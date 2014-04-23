@@ -135,8 +135,9 @@ let pr_existentialset evars =
   prlist_with_sep spc pr_evar (Evar.Set.elements evars)
 let ppexistentialset evars =
   pp (pr_existentialset evars)
-let ppexistentialfilter filter =
-  pp (prlist_with_sep spc bool (Evd.Filter.repr filter))
+let ppexistentialfilter filter = match Evd.Filter.repr filter with
+| None -> pp (Pp.str "ø")
+| Some f -> pp (prlist_with_sep spc bool f)
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoalgoal gl = pp(Goal.pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)

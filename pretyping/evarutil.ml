@@ -643,7 +643,7 @@ let define_pure_evar_as_product evd evk =
   let evd2,rng =
     let newenv = push_named (id, None, dom) evenv in
     let src = evar_source evk evd1 in
-    let filter = Filter.cons true (evar_filter evi) in
+    let filter = Filter.extend 1 (evar_filter evi) in
     new_type_evar evd1 newenv ~src ~filter in
   let prod = mkProd (Name id, dom, subst_var id rng) in
   let evd3 = Evd.define evk prod evd2 in
@@ -681,7 +681,7 @@ let define_pure_evar_as_lambda env evd evk =
   let id =
     next_name_away_with_default_using_types "x" na avoid (whd_evar evd dom) in
   let newenv = push_named (id, None, dom) evenv in
-  let filter = Filter.cons true (evar_filter evi) in
+  let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in
   let evd2,body = new_evar evd1 newenv ~src (subst1 (mkVar id) rng) ~filter in
   let lam = mkLambda (Name id, dom, subst_var id body) in

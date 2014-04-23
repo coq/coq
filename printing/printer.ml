@@ -356,8 +356,10 @@ let pr_concl n sigma g =
 (* display evar type: a context and a type *)
 let pr_evgl_sign gl =
   let ps = pr_named_context_of (evar_env gl) in
-  let f = Filter.repr (evar_filter gl) in
-  let _, l = List.filter2 (fun b c -> not b) f (evar_context gl) in
+  let _, l = match Filter.repr (evar_filter gl) with
+  | None -> [], []
+  | Some f -> List.filter2 (fun b c -> not b) f (evar_context gl)
+  in
   let ids = List.rev_map pi1 l in
   let warn =
     if List.is_empty ids then mt () else

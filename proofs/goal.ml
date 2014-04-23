@@ -501,8 +501,7 @@ module V82 = struct
   let mk_goal evars hyps concl extra =
     let evi = { Evd.evar_hyps = hyps;
 		Evd.evar_concl = concl;
-		Evd.evar_filter = Evd.Filter.identity
-	(List.length (Environ.named_context_of_val hyps));
+		Evd.evar_filter = Evd.Filter.identity;
 		Evd.evar_body = Evd.Evar_empty;
 		Evd.evar_source = (Loc.ghost,Evar_kinds.GoalEvar);
 		Evd.evar_candidates = None;
@@ -558,8 +557,8 @@ module V82 = struct
     let hyps = evi.Evd.evar_hyps in
     let new_hyps =
       List.fold_right Environ.push_named_context_val extra_hyps hyps in
-    let extra_filter = Evd.Filter.identity (List.length extra_hyps) in
-    let new_filter = Evd.Filter.append extra_filter evi.Evd.evar_filter in
+    let filter = evi.Evd.evar_filter in
+    let new_filter = Evd.Filter.extend (List.length extra_hyps) filter in
     let new_evi =
       { evi with Evd.evar_hyps = new_hyps; Evd.evar_filter = new_filter } in
     let new_evi = Typeclasses.mark_unresolvable new_evi in

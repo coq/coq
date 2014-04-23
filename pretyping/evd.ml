@@ -23,45 +23,22 @@ module Filter :
 sig
   type t
   val equal : t -> t -> bool
-  val length : t -> int
-  val identity : int -> t
-  val is_identity : t -> bool
-  val init : int -> (int -> bool) -> t
+  val identity : t
   val filter_list : t -> 'a list -> 'a list
   val filter_array : t -> 'a array -> 'a array
-  val cons : bool -> t -> t
+  val extend : int -> t -> t
   val compose : t -> t -> t
   val restrict_upon : t -> int -> (int -> bool) -> t option
   val map_along : (bool -> 'a -> bool) -> t -> 'a list -> t
-  val init_list : ('a -> bool) -> 'a list -> t
-  val append : t -> t -> t
-  val repr :  t -> bool list
+  val make : bool list -> t
+  val repr :  t -> bool list option
 end =
 struct
-  type t = bool list
+  type t = bool list option
+  (** We guarantee through the interface that if a filter is [Some _] then it
+      contains at least one [false] somewhere. *)
 
-  (** Most of filters we use are identities, so we share their use. *)
-  let identity_pool = Array.make 128 []
-
-  let () =
-    (** Fill the filter pool *)
-    for i = 1 to 127 do
-      let pred = Array.unsafe_get identity_pool (pred i) in
-      let curr = true :: pred in
-      Array.unsafe_set identity_pool i curr
-    done
-
-  let rec identity_gen n accu =
-    if n = 0 then accu
-    else identity_gen (pred n) (true :: accu)
-
-  let identity n =
-    if n < 128 then Array.unsafe_get identity_pool n
-    else
-      let accu = Array.unsafe_get identity_pool 127 in
-      identity_gen (n - 127) accu
-
-  let length = List.length
+  let identity = None
 
   let rec equal l1 l2 = match l1, l2 with
   | [], [] -> true
@@ -69,25 +46,40 @@ struct
     (if h1 then h2 else not h2) && equal l1 l2
   | _ -> false
 
+  let equal l1 l2 = match l1, l2 with
+  | None, None -> true
+  | Some _, None | None, Some _ -> false
+  | Some l1, Some l2 -> equal l1 l2
+
   let rec is_identity = function
   | [] -> true
   | true :: l -> is_identity l
   | false :: _ -> false
 
-  let rec init_aux f i accu =
-    if i = 0 then accu
-    else init_aux f (pred i) (f (pred i) :: accu)
+  let normalize f = if is_identity f then None else Some f
 
-  let init len f =
-    init_aux f len []
+  let filter_list f l = match f with
+  | None -> l
+  | Some f -> CList.filter_with f l
 
-  let filter_list = CList.filter_with
+  let filter_array f v = match f with
+  | None -> v
+  | Some f -> CArray.filter_with f v
 
-  let filter_array = CArray.filter_with
+  let rec extend n l =
+    if n = 0 then l
+    else extend (pred n) (true :: l)
 
-  let cons b l = b :: l
+  let extend n = function
+  | None -> None
+  | Some f -> Some (extend n f)
 
-  let compose = CList.filter_with
+  let compose f1 f2 = match f1 with
+  | None -> f2
+  | Some f1 ->
+    match f2 with
+    | None -> None
+    | Some f2 -> normalize (CList.filter_with f1 f2)
 
   let apply_subfilter filter subfilter =
     let len = Array.length subfilter in
@@ -102,16 +94,24 @@ struct
 
   let restrict_upon f len p =
     let newfilter = Array.init len p in
-    if Array.for_all (fun id -> id) newfilter then
-      None
+    if Array.for_all (fun id -> id) newfilter then None
     else
-      Some (apply_subfilter f newfilter)
+      (** In both cases we statically know that the argument will contain at
+          least one [false] *)
+      let nf = match f with
+      | None -> Some (Array.to_list newfilter)
+      | Some f -> Some (apply_subfilter f newfilter)
+      in
+      Some nf
 
-  let map_along = List.map2
+  let map_along f flt l =
+    let ans = match flt with
+    | None -> List.map (fun x -> f true x) l
+    | Some flt -> List.map2 f flt l
+    in
+    normalize ans
 
-  let init_list = List.map
-
-  let append = (@)
+  let make l = normalize l
 
   let repr f = f
 
@@ -145,7 +145,7 @@ let make_evar hyps ccl = {
   evar_concl = ccl;
   evar_hyps = hyps;
   evar_body = Evar_empty;
-  evar_filter = Filter.identity (List.length (named_context_of_val hyps));
+  evar_filter = Filter.identity;
   evar_source = (Loc.ghost,Evar_kinds.InternalHole);
   evar_candidates = None;
   evar_extra = Store.empty
@@ -163,41 +163,37 @@ let evar_body evi = evi.evar_body
 let evar_context evi = named_context_of_val evi.evar_hyps
 
 let evar_filtered_context evi =
-  let filter = evar_filter evi in
-  if Filter.is_identity filter then evar_context evi
-  else Filter.filter_list (evar_filter evi) (evar_context evi)
+  Filter.filter_list (evar_filter evi) (evar_context evi)
 
 let evar_hyps evi = evi.evar_hyps
 
-let evar_filtered_hyps evi =
-  let filter = evar_filter evi in
-  if Filter.is_identity filter then evar_hyps evi
-  else
-    let rec make_hyps filter ctxt = match filter, ctxt with
-    | [], [] -> empty_named_context_val
-    | false :: filter, _ :: ctxt -> make_hyps filter ctxt
-    | true :: filter, decl :: ctxt ->
-      let hyps = make_hyps filter ctxt in
-      push_named_context_val decl hyps
-    | _ -> instance_mismatch ()
-    in
-    make_hyps (Filter.repr filter) (evar_context evi)
+let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
+| None -> evar_hyps evi
+| Some filter ->
+  let rec make_hyps filter ctxt = match filter, ctxt with
+  | [], [] -> empty_named_context_val
+  | false :: filter, _ :: ctxt -> make_hyps filter ctxt
+  | true :: filter, decl :: ctxt ->
+    let hyps = make_hyps filter ctxt in
+    push_named_context_val decl hyps
+  | _ -> instance_mismatch ()
+  in
+  make_hyps filter (evar_context evi)
 
 let evar_env evi = Global.env_of_context evi.evar_hyps
 
-let evar_filtered_env evi =
-  let filter = evar_filter evi in
-  if Filter.is_identity filter then evar_env evi
-  else
-    let rec make_env filter ctxt = match filter, ctxt with
-    | [], [] -> reset_context (Global.env ())
-    | false :: filter, _ :: ctxt -> make_env filter ctxt
-    | true :: filter, decl :: ctxt ->
-      let env = make_env filter ctxt in
-      push_named decl env
-    | _ -> instance_mismatch ()
-    in
-    make_env (Filter.repr filter) (evar_context evi)
+let evar_filtered_env evi = match Filter.repr (evar_filter evi) with
+| None -> evar_env evi
+| Some filter ->
+  let rec make_env filter ctxt = match filter, ctxt with
+  | [], [] -> reset_context (Global.env ())
+  | false :: filter, _ :: ctxt -> make_env filter ctxt
+  | true :: filter, decl :: ctxt ->
+    let env = make_env filter ctxt in
+    push_named decl env
+  | _ -> instance_mismatch ()
+  in
+  make_env filter (evar_context evi)
 
 let eq_evar_body b1 b2 = match b1, b2 with
 | Evar_empty, Evar_empty -> true
@@ -234,13 +230,19 @@ let make_evar_instance_array info args =
   | true :: filter, (id, _, _) :: ctxt ->
     if i < len then
       let c = Array.unsafe_get args i in
-      if isVarId id c then instrec filter ctxt (succ i)
-      else (id, c) :: instrec filter ctxt (succ i)
+      (id, c) :: instrec filter ctxt (succ i)
     else instance_mismatch ()
   | _ -> instance_mismatch ()
   in
-  let filter = Filter.repr (evar_filter info) in
-  instrec filter (evar_context info) 0
+  match Filter.repr (evar_filter info) with
+  | None ->
+    let map i (id, _, _) =
+      if (i < len) then (id, Array.unsafe_get args i)
+      else instance_mismatch ()
+    in
+    List.map_i map 0 (evar_context info)
+  | Some filter ->
+    instrec filter (evar_context info) 0
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in
@@ -533,13 +535,11 @@ let define evk body evd =
   in
   { evd with defn_evars; undf_evars; last_mods; }
 
-let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?filter ?candidates evd =
-  let filter = match filter with
-  | None ->
-    Filter.identity (List.length (named_context_of_val hyps))
+let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?(filter = Filter.identity) ?candidates evd =
+  let () = match Filter.repr filter with
+  | None -> ()
   | Some filter ->
-    assert (Int.equal (Filter.length filter) (List.length (named_context_of_val hyps)));
-    filter
+    assert (Int.equal (List.length filter) (List.length (named_context_of_val hyps)))
   in
   let evar_info = {
     evar_hyps = hyps;
@@ -918,7 +918,10 @@ let pr_evar_source = function
 let pr_evar_info evi =
   let phyps =
     try
-      let decls = List.combine (evar_context evi) (Filter.repr (evar_filter evi)) in
+      let decls = match Filter.repr (evar_filter evi) with
+      | None -> List.map (fun c -> (c, true)) (evar_context evi)
+      | Some filter -> List.combine (evar_context evi) filter
+      in
       prlist_with_sep spc pr_decl (List.rev decls)
     with Invalid_argument _ -> str "Ill-formed filtered context" in
   let pty = print_constr evi.evar_concl in

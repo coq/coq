@@ -42,17 +42,8 @@ sig
   val equal : t -> t -> bool
   (** Equality over filters *)
 
-  val length : t -> int
-  (** Length of a filter. *)
-
-  val identity : int -> t
-  (** The identity filter of the given length. *)
-
-  val is_identity : t -> bool
-  (** Check whether the whole bitmask is set. *)
-
-  val init : int -> (int -> bool) -> t
-  (** Create a filter with the given length and constructing function. *)
+  val identity : t
+  (** The identity filter. *)
 
   val filter_list : t -> 'a list -> 'a list
   (** Filter a list. Sizes must coincide. *)
@@ -60,8 +51,8 @@ sig
   val filter_array : t -> 'a array -> 'a array
   (** Filter an array. Sizes must coincide. *)
 
-  val cons : bool -> t -> t
-  (** Extend a bitmask on the left. *)
+  val extend : int -> t -> t
+  (** [extend n f] extends [f] on the left with [n]-th times [true]. *)
 
   val compose : t -> t -> t
   (** Horizontal composition : [compose f1 f2] only keeps parts of [f2] where
@@ -73,13 +64,10 @@ sig
   val map_along : (bool -> 'a -> bool) -> t -> 'a list -> t
   (** Apply the function on the filter and the list. Sizes must coincide. *)
 
-  val init_list : ('a -> bool) -> 'a list -> t
+  val make : bool list -> t
   (** Create out of a list *)
 
-  val append : t -> t -> t
-  (** Append, seen as lists *)
-
-  val repr :  t -> bool list
+  val repr :  t -> bool list option
   (** Observe as a bool list. *)
 
 end

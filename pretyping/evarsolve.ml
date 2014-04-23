@@ -494,7 +494,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
           let evd,b = define_evar_from_virtual_equation define_fun env evd b
             sign filter inst_in_env in
           evd,Some b in
-      (push_named_context_val (id,b_in_sign,t_in_sign) sign, Filter.cons true filter,
+      (push_named_context_val (id,b_in_sign,t_in_sign) sign, Filter.extend 1 filter,
        (mkRel 1)::(List.map (lift 1) inst_in_env),
        (mkRel 1)::(List.map (lift 1) inst_in_sign),
        push_rel d env,evd,id::avoid))
