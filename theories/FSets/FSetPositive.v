@@ -45,7 +45,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     | Node l b r => negb b &&& is_empty l &&& is_empty r
    end.
 
-  Fixpoint mem (i : positive) (m : t) : bool :=
+  Fixpoint mem (i : positive) (m : t) {struct m} : bool :=
     match m with
     | Leaf => false
     | Node l o r =>
@@ -82,7 +82,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
        | Leaf,Leaf => Leaf
        | _,_ => Node l false r end.
 
-  Fixpoint remove (i : positive) (m : t) : t :=
+  Fixpoint remove (i : positive) (m : t) {struct m} : t :=
     match m with
       | Leaf => Leaf
       | Node l o r =>
@@ -350,10 +350,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     case o; trivial.
     destruct l; trivial.
     destruct r; trivial.
-    symmetry. destruct x.
-      apply mem_Leaf.
-      apply mem_Leaf.
-      reflexivity.
+  now destruct x.
   Qed.
   Local Opaque node.
 
@@ -362,8 +359,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma is_empty_spec: forall s, Empty s <-> is_empty s = true.
   Proof.
     unfold Empty, In.
-    induction s as [|l IHl o r IHr]; simpl.
-      setoid_rewrite mem_Leaf. firstorder.
+    induction s as [|l IHl o r IHr]; simpl. now split.
       rewrite <- 2andb_lazy_alt, 2andb_true_iff, <- IHl, <- IHr. clear IHl IHr.
       destruct o; simpl; split.
         intro H. elim (H 1). reflexivity.
@@ -821,8 +817,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     xforall f s i = true <-> For_all (fun x => f (i@x) = true) s.
   Proof.
     unfold For_all, In. intro f.
-    induction s as [|l IHl o r IHr]; intros i; simpl.
-     setoid_rewrite mem_Leaf. intuition discriminate.
+    induction s as [|l IHl o r IHr]; intros i; simpl. now split.
      rewrite <- 2andb_lazy_alt, <- orb_lazy_alt, 2 andb_true_iff.
      rewrite IHl, IHr. clear IHl IHr.
       split.
@@ -852,7 +847,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     unfold Exists, In. intro f.
     induction s as [|l IHl o r IHr]; intros i; simpl.
-     setoid_rewrite mem_Leaf. firstorder.
+    split; [ discriminate | now intros  [ _ [? _]]].
      rewrite <- 2orb_lazy_alt, 2orb_true_iff, <- andb_lazy_alt, andb_true_iff.
      rewrite IHl, IHr. clear IHl IHr.
       split.
@@ -904,7 +899,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     induction s as [|l IHl o r IHr]; simpl.
       intros. split; intro H.
         left. assumption.
-        destruct H as [H|[x [Hx Hx']]]. assumption. elim (empty_1 Hx').
+        destruct H as [H|[x [Hx Hx']]]. assumption. discriminate.
 
       intros j acc y. case o.
         rewrite IHl. rewrite InA_cons. rewrite IHr. clear IHl IHr. split.
