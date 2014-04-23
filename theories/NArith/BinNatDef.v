@@ -325,8 +325,8 @@ Definition lxor n m :=
 
 (** Shifts *)
 
-Definition shiftl_nat (a:N)(n:nat) := nat_rect _ a (fun _ => double) n.
-Definition shiftr_nat (a:N)(n:nat) := nat_rect _ a (fun _ => div2) n.
+Definition shiftl_nat (a:N) := nat_rect _ a (fun _ => double).
+Definition shiftr_nat (a:N) := nat_rect _ a (fun _ => div2).
 
 Definition shiftl a n :=
   match a with

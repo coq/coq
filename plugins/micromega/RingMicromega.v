@@ -141,8 +141,8 @@ Qed.
 
 Definition PolC := Pol C. (* polynomials in generalized Horner form, defined in Ring_polynom or EnvRing *)
 Definition PolEnv := Env R. (* For interpreting PolC *)
-Definition eval_pol (env : PolEnv) (p:PolC) : R :=
-   Pphi rplus rtimes phi env p.
+Definition eval_pol : PolEnv -> PolC -> R :=
+   Pphi rplus rtimes phi.
 
 Inductive Op1 : Set := (* relations with 0 *)
 | Equal (* == 0 *)
@@ -679,7 +679,8 @@ match o with
 | OpGt => fun x y : R => y < x
 end.
 
-Definition  eval_pexpr (l : PolEnv) (pe : PExpr C) : R := PEeval rplus rtimes rminus ropp phi pow_phi rpow l pe.
+Definition  eval_pexpr : PolEnv -> PExpr C -> R :=
+ PEeval rplus rtimes rminus ropp phi pow_phi rpow.
 
 Record Formula (T:Type) : Type := {
   Flhs : PExpr T;
@@ -910,7 +911,7 @@ Proof.
   unfold pow_N. ring.
 Qed.
 
-Definition denorm (p : Pol C)  := xdenorm xH p.
+Definition denorm := xdenorm xH.
 
 Lemma denorm_correct : forall p env, eval_pol env p == eval_pexpr env (denorm p).
 Proof.
@@ -960,8 +961,8 @@ Definition map_Formula (f : Formula S)  : Formula C :=
     Build_Formula (map_PExpr l) o (map_PExpr r).
 
 
-Definition eval_sexpr (env : PolEnv) (e : PExpr S) : R :=
-  PEeval rplus rtimes rminus ropp phiS pow_phi rpow env e.
+Definition eval_sexpr : PolEnv -> PExpr S -> R :=
+  PEeval rplus rtimes rminus ropp phiS pow_phi rpow.
 
 Definition eval_sformula (env : PolEnv) (f : Formula S) : Prop :=
   let (lhs, op, rhs) := f in

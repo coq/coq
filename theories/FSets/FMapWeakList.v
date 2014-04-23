@@ -600,18 +600,18 @@ Definition combine_l (m:t elt)(m':t elt') : t oee' :=
 Definition combine_r (m:t elt)(m':t elt') : t oee' :=
   mapi (fun k e' => (find k m, Some e')) m'.
 
-Definition fold_right_pair (A B C:Type)(f:A->B->C->C)(l:list (A*B))(i:C) :=
-  List.fold_right (fun p => f (fst p) (snd p)) i l.
+Definition fold_right_pair (A B C:Type)(f:A->B->C->C) :=
+  List.fold_right (fun p => f (fst p) (snd p)).
 
 Definition combine (m:t elt)(m':t elt') : t oee' :=
   let l := combine_l m m' in
   let r := combine_r m m' in
-  fold_right_pair (add (elt:=oee')) l r.
+  fold_right_pair (add (elt:=oee')) r l.
 
 Lemma fold_right_pair_NoDup :
   forall l r (Hl: NoDupA (eqk (elt:=oee')) l)
     (Hl: NoDupA (eqk (elt:=oee')) r),
-    NoDupA (eqk (elt:=oee')) (fold_right_pair (add (elt:=oee')) l r).
+    NoDupA (eqk (elt:=oee')) (fold_right_pair (add (elt:=oee')) r l).
 Proof.
  induction l; simpl; auto.
  destruct a; simpl; auto.
@@ -733,7 +733,7 @@ Definition option_cons (A:Type)(k:key)(o:option A)(l:list (key*A)) :=
 Definition map2 m m' :=
   let m0 : t oee' := combine m m' in
   let m1 : t (option elt'') := map (fun p => f (fst p) (snd p)) m0 in
-  fold_right_pair (option_cons (A:=elt'')) m1 nil.
+  fold_right_pair (option_cons (A:=elt'')) nil m1.
 
 Lemma map2_NoDup :
   forall m (Hm:NoDupA (@eqk elt) m) m' (Hm':NoDupA (@eqk elt') m'),

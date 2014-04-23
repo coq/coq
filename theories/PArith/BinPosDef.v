@@ -482,8 +482,8 @@ Fixpoint lxor (p q:positive) : N :=
 
 (** Shifts. NB: right shift of 1 stays at 1. *)
 
-Definition shiftl_nat (p:positive)(n:nat) := nat_rect _ p (fun _ => xO) n.
-Definition shiftr_nat (p:positive)(n:nat) := nat_rect _ p (fun _ => div2) n.
+Definition shiftl_nat (p:positive) := nat_rect _ p (fun _ => xO).
+Definition shiftr_nat (p:positive) := nat_rect _ p (fun _ => div2).
 
 Definition shiftl (p:positive)(n:N) :=
   match n with

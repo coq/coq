@@ -41,7 +41,7 @@ Section VALUE_OF_BOOLEAN_VECTORS.
 
   Lemma binary_value : forall n:nat, Bvector n -> Z.
   Proof.
-    simple induction n; intros.
+    refine (nat_rect _ _ _); intros.
     exact 0%Z.
 
     inversion H0.

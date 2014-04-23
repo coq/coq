@@ -835,8 +835,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Definition uncurry {U V W : Type} (f : U -> V -> W) : U*V -> W :=
    fun p => f (fst p) (snd p).
 
-  Definition of_list (l : list (key*elt)) :=
-    List.fold_right (uncurry (@add _)) (empty _) l.
+  Definition of_list :=
+    List.fold_right (uncurry (@add _)) (empty elt).
 
   Definition to_list := elements.
 

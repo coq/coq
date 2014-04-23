@@ -925,8 +925,8 @@ Qed.
 
 (** * Rational to the n-th power *)
 
-Definition Qpower_positive (q:Q)(p:positive) : Q :=
- pow_pos Qmult q p.
+Definition Qpower_positive : Q -> positive -> Q :=
+ pow_pos Qmult.
 
 Instance Qpower_positive_comp : Proper (Qeq==>eq==>Qeq) Qpower_positive.
 Proof.

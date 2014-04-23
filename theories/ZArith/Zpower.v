@@ -25,7 +25,7 @@ Local Open Scope Z_scope.
 (** [Zpower_nat z n] is the n-th power of [z] when [n] is an unary
     integer (type [nat]) and [z] a signed integer (type [Z]) *)
 
-Definition Zpower_nat (z:Z) (n:nat) := nat_rect _ 1 (fun _ => Z.mul z) n.
+Definition Zpower_nat (z:Z) := nat_rect _ 1 (fun _ => Z.mul z).
 
 Lemma Zpower_nat_0_r z : Zpower_nat z 0 = 1.
 Proof. reflexivity. Qed.

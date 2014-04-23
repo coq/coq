@@ -56,8 +56,8 @@ Module Ops (X: DecidableType) <: WOps X.
         if X.eq_dec x y then l else y :: remove x l
     end.
 
-  Definition fold (B : Type) (f : elt -> B -> B) (s : t) (i : B) : B :=
-    fold_left (flip f) s i.
+  Definition fold (B : Type) (f : elt -> B -> B) : t -> B -> B :=
+    fold_left (flip f).
 
   Definition union (s : t) : t -> t := fold add s.
 

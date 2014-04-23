@@ -60,13 +60,13 @@ Definition Bhigh := @Vector.tl bool.
 
 Definition Bsign := @Vector.last bool.
 
-Definition Bneg n (v : Bvector n) := Vector.map negb v.
+Definition Bneg := @Vector.map _ _ negb.
 
-Definition BVand n (v : Bvector n) := Vector.map2 andb v.
+Definition BVand := @Vector.map2 _ _ _ andb.
 
-Definition BVor n (v : Bvector n) := Vector.map2 orb v.
+Definition BVor := @Vector.map2 _ _ _ orb.
 
-Definition BVxor n (v : Bvector n) := Vector.map2 xorb v.
+Definition BVxor := @Vector.map2 _ _ _ xorb.
 
 Definition BshiftL (n:nat) (bv:Bvector (S n)) (carry:bool) :=
   Bcons carry n (Vector.shiftout bv).
