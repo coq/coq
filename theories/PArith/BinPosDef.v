@@ -268,7 +268,7 @@ Fixpoint compare_cont (r:comparison) (x y:positive) {struct y} : comparison :=
     | 1, 1 => r
   end.
 
-Definition compare x y := compare_cont Eq x y.
+Definition compare := compare_cont Eq.
 
 Infix "?=" := compare (at level 70, no associativity) : positive_scope.
 

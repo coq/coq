@@ -40,6 +40,7 @@ module Cst_stack : sig
   val add_args : 'a array -> 'a t -> 'a t
   val add_cst : 'a -> 'a t -> 'a t
   val best_cst : 'a t -> ('a * 'a list) option
+  val best_replace : constr -> constr t -> constr -> constr
   val pr : constr t -> Pp.std_ppcmds
 end
 
@@ -89,6 +90,7 @@ module Stack : sig
   val tail : int -> 'a t -> 'a t
   val nth : 'a t -> int -> 'a
 
+  val best_state : constr * constr t -> constr Cst_stack.t -> constr * constr t
   val zip : ?refold:bool -> constr * constr t -> constr
 end
 
@@ -229,8 +231,7 @@ val find_conclusion : env -> evar_map -> constr -> (constr,constr) kind_of_term
 val is_arity : env ->  evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 
-val contract_fix : ?env:Environ.env -> fixpoint ->
-  constr Cst_stack.t -> constr
+val contract_fix : ?env:Environ.env -> fixpoint -> constr
 val fix_recarg : fixpoint -> constr Stack.t -> (int * constr) option
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)

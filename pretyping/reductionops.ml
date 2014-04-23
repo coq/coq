@@ -173,6 +173,17 @@ module Cst_stack = struct
     | (cst,params,[])::_ -> Some(cst,params)
     | _ -> None
 
+  (** [best_replace d cst_l c] makes the best replacement for [d]
+      by [cst_l] in [c] *)
+  let best_replace d cst_l c =
+    let reconstruct_head = List.fold_left
+      (fun t (i,args) -> mkApp (t,Array.sub args i (Array.length args - i))) in
+    List.fold_right
+      (fun (cst,params,args) t -> Termops.replace_term
+	(reconstruct_head d args)
+	(applist (cst, List.rev params))
+	t) cst_l c
+
   let pr l =
     let open Pp in
     let p_c = Termops.print_constr in
@@ -218,6 +229,7 @@ sig
   val args_size : 'a t -> int
   val tail : int -> 'a t -> 'a t
   val nth : 'a t -> int -> 'a
+  val best_state : constr * constr t -> constr Cst_stack.t -> constr * constr t
   val zip : ?refold:bool -> constr * constr t -> constr
 end =
 struct
@@ -436,6 +448,18 @@ struct
     | Some (_,el,_) -> el
     | None -> raise Not_found
 
+  (** This function breaks the abstraction of Cst_stack ! *)
+  let best_state (_,sk as s) l =
+    let rec aux sk def = function
+      |(cst, params, []) -> (cst, append_app_list (List.rev params) sk)
+      |(cst, params, (i,t)::q) -> match decomp sk with
+	| Some (el,sk') when Constr.equal el t.(i) ->
+	  if i = pred (Array.length t)
+	  then aux sk' def (cst, params, q)
+	  else aux sk' def (cst, params, (succ i,t)::q)
+	| _ -> def
+    in List.fold_left (aux sk) s l
+
   let rec zip ?(refold=false) = function
     | f, [] -> f
     | f, (App (i,a,j) :: s) ->
@@ -443,18 +467,11 @@ struct
 		then a
 		else Array.sub a i (j - i + 1) in
        zip ~refold (mkApp (f, a'), s)
-    | f, (Case (ci,rt,br,cst_sk)::s) when refold ->
-      (match Cst_stack.best_cst cst_sk with
-      | Some (cst, params) -> zip ~refold (cst, append_app_list (List.rev params) s)
-      | None -> zip ~refold (mkCase (ci,rt,f,br), s)
-      )
+    | f, (Case (ci,rt,br,cst_l)::s) when refold ->
+      zip ~refold (best_state (mkCase (ci,rt,f,br), s) cst_l)
     | f, (Case (ci,rt,br,_)::s) -> zip ~refold (mkCase (ci,rt,f,br), s)
-    | f, (Fix (fix,st,cst_sk)::s) when refold ->
-      (match Cst_stack.best_cst cst_sk with
-      | Some (cst, params) -> zip ~refold (cst, append_app_list (List.rev params)
-	(st @ (append_app [|f|] s)))
-      | None ->  zip ~refold (mkFix fix, st @ (append_app [|f|] s))
-      )
+    | f, (Fix (fix,st,cst_l)::s) when refold ->
+      zip ~refold (best_state (mkFix fix, st @ (append_app [|f|] s)) cst_l)
   | f, (Fix (fix,st,_)::s) -> zip ~refold
     (mkFix fix, st @ (append_app [|f|] s))
   | f, (Shift n::s) -> zip ~refold (lift n f, s)
@@ -545,7 +562,7 @@ let apply_subst recfun env cst_l t stack =
   in aux env cst_l t stack
 
 let stacklam recfun env t stack =
-apply_subst (fun _ -> recfun) env [] t stack
+apply_subst (fun _ -> recfun) env Cst_stack.empty t stack
 
 let beta_applist (c,l) =
   stacklam Stack.zip [] c (Stack.append_app_list l Stack.empty)
@@ -593,13 +610,11 @@ let magicaly_constant_of_fixbody env bd = function
     with
     | Not_found -> bd
 
-let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) cst_l =
+let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j =
     let ind = nbodies-j-1 in
-    if Int.equal bodynum ind && not (Option.is_empty (Cst_stack.best_cst cst_l)) then
-      let (c,params) = Option.get (Cst_stack.best_cst cst_l) in
-      applist(c, List.rev params)
+    if Int.equal bodynum ind then mkCoFix (ind,typedbodies)
     else
       let bd = mkCoFix (ind,typedbodies) in
       match env with
@@ -608,6 +623,13 @@ let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) cst_l =
   let closure = List.init nbodies make_Fi in
   substl closure bodies.(bodynum)
 
+(** Similar to the "fix" case below *)
+let reduce_and_refold_cofix recfun env cst_l cofix sk =
+  let raw_answer = contract_cofix ~env cofix in
+  apply_subst
+    (fun x (t,sk') -> recfun x (Cst_stack.best_replace (mkCoFix cofix) cst_l t,sk'))
+    [] Cst_stack.empty raw_answer sk
+
 let reduce_mind_case mia =
   match kind_of_term mia.mconstr with
     | Construct ((ind_sp,i),u) ->
@@ -615,20 +637,18 @@ let reduce_mind_case mia =
 	let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
         applist (mia.mlf.(i-1),real_cargs)
     | CoFix cofix ->
-	let cofix_def = contract_cofix cofix Cst_stack.empty in
+	let cofix_def = contract_cofix cofix in
 	mkCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
-let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies)) cst_l =
+let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies)) =
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
-      if Int.equal bodynum ind && not (Option.is_empty (Cst_stack.best_cst cst_l)) then
-	let (c,params) = Option.get (Cst_stack.best_cst cst_l) in
-	applist(c, List.rev params)
+      if Int.equal bodynum ind then mkFix ((recindices,ind),typedbodies)
       else
 	let bd = mkFix ((recindices,ind),typedbodies) in
 	match env with
@@ -636,6 +656,16 @@ let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies))
 	| Some e -> magicaly_constant_of_fixbody e bd names.(ind) in
     let closure = List.init nbodies make_Fi in
     substl closure bodies.(bodynum)
+
+(** First we substitute the Rel bodynum by the fixpoint and then we try to
+    replace the fixpoint by the best constant from [cst_l]
+    Other rels are directly substituted by constants "magically found from the
+    context" in contract_fix *)
+let reduce_and_refold_fix recfun env cst_l fix sk =
+  let raw_answer = contract_fix ~env fix in
+  apply_subst
+    (fun x (t,sk') -> recfun x (Cst_stack.best_replace (mkFix fix) cst_l t,sk'))
+    [] Cst_stack.empty raw_answer sk
 
 let fix_recarg ((recindices,bodynum),_) stack =
   assert (0 <= bodynum && bodynum < Array.length recindices);
@@ -663,19 +693,8 @@ type 'a reduced_state =
 *)
 let rec whd_state_gen ?csts tactic_mode flags env sigma =
   let rec whrec cst_l (x, stack as s) =
-    let best_state (_,sk as s) l =
-      let rec aux sk def = function
-	|(cst, params, []) -> (cst, Stack.append_app_list (List.rev params) sk)
-	|(cst, params, (i,t)::q) -> match Stack.decomp sk with
-	  | None -> def
-	  | Some (el,sk') ->
-	    let () = Cst_stack.sanity el t.(i) in
-	    if i = pred (Array.length t)
-	    then aux sk' def (cst, params, q)
-	    else aux sk' def (cst, params, (succ i,t)::q)
-      in List.fold_left (aux sk) s l in
     let fold () =
-      if tactic_mode then (best_state s cst_l,Cst_stack.empty) else (s,cst_l)
+      if tactic_mode then (Stack.best_state s cst_l,Cst_stack.empty) else (s,cst_l)
     in
     match kind_of_term x with
     | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
@@ -781,8 +800,10 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	  whrec Cst_stack.empty (Stack.nth args (n+m), s')
 	|args, (Stack.Fix (f,s',cst_l)::s'') ->
 	  let x' = Stack.zip(x,args) in
-	  whrec Cst_stack.empty ((if tactic_mode then contract_fix ~env f else contract_fix f) cst_l,
-		      s' @ (Stack.append_app [|x'|] s''))
+	  let out_sk = s' @ (Stack.append_app [|x'|] s'') in
+	  if tactic_mode
+	  then reduce_and_refold_fix whrec env cst_l f out_sk
+	  else whrec Cst_stack.empty (contract_fix f, out_sk)
 	|_ -> fold ()
       else fold ()
 
@@ -790,9 +811,9 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') ->
-	  whrec Cst_stack.empty ((if tactic_mode
-	    then contract_cofix ~env cofix
-	    else contract_cofix cofix) cst_l, stack)
+	  if tactic_mode
+	  then reduce_and_refold_cofix whrec env cst_l cofix stack
+	  else whrec Cst_stack.empty (contract_cofix cofix, stack)
 	|_ -> fold ()
       else fold ()
 
@@ -861,8 +882,8 @@ let local_whd_state_gen flags sigma =
 	|args, (Stack.Proj (n,m,p) :: s') ->
 	  whrec (Stack.nth args (n+m), s')
 	|args, (Stack.Fix (f,s',cst)::s'') ->
-          let x' = Stack.zip(x,args) in
-            whrec (contract_fix f cst, s' @ (Stack.append_app [|x'|] s''))
+	  let x' = Stack.zip(x,args) in
+	  whrec (contract_fix f, s' @ (Stack.append_app [|x'|] s''))
 	|_ -> s
       else s
 
@@ -870,7 +891,7 @@ let local_whd_state_gen flags sigma =
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') ->
-	  whrec (contract_cofix cofix Cst_stack.empty, stack)
+	  whrec (contract_cofix cofix, stack)
 	|_ -> s
       else s
 
