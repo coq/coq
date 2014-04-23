@@ -111,6 +111,8 @@ module Cst_stack : sig
   val add_args : constr array -> t -> t
   val add_cst : constr -> t -> t
   val best_cst : t -> (constr * constr list) option
+  val best_state : state -> t -> state
+  val pr : t -> Pp.std_ppcmds
 end
 
 (** {6 Reduction Function Operators } *)

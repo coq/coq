@@ -306,7 +306,7 @@ struct
 
   let rec map f x = List.map (function
 			       | Update _ -> assert false
-			       | Shift k as e -> e
+			       | (Proj (_,_,_) | Shift _) as e -> e
 			       | App (i,a,j) ->
 				  let le = j - i + 1 in
 				  App (0,Array.map f (Array.sub a i le), le-1)
@@ -480,31 +480,63 @@ let betadeltaiotaeta = Closure.RedFlags.red_add betadeltaiota Closure.RedFlags.f
 
 (** Machinery about stack of unfolded constants *)
 module Cst_stack = struct
-  type t = (Term.constr * Term.constr list * int)  list
+(** constant * params * args
+
+- constant applied to params = term in head applied to args
+- there is at most one arguments with an empty list of args, it must be the first.
+- in args, the int represents the indice of the first arg to consider *)
+  type t = (Term.constr * Term.constr list * (int * Term.constr array) list)  list
 
   let empty = []
 
+  let sanity x y =
+    assert (Constr.equal x y)
+
   let drop_useless = function
-    | _ :: ((_,_,0)::_ as q) -> q
+    | _ :: ((_,_,[])::_ as q) -> q
     | l -> l
 
   let add_param h cst_l =
-    let append2cst (c,params,nb_skip) =
-      if nb_skip <= 0
-      then (c, h::params, nb_skip)
-      else (c, params, pred nb_skip) in
+    let append2cst = function
+      | (c,params,[]) -> (c, h::params, [])
+      | (c,params,((i,t)::q)) when i = pred (Array.length t) ->
+	 let () = sanity h t.(i) in (c, params, q)
+      | (c,params,(i,t)::q) ->
+	 let () = sanity h t.(i) in (c, params, (succ i,t)::q)
+ in
     drop_useless (List.map append2cst cst_l)
 
   let add_args cl =
-    List.map (fun (a,b,nb_skip) -> (a,b,nb_skip+Array.length cl))
+    List.map (fun (a,b,args) -> (a,b,(0,cl)::args))
 
   let add_cst cst = function
-    | (_,_,0) :: q as l -> l
-    | l -> (cst,[],0)::l
+    | (_,_,[]) :: q as l -> l
+    | l -> (cst,[],[])::l
 
   let best_cst = function
-    | (cst,params,0)::_ -> Some(cst,params)
+    | (cst,params,[])::_ -> Some(cst,params)
     | _ -> None
+
+  let best_state (_,sk as s) l =
+    let rec aux sk def = function
+    |(cst, params, []) -> (cst, Stack.append_app_list (List.rev params) sk)
+    |(cst, params, (i,t)::q) -> match Stack.decomp sk with
+				| None -> def
+				| Some (el,sk') ->
+				   let () = sanity el t.(i) in
+				   if i = pred (Array.length t)
+				   then aux sk' def (cst, params, q)
+				   else aux sk' def (cst, params, (succ i,t)::q)
+    in List.fold_left (aux sk) s l
+
+  let pr l =
+    let open Pp in
+    let p_c = Termops.print_constr in
+    prlist_with_sep pr_semicolon
+		    (fun (c,params,args) ->
+		     hov 1 (p_c c ++ spc () ++ pr_sequence p_c params ++ spc () ++ str "(args:" ++
+			      pr_sequence (fun (i,el) -> prvect_with_sep spc p_c (Array.sub el i (Array.length el - i))) args ++
+			      str ")")) l
 end
 
 (* Beta Reduction tools *)
@@ -635,20 +667,14 @@ type 'a reduced_state =
     contract_* in any case .
 *)
 let rec whd_state_gen ?csts tactic_mode flags env sigma =
-  let noth = [] in
   let rec whrec cst_l (x, stack as s) =
-    let best_state def (cst,params,nb_skip) =
-      try
-	let s' = Stack.tail nb_skip stack in
-	(cst, Stack.append_app_list (List.rev params) s')
-      with Failure _ -> def in
     let fold () =
-      if tactic_mode then (List.fold_left best_state s cst_l,noth) else (s,cst_l)
+      if tactic_mode then (Cst_stack.best_state s cst_l,Cst_stack.empty) else (s,cst_l)
     in
     match kind_of_term x with
     | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
       (match lookup_rel n env with
-      | (_,Some body,_) -> whrec noth (lift n body, stack)
+      | (_,Some body,_) -> whrec Cst_stack.empty (lift n body, stack)
       | _ -> fold ())
     | Var id when Closure.RedFlags.red_set flags (Closure.RedFlags.fVAR id) ->
       (match lookup_named id env with
@@ -725,31 +751,31 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
             | Rel 1, [] ->
 	      let lc = Array.sub cl 0 (napp-1) in
 	      let u = if Int.equal napp 1 then f else appvect (f,lc) in
-	      if noccurn 1 u then (pop u,Stack.empty),noth else fold ()
+	      if noccurn 1 u then (pop u,Stack.empty),Cst_stack.empty else fold ()
             | _ -> fold ()
 	  else fold ()
 	| _ -> fold ())
       | _ -> fold ())
 
     | Case (ci,p,d,lf) ->
-      whrec noth (d, Stack.Case (ci,p,lf,Cst_stack.best_cst cst_l) :: stack)
+      whrec Cst_stack.empty (d, Stack.Case (ci,p,lf,Cst_stack.best_cst cst_l) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
       |None -> fold ()
       |Some (bef,arg,s') ->
-	whrec noth (arg, Stack.Fix(f,bef,Cst_stack.best_cst cst_l)::s'))
+	whrec Cst_stack.empty (arg, Stack.Fix(f,bef,Cst_stack.best_cst cst_l)::s'))
 
     | Construct ((ind,c),u) ->
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') ->
-	  whrec noth (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
+	  whrec Cst_stack.empty (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
 	|args, (Stack.Proj (n,m,p)::s') ->
-	  whrec noth (Stack.nth args (n+m), s')
+	  whrec Cst_stack.empty (Stack.nth args (n+m), s')
 	|args, (Stack.Fix (f,s',cst)::s'') ->
 	  let x' = Stack.zip(x,args) in
-	  whrec noth ((if tactic_mode then contract_fix ~env f else contract_fix f) cst,
+	  whrec Cst_stack.empty ((if tactic_mode then contract_fix ~env f else contract_fix f) cst,
 		      s' @ (Stack.append_app [|x'|] s''))
 	|_ -> fold ()
       else fold ()
@@ -758,7 +784,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') ->
-	  whrec noth ((if tactic_mode
+	  whrec Cst_stack.empty ((if tactic_mode
 	    then contract_cofix ~env cofix
 	    else contract_cofix cofix) (Cst_stack.best_cst cst_l), stack)
 	|_ -> fold ()
@@ -767,7 +793,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
     | Rel _ | Var _ | Const _ | LetIn _ | Proj _ -> fold ()
     | Sort _ | Ind _ | Prod _ -> fold ()
   in
-  whrec (Option.default noth csts)
+  whrec (Option.default Cst_stack.empty csts)
 
 (** reduction machine without global env and refold machinery *)
 let local_whd_state_gen flags sigma =
