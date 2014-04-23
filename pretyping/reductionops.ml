@@ -191,9 +191,9 @@ sig
   val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array * ('a * 'a list) option
+  | Case of case_info * 'a * 'a array * 'a Cst_stack.t
   | Proj of int * int * projection
-  | Fix of fixpoint * 'a t * ('a * 'a list) option
+  | Fix of fixpoint * 'a t * 'a Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
@@ -238,9 +238,9 @@ struct
 
   type 'a member =
   | App of 'a app_node
-  | Case of Term.case_info * 'a * 'a array * ('a * 'a list) option
+  | Case of Term.case_info * 'a * 'a array * 'a Cst_stack.t
   | Proj of int * int * projection
-  | Fix of fixpoint * 'a t * ('a * 'a list) option
+  | Fix of fixpoint * 'a t * 'a Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
@@ -443,12 +443,18 @@ struct
 		then a
 		else Array.sub a i (j - i + 1) in
        zip ~refold (mkApp (f, a'), s)
-    | f, (Case (ci,rt,br,Some(cst, params))::s) when refold ->
-       zip ~refold (cst, append_app_list (List.rev params) s)
+    | f, (Case (ci,rt,br,cst_sk)::s) when refold ->
+      (match Cst_stack.best_cst cst_sk with
+      | Some (cst, params) -> zip ~refold (cst, append_app_list (List.rev params) s)
+      | None -> zip ~refold (mkCase (ci,rt,f,br), s)
+      )
     | f, (Case (ci,rt,br,_)::s) -> zip ~refold (mkCase (ci,rt,f,br), s)
-    | f, (Fix (fix,st,Some(cst, params))::s) when refold ->
-       zip ~refold (cst, append_app_list (List.rev params)
-      (st @ (append_app [|f|] s)))
+    | f, (Fix (fix,st,cst_sk)::s) when refold ->
+      (match Cst_stack.best_cst cst_sk with
+      | Some (cst, params) -> zip ~refold (cst, append_app_list (List.rev params)
+	(st @ (append_app [|f|] s)))
+      | None ->  zip ~refold (mkFix fix, st @ (append_app [|f|] s))
+      )
   | f, (Fix (fix,st,_)::s) -> zip ~refold
     (mkFix fix, st @ (append_app [|f|] s))
   | f, (Shift n::s) -> zip ~refold (lift n f, s)
@@ -587,12 +593,12 @@ let magicaly_constant_of_fixbody env bd = function
     with
     | Not_found -> bd
 
-let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) cst =
+let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) cst_l =
   let nbodies = Array.length bodies in
   let make_Fi j =
     let ind = nbodies-j-1 in
-    if Int.equal bodynum ind && not (Option.is_empty cst) then
-      let (c,params) = Option.get cst in
+    if Int.equal bodynum ind && not (Option.is_empty (Cst_stack.best_cst cst_l)) then
+      let (c,params) = Option.get (Cst_stack.best_cst cst_l) in
       applist(c, List.rev params)
     else
       let bd = mkCoFix (ind,typedbodies) in
@@ -609,19 +615,19 @@ let reduce_mind_case mia =
 	let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
         applist (mia.mlf.(i-1),real_cargs)
     | CoFix cofix ->
-	let cofix_def = contract_cofix cofix None in
+	let cofix_def = contract_cofix cofix Cst_stack.empty in
 	mkCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
-let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies)) cst =
+let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies)) cst_l =
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
-      if Int.equal bodynum ind && not (Option.is_empty cst) then
-	let (c,params) = Option.get cst in
+      if Int.equal bodynum ind && not (Option.is_empty (Cst_stack.best_cst cst_l)) then
+	let (c,params) = Option.get (Cst_stack.best_cst cst_l) in
 	applist(c, List.rev params)
       else
 	let bd = mkFix ((recindices,ind),typedbodies) in
@@ -758,13 +764,13 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       | _ -> fold ())
 
     | Case (ci,p,d,lf) ->
-      whrec Cst_stack.empty (d, Stack.Case (ci,p,lf,Cst_stack.best_cst cst_l) :: stack)
+      whrec Cst_stack.empty (d, Stack.Case (ci,p,lf,cst_l) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
       |None -> fold ()
       |Some (bef,arg,s') ->
-	whrec Cst_stack.empty (arg, Stack.Fix(f,bef,Cst_stack.best_cst cst_l)::s'))
+	whrec Cst_stack.empty (arg, Stack.Fix(f,bef,cst_l)::s'))
 
     | Construct ((ind,c),u) ->
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
@@ -773,9 +779,9 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	  whrec Cst_stack.empty (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
 	|args, (Stack.Proj (n,m,p)::s') ->
 	  whrec Cst_stack.empty (Stack.nth args (n+m), s')
-	|args, (Stack.Fix (f,s',cst)::s'') ->
+	|args, (Stack.Fix (f,s',cst_l)::s'') ->
 	  let x' = Stack.zip(x,args) in
-	  whrec Cst_stack.empty ((if tactic_mode then contract_fix ~env f else contract_fix f) cst,
+	  whrec Cst_stack.empty ((if tactic_mode then contract_fix ~env f else contract_fix f) cst_l,
 		      s' @ (Stack.append_app [|x'|] s''))
 	|_ -> fold ()
       else fold ()
@@ -786,7 +792,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	|args, (Stack.Case(ci, _, lf,_)::s') ->
 	  whrec Cst_stack.empty ((if tactic_mode
 	    then contract_cofix ~env cofix
-	    else contract_cofix cofix) (Cst_stack.best_cst cst_l), stack)
+	    else contract_cofix cofix) cst_l, stack)
 	|_ -> fold ()
       else fold ()
 
@@ -830,12 +836,12 @@ let local_whd_state_gen flags sigma =
         :: stack))
 
     | Case (ci,p,d,lf) ->
-      whrec (d, Stack.Case (ci,p,lf,None) :: stack)
+      whrec (d, Stack.Case (ci,p,lf,Cst_stack.empty) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
       |None -> s
-      |Some (bef,arg,s') -> whrec (arg, Stack.Fix(f,bef,None)::s'))
+      |Some (bef,arg,s') -> whrec (arg, Stack.Fix(f,bef,Cst_stack.empty)::s'))
 
     | Evar ev ->
       (match safe_evar_value sigma ev with
@@ -864,7 +870,7 @@ let local_whd_state_gen flags sigma =
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') ->
-	  whrec (contract_cofix cofix None, stack)
+	  whrec (contract_cofix cofix Cst_stack.empty, stack)
 	|_ -> s
       else s
 

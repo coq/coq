@@ -51,9 +51,9 @@ module Stack : sig
 
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array * ('a * 'a list) option
+  | Case of case_info * 'a * 'a array * 'a Cst_stack.t
   | Proj of int * int * projection
-  | Fix of fixpoint * 'a t * ('a * 'a list) option
+  | Fix of fixpoint * 'a t * 'a Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
@@ -230,7 +230,7 @@ val is_arity : env ->  evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 
 val contract_fix : ?env:Environ.env -> fixpoint ->
-  (constr * constr list) option -> constr
+  constr Cst_stack.t -> constr
 val fix_recarg : fixpoint -> constr Stack.t -> (int * constr) option
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)
