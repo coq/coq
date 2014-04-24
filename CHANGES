@@ -1,6 +1,19 @@
 Changes from V8.4pl3 to V8.4pl4
 ===============================
 
+Kernel
+
+- Coq is now known to be inconsistent with
+  Definition prop_extensionality := forall A B:Prop, (A <-> B) -> A = B.
+  An example of why can be seen at:
+  https://gforge.inria.fr/plugins/scmgit/cgi-bin/gitweb.cgi?p=coq/coq.git;a=blob_plain;f=test-suite/failure/subterm2.v;hb=HEAD
+  or
+  https://gforge.inria.fr/plugins/scmgit/cgi-bin/gitweb.cgi?p=coq/coq.git;a=blob_plain;f=test-suite/failure/subterm3.v;hb=HEAD
+
+- Bug #3211: unsound check of elimination sort.
+- Fix guard condition for nested cofixpoints.
+- Bug #3243: Univ constraints of module subtyping were not propagated.
+
 Tactics
 
 - A new option "Set Stable Omega" ensures that repeated identical calls
@@ -9,7 +22,20 @@ Tactics
 - The interpretation of the open_constr tactic argument was erroneously
   firing type classes resolution in some corner cases.  This has been
   fixed.  The tactic argument type open_constr_wTC is provided for retro
-  compatibility purposes. 
+  compatibility purposes.
+- Fixing bug #3228 (fixing precedence of ltac variables over variables in
+  env) introduces rare and justified tactic failure.
+
+Bug fixes
+
+- Solved bugs:
+  #3260, #2697, #3037, #3262, #2900, #3131, #3238, #3204, #1758, #1039,
+  #3144
+- micromega: solved an ambiguous symbol resolution.
+- Coq always uses / as separator between directories on all platforms.
+- remove trailing '\r' from file names returned by coqtop.
+- bug correction in proving inversion principles for Function.
+- ocamlbuild: minor fixes related to camlp4 and cross-compilation.
 
 Changes from V8.4pl2 to V8.4pl3
 ===============================
