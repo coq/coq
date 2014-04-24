@@ -990,8 +990,8 @@ and eval_tactic ist = function
            tclSHOWHYPS (Proofview.V82.of_tactic (interp_tactic ist tac))
          end
   | TacAbstract (tac,ido) ->
-      Proofview.V82.tactic begin fun gl -> Tactics.tclABSTRACT
-        (Option.map (pf_interp_ident ist gl) ido) (interp_tactic ist tac) gl
+      Proofview.Goal.enter begin fun gl -> Tactics.tclABSTRACT
+        (Option.map (Tacmach.New.of_old (pf_interp_ident ist) gl) ido) (interp_tactic ist tac)
       end
   | TacThen (t1,tf,t,tl) ->
       if Array.length tf = 0 && Array.length tl = 0 then

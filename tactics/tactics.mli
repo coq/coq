@@ -354,7 +354,7 @@ val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -
 
 val unify           : ?state:Names.transparent_state -> constr -> constr -> tactic
 
-val tclABSTRACT : Id.t option -> unit Proofview.tactic -> tactic
+val tclABSTRACT : Id.t option -> unit Proofview.tactic -> unit Proofview.tactic
 
 val admit_as_an_axiom : unit Proofview.tactic
 

@@ -1149,6 +1149,8 @@ let exact_check c gl =
     error "Not an exact proof."
 
 let exact_no_check = refine_no_check
+let new_exact_no_check c =
+  Proofview.Refine.refine (fun h -> (h, c))
 
 let vm_cast_no_check c gl =
   let concl = pf_concl gl in
@@ -3631,9 +3633,13 @@ let interpretable_as_section_decl d1 d2 = match d1,d2 with
   | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr b1 b2 && eq_constr t1 t2
   | (_,None,t1), (_,_,t2) -> eq_constr t1 t2
 
-let abstract_subproof id tac gl =
+let abstract_subproof id tac =
+  let open Tacticals.New in
+  let open Tacmach.New in
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
   let current_sign = Global.named_context()
-  and global_sign = pf_hyps gl in
+  and global_sign = Proofview.Goal.hyps gl in
   let sign,secsign =
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) ->
@@ -3643,15 +3649,21 @@ let abstract_subproof id tac gl =
 	else (add_named_decl d s1,s2))
       global_sign (empty_named_context,empty_named_context_val) in
   let id = next_global_ident_away id (pf_ids_of_hyps gl) in
-  let concl = it_mkNamedProd_or_LetIn (pf_concl gl) sign in
+  let concl = it_mkNamedProd_or_LetIn (Proofview.Goal.concl gl) sign in
   let concl =
-    try flush_and_check_evars (project gl) concl
+    try flush_and_check_evars (Proofview.Goal.sigma gl) concl
     with Uninstantiated_evar _ ->
       error "\"abstract\" cannot handle existentials." in
-  (* spiwack: the [abstract] tacticals loses the "unsafe status" information *)
-  try
-  let (const,_) = Pfedit.build_constant_by_tactic id secsign concl
-    (Tacticals.New.tclCOMPLETE (Tacticals.New.tclTHEN (Tacticals.New.tclDO (List.length sign) intro) tac)) in
+  let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac) in
+  let (const, safe) =
+    try Pfedit.build_constant_by_tactic id secsign concl solve_tac
+    with Proof_errors.TacticFailure e ->
+    (* if the tactic [tac] fails, it reports a [TacticFailure e],
+       which is an error irrelevant to the proof system (in fact it
+       means that [e] comes from [tac] failing to yield enough
+       success). Hence it reraises [e]. *)
+    raise e
+  in
   let cd = Entries.DefinitionEntry const in
   let decl = (cd, IsProof Lemma) in
   (** ppedrot: seems legit to have abstracted subproofs as local*)
@@ -3660,20 +3672,14 @@ let abstract_subproof id tac gl =
   let open Declareops in
   let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
   let effs = cons_side_effects eff no_seff in
-  let gl = { gl with sigma = Evd.emit_side_effects effs gl.sigma; } in
-  exact_no_check
-    (applist (lem,List.rev (instance_from_named_context sign)))
-    gl
-  with Proof_errors.TacticFailure e ->
-    (* if the tactic [tac] fails, it reports a [TacticFailure e],
-       which is an error irrelevant to the proof system (in fact it
-       means that [e] comes from [tac] failing to yield enough
-       success). Hence it reraises [e]. *)
-    raise e
+  let args = List.rev (instance_from_named_context sign) in
+  let solve = Proofview.tclEFFECTS effs <*> new_exact_no_check (applist (lem, args)) in
+  if not safe then Proofview.mark_as_unsafe <*> solve else solve
+  end
 
 let anon_id = Id.of_string "anonymous"
 
-let tclABSTRACT name_op tac gl =
+let tclABSTRACT name_op tac =
   let open Proof_global in
   let s = match name_op with
     | Some s -> s
@@ -3681,7 +3687,7 @@ let tclABSTRACT name_op tac gl =
       let name = try get_current_proof_name () with NoCurrentProof -> anon_id in
       add_suffix name "_subproof"
   in
-  abstract_subproof s tac gl
+  abstract_subproof s tac
 
 
 let admit_as_an_axiom =
