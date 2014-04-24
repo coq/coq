@@ -1,14 +1,15 @@
 Changes from V8.4pl3 to V8.4pl4
 ===============================
 
-Kernel
-
-- Coq is now known to be inconsistent with
-  Definition prop_extensionality := forall A B:Prop, (A <-> B) -> A = B.
-  An example of why can be seen at:
+WARNING:
+The current logic of Coq is now known to be inconsistent with
+  Axiom prop_extensionality : forall A B:Prop, (A <-> B) -> A = B.
+For more details, see:
   https://gforge.inria.fr/plugins/scmgit/cgi-bin/gitweb.cgi?p=coq/coq.git;a=blob_plain;f=test-suite/failure/subterm2.v;hb=HEAD
-  or
+or
   https://gforge.inria.fr/plugins/scmgit/cgi-bin/gitweb.cgi?p=coq/coq.git;a=blob_plain;f=test-suite/failure/subterm3.v;hb=HEAD
+
+Kernel
 
 - Bug #3211: unsound check of elimination sort.
 - Fix guard condition for nested cofixpoints.
