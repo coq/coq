@@ -181,7 +181,6 @@ let save id const do_guard (locality,kind) hook =
         | Global -> false
         in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
-	Autoinstance.search_declaration (ConstRef kn);
 	(locality, ConstRef kn) in
   definition_message id;
   hook l r

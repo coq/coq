@@ -138,7 +138,6 @@ let declare_global_definition ident ce local k imps =
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = definition_message ident in
-  let () = Autoinstance.search_declaration (ConstRef kn) in
   gr
 
 let declare_definition_hook = ref ignore
@@ -211,7 +210,6 @@ let declare_assumption is_coe (local, kind) c imps impl nl (_,ident) = match loc
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = assumption_message ident in
-  let () = Autoinstance.search_declaration (ConstRef kn) in
   let () = Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr local in
   (gr,Lib.is_modtype_strict ())
@@ -400,11 +398,9 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
   let mind = Global.mind_of_delta_kn kn in
   List.iteri (fun i (indimpls, constrimpls) ->
 		   let ind = (mind,i) in
-		     Autoinstance.search_declaration (IndRef ind);
 		     maybe_declare_manual_implicits false (IndRef ind) indimpls;
 		     List.iteri
 		       (fun j impls ->
-(*	    Autoinstance.search_declaration (ConstructRef (ind,j));*)
 			  maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
 		       constrimpls)
       impls;
