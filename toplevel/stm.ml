@@ -762,8 +762,9 @@ end = struct (* {{{ *)
             { verbose = false; loc;
               expr = (VernacEndProof (Proved (true,None))) };
           Some proof
-        with e -> (try
-          match Stateid.get e with
+        with e ->
+          let e = Errors.push e in
+          (try match Stateid.get e with
           | None ->
               Pp.pperrnl Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str s ++
@@ -891,7 +892,8 @@ end = struct (* {{{ *)
     if WorkersPool.is_empty () then
       if !Flags.compilation_mode = Flags.BuildVi then begin
         let force () : Entries.proof_output list Future.assignement =
-          try `Val (build_proof_here_core loc stop ()) with e -> `Exn e in
+          try `Val (build_proof_here_core loc stop ())
+          with e -> let e = Errors.push e in `Exn e in
         let f,assign = Future.create_delegate ~force (State.exn_on id ~valid) in
         let uuid = Future.uuid f in
         TQueue.push queue (TaskBuildProof
@@ -1578,6 +1580,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     let u, a, _ = List.fold_left finish_task u (info_tasks tasks) in
     (u,a,true), p
   with e ->
+    let e = Errors.push e in
     Pp.pperrnl Pp.(str"File " ++ str name ++ str ":" ++ spc () ++ print e);
     exit 1
 

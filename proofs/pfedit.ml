@@ -126,6 +126,7 @@ let build_constant_by_tactic id sign ?(goal_kind = Global,Proof Theorem) typ tac
     delete_current_proof ();
     const, status
   with reraise ->
+    let reraise = Errors.push reraise in
     delete_current_proof ();
     raise reraise
 

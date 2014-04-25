@@ -1205,6 +1205,7 @@ let tclLOG (dbg,depth,trace) pp tac =
 	  msg_debug (str s ++ spc () ++ pp () ++ str ". (*success*)");
 	  out
 	with reraise ->
+          let reraise = Errors.push reraise in
 	  msg_debug (str s ++ spc () ++ pp () ++ str ". (*fail*)");
 	  raise reraise
       end
@@ -1216,6 +1217,7 @@ let tclLOG (dbg,depth,trace) pp tac =
 	  trace := (depth, Some pp) :: !trace;
 	  out
 	with reraise ->
+          let reraise = Errors.push reraise in
 	  trace := (depth, None) :: !trace;
 	  raise reraise
       end

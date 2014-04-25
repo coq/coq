@@ -723,8 +723,9 @@ module V82 = struct
       let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] } in
       let (_,final,_) = apply (Goal.V82.env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = final.comb }
-    with Proof_errors.TacticFailure e ->
-      let e = Errors.push e in
+    with Proof_errors.TacticFailure e as src ->
+      let src = Errors.push src in
+      let e = Backtrace.app_backtrace ~src ~dst:e in
       raise e
 
   let put_status b =

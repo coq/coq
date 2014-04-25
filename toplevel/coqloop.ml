@@ -290,7 +290,10 @@ let rec discard_to_dot () =
 
 let read_sentence () =
   try Vernac.parse_sentence (top_buffer.tokens, None)
-  with reraise -> discard_to_dot (); raise reraise
+  with reraise ->
+    let reraise = Errors.push reraise in
+    discard_to_dot ();
+    raise reraise
 
 (** [do_vernac] reads and executes a toplevel phrase, and print error
     messages when an exception is raised, except for the following:

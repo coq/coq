@@ -3657,11 +3657,13 @@ let abstract_subproof id tac =
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac) in
   let (const, safe) =
     try Pfedit.build_constant_by_tactic id secsign concl solve_tac
-    with Proof_errors.TacticFailure e ->
+    with Proof_errors.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
        means that [e] comes from [tac] failing to yield enough
        success). Hence it reraises [e]. *)
+    let src = Errors.push src in
+    let e = Backtrace.app_backtrace ~src ~dst:e in
     raise e
   in
   let cd = Entries.DefinitionEntry const in

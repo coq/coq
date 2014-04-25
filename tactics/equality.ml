@@ -387,11 +387,6 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
             end
             begin function
               | e ->
-                  (* Try to see if there's an equality hidden *)
-                  (* spiwack: [Errors.push] here is unlikely to do
-                     what it's intended to, or anything meaningful for
-                     that matter. *)
-                  let e = Errors.push e in
 	          let env' = push_rel_context rels env in
 	          let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
 	          match match_with_equality_type t' with

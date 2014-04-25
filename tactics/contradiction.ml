@@ -90,25 +90,23 @@ let contradiction_term (c,lbind as cl) =
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_type_of gl in
-    try (* type_of can raise exceptions. *)
-      let typ = type_of c in
-      let _, ccl = splay_prod env sigma typ in
-      if is_empty_type ccl then
-        Tacticals.New.tclTHEN (elim false cl None) (Tacticals.New.tclTRY assumption)
-      else
-        Proofview.tclORELSE
-          begin
-            if lbind = NoBindings then
-	      filter_hyp (is_negation_of env sigma typ)
-	        (fun id -> simplest_elim (mkApp (mkVar id,[|c|])))
-            else
-	      Proofview.tclZERO Not_found
-          end
-          begin function
-            | Not_found -> Proofview.tclZERO (Errors.UserError ("",Pp.str"Not a contradiction."))
-            | e -> Proofview.tclZERO e
-          end
-    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+    let typ = type_of c in
+    let _, ccl = splay_prod env sigma typ in
+    if is_empty_type ccl then
+      Tacticals.New.tclTHEN (elim false cl None) (Tacticals.New.tclTRY assumption)
+    else
+      Proofview.tclORELSE
+        begin
+          if lbind = NoBindings then
+            filter_hyp (is_negation_of env sigma typ)
+              (fun id -> simplest_elim (mkApp (mkVar id,[|c|])))
+          else
+            Proofview.tclZERO Not_found
+        end
+        begin function
+          | Not_found -> Proofview.tclZERO (Errors.UserError ("",Pp.str"Not a contradiction."))
+          | e -> Proofview.tclZERO e
+        end
   end
 
 let contradiction = function

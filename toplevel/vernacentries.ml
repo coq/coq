@@ -346,7 +346,10 @@ let dump_universes_gen g s =
     Univ.dump_universes output_constraint g;
     close ();
     msg_info (str ("Universes written to file \""^s^"\"."))
-  with reraise -> close (); raise reraise
+  with reraise ->
+    let reraise = Errors.push reraise in
+    close ();
+    raise reraise
 
 let dump_universes sorted s =
   let g = Global.universes () in

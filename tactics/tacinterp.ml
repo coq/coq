@@ -1258,10 +1258,6 @@ and interp_match ist lz constr lmr gl =
     (interp_ltac_constr ist constr gl)
     begin function
       | e ->
-          (* spiwack: [Errors.push] here is unlikely to do what
-             it's intended to, or anything meaningful for that
-             matter. *)
-          let e = Errors.push e in
           Proofview.tclLIFT (debugging_exception_step ist true e
           (fun () -> str "evaluation of the matched expression")) <*>
           Proofview.tclZERO e
