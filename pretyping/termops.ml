@@ -981,7 +981,7 @@ let rec eta_reduce_head c =
                  (match kind_of_term cl.(lastn) with
                     | Rel 1 ->
 			let c' =
-                          if Int.equal lastn 1 then f
+                          if Int.equal lastn 0 then f
 			  else mkApp (f, Array.sub cl 0 lastn)
 			in
 			if noccurn 1 c'
