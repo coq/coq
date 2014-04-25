@@ -1825,9 +1825,7 @@ let destructure_hyps =
 	  end
     in
     let hyps = Proofview.Goal.hyps gl in
-    try (* type_of can raise exceptions *)
-      loop hyps
-    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+    loop hyps
   end
 
 let destructure_goal =

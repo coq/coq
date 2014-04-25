@@ -246,7 +246,6 @@ let _M =mkMeta
 let rec proof_tac p : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
   let type_of = Tacmach.New.pf_type_of gl in
-  try (* type_of can raise exceptions *)
   match p.p_rule with
       Ax c -> Proofview.V82.tactic (exact_check c)
     | SymAx c ->
@@ -315,7 +314,6 @@ let rec proof_tac p : unit Proofview.tactic =
 	 let injt=
 	   mkApp (Lazy.force _f_equal,[|intype;outtype;proj;ti;tj;_M 1|]) in
 	   Tacticals.New.tclTHEN (Proofview.V82.tactic (refine injt)) (proof_tac prf)
-  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
 let refute_tac c t1 t2 p =

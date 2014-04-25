@@ -892,20 +892,15 @@ let onEquality with_evars tac (c,lbindc) =
   Proofview.Goal.raw_enter begin fun gl ->
   let type_of = pf_type_of gl in
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
-  try (* type_of can raise exceptions *)
   let t = type_of c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
   let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
-  begin try (* clenv_pose_dependent_evars can raise exceptions *)
   let eq_clause' = clenv_pose_dependent_evars with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
   let (eq,eq_args) = find_this_eq_data_decompose gl eqn in
   tclTHEN
-    (Proofview.V82.tactic (Refiner.tclEVARS eq_clause'.evd))
+    (Proofview.V82.tclEVARS eq_clause'.evd)
     (tac (eq,eqn,eq_args) eq_clause')
-    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
-  end
-  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
 let onNegatedEquality with_evars tac =
