@@ -52,7 +52,7 @@ let turn_indirect o = match o with
   | Direct (d,cu) ->
       let cu = Future.chain ~pure:true cu (fun (c, u) -> hcons_constr c, u) in
       match !mk_indirect (d,cu) with
-      | None -> NoIndirect([],cu)
+      | None -> Future.sink cu; NoIndirect([],cu)
       | Some (dp,i) -> Indirect ([],dp,i)
 
 let subst_opaque sub = function
