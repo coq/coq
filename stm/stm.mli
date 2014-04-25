@@ -77,4 +77,9 @@ val interp : bool -> located_vernac_expr -> unit
 val current_proof_depth : unit -> int
 val get_all_proof_names : unit -> Id.t list
 val get_current_proof_name : unit -> Id.t option
+val show_script : ?proof:Proof_global.closed_proof -> unit -> unit
 
+(** Reverse dependency hooks *)
+val process_error_hook : (exn -> exn) Hook.t
+val interp_hook : (?verbosely:bool -> ?proof:Proof_global.closed_proof ->
+  Loc.t * Vernacexpr.vernac_expr -> unit) Hook.t

@@ -61,8 +61,8 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 
 CORESRCDIRS:=\
   config 	lib		kernel		kernel/byterun	library \
-  proofs 	tactics 	pretyping	interp		toplevel \
-  parsing	printing	grammar	        intf
+  proofs 	tactics 	pretyping	interp		stm \
+  toplevel	parsing	printing	grammar	        intf
 
 PLUGINS:=\
   omega		romega 		micromega 	quote \
@@ -157,7 +157,7 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma \
-	toplevel/toplevel.cma parsing/highparsing.cma tactics/hightactics.cma
+	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma tactics/hightactics.cma
 
 GRAMMARCMA:=tools/compat5.cmo grammar/grammar.cma
 
@@ -354,7 +354,7 @@ OCAMLDOCDIR=dev/ocamldoc
 DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
 	./pretyping/*.mli ./interp/*.mli printing/*.mli \
 	./parsing/*.mli ./proofs/*.mli \
-	./tactics/*.mli ./toplevel/*.mli)
+	./tactics/*.mli ./stm/*.mli ./toplevel/*.mli)
 
 # Defining options to generate dependencies graphs
 DOT=dot

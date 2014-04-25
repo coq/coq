@@ -12,7 +12,6 @@ val dump_global : Libnames.reference or_by_notation -> unit
 
 (** Vernacular entries *)
 
-val show_script : (?proof:Proof_global.closed_proof -> unit -> unit) ref
 val show_prooftree : unit -> unit
 
 val show_node : unit -> unit

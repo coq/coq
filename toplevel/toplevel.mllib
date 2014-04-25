@@ -5,7 +5,6 @@ Locality
 Metasyntax
 Auto_ind_decl
 Search
-Lemmas
 Indschemes
 Obligations
 Command
@@ -14,10 +13,7 @@ Record
 Vernacinterp
 Mltop
 Vernacentries
-Vernac_classifier
-Stm
 Whelp
-Vi_checking
 Vernac
 Ide_slave
 Usage

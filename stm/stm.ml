@@ -16,6 +16,10 @@ let pr_err s = Printf.eprintf "%s] %s\n" (process_id ()) s; flush stderr
 
 let prerr_endline s = if !Flags.debug then begin pr_err s end else ()
 
+let (f_process_error, process_error_hook) = Hook.make ()
+let ((f_interp : (?verbosely:bool -> ?proof:Proof_global.closed_proof ->
+  Loc.t * Vernacexpr.vernac_expr -> unit) Hook.value), interp_hook) = Hook.make ()
+
 open Vernacexpr
 open Errors
 open Pp
@@ -48,10 +52,11 @@ let vernac_interp ?proof id { verbose; loc; expr } =
     Pp.set_id_for_feedback (Interface.State id);
     Aux_file.record_in_aux_set_at loc;
     prerr_endline ("interpreting " ^ string_of_ppcmds(pr_vernac expr));
-    try Vernacentries.interp ~verbosely:verbose ?proof (loc, expr)
+    let interp = Hook.get f_interp in
+    try interp ~verbosely:verbose ?proof (loc, expr)
     with e ->
       let e = Errors.push e in
-      raise (Cerrors.process_vernac_interp_error e)
+      raise (Hook.get f_process_error e)
   end
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
@@ -567,7 +572,7 @@ end = struct (* {{{ *)
         let loc = Option.default Loc.ghost (Loc.get_loc e) in
         let msg = string_of_ppcmds (print e) in
         Pp.feedback ~state_id:id (Interface.ErrorMsg (loc, msg));
-        Stateid.add (Cerrors.process_vernac_interp_error e) ?valid id
+        Stateid.add (Hook.get f_process_error e) ?valid id
 
   let define ?(redefine=false) ?(cache=`No) f id =
     let str_id = Stateid.to_string id in
@@ -2064,8 +2069,6 @@ let show_script ?proof () =
     let indented_cmds = List.rev (indented_cmds) in
     msg_notice (v 0 (Pp.prlist_with_sep Pp.fnl (fun x -> x) indented_cmds))
   with Vcs_aux.Expired -> ()
-
-let () = Vernacentries.show_script := show_script
 
 (* }}} *)
 

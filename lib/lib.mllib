@@ -10,7 +10,6 @@ Unicode
 System
 CThread
 Spawn
-Spawned
 Trie
 Profile
 Explore
@@ -23,7 +22,3 @@ Genarg
 Ephemeron
 Future
 RemoteCounter
-Dag
-Vcs
-TQueue
-WorkerPool

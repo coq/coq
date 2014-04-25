@@ -495,12 +495,11 @@ let vernac_start_proof kind l lettop =
   start_proof_and_print (Global, Proof kind) l no_hook
 
 let qed_display_script = ref true
-let show_script = ref (fun ?proof () -> ())
 
 let vernac_end_proof ?proof = function
   | Admitted -> save_proof ?proof Admitted
   | Proved (_,_) as e ->
-    if is_verbose () && !qed_display_script then !show_script ?proof ();
+    if is_verbose () && !qed_display_script then Stm.show_script ?proof ();
     save_proof ?proof e
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
@@ -1594,7 +1593,7 @@ let vernac_show = function
       Constrextern.with_implicits msg_notice (pr_nth_open_subgoal n)
   | ShowProof -> show_proof ()
   | ShowNode -> show_node ()
-  | ShowScript -> !show_script ()
+  | ShowScript -> Stm.show_script ()
   | ShowExistentials -> show_top_evars ()
   | ShowTree -> show_prooftree ()
   | ShowProofNames ->
@@ -1956,3 +1955,5 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     if verbosely then Flags.verbosely (aux false) c
     else aux false c
 
+let () = Hook.set Stm.interp_hook interp
+let () = Hook.set Stm.process_error_hook Cerrors.process_vernac_interp_error

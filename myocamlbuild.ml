@@ -106,7 +106,8 @@ let core_libs =
   ["lib/clib"; "lib/lib"; "kernel/kernel"; "library/library";
    "pretyping/pretyping"; "interp/interp";  "proofs/proofs";
    "parsing/parsing"; "printing/printing"; "tactics/tactics";
-   "toplevel/toplevel";  "parsing/highparsing"; "tactics/hightactics"]
+   "stm/stm"; "toplevel/toplevel";  "parsing/highparsing";
+   "tactics/hightactics"]
 let core_cma = List.map (fun s -> s^".cma") core_libs
 let core_cmxa = List.map (fun s -> s^".cmxa") core_libs
 let core_mllib = List.map (fun s -> s^".mllib") core_libs
