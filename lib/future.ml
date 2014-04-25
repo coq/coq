@@ -191,3 +191,17 @@ let map2 ?greedy f x l =
         with Failure _ | Invalid_argument _ ->
           Errors.anomaly (Pp.str "Future.map2 length mismatch")) in
     f xi y) 0 l
+
+let print f kx =
+  let open Pp in
+  let (uid, _, x) = get kx in
+  let uid =
+    if UUID.equal uid UUID.invalid then str "[#]"
+    else str "[" ++ int uid ++ str "]"
+  in
+  match !x with
+  | Delegated _ -> str "Delegated" ++ uid
+  | Closure _ -> str "Closure" ++ uid
+  | Val (x, None) -> str "PureVal" ++ uid ++ spc () ++ hov 0 (f x)
+  | Val (x, Some _) -> str "StateVal" ++ uid ++ spc () ++ hov 0 (f x)
+  | Exn e -> str "Exn"  ++ uid ++ spc () ++ hov 0 (str (Printexc.to_string e))

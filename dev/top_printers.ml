@@ -31,6 +31,10 @@ let _ = Detyping.set_detype_anonymous (fun _ _ -> raise Not_found)
 (* std_ppcmds *)
 let pppp x = pp x
 
+(** Future printer *)
+
+let ppfuture kx = pp (Future.print (fun _ -> str "_") kx)
+
 (* name printers *)
 let ppid id = pp (pr_id id)
 let pplab l = pp (pr_lab l)

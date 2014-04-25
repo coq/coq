@@ -143,9 +143,10 @@ val purify : ('a -> 'b) -> 'a -> 'b
 (* And also let a function alter the state but backtrack if it raises exn *)
 val transactify : ('a -> 'b) -> 'a -> 'b
 
+(** Debug: print a computation given an inner printing function. *)
+val print : ('a -> Pp.std_ppcmds) -> 'a computation -> Pp.std_ppcmds
+
 (* These functions are needed to get rid of side effects.
    Thy are set for the outermos layer of the system, since they have to
    deal with the whole system state. *)
 val set_freeze : (unit -> Dyn.t) -> (Dyn.t -> unit) -> unit
-
-
