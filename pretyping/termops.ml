@@ -976,7 +976,7 @@ let rec eta_reduce_head c =
 	(match kind_of_term (eta_reduce_head c') with
            | App (f,cl) ->
                let lastn = (Array.length cl) - 1 in
-               if lastn < 1 then anomaly (Pp.str "application without arguments")
+               if lastn < 0 then anomaly (Pp.str "application without arguments")
                else
                  (match kind_of_term cl.(lastn) with
                     | Rel 1 ->
