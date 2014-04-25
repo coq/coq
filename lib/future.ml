@@ -167,11 +167,12 @@ let transactify f x =
 
 let purify_future f x = if is_over x then f x else purify f x
 let compute x = purify_future (compute ~pure:false) x
-let force x = purify_future (force ~pure:false) x
+let force ~pure x = purify_future (force ~pure) x
 let chain ?(greedy=true) ~pure x f =
   let y = chain ~pure x f in
-  if is_over x && greedy then ignore(force y);
+  if is_over x && greedy then ignore(force ~pure y);
   y
+let force x = force ~pure:false x
 
 let join kx =
   let v = force kx in
