@@ -576,21 +576,21 @@ Qed.
 
 Lemma iter_swap_gen : forall A B (f:A->B)(g:A->A)(h:B->B),
  (forall a, f (g a) = h (f a)) -> forall p a,
- f (iter p g a) = iter p h (f a).
+ f (iter g a p) = iter h (f a) p.
 Proof.
  induction p; simpl; intros; now rewrite ?H, ?IHp.
 Qed.
 
 Theorem iter_swap :
   forall p (A:Type) (f:A -> A) (x:A),
-    iter p f (f x) = f (iter p f x).
+    iter f (f x) p = f (iter f x p).
 Proof.
  intros. symmetry. now apply iter_swap_gen.
 Qed.
 
 Theorem iter_succ :
   forall p (A:Type) (f:A -> A) (x:A),
-    iter (succ p) f x = f (iter p f x).
+    iter f x (succ p) = f (iter f x p).
 Proof.
  induction p as [p IHp|p IHp|]; intros; simpl; trivial.
  now rewrite !IHp, iter_swap.
@@ -598,7 +598,7 @@ Qed.
 
 Theorem iter_add :
   forall p q (A:Type) (f:A -> A) (x:A),
-    iter (p+q) f x = iter p f (iter q f x).
+    iter f x (p+q) = iter f (iter f x q) p.
 Proof.
  induction p using peano_ind; intros.
  now rewrite add_1_l, iter_succ.
@@ -608,7 +608,7 @@ Qed.
 Theorem iter_invariant :
   forall (p:positive) (A:Type) (f:A -> A) (Inv:A -> Prop),
     (forall x:A, Inv x -> Inv (f x)) ->
-    forall x:A, Inv x -> Inv (iter p f x).
+    forall x:A, Inv x -> Inv (iter f x p).
 Proof.
  induction p as [p IHp|p IHp|]; simpl; trivial.
  intros A f Inv H x H0. apply H, IHp, IHp; trivial.

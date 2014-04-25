@@ -95,11 +95,11 @@ Section Powers_of_2.
       [m] shifted by [n] positions *)
 
   Definition shift_nat (n:nat) (z:positive) := nat_rect _ z (fun _ => xO) n.
-  Definition shift_pos (n z:positive) := Pos.iter n xO z.
+  Definition shift_pos (n z:positive) := Pos.iter xO z n.
   Definition shift (n:Z) (z:positive) :=
     match n with
       | Z0 => z
-      | Zpos p => Pos.iter p xO z
+      | Zpos p => Pos.iter xO z p
       | Zneg p => z
     end.
 
@@ -247,10 +247,10 @@ Section power_div_with_rest.
        end, 2 * d).
 
   Definition Zdiv_rest (x:Z) (p:positive) :=
-    let (qr, d) := Pos.iter p Zdiv_rest_aux (x, 0, 1) in qr.
+    let (qr, d) := Pos.iter Zdiv_rest_aux (x, 0, 1) p in qr.
 
   Lemma Zdiv_rest_correct1 (x:Z) (p:positive) :
-    let (_, d) := Pos.iter p Zdiv_rest_aux (x, 0, 1) in
+    let (_, d) := Pos.iter Zdiv_rest_aux (x, 0, 1) p in
     d = two_power_pos p.
   Proof.
    rewrite Pos2Nat.inj_iter, two_power_pos_nat.
@@ -260,7 +260,7 @@ Section power_div_with_rest.
   Qed.
 
   Lemma Zdiv_rest_correct2 (x:Z) (p:positive) :
-    let '(q,r,d) := Pos.iter p Zdiv_rest_aux (x, 0, 1) in
+    let '(q,r,d) := Pos.iter Zdiv_rest_aux (x, 0, 1) p in
     x = q * d + r /\ 0 <= r < d.
   Proof.
    apply Pos.iter_invariant; [|omega].
@@ -287,7 +287,7 @@ Section power_div_with_rest.
   Lemma Zdiv_rest_correct (x:Z) (p:positive) : Zdiv_rest_proofs x p.
   Proof.
     generalize (Zdiv_rest_correct1 x p); generalize (Zdiv_rest_correct2 x p).
-    destruct (Pos.iter p Zdiv_rest_aux (x, 0, 1)) as ((q,r),d).
+    destruct (Pos.iter Zdiv_rest_aux (x, 0, 1) p) as ((q,r),d).
     intros (H1,(H2,H3)) ->. now exists q r.
   Qed.
 
@@ -299,7 +299,7 @@ Section power_div_with_rest.
   Proof.
    unfold Zdiv_rest.
    generalize (Zdiv_rest_correct1 x p); generalize (Zdiv_rest_correct2 x p).
-   destruct (Pos.iter p Zdiv_rest_aux (x, 0, 1)) as ((q,r),d).
+   destruct (Pos.iter Zdiv_rest_aux (x, 0, 1) p) as ((q,r),d).
    intros H ->. now rewrite two_power_pos_equiv in H.
   Qed.
 

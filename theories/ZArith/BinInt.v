@@ -959,7 +959,7 @@ Proof.
   destruct m; easy || now destruct Hm.
  destruct a as [ |a|a].
  (* a = 0 *)
- replace (Pos.iter n div2 0) with 0
+ replace (Pos.iter div2 0 n) with 0
   by (apply Pos.iter_invariant; intros; subst; trivial).
  now rewrite 2 testbit_0_l.
  (* a > 0 *)
@@ -982,7 +982,7 @@ Proof.
   rewrite ?Pos.iter_succ; apply testbit_even_0.
  destruct a as [ |a|a].
  (* a = 0 *)
- replace (Pos.iter n (mul 2) 0) with 0
+ replace (Pos.iter (mul 2) 0 n) with 0
   by (apply Pos.iter_invariant; intros; subst; trivial).
  apply testbit_0_l.
  (* a > 0 *)
@@ -1013,7 +1013,7 @@ Proof.
   f_equal. now rewrite Pos.add_comm, Pos.add_sub.
  destruct a; unfold shiftl.
  (* ... a = 0 *)
- replace (Pos.iter n (mul 2) 0) with 0
+ replace (Pos.iter (mul 2) 0 n) with 0
   by (apply Pos.iter_invariant; intros; subst; trivial).
  now rewrite 2 testbit_0_l.
  (* ... a > 0 *)

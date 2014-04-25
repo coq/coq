@@ -337,7 +337,7 @@ Definition shiftl a n :=
 Definition shiftr a n :=
   match n with
     | 0 => a
-    | pos p => Pos.iter p div2 a
+    | pos p => Pos.iter div2 a p
   end.
 
 (** Checking whether a particular bit is set or not *)
@@ -375,7 +375,7 @@ Definition of_nat (n:nat) :=
 Definition iter (n:N) {A} (f:A->A) (x:A) : A :=
   match n with
     | 0 => x
-    | pos p => Pos.iter p f x
+    | pos p => Pos.iter f x p
   end.
 
 End N.

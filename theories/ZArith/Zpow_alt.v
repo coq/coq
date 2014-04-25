@@ -30,12 +30,12 @@ Infix "^^" := Zpower_alt (at level 30, right associativity) : Z_scope.
 
 Lemma Piter_mul_acc : forall f,
  (forall x y:Z, (f x)*y = f (x*y)) ->
- forall p k, Pos.iter p f k = (Pos.iter p f 1)*k.
+ forall p k, Pos.iter f k p = (Pos.iter f 1 p)*k.
 Proof.
  intros f Hf.
  induction p; simpl; intros.
- - set (g := Pos.iter p f 1) in *. now rewrite !IHp, Hf, Z.mul_assoc.
- - set (g := Pos.iter p f 1) in *. now rewrite !IHp, Z.mul_assoc.
+ - set (g := Pos.iter f 1 p) in *. now rewrite !IHp, Hf, Z.mul_assoc.
+ - set (g := Pos.iter f 1 p) in *. now rewrite !IHp, Z.mul_assoc.
  - now rewrite Hf, Z.mul_1_l.
 Qed.
 

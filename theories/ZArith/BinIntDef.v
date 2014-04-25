@@ -126,7 +126,7 @@ Infix "*" := mul : Z_scope.
 
 (** ** Power function *)
 
-Definition pow_pos (z:Z) (n:positive) := Pos.iter n (mul z) 1.
+Definition pow_pos (z:Z) := Pos.iter (mul z) 1.
 
 Definition pow x y :=
   match y with
@@ -306,7 +306,7 @@ Definition to_pos (z:Z) : positive :=
 
 Definition iter (n:Z) {A} (f:A -> A) (x:A) :=
   match n with
-    | pos p => Pos.iter p f x
+    | pos p => Pos.iter f x p
     | _ => x
   end.
 
@@ -568,8 +568,8 @@ Definition testbit a n :=
 Definition shiftl a n :=
  match n with
    | 0 => a
-   | pos p => Pos.iter p (mul 2) a
-   | neg p => Pos.iter p div2 a
+   | pos p => Pos.iter (mul 2) a p
+   | neg p => Pos.iter div2 a p
  end.
 
 Definition shiftr a n := shiftl a (-n).

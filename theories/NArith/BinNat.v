@@ -944,7 +944,7 @@ Proof.
  destruct n as [|n]; simpl in *.
  destruct m. now destruct p. elim (Pos.nlt_1_r _ H).
  rewrite Pos.iter_succ. simpl.
- set (u:=Pos.iter n xO p) in *; clearbody u.
+ set (u:=Pos.iter xO p n) in *; clearbody u.
  destruct m as [|m]. now destruct u.
  rewrite <- (IHn (Pos.pred_N m)).
  rewrite <- (testbit_odd_succ _ (Pos.pred_N m)).
@@ -968,7 +968,7 @@ Proof.
  rewrite <- IHn.
  rewrite testbit_succ_r_div2 by apply le_0_l.
  f_equal. simpl. rewrite Pos.iter_succ.
- now destruct (Pos.iter n xO p).
+ now destruct (Pos.iter xO p n).
  apply succ_le_mono. now rewrite succ_pos_pred.
 Qed.
 
