@@ -57,3 +57,5 @@
 #install_printer  (* generic_argument *) pp_generic_argument;;
 
 #install_printer  (* fconstr *) ppfconstr;;
+
+#install_printer (* Future.computation *) ppfuture;;
