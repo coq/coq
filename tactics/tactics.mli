@@ -167,7 +167,6 @@ val revert        : Id.t list -> tactic
 (** {6 Resolution tactics. } *)
 
 val apply_type : constr -> constr list -> tactic
-val apply_term : constr -> constr list -> tactic
 val bring_hyps : named_context -> unit Proofview.tactic
 
 val apply                 : constr -> tactic
@@ -179,7 +178,7 @@ val apply_with_bindings_gen :
 val apply_with_bindings   : constr with_bindings -> tactic
 val eapply_with_bindings  : constr with_bindings -> tactic
 
-val cut_and_apply         : constr -> tactic
+val cut_and_apply         : constr -> unit Proofview.tactic
 
 val apply_in :
   advanced_flag -> evars_flag -> Id.t -> 

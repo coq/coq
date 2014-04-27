@@ -657,9 +657,6 @@ let map_induction_arg f = function
 let apply_type hdcty argl gl =
   refine (applist (mkCast (Evarutil.mk_new_meta(),DEFAULTcast, hdcty),argl)) gl
 
-let apply_term hdc argl gl =
-  refine (applist (hdc,argl)) gl
-
 let bring_hyps hyps =
   if List.is_empty hyps then Tacticals.New.tclIDTAC
   else
@@ -1127,14 +1124,21 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars id
   end.
 *)
 
-let cut_and_apply c gl =
-  let goal_constr = pf_concl gl in
-    match kind_of_term (pf_hnf_constr gl (pf_type_of gl c)) with
+let cut_and_apply c =
+  Proofview.Goal.enter begin fun gl ->
+    match kind_of_term (Tacmach.New.pf_hnf_constr gl (Tacmach.New.pf_type_of gl c)) with
       | Prod (_,c1,c2) when not (dependent (mkRel 1) c2) ->
-	  tclTHENLAST
-	    (apply_type (mkProd (Anonymous,c2,goal_constr)) [mkMeta(new_meta())])
-	    (apply_term c [mkMeta (new_meta())]) gl
+        let concl = Proofview.Goal.concl gl in
+        let env = Tacmach.New.pf_env gl in
+        Proofview.Refine.refine begin fun h ->
+          let typ = mkProd (Anonymous, c2, concl) in
+          let (h, f) = Proofview.Refine.new_evar h env typ in
+          let (h, x) = Proofview.Refine.new_evar h env c1 in
+          let ans = mkApp (f, [|mkApp (c, [|x|])|]) in
+          (h, ans)
+        end
       | _ -> error "lapply needs a non-dependent product."
+  end
 
 (********************************************************************)
 (*               Exact tactics                                      *)

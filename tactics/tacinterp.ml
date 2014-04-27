@@ -1693,12 +1693,11 @@ and interp_atomic ist tac =
         end
       end
   | TacLApply c ->
-      Proofview.V82.tactic begin fun gl -> 
-        let (sigma,c_interp) = pf_interp_constr ist gl c in
-        tclTHEN
-	  (tclEVARS sigma)
+      Proofview.Goal.enter begin fun gl -> 
+        let (sigma,c_interp) = Tacmach.New.of_old (pf_interp_constr ist) gl c in
+        Tacticals.New.tclTHEN
+	  (Proofview.V82.tclEVARS sigma)
 	  (Tactics.cut_and_apply c_interp)
-          gl
       end
 
   (* Context management *)
