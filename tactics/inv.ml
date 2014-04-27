@@ -102,8 +102,8 @@ let make_inv_predicate env sigma indf realargs id status concl =
   (* Now, we can recurse down this list, for each ai,(mkRel k) whether to
      push <Ai>(mkRel k)=ai (when   Ai is closed).
    In any case, we carry along the rest of pairs *)
-  let rec build_concl eqns n = function
-    | [] -> (it_mkProd concl eqns,n)
+  let rec build_concl eqns args n = function
+    | [] -> it_mkProd concl eqns, Array.rev_of_list args
     | ai :: restlist ->
         let ai = lift nhyps ai in
         let (xi, ti) = compute_eqn env' sigma nhyps n ai in
@@ -115,13 +115,17 @@ let make_inv_predicate env sigma indf realargs id status concl =
 	in
         let eq_term = Coqlib.build_coq_eq () in
         let eqn = applist (eq_term ,[eqnty;lhs;rhs]) in
-	build_concl ((Anonymous,lift n eqn)::eqns) (n+1) restlist
+        let eqns = (Anonymous, lift n eqn) :: eqns in
+        let refl_term = Coqlib.build_coq_eq_refl () in
+        let refl = mkApp (refl_term, [|eqnty; rhs|]) in
+        let args = refl :: args in
+        build_concl eqns args (succ n) restlist
   in
-  let (newconcl,neqns) = build_concl [] 0 realargs in
+  let (newconcl, args) = build_concl [] [] 0 realargs in
   let predicate = it_mkLambda_or_LetIn_name env newconcl hyps in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)
-  (predicate,neqns)
+  predicate, args
 
 (* The result of the elimination is a bunch of goals like:
 
@@ -451,7 +455,7 @@ let raw_inversion inv_kind id status names =
         Errors.errorlabstrm "" msg
     in
     let IndType (indf,realargs) = find_rectype env sigma t in
-    let (elim_predicate,neqns) =
+    let (elim_predicate, args) =
       make_inv_predicate env sigma indf realargs id status concl in
     let (cut_concl,case_tac) =
       if status != NoDep && (dependent c concl) then
@@ -462,9 +466,10 @@ let raw_inversion inv_kind id status names =
         case_nodep_then_using
     in
     let refined id =
-      let holes = List.init neqns (fun _ -> Evarutil.mk_new_meta ()) in
-      Proofview.V82.tactic (apply_term (mkVar id) holes)
+      let prf = mkApp (mkVar id, args) in
+      Proofview.Refine.refine (fun h -> h, prf)
     in
+    let neqns = List.length realargs in
     tclTHENS
         (assert_tac Anonymous cut_concl)
         [case_tac names
