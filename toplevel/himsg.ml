@@ -427,7 +427,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
       strbrk " an abstraction, a match, a cofix or a recursive call)"
   | ReturnPredicateNotCoInductive c ->
      str "The return clause of the following pattern matching should be" ++
-     strbrk "a coinductive type:" ++
+     strbrk " a coinductive type:" ++
      spc () ++ pr_lconstr_env env c
   in
   prt_name i ++ str " is ill-formed." ++ fnl () ++

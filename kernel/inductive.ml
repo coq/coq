@@ -1128,9 +1128,8 @@ let check_one_cofix env nbfix def deftype =
 	      raise (CoFixGuardError (env,UnguardedRecursiveCall t))
             else if not(List.for_all (noccur_with_meta n nbfix) args) then
 	      raise (CoFixGuardError (env,NestedRecursiveOccurrences))
-
 	| Construct ((_,i as cstr_kn),u)  ->
-            let lra = vlra.(i-1) in
+            let lra = (dest_subterms vlra).(i-1) in
             let mI = inductive_of_constructor cstr_kn in
 	    let (mib,mip) = lookup_mind_specif env mI in
             let realargs = List.skipn mib.mind_nparams args in
@@ -1142,8 +1141,7 @@ let check_one_cofix env nbfix def deftype =
                     else raise (CoFixGuardError
 		                 (env,RecCallInNonRecArgOfConstructor t))
                   else
-                    let spec = dest_subterms rar in
-                    check_rec_call env true n spec t;
+                    check_rec_call env true n rar t;
                     process_args_of_constr (lr, lrar)
               | [],_ -> ()
               | _ -> anomaly_ill_typed ()
@@ -1153,7 +1151,7 @@ let check_one_cofix env nbfix def deftype =
 	    let () = assert (List.is_empty args) in
             if noccur_with_meta n nbfix a then
               let env' = push_rel (x, None, a) env in
-              check_rec_call env' alreadygrd (n+1)  vlra b
+              check_rec_call env' alreadygrd (n+1) vlra b
             else
 	      raise (CoFixGuardError (env,RecCallInTypeOfAbstraction a))
 
@@ -1172,19 +1170,21 @@ let check_one_cofix env nbfix def deftype =
 
 	| Case (_,p,tm,vrest) ->
 	   begin
-	   try let _ = codomain_is_coind env p in
-            if (noccur_with_meta n nbfix p) then
-              if (noccur_with_meta n nbfix tm) then
-		if (List.for_all (noccur_with_meta n nbfix) args) then
-		  Array.iter (check_rec_call env alreadygrd n vlra) vrest
-		else
-		  raise (CoFixGuardError (env,RecCallInCaseFun c))
-              else
-		raise (CoFixGuardError (env,RecCallInCaseArg c))
-            else
-	      raise (CoFixGuardError (env,RecCallInCasePred c))
-	   with CoFixGuardError _ ->
-		raise (CoFixGuardError (env, ReturnPredicateNotCoInductive c))
+	    match get_codomain_tree env p with
+	    | Subterm (_, vlra') ->
+	       let vlra = inter_wf_paths vlra vlra' in
+               if (noccur_with_meta n nbfix p) then
+		 if (noccur_with_meta n nbfix tm) then
+		   if (List.for_all (noccur_with_meta n nbfix) args) then
+		     Array.iter (check_rec_call env alreadygrd n vlra) vrest
+		   else
+		     raise (CoFixGuardError (env,RecCallInCaseFun c))
+		 else
+		   raise (CoFixGuardError (env,RecCallInCaseArg c))
+               else
+		 raise (CoFixGuardError (env,RecCallInCasePred c))
+	    | _ ->
+	       raise (CoFixGuardError (env, ReturnPredicateNotCoInductive c))
 	   end
 
 	| Meta _ -> ()
@@ -1195,7 +1195,7 @@ let check_one_cofix env nbfix def deftype =
 
   let ((mind, _),_) = codomain_is_coind env deftype in
   let vlra = lookup_subterms env mind in
-  check_rec_call env false 1 (dest_subterms vlra) def
+  check_rec_call env false 1 vlra def
 
 (* The  function which checks that the whole block of definitions
    satisfies the guarded condition *)
