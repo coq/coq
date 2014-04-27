@@ -630,8 +630,11 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
     (* Type of constructors in normal form *)
     let splayed_lc = Array.map (dest_prod_assum env_ar) lc in
     let nf_lc = Array.map (fun (d,b) -> it_mkProd_or_LetIn b d) splayed_lc in
-    let consnrealargs =
+    let consnrealdecls =
       Array.map (fun (d,_) -> rel_context_length d - rel_context_length params)
+	splayed_lc in
+    let consnrealargs =
+      Array.map (fun (d,_) -> rel_context_nhyps d - rel_context_nhyps params)
 	splayed_lc in
     (* Elimination sorts *)
     let arkind,kelim = match ar_kind with
@@ -668,7 +671,8 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
 	mind_nrealargs_ctxt = rel_context_length ar_sign - nparamdecls;
 	mind_kelim = kelim;
 	mind_consnames = Array.of_list cnames;
-	mind_consnrealdecls = consnrealargs;
+	mind_consnrealdecls = consnrealdecls;
+	mind_consnrealargs = consnrealargs;
 	mind_user_lc = lc;
 	mind_nf_lc = nf_lc;
 	mind_recargs = recarg;

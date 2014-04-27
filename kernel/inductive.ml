@@ -370,7 +370,8 @@ let check_case_info env indsp ci =
   if
     not (eq_ind indsp ci.ci_ind) ||
     not (Int.equal mib.mind_nparams ci.ci_npar) ||
-    not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls)
+    not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls) ||
+    not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
 (************************************************************************)

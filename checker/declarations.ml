@@ -510,6 +510,7 @@ let subst_arity sub = function
 let subst_mind_packet sub mbp =
   { mind_consnames = mbp.mind_consnames;
     mind_consnrealdecls = mbp.mind_consnrealdecls;
+    mind_consnrealargs = mbp.mind_consnrealargs;
     mind_typename = mbp.mind_typename;
     mind_nf_lc = Array.smartmap (subst_mps sub) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;

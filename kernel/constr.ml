@@ -43,7 +43,8 @@ type case_printing =
 type case_info =
   { ci_ind        : inductive;
     ci_npar       : int;
-    ci_cstr_ndecls : int array; (* number of pattern vars of each constructor *)
+    ci_cstr_ndecls : int array; (* number of pattern vars of each constructor (with let's)*)
+    ci_cstr_nargs : int array; (* number of pattern vars of each constructor (w/o let's) *)
     ci_pp_info    : case_printing (* not interpreted by the kernel *)
   }
 
@@ -773,6 +774,7 @@ struct
     ci.ci_ind == ci'.ci_ind &&
     Int.equal ci.ci_npar ci'.ci_npar &&
     Array.equal Int.equal ci.ci_cstr_ndecls ci'.ci_cstr_ndecls && (* we use [Array.equal] on purpose *)
+    Array.equal Int.equal ci.ci_cstr_nargs ci'.ci_cstr_nargs && (* we use [Array.equal] on purpose *)
     pp_info_equal ci.ci_pp_info ci'.ci_pp_info  (* we use (=) on purpose *)
   open Hashset.Combine
   let hash_pp_info info =
@@ -788,8 +790,9 @@ struct
     let h1 = ind_hash ci.ci_ind in
     let h2 = Int.hash ci.ci_npar in
     let h3 = Array.fold_left combine 0 ci.ci_cstr_ndecls in
-    let h4 = hash_pp_info ci.ci_pp_info in
-    combine4 h1 h2 h3 h4
+    let h4 = Array.fold_left combine 0 ci.ci_cstr_nargs in
+    let h5 = hash_pp_info ci.ci_pp_info in
+    combine5 h1 h2 h3 h4 h5
 end
 
 module Hcaseinfo = Hashcons.Make(CaseinfoHash)

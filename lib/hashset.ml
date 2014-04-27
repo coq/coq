@@ -202,5 +202,6 @@ module Combine = struct
     let combine x y     = x * alpha + y
     let combine3 x y z   = combine x (combine y z)
     let combine4 x y z t = combine x (combine3 y z t)
+    let combine5 x y z t u = combine x (combine4 y z t u)
     let combinesmall x y = beta * x + y
 end

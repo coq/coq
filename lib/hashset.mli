@@ -43,4 +43,5 @@ module Combine : sig
   val combinesmall : int -> int -> int
   val combine3 : int -> int -> int -> int
   val combine4 : int -> int -> int -> int -> int
+  val combine5 : int -> int -> int -> int -> int -> int
 end

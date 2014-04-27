@@ -183,6 +183,7 @@ let make_case_info env ind style =
   { ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;
+    ci_cstr_nargs = mip.mind_consnrealargs;
     ci_pp_info = print_info }
 
 (*s Useful functions *)

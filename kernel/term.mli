@@ -46,6 +46,7 @@ type case_info = Constr.case_info =
   { ci_ind        : inductive;
     ci_npar       : int;
     ci_cstr_ndecls : int array;
+    ci_cstr_nargs : int array;
     ci_pp_info    : case_printing
   }
 

@@ -86,7 +86,10 @@ struct
     if c = 0 then
       let c = Int.compare ci1.ci_npar ci2.ci_npar in
       if c = 0 then
-        Array.compare Int.compare ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls
+        let c = Array.compare Int.compare ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls in
+        if c = 0 then
+          Array.compare Int.compare ci1.ci_cstr_nargs ci2.ci_cstr_nargs
+        else c
       else c
     else c
 

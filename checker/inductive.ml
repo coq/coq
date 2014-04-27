@@ -352,7 +352,8 @@ let check_case_info env indsp ci =
   if
     not (eq_ind indsp ci.ci_ind) ||
     (mib.mind_nparams <> ci.ci_npar) ||
-    (mip.mind_consnrealdecls <> ci.ci_cstr_ndecls)
+    (mip.mind_consnrealdecls <> ci.ci_cstr_ndecls) ||
+    (mip.mind_consnrealargs <> ci.ci_cstr_nargs)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
 (************************************************************************)
