@@ -36,3 +36,13 @@ fun (A : Type) (x : I A) => match x with
 Argument scopes are [type_scope _]
 foo' = if A 0 then true else false
      : bool
+f = 
+fun H : B =>
+match H with
+| AC x =>
+    (let b0 := b in
+     if b0 as b return (P b -> True)
+     then fun _ : P true => Logic.I
+     else fun _ : P false => Logic.I) x
+end
+     : B -> True

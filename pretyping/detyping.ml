@@ -225,26 +225,28 @@ let update_name na ((_,e),c) =
   | _ ->
       na
 
-let rec decomp_branch n nal b (avoid,env as e) c =
+let rec decomp_branch ndecls nargs nal b (avoid,env as e) c =
   let flag = if b then RenamingForGoal else RenamingForCasesPattern in
-  if Int.equal n 0 then (List.rev nal,(e,c))
+  if Int.equal ndecls 0 then (List.rev nal,(e,c))
   else
-    let na,c,f =
+    let na,c,f,nargs' =
       match kind_of_term (strip_outer_cast c) with
-	| Lambda (na,_,c) -> na,c,compute_displayed_let_name_in
-	| LetIn (na,_,_,c) -> na,c,compute_displayed_name_in
+	| Lambda (na,_,c) -> na,c,compute_displayed_let_name_in,nargs-1
+	| LetIn (na,_,_,c) when ndecls>nargs ->
+            na,c,compute_displayed_name_in,nargs
 	| _ ->
 	    Name (Id.of_string "x"),(applist (lift 1 c, [mkRel 1])),
-	    compute_displayed_name_in in
+	    compute_displayed_name_in,nargs-1 in
     let na',avoid' = f flag avoid na c in
-    decomp_branch (n-1) (na'::nal) b (avoid',add_name na' env) c
+    decomp_branch (ndecls-1) nargs' (na'::nal) b (avoid',add_name na' env) c
 
 let rec build_tree na isgoal e ci cl =
   let mkpat n rhs pl = PatCstr(dl,(ci.ci_ind,n+1),pl,update_name na rhs) in
   let cnl = ci.ci_cstr_ndecls in
+  let cna = ci.ci_cstr_nargs in
   List.flatten
     (List.init (Array.length cl)
-      (fun i -> contract_branch isgoal e (cnl.(i),mkpat i,cl.(i))))
+      (fun i -> contract_branch isgoal e (cnl.(i),cna.(i),mkpat i,cl.(i))))
 
 and align_tree nal isgoal (e,c as rhs) = match nal with
   | [] -> [[],rhs]
@@ -265,8 +267,8 @@ and align_tree nal isgoal (e,c as rhs) = match nal with
 	let mat = align_tree nal isgoal rhs in
 	List.map (fun (hd,rest) -> pat::hd,rest) mat
 
-and contract_branch isgoal e (cn,mkpat,b) =
-  let nal,rhs = decomp_branch cn [] isgoal e b in
+and contract_branch isgoal e (cdn,can,mkpat,b) =
+  let nal,rhs = decomp_branch cdn can [] isgoal e b in
   let mat = align_tree nal isgoal rhs in
   List.map (fun (hd,rhs) -> (mkpat rhs hd,rhs)) mat
 

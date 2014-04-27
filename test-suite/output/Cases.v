@@ -58,3 +58,17 @@ Definition foo' :=
 
 Print foo'.
 
+(* Was bug #3293 (eta-expansion at "match" printing time was failing because
+   of let-in's interpreted as being part of the expansion)  *)
+
+Variable b : bool.
+Variable P : bool -> Prop.
+Inductive B : Prop := AC : P b -> B.
+Definition f : B -> True.
+
+Proof.
+intros [].
+destruct b as [|] ; intros _ ; exact Logic.I.
+Defined.
+
+Print f.
