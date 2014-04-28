@@ -34,7 +34,7 @@
     <define-regex id="locality">(((Local)|(Global))\%{space}+)?</define-regex>
     <define-regex id="begin_proof">(Theorem)|(Lemma)|(Fact)|(Remark)|(Corollary)|(Proposition)|(Property)</define-regex>
     <define-regex id="end_proof">(Qed)|(Defined)|(Admitted)|(Abort)</define-regex>
-    <define-regex id="decl_head">((?'gal'\%{locality}(Program\%{space}+)?(\%{single_decl}|\%{begin_proof}))\%{space}+(?'id'\%{ident}))|((?'gal4list'\%{mult_decl})(?'id_list'(\%{space}+\%{ident})*))|(?'gal'Goal')</define-regex>
+    <define-regex id="decl_head">((?'gal'\%{locality}(Program\%{space}+)?(\%{single_decl}|\%{begin_proof}))\%{space}+(?'id'\%{ident}))|((?'gal4list'\%{mult_decl})(?'id_list'(\%{space}+\%{ident})*))|(?'gal2'Goal)</define-regex>
 
     <context id="escape-seq" style-ref="escape">
       <match>""</match>
@@ -81,6 +81,7 @@
 	  <include>
 	    <context sub-pattern="id" where="start" style-ref="identifier"/>
 	    <context sub-pattern="gal" where="start" style-ref="gallina-keyword"/>
+	    <context sub-pattern="gal2" where="start" style-ref="gallina-keyword"/>
 	    <context sub-pattern="id_list" where="start" style-ref="identifier"/>
 	    <context sub-pattern="gal4list" where="start" style-ref="gallina-keyword"/>
 	    <context id="constr-keyword" style-ref="constr-keyword">
