@@ -484,7 +484,10 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	observe_tac "idtac" tclIDTAC;
 	tclTHEN_i
 	  (observe_tac "functional_induction" (
-	    apply (mkApp (mkVar principle_id,Array.of_list bindings))
+	    (fun gl -> 
+	      let term = mkApp (mkVar principle_id,Array.of_list bindings) in
+	      let gl', _ty = pf_eapply Typing.e_type_of gl term in
+		apply term gl')
 	   ))
 	  (fun i g -> observe_tac ("proving branche "^string_of_int i) (prove_branche i) g )
       ]
@@ -1117,7 +1120,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
     let schemes =
       Array.of_list scheme
     in
-    let _proving_tac =
+    let proving_tac =
       prove_fun_complete funs_constr mib.Declarations.mind_packets schemes lemmas_types_infos
     in
     Array.iteri
@@ -1131,6 +1134,9 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	   (Decl_kinds.Global,false(*FIXME*),(Decl_kinds.Proof Decl_kinds.Theorem))
            (fst lemmas_types_infos.(i), (*FIXME*)Univ.ContextSet.empty)
            (fun _ _ -> ());
+	 ignore (Pfedit.by
+	   (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
+	      (proving_tac i))));
 	 do_save ();
 	 let finfo = find_Function_infos f_as_constant in
 	 let lem_cst,u = destConst (Constrintern.global_reference lem_id) in
