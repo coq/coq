@@ -171,9 +171,10 @@ let insert texfile coq_output result =
     if Str.string_match end_coq_example s 0 then begin
       just_after ()
     end else begin
-      if !verbose then Printf.printf "Coq < %s\n" s;
+      let prompt = if k = 0 then "Coq < " else "      " in
+      if !verbose then Printf.printf "%s%s\n" prompt s;
       if (not first_block) && k=0 then output_string c_out "\\medskip\n";
-      if show_questions then encapsule false c_out ("Coq < " ^ s);
+      if show_questions then encapsule false c_out (prompt ^ s);
       if has_match dot_end_line s then begin
 	let bl = next_block (succ k) in
 	if !verbose then List.iter print_endline bl;
