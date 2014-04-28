@@ -56,7 +56,7 @@ Module Ops (X:OrderedType) <: WOps X.
 
   Definition singleton (x : elt) := x :: nil.
 
-  Fixpoint remove x s :=
+  Fixpoint remove x s : t :=
     match s with
     | nil => nil
     | y :: l =>

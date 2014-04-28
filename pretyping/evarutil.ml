@@ -817,3 +817,56 @@ let lift_tycon n = Option.map (lift n)
 let pr_tycon env = function
     None -> str "None"
   | Some t -> Termops.print_constr_env env t
+
+open Declarations
+
+let get_template_constructor_type evdref (ind, i) n =
+  let mib,oib = Global.lookup_inductive ind in
+  let ar =
+    match oib.mind_arity with
+    | RegularArity _ -> assert false
+    | TemplateArity templ -> templ
+  in
+  let ty = oib.mind_user_lc.(pred i) in
+  let subst = Inductive.ind_subst (fst ind) mib Univ.Instance.empty in
+  let ty = substl subst ty in
+  let rec aux l ty n =
+    match l, kind_of_term ty with
+    | None :: l, Prod (na, t, t') ->
+      mkProd (na, t, aux l t' (pred n))
+    | Some u :: l, Prod (na, t, t') ->
+      let u' = evd_comb0 (new_univ_variable Evd.univ_flexible) evdref in
+	(* evdref := set_leq_sort !evdref u'l (Type u); *)
+	let s = Univ.LMap.add (Option.get (Univ.Universe.level u))
+	  (Option.get (Univ.Universe.level u')) Univ.LMap.empty in
+	let dom = subst_univs_level_constr s t in
+	(* let codom = subst_univs_level_constr s t' in *)
+	  mkProd (na, dom, aux l t' (pred n))
+    | l, LetIn (na, t, b, t') ->
+      mkLetIn (na, t, b, aux l t' n)
+    | _ :: _, _ -> assert false (* All params should be abstracted by a forall or a let-in *)
+    | [], _ -> ty
+  in aux ar.template_param_levels ty n
+
+
+let get_template_constructor_type evdref (ind, i) n =
+  let mib,oib = Global.lookup_inductive ind in
+  let ar =
+    match oib.mind_arity with
+    | RegularArity _ -> assert false
+    | TemplateArity templ -> templ
+  in
+  let ty = oib.mind_user_lc.(pred i) in
+  let subst = Inductive.ind_subst (fst ind) mib Univ.Instance.empty in
+  let ty = substl subst ty in
+    ar.template_param_levels, ty
+
+let get_template_inductive_type evdref ind n =
+  let mib,oib = Global.lookup_inductive ind in
+  let ar =
+    match oib.mind_arity with
+    | RegularArity _ -> assert false
+    | TemplateArity templ -> templ
+  in
+  let ctx = oib.mind_arity_ctxt in
+    ar.template_param_levels, mkArity(ctx, Type ar.template_level)

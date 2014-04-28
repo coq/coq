@@ -240,23 +240,23 @@ Ltac mkPolexpr C Cst CstPow rO rI radd rmul rsub ropp rpow t fv :=
         | (radd ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(PEadd e1 e2)
+          let e2 := mkP t2 in constr:(@PEadd C e1 e2)
         | (rmul ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(PEmul e1 e2)
+          let e2 := mkP t2 in constr:(@PEmul C e1 e2)
         | (rsub ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(PEsub e1 e2)
+          let e2 := mkP t2 in constr:(@PEsub C e1 e2)
         | (ropp ?t1) =>
           fun _ =>
-          let e1 := mkP t1 in constr:(PEopp e1)
+          let e1 := mkP t1 in constr:(@PEopp C e1)
         | (rpow ?t1 ?n) =>
           match CstPow n with
           | InitialRing.NotConstant =>
             fun _ => let p := Find_at t fv in constr:(PEX C p)
-          | ?c => fun _ => let e1 := mkP t1 in constr:(PEpow e1 c)
+          | ?c => fun _ => let e1 := mkP t1 in constr:(@PEpow C e1 c)
           end
         | _ =>
           fun _ => let p := Find_at t fv in constr:(PEX C p)

@@ -1892,7 +1892,7 @@ Inductive Forall2 A B (R:A->B->Prop) : list A -> list B -> Prop :=
 Hint Constructors Forall2.
 
 Theorem Forall2_refl : forall A B (R:A->B->Prop), Forall2 R [] [].
-Proof. exact Forall2_nil. Qed.
+Proof. intros; apply Forall2_nil. Qed.
 
 Theorem Forall2_app_inv_l : forall A B (R:A->B->Prop) l1 l2 l',
   Forall2 R (l1 ++ l2) l' ->

@@ -216,3 +216,10 @@ val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 val evd_comb0 : (evar_map -> evar_map * 'a) -> evar_map ref -> 'a
 val evd_comb1 : (evar_map -> 'b -> evar_map * 'a) -> evar_map ref -> 'b -> 'a
 val evd_comb2 : (evar_map -> 'b -> 'c -> evar_map * 'a) -> evar_map ref -> 'b -> 'c -> 'a
+
+(* val get_template_constructor_type : evar_map ref -> constructor -> int -> types *)
+val get_template_constructor_type : evar_map ref -> constructor -> int -> 
+  (Univ.universe option list * types)
+
+val get_template_inductive_type : evar_map ref -> inductive -> int -> 
+  (Univ.universe option list * types)

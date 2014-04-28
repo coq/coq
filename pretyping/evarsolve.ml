@@ -26,12 +26,12 @@ let normalize_evar evd ev =
   | Evar (evk,args) -> (evk,args)
   | _ -> assert false
 
-let refresh_universes dir evd t =
+let refresh_universes ?(all=false) ?(with_globals=false) dir evd t =
   let evdref = ref evd in
   let modified = ref false in
-  let rec refresh t = match kind_of_term t with
+  let rec refresh dir t = match kind_of_term t with
     | Sort (Type u as s) when Univ.universe_level u = None
-			 (* || Evd.is_sort_variable evd s = None *) ->
+			 || (with_globals && Evd.is_sort_variable evd s = None) ->
       (modified := true;
        (* s' will appear in the term, it can't be algebraic *)
        let s' = evd_comb0 (new_sort_variable Evd.univ_flexible) evdref in
@@ -39,9 +39,9 @@ let refresh_universes dir evd t =
 	   (if dir then set_leq_sort !evdref s' s else
 	     set_leq_sort !evdref s s');
          mkSort s')
-    | Prod (na,u,v) -> mkProd (na,u,refresh v)
+    | Prod (na,u,v) -> mkProd (na,(if all then refresh true u else u),refresh dir v)
     | _ -> t in
-  let t' = refresh t in
+  let t' = refresh dir t in
   if !modified then !evdref, t' else evd, t
 
 (************************)

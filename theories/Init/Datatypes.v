@@ -153,10 +153,10 @@ Inductive option (A:Type) : Type :=
 
 Arguments None [A].
 
-Definition option_map (A B:Type) (f:A->B) o :=
+Definition option_map (A B:Type) (f:A->B) (o : option A) : option B :=
   match o with
-    | Some a => Some (f a)
-    | None => None
+    | Some a => @Some B (f a)
+    | None => @None B
   end.
 
 (** [sum A B], written [A + B], is the disjoint sum of [A] and [B] *)

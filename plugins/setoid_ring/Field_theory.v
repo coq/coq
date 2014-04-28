@@ -588,13 +588,13 @@ Qed.
 (** Smart constructors for polynomial expression,
     with reduction of constants *)
 
-Definition NPEadd e1 e2 :=
+Time Definition NPEadd e1 e2 :=
   match e1, e2 with
   | PEc c1, PEc c2 => PEc (c1 + c2)
   | PEc c, _ => if (c =? 0)%coef then e2 else e1 + e2
   |  _, PEc c => if (c =? 0)%coef then e1 else e1 + e2
     (* Peut t'on factoriser ici ??? *)
-  | _, _ => e1 + e2
+  | _, _ => (@PEadd C e1 e2)
   end%poly.
 Infix "++" := NPEadd (at level 60, right associativity).
 
