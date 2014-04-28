@@ -626,7 +626,7 @@ and coq = parse
 	    end
 	  else
 	    begin
-	      Output.ident s (lexeme_start lexbuf);
+	      Output.ident s None;
 	      let eol=body lexbuf in
 		if eol then coq_bol lexbuf else coq lexbuf
 	    end }
@@ -656,17 +656,17 @@ and coq = parse
 	if eol then coq_bol lexbuf else coq lexbuf }
   | gallina_kw
       { let s = lexeme lexbuf in
-	  Output.ident s (lexeme_start lexbuf);
+	  Output.ident s None;
 	let eol = body lexbuf in
 	  if eol then coq_bol lexbuf else coq lexbuf }
   | notation_kw
       { let s = lexeme lexbuf in
-	Output.ident s (lexeme_start lexbuf);
+	Output.ident s None;
 	let eol= start_notation_string lexbuf in
 	if eol then coq_bol lexbuf else coq lexbuf }
   | prog_kw
       { let s = lexeme lexbuf in
-	  Output.ident s (lexeme_start lexbuf);
+	  Output.ident s None;
 	let eol = body lexbuf in
 	  if eol then coq_bol lexbuf else coq lexbuf }
   | space+ { Output.char ' '; coq lexbuf }
@@ -953,11 +953,11 @@ and escaped_coq = parse
   | "]"
       { decr brackets;
 	if !brackets > 0 then
-	  (Output.sublexer ']' (lexeme_start lexbuf); escaped_coq lexbuf)
+	  (Output.sublexer_in_doc ']'; escaped_coq lexbuf)
 	else Tokens.flush_sublexer () }
   | "["
       { incr brackets;
-        Output.sublexer '[' (lexeme_start lexbuf); escaped_coq lexbuf }
+        Output.sublexer_in_doc '['; escaped_coq lexbuf }
   | "(*"
       { Tokens.flush_sublexer (); comment_level := 1;
         ignore (comment lexbuf); escaped_coq lexbuf }
@@ -967,7 +967,7 @@ and escaped_coq = parse
       { Tokens.flush_sublexer () }
   | (identifier '.')* identifier
       { Tokens.flush_sublexer();
-        Output.ident (lexeme lexbuf) (lexeme_start lexbuf);
+        Output.ident (lexeme lexbuf) None;
         escaped_coq lexbuf }
   | space_nl*
       { let str = lexeme lexbuf in
@@ -979,7 +979,7 @@ and escaped_coq = parse
                                         else Output.start_inline_coq ());
           escaped_coq lexbuf }
   | _ 
-      { Output.sublexer (lexeme_char lexbuf 0) (lexeme_start lexbuf);
+      { Output.sublexer_in_doc (lexeme_char lexbuf 0);
         escaped_coq lexbuf }
 
 (*s Coq "Comments" command. *)
@@ -1147,11 +1147,11 @@ and body = parse
 	     else body lexbuf }
   | "where" 
       { Tokens.flush_sublexer();
-        Output.ident (lexeme lexbuf) (lexeme_start lexbuf);
+        Output.ident (lexeme lexbuf) None;
 	start_notation_string lexbuf }
   | identifier
       { Tokens.flush_sublexer();
-        Output.ident (lexeme lexbuf) (lexeme_start lexbuf);
+        Output.ident (lexeme lexbuf) (Some (lexeme_start lexbuf));
 	body lexbuf }
   | ".."
       { Tokens.flush_sublexer(); Output.char '.'; Output.char '.';
