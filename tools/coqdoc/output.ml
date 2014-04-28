@@ -383,6 +383,14 @@ module Latex = struct
     end;
     last_was_in := false
 
+  let sublexer_in_doc c =
+    if c = '*' && !last_was_in then begin
+      Tokens.flush_sublexer ();
+      output_char '*'
+    end else
+      Tokens.output_tagged_symbol_char None c;
+    last_was_in := false
+
   let initialize () =
     initialize_tex_html ();
     Tokens.token_tree := token_tree_latex;
@@ -399,8 +407,11 @@ module Latex = struct
   let ident s loc =
     last_was_in := s = "in";
     try
-      let tag = Index.find (get_module false) loc in
-      reference (translate s) tag
+      match loc with
+      | None -> raise Not_found
+      | Some loc ->
+          let tag = Index.find (get_module false) loc in
+          reference (translate s) tag
     with Not_found ->
       if is_tactic s then
 	printf "\\coqdoctac{%s}" (translate s)
@@ -646,6 +657,9 @@ module Html = struct
     in
     Tokens.output_tagged_symbol_char tag c
 
+  let sublexer_in_doc c =
+    Tokens.output_tagged_symbol_char None c
+
   let initialize () =
     initialize_tex_html();
     Tokens.token_tree := token_tree_html;
@@ -661,7 +675,11 @@ module Html = struct
     if is_keyword s then begin
       printf "<span class=\"id\" type=\"keyword\">%s</span>" (translate s)
     end else begin
-      try reference (translate s) (Index.find (get_module false) loc)
+      try
+        match loc with
+        | None -> raise Not_found
+        | Some loc ->
+            reference (translate s) (Index.find (get_module false) loc)
       with Not_found ->
 	if is_tactic s then
 	  printf "<span class=\"id\" type=\"tactic\">%s</span>" (translate s)
@@ -985,6 +1003,9 @@ module TeXmacs = struct
   let sublexer c l =
     if !in_doc then Tokens.output_tagged_symbol_char None c else char c
 
+  let sublexer_in_doc c =
+    char c
+
   let initialize () =
     Tokens.token_tree := token_tree_texmacs;
     Tokens.outfun := output_sublexer_string
@@ -1107,6 +1128,7 @@ module Raw = struct
   let ident s loc = raw_ident s
 
   let sublexer c l = char c
+  let sublexer_in_doc c = char c
 
   let initialize () =
     Tokens.token_tree := ref Tokens.empty_ttree;
@@ -1220,6 +1242,7 @@ let char = select Latex.char Html.char TeXmacs.char Raw.char
 let keyword = select Latex.keyword Html.keyword TeXmacs.keyword Raw.keyword
 let ident = select Latex.ident Html.ident TeXmacs.ident Raw.ident
 let sublexer = select Latex.sublexer Html.sublexer TeXmacs.sublexer Raw.sublexer
+let sublexer_in_doc = select Latex.sublexer_in_doc Html.sublexer_in_doc TeXmacs.sublexer_in_doc Raw.sublexer_in_doc
 let initialize = select Latex.initialize Html.initialize TeXmacs.initialize Raw.initialize
 
 let proofbox = select Latex.proofbox Html.proofbox TeXmacs.proofbox Raw.proofbox
