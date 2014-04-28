@@ -59,7 +59,7 @@ let is_keyword =
       "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"; "struct"; "wf"; "measure";
       "fix"; "cofix";
       (* Ltac *)
-      "before"; "after"; "constr"; "ltac"; "goal"; "context"; "beta"; "delta"; "iota"; "zeta";
+      "before"; "after"; "constr"; "ltac"; "goal"; "context"; "beta"; "delta"; "iota"; "zeta"; "lazymatch";
       (* Notations *)
       "level"; "associativity"; "no"
        ]
