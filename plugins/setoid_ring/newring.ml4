@@ -338,12 +338,9 @@ type ring_info =
 module Cmap = Map.Make(Constr)
 
 let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
-let from_relation = Summary.ref Cmap.empty ~name:"ring-tac-rel-table"
 let from_name = Summary.ref Spmap.empty ~name:"ring-tac-name-table"
 
 let ring_for_carrier r = Cmap.find r !from_carrier
-let ring_for_relation rel = Cmap.find rel !from_relation
-
 
 let find_ring_structure env sigma l =
   match l with
@@ -362,20 +359,9 @@ let find_ring_structure env sigma l =
             (str"cannot find a declared ring structure over"++
              spc()++str"\""++pr_constr ty++str"\""))
     | [] -> assert false
-(*
-        let (req,_,_) = dest_rel cl in
-        (try ring_for_relation req
-        with Not_found ->
-          errorlabstrm "ring"
-            (str"cannot find a declared ring structure for equality"++
-             spc()++str"\""++pr_constr req++str"\"")) *)
 
 let add_entry (sp,_kn) e =
-(*  let _ = ty e.ring_lemma1 in
-  let _ = ty e.ring_lemma2 in
-*)
   from_carrier := Cmap.add e.ring_carrier e !from_carrier;
-  from_relation := Cmap.add e.ring_req e !from_relation;
   from_name := Spmap.add sp e !from_name
 
 
@@ -902,11 +888,9 @@ type field_info =
       field_post_tac : glob_tactic_expr }
 
 let field_from_carrier = Summary.ref Cmap.empty ~name:"field-tac-carrier-table"
-let field_from_relation = Summary.ref Cmap.empty ~name:"field-tac-rel-table"
 let field_from_name = Summary.ref Spmap.empty ~name:"field-tac-name-table"
 
 let field_for_carrier r = Cmap.find r !field_from_carrier
-let field_for_relation rel = Cmap.find rel !field_from_relation
 
 let find_field_structure env sigma l =
   check_required_library (cdir@["Field_tac"]);
@@ -926,22 +910,9 @@ let find_field_structure env sigma l =
             (str"cannot find a declared field structure over"++
              spc()++str"\""++pr_constr ty++str"\""))
     | [] -> assert false
-(*        let (req,_,_) = dest_rel cl in
-        (try field_for_relation req
-        with Not_found ->
-          errorlabstrm "field"
-            (str"cannot find a declared field structure for equality"++
-             spc()++str"\""++pr_constr req++str"\"")) *)
 
 let add_field_entry (sp,_kn) e =
-(*
-  let _ = ty e.field_ok in
-  let _ = ty e.field_simpl_eq_ok in
-  let _ = ty e.field_simpl_ok in
-  let _ = ty e.field_cond in
-*)
   field_from_carrier := Cmap.add e.field_carrier e !field_from_carrier;
-  field_from_relation := Cmap.add e.field_req e !field_from_relation;
   field_from_name := Spmap.add sp e !field_from_name
 
 let subst_th (subst,th) =
