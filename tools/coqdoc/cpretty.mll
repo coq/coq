@@ -325,7 +325,7 @@ let def_token =
 let decl_token =
   "Hypothesis"
   | "Hypotheses"
-  | "Parameter"
+  | "Parameter" 's'?
   | "Axiom" 's'?
   | "Conjecture"
 
