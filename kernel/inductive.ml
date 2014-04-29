@@ -510,6 +510,8 @@ let inter_recarg r1 r2 = match r1, r2 with
 
 let inter_wf_paths = Rtree.inter Declareops.eq_recarg inter_recarg Norec
 
+let incl_wf_paths = Rtree.incl Declareops.eq_recarg inter_recarg Norec
+
 let spec_of_tree t =
   if eq_wf_paths t mk_norec
   then Not_subterm
@@ -542,13 +544,10 @@ type guard_env =
     genv    : subterm_spec Lazy.t list;
   }
 
-let make_renv env recarg ((kn,tyi),u) =
-  let mib = Environ.lookup_mind kn env in
-  let mind_recvec =
-    Array.map (fun mip -> mip.mind_recargs) mib.mind_packets in
+let make_renv env recarg tree =
   { env = env;
-    rel_min = recarg+2;
-    genv = [Lazy.lazy_from_val(Subterm(Large,mind_recvec.(tyi)))] }
+    rel_min = recarg+2; (* recarg = 0 ==> Rel 1 -> recarg; Rel 2 -> fix *)
+    genv = [Lazy.lazy_from_val(Subterm(Large,tree))] }
 
 let push_var renv (x,ty,spec) =
   { env = push_rel (x,None,ty) renv.env;
@@ -837,9 +836,10 @@ and extract_stack renv a = function
    | h::t -> stack_element_specif h, t
 
 (* Check term c can be applied to one of the mutual fixpoints. *)
-let check_is_subterm x =
+let check_is_subterm x tree =
   match Lazy.force x with
-    Subterm (Strict,_) | Dead_code -> true
+  | Subterm (Strict,tree') -> incl_wf_paths tree tree'
+  | Dead_code -> true
   |  _ -> false
 
 (************************************************************************)
@@ -895,12 +895,12 @@ let filter_stack_domain env ci p stack =
 (* Check if [def] is a guarded fixpoint body with decreasing arg.
    given [recpos], the decreasing arguments of each mutually defined
    fixpoint. *)
-let check_one_fix renv recpos def =
+let check_one_fix renv recpos trees def =
   let nfi = Array.length recpos in
 
   (* Checks if [t] only make valid recursive calls 
      [stack] is the list of constructor's argument specification and 
-     arguments than will be applied after reduction.
+     arguments that will be applied after reduction.
      example u in t where we have (match .. with |.. => t end) u *)
   let rec check_rec_call renv stack t =
     (* if [t] does not make recursive calls, it is guarded: *)
@@ -920,9 +920,10 @@ let check_one_fix renv recpos def =
 		let stack' = push_stack_closures renv l stack in
                 if List.length stack' <= np then error_partial_apply renv glob
                 else
+		  (* Retrieve the expected tree for the argument *)
                   (* Check the decreasing arg is smaller *)
                   let z = List.nth stack' np in
-	          if not (check_is_subterm (stack_element_specif z)) then
+	          if not (check_is_subterm (stack_element_specif z) trees.(glob)) then
                     begin match z with
 		      |SClosure (z,z') -> error_illegal_rec_call renv glob (z,z') 
 		      |SArg _ -> error_partial_apply renv glob
@@ -1084,10 +1085,15 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
 
 let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
   let (minds, rdef) = inductive_of_mutfix env fix in
+  let get_tree (kn,i) =
+    let mib = Environ.lookup_mind kn env in
+    mib.mind_packets.(i).mind_recargs
+  in
+  let trees = Array.map (fun (mind,_) -> get_tree mind) minds in
   for i = 0 to Array.length bodies - 1 do
     let (fenv,body) = rdef.(i) in
-    let renv = make_renv fenv nvect.(i) minds.(i) in
-    try check_one_fix renv nvect body
+    let renv = make_renv fenv nvect.(i) trees.(i) in
+    try check_one_fix renv nvect trees body
     with FixGuardError (fixenv,err) ->
       error_ill_formed_rec_body fixenv err names i
 	(push_rec_types recdef env) (judgment_of_fixpoint recdef)

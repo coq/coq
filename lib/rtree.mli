@@ -68,6 +68,8 @@ val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 
 val inter : ('a -> 'a -> bool) -> ('a -> 'a -> 'a option) -> 'a -> 'a t -> 'a t -> 'a t
 
+val incl : ('a -> 'a -> bool) -> ('a -> 'a -> 'a option) -> 'a -> 'a t -> 'a t -> bool
+
 (** Iterators *)
 
 val map : ('a -> 'b) -> 'a t -> 'b t

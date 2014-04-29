@@ -167,6 +167,10 @@ let rec inter cmp interlbl def n histo t t' =
 
 let inter cmp interlbl def t t' = inter cmp interlbl def 0 [] t t'
 
+(** Inclusion of rtrees. We may want a more efficient implementation. *)
+let incl cmp interlbl def t t' =
+  equal cmp t (inter cmp interlbl def t t')
+
 (** Tests if a given tree is infinite, i.e. has a branch of infinite length.
    This corresponds to a cycle when visiting the expanded tree.
    We use a specific comparison to detect already seen trees. *)
