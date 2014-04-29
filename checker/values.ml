@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 c0f79d23d0eb5d2e4cfb53ead514fcf5  checker/cic.mli
+MD5 b6df941161847354cea0591850f4d528  checker/cic.mli
 
 *)
 
@@ -114,7 +114,7 @@ let v_sortfam = v_enum "sorts_family" 3
 let v_caseinfo =
   let v_cstyle = v_enum "case_style" 5 in
   let v_cprint = v_tuple "case_printing" [|Int;v_cstyle|] in
-  v_tuple "case_info" [|v_ind;Int;Array Int;v_cprint|]
+  v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_cprint|]
 
 let v_cast = v_enum "cast_kind" 3
 (** NB : In fact there are 4 cast markers, but the last one
@@ -229,6 +229,7 @@ let v_one_ind = v_tuple "one_inductive_body"
     Int;
     List v_sortfam;
     Array v_constr;
+    Array Int;
     Array Int;
     v_wfp;
     Int;
