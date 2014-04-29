@@ -16,15 +16,15 @@ val load_obj : (string -> unit) ref
 
 val get_ml_filename : unit -> string * string
 
-val write_ml_code : string ->
-  ?header:Nativecode.global list -> global list -> unit
-
-val call_compiler : string -> string list -> int * string
-
 val compile : string -> global list -> int * string
 
+val compile_library : Names.dir_path ->
+		      global list -> string list -> string -> int
+
 val call_linker :
-  fatal:bool -> string -> string -> code_location_updates option -> unit
+  ?fatal:bool -> string -> string -> code_location_updates option -> unit
+
+val link_library : prefix:string -> dirname:string -> basename:string -> unit
 
 val rt1 : Nativevalues.t ref
 val rt2 : Nativevalues.t ref

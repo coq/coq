@@ -107,7 +107,7 @@ let register_loaded_library m =
     let f = prefix ^ "cmo" in
     let f = Dynlink.adapt_filename f in
     if not !Flags.no_native_compiler then
-      Nativelib.call_linker ~fatal:false prefix (Filename.concat dirname f) None
+      Nativelib.link_library ~prefix ~dirname ~basename:f
   in
   let rec aux = function
     | [] -> link m; [m]
@@ -760,7 +760,7 @@ let save_library_to ?todo dir f =
     if not !Flags.no_native_compiler then
       let lp = Loadpath.get_accessible_paths () in
       let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
-      if not (Int.equal (Nativelibrary.compile_library dir ast lp fn) 0) then
+      if not (Int.equal (Nativelib.compile_library dir ast lp fn) 0) then
         msg_error (str"Could not compile the library to native code. Skipping.")
    with reraise ->
     let reraise = Errors.push reraise in

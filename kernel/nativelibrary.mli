@@ -15,6 +15,3 @@ compiler *)
 
 val dump_library : module_path -> dir_path -> env -> module_signature ->
   global list * symbol array
-
-val compile_library :
-  dir_path -> global list -> string list -> string -> int
