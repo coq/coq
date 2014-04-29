@@ -554,8 +554,9 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 	      match univs with
 	      | Some _ :: l -> 
 		if is_GHole c then
-		  l, Some (evd_comb1 (Evarsolve.refresh_universes ~with_globals:true true) evdref c1)
-		else l, (* Some c1 *) None
+		  l, Some (evd_comb1 (Evarsolve.refresh_universes ~template:true
+					~with_globals:true true) evdref c1)
+		else l, Some c1
 	      | (None :: l) | l -> l, Some c1
 	    in
 	    let hj = pretype tycon env evdref lvar c in

@@ -26,7 +26,7 @@ let normalize_evar evd ev =
   | Evar (evk,args) -> (evk,args)
   | _ -> assert false
 
-let refresh_universes ?(all=false) ?(with_globals=false) dir evd t =
+let refresh_universes ?(all=false) ?(template=false) ?(with_globals=false) dir evd t =
   let evdref = ref evd in
   let modified = ref false in
   let rec refresh dir t = match kind_of_term t with
@@ -34,7 +34,7 @@ let refresh_universes ?(all=false) ?(with_globals=false) dir evd t =
 			 || (with_globals && Evd.is_sort_variable evd s = None) ->
       (modified := true;
        (* s' will appear in the term, it can't be algebraic *)
-       let s' = evd_comb0 (new_sort_variable Evd.univ_flexible) evdref in
+       let s' = evd_comb0 (new_sort_variable ~template Evd.univ_flexible) evdref in
 	 evdref :=
 	   (if dir then set_leq_sort !evdref s' s else
 	     set_leq_sort !evdref s s');

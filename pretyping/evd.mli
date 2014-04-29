@@ -435,8 +435,8 @@ val normalize_evar_universe_context_variables : evar_universe_context ->
 val normalize_evar_universe_context : evar_universe_context -> 
   evar_universe_context
 
-val new_univ_variable : rigid -> evar_map -> evar_map * Univ.universe
-val new_sort_variable : rigid -> evar_map -> evar_map * sorts
+val new_univ_variable : ?template:bool -> rigid -> evar_map -> evar_map * Univ.universe
+val new_sort_variable : ?template:bool -> rigid -> evar_map -> evar_map * sorts
 val make_flexible_variable : evar_map -> bool -> Univ.universe_level -> evar_map
 val is_sort_variable : evar_map -> sorts -> (Univ.universe_level * bool) option 
 (** [is_sort_variable evm s] returns [Some (u, is_rigid)] or [None] if [s] is 

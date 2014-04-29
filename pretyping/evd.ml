@@ -268,6 +268,7 @@ type evar_universe_context =
     uctx_univ_variables : Universes.universe_opt_subst;
       (** The local universes that are unification variables *)
     uctx_univ_algebraic : Univ.universe_set; 
+    uctx_univ_template : Univ.universe_set; 
     (** The subset of unification variables that
 	can be instantiated with algebraic universes as they appear in types 
 	and universe instances only. *)
@@ -279,6 +280,7 @@ let empty_evar_universe_context =
   { uctx_local = Univ.ContextSet.empty;
     uctx_univ_variables = Univ.LMap.empty;
     uctx_univ_algebraic = Univ.LSet.empty;
+    uctx_univ_template = Univ.LSet.empty;
     uctx_universes = Univ.initial_universes;
     uctx_initial_universes = Univ.initial_universes }
 
@@ -305,6 +307,8 @@ let union_evar_universe_context ctx ctx' =
 	  Univ.LMap.subst_union ctx.uctx_univ_variables ctx'.uctx_univ_variables;
 	uctx_univ_algebraic = 
 	  Univ.LSet.union ctx.uctx_univ_algebraic ctx'.uctx_univ_algebraic;
+	uctx_univ_template = 
+	  Univ.LSet.union ctx.uctx_univ_template ctx'.uctx_univ_template;
 	uctx_initial_universes = ctx.uctx_initial_universes;
 	uctx_universes = 
 	  if local == ctx.uctx_local then ctx.uctx_universes
@@ -325,6 +329,8 @@ let diff_evar_universe_context ctx' ctx  =
 	  Univ.LMap.diff ctx'.uctx_univ_variables ctx.uctx_univ_variables;
 	uctx_univ_algebraic = 
 	  Univ.LSet.diff ctx'.uctx_univ_algebraic ctx.uctx_univ_algebraic;
+	uctx_univ_template = 
+	  Univ.LSet.diff ctx'.uctx_univ_template ctx.uctx_univ_template;
 	uctx_universes = Univ.empty_universes;
 	uctx_initial_universes = ctx.uctx_initial_universes }
 
@@ -348,7 +354,7 @@ let instantiate_variable l b v =
 
 exception UniversesDiffer
 
-let process_universe_constraints univs vars alg local cstrs =
+let process_universe_constraints univs vars alg templ local cstrs =
   let vars = ref vars in
   let normalize = Universes.normalize_universe_opt_subst vars in
   let rec unify_universes fo l d r local =
@@ -372,13 +378,17 @@ let process_universe_constraints univs vars alg local cstrs =
 	    else
 	      match Univ.Universe.level r with
 	      | None -> error ("Algebraic universe on the right")
-	      | Some rl when Univ.Level.is_small rl -> 
-		(if Univ.LSet.for_all (fun l -> 
-		  Univ.Level.is_small l || Univ.LMap.mem l !vars) 
-		    (Univ.Universe.levels l) then
-		    Univ.enforce_leq l r local
-		 else raise (Univ.UniverseInconsistency (Univ.Le, l, r, [])))
-	      | _ -> Univ.enforce_leq l r local
+	      | Some rl ->
+		if Univ.Level.is_small rl then
+		  (if Univ.LSet.for_all (fun l -> 
+		    Univ.Level.is_small l || Univ.LMap.mem l !vars) 
+		      (Univ.Universe.levels l) then
+		      Univ.enforce_leq l r local
+		   else raise (Univ.UniverseInconsistency (Univ.Le, l, r, [])))
+		else if Univ.LSet.mem rl templ && Univ.Universe.is_level l then
+		  unify_universes fo l Univ.UEq r local
+		else
+		  Univ.enforce_leq l r local
 	  else if d == Univ.ULub then
 	    match varinfo l, varinfo r with
 	    | (Inr (l, true, _), Inr (r, _, _)) 
@@ -393,9 +403,9 @@ let process_universe_constraints univs vars alg local cstrs =
 	    | Inr (l', lloc, _), Inr (r', rloc, _) ->
 	      let () = 
 		if lloc then
-		  instantiate_variable l' (Univ.Universe.make r') vars
+		  instantiate_variable l' r vars
 		else if rloc then 
-		  instantiate_variable r' (Univ.Universe.make l') vars
+		  instantiate_variable r' l vars
 		else if not (Univ.check_eq univs l r) then
 		  (* Two rigid/global levels, none of them being local,
 		     one of them being Prop/Set, disallow *)
@@ -430,7 +440,7 @@ let add_constraints_context ctx cstrs =
   let vars, local' =
     process_universe_constraints ctx.uctx_universes
       ctx.uctx_univ_variables ctx.uctx_univ_algebraic
-      local cstrs'
+      ctx.uctx_univ_template local cstrs'
   in
     { ctx with uctx_local = (univs, Univ.Constraint.union local local');
       uctx_univ_variables = vars;
@@ -443,7 +453,8 @@ let add_universe_constraints_context ctx cstrs =
   let univs, local = ctx.uctx_local in
   let vars, local' = 
     process_universe_constraints ctx.uctx_universes 
-      ctx.uctx_univ_variables ctx.uctx_univ_algebraic local cstrs 
+      ctx.uctx_univ_variables ctx.uctx_univ_algebraic 
+      ctx.uctx_univ_template local cstrs 
   in
     { ctx with uctx_local = (univs, Univ.Constraint.union local local');
       uctx_univ_variables = vars;
@@ -948,7 +959,7 @@ let merge_universe_subst evd subst =
 let with_context_set rigid d (a, ctx) = 
   (merge_context_set rigid d ctx, a)
 
-let uctx_new_univ_variable rigid 
+let uctx_new_univ_variable template rigid 
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
   let u = Universes.new_univ_level (Global.current_dirpath ()) in
   let ctx' = Univ.ContextSet.union ctx (Univ.ContextSet.singleton u) in
@@ -960,14 +971,18 @@ let uctx_new_univ_variable rigid
 	if b then {uctx with uctx_univ_variables = uvars';
 	  uctx_univ_algebraic = Univ.LSet.add u avars}
 	else {uctx with uctx_univ_variables = Univ.LMap.add u None uvars} in
-    {uctx' with uctx_local = ctx'}, u
+  let uctx'' = if template then 
+      {uctx' with uctx_univ_template = Univ.LSet.add u uctx'.uctx_univ_template}
+    else uctx'
+  in
+    {uctx'' with uctx_local = ctx'}, u
 
-let new_univ_variable rigid evd =
-  let uctx', u = uctx_new_univ_variable rigid evd.universes in
+let new_univ_variable ?(template=false) rigid evd =
+  let uctx', u = uctx_new_univ_variable template rigid evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
-let new_sort_variable rigid d =
-  let (d', u) = new_univ_variable rigid d in
+let new_sort_variable ?(template=false) rigid d =
+  let (d', u) = new_univ_variable ~template rigid d in
     (d', Type u)
 
 let make_flexible_variable evd b u =
@@ -1189,6 +1204,7 @@ let refresh_undefined_univ_variables uctx =
   in 
   let uctx' = {uctx_local = ctx'; 
 	       uctx_univ_variables = vars; uctx_univ_algebraic = alg;
+	       uctx_univ_template = uctx.uctx_univ_template;
 	       uctx_universes = Univ.initial_universes;
 	       uctx_initial_universes = uctx.uctx_initial_universes } in
     uctx', subst
@@ -1222,6 +1238,7 @@ let normalize_evar_universe_context uctx =
 	  { uctx_local = us'; 
 	    uctx_univ_variables = vars'; 
 	    uctx_univ_algebraic = algs';
+	    uctx_univ_template = uctx.uctx_univ_template;
 	    uctx_universes = universes;
 	    uctx_initial_universes = uctx.uctx_initial_universes }
 	in fixpoint uctx'

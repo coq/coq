@@ -755,6 +755,10 @@ struct
 
     let pr x = str(to_string x)
 
+    let is_level = function
+      | (v, 0) -> true
+      | _ -> false
+
     let level = function
       | (v,0) -> Some v
       | _ -> None
@@ -808,6 +812,10 @@ struct
   let atom l = match node l with
     | Cons (l, n) when is_nil n -> Some l
     | _ -> None
+
+  let is_level l = match node l with
+    | Cons (l, n) when is_nil n -> Expr.is_level l
+    | _ -> false
 
   let level l = match node l with
     | Cons (l, n) when is_nil n -> Expr.level l
