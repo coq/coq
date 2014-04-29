@@ -26,37 +26,37 @@ Require Export Field_theory.
         | (radd ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(FEadd e1 e2)
+          let e2 := mkP t2 in constr:(@FEadd C e1 e2)
         | (rmul ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(FEmul e1 e2)
+          let e2 := mkP t2 in constr:(@FEmul C e1 e2)
         | (rsub ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(FEsub e1 e2)
+          let e2 := mkP t2 in constr:(@FEsub C e1 e2)
         | (ropp ?t1) =>
-          fun _ => let e1 := mkP t1 in constr:(FEopp e1)
+          fun _ => let e1 := mkP t1 in constr:(@FEopp C e1)
         | (rdiv ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
-          let e2 := mkP t2 in constr:(FEdiv e1 e2)
+          let e2 := mkP t2 in constr:(@FEdiv C e1 e2)
         | (rinv ?t1) =>
-          fun _ => let e1 := mkP t1 in constr:(FEinv e1)
+          fun _ => let e1 := mkP t1 in constr:(@FEinv C e1)
         | (rpow ?t1 ?n) =>
           match CstPow n with
           | InitialRing.NotConstant =>
             fun _ =>
             let p := Find_at t fv in
             constr:(@FEX C p)
-          | ?c => fun _ => let e1 := mkP t1 in constr:(FEpow e1 c)
+          | ?c => fun _ => let e1 := mkP t1 in constr:(@FEpow C e1 c)
           end
         | _ =>
           fun _ =>
           let p := Find_at t fv in
           constr:(@FEX C p)
         end
-    | ?c => fun _ => constr:(FEc c)
+    | ?c => fun _ => constr:(@FEc C c)
     end in
     f ()
  in mkP t.
