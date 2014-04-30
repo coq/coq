@@ -610,6 +610,18 @@ let replace_in_clause_maybe_by c2 c1 cl tac_opt =
 exception DiscrFound of
   (constructor * int) list * constructor * constructor
 
+let injection_on_proofs = ref true
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "injection on prop arguments";
+      optkey   = ["Injection";"On";"Proofs"];
+      optread  = (fun () -> !injection_on_proofs) ;
+      optwrite = (fun b -> injection_on_proofs := b) }
+
+
 let find_positions env sigma t1 t2 =
   let rec findrec sorts posn t1 t2 =
     let hd1,args1 = whd_betadeltaiota_stack env sigma t1 in
@@ -648,8 +660,10 @@ let find_positions env sigma t1 t2 =
             then [(List.rev posn,t1_0,t2_0)] else []
   in
   try
-    (* Rem: to allow injection on proofs objects, just add InProp *)
-    Inr (findrec [InSet;InType] [] t1 t2)
+    let sorts = if !injection_on_proofs then [InSet;InType;InProp]
+		else [InSet;InType]
+    in
+    Inr (findrec sorts [] t1 t2)
   with DiscrFound (path,c1,c2) ->
     Inl (path,c1,c2)
 
