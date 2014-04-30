@@ -1265,21 +1265,21 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
   let env = eq_clause.env in
   match find_positions env sigma t1 t2 with
-    | Inl _ ->
-	Proofview.tclZERO (Errors.UserError ("Inj",str"Not a projectable equality but a discriminable one."))
-    | Inr [] ->
-	Proofview.tclZERO (Errors.UserError ("Equality.inj",str"Nothing to do, it is an equality between convertible terms."))
-    | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
-        Proofview.tclZERO (Errors.UserError ("Equality.inj" , str"Nothing to inject."))
-    | Inr posns ->
-        Proofview.tclORELSE
-          (inject_if_homogenous_dependent_pair env sigma u)
-          begin function
-            | Not_dep_pair as e |e when Errors.noncritical e ->
-                inject_at_positions env sigma l2r u eq_clause posns
-                  (tac (clenv_value eq_clause))
-            | reraise -> Proofview.tclZERO reraise
-          end
+  | Inl _ ->
+     Proofview.tclZERO (Errors.UserError ("Inj",strbrk"This equality is discriminable. You should use the discriminate tactic to solve the goal."))
+  | Inr [] ->
+     Proofview.tclZERO (Errors.UserError ("Equality.inj",strbrk"No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern restrictions in the sort Prop."))
+  | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
+     Proofview.tclZERO (Errors.UserError ("Equality.inj" , str"Nothing to inject."))
+  | Inr posns ->
+     Proofview.tclORELSE
+       (inject_if_homogenous_dependent_pair env sigma u)
+       begin function
+         | Not_dep_pair as e |e when Errors.noncritical e ->
+			       inject_at_positions env sigma l2r u eq_clause posns
+						   (tac (clenv_value eq_clause))
+         | reraise -> Proofview.tclZERO reraise
+       end
 
 let postInjEqTac ipats c n =
   match ipats with
