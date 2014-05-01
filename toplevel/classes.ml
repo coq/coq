@@ -165,8 +165,6 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
   let subst = List.map (Evarutil.nf_evar sigma) subst in
     if abstract then
       begin
-	if not (Lib.is_modtype ()) then
-	  error "Declare Instance while not in Module Type.";
 	let _, ty_constr = instance_constructor k (List.rev subst) in
 	let termtype =
 	  let t = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
