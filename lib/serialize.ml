@@ -19,7 +19,7 @@ open Interface
 open Xml_datatype
 
 (* Marshalling of basic types and type constructors *)
-module Xml_marshalling = struct (* {{{ *)
+module Xml_marshalling = struct
 
 exception Marshal_error
 
@@ -370,12 +370,12 @@ let to_feedback xml = match xml with
       content = to_feedback_content content }
   | _ -> raise Marshal_error
 
-end (* }}} *)
+end
 include Xml_marshalling
 
 (* Reification of basic types and type constructors, and functions
    from to xml *)
-module ReifType : sig (* {{{ *)
+module ReifType : sig
 
   type 'a val_t
 
@@ -609,7 +609,7 @@ end = struct
       (pr_xml (of_option_state { opt_sync = true; opt_depr = false;
         opt_name = "name1"; opt_value = IntValue (Some 37) }));
 
-end  (* }}} *)
+end
 open ReifType
 
 (** Types reification, checked with explicit casts *)
@@ -755,7 +755,7 @@ let abstract_eval_call handler (c : 'a call) : 'a value =
   with any ->
     Fail (handler.handle_exn any)
 
-(** brain dead code, edit if protocol messages are added/removed {{{ *)
+(** brain dead code, edit if protocol messages are added/removed *)
 let of_answer (q : 'a call) (v : 'a value) : xml = match q with
   | Add _        -> of_value (of_value_type add_rty_t        ) (Obj.magic v)
   | Edit_at _    -> of_value (of_value_type edit_at_rty_t    ) (Obj.magic v)
@@ -833,7 +833,6 @@ let to_call : xml -> unknown call =
     | "Interp"     -> Interp     (mkCallArg interp_sty_t      a)
     | "StopWorker" -> StopWorker (mkCallArg stop_worker_sty_t a)
     | _ -> raise Marshal_error)
-(* }}} *)
 
 (** misc *)
 
@@ -841,7 +840,7 @@ let is_feedback = function
   | Element ("feedback", _, _) -> true
   | _ -> false
 
-(** {{{ Debug printing *)
+(** Debug printing *)
 
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
@@ -884,8 +883,6 @@ let pr_call call = match call with
   | Init x       -> str_of_call call ^ " " ^ print init_sty_t        x
   | Interp x     -> str_of_call call ^ " " ^ print interp_sty_t      x
   | StopWorker x -> str_of_call call ^ " " ^ print stop_worker_sty_t x
-
-(* }}} *)
 
 let document to_string_fmt =
   Printf.printf "=== Available calls ===\n\n";

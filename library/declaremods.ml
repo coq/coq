@@ -332,7 +332,7 @@ let () = ModSubstObjs.set_missing_handler handle_missing_substobjs
 
 
 
-(** {6 From module expression to substitutive objects *)
+(** {6 From module expression to substitutive objects} *)
 
 (** Turn a chain of [MSEapply] into the head module_path and the
     list of module_path parameters (deepest param coming first).
@@ -668,7 +668,7 @@ let declare_module interp_modast id args res mexpr_o fs =
 
 end
 
-(** {6 Module types : start, end, declare *)
+(** {6 Module types : start, end, declare} *)
 
 module RawModTypeOps = struct
 
@@ -787,7 +787,7 @@ let declare_include interp me_asts =
 end
 
 
-(** {6 Module operations handling summary freeze/unfreeze *)
+(** {6 Module operations handling summary freeze/unfreeze} *)
 
 let protect_summaries f =
   let fs = Summary.freeze_summaries ~marshallable:`No in

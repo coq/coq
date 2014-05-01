@@ -19,10 +19,10 @@ struct
   type interval = num option * num option
       (** None models the absence of bound i.e. infinity *)
       (** As a result,
-	  - None , None   -> ]-oo,+oo[
-	  - None , Some v -> ]-oo,v]
-	  - Some v, None  -> [v,+oo[
-	  - Some v, Some v' -> [v,v']
+	  - None , None   -> \]-oo,+oo\[
+	  - None , Some v -> \]-oo,v\]
+	  - Some v, None  -> \[v,+oo\[
+	  - Some v, Some v' -> \[v,v'\]
       Intervals needs to be explicitely normalised.
       *)
 
@@ -117,7 +117,7 @@ and cstr_info = {
 }
 
 
-(** A system of constraints has the form [{sys = s ; vars = v}].
+(** A system of constraints has the form [\{sys = s ; vars = v\}].
     [s] is a hashtable mapping a normalised vector to a [cstr_info] record where
     - [bound] is an interval
     - [prf_idx] is the set of hypothese indexes (i.e. constraints in the initial system) used to obtain the current constraint.
@@ -499,7 +499,7 @@ let pick_small_value bnd =
 	then ceiling_num i (* why not *) else i
 
 
-(** [solution s1 sys_l  = Some(sn,[(vn-1,sn-1);...; (v1,s1)]@sys_l)]
+(** [solution s1 sys_l  = Some(sn,\[(vn-1,sn-1);...; (v1,s1)\]\@sys_l)]
     then [sn] is a  system which contains only [black_v] -- if it existed in [s1]
     and [sn+1] is obtained by projecting [vn] out of [sn]
     @raise SystemContradiction if  system [s] has no solution

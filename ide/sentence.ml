@@ -67,7 +67,7 @@ let rec grab_sentence_stop (start:GText.iter) =
   (forward_search is_sentence_end start)#forward_char
 
 (** Search forward the first character immediately after a "." sentence end
-    (and not just a "{" or "}" or comment end *)
+    (and not just a "\{" or "\}" or comment end *)
 
 let rec grab_ending_dot (start:GText.iter) =
   let is_ending_dot s = is_sentence_end s && s#char = Char.code '.' in

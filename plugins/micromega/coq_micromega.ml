@@ -45,7 +45,7 @@ type tag = Tag.t
 
 (**
   * An atom is of the form:
-  *   pExpr1 {<,>,=,<>,<=,>=} pExpr2
+  *   pExpr1 \{<,>,=,<>,<=,>=\} pExpr2
   * where pExpr1, pExpr2 are polynomial expressions (see Micromega). pExprs are
   * parametrized by 'cst, which is used as the type of constants.
   *)
@@ -112,7 +112,7 @@ let rec ids_of_formula f =
 (**
   * A clause is a list of (tagged) nFormulas.
   * nFormulas are normalized formulas, i.e., of the form:
-  *   cPol {=,<>,>,>=} 0
+  *   cPol \{=,<>,>,>=\} 0
   * with cPol compact polynomials (see the Pol inductive type in EnvRing.v).
   *)
 
@@ -246,7 +246,7 @@ let rec add_term  t0 = function
 module ISet = Set.Make(Int)
 
 (**
-  * Given a set of integers s={i0,...,iN} and a list m, return the list of
+  * Given a set of integers s=\{i0,...,iN\} and a list m, return the list of
   * elements of m that are at position i0,...,iN.
   *)
 

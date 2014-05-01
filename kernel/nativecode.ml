@@ -21,7 +21,7 @@ open Pre_env
 compiler. mllambda represents a fragment of ML, and can easily be printed
 to OCaml code. *)
 
-(** Local names {{{**)
+(** Local names **)
 
 type lname = { lname : name; luid : int }
 
@@ -42,9 +42,8 @@ let reset_lname = lname_ctr := -1
 let fresh_lname n = 
   incr lname_ctr;
   { lname = n; luid = !lname_ctr }
-  (**}}}**)
 
-(** Global names {{{ **)
+(** Global names **)
 type gname = 
   | Gind of string * inductive (* prefix, inductive name *)
   | Gconstruct of string * constructor (* prefix, constructor name *)
@@ -136,9 +135,8 @@ let reset_normtbl () = normtbl_ctr := -1
 let fresh_gnormtbl l =
   incr normtbl_ctr;
   Gnormtbl (l,!normtbl_ctr)
-  (**}}}**)
 
-(** Symbols (pre-computed values) {{{**)
+(** Symbols (pre-computed values) **)
 
 type symbol =
   | SymbValue of Nativevalues.t
@@ -241,9 +239,9 @@ let symbols_tbl_name = Ginternal "symbols_tbl"
 
 let get_symbols_tbl () =
   let tbl = Array.make (HashtblSymbol.length symb_tbl) dummy_symb in
-  HashtblSymbol.iter (fun x i -> tbl.(i) <- x) symb_tbl; tbl(**}}}**)
+  HashtblSymbol.iter (fun x i -> tbl.(i) <- x) symb_tbl; tbl
 
-(** Lambda to Mllambda {{{**)
+(** Lambda to Mllambda **)
 
 type primitive =
   | Mk_prod
@@ -1250,9 +1248,8 @@ let mllambda_of_lambda auxdefs l t =
   (* final result : global list, fv, ml *)
   else
     (!global_stack, (fv_named, fv_rel), mkMLlam (Array.of_list params) ml)
-    (**}}}**)
 
-(** Code optimization {{{**)
+(** Code optimization **)
 
 (** Optimization of match and fix *)
 
@@ -1408,9 +1405,8 @@ let optimize_stk stk =
         Glet(Gconstant (prefix, c), optimize gdef body)
     | _ -> g in
   List.map optimize_global stk
-  (**}}}**)
 
-(** Printing to ocaml {{{**)
+(** Printing to ocaml **)
 (* Redefine a bunch of functions in module Names to generate names
    acceptable to OCaml. *)
 let string_of_id s = Unicode.ascii_of_ident (string_of_id s)
@@ -1708,9 +1704,9 @@ let pp_global fmt g =
 	pp_gname gn pp_ldecls params 
 	pp_mllam (MLmatch(annot,a,accu,bs))
   | Gcomment s ->
-      Format.fprintf fmt "@[(* %s *)@]@." s(**}}}**)
+      Format.fprintf fmt "@[(* %s *)@]@." s
 
-(** Compilation of elements in environment {{{**)
+(** Compilation of elements in environment **)
 let rec compile_with_fv env sigma auxdefs l t =
   let (auxdefs,(fv_named,fv_rel),ml) = mllambda_of_lambda auxdefs l t in
   if List.is_empty fv_named && List.is_empty fv_rel then (auxdefs,ml)
@@ -1961,6 +1957,5 @@ let update_locations (ind_updates,const_updates) =
 
 let add_header_comment mlcode s =
   Gcomment s :: mlcode
-(** }}} **)
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

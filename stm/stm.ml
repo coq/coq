@@ -130,7 +130,7 @@ module Vcs_aux : sig
   exception Expired
   val visit : (branch_type, transaction,'i) Vcs_.t -> Vcs_.Dag.node -> visit
 
-end = struct (* {{{ *)
+end = struct
 
   let proof_nesting vcs =
     List.fold_left max 0
@@ -171,7 +171,7 @@ end = struct (* {{{ *)
       | _ -> anomaly (str ("Malformed VCS at node "^Stateid.to_string id))
     with Not_found -> raise Expired
 
-end (* }}} *)
+end
 
 (* Imperative wrap around VCS to obtain _the_ VCS *)
 module VCS : sig
@@ -234,7 +234,7 @@ module VCS : sig
   val backup : unit -> vcs
   val restore : vcs -> unit
 
-end = struct (* {{{ *)
+end = struct
 
   include Vcs_
   exception Expired = Vcs_aux.Expired
@@ -242,7 +242,7 @@ end = struct (* {{{ *)
   module StateidSet = Set.Make(Stateid)
   open Printf
 
-  let print_dag vcs () = (* {{{ *)
+  let print_dag vcs () =
     let fname = "stm_" ^ process_id () in
     let string_of_transaction = function
       | Cmd (t, _) | Fork (t, _,_,_) ->
@@ -325,8 +325,7 @@ end = struct (* {{{ *)
     close_out oc;
     ignore(Sys.command
       ("dot -Tpdf -Gcharset=latin1 " ^ fname_dot ^ " -o" ^ fname_ps))
-  (* }}} *)
-  
+
   type vcs = (branch_type, transaction, vcs state_info) t
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
@@ -454,7 +453,7 @@ end = struct (* {{{ *)
 
     val command : now:bool -> (unit -> unit) -> unit
 
-  end = struct (* {{{ *)
+  end = struct
     
     let m = Mutex.create ()
     let c = Condition.create ()
@@ -486,7 +485,7 @@ end = struct (* {{{ *)
           worker := Some (Thread.create run_command ())
       end
 
-  end (* }}} *)
+  end
 
   let print ?(now=false) () =
     if not !Flags.debug && not now then () else NB.command ~now (print_dag !vcs)
@@ -494,7 +493,7 @@ end = struct (* {{{ *)
   let backup () = !vcs
   let restore v = vcs := v
 
-end (* }}} *)
+end
 
 (* Fills in the nodes of the VCS *)
 module State : sig
@@ -517,7 +516,7 @@ module State : sig
   val get_cached : Stateid.t -> frozen_state
   val assign : Stateid.t -> frozen_state -> unit
 
-end = struct (* {{{ *)
+end = struct
 
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
    * failed, so the global state may contain garbage *)
@@ -600,7 +599,6 @@ end = struct (* {{{ *)
       | None -> raise (exn_on id ~valid:good_id e)
 
 end
-(* }}} *)
 
 let hints = ref Aux_file.empty_aux_file
 let set_compilation_hints file =
@@ -670,7 +668,7 @@ module Slaves : sig
 
   val set_perspective : Stateid.t list -> unit
 
-end = struct (* {{{ *)
+end = struct
 
 
   let cancel_worker n = WorkersPool.cancel (n-1)
@@ -1152,7 +1150,7 @@ end = struct (* {{{ *)
     List.map (function ReqBuildProof(a,b,c,d,x,e) ->
       ReqBuildProof(a,b,c,d,List.assoc x f2t_map,e)) tasks
 
-end (* }}} *)
+end
 
 (* Runs all transactions needed to reach a state *)
 module Reach : sig
@@ -1160,7 +1158,7 @@ module Reach : sig
   val known_state :
     ?redefine_qed:bool -> cache:Summary.marshallable -> Stateid.t -> unit
 
-end = struct (* {{{ *)
+end = struct
 
 let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 
@@ -1366,7 +1364,8 @@ let known_state ?(redefine_qed=false) ~cache id =
     prerr_endline ("reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
 
-end (* }}} *)
+end
+
 let _ = Slaves.set_reach_known_state Reach.known_state
 
 (* The backtrack module simulates the classic behavior of a linear document *)
@@ -1382,7 +1381,7 @@ module Backtrack : sig
   (* To be installed during initialization *)
   val undo_vernac_classifier : vernac_expr -> vernac_classification
 
-end = struct (* {{{ *)
+end = struct
 
   let record () =
     let current_branch = VCS.current_branch () in
@@ -1497,7 +1496,7 @@ end = struct (* {{{ *)
        msg_warning(str"undo_vernac_classifier: going back to the initial state.");
        VtStm (VtBack Stateid.initial, true), VtNow
 
-end (* }}} *)
+end
 
 let init () =
   VCS.init Stateid.initial;
@@ -1806,7 +1805,7 @@ let process_transaction ~tty verbose c (loc, expr) =
     let e = Errors.push e in
     handle_failure e vcs tty
 
-(** STM interface {{{******************************************************* **)
+(** STM interface ******************************************************* **)
 
 let stop_worker n = Slaves.cancel_worker n
 
@@ -1945,9 +1944,8 @@ let edit_at id =
         VCS.restore vcs;
         VCS.print ();
         raise e
-(* }}} *)
 
-(** Old tty interface {{{*************************************************** **)
+(** Old tty interface *************************************************** **)
 
 let interp verb (_,e as lexpr) =
   let clas = classify_vernac e in
@@ -2069,7 +2067,5 @@ let show_script ?proof () =
     let indented_cmds = List.rev (indented_cmds) in
     msg_notice (v 0 (Pp.prlist_with_sep Pp.fnl (fun x -> x) indented_cmds))
   with Vcs_aux.Expired -> ()
-
-(* }}} *)
 
 (* vim:set foldmethod=marker: *)
