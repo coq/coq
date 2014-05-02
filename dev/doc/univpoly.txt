@@ -210,3 +210,28 @@ point, I didn't recheck yet).
 
 - [native_compute] is untested: it should deal with primitive
 projections right but not universes.
+
+
+Incompatibilities
+=================
+
+Old-style universe polymorphic definitions were implemented by taking
+advantage of the fact that elaboration (i.e., pretyping and unification)
+were _not_ universe aware, so some of the constraints generated during
+pretypechecking would be forgotten. In the current setting, this is not
+possible, as unification ensures that the substitution is built is
+entirely well-typed, even w.r.t universes. This means that some terms
+that type-checked before no longer do, especially projections of the
+pair:
+
+@fst ?x ?y : prod ?x ?y : Type (max(Datatypes.i, Datatypes.j)).
+
+The "template universe polymorphic" variables i and j appear during
+typing without being refreshed, meaning that they can be lowered (have
+upper constraints) with user-introduced universes. In most cases this
+won't work, so ?x and ?y have to be instantiated earlier, either from
+the type of the actual projected pair term (some t : prod A B) or the
+typing constraint. Adding the correct type annotations will always fix 
+this.
+
+
