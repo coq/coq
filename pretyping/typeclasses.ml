@@ -507,6 +507,9 @@ let is_implicit_arg = function
 
 let resolvable = Store.field ()
 
+let set_resolvable s b =
+  Store.set s resolvable b
+
 let is_resolvable evi =
   assert (match evi.evar_body with Evar_empty -> true | _ -> false);
   Option.default true (Store.get evi.evar_extra resolvable)
@@ -540,7 +543,7 @@ let mark_resolvability filter b sigma =
   Evd.raw_map_undefined map sigma
 
 let mark_unresolvables ?(filter=all_evars) sigma = mark_resolvability filter false sigma
-let mark_resolvables sigma = mark_resolvability all_evars true sigma
+let mark_resolvables ?(filter=all_evars) sigma = mark_resolvability filter true sigma
 
 let has_typeclasses filter evd =
   let check ev evi =

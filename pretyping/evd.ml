@@ -295,7 +295,6 @@ let is_empty_evar_universe_context ctx =
 
 let union_evar_universe_context ctx ctx' =
   if ctx == ctx' then ctx
-  else if is_empty_evar_universe_context ctx then ctx'
   else if is_empty_evar_universe_context ctx' then ctx
   else
     let local = 
@@ -331,7 +330,7 @@ let diff_evar_universe_context ctx' ctx  =
 	  Univ.LSet.diff ctx'.uctx_univ_algebraic ctx.uctx_univ_algebraic;
 	uctx_univ_template = 
 	  Univ.LSet.diff ctx'.uctx_univ_template ctx.uctx_univ_template;
-	uctx_universes = Univ.empty_universes;
+	uctx_universes = ctx.uctx_initial_universes;
 	uctx_initial_universes = ctx.uctx_initial_universes }
 
 (* let diff_evar_universe_context_key = Profile.declare_profile "diff_evar_universe_context";; *)
@@ -354,7 +353,7 @@ let instantiate_variable l b v =
 
 exception UniversesDiffer
 
-let process_universe_constraints univs vars alg templ local cstrs =
+let process_universe_constraints univs vars alg templ cstrs =
   let vars = ref vars in
   let normalize = Universes.normalize_universe_opt_subst vars in
   let rec unify_universes fo l d r local =
@@ -370,10 +369,11 @@ let process_universe_constraints univs vars alg templ local cstrs =
 	    if Univ.check_leq univs l r then
 	      (** Keep Prop/Set <= var around if var might be instantiated by prop or set
 		  later. *)
-	      if Univ.is_small_univ l && not (Univ.is_small_univ r) then
-		match Univ.Universe.level l, Univ.Universe.level r with
-		| Some l, Some r -> Univ.Constraint.add (l,Univ.Le,r) local
-		| _, _ -> local
+	      if Univ.is_small_univ l then 
+		match Univ.Universe.level r with
+		| Some r when Univ.LMap.mem r !vars -> 
+		  Univ.Constraint.add (Option.get (Univ.Universe.level l),Univ.Le,r) local
+		| _ -> local
 	      else local
 	    else
 	      match Univ.Universe.level r with
@@ -423,7 +423,7 @@ let process_universe_constraints univs vars alg templ local cstrs =
   in
   let local = 
     Univ.UniverseConstraints.fold (fun (l,d,r) local -> unify_universes false l d r local)
-      cstrs local
+      cstrs Univ.Constraint.empty
   in
     !vars, local
 
@@ -440,7 +440,7 @@ let add_constraints_context ctx cstrs =
   let vars, local' =
     process_universe_constraints ctx.uctx_universes
       ctx.uctx_univ_variables ctx.uctx_univ_algebraic
-      ctx.uctx_univ_template local cstrs'
+      ctx.uctx_univ_template cstrs'
   in
     { ctx with uctx_local = (univs, Univ.Constraint.union local local');
       uctx_univ_variables = vars;
@@ -454,7 +454,7 @@ let add_universe_constraints_context ctx cstrs =
   let vars, local' = 
     process_universe_constraints ctx.uctx_universes 
       ctx.uctx_univ_variables ctx.uctx_univ_algebraic 
-      ctx.uctx_univ_template local cstrs 
+      ctx.uctx_univ_template cstrs 
   in
     { ctx with uctx_local = (univs, Univ.Constraint.union local local');
       uctx_univ_variables = vars;
@@ -769,7 +769,8 @@ let define evk body evd =
   in
   { evd with defn_evars; undf_evars; last_mods; }
 
-let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?(filter = Filter.identity) ?candidates evd =
+let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) 
+    ?(filter=Filter.identity) ?candidates ?(store=Store.empty) evd =
   let () = match Filter.repr filter with
   | None -> ()
   | Some filter ->
@@ -782,7 +783,7 @@ let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?(filter
     evar_filter = filter;
     evar_source = src;
     evar_candidates = candidates;
-    evar_extra = Store.empty; }
+    evar_extra = store; }
   in
   { evd with undf_evars = EvMap.add evk evar_info evd.undf_evars; }
 
@@ -1128,9 +1129,9 @@ let set_leq_sort evd s1 s2 =
       | Prop c, Prop c' -> 
 	  if c == Null && c' == Pos then evd
 	  else (raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, [])))
-      | _, _ ->
+      | _, _ -> 
         add_universe_constraints evd (Univ.UniverseConstraints.singleton (u1,Univ.ULe,u2))
-	
+	    
 let check_eq evd s s' =
   Univ.check_eq evd.universes.uctx_universes s s'
 

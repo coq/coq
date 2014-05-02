@@ -120,8 +120,10 @@ let goalevars evars = fst evars
 let cstrevars evars = snd evars
 
 let new_cstr_evar (evd,cstrs) env t =
-  let evd', t = Evarutil.new_evar evd env t in
-    (evd', Evar.Set.add (fst (destEvar t)) cstrs), t
+  let s = Typeclasses.set_resolvable Evd.Store.empty false in
+  let evd', t = Evarutil.new_evar ~store:s evd env t in
+  let ev, _ = destEvar t in
+    (evd', Evar.Set.add ev cstrs), t
 
 (** Building or looking up instances. *)
 let e_new_cstr_evar evars env t =
@@ -602,6 +604,9 @@ let shrink_evd sigma ext =
 let no_constraints cstrs = 
   fun ev _ -> not (Evar.Set.mem ev cstrs)
 
+let all_constraints cstrs = 
+  fun ev _ -> Evar.Set.mem ev cstrs
+
 let poly_inverse sort =
   if sort then PropGlobal.inverse else TypeGlobal.inverse
 
@@ -641,7 +646,7 @@ let unify_eqn env (sigma, cstrs) hypinfo by t =
 	       (* 	  env'.evd, prf, c1, c2, car, rel) *)
 	    else raise Reduction.NotConvertible
     in
-    let evars = evd', Evar.Set.empty in
+    let evars = evd', cstrs in
     let evd, res =
       if l2r then evars, (prf, (car, rel, c1, c2))
       else
@@ -1332,7 +1337,8 @@ let apply_strategy (s : strategy) env avoid concl (prop, cstr) evars =
 	Some (Some (res.rew_prf, res.rew_evars, res.rew_car, res.rew_from, res.rew_to))
 
 let solve_constraints env (evars,cstrs) =
-  Typeclasses.resolve_typeclasses env ~split:false ~fail:true evars
+  Typeclasses.resolve_typeclasses env ~split:false ~fail:true 
+    (Typeclasses.mark_resolvables ~filter:(all_constraints cstrs) evars)
 
 let nf_zeta =
   Reductionops.clos_norm_flags (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])

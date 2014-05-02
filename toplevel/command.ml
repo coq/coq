@@ -245,7 +245,7 @@ let declare_assumptions idl is_coe k c imps impl_is_on nl =
 
 let do_assumptions kind nl l =
   let env = Global.env () in
-  let evdref = ref Evd.empty in
+  let evdref = ref (Evd.from_env env) in
   let _,l = List.fold_map (fun env (is_coe,(idl,c)) ->
     let (t,ctx),imps = interp_assumption evdref env [] c in
     let env =
@@ -752,8 +752,8 @@ let nf_evar_context sigma ctx =
 
 let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
-  let evdref = ref Evd.empty in
   let env = Global.env() in
+  let evdref = ref (Evd.from_env env) in
   let _, ((env', binders_rel), impls) = interp_context_evars evdref env bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
@@ -892,7 +892,7 @@ let interp_recursive isfix fixl notations =
   let fixnames = List.map (fun fix -> fix.fix_name) fixl in
 
   (* Interp arities allowing for unresolved types *)
-  let evdref = ref Evd.empty in
+  let evdref = ref (Evd.from_env env) in
   let fixctxs, fiximppairs, fixannots =
     List.split3 (List.map (interp_fix_context evdref env isfix) fixl) in
   let fixctximpenvs, fixctximps = List.split fiximppairs in
@@ -978,8 +978,10 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexe
     let env = Global.env() in
     let indexes = search_guard Loc.ghost env indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
+    let vars = Universes.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
+    let ctx = Universes.restrict_universe_context ctx vars in
     let fixdecls = List.map Term_typing.mk_pure_proof fixdecls in
     let ctx = Univ.ContextSet.to_context ctx in
     ignore (List.map4 (declare_fix (local, poly, Fixpoint) ctx)

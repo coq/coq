@@ -355,38 +355,32 @@ let new_pure_evar_full evd evi =
   let evd = Evd.add evd evk evi in
   (evd, evk)
 
-let new_pure_evar evd sign ?(src=default_source) ?filter ?candidates typ =
+let new_pure_evar evd sign ?(src=default_source) ?filter ?candidates ?store typ =
   let newevk = new_untyped_evar() in
-  let evd = evar_declare sign newevk typ ~src ?filter ?candidates evd in
+  let evd = evar_declare sign newevk typ ~src ?filter ?candidates ?store evd in
   (evd,newevk)
 
-let new_evar_instance sign evd typ ?src ?filter ?candidates instance =
+let new_evar_instance sign evd typ ?src ?filter ?candidates ?store instance =
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
-  let evd,newevk = new_pure_evar evd sign ?src ?filter ?candidates typ in
+  let evd,newevk = new_pure_evar evd sign ?src ?filter ?candidates ?store typ in
   (evd,mkEvar (newevk,Array.of_list instance))
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar evd env ?src ?filter ?candidates typ =
+let new_evar evd env ?src ?filter ?candidates ?store typ =
   let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env typ in
   let candidates = Option.map (List.map (subst2 subst vsubst)) candidates in
   let instance =
     match filter with
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ' ?src ?filter ?candidates instance
+  new_evar_instance sign evd typ' ?src ?filter ?candidates ?store instance
 
 let new_type_evar ?src ?filter rigid evd env =
   let evd', s = new_sort_variable rigid evd in
   let evd', e = new_evar evd' env ?src ?filter (mkSort s) in
     evd', (e, s)
-
-  (* The same using side-effect *)
-let e_new_evar evdref env ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?filter ?candidates ty =
-  let (evd',ev) = new_evar !evdref env ~src:src ?filter ?candidates ty in
-  evdref := evd';
-  ev
 
 let e_new_type_evar evdref ?src ?filter rigid env =
   let evd', c = new_type_evar ?src ?filter rigid !evdref env in
@@ -394,8 +388,8 @@ let e_new_type_evar evdref ?src ?filter rigid env =
     c
 
   (* The same using side-effect *)
-let e_new_evar evdref env ?(src=default_source) ?filter ?candidates ty =
-  let (evd',ev) = new_evar !evdref env ~src:src ?filter ?candidates ty in
+let e_new_evar evdref env ?(src=default_source) ?filter ?candidates ?store ty =
+  let (evd',ev) = new_evar !evdref env ~src:src ?filter ?candidates ?store ty in
   evdref := evd';
   ev
 

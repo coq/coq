@@ -23,18 +23,18 @@ val mk_new_meta : unit -> constr
 (** {6 Creating a fresh evar given their type and context} *)
 val new_evar :
   evar_map -> env -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
-  ?candidates:constr list -> types -> evar_map * constr
+  ?candidates:constr list -> ?store:Store.t -> types -> evar_map * constr
 
 val new_pure_evar :
   evar_map -> named_context_val -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
-  ?candidates:constr list -> types -> evar_map * evar
+  ?candidates:constr list -> ?store:Store.t -> types -> evar_map * evar
 
 val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
 
 (** the same with side-effects *)
 val e_new_evar :
   evar_map ref -> env -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
-  ?candidates:constr list -> types -> constr
+  ?candidates:constr list -> ?store:Store.t -> types -> constr
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
@@ -57,7 +57,9 @@ val e_new_global : evar_map ref -> Globnames.global_reference -> constr
    of [inst] are typed in the occurrence context and their type (seen
    as a telescope) is [sign] *)
 val new_evar_instance :
- named_context_val -> evar_map -> types -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> ?candidates:constr list -> constr list -> evar_map * constr
+ named_context_val -> evar_map -> types -> 
+  ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> ?candidates:constr list -> 
+  ?store:Store.t -> constr list -> evar_map * constr
 
 val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
 
