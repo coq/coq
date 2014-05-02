@@ -76,7 +76,7 @@ let rec flag_of_type env t : flag =
   let t = whd_betadeltaiota env none t in
   match kind_of_term t with
     | Prod (x,t,c) -> flag_of_type (push_rel (x,None,t) env) c
-    | Sort (Prop Null) -> (Logic,TypeScheme)
+    | Sort s when Sorts.is_prop s -> (Logic,TypeScheme)
     | Sort _ -> (Info,TypeScheme)
     | _ -> if (sort_of env t) == InProp then (Logic,Default) else (Info,Default)
 
@@ -206,7 +206,11 @@ let oib_equal o1 o2 =
       match o1.mind_arity, o2.mind_arity with
       | RegularArity {mind_user_arity=c1; mind_sort=s1}, RegularArity {mind_user_arity=c2; mind_sort=s2} ->
 	eq_constr c1 c2 && Sorts.equal s1 s2
-      | _ -> false
+      | TemplateArity p1, TemplateArity p2 ->
+	let eq o1 o2 = Option.equal Univ.Universe.equal o1 o2 in
+	  List.equal eq p1.template_param_levels p2.template_param_levels &&
+	    Univ.Universe.equal p1.template_level p2.template_level
+      | _, _ -> false
     end &&
     Array.equal Id.equal o1.mind_consnames o2.mind_consnames
 
@@ -976,7 +980,7 @@ let extract_fixpoint env vkn (fi,ti,ci) =
 
 let extract_constant env kn cb =
   let r = ConstRef kn in
-  let typ = Global.type_of_global_unsafe r in
+  let typ = Typeops.type_of_constant_type env cb.const_type in
   let warn_info () = if not (is_custom r) then add_info_axiom r in
   let warn_log () = if not (constant_has_body cb) then add_log_axiom r
   in
@@ -1023,7 +1027,7 @@ let extract_constant env kn cb =
 
 let extract_constant_spec env kn cb =
   let r = ConstRef kn in
-  let typ = Global.type_of_global_unsafe r in
+  let typ = Typeops.type_of_constant_type env cb.const_type in
   match flag_of_type env typ with
     | (Logic, TypeScheme) -> Stype (r, [], Some (Tdummy Ktype))
     | (Logic, Default) -> Sval (r, Tdummy Kother)

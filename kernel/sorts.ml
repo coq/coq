@@ -47,10 +47,12 @@ let equal s1 s2 = Int.equal (compare s1 s2) 0
 
 let is_prop = function
   | Prop Null -> true
+  | Type u when Universe.equal Universe.type0m u -> true
   | _ -> false
 
 let is_set = function
   | Prop Pos -> true
+  | Type u when Universe.equal Universe.type0 u -> true
   | _ -> false
 
 let is_small = function
