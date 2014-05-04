@@ -45,11 +45,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     | Node l b r => negb b &&& is_empty l &&& is_empty r
    end.
 
-<<<<<<< HEAD
-  Fixpoint mem (i : positive) (m : t) {struct m} : bool :=
-=======
-  Fixpoint mem (i : elt) (m : t) : bool :=
->>>>>>> This commit adds full universe polymorphism and fast projections to Coq.
+  Fixpoint mem (i : elt) (m : t) {struct m} : bool :=
     match m with
     | Leaf => false
     | Node l o r =>
@@ -86,11 +82,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
        | Leaf,Leaf => Leaf
        | _,_ => Node l false r end.
 
-<<<<<<< HEAD
-  Fixpoint remove (i : positive) (m : t) {struct m} : t :=
-=======
-  Fixpoint remove (i : elt) (m : t) : t :=
->>>>>>> This commit adds full universe polymorphism and fast projections to Coq.
+  Fixpoint remove (i : elt) (m : t) {struct m} : t :=
     match m with
       | Leaf => Leaf
       | Node l o r =>
@@ -358,7 +350,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     case o; trivial.
     destruct l; trivial.
     destruct r; trivial.
-  now destruct x.
+    now destruct x.
   Qed.
   Local Opaque node.
 
