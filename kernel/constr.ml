@@ -378,6 +378,10 @@ let fold_map f accu c = match kind c with
       let accu, l' = Array.smartfoldmap f accu l in
       if b'==b && l'==l then accu, c
       else accu, mkApp (b', l')
+  | Proj (p,t) ->
+      let accu, t' = f accu t in
+      if t' == t then accu, c
+      else accu, mkProj (p, t')
   | Evar (e,l) ->
       let accu, l' = Array.smartfoldmap f accu l in
       if l'==l then accu, c
