@@ -24,4 +24,5 @@ val ident_refutation : string -> (bool * string) option
 val lowercase_first_char : string -> string
 
 (** For extraction, turn a unicode string into an ascii-only one *)
+val is_basic_ascii : string -> bool
 val ascii_of_ident : string -> string

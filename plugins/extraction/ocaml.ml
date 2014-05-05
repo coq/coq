@@ -23,11 +23,7 @@ open Common
 
 (*s Some utility functions. *)
 
-let pp_tvar id =
-  let s = Id.to_string id in
-  if String.length s < 2 || s.[1] != '\''
-  then str ("'"^s)
-  else str ("' "^s)
+let pp_tvar id = str ("'" ^ Id.to_string id)
 
 let pp_abst = function
   | [] -> mt ()

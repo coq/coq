@@ -118,12 +118,27 @@ let _ = Hook.set type_scheme_nb_args_hook type_scheme_nb_args
 
 (*s [type_sign_vl] does the same, plus a type var list. *)
 
+(* When generating type variables, we avoid any ' in their names
+   (otherwise this may cause a lexer conflict in ocaml with 'a').
+   We also get rid of unicode characters. Anyway, since type variables
+   are local, the created name is just a matter of taste...
+   See also Bug #3227 *)
+
+let make_typvar n vl =
+  let id = id_of_name n in
+  let id' =
+    let s = Id.to_string id in
+    if not (String.contains s '\'') && Unicode.is_basic_ascii s then id
+    else id_of_name Anonymous
+  in
+  next_ident_away id' vl
+
 let rec type_sign_vl env c =
   match kind_of_term (whd_betadeltaiota env none c) with
     | Prod (n,t,d) ->
 	let s,vl = type_sign_vl (push_rel_assum (n,t) env) d in
 	if not (is_info_scheme env t) then Kill Kother::s, vl
-	else Keep::s, (next_ident_away (id_of_name n) vl) :: vl
+	else Keep::s, (make_typvar n vl) :: vl
     | _ -> [],[]
 
 let rec nb_default_params env c =
