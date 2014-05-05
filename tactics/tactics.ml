@@ -915,7 +915,8 @@ let default_elim with_evars (c,_ as cx) =
   Proofview.tclORELSE
     (Proofview.Goal.enter begin fun gl ->
       let evd, elim = Tacmach.New.of_old (find_eliminator c) gl in
-      Proofview.V82.tactic (tclTHEN (tclEVARS evd) (general_elim with_evars cx elim))
+	Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evd)
+	  (Proofview.V82.tactic (general_elim with_evars cx elim))
     end)
     begin function
       | IsRecord ->
@@ -1244,8 +1245,8 @@ let assumption =
         infer_conv env sigma t concl
     in
     if is_same_type then 
-	(Proofview.V82.tclEVARS sigma) <*> 
-	  Proofview.Refine.refine (fun h -> (h, mkVar id))
+      (Proofview.V82.tclEVARS sigma) <*> 
+	Proofview.Refine.refine (fun h -> (h, mkVar id))
     else arec gl only_eq rest
   in
   let assumption_tac gl =
@@ -1363,20 +1364,18 @@ let constructor_tac with_evars expctdnumopt i lbind =
     let reduce_to_quantified_ind =
       Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl
     in
-      try (* reduce_to_quantified_ind can raise an exception *)
-	let (mind,redcl) = reduce_to_quantified_ind cl in
-	let nconstr =
-	  Array.length (snd (Global.lookup_inductive (fst mind))).mind_consnames in
-	  check_number_of_constructors expctdnumopt i nconstr;
-	  
-	  let sigma, cons = Evd.fresh_constructor_instance 
-	    (Proofview.Goal.env gl) (Proofview.Goal.sigma gl) (fst mind, i) in
-	  let cons = mkConstructU cons in
-	    
-	  let apply_tac = Proofview.V82.tactic (general_apply true false with_evars (dloc,(cons,lbind))) in
-	    (Tacticals.New.tclTHENLIST
-               [Proofview.V82.tactic (tclTHEN (tclEVARS sigma) (convert_concl_no_check redcl DEFAULTcast)); intros; apply_tac])
-      with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+    let (mind,redcl) = reduce_to_quantified_ind cl in
+    let nconstr =
+      Array.length (snd (Global.lookup_inductive (fst mind))).mind_consnames in
+      check_number_of_constructors expctdnumopt i nconstr;
+      
+      let sigma, cons = Evd.fresh_constructor_instance 
+	(Proofview.Goal.env gl) (Proofview.Goal.sigma gl) (fst mind, i) in
+      let cons = mkConstructU cons in
+	
+      let apply_tac = Proofview.V82.tactic (general_apply true false with_evars (dloc,(cons,lbind))) in
+	(Tacticals.New.tclTHENLIST
+           [Proofview.V82.tclEVARS sigma; Proofview.V82.tactic (convert_concl_no_check redcl DEFAULTcast); intros; apply_tac])
   end
 
 let one_constructor i lbind = constructor_tac false None i lbind
@@ -3773,7 +3772,7 @@ let abstract_subproof id gk tac =
   let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
   let effs = cons_side_effects eff no_seff in
   let args = List.rev (instance_from_named_context sign) in
-  let solve = Proofview.V82.tactic (tclEVARS evd) <*> 
+  let solve = Proofview.V82.tclEVARS evd <*> 
     Proofview.tclEFFECTS effs <*> new_exact_no_check (applist (lem, args)) in
   if not safe then Proofview.mark_as_unsafe <*> solve else solve
   end
