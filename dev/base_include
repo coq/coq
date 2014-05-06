@@ -15,6 +15,7 @@
 #directory "printing";;
 #directory "grammar";;
 #directory "intf";;
+#directory "stm";;
 
 #directory "+camlp4";; (* lazy solution: add both of camlp4/5 so that *)
 #directory "+camlp5";; (* Gramext is found in top_printers.ml *)
@@ -154,7 +155,7 @@ open Command
 open Indschemes
 open Ind_tables
 open Auto_ind_decl
-open Lemmas
+(* open Lemmas *)
 open Coqinit
 open Coqtop
 open Discharge
