@@ -1691,26 +1691,6 @@ let apply_in simple with_evars id lemmas ipat =
 (* Tactics abstracting terms *)
 (*****************************)
 
-(* [letin_tac b na c (occ_hyp,occ_ccl) gl] transforms
-   [...x1:T1(c),...,x2:T2(c),... |- G(c)] into
-   [...x:T;Heqx:(x=c);x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is false or
-   [...x:=c:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
-
-   [occ_hyp,occ_ccl] tells which occurrences of [c] have to be substituted;
-   if [occ_hyp = []] and [occ_ccl = None] then [c] is substituted
-   wherever it occurs, otherwise [c] is substituted only in hyps
-   present in [occ_hyps] at the specified occurrences (everywhere if
-   the list of occurrences is empty), and in the goal at the specified
-   occurrences if [occ_goal] is not [None];
-
-   if name = Anonymous, the name is build from the first letter of the type;
-
-   The tactic first quantify the goal over x1, x2,... then substitute then
-   re-intro x1, x2,... at their initial place ([marks] is internally
-   used to remember the place of x1, x2, ...: it is the list of hypotheses on
-   the left of each x1, ...).
-*)
-
 let out_arg = function
   | ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable")
   | ArgArg x -> x
@@ -1782,8 +1762,23 @@ let make_pattern_test env sigma0 (sigma,c) =
        Proofview.V82.tclEVARUNIVCONTEXT (Evd.evar_universe_context univs),
        subst_univs_constr subst (nf_evar sigma c))
 
-let letin_abstract id c (test,out) (occs,check_occs) gl =
-  let env = pf_env gl in
+let make_eq_test evd c =
+  let out cstr = 
+    let tac = Proofview.V82.tclEVARUNIVCONTEXT (Evd.evar_universe_context cstr.testing_state) in
+      tac, c
+  in
+    (Tacred.make_eq_univs_test evd c, out)
+
+let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs gl =
+  let env = Proofview.Goal.env gl in
+  let id =
+    let t = match ty with Some t -> t | None -> typ_of env sigmac c in
+    let x = id_of_name_using_hdchar (Global.env()) t name in
+    if name == Anonymous then Tacmach.New.of_old (fresh_id [] x) gl else
+      let hyps = Proofview.Goal.hyps gl in
+      if not (mem_named_context x hyps) then x else
+	error ("The variable "^(Id.to_string x)^" is already declared.")
+  in
   let compute_dependency _ (hyp,_,_ as d) depdecls =
     match occurrences_of_hyp hyp occs with
       | None -> depdecls
@@ -1799,31 +1794,50 @@ let letin_abstract id c (test,out) (occs,check_occs) gl =
           let newdecl = subst_closed_term_occ_decl_modulo occ test d in
 	    (subst1_named_decl (mkVar id) newdecl)::depdecls in
   let depdecls = fold_named_context compute_dependency env ~init:[] in
+  let concl = Proofview.Goal.concl gl in
   let ccl = match occurrences_of_goal occs with
-    | None -> pf_concl gl
+    | None -> concl
     | Some occ ->
-        subst1 (mkVar id) (subst_closed_term_occ_modulo occ test None (pf_concl gl)) in
+        subst1 (mkVar id) (subst_closed_term_occ_modulo occ test None concl) in
   let lastlhyp =
     if List.is_empty depdecls then MoveLast else MoveAfter(pi1(List.last depdecls)) in
-  (depdecls,lastlhyp,ccl,out test)
+  (id,depdecls,lastlhyp,ccl,out test)
 
-let letin_tac_gen with_eq name (sigmac,c) test ty occs =
+(** [make_abstraction] is the main entry point to abstract over a term
+    or pattern at some occurrences; it returns:
+    - the id used for the abstraction
+    - the type of the abstraction
+    - the hypotheses from the context which depend on the term or pattern
+    - the most recent hyp before which there is no dependency in the term of pattern
+    - the abstracted conclusion
+    - a tactic to apply to take evars effects into account
+    - the term or pattern to abstract fully instantiated
+*)
+
+type abstraction_request =
+| AbstractPattern of Name.t * (evar_map * constr) * clause * bool
+| AbstractExact of Name.t * constr * types option * clause * bool
+
+let make_abstraction abs gl =
+  let evd = Proofview.Goal.sigma gl in
+  let env = Proofview.Goal.env gl in
+  match abs with
+  | AbstractPattern (name,c,occs,check_occs) ->
+      make_abstraction_core name (make_pattern_test env evd c) c None occs check_occs gl
+  | AbstractExact (name,c,ty,occs,check_occs) ->
+      make_abstraction_core name (make_eq_test evd c) (evd,c) ty occs check_occs gl
+
+(* [letin_tac b (... abstract over c ...) gl] transforms
+   [...x1:T1(c),...,x2:T2(c),... |- G(c)] into
+   [...x:T;Heqx:(x=c);x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is false or
+   [...x:=c:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
+*)
+
+let letin_tac_gen with_eq abs ty =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let hyps = Proofview.Goal.hyps gl in
-    let id =
-      let t = match ty with Some t -> t | None -> typ_of env sigmac c in
-      let x = id_of_name_using_hdchar (Global.env()) t name in
-      if name == Anonymous then Tacmach.New.of_old (fresh_id [] x) gl else
-          if not (mem_named_context x hyps) then x else
-	    error ("The variable "^(Id.to_string x)^" is already declared.")
-    in
-    let (depdecls,lastlhyp,ccl,(tac,c)) =
-      Tacmach.New.of_old (letin_abstract id c test occs) gl
-    in
-    let t =
-      match ty with Some t -> t | None -> Tacmach.New.pf_apply (fun e s -> typ_of e s c) gl
-    in
+    let (id,depdecls,lastlhyp,ccl,(tac,c)) = make_abstraction abs gl in
+    let t = match ty with Some t -> t | _ -> typ_of env (Proofview.Goal.sigma gl) c in
     let (sigma,newcl,eq_tac) = match with_eq with
       | Some (lr,(loc,ido)) ->
           let heq = match ido with
@@ -1851,25 +1865,11 @@ let letin_tac_gen with_eq name (sigmac,c) test ty occs =
         eq_tac ]
   end
 
-let make_eq_test evd c =
-  let out cstr = 
-    let tac = Proofview.V82.tclEVARUNIVCONTEXT (Evd.evar_universe_context cstr.testing_state) in
-      tac, c
-  in
-    (Tacred.make_eq_univs_test evd c, out)
-
 let letin_tac with_eq name c ty occs =
-  Proofview.tclEVARMAP >>= fun sigma ->
-  letin_tac_gen with_eq name (sigma,c) (make_eq_test sigma c) ty (occs,true)
+  letin_tac_gen with_eq (AbstractExact (name,c,ty,occs,true)) ty
 
-let letin_pat_tac with_eq name c ty occs =
-  Proofview.Goal.raw_enter begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
-    let env = Proofview.Goal.env gl in
-  letin_tac_gen with_eq name c
-    (make_pattern_test env sigma c)
-    ty (occs,true)
-  end
+let letin_pat_tac with_eq name c occs =
+  letin_tac_gen with_eq (AbstractPattern (name,c,occs,false)) None
 
 (* Tactics "pose proof" (usetac=None) and "assert" (otherwise) *)
 let forward usetac ipat c =
@@ -3380,7 +3380,6 @@ let induction_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
 	    isrec with_evars elim names (id,lbind) inhyps)
     | _        ->
         Proofview.Goal.raw_enter begin fun gl ->
-          let defs = Proofview.Goal.sigma gl in
           let env = Proofview.Goal.env gl in
 	  let x = id_of_name_using_hdchar (Global.env()) (typ_of env sigma c)
 	        Anonymous in
@@ -3389,12 +3388,10 @@ let induction_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
 	  let with_eq = Option.map (fun eq -> (false,eq)) eqname in
 	(* TODO: if ind has predicate parameters, use JMeq instead of eq *)
           Proofview.Goal.raw_enter begin fun gl ->
-            let env = Proofview.Goal.env gl in
 	    Tacticals.New.tclTHEN
             (* Warning: letin is buggy when c is not of inductive type *)
-	      (letin_tac_gen with_eq (Name id) (sigma,c)
-                 (make_pattern_test env defs (sigma,c))
-                 None (Option.default allHypsAndConcl cls,false))
+	      (letin_tac_gen with_eq
+                 (AbstractPattern (Name id,(sigma,c),(Option.default allHypsAndConcl cls),false)) None)
 	      (induction_with_atomization_of_ind_arg
 	         isrec with_evars elim names (id,lbind) inhyps)
           end

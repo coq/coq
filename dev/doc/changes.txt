@@ -75,7 +75,8 @@
       check_evars_are_solved explicitly to check that evars are solved.
   See also the corresponding commit log.
 
-- Tactics API: new_induct -> induction; new_destruct -> destruct
+- Tactics API: new_induct -> induction; new_destruct -> destruct;
+  letin_pat_tac do not accept a type anymore
 
 =========================================
 = CHANGES BETWEEN COQ V8.3 AND COQ V8.4 =

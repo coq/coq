@@ -346,7 +346,7 @@ val forward   : unit Proofview.tactic option -> intro_pattern_expr located optio
 val letin_tac : (bool * intro_pattern_expr located) option -> Name.t ->
   constr -> types option -> clause -> unit Proofview.tactic
 val letin_pat_tac : (bool * intro_pattern_expr located) option -> Name.t ->
-  evar_map * constr -> types option -> clause -> unit Proofview.tactic
+  evar_map * constr -> clause -> unit Proofview.tactic
 val assert_tac : Name.t -> types -> unit Proofview.tactic
 val assert_by  : Name.t -> types -> unit Proofview.tactic -> unit Proofview.tactic
 val pose_proof : Name.t -> constr -> unit Proofview.tactic

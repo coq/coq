@@ -1599,7 +1599,7 @@ and interp_atomic ist tac =
           let let_pat_tac b na c cl eqpat =
             let id = Option.default (Loc.ghost,IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
-            Tactics.letin_pat_tac with_eq na c None cl
+            Tactics.letin_pat_tac with_eq na c cl
           in
           let_pat_tac b (interp_fresh_name ist env na)
             (interp_pure_open_constr ist env sigma c) clp eqpat
