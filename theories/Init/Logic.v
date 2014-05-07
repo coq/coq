@@ -229,10 +229,6 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
     is provided too.
 *)
 
-(** Remark: [exists x, Q] denotes [ex (fun x => Q)] so that [exists x,
-   P x] is in fact equivalent to [ex (fun x => P x)] which may be not
-   convertible to [ex P] if [P] is not itself an abstraction *)
-
 Inductive ex (A:Type) (P:A -> Prop) : Prop :=
   ex_intro : forall x:A, P x -> ex (A:=A) P.
 
