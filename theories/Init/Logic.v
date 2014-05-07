@@ -193,7 +193,7 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
 
 (** [ex P], or simply [exists x, P x], or also [exists x:A, P x],
     expresses the existence of an [x] of some type [A] in [Set] which
-    satisfies the predicate [P].  This is existential quantification.
+    satisfies the predicate [P]. This is existential quantification.
 
     [ex2 P Q], or simply [exists2 x, P x & Q x], or also
     [exists2 x:A, P x & Q x], expresses the existence of an [x] of
@@ -203,11 +203,6 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
     symmetry with existential quantification, the construction [all P]
     is provided too.
 *)
-
-(** Remark: [exists x, Q] denotes [ex (fun x => Q)] so that [exists x,
-   P x] is in fact equivalent to [ex (fun x => P x)] which may be not
-   convertible to [ex P] if [P] is not itself an abstraction *)
-
 
 Inductive ex (A:Type) (P:A -> Prop) : Prop :=
   ex_intro : forall x:A, P x -> ex (A:=A) P.
