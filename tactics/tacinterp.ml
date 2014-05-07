@@ -543,6 +543,13 @@ let pf_interp_casted_constr ist gl c =
 let pf_interp_constr ist gl =
   interp_constr ist (pf_env gl) (project gl)
 
+let new_interp_constr ist c k =
+  let open Proofview in
+  Proofview.Goal.raw_enter begin fun gl ->
+    let (sigma, c) = interp_constr ist (Goal.env gl) (Goal.sigma gl) c in
+    Proofview.tclTHEN (Proofview.V82.tclEVARS sigma) (k c)
+  end
+
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
   let try_expand_ltac_var sigma x =
     try match dest_fun x with
@@ -591,12 +598,9 @@ let interp_constr_with_occurrences ist sigma env (occs,c) =
   let (sigma,c_interp) = interp_constr ist sigma env c in
   sigma , (interp_occurrences ist occs, c_interp)
 
-let interp_typed_pattern_with_occurrences ist env sigma (occs,c) =
-  let sign,p = interp_typed_pattern ist env sigma c in
-  sign, (interp_occurrences ist occs, p)
-
-let interp_closed_typed_pattern_with_occurrences ist env sigma occl =
-  snd (interp_typed_pattern_with_occurrences ist env sigma occl)
+let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, c) =
+  let _, p = interp_typed_pattern ist env sigma c in
+  interp_occurrences ist occs, p
 
 let interp_constr_with_occurrences_and_name_as_list =
   interp_constr_in_compound_list
@@ -1453,21 +1457,11 @@ and interp_atomic ist tac =
           gl
       end
   | TacExactNoCheck c ->
-      Proofview.V82.tactic begin fun gl -> 
-        let (sigma,c_interp) = pf_interp_constr ist gl c in
-        tclTHEN
-	  (tclEVARS sigma)
-	  (Tactics.exact_no_check c_interp)
-          gl
-      end
+      (new_interp_constr ist c)
+        (fun c -> Proofview.V82.tactic (Tactics.exact_no_check c))
   | TacVmCastNoCheck c ->
-      Proofview.V82.tactic begin fun gl -> 
-        let (sigma,c_interp) = pf_interp_constr ist gl c in
-        tclTHEN
-	  (tclEVARS sigma)
-	  (Tactics.vm_cast_no_check c_interp)
-          gl
-      end
+      (new_interp_constr ist c)
+        (fun c -> Proofview.V82.tactic (Tactics.vm_cast_no_check c))
   | TacApply (a,ev,cb,cl) ->
       Proofview.Goal.raw_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
@@ -1578,13 +1572,8 @@ and interp_atomic ist tac =
         tclWITHHOLES false (Tactics.Simple.generalize_gen) sigma cl gl
       end
   | TacGeneralizeDep c ->
-      Proofview.V82.tactic begin fun gl -> 
-        let (sigma,c_interp) = pf_interp_constr ist gl c in
-        tclTHEN
-	  (tclEVARS sigma)
-	  (Tactics.generalize_dep c_interp)
-          gl
-      end
+      (new_interp_constr ist c)
+        (fun c -> Proofview.V82.tactic (Tactics.generalize_dep c))
   | TacLetTac (na,c,clp,b,eqpat) ->
       Proofview.V82.nf_evar_goals <*>
       Proofview.Goal.enter begin fun gl ->
@@ -1665,26 +1654,13 @@ and interp_atomic ist tac =
       let h2 = interp_quantified_hypothesis ist h2 in
       Elim.h_double_induction h1 h2
   | TacDecomposeAnd c ->
-      Proofview.Goal.enter begin fun gl ->
-      let (sigma,c_interp) = Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) gl in
-      Tacticals.New.tclTHEN
-	(Proofview.V82.tclEVARS sigma)
-	(Elim.h_decompose_and c_interp)
-      end
+      new_interp_constr ist c Elim.h_decompose_and
   | TacDecomposeOr c ->
-      Proofview.Goal.enter begin fun gl ->
-      let (sigma,c_interp) = Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) gl in
-      Tacticals.New.tclTHEN
-	(Proofview.V82.tclEVARS sigma)
-	(Elim.h_decompose_or c_interp)
-      end
+      new_interp_constr ist c Elim.h_decompose_or
   | TacDecompose (l,c) ->
-      Proofview.Goal.enter begin fun gl ->
-      let l = List.map (interp_inductive ist) l in
-      let (sigma,c_interp) = Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) gl in
-      Tacticals.New.tclTHEN
-	(Proofview.V82.tclEVARS sigma)
-	(Elim.h_decompose l c_interp)
+      (new_interp_constr ist c) begin fun c ->
+        let l = List.map (interp_inductive ist) l in
+        Elim.h_decompose l c
       end
   | TacSpecialize (n,cb) ->
       Proofview.Goal.raw_enter begin fun gl ->
@@ -1696,12 +1672,7 @@ and interp_atomic ist tac =
         end
       end
   | TacLApply c ->
-      Proofview.Goal.enter begin fun gl -> 
-        let (sigma,c_interp) = Tacmach.New.of_old (pf_interp_constr ist) gl c in
-        Tacticals.New.tclTHEN
-	  (Proofview.V82.tclEVARS sigma)
-	  (Tactics.cut_and_apply c_interp)
-      end
+      new_interp_constr ist c Tactics.cut_and_apply
 
   (* Context management *)
   | TacClear (b,l) ->
@@ -1833,14 +1804,7 @@ and interp_atomic ist tac =
       begin match c with
       | None -> Tactics.intros_transitivity None
       | Some c ->
-          Proofview.Goal.enter begin fun gl ->
-          let (sigma,c_interp) =
-            Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) gl
-          in
-          Tacticals.New.tclTHEN
-	    (Proofview.V82.tclEVARS sigma)
-	    (Tactics.intros_transitivity (Some c_interp))
-          end
+          (new_interp_constr ist c) (fun c -> Tactics.intros_transitivity (Some c))
       end
 
   (* Equality and inversion *)
