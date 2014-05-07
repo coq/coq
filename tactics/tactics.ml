@@ -324,7 +324,7 @@ let tclWITHEVARS f k gl =
     tclTHEN (tclEVARS evm) (k c') gl
 
 let e_reduct_in_concl (redfun,sty) gl =
-  tclWITHEVARS 
+  tclWITHEVARS
     (fun env sigma -> redfun env sigma (pf_concl gl))
     (fun c -> convert_concl_no_check c sty) gl
 
@@ -339,7 +339,7 @@ let e_pf_reduce_decl (redfun : e_reduction_function) where (id,c,ty) env sigma =
       let sigma',b' = if where != InHypTypeOnly then redfun env sigma b else sigma, b in
       let sigma',ty' = if where != InHypValueOnly then redfun env sigma ty else sigma', ty in
 	sigma', (id,Some b',ty')
-    
+
 let e_reduct_in_hyp redfun (id,where) gl =
   tclWITHEVARS
     (e_pf_reduce_decl redfun where (pf_get_hyp gl id))
@@ -695,27 +695,6 @@ let map_induction_arg f = function
   | ElimOnIdent id -> ElimOnIdent id
 
 (**************************)
-(*  Refinement tactics    *)
-(**************************)
-
-let apply_type hdcty argl gl =
-  refine (applist (mkCast (Evarutil.mk_new_meta(),DEFAULTcast, hdcty),argl)) gl
-
-let bring_hyps hyps =
-  if List.is_empty hyps then Tacticals.New.tclIDTAC
-  else
-    Proofview.Goal.raw_enter begin fun gl ->
-      let env = Proofview.Goal.env gl in
-      let concl = Tacmach.New.pf_nf_concl gl in
-      let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
-      let args = Array.of_list (instance_from_named_context hyps) in
-      Proofview.Refine.refine begin fun h ->
-        let (h, ev) = Proofview.Refine.new_evar h env newcl in
-        (h, (mkApp (ev, args)))
-      end
-    end
-
-(**************************)
 (*     Cut tactics        *)
 (**************************)
 
@@ -753,13 +732,13 @@ let cut_intro t = Tacticals.New.tclTHENFIRST (cut t) intro
 (* [assert_replacing id T tac] adds the subgoals of the proof of [T]
    before the current goal
 
-   id:T0                 id:T0    id:T     
-   =====   ------>   tac(=====) + ==== 
+   id:T0                 id:T0    id:T
+   =====   ------>   tac(=====) + ====
     G                     T        G
 
    It fails if the hypothesis to replace appears in the goal or in
    another hypothesis.
-*) 
+*)
 
 let assert_replacing id t tac = tclTHENFIRST (internal_cut_replace id t) tac
 
@@ -1008,10 +987,10 @@ let make_projection env sigma params cstr sign elim i n c u =
       match List.nth l i with
       | Some proj ->
 	  let args = extended_rel_vect 0 sign in
-	  let proj = 
+	  let proj =
 	    if Environ.is_projection proj env then
-	      mkProj (proj, mkApp (c, args)) 
-	    else 
+	      mkProj (proj, mkApp (c, args))
+	    else
 	      mkApp (mkConstU (proj,u), Array.append (Array.of_list params)
 		[|mkApp (c, args)|])
 	  in
@@ -1042,7 +1021,7 @@ let descend_in_conjunctions tac exit c gl =
 	  (List.init n (fun i gl ->
 	    match pf_apply make_projection gl params cstr sign elim i n c u with
 	    | None -> tclFAIL 0 (mt()) gl
-	    | Some (p,pt) -> 
+	    | Some (p,pt) ->
 	    tclTHENS
 	      (internal_cut id pt)
 	      [refine p; (* Might be ill-typed due to forbidden elimination. *)
@@ -1244,8 +1223,8 @@ let assumption =
         let env = Proofview.Goal.env gl in
         infer_conv env sigma t concl
     in
-    if is_same_type then 
-      (Proofview.V82.tclEVARS sigma) <*> 
+    if is_same_type then
+      (Proofview.V82.tclEVARS sigma) <*>
 	Proofview.Refine.refine (fun h -> (h, mkVar id))
     else arec gl only_eq rest
   in
@@ -1293,7 +1272,7 @@ let rec intros_clearing = function
 
 let specialize mopt (c,lbind) g =
   let tac, term =
-    if lbind == NoBindings then 
+    if lbind == NoBindings then
       let evd = Typeclasses.resolve_typeclasses (pf_env g) (project g) in
 	tclEVARS evd, nf_evar evd c
     else
@@ -1368,8 +1347,8 @@ let constructor_tac with_evars expctdnumopt i lbind =
     let nconstr =
       Array.length (snd (Global.lookup_inductive (fst mind))).mind_consnames in
       check_number_of_constructors expctdnumopt i nconstr;
-      
-      let sigma, cons = Evd.fresh_constructor_instance 
+
+      let sigma, cons = Evd.fresh_constructor_instance
 	(Proofview.Goal.env gl) (Proofview.Goal.sigma gl) (fst mind, i) in
       let cons = mkConstructU cons in
 	
@@ -1689,171 +1668,30 @@ let tclMAPFIRST tacfun l =
   let tacfun x = Proofview.V82.tactic (tacfun x) in
   List.fold_right (fun x -> Tacticals.New.tclTHENFIRST (tacfun x)) l (Proofview.tclUNIT())
 
-let general_apply_in sidecond_first with_delta with_destruct with_evars 
+let general_apply_in sidecond_first with_delta with_destruct with_evars
     id lemmas ipat =
   if sidecond_first then
     (* Skip the side conditions of the applied lemma *)
     Tacticals.New.tclTHENLAST
       (tclMAPLAST
-	(apply_in_once sidecond_first with_delta with_destruct with_evars id) 
+	(apply_in_once sidecond_first with_delta with_destruct with_evars id)
 	lemmas)
       (as_tac id ipat)
-  else 
+  else
     Tacticals.New.tclTHENFIRST
       (tclMAPFIRST
-	(apply_in_once sidecond_first with_delta with_destruct with_evars id) 
+	(apply_in_once sidecond_first with_delta with_destruct with_evars id)
 	lemmas)
       (as_tac id ipat)
 
 let apply_in simple with_evars id lemmas ipat =
   general_apply_in false simple simple with_evars id lemmas ipat
 
-(**************************)
-(*   Generalize tactics   *)
-(**************************)
+(*****************************)
+(* Tactics abstracting terms *)
+(*****************************)
 
-let generalized_name c t ids cl = function
-  | Name id as na ->
-      if Id.List.mem id ids then
-	errorlabstrm "" (pr_id id ++ str " is already used");
-      na
-  | Anonymous ->
-      match kind_of_term c with
-      | Var id ->
-	 (* Keep the name even if not occurring: may be used by intros later *)
-	  Name id
-      | _ ->
-	  if noccurn 1 cl then Anonymous else
-	    (* On ne s'etait pas casse la tete : on avait pris pour nom de
-               variable la premiere lettre du type, meme si "c" avait ete une
-               constante dont on aurait pu prendre directement le nom *)
-	    named_hd (Global.env()) t Anonymous
-
-let generalize_goal_gen ids i ((occs,c,b),na) t (cl,evd) =
-  let decls,cl = decompose_prod_n_assum i cl in
-  let dummy_prod = it_mkProd_or_LetIn mkProp decls in
-  let newdecls,_ = decompose_prod_n_assum i (subst_term_gen eq_constr_nounivs c dummy_prod) in
-  let cl',evd' = subst_closed_term_univs_occ evd occs c (it_mkProd_or_LetIn cl newdecls) in
-  let na = generalized_name c t ids cl' na in
-    mkProd_or_LetIn (na,b,t) cl', evd'
-
-let generalize_goal gl i ((occs,c,b),na as o) cl =
-  let t = pf_type_of gl c in
-    generalize_goal_gen (pf_ids_of_hyps gl) i o t cl
-
-let generalize_dep ?(with_let=false) c gl =
-  let env = pf_env gl in
-  let sign = pf_hyps gl in
-  let init_ids = ids_of_named_context (Global.named_context()) in
-  let seek d toquant =
-    if List.exists (fun (id,_,_) -> occur_var_in_decl env id d) toquant
-      || dependent_in_decl c d then
-      d::toquant
-    else
-      toquant in
-  let to_quantify = Context.fold_named_context seek sign ~init:[] in
-  let to_quantify_rev = List.rev to_quantify in
-  let qhyps = List.map (fun (id,_,_) -> id) to_quantify_rev in
-  let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
-  let tothin' =
-    match kind_of_term c with
-      | Var id when mem_named_context id sign && not (Id.List.mem id init_ids)
-	  -> id::tothin
-      | _ -> tothin
-  in
-  let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
-  let body = 
-    if with_let then
-      match kind_of_term c with 
-      | Var id -> pi2 (pf_get_hyp gl id)
-      | _ -> None
-    else None
-  in
-  let cl'',evd = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous) 
-    (cl',project gl) in
-  let args = instance_from_named_context to_quantify_rev in
-  tclTHENLIST
-    [tclEVARS evd;
-     apply_type cl'' (if Option.is_empty body then c::args else args);
-     thin (List.rev tothin')]
-    gl
-
-let generalize_gen_let lconstr gl =
-  let newcl, evd =
-    List.fold_right_i (generalize_goal gl) 0 lconstr 
-      (pf_concl gl,project gl) 
-  in
-  tclTHEN (tclEVARS evd)
-    (apply_type newcl (List.map_filter (fun ((_,c,b),_) -> 
-      if Option.is_empty b then Some c else None) lconstr)) gl
-
-let new_generalize_gen_let lconstr =
-  Proofview.Goal.raw_enter begin fun gl ->
-    let gl = Proofview.Goal.assume gl in
-    let concl = Proofview.Goal.concl gl in
-    let sigma = Proofview.Goal.sigma gl in
-    let env = Proofview.Goal.env gl in
-    let ids = Tacmach.New.pf_ids_of_hyps gl in
-    let (newcl, sigma), args =
-      List.fold_right_i 
-	(fun i ((_,c,b),_ as o) (cl, args) ->
-	  let t = Tacmach.New.pf_type_of gl c in
-	  let args = if Option.is_empty b then c :: args else args in
-	    generalize_goal_gen ids i o t cl, args)
-	0 lconstr ((concl, sigma), [])
-    in
-      Proofview.V82.tclEVARS sigma <*>
-	Proofview.Refine.refine begin fun h ->
-          let (h, ev) = Proofview.Refine.new_evar h env newcl in
-            (h, (applist (ev, args)))
-	end
-  end
-
-let generalize_gen lconstr =
-  generalize_gen_let (List.map (fun ((occs,c),na) ->
-    (occs,c,None),na) lconstr)
-
-let new_generalize_gen lconstr =
-  new_generalize_gen_let (List.map (fun ((occs,c),na) ->
-    (occs,c,None),na) lconstr)
-    
-let generalize l =
-  generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
-
-let new_generalize l =
-  new_generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
-
-let revert hyps gl = 
-  let lconstr = List.map (fun id -> 
-    let (_, b, _) = pf_get_hyp gl id in
-    ((AllOccurrences, mkVar id, b), Anonymous))
-    hyps 
-  in tclTHEN (generalize_gen_let lconstr) (clear hyps) gl
-
-let new_revert hyps = 
-  Proofview.Goal.raw_enter begin fun gl ->
-    let gl = Proofview.Goal.assume gl in
-    let ctx = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) hyps in
-      (bring_hyps ctx) <*> (Proofview.V82.tactic (clear hyps))
-  end
-
-(* Faudra-t-il une version avec plusieurs args de generalize_dep ?
-Cela peut-être troublant de faire "Generalize Dependent H n" dans
-"n:nat; H:n=n |- P(n)" et d'échouer parce que H a disparu après la
-généralisation dépendante par n.
-
-let quantify lconstr =
- List.fold_right
-   (fun com tac -> tclTHEN tac (tactic_com generalize_dep c))
-   lconstr
-   tclIDTAC
-*)
-
-(* A dependent cut rule à la sequent calculus
-   ------------------------------------------
-   Sera simplifiable le jour où il y aura un let in primitif dans constr
-
-   [letin_tac b na c (occ_hyp,occ_ccl) gl] transforms
+(* [letin_tac b na c (occ_hyp,occ_ccl) gl] transforms
    [...x1:T1(c),...,x2:T2(c),... |- G(c)] into
    [...x:T;Heqx:(x=c);x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is false or
    [...x:=c:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
@@ -1915,29 +1753,31 @@ let default_matching_flags sigma = {
   allow_K_in_toplevel_higher_order_unification = false
 }
 
+(* This supports search of occurrences of term from a pattern *)
+
 let make_pattern_test env sigma0 (sigma,c) =
   let flags = default_matching_flags sigma0 in
   let matching_fun _ t =
-    try let sigma = w_unify env sigma Reduction.CONV ~flags c t in 
+    try let sigma = w_unify env sigma Reduction.CONV ~flags c t in
 	  Some(sigma, t)
     with e when Errors.noncritical e -> raise NotUnifiable in
   let merge_fun c1 c2 =
     match c1, c2 with
-    | Some (evd,c1), Some (_,c2) -> 
+    | Some (evd,c1), Some (_,c2) ->
       (try let evd = w_unify env evd Reduction.CONV ~flags c1 c2 in
-	     Some (evd, c1) 
+	     Some (evd, c1)
        with e when Errors.noncritical e -> raise NotUnifiable)
     | Some _, None -> c1
     | None, Some _ -> c2
-    | None, None -> None 
+    | None, None -> None
   in
-  { match_fun = matching_fun; merge_fun = merge_fun; 
+  { match_fun = matching_fun; merge_fun = merge_fun;
     testing_state = None; last_found = None },
   (fun test -> match test.testing_state with
-  | None -> 
+  | None ->
     let ctx, c = finish_evar_resolution env sigma0 (sigma,c) in
       Proofview.V82.tclEVARUNIVCONTEXT ctx, c
-  | Some (sigma,_) -> 
+  | Some (sigma,_) ->
      let univs, subst = nf_univ_variables sigma in
        Proofview.V82.tclEVARUNIVCONTEXT (Evd.evar_universe_context univs),
        subst_univs_constr subst (nf_evar sigma c))
@@ -2011,7 +1851,7 @@ let letin_tac_gen with_eq name (sigmac,c) test ty occs =
         eq_tac ]
   end
 
-let make_eq_test evd c = 
+let make_eq_test evd c =
   let out cstr = 
     let tac = Proofview.V82.tclEVARUNIVCONTEXT (Evd.evar_universe_context cstr.testing_state) in
       tac, c
@@ -2044,6 +1884,179 @@ let forward usetac ipat c =
 
 let pose_proof na c = forward None (ipat_of_name na) c
 let assert_by na t tac = forward (Some tac) (ipat_of_name na) t
+
+(***************************)
+(*  Generalization tactics *)
+(***************************)
+
+(* Given a type [T] convertible to [forall x1..xn:A1..An(x1..xn-1), G(x1..xn)]
+   and [a1..an:A1..An(a1..an-1)] such that the goal is [G(a1..an)],
+   this generalizes [hyps |- goal] into [hyps |- T] *)
+
+let apply_type hdcty argl gl =
+  refine (applist (mkCast (Evarutil.mk_new_meta(),DEFAULTcast, hdcty),argl)) gl
+
+(* Given a context [hyps] with domain [x1..xn], possibly with let-ins,
+   and well-typed in the current goal, [bring_hyps hyps] generalizes
+   [ctxt |- G(x1..xn] into [ctxt |- forall hyps, G(x1..xn)] *)
+
+let bring_hyps hyps =
+  if List.is_empty hyps then Tacticals.New.tclIDTAC
+  else
+    Proofview.Goal.raw_enter begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let concl = Tacmach.New.pf_nf_concl gl in
+      let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
+      let args = Array.of_list (instance_from_named_context hyps) in
+      Proofview.Refine.refine begin fun h ->
+        let (h, ev) = Proofview.Refine.new_evar h env newcl in
+        (h, (mkApp (ev, args)))
+      end
+    end
+
+(* Compute a name for a generalization *)
+
+let generalized_name c t ids cl = function
+  | Name id as na ->
+      if Id.List.mem id ids then
+	errorlabstrm "" (pr_id id ++ str " is already used");
+      na
+  | Anonymous ->
+      match kind_of_term c with
+      | Var id ->
+	 (* Keep the name even if not occurring: may be used by intros later *)
+	  Name id
+      | _ ->
+	  if noccurn 1 cl then Anonymous else
+	    (* On ne s'etait pas casse la tete : on avait pris pour nom de
+               variable la premiere lettre du type, meme si "c" avait ete une
+               constante dont on aurait pu prendre directement le nom *)
+	    named_hd (Global.env()) t Anonymous
+
+(* Abstract over [c] in [forall x1:A1(c)..xi:Ai(c).T(c)] producing
+   [forall x, x1:A1(x1), .., xi:Ai(x). T(x)] with all [c] abtracted in [Ai]
+   but only those at [occs] in [T] *)
+
+let generalize_goal_gen ids i ((occs,c,b),na) t (cl,evd) =
+  let decls,cl = decompose_prod_n_assum i cl in
+  let dummy_prod = it_mkProd_or_LetIn mkProp decls in
+  let newdecls,_ = decompose_prod_n_assum i (subst_term_gen eq_constr_nounivs c dummy_prod) in
+  let cl',evd' = subst_closed_term_univs_occ evd occs c (it_mkProd_or_LetIn cl newdecls) in
+  let na = generalized_name c t ids cl' na in
+    mkProd_or_LetIn (na,b,t) cl', evd'
+
+let generalize_goal gl i ((occs,c,b),na as o) cl =
+  let t = pf_type_of gl c in
+    generalize_goal_gen (pf_ids_of_hyps gl) i o t cl
+
+let generalize_dep ?(with_let=false) c gl =
+  let env = pf_env gl in
+  let sign = pf_hyps gl in
+  let init_ids = ids_of_named_context (Global.named_context()) in
+  let seek d toquant =
+    if List.exists (fun (id,_,_) -> occur_var_in_decl env id d) toquant
+      || dependent_in_decl c d then
+      d::toquant
+    else
+      toquant in
+  let to_quantify = Context.fold_named_context seek sign ~init:[] in
+  let to_quantify_rev = List.rev to_quantify in
+  let qhyps = List.map (fun (id,_,_) -> id) to_quantify_rev in
+  let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
+  let tothin' =
+    match kind_of_term c with
+      | Var id when mem_named_context id sign && not (Id.List.mem id init_ids)
+	  -> id::tothin
+      | _ -> tothin
+  in
+  let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
+  let body =
+    if with_let then
+      match kind_of_term c with
+      | Var id -> pi2 (pf_get_hyp gl id)
+      | _ -> None
+    else None
+  in
+  let cl'',evd = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous)
+    (cl',project gl) in
+  let args = instance_from_named_context to_quantify_rev in
+  tclTHENLIST
+    [tclEVARS evd;
+     apply_type cl'' (if Option.is_empty body then c::args else args);
+     thin (List.rev tothin')]
+    gl
+
+(**  *)
+let generalize_gen_let lconstr gl =
+  let newcl, evd =
+    List.fold_right_i (generalize_goal gl) 0 lconstr
+      (pf_concl gl,project gl)
+  in
+  tclTHEN (tclEVARS evd)
+    (apply_type newcl (List.map_filter (fun ((_,c,b),_) ->
+      if Option.is_empty b then Some c else None) lconstr)) gl
+
+let new_generalize_gen_let lconstr =
+  Proofview.Goal.raw_enter begin fun gl ->
+    let gl = Proofview.Goal.assume gl in
+    let concl = Proofview.Goal.concl gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let env = Proofview.Goal.env gl in
+    let ids = Tacmach.New.pf_ids_of_hyps gl in
+    let (newcl, sigma), args =
+      List.fold_right_i 
+	(fun i ((_,c,b),_ as o) (cl, args) ->
+	  let t = Tacmach.New.pf_type_of gl c in
+	  let args = if Option.is_empty b then c :: args else args in
+	    generalize_goal_gen ids i o t cl, args)
+	0 lconstr ((concl, sigma), [])
+    in
+      Proofview.V82.tclEVARS sigma <*>
+	Proofview.Refine.refine begin fun h ->
+          let (h, ev) = Proofview.Refine.new_evar h env newcl in
+            (h, (applist (ev, args)))
+	end
+  end
+
+let generalize_gen lconstr =
+  generalize_gen_let (List.map (fun ((occs,c),na) ->
+    (occs,c,None),na) lconstr)
+
+let new_generalize_gen lconstr =
+  new_generalize_gen_let (List.map (fun ((occs,c),na) ->
+    (occs,c,None),na) lconstr)
+    
+let generalize l =
+  generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
+
+let new_generalize l =
+  new_generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
+
+let revert hyps gl =
+  let lconstr = List.map (fun id ->
+    let (_, b, _) = pf_get_hyp gl id in
+    ((AllOccurrences, mkVar id, b), Anonymous))
+    hyps
+  in tclTHEN (generalize_gen_let lconstr) (clear hyps) gl
+
+let new_revert hyps = 
+  Proofview.Goal.raw_enter begin fun gl ->
+    let gl = Proofview.Goal.assume gl in
+    let ctx = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) hyps in
+      (bring_hyps ctx) <*> (Proofview.V82.tactic (clear hyps))
+  end
+
+(* Faudra-t-il une version avec plusieurs args de generalize_dep ?
+Cela peut-être troublant de faire "Generalize Dependent H n" dans
+"n:nat; H:n=n |- P(n)" et d'échouer parce que H a disparu après la
+généralisation dépendante par n.
+
+let quantify lconstr =
+ List.fold_right
+   (fun com tac -> tclTHEN tac (tactic_com generalize_dep c))
+   lconstr
+   tclIDTAC
+*)
 
 (*****************************)
 (* Ad hoc unfold             *)
@@ -2542,16 +2555,16 @@ let coq_heq = lazy (Coqlib.coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq")
 let coq_heq_refl = lazy (Coqlib.coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq_refl")
 
 
-let mkEq t x y = 
+let mkEq t x y =
   mkApp (Lazy.force coq_eq, [| t; x; y |])
-    
-let mkRefl t x = 
+
+let mkRefl t x =
   mkApp (Lazy.force coq_eq_refl, [| t; x |])
 
 let mkHEq t x u y =
   mkApp (Lazy.force coq_heq,
 	[| t; x; u; y |])
-    
+
 let mkHRefl t x =
   mkApp (Lazy.force coq_heq_refl,
 	[| t; x |])
@@ -2570,7 +2583,7 @@ let ids_of_constr ?(all=false) vars c =
   let rec aux vars c =
     match kind_of_term c with
     | Var id -> Id.Set.add id vars
-    | App (f, args) -> 
+    | App (f, args) ->
 	(match kind_of_term f with
 	| Construct ((ind,_),_)
 	| Ind (ind,_) ->
@@ -2581,7 +2594,7 @@ let ids_of_constr ?(all=false) vars c =
 	| _ -> fold_constr aux vars c)
     | _ -> fold_constr aux vars c
   in aux vars c
-    
+
 let decompose_indapp f args =
   match kind_of_term f with
   | Construct ((ind,_),_)
@@ -2628,7 +2641,7 @@ let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
     mkApp (appeqs, abshypt)
 
 let hyps_of_vars env sign nogen hyps =
-  if Id.Set.is_empty hyps then [] 
+  if Id.Set.is_empty hyps then []
   else
     let (_,lh) =
       Context.fold_named_context_reverse
@@ -2641,17 +2654,17 @@ let hyps_of_vars env sign nogen hyps =
 		(Id.Set.add x hs, x :: hl)
 	      else (hs, hl))
         ~init:(hyps,[])
-        sign 
+        sign
     in lh
 
 exception Seen
 
-let linear vars args = 
+let linear vars args =
   let seen = ref vars in
-    try 
-      Array.iter (fun i -> 
+    try
+      Array.iter (fun i ->
 	let rels = ids_of_constr ~all:true Id.Set.empty i in
-	let seen' = 
+	let seen' =
 	  Id.Set.fold (fun id acc ->
 	    if Id.Set.mem id acc then raise Seen
 	    else Id.Set.add id acc)
@@ -2678,7 +2691,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     (* Build application generalized w.r.t. the argument plus the necessary eqs.
        From env |- c : forall G, T and args : G we build
        (T[G'], G' : ctx, env ; G' |- args' : G, eqs := G'_i = G_i, refls : G' = G, vars to generalize)
-       
+
        eqs are not lifted w.r.t. each other yet. (* will be needed when going to dependent indexes *)
     *)
   let aux (prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars, env) arg =
@@ -2711,9 +2724,9 @@ let abstract_args gl generalize_vars dep id defined f args =
 	  let eqs = eq :: lift_list eqs in
 	  let refls = refl :: refls in
 	  let argvars = ids_of_constr vars arg in
-	    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, 
+	    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls,
 	    nongenvars, Id.Set.union argvars vars, env)
-  in 
+  in
   let f', args' = decompose_indapp f args in
   let dogen, f', args' =
     let parvars = ids_of_constr ~all:true Id.Set.empty f' in
@@ -2726,11 +2739,11 @@ let abstract_args gl generalize_vars dep id defined f args =
 	      true, mkApp (f', before), after
   in
     if dogen then
-      let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env = 
+      let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env =
 	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty,env) args'
       in
       let args, refls = List.rev args, List.rev refls in
-      let vars = 
+      let vars =
 	if generalize_vars then
 	  let nogen = Id.Set.add id nogen in
 	    hyps_of_vars (pf_env gl) (pf_hyps gl) nogen vars
@@ -2750,28 +2763,28 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
       match b with
       | None -> let f, args = decompose_app t in
 	        (f, args, false, id, oldid)
-      | Some t -> 
+      | Some t ->
 	  let f, args = decompose_app t in
 	  (f, args, true, id, oldid)
   in
   if List.is_empty args then Proofview.tclUNIT ()
-  else 
+  else
     let args = Array.of_list args in
     let newc = Tacmach.New.of_old (fun gl -> abstract_args gl generalize_vars force_dep id def f args) gl in
       match newc with
       | None -> Proofview.tclUNIT ()
-      | Some (newc, dep, n, vars) -> 
+      | Some (newc, dep, n, vars) ->
 	  let tac =
 	    if dep then
-	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); Proofview.V82.tactic (rename_hyp [(id, oldid)]); Tacticals.New.tclDO n intro; 
+	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); Proofview.V82.tactic (rename_hyp [(id, oldid)]); Tacticals.New.tclDO n intro;
 			   Proofview.V82.tactic (generalize_dep ~with_let:true (mkVar oldid))]
 	    else
 	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); Proofview.V82.tactic (clear [id]); Tacticals.New.tclDO n intro]
 	  in
 	    if List.is_empty vars then tac
-	    else Tacticals.New.tclTHEN tac 
+	    else Tacticals.New.tclTHEN tac
               (Proofview.V82.tactic (fun gl -> tclFIRST [revert vars ;
-				   tclMAP (fun id -> 
+				   tclMAP (fun id ->
 				     tclTRY (generalize_dep ~with_let:true (mkVar id))) vars] gl))
   end
 
@@ -2783,12 +2796,12 @@ let specialize_eqs id gl =
   let env = pf_env gl in
   let ty = pf_get_hyp_typ gl id in
   let evars = ref (project gl) in
-  let unif env evars c1 c2 = 
-    compare_upto_variables c1 c2 && Evarconv.e_conv env evars c1 c2 
+  let unif env evars c1 c2 =
+    compare_upto_variables c1 c2 && Evarconv.e_conv env evars c1 c2
   in
   let rec aux in_eqs ctx acc ty =
     match kind_of_term ty with
-    | Prod (na, t, b) -> 
+    | Prod (na, t, b) ->
 	(match kind_of_term t with
 	| App (eq, [| eqty; x; y |]) when eq_constr (Lazy.force coq_eq) eq ->
 	    let c = if noccur_between 1 (List.length ctx) x then y else x in
@@ -2804,13 +2817,13 @@ let specialize_eqs id gl =
 	      if unif (push_rel_context ctx env) evars pt t then
 		aux true ctx (mkApp (acc, [| p |])) (subst1 p b)
 	      else acc, in_eqs, ctx, ty
-	| _ -> 
+	| _ ->
 	    if in_eqs then acc, in_eqs, ctx, ty
-	    else 
+	    else
 	      let e = e_new_evar evars (push_rel_context ctx env) t in
 		aux false ((na, Some e, t) :: ctx) (mkApp (lift 1 acc, [| mkRel 1 |])) b)
     | t -> acc, in_eqs, ctx, ty
-  in 
+  in
   let acc, worked, ctx, ty = aux false [] (mkVar id) ty in
   let ctx' = nf_rel_context_evar !evars ctx in
   let ctx'' = List.map (fun (n,b,t as decl) ->
@@ -2820,14 +2833,14 @@ let specialize_eqs id gl =
   in
   let ty' = it_mkProd_or_LetIn ty ctx'' in
   let acc' = it_mkLambda_or_LetIn acc ctx'' in
-  let ty' = Tacred.whd_simpl env !evars ty' 
+  let ty' = Tacred.whd_simpl env !evars ty'
   and acc' = Tacred.whd_simpl env !evars acc' in
   let ty' = Evarutil.nf_evar !evars ty' in
     if worked then
       tclTHENFIRST (Tacmach.internal_cut true id ty')
 	(exact_no_check ((* refresh_universes_strict *) acc')) gl
     else tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id) gl
-      
+
 
 let specialize_eqs id gl =
   if
@@ -3319,7 +3332,7 @@ let induction_without_atomization isrec with_evars elim names lid =
   let nlid = List.length lid in
   if not (Int.equal nlid awaited_nargs)
   then Proofview.tclZERO (Errors.UserError ("", str"Not the right number of induction arguments."))
-  else 
+  else
     Proofview.tclTHEN (Proofview.V82.tclEVARS sigma)
       (induction_from_context_l with_evars elim_info lid names)
   end
@@ -3548,8 +3561,8 @@ let elim_type t gl =
 
 let case_type t gl =
   let (ind,t) = pf_reduce_to_atomic_ind gl t in
-  let evd, elimc = 
-    pf_apply build_case_analysis_scheme_default gl ind (elimination_sort_of_goal gl) 
+  let evd, elimc =
+    pf_apply build_case_analysis_scheme_default gl ind (elimination_sort_of_goal gl)
   in
     tclTHEN (tclEVARS evd) (elim_scheme_type elimc t) gl
 
@@ -3781,7 +3794,7 @@ let abstract_subproof id gk tac =
     with Uninstantiated_evar _ ->
       error "\"abstract\" cannot handle existentials." in
 
-  let evd, ctx, concl = 
+  let evd, ctx, concl =
     (* FIXME: should be done only if the tactic succeeds *)
     let evd, nf = nf_evars_and_universes (Proofview.Goal.sigma gl) in
     let ctx = Evd.universe_context_set evd in
@@ -3811,7 +3824,7 @@ let abstract_subproof id gk tac =
   let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
   let effs = cons_side_effects eff no_seff in
   let args = List.rev (instance_from_named_context sign) in
-  let solve = Proofview.V82.tclEVARS evd <*> 
+  let solve = Proofview.V82.tclEVARS evd <*>
     Proofview.tclEFFECTS effs <*> new_exact_no_check (applist (lem, args)) in
   if not safe then Proofview.mark_as_unsafe <*> solve else solve
   end
@@ -3822,11 +3835,11 @@ let tclABSTRACT name_op tac =
   let open Proof_global in
   let default_gk = (Global, false, Proof Theorem) in
   let s, gk = match name_op with
-    | Some s -> 
+    | Some s ->
       (try let _, gk, _ = current_proof_statement () in s, gk
        with NoCurrentProof -> s, default_gk)
     | None   ->
-      let name, gk = 
+      let name, gk =
 	try let name, gk, _ = current_proof_statement () in name, gk
 	with NoCurrentProof -> anon_id, default_gk in
       add_suffix name "_subproof", gk
