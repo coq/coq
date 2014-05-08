@@ -248,12 +248,13 @@ type eliminator = {
 }
 
 val elimination_clause_scheme : evars_flag -> ?flags:unify_flags -> 
-  int -> clausenv -> clausenv -> tactic
+  int -> (constr * types * constr bindings) -> clausenv -> tactic
 
 val elimination_in_clause_scheme : evars_flag -> ?flags:unify_flags -> 
-  Id.t -> int -> clausenv -> clausenv -> tactic
+  Id.t -> int -> (constr * types * constr bindings) -> clausenv -> tactic
 
-val general_elim_clause_gen : (int -> Clenv.clausenv -> 'a -> tactic) ->
+val general_elim_clause_gen :
+  (int -> (constr * types * constr bindings) -> 'a -> tactic) ->
   'a -> eliminator -> tactic
 
 val general_elim  : evars_flag ->
@@ -377,7 +378,7 @@ val subst_one :
 val declare_intro_decomp_eq :
   ((int -> unit Proofview.tactic) -> Coqlib.coq_eq_data * types *
    (types * constr * constr) ->
-   clausenv -> unit Proofview.tactic) -> unit
+   constr * types -> unit Proofview.tactic) -> unit
 
 module Simple : sig
   (** Simplified version of some of the above tactics *)

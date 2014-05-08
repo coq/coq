@@ -1357,7 +1357,13 @@ let dEqThen with_evars ntac = function
 
 let dEq with_evars = dEqThen with_evars (fun c x -> Proofview.tclUNIT ())
 
-let _ = declare_intro_decomp_eq (fun tac -> decompEqThen (fun _ -> tac))
+let intro_decompe_eq tac data cl =
+  Proofview.Goal.raw_enter begin fun gl ->
+    let cl = pf_apply make_clenv_binding gl cl NoBindings in
+    decompEqThen (fun _ -> tac) data cl
+  end
+
+let _ = declare_intro_decomp_eq intro_decompe_eq
 
 let swap_equality_args = function
   | MonomorphicLeibnizEq (e1,e2) -> [e2;e1]

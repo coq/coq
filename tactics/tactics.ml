@@ -808,7 +808,8 @@ let index_of_ind_arg t =
       | None -> error "Could not find inductive argument of elimination scheme."
   in aux None 0 t
 
-let elimination_clause_scheme with_evars ?(flags=elim_flags ()) i elimclause indclause gl =
+let elimination_clause_scheme with_evars ?(flags=elim_flags ()) i (elim, elimty, bindings) indclause gl =
+  let elimclause = make_clenv_binding (pf_env gl) (project gl) (elim, elimty) bindings in
   let indmv =
     (match kind_of_term (nth_arg i elimclause.templval.rebus) with
        | Meta mv -> mv
@@ -836,14 +837,13 @@ let general_elim_clause_gen elimtac indclause elim gl =
   let elimt = pf_type_of gl elimc in
   let i =
     match elim.elimindex with None -> index_of_ind_arg elimt | Some i -> i in
-  let elimclause = pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
-  elimtac i elimclause indclause gl
+  elimtac i (elimc, elimt, lbindelimc) indclause gl
 
 let general_elim_clause elimtac (c,lbindc) elim gl =
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
-  let indclause  = pf_apply make_clenv_binding gl (c,t) lbindc  in
-    general_elim_clause_gen elimtac indclause elim gl
+  let indclause  = pf_apply make_clenv_binding gl (c, t) lbindc in
+  general_elim_clause_gen elimtac indclause elim gl
 
 let general_elim with_evars c e =
   general_elim_clause (elimination_clause_scheme with_evars) c e
@@ -938,7 +938,8 @@ let clenv_fchain_in id ?(flags=elim_flags ()) mv elimclause hypclause =
     (* Set the hypothesis name in the message *)
     raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
 
-let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) id i elimclause indclause gl =
+let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) id i (elim, elimty, bindings) indclause gl =
+  let elimclause = make_clenv_binding (pf_env gl) (project gl) (elim, elimty) bindings in
   let indmv = destMeta (nth_arg i elimclause.templval.rebus) in
   let hypmv =
     try match List.remove Int.equal indmv (clenv_independent elimclause) with
@@ -1444,10 +1445,9 @@ let intro_decomp_eq loc b l l' thin tac id =
   let t = Tacmach.New.pf_type_of gl c in
   let _,t = Tacmach.New.pf_reduce_to_quantified_ind gl t in
   let eq,u,eq_args = my_find_eq_data_decompose gl t in
-  let eq_clause = Tacmach.New.pf_apply make_clenv_binding gl (c,t) NoBindings in
   !intro_decomp_eq_function
     (fun n -> tac ((dloc,id)::thin) (adjust_intro_patterns n l @ l'))
-    (eq,t,eq_args) eq_clause
+    (eq,t,eq_args) (c, t)
   end
 
 let intro_or_and_pattern loc b ll l' thin tac id =
@@ -3286,10 +3286,8 @@ let induction_tac with_evars elim (varname,lbind) typ gl =
   let ({elimindex=i;elimbody=(elimc,lbindelimc)},elimt) = elim in
   let indclause = pf_apply make_clenv_binding gl (mkVar varname,typ) lbind  in
   let i = match i with None -> index_of_ind_arg elimt | Some i -> i in
-  let elimclause =
-    pf_apply make_clenv_binding gl
-      (mkCast (elimc,DEFAULTcast,elimt),elimt) lbindelimc in
-  elimination_clause_scheme with_evars i elimclause indclause gl
+  let elimc = mkCast (elimc, DEFAULTcast, elimt) in
+  elimination_clause_scheme with_evars i (elimc, elimt, lbindelimc) indclause gl
 
 let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) names
   inhyps =
