@@ -298,6 +298,9 @@ module V82 : sig
 
   val tclEVARS : Evd.evar_map -> unit tactic
 
+  (* Set the evar universe context *)
+  val tclEVARUNIVCONTEXT : Evd.evar_universe_context -> unit tactic
+
   val has_unresolved_evar : proofview -> bool
 
   (* Main function in the implementation of Grab Existential Variables.

@@ -325,6 +325,8 @@ let rec tclREPEAT_MAIN t g =
 (* Change evars *)
 let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}
 
+let tclEVARUNIVCONTEXT ctx gls = tclIDTAC {gls with sigma= Evd.set_universe_context gls.sigma ctx}
+
 (* Push universe context *)
 let tclPUSHCONTEXT rigid ctx tac gl = 
   tclTHEN (tclEVARS (Evd.merge_context_set rigid (project gl) ctx)) tac gl

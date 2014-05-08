@@ -166,6 +166,7 @@ val move_hyp      : bool -> Id.t -> Id.t move_location -> tactic
 val rename_hyp    : (Id.t * Id.t) list -> tactic
 
 val revert        : Id.t list -> tactic
+val new_revert    : Id.t list -> unit Proofview.tactic
 
 (** {6 Resolution tactics. } *)
 
@@ -352,6 +353,9 @@ val pose_proof : Name.t -> constr -> unit Proofview.tactic
 
 val generalize      : constr list -> tactic
 val generalize_gen  : ((occurrences * constr) * Name.t) list -> tactic
+val new_generalize  : constr list -> unit Proofview.tactic
+val new_generalize_gen  : ((occurrences * constr) * Name.t) list -> unit Proofview.tactic
+
 val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> tactic
 
 val unify           : ?state:Names.transparent_state -> constr -> constr -> tactic

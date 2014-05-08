@@ -1226,7 +1226,7 @@ let vm_cast_no_check c gl =
 
 let exact_proof c gl =
   let c,ctx = Constrintern.interp_casted_constr (project gl) (pf_env gl) c (pf_concl gl)
-  in tclTHEN (tclPUSHEVARUNIVCONTEXT ctx) (refine_no_check c) gl
+  in tclTHEN (tclEVARUNIVCONTEXT ctx) (refine_no_check c) gl
 
 let assumption =
   let rec arec gl only_eq = function
@@ -1729,14 +1729,17 @@ let generalized_name c t ids cl = function
                constante dont on aurait pu prendre directement le nom *)
 	    named_hd (Global.env()) t Anonymous
 
-let generalize_goal gl i ((occs,c,b),na) (cl,evd) =
-  let t = pf_type_of gl c in
+let generalize_goal_gen ids i ((occs,c,b),na) t (cl,evd) =
   let decls,cl = decompose_prod_n_assum i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
   let newdecls,_ = decompose_prod_n_assum i (subst_term_gen eq_constr_nounivs c dummy_prod) in
   let cl',evd' = subst_closed_term_univs_occ evd occs c (it_mkProd_or_LetIn cl newdecls) in
-  let na = generalized_name c t (pf_ids_of_hyps gl) cl' na in
-    mkProd_or_LetIn (na,b,t) cl', evd
+  let na = generalized_name c t ids cl' na in
+    mkProd_or_LetIn (na,b,t) cl', evd'
+
+let generalize_goal gl i ((occs,c,b),na as o) cl =
+  let t = pf_type_of gl c in
+    generalize_goal_gen (pf_ids_of_hyps gl) i o t cl
 
 let generalize_dep ?(with_let=false) c gl =
   let env = pf_env gl in
@@ -1770,7 +1773,7 @@ let generalize_dep ?(with_let=false) c gl =
     (cl',project gl) in
   let args = instance_from_named_context to_quantify_rev in
   tclTHENLIST
-    [tclPUSHEVARUNIVCONTEXT (Evd.evar_universe_context evd);
+    [tclEVARS evd;
      apply_type cl'' (if Option.is_empty body then c::args else args);
      thin (List.rev tothin')]
     gl
@@ -1780,16 +1783,45 @@ let generalize_gen_let lconstr gl =
     List.fold_right_i (generalize_goal gl) 0 lconstr 
       (pf_concl gl,project gl) 
   in
-  tclTHEN (tclPUSHEVARUNIVCONTEXT (Evd.evar_universe_context evd))
+  tclTHEN (tclEVARS evd)
     (apply_type newcl (List.map_filter (fun ((_,c,b),_) -> 
       if Option.is_empty b then Some c else None) lconstr)) gl
+
+let new_generalize_gen_let lconstr =
+  Proofview.Goal.raw_enter begin fun gl ->
+    let gl = Proofview.Goal.assume gl in
+    let concl = Proofview.Goal.concl gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let env = Proofview.Goal.env gl in
+    let ids = Tacmach.New.pf_ids_of_hyps gl in
+    let (newcl, sigma), args =
+      List.fold_right_i 
+	(fun i ((_,c,b),_ as o) (cl, args) ->
+	  let t = Tacmach.New.pf_type_of gl c in
+	  let args = if Option.is_empty b then c :: args else args in
+	    generalize_goal_gen ids i o t cl, args)
+	0 lconstr ((concl, sigma), [])
+    in
+      Proofview.V82.tclEVARS sigma <*>
+	Proofview.Refine.refine begin fun h ->
+          let (h, ev) = Proofview.Refine.new_evar h env newcl in
+            (h, (applist (ev, args)))
+	end
+  end
 
 let generalize_gen lconstr =
   generalize_gen_let (List.map (fun ((occs,c),na) ->
     (occs,c,None),na) lconstr)
+
+let new_generalize_gen lconstr =
+  new_generalize_gen_let (List.map (fun ((occs,c),na) ->
+    (occs,c,None),na) lconstr)
     
 let generalize l =
   generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
+
+let new_generalize l =
+  new_generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
 
 let revert hyps gl = 
   let lconstr = List.map (fun id -> 
@@ -1797,6 +1829,13 @@ let revert hyps gl =
     ((AllOccurrences, mkVar id, b), Anonymous))
     hyps 
   in tclTHEN (generalize_gen_let lconstr) (clear hyps) gl
+
+let new_revert hyps = 
+  Proofview.Goal.raw_enter begin fun gl ->
+    let gl = Proofview.Goal.assume gl in
+    let ctx = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) hyps in
+      (bring_hyps ctx) <*> (Proofview.V82.tactic (clear hyps))
+  end
 
 (* Faudra-t-il une version avec plusieurs args de generalize_dep ?
 Cela peut-être troublant de faire "Generalize Dependent H n" dans
@@ -1897,10 +1936,10 @@ let make_pattern_test env sigma0 (sigma,c) =
   (fun test -> match test.testing_state with
   | None -> 
     let ctx, c = finish_evar_resolution env sigma0 (sigma,c) in
-      Proofview.V82.tactic (tclPUSHEVARUNIVCONTEXT ctx), c
+      Proofview.V82.tclEVARUNIVCONTEXT ctx, c
   | Some (sigma,_) -> 
      let univs, subst = nf_univ_variables sigma in
-       Proofview.V82.tactic (tclPUSHEVARUNIVCONTEXT (Evd.evar_universe_context univs)),
+       Proofview.V82.tclEVARUNIVCONTEXT (Evd.evar_universe_context univs),
        subst_univs_constr subst (nf_evar sigma c))
 
 let letin_abstract id c (test,out) (occs,check_occs) gl =
@@ -1974,10 +2013,10 @@ let letin_tac_gen with_eq name (sigmac,c) test ty occs =
 
 let make_eq_test evd c = 
   let out cstr = 
-    let tac = tclPUSHEVARUNIVCONTEXT (Evd.evar_universe_context cstr.testing_state) in
-      Proofview.V82.tactic tac, c
+    let tac = Proofview.V82.tclEVARUNIVCONTEXT (Evd.evar_universe_context cstr.testing_state) in
+      tac, c
   in
-    (Tacred.make_eq_univs_test Evd.empty c, out)
+    (Tacred.make_eq_univs_test evd c, out)
 
 let letin_tac with_eq name c ty occs =
   Proofview.tclEVARMAP >>= fun sigma ->

@@ -682,6 +682,9 @@ module V82 = struct
   let tclEVARS evd =
     Proof.modify (fun ps -> { ps with solution = evd })
 
+  let tclEVARUNIVCONTEXT ctx = 
+    Proof.modify (fun ps -> { ps with solution = Evd.set_universe_context ps.solution ctx })
+      
   let has_unresolved_evar pv =
     Evd.has_undefined pv.solution
 
