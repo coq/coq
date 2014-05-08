@@ -1914,6 +1914,13 @@ let bring_hyps hyps =
       end
     end
 
+let revert hyps = 
+  Proofview.Goal.raw_enter begin fun gl ->
+    let gl = Proofview.Goal.assume gl in
+    let ctx = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) hyps in
+      (bring_hyps ctx) <*> (Proofview.V82.tactic (clear hyps))
+  end
+
 (* Compute a name for a generalization *)
 
 let generalized_name c t ids cl = function
@@ -2031,20 +2038,6 @@ let generalize l =
 
 let new_generalize l =
   new_generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
-
-let revert hyps gl =
-  let lconstr = List.map (fun id ->
-    let (_, b, _) = pf_get_hyp gl id in
-    ((AllOccurrences, mkVar id, b), Anonymous))
-    hyps
-  in tclTHEN (generalize_gen_let lconstr) (clear hyps) gl
-
-let new_revert hyps = 
-  Proofview.Goal.raw_enter begin fun gl ->
-    let gl = Proofview.Goal.assume gl in
-    let ctx = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) hyps in
-      (bring_hyps ctx) <*> (Proofview.V82.tactic (clear hyps))
-  end
 
 (* Faudra-t-il une version avec plusieurs args de generalize_dep ?
 Cela peut-être troublant de faire "Generalize Dependent H n" dans
@@ -2783,9 +2776,10 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
 	  in
 	    if List.is_empty vars then tac
 	    else Tacticals.New.tclTHEN tac
-              (Proofview.V82.tactic (fun gl -> tclFIRST [revert vars ;
-				   tclMAP (fun id ->
-				     tclTRY (generalize_dep ~with_let:true (mkVar id))) vars] gl))
+              (Tacticals.New.tclFIRST
+                [revert vars ;
+		 Proofview.V82.tactic (fun gl -> tclMAP (fun id ->
+				     tclTRY (generalize_dep ~with_let:true (mkVar id))) vars gl)])
   end
 
 let rec compare_upto_variables x y =

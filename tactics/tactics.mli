@@ -165,8 +165,7 @@ val specialize    : constr with_bindings -> tactic
 val move_hyp      : bool -> Id.t -> Id.t move_location -> tactic
 val rename_hyp    : (Id.t * Id.t) list -> tactic
 
-val revert        : Id.t list -> tactic
-val new_revert    : Id.t list -> unit Proofview.tactic
+val revert        : Id.t list -> unit Proofview.tactic
 
 (** {6 Resolution tactics. } *)
 
