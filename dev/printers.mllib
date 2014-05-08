@@ -39,7 +39,6 @@ Explore
 Predicate
 Rtree
 Heap
-Dnet
 Genarg
 Stateid
 Ephemeron
@@ -121,7 +120,6 @@ Cbv
 Pretype_errors
 Evarutil
 Evarsolve
-Term_dnet
 Recordops
 Evarconv
 Arguments_renaming

@@ -1,4 +1,5 @@
 Geninterp
+Dnet
 Dn
 Btermdn
 Tacticals
@@ -20,5 +21,6 @@ Tacenv
 TacticMatching
 Tacinterp
 Evar_tactics
+Term_dnet
 Autorewrite
 Tactic_option
