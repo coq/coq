@@ -266,7 +266,7 @@ val elim :
 
 val simple_induct : quantified_hypothesis -> unit Proofview.tactic
 
-val new_induct : evars_flag -> 
+val induction : evars_flag -> 
   (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
     intro_pattern_expr located option * intro_pattern_expr located option ->
@@ -278,7 +278,7 @@ val general_case_analysis : evars_flag -> constr with_bindings ->  unit Proofvie
 val simplest_case         : constr -> unit Proofview.tactic
 
 val simple_destruct          : quantified_hypothesis -> unit Proofview.tactic
-val new_destruct : evars_flag ->
+val destruct : evars_flag ->
   (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
     intro_pattern_expr located option * intro_pattern_expr located option ->

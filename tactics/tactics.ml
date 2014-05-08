@@ -3366,7 +3366,7 @@ let clear_unselected_context id inhyps cls gl =
 	  thin ids gl
       | None -> tclIDTAC gl
 
-let new_induct_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
+let induction_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
   let inhyps = match cls with
   | Some {onhyps=Some hyps} -> List.map (fun ((_,id),_) -> id) hyps
   | _ -> [] in
@@ -3404,8 +3404,8 @@ let new_induct_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
    atomic (using letins), then do induction. The specificity here is
    that all arguments and parameters of the scheme are given
    (mandatory for the moment), so we don't need to deal with
-    parameters of the inductive type as in new_induct_gen. *)
-let new_induct_gen_l isrec with_evars elim (eqname,names) lc =
+    parameters of the inductive type as in induction_gen. *)
+let induction_gen_l isrec with_evars elim (eqname,names) lc =
   if not (Option.is_empty eqname) then
     errorlabstrm "" (str "Do not know what to do with " ++
       Miscprint.pr_intro_pattern (Option.get eqname));
@@ -3451,14 +3451,14 @@ let new_induct_gen_l isrec with_evars elim (eqname,names) lc =
    principles).
    TODO: really unify induction with one and induction with several
    args *)
-let induct_destruct isrec with_evars (lc,elim,names,cls) =
+let induction_destruct_core isrec with_evars (lc,elim,names,cls) =
   assert (List.length lc > 0); (* ensured by syntax, but if called inside caml? *)
   Proofview.Goal.raw_enter begin fun gl ->
   let ifi = is_functional_induction elim gl in
   if Int.equal (List.length lc) 1 && not ifi then
     (* standard induction *)
     onOpenInductionArg
-      (fun c -> new_induct_gen isrec with_evars elim names c cls)
+      (fun c -> induction_gen isrec with_evars elim names c cls)
       (List.hd lc)
   else begin
     (* functional induction *)
@@ -3481,7 +3481,7 @@ let induct_destruct isrec with_evars (lc,elim,names,cls) =
 	(fun (c,lbind) ->
 	  if lbind != NoBindings then
 	    error "'with' clause not supported here.";
-	  new_induct_gen_l isrec with_evars elim names [c]) (List.hd lc)
+	  induction_gen_l isrec with_evars elim names [c]) (List.hd lc)
     | _ ->
       let newlc =
 	List.map (fun x ->
@@ -3489,28 +3489,28 @@ let induct_destruct isrec with_evars (lc,elim,names,cls) =
 	  | ElimOnConstr (x,NoBindings) -> x
 	  | _ -> error "Don't know where to find some argument.")
 	  lc in
-      new_induct_gen_l isrec with_evars elim names newlc
+      induction_gen_l isrec with_evars elim names newlc
     end
   end
   end
 
 let induction_destruct isrec with_evars = function
   | [],_,_ -> Proofview.tclUNIT ()
-  | [a,b],el,cl -> induct_destruct isrec with_evars ([a],el,b,cl)
+  | [a,b],el,cl -> induction_destruct_core isrec with_evars ([a],el,b,cl)
   | (a,b)::l,None,cl ->
       Tacticals.New.tclTHEN
-        (induct_destruct isrec with_evars ([a],None,b,cl))
-        (Tacticals.New.tclMAP (fun (a,b) -> induct_destruct false with_evars ([a],None,b,cl)) l)
+        (induction_destruct_core isrec with_evars ([a],None,b,cl))
+        (Tacticals.New.tclMAP (fun (a,b) -> induction_destruct_core false with_evars ([a],None,b,cl)) l)
   | l,Some el,cl ->
       let check_basic_using = function
         | a,(None,None) -> a
 	| _ -> error "Unsupported syntax for \"using\"."
       in
       let l' = List.map check_basic_using l in
-      induct_destruct isrec with_evars (l', Some el, (None,None), cl)
+      induction_destruct_core isrec with_evars (l', Some el, (None,None), cl)
 
-let new_induct ev lc e idl cls = induct_destruct true ev (lc,e,idl,cls)
-let new_destruct ev lc e idl cls = induct_destruct false ev (lc,e,idl,cls)
+let induction ev lc e idl cls = induction_destruct_core true ev (lc,e,idl,cls)
+let destruct ev lc e idl cls = induction_destruct_core false ev (lc,e,idl,cls)
 
 (* The registered tactic, which calls the default elimination
  * if no elimination constant is provided. *)

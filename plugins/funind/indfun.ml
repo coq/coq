@@ -26,8 +26,8 @@ let is_rec_info scheme_info =
 
 let choose_dest_or_ind scheme_info =
     if is_rec_info scheme_info
-    then Tactics.new_induct false
-    else Tactics.new_destruct false
+    then Tactics.induction false
+    else Tactics.destruct false
 
 let functional_induction with_clean c princl pat =
   Dumpglob.pause ();

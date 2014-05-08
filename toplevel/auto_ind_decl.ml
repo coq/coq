@@ -78,12 +78,12 @@ let sumbool = Coqlib.build_coq_sumbool
 let andb = fun _ -> (Coqlib.build_bool_type()).Coqlib.andb
 
 let induct_on c =
-  new_induct false
+  induction false
     [Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
     None (None,None) None
 
 let destruct_on_using c id =
-  new_destruct false
+  destruct false
     [Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
     None
     (None,Some (dl,IntroOrAndPattern [
@@ -92,7 +92,7 @@ let destruct_on_using c id =
     None
 
 let destruct_on c =
-  new_destruct false
+  destruct false
     [Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
     None (None,None) None
 
@@ -592,7 +592,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                          apply_in false false freshz [Loc.ghost, (andb_prop(), NoBindings)] None;
                          Proofview.Goal.enter begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
-                            (new_destruct false [Tacexpr.ElimOnConstr
+                            (destruct false [Tacexpr.ElimOnConstr
                                       (Evd.empty,((mkVar freshz,NoBindings)))]
                                   None
                                   (None, Some (dl,IntroOrAndPattern [[
