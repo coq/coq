@@ -1699,8 +1699,9 @@ and interp_atomic ist tac =
           gl
       end
   | TacRevert l ->
-      Proofview.V82.tactic begin fun gl -> 
-        Tactics.revert (interp_hyp_list ist (pf_env gl) l) gl
+      Proofview.Goal.raw_enter begin fun gl ->
+        let env = Proofview.Goal.env gl in
+        Tactics.new_revert (interp_hyp_list ist env l)
       end
 
   (* Constructors *)

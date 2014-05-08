@@ -1421,7 +1421,7 @@ let cl_rewrite_clause_tac ?abs strat meta clause gl =
 	      let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
 		tclTHENLAST
 		  (Tacmach.internal_cut false name newt)
-		  (tclTHEN (Tactics.revert [name]) (Tacmach.refine p))
+		  (tclTHEN (Proofview.V82.of_tactic (Tactics.new_revert [name])) (Tacmach.refine p))
 	  | None, None -> change_in_concl None newt
 	in tclTHEN (evartac undef) tac
   in

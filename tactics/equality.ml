@@ -1627,7 +1627,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   let need_rewrite = not (List.is_empty dephyps) || depconcl in
   tclTHENLIST
     ((if need_rewrite then
-      [Proofview.V82.tactic (revert dephyps);
+      [new_revert dephyps;
        general_rewrite dir AllOccurrences true dep_proof_ok (mkVar hyp);
        (tclMAP intro_using dephyps)]
       else
