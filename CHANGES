@@ -55,7 +55,7 @@ Notations
 - The syntax "x -> y" is now declared at level 99. In particular, it has
   now a lower priority than "<->": "A -> B <-> C" is now "A -> (B <-> C)"
   (possible source of incompatibilities)
-- Notations accept term-provinding tactics using the $(...)$ syntax.
+- Notations accept term-providing tactics using the $(...)$ syntax.
 
 Specification Language
 
@@ -109,6 +109,7 @@ Tactics
 - Injection now also deduces equality of arguments of sort Prop. Old behavior
   can be restored by "Unset Injection On Proofs". Also improved the error
   messages.
+- Tactic "subst id" now supports id occurring in dependent local definitions.
 
 Program
 

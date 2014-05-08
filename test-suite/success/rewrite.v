@@ -129,3 +129,12 @@ intros.
 Fail rewrite H in H0.
 Abort.
 
+(* Test subst in the presence of a dependent let-in *)
+(* Was not working prior to May 2014 *)
+
+Goal forall x y, x=y+0 -> let z := x+1 in x+1=y -> z=z -> z=x.
+intros.
+subst x. (* was failing *)
+rewrite H0.
+reflexivity.
+Qed.

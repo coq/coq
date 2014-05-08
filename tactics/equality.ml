@@ -1612,35 +1612,24 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   let hyps = Proofview.Goal.hyps gl in
   let concl = Proofview.Goal.concl gl in
   (* The set of hypotheses using x *)
-  let depdecls =
-    let test (id,_,c as dcl) =
-      if not (Id.equal id hyp) && occur_var_in_decl env x dcl then Some dcl
-      else None in
-    List.rev (List.map_filter test hyps) in
-  let dephyps = List.map (fun (id,_,_) -> id) depdecls in
+  let dephyps =
+    List.rev (snd (List.fold_right (fun (id,b,_ as dcl) (deps,allhyps) ->
+      if not (Id.equal id hyp)
+         && List.exists (fun y -> occur_var_in_decl env y dcl) deps
+      then
+        ((if b = None then deps else id::deps), id::allhyps)
+      else
+        (deps,allhyps))
+      hyps
+      ([x],[]))) in
   (* Decides if x appears in conclusion *)
   let depconcl = occur_var env x concl in
-  (* The set of non-defined hypothesis: they must be abstracted,
-     rewritten and reintroduced *)
-  let abshyps =
-    List.map_filter (function (id, None, _) -> Some (mkVar id) | _ -> None)
-      depdecls in
-  (* a tactic that either introduce an abstracted and rewritten hyp,
-     or introduce a definition where x was replaced *)
-  let introtac = function
-      (id,None,_) -> intro_using id
-    | (id,Some hval,htyp) ->
-        letin_tac None (Name id)
-	  (replace_term (mkVar x) rhs hval)
-	  (Some (replace_term (mkVar x) rhs htyp)) nowhere
-  in
   let need_rewrite = not (List.is_empty dephyps) || depconcl in
   tclTHENLIST
     ((if need_rewrite then
-      [Proofview.V82.tactic (generalize abshyps);
+      [Proofview.V82.tactic (revert dephyps);
        general_rewrite dir AllOccurrences true dep_proof_ok (mkVar hyp);
-       Proofview.V82.tactic (thin dephyps);
-       (tclMAP introtac depdecls)]
+       (tclMAP intro_using dephyps)]
       else
        [Proofview.tclUNIT ()]) @
      [tclTRY (clear [x; hyp])])
