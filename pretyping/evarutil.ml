@@ -139,8 +139,8 @@ let has_undefined_evars or_sorts evd t =
             has_ev c; Array.iter has_ev args
         | Evar_empty ->
 	    raise NotInstantiatedEvar)
-    | Sort (Type _) (*FIXME could be finer, excluding Prop and Set universes *) when or_sorts ->
-      raise Not_found
+    (* | Sort (Type _) (\*FIXME could be finer, excluding Prop and Set universes *\) when or_sorts -> *)
+    (*   raise Not_found *)
     | Ind (_,l) | Const (_,l) | Construct (_,l) 
 	when or_sorts && not (Univ.Instance.is_empty l) (* has_flexible_level evd l *) -> raise Not_found
     | _ -> iter_constr has_ev t in
