@@ -93,6 +93,15 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
       | _ -> error ()
   in
   let mib2 =  subst_mind subst2 mib2 in
+  let check eq f = if not (eq (f mib1) (f mib2)) then error () in
+  let bool_equal (x : bool) (y : bool) = x = y in
+  let u = 
+    check bool_equal (fun x -> x.mind_polymorphic);
+    if mib1.mind_polymorphic then (
+      check Univ.Instance.equal (fun x -> Univ.UContext.instance x.mind_universes);
+      UContext.instance mib1.mind_universes)
+    else Instance.empty
+  in
   let check_inductive_type env t1 t2 =
 
     (* Due to sort-polymorphism in inductive types, the conclusions of
@@ -146,15 +155,13 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
       (* params_ctxt done because part of the inductive types *)
       (* Don't check the sort of the type if polymorphic *)
       check_inductive_type env
-        (type_of_inductive env (mib1,p1)) (type_of_inductive env (mib2,p2))
+        (type_of_inductive env ((mib1,p1),u)) (type_of_inductive env ((mib2,p2),u))
   in
   let check_cons_types i p1 p2 =
     Array.iter2 (check_conv conv env)
-      (arities_of_specif kn (mib1,p1))
-      (arities_of_specif kn (mib2,p2))
+      (arities_of_specif (kn,u) (mib1,p1))
+      (arities_of_specif (kn,u) (mib2,p2))
   in
-  let check eq f = if not (eq (f mib1) (f mib2)) then error () in
-  let bool_equal (x : bool) (y : bool) = x = y in
   check bool_equal (fun mib -> mib.mind_finite);
   check Int.equal (fun mib -> mib.mind_ntypes);
   assert (Array.length mib1.mind_packets >= 1
@@ -179,8 +186,15 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
 	    if kn1 <> kn2 then error ()
   end;*)
   (* we check that records and their field names are preserved. *)
-  check bool_equal (fun mib -> mib.mind_record);
-  if mib1.mind_record then begin
+  let record_equal x y =
+    match x, y with
+    | None, None -> true
+    | Some (r1,p1), Some (r2,p2) ->
+      eq_constr r1 r2 && Array.for_all2 eq_con_chk p1 p2
+    | _, _ -> false
+  in
+  check record_equal (fun mib -> mib.mind_record);
+  if mib1.mind_record != None then begin
     let rec names_prod_letin t = match t with
       | Prod(n,_,t) -> n::(names_prod_letin t)
       | LetIn(n,_,_,t) -> n::(names_prod_letin t)
@@ -282,7 +296,8 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
 		      "inductive type and give a definition to map the old name to the new " ^
 		      "name."));
       if constant_has_body cb2 then error () ;
-      let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
+      let u = inductive_instance mind1 in
+      let arity1 = type_of_inductive env ((mind1,mind1.mind_packets.(i)),u) in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv conv_leq env arity1 typ2
    | IndConstr (((kn,i),j) as cstr,mind1) ->
@@ -292,7 +307,8 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
        "constructor and give a definition to map the old name to the new " ^
        "name."));
       if constant_has_body cb2 then error () ;
-      let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
+      let u1 = inductive_instance mind1 in
+      let ty1 = type_of_constructor (cstr,u1) (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv conv env ty1 ty2
 

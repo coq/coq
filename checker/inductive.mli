@@ -14,7 +14,7 @@ open Environ
 
 (*s Extracting an inductive type from a construction *)
 
-val find_rectype : env -> constr -> inductive * constr list
+val find_rectype : env -> constr -> pinductive * constr list
 
 type mind_specif = mutual_inductive_body * one_inductive_body
 
@@ -22,12 +22,15 @@ type mind_specif = mutual_inductive_body * one_inductive_body
     Raises [Not_found] if the inductive type is not found. *)
 val lookup_mind_specif : env -> inductive -> mind_specif
 
-val type_of_inductive : env -> mind_specif -> constr
+val make_inductive_subst : mutual_inductive_body -> Univ.universe_instance -> Univ.universe_subst
+val inductive_instance : mutual_inductive_body -> Univ.universe_instance
+
+val type_of_inductive : env -> mind_specif puniverses -> constr
 
 (* Return type as quoted by the user *)
-val type_of_constructor : constructor -> mind_specif -> constr
+val type_of_constructor : pconstructor -> mind_specif -> constr
 
-val arities_of_specif : mutual_inductive -> mind_specif -> constr array
+val arities_of_specif : mutual_inductive puniverses -> mind_specif -> constr array
 
 (* [type_case_branches env (I,args) (p:A) c] computes useful types
    about the following Cases expression:
@@ -36,7 +39,7 @@ val arities_of_specif : mutual_inductive -> mind_specif -> constr array
    introduced by products) and the type for the whole expression.
  *)
 val type_case_branches :
-  env -> inductive * constr list -> constr * constr -> constr
+  env -> pinductive * constr list -> constr * constr -> constr
     -> constr array * constr
 
 (* Check a [case_info] actually correspond to a Case expression on the
@@ -50,12 +53,12 @@ val check_cofix : env -> cofixpoint -> unit
 (*s Support for sort-polymorphic inductive types *)
 
 val type_of_inductive_knowing_parameters :
-  env -> one_inductive_body -> constr array -> constr
+  env -> mind_specif puniverses -> constr array -> constr
 
 val max_inductive_sort : sorts array -> Univ.universe
 
-(* val instantiate_universes : env -> rel_context -> *)
-(*     inductive_arity -> constr array -> rel_context * sorts *)
+val instantiate_universes : env -> rel_context ->
+  template_arity -> constr array -> rel_context * sorts
 
 (***************************************************************)
 (* Debug *)

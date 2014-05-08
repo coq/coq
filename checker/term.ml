@@ -76,6 +76,7 @@ let iter_constr_with_binders g f n c = match c with
   | CoFix (_,(_,tl,bl)) ->
       Array.iter (f n) tl;
       Array.iter (f (iterate g (Array.length tl) n)) bl
+  | Proj (p, c) -> f n c
 
 exception LocalOccur
 
@@ -152,6 +153,7 @@ let map_constr_with_binders g f l c = match c with
   | CoFix(ln,(lna,tl,bl)) ->
       let l' = iterate g (Array.length tl) l in
       CoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
+  | Proj (p, c) -> Proj (p, f l c)
 
 (* The generic lifting function *)
 let rec exliftn el c = match c with
@@ -351,6 +353,9 @@ let compare_sorts s1 s2 = match s1, s2 with
 | Prop _, Type _ -> false
 | Type _, Prop _ -> false
 
+let eq_puniverses f (c1,u1) (c2,u2) =
+  Univ.Instance.equal u1 u2 && f c1 c2
+
 let compare_constr f t1 t2 =
   match t1, t2 with
   | Rel n1, Rel n2 -> Int.equal n1 n2
@@ -372,9 +377,10 @@ let compare_constr f t1 t2 =
           f h1 h2 && List.for_all2 f l1 l2
         else false
   | Evar (e1,l1), Evar (e2,l2) -> Int.equal e1 e2 && Array.equal f l1 l2
-  | Const c1, Const c2 -> eq_con_chk c1 c2
-  | Ind c1, Ind c2 -> eq_ind_chk c1 c2
-  | Construct (c1,i1), Construct (c2,i2) -> Int.equal i1 i2 && eq_ind_chk c1 c2
+  | Const c1, Const c2 -> eq_puniverses eq_con_chk c1 c2
+  | Ind c1, Ind c2 -> eq_puniverses eq_ind_chk c1 c2
+  | Construct ((c1,i1),u1), Construct ((c2,i2),u2) -> Int.equal i1 i2 && eq_ind_chk c1 c2
+    && Univ.Instance.equal u1 u2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
       f p1 p2 && f c1 c2 && Array.equal f bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
@@ -389,3 +395,88 @@ let rec eq_constr m n =
   compare_constr eq_constr m n
 
 let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
+
+(* Universe substitutions *)
+
+let subst_univs_puniverses subst =
+  if Univ.is_empty_level_subst subst then fun c -> c
+  else 
+    let f = Univ.Instance.subst subst in
+      fun ((c, u) as x) -> let u' = f u in if u' == u then x else (c, u')
+
+let subst_univs_fn_puniverses fn =
+  let f = Univ.Instance.subst_fn fn in
+    fun ((c, u) as x) -> let u' = f u in if u' == u then x else (c, u')
+
+let map_constr f c = map_constr_with_binders (fun x -> x) (fun _ c -> f c) 0 c
+
+let subst_univs_fn_constr f c =
+  let changed = ref false in
+  let fu = Univ.subst_univs_universe f in
+  let fi = Univ.Instance.subst_fn (Univ.level_subst_of f) in
+  let rec aux t = 
+    match t with
+    | Sort (Type u) -> 
+      let u' = fu u in
+	if u' == u then t else 
+	  (changed := true; Sort (Type u'))
+    | Const (c, u) -> 
+      let u' = fi u in 
+	if u' == u then t
+	else (changed := true; Const (c, u'))
+    | Ind (i, u) ->
+      let u' = fi u in 
+	if u' == u then t
+	else (changed := true; Ind (i, u'))
+    | Construct (c, u) ->
+      let u' = fi u in 
+	if u' == u then t
+	else (changed := true; Construct (c, u'))
+    | _ -> map_constr aux t
+  in 
+  let c' = aux c in
+    if !changed then c' else c
+
+let subst_univs_constr subst c =
+  if Univ.is_empty_subst subst then c
+  else 
+    let f = Univ.make_subst subst in
+      subst_univs_fn_constr f c
+
+
+let subst_univs_level_constr subst c =
+  if Univ.is_empty_level_subst subst then c
+  else 
+    let f = Univ.Instance.subst_fn (Univ.subst_univs_level_level subst) in
+    let changed = ref false in
+    let rec aux t = 
+      match t with
+      | Const (c, u) -> 
+	if Univ.Instance.is_empty u then t
+	else 
+          let u' = f u in 
+	    if u' == u then t
+	    else (changed := true; Const (c, u'))
+      | Ind (i, u) ->
+	if Univ.Instance.is_empty u then t
+	else 
+	  let u' = f u in 
+	    if u' == u then t
+	    else (changed := true; Ind (i, u'))
+      | Construct (c, u) ->
+	if Univ.Instance.is_empty u then t
+	else 
+          let u' = f u in 
+	    if u' == u then t
+	    else (changed := true; Construct (c, u'))
+      | Sort (Type u) -> 
+         let u' = Univ.subst_univs_level_universe subst u in
+	   if u' == u then t else 
+	     (changed := true; Sort (Type u'))
+      | _ -> map_constr aux t
+    in
+    let c' = aux c in
+      if !changed then c' else c
+
+let subst_univs_context s = 
+  map_rel_context (subst_univs_constr s)

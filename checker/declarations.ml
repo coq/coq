@@ -186,12 +186,12 @@ let make_con_equiv mpu mpc dir l =
   if mpu == mpc then constant_of_kn knu
   else constant_of_kn_equiv knu (make_kn mpc dir l)
 
-let subst_con0 sub con =
+let subst_con0 sub con u =
   let kn1,kn2 = user_con con,canonical_con con in
   let mp1,dir,l = repr_kn kn1 in
   let mp2,_,_ = repr_kn kn2 in
   let rebuild_con mp1 mp2 = make_con_equiv mp1 mp2 dir l in
-  let dup con = con, Const con in
+  let dup con = con, Const (con, u) in
   let side,con',resolve = gen_subst_mp rebuild_con sub mp1 mp2 in
   match constant_of_delta_with_inline resolve con' with
     | Some t -> con', t
@@ -205,13 +205,21 @@ let subst_con0 sub con =
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match c with
-      | Const kn -> (try snd (f' kn) with No_subst -> c)
-      | Ind (kn,i) ->
+      | Const (kn, u) -> (try snd (f' kn u) with No_subst -> c)
+      | Proj (kn,t) -> 
+          let kn' = 
+	    try fst (f' kn Univ.Instance.empty)
+	    with No_subst -> kn 
+	  in
+	  let t' = func t in
+	    if kn' == kn && t' == t then c
+	    else Proj (kn', t')
+      | Ind ((kn,i),u) ->
 	  let kn' = f kn in
-	  if kn'==kn then c else Ind (kn',i)
-      | Construct ((kn,i),j) ->
+	  if kn'==kn then c else Ind ((kn',i),u)
+      | Construct (((kn,i),j),u) ->
 	  let kn' = f kn in
-	  if kn'==kn then c else Construct ((kn',i),j)
+	  if kn'==kn then c else Construct (((kn',i),j),u)
       | Case (ci,p,ct,l) ->
 	  let ci_ind =
             let (kn,i) = ci.ci_ind in
@@ -491,8 +499,35 @@ let eq_wf_paths = Rtree.equal eq_recarg
    with      In (params) : Un := cn1 : Tn1 | ... | cnpn : Tnpn
 *)
 
-let subst_arity sub s = subst_mps sub s
 
+let subst_decl_arity f g sub ar = 
+  match ar with
+  | RegularArity x -> 
+    let x' = f sub x in 
+      if x' == x then ar
+      else RegularArity x'
+  | TemplateArity x -> 
+    let x' = g sub x in 
+      if x' == x then ar
+      else TemplateArity x'
+
+let map_decl_arity f g = function
+  | RegularArity a -> RegularArity (f a)
+  | TemplateArity a -> TemplateArity (g a)
+
+
+let subst_rel_declaration sub (id,copt,t as x) =
+  let copt' = Option.smartmap (subst_mps sub) copt in
+  let t' = subst_mps sub t in
+  if copt == copt' && t == t' then x else (id,copt',t')
+
+let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
+
+let subst_template_cst_arity sub (ctx,s as arity) =
+  let ctx' = subst_rel_context sub ctx in
+    if ctx==ctx' then arity else (ctx',s)
+
+let subst_arity sub s = subst_decl_arity subst_mps subst_template_cst_arity sub s
 
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 (* NB: we leave bytecode and native code fields untouched *)
@@ -501,6 +536,18 @@ let subst_const_body sub cb =
     const_body = subst_constant_def sub cb.const_body;
     const_type = subst_arity sub cb.const_type }
 
+
+let subst_regular_ind_arity sub s =
+  let uar' = subst_mps sub s.mind_user_arity in
+    if uar' == s.mind_user_arity then s 
+    else { mind_user_arity = uar'; mind_sort = s.mind_sort }
+
+let subst_template_ind_arity sub s = s
+
+(* FIXME records *)
+let subst_ind_arity =
+  subst_decl_arity subst_regular_ind_arity subst_template_ind_arity
+
 let subst_mind_packet sub mbp =
   { mind_consnames = mbp.mind_consnames;
     mind_consnrealdecls = mbp.mind_consnrealdecls;
@@ -508,7 +555,7 @@ let subst_mind_packet sub mbp =
     mind_typename = mbp.mind_typename;
     mind_nf_lc = Array.smartmap (subst_mps sub) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
-    mind_arity = subst_arity sub mbp.mind_arity;
+    mind_arity = subst_ind_arity sub mbp.mind_arity;
     mind_user_lc = Array.smartmap (subst_mps sub) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealargs_ctxt = mbp.mind_nrealargs_ctxt;

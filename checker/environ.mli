@@ -39,14 +39,19 @@ val push_rec_types : name array * constr array * 'a -> env -> env
 (* Universes *)
 val universes : env -> Univ.universes
 val add_constraints : Univ.constraints -> env -> env
+val check_constraints : Univ.constraints -> env -> bool
 
 (* Constants *)
 val lookup_constant : constant -> env -> Cic.constant_body
 val add_constant : constant -> Cic.constant_body -> env -> env
+val constant_type : env -> constant puniverses -> constant_type Univ.constrained
 type const_evaluation_result = NoBody | Opaque
 exception NotEvaluableConst of const_evaluation_result
-val constant_value : env -> constant -> constr
+val constant_value : env -> constant puniverses -> constr
 val evaluable_constant : constant -> env -> bool
+
+val is_projection : constant -> env -> bool
+val lookup_projection : constant -> env -> projection_body
 
 (* Inductives *)
 val mind_equiv : env -> inductive -> inductive -> bool

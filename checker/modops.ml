@@ -90,7 +90,11 @@ let strengthen_const mp_from l cb resolver =
     | _ ->
       let con = Constant.make2 mp_from l in
       (* let con =  constant_of_delta resolver con in*)
-      { cb with const_body = Def (Declarations.from_val (Const con)) }
+      let u = 
+	if cb.const_polymorphic then Univ.UContext.instance cb.const_universes 
+	else Univ.Instance.empty
+      in
+      { cb with const_body = Def (Declarations.from_val (Const (con,u))) }
 
 let rec strengthen_mod mp_from mp_to mb =
   if Declarations.mp_in_delta mb.mod_mp mb.mod_delta then

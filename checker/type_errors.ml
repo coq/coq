@@ -45,7 +45,7 @@ type type_error =
   | NotAType of unsafe_judgment
   | BadAssumption of unsafe_judgment
   | ReferenceVariables of constr
-  | ElimArity of inductive * sorts_family list * constr * unsafe_judgment
+  | ElimArity of pinductive * sorts_family list * constr * unsafe_judgment
       * (sorts_family * sorts_family * arity_error) option
   | CaseNotInductive of unsafe_judgment
   | WrongCaseInfo of inductive * case_info
@@ -59,6 +59,7 @@ type type_error =
   | IllFormedRecBody of guard_error * name array * int
   | IllTypedRecBody of
       int * name array * unsafe_judgment array * constr array
+  | UnsatisfiedConstraints of Univ.constraints
 
 exception TypeError of env * type_error
 
@@ -107,4 +108,5 @@ let error_ill_formed_rec_body env why lna i =
 let error_ill_typed_rec_body env i lna vdefj vargs =
   raise (TypeError (env, IllTypedRecBody (i,lna,vdefj,vargs)))
 
-
+let error_unsatisfied_constraints env c =
+  raise (TypeError (env, UnsatisfiedConstraints c))

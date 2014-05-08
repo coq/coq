@@ -47,7 +47,7 @@ type type_error =
   | NotAType of unsafe_judgment
   | BadAssumption of unsafe_judgment
   | ReferenceVariables of constr
-  | ElimArity of inductive * sorts_family list * constr * unsafe_judgment
+  | ElimArity of pinductive * sorts_family list * constr * unsafe_judgment
       * (sorts_family * sorts_family * arity_error) option
   | CaseNotInductive of unsafe_judgment
   | WrongCaseInfo of inductive * case_info
@@ -61,6 +61,7 @@ type type_error =
   | IllFormedRecBody of guard_error * name array * int
   | IllTypedRecBody of
       int * name array * unsafe_judgment array * constr array
+  | UnsatisfiedConstraints of Univ.constraints
 
 exception TypeError of env * type_error
 
@@ -75,7 +76,7 @@ val error_assumption : env -> unsafe_judgment -> 'a
 val error_reference_variables : env -> constr -> 'a
 
 val error_elim_arity :
-  env -> inductive -> sorts_family list -> constr -> unsafe_judgment ->
+  env -> pinductive -> sorts_family list -> constr -> unsafe_judgment ->
       (sorts_family * sorts_family * arity_error) option -> 'a
 
 val error_case_not_inductive : env -> unsafe_judgment -> 'a
@@ -99,3 +100,4 @@ val error_ill_formed_rec_body :
 val error_ill_typed_rec_body  :
   env -> int -> name array -> unsafe_judgment array -> constr array -> 'a
 
+val error_unsatisfied_constraints : env -> Univ.constraints -> 'a

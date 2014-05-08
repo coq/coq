@@ -52,3 +52,7 @@ val destArity : constr -> arity
 val isArity : constr -> bool
 val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 val eq_constr : constr -> constr -> bool
+
+val subst_univs_constr : Univ.universe_subst -> constr -> constr
+val subst_univs_level_constr : Univ.universe_level_subst -> constr -> constr
+val subst_univs_context : Univ.universe_subst -> rel_context -> rel_context

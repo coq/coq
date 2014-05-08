@@ -66,10 +66,12 @@ val betaiotazeta       : reds
 val betadeltaiotanolet : reds
 
 (***********************************************************************)
-type table_key =
-  | ConstKey of constant
+type 'a tableKey =
+  | ConstKey of 'a
   | VarKey of Id.t
   | RelKey of int
+
+type table_key = constant puniverses tableKey
 
 type 'a infos
 val ref_value_cache: 'a infos -> table_key -> 'a option
@@ -90,9 +92,10 @@ type fterm =
   | FAtom of constr (* Metas and Sorts *)
   | FCast of fconstr * cast_kind * fconstr
   | FFlex of table_key
-  | FInd of inductive
-  | FConstruct of constructor
+  | FInd of pinductive
+  | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
+  | FProj of constant * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCases of case_info * fconstr * fconstr * fconstr array
@@ -112,6 +115,7 @@ type fterm =
 type stack_member =
   | Zapp of fconstr array
   | Zcase of case_info * fconstr * fconstr array
+  | Zproj of int * int * constant
   | Zfix of fconstr * stack
   | Zshift of int
   | Zupdate of fconstr
@@ -120,6 +124,12 @@ and stack = stack_member list
 
 val append_stack : fconstr array -> stack -> stack
 val eta_expand_stack : stack -> stack
+
+val eta_expand_ind_stack : env -> lift -> pinductive -> fconstr -> stack -> 
+  (lift * (fconstr * stack)) -> lift * (fconstr * stack)
+ 
+val eta_expand_ind_stacks : env -> inductive -> fconstr -> stack -> 
+   (fconstr * stack) -> stack * stack
 
 (* To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
@@ -135,6 +145,8 @@ val destFLambda :
 (* Global and local constant cache *)
 type clos_infos
 val create_clos_infos : reds -> env -> clos_infos
+val infos_env : clos_infos -> env
+val infos_flags : clos_infos -> reds
 
 (* Reduction function *)
 

@@ -297,7 +297,8 @@ let rec explain_exn = function
           str("\nCantApplyBadType at argument " ^ string_of_int n)
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
       | IllFormedRecBody _ -> str"IllFormedRecBody"
-      | IllTypedRecBody _ -> str"IllTypedRecBody"))
+      | IllTypedRecBody _ -> str"IllTypedRecBody"
+      | UnsatisfiedConstraints _ -> str"UnsatisfiedConstraints"))
 
   | Indtypes.InductiveError e ->
       hov 0 (str "Error related to inductive types")

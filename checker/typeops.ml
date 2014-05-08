@@ -28,6 +28,10 @@ let conv_leq_vecti env v1 v2 =
     v1
     v2
 
+let check_constraints cst env = 
+  if Environ.check_constraints cst env then ()
+  else error_unsatisfied_constraints env cst
+
 (* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env (c,ty as j) =
   match whd_betadeltaiota env ty with
@@ -66,23 +70,34 @@ let judge_of_relative env n =
 
 (* Type of constants *)
 
-let type_of_constant_knowing_parameters env t paramtyps =
-  t
-  (* | PolymorphicArity (sign,ar) -> *)
-  (*     let ctx = List.rev sign in *)
-  (*     let ctx,s = instantiate_universes env ctx ar paramtyps in *)
-  (*     mkArity (List.rev ctx,s) *)
+
+let type_of_constant_type_knowing_parameters env t paramtyps =
+  match t with
+  | RegularArity t -> t
+  | TemplateArity (sign,ar) ->
+      let ctx = List.rev sign in
+      let ctx,s = instantiate_universes env ctx ar paramtyps in
+      mkArity (List.rev ctx,s)
+
+let type_of_constant_knowing_parameters env cst paramtyps =
+  let ty, cu = constant_type env cst in
+    type_of_constant_type_knowing_parameters env ty paramtyps, cu
 
 let type_of_constant_type env t =
-  type_of_constant_knowing_parameters env t [||]
+  type_of_constant_type_knowing_parameters env t [||]
 
-let judge_of_constant_knowing_parameters env cst paramstyp =
-  let cb =
-    try lookup_constant cst env
+let type_of_constant env cst =
+  type_of_constant_knowing_parameters env cst [||]
+
+let judge_of_constant_knowing_parameters env (kn,u as cst) paramstyp =
+  let _cb =
+    try lookup_constant kn env
     with Not_found ->
-      failwith ("Cannot find constant: "^string_of_con cst)
+      failwith ("Cannot find constant: "^string_of_con kn)
   in
-  type_of_constant_knowing_parameters env cb.const_type paramstyp
+  let ty, cu = type_of_constant_knowing_parameters env cst paramstyp in
+  let () = check_constraints cu env in
+    ty
 
 let judge_of_constant env cst =
   judge_of_constant_knowing_parameters env cst [||]
@@ -160,27 +175,27 @@ let judge_of_cast env (c,cj) k tj =
    the App case of execute; from this constraints, the expected
    dynamic constraints of the form u<=v are enforced *)
 
-let judge_of_inductive_knowing_parameters env ind (paramstyp:constr array) =
-  let (mib,mip) =
+let judge_of_inductive_knowing_parameters env (ind,u) (paramstyp:constr array) =
+  let specif =
     try lookup_mind_specif env ind
     with Not_found ->
       failwith ("Cannot find inductive: "^string_of_mind (fst ind))
   in
-  type_of_inductive_knowing_parameters env mip paramstyp
+  type_of_inductive_knowing_parameters env (specif,u) paramstyp
 
 let judge_of_inductive env ind =
   judge_of_inductive_knowing_parameters env ind [||]
 
 (* Constructors. *)
 
-let judge_of_constructor env c =
+let judge_of_constructor env (c,u) =
   let ind = inductive_of_constructor c in
   let specif =
     try lookup_mind_specif env ind
     with Not_found ->
       failwith ("Cannot find inductive: "^string_of_mind (fst ind))
   in
-  type_of_constructor c specif
+  type_of_constructor (c,u) specif
 
 (* Case. *)
 
@@ -196,10 +211,23 @@ let judge_of_case env ci pj (c,cj) lfj =
   let indspec =
     try find_rectype env cj
     with Not_found -> error_case_not_inductive env (c,cj) in
-  let _ = check_case_info env (fst indspec) ci in
+  let _ = check_case_info env (fst (fst indspec)) ci in
   let (bty,rslty) = type_case_branches env indspec pj c in
   check_branch_types env (c,cj) (lfj,bty);
   rslty
+
+(* Projection. *)
+
+let judge_of_projection env p c ct =
+  let pb = lookup_projection p env in
+  let (ind,u), args =
+    try find_rectype env ct
+    with Not_found -> error_case_not_inductive env (c, ct)
+  in
+    assert(eq_mind pb.proj_ind (fst ind));
+    let usubst = make_inductive_subst (fst (lookup_mind_specif env ind)) u in
+    let ty = subst_univs_constr usubst pb.proj_type in
+      substl (c :: List.rev args) ty
 
 (* Fixpoints. *)
 
@@ -263,6 +291,10 @@ let rec execute env cstr =
 	in
         let jl = Array.map2 (fun c ty -> c,ty) args jl in
 	judge_of_apply env (f,j) jl
+
+    | Proj (p, c) ->
+        let ct = execute env c in
+          judge_of_projection env p c ct
 
     | Lambda (name,c1,c2) ->
         let _ = execute_type env c1 in
@@ -364,14 +396,14 @@ let check_kind env ar u =
   if snd (dest_prod env ar) = Sort(Type u) then ()
   else failwith "not the correct sort"
 
-(* let check_polymorphic_arity env params par = *)
-(*   let pl = par.poly_param_levels in *)
-(*   let rec check_p env pl params = *)
-(*     match pl, params with *)
-(*         Some u::pl, (na,None,ty)::params -> *)
-(*           check_kind env ty u; *)
-(*           check_p (push_rel (na,None,ty) env) pl params *)
-(*       | None::pl,d::params -> check_p (push_rel d env) pl params *)
-(*       | [], _ -> () *)
-(*       | _ -> failwith "check_poly: not the right number of params" in *)
-(*   check_p env pl (List.rev params) *)
+let check_polymorphic_arity env params par =
+  let pl = par.template_param_levels in
+  let rec check_p env pl params =
+    match pl, params with
+        Some u::pl, (na,None,ty)::params ->
+          check_kind env ty u;
+          check_p (push_rel (na,None,ty) env) pl params
+      | None::pl,d::params -> check_p (push_rel d env) pl params
+      | [], _ -> ()
+      | _ -> failwith "check_poly: not the right number of params" in
+  check_p env pl (List.rev params)

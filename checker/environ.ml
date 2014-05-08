@@ -84,6 +84,9 @@ let add_constraints c env =
     { env with env_stratification =
       { s with env_universes = merge_constraints c s.env_universes } }
 
+let check_constraints cst env =
+  Univ.check_constraints cst env.env_stratification.env_universes
+
 (* Global constants *)
 
 let lookup_constant kn env =
@@ -104,19 +107,53 @@ let add_constant kn cs env =
 
 type const_evaluation_result = NoBody | Opaque
 
+(* Constant types *)
+
+let universes_and_subst_of cb u =
+  let univs = cb.const_universes in
+  let subst = Univ.make_universe_subst u univs in
+    subst, Univ.instantiate_univ_context subst univs
+
+let map_regular_arity f = function
+  | RegularArity a as ar -> 
+    let a' = f a in 
+      if a' == a then ar else RegularArity a'
+  | TemplateArity _ -> assert false
+
+(* constant_type gives the type of a constant *)
+let constant_type env (kn,u) =
+  let cb = lookup_constant kn env in
+    if cb.const_polymorphic then
+      let subst, csts = universes_and_subst_of cb u in
+	(map_regular_arity (subst_univs_constr subst) cb.const_type, csts)
+    else cb.const_type, Univ.Constraint.empty
+
 exception NotEvaluableConst of const_evaluation_result
 
-let constant_value env kn =
+let constant_value env (kn,u) =
   let cb = lookup_constant kn env in
-  match cb.const_body with
-    | Def l_body -> force_constr l_body
+    match cb.const_body with
+    | Def l_body -> 
+      let b = force_constr l_body in
+	if cb.const_polymorphic then
+	  let subst = Univ.make_universe_subst u cb.const_universes in
+	    subst_univs_constr subst b
+	else b
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
 
 (* A global const is evaluable if it is defined and not opaque *)
 let evaluable_constant cst env =
-  try let _  = constant_value env cst in true
+  try let _  = constant_value env (cst, Univ.Instance.empty) in true
   with Not_found | NotEvaluableConst _ -> false
+
+let is_projection cst env = 
+  not (Option.is_empty (lookup_constant cst env).const_proj)
+
+let lookup_projection cst env =
+  match (lookup_constant cst env).const_proj with 
+  | Some pb -> pb
+  | None -> anomaly ("lookup_projection: constant is not a projection")
 
 (* Mutual Inductives *)
 let scrape_mind env kn=
