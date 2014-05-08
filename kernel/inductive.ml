@@ -214,11 +214,13 @@ let instantiate_universes env ctx ar argsorts =
 
 (* Type of an inductive type *)
 
-let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
+let type_of_inductive_subst ?(polyprop=true) env ((mib,mip),u) paramtyps =
   match mip.mind_arity with
   | RegularArity a ->
-    let subst = make_inductive_subst mib u in
-      (subst_univs_constr subst a.mind_user_arity, subst)
+    if not mib.mind_polymorphic then (a.mind_user_arity, Univ.LMap.empty)
+    else 
+      let subst = make_inductive_subst mib u in
+	(subst_univs_constr subst a.mind_user_arity, subst)
   | TemplateArity ar ->
     let ctx = List.rev mip.mind_arity_ctxt in
     let ctx,s = instantiate_universes env ctx ar paramtyps in
@@ -229,21 +231,38 @@ let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
       then raise (SingletonInductiveBecomesProp mip.mind_typename);
       mkArity (List.rev ctx,s), Univ.LMap.empty
 
+let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
+  match mip.mind_arity with
+  | RegularArity a ->
+    if not mib.mind_polymorphic then a.mind_user_arity
+    else 
+      let subst = make_inductive_subst mib u in
+	(subst_univs_constr subst a.mind_user_arity)
+  | TemplateArity ar ->
+    let ctx = List.rev mip.mind_arity_ctxt in
+    let ctx,s = instantiate_universes env ctx ar paramtyps in
+      (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
+         the situation where a non-Prop singleton inductive becomes Prop
+         when applied to Prop params *)
+      if not polyprop && not (is_type0m_univ ar.template_level) && is_prop_sort s
+      then raise (SingletonInductiveBecomesProp mip.mind_typename);
+      mkArity (List.rev ctx,s)
+
 let type_of_inductive env pind = 
-  fst (type_of_inductive_gen env pind [||])
+  type_of_inductive_gen env pind [||]
 
 let constrained_type_of_inductive env ((mib,mip),u as pind) =
-  let ty, subst = type_of_inductive_gen env pind [||] in
+  let ty, subst = type_of_inductive_subst env pind [||] in
   let cst = instantiate_inductive_constraints mib subst in
     (ty, cst)
 
 let constrained_type_of_inductive_knowing_parameters env ((mib,mip),u as pind) args =
-  let ty, subst = type_of_inductive_gen env pind args in
+  let ty, subst = type_of_inductive_subst env pind args in
   let cst = instantiate_inductive_constraints mib subst in
     (ty, cst)
 
 let type_of_inductive_knowing_parameters env ?(polyprop=false) mip args = 
-  fst (type_of_inductive_gen env mip args)
+  type_of_inductive_gen env mip args
 
 (* The max of an array of universes *)
 
