@@ -1,7 +1,15 @@
 TrM.A = M.A
      : Set
+
+TrM.A is monomorphic
 OpM.A = M.A
      : Set
+
+OpM.A is monomorphic
 TrM.B = M.B
      : Set
+
+TrM.B is monomorphic
 *** [ OpM.B : Set ]
+
+OpM.B is monomorphic

@@ -4,4 +4,4 @@ The command has indeed failed with message:
 => Error: Unable to unify "nat" with "True".
 The command has indeed failed with message:
 => In nested Ltac calls to "f" and "apply x", last call failed.
-   Error: Unable to unify "nat" with "True".
+Error: Unable to unify "nat" with "True".

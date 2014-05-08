@@ -1,56 +1,70 @@
 a : bool -> bool
 
+a is monomorphic
 Argument scope is [bool_scope]
 Expands to: Variable a
 b : bool -> bool
 
+b is monomorphic
 Argument scope is [bool_scope]
 Expands to: Variable b
 negb'' : bool -> bool
 
+negb'' is monomorphic
 Argument scope is [bool_scope]
 negb'' is transparent
 Expands to: Constant Top.A.B.negb''
 negb' : bool -> bool
 
+negb' is monomorphic
 Argument scope is [bool_scope]
 negb' is transparent
 Expands to: Constant Top.A.negb'
 negb : bool -> bool
 
+negb is monomorphic
 Argument scope is [bool_scope]
 negb is transparent
 Expands to: Constant Coq.Init.Datatypes.negb
 a : bool -> bool
 
+a is monomorphic
 Expands to: Variable a
 b : bool -> bool
 
+b is monomorphic
 Expands to: Variable b
 negb : bool -> bool
 
+negb is monomorphic
 negb is transparent
 Expands to: Constant Coq.Init.Datatypes.negb
 negb' : bool -> bool
 
+negb' is monomorphic
 negb' is transparent
 Expands to: Constant Top.A.negb'
 negb'' : bool -> bool
 
+negb'' is monomorphic
 negb'' is transparent
 Expands to: Constant Top.A.B.negb''
 a : bool -> bool
 
+a is monomorphic
 Expands to: Variable a
 negb : bool -> bool
 
+negb is monomorphic
 negb is transparent
 Expands to: Constant Coq.Init.Datatypes.negb
 negb' : bool -> bool
 
+negb' is monomorphic
 negb' is transparent
 Expands to: Constant Top.negb'
 negb'' : bool -> bool
 
+negb'' is monomorphic
 negb'' is transparent
 Expands to: Constant Top.negb''
