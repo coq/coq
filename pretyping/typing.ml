@@ -285,11 +285,13 @@ let sort_of env evd c =
 
 (* Try to solve the existential variables by typing *)
 
-let e_type_of env evd c =
+let e_type_of ?(refresh=false) env evd c =
   let evdref = ref evd in
   let j = execute env evdref c in
   (* side-effect on evdref *)
-  !evdref, j.uj_type
+    if refresh then
+      Evarsolve.refresh_universes false !evdref j.uj_type
+    else !evdref, j.uj_type
 
 let solve_evars env evdref c =
   let c = (execute env evdref c).uj_val in
