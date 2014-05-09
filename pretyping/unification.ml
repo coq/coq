@@ -92,8 +92,11 @@ let abstract_list_all_with_dependencies env evd typ c l =
   let evd,b =
     Evarconv.second_order_matching empty_transparent_state
       env evd ev' argoccs c in
-  let p = nf_evar evd (existential_value evd (destEvar ev)) in
-  if b then evd, p else error_cannot_find_well_typed_abstraction env evd p l None
+  if b then
+    let p = nf_evar evd (existential_value evd (destEvar ev)) in
+      evd, p
+  else error_cannot_find_well_typed_abstraction env evd 
+    (nf_evar evd c) l None
 
 (**)
 

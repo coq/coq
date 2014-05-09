@@ -889,10 +889,14 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       in
       force_instantiation evd !evsref
   | [] ->
-      Evd.define evk rhs evd in
-
+    let evd = 
+      try Evarsolve.check_evar_instance evd evk rhs (evar_conv_x ts)
+      with IllTypedInstance _ -> raise (TypingFailed evd)
+    in
+      Evd.define evk rhs evd 
+  in
   abstract_free_holes evd subst, true
-  with TypingFailed evd -> Evd.define evk rhs evd, false
+  with TypingFailed evd -> evd, false
 
 let second_order_matching_with_args ts env evd ev l t =
 (*
