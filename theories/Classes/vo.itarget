@@ -10,3 +10,6 @@ SetoidClass.vo
 SetoidDec.vo
 SetoidTactics.vo
 RelationPairs.vo
+CRelationClasses.vo
+CMorphisms.vo
+CEquivalence.vo

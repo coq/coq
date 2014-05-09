@@ -15,7 +15,8 @@
 
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
-Require Export Coq.Classes.RelationClasses.
+Require Import Setoid.
+Require Export Coq.Classes.CRelationClasses.
 
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
 Local Obligation Tactic := simpl_crelation.
@@ -31,8 +32,7 @@ Set Universe Polymorphism.
    The relation [R] will be instantiated by [respectful] and [A] by an arrow
    type for usual morphisms. *)
 Section Proper.
-  Let U := Type.
-  Context {A B : U}.
+  Context {A B : Type}.
 
   Class Proper (R : crelation A) (m : A) :=
     proper_prf : R m m.
@@ -145,16 +145,15 @@ Ltac f_equiv :=
  end.
 
 Section Relations.
-  Let U := Type.
-  Context {A B : U}. 
+  Context {A B : Type}. 
 
   (** [forall_def] reifies the dependent product as a definition. *)
   
-  Definition forall_def (P : A -> U) : Type := forall x : A, P x.
+  Definition forall_def (P : A -> Type) : Type := forall x : A, P x.
   
   (** Dependent pointwise lifting of a crelation on the range. *)
   
-  Definition forall_relation (P : A -> U)
+  Definition forall_relation (P : A -> Type)
              (sig : forall a, crelation (P a)) : crelation (forall x, P x) :=
     fun f g => forall a, sig a (f a) (g a).
 
@@ -206,12 +205,11 @@ Section Relations.
   Proof. reduce. unfold pointwise_relation in *. apply sub. auto. Qed.
   
   (** For dependent function types. *)
-  Lemma forall_subrelation (P : A -> U) (R S : forall x : A, crelation (P x)) :
+  Lemma forall_subrelation (P : A -> Type) (R S : forall x : A, crelation (P x)) :
     (forall a, subrelation (R a) (S a)) -> 
     subrelation (forall_relation P R) (forall_relation P S).
   Proof. reduce. firstorder. Qed.
 End Relations.
-
 Typeclasses Opaque respectful pointwise_relation forall_relation.
 Arguments forall_relation {A P}%type sig%signature _ _.
 Arguments pointwise_relation A%type {B}%type R%signature _ _.
@@ -260,8 +258,7 @@ Hint Extern 4 (subrelation (@forall_relation ?A ?B ?R) (@forall_relation _ _ ?S)
 
 Section GenericInstances.
   (* Share universes *)
-  Let U := Type.
-  Context {A B C : U}.
+  Context {A B C : Type}.
 
   (** We can build a PER on the Coq function space if we have PERs on the domain and
    codomain. *)
@@ -344,30 +341,12 @@ Section GenericInstances.
   Qed.
 
   Global Program 
-  Instance trans_co_impl_morphism
-    `(Transitive A R) : Proper (R ++> impl) (R x) | 3.
-
-  Next Obligation.
-  Proof with auto.
-    transitivity x0...
-  Qed.
-
-  Global Program 
   Instance trans_co_impl_type_morphism
     `(Transitive A R) : Proper (R ++> arrow) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
     transitivity x0...
-  Qed.
-
-  Global Program 
-  Instance trans_sym_co_inv_impl_morphism
-    `(PER A R) : Proper (R ++> flip impl) (R x) | 3.
-
-  Next Obligation.
-  Proof with auto.
-    transitivity y... symmetry...
   Qed.
 
   Global Program 
@@ -379,31 +358,12 @@ Section GenericInstances.
     transitivity y... symmetry...
   Qed.
 
-  Global Program Instance trans_sym_contra_impl_morphism
-    `(PER A R) : Proper (R --> impl) (R x) | 3.
-
-  Next Obligation.
-  Proof with auto.
-    transitivity x0... symmetry...
-  Qed.
-
   Global Program Instance trans_sym_contra_arrow_morphism
     `(PER A R) : Proper (R --> arrow) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
     transitivity x0... symmetry...
-  Qed.
-
-  Global Program Instance per_partial_app_morphism
-  `(PER A R) : Proper (R ==> iff) (R x) | 2.
-
-  Next Obligation.
-  Proof with auto.
-    split. intros ; transitivity x0...
-    intros.
-    transitivity y...
-    symmetry...
   Qed.
 
   Global Program Instance per_partial_app_type_morphism
@@ -435,19 +395,6 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     transitivity y...
-  Qed.
-
-  (** Every Symmetric and Transitive crelation gives rise to an equivariant morphism. *)
-
-  Global Program 
-  Instance PER_morphism `(PER A R) : Proper (R ==> R ==> iff) R | 1.
-
-  Next Obligation.
-  Proof with auto.
-    split ; intros.
-    transitivity x0... transitivity x... symmetry...
-
-    transitivity y... transitivity y0... symmetry...
   Qed.
 
   (** Every Symmetric and Transitive crelation gives rise to an equivariant morphism. *)
@@ -491,8 +438,8 @@ Section GenericInstances.
     intros R R' HRR' S S' HSS' f g.
     unfold respectful, relation_equivalence in * ; simpl in *.
     split ; intros H x y Hxy.
-    setoid_rewrite <- HSS'. apply H. now rewrite HRR'.
-    rewrite HSS'. apply H. now rewrite <- HRR'.
+    apply (fst (HSS' _ _)). apply H. now apply (snd (HRR' _ _)). 
+    apply (snd (HSS' _ _)). apply H. now apply (fst (HRR' _ _)). 
   Qed.
 
   (** [R] is Reflexive, hence we can build the needed proof. *)
@@ -594,8 +541,8 @@ Instance proper_proper : Proper (relation_equivalence ==> eq ==> iffT) (@Proper 
 Proof.
   intros A R R' HRR' x y <-. red in HRR'.
   split ; red ; intros. 
-  now setoid_rewrite <- HRR'.
-  now setoid_rewrite HRR'.
+  now apply (fst (HRR' _ _)). 
+  now apply (snd (HRR' _ _)).
 Qed.
 
 Ltac proper_reflexive :=
@@ -633,7 +580,7 @@ Section Normalize.
   Lemma proper_normalizes_proper `(Normalizes R0 R1, Proper A R1 m) : Proper R0 m.
   Proof.
     red in H, H0. red in H.
-    setoid_rewrite H.
+    apply (snd (H _ _)). 
     assumption.
   Qed.
 
@@ -722,7 +669,7 @@ Qed.
 
 (** A [PartialOrder] is compatible with its underlying equivalence. *)
 Require Import Relation_Definitions.
-Instance PartialOrder_proper `(PartialOrder A eqA (R : relation A)) :
+Instance PartialOrder_proper `(PartialOrder A eqA (R : crelation A)) :
   Proper (eqA==>eqA==>iff) R.
 Proof.
 intros.

@@ -17,8 +17,8 @@ Require Import Coq.Program.Tactics.
 
 Require Import Coq.Classes.Init.
 Require Import Relation_Definitions.
-Require Export Coq.Classes.RelationClasses.
-Require Import Coq.Classes.Morphisms.
+Require Export Coq.Classes.CRelationClasses.
+Require Import Coq.Classes.CMorphisms.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

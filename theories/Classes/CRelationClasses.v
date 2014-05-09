@@ -25,6 +25,10 @@ Set Universe Polymorphism.
 
 Definition crelation (A : Type) := A -> A -> Type.
 
+Definition arrow (A B : Type) := A -> B.
+
+Definition flip {A B C : Type} (f : A -> B -> C) := fun x y => f y x.
+
 Definition iffT (A B : Type) := ((A -> B) * (B -> A))%type.
 
 (** We allow to unfold the [crelation] definition while doing morphism search. *)
@@ -334,7 +338,8 @@ Section Binary.
   Qed.
 
   Lemma PartialOrder_inverse `(PartialOrder eqA R) : PartialOrder eqA (flip R).
-  Proof. firstorder. Qed.
+  Proof. unfold flip; constructor; unfold flip. intros. apply H. apply symmetry. apply X.
+         unfold relation_conjunction. intros [H1 H2]. apply H. constructor; assumption. Qed.
 End Binary.
 
 Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : typeclass_instances.
