@@ -202,6 +202,8 @@ Hint Extern 3 (PreOrder (flip _)) => class_apply flip_PreOrder : typeclass_insta
 Hint Extern 4 (subrelation (flip _) _) => 
   class_apply @subrelation_symmetric : typeclass_instances.
 
+Arguments irreflexivity {A R Irreflexive} [x] _.
+
 Hint Resolve irreflexivity : ord.
 
 Unset Implicit Arguments.
