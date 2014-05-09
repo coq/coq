@@ -247,18 +247,11 @@ type eliminator = {
   elimbody : constr with_bindings
 }
 
-val elimination_clause_scheme : evars_flag -> ?flags:unify_flags -> 
-  int -> (constr * types * constr bindings) -> clausenv -> tactic
-
-val elimination_in_clause_scheme : evars_flag -> ?flags:unify_flags -> 
-  Id.t -> int -> (constr * types * constr bindings) -> clausenv -> tactic
-
-val general_elim_clause_gen :
-  (int -> (constr * types * constr bindings) -> 'a -> tactic) ->
-  'a -> eliminator -> tactic
-
 val general_elim  : evars_flag ->
   constr with_bindings -> eliminator -> tactic
+
+val general_elim_clause : evars_flag -> unify_flags -> identifier option ->
+  clausenv -> eliminator -> unit Proofview.tactic
 
 val default_elim  : evars_flag -> constr with_bindings -> unit Proofview.tactic
 val simplest_elim : constr -> unit Proofview.tactic

@@ -138,15 +138,14 @@ let side_tac tac sidetac =
   | None -> tac
   | Some sidetac -> tclTHENSFIRSTn tac [|Proofview.tclUNIT ()|] sidetac
 
-let instantiate_lemma_all frzevars env gl c ty l l2r concl =
+let instantiate_lemma_all frzevars gl c ty l l2r concl =
+  let env = Proofview.Goal.env gl in
   let eqclause = pf_apply Clenv.make_clenv_binding gl (c,ty) l in
-  let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
-  let rec split_last_two = function
-      | [c1;c2] -> [],(c1, c2)
-      | x::y::z ->
-	  let l,res = split_last_two (y::z) in x::l, res
-      | _ -> error "The term provided is not an applied relation." in
-  let others,(c1,c2) = split_last_two args in
+  let (equiv, args) = decompose_appvect (Clenv.clenv_type eqclause) in
+  let arglen = Array.length args in
+  let () = if arglen < 2 then error "The term provided is not an applied relation." in
+  let c1 = args.(arglen - 2) in
+  let c2 = args.(arglen - 1) in
   let try_occ (evd', c') =
     clenv_pose_dependent_evars true {eqclause with evd = evd'}
   in
@@ -156,7 +155,7 @@ let instantiate_lemma_all frzevars env gl c ty l l2r concl =
       ((if l2r then c1 else c2),concl)
   in List.map try_occ occs
 
-let instantiate_lemma env gl c ty l l2r concl =
+let instantiate_lemma gl c ty l l2r concl =
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let eqclause = pf_apply Clenv.make_clenv_binding gl (c,t) l in
@@ -191,20 +190,10 @@ let rewrite_conv_closed_unif_flags = {
   Unification.allow_K_in_toplevel_higher_order_unification = false
 }
 
-let rewrite_elim with_evars frzevars c e =
+let rewrite_elim with_evars frzevars cls c e =
   Proofview.Goal.raw_enter begin fun gl ->
   let flags = make_flags frzevars (Proofview.Goal.sigma gl) rewrite_conv_closed_unif_flags c in
-  let elim gl = elimination_clause_scheme with_evars ~flags gl in
-  let tac gl = general_elim_clause_gen elim c e gl in
-  Proofview.V82.tactic tac
-  end
-
-let rewrite_elim_in with_evars frzevars id c e =
-  Proofview.Goal.raw_enter begin fun gl ->
-  let flags = make_flags frzevars (Proofview.Goal.sigma gl) rewrite_conv_closed_unif_flags c in
-  let elim gl = elimination_in_clause_scheme with_evars ~flags id gl in
-  let tac gl = general_elim_clause_gen elim c e gl in
-  Proofview.V82.tactic tac
+  general_elim_clause with_evars flags cls c e
   end
 
 (* Ad hoc asymmetric general_elim_clause *)
@@ -216,8 +205,8 @@ let general_elim_clause with_evars frzevars cls rew elim =
       (* was tclWEAK_PROGRESS which only fails for tactics generating one
           subgoal and did not fail for useless conditional rewritings generating
           an extra condition *)
-      tclNOTSAMEGOAL (rewrite_elim with_evars frzevars rew elim)
-    | Some id -> rewrite_elim_in with_evars frzevars id rew elim
+      tclNOTSAMEGOAL (rewrite_elim with_evars frzevars cls rew elim)
+    | Some _ -> rewrite_elim with_evars frzevars cls rew elim
     end
     begin function
     | PretypeError (env, evd, NoOccurrenceFound (c', _)) ->
@@ -241,10 +230,9 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
       tac
   in
   Proofview.Goal.raw_enter begin fun gl ->
-    let env = Proofview.Goal.env gl in
     let instantiate_lemma concl =
-      if not all then instantiate_lemma env gl c t l l2r concl
-      else instantiate_lemma_all frzevars env gl c t l l2r concl
+      if not all then instantiate_lemma gl c t l l2r concl
+      else instantiate_lemma_all frzevars gl c t l l2r concl
     in
     let typ = match cls with
     | None -> pf_nf_concl gl

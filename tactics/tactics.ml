@@ -839,14 +839,12 @@ let general_elim_clause_gen elimtac indclause elim gl =
     match elim.elimindex with None -> index_of_ind_arg elimt | Some i -> i in
   elimtac i (elimc, elimt, lbindelimc) indclause gl
 
-let general_elim_clause elimtac (c,lbindc) elim gl =
+let general_elim with_evars (c, lbindc) elim gl =
+  let elimtac = elimination_clause_scheme with_evars in
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let indclause  = pf_apply make_clenv_binding gl (c, t) lbindc in
   general_elim_clause_gen elimtac indclause elim gl
-
-let general_elim with_evars c e =
-  general_elim_clause (elimination_clause_scheme with_evars) c e
 
 (* Case analysis tactics *)
 
@@ -957,6 +955,13 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) id i (elim, e
     errorlabstrm "general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
   clenv_refine_in with_evars id elimclause'' gl
+
+let general_elim_clause with_evars flags id c e =
+  let elim gl = match id with
+  | None -> elimination_clause_scheme with_evars ~flags gl
+  | Some id -> elimination_in_clause_scheme with_evars ~flags id gl
+  in
+  Proofview.V82.tactic (fun gl -> general_elim_clause_gen elim c e gl)
 
 (* Apply a tactic below the products of the conclusion of a lemma *)
 
