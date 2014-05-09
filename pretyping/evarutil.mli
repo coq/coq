@@ -221,7 +221,7 @@ val evd_comb2 : (evar_map -> 'b -> 'c -> evar_map * 'a) -> evar_map ref -> 'b ->
 
 (* val get_template_constructor_type : evar_map ref -> constructor -> int -> types *)
 val get_template_constructor_type : evar_map ref -> constructor -> int -> 
-  (Univ.universe option list * types)
+  (Univ.universe_level option list * types)
 
 val get_template_inductive_type : evar_map ref -> inductive -> int -> 
-  (Univ.universe option list * types)
+  (Univ.universe_level option list * types)

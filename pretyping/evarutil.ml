@@ -830,7 +830,7 @@ let get_template_constructor_type evdref (ind, i) n =
     | Some u :: l, Prod (na, t, t') ->
       let u' = evd_comb0 (new_univ_variable Evd.univ_flexible) evdref in
 	(* evdref := set_leq_sort !evdref u'l (Type u); *)
-	let s = Univ.LMap.add (Option.get (Univ.Universe.level u))
+	let s = Univ.LMap.add u
 	  (Option.get (Univ.Universe.level u')) Univ.LMap.empty in
 	let dom = subst_univs_level_constr s t in
 	(* let codom = subst_univs_level_constr s t' in *)

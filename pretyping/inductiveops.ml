@@ -465,7 +465,7 @@ let rec instantiate_universes env evdref scl is = function
       let s =
 	(* Does the sort of parameter [u] appear in (or equal)
            the sort of inductive [is] ? *)
-        if univ_depends u is then
+        if univ_depends (Univ.Universe.make u) is then
           scl (* constrained sort: replace by scl *)
         else
           (* unconstriained sort: replace by fresh universe *)

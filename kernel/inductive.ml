@@ -155,10 +155,7 @@ let sort_as_univ = function
 (* Template polymorphism *)
 
 let cons_subst u su subst =
-  try
-    (u, sup su (List.assoc_f Universe.equal u subst)) ::
-      List.remove_assoc_f Universe.equal u subst
-  with Not_found -> (u, su) :: subst
+  Univ.LMap.add u su subst
 
 let actualize_decl_level env lev t =
   let sign,s = dest_arity env t in
@@ -192,7 +189,7 @@ let rec make_subst env = function
 	d::ctx, subst
   | sign, [], _ ->
       (* Uniform parameters are exhausted *)
-      sign,[]
+      sign, Univ.LMap.empty
   | [], _, _ ->
       assert false
 
@@ -201,7 +198,7 @@ exception SingletonInductiveBecomesProp of Id.t
 let instantiate_universes env ctx ar argsorts =
   let args = Array.to_list argsorts in
   let ctx,subst = make_subst env (ctx,ar.template_param_levels,args) in
-  let level = subst_large_constraints subst ar.template_level in
+  let level = Univ.subst_univs_universe (Univ.make_subst subst) ar.template_level in
   let ty =
     (* Singleton type not containing types are interpretable in Prop *)
     if is_type0m_univ level then prop_sort

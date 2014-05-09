@@ -27,7 +27,7 @@ type engagement = ImpredicativeSet
 *)
 
 type template_arity = {
-  template_param_levels : Univ.universe option list;
+  template_param_levels : Univ.universe_level option list;
   template_level : Univ.universe;
 }
 

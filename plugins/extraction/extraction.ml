@@ -207,7 +207,7 @@ let oib_equal o1 o2 =
       | RegularArity {mind_user_arity=c1; mind_sort=s1}, RegularArity {mind_user_arity=c2; mind_sort=s2} ->
 	eq_constr c1 c2 && Sorts.equal s1 s2
       | TemplateArity p1, TemplateArity p2 ->
-	let eq o1 o2 = Option.equal Univ.Universe.equal o1 o2 in
+	let eq o1 o2 = Option.equal Univ.Level.equal o1 o2 in
 	  List.equal eq p1.template_param_levels p2.template_param_levels &&
 	    Univ.Universe.equal p1.template_level p2.template_level
       | _, _ -> false

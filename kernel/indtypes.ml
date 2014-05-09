@@ -195,11 +195,11 @@ let is_impredicative env u =
 
 let param_ccls params =
   let has_some_univ u = function
-    | Some v when Universe.equal u v -> true
+    | Some v when Univ.Level.equal u v -> true
     | _ -> false
   in
   let remove_some_univ u = function
-    | Some v when Universe.equal u v -> None
+    | Some v when Univ.Level.equal u v -> None
     | x -> x
   in
   let fold l (_, b, p) = match b with
@@ -210,10 +210,13 @@ let param_ccls params =
     (* polymorphism unless there is aliasing (i.e. non distinct levels) *)
     begin match kind_of_term c with
     | Sort (Type u) ->
-      if List.exists (has_some_univ u) l then
-        None :: List.map (remove_some_univ u) l
-      else
-        Some u :: l
+      (match Univ.Universe.level u with
+      | Some u ->
+	if List.exists (has_some_univ u) l then
+          None :: List.map (remove_some_univ u) l
+	else
+          Some u :: l
+      | None -> None :: l)
     | _ ->
       None :: l
     end
