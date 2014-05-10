@@ -439,6 +439,8 @@ let usage () =
   eprintf "  -dumpgraph f : print a dot dependency graph in file 'f'\n";
   exit 1
 
+let split_period = Str.split (Str.regexp (Str.quote "."))
+
 let rec parse = function
   | "-c" :: ll -> option_c := true; parse ll
   | "-D" :: ll -> option_D := true; parse ll
@@ -446,13 +448,13 @@ let rec parse = function
   | "-boot" :: ll -> Flags.boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
   | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
-  | "-I" :: r :: "-as" :: ln :: ll -> add_dir add_known r [ln]; parse ll
+  | "-I" :: r :: "-as" :: ln :: ll -> add_dir add_known r (split_period ln); parse ll
   | "-I" :: r :: "-as" :: [] -> usage ()
   | "-I" :: r :: ll -> add_dir add_known r []; parse ll
   | "-I" :: [] -> usage ()
-  | "-R" :: r :: "-as" :: ln :: ll -> add_rec_dir add_known r [ln]; parse ll
+  | "-R" :: r :: "-as" :: ln :: ll -> add_rec_dir add_known r (split_period ln); parse ll
   | "-R" :: r :: "-as" :: [] -> usage ()
-  | "-R" :: r :: ln :: ll -> add_rec_dir add_known r [ln]; parse ll
+  | "-R" :: r :: ln :: ll -> add_rec_dir add_known r (split_period ln); parse ll
   | "-R" :: ([] | [_]) -> usage ()
   | "-dumpgraph" :: f :: ll -> option_dump := Some (false, f); parse ll
   | "-dumpgraphbox" :: f :: ll -> option_dump := Some (true, f); parse ll
