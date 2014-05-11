@@ -382,9 +382,9 @@ let rec insert_graph name path graphs = match path, graphs with
 let print_graphs chan graph =
   let rec print_aux name = function
   | [] -> name
-  | (Element str) :: tl -> fprintf chan "%s\n" str; print_aux name tl
+  | (Element str) :: tl -> fprintf chan "\"%s\";\n" str; print_aux name tl
   | Subgraph (box, names) :: tl ->
-    fprintf chan "subgraph cluster%n {\n label=\"%s\"" name box;
+    fprintf chan "subgraph cluster%n {\nlabel=\"%s\";\n" name box;
     let name = print_aux (name + 1) names in
     fprintf chan "}\n"; print_aux name tl
   in
@@ -404,7 +404,7 @@ let rec pop_last = function
 let get_boxes path = pop_last (split_path path)
 
 let insert_raw_graph file =
-  insert_graph (basename_noext file) (get_boxes file)
+  insert_graph file (get_boxes file)
 
 let rec get_dependencies name args =
   let vdep  = treat_coq_file (name ^ ".v") in
