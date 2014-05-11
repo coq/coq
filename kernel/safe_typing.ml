@@ -107,6 +107,8 @@ type library_info = DirPath.t * vodigest
 (** Functor and funsig parameters, most recent first *)
 type module_parameters = (MBId.t * module_type_body) list
 
+module DPMap = Map.Make(DirPath)
+
 type safe_environment =
   { env : Environ.env;
     modpath : module_path;
@@ -119,7 +121,7 @@ type safe_environment =
     univ : Univ.constraints;
     future_cst : Univ.constraints Future.computation list;
     engagement : engagement option;
-    imports : library_info list;
+    imports : vodigest DPMap.t;
     loads : (module_path * module_body) list;
     local_retroknowledge : Retroknowledge.action list}
 
@@ -141,7 +143,7 @@ let empty_environment =
     future_cst = [];
     univ = Univ.Constraint.empty;
     engagement = None;
-    imports = [];
+    imports = DPMap.empty;
     loads = [];
     local_retroknowledge = [] }
 
@@ -272,7 +274,7 @@ let check_initial senv = assert (is_initial senv)
 let check_imports current_libs needed =
   let check (id,required) =
     try
-      let actual = List.assoc_f DirPath.equal id current_libs in
+      let actual = DPMap.find id current_libs in
       if not(digest_match ~actual ~required) then
         Errors.error
           ("Inconsistent assumptions over module "^(DirPath.to_string id)^".")
@@ -749,7 +751,7 @@ let export compilation_mode senv dir =
   let lib = {
     comp_name = dir;
     comp_mod = mb;
-    comp_deps = Array.of_list senv.imports;
+    comp_deps = Array.of_list (DPMap.bindings senv.imports);
     comp_enga = Environ.engagement senv.env;
     comp_natsymbs = values }
   in
@@ -772,7 +774,7 @@ let import lib cst vodigest senv =
        in
        Modops.add_linked_module mb linkinfo env);
     modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;
-    imports = (lib.comp_name,vodigest)::senv.imports;
+    imports = DPMap.add lib.comp_name vodigest senv.imports;
     loads = (mp,mb)::senv.loads }
 
 (** {6 Safe typing } *)
