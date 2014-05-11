@@ -418,12 +418,28 @@ let intern_from_file f =
   close_in ch;
   library
 
-let rec intern_library needed (dir, f) =
+module DirPath =
+struct
+  type t = dir_path
+  let rec compare_aux dp1 dp2 = match dp1, dp2 with
+  | [], [] -> 0
+  | [], _ :: _ -> -1
+  | _ :: _, [] -> 1
+  | id1 :: dp1, id2 :: dp2 ->
+    let c = id_ord id1 id2 in
+    if c = 0 then compare_aux dp1 dp2
+    else c
+
+  let compare dp1 dp2 = compare_aux (repr_dirpath dp1) (repr_dirpath dp2)
+end
+module DPMap = Map.Make(DirPath)
+
+let rec intern_library (needed, contents) (dir, f) =
   (* Look if in the current logical environment *)
-  try find_library dir, needed
+  try find_library dir, (needed, contents)
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
-  try List.assoc dir needed, needed
+  try DPMap.find dir contents, (needed, contents)
   with Not_found ->
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
   let m = intern_from_file f in
@@ -432,21 +448,23 @@ let rec intern_library needed (dir, f) =
       (str ("The file " ^ f ^ " contains library") ++ spc () ++
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
-  m, intern_library_deps needed dir m
+  m, intern_library_deps (needed, contents) dir m
 
-and intern_library_deps needed dir m =
-  (dir,m)::List.fold_left (intern_mandatory_library dir) needed m.library_deps
+and intern_library_deps libs dir m =
+  let needed, contents = List.fold_left (intern_mandatory_library dir) libs m.library_deps in
+  (dir :: needed, DPMap.add dir m contents )
 
-and intern_mandatory_library caller needed (dir,d) =
-  let m,needed = intern_library needed (try_locate_absolute_library dir) in
+and intern_mandatory_library caller libs (dir,d) =
+  let m, libs = intern_library libs (try_locate_absolute_library dir) in
   if d <> m.library_digest then
     errorlabstrm "" (strbrk ("Compiled library "^(string_of_dirpath caller)^
 	   ".vo makes inconsistent assumptions over library "
 	   ^(string_of_dirpath dir)));
-  needed
+  libs
 
-let rec_intern_library needed mref =
-  let _,needed = intern_library needed mref in needed
+let rec_intern_library libs mref =
+  let _, libs = intern_library libs mref in
+  libs
 
 let check_library_short_name f dir = function
   | Some id when id <> snd (split_dirpath dir) ->
@@ -469,7 +487,8 @@ let rec_intern_by_filename_only id f =
       m.library_name, []
     end
  else
-    let needed = intern_library_deps [] m.library_name m in
+    let needed, contents = intern_library_deps ([], DPMap.empty) m.library_name m in
+    let needed = List.map (fun dir -> dir, DPMap.find dir contents) needed in
     m.library_name, needed
 
 let rec_intern_library_from_file idopt f =
@@ -543,8 +562,8 @@ let xml_require = ref (fun d -> ())
 let set_xml_require f = xml_require := f
 
 let require_library_from_dirpath modrefl export =
-  let needed = List.fold_left rec_intern_library [] modrefl in
-  let needed = List.rev_map snd needed in
+  let needed, contents = List.fold_left rec_intern_library ([], DPMap.empty) modrefl in
+  let needed = List.rev_map (fun dir -> DPMap.find dir contents) needed in
   let modrefl = List.map fst modrefl in
     if Lib.is_module_or_modtype () then
       begin
