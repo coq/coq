@@ -97,6 +97,24 @@ let set_engagement_opt oeng env =
 
 type library_info = dir_path * Digest.t
 
+
+module DirPath =
+struct
+  type t = dir_path
+  let rec compare_aux dp1 dp2 = match dp1, dp2 with
+  | [], [] -> 0
+  | [], _ :: _ -> -1
+  | _ :: _, [] -> 1
+  | id1 :: dp1, id2 :: dp2 ->
+    let c = id_ord id1 id2 in
+    if c = 0 then compare_aux dp1 dp2
+    else c
+
+  let compare dp1 dp2 = compare_aux (repr_dirpath dp1) (repr_dirpath dp2)
+end
+
+module DPMap = Map.Make(DirPath)
+
 type safe_environment =
     { old : safe_environment;
       env : env;
@@ -106,7 +124,7 @@ type safe_environment =
       revstruct : structure_body;
       univ : Univ.constraints;
       engagement : engagement option;
-      imports : library_info list;
+      imports : Digest.t DPMap.t;
       loads : (module_path * module_body) list;
       local_retroknowledge : Retroknowledge.action list}
 
@@ -149,7 +167,7 @@ let rec empty_environment =
     revstruct = [];
     univ = Univ.empty_constraint;
     engagement = None;
-    imports = [];
+    imports = DPMap.empty;
     loads = [];
     local_retroknowledge = [] }
 
@@ -700,14 +718,14 @@ let export senv dir =
       mod_delta = senv.modinfo.resolver;
       mod_retroknowledge = senv.local_retroknowledge}
   in
-   mp, (dir,mb,senv.imports,engagement senv.env)
+   mp, (dir,mb,DPMap.bindings senv.imports,engagement senv.env)
 
 
 let check_imports senv needed =
   let imports = senv.imports in
   let check (id,stamp) =
     try
-      let actual_stamp = List.assoc id imports in
+      let actual_stamp = DPMap.find id imports in
       if stamp <> actual_stamp then
 	error
 	  ("Inconsistent assumptions over module "^(string_of_dirpath id)^".")
@@ -744,7 +762,7 @@ let import (dp,mb,depends,engmt) digest senv =
       {senv.modinfo with 
 	 resolver = 
 	    add_delta_resolver mb.mod_delta senv.modinfo.resolver};
-	  imports = (dp,digest)::senv.imports;
+	  imports = DPMap.add dp digest senv.imports;
 	  loads = (mp,mb)::senv.loads }
 
 
