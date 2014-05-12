@@ -22,7 +22,7 @@ Definition notT (A:Type) := A -> False.
 
 Section identity_is_a_congruence.
 
- Variables A B : Type.
+ Polymorphic Variables (A : Type) (B : Type).
  Variable f : A -> B.
 
  Variables x y z : A.
@@ -37,7 +37,7 @@ Section identity_is_a_congruence.
   destruct 2; trivial.
  Defined.
 
- Lemma identity_congr : identity x y -> identity (f x) (f y).
+ Polymorphic Lemma identity_congr : identity x y -> identity (f x) (f y).
  Proof.
   destruct 1; trivial.
  Defined.
@@ -70,3 +70,8 @@ Notation refl_id := identity_refl (compat "8.3").
 Notation sym_id := identity_sym (compat "8.3").
 Notation trans_id := identity_trans (compat "8.3").
 Notation sym_not_id := not_identity_sym (compat "8.3").
+
+Polymorphic Definition lift_identity {A x y} (p : @identity A x y) : @identity (Lift A) x y
+  := identity_congr lift p.
+Polymorphic Definition lower_identity {A x y} (p : @identity (Lift A) x y) : @identity A x y
+  := identity_congr lower p.

@@ -280,8 +280,8 @@ End universal_quantification.
     made explicit using the notation [x = y :> A]. This is Leibniz equality
     as it expresses that [x] and [y] are equal iff every property on
     [A] which is true of [x] is also true of [y] *)
-
-Inductive eq (A:Type) (x:A) : A -> Prop :=
+(*[Polymorphic] here breaks [discriminate] *)
+(*Polymorphic*) Inductive eq (A:Type) (x:A) : A -> Prop :=
     eq_refl : x = x :>A
 
 where "x = y :> A" := (@eq A x y) : type_scope.
@@ -297,8 +297,8 @@ Arguments eq_ind [A] x P _ y _.
 Arguments eq_rec [A] x P _ y _.
 Arguments eq_rect [A] x P _ y _.
 
-Hint Resolve I conj or_introl or_intror : core. 
-Hint Resolve eq_refl: core. 
+Hint Resolve I conj or_introl or_intror : core.
+Hint Resolve eq_refl: core.
 Hint Resolve ex_intro ex_intro2: core.
 
 Section Logic_lemmas.
@@ -559,7 +559,7 @@ Proof.
   - intros (x0 & HPx0 & HQx0) x1 HPx1.
     replace x1 with x0 by (transitivity x; [symmetry|]; auto).
     assumption.
-Qed.   
+Qed.
 
 Lemma forall_exists_coincide_unique_domain :
   forall A (P:A->Prop),
@@ -571,7 +571,7 @@ Proof.
   exists x. split; [trivial|].
   destruct H with (Q:=fun x'=>x=x') as (_,Huniq).
   apply Huniq. exists x; auto.
-Qed.       
+Qed.
 
 (** * Being inhabited *)
 
@@ -610,3 +610,35 @@ Qed.
 
 Declare Left Step iff_stepl.
 Declare Right Step iff_trans.
+
+(** * Universes *)
+(** We define some functions for lifting and lowering types.  Although
+    we have cumulativity, sometimes we want to enforce having a type
+    in a strictly higher universe. *)
+Section universes.
+  Local Set Universe Polymorphism.
+
+  Section Lift.
+    Universe i j.
+    Let ensure_lt := Type@{i} : Type@{j}.
+
+    (** If [A : U_i], then [Lift A : U_j] where [i < j]. *)
+    Definition Lift (x : Type@{i}) : Type@{j} := x.
+  End Lift.
+
+  Definition lift {A} : A -> Lift A := fun x => x.
+  Definition lower {A} : Lift A -> A := fun x => x.
+
+  Definition lift_lower_lift {A} (a : A) : lift (lower (lift a)) = a
+    := eq_refl.
+  Definition lower_lift_lower {A} (a : A) : lower (lift (lower a)) = a
+    := eq_refl.
+
+  (* [eq] needs to be polymorphic for this to work *)
+  (*Definition lift_eq {A x y} (p : x = y :> A) : x = y :> Lift A
+    := @f_equal A (Lift A) lift x y p.
+  Definition lower_eq {A x y} (p : x = y :> Lift A) : x = y :> A
+    := @f_equal (Lift A) A lower x y p.*)
+End universes.
+
+Typeclasses Opaque lift lower.
