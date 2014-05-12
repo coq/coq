@@ -24,7 +24,7 @@ Defined.
 Definition ap {A B:Type} (f:A -> B) {x y:A} (p:x = y) : f x = f y
   := match p with idpath => idpath end.
 
-Fail Theorem ex2_8 {A B A' B' : Type} (g : A -> A') (h : B -> B') (x y : A + B)
+Theorem ex2_8 {A B A' B' : Type} (g : A -> A') (h : B -> B') (x y : A + B)
               (* Fortunately, this unifies properly *)
               (pq : match (x, y) with (inl x', inl y') => x' = y' | (inr x', inr y') => x' = y' | _ => Empty end) :
   let f z := match z with inl z' => inl (g z') | inr z' => inr (h z') end in
@@ -57,8 +57,8 @@ Fail Theorem ex2_8 {A B A' B' : Type} (g : A -> A') (h : B -> B') (x y : A + B)
                          | inr y' => ap h
                        end
        end) pq).
-  Fail destruct x; destruct y; destruct pq; reflexivity.
-Fail Qed.
+  destruct x; destruct y; destruct pq; reflexivity.
+Qed.
 (* Toplevel input, characters 1367-1374:
 Error:
 In environment

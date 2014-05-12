@@ -50,7 +50,7 @@ Module failure.
   End SpecializedFunctor.
 
   Set Printing Universes.
-  Fail Polymorphic Definition UnderlyingGraph : SpecializedFunctor GraphIndexingCategory TypeCat.
+  Polymorphic Definition UnderlyingGraph : SpecializedFunctor GraphIndexingCategory TypeCat.
   (* Toplevel input, characters 73-94:
 Error:
 The term "GraphIndexingCategory (* Top.563 *)" has type
@@ -58,6 +58,8 @@ The term "GraphIndexingCategory (* Top.563 *)" has type
 while it is expected to have type
  "SpecializedCategory (* Top.550 Top.551 *) ?7"
 (Universe inconsistency: Cannot enforce Set = Top.551)). *)
+  admit.
+  Defined.
 End failure.
 
 Module polycontext.
@@ -73,7 +75,7 @@ Module polycontext.
   End SpecializedFunctor.
 
   Set Printing Universes.
-  Fail Polymorphic Definition UnderlyingGraph : SpecializedFunctor GraphIndexingCategory TypeCat.
+  Polymorphic Definition UnderlyingGraph : SpecializedFunctor GraphIndexingCategory TypeCat.
   (* Toplevel input, characters 73-94:
 Error:
 The term "GraphIndexingCategory (* Top.563 *)" has type
@@ -81,4 +83,6 @@ The term "GraphIndexingCategory (* Top.563 *)" has type
 while it is expected to have type
  "SpecializedCategory (* Top.550 Top.551 *) ?7"
 (Universe inconsistency: Cannot enforce Set = Top.551)). *)
+  admit.
+  Defined.
 End polycontext.

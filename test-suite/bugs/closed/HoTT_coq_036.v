@@ -30,7 +30,7 @@ Module Version1.
     let C1 := constr:(CObject) in
     let C2 := constr:(fun C => @Object (CObject C) C) in
     unify C1 C2.
-    Fail progress change CObject with (fun C => @Object (CObject C) C) in *.
+    progress change CObject with (fun C => @Object (CObject C) C) in *.
     simpl in *.
     match type of Hf with
       | focus ?V => exact V
@@ -77,7 +77,7 @@ Module Version2.
                                (objD : Type) (D : SpecializedCategory objD), Prop.
   Definition CommaCategory_Object (A : Category) : Type.
     assert (Hf : focus (@ObjectOf' _ (@Build_Category unit TerminalCategory) _ A)) by constructor.
-    Fail progress change CObject with (fun C => @Object (CObject C) C) in *;
+    progress change CObject with (fun C => @Object (CObject C) C) in *;
       simpl in *.
     match type of Hf with
       | focus ?V => exact V
@@ -114,7 +114,7 @@ Module OtherBug.
                                (objD : Type) (D : SpecializedCategory objD), Prop.
   Definition CommaCategory_Object (A : Category) : Type.
     assert (Hf : focus (@ObjectOf' _ (@Build_Category unit TerminalCategory) _ A)) by constructor.
-    Fail progress change CObject with (fun C => @Object (CObject C) C) in *;
+    progress change CObject with (fun C => @Object (CObject C) C) in *;
       simpl in *.
     match type of Hf with
       | focus ?V => exact V
