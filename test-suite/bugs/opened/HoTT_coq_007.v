@@ -36,14 +36,14 @@ Module Comment1.
   Set Printing All.
   Set Printing Universes.
 
-  Fail Lemma foo objC (C : @Category objC) (C0 : Category (Functor Cat0 C)) (x : Functor Cat0 Cat0) : forall (y : Functor C0 Cat0) z, (ComposeFunctors y z = x). (** ??? The term "y" has type
+  Lemma foo objC (C : @Category objC) (C0 : Category (Functor Cat0 C)) (x : Functor Cat0 Cat0) : forall (y : Functor C0 Cat0) z, (ComposeFunctors y z = x). (** ??? The term "y" has type
  "@Functor (* Top.448 Top.449 Top.450 Top.451 *)
     (@Functor (* Set Top.441 Top.442 Top.336 *) Empty_set Cat0 objC C) C0
     Empty_set Cat0" while it is expected to have type
  "@Functor (* Top.295 Top.296 Top.295 Top.296 *) ?46 ?47 ?48 ?49"
 (Universe inconsistency: Cannot enforce Set = Top.295)). *)
-  Fail intro. (* Illegal application (Type Error) *)
-  Fail Abort.
+    intro. (* Illegal application (Type Error) *)
+  Abort.
 End Comment1.
 
 Module Comment2.

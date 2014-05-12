@@ -20,10 +20,9 @@ Identity Coercion FunctorToType_Id : FunctorToType >-> Functor.
 
 Definition FunctorTo_Set2Type `(C : @Category objC) (F : FunctorToSet C)
 : FunctorToType C.
-  Fail refine (@Build_Functor _ C _ TypeCat
+  refine (@Build_Functor _ C _ TypeCat
                          (fun x => F.(ObjectOf) x)
                          (fun s d m => F.(MorphismOf) _ _ m)).
-  admit.
 Defined. (* Toplevel input, characters 0-8:
 Error:
 The term
@@ -50,10 +49,12 @@ Record SetGrothendieckPair `(C : @Category objC) (F' : Functor C SetCat) :=
 Section SetGrothendieckCoercion.
   Context `(C : @Category objC).
   Variable F : Functor C SetCat.
-  Let F' := (F : FunctorToSet _) : FunctorToType _.
+  Fail Let F' := (F : FunctorToSet _) : FunctorToType _. (* The command has indeed failed with message:
+=> Anomaly: apply_coercion_args: mismatch between arguments and coercion.
+Please report. *)
 
   Set Printing Universes.
-  Definition SetGrothendieck2Grothendieck (G : SetGrothendieckPair F) : GrothendieckPair F'
+  Fail Definition SetGrothendieck2Grothendieck (G : SetGrothendieckPair F) : GrothendieckPair F'
     := {| GrothendieckC := G.(SetGrothendieckC); GrothendieckX := G.(SetGrothendieckX) : F' _ |}.
   (* Toplevel input, characters 0-187:
 Error: Illegal application:

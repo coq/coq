@@ -70,7 +70,7 @@ Theorem thm `{Univalence} : (forall A, ((A -> False) -> False) -> A) -> False.
   intro f.
   Set Printing Universes.
   Set Printing All.
-  Fail pose proof (apD f (path_universe e)).
+  pose proof (apD f (path_universe e)).
   Fail pose proof (apD f p).
 (* Toplevel input, characters 18-19:
 Error:

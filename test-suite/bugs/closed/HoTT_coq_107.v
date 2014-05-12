@@ -70,7 +70,7 @@ Definition trunc_sum' n A B `{IsTrunc n Bool, IsTrunc n A, IsTrunc n B}
 Proof.
   Set Printing All.
   Set Printing Universes.
-  Fail refine (@trunc_sigma Bool (fun b => if b then A else B) n _ _).
+  refine (@trunc_sigma Bool (fun b => if b then A else B) n _ _).
   (* Toplevel input, characters 23-76:
 Error:
 In environment
