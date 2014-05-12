@@ -27,7 +27,7 @@ let _ = Errors.register_handler (function
   | _ -> raise Errors.Unhandled)
 
 type fix_exn = exn -> exn
-let id x = prerr_endline "no fix_exn"; x
+let id x = prerr_endline "Future: no fix_exn.\nYou have probably created a Future.computation from a value without passing the ~fix_exn argument.  You probably want to chain with an already existing future instead."; x
 
 module UUID = struct
   type t = int
