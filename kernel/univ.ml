@@ -2194,142 +2194,134 @@ let check_sorted g sorted =
   in
   LMap.iter iter g
 
-(**
-  Bellman-Ford algorithm with a few customizations:
-    - [weight(eq|le) = 0], [weight(lt) = -1]
-    - a [le] edge is initially added from [bottom] to all other
-      vertices, and [bottom] is used as the source vertex
-*)
+(** Longest path algorithm. This is used to compute the minimal number of
+    universes required if the only strict edge would be the Lt one. This
+    algorithm assumes that the given universes constraints are a almost DAG, in
+    the sense that there may be {Eq, Le}-cycles. This is OK for consistent
+    universes, which is the only case where we use this algorithm. *)
 
-let bellman_ford bottom g =
-  let () = match lookup_level bottom g with
-  | None -> ()
-  | Some _ -> assert false
+(** Adjacency graph *)
+type graph = constraint_type LMap.t LMap.t
+
+exception Connected
+
+(** Check connectedness *)
+let connected x y (g : graph) =
+  let rec connected x target seen g =
+    if Level.equal x target then raise Connected
+    else if not (LSet.mem x seen) then
+      let seen = LSet.add x seen in
+      let fold z _ seen = connected z target seen g in
+      let neighbours = try LMap.find x g with Not_found -> LMap.empty in
+      LMap.fold fold neighbours seen
+    else seen
   in
-  let ( <? ) a b = match a, b with
-    | _, None -> true
-    | None, _ -> false
-    | Some x, Some y -> (x : int) < y
-  and ( ++ ) a y = match a with
-    | None -> None
-    | Some x -> Some (x-y)
-  and push u x m = match x with
-    | None -> m
-    | Some y -> LMap.add u y m
+  try connected x y LSet.empty g; false with Connected -> true
+
+let add_edge x y v (g : graph) =
+  try
+    let neighbours = LMap.find x g in
+    let () = assert (not (LMap.mem y neighbours)) in
+    let neighbours = LMap.add y v neighbours in
+    LMap.add x neighbours g
+  with Not_found ->
+    LMap.add x (LMap.singleton y v) g
+
+(** We want to keep the graph DAG. If adding an edge would cause a cycle, that
+    would necessarily be an {Eq, Le}-cycle, otherwise there would have been a
+    universe inconsistency. Therefore we may omit adding such a cycling edge
+    without changing the compacted graph. *)
+let add_eq_edge x y v g = if connected y x g then g else add_edge x y v g
+
+(** Construct the DAG and its inverse at the same time. *)
+let make_graph g : (graph * graph) =
+  let fold u arc accu = match arc with
+  | Equiv v ->
+    let (dir, rev) = accu in
+    (add_eq_edge u v Eq dir, add_eq_edge v u Eq rev)
+  | Canonical { univ; lt; le; } ->
+    let () = assert (u == univ) in
+    let fold_lt (dir, rev) v = (add_edge u v Lt dir, add_edge v u Lt rev) in
+    let fold_le (dir, rev) v = (add_eq_edge u v Le dir, add_eq_edge v u Le rev) in
+    let accu = List.fold_left fold_lt accu lt in
+    let accu = List.fold_left fold_le accu le in
+    accu
   in
-  let relax u v uv distances =
-    let x = lookup_level u distances ++ uv in
-    if x <? lookup_level v distances then push v x distances
-    else distances
+  LMap.fold fold g (LMap.empty, LMap.empty)
+
+(** Construct a topological order out of a DAG. *)
+let rec topological_fold u g rem seen accu =
+  let is_seen =
+    try
+      let status = LMap.find u seen in
+      assert status; (** If false, not a DAG! *)
+      true
+    with Not_found -> false
   in
-  let init = LMap.add bottom 0 LMap.empty in
-  let vertices = LMap.fold (fun u arc res ->
-    let res = LSet.add u res in
-    match arc with
-      | Equiv e -> LSet.add e res
-      | Canonical {univ=univ; lt=lt; le=le} ->
-        assert (u == univ);
-        let add res v = LSet.add v res in
-        let res = List.fold_left add res le in
-        let res = List.fold_left add res lt in
-        res) g LSet.empty
+  if not is_seen then
+    let rem = LMap.remove u rem in
+    let seen = LMap.add u false seen in
+    let neighbours = try LMap.find u g with Not_found -> LMap.empty in
+    let fold v _ (rem, seen, accu) = topological_fold v g rem seen accu in
+    let (rem, seen, accu) = LMap.fold fold neighbours (rem, seen, accu) in
+    (rem, LMap.add u true seen, u :: accu)
+  else (rem, seen, accu)
+
+let rec topological g rem seen accu =
+  let node = try Some (LMap.choose rem) with Not_found -> None in
+  match node with
+  | None -> accu
+  | Some (u, _) ->
+    let rem, seen, accu = topological_fold u g rem seen accu in
+    topological g rem seen accu
+
+(** Compute the longest path from any vertex. *)
+let constraint_cost = function
+| Eq | Le -> 0
+| Lt -> 1
+
+(** This algorithm browses the graph in topological order, computing for each
+    encountered node the length of the longest path leading to it. Should be
+    O(|V|) or so (modulo map representation). *)
+let rec flatten_graph rem (rev : graph) map mx = match rem with
+| [] -> map, mx
+| u :: rem ->
+  let prev = try LMap.find u rev with Not_found -> LMap.empty in
+  let fold v cstr accu =
+    let v_cost = LMap.find v map in
+    max (v_cost + constraint_cost cstr) accu
   in
-  let g =
-    let node = Canonical {
-      univ = bottom;
-      lt = [];
-      le = LSet.elements vertices;
-      rank = 0
-    } in LMap.add bottom node g
-  in
-  let rec iter count accu =
-    if count <= 0 then
-      accu
-    else
-      let accu = LMap.fold (fun u arc res -> match arc with
-        | Equiv e -> relax e u 0 (relax u e 0 res)
-        | Canonical {univ=univ; lt=lt; le=le} ->
-          assert (u == univ);
-          let res = List.fold_left (fun res v -> relax u v 0 res) res le in
-          let res = List.fold_left (fun res v -> relax u v 1 res) res lt in
-          res) g accu
-      in iter (count-1) accu
-  in
-  let distances = iter (LSet.cardinal vertices) init in
-  let () = LMap.iter (fun u arc ->
-    let lu = lookup_level u distances in match arc with
-      | Equiv v ->
-        let lv = lookup_level v distances in
-        assert (not (lu <? lv) && not (lv <? lu))
-      | Canonical {univ=univ; lt=lt; le=le} ->
-        assert (u == univ);
-        List.iter (fun v -> assert (not (lu ++ 0 <? lookup_level v distances))) le;
-        List.iter (fun v -> assert (not (lu ++ 1 <? lookup_level v distances))) lt) g
-  in distances
+  let u_cost = LMap.fold fold prev 0 in
+  let map = LMap.add u u_cost map in
+  flatten_graph rem rev map (max mx u_cost)
 
 (** [sort_universes g] builds a map from universes in [g] to natural
     numbers. It outputs a graph containing equivalence edges from each
     level appearing in [g] to [Type.n], and [lt] edges between the
+    [Type.n]s. The output graph should imply the input graph (and the
     [Type.n]s. The output graph should imply the input graph (and the
     implication will be strict most of the time), but is not
     necessarily minimal. Note: the result is unspecified if the input
     graph already contains [Type.n] nodes (calling a module Type is
     probably a bad idea anyway). *)
 let sort_universes orig =
+  let (dir, rev) = make_graph orig in
+  let order = topological dir dir LMap.empty [] in
+  let compact, max = flatten_graph order rev LMap.empty 0 in
   let mp = Names.DirPath.make [Names.Id.of_string "Type"] in
-  let rec make_level accu g i =
-    let type0 = Level.make mp i in
-    let distances = bellman_ford type0 g in
-    let accu, continue = LMap.fold (fun u x (accu, continue) ->
-      let continue = continue || x < 0 in
-      let accu =
-        if Int.equal x 0 && u != type0 then LMap.add u i accu
-        else accu
-      in accu, continue) distances (accu, false)
-    in
-    let filter x = not (LMap.mem x accu) in
-    let push g u =
-      if LMap.mem u g then g else LMap.add u (Equiv u) g
-    in
-    let g = LMap.fold (fun u arc res -> match arc with
-      | Equiv v as x ->
-        begin match filter u, filter v with
-          | true, true -> LMap.add u x res
-          | true, false -> push res u
-          | false, true -> push res v
-          | false, false -> res
-        end
-      | Canonical {univ=v; lt=lt; le=le; rank=r} ->
-        assert (u == v);
-        if filter u then
-          let lt = List.filter filter lt in
-          let le = List.filter filter le in
-          LMap.add u (Canonical {univ=u; lt=lt; le=le; rank=r}) res
-        else
-          let res = List.fold_left (fun g u -> if filter u then push g u else g) res lt in
-          let res = List.fold_left (fun g u -> if filter u then push g u else g) res le in
-          res) g LMap.empty
-    in
-    if continue then make_level accu g (i+1) else i, accu
+  let types = Array.init (max + 1) (fun n -> Level.make mp n) in
+  (** Old universes are made equal to [Type.n] *)
+  let fold u level accu = LMap.add u (Equiv types.(level)) accu in
+  let sorted = LMap.fold fold compact LMap.empty in
+  (** Add all [Type.n] nodes *)
+  let fold i accu u =
+    if 0 < i then
+      let pred = types.(i - 1) in
+      let arc = {univ = u; lt = [pred]; le = []; rank = 0; } in
+      LMap.add u (Canonical arc) accu
+    else accu
   in
-  let max, levels = make_level LMap.empty orig 0 in
-  (* defensively check that the result makes sense *)
-  check_sorted orig levels;
-  let types = Array.init (max+1) (fun x -> Level.make mp x) in
-  let g = LMap.map (fun x -> Equiv types.(x)) levels in
-  let g =
-    let rec aux i g =
-      if i < max then
-        let u = types.(i) in
-        let g = LMap.add u (Canonical {
-          univ = u;
-          le = [];
-          lt = [types.(i+1)];
-	  rank = 1
-        }) g in aux (i+1) g
-      else g
-    in aux 0 g
-  in g
+  Array.fold_left_i fold sorted types
 
 (**********************************************************************)
 (* Tools for sort-polymorphic inductive types                         *)
