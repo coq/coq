@@ -160,6 +160,8 @@ let inMLTacticGrammar : ml_tactic_grammar_obj -> obj =
   declare_object { (default_object "MLTacticGrammar") with
     open_function = open_ml_tactic_notation;
     cache_function = cache_ml_tactic_notation;
+    classify_function = (fun o -> Substitute o);
+    subst_function = (fun (_, o) -> o);
   }
 
 let add_ml_tactic_notation name prods atomic =
