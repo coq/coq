@@ -332,7 +332,7 @@ Proof. intros. apply CompareSpec2Type; assumption. Defined.
     member is the singleton datatype [identity A a a] whose
     sole inhabitant is denoted [refl_identity A a] *)
 
-Polymorphic Inductive identity (A:Type) (a:A) : A -> Type :=
+Inductive identity (A:Type) (a:A) : A -> Type :=
   identity_refl : identity a a.
 Hint Resolve identity_refl: core.
 
