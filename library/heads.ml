@@ -122,8 +122,9 @@ let compute_head = function
 | EvalConstRef cst ->
    let env = Global.env() in
    let cb = Environ.lookup_constant cst env in
+   let is_Def = function Declarations.Def _ -> true | _ -> false in
    let body = 
-     if cb.Declarations.const_proj = None 
+     if cb.Declarations.const_proj = None && is_Def cb.Declarations.const_body
      then Declareops.body_of_constant cb else None 
    in
      (match body with
