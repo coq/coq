@@ -48,7 +48,7 @@ let elide_part_of_script_and_now (a, _) =
 
 let make_polymorphic (a, b as x) =
   match a with
-  | VtStartProof (x, y, ids, _) -> (VtStartProof (x, y, ids, true), b)
+  | VtStartProof (x, _, ids, _) -> (VtStartProof (x, Doesn'tGuaranteeOpacity, ids, true), b)
   | _ -> x
 
 let undo_classifier = ref (fun _ -> assert false)
