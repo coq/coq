@@ -165,7 +165,7 @@ VERNAC COMMAND EXTEND Function
              (Vernacexpr.VernacFixpoint(None, List.map snd recsl))
          with
          | Vernacexpr.VtSideff ids, _ when hard ->
-             Vernacexpr.(VtStartProof ("Classic", GuaranteesOpacity, ids, false), VtLater)
+             Vernacexpr.(VtStartProof ("Classic", GuaranteesOpacity, ids), VtLater)
          | x -> x ]
     -> [ do_generate_principle false (List.map snd recsl) ]
 END

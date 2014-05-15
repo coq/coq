@@ -8,7 +8,7 @@
 
 (*i camlp4deps: "grammar/grammar.cma"  i*)
 
-let classify_derive_command _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[], false),VtLater)
+let classify_derive_command _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]),VtLater)
 
 VERNAC COMMAND EXTEND Derive CLASSIFIED BY classify_derive_command
 | [ "Derive" ident(f) "From" constr(init) "Upto" constr(r) "As" ident(lemma) ] ->
