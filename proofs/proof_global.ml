@@ -271,29 +271,36 @@ let close_proof ?feedback_id ~now fpl =
   let fpl, univs = Future.split2 fpl in
   let univsubst, make_body =
     if poly || now then
-      let usubst, uctx = Future.force univs in
-      let ctx, subst = 
-	Universes.simplify_universe_context (Univ.ContextSet.of_context uctx) 
+      let make_usubst (usubst, uctx) =
+	let ctx, subst = 
+	  Universes.simplify_universe_context (Univ.ContextSet.of_context uctx) 
+	in
+	let nf x = 
+	  let nf x = Universes.nf_evars_and_universes_opt_subst (fun _ -> None) usubst x in
+	    Vars.subst_univs_level_constr subst (nf x)
+	in
+	let subst = 
+	  Univ.LMap.union usubst (Univ.LMap.map (fun v -> Some (Univ.Universe.make v)) subst)
+	in
+	let univsubst = (subst, Univ.ContextSet.to_context ctx) in
+	  univsubst, nf
       in
-      let nf x = 
-	let nf x = Universes.nf_evars_and_universes_opt_subst (fun _ -> None) usubst x in
-	  Vars.subst_univs_level_constr subst (nf x)
-      in
-      let subst = 
-	Univ.LMap.union usubst (Univ.LMap.map (fun v -> Some (Univ.Universe.make v)) subst)
-      in
-      let univsubst = (subst, Univ.ContextSet.to_context ctx) in
-      let make_body p _c t _octx =
-	let (c, ctx), eff = Future.force p in
+      let make_body nf t _octx ((c, ctx), eff) =
 	let body = nf c and typ = nf t in
 	let used_univs = 
 	  Univ.LSet.union (Universes.universes_of_constr body)
 	    (Universes.universes_of_constr typ)
 	in
 	let ctx = Universes.restrict_universe_context ctx used_univs in
-	let p = Future.from_val ((body, Univ.ContextSet.empty),eff) in
+	let p = (body, Univ.ContextSet.empty),eff in
 	let univs = Univ.ContextSet.to_context ctx in
-	  univs, p, typ
+	  (univs, typ), p
+      in
+      let make_body nf t octx p = 
+	Future.split2 (Future.chain ~pure:true p (make_body nf t octx))
+      in
+      let univsubst =
+	Future.chain ~pure:true univs make_usubst
       in univsubst, make_body
     else
       let ctx = 
@@ -303,22 +310,25 @@ let close_proof ?feedback_id ~now fpl =
       in
       let univs = Univ.ContextSet.to_context ctx in
       let univsubst = (Univ.LMap.empty, univs) in
-	univsubst, (fun p c t octx -> univs, p, t)
+      let make_body nf t octx p = Future.from_val (univs, t), p in
+	Future.from_val (univsubst, fun x -> x), make_body
   in
+  let univsubst, nf = Future.force univsubst in
   let entries =
     Future.map2 (fun p (c, (t, octx)) -> 
-      let univs, body, typ = make_body p c t octx in
-      { Entries.
-      const_entry_body = body;
-      const_entry_secctx = section_vars;
-      const_entry_feedback = feedback_id;
-      const_entry_type  = Some typ;
-      const_entry_inline_code = false;
-      const_entry_opaque = true;
-      const_entry_universes = univs;
-      const_entry_polymorphic = poly;
-      const_entry_proj = None})
-    fpl initial_goals in
+      let univstyp, body = make_body nf t octx p in
+      let univs, typ = Future.force univstyp in
+	{ Entries.
+	  const_entry_body = body;
+	  const_entry_secctx = section_vars;
+	  const_entry_feedback = feedback_id;
+	  const_entry_type  = Some typ;
+	  const_entry_inline_code = false;
+	  const_entry_opaque = true;
+	  const_entry_universes = univs;
+	  const_entry_polymorphic = poly;
+	  const_entry_proj = None})
+      fpl initial_goals in
   { id = pid; entries = entries; persistence = strength; universes = univsubst },
   Ephemeron.get terminator
 

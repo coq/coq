@@ -2216,7 +2216,7 @@ let connected x y (g : graph) =
       LMap.fold fold neighbours seen
     else seen
   in
-  try connected x y LSet.empty g; false with Connected -> true
+  try ignore(connected x y LSet.empty g); false with Connected -> true
 
 let add_edge x y v (g : graph) =
   try
