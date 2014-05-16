@@ -18,6 +18,8 @@ open Pcoq
 open Egramml
 open Compat
 
+let dloc = <:expr< Loc.ghost >>
+
 let rec make_patt = function
   | [] -> <:patt< [] >>
   | GramNonTerminal(loc',_,_,Some p)::l ->
@@ -157,24 +159,48 @@ let possibly_atomic loc prods =
   in
   possibly_empty_subentries loc (List.factorize_left String.equal l)
 
-let declare_tactic loc s c cl =
+let declare_tactic loc s c cl = match cl with
+| [[GramTerminal name], _, tac] ->
+  (** The extension is only made of a name: we do not add any grammar nor
+      printing rule and add it as a true Ltac definition. *)
+  let se = mlexpr_of_string s in
+  let name = mlexpr_of_string name in
+  let tac = <:expr< fun _ $lid:"ist"$ -> $tac$ >> in
+  let body = <:expr< Tacexpr.TacAtom ($dloc$, Tacexpr.TacExtend($dloc$, $se$, [])) >> in
+  let name = <:expr< Libnames.Ident($dloc$, Names.Id.of_string $name$) >> in
+  declare_str_items loc
+    [ <:str_item< do {
+      let obj () = Tacenv.register_ltac false false [($name$, false, $body$)] in
+      try do {
+        Tacenv.register_ml_tactic $se$ $tac$;
+        Mltop.declare_cache_obj obj __coq_plugin_name; }
+      with [ e when Errors.noncritical e ->
+        Pp.msg_warning
+          (Pp.app
+            (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))
+            (Errors.print e)) ]; } >>
+    ]
+| _ ->
+  (** Otherwise we add parsing and printing rules to generate a call to a
+      TacExtend tactic. *)
   let se = mlexpr_of_string s in
   let pp = make_printing_rule se cl in
   let gl = mlexpr_of_clause cl in
   let atom =
     mlexpr_of_list (mlexpr_of_pair mlexpr_of_string (fun x -> x))
       (possibly_atomic loc cl) in
+  let obj = <:expr< fun () -> Metasyntax.add_ml_tactic_notation $se$ $gl$ $atom$ >> in
   declare_str_items loc
     [ <:str_item< do {
       try do {
         Tacenv.register_ml_tactic $se$ $make_fun_clauses loc s cl$;
-        Mltop.declare_cache_obj (fun () -> Metasyntax.add_ml_tactic_notation $se$ $gl$ $atom$) __coq_plugin_name;
+        Mltop.declare_cache_obj $obj$ __coq_plugin_name;
         List.iter (fun (s, r) -> Pptactic.declare_ml_tactic_pprule s r) $pp$; }
       with [ e when Errors.noncritical e ->
-	Pp.msg_warning
-	  (Pp.app
-	     (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))
-	     (Errors.print e)) ]; } >>
+        Pp.msg_warning
+          (Pp.app
+            (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))
+            (Errors.print e)) ]; } >>
     ]
 
 open Pcaml
