@@ -77,7 +77,6 @@ let initial_atomic =
         "compute", TacReduce(Cbv Redops.all_flags,nocl);
         "intro", TacIntroMove(None,MoveLast);
         "intros", TacIntroPattern [];
-        "assumption", TacAssumption;
         "cofix", TacCofix None;
         "trivial", TacTrivial (Off,[],None);
         "auto", TacAuto(Off,None,[],None);
@@ -89,7 +88,6 @@ let initial_atomic =
         "esplit", TacSplit(true,false,[NoBindings]);
         "constructor", TacAnyConstructor (false,None);
         "econstructor", TacAnyConstructor (true,None);
-        "reflexivity", TacReflexivity;
         "symmetry", TacSymmetry nocl
       ]
   in

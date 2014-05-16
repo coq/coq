@@ -134,7 +134,6 @@ let rec subst_match_goal_hyps subst = function
 let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Basic tactics *)
   | TacIntroPattern _ | TacIntrosUntil _ | TacIntroMove _ as x -> x
-  | TacAssumption as x -> x
   | TacExact c -> TacExact (subst_glob_constr subst c)
   | TacExactNoCheck c -> TacExactNoCheck (subst_glob_constr subst c)
   | TacVmCastNoCheck c -> TacVmCastNoCheck (subst_glob_constr subst c)
@@ -201,7 +200,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
         subst_glob_constr subst c, cl)
 
   (* Equivalence relations *)
-  | TacReflexivity | TacSymmetry _ as x -> x
+  | TacSymmetry _ as x -> x
   | TacTransitivity c -> TacTransitivity (Option.map (subst_glob_constr subst) c)
 
   (* Equality and inversion *)

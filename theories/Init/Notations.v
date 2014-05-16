@@ -83,6 +83,7 @@ Open Scope type_scope.
 
 (** ML Tactic Notations *)
 
+Declare ML Module "coretactics".
 Declare ML Module "extratactics".
 Declare ML Module "eauto".
 Declare ML Module "g_class".

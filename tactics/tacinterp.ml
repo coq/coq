@@ -1447,7 +1447,6 @@ and interp_atomic ist tac =
         let mloc = interp_move_location ist env hto in
         Tactics.intro_move (Option.map (interp_fresh_ident ist env) ido) mloc
       end
-  | TacAssumption -> Tactics.assumption
   | TacExact c ->
       Proofview.V82.tactic begin fun gl -> 
         let (sigma,c_interp) = pf_interp_casted_constr ist gl c in
@@ -1793,7 +1792,6 @@ and interp_atomic ist tac =
       end
 
   (* Equivalence relations *)
-  | TacReflexivity -> Tactics.intros_reflexivity
   | TacSymmetry c ->
       Proofview.Goal.raw_enter begin fun gl ->
         let env = Proofview.Goal.env gl in

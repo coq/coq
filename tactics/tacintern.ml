@@ -455,7 +455,6 @@ let rec intern_atomic lf ist x =
   | TacIntroMove (ido,hto) ->
       TacIntroMove (Option.map (intern_ident lf ist) ido,
                     intern_move_location ist hto)
-  | TacAssumption -> TacAssumption
   | TacExact c -> TacExact (intern_constr ist c)
   | TacExactNoCheck c -> TacExactNoCheck (intern_constr ist c)
   | TacVmCastNoCheck c -> TacVmCastNoCheck (intern_constr ist c)
@@ -559,7 +558,6 @@ let rec intern_atomic lf ist x =
 	clause_app (intern_hyp_location ist) cl)
 
   (* Equivalence relations *)
-  | TacReflexivity -> TacReflexivity
   | TacSymmetry idopt ->
       TacSymmetry (clause_app (intern_hyp_location ist) idopt)
   | TacTransitivity c -> TacTransitivity (Option.map (intern_constr ist) c)

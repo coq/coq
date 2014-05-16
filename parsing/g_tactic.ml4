@@ -532,7 +532,6 @@ GEXTEND Gram
       | IDENT "intro"; id = ident -> TacIntroMove (Some id, MoveLast)
       | IDENT "intro" -> TacIntroMove (None, MoveLast)
 
-      | IDENT "assumption" -> TacAssumption
       | IDENT "exact"; c = constr -> TacExact c
       | IDENT "exact_no_check"; c = constr -> TacExactNoCheck c
       | IDENT "vm_cast_no_check"; c = constr -> TacVmCastNoCheck c
@@ -658,7 +657,6 @@ GEXTEND Gram
       | IDENT "econstructor"; t = OPT tactic -> TacAnyConstructor (true,t)
 
       (* Equivalence relations *)
-      | IDENT "reflexivity" -> TacReflexivity
       | IDENT "symmetry"; cl = clause_dft_concl -> TacSymmetry cl
       | IDENT "transitivity"; c = constr -> TacTransitivity (Some c)
       | IDENT "etransitivity" -> TacTransitivity None

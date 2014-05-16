@@ -623,12 +623,10 @@ let pr_cofix_tac (id,c) =
 let rec pr_atom0 = function
   | TacIntroPattern [] -> str "intros"
   | TacIntroMove (None,MoveLast) -> str "intro"
-  | TacAssumption -> str "assumption"
   | TacAnyConstructor (false,None) -> str "constructor"
   | TacAnyConstructor (true,None) -> str "econstructor"
   | TacTrivial (d,[],Some []) -> str (string_of_debug d ^ "trivial")
   | TacAuto (d,None,[],Some []) -> str (string_of_debug d ^ "auto")
-  | TacReflexivity -> str "reflexivity"
   | TacClear (true,[]) -> str "clear"
   | t -> str "(" ++ pr_atom1 t ++ str ")"
 
@@ -651,7 +649,6 @@ and pr_atom1 = function
   | TacIntroMove (ido,hto) ->
       hov 1 (str"intro" ++ pr_opt pr_id ido ++
              Miscprint.pr_move_location pr_ident hto)
-  | TacAssumption as t -> pr_atom0 t
   | TacExact c -> hov 1 (str "exact" ++ pr_constrarg c)
   | TacExactNoCheck c -> hov 1 (str "exact_no_check" ++ pr_constrarg c)
   | TacVmCastNoCheck c -> hov 1 (str "vm_cast_no_check" ++ pr_constrarg c)
@@ -799,7 +796,6 @@ and pr_atom1 = function
       pr_constr c ++ pr_clauses (Some true) pr_ident h)
 
   (* Equivalence relations *)
-  | TacReflexivity as x -> pr_atom0 x
   | TacSymmetry cls -> str "symmetry" ++ pr_clauses (Some true) pr_ident cls
   | TacTransitivity (Some c) -> str "transitivity" ++ pr_constrarg c
   | TacTransitivity None -> str "etransitivity"

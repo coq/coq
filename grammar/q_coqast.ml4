@@ -308,8 +308,6 @@ let rec mlexpr_of_atomic_tactic = function
       let idopt = mlexpr_of_ident_option idopt in
       let idopt'= mlexpr_of_move_location mlexpr_of_hyp idopt' in
       <:expr< Tacexpr.TacIntroMove $idopt$ $idopt'$ >>
-  | Tacexpr.TacAssumption ->
-      <:expr< Tacexpr.TacAssumption >>
   | Tacexpr.TacExact c ->
       <:expr< Tacexpr.TacExact $mlexpr_of_constr c$ >>
   | Tacexpr.TacExactNoCheck c ->
@@ -420,7 +418,6 @@ let rec mlexpr_of_atomic_tactic = function
       <:expr< Tacexpr.TacChange $g p$ $mlexpr_of_constr c$ $l$ >>
 
   (* Equivalence relations *)
-  | Tacexpr.TacReflexivity -> <:expr< Tacexpr.TacReflexivity >>
   | Tacexpr.TacSymmetry ido -> <:expr< Tacexpr.TacSymmetry $mlexpr_of_clause ido$ >>
   | Tacexpr.TacTransitivity c -> <:expr< Tacexpr.TacTransitivity $mlexpr_of_option mlexpr_of_constr c$ >>
 

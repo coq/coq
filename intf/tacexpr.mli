@@ -105,7 +105,6 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacIntroPattern of intro_pattern_expr located list
   | TacIntrosUntil of quantified_hypothesis
   | TacIntroMove of Id.t option * 'nam move_location
-  | TacAssumption
   | TacExact of 'trm
   | TacExactNoCheck of 'trm
   | TacVmCastNoCheck of 'trm
@@ -163,7 +162,6 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacChange of 'pat option * 'trm * 'nam clause_expr
 
   (* Equivalence relations *)
-  | TacReflexivity
   | TacSymmetry of 'nam clause_expr
   | TacTransitivity of 'trm option
 
