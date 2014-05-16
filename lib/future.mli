@@ -84,6 +84,9 @@ val from_val : ?fix_exn:fix_exn -> 'a -> 'a computation
    the value is not just the 'a but also the global system state *)
 val from_here : ?fix_exn:fix_exn -> 'a -> 'a computation
 
+(* To get the fix_exn of a computation *)
+val fix_exn_of : 'a computation -> fix_exn
+
 (* Run remotely, returns the function to assign.  Optionally tekes a function
    that is called when forced.  The default one is to raise NotReady.
    The assignement function does not change the uuid. *)

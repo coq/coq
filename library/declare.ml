@@ -208,7 +208,7 @@ let definition_entry ?(opaque=false) ?(inline=false) ?types
 
 let declare_scheme = ref (fun _ _ -> assert false)
 let set_declare_scheme f = declare_scheme := f
-let declare_sideff se =
+let declare_sideff fix_exn se =
   let cbl, scheme = match se with
     | SEsubproof (c, cb) -> [c, cb], None
     | SEscheme (cbl, k) ->
@@ -229,7 +229,7 @@ let declare_sideff se =
     let pt, opaque = pt_opaque_of cb in
     let ty = ty_of cb in
     { cst_decl = ConstantEntry (DefinitionEntry {
-        const_entry_body = Future.from_here (pt, Declareops.no_seff);
+        const_entry_body = Future.from_here ~fix_exn (pt, Declareops.no_seff);
         const_entry_secctx = Some cb.Declarations.const_hyps;
         const_entry_type = ty;
         const_entry_opaque = opaque;
@@ -259,12 +259,15 @@ let declare_constant ?(internal = UserVerbose) ?(local = false) id (cd, kind) =
     | Entries.DefinitionEntry ({
       const_entry_polymorphic = true; const_entry_body = bo } as de)
       ->
-        let pt, seff = Future.force bo in
+        let _, seff = Future.force bo in
         if Declareops.side_effects_is_empty seff then cd
         else begin
-          Declareops.iter_side_effects declare_sideff seff;
+          let seff = Declareops.uniquize_side_effects seff in
+          Declareops.iter_side_effects
+            (declare_sideff (Future.fix_exn_of bo)) seff;
           Entries.DefinitionEntry { de with
-            const_entry_body = Future.from_val (pt, Declareops.no_seff) }
+            const_entry_body = Future.chain ~pure:true bo (fun (pt, _) ->
+              pt, Declareops.no_seff) }
         end
     | _ -> cd
   in

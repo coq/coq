@@ -90,6 +90,8 @@ let uuid kx = let id, _, _ = get kx in id
 let from_val ?(fix_exn=id) v = create fix_exn (Val (v, None))
 let from_here ?(fix_exn=id) v = create fix_exn (Val (v, Some (!freeze ())))
 
+let fix_exn_of ck = let _, fix_exn, _ = get ck in fix_exn
+
 let default_force () = raise NotReady
 let assignement ck = fun v ->
   let _, fix_exn, c = get ck in
