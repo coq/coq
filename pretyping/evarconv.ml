@@ -270,6 +270,9 @@ let exact_ise_stack2 env evd f sk1 sk2 =
 	  (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
 	  (fun i -> ise_stack2 i a1 a2)]
       else UnifFailure (i,NotSameHead)
+    | Stack.Proj (n1,a1,p1)::q1, Stack.Proj (n2,a2,p2)::q2 ->
+       if eq_constant p1 p2 then ise_stack2 i q1 q2
+       else (UnifFailure (i, NotSameHead))
     | Stack.Update _ :: _, _ | Stack.Shift _ :: _, _
     | _, Stack.Update _ :: _ | _, Stack.Shift _ :: _ -> assert false
     | Stack.App _ :: _, Stack.App _ :: _ ->
@@ -388,7 +391,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  ev lF apprM i
     and f3 i =
 	switch (evar_eqappr_x ts env i pbty) (apprF,cstsF)
-	  (whd_betaiota_deltazeta_for_iota_state ts env i cstsM (vM, skM))
+	  (whd_betaiota_deltazeta_for_iota_state ts env i cstsM vM)
     in
     ise_try evd [f1; (consume_stack on_left apprF apprM); f3] in
   let flex_rigid on_left ev (termF, skF as apprF) (termR, skR as apprR) =
@@ -439,10 +442,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	ise_try evd [f1; f2]
 
     | Flexible ev1, MaybeFlexible (v2,sk2) -> 
-      flex_maybeflex true ev1 (appr1,csts1) ((term2,sk2),csts2) v2
+      flex_maybeflex true ev1 (appr1,csts1) (appr2,csts2) (v2,sk2)
 
     | MaybeFlexible (v1,sk1), Flexible ev2 -> 
-      flex_maybeflex false ev2 (appr2,csts2) ((term1,sk1),csts1) v1
+      flex_maybeflex false ev2 (appr2,csts2) (appr1,csts1) (v1,sk1)
 
     | MaybeFlexible (v1,sk1), MaybeFlexible (v2,sk2) -> begin
         match kind_of_term term1, kind_of_term term2 with
