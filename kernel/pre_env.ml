@@ -153,7 +153,8 @@ let lookup_constant_key kn env =
   Cmap_env.find kn env.env_globals.env_constants
 
 let lookup_constant kn env =
-  fst (Cmap_env.find kn env.env_globals.env_constants)
+  try fst (Cmap_env.find kn env.env_globals.env_constants)
+  with Not_found -> Errors.anomaly Pp.(str "Unknown constant " ++ pr_con kn) 
 
 (* Mutual Inductives *)
 let lookup_mind kn env =
