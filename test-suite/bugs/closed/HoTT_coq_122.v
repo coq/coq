@@ -22,4 +22,4 @@ Record PreCategory :=
       left_identity : forall a b (f : morphism a b), identity b o f = f
     }.
 
-Fail Timeout 1 Hint Rewrite @left_identity. (* stack overflow *)
+Hint Rewrite @left_identity. (* stack overflow *)

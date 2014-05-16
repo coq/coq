@@ -467,14 +467,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    ise_and i 
 	    [(fun i -> evar_conv_x ts env i CONV c c');
 	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
-	  and f2 i = 
-	    if is_transparent_constant ts p then
-	      match unfold_projection env p c sk1 with
-	      | Some (c, sk1) -> 
-		let out1 = whd_betaiota_deltazeta_for_iota_state ts env i csts1 (c,sk1) in
-		  evar_eqappr_x ts env i pbty out1 (appr2, csts2)
-	      | None -> assert false
-	    else UnifFailure (i, NotSameHead)
+	  and f2 i =
+            let out1 = whd_betaiota_deltazeta_for_iota_state ts env i csts1 (v1,sk1)
+            and out2 = whd_betaiota_deltazeta_for_iota_state ts env i csts2 (v2,sk2)
+	    in evar_eqappr_x ts env i pbty out1 out2
 	  in
 	    ise_try evd [f1; f2]
 
