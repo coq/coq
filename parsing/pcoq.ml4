@@ -828,3 +828,9 @@ let rec interp_entry_name static up_level s sep =
 	| Some t -> t
 	| None -> ExtraArgType s in
     t, se
+
+let list_entry_names () =
+  let add_entry key (entry, _) accu = (key, entry) :: accu in
+  let ans = Hashtbl.fold add_entry (snd uprim) [] in
+  let ans = Hashtbl.fold add_entry (snd uconstr) ans in
+  Hashtbl.fold add_entry (snd utactic) ans

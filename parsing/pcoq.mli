@@ -282,6 +282,9 @@ val symbol_of_prod_entry_key :
 val interp_entry_name : bool (** true to fail on unknown entry *) ->
   int option -> string -> string -> entry_type * prod_entry_key
 
+(** Recover the list of all known tactic notation entries. *)
+val list_entry_names : unit -> (string * entry_type) list
+
 (** Registering/resetting the level of a constr entry *)
 
 val find_position :
