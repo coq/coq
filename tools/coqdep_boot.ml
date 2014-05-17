@@ -38,6 +38,7 @@ let coqdep_boot () =
   else begin
     add_rec_dir add_known "theories" ["Coq"];
     add_rec_dir add_known "plugins" ["Coq"];
+    add_dir add_known "tactics" [];
   end;
   if !option_c then mL_dependencies ();
   coq_dependencies ()
