@@ -254,7 +254,7 @@ Theorem Qcmult_integral : forall x y, x*y=0 -> x=0 \/ y=0.
 Proof.
   intros.
   destruct (Qmult_integral x y); try qc; auto.
-  injection H; clear H; intros _ H.
+  injection H; clear H; intros.
   rewrite <- (Qred_correct (x*y)).
   rewrite <- (Qred_correct 0).
   rewrite H; auto with qarith.
