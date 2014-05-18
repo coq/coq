@@ -1280,7 +1280,8 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   | Inl _ ->
      Proofview.tclZERO (Errors.UserError ("Inj",strbrk"This equality is discriminable. You should use the discriminate tactic to solve the goal."))
   | Inr [] ->
-     Proofview.tclZERO (Errors.UserError ("Equality.inj",strbrk"No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern restrictions in the sort Prop."))
+     let suggestion = if !injection_on_proofs then "" else " You can try to use option Set Injection On Proofs." in
+     Proofview.tclZERO (Errors.UserError ("Equality.inj",strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion)))
   | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
      Proofview.tclZERO (Errors.UserError ("Equality.inj" , str"Nothing to inject."))
   | Inr posns ->
