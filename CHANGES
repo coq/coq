@@ -104,9 +104,9 @@ Tactics
   former behavior obtainable by "Unset Injection L2R Pattern Order").
 - New tactic "rewrite_strat" for generalized rewriting with user-defined
   strategies, subsumming autorewrite.
-- Injection now also deduces equality of arguments of sort Prop. Old behavior
-  can be restored by "Unset Injection On Proofs". Also improved the error
-  messages.
+- Injection can now also deduce equality of arguments of sort Prop, by using
+  the option "Set Injection On Proofs" (disabled by default). Also improved the
+  error messages.
 - Tactic "subst id" now supports id occurring in dependent local definitions.
 
 Program

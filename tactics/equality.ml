@@ -611,7 +611,7 @@ let replace_in_clause_maybe_by c2 c1 cl tac_opt =
 exception DiscrFound of
   (constructor * int) list * constructor * constructor
 
-let injection_on_proofs = ref true
+let injection_on_proofs = ref false
 
 let _ =
   declare_bool_option
