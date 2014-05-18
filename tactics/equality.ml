@@ -624,6 +624,12 @@ let _ =
 
 
 let find_positions env sigma t1 t2 =
+  let project env sorts posn t1 t2 =
+    let ty1 = get_type_of env sigma t1 in
+    let s = get_sort_family_of env sigma ty1 in
+    if Sorts.List.mem s sorts
+    then [(List.rev posn,t1,t2)] else []
+  in
   let rec findrec sorts posn t1 t2 =
     let hd1,args1 = whd_betadeltaiota_stack env sigma t1 in
     let hd2,args2 = whd_betadeltaiota_stack env sigma t2 in
@@ -631,7 +637,7 @@ let find_positions env sigma t1 t2 =
       | Construct (sp1,_), Construct (sp2,_)
           when Int.equal (List.length args1) (mis_constructor_nargs_env env sp1)
             ->
-	  let sorts =
+	  let sorts' =
             Sorts.List.intersect sorts (allowed_sorts env (fst sp1))
           in
           (* both sides are fully applied constructors, so either we descend,
@@ -641,23 +647,22 @@ let find_positions env sigma t1 t2 =
 	    let rargs1 = List.lastn nrealargs args1 in
 	    let rargs2 = List.lastn nrealargs args2 in
             List.flatten
-	      (List.map2_i (fun i -> findrec sorts ((sp1,i)::posn))
+	      (List.map2_i (fun i -> findrec sorts' ((sp1,i)::posn))
 		0 rargs1 rargs2)
-	  else if Sorts.List.mem InType sorts
+	  else if Sorts.List.mem InType sorts'
           then (* see build_discriminator *)
 	    raise (DiscrFound (List.rev posn,sp1,sp2))
-	  else []
-
+	  else 
+          (* if we cannot eliminate to Type, we cannot discriminate but we
+	     may still try to project *)
+	  project env sorts posn (applist (hd1,args1)) (applist (hd2,args2))
       | _ ->
 	  let t1_0 = applist (hd1,args1)
           and t2_0 = applist (hd2,args2) in
           if is_conv env sigma t1_0 t2_0 then
 	    []
           else
-	    let ty1_0 = get_type_of env sigma t1_0 in
-	    let s = get_sort_family_of env sigma ty1_0 in
-	    if Sorts.List.mem s sorts
-            then [(List.rev posn,t1_0,t2_0)] else []
+	    project env sorts posn t1_0 t2_0
   in
   try
     let sorts = if !injection_on_proofs then [InSet;InType;InProp]
