@@ -1455,12 +1455,6 @@ and interp_atomic ist tac =
 	  (Tactics.exact_no_check c_interp)
           gl
       end
-  | TacExactNoCheck c ->
-      (new_interp_constr ist c)
-        (fun c -> Proofview.V82.tactic (Tactics.exact_no_check c))
-  | TacVmCastNoCheck c ->
-      (new_interp_constr ist c)
-        (fun c -> Proofview.V82.tactic (Tactics.vm_cast_no_check c))
   | TacApply (a,ev,cb,cl) ->
       Proofview.Goal.raw_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
@@ -1487,28 +1481,12 @@ and interp_atomic ist tac =
         let sigma, cbo = Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
         Tacticals.New.tclWITHHOLES ev (Tactics.elim ev cb) sigma cbo
       end
-  | TacElimType c ->
-      Proofview.V82.tactic begin fun gl -> 
-        let (sigma,c_interp) = pf_interp_type ist gl c in
-        tclTHEN
-	  (tclEVARS sigma)
-	  (Tactics.elim_type c_interp)
-          gl
-      end
   | TacCase (ev,cb) ->
       Proofview.Goal.raw_enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
         Tacticals.New.tclWITHHOLES ev (Tactics.general_case_analysis ev) sigma cb
-      end
-  | TacCaseType c ->
-      Proofview.V82.tactic begin fun gl -> 
-        let (sigma,c_interp) = pf_interp_type ist gl c in
-        tclTHEN
-	  (tclEVARS sigma)
-	  (Tactics.case_type c_interp)
-          gl
       end
   | TacFix (idopt,n) ->
       Proofview.Goal.raw_enter begin fun gl ->
@@ -1548,8 +1526,6 @@ and interp_atomic ist tac =
 	  (Tactics.mutual_cofix (interp_fresh_ident ist env id) l_interp 0)
           gl
       end
-  | TacCut c ->
-      new_interp_type ist c Tactics.cut
   | TacAssert (t,ipat,c) ->
       Proofview.Goal.raw_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
@@ -1670,8 +1646,6 @@ and interp_atomic ist tac =
           tclWITHHOLES false (Tactics.specialize n) sigma cb gl
         end
       end
-  | TacLApply c ->
-      new_interp_constr ist c Tactics.cut_and_apply
 
   (* Context management *)
   | TacClear (b,l) ->

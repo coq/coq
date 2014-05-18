@@ -310,23 +310,15 @@ let rec mlexpr_of_atomic_tactic = function
       <:expr< Tacexpr.TacIntroMove $idopt$ $idopt'$ >>
   | Tacexpr.TacExact c ->
       <:expr< Tacexpr.TacExact $mlexpr_of_constr c$ >>
-  | Tacexpr.TacExactNoCheck c ->
-      <:expr< Tacexpr.TacExactNoCheck $mlexpr_of_constr c$ >>
-  | Tacexpr.TacVmCastNoCheck c ->
-      <:expr< Tacexpr.TacVmCastNoCheck $mlexpr_of_constr c$ >>
   | Tacexpr.TacApply (b,false,cb,None) ->
       <:expr< Tacexpr.TacApply $mlexpr_of_bool b$ False $mlexpr_of_list mlexpr_of_constr_with_binding cb$ None >>
   | Tacexpr.TacElim (false,cb,cbo) ->
       let cb = mlexpr_of_constr_with_binding cb in
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
       <:expr< Tacexpr.TacElim False $cb$ $cbo$ >>
-  | Tacexpr.TacElimType c ->
-      <:expr< Tacexpr.TacElimType $mlexpr_of_constr c$ >>
   | Tacexpr.TacCase (false,cb) ->
       let cb = mlexpr_of_constr_with_binding cb in
       <:expr< Tacexpr.TacCase False $cb$ >>
-  | Tacexpr.TacCaseType c ->
-      <:expr< Tacexpr.TacCaseType $mlexpr_of_constr c$ >>
   | Tacexpr.TacFix (ido,n) ->
       let ido = mlexpr_of_ident_option ido in
       let n = mlexpr_of_int n in
@@ -346,8 +338,6 @@ let rec mlexpr_of_atomic_tactic = function
       let l = mlexpr_of_list f l in
       <:expr< Tacexpr.TacMutualCofix $id$ $l$ >>
 
-  | Tacexpr.TacCut c ->
-      <:expr< Tacexpr.TacCut $mlexpr_of_constr c$ >>
   | Tacexpr.TacAssert (t,ipat,c) ->
       let ipat = mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern) ipat in
       <:expr< Tacexpr.TacAssert $mlexpr_of_option mlexpr_of_tactic t$ $ipat$

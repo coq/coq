@@ -533,8 +533,6 @@ GEXTEND Gram
       | IDENT "intro" -> TacIntroMove (None, MoveLast)
 
       | IDENT "exact"; c = constr -> TacExact c
-      | IDENT "exact_no_check"; c = constr -> TacExactNoCheck c
-      | IDENT "vm_cast_no_check"; c = constr -> TacVmCastNoCheck c
 
       | IDENT "apply"; cl = LIST1 constr_with_bindings SEP ",";
           inhyp = in_hyp_as -> TacApply (true,false,cl,inhyp)
@@ -548,10 +546,8 @@ GEXTEND Gram
           TacElim (false,cl,el)
       | IDENT "eelim"; cl = constr_with_bindings; el = OPT eliminator ->
           TacElim (true,cl,el)
-      | IDENT "elimtype"; c = constr -> TacElimType c
       | IDENT "case"; icl = induction_clause_list -> mkTacCase false icl
       | IDENT "ecase"; icl = induction_clause_list -> mkTacCase true icl
-      | IDENT "casetype"; c = constr -> TacCaseType c
       | "fix"; n = natural -> TacFix (None,n)
       | "fix"; id = ident; n = natural -> TacFix (Some id,n)
       | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
@@ -587,7 +583,6 @@ GEXTEND Gram
       | IDENT "pose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
 	  TacAssert (None,ipat,c)
 
-      | IDENT "cut"; c = constr -> TacCut c
       | IDENT "generalize"; c = constr ->
 	  TacGeneralize [((AllOccurrences,c),Names.Anonymous)]
       | IDENT "generalize"; c = constr; l = LIST1 constr ->
@@ -601,7 +596,6 @@ GEXTEND Gram
 
       | IDENT "specialize"; n = OPT natural; lcb = constr_with_bindings ->
 	  TacSpecialize (n,lcb)
-      | IDENT "lapply"; c = constr -> TacLApply c
 
       (* Derived basic tactics *)
       | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->

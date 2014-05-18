@@ -650,8 +650,6 @@ and pr_atom1 = function
       hov 1 (str"intro" ++ pr_opt pr_id ido ++
              Miscprint.pr_move_location pr_ident hto)
   | TacExact c -> hov 1 (str "exact" ++ pr_constrarg c)
-  | TacExactNoCheck c -> hov 1 (str "exact_no_check" ++ pr_constrarg c)
-  | TacVmCastNoCheck c -> hov 1 (str "vm_cast_no_check" ++ pr_constrarg c)
   | TacApply (a,ev,cb,inhyp) ->
       hov 1 ((if a then mt() else str "simple ") ++
              str (with_evars ev "apply") ++ spc () ++
@@ -660,10 +658,8 @@ and pr_atom1 = function
   | TacElim (ev,cb,cbo) ->
       hov 1 (str (with_evars ev "elim") ++ pr_arg pr_with_bindings cb ++
         pr_opt pr_eliminator cbo)
-  | TacElimType c -> hov 1 (str "elimtype" ++ pr_constrarg c)
   | TacCase (ev,cb) ->
       hov 1 (str (with_evars ev "case") ++ spc () ++ pr_with_bindings cb)
-  | TacCaseType c -> hov 1 (str "casetype" ++ pr_constrarg c)
   | TacFix (ido,n) -> hov 1 (str "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
   | TacMutualFix (id,n,l) ->
       hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc() ++
@@ -672,7 +668,6 @@ and pr_atom1 = function
   | TacMutualCofix (id,l) ->
       hov 1 (str "cofix" ++ spc () ++ pr_id id ++ spc() ++
              str"with " ++ prlist_with_sep spc pr_cofix_tac l)
-  | TacCut c -> hov 1 (str "cut" ++ pr_constrarg c)
   | TacAssert (Some tac,ipat,c) ->
       hov 1 (str "assert" ++
              pr_assumption pr_lconstr pr_constr ipat c ++
@@ -734,8 +729,6 @@ and pr_atom1 = function
   | TacSpecialize (n,c) ->
       hov 1 (str "specialize" ++ spc () ++ pr_opt int n ++
              pr_with_bindings c)
-  | TacLApply c ->
-      hov 1 (str "lapply" ++ pr_constrarg c)
 
   (* Automation tactics *)
   | TacTrivial (_,[],Some []) as x -> pr_atom0 x

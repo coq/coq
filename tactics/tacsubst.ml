@@ -135,23 +135,18 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Basic tactics *)
   | TacIntroPattern _ | TacIntrosUntil _ | TacIntroMove _ as x -> x
   | TacExact c -> TacExact (subst_glob_constr subst c)
-  | TacExactNoCheck c -> TacExactNoCheck (subst_glob_constr subst c)
-  | TacVmCastNoCheck c -> TacVmCastNoCheck (subst_glob_constr subst c)
   | TacApply (a,ev,cb,cl) ->
       TacApply (a,ev,List.map (subst_glob_with_bindings subst) cb,cl)
   | TacElim (ev,cb,cbo) ->
       TacElim (ev,subst_glob_with_bindings subst cb,
                Option.map (subst_glob_with_bindings subst) cbo)
-  | TacElimType c -> TacElimType (subst_glob_constr subst c)
   | TacCase (ev,cb) -> TacCase (ev,subst_glob_with_bindings subst cb)
-  | TacCaseType c -> TacCaseType (subst_glob_constr subst c)
   | TacFix (idopt,n) as x -> x
   | TacMutualFix (id,n,l) ->
       TacMutualFix(id,n,List.map (fun (id,n,c) -> (id,n,subst_glob_constr subst c)) l)
   | TacCofix idopt as x -> x
   | TacMutualCofix (id,l) ->
       TacMutualCofix (id, List.map (fun (id,c) -> (id,subst_glob_constr subst c)) l)
-  | TacCut c -> TacCut (subst_glob_constr subst c)
   | TacAssert (b,na,c) ->
       TacAssert (Option.map (subst_tactic subst) b,na,subst_glob_constr subst c)
   | TacGeneralize cl ->
@@ -177,7 +172,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       let l = List.map (subst_or_var (subst_ind subst)) l in
       TacDecompose (l,subst_glob_constr subst c)
   | TacSpecialize (n,l) -> TacSpecialize (n,subst_glob_with_bindings subst l)
-  | TacLApply c -> TacLApply (subst_glob_constr subst c)
 
   (* Context management *)
   | TacClear _ as x -> x

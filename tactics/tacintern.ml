@@ -456,17 +456,13 @@ let rec intern_atomic lf ist x =
       TacIntroMove (Option.map (intern_ident lf ist) ido,
                     intern_move_location ist hto)
   | TacExact c -> TacExact (intern_constr ist c)
-  | TacExactNoCheck c -> TacExactNoCheck (intern_constr ist c)
-  | TacVmCastNoCheck c -> TacVmCastNoCheck (intern_constr ist c)
   | TacApply (a,ev,cb,inhyp) ->
       TacApply (a,ev,List.map (intern_constr_with_bindings ist) cb,
                 Option.map (intern_in_hyp_as ist lf) inhyp)
   | TacElim (ev,cb,cbo) ->
       TacElim (ev,intern_constr_with_bindings ist cb,
                Option.map (intern_constr_with_bindings ist) cbo)
-  | TacElimType c -> TacElimType (intern_type ist c)
   | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings ist cb)
-  | TacCaseType c -> TacCaseType (intern_type ist c)
   | TacFix (idopt,n) -> TacFix (Option.map (intern_ident lf ist) idopt,n)
   | TacMutualFix (id,n,l) ->
       let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
@@ -475,7 +471,6 @@ let rec intern_atomic lf ist x =
   | TacMutualCofix (id,l) ->
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
       TacMutualCofix (intern_ident lf ist id, List.map f l)
-  | TacCut c -> TacCut (intern_type ist c)
   | TacAssert (otac,ipat,c) ->
       TacAssert (Option.map (intern_pure_tactic ist) otac,
                  Option.map (intern_intro_pattern lf ist) ipat,
@@ -516,7 +511,6 @@ let rec intern_atomic lf ist x =
   | TacDecompose (l,c) -> let l = List.map (intern_inductive ist) l in
       TacDecompose (l,intern_constr ist c)
   | TacSpecialize (n,l) -> TacSpecialize (n,intern_constr_with_bindings ist l)
-  | TacLApply c -> TacLApply (intern_constr ist c)
 
   (* Context management *)
   | TacClear (b,l) -> TacClear (b,List.map (intern_hyp_or_metaid ist) l)
