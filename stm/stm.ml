@@ -42,10 +42,12 @@ let pr_ast { expr } = pr_vernac expr
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 let vernac_interp ?proof id { verbose; loc; expr } =
-  let internal_command = function
+  let rec internal_command = function
     | VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
-    | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true | _ -> false in
+    | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true
+    | VernacTime el -> List.for_all (fun (_,e) -> internal_command e) el
+    | _ -> false in
   if internal_command expr then begin
     prerr_endline ("ignoring " ^ string_of_ppcmds(pr_vernac expr))
   end else begin
