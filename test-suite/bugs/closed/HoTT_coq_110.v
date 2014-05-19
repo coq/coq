@@ -19,5 +19,5 @@ Module Y.
   Definition foo : (A = B) * (A = B).
     split; abstract (rewrite <- P; reflexivity).
   (* Error: internal_paths_rew already exists. *)
-  Fail Defined. (* Anomaly: Uncaught exception Not_found(_). Please report. *)
-Fail End Y.
+  Defined. (* Anomaly: Uncaught exception Not_found(_). Please report. *)
+End Y.

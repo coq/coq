@@ -64,6 +64,10 @@ let handle_side_effects env body side_eff =
     let cbl = match se with
       | SEsubproof (c,cb) -> [c,cb]
       | SEscheme (cl,_) -> List.map (fun (_,c,cb) -> c,cb) cl in
+    let not_exists (c,_) =
+      try ignore(Environ.lookup_constant c env); false
+      with Not_found -> true in 
+    let cbl = List.filter not_exists cbl in
     let cname c = 
       let name = string_of_con c in
       for i = 0 to String.length name - 1 do

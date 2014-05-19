@@ -208,11 +208,11 @@ let definition_entry ?(opaque=false) ?(inline=false) ?types
 
 let declare_scheme = ref (fun _ _ -> assert false)
 let set_declare_scheme f = declare_scheme := f
-let declare_sideff fix_exn se =
+let declare_sideff env fix_exn se =
   let cbl, scheme = match se with
     | SEsubproof (c, cb) -> [c, cb], None
     | SEscheme (cbl, k) ->
-        List.map (fun (_,c,cb) -> c,cb) cbl, Some (List.map pi1 cbl,k) in
+        List.map (fun (_,c,cb) -> c,cb) cbl, Some (cbl,k) in
   let id_of c = Names.Label.to_id (Names.Constant.label c) in
   let pt_opaque_of cb =
     match cb with
@@ -243,13 +243,21 @@ let declare_sideff fix_exn se =
     cst_kind =  Decl_kinds.IsDefinition Decl_kinds.Definition;
     cst_locl = true;
   } in
+  let exists c =
+    try ignore(Environ.lookup_constant c env); true
+    with Not_found -> false in 
   let knl =
-    List.map (fun (c,cb) ->
-      declare_constant_common (id_of c) (cst_of cb)) cbl in
+    CList.map_filter (fun (c,cb) ->
+      if exists c then None
+      else Some (c,declare_constant_common (id_of c) (cst_of cb))) cbl in
   match scheme with
   | None -> ()
-  | Some (inds,kind) ->
-      !declare_scheme kind (Array.of_list (List.combine inds knl))
+  | Some (inds_consts,kind) ->
+      !declare_scheme kind (Array.of_list
+         (List.map (fun (c,kn) ->
+             CList.find_map (fun (x,c',_) ->
+               if Constant.equal c c' then Some (x,kn) else None) inds_consts)
+           knl))
 
 let declare_constant ?(internal = UserVerbose) ?(local = false) id (cd, kind) =
   let cd = (* We deal with side effects of non-opaque constants *)
@@ -264,7 +272,7 @@ let declare_constant ?(internal = UserVerbose) ?(local = false) id (cd, kind) =
         else begin
           let seff = Declareops.uniquize_side_effects seff in
           Declareops.iter_side_effects
-            (declare_sideff (Future.fix_exn_of bo)) seff;
+            (declare_sideff (Global.env ()) (Future.fix_exn_of bo)) seff;
           Entries.DefinitionEntry { de with
             const_entry_body = Future.chain ~pure:true bo (fun (pt, _) ->
               pt, Declareops.no_seff) }

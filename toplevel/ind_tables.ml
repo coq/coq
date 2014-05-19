@@ -181,12 +181,14 @@ let define_mutual_scheme kind internal names mind =
       define_mutual_scheme_base kind s f internal names mind
 
 let find_scheme_on_env_too kind ind =
-  String.Map.find kind (Indmap.find ind !scheme_map)
+  let s = String.Map.find kind (Indmap.find ind !scheme_map) in
+  s, Declareops.cons_side_effects
+      (Safe_typing.sideff_of_scheme
+            kind (Global.safe_env()) [ind, s])
+      Declareops.no_seff 
 
 let find_scheme kind (mind,i as ind) =
-  try 
-    let s = find_scheme_on_env_too kind ind in
-    s, Declareops.no_seff
+  try find_scheme_on_env_too kind ind
   with Not_found ->
   match Hashtbl.find scheme_object_table kind with
   | s,IndividualSchemeFunction f ->
