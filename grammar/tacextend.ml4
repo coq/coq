@@ -10,6 +10,7 @@
 
 open Util
 open Pp
+open Names
 open Genarg
 open Q_util
 open Q_coqast
@@ -55,6 +56,8 @@ let rec extract_signature = function
   | [] -> []
   | GramNonTerminal (_,t,_,_) :: l -> t :: extract_signature l
   | _::l -> extract_signature l
+
+
 
 let check_unicity s l =
   let l' = List.map (fun (l,_,_) -> extract_signature l) l in
@@ -159,20 +162,39 @@ let possibly_atomic loc prods =
   in
   possibly_empty_subentries loc (List.factorize_left String.equal l)
 
+(** Special treatment of constr entries *)
+let is_constr_gram = function
+| GramTerminal _ -> false
+| GramNonTerminal (_, _, e, _) ->
+  match e with
+  | Aentry ("constr", "constr") -> true
+  | _ -> false
+
+let make_vars len =
+  (** We choose names unlikely to be written by a human, even though that
+      does not matter at all. *)
+  List.init len (fun i -> Some (Id.of_string (Printf.sprintf "_%i" i)))
+
 let declare_tactic loc s c cl = match cl with
-| [[GramTerminal name], _, tac] ->
-  (** The extension is only made of a name: we do not add any grammar nor
-      printing rule and add it as a true Ltac definition. *)
+| [(GramTerminal name) :: rem, _, tac] when List.for_all is_constr_gram rem ->
+  (** The extension is only made of a name followed by constr entries: we do not
+      add any grammar nor printing rule and add it as a true Ltac definition. *)
+  let patt = make_patt rem in
+  let vars = make_vars (List.length rem) in
+  let vars = mlexpr_of_list (mlexpr_of_option mlexpr_of_ident) vars in
   let se = mlexpr_of_string s in
   let name = mlexpr_of_string name in
-  let tac = <:expr< fun _ $lid:"ist"$ -> $tac$ >> in
-  let body = <:expr< Tacexpr.TacAtom ($dloc$, Tacexpr.TacExtend($dloc$, $se$, [])) >> in
+  let tac = Compat.make_fun loc [patt, vala None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
+  (** Arguments are not passed directly to the ML tactic in the TacExtend node,
+      the ML tactic retrieves its arguments in the [ist] environment instead.
+      This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
+  let body = <:expr< Tacexpr.TacFun ($vars$, Tacexpr.TacAtom ($dloc$, Tacexpr.TacExtend($dloc$, $se$, []))) >> in
   let name = <:expr< Libnames.Ident($dloc$, Names.Id.of_string $name$) >> in
   declare_str_items loc
     [ <:str_item< do {
       let obj () = Tacenv.register_ltac False False [($name$, False, $body$)] in
       try do {
-        Tacenv.register_ml_tactic $se$ $tac$;
+        Tacenv.register_ml_tactic $se$ (Tacinterp.lift_constr_tac_to_ml_tac $vars$ $tac$);
         Mltop.declare_cache_obj obj __coq_plugin_name; }
       with [ e when Errors.noncritical e ->
         Pp.msg_warning

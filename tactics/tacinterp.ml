@@ -2109,3 +2109,23 @@ let _ = Hook.set Auto.extern_interp
     let lfun = Id.Map.map (fun c -> Value.of_constr c) l in
     let ist = { (default_ist ()) with lfun; } in
     interp_tactic ist)
+
+(** Used in tactic extension **)
+
+let dummy_id = Id.of_string "_"
+
+let lift_constr_tac_to_ml_tac vars tac =
+  let tac _ ist = Proofview.Goal.raw_enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let map = function
+    | None -> None
+    | Some id ->
+      let c = Id.Map.find id ist.lfun in
+      try Some (coerce_to_closed_constr env c)
+      with CannotCoerceTo ty ->
+        error_ltac_variable Loc.ghost dummy_id (Some env) c ty
+    in
+    let args = List.map_filter map vars in
+    tac args ist
+  end in
+  tac
