@@ -84,7 +84,6 @@ let initial_atomic =
         "esplit", TacSplit(true,false,[NoBindings]);
         "constructor", TacAnyConstructor (false,None);
         "econstructor", TacAnyConstructor (true,None);
-        "symmetry", TacSymmetry nocl
       ]
   in
   let fold accu (s, t) = Id.Map.add (Id.of_string s) t accu in

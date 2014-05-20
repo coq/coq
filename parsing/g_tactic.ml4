@@ -639,7 +639,7 @@ GEXTEND Gram
       | IDENT "econstructor"; t = OPT tactic -> TacAnyConstructor (true,t)
 
       (* Equivalence relations *)
-      | IDENT "symmetry"; cl = clause_dft_concl -> TacSymmetry cl
+      | IDENT "symmetry"; "in"; cl = in_clause -> TacSymmetry cl
 
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";

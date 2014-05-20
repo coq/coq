@@ -10,6 +10,7 @@
 
 open Util
 open Names
+open Locus
 open Tacexpr
 open Misctypes
 open Tacinterp
@@ -112,4 +113,8 @@ TACTIC EXTEND specialize
     let specialize c = Proofview.V82.tactic (Tactics.specialize c) in
     Tacticals.New.tclWITHHOLES false specialize sigma c
   ]
+END
+
+TACTIC EXTEND symmetry
+  [ "symmetry" ] -> [ Tactics.intros_symmetry {onhyps=Some[];concl_occs=AllOccurrences} ]
 END
