@@ -790,8 +790,6 @@ and pr_atom1 = function
 
   (* Equivalence relations *)
   | TacSymmetry cls -> str "symmetry" ++ pr_clauses (Some true) pr_ident cls
-  | TacTransitivity (Some c) -> str "transitivity" ++ pr_constrarg c
-  | TacTransitivity None -> str "etransitivity"
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->

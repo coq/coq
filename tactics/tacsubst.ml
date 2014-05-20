@@ -195,7 +195,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
 
   (* Equivalence relations *)
   | TacSymmetry _ as x -> x
-  | TacTransitivity c -> TacTransitivity (Option.map (subst_glob_constr subst) c)
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->

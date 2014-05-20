@@ -554,7 +554,6 @@ let rec intern_atomic lf ist x =
   (* Equivalence relations *)
   | TacSymmetry idopt ->
       TacSymmetry (clause_app (intern_hyp_location ist) idopt)
-  | TacTransitivity c -> TacTransitivity (Option.map (intern_constr ist) c)
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->

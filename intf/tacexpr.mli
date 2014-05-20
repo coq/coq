@@ -157,7 +157,6 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
 
   (* Equivalence relations *)
   | TacSymmetry of 'nam clause_expr
-  | TacTransitivity of 'trm option
 
   (* Equality and inversion *)
   | TacRewrite of evars_flag *

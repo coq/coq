@@ -66,7 +66,7 @@ Qed.
 Lemma sqrt_unique : forall a b, b² <= a < (S b)² -> √a == b.
 Proof.
  intros a b (LEb,LTb).
- assert (Ha : 0<=a) by (transitivity b²; trivial using square_nonneg).
+ assert (Ha : 0<=a) by (transitivity (b²); trivial using square_nonneg).
  assert (Hb : 0<=b) by (apply sqrt_spec_nonneg; order).
  assert (Ha': 0<=√a) by now apply sqrt_nonneg.
  destruct (sqrt_spec a Ha) as (LEa,LTa).

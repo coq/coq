@@ -652,8 +652,6 @@ GEXTEND Gram
 
       (* Equivalence relations *)
       | IDENT "symmetry"; cl = clause_dft_concl -> TacSymmetry cl
-      | IDENT "transitivity"; c = constr -> TacTransitivity (Some c)
-      | IDENT "etransitivity" -> TacTransitivity None
 
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";

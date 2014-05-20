@@ -23,6 +23,10 @@ TACTIC EXTEND assumption
   [ "assumption" ] -> [ Tactics.assumption ]
 END
 
+TACTIC EXTEND etransitivity
+  [ "etransitivity" ] -> [ Tactics.intros_transitivity None ]
+END
+
 TACTIC EXTEND cut
   [ "cut" constr(c) ] -> [ Tactics.cut c ]
 END
@@ -45,4 +49,8 @@ END
 
 TACTIC EXTEND lapply
   [ "lapply" constr(c) ] -> [ Tactics.cut_and_apply c ]
+END
+
+TACTIC EXTEND transitivity
+  [ "transitivity" constr(c) ] -> [ Tactics.intros_transitivity (Some c) ]
 END

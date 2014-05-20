@@ -1772,12 +1772,6 @@ and interp_atomic ist tac =
         let cl = interp_clause ist env c in
         Tactics.intros_symmetry cl
       end
-  | TacTransitivity c ->
-      begin match c with
-      | None -> Tactics.intros_transitivity None
-      | Some c ->
-          (new_interp_constr ist c) (fun c -> Tactics.intros_transitivity (Some c))
-      end
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
