@@ -634,10 +634,6 @@ GEXTEND Gram
       | IDENT "revert"; l = LIST1 id_or_meta -> TacRevert l
 
       (* Constructors *)
-      | IDENT "left";   bl = with_bindings -> TacLeft  (false,bl)
-      | IDENT "eleft";  bl = with_bindings -> TacLeft  (true,bl)
-      | IDENT "right";  bl = with_bindings -> TacRight (false,bl)
-      | IDENT "eright"; bl = with_bindings -> TacRight (true,bl)
       | IDENT "split";  bl = with_bindings -> TacSplit (false,false,[bl])
       | IDENT "esplit"; bl = with_bindings -> TacSplit (true,false,[bl])
       | "exists"; bll = LIST1 opt_bindings SEP "," -> TacSplit (false,true,bll)

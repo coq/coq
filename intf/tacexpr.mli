@@ -144,8 +144,6 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacRevert of 'nam list
 
   (* Trmuctors *)
-  | TacLeft of evars_flag * 'trm bindings
-  | TacRight of evars_flag * 'trm bindings
   | TacSplit of evars_flag * split_flag * 'trm bindings list
   | TacAnyConstructor of evars_flag *
       ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option

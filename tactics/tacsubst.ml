@@ -181,8 +181,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacRevert _ as x -> x
 
   (* Constructors *)
-  | TacLeft (ev,bl) -> TacLeft (ev,subst_bindings subst bl)
-  | TacRight (ev,bl) -> TacRight (ev,subst_bindings subst bl)
   | TacSplit (ev,b,bll) -> TacSplit (ev,b,List.map (subst_bindings subst) bll)
   | TacAnyConstructor (ev,t) -> TacAnyConstructor (ev,Option.map (subst_tactic subst) t)
   | TacConstructor (ev,n,bl) -> TacConstructor (ev,n,subst_bindings subst bl)

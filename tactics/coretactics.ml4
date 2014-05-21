@@ -11,6 +11,7 @@
 open Util
 open Names
 open Tacexpr
+open Misctypes
 open Tacinterp
 
 DECLARE PLUGIN "coretactics"
@@ -53,4 +54,52 @@ END
 
 TACTIC EXTEND transitivity
   [ "transitivity" constr(c) ] -> [ Tactics.intros_transitivity (Some c) ]
+END
+
+(** Left *)
+
+TACTIC EXTEND left
+  [ "left" ] -> [ Tactics.left_with_bindings false NoBindings ]
+END
+
+TACTIC EXTEND eleft
+  [ "eleft" ] -> [ Tactics.left_with_bindings true NoBindings ]
+END
+
+TACTIC EXTEND left_with
+  [ "left" "with" bindings(bl) ] -> [
+    let { Evd.sigma = sigma ; it = bl } = bl in
+    Tacticals.New.tclWITHHOLES false (Tactics.left_with_bindings false) sigma bl
+  ]
+END
+
+TACTIC EXTEND eleft_with
+  [ "eleft" "with" bindings(bl) ] -> [
+    let { Evd.sigma = sigma ; it = bl } = bl in
+    Tacticals.New.tclWITHHOLES true (Tactics.left_with_bindings true) sigma bl
+  ]
+END
+
+(** Right *)
+
+TACTIC EXTEND right
+  [ "right" ] -> [ Tactics.right_with_bindings false NoBindings ]
+END
+
+TACTIC EXTEND eright
+  [ "eright" ] -> [ Tactics.right_with_bindings true NoBindings ]
+END
+
+TACTIC EXTEND right_with
+  [ "right" "with" bindings(bl) ] -> [
+    let { Evd.sigma = sigma ; it = bl } = bl in
+    Tacticals.New.tclWITHHOLES false (Tactics.right_with_bindings false) sigma bl
+  ]
+END
+
+TACTIC EXTEND eright_with
+  [ "eright" "with" bindings(bl) ] -> [
+    let { Evd.sigma = sigma ; it = bl } = bl in
+    Tacticals.New.tclWITHHOLES true (Tactics.right_with_bindings true) sigma bl
+  ]
 END

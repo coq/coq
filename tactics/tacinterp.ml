@@ -1677,20 +1677,6 @@ and interp_atomic ist tac =
       end
 
   (* Constructors *)
-  | TacLeft (ev,bl) ->
-      Proofview.Goal.raw_enter begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = Proofview.Goal.sigma gl in
-        let sigma, bl = interp_bindings ist env sigma bl in
-        Tacticals.New.tclWITHHOLES ev (Tactics.left_with_bindings ev) sigma bl
-      end
-  | TacRight (ev,bl) ->
-      Proofview.Goal.raw_enter begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = Proofview.Goal.sigma gl in
-        let sigma, bl = interp_bindings ist env sigma bl in
-        Tacticals.New.tclWITHHOLES ev (Tactics.right_with_bindings ev) sigma bl
-      end
   | TacSplit (ev,_,bll) ->
       Proofview.Goal.raw_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
