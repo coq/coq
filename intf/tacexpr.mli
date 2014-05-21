@@ -258,7 +258,7 @@ type r_pat = constr_pattern_expr
 type r_cst = reference or_by_notation
 type r_ind = reference or_by_notation
 type r_ref = reference
-type r_nam  = Id.t located or_metaid
+type r_nam  = Id.t located
 type r_lev = rlevel
 
 type raw_atomic_tactic_expr =

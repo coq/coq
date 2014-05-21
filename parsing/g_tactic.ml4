@@ -228,10 +228,7 @@ GEXTEND Gram
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
-    [ [ id = identref -> AI id
-
-      (* This is used in quotations *)
-      | id = METAIDENT -> MetaId (!@loc, id) ] ]
+    [ [ id = identref -> id ] ]
   ;
   open_constr:
     [ [ c = constr -> ((),c) ] ]

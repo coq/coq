@@ -83,7 +83,7 @@ let mlexpr_of_or_var f = function
   | Misctypes.ArgArg x -> <:expr< Misctypes.ArgArg $f x$ >>
   | Misctypes.ArgVar id -> <:expr< Misctypes.ArgVar $mlexpr_of_located mlexpr_of_ident id$ >>
 
-let mlexpr_of_hyp = mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident)
+let mlexpr_of_hyp = (mlexpr_of_located mlexpr_of_ident)
 
 let mlexpr_of_occs = function
   | Locus.AllOccurrences -> <:expr< Locus.AllOccurrences >>

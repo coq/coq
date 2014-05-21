@@ -965,7 +965,7 @@ let raw_printers =
      pr_or_by_notation pr_reference,
      pr_or_by_notation pr_reference,
      pr_reference,
-     pr_or_metaid pr_lident,
+     pr_lident,
      pr_raw_extend,
      pr_raw_alias,
      strip_prod_binders_expr,
@@ -1017,7 +1017,7 @@ let () =
     Miscprint.pr_intro_pattern;
   Genprint.register_print0
     Constrarg.wit_clause_dft_concl
-    (pr_clauses (Some true) (pr_or_metaid pr_lident))
+    (pr_clauses (Some true) (pr_lident))
     (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) (fun id -> pr_lident (Loc.ghost,id)))
   ;

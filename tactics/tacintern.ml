@@ -106,7 +106,7 @@ let intern_hyp ist (loc,id as locid) =
   else
     Pretype_errors.error_var_not_found_loc loc id
 
-let intern_hyp_or_metaid ist id = intern_hyp ist (skip_metaid id)
+let intern_hyp_or_metaid ist id = intern_hyp ist id
 
 let intern_or_var ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)

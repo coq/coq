@@ -215,7 +215,7 @@ GEXTEND Gram
       | "|"; mrl = LIST1 match_rule SEP "|" -> mrl ] ]
   ;
   message_token:
-    [ [ id = identref -> MsgIdent (AI id)
+    [ [ id = identref -> MsgIdent id
       | s = STRING -> MsgString s
       | n = integer -> MsgInt n ] ]
   ;

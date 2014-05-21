@@ -70,4 +70,4 @@ val wit_red_expr :
 
 val wit_tactic : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type
 
-val wit_clause_dft_concl :  (Names.Id.t Loc.located Tacexpr.or_metaid Locus.clause_expr,Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Locus.clause_expr) genarg_type
+val wit_clause_dft_concl :  (Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Locus.clause_expr) genarg_type
