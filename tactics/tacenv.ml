@@ -191,15 +191,15 @@ let make_absolute_name ident repl =
       else let id = Constrexpr_ops.coerce_reference_to_id ident in
              Some id, Lib.make_kn id
     in
-      if KNmap.mem kn !mactab then
-        if repl then id, kn
-        else
-          Errors.user_err_loc (loc, "",
-                       str "There is already an Ltac named " ++ pr_reference ident ++ str".")
-      else if is_atomic_kn kn then
-        Errors.user_err_loc (loc, "",
-                     str "Reserved Ltac name " ++ pr_reference ident ++ str".")
-      else id, kn
+    let () = if KNmap.mem kn !mactab && not repl then
+      Errors.user_err_loc (loc, "",
+        str "There is already an Ltac named " ++ pr_reference ident ++ str".")
+    in
+    let () = if is_atomic_kn kn then
+      msg_warning (str "The Ltac name " ++ pr_reference ident ++
+        str " may be unusable because of a conflict with a notation.")
+    in
+    id, kn
   with Not_found ->
     Errors.user_err_loc (loc, "",
                  str "There is no Ltac named " ++ pr_reference ident ++ str ".")
