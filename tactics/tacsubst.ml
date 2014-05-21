@@ -166,8 +166,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       let el' = Option.map (subst_glob_with_bindings subst) el in
       TacInductionDestruct (isrec,ev,(l',el',cls))
   | TacDoubleInduction (h1,h2) as x -> x
-  | TacDecomposeAnd c -> TacDecomposeAnd (subst_glob_constr subst c)
-  | TacDecomposeOr c -> TacDecomposeOr (subst_glob_constr subst c)
   | TacDecompose (l,c) ->
       let l = List.map (subst_or_var (subst_ind subst)) l in
       TacDecompose (l,subst_glob_constr subst c)

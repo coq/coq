@@ -718,10 +718,6 @@ and pr_atom1 = function
         (str "double induction" ++
          pr_arg pr_quantified_hypothesis h1 ++
 	 pr_arg pr_quantified_hypothesis h2)
-  | TacDecomposeAnd c ->
-      hov 1 (str "decompose record" ++ pr_constrarg c)
-  | TacDecomposeOr c ->
-      hov 1 (str "decompose sum" ++ pr_constrarg c)
   | TacDecompose (l,c) ->
       hov 1 (str "decompose" ++ spc () ++
         hov 0 (str "[" ++ prlist_with_sep spc pr_ind l

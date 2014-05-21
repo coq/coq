@@ -612,8 +612,6 @@ GEXTEND Gram
 	  TacInductionDestruct(false,false,icl)
       | IDENT "edestruct";  icl = induction_clause_list ->
 	  TacInductionDestruct(false,true,icl)
-      | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
-      | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
       | IDENT "decompose"; "["; l = LIST1 smart_global; "]"; c = constr
         -> TacDecompose (l,c)
 

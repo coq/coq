@@ -179,6 +179,17 @@ TACTIC EXTEND cut_rewrite
 END
 
 (**********************************************************************)
+(* Decompose                                                          *)
+
+TACTIC EXTEND decompose_sum
+| [ "decompose" "sum" constr(c) ] -> [ Elim.h_decompose_or c ]
+END
+
+TACTIC EXTEND decompose_record
+| [ "decompose" "record" constr(c) ] -> [ Elim.h_decompose_and c ]
+END
+
+(**********************************************************************)
 (* Contradiction                                                      *)
 
 open Contradiction

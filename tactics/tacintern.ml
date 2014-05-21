@@ -506,8 +506,6 @@ let rec intern_atomic lf ist x =
       let h1 = intern_quantified_hypothesis ist h1 in
       let h2 = intern_quantified_hypothesis ist h2 in
       TacDoubleInduction (h1,h2)
-  | TacDecomposeAnd c -> TacDecomposeAnd (intern_constr ist c)
-  | TacDecomposeOr c -> TacDecomposeOr (intern_constr ist c)
   | TacDecompose (l,c) -> let l = List.map (intern_inductive ist) l in
       TacDecompose (l,intern_constr ist c)
   | TacSpecialize (n,l) -> TacSpecialize (n,intern_constr_with_bindings ist l)

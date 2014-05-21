@@ -1628,10 +1628,6 @@ and interp_atomic ist tac =
       let h1 = interp_quantified_hypothesis ist h1 in
       let h2 = interp_quantified_hypothesis ist h2 in
       Elim.h_double_induction h1 h2
-  | TacDecomposeAnd c ->
-      new_interp_constr ist c Elim.h_decompose_and
-  | TacDecomposeOr c ->
-      new_interp_constr ist c Elim.h_decompose_or
   | TacDecompose (l,c) ->
       (new_interp_constr ist c) begin fun c ->
         let l = List.map (interp_inductive ist) l in
