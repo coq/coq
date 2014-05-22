@@ -133,6 +133,7 @@ tactics/tauto.ml
 tactics/eauto.ml
 tactics/hipattern.ml
 tactics/class_tactics.ml
+tactics/coretactics.ml
 tactics/rewrite.ml
 tactics/eqdecide.ml
 tactics/extratactics.ml
