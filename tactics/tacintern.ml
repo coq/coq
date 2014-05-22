@@ -508,8 +508,6 @@ let rec intern_atomic lf ist x =
       TacDoubleInduction (h1,h2)
   | TacDecompose (l,c) -> let l = List.map (intern_inductive ist) l in
       TacDecompose (l,intern_constr ist c)
-  | TacSpecialize (n,l) -> TacSpecialize (n,intern_constr_with_bindings ist l)
-
   (* Context management *)
   | TacClear (b,l) -> TacClear (b,List.map (intern_hyp_or_metaid ist) l)
   | TacClearBody l -> TacClearBody (List.map (intern_hyp_or_metaid ist) l)

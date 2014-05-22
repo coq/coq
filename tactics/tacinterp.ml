@@ -1633,16 +1633,6 @@ and interp_atomic ist tac =
         let l = List.map (interp_inductive ist) l in
         Elim.h_decompose l c
       end
-  | TacSpecialize (n,cb) ->
-      Proofview.Goal.raw_enter begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = Proofview.Goal.sigma gl in
-        Proofview.V82.tactic begin fun gl -> 
-          let sigma, cb = interp_constr_with_bindings ist env sigma cb in
-          tclWITHHOLES false (Tactics.specialize n) sigma cb gl
-        end
-      end
-
   (* Context management *)
   | TacClear (b,l) ->
       Proofview.V82.tactic begin fun gl ->

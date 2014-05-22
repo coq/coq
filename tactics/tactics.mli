@@ -160,7 +160,7 @@ val clear         : Id.t list -> tactic
 val clear_body    : Id.t list -> tactic
 val keep          : Id.t list -> tactic
 
-val specialize    : int option -> constr with_bindings -> tactic
+val specialize    : constr with_bindings -> tactic
 
 val move_hyp      : bool -> Id.t -> Id.t move_location -> tactic
 val rename_hyp    : (Id.t * Id.t) list -> tactic

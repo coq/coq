@@ -103,3 +103,13 @@ TACTIC EXTEND eright_with
     Tacticals.New.tclWITHHOLES true (Tactics.right_with_bindings true) sigma bl
   ]
 END
+
+(** Specialize *)
+
+TACTIC EXTEND specialize
+  [ "specialize" constr_with_bindings(c) ] -> [
+    let { Evd.sigma = sigma; it = c } = c in
+    let specialize c = Proofview.V82.tactic (Tactics.specialize c) in
+    Tacticals.New.tclWITHHOLES false specialize sigma c
+  ]
+END

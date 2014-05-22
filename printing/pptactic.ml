@@ -722,10 +722,6 @@ and pr_atom1 = function
       hov 1 (str "decompose" ++ spc () ++
         hov 0 (str "[" ++ prlist_with_sep spc pr_ind l
 	  ++ str "]" ++ pr_constrarg c))
-  | TacSpecialize (n,c) ->
-      hov 1 (str "specialize" ++ spc () ++ pr_opt int n ++
-             pr_with_bindings c)
-
   (* Automation tactics *)
   | TacTrivial (_,[],Some []) as x -> pr_atom0 x
   | TacTrivial (d,lems,db) ->

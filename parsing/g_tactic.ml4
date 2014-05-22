@@ -591,9 +591,6 @@ GEXTEND Gram
           TacGeneralize (((nl,c),na)::l)
       | IDENT "generalize"; IDENT "dependent"; c = constr -> TacGeneralizeDep c
 
-      | IDENT "specialize"; n = OPT natural; lcb = constr_with_bindings ->
-	  TacSpecialize (n,lcb)
-
       (* Derived basic tactics *)
       | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->
           TacSimpleInductionDestruct (true,h)

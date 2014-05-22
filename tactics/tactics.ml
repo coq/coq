@@ -1276,7 +1276,7 @@ let rec intros_clearing = function
 
 (* Modifying/Adding an hypothesis  *)
 
-let specialize mopt (c,lbind) g =
+let specialize (c,lbind) g =
   let tac, term =
     if lbind == NoBindings then
       let evd = Typeclasses.resolve_typeclasses (pf_env g) (project g) in
@@ -1287,15 +1287,11 @@ let specialize mopt (c,lbind) g =
       let clause = clenv_unify_meta_types ~flags clause in
       let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
       let nargs = List.length tstack in
-      let tstack = match mopt with
-	| Some m ->
-	    if m < nargs then List.firstn m tstack else tstack
-	| None ->
-	    let rec chk = function
-	      | [] -> []
-	      | t::l -> if occur_meta t then [] else t :: chk l
-	    in chk tstack
+      let rec chk = function
+      | [] -> []
+      | t::l -> if occur_meta t then [] else t :: chk l
       in
+      let tstack = chk tstack in
       let term = applist(thd,List.map (nf_evar clause.evd) tstack) in
       if occur_meta term then
 	errorlabstrm "" (str "Cannot infer an instance for " ++
