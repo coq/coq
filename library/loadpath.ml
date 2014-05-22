@@ -24,9 +24,6 @@ type t = {
 
 let load_paths = Summary.ref ([] : t list) ~name:"LOADPATHS"
 
-let accessible_paths =
-  Summary.ref ([] : CUnix.physical_path list) ~name:"ACCPATHS"
-
 let logical p = p.path_logical
 
 let physical p = p.path_physical
@@ -34,8 +31,6 @@ let physical p = p.path_physical
 let get_load_paths () = !load_paths
 
 let get_paths () = List.map physical !load_paths
-
-let get_accessible_paths () = !accessible_paths
 
 let anomaly_too_many_paths path =
   anomaly (str "Several logical paths are associated to" ++ spc () ++ str path)
@@ -69,10 +64,7 @@ let add_load_path phys_path path_type coq_path =
   } in
   match List.filter filter !load_paths with
   | [] ->
-    load_paths := binding :: !load_paths;
-    if path_type <> ImplicitPath then
-      accessible_paths := List.fold_left (fun acc v -> (fst v) :: acc)
-	(phys_path :: !accessible_paths) (System.all_subdirs phys_path)
+    load_paths := binding :: !load_paths
   | [p] ->
     let dir = p.path_logical in
     if not (DirPath.equal coq_path dir)

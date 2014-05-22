@@ -763,9 +763,8 @@ let save_library_to ?todo dir f =
     close_out ch;
     (* Writing native code files *)
     if not !Flags.no_native_compiler then
-      let lp = Loadpath.get_accessible_paths () in
       let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
-      if not (Int.equal (Nativelib.compile_library dir ast lp fn) 0) then
+      if not (Int.equal (Nativelib.compile_library dir ast fn) 0) then
         msg_error (str"Could not compile the library to native code. Skipping.")
    with reraise ->
     let reraise = Errors.push reraise in
@@ -794,7 +793,13 @@ let mem s =
 		 (CObj.size_kb m) (CObj.size_kb m.library_compiled)
 		 (CObj.size_kb m.library_objects)))
 
-let get_load_paths_str () =
-  List.map CUnix.string_of_physical_path (Loadpath.get_accessible_paths ())
+module StringOrd = struct type t = string let compare = String.compare end
+module StringSet = Set.Make(StringOrd)
 
-let _ = Nativelib.get_load_paths := get_load_paths_str
+let get_used_load_paths () =
+  StringSet.elements
+    (List.fold_left (fun acc m -> StringSet.add
+      (Filename.dirname (library_full_filename m.library_name)) acc)
+       StringSet.empty !libraries_loaded_list)
+
+let _ = Nativelib.get_load_paths := get_used_load_paths
