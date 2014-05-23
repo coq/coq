@@ -184,7 +184,16 @@ let declare_tactic loc s c cl = match cl with
   let vars = mlexpr_of_list (mlexpr_of_option mlexpr_of_ident) vars in
   let se = mlexpr_of_string s in
   let name = mlexpr_of_string name in
-  let tac = Compat.make_fun loc [patt, vala None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
+  let tac =
+    (** Special handling of tactics without arguments: such tactics do not do
+        a Proofview.Goal.enter to compute their arguments. It matters for some
+        whole-prof tactics like [shelve_unifiable]. *)
+    if List.is_empty rem then
+      <:expr< fun _ $lid:"ist"$ -> $tac$ >>
+    else
+      let f = Compat.make_fun loc [patt, vala None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
+      <:expr< Tacinterp.lift_constr_tac_to_ml_tac $vars$ $f$ >>
+  in
   (** Arguments are not passed directly to the ML tactic in the TacExtend node,
       the ML tactic retrieves its arguments in the [ist] environment instead.
       This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
@@ -194,7 +203,7 @@ let declare_tactic loc s c cl = match cl with
     [ <:str_item< do {
       let obj () = Tacenv.register_ltac False False [($name$, False, $body$)] in
       try do {
-        Tacenv.register_ml_tactic $se$ (Tacinterp.lift_constr_tac_to_ml_tac $vars$ $tac$);
+        Tacenv.register_ml_tactic $se$ $tac$;
         Mltop.declare_cache_obj obj __coq_plugin_name; }
       with [ e when Errors.noncritical e ->
         Pp.msg_warning
