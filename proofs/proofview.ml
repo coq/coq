@@ -826,6 +826,20 @@ module Goal = struct
         tclZERO e
     end
 
+  let goals =
+    Proof.current >>= fun env ->
+    Proof.get >>= fun step ->
+    let sigma = step.solution in
+    let map goal =
+      match Goal.advance sigma goal with
+      | None -> None (** ppedrot: Is this check really necessary? *)
+      | Some goal ->
+        (** The sigma is unchanged. *)
+        let (gl, _) = Goal.eval (enter_t (fun gl -> gl)) env sigma goal in
+        Some gl
+    in
+    tclUNIT (List.map_filter map step.comb)
+
   (* compatibility *)
   let goal { self=self } = self
   let refresh_sigma g =

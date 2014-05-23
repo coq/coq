@@ -370,7 +370,11 @@ module Goal : sig
      each goal. *)
   val enter : ([ `NF ] t -> unit tactic) -> unit tactic
 
+  (** Same as enter, but does not normalize the goal beforehand. *)
   val raw_enter : ([ `LZ ] t -> unit tactic) -> unit tactic
+
+  (** Recover the list of current goals under focus *)
+  val goals : [ `NF ] t list tactic
 
   (* compatibility: avoid if possible *)
   val goal : [ `NF ] t -> Goal.goal
