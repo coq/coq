@@ -23,6 +23,8 @@ val spec_iter_references : do_ref -> do_ref -> do_ref -> ml_spec -> unit
 
 val signature_of_structure : ml_structure -> ml_signature
 
+val mtyp_of_mexpr : ml_module_expr -> ml_module_type
+
 val msid_of_mt : ml_module_type -> module_path
 
 val get_decl_in_structure : global_reference -> ml_structure -> ml_decl

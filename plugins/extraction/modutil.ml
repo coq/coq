@@ -197,6 +197,11 @@ let rec msig_of_ms = function
 let signature_of_structure s =
   List.map (fun (mp,ms) -> mp,msig_of_ms ms) s
 
+let rec mtyp_of_mexpr = function
+  | MEfunctor (id,ty,e) -> MTfunsig (id,ty, mtyp_of_mexpr e)
+  | MEstruct (mp,str) -> MTsig (mp, msig_of_ms str)
+  | _ -> assert false
+
 
 (*s Searching one [ml_decl] in a [ml_structure] by its [global_reference] *)
 

@@ -277,13 +277,13 @@ and extract_mb_spec env mp mb = match mb.mod_type_alg with
    important: last to first ensures correct dependencies.
 *)
 
-let rec extract_structure env mp all = function
+let rec extract_structure env mp ~all = function
   | [] -> []
   | (l,SFBconst cb) :: struc ->
       (try
 	 let vl,recd,struc = factor_fix env l cb struc in
 	 let vc = Array.map (Constant.make2 mp) vl in
-	 let ms = extract_structure env mp all struc in
+	 let ms = extract_structure env mp ~all struc in
 	 let b = Array.exists Visit.needed_con vc in
 	 if all || b then
 	   let d = extract_fixpoint env vc recd in
@@ -291,7 +291,7 @@ let rec extract_structure env mp all = function
 	   else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
 	 else ms
        with Impossible ->
-	 let ms = extract_structure env mp all struc in
+	 let ms = extract_structure env mp ~all struc in
 	 let c = Constant.make2 mp l in
 	 let b = Visit.needed_con c in
 	 if all || b then
@@ -300,7 +300,7 @@ let rec extract_structure env mp all = function
 	   else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
 	 else ms)
   | (l,SFBmind mib) :: struc ->
-      let ms = extract_structure env mp all struc in
+      let ms = extract_structure env mp ~all struc in
       let mind = MutInd.make2 mp l in
       let b = Visit.needed_ind mind in
       if all || b then
@@ -309,13 +309,14 @@ let rec extract_structure env mp all = function
 	else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
       else ms
   | (l,SFBmodule mb) :: struc ->
-      let ms = extract_structure env mp all struc in
+      let ms = extract_structure env mp ~all struc in
       let mp = MPdot (mp,l) in
-      if all || Visit.needed_mp mp then
-	(l,SEmodule (extract_module env mp true mb)) :: ms
+      let all' = all || Visit.needed_mp_all mp in
+      if all' || Visit.needed_mp mp then
+	(l,SEmodule (extract_module env mp ~all:all' mb)) :: ms
       else ms
   | (l,SFBmodtype mtb) :: struc ->
-      let ms = extract_structure env mp all struc in
+      let ms = extract_structure env mp ~all struc in
       let mp = MPdot (mp,l) in
       if all || Visit.needed_mp mp then
         (l,SEmodtype (extract_mtb_spec env mp mtb)) :: ms
@@ -323,41 +324,41 @@ let rec extract_structure env mp all = function
 
 (* From [module_expr] and [module_expression] to implementations *)
 
-and extract_mexpr env mp all = function
+and extract_mexpr env mp ~all = function
   | MEwith _ -> assert false (* no 'with' syntax for modules *)
   | me when lang () != Ocaml ->
       (* in Haskell/Scheme, we expand everything *)
-      extract_msignature env mp all (expand_mexpr env mp me)
+      extract_msignature env mp ~all (expand_mexpr env mp me)
   | MEident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;
       Visit.add_mp_all mp; Miniml.MEident mp
   | MEapply (me, arg) ->
-      Miniml.MEapply (extract_mexpr env mp true me,
-	              extract_mexpr env mp true (MEident arg))
+      Miniml.MEapply (extract_mexpr env mp ~all:true me,
+	              extract_mexpr env mp ~all:true (MEident arg))
 
-and extract_mexpression env mp all = function
-  | NoFunctor me -> extract_mexpr env mp all me
+and extract_mexpression env mp ~all = function
+  | NoFunctor me -> extract_mexpr env mp ~all me
   | MoreFunctor (mbid, mtb, me) ->
       let mp1 = MPbound mbid in
       let env' = Modops.add_module_type mp1 mtb	env in
       Miniml.MEfunctor
         (mbid,
          extract_mtb_spec env mp1 mtb,
-	 extract_mexpression env' mp true me)
+	 extract_mexpression env' mp ~all:true me)
 
-and extract_msignature env mp all = function
+and extract_msignature env mp ~all = function
   | NoFunctor struc ->
       let env' = Modops.add_structure mp struc empty_delta_resolver env in
-      Miniml.MEstruct (mp,extract_structure env' mp all struc)
+      Miniml.MEstruct (mp,extract_structure env' mp ~all struc)
   | MoreFunctor (mbid, mtb, me) ->
       let mp1 = MPbound mbid in
       let env' = Modops.add_module_type mp1 mtb	env in
       Miniml.MEfunctor
         (mbid,
          extract_mtb_spec env mp1 mtb,
-	 extract_msignature env' mp true me)
+	 extract_msignature env' mp ~all:true me)
 
-and extract_module env mp all mb =
+and extract_module env mp ~all mb =
   (* A module has an empty [mod_expr] when :
      - it is a module variable (for instance X inside a Module F [X:SIG])
      - it is a module assumption (Declare Module).
@@ -366,12 +367,18 @@ and extract_module env mp all mb =
      moment we don't support this situation. *)
   let impl = match mb.mod_expr with
     | Abstract -> error_no_module_expr mp
-    | Algebraic me -> extract_mexpression env mp all me
-    | Struct sign -> extract_msignature env mp all sign
-    | FullStruct -> extract_msignature env mp all mb.mod_type
+    | Algebraic me -> extract_mexpression env mp ~all:true me
+    | Struct sign -> extract_msignature env mp ~all:true sign
+    | FullStruct -> extract_msignature env mp ~all mb.mod_type
+  in
+  let typ = match mb.mod_expr with
+    | FullStruct ->
+      assert (Option.is_empty mb.mod_type_alg);
+      mtyp_of_mexpr impl
+    | _ -> extract_mb_spec env mp mb
   in
   { ml_mod_expr = impl;
-    ml_mod_type = extract_mb_spec env mp mb }
+    ml_mod_type = typ }
 
 let mono_environment refs mpl =
   Visit.reset ();
@@ -381,7 +388,7 @@ let mono_environment refs mpl =
   let l = List.rev (environment_until None) in
   List.rev_map
     (fun (mp,struc) ->
-      mp, extract_structure env mp (Visit.needed_mp_all mp) struc)
+      mp, extract_structure env mp ~all:(Visit.needed_mp_all mp) struc)
     l
 
 (**************************************)
