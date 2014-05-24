@@ -210,6 +210,14 @@ val eq_constr_univs : constr Univ.check_function
     alpha, casts, application grouping and the universe inequalities in [u]. *)
 val leq_constr_univs : constr Univ.check_function
 
+(** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
+   application grouping and the universe equalities in [u]. *)
+val eq_constr_univs_infer : Univ.universes -> constr -> constr -> bool Univ.constrained
+
+(** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
+    alpha, casts, application grouping and the universe inequalities in [u]. *)
+val leq_constr_univs_infer : Univ.universes -> constr -> constr -> bool Univ.constrained
+
 (** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [c]. *)
 val eq_constr_universes : constr -> constr -> bool Univ.universe_constrained

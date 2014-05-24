@@ -661,11 +661,11 @@ let conv_leq_vecti ?(l2r=false) ?(evars=fun _->None) env v1 v2 =
     v2
 
 let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
-  let b = 
-    if cv_pb == CUMUL then leq_constr_univs univs t1 t2 
-    else eq_constr_univs univs t1 t2
+  let b, cstrs = 
+    if cv_pb == CUMUL then Constr.leq_constr_univs_infer univs t1 t2 
+    else Constr.eq_constr_univs_infer univs t1 t2
   in
-    if b then Constraint.empty
+    if b && Univ.check_constraints cstrs univs then cstrs
     else 
       let (u, cstrs) = 
 	clos_fconv reds cv_pb l2r evars env (univs, Some Constraint.empty) t1 t2 

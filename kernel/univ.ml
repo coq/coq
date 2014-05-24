@@ -1227,16 +1227,20 @@ let check_equal g u v =
   let _, arcv = safe_repr g v in
   arcu == arcv
 
+let set_arc g = 
+  snd (safe_repr g Level.set)
+  
+let prop_arc g = snd (safe_repr g Level.prop)
+
 let check_smaller g strict u v =
   let g, arcu = safe_repr g u in
   let g, arcv = safe_repr g v in
   if strict then
     is_lt g arcu arcv
   else
-    let proparc = snd (safe_repr g Level.prop) in
+    let proparc = prop_arc g in
       arcu == proparc ||
-	(let setarc = snd (safe_repr g Level.set) in
-	   (arcu == setarc && arcv != proparc) ||
+	((arcv != proparc && arcu == set_arc g) ||
 	     is_leq g arcu arcv)
 
 (** Then, checks on universes *)
@@ -1448,7 +1452,7 @@ let enforce_univ_lt u v g =
 	| _ -> anomaly (Pp.str "Univ.fast_compare"))
 	  
 let empty_universes = LMap.empty
-let initial_universes = enforce_univ_lt Level.prop Level.set LMap.empty
+let initial_universes = enforce_univ_leq Level.prop Level.set LMap.empty
 let is_initial_universes g = LMap.equal (==) g initial_universes
 
 (* Constraints and sets of constraints. *)    
