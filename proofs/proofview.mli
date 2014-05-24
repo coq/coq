@@ -453,6 +453,3 @@ end
 
 (* [tclLIFT c] includes the non-logical command [c] in a tactic. *)
 val tclLIFT : 'a NonLogical.t -> 'a tactic
-
-(* Access the current goals *)
-val tclGOALS : [ `NF ] Goal.t list tactic
