@@ -826,6 +826,21 @@ module Goal = struct
         tclZERO e
     end
 
+  let goals =
+    let (>>=) = Proof.bind in
+    Proof.current >>= fun env ->
+    Proof.get >>= fun step ->
+    let map goal =
+      let goal = Goal.advance step.solution goal in
+      match goal with
+      | None -> None
+      | Some g ->
+        let (t, _) = Goal.eval (enter_t (fun x -> x)) env step.solution g in
+        Some t
+    in
+    let goals = List.map_filter map step.comb in
+    Proof.ret goals
+
   (* compatibility *)
   let goal { self=self } = self
   let refresh_sigma g =
@@ -861,5 +876,4 @@ end
 module NonLogical = Proofview_monad.NonLogical
 
 let tclLIFT = Proofview_monad.Logical.lift
-
-
+let tclGOALS = Goal.goals
