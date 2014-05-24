@@ -628,8 +628,8 @@ GEXTEND Gram
       (* Constructors *)
       | IDENT "split";  bl = with_bindings -> TacSplit (false,false,[bl])
       | IDENT "esplit"; bl = with_bindings -> TacSplit (true,false,[bl])
-      | "exists"; bll = LIST1 opt_bindings SEP "," -> TacSplit (false,true,bll)
-      | IDENT "eexists"; bll = LIST1 opt_bindings SEP "," ->
+      | "exists"; bll = LIST0 bindings SEP "," -> TacSplit (false,true,bll)
+      | IDENT "eexists"; bll = LIST0 bindings SEP "," ->
 	  TacSplit (true,true,bll)
       | IDENT "constructor"; n = nat_or_var; l = with_bindings ->
 	  TacConstructor (false,n,l)
