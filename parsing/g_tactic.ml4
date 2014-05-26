@@ -310,7 +310,7 @@ GEXTEND Gram
       | bl = LIST1 constr -> ImplicitBindings bl ] ]
   ;
   opt_bindings:
-    [ [ bl = bindings -> bl | -> NoBindings ] ]
+    [ [ bl = LIST1 bindings SEP "," -> bl | -> [NoBindings] ] ]
   ;
   constr_with_bindings:
     [ [ c = constr; l = with_bindings -> (c, l) ] ]
@@ -628,8 +628,8 @@ GEXTEND Gram
       (* Constructors *)
       | IDENT "split";  bl = with_bindings -> TacSplit (false,false,[bl])
       | IDENT "esplit"; bl = with_bindings -> TacSplit (true,false,[bl])
-      | "exists"; bll = LIST0 bindings SEP "," -> TacSplit (false,true,bll)
-      | IDENT "eexists"; bll = LIST0 bindings SEP "," ->
+      | "exists"; bll = opt_bindings -> TacSplit (false,true,bll)
+      | IDENT "eexists"; bll = opt_bindings ->
 	  TacSplit (true,true,bll)
       | IDENT "constructor"; n = nat_or_var; l = with_bindings ->
 	  TacConstructor (false,n,l)
