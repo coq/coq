@@ -831,9 +831,9 @@ let rec solve_obligation prg num tac =
           let ctx = prg.prg_ctx in
           let obl = subst_deps_obl prg.prg_subst obls obl in
           let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
-            Lemmas.start_proof obl.obl_name kind 
+            Lemmas.start_proof_univs obl.obl_name kind 
               (Universes.subst_opt_univs_constr prg.prg_subst obl.obl_type, ctx)
-              (fun strength gr ->
+              (fun (subst, ctx) strength gr ->
 		let cst = match gr with ConstRef cst -> cst | _ -> assert false in
 		let obl =
 		  let transparent = evaluable_constant cst (Global.env ()) in
@@ -853,13 +853,12 @@ let rec solve_obligation prg num tac =
 		in
 		let obls = Array.copy obls in
 		let _ = obls.(num) <- obl in
-(* 		let ctx = Univ.ContextSet.of_context ctx in *)
-                let subst = Univ.LMap.empty (** FIXME *) in
+		let ctx = Univ.ContextSet.of_context ctx in
 		let res = 
 		  try update_obls 
 			{prg with prg_body = Universes.subst_opt_univs_constr subst prg.prg_body;
 			  prg_type = Universes.subst_opt_univs_constr subst prg.prg_type;
-			  prg_ctx = ctx;
+			  prg_ctx = Univ.ContextSet.union prg.prg_ctx ctx;
 			  prg_subst = Univ.LMap.union prg.prg_subst subst}
 			obls (pred rem)
 		  with e when Errors.noncritical e ->

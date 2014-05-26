@@ -1132,6 +1132,8 @@ let set_leq_sort evd s1 s2 =
       | Prop c, Prop c' -> 
 	  if c == Null && c' == Pos then evd
 	  else (raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, [])))
+      | Type _, Prop _ ->
+	raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, []))
       | _, _ -> 
         add_universe_constraints evd (Univ.UniverseConstraints.singleton (u1,Univ.ULe,u2))
 	    

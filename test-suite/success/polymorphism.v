@@ -211,7 +211,27 @@ Polymorphic Definition id {A : Type} (a : A) : A := a.
 Definition typeid := (@id Type).
 
 
+Fail Check (Prop : Set).
+Fail Check (Set : Set).
+Check (Set : Type).
+Check (Prop : Type).
+Definition setType := $(let t := type of Set in exact t)$.
 
+Definition foo (A : Prop) := A.
+
+Fail Check foo Set.
+Check fun A => foo A.
+Fail Check fun A : Type => foo A.
+Check fun A : Prop => foo A.
+Fail Definition bar := fun A : Set => foo A.
+
+Fail Check (let A := Type in foo (id A)).
+
+Definition fooS (A : Set) := A.
+
+Check (let A := nat in fooS (id A)).
+Fail Check (let A := Set in fooS (id A)).
+Fail Check (let A := Prop in fooS (id A)).
 
 (* Some tests of sort-polymorphisme *)
 Section S.
@@ -227,7 +247,7 @@ End S.
 (*
 Check f nat nat : Set.
 *)
-Definition foo:= I nat nat : Set.
+Definition foo' := I nat nat.
 Print Universes. Print foo. Set Printing Universes. Print foo.
 
 (* Polymorphic axioms: *)

@@ -33,7 +33,6 @@ let occur_meta_or_undefined_evar evd c =
         | Evar_defined c ->
             occrec c; Array.iter occrec args
         | Evar_empty -> raise Occur)
-    (* | Sort (Type _) (\* FIXME could be finer *\) -> raise Occur *)
     | Const (_, i) (* | Ind (_, i) | Construct (_, i)  *)
 	when not (Univ.Instance.is_empty i) -> raise Occur
     | _ -> iter_constr occrec c
@@ -749,7 +748,8 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       with Invalid_argument "Reductionops.Stack.fold2" ->
 	error_cannot_unify (fst curenvnb) sigma (cM,cN)
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
-      in
+  in
+    
   let res = 
     if occur_meta_or_undefined_evar sigma m || occur_meta_or_undefined_evar sigma n
       || subterm_restriction conv_at_top flags then None

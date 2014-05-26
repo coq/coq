@@ -1286,7 +1286,6 @@ let specialize (c,lbind) g =
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
       let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
-      let nargs = List.length tstack in
       let rec chk = function
       | [] -> []
       | t::l -> if occur_meta t then [] else t :: chk l

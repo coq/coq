@@ -107,11 +107,11 @@ Section Respecting.
 
   Definition respecting `(eqa : Equivalence A (R : crelation A), 
                           eqb : Equivalence B (R' : crelation B)) : Type :=
-    { morph : A -> B | respectful R R' morph morph }.
+    { morph : A -> B & respectful R R' morph morph }.
 
   Program Instance respecting_equiv `(eqa : Equivalence A R, eqb : Equivalence B R') :
     Equivalence (fun (f g : respecting eqa eqb) => 
-                   forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
+                   forall (x y : A), R x y -> R' (projT1 f x) (projT1 g y)).
 
   Solve Obligations with unfold respecting in * ; simpl_crelation ; program_simpl.
 

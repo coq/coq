@@ -21,6 +21,10 @@ val start_proof : Id.t -> goal_kind -> ?sign:Environ.named_context_val -> types 
   ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
    unit declaration_hook -> unit
 
+val start_proof_univs : Id.t -> goal_kind -> ?sign:Environ.named_context_val -> types Univ.in_universe_context_set ->
+  ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
+  (Proof_global.proof_universes -> unit declaration_hook) -> unit
+
 val start_proof_com : goal_kind ->
   (lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)) list ->
   unit declaration_hook -> unit

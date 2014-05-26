@@ -192,10 +192,6 @@ Section Relations.
     intros. apply sub. apply mor.
   Qed.
 
-  Global Instance proper_subrelation_proper :
-    Proper (subrelation ++> eq ==> impl) (@Proper A).
-  Proof. reduce. subst. firstorder. Qed.
-
   Global Instance proper_subrelation_proper_arrow :
     Proper (subrelation ++> eq ==> arrow) (@Proper A).
   Proof. reduce. subst. firstorder. Qed.
@@ -301,16 +297,6 @@ Section GenericInstances.
    contravariant in the first argument, covariant in the second. *)
   
   Global Program 
-  Instance trans_contra_co_morphism
-    `(Transitive A R) : Proper (R --> R ++> impl) R.
-  
-  Next Obligation.
-  Proof with auto.
-    transitivity x...
-    transitivity x0...
-  Qed.
-
-  Global Program 
   Instance trans_contra_co_type_morphism
     `(Transitive A R) : Proper (R --> R ++> arrow) R.
   
@@ -321,15 +307,6 @@ Section GenericInstances.
   Qed.
 
   (** Proper declarations for partial applications. *)
-
-  Global Program 
-  Instance trans_contra_inv_impl_morphism
-  `(Transitive A R) : Proper (R --> flip impl) (R x) | 3.
-
-  Next Obligation.
-  Proof with auto.
-    transitivity y...
-  Qed.
 
   Global Program 
   Instance trans_contra_inv_impl_type_morphism
@@ -378,15 +355,6 @@ Section GenericInstances.
   Qed.
 
   (** Every Transitive crelation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof to get an [R y z] goal. *)
-
-  Global Program 
-  Instance trans_co_eq_inv_impl_morphism
-  `(Transitive A R) : Proper (R ==> (@eq A) ==> flip impl) R | 2.
-
-  Next Obligation.
-  Proof with auto.
-    transitivity y...
-  Qed.
 
   Global Program 
   Instance trans_co_eq_inv_arrow_morphism
@@ -669,17 +637,6 @@ Qed.
 
 (** A [PartialOrder] is compatible with its underlying equivalence. *)
 Require Import Relation_Definitions.
-Instance PartialOrder_proper `(PartialOrder A eqA (R : crelation A)) :
-  Proper (eqA==>eqA==>iff) R.
-Proof.
-intros.
-apply proper_sym_impl_iff_2; auto with *.
-intros x x' Hx y y' Hy Hr.
-transitivity x.
-generalize (partial_order_equivalence x x'); compute; intuition.
-transitivity y; auto.
-generalize (partial_order_equivalence y y'); compute; intuition.
-Qed.
 
 Instance PartialOrder_proper_type `(PartialOrder A eqA R) :
   Proper (eqA==>eqA==>iffT) R.

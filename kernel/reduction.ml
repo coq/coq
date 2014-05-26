@@ -221,47 +221,23 @@ type conv_pb =
 let is_cumul = function CUMUL -> true | CONV -> false
 let is_pos = function Pos -> true | Null -> false
 
-(* let sort_cmp env pb s0 s1 cuniv = *)
-(*   match (s0,s1) with *)
-(*     | (Prop c1, Prop c2) when is_cumul pb -> *)
-(*       begin match c1, c2 with *)
-(*       | Null, _ | _, Pos -> cuniv (\* Prop <= Set *\) *)
-(*       | _ -> raise NotConvertible *)
-(*       end *)
-(*     | (Prop c1, Prop c2) -> *)
-(*         if c1 == c2 then cuniv else raise NotConvertible *)
-(*     | (Prop c1, Type u) when is_cumul pb -> *)
-(*       enforce_leq (if is_pos c1 then Universe.type0 else Universe.type0m) u cuniv *)
-(*     | (Type u, Prop c) when is_cumul pb -> *)
-(*       enforce_leq u (if is_pos c then Universe.type0 else Universe.type0m) cuniv *)
-(*     | (Type u1, Type u2) -> *)
-(* 	(match pb with *)
-(*            | CONV -> Univ.enforce_eq u1 u2 cuniv *)
-(* 	   | CUMUL -> enforce_leq u1 u2 cuniv) *)
-(*     | (_, _) -> raise NotConvertible *)
-
-(* let conv_sort env s0 s1 = sort_cmp CONV s0 s1 Constraint.empty *)
-(* let conv_sort_leq env s0 s1 = sort_cmp CUMUL s0 s1 Constraint.empty   *)
-
 let check_eq (univs, cstrs as cuniv) u u' = 
   match cstrs with
   | None -> if check_eq univs u u' then cuniv else raise NotConvertible
   | Some cstrs -> 
     univs, Some (Univ.enforce_eq u u' cstrs)
-    (* let cstr = Univ.enforce_eq u u' Univ.Constraint.empty in *)
-    (* try let univs' = Univ.enforce_constraint cstr univs in *)
-    (* 	  univs', Some (Univ.enforce_eq u u' cstrs) *)
-    (* with UniverseInconsistency _ -> raise NotConvertible *)
 
-let check_leq (univs, cstrs as cuniv) u u' = 
+let check_leq ?(record=false) (univs, cstrs as cuniv) u u' = 
   match cstrs with
   | None -> if check_leq univs u u' then cuniv else raise NotConvertible
   | Some cstrs -> 
-    univs, Some (Univ.enforce_leq u u' cstrs)
-    (* let cstr = Univ.enforce_leq u u' Univ.Constraint.empty in *)
-    (*   try let univs' = Univ.enforce_constraint cstr univs in *)
-    (* 	    univs', Some (Univ.enforce_leq u u' cstrs) *)
-    (*   with UniverseInconsistency _ -> raise NotConvertible *)
+    let cstrs' = Univ.enforce_leq u u' cstrs in
+    let cstrs' = if record then 
+	Univ.Constraint.add (Option.get (Univ.Universe.level u),Univ.Le,
+			     Option.get (Univ.Universe.level u')) cstrs' 
+      else cstrs' 
+    in
+      univs, Some cstrs'
 
 let sort_cmp_universes pb s0 s1 univs =
   match (s0,s1) with
@@ -274,22 +250,13 @@ let sort_cmp_universes pb s0 s1 univs =
     | (Prop c1, Type u) ->
       let u0 = univ_of_sort s0 in
 	(match pb with
-	| CUMUL -> check_leq univs u0 u
+	| CUMUL -> check_leq ~record:true univs u0 u
 	| CONV -> check_eq univs u0 u)
-    | (Type u, Prop c) -> 
-      let u1 = univ_of_sort s1 in
-	(match pb with
-	| CUMUL -> check_leq univs u u1
-	| CONV -> check_eq univs u u1)
+    | (Type u, Prop c) -> raise NotConvertible
     | (Type u1, Type u2) -> 
 	(match pb with
 	| CUMUL -> check_leq univs u1 u2
 	| CONV -> check_eq univs u1 u2)
-
-(* let sort_cmp _ _ _ cuniv = cuniv *)
-
-(* let conv_sort env s0 s1 = sort_cmp CONV s0 s1 empty_constraint *)
-(* let conv_sort_leq env s0 s1 = sort_cmp CUMUL s0 s1 empty_constraint *)
 
 let rec no_arg_available = function
   | [] -> true
@@ -594,7 +561,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
 and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
   compare_stacks
-    (fun (l1,t1) (l2,t2) c -> ccnv CONV l2r infos l1 l2 t1 t2 cuniv)
+    (fun (l1,t1) (l2,t2) cuniv -> ccnv CONV l2r infos l1 l2 t1 t2 cuniv)
     (eq_ind)
     lft1 stk1 lft2 stk2 cuniv
 
@@ -665,7 +632,8 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
     if cv_pb == CUMUL then Constr.leq_constr_univs_infer univs t1 t2 
     else Constr.eq_constr_univs_infer univs t1 t2
   in
-    if b && Univ.check_constraints cstrs univs then cstrs
+    if b && (try ignore(Univ.merge_constraints cstrs univs); true with _ -> false) then 
+      cstrs
     else 
       let (u, cstrs) = 
 	clos_fconv reds cv_pb l2r evars env (univs, Some Constraint.empty) t1 t2 

@@ -285,19 +285,19 @@ let close_proof ?feedback_id ~now fpl =
 	let univsubst = (subst, Univ.ContextSet.to_context ctx) in
 	  univsubst, nf
       in
-      let make_body nf t _octx ((c, ctx), eff) =
+      let make_body nf ctx t _octx ((c, _ctx), eff) =
 	let body = nf c and typ = nf t in
 	let used_univs = 
 	  Univ.LSet.union (Universes.universes_of_constr body)
 	    (Universes.universes_of_constr typ)
 	in
-	let ctx = Universes.restrict_universe_context ctx used_univs in
+	let ctx = Universes.restrict_universe_context (Univ.ContextSet.of_context ctx) used_univs in
 	let p = (body, Univ.ContextSet.empty),eff in
 	let univs = Univ.ContextSet.to_context ctx in
 	  (univs, typ), p
       in
-      let make_body nf t octx p = 
-	Future.split2 (Future.chain ~pure:true p (make_body nf t octx))
+      let make_body nf ctx t octx p = 
+	Future.split2 (Future.chain ~pure:true p (make_body nf ctx t octx))
       in
       let univsubst =
 	Future.chain ~pure:true univs make_usubst
@@ -310,13 +310,13 @@ let close_proof ?feedback_id ~now fpl =
       in
       let univs = Univ.ContextSet.to_context ctx in
       let univsubst = (Univ.LMap.empty, univs) in
-      let make_body nf t octx p = Future.from_val (univs, t), p in
+      let make_body nf ctx t octx p = Future.from_val (univs, t), p in
 	Future.from_val (univsubst, fun x -> x), make_body
   in
   let univsubst, nf = Future.force univsubst in
   let entries =
     Future.map2 (fun p (c, (t, octx)) -> 
-      let univstyp, body = make_body nf t octx p in
+      let univstyp, body = make_body nf (snd univsubst) t octx p in
       let univs, typ = Future.force univstyp in
 	{ Entries.
 	  const_entry_body = body;

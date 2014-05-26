@@ -1341,7 +1341,7 @@ let merge g arcu arcv =
   (* we find the arc with the biggest rank, and we redirect all others to it *)
   let arcu, g, v =
     let best_ranked (max_rank, old_max_rank, best_arc, rest) arc =
-      if arc.rank >= max_rank
+      if Level.is_small arc.univ || arc.rank >= max_rank
       then (arc.rank, max_rank, arc, best_arc::rest)
       else (max_rank, old_max_rank, best_arc, arc::rest)
     in
@@ -1394,27 +1394,13 @@ exception UniverseInconsistency of univ_inconsistency
 let error_inconsistency o u v (p:explanation) =
   raise (UniverseInconsistency (o,make u,make v,p))
 
-(* enforce_univ_leq : Level.t -> Level.t -> unit *)
-(* enforce_univ_leq u v will force u<=v if possible, will fail otherwise *)
-let enforce_univ_leq u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
-  if is_leq g arcu arcv then g
-  else match fast_compare g arcv arcu with
-    | FastLT -> 
-      (match compare g arcv arcu with
-      | LT p -> error_inconsistency Le u v (List.rev (Lazy.force p))
-      | _ -> anomaly (Pp.str "Univ.fast_compare"))
-    | FastLE  -> merge g arcv arcu
-    | FastNLE -> fst (setleq g arcu arcv)
-    | FastEQ -> anomaly (Pp.str "Univ.compare")
-
 (* enforc_univ_eq : Level.t -> Level.t -> unit *)
 (* enforc_univ_eq u v will force u=v if possible, will fail otherwise *)
+
 let enforce_univ_eq u v g =
   let g,arcu = safe_repr g u in
   let g,arcv = safe_repr g v in
-  match fast_compare g arcu arcv with
+    match fast_compare g arcu arcv with
     | FastEQ -> g
     | FastLT ->
       (match compare g arcu arcv with
@@ -1431,11 +1417,27 @@ let enforce_univ_eq u v g =
       | FastNLE -> merge_disc g arcu arcv
       | FastEQ -> anomaly (Pp.str "Univ.compare"))
 
+(* enforce_univ_leq : Level.t -> Level.t -> unit *)
+(* enforce_univ_leq u v will force u<=v if possible, will fail otherwise *)
+let enforce_univ_leq u v g =
+  let g,arcu = safe_repr g u in
+  let g,arcv = safe_repr g v in
+  if is_leq g arcu arcv then g
+  else
+    match fast_compare g arcv arcu with
+    | FastLT -> 
+      (match compare g arcv arcu with
+      | LT p -> error_inconsistency Le u v (List.rev (Lazy.force p))
+      | _ -> anomaly (Pp.str "Univ.fast_compare"))
+    | FastLE  -> merge g arcv arcu
+    | FastNLE -> fst (setleq g arcu arcv)
+    | FastEQ -> anomaly (Pp.str "Univ.compare")
+
 (* enforce_univ_lt u v will force u<v if possible, will fail otherwise *)
 let enforce_univ_lt u v g =
   let g,arcu = safe_repr g u in
   let g,arcv = safe_repr g v in
-  match fast_compare g arcu arcv with
+    match fast_compare g arcu arcv with
     | FastLT -> g
     | FastLE -> fst (setlt g arcu arcv)
     | FastEQ -> 
@@ -1452,7 +1454,10 @@ let enforce_univ_lt u v g =
 	| _ -> anomaly (Pp.str "Univ.fast_compare"))
 	  
 let empty_universes = LMap.empty
-let initial_universes = enforce_univ_leq Level.prop Level.set LMap.empty
+
+(* Prop = Set is forbidden here. *)
+let initial_universes = enforce_univ_lt Level.prop Level.set LMap.empty
+
 let is_initial_universes g = LMap.equal (==) g initial_universes
 
 (* Constraints and sets of constraints. *)    
@@ -2176,7 +2181,7 @@ let normalize_universes g =
         univ = v;
         lt = LSet.elements lt;
         le = LSet.elements le;
-	rank = rank
+	rank = rank;
       }
   in
   LMap.mapi canonicalize g
@@ -2321,7 +2326,7 @@ let sort_universes orig =
   let fold i accu u =
     if 0 < i then
       let pred = types.(i - 1) in
-      let arc = {univ = u; lt = [pred]; le = []; rank = 0; } in
+      let arc = {univ = u; lt = [pred]; le = []; rank = 0} in
       LMap.add u (Canonical arc) accu
     else accu
   in

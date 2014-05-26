@@ -170,8 +170,6 @@ let look_for_possibly_mutual_statements = function
 let save id const cstrs do_guard (locality,poly,kind) hook =
   let const = adjust_guardness_conditions const do_guard in
   let k = Kindops.logical_kind_of_goal_kind kind in
-  (* Add global constraints necessary to check the type of the proof *)
-  let () = Global.push_context (snd cstrs) in
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
 	let c = SectionLocalDef const in
@@ -316,13 +314,14 @@ let standard_proof_terminator compute_guard hook =
           save_anonymous_with_strength proof kind id
       end
 
-let standard_proof_terminator compute_guard hook =
+let universe_proof_terminator compute_guard hook =
   let open Proof_global in function
   | Admitted ->
-      admit hook ();
+      admit (hook (Univ.LMap.empty, Univ.UContext.empty)) ();
       Pp.feedback Interface.AddedAxiom
   | Proved (is_opaque,idopt,proof) ->
-      let proof = get_proof proof compute_guard hook is_opaque in
+      let proof = get_proof proof compute_guard 
+	(hook proof.Proof_global.universes) is_opaque in
       begin match idopt with
       | None -> save_named proof
       | Some ((_,id),None) -> save_anonymous proof id
@@ -332,6 +331,16 @@ let standard_proof_terminator compute_guard hook =
 
 let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = standard_proof_terminator compute_guard hook in
+  let sign = 
+    match sign with
+    | Some sign -> sign
+    | None -> initialize_named_context_for_proof ()
+  in
+  !start_hook (fst c);
+  Pfedit.start_proof id kind sign c ?init_tac terminator
+
+let start_proof_univs id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
+  let terminator = universe_proof_terminator compute_guard hook in
   let sign = 
     match sign with
     | Some sign -> sign
