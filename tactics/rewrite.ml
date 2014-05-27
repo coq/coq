@@ -1477,34 +1477,32 @@ let new_refine c : Goal.subgoals Goal.sensitive =
   in Goal.bind refable Goal.refine
 
 let assert_replacing id newt tac = 
-  let sens = bind_gl_info 
-    (fun concl env sigma ->
-       let nc' = 
-	 Environ.fold_named_context
-	   (fun _ (n, b, t as decl) nc' ->
-	      if Id.equal n id then (n, b, newt) :: nc'
-	      else decl :: nc')
-	   env ~init:[]
-       in
-       let reft = Refinable.make 
-	 (fun h -> 
-	    Goal.bind (Refinable.mkEvar h
-			 (Environ.reset_with_named_context (val_of_named_context nc') env) concl)
-	      (fun ev -> 
-		 Goal.bind (Refinable.mkEvar h env newt)
-		   (fun ev' ->
-		      let inst = 
-			fold_named_context
-			  (fun _ (n, b, t) inst ->
-			     if Id.equal n id then ev' :: inst
-			     else if Option.is_empty b then mkVar n :: inst else inst)
-			  env ~init:[]
-		      in
-		      let (e, args) = destEvar ev in
-			Goal.return (mkEvar (e, Array.of_list inst)))))
-       in Goal.bind reft Goal.refine)
-  in Proofview.tclTHEN (Proofview.tclSENSITIVE sens) 
-       (Proofview.tclFOCUS 2 2 tac)
+  let prf = Proofview.Goal.enter begin fun gl ->
+    let concl = Proofview.Goal.concl gl in
+    let env = Proofview.Goal.env gl in
+    let nc' =
+      Environ.fold_named_context
+        (fun _ (n, b, t as decl) nc' ->
+          if Id.equal n id then (n, b, newt) :: nc'
+          else decl :: nc')
+        env ~init:[]
+    in
+    Proofview.Refine.refine begin fun h ->
+      let env' = Environ.reset_with_named_context (val_of_named_context nc') env in
+      let h, ev = Proofview.Refine.new_evar h env' concl in
+      let h, ev' = Proofview.Refine.new_evar h env newt in
+      let inst =
+        fold_named_context
+          (fun _ (n, b, t) inst ->
+              if Id.equal n id then ev' :: inst
+              else if Option.is_empty b then mkVar n :: inst else inst)
+          env ~init:[]
+      in
+      let (e, args) = destEvar ev in
+      h, mkEvar (e, Array.of_list inst)
+    end
+  end in
+  Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
 
 let newfail n s = 
   Proofview.tclZERO (Refiner.FailError (n, lazy s))
