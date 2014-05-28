@@ -1198,9 +1198,9 @@ let fast_compare g arcu arcv =
 
 let is_leq g arcu arcv =
   arcu == arcv ||
- (match fast_compare_neq false g arcu arcv with
- | FastNLE -> false
- | (FastEQ|FastLE|FastLT) -> true)
+    (match fast_compare_neq false g arcu arcv with
+    | FastNLE -> false
+    | (FastEQ|FastLE|FastLT) -> true)
     
 let is_lt g arcu arcv =
   if arcu == arcv then false
@@ -1241,7 +1241,7 @@ let check_smaller g strict u v =
     let proparc = prop_arc g in
       arcu == proparc ||
 	((arcv != proparc && arcu == set_arc g) ||
-	     is_leq g arcu arcv)
+	    is_leq g arcu arcv)
 
 (** Then, checks on universes *)
 
@@ -1345,17 +1345,17 @@ let merge g arcu arcv =
       then (arc.rank, max_rank, arc, best_arc::rest)
       else (max_rank, old_max_rank, best_arc, arc::rest)
     in
-    match between g arcu arcv with
+      match between g arcu arcv with
       | [] -> anomaly (str "Univ.between")
       | arc::rest ->
         let (max_rank, old_max_rank, best_arc, rest) =
           List.fold_left best_ranked (arc.rank, min_int, arc, []) rest in
-        if max_rank > old_max_rank then best_arc, g, rest
-        else begin
-          (* one redirected node also has max_rank *)
-          let arcu = {best_arc with rank = max_rank + 1} in
-          arcu, enter_arc arcu g, rest
-        end 
+          if max_rank > old_max_rank then best_arc, g, rest
+          else begin
+              (* one redirected node also has max_rank *)
+            let arcu = {best_arc with rank = max_rank + 1} in
+	      arcu, enter_arc arcu g, rest
+          end 
   in
   let redirect (g,w,w') arcv =
     let g' = enter_equiv_arc arcv.univ arcu.univ g in

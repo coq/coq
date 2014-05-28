@@ -1057,8 +1057,19 @@ let w_merge env with_types flags (evd,metas,evars) =
     then Evd.define sp c evd'''
     else Evd.define sp (Evarutil.nf_evar evd''' c) evd''' in
 
-  (* merge constraints *)
-  w_merge_rec evd (order_metas metas) (List.rev evars) []
+  let check_types evd = 
+    let metas = Evd.meta_list evd in
+    let eqns = List.fold_left (fun acc (mv, b) ->
+      match b with
+      | Clval (n, (t, (c, TypeNotProcessed)), v) -> (mv, c, t.rebus) :: acc
+      | _ -> acc) [] metas
+    in w_merge_rec evd [] [] eqns
+  in
+  let res =  (* merge constraints *)
+    w_merge_rec evd (order_metas metas) (List.rev evars) []
+  in
+    if with_types then check_types res
+    else res
 
 let w_unify_meta_types env ?(flags=default_unify_flags ()) evd =
   let metas,evd = retract_coercible_metas evd in

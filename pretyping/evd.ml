@@ -371,7 +371,7 @@ let process_universe_constraints univs vars alg templ cstrs =
 		  later. *)
 	      if Univ.is_small_univ l then 
 		match Univ.Universe.level r with
-		| Some r when Univ.LMap.mem r !vars -> 
+		| Some r ->
 		  Univ.Constraint.add (Option.get (Univ.Universe.level l),Univ.Le,r) local
 		| _ -> local
 	      else local
@@ -380,10 +380,10 @@ let process_universe_constraints univs vars alg templ cstrs =
 	      | None -> error ("Algebraic universe on the right")
 	      | Some rl ->
 		if Univ.Level.is_small rl then
-		  (if Univ.LSet.for_all (fun l -> 
-		    Univ.Level.is_small l || Univ.LMap.mem l !vars) 
+		  (if Univ.LSet.for_all (fun l ->
+		    Univ.Level.is_small l || Univ.LMap.mem l !vars)
 		      (Univ.Universe.levels l) then
-		      Univ.enforce_leq l r local
+		      Univ.enforce_eq l r local
 		   else raise (Univ.UniverseInconsistency (Univ.Le, l, r, [])))
 		else if Univ.LSet.mem rl templ && Univ.Universe.is_level l then
 		  unify_universes fo l Univ.UEq r local
@@ -408,8 +408,9 @@ let process_universe_constraints univs vars alg templ cstrs =
 		  instantiate_variable r' l vars
 		else if not (Univ.check_eq univs l r) then
 		  (* Two rigid/global levels, none of them being local,
-		     one of them being Prop/Set, disallow *)
-		  if Univ.Level.is_small l' || Univ.Level.is_small r' then
+		     one of them being Prop, disallow *)
+		  if Univ.Level.equal l' Univ.Level.prop || 
+		    Univ.Level.equal r' Univ.Level.prop then
 		    raise (Univ.UniverseInconsistency (Univ.Eq, l, r, []))
 		  else
 		    if fo then 
@@ -1128,14 +1129,13 @@ let set_leq_sort evd s1 s2 =
   match is_eq_sort s1 s2 with
   | None -> evd
   | Some (u1, u2) ->
-      match s1, s2 with
-      | Prop c, Prop c' -> 
-	  if c == Null && c' == Pos then evd
-	  else (raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, [])))
-      | Type _, Prop _ ->
-	raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, []))
-      | _, _ -> 
-        add_universe_constraints evd (Univ.UniverseConstraints.singleton (u1,Univ.ULe,u2))
+    if Univ.is_type0_univ u2 then
+      if Univ.is_small_univ u1 then evd
+      else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, []))
+    else if Univ.is_type0m_univ u2 then 
+      raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, []))
+    else 
+      add_universe_constraints evd (Univ.UniverseConstraints.singleton (u1,Univ.ULe,u2))
 	    
 let check_eq evd s s' =
   Univ.check_eq evd.universes.uctx_universes s s'

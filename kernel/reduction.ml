@@ -167,12 +167,6 @@ let convert_universes (univs,cstrs as cuniv) u u' =
     | None -> raise NotConvertible
     | Some cstrs -> 
       (univs, Some (Univ.enforce_eq_instances u u' cstrs)))
-
-      (* try  *)
-      (* 	let cstr = Univ.enforce_eq_instances u u' Univ.Constraint.empty in *)
-      (* 	let univs' = Univ.enforce_constraint cstr univs in *)
-      (* 	  (univs', Some (Univ.enforce_eq_instances u u' cstrs)) *)
-      (* with UniverseInconsistency _ -> raise NotConvertible) *)
       
 let conv_table_key k1 k2 cuniv =
   match k1, k2 with
@@ -632,8 +626,7 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
     if cv_pb == CUMUL then Constr.leq_constr_univs_infer univs t1 t2 
     else Constr.eq_constr_univs_infer univs t1 t2
   in
-    if b && (try ignore(Univ.merge_constraints cstrs univs); true with _ -> false) then 
-      cstrs
+    if b then cstrs
     else 
       let (u, cstrs) = 
 	clos_fconv reds cv_pb l2r evars env (univs, Some Constraint.empty) t1 t2 
