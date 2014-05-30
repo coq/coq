@@ -381,9 +381,12 @@ type binder_kind = BProd | BLambda | BLetIn
 let detype_anonymous = ref (fun loc n -> anomaly ~label:"detype" (Pp.str "index to an anonymous variable"))
 let set_detype_anonymous f = detype_anonymous := f
 
-let option_of_instance l = 
+let detype_level l =
+  GType (Some (Pp.string_of_ppcmds (Univ.Level.pr l)))
+
+let detype_instance l = 
   if Univ.Instance.is_empty l then None
-  else Some l
+  else Some (List.map detype_level (Array.to_list (Univ.Instance.to_array l)))
 
 let rec detype (isgoal:bool) avoid env t =
   match kind_of_term (collapse_appl t) with
@@ -424,18 +427,16 @@ let rec detype (isgoal:bool) avoid env t =
       in
  	mkapp (detype isgoal avoid env f)
  	  (Array.map_to_list (detype isgoal avoid env) args)
-        (* GApp (dl,detype isgoal avoid env f, *)
-        (*       Array.map_to_list (detype isgoal avoid env) args) *)
-    | Const (sp,u) -> GRef (dl, ConstRef sp, option_of_instance u)
+    | Const (sp,u) -> GRef (dl, ConstRef sp, detype_instance u)
     | Proj (p,c) ->
         GProj (dl, p, detype isgoal avoid env c)
     | Evar (ev,cl) ->
         GEvar (dl, ev,
                Some (List.map (detype isgoal avoid env) (Array.to_list cl)))
     | Ind (ind_sp,u) ->
-	GRef (dl, IndRef ind_sp, option_of_instance u)
+	GRef (dl, IndRef ind_sp, detype_instance u)
     | Construct (cstr_sp,u) ->
-	GRef (dl, ConstructRef cstr_sp, option_of_instance u)
+	GRef (dl, ConstructRef cstr_sp, detype_instance u)
     | Case (ci,p,c,bl) ->
 	let comp = computable p (ci.ci_pp_info.ind_nargs) in
 	detype_case comp (detype isgoal avoid env)

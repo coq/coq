@@ -748,9 +748,9 @@ let intern_reference ref =
   Smartlocate.global_of_extended_global r
 
 (* Is it a global reference or a syntactic definition? *)
-let intern_qualid loc qid intern env lvar args =
+let intern_qualid loc qid intern env lvar us args =
   match intern_extended_global_of_qualid (loc,qid) with
-  | TrueGlobal ref -> GRef (loc, ref, None), args
+  | TrueGlobal ref -> GRef (loc, ref, us), args
   | SynDef sp ->
       let (ids,c) = Syntax_def.search_syntactic_definition sp in
       let nids = List.length ids in
@@ -763,15 +763,15 @@ let intern_qualid loc qid intern env lvar args =
       subst_aconstr_in_glob_constr loc intern lvar subst infos c, args2
 
 (* Rule out section vars since these should have been found by intern_var *)
-let intern_non_secvar_qualid loc qid intern env lvar args =
-  match intern_qualid loc qid intern env lvar args with
+let intern_non_secvar_qualid loc qid intern env lvar us args =
+  match intern_qualid loc qid intern env lvar us args with
     | GRef (_, VarRef _, _),_ -> raise Not_found
     | r -> r
 
-let intern_applied_reference intern env namedctx lvar args = function
+let intern_applied_reference intern env namedctx lvar us args = function
   | Qualid (loc, qid) ->
       let r,args2 =
-	try intern_qualid loc qid intern env lvar args
+	try intern_qualid loc qid intern env lvar us args
 	with Not_found -> error_global_not_found_loc loc qid
       in
       let x, isproj, imp, scopes, l = find_appl_head_data r in
@@ -781,7 +781,7 @@ let intern_applied_reference intern env namedctx lvar args = function
       with Not_found ->
       let qid = qualid_of_ident id in
       try
-	let r,args2 = intern_non_secvar_qualid loc qid intern env lvar args in
+	let r,args2 = intern_non_secvar_qualid loc qid intern env lvar us args in
 	let x, isproj, imp, scopes, l = find_appl_head_data r in
 	  (x,imp,scopes,l), isproj, args2
       with Not_found ->
@@ -795,7 +795,7 @@ let interp_reference vars r =
     intern_applied_reference (fun _ -> error_not_enough_arguments Loc.ghost)
       {ids = Id.Set.empty; unb = false ;
        tmp_scope = None; scopes = []; impls = empty_internalization_env} []
-      (vars, Id.Map.empty) [] r
+      (vars, Id.Map.empty) None [] r
   in r
 
 (**********************************************************************)
@@ -1368,7 +1368,7 @@ let internalize globalenv env allow_patvar lvar c =
   let rec intern env = function
     | CRef (ref,us) as x ->
 	let (c,imp,subscopes,l),isproj,_ =
-	  intern_applied_reference intern env (Environ.named_context globalenv) lvar [] ref in
+	  intern_applied_reference intern env (Environ.named_context globalenv) lvar us [] ref in
 	  apply_impargs (None, isproj) c env imp subscopes l (constr_loc x)
 
     | CFix (loc, (locid,iddef), dl) ->
@@ -1467,7 +1467,7 @@ let internalize globalenv env allow_patvar lvar c =
         let (f,_,args_scopes,_),_,args =
 	  let args = List.map (fun a -> (a,None)) args in
 	  intern_applied_reference intern env (Environ.named_context globalenv) 
-	    lvar args ref in
+	    lvar us args ref in
 	(* check_projection isproj (List.length args) f; *)
 	(* Rem: GApp(_,f,[]) stands for @f *)
 	  GApp (loc, f, intern_args env args_scopes (List.map fst args))
@@ -1483,7 +1483,7 @@ let internalize globalenv env allow_patvar lvar c =
           match f with
             | CRef (ref,us) -> 
 	       intern_applied_reference intern env
-		 (Environ.named_context globalenv) lvar args ref
+		 (Environ.named_context globalenv) lvar us args ref
             | CNotation (loc,ntn,([],[],[])) ->
                 let c = intern_notation intern env lvar loc ntn ([],[],[]) in
                 let x, isproj, impl, scopes, l = find_appl_head_data c in

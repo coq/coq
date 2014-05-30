@@ -59,7 +59,7 @@ let type_constructor mind mib u typ params =
   let s = ind_subst mind mib u in
   let ctyp = substl s typ in
   let usubst = make_inductive_subst mib u in
-  let ctyp = subst_univs_constr usubst ctyp in
+  let ctyp = subst_univs_level_constr usubst ctyp in
   let nparams = Array.length params in
   if Int.equal nparams 0 then ctyp
   else

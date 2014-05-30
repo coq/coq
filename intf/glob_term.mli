@@ -28,7 +28,7 @@ type cases_pattern =
       (** [PatCstr(p,C,l,x)] = "|'C' 'l' as 'x'" *)
 
 type glob_constr =
-  | GRef of (Loc.t * global_reference * Univ.universe_instance option)
+  | GRef of (Loc.t * global_reference * glob_sort list option)
   | GVar of (Loc.t * Id.t)
   | GEvar of Loc.t * existential_key * glob_constr list option
   | GPatVar of Loc.t * (bool * patvar) (** Used for patterns only *)

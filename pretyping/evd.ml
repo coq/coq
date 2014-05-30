@@ -262,9 +262,29 @@ let instantiate_evar_array info c args =
   | [] -> c
   | _ -> replace_vars inst c
 
+module StringOrd = struct type t = string let compare = String.compare end
+module UNameMap = struct
+
+    include Map.Make(StringOrd)
+
+    let union s t = 
+      merge (fun k l r -> 
+	match l, r with
+	| Some _, _ -> l
+	| _, _ -> r) s t
+
+    let diff ext orig =
+      fold (fun u v acc -> 
+	if mem u orig then acc 
+	else add u v acc)
+	ext empty
+
+end
+
 (* 2nd part used to check consistency on the fly. *)
 type evar_universe_context = 
-  { uctx_local : Univ.universe_context_set; (** The local context of variables *)
+ { uctx_names : Univ.Level.t UNameMap.t;
+   uctx_local : Univ.universe_context_set; (** The local context of variables *)
     uctx_univ_variables : Universes.universe_opt_subst;
       (** The local universes that are unification variables *)
     uctx_univ_algebraic : Univ.universe_set; 
@@ -277,7 +297,8 @@ type evar_universe_context =
   }
   
 let empty_evar_universe_context = 
-  { uctx_local = Univ.ContextSet.empty;
+  { uctx_names = UNameMap.empty;
+    uctx_local = Univ.ContextSet.empty;
     uctx_univ_variables = Univ.LMap.empty;
     uctx_univ_algebraic = Univ.LSet.empty;
     uctx_univ_template = Univ.LSet.empty;
@@ -301,7 +322,12 @@ let union_evar_universe_context ctx ctx' =
       if ctx.uctx_local == ctx'.uctx_local then ctx.uctx_local 
       else Univ.ContextSet.union ctx.uctx_local ctx'.uctx_local
     in
-      { uctx_local = local;
+    let names =
+      if ctx.uctx_names = ctx.uctx_names then ctx.uctx_names
+      else UNameMap.union ctx.uctx_names ctx'.uctx_names
+    in
+      { uctx_names = names;
+	uctx_local = local;
 	uctx_univ_variables = 
 	  Univ.LMap.subst_union ctx.uctx_univ_variables ctx'.uctx_univ_variables;
 	uctx_univ_algebraic = 
@@ -323,7 +349,9 @@ let diff_evar_universe_context ctx' ctx  =
   if ctx == ctx' then empty_evar_universe_context
   else
     let local = Univ.ContextSet.diff ctx'.uctx_local ctx.uctx_local in
-      { uctx_local = local;
+    let names = UNameMap.diff ctx'.uctx_names ctx.uctx_names in
+      { uctx_names = names;
+	uctx_local = local;
 	uctx_univ_variables = 
 	  Univ.LMap.diff ctx'.uctx_univ_variables ctx.uctx_univ_variables;
 	uctx_univ_algebraic = 
@@ -964,7 +992,7 @@ let merge_universe_subst evd subst =
 let with_context_set rigid d (a, ctx) = 
   (merge_context_set rigid d ctx, a)
 
-let uctx_new_univ_variable template rigid 
+let uctx_new_univ_variable template rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
   let u = Universes.new_univ_level (Global.current_dirpath ()) in
   let ctx' = Univ.ContextSet.union ctx (Univ.ContextSet.singleton u) in
@@ -980,14 +1008,23 @@ let uctx_new_univ_variable template rigid
       {uctx' with uctx_univ_template = Univ.LSet.add u uctx'.uctx_univ_template}
     else uctx'
   in
-    {uctx'' with uctx_local = ctx'}, u
+  let names = 
+    match name with
+    | Some n -> UNameMap.add n u uctx.uctx_names
+    | None -> uctx.uctx_names
+  in
+    {uctx'' with uctx_names = names; uctx_local = ctx'}, u
 
-let new_univ_variable ?(template=false) rigid evd =
-  let uctx', u = uctx_new_univ_variable template rigid evd.universes in
+let new_univ_level_variable ?(template=false) ?name rigid evd =
+  let uctx', u = uctx_new_univ_variable template rigid name evd.universes in
+    ({evd with universes = uctx'}, u)
+
+let new_univ_variable ?(template=false) ?name rigid evd =
+  let uctx', u = uctx_new_univ_variable template rigid name evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
-let new_sort_variable ?(template=false) rigid d =
-  let (d', u) = new_univ_variable ~template rigid d in
+let new_sort_variable ?(template=false) ?name rigid d =
+  let (d', u) = new_univ_variable ~template rigid ?name d in
     (d', Type u)
 
 let make_flexible_variable evd b u =
@@ -1013,7 +1050,7 @@ let make_flexible_variable evd b u =
 let fresh_sort_in_family env evd s = 
   with_context_set univ_flexible evd (Universes.fresh_sort_in_family env s)
 
-let fresh_constant_instance env evd c = 
+let fresh_constant_instance env evd c =
   with_context_set univ_flexible evd (Universes.fresh_constant_instance env c)
 
 let fresh_inductive_instance env evd i =
@@ -1022,8 +1059,8 @@ let fresh_inductive_instance env evd i =
 let fresh_constructor_instance env evd c =
   with_context_set univ_flexible evd (Universes.fresh_constructor_instance env c)
 
-let fresh_global ?(rigid=univ_flexible) env evd gr =
-  with_context_set rigid evd (Universes.fresh_global_instance env gr)
+let fresh_global ?(rigid=univ_flexible) ?names env evd gr =
+  with_context_set rigid evd (Universes.fresh_global_instance ?names env gr)
 
 let whd_sort_variable evd t = t
 
@@ -1203,7 +1240,8 @@ let refresh_undefined_univ_variables uctx =
           (Option.map (Univ.subst_univs_level_universe subst) v) acc)
       uctx.uctx_univ_variables Univ.LMap.empty
   in 
-  let uctx' = {uctx_local = ctx'; 
+  let uctx' = {uctx_names = uctx.uctx_names;
+	       uctx_local = ctx'; 
 	       uctx_univ_variables = vars; uctx_univ_algebraic = alg;
 	       uctx_univ_template = uctx.uctx_univ_template;
 	       uctx_universes = Univ.initial_universes;
@@ -1236,7 +1274,8 @@ let normalize_evar_universe_context uctx =
       else
 	let us', universes = Universes.refresh_constraints uctx.uctx_initial_universes us' in
 	let uctx' = 
-	  { uctx_local = us'; 
+	  { uctx_names = uctx.uctx_names;
+	    uctx_local = us'; 
 	    uctx_univ_variables = vars'; 
 	    uctx_univ_algebraic = algs';
 	    uctx_univ_template = uctx.uctx_univ_template;
@@ -1264,6 +1303,14 @@ let nf_constraints =
     let nfconstrkey = Profile.declare_profile "nf_constraints" in
       Profile.profile1 nfconstrkey nf_constraints
   else nf_constraints
+
+let universe_of_name evd s = 
+  UNameMap.find s evd.universes.uctx_names
+
+let add_universe_name evd s l =
+  let names = evd.universes.uctx_names in
+  let names' = UNameMap.add s l names in
+    {evd with universes = {evd.universes with uctx_names = names'}}
 
 let universes evd = evd.universes.uctx_universes
 let constraints evd = evd.universes.uctx_universes

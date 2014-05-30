@@ -258,8 +258,6 @@ val drop_side_effects : evar_map -> evar_map
     Evar maps also keep track of the universe constraints defined at a given
     point. This section defines the relevant manipulation functions. *)
 
-val new_univ_variable : evar_map -> evar_map * Univ.universe
-val new_sort_variable : evar_map -> evar_map * sorts
 val is_sort_variable : evar_map -> sorts -> bool
 val whd_sort_variable : evar_map -> constr -> constr
 val set_leq_sort : evar_map -> sorts -> sorts -> evar_map
@@ -424,6 +422,10 @@ val union_evar_universe_context : evar_universe_context -> evar_universe_context
   evar_universe_context
 val evar_universe_context_subst : evar_universe_context -> Universes.universe_opt_subst
 
+(** Raises Not_found if not a name for a universe in this map. *)
+val universe_of_name : evar_map -> string -> Univ.universe_level
+val add_universe_name : evar_map -> string -> Univ.universe_level -> evar_map
+
 val universes : evar_map -> Univ.universes
 
 val add_constraints_context : evar_universe_context -> 
@@ -436,8 +438,9 @@ val normalize_evar_universe_context_variables : evar_universe_context ->
 val normalize_evar_universe_context : evar_universe_context -> 
   evar_universe_context
 
-val new_univ_variable : ?template:bool -> rigid -> evar_map -> evar_map * Univ.universe
-val new_sort_variable : ?template:bool -> rigid -> evar_map -> evar_map * sorts
+val new_univ_level_variable : ?template:bool -> ?name:string -> rigid -> evar_map -> evar_map * Univ.universe_level
+val new_univ_variable : ?template:bool -> ?name:string -> rigid -> evar_map -> evar_map * Univ.universe
+val new_sort_variable : ?template:bool -> ?name:string -> rigid -> evar_map -> evar_map * sorts
 val make_flexible_variable : evar_map -> bool -> Univ.universe_level -> evar_map
 val is_sort_variable : evar_map -> sorts -> (Univ.universe_level * bool) option 
 (** [is_sort_variable evm s] returns [Some (u, is_rigid)] or [None] if [s] is 
@@ -489,7 +492,7 @@ val fresh_constant_instance : env -> evar_map -> constant -> evar_map * pconstan
 val fresh_inductive_instance : env -> evar_map -> inductive -> evar_map * pinductive
 val fresh_constructor_instance : env -> evar_map -> constructor -> evar_map * pconstructor
 
-val fresh_global : ?rigid:rigid -> env -> evar_map -> 
+val fresh_global : ?rigid:rigid -> ?names:Univ.Instance.t -> env -> evar_map -> 
   Globnames.global_reference -> evar_map * constr
 
 (********************************************************************

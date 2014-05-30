@@ -60,7 +60,7 @@ let check_privacy_block mib =
 
 let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let usubst = Inductive.make_inductive_subst mib u in
-  let lnamespar = Vars.subst_univs_context usubst
+  let lnamespar = Vars.subst_univs_level_context usubst
     mib.mind_params_ctxt
   in
   let () = check_privacy_block mib in
@@ -284,7 +284,7 @@ let mis_make_indrec env sigma listdepkind mib u =
   let evdref = ref sigma in
   let usubst = Inductive.make_inductive_subst mib u in
   let lnonparrec,lnamesparrec =
-    context_chop (nparams-nparrec) (Vars.subst_univs_context usubst mib.mind_params_ctxt) in
+    context_chop (nparams-nparrec) (Vars.subst_univs_level_context usubst mib.mind_params_ctxt) in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.make mib.mind_ntypes (None : (bool * constr) option) in

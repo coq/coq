@@ -119,7 +119,7 @@ let pr_qualid = pr_qualid
 let pr_patvar = pr_id
 
 let pr_universe_instance l =
-  pr_opt (pr_in_comment Univ.Instance.pr) l
+  pr_opt (pr_in_comment (prlist_with_sep spc pr_glob_sort)) l
 
 let pr_cref ref us =
   pr_reference ref ++ pr_universe_instance us

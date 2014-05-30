@@ -355,15 +355,13 @@ val constraints_of : 'a constrained -> constraints
 val check_context_subset : universe_context_set -> universe_context -> universe_context
 
 (** Make a universe level substitution: the list must match the context variables. *)
-val make_universe_subst : Instance.t -> universe_context -> universe_subst
-val empty_subst : universe_subst
-val is_empty_subst : universe_subst -> bool
+val make_universe_subst : Instance.t -> universe_context -> universe_level_subst
 
 val empty_level_subst : universe_level_subst
 val is_empty_level_subst : universe_level_subst -> bool
 
 (** Get the instantiated graph. *)
-val instantiate_univ_context : universe_subst -> universe_context -> constraints
+val instantiate_univ_context : universe_level_subst -> universe_context -> constraints
 
 (** Substitution of universes. *)
 val subst_univs_level_level : universe_level_subst -> universe_level -> universe_level
@@ -372,6 +370,9 @@ val subst_univs_level_constraints : universe_level_subst -> constraints -> const
 
 val normalize_univs_level_level : universe_level_subst -> universe_level -> universe_level
 
+
+val empty_subst : universe_subst
+val is_empty_subst : universe_subst -> bool
 val make_subst : universe_subst -> universe_subst_fn
 
 (* val subst_univs_level_fail : universe_subst_fn -> universe_level -> universe_level *)

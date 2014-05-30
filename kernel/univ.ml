@@ -454,7 +454,13 @@ module Level = struct
 
     let hcons = hashcons
     let equal = deep_equal (* Not shallow as serialization breaks sharing *)
-    let hash = Hashtbl.hash
+      
+    open Hashset.Combine
+
+    let hash = function
+      | Prop -> combinesmall 1 0
+      | Set -> combinesmall 1 1
+      | Level (n, d) -> combinesmall 2 (combine n (Names.DirPath.hash d))
   end
   
   (* let hcons = Hashcons.simple_hcons Hunivlevel.generate Names.DirPath.hcons *)
@@ -1898,7 +1904,7 @@ let check_context_subset (univs, cst) (univs', cst') =
 (** Substitutions. *)
 
 let make_universe_subst inst (ctx, csts) = 
-  try Array.fold_left2 (fun acc c i -> LMap.add c (Universe.make i) acc)
+  try Array.fold_left2 (fun acc c i -> LMap.add c i acc)
         LMap.empty (Instance.to_array ctx) (Instance.to_array inst)
   with Invalid_argument _ -> 
     anomaly (Pp.str "Mismatched instance and context when building universe substitution")
@@ -2115,7 +2121,7 @@ let subst_univs_universe_constraints subst csts =
 
 (** Substitute instance inst for ctx in csts *)
 let instantiate_univ_context subst (_, csts) = 
-  subst_univs_constraints (make_subst subst) csts
+  subst_univs_level_constraints subst csts
 
 let check_consistent_constraints (ctx,cstrs) cstrs' =
   (* TODO *) ()

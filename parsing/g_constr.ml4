@@ -152,7 +152,9 @@ GEXTEND Gram
   sort:
     [ [ "Set"  -> GSet
       | "Prop" -> GProp
-      | "Type" -> GType None ] ]
+      | "Type" -> GType None
+      | "Type"; "{"; id = string; "}" -> GType (Some id)
+      ] ]
   ;
   lconstr:
     [ [ c = operconstr LEVEL "200" -> c ] ]
@@ -277,12 +279,16 @@ GEXTEND Gram
       | c=operconstr LEVEL "9" -> (c,None) ] ]
   ;
   atomic_constr:
-    [ [ g=global -> CRef (g,None)
+    [ [ g=global; i=instance -> CRef (g,i)
       | s=sort -> CSort (!@loc,s)
       | n=INT -> CPrim (!@loc, Numeral (Bigint.of_string n))
       | s=string -> CPrim (!@loc, String s)
       | "_" -> CHole (!@loc, None, None)
       | id=pattern_ident -> CPatVar(!@loc,(false,id)) ] ]
+  ;
+  instance:
+    [ [ "@{"; l = LIST1 sort SEP ","; "}" -> Some l
+      | -> None ] ]
   ;
   fix_constr:
     [ [ fx1=single_fix -> mk_single_fix fx1

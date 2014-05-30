@@ -78,7 +78,9 @@ val subst_univs_fn_puniverses : universe_level_subst_fn ->
   'a puniverses -> 'a puniverses
 
 val subst_univs_constr : universe_subst -> constr -> constr
+
+(** Level substitutions for polymorphism. *)
+
 val subst_univs_puniverses : universe_level_subst -> 'a puniverses -> 'a puniverses
 val subst_univs_level_constr : universe_level_subst -> constr -> constr
-
-val subst_univs_context : Univ.universe_subst -> rel_context -> rel_context
+val subst_univs_level_context : Univ.universe_level_subst -> rel_context -> rel_context

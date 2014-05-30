@@ -41,43 +41,56 @@ let fresh_instance_from_context ctx =
     (inst, subst), constraints
 
 let fresh_instance ctx =
-  let s = ref LSet.empty in
+  let ctx' = ref LSet.empty in
+  let s = ref LMap.empty in
   let inst = 
-    Instance.subst_fn (fun _ -> 
-      let u = new_univ_level (Global.current_dirpath ()) in 
-	s := LSet.add u !s; u) 
+    Instance.subst_fn (fun v -> 
+      let u = new_univ_level (Global.current_dirpath ()) in
+	ctx' := LSet.add u !ctx';
+	s := LMap.add v u !s; u) 
       (UContext.instance ctx)
-  in !s, inst
+  in !ctx', !s, inst
 
-let fresh_instance_from ctx =
-  let ctx', inst = fresh_instance ctx in
-  let subst = make_universe_subst inst ctx in
+let existing_instance ctx inst = 
+  let s = ref LMap.empty in
+  let () = 
+    Array.iter2 (fun u v -> 
+      s := LMap.add v u !s)
+      (Instance.to_array inst) (Instance.to_array (UContext.instance ctx))
+  in LSet.empty, !s, inst
+
+let fresh_instance_from ctx inst =
+  let ctx', subst, inst = 
+    match inst with 
+    | Some inst -> existing_instance ctx inst
+    | None -> fresh_instance ctx 
+  in
   let constraints = instantiate_univ_context subst ctx in
     (inst, subst), (ctx', constraints)
-
+      
 let unsafe_instance_from ctx =
   (Univ.UContext.instance ctx, ctx)
-
+    
 (** Fresh universe polymorphic construction *)
 
-let fresh_constant_instance env c =
+let fresh_constant_instance env c inst =
   let cb = lookup_constant c env in
     if cb.Declarations.const_polymorphic then
-      let (inst,_), ctx = fresh_instance_from (Declareops.universes_of_constant cb) in
+      let (inst,_), ctx = fresh_instance_from (Declareops.universes_of_constant cb) inst in
 	((c, inst), ctx)
     else ((c,Instance.empty), ContextSet.empty)
 
-let fresh_inductive_instance env ind = 
+let fresh_inductive_instance env ind inst = 
   let mib, mip = Inductive.lookup_mind_specif env ind in
     if mib.Declarations.mind_polymorphic then
-      let (inst,_), ctx = fresh_instance_from mib.Declarations.mind_universes in
+      let (inst,_), ctx = fresh_instance_from mib.Declarations.mind_universes inst in
 	((ind,inst), ctx)
     else ((ind,Instance.empty), ContextSet.empty)
 
-let fresh_constructor_instance env (ind,i) = 
+let fresh_constructor_instance env (ind,i) inst = 
   let mib, mip = Inductive.lookup_mind_specif env ind in
     if mib.Declarations.mind_polymorphic then
-      let (inst,_), ctx = fresh_instance_from mib.Declarations.mind_universes in
+      let (inst,_), ctx = fresh_instance_from mib.Declarations.mind_universes inst in
 	(((ind,i),inst), ctx)
     else (((ind,i),Instance.empty), ContextSet.empty)
 
@@ -104,18 +117,27 @@ let unsafe_constructor_instance env (ind,i) =
 
 open Globnames
 
-let fresh_global_instance env gr =
+let fresh_global_instance ?names env gr =
   match gr with
   | VarRef id -> mkVar id, ContextSet.empty
   | ConstRef sp -> 
-     let c, ctx = fresh_constant_instance env sp in
+     let c, ctx = fresh_constant_instance env sp names in
        mkConstU c, ctx
   | ConstructRef sp ->
-     let c, ctx = fresh_constructor_instance env sp in
+     let c, ctx = fresh_constructor_instance env sp names in
        mkConstructU c, ctx
   | IndRef sp -> 
-     let c, ctx = fresh_inductive_instance env sp in
+     let c, ctx = fresh_inductive_instance env sp names in
        mkIndU c, ctx
+
+let fresh_constant_instance env sp = 
+  fresh_constant_instance env sp None
+
+let fresh_inductive_instance env sp = 
+  fresh_inductive_instance env sp None
+
+let fresh_constructor_instance env sp = 
+  fresh_constructor_instance env sp None
 
 let unsafe_global_instance env gr =
   match gr with
@@ -185,14 +207,15 @@ let type_of_reference env r =
      let cb = Environ.lookup_constant c env in
      let ty = Typeops.type_of_constant_type env cb.const_type in
        if cb.const_polymorphic then
-	 let (inst, subst), ctx = fresh_instance_from (Declareops.universes_of_constant cb) in
-	   Vars.subst_univs_constr subst ty, ctx
+	 let (inst, subst), ctx = 
+	   fresh_instance_from (Declareops.universes_of_constant cb) None in
+	   Vars.subst_univs_level_constr subst ty, ctx
        else ty, ContextSet.empty
 
   | IndRef ind ->
      let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
        if mib.mind_polymorphic then
-	 let (inst, subst), ctx = fresh_instance_from mib.mind_universes in
+	 let (inst, subst), ctx = fresh_instance_from mib.mind_universes None in
 	 let ty = Inductive.type_of_inductive env (specif, inst) in
 	   ty, ctx
        else
@@ -201,7 +224,7 @@ let type_of_reference env r =
   | ConstructRef cstr ->
      let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
        if mib.mind_polymorphic then
-	 let (inst, subst), ctx = fresh_instance_from mib.mind_universes in
+	 let (inst, subst), ctx = fresh_instance_from mib.mind_universes None in
 	   Inductive.type_of_constructor (cstr,inst) specif, ctx
        else Inductive.type_of_constructor (cstr,Instance.empty) specif, ContextSet.empty
 

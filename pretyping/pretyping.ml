@@ -93,10 +93,20 @@ let ((constr_in : constr -> Dyn.t),
 
 (** Miscellaneous interpretation functions *)
 
+let interp_universe_name evd = function
+  | None -> new_univ_level_variable univ_rigid evd
+  | Some s ->
+    try let level = Evd.universe_of_name evd s in
+	  evd, level
+    with Not_found -> 
+      new_univ_level_variable ~name:s univ_rigid evd
+	
 let interp_sort evd = function
   | GProp -> evd, Prop Null
   | GSet -> evd, Prop Pos
-  | GType _ -> new_sort_variable univ_rigid evd
+  | GType n -> 
+    let evd, l = interp_universe_name evd n in
+      evd, Type (Univ.Universe.make l)
 
 let interp_elimination_sort = function
   | GProp -> InProp
@@ -260,8 +270,23 @@ let evar_kind_of_term sigma c =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-(* Check with universe list? *)
-let pretype_global rigid env evd gr us = Evd.fresh_global ~rigid env evd gr
+let interp_universe_level_name evd = function
+  | GProp -> evd, Univ.Level.prop
+  | GSet -> evd, Univ.Level.set
+  | GType s -> interp_universe_name evd s
+
+let pretype_global rigid env evd gr us = 
+  let evd, instance = 
+    match us with
+    | None -> evd, None
+    | Some l -> 
+      let evd, l' = List.fold_left (fun (evd, univs) l -> 
+	let evd, l = interp_universe_level_name evd l in
+	  (evd, l :: univs)) (evd, []) l
+      in 
+	evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
+  in
+    Evd.fresh_global ~rigid ?names:instance env evd gr
 
 let is_template_polymorphic_constructor env c =
   match kind_of_term c with
@@ -292,10 +317,17 @@ let pretype_ref loc evdref env ref us =
     let ty = Retyping.get_type_of env evd c in
       make_judge c ty
 
+let judge_of_Type evd s =
+  let judge s = 
+    { uj_val = mkSort (Type s); uj_type = mkSort (Type (Univ.super s)) }
+  in
+  let evd, l = interp_universe_name evd s in
+    evd, judge (Univ.Universe.make l)
+
 let pretype_sort evdref = function
   | GProp -> judge_of_prop
   | GSet -> judge_of_set
-  | GType _ -> evd_comb0 judge_of_new_Type evdref
+  | GType s -> evd_comb1 judge_of_Type evdref s
 
 let new_type_evar evdref env loc =
   let e, s = 
@@ -500,7 +532,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 	    j', (ind, args))
     in
     let usubst = make_inductive_subst (fst (lookup_mind_specif env ind)) u in
-    let ty = Vars.subst_univs_constr usubst ty in
+    let ty = Vars.subst_univs_level_constr usubst ty in
     let ty = substl (recty.uj_val :: List.rev pars) ty in
     let j = {uj_val = mkProj (cst,recty.uj_val); uj_type = ty} in
       inh_conv_coerce_to_tycon loc env evdref j tycon

@@ -26,24 +26,24 @@ val new_Type_sort : Names.dir_path -> sorts
     the instantiated constraints. *)
 
 val fresh_instance_from_context : universe_context -> 
-  (universe_instance * universe_subst) constrained
+  (universe_instance * universe_level_subst) constrained
 
-val fresh_instance_from : universe_context -> 
-  (universe_instance * universe_subst) in_universe_context_set
+val fresh_instance_from : universe_context -> universe_instance option ->
+  (universe_instance * universe_level_subst) in_universe_context_set
 
 val new_global_univ : unit -> universe in_universe_context_set
 val new_sort_in_family : sorts_family -> sorts
 
 val fresh_sort_in_family : env -> sorts_family -> 
   sorts in_universe_context_set
-val fresh_constant_instance : env -> constant -> 
+val fresh_constant_instance : env -> constant ->
   pconstant in_universe_context_set
-val fresh_inductive_instance : env -> inductive -> 
+val fresh_inductive_instance : env -> inductive ->
   pinductive in_universe_context_set
-val fresh_constructor_instance : env -> constructor -> 
+val fresh_constructor_instance : env -> constructor ->
   pconstructor in_universe_context_set
 
-val fresh_global_instance : env -> Globnames.global_reference -> 
+val fresh_global_instance : ?names:Univ.Instance.t -> env -> Globnames.global_reference -> 
   constr in_universe_context_set
 
 val fresh_global_or_constr_instance : env -> Globnames.global_reference_or_constr -> 

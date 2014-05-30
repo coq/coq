@@ -1,3 +1,28 @@
+Module withoutpoly.
+
+Inductive empty :=. 
+
+Inductive emptyt : Type :=. 
+Inductive singleton : Type :=
+  single.
+Inductive singletoninfo : Type :=
+  singleinfo : unit -> singletoninfo.
+Inductive singletonset : Set :=
+  singleset.
+
+Inductive singletonnoninfo : Type :=
+  singlenoninfo : empty -> singletonnoninfo.
+
+Inductive singletoninfononinfo : Prop :=
+  singleinfononinfo : unit -> singletoninfononinfo.
+
+Inductive bool : Type := 
+  | true | false.
+
+Inductive smashedbool : Prop := 
+  | trueP | falseP.
+End withoutpoly.
+
 Set Universe Polymorphism.
 
 Inductive empty :=. 
@@ -225,7 +250,7 @@ Fail Check fun A : Type => foo A.
 Check fun A : Prop => foo A.
 Fail Definition bar := fun A : Set => foo A.
 
-Fail Check (let A := Type in foo (id A)).
+Check (let A := Type in foo (id A)).
 
 Definition fooS (A : Set) := A.
 

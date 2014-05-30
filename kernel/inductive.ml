@@ -56,11 +56,11 @@ let inductive_params (mib,_) = mib.mind_nparams
 let make_inductive_subst mib u =
   if mib.mind_polymorphic then 
     make_universe_subst u mib.mind_universes
-  else Univ.empty_subst
+  else Univ.empty_level_subst
 
 let inductive_params_ctxt (mib,u) = 
   let subst = make_inductive_subst mib u in
-    Vars.subst_univs_context subst mib.mind_params_ctxt
+    Vars.subst_univs_level_context subst mib.mind_params_ctxt
 
 let inductive_instance mib =
   if mib.mind_polymorphic then 
@@ -89,7 +89,7 @@ let ind_subst mind mib u =
 (* Instantiate inductives in constructor type *)
 let constructor_instantiate mind u subst mib c =
   let s = ind_subst mind mib u in
-    substl s (subst_univs_constr subst c)
+    substl s (subst_univs_level_constr subst c)
 
 let instantiate_params full t args sign =
   let fail () =
@@ -113,7 +113,7 @@ let full_inductive_instantiate mib u params sign =
   let t = mkArity (sign,dummy) in
   let subst = make_inductive_subst mib u in
   let ar = fst (destArity (instantiate_params true t params mib.mind_params_ctxt)) in
-    Vars.subst_univs_context subst ar
+    Vars.subst_univs_level_context subst ar
 
 let full_constructor_instantiate ((mind,_),u,(mib,_),params) =
   let subst = make_inductive_subst mib u in
@@ -217,7 +217,7 @@ let type_of_inductive_subst ?(polyprop=true) env ((mib,mip),u) paramtyps =
     if not mib.mind_polymorphic then (a.mind_user_arity, Univ.LMap.empty)
     else 
       let subst = make_inductive_subst mib u in
-	(subst_univs_constr subst a.mind_user_arity, subst)
+	(subst_univs_level_constr subst a.mind_user_arity, subst)
   | TemplateArity ar ->
     let ctx = List.rev mip.mind_arity_ctxt in
     let ctx,s = instantiate_universes env ctx ar paramtyps in
@@ -234,7 +234,7 @@ let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
     if not mib.mind_polymorphic then a.mind_user_arity
     else 
       let subst = make_inductive_subst mib u in
-	(subst_univs_constr subst a.mind_user_arity)
+	(subst_univs_level_constr subst a.mind_user_arity)
   | TemplateArity ar ->
     let ctx = List.rev mip.mind_arity_ctxt in
     let ctx,s = instantiate_universes env ctx ar paramtyps in

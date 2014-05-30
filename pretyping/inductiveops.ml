@@ -101,7 +101,7 @@ let mis_nf_constructor_type ((ind,u),mib,mip) j =
   let make_Ik k = mkIndU (((fst ind),ntypes-k-1),u) in
   if j > nconstr then error "Not enough constructors in the type.";
   let univsubst = make_inductive_subst mib u in
-    substl (List.init ntypes make_Ik) (subst_univs_constr univsubst specif.(j-1))
+    substl (List.init ntypes make_Ik) (subst_univs_level_constr univsubst specif.(j-1))
 
 (* Arity of constructors excluding parameters and local defs *)
 
@@ -149,7 +149,7 @@ let constructor_nrealhyps (ind,j) =
 let get_full_arity_sign env (ind,u) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let subst = Inductive.make_inductive_subst mib u in
-    Vars.subst_univs_context subst mip.mind_arity_ctxt
+    Vars.subst_univs_level_context subst mip.mind_arity_ctxt
 
 let nconstructors ind =
   let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
@@ -280,11 +280,11 @@ let get_arity env ((ind,u),params) =
       snd (List.chop nnonrecparams mib.mind_params_ctxt)
     else
       parsign in
-  let parsign = Vars.subst_univs_context univsubst parsign in
+  let parsign = Vars.subst_univs_level_context univsubst parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
   let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in
   let subst = instantiate_context parsign params in
-  let arsign = Vars.subst_univs_context univsubst arsign in
+  let arsign = Vars.subst_univs_level_context univsubst arsign in
   (substl_rel_context subst arsign, Inductive.inductive_sort_family mip)
 
 (* Functions to build standard types related to inductive *)
@@ -499,7 +499,7 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
   match mip.mind_arity with
   | RegularArity s ->
     let subst = Inductive.make_inductive_subst mib u in
-      sigma, subst_univs_constr subst s.mind_user_arity
+      sigma, subst_univs_level_constr subst s.mind_user_arity
   | TemplateArity ar ->
     let _,scl = Reduction.dest_arity env conclty in
     let ctx = List.rev mip.mind_arity_ctxt in

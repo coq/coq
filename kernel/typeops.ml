@@ -176,7 +176,7 @@ let type_of_projection env (cst,u) =
     if cb.const_polymorphic then
       let mib,_ = lookup_mind_specif env (pb.proj_ind,0) in
       let subst = make_inductive_subst mib u in
-	Vars.subst_univs_constr subst pb.proj_type
+	Vars.subst_univs_level_constr subst pb.proj_type
     else pb.proj_type
   | None -> raise (Invalid_argument "type_of_projection: not a projection")
 
@@ -374,7 +374,7 @@ let judge_of_projection env p cj =
   in
     assert(eq_mind pb.proj_ind (fst ind));
     let usubst = make_inductive_subst (fst (lookup_mind_specif env ind)) u in
-    let ty = Vars.subst_univs_constr usubst pb.Declarations.proj_type in
+    let ty = Vars.subst_univs_level_constr usubst pb.Declarations.proj_type in
     let ty = substl (cj.uj_val :: List.rev args) ty in
       (* TODO: Universe polymorphism for projections *)
       {uj_val = mkProj (p,cj.uj_val);

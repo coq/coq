@@ -229,7 +229,7 @@ let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
     if cb.const_polymorphic then
       let subst, csts = universes_and_subst_of cb u in
-	(map_regular_arity (subst_univs_constr subst) cb.const_type, csts)
+	(map_regular_arity (subst_univs_level_constr subst) cb.const_type, csts)
     else cb.const_type, Univ.Constraint.empty
 
 let constant_context env kn =
@@ -248,7 +248,7 @@ let constant_value env (kn,u) =
       | Def l_body -> 
 	if cb.const_polymorphic then
 	  let subst, csts = universes_and_subst_of cb u in
-	    (subst_univs_constr subst (Mod_subst.force_constr l_body), csts)
+	    (subst_univs_level_constr subst (Mod_subst.force_constr l_body), csts)
 	else Mod_subst.force_constr l_body, Univ.Constraint.empty
       | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
       | Undef _ -> raise (NotEvaluableConst NoBody)
@@ -263,11 +263,11 @@ let constant_value_and_type env (kn, u) =
     if cb.const_polymorphic then
       let subst, cst = universes_and_subst_of cb u in
       let b' = match cb.const_body with
-	| Def l_body -> Some (subst_univs_constr subst (Mod_subst.force_constr l_body))
+	| Def l_body -> Some (subst_univs_level_constr subst (Mod_subst.force_constr l_body))
 	| OpaqueDef _ -> None
 	| Undef _ -> None
       in
-	b', map_regular_arity (subst_univs_constr subst) cb.const_type, cst
+	b', map_regular_arity (subst_univs_level_constr subst) cb.const_type, cst
     else 
       let b' = match cb.const_body with
 	| Def l_body -> Some (Mod_subst.force_constr l_body)
@@ -284,7 +284,7 @@ let constant_type_in env (kn,u) =
   let cb = lookup_constant kn env in
     if cb.const_polymorphic then
       let subst = Univ.make_universe_subst u cb.const_universes in
-	map_regular_arity (subst_univs_constr subst) cb.const_type
+	map_regular_arity (subst_univs_level_constr subst) cb.const_type
     else cb.const_type
 
 let constant_value_in env (kn,u) =
@@ -294,7 +294,7 @@ let constant_value_in env (kn,u) =
       let b = Mod_subst.force_constr l_body in
 	if cb.const_polymorphic then
 	  let subst = Univ.make_universe_subst u cb.const_universes in
-	    subst_univs_constr subst b
+	    subst_univs_level_constr subst b
 	else b
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
