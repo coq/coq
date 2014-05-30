@@ -311,14 +311,31 @@ let prepare_param = function
   | (na,None,t) -> out_name na, LocalAssum t
   | (na,Some b,_) -> out_name na, LocalDef b
 
+(** Make the arity conclusion flexible to avoid generating an upper bound universe now,
+    only if the universe does not appear anywhere else.
+    This is really a hack to stay compatible with the semantics of template polymorphic 
+    inductives which are recognized when a "Type" appears at the end of the conlusion in
+    the source syntax. *)
+    
+let rec check_anonymous_type ind =
+  let open Glob_term in
+    match ind with
+    | GSort (_, GType None) -> true
+    | GProd (_, _, _, _, e) 
+    | GLetIn (_, _, _, e)
+    | GLambda (_, _, _, _, e)
+    | GApp (_, e, _)
+    | GCast (_, e, _) -> check_anonymous_type e
+    | _ -> false
 
-let make_conclusion_flexible evdref ty = 
-  if isArity ty then
+let make_conclusion_flexible evdref ty poly =
+  if poly && isArity ty then
     let _, concl = destArity ty in
       match concl with
       | Type u -> 
         (match Univ.universe_level u with
-        | Some u -> evdref := Evd.make_flexible_variable !evdref true u
+        | Some u -> 
+	  evdref := Evd.make_flexible_variable !evdref true u
 	| None -> ())
       | _ -> ()
   else () 
@@ -327,9 +344,12 @@ let is_impredicative env u =
   u = Prop Null || 
   (engagement env = Some Declarations.ImpredicativeSet && u = Prop Pos)
 
-(** Make the arity conclusion flexible to avoid generating an upper bound universe now. *)
 let interp_ind_arity evdref env ind =
-  interp_type_evars_impls evdref env ind.ind_arity
+  let c = intern_gen IsType env ind.ind_arity in
+  let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
+  let t, impls = understand_tcc_evars evdref env ~expected_type:IsType c, imps in
+  let pseudo_poly = check_anonymous_type c in
+    t, pseudo_poly, impls
 
 let interp_cstrs evdref env impls mldata arity ind =
   let cnames,ctyps = List.split ind.ind_lc in
@@ -360,7 +380,7 @@ let extract_level env evd tys =
       sign_level env evd ctx) tys 
   in sup_list sorts
 
-let inductive_levels env evdref arities inds =
+let inductive_levels env evdref poly arities inds =
   let destarities = List.map (Reduction.dest_arity env) arities in
   let levels = List.map (fun (ctx,a) -> 
     if a = Prop Null then None
@@ -396,7 +416,7 @@ let inductive_levels env evdref arities inds =
 	   *)
 	let evd = 
 	  (** Indices contribute. *)
-	  if Indtypes.is_indices_matter () then (
+	  if Indtypes.is_indices_matter () && List.length ctx > 0 then (
 	    let ilev = sign_level env !evdref ctx in
 	      Evd.set_leq_sort evd (Type ilev) du)
 	  else evd
@@ -407,7 +427,8 @@ let inductive_levels env evdref arities inds =
 	    if not (Evd.check_leq evd cu Univ.type0_univ) then 
 	      raise (Indtypes.InductiveError Indtypes.LargeNonPropInductiveNotInType)
 	    else evd
-	  else Evd.set_leq_sort evd (Type cu) du 
+	  else
+	    Evd.set_leq_sort evd (Type cu) du
 	in
 	let evd = 
 	  if len >= 2 && Univ.is_type0m_univ cu then 
@@ -436,14 +457,14 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
   (* Interpret the arities *)
   let arities = List.map (interp_ind_arity evdref env_params) indl in
 
-  let fullarities = List.map (fun (c, _) -> it_mkProd_or_LetIn c ctx_params) arities in
+  let fullarities = List.map (fun (c, _, _) -> it_mkProd_or_LetIn c ctx_params) arities in
   let env_ar = push_types env0 indnames fullarities in
   let env_ar_params = push_rel_context ctx_params env_ar in
 
   (* Compute interpretation metadatas *)
-  let indimpls = List.map (fun (_, impls) -> userimpls @ 
+  let indimpls = List.map (fun (_, _, impls) -> userimpls @ 
     lift_implicits (rel_context_nhyps ctx_params) impls) arities in
-  let arities = List.map fst arities in
+  let arities = List.map pi1 arities and aritypoly = List.map pi2 arities in
   let impls = compute_internalization_env env0 (Inductive params) indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
@@ -462,8 +483,8 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
   let nf,_ = e_nf_evars_and_universes evdref in
   let arities = List.map nf arities in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
-  let _ = List.iter (fun ty -> make_conclusion_flexible evdref ty) arities in
-  let arities = inductive_levels env_ar_params evdref arities constructors in
+  let _ = List.iter2 (fun ty poly -> make_conclusion_flexible evdref ty poly) arities aritypoly in
+  let arities = inductive_levels env_ar_params evdref poly arities constructors in
   let nf',_ = e_nf_evars_and_universes evdref in
   let nf x = nf' (nf x) in
   let arities = List.map nf' arities in
