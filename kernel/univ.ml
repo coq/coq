@@ -1466,6 +1466,12 @@ let initial_universes = enforce_univ_lt Level.prop Level.set LMap.empty
 
 let is_initial_universes g = LMap.equal (==) g initial_universes
 
+let add_universe vlev g = 
+  let v = terminal vlev in
+  let proparc = prop_arc g in
+    enter_arc {proparc with le=vlev::proparc.le}
+      (enter_arc v g)
+      
 (* Constraints and sets of constraints. *)    
 
 type univ_constraint = Level.t * constraint_type * Level.t

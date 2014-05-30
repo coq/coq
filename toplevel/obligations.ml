@@ -801,24 +801,6 @@ let solve_by_tac name evi t poly subst ctx =
   Inductiveops.control_only_guard (Global.env ()) (fst body) (*FIXME ignoring the context...*);
   (fst body), subst, entry.Entries.const_entry_universes
 
-  (* try *)
-  (*   let substref = ref (Univ.LMap.empty, Univ.UContext.empty) in *)
-  (*   Pfedit.start_proof id (goal_kind poly) evi.evar_hyps  *)
-  (*     (Universes.subst_opt_univs_constr subst evi.evar_concl, ctx) *)
-  (*   (fun subst-> substref:=subst; fun _ _ -> ()); *)
-  (*   Pfedit.by (tclCOMPLETE t); *)
-  (*   let _,(const,_,_,_) = Pfedit.cook_proof ignore in *)
-  (*     Pfedit.delete_current_proof ();  *)
-  (*     Inductiveops.control_only_guard (Global.env ()) *)
-  (* 	const.Entries.const_entry_body; *)
-  (*     let subst, ctx = !substref in *)
-  (* 	subst_univs_fn_constr (Universes.make_opt_subst subst) const.Entries.const_entry_body, *)
-  (* 	subst, const.Entries.const_entry_universes *)
-  (* with reraise -> *)
-  (*   let reraise = Errors.push reraise in *)
-  (*   Pfedit.delete_current_proof(); *)
-  (*   raise reraise *)
-
 let rec solve_obligation prg num tac =
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in

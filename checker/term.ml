@@ -478,5 +478,5 @@ let subst_univs_level_constr subst c =
     let c' = aux c in
       if !changed then c' else c
 
-let subst_univs_context s = 
-  map_rel_context (subst_univs_constr s)
+let subst_univs_level_context s = 
+  map_rel_context (subst_univs_level_constr s)

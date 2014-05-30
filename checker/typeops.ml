@@ -226,7 +226,7 @@ let judge_of_projection env p c ct =
   in
     assert(eq_mind pb.proj_ind (fst ind));
     let usubst = make_inductive_subst (fst (lookup_mind_specif env ind)) u in
-    let ty = subst_univs_constr usubst pb.proj_type in
+    let ty = subst_univs_level_constr usubst pb.proj_type in
       substl (c :: List.rev args) ty
 
 (* Fixpoints. *)

@@ -183,6 +183,8 @@ val initial_universes : universes
 
 val is_initial_universes : universes -> bool
 
+val add_universe : universe_level -> universes -> universes
+
 (** {6 Substitution} *)
 
 type universe_subst_fn = universe_level -> universe

@@ -55,4 +55,4 @@ val eq_constr : constr -> constr -> bool
 
 val subst_univs_constr : Univ.universe_subst -> constr -> constr
 val subst_univs_level_constr : Univ.universe_level_subst -> constr -> constr
-val subst_univs_context : Univ.universe_subst -> rel_context -> rel_context
+val subst_univs_level_context : Univ.universe_level_subst -> rel_context -> rel_context

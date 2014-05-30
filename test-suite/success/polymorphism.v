@@ -250,7 +250,7 @@ Fail Check fun A : Type => foo A.
 Check fun A : Prop => foo A.
 Fail Definition bar := fun A : Set => foo A.
 
-Check (let A := Type in foo (id A)).
+Fail Check (let A := Type in foo (id A)).
 
 Definition fooS (A : Set) := A.
 

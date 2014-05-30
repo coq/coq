@@ -125,7 +125,7 @@ let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
     if cb.const_polymorphic then
       let subst, csts = universes_and_subst_of cb u in
-	(map_regular_arity (subst_univs_constr subst) cb.const_type, csts)
+	(map_regular_arity (subst_univs_level_constr subst) cb.const_type, csts)
     else cb.const_type, Univ.Constraint.empty
 
 exception NotEvaluableConst of const_evaluation_result
@@ -137,7 +137,7 @@ let constant_value env (kn,u) =
       let b = force_constr l_body in
 	if cb.const_polymorphic then
 	  let subst = Univ.make_universe_subst u cb.const_universes in
-	    subst_univs_constr subst b
+	    subst_univs_level_constr subst b
 	else b
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)

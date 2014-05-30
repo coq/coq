@@ -436,9 +436,8 @@ let process_universe_constraints univs vars alg templ cstrs =
 		  instantiate_variable r' l vars
 		else if not (Univ.check_eq univs l r) then
 		  (* Two rigid/global levels, none of them being local,
-		     one of them being Prop, disallow *)
-		  if Univ.Level.equal l' Univ.Level.prop || 
-		    Univ.Level.equal r' Univ.Level.prop then
+		     one of them being Prop/Set, disallow *)
+		  if Univ.Level.is_small l' || Univ.Level.is_small r' then
 		    raise (Univ.UniverseInconsistency (Univ.Eq, l, r, []))
 		  else
 		    if fo then 
@@ -1013,7 +1012,8 @@ let uctx_new_univ_variable template rigid name
     | Some n -> UNameMap.add n u uctx.uctx_names
     | None -> uctx.uctx_names
   in
-    {uctx'' with uctx_names = names; uctx_local = ctx'}, u
+    {uctx'' with uctx_names = names; uctx_local = ctx';
+      uctx_universes = Univ.add_universe u uctx.uctx_universes}, u
 
 let new_univ_level_variable ?(template=false) ?name rigid evd =
   let uctx', u = uctx_new_univ_variable template rigid name evd.universes in
