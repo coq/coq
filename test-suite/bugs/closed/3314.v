@@ -10,7 +10,7 @@ Fail Check nat:Prop. (* The command has indeed failed with message:
 The term "nat" has type "Set" while it is expected to have type "Prop". *)
 Set Printing All.
 Set Printing Universes.
-Check Lift nat : Prop. (* Lift (* Top.8 Top.9 Top.10 *) nat:Prop
+Fail Check Lift nat : Prop. (* Lift (* Top.8 Top.9 Top.10 *) nat:Prop
      : Prop
 (* Top.10
    Top.9
@@ -19,7 +19,7 @@ Check Lift nat : Prop. (* Lift (* Top.8 Top.9 Top.10 *) nat:Prop
              Top.9 <= Prop
               *)
  *)
-Eval compute in Lift nat : Prop.
+Fail Eval compute in Lift nat : Prop.
 (*      = nat
      : Prop *)
 
@@ -129,18 +129,19 @@ Definition wrap {T : Type1} (t : T) : Box T := t.
 Definition down (x : Type1) : Prop := Box x.
 Definition up (x : Prop) : Type1 := x.
 
-Definition back A : up (down A) -> A := @prop A.
+Fail Definition back A : up (down A) -> A := @prop A.
 
-Definition forth (A : Type1) : A -> up (down A) := @wrap A.
+Fail Definition forth (A : Type1) : A -> up (down A) := @wrap A.
 
-Definition backforth (A:Type1) (P:A->Type) (a:A) :
+Fail Definition backforth (A:Type1) (P:A->Type) (a:A) :
       P (back A (forth A a)) -> P a := fun H => H.
 
-Definition backforth_r (A:Type1) (P:A->Type) (a:A) :
+Fail Definition backforth_r (A:Type1) (P:A->Type) (a:A) :
       P a -> P (back A (forth A a)) := fun H => H.
 
 Theorem pandora : False.
-  apply (paradox down up back forth backforth backforth_r).
+  Fail apply (paradox down up back forth backforth backforth_r).
+  admit.
 Qed.
 
 Print Assumptions pandora.
