@@ -369,7 +369,7 @@ let process_universe_constraints univs vars alg templ cstrs =
 	    if Univ.check_leq univs l r then
 	      (** Keep Prop/Set <= var around if var might be instantiated by prop or set
 		  later. *)
-	      if Univ.is_small_univ l then 
+	      if Univ.Universe.is_level l then 
 		match Univ.Universe.level r with
 		| Some r ->
 		  Univ.Constraint.add (Option.get (Univ.Universe.level l),Univ.Le,r) local
@@ -383,7 +383,7 @@ let process_universe_constraints univs vars alg templ cstrs =
 		  (if Univ.LSet.for_all (fun l ->
 		    Univ.Level.is_small l || Univ.LMap.mem l !vars)
 		      (Univ.Universe.levels l) then
-		      Univ.enforce_eq l r local
+		      Univ.enforce_leq l r local
 		   else raise (Univ.UniverseInconsistency (Univ.Le, l, r, [])))
 		else if Univ.LSet.mem rl templ && Univ.Universe.is_level l then
 		  unify_universes fo l Univ.UEq r local
@@ -1005,11 +1005,6 @@ let make_flexible_variable evd b u =
   in
     {evd with universes = {ctx with uctx_univ_variables = uvars'; 
       uctx_univ_algebraic = avars'}}
-
-
-let instantiate_univ_variable evd v u =
-  let uvars' = Univ.LMap.add v (Some u) evd.universes.uctx_univ_variables in
-    {evd with universes = {evd.universes with uctx_univ_variables = uvars'}}
 
 (****************************************)
 (* Operations on constants              *)

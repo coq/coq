@@ -1064,7 +1064,7 @@ let rec whd_evar sigma c =
           | None -> c)
     | Sort (Type u) -> 
       let u' = Evd.normalize_universe sigma u in
-	if u' == u then c else mkSort (Type u')
+	if u' == u then c else mkSort (Sorts.sort_of_univ u')
     | Const (c', u) when not (Univ.Instance.is_empty u) -> 
       let u' = Evd.normalize_universe_instance sigma u in
 	if u' == u then c else mkConstU (c', u')
