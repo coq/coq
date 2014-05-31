@@ -2096,14 +2096,13 @@ injection H0.
 Abort.
 \end{coq_eval}
 
-Beware that \texttt{injection} yields always an equality in a sigma type
-whenever the injected object has a dependent type.
-
-\Rem There is a special case for dependent pairs. If we have a decidable
-equality over the type of the first argument, then it is safe to do
-the projection on the second one, and so {\tt injection} will work fine.
-To define such an equality, you have to use the {\tt Scheme} command
-(see \ref{Scheme}).
+Beware that \texttt{injection} yields an equality in a sigma type
+whenever the injected object has a dependent type $P$ with its two
+instances in different types $(P~t_1~...~t_n)$ and
+$(P~u_1~...~u_n)$. If $t_1$ and $u_1$ are the same and have for type
+an inductive type for which a decidable equality has been declared
+using the command {\tt Scheme Equality} (see \ref{Scheme}), the use of
+a sigma type is avoided.
 
 \Rem If some quantified hypothesis of the goal is named {\ident}, then
 {\tt injection {\ident}} first introduces the hypothesis in the local

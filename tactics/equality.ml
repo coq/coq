@@ -1196,6 +1196,49 @@ let try_delta_expand env sigma t =
   hd_rec whdt
 *)
 
+let eq_dec_scheme_kind_name = ref (fun _ -> failwith "eq_dec_scheme undefined")
+let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
+
+let eqdep_dec = qualid_of_string "Coq.Logic.Eqdep_dec"
+
+let inject_if_homogenous_dependent_pair ty =
+  Proofview.Goal.raw_enter begin fun gl ->
+  try
+    let eq,u,(t,t1,t2) = find_this_eq_data_decompose gl ty in
+    (* fetch the informations of the  pair *)
+    let ceq = Universes.constr_of_global Coqlib.glob_eq in
+    let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ in
+    (* check whether the equality deals with dep pairs or not *)
+    let eqTypeDest = fst (decompose_app t) in
+    if not (Globnames.is_global (sigTconstr()) eqTypeDest) then raise Exit;
+    let _,ar1 = decompose_app_vect t1 and
+        _,ar2 = decompose_app_vect t2 in
+    let ind,_ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise Exit in
+    (* check if the user has declared the dec principle *)
+    (* and compare the fst arguments of the dep pair *)
+    (* Note: should work even if not an inductive type, but the table only *)
+    (* knows inductive types *)
+    if not (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) (fst ind) &&
+      pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
+    Library.require_library [Loc.ghost,eqdep_dec] (Some false);
+    let new_eq_args = [|pf_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
+    let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
+      ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
+    let c, eff = find_scheme (!eq_dec_scheme_kind_name()) (Univ.out_punivs ind) in
+    (* cut with the good equality and prove the requested goal *)
+    tclTHENLIST
+      [Proofview.tclEFFECTS eff;
+       intro;
+       onLastHyp (fun hyp ->
+        tclTHENS (cut (mkApp (ceq,new_eq_args)))
+          [clear [destVar hyp];
+           Proofview.V82.tactic (refine
+             (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|])))
+          ])]
+  with Exit ->
+    Proofview.tclUNIT ()
+  end
+
 (* Given t1=t2 Inj calculates the whd normal forms of t1 and t2 and it
    expands then only when the whdnf has a constructor of an inductive type
    in hd position, otherwise delta expansion is not done *)
@@ -1233,50 +1276,11 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
     Proofview.tclTHEN (Proofview.V82.tclEVARS !evdref)
     (Proofview.tclBIND
       (Proofview.Monad.List.map
-         (fun (pf,ty) -> tclTHENS (cut ty) [Proofview.tclUNIT (); Proofview.V82.tactic (refine pf)])
+         (fun (pf,ty) -> tclTHENS (cut ty)
+           [inject_if_homogenous_dependent_pair ty;
+            Proofview.V82.tactic (refine pf)])
          (if l2r then List.rev injectors else injectors))
       (fun _ -> tac (List.length injectors)))
-
-exception Not_dep_pair
-
-let eq_dec_scheme_kind_name = ref (fun _ -> failwith "eq_dec_scheme undefined")
-let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
-
-let eqdep_dec = qualid_of_string "Coq.Logic.Eqdep_dec"
-
-let inject_if_homogenous_dependent_pair env sigma (eq,_,(t,t1,t2)) =
-  Proofview.Goal.raw_enter begin fun gl ->
-  (* fetch the informations of the  pair *)
-  let ceq = Universes.constr_of_global Coqlib.glob_eq in
-  let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ in
-  let eqTypeDest = fst (destApp t) in
-  let _,ar1 = destApp t1 and
-      _,ar2 = destApp t2 in
-  let ind = destInd ar1.(0) in
-	(* check whether the equality deals with dep pairs or not *)
-	(* if yes, check if the user has declared the dec principle *)
-	(* and compare the fst arguments of the dep pair *)
-  let new_eq_args = [|type_of env sigma ar1.(3);ar1.(3);ar2.(3)|] in
-  if (Globnames.is_global (sigTconstr()) eqTypeDest) &&
-    (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) (fst ind)) &&
-    (is_conv env sigma ar1.(2) ar2.(2))
-  then begin
-    Library.require_library [Loc.ghost,eqdep_dec] (Some false);
-    let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
-      ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
-    let scheme, eff = find_scheme (!eq_dec_scheme_kind_name()) (Univ.out_punivs ind) in
-      (* cut with the good equality and prove the requested goal *)
-    tclTHENS (tclTHEN (Proofview.tclEFFECTS eff) (cut (mkApp (ceq,new_eq_args))))
-      [tclIDTAC;
-       pf_constr_of_global (ConstRef scheme) (fun c ->
-       tclTHEN (Proofview.V82.tactic (apply (
-        mkApp(inj2,[|ar1.(0);c;ar1.(1);ar1.(2);ar1.(3);ar2.(3)|])
-       ))) (Auto.trivial [] [])
-       )]
-  (* not a dep eq or no decidable type found *)
-  end
-  else raise Not_dep_pair
-  end
 
 let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
@@ -1290,14 +1294,8 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
      Proofview.tclZERO (Errors.UserError ("Equality.inj" , str"Nothing to inject."))
   | Inr posns ->
-     Proofview.tclORELSE
-       (inject_if_homogenous_dependent_pair env sigma u)
-       begin function
-         | Not_dep_pair as e |e when Errors.noncritical e ->
-			       inject_at_positions env sigma l2r u eq_clause posns
-						   (tac (clenv_value eq_clause))
-         | reraise -> Proofview.tclZERO reraise
-       end
+      inject_at_positions env sigma l2r u eq_clause posns
+	(tac (clenv_value eq_clause))
 
 let postInjEqTac ipats c n =
   match ipats with

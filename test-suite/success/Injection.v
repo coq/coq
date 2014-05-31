@@ -84,6 +84,38 @@ injection H.
 intro H0. exact H0.
 Abort.
 
+(* Test injection using K, knowing that an equality is decidable *)
+(* Basic case, using sigT, with "as" clause *)
+
+Goal forall n:nat, forall P:nat -> Type, forall H1 H2:P n,
+  existT P n H1 = existT P n H2 -> H1 = H2.
+intros.
+injection H as H.
+exact H.
+Abort.
+
+(* Test injection using K, knowing that an equality is decidable *)
+(* Dependent case not directly exposing sigT *)
+
+Inductive my_sig (A : Type) (P : A -> Type) : Type :=
+    my_exist : forall x : A, P x -> my_sig A P.
+
+Goal forall n:nat, forall P:nat -> Type, forall H1 H2:P n,
+  my_exist _ _ n H1 = my_exist _ _ n H2 -> H1 = H2.
+intros.
+injection H as H.
+exact H.
+Abort.
+
+(* Test injection using K, knowing that an equality is decidable *)
+(* Dependent case not directly exposing sigT deeply nested *)
+
+Goal forall n:nat, forall P:nat -> Type, forall H1 H2:P n,
+  (my_exist _ _ n H1,0) = (my_exist _ _ n H2,0) -> H1 = H2.
+intros * [= H].
+exact H.
+Abort.
+
 (* Injection does not projects at positions in Prop... allow it?
 
 Inductive t (A:Prop) : Set := c : A -> t A.
