@@ -534,20 +534,23 @@ let rec intros_using = function
 
 let intros = Tacticals.New.tclREPEAT intro
 
-let intro_forthcoming_then_gen loc name_flag move_flag dep_flag tac =
-  let rec aux ids =
+let intro_forthcoming_then_gen loc name_flag move_flag dep_flag n bound tac =
+  let rec aux n ids =
+    if (match bound with None -> true | Some p -> n < p) then
     Proofview.tclORELSE
       begin
       intro_then_gen loc name_flag  move_flag false dep_flag
-         (fun id -> aux (id::ids))
+         (fun id -> aux (n+1) (id::ids))
       end
       begin function
       | RefinerError IntroNeedsProduct ->
           tac ids
       | e -> Proofview.tclZERO e
       end
+    else
+      tac ids
   in
-  aux []
+  aux n []
 
 let rec get_next_hyp_position id = function
   | [] -> raise (RefinerError (NoSuchHyp id))
@@ -1409,7 +1412,8 @@ let (forward_general_multi_rewrite, general_multi_rewrite) = Hook.make ()
 (* Rewriting function for substitution (x=t) everywhere at the same time *)
 let (forward_subst_one, subst_one) = Hook.make ()
 
-let error_unexpected_extra_pattern loc nb pat =
+let error_unexpected_extra_pattern loc bound pat =
+  let nb = Option.get bound in
   let s1,s2,s3 = match pat with
   | IntroIdentifier _ -> "name", (String.plural nb " introduction pattern"), "no"
   | _ -> "introduction pattern", "", "none" in
@@ -1418,15 +1422,6 @@ let error_unexpected_extra_pattern loc nb pat =
       (str "at most " ++ int nb ++ str s2)) ++ spc () ++
        str (if Int.equal nb 1 then "was" else "were") ++
       strbrk " expected in the branch).")
-
-let adjust_intro_patterns nb ipats =
-  let rec aux n = function
-  | [] when Int.equal n 0 -> []
-  | [] -> (dloc,IntroAnonymous) :: aux (n-1) []
-  | (loc',pat) :: _ when Int.equal n 0 ->
-      error_unexpected_extra_pattern loc' nb pat
-  | ip :: l -> ip :: aux (n-1) l in
-  aux nb ipats
 
 let intro_decomp_eq_function = ref (fun _ -> failwith "Not implemented")
 
@@ -1439,30 +1434,28 @@ let my_find_eq_data_decompose gl t =
        known equalities will be dynamically registered *)
       -> raise ConstrMatching.PatternMatchingFailure
 
-let intro_decomp_eq loc b l l' thin tac id =
+let intro_decomp_eq loc b l thin tac id =
   Proofview.Goal.raw_enter begin fun gl ->
   let c = mkVar id in
   let t = Tacmach.New.pf_type_of gl c in
   let _,t = Tacmach.New.pf_reduce_to_quantified_ind gl t in
   let eq,u,eq_args = my_find_eq_data_decompose gl t in
   !intro_decomp_eq_function
-    (fun n -> tac ((dloc,id)::thin) (adjust_intro_patterns n l @ l'))
+    (fun n -> tac ((dloc,id)::thin) (Some n) l)
     (eq,t,eq_args) (c, t)
   end
 
-let intro_or_and_pattern loc b ll l' thin tac id =
+let intro_or_and_pattern loc b ll thin tac id =
   Proofview.Goal.raw_enter begin fun gl ->
   let c = mkVar id in
   let t = Tacmach.New.pf_type_of gl c in
   let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl t in
   let nv = mis_constr_nargs ind in
-  let bracketed = b || not (List.is_empty l') in
-  let adjust n l = if bracketed then adjust_intro_patterns n l else l in
   let ll = fix_empty_or_and_pattern (Array.length nv) ll in
   check_or_and_pattern_size loc ll (Array.length nv);
   Tacticals.New.tclTHENLASTn
     (Tacticals.New.tclTHEN (simplest_case c) (Proofview.V82.tactic (clear [id])))
-    (Array.map2 (fun n l -> tac thin ((adjust n l)@l'))
+    (Array.map2 (fun n l -> tac thin (Some n) l)
        nv (Array.of_list ll))
   end
 
@@ -1524,51 +1517,70 @@ let check_thin_clash_then id thin avoid tac =
   else
     tac thin
 
+let fit_bound n = function
+  | None -> true
+  | Some n' -> n = n'
+
+let exceed_bound n = function
+  | None -> false
+  | Some n' -> n >= n'
+
   (* We delay thinning until the completion of the whole intros tactic
      to ensure that dependent hypotheses are cleared in the right
      dependency order (see bug #1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
-let rec intros_patterns b avoid ids thin destopt tac = function
-  | (loc, IntroWildcard) :: l ->
+let rec intros_patterns b avoid ids thin destopt bound n tac = function
+  | [] when fit_bound n bound -> tac ids thin
+  | [] ->
+      (* Behave as IntroAnonymous *)
+      intro_then_gen dloc (IntroAvoid avoid)
+	destopt true false
+        (fun id -> intros_patterns b avoid (id::ids) thin destopt bound (n+1) tac [])
+  | (loc,pat) :: l ->
+  if exceed_bound n bound then error_unexpected_extra_pattern loc bound pat else
+  match pat with
+  | IntroWildcard ->
       intro_then_gen loc (IntroBasedOn(wild_id,avoid@explicit_intro_names l))
 	MoveLast true false
-        (fun id -> intros_patterns b avoid ids ((loc,id)::thin) destopt tac l)
-  | (loc, IntroIdentifier id) :: l ->
+        (fun id -> intros_patterns b avoid ids ((loc,id)::thin) destopt bound (n+1) tac l)
+  | IntroIdentifier id ->
       check_thin_clash_then id thin avoid (fun thin ->
         intro_then_gen loc (IntroMustBe id) destopt true false
-          (fun id -> intros_patterns b avoid (id::ids) thin destopt tac l))
-  | (loc, IntroAnonymous) :: l ->
+          (fun id -> intros_patterns b avoid (id::ids) thin destopt bound (n+1) tac l))
+  | IntroAnonymous ->
       intro_then_gen loc (IntroAvoid (avoid@explicit_intro_names l))
 	destopt true false
-        (fun id -> intros_patterns b avoid (id::ids) thin destopt tac l)
-  | (loc, IntroFresh id) :: l ->
+        (fun id -> intros_patterns b avoid (id::ids) thin destopt bound (n+1) tac l)
+  | IntroFresh id ->
       (* todo: avoid thinned names to interfere with generation of fresh name *)
       intro_then_gen loc (IntroBasedOn (id, avoid@explicit_intro_names l))
 	destopt true false
-        (fun id -> intros_patterns b avoid (id::ids) thin destopt tac l)
-  | (loc, IntroForthcoming onlydeps) :: l ->
+        (fun id -> intros_patterns b avoid (id::ids) thin destopt bound (n+1) tac l)
+  | IntroForthcoming onlydeps ->
       intro_forthcoming_then_gen loc (IntroAvoid (avoid@explicit_intro_names l))
-	  destopt onlydeps
-        (fun ids -> intros_patterns b avoid ids thin destopt tac l)
-  | (loc, IntroOrAndPattern ll) :: l' ->
+	  destopt onlydeps n bound
+        (fun ids -> intros_patterns b avoid ids thin destopt bound (n+List.length ids) tac l)
+  | IntroOrAndPattern ll ->
       intro_then_force
-	(intro_or_and_pattern loc b ll l' thin
-	   (fun thin -> intros_patterns b avoid ids thin destopt tac))
-  | (loc, IntroInjection l) :: l' ->
-      intro_then_force (fun id ->
-        intro_decomp_eq loc b l l' thin
-          (fun thin -> intros_patterns b avoid ids thin destopt tac) id)
-  | (loc, IntroRewrite l2r) :: l ->
+	(intro_or_and_pattern loc b ll thin
+	   (fun thin bound' -> intros_patterns b avoid ids thin destopt bound' 0 (fun ids thin -> intros_patterns b avoid ids thin destopt bound (n+1) tac l)))
+  | IntroInjection l' ->
+      intro_then_force
+	(intro_decomp_eq loc b l' thin
+	   (fun thin bound' -> intros_patterns b avoid ids thin destopt bound' 0 (fun ids thin -> intros_patterns b avoid ids thin destopt bound (n+1) tac l)))
+  | IntroRewrite l2r ->
       intro_then_gen loc (IntroAvoid(avoid@explicit_intro_names l))
 	MoveLast true false
         (fun id ->
 	  Tacticals.New.tclTHENLAST (* Skip the side conditions of the rewriting step *)
 	    (rewrite_hyp l2r id)
-	    (intros_patterns b avoid ids thin destopt tac l))
-  | [] -> tac ids thin
+	    (intros_patterns b avoid ids thin destopt bound (n+1) tac l))
+
+let intros_pattern_bound n destopt =
+  intros_patterns true [] [] [] destopt (Some n) 0 (fun _ -> clear_wildcards)
 
 let intros_pattern destopt =
-  intros_patterns false [] [] [] destopt (fun _ l -> clear_wildcards l)
+  intros_patterns true [] [] [] destopt None 0 (fun _ l -> clear_wildcards l)
 
 let intro_pattern destopt pat =
   intros_pattern destopt [dloc,pat]
@@ -1601,17 +1613,17 @@ let prepare_intros s ipat gl =
       id , clear_wildcards [dloc,id]
   | IntroRewrite l2r ->
       let id = make_id s in
-      id , Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
+      id, Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | IntroOrAndPattern ll ->
-      make_id s ,
+      make_id s,
       Tacticals.New.onLastHypId
-	(intro_or_and_pattern loc true ll [] []
-	  (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ l -> clear_wildcards l)))
+	(intro_or_and_pattern loc true ll []
+	  (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0 (fun _ l -> clear_wildcards l)))
   | IntroInjection l ->
-      make_id s ,
+      make_id s,
       Tacticals.New.onLastHypId
-	(intro_decomp_eq loc true l [] []
-	  (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ l -> clear_wildcards l)))
+	(intro_decomp_eq loc true l []
+	  (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0 (fun _ l -> clear_wildcards l)))
   | IntroForthcoming _ -> user_err_loc
       (loc,"",str "Introduction pattern for one hypothesis expected")
 
@@ -1647,12 +1659,12 @@ let as_tac id ipat = match ipat with
   | Some (loc,IntroRewrite l2r) ->
       Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | Some (loc,IntroOrAndPattern ll) ->
-      intro_or_and_pattern loc true ll [] []
-        (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ l -> clear_wildcards l))
+      intro_or_and_pattern loc true ll []
+        (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0 (fun _ l -> clear_wildcards l))
         id
   | Some (loc,IntroInjection l) ->
-      intro_decomp_eq loc true l [] []
-        (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ l -> clear_wildcards l))
+      intro_decomp_eq loc true l []
+        (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0 (fun _ l -> clear_wildcards l))
         id
   | Some (loc,
       (IntroIdentifier _ | IntroAnonymous | IntroFresh _ |
@@ -2151,14 +2163,14 @@ let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
 
 let safe_dest_intros_patterns avoid thin dest pat tac =
   Proofview.tclORELSE
-    (intros_patterns true avoid [] thin dest tac pat)
+    (intros_patterns true avoid [] thin dest None 0 tac pat)
     begin function
       | UserError ("move_hyp",_) ->
     (* May happen if the lemma has dependent arguments that are resolved
        only after cook_sign is called, e.g. as in "destruct dec" in context
        "dec:forall x, {x=0}+{x<>0};  a:A  |- if dec a then True else False"
        where argument a of dec will be found only lately *)
-          intros_patterns true avoid [] [] MoveLast tac pat
+          intros_patterns true avoid [] [] MoveLast None 0 tac pat
       | e -> Proofview.tclZERO e
     end
 

@@ -96,18 +96,14 @@ val onInductionArg :
   (constr with_bindings -> unit Proofview.tactic) ->
     constr with_bindings induction_arg -> unit Proofview.tactic
 
-(** Complete intro_patterns up to some length; fails if more patterns
-   than required *)
-
-val adjust_intro_patterns : int -> intro_pattern_expr located list ->
-  intro_pattern_expr located list
-
 (** {6 Introduction tactics with eliminations. } *)
 
 val intro_pattern  : Id.t move_location -> intro_pattern_expr -> unit Proofview.tactic
 val intro_patterns : intro_pattern_expr located list -> unit Proofview.tactic
 val intros_pattern :
   Id.t move_location -> intro_pattern_expr located list -> unit Proofview.tactic
+val intros_pattern_bound :
+  int -> Id.t move_location -> intro_pattern_expr located list -> unit Proofview.tactic
 
 (** {6 Exact tactics. } *)
 

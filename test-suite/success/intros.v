@@ -22,3 +22,9 @@ hnf.
 match goal with [ |- 0 = 0 ] => reflexivity end.
 Abort.
 
+(* Fixing behavior of "*" and "**" in branches, so that they do not
+   introduce more than what the branch expects them to introduce at most *)
+Goal forall n p, n + p = 0.
+intros [|*]; intro p.
+Abort.
+

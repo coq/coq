@@ -1306,13 +1306,11 @@ let postInjEqTac ipats c n =
         if use_injection_pattern_l2r_order () && isVar c
         then tclTRY (clear [destVar c])
         else tclIDTAC in
-      let ipats =
+      let intro_tac =
         if use_injection_pattern_l2r_order ()
-        then adjust_intro_patterns n ipats
-        else ipats in
-      tclTHEN
-        (clear_tac)
-        (intros_pattern MoveLast ipats)
+        then intros_pattern_bound n MoveLast ipats
+        else intros_pattern MoveLast ipats in
+      tclTHEN clear_tac intro_tac
   | None -> tclIDTAC
 
 let injEq ipats =
