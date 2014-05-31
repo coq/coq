@@ -460,6 +460,53 @@ Proof.
   destruct e''; reflexivity.
 Defined.
 
+(** Extra properties of equality *)
+
+Theorem eq_id_comm_l : forall A (f:A->A) (Hf:forall a, a = f a), forall a, f_equal f (Hf a) = Hf (f a).
+Proof.
+  intros.
+  unfold f_equal.
+  rewrite <- (eq_trans_sym_inv_l (Hf a)).
+  pattern (f a) at 1 2 3 4 5 7 8, (Hf a) at 1 2.
+  destruct (Hf a).
+  destruct (Hf a).
+  reflexivity.
+Defined.
+
+Theorem eq_id_comm_r : forall A (f:A->A) (Hf:forall a, f a = a), forall a, f_equal f (Hf a) = Hf (f a).
+Proof.
+  intros.
+  unfold f_equal.
+  rewrite <- (eq_trans_sym_inv_l (Hf (f (f a)))).
+  set (Hfsymf := fun a => eq_sym (Hf a)).
+  change (eq_sym (Hf (f (f a)))) with (Hfsymf (f (f a))).
+  pattern (Hfsymf (f (f a))).
+  destruct (eq_id_comm_l f Hfsymf (f a)).
+  destruct (eq_id_comm_l f Hfsymf a).
+  unfold Hfsymf.
+  destruct (Hf a). simpl. unfold a0; clear a0.
+  rewrite eq_trans_refl_l.
+  reflexivity.
+Defined.
+
+Lemma eq_trans_map_distr : forall A B x y z (f:A->B) (e:x=y) (e':y=z), f_equal f (eq_trans e e') = eq_trans (f_equal f e) (f_equal f e').
+Proof.
+destruct e'.
+reflexivity.
+Defined.
+
+Lemma eq_sym_map_distr : forall A B (x y:A) (f:A->B) (e:x=y), eq_sym (f_equal f e) = f_equal f (eq_sym e).
+Proof.
+destruct e.
+reflexivity.
+Defined.
+
+Lemma eq_trans_sym_distr : forall A (x y z:A) (e:x=y) (e':y=z), eq_sym (eq_trans e e') = eq_trans (eq_sym e') (eq_sym e).
+Proof.
+destruct e, e'.
+reflexivity.
+Defined.
+
 (* Aliases *)
 
 Notation sym_eq := eq_sym (compat "8.3").
