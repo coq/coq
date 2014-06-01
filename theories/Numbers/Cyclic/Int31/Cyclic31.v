@@ -635,7 +635,7 @@ Section Basics.
    EqShiftL k x y  <-> firstn (size-k) (i2l x) = firstn (size-k) (i2l y).
  Proof.
  intros.
- destruct (le_lt_dec size k).
+ destruct (le_lt_dec size k) as [Hle|Hlt].
  split; intros.
  replace (size-k)%nat with O by omega.
  unfold firstn; auto.
@@ -661,7 +661,7 @@ Section Basics.
   EqShiftL k (twice_plus_one x) (twice_plus_one y) <-> EqShiftL (S k) x y.
  Proof.
  intros.
- destruct (le_lt_dec size k).
+ destruct (le_lt_dec size k) as [Hle|Hlt].
  split; intros; apply EqShiftL_size; auto.
 
  rewrite 2 EqShiftL_i2l.
@@ -684,7 +684,7 @@ Section Basics.
   EqShiftL (S k) (shiftr x) (shiftr y).
  Proof.
  intros.
- destruct (le_lt_dec size (S k)).
+ destruct (le_lt_dec size (S k)) as [Hle|Hlt].
  apply EqShiftL_size; auto.
  case_eq (firstr x); intros.
  rewrite <- EqShiftL_twice.
@@ -884,18 +884,18 @@ Section Basics.
  specialize IHn with p.
  destruct (p2ibis n p). simpl @snd in *.
  rewrite nshiftr_S_tail.
- destruct (le_lt_dec size n).
+ destruct (le_lt_dec size n) as [Hle|Hlt].
  rewrite nshiftr_above_size; auto.
- assert (H:=nshiftr_0_firstl _ _ l IHn).
+ assert (H:=nshiftr_0_firstl _ _ Hlt IHn).
  replace (shiftr (twice_plus_one i)) with i; auto.
  destruct i; simpl in *. rewrite H; auto.
 
  specialize IHn with p.
  destruct (p2ibis n p); simpl @snd in *.
  rewrite nshiftr_S_tail.
- destruct (le_lt_dec size n).
+ destruct (le_lt_dec size n) as [Hle|Hlt].
  rewrite nshiftr_above_size; auto.
- assert (H:=nshiftr_0_firstl _ _ l IHn).
+ assert (H:=nshiftr_0_firstl _ _ Hlt IHn).
  replace (shiftr (twice i)) with i; auto.
  destruct i; simpl in *; rewrite H; auto.
 

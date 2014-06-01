@@ -216,10 +216,10 @@ Section Z_BRIC_A_BRAC.
     omega.
 
     rewrite <- two_power_nat_S.
-    destruct (Zeven.Zeven_odd_dec z); intros.
+    destruct (Zeven.Zeven_odd_dec z) as [Heven|Hodd]; intros.
     rewrite <- Zeven.Zeven_div2; auto.
 
-    generalize (Zeven.Zodd_div2 z z0); omega.
+    generalize (Zeven.Zodd_div2 z Hodd); omega.
   Qed.
 
   Lemma Z_to_two_compl_Sn_z :

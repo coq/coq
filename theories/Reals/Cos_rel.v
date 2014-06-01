@@ -258,49 +258,30 @@ Qed.
 
 Lemma A1_cvg : forall x:R, Un_cv (A1 x) (cos x).
 intro.
-assert (H := exist_cos (x * x)).
-elim H; intros.
-assert (p_i := p).
-unfold cos_in in p.
-unfold cos_n, infinite_sum in p.
-unfold R_dist in p.
-cut (cos x = x0).
-intro.
-rewrite H0.
-unfold Un_cv; unfold R_dist; intros.
-elim (p eps H1); intros.
+unfold cos; destruct (exist_cos (Rsqr x)) as (x0,p).
+unfold cos_in, cos_n, infinite_sum, R_dist in p.
+unfold Un_cv, R_dist; intros.
+destruct (p eps H) as (x1,H0).
 exists x1; intros.
 unfold A1.
 replace
  (sum_f_R0 (fun k:nat => (-1) ^ k / INR (fact (2 * k)) * x ^ (2 * k)) n) with
  (sum_f_R0 (fun i:nat => (-1) ^ i / INR (fact (2 * i)) * (x * x) ^ i) n).
-apply H2; assumption.
+apply H0; assumption.
 apply sum_eq.
 intros.
 replace ((x * x) ^ i) with (x ^ (2 * i)).
 reflexivity.
 apply pow_sqr.
-unfold cos.
-case (exist_cos (Rsqr x)).
-unfold Rsqr; intros.
-unfold cos_in in p_i.
-unfold cos_in in c.
-apply uniqueness_sum with (fun i:nat => cos_n i * (x * x) ^ i); assumption.
 Qed.
 
 Lemma C1_cvg : forall x y:R, Un_cv (C1 x y) (cos (x + y)).
 intros.
-assert (H := exist_cos ((x + y) * (x + y))).
-elim H; intros.
-assert (p_i := p).
-unfold cos_in in p.
-unfold cos_n, infinite_sum in p.
-unfold R_dist in p.
-cut (cos (x + y) = x0).
-intro.
-rewrite H0.
-unfold Un_cv; unfold R_dist; intros.
-elim (p eps H1); intros.
+unfold cos.
+destruct (exist_cos (Rsqr (x + y))) as (x0,p).
+unfold cos_in, cos_n, infinite_sum, R_dist in p.
+unfold Un_cv, R_dist; intros.
+destruct (p eps H) as (x1,H0).
 exists x1; intros.
 unfold C1.
 replace
@@ -308,19 +289,12 @@ replace
  with
  (sum_f_R0
     (fun i:nat => (-1) ^ i / INR (fact (2 * i)) * ((x + y) * (x + y)) ^ i) n).
-apply H2; assumption.
+apply H0; assumption.
 apply sum_eq.
 intros.
 replace (((x + y) * (x + y)) ^ i) with ((x + y) ^ (2 * i)).
 reflexivity.
 apply pow_sqr.
-unfold cos.
-case (exist_cos (Rsqr (x + y))).
-unfold Rsqr; intros.
-unfold cos_in in p_i.
-unfold cos_in in c.
-apply uniqueness_sum with (fun i:nat => cos_n i * ((x + y) * (x + y)) ^ i);
- assumption.
 Qed.
 
 Lemma B1_cvg : forall x:R, Un_cv (B1 x) (sin x).
@@ -339,21 +313,14 @@ simpl; ring.
 rewrite tech5; rewrite <- Hrecn.
 simpl; ring.
 unfold ge; apply le_O_n.
-assert (H0 := exist_sin (x * x)).
-elim H0; intros.
-assert (p_i := p).
-unfold sin_in in p.
-unfold sin_n, infinite_sum in p.
-unfold R_dist in p.
-cut (sin x = x * x0).
-intro.
-rewrite H1.
-unfold Un_cv; unfold R_dist; intros.
+unfold sin. destruct (exist_sin (Rsqr x)) as (x0,p).
+unfold sin_in, sin_n, infinite_sum, R_dist in p.
+unfold Un_cv, R_dist; intros.
 cut (0 < eps / Rabs x);
  [ intro
  | unfold Rdiv; apply Rmult_lt_0_compat;
     [ assumption | apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption ] ].
-elim (p (eps / Rabs x) H3); intros.
+destruct (p (eps / Rabs x) H1) as (x1,H2).
 exists x1; intros.
 unfold B1.
 replace
@@ -371,9 +338,7 @@ replace
 rewrite Rabs_mult.
 apply Rmult_lt_reg_l with (/ Rabs x).
 apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
-rewrite <- Rmult_assoc.
-rewrite <- Rinv_l_sym.
-rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); unfold Rdiv in H4; apply H4;
+rewrite <- Rmult_assoc, <- Rinv_l_sym, Rmult_1_l, <- (Rmult_comm eps). apply H2;
  assumption.
 apply Rabs_no_R0; assumption.
 rewrite scal_sum.
@@ -383,12 +348,4 @@ rewrite pow_add.
 rewrite pow_sqr.
 simpl.
 ring.
-unfold sin.
-case (exist_sin (Rsqr x)).
-unfold Rsqr; intros.
-unfold sin_in in p_i.
-unfold sin_in in s.
-assert
- (H1 := uniqueness_sum (fun i:nat => sin_n i * (x * x) ^ i) x0 x1 p_i s).
-rewrite H1; reflexivity.
 Qed.

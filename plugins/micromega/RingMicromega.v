@@ -412,12 +412,12 @@ Proof.
   induction e.
   (* PsatzIn *)
   simpl ; intros.
-  destruct (nth_in_or_default n l (Pc cO, Equal)).
+  destruct (nth_in_or_default n l (Pc cO, Equal)) as [Hin|Heq].
   (* index is in bounds *)
   apply H. congruence.
   (* index is out-of-bounds *)
   inversion H0.
-  rewrite e. simpl.
+  rewrite Heq. simpl.
   now apply  addon.(SORrm).(morph0).
   (* PsatzSquare *)
   simpl. intros. inversion H0.

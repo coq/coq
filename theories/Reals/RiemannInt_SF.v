@@ -173,8 +173,8 @@ Lemma StepFun_P1 :
   forall (a b:R) (f:StepFun a b),
     adapted_couple f a b (subdivision f) (subdivision_val f).
 Proof.
-  intros a b f; unfold subdivision_val; case (projT2 (pre f)); intros;
-    apply a0.
+  intros a b f; unfold subdivision_val; case (projT2 (pre f)) as (x,H);
+    apply H.
 Qed.
 
 Lemma StepFun_P2 :
@@ -201,19 +201,17 @@ Proof.
   intros; unfold adapted_couple; repeat split.
   unfold ordered_Rlist; intros; simpl in H0; inversion H0;
     [ simpl; assumption | elim (le_Sn_O _ H2) ].
-  simpl; unfold Rmin; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
-  simpl; unfold Rmax; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  simpl; unfold Rmin; decide (Rle_dec a b) with H; reflexivity.
+  simpl; unfold Rmax; decide (Rle_dec a b) with H; reflexivity.
   unfold constant_D_eq, open_interval; intros; simpl in H0;
     inversion H0; [ reflexivity | elim (le_Sn_O _ H3) ].
 Qed.
 
 Lemma StepFun_P4 : forall a b c:R, IsStepFun (fct_cte c) a b.
 Proof.
-  intros; unfold IsStepFun; case (Rle_dec a b); intro.
+  intros; unfold IsStepFun; destruct (Rle_dec a b) as [Hle|Hnle].
   apply existT with (cons a (cons b nil)); unfold is_subdivision;
-    apply existT with (cons c nil); apply (StepFun_P3 c r).
+    apply existT with (cons c nil); apply (StepFun_P3 c Hle).
   apply existT with (cons b (cons a nil)); unfold is_subdivision;
     apply existT with (cons c nil); apply StepFun_P2;
       apply StepFun_P3; auto with real.
@@ -244,17 +242,15 @@ Lemma StepFun_P7 :
 Proof.
   unfold adapted_couple; intros; decompose [and] H0; clear H0;
     assert (H5 : Rmax a b = b).
-  unfold Rmax; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmax; decide (Rle_dec a b) with H; reflexivity.
   assert (H7 : r2 <= b).
   rewrite H5 in H2; rewrite <- H2; apply RList_P7;
     [ assumption | simpl; right; left; reflexivity ].
   repeat split.
   apply RList_P4 with r1; assumption.
-  rewrite H5 in H2; unfold Rmin; case (Rle_dec r2 b); intro;
-    [ reflexivity | elim n; assumption ].
-  unfold Rmax; case (Rle_dec r2 b); intro;
-    [ rewrite H5 in H2; rewrite <- H2; reflexivity | elim n; assumption ].
+  rewrite H5 in H2; unfold Rmin; decide (Rle_dec r2 b) with H7; reflexivity.
+  unfold Rmax; decide (Rle_dec r2 b) with H7.
+    rewrite H5 in H2; rewrite <- H2; reflexivity.
   simpl in H4; simpl; apply INR_eq; apply Rplus_eq_reg_l with 1;
     do 2 rewrite (Rplus_comm 1); do 2 rewrite <- S_INR;
       rewrite H4; reflexivity.
@@ -340,33 +336,28 @@ Proof.
   apply H6.
   rewrite <- Hyp_eq; rewrite H3 in H1; unfold adapted_couple in H1;
     decompose [and] H1; clear H1; simpl in H9; rewrite H9;
-      unfold Rmin; case (Rle_dec a b); intro;
-        [ reflexivity | elim n; assumption ].
+      unfold Rmin; decide (Rle_dec a b) with H0; reflexivity.
   elim H6; clear H6; intros l' [lf' H6]; case (Req_dec t2 b); intro.
   exists (cons a (cons b nil)); exists (cons r1 nil);
     unfold adapted_couple_opt; unfold adapted_couple;
       repeat split.
   unfold ordered_Rlist; intros; simpl in H8; inversion H8;
     [ simpl; assumption | elim (le_Sn_O _ H10) ].
-  simpl; unfold Rmin; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
-  simpl; unfold Rmax; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  simpl; unfold Rmin; decide (Rle_dec a b) with H0; reflexivity.
+  simpl; unfold Rmax; decide (Rle_dec a b) with H0; reflexivity.
   intros; simpl in H8; inversion H8.
   unfold constant_D_eq, open_interval; intros; simpl;
     simpl in H9; rewrite H3 in H1; unfold adapted_couple in H1;
       decompose [and] H1; apply (H16 0%nat).
   simpl; apply lt_O_Sn.
   unfold open_interval; simpl; rewrite H7; simpl in H13;
-    rewrite H13; unfold Rmin; case (Rle_dec a b);
-      intro; [ assumption | elim n; assumption ].
+    rewrite H13; unfold Rmin; decide (Rle_dec a b) with H0; assumption.
   elim (le_Sn_O _ H10).
   intros; simpl in H8; elim (lt_n_O _ H8).
   intros; simpl in H8; inversion H8;
     [ simpl; assumption | elim (le_Sn_O _ H10) ].
   assert (Hyp_min : Rmin t2 b = t2).
-  unfold Rmin; case (Rle_dec t2 b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmin; decide (Rle_dec t2 b) with H5; reflexivity.
   unfold adapted_couple in H6; elim H6; clear H6; intros;
     elim (RList_P20 _ (StepFun_P9 H6 H7)); intros s1 [s2 [s3 H9]];
       induction  lf' as [| r2 lf' Hreclf'].
@@ -391,18 +382,16 @@ Proof.
     apply (H16 (S i)); simpl; assumption.
   simpl; simpl in H14; rewrite H14; reflexivity.
   simpl; simpl in H18; rewrite H18; unfold Rmax;
-    case (Rle_dec a b); case (Rle_dec t2 b); intros; reflexivity || elim n;
-      assumption.
+    decide (Rle_dec a b) with H0; decide (Rle_dec t2 b) with H5; reflexivity.
   simpl; simpl in H20; apply H20.
   intros; simpl in H1; unfold constant_D_eq, open_interval; intros;
     induction  i as [| i Hreci].
-  simpl; simpl in H6; case (total_order_T x t2); intro.
-  elim s; intro.
+  simpl; simpl in H6; destruct (total_order_T x t2) as [[Hlt|Heq]|Hgt].
   apply (H17 0%nat);
     [ simpl; apply lt_O_Sn
       | unfold open_interval; simpl; elim H6; intros; split;
         assumption ].
-  rewrite b0; assumption.
+  rewrite Heq; assumption.
   rewrite H10; apply (H22 0%nat);
     [ simpl; apply lt_O_Sn
       | unfold open_interval; simpl; replace s1 with t2;
@@ -440,8 +429,7 @@ Proof.
       assumption.
   simpl; simpl in H19; apply H19.
   rewrite H9; simpl; simpl in H13; rewrite H13; unfold Rmax;
-    case (Rle_dec t2 b); case (Rle_dec a b); intros; reflexivity || elim n;
-      assumption.
+    decide (Rle_dec t2 b) with H5; decide (Rle_dec a b) with H0; reflexivity.
   rewrite H9; simpl; simpl in H15; rewrite H15; reflexivity.
   intros; simpl in H1; unfold constant_D_eq, open_interval; intros;
     induction  i as [| i Hreci].
@@ -483,8 +471,7 @@ Proof.
       assumption.
   simpl; simpl in H18; apply H18.
   rewrite H9; simpl; simpl in H12; rewrite H12; unfold Rmax;
-    case (Rle_dec t2 b); case (Rle_dec a b); intros; reflexivity || elim n;
-      assumption.
+    decide (Rle_dec t2 b) with H5; decide (Rle_dec a b) with H0; reflexivity.
   rewrite H9; simpl; simpl in H14; rewrite H14; reflexivity.
   intros; simpl in H1; unfold constant_D_eq, open_interval; intros;
     induction  i as [| i Hreci].
@@ -511,8 +498,7 @@ Proof.
     clear H1; clear H H7 H9; cut (Rmax a b = b);
       [ intro; rewrite H in H5; rewrite <- H5; apply RList_P7;
         [ assumption | simpl; right; left; reflexivity ]
-        | unfold Rmax; case (Rle_dec a b); intro;
-          [ reflexivity | elim n; assumption ] ].
+        | unfold Rmax; decide (Rle_dec a b) with H0; reflexivity ].
 Qed.
 
 Lemma StepFun_P11 :
@@ -528,7 +514,7 @@ Proof.
   simpl in H10; simpl in H5; rewrite H10; rewrite H5; reflexivity.
   assert (H14 := H3 0%nat (lt_O_Sn _)); simpl in H14; elim H14; intro.
   assert (H15 := H7 0%nat (lt_O_Sn _)); simpl in H15; elim H15; intro.
-  rewrite <- H12 in H1; case (Rle_dec r1 s2); intro; try assumption.
+  rewrite <- H12 in H1; destruct (Rle_dec r1 s2) as [Hle|Hnle]; try assumption.
   assert (H16 : s2 < r1); auto with real.
   induction  s3 as [| r0 s3 Hrecs3].
   simpl in H9; rewrite H9 in H16; cut (r1 <= Rmax a b).
@@ -662,12 +648,11 @@ Lemma StepFun_P13 :
     adapted_couple f a b (cons r (cons r1 r2)) (cons r3 lf1) ->
     adapted_couple_opt f a b (cons s1 (cons s2 s3)) (cons r4 lf2) -> r1 <= s2.
 Proof.
-  intros; case (total_order_T a b); intro.
-  elim s; intro.
-  eapply StepFun_P11; [ apply a0 | apply H0 | apply H1 ].
+  intros; destruct (total_order_T a b) as [[Hlt|Heq]|Hgt].
+  eapply StepFun_P11; [ apply Hlt | apply H0 | apply H1 ].
   elim H; assumption.
   eapply StepFun_P11;
-    [ apply r0 | apply StepFun_P2; apply H0 | apply StepFun_P12; apply H1 ].
+    [ apply Hgt | apply StepFun_P2; apply H0 | apply StepFun_P12; apply H1 ].
 Qed.
 
 Lemma StepFun_P14 :
@@ -689,11 +674,9 @@ Proof.
     case (Req_dec a b); intro.
   rewrite (StepFun_P8 H2 H4); rewrite (StepFun_P8 H H4); reflexivity.
   assert (Hyp_min : Rmin a b = a).
-  unfold Rmin; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmin; decide (Rle_dec a b) with H1; reflexivity.
   assert (Hyp_max : Rmax a b = b).
-  unfold Rmax; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmax; decide (Rle_dec a b) with H1; reflexivity.
   elim (RList_P20 _ (StepFun_P9 H H4)); intros s1 [s2 [s3 H5]]; rewrite H5 in H;
     rewrite H5; induction  lf1 as [| r3 lf1 Hreclf1].
   unfold adapted_couple in H2; decompose [and] H2;
@@ -883,8 +866,8 @@ Lemma StepFun_P15 :
     adapted_couple f a b l1 lf1 ->
     adapted_couple_opt f a b l2 lf2 -> Int_SF lf1 l1 = Int_SF lf2 l2.
 Proof.
-  intros; case (Rle_dec a b); intro;
-    [ apply (StepFun_P14 r H H0)
+  intros; destruct (Rle_dec a b) as [Hle|Hnle];
+    [ apply (StepFun_P14 Hle H H0)
       | assert (H1 : b <= a);
         [ auto with real
           | eapply StepFun_P14;
@@ -897,8 +880,8 @@ Lemma StepFun_P16 :
     exists l' : Rlist,
       (exists lf' : Rlist, adapted_couple_opt f a b l' lf').
 Proof.
-  intros; case (Rle_dec a b); intro;
-    [ apply (StepFun_P10 r H)
+  intros; destruct (Rle_dec a b) as [Hle|Hnle];
+    [ apply (StepFun_P10 Hle H)
       | assert (H1 : b <= a);
         [ auto with real
           | assert (H2 := StepFun_P10 H1 (StepFun_P2 H)); elim H2;
@@ -1003,11 +986,9 @@ Lemma StepFun_P22 :
 Proof.
   unfold is_subdivision; intros a b f g lf lg Hyp X X0; elim X; elim X0;
     clear X X0; intros lg0 p lf0 p0; assert (Hyp_min : Rmin a b = a).
-  unfold Rmin; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmin; decide (Rle_dec a b) with Hyp; reflexivity.
   assert (Hyp_max : Rmax a b = b).
-  unfold Rmax; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmax; decide (Rle_dec a b) with Hyp; reflexivity.
   apply existT with (FF (cons_ORlist lf lg) f); unfold adapted_couple in p, p0;
     decompose [and] p; decompose [and] p0; clear p p0;
       rewrite Hyp_min in H6; rewrite Hyp_min in H1; rewrite Hyp_max in H0;
@@ -1255,11 +1236,9 @@ Lemma StepFun_P24 :
 Proof.
   unfold is_subdivision; intros a b f g lf lg Hyp X X0; elim X; elim X0;
     clear X X0; intros lg0 p lf0 p0; assert (Hyp_min : Rmin a b = a).
-  unfold Rmin; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmin; decide (Rle_dec a b) with Hyp; reflexivity.
   assert (Hyp_max : Rmax a b = b).
-  unfold Rmax; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmax; decide (Rle_dec a b) with Hyp; reflexivity.
   apply existT with (FF (cons_ORlist lf lg) g); unfold adapted_couple in p, p0;
     decompose [and] p; decompose [and] p0; clear p p0;
       rewrite Hyp_min in H1; rewrite Hyp_min in H6; rewrite Hyp_max in H0;
@@ -1652,7 +1631,7 @@ Lemma StepFun_P34 :
     a <= b ->
     Rabs (RiemannInt_SF f) <= RiemannInt_SF (mkStepFun (StepFun_P32 f)).
 Proof.
-  intros; unfold RiemannInt_SF; case (Rle_dec a b); intro.
+  intros; unfold RiemannInt_SF; decide (Rle_dec a b) with H.
   replace
   (Int_SF (subdivision_val (mkStepFun (StepFun_P32 f)))
     (subdivision (mkStepFun (StepFun_P32 f)))) with
@@ -1663,7 +1642,6 @@ Proof.
   apply StepFun_P17 with (fun x:R => Rabs (f x)) a b;
     [ apply StepFun_P31; apply StepFun_P1
       | apply (StepFun_P1 (mkStepFun (StepFun_P32 f))) ].
-  elim n; assumption.
 Qed.
 
 Lemma StepFun_P35 :
@@ -1741,24 +1719,21 @@ Lemma StepFun_P36 :
     (forall x:R, a < x < b -> f x <= g x) ->
     RiemannInt_SF f <= RiemannInt_SF g.
 Proof.
-  intros; unfold RiemannInt_SF; case (Rle_dec a b); intro.
+  intros; unfold RiemannInt_SF; decide (Rle_dec a b) with H.
   replace (Int_SF (subdivision_val f) (subdivision f)) with (Int_SF (FF l f) l).
   replace (Int_SF (subdivision_val g) (subdivision g)) with (Int_SF (FF l g) l).
   unfold is_subdivision in X; elim X; clear X; intros;
     unfold adapted_couple in p; decompose [and] p; clear p;
       assert (H5 : Rmin a b = a);
-        [ unfold Rmin; case (Rle_dec a b); intro;
-          [ reflexivity | elim n; assumption ]
+        [ unfold Rmin; decide (Rle_dec a b) with H; reflexivity
           | assert (H7 : Rmax a b = b);
-            [ unfold Rmax; case (Rle_dec a b); intro;
-              [ reflexivity | elim n; assumption ]
+            [ unfold Rmax; decide (Rle_dec a b) with H; reflexivity
               | rewrite H5 in H3; rewrite H7 in H2; eapply StepFun_P35 with a b;
                 assumption ] ].
   apply StepFun_P17 with (fe g) a b;
     [ apply StepFun_P21; assumption | apply StepFun_P1 ].
   apply StepFun_P17 with (fe f) a b;
     [ apply StepFun_P21; assumption | apply StepFun_P1 ].
-  elim n; assumption.
 Qed.
 
 Lemma StepFun_P37 :
@@ -1819,8 +1794,7 @@ Proof.
     induction  i as [| i Hreci].
   simpl; rewrite H12; replace (Rmin r1 b) with r1.
   simpl in H0; rewrite <- H0; apply (H 0%nat); simpl; apply lt_O_Sn.
-  unfold Rmin; case (Rle_dec r1 b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmin; decide (Rle_dec r1 b) with H7; reflexivity.
   apply (H10 i); apply lt_S_n.
   replace (S (pred (Rlength lg))) with (Rlength lg).
   apply H9.
@@ -1829,8 +1803,7 @@ Proof.
   simpl; assert (H14 : a <= b).
   rewrite <- H1; simpl in H0; rewrite <- H0; apply RList_P7;
     [ assumption | left; reflexivity ].
-  unfold Rmin; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmin; decide (Rle_dec a b) with H14; reflexivity.
   assert (H14 : a <= b).
   rewrite <- H1; simpl in H0; rewrite <- H0; apply RList_P7;
     [ assumption | left; reflexivity ].
@@ -1838,14 +1811,13 @@ Proof.
   rewrite <- H11; induction  lg as [| r0 lg Hreclg].
   simpl in H13; discriminate.
   reflexivity.
-  unfold Rmax; case (Rle_dec a b); case (Rle_dec r1 b); intros;
-    reflexivity || elim n; assumption.
+  unfold Rmax; decide (Rle_dec a b) with H14; decide (Rle_dec r1 b) with H7;
+    reflexivity.
   simpl; rewrite H13; reflexivity.
   intros; simpl in H9; induction  i as [| i Hreci].
   unfold constant_D_eq, open_interval; simpl; intros;
     assert (H16 : Rmin r1 b = r1).
-  unfold Rmin; case (Rle_dec r1 b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmin; decide (Rle_dec r1 b) with H7; reflexivity.
   rewrite H16 in H12; rewrite H12 in H14; elim H14; clear H14; intros _ H14;
     unfold g'; case (Rle_dec r1 x); intro r3.
   elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r3 H14)).
@@ -1862,9 +1834,9 @@ Proof.
   assert (H18 := H16 H17); unfold constant_D_eq, open_interval in H18;
     unfold constant_D_eq, open_interval; intros;
       assert (H19 := H18 _ H14); rewrite <- H19; unfold g';
-        case (Rle_dec r1 x); intro.
+        case (Rle_dec r1 x) as [|[]].
   reflexivity.
-  elim n; replace r1 with (Rmin r1 b).
+  replace r1 with (Rmin r1 b).
   rewrite <- H12; elim H14; clear H14; intros H14 _; left;
     apply Rle_lt_trans with (pos_Rl lg i); try assumption.
   apply RList_P5.
@@ -1874,12 +1846,9 @@ Proof.
   apply lt_trans with (pred (Rlength lg)); try assumption.
   apply lt_pred_n_n; apply neq_O_lt; red; intro; rewrite <- H22 in H17;
     elim (lt_n_O _ H17).
-  unfold Rmin; case (Rle_dec r1 b); intro;
-    [ reflexivity | elim n0; assumption ].
+  unfold Rmin; decide (Rle_dec r1 b) with H7; reflexivity.
   exists (mkStepFun H8); split.
-  simpl; unfold g'; case (Rle_dec r1 b); intro.
-  assumption.
-  elim n; assumption.
+  simpl; unfold g'; decide (Rle_dec r1 b) with H7; assumption.
   intros; simpl in H9; induction  i as [| i Hreci].
   unfold constant_D_eq, co_interval; simpl; intros; simpl in H0;
     rewrite H0; elim H10; clear H10; intros; unfold g';
@@ -1896,9 +1865,9 @@ Proof.
   assert (H12 := H10 H11); unfold constant_D_eq, co_interval in H12;
     unfold constant_D_eq, co_interval; intros;
       rewrite <- (H12 _ H13); simpl; unfold g';
-        case (Rle_dec r1 x); intro.
+        case (Rle_dec r1 x) as [|[]].
   reflexivity.
-  elim n; elim H13; clear H13; intros;
+  elim H13; clear H13; intros;
     apply Rle_trans with (pos_Rl (cons r1 l) i); try assumption;
       change (pos_Rl (cons r1 l) 0 <= pos_Rl (cons r1 l) i);
         elim (RList_P6 (cons r1 l)); intros; apply H15;
@@ -1954,24 +1923,22 @@ Proof.
     unfold adapted_couple; decompose [and] H1;
       decompose [and] H2; clear H1 H2; repeat split.
   apply RList_P25; try assumption.
-  rewrite H10; rewrite H4; unfold Rmin, Rmax; case (Rle_dec a b);
-    case (Rle_dec b c); intros;
-      (right; reflexivity) || (elim n; left; assumption).
+  rewrite H10; rewrite H4; unfold Rmin, Rmax; case (Rle_dec a b) as [|[]];
+    case (Rle_dec b c) as [|[]];
+      (right; reflexivity) || (left; assumption).
   rewrite RList_P22.
-  rewrite H5; unfold Rmin, Rmax; case (Rle_dec a b); case (Rle_dec a c);
-    intros;
+  rewrite H5; unfold Rmin, Rmax; case (Rle_dec a c) as [|[]]; case (Rle_dec a b) as [|[]];
       [ reflexivity
-        | elim n; apply Rle_trans with b; left; assumption
-        | elim n; left; assumption
-        | elim n0; left; assumption ].
+        | left; assumption
+        | apply Rle_trans with b; left; assumption
+        | left; assumption ].
   red; intro; rewrite H1 in H6; discriminate.
   rewrite RList_P24.
-  rewrite H9; unfold Rmin, Rmax; case (Rle_dec b c); case (Rle_dec a c);
-    intros;
+  rewrite H9; unfold Rmin, Rmax; case (Rle_dec a c) as [|[]]; case (Rle_dec b c) as [|[]];
       [ reflexivity
-        | elim n; apply Rle_trans with b; left; assumption
-        | elim n; left; assumption
-        | elim n0; left; assumption ].
+        | left; assumption
+        | apply Rle_trans with b; left; assumption
+        | left; assumption ].
   red; intro; rewrite H1 in H11; discriminate.
   apply StepFun_P20.
   rewrite RList_P23; apply neq_O_lt; red; intro.
@@ -2061,7 +2028,7 @@ Proof.
   assert (H16 : pos_Rl (cons_Rlist l1 l2) (S i) = b).
   rewrite RList_P29.
   rewrite H15; rewrite <- minus_n_n; rewrite H10; unfold Rmin;
-    case (Rle_dec b c); intro; [ reflexivity | elim n; left; assumption ].
+    case (Rle_dec b c) as [|[]]; [ reflexivity | left; assumption ].
   rewrite H15; apply le_n.
   induction  l1 as [| r l1 Hrecl1].
   simpl in H15; discriminate.
@@ -2069,8 +2036,8 @@ Proof.
   assert (H17 : pos_Rl (cons_Rlist l1 l2) i = b).
   rewrite RList_P26.
   replace i with (pred (Rlength l1));
-  [ rewrite H4; unfold Rmax; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; left; assumption ]
+  [ rewrite H4; unfold Rmax; case (Rle_dec a b) as [|[]];
+    [ reflexivity | left; assumption ]
     | rewrite H15; reflexivity ].
   rewrite H15; apply lt_n_Sn.
   rewrite H16 in H2; rewrite H17 in H2; elim H2; intros;
@@ -2095,8 +2062,8 @@ Proof.
   discriminate.
   clear Hrecl1; induction  l1 as [| r0 l1 Hrecl1].
   simpl in H5; simpl in H4; assert (H0 : Rmin a b < Rmax a b).
-  unfold Rmin, Rmax; case (Rle_dec a b); intro;
-    [ assumption | elim n; left; assumption ].
+  unfold Rmin, Rmax; case (Rle_dec a b) as [|[]];
+    [ assumption | left; assumption ].
   rewrite <- H5 in H0; rewrite <- H4 in H0; elim (Rlt_irrefl _ H0).
   clear Hrecl1; simpl; repeat apply le_n_S; apply le_O_n.
   elim (RList_P20 _ H18); intros r1 [r2 [r3 H19]]; rewrite H19;
@@ -2222,9 +2189,9 @@ Proof.
     | left _ => Int_SF lf3 l3
     | right _ => - Int_SF lf3 l3
   end.
-  case (Rle_dec a b); case (Rle_dec b c); case (Rle_dec a c); intros.
-  elim r1; intro.
-  elim r0; intro.
+  case (Rle_dec a b) as [Hle|Hnle]; case (Rle_dec b c) as [Hle'|Hnle']; case (Rle_dec a c) as [Hle''|Hnle''].
+  elim Hle; intro.
+  elim Hle'; intro.
   replace (Int_SF lf3 l3) with
   (Int_SF (FF (cons_Rlist l1 l2) f) (cons_Rlist l1 l2)).
   replace (Int_SF lf1 l1) with (Int_SF (FF l1 f) l1).
@@ -2232,8 +2199,7 @@ Proof.
   symmetry ; apply StepFun_P42.
   unfold adapted_couple in H1, H2; decompose [and] H1; decompose [and] H2;
     clear H1 H2; rewrite H11; rewrite H5; unfold Rmax, Rmin;
-      case (Rle_dec a b); case (Rle_dec b c); intros; reflexivity || elim n;
-        assumption.
+      decide (Rle_dec a b) with Hle; decide (Rle_dec b c) with Hle'; reflexivity.
   eapply StepFun_P17;
     [ apply StepFun_P21; unfold is_subdivision; split with lf2; apply H2;
       assumption
@@ -2250,13 +2216,13 @@ Proof.
   rewrite Rplus_0_l; eapply StepFun_P17;
     [ apply H2 | rewrite H in H3; apply H3 ].
   symmetry ; eapply StepFun_P8; [ apply H1 | assumption ].
-  elim n; apply Rle_trans with b; assumption.
+  elim Hnle''; apply Rle_trans with b; assumption.
   apply Rplus_eq_reg_l with (Int_SF lf2 l2);
     replace (Int_SF lf2 l2 + (Int_SF lf1 l1 + - Int_SF lf2 l2)) with
     (Int_SF lf1 l1); [ idtac | ring ].
   assert (H : c < b).
   auto with real.
-  elim r; intro.
+  elim Hle''; intro.
   rewrite Rplus_comm;
     replace (Int_SF lf1 l1) with
     (Int_SF (FF (cons_Rlist l3 l2) f) (cons_Rlist l3 l2)).
@@ -2264,12 +2230,9 @@ Proof.
   replace (Int_SF lf2 l2) with (Int_SF (FF l2 f) l2).
   apply StepFun_P42.
   unfold adapted_couple in H2, H3; decompose [and] H2; decompose [and] H3;
-    clear H3 H2; rewrite H10; rewrite H6; unfold Rmax, Rmin;
-      case (Rle_dec a c); case (Rle_dec b c); intros;
-        [ elim n; assumption
-          | reflexivity
-          | elim n0; assumption
-          | elim n1; assumption ].
+    clear H3 H2; rewrite H10; rewrite H6; unfold Rmax, Rmin.
+      decide (Rle_dec a c) with Hle''; decide (Rle_dec b c) with Hnle';
+        reflexivity.
   eapply StepFun_P17;
     [ apply StepFun_P21; unfold is_subdivision; split with lf2; apply H2
       | assumption ].
@@ -2284,7 +2247,7 @@ Proof.
   symmetry ; eapply StepFun_P8; [ apply H3 | assumption ].
   replace (Int_SF lf2 l2) with (Int_SF lf3 l3 + Int_SF lf1 l1).
   ring.
-  elim r; intro.
+  elim Hle; intro.
   replace (Int_SF lf2 l2) with
   (Int_SF (FF (cons_Rlist l3 l1) f) (cons_Rlist l3 l1)).
   replace (Int_SF lf3 l3) with (Int_SF (FF l3 f) l3).
@@ -2292,11 +2255,7 @@ Proof.
   symmetry ; apply StepFun_P42.
   unfold adapted_couple in H1, H3; decompose [and] H1; decompose [and] H3;
     clear H3 H1; rewrite H9; rewrite H5; unfold Rmax, Rmin;
-      case (Rle_dec a c); case (Rle_dec a b); intros;
-        [ elim n; assumption
-          | elim n1; assumption
-          | reflexivity
-          | elim n1; assumption ].
+      decide (Rle_dec a c) with Hnle''; decide (Rle_dec a b) with Hle; reflexivity.
   eapply StepFun_P17;
     [ apply StepFun_P21; unfold is_subdivision; split with lf1; apply H1
       | assumption ].
@@ -2316,7 +2275,7 @@ Proof.
   auto with real.
   replace (Int_SF lf2 l2) with (Int_SF lf3 l3 + Int_SF lf1 l1).
   ring.
-  rewrite Rplus_comm; elim r; intro.
+  rewrite Rplus_comm; elim Hle''; intro.
   replace (Int_SF lf2 l2) with
   (Int_SF (FF (cons_Rlist l1 l3) f) (cons_Rlist l1 l3)).
   replace (Int_SF lf3 l3) with (Int_SF (FF l3 f) l3).
@@ -2324,11 +2283,8 @@ Proof.
   symmetry ; apply StepFun_P42.
   unfold adapted_couple in H1, H3; decompose [and] H1; decompose [and] H3;
     clear H3 H1; rewrite H11; rewrite H5; unfold Rmax, Rmin;
-      case (Rle_dec a c); case (Rle_dec a b); intros;
-        [ elim n; assumption
-          | reflexivity
-          | elim n0; assumption
-          | elim n1; assumption ].
+      decide (Rle_dec a c) with Hle''; decide (Rle_dec a b) with Hnle;
+        reflexivity.
   eapply StepFun_P17;
     [ apply StepFun_P21; unfold is_subdivision; split with lf1; apply H1
       | assumption ].
@@ -2346,7 +2302,7 @@ Proof.
   auto with real.
   replace (Int_SF lf1 l1) with (Int_SF lf2 l2 + Int_SF lf3 l3).
   ring.
-  elim r; intro.
+  elim Hle'; intro.
   replace (Int_SF lf1 l1) with
   (Int_SF (FF (cons_Rlist l2 l3) f) (cons_Rlist l2 l3)).
   replace (Int_SF lf3 l3) with (Int_SF (FF l3 f) l3).
@@ -2354,11 +2310,8 @@ Proof.
   symmetry ; apply StepFun_P42.
   unfold adapted_couple in H2, H3; decompose [and] H2; decompose [and] H3;
     clear H3 H2; rewrite H11; rewrite H5; unfold Rmax, Rmin;
-      case (Rle_dec a c); case (Rle_dec b c); intros;
-        [ elim n; assumption
-          | elim n1; assumption
-          | reflexivity
-          | elim n1; assumption ].
+      decide (Rle_dec a c) with Hnle''; decide (Rle_dec b c) with Hle';
+        reflexivity.
   eapply StepFun_P17;
     [ apply StepFun_P21; unfold is_subdivision; split with lf2; apply H2
       | assumption ].
@@ -2371,8 +2324,8 @@ Proof.
   replace (Int_SF lf2 l2) with 0.
   rewrite Rplus_0_l; eapply StepFun_P17;
     [ apply H3 | rewrite H0 in H1; apply H1 ].
-  symmetry ; eapply StepFun_P8; [ apply H2 | assumption ].
-  elim n; apply Rle_trans with a; try assumption.
+  symmetry; eapply StepFun_P8; [ apply H2 | assumption ].
+  elim Hnle'; apply Rle_trans with a; try assumption.
   auto with real.
   assert (H : c < b).
   auto with real.
@@ -2387,11 +2340,8 @@ Proof.
   symmetry ; apply StepFun_P42.
   unfold adapted_couple in H2, H1; decompose [and] H2; decompose [and] H1;
     clear H1 H2; rewrite H11; rewrite H5; unfold Rmax, Rmin;
-      case (Rle_dec a b); case (Rle_dec b c); intros;
-        [ elim n1; assumption
-          | elim n1; assumption
-          | elim n0; assumption
-          | reflexivity ].
+      decide (Rle_dec a b) with Hnle; decide (Rle_dec b c) with Hnle';
+         reflexivity.
   eapply StepFun_P17;
     [ apply StepFun_P21; unfold is_subdivision; split with lf2; apply H2
       | assumption ].
@@ -2463,10 +2413,8 @@ Proof.
   replace a with (Rmin a b).
   pattern b at 2; replace b with (Rmax a b).
   rewrite <- H2; rewrite H3; reflexivity.
-  unfold Rmax; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
-  unfold Rmin; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmax; decide (Rle_dec a b) with H7; reflexivity.
+  unfold Rmin; decide (Rle_dec a b) with H7; reflexivity.
   split with (cons r nil); split with lf1; assert (H2 : c = b).
   rewrite H1 in H0; elim H0; intros; apply Rle_antisym; assumption.
   rewrite H2; assumption.
@@ -2479,16 +2427,14 @@ Proof.
   split with (cons r (cons c nil)); split with (cons r3 nil);
     unfold adapted_couple in H; decompose [and] H; clear H;
       assert (H6 : r = a).
-  simpl in H4; rewrite H4; unfold Rmin; case (Rle_dec a b); intro;
+  simpl in H4; rewrite H4; unfold Rmin; case (Rle_dec a b) as [|[]];
     [ reflexivity
-      | elim n; elim H0; intros; apply Rle_trans with c; assumption ].
+      | elim H0; intros; apply Rle_trans with c; assumption ].
   elim H0; clear H0; intros; unfold adapted_couple; repeat split.
   rewrite H6; unfold ordered_Rlist; intros; simpl in H8; inversion H8;
     [ simpl; assumption | elim (le_Sn_O _ H10) ].
-  simpl; unfold Rmin; case (Rle_dec a c); intro;
-    [ assumption | elim n; assumption ].
-  simpl; unfold Rmax; case (Rle_dec a c); intro;
-    [ reflexivity | elim n; assumption ].
+  simpl; unfold Rmin; decide (Rle_dec a c) with H; assumption.
+  simpl; unfold Rmax; decide (Rle_dec a c) with H; reflexivity.
   unfold constant_D_eq, open_interval; intros; simpl in H8;
     inversion H8.
   simpl; assert (H10 := H7 0%nat);
@@ -2508,8 +2454,8 @@ Proof.
         assert (H14 : a <= b).
   elim H0; intros; apply Rle_trans with c; assumption.
   assert (H16 : r = a).
-  simpl in H7; rewrite H7; unfold Rmin; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  simpl in H7; rewrite H7; unfold Rmin; decide (Rle_dec a b) with H14;
+    reflexivity.
   induction  l1' as [| r4 l1' Hrecl1'].
   simpl in H13; discriminate.
   clear Hrecl1'; unfold adapted_couple; repeat split.
@@ -2517,18 +2463,18 @@ Proof.
   simpl; replace r4 with r1.
   apply (H5 0%nat).
   simpl; apply lt_O_Sn.
-  simpl in H12; rewrite H12; unfold Rmin; case (Rle_dec r1 c); intro;
-    [ reflexivity | elim n; left; assumption ].
+  simpl in H12; rewrite H12; unfold Rmin; case (Rle_dec r1 c) as [|[]];
+    [ reflexivity | left; assumption ].
   apply (H9 i); simpl; apply lt_S_n; assumption.
-  simpl; unfold Rmin; case (Rle_dec a c); intro;
-    [ assumption | elim n; elim H0; intros; assumption ].
+  simpl; unfold Rmin; case (Rle_dec a c) as [|[]];
+    [ assumption | elim H0; intros; assumption ].
   replace (Rmax a c) with (Rmax r1 c).
   rewrite <- H11; reflexivity.
-  unfold Rmax; case (Rle_dec r1 c); case (Rle_dec a c); intros;
-    [ reflexivity
-      | elim n; elim H0; intros; assumption
-      | elim n; left; assumption
-      | elim n0; left; assumption ].
+  unfold Rmax; case (Rle_dec a c) as [|[]]; case (Rle_dec r1 c) as [|[]];
+      [ reflexivity
+      | left; assumption
+      | elim H0; intros; assumption
+      | left; assumption ].
   simpl; simpl in H13; rewrite H13; reflexivity.
   intros; simpl in H; unfold constant_D_eq, open_interval; intros;
     induction  i as [| i Hreci].
@@ -2539,8 +2485,8 @@ Proof.
     elim H4; clear H4; intros; split; try assumption;
       replace r1 with r4.
   assumption.
-  simpl in H12; rewrite H12; unfold Rmin; case (Rle_dec r1 c); intro;
-    [ reflexivity | elim n; left; assumption ].
+  simpl in H12; rewrite H12; unfold Rmin; case (Rle_dec r1 c) as [|[]];
+    [ reflexivity | left; assumption ].
   clear Hreci; simpl; apply H15.
   simpl; apply lt_S_n; assumption.
   unfold open_interval; apply H4.
@@ -2578,10 +2524,8 @@ Proof.
   replace a with (Rmin a b).
   pattern b at 2; replace b with (Rmax a b).
   rewrite <- H2; rewrite H3; reflexivity.
-  unfold Rmax; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
-  unfold Rmin; case (Rle_dec a b); intro;
-    [ reflexivity | elim n; assumption ].
+  unfold Rmax; decide (Rle_dec a b) with H7; reflexivity.
+  unfold Rmin; decide (Rle_dec a b) with H7; reflexivity.
   split with (cons r nil); split with lf1; assert (H2 : c = b).
   rewrite H1 in H0; elim H0; intros; apply Rle_antisym; assumption.
   rewrite <- H2 in H1; rewrite <- H1; assumption.
@@ -2597,15 +2541,15 @@ Proof.
   unfold ordered_Rlist; intros; simpl in H; induction  i as [| i Hreci].
   simpl; assumption.
   clear Hreci; apply (H2 (S i)); simpl; assumption.
-  simpl; unfold Rmin; case (Rle_dec c b); intro;
-    [ reflexivity | elim n; elim H0; intros; assumption ].
+  simpl; unfold Rmin; case (Rle_dec c b) as [|[]];
+    [ reflexivity | elim H0; intros; assumption ].
   replace (Rmax c b) with (Rmax a b).
   rewrite <- H3; reflexivity.
-  unfold Rmax; case (Rle_dec a b); case (Rle_dec c b); intros;
+  unfold Rmax; case (Rle_dec c b) as [|[]]; case (Rle_dec a b) as [|[]];
     [ reflexivity
-      | elim n; elim H0; intros; assumption
-      | elim n; elim H0; intros; apply Rle_trans with c; assumption
-      | elim n0; elim H0; intros; apply Rle_trans with c; assumption ].
+      | elim H0; intros; apply Rle_trans with c; assumption
+      | elim H0; intros; assumption
+      | elim H0; intros; apply Rle_trans with c; assumption ].
   simpl; simpl in H5; apply H5.
   intros; simpl in H; induction  i as [| i Hreci].
   unfold constant_D_eq, open_interval; intros; simpl;
@@ -2615,9 +2559,9 @@ Proof.
     intros; split; try assumption; apply Rle_lt_trans with c;
       try assumption; replace r with a.
   elim H0; intros; assumption.
-  simpl in H4; rewrite H4; unfold Rmin; case (Rle_dec a b); intros;
+  simpl in H4; rewrite H4; unfold Rmin; case (Rle_dec a b) as [|[]];
     [ reflexivity
-      | elim n; elim H0; intros; apply Rle_trans with c; assumption ].
+      | elim H0; intros; apply Rle_trans with c; assumption ].
   clear Hreci; apply (H7 (S i)); simpl; assumption.
   cut (adapted_couple f r1 b (cons r1 r2) lf1).
   cut (r1 <= c <= b).

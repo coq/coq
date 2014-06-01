@@ -450,9 +450,9 @@ fourier.
 Qed.
 
 Definition frame_tan y : {x | 0 < x < PI/2 /\ Rabs y < tan x}.
-destruct (total_order_T (Rabs y) 1).
- assert (yle1 : Rabs y <= 1) by (destruct s; fourier).
- clear s; exists 1; split;[split; [exact Rlt_0_1 | exact PI2_1] | ].
+destruct (total_order_T (Rabs y) 1) as [Hs|Hgt].
+ assert (yle1 : Rabs y <= 1) by (destruct Hs; fourier).
+ clear Hs; exists 1; split;[split; [exact Rlt_0_1 | exact PI2_1] | ].
  apply Rle_lt_trans with (1 := yle1); exact tan_1_gt_1.
 assert (0 < / (Rabs y + 1)).
  apply Rinv_0_lt_compat; fourier.
@@ -530,7 +530,7 @@ split.
     assumption.
    replace (/(Rabs y + 1)) with (2 * u).
     fourier.
-   unfold u; field; apply Rgt_not_eq; clear -r; fourier.
+   unfold u; field; apply Rgt_not_eq; clear -Hgt; fourier.
   solve[discrR].
  apply Rgt_not_eq; assumption.
 unfold tan.

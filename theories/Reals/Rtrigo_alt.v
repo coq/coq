@@ -134,13 +134,13 @@ Proof.
   apply (fun m n p:nat => mult_le_compat_l p n m); apply le_n_S; assumption.
   apply le_n_Sn.
   ring.
-  assert (X := exist_sin (Rsqr a)); elim X; intros.
-  cut (x = sin a / a).
-  intro; rewrite H3 in p; unfold sin_in in p; unfold infinite_sum in p;
-    unfold R_dist in p; unfold Un_cv; unfold R_dist;
+  unfold sin.
+  destruct (exist_sin (Rsqr a)) as (x,p).
+  unfold sin_in, infinite_sum, R_dist in p;
+      unfold Un_cv, R_dist;
       intros.
   cut (0 < eps / Rabs a).
-  intro; elim (p _ H5); intros N H6.
+  intro H4; destruct (p _ H4) as (N,H6).
   exists N; intros.
   replace (sum_f_R0 (tg_alt Un) n0) with
   (a * (1 - sum_f_R0 (fun i:nat => sin_n i * Rsqr a ^ i) (S n0))).
@@ -151,12 +151,12 @@ Proof.
           rewrite Rplus_opp_l; rewrite Rplus_0_r; apply Rmult_lt_reg_l with (/ Rabs a).
   apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
   pattern (/ Rabs a) at 1; rewrite <- (Rabs_Rinv a Hyp_a).
-  rewrite <- Rabs_mult; rewrite Rmult_plus_distr_l; rewrite <- Rmult_assoc;
-    rewrite <- Rinv_l_sym; [ rewrite Rmult_1_l | assumption ];
-      rewrite (Rmult_comm (/ a)); rewrite (Rmult_comm (/ Rabs a));
-        rewrite <- Rabs_Ropp; rewrite Ropp_plus_distr; rewrite Ropp_involutive;
-          unfold Rminus, Rdiv in H6; apply H6; unfold ge;
-            apply le_trans with n0; [ exact H7 | apply le_n_Sn ].
+  rewrite <- Rabs_mult, Rmult_plus_distr_l, <- 2!Rmult_assoc, <- Rinv_l_sym;
+    [ rewrite Rmult_1_l | assumption ];
+      rewrite (Rmult_comm (/ Rabs a)),
+        <- Rabs_Ropp, Ropp_plus_distr, Ropp_involutive, Rmult_1_l.
+          unfold Rminus, Rdiv in H6. apply H6; unfold ge;
+            apply le_trans with n0; [ exact H5 | apply le_n_Sn ].
   rewrite (decomp_sum (fun i:nat => sin_n i * Rsqr a ^ i) (S n0)).
   replace (sin_n 0) with 1.
   simpl; rewrite Rmult_1_r; unfold Rminus;
@@ -176,13 +176,6 @@ Proof.
   unfold Rdiv; apply Rmult_lt_0_compat.
   assumption.
   apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
-  unfold sin; case (exist_sin (Rsqr a)).
-  intros; cut (x = x0).
-  intro; rewrite H3; unfold Rdiv.
-  symmetry ; apply Rinv_r_simpl_m; assumption.
-  unfold sin_in in p; unfold sin_in in s; eapply uniqueness_sum.
-  apply p.
-  apply s.
   intros; elim H2; intros.
   replace (sin a - a) with (- (a - sin a)); [ idtac | ring ].
   split; apply Ropp_le_contravar; assumption.
@@ -318,12 +311,10 @@ Proof.
   apply le_n_2n.
   apply (fun m n p:nat => mult_le_compat_l p n m); apply le_n_Sn.
   apply (fun m n p:nat => mult_le_compat_l p n m); apply le_n_S; assumption.
-  assert (X := exist_cos (Rsqr a0)); elim X; intros.
-  cut (x = cos a0).
-  intro; rewrite H4 in p; unfold cos_in in p; unfold infinite_sum in p;
-    unfold R_dist in p; unfold Un_cv; unfold R_dist;
-      intros.
-  elim (p _ H5); intros N H6.
+  unfold cos. destruct (exist_cos (Rsqr a0)) as (x,p).
+  unfold cos_in, infinite_sum, R_dist in p;
+   unfold Un_cv, R_dist; intros.
+  destruct (p _ H4) as (N,H6).
   exists N; intros.
   replace (sum_f_R0 (tg_alt Un) n1) with
   (1 - sum_f_R0 (fun i:nat => cos_n i * Rsqr a0 ^ i) (S n1)).
@@ -334,7 +325,7 @@ Proof.
           rewrite Ropp_plus_distr; rewrite Ropp_involutive;
             unfold Rminus in H6; apply H6.
   unfold ge; apply le_trans with n1.
-  exact H7.
+  exact H5.
   apply le_n_Sn.
   rewrite (decomp_sum (fun i:nat => cos_n i * Rsqr a0 ^ i) (S n1)).
   replace (cos_n 0) with 1.
@@ -354,10 +345,6 @@ Proof.
   unfold cos_n; unfold Rdiv; simpl; rewrite Rinv_1;
     rewrite Rmult_1_r; reflexivity.
   apply lt_O_Sn.
-  unfold cos; case (exist_cos (Rsqr a0)); intros; unfold cos_in in p;
-    unfold cos_in in c; eapply uniqueness_sum.
-  apply p.
-  apply c.
   intros; elim H3; intros; replace (cos a0 - 1) with (- (1 - cos a0));
     [ idtac | ring ].
   split; apply Ropp_le_contravar; assumption.
@@ -394,8 +381,7 @@ Proof.
   replace (2 * n0 + 1)%nat with (S (2 * n0)).
   apply lt_O_Sn.
   ring.
-  intros; case (total_order_T 0 a); intro.
-  elim s; intro.
+  intros; destruct (total_order_T 0 a) as [[Hlt|Heq]|Hgt].
   apply H; [ left; assumption | assumption ].
   apply H; [ right; assumption | assumption ].
   cut (0 < - a).

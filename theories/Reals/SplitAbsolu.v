@@ -11,7 +11,7 @@ Require Import Rbasic_fun.
 Ltac split_case_Rabs :=
   match goal with
     |  |- context [(Rcase_abs ?X1)] =>
-      case (Rcase_abs X1); try split_case_Rabs
+      destruct (Rcase_abs X1) as [?Hlt|?Hge]; try split_case_Rabs
   end.
 
 

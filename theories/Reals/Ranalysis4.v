@@ -117,14 +117,14 @@ Proof.
   rewrite Rplus_opp_r; rewrite Rabs_R0; apply H0.
   apply H1.
   apply Rle_ge.
-  case (Rcase_abs h); intro.
-  rewrite (Rabs_left h r) in H2.
+  destruct (Rcase_abs h) as [Hlt|Hgt].
+  rewrite (Rabs_left h Hlt) in H2.
   left; rewrite Rplus_comm; apply Rplus_lt_reg_l with (- h); rewrite Rplus_0_r;
     rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l;
       apply H2.
   apply Rplus_le_le_0_compat.
   left; apply H.
-  apply Rge_le; apply r.
+  apply Rge_le; apply Hgt.
   left; apply H.
 Qed.
 
@@ -145,12 +145,12 @@ Proof.
   rewrite <- Rinv_r_sym.
   rewrite Ropp_involutive; rewrite Rplus_opp_l; rewrite Rabs_R0; apply H0.
   apply H2.
-  case (Rcase_abs h); intro.
+  destruct (Rcase_abs h) as [Hlt|Hgt].
   apply Ropp_lt_cancel.
   rewrite Ropp_0; rewrite Ropp_plus_distr; apply Rplus_lt_0_compat.
   apply H1.
-  apply Ropp_0_gt_lt_contravar; apply r.
-  rewrite (Rabs_right h r) in H3.
+  apply Ropp_0_gt_lt_contravar; apply Hlt.
+  rewrite (Rabs_right h Hgt) in H3.
   apply Rplus_lt_reg_l with (- x); rewrite Rplus_0_r; rewrite <- Rplus_assoc;
     rewrite Rplus_opp_l; rewrite Rplus_0_l; apply H3.
   apply H.
@@ -161,13 +161,12 @@ Qed.
 Lemma Rderivable_pt_abs : forall x:R, x <> 0 -> derivable_pt Rabs x.
 Proof.
   intros.
-  case (total_order_T x 0); intro.
-  elim s; intro.
+  destruct (total_order_T x 0) as [[Hlt|Heq]|Hgt].
   unfold derivable_pt; exists (-1).
-  apply (Rabs_derive_2 x a).
-  elim H; exact b.
+  apply (Rabs_derive_2 x Hlt).
+  elim H; exact Heq.
   unfold derivable_pt; exists 1.
-  apply (Rabs_derive_1 x r).
+  apply (Rabs_derive_1 x Hgt).
 Qed.
 
 (** Rabsolu is continuous for all x *)

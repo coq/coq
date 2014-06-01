@@ -146,9 +146,10 @@ Proof.
  induction m; simpl; auto; destruct a; intros.
  inversion_clear Hm.
  rewrite (IHm H1 x x'); auto.
- destruct (X.eq_dec x t0); destruct (X.eq_dec x' t0); trivial.
- elim n; apply X.eq_trans with x; auto.
- elim n; apply X.eq_trans with x'; auto.
+ destruct (X.eq_dec x t0) as [|Hneq]; destruct (X.eq_dec x' t0) as [|?Hneq'];
+   trivial.
+ elim Hneq'; apply X.eq_trans with x; auto.
+ elim Hneq; apply X.eq_trans with x'; auto.
 Qed.
 
 (** * [add] *)
@@ -787,14 +788,14 @@ Proof.
  destruct o; destruct o'; simpl in *; try discriminate; auto.
  destruct a as (k,(oo,oo')); simpl in *.
  inversion_clear H2.
- destruct (X.eq_dec x k); simpl in *.
+ destruct (X.eq_dec x k) as [|Hneq]; simpl in *.
  (* x = k *)
  assert (at_least_one_then_f o o' = f oo oo').
   destruct o; destruct o'; simpl in *; inversion_clear H; auto.
  rewrite H2.
  unfold f'; simpl.
  destruct (f oo oo'); simpl.
- destruct (X.eq_dec x k); try contradict n; auto.
+ destruct (X.eq_dec x k) as [|Hneq]; try contradict Hneq; auto.
  destruct (IHm0 H1) as (_,H4); apply H4; auto.
  case_eq (find x m0); intros; auto.
  elim H0.
@@ -804,7 +805,7 @@ Proof.
  (* k < x *)
  unfold f'; simpl.
  destruct (f oo oo'); simpl.
- destruct (X.eq_dec x k); [ contradict n; auto | auto].
+ destruct (X.eq_dec x k); [ contradict Hneq; auto | auto].
  destruct (IHm0 H1) as (H3,_); apply H3; auto.
  destruct (IHm0 H1) as (H3,_); apply H3; auto.
 
@@ -812,13 +813,13 @@ Proof.
  destruct a as (k,(oo,oo')).
  simpl.
  inversion_clear H2.
- destruct (X.eq_dec x k).
+ destruct (X.eq_dec x k) as [|Hneq].
  (* x = k *)
  discriminate.
  (* k < x *)
  unfold f'; simpl.
  destruct (f oo oo'); simpl.
- destruct (X.eq_dec x k); [ contradict n; auto | auto].
+ destruct (X.eq_dec x k); [ contradict Hneq; auto | auto].
  destruct (IHm0 H1) as (_,H4); apply H4; auto.
  destruct (IHm0 H1) as (_,H4); apply H4; auto.
 Qed.

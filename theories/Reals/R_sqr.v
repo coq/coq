@@ -97,7 +97,7 @@ Qed.
 Lemma Rsqr_incr_0 :
   forall x y:R, Rsqr x <= Rsqr y -> 0 <= x -> 0 <= y -> x <= y.
 Proof.
-  intros; case (Rle_dec x y); intro;
+  intros; destruct (Rle_dec x y) as [Hle|Hnle];
     [ assumption
       | cut (y < x);
         [ intro; unfold Rsqr in H;
@@ -109,7 +109,7 @@ Qed.
 
 Lemma Rsqr_incr_0_var : forall x y:R, Rsqr x <= Rsqr y -> 0 <= y -> x <= y.
 Proof.
-  intros; case (Rle_dec x y); intro;
+  intros; destruct (Rle_dec x y) as [Hle|Hnle];
     [ assumption
       | cut (y < x);
         [ intro; unfold Rsqr in H;
@@ -146,8 +146,8 @@ Qed.
 Lemma Rsqr_neg_pos_le_0 :
   forall x y:R, Rsqr x <= Rsqr y -> 0 <= y -> - y <= x.
 Proof.
-  intros; case (Rcase_abs x); intro.
-  generalize (Ropp_lt_gt_contravar x 0 r); rewrite Ropp_0; intro;
+  intros; destruct (Rcase_abs x) as [Hlt|Hle].
+  generalize (Ropp_lt_gt_contravar x 0 Hlt); rewrite Ropp_0; intro;
     generalize (Rlt_le 0 (- x) H1); intro; rewrite (Rsqr_neg x) in H;
       generalize (Rsqr_incr_0 (- x) y H H2 H0); intro;
         rewrite <- (Ropp_involutive x); apply Ropp_ge_le_contravar;
@@ -160,25 +160,23 @@ Qed.
 Lemma Rsqr_neg_pos_le_1 :
   forall x y:R, - y <= x -> x <= y -> 0 <= y -> Rsqr x <= Rsqr y.
 Proof.
-  intros; case (Rcase_abs x); intro.
-  generalize (Ropp_lt_gt_contravar x 0 r); rewrite Ropp_0; intro;
-    generalize (Rlt_le 0 (- x) H2); intro;
-      generalize (Ropp_le_ge_contravar (- y) x H); rewrite Ropp_involutive;
-        intro; generalize (Rge_le y (- x) H4); intro; rewrite (Rsqr_neg x);
-          apply Rsqr_incr_1; assumption.
-  generalize (Rge_le x 0 r); intro; apply Rsqr_incr_1; assumption.
+  intros x y H H0 H1; destruct (Rcase_abs x) as [Hlt|Hle].
+  apply Ropp_lt_gt_contravar, Rlt_le in Hlt; rewrite Ropp_0 in Hlt;
+  apply Ropp_le_ge_contravar, Rge_le in H; rewrite Ropp_involutive in H;
+  rewrite (Rsqr_neg x); apply Rsqr_incr_1; assumption.
+  apply Rge_le in Hle; apply Rsqr_incr_1; assumption.
 Qed.
 
 Lemma neg_pos_Rsqr_le : forall x y:R, - y <= x -> x <= y -> Rsqr x <= Rsqr y.
 Proof.
-  intros; case (Rcase_abs x); intro.
-  generalize (Ropp_lt_gt_contravar x 0 r); rewrite Ropp_0; intro;
-    generalize (Ropp_le_ge_contravar (- y) x H); rewrite Ropp_involutive;
-      intro; generalize (Rge_le y (- x) H2); intro; generalize (Rlt_le 0 (- x) H1);
-        intro; generalize (Rle_trans 0 (- x) y H4 H3); intro;
-          rewrite (Rsqr_neg x); apply Rsqr_incr_1; assumption.
-  generalize (Rge_le x 0 r); intro; generalize (Rle_trans 0 x y H1 H0); intro;
-    apply Rsqr_incr_1; assumption.
+  intros x y H H0; destruct (Rcase_abs x) as [Hlt|Hle].
+  apply Ropp_lt_gt_contravar, Rlt_le in Hlt; rewrite Ropp_0 in Hlt;
+  apply Ropp_le_ge_contravar, Rge_le in H; rewrite Ropp_involutive in H.
+  assert (0 <= y) by (apply Rle_trans with (-x); assumption).
+  rewrite (Rsqr_neg x); apply Rsqr_incr_1; assumption.
+  apply Rge_le in Hle;
+  assert (0 <= y) by (apply Rle_trans with x; assumption).
+  apply Rsqr_incr_1; assumption.
 Qed.
 
 Lemma Rsqr_abs : forall x:R, Rsqr x = Rsqr (Rabs x).
@@ -220,22 +218,22 @@ Qed.
 
 Lemma Rsqr_eq_abs_0 : forall x y:R, Rsqr x = Rsqr y -> Rabs x = Rabs y.
 Proof.
-  intros; unfold Rabs; case (Rcase_abs x); case (Rcase_abs y); intros.
-  rewrite (Rsqr_neg x) in H; rewrite (Rsqr_neg y) in H;
-    generalize (Ropp_lt_gt_contravar y 0 r);
-      generalize (Ropp_lt_gt_contravar x 0 r0); rewrite Ropp_0;
+  intros; unfold Rabs; case (Rcase_abs x) as [Hltx|Hgex];
+    case (Rcase_abs y) as [Hlty|Hgey].
+  rewrite (Rsqr_neg x), (Rsqr_neg y) in H;
+    generalize (Ropp_lt_gt_contravar y 0 Hlty);
+      generalize (Ropp_lt_gt_contravar x 0 Hltx); rewrite Ropp_0;
         intros; generalize (Rlt_le 0 (- x) H0); generalize (Rlt_le 0 (- y) H1);
           intros; apply Rsqr_inj; assumption.
-  rewrite (Rsqr_neg x) in H; generalize (Rge_le y 0 r); intro;
-    generalize (Ropp_lt_gt_contravar x 0 r0); rewrite Ropp_0;
+  rewrite (Rsqr_neg x) in H; generalize (Rge_le y 0 Hgey); intro;
+    generalize (Ropp_lt_gt_contravar x 0 Hltx); rewrite Ropp_0;
       intro; generalize (Rlt_le 0 (- x) H1); intro; apply Rsqr_inj;
         assumption.
-  rewrite (Rsqr_neg y) in H; generalize (Rge_le x 0 r0); intro;
-    generalize (Ropp_lt_gt_contravar y 0 r); rewrite Ropp_0;
+  rewrite (Rsqr_neg y) in H; generalize (Rge_le x 0 Hgex); intro;
+    generalize (Ropp_lt_gt_contravar y 0 Hlty); rewrite Ropp_0;
       intro; generalize (Rlt_le 0 (- y) H1); intro; apply Rsqr_inj;
         assumption.
-  generalize (Rge_le x 0 r0); generalize (Rge_le y 0 r); intros; apply Rsqr_inj;
-    assumption.
+  apply Rsqr_inj; auto using Rge_le.
 Qed.
 
 Lemma Rsqr_eq_asb_1 : forall x y:R, Rabs x = Rabs y -> Rsqr x = Rsqr y.

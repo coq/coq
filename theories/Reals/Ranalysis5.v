@@ -338,14 +338,14 @@ intros. (* f x y f_cont_interv x_lt_y fx_neg fy_pos.*)
   left; assumption.
   intro.
   unfold cond_positivity in |- *.
-  case (Rle_dec 0 z); intro.
+  destruct (Rle_dec 0 z) as [|Hnotle].
   split.
   intro; assumption.
   intro; reflexivity.
   split.
   intro feqt;discriminate feqt.
   intro.
-  elim n0; assumption.
+  elim Hnotle; assumption.
   unfold Vn in |- *.
   cut (forall z:R, cond_positivity z = false <-> z < 0).
   intros.
@@ -359,10 +359,10 @@ intros. (* f x y f_cont_interv x_lt_y fx_neg fy_pos.*)
   assumption.
   intro.
   unfold cond_positivity in |- *.
-  case (Rle_dec 0 z); intro.
+  destruct (Rle_dec 0 z) as [Hle|].
   split.
   intro feqt; discriminate feqt.
-  intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r H7)).
+  intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hle H7)).
   split.
   intro; auto with real.
   intro; reflexivity.
@@ -371,10 +371,9 @@ intros. (* f x y f_cont_interv x_lt_y fx_neg fy_pos.*)
   assert (Temp : x <= x0 <= y).
    apply IVT_interv_prelim1 with (D:=(fun z : R => cond_positivity (f z))) ; assumption.
   assert (H7 := continuity_seq f Wn x0 (H x0 Temp) H5).
-  case (total_order_T 0 (f x0)); intro.
-  elim s; intro.
+  destruct (total_order_T 0 (f x0)) as [[Hlt|<-]|Hgt].
   left; assumption.
-  rewrite <- b; right; reflexivity.
+  right; reflexivity.
   unfold Un_cv in H7; unfold R_dist in H7.
   cut (0 < - f x0).
   intro.
@@ -397,11 +396,10 @@ intros. (* f x y f_cont_interv x_lt_y fx_neg fy_pos.*)
   assert (Temp : x <= x0 <= y).
    apply IVT_interv_prelim1 with (D:=(fun z : R => cond_positivity (f z))) ; assumption.
   assert (H7 := continuity_seq f Vn x0 (H x0 Temp) H5).
-  case (total_order_T 0 (f x0)); intro.
-  elim s; intro.
+  destruct (total_order_T 0 (f x0)) as [[Hlt|Heq]|].
   unfold Un_cv in H7; unfold R_dist in H7.
-  elim (H7 (f x0) a); intros.
-  cut (x2 >= x2)%nat; [ intro | unfold ge in |- *; apply le_n ].
+  elim (H7 (f x0) Hlt); intros.
+  cut (x2 >= x2)%nat; [ intro | unfold ge; apply le_n ].
   assert (H10 := H8 x2 H9).
   rewrite Rabs_left in H10.
   pattern (f x0) at 2 in H10; rewrite <- Rplus_0_r in H10.
@@ -419,7 +417,7 @@ intros. (* f x y f_cont_interv x_lt_y fx_neg fy_pos.*)
     [ unfold Rminus in |- *; apply Rplus_lt_le_0_compat | ring ].
   assumption.
   apply Ropp_0_ge_le_contravar; apply Rle_ge; apply H6.
-  right; rewrite <- b; reflexivity.
+  right; rewrite <- Heq; reflexivity.
   left; assumption.
   unfold Vn in |- *; assumption.
 Qed.

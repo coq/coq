@@ -63,10 +63,10 @@ Section EqdepDec.
   Let nu_constant : forall (y:A) (u v:x = y), nu u = nu v.
     intros.
     unfold nu.
-    case (eq_dec y); intros.
+    destruct (eq_dec y) as [Heq|Hneq].
     reflexivity.
 
-    case n; trivial.
+    case Hneq; trivial.
   Qed.
 
 
@@ -117,12 +117,11 @@ Section EqdepDec.
     intros.
     cut (proj (ex_intro P x y) y = proj (ex_intro P x y') y).
     simpl.
-    case (eq_dec x).
-    intro e.
-    elim e using K_dec_one_var; trivial.
+    destruct (eq_dec x) as [Heq|Hneq].
+    elim Heq using K_dec_one_var; trivial.
 
     intros.
-    case n; trivial.
+    case Hneq; trivial.
 
     case H.
     reflexivity.

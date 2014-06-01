@@ -867,8 +867,8 @@ Proof.
  induction m'.
  (* m' = nil *)
  intros; destruct a; simpl.
- destruct (X.compare x t0); simpl; auto.
- inversion_clear Hm; clear H0 l Hm' IHm t0.
+ destruct (X.compare x t0) as [Hlt| |Hlt]; simpl; auto.
+ inversion_clear Hm; clear H0 Hlt Hm' IHm t0.
  induction m; simpl; auto.
  inversion_clear H.
  destruct a.
@@ -1244,16 +1244,16 @@ Lemma eq_refl : forall m : t, eq m m.
 Proof.
  intros (m,Hm); induction m; unfold eq; simpl; auto.
  destruct a.
- destruct (X.compare t0 t0); auto.
- apply (MapS.Raw.MX.lt_antirefl l); auto.
+ destruct (X.compare t0 t0) as [Hlt| |Hlt]; auto.
+ apply (MapS.Raw.MX.lt_antirefl Hlt); auto.
  split.
  apply D.eq_refl.
  inversion_clear Hm.
  apply (IHm H).
- apply (MapS.Raw.MX.lt_antirefl l); auto.
+ apply (MapS.Raw.MX.lt_antirefl Hlt); auto.
 Qed.
 
-Lemma  eq_sym : forall m1 m2 : t, eq m1 m2 -> eq m2 m1.
+Lemma eq_sym : forall m1 m2 : t, eq m1 m2 -> eq m2 m1.
 Proof.
  intros (m,Hm); induction m;
  intros (m', Hm'); destruct m'; unfold eq; simpl;

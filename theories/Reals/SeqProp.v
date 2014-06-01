@@ -461,8 +461,7 @@ Lemma cond_eq :
   forall x y:R, (forall eps:R, 0 < eps -> Rabs (x - y) < eps) -> x = y.
 Proof.
   intros.
-  case (total_order_T x y); intro.
-  elim s; intro.
+  destruct (total_order_T x y) as [[Hlt|Heq]|Hgt].
   cut (0 < y - x).
   intro.
   assert (H1 := H (y - x) H0).
@@ -897,8 +896,7 @@ Lemma growing_ineq :
   forall (Un:nat -> R) (l:R),
     Un_growing Un -> Un_cv Un l -> forall n:nat, Un n <= l.
 Proof.
-  intros; case (total_order_T (Un n) l); intro.
-  elim s; intro.
+  intros; destruct (total_order_T (Un n) l) as [[Hlt|Heq]|Hgt].
   left; assumption.
   right; assumption.
   cut (0 < Un n - l).
@@ -1103,11 +1101,11 @@ Proof.
   apply (cv_infty_cv_R0 (fun n:nat => INR (S n))).
   intro; apply not_O_INR; discriminate.
   assumption.
-  unfold cv_infty; intro; case (total_order_T M0 0); intro.
-  elim s; intro.
+  unfold cv_infty; intro;
+    destruct (total_order_T M0 0) as [[Hlt|Heq]|Hgt].
   exists 0%nat; intros.
   apply Rlt_trans with 0; [ assumption | apply lt_INR_0; apply lt_O_Sn ].
-  exists 0%nat; intros; rewrite b; apply lt_INR_0; apply lt_O_Sn.
+  exists 0%nat; intros; rewrite Heq; apply lt_INR_0; apply lt_O_Sn.
   set (M0_z := up M0).
   assert (H10 := archimed M0).
   cut (0 <= M0_z)%Z.

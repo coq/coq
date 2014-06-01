@@ -87,42 +87,7 @@ Lemma NewtonInt_P4 :
   forall (f:R -> R) (a b:R) (pr:Newton_integrable f a b),
     NewtonInt f a b pr = - NewtonInt f b a (NewtonInt_P3 f a b pr).
 Proof.
-  intros; unfold Newton_integrable in pr; elim pr; intros; elim p; intro.
-  unfold NewtonInt;
-    case
-    (NewtonInt_P3 f a b
-      (exist
-        (fun g:R -> R => antiderivative f g a b \/ antiderivative f g b a) x
-        p)).
-  intros; elim o; intro.
-  unfold antiderivative in H0; elim H0; intros; elim H2; intro.
-  unfold antiderivative in H; elim H; intros;
-    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H5 H3)).
-  rewrite H3; ring.
-  assert (H1 := antiderivative_Ucte f x x0 a b H H0); elim H1; intros;
-    unfold antiderivative in H0; elim H0; clear H0; intros _ H0.
-  assert (H3 : a <= a <= b).
-  split; [ right; reflexivity | assumption ].
-  assert (H4 : a <= b <= b).
-  split; [ assumption | right; reflexivity ].
-  assert (H5 := H2 _ H3); assert (H6 := H2 _ H4); rewrite H5; rewrite H6; ring.
-  unfold NewtonInt;
-    case
-    (NewtonInt_P3 f a b
-      (exist
-        (fun g:R -> R => antiderivative f g a b \/ antiderivative f g b a) x
-        p)); intros; elim o; intro.
-  assert (H1 := antiderivative_Ucte f x x0 b a H H0); elim H1; intros;
-    unfold antiderivative in H0; elim H0; clear H0; intros _ H0.
-  assert (H3 : b <= a <= a).
-  split; [ assumption | right; reflexivity ].
-  assert (H4 : b <= b <= a).
-  split; [ right; reflexivity | assumption ].
-  assert (H5 := H2 _ H3); assert (H6 := H2 _ H4); rewrite H5; rewrite H6; ring.
-  unfold antiderivative in H0; elim H0; intros; elim H2; intro.
-  unfold antiderivative in H; elim H; intros;
-    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H5 H3)).
-  rewrite H3; ring.
+  intros f a b (x,H). unfold NewtonInt, NewtonInt_P3; simpl; ring.
 Qed.
 
 (* The set of Newton integrable functions is a vectorial space *)
@@ -227,10 +192,8 @@ Lemma NewtonInt_P6 :
     l * NewtonInt f a b pr1 + NewtonInt g a b pr2.
 Proof.
   intros f g l a b pr1 pr2; unfold NewtonInt;
-    case (NewtonInt_P5 f g l a b pr1 pr2); intros; case pr1;
-      intros; case pr2; intros; case (total_order_T a b);
-        intro.
-  elim s; intro.
+    destruct (NewtonInt_P5 f g l a b pr1 pr2) as (x,o); destruct pr1 as (x0,o0);
+      destruct pr2 as (x1,o1); destruct (total_order_T a b) as [[Hlt|Heq]|Hgt].
   elim o; intro.
   elim o0; intro.
   elim o1; intro.
@@ -242,21 +205,21 @@ Proof.
   split; [ left; assumption | right; reflexivity ].
   assert (H7 := H4 _ H5); assert (H8 := H4 _ H6); rewrite H7; rewrite H8; ring.
   unfold antiderivative in H1; elim H1; intros;
-    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H3 a0)).
+    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H3 Hlt)).
   unfold antiderivative in H0; elim H0; intros;
-    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 a0)).
+    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 Hlt)).
   unfold antiderivative in H; elim H; intros;
-    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H1 a0)).
-  rewrite b0; ring.
+    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H1 Hlt)).
+  rewrite Heq; ring.
   elim o; intro.
   unfold antiderivative in H; elim H; intros;
-    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H1 r)).
+    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H1 Hgt)).
   elim o0; intro.
   unfold antiderivative in H0; elim H0; intros;
-    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 r)).
+    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 Hgt)).
   elim o1; intro.
   unfold antiderivative in H1; elim H1; intros;
-    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H3 r)).
+    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H3 Hgt)).
   assert (H2 := antiderivative_P1 f g x0 x1 l b a H0 H1);
     assert (H3 := antiderivative_Ucte _ _ _ _ _ H H2);
       elim H3; intros; assert (H5 : b <= a <= a).
@@ -277,14 +240,12 @@ Lemma antiderivative_P2 :
         | right _ => F1 x + (F0 b - F1 b)
       end) a c.
 Proof.
-  unfold antiderivative; intros; elim H; clear H; intros; elim H0;
-    clear H0; intros; split.
+  intros; destruct H as (H,H1), H0 as (H0,H2); split.
   2: apply Rle_trans with b; assumption.
-  intros; elim H3; clear H3; intros; case (total_order_T x b); intro.
-  elim s; intro.
+  intros x (H3,H4); destruct (total_order_T x b) as [[Hlt|Heq]|Hgt].
   assert (H5 : a <= x <= b).
   split; [ assumption | left; assumption ].
-  assert (H6 := H _ H5); elim H6; clear H6; intros;
+  destruct (H _ H5) as (x0,H6).
     assert
       (H7 :
         derivable_pt_lim
@@ -293,27 +254,26 @@ Proof.
             | left _ => F0 x
             | right _ => F1 x + (F0 b - F1 b)
           end) x (f x)).
-  unfold derivable_pt_lim; assert (H7 : derive_pt F0 x x0 = f x).
-  symmetry ; assumption.
-  assert (H8 := derive_pt_eq_1 F0 x (f x) x0 H7); unfold derivable_pt_lim in H8;
-    intros; elim (H8 _ H9); intros; set (D := Rmin x1 (b - x)).
+  unfold derivable_pt_lim. intros eps H9.
+  assert (H7 : derive_pt F0 x x0 = f x) by (symmetry; assumption).
+  destruct (derive_pt_eq_1 F0 x (f x) x0 H7 _ H9) as (x1,H10); set (D := Rmin x1 (b - x)).
   assert (H11 : 0 < D).
-  unfold D; unfold Rmin; case (Rle_dec x1 (b - x)); intro.
+  unfold D, Rmin; case (Rle_dec x1 (b - x)); intro.
   apply (cond_pos x1).
   apply Rlt_Rminus; assumption.
-  exists (mkposreal _ H11); intros; case (Rle_dec x b); intro.
-  case (Rle_dec (x + h) b); intro.
+  exists (mkposreal _ H11); intros h H12 H13. case (Rle_dec x b) as [|[]].
+  case (Rle_dec (x + h) b) as [|[]].
   apply H10.
   assumption.
   apply Rlt_le_trans with D; [ assumption | unfold D; apply Rmin_l ].
-  elim n; left; apply Rlt_le_trans with (x + D).
+  left; apply Rlt_le_trans with (x + D).
   apply Rplus_lt_compat_l; apply Rle_lt_trans with (Rabs h).
   apply RRle_abs.
   apply H13.
   apply Rplus_le_reg_l with (- x); rewrite <- Rplus_assoc; rewrite Rplus_opp_l;
     rewrite Rplus_0_l; rewrite Rplus_comm; unfold D;
       apply Rmin_r.
-  elim n; left; assumption.
+  left; assumption.
   assert
     (H8 :
       derivable_pt
@@ -348,7 +308,7 @@ Proof.
   unfold D; unfold Rmin; case (Rle_dec x2 x3); intro.
   apply (cond_pos x2).
   apply (cond_pos x3).
-  exists (mkposreal _ H16); intros; case (Rle_dec x b); intro.
+  exists (mkposreal _ H16); intros; case (Rle_dec x b) as [|[]].
   case (Rle_dec (x + h) b); intro.
   apply H15.
   assumption.
@@ -357,8 +317,8 @@ Proof.
   apply H14.
   assumption.
   apply Rlt_le_trans with D; [ assumption | unfold D; apply Rmin_l ].
-  rewrite b0; ring.
-  elim n; right; assumption.
+  rewrite Heq; ring.
+  right; assumption.
   assert
     (H14 :
       derivable_pt
@@ -388,11 +348,11 @@ Proof.
   unfold D; unfold Rmin; case (Rle_dec x1 (x - b)); intro.
   apply (cond_pos x1).
   apply Rlt_Rminus; assumption.
-  exists (mkposreal _ H11); intros; case (Rle_dec x b); intro.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r0 r)).
-  case (Rle_dec (x + h) b); intro.
+  exists (mkposreal _ H11); intros; destruct (Rle_dec x b) as [Hle|Hnle].
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hle Hgt)).
+  destruct (Rle_dec (x + h) b) as [Hle'|Hnle'].
   cut (b < x + h).
-  intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r0 H14)).
+  intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hle' H14)).
   apply Rplus_lt_reg_l with (- h - b); replace (- h - b + b) with (- h);
     [ idtac | ring ]; replace (- h - b + (x + h)) with (x - b);
     [ idtac | ring ]; apply Rle_lt_trans with (Rabs h).
@@ -425,8 +385,7 @@ Lemma antiderivative_P3 :
     antiderivative f F1 c a \/ antiderivative f F0 a c.
 Proof.
   intros; unfold antiderivative in H, H0; elim H; clear H; elim H0; clear H0;
-    intros; case (total_order_T a c); intro.
-  elim s; intro.
+    intros; destruct (total_order_T a c) as [[Hle|Heq]|Hgt].
   right; unfold antiderivative; split.
   intros; apply H1; elim H3; intros; split;
     [ assumption | apply Rle_trans with c; assumption ].
@@ -448,8 +407,7 @@ Lemma antiderivative_P4 :
     antiderivative f F1 b c \/ antiderivative f F0 c b.
 Proof.
   intros; unfold antiderivative in H, H0; elim H; clear H; elim H0; clear H0;
-    intros; case (total_order_T c b); intro.
-  elim s; intro.
+    intros; destruct (total_order_T c b) as [[Hlt|Heq]|Hgt].
   right; unfold antiderivative; split.
   intros; apply H1; elim H3; intros; split;
     [ apply Rle_trans with c; assumption | assumption ].
@@ -499,10 +457,8 @@ Proof.
   intros.
   elim X; intros F0 H0.
   elim X0; intros F1 H1.
-  case (total_order_T a b); intro.
-  elim s; intro.
-  case (total_order_T b c); intro.
-  elim s0; intro.
+  destruct (total_order_T a b) as [[Hlt|Heq]|Hgt].
+  destruct (total_order_T b c) as [[Hlt'|Heq']|Hgt'].
 (* a<b & b<c *)
   unfold Newton_integrable;
     exists
@@ -515,78 +471,75 @@ Proof.
   elim H1; intro.
   left; apply antiderivative_P2; assumption.
   unfold antiderivative in H2; elim H2; clear H2; intros _ H2.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 a1)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 Hlt')).
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H a0)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hlt)).
 (* a<b & b=c *)
-  rewrite b0 in X; apply X.
+  rewrite Heq' in X; apply X.
 (* a<b & b>c *)
-  case (total_order_T a c); intro.
-  elim s0; intro.
+  destruct (total_order_T a c) as [[Hlt''|Heq'']|Hgt''].
   unfold Newton_integrable; exists F0.
   left.
   elim H1; intro.
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hgt')).
   elim H0; intro.
   assert (H3 := antiderivative_P3 f F0 F1 a b c H2 H).
   elim H3; intro.
   unfold antiderivative in H4; elim H4; clear H4; intros _ H4.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H4 a1)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H4 Hlt'')).
   assumption.
   unfold antiderivative in H2; elim H2; clear H2; intros _ H2.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 a0)).
-  rewrite b0; apply NewtonInt_P1.
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 Hlt)).
+  rewrite Heq''; apply NewtonInt_P1.
   unfold Newton_integrable; exists F1.
   right.
   elim H1; intro.
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hgt')).
   elim H0; intro.
   assert (H3 := antiderivative_P3 f F0 F1 a b c H2 H).
   elim H3; intro.
   assumption.
   unfold antiderivative in H4; elim H4; clear H4; intros _ H4.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H4 r0)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H4 Hgt'')).
   unfold antiderivative in H2; elim H2; clear H2; intros _ H2.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 a0)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 Hlt)).
 (* a=b *)
-  rewrite b0; apply X0.
-  case (total_order_T b c); intro.
-  elim s; intro.
+  rewrite Heq; apply X0.
+  destruct (total_order_T b c) as [[Hlt'|Heq']|Hgt'].
 (* a>b & b<c *)
-  case (total_order_T a c); intro.
-  elim s0; intro.
+  destruct (total_order_T a c) as [[Hlt''|Heq'']|Hgt''].
   unfold Newton_integrable; exists F1.
   left.
   elim H1; intro.
 (*****************)
   elim H0; intro.
   unfold antiderivative in H2; elim H2; clear H2; intros _ H2.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 r)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 Hgt)).
   assert (H3 := antiderivative_P4 f F0 F1 b a c H2 H).
   elim H3; intro.
   assumption.
   unfold antiderivative in H4; elim H4; clear H4; intros _ H4.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H4 a1)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H4 Hlt'')).
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H a0)).
-  rewrite b0; apply NewtonInt_P1.
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hlt')).
+  rewrite Heq''; apply NewtonInt_P1.
   unfold Newton_integrable; exists F0.
   right.
   elim H0; intro.
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hgt)).
   elim H1; intro.
   assert (H3 := antiderivative_P4 f F0 F1 b a c H H2).
   elim H3; intro.
   unfold antiderivative in H4; elim H4; clear H4; intros _ H4.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H4 r0)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H4 Hgt'')).
   assumption.
   unfold antiderivative in H2; elim H2; clear H2; intros _ H2.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 a0)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 Hlt')).
 (* a>b & b=c *)
-  rewrite b0 in X; apply X.
+  rewrite Heq' in X; apply X.
 (* a>b & b>c *)
   assert (X1 := NewtonInt_P3 f a b X).
   assert (X2 := NewtonInt_P3 f b c X0).
@@ -602,17 +555,15 @@ Lemma NewtonInt_P9 :
     NewtonInt f a b pr1 + NewtonInt f b c pr2.
 Proof.
   intros; unfold NewtonInt.
-  case (NewtonInt_P8 f a b c pr1 pr2); intros.
-  case pr1; intros.
-  case pr2; intros.
-  case (total_order_T a b); intro.
-  elim s; intro.
-  case (total_order_T b c); intro.
-  elim s0; intro.
+  case (NewtonInt_P8 f a b c pr1 pr2) as (x,Hor).
+  case pr1 as (x0,Hor0).
+  case pr2 as (x1,Hor1).
+  destruct (total_order_T a b) as [[Hlt|Heq]|Hgt].
+  destruct (total_order_T b c) as [[Hlt'|Heq']|Hgt'].
 (* a<b & b<c *)
-  elim o0; intro.
-  elim o1; intro.
-  elim o; intro.
+  case Hor0; intro.
+  case Hor1; intro.
+  case Hor; intro.
   assert (H2 := antiderivative_P2 f x0 x1 a b c H H0).
   assert
     (H3 :=
@@ -628,23 +579,23 @@ Proof.
   assert (H6 : a <= c <= c).
   split; [ left; apply Rlt_trans with b; assumption | right; reflexivity ].
   rewrite (H4 _ H5); rewrite (H4 _ H6).
-  case (Rle_dec a b); intro.
-  case (Rle_dec c b); intro.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r0 a1)).
+  destruct (Rle_dec a b) as [Hlea|Hnlea].
+  destruct (Rle_dec c b) as [Hlec|Hnlec].
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hlec Hlt')).
   ring.
-  elim n; left; assumption.
+  elim Hnlea; left; assumption.
   unfold antiderivative in H1; elim H1; clear H1; intros _ H1.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H1 (Rlt_trans _ _ _ a0 a1))).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H1 (Rlt_trans _ _ _ Hlt Hlt'))).
   unfold antiderivative in H0; elim H0; clear H0; intros _ H0.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 a1)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 Hlt')).
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H a0)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hlt)).
 (* a<b & b=c *)
-  rewrite <- b0.
+  rewrite <- Heq'.
   unfold Rminus; rewrite Rplus_opp_r; rewrite Rplus_0_r.
-  rewrite <- b0 in o.
-  elim o0; intro.
-  elim o; intro.
+  rewrite <- Heq' in Hor.
+  elim Hor0; intro.
+  elim Hor; intro.
   assert (H1 := antiderivative_Ucte f x x0 a b H0 H).
   elim H1; intros.
   rewrite (H2 b).
@@ -653,25 +604,25 @@ Proof.
   split; [ right; reflexivity | left; assumption ].
   split; [ left; assumption | right; reflexivity ].
   unfold antiderivative in H0; elim H0; clear H0; intros _ H0.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 a0)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 Hlt)).
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H a0)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hlt)).
 (* a<b & b>c *)
-  elim o1; intro.
+  elim Hor1; intro.
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
-  elim o0; intro.
-  elim o; intro.
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hgt')).
+  elim Hor0; intro.
+  elim Hor; intro.
   assert (H2 := antiderivative_P2 f x x1 a c b H1 H).
   assert (H3 := antiderivative_Ucte _ _ _ a b H0 H2).
   elim H3; intros.
   rewrite (H4 a).
   rewrite (H4 b).
-  case (Rle_dec b c); intro.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r0 r)).
-  case (Rle_dec a c); intro.
+  destruct (Rle_dec b c) as [Hle|Hnle].
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hle Hgt')).
+  destruct (Rle_dec a c) as [Hle'|Hnle'].
   ring.
-  elim n0; unfold antiderivative in H1; elim H1; intros; assumption.
+  elim Hnle'; unfold antiderivative in H1; elim H1; intros; assumption.
   split; [ left; assumption | right; reflexivity ].
   split; [ right; reflexivity | left; assumption ].
   assert (H2 := antiderivative_P2 _ _ _ _ _ _ H1 H0).
@@ -679,19 +630,19 @@ Proof.
   elim H3; intros.
   rewrite (H4 c).
   rewrite (H4 b).
-  case (Rle_dec b a); intro.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r0 a0)).
-  case (Rle_dec c a); intro.
+  destruct (Rle_dec b a) as [Hle|Hnle].
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hle Hlt)).
+  destruct (Rle_dec c a) as [Hle'|[]].
   ring.
-  elim n0; unfold antiderivative in H1; elim H1; intros; assumption.
+  unfold antiderivative in H1; elim H1; intros; assumption.
   split; [ left; assumption | right; reflexivity ].
   split; [ right; reflexivity | left; assumption ].
   unfold antiderivative in H0; elim H0; clear H0; intros _ H0.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 a0)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 Hlt)).
 (* a=b *)
-  rewrite b0 in o; rewrite b0.
-  elim o; intro.
-  elim o1; intro.
+  rewrite Heq in Hor |- *.
+  elim Hor; intro.
+  elim Hor1; intro.
   assert (H1 := antiderivative_Ucte _ _ _ b c H H0).
   elim H1; intros.
   assert (H3 : b <= c).
@@ -705,7 +656,7 @@ Proof.
   unfold antiderivative in H, H0; elim H; elim H0; intros; apply Rle_antisym;
     assumption.
   rewrite H1; ring.
-  elim o1; intro.
+  elim Hor1; intro.
   assert (H1 : b = c).
   unfold antiderivative in H, H0; elim H; elim H0; intros; apply Rle_antisym;
     assumption.
@@ -720,25 +671,24 @@ Proof.
   split; [ assumption | right; reflexivity ].
   split; [ right; reflexivity | assumption ].
 (* a>b & b<c *)
-  case (total_order_T b c); intro.
-  elim s; intro.
-  elim o0; intro.
+  destruct (total_order_T b c) as [[Hlt'|Heq']|Hgt'].
+  elim Hor0; intro.
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
-  elim o1; intro.
-  elim o; intro.
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hgt)).
+  elim Hor1; intro.
+  elim Hor; intro.
   assert (H2 := antiderivative_P2 _ _ _ _ _ _ H H1).
   assert (H3 := antiderivative_Ucte _ _ _ b c H0 H2).
   elim H3; intros.
   rewrite (H4 b).
   rewrite (H4 c).
-  case (Rle_dec b a); intro.
-  case (Rle_dec c a); intro.
+  case (Rle_dec b a) as [|[]].
+  case (Rle_dec c a) as [|].
   assert (H5 : a = c).
   unfold antiderivative in H1; elim H1; intros; apply Rle_antisym; assumption.
   rewrite H5; ring.
   ring.
-  elim n; left; assumption.
+  left; assumption.
   split; [ left; assumption | right; reflexivity ].
   split; [ right; reflexivity | left; assumption ].
   assert (H2 := antiderivative_P2 _ _ _ _ _ _ H0 H1).
@@ -746,27 +696,27 @@ Proof.
   elim H3; intros.
   rewrite (H4 a).
   rewrite (H4 b).
-  case (Rle_dec b c); intro.
-  case (Rle_dec a c); intro.
+  case (Rle_dec b c) as [|[]].
+  case (Rle_dec a c) as [|].
   assert (H5 : a = c).
   unfold antiderivative in H1; elim H1; intros; apply Rle_antisym; assumption.
   rewrite H5; ring.
   ring.
-  elim n; left; assumption.
+  left; assumption.
   split; [ right; reflexivity | left; assumption ].
   split; [ left; assumption | right; reflexivity ].
   unfold antiderivative in H0; elim H0; clear H0; intros _ H0.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 a0)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 Hlt')).
 (* a>b & b=c *)
-  rewrite <- b0.
+  rewrite <- Heq'.
   unfold Rminus; rewrite Rplus_opp_r; rewrite Rplus_0_r.
-  rewrite <- b0 in o.
-  elim o0; intro.
+  rewrite <- Heq' in Hor.
+  elim Hor0; intro.
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
-  elim o; intro.
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hgt)).
+  elim Hor; intro.
   unfold antiderivative in H0; elim H0; clear H0; intros _ H0.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 r)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 Hgt)).
   assert (H1 := antiderivative_Ucte f x x0 b a H0 H).
   elim H1; intros.
   rewrite (H2 b).
@@ -775,15 +725,15 @@ Proof.
   split; [ left; assumption | right; reflexivity ].
   split; [ right; reflexivity | left; assumption ].
 (* a>b & b>c *)
-  elim o0; intro.
+  elim Hor0; intro.
   unfold antiderivative in H; elim H; clear H; intros _ H.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
-  elim o1; intro.
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hgt)).
+  elim Hor1; intro.
   unfold antiderivative in H0; elim H0; clear H0; intros _ H0.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 r0)).
-  elim o; intro.
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 Hgt')).
+  elim Hor; intro.
   unfold antiderivative in H1; elim H1; clear H1; intros _ H1.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H1 (Rlt_trans _ _ _ r0 r))).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H1 (Rlt_trans _ _ _ Hgt' Hgt))).
   assert (H2 := antiderivative_P2 _ _ _ _ _ _ H0 H).
   assert (H3 := antiderivative_Ucte _ _ _ c a H1 H2).
   elim H3; intros.
@@ -791,11 +741,11 @@ Proof.
   unfold antiderivative in H1; elim H1; intros; assumption.
   rewrite (H4 c).
   rewrite (H4 a).
-  case (Rle_dec a b); intro.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r1 r)).
-  case (Rle_dec c b); intro.
+  destruct (Rle_dec a b) as [Hle|Hnle].
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hle Hgt)).
+  destruct (Rle_dec c b) as [|[]].
   ring.
-  elim n0; left; assumption.
+  left; assumption.
   split; [ assumption | right; reflexivity ].
   split; [ right; reflexivity | assumption ].
 Qed.

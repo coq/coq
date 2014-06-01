@@ -400,15 +400,14 @@ Theorem Alembert_C3 :
     Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
     { l:R | Pser An x l }.
 Proof.
-  intros; case (total_order_T x 0); intro.
-  elim s; intro.
+  intros; destruct (total_order_T x 0) as [[Hlt|Heq]|Hgt].
   cut (x <> 0).
   intro; apply AlembertC3_step1; assumption.
-  red; intro; rewrite H1 in a; elim (Rlt_irrefl _ a).
+  red; intro; rewrite H1 in Hlt; elim (Rlt_irrefl _ Hlt).
   apply AlembertC3_step2; assumption.
   cut (x <> 0).
   intro; apply AlembertC3_step1; assumption.
-  red; intro; rewrite H1 in r; elim (Rlt_irrefl _ r).
+  red; intro; rewrite H1 in Hgt; elim (Rlt_irrefl _ Hgt).
 Defined.
 
 Lemma Alembert_C4 :
@@ -586,14 +585,13 @@ Lemma Alembert_C6 :
   elim X; intros.
   exists x0.
   apply tech12; assumption.
-  case (total_order_T x 0); intro.
-  elim s; intro.
+  destruct (total_order_T x 0) as [[Hlt|Heq]|Hgt].
   eapply Alembert_C5 with (k * Rabs x).
   split.
   unfold Rdiv; apply Rmult_le_pos.
   left; assumption.
   left; apply Rabs_pos_lt.
-  red; intro; rewrite H3 in a; elim (Rlt_irrefl _ a).
+  red; intro; rewrite H3 in Hlt; elim (Rlt_irrefl _ Hlt).
   apply Rmult_lt_reg_l with (/ k).
   apply Rinv_0_lt_compat; assumption.
   rewrite <- Rmult_assoc.
@@ -604,7 +602,7 @@ Lemma Alembert_C6 :
   intro; apply prod_neq_R0.
   apply H0.
   apply pow_nonzero.
-  red; intro; rewrite H3 in a; elim (Rlt_irrefl _ a).
+  red; intro; rewrite H3 in Hlt; elim (Rlt_irrefl _ Hlt).
   unfold Un_cv; unfold Un_cv in H1.
   intros.
   cut (0 < eps / Rabs x).
@@ -621,7 +619,7 @@ Lemma Alembert_C6 :
   rewrite Rabs_Rabsolu.
   apply Rmult_lt_reg_l with (/ Rabs x).
   apply Rinv_0_lt_compat; apply Rabs_pos_lt.
-  red; intro; rewrite H7 in a; elim (Rlt_irrefl _ a).
+  red; intro; rewrite H7 in Hlt; elim (Rlt_irrefl _ Hlt).
   rewrite <- Rmult_assoc.
   rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l.
@@ -629,7 +627,7 @@ Lemma Alembert_C6 :
   unfold R_dist in H5.
   unfold Rdiv; unfold Rdiv in H5; apply H5; assumption.
   apply Rabs_no_R0.
-  red; intro; rewrite H7 in a; elim (Rlt_irrefl _ a).
+  red; intro; rewrite H7 in Hlt; elim (Rlt_irrefl _ Hlt).
   unfold Rdiv; replace (S n) with (n + 1)%nat; [ idtac | ring ].
   rewrite pow_add.
   simpl.
@@ -641,14 +639,14 @@ Lemma Alembert_C6 :
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r; reflexivity.
   apply pow_nonzero.
-  red; intro; rewrite H7 in a; elim (Rlt_irrefl _ a).
+  red; intro; rewrite H7 in Hlt; elim (Rlt_irrefl _ Hlt).
   apply H0.
   apply pow_nonzero.
-  red; intro; rewrite H7 in a; elim (Rlt_irrefl _ a).
+  red; intro; rewrite H7 in Hlt; elim (Rlt_irrefl _ Hlt).
   unfold Rdiv; apply Rmult_lt_0_compat.
   assumption.
   apply Rinv_0_lt_compat; apply Rabs_pos_lt.
-  red; intro H7; rewrite H7 in a; elim (Rlt_irrefl _ a).
+  red; intro H7; rewrite H7 in Hlt; elim (Rlt_irrefl _ Hlt).
   exists (An 0%nat).
   unfold Un_cv.
   intros.
@@ -661,14 +659,14 @@ Lemma Alembert_C6 :
   simpl; ring.
   rewrite tech5.
   rewrite <- Hrecn.
-  rewrite b; simpl; ring.
+  rewrite Heq; simpl; ring.
   unfold ge; apply le_O_n.
   eapply Alembert_C5 with (k * Rabs x).
   split.
   unfold Rdiv; apply Rmult_le_pos.
   left; assumption.
   left; apply Rabs_pos_lt.
-  red; intro; rewrite H3 in r; elim (Rlt_irrefl _ r).
+  red; intro; rewrite H3 in Hgt; elim (Rlt_irrefl _ Hgt).
   apply Rmult_lt_reg_l with (/ k).
   apply Rinv_0_lt_compat; assumption.
   rewrite <- Rmult_assoc.
@@ -679,7 +677,7 @@ Lemma Alembert_C6 :
   intro; apply prod_neq_R0.
   apply H0.
   apply pow_nonzero.
-  red; intro; rewrite H3 in r; elim (Rlt_irrefl _ r).
+  red; intro; rewrite H3 in Hgt; elim (Rlt_irrefl _ Hgt).
   unfold Un_cv; unfold Un_cv in H1.
   intros.
   cut (0 < eps / Rabs x).
@@ -696,7 +694,7 @@ Lemma Alembert_C6 :
   rewrite Rabs_Rabsolu.
   apply Rmult_lt_reg_l with (/ Rabs x).
   apply Rinv_0_lt_compat; apply Rabs_pos_lt.
-  red; intro; rewrite H7 in r; elim (Rlt_irrefl _ r).
+  red; intro; rewrite H7 in Hgt; elim (Rlt_irrefl _ Hgt).
   rewrite <- Rmult_assoc.
   rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l.
@@ -704,7 +702,7 @@ Lemma Alembert_C6 :
   unfold R_dist in H5.
   unfold Rdiv; unfold Rdiv in H5; apply H5; assumption.
   apply Rabs_no_R0.
-  red; intro; rewrite H7 in r; elim (Rlt_irrefl _ r).
+  red; intro; rewrite H7 in Hgt; elim (Rlt_irrefl _ Hgt).
   unfold Rdiv; replace (S n) with (n + 1)%nat; [ idtac | ring ].
   rewrite pow_add.
   simpl.
@@ -716,12 +714,12 @@ Lemma Alembert_C6 :
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r; reflexivity.
   apply pow_nonzero.
-  red; intro; rewrite H7 in r; elim (Rlt_irrefl _ r).
+  red; intro; rewrite H7 in Hgt; elim (Rlt_irrefl _ Hgt).
   apply H0.
   apply pow_nonzero.
-  red; intro; rewrite H7 in r; elim (Rlt_irrefl _ r).
+  red; intro; rewrite H7 in Hgt; elim (Rlt_irrefl _ Hgt).
   unfold Rdiv; apply Rmult_lt_0_compat.
   assumption.
   apply Rinv_0_lt_compat; apply Rabs_pos_lt.
-  red; intro H7; rewrite H7 in r; elim (Rlt_irrefl _ r).
+  red; intro H7; rewrite H7 in Hgt; elim (Rlt_irrefl _ Hgt).
 Qed.

@@ -237,9 +237,9 @@ Section sequence.
     apply le_n_Sn.
     rewrite (IHN H6), Rplus_0_l.
     unfold test.
-    destruct Rle_lt_dec.
+    destruct Rle_lt_dec as [Hle|Hlt].
     apply eq_refl.
-    now elim Rlt_not_le with (1 := r).
+    now elim Rlt_not_le with (1 := Hlt).
 
     destruct (le_or_lt N n) as [Hn|Hn].
     rewrite le_plus_minus with (1 := Hn).

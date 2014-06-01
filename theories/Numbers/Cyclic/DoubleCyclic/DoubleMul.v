@@ -328,7 +328,7 @@ Section DoubleMul.
    rewrite <- (Z.add_0_r ([|wc|]*wB));rewrite H;apply mult_add_ineq3;zarith.
    simpl ww_to_Z in H1. assert (U:=spec_to_Z cch).
    assert ([|wc|]*wB + [|cch|] <= 2*wB - 3).
-    destruct (Z_le_gt_dec ([|wc|]*wB + [|cch|]) (2*wB - 3));trivial.
+    destruct (Z_le_gt_dec ([|wc|]*wB + [|cch|]) (2*wB - 3)) as [Hle|Hgt];trivial.
     assert ([|xh|] * [|yl|] + [|xl|] * [|yh|] <= (2*wB - 4)*wB + 2).
      ring_simplify ((2*wB - 4)*wB + 2).
      assert (H4 := Zmult_lt_b _ _ _ (spec_to_Z xh) (spec_to_Z yl)).

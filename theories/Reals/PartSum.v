@@ -508,12 +508,11 @@ Lemma sum_incr :
     Un_cv (fun n:nat => sum_f_R0 An n) l ->
     (forall n:nat, 0 <= An n) -> sum_f_R0 An N <= l.
 Proof.
-  intros; case (total_order_T (sum_f_R0 An N) l); intro.
-  elim s; intro.
-  left; apply a.
-  right; apply b.
+  intros; destruct (total_order_T (sum_f_R0 An N) l) as [[Hlt|Heq]|Hgt].
+  left; apply Hlt.
+  right; apply Heq.
   cut (Un_growing (fun n:nat => sum_f_R0 An n)).
-  intro; set (l1 := sum_f_R0 An N) in r.
+  intro; set (l1 := sum_f_R0 An N) in Hgt.
   unfold Un_cv in H; cut (0 < l1 - l).
   intro; elim (H _ H2); intros.
   set (N0 := max x N); cut (N0 >= x)%nat.
@@ -528,7 +527,7 @@ Proof.
   apply Rle_ge; apply Rplus_le_reg_l with l.
   rewrite Rplus_0_r; replace (l + (sum_f_R0 An N0 - l)) with (sum_f_R0 An N0);
     [ idtac | ring ]; apply Rle_trans with l1.
-  left; apply r.
+  left; apply Hgt.
   apply H6.
   unfold l1; apply Rge_le;
     apply (growing_prop (fun k:nat => sum_f_R0 An k)).
@@ -536,7 +535,7 @@ Proof.
   unfold ge, N0; apply le_max_r.
   unfold ge, N0; apply le_max_l.
   apply Rplus_lt_reg_l with l; rewrite Rplus_0_r;
-    replace (l + (l1 - l)) with l1; [ apply r | ring ].
+    replace (l + (l1 - l)) with l1; [ apply Hgt | ring ].
   unfold Un_growing; intro; simpl;
     pattern (sum_f_R0 An n) at 1; rewrite <- Rplus_0_r;
       apply Rplus_le_compat_l; apply H0.
@@ -549,10 +548,9 @@ Lemma sum_cv_maj :
     Un_cv (fun n:nat => sum_f_R0 An n) l2 ->
     (forall n:nat, Rabs (fn n x) <= An n) -> Rabs l1 <= l2.
 Proof.
-  intros; case (total_order_T (Rabs l1) l2); intro.
-  elim s; intro.
-  left; apply a.
-  right; apply b.
+  intros; destruct (total_order_T (Rabs l1) l2) as [[Hlt|Heq]|Hgt].
+  left; apply Hlt.
+  right; apply Heq.
   cut (forall n0:nat, Rabs (SP fn n0 x) <= sum_f_R0 An n0).
   intro; cut (0 < (Rabs l1 - l2) / 2).
   intro; unfold Un_cv in H, H0.
@@ -568,16 +566,16 @@ Proof.
   intro; assert (H11 := H2 N).
   elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H11 H10)).
   apply Rlt_trans with ((Rabs l1 + l2) / 2); assumption.
-  case (Rcase_abs (Rabs l1 - Rabs (SP fn N x))); intro.
+  destruct (Rcase_abs (Rabs l1 - Rabs (SP fn N x))) as [Hlt|Hge].
   apply Rlt_trans with (Rabs l1).
   apply Rmult_lt_reg_l with 2.
   prove_sup0.
   unfold Rdiv; rewrite (Rmult_comm 2); rewrite Rmult_assoc;
     rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; rewrite double; apply Rplus_lt_compat_l; apply r.
+  rewrite Rmult_1_r; rewrite double; apply Rplus_lt_compat_l; apply Hgt.
   discrR.
-  apply (Rminus_lt _ _ r0).
-  rewrite (Rabs_right _ r0) in H7.
+  apply (Rminus_lt _ _ Hlt).
+  rewrite (Rabs_right _ Hge) in H7.
   apply Rplus_lt_reg_l with ((Rabs l1 - l2) / 2 - Rabs (SP fn N x)).
   replace ((Rabs l1 - l2) / 2 - Rabs (SP fn N x) + (Rabs l1 + l2) / 2) with
   (Rabs l1 - Rabs (SP fn N x)).
@@ -586,18 +584,18 @@ Proof.
   unfold Rdiv; rewrite Rmult_plus_distr_r;
     rewrite <- (Rmult_comm (/ 2)); rewrite Rmult_minus_distr_l;
       repeat rewrite (Rmult_comm (/ 2)); pattern (Rabs l1) at 1;
-        rewrite double_var; unfold Rdiv; ring.
-  case (Rcase_abs (sum_f_R0 An N - l2)); intro.
+        rewrite double_var; unfold Rdiv in |- *; ring.
+  destruct (Rcase_abs (sum_f_R0 An N - l2)) as [Hlt|Hge].
   apply Rlt_trans with l2.
-  apply (Rminus_lt _ _ r0).
+  apply (Rminus_lt _ _ Hlt).
   apply Rmult_lt_reg_l with 2.
   prove_sup0.
   rewrite (double l2); unfold Rdiv; rewrite (Rmult_comm 2);
     rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r; rewrite (Rplus_comm (Rabs l1)); apply Rplus_lt_compat_l;
-    apply r.
+    apply Hgt.
   discrR.
-  rewrite (Rabs_right _ r0) in H6; apply Rplus_lt_reg_l with (- l2).
+  rewrite (Rabs_right _ Hge) in H6; apply Rplus_lt_reg_l with (- l2).
   replace (- l2 + (Rabs l1 + l2) / 2) with ((Rabs l1 - l2) / 2).
   rewrite Rplus_comm; apply H6.
   unfold Rdiv; rewrite <- (Rmult_comm (/ 2));
@@ -612,7 +610,7 @@ Proof.
   unfold Rdiv; apply Rmult_lt_0_compat.
   apply Rplus_lt_reg_l with l2.
   rewrite Rplus_0_r; replace (l2 + (Rabs l1 - l2)) with (Rabs l1);
-    [ apply r | ring ].
+    [ apply Hgt | ring ].
   apply Rinv_0_lt_compat; prove_sup0.
   intros; induction  n0 as [| n0 Hrecn0].
   unfold SP; simpl; apply H1.

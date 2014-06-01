@@ -347,11 +347,11 @@ Proof.
   unfold limit1_in; unfold limit_in; intros.
   simpl in *.
   cut (forall eps:R, eps > 0 -> dist R_met l l' < 2 * eps).
-  clear H0 H1; simpl @dist; unfold R_met; unfold R_dist, dist;
-    unfold Rabs; case (Rcase_abs (l - l')); intros.
+  clear H0 H1; unfold dist in |- *; unfold R_met; unfold R_dist in |- *;
+    unfold Rabs; case (Rcase_abs (l - l')) as [Hlt|Hge]; intros.
   cut (forall eps:R, eps > 0 -> - (l - l') < eps).
   intro; generalize (prop_eps (- (l - l')) H1); intro;
-    generalize (Ropp_gt_lt_0_contravar (l - l') r); intro;
+    generalize (Ropp_gt_lt_0_contravar (l - l') Hlt); intro;
       unfold Rgt in H3; generalize (Rgt_not_le (- (l - l')) 0 H3);
         intro; exfalso; auto.
   intros; cut (eps * / 2 > 0).
@@ -375,7 +375,7 @@ Proof.
     intros a b; clear b; apply (Rminus_diag_uniq l l');
       apply a; split.
   assumption.
-  apply (Rge_le (l - l') 0 r).
+  apply (Rge_le (l - l') 0 Hge).
   intros; cut (eps * / 2 > 0).
   intro; generalize (H0 (eps * / 2) H2); rewrite (Rmult_comm eps (/ 2));
     rewrite <- (Rmult_assoc 2 (/ 2) eps); rewrite (Rinv_r 2).

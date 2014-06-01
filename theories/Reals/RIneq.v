@@ -682,6 +682,11 @@ Hint Resolve Ropp_plus_distr: real.
 (** ** Opposite and multiplication                       *)
 (*********************************************************)
 
+Lemma Ropp_mult_distr_l : forall r1 r2, - (r1 * r2) = - r1 * r2.
+Proof.
+  intros; ring.
+Qed.
+
 Lemma Ropp_mult_distr_l_reverse : forall r1 r2, - r1 * r2 = - (r1 * r2).
 Proof.
   intros; ring.
@@ -694,6 +699,11 @@ Proof.
   intros; ring.
 Qed.
 Hint Resolve Rmult_opp_opp: real.
+
+Lemma Ropp_mult_distr_r : forall r1 r2, - (r1 * r2) = r1 * - r2.
+Proof.
+  intros; ring.
+Qed.
 
 Lemma Ropp_mult_distr_r_reverse : forall r1 r2, r1 * - r2 = - (r1 * r2).
 Proof.

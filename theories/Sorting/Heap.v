@@ -156,19 +156,19 @@ Section defs.
 
     (* 1 (leA a a0) *)
     apply Sorted_inv in H. destruct H.
-    destruct (merge l H (a0 :: l0) H0).
+    destruct (merge l H (a0 :: l0) H0) as [l1 H2 H3 H4].
     apply merge_exist with (a :: l1). clear merge merge0.
       auto using cons_sort, cons_leA with datatypes.
-    simpl. rewrite m. now rewrite munion_ass. 
+    simpl. rewrite H3. now rewrite munion_ass.
     intros. apply cons_leA. 
     apply (@HdRel_inv _ leA) with l; trivial with datatypes.
 
     (* 2 (leA a0 a) *)
     apply Sorted_inv in H0. destruct H0.
-    destruct (merge0 l0 H0). clear merge merge0.  
+    destruct (merge0 l0 H0) as [l1 H2 H3 H4]. clear merge merge0.  
     apply merge_exist with (a0 :: l1); 
       auto using cons_sort, cons_leA with datatypes.
-    simpl; rewrite m. simpl. setoid_rewrite munion_ass at 1. rewrite munion_comm.
+    simpl; rewrite H3. simpl. setoid_rewrite munion_ass at 1. rewrite munion_comm.
     repeat rewrite munion_ass. setoid_rewrite munion_comm at 3. reflexivity.
     intros. apply cons_leA. 
     apply (@HdRel_inv _ leA) with l0; trivial with datatypes.

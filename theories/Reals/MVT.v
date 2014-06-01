@@ -233,21 +233,18 @@ Proof.
   intros.
   unfold increasing.
   intros.
-  case (total_order_T x y); intro.
-  elim s; intro.
+  destruct (total_order_T x y) as [[H1| ->]|H1].
   apply Rplus_le_reg_l with (- f x).
   rewrite Rplus_opp_l; rewrite Rplus_comm.
-  assert (H1 := MVT_cor1 f _ _ pr a).
-  elim H1; intros.
-  elim H2; intros.
+  pose proof (MVT_cor1 f _ _ pr H1) as (c & H3 & H4).
   unfold Rminus in H3.
   rewrite H3.
   apply Rmult_le_pos.
   apply H.
   apply Rplus_le_reg_l with x.
   rewrite Rplus_0_r; replace (x + (y + - x)) with y; [ assumption | ring ].
-  rewrite b; right; reflexivity.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 r)).
+  right; reflexivity.
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 H1)).
 Qed.
 
 (**********)
@@ -269,7 +266,7 @@ Proof.
     cut ((f (x + delta / 2) - f x) / (delta / 2) <= 0).
   intro; cut (0 < - ((f (x + delta / 2) - f x) / (delta / 2) - l)).
   intro; unfold Rabs;
-    case (Rcase_abs ((f (x + delta / 2) - f x) / (delta / 2) - l)).
+    case (Rcase_abs ((f (x + delta / 2) - f x) / (delta / 2) - l)) as [Hlt|Hge].
   intros;
     generalize
       (Rplus_lt_compat_r (- l) (- ((f (x + delta / 2) - f x) / (delta / 2) - l))
@@ -294,7 +291,7 @@ Proof.
   ring.
   intros.
   generalize
-    (Ropp_ge_le_contravar ((f (x + delta / 2) - f x) / (delta / 2) - l) 0 r).
+    (Ropp_ge_le_contravar ((f (x + delta / 2) - f x) / (delta / 2) - l) _ Hge).
   rewrite Ropp_0.
   intro.
   elim
@@ -587,12 +584,8 @@ Theorem IAF :
     f b - f a <= k * (b - a).
 Proof.
   intros.
-  case (total_order_T a b); intro.
-  elim s; intro.
-  assert (H1 := MVT_cor1 f _ _ pr a0).
-  elim H1; intros.
-  elim H2; intros.
-  rewrite H3.
+  destruct (total_order_T a b) as [[H1| -> ]|H1].
+  pose proof (MVT_cor1 f _ _ pr H1) as (c & -> & H4).
   do 2 rewrite <- (Rmult_comm (b - a)).
   apply Rmult_le_compat_l.
   apply Rplus_le_reg_l with a; rewrite Rplus_0_r.
@@ -600,10 +593,9 @@ Proof.
   apply H0.
   elim H4; intros.
   split; left; assumption.
-  rewrite b0.
   unfold Rminus; do 2 rewrite Rplus_opp_r.
   rewrite Rmult_0_r; right; reflexivity.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H H1)).
 Qed.
 
 Lemma IAF_var :
@@ -648,8 +640,7 @@ Lemma null_derivative_loc :
     (forall (x:R) (P:a < x < b), derive_pt f x (pr x P) = 0) ->
     constant_D_eq f (fun x:R => a <= x <= b) (f a).
 Proof.
-  intros; unfold constant_D_eq; intros; case (total_order_T a b); intro.
-  elim s; intro.
+  intros; unfold constant_D_eq; intros; destruct (total_order_T a b) as [[Hlt|Heq]|Hgt].
   assert (H2 : forall y:R, a < y < x -> derivable_pt id y).
   intros; apply derivable_pt_id.
   assert (H3 : forall y:R, a <= y <= x -> continuity_pt id y).
@@ -678,10 +669,10 @@ Proof.
       assumption.
   rewrite H1; reflexivity.
   assert (H2 : x = a).
-  rewrite <- b0 in H1; elim H1; intros; apply Rle_antisym; assumption.
+  rewrite <- Heq in H1; elim H1; intros; apply Rle_antisym; assumption.
   rewrite H2; reflexivity.
   elim H1; intros;
-    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ (Rle_trans _ _ _ H2 H3) r)).
+    elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ (Rle_trans _ _ _ H2 H3) Hgt)).
 Qed.
 
 (* Unicity of the antiderivative *)

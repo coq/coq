@@ -276,8 +276,7 @@ Proof.
   intros.
   unfold cv_infty.
   intro.
-  case (total_order_T 0 M); intro.
-  elim s; intro.
+  destruct (total_order_T 0 M) as [[Hlt|<-]|Hgt].
   set (N := up M).
   cut (0 <= N)%Z.
   intro.
@@ -302,7 +301,6 @@ Proof.
   assert (H0 := archimed M); elim H0; intros.
   left; apply Rlt_trans with M; assumption.
   exists 0%nat; intros.
-  rewrite <- b.
   unfold pow_2_n; apply pow_lt; prove_sup0.
   exists 0%nat; intros.
   apply Rlt_trans with 0.
@@ -342,8 +340,7 @@ Proof.
   unfold Un_cv; unfold R_dist.
   intros.
   assert (H4 := cv_infty_cv_R0 pow_2_n pow_2_n_neq_R0 pow_2_n_infty).
-  case (total_order_T x y); intro.
-  elim s; intro.
+  destruct (total_order_T x y) as [[ Hlt | -> ]|Hgt].
   unfold Un_cv in H4; unfold R_dist in H4.
   cut (0 < y - x).
   intro Hyp.
@@ -376,16 +373,15 @@ Proof.
   apply Rplus_lt_reg_l with x; rewrite Rplus_0_r.
   replace (x + (y - x)) with y; [ assumption | ring ].
   exists 0%nat; intros.
-  replace (dicho_lb x y P n - dicho_up x y P n - 0) with
-  (dicho_lb x y P n - dicho_up x y P n); [ idtac | ring ].
+  replace (dicho_lb y y P n - dicho_up y y P n - 0) with
+  (dicho_lb y y P n - dicho_up y y P n); [ idtac | ring ].
   rewrite <- Rabs_Ropp.
   rewrite Ropp_minus_distr'.
   rewrite dicho_lb_dicho_up.
-  rewrite b.
   unfold Rminus, Rdiv; rewrite Rplus_opp_r; rewrite Rmult_0_l;
     rewrite Rabs_R0; assumption.
   assumption.
-  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
+  elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hgt)).
 Qed.
 
 Definition cond_positivity (x:R) : bool :=
@@ -515,14 +511,14 @@ Proof.
   left; assumption.
   intro.
   unfold cond_positivity.
-  case (Rle_dec 0 z); intro.
+  case (Rle_dec 0 z) as [Hle|Hnle].
   split.
   intro; assumption.
   intro; reflexivity.
   split.
   intro feqt;discriminate feqt.
   intro.
-  elim n0; assumption.
+  contradiction.
   unfold Vn.
   cut (forall z:R, cond_positivity z = false <-> z < 0).
   intros.
@@ -536,20 +532,19 @@ Proof.
   assumption.
   intro.
   unfold cond_positivity.
-  case (Rle_dec 0 z); intro.
+  case (Rle_dec 0 z) as [Hle|Hnle].
   split.
   intro feqt; discriminate feqt.
-  intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r H7)).
+  intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hle H7)).
   split.
   intro; auto with real.
   intro; reflexivity.
   cut (Un_cv Wn x0).
   intros.
   assert (H7 := continuity_seq f Wn x0 (H x0) H5).
-  case (total_order_T 0 (f x0)); intro.
-  elim s; intro.
+  destruct (total_order_T 0 (f x0)) as [[Hlt|<-]|Hgt].
   left; assumption.
-  rewrite <- b; right; reflexivity.
+  right; reflexivity.
   unfold Un_cv in H7; unfold R_dist in H7.
   cut (0 < - f x0).
   intro.
@@ -570,10 +565,9 @@ Proof.
   cut (Un_cv Vn x0).
   intros.
   assert (H7 := continuity_seq f Vn x0 (H x0) H5).
-  case (total_order_T 0 (f x0)); intro.
-  elim s; intro.
+  destruct (total_order_T 0 (f x0)) as [[Hlt|<-]|Hgt].
   unfold Un_cv in H7; unfold R_dist in H7.
-  elim (H7 (f x0) a); intros.
+  elim (H7 (f x0) Hlt); intros.
   cut (x2 >= x2)%nat; [ intro | unfold ge; apply le_n ].
   assert (H10 := H8 x2 H9).
   rewrite Rabs_left in H10.
@@ -592,7 +586,7 @@ Proof.
     [ unfold Rminus; apply Rplus_lt_le_0_compat | ring ].
   assumption.
   apply Ropp_0_ge_le_contravar; apply Rle_ge; apply H6.
-  right; rewrite <- b; reflexivity.
+  right; reflexivity.
   left; assumption.
   unfold Vn; assumption.
 Qed.
@@ -603,22 +597,15 @@ Lemma IVT_cor :
     x <= y -> f x * f y <= 0 -> { z:R | x <= z <= y /\ f z = 0 }.
 Proof.
   intros.
-  case (total_order_T 0 (f x)); intro.
-  case (total_order_T 0 (f y)); intro.
-  elim s; intro.
-  elim s0; intro.
+  destruct (total_order_T 0 (f x)) as [[Hltx|Heqx]|Hgtx].
+  destruct (total_order_T 0 (f y)) as [[Hlty|Heqy]|Hgty].
   cut (0 < f x * f y);
     [ intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H1 H2))
       | apply Rmult_lt_0_compat; assumption ].
   exists y.
   split.
   split; [ assumption | right; reflexivity ].
-  symmetry ; exact b.
-  exists x.
-  split.
-  split; [ right; reflexivity | assumption ].
-  symmetry ; exact b.
-  elim s; intro.
+  symmetry ; exact Heqy.
   cut (x < y).
   intro.
   assert (H3 := IVT (- f)%F x y (continuity_opp f H) H2).
@@ -639,21 +626,20 @@ Proof.
     assumption.
   inversion H0.
   assumption.
-  rewrite H2 in a.
-  elim (Rlt_irrefl _ (Rlt_trans _ _ _ r a)).
+  rewrite H2 in Hltx.
+  elim (Rlt_irrefl _ (Rlt_trans _ _ _ Hgty Hltx)).
   exists x.
   split.
   split; [ right; reflexivity | assumption ].
   symmetry ; assumption.
-  case (total_order_T 0 (f y)); intro.
-  elim s; intro.
+  destruct (total_order_T 0 (f y)) as [[Hlty|Heqy]|Hgty].
   cut (x < y).
   intro.
   apply IVT; assumption.
   inversion H0.
   assumption.
-  rewrite H2 in r.
-  elim (Rlt_irrefl _ (Rlt_trans _ _ _ r a)).
+  rewrite H2 in Hgtx.
+  elim (Rlt_irrefl _ (Rlt_trans _ _ _ Hlty Hgtx)).
   exists y.
   split.
   split; [ assumption | right; reflexivity ].
@@ -676,8 +662,7 @@ Proof.
   intro.
   cut (continuity f).
   intro.
-  case (total_order_T y 1); intro.
-  elim s; intro.
+  destruct (total_order_T y 1) as [[Hlt| -> ]|Hgt].
   cut (0 <= f 1).
   intro.
   cut (f 0 * f 1 <= 0).
@@ -701,7 +686,7 @@ Proof.
   exists 1.
   split.
   left; apply Rlt_0_1.
-  rewrite b; symmetry ; apply Rsqr_1.
+  symmetry; apply Rsqr_1.
   cut (0 <= f y).
   intro.
   cut (f 0 * f y <= 0).
@@ -723,7 +708,7 @@ Proof.
   pattern y at 1; rewrite <- Rmult_1_r.
   unfold Rsqr; apply Rmult_le_compat_l.
   assumption.
-  left; exact r.
+  left; exact Hgt.
   replace f with (Rsqr - fct_cte y)%F.
   apply continuity_minus.
   apply derivable_continuous; apply derivable_Rsqr.
@@ -743,39 +728,31 @@ Definition Rsqrt (y:nonnegreal) : R :=
 Lemma Rsqrt_positivity : forall x:nonnegreal, 0 <= Rsqrt x.
 Proof.
   intro.
-  assert (X := Rsqrt_exists (nonneg x) (cond_nonneg x)).
-  elim X; intros.
+  destruct (Rsqrt_exists (nonneg x) (cond_nonneg x)) as (x0 & H1 & H2).
   cut (x0 = Rsqrt x).
   intros.
-  elim p; intros.
-  rewrite H in H0; assumption.
+  rewrite <- H; assumption.
   unfold Rsqrt.
-  case (Rsqrt_exists x (cond_nonneg x)).
-  intros.
-  elim p; elim a; intros.
+  case (Rsqrt_exists x (cond_nonneg x)) as (?,[]).
   apply Rsqr_inj.
   assumption.
   assumption.
-  rewrite <- H0; rewrite <- H2; reflexivity.
+  rewrite <- H0, <- H2; reflexivity.
 Qed.
 
 (**********)
 Lemma Rsqrt_Rsqrt : forall x:nonnegreal, Rsqrt x * Rsqrt x = x.
 Proof.
   intros.
-  assert (X := Rsqrt_exists (nonneg x) (cond_nonneg x)).
-  elim X; intros.
+  destruct (Rsqrt_exists (nonneg x) (cond_nonneg x)) as (x0 & H1 & H2).
   cut (x0 = Rsqrt x).
   intros.
   rewrite <- H.
-  elim p; intros.
-  rewrite H1; reflexivity.
+  rewrite H2; reflexivity.
   unfold Rsqrt.
-  case (Rsqrt_exists x (cond_nonneg x)).
-  intros.
-  elim p; elim a; intros.
+  case (Rsqrt_exists x (cond_nonneg x)) as (x1 & ? & ?).
   apply Rsqr_inj.
   assumption.
   assumption.
-  rewrite <- H0; rewrite <- H2; reflexivity.
+  rewrite <- H0, <- H2; reflexivity.
 Qed.

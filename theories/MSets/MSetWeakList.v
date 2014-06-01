@@ -217,10 +217,10 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Proof.
   induction s; simpl; intros.
   intuition; inv; auto.
-  destruct X.eq_dec; inv; rewrite !InA_cons, ?IHs; intuition.
+  destruct X.eq_dec as [|Hnot]; inv; rewrite !InA_cons, ?IHs; intuition.
   elim H. setoid_replace a with y; eauto.
   elim H3. setoid_replace x with y; eauto.
-  elim n. eauto.
+  elim Hnot. eauto.
   Qed.
 
   Global Instance remove_ok s x `(Ok s) : Ok (remove x s).

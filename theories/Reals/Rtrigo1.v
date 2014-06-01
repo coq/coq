@@ -147,11 +147,11 @@ Proof.
   apply H4.
   intros; rewrite (H0 x); rewrite (H0 x1); apply H5; apply H6.
   intro; unfold cos, SFL in |- *.
-  case (cv x); case (exist_cos (Rsqr x)); intros.
-  symmetry  in |- *; eapply UL_sequence.
-  apply u.
-  unfold cos_in in c; unfold infinite_sum in c; unfold Un_cv in |- *; intros.
-  elim (c _ H0); intros N0 H1.
+  case (cv x) as (x1,HUn); case (exist_cos (Rsqr x)) as (x0,Hcos); intros.
+  symmetry; eapply UL_sequence.
+  apply HUn.
+  unfold cos_in, infinite_sum in Hcos; unfold Un_cv in |- *; intros.
+  elim (Hcos _ H0); intros N0 H1.
   exists N0; intros.
   unfold R_dist in H1; unfold R_dist, SP in |- *.
   replace (sum_f_R0 (fun k:nat => fn k x) n) with
@@ -585,8 +585,8 @@ Qed.
 
 Lemma SIN_bound : forall x:R, -1 <= sin x <= 1.
 Proof.
-  intro; case (Rle_dec (-1) (sin x)); intro.
-  case (Rle_dec (sin x) 1); intro.
+  intro; destruct (Rle_dec (-1) (sin x)) as [Hle|Hnle].
+  destruct (Rle_dec (sin x) 1) as [Hle'|Hnle'].
   split; assumption.
   cut (1 < sin x).
   intro;

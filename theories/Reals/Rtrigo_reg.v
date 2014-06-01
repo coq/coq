@@ -176,14 +176,14 @@ Proof.
   intro; rewrite H9 in H8; rewrite H10 in H8.
   apply H8.
   unfold SFL, sin.
-  case (cv h); intros.
-  case (exist_sin (Rsqr h)); intros.
+  case (cv h) as (x,HUn).
+  case (exist_sin (Rsqr h)) as (x0,Hsin).
   unfold Rdiv; rewrite (Rinv_r_simpl_m h x0 H6).
   eapply UL_sequence.
-  apply u.
-  unfold sin_in in s; unfold sin_n, infinite_sum in s;
+  apply HUn.
+  unfold sin_in in Hsin; unfold sin_n, infinite_sum in Hsin;
     unfold SP, fn, Un_cv; intros.
-  elim (s _ H10); intros N0 H11.
+  elim (Hsin _ H10); intros N0 H11.
   exists N0; intros.
   unfold R_dist; unfold R_dist in H11.
   replace
@@ -194,9 +194,9 @@ Proof.
   apply sum_eq; intros; apply Rmult_eq_compat_l; unfold Rsqr;
     rewrite pow_sqr; reflexivity.
   unfold SFL, sin.
-  case (cv 0); intros.
+  case (cv 0) as (?,HUn).
   eapply UL_sequence.
-  apply u.
+  apply HUn.
   unfold SP, fn; unfold Un_cv; intros; exists 1%nat; intros.
   unfold R_dist;
     replace

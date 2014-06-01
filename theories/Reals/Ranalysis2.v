@@ -433,10 +433,10 @@ Proof.
   unfold IZR; unfold INR, Pos.to_nat; simpl; intro;
     elim (Rlt_irrefl 1 (Rlt_trans _ _ _ H13 H12)).
   apply IZR_lt; omega.
-  unfold Rabs; case (Rcase_abs (/ 2)); intro.
+  unfold Rabs; case (Rcase_abs (/ 2)) as [Hlt|Hge].
   assert (Hyp : 0 < 2).
   prove_sup0.
-  assert (H11 := Rmult_lt_compat_l 2 _ _ Hyp r); rewrite Rmult_0_r in H11;
+  assert (H11 := Rmult_lt_compat_l 2 _ _ Hyp Hlt); rewrite Rmult_0_r in H11;
     rewrite <- Rinv_r_sym in H11; [ idtac | discrR ].
   elim (Rlt_irrefl 0 (Rlt_trans _ _ _ Rlt_0_1 H11)).
   reflexivity.

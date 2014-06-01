@@ -166,7 +166,7 @@ Module PairUsualDecidableType(D1 D2:UsualDecidableType) <: UsualDecidableType.
  destruct (D1.eq_dec x1 y1); destruct (D2.eq_dec x2 y2);
  unfold eq, D1.eq, D2.eq in *; simpl;
  (left; f_equal; auto; fail) ||
- (right; intro H; injection H; auto).
+ (right; intros [=]; auto).
  Defined.
 
 End PairUsualDecidableType.

@@ -1123,7 +1123,7 @@ Proof.
     case
     (Rcase_abs
       ((f (c + Rmin (delta / 2) ((b + - c) / 2)) + - f c) /
-        Rmin (delta / 2) ((b + - c) / 2) + - l)); intro.
+        Rmin (delta / 2) ((b + - c) / 2) + - l)) as [Hlt|Hge].
   replace
   (-
     ((f (c + Rmin (delta / 2) ((b + - c) / 2)) + - f c) /
@@ -1165,7 +1165,7 @@ Proof.
     (H20 :=
       Rge_le
       ((f (c + Rmin (delta / 2) ((b + - c) / 2)) + - f c) /
-        Rmin (delta / 2) ((b + - c) / 2) + - l) 0 r).
+        Rmin (delta / 2) ((b + - c) / 2) + - l) 0 Hge).
   elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H20 H18)).
   assumption.
   rewrite <- Ropp_0;
@@ -1242,17 +1242,16 @@ Proof.
         (mkposreal ((b - c) / 2) H8)).
   unfold Rdiv; apply Rmult_lt_0_compat;
     [ apply (cond_pos delta) | apply Rinv_0_lt_compat; prove_sup0 ].
-  unfold Rabs; case (Rcase_abs (Rmin (delta / 2) ((b - c) / 2))).
-  intro.
+  unfold Rabs; case (Rcase_abs (Rmin (delta / 2) ((b - c) / 2))) as [Hlt|Hge].
   cut (0 < delta / 2).
   intro.
   generalize
     (Rmin_stable_in_posreal (mkposreal (delta / 2) H10)
       (mkposreal ((b - c) / 2) H8)); simpl; intro;
-    elim (Rlt_irrefl 0 (Rlt_trans 0 (Rmin (delta / 2) ((b - c) / 2)) 0 H11 r)).
+    elim (Rlt_irrefl 0 (Rlt_trans 0 (Rmin (delta / 2) ((b - c) / 2)) 0 H11 Hlt)).
   unfold Rdiv; apply Rmult_lt_0_compat;
     [ apply (cond_pos delta) | apply Rinv_0_lt_compat; prove_sup0 ].
-  intro; apply Rle_lt_trans with (delta / 2).
+  apply Rle_lt_trans with (delta / 2).
   apply Rmin_l.
   unfold Rdiv; apply Rmult_lt_reg_l with 2.
   prove_sup0.
@@ -1311,13 +1310,12 @@ Proof.
     case
     (Rcase_abs
       ((f (c + Rmax (- (delta / 2)) ((a + - c) / 2)) + - f c) /
-        Rmax (- (delta / 2)) ((a + - c) / 2) + - l)).
-  intro;
-    elim
+        Rmax (- (delta / 2)) ((a + - c) / 2) + - l)) as [Hlt|Hge].
+  elim
       (Rlt_irrefl 0
         (Rlt_trans 0
           ((f (c + Rmax (- (delta / 2)) ((a + - c) / 2)) + - f c) /
-            Rmax (- (delta / 2)) ((a + - c) / 2) + - l) 0 H19 r)).
+            Rmax (- (delta / 2)) ((a + - c) / 2) + - l) 0 H19 Hlt)).
   intros;
     generalize
       (Rplus_lt_compat_r l
@@ -1380,8 +1378,8 @@ Proof.
   apply Rplus_lt_compat_l; assumption.
   field; discrR.
   assumption.
-  unfold Rabs; case (Rcase_abs (Rmax (- (delta / 2)) ((a - c) / 2))).
-  intro; generalize (RmaxLess1 (- (delta / 2)) ((a - c) / 2)); intro;
+  unfold Rabs; case (Rcase_abs (Rmax (- (delta / 2)) ((a - c) / 2))) as [Hlt|Hge].
+  generalize (RmaxLess1 (- (delta / 2)) ((a - c) / 2)); intro;
     generalize
       (Ropp_le_ge_contravar (- (delta / 2)) (Rmax (- (delta / 2)) ((a - c) / 2))
         H12); rewrite Ropp_involutive; intro;
@@ -1402,7 +1400,7 @@ Proof.
     generalize
       (Rmax_stable_in_negreal (mknegreal (- (delta / 2)) H13)
         (mknegreal ((a - c) / 2) H12)); simpl;
-      intro; generalize (Rge_le (Rmax (- (delta / 2)) ((a - c) / 2)) 0 r);
+      intro; generalize (Rge_le (Rmax (- (delta / 2)) ((a - c) / 2)) 0 Hge);
         intro;
           elim
             (Rlt_irrefl 0
@@ -1494,11 +1492,10 @@ Proof.
     cut (0 <= (f (x + delta / 2) - f x) / (delta / 2)).
   intro; cut (0 <= (f (x + delta / 2) - f x) / (delta / 2) - l).
   intro; unfold Rabs;
-    case (Rcase_abs ((f (x + delta / 2) - f x) / (delta / 2) - l)).
-  intro;
-    elim
+    case (Rcase_abs ((f (x + delta / 2) - f x) / (delta / 2) - l)) as [Hlt|Hge].
+  elim
       (Rlt_irrefl 0
-        (Rle_lt_trans 0 ((f (x + delta / 2) - f x) / (delta / 2) - l) 0 H12 r)).
+        (Rle_lt_trans 0 ((f (x + delta / 2) - f x) / (delta / 2) - l) 0 H12 Hlt)).
   intros;
     generalize
       (Rplus_lt_compat_r l ((f (x + delta / 2) - f x) / (delta / 2) - l)

@@ -583,14 +583,14 @@ split.
 intro; inv.
 destruct 1; inv.
 intros.
-destruct (eqA_dec x a); simpl; auto.
+destruct (eqA_dec x a) as [Heq|Hnot]; simpl; auto.
 rewrite IHl; split; destruct 1; split; auto.
 inv; auto.
 destruct H0; transitivity a; auto.
 split.
 intro; inv.
 split; auto.
-contradict n.
+contradict Hnot.
 transitivity y; auto.
 rewrite (IHl x y) in H0; destruct H0; auto.
 destruct 1; inv; auto.
@@ -890,9 +890,9 @@ split; intros.
 invlist InA.
 compute in H2; destruct H2. subst b'.
 destruct (eqA_dec a a'); intuition.
-destruct (eqA_dec a a'); simpl.
+destruct (eqA_dec a a') as [HeqA|]; simpl.
 contradict H0.
-revert e H2; clear - eqA_equiv.
+revert HeqA H2; clear - eqA_equiv.
 induction l.
 intros; invlist InA.
 intros; invlist InA; auto.

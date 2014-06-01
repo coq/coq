@@ -673,24 +673,24 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
    forall (s : t) (x : elt) (f : elt -> bool),
    compat_bool E.eq f -> In x (filter f s) -> In x s.
   Proof.
-    intros s x f; unfold filter; case M.filter; intuition.
-    generalize (i (compat_P_aux H)); firstorder.
+    intros s x f; unfold filter; case M.filter as (x0,Hiff); intuition.
+    generalize (Hiff (compat_P_aux H)); firstorder.
   Qed.
 
   Lemma filter_2 :
    forall (s : t) (x : elt) (f : elt -> bool),
    compat_bool E.eq f -> In x (filter f s) -> f x = true.
   Proof.
-    intros s x f; unfold filter; case M.filter; intuition.
-    generalize (i (compat_P_aux H)); firstorder.
+    intros s x f; unfold filter; case M.filter as (x0,Hiff); intuition.
+    generalize (Hiff (compat_P_aux H)); firstorder.
   Qed.
 
   Lemma filter_3 :
    forall (s : t) (x : elt) (f : elt -> bool),
    compat_bool E.eq f -> In x s -> f x = true -> In x (filter f s).
   Proof.
-    intros s x f; unfold filter; case M.filter; intuition.
-    generalize (i (compat_P_aux H)); firstorder.
+    intros s x f; unfold filter; case M.filter as (x0,Hiff); intuition.
+    generalize (Hiff (compat_P_aux H)); firstorder.
   Qed.
 
   Definition for_all (f : elt -> bool) (s : t) : bool :=

@@ -489,16 +489,16 @@ Lemma pow_Rabs : forall (x:R) (n:nat), x ^ n <= Rabs x ^ n.
 Proof.
   intros; induction  n as [| n Hrecn].
   right; reflexivity.
-  simpl; case (Rcase_abs x); intro.
+  simpl; destruct (Rcase_abs x) as [Hlt|Hle].
   apply Rle_trans with (Rabs (x * x ^ n)).
   apply RRle_abs.
   rewrite Rabs_mult.
   apply Rmult_le_compat_l.
   apply Rabs_pos.
-  right; symmetry ; apply RPow_abs.
-  pattern (Rabs x) at 1; rewrite (Rabs_right x r);
+  right; symmetry; apply RPow_abs.
+  pattern (Rabs x) at 1; rewrite (Rabs_right x Hle);
     apply Rmult_le_compat_l.
-  apply Rge_le; exact r.
+  apply Rge_le; exact Hle.
   apply Hrecn.
 Qed.
 
@@ -741,10 +741,11 @@ Qed.
 Lemma R_dist_sym : forall x y:R, R_dist x y = R_dist y x.
 Proof.
   unfold R_dist; intros; split_Rabs; try ring.
-  generalize (Ropp_gt_lt_0_contravar (y - x) r); intro;
-    rewrite (Ropp_minus_distr y x) in H; generalize (Rlt_asym (x - y) 0 r0);
+Show.
+  generalize (Ropp_gt_lt_0_contravar (y - x) Hlt0); intro;
+    rewrite (Ropp_minus_distr y x) in H; generalize (Rlt_asym (x - y) 0 Hlt);
       intro; unfold Rgt in H; exfalso; auto.
-  generalize (minus_Rge y x r); intro; generalize (minus_Rge x y r0); intro;
+  generalize (minus_Rge y x Hge0); intro; generalize (minus_Rge x y Hge); intro;
     generalize (Rge_antisym x y H0 H); intro; rewrite H1;
       ring.
 Qed.

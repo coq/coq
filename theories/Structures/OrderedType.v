@@ -85,16 +85,16 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma lt_eq : forall x y z, lt x y -> eq y z -> lt x z.
   Proof.
-   intros; destruct (compare x z); auto.
+   intros; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
    elim (lt_not_eq H); apply eq_trans with z; auto.
-   elim (lt_not_eq (lt_trans l H)); auto.
+   elim (lt_not_eq (lt_trans Hlt H)); auto.
   Qed.
 
   Lemma eq_lt : forall x y z, eq x y -> lt y z -> lt x z.
   Proof.
-   intros; destruct (compare x z); auto.
+   intros; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
    elim (lt_not_eq H0); apply eq_trans with x; auto.
-   elim (lt_not_eq (lt_trans H0 l)); auto.
+   elim (lt_not_eq (lt_trans H0 Hlt)); auto.
   Qed.
 
   Instance lt_compat : Proper (eq==>eq==>iff) lt.

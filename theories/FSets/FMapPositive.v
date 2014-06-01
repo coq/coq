@@ -1074,7 +1074,7 @@ Module PositiveMapAdditionalFacts.
     find i (add j x m) = if E.eq_dec i j then Some x else find i m.
   Proof.
     intros.
-    destruct (E.eq_dec i j); [ rewrite e; apply gss | apply gso; auto ].
+    destruct (E.eq_dec i j) as [ ->|]; [ apply gss | apply gso; auto ].
   Qed.
 
    (* Not derivable from the Map interface *)

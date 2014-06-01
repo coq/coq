@@ -702,18 +702,18 @@ Add Parametric Morphism elt : (@add elt)
  with signature E.eq ==> eq ==> Equal ==> Equal as add_m.
 Proof.
 intros k k' Hk e m m' Hm y.
-rewrite add_o, add_o; do 2 destruct eq_dec; auto.
-elim n; rewrite <-Hk; auto.
-elim n; rewrite Hk; auto.
+rewrite add_o, add_o; do 2 destruct eq_dec as [|?Hnot]; auto.
+elim Hnot; rewrite <-Hk; auto.
+elim Hnot; rewrite Hk; auto.
 Qed.
 
 Add Parametric Morphism elt : (@remove elt)
  with signature E.eq ==> Equal ==> Equal as remove_m.
 Proof.
 intros k k' Hk m m' Hm y.
-rewrite remove_o, remove_o; do 2 destruct eq_dec; auto.
-elim n; rewrite <-Hk; auto.
-elim n; rewrite Hk; auto.
+rewrite remove_o, remove_o; do 2 destruct eq_dec as [|?Hnot]; auto.
+elim Hnot; rewrite <-Hk; auto.
+elim Hnot; rewrite Hk; auto.
 Qed.
 
 Add Parametric Morphism elt elt' : (@map elt elt')
@@ -861,7 +861,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   inversion_clear Hnodup as [| ? ? Hnotin Hnodup'].
   specialize (IH k Hnodup'); clear Hnodup'.
   rewrite add_o, IH.
-  unfold eqb; do 2 destruct eq_dec; auto; elim n; eauto.
+  unfold eqb; do 2 destruct eq_dec as [|?Hnot]; auto; elim Hnot; eauto.
   Qed.
 
   Lemma of_list_2 : forall l, NoDupA eqk l ->
@@ -928,7 +928,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
    apply InA_eqke_eqk with k e'; auto.
    rewrite <- of_list_1; auto.
    intro k'. rewrite Hsame, add_o, of_list_1b. simpl.
-   unfold eqb. do 2 destruct eq_dec; auto; elim n; eauto.
+   unfold eqb. do 2 destruct eq_dec as [|?Hnot]; auto; elim Hnot; eauto.
    inversion_clear Hdup; auto.
   apply IHl.
    intros; eapply Hstep'; eauto.
@@ -1890,7 +1890,7 @@ Module OrdProperties (M:S).
    find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
    add_mapsto_iff by (auto with *).
   unfold O.eqke; simpl. intuition.
-  destruct (E.eq_dec x t0); auto.
+  destruct (E.eq_dec x t0) as [Heq|Hneq]; auto.
   exfalso.
   assert (In t0 m).
    exists e0; auto.
@@ -1919,7 +1919,7 @@ Module OrdProperties (M:S).
     find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
     add_mapsto_iff by (auto with *).
   unfold O.eqke; simpl. intuition.
-  destruct (E.eq_dec x t0); auto.
+  destruct (E.eq_dec x t0) as [Heq|Hneq]; auto.
   exfalso.
   assert (In t0 m).
    exists e0; auto.
@@ -1975,7 +1975,7 @@ Module OrdProperties (M:S).
   inversion_clear H1; [ | inversion_clear H2; eauto ].
   red in H3; simpl in H3; destruct H3.
   destruct p as (p1,p2).
-  destruct (E.eq_dec p1 x).
+  destruct (E.eq_dec p1 x) as [Heq|Hneq].
   apply ME.lt_eq with p1; auto.
    inversion_clear H2.
    inversion_clear H5.

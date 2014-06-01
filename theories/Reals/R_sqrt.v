@@ -37,8 +37,8 @@ Lemma sqrt_sqrt : forall x:R, 0 <= x -> sqrt x * sqrt x = x.
 Proof.
   intros.
   unfold sqrt.
-  case (Rcase_abs x); intro.
-  elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ r H)).
+  case (Rcase_abs x) as [Hlt|Hge].
+  elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ Hlt H)).
   rewrite Rsqrt_Rsqrt; reflexivity.
 Qed.
 

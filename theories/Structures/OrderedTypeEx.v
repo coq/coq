@@ -279,7 +279,7 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
   Proof.
   induction x; destruct y.
   - (* I I *)
-    destruct (IHx y).
+    destruct (IHx y) as [l|e|g].
     apply LT; auto.
     apply EQ; rewrite e; red; auto.
     apply GT; auto.
@@ -290,7 +290,7 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
   - (* O I *)
     apply LT; simpl; auto.
   - (* O O *)
-    destruct (IHx y).
+    destruct (IHx y) as [l|e|g].
     apply LT; auto.
     apply EQ; rewrite e; red; auto.
     apply GT; auto.

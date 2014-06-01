@@ -45,12 +45,12 @@ Qed.
 (*********)
 Lemma Rmin_Rgt_l : forall r1 r2 r, Rmin r1 r2 > r -> r1 > r /\ r2 > r.
 Proof.
-  intros r1 r2 r; unfold Rmin; case (Rle_dec r1 r2); intros.
+  intros r1 r2 r; unfold Rmin; case (Rle_dec r1 r2) as [Hle|Hnle]; intros.
   split.
   assumption.
-  unfold Rgt; unfold Rgt in H; exact (Rlt_le_trans r r1 r2 H r0).
+  unfold Rgt; exact (Rlt_le_trans r r1 r2 H Hle).
   split.
-  generalize (Rnot_le_lt r1 r2 n); intro; exact (Rgt_trans r1 r2 r H0 H).
+  generalize (Rnot_le_lt r1 r2 Hnle); intro; exact (Rgt_trans r1 r2 r H0 H).
   assumption.
 Qed.
 
@@ -168,10 +168,10 @@ Lemma Rmax_Rle : forall r1 r2 r, r <= Rmax r1 r2 <-> r <= r1 \/ r <= r2.
 Proof.
   intros; split.
   unfold Rmax; case (Rle_dec r1 r2); intros; auto.
-  intro; unfold Rmax; case (Rle_dec r1 r2); elim H; clear H; intros;
+  intro; unfold Rmax; case (Rle_dec r1 r2) as [|Hnle]; elim H; clear H; intros;
     auto.
   apply (Rle_trans r r1 r2); auto.
-  generalize (Rnot_le_lt r1 r2 n); clear n; intro; unfold Rgt in H0;
+  generalize (Rnot_le_lt r1 r2 Hnle); clear Hnle; intro; unfold Rgt in H0;
     apply (Rlt_le r r1 (Rle_lt_trans r r2 r1 H H0)).
 Qed.
 
@@ -320,9 +320,9 @@ Qed.
 (*********)
 Lemma Rabs_right : forall r, r >= 0 -> Rabs r = r.
 Proof.
-  intros; unfold Rabs; case (Rcase_abs r); intro.
+  intros; unfold Rabs; case (Rcase_abs r) as [Hlt|Hge].
   absurd (r >= 0).
-  exact (Rlt_not_ge r 0 r0).
+  exact (Rlt_not_ge r 0 Hlt).
   assumption.
   trivial.
 Qed.
@@ -337,9 +337,9 @@ Qed.
 (*********)
 Lemma Rabs_pos : forall x:R, 0 <= Rabs x.
 Proof.
-  intros; unfold Rabs; case (Rcase_abs x); intro.
-  generalize (Ropp_lt_gt_contravar x 0 r); intro; unfold Rgt in H;
-    rewrite Ropp_0 in H; unfold Rle; left; assumption.
+  intros; unfold Rabs; case (Rcase_abs x) as [Hlt|Hge].
+  generalize (Ropp_lt_gt_contravar x 0 Hlt); intro; unfold Rgt in H;
+    rewrite Ropp_0 in H; left; assumption.
   apply Rge_le; assumption.
 Qed.
 
@@ -353,8 +353,8 @@ Definition RRle_abs := Rle_abs.
 (*********)
 Lemma Rabs_pos_eq : forall x:R, 0 <= x -> Rabs x = x.
 Proof.
-  intros; unfold Rabs; case (Rcase_abs x); intro;
-    [ generalize (Rgt_not_le 0 x r); intro; exfalso; auto | trivial ].
+  intros; unfold Rabs; case (Rcase_abs x) as [Hlt|Hge];
+    [ generalize (Rgt_not_le 0 x Hlt); intro; exfalso; auto | trivial ].
 Qed.
 
 (*********)
@@ -366,100 +366,70 @@ Qed.
 (*********)
 Lemma Rabs_pos_lt : forall x:R, x <> 0 -> 0 < Rabs x.
 Proof.
-  intros; generalize (Rabs_pos x); intro; unfold Rle in H0; elim H0; intro;
-    auto.
-  exfalso; clear H0; elim H; clear H; generalize H1; unfold Rabs;
-    case (Rcase_abs x); intros; auto.
-  clear r H1; generalize (Rplus_eq_compat_l x 0 (- x) H0);
-    rewrite (let (H1, H2) := Rplus_ne x in H1); rewrite (Rplus_opp_r x);
-      trivial.
+  intros; destruct (Rabs_pos x) as [|Heq]; auto.
+  apply Rabs_no_R0 in H; symmetry in Heq; contradiction.
 Qed.
 
 (*********)
 Lemma Rabs_minus_sym : forall x y:R, Rabs (x - y) = Rabs (y - x).
 Proof.
-  intros; unfold Rabs; case (Rcase_abs (x - y));
-    case (Rcase_abs (y - x)); intros.
-  generalize (Rminus_lt y x r); generalize (Rminus_lt x y r0); intros;
-    generalize (Rlt_asym x y H); intro; exfalso;
-      auto.
+  intros; unfold Rabs; case (Rcase_abs (x - y)) as [Hlt|Hge];
+    case (Rcase_abs (y - x)) as [Hlt'|Hge'].
+  apply Rminus_lt, Rlt_asym in Hlt; apply Rminus_lt in Hlt'; contradiction.
   rewrite (Ropp_minus_distr x y); trivial.
   rewrite (Ropp_minus_distr y x); trivial.
-  unfold Rge in r, r0; elim r; elim r0; intros; clear r r0.
-  generalize (Ropp_lt_gt_0_contravar (x - y) H); rewrite (Ropp_minus_distr x y);
-    intro; unfold Rgt in H0; generalize (Rlt_asym 0 (y - x) H0);
-      intro; exfalso; auto.
-  rewrite (Rminus_diag_uniq x y H); trivial.
-  rewrite (Rminus_diag_uniq y x H0); trivial.
-  rewrite (Rminus_diag_uniq y x H0); trivial.
+  destruct Hge; destruct Hge'.
+  apply Ropp_lt_gt_0_contravar in H; rewrite (Ropp_minus_distr x y) in H;
+    apply Rlt_asym in H0; contradiction.
+  apply Rminus_diag_uniq in H0 as ->; trivial.
+  apply Rminus_diag_uniq in H as ->; trivial.
+  apply Rminus_diag_uniq in H0 as ->; trivial.
 Qed.
 
 (*********)
 Lemma Rabs_mult : forall x y:R, Rabs (x * y) = Rabs x * Rabs y.
 Proof.
-  intros; unfold Rabs; case (Rcase_abs (x * y)); case (Rcase_abs x);
-    case (Rcase_abs y); intros; auto.
-  generalize (Rmult_lt_gt_compat_neg_l y x 0 r r0); intro;
-    rewrite (Rmult_0_r y) in H; generalize (Rlt_asym (x * y) 0 r1);
-      intro; unfold Rgt in H; exfalso; rewrite (Rmult_comm y x) in H;
-        auto.
+  intros; unfold Rabs; case (Rcase_abs (x * y)) as [Hlt|Hge];
+    case (Rcase_abs x) as [Hltx|Hgex];
+    case (Rcase_abs y) as [Hlty|Hgey]; auto.
+  apply Rmult_lt_gt_compat_neg_l with (r:=x), Rlt_asym in Hlty; trivial.
+    rewrite Rmult_0_r in Hlty; contradiction.
   rewrite (Ropp_mult_distr_l_reverse x y); trivial.
   rewrite (Rmult_comm x (- y)); rewrite (Ropp_mult_distr_l_reverse y x);
     rewrite (Rmult_comm x y); trivial.
-  unfold Rge in r, r0; elim r; elim r0; clear r r0; intros; unfold Rgt in H, H0.
-  generalize (Rmult_lt_compat_l x 0 y H H0); intro; rewrite (Rmult_0_r x) in H1;
-    generalize (Rlt_asym (x * y) 0 r1); intro; exfalso;
-      auto.
-  rewrite H in r1; rewrite (Rmult_0_l y) in r1; generalize (Rlt_irrefl 0);
-    intro; exfalso; auto.
-  rewrite H0 in r1; rewrite (Rmult_0_r x) in r1; generalize (Rlt_irrefl 0);
-    intro; exfalso; auto.
-  rewrite H0 in r1; rewrite (Rmult_0_r x) in r1; generalize (Rlt_irrefl 0);
-    intro; exfalso; auto.
+  destruct Hgex as [| ->], Hgey as [| ->].
+  apply Rmult_lt_compat_l with (r:=x), Rlt_asym in H0; trivial.
+    rewrite Rmult_0_r in H0; contradiction.
+  rewrite Rmult_0_r in Hlt; contradiction (Rlt_irrefl 0).
+  rewrite Rmult_0_l in Hlt; contradiction (Rlt_irrefl 0).
+  rewrite Rmult_0_l in Hlt; contradiction (Rlt_irrefl 0).
   rewrite (Rmult_opp_opp x y); trivial.
-  unfold Rge in r, r1; elim r; elim r1; clear r r1; intros; unfold Rgt in H0, H.
-  generalize (Rmult_lt_compat_l y x 0 H0 r0); intro;
-    rewrite (Rmult_0_r y) in H1; rewrite (Rmult_comm y x) in H1;
-      generalize (Rlt_asym (x * y) 0 H1); intro; exfalso;
-        auto.
-  generalize (Rlt_dichotomy_converse x 0 (or_introl (x > 0) r0));
-    generalize (Rlt_dichotomy_converse y 0 (or_intror (y < 0) H0));
-      intros; generalize (Rmult_integral x y H); intro;
-        elim H3; intro; exfalso; auto.
-  rewrite H0 in H; rewrite (Rmult_0_r x) in H; unfold Rgt in H;
-    generalize (Rlt_irrefl 0); intro; exfalso;
-      auto.
-  rewrite H0; rewrite (Rmult_0_r x); rewrite (Rmult_0_r (- x)); trivial.
-  unfold Rge in r0, r1; elim r0; elim r1; clear r0 r1; intros;
-    unfold Rgt in H0, H.
-  generalize (Rmult_lt_compat_l x y 0 H0 r); intro; rewrite (Rmult_0_r x) in H1;
-    generalize (Rlt_asym (x * y) 0 H1); intro; exfalso;
-      auto.
-  generalize (Rlt_dichotomy_converse y 0 (or_introl (y > 0) r));
-    generalize (Rlt_dichotomy_converse 0 x (or_introl (0 > x) H0));
-      intros; generalize (Rmult_integral x y H); intro;
-        elim H3; intro; exfalso; auto.
-  rewrite H0 in H; rewrite (Rmult_0_l y) in H; unfold Rgt in H;
-    generalize (Rlt_irrefl 0); intro; exfalso;
-      auto.
-  rewrite H0; rewrite (Rmult_0_l y); rewrite (Rmult_0_l (- y)); trivial.
+  destruct Hge. destruct Hgey.
+  apply Rmult_lt_compat_r with (r:=y), Rlt_asym in Hltx; trivial.
+    rewrite Rmult_0_l in Hltx; contradiction.
+  rewrite H0, Rmult_0_r in H; contradiction (Rlt_irrefl 0).
+  rewrite <- Ropp_mult_distr_l, H, Ropp_0; trivial.
+  destruct Hge. destruct Hgex.
+  apply Rmult_lt_compat_l with (r:=x), Rlt_asym in Hlty; trivial.
+    rewrite Rmult_0_r in Hlty; contradiction.
+  rewrite H0, 2!Rmult_0_l; trivial.
+  rewrite <- Ropp_mult_distr_r, H, Ropp_0; trivial.
 Qed.
 
 (*********)
 Lemma Rabs_Rinv : forall r, r <> 0 -> Rabs (/ r) = / Rabs r.
 Proof.
-  intro; unfold Rabs; case (Rcase_abs r); case (Rcase_abs (/ r)); auto;
+  intro; unfold Rabs; case (Rcase_abs r) as [Hlt|Hge];
+    case (Rcase_abs (/ r)) as [Hlt'|Hge']; auto;
     intros.
   apply Ropp_inv_permute; auto.
-  generalize (Rinv_lt_0_compat r r1); intro; unfold Rge in r0; elim r0; intros.
-  unfold Rgt in H1; generalize (Rlt_asym 0 (/ r) H1); intro; exfalso;
-    auto.
-  generalize (Rlt_dichotomy_converse (/ r) 0 (or_introl (/ r > 0) H0)); intro;
-    exfalso; auto.
-  unfold Rge in r1; elim r1; clear r1; intro.
-  unfold Rgt in H0; generalize (Rlt_asym 0 (/ r) (Rinv_0_lt_compat r H0));
-    intro; exfalso; auto.
-  exfalso; auto.
+  rewrite <- Ropp_inv_permute; trivial.
+  destruct Hge' as [| ->].
+  apply Rinv_lt_0_compat, Rlt_asym in Hlt; contradiction.
+  rewrite Ropp_0; trivial.
+  destruct Hge as [| ->].
+  apply Rinv_0_lt_compat, Rlt_asym in H0; contradiction.
+  contradiction (refl_equal 0).
 Qed.
 
 Lemma Rabs_Ropp : forall x:R, Rabs (- x) = Rabs x.
@@ -483,13 +453,14 @@ Qed.
 (*********)
 Lemma Rabs_triang : forall a b:R, Rabs (a + b) <= Rabs a + Rabs b.
 Proof.
-  intros a b; unfold Rabs; case (Rcase_abs (a + b)); case (Rcase_abs a);
-    case (Rcase_abs b); intros.
+  intros a b; unfold Rabs; case (Rcase_abs (a + b)) as [Hlt|Hge];
+    case (Rcase_abs a) as [Hlta|Hgea];
+    case (Rcase_abs b) as [Hltb|Hgeb].
   apply (Req_le (- (a + b)) (- a + - b)); rewrite (Ropp_plus_distr a b);
     reflexivity.
 (**)
   rewrite (Ropp_plus_distr a b); apply (Rplus_le_compat_l (- a) (- b) b);
-    unfold Rle; unfold Rge in r; elim r; intro.
+    unfold Rle; elim Hgeb; intro.
   left; unfold Rgt in H; generalize (Rplus_lt_compat_l (- b) 0 b H); intro;
     elim (Rplus_ne (- b)); intros v w; rewrite v in H0;
       clear v w; rewrite (Rplus_opp_l b) in H0; apply (Rlt_trans (- b) 0 b H0 H).
@@ -497,24 +468,24 @@ Proof.
 (**)
   rewrite (Ropp_plus_distr a b); rewrite (Rplus_comm (- a) (- b));
     rewrite (Rplus_comm a (- b)); apply (Rplus_le_compat_l (- b) (- a) a);
-      unfold Rle; unfold Rge in r0; elim r0; intro.
+      unfold Rle; elim Hgea; intro.
   left; unfold Rgt in H; generalize (Rplus_lt_compat_l (- a) 0 a H); intro;
     elim (Rplus_ne (- a)); intros v w; rewrite v in H0;
       clear v w; rewrite (Rplus_opp_l a) in H0; apply (Rlt_trans (- a) 0 a H0 H).
   right; rewrite H; apply Ropp_0.
 (**)
-  exfalso; generalize (Rplus_ge_compat_l a b 0 r); intro;
+  exfalso; generalize (Rplus_ge_compat_l a b 0 Hgeb); intro;
     elim (Rplus_ne a); intros v w; rewrite v in H; clear v w;
-      generalize (Rge_trans (a + b) a 0 H r0); intro; clear H;
+      generalize (Rge_trans (a + b) a 0 H Hgea); intro; clear H;
         unfold Rge in H0; elim H0; intro; clear H0.
-  unfold Rgt in H; generalize (Rlt_asym (a + b) 0 r1); intro; auto.
+  unfold Rgt in H; generalize (Rlt_asym (a + b) 0 Hlt); intro; auto.
   absurd (a + b = 0); auto.
   apply (Rlt_dichotomy_converse (a + b) 0); left; assumption.
 (**)
-  exfalso; generalize (Rplus_lt_compat_l a b 0 r); intro;
+  exfalso; generalize (Rplus_lt_compat_l a b 0 Hltb); intro;
     elim (Rplus_ne a); intros v w; rewrite v in H; clear v w;
-      generalize (Rlt_trans (a + b) a 0 H r0); intro; clear H;
-        unfold Rge in r1; elim r1; clear r1; intro.
+      generalize (Rlt_trans (a + b) a 0 H Hlta); intro; clear H;
+        destruct Hge.
   unfold Rgt in H; generalize (Rlt_trans (a + b) 0 (a + b) H0 H); intro;
     apply (Rlt_irrefl (a + b)); assumption.
   rewrite H in H0; apply (Rlt_irrefl 0); assumption.
@@ -522,16 +493,16 @@ Proof.
   rewrite (Rplus_comm a b); rewrite (Rplus_comm (- a) b);
     apply (Rplus_le_compat_l b a (- a)); apply (Rminus_le a (- a));
       unfold Rminus; rewrite (Ropp_involutive a);
-        generalize (Rplus_lt_compat_l a a 0 r0); clear r r1;
+        generalize (Rplus_lt_compat_l a a 0 Hlta); clear Hge Hgeb;
           intro; elim (Rplus_ne a); intros v w; rewrite v in H;
-            clear v w; generalize (Rlt_trans (a + a) a 0 H r0);
+            clear v w; generalize (Rlt_trans (a + a) a 0 H Hlta);
               intro; apply (Rlt_le (a + a) 0 H0).
 (**)
   apply (Rplus_le_compat_l a b (- b)); apply (Rminus_le b (- b));
     unfold Rminus; rewrite (Ropp_involutive b);
-      generalize (Rplus_lt_compat_l b b 0 r); clear r0 r1;
+      generalize (Rplus_lt_compat_l b b 0 Hltb); clear Hge Hgea;
         intro; elim (Rplus_ne b); intros v w; rewrite v in H;
-          clear v w; generalize (Rlt_trans (b + b) b 0 H r);
+          clear v w; generalize (Rlt_trans (b + b) b 0 H Hltb);
             intro; apply (Rlt_le (b + b) 0 H0).
 (**)
   unfold Rle; right; reflexivity.
@@ -585,15 +556,15 @@ Qed.
 (*********)
 Lemma Rabs_def2 : forall x a:R, Rabs x < a -> x < a /\ - a < x.
 Proof.
-  unfold Rabs; intro x; case (Rcase_abs x); intros.
-  generalize (Ropp_gt_lt_0_contravar x r); unfold Rgt; intro;
+  unfold Rabs; intro x; case (Rcase_abs x) as [Hlt|Hge]; intros.
+  generalize (Ropp_gt_lt_0_contravar x Hlt); unfold Rgt; intro;
     generalize (Rlt_trans 0 (- x) a H0 H); intro; split.
-  apply (Rlt_trans x 0 a r H1).
+  apply (Rlt_trans x 0 a Hlt H1).
   generalize (Ropp_lt_gt_contravar (- x) a H); rewrite (Ropp_involutive x);
     unfold Rgt; trivial.
-  fold (a > x) in H; generalize (Rgt_ge_trans a x 0 H r); intro;
+  fold (a > x) in H; generalize (Rgt_ge_trans a x 0 H Hge); intro;
     generalize (Ropp_lt_gt_0_contravar a H0); intro; fold (0 > - a);
-      generalize (Rge_gt_trans x 0 (- a) r H1); unfold Rgt;
+      generalize (Rge_gt_trans x 0 (- a) Hge H1); unfold Rgt;
         intro; split; assumption.
 Qed.
 

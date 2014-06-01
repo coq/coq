@@ -18,8 +18,7 @@ Lemma sqrt_var_maj :
 Proof.
   intros; cut (0 <= 1 + h).
   intro; apply Rle_trans with (Rabs (sqrt (Rsqr (1 + h)) - 1)).
-  case (total_order_T h 0); intro.
-  elim s; intro.
+  destruct (total_order_T h 0) as [[Hlt|Heq]|Hgt].
   repeat rewrite Rabs_left.
   unfold Rminus; do 2 rewrite <- (Rplus_comm (-1)).
   do 2 rewrite Ropp_plus_distr; rewrite Ropp_involutive;
@@ -51,7 +50,7 @@ Proof.
   left; apply Rlt_0_1.
   pattern 1 at 2; rewrite <- Rplus_0_r; apply Rplus_lt_compat_l;
     assumption.
-  rewrite b; rewrite Rplus_0_r; rewrite Rsqr_1; rewrite sqrt_1; right;
+  rewrite Heq; rewrite Rplus_0_r; rewrite Rsqr_1; rewrite sqrt_1; right;
     reflexivity.
   repeat rewrite Rabs_right.
   unfold Rminus; do 2 rewrite <- (Rplus_comm (-1));
@@ -86,16 +85,15 @@ Proof.
   rewrite sqrt_Rsqr.
   replace (1 + h - 1) with h; [ right; reflexivity | ring ].
   apply H0.
-  case (total_order_T h 0); intro.
-  elim s; intro.
-  rewrite (Rabs_left h a) in H.
+  destruct (total_order_T h 0) as [[Hlt|Heq]|Hgt].
+  rewrite (Rabs_left h Hlt) in H.
   apply Rplus_le_reg_l with (- h).
   rewrite Rplus_0_r; rewrite Rplus_comm; rewrite Rplus_assoc;
     rewrite Rplus_opp_r; rewrite Rplus_0_r; exact H.
-  left; rewrite b; rewrite Rplus_0_r; apply Rlt_0_1.
+  left; rewrite Heq; rewrite Rplus_0_r; apply Rlt_0_1.
   left; apply Rplus_lt_0_compat.
   apply Rlt_0_1.
-  apply r.
+  apply Hgt.
 Qed.
 
 (** sqrt is continuous in 1 *)
@@ -203,8 +201,8 @@ Proof.
   left; apply Rlt_0_1.
   left; apply H.
   elim H6; intros.
-  case (Rcase_abs (x0 - x)); intro.
-  rewrite (Rabs_left (x0 - x) r) in H8.
+  destruct (Rcase_abs (x0 - x)) as [Hlt|Hgt].
+  rewrite (Rabs_left (x0 - x) Hlt) in H8.
   rewrite Rplus_comm.
   apply Rplus_le_reg_l with (- ((x0 - x) / x)).
   rewrite Rplus_0_r; rewrite <- Rplus_assoc; rewrite Rplus_opp_l;
@@ -220,7 +218,7 @@ Proof.
   apply Rplus_le_le_0_compat.
   left; apply Rlt_0_1.
   unfold Rdiv; apply Rmult_le_pos.
-  apply Rge_le; exact r.
+  apply Rge_le; exact Hgt.
   left; apply Rinv_0_lt_compat; apply H.
   unfold Rdiv; apply Rmult_lt_0_compat.
   apply H1.
@@ -273,8 +271,8 @@ Proof.
   apply Rplus_lt_le_0_compat.
   apply sqrt_lt_R0; apply H.
   apply sqrt_positivity; apply H10.
-  case (Rcase_abs h); intro.
-  rewrite (Rabs_left h r) in H9.
+  destruct (Rcase_abs h) as [Hlt|Hgt].
+  rewrite (Rabs_left h Hlt) in H9.
   apply Rplus_le_reg_l with (- h).
   rewrite Rplus_0_r; rewrite Rplus_comm; rewrite Rplus_assoc;
     rewrite Rplus_opp_r; rewrite Rplus_0_r; left; apply Rlt_le_trans with alpha1.
@@ -282,7 +280,7 @@ Proof.
   unfold alpha1; apply Rmin_r.
   apply Rplus_le_le_0_compat.
   left; assumption.
-  apply Rge_le; apply r.
+  apply Rge_le; apply Hgt.
   unfold alpha1; unfold Rmin; case (Rle_dec alpha x); intro.
   apply H5.
   apply H.
@@ -341,17 +339,16 @@ Proof.
   rewrite <- H1; rewrite sqrt_0; unfold Rminus; rewrite Ropp_0;
     rewrite Rplus_0_r; rewrite <- H1 in H5; unfold Rminus in H5;
       rewrite Ropp_0 in H5; rewrite Rplus_0_r in H5.
-  case (Rcase_abs x0); intro.
-  unfold sqrt; case (Rcase_abs x0); intro.
+  destruct (Rcase_abs x0) as [Hlt|Hgt]_eqn:Heqs.
+  unfold sqrt. rewrite Heqs.
   rewrite Rabs_R0; apply H2.
-  assert (H6 := Rge_le _ _ r0); elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H6 r)).
   rewrite Rabs_right.
   apply Rsqr_incrst_0.
   rewrite Rsqr_sqrt.
-  rewrite (Rabs_right x0 r) in H5; apply H5.
-  apply Rge_le; exact r.
-  apply sqrt_positivity; apply Rge_le; exact r.
+  rewrite (Rabs_right x0 Hgt) in H5; apply H5.
+  apply Rge_le; exact Hgt.
+  apply sqrt_positivity; apply Rge_le; exact Hgt.
   left; exact H2.
-  apply Rle_ge; apply sqrt_positivity; apply Rge_le; exact r.
+  apply Rle_ge; apply sqrt_positivity; apply Rge_le; exact Hgt.
   elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ H1 H)).
 Qed.

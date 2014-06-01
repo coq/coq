@@ -162,9 +162,9 @@ Proof.
       (Rplus_lt_compat (Rabs (d x0 * (x1 - x0))) (eps * / 2)
         (Rabs (x1 - x0) * eps) (eps * / 2) H5 H3); intro;
       rewrite eps2 in H10; assumption.
-  unfold Rabs; case (Rcase_abs 2); auto.
-  intro; cut (0 < 2).
-  intro ; elim (Rlt_asym 0 2 H7 r).
+  unfold Rabs; destruct (Rcase_abs 2) as [Hlt|Hge]; auto.
+  cut (0 < 2).
+  intro H7; elim (Rlt_asym 0 2 H7 Hlt).
   fourier.
   apply Rabs_no_R0.
   discrR.
@@ -193,11 +193,11 @@ Proof.
     unfold limit_in; intros; simpl; split with eps;
       split; auto.
   intros; elim H0; clear H0; intros; unfold D_x in H0; elim H0; intros;
-    rewrite (Rinv_r (x - x0) (Rminus_eq_contra x x0 (not_eq_sym H3)));
-      unfold R_dist; rewrite (Rminus_diag_eq 1 1 (eq_refl 1));
-        unfold Rabs; case (Rcase_abs 0); intro.
+    rewrite (Rinv_r (x - x0) (Rminus_eq_contra x x0 (sym_not_eq H3)));
+      unfold R_dist; rewrite (Rminus_diag_eq 1 1 (refl_equal 1));
+        unfold Rabs; case (Rcase_abs 0) as [Hlt|Hge].
   absurd (0 < 0); auto.
-  red; intro; apply (Rlt_irrefl 0 r).
+  red in |- *; intro; apply (Rlt_irrefl 0 Hlt).
   unfold Rgt in H; assumption.
 Qed.
 

@@ -43,7 +43,7 @@ Proof.
   rewrite Rmult_1_r; rewrite <- (Rmult_comm 3); rewrite <- Rmult_assoc;
     rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l; replace (/ exp 1) with (exp (-1)).
-  unfold exp; case (exist_exp (-1)); intros; simpl;
+  unfold exp; case (exist_exp (-1)) as (?,e); simpl in |- *;
     unfold exp_in in e;
       assert (H := alternated_series_ineq (fun i:nat => / INR (fact i)) x 1).
   cut
@@ -178,13 +178,13 @@ Qed.
 (**********)
 Lemma ln_exists : forall y:R, 0 < y -> { z:R | y = exp z }.
 Proof.
-  intros; case (Rle_dec 1 y); intro.
-  apply (ln_exists1 _ r).
+  intros; destruct (Rle_dec 1 y) as [Hle|Hnle].
+  apply (ln_exists1 _ Hle).
   assert (H0 : 1 <= / y).
   apply Rmult_le_reg_l with y.
   apply H.
   rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_r; left; apply (Rnot_le_lt _ _ n).
+  rewrite Rmult_1_r; left; apply (Rnot_le_lt _ _ Hnle).
   red; intro; rewrite H0 in H; elim (Rlt_irrefl _ H).
   destruct (ln_exists1 _ H0) as (x,p); exists (- x);
     apply Rmult_eq_reg_l with (exp x / y).
@@ -213,12 +213,10 @@ Definition ln (x:R) : R :=
 
 Lemma exp_ln : forall x:R, 0 < x -> exp (ln x) = x.
 Proof.
-  intros; unfold ln; case (Rlt_dec 0 x); intro.
+  intros; unfold ln; decide (Rlt_dec 0 x) with H.
   unfold Rln;
-    case (ln_exists (mkposreal x r) (cond_pos (mkposreal x r)));
-    intros.
-  simpl in e; symmetry ; apply e.
-  elim n; apply H.
+    case (ln_exists (mkposreal x H) (cond_pos (mkposreal x H))) as (?,Hex).
+  symmetry; apply Hex.
 Qed.
 
 Theorem exp_inv : forall x y:R, exp x = exp y -> x = y.
@@ -610,7 +608,7 @@ Proof.
     replace h with (x + h - x); [ idtac | ring ].
   apply H3; split.
   unfold D_x; split.
-  case (Rcase_abs h); intro.
+  destruct (Rcase_abs h) as [Hlt|Hgt].
   assert (H7 : Rabs h < x / 2).
   apply Rlt_le_trans with alp.
   apply H6.
@@ -623,9 +621,9 @@ Proof.
   replace (- h - x / 2 + x / 2) with (- h); [ idtac | ring ].
   pattern x at 2; rewrite double_var.
   replace (- h - x / 2 + (x / 2 + x / 2 + h)) with (x / 2); [ apply H7 | ring ].
-  apply r.
-  apply Rplus_lt_le_0_compat; [ assumption | apply Rge_le; apply r ].
-  apply (not_eq_sym (A:=R)); apply Rminus_not_eq; replace (x + h - x) with h;
+  apply Hlt.
+  apply Rplus_lt_le_0_compat; [ assumption | apply Rge_le; apply Hgt ].
+  apply (sym_not_eq (A:=R)); apply Rminus_not_eq; replace (x + h - x) with h;
     [ apply H5 | ring ].
   replace (x + h - x) with h;
   [ apply Rlt_le_trans with alp;
