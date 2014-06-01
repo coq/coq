@@ -1,0 +1,8 @@
+The V6 archive has been created in March 1996 with files from the
+former V5.10 archive and has been abandoned in 2000.
+
+A new archive named V7 has been created in August 1999 by
+Jean-Christophe Filliâtre with a new architecture placing the
+type-checking at the kernel of Coq. This new architecture came with a
+"cleaner" organization of files, a uniform indentation style, uniform
+headers, etc.

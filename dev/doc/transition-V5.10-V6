@@ -1,0 +1,5 @@
+The V5.10 archive has been created with cvs in February 1995 by
+Jean-Christophe Filliâtre. It was moved to archive V6 in March 1996.
+At this occasion, the contrib directory (user-contributions) were
+moved to a separate directory and some theories (like ALGEBRA) moved
+to the user-contributions directory too.
