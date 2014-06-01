@@ -403,6 +403,13 @@ Section Properties.
 
   End Equivalences.
 
+  Lemma clos_trans_transp_permute : forall x y,
+    transp _ (clos_trans R) x y <-> clos_trans (transp _ R) x y.
+  Proof.
+    split; induction 1;
+    (apply t_step; assumption) || eapply t_trans; eassumption.
+  Qed.
+
 End Properties.
 
 (* begin hide *)
