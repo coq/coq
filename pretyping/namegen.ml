@@ -61,6 +61,20 @@ let is_constructor id =
 (**********************************************************************)
 (* Generating "intuitive" names from its type *)
 
+let head_name c = (* Find the head constant of a constr if any *)
+  let rec hdrec c =
+    match kind_of_term c with
+    | Prod (_,_,c) | Lambda (_,_,c) | LetIn (_,_,_,c)
+    | Cast (c,_,_) | App (c,_) -> hdrec c
+    | Proj (kn,_) -> Some (Label.to_id (con_label kn))
+    | Const _ | Ind _ | Construct _ | Var _ ->
+	Some (basename_of_global (global_of_constr c))
+    | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
+	Some (match lna.(i) with Name id -> id | _ -> assert false)
+    | Sort _ | Rel _ | Meta _|Evar _|Case (_, _, _, _) -> None
+  in
+  hdrec c
+
 let lowercase_first_char id = (* First character of a constr *)
   Unicode.lowercase_first_char (Id.to_string id)
 
@@ -71,11 +85,8 @@ let sort_hdchar = function
 let hdchar env c =
   let rec hdrec k c =
     match kind_of_term c with
-    | Prod (_,_,c)    -> hdrec (k+1) c
-    | Lambda (_,_,c)  -> hdrec (k+1) c
-    | LetIn (_,_,_,c) -> hdrec (k+1) c
-    | Cast (c,_,_)    -> hdrec k c
-    | App (f,l)       -> hdrec k f
+    | Prod (_,_,c) | Lambda (_,_,c) | LetIn (_,_,_,c) -> hdrec (k+1) c
+    | Cast (c,_,_) | App (c,_) -> hdrec k c
     | Proj (kn,_)
     | Const (kn,_) -> lowercase_first_char (Label.to_id (con_label kn))
     | Ind (x,_) -> lowercase_first_char (basename_of_global (IndRef x))
@@ -89,13 +100,10 @@ let hdchar env c =
 	     | (Name id,_,_)   -> lowercase_first_char id
 	     | (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
 	   with Not_found -> "y")
-    | Fix ((_,i),(lna,_,_)) ->
+    | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
 	let id = match lna.(i) with Name id -> id | _ -> assert false in
 	lowercase_first_char id
-    | CoFix (i,(lna,_,_)) ->
-	let id = match lna.(i) with Name id -> id | _ -> assert false in
-	lowercase_first_char id
-    | Meta _|Evar _|Case (_, _, _, _) -> "y"
+    | Meta _ | Evar _ | Case (_, _, _, _) -> "y"
   in
   hdrec 0 c
 

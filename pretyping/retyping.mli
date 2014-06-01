@@ -8,6 +8,7 @@
 
 open Term
 open Evd
+open Context
 open Environ
 
 (** This family of functions assumes its constr argument is known to be
@@ -42,3 +43,5 @@ val type_of_global_reference_knowing_parameters : env -> evar_map -> constr ->
 
 val type_of_global_reference_knowing_conclusion :
   env -> evar_map -> constr -> types -> evar_map * types
+
+val sorts_of_context : env -> evar_map -> rel_context -> sorts list

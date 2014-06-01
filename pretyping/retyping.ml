@@ -232,3 +232,13 @@ let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =
 
 (* Makes an unsafe judgment from a constr *)
 let get_judgment_of env evc c = { uj_val = c; uj_type = get_type_of env evc c }
+
+(* Returns sorts of a context *)
+let sorts_of_context env evc ctxt =
+  let rec aux = function
+  | [] -> env,[]
+  | (_,_,t as d)::ctxt ->
+      let env,sorts = aux ctxt in
+      let s = get_sort_of env evc t in
+      (push_rel d env,s::sorts) in
+  snd (aux ctxt)

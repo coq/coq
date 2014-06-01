@@ -19,6 +19,7 @@ val sort_hdchar : sorts -> string
 val hdchar : env -> types -> string
 val id_of_name_using_hdchar : env -> types -> Name.t -> Id.t
 val named_hd : env -> types -> Name.t -> Name.t
+val head_name : types -> Id.t option
 
 val mkProd_name : env -> Name.t * types * types -> types
 val mkLambda_name : env -> Name.t * types * constr -> constr
