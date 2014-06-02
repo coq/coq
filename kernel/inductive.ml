@@ -627,7 +627,9 @@ let branches_specif renv c_spec ci =
 
 let check_inductive_codomain env p =
   let absctx, ar = dest_lam_assum env p in
+  let env = push_rel_context absctx env in
   let arctx, s = dest_prod_assum env ar in
+  let env = push_rel_context arctx env in
   let i,l' = decompose_app (whd_betadeltaiota env s) in
   isInd i
 
