@@ -484,7 +484,7 @@ let compare accu x y =
   if is_int x && is_int y then no_check_compare x y
   else accu x y
 
-let hobcnv = Array.init 256 (fun i -> Printf.sprintf "%.2x" i)
+let hobcnv = Array.init 256 (fun i -> Printf.sprintf "%02x" i)
 let bohcnv = Array.init 256 (fun i -> i -
                                       (if 0x30 <= i then 0x30 else 0) -
                                       (if 0x41 <= i then 0x7 else 0) -
