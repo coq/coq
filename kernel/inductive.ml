@@ -517,24 +517,29 @@ let spec_of_tree t =
   then Not_subterm
   else Subterm (Strict, t)
 
-let subterm_spec_glb init =
-  let glb2 s1 s2 = 
-    match s1, s2 with
-        s1, Dead_code -> s1
-      | Dead_code, s2 -> s2
-      | Not_subterm, _ -> Not_subterm
-      | _, Not_subterm -> Not_subterm
-      | Subterm (a1,t1), Subterm (a2,t2) ->
-          Pp.msg_info (Pp.str "t1 = ");
-          Pp.msg_info (pp_wf_paths t1);
-          Pp.msg_info (Pp.str "t2 = ");
-          Pp.msg_info (pp_wf_paths t2);
-          let r = inter_wf_paths t1 t2 in
-          Pp.msg_info (Pp.str "r = ");
-          Pp.msg_info (pp_wf_paths r);
-          Subterm (size_glb a1 a2, r)
-  in
-  Array.fold_left glb2 init
+let subterm_spec_glb s1 s2 =
+  match s1, s2 with
+  | s1, Dead_code -> s1
+  | Dead_code, s2 -> s2
+  | Not_subterm, _ -> Not_subterm
+  | _, Not_subterm -> Not_subterm
+  | Subterm (a1,t1), Subterm (a2,t2) ->
+     Pp.msg_info (Pp.str "t1 = ");
+     Pp.msg_info (pp_wf_paths t1);
+     Pp.msg_info (Pp.str "t2 = ");
+     Pp.msg_info (pp_wf_paths t2);
+     let r = inter_wf_paths t1 t2 in
+     Pp.msg_info (Pp.str "r = ");
+     Pp.msg_info (pp_wf_paths r);
+     Subterm (size_glb a1 a2, r)
+
+let family_spec_glb (oi1,s1) (oi2,s2) =
+  match oi1, oi2 with
+  | None, Some _ -> (oi2, subterm_spec_glb s1 s2)
+  | Some i1, Some i2 ->
+     if eq_ind i1 i2 then (oi1, subterm_spec_glb s1 s2)
+     else (oi1, Not_subterm)
+  | _, _ -> (oi1, subterm_spec_glb s1 s2)
 
 type guard_env =
   { env     : env;
@@ -742,14 +747,28 @@ let get_recargs_approx env ind args =
   build_recargs_nested (env,[]) (ind, args)
 
 
-let get_codomain_tree env p =
-  let absctx, ar = dest_lam_assum env p in (* TODO: reduce or preserve lets? *)
-  let arctx, s = dest_prod_assum env ar in (* TODO: check number of prods *)
-  let i,args = decompose_app (whd_betadeltaiota env s) in
-  match kind_of_term i with
-  | Ind i ->
-      let recargs = get_recargs_approx env i args in Subterm(Strict,recargs)
-  | _ -> Not_subterm
+let get_codomain_spec env p =
+  let rec family_codomain_spec env p =
+    let absctx, ar = dest_lam_assum env p in (* TODO: reduce or preserve lets? *)
+    let env = push_rel_context absctx env in
+    let arctx, s = dest_prod_assum env ar in (* TODO: check number of prods *)
+    let env = push_rel_context arctx env in
+    let i,args = decompose_app (whd_betadeltaiota env s) in
+    match kind_of_term i with
+    | Ind i ->
+       let recargs = get_recargs_approx env i args in
+       Some i, Subterm(Strict,recargs)
+    | Case (ci,p,c,lbr) ->
+       let pctx, pr = dest_lam_assum env p in
+       let env' = push_rel_context pctx env in
+       if is_arity env' pr then
+	 let specs = Array.map (family_codomain_spec env) lbr in
+	 (* What if the specs correspond to different inductive families? *)
+	 Array.fold_left family_spec_glb (None, Dead_code) specs
+       else None, Not_subterm
+    | _ -> None, Not_subterm
+  in
+  snd (family_codomain_spec env p)
 
 (* [subterm_specif renv t] computes the recursive structure of [t] and
    compare its size with the size of the initial recursive argument of
@@ -763,8 +782,8 @@ let rec subterm_specif renv stack t =
     match kind_of_term f with
     | Rel k -> subterm_var k renv
     | Case (ci,p,c,lbr) ->
-    let stack' = push_stack_closures renv l stack in
-    let pred_spec = get_codomain_tree renv.env p in
+       let stack' = push_stack_closures renv l stack in
+       let pred_spec = get_codomain_spec renv.env p in
         let cases_spec = branches_specif renv 
 	  (lazy_subterm_specif renv [] c) ci in
         let stl  =
@@ -772,7 +791,7 @@ let rec subterm_specif renv stack t =
 	  let stack_br = push_stack_args (cases_spec.(i)) stack' in
 	    subterm_specif renv stack_br br')
 	  lbr in
-	  subterm_spec_glb pred_spec stl
+	  Array.fold_left subterm_spec_glb pred_spec stl
 
     | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
       (* when proving that the fixpoint f(x)=e is less than n, it is enough
@@ -1178,7 +1197,7 @@ let check_one_cofix env nbfix def deftype =
 
 	| Case (_,p,tm,vrest) ->
 	   begin
-	    match get_codomain_tree env p with
+	    match get_codomain_spec env p with
 	    | Subterm (_, vlra') ->
 	       let vlra = inter_wf_paths vlra vlra' in
                if (noccur_with_meta n nbfix p) then
