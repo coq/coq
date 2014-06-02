@@ -147,6 +147,7 @@ let get_locality = function
 | Global -> false
 
 let save with_clean id const (locality,_,kind) hook =
+  let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
         let k = Kindops.logical_kind_of_goal_kind kind in
@@ -160,7 +161,7 @@ let save with_clean id const (locality,_,kind) hook =
 	(locality, ConstRef kn)
   in
   if with_clean then  Pfedit.delete_current_proof ();
-  Ephemeron.iter_opt hook (fun f -> f l r);
+  Ephemeron.iter_opt hook (fun f -> Future.call_hook fix_exn f l r);
   definition_message id
 
 

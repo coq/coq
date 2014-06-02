@@ -352,7 +352,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
     | [((_,fname),_,bl,ret_type,body),_] when not is_rec ->
       let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
 	Command.do_definition fname (Decl_kinds.Global,(*FIXME*)false,Decl_kinds.Definition)
-	  bl None body (Some ret_type) (fun _ _ -> ())
+	  bl None body (Some ret_type) (Future.mk_hook (fun _ _ -> ()))
     | _ ->
 	Command.do_fixpoint Global false(*FIXME*) fixpoint_exprl
 

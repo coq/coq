@@ -304,6 +304,8 @@ let add_coercion_hook poly local ref =
   let msg = pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
   Flags.if_verbose msg_info msg
 
+let add_coercion_hook poly = Future.mk_hook (add_coercion_hook poly)
+
 let add_subclass_hook poly local ref =
   let stre = match local with
   | Local -> true
@@ -312,3 +314,5 @@ let add_subclass_hook poly local ref =
   in
   let cl = class_of_global ref in
   try_add_new_coercion_subclass cl stre poly
+
+let add_subclass_hook poly = Future.mk_hook (add_subclass_hook poly)

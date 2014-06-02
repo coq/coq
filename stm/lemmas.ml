@@ -168,6 +168,7 @@ let look_for_possibly_mutual_statements = function
 (* Saving a goal *)
 
 let save id const cstrs do_guard (locality,poly,kind) hook =
+  let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
   let const = adjust_guardness_conditions const do_guard in
   let k = Kindops.logical_kind_of_goal_kind kind in
   let l,r = match locality with
@@ -183,7 +184,7 @@ let save id const cstrs do_guard (locality,poly,kind) hook =
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
 	(locality, ConstRef kn) in
   definition_message id;
-  hook l r
+  Future.call_hook fix_exn hook l r
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
@@ -224,7 +225,7 @@ let save_remaining_recthms (locality,p,kind) body opaq i (id,((t_i,ctx_i),(_,imp
       let body_i = match kind_of_term body with
         | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
         | CoFix (0,decls) -> mkCoFix (i,decls)
-        | _ -> anomaly (Pp.str "Not a proof by induction") in
+        | _ -> anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr body) in
       match locality with
       | Discharge ->
           let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p 
@@ -285,7 +286,7 @@ let admit hook () =
       str "declared as an axiom.")
   in
   let () = assumption_message id in
-  hook Global (ConstRef kn)
+  Future.call_hook (fun exn -> exn) hook Global (ConstRef kn)
 
 (* Starting a goal *)
 
@@ -400,8 +401,8 @@ let start_proof_with_initialization kind recguard thms snl hook =
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
-	  hook strength ref) thms_data in
-      start_proof id kind t ?init_tac hook ~compute_guard:guard
+	  Future.call_hook (fun exn -> exn) hook strength ref) thms_data in
+      start_proof id kind t ?init_tac (Future.mk_hook hook) ~compute_guard:guard
 
 let start_proof_com kind thms hook =
   let env0 = Global.env () in

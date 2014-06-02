@@ -763,7 +763,8 @@ end = struct
           !reach_known_state ~cache:`No eop;
           (* The original terminator, a hook, has not been saved in the .vi*)
           Proof_global.set_terminator
-            (Lemmas.standard_proof_terminator [] (fun _ _ -> ()));
+            (Lemmas.standard_proof_terminator []
+              (Future.mk_hook (fun _ _ -> ())));
           let proof = Proof_global.close_proof (fun x -> x) in
           vernac_interp eop ~proof
             { verbose = false; loc;

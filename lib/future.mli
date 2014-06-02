@@ -84,8 +84,18 @@ val from_val : ?fix_exn:fix_exn -> 'a -> 'a computation
    the value is not just the 'a but also the global system state *)
 val from_here : ?fix_exn:fix_exn -> 'a -> 'a computation
 
-(* To get the fix_exn of a computation *)
+(* To get the fix_exn of a computation and build a Tacexpr.declaration_hook.
+ * When a future enters the environment a corresponding hook is run to perform
+ * some work.  If this fails, then its failure has to be annotated with the
+ * same state id that corresponds to the future computation end.  I.e. Qed
+ * is split into two parts, the lazy one (the future) and the eagher one
+ * (the hook), both performing some computations for the same state id. *)
 val fix_exn_of : 'a computation -> fix_exn
+type 'a hook
+val mk_hook :
+  (Decl_kinds.locality -> Globnames.global_reference -> 'a) -> 'a hook
+val call_hook :
+  fix_exn -> 'a hook -> Decl_kinds.locality -> Globnames.global_reference -> 'a
 
 (* Run remotely, returns the function to assign.  Optionally tekes a function
    that is called when forced.  The default one is to raise NotReady.

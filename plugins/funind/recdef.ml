@@ -1320,7 +1320,7 @@ let open_new_goal build_proof ctx using_lemmas ref_ goal_name (gls_type,decompos
     na
     (Decl_kinds.Global, false (* FIXME *), Decl_kinds.Proof Decl_kinds.Lemma)
     (gls_type, ctx)
-    hook;
+    (Future.mk_hook hook);
   if Indfun_common.is_strict_tcc  ()
   then
     ignore (by (Proofview.V82.tactic (tclIDTAC)))
@@ -1415,7 +1415,9 @@ let (com_eqn : int -> Id.t ->
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (Lemmas.start_proof eq_name (Global, false, Proof Lemma)
-       ~sign:(Environ.named_context_val env) (equation_lemma_type, (*FIXME*)Univ.ContextSet.empty) (fun _ _ -> ());
+       ~sign:(Environ.named_context_val env)
+       (equation_lemma_type, (*FIXME*)Univ.ContextSet.empty)
+       (Future.mk_hook (fun _ _ -> ()));
      ignore (by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
 	  (fun  x ->
@@ -1535,5 +1537,5 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       term_id
       using_lemmas
       (List.length res_vars)
-      ctx hook)
+      ctx (Future.mk_hook hook))
     ()

@@ -535,7 +535,8 @@ let declare_definition prg =
     progmap_remove prg;
     !declare_definition_ref prg.prg_name 
       prg.prg_kind ce prg.prg_implicits
-      (fun l r -> prg.prg_hook l r; r)
+      (Future.mk_hook (fun l r ->
+         Future.call_hook (fun exn -> exn) prg.prg_hook l r; r))
 
 open Pp
 
@@ -606,7 +607,7 @@ let declare_mutual_definition l =
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
-      first.prg_hook local gr;
+      Future.call_hook (fun exn -> exn) first.prg_hook local gr;
       List.iter progmap_remove l; kn
 
 let shrink_body c = 
@@ -815,7 +816,7 @@ let rec solve_obligation prg num tac =
           let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
             Lemmas.start_proof_univs obl.obl_name kind 
               (Universes.subst_opt_univs_constr prg.prg_subst obl.obl_type, ctx)
-              (fun (subst, ctx) strength gr ->
+              (fun (subst, ctx) -> Future.mk_hook (fun strength gr ->
 		let cst = match gr with ConstRef cst -> cst | _ -> assert false in
 		let obl =
 		  let transparent = evaluable_constant cst (Global.env ()) in
@@ -851,7 +852,7 @@ let rec solve_obligation prg num tac =
 		      let deps = dependencies obls num in
 			if not (Int.Set.is_empty deps) then
 			  ignore(auto_solve_obligations (Some prg.prg_name) None ~oblset:deps)
-		  | _ -> ());
+		  | _ -> ()));
 	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		     Printer.pr_constr_env (Global.env ()) obl.obl_type);
 	    ignore (Pfedit.by (snd (get_default_tactic ())));
@@ -976,7 +977,7 @@ let show_term n =
 	    ++ Printer.pr_constr_env (Global.env ()) prg.prg_body)
 
 let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
-    ?(reduce=reduce) ?(hook=fun _ _ -> ()) obls =
+    ?(reduce=reduce) ?(hook=Future.mk_hook (fun _ _ -> ())) obls =
   let info = str (Id.to_string n) ++ str " has type-checked" in
   let prg = init_prog_info n term t ctx [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
@@ -994,7 +995,7 @@ let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition)
 	| _ -> res)
 
 let add_mutual_definitions l ctx ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
-    ?(hook=fun _ _ -> ()) notations fixkind =
+    ?(hook=Future.mk_hook (fun _ _ -> ())) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->

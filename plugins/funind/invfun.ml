@@ -1080,7 +1080,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	 Lemmas.start_proof lem_id
 	   (Decl_kinds.Global,false(*FIXME*),(Decl_kinds.Proof Decl_kinds.Theorem))
            (fst lemmas_types_infos.(i), (*FIXME*)Univ.ContextSet.empty)
-           (fun _ _ -> ());
+           (Future.mk_hook (fun _ _ -> ()));
 	 ignore (Pfedit.by
 	   (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
 	      (proving_tac i))));
@@ -1133,7 +1133,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	 Lemmas.start_proof lem_id
 	   (Decl_kinds.Global,false(*FIXME*),(Decl_kinds.Proof Decl_kinds.Theorem))
            (fst lemmas_types_infos.(i), (*FIXME*)Univ.ContextSet.empty)
-           (fun _ _ -> ());
+           (Future.mk_hook (fun _ _ -> ()));
 	 ignore (Pfedit.by
 	   (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
 	      (proving_tac i))));

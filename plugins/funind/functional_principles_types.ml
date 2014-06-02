@@ -290,7 +290,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
   let new_princ_name =
     next_ident_away_in_goal (Id.of_string "___________princ_________") []
   in
-  let hook = hook new_principle_type in
+  let hook = Future.mk_hook (hook new_principle_type) in
   begin
     Lemmas.start_proof
       new_princ_name
@@ -305,7 +305,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
     (* 	  let dur1 = System.time_difference tim1 tim2 in *)
     (* 	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
     (* 	end; *)
-    get_proof_clean true,Ephemeron.create hook
+    get_proof_clean true, Ephemeron.create hook
   end
 
 

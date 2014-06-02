@@ -294,6 +294,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 		  in obls, Some constr, typ
 		| None -> [||], None, termtype
 	      in
+              let hook = Future.mk_hook hook in
 	      let ctx = Evd.universe_context_set evm in
 		ignore (Obligations.add_definition id ?term:constr
 			typ ctx ~kind:(Global,poly,Instance) ~hook obls);
@@ -302,7 +303,8 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	      (Flags.silently 
 	       (fun () ->
 		Lemmas.start_proof id kind (termtype, Evd.universe_context_set evm)
-		(fun _ -> instance_hook k pri global imps ?hook);
+		(Future.mk_hook
+                  (fun _ -> instance_hook k pri global imps ?hook));
                  (* spiwack: I don't know what to do with the status here. *)
 		if not (Option.is_empty term) then 
 		  ignore (Pfedit.by (!refine_ref (evm, Option.get term)))
