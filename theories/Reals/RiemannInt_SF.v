@@ -69,19 +69,19 @@ Proof.
         [ assumption | ring ] ].
   assert (H11 : (0 <= up x)%Z).
   apply le_IZR; apply Rle_trans with x; [ apply H6 | left; assumption ].
-  assert (H12 := IZN_var H11); elim H12; clear H12; intros; assert (H13 : E x).
+  assert (H12 := IZN_var H11); elim H12; clear H12; intros x0 H8; assert (H13 : E x).
   elim (classic (E x)); intro; try assumption.
   cut (forall y:R, E y -> y <= x - 1).
-  intro; assert (H14 := H5 _ H13); cut (x - 1 < x).
-  intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H14 H15)).
+  intro H13; assert (H14 := H5 _ H13); cut (x - 1 < x).
+  intro H15; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H14 H15)).
   apply Rminus_lt; replace (x - 1 - x) with (-1); [ idtac | ring ];
     rewrite <- Ropp_0; apply Ropp_lt_gt_contravar; apply Rlt_0_1.
-  intros; assert (H14 := H4 _ H13); elim H14; intro; unfold E in H13; elim H13;
-    intros; elim H16; intros; apply Rplus_le_reg_l with 1.
+  intros y H13; assert (H14 := H4 _ H13); elim H14; intro H15; unfold E in H13; elim H13;
+    intros x1 H16; elim H16; intros H17 H18; apply Rplus_le_reg_l with 1.
   replace (1 + (x - 1)) with x; [ idtac | ring ]; rewrite <- H18;
     replace (1 + INR x1) with (INR (S x1)); [ idtac | rewrite S_INR; ring ].
   cut (x = INR (pred x0)).
-  intro; rewrite H19; apply le_INR; apply lt_le_S; apply INR_lt; rewrite H18;
+  intro H19; rewrite H19; apply le_INR; apply lt_le_S; apply INR_lt; rewrite H18;
     rewrite <- H19; assumption.
   rewrite H10; rewrite H8; rewrite <- INR_IZR_INZ; replace 1 with (INR 1);
     [ idtac | reflexivity ]; rewrite <- minus_INR.
