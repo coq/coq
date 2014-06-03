@@ -55,6 +55,8 @@ module Stack : sig
   | Case of case_info * 'a * 'a array * 'a Cst_stack.t
   | Proj of int * int * projection
   | Fix of fixpoint * 'a t * 'a Cst_stack.t
+  | Cst of pconstant * int (** current foccussed arg *) * int list (** remaining args *)
+    * 'a t * 'a Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list

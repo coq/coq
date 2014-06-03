@@ -96,6 +96,10 @@ The reduction tactics unfold f when the 5th, 6th and
   7th arguments evaluate to a constructor 
 f is transparent
 Expands to: Constant Top.f
+     = forall v : unit, f 0 0 5 v 3 = 2
+     : Prop
+     = 2 = 2
+     : Prop
 f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is monomorphic
