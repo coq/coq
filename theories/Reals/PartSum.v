@@ -180,12 +180,9 @@ Proof.
   replace (S (S (pred N))) with (S N).
   rewrite (HrecN H1); ring.
   rewrite H2; simpl; reflexivity.
-  assert (H2 := O_or_S N).
-  elim H2; intros.
-  elim a; intros.
-  rewrite <- p.
+  destruct (O_or_S N) as [(m,<-)|<-].
   simpl; reflexivity.
-  rewrite <- b in H1; elim (lt_irrefl _ H1).
+  elim (lt_irrefl _ H1).
   rewrite H1; simpl; reflexivity.
   inversion H.
   right; reflexivity.
@@ -395,9 +392,7 @@ Proof.
       (sum_f_R0 (fun i:nat => Rabs (An i)) m)).
   assumption.
   apply H1; assumption.
-  assert (H4 := lt_eq_lt_dec n m).
-  elim H4; intro.
-  elim a; intro.
+  destruct (lt_eq_lt_dec n m) as [[ | -> ]|].
   rewrite (tech2 An n m); [ idtac | assumption ].
   rewrite (tech2 (fun i:nat => Rabs (An i)) n m); [ idtac | assumption ].
   unfold R_dist.
@@ -418,7 +413,6 @@ Proof.
   apply Rle_ge.
   apply cond_pos_sum.
   intro; apply Rabs_pos.
-  rewrite b.
   unfold R_dist.
   unfold Rminus; do 2 rewrite Rplus_opp_r.
   rewrite Rabs_R0; right; reflexivity.
@@ -451,8 +445,7 @@ Lemma cv_cauchy_1 :
     { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l } ->
     Cauchy_crit_series An.
 Proof.
-  intros An X.
-  elim X; intros.
+  intros An (x,p).
   unfold Un_cv in p.
   unfold Cauchy_crit_series; unfold Cauchy_crit.
   intros.

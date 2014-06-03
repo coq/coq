@@ -222,39 +222,37 @@ Proof.
   intro; apply Rle_lt_trans with (R_dist (sum_f_R0 Bn n) (sum_f_R0 Bn m)).
   assumption.
   apply H2; assumption.
-  assert (H5 := lt_eq_lt_dec n m).
-  elim H5; intro.
-  elim a; intro.
-  rewrite (tech2 An n m); [ idtac | assumption ].
-  rewrite (tech2 Bn n m); [ idtac | assumption ].
-  unfold R_dist; unfold Rminus; do 2 rewrite Ropp_plus_distr;
-    do 2 rewrite <- Rplus_assoc; do 2 rewrite Rplus_opp_r;
-      do 2 rewrite Rplus_0_l; do 2 rewrite Rabs_Ropp; repeat rewrite Rabs_right.
-  apply sum_Rle; intros.
-  elim (H (S n + n0)%nat); intros.
-  apply H8.
-  apply Rle_ge; apply cond_pos_sum; intro.
-  elim (H (S n + n0)%nat); intros.
-  apply Rle_trans with (An (S n + n0)%nat); assumption.
-  apply Rle_ge; apply cond_pos_sum; intro.
-  elim (H (S n + n0)%nat); intros; assumption.
-  rewrite b; unfold R_dist; unfold Rminus;
+  destruct (lt_eq_lt_dec n m) as [[| -> ]|].
+  - rewrite (tech2 An n m); [ idtac | assumption ].
+    rewrite (tech2 Bn n m); [ idtac | assumption ].
+    unfold R_dist; unfold Rminus; do 2 rewrite Ropp_plus_distr;
+      do 2 rewrite <- Rplus_assoc; do 2 rewrite Rplus_opp_r;
+        do 2 rewrite Rplus_0_l; do 2 rewrite Rabs_Ropp; repeat rewrite Rabs_right.
+    apply sum_Rle; intros.
+    elim (H (S n + n0)%nat); intros.
+    apply H8.
+    apply Rle_ge; apply cond_pos_sum; intro.
+    elim (H (S n + n0)%nat); intros.
+    apply Rle_trans with (An (S n + n0)%nat); assumption.
+    apply Rle_ge; apply cond_pos_sum; intro.
+    elim (H (S n + n0)%nat); intros; assumption.
+  - unfold R_dist; unfold Rminus;
     do 2 rewrite Rplus_opp_r; rewrite Rabs_R0; right;
       reflexivity.
-  rewrite (tech2 An m n); [ idtac | assumption ].
-  rewrite (tech2 Bn m n); [ idtac | assumption ].
-  unfold R_dist; unfold Rminus; do 2 rewrite Rplus_assoc;
-    rewrite (Rplus_comm (sum_f_R0 An m)); rewrite (Rplus_comm (sum_f_R0 Bn m));
-      do 2 rewrite Rplus_assoc; do 2 rewrite Rplus_opp_l;
-        do 2 rewrite Rplus_0_r; repeat rewrite Rabs_right.
-  apply sum_Rle; intros.
-  elim (H (S m + n0)%nat); intros; apply H8.
-  apply Rle_ge; apply cond_pos_sum; intro.
-  elim (H (S m + n0)%nat); intros.
-  apply Rle_trans with (An (S m + n0)%nat); assumption.
-  apply Rle_ge.
-  apply cond_pos_sum; intro.
-  elim (H (S m + n0)%nat); intros; assumption.
+  - rewrite (tech2 An m n); [ idtac | assumption ].
+    rewrite (tech2 Bn m n); [ idtac | assumption ].
+    unfold R_dist; unfold Rminus; do 2 rewrite Rplus_assoc;
+      rewrite (Rplus_comm (sum_f_R0 An m)); rewrite (Rplus_comm (sum_f_R0 Bn m));
+        do 2 rewrite Rplus_assoc; do 2 rewrite Rplus_opp_l;
+          do 2 rewrite Rplus_0_r; repeat rewrite Rabs_right.
+    apply sum_Rle; intros.
+    elim (H (S m + n0)%nat); intros; apply H8.
+    apply Rle_ge; apply cond_pos_sum; intro.
+    elim (H (S m + n0)%nat); intros.
+    apply Rle_trans with (An (S m + n0)%nat); assumption.
+    apply Rle_ge.
+    apply cond_pos_sum; intro.
+    elim (H (S m + n0)%nat); intros; assumption.
 Qed.
 
 (** Cesaro's theorem *)

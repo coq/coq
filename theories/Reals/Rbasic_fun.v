@@ -276,9 +276,9 @@ Qed.
 (*********)
 Lemma Rcase_abs : forall r, {r < 0} + {r >= 0}.
 Proof.
-  intro; generalize (Rle_dec 0 r); intro X; elim X; intro; clear X.
-  right; apply (Rle_ge 0 r a).
-  left; fold (0 > r); apply (Rnot_le_lt 0 r b).
+  intro; generalize (Rle_dec 0 r); intro X; elim X; intro H; clear X.
+  right; apply (Rle_ge 0 r H).
+  left; fold (0 > r); apply (Rnot_le_lt 0 r H).
 Qed.
 
 (*********)

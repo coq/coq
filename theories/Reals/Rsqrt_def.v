@@ -423,18 +423,15 @@ Lemma dicho_lb_car :
     P x = false -> P (dicho_lb x y P n) = false.
 Proof.
   intros.
-  induction  n as [| n Hrecn].
-  simpl.
-  assumption.
-  simpl.
-  assert
-    (X :=
-      sumbool_of_bool (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2))).
-  elim X; intro.
-  rewrite a.
-  unfold dicho_lb in Hrecn; assumption.
-  rewrite b.
-  assumption.
+  induction n as [| n Hrecn].
+  - assumption.
+  - simpl.
+    destruct
+        (sumbool_of_bool (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2))) as [Heq|Heq].
+    + rewrite Heq.
+      unfold dicho_lb in Hrecn; assumption.
+    + rewrite Heq.
+      assumption.
 Qed.
 
 Lemma dicho_up_car :
@@ -442,18 +439,15 @@ Lemma dicho_up_car :
     P y = true -> P (dicho_up x y P n) = true.
 Proof.
   intros.
-  induction  n as [| n Hrecn].
-  simpl.
-  assumption.
-  simpl.
-  assert
-    (X :=
-      sumbool_of_bool (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2))).
-  elim X; intro.
-  rewrite a.
-  unfold dicho_lb in Hrecn; assumption.
-  rewrite b.
-  assumption.
+  induction n as [| n Hrecn].
+  - assumption.
+  - simpl.
+    destruct
+      (sumbool_of_bool (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2))) as [Heq|Heq].
+    + rewrite Heq.
+      unfold dicho_lb in Hrecn; assumption.
+    + rewrite  Heq.
+      assumption.
 Qed.
 
 (** Intermediate Value Theorem *)
@@ -463,13 +457,9 @@ Lemma IVT :
     x < y -> f x < 0 -> 0 < f y -> { z:R | x <= z <= y /\ f z = 0 }.
 Proof.
   intros.
-  cut (x <= y).
-  intro.
-  generalize (dicho_lb_cv x y (fun z:R => cond_positivity (f z)) H3).
-  generalize (dicho_up_cv x y (fun z:R => cond_positivity (f z)) H3).
-  intros X X0.
-  elim X; intros.
-  elim X0; intros.
+  assert (x <= y) by (left; assumption).
+  destruct (dicho_lb_cv x y (fun z:R => cond_positivity (f z)) H3) as (x1,p0).
+  destruct (dicho_up_cv x y (fun z:R => cond_positivity (f z)) H3) as (x0,p).
   assert (H4 := cv_dicho _ _ _ _ _ H3 p0 p).
   rewrite H4 in p0.
   exists x0.
@@ -486,7 +476,6 @@ Proof.
   apply dicho_up_decreasing; assumption.
   assumption.
   right; reflexivity.
-  2: left; assumption.
   set (Vn := fun n:nat => dicho_lb x y (fun z:R => cond_positivity (f z)) n).
   set (Wn := fun n:nat => dicho_up x y (fun z:R => cond_positivity (f z)) n).
   cut ((forall n:nat, f (Vn n) <= 0) -> f x0 <= 0).
@@ -612,9 +601,8 @@ Proof.
   cut ((- f)%F x < 0).
   cut (0 < (- f)%F y).
   intros.
-  elim (H3 H5 H4); intros.
+  destruct (H3 H5 H4) as (x0,[]).
   exists x0.
-  elim p; intros.
   split.
   assumption.
   unfold opp_fct in H7.

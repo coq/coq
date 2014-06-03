@@ -822,7 +822,7 @@ Proof.
 intros.
 rewrite for_all_exists in H; auto.
 rewrite negb_true_iff in H.
-elim (for_all_mem_4 (fun x =>negb (f x)) Comp' s);intros;auto.
+destruct (for_all_mem_4 (fun x =>negb (f x)) Comp' s) as (x,p); auto.
 elim p;intros.
 exists x;split;auto.
 rewrite <-negb_false_iff; auto.

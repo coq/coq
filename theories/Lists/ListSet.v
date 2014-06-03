@@ -147,8 +147,8 @@ Section first_definitions.
     simple induction x; simpl.
     tauto.
     intros a0 l; elim (Aeq_dec a a0).
-    intros; discriminate H0.
-    unfold not; intros; elim H1; auto with datatypes.
+    intros _ _ [=].
+    unfold not; intros H H0 H1 [|]; auto with datatypes.
   Qed.
 
   Lemma set_mem_complete2 :
@@ -157,7 +157,7 @@ Section first_definitions.
     simple induction x; simpl.
     tauto.
     intros a0 l; elim (Aeq_dec a a0).
-    intros; elim H0; auto with datatypes.
+    intros H H0 []; auto with datatypes.
     tauto.
   Qed.
 
@@ -204,7 +204,7 @@ Section first_definitions.
     simpl; do 3 intro.
     elim (Aeq_dec b a0).
     simpl; tauto.
-    simpl; intros; elim H0.
+    simpl; intros H0 [|].
     trivial with datatypes.
     tauto.
     tauto.

@@ -98,7 +98,7 @@ Lemma NewtonInt_P5 :
     Newton_integrable (fun x:R => l * f x + g x) a b.
 Proof.
   unfold Newton_integrable; intros f g l a b X X0;
-    elim X; intros; elim X0; intros;
+    elim X; intros x p; elim X0; intros x0 p0;
       exists (fun y:R => l * x y + x0 y).
   elim p; intro.
   elim p0; intro.

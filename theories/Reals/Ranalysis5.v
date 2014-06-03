@@ -165,8 +165,8 @@ assert (forall x l, lb < x < ub -> (derivable_pt_abs f x l <-> derivable_pt_abs 
  apply Rlt_le_trans with (r2:=Rmin delta (Rmin (ub - a) (a - lb))) ; [| apply Rmin_r] ; assumption.
  unfold derivable_pt in Prf.
   unfold derivable_pt in Prg.
-  elim Prf; intros.
-  elim Prg; intros.
+  elim Prf; intros x0 p.
+  elim Prg; intros x1 p0.
   assert (Temp := p); rewrite H in Temp.
   unfold derivable_pt_abs in p.
   unfold derivable_pt_abs in p0.
@@ -295,8 +295,8 @@ intros. (* f x y f_cont_interv x_lt_y fx_neg fy_pos.*)
   generalize (dicho_lb_cv x y (fun z:R => cond_positivity (f z)) H3). 
   generalize (dicho_up_cv x y (fun z:R => cond_positivity (f z)) H3). 
   intros X X0.
-  elim X; intros.
-  elim X0; intros.
+  elim X; intros x0 p.
+  elim X0; intros x1 p0.
   assert (H4 := cv_dicho _ _ _ _ _ H3 p0 p).
   rewrite H4 in p0.
   exists x0.

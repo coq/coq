@@ -156,8 +156,7 @@ Proof.
   intros.
   assert (H2 := CV_ALT_step0 _ H).
   assert (H3 := CV_ALT_step4 _ H H0).
-  assert (X := growing_cv _ H2 H3).
-  elim X; intros.
+  destruct (growing_cv _ H2 H3) as (x,p).
   exists x.
   unfold Un_cv; unfold R_dist; unfold Un_cv in H1;
     unfold R_dist in H1; unfold Un_cv in p; unfold R_dist in p.
@@ -388,16 +387,13 @@ Proof.
   apply Rle_ge; apply PI_tg_pos.
   apply lt_le_trans with N; assumption.
   elim H1; intros H5 _.
-  assert (H6 := lt_eq_lt_dec 0 N).
-  elim H6; intro.
-  elim a; intro.
+  destruct (lt_eq_lt_dec 0 N) as [[| <- ]|H6].
   assumption.
-  rewrite <- b in H4.
   rewrite H4 in H5.
   simpl in H5.
   cut (0 < / (2 * eps)); [ intro | apply Rinv_0_lt_compat; assumption ].
-  elim (Rlt_irrefl _ (Rlt_trans _ _ _ H7 H5)).
-  elim (lt_n_O _ b).
+  elim (Rlt_irrefl _ (Rlt_trans _ _ _ H6 H5)).
+  elim (lt_n_O _ H6).
   apply le_IZR.
   simpl.
   left; apply Rlt_trans with (/ (2 * eps)).

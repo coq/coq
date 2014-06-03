@@ -35,10 +35,8 @@ Proof.
     [ intro | apply Rinv_0_lt_compat; prove_sup0 ].
   elim (H0 (/ 2) H1); intros.
   exists (sum_f_R0 An x + 2 * An (S x)).
-  unfold is_upper_bound; intros; unfold EUn in H3; elim H3; intros.
-  rewrite H4; assert (H5 := lt_eq_lt_dec x1 x).
-  elim H5; intros.
-  elim a; intro.
+  unfold is_upper_bound; intros; unfold EUn in H3; destruct H3 as (x1,->).
+  destruct (lt_eq_lt_dec x1 x) as [[| -> ]|].
   replace (sum_f_R0 An x) with
     (sum_f_R0 An x1 + sum_f_R0 (fun i:nat => An (S x1 + i)%nat) (x - S x1)).
   pattern (sum_f_R0 An x1) at 1; rewrite <- Rplus_0_r;
@@ -47,7 +45,7 @@ Proof.
   apply tech1; intros; apply H.
   apply Rmult_lt_0_compat; [ prove_sup0 | apply H ].
   symmetry ; apply tech2; assumption.
-  rewrite b; pattern (sum_f_R0 An x) at 1; rewrite <- Rplus_0_r;
+  pattern (sum_f_R0 An x) at 1; rewrite <- Rplus_0_r;
     apply Rplus_le_compat_l.
   left; apply Rmult_lt_0_compat; [ prove_sup0 | apply H ].
   replace (sum_f_R0 An x1) with
@@ -86,8 +84,8 @@ Proof.
   apply (tech6 (fun i:nat => An (S x + i)%nat) (/ 2)).
   left; apply Rinv_0_lt_compat; prove_sup0.
   intro; cut (forall n:nat, (n >= x)%nat -> An (S n) < / 2 * An n).
-  intro; replace (S x + S i)%nat with (S (S x + i)).
-  apply H6; unfold ge; apply tech8.
+  intro H4; replace (S x + S i)%nat with (S (S x + i)).
+  apply H4; unfold ge; apply tech8.
   apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR; do 2 rewrite S_INR; ring.
   intros; unfold R_dist in H2; apply Rmult_lt_reg_l with (/ An n).
   apply Rinv_0_lt_compat; apply H.
@@ -101,17 +99,17 @@ Proof.
   unfold Rdiv; reflexivity.
   left; unfold Rdiv; change (0 < An (S n) * / An n);
     apply Rmult_lt_0_compat; [ apply H | apply Rinv_0_lt_compat; apply H ].
-  red; intro; assert (H8 := H n); rewrite H7 in H8;
+  intro H5; assert (H8 := H n); rewrite H5 in H8;
     elim (Rlt_irrefl _ H8).
   replace (S x + 0)%nat with (S x); [ reflexivity | ring ].
   symmetry ; apply tech2; assumption.
   exists (sum_f_R0 An 0); unfold EUn; exists 0%nat; reflexivity.
-  intro X; elim X; intros.
+  intros (x,H1).
   exists x; apply Un_cv_crit_lub;
     [ unfold Un_growing; intro; rewrite tech5;
       pattern (sum_f_R0 An n) at 1; rewrite <- Rplus_0_r;
 	apply Rplus_le_compat_l; left; apply H
-      | apply p ].
+      | apply H1 ].
 Defined.
 
 Lemma Alembert_C2 :
@@ -127,14 +125,12 @@ Proof.
   intro; cut (forall n:nat, 0 < Wn n).
   intro; cut (Un_cv (fun n:nat => Rabs (Vn (S n) / Vn n)) 0).
   intro; cut (Un_cv (fun n:nat => Rabs (Wn (S n) / Wn n)) 0).
-  intro; assert (H5 := Alembert_C1 Vn H1 H3).
-  assert (H6 := Alembert_C1 Wn H2 H4).
-  elim H5; intros.
-  elim H6; intros.
+  intro; pose proof (Alembert_C1 Vn H1 H3) as (x,p).
+  pose proof (Alembert_C1 Wn H2 H4) as (x0,p0).
   exists (x - x0); unfold Un_cv; unfold Un_cv in p;
     unfold Un_cv in p0; intros; cut (0 < eps / 2).
-  intro; elim (p (eps / 2) H8); clear p; intros.
-  elim (p0 (eps / 2) H8); clear p0; intros.
+  intro H6; destruct (p (eps / 2) H6) as (x1,H8). clear p.
+  destruct (p0 (eps / 2) H6) as (x2,H9). clear p0.
   set (N := max x1 x2).
   exists N; intros;
     replace (sum_f_R0 An n) with (sum_f_R0 Vn n - sum_f_R0 Wn n).
@@ -146,9 +142,9 @@ Proof.
   apply Rabs_triang.
   rewrite Rabs_Ropp; apply Rlt_le_trans with (eps / 2 + eps / 2).
   apply Rplus_lt_compat.
-  unfold R_dist in H9; apply H9; unfold ge; apply le_trans with N;
+  unfold R_dist in H8; apply H8; unfold ge; apply le_trans with N;
     [ unfold N; apply le_max_l | assumption ].
-  unfold R_dist in H10; apply H10; unfold ge; apply le_trans with N;
+  unfold R_dist in H9; apply H9; unfold ge; apply le_trans with N;
     [ unfold N; apply le_max_r | assumption ].
   right; symmetry ; apply double_var.
   symmetry ; apply tech11; intro; unfold Vn, Wn;
@@ -344,9 +340,8 @@ Proof.
   intros; set (Bn := fun i:nat => An i * x ^ i).
   cut (forall n:nat, Bn n <> 0).
   intro; cut (Un_cv (fun n:nat => Rabs (Bn (S n) / Bn n)) 0).
-  intro; assert (H4 := Alembert_C2 Bn H2 H3).
-  elim H4; intros.
-  exists x0; unfold Bn in p; apply tech12; assumption.
+  intro; destruct (Alembert_C2 Bn H2 H3) as (x0,H4).
+  exists x0; unfold Bn in H4; apply tech12; assumption.
   unfold Un_cv; intros; unfold Un_cv in H1; cut (0 < eps / Rabs x).
   intro; elim (H1 (eps / Rabs x) H4); intros.
   exists x0; intros; unfold R_dist; unfold Rminus;
@@ -431,9 +426,7 @@ Proof.
   unfold is_upper_bound; intros; unfold EUn in H6.
   elim H6; intros.
   rewrite H7.
-  assert (H8 := lt_eq_lt_dec x2 x0).
-  elim H8; intros.
-  elim a; intro.
+  destruct (lt_eq_lt_dec x2 x0) as [[| -> ]|].
   replace (sum_f_R0 An x0) with
     (sum_f_R0 An x2 + sum_f_R0 (fun i:nat => An (S x2 + i)%nat) (x0 - S x2)).
   pattern (sum_f_R0 An x2) at 1; rewrite <- Rplus_0_r.
@@ -446,7 +439,7 @@ Proof.
     replace (x + (1 - x)) with 1; [ elim H3; intros; assumption | ring ].
   apply H.
   symmetry ; apply tech2; assumption.
-  rewrite b; pattern (sum_f_R0 An x0) at 1; rewrite <- Rplus_0_r;
+  pattern (sum_f_R0 An x0) at 1; rewrite <- Rplus_0_r;
     apply Rplus_le_compat_l.
   left; apply Rmult_lt_0_compat.
   apply Rinv_0_lt_compat; apply Rplus_lt_reg_l with x; rewrite Rplus_0_r;
@@ -520,12 +513,12 @@ Proof.
   replace (S x0 + 0)%nat with (S x0); [ reflexivity | ring ].
   symmetry ; apply tech2; assumption.
   exists (sum_f_R0 An 0); unfold EUn; exists 0%nat; reflexivity.
-  intro X; elim X; intros.
+  intros (x,H1).
   exists x; apply Un_cv_crit_lub;
     [ unfold Un_growing; intro; rewrite tech5;
       pattern (sum_f_R0 An n) at 1; rewrite <- Rplus_0_r;
 	apply Rplus_le_compat_l; left; apply H
-      | apply p ].
+      | apply H1].
 Qed.
 
 Lemma Alembert_C5 :

@@ -65,8 +65,8 @@ Ltac pi := repeat f_equal ; apply proof_irrelevance.
 
 Lemma subset_eq : forall A (P : A -> Prop) (n m : sig P), n = m <-> `n = `m.
 Proof.
-  induction n.
-  induction m.
+  destruct n as (x,p).
+  destruct m as (x',p').
   simpl.
   split ; intros ; subst.
 

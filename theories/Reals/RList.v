@@ -181,13 +181,13 @@ Proof.
   elim Hrecl; intros; assert (H3 := H1 H0); elim H3; intros; elim H4; intros;
     exists (S x0); split;
       [ simpl; apply lt_n_S; assumption | simpl; assumption ].
-  elim H; intros; elim H0; intros; elim (zerop x0); intro.
-  rewrite a in H2; simpl in H2; left; assumption.
-  right; elim Hrecl; intros; apply H4; assert (H5 : S (pred x0) = x0).
+  elim H; intros; elim H0; intros; destruct (zerop x0) as [->|].
+  simpl in H2; left; assumption.
+  right; elim Hrecl; intros H4 H5; apply H5; assert (H6 : S (pred x0) = x0).
   symmetry ; apply S_pred with 0%nat; assumption.
   exists (pred x0); split;
-    [ simpl in H1; apply lt_S_n; rewrite H5; assumption
-      | rewrite <- H5 in H2; simpl in H2; assumption ].
+    [ simpl in H1; apply lt_S_n; rewrite H6; assumption
+      | rewrite <- H6 in H2; simpl in H2; assumption ].
 Qed.
 
 Lemma Rlist_P1 :
@@ -208,11 +208,11 @@ Proof.
   assert (H3 := Hrecl H2); elim H1; intros; elim H3; intros; exists (cons x x0);
     intros; elim H5; clear H5; intros; split.
   simpl; rewrite H5; reflexivity.
-  intros; elim (zerop i); intro.
-  rewrite a; simpl; assumption.
-  assert (H8 : i = S (pred i)).
+  intros; destruct (zerop i) as [->|].
+  simpl; assumption.
+  assert (H9 : i = S (pred i)).
   apply S_pred with 0%nat; assumption.
-  rewrite H8; simpl; apply H6; simpl in H7; apply lt_S_n; rewrite <- H8;
+  rewrite H9; simpl; apply H6; simpl in H7; apply lt_S_n; rewrite <- H9;
     assumption.
 Qed.
 

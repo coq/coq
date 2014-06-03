@@ -27,21 +27,19 @@ Proof.
   intros.
   set (Vn := sequence_minorant Un (cauchy_min Un H)).
   set (Wn := sequence_majorant Un (cauchy_maj Un H)).
-  assert (H0 := maj_cv Un H).
-  fold Wn in H0.
-  assert (H1 := min_cv Un H).
-  fold Vn in H1.
-  elim H0; intros.
-  elim H1; intros.
+  pose proof (maj_cv Un H) as (x,p).
+  fold Wn in p.
+  pose proof (min_cv Un H) as (x0,p0).
+  fold Vn in p0.
   cut (x = x0).
-  intros.
+  intros H2.
   exists x.
   rewrite <- H2 in p0.
   unfold Un_cv.
   intros.
   unfold Un_cv in p; unfold Un_cv in p0.
   cut (0 < eps / 3).
-  intro.
+  intro H4.
   elim (p (eps / 3) H4); intros.
   elim (p0 (eps / 3) H4); intros.
   exists (max x1 x2).
@@ -83,20 +81,20 @@ Proof.
   [ apply Rabs_triang | ring ].
   apply Rlt_le_trans with (eps / 3 + eps / 3 + eps / 3).
   repeat apply Rplus_lt_compat.
-  unfold R_dist in H5.
-  apply H5.
+  unfold R_dist in H1.
+  apply H1.
   unfold ge; apply le_trans with (max x1 x2).
   apply le_max_l.
   assumption.
   rewrite <- Rabs_Ropp.
   replace (- (x - Vn n)) with (Vn n - x); [ idtac | ring ].
-  unfold R_dist in H6.
-  apply H6.
+  unfold R_dist in H3.
+  apply H3.
   unfold ge; apply le_trans with (max x1 x2).
   apply le_max_r.
   assumption.
-  unfold R_dist in H6.
-  apply H6.
+  unfold R_dist in H3.
+  apply H3.
   unfold ge; apply le_trans with (max x1 x2).
   apply le_max_r.
   assumption.
@@ -112,11 +110,11 @@ Proof.
   intro.
   unfold Un_cv in p; unfold Un_cv in p0.
   unfold R_dist in p; unfold R_dist in p0.
-  elim (p (eps / 5) H3); intros N1 H4.
-  elim (p0 (eps / 5) H3); intros N2 H5.
+  elim (p (eps / 5) H1); intros N1 H4.
+  elim (p0 (eps / 5) H1); intros N2 H5.
   unfold Cauchy_crit in H.
   unfold R_dist in H.
-  elim (H (eps / 5) H3); intros N3 H6.
+  elim (H (eps / 5) H1); intros N3 H6.
   set (N := max (max N1 N2) N3).
   apply Rle_lt_trans with (Rabs (x - Wn N) + Rabs (Wn N - x0)).
   replace (x - x0) with (x - Wn N + (Wn N - x0)); [ apply Rabs_triang | ring ].
@@ -146,12 +144,11 @@ Proof.
   cut
     (Vn N =
       minorant (fun k:nat => Un (N + k)%nat) (min_ss Un N (cauchy_min Un H))).
-  intros.
-  rewrite <- H9; rewrite <- H10.
-  rewrite <- H9 in H8.
-  rewrite <- H10 in H7.
-  elim (H7 (eps / 5) H3); intros k2 H11.
-  elim (H8 (eps / 5) H3); intros k1 H12.
+  intros H9 H10.
+  rewrite <- H9 in H8 |- *.
+  rewrite <- H10 in H7 |- *.
+  elim (H7 (eps / 5) H1); intros k2 H11.
+  elim (H8 (eps / 5) H1); intros k1 H12.
   apply Rle_lt_trans with
     (Rabs (Wn N - Un (N + k2)%nat) + Rabs (Un (N + k2)%nat - Vn N)).
   replace (Wn N - Vn N) with

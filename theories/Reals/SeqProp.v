@@ -53,8 +53,7 @@ Proof.
   apply growing_cv.
   apply decreasing_growing; assumption.
   exact H0.
-  intro X.
-  elim X; intros.
+  intros (x,p).
   exists (- x).
   unfold Un_cv in p.
   unfold R_dist in p.
@@ -151,7 +150,7 @@ Definition sequence_lb (Un:nat -> R) (pr:has_lb Un)
 (* Compatibility *)
 Notation sequence_majorant := sequence_ub (only parsing).
 Notation sequence_minorant := sequence_lb (only parsing).
-
+Unset Standard Proposition Elimination Names.
 Lemma Wn_decreasing :
   forall (Un:nat -> R) (pr:has_ub Un), Un_decreasing (sequence_ub Un pr).
 Proof.
@@ -159,21 +158,15 @@ Proof.
   unfold Un_decreasing.
   intro.
   unfold sequence_ub.
-  assert (H := ub_to_lub (fun k:nat => Un (S n + k)%nat) (maj_ss Un (S n) pr)).
-  assert (H0 := ub_to_lub (fun k:nat => Un (n + k)%nat) (maj_ss Un n pr)).
-  elim H; intros.
-  elim H0; intros.
+  pose proof (ub_to_lub (fun k:nat => Un (S n + k)%nat) (maj_ss Un (S n) pr)) as (x,(H1,H2)).
+  pose proof (ub_to_lub (fun k:nat => Un (n + k)%nat) (maj_ss Un n pr)) as (x0,(H3,H4)).
   cut (lub (fun k:nat => Un (S n + k)%nat) (maj_ss Un (S n) pr) = x);
     [ intro Maj1; rewrite Maj1 | idtac ].
   cut (lub (fun k:nat => Un (n + k)%nat) (maj_ss Un n pr) = x0);
     [ intro Maj2; rewrite Maj2 | idtac ].
-  unfold is_lub in p.
-  unfold is_lub in p0.
-  elim p; intros.
   apply H2.
-  elim p0; intros.
   unfold is_upper_bound.
-  intros.
+  intros x1 H5.
   unfold is_upper_bound in H3.
   apply H3.
   elim H5; intros.
@@ -184,12 +177,10 @@ Proof.
   cut
     (is_lub (EUn (fun k:nat => Un (n + k)%nat))
       (lub (fun k:nat => Un (n + k)%nat) (maj_ss Un n pr))).
-  intro.
-  unfold is_lub in p0; unfold is_lub in H1.
-  elim p0; intros; elim H1; intros.
-  assert (H6 := H5 x0 H2).
+  intros (H5,H6).
+  assert (H7 := H6 x0 H3).
   assert
-    (H7 := H3 (lub (fun k:nat => Un (n + k)%nat) (maj_ss Un n pr)) H4).
+    (H8 := H4 (lub (fun k:nat => Un (n + k)%nat) (maj_ss Un n pr)) H5).
   apply Rle_antisym; assumption.
   unfold lub.
   case (ub_to_lub (fun k:nat => Un (n + k)%nat) (maj_ss Un n pr)).
@@ -197,13 +188,11 @@ Proof.
   cut
     (is_lub (EUn (fun k:nat => Un (S n + k)%nat))
       (lub (fun k:nat => Un (S n + k)%nat) (maj_ss Un (S n) pr))).
-  intro.
-  unfold is_lub in p; unfold is_lub in H1.
-  elim p; intros; elim H1; intros.
-  assert (H6 := H5 x H2).
+  intros (H5,H6).
+  assert (H7 := H6 x H1).
   assert
-    (H7 :=
-      H3 (lub (fun k:nat => Un (S n + k)%nat) (maj_ss Un (S n) pr)) H4).
+    (H8 :=
+      H2 (lub (fun k:nat => Un (S n + k)%nat) (maj_ss Un (S n) pr)) H5).
   apply Rle_antisym; assumption.
   unfold lub.
   case (ub_to_lub (fun k:nat => Un (S n + k)%nat) (maj_ss Un (S n) pr)).

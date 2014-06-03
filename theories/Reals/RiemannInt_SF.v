@@ -40,26 +40,25 @@ Proof.
   assert (H2 :  exists x : R, E x).
   elim H; intros; exists (INR x); unfold E; exists x; split;
     [ assumption | reflexivity ].
-  assert (H3 := completeness E H1 H2); elim H3; intros; unfold is_lub in p;
-    elim p; clear p; intros; unfold is_upper_bound in H4, H5;
+  destruct (completeness E H1 H2) as (x,(H4,H5)); unfold is_upper_bound in H4, H5;
       assert (H6 : 0 <= x).
-  elim H2; intros; unfold E in H6; elim H6; intros; elim H7; intros;
+  destruct H2 as (x0,H6). remember H6 as H7. destruct H7 as (x1,(H8,H9)).
     apply Rle_trans with x0;
       [ rewrite <- H9; change (INR 0 <= INR x1); apply le_INR;
         apply le_O_n
         | apply H4; assumption ].
   assert (H7 := archimed x); elim H7; clear H7; intros;
     assert (H9 : x <= IZR (up x) - 1).
-  apply H5; intros; assert (H10 := H4 _ H9); unfold E in H9; elim H9; intros;
-    elim H11; intros; rewrite <- H13; apply Rplus_le_reg_l with 1;
+  apply H5; intros x0 H9. assert (H10 := H4 _ H9); unfold E in H9; elim H9; intros x1 (H12,<-).
+    apply Rplus_le_reg_l with 1;
       replace (1 + (IZR (up x) - 1)) with (IZR (up x));
       [ idtac | ring ]; replace (1 + INR x1) with (INR (S x1));
       [ idtac | rewrite S_INR; ring ].
   assert (H14 : (0 <= up x)%Z).
   apply le_IZR; apply Rle_trans with x; [ apply H6 | left; assumption ].
-  assert (H15 := IZN _ H14); elim H15; clear H15; intros; rewrite H15;
-    rewrite <- INR_IZR_INZ; apply le_INR; apply lt_le_S;
-      apply INR_lt; rewrite H13; apply Rle_lt_trans with x;
+  destruct (IZN _ H14) as (x2,H15).
+    rewrite H15, <- INR_IZR_INZ; apply le_INR; apply lt_le_S.
+      apply INR_lt; apply Rle_lt_trans with x;
         [ assumption | rewrite INR_IZR_INZ; rewrite <- H15; assumption ].
   assert (H10 : x = IZR (up x) - 1).
   apply Rle_antisym;
@@ -84,18 +83,18 @@ Proof.
   cut (x = INR (pred x0)).
   intro; rewrite H19; apply le_INR; apply lt_le_S; apply INR_lt; rewrite H18;
     rewrite <- H19; assumption.
-  rewrite H10; rewrite p; rewrite <- INR_IZR_INZ; replace 1 with (INR 1);
+  rewrite H10; rewrite H8; rewrite <- INR_IZR_INZ; replace 1 with (INR 1);
     [ idtac | reflexivity ]; rewrite <- minus_INR.
   replace (x0 - 1)%nat with (pred x0);
   [ reflexivity
     | case x0; [ reflexivity | intro; simpl; apply minus_n_O ] ].
-  induction  x0 as [| x0 Hrecx0];
-    [ rewrite p in H7; rewrite <- INR_IZR_INZ in H7; simpl in H7;
-      elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H6 H7))
-      | apply le_n_S; apply le_O_n ].
-  rewrite H15 in H13; elim H12; assumption.
+  induction x0 as [|x0 Hrecx0].
+    rewrite H8 in H3. rewrite <- INR_IZR_INZ in H3; simpl in H3.
+      elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H6 H3)).
+    apply le_n_S; apply le_O_n.
+    rewrite H15 in H13; elim H12; assumption.
   split with (pred x0); unfold E in H13; elim H13; intros; elim H12; intros;
-    rewrite H10 in H15; rewrite p in H15; rewrite <- INR_IZR_INZ in H15;
+    rewrite H10 in H15; rewrite H8 in H15; rewrite <- INR_IZR_INZ in H15;
       assert (H16 : INR x0 = INR x1 + 1).
   rewrite H15; ring.
   rewrite <- S_INR in H16; assert (H17 := INR_eq _ _ H16); rewrite H17;
@@ -1202,13 +1201,13 @@ Proof.
   [ apply lt_n_S; assumption
     | symmetry ; apply S_pred with 0%nat; apply neq_O_lt; red;
       intro; rewrite <- H22 in H21; elim (lt_n_O _ H21) ].
-  elim (Rle_dec (pos_Rl lf (S x0)) (pos_Rl (cons_ORlist lf lg) i)); intro.
+  elim (Rle_dec (pos_Rl lf (S x0)) (pos_Rl (cons_ORlist lf lg) i)); intro a0.
   assert (H23 : (S x0 <= x0)%nat).
   apply H20; unfold I; split; assumption.
   elim (le_Sn_n _ H23).
   assert (H23 : pos_Rl (cons_ORlist lf lg) i < pos_Rl lf (S x0)).
   auto with real.
-  clear b0; apply RList_P17; try assumption.
+  clear a0; apply RList_P17; try assumption.
   apply RList_P2; assumption.
   elim (RList_P9 lf lg (pos_Rl lf (S x0))); intros; apply H25; left;
     elim (RList_P3 lf (pos_Rl lf (S x0))); intros; apply H27;
@@ -1450,12 +1449,12 @@ Proof.
   apply lt_n_S; assumption.
   symmetry ; apply S_pred with 0%nat; apply neq_O_lt; red;
     intro; rewrite <- H22 in H21; elim (lt_n_O _ H21).
-  elim (Rle_dec (pos_Rl lg (S x0)) (pos_Rl (cons_ORlist lf lg) i)); intro.
+  elim (Rle_dec (pos_Rl lg (S x0)) (pos_Rl (cons_ORlist lf lg) i)); intro a0.
   assert (H23 : (S x0 <= x0)%nat);
     [ apply H20; unfold I; split; assumption | elim (le_Sn_n _ H23) ].
   assert (H23 : pos_Rl (cons_ORlist lf lg) i < pos_Rl lg (S x0)).
   auto with real.
-  clear b0; apply RList_P17; try assumption;
+  clear a0; apply RList_P17; try assumption;
     [ apply RList_P2; assumption
       | elim (RList_P9 lf lg (pos_Rl lg (S x0))); intros; apply H25; right;
         elim (RList_P3 lg (pos_Rl lg (S x0))); intros;
@@ -2423,7 +2422,7 @@ Proof.
     discriminate.
   clear Hreclf1; assert (H1 : {c <= r1} + {r1 < c}).
   case (Rle_dec c r1); intro; [ left; assumption | right; auto with real ].
-  elim H1; intro.
+  elim H1; intro a0.
   split with (cons r (cons c nil)); split with (cons r3 nil);
     unfold adapted_couple in H; decompose [and] H; clear H;
       assert (H6 : r = a).
@@ -2534,7 +2533,7 @@ Proof.
     discriminate.
   clear Hreclf1; assert (H1 : {c <= r1} + {r1 < c}).
   case (Rle_dec c r1); intro; [ left; assumption | right; auto with real ].
-  elim H1; intro.
+  elim H1; intro a0.
   split with (cons c (cons r1 r2)); split with (cons r3 lf1);
     unfold adapted_couple in H; decompose [and] H; clear H;
       unfold adapted_couple; repeat split.

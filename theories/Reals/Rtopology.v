@@ -1655,9 +1655,9 @@ Proof.
   apply H7; split.
   unfold D_x, no_cond; split; [ trivial | assumption ].
   apply Rlt_le_trans with (Rmin x0 (M - m)); [ apply H8 | apply Rmin_l ].
-  assert (H8 := completeness _ H6 H7); elim H8; clear H8; intros;
+  destruct (completeness _ H6 H7) as (x1,p).
     cut (0 < x1 <= M - m).
-  intro; elim H8; clear H8; intros; exists (mkposreal _ H8); split.
+  intros (H8,H9); exists (mkposreal _ H8); split.
   intros; cut (exists alp : R, Rabs (z - x) < alp <= x1 /\ E alp).
   intros; elim H11; intros; elim H12; clear H12; intros; unfold E in H13;
     elim H13; intros; apply H15.
@@ -1811,7 +1811,7 @@ Proof.
   apply H14; split;
     [ unfold D_x, no_cond; split; [ trivial | assumption ]
       | apply Rlt_le_trans with (Rmin x0 (M - m)); [ apply H15 | apply Rmin_l ] ].
-  assert (H13 := completeness _ H11 H12); elim H13; clear H13; intros;
+  destruct (completeness _ H11 H12) as (x0,p).
     cut (0 < x0 <= M - m).
   intro; elim H13; clear H13; intros; exists x0; split.
   assumption.

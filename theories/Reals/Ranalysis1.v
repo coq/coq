@@ -1066,15 +1066,8 @@ Lemma pr_nu :
   forall f (x:R) (pr1 pr2:derivable_pt f x),
     derive_pt f x pr1 = derive_pt f x pr2.
 Proof.
-  intros.
-  unfold derivable_pt in pr1.
-  unfold derivable_pt in pr2.
-  elim pr1; intros.
-  elim pr2; intros.
-  unfold derivable_pt_abs in p.
-  unfold derivable_pt_abs in p0.
-  simpl.
-  apply (uniqueness_limite f x x0 x1 p p0).
+  intros f x (x0,H0) (x1,H1).
+  apply (uniqueness_limite f x x0 x1 H0 H1).
 Qed.
 
 

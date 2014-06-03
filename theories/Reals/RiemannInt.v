@@ -49,8 +49,8 @@ Lemma RiemannInt_P1 :
   forall (f:R -> R) (a b:R),
     Riemann_integrable f a b -> Riemann_integrable f b a.
 Proof.
-  unfold Riemann_integrable; intros; elim (X eps); clear X; intros;
-    elim p; clear p; intros; exists (mkStepFun (StepFun_P6 (pre x)));
+  unfold Riemann_integrable; intros; elim (X eps); clear X; intros.
+  elim p; clear p; intros x0 p; exists (mkStepFun (StepFun_P6 (pre x)));
       exists (mkStepFun (StepFun_P6 (pre x0)));
         elim p; clear p; intros; split.
   intros; apply (H t); elim H1; clear H1; intros; split;
@@ -171,7 +171,7 @@ Proof.
   rewrite Rabs_Ropp; apply H4.
   rewrite Rabs_Ropp in H4; apply H4.
   apply H4.
-  assert (H3 := RiemannInt_P2 _ _ _ _ H H1 H2); elim H3; intros;
+  assert (H3 := RiemannInt_P2 _ _ _ _ H H1 H2); elim H3; intros x p;
     exists (- x); unfold Un_cv; unfold Un_cv in p;
       intros; elim (p _ H4); intros; exists x0; intros;
         generalize (H5 _ H6); unfold R_dist, RiemannInt_SF;
@@ -423,7 +423,7 @@ Proof.
   exists 0%nat; unfold I; rewrite Rmult_0_l; rewrite Rplus_0_r;
     assumption.
   cut (Nbound I).
-  intro; assert (H2 := Nzorn H0 H1); elim H2; intros; exists x; elim p; intros;
+  intro; assert (H2 := Nzorn H0 H1); elim H2; intros x p; exists x; elim p; intros;
     split.
   apply H3.
   destruct (total_order_T (a + INR (S x) * del) b) as [[Hlt|Heq]|Hgt].
@@ -497,7 +497,7 @@ Proof.
             | apply Rmin_r ]
           | intros; apply H3; try assumption; apply Rlt_le_trans with (Rmin x (b - a));
             [ assumption | apply Rmin_l ] ].
-  assert (H3 := completeness E H1 H2); elim H3; intros; cut (0 < x <= b - a).
+  assert (H3 := completeness E H1 H2); elim H3; intros x p; cut (0 < x <= b - a).
   intro; elim H4; clear H4; intros; exists (mkposreal _ H4); split.
   apply H5.
   unfold is_lub in p; elim p; intros; unfold is_upper_bound in H6;
@@ -535,7 +535,7 @@ Lemma Heine_cor2 :
           a <= y <= b -> Rabs (x - y) < delta -> Rabs (f x - f y) < eps }.
 Proof.
   intro f; intros; destruct (total_order_T a b) as [[Hlt|Heq]|Hgt].
-  assert (H0 := Heine_cor1 Hlt H eps); elim H0; intros; exists x;
+  assert (H0 := Heine_cor1 Hlt H eps); elim H0; intros x p; exists x;
     elim p; intros; apply H2; assumption.
   exists (mkposreal _ Rlt_0_1); intros; assert (H3 : x = y);
     [ elim H0; elim H1; intros; rewrite Heq in H3, H5;
@@ -993,11 +993,10 @@ Qed.
 
 Lemma Req_EM_T : forall r1 r2:R, {r1 = r2} + {r1 <> r2}.
 Proof.
-  intros; elim (total_order_T r1 r2); intros;
-    [ elim a; intro;
-      [ right; red; intro; rewrite H in a0; elim (Rlt_irrefl r2 a0)
-        | left; assumption ]
-      | right; red; intro; rewrite H in b; elim (Rlt_irrefl r2 b) ].
+  intros; destruct (total_order_T r1 r2) as [[H|]|H].
+  - right; red; intros ->; elim (Rlt_irrefl r2 H).
+  - left; assumption.
+  - right; red; intros ->; elim (Rlt_irrefl r2 H).
 Qed.
 
 (* L1([a,b]) is a vectorial space *)
@@ -1008,7 +1007,7 @@ Lemma RiemannInt_P10 :
     Riemann_integrable (fun x:R => f x + l * g x) a b.
 Proof.
   unfold Riemann_integrable; intros f g; intros; destruct (Req_EM_T l 0) as [Heq|Hneq].
-  elim (X eps); intros; split with x; elim p; intros; split with x0; elim p0;
+  elim (X eps); intros x p; split with x; elim p; intros x0 p0; split with x0; elim p0;
     intros; split; try assumption; rewrite Heq; intros;
       rewrite Rmult_0_l; rewrite Rplus_0_r; apply H; assumption.
   assert (H : 0 < eps / 2).
@@ -1019,9 +1018,9 @@ Proof.
     [ apply (cond_pos eps)
       | apply Rinv_0_lt_compat; apply Rmult_lt_0_compat;
         [ prove_sup0 | apply Rabs_pos_lt; assumption ] ].
-  elim (X (mkposreal _ H)); intros; elim (X0 (mkposreal _ H0)); intros;
+  elim (X (mkposreal _ H)); intros x p; elim (X0 (mkposreal _ H0)); intros x0 p0;
     split with (mkStepFun (StepFun_P28 l x x0)); elim p0;
-      elim p; intros; split with (mkStepFun (StepFun_P28 (Rabs l) x1 x2));
+      elim p; intros x1 p1 x2 p2. split with (mkStepFun (StepFun_P28 (Rabs l) x1 x2));
         elim p1; elim p2; clear p1 p2 p0 p X X0; intros; split.
   intros; simpl;
     apply Rle_trans with (Rabs (f t - x t) + Rabs (l * (g t - x0 t))).

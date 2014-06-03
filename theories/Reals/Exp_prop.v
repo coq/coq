@@ -86,18 +86,17 @@ Qed.
 
 Lemma div2_not_R0 : forall N:nat, (1 < N)%nat -> (0 < div2 N)%nat.
 Proof.
-  intros; induction  N as [| N HrecN].
-  elim (lt_n_O _ H).
-  cut ((1 < N)%nat \/ N = 1%nat).
-  intro; elim H0; intro.
-  assert (H2 := even_odd_dec N).
-  elim H2; intro.
-  rewrite <- (even_div2 _ a); apply HrecN; assumption.
-  rewrite <- (odd_div2 _ b); apply lt_O_Sn.
-  rewrite H1; simpl; apply lt_O_Sn.
-  inversion H.
-  right; reflexivity.
-  left; apply lt_le_trans with 2%nat; [ apply lt_n_Sn | apply H1 ].
+  intros; induction N as [| N HrecN].
+  - elim (lt_n_O _ H).
+  - cut ((1 < N)%nat \/ N = 1%nat).
+    { intro; elim H0; intro.
+      + destruct (even_odd_dec N) as [Heq|Heq].
+        * rewrite <- (even_div2 _ Heq); apply HrecN; assumption.
+        * rewrite <- (odd_div2 _ Heq); apply lt_O_Sn.
+      + rewrite H1; simpl; apply lt_O_Sn. }
+    inversion H.
+    right; reflexivity.
+    left; apply lt_le_trans with 2%nat; [ apply lt_n_Sn | apply H1 ].
 Qed.
 
 Lemma Reste_E_maj :
@@ -857,8 +856,7 @@ Proof.
         Un_cv
         (fun n:nat =>
           sum_f_R0 (fun k:nat => Rabs (r ^ k / INR (fact (S k)))) n) l }.
-  intro X.
-  elim X; intros.
+  intros (x,p).
   exists x; intros.
   split.
   apply p.

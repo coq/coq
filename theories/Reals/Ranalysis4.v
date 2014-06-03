@@ -26,7 +26,7 @@ Proof.
   apply derivable_pt_const.
   assumption.
   assumption.
-  unfold div_fct, inv_fct, fct_cte; intro X0; elim X0; intros;
+  unfold div_fct, inv_fct, fct_cte; intros (x0,p);
     unfold derivable_pt; exists x0;
       unfold derivable_pt_abs; unfold derivable_pt_lim;
         unfold derivable_pt_abs in p; unfold derivable_pt_lim in p;
@@ -41,11 +41,7 @@ Lemma pr_nu_var :
   forall (f g:R -> R) (x:R) (pr1:derivable_pt f x) (pr2:derivable_pt g x),
     f = g -> derive_pt f x pr1 = derive_pt g x pr2.
 Proof.
-  unfold derivable_pt, derive_pt; intros.
-  elim pr1; intros.
-  elim pr2; intros.
-  simpl.
-  rewrite H in p.
+  unfold derivable_pt, derive_pt; intros f g x (x0,p0) (x1,p1) ->.
   apply uniqueness_limite with g x; assumption.
 Qed.
 
@@ -54,14 +50,11 @@ Lemma pr_nu_var2 :
   forall (f g:R -> R) (x:R) (pr1:derivable_pt f x) (pr2:derivable_pt g x),
     (forall h:R, f h = g h) -> derive_pt f x pr1 = derive_pt g x pr2.
 Proof.
-  unfold derivable_pt, derive_pt; intros.
-  elim pr1; intros.
-  elim pr2; intros.
-  simpl.
-  assert (H0 := uniqueness_step2 _ _ _ p).
-  assert (H1 := uniqueness_step2 _ _ _ p0).
+  unfold derivable_pt, derive_pt; intros f g x (x0,p0) (x1,p1) H.
+  assert (H0 := uniqueness_step2 _ _ _ p0).
+  assert (H1 := uniqueness_step2 _ _ _ p1).
   cut (limit1_in (fun h:R => (f (x + h) - f x) / h) (fun h:R => h <> 0) x1 0).
-  intro; assert (H3 := uniqueness_step1 _ _ _ _ H0 H2).
+  intro H2; assert (H3 := uniqueness_step1 _ _ _ _ H0 H2).
   assumption.
   unfold limit1_in; unfold limit_in; unfold dist;
     simpl; unfold R_dist; unfold limit1_in in H1;

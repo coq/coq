@@ -152,7 +152,7 @@ Section defs.
     revert l2 H0. fix 1. intros.
     destruct l2 as [|a0 l0]. 
     apply merge_exist with (a :: l); simpl; auto with datatypes. 
-    elim (leA_dec a a0); intros.
+    induction (leA_dec a a0) as [Hle|Hle].
 
     (* 1 (leA a a0) *)
     apply Sorted_inv in H. destruct H.

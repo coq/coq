@@ -39,7 +39,7 @@ Proof.
         (fun n:nat =>
           sum_f_R0 (fun k:nat => Rabs (/ INR (fact (2 * k)) * r ^ (2 * k)))
           n) l }.
-  intro X; elim X; intros.
+  intros (x,p).
   exists x.
   split.
   apply p.
