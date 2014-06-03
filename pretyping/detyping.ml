@@ -232,7 +232,7 @@ let rec decomp_branch ndecls nargs nal b (avoid,env as e) c =
 	| LetIn (na,_,_,c) when ndecls>nargs ->
             na,c,compute_displayed_name_in,nargs
 	| _ ->
-	    Name (Id.of_string "x"),(applist (lift 1 c, [mkRel 1])),
+	    Name default_dependent_ident,(applist (lift 1 c, [mkRel 1])),
 	    compute_displayed_name_in,nargs-1 in
     let na',avoid' = f flag avoid na c in
     decomp_branch (ndecls-1) nargs' (na'::nal) b (avoid',add_name na' env) c
@@ -296,7 +296,7 @@ let it_destRLambda_or_LetIn_names n c =
       | _ ->
           (* eta-expansion *)
 	  let next l =
-	    let x = next_ident_away (Id.of_string "x") l in
+	    let x = next_ident_away default_dependent_ident l in
 	    (* Not efficient but unusual and no function to get free glob_vars *)
 (* 	    if occur_glob_constr x c then next (x::l) else x in *)
 	    x

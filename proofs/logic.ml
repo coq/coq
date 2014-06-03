@@ -313,7 +313,7 @@ let name_prop_vars env sigma ctxt =
   List.map2 (fun (na,b,t as d) s ->
     if na = Anonymous && s = prop_sort then
       let s = match Namegen.head_name t with Some id -> string_of_id id | None -> "" in
-      (Name (add_suffix (id_of_string "H") s),b,t)
+      (Name (add_suffix Namegen.default_prop_ident s),b,t)
     else
       d)
     ctxt (sorts_of_context env sigma ctxt)

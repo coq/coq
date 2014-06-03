@@ -67,7 +67,7 @@ let rec list_try_compile f = function
 	    list_try_compile f t
 
 let force_name =
-  let nx = Name (Id.of_string "x") in function Anonymous -> nx | na -> na
+  let nx = Name default_dependent_ident in function Anonymous -> nx | na -> na
 
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)

@@ -12,6 +12,15 @@ open Context
 open Environ
 
 (*********************************************************************
+   Conventional default names *)
+
+val default_prop_ident : Id.t          (* "H" *)
+val default_small_ident : Id.t         (* "H" *)
+val default_type_ident : Id.t          (* "X" *)
+val default_non_dependent_ident : Id.t (* "H" *)
+val default_dependent_ident : Id.t     (* "x" *)
+
+(*********************************************************************
    Generating "intuitive" names from their type *)
 
 val lowercase_first_char : Id.t -> string
@@ -57,7 +66,9 @@ val next_global_ident_away : Id.t -> Id.t list -> Id.t
 (** Avoid clashing with a constructor name already used in current module *)
 val next_name_away_in_cases_pattern : Name.t -> Id.t list -> Id.t
 
-val next_name_away  : Name.t -> Id.t list -> Id.t (** default is "H" *)
+(** Default is [default_non_dependent_ident] *)
+val next_name_away  : Name.t -> Id.t list -> Id.t
+
 val next_name_away_with_default : string -> Name.t -> Id.t list ->
   Id.t
 

@@ -817,7 +817,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 	      (fun (n, b, t) ->
 		match n with
                   Name _ -> (n, b, t)
-                | Anonymous -> (Name (Id.of_string "H"), b, t))
+                | Anonymous -> (Name Namegen.default_non_dependent_ident, b, t))
 	      cs.cs_args
 	in
 	let env_c = push_rel_context csgn env in

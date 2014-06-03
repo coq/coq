@@ -24,6 +24,24 @@ open Environ
 open Termops
 
 (**********************************************************************)
+(* Conventional names *)
+
+let default_prop_string = "H"
+let default_prop_ident = Id.of_string default_prop_string
+
+let default_small_string = "H"
+let default_small_ident = Id.of_string default_small_string
+
+let default_type_string = "X"
+let default_type_ident = Id.of_string default_type_string
+
+let default_non_dependent_string = "H"
+let default_non_dependent_ident = Id.of_string default_non_dependent_string
+
+let default_dependent_string = "x"
+let default_dependent_ident = Id.of_string "x"
+
+(**********************************************************************)
 (* Globality of identifiers *)
 
 let is_imported_modpath = function
@@ -147,8 +165,6 @@ let it_mkLambda_or_LetIn_name env b hyps =
 (**********************************************************************)
 (* Fresh names *)
 
-let default_x = Id.of_string "x"
-
 (* Looks for next "good" name by lifting subscript *)
 
 let next_ident_away_from id bad =
@@ -173,7 +189,7 @@ let rec to_avoid id = function
 (* 1- Looks for a fresh name for printing in cases pattern *)
 
 let next_name_away_in_cases_pattern na avoid =
-  let id = match na with Name id -> id | Anonymous -> default_x in
+  let id = match na with Name id -> id | Anonymous -> default_dependent_ident in
   next_ident_away_from id (fun id -> to_avoid id avoid || is_constructor id)
 
 (* 2- Looks for a fresh name for introduction in goal *)
@@ -191,7 +207,9 @@ let next_ident_away_in_goal id avoid =
   next_ident_away_from id bad
 
 let next_name_away_in_goal na avoid =
-  let id = match na with Name id -> id | Anonymous -> Id.of_string "H" in
+  let id = match na with
+    | Name id -> id
+    | Anonymous -> default_non_dependent_ident in
   next_ident_away_in_goal id avoid
 
 (* 3- Looks for next fresh name outside a list that is moreover valid
@@ -229,7 +247,7 @@ let next_name_away_with_default_using_types default na avoid t =
 	| Anonymous -> Id.of_string default in
   next_ident_away id avoid
 
-let next_name_away = next_name_away_with_default "H"
+let next_name_away = next_name_away_with_default default_non_dependent_string
 
 let make_all_name_different env =
   let avoid = ref (ids_of_named_context (named_context env)) in
@@ -279,7 +297,7 @@ let next_name_away_for_default_printing env_t na avoid =
       (* In principle, an anonymous name is not dependent and will not be *)
       (* taken into account by the function compute_displayed_name_in; *)
       (* just in case, invent a valid name *)
-      Id.of_string "H" in
+      default_non_dependent_ident in
   next_ident_away_for_default_printing env_t id avoid
 
 (**********************************************************************)

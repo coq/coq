@@ -482,7 +482,7 @@ let rec decompose_app_rel env evd t =
       else 
 	let (f', args) = decompose_app_rel env evd args.(0) in
 	let ty = Typing.type_of env evd args.(0) in
-	let f'' = mkLambda (Name (Id.of_string "x"), ty,
+	let f'' = mkLambda (Name default_dependent_ident, ty,
 	  mkLambda (Name (Id.of_string "y"), lift 1 ty,
 	    mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
 	in (f'', args)

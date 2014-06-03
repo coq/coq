@@ -188,7 +188,7 @@ let build_id_coercion idf_opt source poly =
   let lams,t = decompose_lam_assum c in
   let val_f =
     it_mkLambda_or_LetIn
-      (mkLambda (Name (Id.of_string "x"),
+      (mkLambda (Name Namegen.default_dependent_ident,
 		 applistc vs (extended_rel_list 0 lams),
 		 mkRel 1))
        lams

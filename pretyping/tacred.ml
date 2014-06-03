@@ -342,7 +342,7 @@ let reference_eval sigma env = function
    The type Tij' is Tij[yi(j-1)..y1 <- ai(j-1)..a1]
 *)
 
-let x = Name (Id.of_string "x")
+let x = Name default_dependent_ident
 
 let make_elim_fun (names,(nbfix,lv,n)) u largs =
   let lu = List.firstn n largs in

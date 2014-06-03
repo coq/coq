@@ -1170,7 +1170,7 @@ let whd_meta sigma c = match kind_of_term c with
   | Meta p -> (try meta_value sigma p with Not_found -> c)
   | _ -> c
 
-let hid = Id.of_string "H"
+let default_plain_instance_ident = Id.of_string "H"
 
 (* Try to replace all metas. Does not replace metas in the metas' values
  * Differs from (strong whd_meta). *)
@@ -1189,7 +1189,7 @@ let plain_instance s c =
 	    match kind_of_term g with
             | App _ ->
                 let l' = CArray.Fun1.smartmap lift 1 l' in
-                mkLetIn (Name hid,g,t,mkApp(mkRel 1, l'))
+                mkLetIn (Name default_plain_instance_ident,g,t,mkApp(mkRel 1, l'))
             | _ -> mkApp (g,l')
 	    with Not_found -> mkApp (f,l'))
         | _ -> mkApp (irec n f,l'))

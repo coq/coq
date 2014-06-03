@@ -680,7 +680,7 @@ let empty_valcon = None
 (* Builds a value constraint *)
 let mk_valcon c = Some c
 
-let idx = Id.of_string "x"
+let idx = Namegen.default_dependent_ident
 
 (* Refining an evar to a product *)
 

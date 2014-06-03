@@ -888,7 +888,7 @@ type hints_entry =
   | HintsExternEntry of
       int * (patvar list * constr_pattern) option * glob_tactic_expr
 
-let h = Id.of_string "H"
+let default_prepare_hint_ident = Id.of_string "H"
 
 exception Found of constr * types
 
@@ -915,7 +915,7 @@ let prepare_hint check env init (sigma,c) =
   let rec iter c =
     try find_next_evar c; c
     with Found (evar,t) ->
-      let id = next_ident_away_from h (fun id -> Id.Set.mem id !vars) in
+      let id = next_ident_away_from default_prepare_hint_ident (fun id -> Id.Set.mem id !vars) in
       vars := Id.Set.add id !vars;
       subst := (evar,mkVar id)::!subst;
       mkNamedLambda id t (iter (replace_term evar (mkVar id) c)) in

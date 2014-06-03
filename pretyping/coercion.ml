@@ -76,7 +76,6 @@ let app_opt env evdref f t =
   whd_betaiota !evdref (app_opt f t)
 
 let pair_of_array a = (a.(0), a.(1))
-let make_name s = Name (Id.of_string s)
 
 let disc_subset x =
   match kind_of_term x with
@@ -183,7 +182,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 	| _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->
 	  let name' = 
-	    Name (Namegen.next_ident_away (Id.of_string "x") (Termops.ids_of_context env))
+	    Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.ids_of_context env))
 	  in
 	  let env' = push_rel (name', None, a') env in
 	  let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
@@ -235,7 +234,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		       | _ -> raise NoSubtacCoercion
 		     in
 		     let (pb, b), (pb', b') = remove_head a pb, remove_head a' pb' in
-		     let env' = push_rel (make_name "x", None, a) env in
+		     let env' = push_rel (Name Namegen.default_dependent_ident, None, a) env in
 		     let c2 = coerce_unify env' b b' in
 		       match c1, c2 with
 		       | None, None -> None
@@ -450,7 +449,7 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
           (* Note: we retype the term because sort-polymorphism may have *)
           (* weaken its type *)
 	  let name = match name with
-	    | Anonymous -> Name (Id.of_string "x")
+	    | Anonymous -> Name Namegen.default_dependent_ident
 	    | _ -> name in
 	  let env1 = push_rel (name,None,u1) env in
 	  let (evd', v1) =
