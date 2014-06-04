@@ -861,7 +861,11 @@ let explain_unsatisfiable_constraints env evd constr comp =
   | None -> Typeclasses.is_resolvable evi
   | Some comp -> Typeclasses.is_resolvable evi && Evar.Set.mem evk comp
   in
-  let undef = Evar.Map.filter is_kept undef in
+  let undef = 
+    let m = Evar.Map.filter is_kept undef in
+      if Evar.Map.is_empty m then undef
+      else m
+  in
   match constr with
   | None ->
     str "Unable to satisfy the following constraints:" ++ fnl () ++

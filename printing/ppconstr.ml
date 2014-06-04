@@ -118,8 +118,16 @@ let pr_name = pr_name
 let pr_qualid = pr_qualid
 let pr_patvar = pr_id
 
+let pr_glob_sort_instance = function
+  | GProp -> str "Prop"
+  | GSet -> str "Set"
+  | GType u -> 
+    (match u with 
+    | Some u -> str u
+    | None -> str "Type")
+
 let pr_universe_instance l =
-  pr_opt (pr_in_comment (prlist_with_sep spc pr_glob_sort)) l
+  pr_opt (pr_in_comment (prlist_with_sep spc pr_glob_sort_instance)) l
 
 let pr_cref ref us =
   pr_reference ref ++ pr_universe_instance us

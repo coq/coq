@@ -386,6 +386,7 @@ let is_rigid_head flags t =
   match kind_of_term t with
   | Const (cst,u) -> not (Cpred.mem cst (snd flags.modulo_delta))
   | Ind (i,u) -> true
+  | Construct _ -> true
   | Fix _ | CoFix _ -> true
   | _ -> false
 

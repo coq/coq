@@ -161,7 +161,7 @@ GEXTEND Gram
   ;
   constr:
     [ [ c = operconstr LEVEL "8" -> c
-      | "@"; f=global -> CAppExpl(!@loc,(None,f,None),[]) ] ]
+      | "@"; f=global; i = instance -> CAppExpl(!@loc,(None,f,i),[]) ] ]
   ;
   operconstr:
     [ "200" RIGHTA
@@ -185,7 +185,7 @@ GEXTEND Gram
     | "90" RIGHTA [ ]
     | "10" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(!@loc,(None,f),args)
-      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(!@loc,(None,f,None),args)
+      | "@"; f=global; i = instance; args=LIST0 NEXT -> CAppExpl(!@loc,(None,f,i),args)
       | "@"; (locid,id) = pattern_identref; args=LIST1 identref ->
           let args = List.map (fun x -> CRef (Ident x,None), None) args in
           CApp(!@loc,(None,CPatVar(locid,(true,id))),args) ]
