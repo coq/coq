@@ -729,15 +729,30 @@ open Universe
 
 let universe_level = Universe.level
 
+type status = Unset | SetLe | SetLt
+
 (* Comparison on this type is pointer equality *)
 type canonical_arc =
     { univ: Level.t;
       lt: Level.t list;
       le: Level.t list;
       rank : int;
-      predicative : bool}
+      predicative : bool;
+      mutable status : status;
+      (** Guaranteed to be unset out of the [compare_neq] functions. It is used
+          to do an imperative traversal of the graph, ensuring a O(1) check that
+          a node has already been visited. Quite performance critical indeed. *)
+    }
 
-let terminal u = {univ=u; lt=[]; le=[]; rank=0; predicative=false}
+let arc_is_le arc = match arc.status with
+| Unset -> false
+| SetLe | SetLt -> true
+
+let arc_is_lt arc = match arc.status with
+| Unset | SetLe -> false
+| SetLt -> true
+
+let terminal u = {univ=u; lt=[]; le=[]; rank=0; predicative=false; status = Unset}
 
 module UMap :
 sig
@@ -760,6 +775,24 @@ type univ_entry =
   | Equiv of Level.t
 
 type universes = univ_entry UMap.t
+
+(** Used to cleanup universes if a traversal function is interrupted before it
+    has the opportunity to do it itself. *)
+let unsafe_cleanup_universes g =
+  let iter _ arc = match arc with
+  | Equiv _ -> ()
+  | Canonical arc -> arc.status <- Unset
+  in
+  UMap.iter iter g
+
+let rec cleanup_universes g =
+  try unsafe_cleanup_universes g
+  with e ->
+    (** The only way unsafe_cleanup_universes may raise an exception is when
+        a serious error (stack overflow, out of memory) occurs, or a signal is
+        sent. In this unlikely event, we relaunch the cleanup until we finally
+        succeed. *)
+    cleanup_universes g; raise e
 
 let enter_equiv_arc u v g =
   UMap.add u (Equiv v) g
@@ -880,33 +913,47 @@ type order = EQ | LT of explanation Lazy.t | LE of explanation Lazy.t | NLE
   We use depth-first search, but the presence of [arcv] in [new_lt]
   is checked as soon as possible : this seems to be slightly faster
   on a test.
+
+  We do the traversal imperatively, setting the [status] flag on visited nodes.
+  This ensures O(1) check, but it also requires unsetting the flag when leaving
+  the function. Some special care has to be taken in order to ensure we do not
+  recover a messed up graph at the end. This occurs in particular when the
+  traversal raises an exception. Even though the code below is exception-free,
+  OCaml may still raise random exceptions, essentially fatal exceptions or
+  signal handlers. Therefore we ensure the cleanup by a catch-all clause. Note
+  also that the use of an imperative solution does make this function
+  thread-unsafe. For now we do not check universes in different threads, but if
+  ever this is to be done, we would need some lock somewhere.
+
 *)
 
 let compare_neq strict g arcu arcv =
   (* [c] characterizes whether (and how) arcv has already been related
      to arcu among the lt_done,le_done universe *)
-  let rec cmp c lt_done le_done lt_todo le_todo = match lt_todo, le_todo with
-  | [],[] -> c
+  let rec cmp c to_revert lt_todo le_todo = match lt_todo, le_todo with
+  | [],[] -> (to_revert, c)
   | (arc,p)::lt_todo, le_todo ->
-    if List.memq arc lt_done then
-      cmp c lt_done le_done lt_todo le_todo
+    if arc_is_lt arc then
+      cmp c to_revert lt_todo le_todo
     else
       let rec find lt_todo lt le = match le with
       | [] ->
         begin match lt with
-        | [] -> cmp c (arc :: lt_done) le_done lt_todo le_todo
+        | [] ->
+          let () = arc.status <- SetLt in
+          cmp c (arc :: to_revert) lt_todo le_todo
         | u :: lt ->
           let arc = repr g u in
           let p = lazy ((Lt, make u) :: Lazy.force p) in
           if arc == arcv then
-            if strict then LT p else LE p
+            if strict then (to_revert, LT p) else (to_revert, LE p)
           else find ((arc, p) :: lt_todo) lt le
         end
       | u :: le ->
         let arc = repr g u in
         let p = lazy ((Le, make u) :: Lazy.force p) in
         if arc == arcv then
-          if strict then LT p else LE p
+          if strict then (to_revert, LT p) else (to_revert, LE p)
         else find ((arc, p) :: lt_todo) lt le
       in
       find lt_todo arc.lt arc.le
@@ -916,10 +963,10 @@ let compare_neq strict g arcu arcv =
 	 if arcv is strictly above arc, then we would have a cycle.
          But we cannot answer LE yet, a stronger constraint may
 	 come later from [le_todo]. *)
-      if strict then cmp (LE p) lt_done le_done [] le_todo else LE p
+      if strict then cmp (LE p) to_revert [] le_todo else (to_revert, LE p)
     else
-      if (List.memq arc lt_done) || (List.memq arc le_done) then
-        cmp c lt_done le_done [] le_todo
+      if arc_is_le arc then
+        cmp c to_revert [] le_todo
       else
         let rec find lt_todo lt = match lt with
         | [] ->
@@ -929,43 +976,54 @@ let compare_neq strict g arcu arcv =
             node :: accu
           in
           let le_new = List.fold_left fold le_todo arc.le in
-          cmp c lt_done (arc :: le_done) lt_todo le_new
+          let () = arc.status <- SetLe in
+          cmp c (arc :: to_revert) lt_todo le_new
         | u :: lt ->
           let arc = repr g u in
           let p = lazy ((Lt, make u) :: Lazy.force p) in
           if arc == arcv then
-            if strict then LT p else LE p
+            if strict then (to_revert, LT p) else (to_revert, LE p)
           else find ((arc, p) :: lt_todo) lt
         in
         find [] arc.lt
   in
-  cmp NLE [] [] [] [(arcu,Lazy.lazy_from_val [])]
+  try
+    let (to_revert, c) = cmp NLE [] [] [(arcu,Lazy.lazy_from_val [])] in
+    (** Reset all the touched arcs. *)
+    let () = List.iter (fun arc -> arc.status <- Unset) to_revert in
+    c
+  with e ->
+    (** Unlikely event: fatal error or signal *)
+    let () = cleanup_universes g in
+    raise e
 
 type fast_order = FastEQ | FastLT | FastLE | FastNLE
 
 let fast_compare_neq strict g arcu arcv =
   (* [c] characterizes whether arcv has already been related
      to arcu among the lt_done,le_done universe *)
-  let rec cmp c lt_done le_done lt_todo le_todo = match lt_todo, le_todo with
-  | [],[] -> c
+  let rec cmp c to_revert lt_todo le_todo = match lt_todo, le_todo with
+  | [],[] -> (to_revert, c)
   | arc::lt_todo, le_todo ->
-    if List.memq arc lt_done then
-      cmp c lt_done le_done lt_todo le_todo
+    if arc_is_lt arc then
+      cmp c to_revert lt_todo le_todo
     else
       let rec find lt_todo lt le = match le with
       | [] ->
         begin match lt with
-        | [] -> cmp c (arc :: lt_done) le_done lt_todo le_todo
+        | [] ->
+          let () = arc.status <- SetLt in
+          cmp c (arc :: to_revert) lt_todo le_todo
         | u :: lt ->
           let arc = repr g u in
           if arc == arcv then
-            if strict then FastLT else FastLE
+            if strict then (to_revert, FastLT) else (to_revert, FastLE)
           else find (arc :: lt_todo) lt le
         end
       | u :: le ->
         let arc = repr g u in
         if arc == arcv then
-          if strict then FastLT else FastLE
+          if strict then (to_revert, FastLT) else (to_revert, FastLE)
         else find (arc :: lt_todo) lt le
       in
       find lt_todo arc.lt arc.le
@@ -975,10 +1033,10 @@ let fast_compare_neq strict g arcu arcv =
 	 if arcv is strictly above arc, then we would have a cycle.
          But we cannot answer LE yet, a stronger constraint may
 	 come later from [le_todo]. *)
-      if strict then cmp FastLE lt_done le_done [] le_todo else FastLE
+      if strict then cmp FastLE to_revert [] le_todo else (to_revert, FastLE)
     else
-      if (List.memq arc lt_done) || (List.memq arc le_done) then
-        cmp c lt_done le_done [] le_todo
+      if arc_is_le arc then
+        cmp c to_revert [] le_todo
       else
         let rec find lt_todo lt = match lt with
         | [] ->
@@ -987,16 +1045,25 @@ let fast_compare_neq strict g arcu arcv =
             node :: accu
           in
           let le_new = List.fold_left fold le_todo arc.le in
-          cmp c lt_done (arc :: le_done) lt_todo le_new
+          let () = arc.status <- SetLe in
+          cmp c (arc :: to_revert) lt_todo le_new
         | u :: lt ->
           let arc = repr g u in
           if arc == arcv then
-            if strict then FastLT else FastLE
+            if strict then (to_revert, FastLT) else (to_revert, FastLE)
           else find (arc :: lt_todo) lt
         in
         find [] arc.lt
   in
-  cmp FastNLE [] [] [] [arcu]
+  try
+    let (to_revert, c) = cmp FastNLE [] [] [arcu] in
+    (** Reset all the touched arcs. *)
+    let () = List.iter (fun arc -> arc.status <- Unset) to_revert in
+    c
+  with e ->
+    (** Unlikely event: fatal error or signal *)
+    let () = cleanup_universes g in
+    raise e
 
 let compare g arcu arcv =
   if arcu == arcv then EQ else compare_neq true g arcu arcv
@@ -1467,6 +1534,7 @@ let normalize_universes g =
         le = LSet.elements le;
 	rank = rank;
 	predicative = false;
+	status = Unset;
       }
   in
   UMap.mapi canonicalize g
@@ -1608,7 +1676,7 @@ let sort_universes orig =
   let fold i accu u =
     if 0 < i then
       let pred = types.(i - 1) in
-      let arc = {univ = u; lt = [pred]; le = []; rank = 0; predicative = false} in
+      let arc = {univ = u; lt = [pred]; le = []; rank = 0; predicative = false; status = Unset; } in
       UMap.add u (Canonical arc) accu
     else accu
   in
