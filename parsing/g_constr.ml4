@@ -153,7 +153,7 @@ GEXTEND Gram
     [ [ "Set"  -> GSet
       | "Prop" -> GProp
       | "Type" -> GType None
-      | "Type"; "{"; id = string; "}" -> GType (Some id)
+      | "Type"; "{"; id = ident; "}" -> GType (Some (Id.to_string id))
       ] ]
   ;
   lconstr:
@@ -287,8 +287,15 @@ GEXTEND Gram
       | id=pattern_ident -> CPatVar(!@loc,(false,id)) ] ]
   ;
   instance:
-    [ [ "@{"; l = LIST1 sort SEP ","; "}" -> Some l
+    [ [ "@{"; l = LIST1 level; "}" -> Some l
       | -> None ] ]
+  ;
+  level:
+    [ [ "Set" -> GSet
+      | "Prop" -> GProp
+      | "Type" -> GType None
+      | id = ident -> GType (Some (Id.to_string id))
+      ] ]
   ;
   fix_constr:
     [ [ fx1=single_fix -> mk_single_fix fx1
