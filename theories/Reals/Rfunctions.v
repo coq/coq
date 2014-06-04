@@ -741,7 +741,6 @@ Qed.
 Lemma R_dist_sym : forall x y:R, R_dist x y = R_dist y x.
 Proof.
   unfold R_dist; intros; split_Rabs; try ring.
-Show.
   generalize (Ropp_gt_lt_0_contravar (y - x) Hlt0); intro;
     rewrite (Ropp_minus_distr y x) in H; generalize (Rlt_asym (x - y) 0 Hlt);
       intro; unfold Rgt in H; exfalso; auto.
