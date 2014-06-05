@@ -778,6 +778,19 @@ type canonical_arc =
 
 let terminal u = {univ=u; lt=[]; le=[]; rank=0}
 
+module UMap :
+sig
+  type key = Level.t
+  type +'a t
+  val empty : 'a t
+  val add : key -> 'a -> 'a t -> 'a t
+  val find : key -> 'a t -> 'a
+  val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val iter : (key -> 'a -> unit) -> 'a t -> unit
+  val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
+end = HMap.Make(Level)
+
 (* A Level.t is either an alias for another one, or a canonical one,
    for which we know the universes that are above *)
 
@@ -785,14 +798,13 @@ type univ_entry =
     Canonical of canonical_arc
   | Equiv of Level.t
 
-
-type universes = univ_entry LMap.t
+type universes = univ_entry UMap.t
 
 let enter_equiv_arc u v g =
-  LMap.add u (Equiv v) g
+  UMap.add u (Equiv v) g
 
 let enter_arc ca g =
-  LMap.add ca.univ (Canonical ca) g
+  UMap.add ca.univ (Canonical ca) g
 
 let is_type0m_univ = Universe.is_type0m
 
@@ -816,7 +828,7 @@ let is_univ_variable l = Universe.level l != None
 let repr g u =
   let rec repr_rec u =
     let a =
-      try LMap.find u g
+      try UMap.find u g
       with Not_found -> anomaly ~label:"Univ.repr"
 	  (str"Universe " ++ Level.pr u ++ str" undefined")
     in
@@ -831,7 +843,7 @@ let repr g u =
 
 let safe_repr g u =
   let rec safe_repr_rec u =
-    match LMap.find u g with
+    match UMap.find u g with
       | Equiv v -> safe_repr_rec v
       | Canonical arc -> arc
   in
@@ -1300,12 +1312,12 @@ let enforce_univ_lt u v g =
 	| LE p | LT p -> error_inconsistency Lt u v (List.rev (Lazy.force p))
 	| _ -> anomaly (Pp.str "Univ.fast_compare"))
 	  
-let empty_universes = LMap.empty
+let empty_universes = UMap.empty
 
 (* Prop = Set is forbidden here. *)
-let initial_universes = enforce_univ_lt Level.prop Level.set LMap.empty
+let initial_universes = enforce_univ_lt Level.prop Level.set UMap.empty
 
-let is_initial_universes g = LMap.equal (==) g initial_universes
+let is_initial_universes g = UMap.equal (==) g initial_universes
 
 let add_universe vlev g = 
   let v = terminal vlev in
@@ -1972,7 +1984,7 @@ let to_constraints g s =
 (* Normalization *)
 
 let lookup_level u g =
-  try Some (LMap.find u g) with Not_found -> None
+  try Some (UMap.find u g) with Not_found -> None
 
 (** [normalize_universes g] returns a graph where all edges point
     directly to the canonical representent of their target. The output
@@ -1986,18 +1998,18 @@ let normalize_universes g =
     | Some x -> x, cache
     | None -> match Lazy.force arc with
     | None ->
-      u, LMap.add u u cache
+      u, UMap.add u u cache
     | Some (Canonical {univ=v; lt=_; le=_}) ->
-      v, LMap.add u v cache
+      v, UMap.add u v cache
     | Some (Equiv v) ->
       let v, cache = visit v (lazy (lookup_level v g)) cache in
-      v, LMap.add u v cache
+      v, UMap.add u v cache
   in
-  let cache = LMap.fold
+  let cache = UMap.fold
     (fun u arc cache -> snd (visit u (Lazy.lazy_from_val (Some arc)) cache))
-    g LMap.empty
+    g UMap.empty
   in
-  let repr x = LMap.find x cache in
+  let repr x = UMap.find x cache in
   let lrepr us = List.fold_left
     (fun e x -> LSet.add (repr x) e) LSet.empty us
   in
@@ -2018,7 +2030,7 @@ let normalize_universes g =
 	rank = rank;
       }
   in
-  LMap.mapi canonicalize g
+  UMap.mapi canonicalize g
 
 (** Longest path algorithm. This is used to compute the minimal number of
     universes required if the only strict edge would be the Lt one. This
@@ -2073,7 +2085,7 @@ let make_graph g : (graph * graph) =
     let accu = List.fold_left fold_le accu le in
     accu
   in
-  LMap.fold fold g (LMap.empty, LMap.empty)
+  UMap.fold fold g (LMap.empty, LMap.empty)
 
 (** Construct a topological order out of a DAG. *)
 let rec topological_fold u g rem seen accu =
@@ -2137,14 +2149,14 @@ let sort_universes orig =
   let mp = Names.DirPath.make [Names.Id.of_string "Type"] in
   let types = Array.init (max + 1) (fun n -> Level.make mp n) in
   (** Old universes are made equal to [Type.n] *)
-  let fold u level accu = LMap.add u (Equiv types.(level)) accu in
-  let sorted = LMap.fold fold compact LMap.empty in
+  let fold u level accu = UMap.add u (Equiv types.(level)) accu in
+  let sorted = LMap.fold fold compact UMap.empty in
   (** Add all [Type.n] nodes *)
   let fold i accu u =
     if 0 < i then
       let pred = types.(i - 1) in
       let arc = {univ = u; lt = [pred]; le = []; rank = 0} in
-      LMap.add u (Canonical arc) accu
+      UMap.add u (Canonical arc) accu
     else accu
   in
   Array.fold_left_i fold sorted types
@@ -2242,7 +2254,7 @@ let constraints_of_universes g =
 	acc
     | Equiv v -> Constraint.add (u,Eq,v) acc
   in
-    LMap.fold constraints_of g Constraint.empty
+  UMap.fold constraints_of g Constraint.empty
 
 (* Pretty-printing *)
 
@@ -2264,7 +2276,7 @@ let pr_arc = function
       Level.pr u  ++ str " = " ++ Level.pr v ++ fnl ()
 
 let pr_universes g =
-  let graph = LMap.fold (fun u a l -> (u,a)::l) g [] in
+  let graph = UMap.fold (fun u a l -> (u,a)::l) g [] in
   prlist pr_arc graph
 
 (* Dumping constraints to a file *)
@@ -2278,7 +2290,7 @@ let dump_universes output g =
     | Equiv v ->
       output Eq (Level.to_string u) (Level.to_string v)
   in
-    LMap.iter dump_arc g
+  UMap.iter dump_arc g
 
 module Huniverse_set = 
   Hashcons.Make(
