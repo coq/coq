@@ -42,24 +42,15 @@ module Hashconsing = struct
     let dummy = -1
 
     external to_int : t -> int = "%identity"
-
-
-    external of_int : int -> t= "%identity"
   end
-    
+
   module Hcons = struct
 
     module type SA =
     sig
-      type data
       type t
-      val make : data -> t
-      val node : t -> data
-      val hash : t -> int
       val uid : t -> Uid.t
       val equal : t -> t -> bool
-      val stats : unit -> unit
-      val init : unit -> unit
     end
 
     module type S =
@@ -80,7 +71,7 @@ module Hashconsing = struct
 
     module Make (H : Hashtbl.HashedType) : S with type data = H.t =
     struct
-      let uid_make,uid_current,uid_set = Uid.make_maker()
+      let uid_make,_,_ = Uid.make_maker()
       type data = H.t
       type t = { id : Uid.t;
 		 key : int;
@@ -97,7 +88,6 @@ module Hashconsing = struct
       end)
       let pool = WH.create 491
 
-      exception Found of Uid.t
       let total_count = ref 0
       let miss_count = ref 0
       let init () =
@@ -115,8 +105,6 @@ module Hashconsing = struct
 	    incr miss_count;
 	    WH.add pool cell;
 	    cell
-
-      exception Found of t
 
       let stats () = ()
     end
@@ -137,31 +125,20 @@ module Hashconsing = struct
       type data = Data.t
       type t = Node.t
       val hash : t -> int
-      val uid : t -> Uid.t
       val make : data -> t
-      val equal : t -> t -> bool
       val nil : t
       val is_nil : t -> bool
       val tip : elt -> t
       val node : t -> t node
       val cons : (* ?sorted:bool -> *) elt -> t -> t
-      val hd : t -> elt
-      val tl : t -> t
       val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
       val map : (elt -> elt) -> t -> t
       val smartmap : (elt -> elt) -> t -> t
-      val iter : (elt -> 'a) -> t -> unit
       val exists : (elt -> bool) -> t -> bool
-      val exists_remove : (elt -> bool) -> t -> t
       val for_all : (elt -> bool) -> t -> bool
       val for_all2 : (elt -> elt -> bool) -> t -> t -> bool
-      val rev : t -> t
-      val rev_map : (elt -> elt) -> t -> t
-      val length : t -> int
       val mem : elt -> t -> bool
       val remove : elt -> t -> t
-      val stats : unit -> unit
-      val init : unit -> unit
       val to_list : t -> elt list
       val compare : (elt -> elt -> int) -> t -> t -> int
     end
@@ -189,24 +166,10 @@ module Hashconsing = struct
     let make = Node.make
     let node x = x.Node.node
     let hash x = x.Node.key
-    let equal = Node.equal
-    let uid x= x.Node.id
     let nil = Node.make Nil
-    let stats = Node.stats
-    let init = Node.init
 
     let is_nil =
       function { Node.node = Nil } -> true | _ -> false
-				  
-    (* doing sorted insertion allows to make
-       better use of hash consing *)
-    let rec sorted_cons e l =
-      match l.Node.node with
-      |	Nil -> Node.make (Cons(e, l))
-      | Cons (x, ll) ->
-      if H.uid e < H.uid x
-      then Node.make (Cons(e, l))
-      else Node.make (Cons(x, sorted_cons e ll))
 
     let cons e l =
       Node.make(Cons(e, l))
@@ -216,9 +179,6 @@ module Hashconsing = struct
     (* let cons ?(sorted=true) e l = *)
     (*   if sorted then sorted_cons e l else cons e l *)
 
-    let hd = function { Node.node = Cons(a,_) } -> a | _ -> failwith "hd"
-    let tl = function { Node.node = Cons(_,a) } -> a | _ -> failwith "tl"
-    
     let fold f l acc =
       let rec loop acc l = match l.Node.node with
 	| Nil -> acc
@@ -245,13 +205,6 @@ module Hashconsing = struct
 	    else cons a' (loop aa)
       in loop l
 
-    let iter f l =
-      let rec loop l = match l.Node.node with
-	| Nil -> ()
-	| Cons(a,aa) ->  (f a);(loop aa)
-      in
-	loop l
-	
     let exists f l =
       let rec loop l = match l.Node.node with
 	| Nil -> false
@@ -259,17 +212,6 @@ module Hashconsing = struct
       in
 	loop l
 
-    let exists_remove f i =
-      let rec loop l = match l.Node.node with
-	| Nil -> l
-	| Cons(a,aa) -> 
-	  if f a then loop aa
-	  else let aa' = loop aa in
-		 if aa == aa' then l
-		 else cons a aa'
-      in
-	loop i
-	
     let for_all f l =
       let rec loop l = match l.Node.node with
 	| Nil -> true
@@ -301,9 +243,6 @@ module Hashconsing = struct
       in
 	loop l
 
-    let rev l = fold cons l nil
-    let rev_map f l = fold (fun x acc -> cons (f x) acc) l nil
-    let length l = fold (fun _ c -> c+1) l 0
     let rec mem e l =
       match l.Node.node with
       | Nil -> false
@@ -373,20 +312,6 @@ module HashedHashcons (H : HashconsedHashedType) : StaticHashHashedType
     let make x = { hash = H.hash x; data = x }
   end	  
     
-module type S =
-sig
-  
-  type data
-  type t = private { key : int;
-		     node : data }
-  val make : data -> t
-  val node : t -> data
-  val hash : t -> int
-  val equal : t -> t -> bool
-  val stats : unit -> unit
-  val init : unit -> unit
-end
-
 module MakeHashedHashcons (H : StaticHashHashedType) = 
 struct
   module WH = Weak.Make(struct
@@ -422,15 +347,6 @@ module Level = struct
     | Level of int * DirPath.t
 
   (* Hash-consing *)
-
-  let shallow_equal x y = 
-    x == y ||
-      match x, y with
-      | Prop, Prop -> true
-      | Set, Set -> true
-      | Level (n,d), Level (n',d') ->
-	n == n' && d == d'
-      | _ -> false
 
   let deep_equal x y =
     x == y ||
@@ -483,11 +399,6 @@ module Level = struct
   let is_prop x =
     match data x with
     | Prop -> true
-    | _ -> false
-
-  let is_set x = 
-    match data x with
-    | Set -> true
     | _ -> false
 
   (* A specialized comparison function: we compare the [int] part first.
@@ -546,14 +457,9 @@ module LSet = struct
   let pr s = 
     str"{" ++ pr_universe_level_list (elements s) ++ str"}"
 
-  let of_list l =
-    List.fold_left (fun acc x -> add x acc) empty l
-
   let of_array l =
     Array.fold_left (fun acc x -> add x acc) empty l
 
-  (* MS: Is this the best for sets? *)
-  let hash = Hashtbl.hash
 end
 
 module LMap = struct 
@@ -600,35 +506,6 @@ module LMap = struct
 end
 
 type universe_level = Level.t
-
-module LList = struct
-  type t = Level.t list
-  type _t = t
-  module Huniverse_level_list = 
-  Hashcons.Make(
-    struct
-      type t = _t
-      type u = universe_level -> universe_level
-      let hashcons huc s =
-	List.fold_right (fun x a -> huc x :: a) s []
-      let equal s s' = List.for_all2eq (==) s s'
-      let hash = Hashtbl.hash
-    end)
-
-  let hcons = 
-    Hashcons.simple_hcons Huniverse_level_list.generate Level.hcons
-
-  let empty = hcons []
-  let equal l l' = l == l' ||
-    (try List.for_all2 Level.equal l l'
-     with Invalid_argument _ -> false)
-
-  let levels =
-    List.fold_left (fun s x -> LSet.add x s) LSet.empty
-
-end
-
-type universe_level_list = universe_level list
 
 type universe_level_subst_fn = universe_level -> universe_level
 
@@ -678,20 +555,14 @@ struct
 
       include Hashcons.Make(ExprHash)
 
-      type data = t
-      type node = t
-
       let make =
 	Hashcons.simple_hcons generate Level.hcons
-      external node : node -> data = "%identity"
       let hash = ExprHash.hash
       let uid = hash
       let equal x y = x == y ||
 	(let (u,n) = x and (v,n') = y in
 	   Int.equal n n' && Level.equal u v)
 
-      let stats _ = ()
-      let init _ = ()
     end
 
     let hcons = HExpr.make
@@ -711,18 +582,6 @@ struct
 
     let is_prop = function
       | (l,0) -> Level.is_prop l
-      | _ -> false
-
-    let is_set = function
-      | (l,0) -> Level.is_set l
-      | _ -> false
-      
-    let is_type1 = function
-      | (l,1) -> Level.is_set l
-      | _ -> false
-          
-    let is_small = function
-      | (l, 0) -> Level.is_small l
       | _ -> false
 
     let equal x y = x == y ||
@@ -781,7 +640,6 @@ struct
   end
     
   let compare_expr = Expr.compare
-  let pr_expr n = Expr.pr n
 
   module Huniv = Hashconsing.HList.Make(Expr.HExpr)
   type t = Huniv.t
@@ -848,7 +706,6 @@ struct
 
   let is_type0m x = equal type0m x
   let is_type0 x = equal type0 x
-  let is_type1 x = equal type1 x
 
   (* Returns the formal universe that lies juste above the universe variable u.
      Used to type the sort u. *)
@@ -889,11 +746,6 @@ struct
      Used to type the products. *)
   let sup x y = merge_univs x y
 
-  let of_list l = 
-    List.fold_right
-      (fun x acc -> cons x acc)
-      l nil
-    
   let empty = nil
   let is_empty n = is_nil n
 
@@ -974,8 +826,6 @@ let repr g u =
   in
   repr_rec u
 
-let can g l = List.map (repr g) l
-
 (* [safe_repr] also search for the canonical representative, but
    if the graph doesn't contain the searched universe, we add it. *)
 
@@ -1050,13 +900,6 @@ let constraint_type_ord c1 c2 = match c1, c2 with
 | Le, Eq -> -1
 | Eq, Eq -> 0
 | Eq, _ -> 1
-
-(* Assuming the current universe has been reached by [p] and [l]
-   correspond to the universes in (direct) relation [rel] with it,
-   make a list of canonical universe, updating the relation with
-   the starting point (path stored in reverse order). *)
-let canp g (p:explanation Lazy.t) rel l : (canonical_arc * explanation Lazy.t) list =
-  List.map (fun u -> (repr g u, lazy ((rel,Universe.make u):: Lazy.force p))) l
 
 type order = EQ | LT of explanation Lazy.t | LE of explanation Lazy.t | NLE
 
@@ -1256,8 +1099,6 @@ type 'a check_function = universes -> 'a -> 'a -> bool
 let check_equal_expr g x y =
   x == y || (let (u, n) = x and (v, m) = y in 
 	       Int.equal n m && check_equal g u v)
-
-exception Neq 
 
 let check_eq_univs g l1 l2 =
   let f x1 x2 = check_equal_expr g x1 x2 in
@@ -1515,7 +1356,6 @@ struct
 end
 
 let empty_constraint = Constraint.empty
-let is_empty_constraint = Constraint.is_empty
 let union_constraint = Constraint.union
 let eq_constraint = Constraint.equal
 
@@ -1820,9 +1660,6 @@ struct
   let empty = (LSet.empty, Constraint.empty)
   let is_empty (univs, cst) = LSet.is_empty univs && Constraint.is_empty cst
 
-  let of_context (ctx,cst) =
-    (Instance.levels ctx, cst)
-
   let of_set s = (s, Constraint.empty)
   let singleton l = of_set (LSet.singleton l)
   let of_instance i = of_set (Instance.levels i)
@@ -1875,15 +1712,6 @@ let pr_universe_level_subst =
 
 let constraints_of (_, cst) = cst
 
-let constraint_depend (l,d,r) u =
-  Level.equal l u || Level.equal l r
-
-let constraint_depend_list (l,d,r) us =
-  List.mem l us || List.mem r us
-
-let constraints_depend cstr us = 
-  Constraint.exists (fun c -> constraint_depend_list c us) cstr
-
 let remove_dangling_constraints dangling cst =
   Constraint.fold (fun (l,d,r as cstr) cst' -> 
     if List.mem l dangling || List.mem r dangling then cst'
@@ -1934,13 +1762,7 @@ let rec normalize_univs_level_level subst l =
       normalize_univs_level_level subst l'
   with Not_found -> l
 
-let subst_univs_level_fail subst l =
-  try match Universe.level (subst l) with 
-  | Some l' -> l'
-  | None -> l
-  with Not_found -> l
-
-let rec subst_univs_level_universe subst u =
+let subst_univs_level_universe subst u =
   let f x = Universe.Expr.map (fun u -> subst_univs_level_level subst u) x in
   let u' = Universe.smartmap f u in
     if u == u' then u
@@ -2133,7 +1955,7 @@ let check_consistent_constraints (ctx,cstrs) cstrs' =
   (* TODO *) ()
 
 let to_constraints g s = 
-  let rec tr (x,d,y) acc =
+  let tr (x,d,y) acc =
     let add l d l' acc = Constraint.add (l,UniverseConstraints.tr_dir d,l') acc in
       match Universe.level x, d, Universe.level y with
       | Some l, (ULe | UEq | ULub), Some l' -> add l d l' acc
@@ -2197,23 +2019,6 @@ let normalize_universes g =
       }
   in
   LMap.mapi canonicalize g
-
-(** [check_sorted g sorted]: [g] being a universe graph, [sorted]
-    being a map to levels, checks that all constraints in [g] are
-    satisfied in [sorted]. *)
-let check_sorted g sorted =
-  let get u = try LMap.find u sorted with
-    | Not_found -> assert false
-  in
-  let iter u arc =
-    let lu = get u in match arc with
-    | Equiv v -> assert (Int.equal lu (get v))
-    | Canonical {univ = u'; lt = lt; le = le} ->
-      assert (u == u');
-      List.iter (fun v -> assert (lu <= get v)) le;
-      List.iter (fun v -> assert (lu < get v)) lt
-  in
-  LMap.iter iter g
 
 (** Longest path algorithm. This is used to compute the minimal number of
     universes required if the only strict edge would be the Lt one. This
