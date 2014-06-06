@@ -222,12 +222,14 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 
   (* Evar must be undefined since we have flushed evars *)
   let () = if !debug_unification then
-	     let open Pp in
-	     let pr_state (tm,l) =
-	       h 0 (Termops.print_constr tm ++ str "|" ++ cut ()
-		    ++ prlist_with_sep pr_semicolon
-				       (fun x -> hov 1 (Termops.print_constr x)) l) in
-	     pp (v 0 (pr_state appr1 ++ cut () ++ pr_state appr2 ++ cut ()) ++ fnl ()) in
+      let pr_state (tm,l) =
+	Pp.h 0 (Termops.print_constr tm ++ Pp.str "|" ++ Pp.cut ()
+		++ prlist_with_sep pr_semicolon
+		  (fun x -> Pp.hov 1 (Termops.print_constr x)) l)
+      in
+      Pp.pp (Pp.v 0 (pr_state appr1 ++ Pp.cut () ++ pr_state appr2 ++ Pp.cut ())
+             ++ Pp.fnl ())
+  in
   match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 i =
