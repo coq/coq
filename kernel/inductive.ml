@@ -763,7 +763,6 @@ let get_codomain_spec env p =
        let env' = push_rel_context pctx env in
        if is_arity env' pr then
 	 let specs = Array.map (family_codomain_spec env) lbr in
-	 (* What if the specs correspond to different inductive families? *)
 	 Array.fold_left family_spec_glb (None, Dead_code) specs
        else None, Not_subterm
     | _ -> None, Not_subterm
@@ -883,35 +882,49 @@ let error_illegal_rec_call renv fx (arg_renv,arg) =
 let error_partial_apply renv fx =
   raise (FixGuardError (renv.env,NotEnoughArgumentsForFixCall fx))
 
-let filter_stack_domain env ci p stack =
+let rec filter_stack_domain env p stack =
+  let reset_stack stack =
+    (* TODO: is it correct to empty the stack instead? *)
+    List.fold_right (fun _ l -> (None, SArg (lazy Not_subterm)) :: l) stack []
+  in
   let absctx, ar = dest_lam_assum env p in
   let env = push_rel_context absctx env in
   let rec filter_stack env ar stack =
     let t = whd_betadeltaiota env ar in
     match stack, kind_of_term t with
-    | elt :: stack', Prod (n,a,c0) ->
+    | (oind,elt) :: stack', Prod (n,a,c0) ->
       let d = (n,None,a) in
       let ty, args = decompose_app a in (* TODO: reduce a? *)
       let elt = match kind_of_term ty with
-      | Ind ind -> 
+      | Ind ind when oind = None || Option.equal eq_ind (Some ind) oind ->
         let spec' = stack_element_specif elt in (* TODO: this is recomputed
         each time*)
         (match (Lazy.force spec') with (* TODO: are we forcing too much? *)
-        | Not_subterm -> elt
+        | Not_subterm -> (Some ind, elt)
         | Subterm(s,path) ->
             let recargs = get_recargs_approx env ind args in
             let path = inter_wf_paths path recargs in
-            SArg (lazy (Subterm(s,path))))
+            (Some ind, SArg (lazy (Subterm(s,path)))))
             (* TODO: not really an SArg *)
             (* TODO: what if Dead_code above? *)
-      | _ -> (SArg (lazy Not_subterm))
+      | _ -> (None, SArg (lazy Not_subterm)) (* We could accept match here too *)
       in
       elt :: filter_stack (push_rel d env) c0 stack'
+    | _, Case (ci,p,c,lbr) ->
+      let pctx, pr = dest_lam_assum env p in
+      let env' = push_rel_context pctx env in
+      if is_arity env' pr then
+	Array.fold_left (fun stack ar -> filter_stack_domain env ar stack) stack lbr
+	(* What if the specs correspond to different inductive families? *)
+      else reset_stack stack
     | [], _ -> [] (* TODO: remove after debugging *)
-    | _,_ -> List.fold_right (fun _ l -> SArg (lazy Not_subterm) :: l) stack []
-             (* TODO: is it correct to empty the stack instead? *)
+    | _,_ -> reset_stack stack
   in
   filter_stack env ar stack
+
+let filter_stack_domain env p stack =
+  let stack = List.map (fun spec -> (None, spec)) stack in
+  List.map snd (filter_stack_domain env p stack)
 
 (* Check if [def] is a guarded fixpoint body with decreasing arg.
    given [recpos], the decreasing arguments of each mutually defined
@@ -968,7 +981,7 @@ let check_one_fix renv recpos trees def =
             let case_spec = branches_specif renv 
 	      (lazy_subterm_specif renv [] c_0) ci in
 	    let stack' = push_stack_closures renv l stack in
-        let stack' = filter_stack_domain renv.env ci p stack' in
+        let stack' = filter_stack_domain renv.env p stack' in
               Array.iteri (fun k br' -> 
 			     let stack_br = push_stack_args case_spec.(k) stack' in
 			     check_rec_call renv stack_br br') lrest
