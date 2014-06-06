@@ -1431,7 +1431,7 @@ let my_find_eq_data_decompose gl t =
        known equalities will be dynamically registered *)
       -> raise ConstrMatching.PatternMatchingFailure
 
-let intro_decomp_eq loc b l thin tac id =
+let intro_decomp_eq loc l thin tac id =
   Proofview.Goal.raw_enter begin fun gl ->
   let c = mkVar id in
   let t = Tacmach.New.pf_type_of gl c in
@@ -1442,7 +1442,7 @@ let intro_decomp_eq loc b l thin tac id =
     (eq,t,eq_args) (c, t)
   end
 
-let intro_or_and_pattern loc b ll thin tac id =
+let intro_or_and_pattern loc bracketed ll thin tac id =
   Proofview.Goal.raw_enter begin fun gl ->
   let c = mkVar id in
   let t = Tacmach.New.pf_type_of gl c in
@@ -1452,7 +1452,7 @@ let intro_or_and_pattern loc b ll thin tac id =
   check_or_and_pattern_size loc ll (Array.length nv);
   Tacticals.New.tclTHENLASTn
     (Tacticals.New.tclTHEN (simplest_case c) (Proofview.V82.tactic (clear [id])))
-    (Array.map2 (fun n l -> tac thin (Some n) l)
+    (Array.map2 (fun n l -> tac thin (if bracketed then Some n else None) l)
        nv (Array.of_list ll))
   end
 
@@ -1559,11 +1559,11 @@ let rec intros_patterns b avoid ids thin destopt bound n tac = function
         (fun ids -> intros_patterns b avoid ids thin destopt bound (n+List.length ids) tac l)
   | IntroOrAndPattern ll ->
       intro_then_force
-	(intro_or_and_pattern loc b ll thin
+	(intro_or_and_pattern loc (b || not (List.is_empty l)) ll thin
 	   (fun thin bound' -> intros_patterns b avoid ids thin destopt bound' 0 (fun ids thin -> intros_patterns b avoid ids thin destopt bound (n+1) tac l)))
   | IntroInjection l' ->
       intro_then_force
-	(intro_decomp_eq loc b l' thin
+	(intro_decomp_eq loc l' thin
 	   (fun thin bound' -> intros_patterns b avoid ids thin destopt bound' 0 (fun ids thin -> intros_patterns b avoid ids thin destopt bound (n+1) tac l)))
   | IntroRewrite l2r ->
       intro_then_gen loc (IntroAvoid(avoid@explicit_intro_names l))
@@ -1576,8 +1576,16 @@ let rec intros_patterns b avoid ids thin destopt bound n tac = function
 let intros_pattern_bound n destopt =
   intros_patterns true [] [] [] destopt (Some n) 0 (fun _ -> clear_wildcards)
 
+(* The following boolean governs what "intros []" do on examples such
+   as "forall x:nat*nat, x=x"; if true, it behaves as "intros [? ?]";
+   if false, it behaves as "intro H; case H; clear H" for fresh H.
+   Kept as false for compatibility.
+ *)
+let bracketing_last_or_and_intro_pattern = false 
+
 let intros_pattern destopt =
-  intros_patterns true [] [] [] destopt None 0 (fun _ l -> clear_wildcards l)
+  intros_patterns bracketing_last_or_and_intro_pattern
+    [] [] [] destopt None 0 (fun _ l -> clear_wildcards l)
 
 let intro_pattern destopt pat =
   intros_pattern destopt [dloc,pat]
@@ -1619,7 +1627,7 @@ let prepare_intros s ipat gl =
   | IntroInjection l ->
       make_id s,
       Tacticals.New.onLastHypId
-	(intro_decomp_eq loc true l []
+	(intro_decomp_eq loc l []
 	  (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0 (fun _ l -> clear_wildcards l)))
   | IntroForthcoming _ -> user_err_loc
       (loc,"",str "Introduction pattern for one hypothesis expected")
@@ -1660,7 +1668,7 @@ let as_tac id ipat = match ipat with
         (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0 (fun _ l -> clear_wildcards l))
         id
   | Some (loc,IntroInjection l) ->
-      intro_decomp_eq loc true l []
+      intro_decomp_eq loc l []
         (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0 (fun _ l -> clear_wildcards l))
         id
   | Some (loc,
