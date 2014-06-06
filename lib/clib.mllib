@@ -12,6 +12,7 @@ Option
 Store
 Exninfo
 Backtrace
+Control
 IArray
 IStream
 Pp_control

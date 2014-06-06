@@ -12,6 +12,7 @@ Option
 Store
 Exninfo
 Backtrace
+Control
 IStream
 Pp_control
 Loc

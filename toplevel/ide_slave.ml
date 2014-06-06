@@ -24,7 +24,7 @@ open Printer
 let catch_break = ref false
 
 let init_signal_handler () =
-  let f _ = if !catch_break then raise Sys.Break else Util.interrupt := true in
+  let f _ = if !catch_break then raise Sys.Break else Control.interrupt := true in
   Sys.set_signal Sys.sigint (Sys.Signal_handle f)
 
 
@@ -339,7 +339,7 @@ let quit = ref false
 let eval_call xml_oc log c =
   let interruptible f x =
     catch_break := true;
-    Util.check_for_interrupt ();
+    Control.check_for_interrupt ();
     let r = f x in
     catch_break := false;
     let out = read_stdout () in

@@ -1879,32 +1879,14 @@ let _ =
 
 let current_timeout = ref None
 
-(** Installing and de-installing a timer.
-    Note: according to ocaml documentation, Unix.alarm isn't available
-    for native win32. *)
-
-let timeout_handler _ = raise Timeout
-
-let set_timeout n =
-  let psh =
-    Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
-  ignore (Unix.alarm n);
-  Some psh
-
-let default_set_timeout () =
+let vernac_timeout f =
   match !current_timeout, !default_timeout with
-    | Some n, _ -> set_timeout n
-    | None, Some n -> set_timeout n
-    | None, None -> None
+    | Some n, _ | None, Some n ->
+      let f () = f (); current_timeout := None in
+      Control.timeout n f Timeout
+    | None, None -> f ()
 
-let restore_timeout = function
-  | None -> ()
-  | Some psh ->
-    (* stop alarm *)
-    ignore(Unix.alarm 0);
-    (* restore handler *)
-    Sys.set_signal Sys.sigalrm psh;
-    current_timeout := None
+let restore_timeout () = current_timeout := None
 
 let locate_if_not_already loc exn =
   match Loc.get_loc exn with
@@ -1969,24 +1951,18 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         check_vernac_supports_polymorphism c polymorphism;
 	let poly = enforce_polymorphism polymorphism in
         Obligations.set_program_mode isprogcmd;
-        let psh = default_set_timeout () in
         try
+          vernac_timeout begin fun () ->
           if verbosely then Flags.verbosely (interp ?proof locality poly) c
                        else Flags.silently  (interp ?proof locality poly) c;
-          restore_timeout psh;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
             Flags.program_mode := orig_program_mode
+          end
         with
-          | reraise when Errors.noncritical reraise ->
+          | reraise when (match reraise with Timeout _ -> true | e -> Errors.noncritical e) ->
             let e = Errors.push reraise in
             let e = locate_if_not_already loc e in
-            restore_timeout psh;
-            Flags.program_mode := orig_program_mode;
-            raise e
-          | Timeout as reraise ->
-            let e = Errors.push reraise in
-            let e = locate_if_not_already loc e in
-            restore_timeout psh;
+            let () = restore_timeout () in
             Flags.program_mode := orig_program_mode;
             raise e
   and aux_list ?locality ?polymorphism isprogcmd l =

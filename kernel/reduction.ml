@@ -289,7 +289,7 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
-  Util.check_for_interrupt ();
+  Control.check_for_interrupt ();
   incr steps;
   if !steps = 10000 && slave_process () then begin
     Thread.yield ();

@@ -124,9 +124,3 @@ let delayed_force f = f ()
 
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
-
-(*s interruption *)
-
-let interrupt = ref false
-let check_for_interrupt () =
-  if !interrupt then begin interrupt := false; raise Sys.Break end

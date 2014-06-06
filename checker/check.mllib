@@ -12,6 +12,7 @@ Option
 Store
 Exninfo
 Backtrace
+Control
 Flags
 Pp_control
 Pp

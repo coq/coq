@@ -103,9 +103,3 @@ type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 (** Used for browsable-until structures. *)
 
-(** {6 ... } *)
-(** Coq interruption: set the following boolean reference to interrupt Coq
-    (it eventually raises [Break], simulating a Ctrl-C) *)
-
-val interrupt : bool ref
-val check_for_interrupt : unit -> unit

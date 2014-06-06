@@ -27,7 +27,7 @@ type lseqtac= global_reference -> seqtac
 type 'a with_backtracking = tactic -> 'a
 
 let wrap n b continue seq gls=
-  check_for_interrupt ();
+  Control.check_for_interrupt ();
   let nc=pf_hyps gls in
   let env=pf_env gls in
   let rec aux i nc ctx=

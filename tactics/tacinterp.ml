@@ -989,7 +989,7 @@ let rec val_interp ist (tac:glob_tactic_expr) : typed_generic_argument GTac.t =
     (** Delayed evaluation *)
     GTac.return (of_tacvalue (VFun (extract_trace ist, ist.lfun, [], t)))
   in
-  check_for_interrupt ();
+  Control.check_for_interrupt ();
   match curr_debug ist with
   | DebugOn lev ->
         let eval v =

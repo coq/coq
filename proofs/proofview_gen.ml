@@ -75,24 +75,9 @@ module IOBase =
   (** val timeout : int -> 'a1 coq_T -> 'a1 coq_T **)
   
   let timeout = fun n t -> (); fun () ->
-    let timeout_handler _ = Pervasives.raise (Proof_errors.Exception Proof_errors.Timeout) in
-    let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
-    Pervasives.ignore (Unix.alarm n);
-    let restore_timeout () =
-      Pervasives.ignore (Unix.alarm 0);
-      Sys.set_signal Sys.sigalrm psh
-    in
-    try
-      let res = t () in
-      restore_timeout ();
-      res
-    with
-    | e ->
-      let e = Errors.push e in
-      restore_timeout ();
-      Pervasives.raise e
- 
- end
+    Control.timeout n t (Proof_errors.Exception Proof_errors.Timeout)
+
+end
 
 type proofview = { solution : Evd.evar_map; comb : Goal.goal list }
 

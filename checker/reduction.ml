@@ -226,7 +226,7 @@ let rec ccnv univ cv_pb infos lft1 lft2 term1 term2 =
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
-  Util.check_for_interrupt ();
+  Control.check_for_interrupt ();
   (* First head reduce both terms *)
   let rec whd_both (t1,stk1) (t2,stk2) =
     let st1' = whd_stack infos t1 stk1 in

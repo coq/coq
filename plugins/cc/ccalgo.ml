@@ -574,7 +574,7 @@ let is_redundant state id args =
     with Not_found -> false
 
 let add_inst state (inst,int_subst) =
-  check_for_interrupt ();
+  Control.check_for_interrupt ();
   if state.rew_depth > 0 then
   if is_redundant state inst.qe_hyp_id int_subst then
     debug (str "discarding redundant (dis)equality")
@@ -955,7 +955,7 @@ let find_instances state =
     debug (str "Running E-matching algorithm ... ");
     try
       while true do
-	check_for_interrupt ();
+	Control.check_for_interrupt ();
 	do_match state res pb_stack
       done;
       anomaly (Pp.str "get out of here !")
@@ -966,7 +966,7 @@ let rec execute first_run state =
   debug (str "Executing ... ");
   try
     while
-      check_for_interrupt ();
+      Control.check_for_interrupt ();
       one_step state do ()
     done;
     match check_disequalities state with
