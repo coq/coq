@@ -832,7 +832,7 @@ let build_per_info etype casee gls =
   let ctyp=pf_type_of gls casee in
   let is_dep = dependent casee concl in
   let hd,args = decompose_app (special_whd gls ctyp) in
-  let (ind,u as indu) =
+  let (ind,u) =
     try
       destInd hd
     with DestKO ->
