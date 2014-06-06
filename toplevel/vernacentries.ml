@@ -1669,7 +1669,6 @@ let interp ?proof locality poly c =
   prerr_endline ("interpreting: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac c));
   match c with
   (* Done later in this file *)
-  | VernacList _ -> assert false
   | VernacLoad _ -> assert false
   | VernacFail _ -> assert false
   | VernacTime _ -> assert false
@@ -1960,11 +1959,10 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         aux ?locality ?polymorphism isprogcmd v
     | VernacTime v ->
 	let tstart = System.get_time() in
-        aux ?locality ?polymorphism isprogcmd v;
+        aux_list ?locality ?polymorphism isprogcmd v;
 	let tend = System.get_time() in
 	let msg = if !Flags.time then "" else "Finished transaction in " in
         msg_info (str msg ++ System.fmt_time_difference tstart tend)
-    | VernacList l -> List.iter (aux false) (List.map snd l)
     | VernacLoad (_,fname) -> vernac_load (aux false) fname
     | c -> 
         check_vernac_supports_locality c locality;
@@ -1991,6 +1989,8 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             restore_timeout psh;
             Flags.program_mode := orig_program_mode;
             raise e
+  and aux_list ?locality ?polymorphism isprogcmd l =
+    List.iter (aux false) (List.map snd l)
   in
     if verbosely then Flags.verbosely (aux false) c
     else aux false c

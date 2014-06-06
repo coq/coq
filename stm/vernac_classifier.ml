@@ -56,7 +56,7 @@ let undo_classifier = ref (fun _ -> assert false)
 let set_undo_classifier f = undo_classifier := f
 
 let rec classify_vernac e =
-  let static_classifier e = match e with
+  let rec static_classifier e = match e with
     (* PG compatibility *)
     | VernacUnsetOption (["Silent"]|["Undo"]|["Printing";"Depth"])
     | VernacSetOption   ((["Silent"]|["Undo"]|["Printing";"Depth"]),_)
@@ -77,7 +77,7 @@ let rec classify_vernac e =
 	make_polymorphic (classify_vernac e)
       else classify_vernac e
     | VernacTimeout (_,e) -> classify_vernac e
-    | VernacTime e -> classify_vernac e
+    | VernacTime e -> classify_vernac_list e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep | VtSideff _
@@ -157,7 +157,6 @@ let rec classify_vernac e =
     | VernacRegister _
     | VernacComments _ -> VtSideff [], VtLater
     (* Who knows *)
-    | VernacList _
     | VernacLoad _ -> VtSideff [], VtNow
     (* (Local) Notations have to disappear *)
     | VernacEndSegment _ -> VtSideff [], VtNow
@@ -193,6 +192,13 @@ let rec classify_vernac e =
     | VernacExtend (s,l) ->
         try List.assoc s !classifiers l ()
         with Not_found -> anomaly(str"No classifier for"++spc()++str s)
+  and classify_vernac_list = function
+    (* spiwack: It would be better to define a monoid on classifiers.
+       So that the classifier of the list would be the composition of
+       the classifier of the individual commands. Currently: special
+       case for singleton lists.*)
+    | [_,c] -> static_classifier c
+    | l -> VtUnknown,VtNow
   in
   let res = static_classifier e in
     if Flags.is_universe_polymorphism () then

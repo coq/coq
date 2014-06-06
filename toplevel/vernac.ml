@@ -27,12 +27,13 @@ let rec is_navigation_vernac = function
   | VernacBacktrack _
   | VernacBackTo _
   | VernacBack _ -> true
-  | VernacTime c -> is_navigation_vernac c (* Time Back* is harmless *)
+  | VernacTime l ->
+    List.exists
+      (fun (_,c) -> is_navigation_vernac c) l (* Time Back* is harmless *)
   | c -> is_deep_navigation_vernac c
 
 and is_deep_navigation_vernac = function
   | VernacTimeout (_,c) | VernacFail c -> is_navigation_vernac c
-  | VernacList l -> List.exists (fun (_,c) -> is_navigation_vernac c) l
   | _ -> false
 
 (* NB: Reset is now allowed again as asked by A. Chlipala *)
@@ -234,9 +235,6 @@ let rec vernac_com verbosely checknav (loc,com) =
 	    raise reraise
 	end
 
-    | VernacList l ->
-        List.iter (fun (_,v) -> interp v) l
-
     | v when !just_parsing -> ()
 
     | v -> Stm.interp verbosely (loc,v)
@@ -245,7 +243,7 @@ let rec vernac_com verbosely checknav (loc,com) =
       checknav loc com;
       if do_beautify () then pr_new_syntax loc (Some com);
       if !Flags.time then display_cmd_header loc com;
-      let com = if !Flags.time then VernacTime com else com in
+      let com = if !Flags.time then VernacTime [loc,com] else com in
       interp com
     with reraise ->
       let reraise = Errors.push reraise in

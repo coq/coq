@@ -531,13 +531,9 @@ let rec pr_vernac = function
   | VernacRestoreState s -> str"Restore State" ++ spc() ++ qs s
 
   (* Control *)
-  | VernacList l ->
-      hov 2 (str"[" ++ spc() ++
-             prlist (fun v -> pr_located pr_vernac v ++ sep_end (snd v) ++ fnl()) l
-             ++ spc() ++ str"]")
   | VernacLoad (f,s) -> str"Load" ++ if f then (spc() ++ str"Verbose"
   ++ spc()) else spc()  ++ qs s
-  | VernacTime v -> str"Time" ++ spc() ++ pr_vernac v
+  | VernacTime v -> str"Time" ++ spc() ++ pr_vernac_list v
   | VernacTimeout(n,v) -> str"Timeout " ++ int n ++ spc() ++ pr_vernac v
   | VernacFail v -> str"Fail" ++ spc() ++ pr_vernac v
   | VernacError _ -> str"No-parsing-rule for VernacError"
@@ -958,6 +954,11 @@ let rec pr_vernac = function
   | VernacSubproof None -> str "{"
   | VernacSubproof (Some i) -> str "BeginSubproof " ++ int i
   | VernacEndSubproof -> str "}"
+
+and pr_vernac_list l =
+      hov 2 (str"[" ++ spc() ++
+             prlist (fun v -> pr_located pr_vernac v ++ sep_end (snd v) ++ fnl()) l
+             ++ spc() ++ str"]")
 
 and pr_extend s cl =
   let pr_arg a =

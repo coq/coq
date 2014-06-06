@@ -265,9 +265,8 @@ type module_binder = bool option * lident list * module_ast_inl
 
 type vernac_expr =
   (* Control *)
-  | VernacList of located_vernac_expr list
   | VernacLoad of verbose_flag * string
-  | VernacTime of vernac_expr
+  | VernacTime of vernac_list
   | VernacTimeout of int * vernac_expr
   | VernacFail of vernac_expr
   | VernacError of exn (* always fails *)
@@ -430,6 +429,8 @@ type vernac_expr =
   | VernacProgram of vernac_expr
   | VernacPolymorphic of bool * vernac_expr
   | VernacLocal of bool * vernac_expr
+
+and vernac_list = located_vernac_expr list
 
 and located_vernac_expr = Loc.t * vernac_expr
 
