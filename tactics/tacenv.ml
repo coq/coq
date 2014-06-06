@@ -80,8 +80,6 @@ let initial_atomic =
         "cofix", TacCofix None;
         "trivial", TacTrivial (Off,[],None);
         "auto", TacAuto(Off,None,[],None);
-        "split", TacSplit(false,false,[NoBindings]);
-        "esplit", TacSplit(true,false,[NoBindings]);
         "constructor", TacAnyConstructor (false,None);
         "econstructor", TacAnyConstructor (true,None);
       ]

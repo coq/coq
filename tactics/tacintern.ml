@@ -520,7 +520,7 @@ let rec intern_atomic lf ist x =
   | TacRevert l -> TacRevert (List.map (intern_hyp_or_metaid ist) l)
 
   (* Constructors *)
-  | TacSplit (ev,b,bll) -> TacSplit (ev,b,List.map (intern_bindings ist) bll)
+  | TacSplit (ev,bll) -> TacSplit (ev,List.map (intern_bindings ist) bll)
   | TacAnyConstructor (ev,t) -> TacAnyConstructor (ev,Option.map (intern_pure_tactic ist) t)
   | TacConstructor (ev,n,bl) -> TacConstructor (ev,intern_or_var ist n,intern_bindings ist bl)
 

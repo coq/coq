@@ -1690,7 +1690,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
 
   (* Constructors *)
-  | TacSplit (ev,_,bll) ->
+  | TacSplit (ev,bll) ->
       Proofview.Goal.raw_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in

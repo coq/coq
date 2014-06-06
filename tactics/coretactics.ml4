@@ -118,3 +118,27 @@ END
 TACTIC EXTEND symmetry
   [ "symmetry" ] -> [ Tactics.intros_symmetry {onhyps=Some[];concl_occs=AllOccurrences} ]
 END
+
+(** Split *)
+
+TACTIC EXTEND split
+  [ "split" ] -> [ Tactics.split_with_bindings false [NoBindings] ]
+END
+
+TACTIC EXTEND esplit
+  [ "esplit" ] -> [ Tactics.split_with_bindings true [NoBindings] ]
+END
+
+TACTIC EXTEND split_with
+  [ "split" "with" bindings(bl) ] -> [
+    let { Evd.sigma = sigma ; it = bl } = bl in
+    Tacticals.New.tclWITHHOLES false (Tactics.split_with_bindings false) sigma [bl]
+  ]
+END
+
+TACTIC EXTEND esplit_with
+  [ "esplit" "with" bindings(bl) ] -> [
+    let { Evd.sigma = sigma ; it = bl } = bl in
+    Tacticals.New.tclWITHHOLES true (Tactics.split_with_bindings true) sigma [bl]
+  ]
+END

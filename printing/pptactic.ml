@@ -758,8 +758,7 @@ and pr_atom1 = function
       hov 1 (str "revert" ++ spc () ++ prlist_with_sep spc pr_ident l)
 
   (* Constructors *)
-  | TacSplit (ev,false,l) -> hov 1 (str (with_evars ev "split") ++ prlist_with_sep pr_comma pr_bindings l)
-  | TacSplit (ev,true,l) -> hov 1 (str (with_evars ev "exists") ++ prlist_with_sep (fun () -> str",") pr_ex_bindings l)
+  | TacSplit (ev,l) -> hov 1 (str (with_evars ev "exists") ++ prlist_with_sep (fun () -> str",") pr_ex_bindings l)
   | TacAnyConstructor (ev,Some t) ->
       hov 1 (str (with_evars ev "constructor") ++ pr_arg (pr_tac_level (latom,E)) t)
   | TacAnyConstructor (ev,None) as t -> pr_atom0 t

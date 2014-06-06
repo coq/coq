@@ -626,11 +626,9 @@ GEXTEND Gram
       | IDENT "revert"; l = LIST1 id_or_meta -> TacRevert l
 
       (* Constructors *)
-      | IDENT "split";  bl = with_bindings -> TacSplit (false,false,[bl])
-      | IDENT "esplit"; bl = with_bindings -> TacSplit (true,false,[bl])
-      | "exists"; bll = opt_bindings -> TacSplit (false,true,bll)
+      | "exists"; bll = opt_bindings -> TacSplit (false,bll)
       | IDENT "eexists"; bll = opt_bindings ->
-	  TacSplit (true,true,bll)
+	  TacSplit (true,bll)
       | IDENT "constructor"; n = nat_or_var; l = with_bindings ->
 	  TacConstructor (false,n,l)
       | IDENT "econstructor"; n = nat_or_var; l = with_bindings ->
