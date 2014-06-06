@@ -924,9 +924,6 @@ let mk_int_or_var_value ist c = in_gen (topwit wit_int) (interp_int_or_var ist c
 
 let pack_sigma (sigma,c) = {it=c;sigma=sigma;}
 
-let extend_gl_hyps { it=gl ; sigma=sigma } sign =
-  Goal.V82.new_goal_with sigma gl sign
-
 module GTac =
 struct
   type 'a garg =
@@ -1745,21 +1742,16 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = Proofview.Goal.sigma gl in
         Proofview.V82.tactic begin fun gl -> 
           let sign,op = interp_typed_pattern ist env sigma op in
-        (* spiwack: (2012/04/18) the evar_map output by pf_interp_constr
-	   is dropped as the evar_map taken as input (from
-	   extend_gl_hyps) is incorrect.  This means that evar
-	   instantiated by pf_interp_constr may be lost, there. *)
           let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
+	  let env' = Environ.push_named_context sign env in
           let (sigma',c_interp) =
-	    try pf_interp_constr ist (extend_gl_hyps gl sign) c
+	    try interp_constr ist env' sigma c
 	    with e when to_catch e (* Hack *) ->
 	      errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
           in
           tclTHEN
-	    (tclEVARS sigma)
-	    (tclTHEN (* At least recover the declared universes *)
-	       (tclPUSHEVARUNIVCONTEXT (Evd.evar_universe_context sigma'))
-	       (Tactics.change (Some op) c_interp (interp_clause ist env cl)))
+	    (tclEVARS sigma')
+	    (Tactics.change (Some op) c_interp (interp_clause ist env cl))
             gl
         end
       end
