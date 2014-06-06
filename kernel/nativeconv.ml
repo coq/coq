@@ -70,7 +70,7 @@ and conv_atom pb lvl a1 a2 cu =
 	if not (eq_constant c1 c2) then raise NotConvertible;
 	cu
     | Asort s1, Asort s2 -> 
-	ignore(sort_cmp_universes pb s1 s2 (cu, None)); cu
+        check_sort_cmp_universes pb s1 s2 cu; cu
     | Avar id1, Avar id2 ->
 	if not (Id.equal id1 id2) then raise NotConvertible;
 	cu

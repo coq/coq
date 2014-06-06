@@ -50,7 +50,7 @@ let rec conv_val pb k v1 v2 cu =
 
 and conv_whd pb k whd1 whd2 cu =
   match whd1, whd2 with
-  | Vsort s1, Vsort s2 -> ignore(sort_cmp_universes pb s1 s2 (cu,None)); cu
+  | Vsort s1, Vsort s2 -> check_sort_cmp_universes pb s1 s2 cu; cu
   | Vprod p1, Vprod p2 ->
       let cu = conv_val CONV k (dom p1) (dom p2) cu in
       conv_fun pb k (codom p1) (codom p2) cu
@@ -188,7 +188,7 @@ let rec conv_eq pb t1 t2 cu =
 	if Int.equal m1 m2 then cu else raise NotConvertible
     | Var id1, Var id2 ->
 	if Id.equal id1 id2 then cu else raise NotConvertible
-    | Sort s1, Sort s2 -> ignore(sort_cmp_universes pb s1 s2 (cu,None)); cu
+    | Sort s1, Sort s2 -> check_sort_cmp_universes pb s1 s2 cu; cu
     | Cast (c1,_,_), _ -> conv_eq pb c1 t2 cu
     | _, Cast (c2,_,_) -> conv_eq pb t1 c2 cu
     | Prod (_,t1,c1), Prod (_,t2,c2) ->

@@ -401,6 +401,12 @@ module Level = struct
     | Prop -> true
     | _ -> false
 
+  let is_set x =
+    match data x with
+    | Set -> true
+    | _ -> false
+    
+
   (* A specialized comparison function: we compare the [int] part first.
      This way, most of the time, the [DirPath.t] part is not considered.
 
@@ -774,9 +780,10 @@ type canonical_arc =
     { univ: Level.t;
       lt: Level.t list;
       le: Level.t list;
-      rank : int}
+      rank : int;
+      predicative : bool}
 
-let terminal u = {univ=u; lt=[]; le=[]; rank=0}
+let terminal u = {univ=u; lt=[]; le=[]; rank=0; predicative=false}
 
 module UMap :
 sig
@@ -1088,10 +1095,9 @@ let check_equal g u v =
   let _, arcv = safe_repr g v in
   arcu == arcv
 
-let set_arc g = 
-  snd (safe_repr g Level.set)
-  
-let prop_arc g = snd (safe_repr g Level.prop)
+let is_set_arc u = Level.is_set u.univ
+let is_prop_arc u = Level.is_prop u.univ
+let get_prop_arc g = snd (safe_repr g Level.prop)
 
 let check_smaller g strict u v =
   let g, arcu = safe_repr g u in
@@ -1099,10 +1105,9 @@ let check_smaller g strict u v =
   if strict then
     is_lt g arcu arcv
   else
-    let proparc = prop_arc g in
-      arcu == proparc ||
-	((arcv != proparc && arcu == set_arc g) ||
-	    is_leq g arcu arcv)
+    is_prop_arc arcu 
+    || (is_set_arc arcu && arcv.predicative) 
+    || is_leq g arcu arcv
 
 (** Then, checks on universes *)
 
@@ -1166,12 +1171,20 @@ let check_leq =
 
 (** Enforcing new constraints : [setlt], [setleq], [merge], [merge_disc] *)
 
+(** To speed up tests of Set </<= i *)
+let set_predicative g arcv = 
+  enter_arc {arcv with predicative = true} g
+
 (* setlt : Level.t -> Level.t -> reason -> unit *)
 (* forces u > v *)
 (* this is normally an update of u in g rather than a creation. *)
 let setlt g arcu arcv =
   let arcu' = {arcu with lt=arcv.univ::arcu.lt} in
-  enter_arc arcu' g, arcu'
+  let g = 
+    if is_set_arc arcu then set_predicative g arcv
+    else g
+  in
+    enter_arc arcu' g, arcu'
 
 (* checks that non-redundant *)
 let setlt_if (g,arcu) v =
@@ -1184,8 +1197,12 @@ let setlt_if (g,arcu) v =
 (* this is normally an update of u in g rather than a creation. *)
 let setleq g arcu arcv =
   let arcu' = {arcu with le=arcv.univ::arcu.le} in
-  enter_arc arcu' g, arcu'
-
+  let g = 
+    if is_set_arc arcu' then
+      set_predicative g arcv
+    else g
+  in
+    enter_arc arcu' g, arcu'
 
 (* checks that non-redundant *)
 let setleq_if (g,arcu) v =
@@ -1321,7 +1338,7 @@ let is_initial_universes g = UMap.equal (==) g initial_universes
 
 let add_universe vlev g = 
   let v = terminal vlev in
-  let proparc = prop_arc g in
+  let proparc = get_prop_arc g in
     enter_arc {proparc with le=vlev::proparc.le}
       (enter_arc v g)
       
@@ -1433,8 +1450,6 @@ module UniverseConstraints = struct
   include S
   
   let add (l,d,r as cst) s = 
-    if (Option.is_empty (Universe.level r)) then 
-      prerr_endline "Algebraic universe on the right";
     if Universe.equal l r then s
     else add cst s
 
@@ -2028,6 +2043,7 @@ let normalize_universes g =
         lt = LSet.elements lt;
         le = LSet.elements le;
 	rank = rank;
+	predicative = false;
       }
   in
   UMap.mapi canonicalize g
@@ -2155,7 +2171,7 @@ let sort_universes orig =
   let fold i accu u =
     if 0 < i then
       let pred = types.(i - 1) in
-      let arc = {univ = u; lt = [pred]; le = []; rank = 0} in
+      let arc = {univ = u; lt = [pred]; le = []; rank = 0; predicative = false} in
       UMap.add u (Canonical arc) accu
     else accu
   in

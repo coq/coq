@@ -26,20 +26,29 @@ val nf_betaiota      : env -> constr -> constr
 exception NotConvertible
 exception NotConvertibleVect of int
 
-type conv_universes = Univ.universes * Univ.constraints option
-
 type 'a conversion_function = env -> 'a -> 'a -> unit
 type 'a trans_conversion_function = Names.transparent_state -> 'a conversion_function
 type 'a universe_conversion_function = env -> Univ.universes -> 'a -> 'a -> unit
 type 'a trans_universe_conversion_function = 
   Names.transparent_state -> 'a universe_conversion_function
 
-type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
-
 type conv_pb = CONV | CUMUL
 
-val sort_cmp_universes :
-  conv_pb -> sorts -> sorts -> conv_universes -> conv_universes
+type 'a universe_compare = 
+  { (* Might raise NotConvertible *)
+    compare : conv_pb -> sorts -> sorts -> 'a -> 'a;
+    compare_instances: bool (* Instance of a flexible constant? *) -> 
+		       Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+  } 
+
+type 'a universe_state = 'a * 'a universe_compare
+
+type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
+
+type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
+
+val check_sort_cmp_universes :
+  conv_pb -> sorts -> sorts -> Univ.universes -> unit
 
 (* val sort_cmp : *)
 (*     conv_pb -> sorts -> sorts -> Univ.constraints -> Univ.constraints *)
@@ -70,6 +79,9 @@ val infer_conv : ?l2r:bool -> ?evars:(existential->constr option) ->
   ?ts:Names.transparent_state -> constr infer_conversion_function
 val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) -> 
   ?ts:Names.transparent_state -> types infer_conversion_function
+
+val generic_conv : conv_pb -> bool -> (existential->constr option) -> 
+  Names.transparent_state -> (constr,'a) generic_conversion_function
 
 (** option for conversion *)
 val set_vm_conv : (conv_pb -> types conversion_function) -> unit

@@ -153,25 +153,51 @@ type 'a trans_conversion_function = Names.transparent_state -> 'a conversion_fun
 type 'a universe_conversion_function = env -> Univ.universes -> 'a -> 'a -> unit
 type 'a trans_universe_conversion_function = 
   Names.transparent_state -> 'a universe_conversion_function
-type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
-
-type conv_universes = Univ.universes * Univ.constraints option
 
 exception NotConvertible
 exception NotConvertibleVect of int
 
-let convert_universes (univs,cstrs as cuniv) u u' =
-  if Univ.Instance.check_eq univs u u' then cuniv
-  else
-    (match cstrs with 
-    | None -> raise NotConvertible
-    | Some cstrs -> 
-      (univs, Some (Univ.enforce_eq_instances u u' cstrs)))
-      
+
+(* Convertibility of sorts *)
+
+(* The sort cumulativity is
+
+    Prop <= Set <= Type 1 <= ... <= Type i <= ...
+
+    and this holds whatever Set is predicative or impredicative
+*)
+
+type conv_pb =
+  | CONV
+  | CUMUL
+
+let is_cumul = function CUMUL -> true | CONV -> false
+let is_pos = function Pos -> true | Null -> false
+
+type 'a universe_compare = 
+  { (* Might raise NotConvertible *)
+    compare : conv_pb -> sorts -> sorts -> 'a -> 'a;
+    compare_instances: bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+  } 
+
+type 'a universe_state = 'a * 'a universe_compare
+
+type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
+
+type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
+
+type conv_universes = Univ.universes * Univ.constraints option
+
+let sort_cmp_universes pb s0 s1 (u, check) =
+  (check.compare pb s0 s1 u, check)
+
+let convert_instances flex u u' (s, check) =
+  (check.compare_instances flex u u' s, check)
+
 let conv_table_key k1 k2 cuniv =
   match k1, k2 with
   | ConstKey (cst, u), ConstKey (cst', u') when eq_constant_key cst cst' ->
-    convert_universes cuniv u u'
+    convert_instances true u u' cuniv
   | _ -> raise NotConvertible
 
 let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
@@ -198,59 +224,6 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
   if compare_stack_shape stk1 stk2 then
     cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
   else raise NotConvertible
-
-(* Convertibility of sorts *)
-
-(* The sort cumulativity is
-
-    Prop <= Set <= Type 1 <= ... <= Type i <= ...
-
-    and this holds whatever Set is predicative or impredicative
-*)
-
-type conv_pb =
-  | CONV
-  | CUMUL
-
-let is_cumul = function CUMUL -> true | CONV -> false
-let is_pos = function Pos -> true | Null -> false
-
-let check_eq (univs, cstrs as cuniv) u u' = 
-  match cstrs with
-  | None -> if check_eq univs u u' then cuniv else raise NotConvertible
-  | Some cstrs -> 
-    univs, Some (Univ.enforce_eq u u' cstrs)
-
-let check_leq ?(record=false) (univs, cstrs as cuniv) u u' = 
-  match cstrs with
-  | None -> if check_leq univs u u' then cuniv else raise NotConvertible
-  | Some cstrs -> 
-    let cstrs' = Univ.enforce_leq u u' cstrs in
-    let cstrs' = if record then 
-	Univ.Constraint.add (Option.get (Univ.Universe.level u),Univ.Le,
-			     Option.get (Univ.Universe.level u')) cstrs' 
-      else cstrs' 
-    in
-      univs, Some cstrs'
-
-let sort_cmp_universes pb s0 s1 univs =
-  match (s0,s1) with
-    | (Prop c1, Prop c2) when is_cumul pb ->
-      begin match c1, c2 with
-      | Null, _ | _, Pos -> univs (* Prop <= Set *)
-      | _ -> raise NotConvertible
-      end
-    | (Prop c1, Prop c2) -> if c1 == c2 then univs else raise NotConvertible
-    | (Prop c1, Type u) ->
-      let u0 = univ_of_sort s0 in
-	(match pb with
-	| CUMUL -> check_leq ~record:true univs u0 u
-	| CONV -> check_eq univs u0 u)
-    | (Type u, Prop c) -> raise NotConvertible
-    | (Type u1, Type u2) -> 
-	(match pb with
-	| CUMUL -> check_leq univs u1 u2
-	| CONV -> check_eq univs u1 u2)
 
 let rec no_arg_available = function
   | [] -> true
@@ -489,14 +462,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FInd (ind1,u1), FInd (ind2,u2)) ->
         if eq_ind ind1 ind2
 	then
-	  (let cuniv = convert_universes cuniv u1 u2 in
+	  (let cuniv = convert_instances false u1 u2 cuniv in
              convert_stacks l2r infos lft1 lft2 v1 v2 cuniv)
         else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
 	if Int.equal j1 j2 && eq_ind ind1 ind2
 	then
-	  (let cuniv = convert_universes cuniv u1 u2 in
+	  (let cuniv = convert_instances false u1 u2 cuniv in
            convert_stacks l2r infos lft1 lft2 v1 v2 cuniv)
         else raise NotConvertible
 	  
@@ -577,6 +550,80 @@ let clos_fconv trans cv_pb l2r evars env univs t1 t2 =
   let infos = create_clos_infos ~evars reds env in
   ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
 
+
+let check_eq univs u u' = 
+  if not (check_eq univs u u') then raise NotConvertible
+
+let check_leq univs u u' = 
+  if not (check_leq univs u u') then raise NotConvertible
+
+let check_sort_cmp_universes pb s0 s1 univs =
+  match (s0,s1) with
+    | (Prop c1, Prop c2) when is_cumul pb ->
+      begin match c1, c2 with
+      | Null, _ | _, Pos -> () (* Prop <= Set *)
+      | _ -> raise NotConvertible
+      end
+    | (Prop c1, Prop c2) -> if c1 != c2 then raise NotConvertible
+    | (Prop c1, Type u) ->
+      let u0 = univ_of_sort s0 in
+	(match pb with
+	| CUMUL -> check_leq univs u0 u
+	| CONV -> check_eq univs u0 u)
+    | (Type u, Prop c) -> raise NotConvertible
+    | (Type u1, Type u2) -> 
+	(match pb with
+	| CUMUL -> check_leq univs u1 u2
+	| CONV -> check_eq univs u1 u2)
+
+let checked_sort_cmp_universes pb s0 s1 univs =
+  check_sort_cmp_universes pb s0 s1 univs; univs
+
+let check_convert_instances _flex u u' univs =
+  if Univ.Instance.check_eq univs u u' then univs
+  else raise NotConvertible
+
+let checked_universes =
+  { compare = checked_sort_cmp_universes;
+    compare_instances = check_convert_instances }
+
+let infer_eq (univs, cstrs as cuniv) u u' =
+  if Univ.check_eq univs u u' then cuniv
+  else
+    univs, (Univ.enforce_eq u u' cstrs)
+
+let infer_leq (univs, cstrs as cuniv) u u' =
+  if Univ.check_leq univs u u' then cuniv
+  else
+    let cstrs' = Univ.enforce_leq u u' cstrs in
+      univs, cstrs'
+
+let infer_cmp_universes pb s0 s1 univs =
+  match (s0,s1) with
+    | (Prop c1, Prop c2) when is_cumul pb ->
+      begin match c1, c2 with
+      | Null, _ | _, Pos -> univs (* Prop <= Set *)
+      | _ -> raise NotConvertible
+      end
+    | (Prop c1, Prop c2) -> if c1 == c2 then univs else raise NotConvertible
+    | (Prop c1, Type u) ->
+      let u0 = univ_of_sort s0 in
+	(match pb with
+	| CUMUL -> infer_leq univs u0 u
+	| CONV -> infer_eq univs u0 u)
+    | (Type u, Prop c) -> raise NotConvertible
+    | (Type u1, Type u2) -> 
+	(match pb with
+	| CUMUL -> infer_leq univs u1 u2
+	| CONV -> infer_eq univs u1 u2)
+
+let infer_convert_instances flex u u' (univs,cstrs) =
+  (univs, Univ.enforce_eq_instances u u' cstrs)
+
+let infered_universes : (Univ.universes * Univ.Constraint.t) universe_compare = 
+  { compare = infer_cmp_universes;
+    compare_instances = infer_convert_instances }
+
 let trans_fconv_universes reds cv_pb l2r evars env univs t1 t2 =
   let b = 
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2 
@@ -584,7 +631,7 @@ let trans_fconv_universes reds cv_pb l2r evars env univs t1 t2 =
   in
     if b then ()
     else 
-      let _ = clos_fconv reds cv_pb l2r evars env (univs, None) t1 t2 in
+      let _ = clos_fconv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
 	()
 
 (* Profiling *)
@@ -621,16 +668,21 @@ let conv_leq_vecti ?(l2r=false) ?(evars=fun _->None) env v1 v2 =
     v1
     v2
 
+let generic_conv cv_pb l2r evars reds env univs t1 t2 =
+  let (s, _) = 
+    clos_fconv reds cv_pb l2r evars env univs t1 t2 
+  in s
+
 let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
-  let b, cstrs = 
-    if cv_pb == CUMUL then Constr.leq_constr_univs_infer univs t1 t2 
+  let b, cstrs =
+    if cv_pb == CUMUL then Constr.leq_constr_univs_infer univs t1 t2
     else Constr.eq_constr_univs_infer univs t1 t2
   in
-    if b then cstrs
-    else 
-      let (u, cstrs) = 
-	clos_fconv reds cv_pb l2r evars env (univs, Some Constraint.empty) t1 t2 
-      in Option.get cstrs
+    if b then (Univ.to_constraints univs cstrs)
+    else
+      let univs = ((univs, Univ.Constraint.empty), infered_universes) in
+      let ((_,cstrs), _) = clos_fconv reds cv_pb l2r evars env univs t1 t2 in
+	cstrs
 
 (* Profiling *)
 let infer_conv_universes = 

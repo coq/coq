@@ -458,7 +458,8 @@ val set_eq_sort : evar_map -> sorts -> sorts -> evar_map
 val has_lub : evar_map -> Univ.universe -> Univ.universe -> evar_map
 val set_eq_level : evar_map -> Univ.universe_level -> Univ.universe_level -> evar_map
 val set_leq_level : evar_map -> Univ.universe_level -> Univ.universe_level -> evar_map
-val set_eq_instances : evar_map -> Univ.universe_instance -> Univ.universe_instance -> evar_map
+val set_eq_instances : ?flex:bool -> 
+  evar_map -> Univ.universe_instance -> Univ.universe_instance -> evar_map
 
 val check_eq : evar_map -> Univ.universe -> Univ.universe -> bool
 val check_leq : evar_map -> Univ.universe -> Univ.universe -> bool

@@ -1124,7 +1124,7 @@ let pb_equal = function
   | Reduction.CONV -> Reduction.CONV
 
 let sort_cmp cv_pb s1 s2 u = 
-  ignore(Reduction.sort_cmp_universes cv_pb s1 s2 (u, None))
+  Reduction.check_sort_cmp_universes cv_pb s1 s2 u
 
 let test_trans_conversion (f: ?l2r:bool-> ?evars:'a->'b) reds env sigma x y =
   try
@@ -1145,22 +1145,50 @@ let is_fconv = function | Reduction.CONV -> is_conv | Reduction.CUMUL -> is_conv
 let check_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y = 
   let f = match pb with
     | Reduction.CONV -> Reduction.trans_conv_universes
-    | Reduction.CUMUL -> Reduction.trans_conv_leq_universes in
+    | Reduction.CUMUL -> Reduction.trans_conv_leq_universes 
+  in
     try f ~evars:(safe_evar_value sigma) ts env (Evd.universes sigma) x y; true
     with Reduction.NotConvertible -> false
     | Univ.UniverseInconsistency _ -> false
     | e when is_anomaly e -> error "Conversion test raised an anomaly"
 
+let sigma_compare_sorts pb s0 s1 sigma =
+  match pb with
+  | Reduction.CONV -> Evd.set_eq_sort sigma s0 s1
+  | Reduction.CUMUL -> Evd.set_leq_sort sigma s0 s1
+    
+let sigma_compare_instances flex i0 i1 sigma =
+  try Evd.set_eq_instances ~flex sigma i0 i1
+  with Evd.UniversesDiffer -> raise Reduction.NotConvertible
+
+let sigma_univ_state = 
+  { Reduction.compare = sigma_compare_sorts;
+    Reduction.compare_instances = sigma_compare_instances }
+
 let infer_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y = 
-  let f = match pb with
-    | Reduction.CONV -> Reduction.infer_conv
-    | Reduction.CUMUL -> Reduction.infer_conv_leq in
-    try 
-      let cstrs = f ~evars:(safe_evar_value sigma) ~ts env (Evd.universes sigma) x y in
-	Evd.add_constraints sigma cstrs, true
-    with Reduction.NotConvertible -> sigma, false
-    | Univ.UniverseInconsistency _ -> sigma, false
-    | e when is_anomaly e -> error "Conversion test raised an anomaly"
+  try 
+    let b, sigma = 
+      let b, cstrs = 
+	if pb == Reduction.CUMUL then 
+	  Constr.leq_constr_univs_infer (Evd.universes sigma) x y 
+	else
+	  Constr.eq_constr_univs_infer (Evd.universes sigma) x y 
+      in
+	if b then 
+	  try true, Evd.add_universe_constraints sigma cstrs
+	  with Univ.UniverseInconsistency _ | Evd.UniversesDiffer -> false, sigma
+	else false, sigma
+    in
+      if b then sigma, true
+      else
+	let sigma' = 
+	  Reduction.generic_conv pb false (safe_evar_value sigma) ts 
+	    env (sigma, sigma_univ_state) x y in
+	  sigma', true
+  with
+  | Reduction.NotConvertible -> sigma, false
+  | Univ.UniverseInconsistency _ -> sigma, false
+  | e when is_anomaly e -> error "Conversion test raised an anomaly"
     
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
