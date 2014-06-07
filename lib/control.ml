@@ -45,9 +45,48 @@ let unix_timeout n f e =
     restore_timeout ();
     raise e
 
+let windows_timeout n f e =
+  let killed = ref false in
+  let exited = ref false in
+  let thread init =
+    while not !killed do
+      let cur = Unix.time () in
+      if float_of_int n <= cur -. init then begin
+        interrupt := true;
+        exited := true;
+        Thread.exit ()
+      end;
+      Thread.delay 0.5
+    done
+  in
+  let init = Unix.time () in
+  let id = Thread.create thread init in
+  try
+    let res = f () in
+    let () = killed := true in
+    let cur = Unix.time () in
+    (** The thread did not interrupt, but the computation took longer than
+        expected. *)
+    let () = if float_of_int n <= cur -. init then begin
+      exited := true;
+      raise Sys.Break
+    end in
+    res
+  with
+  | Sys.Break ->
+    (** Just in case, it could be a regular Ctrl+C *)
+    if not !exited then begin killed := true; raise Sys.Break end
+    else raise e
+  | e ->
+    let () = killed := true in
+    let e = Backtrace.add_backtrace e in
+    raise e
+
 type timeout = { timeout : 'a. int -> (unit -> 'a) -> exn -> 'a }
 
-let timeout_fun = ref { timeout = unix_timeout }
+let timeout_fun = match Sys.os_type with
+| "Unix" | "Cygwin" -> ref { timeout = unix_timeout }
+| _ -> ref { timeout = windows_timeout }
 
 let set_timeout f = timeout_fun := f
 
