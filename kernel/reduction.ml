@@ -265,15 +265,6 @@ let in_whnf (t,stk) =
     | (FFlex _ | FProd _ | FEvar _ | FInd _ | FAtom _ | FRel _ | FProj _) -> true
     | FLOCKED -> assert false
 
-let steps = ref 0
-
-let slave_process =
-  let rec f = ref (fun () ->
-    match !Flags.async_proofs_mode with
-    | Flags.APonParallel n -> let b = n > 0 in f := (fun () -> b); !f ()
-    | _ -> f := (fun () -> false); !f ()) in
-  fun () -> !f ()
-
 let unfold_projection infos p c =
   if RedFlags.red_set infos.i_flags (RedFlags.fCONST p) then
     (match try Some (lookup_projection p (info_env infos)) with Not_found -> None with
@@ -290,11 +281,6 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
   Control.check_for_interrupt ();
-  incr steps;
-  if !steps = 10000 && slave_process () then begin
-    Thread.yield ();
-    steps := 0;
-  end;
   (* First head reduce both terms *)
   let whd = whd_stack (infos_with_reds infos betaiotazeta) in
   let rec whd_both (t1,stk1) (t2,stk2) =

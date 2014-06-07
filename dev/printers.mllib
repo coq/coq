@@ -12,12 +12,12 @@ Option
 Store
 Exninfo
 Backtrace
-Control
 IStream
 Pp_control
 Loc
 Compat
 Flags
+Control
 Pp
 Segmenttree
 Unicodetable

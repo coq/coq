@@ -10,8 +10,22 @@
 
 let interrupt = ref false
 
+let steps = ref 0
+
+let slave_process =
+  let rec f = ref (fun () ->
+    match !Flags.async_proofs_mode with
+    | Flags.APonParallel n -> let b = n > 0 in f := (fun () -> b); !f ()
+    | _ -> f := (fun () -> false); !f ()) in
+  fun () -> !f ()
+
 let check_for_interrupt () =
-  if !interrupt then begin interrupt := false; raise Sys.Break end
+  if !interrupt then begin interrupt := false; raise Sys.Break end;
+  incr steps;
+  if !steps = 10000 && slave_process () then begin
+    Thread.yield ();
+    steps := 0;
+  end
 
 (** This function does not work on windows, sigh... *)
 let unix_timeout n f e =

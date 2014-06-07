@@ -12,11 +12,11 @@ Option
 Store
 Exninfo
 Backtrace
-Control
 IArray
 IStream
 Pp_control
 Flags
+Control
 Pp
 Deque
 CObj
