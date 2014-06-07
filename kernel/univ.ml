@@ -2272,6 +2272,9 @@ let constraints_of_universes g =
   in
   UMap.fold constraints_of g Constraint.empty
 
+let constraints_of_universes g =
+  constraints_of_universes (normalize_universes g)
+
 (* Pretty-printing *)
 
 let pr_arc = function

@@ -423,7 +423,6 @@ exception UniverseInconsistency of univ_inconsistency
 
 val enforce_constraint : univ_constraint -> universes -> universes
 val merge_constraints : constraints -> universes -> universes
-val normalize_universes : universes -> universes
 val sort_universes : universes -> universes
 
 val constraints_of_universes : universes -> constraints

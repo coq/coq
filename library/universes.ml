@@ -627,7 +627,7 @@ let normalize_context_set ctx us algs =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
     let g = Univ.merge_constraints csts Univ.empty_universes in
-      Univ.constraints_of_universes (Univ.normalize_universes g)
+      Univ.constraints_of_universes g
   in
   let noneqs =
     Constraint.fold (fun (l,d,r) noneqs ->
