@@ -10,7 +10,6 @@
 open Errors
 open Util
 open Names
-open Univ
 open Cic
 open Term
 open Declarations
@@ -99,8 +98,8 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
     check bool_equal (fun x -> x.mind_polymorphic);
     if mib1.mind_polymorphic then (
       check Univ.Instance.equal (fun x -> Univ.UContext.instance x.mind_universes);
-      UContext.instance mib1.mind_universes)
-    else Instance.empty
+      Univ.UContext.instance mib1.mind_universes)
+    else Univ.Instance.empty
   in
   let check_inductive_type env t1 t2 =
 
@@ -233,13 +232,13 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
       if isArity t2 then
         let (ctx2,s2) = destArity t2 in
         match s2 with
-        | Type v when not (is_univ_variable v) ->
+        | Type v when not (Univ.is_univ_variable v) ->
           (* The type in the interface is inferred and is made of algebraic
              universes *)
           begin try
             let (ctx1,s1) = dest_arity env t1 in
             match s1 with
-            | Type u when not (is_univ_variable u) ->
+            | Type u when not (Univ.is_univ_variable u) ->
               (* Both types are inferred, no need to recheck them. We
                  cheat and collapse the types to Prop *)
                 mkArity (ctx1,Prop Null), mkArity (ctx2,Prop Null)

@@ -9,7 +9,6 @@
 open Errors
 open Util
 open Names
-open Univ
 open Cic
 open Term
 open Reduction
@@ -53,11 +52,11 @@ let assumption_of_judgment env j =
 
 (* Prop and Set *)
 
-let judge_of_prop = Sort (Type type1_univ)
+let judge_of_prop = Sort (Type Univ.type1_univ)
 
 (* Type of Type(i). *)
 
-let judge_of_type u = Sort (Type (super u))
+let judge_of_type u = Sort (Type (Univ.super u))
 
 (*s Type of a de Bruijn index. *)
 
@@ -134,13 +133,13 @@ let sort_of_product env domsort rangsort =
           rangsort
         else
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
-          Type (sup u1 type0_univ)
+          Type (Univ.sup u1 Univ.type0_univ)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Pos,  Type u2)  -> Type (sup type0_univ u2)
+    | (Prop Pos,  Type u2)  -> Type (Univ.sup Univ.type0_univ u2)
     (* Product rule (Prop,Type_i,Type_i) *)
     | (Prop Null, Type _)  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *)
-    | (Type u1, Type u2) -> Type (sup u1 u2)
+    | (Type u1, Type u2) -> Type (Univ.sup u1 u2)
 
 (* Type of a type cast *)
 

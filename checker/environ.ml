@@ -1,7 +1,6 @@
 open Errors
 open Util
 open Names
-open Univ
 open Cic
 open Term
 open Declarations
@@ -14,7 +13,7 @@ type globals = {
   env_modtypes : module_type_body MPmap.t}
 
 type stratification = {
-  env_universes : universes;
+  env_universes : Univ.universes;
   env_engagement : engagement option
 }
 
@@ -77,12 +76,12 @@ let push_rec_types (lna,typarray,_) env =
 
 (* Universe constraints *)
 let add_constraints c env =
-  if c == Constraint.empty then
+  if c == Univ.Constraint.empty then
     env
   else
     let s = env.env_stratification in
     { env with env_stratification =
-      { s with env_universes = merge_constraints c s.env_universes } }
+      { s with env_universes = Univ.merge_constraints c s.env_universes } }
 
 let check_constraints cst env =
   Univ.check_constraints cst env.env_stratification.env_universes

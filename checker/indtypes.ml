@@ -9,7 +9,6 @@
 open Errors
 open Util
 open Names
-open Univ
 open Cic
 open Term
 open Inductive
@@ -183,7 +182,7 @@ let check_predicativity env s small level =
         (* let cst = *)
         (*   merge_constraints (enforce_leq u u' empty_constraint) *)
         (*     (universes env) in *)
-        if not (check_leq (universes env) level u) then
+        if not (Univ.check_leq (universes env) level u) then
           failwith "impredicative Type inductive type"
     | Prop Pos, Some ImpredicativeSet -> ()
     | Prop Pos, _ ->

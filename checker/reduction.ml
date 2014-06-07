@@ -10,7 +10,6 @@ open Errors
 open Util
 open Cic
 open Term
-open Univ
 open Closure
 open Esubst
 open Environ
@@ -160,8 +159,8 @@ let sort_cmp univ pb s0 s1 =
     | (Type u1, Type u2) ->
         if not
 	  (match pb with
-            | CONV -> check_eq univ u1 u2
-	    | CUMUL -> check_leq univ u1 u2)
+            | CONV -> Univ.check_eq univ u1 u2
+	    | CUMUL -> Univ.check_leq univ u1 u2)
         then raise NotConvertible
     | (_, _) -> raise NotConvertible
 

@@ -9,7 +9,6 @@
 open Errors
 open Util
 open Names
-open Univ
 open Cic
 open Term
 open Reduction
@@ -56,7 +55,7 @@ let inductive_params (mib,_) = mib.mind_nparams
 
 let make_inductive_subst mib u =
   if mib.mind_polymorphic then 
-    make_universe_subst u mib.mind_universes
+    Univ.make_universe_subst u mib.mind_universes
   else Univ.empty_level_subst
 
 let inductive_params_ctxt (mib,u) = 
@@ -65,18 +64,18 @@ let inductive_params_ctxt (mib,u) =
 
 let inductive_instance mib =
   if mib.mind_polymorphic then 
-    UContext.instance mib.mind_universes
-  else Instance.empty
+    Univ.UContext.instance mib.mind_universes
+  else Univ.Instance.empty
 
 let inductive_context mib =
   if mib.mind_polymorphic then 
     mib.mind_universes 
-  else UContext.empty
+  else Univ.UContext.empty
 
 let instantiate_inductive_constraints mib subst =
   if mib.mind_polymorphic then
-    instantiate_univ_context subst mib.mind_universes
-  else Constraint.empty
+    Univ.instantiate_univ_context subst mib.mind_universes
+  else Univ.Constraint.empty
 
 (************************************************************************)
 
@@ -150,13 +149,13 @@ Remark: Set (predicative) is encoded as Type(0)
 
 let sort_as_univ = function
 | Type u -> u
-| Prop Null -> type0m_univ
-| Prop Pos -> type0_univ
+| Prop Null -> Univ.type0m_univ
+| Prop Pos -> Univ.type0_univ
 
 let cons_subst u su subst =
   try
-    (u, sup su (List.assoc_f Universe.equal u subst)) ::
-      List.remove_assoc_f Universe.equal u subst
+    (u, Univ.sup su (List.assoc_f Univ.Universe.equal u subst)) ::
+      List.remove_assoc_f Univ.Universe.equal u subst
   with Not_found -> (u, su) :: subst
 
 let actualize_decl_level env lev t =
@@ -208,12 +207,12 @@ exception SingletonInductiveBecomesProp of Id.t
 let instantiate_universes env ctx ar argsorts =
   let args = Array.to_list argsorts in
   let ctx,subst = make_subst env (ctx,ar.template_param_levels,args) in
-  let level = subst_large_constraints subst ar.template_level in
+  let level = Univ.subst_large_constraints subst ar.template_level in
   let ty =
     (* Singleton type not containing types are interpretable in Prop *)
-    if is_type0m_univ level then Prop Null
+    if Univ.is_type0m_univ level then Prop Null
     (* Non singleton type not containing types are interpretable in Set *)
-    else if is_type0_univ level then Prop Pos
+    else if Univ.is_type0_univ level then Prop Pos
     (* This is a Type with constraints *)
     else Type level
   in
@@ -238,7 +237,7 @@ let type_of_inductive_subst ?(polyprop=true) env ((mib,mip),u) paramtyps =
       (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
          the situation where a non-Prop singleton inductive becomes Prop
          when applied to Prop params *)
-      if not polyprop && not (is_type0m_univ ar.template_level) && is_prop_sort s
+      if not polyprop && not (Univ.is_type0m_univ ar.template_level) && is_prop_sort s
       then raise (SingletonInductiveBecomesProp mip.mind_typename);
       mkArity (List.rev ctx,s), Univ.LMap.empty
 
@@ -255,7 +254,7 @@ let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
       (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
          the situation where a non-Prop singleton inductive becomes Prop
          when applied to Prop params *)
-      if not polyprop && not (is_type0m_univ ar.template_level) && is_prop_sort s
+      if not polyprop && not (Univ.is_type0m_univ ar.template_level) && is_prop_sort s
       then raise (SingletonInductiveBecomesProp mip.mind_typename);
       mkArity (List.rev ctx,s)
 
@@ -284,11 +283,11 @@ let type_of_inductive env mip =
 
 let cumulate_constructor_univ u = function
   | Prop Null -> u
-  | Prop Pos -> sup type0_univ u
-  | Type u' -> sup u u'
+  | Prop Pos -> Univ.sup Univ.type0_univ u
+  | Type u' -> Univ.sup u u'
 
 let max_inductive_sort =
-  Array.fold_left cumulate_constructor_univ type0m_univ
+  Array.fold_left cumulate_constructor_univ Univ.type0m_univ
 
 (************************************************************************)
 (* Type of a constructor *)
@@ -310,7 +309,7 @@ let type_of_constructor cstru mspec =
   fst (type_of_constructor_gen cstru mspec)
 
 let type_of_constructor_in_ctx cstr (mib,mip as mspec) =
-  let u = UContext.instance mib.mind_universes in
+  let u = Univ.UContext.instance mib.mind_universes in
   let c = type_of_constructor_gen (cstr, u) mspec in
     (fst c, mib.mind_universes)
 
