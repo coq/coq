@@ -140,9 +140,9 @@ Module FirstComment.
   Section MonoidalCategory.
     Variable objC : Type.
 
-    Fail Let AssociatorCoherenceCondition' := Eval unfold AssociatorCoherenceCondition in @AssociatorCoherenceCondition.
+    Let AssociatorCoherenceCondition' := Eval unfold AssociatorCoherenceCondition in @AssociatorCoherenceCondition.
 
-    Fail Record MonoidalCategory :=
+    Record MonoidalCategory :=
       {
         MonoidalUnderlyingCategory :> @Category objC;
         TensorProduct : Functor (MonoidalUnderlyingCategory * MonoidalUnderlyingCategory) MonoidalUnderlyingCategory;
@@ -153,8 +153,8 @@ Module FirstComment.
   End MonoidalCategory.
 
   Section EnrichedCategory.
-    Fail Context `(M : @MonoidalCategory objM).
-    Fail Let x : M := IdentityObject M.
+    Context `(M : @MonoidalCategory objM).
+    Let x : M := IdentityObject M.
     (* Anomaly: apply_coercion_args: mismatch between arguments and coercion. Please report.  *)
   End EnrichedCategory.
 End FirstComment.
@@ -311,5 +311,20 @@ Module SecondComment.
                                 (SliceCategory_Functor LocallySmallCat
                                                        (ProductCategory A B : Category _)).
     (* Anomaly: apply_coercion_args: mismatch between arguments and coercion. Please report. *)
+    (* Toplevel input, characters 110-142:
+Error:
+In environment
+objA : Type
+A : Category objA
+objB : Type
+B : Category objB
+objC : Type
+C : Category objC
+S : OppositeCategory (FunctorCategory A C)
+T : FunctorCategory B C
+The term "ProductCategory A B:Category (objA * objB)" has type
+ "Category (objA * objB)" while it is expected to have type
+ "Object LocallySmallCat".
+ *)
   End CommaCategoryProjectionFunctor.
 End SecondComment.
