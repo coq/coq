@@ -163,7 +163,7 @@ let declare_definition ident (local, p, k) ce imps hook =
     VarRef ident
   | Discharge | Local | Global ->
     declare_global_definition ident ce local k imps in
-  Future.call_hook (Future.fix_exn_of ce.Entries.const_entry_body) hook local r
+  Lemmas.call_hook (Future.fix_exn_of ce.Entries.const_entry_body) hook local r
 
 let _ = Obligations.declare_definition_ref := declare_definition
 
@@ -187,8 +187,8 @@ let do_definition ident k bl red_option c ctypopt hook =
           ident ~term:c cty ctx ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
       ignore(declare_definition ident k ce imps
-        (Future.mk_hook
-          (fun l r -> Future.call_hook (fun exn -> exn) hook l r;r)))
+        (Lemmas.mk_hook
+          (fun l r -> Lemmas.call_hook (fun exn -> exn) hook l r;r)))
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
@@ -692,7 +692,7 @@ let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 
 let declare_fix (_,poly,_ as kind) ctx f ((def,_),eff) t imps =
   let ce = definition_entry ~types:t ~poly ~univs:ctx ~eff def in
-  declare_definition f kind ce imps (Future.mk_hook (fun _ r -> r))
+  declare_definition f kind ce imps (Lemmas.mk_hook (fun _ r -> r))
 
 let _ = Obligations.declare_fix_ref := declare_fix
 
@@ -900,7 +900,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
 	  Impargs.declare_manual_implicits false gr [impls]
       in hook, recname, typ
   in
-  let hook = Future.mk_hook hook in
+  let hook = Lemmas.mk_hook hook in
   let fullcoqc = Evarutil.nf_evar !evdref def in
   let fullctyp = Evarutil.nf_evar !evdref typ in
   Obligations.check_evars env !evdref;
@@ -994,7 +994,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexe
       Option.map (List.map Proofview.V82.tactic) init_tac
     in
     Lemmas.start_proof_with_initialization (Global,poly,DefinitionBody Fixpoint)
-      (Some(false,indexes,init_tac)) thms None (Future.mk_hook (fun _ _ -> ()))
+      (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
@@ -1028,7 +1028,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns
       Option.map (List.map Proofview.V82.tactic) init_tac
     in
     Lemmas.start_proof_with_initialization (Global,poly, DefinitionBody CoFixpoint)
-      (Some(true,[],init_tac)) thms None (Future.mk_hook (fun _ _ -> ()))
+      (Some(true,[],init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in

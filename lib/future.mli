@@ -91,11 +91,6 @@ val from_here : ?fix_exn:fix_exn -> 'a -> 'a computation
  * is split into two parts, the lazy one (the future) and the eagher one
  * (the hook), both performing some computations for the same state id. *)
 val fix_exn_of : 'a computation -> fix_exn
-type 'a hook
-val mk_hook :
-  (Decl_kinds.locality -> Globnames.global_reference -> 'a) -> 'a hook
-val call_hook :
-  fix_exn -> 'a hook -> Decl_kinds.locality -> Globnames.global_reference -> 'a
 
 (* Run remotely, returns the function to assign.  Optionally tekes a function
    that is called when forced.  The default one is to raise NotReady.

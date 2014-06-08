@@ -32,6 +32,14 @@ open Constrexpr
 open Constrintern
 open Impargs
 
+type 'a declaration_hook = Decl_kinds.locality -> Globnames.global_reference -> 'a
+let mk_hook hook = hook
+let call_hook fix_exn hook l c =
+  try hook l c
+  with e when Errors.noncritical e ->
+    let e = Errors.push e in
+    raise (fix_exn e)
+
 (* Support for mutually proved theorems *)
 
 let retrieve_first_recthm = function
@@ -184,7 +192,7 @@ let save id const cstrs do_guard (locality,poly,kind) hook =
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
 	(locality, ConstRef kn) in
   definition_message id;
-  Future.call_hook fix_exn hook l r
+  call_hook fix_exn hook l r
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
@@ -286,7 +294,7 @@ let admit hook () =
       str "declared as an axiom.")
   in
   let () = assumption_message id in
-  Future.call_hook (fun exn -> exn) hook Global (ConstRef kn)
+  call_hook (fun exn -> exn) hook Global (ConstRef kn)
 
 (* Starting a goal *)
 
@@ -401,8 +409,8 @@ let start_proof_with_initialization kind recguard thms snl hook =
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
-	  Future.call_hook (fun exn -> exn) hook strength ref) thms_data in
-      start_proof id kind t ?init_tac (Future.mk_hook hook) ~compute_guard:guard
+	  call_hook (fun exn -> exn) hook strength ref) thms_data in
+      start_proof id kind t ?init_tac (mk_hook hook) ~compute_guard:guard
 
 let start_proof_com kind thms hook =
   let env0 = Global.env () in

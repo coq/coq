@@ -290,7 +290,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
   let new_princ_name =
     next_ident_away_in_goal (Id.of_string "___________princ_________") []
   in
-  let hook = Future.mk_hook (hook new_principle_type) in
+  let hook = Lemmas.mk_hook (hook new_principle_type) in
   begin
     Lemmas.start_proof
       new_princ_name

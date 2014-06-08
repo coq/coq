@@ -1878,7 +1878,7 @@ let add_morphism_infer glob m n =
 	  declare_projection n instance_id (ConstRef cst)
 	| _ -> assert false
       in
-      let hook = Future.mk_hook hook in
+      let hook = Lemmas.mk_hook hook in
 	Flags.silently
 	  (fun () ->
 	    Lemmas.start_proof instance_id kind (instance, ctx) hook;

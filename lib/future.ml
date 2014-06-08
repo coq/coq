@@ -91,13 +91,6 @@ let from_val ?(fix_exn=id) v = create fix_exn (Val (v, None))
 let from_here ?(fix_exn=id) v = create fix_exn (Val (v, Some (!freeze ())))
 
 let fix_exn_of ck = let _, fix_exn, _ = get ck in fix_exn
-type 'a hook = Decl_kinds.locality -> Globnames.global_reference -> 'a
-let mk_hook hook = hook
-let call_hook fix_exn hook l c =
-  try hook l c
-  with e when Errors.noncritical e ->
-    let e = Errors.push e in
-    raise (fix_exn e)
 
 let default_force () = raise NotReady
 let assignement ck = fun v ->

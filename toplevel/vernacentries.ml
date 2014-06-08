@@ -452,12 +452,12 @@ let start_proof_and_print k l hook =
   start_proof_com k l hook;
   print_subgoals ()
 
-let no_hook = Future.mk_hook (fun _ _ -> ())
+let no_hook = Lemmas.mk_hook (fun _ _ -> ())
 
 let vernac_definition_hook p = function
 | Coercion -> Class.add_coercion_hook p
 | CanonicalStructure ->
-    Future.mk_hook (fun _ -> Recordops.declare_canonical_structure)
+    Lemmas.mk_hook (fun _ -> Recordops.declare_canonical_structure)
 | SubClass -> Class.add_subclass_hook p
 | _ -> no_hook
 

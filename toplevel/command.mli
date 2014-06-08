@@ -34,11 +34,11 @@ val interp_definition :
 
 val declare_definition : Id.t -> definition_kind ->
   definition_entry -> Impargs.manual_implicits ->
-    Globnames.global_reference declaration_hook -> Globnames.global_reference
+    Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
 
 val do_definition : Id.t -> definition_kind ->
   local_binder list -> red_expr option -> constr_expr ->
-  constr_expr option -> unit declaration_hook -> unit
+  constr_expr option -> unit Lemmas.declaration_hook -> unit
 
 (** {6 Parameters/Assumptions} *)
 
