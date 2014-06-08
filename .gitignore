@@ -48,6 +48,7 @@ myocamlbuild_config.ml
 config/Makefile
 config/coq_config.ml
 dev/ocamldebug-coq
+lia.cache
 plugins/micromega/csdpcert
 kernel/byterun/dllcoqrun.so
 coqdoc.sty
