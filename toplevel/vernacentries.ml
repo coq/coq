@@ -1245,6 +1245,15 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
+      optname  = "kernel term sharing";
+      optkey   = ["Kernel"; "Term"; "Sharing"];
+      optread  = (fun () -> !Closure.share);
+      optwrite = (fun b -> Closure.share := b) }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
       optname  = "use of boxed values";
       optkey   = ["Boxed";"Values"];
       optread  = (fun _ -> not (Vm.transp_values ()));
