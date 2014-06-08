@@ -126,7 +126,7 @@ let check_conv_record (t1,sk1) (t2,sk2) =
 	  lookup_canonical_conversion (proji, Const_cs c2),sk2
     with Not_found ->
       let (c, cs) = lookup_canonical_conversion (proji,Default_cs) in 
-	(t2,cs),[]
+	(c,cs),[]
   in
   let t', { o_DEF = c; o_CTX = ctx; o_INJ=n; o_TABS = bs;
         o_TPARAMS = params; o_NPARAMS = nparams; o_TCOMPS = us } = canon_s in
@@ -687,8 +687,7 @@ and conv_record trs env evd (ctx,(h,h'),c,bs,(params,params1),(us,us2),(ts,ts1),
     in
     let app = mkApp (c, Array.rev_of_list ks) in
     ise_and evd'
-      [test;
-       (fun i ->
+      [(fun i ->
 	exact_ise_stack2 env i
           (fun env' i' cpb x1 x -> evar_conv_x trs env' i' cpb x1 (substl ks x))
           params1 params);
@@ -698,7 +697,9 @@ and conv_record trs env evd (ctx,(h,h'),c,bs,(params,params1),(us,us2),(ts,ts1),
            us2 us);
        (fun i -> evar_conv_x trs env i CONV c1 app);
        (fun i -> exact_ise_stack2 env i (evar_conv_x trs) ts ts1);
-       (fun i -> evar_conv_x trs env i CONV h (substl ks h'))]
+       test;
+       (fun i -> evar_conv_x trs env i CONV h 
+	 (fst (decompose_app_vect (substl ks h'))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 and eta_constructor ts env evd ((ind, i), u) l1 csts1 (c, csts2) =

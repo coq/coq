@@ -47,6 +47,24 @@ Goal forall a1 a2, eqA (plusA a1 zeroA) a2.
 change (eqB (plusB (phi a1) zeroB) (phi a2)).
 Admitted.
 
+Variable foo : A -> Type.
+
+Definition local0 := fun (a1 : A) (a2 : A) (a3 : A) =>
+                       (eq_refl : plusA a1 (plusA zeroA a2) = ia _).
+Definition local1 := 
+  fun (a1 : A) (a2 : A) (f : A -> A) => 
+    (eq_refl : plusA a1 (plusA zeroA (f a2)) = ia _).
+
+Definition local2 := 
+  fun (a1 : A) (f : A -> A) => 
+    (eq_refl : (f a1) = ia _).
+
+Goal forall a1 a2, eqA (plusA a1 zeroA) a2.
+  intros a1 a2.
+  refine  (eq_img _ _  _).
+change (eqB (plusB (phi a1) zeroB) (phi a2)).
+Admitted.
+
 End group_morphism.
 
 Open Scope type_scope.
@@ -129,13 +147,3 @@ Admitted.
 Check L : abs _ .
 
 End type_reification.
-
-
-
-
-
-
-
-
-
-
