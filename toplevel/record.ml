@@ -378,7 +378,6 @@ let interp_and_check_sort sort =
     else user_err_loc (constr_loc sort,"", str"Sort expected.")) sort
 
 open Vernacexpr
-open Autoinstance
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions 
@@ -405,7 +404,6 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
     | Class def ->
 	let gr = declare_class finite def infer (loc,idstruc) idbuild
 	  implpars params sc implfs fields is_coe coers priorities sign in
-	if infer then search_record declare_class_instance gr sign;
 	gr
     | _ ->
 	let arity = Option.default (Termops.new_Type ()) sc in
@@ -413,5 +411,4 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
 	  (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs in
 	let ind = declare_structure finite infer idstruc idbuild implpars params arity implfs 
 	  fields is_coe (List.map (fun coe -> coe <> None) coers) sign in
-	if infer then search_record declare_record_instance (ConstructRef (ind,1)) sign;
 	IndRef ind

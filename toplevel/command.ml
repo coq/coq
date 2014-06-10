@@ -106,7 +106,6 @@ let declare_global_definition ident ce local k imps =
     if local = Local && Flags.is_verbose() then
       msg_warning (pr_id ident ++ str" is declared as a global definition");
     definition_message ident;
-    Autoinstance.search_declaration (ConstRef kn);
     gr
 
 let declare_definition_hook = ref ignore
@@ -154,7 +153,6 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
         if local=Local & Flags.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
           str" because it is at a global level");
-	Autoinstance.search_declaration (ConstRef kn);
 	Typeclasses.declare_instance None false gr;
         gr 
   in
@@ -342,11 +340,9 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
   let mind = Global.mind_of_delta_kn kn in
   list_iter_i (fun i (indimpls, constrimpls) ->
 		   let ind = (mind,i) in
-		     Autoinstance.search_declaration (IndRef ind);
 		     maybe_declare_manual_implicits false (IndRef ind) indimpls;
 		     list_iter_i
 		       (fun j impls ->
-(*	    Autoinstance.search_declaration (ConstructRef (ind,j));*)
 			  maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
 		       constrimpls)
       impls;
@@ -484,7 +480,6 @@ let declare_fix kind f def t imps =
   in
   let kn = declare_constant f (DefinitionEntry ce,IsDefinition kind) in
   let gr = ConstRef kn in
-  Autoinstance.search_declaration (ConstRef kn);
   maybe_declare_manual_implicits false gr imps;
   gr
 

@@ -168,7 +168,6 @@ let save id const do_guard (locality,kind) hook =
 	(Local, VarRef id)
     | Local | Global ->
         let kn = declare_constant id (DefinitionEntry const, k) in
-	Autoinstance.search_declaration (ConstRef kn);
 	(Global, ConstRef kn) in
   Pfedit.delete_current_proof ();
   definition_message id;
