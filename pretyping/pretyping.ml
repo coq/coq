@@ -318,11 +318,12 @@ let pretype_ref loc evdref env ref us =
       make_judge c ty
 
 let judge_of_Type evd s =
-  let judge s = 
+  let evd, l = interp_universe_name evd s in
+  let s = Univ.Universe.make l in
+  let judge = 
     { uj_val = mkSort (Type s); uj_type = mkSort (Type (Univ.super s)) }
   in
-  let evd, l = interp_universe_name evd s in
-    evd, judge (Univ.Universe.make l)
+    evd, judge
 
 let pretype_sort evdref = function
   | GProp -> judge_of_prop

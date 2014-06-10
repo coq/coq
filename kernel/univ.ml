@@ -536,6 +536,10 @@ struct
     let is_prop = function
       | (l,0) -> Level.is_prop l
       | _ -> false
+	
+    let is_small = function
+      | (l,0) -> Level.is_small l
+      | _ -> false
 
     let equal x y = x == y ||
       (let (u,n) = x and (v,n') = y in
@@ -642,8 +646,8 @@ struct
     fold (fun x acc -> LSet.add (Expr.get_level x) acc) l LSet.empty
 
   let is_small u = 
-    match level u with
-    | Some l -> Level.is_small l
+    match node u with
+    | Cons (l, n) when is_nil n -> Expr.is_small l
     | _ -> false
 
   (* The lower predicative level of the hierarchy that contains (impredicative)
@@ -663,7 +667,9 @@ struct
   (* Returns the formal universe that lies juste above the universe variable u.
      Used to type the sort u. *)
   let super l = 
-    Huniv.map (fun x -> Expr.successor x) l
+    if is_small l then type1
+    else
+      Huniv.map (fun x -> Expr.successor x) l
 
   let addn n l =
     Huniv.map (fun x -> Expr.addn n x) l

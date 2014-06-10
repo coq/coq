@@ -490,13 +490,13 @@ let rec decompose_app_rel env evd t =
 
 let decompose_applied_relation env origsigma sigma flags orig (c,l) left2right =
   let c' = c in
-  let ctype = Typing.type_of env sigma c' in
+  let ctype = Retyping.get_type_of env sigma c' in
   let find_rel ty =
     let eqclause = Clenv.make_clenv_binding_env_apply env sigma None (c',ty) l in
     let (equiv, args) = decompose_app_rel env eqclause.evd (Clenv.clenv_type eqclause) in
     let c1 = args.(0) and c2 = args.(1) in 
     let ty1, ty2 =
-      Typing.type_of env eqclause.evd c1, Typing.type_of env eqclause.evd c2
+      Retyping.get_type_of env eqclause.evd c1, Retyping.get_type_of env eqclause.evd c2
     in
       if not (evd_convertible env eqclause.evd ty1 ty2) then None
       else
@@ -648,8 +648,8 @@ let unify_eqn env (sigma, cstrs) hypinfo by t =
 	  let c1 = nf c1 and c2 = nf c2
 	  and car = nf car and rel = nf rel
 	  and prf = nf prf in
-	  let ty1 = Typing.type_of env'.env env'.evd c1
-	  and ty2 = Typing.type_of env'.env env'.evd c2
+	  let ty1 = Retyping.get_type_of env'.env env'.evd c1
+	  and ty2 = Retyping.get_type_of env'.env env'.evd c2
 	  in
 	    if convertible env env'.evd ty1 ty2 then 
 	      (* (if occur_meta_or_existential prf then *)
@@ -925,7 +925,7 @@ let subterm all flags (s : strategy) : strategy =
 		(fun (acc, evars, progress) arg ->
 		  if not (Option.is_empty progress) && not all then (None :: acc, evars, progress)
 		  else
-		    let argty = Typing.type_of env (goalevars evars) arg in
+		    let argty = Retyping.get_type_of env (goalevars evars) arg in
 		    let res = s env avoid arg argty (prop,None) evars in
 		      match res with
 		      | Some None -> (None :: acc, evars, 
@@ -965,7 +965,7 @@ let subterm all flags (s : strategy) : strategy =
 
 	  in
 	    if flags.on_morphisms then
-	      let mty = Typing.type_of env (goalevars evars) m in
+	      let mty = Retyping.get_type_of env (goalevars evars) m in
 	      let evars, cstr', m, mty, argsl, args = 
 		let argsl = Array.to_list args in
 		let lift = if prop then PropGlobal.lift_cstr else TypeGlobal.lift_cstr in
@@ -1003,8 +1003,8 @@ let subterm all flags (s : strategy) : strategy =
 	      
       | Prod (n, x, b) when noccurn 1 b ->
 	  let b = subst1 mkProp b in
-	  let tx = Typing.type_of env (goalevars evars) x 
-	  and tb = Typing.type_of env (goalevars evars) b in
+	  let tx = Retyping.get_type_of env (goalevars evars) x 
+	  and tb = Retyping.get_type_of env (goalevars evars) b in
 	  let arr = if prop then PropGlobal.arrow_morphism 
 	    else TypeGlobal.arrow_morphism 
 	  in
@@ -1073,7 +1073,7 @@ let subterm all flags (s : strategy) : strategy =
       | Lambda (n, t, b) when flags.under_lambdas ->
 	let n' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n in
 	let env' = Environ.push_rel (n', None, t) env in
-	let bty = Typing.type_of env' (goalevars evars) b in
+	let bty = Retyping.get_type_of env' (goalevars evars) b in
 	let unlift = if prop then PropGlobal.unlift_cstr else TypeGlobal.unlift_cstr in
 	let b' = s env' avoid b bty (prop, unlift env evars cstr) evars in
 	  (match b' with
@@ -1095,7 +1095,7 @@ let subterm all flags (s : strategy) : strategy =
 	  | _ -> b')
 	    
       | Case (ci, p, c, brs) ->
-	let cty = Typing.type_of env (goalevars evars) c in
+	let cty = Retyping.get_type_of env (goalevars evars) c in
 	let evars', eqty = app_poly_sort prop env evars coq_eq [| cty |] in
 	let cstr' = Some eqty in
 	let c' = s env avoid c cty (prop, cstr') evars' in
@@ -1351,7 +1351,7 @@ let rewrite_with flags c left2right loccs : strategy =
 
 let apply_strategy (s : strategy) env avoid concl (prop, cstr) evars =
   let res =
-    s env avoid concl (Typing.type_of env (goalevars evars) concl)
+    s env avoid concl (Retyping.get_type_of env (goalevars evars) concl)
       (prop, Some cstr) evars
   in
     match res with
@@ -2118,8 +2118,8 @@ let implify id gl =
     | (_, None, ty as hd) :: tl when noccurn 1 concl ->
 	let env = Environ.push_rel_context tl (pf_env gl) in
 	let sigma = project gl in
-	let tyhd = Typing.type_of env sigma ty
-	and tyconcl = Typing.type_of (Environ.push_rel hd env) sigma concl in
+	let tyhd = Retyping.get_type_of env sigma ty
+	and tyconcl = Retyping.get_type_of (Environ.push_rel hd env) sigma concl in
 	let ((sigma,_), app), unfold = 
 	  PropGlobal.arrow_morphism env (sigma, Evar.Set.empty) tyhd 
 	    (subst1 mkProp tyconcl) ty (subst1 mkProp concl) 
