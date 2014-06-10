@@ -52,45 +52,6 @@ end
 
 type universe_set = LSet.t
 
-(** Polymorphic maps from universe levels to 'a *)
-module LMap : 
-sig
-  include Map.S with type key = universe_level
-
-  val union : 'a t -> 'a t -> 'a t
-  (** [union x y] favors the bindings in the first map. *)
-
-  val diff : 'a t -> 'a t -> 'a t
-  (** [diff x y] removes bindings from x that appear in y (whatever the value). *)
-
-  val subst_union : 'a option t -> 'a option t -> 'a option t
-  (** [subst_union x y] favors the bindings of the first map that are [Some],
-      otherwise takes y's bindings. *)
-
-  val elements : 'a t -> (universe_level * 'a) list
-  (** As an association list *)
-
-  val of_list : (universe_level * 'a) list -> 'a t
-  (** From an association list *)
-
-  val of_set : universe_set -> 'a -> 'a t
-  (** Associates the same value to all levels in the set *)
-
-  val mem : universe_level -> 'a t -> bool
-  (** Is there a binding for the level? *)
-
-  val find_opt : universe_level -> 'a t -> 'a option
-  (** Find the value associated to the level, if any *)
-
-  val universes : 'a t -> universe_set
-  (** The domain of the map *)
-
-  val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
-  (** Pretty-printing *)
-end
-
-type 'a universe_map = 'a LMap.t
-
 module Universe :
 sig
   type t
@@ -187,6 +148,126 @@ val sort_universes : universes -> universes
 (** Adds a universe to the graph, ensuring it is >= Prop. *)
 val add_universe : universe_level -> universes -> universes
 
+(** {6 Constraints. } *)
+
+type constraint_type = Lt | Le | Eq
+type univ_constraint = universe_level * constraint_type * universe_level
+
+module Constraint : sig
+ include Set.S with type elt = univ_constraint
+end
+
+type constraints = Constraint.t
+
+val empty_constraint : constraints
+val union_constraint : constraints -> constraints -> constraints
+val eq_constraint : constraints -> constraints -> bool
+
+(** A value with universe constraints. *)
+type 'a constrained = 'a * constraints
+
+(** Constrained *)
+val constraints_of : 'a constrained -> constraints
+
+(** Enforcing constraints. *)
+
+type 'a constraint_function = 'a -> 'a -> constraints -> constraints
+
+val enforce_eq : universe constraint_function
+val enforce_leq : universe constraint_function
+val enforce_eq_level : universe_level constraint_function
+val enforce_leq_level : universe_level constraint_function
+
+(** {6 ... } *)
+(** Merge of constraints in a universes graph.
+  The function [merge_constraints] merges a set of constraints in a given
+  universes graph. It raises the exception [UniverseInconsistency] if the
+  constraints are not satisfiable. *)
+
+(** Type explanation is used to decorate error messages to provide
+  useful explanation why a given constraint is rejected. It is composed
+  of a path of universes and relation kinds [(r1,u1);..;(rn,un)] means
+   .. <(r1) u1 <(r2) ... <(rn) un (where <(ri) is the relation symbol
+  denoted by ri, currently only < and <=). The lowest end of the chain
+  is supposed known (see UniverseInconsistency exn). The upper end may
+  differ from the second univ of UniverseInconsistency because all
+  universes in the path are canonical. Note that each step does not
+  necessarily correspond to an actual constraint, but reflect how the
+  system stores the graph and may result from combination of several
+  constraints...
+*)
+type explanation = (constraint_type * universe) list
+type univ_inconsistency = constraint_type * universe * universe * explanation
+
+exception UniverseInconsistency of univ_inconsistency
+
+val enforce_constraint : univ_constraint -> universes -> universes
+val merge_constraints : constraints -> universes -> universes
+
+val constraints_of_universes : universes -> constraints
+
+val check_constraint  : universes -> univ_constraint -> bool
+val check_constraints : constraints -> universes -> bool
+
+(** {6 Support for old-style sort-polymorphism } *)
+
+val solve_constraints_system : universe option array -> universe array -> universe array ->
+  universe array
+
+val remove_large_constraint : universe_level -> universe -> universe -> universe
+
+val subst_large_constraint : universe -> universe -> universe -> universe
+
+val subst_large_constraints :
+  (universe * universe) list -> universe -> universe
+
+val no_upper_constraints : universe -> constraints -> bool
+
+(** Is u mentionned in v (or equals to v) ? *)
+
+val univ_depends : universe -> universe -> bool
+
+(** {6 Support for universe polymorphism } *)
+
+(** Polymorphic maps from universe levels to 'a *)
+module LMap : 
+sig
+  include Map.S with type key = universe_level
+
+  val union : 'a t -> 'a t -> 'a t
+  (** [union x y] favors the bindings in the first map. *)
+
+  val diff : 'a t -> 'a t -> 'a t
+  (** [diff x y] removes bindings from x that appear in y (whatever the value). *)
+
+  val subst_union : 'a option t -> 'a option t -> 'a option t
+  (** [subst_union x y] favors the bindings of the first map that are [Some],
+      otherwise takes y's bindings. *)
+
+  val elements : 'a t -> (universe_level * 'a) list
+  (** As an association list *)
+
+  val of_list : (universe_level * 'a) list -> 'a t
+  (** From an association list *)
+
+  val of_set : universe_set -> 'a -> 'a t
+  (** Associates the same value to all levels in the set *)
+
+  val mem : universe_level -> 'a t -> bool
+  (** Is there a binding for the level? *)
+
+  val find_opt : universe_level -> 'a t -> 'a option
+  (** Find the value associated to the level, if any *)
+
+  val universes : 'a t -> universe_set
+  (** The domain of the map *)
+
+  val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+  (** Pretty-printing *)
+end
+
+type 'a universe_map = 'a LMap.t
+
 (** {6 Substitution} *)
 
 type universe_subst_fn = universe_level -> universe
@@ -248,42 +329,24 @@ end
 
 type universe_instance = Instance.t
 
+val enforce_eq_instances : universe_instance constraint_function
+
 type 'a puniverses = 'a * universe_instance
 val out_punivs : 'a puniverses -> 'a
 val in_punivs : 'a -> 'a puniverses
 
-(** {6 Constraints. } *)
-
-type constraint_type = Lt | Le | Eq
-type univ_constraint = universe_level * constraint_type * universe_level
-
-module Constraint : sig
- include Set.S with type elt = univ_constraint
-end
-
-type constraints = Constraint.t
-
-val empty_constraint : constraints
-val union_constraint : constraints -> constraints -> constraints
-val eq_constraint : constraints -> constraints -> bool
-
-(** A value with universe constraints. *)
-type 'a constrained = 'a * constraints
-
-(** Constrained *)
-val constraints_of : 'a constrained -> constraints
-
-(** A list of universes with universe constraints,
-    representiong local universe variables and constraints *)
+(** A vector of universe levels with universe constraints,
+    representiong local universe variables and associated constraints *)
 
 module UContext :
 sig 
   type t
 
   val make : Instance.t constrained -> t
+
   val empty : t
   val is_empty : t -> bool
-
+    
   val instance : t -> Instance.t
   val constraints : t -> constraints
 
@@ -352,65 +415,6 @@ val make_subst : universe_subst -> universe_subst_fn
 val subst_univs_level : universe_subst_fn -> universe_level -> universe
 val subst_univs_universe : universe_subst_fn -> universe -> universe
 val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
-
-(** Enforcing constraints. *)
-
-type 'a constraint_function = 'a -> 'a -> constraints -> constraints
-
-val enforce_eq : universe constraint_function
-val enforce_leq : universe constraint_function
-val enforce_eq_level : universe_level constraint_function
-val enforce_leq_level : universe_level constraint_function
-val enforce_eq_instances : universe_instance constraint_function
-
-(** {6 ... } *)
-(** Merge of constraints in a universes graph.
-  The function [merge_constraints] merges a set of constraints in a given
-  universes graph. It raises the exception [UniverseInconsistency] if the
-  constraints are not satisfiable. *)
-
-(** Type explanation is used to decorate error messages to provide
-  useful explanation why a given constraint is rejected. It is composed
-  of a path of universes and relation kinds [(r1,u1);..;(rn,un)] means
-   .. <(r1) u1 <(r2) ... <(rn) un (where <(ri) is the relation symbol
-  denoted by ri, currently only < and <=). The lowest end of the chain
-  is supposed known (see UniverseInconsistency exn). The upper end may
-  differ from the second univ of UniverseInconsistency because all
-  universes in the path are canonical. Note that each step does not
-  necessarily correspond to an actual constraint, but reflect how the
-  system stores the graph and may result from combination of several
-  constraints...
-*)
-type explanation = (constraint_type * universe) list
-type univ_inconsistency = constraint_type * universe * universe * explanation
-
-exception UniverseInconsistency of univ_inconsistency
-
-val enforce_constraint : univ_constraint -> universes -> universes
-val merge_constraints : constraints -> universes -> universes
-
-val constraints_of_universes : universes -> constraints
-
-val check_constraint  : universes -> univ_constraint -> bool
-val check_constraints : constraints -> universes -> bool
-
-(** {6 Support for sort-polymorphism } *)
-
-val solve_constraints_system : universe option array -> universe array -> universe array ->
-  universe array
-
-val remove_large_constraint : universe_level -> universe -> universe -> universe
-
-val subst_large_constraint : universe -> universe -> universe -> universe
-
-val subst_large_constraints :
-  (universe * universe) list -> universe -> universe
-
-val no_upper_constraints : universe -> constraints -> bool
-
-(** Is u mentionned in v (or equals to v) ? *)
-
-val univ_depends : universe -> universe -> bool
 
 (** {6 Pretty-printing of universes. } *)
 
