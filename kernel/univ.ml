@@ -1042,6 +1042,8 @@ let check_equal g u v =
   let _, arcv = safe_repr g v in
   arcu == arcv
 
+let check_eq_level g u v = u == v || check_equal g u v
+
 let is_set_arc u = Level.is_set u.univ
 let is_prop_arc u = Level.is_prop u.univ
 let get_prop_arc g = snd (safe_repr g Level.prop)
@@ -1070,23 +1072,14 @@ let check_eq_univs g l1 l2 =
     Huniv.for_all (fun x1 -> exists x1 l2) l1
     && Huniv.for_all (fun x2 -> exists x2 l1) l2
 
-(** [check_eq] is also used in [Evd.set_eq_sort],
-    hence [Evarconv] and [Unification]. In this case,
-    it seems that the Atom/Max case may occur,
-    hence a relaxed version. *)
-
 let check_eq g u v =
   Universe.equal u v || check_eq_univs g u v
-
-let check_eq_level g u v = u == v || check_equal g u v
 
 let check_eq = 
   if Flags.profile then
     let check_eq_key = Profile.declare_profile "check_eq" in
       Profile.profile3 check_eq_key check_eq
   else check_eq
-
-let lax_check_eq = check_eq
 
 let check_smaller_expr g (u,n) (v,m) =
   let diff = n - m in
@@ -1101,8 +1094,6 @@ let exists_bigger g ul l =
     check_smaller_expr g ul ul') l
 
 let real_check_leq g u v =
-  (* prerr_endline ("Real check leq" ^ (string_of_ppcmds  *)
-  (* 				       (Universe.pr u ++ str" " ++ Universe.pr v))); *)
   Huniv.for_all (fun ul -> exists_bigger g ul v) u
     
 let check_leq g u v =
