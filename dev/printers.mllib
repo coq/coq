@@ -107,9 +107,9 @@ Heads
 Assumptions
 Locusops
 Miscops
+Universes
 Termops
 Namegen
-Universes
 Evd
 Glob_ops
 Redops
