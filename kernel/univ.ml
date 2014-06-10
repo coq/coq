@@ -893,9 +893,7 @@ let constraint_type_ord c1 c2 = match c1, c2 with
 | Eq, Eq -> 0
 | Eq, _ -> 1
 
-type order = EQ | LT of explanation Lazy.t | LE of explanation Lazy.t | NLE
-
-(** [compare_neq] : is [arcv] in the transitive upward closure of [arcu] ?
+(** [fast_compare_neq] : is [arcv] in the transitive upward closure of [arcu] ?
 
   In [strict] mode, we fully distinguish between LE and LT, while in
   non-strict mode, we simply answer LE for both situations.
@@ -927,7 +925,7 @@ type order = EQ | LT of explanation Lazy.t | LE of explanation Lazy.t | NLE
 
 *)
 
-let compare_neq strict g arcu arcv =
+let get_explanation strict g arcu arcv =
   (* [c] characterizes whether (and how) arcv has already been related
      to arcu among the lt_done,le_done universe *)
   let rec cmp c to_revert lt_todo le_todo = match lt_todo, le_todo with
@@ -946,14 +944,14 @@ let compare_neq strict g arcu arcv =
           let arc = repr g u in
           let p = lazy ((Lt, make u) :: Lazy.force p) in
           if arc == arcv then
-            if strict then (to_revert, LT p) else (to_revert, LE p)
+            if strict then (to_revert, p) else (to_revert, p)
           else find ((arc, p) :: lt_todo) lt le
         end
       | u :: le ->
         let arc = repr g u in
         let p = lazy ((Le, make u) :: Lazy.force p) in
         if arc == arcv then
-          if strict then (to_revert, LT p) else (to_revert, LE p)
+          if strict then (to_revert, p) else (to_revert, p)
         else find ((arc, p) :: lt_todo) lt le
       in
       find lt_todo arc.lt arc.le
@@ -963,7 +961,7 @@ let compare_neq strict g arcu arcv =
 	 if arcv is strictly above arc, then we would have a cycle.
          But we cannot answer LE yet, a stronger constraint may
 	 come later from [le_todo]. *)
-      if strict then cmp (LE p) to_revert [] le_todo else (to_revert, LE p)
+      if strict then cmp p to_revert [] le_todo else (to_revert, p)
     else
       if arc_is_le arc then
         cmp c to_revert [] le_todo
@@ -982,13 +980,13 @@ let compare_neq strict g arcu arcv =
           let arc = repr g u in
           let p = lazy ((Lt, make u) :: Lazy.force p) in
           if arc == arcv then
-            if strict then (to_revert, LT p) else (to_revert, LE p)
+            if strict then (to_revert, p) else (to_revert, p)
           else find ((arc, p) :: lt_todo) lt
         in
         find [] arc.lt
   in
   try
-    let (to_revert, c) = cmp NLE [] [] [(arcu,Lazy.lazy_from_val [])] in
+    let (to_revert, c) = cmp (Lazy.lazy_from_val []) [] [] [(arcu,Lazy.lazy_from_val [])] in
     (** Reset all the touched arcs. *)
     let () = List.iter (fun arc -> arc.status <- Unset) to_revert in
     c
@@ -1065,8 +1063,7 @@ let fast_compare_neq strict g arcu arcv =
     let () = cleanup_universes g in
     raise e
 
-let compare g arcu arcv =
-  if arcu == arcv then EQ else compare_neq true g arcu arcv
+let get_explanation_strict g arcu arcv = get_explanation true g arcu arcv
 
 let fast_compare g arcu arcv =
   if arcu == arcv then FastEQ else fast_compare_neq true g arcu arcv
@@ -1265,16 +1262,14 @@ let enforce_univ_eq u v g =
     match fast_compare g arcu arcv with
     | FastEQ -> g
     | FastLT ->
-      (match compare g arcu arcv with
-      | LT p -> error_inconsistency Eq v u (List.rev (Lazy.force p))
-      | _ -> anomaly (Pp.str "Univ.fast_compare"))
+      let p = get_explanation_strict g arcu arcv in
+      error_inconsistency Eq v u (List.rev (Lazy.force p))
     | FastLE -> merge g arcu arcv
     | FastNLE ->
       (match fast_compare g arcv arcu with
-      | FastLT -> 
-	(match compare g arcv arcu with
-	| LT p -> error_inconsistency Eq u v (List.rev (Lazy.force p))
-	| _ -> anomaly (Pp.str "Univ.fast_compare"))
+      | FastLT ->
+        let p = get_explanation_strict g arcv arcu in
+        error_inconsistency Eq u v (List.rev (Lazy.force p))
       | FastLE -> merge g arcv arcu
       | FastNLE -> merge_disc g arcu arcv
       | FastEQ -> anomaly (Pp.str "Univ.compare"))
@@ -1287,10 +1282,9 @@ let enforce_univ_leq u v g =
   if is_leq g arcu arcv then g
   else
     match fast_compare g arcv arcu with
-    | FastLT -> 
-      (match compare g arcv arcu with
-      | LT p -> error_inconsistency Le u v (List.rev (Lazy.force p))
-      | _ -> anomaly (Pp.str "Univ.fast_compare"))
+    | FastLT ->
+      let p = get_explanation_strict g arcv arcu in
+      error_inconsistency Le u v (List.rev (Lazy.force p))
     | FastLE  -> merge g arcv arcu
     | FastNLE -> fst (setleq g arcu arcv)
     | FastEQ -> anomaly (Pp.str "Univ.compare")
@@ -1302,19 +1296,15 @@ let enforce_univ_lt u v g =
     match fast_compare g arcu arcv with
     | FastLT -> g
     | FastLE -> fst (setlt g arcu arcv)
-    | FastEQ -> 
-      (match compare g arcu arcv with
-      | EQ -> error_inconsistency Lt u v [(Eq,make v)]
-      | _ -> anomaly (Pp.str "Univ.fast_compare"))
+    | FastEQ -> error_inconsistency Lt u v [(Eq,make v)]
     | FastNLE ->
       match fast_compare_neq false g arcv arcu with
 	FastNLE -> fst (setlt g arcu arcv)
       | FastEQ -> anomaly (Pp.str "Univ.compare")
       | (FastLE|FastLT) ->
-	(match compare_neq false g arcv arcu with
-	| LE p | LT p -> error_inconsistency Lt u v (List.rev (Lazy.force p))
-	| _ -> anomaly (Pp.str "Univ.fast_compare"))
-	  
+        let p = get_explanation false g arcv arcu  in
+        error_inconsistency Lt u v (List.rev (Lazy.force p))
+
 let empty_universes = UMap.empty
 
 (* Prop = Set is forbidden here. *)
