@@ -718,7 +718,8 @@ let export senv dir =
       mod_delta = senv.modinfo.resolver;
       mod_retroknowledge = senv.local_retroknowledge}
   in
-   mp, (dir,mb,DPMap.bindings senv.imports,engagement senv.env)
+  let imports = DPMap.fold (fun dp v accu -> (dp, v) :: accu) senv.imports [] in
+  mp, (dir,mb, imports, engagement senv.env)
 
 
 let check_imports senv needed =
