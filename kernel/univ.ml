@@ -1574,7 +1574,6 @@ let connected x y (g : graph) =
 let add_edge x y v (g : graph) =
   try
     let neighbours = LMap.find x g in
-    let () = assert (not (LMap.mem y neighbours)) in
     let neighbours = LMap.add y v neighbours in
     LMap.add x neighbours g
   with Not_found ->
@@ -1596,8 +1595,11 @@ let make_graph g : (graph * graph) =
     let () = assert (u == univ) in
     let fold_lt (dir, rev) v = (add_edge u v Lt dir, add_edge v u Lt rev) in
     let fold_le (dir, rev) v = (add_eq_edge u v Le dir, add_eq_edge v u Le rev) in
-    let accu = List.fold_left fold_lt accu lt in
+    (** Order is important : lt after le, because of the possible redundancy
+        between [le] and [lt] in a canonical arc. This way, the [lt] constraint
+        is the last one set, which is correct because it implies [le]. *)
     let accu = List.fold_left fold_le accu le in
+    let accu = List.fold_left fold_lt accu lt in
     accu
   in
   UMap.fold fold g (LMap.empty, LMap.empty)
