@@ -116,8 +116,7 @@ val enforce_leq : universe constraint_function
   system stores the graph and may result from combination of several
   constraints...
 *)
-type explanation = (constraint_type * universe) list
-type univ_inconsistency = constraint_type * universe * universe * explanation
+type univ_inconsistency = constraint_type * universe * universe
 
 exception UniverseInconsistency of univ_inconsistency
 

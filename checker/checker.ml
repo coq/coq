@@ -251,7 +251,7 @@ let rec explain_exn = function
       hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ str (guill s) ++ report ())
   | Sys.Break ->
       hov 0 (fnl () ++ str "User interrupt.")
-  | Univ.UniverseInconsistency (o,u,v,_) ->
+  | Univ.UniverseInconsistency (o,u,v) ->
       let msg =
 	if !Flags.debug (*!Constrextern.print_universes*) then
 	  spc() ++ str "(cannot enforce" ++ spc() ++ Univ.pr_uni u ++ spc() ++

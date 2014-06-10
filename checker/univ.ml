@@ -716,8 +716,6 @@ let between g arcu arcv =
 
 type constraint_type = Lt | Le | Eq
 
-type explanation = (constraint_type * universe) list
-
 let constraint_type_ord c1 c2 = match c1, c2 with
 | Lt, Lt -> 0
 | Lt, _ -> -1
@@ -726,8 +724,6 @@ let constraint_type_ord c1 c2 = match c1, c2 with
 | Le, Eq -> -1
 | Eq, Eq -> 0
 | Eq, _ -> 1
-
-type order = EQ | LT of explanation Lazy.t | LE of explanation Lazy.t | NLE
 
 (** [compare_neq] : is [arcv] in the transitive upward closure of [arcu] ?
 
@@ -748,65 +744,6 @@ type order = EQ | LT of explanation Lazy.t | LE of explanation Lazy.t | NLE
   is checked as soon as possible : this seems to be slightly faster
   on a test.
 *)
-
-let compare_neq strict g arcu arcv =
-  (* [c] characterizes whether (and how) arcv has already been related
-     to arcu among the lt_done,le_done universe *)
-  let rec cmp c lt_done le_done lt_todo le_todo = match lt_todo, le_todo with
-  | [],[] -> c
-  | (arc,p)::lt_todo, le_todo ->
-    if List.memq arc lt_done then
-      cmp c lt_done le_done lt_todo le_todo
-    else
-      let rec find lt_todo lt le = match le with
-      | [] ->
-        begin match lt with
-        | [] -> cmp c (arc :: lt_done) le_done lt_todo le_todo
-        | u :: lt ->
-          let arc = repr g u in
-          let p = lazy ((Lt, make u) :: Lazy.force p) in
-          if arc == arcv then
-            if strict then LT p else LE p
-          else find ((arc, p) :: lt_todo) lt le
-        end
-      | u :: le ->
-        let arc = repr g u in
-        let p = lazy ((Le, make u) :: Lazy.force p) in
-        if arc == arcv then
-          if strict then LT p else LE p
-        else find ((arc, p) :: lt_todo) lt le
-      in
-      find lt_todo arc.lt arc.le
-  | [], (arc,p)::le_todo ->
-    if arc == arcv then
-      (* No need to continue inspecting universes above arc:
-	 if arcv is strictly above arc, then we would have a cycle.
-         But we cannot answer LE yet, a stronger constraint may
-	 come later from [le_todo]. *)
-      if strict then cmp (LE p) lt_done le_done [] le_todo else LE p
-    else
-      if (List.memq arc lt_done) || (List.memq arc le_done) then
-        cmp c lt_done le_done [] le_todo
-      else
-        let rec find lt_todo lt = match lt with
-        | [] ->
-          let fold accu u =
-            let p = lazy ((Le, make u) :: Lazy.force p) in
-            let node = (repr g u, p) in
-            node :: accu
-          in
-          let le_new = List.fold_left fold le_todo arc.le in
-          cmp c lt_done (arc :: le_done) lt_todo le_new
-        | u :: lt ->
-          let arc = repr g u in
-          let p = lazy ((Lt, make u) :: Lazy.force p) in
-          if arc == arcv then
-            if strict then LT p else LE p
-          else find ((arc, p) :: lt_todo) lt
-        in
-        find [] arc.lt
-  in
-  cmp NLE [] [] [] [(arcu,Lazy.lazy_from_val [])]
 
 type fast_order = FastEQ | FastLT | FastLE | FastNLE
 
@@ -864,9 +801,6 @@ let fast_compare_neq strict g arcu arcv =
         find [] arc.lt
   in
   cmp FastNLE [] [] [] [arcu]
-
-let compare g arcu arcv =
-  if arcu == arcv then EQ else compare_neq true g arcu arcv
 
 let fast_compare g arcu arcv =
   if arcu == arcv then FastEQ else fast_compare_neq true g arcu arcv
@@ -1048,12 +982,12 @@ let merge_disc g arc1 arc2 =
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
-type univ_inconsistency = constraint_type * universe * universe * explanation
+type univ_inconsistency = constraint_type * universe * universe
 
 exception UniverseInconsistency of univ_inconsistency
 
-let error_inconsistency o u v (p:explanation) =
-  raise (UniverseInconsistency (o,make u,make v,p))
+let error_inconsistency o u v =
+  raise (UniverseInconsistency (o,make u,make v))
 
 (* enforc_univ_eq : Level.t -> Level.t -> unit *)
 (* enforc_univ_eq u v will force u=v if possible, will fail otherwise *)
@@ -1063,17 +997,11 @@ let enforce_univ_eq u v g =
   let g,arcv = safe_repr g v in
     match fast_compare g arcu arcv with
     | FastEQ -> g
-    | FastLT ->
-      (match compare g arcu arcv with
-      | LT p -> error_inconsistency Eq v u (List.rev (Lazy.force p))
-      | _ -> anomaly (Pp.str "Univ.fast_compare"))
+    | FastLT -> error_inconsistency Eq v u
     | FastLE -> merge g arcu arcv
     | FastNLE ->
       (match fast_compare g arcv arcu with
-      | FastLT -> 
-	(match compare g arcv arcu with
-	| LT p -> error_inconsistency Eq u v (List.rev (Lazy.force p))
-	| _ -> anomaly (Pp.str "Univ.fast_compare"))
+      | FastLT -> error_inconsistency Eq u v
       | FastLE -> merge g arcv arcu
       | FastNLE -> merge_disc g arcu arcv
       | FastEQ -> anomaly (Pp.str "Univ.compare"))
@@ -1086,10 +1014,7 @@ let enforce_univ_leq u v g =
   if is_leq g arcu arcv then g
   else
     match fast_compare g arcv arcu with
-    | FastLT -> 
-      (match compare g arcv arcu with
-      | LT p -> error_inconsistency Le u v (List.rev (Lazy.force p))
-      | _ -> anomaly (Pp.str "Univ.fast_compare"))
+    | FastLT -> error_inconsistency Le u v
     | FastLE  -> merge g arcv arcu
     | FastNLE -> fst (setleq g arcu arcv)
     | FastEQ -> anomaly (Pp.str "Univ.compare")
@@ -1101,19 +1026,13 @@ let enforce_univ_lt u v g =
     match fast_compare g arcu arcv with
     | FastLT -> g
     | FastLE -> fst (setlt g arcu arcv)
-    | FastEQ -> 
-      (match compare g arcu arcv with
-      | EQ -> error_inconsistency Lt u v [(Eq,make v)]
-      | _ -> anomaly (Pp.str "Univ.fast_compare"))
+    | FastEQ -> error_inconsistency Lt u v
     | FastNLE ->
       match fast_compare_neq false g arcv arcu with
 	FastNLE -> fst (setlt g arcu arcv)
       | FastEQ -> anomaly (Pp.str "Univ.compare")
-      | (FastLE|FastLT) ->
-	(match compare_neq false g arcv arcu with
-	| LE p | LT p -> error_inconsistency Lt u v (List.rev (Lazy.force p))
-	| _ -> anomaly (Pp.str "Univ.fast_compare"))
-	  
+      | FastLE | FastLT -> error_inconsistency Lt u v
+
 (* Prop = Set is forbidden here. *)
 let initial_universes = enforce_univ_lt Level.prop Level.set UMap.empty
 
@@ -1183,7 +1102,7 @@ let enforce_eq_level u v c =
   (* We discard trivial constraints like u=u *)
   if Level.equal u v then c 
   else if Level.apart u v then
-    error_inconsistency Eq u v []
+    error_inconsistency Eq u v
   else Constraint.add (u,Eq,v) c
 
 let enforce_eq u v c =
@@ -1208,7 +1127,7 @@ let constraint_add_leq v u c =
 	Constraint.add (x,Lt,y) c
       else if j <= -1 (* n = m+k, v+k <= u <-> v+(k-1) < u *) then
 	if Level.equal x y then (* u+(k+1) <= u *)
-	  raise (UniverseInconsistency (Le, Universe.tip v, Universe.tip u, []))
+	  raise (UniverseInconsistency (Le, Universe.tip v, Universe.tip u))
 	else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints")
       else if j = 0 then
 	Constraint.add (x,Le,y) c
