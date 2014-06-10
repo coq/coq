@@ -18,11 +18,29 @@ Definition FunctorToType `(C : @Category objC) := Functor C TypeCat.
 (* Removing the following line, as well as the [Definition] and [Identity Coercion] immediately following it, makes the file go through *)
 Identity Coercion FunctorToType_Id : FunctorToType >-> Functor.
 
+Set Printing Universes.
 Definition FunctorTo_Set2Type `(C : @Category objC) (F : FunctorToSet C)
 : FunctorToType C.
-  refine (@Build_Functor _ C _ TypeCat
+  Fail refine (@Build_Functor _ C _ TypeCat
                          (fun x => F.(ObjectOf) x)
                          (fun s d m => F.(MorphismOf) _ _ m)).
+(* ??? Toplevel input, characters 8-148:
+Error:
+In environment
+objC : Type{Top.100}
+C : Category@{Top.100 Top.101} objC
+F : FunctorToSet@{Top.100 Top.101 Top.99} C
+The term
+ "{|
+  ObjectOf := fun x : objC => F x;
+  MorphismOf := fun (s d : objC) (m : Morphism@{Top.100 Top.101} C s d) =>
+                MorphismOf@{Top.100 Top.101 Top.99 Set} F s d m |}" has type
+ "Functor@{Top.104 Top.105 Top.106 Top.107} C TypeCat@{Top.108 Top.109
+    Top.110}" while it is expected to have type
+ "FunctorToType@{Top.100 Top.101 Top.102 Top.103} C"
+(Universe inconsistency: Cannot enforce Set = Top.103)).
+ *)
+admit.
 Defined. (* Toplevel input, characters 0-8:
 Error:
 The term
@@ -49,12 +67,12 @@ Record SetGrothendieckPair `(C : @Category objC) (F' : Functor C SetCat) :=
 Section SetGrothendieckCoercion.
   Context `(C : @Category objC).
   Variable F : Functor C SetCat.
-  Fail Let F' := (F : FunctorToSet _) : FunctorToType _. (* The command has indeed failed with message:
+  Let F' := (F : FunctorToSet _) : FunctorToType _. (* The command has indeed failed with message:
 => Anomaly: apply_coercion_args: mismatch between arguments and coercion.
 Please report. *)
 
   Set Printing Universes.
-  Fail Definition SetGrothendieck2Grothendieck (G : SetGrothendieckPair F) : GrothendieckPair F'
+  Definition SetGrothendieck2Grothendieck (G : SetGrothendieckPair F) : GrothendieckPair F'
     := {| GrothendieckC := G.(SetGrothendieckC); GrothendieckX := G.(SetGrothendieckX) : F' _ |}.
   (* Toplevel input, characters 0-187:
 Error: Illegal application:
