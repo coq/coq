@@ -194,14 +194,11 @@ val nf_evars_and_universes_opt_subst : (existential -> constr option) ->
 (** Shrink a universe context to a restricted set of variables *)
 
 val universes_of_constr : constr -> universe_set
-val shrink_universe_context : universe_context_set -> universe_set -> universe_context_set
 val restrict_universe_context : universe_context_set -> universe_set -> universe_context_set
 val simplify_universe_context : universe_context_set -> 
   universe_context_set * universe_level_subst
 
 val refresh_constraints : universes -> universe_context_set -> universe_context_set * universes
-
-val remove_trivial_constraints : universe_context_set -> universe_context_set
 
 (** Pretty-printing *)
 

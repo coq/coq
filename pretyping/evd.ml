@@ -1181,25 +1181,11 @@ let subst_univs_context_with_def def usubst (ctx, cst) =
 let subst_univs_context usubst ctx =
   subst_univs_context_with_def (Univ.LMap.universes usubst) (Univ.make_subst usubst) ctx
 
-let subst_univs_universes s g = 
-  Univ.LMap.fold (fun u v g ->
-    (* Problem here: we might have instantiated an algebraic universe... *)
-    Univ.enforce_constraint (u, Univ.Eq, Option.get (Univ.Universe.level v)) g) s g
-
-let subst_univs_opt_universes s g = 
-  Univ.LMap.fold (fun u v g ->
-    (* Problem here: we might have instantiated an algebraic universe... *)
-    match v with
-    | Some l ->
-      Univ.enforce_constraint (u, Univ.Eq, Option.get (Univ.Universe.level l)) g
-    | None -> g) s g
-
 let normalize_evar_universe_context_variables uctx =
   let normalized_variables, undef, def, subst = 
     Universes.normalize_univ_variables uctx.uctx_univ_variables 
   in
   let ctx_local = subst_univs_context_with_def def (Univ.make_subst subst) uctx.uctx_local in
-  (* let univs = subst_univs_universes subst uctx.uctx_universes in *)
   let ctx_local', univs = Universes.refresh_constraints uctx.uctx_initial_universes ctx_local in
     subst, { uctx with uctx_local = ctx_local';
       uctx_univ_variables = normalized_variables;

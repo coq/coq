@@ -412,7 +412,6 @@ val empty_subst : universe_subst
 val is_empty_subst : universe_subst -> bool
 val make_subst : universe_subst -> universe_subst_fn
 
-val subst_univs_level : universe_subst_fn -> universe_level -> universe
 val subst_univs_universe : universe_subst_fn -> universe -> universe
 val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
 

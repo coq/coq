@@ -462,13 +462,6 @@ let new_global_univ () =
 
 module LevelUnionFind = Unionfind.Make (Univ.LSet) (Univ.LMap)
 
-let remove_trivial_constraints cst =
-  Constraint.fold (fun (l,d,r as cstr) nontriv ->
-    if d != Lt && Univ.Level.equal l r then nontriv
-    else if d == Le && is_type0m_univ (Univ.Universe.make l) then nontriv
-    else Constraint.add cstr nontriv)
-    cst Constraint.empty
-
 let add_list_map u t map = 
   let l, d, r = LMap.split u map in
   let d' = match d with None -> [t] | Some l -> t :: l in
@@ -593,7 +586,7 @@ let normalize_univ_variable ~find ~update =
     let b' = subst_univs_universe aux b in
       if Universe.equal b' b then b
       else update cur b'
-  in fun b -> try aux b with Not_found -> Universe.make b
+  in aux
 
 let normalize_univ_variable_opt_subst ectx =
   let find l = 
@@ -621,6 +614,15 @@ let normalize_universe_subst subst =
   let normlevel = normalize_univ_variable_subst subst in
     subst_univs_universe normlevel
 
+let normalize_opt_subst ctx = 
+  let ectx = ref ctx in
+  let normalize = normalize_univ_variable_opt_subst ectx in
+  let () =
+    Univ.LMap.iter (fun u v ->
+      if Option.is_empty v then ()
+      else try ignore(normalize u) with Not_found -> assert(false)) ctx 
+  in !ectx
+
 type universe_opt_subst = universe option universe_map
 	  
 let make_opt_subst s = 
@@ -633,17 +635,16 @@ let subst_opt_univs_constr s =
   let f = make_opt_subst s in
     Vars.subst_univs_fn_constr f
 
+
 let normalize_univ_variables ctx = 
-  let ectx = ref ctx in
-  let normalize = normalize_univ_variable_opt_subst ectx in
-  let _ = Univ.LMap.iter (fun u _ -> ignore(normalize u)) ctx in
-  let undef, def, subst = 
+  let ctx = normalize_opt_subst ctx in
+  let undef, def, subst =
     Univ.LMap.fold (fun u v (undef, def, subst) -> 
       match v with
       | None -> (Univ.LSet.add u undef, def, subst)
       | Some b -> (undef, Univ.LSet.add u def, Univ.LMap.add u b subst))
-    !ectx (Univ.LSet.empty, Univ.LSet.empty, Univ.LMap.empty)
-  in !ectx, undef, def, subst
+    ctx (Univ.LSet.empty, Univ.LSet.empty, Univ.LMap.empty)
+  in ctx, undef, def, subst
 
 let pr_universe_body = function
   | None -> mt ()
@@ -871,10 +872,8 @@ let normalize_context_set ctx us algs =
   let ctx', us, algs, inst, noneqs = 
     minimize_univ_variables ctx us algs ucstrsr ucstrsl noneqs
   in
-  let us = ref us in
-  let norm = normalize_univ_variable_opt_subst us in
-  let _normalize_subst = LMap.iter (fun u v -> ignore(norm u)) !us in
-    (!us, algs), (ctx', Constraint.union noneqs eqs)
+  let us = normalize_opt_subst us in
+    (us, algs), (ctx', Constraint.union noneqs eqs)
 
 (* let normalize_conkey = Profile.declare_profile "normalize_context_set" *)
 (* let normalize_context_set a b c = Profile.profile3 normalize_conkey normalize_context_set a b c *)
@@ -889,18 +888,6 @@ let universes_of_constr c =
 	LSet.union (Universe.levels u) s
     | _ -> fold_constr aux s c
   in aux LSet.empty c
-
-let shrink_universe_context (univs,csts) s =
-  let univs' = LSet.inter univs s in
-    Constraint.fold (fun (l,d,r as c) (univs',csts) ->
-      if LSet.mem l univs' then
-	let univs' = if LSet.mem r univs then LSet.add r univs' else univs' in
-	  (univs', Constraint.add c csts)
-      else if LSet.mem r univs' then
-	let univs' = if LSet.mem l univs then LSet.add l univs' else univs' in
-	  (univs', Constraint.add c csts)
-      else (univs', csts))
-      csts (univs',Constraint.empty)
 
 let restrict_universe_context (univs,csts) s =
   (* Universes that are not necessary to typecheck the term.
@@ -971,10 +958,3 @@ let refresh_constraints univs (ctx, cstrs) =
       else (Univ.Constraint.add c cstrs', Univ.enforce_constraint c univs))
       cstrs (Univ.Constraint.empty, univs)
   in ((ctx, cstrs'), univs')
-
-let remove_trivial_constraints (ctx, cstrs) =
-  let cstrs' = 
-    Univ.Constraint.fold (fun c acc ->
-      if is_prop_leq c then Univ.Constraint.remove c acc
-      else acc) cstrs cstrs
-  in (ctx, cstrs')

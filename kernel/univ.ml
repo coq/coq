@@ -1984,10 +1984,6 @@ type universe_subst_fn = universe_level -> universe
 
 let make_subst subst = fun l -> LMap.find l subst
 
-let subst_univs_level fn l = 
-  try fn l
-  with Not_found -> make l
-
 let subst_univs_expr_opt fn (l,n) =
   Universe.addn n (fn l)
 
@@ -2007,14 +2003,22 @@ let subst_univs_universe fn ul =
 	List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.Huniv.tip u))
 	  substs nosubst
 
-let subst_univs_constraint fn (u,d,v) =
-  let u' = subst_univs_level fn u and v' = subst_univs_level fn v in
-    if d != Lt && Universe.equal u' v' then None
-    else Some (u',d,v')
+let subst_univs_level fn l = 
+  try Some (fn l)
+  with Not_found -> None
+
+let subst_univs_constraint fn (u,d,v as c) cstrs =
+  let u' = subst_univs_level fn u in
+  let v' = subst_univs_level fn v in
+  match u', v' with
+  | None, None -> Constraint.add c cstrs
+  | Some u, None -> enforce_univ_constraint (u,d,make v) cstrs
+  | None, Some v -> enforce_univ_constraint (make u,d,v) cstrs
+  | Some u, Some v -> enforce_univ_constraint (u,d,v) cstrs
 
 let subst_univs_constraints subst csts =
   Constraint.fold 
-    (fun c -> Option.fold_right enforce_univ_constraint (subst_univs_constraint subst c))
+    (fun c cstrs -> subst_univs_constraint subst c cstrs)
     csts Constraint.empty 
 
 (** Pretty-printing *)
