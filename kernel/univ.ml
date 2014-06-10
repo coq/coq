@@ -1271,9 +1271,6 @@ let enforce_constraint cst g =
     | (u,Le,v) -> enforce_univ_leq u v g
     | (u,Eq,v) -> enforce_univ_eq u v g
       
-let merge_constraints c g =
-  Constraint.fold enforce_constraint c g
-
 let pr_constraint_type op = 
   let op_str = match op with
     | Lt -> " < "
@@ -1308,6 +1305,8 @@ end
 let empty_constraint = Constraint.empty
 let union_constraint = Constraint.union
 let eq_constraint = Constraint.equal
+let merge_constraints c g =
+  Constraint.fold enforce_constraint c g
 
 type constraints = Constraint.t
 
@@ -1990,16 +1989,15 @@ let subst_univs_level fn l =
   with Not_found -> make l
 
 let subst_univs_expr_opt fn (l,n) =
-  try Some (Universe.addn n (fn l))
-  with Not_found -> None
+  Universe.addn n (fn l)
 
 let subst_univs_universe fn ul =
   let subst, nosubst = 
     Universe.Huniv.fold (fun u (subst,nosubst) -> 
-      match subst_univs_expr_opt fn u with
-      | Some a' -> (a' :: subst, nosubst)
-      | None -> (subst, u :: nosubst))
-    ul ([], [])
+      try let a' = subst_univs_expr_opt fn u in
+	    (a' :: subst, nosubst)
+      with Not_found -> (subst, u :: nosubst))
+      ul ([], [])
   in 
     if CList.is_empty subst then ul
     else 
