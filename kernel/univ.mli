@@ -197,7 +197,7 @@ val enforce_leq_level : universe_level constraint_function
   constraints...
 *)
 type explanation = (constraint_type * universe) list
-type univ_inconsistency = constraint_type * universe * universe * explanation
+type univ_inconsistency = constraint_type * universe * universe * explanation option
 
 exception UniverseInconsistency of univ_inconsistency
 

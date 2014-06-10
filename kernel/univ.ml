@@ -942,14 +942,14 @@ let get_explanation strict g arcu arcv =
           cmp c (arc :: to_revert) lt_todo le_todo
         | u :: lt ->
           let arc = repr g u in
-          let p = lazy ((Lt, make u) :: Lazy.force p) in
+          let p = (Lt, make u) :: p in
           if arc == arcv then
             if strict then (to_revert, p) else (to_revert, p)
           else find ((arc, p) :: lt_todo) lt le
         end
       | u :: le ->
         let arc = repr g u in
-        let p = lazy ((Le, make u) :: Lazy.force p) in
+        let p = (Le, make u) :: p in
         if arc == arcv then
           if strict then (to_revert, p) else (to_revert, p)
         else find ((arc, p) :: lt_todo) lt le
@@ -969,7 +969,7 @@ let get_explanation strict g arcu arcv =
         let rec find lt_todo lt = match lt with
         | [] ->
           let fold accu u =
-            let p = lazy ((Le, make u) :: Lazy.force p) in
+            let p = (Le, make u) :: p in
             let node = (repr g u, p) in
             node :: accu
           in
@@ -978,7 +978,7 @@ let get_explanation strict g arcu arcv =
           cmp c (arc :: to_revert) lt_todo le_new
         | u :: lt ->
           let arc = repr g u in
-          let p = lazy ((Lt, make u) :: Lazy.force p) in
+          let p = (Lt, make u) :: p in
           if arc == arcv then
             if strict then (to_revert, p) else (to_revert, p)
           else find ((arc, p) :: lt_todo) lt
@@ -986,10 +986,10 @@ let get_explanation strict g arcu arcv =
         find [] arc.lt
   in
   try
-    let (to_revert, c) = cmp (Lazy.lazy_from_val []) [] [] [(arcu,Lazy.lazy_from_val [])] in
+    let (to_revert, c) = cmp [] [] [] [(arcu, [])] in
     (** Reset all the touched arcs. *)
     let () = List.iter (fun arc -> arc.status <- Unset) to_revert in
-    c
+    Some (List.rev c)
   with e ->
     (** Unlikely event: fatal error or signal *)
     let () = cleanup_universes g in
@@ -1246,11 +1246,11 @@ let merge_disc g arc1 arc2 =
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
-type univ_inconsistency = constraint_type * universe * universe * explanation
+type univ_inconsistency = constraint_type * universe * universe * explanation option
 
 exception UniverseInconsistency of univ_inconsistency
 
-let error_inconsistency o u v (p:explanation) =
+let error_inconsistency o u v (p:explanation option) =
   raise (UniverseInconsistency (o,make u,make v,p))
 
 (* enforc_univ_eq : Level.t -> Level.t -> unit *)
@@ -1263,13 +1263,13 @@ let enforce_univ_eq u v g =
     | FastEQ -> g
     | FastLT ->
       let p = get_explanation_strict g arcu arcv in
-      error_inconsistency Eq v u (List.rev (Lazy.force p))
+      error_inconsistency Eq v u p
     | FastLE -> merge g arcu arcv
     | FastNLE ->
       (match fast_compare g arcv arcu with
       | FastLT ->
         let p = get_explanation_strict g arcv arcu in
-        error_inconsistency Eq u v (List.rev (Lazy.force p))
+        error_inconsistency Eq u v p
       | FastLE -> merge g arcv arcu
       | FastNLE -> merge_disc g arcu arcv
       | FastEQ -> anomaly (Pp.str "Univ.compare"))
@@ -1284,7 +1284,7 @@ let enforce_univ_leq u v g =
     match fast_compare g arcv arcu with
     | FastLT ->
       let p = get_explanation_strict g arcv arcu in
-      error_inconsistency Le u v (List.rev (Lazy.force p))
+      error_inconsistency Le u v p
     | FastLE  -> merge g arcv arcu
     | FastNLE -> fst (setleq g arcu arcv)
     | FastEQ -> anomaly (Pp.str "Univ.compare")
@@ -1296,14 +1296,14 @@ let enforce_univ_lt u v g =
     match fast_compare g arcu arcv with
     | FastLT -> g
     | FastLE -> fst (setlt g arcu arcv)
-    | FastEQ -> error_inconsistency Lt u v [(Eq,make v)]
+    | FastEQ -> error_inconsistency Lt u v (Some [(Eq,make v)])
     | FastNLE ->
       match fast_compare_neq false g arcv arcu with
 	FastNLE -> fst (setlt g arcu arcv)
       | FastEQ -> anomaly (Pp.str "Univ.compare")
       | (FastLE|FastLT) ->
         let p = get_explanation false g arcv arcu  in
-        error_inconsistency Lt u v (List.rev (Lazy.force p))
+        error_inconsistency Lt u v p
 
 let empty_universes = UMap.empty
 
@@ -1409,7 +1409,7 @@ let enforce_eq_level u v c =
   (* We discard trivial constraints like u=u *)
   if Level.equal u v then c 
   else if Level.apart u v then
-    error_inconsistency Eq u v []
+    error_inconsistency Eq u v None
   else Constraint.add (u,Eq,v) c
 
 let enforce_eq u v c =
@@ -1434,7 +1434,7 @@ let constraint_add_leq v u c =
 	Constraint.add (x,Lt,y) c
       else if j <= -1 (* n = m+k, v+k <= u <-> v+(k-1) < u *) then
 	if Level.equal x y then (* u+(k+1) <= u *)
-	  raise (UniverseInconsistency (Le, Universe.tip v, Universe.tip u, []))
+	  raise (UniverseInconsistency (Le, Universe.tip v, Universe.tip u, None))
 	else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints")
       else if j = 0 then
 	Constraint.add (x,Le,y) c
@@ -2152,8 +2152,8 @@ let explain_universe_inconsistency (o,u,v,p) =
       | Eq -> str"=" | Lt -> str"<" | Le -> str"<=" 
     in
     let reason = match p with
-	[] -> mt()
-      | _::_ ->
+      | None | Some [] -> mt()
+      | Some p ->
 	str " because" ++ spc() ++ pr_uni v ++
 	  prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ pr_uni v)
 	  p ++

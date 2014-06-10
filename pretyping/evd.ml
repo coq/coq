@@ -412,7 +412,7 @@ let process_universe_constraints univs vars alg templ cstrs =
 		    Univ.LSet.fold (fun l local ->
 		      if Univ.Level.is_small l || Univ.LMap.mem l !vars then
 			Univ.enforce_eq (Univ.Universe.make l) r local
-		      else raise (Univ.UniverseInconsistency (Univ.Le, Univ.Universe.make l, r, [])))
+		      else raise (Univ.UniverseInconsistency (Univ.Le, Univ.Universe.make l, r, None)))
 		      levels local
 		else if Univ.LSet.mem rl templ && Univ.Universe.is_level l then
 		  unify_universes fo l Universes.UEq r local
@@ -439,7 +439,7 @@ let process_universe_constraints univs vars alg templ cstrs =
 		  (* Two rigid/global levels, none of them being local,
 		     one of them being Prop/Set, disallow *)
 		  if Univ.Level.is_small l' || Univ.Level.is_small r' then
-		    raise (Univ.UniverseInconsistency (Univ.Eq, l, r, []))
+		    raise (Univ.UniverseInconsistency (Univ.Eq, l, r, None))
 		  else
 		    if fo then 
 		      raise UniversesDiffer
@@ -447,7 +447,7 @@ let process_universe_constraints univs vars alg templ cstrs =
 	        Univ.enforce_eq_level l' r' local
            | _, _ (* One of the two is algebraic or global *) -> 
 	     if Univ.check_eq univs l r then local
-	     else raise (Univ.UniverseInconsistency (Univ.Eq, l, r, []))
+	     else raise (Univ.UniverseInconsistency (Univ.Eq, l, r, None))
   in
   let local = 
     Universes.Constraints.fold (fun (l,d,r) local -> unify_universes false l d r local)
