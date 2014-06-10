@@ -370,8 +370,6 @@ module Level = struct
 
 end
 
-module LSet = Set.Make (Level)
-
 (** Level maps *)
 module LMap = Map.Make (Level)
 
@@ -380,8 +378,6 @@ type 'a universe_map = 'a LMap.t
 type universe_level = Level.t
 
 type universe_level_subst_fn = universe_level -> universe_level
-
-type universe_set = LSet.t
 
 (* An algebraic universe [universe] is either a universe variable
    [Level.t] or a formal universe known to be greater than some
@@ -1065,31 +1061,6 @@ let merge_constraints c g =
   Constraint.fold enforce_constraint c g
 
 type constraints = Constraint.t
-
-module Hconstraint =
-  Hashcons.Make(
-    struct
-      type t = univ_constraint
-      type u = universe_level -> universe_level
-      let hashcons hul (l1,k,l2) = (hul l1, k, hul l2)
-      let equal (l1,k,l2) (l1',k',l2') =
-	l1 == l1' && k == k' && l2 == l2'
-      let hash = Hashtbl.hash
-    end)
-
-module Hconstraints =
-  Hashcons.Make(
-    struct
-      type t = constraints
-      type u = univ_constraint -> univ_constraint
-      let hashcons huc s =
-	Constraint.fold (fun x -> Constraint.add (huc x)) s Constraint.empty
-      let equal s s' =
-	List.for_all2eq (==)
-	  (Constraint.elements s)
-	  (Constraint.elements s')
-      let hash = Hashtbl.hash
-    end)
 
 (** A value with universe constraints. *)
 type 'a constrained = 'a * constraints

@@ -23,11 +23,6 @@ end
 type universe_level = Level.t
 (** Alias name. *)
 
-(** Sets of universe levels *)
-module LSet : Set.S with type elt = universe_level
-
-type universe_set = LSet.t
-
 module Universe :
 sig
   type t

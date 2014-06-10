@@ -442,7 +442,6 @@ let subst_constant_def sub = function
   | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
 
 (** Local variables and graph *)
-type universe_context = Univ.LSet.t * Univ.constraints 
 
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
