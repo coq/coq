@@ -29,7 +29,7 @@ open Decl_kinds
 let dl = Loc.ghost
 
 (** Should we keep details of universes during detyping ? *)
-let print_universes = ref false
+let print_universes = Flags.univ_print
 
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)

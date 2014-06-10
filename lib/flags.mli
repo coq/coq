@@ -44,6 +44,7 @@ val load_proofs : load_proofs ref
 
 val raw_print : bool ref
 val record_print : bool ref
+val univ_print : bool ref
 
 type compat_version = V8_2 | V8_3 | V8_4 | Current
 val compat_version : compat_version ref

@@ -81,6 +81,8 @@ let raw_print = ref false
 
 let record_print = ref true
 
+let univ_print = ref false
+
 let we_are_parsing = ref false
 
 (* Compatibility mode *)

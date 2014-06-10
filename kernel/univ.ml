@@ -989,11 +989,15 @@ let get_explanation strict g arcu arcv =
     let (to_revert, c) = cmp [] [] [] [(arcu, [])] in
     (** Reset all the touched arcs. *)
     let () = List.iter (fun arc -> arc.status <- Unset) to_revert in
-    Some (List.rev c)
+    List.rev c
   with e ->
     (** Unlikely event: fatal error or signal *)
     let () = cleanup_universes g in
     raise e
+
+let get_explanation strict g arcu arcv =
+  if !Flags.univ_print then Some (get_explanation strict g arcu arcv)
+  else None
 
 type fast_order = FastEQ | FastLT | FastLE | FastNLE
 
