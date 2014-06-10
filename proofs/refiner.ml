@@ -337,9 +337,6 @@ let tclPUSHEVARUNIVCONTEXT ctx gl =
 let tclPUSHCONSTRAINTS cst gl = 
   tclEVARS (Evd.add_constraints (project gl) cst) gl
 
-let tclPUSHUNIVERSECONSTRAINTS cst gl = 
-  tclEVARS (Evd.add_universe_constraints (project gl) cst) gl
-
 (* Check that holes in arguments have been resolved *)
 
 let check_evars env sigma extsigma origsigma =

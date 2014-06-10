@@ -15,6 +15,198 @@ open Environ
 open Locus
 open Univ
 
+type universe_constraint_type = ULe | UEq | ULub
+
+type universe_constraint = universe * universe_constraint_type * universe
+
+module Constraints = struct
+  module S = Set.Make(
+  struct 
+    type t = universe_constraint
+
+    let compare_type c c' =
+      match c, c' with
+      | ULe, ULe -> 0
+      | ULe, _ -> -1
+      | _, ULe -> 1
+      | UEq, UEq -> 0
+      | UEq, _ -> -1
+      | ULub, ULub -> 0
+      | ULub, _ -> 1
+      
+    let compare (u,c,v) (u',c',v') =
+      let i = compare_type c c' in
+	if Int.equal i 0 then
+	  let i' = Universe.compare u u' in
+	    if Int.equal i' 0 then Universe.compare v v'
+	    else 
+	      if c != ULe && Universe.compare u v' = 0 && Universe.compare v u' = 0 then 0
+	      else i'
+	else i
+  end)
+  
+  include S
+  
+  let add (l,d,r as cst) s = 
+    if Universe.equal l r then s
+    else add cst s
+
+  let tr_dir = function
+    | ULe -> Le
+    | UEq -> Eq
+    | ULub -> Eq
+
+  let op_str = function ULe -> " <= " | UEq -> " = " | ULub -> " /\\ "
+
+  let pr c =
+    fold (fun (u1,op,u2) pp_std ->
+	pp_std ++ Universe.pr u1 ++ str (op_str op) ++
+	Universe.pr u2 ++ fnl ()) c (str "")
+
+  let equal x y = 
+    x == y || equal x y
+
+end
+
+type universe_constraints = Constraints.t
+type 'a universe_constrained = 'a * universe_constraints
+
+type 'a universe_constraint_function = 'a -> 'a -> universe_constraints -> universe_constraints
+
+let enforce_eq_instances_univs strict x y c = 
+  let d = if strict then ULub else UEq in
+  let ax = Instance.to_array x and ay = Instance.to_array y in
+    if Array.length ax != Array.length ay then
+      Errors.anomaly (Pp.str "Invalid argument: enforce_eq_instances_univs called with" ++
+	       Pp.str " instances of different lengths");
+    CArray.fold_right2
+      (fun x y -> Constraints.add (Universe.make x, d, Universe.make y))
+      ax ay c
+
+let subst_univs_universe_constraint fn (u,d,v) =
+  let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
+    if Universe.equal u' v' then None
+    else Some (u',d,v')
+
+let subst_univs_universe_constraints subst csts =
+  Constraints.fold 
+    (fun c -> Option.fold_right Constraints.add (subst_univs_universe_constraint subst c))
+    csts Constraints.empty 
+
+
+let to_constraints g s = 
+  let tr (x,d,y) acc =
+    let add l d l' acc = Constraint.add (l,Constraints.tr_dir d,l') acc in
+      match Universe.level x, d, Universe.level y with
+      | Some l, (ULe | UEq | ULub), Some l' -> add l d l' acc
+      | _, ULe, Some l' -> enforce_leq x y acc
+      | _, ULub, _ -> acc
+      | _, d, _ -> 
+	let f = if d == ULe then check_leq else check_eq in
+	  if f g x y then acc else 
+	    raise (Invalid_argument 
+		   "to_constraints: non-trivial algebraic constraint between universes")
+  in Constraints.fold tr s Constraint.empty
+
+let eq_constr_univs_infer univs m n =
+  if m == n then true, Constraints.empty
+  else 
+    let cstrs = ref Constraints.empty in
+    let eq_universes strict = Univ.Instance.check_eq univs in
+    let eq_sorts s1 s2 = 
+      if Sorts.equal s1 s2 then true
+      else
+	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
+	  if Univ.check_eq univs u1 u2 then true
+	  else
+	    (cstrs := Constraints.add (u1, UEq, u2) !cstrs;
+	     true)
+    in
+    let rec eq_constr' m n = 
+      m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
+    in
+    let res = Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n in
+      res, !cstrs
+
+let leq_constr_univs_infer univs m n =
+  if m == n then true, Constraints.empty
+  else 
+    let cstrs = ref Constraints.empty in
+    let eq_universes strict l l' = Univ.Instance.check_eq univs l l' in
+    let eq_sorts s1 s2 = 
+      if Sorts.equal s1 s2 then true
+      else
+	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
+	  if Univ.check_eq univs u1 u2 then true
+	  else (cstrs := Constraints.add (u1, UEq, u2) !cstrs;
+		true)
+    in
+    let leq_sorts s1 s2 = 
+      if Sorts.equal s1 s2 then true
+      else 
+	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
+	  if Univ.check_leq univs u1 u2 then true
+	  else
+	    (cstrs := Constraints.add (u1, ULe, u2) !cstrs; 
+	     true)
+    in
+    let rec eq_constr' m n = 
+      m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
+    in
+    let rec compare_leq m n =
+      Constr.compare_head_gen_leq eq_universes eq_sorts leq_sorts 
+	eq_constr' leq_constr' m n
+    and leq_constr' m n = m == n || compare_leq m n in
+    let res = compare_leq m n in
+      res, !cstrs
+
+let eq_constr_universes m n =
+  if m == n then true, Constraints.empty
+  else 
+    let cstrs = ref Constraints.empty in
+    let eq_universes strict l l' = 
+      cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
+    let eq_sorts s1 s2 = 
+      if Sorts.equal s1 s2 then true
+      else
+	(cstrs := Constraints.add 
+	   (Sorts.univ_of_sort s1, UEq, Sorts.univ_of_sort s2) !cstrs;
+	 true)
+    in
+    let rec eq_constr' m n = 
+      m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
+    in
+    let res = Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n in
+      res, !cstrs
+
+let leq_constr_universes m n =
+  if m == n then true, Constraints.empty
+  else 
+    let cstrs = ref Constraints.empty in
+    let eq_universes strict l l' = 
+      cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
+    let eq_sorts s1 s2 = 
+      if Sorts.equal s1 s2 then true
+      else (cstrs := Constraints.add 
+	      (Sorts.univ_of_sort s1,UEq,Sorts.univ_of_sort s2) !cstrs; 
+	    true)
+    in
+    let leq_sorts s1 s2 = 
+      if Sorts.equal s1 s2 then true
+      else 
+	(cstrs := Constraints.add 
+	   (Sorts.univ_of_sort s1,ULe,Sorts.univ_of_sort s2) !cstrs; 
+	 true)
+    in
+    let rec eq_constr' m n = 
+      m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
+    in
+    let rec compare_leq m n =
+      Constr.compare_head_gen_leq eq_universes eq_sorts leq_sorts eq_constr' leq_constr' m n
+    and leq_constr' m n = m == n || compare_leq m n in
+    let res = compare_leq m n in
+      res, !cstrs
+
 (* Generator of levels *)
 let new_univ_level, set_remote_new_univ_level =
   RemoteCounter.new_counter ~name:"Universes" 0 ~incr:((+) 1)

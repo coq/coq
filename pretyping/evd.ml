@@ -393,7 +393,7 @@ let process_universe_constraints univs vars alg templ cstrs =
 	  | None -> Inl x
 	  | Some l -> Inr (l, Univ.LMap.mem l !vars, Univ.LSet.mem l alg)
 	in
-	  if d == Univ.ULe then
+	  if d == Universes.ULe then
 	    if Univ.check_leq univs l r then
 	      (** Keep Prop/Set <= var around if var might be instantiated by prop or set
 		  later. *)
@@ -415,19 +415,19 @@ let process_universe_constraints univs vars alg templ cstrs =
 		      else raise (Univ.UniverseInconsistency (Univ.Le, Univ.Universe.make l, r, [])))
 		      levels local
 		else if Univ.LSet.mem rl templ && Univ.Universe.is_level l then
-		  unify_universes fo l Univ.UEq r local
+		  unify_universes fo l Universes.UEq r local
 		else
 		  Univ.enforce_leq l r local
-	  else if d == Univ.ULub then
+	  else if d == Universes.ULub then
 	    match varinfo l, varinfo r with
 	    | (Inr (l, true, _), Inr (r, _, _)) 
 	    | (Inr (r, _, _), Inr (l, true, _)) -> 
 	      instantiate_variable l (Univ.Universe.make r) vars; 
 	      Univ.enforce_eq_level l r local
 	    | Inr (_, _, _), Inr (_, _, _) ->
-	      unify_universes true l Univ.UEq r local
+	      unify_universes true l Universes.UEq r local
 	    | _, _ -> assert false
-	  else (* d = Univ.UEq *)
+	  else (* d = Universes.UEq *)
 	    match varinfo l, varinfo r with
 	    | Inr (l', lloc, _), Inr (r', rloc, _) ->
 	      let () = 
@@ -450,7 +450,7 @@ let process_universe_constraints univs vars alg templ cstrs =
 	     else raise (Univ.UniverseInconsistency (Univ.Eq, l, r, []))
   in
   let local = 
-    Univ.UniverseConstraints.fold (fun (l,d,r) local -> unify_universes false l d r local)
+    Universes.Constraints.fold (fun (l,d,r) local -> unify_universes false l d r local)
       cstrs Univ.Constraint.empty
   in
     !vars, local
@@ -460,10 +460,10 @@ let add_constraints_context ctx cstrs =
   let cstrs' = Univ.Constraint.fold (fun (l,d,r) acc -> 
     let l = Univ.Universe.make l and r = Univ.Universe.make r in
     let cstr' = 
-      if d == Univ.Lt then (Univ.Universe.super l, Univ.ULe, r)
-      else (l, (if d == Univ.Le then Univ.ULe else Univ.UEq), r)
-    in Univ.UniverseConstraints.add cstr' acc)
-    cstrs Univ.UniverseConstraints.empty
+      if d == Univ.Lt then (Univ.Universe.super l, Universes.ULe, r)
+      else (l, (if d == Univ.Le then Universes.ULe else Universes.UEq), r)
+    in Universes.Constraints.add cstr' acc)
+    cstrs Universes.Constraints.empty
   in
   let vars, local' =
     process_universe_constraints ctx.uctx_universes
@@ -1135,7 +1135,7 @@ let set_eq_sort d s1 s2 =
   match is_eq_sort s1 s2 with
   | None -> d
   | Some (u1, u2) -> add_universe_constraints d 
-    (Univ.UniverseConstraints.singleton (u1,Univ.UEq,u2))
+    (Universes.Constraints.singleton (u1,Universes.UEq,u2))
 
 let has_lub evd u1 u2 =
   (* let normalize = Universes.normalize_universe_opt_subst (ref univs.uctx_univ_variables) in *)
@@ -1143,7 +1143,7 @@ let has_lub evd u1 u2 =
   (* let u1 = normalize u1 and u2 = normalize u2 in *)
     if Univ.Universe.equal u1 u2 then evd
     else add_universe_constraints evd
-      (Univ.UniverseConstraints.singleton (u1,Univ.ULub,u2))
+      (Universes.Constraints.singleton (u1,Universes.ULub,u2))
 
 let set_eq_level d u1 u2 =
   add_constraints d (Univ.enforce_eq_level u1 u2 Univ.Constraint.empty)
@@ -1153,7 +1153,7 @@ let set_leq_level d u1 u2 =
 
 let set_eq_instances ?(flex=false) d u1 u2 =
   add_universe_constraints d
-    (Univ.enforce_eq_instances_univs flex u1 u2 Univ.UniverseConstraints.empty)
+    (Universes.enforce_eq_instances_univs flex u1 u2 Universes.Constraints.empty)
 
 let set_leq_sort evd s1 s2 =
   let s1 = normalize_sort evd s1 
@@ -1167,7 +1167,7 @@ let set_leq_sort evd s1 s2 =
     (* else if Univ.is_type0m_univ u2 then  *)
     (*   raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, [])) *)
     (* else  *)
-      add_universe_constraints evd (Univ.UniverseConstraints.singleton (u1,Univ.ULe,u2))
+      add_universe_constraints evd (Universes.Constraints.singleton (u1,Universes.ULe,u2))
 	    
 let check_eq evd s s' =
   Univ.check_eq evd.universes.uctx_universes s s'

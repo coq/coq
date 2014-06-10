@@ -391,16 +391,16 @@ let is_rigid_head flags t =
   | _ -> false
 
 let force_eqs c = 
-  Univ.UniverseConstraints.fold
+  Universes.Constraints.fold
     (fun ((l,d,r) as c) acc -> 
-      let c' = if d == Univ.ULub then (l,Univ.UEq,r) else c in
-	Univ.UniverseConstraints.add c' acc) 
-    c Univ.UniverseConstraints.empty
+      let c' = if d == Universes.ULub then (l,Universes.UEq,r) else c in
+	Universes.Constraints.add c' acc) 
+    c Universes.Constraints.empty
 
 let constr_cmp pb sigma flags t u =
   let b, cstrs = 
-    if pb == Reduction.CONV then eq_constr_universes t u
-    else leq_constr_universes t u
+    if pb == Reduction.CONV then Universes.eq_constr_universes t u
+    else Universes.leq_constr_universes t u
   in 
     if b then 
       try Evd.add_universe_constraints sigma cstrs, b

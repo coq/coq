@@ -664,7 +664,7 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
     if cv_pb == CUMUL then Constr.leq_constr_univs_infer univs t1 t2
     else Constr.eq_constr_univs_infer univs t1 t2
   in
-    if b then (Univ.to_constraints univs cstrs)
+    if b then cstrs
     else
       let univs = ((univs, Univ.Constraint.empty), infered_universes) in
       let ((_,cstrs), _) = clos_fconv reds cv_pb l2r evars env univs t1 t2 in

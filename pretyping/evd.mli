@@ -265,7 +265,7 @@ val set_eq_sort : evar_map -> sorts -> sorts -> evar_map
 
 exception UniversesDiffer
 
-val add_universe_constraints : evar_map -> Univ.universe_constraints -> evar_map
+val add_universe_constraints : evar_map -> Universes.universe_constraints -> evar_map
 (** Add the given universe unification constraints to the evar map.
     @raises UniversesDiffer in case a first-order unification fails.
     @raises UniverseInconsistency

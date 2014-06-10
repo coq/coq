@@ -1969,7 +1969,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             Flags.program_mode := orig_program_mode
           end
         with
-          | reraise when (match reraise with Timeout _ -> true | e -> Errors.noncritical e) ->
+          | reraise when (match reraise with Timeout -> true | e -> Errors.noncritical e) ->
             let e = Errors.push reraise in
             let e = locate_if_not_already loc e in
             let () = restore_timeout () in

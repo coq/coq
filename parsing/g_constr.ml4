@@ -153,7 +153,7 @@ GEXTEND Gram
     [ [ "Set"  -> GSet
       | "Prop" -> GProp
       | "Type" -> GType None
-      | "Type"; "{"; id = ident; "}" -> GType (Some (Id.to_string id))
+      | "Type"; "@{"; id = ident; "}" -> GType (Some (Id.to_string id))
       ] ]
   ;
   lconstr:

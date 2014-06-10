@@ -1058,7 +1058,7 @@ let compute = cbv_betadeltaiota
 
 let make_eq_univs_test evd c =
   { match_fun = (fun evd c' -> 
-    let b, cst = eq_constr_universes c c' in 
+    let b, cst = Universes.eq_constr_universes c c' in 
       if b then 
 	try Evd.add_universe_constraints evd cst
 	with Evd.UniversesDiffer -> raise NotUnifiable

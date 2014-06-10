@@ -182,6 +182,9 @@ val initial_universes : universes
 
 val is_initial_universes : universes -> bool
 
+val sort_universes : universes -> universes
+
+(** Adds a universe to the graph, ensuring it is >= Prop. *)
 val add_universe : universe_level -> universes -> universes
 
 (** {6 Substitution} *)
@@ -267,6 +270,8 @@ val eq_constraint : constraints -> constraints -> bool
 (** A value with universe constraints. *)
 type 'a constrained = 'a * constraints
 
+(** Constrained *)
+val constraints_of : 'a constrained -> constraints
 
 (** A list of universes with universe constraints,
     representiong local universe variables and constraints *)
@@ -307,8 +312,7 @@ sig
   val add_constraints : t -> constraints -> t
   val add_universes : Instance.t -> t -> t
 
-  (** Arbitrary choice of linear order of the variables 
-      and normalization of the constraints *)
+  (** Arbitrary choice of linear order of the variables *)
   val to_context : t -> universe_context
   val of_context : universe_context -> t
 
@@ -326,76 +330,38 @@ type universe_context_set = ContextSet.t
 type 'a in_universe_context = 'a * universe_context
 type 'a in_universe_context_set = 'a * universe_context_set
 
-(** {6 Constraints for type inference}
-    
-    When doing conversion of universes, not only do we have =/<= constraints but
-    also Lub constraints which correspond to unification of two levels that might
-    not be necessary if unfolding is performed.
- *)
-
-type universe_constraint_type = ULe | UEq | ULub
-
-type universe_constraint = universe * universe_constraint_type * universe
-module UniverseConstraints : sig
-  include Set.S with type elt = universe_constraint
-			     
-  val pr : t -> Pp.std_ppcmds
-end
-
-type universe_constraints = UniverseConstraints.t
-type 'a universe_constrained = 'a * universe_constraints
-
-
-(** Constrained *)
-val constraints_of : 'a constrained -> constraints
-
-
-(** [check_context_subset s s'] checks that [s] is implied by [s'] as a set of constraints,
-    and shrinks [s'] to the set of variables declared in [s].
-. *)
-val check_context_subset : universe_context_set -> universe_context -> universe_context
-
-(** Make a universe level substitution: the list must match the context variables. *)
-val make_universe_subst : Instance.t -> universe_context -> universe_level_subst
-
 val empty_level_subst : universe_level_subst
 val is_empty_level_subst : universe_level_subst -> bool
-
-(** Get the instantiated graph. *)
-val instantiate_univ_context : universe_level_subst -> universe_context -> constraints
 
 (** Substitution of universes. *)
 val subst_univs_level_level : universe_level_subst -> universe_level -> universe_level
 val subst_univs_level_universe : universe_level_subst -> universe -> universe
 val subst_univs_level_constraints : universe_level_subst -> constraints -> constraints
 
-val normalize_univs_level_level : universe_level_subst -> universe_level -> universe_level
+(** Make a universe level substitution: the instances must match. *)
+val make_universe_subst : Instance.t -> universe_context -> universe_level_subst
+(** Get the instantiated graph. *)
+val instantiate_univ_context : universe_level_subst -> universe_context -> constraints
 
+(** Level to universe substitutions. *)
 
 val empty_subst : universe_subst
 val is_empty_subst : universe_subst -> bool
 val make_subst : universe_subst -> universe_subst_fn
 
-(* val subst_univs_level_fail : universe_subst_fn -> universe_level -> universe_level *)
 val subst_univs_level : universe_subst_fn -> universe_level -> universe
 val subst_univs_universe : universe_subst_fn -> universe -> universe
 val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
-val subst_univs_universe_constraints : universe_subst_fn -> universe_constraints -> universe_constraints
 
-(** Raises universe inconsistency if not compatible. *)
-val check_consistent_constraints : universe_context_set -> constraints -> unit
+(** Enforcing constraints. *)
 
 type 'a constraint_function = 'a -> 'a -> constraints -> constraints
 
-val enforce_leq : universe constraint_function
 val enforce_eq : universe constraint_function
+val enforce_leq : universe constraint_function
 val enforce_eq_level : universe_level constraint_function
 val enforce_leq_level : universe_level constraint_function
 val enforce_eq_instances : universe_instance constraint_function
-
-type 'a universe_constraint_function = 'a -> 'a -> universe_constraints -> universe_constraints
-
-val enforce_eq_instances_univs : bool -> universe_instance universe_constraint_function
 
 (** {6 ... } *)
 (** Merge of constraints in a universes graph.
@@ -422,15 +388,11 @@ exception UniverseInconsistency of univ_inconsistency
 
 val enforce_constraint : univ_constraint -> universes -> universes
 val merge_constraints : constraints -> universes -> universes
-val sort_universes : universes -> universes
 
 val constraints_of_universes : universes -> constraints
 
-val to_constraints : universes -> universe_constraints -> constraints
-
 val check_constraint  : universes -> univ_constraint -> bool
 val check_constraints : constraints -> universes -> bool
-
 
 (** {6 Support for sort-polymorphism } *)
 
@@ -455,7 +417,6 @@ val univ_depends : universe -> universe -> bool
 val pr_universes : universes -> Pp.std_ppcmds
 val pr_constraint_type : constraint_type -> Pp.std_ppcmds
 val pr_constraints : constraints -> Pp.std_ppcmds
-(* val pr_universe_list : universe_list -> Pp.std_ppcmds *)
 val pr_universe_context : universe_context -> Pp.std_ppcmds
 val pr_universe_context_set : universe_context_set -> Pp.std_ppcmds
 val pr_universe_level_subst : universe_level_subst -> Pp.std_ppcmds

@@ -578,9 +578,9 @@ let leq_constr_univs univs m n =
       compare_leq m n
 
 let eq_constr_univs_infer univs m n =
-  if m == n then true, UniverseConstraints.empty
+  if m == n then true, Constraint.empty
   else 
-    let cstrs = ref UniverseConstraints.empty in
+    let cstrs = ref Constraint.empty in
     let eq_universes strict = Univ.Instance.check_eq univs in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
@@ -588,7 +588,7 @@ let eq_constr_univs_infer univs m n =
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
 	  if Univ.check_eq univs u1 u2 then true
 	  else
-	    (cstrs := Univ.UniverseConstraints.add (u1, Univ.UEq, u2) !cstrs;
+	    (cstrs := Univ.enforce_eq u1 u2 !cstrs;
 	     true)
     in
     let rec eq_constr' m n = 
@@ -598,16 +598,16 @@ let eq_constr_univs_infer univs m n =
       res, !cstrs
 
 let leq_constr_univs_infer univs m n =
-  if m == n then true, UniverseConstraints.empty
+  if m == n then true, Constraint.empty
   else 
-    let cstrs = ref UniverseConstraints.empty in
+    let cstrs = ref Constraint.empty in
     let eq_universes strict l l' = Univ.Instance.check_eq univs l l' in
     let eq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
 	  if Univ.check_eq univs u1 u2 then true
-	  else (cstrs := Univ.UniverseConstraints.add (u1, Univ.UEq, u2) !cstrs;
+	  else (cstrs := Univ.enforce_eq u1 u2 !cstrs;
 		true)
     in
     let leq_sorts s1 s2 = 
@@ -616,55 +616,8 @@ let leq_constr_univs_infer univs m n =
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
 	  if Univ.check_leq univs u1 u2 then true
 	  else
-	    (cstrs := Univ.UniverseConstraints.add (u1, Univ.ULe, u2) !cstrs; 
+	    (cstrs := Univ.enforce_leq u1 u2 !cstrs; 
 	     true)
-    in
-    let rec eq_constr' m n = 
-      m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
-    in
-    let rec compare_leq m n =
-      compare_head_gen_leq eq_universes eq_sorts leq_sorts eq_constr' leq_constr' m n
-    and leq_constr' m n = m == n || compare_leq m n in
-    let res = compare_leq m n in
-      res, !cstrs
-
-let eq_constr_universes m n =
-  if m == n then true, UniverseConstraints.empty
-  else 
-    let cstrs = ref UniverseConstraints.empty in
-    let eq_universes strict l l' = 
-      cstrs := Univ.enforce_eq_instances_univs strict l l' !cstrs; true in
-    let eq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else
-	(cstrs := Univ.UniverseConstraints.add 
-	   (Sorts.univ_of_sort s1, Univ.UEq, Sorts.univ_of_sort s2) !cstrs;
-	 true)
-    in
-    let rec eq_constr' m n = 
-      m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
-    in
-    let res = compare_head_gen eq_universes eq_sorts eq_constr' m n in
-      res, !cstrs
-
-let leq_constr_universes m n =
-  if m == n then true, UniverseConstraints.empty
-  else 
-    let cstrs = ref UniverseConstraints.empty in
-    let eq_universes strict l l' = 
-      cstrs := Univ.enforce_eq_instances_univs strict l l' !cstrs; true in
-    let eq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else (cstrs := Univ.UniverseConstraints.add 
-	      (Sorts.univ_of_sort s1,Univ.UEq,Sorts.univ_of_sort s2) !cstrs; 
-	    true)
-    in
-    let leq_sorts s1 s2 = 
-      if Sorts.equal s1 s2 then true
-      else 
-	(cstrs := Univ.UniverseConstraints.add 
-	   (Sorts.univ_of_sort s1,Univ.ULe,Sorts.univ_of_sort s2) !cstrs; 
-	 true)
     in
     let rec eq_constr' m n = 
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n

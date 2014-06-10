@@ -39,7 +39,6 @@ val tclPUSHCONTEXT : Evd.rigid -> Univ.universe_context_set -> tactic -> tactic
 val tclPUSHEVARUNIVCONTEXT : Evd.evar_universe_context -> tactic
 
 val tclPUSHCONSTRAINTS : Univ.constraints -> tactic
-val tclPUSHUNIVERSECONSTRAINTS : Univ.UniverseConstraints.t -> tactic
 
 (** [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
    [tac2] to every resulting subgoals *)

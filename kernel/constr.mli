@@ -212,19 +212,11 @@ val leq_constr_univs : constr Univ.check_function
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
-val eq_constr_univs_infer : Univ.universes -> constr -> constr -> bool Univ.universe_constrained
+val eq_constr_univs_infer : Univ.universes -> constr -> constr -> bool Univ.constrained
 
 (** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
     alpha, casts, application grouping and the universe inequalities in [u]. *)
-val leq_constr_univs_infer : Univ.universes -> constr -> constr -> bool Univ.universe_constrained
-
-(** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
-   application grouping and the universe equalities in [c]. *)
-val eq_constr_universes : constr -> constr -> bool Univ.universe_constrained
-
-(** [leq_constr_universes a b] [true, c] if [a] is convertible to [b] modulo
-    alpha, casts, application grouping and the universe inequalities in [c]. *)
-val leq_constr_universes : constr -> constr -> bool Univ.universe_constrained
+val leq_constr_univs_infer : Univ.universes -> constr -> constr -> bool Univ.constrained
 
 (** [eq_constr_univs a b] [true, c] if [a] equals [b] modulo alpha, casts,
    application grouping and ignoring universe instances. *)
@@ -281,6 +273,31 @@ val iter_with_binders :
 
 val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
 
+(** [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to compare
+   the immediate subterms of [c1] of [c2] if needed, [u] to compare universe
+   instances (the first boolean tells if they belong to a constant), [s] to 
+   compare sorts; Cast's, binders name and Cases annotations are not taken 
+    into account *)
+
+val compare_head_gen : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
+  (Sorts.t -> Sorts.t -> bool) ->
+  (constr -> constr -> bool) ->
+  constr -> constr -> bool
+
+(** [compare_head_gen_leq u s sle f fle c1 c2] compare [c1] and [c2]
+    using [f] to compare the immediate subterms of [c1] of [c2] for
+    conversion, [fle] for cumulativity, [u] to compare universe
+    instances (the first boolean tells if they belong to a constant),
+    [s] to compare sorts for equality and [sle] for subtyping; Cast's,
+    binders name and Cases annotations are not taken into account *)
+
+val compare_head_gen_leq : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
+  (Sorts.t -> Sorts.t -> bool) ->
+  (Sorts.t -> Sorts.t -> bool) ->
+  (constr -> constr -> bool) ->
+  (constr -> constr -> bool) ->
+  constr -> constr -> bool
+  
 (** {6 Hashconsing} *)
 
 val hash : constr -> int

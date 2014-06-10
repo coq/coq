@@ -630,8 +630,8 @@ let magicaly_constant_of_fixbody env bd = function
       match constant_opt_value env (cst,u) with
       | None -> bd
       | Some (t,cstrs) -> 
-        let b, csts = eq_constr_universes t bd in
-	let subst = UniverseConstraints.fold (fun (l,d,r) acc -> 
+        let b, csts = Universes.eq_constr_universes t bd in
+	let subst = Universes.Constraints.fold (fun (l,d,r) acc -> 
 	  Univ.LMap.add (Option.get (Universe.level l)) (Option.get (Universe.level r)) acc)
 	  csts Univ.LMap.empty
 	in
@@ -1170,9 +1170,9 @@ let infer_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y 
     let b, sigma = 
       let b, cstrs = 
 	if pb == Reduction.CUMUL then 
-	  Constr.leq_constr_univs_infer (Evd.universes sigma) x y 
+	  Universes.leq_constr_univs_infer (Evd.universes sigma) x y 
 	else
-	  Constr.eq_constr_univs_infer (Evd.universes sigma) x y 
+	  Universes.eq_constr_univs_infer (Evd.universes sigma) x y 
       in
 	if b then 
 	  try true, Evd.add_universe_constraints sigma cstrs

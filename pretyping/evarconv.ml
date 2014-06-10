@@ -369,10 +369,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     else evar_eqappr_x ts env' evd CONV out2 out1
   in
   let rigids env evd sk term sk' term' =
-    let b,univs = eq_constr_universes term term' in
+    let b,univs = Universes.eq_constr_universes term term' in
       if b then
 	ise_and evd [(fun i -> 
-	  let cstrs = Univ.to_constraints (Evd.universes i) univs in
+	  let cstrs = Universes.to_constraints (Evd.universes i) univs in
 	    try let i = Evd.add_constraints i cstrs in
 		  Success i
 	    with Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
@@ -485,7 +485,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	     allow this identification (first-order unification of universes). Otherwise
 	     fallback to unfolding.
 	  *)
-	  let b,univs = eq_constr_universes term1 term2 in
+	  let b,univs = Universes.eq_constr_universes term1 term2 in
 	    if b then
 	      ise_and i [(fun i -> 
 		try Success (Evd.add_universe_constraints i univs)

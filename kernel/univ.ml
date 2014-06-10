@@ -712,13 +712,20 @@ end
 
 type universe = Universe.t
 
-open Universe
-
-(* type universe_list = UList.t *)
-(* let pr_universe_list = UList.pr *)
-
-let pr_uni = Universe.pr
+(* The level of predicative Set *)
+let type0m_univ = Universe.type0m
+let type0_univ = Universe.type0
+let type1_univ = Universe.type1
+let is_type0m_univ = Universe.is_type0m
+let is_type0_univ = Universe.is_type0
+let is_univ_variable l = Universe.level l != None
 let is_small_univ = Universe.is_small
+let pr_uni = Universe.pr
+
+let sup = Universe.sup
+let super = Universe.super
+
+open Universe
 
 let universe_level = Universe.level
 
@@ -759,20 +766,6 @@ let enter_equiv_arc u v g =
 
 let enter_arc ca g =
   UMap.add ca.univ (Canonical ca) g
-
-let is_type0m_univ = Universe.is_type0m
-
-(* The level of predicative Set *)
-let type0m_univ = Universe.type0m
-let type0_univ = Universe.type0
-let type1_univ = Universe.type1
-
-let sup = Universe.sup
-let super = Universe.super
-
-let is_type0_univ = Universe.is_type0
-
-let is_univ_variable l = Universe.level l != None
 
 (* Every Level.t has a unique canonical arc representative *)
 
@@ -1075,12 +1068,6 @@ let check_eq_univs g l1 l2 =
 let check_eq g u v =
   Universe.equal u v || check_eq_univs g u v
 
-let check_eq = 
-  if Flags.profile then
-    let check_eq_key = Profile.declare_profile "check_eq" in
-      Profile.profile3 check_eq_key check_eq
-  else check_eq
-
 let check_smaller_expr g (u,n) (v,m) =
   let diff = n - m in
     match diff with
@@ -1100,12 +1087,6 @@ let check_leq g u v =
   Universe.equal u v ||
     Universe.is_type0m u ||
     check_eq_univs g u v || real_check_leq g u v
-
-let check_leq = 
-  if Flags.profile then 
-    let check_leq_key = Profile.declare_profile "check_leq" in
-      Profile.profile3 check_leq_key check_leq
-  else check_leq
 
 (** Enforcing new constraints : [setlt], [setleq], [merge], [merge_disc] *)
 
@@ -1297,7 +1278,6 @@ let pr_constraint_type op =
     | Eq -> " = "
   in str op_str
 
-
 module UConstraintOrd =
 struct
   type t = univ_constraint
@@ -1356,60 +1336,6 @@ module Hconstraints =
 let hcons_constraint = Hashcons.simple_hcons Hconstraint.generate Level.hcons
 let hcons_constraints = Hashcons.simple_hcons Hconstraints.generate hcons_constraint
 
-type universe_constraint_type = ULe | UEq | ULub
-
-type universe_constraint = universe * universe_constraint_type * universe
-module UniverseConstraints = struct
-  module S = Set.Make(
-  struct 
-    type t = universe_constraint
-
-    let compare_type c c' =
-      match c, c' with
-      | ULe, ULe -> 0
-      | ULe, _ -> -1
-      | _, ULe -> 1
-      | UEq, UEq -> 0
-      | UEq, _ -> -1
-      | ULub, ULub -> 0
-      | ULub, _ -> 1
-      
-    let compare (u,c,v) (u',c',v') =
-      let i = compare_type c c' in
-	if Int.equal i 0 then
-	  let i' = Universe.compare u u' in
-	    if Int.equal i' 0 then Universe.compare v v'
-	    else 
-	      if c != ULe && Universe.compare u v' = 0 && Universe.compare v u' = 0 then 0
-	      else i'
-	else i
-  end)
-  
-  include S
-  
-  let add (l,d,r as cst) s = 
-    if Universe.equal l r then s
-    else add cst s
-
-  let tr_dir = function
-    | ULe -> Le
-    | UEq -> Eq
-    | ULub -> Eq
-
-  let op_str = function ULe -> " <= " | UEq -> " = " | ULub -> " /\\ "
-
-  let pr c =
-    fold (fun (u1,op,u2) pp_std ->
-	pp_std ++ Universe.pr u1 ++ str (op_str op) ++
-	Universe.pr u2 ++ fnl ()) c (str "")
-
-  let equal x y = 
-    x == y || equal x y
-
-end
-
-type universe_constraints = UniverseConstraints.t
-type 'a universe_constrained = 'a * universe_constraints
 
 (** A value with universe constraints. *)
 type 'a constrained = 'a * constraints
@@ -1506,22 +1432,6 @@ struct
   let hash = HInstancestruct.hash
     
   let share a = (a, hash a)
-
-    (* let len = Array.length a in *)
-    (*   if Int.equal len 0 then (empty, 0) *)
-    (*   else begin *)
-    (* 	let accu = ref 0 in *)
-    (* 	  for i = 0 to len - 1 do *)
-    (* 	    let l = Array.unsafe_get a i in *)
-    (* 	    let l', h = Level.hcons l, Level.hash l in *)
-    (* 	      accu := Hashset.Combine.combine !accu h; *)
-    (* 	      if l' == l then ()  *)
-    (* 	      else Array.unsafe_set a i l' *)
-    (* 	  done; *)
-    (* 	  (\* [h] must be positive. *\) *)
-    (* 	  let h = !accu land 0x3FFFFFFF in *)
-    (* 	    (a, h) *)
-    (*   end *)
 	      
   let empty = hcons [||]
 
@@ -1562,11 +1472,6 @@ struct
       (CArray.for_all2 Level.equal t u 
 	 (* Necessary as universe instances might come from different modules and 
 	    unmarshalling doesn't preserve sharing *))
-
-	 (* if b then *)
-	 (*   (prerr_endline ("Not physically equal but equal:" ^(Pp.string_of_ppcmds (pr t)) *)
-	 (* 		   ^ " and " ^ (Pp.string_of_ppcmds (pr u))); b) *)
-	 (* else b) *)
 
   let check_eq g t1 t2 =
     t1 == t2 ||
@@ -1677,29 +1582,6 @@ let pr_universe_level_subst =
 
 let constraints_of (_, cst) = cst
 
-let remove_dangling_constraints dangling cst =
-  Constraint.fold (fun (l,d,r as cstr) cst' -> 
-    if List.mem l dangling || List.mem r dangling then cst'
-    else
-      (** Unnecessary constraints Prop <= u *)
-      if Level.equal l Level.prop && d == Le then cst'
-      else Constraint.add cstr cst') cst Constraint.empty
-  
-let check_context_subset (univs, cst) (univs', cst') =
-  let newunivs, dangling = List.partition (fun u -> LSet.mem u univs) (Instance.to_list univs') in
-    (* Some universe variables that don't appear in the term 
-       are still mentionned in the constraints. This is the 
-       case for "fake" universe variables that correspond to +1s. *)
-    (* if not (CList.is_empty dangling) then  *)
-    (*   todo ("A non-empty set of inferred universes do not appear in the term or type"); *)
-      (* (not (constraints_depend cst' dangling));*)
-    (* TODO: check implication *)
-  (** Remove local universes that do not appear in any constraint, they
-      are really entirely parametric. *)
-  (* let newunivs, dangling' = List.partition (fun u -> constraints_depend cst [u]) newunivs in *)
-  let cst' = remove_dangling_constraints dangling cst in
-    Instance.of_list newunivs, cst'
-
 (** Substitutions. *)
 
 let make_universe_subst inst (ctx, csts) = 
@@ -1721,12 +1603,6 @@ let subst_univs_level_level subst l =
   try LMap.find l subst
   with Not_found -> l
 
-let rec normalize_univs_level_level subst l =
-  try 
-    let l' = LMap.find l subst in
-      normalize_univs_level_level subst l'
-  with Not_found -> l
-
 let subst_univs_level_universe subst u =
   let f x = Universe.Expr.map (fun u -> subst_univs_level_level subst u) x in
   let u' = Universe.smartmap f u in
@@ -1743,10 +1619,6 @@ let subst_univs_level_constraints subst csts =
   Constraint.fold 
     (fun c -> Option.fold_right Constraint.add (subst_univs_level_constraint subst c))
     csts Constraint.empty 
-
-(* let subst_univs_level_constraint_key = Profile.declare_profile "subst_univs_level_constraint";; *)
-(* let subst_univs_level_constraint = *)
-(*   Profile.profile2 subst_univs_level_constraint_key subst_univs_level_constraint *)
 
 (** With level to universe substitutions. *)
 type universe_subst_fn = universe_level -> universe
@@ -1780,11 +1652,6 @@ let subst_univs_universe fn ul =
 let subst_univs_constraint fn (u,d,v) =
   let u' = subst_univs_level fn u and v' = subst_univs_level fn v in
     if d != Lt && Universe.equal u' v' then None
-    else Some (u',d,v')
-
-let subst_univs_universe_constraint fn (u,d,v) =
-  let u' = subst_univs_universe fn u and v' = subst_univs_universe fn v in
-    if Universe.equal u' v' then None
     else Some (u',d,v')
 
 (** Constraint functions. *)
@@ -1850,28 +1717,12 @@ let enforce_leq_level u v c =
 let enforce_eq_instances x y = 
   let ax = Instance.to_array x and ay = Instance.to_array y in
     if Array.length ax != Array.length ay then
-      anomaly (Pp.str "Invalid argument: enforce_eq_instances called with instances of different lengths");
+      anomaly (Pp.(++) (Pp.str "Invalid argument: enforce_eq_instances called with")
+		 (Pp.str " instances of different lengths"));
     CArray.fold_right2 enforce_eq_level ax ay
-
-type 'a universe_constraint_function = 'a -> 'a -> universe_constraints -> universe_constraints
-
-let enforce_eq_instances_univs strict x y c = 
-  let d = if strict then ULub else UEq in
-  let ax = Instance.to_array x and ay = Instance.to_array y in
-    if Array.length ax != Array.length ay then
-      anomaly (Pp.str "Invalid argument: enforce_eq_instances_univs called with instances of different lengths");    
-    CArray.fold_right2
-      (fun x y -> UniverseConstraints.add (Universe.make x, d, Universe.make y))
-      ax ay c
       
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
-
-let merge_constraints = 
-  if Flags.profile then 
-    let key = Profile.declare_profile "merge_constraints" in
-      Profile.profile2 key merge_constraints
-  else merge_constraints
 
 let check_constraint g (l,d,r) =
   match d with
@@ -1881,12 +1732,6 @@ let check_constraint g (l,d,r) =
 
 let check_constraints c g =
   Constraint.for_all (check_constraint g) c
-
-let check_constraints =
-  if Flags.profile then
-    let key = Profile.declare_profile "check_constraints" in
-      Profile.profile2 key check_constraints
-  else check_constraints
 
 let enforce_univ_constraint (u,d,v) =
   match d with
@@ -1899,40 +1744,9 @@ let subst_univs_constraints subst csts =
     (fun c -> Option.fold_right enforce_univ_constraint (subst_univs_constraint subst c))
     csts Constraint.empty 
 
-(* let subst_univs_constraints_key = Profile.declare_profile "subst_univs_constraints";; *)
-(* let subst_univs_constraints = *)
-(*   Profile.profile2 subst_univs_constraints_key subst_univs_constraints *)
-
-let subst_univs_universe_constraints subst csts =
-  UniverseConstraints.fold 
-    (fun c -> Option.fold_right UniverseConstraints.add (subst_univs_universe_constraint subst c))
-    csts UniverseConstraints.empty 
-
-(* let subst_univs_universe_constraints_key = Profile.declare_profile "subst_univs_universe_constraints";; *)
-(* let subst_univs_universe_constraints = *)
-(*   Profile.profile2 subst_univs_universe_constraints_key subst_univs_universe_constraints *)
-
 (** Substitute instance inst for ctx in csts *)
 let instantiate_univ_context subst (_, csts) = 
   subst_univs_level_constraints subst csts
-
-let check_consistent_constraints (ctx,cstrs) cstrs' =
-  (* TODO *) ()
-
-let to_constraints g s = 
-  let tr (x,d,y) acc =
-    let add l d l' acc = Constraint.add (l,UniverseConstraints.tr_dir d,l') acc in
-      match Universe.level x, d, Universe.level y with
-      | Some l, (ULe | UEq | ULub), Some l' -> add l d l' acc
-      | _, ULe, Some l' -> enforce_leq x y acc
-      | _, ULub, _ -> acc
-      | _, d, _ -> 
-	let f = if d == ULe then check_leq else check_eq in
-	  if f g x y then acc else 
-	    raise (Invalid_argument 
-		   "to_constraints: non-trivial algebraic constraint between universes")
-  in UniverseConstraints.fold tr s Constraint.empty
-     
 
 (* Normalization *)
 
@@ -2288,3 +2102,30 @@ let explain_universe_inconsistency (o,u,v,p) =
 let compare_levels = Level.compare
 let eq_levels = Level.equal
 let equal_universes = Universe.equal
+
+
+(*
+
+let merge_constraints = 
+  if Flags.profile then 
+    let key = Profile.declare_profile "merge_constraints" in
+      Profile.profile2 key merge_constraints
+  else merge_constraints
+let check_constraints =
+  if Flags.profile then
+    let key = Profile.declare_profile "check_constraints" in
+      Profile.profile2 key check_constraints
+  else check_constraints
+
+let check_eq = 
+  if Flags.profile then
+    let check_eq_key = Profile.declare_profile "check_eq" in
+      Profile.profile3 check_eq_key check_eq
+  else check_eq
+
+let check_leq = 
+  if Flags.profile then 
+    let check_leq_key = Profile.declare_profile "check_leq" in
+      Profile.profile3 check_leq_key check_leq
+  else check_leq
+*)
