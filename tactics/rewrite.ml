@@ -295,7 +295,8 @@ end) = struct
     let ap = is_Prop ta and bp = is_Prop tb in
       if ap && bp then app_poly env evd impl [| a; b |], unfold_impl
       else if ap then (* Domain in Prop, CoDomain in Type *)
-	(evd, mkProd (Anonymous, a, b)), (fun x -> x)
+	(app_poly env evd arrow [| a; b |]), unfold_impl
+	(* (evd, mkProd (Anonymous, a, b)), (fun x -> x) *)
       else if bp then (* Dummy forall *)
 	(app_poly env evd coq_all [| a; mkLambda (Anonymous, a, b) |]), unfold_forall
       else (* None in Prop, use arrow *)

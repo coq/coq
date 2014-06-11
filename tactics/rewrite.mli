@@ -28,7 +28,24 @@ type ('constr,'redexpr) strategy_ast =
   | StratEval of 'redexpr 
   | StratFold of 'constr
 
-type strategy
+type rewrite_proof = 
+  | RewPrf of constr * constr
+  | RewCast of cast_kind
+
+type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
+
+type rewrite_result_info = {
+  rew_car : constr;
+  rew_from : constr;
+  rew_to : constr;
+  rew_prf : rewrite_proof;
+  rew_evars : evars;
+}
+
+type rewrite_result = rewrite_result_info option
+
+type strategy = Environ.env -> Id.t list -> constr -> types ->
+  (bool (* prop *) * constr option) -> evars -> rewrite_result option
 
 val strategy_of_ast : (glob_constr_and_expr, raw_red_expr) strategy_ast -> strategy
 
@@ -78,3 +95,14 @@ val setoid_symmetry_in : Id.t -> unit Proofview.tactic
 val setoid_reflexivity : unit Proofview.tactic
 
 val setoid_transitivity : constr option -> unit Proofview.tactic
+
+
+val apply_strategy :
+  strategy ->
+  Environ.env ->
+  Names.Id.t list ->
+  Term.constr ->
+  bool * Term.constr ->
+  evars ->
+  (rewrite_proof * evars * Term.constr * Term.constr * Term.constr)
+    option option
