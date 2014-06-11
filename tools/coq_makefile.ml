@@ -94,7 +94,7 @@ let is_prefix dir1 dir2 =
 let physical_dir_of_logical_dir ldir =
   let le = String.length ldir - 1 in
   let pdir = if ldir.[le] = '.' then String.sub ldir 0 (le - 1) else String.copy ldir in
-  for i = 0 to le - 1 do
+  for i = 0 to String.length pdir - 1 do
     if pdir.[i] = '.' then pdir.[i] <- '/';
   done;
   pdir
