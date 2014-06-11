@@ -3828,7 +3828,8 @@ let abstract_subproof id gk tac =
   let evd = Evd.merge_universe_subst evd subst in
   let open Declareops in
   let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
-  let effs = cons_side_effects eff no_seff in
+  let effs = cons_side_effects eff
+    Entries.(snd (Future.force const.const_entry_body)) in
   let args = List.rev (instance_from_named_context sign) in
   let solve = Proofview.V82.tclEVARS evd <*>
     Proofview.tclEFFECTS effs <*> new_exact_no_check (applist (lem, args)) in
