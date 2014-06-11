@@ -141,12 +141,12 @@ module Cst_stack = struct
 - constant applied to params = term in head applied to args
 - there is at most one arguments with an empty list of args, it must be the first.
 - in args, the int represents the indice of the first arg to consider *)
-  type 'a t = ('a * 'a list * (int * 'a array) list)  list
+  type t = (constr * constr list * (int * constr array) list)  list
 
   let empty = []
 
   let sanity x y =
-    assert (Constr.equal x y)
+    assert(Term.eq_constr x y)
 
   let drop_useless = function
     | _ :: ((_,_,[])::_ as q) -> q
@@ -158,9 +158,9 @@ module Cst_stack = struct
       | (c,params,((i,t)::q)) when i = pred (Array.length t) ->
 	 let () = sanity h t.(i) in (c, params, q)
       | (c,params,(i,t)::q) ->
-	 let () = sanity h t.(i) in (c, params, (succ i,t)::q)
- in
-    drop_useless (List.map append2cst cst_l)
+	let () = sanity h t.(i) in (c, params, (succ i,t)::q)
+    in
+      drop_useless (List.map append2cst cst_l)
 
   let add_args cl =
     List.map (fun (a,b,args) -> (a,b,(0,cl)::args))
@@ -202,10 +202,10 @@ sig
   val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array * 'a Cst_stack.t
+  | Case of case_info * 'a * 'a array * Cst_stack.t
   | Proj of int * int * projection
-  | Fix of fixpoint * 'a t * 'a Cst_stack.t
-  | Cst of pconstant * int * int list * 'a t * 'a Cst_stack.t
+  | Fix of fixpoint * 'a t * Cst_stack.t
+  | Cst of pconstant * int * int list * 'a t * Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
@@ -230,7 +230,7 @@ sig
   val args_size : 'a t -> int
   val tail : int -> 'a t -> 'a t
   val nth : 'a t -> int -> 'a
-  val best_state : constr * constr t -> constr Cst_stack.t -> constr * constr t
+  val best_state : constr * constr t -> Cst_stack.t -> constr * constr t
   val zip : ?refold:bool -> constr * constr t -> constr
 end =
 struct
@@ -251,10 +251,10 @@ struct
 
   type 'a member =
   | App of 'a app_node
-  | Case of Term.case_info * 'a * 'a array * 'a Cst_stack.t
+  | Case of Term.case_info * 'a * 'a array * Cst_stack.t
   | Proj of int * int * projection
-  | Fix of fixpoint * 'a t * 'a Cst_stack.t
-  | Cst of pconstant * int * int list * 'a t * 'a Cst_stack.t
+  | Fix of fixpoint * 'a t * Cst_stack.t
+  | Cst of pconstant * int * int list * 'a t * Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
@@ -590,9 +590,9 @@ let apply_subst recfun env cst_l t stack =
       aux (h::env) (Cst_stack.add_param h cst_l) c stacktl
     | _ -> recfun cst_l (substl env t, stack)
   in aux env cst_l t stack
-
+    
 let stacklam recfun env t stack =
-apply_subst (fun _ -> recfun) env Cst_stack.empty t stack
+  apply_subst (fun _ -> recfun) env Cst_stack.empty t stack
 
 let beta_applist (c,l) =
   stacklam Stack.zip [] c (Stack.append_app_list l Stack.empty)
@@ -784,7 +784,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
     | Proj (p, c) when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST p) ->
       (match (lookup_constant p env).Declarations.const_proj with
       | None -> assert false
-      | Some pb -> whrec cst_l (c, Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p)
+      | Some pb -> whrec Cst_stack.empty(* cst_l *) (c, Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p)
         :: stack))
     | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
       apply_subst whrec [b] cst_l c stack
@@ -1385,7 +1385,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
 	  (Closure.RedFlags.red_add_transparent betadeltaiota ts) env sigma (t,args) in
 	if isConstruct t_o then
 	  if Closure.is_transparent_constant ts p then
-	    whrec csts_o (Stack.nth stack_o (n+m), stack'')
+	    whrec Cst_stack.empty (* csts_o *) (Stack.nth stack_o (n+m), stack'')
 	  else (* Won't unfold *) (whd_betaiota_state sigma (t_o, stack_o@stack'),csts')
 	else s,csts'
       |_, ((Stack.App _| Stack.Shift _|Stack.Update _|Stack.Cst _) :: _|[]) -> s,csts'

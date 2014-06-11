@@ -53,6 +53,8 @@
 #install_printer  (* type_judgement *) pptype;;
 #install_printer  (* judgement *) ppj;;
 
+#install_printer  (* judgement *) pp_cst_stack_t;;
+
 (*#install_printer  (* hint_db *)  print_hint_db;;*)
 (*#install_printer  (* hints_path *)  pphintspath;;*)
 #install_printer  (* goal *)  ppgoal;;

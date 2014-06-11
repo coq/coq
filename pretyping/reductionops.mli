@@ -34,14 +34,14 @@ end
     cst applied to params must convertible to term of the state applied to args
 *)
 module Cst_stack : sig
-  type 'a t
-  val empty : 'a t
-  val add_param : constr -> constr t -> constr t
-  val add_args : 'a array -> 'a t -> 'a t
-  val add_cst : 'a -> 'a t -> 'a t
-  val best_cst : 'a t -> ('a * 'a list) option
-  val best_replace : constr -> constr t -> constr -> constr
-  val pr : constr t -> Pp.std_ppcmds
+  type t
+  val empty : t
+  val add_param : constr -> t -> t
+  val add_args : constr array -> t -> t
+  val add_cst : constr -> t -> t
+  val best_cst : t -> (constr * constr list) option
+  val best_replace : constr -> t -> constr -> constr
+  val pr : t -> Pp.std_ppcmds
 end
 
 
@@ -52,11 +52,11 @@ module Stack : sig
 
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array * 'a Cst_stack.t
+  | Case of case_info * 'a * 'a array * Cst_stack.t
   | Proj of int * int * projection
-  | Fix of fixpoint * 'a t * 'a Cst_stack.t
+  | Fix of fixpoint * 'a t * Cst_stack.t
   | Cst of pconstant * int (** current foccussed arg *) * int list (** remaining args *)
-    * 'a t * 'a Cst_stack.t
+    * 'a t * Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
@@ -92,7 +92,7 @@ module Stack : sig
   val tail : int -> 'a t -> 'a t
   val nth : 'a t -> int -> 'a
 
-  val best_state : constr * constr t -> constr Cst_stack.t -> constr * constr t
+  val best_state : constr * constr t -> Cst_stack.t -> constr * constr t
   val zip : ?refold:bool -> constr * constr t -> constr
 end
 
@@ -130,8 +130,8 @@ val stack_reduction_of_reduction :
 i*)
 val stacklam : (state -> 'a) -> constr list -> constr -> constr Stack.t -> 'a
 
-val whd_state_gen : ?csts:constr Cst_stack.t -> bool -> Closure.RedFlags.reds ->
-  Environ.env -> Evd.evar_map -> state -> state * constr Cst_stack.t
+val whd_state_gen : ?csts:Cst_stack.t -> bool -> Closure.RedFlags.reds ->
+  Environ.env -> Evd.evar_map -> state -> state * Cst_stack.t
 
 val iterate_whd_gen : bool -> Closure.RedFlags.reds ->
   Environ.env -> Evd.evar_map -> Term.constr -> Term.constr
@@ -277,8 +277,8 @@ val head_unfold_under_prod : transparent_state -> reduction_function
 (** {6 Heuristic for Conversion with Evar } *)
 
 val whd_betaiota_deltazeta_for_iota_state :
-  transparent_state -> Environ.env -> Evd.evar_map -> constr Cst_stack.t -> state ->
-  state * constr Cst_stack.t
+  transparent_state -> Environ.env -> Evd.evar_map -> Cst_stack.t -> state ->
+  state * Cst_stack.t
 
 (** {6 Meta-related reduction functions } *)
 val meta_instance : evar_map -> constr freelisted -> constr
