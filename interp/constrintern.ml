@@ -1496,7 +1496,7 @@ let internalize globalenv env allow_patvar lvar c =
 	let cargs =
 	  sort_fields true loc fs
 	    (fun k l -> CHole (loc, Some (Evar_kinds.QuestionMark (Evar_kinds.Define true)), None) :: l)
-	  in
+	in
 	begin
 	  match cargs with
 	    | None -> user_err_loc (loc, "intern", str"No constructor inference.")

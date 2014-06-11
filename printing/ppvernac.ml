@@ -728,7 +728,7 @@ let rec pr_vernac = function
        str":" ++ spc () ++
        pr_constr cl ++ pr_priority pri ++
 	 (match props with
-	  | Some p -> spc () ++ str":=" ++ spc () ++ pr_constr p
+	  | Some (_,p) -> spc () ++ str":=" ++ spc () ++ pr_constr p
 	  | None -> mt()))
 
  | VernacContext l ->

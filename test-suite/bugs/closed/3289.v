@@ -11,7 +11,13 @@ Instance contr_unit : Contr Unit | 0 :=
         contr := fun t : Unit => I
       |} in x. (* success *)
 
-Fail Instance contr_unit' : Contr Unit | 0 :=
+Instance contr_internal_unit' : Contr_internal Unit | 0 :=
+  {|
+    center := tt;
+    contr := fun t : Unit => I
+  |}.
+
+Instance contr_unit' : Contr Unit | 0 :=
   {|
     center := tt;
     contr := fun t : Unit => I

@@ -593,8 +593,8 @@ GEXTEND Gram
       | IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ;
-	 props = [ ":="; "{"; r = record_declaration; "}" -> Some r |
-	     ":="; c = lconstr -> Some c | -> None ] ->
+	 props = [ ":="; "{"; r = record_declaration; "}" -> Some (true,r) |
+	     ":="; c = lconstr -> Some (false,c) | -> None ] ->
 	   VernacInstance (false,snd namesup,(fst namesup,expl,t),props,pri)
 
       | IDENT "Existing"; IDENT "Instance"; id = global;

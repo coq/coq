@@ -187,11 +187,11 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
     else (
       let props =
 	match props with
-	| Some (CRecord (loc, _, fs)) ->
+	| Some (true, CRecord (loc, _, fs)) ->
 	    if List.length fs > List.length k.cl_props then
 	      mismatched_props env' (List.map snd fs) k.cl_props;
 	    Some (Inl fs)
-	| Some t -> Some (Inr t)
+	| Some (_, t) -> Some (Inr t)
 	| None -> 
 	    if Flags.is_program_mode () then Some (Inl [])
 	    else None
