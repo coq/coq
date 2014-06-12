@@ -831,6 +831,13 @@ TACTIC EXTEND is_fix
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a fix definition") ]
 END;;
 
+TACTIC EXTEND is_cofix
+| [ "is_cofix" constr(x) ] ->
+  [ match kind_of_term x with
+    | CoFix _ -> Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a cofix definition") ]
+END;;
+
 (* Command to grab the evars left unresolved at the end of a proof. *)
 (* spiwack: I put it in extratactics because it is somewhat tied with
    the semantics of the LCF-style tactics, hence with the classic tactic
