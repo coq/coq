@@ -1,24 +1,21 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V8.4 SYSTEM
+            INSTALLATION PROCEDURES FOR THE COQ V8.5 SYSTEM
             -----------------------------------------------
 
 
 WHAT DO YOU NEED ?
 ==================
 
-   Coq is designed to work on computers equipped with a POSIX (Unix or
-   a clone) operating system. It also works under Microsoft Windows
-   (see INSTALL.win); for a precompiled MacOS X package, see
-   INSTALL.macosx.
+   Coq is designed to work on computers equipped with a POSIX (Unix or a
+   clone) operating system. It also works under Microsoft Windows (see
+   INSTALL.win); for a MacOS X bundle application, see INSTALL.macosx.
 
-   Coq is known to be actively used under GNU/Linux (i386, amd64 and
-   ppc) and FreeBSD. Automated tests are run under many, many
-   different architectures under GNU/Linux.
+   Coq is known to be actively used under GNU/Linux (i386 and amd64) and
+   FreeBSD. Automated tests are run under many, many different architectures
+   under GNU/Linux.
 
-   Naturally, Coq will run faster on an architecture where OCaml can
-   compile to native code, rather than only bytecode. At time of
-   writing, that is IA32, PowerPC, AMD64, Alpha, Sparc, Mips, IA64,
-   HPPA and StrongArm. See
+   Naturally, Coq will run faster on an architecture where OCaml can compile
+   to native code, rather than only bytecode.  See
    http://caml.inria.fr/ocaml/portability.en.html for details.
 
 
@@ -27,50 +24,36 @@ WHAT DO YOU NEED ?
    version suits you, follow the usual procedure for your OS to
    install it. E.g.:
 
-   - Debian GNU/Linux (or Debian GNU/k*BSD or ...):
+   - Debian GNU/Linux derivatives (or Debian GNU/k*BSD or ...):
 
      aptitude install coq
 
-   - Gentoo GNU/Linux: 
+   - Gentoo GNU/Linux:
 
      emerge sci-mathematics/coq
 
-   - Mandriva GNU/Linux:
+   - Fedora GNU/Linux:
 
      urpmi coq
 
-   Should you need or prefer to compile Coq V8.4 yourself, you need:
+   - MacOS:
+
+     port install coq
+
+   Should you need or prefer to compile Coq V8.5 yourself, you need:
 
      - Objective Caml version 3.12.1 or later
        (available at http://caml.inria.fr/)
 
-     - Camlp5 (version <= 4.08, or 5.* transitional)
+     - Camlp5 (version >= 6.06) (Coq compiles with Camlp4 but might be less
+       well supported)
 
      - GNU Make version 3.81 or later
-       (
-	available at http://www.gnu.org/software/make/, but also a
-        standard or optional add-on part to most Unices and Unix
-        clones, sometimes under the name "gmake".
-
-	If a new enough version is not included in your system, nor
-        easily available as an add-on, this should get you a working
-        make:
-
-	#Download it (wget is an example, use your favourite FTP or HTTP client)
-	wget http://ftp.gnu.org/pub/gnu/make/make-3.81.tar.bz2
-	bzip2 -cd make-3.81.tar.bz2 | tar x
-	#If you don't have bzip2, you can download the gzipped version instead.
-        cd make-3.81
-        ./configure --prefix=${HOME}
-	make install
-
-	Then, make sure that ${HOME}/bin is first in your $PATH.
-       )
 
      - a C compiler
 
-     - for Coqide, the Lablgtk development files, and the GTK libraries,
-       see INSTALL.ide for more details
+     - for Coqide, the Lablgtk development files, and the GTK libraries
+       incuding gtksourceview, see INSTALL.ide for more details
 
    By FTP, Coq comes as a single compressed tar-file. You have
    probably already decompressed it if you are reading this document.
@@ -98,21 +81,18 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    bigger), you will also need the "ocamlopt" (or its native code version
    "ocamlopt.opt") command.
 
-2- Check that you have Camlp4 installed on your 
-   computer and that the command "camlp4" lies in a directory which
+2- Check that you have Camlp5 (or a supported Camlp4) installed on your
+   computer and that the command "camlp5" lies in a directory which
    is present in your $PATH environment variable path.
-   (You need Camlp4 in both bytecode and native versions if
+   (You need Camlp5/4 in both bytecode and native versions if
    your platform supports it).
 
-   Note: in the latest ocaml distributions, camlp4 comes with ocaml so
-   you do not have to check this point anymore.
-
-3- The uncompression and un-tarring of the distribution file gave birth 
-   to a directory named "coq-8.xx". You can rename this directory and put 
+3- The uncompression and un-tarring of the distribution file gave birth
+   to a directory named "coq-8.xx". You can rename this directory and put
    it wherever you want. Just keep in mind that you will need some spare
-   space during the compilation (reckon on about 50 Mb of disk space
+   space during the compilation (reckon on about 300 Mb of disk space
    for the whole system in native-code compilation). Once installed, the
-   binaries take about 14 Mb, and the library about 9 Mb.
+   binaries take about 30 Mb, and the library about 200 Mb.
 
 4- First you need to configure the system. It is done automatically with
    the command:
@@ -137,7 +117,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 -libdir <dir>                   (default: /usr/local/lib/coq)
         Directory where the Coq standard library will be installed
 
--mandir <dir>                   (default: /usr/local/man)
+-mandir <dir>                   (default: /usr/local/share/man)
         Directory where the Coq manual pages will be installed
 
 -emacslib <dir>			(default: /usr/local/lib/emacs/site-lisp)
@@ -153,7 +133,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
         is not necessary in that case.
 
 -opt
-        Use the ocamlc.opt compiler instead of ocamlc (and ocamlopt.opt 
+        Use the ocamlc.opt compiler instead of ocamlc (and ocamlopt.opt
         compiler instead of ocamlopt). Makes compilation faster (recommended).
 
 -browser <command>
@@ -167,7 +147,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    to compile Coq in Objective Caml bytecode (and native-code if supported).
 
    This will compile the entire system. This phase can take more or less time,
-   depending on your architecture and is fairly verbose. 
+   depending on your architecture and is fairly verbose.
 
 6- You can now install the Coq system. Executables, libraries, manual pages
    and emacs mode are copied in some standard places of your system, defined at
@@ -191,12 +171,10 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 INSTALLATION PROCEDURE FOR ADVANCED USERS.
 ==========================================
 
-   If you wish to write tactics (and that really means that you belong
-   to advanced users!) you *must* keep the Coq sources, without cleaning
-   them. Therefore, to avoid a duplication of binaries and library, it is
-   not necessary to do the installation step (6- above).
-   You just have to tell it at configuration step (4- above) with the
-   option -local :
+   If you wish to write plugins you *must* keep the Coq sources, without
+   cleaning them. Therefore, to avoid a duplication of binaries and library,
+   it is not necessary to do the installation step (6- above).  You just have
+   to tell it at configuration step (4- above) with the option -local :
 
 	./configure -local <other options>
 
@@ -219,15 +197,15 @@ THE AVAILABLE COMMANDS.
 =======================
 
    There are two Coq commands:
-	
+
 	coqtop		The Coq toplevel
 	coqc		The Coq compiler
 
-   There are actually two binaries for the interactive system, coqtop.byte
-   and coqtop.opt (respectively bytecode and native code versions of Coq). 
-   coqtop is a link to the fastest version, i.e. coqtop.opt if any, and
-   coqtop.byte otherwise. coqc also invokes the fastest version of Coq.
-   Options -opt and -byte to coqtop and coqc selects a particular binary.
+   Under architecture where ocamlopt is available, there are actually two
+   binaries for the interactive system, coqtop.byte and coqtop (respectively
+   bytecode and native code versions of Coq).  coqtop is a link to coqtop.byte
+   otherwise. coqc also invokes the fastest version of Coq.  Options -opt and
+   -byte to coqtop and coqc selects a particular binary.
 
     * `coqtop' launches Coq in the interactive mode. By default it loads
       basic logical definitions and tactics from the Init directory.
@@ -237,24 +215,24 @@ THE AVAILABLE COMMANDS.
 
 		coqc foo.v
 
-      It will produce a file foo.vo, that you can now load through the Coq 
-      command "Require". 
+      It will produce a file foo.vo, that you can now load through the Coq
+      command "Require".
 
    A detailed description of these commands and of their options is given
    in the Reference Manual (which you can get by FTP, in the doc/
    directory, or read online on http://coq.inria.fr/doc/)
    and in the corresponding manual pages.
 
-   There is also a tutorial and a FAQ; see http://coq.inria.fr/doc1-eng.html
+   There is also a tutorial and a FAQ; see http://coq.inria.fr/getting-started
 
 
 COMPILING FOR DIFFERENT ARCHITECTURES.
 ======================================
 
-   This section explains how to compile Coq for several architecture,
-   sharing the same sources. The important fact is that some files are 
-   architecture dependent (.cmx, .o and executable  files for instance)
-   but others are not (.cmo and .vo). Consequently, you can :
+   This section explains how to compile Coq for several architecture, sharing
+   the same sources. The important fact is that some files are architecture
+   dependent (.cmx, .o and executable files for instance) but others are not
+   (.cmo and .vo). Consequently, you can :
 
    o  save some time during compilation by not cleaning the architecture
       independent files;
