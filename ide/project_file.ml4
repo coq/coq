@@ -71,6 +71,10 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     in
     process_cmd_line orig_dir (project_file,makefile,install,opt) l r
   | "-custom" :: com :: dependencies :: file :: r ->
+    Pp.msg_warning (Pp.app
+    (Pp.str "Please now use \"-extra[-phony] result deps command\" instead of \"-custom command deps result\".")
+    (Pp.pr_arg Pp.str "It follows makefile target declaration order and has a clearer semantic.")
+    );
     process_cmd_line orig_dir opts (Special (file,dependencies,false,com) :: l) r
   | "-extra" :: file :: dependencies :: com :: r ->
     process_cmd_line orig_dir opts (Special (file,dependencies,false,com) :: l) r
@@ -80,7 +84,7 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     process_cmd_line orig_dir opts ((Include (CUnix.correct_path d orig_dir)) :: l) r
   | "-R" :: p :: lp :: r ->
     process_cmd_line orig_dir opts (RInclude (CUnix.correct_path p orig_dir,lp) :: l) r
-  | ("-I"|"-custom") :: _ ->
+  | ("-R"|"-I"|"-custom"|"-extra"|"-extra-phony") :: _ ->
     raise Parsing_error
   | "-f" :: file :: r ->
     let file = CUnix.remove_path_dot (CUnix.correct_path file orig_dir) in

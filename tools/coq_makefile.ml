@@ -48,18 +48,26 @@ let section s =
 let usage () =
   output_string stderr "Usage summary:
 
-coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ... [file.mllib]
-  ... [-custom command dependencies file] ... [-I dir] ... [-R physicalpath
-  logicalpath] ... [VARIABLE = value] ...  [-arg opt] ... [-opt|-byte]
-  [-no-install] [-f file] [-o file] [-h] [--help]
+coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ...
+  [file.ml{lib,pack}] ... [-extra[-phony] result dependencies command]
+  ... [-I dir] ... [-R physicalpath logicalpath] ... [VARIABLE = value]
+  ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]
+  [-h] [--help]
 
 [file.v]: Coq file to be compiled
 [file.ml[i4]?]: Objective Caml file to be compiled
-[file.mllib]: ocamlbuild file that describes a Objective Caml library
+[file.ml{lib,pack}]: ocamlbuild file that describes a Objective Caml
+  library/module
 [subdirectory] : subdirectory that should be \"made\" and has a
   Makefile itself to do so.
-[-custom command dependencies file]: add target \"file\" with command
-  \"command\" and dependencies \"dependencies\"
+[-extra result dependencies command]: add target \"result\" with command
+  \"command\" and dependencies \"dependencies\". If \"result\" is not
+  generic (do not contains a %), \"result\" is built by _make all_ and
+  deleted by _make clean_.
+[-extra-phony result dependencies command]: add a PHONY target \"result\"
+ with command \"command\" and dependencies \"dependencies\". Note that
+ _-extra-phony foo bar \"\"_ is a regular way to add the target \"bar\" as
+ as a dependencies of an already defined target \"foo\".
 [-I dir]: look for Objective Caml dependencies in \"dir\"
 [-R physicalpath logicalpath]: look for Coq dependencies resursively
   starting from \"physicalpath\". The logical path associated to the
@@ -642,7 +650,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
 
 let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
   let other_targets = CList.map_filter
-    (fun (n,_,is_phony,_) -> if is_phony || not (is_genrule n) then Some n else None)
+    (fun (n,_,is_phony,_) -> if not (is_phony || is_genrule n) then Some n else None)
     sps @ sds in
   main_targets vfiles mlfiles other_targets inc;
     print ".PHONY: ";
