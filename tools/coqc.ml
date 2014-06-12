@@ -126,6 +126,7 @@ let parse_args () =
     | "-R" :: s :: "-as" :: t :: rem ->	parse (cfiles,t::"-as"::s::"-R"::args) rem
     | "-R" :: s :: "-as" :: [] -> usage ()
     | "-R" :: s :: t :: rem -> parse (cfiles,t::s::"-R"::args) rem
+    | "-Q" :: s :: t :: rem -> parse (cfiles,t::s::"-Q"::args) rem
     | ("-schedule-vi-checking"
       |"-check-vi-tasks" | "-schedule-vi2vo" as o) :: s :: rem ->
         let nodash, rem =
