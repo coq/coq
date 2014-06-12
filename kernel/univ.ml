@@ -34,9 +34,7 @@ module Uid = struct
 
   let make_maker () =
     let _id = ref ~-1 in
-      ((fun () -> incr _id;!_id),
-        (fun () -> !_id),
-        (fun i -> _id := i))
+    fun () -> incr _id;!_id
 
   let dummy = -1
   let to_int id = id
@@ -44,40 +42,26 @@ end
 
 module Hcons = struct
 
-  module type SA =
-  sig
-    type t
-    val uid : t -> Uid.t
-    val equal : t -> t -> bool
-  end
+  type 'a node = { id : Uid.t; key : int; node : 'a }
 
   module type S =
   sig
-
     type data
-    type t = private { id : Uid.t;
-                        key : int;
-                        node : data }
+    type t = data node
     val make : data -> t
     val node : t -> data
     val hash : t -> int
-    val uid : t -> Uid.t
-    val equal : t -> t -> bool
     val stats : unit -> unit
     val init : unit -> unit
   end
 
   module Make (H : Hashtbl.HashedType) : S with type data = H.t =
   struct
-    let uid_make,_,_ = Uid.make_maker()
+    let uid_make = Uid.make_maker()
     type data = H.t
-    type t = { id : Uid.t;
-                key : int;
-                node : data }
+    type t = data node
     let node t = t.node
-    let uid t = t.id
     let hash t = t.key
-    let equal t1 t2 = t1 == t2
     module WH = Weak.Make( struct
       type _t = t
       type t = _t
@@ -113,16 +97,8 @@ module HList = struct
   module type S = sig
     type elt
     type 'a node = Nil | Cons of elt * 'a
-
-    module rec Node :
-    sig
-      include Hcons.S with type data = Data.t
-    end
-    and Data : sig
-      include Hashtbl.HashedType with type t = Node.t node
-    end
-    type data = Data.t
-    type t = Node.t
+    type t
+    type data = t node
     val hash : t -> int
     val make : data -> t
     val nil : t
@@ -142,12 +118,14 @@ module HList = struct
     val compare : (elt -> elt -> int) -> t -> t -> int
   end
 
-  module Make (H : Hcons.SA) : S with type elt = H.t =
+  module Make (H : Hashtbl.HashedType) : S with type elt = H.t =
   struct
     type elt = H.t
     type 'a node = Nil | Cons of elt * 'a
-    module rec Node : Hcons.S with type data = Data.t = Hcons.Make (Data)
-                              and Data : Hashtbl.HashedType  with type t = Node.t node =
+
+    module rec Node : Hcons.S with type data = Data.t = Hcons.Make(Data)
+
+    and Data : Hashtbl.HashedType  with type t = Node.t node =
     struct
       type t = Node.t node
       let equal x y =
@@ -157,18 +135,18 @@ module HList = struct
         | _ -> false
       let hash = function
         | Nil -> 0
-        | Cons(a,aa) -> 17 + 65599 * (Uid.to_int (H.uid a)) + 491 * (Uid.to_int aa.Node.id)
+        | Cons(a,aa) -> 17 + 65599 * (H.hash a) + 491 * (Uid.to_int aa.Hcons.id)
     end
     
   type data = Data.t
   type t = Node.t
   let make = Node.make
-  let node x = x.Node.node
-  let hash x = x.Node.key
+  let node x = x.Hcons.node
+  let hash x = x.Hcons.key
   let nil = Node.make Nil
 
   let is_nil =
-    function { Node.node = Nil } -> true | _ -> false
+    function { Hcons.node = Nil } -> true | _ -> false
 
   let cons e l =
     Node.make(Cons(e, l))
@@ -179,21 +157,21 @@ module HList = struct
   (*   if sorted then sorted_cons e l else cons e l *)
 
   let fold f l acc =
-    let rec loop acc l = match l.Node.node with
+    let rec loop acc l = match l.Hcons.node with
       | Nil -> acc
       | Cons (a, aa) -> loop (f a acc) aa
     in
       loop acc l
 
   let map f l  =
-    let rec loop l = match l.Node.node with
+    let rec loop l = match l.Hcons.node with
       | Nil -> l
       | Cons(a, aa) -> cons (f a) (loop aa)
     in
       loop l
 
   let smartmap f l =
-    let rec loop l = match l.Node.node with
+    let rec loop l = match l.Hcons.node with
       | Nil -> l
       | Cons (a, aa) -> 
         let a' = f a in 
@@ -205,21 +183,21 @@ module HList = struct
     in loop l
 
   let exists f l =
-    let rec loop l = match l.Node.node with
+    let rec loop l = match l.Hcons.node with
       | Nil -> false
       | Cons(a,aa) -> f a || loop aa
     in
       loop l
 
   let for_all f l =
-    let rec loop l = match l.Node.node with
+    let rec loop l = match l.Hcons.node with
       | Nil -> true
       | Cons(a,aa) -> f a && loop aa
     in
       loop l
 
   let for_all2 f l l' =
-    let rec loop l l' = match l.Node.node, l'.Node.node with
+    let rec loop l l' = match l.Hcons.node, l'.Hcons.node with
       | Nil, Nil -> true
       | Cons(a,aa), Cons(b,bb) -> f a b && loop aa bb
       | _, _ -> false
@@ -227,14 +205,14 @@ module HList = struct
       loop l l'
 
   let to_list l =
-    let rec loop l = match l.Node.node with
+    let rec loop l = match l.Hcons.node with
       | Nil -> []
       | Cons(a,aa) -> a :: loop aa
     in
       loop l
       
   let remove x l =
-    let rec loop l = match l.Node.node with
+    let rec loop l = match l.Hcons.node with
       | Nil -> l
       | Cons(a,aa) -> 
         if H.equal a x then aa
@@ -243,7 +221,7 @@ module HList = struct
       loop l
 
   let rec mem e l =
-    match l.Node.node with
+    match l.Hcons.node with
     | Nil -> false
     | Cons (x, ll) -> x == e || mem e ll
 
@@ -511,7 +489,6 @@ struct
       let make =
 	Hashcons.simple_hcons generate Level.hcons
       let hash = ExprHash.hash
-      let uid = hash
       let equal x y = x == y ||
 	(let (u,n) = x and (v,n') = y in
 	   Int.equal n n' && Level.equal u v)
@@ -1797,9 +1774,6 @@ module Instance : sig
     val of_array : Level.t array -> t
     val to_array : t -> Level.t array
 
-    val of_list : Level.t list -> t
-    val to_list : t -> Level.t list
-
     val append : t -> t -> t
     val equal : t -> t -> bool
     val hcons : t -> t
@@ -1879,10 +1853,6 @@ struct
 
   let to_array a = a
 
-  let of_list a = of_array (Array.of_list a)
-  let to_list = Array.to_list
-
-    
   let eqeq = HInstancestruct.equal
 
   let subst_fn fn t = 
