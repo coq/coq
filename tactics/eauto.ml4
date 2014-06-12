@@ -35,7 +35,7 @@ let eauto_unif_flags = { auto_unif_flags with Unification.modulo_delta = full_tr
 let e_give_exact ?(flags=eauto_unif_flags) c gl = let t1 = (pf_type_of gl c) and t2 = pf_concl gl in
   if occur_existential t1 || occur_existential t2 then
      tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl
-  else exact_check c gl
+  else Proofview.V82.of_tactic (exact_check c) gl
 
 let assumption id = e_give_exact (mkVar id)
 

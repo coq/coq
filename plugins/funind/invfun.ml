@@ -427,7 +427,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	    (* replacing [res] with its value *)
 	    observe_tac "rewriting res value" (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar hres)));
 	    (* Conclusion *)
-	    observe_tac "exact" (fun g -> exact_check (app_constructor g) g)  
+	    observe_tac "exact" (fun g -> Proofview.V82.of_tactic (exact_check (app_constructor g)) g)  
 	  ]
       )
 	g
@@ -478,7 +478,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	observe_tac "principle" (Proofview.V82.of_tactic (assert_by
 	  (Name principle_id)
 	  princ_type
-	  (Proofview.V82.tactic (exact_check f_principle))));
+	  (exact_check f_principle)));
 	observe_tac "intro args_names" (tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) args_names);
 	(* observe_tac "titi" (pose_proof (Name (Id.of_string "__")) (Reductionops.nf_beta Evd.empty  ((mkApp (mkVar principle_id,Array.of_list bindings))))); *)
 	observe_tac "idtac" tclIDTAC;

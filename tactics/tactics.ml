@@ -129,18 +129,18 @@ let convert_concl   = Tacmach.convert_concl
 let convert_hyp     = Tacmach.convert_hyp
 let thin_body       = Tacmach.thin_body
 
-let convert_gen pb x y gl =
-  try tclEVARS (pf_apply Evd.conversion gl pb x y) gl
-  with Reduction.NotConvertible ->
-    tclFAIL_lazy 0 (lazy (str"Not convertible"))
- (* Adding more information in this message, even under the lazy, can result in huge *)
- (* blowups, time and spacewise... (see autos used in DoubleCyclic.) 2.3s against 15s. *)
- (* 			    ++ Printer.pr_constr_env env x ++  *)
- (* 			    str" and " ++ Printer.pr_constr_env env y)) *)
-        gl
+let convert_gen pb x y =
+  Proofview.Goal.raw_enter begin fun gl ->
+    try
+      let sigma = Tacmach.New.pf_apply Evd.conversion gl pb x y in
+      Proofview.V82.tclEVARS sigma
+    with (* Reduction.NotConvertible *) _ ->
+      (** FIXME: Sometimes an anomaly is raised from conversion *)
+      Tacticals.New.tclFAIL 0 (str "Not convertible")
+end
 
-let convert = convert_gen Reduction.CONV
-let convert_leq = convert_gen Reduction.CUMUL
+let convert x y = convert_gen Reduction.CONV x y
+let convert_leq x y = convert_gen Reduction.CUMUL x y
 
 let error_clear_dependency env id = function
   | Evarutil.OccurHypInSimpleClause None ->
@@ -1194,15 +1194,18 @@ let cut_and_apply c =
 (* let refine_no_checkkey = Profile.declare_profile "refine_no_check";; *)
 (* let refine_no_check = Profile.profile2 refine_no_checkkey refine_no_check *)
 
-let exact_check c gl =
-  let concl = (pf_concl gl) in
-  let ct = pf_type_of gl c in
-    try tclTHEN (convert_leq ct concl) (refine_no_check c) gl
-    with _ -> error "Not an exact proof." (*FIXME error handling here not the best *)
-
-let exact_no_check = refine_no_check
 let new_exact_no_check c =
   Proofview.Refine.refine (fun h -> (h, c))
+
+let exact_check c =
+  Proofview.Goal.raw_enter begin fun gl ->
+  (** We do not need to normalize the goal because we just check convertibility *)
+  let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+  let ct = Tacmach.New.pf_type_of gl c in
+  Tacticals.New.tclTHEN (convert_leq ct concl) (new_exact_no_check c)
+  end
+
+let exact_no_check = refine_no_check
 
 let vm_cast_no_check c gl =
   let concl = pf_concl gl in

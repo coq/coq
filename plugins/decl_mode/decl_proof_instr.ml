@@ -437,7 +437,7 @@ let thus_tac c ctyp submetas gls =
     with Not_found ->
       error "I could not relate this statement to the thesis." in
   if List.is_empty list then
-    exact_check proof gls
+    Proofview.V82.of_tactic (exact_check proof) gls
   else
     let refiner = concl_refiner list proof gls in
       Tactics.refine refiner gls
@@ -534,14 +534,14 @@ let instr_rew _thus rew_side cut gls0 =
 	    tclTHENS (Proofview.V82.of_tactic (assert_postpone c_id new_eq))
 	      [tclTHEN tcl_erase_info
 		 (tclTHENS (Proofview.V82.of_tactic (transitivity lhs))
-		    [just_tac;exact_check (mkVar last_id)]);
+		    [just_tac;Proofview.V82.of_tactic (exact_check (mkVar last_id))]);
 	       thus_tac new_eq] gls0
       | Rhs ->
 	  let new_eq = mkApp(Lazy.force _eq,[|typ;lhs;cut.cut_stat.st_it|]) in
 	    tclTHENS (Proofview.V82.of_tactic (assert_postpone c_id new_eq))
 	      [tclTHEN tcl_erase_info
 		 (tclTHENS (Proofview.V82.of_tactic (transitivity rhs))
-		    [exact_check (mkVar last_id);just_tac]);
+		    [Proofview.V82.of_tactic (exact_check (mkVar last_id));just_tac]);
 	       thus_tac new_eq] gls0
 
 

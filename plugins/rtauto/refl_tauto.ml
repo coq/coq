@@ -313,7 +313,7 @@ let rtauto_tac gls=
   let tac_start_time = System.get_time () in
   let result=
     if !check then
-      Tactics.exact_check term gls
+      Proofview.V82.of_tactic (Tactics.exact_check term) gls
     else
       Tactics.exact_no_check term gls in
   let tac_end_time = System.get_time () in

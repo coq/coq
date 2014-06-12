@@ -249,28 +249,23 @@ let app_global f args k =
 let new_app_global f args k = 
   Tacticals.New.pf_constr_of_global f (fun fc -> k (mkApp (fc, args)))
 
-let new_exact_check c = Proofview.V82.tactic (exact_check c)
 let new_refine c = Proofview.V82.tactic (refine c)
 
 let rec proof_tac p : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
-  let type_of = Tacmach.New.pf_type_of gl in
+  let type_of t = Tacmach.New.pf_type_of gl t in
   try (* type_of can raise exceptions *)
   match p.p_rule with
-      Ax c -> new_exact_check c
+      Ax c -> exact_check c
     | SymAx c ->
-        Proofview.V82.tactic begin fun gls ->
 	let l=constr_of_term p.p_lhs and
 	    r=constr_of_term p.p_rhs in
-        let typ = (* Termops.refresh_universes *)pf_type_of gls l in
-	  (app_global _sym_eq [|typ;r;l;c|] exact_check) gls
-        end
+        let typ = (* Termops.refresh_universes *) type_of l in
+        new_app_global _sym_eq [|typ;r;l;c|] exact_check
     | Refl t ->
-        Proofview.V82.tactic begin fun gls ->
 	let lr = constr_of_term t in
-	let typ = (* Termops.refresh_universes *) (pf_type_of gls lr) in
-	  (app_global _refl_equal [|typ;constr_of_term t|] exact_check) gls
-        end
+	let typ = (* Termops.refresh_universes *) type_of lr in
+        new_app_global _refl_equal [|typ;constr_of_term t|] exact_check
     | Trans (p1,p2)->
 	let t1 = constr_of_term p1.p_lhs and
 	    t2 = constr_of_term p1.p_rhs and
@@ -339,7 +334,7 @@ let refute_tac c t1 t2 p =
 
 let refine_exact_check c gl =
   let evm, _ = pf_apply e_type_of gl c in
-    Tacticals.tclTHEN (Refiner.tclEVARS evm) (exact_check c) gl
+    Tacticals.tclTHEN (Refiner.tclEVARS evm) (Proofview.V82.of_tactic (exact_check c)) gl
 
 let convert_to_goal_tac c t1 t2 p = 
   Proofview.Goal.enter begin fun gl ->

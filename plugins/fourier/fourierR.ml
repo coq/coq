@@ -422,18 +422,16 @@ let my_cut c gl=
 
 let exact = exact_check;;
 
-let tac_use h = match h.htype with
-               "Rlt" -> exact h.hname
-              |"Rle" -> exact h.hname
-              |"Rgt" -> (tclTHEN (apply (get coq_Rfourier_gt_to_lt))
-                                (exact h.hname))
-              |"Rge" -> (tclTHEN (apply (get coq_Rfourier_ge_to_le))
-                                (exact h.hname))
-              |"eqTLR" -> (tclTHEN (apply (get coq_Rfourier_eqLR_to_le))
-                                (exact h.hname))
-              |"eqTRL" -> (tclTHEN (apply (get coq_Rfourier_eqRL_to_le))
-                                (exact h.hname))
-              |_->assert false
+let tac_use h =
+  let tac = Proofview.V82.of_tactic (exact h.hname) in
+  match h.htype with
+    "Rlt" -> tac
+  |"Rle" -> tac
+  |"Rgt" -> (tclTHEN (apply (get coq_Rfourier_gt_to_lt)) tac)
+  |"Rge" -> (tclTHEN (apply (get coq_Rfourier_ge_to_le)) tac)
+  |"eqTLR" -> (tclTHEN (apply (get coq_Rfourier_eqLR_to_le)) tac)
+  |"eqTRL" -> (tclTHEN (apply (get coq_Rfourier_eqRL_to_le)) tac)
+  |_->assert false
 ;;
 
 (*

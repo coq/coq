@@ -1172,11 +1172,12 @@ let exact poly (c,clenv) =
     else 
       let ctx = Evd.evar_universe_context clenv.evd in
 	ctx, c
-  in 
-    fun gl ->
-      tclTHEN (Refiner.tclEVARS (Evd.merge_universe_context (project gl) ctx)) 
-	(exact_check c') gl
-    
+  in
+  Proofview.Goal.raw_enter begin fun gl ->
+    let sigma = Evd.merge_universe_context (Proofview.Goal.sigma gl) ctx in
+    Tacticals.New.tclTHEN (Proofview.V82.tclEVARS sigma) (exact_check c')
+  end
+
 (* Util *)
 
 let expand_constructor_hints env sigma lems =
@@ -1465,7 +1466,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) 
     match t with
     | Res_pf (c,cl) -> Proofview.V82.tactic (unify_resolve_gen poly flags (c,cl))
     | ERes_pf _ -> Proofview.V82.tactic (fun gl -> error "eres_pf")
-    | Give_exact (c, cl)  -> Proofview.V82.tactic (exact poly (c, cl))
+    | Give_exact (c, cl)  -> exact poly (c, cl)
     | Res_pf_THEN_trivial_fail (c,cl) ->
       Tacticals.New.tclTHEN
         (Proofview.V82.tactic (unify_resolve_gen poly flags (c,cl)))

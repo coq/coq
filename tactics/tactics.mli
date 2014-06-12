@@ -45,8 +45,8 @@ val fix             : Id.t option -> int -> tactic
 val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> tactic
 val cofix           : Id.t option -> tactic
 
-val convert         : constr -> constr -> tactic
-val convert_leq     : constr -> constr -> tactic
+val convert         : constr -> constr -> unit Proofview.tactic
+val convert_leq     : constr -> constr -> unit Proofview.tactic
 
 (** {6 Introduction tactics. } *)
 
@@ -110,7 +110,7 @@ val intros_pattern_bound :
 val assumption       : unit Proofview.tactic
 val exact_no_check   : constr -> tactic
 val vm_cast_no_check : constr -> tactic
-val exact_check      : constr -> tactic
+val exact_check      : constr -> unit Proofview.tactic
 val exact_proof      : Constrexpr.constr_expr -> tactic
 
 (** {6 Reduction tactics. } *)
