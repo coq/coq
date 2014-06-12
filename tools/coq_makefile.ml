@@ -72,6 +72,9 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ...
 [-R physicalpath logicalpath]: look for Coq dependencies resursively
   starting from \"physicalpath\". The logical path associated to the
   physical path is \"logicalpath\".
+[-Q physicalpath logicalpath]: look for Coq dependencies starting from
+  \"physicalpath\". The logical path associated to the physical path
+  is \"logicalpath\".
 [VARIABLE = value]: Add the variable definition \"VARIABLE=value\"
 [-byte]: compile with byte-code version of coq
 [-opt]: compile with native-code version of coq
@@ -115,14 +118,15 @@ let standard opt =
   print "\t$(MAKE) all \"OPT:="; print (if opt then "-opt" else "-byte");
   print "\"\n\n"
 
-let classify_files_by_root var files (inc_i,inc_r) =
-  if not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_r) then
+let classify_files_by_root var files (inc_ml,inc_i,inc_r) =
+  if not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_r)
+    && not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_i) then
     begin
       let absdir_of_files = List.rev_map
 	(fun x -> CUnix.canonical_path_name (Filename.dirname x))
 	files in
 	(* files in scope of a -I option (assuming they are no overlapping) *)
-      let has_inc_i = List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_i in
+      let has_inc_i = List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_ml in
 	if has_inc_i then
 	  begin
 	    printf "%sINC=" var;
@@ -131,7 +135,7 @@ let classify_files_by_root var files (inc_i,inc_r) =
 			 then printf
 			   "$(filter $(wildcard %s/*),$(%s)) "
 			   pdir var
-		      ) inc_i;
+		      ) inc_ml;
 	    printf "\n";
 	  end;
       (* Files in the scope of a -R option (assuming they are disjoint) *)
@@ -139,38 +143,38 @@ let classify_files_by_root var files (inc_i,inc_r) =
 		       if List.exists (is_prefix abspdir) absdir_of_files then
 			 printf "%s%d=$(patsubst %s/%%,%%,$(filter %s/%%,$(%s)))\n"
 			   var i pdir pdir var)
-	  inc_r;
+	  (inc_i@inc_r);
     end
 
-let vars_to_put_by_root var_x_files_l (inc_i,inc_r) =
+let vars_to_put_by_root var_x_files_l (inc_ml,inc_i,inc_r) =
   let var_x_absdirs_l = List.rev_map
     (fun (v,l) -> (v,List.rev_map (fun x -> CUnix.canonical_path_name (Filename.dirname x)) l))
     var_x_files_l in
   let var_filter f g = List.fold_left (fun acc (var,dirs) ->
     if f dirs
     then (g var)::acc else acc) [] var_x_absdirs_l in
-  try
     (* All files caught by a -R . option (assuming it is the only one) *)
-    let ldir = match inc_r with
-      |[(".",t,_)] -> t
-      |l -> let out = List.assoc "." (List.rev_map (fun (p,l,_) -> (p,l)) inc_r) in
-	    let () = prerr_string "Warning: install rule assumes that -R . _ is the only -R option" in
-	    out in
-    (None,[".",physical_dir_of_logical_dir ldir,List.rev_map fst var_x_files_l])
-  with Not_found ->
-    (
-      (* vars for -I options *)
-      Some (var_filter (fun l -> List.exists (fun (_,a) -> List.mem a l) inc_i) (fun x -> x)),
+  match inc_i@inc_r with
+  |[(".",t,_)] -> (None,[".",physical_dir_of_logical_dir t,List.rev_map fst var_x_files_l])
+  |l ->
+    try
+      let out = List.assoc "." (List.rev_map (fun (p,l,_) -> (p,l)) l) in
+      let () = prerr_string "Warning: install rule assumes that -R/-Q . _ is the only -R/-Q option" in
+      (None,[".",physical_dir_of_logical_dir out,List.rev_map fst var_x_files_l])
+    with Not_found ->
+      (
+      (* vars for -Q options *)
+	Some (var_filter (fun l -> List.exists (fun (_,a) -> List.mem a l) inc_ml) (fun x -> x)),
       (* (physical dir, physical dir of logical path,vars) for -R options
 	 (assuming physical dirs are disjoint) *)
-      if inc_r = [] then
+      if l = [] then
 	[".","$(INSTALLDEFAULTROOT)",[]]
       else
 	Util.List.fold_left_i (fun i out (pdir,ldir,abspdir) ->
 	  let vars_r = var_filter (List.exists (is_prefix abspdir)) (fun x -> x^string_of_int i) in
 	  let pdir' = physical_dir_of_logical_dir ldir in
-	  (pdir,pdir',vars_r)::out) 1 [] inc_r
-    )
+	  (pdir,pdir',vars_r)::out) 1 [] l
+      )
 
 let install_include_by_root =
   let install_dir for_i (pdir,pdir',vars) =
@@ -220,15 +224,29 @@ in
   |Some v_i,l -> List.iter (uninstall_dir (fun () -> uninstall_i v_i)) l
 
 let where_put_doc = function
-    |_,[] -> "$(INSTALLDEFAULTROOT)";
-    |_,((_,lp,_)::q as inc_r) ->
+    |_,[],[] -> "$(INSTALLDEFAULTROOT)";
+    |_,((_,lp,_)::q as inc_i),[] ->
       let pr = List.fold_left (fun a (_,b,_) -> string_prefix a b) lp q in
       if (pr <> "") &&
-	((List.exists (fun(_,b,_) -> b = pr) inc_r) || pr.[String.length pr - 1] = '.')
+	((List.exists (fun(_,b,_) -> b = pr) inc_i)
+	 || pr.[String.length pr - 1] = '.')
       then
 	physical_dir_of_logical_dir pr
       else
-	let () = prerr_string "Warning: -R options don't have a correct common prefix,
+	let () = prerr_string "Warning: -Q options don't have a correct common prefix,
+ install-doc will put anything in $INSTALLDEFAULTROOT\n" in
+	"$(INSTALLDEFAULTROOT)"
+    |_,inc_i,((_,lp,_)::q as inc_r) ->
+      let pr = List.fold_left (fun a (_,b,_) -> string_prefix a b) lp q in
+      let pr = List.fold_left (fun a (_,b,_) -> string_prefix a b) pr inc_i in
+      if (pr <> "") &&
+	((List.exists (fun(_,b,_) -> b = pr) inc_r)
+	 || (List.exists (fun(_,b,_) -> b = pr) inc_i)
+	 || pr.[String.length pr - 1] = '.')
+      then
+	physical_dir_of_logical_dir pr
+      else
+	let () = prerr_string "Warning: -R/-Q options don't have a correct common prefix,
  install-doc will put anything in $INSTALLDEFAULTROOT\n" in
 	"$(INSTALLDEFAULTROOT)"
 
@@ -339,7 +357,7 @@ let implicit () =
     print "%.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.ml4.d: %.ml4\n";
-    print "\t$(COQDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml_rules () =
     print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
@@ -352,12 +370,12 @@ let implicit () =
     print "%.cma: | %.mllib\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
     print "%.cmxa: | %.mllib\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
     print "%.mllib.d: %.mllib\n";
-    print "\t$(COQDEP) $(COQLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let mlpack_rules () =
     print "%.cmo: | %.mlpack\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
     print "%.cmx: | %.mlpack\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
     print "%.mlpack.d: %.mlpack\n";
-    print "\t$(COQDEP) $(COQLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
+    print "\t$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
 in
   let v_rules () =
     print "%.vo %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -417,7 +435,7 @@ let variables is_install opt (args,defs) =
   -I \"$(COQLIB)proofs\" -I \"$(COQLIB)tactics\" -I \"$(COQLIB)tools\" \\
   -I \"$(COQLIB)toplevel\" -I \"$(COQLIB)stm\" -I \"$(COQLIB)grammar\"";
     List.iter (fun c -> print " \\
-    -I \"$(COQLIB)/"; print c; print "\"") Coq_config.plugins_dirs; print "\n";
+  -I \"$(COQLIB)/"; print c; print "\"") Coq_config.plugins_dirs; print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
     print "CAMLC?=$(OCAMLC) -c -rectypes\n";
     print "CAMLOPTC?=$(OCAMLOPT) -c -rectypes\n";
@@ -471,21 +489,26 @@ let parameters () =
   print "TIMED=\nTIMECMD=\nSTDTIME?=/usr/bin/time -f \"$* (user: %U mem: %M ko)\"\n";
   print "TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))\n\n"
 
-let include_dirs (inc_i,inc_r) =
-  let parse_includes l = List.map (fun (x,_) -> "-I " ^ x) l in
+let include_dirs (inc_ml,inc_i,inc_r) =
+  let parse_ml_includes l = List.map (fun (x,_) -> "-I " ^ x) l in
+  let parse_includes l = List.map (fun (x,l,_) -> "-Q " ^ x ^ " " ^ l) l in
   let parse_rec_includes l =
     List.map (fun (p,l,_) ->
       let l' = if l = "" then "\"\"" else l in "-R " ^ p ^ " " ^ l')
       l in
+  let str_ml = parse_ml_includes inc_ml in
   let str_i = parse_includes inc_i in
   let str_r = parse_rec_includes inc_r in
     section "Libraries definitions.";
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
-      print "OCAMLLIBS?="; print_list "\\\n  " str_i; print "\n";
+      print "OCAMLLIBS?="; print_list "\\\n  " str_ml; print "\n";
     end;
     if !some_vfile || !some_mllibfile || !some_mlpackfile then begin
-      print "COQLIBS?="; print_list "\\\n  " str_i; print " "; print_list "\\\n  " str_r; print "\n";
-      print "COQDOCLIBS?=";   print_list "\\\n  " str_r; print "\n\n";
+      print "COQLIBS?="; print_list "\\\n  " str_i;
+      List.iter (fun x -> print "\\\n  "; print x) str_r;
+      List.iter (fun x -> print "\\\n  "; print x) str_ml; print "\n";
+      print "COQDOCLIBS?="; print_list "\\\n  " str_i;
+      List.iter (fun x -> print "\\\n  "; print x) str_r; print "\n\n";
     end
 
 let custom sps =
@@ -691,19 +714,19 @@ let command_line args =
   print_list args;
   print "\n#\n\n"
 
-let ensure_root_dir (v,(mli,ml4,ml,mllib,mlpack),_,_) ((i_inc,r_inc) as l) =
+let ensure_root_dir (v,(mli,ml4,ml,mllib,mlpack),_,_) ((ml_inc,i_inc,r_inc) as l) =
   let here = Sys.getcwd () in
   let not_tops =List.for_all (fun s -> s <> Filename.basename s) in
-  if List.exists (fun (_,x) -> x = here) i_inc
+  if List.exists (fun (_,_,x) -> x = here) i_inc
     || List.exists (fun (_,_,x) -> is_prefix x here) r_inc
     || (not_tops v && not_tops mli && not_tops ml4 && not_tops ml
 	&& not_tops mllib && not_tops mlpack) then
     l
   else
-    ((".",here)::i_inc,r_inc)
+    ((".",here)::ml_inc,(".","Top",here)::i_inc,r_inc)
 
 let warn_install_at_root_directory
-    (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,_) (inc_i,inc_r) =
+    (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,_) (inc_ml,inc_i,inc_r) =
   let inc_r_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r in
   let inc_top = List.map (fun (p,_,_) -> p) inc_r_top in
   let files = vfiles @ mlifiles @ ml4files @ mlfiles @ mllibfiles @ mlpackfiles in
@@ -712,7 +735,7 @@ let warn_install_at_root_directory
     Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R %sis recommended\n"
       (if inc_r_top = [] then "" else "with non trivial logical root ")
 
-let check_overlapping_include (_,inc_r) =
+let check_overlapping_include (_,inc_i,inc_r) =
   let pwd = Sys.getcwd () in
   let aux = function
     | [] -> ()
@@ -722,7 +745,7 @@ let check_overlapping_include (_,inc_r) =
 	List.iter (fun (pdir',_,abspdir') ->
 	  if is_prefix abspdir abspdir' || is_prefix abspdir' abspdir then
 	    Printf.eprintf "Warning: in options -R, %s and %s overlap\n" pdir pdir') l;
-  in aux inc_r
+  in aux (inc_i@inc_r)
 
 let do_makefile args =
   let has_file var = function

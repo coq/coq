@@ -10,7 +10,8 @@ type target =
     (* file, dependencies, is_phony, command *)
   | Subdir of string
   | Def of string * string (* X=foo -> Def ("X","foo") *)
-  | Include of string
+  | MLInclude of string (* -I physicalpath *)
+  | Include of string * string (* -Q physicalpath logicalpath *)
   | RInclude of string * string (* -R physicalpath logicalpath *)
 
 type install =
@@ -80,11 +81,14 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     process_cmd_line orig_dir opts (Special (file,dependencies,false,com) :: l) r
   | "-extra-phony" :: target :: dependencies :: com :: r ->
     process_cmd_line orig_dir opts (Special (target,dependencies,true,com) :: l) r
+  | "-Q" :: d :: lp :: r ->
+    process_cmd_line orig_dir opts ((Include (CUnix.correct_path d orig_dir, lp)) :: l) r
   | "-I" :: d :: r ->
-    process_cmd_line orig_dir opts ((Include (CUnix.correct_path d orig_dir)) :: l) r
+    process_cmd_line orig_dir opts ((MLInclude (CUnix.correct_path d orig_dir)) :: l) r
+  | "-R" :: p :: "-as" :: lp :: r
   | "-R" :: p :: lp :: r ->
     process_cmd_line orig_dir opts (RInclude (CUnix.correct_path p orig_dir,lp) :: l) r
-  | ("-R"|"-I"|"-custom"|"-extra"|"-extra-phony") :: _ ->
+  | ("-Q"|"-R"|"-I"|"-custom"|"-extra"|"-extra-phony") :: _ ->
     raise Parsing_error
   | "-f" :: file :: r ->
     let file = CUnix.remove_path_dot (CUnix.correct_path file orig_dir) in
@@ -129,7 +133,7 @@ let rec post_canonize f =
     if dir = Filename.current_dir_name then f else post_canonize dir
   else f
 
-(* Return: ((v,(mli,ml4,ml,mllib,mlpack),special,subdir),(i_inc,r_inc),(args,defs)) *)
+(* Return: ((v,(mli,ml4,ml,mllib,mlpack),special,subdir),(ml_inc,q_inc,r_inc),(args,defs)) *)
 let split_arguments =
   let rec aux = function
   | V n :: r ->
@@ -153,17 +157,24 @@ let split_arguments =
       let (v,m,o,s),i,d = aux r in ((v,m,(n,dep,is_phony,c)::o,s),i,d)
   | Subdir n :: r ->
       let (v,m,o,s),i,d = aux r in ((v,m,o,n::s),i,d)
-  | Include p :: r ->
-      let t,(i,r),d = aux r in (t,((CUnix.remove_path_dot (post_canonize p),
-				    CUnix.canonical_path_name p)::i,r),d)
+  | MLInclude p :: r ->
+      let t,(ml,q,r),d = aux r in (t,((CUnix.remove_path_dot (post_canonize p),
+                                   CUnix.canonical_path_name p)::ml,q,r),d)
+  | Include (p,l) :: r ->
+      let t,(ml,i,r),d = aux r in
+      let i_new = (CUnix.remove_path_dot (post_canonize p),l,
+		   CUnix.canonical_path_name p) in
+      (t,(ml,i_new::i,r),d)
   | RInclude (p,l) :: r ->
-      let t,(i,r),d = aux r in (t,(i,(CUnix.remove_path_dot (post_canonize p),l,
-				      CUnix.canonical_path_name p)::r),d)
+      let t,(ml,i,r),d = aux r in
+      let r_new = (CUnix.remove_path_dot (post_canonize p),l,
+		   CUnix.canonical_path_name p) in
+      (t,(ml,i,r_new::r),d)
   | Def (v,def) :: r ->
       let t,i,(args,defs) = aux r in (t,i,(args,(v,def)::defs))
   | Arg a :: r ->
       let t,i,(args,defs) = aux r in (t,i,(a::args,defs))
-  | [] -> ([],([],[],[],[],[]),[],[]),([],[]),([],[])
+  | [] -> ([],([],[],[],[],[]),[],[]),([],[],[]),([],[])
   in aux
 
 let read_project_file f =
@@ -175,21 +186,22 @@ let args_from_project file project_files default_name =
   let contains_file dir =
       List.exists (fun x -> is_f (CUnix.correct_path x dir))
   in
-  let build_cmd_line i_inc r_inc args =
-    List.fold_right (fun (_,i) o -> "-I" :: i :: o) i_inc
-      (List.fold_right (fun (_,l,p) o -> "-R" :: p :: l :: o) r_inc
-	 (List.fold_right (fun a o -> parse_args (Stream.of_string a) @ o) args []))
+  let build_cmd_line ml_inc i_inc r_inc args =
+    List.fold_right (fun (_,i) o -> "-I" :: i :: o) ml_inc
+      (List.fold_right (fun (_,l,i) o -> "-Q" :: i :: l :: o) i_inc
+        (List.fold_right (fun (_,l,p) o -> "-R" :: p :: l :: o) r_inc
+	  (List.fold_right (fun a o -> parse_args (Stream.of_string a) @ o) args [])))
   in try
-      let (_,(_,(i_inc,r_inc),(args,_))) =
+      let (_,(_,(ml_inc,i_inc,r_inc),(args,_))) =
 	List.find (fun (dir,((v_files,_,_,_),_,_)) ->
 		     contains_file dir v_files) project_files in
-	build_cmd_line i_inc r_inc args
+	build_cmd_line ml_inc i_inc r_inc args
     with Not_found ->
       let rec find_project_file dir = try
-	let ((v_files,_,_,_),(i_inc,r_inc),(args,_)) =
+	let ((v_files,_,_,_),(ml_inc,i_inc,r_inc),(args,_)) =
 	  read_project_file (Filename.concat dir default_name) in
 	  if contains_file dir v_files
-	  then build_cmd_line i_inc r_inc args
+	  then build_cmd_line ml_inc i_inc r_inc args
 	  else let newdir = Filename.dirname dir in
 	    if dir = newdir then [] else find_project_file newdir
       with Sys_error s ->
