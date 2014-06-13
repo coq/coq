@@ -24,10 +24,9 @@ run by the command {\tt coqtop}.
 \label{binary-images}
 They are two different binary images of \Coq: the byte-code one and
 the native-code one (if Objective Caml provides a native-code compiler
-for your platform, which is supposed in the following).  When invoking
-\verb!coqtop! or \verb!coqc!, the native-code version of the system is
-used.  The command-line options \verb!-byte! and \verb!-opt! explicitly
-select the byte-code and the native-code versions, respectively.
+for your platform, which is supposed in the following). By default,
+\verb!coqc! executes the native-code version; this can be overridden
+using the \verb!-byte! option.
 
 The byte-code toplevel is based on a Caml
 toplevel (to allow the dynamic link of tactics).  You can switch to
@@ -43,11 +42,7 @@ compile it into a {\em file}{\tt .vo} file (See ~\ref{compiled}).
 defined in the Section~\ref{lexical}. It
 must only contain letters, digits or underscores
 (\_). Thus it can be \verb+/bar/foo/toto.v+ but cannot be
-\verb+/bar/foo/to-to.v+ . 
-
-Notice that the \verb!-byte! and \verb!-opt! options are still
-available with \verb!coqc!  and allow you to select the byte-code or
-native-code versions of the system.
+\verb+/bar/foo/to-to.v+.
 
 \section[Customization]{Customization at launch time}
 

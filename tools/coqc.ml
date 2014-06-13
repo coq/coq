@@ -82,7 +82,7 @@ let parse_args () =
     | "-image" :: f :: rem -> image := f; parse (cfiles,args) rem
     | "-image" :: [] ->	usage ()
     | "-byte" :: rem -> binary := "coqtop.byte"; parse (cfiles,args) rem
-    | "-opt" :: rem -> (* now a no-op *) parse (cfiles,args) rem
+    | "-opt" :: rem -> binary := "coqtop"; parse (cfiles,args) rem
 
 (* Obsolete options *)
 

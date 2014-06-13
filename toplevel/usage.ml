@@ -48,9 +48,6 @@ let print_usage_channel co command =
 \n  -compile f             compile Coq file f.v (implies -batch)\
 \n  -compile-verbose f     verbosely compile Coq file f.v (implies -batch)\
 \n\
-\n  -opt                   run the native-code version of Coq\
-\n  -byte                  run the bytecode version of Coq\
-\n\
 \n  -where                 print Coq's standard library location and exit\
 \n  -config                print Coq's configuration information and exit\
 \n  -v                     print Coq version and exit\
@@ -89,6 +86,8 @@ let print_usage_coqc () =
 \noptions are:\
 \n  -verbose  compile verbosely\
 \n  -image f  specify an alternative executable for Coq\
+\n  -opt      run the native-code version of Coq\
+\n  -byte     run the bytecode version of Coq\
 \n  -t        keep temporary files\n\n"
 
 (* Print the configuration information *)
