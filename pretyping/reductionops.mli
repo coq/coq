@@ -50,12 +50,16 @@ module Stack : sig
 
   val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
 
+  type 'a cst_member = 
+    | Cst_const of pconstant
+    | Cst_proj of projection * 'a
+
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array * Cst_stack.t
   | Proj of int * int * projection
   | Fix of fixpoint * 'a t * Cst_stack.t
-  | Cst of pconstant * int (** current foccussed arg *) * int list (** remaining args *)
+  | Cst of 'a cst_member * int (** current foccussed arg *) * int list (** remaining args *)
     * 'a t * Cst_stack.t
   | Shift of int
   | Update of 'a

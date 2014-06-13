@@ -571,12 +571,11 @@ let recargs = function
   | EvalConst c -> Option.map (fun (x,y,_) -> (x,y))
 			      (ReductionBehaviour.get (ConstRef c))
 
-let reduce_projection env sigma proj (recarg'hd,stack') stack =
+let reduce_projection env sigma pb (recarg'hd,stack') stack =
   (match kind_of_term recarg'hd with
   | Construct _ -> 
     let proj_narg = 
-      let pb = Option.get ((lookup_constant proj env).Declarations.const_proj) in
-	pb.Declarations.proj_npars + pb.Declarations.proj_arg
+      pb.Declarations.proj_npars + pb.Declarations.proj_arg
     in Reduced (List.nth stack' proj_narg, stack)
   | _ -> NotReducible)
 
@@ -651,14 +650,10 @@ let rec red_elim_const env sigma ref u largs =
     | Some (x::l,_) when nargs <= List.fold_left max x l -> raise Redelimination
     | Some (l,n) ->
         let is_empty = match l with [] -> true | _ -> false in
-        List.fold_left (fun stack i ->
-          let arg = List.nth stack i in
-          let rarg = whd_construct_stack env sigma arg in
-          match kind_of_term (fst rarg) with
-          | Construct _ -> List.assign stack i (applist rarg)
-          | _ -> raise Redelimination)
-        largs l, n >= 0 && is_empty && nargs >= n,
-                 n >= 0 && not is_empty && nargs >= n in
+	  reduce_params env sigma largs l, 
+	  n >= 0 && is_empty && nargs >= n,
+          n >= 0 && not is_empty && nargs >= n 
+  in
   try match reference_eval sigma env ref with
     | EliminationCases n when nargs >= n ->
 	let c = reference_value sigma env ref u in
@@ -701,6 +696,19 @@ let rec red_elim_const env sigma ref u largs =
        let c = reference_value sigma env ref u in
        whd_betaiotazeta sigma (applist (c, largs)), []
 
+and reduce_params env sigma stack l =
+  let len = List.length stack in
+    List.fold_left (fun stack i ->
+      if len <= i then raise Redelimination
+      else
+	let arg = List.nth stack i in
+	let rarg = whd_construct_stack env sigma arg in
+	  match kind_of_term (fst rarg) with
+	  | Construct _ -> List.assign stack i (applist rarg)
+	  | _ -> raise Redelimination)
+      stack l
+    
+
 (* reduce to whd normal form or to an applied constant that does not hide
    a reducible iota/fix/cofix redex (the "simpl" tactic) *)
 
@@ -729,12 +737,21 @@ and whd_simpl_stack env sigma =
       | Proj (p, c) ->
         (try 
 	   if is_evaluable env (EvalConstRef p) then
- 	     (match recargs (EvalConst p) with
- 	     | Some (_, n) when n > 1 -> (* simpl never *) s'
- 	     | _ ->
-	       match reduce_projection env sigma p (whd_construct_stack env sigma c) stack with
-	       | Reduced s' -> redrec (applist s')
-	       | NotReducible -> s')
+	     let pb = Option.get ((lookup_constant p env).Declarations.const_proj) in
+ 	       (match ReductionBehaviour.get (ConstRef p) with
+ 	       | Some (l, n, f) when List.mem `ReductionNeverUnfold f -> (* simpl never *) s'
+	       | Some (l, n, f) when not (List.is_empty l) ->
+		 let l' = List.map (fun i -> i - (pb.Declarations.proj_npars + 1)) l in
+		 let stack = reduce_params env sigma stack l' in
+		   (match reduce_projection env sigma pb 
+		     (whd_construct_stack env sigma c) stack 
+		    with
+		    | Reduced s' -> redrec (applist s')
+		    | NotReducible -> s')
+ 	       | _ ->
+		 match reduce_projection env sigma pb (whd_construct_stack env sigma c) stack with
+		 | Reduced s' -> redrec (applist s')
+		 | NotReducible -> s')
 	   else s'
 	 with Redelimination -> s')
 	  
@@ -775,6 +792,9 @@ and whd_construct_stack env sigma s =
    sequence of products; fails if no delta redex is around
 *)
 
+let match_eval_proj env proj =
+  ((lookup_constant proj env).Declarations.const_proj)
+
 let try_red_product env sigma c =
   let simpfun = clos_norm_flags betaiotazeta env sigma in
   let rec redrec env x =
@@ -801,9 +821,12 @@ let try_red_product env sigma c =
 	  | Construct _ -> c
 	  | _ -> redrec env c
 	in
-          (match reduce_projection env sigma p (whd_betaiotazeta_stack sigma c') [] with
-	  | Reduced s -> simpfun (applist s)
-	  | NotReducible -> raise Redelimination)
+	  (match match_eval_proj env p with
+	  | Some pb -> 
+            (match reduce_projection env sigma pb (whd_betaiotazeta_stack sigma c') [] with
+	    | Reduced s -> simpfun (applist s)
+	    | NotReducible -> raise Redelimination)
+	  | None -> raise Redelimination)
       | _ -> 
         (match match_eval_ref env x with
         | Some (ref, u) ->

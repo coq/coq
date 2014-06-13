@@ -200,12 +200,17 @@ module Stack :
 sig
   type 'a app_node
   val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
+
+  type 'a cst_member = 
+    | Cst_const of pconstant
+    | Cst_proj of projection * 'a
+
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array * Cst_stack.t
   | Proj of int * int * projection
   | Fix of fixpoint * 'a t * Cst_stack.t
-  | Cst of pconstant * int * int list * 'a t * Cst_stack.t
+  | Cst of 'a cst_member * int * int list * 'a t * Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
@@ -249,12 +254,17 @@ struct
 		     prvect_with_sep pr_comma pr (Array.sub a i (j - i + 1))
 		     )
 
+
+  type 'a cst_member = 
+    | Cst_const of pconstant
+    | Cst_proj of projection * 'a
+
   type 'a member =
   | App of 'a app_node
   | Case of Term.case_info * 'a * 'a array * Cst_stack.t
   | Proj of int * int * projection
   | Fix of fixpoint * 'a t * Cst_stack.t
-  | Cst of pconstant * int * int list * 'a t * Cst_stack.t
+  | Cst of 'a cst_member * int * int list * 'a t * Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
@@ -274,8 +284,8 @@ struct
     | Fix (f,args,cst) ->
        str "ZFix(" ++ Termops.pr_fix Termops.print_constr f
        ++ pr_comma () ++ pr pr_c args ++ str ")"
-    | Cst ((c,_),curr,remains,params,cst_l) -> (* pboutill : TODO print univ *)
-      str "ZCst(" ++ Constant.print c ++ pr_comma () ++ int curr
+    | Cst (mem,curr,remains,params,cst_l) ->
+      str "ZCst(" ++ pr_cst_member pr_c mem ++ pr_comma () ++ int curr
       ++ pr_comma () ++
 	prlist_with_sep pr_semicolon int remains ++
 	pr_comma () ++ pr pr_c params ++ str ")"
@@ -284,6 +294,15 @@ struct
   and pr pr_c l =
     let open Pp in
     prlist_with_sep pr_semicolon (fun x -> hov 1 (pr_member pr_c x)) l
+
+  and pr_cst_member pr_c c =
+    let open Pp in 
+      match c with
+      | Cst_const (c, u) -> 
+	if Univ.Instance.is_empty u then Constant.print c
+	else str"(" ++ Constant.print c ++ str ", " ++ Univ.Instance.pr u ++ str")"
+      | Cst_proj (p, c) ->
+	pr_c c ++ str".(" ++ Constant.print p ++ str")"
 
   let empty = []
   let is_empty = CList.is_empty
@@ -305,6 +324,14 @@ struct
     else (l.(j), sk)
 
   let equal f f_fix sk1 sk2 =
+    let equal_cst_member x lft1 y lft2 = 
+      match x, y with
+      | Cst_const (c1,u1), Cst_const (c2, u2) ->
+	Constant.equal c1 c2 && Univ.Instance.equal u1 u2
+      | Cst_proj (p1,c1), Cst_proj (p2,c2) ->
+	Constant.equal p1 p2 && f (c1,lft1) (c2,lft2)
+      | _, _ -> false
+    in
     let rec equal_rec sk1 lft1 sk2 lft2  =
       match sk1,sk2 with
       | [],[] -> Some (lft1,lft2)
@@ -329,8 +356,8 @@ struct
 	  | None -> None
 	  | Some (lft1',lft2') -> equal_rec s1' lft1' s2' lft2'
 	else None
-      | Cst ((c1,u1),curr1,remains1,params1,_)::s1', Cst ((c2,u2),curr2,remains2,params2,_)::s2' ->
-	if Constant.equal c1 c2 && Univ.Instance.equal u1 u2 then
+      | Cst (c1,curr1,remains1,params1,_)::s1', Cst (c2,curr2,remains2,params2,_)::s2' ->
+	if equal_cst_member c1 lft1 c2 lft2 then
 	  match equal_rec (List.rev params1) lft1 (List.rev params2) lft2 with
 	  | Some (lft1',lft2') -> equal_rec s1' lft1' s2' lft2'
 	  | None -> None
@@ -486,6 +513,10 @@ struct
 	| _ -> def
     in List.fold_left (aux sk) s l
 
+  let constr_of_cst_member = function
+    | Cst_const (c, u) -> mkConstU (c,u)
+    | Cst_proj (p, c) -> mkProj (p, c)
+
   let rec zip ?(refold=false) = function
     | f, [] -> f
     | f, (App (i,a,j) :: s) ->
@@ -501,9 +532,9 @@ struct
   | f, (Fix (fix,st,_)::s) -> zip ~refold
     (mkFix fix, st @ (append_app [|f|] s))
   | f, (Cst (cst,_,_,params,cst_l)::s) when refold ->
-    zip ~refold (best_state (mkConstU cst,params @ (append_app [|f|] s)) cst_l)
+    zip ~refold (best_state (constr_of_cst_member cst,params @ (append_app [|f|] s)) cst_l)
   | f, (Cst (cst,_,_,params,_)::s) ->
-    zip ~refold (mkConstU cst,params @ (append_app [|f|] s))
+    zip ~refold (constr_of_cst_member cst,params @ (append_app [|f|] s))
   | f, (Shift n::s) -> zip ~refold (lift n f, s)
   | f, (Proj (n,m,p)::s) -> zip ~refold (mkProj (p,f),s)
   | _, (Update _::_) -> assert false
@@ -779,13 +810,35 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		  |curr::remains -> match Stack.strip_n_app curr stack with
 		    | None -> fold ()
 		    | Some (bef,arg,s') ->
-		      whrec Cst_stack.empty (arg,Stack.Cst(const,curr,remains,bef,cst_l)::s')
+		      whrec Cst_stack.empty (arg,Stack.Cst(Stack.Cst_const const,curr,remains,bef,cst_l)::s')
        )
     | Proj (p, c) when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST p) ->
       (match (lookup_constant p env).Declarations.const_proj with
       | None -> assert false
-      | Some pb -> whrec Cst_stack.empty(* cst_l *) (c, Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p)
-        :: stack))
+      | Some pb -> begin
+	let npars = pb.Declarations.proj_npars 
+	and arg = pb.Declarations.proj_arg in
+	  match ReductionBehaviour.get (Globnames.ConstRef p) with
+	  | None ->
+	    let stack' = (c, Stack.Proj (npars, arg, p) :: stack) in
+	      whrec Cst_stack.empty(* cst_l *) stack'
+	  | Some (recargs, nargs, flags) ->
+	    if (List.mem `ReductionNeverUnfold flags
+		|| (nargs > 0 && Stack.args_size stack < (nargs - (npars + 1))))
+	    then fold ()
+	    else
+	      match List.map (fun x -> x - (npars + 1)) recargs with
+	      |[] -> (* if nargs has been specified *)
+	      (* CAUTION : the constant is NEVER refold
+                 (even when it hides a (co)fix) *)
+		let stack' = (c, Stack.Proj (npars, arg, p) :: stack) in
+		  whrec Cst_stack.empty(* cst_l *) stack'
+	      | curr::remains -> match Stack.strip_n_app curr stack with
+		| None -> fold ()
+		| Some (bef,arg,s') ->
+		  whrec Cst_stack.empty 
+		    (arg,Stack.Cst(Stack.Cst_proj (p, c),curr,remains,bef,cst_l)::s')
+      end)
     | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
       apply_subst whrec [b] cst_l c stack
     | Cast (c,_,_) -> whrec cst_l (c, stack)
@@ -840,11 +893,16 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	|args, (Stack.Cst (const,curr,remains,s',cst_l) :: s'') ->
 	  let x' = Stack.zip(x,args) in
 	  begin match remains with
-	  | [] -> (match constant_opt_value_in env const with
-	    | None -> fold ()
-	    | Some body ->
-	      whrec (Cst_stack.add_cst (mkConstU const) cst_l)
-		(body, s' @ (Stack.append_app [|x'|] s'')))
+	  | [] -> 
+	    (match const with
+	    | Stack.Cst_const const ->
+	      (match constant_opt_value_in env const with
+	      | None -> fold ()
+	      | Some body ->
+		whrec (Cst_stack.add_cst (mkConstU const) cst_l)
+		  (body, s' @ (Stack.append_app [|x'|] s'')))
+	    | Stack.Cst_proj (p, c) ->
+	      whrec Cst_stack.empty (mkProj (p, c), s' @ (Stack.append_app [|x'|] s'')))
 	  | next :: remains' -> match Stack.strip_n_app (next-curr-1) s'' with
 	    | None -> fold ()
 	    | Some (bef,arg,s''') ->

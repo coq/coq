@@ -36,8 +36,15 @@ let _ = Goptions.declare_bool_option {
 let unfold_projection env p c stk =
   (match try Some (lookup_projection p env) with Not_found -> None with
   | Some pb -> 
-    let s = Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p) in
-      Some (c, s :: stk)
+    let unfold () = 
+      let s = Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p) in
+	Some (c, s :: stk)
+    in
+      (match ReductionBehaviour.get (Globnames.ConstRef p) with
+      | None -> unfold ()
+      | Some (recargs, nargs, flags) ->
+	if (List.mem `ReductionNeverUnfold flags) then None
+	else unfold ())
   | None -> None)
 
 let eval_flexible_term ts env c stk =
