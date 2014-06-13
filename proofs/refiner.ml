@@ -340,13 +340,24 @@ let tclPUSHCONSTRAINTS cst gl =
 (* Check that holes in arguments have been resolved *)
 
 let check_evars env sigma extsigma origsigma =
+  let rec is_undefined_up_to_restriction sigma evk =
+    match Evd.evar_body (Evd.find sigma evk) with
+    | Evar_empty -> true
+    | Evar_defined c -> match Term.kind_of_term c with
+      | Term.Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
+      | _ -> 
+        (* We make the assumption that there is no way no refine an
+           evar remaining after typing from the initial term given to
+           apply/elim and co tactics, is it correct? *)
+        false in
   let rest =
     Evd.fold_undefined (fun evk evi acc ->
-      if Evd.is_undefined extsigma evk && not (Evd.mem origsigma evk) then
+      if is_undefined_up_to_restriction sigma evk && not (Evd.mem origsigma evk)
+      then
 	evi::acc
       else
 	acc)
-      sigma []
+      extsigma []
   in
   match rest with
   | [] -> ()
