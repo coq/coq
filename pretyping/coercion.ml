@@ -40,14 +40,13 @@ let apply_coercion_args env evd check argl funj =
   let rec apply_rec acc typ = function
     | [] -> { uj_val = applist (j_val funj,argl);
 	      uj_type = typ }
-    | h::restl ->
-	(* On devrait pouvoir s'arranger pour qu'on n'ait pas à faire hnf_constr *)
-  	match kind_of_term (whd_betadeltaiota env evd typ) with
-	| Prod (_,c1,c2) ->
-	    if check && not (e_cumul env evdref (Retyping.get_type_of env evd h) c1) then
-	      anomaly (Pp.str"apply_coercion_args: mismatch between arguments and coercion");
-	    apply_rec (h::acc) (subst1 h c2) restl
-	| _ -> anomaly (Pp.str "apply_coercion_args")
+    | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
+      match kind_of_term (whd_betadeltaiota env evd typ) with
+      | Prod (_,c1,c2) ->
+        if check && not (e_cumul env evdref (Retyping.get_type_of env evd h) c1) then
+	  raise NoCoercion;
+        apply_rec (h::acc) (subst1 h c2) restl
+      | _ -> anomaly (Pp.str "apply_coercion_args")
   in
   let res = apply_rec [] funj.uj_type argl in
     !evdref, res
@@ -346,7 +345,8 @@ let apply_coercion env sigma p hj typ_cl =
 	    jres.uj_type,sigma)
       (hj,typ_cl,sigma) p
     in evd, j
-  with e when Errors.noncritical e -> anomaly (Pp.str "apply_coercion")
+  with NoCoercion as e -> raise e
+  | e when Errors.noncritical e -> anomaly (Pp.str "apply_coercion")
 
 let inh_app_fun env evd j =
   let t = whd_betadeltaiota env evd j.uj_type in
@@ -359,7 +359,7 @@ let inh_app_fun env evd j =
       	try let t,p =
 	  lookup_path_to_fun_from env evd j.uj_type in
 	    apply_coercion env evd p j t
-	with Not_found when Flags.is_program_mode () ->
+	with Not_found | NoCoercion when Flags.is_program_mode () ->
 	  try
 	    let evdref = ref evd in
 	    let coercef, t = mu env evdref t in
@@ -382,7 +382,7 @@ let inh_tosort_force loc env evd j =
     let evd,j1 = apply_coercion env evd p j t in
     let j2 = on_judgment_type (whd_evar evd) j1 in
       (evd,type_judgment env j2)
-  with Not_found ->
+  with Not_found | NoCoercion ->
     error_not_a_type_loc loc env evd j
 
 let inh_coerce_to_sort loc env evd j =
@@ -421,7 +421,7 @@ let inh_coerce_to_fail env evd rigidonly v t c1 =
       try
 	let t2,t1,p = lookup_path_between env evd (t,c1) in
 	  match v with
-	  Some v ->
+	  | Some v ->
 	    let evd,j =
 	      apply_coercion env evd p
 		{uj_val = v; uj_type = t} t2 in

@@ -1,6 +1,6 @@
 Set Implicit Arguments.
 Generalizable All Variables.
-
+Set Universe Polymorphism.
 
 Polymorphic Record SpecializedCategory (obj : Type) := Build_SpecializedCategory' {
   Object :> _ := obj;
@@ -13,8 +13,8 @@ Polymorphic Record SpecializedCategory (obj : Type) := Build_SpecializedCategory
 Polymorphic Definition Morphism obj (C : @SpecializedCategory obj) : forall s d : C, _ := Eval cbv beta delta [Morphism'] in C.(Morphism').
 
 (* eh, I'm not terribly happy.  meh. *)
-Polymorphic Definition SmallSpecializedCategory (obj : Set) (*mor : obj -> obj -> Set*) := SpecializedCategory obj.
-Identity Coercion SmallSpecializedCategory_LocallySmallSpecializedCategory_Id : SmallSpecializedCategory >-> SpecializedCategory.
+Polymorphic Definition SmallSpecializedCategory (obj : Set) (*mor : obj -> obj -> Set*) := SpecializedCategory@{Set Set} obj.
+Polymorphic Identity Coercion SmallSpecializedCategory_LocallySmallSpecializedCategory_Id : SmallSpecializedCategory >-> SpecializedCategory.
 
 Polymorphic Record Category := {
   CObject : Type;
@@ -26,7 +26,7 @@ Polymorphic Definition GeneralizeCategory `(C : @SpecializedCategory obj) : Cate
   refine {| CObject := C.(Object) |}; auto.
 Defined.
 
-Coercion GeneralizeCategory : SpecializedCategory >-> Category.
+Polymorphic Coercion GeneralizeCategory : SpecializedCategory >-> Category.
 
 
 
@@ -45,17 +45,18 @@ Section SpecializedFunctor.
   }.
 End SpecializedFunctor.
 
-Global Coercion ObjectOf' : SpecializedFunctor >-> Funclass.
-(*Unset Universe Polymorphism.*)
+Global Polymorphic Coercion ObjectOf' : SpecializedFunctor >-> Funclass.
+Set Universe Polymorphism.
 Section Functor.
   Variable C D : Category.
 
   Polymorphic Definition Functor := SpecializedFunctor C D.
 End Functor.
+Unset Universe Polymorphism.
 
-Identity Coercion Functor_SpecializedFunctor_Id : Functor >-> SpecializedFunctor.
+Polymorphic Identity Coercion Functor_SpecializedFunctor_Id : Functor >-> SpecializedFunctor.
 Polymorphic Definition GeneralizeFunctor objC C objD D (F : @SpecializedFunctor objC C objD D) : Functor C D := F.
-Coercion GeneralizeFunctor : SpecializedFunctor >-> Functor.
+Polymorphic Coercion GeneralizeFunctor : SpecializedFunctor >-> Functor.
 
 Arguments SpecializedFunctor {objC} C {objD} D.
 
@@ -70,7 +71,7 @@ Polymorphic Definition GeneralizeSmallCategory `(C : @SmallSpecializedCategory o
   refine {| SObject := obj |}; destruct C; econstructor; eassumption.
 Defined.
 
-Coercion GeneralizeSmallCategory : SmallSpecializedCategory >-> SmallCategory.
+Polymorphic Coercion GeneralizeSmallCategory : SmallSpecializedCategory >-> SmallCategory.
 
 Bind Scope category_scope with SmallCategory.
 
@@ -102,13 +103,13 @@ Lemma InitialCategory_Initial : InitialObject (C := SmallCat) (DiscreteCategory 
   admit.
 Qed.
 
-
+Set Universe Polymorphism.
 Section GraphObj.
   Context `(C : @SpecializedCategory objC).
 
   Inductive GraphIndex := GraphIndexSource | GraphIndexTarget.
 
-  Polymorphic Definition GraphIndex_Morphism (a b : GraphIndex) : Set :=
+  Definition GraphIndex_Morphism (a b : GraphIndex) : Set :=
     match (a, b) with
       | (GraphIndexSource, GraphIndexSource) => unit
       | (GraphIndexTarget, GraphIndexTarget) => unit
@@ -118,11 +119,11 @@ Section GraphObj.
 
   Global Arguments GraphIndex_Morphism a b /.
 
-  Polymorphic Definition GraphIndex_Compose s d d' (m1 : GraphIndex_Morphism d d') (m2 : GraphIndex_Morphism s d) :
+  Definition GraphIndex_Compose s d d' (m1 : GraphIndex_Morphism d d') (m2 : GraphIndex_Morphism s d) :
     GraphIndex_Morphism s d'.
   Admitted.
 
-  Polymorphic Definition GraphIndexingCategory : @SpecializedCategory GraphIndex.
+   Definition GraphIndexingCategory : @SpecializedCategory GraphIndex.
     refine {|
       Morphism' := GraphIndex_Morphism;
       Identity' := (fun x => match x with GraphIndexSource => tt | GraphIndexTarget => tt end);
@@ -131,7 +132,7 @@ Section GraphObj.
     admit.
   Defined.
 
-  Polymorphic Definition UnderlyingGraph_ObjectOf x :=
+  Definition UnderlyingGraph_ObjectOf x :=
     match x with
       | GraphIndexSource => { sd : objC * objC & C.(Morphism) (fst sd) (snd sd) }
       | GraphIndexTarget => objC
@@ -139,11 +140,11 @@ Section GraphObj.
 
   Global Arguments UnderlyingGraph_ObjectOf x /.
 
-  Polymorphic Definition UnderlyingGraph_MorphismOf s d (m : Morphism GraphIndexingCategory s d) :
+  Definition UnderlyingGraph_MorphismOf s d (m : Morphism GraphIndexingCategory s d) :
     UnderlyingGraph_ObjectOf s -> UnderlyingGraph_ObjectOf d.
   Admitted.
 
-  Polymorphic Definition UnderlyingGraph : SpecializedFunctor GraphIndexingCategory TypeCat.
+  Definition UnderlyingGraph : SpecializedFunctor GraphIndexingCategory TypeCat.
   Proof.
     match goal with
       | [ |- SpecializedFunctor ?C ?D ] =>
@@ -160,8 +161,17 @@ End GraphObj.
 
 Set Printing Universes.
 Set Printing All.
+
+Print Coercions.
+
+Section test.
+
 Fail Polymorphic Definition UnderlyingGraphFunctor_MorphismOf' (C D : SmallCategory) (F : SpecializedFunctor C D) :
-  Morphism (FunctorCategory TypeCat GraphIndexingCategory) (@UnderlyingGraph (SObject C) (C:SpecializedCategory (SObject C))) (UnderlyingGraph D). (* Toplevel input, characters 216-249:
+    Morphism (FunctorCategory TypeCat GraphIndexingCategory)
+    (@UnderlyingGraph (SObject C)
+                     (SmallSpecializedCategory_LocallySmallSpecializedCategory_Id (SUnderlyingCategory C)))
+    (UnderlyingGraph D).
+ (* Toplevel input, characters 216-249:
 Error:
 In environment
 C : SmallCategory (* Top.594 *)
@@ -183,3 +193,8 @@ Fail Admitted.
 Fail Polymorphic Definition UnderlyingGraphFunctor_MorphismOf (C D : SmallCategory) (F : SpecializedFunctor C D) :
   Morphism (FunctorCategory TypeCat GraphIndexingCategory) (UnderlyingGraph C) (UnderlyingGraph D). (* Anomaly: apply_coercion. Please report.*)
 Fail Admitted.
+
+Polymorphic Definition UnderlyingGraphFunctor_MorphismOf (C D : SmallCategory) (F : SpecializedFunctor C D) :
+  Morphism (FunctorCategory GraphIndexingCategory TypeCat) (UnderlyingGraph C) (UnderlyingGraph D). (* Anomaly: apply_coercion. Please report.*)
+Proof.
+Admitted.
