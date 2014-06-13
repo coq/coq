@@ -73,10 +73,6 @@ let ideslave_coqtop_flags = ref None
 
 let time = ref false
 
-type load_proofs = Force | Lazy | Dont
-
-let load_proofs = ref Lazy
-
 let raw_print = ref false
 
 let record_print = ref true

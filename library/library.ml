@@ -347,8 +347,6 @@ let access_table fetch_table add_table tables dp i =
   assert (i < Array.length t); t.(i)
 
 let access_opaque_table dp i =
-  if !Flags.load_proofs == Flags.Dont then
-    error "Not accessing an opaque term due to option -dont-load-proofs.";
   access_table
     (fetch_table "opaque proofs")
     add_opaque_table !opaque_tables dp i

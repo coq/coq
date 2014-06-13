@@ -373,10 +373,8 @@ let parse_args arglist =
     |"-color" -> Flags.make_term_color true
     |"-config"|"--config" -> print_config := true
     |"-debug" -> set_debug ()
-    |"-dont-load-proofs" -> Flags.load_proofs := Flags.Dont
     |"-emacs" -> set_emacs ()
     |"-filteropts" -> filter_opts := true
-    |"-force-load-proofs" -> Flags.load_proofs := Flags.Force
     |"-h"|"-H"|"-?"|"-help"|"--help" -> usage ()
     |"--help-XML-protocol" ->
         Serialize.document Xml_printer.to_string_fmt; exit 0
@@ -384,7 +382,6 @@ let parse_args arglist =
     |"-impredicative-set" -> set_engagement Declarations.ImpredicativeSet
     |"-indices-matter" -> Indtypes.enforce_indices_matter ()
     |"-just-parsing" -> Vernac.just_parsing := true
-    |"-lazy-load-proofs" -> Flags.load_proofs := Flags.Lazy
     |"-m"|"--memory" -> memory_stat := true
     |"-noinit"|"-nois" -> load_init := false
     |"-no-compat-notations" -> no_compat_ntn := true
@@ -413,6 +410,9 @@ let parse_args arglist =
       warning "Obsolete option \"-emacs-U\", use -emacs instead."; set_emacs ()
     |"-v7" -> error "This version of Coq does not support v7 syntax"
     |"-v8" -> warning "Obsolete option \"-v8\"."
+    |"-lazy-load-proofs" -> warning "Obsolete option \"-lazy-load-proofs\"."
+    |"-dont-load-proofs" -> warning "Obsolete option \"-dont-load-proofs\"."
+    |"-force-load-proofs" -> warning "Obsolete option \"-force-load-proofs\"."
 
     (* Unknown option *)
     | s -> extras := s :: !extras

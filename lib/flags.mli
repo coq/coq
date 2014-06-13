@@ -39,9 +39,6 @@ val time : bool ref
 
 val we_are_parsing : bool ref
 
-type load_proofs = Force | Lazy | Dont
-val load_proofs : load_proofs ref
-
 val raw_print : bool ref
 val record_print : bool ref
 val univ_print : bool ref

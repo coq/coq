@@ -67,10 +67,6 @@ let print_usage_channel co command =
 \n  -with-geoproof (yes|no) to (de)activate special functions for Geoproof within Coqide (default is yes)\
 \n  -impredicative-set     set sort Set impredicative\
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
-
-\n  -force-load-proofs     load opaque proofs in memory initially\
-\n  -lazy-load-proofs      load opaque proofs in memory by necessity (default)\
-\n  -dont-load-proofs      see opaque proofs as axioms instead of loading them\
 \n  -xml                   export XML files either to the hierarchy rooted in\
 \n                         the directory $COQ_XML_LIBRARY_ROOT (if set) or to\
 \n                         stdout (if unset)\

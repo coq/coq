@@ -217,22 +217,6 @@ Section~\ref{LongNames}).
   This dumps references for global names in file {\em file}
   (to be used by coqdoc, see~\ref{coqdoc})
 
-\item[{\tt -dont-load-proofs}]\ 
-
-  In this mode, it is an error to access the body of opaque theorems
-  (for example via {\tt Print} or {\tt Print Assumptions}).
-
-\item[{\tt -lazy-load-proofs}]\
-
-  This is the default behavior. Proofs of opaque theorems aren't
-  loaded immediately in memory, but only when necessary, for instance
-  during a {\tt Print} or {\tt Print Assumptions}. This mode should be
-  almost as fast and efficient as {\tt -dont-load-proofs}.
-
-\item[{\tt -force-load-proofs}]\
-
-  Deprecated, now the same as {\tt -lazy-load-proofs}.
-
 \item[{\tt -no-hash-consing}] \mbox{}
 
 \item[{\tt -vm}]\ 

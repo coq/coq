@@ -299,10 +299,7 @@ let warning_axioms () =
        str "Having invalid logical axiom in the environment when extracting" ++
        spc () ++ str "may lead to incorrect or non-terminating ML terms." ++
        fnl ())
-  end;
-  if !Flags.load_proofs == Flags.Dont && not (List.is_empty (info_axioms@log_axioms)) then
-    msg_warning
-      (str "Some of these axioms might be due to option -dont-load-proofs.")
+  end
 
 let warning_opaques accessed =
   let opaques = Refset'.elements !opaques in
