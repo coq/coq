@@ -28,8 +28,6 @@ val profile : bool
 
 val print_emacs : bool ref
 
-val term_quality : bool ref
-
 val xml_export : bool ref
 
 val ide_slave : bool ref

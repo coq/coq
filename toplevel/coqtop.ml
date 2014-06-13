@@ -389,7 +389,6 @@ let parse_args arglist =
     |"-notop" -> unset_toplevel_name ()
     |"-output-context" -> output_context := true
     |"-q" -> no_load_rc ()
-    |"-quality" -> term_quality := true; no_load_rc ()
     |"-quiet"|"-silent" -> Flags.make_silent true
     |"-quick" -> Flags.compilation_mode := BuildVi
     |"-time" -> Flags.time := true
@@ -413,6 +412,7 @@ let parse_args arglist =
     |"-dont-load-proofs" -> warning "Obsolete option \"-dont-load-proofs\"."
     |"-force-load-proofs" -> warning "Obsolete option \"-force-load-proofs\"."
     |"-unsafe" -> warning "Obsolete option \"-unsafe\"."; ignore (next ())
+    |"-quality" -> warning "Obsolete option \"-quality\"."
 
     (* Unknown option *)
     | s -> extras := s :: !extras

@@ -64,8 +64,6 @@ let profile = false
 
 let print_emacs = ref false
 
-let term_quality = ref false
-
 let xml_export = ref false
 
 let ide_slave = ref false
