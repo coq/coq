@@ -100,9 +100,6 @@ val with_extra_values : 'c list ref -> 'c list -> ('a -> 'b) -> 'a -> 'b
 val set_print_hyps_limit : int option -> unit
 val print_hyps_limit : unit -> int option
 
-val add_unsafe : string -> unit
-val is_unsafe : string -> bool
-
 (** Options for external tools *)
 
 (** Returns string format for default browser to use from Coq or CoqIDE *)

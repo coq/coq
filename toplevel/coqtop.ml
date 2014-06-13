@@ -359,7 +359,6 @@ let parse_args arglist =
     |"-print-mod-uid" -> Flags.print_mod_uid := true; add_require (next ())
     |"-require" -> add_require (next ())
     |"-top" -> set_toplevel_name (dirpath_of_string (next ()))
-    |"-unsafe" -> add_unsafe (next ())
     |"-with-geoproof" -> Coq_config.with_geoproof := get_bool opt (next ())
     |"-main-channel" -> Spawned.main_channel := get_host_port opt (next())
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
@@ -413,6 +412,7 @@ let parse_args arglist =
     |"-lazy-load-proofs" -> warning "Obsolete option \"-lazy-load-proofs\"."
     |"-dont-load-proofs" -> warning "Obsolete option \"-dont-load-proofs\"."
     |"-force-load-proofs" -> warning "Obsolete option \"-force-load-proofs\"."
+    |"-unsafe" -> warning "Obsolete option \"-unsafe\"."; ignore (next ())
 
     (* Unknown option *)
     | s -> extras := s :: !extras

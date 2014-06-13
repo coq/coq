@@ -162,21 +162,6 @@ let print_hyps_limit = ref (None : int option)
 let set_print_hyps_limit n = print_hyps_limit := n
 let print_hyps_limit () = !print_hyps_limit
 
-(* A list of the areas of the system where "unsafe" operation
- * has been requested *)
-
-module StringOrd =
-struct
-  type t = string
-  let compare = String.compare
-end
-
-module Stringset = Set.Make(StringOrd)
-
-let unsafe_set = ref Stringset.empty
-let add_unsafe s = unsafe_set := Stringset.add s !unsafe_set
-let is_unsafe s = Stringset.mem s !unsafe_set
-
 (* Flags for external tools *)
 
 let browser_cmd_fmt =
