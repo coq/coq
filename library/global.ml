@@ -197,10 +197,10 @@ let universes_of_global env r =
       let cb = Environ.lookup_constant c env in 
 	Declareops.universes_of_constant cb
     | IndRef ind ->
-      let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
+      let (mib, oib) = Inductive.lookup_mind_specif env ind in
 	mib.mind_universes 
     | ConstructRef cstr ->
-      let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
+      let (mib,oib) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
 	mib.mind_universes 
 
 let universes_of_global gr = 
