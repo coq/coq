@@ -112,6 +112,8 @@ let rec subst_meta_instances bl c =
     | Meta i -> (try assoc_pair i bl with Not_found -> c)
     | _ -> map_constr (subst_meta_instances bl) c
 
+(** [env] should be the context in which the metas live *)
+
 let pose_all_metas_as_evars env evd t =
   let evdref = ref evd in
   let rec aux t = match kind_of_term t with
@@ -133,14 +135,18 @@ let pose_all_metas_as_evars env evd t =
 let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
   match kind_of_term f with
     | Meta k ->
-	let sigma,c = pose_all_metas_as_evars env sigma c in
+	(* We enforce that the Meta does not depend on the [nb]
+	   extra assumptions added by unification to the context *)
+        let env' = pop_rel_context nb env in
+	let sigma,c = pose_all_metas_as_evars env' sigma c in
 	let c = solve_pattern_eqn env l c in
 	let pb = (Conv,TypeNotProcessed) in
 	  if noccur_between 1 nb c then
             sigma,(k,lift (-nb) c,pb)::metasubst,evarsubst
 	  else error_cannot_unify_local env sigma (applist (f, l),c,c)
     | Evar ev ->
-	let sigma,c = pose_all_metas_as_evars env sigma c in
+        let env' = pop_rel_context nb env in
+	let sigma,c = pose_all_metas_as_evars env' sigma c in
 	sigma,metasubst,(env,ev,solve_pattern_eqn env l c)::evarsubst
     | _ -> assert false
 
