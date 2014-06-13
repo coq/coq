@@ -760,6 +760,18 @@ let error_uninstantiated_metas t clenv =
   let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta")
   in errorlabstrm "" (str "Cannot find an instance for " ++ pr_id id ++ str".")
 
+let check_unresolved_evars_of_metas clenv =
+  (* This checks that Metas turned into Evars by *)
+  (* Refiner.pose_all_metas_as_evars are resolved *)
+  List.iter (fun (mv,b) -> match b with
+  | Clval (_,(c,_),_) ->
+    (match kind_of_term c.rebus with
+    | Evar (evk,_) when Evd.is_undefined clenv.evd evk ->
+      error_uninstantiated_metas (mkMeta mv) clenv
+    | _ -> ())
+  | _ -> ())
+  (meta_list clenv.evd)
+
 (* For a clenv expressing some lemma [C[?1:T1,...,?n:Tn] : P] and some
    goal [G], [clenv_refine_in] returns [n+1] subgoals, the [n] last
    ones (resp [n] first ones if [sidecond_first] is [true]) being the
@@ -774,6 +786,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) id c
     else clenv
   in
   let new_hyp_typ = clenv_type clenv in
+  if not with_evars then check_unresolved_evars_of_metas clenv;
   if not with_evars && occur_meta new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
