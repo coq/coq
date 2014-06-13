@@ -498,6 +498,8 @@ let explain_evar_kind env evi = function
       str "the type of an impossible pattern-matching clause"
   | Evar_kinds.MatchingVar _ ->
       assert false
+  | Evar_kinds.VarInstance id ->
+      str "an instance for the variable " ++ pr_id id
 
 let explain_unsolvability = function
   | None -> mt()

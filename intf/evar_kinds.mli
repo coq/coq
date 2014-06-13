@@ -27,3 +27,4 @@ type t =
   | GoalEvar
   | ImpossibleCase
   | MatchingVar of bool * Id.t
+  | VarInstance of Id.t

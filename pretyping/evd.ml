@@ -1560,6 +1560,7 @@ let pr_evar_source = function
   | Evar_kinds.GoalEvar -> str "goal evar"
   | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
   | Evar_kinds.MatchingVar _ -> str "matching variable"
+  | Evar_kinds.VarInstance id -> str "instance of " ++ pr_id id
 
 let pr_evar_info evi =
   let phyps =
