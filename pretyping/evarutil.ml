@@ -491,12 +491,12 @@ let rec check_and_clear_in_constr evdref err ids c =
 
       | _ -> map_constr (check_and_clear_in_constr evdref err ids) c
 
-let clear_hyps_in_evi evdref hyps concl ids =
+let clear_hyps_in_evi_main evdref hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occuring in evi *)
-  let nconcl =
-    check_and_clear_in_constr evdref (OccurHypInSimpleClause None) ids concl in
+  let terms =
+    List.map (check_and_clear_in_constr evdref (OccurHypInSimpleClause None) ids) terms in
   let nhyps =
     let check_context ((id,ob,c) as decl) =
       let err = OccurHypInSimpleClause (Some id) in
@@ -517,7 +517,17 @@ let clear_hyps_in_evi evdref hyps concl ids =
     in
       remove_hyps ids check_context check_value hyps
   in
-  (nhyps,nconcl)
+  (nhyps,terms)
+
+let clear_hyps_in_evi evdref hyps concl ids =
+  match clear_hyps_in_evi_main evdref hyps [concl] ids with
+  | (nhyps,[nconcl]) -> (nhyps,nconcl)
+  | _ -> assert false
+
+let clear_hyps2_in_evi evdref hyps t concl ids =
+  match clear_hyps_in_evi_main evdref hyps [t;concl] ids with
+  | (nhyps,[t;nconcl]) -> (nhyps,t,nconcl)
+  | _ -> assert false
 
 (** The following functions return the set of evars immediately
     contained in the object, including defined evars *)

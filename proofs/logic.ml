@@ -104,8 +104,13 @@ let check_typability env sigma c =
 
 let clear_hyps sigma ids sign cl =
   let evdref = ref (Evd.create_goal_evar_defs sigma) in
-  let (hyps,concl) = Evarutil.clear_hyps_in_evi evdref sign cl ids in
-  (hyps,concl, !evdref)
+  let (hyps,cl) = Evarutil.clear_hyps_in_evi evdref sign cl ids in
+  (hyps, cl, !evdref)
+
+let clear_hyps2 sigma ids sign t cl =
+  let evdref = ref (Evd.create_goal_evar_defs sigma) in
+  let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi evdref sign t cl ids in
+  (hyps, t, cl, !evdref)
 
 (* The ClearBody tactic *)
 
@@ -578,17 +583,17 @@ let prim_refiner r sigma goal =
 
     | Cut (b,replace,id,t) ->
         let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma t) in
-	let sign,cl,sigma =
+	let sign,t,cl,sigma =
 	  if replace then
 	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
-	    let sign,cl,sigma = clear_hyps sigma (Id.Set.singleton id) sign cl in
+	    let sign,t,cl,sigma = clear_hyps2 sigma (Id.Set.singleton id) sign t cl in
 	    move_hyp true false ([],(id,None,t),named_context_of_val sign)
 	      nexthyp,
-	      cl,sigma
+	      t,cl,sigma
 	  else
             (if !check && mem_named_context id (named_context_of_val sign) then
 	      error ("Variable " ^ Id.to_string id ^ " is already declared.");
-	     push_named_context_val (id,None,t) sign,cl,sigma) in
+	     push_named_context_val (id,None,t) sign,t,cl,sigma) in
         let (sg2,ev2,sigma) = 
 	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
 	let oterm = Term.mkApp (mkNamedLambda id t ev2 , [| ev1 |]) in

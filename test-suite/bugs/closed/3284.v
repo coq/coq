@@ -13,5 +13,11 @@ Proof.
   intros A B C f g x H.
   Fail apply @functional_extensionality_dep in H.
   Fail apply functional_extensionality_dep in H.
+  eapply functional_extensionality_dep in H.
+Abort.
+
+Goal forall A B C (f g : forall (x : A) (y : B x), C x y), forall x:A, (forall x y, f x y = g x y) -> True.
+Proof.
+  intros A B C f g x H.
   specialize (H x).
   apply functional_extensionality_dep in H.
