@@ -113,6 +113,9 @@ val reset_context : env -> env
 (* This forgets rel context and sets a new named context *)
 val reset_with_named_context : named_context_val -> env -> env
 
+(* This removes the [n] last declarations from the rel context *)
+val pop_rel_context : int -> env -> env
+
 (************************************************************************)
 (*s Global constants *)
 (*s Add entries to global environment *)
