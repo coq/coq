@@ -244,15 +244,16 @@ let mk_inductive_obj sp mib packs variables nparams hyps finite =
        let {Declarations.mind_consnames=consnames ;
             Declarations.mind_typename=typename } = p
        in
-        let arity = Inductive.type_of_inductive (Global.env()) ((mib,p),Univ.Instance.empty)(*FIXME*) in
-        let lc = Inductiveops.arities_of_constructors (Global.env ()) ((sp,!tyno),Univ.Instance.empty)(*FIXME*) in
-        let cons =
+       let inst = Univ.UContext.instance mib.Declarations.mind_universes in
+       let arity = Inductive.type_of_inductive (Global.env()) ((mib,p),inst) in
+       let lc = Inductiveops.arities_of_constructors (Global.env ()) ((sp,!tyno),inst) in
+       let cons =
          (Array.fold_right (fun (name,lc) i -> (name,lc)::i)
-          (Array.mapi
-           (fun j x ->(x,Unshare.unshare lc.(j))) consnames)
-          []
+            (Array.mapi
+               (fun j x ->(x,Unshare.unshare lc.(j))) consnames)
+            []
          )
-        in
+       in
          (typename,finite,Unshare.unshare arity,cons)::i
      ) packs []
    in

@@ -11,7 +11,7 @@ Delimit Scope functor_scope with functor.
 
 Local Open Scope category_scope.
 
-Fail Record SpecializedCategory (obj : Type) :=
+Record SpecializedCategory (obj : Type) :=
   {
     Object :> _ := obj;
     Morphism : obj -> obj -> Type;

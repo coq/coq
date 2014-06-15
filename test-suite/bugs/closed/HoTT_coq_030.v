@@ -47,7 +47,7 @@ Record SpecializedFunctor
     }.
 
 Section Functor.
-  Variable C D : Category.
+  Context (C D : Category).
 
   Definition Functor := SpecializedFunctor C D.
 End Functor.
@@ -235,7 +235,7 @@ Section FullyFaithful.
   Context `(C : @SpecializedCategory objC).
 
   Set Printing Universes.
-  Fail Check InducedHomNaturalTransformation (Yoneda C).
+  Check InducedHomNaturalTransformation (Yoneda C).
   (* Error: Universe inconsistency (cannot enforce Top.865 = Top.851 because
 Top.851 < Top.869 <= Top.864 <= Top.865). *)
 End FullyFaithful.

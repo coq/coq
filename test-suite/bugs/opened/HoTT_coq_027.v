@@ -20,8 +20,8 @@ Identity Coercion FunctorToType_Id : FunctorToType >-> Functor.
 
 Set Printing Universes.
 Definition FunctorTo_Set2Type `(C : @Category objC) (F : FunctorToSet C)
-: FunctorToType C.
-  Fail refine (@Build_Functor _ C _ TypeCat
+: FunctorToType@{Type Type Type Set} C.
+  refine (@Build_Functor _ C _ TypeCat
                          (fun x => F.(ObjectOf) x)
                          (fun s d m => F.(MorphismOf) _ _ m)).
 (* ??? Toplevel input, characters 8-148:
@@ -40,7 +40,6 @@ The term
  "FunctorToType@{Top.100 Top.101 Top.102 Top.103} C"
 (Universe inconsistency: Cannot enforce Set = Top.103)).
  *)
-admit.
 Defined. (* Toplevel input, characters 0-8:
 Error:
 The term
