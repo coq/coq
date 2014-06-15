@@ -1,11 +1,10 @@
 Goal Type = Type.
-  match goal with |- ?x = ?y => idtac end.
+  Fail match goal with |- ?x = ?x => idtac end.
 Abort.
 
 Goal Prop.
   Fail match goal with |- Type => idtac end.
 Abort.
-
 
 Goal Prop = Set.
   (* This should fail *)
