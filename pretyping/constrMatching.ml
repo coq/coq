@@ -63,7 +63,7 @@ let warn_bound_again name =
 let constrain n (ids, m as x) (names, terms as subst) =
   try
     let (ids', m') = Id.Map.find n terms in
-    if List.equal Id.equal ids ids' && eq_constr_nounivs m m' then subst
+    if List.equal Id.equal ids ids' && eq_constr m m' then subst
     else raise PatternMatchingFailure
   with Not_found ->
     let () = if Id.Map.mem n names then warn_bound_meta n in

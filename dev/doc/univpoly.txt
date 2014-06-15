@@ -235,3 +235,21 @@ typing constraint. Adding the correct type annotations will always fix
 this.
 
 
+Unification semantics
+=====================
+
+In Ltac, matching with:
+
+- a universe polymorphic constant [c] matches any instance of the
+  constant.
+- a variable ?x already bound to a term [t] (non-linear pattern) uses 
+  strict equality of universes (e.g., Type@{i} and Type@{j} are not
+  equal).
+
+In tactics:
+
+- [change foo with bar], [pattern foo] will unify all instances of [foo]
+  (and convert them with [bar]). This might incur unifications of
+  universes. [change] uses conversion while [pattern] only does
+  syntactic matching up-to unification of universes.
+- [apply], [refine] use unification up to universes.
