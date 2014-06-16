@@ -23,30 +23,6 @@ let image = ref ""
 
 let verbose = ref false
 
-(* Verifies that a string starts by a letter and do not contain
-   others caracters than letters, digits, or `_` *)
-
-let check_module_name s =
-  let err c =
-    output_string stderr "Invalid module name: ";
-    output_string stderr s;
-    output_string stderr " character ";
-    if c = '\'' then
-      output_string stderr "\"'\""
-    else
-      (output_string stderr"'"; output_char stderr c; output_string stderr"'");
-    output_string stderr " is not allowed in module names\n";
-    exit 1
-  in
-  match String.get s 0 with
-    | 'a' .. 'z' | 'A' .. 'Z' ->
-	for i = 1 to (String.length s)-1 do
-	  match String.get s i with
-	    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_'  -> ()
-	    | c -> err c
-	done
-    | c -> err c
-
 let rec make_compilation_args = function
   | [] -> []
   | file :: fl ->
@@ -55,7 +31,6 @@ let rec make_compilation_args = function
           Filename.chop_suffix file ".v"
         else file
       in
-      check_module_name (Filename.basename file_noext);
       (if !verbose then "-compile-verbose" else "-compile")
       :: file_noext :: (make_compilation_args fl)
 
