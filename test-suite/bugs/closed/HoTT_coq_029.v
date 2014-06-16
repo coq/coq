@@ -164,6 +164,11 @@ Module SecondComment.
   Set Universe Polymorphism.
   Generalizable All Variables.
 
+  Record prod (A B : Type) := pair { fst : A; snd : B }.
+  Arguments fst {A B} _.
+  Arguments snd {A B} _.
+  Infix "*" := prod : type_scope.
+  Notation " ( x , y ) " := (@pair _ _ x y).
   Record Category (obj : Type) :=
     Build_Category {
         Object :> _ := obj;
@@ -301,15 +306,15 @@ Module SecondComment.
     Definition CommaCategoryProjection : Functor (CommaCategory S T) (ProductCategory A B).
     Admitted.
 
-    Fail Definition CommaCategoryProjectionFunctor_ObjectOf
-    : @SliceCategoryOver _ LocallySmallCat (ProductCategory A B : Category _)
+    Definition CommaCategoryProjectionFunctor_ObjectOf
+    : @SliceCategoryOver _ LocallySmallCat (ProductCategory A B)
       :=
         existT _
-               ((CommaCategory S T : Category _) : Category', tt)
+               ((CommaCategory S T) : Category', tt)
                (CommaCategoryProjection) :
           CommaCategory_ObjectT (IdentityFunctor _)
                                 (SliceCategory_Functor LocallySmallCat
-                                                       (ProductCategory A B : Category _)).
+                                                       (ProductCategory A B)).
     (* Anomaly: apply_coercion_args: mismatch between arguments and coercion. Please report. *)
     (* Toplevel input, characters 110-142:
 Error:
