@@ -20,7 +20,7 @@ Polymorphic Record NaturalTransformation objC C objD D (F G : Functor (objC := o
     Commutes' : forall s d (m : C.(Morphism) s d), ComponentsOf' s = ComponentsOf' s }.
 
 Ltac present_obj from to :=
-  repeat match goal with
+  match goal with
            | [ _ : appcontext[from ?obj ?C] |- _ ] => progress change (from obj C) with (to obj C) in *
            | [ |- appcontext[from ?obj ?C] ] => progress change (from obj C) with (to obj C) in *
          end.
@@ -36,7 +36,7 @@ Section NaturalTransformationComposition.
   Polymorphic Definition NTComposeT (T' : NaturalTransformation F' F'') (T : NaturalTransformation F F') :
     NaturalTransformation F F''.
     exists (fun c => Compose _ _ _ _ (T' c) (T c)).
-    progress present_obj @Morphism @Morphism. (* removing this line makes the error go away *)
+    repeat progress present_obj @Morphism @Morphism. (* removing this line makes the error go away *)
     intros. (* removing this line makes the error go away *)
     admit.
   Defined.
@@ -65,18 +65,19 @@ Section Law0.
   Set Printing Universes.
   Set Printing Existential Instances.
 
-  Fail Polymorphic Definition ExponentialLaw0Functor_Inverse_ObjectOf' : Object (@FunctorCategory Empty_set Cat0 objC C).
+  Polymorphic Definition ExponentialLaw0Functor_Inverse_ObjectOf' : Object (@FunctorCategory Empty_set Cat0 objC C).
   (* In environment
 objC : Type (* Top.154 *)
 C : Category (* Top.155 Top.154 *) objC
 The term "objC" has type "Type (* Top.154 *)"
 while it is expected to have type "Type (* Top.184 *)"
 (Universe inconsistency: Cannot enforce Top.154 <= Set)). *)
-  Fail Admitted.
+  Admitted.
 
-  Fail Polymorphic Definition ExponentialLaw0Functor_Inverse_ObjectOf : Object (FunctorCategory Cat0 C).
-  Fail hnf.
-  Fail refine (@FunctorFrom0 _ _).
+  Polymorphic Definition ExponentialLaw0Functor_Inverse_ObjectOf : Object (FunctorCategory Cat0 C).
+    hnf.
+    refine (@FunctorFrom0 _ _).
+
     (* Toplevel input, characters 23-40:
 Error:
 In environment
@@ -90,6 +91,5 @@ The term
  while it is expected to have type
  "@Functor (* Set Prop Set Prop *) Empty_set Cat0 objC C".
 *)
-  Fail admit.
-  Fail Defined.
+  Defined.
 End Law0.

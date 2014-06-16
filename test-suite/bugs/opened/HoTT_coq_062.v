@@ -49,7 +49,8 @@ Local Open Scope equiv_scope.
 Definition equiv_path (A B : Type) (p : A = B) : A <~> B
   := BuildEquiv _ _ (transport (fun X:Type => X) p) admit.
 
-Class Univalence := { isequiv_equiv_path :> forall (A B : Type), IsEquiv (equiv_path A B) }.
+Class Univalence :=
+  isequiv_equiv_path :> forall (A B : Type), IsEquiv (equiv_path A B) .
 
 Section Univalence.
   Context `{Univalence}.
@@ -66,11 +67,13 @@ Defined.
 
 Definition p `{Univalence} : Bool = Bool := path_universe e.
 
-Theorem thm `{Univalence} : (forall A, ((A -> False) -> False) -> A) -> False.
+Theorem thm `{Univalence} : (forall A : Set, ((A -> False) -> False) -> A) -> False.
   intro f.
   Set Printing Universes.
   Set Printing All.
-  Fail pose proof (apD f (path_universe e)).
+  pose proof (apD f (path_universe e)).
+  cut `{Univalence}; intros. pose proof (apD f p). 
+Admitted.
   (* ??? Toplevel input, characters 0-37:
 Error:
 Unable to satisfy the following constraints:
@@ -79,7 +82,6 @@ H : Univalence@{Top.144 Top.145 Top.146 Top.147 Top.148}
 f : forall (A : Type{Top.150}) (_ : forall _ : forall _ : A, False, False), A
 
 ?57 : "@IsEquiv@{Top.150 Top.145} Bool Bool (equiv_fun@{Set Set} Bool Bool e)" *)
-  Fail pose proof (apD f p).
 (* Toplevel input, characters 18-19:
 Error:
 In environment

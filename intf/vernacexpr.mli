@@ -101,6 +101,7 @@ type showable =
   | ShowNode
   | ShowScript
   | ShowExistentials
+  | ShowUniverses
   | ShowTree
   | ShowProofNames
   | ShowIntros of bool

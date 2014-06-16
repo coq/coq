@@ -245,14 +245,25 @@ let declare_assumptions idl is_coe k c imps impl_is_on nl =
       (ref',u')::refs, status' && status) ([],true) idl in
   List.rev refs, status
 
-let do_assumptions kind nl l =
+let do_assumptions (_, poly, _ as kind) nl l =
   let env = Global.env () in
   let evdref = ref (Evd.from_env env) in
+  let l = 
+    if poly then
+      (* Separate declarations so that A B : Type puts A and B in different levels. *)
+      List.fold_right (fun (is_coe,(idl,c)) acc ->
+        List.fold_right (fun id acc -> 
+	  (is_coe, ([id], c)) :: acc) idl acc)
+        l []
+    else l
+  in
   let _,l = List.fold_map (fun env (is_coe,(idl,c)) ->
     let (t,ctx),imps = interp_assumption evdref env [] c in
     let env =
       push_named_context (List.map (fun (_,id) -> (id,None,t)) idl) env in
-    (env,((is_coe,idl),t,(ctx,imps)))) env l in
+      (env,((is_coe,idl),t,(ctx,imps)))) 
+    env l 
+  in
   let evd = solve_remaining_evars all_and_fail_flags env Evd.empty !evdref in
   let l = List.map (on_pi2 (nf_evar evd)) l in
   snd (List.fold_left (fun (subst,status) ((is_coe,idl),t,(ctx,imps)) ->

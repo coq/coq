@@ -512,6 +512,7 @@ let rec pr_vernac = function
 	| ShowNode -> str"Show Node"
 	| ShowScript -> str"Show Script"
 	| ShowExistentials -> str"Show Existentials"
+	| ShowUniverses -> str"Show Universes"
 	| ShowTree -> str"Show Tree"
 	| ShowProofNames -> str"Show Conjectures"
 	| ShowIntros b -> str"Show " ++ (if b then str"Intros" else str"Intro")

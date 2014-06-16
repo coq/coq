@@ -71,6 +71,15 @@ let show_top_evars () =
   let sigma = gls.Evd.sigma in
   msg_notice (pr_evars_int 1 (Evarutil.non_instantiated sigma))
 
+let show_universes () =
+  let pfts = get_pftreestate () in
+  let gls = Proof.V82.subgoals pfts in
+  let sigma = gls.Evd.sigma in
+  let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
+  let cstrs = Univ.merge_constraints (Univ.ContextSet.constraints ctx) Univ.empty_universes in
+    msg_notice (Univ.pr_universe_context_set ctx);
+    msg_notice (str"Normalized constraints: " ++ Univ.pr_universes cstrs)
+
 let show_prooftree () =
   (* Spiwack: proof tree is currently not working *)
   ()
@@ -1619,6 +1628,7 @@ let vernac_show = function
   | ShowNode -> show_node ()
   | ShowScript -> Stm.show_script ()
   | ShowExistentials -> show_top_evars ()
+  | ShowUniverses -> show_universes ()
   | ShowTree -> show_prooftree ()
   | ShowProofNames ->
       msg_notice (pr_sequence pr_id (Pfedit.get_all_proof_names()))
