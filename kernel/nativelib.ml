@@ -67,6 +67,9 @@ let call_compiler ml_filename =
   let f = Filename.chop_extension ml_filename in
   let link_filename = f ^ ".cmo" in
   let link_filename = Dynlink.adapt_filename link_filename in
+  let remove f = if Sys.file_exists f then Sys.remove f in
+  remove link_filename;
+  remove (f ^ ".cmi");
   let comp_cmd =
     Format.sprintf "%s -%s -o %s -rectypes -w a -I %s -impl %s"
       compiler_name (if Dynlink.is_native then "shared" else "c")
