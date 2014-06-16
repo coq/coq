@@ -1,4 +1,10 @@
-(* File reduced by coq-bug-finder from 9039 lines to 7786 lines, then from 7245 lines to 476 lines, then from 417 lines to 249 lines, then from 171 lines to 127 lines. *)
+(* There are some problems in materialize_evar with local definitions,
+   as CO below; this is not completely sorted out yet, but at least
+   it fails in a smooth way at the time of today [HH] *)
+
+(* File reduced by coq-bug-finder from 9039 lines to 7786 lines, then
+   from 7245 lines to 476 lines, then from 417 lines to 249 lines,
+   then from 171 lines to 127 lines. *)
 
 Set Implicit Arguments.
 Set Universe Polymorphism.

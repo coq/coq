@@ -1260,6 +1260,8 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
         | Some b ->
           try project_variable t
           with NotInvertibleUsingOurAlgorithm _ -> imitate envk b)
+    | LetIn (na,b,u,c) ->
+        imitate envk (subst1 b c)
     | Evar (evk',args' as ev') ->
         if Evar.equal evk evk' then raise (OccurCheckIn (evd,rhs));
         (* Evar/Evar problem (but left evar is virtual) *)
