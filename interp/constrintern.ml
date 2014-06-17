@@ -1151,7 +1151,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	       let ((ids',_,_,_) as env',rbefore) =
 		 List.fold_left intern_local_binder (env,[]) before in
 	       let ro = f (intern (ids', unb, tmp_scope, scopes)) in
-	       let n' = Option.map (fun _ -> List.length rbefore) n in
+	       let n' = Option.map (fun _ -> List.length (List.filter (fun (_,_,b,_) -> (* remove let-ins *) b = None) rbefore)) n in
 		 n', ro, List.fold_left intern_local_binder (env',rbefore) after
 	     in
 	     let n, ro, ((ids',_,_,_),rbl) =
