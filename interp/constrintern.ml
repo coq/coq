@@ -681,7 +681,11 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
 	GVar (loc,id), [], [], []
 
 let is_projection_ref = function
-  | ConstRef r -> if Environ.is_projection r (Global.env ()) then Some r else None
+  | ConstRef r -> 
+    if Environ.is_projection r (Global.env ()) then 
+      let pb = Environ.lookup_projection r (Global.env ()) in
+	Some (r, pb.Declarations.proj_npars)
+    else None
   | _ -> None
 
 let proj_impls r impls =
@@ -689,28 +693,32 @@ let proj_impls r impls =
   let f (x, l) = x, projection_implicits env r l in
     List.map f impls
 
+let proj_scopes n scopes = 
+  List.skipn_at_least n scopes
+
 let find_appl_head_data c =
   match c with
   | GRef (loc,ref,_) as x -> 
     let impls = implicits_of_global ref in
-    let isproj, impls = 
-      match is_projection_ref ref with
-      | Some r -> true, proj_impls r impls
-      | None -> false, impls
-    in
     let scopes = find_arguments_scope ref in
+    let isproj, impls, scopes = 
+      match is_projection_ref ref with
+      | Some (r, n) -> true, proj_impls r impls, proj_scopes n scopes
+      | None -> false, impls, scopes
+    in
       x, isproj, impls, scopes, []
   | GApp (_,GRef (_,ref,_),l) as x
       when l != [] && Flags.version_strictly_greater Flags.V8_2 ->
       let n = List.length l in
       let impls = implicits_of_global ref in 
-      let isproj, impls = 
+      let scopes = find_arguments_scope ref in
+      let isproj, impls, scopes = 
 	match is_projection_ref ref with
-	| Some r -> true, proj_impls r impls
-	| None -> false, impls
+	| Some (r, n) -> true, proj_impls r impls, proj_scopes n scopes
+	| None -> false, impls, scopes
       in
 	x, isproj, List.map (drop_first_implicits n) impls,
-	List.skipn_at_least n (find_arguments_scope ref),[]
+	List.skipn_at_least n scopes,[]
   | x -> x,false,[],[],[]
 
 let error_not_enough_arguments loc =

@@ -67,7 +67,7 @@ Module failure.
   Check ((_ o _) _2 _)%hom. (* ((?14 o ?15)%functor _1 ?18)%hom
      : hom ?13 (ob_of (?14 o ?15)%functor ?16)
          (ob_of (?14 o ?15)%functor ?17) *)
-  Fail Check ((_ o _) _1 _)%hom. (* Toplevel input, characters 7-19:
+  Check ((_ o _) _1 _)%hom. (* Toplevel input, characters 7-19:
 Error:
 The term "(?23 o ?24)%hom" has type "hom ?19 ?20 ?22"
 while it is expected to have type "functor ?25 ?26". *)
