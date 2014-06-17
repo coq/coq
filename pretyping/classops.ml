@@ -31,6 +31,7 @@ type cl_typ =
   | CL_SECVAR of variable
   | CL_CONST of constant
   | CL_IND of inductive
+  | CL_PROJ of projection
 
 type cl_info_typ = {
   cl_param : int
@@ -194,6 +195,7 @@ let find_class_type sigma t =
   match kind_of_term t' with
     | Var id -> CL_SECVAR id, Univ.Instance.empty, args
     | Const (sp,u) -> CL_CONST sp, u, args
+    | Proj (p, c) -> CL_PROJ p, Univ.Instance.empty, c :: args
     | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
     | Prod (_,_,_) -> CL_FUN, Univ.Instance.empty, []
     | Sort _ -> CL_SORT, Univ.Instance.empty, []
@@ -204,6 +206,9 @@ let subst_cl_typ subst ct = match ct with
     CL_SORT
   | CL_FUN
   | CL_SECVAR _ -> ct
+  | CL_PROJ c ->
+    let c',t = subst_con_kn subst c in
+      if c' == c then ct else CL_PROJ c'
   | CL_CONST c ->
       let c',t = subst_con_kn subst c in
 	if c' == c then ct else
@@ -239,7 +244,7 @@ let class_args_of env sigma c = pi3 (find_class_type sigma c)
 let string_of_class = function
   | CL_FUN -> "Funclass"
   | CL_SORT -> "Sortclass"
-  | CL_CONST sp ->
+  | CL_CONST sp | CL_PROJ sp ->
       string_of_qualid (shortest_qualid_of_global Id.Set.empty (ConstRef sp))
   | CL_IND sp ->
       string_of_qualid (shortest_qualid_of_global Id.Set.empty (IndRef sp))
@@ -395,12 +400,18 @@ type coercion = {
 (* Calcul de l'arité d'une classe *)
 
 let reference_arity_length ref =
-  let t,_ = Universes.type_of_global ref in
+  let t = Universes.unsafe_type_of_global ref in
   List.length (fst (Reductionops.splay_arity (Global.env()) Evd.empty t))
+
+let projection_arity_length p =
+  let len = reference_arity_length (ConstRef p) in
+  let pb = Environ.lookup_projection p (Global.env ()) in 
+    len - pb.Declarations.proj_npars
 
 let class_params = function
   | CL_FUN | CL_SORT -> 0
   | CL_CONST sp -> reference_arity_length (ConstRef sp)
+  | CL_PROJ sp -> projection_arity_length sp
   | CL_SECVAR sp -> reference_arity_length (VarRef sp)
   | CL_IND sp  -> reference_arity_length (IndRef sp)
 
