@@ -53,8 +53,6 @@ type mutual_inductive_entry = {
 type proof_output = constr Univ.in_universe_context_set * Declareops.side_effects
 type const_entry_body = proof_output Future.computation
 
-type projection = mutual_inductive * int * int * types
-
 type definition_entry = {
   const_entry_body   : const_entry_body;
   (* List of sectoin variables *)
@@ -64,7 +62,7 @@ type definition_entry = {
   const_entry_type        : types option;
   const_entry_polymorphic : bool;
   const_entry_universes   : Univ.universe_context;
-  const_entry_proj        : projection option;
+  const_entry_proj        : bool;
   const_entry_opaque      : bool;
   const_entry_inline_code : bool }
 

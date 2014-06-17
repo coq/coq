@@ -199,7 +199,7 @@ let definition_entry ?(opaque=false) ?(inline=false) ?types
   { const_entry_body = Future.from_val ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
-    const_entry_proj = None;
+    const_entry_proj = false;
     const_entry_polymorphic = poly;
     const_entry_universes = univs;
     const_entry_opaque = opaque;
@@ -237,7 +237,7 @@ let declare_sideff env fix_exn se =
         const_entry_feedback = None;
 	const_entry_polymorphic = cb.const_polymorphic;
 	const_entry_universes = cb.const_universes;
-	const_entry_proj = None;
+	const_entry_proj = false;
     });
     cst_hyps = [] ;
     cst_kind =  Decl_kinds.IsDefinition Decl_kinds.Definition;

@@ -119,6 +119,38 @@ let hcons_j j =
 
 let feedback_completion_typecheck =
   Option.iter (fun state_id -> Pp.feedback ~state_id Interface.Complete)
+
+let check_projection env kn inst body =
+  let cannot_recognize () = error ("Cannot recognize a projection") in
+  let ctx, m = decompose_lam_assum body in
+  let () = if not (isCase m) then cannot_recognize () in
+  let ci, p, c, b = destCase m in
+  let (mib, oib as specif) = Inductive.lookup_mind_specif env ci.ci_ind in
+  let recinfo = match mib.mind_record with
+    | None -> 
+      error ("Trying to declare a primitive projection for a non-record inductive type")
+    | Some (_, r) -> r
+  in
+  let n = mib.mind_nparams in
+  let () = 
+    if n + 1 != List.length ctx ||
+      not (isRel c) || destRel c != 1 || Array.length b != 1 ||
+      not (isLambda p)
+    then cannot_recognize ()
+  in
+  let (na, t, ty) = destLambda p in 
+  let argctx, p = decompose_lam_assum b.(0) in
+  (* No need to check the lambdas as the case is well-formed *)
+  let () = if not (isRel p) then cannot_recognize () in
+  let arg = destRel p - 1 in
+  let () = if not (arg < Array.length recinfo) then cannot_recognize () in
+  let () = if not (eq_con_chk recinfo.(Array.length recinfo - (arg + 1)) kn) then cannot_recognize () in
+  let pb = { proj_ind = fst ci.ci_ind;
+	     proj_npars = n;
+	     proj_arg = arg;
+	     proj_type = ty;
+	     proj_body = body }
+  in pb
   
 let infer_declaration env kn dcl =
   match dcl with
@@ -153,23 +185,20 @@ let infer_declaration env kn dcl =
       assert(Univ.ContextSet.is_empty ctx);
       let body = handle_side_effects env body side_eff in
       let def, typ, proj = 
-	match c.const_entry_proj with
-	| Some (ind, n, m, ty) ->
-            (* FIXME: check projection *)
-	  let pb = { proj_ind = ind;
-		     proj_npars = n;
-		     proj_arg = m;
-		     proj_type = ty;
-		     proj_body = body }
-	  in 
+	if c.const_entry_proj then
+	  (** This should be the projection defined as a match. *)
+	  let j = infer env body in
+	  let typ = constrain_type env j c.const_entry_polymorphic (map_option_typ typ) in
+	  (** We check it does indeed have the shape of a projection. *)
+	  let inst = Univ.UContext.instance c.const_entry_universes in
+	  let pb = check_projection env (Option.get kn) inst body in
+	  (** We build the eta-expanded form. *)
+	  let context, m = decompose_lam_n_assum (pb.proj_npars + 1) body in 
 	  let body' = mkProj (Option.get kn, mkRel 1) in
-	    (* TODO: recognize projection *)
-	  let context, m = decompose_lam_n_assum (n + 1) body in 
 	  let body = it_mkLambda_or_LetIn body' context in
-
 	    Def (Mod_subst.from_val (hcons_constr body)),
-	    RegularArity (hcons_constr (Option.get typ)), Some pb
-	| None ->
+	    typ, Some pb
+	else
 	  let j = infer env body in
 	  let j = hcons_j j in
 	  let typ = constrain_type env j c.const_entry_polymorphic (map_option_typ typ) in

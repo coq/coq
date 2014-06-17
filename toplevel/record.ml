@@ -247,12 +247,9 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
                 it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
 	      let kn =
 	        try
-		  let projinfo = 
-		    (fst indsp, mib.mind_nparams, nfields - nfi, ccl)
-		  in
-		  let projinfo =
-		    if !primitive_flag && optci = None then Some projinfo 
-		    else None
+		  let makeprim =
+		    if !primitive_flag && optci = None then true
+		    else false
 		  in
 		  let cie = {
                     const_entry_body =
@@ -261,7 +258,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
                     const_entry_type = Some projtyp;
 		    const_entry_polymorphic = poly;
 		    const_entry_universes = ctx;
-		    const_entry_proj = projinfo;
+		    const_entry_proj = makeprim;
                     const_entry_opaque = false;
                     const_entry_inline_code = false;
                     const_entry_feedback = None;
