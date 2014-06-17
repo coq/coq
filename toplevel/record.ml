@@ -219,7 +219,6 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
   let x = match name with Some n -> Name n | None -> Namegen.named_hd (Global.env()) r Anonymous in
   let fields = instantiate_possibly_recursive_type indu paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
-  let nfields = List.length fields in
   let (_,kinds,sp_projs,_) =
     List.fold_left3
       (fun (nfi,kinds,sp_projs,subst) coe (fi,optci,ti) impls ->
