@@ -142,9 +142,10 @@ let check_projection env kn inst body =
   let argctx, p = decompose_lam_assum b.(0) in
   (* No need to check the lambdas as the case is well-formed *)
   let () = if not (isRel p) then cannot_recognize () in
-  let arg = destRel p - 1 in
-  let () = if not (arg < Array.length recinfo) then cannot_recognize () in
-  let () = if not (eq_con_chk recinfo.(Array.length recinfo - (arg + 1)) kn) then cannot_recognize () in
+  let var = destRel p in
+  let () = if not (var <= Array.length recinfo) then cannot_recognize () in
+  let arg = Array.length recinfo - var in
+  let () = if not (eq_con_chk recinfo.(arg) kn) then cannot_recognize () in
   let pb = { proj_ind = fst ci.ci_ind;
 	     proj_npars = n;
 	     proj_arg = arg;

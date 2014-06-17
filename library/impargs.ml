@@ -200,6 +200,9 @@ let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
     | App (f,_) when rig && is_flexible_reference env bound depth f ->
 	if strict then () else
           iter_constr_with_full_binders push_lift (frec false) ed c
+    | Proj (p,c) when rig ->
+      if strict then () else
+        iter_constr_with_full_binders push_lift (frec false) ed c	  
     | Case _ when rig ->
 	if strict then () else
           iter_constr_with_full_binders push_lift (frec false) ed c

@@ -2,7 +2,7 @@ Set Primitive Projections.
 Set Implicit Arguments.
 Set Universe Polymorphism.
 Set Asymmetric Patterns.
-
+Set Printing Projections.
 Inductive sum A B := inl : A -> sum A B | inr : B -> sum A B.
 Inductive Empty :=.
 
@@ -10,7 +10,7 @@ Record category :=
   { ob :> Type;
     hom : ob -> ob -> Type
   }.
-Set Printing All.
+
 Definition sum_category (C D : category) : category :=
   {|
     ob := sum (ob C) (ob D);
@@ -23,12 +23,5 @@ Definition sum_category (C D : category) : category :=
 Goal forall C D (x y : ob (sum_category C D)), Type.
 intros C D x y.
 hnf in x, y.
-Fail exact (hom x y). (* Toplevel input, characters 26-27:
-Error:
-In environment
-C : category
-D : category
-x : sum (ob C) (ob D)
-y : sum (ob C) (ob D)
-The term "x" has type "sum (ob C) (ob D)" while it is expected to have type
- "ob ?16". *)
+exact (hom (sum_category _ _) x y). 
+Defined.
