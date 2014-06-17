@@ -398,7 +398,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl
           | (na,bk,Some bd,ty)::bl ->
               let ty' = pretype_type empty_valcon env evdref lvar ty in
-              let bd' = pretype (mk_tycon ty'.utj_val) env evdref lvar ty in
+              let bd' = pretype (mk_tycon ty'.utj_val) env evdref lvar bd in
               let dcl = (na,Some bd'.uj_val,ty'.utj_val) in
 		type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl in
 	let ctxtv = Array.map (type_bl env empty_rel_context) bl in
