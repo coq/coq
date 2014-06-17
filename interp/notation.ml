@@ -535,6 +535,7 @@ let compute_scope_class t =
   let t', _ = decompose_appvect (Reductionops.whd_betaiotazeta Evd.empty t) in
   match kind_of_term t' with
   | Var _ | Const _ | Ind _ -> ScopeRef (global_of_constr t')
+  | Proj (p, c) -> ScopeRef (ConstRef p)
   | Sort _ -> ScopeSort
   |  _ -> raise Not_found
 
