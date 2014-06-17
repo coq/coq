@@ -1302,9 +1302,9 @@ let tclLOG (dbg,depth,trace) pp tac =
     | Debug ->
        (* For "debug (trivial/auto)", we directly output messages *)
       let s = String.make depth '*' in
-      begin fun gl ->
+      Proofview.V82.tactic begin fun gl ->
 	try
-	  let out = tac gl in
+	  let out = Proofview.V82.of_tactic tac gl in
 	  msg_debug (str s ++ spc () ++ pp () ++ str ". (*success*)");
 	  out
 	with reraise ->
@@ -1314,9 +1314,9 @@ let tclLOG (dbg,depth,trace) pp tac =
       end
     | Info ->
       (* For "info (trivial/auto)", we store a log trace *)
-      begin fun gl ->
+      Proofview.V82.tactic begin fun gl ->
 	try
-	  let out = tac gl in
+	  let out = Proofview.V82.of_tactic tac gl in
 	  trace := (depth, Some pp) :: !trace;
 	  out
 	with reraise ->
@@ -1324,9 +1324,6 @@ let tclLOG (dbg,depth,trace) pp tac =
 	  trace := (depth, None) :: !trace;
 	  raise reraise
       end
-
-let new_tclLOG dbg pp tac =
-  Proofview.V82.tactic (tclLOG dbg pp (Proofview.V82.of_tactic tac))
 
 (** For info, from the linear trace information, we reconstitute the part
     of the proof tree we're interested in. The last executed tactic
@@ -1365,17 +1362,16 @@ let pr_dbg_header = function
 
 let tclTRY_dbg d tac =
   let (level, _, _) = d in
-  tclORELSE0
-    (fun gl ->
-      let out = tac gl in
-      if level != Off then msg_debug (pr_dbg_header d ++ fnl () ++ pr_info_trace d);
-      out)
-    (fun gl ->
-      if level == Info then msg_debug (pr_info_nop d);
-      tclIDTAC gl)
-
-let new_tclTRY_dbg d tac =
-  Proofview.V82.tactic (tclTRY_dbg d (Proofview.V82.of_tactic tac))
+  let delay f = Proofview.tclUNIT () >>= fun () -> f () in
+  let tac = match level with
+  | Off -> tac
+  | Debug | Info -> delay (fun () -> msg_debug (pr_dbg_header d ++ fnl () ++ pr_info_trace d); tac)
+  in
+  let after = match level with
+  | Info -> delay (fun () -> msg_debug (pr_info_nop d); Proofview.tclUNIT ())
+  | Off | Debug -> Proofview.tclUNIT ()
+  in
+  Tacticals.New.tclORELSE0 tac after
 
 (**************************************************************************)
 (*                           The Trivial tactic                           *)
@@ -1400,8 +1396,8 @@ let exists_evaluable_reference env = function
   | EvalConstRef _ -> true
   | EvalVarRef v -> try ignore(lookup_named v env); true with Not_found -> false
 
-let dbg_intro dbg = new_tclLOG dbg (fun () -> str "intro") intro
-let dbg_assumption dbg = new_tclLOG dbg (fun () -> str "assumption") assumption
+let dbg_intro dbg = tclLOG dbg (fun () -> str "intro") intro
+let dbg_assumption dbg = tclLOG dbg (fun () -> str "assumption") assumption
 
 let rec trivial_fail_db dbg mod_delta db_list local_db =
   let intro_tac =
@@ -1480,7 +1476,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) 
        else tclFAIL 0 (str"Unbound reference") gl)
     | Extern tacast -> conclPattern concl p tacast
   in
-  new_tclLOG dbg (fun () -> pr_autotactic t) tactic
+  tclLOG dbg (fun () -> pr_autotactic t) tactic
 
 and trivial_resolve dbg mod_delta db_list local_db cl =
   try
@@ -1511,7 +1507,7 @@ let trivial ?(debug=Off) lems dbnames =
   let db_list = make_db_list dbnames in
   let d = mk_trivial_dbg debug in
   let hints = Tacmach.New.of_old (make_local_hint_db false lems) gl in
-  new_tclTRY_dbg d
+  tclTRY_dbg d
     (trivial_fail_db d false db_list hints)
   end
 
@@ -1522,7 +1518,7 @@ let full_trivial ?(debug=Off) lems =
   let db_list = List.map snd (String.Map.bindings dbs) in
   let d = mk_trivial_dbg debug in
   let hints = Tacmach.New.of_old (make_local_hint_db false lems) gl in
-  new_tclTRY_dbg d
+  tclTRY_dbg d
     (trivial_fail_db d false db_list hints)
   end
 
@@ -1590,7 +1586,7 @@ let delta_auto debug mod_delta n lems dbnames =
   let db_list = make_db_list dbnames in
   let d = mk_auto_dbg debug in
   let hints = Tacmach.New.of_old (make_local_hint_db false lems) gl in
-  new_tclTRY_dbg d
+  tclTRY_dbg d
     (search d n mod_delta db_list hints)
   end
 
@@ -1613,7 +1609,7 @@ let delta_full_auto ?(debug=Off) mod_delta n lems =
   let db_list = List.map snd (String.Map.bindings dbs) in
   let d = mk_auto_dbg debug in
   let hints = Tacmach.New.of_old (make_local_hint_db false lems) gl in
-  new_tclTRY_dbg d
+  tclTRY_dbg d
     (search d n mod_delta db_list hints)
   end
 
