@@ -17,7 +17,6 @@ open Term
 open Indrec
 open Declarations
 open Typeops
-open Termops
 open Ind_tables
 
 (* Induction/recursion schemes *)

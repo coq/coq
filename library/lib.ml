@@ -446,10 +446,6 @@ let section_segment_of_constant con =
 let section_segment_of_mutual_inductive kn =
   Names.Mindmap.find kn (snd (pi3 (List.hd !sectab)))
 
-let rec list_mem_assoc x = function
-  | [] -> raise Not_found
-  | (a, _) :: l -> Names.Id.equal a x || list_mem_assoc x l
-
 let section_instance = function
   | VarRef id ->
       if List.exists (fun (id',_,_,_) -> Names.id_eq id id') 

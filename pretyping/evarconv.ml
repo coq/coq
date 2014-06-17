@@ -687,7 +687,7 @@ and conv_record trs env evd (ctx,(h,h'),c,bs,(params,params1),(us,us2),(ts,ts1),
 	 (fst (decompose_app_vect (substl ks h'))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
-and eta_constructor ts env evd ((ind, i), u) l1 csts1 (c, csts2) =
+(*and eta_constructor ts env evd ((ind, i), u) l1 csts1 (c, csts2) =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
     | Some (exp,projs) when Array.length projs > 0 -> 
@@ -703,7 +703,7 @@ and eta_constructor ts env evd ((ind, i), u) l1 csts1 (c, csts2) =
 		   (Stack.append_app_list sk2 Stack.empty)
 	     else raise (Failure "")
 	 with Failure _ -> UnifFailure(evd,NotSameHead))
-    | _ -> UnifFailure (evd,NotSameHead)
+    | _ -> UnifFailure (evd,NotSameHead)*)
 
 (* Profiling *)
 let evar_conv_x =

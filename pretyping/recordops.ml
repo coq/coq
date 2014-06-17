@@ -145,14 +145,6 @@ type cs_pattern =
   | Sort_cs of sorts_family
   | Default_cs
 
-let eq_obj_typ o1 o2 =
-  Constr.equal o1.o_DEF o2.o_DEF &&
-  Int.equal o1.o_INJ o2.o_INJ &&
-  List.equal Constr.equal o1.o_TABS o2.o_TABS &&
-  List.equal Constr.equal o1.o_TPARAMS o2.o_TPARAMS &&
-  Int.equal o1.o_NPARAMS o2.o_NPARAMS &&
-  List.equal Constr.equal o1.o_TCOMPS o2.o_TCOMPS
-
 let eq_cs_pattern p1 p2 = match p1, p2 with
 | Const_cs gr1, Const_cs gr2 -> eq_gr gr1 gr2
 | Prod_cs, Prod_cs -> true
@@ -240,8 +232,6 @@ let pr_cs_pattern = function
   | Prod_cs -> str "_ -> _"
   | Default_cs -> str "_"
   | Sort_cs s -> Termops.pr_sort_family s
-
-let pr_pattern (p,c) = pr_cs_pattern p
 
 let open_canonical_structure i (_,o) =
   if Int.equal i 1 then

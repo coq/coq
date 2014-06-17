@@ -228,9 +228,6 @@ let declare_assumption is_coe (local,p,kind) (c,ctx) imps impl nl (_,ident) = ma
   in
     (gr,inst,Lib.is_modtype_strict ())
 
-let declare_assumptions_hook = ref ignore
-let set_declare_assumptions_hook = (:=) declare_assumptions_hook
-
 let interp_assumption evdref env bl c =
   let c = prod_constr_expr c bl in
   let ty, impls = interp_type_evars_impls evdref env c in
@@ -584,9 +581,6 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
 type one_inductive_impls =
   Impargs.manual_explicitation list (* for inds *)*
   Impargs.manual_explicitation list list (* for constrs *)
-
-type one_inductive_expr =
-  lident * local_binder list * constr_expr option * constructor_expr list
 
 let do_mutual_inductive indl poly prv finite =
   let indl,coes,ntns = extract_mutual_inductive_declaration_components indl in
@@ -1079,11 +1073,6 @@ let out_def = function
   | Some def -> def
   | None -> error "Program Fixpoint needs defined bodies."
 
-let collect_evars_of_term evd c ty =
-  let evars = Evar.Set.union (evars_of_term c) (evars_of_term ty) in
-    Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
-      evars Evd.empty
-      
 let do_program_recursive local p fixkind fixl ntns =
   let isfix = fixkind != Obligations.IsCoFixpoint in
   let (env, rec_sign, evd), fix, info = 

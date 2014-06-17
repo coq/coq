@@ -12,10 +12,8 @@ open Names
 open Univ
 open Term
 open Vars
-open Context
 open Declarations
 open Environ
-open Entries
 open Reduction
 open Inductive
 open Type_errors
@@ -62,7 +60,6 @@ let assumption_of_judgment env t ty =
 (* Prop and Set *)
 
 let judge_of_prop = mkSort type1_sort
-let judge_of_set = judge_of_prop
 
 let judge_of_prop_contents _ = judge_of_prop
 
@@ -122,16 +119,6 @@ let type_of_constant_knowing_parameters env cst paramtyps =
   let ty, cu = constant_type env cst in
     type_of_constant_knowing_parameters_arity env ty paramtyps, cu
 
-let type_of_constant_type env t =
-  type_of_constant_knowing_parameters_arity env t [||]
-
-let type_of_constant env cst =
-  type_of_constant_knowing_parameters env cst [||]
-
-let type_of_constant_in env cst =
-  let ar = constant_type_in env cst in
-    type_of_constant_knowing_parameters_arity env ar [||]
-
 let judge_of_constant_knowing_parameters env (kn,u as cst) args =
   let cb = lookup_constant kn env in
   let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
@@ -141,18 +128,6 @@ let judge_of_constant_knowing_parameters env (kn,u as cst) args =
 
 let judge_of_constant env cst =
   judge_of_constant_knowing_parameters env cst [||]
-
-let type_of_projection env (cst,u) =
-  let cb = lookup_constant cst env in
-  match cb.const_proj with
-  | Some pb -> 
-    if cb.const_polymorphic then
-      let mib,_ = lookup_mind_specif env (pb.proj_ind,0) in
-      let subst = make_inductive_subst mib u in
-	Vars.subst_univs_level_constr subst pb.proj_type
-    else pb.proj_type
-  | None -> raise (Invalid_argument "type_of_projection: not a projection")
-
 
 (* Type of a lambda-abstraction. *)
 
@@ -168,11 +143,6 @@ let type_of_projection env (cst,u) =
 
 let judge_of_abstraction env name var ty =
   mkProd (name, var, ty)
-
-(* Type of let-in. *)
-
-let judge_of_letin env name defj typj j =
-  subst1 defj j
 
 (* Type of an application. *)
 
@@ -490,26 +460,3 @@ let infer_type env constr =
 let infer_v env cv =
   let jv = execute_array env cv in
     make_judgev cv jv
-
-(* Typing of several terms. *)
-
-let infer_local_decl env id = function
-  | LocalDef c ->
-      let t = execute env c in
-      (Name id, Some c, t)
-  | LocalAssum c ->
-      let t = execute env c in
-      (Name id, None, assumption_of_judgment env c t)
-
-let infer_local_decls env decls =
-  let rec inferec env = function
-  | (id, d) :: l ->
-      let (env, l) = inferec env l in
-      let d = infer_local_decl env id d in
-	(push_rel d env, add_rel_decl d l)
-  | [] -> (env, empty_rel_context) in
-  inferec env decls
-
-(* Exported typing functions *)
-
-let typing env c = infer env c

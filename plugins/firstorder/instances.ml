@@ -21,7 +21,6 @@ open Reductionops
 open Formula
 open Sequent
 open Names
-open Globnames
 open Misctypes
 
 let compare_instance inst1 inst2=

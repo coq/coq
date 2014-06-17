@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Util
 open Names
 open Term
@@ -14,7 +13,6 @@ open Vars
 open Mod_subst
 open Environ
 open Globnames
-open Nameops
 open Libobject
 open Lib
 
@@ -186,15 +184,3 @@ let inHead : head_obj -> obj =
 let declare_head c =
   let hd = compute_head c in
   add_anonymous_leaf (inHead (c,hd))
-
-(** Printing *)
-
-let pr_head = function
-| RigidHead (RigidParameter cst) -> str "rigid constant " ++ pr_con cst
-| RigidHead (RigidType) -> str "rigid type"
-| RigidHead (RigidVar id) -> str "rigid variable " ++ pr_id id
-| ConstructorHead -> str "constructor"
-| FlexibleHead (k,n,p,b) -> int n ++ str "th of " ++ int k ++ str " binders applied to " ++ int p ++ str " arguments" ++ (if b then str " (with case)" else mt())
-| NotImmediatelyComputableHead -> str "unknown"
-
-

@@ -82,8 +82,6 @@ let solveNoteqBranch side =
 
 let make_eq () =
 (*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq ())
-let make_eq_refl () =
-(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq_refl ())
 
 let mkDecideEqGoal eqonleft op rectype c1 c2 =
   let equality    = mkApp(make_eq(), [|rectype; c1; c2|]) in

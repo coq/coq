@@ -802,12 +802,6 @@ let register field value by_clause senv =
       Retroknowledge.RKRegister (field,value)::senv.local_retroknowledge
   }
 
-(* spiwack : currently unused *)
-let unregister field senv =
-  (*spiwack: todo: do things properly or delete *)
-  { senv with env = Environ.unregister senv.env field}
-(* /spiwack *)
-
 (* This function serves only for inlining constants in native compiler for now,
 but it is meant to become a replacement for environ.register *)
 let register_inline kn senv =

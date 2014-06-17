@@ -214,7 +214,6 @@ module VCS : sig
   val goals : id -> int -> unit
   val set_state : id -> state -> unit
   val get_state : id -> state option
-  val forget_state : id -> unit
 
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
   val slice : start:id -> stop:id -> vcs
@@ -366,7 +365,6 @@ end = struct
     | None -> raise Vcs_aux.Expired
   let set_state id s = (get_info id).state <- Some s
   let get_state id = (get_info id).state
-  let forget_state id = (get_info id).state <- None
   let reached id b =
     let info = get_info id in
     if b then info.n_reached <- info.n_reached + 1
@@ -690,19 +688,9 @@ end = struct
         Stateid.t * Stateid.t * std_ppcmds *
           (Stateid.t * State.frozen_state) list
     | RespFeedback of Interface.feedback
-    | RespGetCounterFreshLocalUniv
     | RespGetCounterNewUnivLevel
-  let pr_response = function
-    | RespBuiltProof _ -> "Sucess"
-    | RespError _ -> "Error"
-    | RespFeedback { Interface.id = Interface.State id } ->
-        "Feedback on " ^ Stateid.to_string id
-    | RespFeedback _ -> assert false
-    | RespGetCounterFreshLocalUniv -> "GetCounterFreshLocalUniv"
-    | RespGetCounterNewUnivLevel -> "GetCounterNewUnivLevel"
 
   type more_data =
-    | MoreDataLocalUniv of Univ.universe list
     | MoreDataUnivLevel of Univ.universe_level list
  
   type task =
@@ -987,7 +975,6 @@ end = struct
                    Pp.feedback (Interface.InProgress ~-1) *)
                 last_task := None;
                 raise KillRespawn
-            | _, RespGetCounterFreshLocalUniv -> assert false (* Deprecated function *)
                 (* marshal_more_data oc (MoreDataLocalUniv *)
                 (*   (CList.init 10 (fun _ -> Universes.fresh_local_univ ()))); *)
                 (* loop () *)
@@ -1090,7 +1077,7 @@ end = struct
     Universes.set_remote_new_univ_level (bufferize (fun () ->
       marshal_response !slave_oc RespGetCounterNewUnivLevel;
       match unmarshal_more_data !slave_ic with
-      | MoreDataUnivLevel l -> l | _ -> assert false));
+      | MoreDataUnivLevel l -> l));
     let working = ref false in
     slave_handshake ();
     while true do

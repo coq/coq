@@ -99,10 +99,6 @@ let init_constant dir s =
   let d = "Init"::dir in
   check_required_library (coq::d); gen_constant "Coqlib" d s
 
-let logic_constant dir s =
-  let d = "Logic"::dir in
-  check_required_library (coq::d); gen_constant "Coqlib" d s
-
 let logic_reference dir s =
   let d = "Logic"::dir in
   check_required_library ("Coq"::d); gen_reference "Coqlib" d s
@@ -138,9 +134,6 @@ let logic_type_module = make_dir logic_type_module_name
 
 let datatypes_module_name = init_dir@["Datatypes"]
 let datatypes_module = make_dir datatypes_module_name
-
-let arith_module_name = arith_dir@["Arith"]
-let arith_module = make_dir arith_module_name
 
 let jmeq_module_name = [coq;"Logic";"JMeq"]
 let jmeq_module = make_dir jmeq_module_name
@@ -272,9 +265,6 @@ let build_coq_eq_data () =
   sym = Lazy.force coq_eq_sym;
   trans = Lazy.force coq_eq_trans;
   congr = Lazy.force coq_eq_congr }
-
-let make_dirpath dir = 
-  Names.make_dirpath (List.map id_of_string dir)
 
 let build_coq_eq () = Lazy.force coq_eq_eq
 let build_coq_eq_refl () = Lazy.force coq_eq_refl

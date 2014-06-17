@@ -72,9 +72,6 @@ let glob_occs ist l = l
 
 let subst_occs evm l = l
 
-type occurrences_or_var = int list or_var
-type occurrences = int list
-
 ARGUMENT EXTEND occurrences
   PRINTED BY pr_int_list_full
 

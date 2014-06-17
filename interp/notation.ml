@@ -214,18 +214,6 @@ type interp_rule =
   | NotationRule of scope_name option * notation
   | SynDefRule of kernel_name
 
-let compare_interp_rule x y =
-  match x, y with
-  | NotationRule (sno1, n1), NotationRule (sno2, n2) ->
-      (match sno1, sno2 with
-      | None, None -> String.compare n1 n2
-      | None, Some _ -> -1
-      | Some sn1, Some sn2 -> String.compare sn1 sn2
-      | Some _, None -> 1)
-  | SynDefRule kn1, SynDefRule kn2 -> KerName.compare kn1 kn2
-  | NotationRule _, SynDefRule _ -> -1
-  | SynDefRule _, NotationRule _ -> 1
-
 (* We define keys for glob_constr and aconstr to split the syntax entries
    according to the key of the pattern (adapted from Chet Murthy by HH) *)
 

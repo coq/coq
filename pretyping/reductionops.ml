@@ -736,10 +736,6 @@ let fix_recarg ((recindices,bodynum),_) stack =
   with Not_found ->
     None
 
-type 'a reduced_state = 
-  | NotReducible
-  | Reduced of constr
-
 (** Generic reduction function with environment
 
     Here is where unfolded constant are stored in order to be
@@ -1081,13 +1077,6 @@ let whd_betadeltaiota_stack env =
   stack_red_of_state_red (whd_betadeltaiota_state env)
 let whd_betadeltaiota env =
   red_of_state_red (whd_betadeltaiota_state env)
-
-let whd_betadeltaiota_state_using ts env =
-  raw_whd_state_gen (Closure.RedFlags.red_add_transparent betadeltaiota ts) env
-let whd_betadeltaiota_stack_using ts env =
-  stack_red_of_state_red (whd_betadeltaiota_state_using ts env)
-let whd_betadeltaiota_using ts env =
-  red_of_state_red (whd_betadeltaiota_state_using ts env)
 
 let whd_betadeltaiotaeta_state env = raw_whd_state_gen betadeltaiotaeta env
 let whd_betadeltaiotaeta_stack env =

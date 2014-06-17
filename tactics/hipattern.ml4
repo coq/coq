@@ -387,12 +387,6 @@ let match_eq eqn eq_pat =
 let no_check () = true
 let check_jmeq_loaded () = Library.library_is_loaded Coqlib.jmeq_module
 
-let build_coq_jmeq_data_in env =
-  build_coq_jmeq_data (), Univ.ContextSet.empty
-
-let build_coq_identity_data_in env =
-  build_coq_identity_data (), Univ.ContextSet.empty
-
 let equalities =
   [coq_eq_pattern, no_check, build_coq_eq_data;
    coq_jmeq_pattern, check_jmeq_loaded, build_coq_jmeq_data;
@@ -441,11 +435,6 @@ let dest_nf_eq gls eqn =
     error "Not an equality."
 
 (*** Sigma-types *)
-
-(* Patterns "(existS ?1 ?2 ?3 ?4)" and "(existT ?1 ?2 ?3 ?4)" *)
-let coq_ex_pattern_gen ex = lazy PATTERN [ %ex ?X1 ?X2 ?X3 ?X4 ]
-let coq_existT_pattern = coq_ex_pattern_gen coq_existT_ref
-let coq_exist_pattern = coq_ex_pattern_gen coq_exist_ref
 
 let match_sigma ex =
   match kind_of_term ex with

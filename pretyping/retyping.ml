@@ -16,7 +16,6 @@ open Inductiveops
 open Names
 open Reductionops
 open Environ
-open Declarations
 open Termops
 
 type retype_error =

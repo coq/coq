@@ -224,6 +224,8 @@ module New : sig
   val onLastHyp        : (constr -> unit tactic) -> unit tactic
   val onLastDecl       : (named_declaration -> unit tactic) -> unit tactic
 
+  val onHyps      : ([ `NF ] Proofview.Goal.t -> named_context) ->
+                    (named_context -> unit tactic) -> unit tactic
   val afterHyp    : Id.t -> (named_context -> unit tactic) -> unit tactic
 
   val tryAllHyps          : (identifier -> unit tactic) -> unit tactic

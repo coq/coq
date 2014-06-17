@@ -24,10 +24,6 @@ open Entries
 open Typeops
 open Fast_typeops
 
-let debug = true
-let prerr_endline =
-  if debug then prerr_endline else fun _ -> ()
-
 let constrain_type env j poly = function
   | `None -> 
     if not poly then (* Old-style polymorphism *)
@@ -45,15 +41,6 @@ let constrain_type env j poly = function
 	RegularArity t
 
 let map_option_typ = function None -> `None | Some x -> `Some x
-
-let local_constrain_type env j = function
-  | None ->
-      j.uj_type
-  | Some t ->
-      let tj = infer_type env t in
-      let _ = judge_of_cast env j DEFAULTcast tj in
-      assert (eq_constr t tj.utj_val);
-      t
 
 (* Insertion of constants and parameters in environment. *)
 

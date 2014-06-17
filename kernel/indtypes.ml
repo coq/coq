@@ -102,14 +102,6 @@ let mind_check_names mie =
 
 (* Typing the arities and constructor types *)
 
-let is_logic_type t = is_prop_sort t.utj_type
-
-(* [infos] is a sequence of pair [islogic,issmall] for each type in
-   the product of a constructor or arity *)
-
-let is_small infos = List.for_all (fun (logic,small) -> small) infos
-let is_logic_constr infos = List.for_all (fun (logic,small) -> logic) infos
-
 (* An inductive definition is a "unit" if it has only one constructor
    and that all arguments expected by this constructor are
    logical, this is the case for equality, conjunction of logical properties
@@ -153,22 +145,8 @@ let infos_and_sort env ctx t =
    w1,w2,w3 <= u3
 *)
 
-let extract_level (_,_,lc,(_,lev)) =
-  (* Enforce that the level is not in Prop if more than one constructor *)
-  (* if Array.length lc >= 2 then sup type0_univ lev else lev *)
-  lev
-
-let inductive_levels arities inds =
-  let cstrs_levels = Array.map extract_level inds in
-  (* Take the transitive closure of the system of constructors *)
-  (* level constraints and remove the recursive dependencies *)
-    cstrs_levels
-
 (* This (re)computes informations relevant to extraction and the sort of an
    arity or type constructor; we do not to recompute universes constraints *)
-
-let context_set_list_union =
-  List.fold_left ContextSet.union ContextSet.empty
 
 let infer_constructor_packet env_ar_par ctx params lc =
   (* type-check the constructors *)
@@ -691,11 +669,7 @@ let used_section_variables env inds =
       Id.Set.empty inds in
   keep_hyps env ids
 
-let lift_decl n d = 
-  map_rel_declaration (lift n) d
-
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
-let rel_list n m = Array.to_list (rel_vect n m)
 let rel_appvect n m = rel_vect n (List.length m)
 
 exception UndefinableExpansion
@@ -707,7 +681,7 @@ exception UndefinableExpansion
 let compute_expansion ((kn, _ as ind), u) params ctx =
   let mp, dp, l = repr_mind kn in
   let make_proj id = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
-  let rec projections acc (na, b, t) =
+  let projections acc (na, b, t) =
     match b with
     | Some c -> acc
     | None -> 

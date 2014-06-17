@@ -220,10 +220,6 @@ let universes_and_subst_of cb u =
   let subst = Univ.make_universe_subst u univs in
     subst, Univ.instantiate_univ_context subst univs
 
-let get_regular_arity = function
-  | RegularArity a -> a
-  | TemplateArity _ -> assert false
-
 let map_regular_arity f = function
   | RegularArity a as ar -> 
     let a' = f a in 
@@ -373,8 +369,6 @@ let add_mind kn mib env =
   let li = no_link_info () in add_mind_key kn (mib, li) env
 
 (* Lookup of section variables *)
-
-let constant_body_hyps cb = cb.const_hyps
 
 let lookup_constant_variables c env =
   let cmap = lookup_constant c env in

@@ -468,8 +468,6 @@ let congruence_tac depth l =
    might be slow now, let's rather do something equivalent
    to a "simple apply refl_equal" *)
 
-let simple_reflexivity () = apply (Universes.constr_of_global _refl_equal)
-
 (* The [f_equal] tactic.
 
    It mimics the use of lemmas [f_equal], [f_equal2], etc.

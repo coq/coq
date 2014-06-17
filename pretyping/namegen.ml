@@ -38,7 +38,6 @@ let default_type_ident = Id.of_string default_type_string
 let default_non_dependent_string = "H"
 let default_non_dependent_ident = Id.of_string default_non_dependent_string
 
-let default_dependent_string = "x"
 let default_dependent_ident = Id.of_string "x"
 
 (**********************************************************************)

@@ -727,8 +727,6 @@ let pr_assumptionset env s =
     ] in
     prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
 
-open Typeclasses
-
 let xor a b = 
   (a && not b) || (not a && b)
 

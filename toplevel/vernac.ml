@@ -212,7 +212,7 @@ let display_cmd_header loc com =
   Pp.flush_all ()
 
 let rec vernac_com verbosely checknav (loc,com) =
-  let rec interp = function
+  let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
 	let st = save_translator_coqdoc () in

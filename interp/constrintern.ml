@@ -28,7 +28,6 @@ open Topconstr
 open Nametab
 open Notation
 open Inductiveops
-open Misctypes
 open Decl_kinds
 
 (** constr_expr -> glob_constr translation:
@@ -297,12 +296,6 @@ let set_var_scope loc id istermvar env ntnvars =
 let set_type_scope env = {env with tmp_scope = Some Notation.type_scope}
 
 let reset_tmp_scope env = {env with tmp_scope = None}
-
-let set_scope env = function
-  | CastConv (GSort _) -> set_type_scope env
-  | CastConv (GRef (_,ref,_) | GApp (_,GRef (_,ref,_),_)) ->
-      {env with tmp_scope = compute_scope_of_global ref}
-  | _ -> env
 
 let rec it_mkGProd loc2 env body =
   match env with
@@ -1299,18 +1292,6 @@ let merge_impargs l args =
       | _ -> a::l)
     l args
 
-let check_projection isproj nargs r =
-  match (r,isproj) with
-  | GRef (loc, ref, _), Some _ ->
-      (try
-	if not (Int.equal nargs 1) then
-	  user_err_loc (loc,"",str "Projection does not have the right number of explicit parameters.");
-      with Not_found ->
-	user_err_loc
-	(loc,"",pr_global_env Id.Set.empty ref ++ str " is not a registered projection."))
-  | _, Some _ -> user_err_loc (loc_of_glob_constr r, "", str "Not a projection.")
-  | _, None -> ()
-
 let get_implicit_name n imps =
   Some (Impargs.name_of_implicit (List.nth imps (n-1)))
 
@@ -1359,10 +1340,6 @@ let extract_explicit_arg imps args =
 
 (**********************************************************************)
 (* Main loop                                                          *)
-
-let is_projection_ref env = function
-  | ConstRef c -> Environ.is_projection c env
-  | _ -> false
 
 let internalize globalenv env allow_patvar lvar c =
   let rec intern env = function

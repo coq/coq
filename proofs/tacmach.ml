@@ -7,9 +7,7 @@
 (************************************************************************)
 
 open Util
-open Names
 open Namegen
-open Term
 open Termops
 open Environ
 open Reductionops

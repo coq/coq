@@ -954,8 +954,6 @@ let evar_universe_context d = d.universes
 
 let universe_context_set d = d.universes.uctx_local
 
-let universes evd = evd.universes.uctx_universes
-
 let universe_context evd =
   Univ.ContextSet.to_context evd.universes.uctx_local
 
@@ -1088,33 +1086,9 @@ let is_eq_sort s1 s2 =
       if Univ.Universe.equal u1 u2 then None
       else Some (u1, u2)
 
-let is_univ_var_or_set u = 
-  not (Option.is_empty (Univ.universe_level u))
-
-type universe_global = 
-  | LocalUniv of Univ.universe_level
-  | GlobalUniv of Univ.universe_level
-
-type universe_kind = 
-  | Algebraic of Univ.universe
-  | Variable of universe_global * bool
-
-let is_univ_level_var (us, cst) algs u =
-  match Univ.universe_level u with
-  | Some l -> 
-    let glob = if Univ.LSet.mem l us then LocalUniv l else GlobalUniv l in
-      Variable (glob, Univ.LSet.mem l algs)
-  | None -> Algebraic u
-
 let normalize_universe evd =
   let vars = ref evd.universes.uctx_univ_variables in
   let normalize = Universes.normalize_universe_opt_subst vars in
-    normalize
-
-let memo_normalize_universe evd =
-  let vars = ref evd.universes.uctx_univ_variables in
-  let normalize = Universes.normalize_universe_opt_subst vars in
-    (fun () -> {evd with universes = {evd.universes with uctx_univ_variables = !vars}}),
     normalize
 
 let normalize_universe_instance evd l =
@@ -1178,9 +1152,6 @@ let check_leq evd s s' =
 let subst_univs_context_with_def def usubst (ctx, cst) =
   (Univ.LSet.diff ctx def, Univ.subst_univs_constraints usubst cst)
 
-let subst_univs_context usubst ctx =
-  subst_univs_context_with_def (Univ.LMap.universes usubst) (Univ.make_subst usubst) ctx
-
 let normalize_evar_universe_context_variables uctx =
   let normalized_variables, undef, def, subst = 
     Universes.normalize_univ_variables uctx.uctx_univ_variables 
@@ -1195,14 +1166,6 @@ let normalize_evar_universe_context_variables uctx =
 (* let normalize_evar_universe_context_variables = *)
 (*   Profile.profile1 normvarsconstrkey normalize_evar_universe_context_variables;; *)
     
-let mark_undefs_as_rigid uctx =
-  let vars' = 
-    Univ.LMap.fold (fun u v acc ->
-      if v == None && not (Univ.LSet.mem u uctx.uctx_univ_algebraic) 
-      then acc else Univ.LMap.add u v acc)
-    uctx.uctx_univ_variables Univ.LMap.empty
-  in { uctx with uctx_univ_variables = vars' }
-
 let mark_undefs_as_nonalg uctx =
   let vars' = 
     Univ.LMap.fold (fun u v acc ->
@@ -1239,16 +1202,6 @@ let refresh_undefined_universes evd =
   let evd' = cmap (subst_univs_level_constr subst) {evd with universes = uctx'} in
     evd', subst
 
-let constraints_universes c = 
-  Univ.Constraint.fold (fun (l',d,r') acc -> Univ.LSet.add l' (Univ.LSet.add r' acc))
-    c Univ.LSet.empty
-
-let is_undefined_universe_variable l vars =
-  try (match Univ.LMap.find l vars with
-      | Some u -> false
-      | None -> true)
-  with Not_found -> false
-    
 let normalize_evar_universe_context uctx = 
   let rec fixpoint uctx = 
     let ((vars',algs'), us') = 
@@ -1275,10 +1228,6 @@ let nf_univ_variables evd =
   let evd' = {evd with universes = uctx'} in
     evd', subst
 
-let normalize_univ_level fullsubst u =
-  try Univ.LMap.find u fullsubst
-  with Not_found -> Univ.Universe.make u
-  
 let nf_constraints evd =
   let subst, uctx' = normalize_evar_universe_context_variables evd.universes in
   let uctx' = normalize_evar_universe_context uctx' in
@@ -1299,7 +1248,6 @@ let add_universe_name evd s l =
     {evd with universes = {evd.universes with uctx_names = names'}}
 
 let universes evd = evd.universes.uctx_universes
-let constraints evd = evd.universes.uctx_universes
 
 (* Conversion w.r.t. an evar map and its local universes. *)
 

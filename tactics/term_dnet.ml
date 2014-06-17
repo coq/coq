@@ -337,11 +337,11 @@ struct
     | _ -> assert false
 
   (* debug *)
-  let rec pr_term_pattern p =
+(*  let rec pr_term_pattern p =
     (fun pr_t -> function
        | Term t -> pr_t t
        | Meta m -> str"["++Pp.int (Obj.magic m)++str"]"
-    ) (pr_dconstr pr_term_pattern) p
+    ) (pr_dconstr pr_term_pattern) p*)
 
   let search_pat cpat dpat dn =
     let whole_c = cpat in

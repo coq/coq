@@ -59,11 +59,6 @@ let value_of_evaluable_ref env evref u =
       raise (Invalid_argument "value_of_evaluable_ref"))
   | EvalVarRef id -> Option.get (pi2 (lookup_named id env))
 
-let constr_of_evaluable_ref evref u =
-  match evref with
-  | EvalConstRef con -> mkConstU (con,u)
-  | EvalVarRef id -> mkVar id
-
 let evaluable_of_global_reference env = function
   | ConstRef cst when is_evaluable_const env cst -> EvalConstRef cst
   | VarRef id when is_evaluable_var env id -> EvalVarRef id

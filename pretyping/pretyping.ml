@@ -288,16 +288,6 @@ let pretype_global rigid env evd gr us =
   in
     Evd.fresh_global ~rigid ?names:instance env evd gr
 
-let is_template_polymorphic_constructor env c =
-  match kind_of_term c with
-  | Construct ((ind, i), u) -> Environ.template_polymorphic_ind ind env
-  | _ -> false
-
-let is_template_polymorphic_constructor env c =
-  match kind_of_term c with
-  | Construct ((ind, i), u) -> Environ.template_polymorphic_ind ind env
-  | _ -> false
-
 let pretype_ref loc evdref env ref us =
   match ref with
   | VarRef id ->

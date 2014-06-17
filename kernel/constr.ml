@@ -143,7 +143,6 @@ let mkApp (f, a) =
       | App (g, cl) -> App (g, Array.append cl a)
       | _ -> App (f, a)
 
-let out_punivs (a, _) = a
 let map_puniverses f (x,u) = (f x, u)
 let in_punivs a = (a, Univ.Instance.empty)
 
@@ -546,9 +545,6 @@ let compare_head_gen_leq eq_universes eq_sorts leq_sorts eq leq t1 t2 =
 
 let rec eq_constr m n =
   (m == n) || compare_head_gen (fun _ -> Instance.equal) Sorts.equal eq_constr m n
-
-(** Strict equality of universe instances. *)
-let compare_constr = compare_head_gen (fun _ -> Instance.equal) Sorts.equal
 
 let equal m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
@@ -989,7 +985,7 @@ module Hsorts =
 	| Type u -> 2 + Universe.hash u
     end)
 
-let hcons_sorts = Hashcons.simple_hcons Hsorts.generate hcons_univ
+(* let hcons_sorts = Hashcons.simple_hcons Hsorts.generate hcons_univ *)
 let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate hcons_ind
 
 let hcons =

@@ -43,10 +43,6 @@ let error_syntactic_metavariables_not_allowed loc =
 let error_tactic_expected loc =
   user_err_loc (loc,"",str "Tactic expected.")
 
-let skip_metaid = function
-  | AI x -> x
-  | MetaId (loc,_) -> error_syntactic_metavariables_not_allowed loc
-
 (** Generic arguments *)
 
 type glob_sign = Genintern.glob_sign = {

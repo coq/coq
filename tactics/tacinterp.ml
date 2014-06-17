@@ -294,9 +294,6 @@ let interp_ident = interp_ident_gen false
 let interp_fresh_ident = interp_ident_gen true
 let pf_interp_ident id gl = interp_ident_gen false id (pf_env gl)
 
-let interp_global ist gl gr = 
-  Evd.fresh_global (pf_env gl) (project gl) gr
-
 (* Interprets an optional identifier which must be fresh *)
 let interp_fresh_name ist env = function
   | Anonymous -> Anonymous
@@ -577,14 +574,6 @@ let interp_auto_lemmas ist env sigma lems =
 (* Interprets a type expression *)
 let pf_interp_type ist gl =
   interp_type ist (pf_env gl) (project gl)
-
-let new_interp_type ist c k =
-  let open Proofview.Goal in
-  let open Proofview.Notations in
-  Proofview.Goal.raw_enter begin fun gl ->
-    let (sigma, c) = interp_type ist (env gl) (sigma gl) c in
-    Proofview.V82.tclEVARS sigma <*> k c
-  end
 
 (* Interprets a reduction expression *)
 let interp_unfold ist env (occs,qid) =
@@ -952,8 +941,6 @@ struct
     in
     Proofview.tclDISPATCHL (List.map f l) >>= fun l ->
     Proofview.tclUNIT (Depends (List.concat l))
-
-  let goal = Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l)
 
   let enter f =
     bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))

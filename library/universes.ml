@@ -10,9 +10,7 @@ open Util
 open Pp
 open Names
 open Term
-open Context
 open Environ
-open Locus
 open Univ
 
 type universe_constraint_type = ULe | UEq | ULub
@@ -471,12 +469,8 @@ let add_list_map u t map =
       match rm with Some t -> rm | None -> None) l r
   in LMap.add u d' lr
 
-let find_list_map u map =
-  try LMap.find u map with Not_found -> []
-
 module UF = LevelUnionFind
-type universe_full_subst = (universe_level * universe) list
-  
+
 (** Precondition: flexible <= ctx *)
 let choose_canonical ctx flexible algs s =
   let global = LSet.diff s ctx in
@@ -498,8 +492,6 @@ let choose_canonical ctx flexible algs s =
 	    else
 	      let canon = LSet.choose algs in
 		canon, (global, rigid, LSet.remove canon flexible)
-
-open Universe
 
 let subst_puniverses subst (c, u as cu) =
   let u' = Instance.subst subst u in
@@ -531,9 +523,6 @@ let subst_univs_fn_puniverses lsubst (c, u as cu) =
   let u' = Instance.subst_fn lsubst u in
     if u' == u then cu else (c, u')
 
-let subst_univs_puniverses subst cu =
-  subst_univs_fn_puniverses (Univ.level_subst_of (Univ.make_subst subst)) cu
-
 let nf_evars_and_universes_gen f subst =
   let lsubst = Univ.level_subst_of subst in
   let rec aux c =
@@ -557,15 +546,9 @@ let nf_evars_and_universes_gen f subst =
     | _ -> map_constr aux c
   in aux
 
-let nf_evars_and_universes_subst f subst =
-  nf_evars_and_universes_gen f (Univ.make_subst subst)
-
 let nf_evars_and_universes_opt_subst f subst =
   let subst = fun l -> match LMap.find l subst with None -> raise Not_found | Some l' -> l' in
     nf_evars_and_universes_gen f subst
-
-let subst_univs_full_constr subst c = 
-  nf_evars_and_universes_subst (fun _ -> None) subst c
 
 let fresh_universe_context_set_instance ctx =
   if ContextSet.is_empty ctx then LMap.empty, ctx
@@ -652,29 +635,12 @@ let pr_universe_body = function
 
 let pr_universe_opt_subst = Univ.LMap.pr pr_universe_body
 
-let is_defined_var u l = 
-  try
-    match LMap.find u l with
-    | Some _ -> true
-    | None -> false
-  with Not_found -> false
-
-let subst_univs_subst u l s = 
-  LMap.add u l s
-    
 exception Found of Level.t
 let find_inst insts v =
   try LMap.iter (fun k (enf,alg,v') ->
     if not alg && enf && Universe.equal v' v then raise (Found k))
 	insts; raise Not_found
   with Found l -> l
-
-let add_inst u (enf,b,lbound) insts =
-  match lbound with
-  | Some v -> LMap.add u (enf,b,v) insts
-  | None -> insts
-
-exception Stays
 
 let compute_lbound left =
  (** The universe variable was not fixed yet.
@@ -693,11 +659,6 @@ let compute_lbound left =
 	 else None))
       None left
   
-let maybe_enforce_leq lbound u cstrs = 
-  match lbound with
-  | Some lbound -> enforce_leq lbound (Universe.make u) cstrs
-  | None -> cstrs
-
 let instantiate_with_lbound u lbound alg enforce (ctx, us, algs, insts, cstrs) =
   if enforce then
     let inst = Universe.make u in
@@ -940,9 +901,6 @@ let simplify_universe_context (univs,csts) =
 
 let is_small_leq (l,d,r) =
   Level.is_small l && d == Univ.Le
-
-let is_prop_leq (l,d,r) =
-  Level.equal Level.prop l && d == Univ.Le
 
 (* Prop < i <-> Set+1 <= i <-> Set < i *)
 let translate_cstr (l,d,r as cstr) =

@@ -14,7 +14,6 @@ open Term
 open Vars
 open Context
 open Termops
-open Namegen
 open Declarations
 open Declareops
 open Environ

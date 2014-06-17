@@ -126,10 +126,6 @@ let nf_evar_map_undefined evm =
 (* Auxiliary functions for the conversion algorithms modulo evars
  *)
 
-let has_flexible_level evd l =
-  let a = Univ.Instance.to_array l in
-    Array.exists (fun l -> Evd.is_flexible_level evd l) a
-    
 let has_undefined_evars or_sorts evd t =
   let rec has_ev t =
     match kind_of_term t with
@@ -822,35 +818,6 @@ let pr_tycon env = function
   | Some t -> Termops.print_constr_env env t
 
 open Declarations
-
-let get_template_constructor_type evdref (ind, i) n =
-  let mib,oib = Global.lookup_inductive ind in
-  let ar =
-    match oib.mind_arity with
-    | RegularArity _ -> assert false
-    | TemplateArity templ -> templ
-  in
-  let ty = oib.mind_user_lc.(pred i) in
-  let subst = Inductive.ind_subst (fst ind) mib Univ.Instance.empty in
-  let ty = substl subst ty in
-  let rec aux l ty n =
-    match l, kind_of_term ty with
-    | None :: l, Prod (na, t, t') ->
-      mkProd (na, t, aux l t' (pred n))
-    | Some u :: l, Prod (na, t, t') ->
-      let u' = evd_comb0 (new_univ_variable Evd.univ_flexible) evdref in
-	(* evdref := set_leq_sort !evdref u'l (Type u); *)
-	let s = Univ.LMap.add u
-	  (Option.get (Univ.Universe.level u')) Univ.LMap.empty in
-	let dom = subst_univs_level_constr s t in
-	(* let codom = subst_univs_level_constr s t' in *)
-	  mkProd (na, dom, aux l t' (pred n))
-    | l, LetIn (na, t, b, t') ->
-      mkLetIn (na, t, b, aux l t' n)
-    | _ :: _, _ -> assert false (* All params should be abstracted by a forall or a let-in *)
-    | [], _ -> ty
-  in aux ar.template_param_levels ty n
-
 
 let get_template_constructor_type evdref (ind, i) n =
   let mib,oib = Global.lookup_inductive ind in

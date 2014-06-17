@@ -10,7 +10,6 @@ open Term
 open Vars
 open Namegen
 open Environ
-open Declareops
 open Entries
 open Pp
 open Names
@@ -125,7 +124,6 @@ let lt = function () -> (coq_base_constant "lt")
 let le = function () -> (coq_base_constant "le")
 let ex = function () -> (coq_base_constant "ex")
 let nat = function () -> (coq_base_constant "nat")
-let coq_sig = function () -> (coq_base_constant "sig")
 let iter_ref () =  
   try find_reference ["Recdef"] "iter" 
   with Not_found -> error "module Recdef not loaded"

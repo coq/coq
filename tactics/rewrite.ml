@@ -36,12 +36,7 @@ open Goal
 open Environ
 open Tacinterp
 open Termops
-open Genarg
-open Extraargs
-open Pcoq.Constr
-open Entries
 open Libnames
-open Evarutil
 
 (** Typeclass-based generalized rewriting. *)
 
@@ -76,7 +71,6 @@ let find_global dir s =
 
 (** Global constants. *)
 
-let gen_reference dir s = Coqlib.gen_reference "rewrite" dir s
 let coq_eq_ref = find_reference ["Init"; "Logic"] "eq"
 let coq_eq = find_global ["Init"; "Logic"] "eq"
 let coq_f_equal = find_global ["Init"; "Logic"] "f_equal"
@@ -118,13 +112,6 @@ let new_cstr_evar (evd,cstrs) env t =
 let e_new_cstr_evar evars env t =
   let evd', t = new_cstr_evar !evars env t in evars := evd'; t
 
-let new_goal_evar (evd,cstrs) env t =
-  let evd', t = Evarutil.new_evar evd env t in
-    (evd', cstrs), t
-
-let e_new_goal_evar evars env t =
-  let evd', t = new_goal_evar !evars env t in evars := evd'; t
-
 (** Building or looking up instances. *)
 
 let extends_undefined evars evars' =
@@ -161,7 +148,6 @@ module GlobalBindings (M : sig
   val relation : string list * string
   val app_poly : env -> evars -> (evars -> evars * constr) -> constr array -> evars * constr
   val arrow : evars -> evars * constr
-  val coq_inverse : evars -> evars * constr
 end) = struct
   open M
   let relation : evars -> evars * constr = find_global (fst relation) (snd relation)
@@ -608,14 +594,6 @@ let solve_remaining_by by env prf =
       indep env.evd
     in { env with evd = evd' }, prf
 
-let extend_evd sigma ext sigma' =
-  Evar.Set.fold (fun i acc ->
-    Evd.add acc i (Evarutil.nf_evar_info sigma' (Evd.find sigma' i)))
-    ext sigma
-
-let shrink_evd sigma ext =
-  Evar.Set.fold (fun i acc -> Evd.remove acc i) ext sigma
-
 let no_constraints cstrs = 
   fun ev _ -> not (Evar.Set.mem ev cstrs)
 
@@ -706,10 +684,6 @@ let make_eq () =
 (*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq ())
 let make_eq_refl () =
 (*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq_refl ())
-
-let get_rew_rel r = match r.rew_prf with
-  | RewPrf (rel, prf) -> rel
-  | RewCast c -> mkApp (make_eq (),[| r.rew_car; r.rew_from; r.rew_to |])
 
 let get_rew_prf r = match r.rew_prf with
   | RewPrf (rel, prf) -> rel, prf 
@@ -1289,25 +1263,6 @@ module Strategies =
 	      Some (Some { rew_car = ty; rew_from = t; rew_to = t';
 			   rew_prf = RewCast ckind; rew_evars = evars })
 	
-    let fold c : strategy =
-      fun env avoid t ty cstr evars ->
-(* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
-	let sigma, c = Constrintern.interp_open_constr (goalevars evars) env c in
-	let unfolded =
-	  try Tacred.try_red_product env sigma c
-	  with e when Errors.noncritical e ->
-            error "fold: the term is not unfoldable !"
-	in
-	  try
-	  let sigma = Unification.w_unify env sigma CONV ~flags:(Unification.elim_flags ())
-	    unfolded t in
-	    let c' = Evarutil.nf_evar sigma c in
-	      Some (Some { rew_car = ty; rew_from = t; rew_to = c';
-			   rew_prf = RewCast DEFAULTcast; 
-			   rew_evars = (sigma, snd evars) })
-	  with e when Errors.noncritical e -> None
-
-
     let fold_glob c : strategy =
       fun env avoid t ty cstr evars ->
 (* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
@@ -1426,9 +1381,6 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
     | Some None -> Some None
     | None -> None
 		   
-let rewrite_refine (evd,c) = 
-  Tacmach.refine c
-
 let cl_rewrite_clause_tac ?abs strat meta clause gl =
   let evartac evd = Refiner.tclEVARS (Evd.clear_metas evd) in
   let treat res =
@@ -1582,29 +1534,10 @@ let cl_rewrite_clause_strat strat clause =
 let cl_rewrite_clause l left2right occs clause gl =
   cl_rewrite_clause_strat (rewrite_with (general_rewrite_unif_flags ()) l left2right occs) clause gl
 
-let occurrences_of = function
-  | n::_ as nl when n < 0 -> (false,List.map abs nl)
-  | nl ->
-      if List.exists (fun n -> n < 0) nl then
-	error "Illegal negative occurrence number.";
-      (true,nl)
-
-open Extraargs
-
-let apply_constr_expr c l2r occs = fun env avoid t ty cstr evars ->
-  let evd, c = Constrintern.interp_open_constr (goalevars evars) env c in
-    apply_lemma (general_rewrite_unif_flags ()) (Evd.empty, (c, NoBindings)) 
-      l2r None occs env avoid t ty cstr (evd, cstrevars evars)
-
 let apply_glob_constr c l2r occs = fun env avoid t ty cstr evars ->
   let evd, c = (Pretyping.understand_tcc (goalevars evars) env c) in
     apply_lemma (general_rewrite_unif_flags ()) (Evd.empty, (c, NoBindings)) 
       l2r None occs env avoid t ty cstr (evd, cstrevars evars)
-
-let interp_constr_list env sigma =
-  List.map (fun c -> 
-	      let evd, c = Constrintern.interp_open_constr sigma env c in
-		(evd, (c, NoBindings)), true, None)
 
 let interp_glob_constr_list env sigma =
   List.map (fun c -> 
@@ -2111,74 +2044,6 @@ let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity
 let _ = Hook.set Tactics.setoid_symmetry setoid_symmetry
 let _ = Hook.set Tactics.setoid_symmetry_in setoid_symmetry_in
 let _ = Hook.set Tactics.setoid_transitivity setoid_transitivity
-
-let implify id gl =
-  let (_, b, ctype) = pf_get_hyp gl id in
-  let binders,concl = decompose_prod_assum ctype in
-  let evm, ctype' =
-    match binders with
-    | (_, None, ty as hd) :: tl when noccurn 1 concl ->
-	let env = Environ.push_rel_context tl (pf_env gl) in
-	let sigma = project gl in
-	let tyhd = Retyping.get_type_of env sigma ty
-	and tyconcl = Retyping.get_type_of (Environ.push_rel hd env) sigma concl in
-	let ((sigma,_), app), unfold = 
-	  PropGlobal.arrow_morphism env (sigma, Evar.Set.empty) tyhd 
-	    (subst1 mkProp tyconcl) ty (subst1 mkProp concl) 
-	in
-	  sigma, it_mkProd_or_LetIn app tl
-    | _ -> project gl, ctype
-  in tclTHEN (Refiner.tclEVARS evm) (Tacmach.convert_hyp (id, b, ctype')) gl
-
-let rec fold_matches env sigma c =
-  map_constr_with_full_binders Environ.push_rel 
-    (fun env c ->
-      match kind_of_term c with
-      | Case _ ->
-          let cst, env, c', _eff = fold_match ~force:true env sigma c in
-	    fold_matches env sigma c'
-      | _ -> fold_matches env sigma c)
-    env c
-
-let fold_match_tac c gl =
-  let _, _, c', eff = fold_match ~force:true (pf_env gl) (project gl) c in
-  let gl = { gl with sigma = Evd.emit_side_effects eff gl.sigma } in
-    change (Some (snd (Patternops.pattern_of_constr (project gl) c))) c' onConcl gl
-
-let fold_matches_tac c gl =
-  let c' = fold_matches (pf_env gl) (project gl) c in
-  (* let gl = { gl with sigma = Evd.emit_side_effects eff gl.sigma } in *)
-    change (Some (snd (Patternops.pattern_of_constr (project gl) c))) c' onConcl gl
-
-let myapply id l gl =
-  let gr = id in
-  let _, impls = List.hd (Impargs.implicits_of_global gr) in
-  let env = pf_env gl in
-  let evars = ref (project gl) in
-  let evd, ty = fresh_global env !evars gr in
-  let _ = evars := evd in
-  let app =
-    let rec aux ty impls args args' =
-      match impls, kind_of_term ty with
-      | Some (_, _, (_, _)) :: impls, Prod (n, t, t') ->
-	let arg = Evarutil.e_new_evar evars env t in
-	  aux (subst1 arg t') impls args (arg :: args')
-      | None :: impls, Prod (n, t, t') ->
-	(match args with
-	| [] ->
-	  if dependent (mkRel 1) t' then
-	    let arg = Evarutil.e_new_evar evars env t in
-	      aux (subst1 arg t') impls args (arg :: args')
-	  else
-	    let arg = Evarutil.mk_new_meta () in
-	      evars := meta_declare (destMeta arg) t !evars;
-	      aux (subst1 arg t') impls args (arg :: args')
-	| arg :: args -> 
-	  aux (subst1 arg t') impls args (arg :: args'))
-      | _, _ -> mkApp (Universes.constr_of_global gr, Array.of_list (List.rev args'))
-    in aux ty impls l []
-  in
-    tclTHEN (Refiner.tclEVARS !evars) (apply app) gl
 
 let get_lemma_proof f env evm x y = 
   let (evm, _), c = f env (evm,Evar.Set.empty) x y in

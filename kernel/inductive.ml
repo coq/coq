@@ -19,9 +19,6 @@ open Environ
 open Reduction
 open Type_errors
 
-type pinductive = inductive puniverses
-type pconstructor = constructor puniverses
-
 type mind_specif = mutual_inductive_body * one_inductive_body
 
 (* raise Not_found if not an inductive type *)
@@ -156,10 +153,6 @@ let sort_as_univ = function
 
 let cons_subst u su subst =
   Univ.LMap.add u su subst
-
-let actualize_decl_level env lev t =
-  let sign,s = dest_arity env t in
-  mkArity (sign,lev)
 
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)

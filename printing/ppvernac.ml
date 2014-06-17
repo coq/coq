@@ -375,11 +375,6 @@ let pr_priority = function
 | None -> mt ()
 | Some i -> spc () ++ str "|" ++ spc () ++ int i
 
-let pr_poly p = 
-  if Flags.is_universe_polymorphism () then
-    if not p then str"Monomorphic " else mt ()
-  else if p then str"Polymorphic " else mt ()
-
 (**************************************)
 (* Pretty printer for vernac commands *)
 (**************************************)

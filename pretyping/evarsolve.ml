@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Util
-open Pp
 open Errors
 open Names
 open Term
@@ -1193,9 +1192,6 @@ exception NotEnoughInformationToProgress of (Id.t * evar_projection) list
 exception NotEnoughInformationEvarEvar of constr
 exception OccurCheckIn of evar_map * constr
 exception MetaOccurInBodyInternal
-
-let fast_stats = ref 0
-let not_fast_stats = ref 0
 
 let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
   let aliases = make_alias_map env in

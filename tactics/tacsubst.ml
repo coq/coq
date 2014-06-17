@@ -15,7 +15,6 @@ open Misctypes
 open Globnames
 open Term
 open Genredexpr
-open Inductiveops
 open Patternops
 open Pretyping
 

@@ -14,7 +14,6 @@ open Term
 open Reduction
 open Declarations
 open Environ
-open Inductive
 open Libobject
 open Lib
 open Pp

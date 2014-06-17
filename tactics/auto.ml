@@ -141,12 +141,6 @@ type search_entry = stored_data list * stored_data list * Bounded_net.t
 
 let empty_se = ([],[],Bounded_net.create ())
 
-let eq_constr_or_reference x y = 
-  match x, y with
-  | IsConstr (x,_), IsConstr (y,_) -> eq_constr x y
-  | IsGlobRef x, IsGlobRef y -> eq_gr x y
-  | _, _ -> false
-
 let eq_pri_auto_tactic (_, x) (_, y) =
   if Int.equal x.pri y.pri && Option.equal constr_pattern_eq x.pat y.pat then
     match x.code,y.code with
@@ -188,11 +182,6 @@ let is_transparent_gr (ids, csts) = function
   | IndRef _ | ConstructRef _ -> false
 
 let dummy_goal = Goal.V82.dummy_goal
-
-let instantiate_constr_or_ref env sigma c =
-  let c, ctx = Universes.fresh_global_or_constr_instance env c in
-  let cty = Retyping.get_type_of env sigma c in
-    (c, cty), ctx
 
 let strip_params env c = 
   match kind_of_term c with
@@ -874,10 +863,6 @@ let add_trivials env sigma l local dbnames =
 let (forward_intern_tac, extern_intern_tac) = Hook.make ()
 
 type hnf = bool
-
-let pr_hint_term = function
-  | IsConstr (c,_) -> pr_constr c
-  | IsGlobRef gr -> pr_global gr
 
 type hints_entry =
   | HintsResolveEntry of (int option * polymorphic * hnf * hints_path_atom * hint_term) list

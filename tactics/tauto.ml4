@@ -11,7 +11,6 @@
 open Term
 open Hipattern
 open Names
-open Globnames
 open Pp
 open Genarg
 open Stdarg

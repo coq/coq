@@ -9,11 +9,8 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Util
-open Names
 open Locus
-open Tacexpr
 open Misctypes
-open Tacinterp
 
 DECLARE PLUGIN "coretactics"
 

@@ -172,7 +172,6 @@ type conv_pb =
   | CUMUL
 
 let is_cumul = function CUMUL -> true | CONV -> false
-let is_pos = function Pos -> true | Null -> false
 
 type 'a universe_compare = 
   { (* Might raise NotConvertible *)
@@ -185,8 +184,6 @@ type 'a universe_state = 'a * 'a universe_compare
 type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
 type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
-
-type conv_universes = Univ.universes * Univ.constraints option
 
 let sort_cmp_universes pb s0 s1 (u, check) =
   (check.compare pb s0 s1 u, check)
