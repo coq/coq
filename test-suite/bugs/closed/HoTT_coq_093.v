@@ -18,20 +18,10 @@ Section lift.
     exact (U0 -> U1).
   Defined.
 
-  Definition Lift : lift_type := fun A => A.
+  Definition Lift (A : Type@{i}) : Type@{j} := A.
 End lift.
 
-Goal forall (A : Type) (x y : A), @paths A x y -> @paths (Lift A) x y.
+Goal forall (A : Type@{i}) (x y : A), @paths@{i} A x y -> @paths@{j} A x y.
 intros A x y p.
-compute in *.
-Fail exact p. (* Toplevel input, characters 21-22:
-Error:
-In environment
-A : Type (* Top.15 *)
-x : A
-y : A
-p : @paths (* Top.15 *) A x y
-The term "p" has type "@paths (* Top.15 *) A x y"
-while it is expected to have type "@paths (* Top.18 *) A x y"
-(Universe inconsistency: Cannot enforce Top.18 = Top.15 because Top.15
-< Top.18)). *)
+compute in *. destruct p. exact idpath.
+Defined.
