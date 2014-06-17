@@ -226,7 +226,7 @@ let typecheck_inductive env ctx mie =
          (* Arities (without params) are typed-checked here *)
          let arity, expltype = 
 	   if isArity ind.mind_entry_arity then
-	     let (ctx,s) = destArity ind.mind_entry_arity in
+	     let (ctx,s) = dest_arity env_params ind.mind_entry_arity in
 	       match s with
 	       | Type u when Univ.universe_level u = None ->
 	         (** We have an algebraic universe as the conclusion of the arity,
