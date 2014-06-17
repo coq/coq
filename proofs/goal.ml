@@ -21,7 +21,12 @@ type goal = {
   content : Evd.evar;      (* Corresponding evar. Allows to retrieve
 			      logical information once put together
 			      with an evar_map. *)
-  tags : string list       (* Heriditary? tags to be displayed *)
+  tags : string list;
+  (** Heriditary? tags to be displayed *)
+  cache : Evd.evar_map;
+  (** Invariant: for all sigma, if gl.cache == sigma and gl.content is actually
+      pertaining to sigma, then gl is nf-evarized in sigma. We use this not to
+      nf-evar goals too often. *)
 }
 (* spiwack: I don't deal with the tags, yet. It is a worthy discussion
    whether we do want some tags displayed besides the goal or not. *)
@@ -37,7 +42,8 @@ let content evars { content = e } = Evd.find evars e
 (* Builds a new (empty) goal with evar [e] *)
 let build e =
   { content = e ;
-    tags = []
+    tags = [];
+    cache = Evd.empty;
   }
 
 
@@ -53,7 +59,7 @@ let get_by_uid u =
 (* Builds a new goal with content evar [e] and
    inheriting from goal [gl]*)
 let descendent gl e =
-  { gl with content = e}
+  { gl with content = e; cache = Evd.empty }
 
 (* [advance sigma g] returns [Some g'] if [g'] is undefined and
     is the current avatar of [g] (for instance [g] was changed by [clear]
@@ -72,7 +78,7 @@ let rec advance sigma g =
   | Evd.Evar_defined v ->
       if Option.default false (Evd.Store.get evi.Evd.evar_extra Evarutil.cleared) then
         let (e,_) = Term.destEvar v in
-        let g' = { g with content = e } in
+        let g' = descendent g e in
         advance sigma g'
       else
         None
@@ -567,10 +573,12 @@ module V82 = struct
 
   (* Used by the compatibility layer and typeclasses *)
   let nf_evar sigma gl =
-    let evi = content sigma gl in
-    let evi = Evarutil.nf_evar_info sigma evi in
-    let sigma = Evd.add sigma gl.content evi in
-    (gl,sigma)
+    if sigma == gl.cache then (gl, sigma)
+    else
+      let evi = content sigma gl in
+      let evi = Evarutil.nf_evar_info sigma evi in
+      let sigma = Evd.add sigma gl.content evi in
+      ({ gl with cache = sigma }, sigma)
 
   (* Goal represented as a type, doesn't take into account section variables *)
   let abstract_type sigma gl =
