@@ -138,7 +138,7 @@ let check_projection env kn inst body =
       not (isLambda p)
     then cannot_recognize ()
   in
-  let (na, t, ty) = destLambda p in 
+  let (na, t, ty) = destLambda (Vars.subst1 mkProp p) in 
   let argctx, p = decompose_lam_assum b.(0) in
   (* No need to check the lambdas as the case is well-formed *)
   let () = if not (isRel p) then cannot_recognize () in
