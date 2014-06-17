@@ -501,15 +501,12 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 	    let ty = substl args ty in
 	    let ev = e_new_evar evdref env ~src:(loc,k) ty in
 	      ev :: args) ctx []
-      (* let j = pretype (mk_tycon ty) env evdref lvar par in *)
-      (* j.uj_val :: args) ctx pars [] *)
       in (ind, List.rev args)
     in
     let argtycon =
       match arg with
-      (** FIXME ? *)
       | GHole (loc, k, _) -> (* Typeclass projection application: 
-			     create the necessary type constraint *)
+				create the necessary type constraint *)
 	let ind, args = mk_ty k in
 	  mk_tycon (applist (mkIndU ind, args))
       | _ -> empty_tycon
@@ -519,16 +516,17 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
       try
 	let IndType (indf, _ (*[]*)) = 
 	  find_rectype env !evdref recty.uj_type
-	in recty, dest_ind_family indf
+	in 
+	let ((ind', _), _) as indf = dest_ind_family indf in
+	  if not (eq_ind ind' (mind,0)) then raise Not_found
+	  else recty, indf
       with Not_found -> 
 	(match argtycon with
 	| Some ty -> assert false
-	  (* let IndType (indf, _) = find_rectype env !evdref ty in *)
-	  (*   recty, dest_ind_family indf *)
 	| None -> 
 	  let ind, args = mk_ty Evar_kinds.InternalHole in
 	  let j' = 
-	    inh_conv_coerce_to_tycon loc env evdref recty 
+	    inh_conv_coerce_to_tycon (loc_of_glob_constr arg) env evdref recty 
 	      (mk_tycon (applist (mkIndU ind, args))) in
 	    j', (ind, args))
     in
