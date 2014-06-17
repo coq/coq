@@ -8,9 +8,13 @@ Module A.
   | BuildContr : forall A (center : A) (contr : forall y, center = y), IsTrunc 0 A
   | trunc_S : forall A n, (forall x y : A, IsTrunc n (x = y)) -> IsTrunc (S n) A.
 
-  Fail Existing Class IsTrunc.
-  (* Anomaly: Mismatched instance and context when building universe substitution.
-Please report. *)
+  Existing Class IsTrunc.
+
+
+  Instance is_trunc_unit : IsTrunc 0 unit.
+  Proof. apply BuildContr with (center:=tt). now intros []. Defined.
+
+  Check (_ : IsTrunc 0 unit).
 End A.
 
 Module B.
@@ -20,7 +24,11 @@ Module B.
       | S _ => False
     end.
 
-  Fail Existing Class IsTrunc.
-  (* Anomaly: Mismatched instance and context when building universe substitution.
-Please report. *)
+  Existing Class IsTrunc.
+
+  Instance is_trunc_unit : IsTrunc 0 unit.
+  Proof. exact I. Defined.
+
+  Check (_ : IsTrunc 0 unit).
+  Fail Definition foo := (_ : IsTrunc 1 unit).
 End B.

@@ -403,9 +403,9 @@ let add_class cl =
 
 
 open Declarations
-(* FIXME: deal with universe instances *)
+
 let add_constant_class cst =
-  let ty = Typeops.type_of_constant_in (Global.env ()) (cst,Univ.Instance.empty) in
+  let ty = Universes.unsafe_type_of_global (ConstRef cst) in
   let ctx, arity = decompose_prod_assum ty in
   let tc = 
     { cl_impl = ConstRef cst;
@@ -420,9 +420,10 @@ let add_inductive_class ind =
   let mind, oneind = Global.lookup_inductive ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
+    let inst = Univ.UContext.instance mind.mind_universes in
     let ty = Inductive.type_of_inductive_knowing_parameters
       (push_rel_context ctx (Global.env ()))
-      ((mind,oneind),Univ.Instance.empty)
+      ((mind,oneind),inst)
       (Array.map (fun x -> lazy x) (Termops.extended_rel_vect 0 ctx))
     in
       { cl_impl = IndRef ind;
