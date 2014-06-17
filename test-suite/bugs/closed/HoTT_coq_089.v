@@ -3,7 +3,7 @@ Set Printing Universes.
 
 Inductive type_paths (A : Type) : Type -> Prop
   := idtypepath : type_paths A A.
-Monomorphic Definition comp_type_paths := Eval compute in type_paths.
+Monomorphic Definition comp_type_paths := Eval compute in type_paths@{Type Type}.
 Check comp_type_paths.
 (* comp_type_paths
      : Type (* Top.12 *) -> Type (* Top.12 *) -> Prop *)
@@ -29,7 +29,7 @@ Defined.
 
 Goal Type.
 Proof.
-  Fail match type of comp_type_paths with
+   match type of comp_type_paths with
     | ?U0 -> ?U1 -> ?R
       => exact (@comp_type_paths nat U0)
   end.
@@ -39,5 +39,5 @@ The term "Type (* Top.51 *)" has type "Type (* Top.51+1 *)"
 while it is expected to have type "Type (* Top.51 *)"
 (Universe inconsistency: Cannot enforce Top.51 < Top.51 because Top.51
 = Top.51)). *)
-  admit.
+  
 Defined.
