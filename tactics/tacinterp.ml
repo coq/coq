@@ -453,8 +453,6 @@ let interp_fresh_id ist env l =
       Id.of_string s in
   Tactics.fresh_id_in_env avoid id env
 
-let pf_interp_fresh_id ist gl = interp_fresh_id ist (pf_env gl)
-
 let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let constrvars = extract_ltac_constr_values ist env in
   let vars = (constrvars, ist.lfun) in
@@ -946,6 +944,10 @@ struct
     bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
       (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
 
+  let raw_enter f =
+    bind (Proofview.Goal.raw_goals >>= fun l -> Proofview.tclUNIT (Depends l))
+      (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
+
   (** If the tactic returns unit, we can focus on the goals if necessary. *)
   let run m k = m >>= function
   | Uniform v -> k v
@@ -1081,7 +1083,7 @@ and interp_tacarg ist arg : typed_generic_argument GTac.t =
       end
   | Reference r -> interp_ltac_reference dloc false ist r
   | ConstrMayEval c ->
-      GTac.enter begin fun gl ->
+      GTac.raw_enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let (sigma,c_interp) = interp_constr_may_eval ist env sigma c in
@@ -1098,17 +1100,13 @@ and interp_tacarg ist arg : typed_generic_argument GTac.t =
       interp_app loc ist fv largs
   | TacExternal (loc,com,req,la) ->
       let (>>=) = GTac.bind in
-      GTac.enter begin fun gl ->
       GTacList.map (fun a -> interp_tacarg ist a) la >>= fun la_interp ->
-      Proofview.V82.wrap_exceptions begin fun () ->
-        interp_external loc ist gl com req la_interp
-      end
-      end
+      interp_external loc ist com req la_interp
   | TacFreshId l ->
-      GTac.enter begin fun gl ->
+      GTac.raw_enter begin fun gl ->
       (* spiwack: I'm probably being over-conservative here,
          pf_interp_fresh_id shouldn't raise exceptions *)
-        let id = Tacmach.New.of_old (fun gl -> pf_interp_fresh_id ist gl l) gl in
+        let id = interp_fresh_id ist (Tacmach.New.pf_env gl) l in
         GTac.return (in_gen (topwit wit_intro_pattern) (dloc, IntroIdentifier id))
       end
   | Tacexp t -> val_interp ist t
@@ -1283,7 +1281,7 @@ and interp_match ist lz constr lmr =
           Proofview.tclZERO e
     end
   end >>= fun constr ->
-  GTac.enter begin fun gl ->
+  GTac.raw_enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
@@ -1302,7 +1300,7 @@ and interp_match_goal ist lz lr lmr =
       interp_match_successes lz ist (TacticMatching.match_goal env sigma hyps concl ilr)
     end
 
-and interp_external loc ist gl com req la =
+and interp_external loc ist com req la =
   GTac.enter begin fun gl ->
   let f ch = Tacmach.New.of_old (fun gl -> extern_request ch req gl la) gl in
   let g ch = internalise_tacarg ch in
@@ -1399,7 +1397,7 @@ and interp_ltac_constr ist e : constr GTac.t =
       (val_interp ist e)
       begin function
         | Not_found ->
-            GTac.enter begin fun gl ->
+            GTac.raw_enter begin fun gl ->
               let env = Proofview.Goal.env gl in
               Proofview.tclLIFT begin
                 debugging_step ist (fun () ->
@@ -1411,7 +1409,7 @@ and interp_ltac_constr ist e : constr GTac.t =
         | e -> Proofview.tclZERO e
       end
   end >>= fun result ->
-  GTac.enter begin fun gl ->
+  GTac.raw_enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let result = Value.normalize result in
   try

@@ -376,6 +376,9 @@ module Goal : sig
   (** Recover the list of current goals under focus *)
   val goals : [ `NF ] t list tactic
 
+  (** Recover the list of current goals under focus, without evar-normalization *)
+  val raw_goals : [ `LZ ] t list tactic
+
   (* compatibility: avoid if possible *)
   val goal : [ `NF ] t -> Goal.goal
 
