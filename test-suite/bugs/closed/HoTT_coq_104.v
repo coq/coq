@@ -10,4 +10,4 @@ Local Set Primitive Projections.
 Record prod (A B : Type) : Type :=
   pair { fst : A; snd : B }.
 
-Fail Check fun x : prod Set Set => eq_refl : x = pair (fst x) (snd x).
+Check fun x : prod Set Set => eq_refl : x = pair (fst x) (snd x).
