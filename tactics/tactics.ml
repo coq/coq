@@ -3823,8 +3823,9 @@ let abstract_subproof id gk tac =
       evd, ctx, nf concl
   in
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac) in
-  let (const, safe, (subst, ctx)) =
-    try Pfedit.build_constant_by_tactic ~goal_kind:gk id secsign (concl, ctx) solve_tac
+  let ectx = Evd.evar_universe_context evd in
+  let (const, safe, ectx) =
+    try Pfedit.build_constant_by_tactic ~goal_kind:gk id ectx secsign concl solve_tac
     with Proof_errors.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -3840,8 +3841,7 @@ let abstract_subproof id gk tac =
   let cst = Declare.declare_constant ~internal:Declare.KernelSilent ~local:true id decl in
   (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
   let lem, ctx = Universes.unsafe_constr_of_global (ConstRef cst) in
-  let evd = Evd.merge_context_set Evd.univ_rigid evd (Univ.ContextSet.of_context ctx) in
-  let evd = Evd.merge_universe_subst evd subst in
+  let evd = Evd.set_universe_context evd ectx in
   let open Declareops in
   let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
   let effs = cons_side_effects eff

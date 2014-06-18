@@ -324,8 +324,7 @@ type program_info = {
   prg_name: Id.t;
   prg_body: constr;
   prg_type: constr;
-  prg_ctx:  Univ.universe_context_set;
-  prg_subst : Universes.universe_opt_subst;
+  prg_ctx:  Evd.evar_universe_context;
   prg_obligations: obligations;
   prg_deps : Id.t list;
   prg_fixkind : fixpoint_kind option ;
@@ -389,18 +388,18 @@ let _ =
 
 let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
-let get_body subst obl = 
+let get_body obl = 
   match obl.obl_body with
   | None -> assert false
-  | Some (DefinedObl c) -> 
+  | Some (DefinedObl c) ->
     let ctx = Environ.constant_context (Global.env ()) c in
-    let pc = subst_univs_fn_puniverses (Univ.level_subst_of subst) (c, Univ.UContext.instance ctx) in
+    let pc = (c, Univ.UContext.instance ctx) in
       DefinedObl pc
   | Some (TermObl c) -> 
-      TermObl (subst_univs_fn_constr subst c)
+      TermObl c
 
-let get_obligation_body expand subst obl =
-  let c = get_body subst obl in
+let get_obligation_body expand obl =
+  let c = get_body obl in
   let c' = 
     if expand && obl.obl_status == Evar_kinds.Expand then
       (match c with
@@ -411,21 +410,19 @@ let get_obligation_body expand subst obl =
     | TermObl c -> c)
   in c'
 
-let obl_substitution expand subst obls deps =
+let obl_substitution expand obls deps =
   Int.Set.fold
     (fun x acc ->
        let xobl = obls.(x) in
        let oblb =
-	 try get_obligation_body expand subst xobl
+	 try get_obligation_body expand xobl
 	 with e when Errors.noncritical e -> assert false
        in (xobl.obl_name, (xobl.obl_type, oblb)) :: acc)
     deps []
 
-let subst_deps expand subst obls deps t =
-  let subst = Universes.make_opt_subst subst in
-  let osubst = obl_substitution expand subst obls deps in
-    Vars.subst_univs_fn_constr subst
-      (Vars.replace_vars (List.map (fun (n, (_, b)) -> n, b) osubst) t)
+let subst_deps expand obls deps t =
+  let osubst = obl_substitution expand obls deps in
+    (Vars.replace_vars (List.map (fun (n, (_, b)) -> n, b) osubst) t)
 
 let rec prod_app t n =
   match kind_of_term (strip_outer_cast t) with
@@ -453,8 +450,7 @@ let replace_appvars subst =
   in map_constr aux
        
 let subst_prog expand obls ints prg =
-  let usubst = Universes.make_opt_subst prg.prg_subst in
-  let subst = obl_substitution expand usubst obls ints in
+  let subst = obl_substitution expand obls ints in
     if get_hide_obligations () then
       (replace_appvars subst prg.prg_body,
        replace_appvars subst ((* Termops.refresh_universes *) prg.prg_type))
@@ -463,8 +459,8 @@ let subst_prog expand obls ints prg =
 	(Vars.replace_vars subst' prg.prg_body,
 	 Vars.replace_vars subst' ((* Termops.refresh_universes *) prg.prg_type))
 
-let subst_deps_obl subst obls obl =
-  let t' = subst_deps true subst obls obl.obl_deps obl.obl_type in
+let subst_deps_obl obls obl =
+  let t' = subst_deps true obls obl.obl_deps obl.obl_type in
     { obl with obl_type = t' }
 
 module ProgMap = Map.Make(Id)
@@ -528,9 +524,11 @@ let subst_body expand prg =
 
 let declare_definition prg =
   let body, typ = subst_body true prg in
+  let nf = Universes.nf_evars_and_universes_opt_subst (fun x -> None)
+    (Evd.evar_universe_context_subst prg.prg_ctx) in
   let ce =
-    definition_entry ~types:typ ~poly:(pi2 prg.prg_kind) 
-      ~univs:(Univ.ContextSet.to_context prg.prg_ctx) body
+    definition_entry ~types:(nf typ) ~poly:(pi2 prg.prg_kind) 
+      ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
   in
     progmap_remove prg;
     !declare_definition_ref prg.prg_name 
@@ -599,7 +597,7 @@ let declare_mutual_definition l =
             mk_proof (mkCoFix (i,fixdecls))) 0 l
   in
   (* Declare the recursive definitions *)
-  let ctx = Univ.ContextSet.to_context first.prg_ctx in
+  let ctx = Evd.evar_context_universe_context first.prg_ctx in
   let kns = List.map4 (!declare_fix_ref (local, poly, kind) ctx) 
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
@@ -677,7 +675,7 @@ let init_prog_info n b t ctx deps fixkind notations obls impls kind reduce hook 
 	  obls, b
   in
     { prg_name = n ; prg_body = b; prg_type = reduce t; 
-      prg_ctx = ctx; prg_subst = Univ.LMap.empty;
+      prg_ctx = ctx; 
       prg_obligations = (obls', Array.length obls');
       prg_deps = deps; prg_fixkind = fixkind ; prg_notations = notations ;
       prg_implicits = impls; prg_kind = kind; prg_reduce = reduce; 
@@ -789,18 +787,19 @@ let rec string_of_list sep f = function
 
 (* Solve an obligation using tactics, return the corresponding proof term *)
 
-let solve_by_tac name evi t poly subst ctx =
+let solve_by_tac name evi t poly ctx =
   let id = name in
-  let concl = Universes.subst_opt_univs_constr subst evi.evar_concl in
-  (* spiwack: the status is dropped. MS: the ctx is dropped too *)
-  let (entry,_,(subst,ctx)) = Pfedit.build_constant_by_tactic 
-    id ~goal_kind:(goal_kind poly) evi.evar_hyps (concl, ctx) (Tacticals.New.tclCOMPLETE t) in
+  let concl = evi.evar_concl in
+  (* spiwack: the status is dropped. *)
+  let (entry,_,ctx') = Pfedit.build_constant_by_tactic 
+    id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps concl (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
   let entry = Term_typing.handle_side_effects env entry in
   let body, eff = Future.force entry.Entries.const_entry_body in
   assert(Declareops.side_effects_is_empty eff);
+  assert(Univ.ContextSet.is_empty (snd body));
   Inductiveops.control_only_guard (Global.env ()) (fst body) (*FIXME ignoring the context...*);
-  (fst body), subst, entry.Entries.const_entry_universes
+  (fst body), ctx'
 
 let rec solve_obligation prg num tac =
   let user_num = succ num in
@@ -811,12 +810,10 @@ let rec solve_obligation prg num tac =
     else
       match deps_remaining obls obl.obl_deps with
       | [] ->
-          let ctx = prg.prg_ctx in
-          let obl = subst_deps_obl prg.prg_subst obls obl in
+          let obl = subst_deps_obl obls obl in
           let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
-            Lemmas.start_proof_univs obl.obl_name kind 
-              (Universes.subst_opt_univs_constr prg.prg_subst obl.obl_type, ctx)
-              (fun (subst, ctx) -> Lemmas.mk_hook (fun strength gr ->
+            Lemmas.start_proof_univs obl.obl_name kind prg.prg_ctx obl.obl_type
+              (fun ctx' -> Lemmas.mk_hook (fun strength gr ->
 		let cst = match gr with ConstRef cst -> cst | _ -> assert false in
 		let obl =
 		  let transparent = evaluable_constant cst (Global.env ()) in
@@ -836,13 +833,12 @@ let rec solve_obligation prg num tac =
 		in
 		let obls = Array.copy obls in
 		let _ = obls.(num) <- obl in
-		let ctx = Univ.ContextSet.of_context ctx in
 		let res = 
 		  try update_obls 
-			{prg with prg_body = Universes.subst_opt_univs_constr subst prg.prg_body;
-			  prg_type = Universes.subst_opt_univs_constr subst prg.prg_type;
-			  prg_ctx = Univ.ContextSet.union prg.prg_ctx ctx;
-			  prg_subst = Univ.LMap.union prg.prg_subst subst}
+			{prg with prg_body = prg.prg_body;
+			  prg_type = prg.prg_type;
+			  prg_ctx = ctx' }
+			  
 			obls (pred rem)
 		  with e when Errors.noncritical e ->
                     pperror (Errors.print (Cerrors.process_vernac_interp_error e))
@@ -879,7 +875,7 @@ and solve_obligation_by_tac prg obls i tac =
     | None ->
 	try
 	  if List.is_empty (deps_remaining obls obl.obl_deps) then
-	    let obl = subst_deps_obl prg.prg_subst obls obl in
+	    let obl = subst_deps_obl obls obl in
 	    let tac =
 	      match tac with
 	      | Some t -> t
@@ -888,11 +884,12 @@ and solve_obligation_by_tac prg obls i tac =
 		  | Some t -> t
 		  | None -> snd (get_default_tactic ())
 	    in
-	    let t, subst, ctx = 
+	    let t, ctx = 
 	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac 
-	        (pi2 prg.prg_kind) prg.prg_subst prg.prg_ctx
+	        (pi2 prg.prg_kind) prg.prg_ctx
 	    in
-	      obls.(i) <- declare_obligation {prg with prg_subst = subst} obl t ctx;
+	    let uctx = Evd.evar_context_universe_context ctx in
+	      obls.(i) <- declare_obligation {prg with prg_ctx = ctx} obl t uctx;
 	      true
 	  else false
 	with e when Errors.noncritical e ->
@@ -1022,8 +1019,8 @@ let admit_prog prg =
       (fun i x ->
         match x.obl_body with
         | None ->
-            let x = subst_deps_obl prg.prg_subst obls x in
-	    let ctx = Univ.ContextSet.to_context prg.prg_ctx in
+            let x = subst_deps_obl obls x in
+	    let ctx = Evd.evar_context_universe_context prg.prg_ctx in
             let kn = Declare.declare_constant x.obl_name ~local:true
               (ParameterEntry (None,false,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in

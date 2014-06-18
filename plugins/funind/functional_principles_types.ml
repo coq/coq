@@ -278,7 +278,8 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
     Lemmas.start_proof
       new_princ_name
       (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem))
-      (new_principle_type, (*FIXME*) Univ.ContextSet.empty)
+      (*FIXME*) Evd.empty_evar_universe_context
+    new_principle_type
       hook
     ;
     (*       let _tim1 = System.get_time ()  in *)

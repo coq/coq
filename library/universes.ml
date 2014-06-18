@@ -791,18 +791,17 @@ let normalize_context_set ctx us algs =
   in
   let partition = UF.partition uf in
   let flex x = LMap.mem x us in
-  let subst, eqs = List.fold_left (fun (subst, cstrs) s -> 
+  let ctx, subst, eqs = List.fold_left (fun (ctx, subst, cstrs) s -> 
     let canon, (global, rigid, flexible) = choose_canonical ctx flex algs s in
     (* Add equalities for globals which can't be merged anymore. *)
     let cstrs = LSet.fold (fun g cst -> 
-      Constraint.add (canon, Univ.Eq, g) cst) (LSet.union global rigid)
+      Constraint.add (canon, Univ.Eq, g) cst) global
       cstrs 
     in
-    let subst = LSet.fold (fun f -> LMap.add f canon)
-      flexible subst
-    in 
-      (subst, cstrs))
-    (LMap.empty, Constraint.empty) partition
+    let subst = LSet.fold (fun f -> LMap.add f canon) rigid subst in 
+    let subst = LSet.fold (fun f -> LMap.add f canon) flexible subst in 
+      (LSet.diff (LSet.diff ctx rigid) flexible, subst, cstrs))
+    (ctx, LMap.empty, Constraint.empty) partition
   in
   (* Noneqs is now in canonical form w.r.t. equality constraints, 
      and contains only inequality constraints. *)

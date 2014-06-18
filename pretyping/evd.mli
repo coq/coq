@@ -117,6 +117,9 @@ val map_evar_info : (constr -> constr) -> evar_info -> evar_info
 
 (** {6 Unification state} **)
 
+type evar_universe_context
+(** The universe context associated to an evar map *)
+
 type evar_map
 (** Type of unification state. Essentially a bunch of state-passing data needed
     to handle incremental term construction. *)
@@ -128,7 +131,7 @@ val progress_evar_map : evar_map -> evar_map -> bool
 val empty : evar_map
 (** The empty evar map. *)
 
-val from_env : ?ctx:Univ.universe_context_set -> env -> evar_map
+val from_env : ?ctx:evar_universe_context -> env -> evar_map
 (** The empty evar map with given universe context, taking its initial 
     universes from env. *)
 
@@ -407,9 +410,6 @@ type rigid =
 val univ_rigid : rigid
 val univ_flexible : rigid
 val univ_flexible_alg : rigid
-
-(** The universe context associated to an evar map *)
-type evar_universe_context
 
 type 'a in_evar_universe_context = 'a * evar_universe_context
 

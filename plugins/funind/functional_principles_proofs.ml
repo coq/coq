@@ -987,8 +987,9 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
       i*)
     (mk_equation_id f_id)
     (Decl_kinds.Global, false, (Decl_kinds.Proof Decl_kinds.Theorem))
-    (lemma_type, (*FIXME*) Univ.ContextSet.empty)
-    (Lemmas.mk_hook (fun _ _ -> ()));
+  Evd.empty_evar_universe_context
+  lemma_type
+  (Lemmas.mk_hook (fun _ _ -> ()));
   ignore (Pfedit.by (Proofview.V82.tactic prove_replacement));
   Lemmas.save_proof (Vernacexpr.Proved(false,None))
 

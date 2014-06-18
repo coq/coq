@@ -1269,7 +1269,7 @@ let open_new_goal build_proof ctx using_lemmas ref_ goal_name (gls_type,decompos
     let lid = ref [] in
     let h_num = ref (-1) in
     Proof_global.discard_all ();
-    build_proof (Univ.ContextSet.empty)
+    build_proof Evd.empty_evar_universe_context
       (  fun gls ->
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
 	   tclTHENSEQ
@@ -1317,7 +1317,7 @@ let open_new_goal build_proof ctx using_lemmas ref_ goal_name (gls_type,decompos
   Lemmas.start_proof
     na
     (Decl_kinds.Global, false (* FIXME *), Decl_kinds.Proof Decl_kinds.Lemma)
-    (gls_type, ctx)
+    ctx gls_type
     (Lemmas.mk_hook hook);
   if Indfun_common.is_strict_tcc  ()
   then
@@ -1360,12 +1360,11 @@ let com_terminate
     thm_name using_lemmas
     nb_args ctx
     hook =
-  let ctx = Univ.ContextSet.of_context ctx in
   let start_proof ctx (tac_start:tactic) (tac_end:tactic) =
     let (evmap, env) = Lemmas.get_current_context() in
     Lemmas.start_proof thm_name
       (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
-      (compute_terminate_type nb_args fonctional_ref, ctx) hook;
+      ctx (compute_terminate_type nb_args fonctional_ref) hook;
 
     ignore (by (Proofview.V82.tactic (observe_tac (str "starting_tac") tac_start)));
     ignore (by (Proofview.V82.tactic (observe_tac (str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
@@ -1374,7 +1373,7 @@ let com_terminate
   start_proof ctx tclIDTAC tclIDTAC;
   try
     let sigma, new_goal_type = build_new_goal_type () in
-    open_new_goal start_proof (Evd.universe_context_set sigma)
+    open_new_goal start_proof (Evd.evar_universe_context sigma)
       using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
       (new_goal_type);
@@ -1414,7 +1413,8 @@ let (com_eqn : int -> Id.t ->
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (Lemmas.start_proof eq_name (Global, false, Proof Lemma)
        ~sign:(Environ.named_context_val env)
-       (equation_lemma_type, (*FIXME*)Univ.ContextSet.empty)
+       (Evd.evar_universe_context evmap)
+       equation_lemma_type
        (Lemmas.mk_hook (fun _ _ -> ()));
      ignore (by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
@@ -1481,8 +1481,8 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let equation_id = add_suffix function_name "_equation" in
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
-  let ctx = Evd.universe_context evm in
-  let functional_ref = declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~ctx res in
+  let ctx = Evd.evar_universe_context evm in
+  let functional_ref = declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~ctx:(Evd.universe_context evm) res in
   let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in  
   let relation =
     fst (*FIXME*)(interp_constr

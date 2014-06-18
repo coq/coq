@@ -53,7 +53,7 @@ val give_me_the_proof : unit -> Proof.proof
     (i.e. an proof ending command) and registers the appropriate
     values. *)
 type lemma_possible_guards = int list list
-type proof_universes = Universes.universe_opt_subst Univ.in_universe_context
+type proof_universes = Evd.evar_universe_context
 type proof_object = {
   id : Names.Id.t;
   entries : Entries.definition_entry list;
@@ -78,13 +78,13 @@ type closed_proof = proof_object * proof_terminator
     closing commands and the xml plugin); [terminator] is used at the
     end of the proof to close the proof. *)
 val start_proof :
-  Names.Id.t -> Decl_kinds.goal_kind -> (Environ.env * Term.types Univ.in_universe_context_set) list  ->
+  Names.Id.t -> Decl_kinds.goal_kind -> Evd.evar_universe_context -> (Environ.env * Term.types) list  ->
     proof_terminator -> unit
 
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
 val start_dependent_proof :
-  Names.Id.t -> Decl_kinds.goal_kind -> Proofview.telescope  ->
+  Names.Id.t -> Decl_kinds.goal_kind -> Evd.evar_universe_context -> Proofview.telescope  ->
     proof_terminator -> unit
 
 (* Takes a function to add to the exceptions data relative to the
@@ -95,8 +95,7 @@ val close_proof : (exn -> exn) -> closed_proof
  * Both access the current proof state. The formes is supposed to be
  * chained with a computation that completed the proof *)
 
-type closed_proof_output = Entries.proof_output list * 
-    Universes.universe_opt_subst Univ.in_universe_context
+type closed_proof_output = Entries.proof_output list * Evd.evar_universe_context
 
 val return_proof : unit -> closed_proof_output
 val close_future_proof : feedback_id:Stateid.t ->

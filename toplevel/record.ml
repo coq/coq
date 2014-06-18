@@ -72,7 +72,7 @@ let binders_of_decls = List.map binder_of_decl
 
 let typecheck_params_and_fields def id t ps nots fs =
   let env0 = Global.env () in
-  let evars = ref (Evd.from_env ~ctx:(Univ.ContextSet.empty) env0) in
+  let evars = ref (Evd.from_env env0) in
   let _ = 
     let error bk (loc, name) = 
       match bk, name with

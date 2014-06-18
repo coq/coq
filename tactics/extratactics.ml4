@@ -304,10 +304,11 @@ open Coqlib
 let project_hint pri l2r r =
   let gr = Smartlocate.global_with_alias r in
   let env = Global.env() in
-  let c,ctx = Universes.fresh_global_instance env gr in
-  let t = Retyping.get_type_of env (Evd.from_env ~ctx env) c in
+  let sigma = Evd.from_env env in
+  let sigma, c = Evd.fresh_global env sigma gr in
+  let t = Retyping.get_type_of env sigma c in
   let t =
-    Tacred.reduce_to_quantified_ref env Evd.empty (Lazy.force coq_iff_ref) t in
+    Tacred.reduce_to_quantified_ref env sigma (Lazy.force coq_iff_ref) t in
   let sign,ccl = decompose_prod_assum t in
   let (a,b) = match snd (decompose_app ccl) with
     | [a;b] -> (a,b)
@@ -320,6 +321,7 @@ let project_hint pri l2r r =
   let id =
     Nameops.add_suffix (Nametab.basename_of_global gr) ("_proj_" ^ (if l2r then "l2r" else "r2l"))
   in
+  let ctx = Evd.universe_context_set sigma in
   let c = Declare.declare_definition ~internal:Declare.KernelSilent id (c,ctx) in
     (pri,false,true,Auto.PathAny, Auto.IsGlobRef (Globnames.ConstRef c))
 

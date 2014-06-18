@@ -305,10 +305,10 @@ let empty_evar_universe_context =
     uctx_universes = Univ.initial_universes;
     uctx_initial_universes = Univ.initial_universes }
 
-let evar_universe_context_from e c = 
+let evar_universe_context_from e = 
   let u = universes e in
     {empty_evar_universe_context with 
-      uctx_local = c; uctx_universes = u; uctx_initial_universes = u}
+      uctx_universes = u; uctx_initial_universes = u}
 
 let is_empty_evar_universe_context ctx =
   Univ.ContextSet.is_empty ctx.uctx_local && 
@@ -751,9 +751,10 @@ let empty = {
   effects    = Declareops.no_seff;
 }
 
-let from_env ?(ctx=Univ.ContextSet.empty) e = 
-  { empty with universes = evar_universe_context_from e ctx }
-
+let from_env ?ctx e = 
+  match ctx with
+  | None -> { empty with universes = evar_universe_context_from e }
+  | Some ctx -> { empty with universes = ctx }
 
 let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
 

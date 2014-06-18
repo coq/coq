@@ -26,7 +26,7 @@ open Util
 type proofview = Proofview_monad.proofview
 open Proofview_monad
 
-type entry = (Term.constr * Term.types Univ.in_universe_context_set) list
+type entry = (Term.constr * Term.types) list
 
 let proofview p =
   p.comb , p.solution
@@ -36,13 +36,12 @@ let proofview p =
 let init sigma =
   let rec aux = function
   | [] ->  [], { solution = sigma; comb = []; }
-  | (env, (typ,ctx)) :: l ->
+  | (env, typ) :: l ->
     let ret, { solution = sol; comb = comb } = aux l in
     let (new_defs , econstr) = Evarutil.new_evar sol env typ in
     let (e, _) = Term.destEvar econstr in
-    let new_defs = Evd.merge_context_set Evd.univ_rigid new_defs ctx in
     let gl = Goal.build e in
-    let entry = (econstr, (typ, ctx)) :: ret in
+    let entry = (econstr, typ) :: ret in
     entry, { solution = new_defs; comb = gl::comb; }
   in
   fun l ->
@@ -52,18 +51,17 @@ let init sigma =
 
 type telescope =
   | TNil
-  | TCons of Environ.env * Term.types Univ.in_universe_context_set * (Term.constr -> telescope)
+  | TCons of Environ.env * Term.types * (Term.constr -> telescope)
 
 let dependent_init =
   let rec aux sigma = function
   | TNil -> [], { solution = sigma; comb = []; }
-  | TCons (env, (typ, ctx), t) ->
+  | TCons (env, typ, t) ->
     let (sigma, econstr ) = Evarutil.new_evar sigma env typ in
-    let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
     let ret, { solution = sol; comb = comb } = aux sigma (t econstr) in
     let (e, _) = Term.destEvar econstr in
     let gl = Goal.build e in
-    let entry = (econstr, (typ, ctx)) :: ret in
+    let entry = (econstr, typ) :: ret in
     entry, { solution = sol; comb = gl :: comb; }
   in
   fun sigma t ->

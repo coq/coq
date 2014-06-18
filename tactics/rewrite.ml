@@ -589,8 +589,9 @@ let solve_remaining_by by env prf =
     let evd' = 
       List.fold_right (fun mv evd ->
         let ty = Clenv.clenv_nf_meta env (meta_type evd mv) in
-	let c,_,_ = Pfedit.build_by_tactic env.env (ty,Univ.ContextSet.empty) (Tacticals.New.tclCOMPLETE tac) in
-	  meta_assign mv (fst c (*FIXME*), (Conv,TypeNotProcessed)) evd)
+	let c,_,ctx' = Pfedit.build_by_tactic env.env (Evd.evar_universe_context evd) ty (Tacticals.New.tclCOMPLETE tac) in
+	let evd = Evd.set_universe_context evd ctx' in
+	  meta_assign mv (c, (Conv,TypeNotProcessed)) evd)
       indep env.evd
     in { env with evd = evd' }, prf
 
@@ -1236,7 +1237,8 @@ module Strategies =
 	fail cs
 
     let inj_open hint =
-      (Evd.from_env ~ctx:hint.Autorewrite.rew_ctx (Global.env()),
+      let ctx = Evd.evar_universe_context_of hint.Autorewrite.rew_ctx in
+      (Evd.from_env ~ctx (Global.env()),
        (hint.Autorewrite.rew_lemma, NoBindings))
 
     let old_hints (db : string) : strategy =
@@ -1727,7 +1729,7 @@ let declare_projection n instance_id r =
 let build_morphism_signature m =
   let env = Global.env () in
   let m,ctx = Constrintern.interp_constr Evd.empty env m in
-  let sigma = Evd.from_env ~ctx:(Evd.evar_universe_context_set ctx) env in
+  let sigma = Evd.from_env ~ctx env in
   let t = Typing.type_of env sigma m in
   let cstrs =
     let rec aux t =
@@ -1788,7 +1790,7 @@ let add_morphism_infer glob m n =
   let poly = Flags.is_universe_polymorphism () in
   let instance_id = add_suffix n "_Proper" in
   let instance = build_morphism_signature m in
-  let ctx = Univ.ContextSet.empty (*FIXME *) in
+  let ctx = Evd.empty_evar_universe_context (*FIXME *) in
     if Lib.is_modtype () then
       let cst = Declare.declare_constant ~internal:Declare.KernelSilent instance_id
 				(Entries.ParameterEntry 
@@ -1815,7 +1817,7 @@ let add_morphism_infer glob m n =
       let hook = Lemmas.mk_hook hook in
 	Flags.silently
 	  (fun () ->
-	    Lemmas.start_proof instance_id kind (instance, ctx) hook;
+	    Lemmas.start_proof instance_id kind ctx instance hook;
 	    ignore (Pfedit.by (Tacinterp.interp tac))) ()
 
 let add_morphism glob binders m s n =

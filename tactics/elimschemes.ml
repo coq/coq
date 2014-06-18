@@ -50,7 +50,8 @@ let optimize_non_type_induction_scheme kind dep sort ind =
     let ctx = if mib.mind_polymorphic then mib.mind_universes else Univ.UContext.empty in
     let u = Univ.UContext.instance ctx in
     let ctxset = Univ.ContextSet.of_context ctx in
-    let sigma, c = build_induction_scheme env (Evd.from_env ~ctx:ctxset env) (ind,u) dep sort in
+    let ectx = Evd.evar_universe_context_of ctxset in
+    let sigma, c = build_induction_scheme env (Evd.from_env ~ctx:ectx env) (ind,u) dep sort in
       (c, Evd.evar_universe_context sigma), Declareops.no_seff
 
 let build_induction_scheme_in_type dep sort ind =
@@ -61,7 +62,8 @@ let build_induction_scheme_in_type dep sort ind =
   in
   let u = Univ.UContext.instance ctx in
   let ctxset = Univ.ContextSet.of_context ctx in
-  let sigma, c = build_induction_scheme env (Evd.from_env ~ctx:ctxset env) (ind,u) dep sort in
+  let ectx = Evd.evar_universe_context_of ctxset in
+  let sigma, c = build_induction_scheme env (Evd.from_env ~ctx:ectx env) (ind,u) dep sort in
     c, Evd.evar_universe_context sigma
  
 let rect_scheme_kind_from_type =

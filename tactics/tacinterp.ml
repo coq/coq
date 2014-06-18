@@ -2060,8 +2060,7 @@ let _ =
     if has_type arg (glbwit wit_tactic) then
       let tac = out_gen (glbwit wit_tactic) arg in
       let tac = interp_tactic ist tac in
-      let ctx = Evd.universe_context_set sigma in
-      let prf = Proof.start sigma [env, (ty, ctx)] in
+      let prf = Proof.start sigma [env, ty] in
       let (prf, _) =
         try Proof.run_tactic env tac prf
         with Proof_errors.TacticFailure e as src ->

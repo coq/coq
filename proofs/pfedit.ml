@@ -25,9 +25,9 @@ let delete_proof = Proof_global.discard
 let delete_current_proof = Proof_global.discard_current
 let delete_all_proofs = Proof_global.discard_all
 
-let start_proof (id : Id.t) str hyps c ?init_tac terminator =
+let start_proof (id : Id.t) str ctx hyps c ?init_tac terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
-  Proof_global.start_proof id str goals terminator;
+  Proof_global.start_proof id str ctx goals terminator;
   let env = Global.env () in
   ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
@@ -118,8 +118,8 @@ open Decl_kinds
 
 let next = let n = ref 0 in fun () -> incr n; !n
 
-let build_constant_by_tactic id sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
-  start_proof id goal_kind sign typ (fun _ -> ());
+let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
+  start_proof id goal_kind ctx sign typ (fun _ -> ());
   try
     let status = by tac in
     let _,(const,univs,_) = cook_proof () in
@@ -130,15 +130,16 @@ let build_constant_by_tactic id sign ?(goal_kind = Global, false, Proof Theorem)
     delete_current_proof ();
     raise reraise
 
-let build_by_tactic env ?(poly=false) typ tac =
+let build_by_tactic env ctx ?(poly=false) typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
   let gk = Global, poly, Proof Theorem in
-  let ce, status, univs = build_constant_by_tactic id sign ~goal_kind:gk typ tac in
+  let ce, status, univs = build_constant_by_tactic id ctx sign ~goal_kind:gk typ tac in
   let ce = Term_typing.handle_side_effects env ce in
-  let cb, se = Future.force ce.const_entry_body in
+  let (cb, ctx), se = Future.force ce.const_entry_body in
   assert(Declareops.side_effects_is_empty se);
-  cb, status, fst univs
+  assert(Univ.ContextSet.is_empty ctx);
+  cb, status, univs
 
 (**********************************************************************)
 (* Support for resolution of evars in tactic interpretation, including
@@ -160,7 +161,7 @@ let solve_by_implicit_tactic env sigma evk =
       let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (Errors.UserError ("",Pp.str"Proof is not complete."))) []) in
       (try
         let (ans, _, _) = 
-	  build_by_tactic env (evi.evar_concl, Evd.universe_context_set sigma) tac in
-        fst ans
+	  build_by_tactic env (Evd.evar_universe_context sigma) evi.evar_concl tac in
+        ans
        with e when Logic.catchable_exception e -> raise Exit)
   | _ -> raise Exit

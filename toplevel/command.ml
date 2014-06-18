@@ -182,7 +182,7 @@ let do_definition ident k bl red_option c ctypopt hook =
       let obls, _, c, cty = 
 	Obligations.eterm_obligations env ident evd 0 c typ
       in
-      let ctx = Evd.universe_context_set evd in
+      let ctx = Evd.evar_universe_context evd in
 	ignore(Obligations.add_definition
           ident ~term:c cty ctx ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
@@ -912,7 +912,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   let evars, _, evars_def, evars_typ = 
     Obligations.eterm_obligations env recname !evdref 0 fullcoqc fullctyp 
   in
-  let ctx = Evd.universe_context_set !evdref in
+  let ctx = Evd.evar_universe_context !evdref in
     ignore(Obligations.add_definition recname ~term:evars_def 
 	     evars_typ ctx evars ~hook)
 
@@ -980,18 +980,18 @@ let check_recursive isfix env evd (fixnames,fixdefs,_) =
 let interp_fixpoint l ntns =
   let (env,_,evd),fix,info = interp_recursive true l ntns in
   check_recursive true env evd fix;
-  (fix,Evd.universe_context_set evd,info)
+  (fix,Evd.evar_universe_context evd,info)
 
 let interp_cofixpoint l ntns =
   let (env,_,evd),fix,info = interp_recursive false l ntns in
   check_recursive false  env evd fix;
-  fix,Evd.universe_context_set evd,info
+  fix,Evd.evar_universe_context evd,info
     
 let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexes ntns =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      List.map3 (fun id t (len,imps,_) -> (id,((t,ctx),(len,imps)))) fixnames fixtypes fiximps in
+      List.map3 (fun id t (len,imps,_) -> (id,(t,(len,imps)))) fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
@@ -999,7 +999,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexe
       Option.map (List.map Proofview.V82.tactic) init_tac
     in
     Lemmas.start_proof_with_initialization (Global,poly,DefinitionBody Fixpoint)
-      (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
+      ctx (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
@@ -1010,6 +1010,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexe
     let vars = Universes.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
+    let ctx = Evd.evar_universe_context_set ctx in
     let ctx = Universes.restrict_universe_context ctx vars in
     let fixdecls = List.map Term_typing.mk_pure_proof fixdecls in
     let ctx = Univ.ContextSet.to_context ctx in
@@ -1025,7 +1026,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      List.map3 (fun id t (len,imps,_) -> (id,((t,ctx),(len,imps)))) fixnames fixtypes fiximps in
+      List.map3 (fun id t (len,imps,_) -> (id,(t,(len,imps)))) fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
@@ -1033,7 +1034,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns
       Option.map (List.map Proofview.V82.tactic) init_tac
     in
     Lemmas.start_proof_with_initialization (Global,poly, DefinitionBody CoFixpoint)
-      (Some(true,[],init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
+      ctx (Some(true,[],init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
@@ -1041,6 +1042,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns
     let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
     let fixdecls = List.map Term_typing.mk_pure_proof fixdecls in
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
+    let ctx = Evd.evar_universe_context_set ctx in
     let ctx = Univ.ContextSet.to_context ctx in
     ignore (List.map4 (declare_fix (local, poly, CoFixpoint) ctx) 
 	      fixnames fixdecls fixtypes fiximps);
@@ -1109,7 +1111,7 @@ let do_program_recursive local p fixkind fixl ntns =
 	Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
 	List.iteri (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
   end in
-  let ctx = Evd.universe_context_set evd in
+  let ctx = Evd.evar_universe_context evd in
   let kind = match fixkind with
   | Obligations.IsFixpoint _ -> (local, p, Fixpoint)
   | Obligations.IsCoFixpoint -> (local, p, CoFixpoint)

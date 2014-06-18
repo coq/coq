@@ -641,11 +641,11 @@ let make_bl_scheme mind =
   let lnonparrec,lnamesparrec = (* TODO subst *)
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let bl_goal, eff = compute_bl_goal ind lnamesparrec nparrec in
-  let ctx = Univ.ContextSet.empty (*FIXME univs *) in
-  let (ans, _, _) = Pfedit.build_by_tactic (Global.env()) (bl_goal, ctx)
+  let ctx = Evd.empty_evar_universe_context (*FIXME univs *) in
+  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx bl_goal
     (compute_bl_tact (!bl_scheme_kind_aux()) (ind, Univ.Instance.empty) lnamesparrec nparrec)
   in
-  ([|fst ans (*FIXME univs*)|], Evd.empty_evar_universe_context), eff
+  ([|ans|], ctx), eff
 
 let bl_scheme_kind = declare_mutual_scheme_object "_dec_bl" make_bl_scheme
 
@@ -763,10 +763,11 @@ let make_lb_scheme mind =
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
-  let (ans, _, _) = Pfedit.build_by_tactic (Global.env()) (lb_goal,Univ.ContextSet.empty)
+  let ctx = Evd.empty_evar_universe_context in
+  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx lb_goal
     (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
   in
-  ([|fst ans|], Evd.empty_evar_universe_context (* FIXME *)), eff
+  ([|ans|], ctx (* FIXME *)), eff
 
 let lb_scheme_kind = declare_mutual_scheme_object "_dec_lb" make_lb_scheme
 
@@ -933,13 +934,14 @@ let make_eq_decidability mind =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let u = Univ.Instance.empty in
+  let ctx = Evd.empty_evar_universe_context (* FIXME *)in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  let (ans, _, _) = Pfedit.build_by_tactic (Global.env())
-    (compute_dec_goal (ind,u) lnamesparrec nparrec, Univ.ContextSet.empty)
+  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx
+    (compute_dec_goal (ind,u) lnamesparrec nparrec)
     (compute_dec_tact ind lnamesparrec nparrec)
   in
-  ([|fst ans (*FIXME*)|], Evd.empty_evar_universe_context (* FIXME *)), Declareops.no_seff
+  ([|ans|], ctx), Declareops.no_seff
 
 let eq_dec_scheme_kind =
   declare_mutual_scheme_object "_eq_dec" make_eq_decidability

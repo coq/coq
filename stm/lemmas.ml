@@ -207,14 +207,14 @@ let compute_proof_name locality = function
   | None ->
       next_global_ident_away default_thm_id (Pfedit.get_all_proof_names ()) 
 
-let save_remaining_recthms (locality,p,kind) body opaq i (id,((t_i,ctx_i),(_,imps))) =
+let save_remaining_recthms (locality,p,kind) ctx body opaq i (id,(t_i,(_,imps))) =
   match body with
   | None ->
       (match locality with
       | Discharge ->
           let impl = false in (* copy values from Vernacentries *)
           let k = IsAssumption Conjectural in
-          let c = SectionLocalAssum ((t_i,ctx_i),p,impl) in
+          let c = SectionLocalAssum ((t_i,ctx),p,impl) in
 	  let _ = declare_variable id (Lib.cwd(),c,k) in
           (Discharge, VarRef id,imps)
       | Local | Global ->
@@ -224,7 +224,7 @@ let save_remaining_recthms (locality,p,kind) body opaq i (id,((t_i,ctx_i),(_,imp
           | Global -> false
           | Discharge -> assert false
           in
-          let ctx = Univ.ContextSet.to_context ctx_i in
+          let ctx = Univ.ContextSet.to_context ctx in
           let decl = (ParameterEntry (None,p,(t_i,ctx),None), k) in
           let kn = declare_constant id ~local decl in
           (locality,ConstRef kn,imps))
@@ -237,12 +237,12 @@ let save_remaining_recthms (locality,p,kind) body opaq i (id,((t_i,ctx_i),(_,imp
       match locality with
       | Discharge ->
           let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p 
-	    ~univs:(Univ.ContextSet.to_context ctx_i) body_i in
+	    ~univs:(Univ.ContextSet.to_context ctx) body_i in
 	  let c = SectionLocalDef const in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
           (Discharge,VarRef id,imps)
       | Local | Global ->
-        let ctx = Univ.ContextSet.to_context ctx_i in
+        let ctx = Univ.ContextSet.to_context ctx in
         let local = match locality with
         | Local -> true
         | Global -> false
@@ -326,7 +326,7 @@ let standard_proof_terminator compute_guard hook =
 let universe_proof_terminator compute_guard hook =
   let open Proof_global in function
   | Admitted ->
-      admit (hook (Univ.LMap.empty, Univ.UContext.empty)) ();
+      admit (hook Evd.empty_evar_universe_context) ();
       Pp.feedback Interface.AddedAxiom
   | Proved (is_opaque,idopt,proof) ->
       let proof = get_proof proof compute_guard 
@@ -338,31 +338,29 @@ let universe_proof_terminator compute_guard hook =
           save_anonymous_with_strength proof kind id
       end
 
-let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
+let start_proof id kind ctx ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = standard_proof_terminator compute_guard hook in
   let sign = 
     match sign with
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()
   in
-  !start_hook (fst c);
-  Pfedit.start_proof id kind sign c ?init_tac terminator
+  !start_hook c;
+  Pfedit.start_proof id kind ctx sign c ?init_tac terminator
 
-let start_proof_univs id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
+let start_proof_univs id kind ctx ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = universe_proof_terminator compute_guard hook in
   let sign = 
     match sign with
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()
   in
-  !start_hook (fst c);
-  Pfedit.start_proof id kind sign c ?init_tac terminator
+  !start_hook c;
+  Pfedit.start_proof id kind ctx sign c ?init_tac terminator
 
-
-(* FIXME: forgetting about the universes here *)
 let rec_tac_initializer finite guard thms snl =
   if finite then
-    match List.map (fun (id,(t,_)) -> (id,fst t)) thms with
+    match List.map (fun (id,(t,_)) -> (id,t)) thms with
     | (id,_)::l -> Tactics.mutual_cofix id l 0
     | _ -> assert false
   else
@@ -370,11 +368,11 @@ let rec_tac_initializer finite guard thms snl =
     let nl = match snl with 
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
-    in match List.map2 (fun (id,(t,_)) n -> (id,n,fst t)) thms nl with
+    in match List.map2 (fun (id,(t,_)) n -> (id,n,t)) thms nl with
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
-let start_proof_with_initialization kind recguard thms snl hook =
+let start_proof_with_initialization kind ctx recguard thms snl hook =
   let intro_tac (_, (_, (ids, _))) =
     Tacticals.New.tclMAP (function
     | Name id -> Tactics.intro_mustbe_force id
@@ -405,12 +403,13 @@ let start_proof_with_initialization kind recguard thms snl hook =
           if List.is_empty other_thms then [] else
             (* there are several theorems defined mutually *)
             let body,opaq = retrieve_first_recthm ref in
-            List.map_i (save_remaining_recthms kind body opaq) 1 other_thms in
+	    let ctx = Evd.evar_universe_context_set ctx in
+            List.map_i (save_remaining_recthms kind ctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  call_hook (fun exn -> exn) hook strength ref) thms_data in
-      start_proof id kind t ?init_tac (mk_hook hook) ~compute_guard:guard
+      start_proof id kind ctx t ?init_tac (mk_hook hook) ~compute_guard:guard
 
 let start_proof_com kind thms hook =
   let env0 = Global.env () in
@@ -427,11 +426,9 @@ let start_proof_com kind thms hook =
     thms in
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in
-  let ctxset = Evd.universe_context_set evd in
-  let thms = List.map (fun (n, (t, info)) -> (n, ((nf t, ctxset), info)))
-    thms
-  in
-  start_proof_with_initialization kind recguard thms snl hook
+  let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
+  start_proof_with_initialization kind (Evd.evar_universe_context evd) 
+    recguard thms snl hook
 
 
 (* Saving a proof *)

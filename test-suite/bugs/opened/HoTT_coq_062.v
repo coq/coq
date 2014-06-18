@@ -65,16 +65,17 @@ Definition e : Bool <~> Bool.
   admit.
 Defined.
 
-Definition p `{Univalence} : Bool = Bool := path_universe e.
+Definition p `{Univalence} : @paths Set Bool Bool := path_universe e.
 
 Theorem thm `{Univalence} : (forall A : Set, ((A -> False) -> False) -> A) -> False.
   intro f.
   Set Printing Universes.
   Set Printing All.
+  pose proof (apD f p). 
+  pose(path_universe e).
   pose proof (apD f (path_universe e)).
-  cut `{Univalence}; intros. pose proof (apD f p). 
-Admitted.
-  (* ??? Toplevel input, characters 0-37:
+  admit.
+Defined.  (* ??? Toplevel input, characters 0-37:
 Error:
 Unable to satisfy the following constraints:
 In environment:
