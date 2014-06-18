@@ -232,7 +232,7 @@ val univ_depends : universe -> universe -> bool
 (** Polymorphic maps from universe levels to 'a *)
 module LMap : 
 sig
-  include Map.S with type key = universe_level
+  include CMap.ExtS with type key = universe_level and module Set := LSet
 
   val union : 'a t -> 'a t -> 'a t
   (** [union x y] favors the bindings in the first map. *)
@@ -243,24 +243,6 @@ sig
   val subst_union : 'a option t -> 'a option t -> 'a option t
   (** [subst_union x y] favors the bindings of the first map that are [Some],
       otherwise takes y's bindings. *)
-
-  val elements : 'a t -> (universe_level * 'a) list
-  (** As an association list *)
-
-  val of_list : (universe_level * 'a) list -> 'a t
-  (** From an association list *)
-
-  val of_set : universe_set -> 'a -> 'a t
-  (** Associates the same value to all levels in the set *)
-
-  val mem : universe_level -> 'a t -> bool
-  (** Is there a binding for the level? *)
-
-  val find_opt : universe_level -> 'a t -> 'a option
-  (** Find the value associated to the level, if any *)
-
-  val universes : 'a t -> universe_set
-  (** The domain of the map *)
 
   val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
   (** Pretty-printing *)

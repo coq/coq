@@ -415,24 +415,9 @@ module LMap = struct
       else add u v acc)
       ext empty
 
-  let elements = bindings
-  let of_set s d = 
-    LSet.fold (fun u -> add u d) s
-      empty
-    
-  let of_list l =
-    List.fold_left (fun m (u, v) -> add u v m) empty l 
-    
-  let universes m =
-    fold (fun u _ acc -> LSet.add u acc) m LSet.empty
-
   let pr f m =
     h 0 (prlist_with_sep fnl (fun (u, v) ->
-      Level.pr u ++ f v) (elements m))
-
-  let find_opt t m =
-    try Some (find t m)
-    with Not_found -> None
+      Level.pr u ++ f v) (bindings m))
 end
 
 type 'a universe_map = 'a LMap.t
