@@ -61,18 +61,18 @@ Section Univalence.
     := path_universe_uncurried (BuildEquiv _ _ f feq).
 End Univalence.
 
-Definition e : Bool <~> Bool.
+Definition e : Equiv@{i j} Bool Bool.
   admit.
 Defined.
 
-Definition p `{Univalence} : @paths Set Bool Bool := path_universe e.
+Definition p `{Univalence} : @paths Type Bool Bool := path_universe e.
 
-Theorem thm `{Univalence} : (forall A : Set, ((A -> False) -> False) -> A) -> False.
+Theorem thm `{Univalence} : (forall A, ((A -> False) -> False) -> A) -> False.
   intro f.
   Set Printing Universes.
   Set Printing All.
-  pose proof (apD f p). 
-  pose(path_universe e).
+  Show Universes.
+  pose proof (apD f p).
   pose proof (apD f (path_universe e)).
   admit.
 Defined.  (* ??? Toplevel input, characters 0-37:
