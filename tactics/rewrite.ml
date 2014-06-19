@@ -352,6 +352,26 @@ end) = struct
     | None -> None
     | Some codom -> Some (decomp_pointwise 1 codom)
 
+  (** Looking up declared rewrite relations (instances of [RewriteRelation]) *)
+  let is_applied_rewrite_relation env sigma rels t =
+    match kind_of_term t with
+    | App (c, args) when Array.length args >= 2 ->
+      let head = if isApp c then fst (destApp c) else c in
+	if Globnames.is_global (coq_eq_ref ()) head then None
+	else
+	  (try
+	   let params, args = Array.chop (Array.length args - 2) args in
+	   let env' = Environ.push_rel_context rels env in
+	   let evars, (evar, _) = Evarutil.new_type_evar Evd.univ_flexible sigma env' in
+	   let evars, inst = 
+	     app_poly env (evars,Evar.Set.empty)
+	       rewrite_relation_class [| evar; mkApp (c, params) |] in
+	   let _ = Typeclasses.resolve_one_typeclass env' (goalevars evars) inst in
+	     Some (it_mkProd_or_LetIn t rels)
+	   with e when Errors.noncritical e -> None)
+  | _ -> None
+
+
 end
 
 (* let my_type_of env evars c = Typing.e_type_of env evars c *)
@@ -410,24 +430,7 @@ end
 let sort_of_rel env evm rel =
   Reductionops.sort_of_arity env evm (Retyping.get_type_of env evm rel)
 
-(** Looking up declared rewrite relations (instances of [RewriteRelation]) *)
-let is_applied_rewrite_relation env sigma rels t =
-  match kind_of_term t with
-  | App (c, args) when Array.length args >= 2 ->
-      let head = if isApp c then fst (destApp c) else c in
-	if Globnames.is_global (coq_eq_ref ()) head then None
-	else
-	  (try
-	      let params, args = Array.chop (Array.length args - 2) args in
-	      let env' = Environ.push_rel_context rels env in
-	      let evars, (evar, _) = Evarutil.new_type_evar Evd.univ_flexible sigma env' in
-	      let evars, inst = 
-		app_poly_check env (evars,Evar.Set.empty)
-		  TypeGlobal.rewrite_relation_class [| evar; mkApp (c, params) |] in
-	      let _ = Typeclasses.resolve_one_typeclass env' (goalevars evars) inst in
-		Some (it_mkProd_or_LetIn t rels)
-	  with e when Errors.noncritical e -> None)
-  | _ -> None
+let is_applied_rewrite_relation = PropGlobal.is_applied_rewrite_relation
 
 (* let _ = *)
 (*   Hook.set Equality.is_applied_rewrite_relation is_applied_rewrite_relation *)

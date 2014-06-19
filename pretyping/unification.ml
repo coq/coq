@@ -126,7 +126,7 @@ let rec subst_meta_instances bl c =
 
 let evar_source_of_meta mv evd =
   match Evd.meta_name evd mv with
-  | Anonymous -> assert false (* only dependent metas posed as evars (?) *)
+  | Anonymous -> (Loc.ghost,Evar_kinds.GoalEvar)
   | Name id -> (Loc.ghost,Evar_kinds.VarInstance id)
 
 let pose_all_metas_as_evars env evd t =
