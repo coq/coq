@@ -915,7 +915,20 @@ let emit_to_focus window sgn =
   let obj = Gobject.unsafe_cast focussed_widget in
   try GtkSignal.emit_unit obj ~sgn with _ -> ()
 
+let drop_received context ~x ~y data ~info ~time =
+  if data#format = 8 then begin
+    let files = Str.split (Str.regexp "\r?\n") data#data in
+    let path = Str.regexp "^file://\\(.*\\)$" in
+    List.iter (fun f ->
+      if Str.string_match path f 0 then
+        FileAux.load_file (Str.matched_group 1 f)
+    ) files;
+    context#finish ~success:true ~del:false ~time
+  end else context#finish ~success:false ~del:false ~time
 
+let drop_targets = [
+  { Gtk.target = "text/uri-list"; Gtk.flags = []; Gtk.info = 0}
+]
 
 (** {2 Creation of the main coqide window } *)
 
@@ -930,8 +943,10 @@ let build_ui () =
     try w#set_icon (Some (GdkPixbuf.from_file (MiscMenu.coq_icon ())))
     with _ -> ()
   in
-  let _ = w#event#connect#delete ~callback:(fun _ -> File.quit (); true)
-  in
+  let _ = w#event#connect#delete ~callback:(fun _ -> File.quit (); true) in
+  w#drag#dest_set drop_targets ~actions:[`COPY;`MOVE];
+  let _ = w#drag#connect#data_received ~callback:drop_received in
+
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
 
   let file_menu = GAction.action_group ~name:"File" () in
