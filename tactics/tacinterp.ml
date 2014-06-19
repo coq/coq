@@ -932,7 +932,7 @@ struct
     | Uniform x ->
       (** We dispatch the uniform result on each goal under focus, as we know
           that the [m] argument was actually dependent. *)
-      Proofview.Goal.goals >>= fun l ->
+      Proofview.Goal.raw_goals >>= fun l ->
       let ans = List.map (fun _ -> x) l in
       Proofview.tclUNIT ans
     | Depends l -> Proofview.tclUNIT l

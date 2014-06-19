@@ -1387,16 +1387,18 @@ let dbg_assumption dbg = tclLOG dbg (fun () -> str "assumption") assumption
 let rec trivial_fail_db dbg mod_delta db_list local_db =
   let intro_tac =
     Tacticals.New.tclTHEN (dbg_intro dbg)
-      ( Proofview.Goal.enter begin fun gl ->
+      ( Proofview.Goal.raw_enter begin fun gl ->
           let sigma = Proofview.Goal.sigma gl in
           let env = Proofview.Goal.env gl in
-          let hyp = Tacmach.New.pf_last_hyp gl in
+          let nf c = Evarutil.nf_evar sigma c in
+          let decl = Tacmach.New.pf_last_hyp (Proofview.Goal.assume gl) in
+          let hyp = Context.map_named_declaration nf decl in
 	  let hintl = make_resolve_hyp env sigma hyp
 	  in trivial_fail_db dbg mod_delta db_list (Hint_db.add_list hintl local_db)
       end)
   in
-  Proofview.Goal.enter begin fun gl ->
-    let concl = Proofview.Goal.concl gl in
+  Proofview.Goal.raw_enter begin fun gl ->
+    let concl = Tacmach.New.pf_nf_concl gl in
     Tacticals.New.tclFIRST
       ((dbg_assumption dbg)::intro_tac::
           (List.map Tacticals.New.tclCOMPLETE
@@ -1528,16 +1530,16 @@ let possible_resolve dbg mod_delta db_list local_db cl =
 	(my_find_search mod_delta db_list local_db head cl)
   with Not_found -> []
 
-let extend_local_db gl decl db =
-  Hint_db.add_list (make_resolve_hyp (pf_env gl) (project gl) decl) db
+let extend_local_db decl db gl =
+  Hint_db.add_list (make_resolve_hyp (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) decl) db
 
 (* Introduce an hypothesis, then call the continuation tactic [kont]
    with the hint db extended with the so-obtained hypothesis *)
 
 let intro_register dbg kont db =
   Tacticals.New.tclTHEN (dbg_intro dbg)
-    (Proofview.Goal.enter begin fun gl ->
-      let extend_local_db = Tacmach.New.of_old extend_local_db gl in
+    (Proofview.Goal.raw_enter begin fun gl ->
+      let extend_local_db decl db = extend_local_db decl db gl in
       Tacticals.New.onLastDecl (fun decl -> kont (extend_local_db decl db))
     end)
 
@@ -1552,8 +1554,8 @@ let search d n mod_delta db_list local_db =
       if Int.equal n 0 then Proofview.tclZERO (Errors.UserError ("",str"BOUND 2")) else
         Tacticals.New.tclORELSE0 (dbg_assumption d)
 	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
-	     ( Proofview.Goal.enter begin fun gl ->
-               let concl = Proofview.Goal.concl gl in
+	     ( Proofview.Goal.raw_enter begin fun gl ->
+               let concl = Tacmach.New.pf_nf_concl gl in
 	       let d' = incr_dbg d in
 	       Tacticals.New.tclFIRST
 	         (List.map
