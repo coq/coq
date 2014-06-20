@@ -32,7 +32,8 @@ Proof.
   apply (dirprodtosetquot R R).
   apply dirprodpair; [ exact c | exact c0 ].
   Undo.
-  Fail exact (dirprodpair c c0).
+  exact (dirprodpair c c0).
+Defined.
   (* Toplevel input, characters 39-40:
 Error:
 In environment

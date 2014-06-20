@@ -275,14 +275,21 @@ let interp_universe_level_name evd = function
   | GSet -> evd, Univ.Level.set
   | GType s -> interp_universe_name evd s
 
-let pretype_global rigid env evd gr us = 
+let pretype_global loc rigid env evd gr us = 
   let evd, instance = 
     match us with
     | None -> evd, None
     | Some l -> 
-      let evd, l' = List.fold_left (fun (evd, univs) l -> 
-	let evd, l = interp_universe_level_name evd l in
-	  (evd, l :: univs)) (evd, []) l
+      let _, ctx = Universes.unsafe_constr_of_global gr in
+      let arr = Univ.Instance.to_array (Univ.UContext.instance ctx) in
+      let len = Array.length arr in
+	if len != List.length l then
+	  user_err_loc (loc, "pretype", 
+			str "Universe instance should have length " ++ int len)
+	else
+	  let evd, l' = List.fold_left (fun (evd, univs) l -> 
+	    let evd, l = interp_universe_level_name evd l in
+	      (evd, l :: univs)) (evd, []) l
       in 
 	evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
   in
@@ -302,7 +309,7 @@ let pretype_ref loc evdref env ref us =
             variables *)
          Pretype_errors.error_var_not_found_loc loc id)
   | ref ->
-    let evd, c = pretype_global univ_flexible env !evdref ref us in
+    let evd, c = pretype_global loc univ_flexible env !evdref ref us in
     let () = evdref := evd in
     let ty = Retyping.get_type_of env evd c in
       make_judge c ty

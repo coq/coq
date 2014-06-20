@@ -7,7 +7,7 @@ Definition UU := Set.
 Definition dirprod ( X Y : UU ) := sigT ( fun x : X => Y ) .
 Definition dirprodpair { X Y : UU } := existT ( fun x : X => Y ) .
 Definition hProp := sigT (fun X : Type => admit).
-Axiom hProppair : forall ( X : UU ) ( is : admit ), hProp@{Set i}.
+Axiom hProppair : forall ( X : UU ) ( is : admit ), hProp.
 Definition hProptoType := @projT1 _ _ : hProp -> Type .
 Coercion hProptoType: hProp >-> Sortclass.
 Definition ishinh_UU ( X : UU ) : UU := forall P: Set, ( ( X -> P ) -> P ).
@@ -31,7 +31,7 @@ Definition iseqclassconstr { X : UU } ( R : hrel X ) { A : hsubtypes X } ( ax0 :
   pose @iseqclassconstr'.
   intros.
   exact (dirprodpair ax0 (dirprodpair ax1 ax2)).
-Fail Defined.
+Defined.
 (* Toplevel input, characters 15-23:
 Error: Illegal application:
 The term "dirprodpair" of type

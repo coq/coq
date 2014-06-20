@@ -244,9 +244,14 @@ let fresh_instance ctx =
 let existing_instance ctx inst = 
   let s = ref LMap.empty in
   let () = 
-    Array.iter2 (fun u v -> 
-      s := LMap.add v u !s)
-      (Instance.to_array inst) (Instance.to_array (UContext.instance ctx))
+    let a1 = Instance.to_array inst 
+    and a2 = Instance.to_array (UContext.instance ctx) in
+    let len1 = Array.length a1 and len2 = Array.length a2 in 
+      if not (len1 == len2) then
+	Errors.errorlabstrm "Universes"
+	  (str "Polymorphic constant expected " ++ int len2 ++ 
+	     str" levels but was given " ++ int len1)
+      else Array.iter2 (fun u v -> s := LMap.add v u !s) a1 a2
   in LSet.empty, !s, inst
 
 let fresh_instance_from ctx inst =
