@@ -288,14 +288,14 @@ let typecheck_inductive env ctx mie =
 
   let inds =
     Array.map (fun ((id,full_arity,sign,expltype,def_level,inf_level),cn,lc,(is_unit,clev))  ->
+      let infu = 
+	(** Inferred level, with parameters and constructors. *)
+	match inf_level with
+	| Some alev -> Universe.sup clev alev
+	| None -> clev
+      in
       let full_polymorphic () = 
 	let defu = Term.univ_of_sort def_level in
-	let infu = 
-	  (** Inferred level, with parameters and constructors. *)
-	  match inf_level with
-	  | Some alev -> Universe.sup clev alev
-	  | None -> clev
-	in
 	let is_natural =
 	  check_leq (universes env') infu defu && 
 	    not (is_type0m_univ defu && not is_unit)
@@ -325,14 +325,14 @@ let typecheck_inductive env ctx mie =
 	    (* conclusions of the parameters *)
             (* We enforce [u >= lev] in case [lev] has a strict upper *)
             (* constraints over [u] *)
-	    let b = check_leq (universes env') clev u in
+	    let b = check_leq (universes env') infu u in
 	      if not b then
 		anomaly ~label:"check_inductive" 
 		  (Pp.str"Incorrect universe " ++
 		     Universe.pr u ++ Pp.str " declared for inductive type, inferred level is "
 		   ++ Universe.pr clev)
 	      else
-		TemplateArity (param_ccls params, clev)
+		TemplateArity (param_ccls params, infu)
 	  | _ (* Not an explicit occurrence of Type *) ->
 	    full_polymorphic ()
       in
