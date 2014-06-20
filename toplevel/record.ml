@@ -93,7 +93,7 @@ let typecheck_params_and_fields def id t ps nots fs =
 	 (match kind_of_term sred with
 	 | Sort s' -> 
 	   (match Evd.is_sort_variable !evars s' with
-	   | Some (l, _) -> evars := Evd.make_flexible_variable !evars true (* (not def) *) l; sred
+	   | Some l -> evars := Evd.make_flexible_variable !evars true (* (not def) *) l; sred
 	   | None -> s)
 	 | _ -> user_err_loc (constr_loc t,"", str"Sort expected."))
     | None -> 

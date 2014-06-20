@@ -1559,7 +1559,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
         map_constr_with_full_binders push_binder aux x t
     | Evar ev ->
         let ty = get_type_of env sigma t in
-	let ty = Evarutil.evd_comb1 (refresh_universes false) evdref ty in
+	let ty = Evarutil.evd_comb1 (refresh_universes false env) evdref ty in
         let inst =
 	  List.map_i
 	    (fun i _ ->
@@ -1577,7 +1577,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
       let vl = List.map pi1 good in
       let ty = 
 	let ty = get_type_of env !evdref t in
-	  Evarutil.evd_comb1 (refresh_universes false) evdref ty
+	  Evarutil.evd_comb1 (refresh_universes false env) evdref ty
       in
       let ty = lift (-k) (aux x ty) in
       let depvl = free_rels ty in

@@ -26,23 +26,72 @@ let normalize_evar evd ev =
   | Evar (evk,args) -> (evk,args)
   | _ -> assert false
 
-let refresh_universes ?(all=false) ?(template=false) ?(with_globals=false) dir evd t =
+let get_polymorphic_positions f = 
+  let open Declarations in
+  match kind_of_term f with
+  | Ind (ind, u) | Construct ((ind, _), u) -> 
+    let mib,oib = Global.lookup_inductive ind in
+      (match oib.mind_arity with
+      | RegularArity _ -> assert false
+      | TemplateArity templ -> templ.template_param_levels)
+  | Const (cst, u) ->
+    let cb = Global.lookup_constant cst in
+      (match cb.const_type with
+      | RegularArity _ -> assert false
+      | TemplateArity (_, templ) -> 
+        templ.template_param_levels)
+  | _ -> assert false
+
+let refresh_universes dir env evd t =
   let evdref = ref evd in
   let modified = ref false in
-  let rec refresh dir t = match kind_of_term t with
-    | Sort (Type u as s) when Univ.universe_level u = None
-			 || (with_globals && Evd.is_sort_variable evd s = None) ->
-      (modified := true;
-       (* s' will appear in the term, it can't be algebraic *)
-       let s' = evd_comb0 (new_sort_variable ~template Evd.univ_flexible) evdref in
-	 evdref :=
-	   (if dir then set_leq_sort !evdref s' s else
-	     set_leq_sort !evdref s s');
-         mkSort s')
-    | Prod (na,u,v) -> mkProd (na,(if all then refresh true u else u),refresh dir v)
-    | _ -> t in
-  let t' = refresh dir t in
-  if !modified then !evdref, t' else evd, t
+  let rec refresh dir t = 
+    match kind_of_term t with
+    | Sort (Type u as s) when
+      (match Univ.universe_level u with
+      | None -> true 
+      | Some l -> Option.is_empty (Evd.is_sort_variable evd s)) ->
+      (* s' will appear in the term, it can't be algebraic *)
+      let s' = evd_comb0 (new_sort_variable Evd.univ_flexible) evdref in
+      let evd = 
+	if dir then set_leq_sort !evdref s' s
+	else set_leq_sort !evdref s s'
+      in
+	modified := true; evdref := evd; mkSort s'
+    | Prod (na,u,v) -> 
+      mkProd (na,u,refresh dir v)
+    | _ -> t
+  (** Refresh the types of evars under template polymorphic references *)
+  and refresh_term_evars onevars t =
+    match kind_of_term t with
+    | App (f, args) when is_template_polymorphic env f ->
+      let pos = get_polymorphic_positions f in
+	refresh_polymorphic_positions args pos
+    | Evar (ev, a) when onevars ->
+      let evi = Evd.find !evdref ev in
+      let ty' = refresh true evi.evar_concl in
+	if !modified then 
+	  evdref := Evd.add !evdref ev {evi with evar_concl = ty'}
+	else ()
+    | _ -> iter_constr (refresh_term_evars onevars) t
+  and refresh_polymorphic_positions args pos =
+    let rec aux i = function
+      | Some l :: ls -> 
+        if i < Array.length args then 
+	  ignore(refresh_term_evars true args.(i));
+        aux (succ i) ls
+      | None :: ls -> 
+        if i < Array.length args then 
+          ignore(refresh_term_evars false args.(i));
+	aux (succ i) ls
+      | [] -> ()
+    in aux 0 pos
+  in
+  let t' = 
+    if isArity t then refresh dir t 
+    else (refresh_term_evars false t; t)
+  in
+    if !modified then !evdref, t' else !evdref, t
 
 (************************)
 (* Unification results  *)
@@ -504,7 +553,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       let id = next_name_away na avoid in
       let evd,t_in_sign =
         let s = Retyping.get_sort_of env evd t_in_env in
-        let evd,ty_t_in_sign = refresh_universes false evd (mkSort s) in
+        let evd,ty_t_in_sign = refresh_universes false env evd (mkSort s) in
         define_evar_from_virtual_equation define_fun env evd t_in_env 
           ty_t_in_sign sign filter inst_in_env in
       let evd,b_in_sign = match b with
@@ -523,7 +572,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   in
   let evd,ev2ty_in_sign =
     let s = Retyping.get_sort_of env evd ty_in_env in
-    let evd,ty_t_in_sign = refresh_universes false evd (mkSort s) in
+    let evd,ty_t_in_sign = refresh_universes false env evd (mkSort s) in
     define_evar_from_virtual_equation define_fun env evd ty_in_env
       ty_t_in_sign sign2 filter2 inst2_in_env in
   let evd,ev2_in_sign =
@@ -1387,7 +1436,7 @@ and evar_define conv_algo ?(choose=false) ?(dir=false) env evd pbty (evk,argsv a
     (* so we recheck acyclicity *)
     if occur_evar evk body then raise (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
-    let evd', body = refresh_universes dir evd' body in
+    let evd', body = refresh_universes dir env evd' body in
 (* Cannot strictly type instantiations since the unification algorithm
  * does not unify applications from left to right.
  * e.g problem f x == g y yields x==y and f==g (in that order)

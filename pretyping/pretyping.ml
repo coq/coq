@@ -527,20 +527,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
       inh_conv_coerce_to_tycon loc env evdref j tycon
 
   | GApp (loc,f,args) ->
-    let univs, fj = 
-      match f with
-      | GRef (loc, ConstructRef (ind, i as cstr), u')
-      	  when Environ.template_polymorphic_ind ind env ->
-       (** We refresh the universes so as to enforce using <= instead of instantiating
-      	   an unkwown ?X with the template polymorphic type variable and destroying
-      	   template polymorphism.
-      	   e.g. when typechecking nil : Π A : Type n, list A, we don't
-      	   want n to be used as the fixed carrier level of the list, so we
-      	   refresh it preemptively. *)
-      	let univs, ty = Evarutil.get_template_constructor_type evdref cstr (List.length args) in
-      	  univs, make_judge (mkConstruct cstr) ty
-      | _ -> [], pretype empty_tycon env evdref lvar f 
-    in
+    let fj = pretype empty_tycon env evdref lvar f in
     let floc = loc_of_glob_constr f in
     let length = List.length args in
     let candargs =
@@ -563,7 +550,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 	      with Not_found -> []
       else []
     in
-    let rec apply_rec env n resj univs candargs = function
+    let rec apply_rec env n resj candargs = function
       | [] -> resj
       | c::rest ->
 	let argloc = loc_of_glob_constr c in
@@ -571,15 +558,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
         let resty = whd_betadeltaiota env !evdref resj.uj_type in
       	  match kind_of_term resty with
 	  | Prod (na,c1,c2) ->
-	    let univs, tycon = 
-	      match univs with
-	      | Some _ :: l -> 
-		if is_GHole c then
-		  l, Some (evd_comb1 (Evarsolve.refresh_universes ~template:true
-					~with_globals:true true) evdref c1)
-		else l, Some c1
-	      | (None :: l) | l -> l, Some c1
-	    in
+	    let tycon = Some c1 in
 	    let hj = pretype tycon env evdref lvar c in
 	    let candargs, ujval =
 	      match candargs with
@@ -590,10 +569,8 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 		else [], j_val hj
 	    in
 	    let value, typ = applist (j_val resj, [ujval]), subst1 ujval c2 in
-	      apply_rec env (n+1)
-		{ uj_val = value;
-		  uj_type = typ }
-		univs candargs rest
+	    let j = { uj_val = value; uj_type = typ } in
+	      apply_rec env (n+1) j candargs rest
 		
 	  | _ ->
 	    let hj = pretype empty_tycon env evdref lvar c in
@@ -601,7 +578,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 		(Loc.merge floc argloc) env !evdref
 	      	resj [hj]
     in
-    let resj = apply_rec env 1 fj univs candargs args in
+    let resj = apply_rec env 1 fj candargs args in
     let resj =
       match evar_kind_of_term !evdref resj.uj_val with
       | App (f,args) ->
@@ -611,30 +588,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 	    let c = mkApp (f,Array.map (whd_evar sigma) args) in
 	    let t = Retyping.get_type_of env sigma c in
 	      make_judge c (* use this for keeping evars: resj.uj_val *) t
-	    (* else  *)
-	    (*   if is_template_polymorphic_constructor env f then *)
-	    (*     let ty = nf_evar !evdref resj.uj_type in *)
-	    (* 	if occur_existential resj.uj_type then *)
-	    (* 	(\* The type is not fully defined, e.g. list ?A where A : Type n  *)
-	    (* 	   for n the fixed template universe of lists. We don't want this *)
-	  (* 	   n to escape (e.g. by later taking typeof(list A) = Type n) when *)
-	  (* 	   instantiating other existentials. So we need to refresh the  *)
-	  (* 	   type of f and redo typechecking with this fresh type. *\) *)
-	  (* 	  match kind_of_term f with *)
-	  (* 	  | Construct ((ind, i as cstr,u)) -> *)
-	  (* 	  (\** We refresh the universes so as to enforce using <= instead of instantiating *)
-    	  (* 	      an unkwown ?X with the template polymorphic type variable and destroying *)
-    	  (* 	      template polymorphism. *)
-    	  (* 	      e.g. when typechecking nil : Π A : Type n, list A, we don't *)
-    	  (* 	      want n to be used as the fixed carrier level of the list, so we *)
-    	  (* 	      refresh it preemptively. *\) *)
-	  (* 	    evdref := initial_evd; *)
-	  (* 	    let ty = Evarutil.get_template_constructor_type evdref cstr in *)
-    	  (* 	    let fj = make_judge (mkConstruct cstr) ty in *)
-	  (* 	      typecheck_app fj *)
-	  (* 	  | _ -> assert false *)
-	  (* 	else make_judge resj.uj_val ty *)
-	    else resj
+	  else resj
       | _ -> resj 
     in
       inh_conv_coerce_to_tycon loc env evdref resj tycon

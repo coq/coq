@@ -816,27 +816,3 @@ let lift_tycon n = Option.map (lift n)
 let pr_tycon env = function
     None -> str "None"
   | Some t -> Termops.print_constr_env env t
-
-open Declarations
-
-let get_template_constructor_type evdref (ind, i) n =
-  let mib,oib = Global.lookup_inductive ind in
-  let ar =
-    match oib.mind_arity with
-    | RegularArity _ -> assert false
-    | TemplateArity templ -> templ
-  in
-  let ty = oib.mind_user_lc.(pred i) in
-  let subst = Inductive.ind_subst (fst ind) mib Univ.Instance.empty in
-  let ty = substl subst ty in
-    ar.template_param_levels, ty
-
-let get_template_inductive_type evdref ind n =
-  let mib,oib = Global.lookup_inductive ind in
-  let ar =
-    match oib.mind_arity with
-    | RegularArity _ -> assert false
-    | TemplateArity templ -> templ
-  in
-  let ctx = oib.mind_arity_ctxt in
-    ar.template_param_levels, mkArity(ctx, Type ar.template_level)

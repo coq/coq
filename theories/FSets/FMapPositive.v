@@ -212,7 +212,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
        try rewrite <- (gleaf i); auto; try apply IHi; congruence.
   Qed.
 
-  Lemma rleaf : forall (i : key), remove i (Leaf : t A) = Leaf.
+  Lemma rleaf : forall (i : key), remove i Leaf = Leaf.
   Proof. destruct i; simpl; auto. Qed.
 
   Theorem grs:

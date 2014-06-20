@@ -261,7 +261,6 @@ val drop_side_effects : evar_map -> evar_map
     Evar maps also keep track of the universe constraints defined at a given
     point. This section defines the relevant manipulation functions. *)
 
-val is_sort_variable : evar_map -> sorts -> bool
 val whd_sort_variable : evar_map -> constr -> constr
 val set_leq_sort : evar_map -> sorts -> sorts -> evar_map
 val set_eq_sort : evar_map -> sorts -> sorts -> evar_map
@@ -438,15 +437,14 @@ val normalize_evar_universe_context_variables : evar_universe_context ->
 val normalize_evar_universe_context : evar_universe_context -> 
   evar_universe_context
 
-val new_univ_level_variable : ?template:bool -> ?name:string -> rigid -> evar_map -> evar_map * Univ.universe_level
-val new_univ_variable : ?template:bool -> ?name:string -> rigid -> evar_map -> evar_map * Univ.universe
-val new_sort_variable : ?template:bool -> ?name:string -> rigid -> evar_map -> evar_map * sorts
+val new_univ_level_variable : ?name:string -> rigid -> evar_map -> evar_map * Univ.universe_level
+val new_univ_variable : ?name:string -> rigid -> evar_map -> evar_map * Univ.universe
+val new_sort_variable : ?name:string -> rigid -> evar_map -> evar_map * sorts
 val make_flexible_variable : evar_map -> bool -> Univ.universe_level -> evar_map
-val is_sort_variable : evar_map -> sorts -> (Univ.universe_level * bool) option 
-(** [is_sort_variable evm s] returns [Some (u, is_rigid)] or [None] if [s] is 
-    not a sort variable declared in [evm] *)
+val is_sort_variable : evar_map -> sorts -> Univ.universe_level option 
+(** [is_sort_variable evm s] returns [Some u] or [None] if [s] is 
+    not a local sort variable declared in [evm] *)
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
-
 
 val whd_sort_variable : evar_map -> constr -> constr
 (* val normalize_universe_level : evar_map -> Univ.universe_level -> Univ.universe_level *)
