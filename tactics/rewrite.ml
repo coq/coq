@@ -444,7 +444,7 @@ let evd_convertible env evd x y =
   with e when Errors.noncritical e -> false
 
 let convertible env evd x y =
-  Reductionops.is_conv env evd x y
+  Reductionops.is_conv_leq env evd x y
 
 type hypinfo = {
   cl : clausenv;
@@ -634,13 +634,9 @@ let unify_eqn env (sigma, cstrs) hypinfo by t =
 	  let ty1 = Retyping.get_type_of env'.env env'.evd c1
 	  and ty2 = Retyping.get_type_of env'.env env'.evd c2
 	  in
-	    if convertible env env'.evd ty1 ty2 then 
-	      (* (if occur_meta_or_existential prf then *)
-		(hypinfo := refresh_hypinfo env env'.evd !hypinfo;
-		 env'.evd, prf, c1, c2, car, rel)
-	       (* else (\** Evars have been solved, we can go back to the initial evd, *)
-	       (* 		but keep the potential refinement of existing evars. *\) *)
-	       (* 	  env'.evd, prf, c1, c2, car, rel) *)
+	    if convertible env env'.evd ty2 ty1 then 
+	      (hypinfo := refresh_hypinfo env env'.evd !hypinfo;
+	       env'.evd, prf, c1, c2, car, rel)
 	    else raise Reduction.NotConvertible
     in
     let evars = evd', cstrs in
@@ -655,7 +651,9 @@ let unify_eqn env (sigma, cstrs) hypinfo by t =
 	  let evars, rel' = poly_inverse !hypinfo.sort env evars car rel in
 	    evars, (prf, (car, rel', c2, c1))
     in Some (evd, res)
-  with e when Class_tactics.catchable e -> None
+  with 
+  | e when Class_tactics.catchable e -> None
+  | Reduction.NotConvertible -> None
 
 type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
 
