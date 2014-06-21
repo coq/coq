@@ -272,12 +272,18 @@ let make_hints g st only_classes sign =
   let paths, hintlist =
     List.fold_left
     (fun (paths, hints) hyp ->
-     if is_section_variable (pi1 hyp) then (paths, hints)
-     else
-       let path, hint =
-	 PathEmpty, pf_apply make_resolve_hyp g st (true,false,false) only_classes None hyp
-       in
-	 (PathOr (paths, path), hint @ hints))
+      let consider =
+	try let (_, b, t) = Global.lookup_named (pi1 hyp) in
+	      (* Section variable, reindex only if the type changed *)
+	      not (eq_constr t (pi3 hyp))
+	with Not_found -> true
+     in
+      if consider then 
+	let path, hint =
+	  PathEmpty, pf_apply make_resolve_hyp g st (true,false,false) only_classes None hyp
+	in
+	  (PathOr (paths, path), hint @ hints)
+      else (paths, hints))
     (PathEmpty, []) sign
   in Hint_db.add_list hintlist (Hint_db.empty st true)
 
