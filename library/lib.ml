@@ -406,7 +406,9 @@ let extract_hyps (secs,ohyps) =
     | ((id,impl,poly,ctx)::idl,(id',b,t)::hyps) when Names.Id.equal id id' ->
       let l, r = aux (idl,hyps) in 
 	(id',impl,b,t) :: l, if poly then Univ.ContextSet.union r ctx else r
-    | (id::idl,hyps) -> aux (idl,hyps)
+    | ((_,_,poly,ctx)::idl,hyps) -> 
+        let l, r = aux (idl,hyps) in
+          l, if poly then Univ.ContextSet.union r ctx else r
     | [], _ -> [],Univ.ContextSet.empty
   in aux (secs,ohyps)
 
@@ -430,13 +432,11 @@ let add_section_replacement f g hyps =
 
 let add_section_kn kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
-  add_section_replacement f f
+    add_section_replacement f f
 
 let add_section_constant is_projection kn =
-  (* let g x (l1,l2) = (Names.Cmap.add kn (Univ.Instance.empty,[||]) l1,l2) in *)
   let f x (l1,l2) = (Names.Cmap.add kn x l1,l2) in
-    (* if is_projection then add_section_replacement g f *)
-    (* else *) add_section_replacement f f
+    add_section_replacement f f
 
 let replacement_context () = pi2 (List.hd !sectab)
 
