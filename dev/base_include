@@ -55,6 +55,8 @@
 
 open Names
 open Term
+open Vars
+open Context
 open Typeops
 open Term_typing
 open Univ
