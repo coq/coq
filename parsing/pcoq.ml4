@@ -753,8 +753,8 @@ let rec interp_entry_name static up_level s sep =
     let s = if s = "hyp" then "var" else s in
     let t, se =
       match Extrawit.tactic_genarg_level s with
-	| Some n when Some n = up_level & up_level <> Some 5 -> None, Aself
-	| Some n when Some (n+1) = up_level & up_level <> Some 5 -> None, Anext
+	| Some n when Some n = up_level & up_level <> Some 5 & up_level <> Some 0 -> None, Aself
+	| Some n when Some (n+1) = up_level & up_level <> Some 5 & up_level <> Some 0 -> None, Anext
 	| Some n -> None, Atactic n
 	| None ->
       try Some (get_entry uprim s), Aentry ("prim",s) with Not_found ->
