@@ -802,7 +802,9 @@ let rec interp_entry_name static up_level s sep =
     let s = match s with "hyp" -> "var" | _ -> s in
     let check_lvl n = match up_level with
     | None -> false
-    | Some m -> Int.equal m n && not (Int.equal m 5)
+    | Some m -> Int.equal m n
+                && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
+                && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
     in
     let t, se =
       match tactic_level s with
