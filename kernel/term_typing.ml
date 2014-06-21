@@ -112,7 +112,7 @@ let check_projection env kn inst body =
   let ctx, m = decompose_lam_assum body in
   let () = if not (isCase m) then cannot_recognize () in
   let ci, p, c, b = destCase m in
-  let (mib, oib as specif) = Inductive.lookup_mind_specif env ci.ci_ind in
+  let (mib, oib as _specif) = Inductive.lookup_mind_specif env ci.ci_ind in
   let recinfo = match mib.mind_record with
     | None -> 
       error ("Trying to declare a primitive projection for a non-record inductive type")

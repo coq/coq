@@ -60,7 +60,7 @@ let windows_timeout n f e =
     done
   in
   let init = Unix.time () in
-  let id = Thread.create thread init in
+  let _id = Thread.create thread init in
   try
     let res = f () in
     let () = killed := true in
