@@ -1,4 +1,29 @@
 (* File reduced by coq-bug-finder from original input, then from 12106 lines to 1070 lines *)
+Set Universe Polymorphism.
+Definition setleq (A : Type@{i}) (B : Type@{j}) := A : Type@{j}.
+
+Inductive foo : Type@{l} := bar : foo . 
+Section MakeEq.
+  Variables (a : foo@{i}) (b : foo@{j}).
+
+  Let t := $(let ty := type of b in exact ty)$.
+  Definition make_eq (x:=b) := a : t.
+End MakeEq.
+
+Definition same (x : foo@{i}) (y : foo@{i}) := x.
+
+Section foo.
+
+  Variables x : foo@{i}.
+  Variables y : foo@{j}.
+  
+  Let AleqB := let foo := make_eq x y in (Type * Type)%type.
+
+  Definition baz := same x y.
+End foo.
+
+Definition baz' := Eval unfold baz in baz@{i j k l}.
+
 Module Export HoTT_DOT_Overture.
 Module Export HoTT.
 Module Export Overture.
@@ -1041,33 +1066,30 @@ Section Adjunction.
   Variable D : PreCategory.
   Variable F : Functor C D.
   Variable G : Functor D C.
-  Let Adjunction_Type := Eval simpl in hom_functor D o (F^op, 1) <~=~> hom_functor C o (1, G).
 
-End Adjunction.
-Undo.
+  Let Adjunction_Type := 
+    Eval simpl in (hom_functor D) o (F^op, 1) <~=~> (hom_functor C) o (1, G).
 
   Record AdjunctionHom :=
     {
-      mate_of : @NaturalIsomorphism
-                  H
-                  (Category.Prod.prod (Category.Dual.opposite C) D)
-                  (@Core.set_cat H)
-                  (@compose
-                     (Category.Prod.prod (Category.Dual.opposite C) D)
-                     (Category.Prod.prod (Category.Dual.opposite D) D)
-                     (@Core.set_cat H) (@hom_functor H D)
-                     (@pair (Category.Dual.opposite C)
-                            (Category.Dual.opposite D) D D
-                            (@opposite C D F) (identity D)))
-                  (@compose
-                     (Category.Prod.prod (Category.Dual.opposite C) D)
-                     (Category.Prod.prod (Category.Dual.opposite C) C)
-                     (@Core.set_cat H) (@hom_functor H C)
-                     (@pair (Category.Dual.opposite C)
-                            (Category.Dual.opposite C) D C
-                            (identity (Category.Dual.opposite C)) G))
+      mate_of : 
+        @NaturalIsomorphism H
+                         (Prod.prod (Category.Dual.opposite C) D)
+                         (@set_cat H)
+                         (@compose (Prod.prod (Category.Dual.opposite C) D)
+                            (Prod.prod (Category.Dual.opposite D) D)
+                            (@set_cat H) (@hom_functor H D)
+                            (@pair (Category.Dual.opposite C)
+                               (Category.Dual.opposite D) D D
+                               (@opposite C D F) (identity D)))
+                         (@compose (Prod.prod (Category.Dual.opposite C) D)
+                            (Prod.prod (Category.Dual.opposite C) C)
+                            (@set_cat H) (@hom_functor H C)
+                            (@pair (Category.Dual.opposite C)
+                               (Category.Dual.opposite C) D C
+                               (identity (Category.Dual.opposite C)) G))
     }.
-Fail End Adjunction.
+End Adjunction.
 (* Error: Illegal application:
 The term "NaturalIsomorphism" of type
  "forall (H : Funext) (C D : PreCategory),

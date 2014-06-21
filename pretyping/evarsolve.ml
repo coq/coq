@@ -42,7 +42,7 @@ let get_polymorphic_positions f =
         templ.template_param_levels)
   | _ -> assert false
 
-let refresh_universes dir env evd t =
+let refresh_universes ?(onlyalg=false) dir env evd t =
   let evdref = ref evd in
   let modified = ref false in
   let rec refresh dir t = 
@@ -50,7 +50,7 @@ let refresh_universes dir env evd t =
     | Sort (Type u as s) when
       (match Univ.universe_level u with
       | None -> true 
-      | Some l -> Option.is_empty (Evd.is_sort_variable evd s)) ->
+      | Some l -> not onlyalg && Option.is_empty (Evd.is_sort_variable evd s)) ->
       (* s' will appear in the term, it can't be algebraic *)
       let s' = evd_comb0 (new_sort_variable Evd.univ_flexible) evdref in
       let evd = 

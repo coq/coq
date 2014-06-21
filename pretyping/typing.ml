@@ -290,7 +290,7 @@ let e_type_of ?(refresh=false) env evd c =
   let j = execute env evdref c in
   (* side-effect on evdref *)
     if refresh then
-      Evarsolve.refresh_universes false env !evdref j.uj_type
+      Evarsolve.refresh_universes ~onlyalg:true false env !evdref j.uj_type
     else !evdref, j.uj_type
 
 let solve_evars env evdref c =

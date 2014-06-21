@@ -24,13 +24,8 @@ Section groupoid_category.
     compute in H.
     change (forall (x y : X) (p q : x = y) (r s : p = q), Contr (r = s)) in H.
     assert (H' := H).
-    pose proof (_ : Contr (idpath = idpath :> (@paths (@paths X d d) idpath idpath))) as X0. (* success *)
-    clear H' X0.
-    Fail pose (_ : Contr (idpath = idpath :> (@paths (@paths X d d) idpath idpath))). (* Toplevel input, characters 21-22:
-Error:
-Cannot infer this placeholder.
-Could not find an instance for "Contr (idpath = idpath)" in environment:
-
-X : Type
-H : forall (x y : X) (p q : x = y) (r s : p = q), Contr (r = s)
-d : X *)
+    set (foo:=_ : Contr (idpath = idpath :> (@paths (@paths X d d) idpath idpath))). (* success *)
+    clear H' foo.
+    Set Typeclasses Debug.
+    pose (_ : Contr (idpath = idpath :> (@paths (@paths X d d) idpath idpath))). 
+Abort. 
