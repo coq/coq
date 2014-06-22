@@ -53,6 +53,22 @@ val w_unify_meta_types : env -> ?flags:unify_flags -> evar_map -> evar_map
 val w_coerce_to_type : env -> evar_map -> constr -> types -> types ->
   evar_map * constr
 
+(* Looking for subterms in contexts at some occurrences, possibly with pattern*)
+
+type abstraction_request =
+| AbstractPattern of Names.Name.t * (evar_map * constr) * Locus.clause * bool * Pretyping.inference_flags
+| AbstractExact of Names.Name.t * constr * types option * Locus.clause * bool
+
+val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
+  env -> Evd.evar_map -> open_constr -> Evd.evar_universe_context * constr
+
+type abstraction_result =
+  Names.Id.t * Context.named_declaration list * Names.Id.t option *
+    constr * (Evd.evar_universe_context * constr)
+
+val make_abstraction : env -> Evd.evar_map -> constr ->
+  abstraction_request -> abstraction_result
+
 (*i This should be in another module i*)
 
 (** [abstract_list_all env evd t c l]

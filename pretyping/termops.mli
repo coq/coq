@@ -155,7 +155,16 @@ val subst_closed_term_occ_gen :
     testing function returning a substitution of type ['a] (or failing
     with NotUnifiable); a function for merging substitution (possibly
     failing with NotUnifiable) and an initial substitution are
-    required too *)
+    required too; [subst_closed_term_occ_modulo] itself turns a
+    NotUnifiable exception into a SubtermUnificationError *)
+
+exception NotUnifiable
+
+type position =(Id.t * Locus.hyp_location_flag) option
+
+type subterm_unification_error = bool * (position * int * constr) * (position * int * constr)
+
+exception SubtermUnificationError of subterm_unification_error
 
 type 'a testing_function = {
   match_fun : 'a -> constr -> 'a;
@@ -165,8 +174,6 @@ type 'a testing_function = {
 }
 
 val make_eq_test : constr -> unit testing_function
-
-exception NotUnifiable
 
 val subst_closed_term_occ_modulo :
   occurrences -> 'a testing_function -> (Id.t * hyp_location_flag) option

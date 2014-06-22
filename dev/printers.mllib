@@ -137,9 +137,9 @@ Detyping
 Indrec
 Program
 Coercion
-Unification
 Cases
 Pretyping
+Unification
 Declaremods
 Library
 States

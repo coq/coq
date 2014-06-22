@@ -22,6 +22,7 @@ open Reductionops
 open Cbv
 open Patternops
 open Locus
+open Pretype_errors
 
 (* Errors *)
 
@@ -960,7 +961,7 @@ let e_contextually byhead (occs,c) f env sigma t =
   in
   let t' = traverse (env,c) t in
   if List.exists (fun o -> o >= !pos) locs then error_invalid_occurrence locs;
-    !evd, t'
+  !evd, t'
 
 let contextually byhead occs f env sigma t =
   let f' subst env sigma t = sigma, f subst env sigma t in
@@ -1075,9 +1076,9 @@ let compute = cbv_betadeltaiota
 (* Pattern *)
 
 let make_eq_univs_test evd c =
-  { match_fun = (fun evd c' -> 
-    let b, cst = Universes.eq_constr_universes c c' in 
-      if b then 
+  { match_fun = (fun evd c' ->
+    let b, cst = Universes.eq_constr_universes c c' in
+      if b then
 	try Evd.add_universe_constraints evd cst
 	with Evd.UniversesDiffer -> raise NotUnifiable
       else raise NotUnifiable);

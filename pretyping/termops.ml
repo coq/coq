@@ -679,30 +679,33 @@ let replace_term = replace_term_gen eq_constr
    occurrence except the ones in l and b=false, means all occurrences
    except the ones in l *)
 
-let error_invalid_occurrence l =
+type occurrence_error =
+  | InvalidOccurrence of int list
+  | IncorrectInValueOccurrence of Id.t
+
+let explain_invalid_occurrence l =
   let l = List.sort_uniquize Int.compare l in
-  errorlabstrm ""
-    (str ("Invalid occurrence " ^ String.plural (List.length l) "number" ^": ") ++
-     prlist_with_sep spc int l ++ str ".")
+  str ("Invalid occurrence " ^ String.plural (List.length l) "number" ^": ")
+  ++ prlist_with_sep spc int l ++ str "."
 
-let pr_position (cl,pos) =
-  let clpos = match cl with
-    | None -> str " of the goal"
-    | Some (id,InHyp) -> str " of hypothesis " ++ pr_id id
-    | Some (id,InHypTypeOnly) -> str " of the type of hypothesis " ++ pr_id id
-    | Some (id,InHypValueOnly) -> str " of the body of hypothesis " ++ pr_id id in
-  int pos ++ clpos
+let explain_incorrect_in_value_occurrence id =
+  pr_id id ++ str " has no value."
 
-let error_cannot_unify_occurrences nested (cl2,pos2,t2) (cl1,pos1,t1) =
-  let s = if nested then "Found nested occurrences of the pattern"
-    else "Found incompatible occurrences of the pattern" in
-  errorlabstrm ""
-    (str s ++ str ":" ++
-     spc () ++ str "Matched term " ++ quote (print_constr t2) ++
-     strbrk " at position " ++ pr_position (cl2,pos2) ++ 
-     strbrk " is not compatible with matched term " ++
-     quote (print_constr t1) ++ strbrk " at position " ++ 
-     pr_position (cl1,pos1) ++ str ".")
+let explain_occurrence_error = function
+  | InvalidOccurrence l -> explain_invalid_occurrence l
+  | IncorrectInValueOccurrence id -> explain_incorrect_in_value_occurrence id
+
+let error_occurrences_error e =
+  errorlabstrm "" (explain_occurrence_error e)
+
+let error_invalid_occurrence occ =
+  error_occurrences_error (InvalidOccurrence occ)
+
+type position =(Id.t * Locus.hyp_location_flag) option
+
+type subterm_unification_error = bool * (position * int * constr) * (position * int * constr)
+
+exception SubtermUnificationError of subterm_unification_error
 
 exception NotUnifiable
 
@@ -724,7 +727,7 @@ let subst_closed_term_occ_gen_modulo occs test cl occ t =
       test.last_found <- Some (cl,!pos,t)
     with NotUnifiable ->
       let lastpos = Option.get test.last_found in
-      error_cannot_unify_occurrences !nested (cl,!pos,t) lastpos in
+     raise (SubtermUnificationError (!nested,(cl,!pos,t),lastpos)) in
   let rec substrec k t =
     if nowhere_except_in && !pos > maxocc then t else
     try
@@ -749,7 +752,7 @@ let check_used_occurrences nbocc (nowhere_except_in,locs) =
   let rest = List.filter (fun o -> o >= nbocc) locs in
   match rest with
   | [] -> ()
-  | _ -> error_invalid_occurrence rest
+  | _ -> error_occurrences_error (InvalidOccurrence rest)
 
 let proceed_with_occurrences f occs x =
   match occs with
@@ -785,7 +788,7 @@ let map_named_declaration_with_hyploc f hyploc acc (id,bodyopt,typ) =
   let f = f (Some (id,hyploc)) in
   match bodyopt,hyploc with
   | None, InHypValueOnly ->
-      errorlabstrm "" (pr_id id ++ str " has no value.")
+      error_occurrences_error (IncorrectInValueOccurrence id)
   | None, _ | Some _, InHypTypeOnly ->
       let acc,typ = f acc typ in acc,(id,bodyopt,typ)
   | Some body, InHypValueOnly ->

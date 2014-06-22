@@ -26,8 +26,8 @@ Typeclasses
 Classops
 Program
 Coercion
-Unification
 Detyping
 Indrec
 Cases
 Pretyping
+Unification

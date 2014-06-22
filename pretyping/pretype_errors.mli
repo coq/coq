@@ -47,6 +47,7 @@ type pretype_error =
   | UnexpectedType of constr * constr
   | NotProduct of constr
   | TypingError of type_error
+  | CannotUnifyOccurrences of Termops.subterm_unification_error
 
 exception PretypeError of env * Evd.evar_map * pretype_error
 

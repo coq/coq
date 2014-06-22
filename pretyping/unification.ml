@@ -24,6 +24,7 @@ open Retyping
 open Coercion
 open Recordops
 open Locus
+open Locusops
 
 let occur_meta_or_undefined_evar evd c =
   let rec occrec c = match kind_of_term c with
@@ -1155,6 +1156,153 @@ let iter_fail f a =
       try f a.(i)
       with ex when precatchable_exception ex -> ffail (i+1)
   in ffail 0
+
+(* make_abstraction: a variant of w_unify_to_subterm which works on
+   contexts, with evars, and possibly with occurrences *)
+
+let out_arg = function
+  | Misctypes.ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable")
+  | Misctypes.ArgArg x -> x
+
+let occurrences_of_hyp id cls =
+  let rec hyp_occ = function
+      [] -> None
+    | ((occs,id'),hl)::_ when Id.equal id id' ->
+        Some (occurrences_map (List.map out_arg) occs, hl)
+    | _::l -> hyp_occ l in
+  match cls.onhyps with
+      None -> Some (AllOccurrences,InHyp)
+    | Some l -> hyp_occ l
+
+let occurrences_of_goal cls =
+  if cls.concl_occs == NoOccurrences then None
+  else Some (occurrences_map (List.map out_arg) cls.concl_occs)
+
+let in_every_hyp cls = Option.is_empty cls.onhyps
+
+let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env initial_sigma (sigma,c) =
+  let sigma = Pretyping.solve_remaining_evars flags env initial_sigma sigma
+  in Evd.evar_universe_context sigma, nf_evar sigma c
+
+let default_matching_flags sigma = {
+  modulo_conv_on_closed_terms = Some empty_transparent_state;
+  use_metas_eagerly_in_conv_on_closed_terms = false;
+  modulo_delta = empty_transparent_state;
+  modulo_delta_types = full_transparent_state;
+  modulo_delta_in_merge = Some full_transparent_state;
+  check_applied_meta_types = true;
+  resolve_evars = false;
+  use_pattern_unification = false;
+  use_meta_bound_pattern_unification = false;
+  frozen_evars =
+    fold_undefined (fun evk _ evars -> Evar.Set.add evk evars)
+      sigma Evar.Set.empty;
+  restrict_conv_on_strict_subterms = false;
+  modulo_betaiota = false;
+  modulo_eta = false;
+  allow_K_in_toplevel_higher_order_unification = false
+}
+
+(* This supports search of occurrences of term from a pattern *)
+
+let make_pattern_test inf_flags env sigma0 (sigma,c) =
+  let flags = default_matching_flags sigma0 in
+  let matching_fun _ t =
+    try let sigma = w_typed_unify env sigma Reduction.CONV flags c t in
+	  Some(sigma, t)
+    with e when Errors.noncritical e -> raise NotUnifiable in
+  let merge_fun c1 c2 =
+    match c1, c2 with
+    | Some (evd,c1), Some (_,c2) ->
+      (try let evd = w_typed_unify env evd Reduction.CONV flags c1 c2 in
+	     Some (evd, c1)
+       with e when Errors.noncritical e -> raise NotUnifiable)
+    | Some _, None -> c1
+    | None, Some _ -> c2
+    | None, None -> None
+  in
+  { match_fun = matching_fun; merge_fun = merge_fun;
+    testing_state = None; last_found = None },
+  (fun test -> match test.testing_state with
+  | None ->
+      finish_evar_resolution ~flags:inf_flags env sigma0 (sigma,c)
+  | Some (sigma,_) ->
+     let univs, subst = nf_univ_variables sigma in
+     Evd.evar_universe_context univs,
+     subst_univs_constr subst (nf_evar sigma c))
+
+let make_eq_test evd c =
+  let out cstr =
+    Evd.evar_universe_context cstr.testing_state, c
+  in
+    (Tacred.make_eq_univs_test evd c, out)
+
+let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env concl =
+  let id =
+    let t = match ty with Some t -> t | None -> get_type_of env sigmac c in
+    let x = id_of_name_using_hdchar (Global.env()) t name in
+    let ids = ids_of_named_context (named_context env) in
+    if name == Anonymous then next_ident_away_in_goal x ids else
+    if mem_named_context x (named_context env) then
+      error ("The variable "^(Id.to_string x)^" is already declared.")
+    else
+      x
+  in
+  let compute_dependency _ (hyp,_,_ as d) depdecls =
+    match occurrences_of_hyp hyp occs with
+    | None -> depdecls
+    | Some ((AllOccurrences, InHyp) as occ) ->
+        let newdecl = subst_closed_term_occ_decl_modulo occ test d in
+        if Context.eq_named_declaration d newdecl then
+          if check_occs && not (in_every_hyp occs)
+          then raise (PretypeError (env,sigmac,NoOccurrenceFound (c,Some hyp)))
+          else depdecls
+        else
+          (subst1_named_decl (mkVar id) newdecl)::depdecls
+    | Some occ ->
+        let newdecl = subst_closed_term_occ_decl_modulo occ test d in
+        (subst1_named_decl (mkVar id) newdecl)::depdecls in
+  try
+    let depdecls = fold_named_context compute_dependency env ~init:[] in
+    let ccl = match occurrences_of_goal occs with
+      | None -> concl
+      | Some occ ->
+          subst1 (mkVar id) (subst_closed_term_occ_modulo occ test None concl)
+    in
+    let lastlhyp =
+      if List.is_empty depdecls then None else Some (pi1(List.last depdecls)) in
+    (id,depdecls,lastlhyp,ccl,out test)
+  with
+    SubtermUnificationError e ->
+      raise (PretypeError (env,sigmac,CannotUnifyOccurrences e))
+
+(** [make_abstraction] is the main entry point to abstract over a term
+    or pattern at some occurrences; it returns:
+    - the id used for the abstraction
+    - the type of the abstraction
+    - the hypotheses from the context which depend on the term or pattern
+    - the most recent hyp before which there is no dependency in the term of pattern
+    - the abstracted conclusion
+    - an evar universe context effect to apply on the goal
+    - the term or pattern to abstract fully instantiated
+*)
+
+type abstraction_request =
+| AbstractPattern of Name.t * (evar_map * constr) * clause * bool * Pretyping.inference_flags
+| AbstractExact of Name.t * constr * types option * clause * bool
+
+type abstraction_result =
+  Names.Id.t * Context.named_declaration list * Names.Id.t option *
+    constr * (Evd.evar_universe_context * constr)
+
+let make_abstraction env evd ccl abs =
+  match abs with
+  | AbstractPattern (name,c,occs,check_occs,flags) ->
+      make_abstraction_core name
+        (make_pattern_test flags env evd c) c None occs check_occs env ccl
+  | AbstractExact (name,c,ty,occs,check_occs) ->
+      make_abstraction_core name
+        (make_eq_test evd c) (evd,c) ty occs check_occs env ccl
 
 (* Tries to find an instance of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] until it finds a match.
