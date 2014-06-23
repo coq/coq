@@ -1,5 +1,6 @@
+
 Module X.
-  Set Universe Polymorphism.
+  (*Set Universe Polymorphism.*)
   Inductive paths A (x : A) : forall _ : A, Type := idpath : paths A x x.
   Notation "x = y" := (@paths _ x y) (at level 70, no associativity) : type_scope.
 
@@ -7,13 +8,11 @@ Module X.
   Axiom P : A = B.
   Definition foo : A = B.
     abstract (rewrite <- P; reflexivity).
-    (* Error: internal_paths_rew already exists. *)
-  Fail Fail Defined. (* Anomaly: Uncaught exception Not_found(_). Please report. *)
-  Admitted.
+  Defined.
 End X.
 
 Module Y.
-  Set Universe Polymorphism.
+  (*Set Universe Polymorphism.*)
   Inductive paths A (x : A) : forall _ : A, Type := idpath : paths A x x.
   Notation "x = y" := (@paths _ x y) (at level 70, no associativity) : type_scope.
 
@@ -21,7 +20,5 @@ Module Y.
   Axiom P : A = B.
   Definition foo : (A = B) * (A = B).
     split; abstract (rewrite <- P; reflexivity).
-  (* Error: internal_paths_rew already exists. *)
-  Fail Fail Defined. (* Anomaly: Uncaught exception Not_found(_). Please report. *)
-  Admitted.
+  Defined.
 End Y.

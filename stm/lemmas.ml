@@ -65,6 +65,16 @@ let adjust_guardness_conditions const = function
 	  List.interval 0 (List.length ((lam_assum c))))
 	  lemma_guard (Array.to_list fixdefs) in
 *)
+              let add c cb e =
+                let exists c e =
+                  try ignore(Environ.lookup_constant c e); true
+                  with Not_found -> false in 
+                if exists c e then e else Environ.add_constant c cb e in
+              let env = Declareops.fold_side_effects (fun env -> function
+                | SEsubproof (c, cb) -> add c cb env
+                | SEscheme (l,_) ->
+                    List.fold_left (fun e (_,c,cb) -> add c cb e) env l)
+                env (Declareops.uniquize_side_effects eff) in
               let indexes =
 	        search_guard Loc.ghost env
                   possible_indexes fixdecls in
