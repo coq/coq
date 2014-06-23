@@ -135,6 +135,7 @@ Abort.
 Goal forall x y, x=y+0 -> let z := x+1 in x+1=y -> z=z -> z=x.
 intros.
 subst x. (* was failing *)
+subst z. 
 rewrite H0.
-reflexivity.
+auto with arith.
 Qed.
