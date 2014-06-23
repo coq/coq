@@ -34,8 +34,9 @@ Module Export Overture.
 
   Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3) : equiv_scope.
 
-  Class Funext :=
-    { isequiv_apD10 :> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) }.
+  Class Funext.
+  Axiom isequiv_apD10 : `{Funext} -> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) .
+  Existing Instance isequiv_apD10.
 
   Definition path_forall `{Funext} {A : Type} {P : A -> Type} (f g : forall x : A, P x) :
     (forall x, f x = g x) -> f = g
@@ -164,13 +165,14 @@ Definition pullback_along `{Funext} (C C' D : PreCategory) (p : Functor C C')
 : object ((C' -> D) -> (C -> D))
   := Eval hnf in compose_functor _ _ _ p.
 
-Definition IsColimit `{Funext} C D (F : Functor D C) (x : object
-                                                            (@comma_category (indiscrete_category Unit)
-                                                                             (@functor_category H (indiscrete_category Unit) C)
-                                                                             (@functor_category H D C)
-                                                                             admit
-                                                                             (@pullback_along H D (indiscrete_category Unit) C
-                                                                                              admit))) : Type
+Definition IsColimit `{Funext} C D (F : Functor D C) 
+           (x : object
+                  (@comma_category (indiscrete_category Unit)
+                                   (@functor_category H (indiscrete_category Unit) C)
+                                   (@functor_category H D C)
+                                   admit
+                                   (@pullback_along H D (indiscrete_category Unit) C
+                                                    admit))) : Type
   := admit.
 
 Generalizable All Variables.
