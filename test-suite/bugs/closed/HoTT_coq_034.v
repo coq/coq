@@ -14,7 +14,7 @@ Module Short.
 
   Set Printing Universes.
   Check bar nat Set : Set. (* success *)
-  Fail Check foo nat Set : Set. (* Toplevel input, characters 6-17:
+  Check foo nat Set : Set. (* Toplevel input, characters 6-17:
 Error:
 The term "foo (* Top.303 Top.304 *) nat Set" has type
 "Type (* Top.304 *)" while it is expected to have type
