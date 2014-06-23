@@ -843,7 +843,7 @@ let elimination_clause_scheme with_evars ?(flags=elim_flags ()) i (elim, elimty,
              (str "The type of elimination clause is not well-formed."))
   in
   let elimclause' = clenv_fchain ~flags indmv elimclause indclause in
-  Clenvtac.res_pf elimclause' ~with_evars:with_evars ~flags gl
+  Proofview.V82.of_tactic (Clenvtac.res_pf elimclause' ~with_evars:with_evars ~flags) gl
 
 (*
  * Elimination tactic with bindings and using an arbitrary
@@ -1080,7 +1080,7 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
       let n = nb_prod thm_ty - nprod in
 	if n<0 then error "Applied theorem has not enough premisses.";
 	let clause = pf_apply make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
-	Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags gl
+	Proofview.V82.of_tactic (Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags) gl
     in
       try try_apply thm_ty0 concl_nprod
       with PretypeError _|RefinerError _|UserError _|Failure _ as exn ->
@@ -3586,7 +3586,7 @@ let elim_scheme_type elim t gl =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
 	  clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
             (clenv_meta_type clause mv) clause in
-	Clenvtac.res_pf clause' ~flags:(elim_flags ()) gl
+	Proofview.V82.of_tactic (Clenvtac.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false) gl
     | _ -> anomaly (Pp.str "elim_scheme_type")
 
 let elim_type t gl =

@@ -253,7 +253,7 @@ let lemInv id c gls =
   try
     let clause = mk_clenv_type_of gls c in
     let clause = clenv_constrain_last_binding (mkVar id) clause in
-    Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) gls
+    Proofview.V82.of_tactic (Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false) gls
   with
     | NoSuchBinding ->
 	errorlabstrm ""

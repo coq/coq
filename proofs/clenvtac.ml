@@ -78,8 +78,10 @@ open Unification
 
 let dft = default_unify_flags
 
-let res_pf clenv ?(with_evars=false) ?(flags=dft ()) gls =
-  clenv_refine with_evars (clenv_unique_resolver ~flags clenv gls) gls
+let res_pf clenv ?(with_evars=false) ?(flags=dft ()) =
+  Proofview.V82.tactic begin fun gl ->
+    clenv_refine with_evars (clenv_unique_resolver ~flags clenv gl) gl
+  end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
    particulier ne semblent pas vérifier que des instances différentes
