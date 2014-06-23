@@ -545,10 +545,12 @@ let autounfold_one db cl gl =
       let (ids, csts) = Hint_db.unfolds db in
 	(Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db
   in
-  let did, c' = unfold_head (pf_env gl) st (match cl with Some (id, _) -> pf_get_hyp_typ gl id | None -> pf_concl gl) in
+  let did, c' = unfold_head (pf_env gl) st 
+    (match cl with Some (id, _) -> pf_get_hyp_typ gl id | None -> pf_concl gl) 
+  in
     if did then
       match cl with
-      | Some hyp -> change_in_hyp None c' hyp gl
+      | Some hyp -> change_in_hyp None (fun env sigma -> sigma, c') hyp gl
       | None -> convert_concl_no_check c' DEFAULTcast gl
     else tclFAIL 0 (str "Nothing to unfold") gl
 

@@ -640,7 +640,7 @@ let hResolve id c occ t gl =
   let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in
     tclTHEN (Refiner.tclEVARS sigma)
-     (change_in_concl None (mkLetIn (Anonymous,t_constr,t_constr_type,pf_concl gl))) gl
+     (change_concl (mkLetIn (Anonymous,t_constr,t_constr_type,pf_concl gl))) gl
 
 let hResolve_auto id c t gl =
   let rec resolve_auto n = 
@@ -669,7 +669,7 @@ let hget_evar n gl =
   if n <= 0 then error "Incorrect existential variable index.";
   let ev = List.nth evl (n-1) in
   let ev_type = existential_type sigma ev in
-  change_in_concl None (mkLetIn (Anonymous,mkEvar ev,ev_type,pf_concl gl)) gl
+  change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,pf_concl gl)) gl
 
 TACTIC EXTEND hget_evar
 | [ "hget_evar" int_or_var(n) ] -> [ Proofview.V82.tactic (hget_evar (out_arg n)) ]
@@ -715,7 +715,7 @@ let  mkCaseEq a  : unit Proofview.tactic =
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
             Proofview.V82.tactic begin
-	      change_in_concl None
+	      change_concl
 	        (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl)
             end
           end;
