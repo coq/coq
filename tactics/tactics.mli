@@ -117,12 +117,14 @@ val exact_proof      : Constrexpr.constr_expr -> tactic
 
 type tactic_reduction = env -> evar_map -> constr -> constr
 
+type change_arg = env -> evar_map -> evar_map * constr
+
 val reduct_in_hyp     : tactic_reduction -> hyp_location -> tactic
 val reduct_option     : tactic_reduction * cast_kind -> goal_location -> tactic
 val reduct_in_concl   : tactic_reduction * cast_kind -> tactic
-val change_in_concl   : (occurrences * constr_pattern) option -> constr -> 
-                        tactic
-val change_in_hyp     : (occurrences * constr_pattern) option -> constr ->
+val change_in_concl   : (occurrences * constr_pattern) option -> change_arg -> tactic
+val change_concl      : constr -> tactic
+val change_in_hyp     : (occurrences * constr_pattern) option -> change_arg ->
                         hyp_location -> tactic
 val red_in_concl      : tactic
 val red_in_hyp        : hyp_location -> tactic
@@ -144,7 +146,7 @@ val unfold_in_hyp     :
 val unfold_option     :
   (occurrences * evaluable_global_reference) list -> goal_location -> tactic
 val change            :
-  constr_pattern option -> constr -> clause -> tactic
+  constr_pattern option -> change_arg -> clause -> tactic
 val pattern_option    :
   (occurrences * constr) list -> goal_location -> tactic
 val reduce            : red_expr -> clause -> tactic

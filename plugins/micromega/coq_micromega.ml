@@ -1378,7 +1378,7 @@ let micromega_order_change spec cert cert_typ env ff gl =
  let formula_typ = (Term.mkApp (Lazy.force coq_Cstr,[|spec.coeff|])) in
  let ff = dump_formula formula_typ (dump_cstr spec.coeff spec.dump_coeff) ff in
  let vm = dump_varmap (spec.typ) env in
-  Tactics.change_in_concl None
+  Tactics.change_concl
    (set
      [
       ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
@@ -1666,7 +1666,7 @@ let micromega_order_changer cert env ff gl =
  let formula_typ = (Term.mkApp (Lazy.force coq_Cstr,[| coeff|])) in
  let ff = dump_formula formula_typ (dump_cstr coeff dump_coeff) ff in
  let vm = dump_varmap (typ) env in
-  Tactics.change_in_concl None
+  Tactics.change_concl
    (set
      [
       ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));

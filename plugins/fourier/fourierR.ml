@@ -587,7 +587,7 @@ let rec fourier gl=
                       else tac_zero_infeq_false gl (rational_to_fraction cres)
            in
            tac:=(tclTHENS (my_cut ineq)
-                     [tclTHEN (change_in_concl None
+                     [tclTHEN (change_concl
 			       (mkAppL [| get coq_not; ineq|]
 				       ))
 		      (tclTHEN (apply (if sres then get coq_Rnot_lt_lt

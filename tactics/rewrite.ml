@@ -1396,13 +1396,13 @@ let cl_rewrite_clause_tac ?abs strat meta clause gl =
 	  | Some id, Some p ->
 	      cut_replacing id newt (Tacmach.refine p)
 	  | Some id, None -> 
-	      change_in_hyp None newt (id, InHypTypeOnly)
+	      change_in_hyp None (fun env sigma -> sigma, newt) (id, InHypTypeOnly)
 	  | None, Some p ->
 	      let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
 		tclTHENLAST
 		  (Tacmach.internal_cut false name newt)
 		  (tclTHEN (Proofview.V82.of_tactic (Tactics.revert [name])) (Tacmach.refine p))
-	  | None, None -> change_in_concl None newt
+	  | None, None -> change_in_concl None (fun env sigma -> sigma, newt)
 	in tclTHEN (evartac undef) tac
   in
   let tac =

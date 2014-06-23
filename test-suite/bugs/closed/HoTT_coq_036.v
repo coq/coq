@@ -29,8 +29,8 @@ Module Version1.
     assert (Hf : focus ((S tt) = (S tt))) by constructor.
     let C1 := constr:(CObject) in
     let C2 := constr:(fun C => @Object (CObject C) C) in
-    unify C1 C2.
-    progress change CObject with (fun C => @Object (CObject C) C) in *.
+    unify C1 C2; idtac C1 C2. Show Universes.
+    progress change @CObject with (fun C => @Object (CObject C) C) in *. 
     simpl in *.
     match type of Hf with
       | focus ?V => exact V
@@ -112,7 +112,7 @@ Module OtherBug.
 
   Parameter ObjectOf' : forall (objC : Type) (C : SpecializedCategory objC)
                                (objD : Type) (D : SpecializedCategory objD), Prop.
-  Definition CommaCategory_Object (A : Category) : Type.
+  Definition CommaCategory_Object (A : Category@{i}) : Type.
     assert (Hf : focus (@ObjectOf' _ (@Build_Category unit TerminalCategory) _ A)) by constructor.
     progress change CObject with (fun C => @Object (CObject C) C) in *;
       simpl in *.

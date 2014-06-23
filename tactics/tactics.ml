@@ -345,19 +345,30 @@ let e_reduct_in_hyp redfun (id,where) gl =
     (e_pf_reduce_decl redfun where (pf_get_hyp gl id))
     convert_hyp_no_check gl
 
+type change_arg = env -> evar_map -> evar_map * constr
+
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb t env sigma c =
-  let evd, b = infer_conv ~pb:cv_pb env sigma t c in
-    if b then evd, t
-    else
-      errorlabstrm "convert-check-hyp" (str "Not convertible.")
+  let sigma, t' = t env sigma in
+  let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
+    if b then sigma, t'
+    else raise ConstrMatching.PatternMatchingFailure
 
+let change_and_check_subst cv_pb subst t env sigma c =
+  let t' env sigma = 
+    let sigma, t = t env sigma in
+      sigma, replace_vars (Id.Map.bindings subst) t 
+  in change_and_check cv_pb t' env sigma c
+      
 (* Use cumulativity only if changing the conclusion not a subterm *)
 let change_on_subterm cv_pb t = function
-  | None -> change_and_check cv_pb t
+  | None -> fun env sigma c ->
+    (try change_and_check cv_pb t env sigma c
+     with ConstrMatching.PatternMatchingFailure ->
+       errorlabstrm "convert-check-hyp" (str "Not convertible."))
   | Some occl ->
-      e_contextually false occl
-        (fun subst -> change_and_check Reduction.CONV (replace_vars (Id.Map.bindings subst) t))
+    e_contextually false occl
+      (fun subst -> change_and_check_subst Reduction.CONV subst t)
 
 let change_in_concl occl t =
   e_reduct_in_concl ((change_on_subterm Reduction.CUMUL t occl),DEFAULTcast)
@@ -377,6 +388,9 @@ let change chg c cls gl =
     | OnConcl occs ->
        change_option (bind_change_occurrences occs chg) c None)
     cls gl
+
+let change_concl t = 
+  change_in_concl None (fun env sigma -> sigma, t)
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
 let red_in_concl        = reduct_in_concl (red_product,REVERTcast)

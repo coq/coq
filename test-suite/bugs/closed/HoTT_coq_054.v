@@ -47,10 +47,10 @@ Theorem ex2_8 {A B A' B' : Type} (g : A -> A') (h : B -> B') (x y : A + B)
                          | inl y' => ap g
                          | inr y' => idmap
                        end
-           | inr x' => match y as y return match y with
+           | inr x' => match y as y return match y return Type with
                                                inr y' => x' = y'
                                              | _ => Empty
-                                           end -> match f y with
+                                           end -> match f y return Type with
                                                     | inr y' => h x' = y'
                                                     | _ => Empty end with
                          | inl y' => idmap
