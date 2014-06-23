@@ -1,5 +1,7 @@
 Require Import Classes.RelationClasses List Setoid.
 
+Definition eqT (T : Type) := @eq T.
+
 Set Universe Polymorphism.
 
 Definition RowType := list Type.
@@ -17,10 +19,11 @@ Inductive RowTypeDecidable (P : forall T, relation T) `(H : forall T, Equivalenc
                            -> RowTypeDecidable P H Ts
                            -> RowTypeDecidable P H (T :: Ts).
 
+
 Set Printing Universes.
 
-Fixpoint Row_eq Ts
-: RowTypeDecidable (@eq) _ Ts -> forall r1 r2 : Row Ts, {@eq (Row Ts) r1 r2} + {r1 <> r2}.
+Fixpoint Row_eq (Ts : RowType)
+: RowTypeDecidable (@eqT) _ Ts -> forall r1 r2 : Row Ts, {@eq (Row Ts) r1 r2} + {r1 <> r2}.
 (* Toplevel input, characters 81-87:
 Error:
 In environment
