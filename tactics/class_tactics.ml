@@ -98,7 +98,7 @@ let e_give_exact flags poly (c,clenv) gl =
     else c, gl
   in
   let t1 = pf_type_of gl c in
-    tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl
+    tclTHEN (Proofview.V82.of_tactic (Clenvtac.unify ~flags t1)) (exact_no_check c) gl
 
 let unify_e_resolve poly flags (c,clenv) gls =
   let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in

@@ -104,14 +104,15 @@ let fail_quick_unif_flags = {
 }
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
-let unifyTerms ?(flags=fail_quick_unif_flags) m n gls =
-  let env = pf_env gls in
-  let evd = create_goal_evar_defs (project gls) in
-    try 
+let unify ?(flags=fail_quick_unif_flags) m =
+  Proofview.Goal.raw_enter begin fun gl ->
+    let env = Tacmach.New.pf_env gl in
+    let n = Tacmach.New.pf_nf_concl gl in
+    let evd = create_goal_evar_defs (Proofview.Goal.sigma gl) in
+    try
       let evd' = w_unify env evd CONV ~flags m n in
-	tclIDTAC {it = gls.it; sigma =  evd'; }
+      Proofview.V82.tclEVARS evd'
     with e when Errors.noncritical e ->
-      tclFAIL 0 (Errors.print e) gls
-
-let unify ?(flags=fail_quick_unif_flags) m gls =
-  let n = pf_concl gls in unifyTerms ~flags m n gls
+      (** This is Tacticals.tclFAIL *)
+      Proofview.tclZERO (FailError (0, lazy (Errors.print e)))
+  end

@@ -13,7 +13,7 @@ open Tacexpr
 open Unification
 
 (** Tactics *)
-val unify : ?flags:unify_flags -> constr -> tactic
+val unify : ?flags:unify_flags -> constr -> unit Proofview.tactic
 val clenv_refine : evars_flag -> ?with_classes:bool -> clausenv -> tactic
 val res_pf : clausenv -> ?with_evars:evars_flag -> ?flags:unify_flags -> tactic
 
