@@ -90,6 +90,9 @@ Tactics
 - "change ... in ..." and "simpl ... in ..." now consider nested
   occurrences (possible source of incompatibilities since this alters
   the numbering of occurrences).
+- The "change p with c" tactic semantics changed, now typechecking 
+  "c" at each matching occurrence "t" of the pattern "p", and 
+  converting "t" with "c".
 - Now "appcontext" and "context" behave the same. The old buggy behaviour of
   "context" can be retrieved at parse time by setting the
   "Tactic Compat Context" flag. (possible source of incompatibilities).

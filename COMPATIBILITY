@@ -1,3 +1,24 @@
+Potential sources of incompatibilities between Coq V8.4 and V8.5
+----------------------------------------------------------------
+
+Universe Polymorphism.
+
+- Refinement, unification and tactics are now aware of universes,
+  resulting in more localized errors. Universe inconsistencies 
+  should no more get raised at Qed time but during the proof.
+  Unification *always* produces well-typed substitutions, hence
+  some rare cases of unifications that succeeded while producing
+  ill-typed terms before will now fail.
+  
+- The [change p with c] tactic semantics changed, now typechecking 
+  [c] at each matching occurrence [t] of the pattern [p], and 
+  converting [t] with [c].
+  
+- Template polymorphic inductive types: the partial application 
+  of a template polymorphic type (e.g. list) is not polymorphic.
+  An explicit parameter application (e.g [fun A => list A]) or
+  [apply (list _)] will result in a polymorphic instance.
+
 Potential sources of incompatibilities between Coq V8.3 and V8.4
 ----------------------------------------------------------------
 
