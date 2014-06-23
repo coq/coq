@@ -5,11 +5,11 @@ Set Printing Universes.
 
 Inductive enc (A:Type (*1*)) (* : Type.1 *) := C : A -> enc A.
 
-Definition id (X:Type(*5*)) (x:X) := x.
+Definition id (X:Type(*4*)) (x:X) := x.
 
-Lemma test : let S := Type(*6 : 7*) in enc S -> S.
+Lemma test : let S := Type(*5 : 6*) in enc S -> S.
 simpl; intros.
-apply enc.
+refine (enc _).
 apply id.
 apply Prop.
 Defined.
@@ -26,7 +26,7 @@ b : (list a) -> a.   (* i don't know if this *)
 Inductive sg : Type := Sg. (* single *)
 
 Definition ipl2 (P : a -> Type) :=   (* in Prop, that means P is true forall *)
-fold_right (fun x => prod (P x)) sg. (* the elements of a given list         *)
+  fold_right (fun x => fun A => prod (P x) A) sg. (* the elements of a given list         *)
 
 Definition ind
      : forall S : a -> Type,
@@ -55,7 +55,7 @@ Defined.
 
 Lemma k' : a -> Type. (* same lemma but with our bug *)
 intro;pattern H;apply ind;intros.
-  apply prod.
+  refine (prod _ _).
     induction ls.
       exact sg.
       exact sg.

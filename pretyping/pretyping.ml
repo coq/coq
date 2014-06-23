@@ -590,10 +590,13 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
       match evar_kind_of_term !evdref resj.uj_val with
       | App (f,args) ->
         let f = whd_evar !evdref f in
-          if is_template_polymorphic env f then
+          if isInd f && is_template_polymorphic env f then
+	    (* Special case for inductive type applications that must be 
+	       refreshed right away. *)
 	    let sigma = !evdref in
 	    let c = mkApp (f,Array.map (whd_evar sigma) args) in
-	    let t = Retyping.get_type_of env sigma c in
+	    let c = evd_comb1 (Evarsolve.refresh_universes true env) evdref c in
+	    let t = Retyping.get_type_of env !evdref c in
 	      make_judge c (* use this for keeping evars: resj.uj_val *) t
 	  else resj
       | _ -> resj 
