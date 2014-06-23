@@ -324,7 +324,7 @@ let named_of_rel_context l =
       l ([], [])
   in ctx
 
-let context l =
+let context poly l =
   let env = Global.env() in
   let evars = ref Evd.empty in
   let _, ((env', fullctx), impls) = interp_context_evars evars env l in
@@ -341,12 +341,12 @@ let context l =
   let fn status (id, b, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       let uctx = Univ.ContextSet.to_context uctx in	
-      let decl = (ParameterEntry (None,false,(t,uctx),None), IsAssumption Logical) in
+      let decl = (ParameterEntry (None,poly,(t,uctx),None), IsAssumption Logical) in
       let cst = Declare.declare_constant ~internal:Declare.KernelSilent id decl in
 	match class_of_constr t with
 	| Some (rels, ((tc,_), args) as _cl) ->
 	    add_instance (Typeclasses.new_instance tc None false (*FIXME*)
-			  (Flags.use_polymorphic_flag ()) (ConstRef cst));
+			    poly (ConstRef cst));
             status
 	    (* declare_subclasses (ConstRef cst) cl *)
 	| None -> status
@@ -356,7 +356,7 @@ let context l =
       | _ -> false
       in
       let impl = List.exists test impls in
-      let decl = (Discharge, (Flags.use_polymorphic_flag ()), Definitional) in
+      let decl = (Discharge, poly, Definitional) in
       let nstatus =
         pi3 (Command.declare_assumption false decl (t, uctx) [] impl
           Vernacexpr.NoInline (Loc.ghost, id))

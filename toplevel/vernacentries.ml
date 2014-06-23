@@ -794,8 +794,8 @@ let vernac_instance abst locality poly sup inst props pri =
   Dumpglob.dump_constraint inst false "inst";
   ignore(Classes.new_instance ~abstract:abst ~global poly sup inst props pri)
 
-let vernac_context l =
-  if not (Classes.context l) then Pp.feedback Interface.AddedAxiom
+let vernac_context poly l =
+  if not (Classes.context poly l) then Pp.feedback Interface.AddedAxiom
 
 let vernac_declare_instances locality ids pri =
   let glob = not (make_section_locality locality) in
@@ -1746,7 +1746,7 @@ let interp ?proof locality poly c =
   (* Type classes *)
   | VernacInstance (abst, sup, inst, props, pri) ->
       vernac_instance abst locality poly sup inst props pri
-  | VernacContext sup -> vernac_context sup
+  | VernacContext sup -> vernac_context poly sup
   | VernacDeclareInstances (ids, pri) -> vernac_declare_instances locality ids pri
   | VernacDeclareClass id -> vernac_declare_class id
 
@@ -1872,7 +1872,7 @@ let check_vernac_supports_polymorphism c p =
     | VernacStartTheoremProof _
     | VernacCoercion _ | VernacIdentityCoercion _
     | VernacInstance _ | VernacDeclareInstances _
-    | VernacHints _
+    | VernacHints _ | VernacContext _
     | VernacExtend _ ) -> ()
   | Some _, _ -> Errors.error "This command does not support Polymorphism"
 

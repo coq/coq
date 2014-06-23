@@ -67,7 +67,7 @@ val id_of_class : typeclass -> Id.t
 
 (** returns [false] if, for lack of section, it declares an assumption
     (unless in a module type). *)
-val context : local_binder list -> bool
+val context : Decl_kinds.polymorphic -> local_binder list -> bool
 
 (** Forward ref for refine *)
 

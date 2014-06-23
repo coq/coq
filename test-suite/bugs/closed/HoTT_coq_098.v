@@ -37,10 +37,10 @@ Module success.
   Admitted.
 End success.
 
-Module failure.
+Module success2.
   Section SpecializedFunctor.
-    Context `(C : @SpecializedCategory objC).
-    Context `(D : @SpecializedCategory objD).
+    Polymorphic Context `(C : @SpecializedCategory objC).
+    Polymorphic Context `(D : @SpecializedCategory objD).
 
     Polymorphic Record SpecializedFunctor
       := {
@@ -60,29 +60,4 @@ while it is expected to have type
 (Universe inconsistency: Cannot enforce Set = Top.551)). *)
   admit.
   Defined.
-End failure.
-
-Module polycontext.
-  Section SpecializedFunctor.
-    Context `(C : @SpecializedCategory objC).
-    Context `(D : @SpecializedCategory objD).
-
-    Polymorphic Record SpecializedFunctor
-      := {
-          ObjectOf' : objC -> objD;
-          MorphismOf' : forall s d, C.(Morphism') s d -> D.(Morphism') (ObjectOf' s) (ObjectOf' d)
-        }.
-  End SpecializedFunctor.
-
-  Set Printing Universes.
-  Polymorphic Definition UnderlyingGraph : SpecializedFunctor GraphIndexingCategory TypeCat.
-  (* Toplevel input, characters 73-94:
-Error:
-The term "GraphIndexingCategory (* Top.563 *)" has type
- "SpecializedCategory (* Top.563 Set *) GraphIndex"
-while it is expected to have type
- "SpecializedCategory (* Top.550 Top.551 *) ?7"
-(Universe inconsistency: Cannot enforce Set = Top.551)). *)
-  admit.
-  Defined.
-End polycontext.
+End success2.
