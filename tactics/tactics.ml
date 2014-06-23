@@ -28,7 +28,6 @@ open Genredexpr
 open Tacmach
 open Logic
 open Clenv
-open Clenvtac
 open Refiner
 open Tacticals
 open Hipattern
@@ -793,7 +792,7 @@ let check_unresolved_evars_of_metas clenv =
    [id] is replaced by P using the proof given by [tac] *)
 
 let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) id clenv gl =
-  let clenv = clenv_pose_dependent_evars with_evars clenv in
+  let clenv = Clenvtac.clenv_pose_dependent_evars with_evars clenv in
   let clenv =
     if with_classes then
       { clenv with evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd }
@@ -844,7 +843,7 @@ let elimination_clause_scheme with_evars ?(flags=elim_flags ()) i (elim, elimty,
              (str "The type of elimination clause is not well-formed."))
   in
   let elimclause' = clenv_fchain ~flags indmv elimclause indclause in
-  res_pf elimclause' ~with_evars:with_evars ~flags gl
+  Clenvtac.res_pf elimclause' ~with_evars:with_evars ~flags gl
 
 (*
  * Elimination tactic with bindings and using an arbitrary
@@ -3230,7 +3229,7 @@ let induction_tac_felim with_evars indvars nparams elim gl =
   let elimclause' = recolle_clenv nparams indvars elimclause gl in
   (* one last resolution (useless?) *)
   let resolved = clenv_unique_resolver ~flags:(elim_flags ()) elimclause' gl in
-  clenv_refine with_evars resolved gl
+  Clenvtac.clenv_refine with_evars resolved gl
 
 (* Apply induction "in place" replacing the hypothesis on which
    induction applies with the induction hypotheses *)
@@ -3587,7 +3586,7 @@ let elim_scheme_type elim t gl =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
 	  clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
             (clenv_meta_type clause mv) clause in
-	res_pf clause' ~flags:(elim_flags ()) gl
+	Clenvtac.res_pf clause' ~flags:(elim_flags ()) gl
     | _ -> anomaly (Pp.str "elim_scheme_type")
 
 let elim_type t gl =

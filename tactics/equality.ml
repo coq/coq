@@ -34,7 +34,6 @@ open Coqlib
 open Declarations
 open Indrec
 open Clenv
-open Clenvtac
 open Evd
 open Ind_tables
 open Eqschemes
@@ -147,7 +146,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
   let try_occ (evd', c') =
-    clenv_pose_dependent_evars true {eqclause with evd = evd'}
+    Clenvtac.clenv_pose_dependent_evars true {eqclause with evd = evd'}
   in
   let flags = make_flags frzevars (Proofview.Goal.sigma gl) rewrite_unif_flags eqclause in
   let occs =
@@ -892,7 +891,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort =
     discrimination_pf env sigma e (t,t1,t2) discriminator lbeq in
   let pf_ty = mkArrow eqn absurd_term in
   let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
-  let pf = clenv_value_cast_meta absurd_clause in
+  let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
   Proofview.V82.tclEVARS sigma <*>
   Proofview.tclEFFECTS eff <*>
   tclTHENS (cut_intro absurd_term)
@@ -918,7 +917,7 @@ let onEquality with_evars tac (c,lbindc) =
   let t = type_of c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
   let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
-  let eq_clause' = clenv_pose_dependent_evars with_evars eq_clause in
+  let eq_clause' = Clenvtac.clenv_pose_dependent_evars with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
   let (eq,u,eq_args) = find_this_eq_data_decompose gl eqn in
   tclTHEN
@@ -1263,7 +1262,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
       let pf = applist(congr,[t;resty;injfun;t1;t2]) in
       let sigma, pf_typ = Typing.e_type_of env sigma pf in
       let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in
-      let pf = clenv_value_cast_meta inj_clause in
+      let pf = Clenvtac.clenv_value_cast_meta inj_clause in
       let ty = simplify_args env sigma (clenv_type inj_clause) in
 	evdref := sigma;
 	Some (pf, ty)
