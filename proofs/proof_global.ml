@@ -269,7 +269,10 @@ let close_proof ?feedback_id ~now fpl =
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
   let fpl, univs = Future.split2 fpl in
-  let universes = Future.force univs in
+  let universes = 
+    if poly || now then Future.force univs 
+    else Proof.in_proof proof (fun x -> Evd.evar_universe_context x) 
+  in
   let nf = Universes.nf_evars_and_universes_opt_subst (fun x -> None)
     (Evd.evar_universe_context_subst universes) in
   let make_body =
