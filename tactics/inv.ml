@@ -74,7 +74,7 @@ let make_inv_predicate env evd indf realargs id status concl =
       | NoDep ->
 	  (* We push the arity and leave concl unchanged *)
 	  let hyps_arity,_ = get_arity env indf in
-	  (hyps_arity,concl)
+	    (hyps_arity,concl)
       | Dep dflt_concl ->
 	  if not (occur_var env id concl) then
 	    errorlabstrm "make_inv_predicate"
@@ -129,6 +129,7 @@ let make_inv_predicate env evd indf realargs id status concl =
   in
   let (newconcl, args) = build_concl [] [] 0 realargs in
   let predicate = it_mkLambda_or_LetIn_name env newconcl hyps in
+  let _ = Evarutil.evd_comb1 (Typing.e_type_of env) evd predicate in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)
   predicate, args

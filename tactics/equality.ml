@@ -987,7 +987,7 @@ let find_sigma_data env s = build_sigma_type ()
 let make_tuple env sigma (rterm,rty) lind =
   assert (dependent (mkRel lind) rty);
   let sigdata = find_sigma_data env (get_sort_of env sigma rty) in
-  let a = type_of env sigma (mkRel lind) in
+  let sigma, a = e_type_of ~refresh:true env sigma (mkRel lind) in
   let (na,_,_) = lookup_rel lind env in
   (* We move [lind] to [1] and lift other rels > [lind] by 1 *)
   let rty = lift (1-lind) (liftn lind (lind+1) rty) in
@@ -1089,7 +1089,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
             let w_type = type_of env sigma w in
             if Evarconv.e_cumul env evdref w_type a then
 	      let exist_term = Evarutil.evd_comb1 (Evd.fresh_global env) evdref sigdata.intro in
-              applist(exist_term,[w_type;p_i_minus_1;w;tuple_tail])
+              applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
             else
               error "Cannot solve a unification problem."
 	| None -> anomaly (Pp.str "Not enough components to build the dependent tuple")
