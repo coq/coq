@@ -3229,7 +3229,7 @@ let induction_tac_felim with_evars indvars nparams elim gl =
   let elimclause' = recolle_clenv nparams indvars elimclause gl in
   (* one last resolution (useless?) *)
   let resolved = clenv_unique_resolver ~flags:(elim_flags ()) elimclause' gl in
-  Clenvtac.clenv_refine with_evars resolved gl
+  Proofview.V82.of_tactic (Clenvtac.clenv_refine with_evars resolved) gl
 
 (* Apply induction "in place" replacing the hypothesis on which
    induction applies with the induction hypotheses *)

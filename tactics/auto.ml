@@ -1136,13 +1136,13 @@ let unify_resolve_nodelta poly (c,clenv) gl =
   let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
   let clenv' = connect_clenv gl clenv' in
   let clenv'' = clenv_unique_resolver ~flags:auto_unif_flags clenv' gl in
-  Clenvtac.clenv_refine false clenv'' gl
+  Proofview.V82.of_tactic (Clenvtac.clenv_refine false clenv'') gl
 
 let unify_resolve poly flags (c,clenv) gl =
   let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
   let clenv' = connect_clenv gl clenv' in
   let clenv'' = clenv_unique_resolver ~flags clenv' gl in
-  Clenvtac.clenv_refine false clenv'' gl
+  Proofview.V82.of_tactic (Clenvtac.clenv_refine false clenv'') gl
 
 let unify_resolve_gen poly = function
   | None -> unify_resolve_nodelta poly

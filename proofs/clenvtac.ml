@@ -59,7 +59,11 @@ let clenv_pose_dependent_evars with_evars clenv =
       (RefinerError (UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));
   clenv_pose_metas_as_evars clenv dep_mvs
 
-let clenv_refine with_evars ?(with_classes=true) clenv gls =
+let clenv_refine with_evars ?(with_classes=true) clenv =
+  (** ppedrot: a Goal.enter here breaks things, because the tactic below may
+      solve goals by side effects, while the compatibility layer keeps those
+      useless goals. That deserves a FIXME. *)
+  Proofview.V82.tactic begin fun gl ->
   let clenv = clenv_pose_dependent_evars with_evars clenv in
   let evd' =
     if with_classes then
@@ -71,16 +75,17 @@ let clenv_refine with_evars ?(with_classes=true) clenv gls =
   let clenv = { clenv with evd = evd' } in
   tclTHEN
     (tclEVARS (Evd.clear_metas evd'))
-    (refine_no_check (clenv_cast_meta clenv (clenv_value clenv)))
-    gls
+    (refine_no_check (clenv_cast_meta clenv (clenv_value clenv))) gl
+  end
 
 open Unification
 
 let dft = default_unify_flags
 
 let res_pf clenv ?(with_evars=false) ?(flags=dft ()) =
-  Proofview.V82.tactic begin fun gl ->
-    clenv_refine with_evars (clenv_unique_resolver ~flags clenv gl) gl
+  Proofview.Goal.raw_enter begin fun gl ->
+    let clenv gl = clenv_unique_resolver ~flags clenv gl in
+    clenv_refine with_evars (Tacmach.New.of_old clenv (Proofview.Goal.assume gl))
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en

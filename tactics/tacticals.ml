@@ -592,7 +592,7 @@ module New = struct
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
     Proofview.tclTHEN
-      (Proofview.V82.tactic (Clenvtac.clenv_refine false clenv'))
+      (Clenvtac.clenv_refine false clenv')
       (Proofview.tclEXTEND [] tclIDTAC branchtacs)
     end
 

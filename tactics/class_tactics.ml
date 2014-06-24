@@ -104,13 +104,13 @@ let unify_e_resolve poly flags (c,clenv) gls =
   let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
   let clenv' = connect_clenv gls clenv' in
   let clenv' = clenv_unique_resolver ~flags clenv' gls in
-    Clenvtac.clenv_refine true ~with_classes:false clenv' gls
+  Proofview.V82.of_tactic (Clenvtac.clenv_refine true ~with_classes:false clenv') gls
 
 let unify_resolve poly flags (c,clenv) gls =
   let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
   let clenv' = connect_clenv gls clenv' in
   let clenv' = clenv_unique_resolver ~flags clenv' gls in
-    Clenvtac.clenv_refine false(*uhoh, was true*) ~with_classes:false clenv' gls
+  Proofview.V82.of_tactic (Clenvtac.clenv_refine false(*uhoh, was true*) ~with_classes:false clenv') gls
 
 let clenv_of_prods poly nprods (c, clenv) gls =
   if poly || Int.equal nprods 0 then Some clenv
