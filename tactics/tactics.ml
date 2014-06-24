@@ -660,11 +660,6 @@ let rec intros_move = function
       Tacticals.New.tclTHEN (intro_gen dloc (IntroMustBe hyp) destopt false false)
 	(intros_move rest)
 
-let dependent_in_decl a (_,c,t) =
-  match c with
-    | None -> dependent a t
-    | Some body -> dependent a body || dependent a t
-
 (* Apply a tactic on a quantified hypothesis, an hypothesis in context
    or a term with bindings *)
 

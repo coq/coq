@@ -110,6 +110,7 @@ val dependent : constr -> constr -> bool
 val dependent_no_evar : constr -> constr -> bool
 val dependent_univs : constr -> constr -> bool
 val dependent_univs_no_evar : constr -> constr -> bool
+val dependent_in_decl : constr -> named_declaration -> bool
 val count_occurrences : constr -> constr -> int
 val collect_metas : constr -> int list
 val collect_vars : constr -> Id.Set.t (** for visible vars only *)

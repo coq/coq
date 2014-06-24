@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Errors
+open Pp
 open Util
 open Names
 open Term
@@ -1180,6 +1181,17 @@ let occurrences_of_goal cls =
 
 let in_every_hyp cls = Option.is_empty cls.onhyps
 
+let indirectly_dependent c d decls =
+  not (isVar c) &&
+    (* This test is not needed if the original term is a variable, but
+       it is needed otherwise, as e.g. when abstracting over "2" in
+       "forall H:0=2, H=H:>(0=1+1) -> 0=2." where there is now obvious
+       way to see that the second hypothesis depends indirectly over 2 *)
+    List.exists (fun (id,_,_) -> dependent_in_decl (mkVar id) d) decls
+
+let indirect_dependency d decls =
+  pi1 (List.hd (List.filter (fun (id,_,_) -> dependent_in_decl (mkVar id) d) decls))
+
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env initial_sigma (sigma,c) =
   let sigma = Pretyping.solve_remaining_evars flags env initial_sigma sigma
   in Evd.evar_universe_context sigma, nf_evar sigma c
@@ -1250,10 +1262,20 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
   in
   let compute_dependency _ (hyp,_,_ as d) depdecls =
     match occurrences_of_hyp hyp occs with
-    | None -> depdecls
+    | None ->
+        if indirectly_dependent c d depdecls then
+          (* Told explicitly not to abstract over [d], but it is dependent *)
+          let id' = indirect_dependency d depdecls in
+          errorlabstrm "" (str "Cannot abstract over " ++ Nameops.pr_id id'
+            ++ str " without also abstracting or erasing " ++ Nameops.pr_id hyp
+            ++ str ".")
+        else
+          depdecls
     | Some ((AllOccurrences, InHyp) as occ) ->
         let newdecl = subst_closed_term_occ_decl_modulo occ test d in
-        if Context.eq_named_declaration d newdecl then
+        if Context.eq_named_declaration d newdecl
+           && not (indirectly_dependent c d depdecls)
+        then
           if check_occs && not (in_every_hyp occs)
           then raise (PretypeError (env,sigmac,NoOccurrenceFound (c,Some hyp)))
           else depdecls
@@ -1280,7 +1302,7 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
     or pattern at some occurrences; it returns:
     - the id used for the abstraction
     - the type of the abstraction
-    - the hypotheses from the context which depend on the term or pattern
+    - the declarations from the context which depend on the term or pattern
     - the most recent hyp before which there is no dependency in the term of pattern
     - the abstracted conclusion
     - an evar universe context effect to apply on the goal

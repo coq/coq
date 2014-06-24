@@ -575,6 +575,11 @@ let dependent_no_evar = dependent_main true false
 let dependent_univs = dependent_main false true
 let dependent_univs_no_evar = dependent_main true true
 
+let dependent_in_decl a (_,c,t) =
+  match c with
+    | None -> dependent a t
+    | Some body -> dependent a body || dependent a t
+
 let count_occurrences m t =
   let n = ref 0 in
   let rec countrec m t =
