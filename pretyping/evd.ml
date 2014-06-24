@@ -242,7 +242,8 @@ let make_evar_instance_array info args =
   | true :: filter, (id, _, _) :: ctxt ->
     if i < len then
       let c = Array.unsafe_get args i in
-      (id, c) :: instrec filter ctxt (succ i)
+      if isVarId id c then instrec filter ctxt (succ i)
+      else (id, c) :: instrec filter ctxt (succ i)
     else instance_mismatch ()
   | _ -> instance_mismatch ()
   in
