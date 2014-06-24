@@ -1,3 +1,6 @@
+Typeclasses eauto := debug.
+Set Printing All.
+
 Axiom SProp : Set.
 Axiom sp : SProp.
 
@@ -16,7 +19,6 @@ Class LogicOps F := { land: F -> F }.
 Instance : LogicOps SProp. Admitted.
 Instance : LogicOps Prop. Admitted.
 
-Set Printing All.
 Parameter (n : nat).
 (* If this is a [Definition], the resolution goes through fine. *)
 Notation vn := (@stateIs _ n).
@@ -26,3 +28,19 @@ Definition GOOD : SProp :=
 (* This doesn't resolve, if PropLogicOps is defined later than SPropLogicOps *)
 Fail Definition BAD : SProp :=
   @land _ _ vn.
+
+
+Class A T := { foo : T -> Prop }.
+Instance: A nat. Admitted.
+Instance: A Set. Admitted.
+
+Class B := { U : Type ; b : U }.
+Instance bi: B := {| U := nat ; b := 0 |}.
+
+Notation b0N := (@b _ : nat).
+Notation b0Ni := (@b bi : nat).
+Definition b0D := (@b _ : nat).
+Definition GOOD1 := (@foo _ _ b0D).
+Definition GOOD2 := (let x := b0N in @foo _ _ x).
+Definition GOOD3 := (@foo _ _ b0Ni).
+Fail Definition BAD1 := (@foo _ _ b0N). (* Error: The term "b0Ni" has type "nat" while it is expected to have type "Set". *)
