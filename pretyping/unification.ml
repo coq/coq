@@ -442,7 +442,7 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst) tyM tyN =
   | None -> sigma
   | Some n ->
     if is_ground_term sigma m && is_ground_term sigma n then
-      let sigma, b = infer_conv ~pb:pbty ~ts:flags.modulo_delta env sigma m n in
+      let sigma, b = infer_conv ~pb:pbty ~ts:flags.modulo_delta_types env sigma m n in
 	if b then sigma
 	else error_cannot_unify env sigma (m,n)
     else sigma
