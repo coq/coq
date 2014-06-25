@@ -882,7 +882,8 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       force_instantiation evd !evsref
   | [] ->
     let evd = 
-      try Evarsolve.check_evar_instance evd evk rhs (evar_conv_x ts)
+      try Evarsolve.check_evar_instance evd evk rhs 
+	    (evar_conv_x full_transparent_state)
       with IllTypedInstance _ -> raise (TypingFailed evd)
     in
       Evd.define evk rhs evd 
