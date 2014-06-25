@@ -53,7 +53,9 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 
 let try_find_global_reference dir s =
   let sp = Libnames.make_path (make_dir ("Coq"::dir)) (Id.of_string s) in
-    Nametab.global_of_path sp
+    try Nametab.global_of_path sp
+    with Not_found -> 
+      anomaly (str ("Global reference " ^ s ^ " not found in generalized rewriting"))
 
 let find_reference dir s =
   let gr = lazy (try_find_global_reference dir s) in
@@ -1527,7 +1529,6 @@ let cl_rewrite_clause_strat strat clause =
   tclTHEN (tactic_init_setoid ())
   (fun gl -> 
    let meta = Evarutil.new_meta() in
-     (*     let gl = { gl with sigma = Typeclasses.mark_unresolvables gl.sigma } in *)
      try cl_rewrite_clause_tac strat (mkMeta meta) clause gl
      with RewriteFailure e ->
        tclFAIL 0 (str"setoid rewrite failed: " ++ e) gl
@@ -1888,7 +1889,7 @@ let unification_rewrite flags l2r c1 c2 cl car rel but gl =
   and car = nf car and rel = nf rel in
   check_evar_map_of_evars_defs cl'.evd;
   let prf = nf (Clenv.clenv_value cl') and prfty = nf (Clenv.clenv_type cl') in
-  let sort = sort_of_rel env evd' (pf_concl gl) in
+  let sort = sort_of_rel env evd' but in
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty;
     evd = Evd.diff cl'.evd (project gl) } 
   in
@@ -1942,6 +1943,7 @@ let general_s_rewrite_clause x =
   match x with
     | None -> general_s_rewrite None
     | Some id -> general_s_rewrite (Some id)
+
 let general_s_rewrite_clause x y z w ~new_goals =
   newtactic_init_setoid () <*>
   Proofview.V82.tactic (general_s_rewrite_clause x y z w ~new_goals)
