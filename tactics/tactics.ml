@@ -1887,31 +1887,36 @@ let letin_tac_gen with_eq abs ty =
     let env = Proofview.Goal.env gl in
     let (id,depdecls,lastlhyp,ccl,(tac,c)) = make_abstraction abs gl in
     let t = match ty with Some t -> t | _ -> typ_of env (Proofview.Goal.sigma gl) c in
-    let (sigma,newcl,eq_tac) = match with_eq with
+    let eq_tac gl = match with_eq with
       | Some (lr,(loc,ido)) ->
           let heq = match ido with
             | IntroAnonymous -> new_fresh_id [id] (add_prefix "Heq" id) gl
 	    | IntroFresh heq_base -> new_fresh_id [id] heq_base gl
             | IntroIdentifier id -> id
 	    | _ -> Errors.error "Expect an introduction pattern naming one hypothesis." in
-            let eqdata = build_coq_eq_data () in
-            let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
-            let sigma, eq = Evd.fresh_global env (Proofview.Goal.sigma gl) eqdata.eq in
-            let sigma, refl = Evd.fresh_global env sigma eqdata.refl in
-            let eq = applist (eq,args) in
-            let refl = applist (refl, [t;mkVar id]) in
-              sigma,
-              mkNamedLetIn id c t (mkLetIn (Name heq, refl, eq, ccl)),
-              Tacticals.New.tclTHEN
-	        (intro_gen loc (IntroMustBe heq) lastlhyp true false)
-	        (Proofview.V82.tactic (thin_body [heq;id]))
+          let eqdata = build_coq_eq_data () in
+          let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
+          let sigma, eq = Evd.fresh_global env (Proofview.Goal.sigma gl) eqdata.eq in
+          let sigma, refl = Evd.fresh_global env sigma eqdata.refl in
+          let eq = applist (eq,args) in
+          let refl = applist (refl, [t;mkVar id]) in
+	  let term = mkNamedLetIn id c t (mkLetIn (Name heq, refl, eq, ccl)) in
+	  let sigma, _ = Typing.e_type_of env sigma term in
+            sigma, term,
+            Tacticals.New.tclTHEN
+	      (intro_gen loc (IntroMustBe heq) lastlhyp true false)
+	      (Proofview.V82.tactic (thin_body [heq;id]))
       | None ->
 	  (Proofview.Goal.sigma gl, mkNamedLetIn id c t ccl, Proofview.tclUNIT ()) in
-    Tacticals.New.tclTHENLIST
-      [ Proofview.V82.tclEVARS sigma; tac; Proofview.V82.tactic (convert_concl_no_check newcl DEFAULTcast);
-        intro_gen dloc (IntroMustBe id) lastlhyp true false;
-        Proofview.V82.tactic (tclMAP convert_hyp_no_check depdecls);
-        eq_tac ]
+    Proofview.tclBIND tac (fun () ->
+      Proofview.Goal.enter (fun gl -> 
+	let (sigma,newcl,eq_tac) = eq_tac gl in
+	  Tacticals.New.tclTHENLIST
+	    [ Proofview.V82.tclEVARS sigma; 
+	      Proofview.V82.tactic (convert_concl_no_check newcl DEFAULTcast);
+              intro_gen dloc (IntroMustBe id) lastlhyp true false;
+              Proofview.V82.tactic (tclMAP convert_hyp_no_check depdecls);
+              eq_tac ]))
   end
 
 let letin_tac with_eq name c ty occs =
