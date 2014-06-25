@@ -6,12 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** [Ide_slave] : an implementation of [Ide_intf], i.e. mainly an interp
-    function and a rewind function. This specialized loop is triggered
-    when the -ideslave option is passed to Coqtop. Currently CoqIDE is
-    the only one using this mode, but we try here to be as generic as
-    possible, so this may change in the future... *)
+let () = Coqtop.toploop_init := (fun args ->
+        Flags.make_silent true;
+        Stm.slave_init_stdout ();
+        args)
 
-val init_stdout : unit -> unit
+let () = Coqtop.toploop_run := Stm.slave_main_loop
 
-val loop : unit -> unit

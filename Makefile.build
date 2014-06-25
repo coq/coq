@@ -210,7 +210,7 @@ miniopt: $(COQTOPEXE) pluginsopt
 minibyte: $(COQTOPBYTE) pluginsbyte
 
 ifeq ($(BEST),opt)
-$(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
+$(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -thread -o $@
 	$(STRIP) $@
@@ -219,7 +219,7 @@ $(COQTOPEXE): $(COQTOPBYTE)
 	cp $< $@
 endif
 
-$(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN)
+$(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(TOPLOOPCMA)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -thread -o $@
 
@@ -301,8 +301,8 @@ IDEFILES=$(wildcard ide/coq*.lang) ide/coq_style.xml ide/coq.png ide/mac_default
 
 coqide-binaries: coqide-$(HASCOQIDE)
 coqide-no:
-coqide-byte: $(COQIDEBYTE) $(COQIDE)
-coqide-opt:  $(COQIDEBYTE) $(COQIDE)
+coqide-byte: $(COQIDEBYTE) $(COQIDE) $(IDETOPLOOPCMA)
+coqide-opt:  $(COQIDEBYTE) $(COQIDE) $(IDETOPLOOPCMA) $(IDETOPLOOPCMA:.cma=.cmxs)
 coqide-files: $(IDEFILES)
 
 ifeq ($(HASCOQIDE),opt)
@@ -334,6 +334,11 @@ endif
 install-ide-bin:
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQIDE) $(FULLBINDIR)
+	$(MKDIR) $(FULLCOQLIB)/toploop
+	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
+ifeq ($(BEST),opt)
+	$(INSTALLBIN) $(IDETOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
+endif
 
 install-ide-devfiles:
 	$(MKDIR) $(FULLCOQLIB)
@@ -618,6 +623,12 @@ install-coqlight: install-binaries install-library-light
 install-binaries: install-tools
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQC) $(COQTOPBYTE) $(COQTOPEXE) $(CHICKEN) $(FULLBINDIR)
+	$(MKDIR) $(FULLCOQLIB)/toploop
+	$(INSTALLBIN) $(TOPLOOPCMA) $(FULLCOQLIB)/toploop/
+ifeq ($(BEST),opt)
+	$(INSTALLBIN) $(TOPLOOPCMA:.cma=.cmxs) $(FULLCOQLIB)/toploop/
+endif
+
 
 install-tools:
 	$(MKDIR) $(FULLBINDIR)

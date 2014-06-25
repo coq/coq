@@ -14,3 +14,9 @@
 val init_toplevel : string list -> unit
 
 val start : unit -> unit
+
+
+(* For other toploops *)
+val toploop_init : (string list -> string list) ref
+val toploop_run : (unit -> unit) ref
+

@@ -211,7 +211,8 @@ let file_of_name name =
   let suffix = get_ml_object_suffix name in
   let fail s =
     errorlabstrm "Mltop.load_object"
-      (str"File not found on loadpath : " ++ str s) in
+      (str"File not found on loadpath : " ++ str s ++ str"\n" ++
+       str"Loadpath: " ++ str(String.concat ":" !coq_mlpath_copy)) in
   if is_native then
     let name = match suffix with
       | Some ((".cmo"|".cma") as suffix) ->
@@ -289,6 +290,8 @@ let load_ml_object mname fname=
   dir_ml_load fname;
   add_known_module mname;
   init_ml_object mname
+
+let load_ml_object_raw fname = dir_ml_load (file_of_name fname)
 
 (* Summary of declared ML Modules *)
 

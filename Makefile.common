@@ -72,7 +72,7 @@ PLUGINS:=\
 
 SRCDIRS:=\
   $(CORESRCDIRS)  \
-  tools 	tools/coqdoc	\
+  tools 	tools/coqdoc	idetop\
   $(addprefix plugins/, $(PLUGINS))
 
 IDESRCDIRS:=\
@@ -159,6 +159,8 @@ CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma \
 	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma tactics/hightactics.cma
 
+TOPLOOPCMA:=stm/stmworkertop.cma
+
 GRAMMARCMA:=tools/compat5.cmo grammar/grammar.cma
 
 OMEGACMA:=plugins/omega/omega_plugin.cma
@@ -212,6 +214,7 @@ LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
 
 IDEDEPS:=lib/clib.cma lib/xml_lexer.cmo lib/xml_parser.cmo lib/xml_printer.cmo lib/errors.cmo lib/spawn.cmo
 IDECMA:=ide/ide.cma
+IDETOPLOOPCMA=idetop/coqidetop.cma
 
 LINKIDE:=$(IDEDEPS) $(IDECMA) ide/coqide_main.ml
 LINKIDEOPT:=$(IDEOPTDEPS) $(patsubst %.cma,%.cmxa,$(IDEDEPS:.cmo=.cmx)) $(IDECMA:.cma=.cmxa) ide/coqide_main.ml

@@ -444,3 +444,10 @@ let loop () =
   done;
   pr_debug "Exiting gracefully.";
   exit 0
+
+let () = Coqtop.toploop_init := (fun args ->
+        Flags.make_silent true;
+        init_stdout ();
+        args)
+
+let () = Coqtop.toploop_run := loop

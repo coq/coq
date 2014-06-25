@@ -54,6 +54,7 @@ val add_rec_path : unix_path:string -> coq_root:Names.DirPath.t -> implicit:bool
 val add_known_module : string -> unit
 val module_is_known : string -> bool
 val load_ml_object : string -> string -> unit
+val load_ml_object_raw : string -> unit
 
 (** {5 Initialization functions} *)
 

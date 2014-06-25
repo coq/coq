@@ -38,6 +38,20 @@ let print_header () =
   ppnl (str ("Welcome to Coq "^ver^" ("^rev^")"));
   pp_flush ()
 
+let warning s = msg_warning (strbrk s)
+
+let toploop = ref None
+let toploop_init = ref (fun x -> x)
+let toploop_run = ref (fun () ->
+  if Dumpglob.dump () then begin
+    if_verbose warning "Dumpglob cannot be used in interactive mode.";
+    Dumpglob.noglob ()
+  end;
+  Coqloop.loop();
+  (* Initialise and launch the Ocaml toplevel *)
+  Coqinit.init_ocaml_path();
+  Mltop.ocaml_toploop())
+
 let output_context = ref false
 
 let memory_stat = ref false
@@ -201,8 +215,6 @@ let error_missing_arg s =
   prerr_endline "See --help for the syntax of supported options";
   exit 1
 
-let warning s = msg_warning (strbrk s)
-
 let filter_opts = ref false
 let exitcode () = if !filter_opts then 2 else 0
 
@@ -217,6 +229,7 @@ let get_async_proofs_mode opt next = function
   | "on" -> Flags.APonParallel 0
   | "worker" ->
       let n = int_of_string (next()) in assert (n > 0);
+      toploop := Some "stmworkertop";
       Flags.APonParallel n
   | "lazy" -> Flags.APonLazy
   | _ -> prerr_endline ("Error: on/off/lazy/worker expected after "^opt); exit 1
@@ -341,7 +354,7 @@ let parse_args arglist =
     |"-async-proofs-j" ->
         Flags.async_proofs_n_workers := (get_int opt (next ()))
     |"-async-proofs-worker-flags" ->
-        Flags.async_proofs_worker_flags := Some (next ())
+        Flags.async_proofs_worker_flags := Some (next ());
     |"-compat" -> Flags.compat_version := get_compat_version (next ())
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())
@@ -363,6 +376,7 @@ let parse_args arglist =
     |"-main-channel" -> Spawned.main_channel := get_host_port opt (next())
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
     |"-vi2vo" -> add_compile false (next ()); Flags.compilation_mode := Vi2Vo
+    |"-toploop" -> toploop := Some (next ())
 
     (* Options with zero arg *)
     |"-batch" -> set_batch_mode ()
@@ -377,7 +391,7 @@ let parse_args arglist =
     |"-h"|"-H"|"-?"|"-help"|"--help" -> usage ()
     |"--help-XML-protocol" ->
         Serialize.document Xml_printer.to_string_fmt; exit 0
-    |"-ideslave" -> Flags.ide_slave := true
+    |"-ideslave" -> toploop := Some "coqidetop"; Flags.ide_slave := true
     |"-impredicative-set" -> set_engagement Declarations.ImpredicativeSet
     |"-indices-matter" -> Indtypes.enforce_indices_matter ()
     |"-just-parsing" -> Vernac.just_parsing := true
@@ -436,27 +450,22 @@ let init arglist =
   begin
     try
       let extras = parse_args arglist in
-      if not (List.is_empty extras) && not !filter_opts then begin
-        prerr_endline ("Don't know what to do with " ^ String.concat " " extras);
-        prerr_endline "See --help for the list of supported options";
-        exit 1
-      end;
       (* If we have been spawned by the Spawn module, this has to be done
        * early since the master waits us to connect back *)
       Spawned.init_channels ();
       Envars.set_coqlib Errors.error;
-      if !print_where then (print_endline (Envars.coqlib ()); exit (exitcode ()));
+      if !print_where then (print_endline(Envars.coqlib ()); exit(exitcode ()));
       if !print_config then (Usage.print_config (); exit (exitcode ()));
       if !filter_opts then (print_string (String.concat "\n" extras); exit 0);
-      if !Flags.ide_slave then begin
-        Flags.make_silent true;
-        Ide_slave.init_stdout ()
-      end else if Flags.async_proofs_is_worker () then begin
-        Flags.make_silent true;
-        Stm.slave_init_stdout ()
+      init_load_path ();
+      Option.iter Mltop.load_ml_object_raw !toploop;
+      let extras = !toploop_init extras in
+      if not (List.is_empty extras) then begin
+        prerr_endline ("Don't know what to do with "^String.concat " " extras);
+        prerr_endline "See --help for the list of supported options";
+        exit 1
       end;
       if_verbose print_header ();
-      init_load_path ();
       inputstate ();
       Mltop.init_known_plugins ();
       set_vm_opt ();
@@ -500,18 +509,7 @@ let start () =
   let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in
   (* In batch mode, Coqtop has already exited at this point. In interactive one,
      dump glob is nothing but garbage ...  *)
-  if !Flags.ide_slave then
-    Ide_slave.loop ()
-  else if Flags.async_proofs_is_worker () then
-    Stm.slave_main_loop ()
-  else
-    let () = if Dumpglob.dump () then
-      let () = if_verbose warning "Dumpglob cannot be used in interactive mode." in
-      Dumpglob.noglob () in
-    Coqloop.loop();
-  (* Initialise and launch the Ocaml toplevel *)
-  Coqinit.init_ocaml_path();
-  Mltop.ocaml_toploop();
+  !toploop_run ();
   exit 1
 
 (* [Coqtop.start] will be called by the code produced by coqmktop *)
