@@ -82,7 +82,7 @@ open Unification
 
 let dft = default_unify_flags
 
-let res_pf clenv ?(with_evars=false) ?(flags=dft ()) =
+let res_pf ?(with_evars=false) ?(flags=dft ()) clenv =
   Proofview.Goal.raw_enter begin fun gl ->
     let clenv gl = clenv_unique_resolver ~flags clenv gl in
     clenv_refine with_evars (Tacmach.New.of_old clenv (Proofview.Goal.assume gl))
