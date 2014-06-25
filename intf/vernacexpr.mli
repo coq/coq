@@ -148,7 +148,7 @@ type obsolete_locality = bool
  * compatible.  If the grammar is fixed removing deprecated syntax, this
  * bool should go away too *)
 
-type option_value = Interface.option_value =
+type option_value = Goptions.option_value =
   | BoolValue of bool
   | IntValue of int option
   | StringValue of string

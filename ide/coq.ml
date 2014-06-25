@@ -177,7 +177,7 @@ type void = Void
     Reference: http://alan.petitepomme.net/cwn/2004.01.13.html
     To rewrite someday with GADT. *)
 
-type 'a poly_ccb = 'a Serialize.call * ('a Interface.value -> void)
+type 'a poly_ccb = 'a Xmlprotocol.call * ('a Interface.value -> void)
 type 't scoped_ccb = { bind_ccb : 'a. 'a poly_ccb -> 't }
 type ccb = { open_ccb : 't. 't scoped_ccb -> 't }
 
@@ -234,7 +234,7 @@ type coqtop = {
   (* called whenever coqtop dies *)
   mutable reset_handler : reset_kind -> unit task;
   (* called whenever coqtop sends a feedback message *)
-  mutable feedback_handler : Interface.feedback -> unit;
+  mutable feedback_handler : Feedback.feedback -> unit;
   (* actual coqtop process and its status *)
   mutable handle : handle;
   mutable status : status;
@@ -296,22 +296,22 @@ let rec check_errors = function
 | `OUT :: _ -> raise (TubeError "OUT")
 
 let handle_intermediate_message handle xml =
-  let message = Serialize.to_message xml in
-  let level = message.Interface.message_level in
-  let content = message.Interface.message_content in
+  let message = Pp.to_message xml in
+  let level = message.Pp.message_level in
+  let content = message.Pp.message_content in
   let logger = match handle.waiting_for with
     | Some (_, l) -> l 
     | None -> function
-        | Interface.Error -> Minilib.log ~level:`ERROR
-        | Interface.Info -> Minilib.log ~level:`INFO
-        | Interface.Notice -> Minilib.log ~level:`NOTICE
-        | Interface.Warning -> Minilib.log ~level:`WARNING
-        | Interface.Debug _ -> Minilib.log ~level:`DEBUG
+        | Pp.Error -> Minilib.log ~level:`ERROR
+        | Pp.Info -> Minilib.log ~level:`INFO
+        | Pp.Notice -> Minilib.log ~level:`NOTICE
+        | Pp.Warning -> Minilib.log ~level:`WARNING
+        | Pp.Debug _ -> Minilib.log ~level:`DEBUG
   in
   logger level content
 
 let handle_feedback feedback_processor xml =
-  let feedback = Serialize.to_feedback xml in
+  let feedback = Feedback.to_feedback xml in
   feedback_processor feedback
 
 let handle_final_answer handle xml =
@@ -320,7 +320,7 @@ let handle_final_answer handle xml =
     | None -> raise (AnswerWithoutRequest (Xml_printer.to_string_fmt xml))
     | Some (c, _) -> c in
   let () = handle.waiting_for <- None in
-  with_ccb ccb { bind_ccb = fun (c, f) -> f (Serialize.to_answer c xml) }
+  with_ccb ccb { bind_ccb = fun (c, f) -> f (Xmlprotocol.to_answer c xml) }
 
 type input_state = {
   mutable fragment : string;
@@ -340,10 +340,10 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
     let l_end = Lexing.lexeme_end lex in
     state.fragment <- String.sub s l_end (String.length s - l_end);
     state.lexerror <- None;
-    if Serialize.is_message xml then begin
+    if Pp.is_message xml then begin
       handle_intermediate_message handle xml;
       loop ()
-    end else if Serialize.is_feedback xml then begin
+    end else if Feedback.is_feedback xml then begin
       handle_feedback feedback_processor xml;
       loop ()
     end else begin
@@ -501,22 +501,22 @@ type 'a query = 'a Interface.value task
 
 let eval_call ?(logger=default_logger) call handle k =
   (** Send messages to coqtop and prepare the decoding of the answer *)
-  Minilib.log ("Start eval_call " ^ Serialize.pr_call call);
+  Minilib.log ("Start eval_call " ^ Xmlprotocol.pr_call call);
   assert (handle.alive && handle.waiting_for = None);
   handle.waiting_for <- Some (mk_ccb (call,k), logger);
-  Xml_printer.print handle.xml_oc (Serialize.of_call call);
+  Xml_printer.print handle.xml_oc (Xmlprotocol.of_call call);
   Minilib.log "End eval_call";
   Void
 
-let add ?(logger=default_logger) x = eval_call ~logger (Serialize.add x)
-let edit_at i = eval_call (Serialize.edit_at i)
-let query ?(logger=default_logger) x = eval_call ~logger (Serialize.query x)
-let mkcases s = eval_call (Serialize.mkcases s)
-let status ?logger force = eval_call ?logger (Serialize.status force)
-let hints x = eval_call (Serialize.hints x)
-let search flags = eval_call (Serialize.search flags)
-let init x = eval_call (Serialize.init x)
-let stop_worker x = eval_call (Serialize.stop_worker x)
+let add ?(logger=default_logger) x = eval_call ~logger (Xmlprotocol.add x)
+let edit_at i = eval_call (Xmlprotocol.edit_at i)
+let query ?(logger=default_logger) x = eval_call ~logger (Xmlprotocol.query x)
+let mkcases s = eval_call (Xmlprotocol.mkcases s)
+let status ?logger force = eval_call ?logger (Xmlprotocol.status force)
+let hints x = eval_call (Xmlprotocol.hints x)
+let search flags = eval_call (Xmlprotocol.search flags)
+let init x = eval_call (Xmlprotocol.init x)
+let stop_worker x = eval_call (Xmlprotocol.stop_worker x)
 
 module PrintOpt =
 struct
@@ -573,7 +573,7 @@ struct
     let mkopt o v acc = (o, Interface.BoolValue v) :: acc in
     let opts = Hashtbl.fold mkopt current_state [] in
     let opts = (width, Interface.IntValue !width_state) :: opts in
-    eval_call (Serialize.set_options opts) h
+    eval_call (Xmlprotocol.set_options opts) h
       (function
 	| Interface.Good () -> k ()
 	| _ -> failwith "Cannot set options. Resetting coqtop")
@@ -581,7 +581,7 @@ struct
 end
 
 let goals ?logger x h k =
-  PrintOpt.enforce h (fun () -> eval_call ?logger (Serialize.goals x) h k)
+  PrintOpt.enforce h (fun () -> eval_call ?logger (Xmlprotocol.goals x) h k)
 
 let evars x h k =
-  PrintOpt.enforce h (fun () -> eval_call (Serialize.evars x) h k)
+  PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.evars x) h k)

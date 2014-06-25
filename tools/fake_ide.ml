@@ -20,23 +20,23 @@ type coqtop = {
 let logger level content = prerr_endline content
 
 let base_eval_call ?(print=true) ?(fail=true) call coqtop =
-  if print then prerr_endline (Serialize.pr_call call);
-  let xml_query = Serialize.of_call call in
+  if print then prerr_endline (Xmlprotocol.pr_call call);
+  let xml_query = Xmlprotocol.of_call call in
   Xml_printer.print coqtop.xml_printer xml_query;
   let rec loop () =
     let xml = Xml_parser.parse coqtop.xml_parser in
-    if Serialize.is_message xml then
-      let message = Serialize.to_message xml in
-      let level = message.Interface.message_level in
-      let content = message.Interface.message_content in
+    if Pp.is_message xml then
+      let message = Pp.to_message xml in
+      let level = message.Pp.message_level in
+      let content = message.Pp.message_content in
       logger level content;
       loop ()
-    else if Serialize.is_feedback xml then
+    else if Feedback.is_feedback xml then
       loop ()
-    else (Serialize.to_answer call xml)
+    else (Xmlprotocol.to_answer call xml)
   in
   let res = loop () in
-  if print then prerr_endline (Serialize.pr_full_value call res);
+  if print then prerr_endline (Xmlprotocol.pr_full_value call res);
   match res with
   | Interface.Fail (_,_,s) when fail -> error s
   | Interface.Fail (_,_,s) as x -> prerr_endline s; x
@@ -224,7 +224,7 @@ module GUILogic = struct
         let to_id, need_unfocus =
           get_id_pred (fun id _ -> Stateid.equal id safe_id) in
         after_edit_at (to_id, need_unfocus)
-          (base_eval_call (Serialize.edit_at to_id) coq)
+          (base_eval_call (Xmlprotocol.edit_at to_id) coq)
     | Interface.Good _ -> error "The command was expected to fail but did not"
 
 end
@@ -233,7 +233,7 @@ open GUILogic
 
 let eval_print l coq =
   let open Parser in
-  let open Serialize in
+  let open Xmlprotocol in
   (* prerr_endline ("Interpreting: " ^ print_toklist l); *)
   match l with
   | [ Tok(_,"ADD"); Top []; Tok(_,phrase) ] ->
@@ -311,15 +311,15 @@ let main =
     Xml_parser.check_eof ip false;
     { xml_printer = op; xml_parser = ip } in
   let init () =
-    match base_eval_call ~print:false (Serialize.init None) coq with
+    match base_eval_call ~print:false (Xmlprotocol.init None) coq with
     | Interface.Good id ->
         let dir = Filename.dirname input_file in
         let phrase = Printf.sprintf "Add LoadPath \"%s\". " dir in
         let eid, tip = add_sentence ~name:"initial" phrase in
-        after_add (base_eval_call (Serialize.add ((phrase,eid),(tip,true))) coq)
+        after_add (base_eval_call (Xmlprotocol.add ((phrase,eid),(tip,true))) coq)
     | Interface.Fail _ -> error "init call failed" in
   let finish () =
-    match base_eval_call (Serialize.status true) coq with
+    match base_eval_call (Xmlprotocol.status true) coq with
     | Interface.Good _ -> exit 0
     | Interface.Fail (_,_,s) -> error s in
   (* The main loop *)

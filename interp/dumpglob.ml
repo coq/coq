@@ -131,7 +131,7 @@ let interval loc =
 
 let dump_ref loc filepath modpath ident ty =
   if !glob_output = Feedback then
-    Pp.feedback (Interface.GlobRef (loc, filepath, modpath, ident, ty))
+    Pp.feedback (Feedback.GlobRef (loc, filepath, modpath, ident, ty))
   else
     let bl,el = interval loc in
     dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
@@ -229,7 +229,7 @@ let dump_binding loc id = ()
 
 let dump_def ty loc secpath id =
   if !glob_output = Feedback then
-    Pp.feedback (Interface.GlobDef (loc, id, secpath, ty))
+    Pp.feedback (Feedback.GlobDef (loc, id, secpath, ty))
   else
     let bl,el = interval loc in
     dump_string (Printf.sprintf "%s %d:%d %s %s\n" ty bl el secpath id)

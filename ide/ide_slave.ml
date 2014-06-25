@@ -50,9 +50,9 @@ let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 let pr_debug s =
   if !Flags.debug then pr_with_pid s
 let pr_debug_call q =
-  if !Flags.debug then pr_with_pid ("<-- " ^ Serialize.pr_call q)
+  if !Flags.debug then pr_with_pid ("<-- " ^ Xmlprotocol.pr_call q)
 let pr_debug_answer q r =
-  if !Flags.debug then pr_with_pid ("--> " ^ Serialize.pr_full_value q r)
+  if !Flags.debug then pr_with_pid ("--> " ^ Xmlprotocol.pr_full_value q r)
 
 (** Categories of commands *)
 
@@ -277,7 +277,7 @@ let set_options options =
 
 let about () = {
   Interface.coqtop_version = Coq_config.version;
-  Interface.protocol_version = Serialize.protocol_version;
+  Interface.protocol_version = Xmlprotocol.protocol_version;
   Interface.release_date = Coq_config.date;
   Interface.compile_date = Coq_config.compile_date;
 }
@@ -365,7 +365,7 @@ let eval_call xml_oc log c =
     Interface.handle_exn = handle_exn;
     Interface.stop_worker = Stm.stop_worker;
   } in
-  Serialize.abstract_eval_call handler c
+  Xmlprotocol.abstract_eval_call handler c
 
 (** Message dispatching.
     Since coqtop -ideslave starts 1 thread per slave, and each
@@ -384,15 +384,15 @@ let slave_logger xml_oc level message =
   (* convert the message into XML *)
   let msg = string_of_ppcmds (hov 0 message) in
   let message = {
-    Interface.message_level = level;
-    Interface.message_content = msg;
+    Pp.message_level = level;
+    Pp.message_content = msg;
   } in
   let () = pr_debug (Printf.sprintf "-> %S" msg) in
-  let xml = Serialize.of_message message in
+  let xml = Pp.of_message message in
   print_xml xml_oc xml
 
 let slave_feeder xml_oc msg =
-  let xml = Serialize.of_feedback msg in
+  let xml = Feedback.of_feedback msg in
   print_xml xml_oc xml
 
 (** The main loop *)
@@ -421,12 +421,12 @@ let loop () =
     try
       let xml_query = Xml_parser.parse xml_ic in
 (*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
-      let q = Serialize.to_call xml_query in
+      let q = Xmlprotocol.to_call xml_query in
       let () = pr_debug_call q in
-      let r = eval_call xml_oc (slave_logger xml_oc Interface.Notice) q in
+      let r = eval_call xml_oc (slave_logger xml_oc Pp.Notice) q in
       let () = pr_debug_answer q r in
-(*       pr_with_pid (Xml_printer.to_string_fmt (Serialize.of_answer q r)); *)
-      print_xml xml_oc (Serialize.of_answer q r);
+(*       pr_with_pid (Xml_printer.to_string_fmt (Xmlprotocol.of_answer q r)); *)
+      print_xml xml_oc (Xmlprotocol.of_answer q r);
       flush out_ch
     with
       | Xml_parser.Error (Xml_parser.Empty, _) ->
@@ -445,7 +445,14 @@ let loop () =
   pr_debug "Exiting gracefully.";
   exit 0
 
+let rec parse = function
+  | "--help-XML-protocol" :: rest ->
+        Xmlprotocol.document Xml_printer.to_string_fmt; exit 0
+  | x :: rest -> x :: parse rest
+  | [] -> []
+
 let () = Coqtop.toploop_init := (fun args ->
+        let args = parse args in
         Flags.make_silent true;
         init_stdout ();
         args)

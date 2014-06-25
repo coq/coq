@@ -18,6 +18,8 @@ Loc
 Compat
 Flags
 Control
+Loc
+Serialize
 Pp
 Segmenttree
 Unicodetable

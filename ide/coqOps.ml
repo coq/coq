@@ -10,6 +10,7 @@ open Util
 open Coq
 open Ideutils
 open Interface
+open Feedback
 
 type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of string ]
 type mem_flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR ]
@@ -422,7 +423,7 @@ object(self)
       self#position_error_tag_at_iter start phrase loc;
       buffer#place_cursor ~where:stop;
       messages#clear;
-      messages#push Error msg;
+      messages#push Pp.Error msg;
       self#show_goals
     end else
       self#show_goals_aux ~move_insert:true ()
@@ -511,7 +512,7 @@ object(self)
             let handle_answer = function
               | Good (id, (Util.Inl (* NewTip *) (), msg)) ->
                   Doc.assign_tip_id document id;
-                  logger Notice msg;
+                  logger Pp.Notice msg;
                   self#commit_queue_transaction sentence;
                   loop id []
               | Good (id, (Util.Inr (* Unfocus *) tip, msg)) ->
@@ -519,7 +520,7 @@ object(self)
                   let topstack, _ = Doc.context document in
                   self#exit_focus;
                   self#cleanup (Doc.cut_at document tip);
-                  logger Notice msg;
+                  logger Pp.Notice msg;
                   self#mark_as_needed sentence;
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
@@ -538,7 +539,7 @@ object(self)
    let next = function
      | Good _ ->
          messages#clear;
-         messages#push Info "Doc checked";
+         messages#push Pp.Info "Doc checked";
          Coq.return ()
      | Fail x -> self#handle_failure x in
    Coq.bind (Coq.status ~logger:messages#push true) next
@@ -628,8 +629,8 @@ object(self)
           self#cleanup (Doc.cut_at document to_id);
           conclusion ()
       | Fail (safe_id, loc, msg) ->
-          if loc <> None then messages#push Error "Fixme LOC";
-          messages#push Error msg;
+          if loc <> None then messages#push Pp.Error "Fixme LOC";
+          messages#push Pp.Error msg;
           if Stateid.equal safe_id Stateid.dummy then self#show_goals
           else undo safe_id
                  (Doc.focused document && Doc.is_in_focus document safe_id))
@@ -647,7 +648,7 @@ object(self)
     ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
   =
     messages#clear;
-    messages#push Error msg;
+    messages#push Pp.Error msg;
     ignore(self#process_feedback ());
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
     else

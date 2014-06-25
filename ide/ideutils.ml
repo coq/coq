@@ -272,15 +272,15 @@ let textview_width (view : #GText.view_skel) =
   let char_width = GPango.to_pixels metrics#approx_char_width in
   pixel_width / char_width
 
-type logger = Interface.message_level -> string -> unit
+type logger = Pp.message_level -> string -> unit
 
 let default_logger level message =
   let level = match level with
-  | Interface.Debug _ -> `DEBUG
-  | Interface.Info -> `INFO
-  | Interface.Notice -> `NOTICE
-  | Interface.Warning -> `WARNING
-  | Interface.Error -> `ERROR
+  | Pp.Debug _ -> `DEBUG
+  | Pp.Info -> `INFO
+  | Pp.Notice -> `NOTICE
+  | Pp.Warning -> `WARNING
+  | Pp.Error -> `ERROR
   in
   Minilib.log ~level message
 

@@ -40,8 +40,27 @@ val search_rewrite : constr_pattern -> DirPath.t list * bool -> std_ppcmds
 val search_pattern : constr_pattern -> DirPath.t list * bool -> std_ppcmds
 val search_about   : (bool * glob_search_about_item) list ->
   DirPath.t list * bool -> std_ppcmds
-val interface_search : (Interface.search_constraint * bool) list ->
-  string Interface.coq_object list
+
+type search_constraint =
+  (** Whether the name satisfies a regexp (uses Ocaml Str syntax) *)
+  | Name_Pattern of string
+  (** Whether the object type satisfies a pattern *)
+  | Type_Pattern of string
+  (** Whether some subtype of object type satisfies a pattern *)
+  | SubType_Pattern of string
+  (** Whether the object pertains to a module *)
+  | In_Module of string list
+  (** Bypass the Search blacklist *)
+  | Include_Blacklist
+
+type 'a coq_object = {
+  coq_object_prefix : string list;
+  coq_object_qualid : string list;
+  coq_object_object : 'a;
+}
+
+val interface_search : (search_constraint * bool) list ->
+  string coq_object list
 
 (** {6 Generic search function} *)
 

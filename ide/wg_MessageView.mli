@@ -12,7 +12,7 @@ class type message_view =
     method clear : unit
     method add : string -> unit
     method set : string -> unit
-    method push : Interface.message_level -> string -> unit
+    method push : Pp.message_level -> string -> unit
       (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer
       (** for more advanced text edition *)

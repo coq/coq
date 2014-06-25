@@ -7,8 +7,8 @@
 (************************************************************************)
 
 open Vernacexpr
-open Interface
 open Names
+open Feedback
 
 (** state-transaction-machine interface *)
 

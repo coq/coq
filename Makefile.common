@@ -72,11 +72,10 @@ PLUGINS:=\
 
 SRCDIRS:=\
   $(CORESRCDIRS)  \
-  tools 	tools/coqdoc	idetop\
+  tools 	tools/coqdoc	\
   $(addprefix plugins/, $(PLUGINS))
 
-IDESRCDIRS:=\
-  config	lib	ide/utils	ide
+IDESRCDIRS:= $(CORESRCDIRS) ide ide/utils
 
 # Order is relevent here because kernel and checker contain files
 # with the same name
@@ -214,7 +213,7 @@ LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
 
 IDEDEPS:=lib/clib.cma lib/xml_lexer.cmo lib/xml_parser.cmo lib/xml_printer.cmo lib/errors.cmo lib/spawn.cmo
 IDECMA:=ide/ide.cma
-IDETOPLOOPCMA=idetop/coqidetop.cma
+IDETOPLOOPCMA=ide/coqidetop.cma
 
 LINKIDE:=$(IDEDEPS) $(IDECMA) ide/coqide_main.ml
 LINKIDEOPT:=$(IDEOPTDEPS) $(patsubst %.cma,%.cmxa,$(IDEDEPS:.cmo=.cmx)) $(IDECMA:.cma=.cmxa) ide/coqide_main.ml
@@ -227,7 +226,7 @@ IDEMOD:=$(shell cat ide/ide.mllib)
 
 # coqmktop, coqc
 
-COQENVCMO:=lib/clib.cma lib/loc.cmo lib/errors.cmo
+COQENVCMO:=lib/clib.cma lib/errors.cmo
 
 COQMKTOPCMO:=$(COQENVCMO) tools/tolink.cmo tools/coqmktop.cmo
 

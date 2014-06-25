@@ -15,9 +15,19 @@ open Libobject
 open Libnames
 open Mod_subst
 
-open Interface
+type option_name = string list
+type option_value =
+  | BoolValue   of bool
+  | IntValue    of int option
+  | StringValue of string
 
-type option_name = Interface.option_name
+(** Summary of an option status *)
+type option_state = {
+  opt_sync  : bool;
+  opt_depr  : bool;
+  opt_name  : string;
+  opt_value : option_value;
+}
 
 (****************************************************************************)
 (* 0- Common things                                                         *)
@@ -353,7 +363,6 @@ let print_option_value key =
 	msg_info (str ("The "^name^" mode is "^(if b then "on" else "off")))
     | _ ->
 	msg_info (str ("Current value of "^name^" is ") ++ msg_option_value (name, s))
-
 
 let get_tables () =
   let tables = !value_tab in

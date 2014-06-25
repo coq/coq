@@ -55,13 +55,13 @@ type hint = (string * string) list
 
 type option_name = string list
 
-type option_value =
+type option_value = Goptions.option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
 
 (** Summary of an option status *)
-type option_state = {
+type option_state = Goptions.option_state = {
   opt_sync  : bool;
   (** Whether an option is synchronous *)
   opt_depr  : bool;
@@ -72,7 +72,7 @@ type option_state = {
   (** The current value of the option *)
 }
 
-type search_constraint =
+type search_constraint = Search.search_constraint =
 (** Whether the name satisfies a regexp (uses Ocaml Str syntax) *)
 | Name_Pattern of string
 (** Whether the object type satisfies a pattern *)
@@ -92,7 +92,7 @@ type search_flags = (search_constraint * bool) list
     the user. [coq_object_prefix] is the missing part to recover the fully
     qualified name, i.e [fully_qualified = coq_object_prefix + coq_object_qualid].
     [coq_object_object] is the actual content of the object. *)
-type 'a coq_object = {
+type 'a coq_object = 'a Search.coq_object = {
   coq_object_prefix : string list;
   coq_object_qualid : string list;
   coq_object_object : 'a;
@@ -105,45 +105,11 @@ type coq_info = {
   compile_date : string;
 }
 
-(** Coq unstructured messages *)
-
-type message_level =
-  | Debug of string
-  | Info
-  | Notice
-  | Warning
-  | Error
-
-type message = {
-  message_level : message_level;
-  message_content : string;
-}
-
-(** Coq "semantic" infos obtained during parsing/execution *)
-type edit_id = int
-type state_id = Stateid.t
-type edit_or_state_id = Edit of edit_id | State of state_id
-
-type feedback_content =
-  | AddedAxiom
-  | Processed
-  | Incomplete
-  | Complete
-  | GlobRef of Loc.t * string * string * string * string
-  | GlobDef of Loc.t * string * string * string
-  | ErrorMsg of Loc.t * string
-  | InProgress of int
-  | SlaveStatus of int * string
-  | ProcessingInMaster
-
-type feedback = {
-  id : edit_or_state_id;
-  content : feedback_content;
-}
-
 (** Calls result *)
 
 type location = (int * int) option (* start and end of the error *)
+type state_id = Feedback.state_id
+type edit_id = Feedback.edit_id
 
 (* The fail case carries the current state_id of the prover, the GUI
    should probably retract to that point *)

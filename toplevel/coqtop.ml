@@ -389,8 +389,6 @@ let parse_args arglist =
     |"-emacs" -> set_emacs ()
     |"-filteropts" -> filter_opts := true
     |"-h"|"-H"|"-?"|"-help"|"--help" -> usage ()
-    |"--help-XML-protocol" ->
-        Serialize.document Xml_printer.to_string_fmt; exit 0
     |"-ideslave" -> toploop := Some "coqidetop"; Flags.ide_slave := true
     |"-impredicative-set" -> set_engagement Declarations.ImpredicativeSet
     |"-indices-matter" -> Indtypes.enforce_indices_matter ()

@@ -51,7 +51,7 @@ let vernac_interp ?proof id { verbose; loc; expr } =
   if internal_command expr then begin
     prerr_endline ("ignoring " ^ string_of_ppcmds(pr_vernac expr))
   end else begin
-    Pp.set_id_for_feedback (Interface.State id);
+    Pp.set_id_for_feedback (Feedback.State id);
     Aux_file.record_in_aux_set_at loc;
     prerr_endline ("interpreting " ^ string_of_ppcmds(pr_vernac expr));
     let interp = Hook.get f_interp in
@@ -63,7 +63,7 @@ let vernac_interp ?proof id { verbose; loc; expr } =
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
 let vernac_parse eid s =
-  set_id_for_feedback (Interface.Edit eid);
+  set_id_for_feedback (Feedback.Edit eid);
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   Flags.with_option Flags.we_are_parsing (fun () ->
     match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
@@ -570,7 +570,7 @@ end = struct
     | None ->
         let loc = Option.default Loc.ghost (Loc.get_loc e) in
         let msg = string_of_ppcmds (print e) in
-        Pp.feedback ~state_id:id (Interface.ErrorMsg (loc, msg));
+        Pp.feedback ~state_id:id (Feedback.ErrorMsg (loc, msg));
         Stateid.add (Hook.get f_process_error e) ?valid id
 
   let define ?(redefine=false) ?(cache=`No) f id =
@@ -585,7 +585,7 @@ end = struct
       else if cache = `Shallow then freeze `Shallow id;
       prerr_endline ("setting cur id to "^str_id);
       cur_id := id;
-      feedback ~state_id:id Interface.Processed;
+      feedback ~state_id:id Feedback.Processed;
       VCS.reached id true;
       if Proof_global.there_are_pending_proofs () then
         VCS.goals id (Proof_global.get_open_goals ());
@@ -687,7 +687,7 @@ end = struct
     | RespError of (* err, safe, msg, safe_states *)
         Stateid.t * Stateid.t * std_ppcmds *
           (Stateid.t * State.frozen_state) list
-    | RespFeedback of Interface.feedback
+    | RespFeedback of Feedback.feedback
     | RespGetCounterNewUnivLevel
 
   type more_data =
@@ -825,8 +825,6 @@ end = struct
         with Not_found -> 0.0 in
       s,max (time1 +. time2) 0.0001,i) 0 l
 
-  open Interface
-
   exception MarshalError of string
 
   let marshal_to_channel oc data =
@@ -900,7 +898,7 @@ end = struct
     else 
       let f, assign = Future.create_delegate (State.exn_on id ~valid) in
       let uuid = Future.uuid f in
-      Pp.feedback (Interface.InProgress 1);
+      Pp.feedback (Feedback.InProgress 1);
       TQueue.push queue (TaskBuildProof
         (exn_info,start,stop,assign,cancel_switch,loc,uuid,name));
       f, cancel_switch
@@ -920,7 +918,7 @@ end = struct
           match !Flags.async_proofs_mode with
           | Flags.APonParallel n -> n
           | _ -> assert false in
-    Pp.feedback ~state_id:Stateid.initial (Interface.SlaveStatus(id, s))
+    Pp.feedback ~state_id:Stateid.initial (Feedback.SlaveStatus(id, s))
 
   let rec manage_slave ~cancel:cancel_user_req id_slave respawn =
     let ic, oc, proc =
@@ -962,7 +960,7 @@ end = struct
               RespBuiltProof(pl, time)->
                 assign (`Val pl);
                 (* We restart the slave, to avoid memory leaks.  We could just
-                   Pp.feedback (Interface.InProgress ~-1) *)
+                   Pp.feedback (Feedback.InProgress ~-1) *)
                 record_pb_time s loc time;
                 last_task := None;
                 raise KillRespawn
@@ -972,7 +970,7 @@ end = struct
                 assign (`Exn e);
                 List.iter (fun (id,s) -> State.assign id s) valid_states;
                 (* We restart the slave, to avoid memory leaks.  We could just
-                   Pp.feedback (Interface.InProgress ~-1) *)
+                   Pp.feedback (Feedback.InProgress ~-1) *)
                 last_task := None;
                 raise KillRespawn
                 (* marshal_more_data oc (MoreDataLocalUniv *)
@@ -982,7 +980,7 @@ end = struct
                 marshal_more_data oc (MoreDataUnivLevel
                   (CList.init 10 (fun _ -> Universes.new_univ_level (Global.current_dirpath ()))));
                 loop ()
-            | _, RespFeedback {id = State state_id; content = msg} ->
+            | _, RespFeedback {Feedback.id = Feedback.State state_id; content = msg} ->
                 Pp.feedback ~state_id msg;
                 loop ()
             | _, RespFeedback _ -> assert false (* Parsing in master process *)
@@ -990,7 +988,7 @@ end = struct
             loop ()
         with
         | VCS.Expired -> (* task cancelled: e.g. the user did backtrack *)
-            Pp.feedback (Interface.InProgress ~-1);
+            Pp.feedback (Feedback.InProgress ~-1);
             prerr_endline ("Task expired: " ^ pr_task task)
         | (Sys_error _ | Invalid_argument _ | End_of_file | KillRespawn) as e ->
             raise e (* we pass the exception to the external handler *)
@@ -1000,7 +998,7 @@ end = struct
               "Falling back to local, lazy, evaluation."));
             let TaskBuildProof (exn_info, _, stop, assign,_,loc,_,_) = task in
             assign(`Comp(build_proof_here exn_info loc stop));
-            Pp.feedback (Interface.InProgress ~-1)
+            Pp.feedback (Feedback.InProgress ~-1)
         | MarshalError s ->
             pr_err ("Fatal marshal error: " ^ s);
             flush_all (); exit 1
@@ -1011,11 +1009,11 @@ end = struct
       done
     with
     | KillRespawn ->
-        Pp.feedback (Interface.InProgress ~-1);
+        Pp.feedback (Feedback.InProgress ~-1);
         Worker.kill proc; ignore(Worker.wait proc);
         manage_slave ~cancel:cancel_user_req id_slave respawn
     | Sys_error _ | Invalid_argument _ | End_of_file when !task_expired ->
-        Pp.feedback (Interface.InProgress ~-1);
+        Pp.feedback (Feedback.InProgress ~-1);
         ignore(Worker.wait proc);
         manage_slave ~cancel:cancel_user_req id_slave respawn
     | Sys_error _ | Invalid_argument _ | End_of_file when !task_cancelled ->
@@ -1025,8 +1023,8 @@ end = struct
           let s = "Worker cancelled by the user" in
           let e = Stateid.add ~valid:start (RemoteException (strbrk s)) start in
           assign (`Exn e);
-          Pp.feedback ~state_id:start (Interface.ErrorMsg (Loc.ghost, s));
-          Pp.feedback (Interface.InProgress ~-1);
+          Pp.feedback ~state_id:start (Feedback.ErrorMsg (Loc.ghost, s));
+          Pp.feedback (Feedback.InProgress ~-1);
         ) !last_task;
         Worker.kill proc; ignore(Worker.wait proc);
         manage_slave ~cancel:cancel_user_req id_slave respawn
@@ -1037,7 +1035,7 @@ end = struct
           msg_warning(strbrk "Falling back to local, lazy, evaluation.");
           let TaskBuildProof (exn_info, _, stop, assign,_,loc,_,_) = task in
           assign(`Comp(build_proof_here exn_info loc stop));
-          Pp.feedback (Interface.InProgress ~-1);
+          Pp.feedback (Feedback.InProgress ~-1);
         ) !last_task;
         Worker.kill proc; ignore(Worker.wait proc);
         manage_slave ~cancel:cancel_user_req id_slave respawn
@@ -1252,7 +1250,7 @@ let known_state ?(redefine_qed=false) ~cache id =
     prerr_endline ("reaching: " ^ Stateid.to_string id);
     if not redefine_qed && State.is_cached id then begin
       State.install_cached id;
-      feedback ~state_id:id Interface.Processed;
+      feedback ~state_id:id Feedback.Processed;
       prerr_endline ("reached (cache)")
     end else
     let step, cache_step =
@@ -1292,7 +1290,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                       Proof_global.close_future_proof ~feedback_id:id fp in
                     reach view.next;
                     vernac_interp id ~proof x;
-                    feedback ~state_id:id Interface.Incomplete
+                    feedback ~state_id:id Feedback.Incomplete
                 | VtDrop, _, _ ->
                     reach view.next;
                     Option.iter (vernac_interp start) proof_using_ast;
@@ -1347,7 +1345,7 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), cache
     in
     if !Flags.async_proofs_mode = Flags.APonParallel 0 then
-      Pp.feedback ~state_id:id Interface.ProcessingInMaster;
+      Pp.feedback ~state_id:id Feedback.ProcessingInMaster;
     State.define ~cache:cache_step ~redefine:redefine_qed step id;
     prerr_endline ("reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id

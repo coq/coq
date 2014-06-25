@@ -217,26 +217,39 @@ let search_about items mods =
   let () = generic_search iter in
   format_display !ans
 
+type search_constraint =
+  | Name_Pattern of string
+  | Type_Pattern of string
+  | SubType_Pattern of string
+  | In_Module of string list
+  | Include_Blacklist
+
+type 'a coq_object = {
+  coq_object_prefix : string list;
+  coq_object_qualid : string list;
+  coq_object_object : 'a;
+}
+
 let interface_search flags =
   let env = Global.env () in
   let rec extract_flags name tpe subtpe mods blacklist = function
   | [] -> (name, tpe, subtpe, mods, blacklist)
-  | (Interface.Name_Pattern s, b) :: l ->
+  | (Name_Pattern s, b) :: l ->
     let regexp =
       try Str.regexp s
       with e when Errors.noncritical e ->
         Errors.error ("Invalid regexp: " ^ s)
     in
     extract_flags ((regexp, b) :: name) tpe subtpe mods blacklist l
-  | (Interface.Type_Pattern s, b) :: l ->
+  | (Type_Pattern s, b) :: l ->
     let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
     let (_, pat) = Constrintern.intern_constr_pattern env constr in
     extract_flags name ((pat, b) :: tpe) subtpe mods blacklist l
-  | (Interface.SubType_Pattern s, b) :: l ->
+  | (SubType_Pattern s, b) :: l ->
     let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
     let (_, pat) = Constrintern.intern_constr_pattern env constr in
     extract_flags name tpe ((pat, b) :: subtpe) mods blacklist l
-  | (Interface.In_Module m, b) :: l ->
+  | (In_Module m, b) :: l ->
     let path = String.concat "." m in
     let m = Pcoq.parse_string Pcoq.Constr.global path in
     let (_, qid) = Libnames.qualid_of_reference m in
@@ -246,7 +259,7 @@ let interface_search flags =
         Errors.error ("Module " ^ path ^ " not found.")
     in
     extract_flags name tpe subtpe ((id, b) :: mods) blacklist l
-  | (Interface.Include_Blacklist, b) :: l ->
+  | (Include_Blacklist, b) :: l ->
     extract_flags name tpe subtpe mods b l
   in
   let (name, tpe, subtpe, mods, blacklist) =
@@ -295,9 +308,9 @@ let interface_search flags =
     in
     let (prefix, qualid) = prefix fullpath shortpath [Id.to_string basename] in
     let answer = {
-      Interface.coq_object_prefix = prefix;
-      Interface.coq_object_qualid = qualid;
-      Interface.coq_object_object = string_of_ppcmds (pr_lconstr_env env constr);
+      coq_object_prefix = prefix;
+      coq_object_qualid = qualid;
+      coq_object_object = string_of_ppcmds (pr_lconstr_env env constr);
     } in
     ans := answer :: !ans;
   in

@@ -78,8 +78,19 @@ val close : unit -> std_ppcmds
 val tclose : unit -> std_ppcmds
 
 (** {6 Sending messages to the user} *)
+type message_level =
+  | Debug of string
+  | Info
+  | Notice
+  | Warning
+  | Error
 
-type logger = Interface.message_level -> std_ppcmds -> unit
+type message = {
+  message_level : message_level;
+  message_content : string;
+}
+
+type logger = message_level -> std_ppcmds -> unit
 
 val msg_info : std_ppcmds -> unit
 (** Message that displays information, usually in verbose mode, such as [Foobar
@@ -104,6 +115,11 @@ val std_logger : logger
 
 val set_logger : logger -> unit
 
+val of_message : message -> Xml_datatype.xml
+val to_message : Xml_datatype.xml -> message
+val is_message : Xml_datatype.xml -> bool
+
+
 (** {6 Feedback sent, even asynchronously, to the user interface} *)
 
 (* This stuff should be available to most of the system, line msg_* above.
@@ -116,10 +132,10 @@ val set_logger : logger -> unit
  * since the two phases are performed sequentially) *)
 
 val feedback :
-  ?state_id:Interface.state_id -> Interface.feedback_content -> unit
+  ?state_id:Feedback.state_id -> Feedback.feedback_content -> unit
 
-val set_id_for_feedback : Interface.edit_or_state_id -> unit
-val set_feeder : (Interface.feedback -> unit) -> unit
+val set_id_for_feedback : Feedback.edit_or_state_id -> unit
+val set_feeder : (Feedback.feedback -> unit) -> unit
 
 (** {6 Utilities} *)
 

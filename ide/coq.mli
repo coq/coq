@@ -63,7 +63,7 @@ val spawn_coqtop : string list -> coqtop
 val set_reset_handler : coqtop -> (reset_kind -> unit task) -> unit
 (** Register a handler called when a coqtop dies (badly or on purpose) *)
 
-val set_feedback_handler : coqtop -> (Interface.feedback -> unit) -> unit
+val set_feedback_handler : coqtop -> (Feedback.feedback -> unit) -> unit
 (** Register a handler called when coqtop sends a feedback message *)
 
 val init_coqtop : coqtop -> unit task -> unit

@@ -47,7 +47,7 @@ open Pp
 open Libnames
 open Mod_subst
 
-type option_name = Interface.option_name
+type option_name = string list
 
 (** {6 Tables. } *)
 
@@ -161,7 +161,20 @@ val set_string_option_value : option_name -> string -> unit
 
 val print_option_value : option_name -> unit
 
-val get_tables : unit -> Interface.option_state OptionMap.t
+type option_value =
+  | BoolValue   of bool
+  | IntValue    of int option
+  | StringValue of string
+
+(** Summary of an option status *)
+type option_state = {
+  opt_sync  : bool;
+  opt_depr  : bool;
+  opt_name  : string;
+  opt_value : option_value;
+}
+
+val get_tables : unit -> option_state OptionMap.t
 val print_tables : unit -> std_ppcmds
 
 val error_undeclared_key : option_name -> 'a

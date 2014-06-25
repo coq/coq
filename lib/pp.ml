@@ -345,14 +345,49 @@ let msgerrnl x = msgnl_with !err_ft x
 
 (* Logging management *)
 
-type level = Interface.message_level =
-| Debug of string
-| Info
-| Notice
-| Warning
-| Error
+type message_level =
+  | Debug of string
+  | Info
+  | Notice
+  | Warning
+  | Error
 
-type logger = level -> std_ppcmds -> unit
+type message = {
+  message_level : message_level;
+  message_content : string;
+}
+
+let of_message_level = function
+  | Debug s ->
+      Serialize.constructor "message_level" "debug" [Xml_datatype.PCData s]
+  | Info -> Serialize.constructor "message_level" "info" []
+  | Notice -> Serialize.constructor "message_level" "notice" []
+  | Warning -> Serialize.constructor "message_level" "warning" []
+  | Error -> Serialize.constructor "message_level" "error" []
+let to_message_level =
+  Serialize.do_match "message_level" (fun s args -> match s with
+  | "debug" -> Debug (Serialize.raw_string args)
+  | "info" -> Info
+  | "notice" -> Notice
+  | "warning" -> Warning
+  | "error" -> Error
+  | _ -> raise Serialize.Marshal_error)
+
+let of_message msg =
+  let lvl = of_message_level msg.message_level in
+  let content = Serialize.of_string msg.message_content in
+  Xml_datatype.Element ("message", [], [lvl; content])
+let to_message xml = match xml with
+  | Xml_datatype.Element ("message", [], [lvl; content]) -> {
+      message_level = to_message_level lvl;
+      message_content = Serialize.to_string content }
+  | _ -> raise Serialize.Marshal_error
+
+let is_message = function
+  | Xml_datatype.Element ("message", _, _) -> true
+  | _ -> false
+
+type logger = message_level -> std_ppcmds -> unit
 
 let print_color s x = x
 (* FIXME *)
@@ -387,14 +422,14 @@ let set_logger l = logger := l
 (** Feedback *)
 
 let feeder = ref ignore
-let feedback_id = ref (Interface.Edit 0)
+let feedback_id = ref (Feedback.Edit 0)
 let set_id_for_feedback i = feedback_id := i
 let feedback ?state_id what =
   !feeder {
-     Interface.content = what;
-     Interface.id =
+     Feedback.content = what;
+     Feedback.id =
        match state_id with
-       | Some id -> Interface.State id
+       | Some id -> Feedback.State id
        | None -> !feedback_id;
   }
 let set_feeder f = feeder := f

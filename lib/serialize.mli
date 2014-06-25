@@ -6,61 +6,32 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** * Applicative part of the interface of CoqIde calls to Coq *)
-
-open Interface
 open Xml_datatype
-
-type 'a call
-
-type unknown
-
-val add         : add_sty         -> add_rty call
-val edit_at     : edit_at_sty     -> edit_at_rty call
-val query       : query_sty       -> query_rty call
-val goals       : goals_sty       -> goals_rty call
-val hints       : hints_sty       -> hints_rty call
-val status      : status_sty      -> status_rty call
-val mkcases     : mkcases_sty     -> mkcases_rty call
-val evars       : evars_sty       -> evars_rty call
-val search      : search_sty      -> search_rty call
-val get_options : get_options_sty -> get_options_rty call
-val set_options : set_options_sty -> set_options_rty call
-val quit        : quit_sty        -> quit_rty call
-val init        : init_sty        -> init_rty call
-val stop_worker : stop_worker_sty -> stop_worker_rty call
-(* retrocompatibility *)
-val interp      : interp_sty      -> interp_rty call
-
-val abstract_eval_call : handler -> 'a call -> 'a value
-
-(** * Protocol version *)
-
-val protocol_version : string
-
-(** * XML data marshalling *)
 
 exception Marshal_error
 
-val of_call : 'a call -> xml
-val to_call : xml -> unknown call
-
-val of_message : message -> xml
-val to_message : xml -> message
-val is_message : xml -> bool
-
-val of_feedback : feedback -> xml
-val to_feedback : xml -> feedback
-val is_feedback : xml -> bool
-
-val of_answer : 'a call -> 'a value -> xml
-val to_answer : 'a call -> xml -> 'a value
-
-(* Prints the documentation of this module *)
-val document : (xml -> string) -> unit
-
-(** * Debug printing *)
-
-val pr_call : 'a call -> string
-val pr_value : 'a value -> string
-val pr_full_value : 'a call -> 'a value -> string
+val massoc: string -> (string * string) list -> string
+val constructor: string -> string -> xml list -> xml
+val do_match: string -> (string -> xml list -> 'b) -> xml -> 'b
+val singleton: 'a list -> 'a
+val raw_string: xml list -> string
+val of_unit: unit -> xml
+val to_unit: xml -> unit
+val of_bool: bool -> xml
+val to_bool: xml -> bool
+val of_list: ('a -> xml) -> 'a list -> xml
+val to_list: (xml -> 'a) -> xml -> 'a list
+val of_option: ('a -> xml) -> 'a option -> xml
+val to_option: (xml -> 'a) -> xml -> 'a option
+val of_string: string -> xml
+val to_string: xml -> string
+val of_int: int -> xml
+val to_int: xml -> int
+val of_pair: ('a -> xml) -> ('b -> xml) -> 'a * 'b -> xml
+val to_pair: (xml -> 'a) -> (xml -> 'b) -> xml -> 'a * 'b
+val of_union: ('a -> xml) -> ('b -> xml) -> ('a, 'b) CSig.union -> xml
+val to_union: (xml -> 'a) -> (xml -> 'b) -> xml -> ('a, 'b) CSig.union
+val of_edit_id: int -> xml
+val to_edit_id: xml -> int
+val of_loc : Loc.t -> xml
+val to_loc : xml -> Loc.t
