@@ -1227,8 +1227,11 @@ let exact_check c =
   Proofview.Goal.raw_enter begin fun gl ->
   (** We do not need to normalize the goal because we just check convertibility *)
   let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
-  let ct = Tacmach.New.pf_type_of gl c in
-  Tacticals.New.tclTHEN (convert_leq ct concl) (new_exact_no_check c)
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let sigma, ct = Typing.e_type_of env sigma c in
+    Proofview.V82.tclEVARS sigma <*>
+      Tacticals.New.tclTHEN (convert_leq ct concl) (new_exact_no_check c)
   end
 
 let exact_no_check = refine_no_check
