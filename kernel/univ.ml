@@ -223,7 +223,7 @@ module HList = struct
   let rec mem e l =
     match l.Hcons.node with
     | Nil -> false
-    | Cons (x, ll) -> x == e || mem e ll
+    | Cons (x, ll) -> H.equal x e || mem e ll
 
   let rec compare cmp l1 l2 =
     if l1 == l2 then 0 

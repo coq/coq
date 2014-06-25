@@ -480,14 +480,16 @@ let rec instantiate_universes env evdref scl is = function
       d :: instantiate_universes env evdref scl is (sign, exp)
   | (na,None,ty)::sign, Some u::exp ->
       let ctx,_ = Reduction.dest_arity env ty in
+      let u = Univ.Universe.make u in
       let s =
 	(* Does the sort of parameter [u] appear in (or equal)
            the sort of inductive [is] ? *)
-        if univ_depends (Univ.Universe.make u) is then
+        if univ_depends u is then
           scl (* constrained sort: replace by scl *)
         else
-          (* unconstriained sort: replace by fresh universe *)
+          (* unconstrained sort: replace by fresh universe *)
           let evm, s = Evd.new_sort_variable Evd.univ_flexible !evdref in
+	  let evm = Evd.set_leq_sort evm s (Sorts.sort_of_univ u) in
 	    evdref := evm; s
       in
       (na,None,mkArity(ctx,s)):: instantiate_universes env evdref scl is (sign, exp)
