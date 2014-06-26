@@ -1,5 +1,3 @@
-Unset Typeclass Resolution For Conversion.
-
 Typeclasses eauto := debug.
 Set Printing All.
 
