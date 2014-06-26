@@ -42,6 +42,13 @@ let push { queue = q; lock = m; cond = c } x =
   Condition.signal c;
   Mutex.unlock m
 
+let clear { queue = q; lock = m; cond = c } =
+  Mutex.lock m;
+  Queue.clear q;
+  Mutex.unlock m
+
+let is_empty { queue = q } = Queue.is_empty q
+
 let wait_until_n_are_waiting_and_queue_empty j tq =
   Mutex.lock tq.lock;
   while not (Queue.is_empty tq.queue) || tq.nwaiting < j do

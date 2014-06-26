@@ -18,4 +18,7 @@ val prepare_in_channel_for_thread_friendly_io : in_channel -> unit
 val thread_friendly_input_value : in_channel -> 'a
 val thread_friendly_read :
   in_channel -> string -> off:int -> len:int -> int
+val thread_friendly_really_read :
+  in_channel -> string -> off:int -> len:int -> unit
+val thread_friendly_really_read_line : in_channel -> string
 

@@ -34,6 +34,25 @@ let really_read_fd fd s off len =
     i := !i + r
   done
 
+let thread_friendly_really_read ic s ~off ~len =
+  try
+    let fd = Unix.descr_of_in_channel ic in
+    really_read_fd fd s off len
+  with Unix.Unix_error _ -> raise End_of_file
+
+let thread_friendly_really_read_line ic =
+  try
+    let fd = Unix.descr_of_in_channel ic in
+    let b = Buffer.create 1024 in
+    let s = String.make 1 '\000' in
+    while s <> "\n" do
+      let n = thread_friendly_read_fd fd s ~off:0 ~len:1 in
+      if n = 0 then raise End_of_file;
+      if s <> "\n" then Buffer.add_string b s;
+    done;
+    Buffer.contents b
+  with Unix.Unix_error _ -> raise End_of_file
+
 let thread_friendly_input_value ic =
   try
     let fd = Unix.descr_of_in_channel ic in
