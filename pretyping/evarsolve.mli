@@ -31,11 +31,11 @@ type conv_fun =
 type conv_fun_bool =
   env ->  evar_map -> conv_pb -> constr -> constr -> bool
 
-val evar_define : conv_fun -> ?choose:bool -> ?dir:bool -> env -> evar_map -> 
+val evar_define : conv_fun -> ?choose:bool -> env -> evar_map -> 
   bool option -> existential -> constr -> evar_map
 
 val refresh_universes : ?onlyalg:bool (* Only algebraic universes *) ->
-  bool (* direction: true for levels lower than the existing levels *) ->
+  bool option (* direction: true for levels lower than the existing levels *) ->
   env -> evar_map -> types -> evar_map * types
 
 val solve_refl : ?can_drop:bool -> conv_fun_bool -> env ->  evar_map ->

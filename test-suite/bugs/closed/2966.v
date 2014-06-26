@@ -7,7 +7,7 @@ Set Asymmetric Patterns.
 Module MemSig.
   Definition t: Type := list Type.
   
-  Definition Nth (sig: t) (n: nat): Type :=
+  Definition Nth (sig: t) (n: nat) :=
     nth n sig unit.
 End MemSig.
 

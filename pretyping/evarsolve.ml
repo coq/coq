@@ -42,7 +42,12 @@ let get_polymorphic_positions f =
         templ.template_param_levels)
   | _ -> assert false
 
-let refresh_universes ?(onlyalg=false) dir env evd t =
+(**
+   forall A (l : list A) -> typeof A = Type i <= Datatypes.j -> i not refreshed
+   hd ?A (l : list t) -> A = t
+
+*)
+let refresh_universes ?(onlyalg=false) pbty env evd t =
   let evdref = ref evd in
   let modified = ref false in
   let rec refresh dir t = 
@@ -88,7 +93,10 @@ let refresh_universes ?(onlyalg=false) dir env evd t =
     in aux 0 pos
   in
   let t' = 
-    if isArity t then refresh dir t 
+    if isArity t then
+      (match pbty with
+      | None -> t
+      | Some dir -> refresh dir t)
     else (refresh_term_evars false t; t)
   in
     if !modified then !evdref, t' else !evdref, t
@@ -553,7 +561,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       let id = next_name_away na avoid in
       let evd,t_in_sign =
         let s = Retyping.get_sort_of env evd t_in_env in
-        let evd,ty_t_in_sign = refresh_universes false env evd (mkSort s) in
+        let evd,ty_t_in_sign = refresh_universes (Some false) env evd (mkSort s) in
         define_evar_from_virtual_equation define_fun env evd t_in_env 
           ty_t_in_sign sign filter inst_in_env in
       let evd,b_in_sign = match b with
@@ -572,7 +580,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   in
   let evd,ev2ty_in_sign =
     let s = Retyping.get_sort_of env evd ty_in_env in
-    let evd,ty_t_in_sign = refresh_universes false env evd (mkSort s) in
+    let evd,ty_t_in_sign = refresh_universes (Some false) env evd (mkSort s) in
     define_evar_from_virtual_equation define_fun env evd ty_in_env
       ty_t_in_sign sign2 filter2 inst2_in_env in
   let evd,ev2_in_sign =
@@ -1417,7 +1425,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
  * context "hyps" and not referring to itself.
  *)
 
-and evar_define conv_algo ?(choose=false) ?(dir=false) env evd pbty (evk,argsv as ev) rhs =
+and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
   match kind_of_term rhs with
   | Evar (evk2,argsv2 as ev2) ->
       if Evar.equal evk evk2 then
@@ -1436,7 +1444,7 @@ and evar_define conv_algo ?(choose=false) ?(dir=false) env evd pbty (evk,argsv a
     (* so we recheck acyclicity *)
     if occur_evar evk body then raise (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
-    let evd', body = refresh_universes dir env evd' body in
+    let evd', body = refresh_universes pbty env evd' body in
 (* Cannot strictly type instantiations since the unification algorithm
  * does not unify applications from left to right.
  * e.g problem f x == g y yields x==y and f==g (in that order)
@@ -1520,8 +1528,7 @@ let reconsider_conv_pbs conv_algo evd =
 let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1),t2) =
   try
     let t2 = whd_betaiota evd t2 in (* includes whd_evar *)
-    let dir = match pbty with Some d -> d | None -> false in
-    let evd = evar_define conv_algo ~choose ~dir env evd pbty ev1 t2 in
+    let evd = evar_define conv_algo ~choose env evd pbty ev1 t2 in
       reconsider_conv_pbs conv_algo evd
   with
     | NotInvertibleUsingOurAlgorithm t ->
