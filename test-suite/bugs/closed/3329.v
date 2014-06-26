@@ -70,7 +70,7 @@ Local Open Scope functor_scope.
 Context `{Funext}.
 Variable D : PreCategory.
 Set Printing Universes.
-Fail Check hom_functor D o 1.
+Check hom_functor D o 1.
 (* Toplevel input, characters 20-44:
 Error: Illegal application:
 The term "@set_cat" of type "(Funext -> PreCategory)%type"
