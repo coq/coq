@@ -762,7 +762,7 @@ Qed.
 Global Instance rev_eqlistA_compat : Proper (eqlistA==>eqlistA) (@rev A).
 Proof.
 repeat red. intros.
-rewrite (app_nil_end (rev x)), (app_nil_end (rev y)).
+rewrite <- (app_nil_r (rev x)), <- (app_nil_r (rev y)).
 apply eqlistA_rev_app; auto.
 Qed.
 

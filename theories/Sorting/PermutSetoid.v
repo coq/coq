@@ -179,7 +179,7 @@ Proof.
   simpl; trivial using permut_refl.
   simpl.
   apply permut_add_cons_inside.
-  rewrite <- app_nil_end. trivial.
+  rewrite app_nil_r. trivial.
 Qed.
 
 (** * Some inversion results. *)

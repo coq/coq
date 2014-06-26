@@ -979,7 +979,7 @@ Proof.
   { transitivity size; trivial. subst. auto with arith. }
  destruct acc1 as [|x acc1].
   { exfalso. revert LE. apply Nat.lt_nge. subst.
-    rewrite <- app_nil_end, <- elements_cardinal; auto with arith. }
+    rewrite app_nil_r, <- elements_cardinal; auto with arith. }
  specialize (Hg acc1).
  destruct (g acc1) as (t2,acc2).
  destruct Hg as (Hg1,Hg2).

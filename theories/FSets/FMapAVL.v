@@ -1367,7 +1367,7 @@ Proof.
  induction s; simpl; intros; auto.
  rewrite IHs1, IHs2.
  unfold elements; simpl.
- rewrite 2 IHs1, IHs2, <- !app_nil_end, !app_ass; auto.
+ rewrite 2 IHs1, IHs2, !app_nil_r, !app_ass; auto.
 Qed.
 
 Lemma elements_node :
@@ -1376,7 +1376,7 @@ Lemma elements_node :
  elements (Node t1 x e t2 z) ++ l.
 Proof.
  unfold elements; simpl; intros.
- rewrite !elements_app, <- !app_nil_end, !app_ass; auto.
+ rewrite !elements_app, !app_nil_r, !app_ass; auto.
 Qed.
 
 (** * Fold *)
@@ -1491,9 +1491,9 @@ Lemma equal_IfEq : forall (m1 m2:t elt),
   IfEq (equal cmp m1 m2) (elements m1) (elements m2).
 Proof.
  intros; unfold equal.
- rewrite (app_nil_end (elements m1)).
+ rewrite <- (app_nil_r (elements m1)).
  replace (elements m2) with (flatten_e (cons m2 (End _)))
-  by (rewrite cons_1; simpl; rewrite <-app_nil_end; auto).
+  by (rewrite cons_1; simpl; rewrite app_nil_r; auto).
  apply equal_cont_IfEq.
  intros.
  apply equal_end_IfEq; auto.
@@ -2096,9 +2096,9 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
    Cmp (compare_pure s1 s2) (R.elements s1) (R.elements s2).
   Proof.
    intros; unfold compare_pure.
-   rewrite (app_nil_end (R.elements s1)).
+   rewrite <- (app_nil_r (R.elements s1)).
    replace (R.elements s2) with (P.flatten_e (R.cons s2 (R.End _))) by
-    (rewrite P.cons_1; simpl; rewrite <- app_nil_end; auto).
+    (rewrite P.cons_1; simpl; rewrite app_nil_r; auto).
    auto using compare_cont_Cmp, compare_end_Cmp.
   Qed.
 

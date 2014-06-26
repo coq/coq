@@ -1063,9 +1063,9 @@ Lemma compare_Cmp : forall s1 s2,
  Cmp (compare s1 s2) (elements s1) (elements s2).
 Proof.
  intros; unfold compare.
- rewrite (app_nil_end (elements s1)).
+ rewrite <- (app_nil_r (elements s1)).
  replace (elements s2) with (flatten_e (cons s2 End)) by
-  (rewrite cons_1; simpl; rewrite <- app_nil_end; auto).
+  (rewrite cons_1; simpl; rewrite app_nil_r; auto).
  apply compare_cont_Cmp; auto.
  intros.
  apply compare_end_Cmp; auto.

@@ -183,7 +183,7 @@ Section Wf_Lexicographic_Exponentiation.
 
     intro.
     generalize (app_nil_end x1).
-    simple induction 1; simple induction 1. 
+    simple induction 1; simple induction 1.
     split. apply d_conc; auto with sets.
 
     apply d_nil.
