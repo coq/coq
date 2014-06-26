@@ -6,17 +6,14 @@ FILE=$1
 HIDDEN=$2
 
 cp -f $FILE.template tmp
-echo -n Building file index-list.prehtml ...
+echo -n "Building file index-list.prehtml... "
 
 #LIBDIRS="Init Logic Structures Bool Arith PArith NArith ZArith QArith Relations Sets Classes Setoids Lists Vectors Sorting Wellfounded MSets FSets Reals Program Numbers Numbers/Natural/Abstract Numbers/Natural/Peano Numbers/Natural/Binary Numbers/Natural/BigN Numbers/Natural/SpecViaZ Numbers/Integer/Abstract Numbers/Integer/NatPairs Numbers/Integer/Binary Numbers/Integer/SpecViaZ Numbers/Integer/BigZ Numbers/NatInt Numbers/Cyclic/Abstract Numbers/Cyclic/Int31 Numbers/Cyclic/ZModulo Numbers/Cyclic/DoubleCyclic Numbers/Rational/BigQ Numbers/Rational/SpecViaQ Strings"
-LIBDIRS=`find theories/* -type d | sed -e "s:^theories/::"`
+LIBDIRS=`find theories/* -type d ! -name .coq-native | sed -e "s:^theories/::"`
 
 for k in $LIBDIRS; do
     i=theories/$k
-    echo $i
-    
     d=`basename $i`
-    if [ "$d" != "CVS" ]; then
       ls $i | grep -q \.v'$'
       if [ $? = 0 ]; then
 	for j in $i/*.v; do
@@ -46,7 +43,6 @@ for k in $LIBDIRS; do
             fi
 	done
       fi
-    fi
     rm -f tmp2
     sed -e "s/#$d#//" tmp > tmp2
     mv -f tmp2 tmp
