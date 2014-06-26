@@ -472,11 +472,11 @@ Proof.
   elim Hyp; intros; assumption.
   elim H3; intros; assumption.
   apply Rminus_eq_contra.
-  red; intro.
-  elim H3; intros.
+  red; intro H10.
+  elim H3; intros H11 H12. 
   rewrite H10 in H12; elim (Rlt_irrefl _ H12).
-  red; intro.
-  elim H3; intros.
+  red; intro H10.
+  elim H3; intros H11 H12.
   rewrite H10 in H12; elim (Rlt_irrefl _ H12).
   replace (An (S x0)) with (An (S x0 + 0)%nat).
   apply (tech6 (fun i:nat => An (S x0 + i)%nat) x).
@@ -485,7 +485,7 @@ Proof.
   elim H3; intros; assumption.
   intro.
   cut (forall n:nat, (n >= x0)%nat -> An (S n) < x * An n).
-  intro.
+  intro H9.
   replace (S x0 + S i)%nat with (S (S x0 + i)).
   apply H9.
   unfold ge.
@@ -507,7 +507,7 @@ Proof.
     apply Rmult_lt_0_compat.
   apply H.
   apply Rinv_0_lt_compat; apply H.
-  red; intro.
+  red; intro H10.
   assert (H11 := H n).
   rewrite H10 in H11; elim (Rlt_irrefl _ H11).
   replace (S x0 + 0)%nat with (S x0); [ reflexivity | ring ].

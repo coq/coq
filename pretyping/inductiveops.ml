@@ -370,10 +370,10 @@ let find_coinductive env sigma c =
 (* find appropriate names for pattern variables. Useful in the Case
    and Inversion (case_then_using et case_nodep_then_using) tactics. *)
 
-let h_based_elimination_names = ref true
+let h_based_elimination_names = ref false
 
 let use_h_based_elimination_names () =
-  !h_based_elimination_names && Flags.version_strictly_greater Flags.V8_4
+  !h_based_elimination_names (* && Flags.version_strictly_greater Flags.V8_4 *)
 
 open Goptions
 

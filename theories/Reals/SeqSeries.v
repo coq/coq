@@ -229,7 +229,7 @@ Proof.
       do 2 rewrite <- Rplus_assoc; do 2 rewrite Rplus_opp_r;
         do 2 rewrite Rplus_0_l; do 2 rewrite Rabs_Ropp; repeat rewrite Rabs_right.
     apply sum_Rle; intros.
-    elim (H (S n + n0)%nat); intros.
+    elim (H (S n + n0)%nat); intros H7 H8.
     apply H8.
     apply Rle_ge; apply cond_pos_sum; intro.
     elim (H (S n + n0)%nat); intros.
@@ -246,7 +246,7 @@ Proof.
         do 2 rewrite Rplus_assoc; do 2 rewrite Rplus_opp_l;
           do 2 rewrite Rplus_0_r; repeat rewrite Rabs_right.
     apply sum_Rle; intros.
-    elim (H (S m + n0)%nat); intros; apply H8.
+    elim (H (S m + n0)%nat); intros H7 H8; apply H8.
     apply Rle_ge; apply cond_pos_sum; intro.
     elim (H (S m + n0)%nat); intros.
     apply Rle_trans with (An (S m + n0)%nat); assumption.
