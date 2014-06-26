@@ -30,6 +30,18 @@ open Evd
 open Termops
 open Globnames
 
+let use_typeclasses_for_conversion = ref true
+
+let _ =
+  Goptions.declare_bool_option
+    { Goptions.optsync  = true;
+      optdepr  = false;
+      optname  = "use typeclass resolution during conversion";
+      optkey   = ["Typeclass"; "Resolution"; "For"; "Conversion"];
+      optread  = (fun () -> !use_typeclasses_for_conversion);
+      optwrite = (fun b -> use_typeclasses_for_conversion := b) }
+
+
 (* Typing operations dealing with coercions *)
 exception NoCoercion
 exception NoCoercionNoUnifier of evar_map * unification_error
@@ -371,7 +383,8 @@ let inh_app_fun env evd j =
 let inh_app_fun resolve_tc env evd j =
   try inh_app_fun env evd j
   with
-  | Not_found when not resolve_tc -> (evd, j)
+  | Not_found when not resolve_tc 
+    || not !use_typeclasses_for_conversion -> (evd, j)
   | Not_found ->
     try inh_app_fun env (saturate_evd env evd) j
     with Not_found -> (evd, j)
@@ -475,7 +488,7 @@ let inh_conv_coerce_to_gen resolve_tc rigidonly loc env evd cj t =
 	  coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
 	else raise NoSubtacCoercion
       with
-      | NoSubtacCoercion when not resolve_tc ->
+      | NoSubtacCoercion when not resolve_tc || not !use_typeclasses_for_conversion ->
 	  error_actual_type_loc loc env best_failed_evd cj t e
       | NoSubtacCoercion ->
 	let evd' = saturate_evd env evd in
