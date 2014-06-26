@@ -503,6 +503,9 @@ Qed.
 
 Require Export Coq.Logic.FunctionalExtensionality.
 Print PLanguage.
+
+Unset Standard Proposition Elimination Names.
+
 Program Definition PTransfo l1 l2 (tr: Transformation l1 l2) (h: isSharedTransfo l1 l2 tr): 
 Transformation (PLanguage l1) (PLanguage l2) :=
   mkTransformation (PLanguage l1) (PLanguage l2)
