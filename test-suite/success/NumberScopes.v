@@ -31,7 +31,7 @@ Definition f_N' (x:N.t) := x.
 Check (f_N 1).
 Check (f_N' 1).
 
-Require Import NPeano.
+Require Import Arith.
 Check (Nat.add 1 2).
 Check (Nat.add_comm 1 2).
 Check (Nat.min_comm 1 2).

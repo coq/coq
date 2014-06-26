@@ -19,7 +19,8 @@ Require Export Equalities Orders NumPrelude GenericMinMax.
 
 Module Type ZeroSuccPred (Import T:Typ).
  Parameter Inline(20) zero : t.
- Parameters Inline succ pred : t -> t.
+ Parameter Inline(50) succ : t -> t.
+ Parameter Inline pred : t -> t.
 End ZeroSuccPred.
 
 Module Type ZeroSuccPredNotation (T:Typ)(Import NZ:ZeroSuccPred T).

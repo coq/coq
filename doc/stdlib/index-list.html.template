@@ -29,6 +29,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Init/Datatypes.v
     theories/Init/Logic.v
     theories/Init/Logic_Type.v
+    theories/Init/Nat.v
     theories/Init/Peano.v
     theories/Init/Specif.v
     theories/Init/Tactics.v
@@ -108,8 +109,8 @@ through the <tt>Require Import</tt> command.</p>
   <dt> <b>Arith</b>:
     Basic Peano arithmetic
   </dt>
-  <dd> 
-    theories/Arith/Arith_base.v
+  <dd>
+    theories/Arith/PeanoNat.v
     theories/Arith/Le.v
     theories/Arith/Lt.v
     theories/Arith/Plus.v
@@ -119,6 +120,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Arith/Between.v
     theories/Arith/Peano_dec.v
     theories/Arith/Compare_dec.v
+    (theories/Arith/Arith_base.v)
     (theories/Arith/Arith.v)
     theories/Arith/Min.v
     theories/Arith/Max.v

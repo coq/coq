@@ -6,10 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Le.
-Require Import Lt.
-Require Import Gt.
-Require Import Decidable.
+Require Import Le Lt Gt Decidable PeanoNat.
 
 Local Open Scope nat_scope.
 
@@ -29,31 +26,31 @@ Defined.
 
 Definition gt_eq_gt_dec n m : {m > n} + {n = m} + {n > m}.
 Proof.
-  intros; apply lt_eq_lt_dec; assumption.
+  now apply lt_eq_lt_dec.
 Defined.
 
 Definition le_lt_dec n m : {n <= m} + {m < n}.
 Proof.
   induction n in m |- *.
-  auto with arith.
-  destruct m.
-  auto with arith.
-  elim (IHn m); auto with arith.
+  - left; auto with arith.
+  - destruct m.
+    + right; auto with arith.
+    + elim (IHn m); [left|right]; auto with arith.
 Defined.
 
 Definition le_le_S_dec n m : {n <= m} + {S m <= n}.
 Proof.
-  intros; exact (le_lt_dec n m).
+  exact (le_lt_dec n m).
 Defined.
 
 Definition le_ge_dec n m : {n <= m} + {n >= m}.
 Proof.
-  intros; elim (le_lt_dec n m); auto with arith.
+  elim (le_lt_dec n m); auto with arith.
 Defined.
 
 Definition le_gt_dec n m : {n <= m} + {n > m}.
 Proof.
-  intros; exact (le_lt_dec n m).
+  exact (le_lt_dec n m).
 Defined.
 
 Definition le_lt_eq_dec n m : n <= m -> {n < m} + {n = m}.
@@ -62,162 +59,121 @@ Proof.
   intros; absurd (m < n); auto with arith.
 Defined.
 
-Theorem le_dec : forall n m, {n <= m} + {~ n <= m}.
+Theorem le_dec n m : {n <= m} + {~ n <= m}.
 Proof.
-  intros n m. destruct (le_gt_dec n m).
-   auto with arith.
-   right. apply gt_not_le. assumption.
+  destruct (le_gt_dec n m).
+  - now left.
+  - right. now apply gt_not_le.
 Defined.
 
-Theorem lt_dec : forall n m, {n < m} + {~ n < m}.
+Theorem lt_dec n m : {n < m} + {~ n < m}.
 Proof.
-  intros; apply le_dec.
+  apply le_dec.
 Defined.
 
-Theorem gt_dec : forall n m, {n > m} + {~ n > m}.
+Theorem gt_dec n m : {n > m} + {~ n > m}.
 Proof.
-  intros; apply lt_dec.
+  apply lt_dec.
 Defined.
 
-Theorem ge_dec : forall n m, {n >= m} + {~ n >= m}.
+Theorem ge_dec n m : {n >= m} + {~ n >= m}.
 Proof.
-  intros; apply le_dec.
+  apply le_dec.
 Defined.
 
 (** Proofs of decidability *)
 
-Theorem dec_le : forall n m, decidable (n <= m).
+Theorem dec_le n m : decidable (n <= m).
 Proof.
-  intros n m; destruct (le_dec n m); unfold decidable; auto.
+  apply Nat.le_decidable.
 Qed.
 
-Theorem dec_lt : forall n m, decidable (n < m).
+Theorem dec_lt n m : decidable (n < m).
 Proof.
-  intros; apply dec_le.
+  apply Nat.lt_decidable.
 Qed.
 
-Theorem dec_gt : forall n m, decidable (n > m).
+Theorem dec_gt n m : decidable (n > m).
 Proof.
-  intros; apply dec_lt.
+  apply Nat.lt_decidable.
 Qed.
 
-Theorem dec_ge : forall n m, decidable (n >= m).
+Theorem dec_ge n m : decidable (n >= m).
 Proof.
-  intros; apply dec_le.
+  apply Nat.le_decidable.
 Qed.
 
-Theorem not_eq : forall n m, n <> m -> n < m \/ m < n.
+Theorem not_eq n m : n <> m -> n < m \/ m < n.
 Proof.
-  intros x y H; elim (lt_eq_lt_dec x y);
-    [ intros H1; elim H1;
-      [ auto with arith | intros H2; absurd (x = y); assumption ]
-      | auto with arith ].
+  apply Nat.lt_gt_cases.
 Qed.
 
-
-Theorem not_le : forall n m, ~ n <= m -> n > m.
+Theorem not_le n m : ~ n <= m -> n > m.
 Proof.
-  intros x y H; elim (le_gt_dec x y);
-    [ intros H1; absurd (x <= y); assumption | trivial with arith ].
+  apply Nat.nle_gt.
 Qed.
 
-Theorem not_gt : forall n m, ~ n > m -> n <= m.
+Theorem not_gt n m : ~ n > m -> n <= m.
 Proof.
-  intros x y H; elim (le_gt_dec x y);
-    [ trivial with arith | intros H1; absurd (x > y); assumption ].
+  apply Nat.nlt_ge.
 Qed.
 
-Theorem not_ge : forall n m, ~ n >= m -> n < m.
+Theorem not_ge n m : ~ n >= m -> n < m.
 Proof.
-  intros x y H; exact (not_le y x H).
+  apply Nat.nle_gt.
 Qed.
 
-Theorem not_lt : forall n m, ~ n < m -> n >= m.
+Theorem not_lt n m : ~ n < m -> n >= m.
 Proof.
-  intros x y H; exact (not_gt y x H).
+  apply Nat.nlt_ge.
 Qed.
 
 
-(** A ternary comparison function in the spirit of [Z.compare]. *)
+(** A ternary comparison function in the spirit of [Z.compare].
+    See now [Nat.compare] and its properties.
+    In scope [nat_scope], the notation for [Nat.compare] is "?=" *)
 
-Fixpoint nat_compare n m :=
-  match n, m with
-   | O, O => Eq
-   | O, S _ => Lt
-   | S _, O => Gt
-   | S n', S m' => nat_compare n' m'
-  end.
+Notation nat_compare := Nat.compare (compat "8.4").
 
-Lemma nat_compare_S : forall n m, nat_compare (S n) (S m) = nat_compare n m.
+Notation nat_compare_spec := Nat.compare_spec (compat "8.4").
+Notation nat_compare_eq_iff := Nat.compare_eq_iff (compat "8.4").
+Notation nat_compare_S := Nat.compare_succ (compat "8.4").
+
+Lemma nat_compare_lt n m : n<m <-> (n ?= m) = Lt.
 Proof.
- reflexivity.
+ symmetry. apply Nat.compare_lt_iff.
 Qed.
 
-Lemma nat_compare_eq_iff : forall n m, nat_compare n m = Eq <-> n = m.
+Lemma nat_compare_gt n m : n>m <-> (n ?= m) = Gt.
 Proof.
-  induction n; destruct m; simpl; split; auto; try discriminate;
-   destruct (IHn m); auto.
+ symmetry. apply Nat.compare_gt_iff.
 Qed.
 
-Lemma nat_compare_eq : forall n m, nat_compare n m = Eq -> n = m.
+Lemma nat_compare_le n m : n<=m <-> (n ?= m) <> Gt.
 Proof.
-  intros; apply -> nat_compare_eq_iff; auto.
+ symmetry. apply Nat.compare_le_iff.
 Qed.
 
-Lemma nat_compare_lt : forall n m, n<m <-> nat_compare n m = Lt.
+Lemma nat_compare_ge n m : n>=m <-> (n ?= m) <> Lt.
 Proof.
-  induction n; destruct m; simpl; split; auto with arith;
-   try solve [inversion 1].
-  destruct (IHn m); auto with arith.
-  destruct (IHn m); auto with arith.
-Qed.
-
-Lemma nat_compare_gt : forall n m, n>m <-> nat_compare n m = Gt.
-Proof.
-  induction n; destruct m; simpl; split; auto with arith;
-   try solve [inversion 1].
-  destruct (IHn m); auto with arith.
-  destruct (IHn m); auto with arith.
-Qed.
-
-Lemma nat_compare_le : forall n m, n<=m <-> nat_compare n m <> Gt.
-Proof.
-  split.
-  intros LE; contradict LE.
-   apply lt_not_le. apply <- nat_compare_gt; auto.
-  intros NGT. apply not_lt. contradict NGT.
-   apply -> nat_compare_gt; auto.
-Qed.
-
-Lemma nat_compare_ge : forall n m, n>=m <-> nat_compare n m <> Lt.
-Proof.
-  split.
-  intros GE; contradict GE.
-   apply lt_not_le. apply <- nat_compare_lt; auto.
-  intros NLT. apply not_lt. contradict NLT.
-   apply -> nat_compare_lt; auto.
-Qed.
-
-Lemma nat_compare_spec :
-  forall x y, CompareSpec (x=y) (x<y) (y<x) (nat_compare x y).
-Proof.
- intros. 
- destruct (nat_compare x y) eqn:?; constructor.
- apply nat_compare_eq; auto.
- apply <- nat_compare_lt; auto.
- apply <- nat_compare_gt; auto.
+ symmetry. apply Nat.compare_ge_iff.
 Qed.
 
 (** Some projections of the above equivalences. *)
 
-Lemma nat_compare_Lt_lt : forall n m, nat_compare n m = Lt -> n<m.
+Lemma nat_compare_eq n m : (n ?= m) = Eq -> n = m.
 Proof.
-  intros; apply <- nat_compare_lt; auto.
+  apply Nat.compare_eq_iff.
 Qed.
 
-Lemma nat_compare_Gt_gt : forall n m, nat_compare n m = Gt -> n>m.
+Lemma nat_compare_Lt_lt n m : (n ?= m) = Lt -> n<m.
 Proof.
-  intros; apply <- nat_compare_gt; auto.
+  apply Nat.compare_lt_iff.
+Qed.
+
+Lemma nat_compare_Gt_gt n m : (n ?= m) = Gt -> n>m.
+Proof.
+  apply Nat.compare_gt_iff.
 Qed.
 
 (** A previous definition of [nat_compare] in terms of [lt_eq_lt_dec].
@@ -230,70 +186,48 @@ Definition nat_compare_alt (n m:nat) :=
     | inright _ => Gt
   end.
 
-Lemma nat_compare_equiv: forall n m,
- nat_compare n m = nat_compare_alt n m.
+Lemma nat_compare_equiv n m : (n ?= m) = nat_compare_alt n m.
 Proof.
-  intros; unfold nat_compare_alt; destruct lt_eq_lt_dec as [[LT|EQ]|GT].
-  apply -> nat_compare_lt; auto.
-  apply <- nat_compare_eq_iff; auto.
-  apply -> nat_compare_gt; auto.
+  unfold nat_compare_alt; destruct lt_eq_lt_dec as [[|]|].
+  - now apply Nat.compare_lt_iff.
+  - now apply Nat.compare_eq_iff.
+  - now apply Nat.compare_gt_iff.
 Qed.
 
+(** A boolean version of [le] over [nat].
+    See now [Nat.leb] and its properties.
+    In scope [nat_scope], the notation for [Nat.leb] is "<=?" *)
 
-(** A boolean version of [le] over [nat]. *)
+Notation leb := Nat.leb (compat "8.4").
 
-Fixpoint leb (m:nat) : nat -> bool :=
-  match m with
-    | O => fun _:nat => true
-    | S m' =>
-      fun n:nat => match n with
-                     | O => false
-                     | S n' => leb m' n'
-                   end
-  end.
+Notation leb_iff := Nat.leb_le (compat "8.4").
 
-Lemma leb_correct : forall m n, m <= n -> leb m n = true.
+Lemma leb_iff_conv m n : (n <=? m) = false <-> m < n.
 Proof.
-  induction m as [| m IHm]. trivial.
-  destruct n. intro H. elim (le_Sn_O _ H).
-  intros. simpl. apply IHm. apply le_S_n. assumption.
+ rewrite Nat.leb_nle. apply Nat.nle_gt.
 Qed.
 
-Lemma leb_complete : forall m n, leb m n = true -> m <= n.
+Lemma leb_correct m n : m <= n -> (m <=? n) = true.
 Proof.
-  induction m. trivial with arith.
-  destruct n. intro H. discriminate H.
-  auto with arith.
+ apply Nat.leb_le.
 Qed.
 
-Lemma leb_iff : forall m n, leb m n = true <-> m <= n.
+Lemma leb_complete m n : (m <=? n) = true -> m <= n.
 Proof.
-  split; auto using leb_correct, leb_complete.
+ apply Nat.leb_le.
 Qed.
 
-Lemma leb_correct_conv : forall m n, m < n -> leb n m = false.
+Lemma leb_correct_conv m n : m < n -> (n <=? m) = false.
 Proof.
-  intros.
-  generalize (leb_complete n m).
-  destruct (leb n m); auto.
-  intros; elim (lt_not_le m n); auto.
+ apply leb_iff_conv.
 Qed.
 
-Lemma leb_complete_conv : forall m n, leb n m = false -> m < n.
+Lemma leb_complete_conv m n : (n <=? m) = false -> m < n.
 Proof.
-  intros m n EQ. apply not_le.
-  intro LE. apply leb_correct in LE. rewrite LE in EQ; discriminate.
+ apply leb_iff_conv.
 Qed.
 
-Lemma leb_iff_conv : forall m n, leb n m = false <-> m < n.
+Lemma leb_compare n m : (n <=? m) = true <-> (n ?= m) <> Gt.
 Proof.
-  split; auto using leb_complete_conv, leb_correct_conv.
+ rewrite Nat.compare_le_iff. apply Nat.leb_le.
 Qed.
-
-Lemma leb_compare : forall n m, leb n m = true <-> nat_compare n m <> Gt.
-Proof.
- split; intros.
- apply -> nat_compare_le. auto using leb_complete.
- apply leb_correct. apply <- nat_compare_le; auto.
-Qed.
-

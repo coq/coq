@@ -8,7 +8,7 @@
 
 Require Export BinNums.
 Require Import BinPos RelationClasses Morphisms Setoid
- Equalities OrdersFacts GenericMinMax Bool NAxioms NProperties.
+ Equalities OrdersFacts GenericMinMax Bool NAxioms NMaxMin NProperties.
 Require BinNatDef.
 
 (**********************************************************************)
@@ -65,6 +65,20 @@ Notation "( p | q )" := (divide p q) (at level 0) : N_scope.
 
 Definition Even n := exists m, n = 2*m.
 Definition Odd n := exists m, n = 2*m+1.
+
+(** Proofs of morphisms, obvious since eq is Leibniz *)
+
+Local Obligation Tactic := simpl_relation.
+Program Definition succ_wd : Proper (eq==>eq) succ := _.
+Program Definition pred_wd : Proper (eq==>eq) pred := _.
+Program Definition add_wd : Proper (eq==>eq==>eq) add := _.
+Program Definition sub_wd : Proper (eq==>eq==>eq) sub := _.
+Program Definition mul_wd : Proper (eq==>eq==>eq) mul := _.
+Program Definition lt_wd : Proper (eq==>eq==>iff) lt := _.
+Program Definition div_wd : Proper (eq==>eq==>eq) div := _.
+Program Definition mod_wd : Proper (eq==>eq==>eq) modulo := _.
+Program Definition pow_wd : Proper (eq==>eq==>eq) pow := _.
+Program Definition testbit_wd : Proper (eq==>eq==>Logic.eq) testbit := _.
 
 (** Decidability of equality. *)
 
@@ -137,6 +151,50 @@ Theorem peano_rec_succ P a f n :
 Proof.
 apply peano_rect_succ.
 Qed.
+
+(** Generic induction / recursion *)
+
+Theorem bi_induction :
+  forall A : N -> Prop, Proper (Logic.eq==>iff) A ->
+    A 0 -> (forall n, A n <-> A (succ n)) -> forall n : N, A n.
+Proof.
+intros A A_wd A0 AS. apply peano_rect. assumption. intros; now apply -> AS.
+Qed.
+
+Definition recursion {A} : A -> (N -> A -> A) -> N -> A :=
+  peano_rect (fun _ => A).
+
+Instance recursion_wd {A} (Aeq : relation A) :
+ Proper (Aeq==>(Logic.eq==>Aeq==>Aeq)==>Logic.eq==>Aeq) recursion.
+Proof.
+intros a a' Ea f f' Ef x x' Ex. subst x'.
+induction x using peano_ind.
+trivial.
+unfold recursion in *. rewrite 2 peano_rect_succ. now apply Ef.
+Qed.
+
+Theorem recursion_0 {A} (a:A) (f:N->A->A) : recursion a f 0 = a.
+Proof. reflexivity. Qed.
+
+Theorem recursion_succ {A} (Aeq : relation A) (a : A) (f : N -> A -> A):
+ Aeq a a -> Proper (Logic.eq==>Aeq==>Aeq) f ->
+  forall n : N, Aeq (recursion a f (succ n)) (f n (recursion a f n)).
+Proof.
+unfold recursion; intros a_wd f_wd n. induction n using peano_ind.
+rewrite peano_rect_succ. now apply f_wd.
+rewrite !peano_rect_succ in *. now apply f_wd.
+Qed.
+
+(** Specification of constants *)
+
+Lemma one_succ : 1 = succ 0.
+Proof. reflexivity. Qed.
+
+Lemma two_succ : 2 = succ 1.
+Proof. reflexivity. Qed.
+
+Definition pred_0 : pred 0 = 0.
+Proof. reflexivity. Qed.
 
 (** Properties of mixed successor and predecessor. *)
 
@@ -262,68 +320,29 @@ Qed.
 
 Include BoolOrderFacts.
 
-(** We regroup here some results used for proving the correctness
-    of more advanced functions. These results will also be provided
-    by the generic functor of properties about natural numbers
-    instantiated at the end of the file. *)
+(** Specification of minimum and maximum *)
 
-Module Import Private_BootStrap.
-
-Theorem add_0_r n : n + 0 = n.
+Theorem min_l n m : n <= m -> min n m = n.
 Proof.
-now destruct n.
+unfold min, le. case compare; trivial. now destruct 1.
 Qed.
 
-Theorem add_comm n m : n + m = m + n.
+Theorem min_r n m : m <= n -> min n m = m.
 Proof.
-destruct n, m; simpl; try reflexivity. simpl. f_equal. apply Pos.add_comm.
+unfold min, le. rewrite compare_antisym.
+case compare_spec; trivial. now destruct 2.
 Qed.
 
-Theorem add_assoc n m p : n + (m + p) = n + m + p.
+Theorem max_l n m : m <= n -> max n m = n.
 Proof.
-destruct n; try reflexivity.
-destruct m; try reflexivity.
-destruct p; try reflexivity.
-simpl. f_equal. apply Pos.add_assoc.
+unfold max, le. rewrite compare_antisym.
+case compare_spec; auto. now destruct 2.
 Qed.
 
-Lemma sub_add n m : n <= m -> m - n + n = m.
+Theorem max_r n m : n <= m -> max n m = m.
 Proof.
- destruct n as [|p], m as [|q]; simpl; try easy'. intros H.
- case Pos.sub_mask_spec; intros; simpl; subst; trivial.
- now rewrite Pos.add_comm.
- apply Pos.le_nlt in H. elim H. apply Pos.lt_add_r.
+unfold max, le. case compare; trivial. now destruct 1.
 Qed.
-
-Theorem mul_comm n m : n * m = m * n.
-Proof.
-destruct n, m; simpl; trivial. f_equal. apply Pos.mul_comm.
-Qed.
-
-Lemma le_0_l n : 0<=n.
-Proof.
-now destruct n.
-Qed.
-
-Lemma leb_spec n m : BoolSpec (n<=m) (m<n) (n <=? m).
-Proof.
- unfold le, lt, leb. rewrite (compare_antisym n m).
- case compare; now constructor.
-Qed.
-
-Lemma add_lt_cancel_l n m p : p+n < p+m -> n<m.
-Proof.
- intro H. destruct p. simpl; auto.
- destruct n; destruct m.
- elim (Pos.lt_irrefl _ H).
- red; auto.
- rewrite add_0_r in H. simpl in H.
- red in H. simpl in H.
- elim (Pos.lt_not_add_l _ _ H).
- now apply (Pos.add_lt_mono_l p).
-Qed.
-
-End Private_BootStrap.
 
 (** Specification of lt and le. *)
 
@@ -333,6 +352,13 @@ destruct n as [|p], m as [|q]; simpl; try easy'.
 split. now destruct p. now destruct 1.
 apply Pos.lt_succ_r.
 Qed.
+
+(** We can now derive all properties of basic functions and orders,
+    and use these properties for proving the specs of more advanced
+    functions. *)
+
+Include NBasicProp <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+
 
 (** Properties of [double] and [succ_double] *)
 
@@ -394,30 +420,6 @@ Proof.
  unfold lt in *; simpl in *. now rewrite Pos.compare_xI_xO, H.
 Qed.
 
-
-(** Specification of minimum and maximum *)
-
-Theorem min_l n m : n <= m -> min n m = n.
-Proof.
-unfold min, le. case compare; trivial. now destruct 1.
-Qed.
-
-Theorem min_r n m : m <= n -> min n m = m.
-Proof.
-unfold min, le. rewrite compare_antisym.
-case compare_spec; trivial. now destruct 2.
-Qed.
-
-Theorem max_l n m : m <= n -> max n m = n.
-Proof.
-unfold max, le. rewrite compare_antisym.
-case compare_spec; auto. now destruct 2.
-Qed.
-
-Theorem max_r n m : n <= m -> max n m = m.
-Proof.
-unfold max, le. case compare; trivial. now destruct 1.
-Qed.
 
 (** 0 is the least natural number *)
 
@@ -560,13 +562,13 @@ Proof.
   (* a~1 *)
   destruct pos_div_eucl as (q,r); simpl in *.
   case leb_spec; intros H; simpl; trivial.
-  apply add_lt_cancel_l with b. rewrite add_comm, sub_add by trivial.
+  apply add_lt_mono_l with b. rewrite add_comm, sub_add by trivial.
   destruct b as [|b]; [now destruct Hb| simpl; rewrite Pos.add_diag ].
   apply (succ_double_lt _ _ IHa).
   (* a~0 *)
   destruct pos_div_eucl as (q,r); simpl in *.
   case leb_spec; intros H; simpl; trivial.
-  apply add_lt_cancel_l with b. rewrite add_comm, sub_add by trivial.
+  apply add_lt_mono_l with b. rewrite add_comm, sub_add by trivial.
   destruct b as [|b]; [now destruct Hb| simpl; rewrite Pos.add_diag ].
   now destruct r.
   (* 1 *)
@@ -754,7 +756,7 @@ Proof.
  destruct m. now destruct (shiftl a n).
  rewrite <- (succ_pos_pred p), testbit_succ_r_div2, div2_double by apply le_0_l.
  apply IHn.
- apply add_lt_cancel_l with 1. rewrite 2 (add_succ_l 0). simpl.
+ apply add_lt_mono_l with 1. rewrite 2 (add_succ_l 0). simpl.
  now rewrite succ_pos_pred.
 Qed.
 
@@ -833,69 +835,10 @@ Proof.
  apply pos_ldiff_spec.
 Qed.
 
-(** Specification of constants *)
+(** Instantiation of generic properties of advanced functions
+    (pow, sqrt, log2, div, gcd, ...) *)
 
-Lemma one_succ : 1 = succ 0.
-Proof. reflexivity. Qed.
-
-Lemma two_succ : 2 = succ 1.
-Proof. reflexivity. Qed.
-
-Definition pred_0 : pred 0 = 0.
-Proof. reflexivity. Qed.
-
-(** Proofs of morphisms, obvious since eq is Leibniz *)
-
-Local Obligation Tactic := simpl_relation.
-Program Definition succ_wd : Proper (eq==>eq) succ := _.
-Program Definition pred_wd : Proper (eq==>eq) pred := _.
-Program Definition add_wd : Proper (eq==>eq==>eq) add := _.
-Program Definition sub_wd : Proper (eq==>eq==>eq) sub := _.
-Program Definition mul_wd : Proper (eq==>eq==>eq) mul := _.
-Program Definition lt_wd : Proper (eq==>eq==>iff) lt := _.
-Program Definition div_wd : Proper (eq==>eq==>eq) div := _.
-Program Definition mod_wd : Proper (eq==>eq==>eq) modulo := _.
-Program Definition pow_wd : Proper (eq==>eq==>eq) pow := _.
-Program Definition testbit_wd : Proper (eq==>eq==>Logic.eq) testbit := _.
-
-(** Generic induction / recursion *)
-
-Theorem bi_induction :
-  forall A : N -> Prop, Proper (Logic.eq==>iff) A ->
-    A 0 -> (forall n, A n <-> A (succ n)) -> forall n : N, A n.
-Proof.
-intros A A_wd A0 AS. apply peano_rect. assumption. intros; now apply -> AS.
-Qed.
-
-Definition recursion {A} : A -> (N -> A -> A) -> N -> A :=
-  peano_rect (fun _ => A).
-
-Instance recursion_wd {A} (Aeq : relation A) :
- Proper (Aeq==>(Logic.eq==>Aeq==>Aeq)==>Logic.eq==>Aeq) recursion.
-Proof.
-intros a a' Ea f f' Ef x x' Ex. subst x'.
-induction x using peano_ind.
-trivial.
-unfold recursion in *. rewrite 2 peano_rect_succ. now apply Ef.
-Qed.
-
-Theorem recursion_0 {A} (a:A) (f:N->A->A) : recursion a f 0 = a.
-Proof. reflexivity. Qed.
-
-Theorem recursion_succ {A} (Aeq : relation A) (a : A) (f : N -> A -> A):
- Aeq a a -> Proper (Logic.eq==>Aeq==>Aeq) f ->
-  forall n : N, Aeq (recursion a f (succ n)) (f n (recursion a f n)).
-Proof.
-unfold recursion; intros a_wd f_wd n. induction n using peano_ind.
-rewrite peano_rect_succ. now apply f_wd.
-rewrite !peano_rect_succ in *. now apply f_wd.
-Qed.
-
-(** Instantiation of generic properties of natural numbers *)
-
-Include NProp
- <+ UsualMinMaxLogicalProperties
- <+ UsualMinMaxDecProperties.
+Include NExtraProp.
 
 (** In generic statements, the predicates [lt] and [le] have been
   favored, whereas [gt] and [ge] don't even exist in the abstract

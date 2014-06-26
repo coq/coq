@@ -31,7 +31,7 @@ Delimit Scope bigN_scope with bigN.
 Module BigN <: NType <: OrderedTypeFull <: TotalOrder :=
   NMake.Make Int31Cyclic
   <+ NTypeIsNAxioms
-  <+ NProp [no inline]
+  <+ NBasicProp [no inline] <+ NExtraProp [no inline]
   <+ HasEqBool2Dec [no inline]
   <+ MinMaxLogicalProperties [no inline]
   <+ MinMaxDecProperties [no inline].

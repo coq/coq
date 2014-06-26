@@ -43,9 +43,14 @@ open Indfun_common
 
 (* Ugly things which should not be here *)
 
-let coq_base_constant s =
-  Coqlib.gen_constant_in_modules "RecursiveDefinition"
-    (Coqlib.init_modules @ [["Coq";"Arith";"Le"];["Coq";"Arith";"Lt"]]) s;;
+let coq_constant m s =
+  Coqlib.coq_constant "RecursiveDefinition" m s
+
+let arith_Nat = ["Arith";"PeanoNat";"Nat"]
+let arith_Lt = ["Arith";"Lt"]
+
+let coq_init_constant s =
+  Coqlib.gen_constant_in_modules "RecursiveDefinition" Coqlib.init_modules s
 
 let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
@@ -120,25 +125,25 @@ let v_id = Id.of_string "v"
 let def_id = Id.of_string "def"
 let p_id = Id.of_string "p"
 let rec_res_id = Id.of_string "rec_res";;
-let lt = function () -> (coq_base_constant "lt")
-let le = function () -> (coq_base_constant "le")
-let ex = function () -> (coq_base_constant "ex")
-let nat = function () -> (coq_base_constant "nat")
+let lt = function () -> (coq_init_constant "lt")
+let le = function () -> (coq_init_constant "le")
+let ex = function () -> (coq_init_constant "ex")
+let nat = function () -> (coq_init_constant "nat")
 let iter_ref () =  
   try find_reference ["Recdef"] "iter" 
   with Not_found -> error "module Recdef not loaded"
 let iter = function () -> (constr_of_global (delayed_force iter_ref))
-let eq = function () -> (coq_base_constant "eq")
+let eq = function () -> (coq_init_constant "eq")
 let le_lt_SS = function () -> (constant ["Recdef"] "le_lt_SS")
-let le_lt_n_Sm = function () -> (coq_base_constant "le_lt_n_Sm")
-let le_trans = function () -> (coq_base_constant "le_trans")
-let le_lt_trans = function () -> (coq_base_constant "le_lt_trans")
-let lt_S_n = function () -> (coq_base_constant "lt_S_n")
-let le_n = function () -> (coq_base_constant "le_n")
+let le_lt_n_Sm = function () -> (coq_constant arith_Lt "le_lt_n_Sm")
+let le_trans = function () -> (coq_constant arith_Nat "le_trans")
+let le_lt_trans = function () -> (coq_constant arith_Nat "le_lt_trans")
+let lt_S_n = function () -> (coq_constant arith_Lt "lt_S_n")
+let le_n = function () -> (coq_init_constant "le_n")
 let coq_sig_ref = function () -> (find_reference ["Coq";"Init";"Specif"] "sig")
-let coq_O = function () -> (coq_base_constant "O")
-let coq_S = function () -> (coq_base_constant "S")
-let lt_n_O = function () -> (coq_base_constant "lt_n_O")
+let coq_O = function () -> (coq_init_constant "O")
+let coq_S = function () -> (coq_init_constant "S")
+let lt_n_O = function () -> (coq_constant arith_Nat "nlt_0_r")
 let max_ref = function () -> (find_reference ["Recdef"] "max")
 let max_constr = function () -> (constr_of_global (delayed_force max_ref))
 let coq_conj = function () -> find_reference Coqlib.logic_module_name "conj"

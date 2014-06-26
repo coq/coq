@@ -6,185 +6,149 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Theorems about [lt] in nat. [lt] is defined in library [Init/Peano.v] as:
+(** Strict order on natural numbers.
+
+ This file is mostly OBSOLETE now, see module [PeanoNat.Nat] instead.
+
+ [lt] is defined in library [Init/Peano.v] as:
 <<
 Definition lt (n m:nat) := S n <= m.
 Infix "<" := lt : nat_scope.
 >>
 *)
 
-Require Import Le.
-Local Open Scope nat_scope.
+Require Import PeanoNat.
 
-Implicit Types m n p : nat.
+Local Open Scope nat_scope.
 
 (** * Irreflexivity *)
 
-Theorem lt_irrefl : forall n, ~ n < n.
-Proof le_Sn_n.
+Notation lt_irrefl := Nat.lt_irrefl (compat "8.4"). (* ~ x < x *)
+
 Hint Resolve lt_irrefl: arith v62.
 
 (** * Relationship between [le] and [lt] *)
 
-Theorem lt_le_S : forall n m, n < m -> S n <= m.
+Theorem lt_le_S n m : n < m -> S n <= m.
 Proof.
-  auto with arith.
+ apply Nat.le_succ_l.
 Qed.
+
+Theorem lt_n_Sm_le n m : n < S m -> n <= m.
+Proof.
+ apply Nat.lt_succ_r.
+Qed.
+
+Theorem le_lt_n_Sm n m : n <= m -> n < S m.
+Proof.
+ apply Nat.lt_succ_r.
+Qed.
+
 Hint Immediate lt_le_S: arith v62.
-
-Theorem lt_n_Sm_le : forall n m, n < S m -> n <= m.
-Proof.
-  auto with arith.
-Qed.
 Hint Immediate lt_n_Sm_le: arith v62.
-
-Theorem le_lt_n_Sm : forall n m, n <= m -> n < S m.
-Proof.
-  auto with arith.
-Qed.
 Hint Immediate le_lt_n_Sm: arith v62.
 
-Theorem le_not_lt : forall n m, n <= m -> ~ m < n.
+Theorem le_not_lt n m : n <= m -> ~ m < n.
 Proof.
-  induction 1; auto with arith.
+ apply Nat.le_ngt.
 Qed.
 
-Theorem lt_not_le : forall n m, n < m -> ~ m <= n.
+Theorem lt_not_le n m : n < m -> ~ m <= n.
 Proof.
-  red; intros n m Lt Le; exact (le_not_lt m n Le Lt).
+ apply Nat.lt_nge.
 Qed.
+
 Hint Immediate le_not_lt lt_not_le: arith v62.
 
 (** * Asymmetry *)
 
-Theorem lt_asym : forall n m, n < m -> ~ m < n.
+Notation lt_asym := Nat.lt_asymm (compat "8.4"). (* n<m -> ~m<n *)
+
+(** * Order and 0 *)
+
+Notation lt_0_Sn := Nat.lt_0_succ (compat "8.4"). (* 0 < S n *)
+Notation lt_n_0 := Nat.nlt_0_r (compat "8.4"). (* ~ n < 0 *)
+
+Theorem neq_0_lt n : 0 <> n -> 0 < n.
 Proof.
-  induction 1; auto with arith.
+ intros. now apply Nat.neq_0_lt_0, Nat.neq_sym.
 Qed.
+
+Theorem lt_0_neq n : 0 < n -> 0 <> n.
+Proof.
+ intros. now apply Nat.neq_sym, Nat.neq_0_lt_0.
+Qed.
+
+Hint Resolve lt_0_Sn lt_n_0 : arith v62.
+Hint Immediate neq_0_lt lt_0_neq: arith v62.
 
 (** * Order and successor *)
 
-Theorem lt_n_Sn : forall n, n < S n.
-Proof.
-  auto with arith.
-Qed.
-Hint Resolve lt_n_Sn: arith v62.
+Notation lt_n_Sn := Nat.lt_succ_diag_r (compat "8.4"). (* n < S n *)
+Notation lt_S := Nat.lt_lt_succ_r (compat "8.4"). (* n < m -> n < S m *)
 
-Theorem lt_S : forall n m, n < m -> n < S m.
+Theorem lt_n_S n m : n < m -> S n < S m.
 Proof.
-  auto with arith.
+ apply Nat.succ_lt_mono.
 Qed.
-Hint Resolve lt_S: arith v62.
 
-Theorem lt_n_S : forall n m, n < m -> S n < S m.
+Theorem lt_S_n n m : S n < S m -> n < m.
 Proof.
-  auto with arith.
+ apply Nat.succ_lt_mono.
 Qed.
-Hint Resolve lt_n_S: arith v62.
 
-Theorem lt_S_n : forall n m, S n < S m -> n < m.
-Proof.
-  auto with arith.
-Qed.
-Hint Immediate lt_S_n: arith v62.
-
-Theorem lt_0_Sn : forall n, 0 < S n.
-Proof.
-  auto with arith.
-Qed.
-Hint Resolve lt_0_Sn: arith v62.
-
-Theorem lt_n_0 : forall n, ~ n < 0.
-Proof le_Sn_0.
-Hint Resolve lt_n_0: arith v62.
+Hint Resolve lt_n_Sn lt_S lt_n_S : arith v62.
+Hint Immediate lt_S_n : arith v62.
 
 (** * Predecessor *)
 
-Lemma S_pred : forall n m, m < n -> n = S (pred n).
+Lemma S_pred n m : m < n -> n = S (pred n).
 Proof.
-induction 1; auto with arith.
+ intros. symmetry. now apply Nat.lt_succ_pred with m.
 Qed.
 
-Lemma lt_pred : forall n m, S n < m -> n < pred m.
+Lemma lt_pred n m : S n < m -> n < pred m.
 Proof.
-induction 1; simpl; auto with arith.
+ apply Nat.lt_succ_lt_pred.
 Qed.
+
+Lemma lt_pred_n_n n : 0 < n -> pred n < n.
+Proof.
+ intros. now apply Nat.lt_pred_l, Nat.neq_0_lt_0.
+Qed.
+
 Hint Immediate lt_pred: arith v62.
-
-Lemma lt_pred_n_n : forall n, 0 < n -> pred n < n.
-destruct 1; simpl; auto with arith.
-Qed.
 Hint Resolve lt_pred_n_n: arith v62.
 
 (** * Transitivity properties *)
 
-Theorem lt_trans : forall n m p, n < m -> m < p -> n < p.
-Proof.
-  induction 2; auto with arith.
-Qed.
-
-Theorem lt_le_trans : forall n m p, n < m -> m <= p -> n < p.
-Proof.
-  induction 2; auto with arith.
-Qed.
-
-Theorem le_lt_trans : forall n m p, n <= m -> m < p -> n < p.
-Proof.
-  induction 2; auto with arith.
-Qed.
+Notation lt_trans := Nat.lt_trans (compat "8.4").
+Notation lt_le_trans := Nat.lt_le_trans (compat "8.4").
+Notation le_lt_trans := Nat.le_lt_trans (compat "8.4").
 
 Hint Resolve lt_trans lt_le_trans le_lt_trans: arith v62.
 
 (** * Large = strict or equal *)
 
-Theorem le_lt_or_eq : forall n m, n <= m -> n < m \/ n = m.
+Notation le_lt_or_eq_iff := Nat.lt_eq_cases (compat "8.4").
+
+Theorem le_lt_or_eq n m : n <= m -> n < m \/ n = m.
 Proof.
-  induction 1; auto with arith.
+ apply Nat.lt_eq_cases.
 Qed.
 
-Theorem le_lt_or_eq_iff : forall n m, n <= m <-> n < m \/ n = m.
-Proof.
-  split.
-  intros; apply le_lt_or_eq; auto.
-  destruct 1; subst; auto with arith.
-Qed.
+Notation lt_le_weak := Nat.lt_le_incl (compat "8.4").
 
-Theorem lt_le_weak : forall n m, n < m -> n <= m.
-Proof.
-  auto with arith.
-Qed.
 Hint Immediate lt_le_weak: arith v62.
 
 (** * Dichotomy *)
 
-Theorem le_or_lt : forall n m, n <= m \/ m < n.
-Proof.
-  intros n m; pattern n, m; apply nat_double_ind; auto with arith.
-  induction 1; auto with arith.
-Qed.
+Notation le_or_lt := Nat.le_gt_cases (compat "8.4"). (* n <= m \/ m < n *)
 
-Theorem nat_total_order : forall n m, n <> m -> n < m \/ m < n.
+Theorem nat_total_order n m : n <> m -> n < m \/ m < n.
 Proof.
-  intros m n diff.
-  elim (le_or_lt n m); [ intro H'0 | auto with arith ].
-  elim (le_lt_or_eq n m); auto with arith.
-  intro H'; elim diff; auto with arith.
+ apply Nat.lt_gt_cases.
 Qed.
-
-(** * Comparison to 0 *)
-
-Theorem neq_0_lt : forall n, 0 <> n -> 0 < n.
-Proof.
-  induction n; auto with arith.
-  intros; absurd (0 = 0); trivial with arith.
-Qed.
-Hint Immediate neq_0_lt: arith v62.
-
-Theorem lt_0_neq : forall n, 0 < n -> 0 <> n.
-Proof.
-  induction 1; auto with arith.
-Qed.
-Hint Immediate lt_0_neq: arith v62.
 
 (* begin hide *)
 Notation lt_O_Sn := lt_0_Sn (only parsing).
@@ -192,3 +156,7 @@ Notation neq_O_lt := neq_0_lt (only parsing).
 Notation lt_O_neq := lt_0_neq (only parsing).
 Notation lt_n_O := lt_n_0 (only parsing).
 (* end hide *)
+
+(** For compatibility, we "Require" the same files as before *)
+
+Require Import Le.

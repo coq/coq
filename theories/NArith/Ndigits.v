@@ -6,8 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Bool Morphisms Setoid Bvector BinPos BinNat Wf_nat
- Pnat Nnat Compare_dec Lt Minus.
+Require Import Bool Morphisms Setoid Bvector BinPos BinNat PeanoNat Pnat Nnat.
 
 Local Open Scope N_scope.
 
@@ -111,10 +110,12 @@ Lemma Nshiftl_nat_spec_high : forall a n m, (n<=m)%nat ->
   N.testbit_nat (N.shiftl_nat a n) m = N.testbit_nat a (m-n).
 Proof.
  induction n; intros m H.
- now rewrite <- minus_n_O.
- destruct m. inversion H. apply le_S_n in H.
- simpl. rewrite <- IHn; trivial.
- destruct (N.shiftl_nat a n) as [|[p|p|]]; simpl; trivial.
+ - now rewrite Nat.sub_0_r.
+ - destruct m.
+   + inversion H.
+   + apply le_S_n in H.
+     simpl. rewrite <- IHn; trivial.
+     destruct (N.shiftl_nat a n) as [|[p|p|]]; simpl; trivial.
 Qed.
 
 Lemma Nshiftl_nat_spec_low : forall a n m, (m<n)%nat ->
@@ -123,9 +124,10 @@ Proof.
  induction n; intros m H. inversion H.
  rewrite Nshiftl_nat_S.
  destruct m.
- destruct (N.shiftl_nat a n); trivial.
- specialize (IHn m (lt_S_n _ _ H)).
- destruct (N.shiftl_nat a n); trivial.
+ - destruct (N.shiftl_nat a n); trivial.
+ - apply Lt.lt_S_n in H.
+   specialize (IHn m H).
+   destruct (N.shiftl_nat a n); trivial.
 Qed.
 
 (** A left shift for positive numbers (used in BigN) *)
@@ -446,49 +448,52 @@ Lemma Nless_trans :
    Nless a a' = true -> Nless a' a'' = true -> Nless a a'' = true.
 Proof.
   induction a as [|a IHa|a IHa] using N.binary_ind; intros a' a'' H H0.
-    case_eq (Nless N0 a'') ; intros Heqn. trivial.
-     rewrite (N0_less_2 a'' Heqn), (Nless_z a') in H0. discriminate H0.
-    induction a' as [|a' _|a' _] using N.binary_ind.
-      rewrite (Nless_z (N.double a)) in H. discriminate H.
-      rewrite (Nless_def_1 a a') in H.
-       induction a'' using N.binary_ind.
-         rewrite (Nless_z (N.double a')) in H0. discriminate H0.
-         rewrite (Nless_def_1 a' a'') in H0. rewrite (Nless_def_1 a a'').
-          exact (IHa _ _ H H0).
-         apply Nless_def_3.
-      induction a'' as [|a'' _|a'' _] using N.binary_ind.
-        rewrite (Nless_z (N.succ_double a')) in H0. discriminate H0.
-        rewrite (Nless_def_4 a' a'') in H0. discriminate H0.
-        apply Nless_def_3.
-    induction a' as [|a' _|a' _] using N.binary_ind.
-      rewrite (Nless_z (N.succ_double a)) in H. discriminate H.
-      rewrite (Nless_def_4 a a') in H. discriminate H.
+  - case_eq (Nless N0 a'') ; intros Heqn.
+    + trivial.
+    + rewrite (N0_less_2 a'' Heqn), (Nless_z a') in H0. discriminate H0.
+  - induction a' as [|a' _|a' _] using N.binary_ind.
+    + rewrite (Nless_z (N.double a)) in H. discriminate H.
+    + rewrite (Nless_def_1 a a') in H.
       induction a'' using N.binary_ind.
-        rewrite (Nless_z (N.succ_double a')) in H0. discriminate H0.
-        rewrite (Nless_def_4 a' a'') in H0. discriminate H0.
-        rewrite (Nless_def_2 a' a'') in H0. rewrite (Nless_def_2 a a') in H.
-          rewrite (Nless_def_2 a a''). exact (IHa _ _ H H0).
+      * rewrite (Nless_z (N.double a')) in H0. discriminate H0.
+      * rewrite (Nless_def_1 a' a'') in H0. rewrite (Nless_def_1 a a'').
+        exact (IHa _ _ H H0).
+      * apply Nless_def_3.
+    + induction a'' as [|a'' _|a'' _] using N.binary_ind.
+      * rewrite (Nless_z (N.succ_double a')) in H0. discriminate H0.
+      * rewrite (Nless_def_4 a' a'') in H0. discriminate H0.
+      * apply Nless_def_3.
+  - induction a' as [|a' _|a' _] using N.binary_ind.
+    + rewrite (Nless_z (N.succ_double a)) in H. discriminate H.
+    + rewrite (Nless_def_4 a a') in H. discriminate H.
+    + induction a'' using N.binary_ind.
+      * rewrite (Nless_z (N.succ_double a')) in H0. discriminate H0.
+      * rewrite (Nless_def_4 a' a'') in H0. discriminate H0.
+      * rewrite (Nless_def_2 a' a'') in H0. rewrite (Nless_def_2 a a') in H.
+        rewrite (Nless_def_2 a a''). exact (IHa _ _ H H0).
 Qed.
 
 Lemma Nless_total :
  forall a a', {Nless a a' = true} + {Nless a' a = true} + {a = a'}.
 Proof.
   induction a using N.binary_rec; intro a'.
-    case_eq (Nless N0 a') ; intros Heqb. left. left. auto.
-     right. rewrite (N0_less_2 a' Heqb). reflexivity.
-    induction a' as [|a' _|a' _] using N.binary_rec.
-      case_eq (Nless N0 (N.double a)) ; intros Heqb. left. right. auto.
-       right. exact (N0_less_2 _  Heqb).
-      rewrite 2!Nless_def_1. destruct (IHa a') as [ | ->].
-        left. assumption.
-        right. reflexivity.
-    left. left. apply Nless_def_3.
-    induction a' as [|a' _|a' _] using N.binary_rec.
-      left. right. destruct a; reflexivity.
-      left. right. apply Nless_def_3.
-      rewrite 2!Nless_def_2. destruct (IHa a') as [ | ->].
-        left. assumption.
-        right. reflexivity.
+  - case_eq (Nless N0 a') ; intros Heqb.
+    + left. left. auto.
+    + right. rewrite (N0_less_2 a' Heqb). reflexivity.
+  - induction a' as [|a' _|a' _] using N.binary_rec.
+    + case_eq (Nless N0 (N.double a)) ; intros Heqb.
+      * left. right. auto.
+      * right. exact (N0_less_2 _  Heqb).
+    + rewrite 2!Nless_def_1. destruct (IHa a') as [ | ->].
+      * left. assumption.
+      * right. reflexivity.
+    + left. left. apply Nless_def_3.
+  - induction a' as [|a' _|a' _] using N.binary_rec.
+    + left. right. destruct a; reflexivity.
+    + left. right. apply Nless_def_3.
+    + rewrite 2!Nless_def_2. destruct (IHa a') as [ | ->].
+      * left. assumption.
+      * right. reflexivity.
 Qed.
 
 (** Number of digits in a number *)
@@ -622,7 +627,7 @@ induction bv; intros.
 inversion H.
 destruct p ; simpl.
   destruct (Bv2N n bv); destruct h; simpl in *; auto.
-  specialize IHbv with p (lt_S_n _ _ H).
+  specialize IHbv with p (Lt.lt_S_n _ _ H).
     simpl in * ; destruct (Bv2N n bv); destruct h; simpl in *; auto.
 Qed.
 
@@ -641,7 +646,7 @@ Proof.
 destruct n as [|n].
 inversion H.
 induction n ; destruct p ; unfold Vector.nth_order in *; simpl in * ; auto.
-intros H ; destruct (lt_n_O _ (lt_S_n _ _ H)).
+intros H ; destruct (Lt.lt_n_O _ (Lt.lt_S_n _ _ H)).
 Qed.
 
 (** Binary bitwise operations are the same in the two worlds. *)

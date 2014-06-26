@@ -6,176 +6,139 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Properties of addition. [add] is defined in [Init/Peano.v] as:
+(** Properties of addition.
+
+ This file is mostly OBSOLETE now, see module [PeanoNat.Nat] instead.
+
+ [Nat.add] is defined in [Init/Nat.v] as:
 <<
-Fixpoint plus (n m:nat) : nat :=
+Fixpoint add (n m:nat) : nat :=
   match n with
   | O => m
   | S p => S (p + m)
   end
-where "n + m" := (plus n m) : nat_scope.
+where "n + m" := (add n m) : nat_scope.
 >>
- *)
+*)
 
-Require Import Le.
-Require Import Lt.
+Require Import PeanoNat.
 
 Local Open Scope nat_scope.
 
-Implicit Types m n p q : nat.
+(** * Neutrality of 0, commutativity, associativity *)
 
-(** * Zero is neutral 
-Deprecated : Already in Init/Peano.v *)
-Notation plus_0_l := plus_O_n (only parsing).
-Definition plus_0_r n := eq_sym (plus_n_O n).
+Notation plus_0_l := Nat.add_0_l (compat "8.4").
+Notation plus_0_r := Nat.add_0_r (compat "8.4").
+Notation plus_comm := Nat.add_comm (compat "8.4").
+Notation plus_assoc := Nat.add_assoc (compat "8.4").
 
-(** * Commutativity *)
+Notation plus_permute := Nat.add_shuffle3 (compat "8.4").
 
-Lemma plus_comm : forall n m, n + m = m + n.
+Definition plus_Snm_nSm : forall n m, S n + m = n + S m :=
+ Peano.plus_n_Sm.
+
+Lemma plus_assoc_reverse n m p : n + m + p = n + (m + p).
 Proof.
-  intros n m; elim n; simpl; auto with arith.
-  intros y H; elim (plus_n_Sm m y); auto with arith.
+  symmetry. apply Nat.add_assoc.
 Qed.
-Hint Immediate plus_comm: arith v62.
-
-(** * Associativity *)
-
-Definition plus_Snm_nSm : forall n m, S n + m = n + S m:=
- plus_n_Sm.
-
-Lemma plus_assoc : forall n m p, n + (m + p) = n + m + p.
-Proof.
-  intros n m p; elim n; simpl; auto with arith.
-Qed.
-Hint Resolve plus_assoc: arith v62.
-
-Lemma plus_permute : forall n m p, n + (m + p) = m + (n + p).
-Proof.
-  intros; rewrite (plus_assoc m n p); rewrite (plus_comm m n); auto with arith.
-Qed.
-
-Lemma plus_assoc_reverse : forall n m p, n + m + p = n + (m + p).
-Proof.
-  auto with arith.
-Qed.
-Hint Resolve plus_assoc_reverse: arith v62.
 
 (** * Simplification *)
 
-Lemma plus_reg_l : forall n m p, p + n = p + m -> n = m.
+Lemma plus_reg_l n m p : p + n = p + m -> n = m.
 Proof.
-  intros m p n; induction n; simpl; auto with arith.
+ apply Nat.add_cancel_l.
 Qed.
 
-Lemma plus_le_reg_l : forall n m p, p + n <= p + m -> n <= m.
+Lemma plus_le_reg_l n m p : p + n <= p + m -> n <= m.
 Proof.
-  induction p; simpl; auto with arith.
+ apply Nat.add_le_mono_l.
 Qed.
 
-Lemma plus_lt_reg_l : forall n m p, p + n < p + m -> n < m.
+Lemma plus_lt_reg_l n m p : p + n < p + m -> n < m.
 Proof.
-  induction p; simpl; auto with arith.
+ apply Nat.add_lt_mono_l.
 Qed.
 
 (** * Compatibility with order *)
 
-Lemma plus_le_compat_l : forall n m p, n <= m -> p + n <= p + m.
+Lemma plus_le_compat_l n m p : n <= m -> p + n <= p + m.
 Proof.
-  induction p; simpl; auto with arith.
-Qed.
-Hint Resolve plus_le_compat_l: arith v62.
-
-Lemma plus_le_compat_r : forall n m p, n <= m -> n + p <= m + p.
-Proof.
-  induction 1; simpl; auto with arith.
-Qed.
-Hint Resolve plus_le_compat_r: arith v62.
-
-Lemma le_plus_l : forall n m, n <= n + m.
-Proof.
-  induction n; simpl; auto with arith.
-Qed.
-Hint Resolve le_plus_l: arith v62.
-
-Lemma le_plus_r : forall n m, m <= n + m.
-Proof.
-  intros n m; elim n; simpl; auto with arith.
-Qed.
-Hint Resolve le_plus_r: arith v62.
-
-Theorem le_plus_trans : forall n m p, n <= m -> n <= m + p.
-Proof.
-  intros; apply le_trans with (m := m); auto with arith.
-Qed.
-Hint Resolve le_plus_trans: arith v62.
-
-Theorem lt_plus_trans : forall n m p, n < m -> n < m + p.
-Proof.
-  intros; apply lt_le_trans with (m := m); auto with arith.
-Qed.
-Hint Immediate lt_plus_trans: arith v62.
-
-Lemma plus_lt_compat_l : forall n m p, n < m -> p + n < p + m.
-Proof.
-  induction p; simpl; auto with arith.
-Qed.
-Hint Resolve plus_lt_compat_l: arith v62.
-
-Lemma plus_lt_compat_r : forall n m p, n < m -> n + p < m + p.
-Proof.
-  intros n m p H; rewrite (plus_comm n p); rewrite (plus_comm m p).
-  elim p; auto with arith.
-Qed.
-Hint Resolve plus_lt_compat_r: arith v62.
-
-Lemma plus_le_compat : forall n m p q, n <= m -> p <= q -> n + p <= m + q.
-Proof.
-  intros n m p q H H0.
-  elim H; simpl; auto with arith.
+ apply Nat.add_le_mono_l.
 Qed.
 
-Lemma plus_le_lt_compat : forall n m p q, n <= m -> p < q -> n + p < m + q.
+Lemma plus_le_compat_r n m p : n <= m -> n + p <= m + p.
 Proof.
-  unfold lt. intros. change (S n + p <= m + q). rewrite plus_Snm_nSm.
-  apply plus_le_compat; assumption.
+ apply Nat.add_le_mono_r.
 Qed.
 
-Lemma plus_lt_le_compat : forall n m p q, n < m -> p <= q -> n + p < m + q.
+Lemma plus_lt_compat_l n m p : n < m -> p + n < p + m.
 Proof.
-  unfold lt. intros. change (S n + p <= m + q). apply plus_le_compat; assumption.
+ apply Nat.add_lt_mono_l.
 Qed.
 
-Lemma plus_lt_compat : forall n m p q, n < m -> p < q -> n + p < m + q.
+Lemma plus_lt_compat_r n m p : n < m -> n + p < m + p.
 Proof.
-  intros. apply plus_lt_le_compat. assumption.
-  apply lt_le_weak. assumption.
+ apply Nat.add_lt_mono_r.
+Qed.
+
+Lemma plus_le_compat n m p q : n <= m -> p <= q -> n + p <= m + q.
+Proof.
+ apply Nat.add_le_mono.
+Qed.
+
+Lemma plus_le_lt_compat n m p q : n <= m -> p < q -> n + p < m + q.
+Proof.
+ apply Nat.add_le_lt_mono.
+Qed.
+
+Lemma plus_lt_le_compat n m p q : n < m -> p <= q -> n + p < m + q.
+Proof.
+ apply Nat.add_lt_le_mono.
+Qed.
+
+Lemma plus_lt_compat n m p q : n < m -> p < q -> n + p < m + q.
+Proof.
+ apply Nat.add_lt_mono.
+Qed.
+
+Lemma le_plus_l n m : n <= n + m.
+Proof.
+ apply Nat.le_add_r.
+Qed.
+
+Lemma le_plus_r n m : m <= n + m.
+Proof.
+ rewrite Nat.add_comm. apply Nat.le_add_r.
+Qed.
+
+Theorem le_plus_trans n m p : n <= m -> n <= m + p.
+Proof.
+  intros. now rewrite <- Nat.le_add_r.
+Qed.
+
+Theorem lt_plus_trans n m p : n < m -> n < m + p.
+Proof.
+  intros. apply Nat.lt_le_trans with m. trivial. apply Nat.le_add_r.
 Qed.
 
 (** * Inversion lemmas *)
 
-Lemma plus_is_O : forall n m, n + m = 0 -> n = 0 /\ m = 0.
+Lemma plus_is_O n m : n + m = 0 -> n = 0 /\ m = 0.
 Proof.
-  intro m; destruct m as [| n]; auto.
-  intros. discriminate H.
+  destruct n; now split.
 Qed.
 
-Definition plus_is_one :
-  forall m n, m + n = 1 -> {m = 0 /\ n = 1} + {m = 1 /\ n = 0}.
+Definition plus_is_one m n :
+  m + n = 1 -> {m = 0 /\ n = 1} + {m = 1 /\ n = 0}.
 Proof.
-  intro m; destruct m as [| n]; auto.
-  destruct n; auto.
-  intros.
-  simpl in H. discriminate H.
+  destruct m as [| m]; auto.
+  destruct m; auto.
+  discriminate.
 Defined.
 
 (** * Derived properties *)
 
-Lemma plus_permute_2_in_4 : forall n m p q, n + m + (p + q) = n + p + (m + q).
-Proof.
-  intros m n p q.
-  rewrite <- (plus_assoc m n (p + q)). rewrite (plus_assoc n p q).
-  rewrite (plus_comm n p). rewrite <- (plus_assoc p n q). apply plus_assoc.
-Qed.
+Notation plus_permute_2_in_4 := Nat.add_shuffle1 (compat "8.4").
 
 (** * Tail-recursive plus *)
 
@@ -190,31 +153,37 @@ Fixpoint tail_plus n m : nat :=
   end.
 
 Lemma plus_tail_plus : forall n m, n + m = tail_plus n m.
+Proof.
 induction n as [| n IHn]; simpl; auto.
 intro m; rewrite <- IHn; simpl; auto.
 Qed.
 
 (** * Discrimination *)
 
-Lemma succ_plus_discr : forall n m, n <> S (plus m n).
+Lemma succ_plus_discr n m : n <> S (m+n).
 Proof.
-  intros n m; induction n as [|n IHn].
-  discriminate.
-  intro H; apply IHn; apply eq_add_S; rewrite H; rewrite <- plus_n_Sm;
-    reflexivity.
+ apply Nat.succ_add_discr.
 Qed.
 
-Lemma n_SSn : forall n, n <> S (S n).
-Proof.
-  intro n; exact (succ_plus_discr n 1).
-Qed.
+Lemma n_SSn n : n <> S (S n).
+Proof (succ_plus_discr n 1).
 
-Lemma n_SSSn : forall n, n <> S (S (S n)).
-Proof.
-  intro n; exact (succ_plus_discr n 2).
-Qed.
+Lemma n_SSSn n : n <> S (S (S n)).
+Proof (succ_plus_discr n 2).
 
-Lemma n_SSSSn : forall n, n <> S (S (S (S n))).
-Proof.
-  intro n; exact (succ_plus_discr n 3).
-Qed.
+Lemma n_SSSSn n : n <> S (S (S (S n))).
+Proof (succ_plus_discr n 3).
+
+
+(** * Compatibility Hints *)
+
+Hint Immediate plus_comm : arith v62.
+Hint Resolve plus_assoc plus_assoc_reverse : arith v62.
+Hint Resolve plus_le_compat_l plus_le_compat_r : arith v62.
+Hint Resolve le_plus_l le_plus_r le_plus_trans : arith v62.
+Hint Immediate lt_plus_trans : arith v62.
+Hint Resolve plus_lt_compat_l plus_lt_compat_r : arith v62.
+
+(** For compatibility, we "Require" the same files as before *)
+
+Require Import Le Lt.

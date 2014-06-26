@@ -119,6 +119,7 @@ let init_modules = [
   init_dir@["Logic"];
   init_dir@["Specif"];
   init_dir@["Logic_Type"];
+  init_dir@["Nat"];
   init_dir@["Peano"];
   init_dir@["Wf"]
 ]

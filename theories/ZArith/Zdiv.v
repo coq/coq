@@ -683,7 +683,7 @@ Arguments Zdiv_eucl_extended : default implicits.
 
 (** * Division and modulo in Z agree with same in nat: *)
 
-Require Import NPeano.
+Require Import PeanoNat.
 
 Lemma div_Zdiv (n m: nat): m <> O ->
   Z.of_nat (n / m) = Z.of_nat n / Z.of_nat m.

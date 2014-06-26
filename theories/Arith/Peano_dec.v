@@ -6,47 +6,61 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Decidable.
+Require Import Decidable PeanoNat.
 Require Eqdep_dec.
-Require Import Le Lt.
 Local Open Scope nat_scope.
 
 Implicit Types m n x y : nat.
 
-Theorem O_or_S : forall n, {m : nat | S m = n} + {0 = n}.
+Theorem O_or_S n : {m : nat | S m = n} + {0 = n}.
 Proof.
   induction n.
-  auto.
-  left; exists n; auto.
+  - now right.
+  - left; exists n; auto.
 Defined.
 
-Theorem eq_nat_dec : forall n m, {n = m} + {n <> m}.
-Proof.
-  induction n; destruct m; auto.
-  elim (IHn m); auto.
-Defined.
+Notation eq_nat_dec := Nat.eq_dec (compat "8.4").
 
 Hint Resolve O_or_S eq_nat_dec: arith.
 
-Theorem dec_eq_nat : forall n m, decidable (n = m).
-  intros x y; unfold decidable; elim (eq_nat_dec x y); auto with arith.
+Theorem dec_eq_nat n m : decidable (n = m).
+Proof.
+  elim (Nat.eq_dec n m); [left|right]; trivial.
 Defined.
 
-Definition UIP_nat:= Eqdep_dec.UIP_dec eq_nat_dec.
+Definition UIP_nat:= Eqdep_dec.UIP_dec Nat.eq_dec.
+
+Import EqNotations.
 
 Lemma le_unique: forall m n (h1 h2: m <= n), h1 = h2.
 Proof.
 fix 3.
-refine (fun m _ h1 => match h1 as h' in _ <= k return forall hh: m <= k, h' = hh
-  with le_n _ => _ |le_S _ i H => _ end).
-refine (fun hh => match hh as h' in _ <= k return forall eq: m = k, 
-  le_n m = match eq in _ = p return m <= p -> m <= m with |eq_refl => fun bli => bli end h' with
-    |le_n _ => fun eq => _ |le_S _ j H' => fun eq => _ end eq_refl).
-rewrite (UIP_nat _ _ eq eq_refl). reflexivity.
-subst m. destruct (Lt.lt_irrefl j H').
-refine (fun hh => match hh as h' in _ <= k return match k as k' return m <= k' -> Prop
-  with |0 => fun _ => True |S i' => fun h'' => forall H':m <= i', le_S m i' H' = h'' end h'
-    with |le_n _ => _ |le_S _ j H2 => fun H' => _ end H).
-destruct m. exact I. intros; destruct (Lt.lt_irrefl m H').
-f_equal. apply le_unique.
+destruct h1 as [ | i h1 ]; intros h2.
+- set (Return k (le:m<=k) :=
+       forall (eq:m=k),
+         le_n m = (rew eq in fun (le':m<=m) => le') le).
+  refine
+     (match h2 as h2' return (Return _ h2') with
+        | le_n _ => fun eq => _
+        | le_S _ j h2 => fun eq => _
+      end eq_refl).
+  + rewrite (UIP_nat _ _ eq eq_refl). simpl. reflexivity.
+  + exfalso. revert h2. rewrite eq. apply Nat.lt_irrefl.
+- set (Return k (le:m<=k) :=
+       match k as k' return (m <= k' -> Prop) with
+         | 0 => fun _ => True
+         | S i' => fun (le':m<=S i') => forall (H':m<=i'), le_S _ _ H' = le'
+       end le).
+  refine
+    (match h2 as h2' return (Return _ h2') with
+       | le_n _ => _
+       | le_S _ j h2 => fun h1' => _
+     end h1).
+  + unfold Return; clear. destruct m; simpl.
+    * exact I.
+    * intros h1'. destruct (Nat.lt_irrefl _ h1').
+  + f_equal. apply le_unique.
 Qed.
+
+(** For compatibility *)
+Require Import Le Lt.

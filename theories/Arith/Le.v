@@ -6,7 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Order on natural numbers. [le] is defined in [Init/Peano.v] as:
+(** Order on natural numbers.
+
+ This file is mostly OBSOLETE now, see module [PeanoNat.Nat] instead.
+
+ [le] is defined in [Init/Peano.v] as:
 <<
 Inductive le (n:nat) : nat -> Prop :=
   | le_n : n <= n
@@ -14,109 +18,57 @@ Inductive le (n:nat) : nat -> Prop :=
 
 where "n <= m" := (le n m) : nat_scope.
 >>
- *)
+*)
+
+Require Import PeanoNat.
 
 Local Open Scope nat_scope.
 
-Implicit Types m n p : nat.
+(** * [le] is an order on [nat] *)
 
-(** * [le] is a pre-order *)
+Notation le_refl := Nat.le_refl (compat "8.4").
+Notation le_trans := Nat.le_trans (compat "8.4").
+Notation le_antisym := Nat.le_antisymm (compat "8.4").
 
-(** Reflexivity *)
-Theorem le_refl : forall n, n <= n.
-Proof.
-  exact le_n.
-Qed.
-
-(** Transitivity *)
-Theorem le_trans : forall n m p, n <= m -> m <= p -> n <= p.
-Proof.
-  induction 2; auto.
-Qed.
 Hint Resolve le_trans: arith v62.
-
-(** * Properties of [le] w.r.t. successor, predecessor and 0 *)
-
-(** Comparison to 0 *)
-
-Theorem le_0_n : forall n, 0 <= n.
-Proof.
-  induction n; auto.
-Qed.
-
-Theorem le_Sn_0 : forall n, ~ S n <= 0.
-Proof.
-  red; intros n H.
-  change (IsSucc 0); elim H; simpl; auto with arith.
-Qed.
-
-Hint Resolve le_0_n le_Sn_0: arith v62.
-
-Theorem le_n_0_eq : forall n, n <= 0 -> 0 = n.
-Proof.
-  induction n. auto with arith.  idtac. auto with arith.
-  intro; contradiction le_Sn_0 with n.
-Qed.
-Hint Immediate le_n_0_eq: arith v62.
-
-
-(** [le] and successor *)
-
-Theorem le_n_S : forall n m, n <= m -> S n <= S m.
-Proof.
-  induction 1; auto.
-Qed.
-
-Theorem le_n_Sn : forall n, n <= S n.
-Proof.
-  auto.
-Qed.
-
-Hint Resolve le_n_S le_n_Sn : arith v62.
-
-Theorem le_Sn_le : forall n m, S n <= m -> n <= m.
-Proof.
-  intros n m H; apply le_trans with (S n); auto with arith.
-Qed.
-Hint Immediate le_Sn_le: arith v62.
-
-Theorem le_S_n : forall n m, S n <= S m -> n <= m.
-Proof.
-  exact Peano.le_S_n.
-Qed.
-Hint Immediate le_S_n: arith v62.
-
-Theorem le_Sn_n : forall n, ~ S n <= n.
-Proof.
-  induction n; auto with arith.
-Qed.
-Hint Resolve le_Sn_n: arith v62.
-
-(** [le] and predecessor *)
-
-Theorem le_pred_n : forall n, pred n <= n.
-Proof.
-  induction n; auto with arith.
-Qed.
-Hint Resolve le_pred_n: arith v62.
-
-Theorem le_pred : forall n m, n <= m -> pred n <= pred m.
-Proof.
-  exact Peano.le_pred.
-Qed.
-
-(** * [le] is a order on [nat] *)
-(** Antisymmetry *)
-
-Theorem le_antisym : forall n m, n <= m -> m <= n -> n = m.
-Proof.
-  intros n m H; destruct H as [|m' H]; auto with arith.
-  intros H1.
-  absurd (S m' <= m'); auto with arith.
-  apply le_trans with n; auto with arith.
-Qed.
 Hint Immediate le_antisym: arith v62.
 
+(** * Properties of [le] w.r.t 0 *)
+
+Notation le_0_n := Nat.le_0_l (compat "8.4").  (* 0 <= n *)
+Notation le_Sn_0 := Nat.nle_succ_0 (compat "8.4").  (* ~ S n <= 0 *)
+
+Lemma le_n_0_eq n : n <= 0 -> 0 = n.
+Proof.
+ intros. symmetry. now apply Nat.le_0_r.
+Qed.
+
+(** * Properties of [le] w.r.t successor *)
+
+(** See also [Nat.succ_le_mono]. *)
+
+Theorem le_n_S : forall n m, n <= m -> S n <= S m.
+Proof Peano.le_n_S.
+
+Theorem le_S_n : forall n m, S n <= S m -> n <= m.
+Proof Peano.le_S_n.
+
+Notation le_n_Sn := Nat.le_succ_diag_r (compat "8.4"). (* n <= S n *)
+Notation le_Sn_n := Nat.nle_succ_diag_l (compat "8.4"). (* ~ S n <= n *)
+
+Theorem le_Sn_le : forall n m, S n <= m -> n <= m.
+Proof Nat.lt_le_incl.
+
+Hint Resolve le_0_n le_Sn_0: arith v62.
+Hint Resolve le_n_S le_n_Sn le_Sn_n : arith v62.
+Hint Immediate le_n_0_eq le_Sn_le le_S_n : arith v62.
+
+(** * Properties of [le] w.r.t predecessor *)
+
+Notation le_pred_n := Nat.le_pred_l (compat "8.4"). (* pred n <= n *)
+Notation le_pred := Nat.pred_le_mono (compat "8.4"). (* n<=m -> pred n <= pred m *)
+
+Hint Resolve le_pred_n: arith v62.
 
 (** * A different elimination principle for the order on natural numbers *)
 
@@ -126,10 +78,10 @@ Lemma le_elim_rel :
    (forall p (q:nat), p <= q -> P p q -> P (S p) (S q)) ->
    forall n m, n <= m -> P n m.
 Proof.
-  induction n; auto with arith.
-  intros m Le.
-  elim Le; auto with arith.
-Qed.
+  intros P H0 HS.
+  induction n; trivial.
+  intros m Le. elim Le; auto with arith.
+ Qed.
 
 (* begin hide *)
 Notation le_O_n := le_0_n (only parsing).

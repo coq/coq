@@ -11,16 +11,16 @@
  * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
  *              91405 Orsay, France *)
 
-Require Import Orders NPeano POrderedType NArith
- ZArith RelationPairs EqualitiesFacts.
+Require Import Orders PeanoNat POrderedType BinNat BinInt
+ RelationPairs EqualitiesFacts.
 
 (** * Examples of Ordered Type structures. *)
 
 
 (** Ordered Type for [nat], [Positive], [N], [Z] with the usual order. *)
 
-Module Nat_as_OT := NPeano.Nat.
-Module Positive_as_OT := POrderedType.Positive_as_OT.
+Module Nat_as_OT := PeanoNat.Nat.
+Module Positive_as_OT := BinPos.Pos.
 Module N_as_OT := BinNat.N.
 Module Z_as_OT := BinInt.Z.
 

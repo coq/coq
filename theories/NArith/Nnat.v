@@ -6,8 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Minus Compare_dec Sumbool Div2 Min Max.
-Require Import BinPos BinNat Pnat.
+Require Import BinPos BinNat PeanoNat Pnat.
 
 (** * Conversions from [N] to [nat] *)
 
@@ -68,52 +67,58 @@ Qed.
 Lemma inj_sub a a' :
   N.to_nat (a - a') = N.to_nat a - N.to_nat a'.
 Proof.
- destruct a as [|a], a' as [|a']; simpl; auto with arith.
+ destruct a as [|a], a' as [|a']; simpl; rewrite ?Nat.sub_0_r; trivial.
  destruct (Pos.compare_spec a a').
- subst. now rewrite Pos.sub_mask_diag, <- minus_n_n.
- rewrite Pos.sub_mask_neg; trivial. apply Pos2Nat.inj_lt in H.
- simpl; symmetry; apply not_le_minus_0; auto with arith.
- destruct (Pos.sub_mask_pos' _ _ H) as (q & -> & Hq).
- simpl. apply plus_minus. now rewrite <- Hq, Pos2Nat.inj_add.
+ - subst. now rewrite Pos.sub_mask_diag, Nat.sub_diag.
+ - rewrite Pos.sub_mask_neg; trivial. apply Pos2Nat.inj_lt in H.
+   simpl; symmetry; apply Nat.sub_0_le. now apply Nat.lt_le_incl.
+ - destruct (Pos.sub_mask_pos' _ _ H) as (q & -> & Hq).
+   simpl; symmetry; apply Nat.add_sub_eq_l. now rewrite <- Hq, Pos2Nat.inj_add.
 Qed.
 
-Lemma inj_pred a : N.to_nat (N.pred a) = pred (N.to_nat a).
+Lemma inj_pred a : N.to_nat (N.pred a) = Nat.pred (N.to_nat a).
 Proof.
- intros. rewrite pred_of_minus, N.pred_sub. apply inj_sub.
+ rewrite <- Nat.sub_1_r, N.pred_sub. apply inj_sub.
 Qed.
 
-Lemma inj_div2 a : N.to_nat (N.div2 a) = div2 (N.to_nat a).
+Lemma inj_div2 a : N.to_nat (N.div2 a) = Nat.div2 (N.to_nat a).
 Proof.
  destruct a as [|[p|p| ]]; trivial.
- simpl N.to_nat. now rewrite Pos2Nat.inj_xI, div2_double_plus_one.
- simpl N.to_nat. now rewrite Pos2Nat.inj_xO, div2_double.
+ - simpl N.to_nat. now rewrite Pos2Nat.inj_xI, Nat.div2_succ_double.
+ - simpl N.to_nat. now rewrite Pos2Nat.inj_xO, Nat.div2_double.
 Qed.
 
 Lemma inj_compare a a' :
- (a ?= a')%N = nat_compare (N.to_nat a) (N.to_nat a').
+ (a ?= a')%N = (N.to_nat a ?= N.to_nat a').
 Proof.
  destruct a, a'; simpl; trivial.
- now destruct (Pos2Nat.is_succ p) as (n,->).
- now destruct (Pos2Nat.is_succ p) as (n,->).
- apply Pos2Nat.inj_compare.
+ - now destruct (Pos2Nat.is_succ p) as (n,->).
+ - now destruct (Pos2Nat.is_succ p) as (n,->).
+ - apply Pos2Nat.inj_compare.
 Qed.
 
 Lemma inj_max a a' :
-  N.to_nat (N.max a a') = max (N.to_nat a) (N.to_nat a').
+  N.to_nat (N.max a a') = Nat.max (N.to_nat a) (N.to_nat a').
 Proof.
  unfold N.max. rewrite inj_compare; symmetry.
- case nat_compare_spec; intros H; try rewrite H; auto with arith.
+ case Nat.compare_spec; intros.
+ - now apply Nat.max_r, Nat.eq_le_incl.
+ - now apply Nat.max_r, Nat.lt_le_incl.
+ - now apply Nat.max_l, Nat.lt_le_incl.
 Qed.
 
 Lemma inj_min a a' :
-  N.to_nat (N.min a a') = min (N.to_nat a) (N.to_nat a').
+  N.to_nat (N.min a a') = Nat.min (N.to_nat a) (N.to_nat a').
 Proof.
   unfold N.min; rewrite inj_compare. symmetry.
-  case nat_compare_spec; intros H; try rewrite H; auto with arith.
+  case Nat.compare_spec; intros.
+ - now apply Nat.min_l, Nat.eq_le_incl.
+ - now apply Nat.min_l, Nat.lt_le_incl.
+ - now apply Nat.min_r, Nat.lt_le_incl.
 Qed.
 
 Lemma inj_iter a {A} (f:A->A) (x:A) :
-  N.iter a f x = nat_rect (fun _ => A) x (fun _ => f) (N.to_nat a).
+  N.iter a f x = Nat.iter (N.to_nat a) f x.
 Proof.
  destruct a as [|a]. trivial. apply Pos2Nat.inj_iter.
 Qed.
@@ -166,7 +171,7 @@ Proof. nat2N. Qed.
 Lemma inj_succ n : N.of_nat (S n) = N.succ (N.of_nat n).
 Proof. nat2N. Qed.
 
-Lemma inj_pred n : N.of_nat (pred n) = N.pred (N.of_nat n).
+Lemma inj_pred n : N.of_nat (Nat.pred n) = N.pred (N.of_nat n).
 Proof. nat2N. Qed.
 
 Lemma inj_add n n' : N.of_nat (n+n') = (N.of_nat n + N.of_nat n')%N.
@@ -178,23 +183,23 @@ Proof. nat2N. Qed.
 Lemma inj_mul n n' : N.of_nat (n*n') = (N.of_nat n * N.of_nat n')%N.
 Proof. nat2N. Qed.
 
-Lemma inj_div2 n : N.of_nat (div2 n) = N.div2 (N.of_nat n).
+Lemma inj_div2 n : N.of_nat (Nat.div2 n) = N.div2 (N.of_nat n).
 Proof. nat2N. Qed.
 
 Lemma inj_compare n n' :
-  nat_compare n n' = (N.of_nat n ?= N.of_nat n')%N.
+  (n ?= n') = (N.of_nat n ?= N.of_nat n')%N.
 Proof. now rewrite N2Nat.inj_compare, !id. Qed.
 
 Lemma inj_min n n' :
-  N.of_nat (min n n') = N.min (N.of_nat n) (N.of_nat n').
+  N.of_nat (Nat.min n n') = N.min (N.of_nat n) (N.of_nat n').
 Proof. nat2N. Qed.
 
 Lemma inj_max n n' :
-  N.of_nat (max n n') = N.max (N.of_nat n) (N.of_nat n').
+  N.of_nat (Nat.max n n') = N.max (N.of_nat n) (N.of_nat n').
 Proof. nat2N. Qed.
 
 Lemma inj_iter n {A} (f:A->A) (x:A) :
-  nat_rect (fun _ => A) x (fun _ => f) n = N.iter (N.of_nat n) f x.
+  Nat.iter n f x = N.iter (N.of_nat n) f x.
 Proof. now rewrite N2Nat.inj_iter, !id. Qed.
 
 End Nat2N.

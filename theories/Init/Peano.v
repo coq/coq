@@ -26,6 +26,7 @@
 Require Import Notations.
 Require Import Datatypes.
 Require Import Logic.
+Require Coq.Init.Nat.
 
 Open Scope nat_scope.
 
@@ -37,10 +38,8 @@ Hint Resolve f_equal_nat: core.
 
 (** The predecessor function *)
 
-Definition pred (n:nat) : nat := match n with
-                                 | O => n
-                                 | S u => u
-                                 end.
+Notation pred := Nat.pred (compat "8.4").
+
 Definition f_equal_pred := f_equal pred.
 Hint Resolve f_equal_pred: v62.
 
@@ -82,13 +81,8 @@ Hint Resolve n_Sn: core.
 
 (** Addition *)
 
-Fixpoint plus (n m:nat) : nat :=
-  match n with
-  | O => m
-  | S p => S (p + m)
-  end
-
-where "n + m" := (plus n m) : nat_scope.
+Notation plus := Nat.add (compat "8.4").
+Infix "+" := Nat.add : nat_scope.
 
 Definition f_equal2_plus := f_equal2 plus.
 Hint Resolve f_equal2_plus: v62.
@@ -103,7 +97,7 @@ Hint Resolve plus_n_O: core.
 
 Lemma plus_O_n : forall n:nat, 0 + n = n.
 Proof.
-  auto.
+  reflexivity.
 Qed.
 
 Lemma plus_n_Sm : forall n m:nat, S (n + m) = n + S m.
@@ -114,7 +108,7 @@ Hint Resolve plus_n_Sm: core.
 
 Lemma plus_Sn_m : forall n m:nat, S n + m = S (n + m).
 Proof.
-  auto.
+  reflexivity.
 Qed.
 
 (** Standard associated names *)
@@ -124,13 +118,9 @@ Notation plus_succ_r_reverse := plus_n_Sm (compat "8.2").
 
 (** Multiplication *)
 
-Fixpoint mult (n m:nat) : nat :=
-  match n with
-  | O => 0
-  | S p => m + p * m
-  end
+Notation mult := Nat.mul (compat "8.4").
+Infix "*" := Nat.mul : nat_scope.
 
-where "n * m" := (mult n m) : nat_scope.
 Definition f_equal2_mult := f_equal2 mult.
 Hint Resolve f_equal2_mult: core.
 
@@ -155,14 +145,8 @@ Notation mult_succ_r_reverse := mult_n_Sm (compat "8.2").
 
 (** Truncated subtraction: [m-n] is [0] if [n>=m] *)
 
-Fixpoint minus (n m:nat) : nat :=
-  match n, m with
-  | O, _ => n
-  | S k, O => n
-  | S k, S l => k - l
-  end
-
-where "n - m" := (minus n m) : nat_scope.
+Notation minus := Nat.sub (compat "8.4").
+Infix "-" := Nat.sub : nat_scope.
 
 (** Definition of the usual orders, the basic properties of [le] and [lt]
     can be found in files Le and Lt *)
@@ -206,6 +190,16 @@ Proof.
 intros n m. exact (le_pred (S n) (S m)).
 Qed.
 
+Theorem le_0_n : forall n, 0 <= n.
+Proof.
+ induction n; constructor; trivial.
+Qed.
+
+Theorem le_n_S : forall n m, n <= m -> S n <= S m.
+Proof.
+ induction 1; constructor; trivial.
+Qed.
+
 (** Case analysis *)
 
 Theorem nat_case :
@@ -228,43 +222,37 @@ Qed.
 
 (** Maximum and minimum : definitions and specifications *)
 
-Fixpoint max n m : nat :=
-  match n, m with
-    | O, _ => m
-    | S n', O => n
-    | S n', S m' => S (max n' m')
-  end.
+Notation max := Nat.max (compat "8.4").
+Notation min := Nat.min (compat "8.4").
 
-Fixpoint min n m : nat :=
-  match n, m with
-    | O, _ => 0
-    | S n', O => 0
-    | S n', S m' => S (min n' m')
-  end.
-
-Theorem max_l : forall n m : nat, m <= n -> max n m = n.
+Lemma max_l n m : m <= n -> Nat.max n m = n.
 Proof.
-induction n; destruct m; simpl; auto. inversion 1.
-intros. apply f_equal. apply IHn. apply le_S_n. trivial.
+ revert m; induction n; destruct m; simpl; trivial.
+ - inversion 1.
+ - intros. apply f_equal, IHn, le_S_n; trivial.
 Qed.
 
-Theorem max_r : forall n m : nat, n <= m -> max n m = m.
+Lemma max_r n m : n <= m -> Nat.max n m = m.
 Proof.
-induction n; destruct m; simpl; auto. inversion 1.
-intros. apply f_equal. apply IHn. apply le_S_n. trivial.
+ revert m; induction n; destruct m; simpl; trivial.
+ - inversion 1.
+ - intros. apply f_equal, IHn, le_S_n; trivial.
 Qed.
 
-Theorem min_l : forall n m : nat, n <= m -> min n m = n.
+Lemma min_l n m : n <= m -> Nat.min n m = n.
 Proof.
-induction n; destruct m; simpl; auto. inversion 1.
-intros. apply f_equal. apply IHn. apply le_S_n. trivial.
+ revert m; induction n; destruct m; simpl; trivial.
+ - inversion 1.
+ - intros. apply f_equal, IHn, le_S_n; trivial.
 Qed.
 
-Theorem min_r : forall n m : nat, m <= n -> min n m = m.
+Lemma min_r n m : m <= n -> Nat.min n m = m.
 Proof.
-induction n; destruct m; simpl; auto. inversion 1.
-intros. apply f_equal. apply IHn. apply le_S_n. trivial.
+ revert m; induction n; destruct m; simpl; trivial.
+ - inversion 1.
+ - intros. apply f_equal, IHn, le_S_n; trivial.
 Qed.
+
 
 Lemma nat_rect_succ_r {A} (f: A -> A) (x:A) n :
   nat_rect (fun _ => A) x (fun _ => f) (S n) = nat_rect (fun _ => A) (f x) (fun _ => f) n.

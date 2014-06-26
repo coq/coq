@@ -8,7 +8,7 @@
 (************************************************************************)
 
 Require Export BinNums BinPos Pnat.
-Require Import BinNat Bool Plus Mult Equalities GenericMinMax
+Require Import BinNat Bool Equalities GenericMinMax
  OrdersFacts ZAxioms ZProperties.
 Require BinIntDef.
 
@@ -72,6 +72,23 @@ Definition eq_dec (x y : Z) : {x = y} + {x <> y}.
 Proof.
  decide equality; apply Pos.eq_dec.
 Defined.
+
+(** * Proofs of morphisms, obvious since eq is Leibniz *)
+
+Local Obligation Tactic := simpl_relation.
+Program Definition succ_wd : Proper (eq==>eq) succ := _.
+Program Definition pred_wd : Proper (eq==>eq) pred := _.
+Program Definition opp_wd : Proper (eq==>eq) opp := _.
+Program Definition add_wd : Proper (eq==>eq==>eq) add := _.
+Program Definition sub_wd : Proper (eq==>eq==>eq) sub := _.
+Program Definition mul_wd : Proper (eq==>eq==>eq) mul := _.
+Program Definition lt_wd : Proper (eq==>eq==>iff) lt := _.
+Program Definition div_wd : Proper (eq==>eq==>eq) div := _.
+Program Definition mod_wd : Proper (eq==>eq==>eq) modulo := _.
+Program Definition quot_wd : Proper (eq==>eq==>eq) quot := _.
+Program Definition rem_wd : Proper (eq==>eq==>eq) rem := _.
+Program Definition pow_wd : Proper (eq==>eq==>eq) pow := _.
+Program Definition testbit_wd : Proper (eq==>eq==>Logic.eq) testbit := _.
 
 (** * Properties of [pos_sub] *)
 
@@ -138,11 +155,19 @@ Qed.
 
 Module Import Private_BootStrap.
 
-(** * Properties of addition *)
-
-(** ** Zero is neutral for addition *)
+(** ** Operations and constants *)
 
 Lemma add_0_r n : n + 0 = n.
+Proof.
+ now destruct n.
+Qed.
+
+Lemma mul_0_r n : n * 0 = 0.
+Proof.
+ now destruct n.
+Qed.
+
+Lemma mul_1_l n : 1 * n = n.
 Proof.
  now destruct n.
 Qed.
@@ -196,28 +221,25 @@ Proof.
    symmetry. now apply Pos.add_sub_assoc.
 Qed.
 
-Lemma add_assoc n m p : n + (m + p) = n + m + p.
+Local Arguments add !x !y.
+
+Lemma add_assoc_pos p n m : pos p + (n + m) = pos p + n + m.
 Proof.
- assert (AUX : forall x y z, pos x + (y + z) = pos x + y + z).
- { intros x [|y|y] [|z|z]; rewrite ?add_0_r; trivial.
-   - simpl. now rewrite Pos.add_assoc.
-   - simpl (_ + neg _). symmetry. apply pos_sub_add.
-   - simpl (neg _ + _); simpl (_ + neg _).
-     now rewrite (add_comm _ (pos _)), <- 2 pos_sub_add, Pos.add_comm.
-   - apply opp_inj. rewrite !opp_add_distr. simpl opp.
-     simpl (neg _ + _); simpl (_ + neg _).
-     rewrite add_comm, Pos.add_comm. apply pos_sub_add. }
- destruct n.
- - trivial.
- - apply AUX.
- - apply opp_inj. rewrite !opp_add_distr. simpl opp. apply AUX.
+ destruct n as [|n|n], m as [|m|m]; simpl; trivial.
+ - now rewrite Pos.add_assoc.
+ - symmetry. apply pos_sub_add.
+ - symmetry. apply add_0_r.
+ - now rewrite <- pos_sub_add, add_comm, <- pos_sub_add, Pos.add_comm.
+ - apply opp_inj. rewrite !opp_add_distr, !pos_sub_opp.
+   rewrite add_comm, Pos.add_comm. apply pos_sub_add.
 Qed.
 
-(** ** Subtraction and successor *)
-
-Lemma sub_succ_l n m : succ n - m = succ (n - m).
+Lemma add_assoc n m p : n + (m + p) = n + m + p.
 Proof.
- unfold sub, succ. now rewrite <- 2 add_assoc, (add_comm 1).
+ destruct n.
+ - trivial.
+ - apply add_assoc_pos.
+ - apply opp_inj. rewrite !opp_add_distr. simpl. apply add_assoc_pos.
 Qed.
 
 (** ** Opposite is inverse for addition *)
@@ -227,55 +249,9 @@ Proof.
  destruct n; simpl; trivial; now rewrite pos_sub_diag.
 Qed.
 
-Lemma add_opp_diag_l n : - n + n = 0.
-Proof.
- rewrite add_comm. apply add_opp_diag_r.
-Qed.
-
-(** ** Commutativity of multiplication *)
-
-Lemma mul_comm n m : n * m = m * n.
-Proof.
- destruct n, m; simpl; trivial; f_equal; apply Pos.mul_comm.
-Qed.
-
-(** ** Associativity of multiplication *)
-
-Lemma mul_assoc n m p : n * (m * p) = n * m * p.
-Proof.
- destruct n, m, p; simpl; trivial; f_equal; apply Pos.mul_assoc.
-Qed.
-
-(** Multiplication and constants *)
-
-Lemma mul_1_l n : 1 * n = n.
-Proof.
- now destruct n.
-Qed.
-
-Lemma mul_1_r n : n * 1 = n.
-Proof.
- destruct n; simpl; now rewrite ?Pos.mul_1_r.
-Qed.
-
 (** ** Multiplication and Opposite *)
 
-Lemma mul_opp_l n m : - n * m = - (n * m).
-Proof.
- now destruct n, m.
-Qed.
-
 Lemma mul_opp_r n m : n * - m = - (n * m).
-Proof.
- now destruct n, m.
-Qed.
-
-Lemma mul_opp_opp n m : - n * - m = n * m.
-Proof.
- now destruct n, m.
-Qed.
-
-Lemma mul_opp_comm n m : - n * m = n * - m.
 Proof.
  now destruct n, m.
 Qed.
@@ -283,76 +259,24 @@ Qed.
 (** ** Distributivity of multiplication over addition *)
 
 Lemma mul_add_distr_pos (p:positive) n m :
- pos p * (n + m) = pos p * n + pos p * m.
+ (n + m) * pos p = n * pos p + m * pos p.
 Proof.
- destruct n as [|n|n], m as [|m|m]; simpl; trivial;
- rewrite ?pos_sub_spec, ?Pos.mul_compare_mono_l; try case Pos.compare_spec;
- intros; now rewrite ?Pos.mul_add_distr_l, ?Pos.mul_sub_distr_l.
-Qed.
-
-Lemma mul_add_distr_l n m p : n * (m + p) = n * m + n * p.
-Proof.
- destruct n as [|n|n]. trivial.
- apply mul_add_distr_pos.
- change (neg n) with (- pos n).
- rewrite !mul_opp_l, <- opp_add_distr. f_equal.
- apply mul_add_distr_pos.
+ destruct n as [|n|n], m as [|m|m]; simpl; trivial.
+ - now rewrite Pos.mul_add_distr_r.
+ - rewrite ?pos_sub_spec, ?Pos.mul_compare_mono_r; case Pos.compare_spec;
+   simpl; trivial; intros; now rewrite Pos.mul_sub_distr_r.
+ - rewrite ?pos_sub_spec, ?Pos.mul_compare_mono_r; case Pos.compare_spec;
+   simpl; trivial; intros; now rewrite Pos.mul_sub_distr_r.
+ - now rewrite Pos.mul_add_distr_r.
 Qed.
 
 Lemma mul_add_distr_r n m p : (n + m) * p = n * p + m * p.
 Proof.
- rewrite !(mul_comm _ p). apply mul_add_distr_l.
-Qed.
-
-(** ** Basic properties of divisibility *)
-
-Lemma divide_Zpos p q : (pos p|pos q) <-> (p|q)%positive.
-Proof.
- split.
- intros ([ |r|r],H); simpl in *; destr_eq H. exists r; auto.
- intros (r,H). exists (pos r); simpl; now f_equal.
-Qed.
-
-Lemma divide_Zpos_Zneg_r n p : (n|pos p) <-> (n|neg p).
-Proof.
- split; intros (m,H); exists (-m); now rewrite mul_opp_l, <- H.
-Qed.
-
-Lemma divide_Zpos_Zneg_l n p : (pos p|n) <-> (neg p|n).
-Proof.
- split; intros (m,H); exists (-m); now rewrite mul_opp_l, <- mul_opp_r.
-Qed.
-
-(** ** Conversions between [Z.testbit] and [N.testbit] *)
-
-Lemma testbit_of_N a n :
- testbit (of_N a) (of_N n) = N.testbit a n.
-Proof.
- destruct a as [|a], n; simpl; trivial. now destruct a.
-Qed.
-
-Lemma testbit_of_N' a n : 0<=n ->
- testbit (of_N a) n = N.testbit a (to_N n).
-Proof.
- intro Hn. rewrite <- testbit_of_N. f_equal.
- destruct n; trivial; now destruct Hn.
-Qed.
-
-Lemma testbit_Zpos a n : 0<=n ->
- testbit (pos a) n = N.testbit (N.pos a) (to_N n).
-Proof.
- intro Hn. now rewrite <- testbit_of_N'.
-Qed.
-
-Lemma testbit_Zneg a n : 0<=n ->
- testbit (neg a) n = negb (N.testbit (Pos.pred_N a) (to_N n)).
-Proof.
- intro Hn.
- rewrite <- testbit_of_N' by trivial.
- destruct n as [ |n|n];
-  [ | simpl; now destruct (Pos.pred_N a) | now destruct Hn].
- unfold testbit.
- now destruct a as [|[ | | ]| ].
+ destruct p as [|p|p].
+ - now rewrite !mul_0_r.
+ - apply mul_add_distr_pos.
+ - apply opp_inj. rewrite opp_add_distr, <- !mul_opp_r.
+   apply mul_add_distr_pos.
 Qed.
 
 End Private_BootStrap.
@@ -396,6 +320,8 @@ Proof.
 Qed.
 
 (** ** Specification of successor and predecessor *)
+
+Local Arguments pos_sub : simpl nomatch.
 
 Lemma succ_pred n : succ (pred n) = n.
 Proof.
@@ -510,6 +436,45 @@ Proof.
  unfold le, min.
  rewrite (compare_antisym n m). case compare_spec; intuition.
 Qed.
+
+(** ** Induction principles based on successor / predecessor *)
+
+Lemma peano_ind (P : Z -> Prop) :
+  P 0 ->
+  (forall x, P x -> P (succ x)) ->
+  (forall x, P x -> P (pred x)) ->
+  forall z, P z.
+Proof.
+ intros H0 Hs Hp z; destruct z.
+ assumption.
+ induction p using Pos.peano_ind.
+  now apply (Hs 0).
+  rewrite <- Pos.add_1_r.
+  now apply (Hs (pos p)).
+ induction p using Pos.peano_ind.
+  now apply (Hp 0).
+  rewrite <- Pos.add_1_r.
+  now apply (Hp (neg p)).
+Qed.
+
+Lemma bi_induction (P : Z -> Prop) :
+  Proper (eq ==> iff) P ->
+  P 0 ->
+  (forall x, P x <-> P (succ x)) ->
+  forall z, P z.
+Proof.
+ intros _ H0 Hs. induction z using peano_ind.
+ assumption.
+ now apply -> Hs.
+ apply Hs. now rewrite succ_pred.
+Qed.
+
+(** We can now derive all properties of basic functions and orders,
+    and use these properties for proving the specs of more advanced
+    functions. *)
+
+Include ZBasicProp <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+
 
 (** ** Specification of absolute value *)
 
@@ -693,7 +658,7 @@ Lemma div_eucl_eq a b : b<>0 ->
 Proof.
  destruct a as [ |a|a], b as [ |b|b]; unfold div_eucl; trivial;
   (now destruct 1) || intros _;
-  generalize (pos_div_eucl_eq a (pos b) (eq_refl _));
+  generalize (pos_div_eucl_eq a (pos b) Logic.eq_refl);
   destruct pos_div_eucl as (q,r); rewrite mul_comm.
  - (* pos pos *)
    trivial.
@@ -756,7 +721,7 @@ Proof.
  destruct a as [|a|a]; unfold modulo, div_eucl.
  now split.
  now apply pos_div_eucl_bound.
- generalize (pos_div_eucl_bound a (pos b) (eq_refl _)).
+ generalize (pos_div_eucl_bound a (pos b) Logic.eq_refl).
  destruct pos_div_eucl as (q,r); unfold snd; intros (Hr,Hr').
  destruct r as [|r|r]; (now destruct Hr) || clear Hr.
  now split.
@@ -773,7 +738,7 @@ Proof.
  destruct b as [|b|b]; try easy; intros _.
  destruct a as [|a|a]; unfold modulo, div_eucl.
  now split.
- generalize (pos_div_eucl_bound a (pos b) (eq_refl _)).
+ generalize (pos_div_eucl_bound a (pos b) Logic.eq_refl).
  destruct pos_div_eucl as (q,r); unfold snd; intros (Hr,Hr').
  destruct r as [|r|r]; (now destruct Hr) || clear Hr.
  now split.
@@ -783,7 +748,7 @@ Proof.
  change (neg b - neg r <= 0). unfold le, lt in *.
   rewrite <- compare_sub. simpl in *.
   now rewrite <- Pos.compare_antisym, Hr'.
- generalize (pos_div_eucl_bound a (pos b) (eq_refl _)).
+ generalize (pos_div_eucl_bound a (pos b) Logic.eq_refl).
  destruct pos_div_eucl as (q,r); unfold snd; intros (Hr,Hr').
  split; destruct r; try easy.
   red; simpl; now rewrite <- Pos.compare_antisym.
@@ -838,6 +803,25 @@ Proof. intros _. apply rem_opp_l'. Qed.
 
 Lemma rem_opp_r a b : b<>0 -> rem a (-b) = rem a b.
 Proof. intros _. apply rem_opp_r'. Qed.
+
+(** ** Extra properties about [divide] *)
+
+Lemma divide_Zpos p q : (pos p|pos q) <-> (p|q)%positive.
+Proof.
+ split.
+ intros ([ |r|r],H); simpl in *; destr_eq H. exists r; auto.
+ intros (r,H). exists (pos r); simpl; now f_equal.
+Qed.
+
+Lemma divide_Zpos_Zneg_r n p : (n|pos p) <-> (n|neg p).
+Proof.
+ split; intros (m,H); exists (-m); now rewrite mul_opp_l, <- H.
+Qed.
+
+Lemma divide_Zpos_Zneg_l n p : (pos p|n) <-> (neg p|n).
+Proof.
+ split; intros (m,H); exists (-m); now rewrite mul_opp_l, <- mul_opp_r.
+Qed.
 
 (** ** Correctness proofs for gcd *)
 
@@ -896,6 +880,38 @@ Theorem ggcd_opp a b :
 Proof.
  destruct a as [|a|a], b as [|b|b]; unfold ggcd, opp; auto;
   destruct (Pos.ggcd a b) as (g,(aa,bb)); auto.
+Qed.
+
+(** ** Extra properties about [testbit] *)
+
+Lemma testbit_of_N a n :
+ testbit (of_N a) (of_N n) = N.testbit a n.
+Proof.
+ destruct a as [|a], n; simpl; trivial. now destruct a.
+Qed.
+
+Lemma testbit_of_N' a n : 0<=n ->
+ testbit (of_N a) n = N.testbit a (to_N n).
+Proof.
+ intro Hn. rewrite <- testbit_of_N. f_equal.
+ destruct n; trivial; now destruct Hn.
+Qed.
+
+Lemma testbit_Zpos a n : 0<=n ->
+ testbit (pos a) n = N.testbit (N.pos a) (to_N n).
+Proof.
+ intro Hn. now rewrite <- testbit_of_N'.
+Qed.
+
+Lemma testbit_Zneg a n : 0<=n ->
+ testbit (neg a) n = negb (N.testbit (Pos.pred_N a) (to_N n)).
+Proof.
+ intro Hn.
+ rewrite <- testbit_of_N' by trivial.
+ destruct n as [ |n|n];
+  [ | simpl; now destruct (Pos.pred_N a) | now destruct Hn].
+ unfold testbit.
+ now destruct a as [|[ | | ]| ].
 Qed.
 
 (** ** Proofs of specifications for bitwise operations *)
@@ -1103,59 +1119,10 @@ Proof.
  now rewrite N.lxor_spec, xorb_negb_negb.
 Qed.
 
-(** ** Induction principles based on successor / predecessor *)
 
-Lemma peano_ind (P : Z -> Prop) :
-  P 0 ->
-  (forall x, P x -> P (succ x)) ->
-  (forall x, P x -> P (pred x)) ->
-  forall z, P z.
-Proof.
- intros H0 Hs Hp z; destruct z.
- assumption.
- induction p using Pos.peano_ind.
-  now apply (Hs 0).
-  rewrite <- Pos.add_1_r.
-  now apply (Hs (pos p)).
- induction p using Pos.peano_ind.
-  now apply (Hp 0).
-  rewrite <- Pos.add_1_r.
-  now apply (Hp (neg p)).
-Qed.
+(** Generic properties of advanced functions. *)
 
-Lemma bi_induction (P : Z -> Prop) :
-  Proper (eq ==> iff) P ->
-  P 0 ->
-  (forall x, P x <-> P (succ x)) ->
-  forall z, P z.
-Proof.
- intros _ H0 Hs. induction z using peano_ind.
- assumption.
- now apply -> Hs.
- apply Hs. now rewrite succ_pred.
-Qed.
-
-
-(** * Proofs of morphisms, obvious since eq is Leibniz *)
-
-Local Obligation Tactic := simpl_relation.
-Program Definition succ_wd : Proper (eq==>eq) succ := _.
-Program Definition pred_wd : Proper (eq==>eq) pred := _.
-Program Definition opp_wd : Proper (eq==>eq) opp := _.
-Program Definition add_wd : Proper (eq==>eq==>eq) add := _.
-Program Definition sub_wd : Proper (eq==>eq==>eq) sub := _.
-Program Definition mul_wd : Proper (eq==>eq==>eq) mul := _.
-Program Definition lt_wd : Proper (eq==>eq==>iff) lt := _.
-Program Definition div_wd : Proper (eq==>eq==>eq) div := _.
-Program Definition mod_wd : Proper (eq==>eq==>eq) modulo := _.
-Program Definition quot_wd : Proper (eq==>eq==>eq) quot := _.
-Program Definition rem_wd : Proper (eq==>eq==>eq) rem := _.
-Program Definition pow_wd : Proper (eq==>eq==>eq) pow := _.
-Program Definition testbit_wd : Proper (eq==>eq==>Logic.eq) testbit := _.
-
-Include ZProp
- <+ UsualMinMaxLogicalProperties
- <+ UsualMinMaxDecProperties.
+Include ZExtraProp.
 
 (** In generic statements, the predicates [lt] and [le] have been
   favored, whereas [gt] and [ge] don't even exist in the abstract
@@ -1394,11 +1361,11 @@ Lemma inj_gcd p q : Z.pos (Pos.gcd p q) = Z.gcd (Z.pos p) (Z.pos q).
 Proof. reflexivity. Qed.
 
 Definition inj_divide p q : (Z.pos p|Z.pos q) <-> (p|q)%positive.
-Proof. apply Z.Private_BootStrap.divide_Zpos. Qed.
+Proof. apply Z.divide_Zpos. Qed.
 
 Lemma inj_testbit a n : 0<=n ->
  Z.testbit (Z.pos a) n = N.testbit (N.pos a) (Z.to_N n).
-Proof. apply Z.Private_BootStrap.testbit_Zpos. Qed.
+Proof. apply Z.testbit_Zpos. Qed.
 
 (** Some results concerning Z.neg *)
 
@@ -1436,14 +1403,14 @@ Lemma add_neg_pos p q : Z.neg p + Z.pos q = Z.pos_sub q p.
 Proof. reflexivity. Qed.
 
 Lemma divide_pos_neg_r n p : (n|Z.pos p) <-> (n|Z.neg p).
-Proof. apply Z.Private_BootStrap.divide_Zpos_Zneg_r. Qed.
+Proof. apply Z.divide_Zpos_Zneg_r. Qed.
 
 Lemma divide_pos_neg_l n p : (Z.pos p|n) <-> (Z.neg p|n).
-Proof. apply Z.Private_BootStrap.divide_Zpos_Zneg_l. Qed.
+Proof. apply Z.divide_Zpos_Zneg_l. Qed.
 
 Lemma testbit_neg a n : 0<=n ->
  Z.testbit (Z.neg a) n = negb (N.testbit (Pos.pred_N a) (Z.to_N n)).
-Proof. apply Z.Private_BootStrap.testbit_Zneg. Qed.
+Proof. apply Z.testbit_Zneg. Qed.
 
 End Pos2Z.
 

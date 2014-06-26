@@ -31,7 +31,7 @@ Additional suggested reading:
 *)
 
 Require MSetGenTree.
-Require Import Bool List BinPos Pnat Setoid SetoidList NPeano.
+Require Import Bool List BinPos Pnat Setoid SetoidList PeanoNat.
 Local Open Scope list_scope.
 
 (* For nicer extraction, we create induction principles
@@ -1566,7 +1566,7 @@ Proof.
 Qed.
 
 Lemma maxdepth_upperbound s : Rbt s ->
- maxdepth s <= 2 * log2 (S (cardinal s)).
+ maxdepth s <= 2 * Nat.log2 (S (cardinal s)).
 Proof.
  intros (n,H).
  eapply Nat.le_trans; [eapply rb_maxdepth; eauto|].
@@ -1581,7 +1581,7 @@ Proof.
 Qed.
 
 Lemma maxdepth_lowerbound s : s<>Leaf ->
- log2 (cardinal s) < maxdepth s.
+ Nat.log2 (cardinal s) < maxdepth s.
 Proof.
  apply maxdepth_log_cardinal.
 Qed.

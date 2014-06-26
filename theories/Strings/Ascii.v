@@ -10,7 +10,7 @@
 (** Contributed by Laurent Théry (INRIA);
     Adapted to Coq V8 by the Coq Development Team *)
 
-Require Import Bool BinPos BinNat Nnat.
+Require Import Bool BinPos BinNat PeanoNat Nnat.
 Declare ML Module "ascii_syntax_plugin".
 
 (** * Definition of ascii characters *)
@@ -115,7 +115,7 @@ Proof.
  unfold N.lt.
  change 256%N with (N.of_nat 256).
  rewrite <- Nat2N.inj_compare.
- rewrite <- Compare_dec.nat_compare_lt. auto.
+ now apply Nat.compare_lt_iff.
 Qed.
 
 

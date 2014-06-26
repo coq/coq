@@ -135,6 +135,7 @@ let init_ocaml_path () =
         [ "grammar" ]; [ "ide" ] ]
 
 let get_compat_version = function
+  | "8.4" -> Flags.V8_4
   | "8.3" -> Flags.V8_3
   | "8.2" -> Flags.V8_2
   | ("8.1" | "8.0") as s ->

@@ -6,11 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Equality on natural numbers *)
-
+Require Import PeanoNat.
 Local Open Scope nat_scope.
 
-Implicit Types m n x y : nat.
+(** Equality on natural numbers *)
 
 (** * Propositional equality  *)
 
@@ -22,27 +21,32 @@ Fixpoint eq_nat n m : Prop :=
     | S n1, S m1 => eq_nat n1 m1
   end.
 
-Theorem eq_nat_refl : forall n, eq_nat n n.
+Theorem eq_nat_refl n : eq_nat n n.
+Proof.
   induction n; simpl; auto.
 Qed.
 Hint Resolve eq_nat_refl: arith v62.
 
 (** [eq] restricted to [nat] and [eq_nat] are equivalent *)
 
-Lemma eq_eq_nat : forall n m, n = m -> eq_nat n m.
-  induction 1; trivial with arith.
-Qed.
-Hint Immediate eq_eq_nat: arith v62.
-
-Lemma eq_nat_eq : forall n m, eq_nat n m -> n = m.
-  induction n; induction m; simpl; contradiction || auto with arith.
-Qed.
-Hint Immediate eq_nat_eq: arith v62.
-
-Theorem eq_nat_is_eq : forall n m, eq_nat n m <-> n = m.
+Theorem eq_nat_is_eq n m : eq_nat n m <-> n = m.
 Proof.
-  split; auto with arith.
+  split.
+  - revert m; induction n; destruct m; simpl; contradiction || auto.
+  - intros <-; apply eq_nat_refl.
 Qed.
+
+Lemma eq_eq_nat n m : n = m -> eq_nat n m.
+Proof.
+ apply eq_nat_is_eq.
+Qed.
+
+Lemma eq_nat_eq n m : eq_nat n m -> n = m.
+Proof.
+ apply eq_nat_is_eq.
+Qed.
+
+Hint Immediate eq_eq_nat eq_nat_eq: arith v62.
 
 Theorem eq_nat_elim :
   forall n (P:nat -> Prop), P n -> forall m, eq_nat n m -> P m.
@@ -52,63 +56,47 @@ Qed.
 
 Theorem eq_nat_decide : forall n m, {eq_nat n m} + {~ eq_nat n m}.
 Proof.
-  induction n.
-  destruct m as [| n].
-  auto with arith.
-  intros; right; red; trivial with arith.
-  destruct m as [| n0].
-  right; red; auto with arith.
-  intros.
-  simpl.
-  apply IHn.
+  induction n; destruct m; simpl.
+  - left; trivial.
+  - right; intro; trivial.
+  - right; intro; trivial.
+  - apply IHn.
 Defined.
 
 
-(** * Boolean equality on [nat] *)
+(** * Boolean equality on [nat].
 
-Fixpoint beq_nat n m : bool :=
-  match n, m with
-    | O, O => true
-    | O, S _ => false
-    | S _, O => false
-    | S n1, S m1 => beq_nat n1 m1
-  end.
+   We reuse the one already defined in module [Nat].
+   In scope [nat_scope], the notation "=?" can be used. *)
 
-Lemma beq_nat_refl : forall n, true = beq_nat n n.
+Notation beq_nat := Nat.eqb (compat "8.4").
+
+Notation beq_nat_true_iff := Nat.eqb_eq (compat "8.4").
+Notation beq_nat_false_iff := Nat.eqb_neq (compat "8.4").
+
+Lemma beq_nat_refl n : true = (n =? n).
 Proof.
-  intro x; induction x; simpl; auto.
+ symmetry. apply Nat.eqb_refl.
 Qed.
 
-Definition beq_nat_eq : forall x y, true = beq_nat x y -> x = y.
+Lemma beq_nat_true n m : (n =? m) = true -> n=m.
 Proof.
-  double induction x y; simpl.
-    reflexivity.
-    intros n H1 H2. discriminate H2.
-    intros n H1 H2. discriminate H2.
-    intros n H1 z H2 H3. case (H2 _ H3). reflexivity.
+ apply Nat.eqb_eq.
+Qed.
+
+Lemma beq_nat_false n m : (n =? m) = false -> n<>m.
+Proof.
+ apply Nat.eqb_neq.
+Qed.
+
+(** TODO: is it really useful here to have a Defined ?
+    Otherwise we could use Nat.eqb_eq *)
+
+Definition beq_nat_eq : forall n m, true = (n =? m) -> n = m.
+Proof.
+  induction n; destruct m; simpl.
+  - reflexivity.
+  - discriminate.
+  - discriminate.
+  - intros H. case (IHn _ H). reflexivity.
 Defined.
-
-Lemma beq_nat_true : forall x y, beq_nat x y = true -> x=y.
-Proof.
- induction x; destruct y; simpl; auto; intros; discriminate.
-Qed.
-
-Lemma beq_nat_false : forall x y, beq_nat x y = false -> x<>y.
-Proof.
- induction x; destruct y; simpl; auto; intros; discriminate.
-Qed.
-
-Lemma beq_nat_true_iff : forall x y, beq_nat x y = true <-> x=y.
-Proof.
- split. apply beq_nat_true.
- intros; subst; symmetry; apply beq_nat_refl.
-Qed.
-
-Lemma beq_nat_false_iff : forall x y, beq_nat x y = false <-> x<>y.
-Proof.
- intros x y.
- split. apply beq_nat_false.
- generalize (beq_nat_true_iff x y).
- destruct beq_nat; auto.
- intros IFF NEQ. elim NEQ. apply IFF; auto.
-Qed.

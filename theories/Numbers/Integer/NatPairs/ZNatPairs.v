@@ -332,9 +332,9 @@ and get their properties *)
 
 (* The following lines increase the compilation time at least twice *)
 (*
-Require Import NPeano.
+Require PeanoNat.
 
-Module Export ZPairsPeanoAxiomsMod := ZPairsAxiomsMod NPeanoAxiomsMod.
+Module Export ZPairsPeanoAxiomsMod := ZPairsAxiomsMod PeanoNat.Nat.
 Module Export ZPairsPropMod := ZPropFunct ZPairsPeanoAxiomsMod.
 
 Eval compute in (3, 5) * (4, 6).

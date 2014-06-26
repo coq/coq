@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+Require Export PeanoNat.
+
 Require Export Le.
 Require Export Lt.
 Require Export Plus.

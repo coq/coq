@@ -6,9 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Plus.
-Require Import Mult.
-Require Import Lt.
+Require Import PeanoNat Plus Mult Lt.
 Local Open Scope nat_scope.
 
 (** Factorial *)
@@ -21,28 +19,19 @@ Fixpoint fact (n:nat) : nat :=
 
 Arguments fact n%nat.
 
-Lemma lt_O_fact : forall n:nat, 0 < fact n.
+Lemma lt_O_fact n : 0 < fact n.
 Proof.
-  simple induction n; unfold lt; simpl; auto with arith.
+  induction n; simpl; auto with arith.
 Qed.
 
-Lemma fact_neq_0 : forall n:nat, fact n <> 0.
+Lemma fact_neq_0 n : fact n <> 0.
 Proof.
-  intro.
-  apply not_eq_sym.
-  apply lt_O_neq.
-  apply lt_O_fact.
+ apply Nat.neq_0_lt_0, lt_O_fact.
 Qed.
 
-Lemma fact_le : forall n m:nat, n <= m -> fact n <= fact m.
+Lemma fact_le n m : n <= m -> fact n <= fact m.
 Proof.
   induction 1.
-  apply le_n.
-  assert (1 * fact n <= S m * fact m).
-  apply mult_le_compat.
-  apply lt_le_S; apply lt_O_Sn.
-  assumption.
-  simpl (1 * fact n) in H0.
-  rewrite <- plus_n_O in H0.
-  assumption.
+  - apply le_n.
+  - simpl. transitivity (fact m). trivial. apply Nat.le_add_r.
 Qed.

@@ -6,14 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** THIS FILE IS DEPRECATED. Use [NPeano.Nat] instead. *)
+(** THIS FILE IS DEPRECATED. Use [PeanoNat.Nat] instead. *)
 
-Require Import NPeano.
+Require Import PeanoNat.
 
 Local Open Scope nat_scope.
 Implicit Types m n p : nat.
 
-Notation min := Peano.min (only parsing).
+Notation min := Nat.min (only parsing).
 
 Definition min_0_l := Nat.min_0_l.
 Definition min_0_r := Nat.min_0_r.

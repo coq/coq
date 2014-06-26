@@ -29,7 +29,7 @@ Delimit Scope bigZ_scope with bigZ.
 Module BigZ <: ZType <: OrderedTypeFull <: TotalOrder :=
  ZMake.Make BigN
  <+ ZTypeIsZAxioms
- <+ ZProp [no inline]
+ <+ ZBasicProp [no inline] <+ ZExtraProp [no inline]
  <+ HasEqBool2Dec [no inline]
  <+ MinMaxLogicalProperties [no inline]
  <+ MinMaxDecProperties [no inline].

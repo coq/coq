@@ -271,7 +271,7 @@ Qed.
 
 Lemma inj_testbit a n :
  Z.testbit (Z.of_N a) (Z.of_N n) = N.testbit a n.
-Proof. apply Z.Private_BootStrap.testbit_of_N. Qed.
+Proof. apply Z.testbit_of_N. Qed.
 
 End N2Z.
 
@@ -426,7 +426,7 @@ Qed.
 
 Lemma inj_testbit a n : 0<=n ->
  Z.testbit (Z.of_N a) n = N.testbit a (Z.to_N n).
-Proof. apply Z.Private_BootStrap.testbit_of_N'. Qed.
+Proof. apply Z.testbit_of_N'. Qed.
 
 End Z2N.
 
@@ -637,7 +637,7 @@ Qed.
 
 (** [Z.of_nat] and usual operations *)
 
-Lemma inj_compare n m : (Z.of_nat n ?= Z.of_nat m) = nat_compare n m.
+Lemma inj_compare n m : (Z.of_nat n ?= Z.of_nat m) = (n ?= m)%nat.
 Proof.
  now rewrite <-!nat_N_Z, N2Z.inj_compare, <- Nat2N.inj_compare.
 Qed.
@@ -690,23 +690,23 @@ Proof.
  now rewrite <- !nat_N_Z, Nat2N.inj_sub, N2Z.inj_sub.
 Qed.
 
-Lemma inj_pred_max n : Z.of_nat (pred n) = Z.max 0 (Z.pred (Z.of_nat n)).
+Lemma inj_pred_max n : Z.of_nat (Nat.pred n) = Z.max 0 (Z.pred (Z.of_nat n)).
 Proof.
  now rewrite <- !nat_N_Z, Nat2N.inj_pred, N2Z.inj_pred_max.
 Qed.
 
-Lemma inj_pred n : (0<n)%nat -> Z.of_nat (pred n) = Z.pred (Z.of_nat n).
+Lemma inj_pred n : (0<n)%nat -> Z.of_nat (Nat.pred n) = Z.pred (Z.of_nat n).
 Proof.
  rewrite nat_compare_lt, Nat2N.inj_compare. intros.
  now rewrite <- !nat_N_Z, Nat2N.inj_pred, N2Z.inj_pred.
 Qed.
 
-Lemma inj_min n m : Z.of_nat (min n m) = Z.min (Z.of_nat n) (Z.of_nat m).
+Lemma inj_min n m : Z.of_nat (Nat.min n m) = Z.min (Z.of_nat n) (Z.of_nat m).
 Proof.
  now rewrite <- !nat_N_Z, Nat2N.inj_min, N2Z.inj_min.
 Qed.
 
-Lemma inj_max n m : Z.of_nat (max n m) = Z.max (Z.of_nat n) (Z.of_nat m).
+Lemma inj_max n m : Z.of_nat (Nat.max n m) = Z.max (Z.of_nat n) (Z.of_nat m).
 Proof.
  now rewrite <- !nat_N_Z, Nat2N.inj_max, N2Z.inj_max.
 Qed.
@@ -777,13 +777,13 @@ Proof.
  intros. now rewrite <- !Z_N_nat, Z2N.inj_sub, N2Nat.inj_sub.
 Qed.
 
-Lemma inj_pred n : Z.to_nat (Z.pred n) = pred (Z.to_nat n).
+Lemma inj_pred n : Z.to_nat (Z.pred n) = Nat.pred (Z.to_nat n).
 Proof.
  now rewrite <- !Z_N_nat, Z2N.inj_pred, N2Nat.inj_pred.
 Qed.
 
 Lemma inj_compare n m : 0<=n -> 0<=m ->
- nat_compare (Z.to_nat n) (Z.to_nat m) = (n ?= m).
+ (Z.to_nat n ?= Z.to_nat m)%nat = (n ?= m).
 Proof.
  intros Hn Hm. now rewrite <- Nat2Z.inj_compare, !id.
 Qed.
@@ -798,12 +798,12 @@ Proof.
  intros Hn Hm. unfold Z.lt. now rewrite nat_compare_lt, inj_compare.
 Qed.
 
-Lemma inj_min n m : Z.to_nat (Z.min n m) = min (Z.to_nat n) (Z.to_nat m).
+Lemma inj_min n m : Z.to_nat (Z.min n m) = Nat.min (Z.to_nat n) (Z.to_nat m).
 Proof.
  now rewrite <- !Z_N_nat, Z2N.inj_min, N2Nat.inj_min.
 Qed.
 
-Lemma inj_max n m : Z.to_nat (Z.max n m) = max (Z.to_nat n) (Z.to_nat m).
+Lemma inj_max n m : Z.to_nat (Z.max n m) = Nat.max (Z.to_nat n) (Z.to_nat m).
 Proof.
  now rewrite <- !Z_N_nat, Z2N.inj_max, N2Nat.inj_max.
 Qed.
@@ -876,13 +876,13 @@ Proof.
  intros. now rewrite <- !Zabs_N_nat, Zabs2N.inj_sub, N2Nat.inj_sub.
 Qed.
 
-Lemma inj_pred n : 0<n -> Z.abs_nat (Z.pred n) = pred (Z.abs_nat n).
+Lemma inj_pred n : 0<n -> Z.abs_nat (Z.pred n) = Nat.pred (Z.abs_nat n).
 Proof.
  intros. now rewrite <- !Zabs_N_nat, Zabs2N.inj_pred, N2Nat.inj_pred.
 Qed.
 
 Lemma inj_compare n m : 0<=n -> 0<=m ->
- nat_compare (Z.abs_nat n) (Z.abs_nat m) = (n ?= m).
+ (Z.abs_nat n ?= Z.abs_nat m)%nat = (n ?= m).
 Proof.
  intros. now rewrite <- !Zabs_N_nat, <- N2Nat.inj_compare, Zabs2N.inj_compare.
 Qed.
@@ -898,13 +898,13 @@ Proof.
 Qed.
 
 Lemma inj_min n m : 0<=n -> 0<=m ->
- Z.abs_nat (Z.min n m) = min (Z.abs_nat n) (Z.abs_nat m).
+ Z.abs_nat (Z.min n m) = Nat.min (Z.abs_nat n) (Z.abs_nat m).
 Proof.
  intros. now rewrite <- !Zabs_N_nat, Zabs2N.inj_min, N2Nat.inj_min.
 Qed.
 
 Lemma inj_max n m : 0<=n -> 0<=m ->
- Z.abs_nat (Z.max n m) = max (Z.abs_nat n) (Z.abs_nat m).
+ Z.abs_nat (Z.max n m) = Nat.max (Z.abs_nat n) (Z.abs_nat m).
 Proof.
  intros. now rewrite <- !Zabs_N_nat, Zabs2N.inj_max, N2Nat.inj_max.
 Qed.

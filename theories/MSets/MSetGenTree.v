@@ -27,7 +27,7 @@
      - min_elt max_elt choose
 *)
 
-Require Import Orders OrdersFacts MSetInterface NPeano.
+Require Import Orders OrdersFacts MSetInterface PeanoNat.
 Local Open Scope list_scope.
 Local Open Scope lazy_bool_scope.
 
@@ -1129,14 +1129,14 @@ Proof.
 Qed.
 
 Lemma maxdepth_log_cardinal s : s <> Leaf ->
- log2 (cardinal s) < maxdepth s.
+ Nat.log2 (cardinal s) < maxdepth s.
 Proof.
  intros H.
  apply Nat.log2_lt_pow2. destruct s; simpl; intuition.
  apply maxdepth_cardinal.
 Qed.
 
-Lemma mindepth_log_cardinal s : mindepth s <= log2 (S (cardinal s)).
+Lemma mindepth_log_cardinal s : mindepth s <= Nat.log2 (S (cardinal s)).
 Proof.
  apply Nat.log2_le_pow2. auto with arith.
  apply mindepth_cardinal.
