@@ -102,19 +102,4 @@ Record Box (T : Type) : Prop := wrap {prop : T}.
 Definition down (x : Type) : Prop := Box x.
 Definition up (x : Prop) : Type := x.
 
-Definition back A : up (down A) -> A := @prop A.
-
-Definition forth A : A -> up (down A) := wrap A.
-
-Definition backforth (A:Type) (P:A->Type) (a:A) :
-      P (back A (forth A a)) -> P a := fun H => H.
-
-Definition backforth_r (A:Type) (P:A->Type) (a:A) :
-      P a -> P (back A (forth A a)) := fun H => H.
-
-Theorem pandora : False.
-apply (paradox down up back forth backforth backforth_r).
-Qed.
-
-Print Assumptions pandora.
-(* Closed under the global context *)
+Fail Definition back A : up (down A) -> A := @prop A.
