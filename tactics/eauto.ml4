@@ -282,10 +282,18 @@ module SearchProblem = struct
 	       { depth = s.depth; tacres = res; last_tactic = pp; prev = ps;
 		 dblist = s.dblist; localdb = List.tl s.localdb }
 	     else
-	       { depth = pred s.depth; tacres = res;
-		 dblist = s.dblist; last_tactic = pp; prev = ps;
-		 localdb =
-		   List.addn (nbgl'-nbgl) (List.hd s.localdb) s.localdb })
+	       let newlocal = 
+		 let hyps = pf_hyps g in
+		   List.map (fun gl ->
+		     let gls = {Evd.it = gl; sigma = lgls.Evd.sigma } in
+		     let hyps' = pf_hyps gls in
+		       if hyps' == hyps then List.hd s.localdb
+		       else make_local_hint_db ~ts:full_transparent_state true [] gls)
+		     (List.firstn ((nbgl'-nbgl) + 1) (sig_it lgls))
+	       in
+		 { depth = pred s.depth; tacres = res;
+		   dblist = s.dblist; last_tactic = pp; prev = ps;
+		   localdb = newlocal @ List.tl s.localdb })
 	  l
       in
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
