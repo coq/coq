@@ -41,10 +41,8 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd>
     theories/Logic/SetIsType.v
-    theories/Logic/Classical_Pred_Set.v
     theories/Logic/Classical_Pred_Type.v
     theories/Logic/Classical_Prop.v
-    theories/Logic/Classical_Type.v
     (theories/Logic/Classical.v)
     theories/Logic/ClassicalFacts.v
     theories/Logic/Decidable.v
