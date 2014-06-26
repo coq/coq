@@ -165,4 +165,5 @@ Section Stack.
     | None => [False]
     end) * emp.
   Proof.
-    intros. apply himp_ex_conc_trivial.
+    intros. 
+    try apply himp_ex_conc_trivial.
