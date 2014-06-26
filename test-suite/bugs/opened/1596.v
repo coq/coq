@@ -2,6 +2,8 @@
 Require Import Relations.
 Require Import FSets.
 Require Import Arith.
+Require Import Omega.
+Unset Standard Proposition Elimination Names.
 
 Lemma Bool_elim_bool : forall (b:bool),b=true \/ b=false.
   destruct b;try tauto.
@@ -253,7 +255,7 @@ n).
     induction m;simpl;intro.
     elim (Bool_elim_bool (H.mem (MessageSpi.MNam n,n0) h));intros.
     apply SynInc;apply H.mem_2;trivial.
-
+    
     Fail rewrite H in H0. (* !! impossible here !! *)
 Abort.
 (*    discriminate H0.
