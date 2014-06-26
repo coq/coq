@@ -171,3 +171,5 @@ val check_connection : string list -> unit
 (** Launch a coqtop with the user args in order to be sure that it works,
     checking in particular that Prelude.vo is found. This command
     may terminate coqide in case of trouble *)
+
+val interrupter : (int -> unit) ref
