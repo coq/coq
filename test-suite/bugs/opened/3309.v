@@ -11,8 +11,8 @@ Unset Automatic Introduction.
 
 Definition UU := Set.
 
-Definition dirprod ( X Y : UU ) := sigT ( fun x : X => Y ) .
-Definition dirprodpair { X Y : UU } := existT ( fun x : X => Y ) .
+Definition dirprod ( X Y : UU ) := sigT' ( fun x : X => Y ) .
+Definition dirprodpair { X Y : UU } := existT' ( fun x : X => Y ) .
 
 Definition ddualand { X Y P : UU } (xp : ( X -> P ) -> P ) ( yp : ( Y -> P ) -> P ) : ( dirprod X Y -> P ) -> P.
 Proof.
@@ -30,12 +30,12 @@ Definition invweq { X Y : UU } ( w : weq X Y ) : weq Y X .
 admit.
 Defined.
 
-Definition hProp := sigT (fun X : Type => admit).
+Definition hProp := sigT' (fun X : Type => admit).
 
-Definition hProppair ( X : UU ) ( is : admit ) : hProp@{Set i}.
-intros; exact (existT (fun X : UU => admit ) X is ).
+Definition hProppair ( X : UU ) ( is : admit ) : hProp@{i j Set k}.
+intros; exact (existT' (fun X : UU => admit ) X is ).
 Defined.
-Definition hProptoType := @projT1 _ _ : hProp -> Type .
+Definition hProptoType := @projT1' _ _ : hProp -> Type .
 Coercion hProptoType: hProp >-> Sortclass.
 
 Definition ishinh_UU ( X : UU ) : UU := forall P: Set, ( ( X -> P ) -> P ).
@@ -55,18 +55,18 @@ intros; exact ( fun P:_  => ddualand (inx1 P) (iny1 P)) .
 Defined.
 
 Definition UU' := Type.
-Definition hSet:= sigT (fun X : UU' => admit) .
-Definition hSetpair := existT (fun X : UU' => admit).
-Definition pr1hSet:= @projT1 UU (fun X : UU' => admit) : hSet -> Type.
+Definition hSet:= sigT' (fun X : UU' => admit) .
+Definition hSetpair := existT' (fun X : UU' => admit).
+Definition pr1hSet:= @projT1' UU (fun X : UU' => admit) : hSet -> Type.
 Coercion pr1hSet: hSet >-> Sortclass.
 
-Definition hPropset : hSet := existT _ hProp admit .
+Definition hPropset : hSet := existT' _ hProp admit .
 
 Definition hsubtypes ( X : UU ) : Type.
 intros; exact (X -> hProp ).
 Defined.
 Definition carrier { X : UU } ( A : hsubtypes X ) : Type.
-intros; exact (sigT A).
+intros; exact (sigT' A).
 Defined.
 Coercion carrier : hsubtypes >-> Sortclass.
 
@@ -96,9 +96,9 @@ admit.
 Defined.
 
 Definition eqrel ( X : UU ) : Type.
-intros; exact ( sigT ( fun R : hrel X => iseqrel R ) ).
+intros; exact ( sigT' ( fun R : hrel X => iseqrel R ) ).
 Defined.
-Definition pr1eqrel ( X : UU ) : eqrel X -> ( X -> ( X -> hProp ) ) := @projT1 _ _ .
+Definition pr1eqrel ( X : UU ) : eqrel X -> ( X -> ( X -> hProp ) ) := @projT1' _ _ .
 Coercion pr1eqrel : eqrel >-> Funclass .
 
 Definition hreldirprod { X Y : UU } ( RX : hrel X ) ( RY : hrel Y ) : hrel ( dirprod X Y ) .
@@ -116,7 +116,7 @@ intros. hnf. apply dirprodpair. exact ax0. apply dirprodpair. exact ax1. exact a
 Defined.
 
 Definition eqax0 { X : UU } { R : hrel X } { A : hsubtypes X }  : iseqclass R A -> ishinh ( carrier A ) .
-intros X R A; exact ( fun is : iseqclass R A =>  projT1 is ).
+intros X R A; exact ( fun is : iseqclass R A =>  projT1' _ is ).
 Defined.
 
 Lemma iseqclassdirprod { X Y : UU } { R : hrel X } { Q : hrel Y } { A : hsubtypes X } { B : hsubtypes Y } ( isa : iseqclass R A ) ( isb : iseqclass Q B ) : iseqclass ( hreldirprod R Q ) ( subtypesdirprod A B ) .
@@ -130,10 +130,10 @@ Proof .
 Defined .
 
 Definition image { X Y : UU } ( f : X -> Y ) : Type.
-intros; exact ( sigT ( fun y : Y => admit ) ).
+intros; exact ( sigT' ( fun y : Y => admit ) ).
 Defined.
 Definition pr1image { X Y : UU } ( f : X -> Y ) : image f -> Y.
-intros X Y f; exact ( @projT1 _  ( fun y : Y => admit ) ).
+intros X Y f; exact ( @projT1' _  ( fun y : Y => admit ) ).
 Defined.
 
 Definition prtoimage { X Y : UU } (f : X -> Y) : X -> image f.
@@ -141,14 +141,14 @@ Definition prtoimage { X Y : UU } (f : X -> Y) : X -> image f.
 Defined.
 
 Definition setquot { X : UU } ( R : hrel X ) : Type.
-intros; exact ( sigT ( fun A : _ => iseqclass R A ) ).
+intros; exact ( sigT' ( fun A : _ => iseqclass R A ) ).
 Defined.
 Definition setquotpair { X : UU } ( R : hrel X ) ( A : hsubtypes X ) ( is : iseqclass R A ) : setquot R.
-intros; exact (existT _ A is ).
+intros; exact (existT' _ A is ).
 Defined.
 Definition pr1setquot { X : UU } ( R : hrel X ) : setquot R -> ( hsubtypes X ).
 intros X R.
-exact ( @projT1 _ ( fun A : _ => iseqclass R A ) ).
+exact ( @projT1' _ ( fun A : _ => iseqclass R A ) ).
 Defined.
 Coercion pr1setquot : setquot >-> hsubtypes .
 
@@ -157,7 +157,7 @@ intros; exact ( hSetpair (setquot R) admit) .
 Defined.
 
 Definition dirprodtosetquot { X Y : UU } ( RX : hrel X ) ( RY : hrel Y ) (cd : dirprod ( setquot RX ) ( setquot RY ) ) : setquot ( hreldirprod RX RY ).
-intros; exact ( setquotpair _ _ ( iseqclassdirprod ( projT2 ( projT1 cd ) ) ( projT2 ( projT2 cd ) ) ) ).
+intros; exact ( setquotpair _ _ ( iseqclassdirprod ( projT2' _ ( projT1' _ cd ) ) ( projT2' _  ( projT2' _ cd ) ) ) ).
 Defined.
 
 Definition iscomprelfun2 { X Y : UU } ( R : hrel X ) ( f : X -> X -> Y ) := forall x x' x0 x0' : X , R x x' ->  R x0 x0' ->  paths ( f x x0 ) ( f x' x0' ) .
@@ -167,16 +167,16 @@ intros; exact ( X -> X -> X ).
 Defined.
 
 Definition setwithbinop : Type.
-exact (sigT ( fun X : hSet => binop X ) ).
+exact (sigT' ( fun X : hSet => binop X ) ).
 Defined.
-Definition pr1setwithbinop : setwithbinop -> hSet@{Set j}.
+Definition pr1setwithbinop : setwithbinop -> hSet@{j k Set l}.
 unfold setwithbinop.
-exact ( @projT1 _ ( fun X : hSet@{Set j} => binop@{Set} X ) ).
+exact ( @projT1' _ ( fun X : hSet@{j k Set l} => binop@{Set} X ) ).
 Defined.
 Coercion pr1setwithbinop : setwithbinop >-> hSet .
 
 Definition op { X : setwithbinop } : binop X.
-intros; exact ( projT2 X ).
+intros; exact ( projT2' _ X ).
 Defined.
 
 Definition subsetswithbinop { X : setwithbinop } : Type.
@@ -190,11 +190,11 @@ Defined.
 Coercion carrierofasubsetwithbinop : subsetswithbinop >-> setwithbinop .
 
 Definition binopeqrel { X : setwithbinop } : Type.
-intros; exact (sigT ( fun R : eqrel X => admit ) ).
+intros; exact (sigT' ( fun R : eqrel X => admit ) ).
 Defined.
-Definition binopeqrelpair { X : setwithbinop } := existT ( fun R : eqrel X => admit ).
+Definition binopeqrelpair { X : setwithbinop } := existT' ( fun R : eqrel X => admit ).
 Definition pr1binopeqrel ( X : setwithbinop ) : @binopeqrel X -> eqrel X.
-intros X; exact ( @projT1 _ ( fun R : eqrel X => admit ) ) .
+intros X; exact ( @projT1' _ ( fun R : eqrel X => admit ) ) .
 Defined.
 Coercion pr1binopeqrel : binopeqrel >-> eqrel .
 
@@ -203,10 +203,10 @@ admit.
 Defined.
 
 Definition monoid : Type.
-exact ( sigT ( fun X : setwithbinop => admit ) ).
+exact ( sigT' ( fun X : setwithbinop => admit ) ).
 Defined.
-Definition monoidpair := existT ( fun X : setwithbinop => admit ) .
-Definition pr1monoid : monoid -> setwithbinop := @projT1 _ _ .
+Definition monoidpair := existT' ( fun X : setwithbinop => admit ) .
+Definition pr1monoid : monoid -> setwithbinop := @projT1' _ _ .
 Coercion pr1monoid : monoid >-> setwithbinop .
 
 Notation "x + y" := ( op x y ) : addmonoid_scope .
@@ -221,11 +221,11 @@ Defined.
 Coercion  submonoidstosubsetswithbinop : submonoids >-> subsetswithbinop .
 
 Definition abmonoid : Type.
-exact (sigT ( fun X : setwithbinop => admit ) ).
+exact (sigT' ( fun X : setwithbinop => admit ) ).
 Defined.
 
 Definition abmonoidtomonoid : abmonoid -> monoid.
-exact (fun X : _ => monoidpair ( projT1 X ) admit ).
+exact (fun X : _ => monoidpair ( projT1' _ X ) admit ).
 Defined.
 Coercion abmonoidtomonoid : abmonoid >-> monoid .
 
@@ -261,9 +261,9 @@ Defined.
 Theorem setquotuniv  { X : UU } ( R : hrel X ) ( Y : hSet ) ( f : X -> Y ) ( c : setquot R ) : Y .
 Proof.
   intros.
-  apply ( pr1image ( fun x : c => f ( projT1 x ) ) ) .
-  apply ( @hinhuniv ( projT1 c ) ( hProppair _ admit ) ( prtoimage ( fun x : c => f ( projT1 x ) ) ) ) .
-  pose ( eqax0 ( projT2 c ) )  as h.
+  apply ( pr1image ( fun x : c => f ( projT1' _ x ) ) ) .
+  apply ( @hinhuniv ( projT1' _ c ) ( hProppair _ admit ) ( prtoimage ( fun x : c => f ( projT1' _ x ) ) ) ) .
+  pose ( eqax0 ( projT2' _ c ) )  as h.
   simpl in *.
   Set Printing Universes.
   exact h.
@@ -315,4 +315,12 @@ Definition abmonoidfracrel ( X : abmonoid ) ( A : @submonoids X ) :  hrel (@setq
 intros; exact (@quotrel _ _).
 Defined.
 
-Fail Timeout 3 Axiom ispartlbinopabmonoidfracrel : forall ( X : abmonoid ) ( A : @subabmonoids X ) { L : hrel X } ( z : abmonoidfrac X A ) , @abmonoidfracrel X A ( ( admit + z ) )admit.
+Fail Timeout 1 Axiom ispartlbinopabmonoidfracrel : forall ( X : abmonoid ) ( A : @subabmonoids X ) { L : hrel X } ( z : abmonoidfrac X A ) , @abmonoidfracrel X A ( ( admit + z ) )admit.
+
+Definition ispartlbinopabmonoidfracrel_type : Type :=
+  forall ( X : abmonoid ) ( A : @subabmonoids X ) { L : hrel X } ( z : abmonoidfrac X A ), 
+    @abmonoidfracrel X A ( ( admit + z ) )admit.
+
+Axiom ispartlbinopabmonoidfracrel : $(let t:= eval unfold ispartlbinopabmonoidfracrel_type in
+                                      ispartlbinopabmonoidfracrel_type in exact t)$.
+
