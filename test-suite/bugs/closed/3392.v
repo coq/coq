@@ -37,5 +37,4 @@ Proof.
         rewrite eissect;
         apply apD
       ).
-Fail Defined.
-(* Anomaly: Uncaught exception Not_found(_). Please report. *)
+Defined.
