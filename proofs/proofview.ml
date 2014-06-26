@@ -230,6 +230,8 @@ let catchable_exception = function
 (* Unit of the tactic monad *)
 let tclUNIT a = (Proof.ret a:'a Proof.t)
 
+let tclCHECKINTERRUPT a = Control.check_for_interrupt (); Proof.ret a
+
 (* Bind operation of the tactic monad *)
 let tclBIND = Proof.bind
 

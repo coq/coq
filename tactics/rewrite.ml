@@ -1213,9 +1213,13 @@ module Strategies =
 
     let try_ str : strategy = choice str id
 
+    let check_interrupt str e l c t r ev =
+      Control.check_for_interrupt ();
+      str  e l c t r ev
+    
     let fix (f : strategy -> strategy) : strategy =
-      let rec aux env = f (fun env -> aux env) env in aux
-
+      let rec aux env = f (fun env -> check_interrupt aux env) env in aux
+    
     let any (s : strategy) : strategy =
       fix (fun any -> try_ (seq s any))
 

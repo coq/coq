@@ -139,6 +139,9 @@ val apply : Environ.env -> 'a tactic -> proofview -> 'a
 
 (* Unit of the tactic monad *)
 val tclUNIT : 'a -> 'a tactic
+ 
+(* Unit but checks for interrupts *) 
+val tclCHECKINTERRUPT : 'a -> 'a tactic
 
 (* Bind operation of the tactic monad *)
 val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
