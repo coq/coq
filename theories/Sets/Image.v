@@ -26,7 +26,7 @@
 
 Require Export Finite_sets.
 Require Export Constructive_sets.
-Require Export Classical_Type.
+Require Export Classical.
 Require Export Classical_sets.
 Require Export Powerset.
 Require Export Powerset_facts.

@@ -26,7 +26,7 @@
 
 Require Export Ensembles.
 Require Export Constructive_sets.
-Require Export Classical_Type.
+Require Export Classical.
 
 Section Ensembles_classical.
   Variable U : Type.

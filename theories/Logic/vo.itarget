@@ -4,10 +4,8 @@ ClassicalChoice.vo
 ClassicalDescription.vo
 ClassicalEpsilon.vo
 ClassicalFacts.vo
-Classical_Pred_Set.vo
 Classical_Pred_Type.vo
 Classical_Prop.vo
-Classical_Type.vo
 ClassicalUniqueChoice.vo
 Classical.vo
 ConstructiveEpsilon.vo

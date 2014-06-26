@@ -32,7 +32,7 @@ Require Export Partial_Order.
 Require Export Cpo.
 Require Export Powerset.
 Require Export Powerset_facts.
-Require Export Classical_Type.
+Require Export Classical.
 Require Export Classical_sets.
 
 Section Sets_as_an_algebra.
