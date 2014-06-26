@@ -15,7 +15,6 @@
 
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
-Require Import Setoid.
 Require Export Coq.Classes.CRelationClasses.
 
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
