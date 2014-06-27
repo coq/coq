@@ -3,35 +3,35 @@ Changes from V8.4
 
 Logic
 
-- Primitive projections for records allow for a compact representation of
-projections, without parameters and avoid the behavior of defined
-projections that can unfold to a case expression. To turn the use of
-native projections on, use [Set Primitive Projections]. Record, Class
-and Structure types defined while this option is set will be defined
-with primitive projections instead of the usual encoding as a case
-expression. For compatibility, when p is a primitive projection, @p can
-be used to refer to the projection with explicit parameters, i.e.  [@p]
-is definitionaly equal to [λ params r. r.(p)]. Records with primitive
-projections have eta-conversion, the canonical form being 
-[mkR pars (p1 t) ... (pn t)].
+- Primitive projections for records allow for a compact representation
+  of projections, without parameters and avoid the behavior of defined
+  projections that can unfold to a case expression. To turn the use of
+  native projections on, use [Set Primitive Projections]. Record,
+  Class and Structure types defined while this option is set will be
+  defined with primitive projections instead of the usual encoding as
+  a case expression. For compatibility, when p is a primitive
+  projection, @p can be used to refer to the projection with explicit
+  parameters, i.e.  [@p] is definitionaly equal to [λ params
+  r. r.(p)]. Records with primitive projections have eta-conversion,
+  the canonical form being [mkR pars (p1 t) ... (pn t)].
 
   With native projections, the parsing of projection applications changes:
-- r.(p) and (p r) elaborate to native projection application, and the
-   parameters cannot be mentionned. The following arguments are 
-   parsed according to the remaining implicits declared for the projection
-   (i.e. the implicits after the record type argument). In dot notation,
-   the record type argument is considered explicit no matter what its
-   implicit status is.
-- r.(@p params) and @p args are parsed as regular applications of the projection 
-  with explicit parameters.
-- [simpl p] is forbidden, but [simpl @p] will simplify both the projection
-  and it's explicit [@p] version.
-- [unfold p] has no effect on projection applications unless it is applied
-  to a constructor. If the explicit version appears it reduces to the 
-  projection application.
-- [pattern x at n], [rewrite x at n] and in general abstraction and selection 
-  of occurrences may fail due to the disappearance of parameters.
 
+  - r.(p) and (p r) elaborate to native projection application, and
+    the parameters cannot be mentionned. The following arguments are
+    parsed according to the remaining implicits declared for the
+    projection (i.e. the implicits after the record type argument). In
+    dot notation, the record type argument is considered explicit no
+    matter what its implicit status is.
+  - r.(@p params) and @p args are parsed as regular applications of the
+    projection with explicit parameters.
+  - [simpl p] is forbidden, but [simpl @p] will simplify both the projection
+    and it's explicit [@p] version.
+  - [unfold p] has no effect on projection applications unless it is applied
+    to a constructor. If the explicit version appears it reduces to the
+    projection application.
+  - [pattern x at n], [rewrite x at n] and in general abstraction and selection
+    of occurrences may fail due to the disappearance of parameters.
 
 Vernacular commands
 
@@ -61,6 +61,9 @@ Specification Language
   implicit arguments than in applicative position. The old behaviour can be
   recovered by the command "Set Asymmetric Patterns". (possible source of
   incompatibilities)
+- Type inference algorithm now granting opacity of constants. This might also
+  affects behavior of tactics (source of incompatibilities, solvable by
+  re-declaring transparent constants which were set opaque).
 
 Tactics
 

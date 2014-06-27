@@ -19,6 +19,11 @@ Universe Polymorphism.
   An explicit parameter application (e.g [fun A => list A]) or
   [apply (list _)] will result in a polymorphic instance.
 
+- The type inference algorithm now takes opacity of constants into
+  account. This may have effects on tactics using type inference
+  (e.g. induction). Extra "Transparent" might have to be added to
+  revert opacity of constants.
+
 Potential sources of incompatibilities between Coq V8.3 and V8.4
 ----------------------------------------------------------------
 
