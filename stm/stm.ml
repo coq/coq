@@ -1395,7 +1395,7 @@ end = struct
     let info = VCS.get_info id in
     match info.vcs_backup with
     | _, None ->
-       anomaly(str"Backtrack.backto "++str(Stateid.to_string id)++
+       anomaly(str"Backtrack.branches_of "++str(Stateid.to_string id)++
                str": a state with no vcs_backup")
     | _, Some x -> x
 
