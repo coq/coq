@@ -313,7 +313,10 @@ let lookup_canonical_conversion (proj,pat) =
 
 let is_open_canonical_projection env sigma (c,args) =
   try
-    let n = find_projection_nparams (global_of_constr c) in
+    let ref = global_of_constr c in
+    let n = find_projection_nparams ref in
+    (** Check if there is some canonical projection attached to this structure *)
+    let _ = Refmap.find ref !object_table in
     try
       let arg = whd_betadeltaiota env sigma (Stack.nth args n) in
       let hd = match kind_of_term arg with App (hd, _) -> hd | _ -> arg in
