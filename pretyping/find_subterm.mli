@@ -1,0 +1,66 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2012     *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+open Names
+open Locus
+open Context
+open Term
+open Evd
+open Pretype_errors
+
+(** Finding subterms, possibly up to some unification function,
+    possibly at some given occurrences *)
+
+exception NotUnifiable of (constr * constr * unification_error) option
+
+exception SubtermUnificationError of subterm_unification_error
+
+(** A testing function is typically a unification function returning a
+    substitution or failing with a NotUnifiable error, together with a
+    function to merge substitutions and an initial substitution;
+    last_found is used for error messages and it has to be initialized
+    with None. *)
+type 'a testing_function = {
+  match_fun : 'a -> constr -> 'a;
+  merge_fun : 'a -> 'a -> 'a;
+  mutable testing_state : 'a;
+  mutable last_found : ((Id.t * hyp_location_flag) option * int * constr) option
+}
+
+(** This is the basic testing function, looking for exact matches of a
+    closed term *)
+val make_eq_univs_test : evar_map -> constr -> evar_map testing_function
+
+(** [replace_term_occ_modulo occl test mk c] looks in [c] for subterm
+    modulo a testing function [test] and replaces successfully
+    matching subterms at the indicated occurrences [occl] with [mk
+    ()]; it turns a NotUnifiable exception raised by the testing
+    function into a SubtermUnificationError. *)
+val replace_term_occ_modulo :
+  occurrences -> 'a testing_function -> (unit -> constr) -> constr -> constr
+
+(** [replace_term_occ_decl_modulo] is similar to
+    [replace_term_occ_modulo] but for a named_declaration. *)
+val replace_term_occ_decl_modulo :
+  occurrences * hyp_location_flag -> 'a testing_function -> (unit -> constr) ->
+  named_declaration -> named_declaration
+
+(** [subst_closed_term_occ occl c d] replaces occurrences of
+    closed [c] at positions [occl] by [Rel 1] in [d] (see also Note OCC),
+    unifying universes which results in a set of constraints. *)
+val subst_closed_term_occ : evar_map -> occurrences -> constr -> 
+  constr -> constr * evar_map
+
+(** [subst_closed_term_occ_decl evd occl c decl] replaces occurrences of 
+    closed [c] at positions [occl] by [Rel 1] in [decl]. *)
+val subst_closed_term_occ_decl : evar_map ->
+  occurrences * hyp_location_flag ->
+  constr -> named_declaration -> named_declaration * evar_map
+
+(** Miscellaneous *)
+val error_invalid_occurrence : int list -> 'a

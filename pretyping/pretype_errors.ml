@@ -23,6 +23,10 @@ type unification_error =
   | InstanceNotSameType of existential_key * env * types * types
   | UnifUnivInconsistency of Univ.univ_inconsistency
 
+type position =(Id.t * Locus.hyp_location_flag) option
+
+type subterm_unification_error = bool * (position * int * constr) * (position * int * constr) * (constr * constr * unification_error) option
+
 type pretype_error =
   (* Old Case *)
   | CantFindCaseType of constr
@@ -46,7 +50,7 @@ type pretype_error =
   | UnexpectedType of constr * constr
   | NotProduct of constr
   | TypingError of type_error
-  | CannotUnifyOccurrences of Termops.subterm_unification_error
+  | CannotUnifyOccurrences of subterm_unification_error
 
 exception PretypeError of env * Evd.evar_map * pretype_error
 

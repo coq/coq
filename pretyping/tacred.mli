@@ -60,14 +60,6 @@ val unfoldn :
 (** Fold *)
 val fold_commands : constr list ->  reduction_function
 
-val make_eq_univs_test : evar_map -> constr -> evar_map Termops.testing_function
-
-(** [subst_closed_term_occ occl c d] replaces occurrences of closed [c] at
-   positions [occl] by [Rel 1] in [d] (see also Note OCC), unifying universes
-   which results in a set of constraints. *)
-val subst_closed_term_univs_occ : evar_map -> occurrences -> constr -> constr -> 
-  constr * evar_map
-
 (** Pattern *)
 val pattern_occs : (occurrences * constr) list -> env -> evar_map -> constr -> 
   constr

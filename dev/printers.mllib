@@ -129,6 +129,7 @@ Arguments_renaming
 Typing
 Patternops
 ConstrMatching
+Find_subterm
 Tacred
 Classops
 Typeclasses_errors

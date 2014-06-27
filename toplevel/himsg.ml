@@ -645,15 +645,16 @@ let pr_position (cl,pos) =
     | Some (id,Locus.InHypValueOnly) -> str " of the body of hypothesis " ++ pr_id id in
   int pos ++ clpos
 
-let explain_cannot_unify_occurrences env nested (cl2,pos2,t2) (cl1,pos1,t1) =
+let explain_cannot_unify_occurrences env sigma nested (cl2,pos2,t2) (cl1,pos1,t1) e =
   let s = if nested then "Found nested occurrences of the pattern"
     else "Found incompatible occurrences of the pattern" in
+  let ppreason = match e with None -> mt() | Some (c1,c2,e) -> explain_unification_error env sigma c1 c2 (Some e) in
   str s ++ str ":" ++
   spc () ++ str "Matched term " ++ pr_lconstr_env env t2 ++
   strbrk " at position " ++ pr_position (cl2,pos2) ++
   strbrk " is not compatible with matched term " ++
   pr_lconstr_env env t1 ++ strbrk " at position " ++ 
-  pr_position (cl1,pos1) ++ str "."
+  pr_position (cl1,pos1) ++ ppreason ++ str "."
 
 let explain_pretype_error env sigma err =
   let env = Evarutil.env_nf_betaiotaevar sigma env in
@@ -687,7 +688,7 @@ let explain_pretype_error env sigma err =
   | AbstractionOverMeta (m,n) -> explain_abstraction_over_meta env m n
   | NonLinearUnification (m,c) -> explain_non_linear_unification env m c
   | TypingError t -> explain_type_error env sigma t
-  | CannotUnifyOccurrences (b,c1,c2) -> explain_cannot_unify_occurrences env b c1 c2
+  | CannotUnifyOccurrences (b,c1,c2,e) -> explain_cannot_unify_occurrences env sigma b c1 c2 e
 
 (* Module errors *)
 

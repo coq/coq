@@ -26,6 +26,7 @@ open Coercion
 open Recordops
 open Locus
 open Locusops
+open Find_subterm
 
 let occur_meta_or_undefined_evar evd c =
   let rec occrec c = match kind_of_term c with
@@ -62,7 +63,7 @@ let abstract_scheme env evd c l lname_typ =
        else *) 
        if occur_meta a then mkLambda_name env (na,ta,t), evd
        else
-	 let t', evd' = Tacred.subst_closed_term_univs_occ evd locc a t in
+	 let t', evd' = Find_subterm.subst_closed_term_occ evd locc a t in
 	   mkLambda_name env (na,ta,t'), evd')
     (c,evd)
     (List.rev l)
@@ -1222,17 +1223,21 @@ let make_pattern_test inf_flags env sigma0 (sigma,c) =
   let matching_fun _ t =
     try let sigma = w_typed_unify env sigma Reduction.CONV flags c t in
 	  Some(sigma, t)
-    with e when Errors.noncritical e -> raise NotUnifiable in
+    with
+    | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
+        raise (NotUnifiable (Some (c1,c2,e)))
+    | e when Errors.noncritical e -> raise (NotUnifiable None) in
   let merge_fun c1 c2 =
     match c1, c2 with
     | Some (evd,c1), Some (_,c2) ->
       (try let evd = w_typed_unify env evd Reduction.CONV flags c1 c2 in
 	     Some (evd, c1)
-       with e when Errors.noncritical e -> raise NotUnifiable)
+       with
+       | PretypeError (_,_,CannotUnify (c1,c2,Some e)) -> raise (NotUnifiable (Some (c1,c2,e)))
+       | e when Errors.noncritical e -> raise (NotUnifiable None))
     | Some _, None -> c1
     | None, Some _ -> c2
-    | None, None -> None
-  in
+    | None, None -> None in
   { match_fun = matching_fun; merge_fun = merge_fun;
     testing_state = None; last_found = None },
   (fun test -> match test.testing_state with
@@ -1247,7 +1252,7 @@ let make_eq_test evd c =
   let out cstr =
     Evd.evar_universe_context cstr.testing_state, c
   in
-    (Tacred.make_eq_univs_test evd c, out)
+    (make_eq_univs_test evd c, out)
 
 let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env concl =
   let id =
@@ -1260,6 +1265,7 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
     else
       x
   in
+  let mkvarid () = mkVar id in
   let compute_dependency _ (hyp,_,_ as d) depdecls =
     match occurrences_of_hyp hyp occs with
     | None ->
@@ -1272,7 +1278,7 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
         else
           depdecls
     | Some ((AllOccurrences, InHyp) as occ) ->
-        let newdecl = subst_closed_term_occ_decl_modulo occ test d in
+        let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
         if Context.eq_named_declaration d newdecl
            && not (indirectly_dependent c d depdecls)
         then
@@ -1280,16 +1286,15 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
           then raise (PretypeError (env,sigmac,NoOccurrenceFound (c,Some hyp)))
           else depdecls
         else
-          (subst1_named_decl (mkVar id) newdecl)::depdecls
+          newdecl :: depdecls
     | Some occ ->
-        let newdecl = subst_closed_term_occ_decl_modulo occ test d in
-        (subst1_named_decl (mkVar id) newdecl)::depdecls in
+        replace_term_occ_decl_modulo occ test mkvarid d :: depdecls in
   try
     let depdecls = fold_named_context compute_dependency env ~init:[] in
     let ccl = match occurrences_of_goal occs with
       | None -> concl
       | Some occ ->
-          subst1 (mkVar id) (subst_closed_term_occ_modulo occ test None concl)
+          replace_term_occ_modulo occ test mkvarid concl
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (pi1(List.last depdecls)) in

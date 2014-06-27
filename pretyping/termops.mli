@@ -147,56 +147,6 @@ val subst_term : constr -> constr -> constr
 (** [replace_term d e c] replaces [d] by [e] in [c] *)
 val replace_term : constr -> constr -> constr -> constr
 
-(** [subst_closed_term_occ_gen occl n c d] replaces occurrences of closed [c] at
-   positions [occl], counting from [n], by [Rel 1] in [d] *)
-val subst_closed_term_occ_gen :
-  occurrences -> int -> constr -> types -> int * types
-
-(** [subst_closed_term_occ_modulo] looks for subterm modulo a
-    testing function returning a substitution of type ['a] (or failing
-    with NotUnifiable); a function for merging substitution (possibly
-    failing with NotUnifiable) and an initial substitution are
-    required too; [subst_closed_term_occ_modulo] itself turns a
-    NotUnifiable exception into a SubtermUnificationError *)
-
-exception NotUnifiable
-
-type position =(Id.t * Locus.hyp_location_flag) option
-
-type subterm_unification_error = bool * (position * int * constr) * (position * int * constr)
-
-exception SubtermUnificationError of subterm_unification_error
-
-type 'a testing_function = {
-  match_fun : 'a -> constr -> 'a;
-  merge_fun : 'a -> 'a -> 'a;
-  mutable testing_state : 'a;
-  mutable last_found : ((Id.t * hyp_location_flag) option * int * constr) option
-}
-
-val make_eq_test : constr -> unit testing_function
-
-val subst_closed_term_occ_modulo :
-  occurrences -> 'a testing_function -> (Id.t * hyp_location_flag) option
-  -> constr -> types
-
-(** [subst_closed_term_occ occl c d] replaces occurrences of closed [c] at
-   positions [occl] by [Rel 1] in [d] (see also Note OCC) *)
-val subst_closed_term_occ : occurrences -> constr -> constr -> constr
-
-(** [subst_closed_term_occ_decl occl c decl] replaces occurrences of closed [c]
-   at positions [occl] by [Rel 1] in [decl] *)
-
-val subst_closed_term_occ_decl :
-  occurrences * hyp_location_flag -> constr -> named_declaration ->
-      named_declaration
-
-val subst_closed_term_occ_decl_modulo :
-  occurrences * hyp_location_flag -> 'a testing_function ->
-  named_declaration -> named_declaration
-
-val error_invalid_occurrence : int list -> 'a
-
 (** Alternative term equalities *)
 val base_sort_cmp : Reduction.conv_pb -> sorts -> sorts -> bool
 val compare_constr_univ : (Reduction.conv_pb -> constr -> constr -> bool) ->

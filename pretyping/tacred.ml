@@ -15,6 +15,7 @@ open Vars
 open Libnames
 open Globnames
 open Termops
+open Find_subterm
 open Namegen
 open Environ
 open Closure
@@ -1075,22 +1076,6 @@ let compute = cbv_betadeltaiota
 
 (* Pattern *)
 
-let make_eq_univs_test evd c =
-  { match_fun = (fun evd c' ->
-    let b, cst = Universes.eq_constr_universes c c' in
-      if b then
-	try Evd.add_universe_constraints evd cst
-	with Evd.UniversesDiffer -> raise NotUnifiable
-      else raise NotUnifiable);
-  merge_fun = (fun evd _ -> evd);
-  testing_state = evd;
-  last_found = None
-} 
-let subst_closed_term_univs_occ evd occs c t =
-  let test = make_eq_univs_test evd c in
-  let t' = subst_closed_term_occ_modulo occs test None t in
-    t', test.testing_state
-
 (* gives [na:ta]c' such that c converts to ([na:ta]c' a), abstracting only
  * the specified occurrences. *)
 
@@ -1101,7 +1086,7 @@ let abstract_scheme env sigma (locc,a) c =
   if occur_meta a then
     mkLambda (na,ta,c)
   else
-    let c', sigma' = subst_closed_term_univs_occ sigma locc a c in
+    let c', sigma' = subst_closed_term_occ sigma locc a c in
       mkLambda (na,ta,c') 
 
 let pattern_occs loccs_trm env sigma c =

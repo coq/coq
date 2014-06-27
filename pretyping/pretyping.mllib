@@ -9,6 +9,7 @@ Nativenorm
 Retyping
 Cbv
 Pretype_errors
+Find_subterm
 Evarutil
 Evarsolve
 Recordops

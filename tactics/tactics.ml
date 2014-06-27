@@ -15,6 +15,7 @@ open Term
 open Vars
 open Context
 open Termops
+open Find_subterm
 open Namegen
 open Declarations
 open Inductiveops
@@ -1865,7 +1866,7 @@ let generalize_goal_gen ids i ((occs,c,b),na) t (cl,evd) =
   let decls,cl = decompose_prod_n_assum i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
   let newdecls,_ = decompose_prod_n_assum i (subst_term_gen eq_constr_nounivs c dummy_prod) in
-  let cl',evd' = subst_closed_term_univs_occ evd occs c (it_mkProd_or_LetIn cl newdecls) in
+  let cl',evd' = subst_closed_term_occ evd occs c (it_mkProd_or_LetIn cl newdecls) in
   let na = generalized_name c t ids cl' na in
     mkProd_or_LetIn (na,b,t) cl', evd'
 

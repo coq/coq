@@ -78,6 +78,13 @@
 - Tactics API: new_induct -> induction; new_destruct -> destruct;
   letin_pat_tac do not accept a type anymore
 
+- New file find_subterm.ml for gathering former functions
+  subst_closed_term_occ_modulo, subst_closed_term_occ_decl (which now
+  take and outputs also an evar_map), and
+  subst_closed_term_occ_modulo, subst_closed_term_occ_decl_modulo (now
+  renamed into replace_term_occ_modulo and
+  replace_term_occ_decl_modulo).
+
 =========================================
 = CHANGES BETWEEN COQ V8.3 AND COQ V8.4 =
 =========================================
