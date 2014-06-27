@@ -1967,7 +1967,8 @@ let setoid_proof ty fn fallback =
           let rel, args = decompose_app_rel env sigma concl in
           let evm = sigma in
           let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
-          fn env sigma car rel
+	    (try init_setoid () with _ -> raise Not_found);
+            fn env sigma car rel
         with e -> Proofview.tclZERO e
       end
       begin function
