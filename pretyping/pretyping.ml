@@ -311,7 +311,7 @@ let pretype_ref loc evdref env ref us =
   | ref ->
     let evd, c = pretype_global loc univ_flexible env !evdref ref us in
     let () = evdref := evd in
-    let ty = Retyping.get_type_of env evd c in
+    let ty = Typing.type_of env evd c in
       make_judge c ty
 
 let judge_of_Type evd s =

@@ -96,15 +96,22 @@ let judge_of_variable env id =
 (* Management of context of variables. *)
 
 (* Checks if a context of variables can be instantiated by the
-   variables of the current env *)
-(* TODO: check order? *)
+   variables of the current env.
+   Order does not have to be checked assuming that all names are distinct *)
 let check_hyps_inclusion env c sign =
   Context.fold_named_context
-    (fun (id,_,ty1) () ->
+    (fun (id,b1,ty1) () ->
       try
-        let ty2 = named_type id env in
-        if not (eq_constr ty2 ty1) then raise Exit
-      with Not_found | Exit ->
+        let (_,b2,ty2) = lookup_named id env in
+        conv env ty2 ty1;
+        (match b2,b1 with
+        | None, None -> ()
+        | None, Some _ ->
+            (* This is wrong, because we don't know if the body is
+               needed or not for typechecking: *) ()
+        | Some _, None -> raise NotConvertible
+        | Some b2, Some b1 -> conv env b2 b1);
+      with Not_found | NotConvertible | Option.Heterogeneous ->
         error_reference_variables env id c)
     sign
     ~init:()
@@ -145,8 +152,16 @@ let type_of_constant_type_knowing_parameters env t paramtyps =
       mkArity (List.rev ctx,s)
 
 let type_of_constant_knowing_parameters env cst paramtyps =
+  let cb = lookup_constant (fst cst) env in
+  let _ = check_hyps_inclusion env (mkConstU cst) cb.const_hyps in
   let ty, cu = constant_type env cst in
     type_of_constant_type_knowing_parameters env ty paramtyps, cu
+
+let type_of_constant_knowing_parameters_in env cst paramtyps =
+  let cb = lookup_constant (fst cst) env in
+  let _ = check_hyps_inclusion env (mkConstU cst) cb.const_hyps in
+  let ty = constant_type_in env cst in
+    type_of_constant_type_knowing_parameters env ty paramtyps
 
 let type_of_constant_type env t =
   type_of_constant_type_knowing_parameters env t [||]
@@ -155,13 +170,13 @@ let type_of_constant env cst =
   type_of_constant_knowing_parameters env cst [||]
 
 let type_of_constant_in env cst =
+  let cb = lookup_constant (fst cst) env in
+  let _ = check_hyps_inclusion env (mkConstU cst) cb.const_hyps in
   let ar = constant_type_in env cst in
     type_of_constant_type_knowing_parameters env ar [||]
 
 let judge_of_constant_knowing_parameters env (kn,u as cst) args =
   let c = mkConstU cst in
-  let cb = lookup_constant kn env in
-  let _ = check_hyps_inclusion env c cb.const_hyps in
   let ty, cu = type_of_constant_knowing_parameters env cst args in
   let _ = Environ.check_constraints cu env in
     make_judge c ty

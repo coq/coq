@@ -183,8 +183,7 @@ let retype ?(polyprop=true) sigma =
 	       ~polyprop env (mip,snd ind) argtyps
 	 with Reduction.NotArity -> retype_error NotAnArity)
     | Const cst ->
-      let t = constant_type_in env cst in
-	(try Typeops.type_of_constant_type_knowing_parameters env t argtyps
+	(try Typeops.type_of_constant_knowing_parameters_in env cst argtyps
 	 with Reduction.NotArity -> retype_error NotAnArity)
     | Var id -> type_of_var env id
     | Construct cstr -> type_of_constructor env cstr

@@ -120,6 +120,12 @@ val type_of_constant_type_knowing_parameters :
 val type_of_constant_knowing_parameters :
   env -> pconstant -> types Lazy.t array -> types constrained
 
+val type_of_constant_knowing_parameters_in :
+  env -> pconstant -> types Lazy.t array -> types
+
 (** Make a type polymorphic if an arity *)
 val make_polymorphic_if_constant_for_ind : env -> unsafe_judgment ->
   constant_type
+
+(** Check that hyps are included in env and fails with error otherwise *)
+val check_hyps_inclusion : env -> constr -> section_context -> unit
