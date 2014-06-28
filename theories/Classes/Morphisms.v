@@ -417,8 +417,6 @@ Section GenericInstances.
     Proper R' (m x).
   Proof. simpl_relation. Qed.
   
-  Class Params (of : A) (arity : nat).
-    
   Lemma flip_respectful (R : relation A) (R' : relation B) :
     relation_equivalence (flip (R ==> R')) (flip R ==> flip R').
   Proof.
@@ -460,6 +458,8 @@ End GenericInstances.
 Class PartialApplication.
 
 CoInductive normalization_done : Prop := did_normalization.
+
+Class Params {A : Type} (of : A) (arity : nat).
 
 Ltac partial_application_tactic :=
   let rec do_partial_apps H m cont := 
@@ -563,11 +563,16 @@ Section Normalize.
 
 End Normalize.
 
-Lemma flip_arrow `(NA : Normalizes A R (flip R'''), NB : Normalizes B R' (flip R'')) :
+Lemma flip_arrow {A : Type} {B : Type}
+      `(NA : Normalizes A R (flip R'''), NB : Normalizes B R' (flip R'')) :
   Normalizes (A -> B) (R ==> R') (flip (R''' ==> R'')%signature).
 Proof. 
   unfold Normalizes in *. intros.
-  rewrite NA, NB. firstorder. 
+  unfold relation_equivalence in *. 
+  unfold predicate_equivalence in *. simpl in *.
+  unfold respectful. unfold flip in *. firstorder.
+  apply NB. apply H. apply NA. apply H0.
+  apply NB. apply H. apply NA. apply H0.
 Qed.
 
 Ltac normalizes :=
