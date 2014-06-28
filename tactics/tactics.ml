@@ -535,10 +535,11 @@ let intros = Tacticals.New.tclREPEAT intro
 
 let intro_forthcoming_then_gen loc name_flag move_flag dep_flag n bound tac =
   let rec aux n ids =
-    if (match bound with None -> true | Some p -> n < p) then
+    (* Note: we always use the bound when there is one for "*" and "**" *)
+    if (match bound with None -> true | Some (_,p) -> n < p) then
     Proofview.tclORELSE
       begin
-      intro_then_gen loc name_flag  move_flag false dep_flag
+      intro_then_gen loc name_flag move_flag false dep_flag
          (fun id -> aux (n+1) (id::ids))
       end
       begin function
@@ -1426,7 +1427,7 @@ let (forward_general_multi_rewrite, general_multi_rewrite) = Hook.make ()
 let (forward_subst_one, subst_one) = Hook.make ()
 
 let error_unexpected_extra_pattern loc bound pat =
-  let nb = Option.get bound in
+  let _,nb = Option.get bound in
   let s1,s2,s3 = match pat with
   | IntroIdentifier _ -> "name", (String.plural nb " introduction pattern"), "no"
   | _ -> "introduction pattern", "", "none" in
@@ -1454,7 +1455,7 @@ let intro_decomp_eq loc l thin tac id =
   let _,t = Tacmach.New.pf_reduce_to_quantified_ind gl t in
   let eq,u,eq_args = my_find_eq_data_decompose gl t in
   !intro_decomp_eq_function
-    (fun n -> tac ((dloc,id)::thin) (Some n) l)
+    (fun n -> tac ((dloc,id)::thin) (Some (true,n)) l)
     (eq,t,eq_args) (c, t)
   end
 
@@ -1468,7 +1469,7 @@ let intro_or_and_pattern loc bracketed ll thin tac id =
   check_or_and_pattern_size loc ll (Array.length nv);
   Tacticals.New.tclTHENLASTn
     (Tacticals.New.tclTHEN (simplest_case c) (Proofview.V82.tactic (clear [id])))
-    (Array.map2 (fun n l -> tac thin (if bracketed then Some n else None) l)
+    (Array.map2 (fun n l -> tac thin (Some (bracketed,n)) l)
        nv (Array.of_list ll))
   end
 
@@ -1532,11 +1533,11 @@ let check_thin_clash_then id thin avoid tac =
 
 let fit_bound n = function
   | None -> true
-  | Some n' -> n = n'
+  | Some (use_bound,n') -> not use_bound || n = n'
 
 let exceed_bound n = function
   | None -> false
-  | Some n' -> n >= n'
+  | Some (use_bound,n') -> use_bound && n >= n'
 
   (* We delay thinning until the completion of the whole intros tactic
      to ensure that dependent hypotheses are cleared in the right
@@ -1590,7 +1591,8 @@ let rec intros_patterns b avoid ids thin destopt bound n tac = function
 	    (intros_patterns b avoid ids thin destopt bound (n+1) tac l))
 
 let intros_pattern_bound n destopt =
-  intros_patterns true [] [] [] destopt (Some n) 0 (fun _ -> clear_wildcards)
+  intros_patterns true [] [] [] destopt
+    (Some (true,n)) 0 (fun _ -> clear_wildcards)
 
 (* The following boolean governs what "intros []" do on examples such
    as "forall x:nat*nat, x=x"; if true, it behaves as "intros [? ?]";
