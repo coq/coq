@@ -24,13 +24,15 @@ open Inductive
    Inductive, but they expect an env *)
 
 let type_of_inductive env (ind,u) =
- let specif = Inductive.lookup_mind_specif env ind in
-  Inductive.type_of_inductive env (specif,u)
+ let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
+ Typeops.check_hyps_inclusion env (mkInd ind) mib.mind_hyps;
+ Inductive.type_of_inductive env (specif,u)
 
 (* Return type as quoted by the user *)
 let type_of_constructor env (cstr,u) =
- let specif =
-  Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
+ let (mib,_ as specif) =
+   Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
+ Typeops.check_hyps_inclusion env (mkConstruct cstr) mib.mind_hyps;
  Inductive.type_of_constructor (cstr,u) specif
 
 let type_of_constructor_in_ctx env cstr =
