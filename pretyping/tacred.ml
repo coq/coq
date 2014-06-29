@@ -565,8 +565,7 @@ let special_red_case env sigma whfun (ci, p, c, lf)  =
 
 let recargs = function
   | EvalVar _ | EvalRel _ | EvalEvar _ -> None
-  | EvalConst c -> Option.map (fun (x,y,_) -> (x,y))
-			      (ReductionBehaviour.get (ConstRef c))
+  | EvalConst c -> ReductionBehaviour.get (ConstRef c)
 
 let reduce_projection env sigma pb (recarg'hd,stack') stack =
   (match kind_of_term recarg'hd with
@@ -640,28 +639,29 @@ let whd_nothing_for_iota env sigma s =
 
 let rec red_elim_const env sigma ref u largs =
   let nargs = List.length largs in
-  let largs, unfold_anyway, unfold_nonelim =
+  let largs, unfold_anyway, unfold_nonelim, nocase =
     match recargs ref with
-    | None -> largs, false, false
-    | Some (_,n) when nargs < n -> raise Redelimination
-    | Some (x::l,_) when nargs <= List.fold_left max x l -> raise Redelimination
-    | Some (l,n) ->
+    | None -> largs, false, false, false
+    | Some (_,n,f) when nargs < n || List.mem `ReductionNeverUnfold f -> raise Redelimination
+    | Some (x::l,_,_) when nargs <= List.fold_left max x l -> raise Redelimination
+    | Some (l,n,f) ->
         let is_empty = match l with [] -> true | _ -> false in
 	  reduce_params env sigma largs l, 
 	  n >= 0 && is_empty && nargs >= n,
-          n >= 0 && not is_empty && nargs >= n 
+          n >= 0 && not is_empty && nargs >= n,
+	  List.mem `ReductionDontExposeCase f
   in
   try match reference_eval sigma env ref with
     | EliminationCases n when nargs >= n ->
 	let c = reference_value sigma env ref u in
 	let c', lrest = whd_nothing_for_iota env sigma (applist(c,largs)) in
 	let whfun = whd_simpl_stack env sigma in
-        (special_red_case env sigma whfun (destCase c'), lrest)
+        (special_red_case env sigma whfun (destCase c'), lrest), nocase
     | EliminationProj n when nargs >= n ->
 	let c = reference_value sigma env ref u in
 	let c', lrest = whd_nothing_for_iota env sigma (applist(c,largs)) in
 	let whfun = whd_construct_stack env sigma in
-	  (reduce_proj env sigma whfun c', lrest)
+	  (reduce_proj env sigma whfun c', lrest), nocase
     | EliminationFix (min,minfxargs,infos) when nargs >= min ->
 	let c = reference_value sigma env ref u in
 	let d, lrest = whd_nothing_for_iota env sigma (applist(c,largs)) in
@@ -669,7 +669,7 @@ let rec red_elim_const env sigma ref u largs =
 	let whfun = whd_construct_stack env sigma in
 	(match reduce_fix_use_function env sigma f whfun (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
-           | Reduced (c,rest) -> (nf_beta sigma c, rest))
+           | Reduced (c,rest) -> (nf_beta sigma c, rest), nocase)
     | EliminationMutualFix (min,refgoal,refinfos) when nargs >= min ->
 	let rec descend (ref,u) args =
 	  let c = reference_value sigma env ref u in
@@ -684,14 +684,14 @@ let rec red_elim_const env sigma ref u largs =
 	let whfun = whd_construct_stack env sigma in
 	(match reduce_fix_use_function env sigma f whfun (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
-	   | Reduced (c,rest) -> (nf_beta sigma c, rest))
+	   | Reduced (c,rest) -> (nf_beta sigma c, rest), nocase)
     | NotAnElimination when unfold_nonelim ->
          let c = reference_value sigma env ref u in
-         whd_betaiotazeta sigma (applist (c, largs)), []
+           (whd_betaiotazeta sigma (applist (c, largs)), []), nocase
     | _ -> raise Redelimination
     with Redelimination when unfold_anyway ->
        let c = reference_value sigma env ref u in
-       whd_betaiotazeta sigma (applist (c, largs)), []
+	 (whd_betaiotazeta sigma (applist (c, largs)), []), nocase
 
 and reduce_params env sigma stack l =
   let len = List.length stack in
@@ -756,13 +756,14 @@ and whd_simpl_stack env sigma =
         match match_eval_ref env x with
 	| Some (ref, u) ->
           (try
-             let hd, _ as s'' = redrec (applist(red_elim_const env sigma ref u stack)) in
+	     let sapp, nocase = red_elim_const env sigma ref u stack in
+             let hd, _ as s'' = redrec (applist(sapp)) in
              let rec is_case x = match kind_of_term x with
                | Lambda (_,_, x) | LetIn (_,_,_, x) | Cast (x, _,_) -> is_case x
                | App (hd, _) -> is_case hd
                | Case _ -> true
                | _ -> false in
-               if dont_expose_case ref && is_case hd then raise Redelimination
+               if nocase && is_case hd then raise Redelimination
                else s''
            with Redelimination -> s')
 	| None -> s'
@@ -1160,7 +1161,7 @@ let one_step_reduce env sigma c =
       | _ when isEvalRef env x ->
 	  let ref,u = destEvalRefU x in
           (try
-             red_elim_const env sigma ref u stack
+             fst (red_elim_const env sigma ref u stack)
            with Redelimination ->
 	     match reference_opt_value sigma env ref u with
 	       | Some d -> (d, stack)
