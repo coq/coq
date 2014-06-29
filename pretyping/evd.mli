@@ -486,7 +486,7 @@ val nf_constraints : evar_map -> evar_map
 
 (** Polymorphic universes *)
 
-val fresh_sort_in_family : env -> evar_map -> sorts_family -> evar_map * sorts
+val fresh_sort_in_family : ?rigid:rigid -> env -> evar_map -> sorts_family -> evar_map * sorts
 val fresh_constant_instance : env -> evar_map -> constant -> evar_map * pconstant
 val fresh_inductive_instance : env -> evar_map -> inductive -> evar_map * pinductive
 val fresh_constructor_instance : env -> evar_map -> constructor -> evar_map * pconstructor

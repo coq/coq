@@ -1035,8 +1035,8 @@ let make_flexible_variable evd b u =
 (* Operations on constants              *)
 (****************************************)
 
-let fresh_sort_in_family env evd s = 
-  with_context_set univ_flexible evd (Universes.fresh_sort_in_family env s)
+let fresh_sort_in_family ?(rigid=univ_flexible) env evd s = 
+  with_context_set rigid evd (Universes.fresh_sort_in_family env s)
 
 let fresh_constant_instance env evd c =
   with_context_set univ_flexible evd (Universes.fresh_constant_instance env c)
