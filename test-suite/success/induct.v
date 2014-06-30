@@ -64,3 +64,14 @@ Undo 2.
 Fail induction (S _) in |- * at 4.
 Abort.
 
+(* Check use of "as" clause *)
+
+Inductive I := C : forall x, x<0 -> I -> I.
+
+Goal forall x:I, x=x.
+intros.
+induction x as [y * IHx].
+change (x = x) in IHx. (* We should have IHx:x=x *)
+Abort.
+
+

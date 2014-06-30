@@ -118,6 +118,7 @@ Tactics
   the option "Set Injection On Proofs" (disabled by default). Also improved the
   error messages.
 - Tactic "subst id" now supports id occurring in dependent local definitions.
+- Bugs fixed about intro-pattern "*" might lead to some rare incompatibilities.
 
 Program
 

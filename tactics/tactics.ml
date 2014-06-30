@@ -2045,16 +2045,21 @@ let check_unused_names names =
       (str"Unused introduction " ++ str (String.plural (List.length names) "pattern")
        ++ str": " ++ prlist_with_sep spc Miscprint.pr_intro_pattern names)
 
-let rec consume_pattern avoid id isdep gl = function
-  | [] -> ((dloc, IntroIdentifier (new_fresh_id avoid id gl)), [])
+let intropattern_of_name gl avoid = function
+  | Anonymous -> IntroAnonymous
+  | Name id -> IntroIdentifier (new_fresh_id avoid id gl)
+
+
+let rec consume_pattern avoid na isdep gl = function
+  | [] -> ((dloc, intropattern_of_name gl avoid na), [])
   | (loc,IntroAnonymous)::names ->
       let avoid = avoid@explicit_intro_names names in
-      ((loc,IntroIdentifier (new_fresh_id avoid id gl)), names)
+      ((loc,intropattern_of_name gl avoid na), names)
   | (loc,IntroForthcoming true)::names when not isdep ->
-      consume_pattern avoid id isdep gl names
+      consume_pattern avoid na isdep gl names
   | (loc,IntroForthcoming _)::names as fullpat ->
       let avoid = avoid@explicit_intro_names names in
-      ((loc,IntroIdentifier (new_fresh_id avoid id gl)), fullpat)
+      ((loc,intropattern_of_name gl avoid na), fullpat)
   | (loc,IntroFresh id')::names ->
       let avoid = avoid@explicit_intro_names names in
       ((loc,IntroIdentifier (new_fresh_id avoid id' gl)), names)
@@ -2121,12 +2126,12 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
           | [loc,IntroIdentifier id as pat] ->
               let id' = next_ident_away (add_prefix "IH" id) avoid in
 	      (pat, [dloc, IntroIdentifier id'])
-          | _ -> consume_pattern avoid recvarname deprec gl names in
+          | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
         let dest = get_recarg_dest dests in
         safe_dest_intros_patterns avoid thin dest [recpat] (fun ids thin ->
         Proofview.Goal.raw_enter begin fun gl ->
           let (hyprec,names) =
-            consume_pattern avoid hyprecname depind gl names
+            consume_pattern avoid (Name hyprecname) depind gl names
           in
 	  safe_dest_intros_patterns avoid thin MoveLast [hyprec] (fun ids' thin ->
 	    peel_tac ra' (update_dest dests ids') names thin)
@@ -2135,24 +2140,26 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
     | (IndArg,dep,hyprecname) :: ra' ->
         Proofview.Goal.raw_enter begin fun gl ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
-        let (pat,names) = consume_pattern avoid hyprecname dep gl names in
+        let pat,names =
+          consume_pattern avoid (Name hyprecname) dep gl names in
 	safe_dest_intros_patterns avoid thin MoveLast [pat] (fun ids thin ->
         peel_tac ra' (update_dest dests ids) names thin)
         end
     | (RecArg,dep,recvarname) :: ra' ->
         Proofview.Goal.raw_enter begin fun gl ->
-        let (pat,names) = consume_pattern avoid recvarname dep gl names in
+        let (pat,names) =
+          consume_pattern avoid (Name recvarname) dep gl names in
         let dest = get_recarg_dest dests in
 	safe_dest_intros_patterns avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
-    | (OtherArg,_,_) :: ra' ->
-        let pat,names = match names with
-          | [] -> (dloc, IntroAnonymous), []
-          | pat::names -> pat,names in
+    | (OtherArg,dep,_) :: ra' ->
+        Proofview.Goal.raw_enter begin fun gl ->
+        let (pat,names) = consume_pattern avoid Anonymous dep gl names in
         let dest = get_recarg_dest dests in
 	safe_dest_intros_patterns avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
+        end
     | [] ->
         check_unused_names names;
         Tacticals.New.tclTHEN (clear_wildcards thin) (tac dests)
