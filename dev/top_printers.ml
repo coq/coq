@@ -141,6 +141,7 @@ let pp_cpred s = pp (pr_cpred s)
 let pp_transparent_state s = pp (pr_transparent_state s)
 let pp_stack_t n = pp (Reductionops.Stack.pr Termops.print_constr n)
 let pp_cst_stack_t n = pp (Reductionops.Cst_stack.pr n)
+let pp_state_t n = pp (Reductionops.pr_state n)
 
 (* proof printers *)
 let pr_evar ev = Pp.int (Evar.repr ev)

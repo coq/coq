@@ -749,9 +749,29 @@ let fix_recarg ((recindices,bodynum),_) stack =
     It substitutes fix and cofix by the constant they come from in
     contract_* in any case .
 *)
+
+let debug_RAKAM = ref (false)
+let _ = Goptions.declare_bool_option {
+  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optname =
+    "Print states of the Reductionops abstract machine";
+  Goptions.optkey = ["Debug";"RAKAM"];
+  Goptions.optread = (fun () -> !debug_RAKAM);
+  Goptions.optwrite = (fun a -> debug_RAKAM:=a);
+}
+
 let rec whd_state_gen ?csts tactic_mode flags env sigma =
   let rec whrec cst_l (x, stack as s) =
+    let () = if !debug_RAKAM then
+	let open Pp in
+	pp (h 0 (str "<<" ++ Termops.print_constr x ++
+		   str "|" ++ cut () ++ Cst_stack.pr cst_l ++
+		   str "|" ++ cut () ++ Stack.pr Termops.print_constr stack ++
+		   str ">>") ++ fnl ())
+    in
     let fold () =
+      let () = if !debug_RAKAM then
+	  let open Pp in pp (str "<><><><><>" ++ fnl ()) in
       if tactic_mode then (Stack.best_state s cst_l,Cst_stack.empty) else (s,cst_l)
     in
     match kind_of_term x with
