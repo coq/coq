@@ -1342,6 +1342,20 @@ let meta_reassign mv (v, pb) evd =
 let meta_name evd mv =
   try fst (clb_name (Metamap.find mv evd.metas)) with Not_found -> Anonymous
 
+let explain_no_such_bound_variable evd id =
+  let mvl =
+    List.rev (Metamap.fold (fun n clb l ->
+      let na = fst (clb_name clb) in
+      if na != Anonymous then out_name na :: l else l)
+    evd.metas []) in
+  errorlabstrm "Evd.meta_with_name"
+    (str"No such bound variable " ++ pr_id id ++
+     (if mvl == [] then str " (no bound variables at all in the expression)."
+      else
+        (str" (possible name" ++
+         str (if List.length mvl == 1 then " is: " else "s are: ") ++
+         pr_enum pr_id mvl ++ str").")))
+
 let meta_with_name evd id =
   let na = Name id in
   let (mvl,mvnodef) =
@@ -1353,8 +1367,7 @@ let meta_with_name evd id =
       evd.metas ([],[]) in
   match mvnodef, mvl with
     | _,[]  ->
-	errorlabstrm "Evd.meta_with_name"
-          (str"No such bound variable " ++ pr_id id ++ str".")
+      explain_no_such_bound_variable evd id
     | ([n],_|_,[n]) ->
 	n
     | _  ->
