@@ -21,6 +21,7 @@ val async_proofs_n_workers : int ref
 val async_proofs_worker_flags : string option ref
 
 val async_proofs_is_worker : unit -> bool
+val async_proofs_always_delegate : bool ref
 
 val debug : bool ref
 

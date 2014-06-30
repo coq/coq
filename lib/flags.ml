@@ -52,6 +52,7 @@ type async_proofs = APoff | APonLazy | APonParallel of int
 let async_proofs_mode = ref APoff
 let async_proofs_n_workers = ref 1
 let async_proofs_worker_flags = ref None
+let async_proofs_always_delegate = ref false
 
 let async_proofs_is_worker () =
   match !async_proofs_mode with

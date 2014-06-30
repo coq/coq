@@ -379,6 +379,8 @@ let parse_args arglist =
     |"-toploop" -> toploop := Some (next ())
 
     (* Options with zero arg *)
+    |"-async-proofs-always-delegate" ->
+        Flags.async_proofs_always_delegate := true;
     |"-batch" -> set_batch_mode ()
     |"-beautify" -> make_beautify true
     |"-boot" -> boot := true; no_load_rc ()

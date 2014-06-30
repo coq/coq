@@ -1151,9 +1151,11 @@ let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 let delegate_policy_check time =
   if interactive () = `Yes then
     (!Flags.async_proofs_mode = Flags.APonParallel 0 ||
-    !Flags.async_proofs_mode = Flags.APonLazy) && time >= 1.0
+    !Flags.async_proofs_mode = Flags.APonLazy) &&
+    (time >= 1.0 || !Flags.async_proofs_always_delegate)
   else if !Flags.compilation_mode = Flags.BuildVi then true
-  else !Flags.async_proofs_mode <> Flags.APoff && time >= 1.0
+  else !Flags.async_proofs_mode <> Flags.APoff &&
+       (time >= 1.0 || !Flags.async_proofs_always_delegate)
 
 let collect_proof cur hd brkind id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id);
