@@ -60,6 +60,7 @@ let usage () =
   prerr_endline "  --boot               run in boot mode";
   prerr_endline "  --coqlib_path <dir>  set the path where Coq files are installed";
   prerr_endline "  -R <dir> <coqdir>    map physical dir to Coq dir";
+  prerr_endline "  -Q <dir> <coqdir>    map physical dir to Coq dir";
   prerr_endline "  --latin1             set ISO-8859-1 input language";
   prerr_endline "  --utf8               set UTF-8 input language";
   prerr_endline "  --charset <string>   set HTML charset";
@@ -319,6 +320,10 @@ let parse () =
     | "-R" :: path :: log :: rem ->
 	add_path path log; parse_rec rem
     | "-R" :: ([] | [_]) ->
+	usage ()
+    | "-Q" :: path :: log :: rem ->
+	add_path path log; parse_rec rem
+    | "-Q" :: ([] | [_]) ->
 	usage ()
     | ("-glob-from" | "--glob-from") :: f :: rem ->
 	glob_source := GlobFile f; parse_rec rem
