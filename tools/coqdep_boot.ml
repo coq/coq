@@ -24,21 +24,26 @@ let rec parse = function
   | "-I" :: r :: ll ->
        (* To solve conflict (e.g. same filename in kernel and checker)
           we allow to state an explicit order *)
-       add_dir add_known r [];
+       add_caml_dir r;
        norec_dirs:=r::!norec_dirs;
        parse ll
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
 
 let coqdep_boot () =
+  let () = option_boot := true in
   if Array.length Sys.argv < 2 then exit 1;
   parse (List.tl (Array.to_list Sys.argv));
-  if !option_c then
-    add_rec_dir add_known "." []
+  if !option_c then begin
+    add_rec_dir add_known "." [];
+    add_rec_dir (fun _ -> add_caml_known) "." ["Coq"];
+  end
   else begin
     add_rec_dir add_known "theories" ["Coq"];
     add_rec_dir add_known "plugins" ["Coq"];
-    add_dir add_known "tactics" [];
+    add_caml_dir "tactics";
+    add_rec_dir (fun _ -> add_caml_known) "theories" ["Coq"];
+    add_rec_dir (fun _ -> add_caml_known) "plugins" ["Coq"];
   end;
   if !option_c then mL_dependencies ();
   coq_dependencies ()

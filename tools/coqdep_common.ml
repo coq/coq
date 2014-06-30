@@ -23,6 +23,7 @@ let stdout = Pervasives.stdout
 let option_c = ref false
 let option_noglob = ref false
 let option_natdynlk = ref true
+let option_boot = ref false
 let option_mldep = ref None
 
 let norec_dirs = ref ([] : string list)
@@ -426,18 +427,26 @@ let rec suffixes = function
   | [name] -> [[name]]
   | dir::suffix as l -> l::suffixes suffix
 
-let add_known phys_dir log_dir f =
-  match get_extension f [".v";".ml";".mli";".ml4";".mllib";".mlpack"] with
-    | (basename,".v") ->
-	let name = log_dir@[basename] in
-	let file = phys_dir//basename in
-	let paths = suffixes name in
-	List.iter
-	  (fun n -> safe_hash_add clash_v vKnown (n,file)) paths
+let add_caml_known phys_dir _ f =
+  match get_extension f [".ml";".mli";".ml4";".mllib";".mlpack"] with
     | (basename,(".ml"|".ml4")) -> add_ml_known basename (Some phys_dir)
     | (basename,".mli") -> add_mli_known basename (Some phys_dir)
     | (basename,".mllib") -> add_mllib_known basename (Some phys_dir)
     | (basename,".mlpack") -> add_mlpack_known basename (Some phys_dir)
+    | _ -> ()
+
+let add_known recur phys_dir log_dir f =
+  match get_extension f [".v";".vo"] with
+    | (basename,".v") ->
+	let name = log_dir@[basename] in
+	let file = phys_dir//basename in
+	let paths = if recur then suffixes name else [name] in
+	List.iter
+	  (fun n -> safe_hash_add clash_v vKnown (n,file)) paths
+    | (basename,".vo") when not(!option_boot) ->
+        let name = log_dir@[basename] in
+	let paths = if recur then suffixes name else [name] in
+        List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
     | _ -> ()
 
 (* Visits all the directories under [dir], including [dir],
@@ -464,11 +473,18 @@ let rec add_directory recur add_file phys_dir log_dir =
     done
   with End_of_file -> closedir dirh
 
+(** -Q semantic: go in subdirs but only full logical paths are known. *)
 let add_dir add_file phys_dir log_dir =
-  try add_directory false add_file phys_dir log_dir with Unix_error _ -> ()
+  try add_directory true (add_file false) phys_dir log_dir with Unix_error _ -> ()
 
+(** -R semantic: go in subdirs and suffixes of logical paths are known. *)
 let add_rec_dir add_file phys_dir log_dir =
-  handle_unix_error (add_directory true add_file phys_dir) log_dir
+  handle_unix_error (add_directory true (add_file true) phys_dir) log_dir
+
+(** -I semantic: do not go in subdirs. *)
+let add_caml_dir phys_dir =
+  handle_unix_error (add_directory true add_caml_known phys_dir) []
+
 
 let rec treat_file old_dirname old_name =
   let name = Filename.basename old_name
