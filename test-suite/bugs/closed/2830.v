@@ -1,6 +1,6 @@
 (* Bug report #2830 (evar defined twice) covers different bugs *)
 
-(* This was submitted by Anthony Crowley *)
+(* 1- This was submitted by qb.h.agws *)
 
 Module A.
 
@@ -37,7 +37,7 @@ Fail Fixpoint StringOr (n m: nat) (a: BitString n) (b: BitString m) :=
 
 End A.
 
-(* This was submitted by Andrew Appel *)
+(* 2- This was submitted by Andrew Appel *)
 
 Module B.
 
@@ -111,3 +111,117 @@ Lemma forall_pred_ext  {A} `{agA : ageable A}: forall B P Q,
 Abort.
 
 End B.
+
+(* 3. *)
+
+(* This was submitted by Anthony Cowley *)
+
+Require Import Coq.Classes.Morphisms.
+Require Import Setoid.
+
+Module C.
+
+Reserved Notation "a ~> b" (at level 70, right associativity).
+Reserved Notation "a ∘ b" (at level 45).
+Reserved Notation "a ≈ b" (at level 54).
+Generalizable All Variables.
+
+Class Category (Object:Type) (Hom:Object -> Object -> Type) := {
+    hom := Hom where "a ~> b" := (hom a b) : category_scope
+  ; ob := Object
+  ; id : forall a, hom a a
+  ; comp : forall c b a, hom b c -> hom a b -> hom a c
+    where "g ∘ f" := (comp _ _ _ g f)  : category_scope
+  ; eqv : forall a b, hom a b -> hom a b -> Prop
+    where "f ≈ g" := (eqv _ _ f g) : category_scope
+  ; eqv_equivalence : forall a b, Equivalence (eqv a b)
+  ; comp_respects : forall a b c,
+    Proper (eqv b c ==> eqv a b ==> eqv a c) (comp c b a)
+  ; left_identity : forall `(f:a ~> b), id b ∘ f ≈ f
+  ; right_identity : forall `(f:a ~> b), f ∘ id a ≈ f
+  ; associativity : forall `(f:a~>b) `(g:b~>c) `(h:c~>d),
+    h ∘ (g ∘ f) ≈ (h ∘ g) ∘ f
+}.
+Notation "a ~> b" := (@hom _ _ _ a b) : category_scope.
+Notation "g ∘ f" := (@comp _ _ _ _ _ _ g f) : category_scope.
+Notation "a ≈ b" := (@eqv _ _ _ _ _ a b) : category_scope.
+Notation "a ~{ C }~> b" := (@hom _ _ C a b) (at level 100) : category_scope.
+Coercion ob : Category >-> Sortclass.
+
+Open Scope category_scope.
+
+Add Parametric Relation `(C:Category Ob Hom) (a b : Ob) : (hom a b) (eqv a b)
+  reflexivity proved by (@Equivalence_Reflexive _ _ (eqv_equivalence a b))
+  symmetry proved by (@Equivalence_Symmetric _ _ (eqv_equivalence a b))
+  transitivity proved by (@Equivalence_Transitive _ _ (eqv_equivalence a b))
+  as parametric_relation_eqv.
+
+Add Parametric Morphism `(C:Category Ob Hom) (c b a : Ob) : (comp c b a)
+  with signature (eqv _ _ ==> eqv _ _ ==> eqv _ _) as parametric_morphism_comp.
+  intros x y Heq x' y'. apply comp_respects. exact Heq.
+  Defined.
+
+Class Functor `(C:Category) `(D:Category) (im : C -> D) := {
+  functor_im := im
+  ; fmap : forall {a b}, `(a ~> b) -> im a ~> im b
+  ; fmap_respects : forall a b (f f' : a ~> b), f ≈ f' -> fmap f ≈ fmap f'
+  ; fmap_preserves_id : forall a, fmap (id a) ≈ id (im a)
+  ; fmap_preserves_comp : forall `(f:a~>b) `(g:b~>c), 
+    fmap g ∘ fmap f ≈ fmap (g ∘ f)
+}.
+Coercion functor_im : Functor >-> Funclass.
+Implicit Arguments fmap [Object Hom C Object0 Hom0 D im a b].
+
+Add Parametric Morphism `(C:Category) `(D:Category)
+  (Im:C->D) (F:Functor C D Im) (a b:C) : (@fmap _ _ C _ _ D Im F a b)
+  with signature (@eqv C _ C a b ==> @eqv D _ D (Im a) (Im b)) 
+  as parametric_morphism_fmap.
+intros. apply fmap_respects. assumption. Qed.
+
+(* HERE IS THE PROBLEMATIC INSTANCE. If we change this to a regular Definition,
+   then the problem goes away. *)
+Instance functor_comp `{C:Category} `{D:Category} `{E:Category} 
+  {Gim} (G:Functor D E Gim) {Fim} (F:Functor C D Fim)
+  : Functor C E (Basics.compose Gim Fim).
+intros. apply Build_Functor with (fmap := fun a b f => fmap G (fmap F f)).
+abstract (intros; rewrite H; reflexivity).
+abstract (intros; repeat (rewrite fmap_preserves_id); reflexivity).
+abstract (intros; repeat (rewrite fmap_preserves_comp); reflexivity).
+Defined.
+
+Definition skel {A:Type} : relation A := @eq A.
+Instance skel_equiv A : Equivalence (@skel A).
+Admitted.
+
+Require Import FunctionalExtensionality.
+Instance set_cat : Category Type (fun A B => A -> B) := {
+  id := fun A => fun x => x
+  ; comp c b a f g := fun x => f (g x)
+  ; eqv := fun A B => @skel (A -> B)
+}.
+intros. compute. symmetry. apply eta_expansion.
+intros. compute. symmetry. apply eta_expansion.
+intros. compute. reflexivity. Defined.
+
+(* The [list] type constructor is a Functor. *)
+
+Require Import List.
+
+Definition setList (A:set_cat) := list A.
+Instance list_functor : Functor set_cat set_cat setList.
+apply Build_Functor with (fmap := @map).
+intros. rewrite H. reflexivity.
+intros; simpl; apply functional_extensionality. 
+  induction x; [auto|simpl]. rewrite IHx. reflexivity.
+intros; simpl; apply functional_extensionality.
+  induction x; [auto|simpl]. rewrite IHx. reflexivity.
+Defined.
+
+Local Notation "[ a , .. , b ]" := (a :: .. (b :: nil) ..) : list_scope.
+Definition setFmap {Fim} {F:Functor set_cat set_cat Fim} `(f:A~>B) (xs:Fim A) := fmap F f xs.
+
+(* We want to infer the [Functor] instance based on the value's
+   structure, but the [functor_comp] instance throws things awry. *)
+Eval cbv in setFmap (fun x => x * 3) [67,8].
+
+End C.
