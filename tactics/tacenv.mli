@@ -17,10 +17,10 @@ open Tacexpr
 type alias = KerName.t
 (** Type of tactic alias, used in the [TacAlias] node. *)
 
-val register_alias : alias -> DirPath.t -> glob_tactic_expr -> unit
+val register_alias : alias -> glob_tactic_expr -> unit
 (** Register a tactic alias. *)
 
-val interp_alias : alias -> (DirPath.t * glob_tactic_expr)
+val interp_alias : alias -> glob_tactic_expr
 (** Recover the the body of an alias. Raises an anomaly if it does not exist. *)
 
 (** {5 Coq tactic definitions} *)

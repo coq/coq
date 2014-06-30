@@ -1823,7 +1823,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         tac args ist
       end
   | TacAlias (loc,s,l) ->
-      let (_, body) = Tacenv.interp_alias s in
+      let body = Tacenv.interp_alias s in
       let rec f x = match genarg_tag x with
       | QuantHypArgType | RedExprArgType
       | ConstrWithBindingsArgType

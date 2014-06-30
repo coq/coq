@@ -65,12 +65,11 @@ type tactic_grammar_obj = {
   tacobj_local : locality_flag;
   tacobj_tacgram : tactic_grammar;
   tacobj_tacpp : Pptactic.pp_tactic;
-  tacobj_body : DirPath.t * Tacexpr.glob_tactic_expr
+  tacobj_body : Tacexpr.glob_tactic_expr
 }
 
 let cache_tactic_notation ((_, key), tobj) =
-  let (dp, body) = tobj.tacobj_body in
-  Tacenv.register_alias key dp body;
+  Tacenv.register_alias key tobj.tacobj_body;
   Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp
 
@@ -79,16 +78,14 @@ let open_tactic_notation i ((_, key), tobj) =
     Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
 
 let load_tactic_notation i ((_, key), tobj) =
-  let (dp, body) = tobj.tacobj_body in
   (** Only add the printing and interpretation rules. *)
-  Tacenv.register_alias key dp body;
+  Tacenv.register_alias key tobj.tacobj_body;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp;
   if Int.equal i 1 && not tobj.tacobj_local then
     Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
 
 let subst_tactic_notation (subst, tobj) =
-  let dir, tac = tobj.tacobj_body in
-  { tobj with tacobj_body = (dir, Tacsubst.subst_tactic subst tac); }
+  { tobj with tacobj_body = Tacsubst.subst_tactic subst tobj.tacobj_body; }
 
 let classify_tactic_notation tacobj = Substitute tacobj
 
@@ -121,7 +118,7 @@ let add_tactic_notation (local,n,prods,e) =
     tacobj_local = local;
     tacobj_tacgram = parule;
     tacobj_tacpp = pprule;
-    tacobj_body = (Lib.cwd (), tac);
+    tacobj_body = tac;
   } in
   Lib.add_anonymous_leaf (inTacticGrammar tacobj)
 
