@@ -54,7 +54,7 @@ let rec read_all_lines in_chan =
     let arg = input_line in_chan in
     let len = String.length arg  in
     let arg =
-      if arg.[len - 1] = '\r' then
+      if len > 0 && arg.[len - 1] = '\r' then
 	String.sub arg 0 (len - 1)
       else arg
     in
