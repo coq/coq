@@ -708,7 +708,7 @@ let interp_message_nl ist gl = function
 let interp_message ist gl l =
   (* Force evaluation of interp_message_token so that potential errors
      are raised now and not at printing time *)
-  prlist (fun x -> spc () ++ x) (List.map (interp_message_token ist gl) l)
+  prlist_with_sep spc (interp_message_token ist gl) l
 
 let rec interp_intro_pattern ist env = function
   | loc, IntroOrAndPattern l ->
