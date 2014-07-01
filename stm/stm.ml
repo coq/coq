@@ -1602,6 +1602,7 @@ let merge_proof_branch qast keep brname =
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
 let handle_failure e vcs tty =
+  if e = Errors.Drop then raise e else
   match Stateid.get e with
   | None ->
       VCS.restore vcs;
@@ -1740,6 +1741,9 @@ let process_transaction ~tty verbose c (loc, expr) =
           rc
           
       (* Side effect on all branches *)
+      | VtUnknown, _ when expr = VernacToplevelControl Drop ->
+          vernac_interp (VCS.get_branch_pos head) x; `Ok
+
       | VtSideff l, w ->
           let id = VCS.new_node () in
           VCS.checkout VCS.Branch.master;
