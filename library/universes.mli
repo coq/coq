@@ -17,6 +17,12 @@ open Univ
 
 (** Universes *)
 
+type universe_names = 
+  Univ.universe_level Idmap.t * Id.t Univ.LMap.t
+
+val global_universe_names : unit -> universe_names
+val set_global_universe_names : universe_names -> unit
+
 (** The global universe counter *)
 val set_remote_new_univ_level : universe_level RemoteCounter.installer
 
@@ -237,4 +243,3 @@ val minimize_univ_variables :
            Univ.LSet.t * Univ.universe option Univ.LMap.t *
 	     Univ.LSet.t *
            (bool * bool * Univ.universe) Univ.LMap.t * Univ.constraints
-

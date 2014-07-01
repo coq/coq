@@ -13,6 +13,16 @@ open Term
 open Environ
 open Univ
 
+type universe_names = 
+    Univ.universe_level Idmap.t * Id.t Univ.LMap.t
+
+let global_universes = Summary.ref ~name:"Global universe names" 
+  ((Idmap.empty, Univ.LMap.empty) : universe_names)
+
+let global_universe_names () = !global_universes
+let set_global_universe_names s = global_universes := s
+
+
 type universe_constraint_type = ULe | UEq | ULub
 
 type universe_constraint = universe * universe_constraint_type * universe

@@ -691,7 +691,15 @@ let rec pr_vernac = function
       hov 2 (str"Combined Scheme" ++ spc() ++
 	       pr_lident id ++ spc() ++ str"from" ++ spc() ++
 	       prlist_with_sep (fun _ -> fnl() ++ str", ") pr_lident l)
-
+  | VernacUniverse v ->
+    hov 2 (str"Universe" ++ spc () ++
+	     prlist_with_sep (fun _ -> str",") pr_lident v)
+  | VernacConstraint v ->
+    let pr_uconstraint (l, d, r) =
+      pr_lident l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++ pr_lident r
+    in
+      hov 2 (str"Constraint" ++ spc () ++
+	       prlist_with_sep (fun _ -> str",") pr_uconstraint v)
 
   (* Gallina extensions *)
   | VernacBeginSection id -> hov 2 (str"Section" ++ spc () ++ pr_lident id)

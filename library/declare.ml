@@ -430,3 +430,53 @@ let definition_message id =
 
 let assumption_message id =
   Flags.if_verbose msg_info (pr_id id ++ str " is assumed")
+
+(** Global universe names, in a different summary *)
+
+type universe_names = 
+    (Univ.universe_level Idmap.t * Id.t Univ.LMap.t)
+
+let input_universes : universe_names -> Libobject.obj =
+  let open Libobject in 
+    declare_object
+    { (default_object "Global universe name state") with
+      cache_function = (fun (na, pi) -> Universes.set_global_universe_names pi);
+      load_function = (fun _ (_, pi) -> Universes.set_global_universe_names pi);
+      discharge_function = (fun (_, a) -> Some a);
+      classify_function = (fun a -> Keep a) }
+
+let do_universe l =
+  let glob = Universes.global_universe_names () in
+  let glob' = 
+    List.fold_left (fun (idl,lid) (l, id) ->
+      let lev = Universes.new_univ_level (Global.current_dirpath ()) in
+	(Idmap.add id lev idl, Univ.LMap.add lev id lid))
+      glob l
+  in
+    Lib.add_anonymous_leaf (input_universes glob')
+
+
+let input_constraints : Univ.constraints -> Libobject.obj =
+  let open Libobject in 
+    declare_object
+    { (default_object "Global universe constraints") with
+      cache_function = (fun (na, c) -> Global.add_constraints c);
+      load_function = (fun _ (_, c) -> Global.add_constraints c);
+      discharge_function = (fun (_, a) -> Some a);
+      classify_function = (fun a -> Keep a) }
+
+let do_constraint l = 
+  let u_of_id = 
+    let names, _ = Universes.global_universe_names () in
+      fun (loc, id) -> 
+	try Idmap.find id names
+	with Not_found ->
+	  user_err_loc (loc, "Constraint", str "Undeclared universe " ++ pr_id id)	    
+  in
+  let constraints = List.fold_left (fun acc (l, d, r) ->
+    let lu = u_of_id l and ru = u_of_id r in
+      Univ.Constraint.add (lu, d, ru) acc)
+    Univ.Constraint.empty l
+  in
+    Lib.add_anonymous_leaf (input_constraints constraints)
+  

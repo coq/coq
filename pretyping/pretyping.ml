@@ -96,10 +96,15 @@ let ((constr_in : constr -> Dyn.t),
 let interp_universe_name evd = function
   | None -> new_univ_level_variable univ_rigid evd
   | Some s ->
-    try let level = Evd.universe_of_name evd s in
-	  evd, level
-    with Not_found -> 
-      new_univ_level_variable ~name:s univ_rigid evd
+    try
+      let id = try Id.of_string s with _ -> raise Not_found in
+      let names, _ = Universes.global_universe_names () in
+	evd, Idmap.find id names
+    with Not_found ->
+      try let level = Evd.universe_of_name evd s in
+	    evd, level
+      with Not_found -> 
+	new_univ_level_variable ~name:s univ_rigid evd
 	
 let interp_sort evd = function
   | GProp -> evd, Prop Null

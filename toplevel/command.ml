@@ -38,6 +38,9 @@ open Indschemes
 open Misctypes
 open Vernacexpr
 
+let do_universe l = Declare.do_universe l  
+let do_constraint l = Declare.do_constraint l
+
 let rec under_binders env f n c =
   if Int.equal n 0 then f env Evd.empty c else
     match kind_of_term c with

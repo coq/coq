@@ -539,6 +539,10 @@ struct
 
     let pr x = str(to_string x)
 
+    let pr_with f (v, n) = 
+      if Int.equal n 0 then f v
+      else f v ++ str"+" ++ int n
+
     let is_level = function
       | (v, 0) -> true
       | _ -> false
@@ -590,6 +594,13 @@ struct
     | _ -> 
       str "max(" ++ hov 0
 	(prlist_with_sep pr_comma Expr.pr (to_list l)) ++
+        str ")"
+
+  let pr_with f l = match node l with
+    | Cons (u, n) when is_nil n -> Expr.pr_with f u
+    | _ -> 
+      str "max(" ++ hov 0
+	(prlist_with_sep pr_comma (Expr.pr_with f) (to_list l)) ++
         str ")"
       
   let atom l = match node l with

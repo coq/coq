@@ -370,7 +370,12 @@ let detype_sort = function
   | Type u ->
     GType
       (if !print_universes
-       then Some (Pp.string_of_ppcmds (Univ.Universe.pr u))
+       then 
+	  let _, map = Universes.global_universe_names () in
+	  let pr_level u = 
+	    try Nameops.pr_id (Univ.LMap.find u map) with Not_found -> Univ.Level.pr u
+	  in
+	    Some (Pp.string_of_ppcmds (Univ.Universe.pr_with pr_level u))
        else None)
 
 type binder_kind = BProd | BLambda | BLetIn

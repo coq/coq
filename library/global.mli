@@ -28,9 +28,6 @@ val named_context : unit -> Context.named_context
 (** Changing the (im)predicativity of the system *)
 val set_engagement : Declarations.engagement -> unit
 
-(** Extra universe constraints *)
-val add_constraints : Univ.constraints -> unit
-
 (** Variables, Local definitions, constants, inductive types *)
 
 val push_named_assum : (Id.t * Constr.types) Univ.in_universe_context_set -> unit
@@ -41,6 +38,7 @@ val add_constant :
 val add_mind :
   DirPath.t -> Id.t -> Entries.mutual_inductive_entry -> mutual_inductive
 
+(** Extra universe constraints *)
 val add_constraints : Univ.constraints -> unit
 
 val push_context : Univ.universe_context -> unit

@@ -237,3 +237,4 @@ let register_inline c = globalize0 (Safe_typing.register_inline c)
 
 let set_strategy k l =
   GlobalSafeEnv.set_safe_env (Safe_typing.set_strategy (safe_env ()) k l)
+

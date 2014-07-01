@@ -85,3 +85,10 @@ val recursive_message : bool (** true = fixpoint *) ->
   int array option -> Id.t list -> unit
 
 val exists_name : Id.t -> bool
+
+
+
+(** Global universe names and constraints *)
+
+val do_universe : Id.t Loc.located list -> unit
+val do_constraint : (Id.t Loc.located * Univ.constraint_type * Id.t Loc.located) list -> unit

@@ -210,6 +210,8 @@ GEXTEND Gram
 	      l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l)
       | IDENT "Register"; IDENT "Inline"; id = identref ->
           VernacRegister(id, RegisterInline)
+      | IDENT "Universe"; l = LIST1 identref -> VernacUniverse l
+      | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> VernacConstraint l
   ] ]
   ;
 
@@ -255,6 +257,10 @@ GEXTEND Gram
     [ [ IDENT "Inline"; "("; i = INT; ")" -> InlineAt (int_of_string i)
       | IDENT "Inline" -> DefaultInline
       | -> NoInline] ]
+  ;
+  univ_constraint:
+    [ [ l = identref; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
+	r = identref -> (l, ord, r) ] ]
   ;
   finite_token:
     [ [ "Inductive" -> (Inductive_kw,Finite)

@@ -303,6 +303,8 @@ type vernac_expr =
       locality option * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
+  | VernacUniverse of lident list
+  | VernacConstraint of (lident * Univ.constraint_type * lident) list
 
   (* Gallina extensions *)
   | VernacBeginSection of lident

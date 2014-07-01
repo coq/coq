@@ -79,6 +79,8 @@ sig
   val pr : t -> Pp.std_ppcmds
   (** Pretty-printing *)
 
+  val pr_with : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
+
   val is_level : t -> bool
   (** Test if the universe is a level or an algebraic universe. *)
 

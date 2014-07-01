@@ -605,6 +605,9 @@ let vernac_combined_scheme lid l =
      List.iter (fun lid -> dump_global (Misctypes.AN (Ident lid))) l);
  Indschemes.do_combined_scheme lid l
 
+let vernac_universe l = do_universe l
+let vernac_constraint l = do_constraint l
+
 (**********************)
 (* Modules            *)
 
@@ -1721,6 +1724,8 @@ let interp ?proof locality poly c =
   | VernacCoFixpoint (local, l) -> vernac_cofixpoint locality poly local l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
+  | VernacUniverse l -> vernac_universe l
+  | VernacConstraint l -> vernac_constraint l
 
   (* Modules *)
   | VernacDeclareModule (export,lid,bl,mtyo) ->
