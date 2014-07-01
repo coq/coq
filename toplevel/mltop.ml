@@ -131,7 +131,9 @@ let dir_ml_load s =
         try
           Dynlink.loadfile gname;
 	with Dynlink.Error a ->
-          errorlabstrm "Mltop.load_object" (str (Dynlink.error_message a))
+          errorlabstrm "Mltop.load_object"
+            (strbrk "while loading " ++ str s ++
+             strbrk ": " ++ str (Dynlink.error_message a))
 
 (* Dynamic interpretation of .ml *)
 let dir_ml_use s =
