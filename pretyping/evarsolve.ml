@@ -1159,9 +1159,8 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
 	      ?candidates:evi.evar_candidates (it_mkProd_or_LetIn (mkSort k) ctx) 
 	  in
 	  let evd = Evd.set_leq_sort (Evd.set_leq_sort evd k i) k j in
-	    solve_evar_evar ~force f g env 
-	      (solve_evar_evar ~force f g env evd None (ev3,args1) ev1)
-	      pbty (ev3,args1) ev2
+	  let evd = solve_evar_evar ~force f g env evd (Some false) (ev3,args1) ev1 in
+	    f env evd pbty ev2 (whd_evar evd (mkEvar (ev3,args1)))
     with Reduction.NotArity -> 
       solve_evar_evar ~force f g env evd None ev1 ev2
 
