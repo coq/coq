@@ -350,44 +350,45 @@ let header_includes () = ()
 let implicit () =
     section "Implicit rules.";
   let mli_rules () =
-    print "%.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
-    print "%.mli.d: %.mli\n";
+    print "$(MLIFILES:.mli=.cmi): %.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print "$(addsuffix .d,$(MLIFILES)): %.mli.d: %.mli\n";
     print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml4_rules () =
-    print "%.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
-    print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
-    print "%.ml4.d: %.ml4\n";
-    print "\t$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "$(ML4FILES:.ml4=.cmo): %.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
+    print "$(ML4FILES:.ml4=.cmx): %.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
+    print "$(addsuffix .d,$(ML4FILES)): %.ml4.d: %.ml4\n";
+    print "\t$(COQDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml_rules () =
-    print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
-    print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
-    print "%.ml.d: %.ml\n";
+    print "$(MLFILES:.ml=.cmo): %.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print "$(MLFILES:.ml=.cmx): %.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print "$(addsuffix .d,$(MLFILES)): %.ml.d: %.ml\n";
     print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
-  let cmxs_rules () =
-    print "%.cmxs: %.cmxa\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n";
-    print "%.cmxs: %.cmx\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n" in
+  let cmxs_rules () = (* order is important here when there is foo.ml and foo.mllib *)
+    print "$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs) $(MLPACKFILES:.mlpack=.cmxs): %.cmxs: %.cmx\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n";
+    print "$(MLLIBFILES:.mllib=.cmxs): %.cmxs: %.cmxa\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n" in
   let mllib_rules () =
-    print "%.cma: | %.mllib\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
-    print "%.cmxa: | %.mllib\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
-    print "%.mllib.d: %.mllib\n";
-    print "\t$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "$(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
+    print "$(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
+    print "$(addsuffix .d,$(MLLIBFILES)): %.mllib.d: %.mllib\n";
+    print "\t$(COQDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let mlpack_rules () =
-    print "%.cmo: | %.mlpack\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
-    print "%.cmx: | %.mlpack\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
-    print "%.mlpack.d: %.mlpack\n";
-    print "\t$(COQDEP) $(OCAMLLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
+    print "$(MLPACKFILES:.mlpack=.cmo): %.cmo: | %.mlpack\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
+    print "$(MLIFILES:.mlpack=.cmx): %.cmx: | %.mlpack\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
+    print "$(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack\n";
+    print "\t$(COQDEP) $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
 in
   let v_rules () =
-    print "%.vo %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
-    print "%.vi: %.v\n\t$(COQC) -quick $(COQDEBUG) $(COQFLAGS) $*\n\n";
-    print "%.g: %.v\n\t$(GALLINA) $<\n\n";
-    print "%.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex $< -o $@\n\n";
-    print "%.html: %.v %.glob\n\t$(COQDOC) $(COQDOCFLAGS) -html $< -o $@\n\n";
-    print "%.g.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex -g $< -o $@\n\n";
-    print "%.g.html: %.v %.glob\n\t$(COQDOC) $(COQDOCFLAGS)  -html -g $< -o $@\n\n";
-    print "%.v.d: %.v\n";
+    print "$(VOFILES): %.vo: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print "$(GLOBFILES): %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print "$(VFILES:.v=.vi): %.vi: %.v\n\t$(COQC) -quick $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print "$(GFILES): %.g: %.v\n\t$(GALLINA) $<\n\n";
+    print "$(VFILES:.v=.tex): %.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex $< -o $@\n\n";
+    print "$(HTMLFILES): %.html: %.v %.glob\n\t$(COQDOC) $(COQDOCFLAGS) -html $< -o $@\n\n";
+    print "$(VFILES:.v=.g.tex): %.g.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex -g $< -o $@\n\n";
+    print "$(GHTMLFILES): %.g.html: %.v %.glob\n\t$(COQDOC) $(COQDOCFLAGS)  -html -g $< -o $@\n\n";
+    print "$(addsuffix .d,$(VFILES)): %.v.d: %.v\n";
     print "\t$(COQDEP) $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
-    print "%.v.beautified:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) -beautify $*\n\n"
+    print "$(addsuffix .beautified,$(VFILES)): %.v.beautified:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) -beautify $*\n\n"
   in
     if !some_mlifile then mli_rules ();
     if !some_ml4file then ml4_rules ();
@@ -447,7 +448,7 @@ CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo
 else
 CAMLP4EXTEND=
 endif\n";
-    print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) -I . $(COQSRCLIBS) compat5.cmo \\
+    print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) $(COQSRCLIBS) compat5.cmo \\
   $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n\n";
     end;
     match is_install with
@@ -680,10 +681,10 @@ let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
     print_list " "
       ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install" ::
 	  "uninstall_me.sh" :: "uninstall" :: "userinstall" :: "depend" ::
-	  "html" :: "validate" :: sds);
-    print_list " " (CList.map_filter
-		      (fun (n,_,is_phony,_) -> if is_phony then Some n else None)
-		      sps);
+	  "html" :: "validate" ::
+	    (sds@(CList.map_filter
+		    (fun (n,_,is_phony,_) ->
+		     if is_phony then Some n else None) sps)));
     print "\n\n";
     custom sps;
     subdirs sds;
