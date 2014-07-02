@@ -1322,9 +1322,10 @@ let apply_strategy (s : strategy) env avoid concl (prop, cstr) evars =
 	Some (Some (res.rew_prf, res.rew_evars, res.rew_car, res.rew_from, res.rew_to))
 
 let solve_constraints env (evars,cstrs) =
-  Typeclasses.resolve_typeclasses env ~split:false ~fail:true 
-    (Typeclasses.mark_resolvables ~filter:(all_constraints cstrs) evars)
-
+  let filter = all_constraints cstrs in
+    Typeclasses.resolve_typeclasses env ~filter ~split:false ~fail:true 
+      (Typeclasses.mark_resolvables ~filter evars)
+      
 let nf_zeta =
   Reductionops.clos_norm_flags (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
 
