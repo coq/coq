@@ -165,48 +165,79 @@ module PatternMatching (E:StaticEnvironment) = struct
       of [f x]. The substitutions of [x] and [f x] are composed,
       dropping the apparent successes when the substitutions are not
       coherent. *)
+  type ('a, 'b) acc = Done of 'a IStream.t | Next of unit t * 'a IStream.t * 'b IStream.t
+
   let (>>=) (type a) (type b) (x:a m) (f:a -> b m) : b m =
     let open IStream in
-    concat_map begin fun { subst=substx; context=contextx; terms=termsx; lhs=lhsx } ->
-      map_filter begin fun { subst=substf; context=contextf; terms=termsf; lhs=lhsf } ->
+    let rec make = function
+    | Done s ->
+      begin match peek s with
+      | Nil -> Nil
+      | Cons ({ subst=substx; context=contextx; terms=termsx; lhs=lhsx } as m, s) ->
+        let r = f lhsx in
+        let m = { m with lhs = () } in
+        make (Next (m, s, r))
+      end
+    | Next (m, s, r) ->
+      begin match peek r with
+      | Nil -> make (Done s)
+      | Cons ({ subst=substf; context=contextf; terms=termsf; lhs=lhsf }, r) ->
         try
-          Some {
-            subst = subst_prod substx substf ;
-            context = context_subst_prod contextx contextf ;
-            terms = term_subst_prod termsx termsf ;
+          let ans = {
+            subst = subst_prod m.subst substf ;
+            context = context_subst_prod m.context contextf ;
+            terms = term_subst_prod m.terms termsf ;
             lhs = lhsf
-          }
-        with Not_coherent_metas -> None
-      end (f lhsx)
-    end x
+          } in
+          Cons (ans, (Next (m, s, r)))
+        with Not_coherent_metas -> make (Next (m, s, r))
+      end
+    in
+    IStream.make make (Done x)
 
   (** A variant of [(>>=)] when the first argument returns [unit]. *)
   let (<*>) (type a) (x:unit m) (y:a m) : a m =
     let open IStream in
-    concat_map begin fun { subst=substx; context=contextx; terms=termsx; lhs=() } ->
-      map_filter begin fun { subst=substy; context=contexty; terms=termsy; lhs=lhsy } ->
+    let rec make = function
+    | Done s ->
+      begin match peek s with
+      | Nil -> Nil
+      | Cons (m, s) -> make (Next (m, s, y))
+      end
+    | Next (m, s, r) ->
+      begin match peek r with
+      | Nil -> make (Done s)
+      | Cons ({ subst=substf; context=contextf; terms=termsf; lhs=lhsf }, r) ->
         try
-          Some {
-            subst = subst_prod substx substy ;
-            context = context_subst_prod contextx contexty ;
-            terms = term_subst_prod termsx termsy ;
-            lhs = lhsy
-          }
-        with Not_coherent_metas -> None
-      end y
-    end x
+          let ans = {
+            subst = subst_prod m.subst substf ;
+            context = context_subst_prod m.context contextf ;
+            terms = term_subst_prod m.terms termsf ;
+            lhs = lhsf
+          } in
+          Cons (ans, (Next (m, s, r)))
+        with Not_coherent_metas -> make (Next (m, s, r))
+      end
+    in
+    IStream.make make (Done x)
 
   (** Failure of the pattern-matching monad: no success. *)
   let fail (type a) : a m = IStream.empty
 
   (** Chooses in a list, in the same order as the list *)
   let pick (type a) (l:a list) : a m =
-    IStream.map begin fun x ->
-      { subst = empty_subst ;
+    let make = function
+    | [] -> IStream.Nil
+    | x :: l ->
+      let s = {
+        subst = empty_subst ;
         context = empty_context_subst ;
         terms = empty_term_subst ;
-        lhs = x }
-    end (IStream.of_list l)
+        lhs = x
+      } in
+      IStream.Cons (s, l)
+    in
+    IStream.make make l
 
   (** Declares a subsitution, a context substitution and a term substitution. *)
   let put subst context terms : unit m =
@@ -264,7 +295,7 @@ module PatternMatching (E:StaticEnvironment) = struct
   (** [match_term term rules] matches the term [term] with the set of
       matching rules [rules].*)
   let match_term term rules =
-    IStream.(concat (map (fun r -> rule_match_term term r) (of_list rules)))
+    IStream.(concat_map (fun r -> rule_match_term term r) (of_list rules))
 
 
 
@@ -332,7 +363,7 @@ module PatternMatching (E:StaticEnvironment) = struct
   (** [match_goal hyps concl rules] matches the goal [hyps|-concl]
       with the set of matching rules [rules]. *)
   let match_goal hyps concl rules =
-    IStream.(concat (map (fun r -> rule_match_goal hyps concl r) (of_list rules)))
+    IStream.(concat_map (fun r -> rule_match_goal hyps concl r) (of_list rules))
 
 end
 
