@@ -1243,7 +1243,7 @@ and interp_match_successes lz ist s : typed_generic_argument GTac.t =
     match peek t with
     | Nil -> Proofview.tclZERO e
     | Cons (t1,t') ->
-        Proofview.tclORELSE
+        Proofview.tclOR
           (interp_match_success ist t1)
           begin fun e ->
               (* Honors Ltac's failure level. *)
