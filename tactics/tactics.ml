@@ -1774,15 +1774,16 @@ let letin_tac_gen with_eq abs ty =
 	      (Proofview.V82.tactic (thin_body [heq;id]))
       | None ->
 	  (Proofview.Goal.sigma gl, mkNamedLetIn id c t ccl, Proofview.tclUNIT ()) in
-    Proofview.Goal.enter (fun gl -> 
-      let (sigma,newcl,eq_tac) = eq_tac gl in
-      Tacticals.New.tclTHENLIST
-	[ Proofview.V82.tclEVARS sigma;
-          Proofview.V82.tclEVARUNIVCONTEXT ctx;
-	  Proofview.V82.tactic (convert_concl_no_check newcl DEFAULTcast);
-          intro_gen dloc (IntroMustBe id) (decode_hyp lastlhyp) true false;
-          Proofview.V82.tactic (tclMAP convert_hyp_no_check depdecls);
-          eq_tac ])
+    Tacticals.New.tclTHEN
+      (Proofview.V82.tclEVARUNIVCONTEXT ctx)
+      (Proofview.Goal.enter (fun gl -> 
+	let (sigma,newcl,eq_tac) = eq_tac gl in
+	  Tacticals.New.tclTHENLIST
+	    [ Proofview.V82.tclEVARS sigma;
+	      Proofview.V82.tactic (convert_concl_no_check newcl DEFAULTcast);
+              intro_gen dloc (IntroMustBe id) (decode_hyp lastlhyp) true false;
+              Proofview.V82.tactic (tclMAP convert_hyp_no_check depdecls);
+              eq_tac ]))
   end
 
 let letin_tac with_eq name c ty occs =
