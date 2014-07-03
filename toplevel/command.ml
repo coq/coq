@@ -390,7 +390,7 @@ let sup_list = List.fold_left Univ.sup Univ.type0m_univ
 let extract_level env evd tys = 
   let sorts = List.map (fun ty -> 
     let ctx, concl = Reduction.dest_prod_assum env ty in
-      sign_level env evd ctx) tys 
+      sign_level env evd ((Anonymous, None, concl) :: ctx)) tys 
   in sup_list sorts
 
 let inductive_levels env evdref poly arities inds =

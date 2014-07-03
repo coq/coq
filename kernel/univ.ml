@@ -1700,9 +1700,30 @@ let solve_constraints_system levels level_bounds level_min =
       levels in
   let v = Array.copy level_bounds in
   let nind = Array.length v in
+  let clos = Array.map (fun _ -> Int.Set.empty) levels in
+  (* First compute the transitive closure of the levels dependencies *)
   for i=0 to nind-1 do
     for j=0 to nind-1 do
       if not (Int.equal i j) && is_direct_sort_constraint levels.(j) v.(i) then
+	clos.(i) <- Int.Set.add j clos.(i);
+    done;
+  done;
+  let rec closure () = 
+    let continue = ref false in
+      Array.iteri (fun i deps -> 
+	let deps' = 
+	  Int.Set.fold (fun j acc -> Int.Set.union acc clos.(j)) deps deps
+	in 
+	  if Int.Set.equal deps deps' then ()
+	  else (clos.(i) <- deps'; continue := true))
+	clos;
+      if !continue then closure ()
+      else ()
+  in 
+  closure ();
+  for i=0 to nind-1 do
+    for j=0 to nind-1 do
+      if not (Int.equal i j) && Int.Set.mem j clos.(i) then
 	(v.(i) <- Universe.sup v.(i) level_bounds.(j);
 	 level_min.(i) <- Universe.sup level_min.(i) level_min.(j))
     done;
