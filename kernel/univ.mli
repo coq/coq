@@ -129,6 +129,15 @@ val super : universe -> universe
 
 val universe_level : universe -> universe_level option
 
+(** [univ_level_mem l u] Is l is mentionned in u ? *)
+
+val univ_level_mem : universe_level -> universe -> bool
+
+(** [univ_level_rem u v min] removes [u] from [v], resulting in [min]
+    if [v] was exactly [u]. *)
+
+val univ_level_rem : universe_level -> universe -> universe -> universe
+
 (** {6 Graphs of universes. } *)
 
 type universes
@@ -210,24 +219,6 @@ val constraints_of_universes : universes -> constraints
 
 val check_constraint  : universes -> univ_constraint -> bool
 val check_constraints : constraints -> universes -> bool
-
-(** {6 Support for old-style sort-polymorphism } *)
-
-val solve_constraints_system : universe option array -> universe array -> universe array ->
-  universe array
-
-val remove_large_constraint : universe_level -> universe -> universe -> universe
-
-val subst_large_constraint : universe -> universe -> universe -> universe
-
-val subst_large_constraints :
-  (universe * universe) list -> universe -> universe
-
-val no_upper_constraints : universe -> constraints -> bool
-
-(** Is u mentionned in v (or equals to v) ? *)
-
-val univ_depends : universe -> universe -> bool
 
 (** {6 Support for universe polymorphism } *)
 

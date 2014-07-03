@@ -413,7 +413,7 @@ let inductive_levels env evdref poly arities inds =
   in
   (* Take the transitive closure of the system of constructors *)
   (* level constraints and remove the recursive dependencies *)
-  let levels' = Univ.solve_constraints_system (Array.of_list levels)
+  let levels' = Universes.solve_constraints_system (Array.of_list levels)
     (Array.of_list cstrs_levels) (Array.of_list min_levels)
   in
   let evd =

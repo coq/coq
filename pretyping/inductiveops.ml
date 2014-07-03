@@ -480,13 +480,13 @@ let rec instantiate_universes env evdref scl is = function
       d :: instantiate_universes env evdref scl is (sign, exp)
   | d::sign, None::exp ->
       d :: instantiate_universes env evdref scl is (sign, exp)
-  | (na,None,ty)::sign, Some u::exp ->
+  | (na,None,ty)::sign, Some l::exp ->
       let ctx,_ = Reduction.dest_arity env ty in
-      let u = Univ.Universe.make u in
+      let u = Univ.Universe.make l in
       let s =
 	(* Does the sort of parameter [u] appear in (or equal)
            the sort of inductive [is] ? *)
-        if univ_depends u is then
+        if univ_level_mem l is then
           scl (* constrained sort: replace by scl *)
         else
           (* unconstrained sort: replace by fresh universe *)

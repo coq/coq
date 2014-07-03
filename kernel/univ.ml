@@ -1657,110 +1657,18 @@ let sort_universes orig =
   in
   Array.fold_left_i fold sorted types
 
-(**********************************************************************)
-(* Tools for sort-polymorphic inductive types                         *)
-
 (* Miscellaneous functions to remove or test local univ assumed to
-   occur only in the le constraints *)
+   occur in a universe *)
 
-let remove_large_constraint u v min = 
+let univ_level_mem u v = Huniv.mem (Expr.make u) v
+
+let univ_level_rem u v min = 
   match Universe.level v with
   | Some u' -> if Level.equal u u' then min else v
   | None -> Huniv.remove (Universe.Expr.make u) v
 
-(* [is_direct_constraint u v] if level [u] is a member of universe [v] *)
-let is_direct_constraint u v =
-  match Universe.level v with
-  | Some u' -> Level.equal u u'
-  | None -> 
-    let expr = Universe.Expr.make u in
-      Universe.exists (Universe.Expr.equal expr) v
-
-(*
-   Solve a system of universe constraint of the form
-
-   u_s11, ..., u_s1p1, w1 <= u1
-   ...
-   u_sn1, ..., u_snpn, wn <= un
-
-where
-
-  - the ui (1 <= i <= n) are universe variables,
-  - the sjk select subsets of the ui for each equations,
-  - the wi are arbitrary complex universes that do not mention the ui.
-*)
-
-let is_direct_sort_constraint s v = match s with
-  | Some u -> is_direct_constraint u v
-  | None -> false
-
-let solve_constraints_system levels level_bounds level_min =
-  let levels =
-    Array.map (Option.map (fun u -> match level u with Some u -> u | _ -> anomaly (Pp.str"expects Atom")))
-      levels in
-  let v = Array.copy level_bounds in
-  let nind = Array.length v in
-  let clos = Array.map (fun _ -> Int.Set.empty) levels in
-  (* First compute the transitive closure of the levels dependencies *)
-  for i=0 to nind-1 do
-    for j=0 to nind-1 do
-      if not (Int.equal i j) && is_direct_sort_constraint levels.(j) v.(i) then
-	clos.(i) <- Int.Set.add j clos.(i);
-    done;
-  done;
-  let rec closure () = 
-    let continue = ref false in
-      Array.iteri (fun i deps -> 
-	let deps' = 
-	  Int.Set.fold (fun j acc -> Int.Set.union acc clos.(j)) deps deps
-	in 
-	  if Int.Set.equal deps deps' then ()
-	  else (clos.(i) <- deps'; continue := true))
-	clos;
-      if !continue then closure ()
-      else ()
-  in 
-  closure ();
-  for i=0 to nind-1 do
-    for j=0 to nind-1 do
-      if not (Int.equal i j) && Int.Set.mem j clos.(i) then
-	(v.(i) <- Universe.sup v.(i) level_bounds.(j);
-	 level_min.(i) <- Universe.sup level_min.(i) level_min.(j))
-    done;
-    for j=0 to nind-1 do
-      match levels.(j) with
-      | Some u -> v.(i) <- remove_large_constraint u v.(i) level_min.(i)
-      | None -> ()
-    done
-  done;
-  v
-
-let subst_large_constraint u u' v =
-  match level u with
-  | Some u ->
-      (* if is_direct_constraint u v then  *)
-	Universe.sup u' (remove_large_constraint u v type0m_univ)
-      (* else v *)
-  | _ ->
-      anomaly (Pp.str "expect a universe level")
-
-let subst_large_constraints =
-  List.fold_right (fun (u,u') -> subst_large_constraint u u')
-
-let no_upper_constraints u cst =
-  match level u with
-  | Some u ->
-    let test (u1, _, _) =
-      not (Int.equal (Level.compare u1 u) 0) in
-    Constraint.for_all test cst
-  | _ -> anomaly (Pp.str "no_upper_constraints")
-
 (* Is u mentionned in v (or equals to v) ? *)
 
-let univ_depends u v =
-  match atom u with
-    | Some u -> Huniv.mem u v
-    | _ -> anomaly (Pp.str"univ_depends given a non-atomic 1st arg")
 
 (**********************************************************************)
 (** Universe polymorphism                                             *)

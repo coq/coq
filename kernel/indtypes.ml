@@ -320,7 +320,6 @@ let typecheck_inductive env ctx mie =
 	in
 	  match s with
 	  | Type u when expltype (* Explicitly polymorphic *) ->
-	      (* && no_upper_constraints u (Univ.UContext.constraints mie.mind_entry_universes) -> *)
 	    (* The polymorphic level is a function of the level of the *)
 	    (* conclusions of the parameters *)
             (* We enforce [u >= lev] in case [lev] has a strict upper *)
