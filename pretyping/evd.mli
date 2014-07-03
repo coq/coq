@@ -478,7 +478,7 @@ val merge_universe_subst : evar_map -> Universes.universe_opt_subst -> evar_map
 val with_context_set : rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
 
 val nf_univ_variables : evar_map -> evar_map * Univ.universe_subst
-val abstract_undefined_variables : evar_map -> evar_map
+val abstract_undefined_variables : evar_universe_context -> evar_universe_context
 
 val refresh_undefined_universes : evar_map -> evar_map * Univ.universe_level_subst
 

@@ -1155,16 +1155,15 @@ let normalize_evar_universe_context_variables uctx =
 (* let normalize_evar_universe_context_variables = *)
 (*   Profile.profile1 normvarsconstrkey normalize_evar_universe_context_variables;; *)
     
-let mark_undefs_as_nonalg uctx =
+let abstract_undefined_variables uctx =
   let vars' = 
     Univ.LMap.fold (fun u v acc ->
       if v == None then Univ.LSet.remove u acc
       else acc)
     uctx.uctx_univ_variables uctx.uctx_univ_algebraic
-  in { uctx with uctx_univ_algebraic = vars' }
+  in { uctx with uctx_local = Univ.ContextSet.empty;
+      uctx_univ_algebraic = vars' }
 
-let abstract_undefined_variables evd =
-  {evd with universes = mark_undefs_as_nonalg evd.universes}
 
 let refresh_undefined_univ_variables uctx =
   let subst, ctx' = Universes.fresh_universe_context_set_instance uctx.uctx_local in
