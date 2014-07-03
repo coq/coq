@@ -1965,11 +1965,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
     | VernacTime v ->
-	let tstart = System.get_time() in
-        aux_list ?locality ?polymorphism isprogcmd v;
-	let tend = System.get_time() in
-	let msg = if !Flags.time then "" else "Finished transaction in " in
-        msg_info (str msg ++ System.fmt_time_difference tstart tend)
+        System.with_time !Flags.time (aux ?locality ?polymorphism isprogcmd) v;
     | VernacLoad (_,fname) -> vernac_load (aux false) fname
     | c -> 
         check_vernac_supports_locality c locality;

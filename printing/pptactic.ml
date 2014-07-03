@@ -865,6 +865,9 @@ let rec pr_tac inherited tac =
       hov 1 (str "timeout " ++ pr_or_var int n ++ spc () ++
              pr_tac (ltactical,E) t),
       ltactical
+  | TacTime t ->
+      hov 1 (str "time " ++ pr_tac (ltactical,E) t),
+      ltactical
   | TacRepeat t ->
       hov 1 (str "repeat" ++ spc () ++ pr_tac (ltactical,E) t),
       ltactical

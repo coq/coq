@@ -467,6 +467,9 @@ module New = struct
         | e -> Proofview.tclZERO e
       end
 
+  let tclTIME t =
+    Proofview.tclTIME t
+
   let nthDecl m gl =
     let hyps = Proofview.Goal.hyps gl in
     try
