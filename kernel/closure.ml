@@ -737,8 +737,7 @@ let fapp_stack (m,stk) = zip m stk
    (strip_update_shift, through get_arg). *)
 
 (* optimised for the case where there are no shifts... *)
-let strip_update_shift_app head stk =
-  assert (match head.norm with Red -> false | _ -> true);
+let strip_update_shift_app_red head stk =
   let rec strip_rec rstk h depth = function
     | Zshift(k) as e :: s ->
         strip_rec (e::rstk) (lift_fconstr k h) (depth+k) s
@@ -750,6 +749,9 @@ let strip_update_shift_app head stk =
     | stk -> (depth,List.rev rstk, stk) in
   strip_rec [] head 0 stk
 
+let strip_update_shift_app head stack =
+  assert (match head.norm with Red -> false | _ -> true);
+  strip_update_shift_app_red head stack
 
 let get_nth_arg head n stk =
   assert (match head.norm with Red -> false | _ -> true);
@@ -812,22 +814,28 @@ let rec reloc_rargs_rec depth stk =
 let reloc_rargs depth stk =
   if Int.equal depth 0 then stk else reloc_rargs_rec depth stk
 
-let rec drop_parameters depth n argstk =
+let rec try_drop_parameters depth n argstk =
   match argstk with
       Zapp args::s ->
         let q = Array.length args in
-        if n > q then drop_parameters depth (n-q) s
+        if n > q then try_drop_parameters depth (n-q) s
         else if Int.equal n q then reloc_rargs depth s
         else
           let aft = Array.sub args n (q-n) in
           reloc_rargs depth (append_stack aft s)
-    | Zshift(k)::s -> drop_parameters (depth-k) n s
-    | [] -> (* we know that n < stack_args_size(argstk) (if well-typed term) *)
+    | Zshift(k)::s -> try_drop_parameters (depth-k) n s
+    | [] -> 
 	if Int.equal n 0 then []
-	else anomaly
-	  (Pp.str "ill-typed term: found a match on a partially applied constructor")
+	else raise Not_found
     | _ -> assert false
 	(* strip_update_shift_app only produces Zapp and Zshift items *)
+
+let drop_parameters depth n argstk =
+  try try_drop_parameters depth n argstk
+  with Not_found ->
+  (* we know that n < stack_args_size(argstk) (if well-typed term) *) 
+  anomaly (Pp.str "ill-typed term: found a match on a partially applied constructor")
+
 
 let rec get_parameters depth n argstk =
   match argstk with
@@ -845,35 +853,34 @@ let rec get_parameters depth n argstk =
     | _ -> assert false
 	(* strip_update_shift_app only produces Zapp and Zshift items *)
 
-let eta_expand_ind_stack env lft (ind,u) m s (lft, h) =
-  let mib = lookup_mind (fst ind) env in
-    match mib.Declarations.mind_record with
-    | None -> raise Not_found
-    | Some (exp,_) -> 
-      let pars = mib.Declarations.mind_nparams in
-      let h' = fapp_stack h in
-      let (depth, args, _) = strip_update_shift_app m s in
-      let paramargs = get_parameters depth pars args in
-      let subs = subs_cons (Array.append paramargs [|h'|], subs_id 0) in
-      let fexp = mk_clos subs exp in
-	(lft, (fexp, []))
 
-let eta_expand_ind_stacks env ind m s h =
+(** [eta_expand_ind_stacks env ind c s t] computes stacks correspoding 
+    to the conversion of the eta expansion of t, considered as an inhabitant 
+    of ind, and the Constructor c of this inductive type applied to arguments
+    s.
+    @assumes [t] is an irreducible term, and not a constructor. [ind] is the inductive
+    of the constructor term [c] 
+    @raises Not_found if the inductive is not a primitive record, or if the 
+    constructor is partially applied.
+ *)
+let eta_expand_ind_stacks env ind m s (f, s') =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
     | Some (exp,projs) when Array.length projs > 0 -> 
-      let pars = mib.Declarations.mind_nparams in
-      let h' = fapp_stack h in
-      let (depth, args, _) = strip_update_shift_app m s in
       let primitive = Environ.is_projection projs.(0) env in
 	if primitive then
-	  let s' = drop_parameters depth pars args in
-      (* Construct, pars1 .. parsm :: arg1...argn :: s ~= (t, []) ->
-	 arg1..argn :: s ~= (proj1 t...projn t) s
-      *)
-	  let hstack = Array.map (fun p -> { norm = Red;
-					     term = FProj (p, h') }) projs in
-	    s', [Zapp hstack]
+	  (* Construct, pars1 .. parsm :: arg1...argn :: s ~= (f, s') ->
+	     arg1..argn ~= (proj1 t...projn t) && s = s' <->
+	     arg1..argn @ s ~= (proj1 t...projn t) @ s' *)
+	  let pars = mib.Declarations.mind_nparams in
+	  let (depth', args', s') = strip_update_shift_app_red f s' in
+	  let right = fapp_stack (f, args') in
+	  let (depth, args, s) = strip_update_shift_app m s in
+	  (** Try to drop the params, might fail on partially applied constructors. *)
+	  let argss = try_drop_parameters depth pars args in
+	  let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
+					     term = FProj (p, right) }) projs in
+	    argss, (Zapp hstack :: s')
 	else raise Not_found (* disallow eta-exp for non-primitive records *)
     | _ -> raise Not_found
 
@@ -935,7 +942,7 @@ let rec knh info m stk =
 	  | Some pb ->
 	     knh info c (Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p)
 			 :: zupdate m stk))
-	else (m,stk)
+	else (set_norm m; (m,stk))
 
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|

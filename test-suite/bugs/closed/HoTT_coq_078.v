@@ -35,11 +35,9 @@ Definition transport_prod' {A : Type} {P Q : A -> Type} {a a' : A} (p : a = a')
        | idpath => idpath
      end. (* success *)
 
-Fail Definition transport_prod {A : Type} {P Q : A -> Type} {a a' : A} (p : a = a')
+Definition transport_prod {A : Type} {P Q : A -> Type} {a a' : A} (p : a = a')
   (z : P a * Q a)
   : transport (fun a => P a * Q a) p z  =  (transport _ p (fst z), transport _ p (snd z))
   := match p with
        | idpath => idpath
      end.
-(** Toplevel input, characters 15-255:
-Error: Conversion test raised an anomaly *)

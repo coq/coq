@@ -187,9 +187,15 @@ val whd_val : clos_infos -> fconstr -> constr
 val whd_stack :
   clos_infos -> fconstr -> stack -> fconstr * stack
 
-val eta_expand_ind_stack : env -> lift -> pinductive -> fconstr -> stack -> 
-  (lift * (fconstr * stack)) -> lift * (fconstr * stack)
- 
+(** [eta_expand_ind_stacks env ind c s t] computes stacks correspoding 
+    to the conversion of the eta expansion of t, considered as an inhabitant 
+    of ind, and the Constructor c of this inductive type applied to arguments
+    s.
+    @assumes [t] is a rigid term, and not a constructor. [ind] is the inductive
+    of the constructor term [c] 
+    @raises Not_found if the inductive is not a primitive record, or if the 
+    constructor is partially applied.
+ *)
 val eta_expand_ind_stacks : env -> inductive -> fconstr -> stack -> 
    (fconstr * stack) -> stack * stack
 

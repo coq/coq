@@ -708,7 +708,9 @@ and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
 		 exact_ise_stack2 env evd (evar_conv_x ts) l1' 
 		   (Stack.append_app_list l2' Stack.empty)
 	     else raise (Failure "")
-	 with Failure _ -> UnifFailure(evd,NotSameHead))
+	 with 
+	 | Invalid_argument _ (* Stack.tail: partially applied constructor *)
+	 | Failure _ -> UnifFailure(evd,NotSameHead))
     | _ -> UnifFailure (evd,NotSameHead)
 
 (* Profiling *)
