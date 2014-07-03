@@ -209,6 +209,7 @@ and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr =
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacDo of int or_var * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacTimeout of int or_var * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacTime of string option * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacRepeat of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacProgress of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacShowHyps of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr

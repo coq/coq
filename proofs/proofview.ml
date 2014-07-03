@@ -20,6 +20,7 @@
    There is also need of a list of the evars which initialised the proofview
    to be able to return information about the proofview. *)
 
+open Pp
 open Util
 
 (* Type of proofviews. *)
@@ -592,6 +593,32 @@ let tclTIMEOUT n t =
         Proof.put m >>
         Proof.ret res
     | Util.Inr e -> tclZERO e
+
+let tclTIME s t =
+  let (>>=) = Proof.bind in
+  let pr_time t1 t2 n msg =
+    let msg =
+      if n = 0 then
+        str msg
+      else
+        str (msg ^ " after ") ++ int n ++ str (String.plural n " backtracking")
+    in
+    msg_info(str "Tactic call" ++ pr_opt str s ++ str " ran for " ++
+             System.fmt_time_difference t1 t2 ++ str " " ++ surround msg) in
+  let rec aux n t =
+    let tstart = System.get_time() in
+    Proof.split t >>= function
+    | Nil e ->
+      begin
+        let tend = System.get_time() in
+        pr_time tstart tend n "failure";
+        tclZERO e
+      end
+    | Cons (x,k) ->
+        let tend = System.get_time() in
+        pr_time tstart tend n "success";
+        tclOR (tclUNIT x) (fun e -> aux (n+1) (k e))
+  in aux 0 t
 
 let mark_as_unsafe =
   Proof.put (false,([],[]))

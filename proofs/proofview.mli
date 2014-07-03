@@ -271,6 +271,10 @@ exception Timeout
     In case of timeout if fails with [tclZERO Timeout]. *)
 val tclTIMEOUT : int -> 'a tactic -> 'a tactic
 
+(** [tclTIME s t] displays time for each atomic call to t, using s as an
+    identifying annotation if present *)
+val tclTIME : string option -> 'a tactic -> 'a tactic
+
 (** [mark_as_unsafe] signals that the current tactic is unsafe. *)
 val mark_as_unsafe : unit tactic
 

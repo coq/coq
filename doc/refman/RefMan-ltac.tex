@@ -102,6 +102,7 @@ is understood as
 & | & {\tt once} {\tacexprpref}\\
 & | & {\tt exactly\_once} {\tacexprpref}\\
 & | & {\tt timeout} {\it (}{\naturalnumber} {\it |} {\ident}{\it )} {\tacexprpref}\\
+& | & {\tt time} \zeroone{\qstring} {\tacexprpref}\\
 & | & {\tacexprinf} \\
 \\
 {\tacexprinf} & ::= &
@@ -401,7 +402,7 @@ Branching is left-associative.
 \subsubsection[First tactic to work]{First tactic to work\tacindex{first}
 \index{Tacticals!first@{\tt first}}}
 
-Backtracking branching may be too expansive. In this case we may
+Backtracking branching may be too expensive. In this case we may
 restrict to a local, left biased, branching and consider the first
 tactic to work (i.e. which does not fail) among a panel of tactics:
 \begin{quote}
@@ -536,6 +537,20 @@ proposed only for convenience during debug or other development
 phases, we strongly advise you to not leave any {\tt timeout} in
 final scripts. Note also that this tactical isn't available on
 the native Windows port of Coq.
+
+\subsubsection{Timing a tactic\tacindex{time}
+\index{Tacticals!time@{\tt time}}}
+
+A tactic execution can be timed:
+\begin{quote}
+ {\tt time} {\qstring} {\tacexpr}
+\end{quote}
+evaluates {\tacexpr}
+and displays the time the tactic expression ran, whether it fails or
+successes. In case of several successes, the time for each successive
+runs is displayed. Time is in seconds and is machine-dependent. The
+{\qstring} argument is optional. When provided, it is used to identify
+this particular occurrence of {\tt time}.
 
 \subsubsection[Local definitions]{Local definitions\index{Ltac!let}
 \index{Ltac!let rec}
