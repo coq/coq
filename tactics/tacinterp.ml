@@ -1241,32 +1241,28 @@ and interp_match_successes lz ist s : typed_generic_argument GTac.t =
   let rec tclOR_stream t e =
     let open IStream in
     match peek t with
+    | Nil -> Proofview.tclZERO e
     | Cons (t1,t') ->
         Proofview.tclORELSE
-          t1
+          (interp_match_success ist t1)
           begin fun e ->
               (* Honors Ltac's failure level. *)
               Tacticals.New.catch_failerror e <*> tclOR_stream t' e
             end
-    | Nil ->
-        Proofview.tclZERO e
     in
-    let matching_failure =
-      UserError ("Tacinterp.apply_match" , str "No matching clauses for match.")
-    in
-    let successes =
-      IStream.map (fun s -> interp_match_success ist s) s
-    in
-    if lz then
-      (** lazymatch *)
-      let open IStream in
-      begin match peek successes with
-      | Cons (s,_) -> s
-      | Nil -> Proofview.tclZERO matching_failure
-      end
-    else
-      (** match *)
-      Proofview.tclONCE (tclOR_stream successes matching_failure)
+  let matching_failure =
+    UserError ("Tacinterp.apply_match" , str "No matching clauses for match.")
+  in
+  if lz then
+    (** lazymatch *)
+    let open IStream in
+    begin match peek s with
+    | Cons (s,_) -> interp_match_success ist s
+    | Nil -> Proofview.tclZERO matching_failure
+    end
+  else
+    (** match *)
+    Proofview.tclONCE (tclOR_stream s matching_failure)
 
 
 (* Interprets the Match expressions *)
