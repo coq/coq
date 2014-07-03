@@ -20,6 +20,12 @@ let cons x s = Lazy.lazy_from_val (Cons (x, s))
 
 let thunk = Lazy.lazy_from_fun
 
+let rec make_node f s = match f s with
+| Nil -> Nil
+| Cons (x, s) -> Cons (x, make f s)
+
+and make f s = lazy (make_node f s)
+
 let rec force s = match Lazy.force s with
 | Nil -> ()
 | Cons (_, s) -> force s

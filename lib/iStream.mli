@@ -31,6 +31,9 @@ val cons : 'a -> 'a t -> 'a t
 val thunk : (unit -> ('a,'a t) u) -> 'a t
 (** Internalize the lazyness of a stream. *)
 
+val make : ('a -> ('b, 'a) u) -> 'a -> 'b t
+(** Coiteration constructor. *)
+
 (** {6 Destructors} *)
 
 val is_empty : 'a t -> bool
