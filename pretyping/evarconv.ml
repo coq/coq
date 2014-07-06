@@ -420,12 +420,31 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 i =
 	  match ise_stack2 false env i (evar_conv_x ts) sk1 sk2 with
-	  |None, Success i' -> solve_simple_eqn (evar_conv_x ts) env i'
-	    (position_problem true pbty,ev1,term2)
-	  |Some (r,[]), Success i' -> solve_simple_eqn (evar_conv_x ts) env i'
-	    (position_problem false pbty,ev2,Stack.zip(term1,r))
-	  |Some ([],r), Success i' -> solve_simple_eqn (evar_conv_x ts) env i'
-	          (position_problem true pbty,ev1,Stack.zip(term2,r))
+	  |None, Success i' -> 
+	    (* Evar can be defined in i' *)
+	    let ev1' = whd_evar i' (mkEvar ev1) in
+	      if isEvar ev1' then
+		solve_simple_eqn (evar_conv_x ts) env i'
+		  (position_problem true pbty,destEvar ev1',term2)
+	      else 
+		evar_eqappr_x ts env evd pbty 
+		  ((ev1', sk1), csts1) ((term2, sk2), csts2)
+	  |Some (r,[]), Success i' -> 
+	    let ev2' = whd_evar i' (mkEvar ev2) in
+	      if isEvar ev2' then
+		solve_simple_eqn (evar_conv_x ts) env i'
+		  (position_problem false pbty,destEvar ev2',Stack.zip(term1,r))
+	      else 
+		evar_eqappr_x ts env evd pbty 
+		  ((ev2', sk1), csts1) ((term2, sk2), csts2)
+
+	  |Some ([],r), Success i' -> 
+	    let ev1' = whd_evar i' (mkEvar ev1) in
+	      if isEvar ev1' then
+		solve_simple_eqn (evar_conv_x ts) env i'
+	          (position_problem true pbty,destEvar ev1',Stack.zip(term2,r))
+	      else evar_eqappr_x ts env evd pbty 
+		((ev1', sk1), csts1) ((term2, sk2), csts2)
 	  |_, (UnifFailure _ as x) -> x
 	  |Some _, _ -> UnifFailure (i,NotSameArgSize)
 	and f2 i =
