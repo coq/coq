@@ -758,7 +758,7 @@ let dest_prod env =
   in
   decrec env empty_rel_context
 
-(* The same but preserving lets *)
+(* The same but preserving lets in the context, not internal ones. *)
 let dest_prod_assum env =
   let rec prodec_rec env l ty =
     let rty = whd_betadeltaiota_nolet env ty in
@@ -770,7 +770,10 @@ let dest_prod_assum env =
         let d = (x,Some b,t) in
 	prodec_rec (push_rel d env) (add_rel_decl d l) c
     | Cast (c,_,_)    -> prodec_rec env l c
-    | _               -> l,rty
+    | _               ->
+      let rty' = whd_betadeltaiota env rty in
+	if Term.eq_constr rty' rty then l, rty
+	else prodec_rec env l rty'
   in
   prodec_rec env empty_rel_context
 
