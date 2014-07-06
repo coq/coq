@@ -210,6 +210,10 @@ let unfocus c sp =
 module Proof = Proofview_monad.Logical
 type +'a tactic = 'a Proof.t
 
+type 'a case =
+| Fail of exn
+| Next of 'a * (exn -> 'a tactic)
+
 (* Applies a tactic to the current proofview. *)
 let apply env t sp =
   let (((next_r,next_state),status)) = Proofview_monad.NonLogical.run (Proof.run t env sp) in
@@ -246,6 +250,14 @@ let tclOR t1 t2 =
 
 (* [tclZERO e] always fails with error message [e]*)
 let tclZERO = Proof.zero
+
+(* [tclCASE t] observes the head of the tactic and returns it as a value *)
+let tclCASE t =
+  let map = function
+  | Nil e -> Fail e
+  | Cons (x, t) -> Next (x, t)
+  in
+  Proof.map map (Proof.split t)
 
 (* [tclORELSE t1 t2] behaves like [t1] if [t1] succeeds at least once
    or [t2] if [t1] fails. *)

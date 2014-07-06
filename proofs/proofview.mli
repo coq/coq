@@ -124,6 +124,10 @@ val unfocus : focus_context -> proofview -> proofview
 
 type +'a tactic 
 
+type 'a case =
+| Fail of exn
+| Next of 'a * (exn -> 'a tactic)
+
 (* Applies a tactic to the current proofview. *)
 (* the return boolean signals the use of an unsafe tactic, in which
    case it is [false]. *)
@@ -159,6 +163,9 @@ val tclZERO : exn -> 'a tactic
 (* [tclORELSE t1 t2] behaves like [t1] if [t1] succeeds at least once
    or [t2 e] if [t1] fails with [e]. *)
 val tclORELSE : 'a tactic -> (exn -> 'a tactic) -> 'a tactic
+
+(* [tclCASE t] observes the head of the tactic and returns it as a value *)
+val tclCASE : 'a tactic -> 'a case tactic
 
 (* [tclIFCATCH a s f] is a generalisation of [tclORELSE]: if [a]
    succeeds at least once then it behaves as [tclBIND a s] otherwise, if [a]
