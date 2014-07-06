@@ -1119,7 +1119,9 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
     (* If instances are canonical, we solve the problem in linear time *)
     let sign = evar_filtered_context (Evd.find evd evk2) in
     let id_inst = inst_of_vars sign in
-    Evd.define evk2 (mkEvar(evk1,id_inst)) evd
+    let body = mkEvar(evk1,id_inst) in
+    let evd' = Evd.define evk2 body evd in
+      check_evar_instance evd' evk2 body g
   else
     let evd,ev1,ev2 =
       (* If an evar occurs in the instance of the other evar and the
