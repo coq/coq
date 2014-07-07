@@ -125,6 +125,8 @@ let mlexpr_of_red_flags {
   Genredexpr.rConst = $mlexpr_of_list (mlexpr_of_by_notation mlexpr_of_reference) l$
 } >>
 
+let mlexpr_of_instance c = <:expr< None >>
+
 let mlexpr_of_explicitation = function
   | Constrexpr.ExplByName id -> <:expr< Constrexpr.ExplByName $mlexpr_of_ident id$ >>
   | Constrexpr.ExplByPos (n,_id) -> <:expr< Constrexpr.ExplByPos $mlexpr_of_int n$ >>
@@ -156,8 +158,8 @@ let rec mlexpr_of_constr = function
   | Constrexpr.CLetIn (loc,_,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Constrexpr.CAppExpl (loc,(p,r,us),l) ->
     let loc = of_coqloc loc in
-    let a = (p,r) in
-    <:expr< Constrexpr.CAppExpl $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_reference a$ $mlexpr_of_list mlexpr_of_constr l$ >>
+    let a = (p,r,us) in
+    <:expr< Constrexpr.CAppExpl $dloc$ $mlexpr_of_triple (mlexpr_of_option mlexpr_of_int) mlexpr_of_reference mlexpr_of_instance a$ $mlexpr_of_list mlexpr_of_constr l$ >>
   | Constrexpr.CApp (loc,a,l) ->
     let loc = of_coqloc loc in
     <:expr< Constrexpr.CApp $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_constr a$ $mlexpr_of_list (mlexpr_of_pair mlexpr_of_constr (mlexpr_of_option (mlexpr_of_located mlexpr_of_explicitation))) l$ >>
