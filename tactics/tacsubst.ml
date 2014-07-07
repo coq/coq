@@ -230,7 +230,6 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
       TacThens (subst_tactic subst t, List.map (subst_tactic subst) tl)
   | TacDo (n,tac) -> TacDo (n,subst_tactic subst tac)
   | TacTimeout (n,tac) -> TacTimeout (n,subst_tactic subst tac)
-  | TacTime tac -> TacTime (subst_tactic subst tac)
   | TacTry tac -> TacTry (subst_tactic subst tac)
   | TacInfo tac -> TacInfo (subst_tactic subst tac)
   | TacRepeat tac -> TacRepeat (subst_tactic subst tac)

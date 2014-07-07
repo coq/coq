@@ -1023,7 +1023,6 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacThens (t1,tl) -> Tacticals.New.tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
   | TacDo (n,tac) -> Tacticals.New.tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTimeout (n,tac) -> Tacticals.New.tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
-  | TacTime tac -> Tacticals.New.tclTIME (interp_tactic ist tac)
   | TacTry tac -> Tacticals.New.tclTRY (interp_tactic ist tac)
   | TacRepeat tac -> Tacticals.New.tclREPEAT (interp_tactic ist tac)
   | TacOr (tac1,tac2) ->

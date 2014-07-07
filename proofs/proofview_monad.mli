@@ -38,7 +38,6 @@ module NonLogical : sig
   val raise : exn -> 'a t
   val catch : 'a t -> (exn -> 'a t) -> 'a t
   val timeout : int -> 'a t -> 'a t
-  val time : bool -> 'a t -> 'a t
 
 
   (* [run] performs effects. *)

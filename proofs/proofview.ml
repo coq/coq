@@ -579,19 +579,6 @@ let tclTIMEOUT n t =
         Proof.ret res
     | Util.Inr e -> tclZERO e
 
-let tclTIME t =
-  let (>>=) = Proof.bind in
-  let (>>) = Proof.seq in
-  let t = Proof.lift (Proofview_monad.NonLogical.ret ()) >> t in
-  Proof.current >>= fun env ->
-  Proof.get >>= fun initial ->
-  Proof.lift begin
-    Proofview_monad.NonLogical.time !Flags.time (Proof.run t env initial)
-  end >>= function ((res,s),m) ->
-    Proof.set s >>
-    Proof.put m >>
-    Proof.ret res
-
 let mark_as_unsafe =
   Proof.put (false,([],[]))
 
