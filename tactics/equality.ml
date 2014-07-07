@@ -1426,26 +1426,36 @@ let is_eq_x gl x (id,_,c) =
 
 let subst_one dep_proof_ok x (hyp,rhs,dir) gl =
   (* The set of hypotheses using x *)
-  let dephyps =
-    List.rev (snd (List.fold_right (fun (id,b,_ as dcl) (deps,allhyps) ->
-      if not (id_ord id hyp = 0)
-         && List.exists (fun y -> occur_var_in_decl (pf_env gl) y dcl) deps
-      then
-        ((if b = None then deps else id::deps), id::allhyps)
-      else
-        (deps,allhyps))
-      (pf_hyps gl)
-      ([x],[]))) in
+  let depdecls =
+    let test (id,_,c as dcl) =
+      if id <> hyp && occur_var_in_decl (pf_env gl) x dcl then dcl
+      else failwith "caught" in
+    List.rev (map_succeed test (pf_hyps gl)) in
+  let dephyps = List.map (fun (id,_,_) -> id) depdecls in
   (* Decides if x appears in conclusion *)
   let depconcl = occur_var (pf_env gl) x (pf_concl gl) in
   (* The set of non-defined hypothesis: they must be abstracted,
      rewritten and reintroduced *)
+  let abshyps =
+    map_succeed
+      (fun (id,v,_) -> if v=None then mkVar id else failwith "caught")
+      depdecls in
+  (* a tactic that either introduce an abstracted and rewritten hyp,
+     or introduce a definition where x was replaced *)
+  let introtac = function
+      (id,None,_) -> intro_using id
+    | (id,Some hval,htyp) ->
+        letin_tac None (Name id)
+	  (replace_term (mkVar x) rhs hval)
+	  (Some (replace_term (mkVar x) rhs htyp)) nowhere
+  in
   let need_rewrite = dephyps <> [] || depconcl in
   tclTHENLIST
     ((if need_rewrite then
-      [revert dephyps;
+      [generalize abshyps;
        general_rewrite dir all_occurrences true dep_proof_ok (mkVar hyp);
-       (tclMAP intro_using dephyps)]
+       thin dephyps;
+       tclMAP introtac depdecls]
       else
        [tclIDTAC]) @
      [tclTRY (clear [x;hyp])]) gl
