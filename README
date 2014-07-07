@@ -27,18 +27,15 @@ CHANGES.
 AVAILABILITY.
 =============
 
-   Coq is available at http://coq.inria.fr, or, for older versions at
-   ftp://ftp.inria.fr/INRIA/Projects/LogiCal/coq.
+   Coq is available from http://coq.inria.fr.
 
 
 THE COQ CLUB.
 =============
 
-   The Coq Club moderated mailing list is meant to be a standard way to
-   discuss questions about the Coq system and related topics. The submission
-   address is:
-
-	coq-club@inria.fr
+   The Coq Club moderated mailing list is meant to be a standard way
+   to discuss questions about the Coq system and related topics. The
+   subscription link can be found at http://coq.inria.fr/community.
 
    The topics to be discussed in the club should include:
 
@@ -53,13 +50,8 @@ THE COQ CLUB.
      * theoretical questions about typed lambda-calculi which are
        closely related to Coq.
 
-   To be added to, or removed from, the mailing list, please write to:
-
-	coq-club-request@inria.fr
-
-   Please use also this address for any questions/suggestions about the
-   Coq Club. It might sometimes take a few days before your messages get
-   forwarded.
+   For any questions/suggestions about the Coq Club, please write to
+   coq-club-request@inria.fr.
 
 
 BUGS REPORT.
