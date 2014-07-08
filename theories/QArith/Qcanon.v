@@ -70,7 +70,6 @@ Qed.
 
 Definition Q2Qc (q:Q) : Qc := Qcmake (Qred q) (Qred_involutive q).
 Arguments Q2Qc q%Q.
-Notation " !! " := Q2Qc : Qc_scope.
 
 Lemma Qc_is_canon : forall q q' : Qc, q == q' -> q = q'.
 Proof.
@@ -87,8 +86,8 @@ Proof.
 Qed.
 Hint Resolve Qc_is_canon.
 
-Notation " 0 " := (!!0) : Qc_scope.
-Notation " 1 " := (!!1) : Qc_scope.
+Notation " 0 " := (Q2Qc 0) : Qc_scope.
+Notation " 1 " := (Q2Qc 1) : Qc_scope.
 
 Definition Qcle (x y : Qc) := (x <= y)%Q.
 Definition Qclt (x y : Qc) := (x < y)%Q.
@@ -144,15 +143,15 @@ Defined.
 (** The addition, multiplication and opposite are defined
    in the straightforward way: *)
 
-Definition Qcplus (x y : Qc) := !!(x+y).
+Definition Qcplus (x y : Qc) := Q2Qc (x+y).
 Infix "+" := Qcplus : Qc_scope.
-Definition Qcmult (x y : Qc) := !!(x*y).
+Definition Qcmult (x y : Qc) := Q2Qc (x*y).
 Infix "*" := Qcmult : Qc_scope.
-Definition Qcopp (x : Qc) := !!(-x).
+Definition Qcopp (x : Qc) := Q2Qc (-x).
 Notation "- x" := (Qcopp x) : Qc_scope.
 Definition Qcminus (x y : Qc) := x+-y.
 Infix "-" := Qcminus : Qc_scope.
-Definition Qcinv (x : Qc) := !!(/x).
+Definition Qcinv (x : Qc) := Q2Qc (/x).
 Notation "/ x" := (Qcinv x) : Qc_scope.
 Definition Qcdiv (x y : Qc) := x*/y.
 Infix "/" := Qcdiv : Qc_scope.
