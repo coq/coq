@@ -58,7 +58,7 @@ let set_strategy ({ var_opacity; cst_opacity } as oracle) k l =
     in
     let var_trstate = match l with
     | Opaque -> Id.Pred.remove id oracle.var_trstate
-    | _ -> oracle.var_trstate
+    | _ -> Id.Pred.add id oracle.var_trstate
     in
     { oracle with var_opacity; var_trstate; }
   | ConstKey c ->
@@ -68,7 +68,7 @@ let set_strategy ({ var_opacity; cst_opacity } as oracle) k l =
     in
     let cst_trstate = match l with
     | Opaque -> Cpred.remove c oracle.cst_trstate
-    | _ -> oracle.cst_trstate
+    | _ -> Cpred.add c oracle.cst_trstate
     in
     { oracle with cst_opacity; cst_trstate; }
   | RelKey _ -> Errors.error "set_strategy: RelKey"
