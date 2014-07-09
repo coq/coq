@@ -300,6 +300,31 @@ let pr_located_qualid = function
   | Undefined qid ->
       pr_qualid qid ++ spc () ++ str "not a defined object."
 
+let canonize_ref = function
+  | ConstRef c ->
+    let kn = Constant.canonical c in
+    if KerName.equal (Constant.user c) kn then None
+    else Some (ConstRef (Constant.make1 kn))
+  | IndRef (ind,i) ->
+    let kn = MutInd.canonical ind in
+    if KerName.equal (MutInd.user ind) kn then None
+    else Some (IndRef (MutInd.make1 kn, i))
+  | ConstructRef ((ind,i),j) ->
+    let kn = MutInd.canonical ind in
+    if KerName.equal (MutInd.user ind) kn then None
+    else Some (ConstructRef ((MutInd.make1 kn, i),j))
+  | VarRef _ -> None
+
+let display_alias = function
+  | Term r ->
+    begin match canonize_ref r with
+    | None -> mt ()
+    | Some r' ->
+      let q' = Nametab.shortest_qualid_of_global Id.Set.empty r' in
+      spc () ++ str "(alias of " ++ pr_qualid q' ++ str ")"
+    end
+  | _ -> mt ()
+
 let print_located_qualid ref =
   let (loc,qid) = qualid_of_reference ref in
   let expand = function
@@ -319,9 +344,10 @@ let print_located_qualid ref =
 	(fun (o,oqid) ->
 	  hov 2 (pr_located_qualid o ++
 	  (if not (qualid_eq oqid qid) then
-	    spc() ++ str "(shorter name to refer to it in current context is " ++ pr_qualid oqid ++ str")"
-	  else
-	    mt ()))) l
+	    spc() ++ str "(shorter name to refer to it in current context is "
+            ++ pr_qualid oqid ++ str")"
+	   else mt ()) ++
+          display_alias o)) l
 
 (******************************************)
 (**** Printing declarations and judgments *)
