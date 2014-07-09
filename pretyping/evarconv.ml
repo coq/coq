@@ -1068,22 +1068,25 @@ let consider_remaining_unif_problems env
 
 exception UnableToUnify of evar_map * unification_error
 
-let the_conv_x env ?(ts=Conv_oracle.get_transp_state (Environ.oracle env)) t1 t2 evd =
+let default_transparent_state env = full_transparent_state
+(* Conv_oracle.get_transp_state (Environ.oracle env) *)
+
+let the_conv_x env ?(ts=default_transparent_state env) t1 t2 evd =
   match evar_conv_x ts env evd CONV  t1 t2 with
   | Success evd' -> evd'
   | UnifFailure (evd',e) -> raise (UnableToUnify (evd',e))
 
-let the_conv_x_leq env ?(ts=Conv_oracle.get_transp_state (Environ.oracle env)) t1 t2 evd =
+let the_conv_x_leq env ?(ts=default_transparent_state env) t1 t2 evd =
   match evar_conv_x ts env evd CUMUL t1 t2 with
   | Success evd' -> evd'
   | UnifFailure (evd',e) -> raise (UnableToUnify (evd',e))
 
-let e_conv env ?(ts=Conv_oracle.get_transp_state (Environ.oracle env)) evdref t1 t2 =
+let e_conv env ?(ts=default_transparent_state env) evdref t1 t2 =
   match evar_conv_x ts env !evdref CONV t1 t2 with
   | Success evd' -> evdref := evd'; true
   | _ -> false
 
-let e_cumul env ?(ts=Conv_oracle.get_transp_state (Environ.oracle env)) evdref t1 t2 =
+let e_cumul env ?(ts=default_transparent_state env) evdref t1 t2 =
   match evar_conv_x ts env !evdref CUMUL t1 t2 with
   | Success evd' -> evdref := evd'; true
   | _ -> false

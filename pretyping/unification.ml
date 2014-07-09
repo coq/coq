@@ -367,9 +367,11 @@ let subterm_restriction is_subterm flags =
 let key_of env b flags f =
   if subterm_restriction b flags then None else
   match kind_of_term f with
-  | Const (cst, u) when Cpred.mem cst (snd flags.modulo_delta) ->
+  | Const (cst, u) when is_transparent env (ConstKey cst) &&
+      Cpred.mem cst (snd flags.modulo_delta) ->
       Some (IsKey (ConstKey (cst, u)))
-  | Var id when Id.Pred.mem id (fst flags.modulo_delta) ->
+  | Var id when is_transparent env (VarKey id) && 
+      Id.Pred.mem id (fst flags.modulo_delta) ->
     Some (IsKey (VarKey id))
   | Proj (p, c) when Cpred.mem p (snd flags.modulo_delta) ->
     Some (IsProj (p, c))
