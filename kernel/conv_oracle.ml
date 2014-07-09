@@ -28,10 +28,17 @@ let is_transparent = function
 
 type oracle = {
   var_opacity : level Id.Map.t;
-  cst_opacity : level Cmap.t
+  cst_opacity : level Cmap.t;
+  var_trstate : Id.Pred.t;
+  cst_trstate : Cpred.t;
 }
 
-let empty = { var_opacity = Id.Map.empty; cst_opacity = Cmap.empty }
+let empty = {
+  var_opacity = Id.Map.empty;
+  cst_opacity = Cmap.empty;
+  var_trstate = Id.Pred.full;
+  cst_trstate = Cpred.full;
+}
 
 let get_strategy { var_opacity; cst_opacity } = function
   | VarKey id ->
@@ -45,13 +52,25 @@ let get_strategy { var_opacity; cst_opacity } = function
 let set_strategy ({ var_opacity; cst_opacity } as oracle) k l =
   match k with
   | VarKey id ->
-      { oracle with var_opacity =
-          if is_default l then Id.Map.remove id var_opacity
-          else Id.Map.add id l var_opacity }
+    let var_opacity =
+      if is_default l then Id.Map.remove id var_opacity
+      else Id.Map.add id l var_opacity
+    in
+    let var_trstate = match l with
+    | Opaque -> Id.Pred.remove id oracle.var_trstate
+    | _ -> oracle.var_trstate
+    in
+    { oracle with var_opacity; var_trstate; }
   | ConstKey c ->
-      { oracle with cst_opacity =
-          if is_default l then Cmap.remove c cst_opacity
-          else Cmap.add c l cst_opacity }
+    let cst_opacity =
+      if is_default l then Cmap.remove c cst_opacity
+      else Cmap.add c l cst_opacity
+    in
+    let cst_trstate = match l with
+    | Opaque -> Cpred.remove c oracle.cst_trstate
+    | _ -> oracle.cst_trstate
+    in
+    { oracle with cst_opacity; cst_trstate; }
   | RelKey _ -> Errors.error "set_strategy: RelKey"
 
 let fold_strategy f { var_opacity; cst_opacity; } accu =
@@ -60,13 +79,7 @@ let fold_strategy f { var_opacity; cst_opacity; } accu =
   let accu = Id.Map.fold fvar var_opacity accu in
   Cmap.fold fcst cst_opacity accu
 
-let get_transp_state { var_opacity; cst_opacity } =
-  (Id.Map.fold
-    (fun id l ts -> if  l=Opaque then Id.Pred.remove id ts else ts)
-    var_opacity Id.Pred.full,
-   Cmap.fold
-    (fun c l ts -> if  l=Opaque then Cpred.remove c ts else ts)
-    cst_opacity Cpred.full)
+let get_transp_state { var_trstate; cst_trstate } = (var_trstate, cst_trstate)
 
 (* Unfold the first constant only if it is "more transparent" than the
    second one. In case of tie, expand the second one. *)
