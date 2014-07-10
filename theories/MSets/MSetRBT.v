@@ -399,7 +399,7 @@ Definition skip_black t :=
 Fixpoint compare_height (s1x s1 s2 s2x: tree) : comparison :=
  match skip_red s1x, skip_red s1, skip_red s2, skip_red s2x with
  | Node _ s1x' _ _, Node _ s1' _ _, Node _ s2' _ _, Node _ s2x' _ _ =>
-   compare_height (skip_black s2x') s1' s2' (skip_black s2x')
+   compare_height (skip_black s1x') s1' s2' (skip_black s2x')
  | _, Leaf, _, Node _ _ _ _ => Lt
  | Node _ _ _ _, _, Leaf, _ => Gt
  | Node _ s1x' _ _, Node _ s1' _ _, Node _ s2' _ _, Leaf =>
