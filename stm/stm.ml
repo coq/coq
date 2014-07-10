@@ -197,7 +197,7 @@ module VCS : sig
   val branches : unit -> Branch.t list
   val get_branch : Branch.t -> branch_type branch_info
   val get_branch_pos : Branch.t -> id
-  val new_node : unit -> id
+  val new_node : ?id:Stateid.t -> unit -> id
   val merge : id -> ours:transaction -> ?into:Branch.t -> Branch.t -> unit
   val rewrite_merge : id -> ours:transaction -> at:id -> Branch.t -> unit
   val delete_branch : Branch.t -> unit
@@ -340,8 +340,7 @@ end = struct
   let branches () = branches !vcs
   let get_branch head = get_branch !vcs head
   let get_branch_pos head = (get_branch head).pos
-  let new_node () =
-    let id = Stateid.fresh () in
+  let new_node ?(id=Stateid.fresh ()) () =
     vcs := set_info !vcs id (default_info ());
     id
   let merge id ~ours ?into branch =
@@ -1597,13 +1596,13 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     Pp.pperrnl Pp.(str"File " ++ str name ++ str ":" ++ spc () ++ print e);
     exit 1
 
-let merge_proof_branch qast keep brname =
+let merge_proof_branch ?id qast keep brname =
   let brinfo = VCS.get_branch brname in
   let qed fproof = { qast; keep; brname; brinfo; fproof } in
   match brinfo with
   | { VCS.kind = `Proof _ } ->
       VCS.checkout VCS.Branch.master;
-      let id = VCS.new_node () in
+      let id = VCS.new_node ?id () in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.delete_branch brname;
       if keep == VtKeep then VCS.propagate_sideff None;
@@ -1650,7 +1649,7 @@ let handle_failure e vcs tty =
       VCS.print ();
       raise e
 
-let process_transaction ~tty verbose c (loc, expr) =
+let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
   let warn_if_pos a b =
     if b then msg_warning(pr_ast a ++ str" should not be part of a script") in
   let v, x = expr, { verbose = verbose && Flags.is_verbose(); loc; expr } in
@@ -1678,7 +1677,7 @@ let process_transaction ~tty verbose c (loc, expr) =
       
       (* Back *)
       | VtStm (VtBack oid, true), w ->
-          let id = VCS.new_node () in
+          let id = VCS.new_node ~id:newtip () in
           let { mine; others } = Backtrack.branches_of oid in
           List.iter (fun branch ->
             if not (List.mem_assoc branch (mine::others)) then
@@ -1717,7 +1716,7 @@ let process_transaction ~tty verbose c (loc, expr) =
              let e = Errors.push e in
              raise(State.exn_on Stateid.dummy e)); `Ok
       | VtQuery true, w ->
-          let id = VCS.new_node () in
+          let id = VCS.new_node ~id:newtip () in
           VCS.commit id (Cmd (x,[]));
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQuery false, VtLater ->
@@ -1725,7 +1724,7 @@ let process_transaction ~tty verbose c (loc, expr) =
 
       (* Proof *)
       | VtStartProof (mode, guarantee, names), w ->
-          let id = VCS.new_node () in
+          let id = VCS.new_node ~id:newtip () in
           let bname = VCS.mk_branch_name x in
           VCS.checkout VCS.Branch.master;
           VCS.commit id (Fork (x, bname, guarantee, names));
@@ -1735,7 +1734,7 @@ let process_transaction ~tty verbose c (loc, expr) =
       | VtProofMode _, VtLater ->
           anomaly(str"VtProofMode must be executed VtNow")
       | VtProofMode mode, VtNow ->
-          let id = VCS.new_node () in
+          let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
           VCS.commit id (Cmd (x,[]));
           VCS.propagate_sideff (Some x);
@@ -1754,11 +1753,11 @@ let process_transaction ~tty verbose c (loc, expr) =
           finish ();
           `Ok
       | VtProofStep, w ->
-          let id = VCS.new_node () in
+          let id = VCS.new_node ~id:newtip () in
           VCS.commit id (Cmd (x,[]));
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
-          let rc = merge_proof_branch x keep head in
+          let rc = merge_proof_branch ~id:newtip x keep head in
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish ();
           rc
@@ -1768,7 +1767,7 @@ let process_transaction ~tty verbose c (loc, expr) =
           vernac_interp (VCS.get_branch_pos head) x; `Ok
 
       | VtSideff l, w ->
-          let id = VCS.new_node () in
+          let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
           VCS.commit id (Cmd (x,l));
           VCS.propagate_sideff (Some x);
@@ -1777,7 +1776,7 @@ let process_transaction ~tty verbose c (loc, expr) =
 
       (* Unknown: we execute it, check for open goals and propagate sideeff *)
       | VtUnknown, VtNow ->
-          let id = VCS.new_node () in
+          let id = VCS.new_node ~id:newtip () in
           let step () =
             VCS.checkout VCS.Branch.master;
             let mid = VCS.get_branch_pos VCS.Branch.master in
@@ -1837,13 +1836,13 @@ let query ~at s =
          ~tty:false true (VtQuery false, VtNow) loc_ast))
   s
 
-let add ~ontop ?(check=ignore) verb eid s =
+let add ~ontop ?newtip ?(check=ignore) verb eid s =
   let cur_tip = VCS.cur_tip () in
   if Stateid.equal ontop cur_tip then begin
     let _, ast as loc_ast = vernac_parse eid s in
     check(loc_ast);
     let clas = classify_vernac ast in
-    match process_transaction ~tty:false verb clas loc_ast with
+    match process_transaction ?newtip ~tty:false verb clas loc_ast with
     | `Ok -> VCS.cur_tip (), `NewTip
     | `Unfocus qed_id -> qed_id, `Unfocus (VCS.cur_tip ())
   end else begin

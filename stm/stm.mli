@@ -16,8 +16,9 @@ open Feedback
    having edit id [eid].  [check] is called on the AST.
    The [ontop] parameter is just for asserting the GUI is on sync, but
    will eventually call edit_at on the fly if needed.
-   The sentence [s] is parsed in the state [ontop]. *)
-val add : ontop:Stateid.t -> ?check:(located_vernac_expr -> unit) ->
+   The sentence [s] is parsed in the state [ontop].
+   If [newtip] is provided, then the returned state id is guaranteed to be [newtip] *)
+val add : ontop:Stateid.t -> ?newtip:Stateid.t -> ?check:(located_vernac_expr -> unit) ->
   bool -> edit_id -> string ->
     Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
