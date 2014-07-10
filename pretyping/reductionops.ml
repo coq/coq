@@ -1375,7 +1375,10 @@ let splay_prod_assum env sigma =
 	prodec_rec (push_rel (x, Some b, t) env)
 	  (add_rel_decl (x, Some b, t) l) c
     | Cast (c,_,_)    -> prodec_rec env l c
-    | _               -> l,t
+    | _               -> 
+      let t' = whd_betadeltaiota env sigma t in
+	if Term.eq_constr t t' then l,t
+	else prodec_rec env l t'
   in
   prodec_rec env empty_rel_context
 
