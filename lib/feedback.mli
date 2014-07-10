@@ -24,6 +24,8 @@ type feedback_content =
   | InProgress of int
   | SlaveStatus of int * string
   | ProcessingInMaster
+  | Goals of Loc.t * string
+  | FileLoaded of string * string
 
 type feedback = {
   id : edit_or_state_id;

@@ -488,6 +488,7 @@ let rec intern_library (needed, contents) (dir, f) =
       (str ("The file " ^ f ^ " contains library") ++ spc () ++
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
+  Pp.feedback(Feedback.FileLoaded(DirPath.to_string dir, f));
   m, intern_library_deps (needed, contents) dir m
 
 and intern_library_deps libs dir m =

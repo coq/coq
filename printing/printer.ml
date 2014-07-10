@@ -549,12 +549,12 @@ let pr_goal     x = !printer_pr.pr_goal     x
 (* End abstraction layer                                              *)
 (**********************************************************************)
 
-let pr_open_subgoals () =
+let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
   (* spiwack: it shouldn't be the job of the printer to look up stuff
      in the [evar_map], I did stuff that way because it was more
      straightforward, but seriously, [Proof.proof] should return
      [evar_info]-s instead. *)
-  let p = Proof_global.give_me_the_proof () in
+  let p = proof in
   let (goals , stack , shelf, given_up, sigma ) = Proof.proof p in
   let stack = List.map (fun (l,r) -> List.length l + List.length r) stack in
   let seeds = Proof.V82.top_evars p in

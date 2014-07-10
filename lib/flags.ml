@@ -70,6 +70,8 @@ let xml_export = ref false
 let ide_slave = ref false
 let ideslave_coqtop_flags = ref None
 
+let feedback_goals = ref false
+
 let time = ref false
 
 let raw_print = ref false

@@ -495,6 +495,16 @@ end = struct
 
 end
 
+let print_goals_of_state id =
+  try
+    Option.iter (fun { proof = pstate } -> Pp.feedback ~state_id:id
+      (Feedback.Goals
+        (Loc.ghost, Pp.string_of_ppcmds
+          (Printer.pr_open_subgoals
+            ~proof:(Proof_global.proof_of_state pstate) ()))))
+      (VCS.get_info id).state
+  with Proof_global.NoCurrentProof -> ()
+
 (* Fills in the nodes of the VCS *)
 module State : sig
   
@@ -722,6 +732,14 @@ end = struct
   let build_proof_here (id,valid) loc eop =
     Future.create (State.exn_on id ~valid) (build_proof_here_core loc eop)
 
+  let slave_print_all_goals id =
+    let rec aux id =
+      try aux (VCS.visit id).next
+      with
+      | VCS.Expired -> ()
+      | e when Errors.noncritical e -> () in
+    Future.purify (fun id -> !reach_known_state ~cache:`No id; aux id) id
+
   let slave_respond msg =
     match msg with
     | ReqBuildProof(exn_info,eop,vcs,loc,_,_) ->
@@ -739,6 +757,7 @@ end = struct
           se) (fst l);
           l, Unix.gettimeofday () -. wall_clock in
         VCS.print ();
+        if !Flags.feedback_goals then slave_print_all_goals eop;
         RespBuiltProof(rc,time)
 
   let check_task_aux extra name l i =
@@ -1120,6 +1139,7 @@ end = struct
             | Some id -> aux (n+1) m id in
           (if is_cached safe_id then [safe_id,get_cached safe_id] else [])
           @ aux 1 (prog 1 1) safe_id in
+        if !Flags.feedback_goals then slave_print_all_goals safe_id;
         marshal_response !slave_oc (RespError(err_id, safe_id, print e, states))
       | e ->
         pr_err ("Slave: critical exception: " ^ Pp.string_of_ppcmds (print e));
@@ -1349,6 +1369,7 @@ let known_state ?(redefine_qed=false) ~cache id =
     if !Flags.async_proofs_mode = Flags.APonParallel 0 then
       Pp.feedback ~state_id:id Feedback.ProcessingInMaster;
     State.define ~cache:cache_step ~redefine:redefine_qed step id;
+    if !Flags.feedback_goals then print_goals_of_state id;
     prerr_endline ("reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
 

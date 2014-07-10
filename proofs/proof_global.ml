@@ -515,4 +515,5 @@ let freeze ~marshallable =
   | `Shallow -> !pstates
   | `No -> !pstates
 let unfreeze s = pstates := s; update_proof_mode ()
+let proof_of_state = function { proof }::_ -> proof | _ -> raise NoCurrentProof
 

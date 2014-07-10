@@ -24,6 +24,8 @@ type feedback_content =
   | InProgress of int
   | SlaveStatus of int * string
   | ProcessingInMaster
+  | Goals of Loc.t * string
+  | FileLoaded of string * string
 
 type feedback = {
   id : edit_or_state_id;
@@ -46,6 +48,9 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
   | "slavestatus", [ns] ->
        let n, s = to_pair to_int to_string ns in
        SlaveStatus(n,s)
+  | "goals", [loc;s] -> Goals (to_loc loc, to_string s)
+  | "fileloaded", [dirpath; filename] ->
+       FileLoaded(to_string dirpath, to_string filename)
   | _ -> raise Marshal_error)
 let of_feedback_content = function
   | AddedAxiom -> constructor "feedback_content" "addedaxiom" []
@@ -72,6 +77,12 @@ let of_feedback_content = function
   | SlaveStatus(n,s) ->
       constructor "feedback_content" "slavestatus"
         [of_pair of_int of_string (n,s)]
+  | Goals (loc,s) ->
+      constructor "feedback_content" "goals" [of_loc loc;of_string s]
+  | FileLoaded(dirpath, filename) ->
+      constructor "feedback_content" "fileloaded" [
+        of_string dirpath;
+        of_string filename ]
 
 let of_edit_or_state_id = function
   | Edit id -> ["object","edit"], of_edit_id id
