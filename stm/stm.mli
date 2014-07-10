@@ -38,6 +38,8 @@ val edit_at : Stateid.t -> [ `NewTip | `Focus of focus ]
 (* Evaluates the tip of the current branch *)
 val finish : unit -> unit
 
+val observe : Stateid.t -> unit
+
 val stop_worker : int -> unit
 
 (* Joins the entire document.  Implies finish, but also checks proofs *)
