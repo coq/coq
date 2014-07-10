@@ -336,11 +336,11 @@ let standard_proof_terminator compute_guard hook =
 let universe_proof_terminator compute_guard hook =
   let open Proof_global in function
   | Admitted ->
-      admit (hook Evd.empty_evar_universe_context) ();
+      admit (hook None) ();
       Pp.feedback Feedback.AddedAxiom
   | Proved (is_opaque,idopt,proof) ->
       let proof = get_proof proof compute_guard 
-	(hook proof.Proof_global.universes) is_opaque in
+	(hook (Some proof.Proof_global.universes)) is_opaque in
       begin match idopt with
       | None -> save_named proof
       | Some ((_,id),None) -> save_anonymous proof id

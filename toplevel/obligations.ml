@@ -834,11 +834,16 @@ let rec solve_obligation prg num tac =
 		let obls = Array.copy obls in
 		let _ = obls.(num) <- obl in
 		let ctx' = 
-		  if not (pi2 prg.prg_kind) (* Not polymorphic *) then
-		    (* This context is already declared globally, we cannot 
-		       instantiate the rigid variables anymore *) 
-		    Evd.abstract_undefined_variables ctx'
-		  else ctx'
+		  let ctx = 
+		    match ctx' with
+		    | None -> prg.prg_ctx
+		    | Some ctx' -> ctx'
+		  in
+  		    if not (pi2 prg.prg_kind) (* Not polymorphic *) then
+		      (* This context is already declared globally, we cannot 
+			 instantiate the rigid variables anymore *) 
+		      Evd.abstract_undefined_variables ctx
+		    else ctx
 		in
 		let res = 
 		  try update_obls 
