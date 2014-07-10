@@ -41,3 +41,4 @@ val dump_constraint :
 
 val dump_string : string -> unit
 
+val type_of_global_ref : Globnames.global_reference -> string 
