@@ -388,6 +388,7 @@ let is_message = function
   | _ -> false
 
 type logger = message_level -> std_ppcmds -> unit
+type modern_logger = id:Feedback.edit_or_state_id -> message_level -> std_ppcmds -> unit
 
 let print_color s x = x
 (* FIXME *)
@@ -402,7 +403,7 @@ let debugbody strm = print_color "36" (hov 0 (str "Debug:" ++ spc () ++ strm)) (
 let warnbody strm = make_body "93" (str "Warning:") strm (* bright yellow *)
 let errorbody strm = make_body "31" (str "Error:") strm (* bright red *)
 
-let std_logger level msg = match level with
+let std_logger ~id:_ level msg = match level with
 | Debug _ -> msgnl (debugbody msg) (* cyan *)
 | Info -> msgnl (print_color "37" (hov 0 msg)) (* gray *)
 | Notice -> msgnl msg
@@ -411,13 +412,18 @@ let std_logger level msg = match level with
 
 let logger = ref std_logger
 
-let msg_info x = !logger Info x
-let msg_notice x = !logger Notice x
-let msg_warning x = !logger Warning x
-let msg_error x = !logger Error x
-let msg_debug x = !logger (Debug "_") x
+let feedback_id = ref (Feedback.Edit 0)
 
-let set_logger l = logger := l
+let msg_info x = !logger ~id:!feedback_id Info x
+let msg_notice x = !logger ~id:!feedback_id Notice x
+let msg_warning x = !logger ~id:!feedback_id Warning x
+let msg_error x = !logger ~id:!feedback_id Error x
+let msg_debug x = !logger ~id:!feedback_id (Debug "_") x
+
+let set_logger l = logger := (fun ~id:_ lvl msg -> l lvl msg)
+let set_modern_logger (l : modern_logger) = logger := l 
+
+let std_logger lvl msg = std_logger ~id:!feedback_id lvl msg
 
 (** Feedback *)
 

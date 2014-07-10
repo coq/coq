@@ -115,6 +115,9 @@ val std_logger : logger
 
 val set_logger : logger -> unit
 
+type modern_logger = id:Feedback.edit_or_state_id -> message_level -> std_ppcmds -> unit
+val set_modern_logger : modern_logger -> unit
+
 val of_message : message -> Xml_datatype.xml
 val to_message : Xml_datatype.xml -> message
 val is_message : Xml_datatype.xml -> bool
