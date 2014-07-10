@@ -942,7 +942,7 @@ let rec knh info m stk =
 	  | Some pb ->
 	     knh info c (Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p)
 			 :: zupdate m stk))
-	else (set_norm m; (m,stk))
+	else (m,stk)
 
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|
