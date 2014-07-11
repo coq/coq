@@ -353,8 +353,8 @@ let parse_args arglist =
         Flags.async_proofs_mode := get_async_proofs_mode opt next (next())
     |"-async-proofs-j" ->
         Flags.async_proofs_n_workers := (get_int opt (next ()))
-    |"-async-proofs-worker-flags" ->
-        Flags.async_proofs_worker_flags := Some (next ());
+    |"-async-proofs-private-flags" ->
+        Flags.async_proofs_private_flags := Some (next ());
     |"-compat" -> Flags.compat_version := get_compat_version (next ())
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())

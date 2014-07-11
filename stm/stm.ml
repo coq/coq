@@ -941,10 +941,10 @@ end = struct
   let rec manage_slave ~cancel:cancel_user_req id_slave respawn =
     let ic, oc, proc =
       let rec set_slave_opt = function
-        | [] -> ["-async-proofs"; "worker"; string_of_int id_slave; "-feedback-glob"]
+        | [] -> !Flags.async_proofs_flags_for_workers @
+                ["-async-proofs"; "worker"; string_of_int id_slave]
         | ("-ideslave"|"-emacs"|"-emacs-U")::tl -> set_slave_opt tl
-        | ("-async-proofs"
-          |"-compile"
+        | ("-async-proofs" |"-toploop" |"-vi2vo" |"-compile"
           |"-compile-verbose")::_::tl -> set_slave_opt tl
         | x::tl -> x :: set_slave_opt tl in
       let args =
@@ -1513,7 +1513,7 @@ let init () =
   Backtrack.record ();
   if !Flags.async_proofs_mode = Flags.APonParallel 0 then begin
     Slaves.init ();
-    let opts = match !Flags.async_proofs_worker_flags with
+    let opts = match !Flags.async_proofs_private_flags with
       | None -> []
       | Some s -> Str.split_delim (Str.regexp ",") s in
     if String.List.mem "fallback-to-lazy-if-marshal-error=no" opts then
@@ -1920,7 +1920,8 @@ let edit_at id =
       | _, Some _, None -> assert false
       | false, Some qed_id, Some mode ->
           let tip = VCS.cur_tip () in
-          if has_failed qed_id && not !Flags.async_proofs_never_reopen_branch then reopen_branch id mode qed_id tip
+          if has_failed qed_id && not !Flags.async_proofs_never_reopen_branch
+          then reopen_branch id mode qed_id tip
           else backto id
       | true, Some qed_id, Some mode ->
           if on_cur_branch id then begin

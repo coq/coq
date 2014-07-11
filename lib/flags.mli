@@ -18,11 +18,11 @@ val compilation_mode : compilation_mode ref
 type async_proofs = APoff | APonLazy | APonParallel of int
 val async_proofs_mode : async_proofs ref
 val async_proofs_n_workers : int ref
-val async_proofs_worker_flags : string option ref
-
+val async_proofs_private_flags : string option ref
 val async_proofs_is_worker : unit -> bool
 val async_proofs_always_delegate : bool ref
 val async_proofs_never_reopen_branch : bool ref
+val async_proofs_flags_for_workers : string list ref
 
 val debug : bool ref
 
