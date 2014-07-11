@@ -6,14 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*** This module implements an "untyped store", in this particular case we
-        see it as an extensible record whose fields are left unspecified. ***)
+(** This module implements an "untyped store", in this particular case
+    we see it as an extensible record whose fields are left
+    unspecified. ***)
 
-(* We give a short implementation of a universal type. This is mostly equivalent
-    to what is proposed by module Dyn.ml, except that it requires no explicit tag. *)
-
-(* We use a dynamic "name" allocator. But if we needed to serialise stores, we
-might want something static to avoid troubles with plugins order. *)
+(** We use a dynamic "name" allocator. But if we needed to serialise
+    stores, we might want something static to avoid troubles with
+    plugins order. *)
 
 module type T =
 sig
@@ -34,13 +33,13 @@ end
 module Make (M : T) : S =
 struct
 
-let next =
-  let count = ref 0 in fun () ->
-  let n = !count in
-  incr count;
-  n
+  let next =
+    let count = ref 0 in fun () ->
+      let n = !count in
+      incr count;
+      n
 
-type t = Obj.t option array
+  type t = Obj.t option array
 (** Objects are accessed through an array access. *)
 
 type 'a field = int
