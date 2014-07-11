@@ -1232,7 +1232,7 @@ let collect_proof cur hd brkind id =
      if is_defined cur then `Sync (no_name,`Transparent)
      else
        let rc = collect (Some cur) [] id in
-       if not (State.is_cached id) then rc
+       if not (State.is_cached id) || !Flags.async_proofs_always_delegate then rc
        else (* we already have the proof, no gain in delaying *)
          match rc with
          | `Sync(name,_) -> `Sync (name,`AlreadyEvaluated)
@@ -1920,7 +1920,7 @@ let edit_at id =
       | _, Some _, None -> assert false
       | false, Some qed_id, Some mode ->
           let tip = VCS.cur_tip () in
-          if has_failed qed_id then reopen_branch id mode qed_id tip
+          if has_failed qed_id && not !Flags.async_proofs_never_reopen_branch then reopen_branch id mode qed_id tip
           else backto id
       | true, Some qed_id, Some mode ->
           if on_cur_branch id then begin

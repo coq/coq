@@ -382,6 +382,8 @@ let parse_args arglist =
     (* Options with zero arg *)
     |"-async-proofs-always-delegate" ->
         Flags.async_proofs_always_delegate := true;
+    |"-async-proofs-never-reopen-branch" ->
+        Flags.async_proofs_never_reopen_branch := true;
     |"-batch" -> set_batch_mode ()
     |"-beautify" -> make_beautify true
     |"-boot" -> boot := true; no_load_rc ()
