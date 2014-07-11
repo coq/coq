@@ -156,8 +156,10 @@ let infer_constructor_packet env_ar_par ctx params lc =
   let lc'' = Array.map (fun j -> it_mkProd_or_LetIn j.utj_val params) jlc in
   (* compute the max of the sorts of the products of the constructors types *)
   let levels = List.map (infos_and_sort env_ar_par ctx) lc in
-  let level = List.fold_left (fun max l -> Universe.sup max l) Universe.type0m levels in
-  (lc'',(is_unit levels,level))
+  let isunit = is_unit levels in
+  let min = if Array.length jlc > 1 then Universe.type0 else Universe.type0m in
+  let level = List.fold_left (fun max l -> Universe.sup max l) min levels in
+  (lc'', (isunit, level))
 
 (* If indices matter *)
 let cumulate_arity_large_levels env sign =

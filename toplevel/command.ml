@@ -385,13 +385,13 @@ let sign_level env evd sign =
 	  (Univ.sup u lev, push_rel d env))
     sign (Univ.type0m_univ,env))
 
-let sup_list = List.fold_left Univ.sup Univ.type0m_univ
+let sup_list min = List.fold_left Univ.sup min
 
-let extract_level env evd tys = 
+let extract_level env evd min tys = 
   let sorts = List.map (fun ty -> 
     let ctx, concl = Reduction.dest_prod_assum env ty in
       sign_level env evd ((Anonymous, None, concl) :: ctx)) tys 
-  in sup_list sorts
+  in sup_list min sorts
 
 let inductive_levels env evdref poly arities inds =
   let destarities = List.map (Reduction.dest_arity env) arities in
@@ -403,12 +403,12 @@ let inductive_levels env evdref poly arities inds =
     CList.split3
       (List.map2 (fun (_,tys,_) (ctx,du) -> 
 	let len = List.length tys in
-	let clev = extract_level env !evdref tys in
 	let minlev =
 	  if len > 1 && not (is_impredicative env du) then
 	    Univ.type0_univ
 	  else Univ.type0m_univ
 	in
+	let clev = extract_level env !evdref minlev tys in
 	  (clev, minlev, len)) inds destarities)
   in
   (* Take the transitive closure of the system of constructors *)
