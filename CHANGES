@@ -120,6 +120,10 @@ Tactics
 - Tactic "subst id" now supports id occurring in dependent local definitions.
 - Bugs fixed about intro-pattern "*" might lead to some rare incompatibilities.
 - New tactical "time" to display time spent executing its argument.
+- Tactics referring or using a constant dependent in a section variable which
+  has been cleared or renamed in the current goal context now fail
+  (possible source of incompatibilities solvable by avoiding clearing
+  the relevant hypotheses).
 
 Program
 
