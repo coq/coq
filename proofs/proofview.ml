@@ -606,6 +606,7 @@ let tclTIME s t =
     msg_info(str "Tactic call" ++ pr_opt str s ++ str " ran for " ++
              System.fmt_time_difference t1 t2 ++ str " " ++ surround msg) in
   let rec aux n t =
+    tclUNIT () >>= fun () ->
     let tstart = System.get_time() in
     Proof.split t >>= function
     | Nil e ->
