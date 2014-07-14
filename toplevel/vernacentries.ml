@@ -42,7 +42,7 @@ let prerr_endline =
 let cl_of_qualid = function
   | FunClass -> Classops.CL_FUN
   | SortClass -> Classops.CL_SORT
-  | RefClass r -> Class.class_of_global (Smartlocate.smart_global r)
+  | RefClass r -> Class.class_of_global (Smartlocate.smart_global ~head:true r)
 
 let scope_class_of_qualid qid =
   Notation.scope_class_of_reference (Smartlocate.smart_global qid)

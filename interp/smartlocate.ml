@@ -20,6 +20,18 @@ open Misctypes
 open Syntax_def
 open Notation_term
 
+let global_of_extended_global_head = function
+  | TrueGlobal ref -> ref
+  | SynDef kn ->
+      let _, syn_def = search_syntactic_definition kn in
+      let rec head_of = function
+        | NRef ref -> ref
+        | NApp (rc, _) -> head_of rc
+        | NCast (rc, _) -> head_of rc
+        | NLetIn (_, _, rc) -> head_of rc
+        | _ -> raise Not_found in
+      head_of syn_def
+
 let global_of_extended_global = function
   | TrueGlobal ref -> ref
   | SynDef kn ->
@@ -28,9 +40,11 @@ let global_of_extended_global = function
   | [],NApp (NRef ref,[]) -> ref
   | _ -> raise Not_found
 
-let locate_global_with_alias (loc,qid) =
+let locate_global_with_alias ?(head=false) (loc,qid) =
   let ref = Nametab.locate_extended qid in
-  try global_of_extended_global ref
+  try
+    if head then global_of_extended_global_head ref
+    else global_of_extended_global ref
   with Not_found ->
     user_err_loc (loc,"",pr_qualid qid ++
       str " is bound to a notation that does not denote a reference.")
@@ -44,14 +58,14 @@ let global_inductive_with_alias r =
         pr_reference r ++ spc () ++ str "is not an inductive type.")
   with Not_found -> Nametab.error_global_not_found_loc loc qid
 
-let global_with_alias r =
+let global_with_alias ?head r =
   let (loc,qid as lqid) = qualid_of_reference r in
-  try locate_global_with_alias lqid
+  try locate_global_with_alias ?head lqid
   with Not_found -> Nametab.error_global_not_found_loc loc qid
 
-let smart_global = function
+let smart_global ?head = function
   | AN r ->
-      global_with_alias r
+      global_with_alias ?head r
   | ByNotation (loc,ntn,sc) ->
       Notation.interp_notation_as_global_reference loc (fun _ -> true) ntn sc
 
