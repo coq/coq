@@ -382,6 +382,14 @@ let e_new_type_evar evdref ?src ?filter rigid env =
     evdref := evd';
     c
 
+let new_Type ?(rigid=Evd.univ_flexible) env evd = 
+  let evd', s = new_sort_variable rigid evd in
+    evd', mkSort s
+
+let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
+  let evd', s = new_sort_variable rigid !evdref in
+    evdref := evd'; mkSort s
+
   (* The same using side-effect *)
 let e_new_evar evdref env ?(src=default_source) ?filter ?candidates ?store ty =
   let (evd',ev) = new_evar !evdref env ~src:src ?filter ?candidates ?store ty in
