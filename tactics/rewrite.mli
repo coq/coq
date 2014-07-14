@@ -44,8 +44,10 @@ type rewrite_result_info = {
 
 type rewrite_result = rewrite_result_info option
 
-type strategy = Environ.env -> Id.t list -> constr -> types ->
-  (bool (* prop *) * constr option) -> evars -> rewrite_result option
+type 'a pure_strategy = 'a -> Environ.env -> Id.t list -> constr -> types ->
+  (bool (* prop *) * constr option) -> evars -> 'a * rewrite_result option
+
+type strategy = unit pure_strategy
 
 val strategy_of_ast : (glob_constr_and_expr, raw_red_expr) strategy_ast -> strategy
 
