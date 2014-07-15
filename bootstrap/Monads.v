@@ -235,24 +235,7 @@ Module IOBase.
  Extract Constant print => "fun s -> (); fun () -> try Pp.pp s; Pp.pp_flush () with e -> let e = Errors.push e in raise e ()".
 
  Parameter timeout: forall A, Int -> T A -> T A.
- Extract Constant timeout => "fun n t -> (); fun () ->
-    let timeout_handler _ = Pervasives.raise (Proof_errors.Exception Proof_errors.Timeout) in
-    let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
-    Pervasives.ignore (Unix.alarm n);
-    let restore_timeout () =
-      Pervasives.ignore (Unix.alarm 0);
-      Sys.set_signal Sys.sigalrm psh
-    in
-    try
-      let res = t () in
-      restore_timeout ();
-      res
-    with
-    | e ->
-      let e = Errors.push e in
-      restore_timeout ();
-      Pervasives.raise e
- ".
+ Extract Constant timeout => "fun n t -> (); fun () -> Control.timeout n t (Proof_errors.Exception Proof_errors.Timeout)".
  Extraction Implicit timeout [A].
 
 End IOBase.
