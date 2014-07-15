@@ -200,17 +200,12 @@ let sort_dependencies evl =
 
 open Environ
 
-let collect_evars_of_term c ty =
-  Evar.Set.union (Evarutil.evars_of_term c) (Evarutil.evars_of_term ty)
-
 let eterm_obligations env name evm fs ?status t ty = 
   (* 'Serialize' the evars *)
-  let evars = collect_evars_of_term t ty in
   let nc = Environ.named_context env in
   let nc_len = Context.named_context_length nc in
   let evm = Evarutil.nf_evar_map_undefined evm in
   let evl = Evarutil.non_instantiated evm in
-  let evl = Evar.Map.filter (fun ev _ -> Evar.Set.mem ev evars) evl in
   let evl = Evar.Map.bindings evl in
   let evl = List.map (fun (id, ev) -> (id, ev, evar_dependencies evm id)) evl in
   let sevl = sort_dependencies evl in
@@ -898,10 +893,11 @@ and solve_obligation_by_tac prg obls i tac =
 	    in
 	    let t, ctx = 
 	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac 
-	        (pi2 prg.prg_kind) prg.prg_ctx
+	        (pi2 !prg.prg_kind) !prg.prg_ctx
 	    in
 	    let uctx = Evd.evar_context_universe_context ctx in
-	      obls.(i) <- declare_obligation {prg with prg_ctx = ctx} obl t uctx;
+	      prg := {!prg with prg_ctx = ctx};
+	      obls.(i) <- declare_obligation !prg obl t uctx;
 	      true
 	  else false
 	with e when Errors.noncritical e ->
@@ -921,6 +917,7 @@ and solve_prg_obligations prg ?oblset tac =
     | Some s -> set := s;
       (fun i -> Int.Set.mem i !set)
   in
+  let prg = ref prg in
   let _ =
     Array.iteri (fun i x ->
       if p i && solve_obligation_by_tac prg obls' i tac then
@@ -929,7 +926,7 @@ and solve_prg_obligations prg ?oblset tac =
  	   decr rem))
       obls'
   in
-    update_obls prg obls' !rem
+    update_obls !prg obls' !rem
 
 and solve_obligations n tac =
   let prg = get_prog_err n in
@@ -942,8 +939,9 @@ and try_solve_obligation n prg tac =
   let prg = get_prog prg in
   let obls, rem = prg.prg_obligations in
   let obls' = Array.copy obls in
-    if solve_obligation_by_tac prg obls' n tac then
-      ignore(update_obls prg obls' (pred rem));
+  let prgref = ref prg in
+    if solve_obligation_by_tac prgref obls' n tac then
+      ignore(update_obls !prgref obls' (pred rem));
 
 and try_solve_obligations n tac =
   try ignore (solve_obligations n tac) with NoObligations _ -> ()
