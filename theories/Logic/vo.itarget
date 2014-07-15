@@ -16,7 +16,8 @@ Epsilon.vo
 Eqdep_dec.vo
 EqdepFacts.vo
 Eqdep.vo
-Fan.vo
+WeakFan.vo
+WKL.vo
 FunctionalExtensionality.vo
 Hurkens.vo
 IndefiniteDescription.vo
