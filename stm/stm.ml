@@ -733,6 +733,7 @@ end = struct
 
   let slave_print_all_goals id =
     let rec aux id =
+      print_goals_of_state id;
       try aux (VCS.visit id).next
       with
       | VCS.Expired -> ()
@@ -1368,7 +1369,8 @@ let known_state ?(redefine_qed=false) ~cache id =
     if !Flags.async_proofs_mode = Flags.APonParallel 0 then
       Pp.feedback ~state_id:id Feedback.ProcessingInMaster;
     State.define ~cache:cache_step ~redefine:redefine_qed step id;
-    if !Flags.feedback_goals then print_goals_of_state id;
+    if !Flags.feedback_goals && not (Flags.async_proofs_is_worker ()) then
+      print_goals_of_state id;
     prerr_endline ("reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
 
