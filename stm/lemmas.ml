@@ -217,7 +217,8 @@ let compute_proof_name locality = function
   | None ->
       next_global_ident_away default_thm_id (Pfedit.get_all_proof_names ()) 
 
-let save_remaining_recthms (locality,p,kind) ctx body opaq i (id,(t_i,(_,imps))) =
+let save_remaining_recthms (locality,p,kind) norm ctx body opaq i (id,(t_i,(_,imps))) =
+  let t_i = norm t_i in
   match body with
   | None ->
       (match locality with
@@ -239,6 +240,7 @@ let save_remaining_recthms (locality,p,kind) ctx body opaq i (id,(t_i,(_,imps)))
           let kn = declare_constant id ~local decl in
           (locality,ConstRef kn,imps))
   | Some body ->
+      let body = norm body in
       let k = Kindops.logical_kind_of_goal_kind kind in
       let body_i = match kind_of_term body with
         | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
@@ -408,18 +410,25 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
   match thms with
   | [] -> anomaly (Pp.str "No proof to start")
   | (id,(t,(_,imps)))::other_thms ->
-      let hook strength ref =
+      let hook ctx strength ref =
+        let ctx = match ctx with
+        | None -> Evd.empty_evar_universe_context
+        | Some ctx -> ctx
+        in
         let other_thms_data =
           if List.is_empty other_thms then [] else
             (* there are several theorems defined mutually *)
             let body,opaq = retrieve_first_recthm ref in
+            let subst = Evd.evar_universe_context_subst ctx in
+            let norm c = Universes.subst_opt_univs_constr subst c in
 	    let ctx = Evd.evar_universe_context_set ctx in
-            List.map_i (save_remaining_recthms kind ctx body opaq) 1 other_thms in
+	    let body = Option.map norm body in
+            List.map_i (save_remaining_recthms kind norm ctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  call_hook (fun exn -> exn) hook strength ref) thms_data in
-      start_proof id kind ctx t ?init_tac (mk_hook hook) ~compute_guard:guard
+      start_proof_univs id kind ctx t ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
 
 let start_proof_com kind thms hook =
   let env0 = Global.env () in
