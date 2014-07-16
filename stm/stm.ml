@@ -818,7 +818,8 @@ end = struct
         | Declarations.OpaqueDef lc ->
             let uc = Option.get (Opaqueproof.get_constraints lc) in
             let uc =
-              Future.chain ~greedy:true ~pure:true uc Univ.hcons_universe_context_set in
+              Future.chain
+                ~greedy:true ~pure:true uc Univ.hcons_universe_context_set in
             let pr = Opaqueproof.get_proof lc in
             let pr = Future.chain ~greedy:true ~pure:true pr discharge in
             let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
@@ -1573,7 +1574,8 @@ let join () =
 
 type tasks = Slaves.tasks * RemoteCounter.remote_counters_status
 let dump x = Slaves.dump x, RemoteCounter.backup ()
-let check_task name (tasks,_) i =
+let check_task name (tasks,rcbackup) i =
+  RemoteCounter.restore rcbackup;
   let vcs = VCS.backup () in
   try
     let rc = Future.purify (Slaves.check_task name tasks) i in
