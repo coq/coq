@@ -445,8 +445,10 @@ let inh_coerce_to_fail env evd rigidonly v t c1 =
       try (the_conv_x_leq env t' c1 evd, v')
       with UnableToUnify _ -> raise NoCoercion
 
-let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
-  try (the_conv_x_leq env t c1 evd, v)
+let rec inh_conv_coerce_to_fail ?(cumul=true) loc env evd rigidonly v t c1 =
+  try if cumul then 
+       (the_conv_x_leq env t c1 evd, v)
+    else (the_conv_x env t c1 evd, v)
   with UnableToUnify (best_failed_evd,e) ->
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
@@ -466,7 +468,7 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
 	    | _ -> name in
 	  let env1 = push_rel (name,None,u1) env in
 	  let (evd', v1) =
-	    inh_conv_coerce_to_fail loc env1 evd rigidonly
+	    inh_conv_coerce_to_fail ~cumul:false loc env1 evd rigidonly
               (Some (mkRel 1)) (lift 1 u1) (lift 1 t1) in
           let v1 = Option.get v1 in
 	  let v2 = Option.map (fun v -> beta_applist (lift 1 v,[v1])) v in
