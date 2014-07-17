@@ -438,14 +438,11 @@ Notation inj_pairT2 := inj_pair2.
 
 End EqdepTheory.
 
-Arguments eq_dep  U P p x q _ : clear implicits.
-Arguments eq_dep1 U P p x q y : clear implicits.
-
 (** Basic facts about eq_dep *)
 
 Lemma f_eq_dep :
   forall U (P:U->Type) R p q x y (f:forall p, P p -> R p),
-    eq_dep x y -> eq_dep (f p x) (f q y).
+    eq_dep p x q y -> eq_dep p (f p x) q (f q y).
 Proof.
 intros * []. reflexivity.
 Qed.
@@ -458,7 +455,10 @@ Qed.
 
 Lemma f_eq_dep_non_dep :
   forall U (P:U->Type) R p q x y (f:forall p, P p -> R),
-    eq_dep x y -> f p x = f q y.
+    eq_dep p x q y -> f p x = f q y.
 Proof.
 intros * []. reflexivity.
 Qed.
+
+Arguments eq_dep  U P p x q _ : clear implicits.
+Arguments eq_dep1 U P p x q y : clear implicits.
