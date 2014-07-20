@@ -135,9 +135,6 @@ let has_undefined_evars or_sorts evd t =
             has_ev c; Array.iter has_ev args
         | Evar_empty ->
 	    raise NotInstantiatedEvar)
-    | Ind (_,l) | Const (_,l) | Construct (_,l) 
-	when or_sorts && not (Univ.Instance.is_empty l) -> 
-      raise Not_found
     | _ -> iter_constr has_ev t in
   try let _ = has_ev t in false
   with (Not_found | NotInstantiatedEvar) -> true

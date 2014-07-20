@@ -1589,7 +1589,7 @@ let pr_evar_universe_context ctx =
     (str"UNIVERSES:"++brk(0,1)++ h 0 (Univ.pr_universe_context_set ctx.uctx_local) ++ fnl () ++
      str"ALGEBRAIC UNIVERSES:"++brk(0,1)++h 0 (Univ.LSet.pr ctx.uctx_univ_algebraic) ++ fnl() ++
      str"UNDEFINED UNIVERSES:"++brk(0,1)++
-       h 0 (Universes.pr_universe_opt_subst ctx.uctx_univ_variables))
+       h 0 (Universes.pr_universe_opt_subst ctx.uctx_univ_variables) ++ fnl())
 
 let print_env_short env =
   let pr_body n = function

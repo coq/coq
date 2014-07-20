@@ -10,6 +10,8 @@ open Term
 open Context
 open Environ
 
+val left2right : bool ref
+
 (***********************************************************************
   s Reduction functions *)
 

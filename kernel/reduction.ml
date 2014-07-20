@@ -26,6 +26,8 @@ open Environ
 open Closure
 open Esubst
 
+let left2right = ref false
+
 let conv_key k =
   match k with
   | VarKey id -> VarKey id
@@ -191,10 +193,11 @@ let sort_cmp_universes pb s0 s1 (u, check) =
 let convert_instances flex u u' (s, check) =
   (check.compare_instances flex u u' s, check)
 
-let conv_table_key k1 k2 cuniv =
+let conv_table_key infos k1 k2 cuniv =
   match k1, k2 with
   | ConstKey (cst, u), ConstKey (cst', u') when eq_constant_key cst cst' ->
-    convert_instances true u u' cuniv
+    let flex = evaluable_constant cst (info_env infos) in
+      convert_instances flex u u' cuniv
   | _ -> raise NotConvertible
 
 let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
@@ -203,7 +206,10 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
       | (z1::s1, z2::s2) ->
           let cu1 = cmp_rec s1 s2 cuniv in
           (match (z1,z2) with
-            | (Zlapp a1,Zlapp a2) -> Array.fold_right2 f a1 a2 cu1
+            | (Zlapp a1,Zlapp a2) -> 
+	      if !left2right then
+		Array.fold_left2 (fun cu x y -> f x y cu) cu1 a1 a2
+	      else Array.fold_right2 f a1 a2 cu1
 	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
 	      if not (eq_constant c1 c2) then 
 		raise NotConvertible
@@ -320,29 +326,31 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
-	(try (* try first intensional equality *)
-	   if eq_table_key fl1 fl2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-           else 
-	     (let cuniv = conv_table_key fl1 fl2 cuniv in
-	      convert_stacks l2r infos lft1 lft2 v1 v2 cuniv)
-        with NotConvertible ->
-          (* else the oracle tells which constant is to be expanded *)
-          let (app1,app2) =
-            if Conv_oracle.oracle_order (Closure.oracle_of_infos infos) l2r (conv_key fl1) (conv_key fl2) then
-              match unfold_reference infos fl1 with
-                | Some def1 -> ((lft1, whd def1 v1), appr2)
-                | None ->
-                    (match unfold_reference infos fl2 with
-                      | Some def2 -> (appr1, (lft2, whd def2 v2))
-		      | None -> raise NotConvertible)
-            else
-	      match unfold_reference infos fl2 with
-                | Some def2 -> (appr1, (lft2, whd def2 v2))
-                | None ->
-                    (match unfold_reference infos fl1 with
-                    | Some def1 -> ((lft1, whd def1 v1), appr2)
-		    | None -> raise NotConvertible) in
-          eqappr cv_pb l2r infos app1 app2 cuniv)
+      (try
+	 if eq_table_key fl1 fl2 then (* try first intensional equality *)
+	   convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+         else (let cuniv = conv_table_key infos fl1 fl2 cuniv in
+		 convert_stacks l2r infos lft1 lft2 v1 v2 cuniv)
+       with NotConvertible ->
+           (* else the oracle tells which constant is to be expanded *)
+	 let oracle = Closure.oracle_of_infos infos in
+         let (app1,app2) =
+           if Conv_oracle.oracle_order oracle l2r (conv_key fl1) (conv_key fl2) then
+	     match unfold_reference infos fl1 with
+             | Some def1 -> ((lft1, whd def1 v1), appr2)
+             | None ->
+               (match unfold_reference infos fl2 with
+               | Some def2 -> (appr1, (lft2, whd def2 v2))
+	       | None -> raise NotConvertible)
+           else
+	     match unfold_reference infos fl2 with
+             | Some def2 -> (appr1, (lft2, whd def2 v2))
+             | None ->
+               (match unfold_reference infos fl1 with
+               | Some def1 -> ((lft1, whd def1 v1), appr2)
+	       | None -> raise NotConvertible) 
+	 in
+           eqappr cv_pb l2r infos app1 app2 cuniv)
 
     | (FProj (p1,c1), FProj (p2, c2)) ->
       (* Projections: prefer unfolding to first-order unification,
@@ -418,12 +426,12 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
            | Some def1 ->
 	       eqappr cv_pb l2r infos (lft1, whd def1 v1) appr2 cuniv
            | None -> 
-	     match c2 with 
+	     match c2 with
 	     | FConstruct ((ind2,j2),u2) ->
 	       (try
- 	     	  let v2, v1 = 
- 		    eta_expand_ind_stacks (info_env infos) ind2 hd2 v2 (snd appr1)
- 		  in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+ 	     	  let v2, v1 =
+ 	     	    eta_expand_ind_stacks (info_env infos) ind2 hd2 v2 (snd appr1)
+ 	     	  in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
  	     	with Not_found -> raise NotConvertible)
 	     | _ -> raise NotConvertible)
 
@@ -432,12 +440,12 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
            | Some def2 ->
 	       eqappr cv_pb l2r infos appr1 (lft2, whd def2 v2) cuniv
            | None -> 
-	     match c1 with 
+	     match c1 with
 	     | FConstruct ((ind1,j1),u1) ->
- 	       (try let v1, v2 = 
-		      eta_expand_ind_stacks (info_env infos) ind1 hd1 v1 (snd appr2)
-		    in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-		with Not_found -> raise NotConvertible)
+ 	       (try let v1, v2 =
+	     	      eta_expand_ind_stacks (info_env infos) ind1 hd1 v1 (snd appr2)
+	     	    in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+	     	with Not_found -> raise NotConvertible)
 	     | _ -> raise NotConvertible)
 	  
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
@@ -459,16 +467,16 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       (* Eta expansion of records *)
     | (FConstruct ((ind1,j1),u1), _) ->
       (try
-	 let v1, v2 = 
-	   eta_expand_ind_stacks (info_env infos) ind1 hd1 v1 (snd appr2)
-	 in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+    	 let v1, v2 =
+    	   eta_expand_ind_stacks (info_env infos) ind1 hd1 v1 (snd appr2)
+    	 in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 
     | (_, FConstruct ((ind2,j2),u2)) ->
       (try
-	 let v2, v1 = 
-	   eta_expand_ind_stacks (info_env infos) ind2 hd2 v2 (snd appr1)
-	 in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+    	 let v2, v1 =
+    	   eta_expand_ind_stacks (info_env infos) ind2 hd2 v2 (snd appr1)
+    	 in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 
     | (FFix (((op1, i1),(_,tys1,cl1)),e1), FFix(((op2, i2),(_,tys2,cl2)),e2)) ->
