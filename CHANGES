@@ -194,6 +194,12 @@ Internal Infrastructure
     by option -vmbyteflags which expects a comma-separated argument.
   * The -coqtoolsbyteflags option is discontinued, see -no-custom instead.
 
+Miscellaneous
+
+- ML plugins now require a "DECLARE PLUGIN \"foo\"" statement. The "foo" name
+  must be exactly the name of the ML module that will be loaded through a
+  "Declare ML \"foo\"" command.
+
 Changes from V8.4beta2 to V8.4
 ==============================
 
