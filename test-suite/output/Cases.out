@@ -10,7 +10,7 @@ fix F (t : t) : P t :=
 t_rect is monomorphic
 proj = 
 fun (x y : nat) (P : nat -> Type) (def : P x) (prf : P y) =>
-match eq_nat_dec x y with
+match Nat.eq_dec x y with
 | left eqprf => match eqprf in (_ = z) return (P z) with
                 | eq_refl => def
                 end

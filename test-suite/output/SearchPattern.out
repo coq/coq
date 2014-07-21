@@ -5,28 +5,77 @@ orb: bool -> bool -> bool
 implb: bool -> bool -> bool
 xorb: bool -> bool -> bool
 negb: bool -> bool
+Nat.eqb: nat -> nat -> bool
+Nat.leb: nat -> nat -> bool
+Nat.ltb: nat -> nat -> bool
+Nat.even: nat -> bool
+Nat.odd: nat -> bool
+Nat.testbit: nat -> nat -> bool
 O: nat
 S: nat -> nat
 length: forall A : Type, list A -> nat
-pred: nat -> nat
-plus: nat -> nat -> nat
-mult: nat -> nat -> nat
-minus: nat -> nat -> nat
-max: nat -> nat -> nat
-min: nat -> nat -> nat
+Nat.zero: nat
+Nat.one: nat
+Nat.two: nat
+Nat.succ: nat -> nat
+Nat.pred: nat -> nat
+Nat.add: nat -> nat -> nat
+Nat.double: nat -> nat
+Nat.mul: nat -> nat -> nat
+Nat.sub: nat -> nat -> nat
+Nat.max: nat -> nat -> nat
+Nat.min: nat -> nat -> nat
+Nat.pow: nat -> nat -> nat
+Nat.div: nat -> nat -> nat
+Nat.modulo: nat -> nat -> nat
+Nat.gcd: nat -> nat -> nat
+Nat.square: nat -> nat
+Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
+Nat.sqrt: nat -> nat
+Nat.log2_iter: nat -> nat -> nat -> nat -> nat
+Nat.log2: nat -> nat
+Nat.div2: nat -> nat
+Nat.shiftl: nat -> nat -> nat
+Nat.shiftr: nat -> nat -> nat
+Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
+Nat.land: nat -> nat -> nat
+Nat.lor: nat -> nat -> nat
+Nat.ldiff: nat -> nat -> nat
+Nat.lxor: nat -> nat -> nat
 
 S: nat -> nat
-pred: nat -> nat
-plus: nat -> nat -> nat
-mult: nat -> nat -> nat
-minus: nat -> nat -> nat
-max: nat -> nat -> nat
-min: nat -> nat -> nat
+Nat.succ: nat -> nat
+Nat.pred: nat -> nat
+Nat.add: nat -> nat -> nat
+Nat.double: nat -> nat
+Nat.mul: nat -> nat -> nat
+Nat.sub: nat -> nat -> nat
+Nat.max: nat -> nat -> nat
+Nat.min: nat -> nat -> nat
+Nat.pow: nat -> nat -> nat
+Nat.div: nat -> nat -> nat
+Nat.modulo: nat -> nat -> nat
+Nat.gcd: nat -> nat -> nat
+Nat.square: nat -> nat
+Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
+Nat.sqrt: nat -> nat
+Nat.log2_iter: nat -> nat -> nat -> nat -> nat
+Nat.log2: nat -> nat
+Nat.div2: nat -> nat
+Nat.shiftl: nat -> nat -> nat
+Nat.shiftr: nat -> nat -> nat
+Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
+Nat.land: nat -> nat -> nat
+Nat.lor: nat -> nat -> nat
+Nat.ldiff: nat -> nat -> nat
+Nat.lxor: nat -> nat -> nat
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
 identity_refl: forall (A : Type) (a : A), identity a a
 iff_refl: forall A : Prop, A <-> A
 eq_refl: forall (A : Type) (x : A), x = x
+Nat.divmod: nat -> nat -> nat -> nat -> nat * nat
 le_n: forall n : nat, n <= n
 pair: forall A B : Type, A -> B -> A * B
 conj: forall A B : Prop, A -> B -> A /\ B
+Nat.divmod: nat -> nat -> nat -> nat -> nat * nat
 
