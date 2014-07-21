@@ -475,14 +475,12 @@ let new_global_univ () =
 
 module LevelUnionFind = Unionfind.Make (Univ.LSet) (Univ.LMap)
 
-let add_list_map u t map = 
-  let l, d, r = LMap.split u map in
-  let d' = match d with None -> [t] | Some l -> t :: l in
-  let lr = 
-    LMap.merge (fun k lm rm -> 
-      match lm with Some t -> lm | None ->
-      match rm with Some t -> rm | None -> None) l r
-  in LMap.add u d' lr
+let add_list_map u t map =
+  try
+    let l = LMap.find u map in
+    LMap.update u (t :: l) map
+  with Not_found ->
+    LMap.add u [t] map
 
 module UF = LevelUnionFind
 
