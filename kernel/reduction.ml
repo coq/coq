@@ -194,10 +194,15 @@ let convert_instances flex u u' (s, check) =
   (check.compare_instances flex u u' s, check)
 
 let conv_table_key infos k1 k2 cuniv =
+  if k1 == k2 then cuniv else
   match k1, k2 with
   | ConstKey (cst, u), ConstKey (cst', u') when eq_constant_key cst cst' ->
-    let flex = evaluable_constant cst (info_env infos) in
-      convert_instances flex u u' cuniv
+    if Univ.Instance.equal u u' then cuniv
+    else 
+      let flex = evaluable_constant cst (info_env infos) in
+	convert_instances flex u u' cuniv
+  | VarKey id, VarKey id' when Id.equal id id' -> cuniv
+  | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
 
 let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
@@ -327,10 +332,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
       (try
-	 if eq_table_key fl1 fl2 then (* try first intensional equality *)
+	 let cuniv = conv_table_key infos fl1 fl2 cuniv in
 	   convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-         else (let cuniv = conv_table_key infos fl1 fl2 cuniv in
-		 convert_stacks l2r infos lft1 lft2 v1 v2 cuniv)
        with NotConvertible ->
            (* else the oracle tells which constant is to be expanded *)
 	 let oracle = Closure.oracle_of_infos infos in
