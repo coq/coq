@@ -51,7 +51,30 @@ module type PartitionSig = sig
 
 end
 
+module type SetS =
+sig
+  type t
+  type elt
+  val singleton : elt -> t
+  val union : t -> t -> t
+  val choose : t -> elt
+  val iter : (elt -> unit) -> t -> unit
+end
+(** Minimal interface for sets, subtype of stdlib's Set. *)
+
+module type MapS =
+sig
+  type key
+  type +'a t
+  val empty : 'a t
+  val find : key -> 'a t -> 'a
+  val add : key -> 'a -> 'a t -> 'a t
+  val mem : key -> 'a t -> bool
+  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+end
+(** Minimal interface for maps, subtype of stdlib's Map. *)
+
 module Make :
-  functor (S:Set.S) ->
-    functor (M:Map.S with type key = S.elt) ->
+  functor (S:SetS) ->
+    functor (M:MapS with type key = S.elt) ->
       PartitionSig with type elt = S.elt and type set = S.t

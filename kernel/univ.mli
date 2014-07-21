@@ -44,7 +44,7 @@ type universe_level = Level.t
 (** Sets of universe levels *)
 module LSet : 
 sig 
-  include Set.S with type elt = universe_level
+  include CSig.SetS with type elt = universe_level
 	      
   val pr : t -> Pp.std_ppcmds
   (** Pretty-printing *)

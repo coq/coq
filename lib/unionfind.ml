@@ -53,7 +53,28 @@ module type PartitionSig = sig
 
 end
 
-module Make (S:Set.S)(M:Map.S with type key = S.elt) = struct
+module type SetS =
+sig
+  type t
+  type elt
+  val singleton : elt -> t
+  val union : t -> t -> t
+  val choose : t -> elt
+  val iter : (elt -> unit) -> t -> unit
+end
+
+module type MapS =
+sig
+  type key
+  type +'a t
+  val empty : 'a t
+  val find : key -> 'a t -> 'a
+  val add : key -> 'a -> 'a t -> 'a t
+  val mem : key -> 'a t -> bool
+  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+end
+
+module Make (S:SetS)(M:MapS with type key = S.elt) = struct
 
   type elt = S.elt
   type set = S.t
@@ -101,7 +122,7 @@ module Make (S:Set.S)(M:Map.S with type key = S.elt) = struct
 
   let union_set s p =
     try
-      let x = S.min_elt s in
+      let x = S.choose s in
       S.iter (fun y -> union x y p) s
     with Not_found -> ()
 

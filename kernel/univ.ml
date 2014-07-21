@@ -378,22 +378,9 @@ module Level = struct
 
 end
 
-module LSet = struct
-  module M = Set.Make (Level)
-  include M
-
-  let pr s = 
-    str"{" ++ prlist_with_sep spc Level.pr (elements s) ++ str"}"
-
-  let of_array l =
-    Array.fold_left (fun acc x -> add x acc) empty l
-
-end
-
-
 (** Level maps *)
 module LMap = struct 
-  module M = Map.Make (Level)
+  module M = HMap.Make (Level)
   include M
 
   let union l r = 
@@ -419,6 +406,18 @@ module LMap = struct
     h 0 (prlist_with_sep fnl (fun (u, v) ->
       Level.pr u ++ f v) (bindings m))
 end
+
+module LSet = struct
+  include LMap.Set
+
+  let pr s =
+    str"{" ++ prlist_with_sep spc Level.pr (elements s) ++ str"}"
+
+  let of_array l =
+    Array.fold_left (fun acc x -> add x acc) empty l
+
+end
+
 
 type 'a universe_map = 'a LMap.t
 
