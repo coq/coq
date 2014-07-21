@@ -120,8 +120,9 @@ let unify_e_resolve poly flags (c,clenv) gls =
   let clenv', subst = if poly then Clenv.refresh_undefined_univs clenv 
   else clenv, Univ.empty_level_subst in
   let clenv' = connect_clenv gls clenv' in
-  let _ = clenv_unique_resolver ~flags clenv' gls in
-  Tactics.Simple.eapply (Vars.subst_univs_level_constr subst c) gls
+  let clenv' = clenv_unique_resolver ~flags clenv' gls in
+    tclTHEN (Refiner.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
+      (Tactics.Simple.eapply (Vars.subst_univs_level_constr subst c)) gls
 
 let e_exact poly flags (c,clenv) =
   let clenv', subst = 
