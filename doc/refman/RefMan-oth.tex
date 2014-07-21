@@ -421,8 +421,10 @@ The default blacklisted substrings are {\tt "\_admitted"
 
 \subsection[\tt Locate {\qualid}.]{\tt Locate {\qualid}.\comindex{Locate}
 \label{Locate}}
-This command displays the full name of the qualified identifier {\qualid}
-and consequently the \Coq\ module in which it is defined.
+This command displays the full name of objects whose name is a prefix of the
+qualified identifier {\qualid}, and consequently the \Coq\ module in which they
+are defined. It searches for objects from the different qualified namespaces of
+Coq: terms, modules, Ltac, etc.
 
 \begin{coq_eval}
 (*************** The last line should produce **************************)
@@ -438,6 +440,18 @@ Locate Init.Datatypes.O.
 Locate Coq.Init.Datatypes.O.
 Locate I.Dont.Exist.
 \end{coq_example}
+
+\begin{Variants}
+\item {\tt Locate Term {\qualid}.}\comindex{Locate Term}\\
+  As {\tt Locate} but restricted to terms.
+
+\item {\tt Locate Module {\qualid}.}
+  As {\tt Locate} but restricted to modules.
+
+\item {\tt Locate Ltac {\qualid}.}\comindex{Locate Ltac}\\
+  As {\tt Locate} but restricted to tactics.
+\end{Variants}
+
 
 \SeeAlso Section \ref{LocateSymbol}
 

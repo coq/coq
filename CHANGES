@@ -52,6 +52,9 @@ Vernacular commands
   The tools/update-require script can be used to convert a development.
 - A new Print Strategies command allows to visualize the opacity status
   of the whole engine.
+- The "Locate" command now searches through all sorts of qualified namespaces of
+  Coq: terms, modules, tactics, etc. The old behaviour of the command can be
+  retrieved using the "Locate Term" command.
 
 Specification Language
 
