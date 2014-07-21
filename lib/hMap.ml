@@ -79,7 +79,7 @@ struct
   let inter s1 s2 =
     let fu _ m1 m2 = match m1, m2 with
     | None, None -> None
-    | (Some _ as m), None | None, (Some _ as m) -> m
+    | (Some _ as m), None | None, (Some _ as m) -> None
     | Some m1, Some m2 ->
       let m = Set.inter m1 m2 in
       if Set.is_empty m then None else Some m
@@ -89,7 +89,8 @@ struct
   let diff s1 s2 =
     let fu _ m1 m2 = match m1, m2 with
     | None, None -> None
-    | (Some _ as m), None | None, (Some _ as m) -> m
+    | (Some _ as m), None -> m
+    | None, (Some _ as m) -> None
     | Some m1, Some m2 ->
       let m = Set.diff m1 m2 in
       if Set.is_empty m then None else Some m
