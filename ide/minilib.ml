@@ -6,6 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
+let rec print_list print fmt = function
+  | [] -> ()
+  | [x] -> print fmt x
+  | x :: r -> print fmt x; print_list print fmt r
+
 type level = [
   | `DEBUG
   | `INFO
@@ -53,3 +58,13 @@ let coqide_config_dirs () =
   coqide_config_home ()
   :: List.map coqify (Glib.get_system_config_dirs ())
   @ Option.List.cons Coq_config.configdir []
+
+let is_prefix_of pre s =
+  let i = ref 0 in
+  let () = while (!i < (String.length pre)
+        && !i < (String.length s)
+	     && pre.[!i] = s.[!i]) do
+	          incr i
+		     done
+  in !i = String.length pre
+

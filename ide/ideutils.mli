@@ -40,9 +40,6 @@ val stock_to_widget :
   ?size:[`CUSTOM of int * int | Gtk.Tags.icon_size] ->
     GtkStock.id -> GObj.widget
 
-open Format
-val print_list : (formatter -> 'a -> unit) -> formatter -> 'a list -> unit
-
 val custom_coqtop : string option ref
 (* @return command to call coqtop
    - custom_coqtop if set

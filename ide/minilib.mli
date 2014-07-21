@@ -9,6 +9,8 @@
 (** Some excerpts of Util and similar files to avoid depending on them
     and hence on Compat and Camlp4 *)
 
+val print_list : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a list -> unit
+
 type level = [
   | `DEBUG
   | `INFO
@@ -25,3 +27,4 @@ val log : ?level:level -> string -> unit
 val coqide_config_home : unit -> string
 val coqide_config_dirs : unit -> string list
 val coqide_data_dirs : unit -> string list
+val is_prefix_of : string -> string -> bool
