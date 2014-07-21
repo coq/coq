@@ -508,32 +508,6 @@ let choose_canonical ctx flexible algs s =
 	      let canon = LSet.choose algs in
 		canon, (global, rigid, LSet.remove canon flexible)
 
-let subst_puniverses subst (c, u as cu) =
-  let u' = Instance.subst subst u in
-    if u' == u then cu else (c, u')
-
-let nf_evars_and_universes_local f subst =
-  let rec aux c =
-    match kind_of_term c with
-    | Evar (evdk, _ as ev) ->
-      (match f ev with
-      | None -> c
-      | Some c -> aux c)
-    | Const pu -> 
-      let pu' = subst_puniverses subst pu in
-	if pu' == pu then c else mkConstU pu'
-    | Ind pu ->
-      let pu' = subst_puniverses subst pu in
-	if pu' == pu then c else mkIndU pu'
-    | Construct pu ->
-      let pu' = subst_puniverses subst pu in
-	if pu' == pu then c else mkConstructU pu'
-    | Sort (Type u) ->
-      let u' = Univ.subst_univs_level_universe subst u in
-	if u' == u then c else mkSort (sort_of_univ u')
-    | _ -> map_constr aux c
-  in aux
-
 let subst_univs_fn_puniverses lsubst (c, u as cu) =
   let u' = Instance.subst_fn lsubst u in
     if u' == u then cu else (c, u')

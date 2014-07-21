@@ -1708,7 +1708,6 @@ module Instance : sig
 
     val eqeq : t -> t -> bool
     val subst_fn : universe_level_subst_fn -> t -> t
-    val subst : universe_level_subst -> t -> t
     
     val pr : t -> Pp.std_ppcmds
     val levels : t -> LSet.t
@@ -1763,7 +1762,7 @@ struct
     
   let hash = HInstancestruct.hash
     
-  let share a = (a, hash a)
+  let share a = (hcons a, hash a)
 	      
   let empty = hcons [||]
 
@@ -1782,12 +1781,7 @@ struct
 
   let subst_fn fn t = 
     let t' = CArray.smartmap fn t in
-      if t' == t then t else hcons t'
-
-  let subst s t =
-    let t' = 
-      CArray.smartmap (fun x -> try LMap.find x s with Not_found -> x) t
-    in if t' == t then t else hcons t'
+      if t' == t then t else t'
 
   let levels x = LSet.of_array x
 

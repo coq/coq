@@ -216,12 +216,6 @@ let subst_vars subst c = substn_vars 1 subst c
 (** Universe substitutions *)
 open Constr
 
-let subst_univs_puniverses subst =
-  if Univ.is_empty_level_subst subst then fun c -> c
-  else 
-    let f = Univ.Instance.subst subst in
-      fun ((c, u) as x) -> let u' = f u in if u' == u then x else (c, u')
-
 let subst_univs_fn_puniverses fn =
   let f = Univ.Instance.subst_fn fn in
     fun ((c, u) as x) -> let u' = f u in if u' == u then x else (c, u')

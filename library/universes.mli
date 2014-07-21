@@ -191,9 +191,6 @@ val unsafe_type_of_global : Globnames.global_reference -> types
 
 (** Full universes substitutions into terms *)
 
-val nf_evars_and_universes_local : (existential -> constr option) -> universe_level_subst -> 
-  constr -> constr
-
 val nf_evars_and_universes_opt_subst : (existential -> constr option) -> 
   universe_opt_subst -> constr -> constr
 

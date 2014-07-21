@@ -397,16 +397,6 @@ let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
 (* Universe substitutions *)
 
-let subst_univs_puniverses subst =
-  if Univ.is_empty_level_subst subst then fun c -> c
-  else 
-    let f = Univ.Instance.subst subst in
-      fun ((c, u) as x) -> let u' = f u in if u' == u then x else (c, u')
-
-let subst_univs_fn_puniverses fn =
-  let f = Univ.Instance.subst_fn fn in
-    fun ((c, u) as x) -> let u' = f u in if u' == u then x else (c, u')
-
 let map_constr f c = map_constr_with_binders (fun x -> x) (fun _ c -> f c) 0 c
 
 let subst_univs_fn_constr f c =

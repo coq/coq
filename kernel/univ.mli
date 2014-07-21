@@ -272,7 +272,7 @@ sig
   (** To concatenate two instances, used for discharge *)
 
   val equal : t -> t -> bool
-  (** Equality (note: instances are hash-consed, this is O(1)) *)
+  (** Equality *)
 
   val hcons : t -> t
   (** Hash-consing. *)
@@ -287,9 +287,6 @@ sig
   (** Rely on physical equality of subterms only *)
 
   val subst_fn : universe_level_subst_fn -> t -> t
-  (** Substitution by a level-to-level function. *)
-
-  val subst : universe_level_subst -> t -> t
   (** Substitution by a level-to-level function. *)
 
   val pr : t -> Pp.std_ppcmds
