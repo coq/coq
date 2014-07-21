@@ -224,6 +224,7 @@ clean-ide:
 	rm -f ide/input_method_lexer.ml
 	rm -f ide/highlight.ml ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
 	rm -f ide/utf8_convert.ml
+	rm -rf $(COQIDEAPP)
 
 ml4clean:
 	rm -f $(GENML4FILES)

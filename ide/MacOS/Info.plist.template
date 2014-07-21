@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>*</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>NSStringPboardType</string>
+			<key>CFBundleTypeOSTypes</key>
+			<array>
+				<string>****</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeIconFile</key>
+			<string>coqfile.icns</string>
+			<key>CFBundleTypeName</key>
+			<string>Coq file</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>text/plain</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>v</string>
+			</array>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>All</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleTypeMIMETypes</key>
+			<array>
+				<string>text/plain</string>
+			</array>
+			<key>LSHandlerRank</key>
+			<string>Default</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>*</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleIconFile</key>
+	<string>coqide.icns</string>
+	<key>CFBundleVersion</key>
+	<string>390</string>
+	<key>CFBundleName</key>
+	<string>CoqIDE</string>
+	<key>CFBundleShortVersionString</key>
+	<string>Coq_vVERSION</string>
+	<key>CFBundleDisplayName</key>
+	<string>Coq Proof Assistant vVERSION</string>
+	<key>CFBundleGetInfoString</key>
+	<string>Coq_vVERSION</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright 1999-2014, The Coq Development Team INRIA - CNRS - LIX - LRI - PPS</string>
+	<key>CFBundleHelpBookFolder</key>
+	<string>share/doc/coq/html/</string>
+	<key>CFAppleHelpAnchor</key>
+	<string>index</string>
+	<key>CFBundleExecutable</key>
+	<string>coqide</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleIdentifier</key>
+	<string>fr.inria.coqide</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+</dict>
+</plist>

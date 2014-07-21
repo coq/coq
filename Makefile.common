@@ -43,6 +43,8 @@ MKDIR:=install -d
 
 COQIDEBYTE:=bin/coqide.byte$(EXE)
 COQIDE:=bin/coqide$(EXE)
+COQIDEAPP:=bin/CoqIDE_$(VERSION).app
+COQIDEINAPP:=$(COQIDEAPP)/Contents/MacOS/coqide
 
 ifeq ($(BEST),opt)
 OPT:=opt
@@ -361,6 +363,15 @@ DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
 # Defining options to generate dependencies graphs
 DOT=dot
 ODOCDOTOPTS=-dot -dot-reduce
+
+###########################################################################
+# GTK for Coqide MacOS bundle
+###########################################################################
+
+GTKSHARE=$(shell pkg-config --variable=prefix gtk+-2.0)/share
+GTKBIN=$(shell pkg-config --variable=prefix gtk+-2.0)/bin
+GTKLIBS=$(shell pkg-config --variable=libdir gtk+-2.0)
+
 
 # For emacs: 
 # Local Variables: 

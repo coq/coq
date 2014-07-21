@@ -297,7 +297,7 @@ COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES) -thread
 
 .SUFFIXES:.vo
 
-IDEFILES=$(wildcard ide/coq*.lang) ide/coq_style.xml ide/coq.png ide/mac_default_accel_map
+IDEFILES=$(wildcard ide/coq*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_accel_map
 
 coqide-binaries: coqide-$(HASCOQIDE)
 coqide-no:
@@ -350,7 +350,7 @@ ifeq ($(BEST),opt)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA:.cma=.cmxa) $(IDECMA:.cma=.a)
 endif
 
-install-ide-files:
+install-ide-files: #Please update $(COQIDEAPP)/Contents/Resources/ at the same time
 	$(MKDIR) $(FULLDATADIR)
 	$(INSTALLLIB) ide/coq.png ide/coq.lang ide/coq_style.xml $(FULLDATADIR)
 	$(MKDIR) $(FULLCONFIGDIR)
@@ -359,6 +359,93 @@ install-ide-files:
 install-ide-info:
 	$(MKDIR) $(FULLDOCDIR)
 	$(INSTALLLIB) ide/FAQ $(FULLDOCDIR)/FAQ-CoqIde
+
+###########################################################################
+# CoqIde MacOS special targets
+###########################################################################
+
+.PHONY: $(COQIDEAPP)/Contents
+
+$(COQIDEAPP)/Contents:
+	rm -rdf $@
+	$(MKDIR) $@
+	sed -e "s/VERSION/$(VERSION)/g" ide/MacOS/Info.plist.template > $@/Info.plist
+	$(MKDIR) "$@/MacOS"
+
+$(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
+		unix.cmxa lablgtk.cmxa lablgtksourceview2.cmxa str.cmxa \
+		$(IDEFLAGS:.cma=.cmxa) $^
+	$(STRIP) $@
+
+$(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
+	$(MKDIR) $@/coq/
+	$(INSTALLLIB) ide/coq.png ide/coq.lang ide/coq_style.xml $@/coq/
+	$(MKDIR) $@/gtksourceview-2.0/{language-specs,styles}
+	$(INSTALLLIB) "$(GTKSHARE)/"gtksourceview-2.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-2.0/language-specs/
+	$(INSTALLLIB) "$(GTKSHARE)/"gtksourceview-2.0/styles/{styles.rng,classic.xml} $@/gtksourceview-2.0/styles/
+	cp -R "$(GTKSHARE)/"locale $@
+	cp -R "$(GTKSHARE)/"icons $@
+	cp -R "$(GTKSHARE)/"themes $@
+
+$(COQIDEAPP)/Contents/Resources/loaders: $(COQIDEAPP)/Contents
+	$(MKDIR) $@
+	$(INSTALLLIB) $$("$(GTKBIN)/gdk-pixbuf-query-loaders" | sed -n -e '5 s!.*= \(.*\)$$!\1!p')/libpixbufloader-png.so $@
+
+$(COQIDEAPP)/Contents/Resources/immodules: $(COQIDEAPP)/Contents
+	$(MKDIR) $@
+	$(INSTALLLIB) "$(GTKLIBS)/gtk-2.0/2.10.0/immodules/"*.so $@
+
+
+$(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
+	$(MKDIR) $@/xdg/coq
+	$(INSTALLLIB) ide/MacOS/default_accel_map $@/xdg/coq/coqide.keys
+	$(MKDIR) $@/gtk-2.0
+	{ "$(GTKBIN)/gdk-pixbuf-query-loaders" $@/../loaders/*.so |\
+	 sed -e "s!/.*\(/loaders/.*.so\)!@executable_path/../Resources/\1!"; } \
+	> $@/gtk-2.0/gdk-pixbuf.loaders
+	{ "$(GTKBIN)/gtk-query-immodules-2.0" $@/../immodules/*.so |\
+	 sed -e "s!/.*\(/immodules/.*.so\)!@executable_path/../Resources/\1!" |\
+	 sed -e "s!/.*\(/share/locale\)!@executable_path/../Resources/\1!"; } \
+	> $@/gtk-2.0/gtk-immodules.loaders
+	$(MKDIR) $@/pango
+	echo "[Pango]" > $@/pango/pangorc
+
+$(COQIDEAPP)/Contents/Resources/lib: $(COQIDEAPP)/Contents/Resources/immodules $(COQIDEAPP)/Contents/Resources/loaders $(COQIDEAPP)/Contents $(COQIDEINAPP)
+	$(MKDIR) $@
+	$(INSTALLLIB) $(GTKLIBS)/charset.alias $@/
+	$(MKDIR) $@/pango/1.8.0/modules
+	$(INSTALLLIB) "$(GTKLIBS)/pango/1.8.0/modules/"*.so $@/pango/1.8.0/modules/
+	{ "$(GTKBIN)/pango-querymodules" $@/pango/1.8.0/modules/*.so |\
+	 sed -e "s!/.*\(/pango/1.8.0/modules/.*.so\)!@executable_path/../Resources/lib\1!"; } \
+	> $@/pango/1.8.0/modules.cache
+
+	for i in $$(otool -L $(COQIDEINAPP) |sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
+	    do cp $$i $@/; \
+	    ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$i) $(GTKLIBS) $@; \
+	done
+	for i in $@/../loaders/*.so $@/../immodules/*.so $@/pango/1.8.0/modules/*.so; \
+	    do \
+		for j in $$(otool -L $$i | sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
+		do cp $$j $@/; ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$j) $(GTKLIBS) $@; done; \
+		ide/MacOS/relatify_with-respect-to_.sh $$i $(GTKLIBS) $@; \
+	    done
+	EXTRAWORK=1; \
+	while [ $${EXTRAWORK} -eq 1 ]; \
+	do EXTRAWORK=0; \
+	    for i in $@/*.dylib; \
+	    do for j in $$(otool -L $$i | sed -n -e "\@$(GTKLIBS)@ s/[^/]*\(\/[^ ]*\) .*$$/\1/p"); \
+		do EXTRAWORK=1; cp $$j $@/; ide/MacOS/relatify_with-respect-to_.sh $@/$$(basename $$j) $(GTKLIBS) $@; done; \
+	    done; \
+	done
+	ide/MacOS/relatify_with-respect-to_.sh $(COQIDEINAPP) $(GTKLIBS) $@
+
+$(COQIDEAPP)/Contents/Resources:$(COQIDEAPP)/Contents/Resources/etc $(COQIDEAPP)/Contents/Resources/share
+	$(INSTALLLIB) ide/MacOS/*.icns $@
+
+$(COQIDEAPP):$(COQIDEAPP)/Contents/Resources
+	codesign -s - $@
 
 ###########################################################################
 # tests
