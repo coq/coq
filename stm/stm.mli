@@ -63,6 +63,8 @@ val get_current_state : unit -> Stateid.t
 val init : unit -> unit
 val slave_main_loop : unit -> unit
 val slave_init_stdout : unit -> unit
+val tacslave_main_loop : unit -> unit
+val tacslave_init_stdout : unit -> unit
 
 (* Filename *)
 val set_compilation_hints : string -> unit
@@ -87,3 +89,4 @@ val show_script : ?proof:Proof_global.closed_proof -> unit -> unit
 val process_error_hook : (exn -> exn) Hook.t
 val interp_hook : (?verbosely:bool -> ?proof:Proof_global.closed_proof ->
   Loc.t * Vernacexpr.vernac_expr -> unit) Hook.t
+val with_fail_hook : (bool -> (unit -> unit) -> unit) Hook.t

@@ -18,7 +18,12 @@ type spawn =
   args:string array -> env:string array -> unit ->
     in_channel * out_channel * Worker.process
 
-let slave_managers = ref None
+type worker = {
+  name : worker_id;
+  cancel : bool ref;
+  die : bool ref;
+  manager : Thread.t }
+let slave_managers : worker array option ref = ref None
 
 let n_workers () = match !slave_managers with
   | None -> 0
@@ -50,16 +55,26 @@ let init ~size:n ~manager:manage_slave mk_name =
     (Array.init n (fun x ->
        let name = mk_name x in
        let cancel = ref false in
-       name, cancel, Thread.create (manage_slave ~cancel name) (respawn name)))
+       let die = ref false in
+       let manager =
+         Thread.create (manage_slave ~cancel ~die name) (respawn name) in
+       { name; cancel; die; manager }))
 
-let cancel n =
+let foreach f =
   match !slave_managers with
   | None -> ()
   | Some a ->
-      for i = 0 to Array.length a - 1 do
-        let name, switch, _ = a.(i) in
-        if n = name then switch := true
-      done
+      for i = 0 to Array.length a - 1 do f a.(i) done
+
+let cancel n = foreach (fun { name; cancel } -> if n = name then cancel := true)
+
+let cancel_all () = foreach (fun { cancel } -> cancel := true)
+
+let kill_all () = foreach (fun { die } -> die := true)
+
+let destroy () =
+  kill_all ();
+  slave_managers := None
       
 let worker_handshake slave_ic slave_oc =
   try

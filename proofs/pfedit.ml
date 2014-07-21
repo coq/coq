@@ -95,6 +95,8 @@ let solve ?with_end_tac gi tac pr =
     let tac = match gi with
       | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
       | Vernacexpr.SelectAll -> tac
+      | Vernacexpr.SelectAllParallel ->
+          Errors.anomaly(str"SelectAllParallel not handled by Stm")
     in
     Proof.run_tactic (Global.env ()) tac pr
   with

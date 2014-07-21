@@ -18,8 +18,8 @@ module type Task = sig
   val extra_env : unit -> string array
 
   (* run by the master, on a thread *)
-  val request_of_task : task -> request option
-  val use_response : task -> response -> [ `Die | `Stay | `StayReset ]
+  val request_of_task : [ `Fresh | `Old ] -> task -> request option
+  val use_response : task -> response -> [ `Stay | `StayReset ]
   val on_marshal_error : string -> task -> unit
   val on_slave_death : task option -> [ `Exit of int | `Stay ]
   val on_task_cancellation_or_expiration : task option -> unit
@@ -40,6 +40,10 @@ module Make(T : Task) : sig
 
   (* Number of workers, 0 = lazy local *)
   val init : int -> unit
+  val destroy : unit -> unit
+
+  val with_n_workers :
+    int -> (join:(unit -> unit) -> cancel_all:(unit -> unit) -> 'a) -> 'a
 
   val n_workers : unit -> int
 
@@ -47,6 +51,7 @@ module Make(T : Task) : sig
 
   (* blocking function that waits for the task queue to be empty *)
   val join : unit -> unit
+  val cancel_all : unit -> unit
 
   (* slave process main loop *)
   val slave_main_loop : (unit -> unit) -> unit
@@ -54,7 +59,7 @@ module Make(T : Task) : sig
   
   val cancel_worker : string -> unit
 
-  val reorder_tasks : (T.task -> T.task -> int) -> unit
+  val set_order : (T.task -> T.task -> int) -> unit
 
   val dump : unit -> T.task list
 

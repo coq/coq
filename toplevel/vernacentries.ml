@@ -1904,6 +1904,32 @@ let locate_if_not_already loc exn =
 exception HasNotFailed
 exception HasFailed of string
 
+let with_fail b f =
+  if not b then f ()
+  else begin try
+      (* If the command actually works, ignore its effects on the state.
+       * Note that error has to be printed in the right state, hence
+       * within the purified function *)
+      Future.purify
+        (fun v ->
+           try f v; raise HasNotFailed
+           with
+           | HasNotFailed as e -> raise e
+           | e -> raise (HasFailed (Pp.string_of_ppcmds
+              (Errors.print (Cerrors.process_vernac_interp_error e)))))
+        ()
+    with e when Errors.noncritical e -> 
+      let e = Errors.push e in
+      match e with
+      | HasNotFailed ->
+          errorlabstrm "Fail" (str "The command has not failed!")
+      | HasFailed msg ->
+          if is_verbose () || !Flags.ide_slave then msg_info
+    	(str "The command has indeed failed with message:" ++
+    	 fnl () ++ str "=> " ++ hov 0 (str msg))
+      | _ -> assert false
+  end
+
 let interp ?(verbosely=true) ?proof (loc,c) =
   let orig_program_mode = Flags.is_program_mode () in
   let rec aux ?locality ?polymorphism isprogcmd = function
@@ -1919,31 +1945,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     | VernacStm (PGLast c) -> aux ?locality ?polymorphism isprogcmd c
     | VernacStm _ -> assert false (* Done by Stm *)
     | VernacFail v ->
-	begin try
-	  (* If the command actually works, ignore its effects on the state.
-           * Note that error has to be printed in the right state, hence
-           * within the purified function *)
-	  Future.purify
-	    (fun v ->
-               try
-                 aux ?locality ?polymorphism isprogcmd v;
-                 raise HasNotFailed
-               with
-               | HasNotFailed as e -> raise e
-               | e -> raise (HasFailed (Pp.string_of_ppcmds
-                  (Errors.print (Cerrors.process_vernac_interp_error e)))))
-            v
-        with e when Errors.noncritical e -> 
-          let e = Errors.push e in
-          match e with
-	  | HasNotFailed ->
-	      errorlabstrm "Fail" (str "The command has not failed!")
-	  | HasFailed msg ->
-	      if is_verbose () || !Flags.ide_slave then msg_info
-		(str "The command has indeed failed with message:" ++
-		 fnl () ++ str "=> " ++ hov 0 (str msg))
-          | _ -> assert false
-	end
+        with_fail true (fun () -> aux ?locality ?polymorphism isprogcmd v)
     | VernacTimeout (n,v) ->
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
@@ -1978,3 +1980,4 @@ let interp ?(verbosely=true) ?proof (loc,c) =
 
 let () = Hook.set Stm.interp_hook interp
 let () = Hook.set Stm.process_error_hook Cerrors.process_vernac_interp_error
+let () = Hook.set Stm.with_fail_hook with_fail

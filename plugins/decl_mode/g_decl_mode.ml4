@@ -106,7 +106,7 @@ let proof_instr : raw_proof_instr Gram.entry =
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr
 
-let classify_proof_instr _ = VtProofStep, VtLater
+let classify_proof_instr _ = VtProofStep false, VtLater
 
 (* We use the VERNAC EXTEND facility with a custom non-terminal
     to populate [proof_mode] with a new toplevel interpreter.

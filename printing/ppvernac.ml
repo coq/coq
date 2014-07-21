@@ -778,6 +778,7 @@ let rec pr_vernac = function
       let pr_goal_selector = function
         | SelectNth i -> int i ++ str":"
         | SelectAll -> str"all" ++ str":"
+        | SelectAllParallel -> str"par"
       in
       (if i = Proof_global.get_default_goal_selector () then mt() else pr_goal_selector i) ++
       pr_raw_tactic tac

@@ -54,3 +54,5 @@ val make_cases : string -> string list list
 
 val vernac_end_proof :
   ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
+
+val with_fail : bool -> (unit -> unit) -> unit

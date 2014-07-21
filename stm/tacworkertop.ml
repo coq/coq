@@ -6,19 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Thread safe queue with some extras *)
+let () = Coqtop.toploop_init := (fun args ->
+        Flags.make_silent true;
+        Stm.tacslave_init_stdout ();
+        args)
 
-type 'a t
-val create : unit -> 'a t
-val pop : 'a t -> 'a
-val push : 'a t -> 'a -> unit
-val set_order : 'a t -> ('a -> 'a -> int) -> unit
-val wait_until_n_are_waiting_and_queue_empty : int -> 'a t -> unit
-val dump : 'a t -> 'a list
-val clear : 'a t -> unit
-val is_empty : 'a t -> bool
+let () = Coqtop.toploop_run := Stm.tacslave_main_loop
 
-exception BeingDestroyed
-(* Threads blocked in pop can get this exception if the queue is being
- * destroyed *)
-val destroy : 'a t -> unit

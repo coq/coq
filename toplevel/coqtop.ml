@@ -353,6 +353,8 @@ let parse_args arglist =
         Flags.async_proofs_mode := get_async_proofs_mode opt (next())
     |"-async-proofs-j" ->
         Flags.async_proofs_n_workers := (get_int opt (next ()))
+    |"-async-proofs-tac-j" ->
+        Flags.async_proofs_n_tacworkers := (get_int opt (next ()))
     |"-async-proofs-private-flags" ->
         Flags.async_proofs_private_flags := Some (next ());
     |"-worker-id" -> set_worker_id opt (next ())

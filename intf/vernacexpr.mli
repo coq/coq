@@ -31,6 +31,7 @@ type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 type goal_selector =
   | SelectNth of int
   | SelectAll
+  | SelectAllParallel
 
 type goal_identifier = string
 type scope_name = string
@@ -447,7 +448,7 @@ type vernac_type =
   | VtStartProof of vernac_start
   | VtSideff of vernac_sideff_type
   | VtQed of vernac_qed_type
-  | VtProofStep
+  | VtProofStep of bool (* parallelize *)
   | VtProofMode of string
   | VtQuery of vernac_part_of_script * report_with
   | VtStm of vernac_control * vernac_part_of_script

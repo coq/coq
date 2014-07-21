@@ -529,6 +529,7 @@ let get_default_goal_selector () = !default_goal_selector
 let print_goal_selector = function
   | Vernacexpr.SelectAll -> "all"
   | Vernacexpr.SelectNth i -> string_of_int i
+  | Vernacexpr.SelectAllParallel -> "par"
 
 let parse_goal_selector = function
   | "all" -> Vernacexpr.SelectAll

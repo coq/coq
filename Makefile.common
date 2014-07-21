@@ -162,7 +162,7 @@ CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma \
 	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma tactics/hightactics.cma
 
-TOPLOOPCMA:=stm/stmworkertop.cma
+TOPLOOPCMA:=stm/stmworkertop.cma stm/tacworkertop.cma
 
 GRAMMARCMA:=tools/compat5.cmo grammar/grammar.cma
 

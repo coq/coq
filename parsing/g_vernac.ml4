@@ -119,7 +119,8 @@ GEXTEND Gram
 
   selector:
     [ [ n=natural; ":" -> SelectNth n
-      | IDENT "all" ; ":" -> SelectAll ] ]
+      | IDENT "all" ; ":" -> SelectAll
+      | IDENT "par" ; ":" -> SelectAllParallel ] ]
   ;
 
   tactic_mode:

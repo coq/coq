@@ -51,6 +51,7 @@ let compilation_mode = ref BuildVo
 type async_proofs = APoff | APonLazy | APon
 let async_proofs_mode = ref APoff
 let async_proofs_n_workers = ref 1
+let async_proofs_n_tacworkers = ref 2
 let async_proofs_private_flags = ref None
 let async_proofs_always_delegate = ref false
 let async_proofs_never_reopen_branch = ref false
