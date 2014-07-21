@@ -57,6 +57,7 @@ val inspect : int -> std_ppcmds
 val print_located_qualid : reference -> std_ppcmds
 val print_located_term : reference -> std_ppcmds
 val print_located_tactic : reference -> std_ppcmds
+val print_located_module : reference -> std_ppcmds
 
 type object_pr = {
   print_inductive           : mutual_inductive -> std_ppcmds;

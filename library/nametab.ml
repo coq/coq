@@ -431,6 +431,8 @@ let locate_extended_all_tactic qid = KnTab.find_prefixes qid !the_tactictab
 
 let locate_extended_all_dir qid = DirTab.find_prefixes qid !the_dirtab
 
+let locate_extended_all_modtype qid = MPTab.find_prefixes qid !the_modtypetab
+
 (* Derived functions *)
 
 let locate_constant qid =
@@ -489,6 +491,9 @@ let dirpath_of_module mp =
 
 let path_of_tactic kn =
   KNmap.find kn !the_tacticrevtab
+
+let path_of_modtype mp =
+  MPmap.find mp !the_modtyperevtab
 
 (* Shortest qualid functions **********************************************)
 

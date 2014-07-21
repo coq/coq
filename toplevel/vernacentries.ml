@@ -397,17 +397,6 @@ let print_located_library r =
     | Library.LibUnmappedDir -> err_unmapped_library loc qid
     | Library.LibNotFound -> err_notfound_library loc qid
 
-let print_located_module r =
-  let (loc,qid) = qualid_of_reference r in
-  try
-    let dir = Nametab.full_name_module qid in
-    msg_notice (str "Module " ++ pr_dirpath dir)
-  with Not_found ->
-    if DirPath.is_empty (fst (repr_qualid qid)) then
-      msg_error (str "No module is referred to by basename" ++ spc () ++ pr_qualid qid)
-    else
-      msg_error (str "No module is referred to by name" ++ spc () ++ pr_qualid qid)
-
 let smart_global r =
   let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob (Constrarg.loc_of_or_by_notation loc_of_reference r) gr;
@@ -1540,7 +1529,7 @@ let vernac_locate = function
         (Notation.locate_notation
           (Constrextern.without_symbols pr_lglob_constr) ntn sc)
   | LocateLibrary qid -> print_located_library qid
-  | LocateModule qid -> print_located_module qid
+  | LocateModule qid -> msg_notice (print_located_module qid)
   | LocateTactic qid -> msg_notice (print_located_tactic qid)
   | LocateFile f -> msg_notice (locate_file f)
 

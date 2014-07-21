@@ -113,6 +113,7 @@ val locate_all : qualid -> global_reference list
 val locate_extended_all : qualid -> extended_global_reference list
 val locate_extended_all_tactic : qualid -> ltac_constant list
 val locate_extended_all_dir : qualid -> global_dir_reference list
+val locate_extended_all_modtype : qualid -> module_path list
 
 (** Mapping a full path to a global reference *)
 
@@ -143,6 +144,7 @@ val full_name_module : qualid -> DirPath.t
 val path_of_syndef : syndef_name -> full_path
 val path_of_global : global_reference -> full_path
 val dirpath_of_module : module_path -> DirPath.t
+val path_of_modtype : module_path -> full_path
 val path_of_tactic : ltac_constant -> full_path
 
 (** Returns in particular the dirpath or the basename of the full path

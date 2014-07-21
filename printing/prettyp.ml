@@ -262,7 +262,7 @@ type logical_name =
   | Term of global_reference
   | Dir of global_dir_reference
   | Syntactic of kernel_name
-  | ModuleType of qualid * module_path
+  | ModuleType of module_path
   | Tactic of Nametab.ltac_constant
   | Undefined of qualid
 
@@ -274,7 +274,7 @@ let locate_any_name ref =
   with Not_found ->
   try Dir (Nametab.locate_dir qid)
   with Not_found ->
-  try ModuleType (qid, Nametab.locate_modtype qid)
+  try ModuleType (Nametab.locate_modtype qid)
   with Not_found -> Undefined qid
 
 let pr_located_qualid = function
@@ -296,8 +296,8 @@ let pr_located_qualid = function
 	| DirClosedSection dir -> "Closed Section", dir
       in
       str s ++ spc () ++ pr_dirpath dir
-  | ModuleType (qid,_) ->
-      str "Module Type" ++ spc () ++ pr_path (Nametab.full_name_modtype qid)
+  | ModuleType mp ->
+      str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
   | Tactic kn ->
       str "Ltac" ++ spc () ++ pr_path (Nametab.path_of_tactic kn)
   | Undefined qid ->
@@ -350,10 +350,23 @@ let locate_module qid =
   in
   List.map_filter map all
 
+let locate_modtype qid =
+  let all = Nametab.locate_extended_all_modtype qid in
+  let map mp = ModuleType mp, Nametab.shortest_qualid_of_modtype mp in
+  let modtypes = List.map map all in
+  (** Don't forget the opened module types: they are not part of the same name tab. *)
+  let all = Nametab.locate_extended_all_dir qid in
+  let map dir = match dir with
+  | DirOpenModtype _ -> Some (Dir dir, qid)
+  | _ -> None
+  in
+  modtypes @ List.map_filter map all
+
 let print_located_qualid name flags ref =
   let (loc,qid) = qualid_of_reference ref in
   let located = [] in
   let located = if List.mem `LTAC flags then locate_tactic qid @ located else located in
+  let located = if List.mem `MODTYPE flags then locate_modtype qid @ located else located in
   let located = if List.mem `MODULE flags then locate_module qid @ located else located in
   let located = if List.mem `TERM flags then locate_term qid @ located else located in
   match located with
@@ -375,7 +388,8 @@ let print_located_qualid name flags ref =
 
 let print_located_term ref = print_located_qualid "term" [`TERM] ref
 let print_located_tactic ref = print_located_qualid "tactic" [`LTAC] ref
-let print_located_qualid ref = print_located_qualid "object" [`TERM; `LTAC; `MODULE] ref
+let print_located_module ref = print_located_qualid "module" [`MODULE; `MODTYPE] ref
+let print_located_qualid ref = print_located_qualid "object" [`TERM; `LTAC; `MODULE; `MODTYPE] ref
 
 (******************************************)
 (**** Printing declarations and judgments *)
@@ -662,7 +676,7 @@ let print_any_name = function
   | Syntactic kn -> print_syntactic_def kn
   | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
   | Dir _ -> mt ()
-  | ModuleType (_,kn) -> print_modtype kn
+  | ModuleType mp -> print_modtype mp
   | Tactic kn -> mt () (** TODO *)
   | Undefined qid ->
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
