@@ -427,6 +427,8 @@ let locate_all qid =
 
 let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
 
+let locate_extended_all_tactic qid = KnTab.find_prefixes qid !the_tactictab
+
 (* Derived functions *)
 
 let locate_constant qid =

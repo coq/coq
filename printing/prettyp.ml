@@ -349,6 +349,27 @@ let print_located_qualid ref =
 	   else mt ()) ++
           display_alias o)) l
 
+let print_located_tactic r =
+  let (loc,qid) = qualid_of_reference r in
+  let all = Nametab.locate_extended_all_tactic qid in
+  let ans = List.map (fun qid -> (qid, Nametab.shortest_qualid_of_tactic qid)) all in
+  match ans with
+  | [] ->
+    str "No Ltac definition is referred to by " ++ pr_qualid qid
+  | _ ->
+    let print (obj, oqid) =
+      let path = Nametab.path_of_tactic obj in
+      let msg = str "Ltac" ++ spc () ++ pr_path path in
+      let short =
+        if not (qualid_eq oqid qid) then
+          spc() ++ str "(shorter name to refer to it in current context is "
+          ++ pr_qualid oqid ++ str")"
+        else mt ()
+      in
+      hov 2 (msg ++ short)
+    in
+    prlist_with_sep fnl print ans
+
 (******************************************)
 (**** Printing declarations and judgments *)
 (****  Gallina layer                  *****)
