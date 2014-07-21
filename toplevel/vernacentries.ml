@@ -1532,8 +1532,10 @@ let vernac_search s r =
       msg_notice (Search.search_about (List.map (on_snd interp_search_about_item) sl) r)
 
 let vernac_locate = function
-  | LocateTerm (AN qid) -> msg_notice (print_located_qualid qid)
-  | LocateTerm (ByNotation (_,ntn,sc)) ->
+  | LocateAny (AN qid) -> msg_notice (print_located_qualid qid)
+  | LocateTerm (AN qid) -> msg_notice (print_located_term qid)
+  | LocateAny (ByNotation (_, ntn, sc)) (** TODO : handle Ltac notations *)
+  | LocateTerm (ByNotation (_, ntn, sc)) ->
       msg_notice
         (Notation.locate_notation
           (Constrextern.without_symbols pr_lglob_constr) ntn sc)

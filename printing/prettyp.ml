@@ -263,6 +263,7 @@ type logical_name =
   | Dir of global_dir_reference
   | Syntactic of kernel_name
   | ModuleType of qualid * module_path
+  | Tactic of Nametab.ltac_constant
   | Undefined of qualid
 
 let locate_any_name ref =
@@ -297,6 +298,8 @@ let pr_located_qualid = function
       str s ++ spc () ++ pr_dirpath dir
   | ModuleType (qid,_) ->
       str "Module Type" ++ spc () ++ pr_path (Nametab.full_name_modtype qid)
+  | Tactic kn ->
+      str "Ltac" ++ spc () ++ pr_path (Nametab.path_of_tactic kn)
   | Undefined qid ->
       pr_qualid qid ++ spc () ++ str "not a defined object."
 
@@ -325,20 +328,41 @@ let display_alias = function
     end
   | _ -> mt ()
 
-let print_located_qualid ref =
-  let (loc,qid) = qualid_of_reference ref in
+let locate_term qid =
   let expand = function
     | TrueGlobal ref ->
-	Term ref, Nametab.shortest_qualid_of_global Id.Set.empty ref
+        Term ref, Nametab.shortest_qualid_of_global Id.Set.empty ref
     | SynDef kn ->
-	Syntactic kn, Nametab.shortest_qualid_of_syndef Id.Set.empty kn in
-  match List.map expand (Nametab.locate_extended_all qid) with
+        Syntactic kn, Nametab.shortest_qualid_of_syndef Id.Set.empty kn
+  in
+  List.map expand (Nametab.locate_extended_all qid)
+
+let locate_tactic qid =
+  let all = Nametab.locate_extended_all_tactic qid in
+  List.map (fun kn -> (Tactic kn, Nametab.shortest_qualid_of_tactic kn)) all
+
+let locate_module qid =
+  let all = Nametab.locate_extended_all_dir qid in
+  let map dir = match dir with
+  | DirModule (_, (mp, _)) -> Some (Dir dir, Nametab.shortest_qualid_of_module mp)
+  | DirOpenModule _ -> Some (Dir dir, qid)
+  | _ -> None
+  in
+  List.map_filter map all
+
+let print_located_qualid name flags ref =
+  let (loc,qid) = qualid_of_reference ref in
+  let located = [] in
+  let located = if List.mem `LTAC flags then locate_tactic qid @ located else located in
+  let located = if List.mem `MODULE flags then locate_module qid @ located else located in
+  let located = if List.mem `TERM flags then locate_term qid @ located else located in
+  match located with
     | [] ->
 	let (dir,id) = repr_qualid qid in
 	if DirPath.is_empty dir then
-	  str "No object of basename " ++ pr_id id
+	  str ("No " ^ name ^ " of basename") ++ spc () ++ pr_id id
 	else
-	  str "No object of suffix " ++ pr_qualid qid
+	  str ("No " ^ name ^ " of suffix") ++ pr_qualid qid
     | l ->
 	prlist_with_sep fnl
 	(fun (o,oqid) ->
@@ -349,26 +373,9 @@ let print_located_qualid ref =
 	   else mt ()) ++
           display_alias o)) l
 
-let print_located_tactic r =
-  let (loc,qid) = qualid_of_reference r in
-  let all = Nametab.locate_extended_all_tactic qid in
-  let ans = List.map (fun qid -> (qid, Nametab.shortest_qualid_of_tactic qid)) all in
-  match ans with
-  | [] ->
-    str "No Ltac definition is referred to by " ++ pr_qualid qid
-  | _ ->
-    let print (obj, oqid) =
-      let path = Nametab.path_of_tactic obj in
-      let msg = str "Ltac" ++ spc () ++ pr_path path in
-      let short =
-        if not (qualid_eq oqid qid) then
-          spc() ++ str "(shorter name to refer to it in current context is "
-          ++ pr_qualid oqid ++ str")"
-        else mt ()
-      in
-      hov 2 (msg ++ short)
-    in
-    prlist_with_sep fnl print ans
+let print_located_term ref = print_located_qualid "term" [`TERM] ref
+let print_located_tactic ref = print_located_qualid "tactic" [`LTAC] ref
+let print_located_qualid ref = print_located_qualid "object" [`TERM; `LTAC; `MODULE] ref
 
 (******************************************)
 (**** Printing declarations and judgments *)
@@ -656,6 +663,7 @@ let print_any_name = function
   | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
   | Dir _ -> mt ()
   | ModuleType (_,kn) -> print_modtype kn
+  | Tactic kn -> mt () (** TODO *)
   | Undefined qid ->
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
@@ -710,7 +718,7 @@ let print_about_any loc k =
       v 0 (
       print_syntactic_def kn ++ fnl () ++
       hov 0 (str "Expands to: " ++ pr_located_qualid k))
-  | Dir _ | ModuleType _ | Undefined _ ->
+  | Dir _ | ModuleType _ | Tactic _ | Undefined _ ->
       hov 0 (pr_located_qualid k)
 
 let print_about = function

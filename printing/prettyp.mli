@@ -53,7 +53,9 @@ val print_all_instances : unit -> std_ppcmds
 val inspect : int -> std_ppcmds
 
 (** Locate *)
+
 val print_located_qualid : reference -> std_ppcmds
+val print_located_term : reference -> std_ppcmds
 val print_located_tactic : reference -> std_ppcmds
 
 type object_pr = {

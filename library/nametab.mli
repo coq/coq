@@ -112,6 +112,7 @@ val global_inductive : reference -> inductive
 val locate_all : qualid -> global_reference list
 val locate_extended_all : qualid -> extended_global_reference list
 val locate_extended_all_tactic : qualid -> ltac_constant list
+val locate_extended_all_dir : qualid -> global_dir_reference list
 
 (** Mapping a full path to a global reference *)
 

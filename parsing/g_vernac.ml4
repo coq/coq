@@ -908,7 +908,8 @@ GEXTEND Gram
       | qid = smart_global -> RefClass qid ] ]
   ;
   locatable:
-    [ [ qid = smart_global -> LocateTerm qid
+    [ [ qid = smart_global -> LocateAny qid
+      | IDENT "Term"; qid = smart_global -> LocateTerm qid
       | IDENT "File"; f = ne_string -> LocateFile f
       | IDENT "Library"; qid = global -> LocateLibrary qid
       | IDENT "Module"; qid = global -> LocateModule qid

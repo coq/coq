@@ -924,7 +924,8 @@ let rec pr_vernac = function
   | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_constr_pattern_expr
   | VernacLocate loc ->
       let pr_locate =function
-	| LocateTerm qid -> pr_smart_global qid
+        | LocateAny qid -> pr_smart_global qid
+        | LocateTerm qid -> str "Term" ++ spc() ++ pr_smart_global qid
 	| LocateFile f -> str"File" ++ spc() ++ qs f
 	| LocateLibrary qid -> str"Library" ++ spc () ++ pr_module qid
 	| LocateModule qid -> str"Module" ++ spc () ++ pr_module qid

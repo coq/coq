@@ -88,6 +88,7 @@ type searchable =
   | SearchAbout of (bool * search_about_item) list
 
 type locatable =
+  | LocateAny of reference or_by_notation
   | LocateTerm of reference or_by_notation
   | LocateLibrary of reference
   | LocateModule of reference
