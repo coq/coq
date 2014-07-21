@@ -249,7 +249,7 @@ let coqtop_path () =
 	    let i = Str.search_backward (Str.regexp_string "coqide") prog pos
             in
 	    String.blit "coqtop" 0 prog i 6;
-	    prog
+	    if Sys.file_exists prog then prog else "coqtop"
 	  with Not_found -> "coqtop"
   in file
 
