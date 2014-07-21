@@ -375,7 +375,7 @@ let print_located_qualid name flags ref =
 	if DirPath.is_empty dir then
 	  str ("No " ^ name ^ " of basename") ++ spc () ++ pr_id id
 	else
-	  str ("No " ^ name ^ " of suffix") ++ pr_qualid qid
+	  str ("No " ^ name ^ " of suffix") ++ spc () ++ pr_qualid qid
     | l ->
 	prlist_with_sep fnl
 	(fun (o,oqid) ->
