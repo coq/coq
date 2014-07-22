@@ -323,17 +323,19 @@ $(COQIDEBYTE): $(LINKIDE)
 
 # install targets
 
-.PHONY: install-coqide install-ide-bin install-ide-files install-ide-info install-ide-devfiles
+.PHONY: install-coqide install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles
 
 ifeq ($(HASCOQIDE),no)
 install-coqide:
 else
-install-coqide: install-ide-bin install-ide-files install-ide-info install-ide-devfiles
+install-coqide: install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles
 endif
 
 install-ide-bin:
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQIDE) $(FULLBINDIR)
+
+install-ide-toploop:
 	$(MKDIR) $(FULLCOQLIB)/toploop
 	$(INSTALLBIN) $(IDETOPLOOPCMA) $(FULLCOQLIB)/toploop/
 ifeq ($(BEST),opt)
