@@ -78,13 +78,13 @@ type closed_proof = proof_object * proof_terminator
     closing commands and the xml plugin); [terminator] is used at the
     end of the proof to close the proof. *)
 val start_proof :
-  Names.Id.t -> Decl_kinds.goal_kind -> Evd.evar_universe_context -> (Environ.env * Term.types) list  ->
+  Evd.evar_map -> Names.Id.t -> Decl_kinds.goal_kind -> (Environ.env * Term.types) list  ->
     proof_terminator -> unit
 
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
 val start_dependent_proof :
-  Names.Id.t -> Decl_kinds.goal_kind -> Evd.evar_universe_context -> Proofview.telescope  ->
+  Evd.evar_map -> Names.Id.t -> Decl_kinds.goal_kind -> Proofview.telescope  ->
     proof_terminator -> unit
 
 (* Takes a function to add to the exceptions data relative to the

@@ -216,28 +216,30 @@ let activate_proof_mode mode =
 let disactivate_proof_mode mode =
   Ephemeron.iter_opt (find_proof_mode mode) (fun x -> x.reset ())
 
-(** [start_proof id str goals terminator] starts a proof of name [id]
-    with goals [goals] (a list of pairs of environment and
+(** [start_proof sigma id str goals terminator] starts a proof of name
+    [id] with goals [goals] (a list of pairs of environment and
     conclusion); [str] describes what kind of theorem/definition this
     is (spiwack: for potential printing, I believe is used only by
     closing commands and the xml plugin); [terminator] is used at the
-    end of the proof to close the proof. *)
-let start_proof id str ctx goals terminator =
+    end of the proof to close the proof. The proof is started in the
+    evar map [sigma] (which can typically contain universe
+    constraints). *)
+let start_proof sigma id str goals terminator =
   let initial_state = {
     pid = id;
     terminator = Ephemeron.create terminator;
-    proof = Proof.start (Evd.from_env ~ctx (Global.env ())) goals;
+    proof = Proof.start sigma goals;
     endline_tactic = None;
     section_vars = None;
     strength = str;
     mode = find_proof_mode "No" } in
   push initial_state pstates
 
-let start_dependent_proof id str ctx goals terminator =
+let start_dependent_proof sigma id str goals terminator =
   let initial_state = {
     pid = id;
     terminator = Ephemeron.create terminator;
-    proof = Proof.dependent_start (Evd.from_env ~ctx (Global.env ())) goals;
+    proof = Proof.dependent_start sigma goals;
     endline_tactic = None;
     section_vars = None;
     strength = str;

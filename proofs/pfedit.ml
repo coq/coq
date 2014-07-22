@@ -27,7 +27,7 @@ let delete_all_proofs = Proof_global.discard_all
 
 let start_proof (id : Id.t) str ctx hyps c ?init_tac terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
-  Proof_global.start_proof id str ctx goals terminator;
+  Proof_global.start_proof (Evd.from_env ~ctx (Global.env ())) id str goals terminator;
   let env = Global.env () in
   ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
