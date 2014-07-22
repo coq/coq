@@ -6,7 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** [start_deriving f init r lemma] starts a proof of [r init
-    ?x]. When the proof ends, [f] is defined as the value of [?x] and
-    [lemma] as the proof. *)
-val start_deriving : Names.Id.t -> Constrexpr.constr_expr -> Constrexpr.constr_expr -> Names.Id.t -> unit
+(** [start_deriving f suchthat lemma] starts a proof of [suchthat]
+    (which can contain references to [f]) in the context extended by
+    [f:=?x]. When the proof ends, [f] is defined as the value of [?x]
+    and [lemma] as the proof. *)
+val start_deriving : Names.Id.t -> Constrexpr.constr_expr -> Names.Id.t -> unit

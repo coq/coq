@@ -11,6 +11,6 @@
 let classify_derive_command _ = Vernacexpr.(VtStartProof ("Classic",Doesn'tGuaranteeOpacity,[]),VtLater)
 
 VERNAC COMMAND EXTEND Derive CLASSIFIED BY classify_derive_command
-| [ "Derive" ident(f) "From" constr(init) "Upto" constr(r) "As" ident(lemma) ] ->
-     [ Derive.start_deriving f init r lemma ]
+| [ "Derive" ident(f) "SuchThat" constr(suchthat) "As" ident(lemma) ] ->
+     [ Derive.start_deriving f suchthat lemma ]
 END
