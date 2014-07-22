@@ -40,13 +40,13 @@ type entry
 val init : Evd.evar_map -> (Environ.env * Term.types) list -> entry * proofview
 
 type telescope =
-  | TNil
-  | TCons of Environ.env * Term.types * (Term.constr -> telescope)
+  | TNil of Evd.evar_map
+  | TCons of Environ.env * Evd.evar_map * Term.types * (Evd.evar_map -> Term.constr -> telescope)
 
 (* Like [init], but goals are allowed to be depedenent on one
    another. Dependencies between goals is represented with the type
    [telescope] instead of [list]. *)
-val dependent_init  : Evd.evar_map -> telescope -> entry * proofview
+val dependent_init  : telescope -> entry * proofview
 
 (* Returns whether this proofview is finished or not. That is,
    if it has empty subgoals in the comb. There could still be unsolved

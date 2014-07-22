@@ -237,8 +237,8 @@ let start sigma goals =
     shelf = [] ;
     given_up = [] } in
   _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
-let dependent_start sigma goals =
-  let entry, proofview = Proofview.dependent_init sigma goals in
+let dependent_start goals =
+  let entry, proofview = Proofview.dependent_init goals in
   let pr = {
     proofview;
     entry;

@@ -84,7 +84,7 @@ val start_proof :
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
 val start_dependent_proof :
-  Evd.evar_map -> Names.Id.t -> Decl_kinds.goal_kind -> Proofview.telescope  ->
+  Names.Id.t -> Decl_kinds.goal_kind -> Proofview.telescope  ->
     proof_terminator -> unit
 
 (* Takes a function to add to the exceptions data relative to the

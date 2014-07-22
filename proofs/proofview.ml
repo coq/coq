@@ -51,22 +51,22 @@ let init sigma =
     entry, { v with solution = Typeclasses.mark_unresolvables v.solution }
 
 type telescope =
-  | TNil
-  | TCons of Environ.env * Term.types * (Term.constr -> telescope)
+  | TNil of Evd.evar_map
+  | TCons of Environ.env * Evd.evar_map * Term.types * (Evd.evar_map -> Term.constr -> telescope)
 
 let dependent_init =
-  let rec aux sigma = function
-  | TNil -> [], { solution = sigma; comb = []; }
-  | TCons (env, typ, t) ->
+  let rec aux = function
+  | TNil sigma -> [], { solution = sigma; comb = []; }
+  | TCons (env, sigma, typ, t) ->
     let (sigma, econstr ) = Evarutil.new_evar sigma env typ in
-    let ret, { solution = sol; comb = comb } = aux sigma (t econstr) in
+    let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let (e, _) = Term.destEvar econstr in
     let gl = Goal.build e in
     let entry = (econstr, typ) :: ret in
     entry, { solution = sol; comb = gl :: comb; }
   in
-  fun sigma t ->
-    let entry, v = aux sigma t in
+  fun t ->
+    let entry, v = aux t in
     (* Marks all the goal unresolvable for typeclasses. *)
     entry, { v with solution = Typeclasses.mark_unresolvables v.solution }
 

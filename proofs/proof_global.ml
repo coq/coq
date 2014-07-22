@@ -235,11 +235,11 @@ let start_proof sigma id str goals terminator =
     mode = find_proof_mode "No" } in
   push initial_state pstates
 
-let start_dependent_proof sigma id str goals terminator =
+let start_dependent_proof id str goals terminator =
   let initial_state = {
     pid = id;
     terminator = Ephemeron.create terminator;
-    proof = Proof.dependent_start sigma goals;
+    proof = Proof.dependent_start goals;
     endline_tactic = None;
     section_vars = None;
     strength = str;
