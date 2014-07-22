@@ -33,6 +33,7 @@ type guard_error =
   | RecCallInCaseArg of constr
   | RecCallInCasePred of constr
   | NotGuardedForm of constr
+  | ReturnPredicateNotCoInductive of constr
 
 type arity_error =
   | NonInformativeToInformative

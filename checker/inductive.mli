@@ -73,10 +73,6 @@ type guard_env =
   { env     : env;
     (* dB of last fixpoint *)
     rel_min : int;
-    (* inductive of recarg of each fixpoint *)
-    inds    : inductive array;
-    (* the recarg information of inductive family *)
-    recvec  : wf_paths array;
     (* dB of variables denoting subterms *)
     genv    : subterm_spec Lazy.t list;
   }

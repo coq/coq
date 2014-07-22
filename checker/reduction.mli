@@ -47,5 +47,7 @@ val hnf_prod_applist : env -> constr -> constr list -> constr
 
 val dest_prod       : env -> constr -> rel_context * constr
 val dest_prod_assum : env -> constr -> rel_context * constr
+val dest_lam_assum  : env -> constr -> rel_context * constr
+
 
 val dest_arity : env -> constr -> arity
