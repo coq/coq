@@ -150,6 +150,13 @@ module PatternMatching (E:StaticEnvironment) = struct
       right hand substitution shadows the left hand one. *)
   let term_subst_prod = id_map_right_biased_union
 
+  (** Merge two writers (and ignore the first value component). *)
+  let merge m1 m2 = {
+    subst = subst_prod m1.subst m2.subst;
+    context = context_subst_prod m1.context m2.context;
+    terms = term_subst_prod m1.terms m2.terms;
+    lhs = m2.lhs;
+  }
 
   (** Monadic [return]: returns a single success with empty substitutions. *)
   let return (type a) (lhs:a) : a m =
@@ -173,22 +180,17 @@ module PatternMatching (E:StaticEnvironment) = struct
     | Done s ->
       begin match peek s with
       | Nil -> Nil
-      | Cons ({ subst=substx; context=contextx; terms=termsx; lhs=lhsx } as m, s) ->
-        let r = f lhsx in
+      | Cons (m, s) ->
+        let r = f m.lhs in
         let m = { m with lhs = () } in
         make (Next (m, s, r))
       end
     | Next (m, s, r) ->
       begin match peek r with
       | Nil -> make (Done s)
-      | Cons ({ subst=substf; context=contextf; terms=termsf; lhs=lhsf }, r) ->
+      | Cons (mf, r) ->
         try
-          let ans = {
-            subst = subst_prod m.subst substf ;
-            context = context_subst_prod m.context contextf ;
-            terms = term_subst_prod m.terms termsf ;
-            lhs = lhsf
-          } in
+          let ans = merge m mf in
           Cons (ans, (Next (m, s, r)))
         with Not_coherent_metas -> make (Next (m, s, r))
       end
@@ -207,14 +209,9 @@ module PatternMatching (E:StaticEnvironment) = struct
     | Next (m, s, r) ->
       begin match peek r with
       | Nil -> make (Done s)
-      | Cons ({ subst=substf; context=contextf; terms=termsf; lhs=lhsf }, r) ->
+      | Cons (mf, r) ->
         try
-          let ans = {
-            subst = subst_prod m.subst substf ;
-            context = context_subst_prod m.context contextf ;
-            terms = term_subst_prod m.terms termsf ;
-            lhs = lhsf
-          } in
+          let ans = merge m mf in
           Cons (ans, (Next (m, s, r)))
         with Not_coherent_metas -> make (Next (m, s, r))
       end
