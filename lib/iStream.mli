@@ -42,6 +42,9 @@ val is_empty : 'a t -> bool
 val peek : 'a t -> ('a , 'a t) u
 (** Return the head and the tail of a stream, if any. *)
 
+val is_val : 'a t -> bool
+(** Check if the head has already been evaluated. *)
+
 (** {6 Standard operations}
 
     All stream-returning functions are lazy. The other ones are eager. *)

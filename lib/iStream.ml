@@ -38,6 +38,8 @@ let is_empty s = match Lazy.force s with
 
 let peek = Lazy.force
 
+let is_val = Lazy.is_val
+
 let rec of_list = function
 | [] -> empty
 | x :: l -> cons x (of_list l)
