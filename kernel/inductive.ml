@@ -520,18 +520,12 @@ let spec_of_tree t =
 let subterm_spec_glb init =
   let glb2 s1 s2 = 
     match s1, s2 with
-        s1, Dead_code -> s1
-      | Dead_code, s2 -> s2
+        _, Dead_code -> s1
+      | Dead_code, _ -> s2
       | Not_subterm, _ -> Not_subterm
       | _, Not_subterm -> Not_subterm
       | Subterm (a1,t1), Subterm (a2,t2) ->
-          Pp.msg_info (Pp.str "t1 = ");
-          Pp.msg_info (pp_wf_paths t1);
-          Pp.msg_info (Pp.str "t2 = ");
-          Pp.msg_info (pp_wf_paths t2);
           let r = inter_wf_paths t1 t2 in
-          Pp.msg_info (Pp.str "r = ");
-          Pp.msg_info (pp_wf_paths r);
           Subterm (size_glb a1 a2, r)
   in
   Array.fold_left glb2 init
@@ -615,7 +609,7 @@ let branches_specif renv c_spec ci =
     Array.mapi
       (fun i nca -> (* i+1-th cstructor has arity nca *)
 	 let lvra = lazy 
-	   (match Lazy.force c_spec with (* TODO: is this check necessary? *)
+	   (match Lazy.force c_spec with
 		Subterm (_,t) when match_inductive ci.ci_ind (dest_recarg t) ->
 		  let vra = Array.of_list (dest_subterms t).(i) in
 		  assert (Int.equal nca (Array.length vra));
@@ -743,8 +737,8 @@ let get_recargs_approx env ind args =
 
 
 let get_codomain_tree env p =
-  let absctx, ar = dest_lam_assum env p in (* TODO: reduce or preserve lets? *)
-  let arctx, s = dest_prod_assum env ar in (* TODO: check number of prods *)
+  let absctx, ar = dest_lam_assum env p in
+  let arctx, s = dest_prod_assum env ar in
   let i,args = decompose_app (whd_betadeltaiota env s) in
   match kind_of_term i with
   | Ind i ->
@@ -780,7 +774,6 @@ let rec subterm_specif renv stack t =
 	 furthermore when f is applied to a term which is strictly less than
 	 n, one may assume that x itself is strictly less than n
       *)
-           (* TODO: is this necessary? *)
     if not (check_inductive_codomain renv.env typarray.(i)) then Not_subterm
     else 
       let (ctxt,clfix) = dest_prod renv.env typarray.(i) in	    
@@ -872,25 +865,20 @@ let filter_stack_domain env ci p stack =
     match stack, kind_of_term t with
     | elt :: stack', Prod (n,a,c0) ->
       let d = (n,None,a) in
-      let ty, args = decompose_app a in (* TODO: reduce a? *)
+      let ty, args = decompose_app (whd_betadeltaiota env a) in
       let elt = match kind_of_term ty with
       | Ind ind -> 
-        let spec' = stack_element_specif elt in (* TODO: this is recomputed
-        each time*)
-        (match (Lazy.force spec') with (* TODO: are we forcing too much? *)
-        | Not_subterm -> elt
+        let spec' = stack_element_specif elt in
+        (match (Lazy.force spec') with
+        | Not_subterm | Dead_code -> elt
         | Subterm(s,path) ->
             let recargs = get_recargs_approx env ind args in
             let path = inter_wf_paths path recargs in
             SArg (lazy (Subterm(s,path))))
-            (* TODO: not really an SArg *)
-            (* TODO: what if Dead_code above? *)
       | _ -> (SArg (lazy Not_subterm))
       in
       elt :: filter_stack (push_rel d env) c0 stack'
-    | [], _ -> [] (* TODO: remove after debugging *)
     | _,_ -> List.fold_right (fun _ l -> SArg (lazy Not_subterm) :: l) stack []
-             (* TODO: is it correct to empty the stack instead? *)
   in
   filter_stack env ar stack
 
