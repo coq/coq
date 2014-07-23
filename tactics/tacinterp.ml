@@ -1765,9 +1765,6 @@ let mk_int_or_var_value ist c = VInteger (interp_int_or_var ist c)
 
 let pack_sigma (sigma,c) = {it=c;sigma=sigma}
 
-let extend_gl_hyps { it=gl ; sigma=sigma } sign =
-  Goal.V82.new_goal_with sigma gl sign
-
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist gl (tac:glob_tactic_expr) =
   let value_interp ist = match tac with
@@ -2521,18 +2518,15 @@ and interp_atomic ist gl tac =
 	(h_change None c_interp (interp_clause ist gl cl))
   | TacChange (Some op,c,cl) ->
       let sign,op = interp_typed_pattern ist env sigma op in
-      (* spiwack: (2012/04/18) the evar_map output by pf_interp_constr
-	 is dropped as the evar_map taken as input (from
-	 extend_gl_hyps) is incorrect.  This means that evar
-	 instantiated by pf_interp_constr may be lost, there. *)
-      let (_,c_interp) =
-	try pf_interp_constr ist (extend_gl_hyps gl sign) c
+      let env' = List.fold_right Environ.push_named sign env in
+      let (sigma',c_interp) =
+	try interp_constr ist env' sigma c
 	with Not_found | Anomaly _ (* Hack *) ->
 	   errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
       in
       tclTHEN
-	(tclEVARS sigma)
-	(h_change (Some op) c_interp (interp_clause ist { gl with sigma=sigma } cl))
+	(tclEVARS sigma')
+	(h_change (Some op) c_interp (interp_clause ist { gl with sigma=sigma' } cl))
 
   (* Equivalence relations *)
   | TacReflexivity -> h_reflexivity
