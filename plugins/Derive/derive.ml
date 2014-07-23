@@ -55,19 +55,18 @@ let start_deriving f suchthat lemma =
         let f_def = Entries.DefinitionEntry f_def , Decl_kinds.(IsDefinition Definition) in
         let f_kn = Declare.declare_constant f f_def in
         let f_kn_term = Term.mkConst f_kn in
+        let substf c = Vars.replace_vars [f,f_kn_term] c in
         let lemma_pretype =
           match Entries.(lemma_def.const_entry_type) with
           | Some t -> t
           | None -> assert false (* Proof_global always sets type here. *)
         in
         (* substitutes the variable [f] by the constant [f] it was standing for. *)
-        let lemma_type = Vars.replace_vars [f,f_kn_term] lemma_pretype in
+        let lemma_type = substf lemma_pretype in
         (* The type of [lemma_def] is adjusted to refer to [f_kn], the
            opacity is adjusted by the proof ending command.  *)
         let lemma_body =
-          map_const_entry_body begin fun c ->
-            Vars.replace_vars [f,f_kn_term] c
-          end Entries.(lemma_def.const_entry_body)
+          map_const_entry_body substf Entries.(lemma_def.const_entry_body)
         in
         let lemma_def = let open Entries in { lemma_def with
           const_entry_body = lemma_body ;
