@@ -21,11 +21,11 @@ object
   method backtrack_last_phrase : unit task
   method initialize : unit task
   method join_document : unit task
-  method stop_worker : int -> unit task
+  method stop_worker : string -> unit task
 
   method get_n_errors : int
   method get_errors : (int * string) list
-  method get_slaves_status : int * int * string Int.Map.t
+  method get_slaves_status : int * int * string CString.Map.t
 
 
   method handle_failure : Interface.handle_exn_rty -> unit task

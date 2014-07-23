@@ -14,7 +14,7 @@ let steps = ref 0
 
 let are_we_threading = lazy (
   match !Flags.async_proofs_mode with
-  | Flags.APonParallel _ -> true
+  | Flags.APon -> true
   | _ -> false)
 
 let check_for_interrupt () =

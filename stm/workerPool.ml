@@ -13,7 +13,7 @@ module Make(Worker : sig
       process * in_channel * out_channel
 end) = struct
 
-type worker_id = int
+type worker_id = string
 type spawn =
   args:string array -> env:string array -> unit ->
     in_channel * out_channel * Worker.process
@@ -32,11 +32,11 @@ let master_handshake worker_id ic oc =
     Marshal.to_channel oc magic_no [];  flush oc;
     let n = (Marshal.from_channel ic : int) in
     if n <> magic_no then begin
-      Printf.eprintf "Handshake with %d failed: protocol mismatch\n" worker_id;
+      Printf.eprintf "Handshake with %s failed: protocol mismatch\n" worker_id;
       exit 1;
     end
   with e when Errors.noncritical e ->
-    Printf.eprintf "Handshake with %d failed: %s\n"
+    Printf.eprintf "Handshake with %s failed: %s\n"
       worker_id (Printexc.to_string e);
     exit 1
 
@@ -45,18 +45,21 @@ let respawn n ~args ~env () =
   master_handshake n ic oc;
   ic, oc, proc
 
-let init ~size:n ~manager:manage_slave =
+let init ~size:n ~manager:manage_slave mk_name =
   slave_managers := Some
     (Array.init n (fun x ->
+       let name = mk_name x in
        let cancel = ref false in
-       cancel, Thread.create (manage_slave ~cancel (x+1)) (respawn (x+1))))
+       name, cancel, Thread.create (manage_slave ~cancel name) (respawn name)))
 
 let cancel n =
   match !slave_managers with
   | None -> ()
   | Some a ->
-      let switch, _ = a.(n) in
-      switch := true
+      for i = 0 to Array.length a - 1 do
+        let name, switch, _ = a.(i) in
+        if n = name then switch := true
+      done
       
 let worker_handshake slave_ic slave_oc =
   try

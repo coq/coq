@@ -206,7 +206,7 @@ type interp_sty = (raw * verbose) * string
 (* spiwack: [Inl] for safe and [Inr] for unsafe. *)
 type interp_rty = state_id * (string,string) Util.union
 
-type stop_worker_sty = int
+type stop_worker_sty = string
 type stop_worker_rty = unit
 
 

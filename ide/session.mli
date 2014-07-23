@@ -22,7 +22,7 @@ class type control =
   end
 
 type errpage = (int * string) list page
-type jobpage = string Int.Map.t page
+type jobpage = string CString.Map.t page
 
 type session = {
   buffer : GText.buffer;

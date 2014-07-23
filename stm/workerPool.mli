@@ -13,13 +13,14 @@ module Make(Worker : sig
       process * in_channel * out_channel
 end) : sig
 
-type worker_id = int
+type worker_id = string
 type spawn =
   args:string array -> env:string array -> unit ->
     in_channel * out_channel * Worker.process
 
 val init :
-  size:int -> manager:(cancel:bool ref -> worker_id -> spawn -> unit) -> unit
+  size:int -> manager:(cancel:bool ref -> worker_id -> spawn -> unit) ->
+  (int -> worker_id) -> unit
 val is_empty : unit -> bool
 val n_workers : unit -> int
 val cancel : worker_id -> unit

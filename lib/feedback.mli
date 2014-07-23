@@ -40,7 +40,7 @@ type feedback_content =
   | GlobDef of Loc.t * string * string * string
   | ErrorMsg of Loc.t * string
   | InProgress of int
-  | SlaveStatus of int * string
+  | SlaveStatus of string * string
   | ProcessingInMaster
   | Goals of Loc.t * string
   | FileLoaded of string * string

@@ -295,3 +295,10 @@ let with_time time f x =
     let msg2 = if time then "" else " (failure)" in
     msg_info (str msg ++ fmt_time_difference tstart tend ++ str msg2);
     raise e
+
+let process_id () =
+  if Flags.async_proofs_is_worker () then !Flags.async_proofs_worker_id
+  else if Flags.async_proofs_is_master () then
+    Printf.sprintf "master:%d" (Thread.id (Thread.self ()))
+  else "master"
+    

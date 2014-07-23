@@ -224,15 +224,15 @@ let no_compat_ntn = ref false
 let print_where = ref false
 let print_config = ref false
 
-let get_async_proofs_mode opt next = function
+let get_async_proofs_mode opt = function
   | "off" -> Flags.APoff
-  | "on" -> Flags.APonParallel 0
-  | "worker" ->
-      let n = int_of_string (next()) in assert (n > 0);
-      toploop := Some "stmworkertop";
-      Flags.APonParallel n
+  | "on" -> Flags.APon
   | "lazy" -> Flags.APonLazy
-  | _ -> prerr_endline ("Error: on/off/lazy/worker expected after "^opt); exit 1
+  | _ -> prerr_endline ("Error: on/off/lazy expected after "^opt); exit 1
+
+let set_worker_id opt s =
+  assert (s <> "master");
+  Flags.async_proofs_worker_id := s
 
 let get_bool opt = function
   | "yes" -> true
@@ -350,11 +350,12 @@ let parse_args arglist =
     (* Options with one arg *)
     |"-coqlib" -> Flags.coqlib_spec:=true; Flags.coqlib:=(next ())
     |"-async-proofs" ->
-        Flags.async_proofs_mode := get_async_proofs_mode opt next (next())
+        Flags.async_proofs_mode := get_async_proofs_mode opt (next())
     |"-async-proofs-j" ->
         Flags.async_proofs_n_workers := (get_int opt (next ()))
     |"-async-proofs-private-flags" ->
         Flags.async_proofs_private_flags := Some (next ());
+    |"-worker-id" -> set_worker_id opt (next ())
     |"-compat" -> Flags.compat_version := get_compat_version (next ())
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())

@@ -26,7 +26,7 @@ class type control =
   end
 
 type errpage = (int * string) list page
-type jobpage = string Int.Map.t page
+type jobpage = string CString.Map.t page
 
 type session = {
   buffer : GText.buffer;
@@ -303,10 +303,10 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
 let create_jobpage coqtop coqops : jobpage =
   let table, access =
     make_table_widget
-      [`Int,"Worker",true; `String,"Job name",true]
+      [`String,"Worker",true; `String,"Job name",true]
       (fun columns store tp vc ->
         let row = store#get_iter tp in
-        let w = store#get ~row ~column:(find_int_col "Worker" columns) in
+        let w = store#get ~row ~column:(find_string_col "Worker" columns) in
 	let info () = Minilib.log ("Coq busy, discarding query") in
 	Coq.try_grab coqtop (coqops#stop_worker w) info
       ) in
@@ -314,7 +314,7 @@ let create_jobpage coqtop coqops : jobpage =
   let box = GPack.vbox ~homogeneous:false () in
   let () = box#pack ~expand:true table#coerce in
   let () = box#pack ~expand:false ~padding:2 tip#coerce in
-  let last_update = ref Int.Map.empty in
+  let last_update = ref CString.Map.empty in
   let callback = ref (fun _ -> ()) in
   object (self)
     inherit GObj.widget box#as_widget
@@ -324,9 +324,9 @@ let create_jobpage coqtop coqops : jobpage =
 	last_update := jobs;
 	access (fun _ store -> store#clear ());
         !callback jobs;
-	Int.Map.iter (fun id job -> access (fun columns store ->
+	CString.Map.iter (fun id job -> access (fun columns store ->
           let line = store#append () in
-          store#set line (find_int_col "Worker" columns) id;
+          store#set line (find_string_col "Worker" columns) id;
           store#set line (find_string_col "Job name" columns) job))
           jobs
       end

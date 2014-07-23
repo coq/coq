@@ -65,7 +65,7 @@ type feedback_content =
   | GlobDef of Loc.t * string * string * string
   | ErrorMsg of Loc.t * string
   | InProgress of int
-  | SlaveStatus of int * string
+  | SlaveStatus of string * string
   | ProcessingInMaster
   | Goals of Loc.t * string
   | FileLoaded of string * string
@@ -90,7 +90,7 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
   | "errormsg", [loc;  s] -> ErrorMsg (to_loc loc, to_string s)
   | "inprogress", [n] -> InProgress (to_int n)
   | "slavestatus", [ns] ->
-       let n, s = to_pair to_int to_string ns in
+       let n, s = to_pair to_string to_string ns in
        SlaveStatus(n,s)
   | "goals", [loc;s] -> Goals (to_loc loc, to_string s)
   | "fileloaded", [dirpath; filename] ->
@@ -121,7 +121,7 @@ let of_feedback_content = function
   | InProgress n -> constructor "feedback_content" "inprogress" [of_int n]
   | SlaveStatus(n,s) ->
       constructor "feedback_content" "slavestatus"
-        [of_pair of_int of_string (n,s)]
+        [of_pair of_string of_string (n,s)]
   | Goals (loc,s) ->
       constructor "feedback_content" "goals" [of_loc loc;of_string s]
   | FileLoaded(dirpath, filename) ->

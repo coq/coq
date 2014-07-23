@@ -434,7 +434,7 @@ let quit_sty_t : quit_sty val_t = unit_t
 let about_sty_t : about_sty val_t = unit_t
 let init_sty_t : init_sty val_t = option_t string_t
 let interp_sty_t : interp_sty val_t = pair_t (pair_t bool_t bool_t) string_t
-let stop_worker_sty_t : stop_worker_sty val_t = int_t
+let stop_worker_sty_t : stop_worker_sty val_t = string_t
 
 let add_rty_t : add_rty val_t =
   pair_t state_id_t (pair_t (union_t unit_t state_id_t) string_t)

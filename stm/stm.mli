@@ -42,7 +42,7 @@ val finish : unit -> unit
 
 val observe : Stateid.t -> unit
 
-val stop_worker : int -> unit
+val stop_worker : string -> unit
 
 (* Joins the entire document.  Implies finish, but also checks proofs *)
 val join : unit -> unit
