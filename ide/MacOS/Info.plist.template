@@ -60,7 +60,7 @@
 	<key>CFBundleName</key>
 	<string>CoqIDE</string>
 	<key>CFBundleShortVersionString</key>
-	<string>Coq_vVERSION</string>
+	<string>VERSION</string>
 	<key>CFBundleDisplayName</key>
 	<string>Coq Proof Assistant vVERSION</string>
 	<key>CFBundleGetInfoString</key>
@@ -78,7 +78,9 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleIdentifier</key>
-	<string>fr.inria.coqide</string>
+	<string>fr.inria.coq.coqide</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.developer-tools</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>NSPrincipalClass</key>
