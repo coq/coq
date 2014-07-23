@@ -1233,37 +1233,25 @@ and interp_match_success ist { TacticMatching.subst ; context ; terms ; lhs } =
     matching of successes [s]. If [lz] is set to true, then only the
     first success is considered, otherwise further successes are tried
     if the left-hand side fails. *)
-and interp_match_successes lz ist s : typed_generic_argument GTac.t =
-    (** iterates [tclOR] lazily on the stream [t], if [t]gl is
-        exhausted, raises [e]. Beware: there is no [tclINDEPENDENT],
-        relying on the fact that it will always be applied to a single
-        goal, by virtue of an earlier [Proofview.Goal.enter]. *)
-  let rec tclOR_stream t e =
-    let open IStream in
-    match peek t with
-    | Nil -> Proofview.tclZERO e
-    | Cons (t1,t') ->
-        Proofview.tclOR
-          (interp_match_success ist t1)
-          begin fun e ->
-              (* Honors Ltac's failure level. *)
-              Tacticals.New.catch_failerror e <*> tclOR_stream t' e
-            end
-    in
-  let matching_failure =
-    UserError ("Tacinterp.apply_match" , str "No matching clauses for match.")
-  in
-  if lz then
-    (** lazymatch *)
-    let open IStream in
-    begin match peek s with
-    | Cons (s,_) -> interp_match_success ist s
-    | Nil -> Proofview.tclZERO matching_failure
-    end
-  else
-    (** match *)
-    Proofview.tclONCE (tclOR_stream s matching_failure)
-
+and interp_match_successes lz ist tac =
+    if lz then
+      (** Only keep the first matching result, we don't backtrack on it *)
+      let tac = Proofview.tclONCE tac in
+      tac >>= fun ans -> interp_match_success ist ans
+    else
+      let decrease e = match e with
+      | FailError (0, _) -> e
+      | FailError (n, s) -> FailError (pred n, s)
+      | _ -> e
+      in
+      let break e = match e with
+      | FailError (0, _) -> false
+      | FailError (n, s) -> true
+      | _ -> false
+      in
+      let tac = Proofview.tclBREAK break tac >>= fun ans -> interp_match_success ist ans in
+      (** Once a tactic has succeeded, do not backtrack anymore *)
+      Proofview.tclONCE (Proofview.tclOR tac (fun e -> Proofview.tclZERO (decrease e)))
 
 (* Interprets the Match expressions *)
 and interp_match ist lz constr lmr =

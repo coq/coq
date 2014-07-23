@@ -101,6 +101,8 @@ let verify_metas_coherence env sigma (ln1,lcm) (ln,lm) =
   let merged = ln +++ ln1 in
   (merged, Id.Map.merge merge lcm lm)
 
+let matching_error =
+  Errors.UserError ("" , Pp.str "No matching clauses for match.")
 
 (** A functor is introduced to share the environment and the
     evar_map. They do not change and it would be a pity to introduce
@@ -122,8 +124,8 @@ module PatternMatching (E:StaticEnvironment) = struct
   (* spiwack: as we don't benefit from the various stream optimisations
      of Haskell, it may be costly to give the monad in direct style such as
      here. We may want to use some continuation passing style. *)
-  type 'a m = 'a t IStream.t
-
+  type 'a tac = 'a Proofview.tactic
+  type 'a m = { stream : 'r. ('a -> unit t -> 'r tac) -> unit t -> 'r tac }
 
   (** The empty substitution. *)
   let empty_subst = Id.Map.empty , Id.Map.empty
@@ -151,94 +153,55 @@ module PatternMatching (E:StaticEnvironment) = struct
   let term_subst_prod = id_map_right_biased_union
 
   (** Merge two writers (and ignore the first value component). *)
-  let merge m1 m2 = {
-    subst = subst_prod m1.subst m2.subst;
-    context = context_subst_prod m1.context m2.context;
-    terms = term_subst_prod m1.terms m2.terms;
-    lhs = m2.lhs;
-  }
+  let merge m1 m2 =
+    try Some {
+      subst = subst_prod m1.subst m2.subst;
+      context = context_subst_prod m1.context m2.context;
+      terms = term_subst_prod m1.terms m2.terms;
+      lhs = m2.lhs;
+    }
+    with Not_coherent_metas -> None
 
   (** Monadic [return]: returns a single success with empty substitutions. *)
   let return (type a) (lhs:a) : a m =
-    let success = {
-      subst = empty_subst ;
-      context = empty_context_subst ;
-      terms = empty_term_subst ;
-      lhs = lhs ; }
-    in
-    IStream.(cons success empty)
+    { stream = fun k ctx -> k lhs ctx }
 
   (** Monadic bind: each success of [x] is replaced by the successes
       of [f x]. The substitutions of [x] and [f x] are composed,
       dropping the apparent successes when the substitutions are not
       coherent. *)
-  type ('a, 'b) acc = Done of 'a IStream.t | Next of unit t * 'a IStream.t * 'b IStream.t
-
-  let (>>=) (type a) (type b) (x:a m) (f:a -> b m) : b m =
-    let open IStream in
-    let rec make = function
-    | Done s ->
-      begin match peek s with
-      | Nil -> Nil
-      | Cons (m, s) ->
-        let r = f m.lhs in
-        let m = { m with lhs = () } in
-        make (Next (m, s, r))
-      end
-    | Next (m, s, r) ->
-      begin match peek r with
-      | Nil -> make (Done s)
-      | Cons (mf, r) ->
-        try
-          let ans = merge m mf in
-          Cons (ans, (Next (m, s, r)))
-        with Not_coherent_metas -> make (Next (m, s, r))
-      end
-    in
-    IStream.make make (Done x)
+  let (>>=) (type a) (type b) (m:a m) (f:a -> b m) : b m =
+    { stream = fun k ctx -> m.stream (fun x ctx -> (f x).stream k ctx) ctx }
 
   (** A variant of [(>>=)] when the first argument returns [unit]. *)
-  let (<*>) (type a) (x:unit m) (y:a m) : a m =
-    let open IStream in
-    let rec make = function
-    | Done s ->
-      begin match peek s with
-      | Nil -> Nil
-      | Cons (m, s) -> make (Next (m, s, y))
-      end
-    | Next (m, s, r) ->
-      begin match peek r with
-      | Nil -> make (Done s)
-      | Cons (mf, r) ->
-        try
-          let ans = merge m mf in
-          Cons (ans, (Next (m, s, r)))
-        with Not_coherent_metas -> make (Next (m, s, r))
-      end
-    in
-    IStream.make make (Done x)
+  let (<*>) (type a) (m:unit m) (y:a m) : a m =
+    { stream = fun k ctx -> m.stream (fun () ctx -> y.stream k ctx) ctx }
 
   (** Failure of the pattern-matching monad: no success. *)
-  let fail (type a) : a m = IStream.empty
+  let fail (type a) : a m = { stream = fun _ _ -> Proofview.tclZERO matching_error }
+
+  let run (m : 'a m) =
+    let ctx = {
+      subst = empty_subst ;
+      context = empty_context_subst ;
+      terms = empty_term_subst ;
+      lhs = ();
+    } in
+    let eval lhs ctx = Proofview.tclUNIT { ctx with lhs } in
+    m.stream eval ctx
 
   (** Chooses in a list, in the same order as the list *)
-  let pick (type a) (l:a list) : a m =
-    let make = function
-    | [] -> IStream.Nil
-    | x :: l ->
-      let s = {
-        subst = empty_subst ;
-        context = empty_context_subst ;
-        terms = empty_term_subst ;
-        lhs = x
-      } in
-      IStream.Cons (s, l)
-    in
-    IStream.make make l
+  let rec pick (l:'a list) e : 'a m = match l with
+  | [] -> { stream = fun _ _ -> Proofview.tclZERO e }
+  | x :: l ->
+    { stream = fun k ctx -> Proofview.tclOR (k x ctx) (fun e -> (pick l e).stream k ctx) }
+
+  let pick l = pick l matching_error
 
   (** Declares a subsitution, a context substitution and a term substitution. *)
   let put subst context terms : unit m =
-    IStream.(cons { subst ; context ; terms ; lhs = () } empty)
+    let s = { subst ; context ; terms ; lhs = () } in
+    { stream = fun k ctx -> match merge s ctx with None -> Proofview.tclZERO matching_error | Some s -> k () s }
 
   (** Declares a substitution. *)
   let put_subst subst : unit m = put subst empty_context_subst empty_term_subst
@@ -270,14 +233,21 @@ module PatternMatching (E:StaticEnvironment) = struct
           with ConstrMatching.PatternMatchingFailure -> fail
         end
     | Subterm (with_app_context,id_ctxt,p) ->
-        (* spiwack: this branch is easier in direct style, would need to be
-           changed if the implementation of the monad changes. *)
-        IStream.map begin fun { ConstrMatching.m_sub ; m_ctx } ->
-          let subst = adjust m_sub in
-          let context = id_map_try_add id_ctxt m_ctx Id.Map.empty in
-          let terms = empty_term_subst in
-          { subst ; context ; terms ; lhs }
-        end (ConstrMatching.match_subterm_gen with_app_context p term)
+
+      let rec map s e =
+        { stream = fun k ctx -> match IStream.peek s with
+          | IStream.Nil -> Proofview.tclZERO e
+          | IStream.Cons ({ ConstrMatching.m_sub ; m_ctx }, s) ->
+            let subst = adjust m_sub in
+            let context = id_map_try_add id_ctxt m_ctx Id.Map.empty in
+            let terms = empty_term_subst in
+            let nctx = { subst ; context ; terms ; lhs = () } in
+            match merge ctx nctx with
+            | None -> (map s e).stream k ctx
+            | Some nctx -> Proofview.tclOR (k lhs nctx) (fun e -> (map s e).stream k ctx)
+        }
+      in
+      map (ConstrMatching.match_subterm_gen with_app_context p term) matching_error
 
 
   (** [rule_match_term term rule] matches the term [term] with the
@@ -291,10 +261,14 @@ module PatternMatching (E:StaticEnvironment) = struct
 
   (** [match_term term rules] matches the term [term] with the set of
       matching rules [rules].*)
-  let match_term term rules =
-    IStream.(concat_map (fun r -> rule_match_term term r) (of_list rules))
-
-
+  let rec match_term e term rules = match rules with
+  | [] -> { stream = fun _ _ -> Proofview.tclZERO e }
+  | r :: rules ->
+    { stream = fun k ctx ->
+      let head = rule_match_term term r in
+      let tail e = match_term e term rules in
+      Proofview.tclOR (head.stream k ctx) (fun e -> (tail e).stream k ctx)
+    }
 
 
   (** [hyp_match_type hypname pat hyps] matches a single
@@ -359,8 +333,14 @@ module PatternMatching (E:StaticEnvironment) = struct
 
   (** [match_goal hyps concl rules] matches the goal [hyps|-concl]
       with the set of matching rules [rules]. *)
-  let match_goal hyps concl rules =
-    IStream.(concat_map (fun r -> rule_match_goal hyps concl r) (of_list rules))
+  let rec match_goal e hyps concl rules = match rules with
+  | [] -> { stream = fun _ _ -> Proofview.tclZERO e }
+  | r :: rules ->
+    { stream = fun k ctx ->
+      let head = rule_match_goal hyps concl r in
+      let tail e = match_goal e hyps concl rules in
+      Proofview.tclOR (head.stream k ctx) (fun e -> (tail e).stream k ctx)
+    }
 
 end
 
@@ -374,7 +354,7 @@ let match_term env sigma term rules =
     let sigma = sigma
   end in
   let module M = PatternMatching(E) in
-  M.match_term term rules
+  M.run (M.match_term matching_error term rules)
 
 
 (** [match_goal env sigma hyps concl rules] matches the goal
@@ -388,4 +368,4 @@ let match_goal env sigma hyps concl rules =
     let sigma = sigma
   end in
   let module M = PatternMatching(E) in
-  M.match_goal hyps concl rules
+  M.run (M.match_goal matching_error hyps concl rules)
