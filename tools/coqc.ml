@@ -96,6 +96,7 @@ let parse_args () =
       |"-impredicative-set"|"-vm"|"-no-native-compiler"
       |"-verbose-compat-notations"|"-no-compat-notations"
       |"-indices-matter"|"-quick"
+      |"-async-proofs-always-delegate"|"-async-proofs-never-reopen-branch"
       as o) :: rem ->
 	parse (cfiles,o::args) rem
 
@@ -105,7 +106,7 @@ let parse_args () =
       |"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"
-      |"-async-proofs-j" |"-async-proofs-worker-flags" |"-async-proofs"
+      |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs"
       as o) :: rem ->
 	begin
 	  match rem with

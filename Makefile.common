@@ -54,6 +54,7 @@ endif
 
 BESTOBJ:=$(if $(OPT),.cmx,.cmo)
 BESTLIB:=$(if $(OPT),.cmxa,.cma)
+BESTDYN:=$(if $(OPT),.cmxs,.cma)
 
 COQBINARIES:= $(COQMKTOP) \
   $(COQTOPBYTE) $(COQTOPEXE) \
