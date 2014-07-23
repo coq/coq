@@ -275,7 +275,11 @@ let close_proof ?feedback_id ~now fpl =
     if poly || now then Future.force univs 
     else Proof.in_proof proof (fun x -> Evd.evar_universe_context x) 
   in
-  let nf = Universes.nf_evars_and_universes_opt_subst (fun x -> None)
+  (* Because of dependent subgoals at the begining of proofs, we could
+     have existential variables in the initial types of goals, we need to
+     normalise them for the kernel. *)
+  let subst_evar k = Proof.in_proof proof (fun m -> Evd.existential_opt_value m k) in
+  let nf = Universes.nf_evars_and_universes_opt_subst subst_evar
     (Evd.evar_universe_context_subst universes) in
   let make_body =
     if poly || now then
