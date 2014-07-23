@@ -299,7 +299,7 @@ let close_proof ?feedback_id ~now fpl =
 	  Future.from_val (univs, nf t), p  
   in
   let entries =
-    Future.map2 (fun p (c, t) -> 
+    Future.map2 (fun p (_, t) ->
       let univstyp, body = make_body t p in
       let univs, typ = Future.force univstyp in
 	{ Entries.
