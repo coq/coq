@@ -202,7 +202,7 @@ let print_polymorphism ref =
       (if poly then "universe polymorphic"
        else if template_poly then
 	 "template universe polymorphic"
-       else "monomorphic")
+       else "not universe polymorphic")
 	 
 let print_name_infos ref =
   let poly = print_polymorphism ref in
