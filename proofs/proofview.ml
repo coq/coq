@@ -910,13 +910,35 @@ struct
     let h = (evd, build_goal evk :: evs) in
     (h, ev)
 
+  let fresh_constructor_instance (evd,evs) env construct =
+    let (evd,pconstruct) = Evd.fresh_constructor_instance env evd construct in
+    (evd,evs) , pconstruct
+
+  let with_type (evd,evs) env c t =
+    let my_type = Retyping.get_type_of env evd c in
+    let j = Environ.make_judge c my_type in
+    let (evd,j') =
+      Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j t
+    in
+    (evd,evs) , j'.Environ.uj_val
+
   let refine f = Goal.raw_enter begin fun gl ->
     let sigma = Goal.sigma gl in
     let handle = (sigma, []) in
     let ((sigma, evs), c) = f handle in
     let sigma = partial_solution sigma gl.Goal.self c in
-    let modify start = { solution = sigma; comb = List.rev evs; } in
+    let modify start = { solution = sigma; comb = undefined sigma (List.rev evs); } in
     Proof.modify modify
+  end
+
+  let refine_casted f = Goal.raw_enter begin fun gl ->
+    let concl = Goal.concl gl in
+    let env = Goal.env gl in
+    let f h =
+      let (h,c) = f h in
+      with_type h env c concl
+    in
+    refine f
   end
 
 end
@@ -924,5 +946,3 @@ end
 module NonLogical = Proofview_monad.NonLogical
 
 let tclLIFT = Proofview_monad.Logical.lift
-
-

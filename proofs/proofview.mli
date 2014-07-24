@@ -411,11 +411,22 @@ module Refine : sig
   val new_evar : handle -> Environ.env -> Constr.types -> handle * Constr.t
   (** Create a new hole that will be added to the goals to solve. *)
 
+  val fresh_constructor_instance :
+    handle -> Environ.env -> Names.constructor -> handle * Constr.pconstructor
+  (** Creates a constructor with fresh universe variables. *)
+
+  val with_type : handle -> Environ.env -> Term.constr -> Term.types -> handle*Term.constr
+  (** [with_type h env c t] coerces refinable term [c] to type [t]. *)
+
   val refine : (handle -> handle * Constr.t) -> unit tactic
   (** Given a term with holes that have been generated through {!new_evar}, this
       function fills the current hole with the given constr and creates goals
       for all the holes in their generation order. Exceptions raised by the
       function are caught. *)
+
+  val refine_casted : (handle -> handle * Constr.t) -> unit tactic
+  (** Like {!refine} except the refined term is coerced to has, as its
+      type, the conclusion of the current goal. *)
 
 end
 
