@@ -30,6 +30,7 @@ val pr_goal : goal -> Pp.std_ppcmds
     into [g']). It returns [None] if [g] has been (partially) solved. *)
 val advance : Evd.evar_map -> goal -> goal option
 
+val solution : Evd.evar_map -> goal -> Term.constr option
 
 (* Equality function on goals. Return [true] if all of its hypotheses
    and conclusion are equal. *)

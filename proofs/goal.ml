@@ -83,6 +83,11 @@ let rec advance sigma g =
       else
         None
 
+let solution sigma g =
+  let evi = Evd.find sigma g.content in
+  match evi.Evd.evar_body with
+  | Evd.Evar_empty -> None
+  | Evd.Evar_defined v -> Some v
 
 (* Equality function on goals *)
 let equal evars1 gl1 evars2 gl2 =
