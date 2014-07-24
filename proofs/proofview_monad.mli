@@ -65,6 +65,7 @@ module Logical : sig
   val zero : exn -> 'a t
   val plus : 'a t -> (exn -> 'a t) -> 'a t
   val split : 'a t -> (('a,(exn->'a t)) list_view) t
+  val once : 'a t -> 'a t
 
   val lift : 'a NonLogical.t -> 'a t
 

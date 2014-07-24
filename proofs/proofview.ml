@@ -283,12 +283,7 @@ let tclIFCATCH a s f =
 
 (* [tclONCE t] fails if [t] fails, otherwise it has exactly one
    success. *)
-let tclONCE t =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Proof.bind in
-  Proof.split t >>= function
-    | Nil e -> tclZERO e
-    | Cons (x,_) -> tclUNIT x
+let tclONCE = Proof.once
 
 exception MoreThanOneSuccess
 let _ = Errors.register_handler begin function

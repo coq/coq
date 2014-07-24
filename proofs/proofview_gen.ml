@@ -138,6 +138,10 @@ module Logical =
 
   (** List observation *)
 
+  let once (m : 'a tactic) : 'a tactic = (); fun s ->
+    let m = m s in
+    { iolist = fun nil cons -> m.iolist nil (fun x _ -> cons x nil) }
+
   type 'a reified = ('a, exn -> 'a reified) list_view IO.t
 
   let rec reflect (m : 'a reified) : 'a iolist =
