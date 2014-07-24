@@ -1,0 +1,78 @@
+\achapter{Polymorphic Universes}
+\aauthor{Matthieu Sozeau}
+
+\label{Universes-full}
+\index{Universes!presentation}
+
+\asection{General Presentation}
+
+This section describes the universe polymorphic extension of Coq.
+Universe polymorphism allows to write generic definitions making use of
+universes and reuse them at different and sometimes incompatible levels.
+
+A standard example of the difference between universe \emph{polymorphic} and 
+\emph{monormorphic} definitions is given by the identity function:
+
+\begin{coq_example*}
+Definition identity {A : Type} (a : A) := a.
+\end{coq_example*}
+
+By default, constant declarations are monomorphic, hence the identity
+function declares a global universe (say \texttt{Top.1}) for its
+domain. Subsequently, if we try to self-apply the identity, we will get
+an error:
+
+\begin{coq_eval}
+Set Printing Universes.
+\end{coq_eval}
+\begin{coq_example}
+Fail Definition selfid := identity (@identity).
+\end{coq_example}
+
+Indeed, the global level \texttt{Top.1} would have to be strictly smaller than itself
+for this self-application to typecheck, as the type of (@identity) is
+\texttt{forall (A : Type@{Top.1}), A -> A} whose type is itself \texttt{Type@{Top.1+1}}.
+
+A universe polymorphic identity function binds its domain universe level
+at the definition level instead of making it global.
+
+\begin{coq_example}
+Polymorphic Definition pidentity {A : Type} (a : A) := a.
+About pidentity.
+\end{coq_example}
+
+It is then possible to reuse the constant at different levels, like so:
+
+\begin{coq_example}
+Definition selfpid := pidentity (@pidentity).
+\end{coq_example}
+
+Of course, the two instances of \texttt{pidentity} in this definition
+are different. This can be seen when \texttt{Set Printing Universes} is
+on:
+
+\begin{coq_example}
+Print selfpid.
+\end{coq_example}
+
+Now \texttt{pidentity} is used at two different levels: at the head of
+the application is is instantiated at \texttt{Top.3} while in the
+argument position it is instantiated at \texttt{Top.4}. This definition
+is only valid as long as \texttt{Top.4} is strictly smaller than
+\texttt{Top.3}, as show by the constraints. Not that this definition is
+monomorphic (not universe polymorphic), so in turn the two universes are
+actually global levels.
+
+Polymorphic constants, inductive 
+
+
+
+\asubsection{\tt Polymorphic, Monomorphic}
+\comindex{Polymorphic}
+\comindex{Monomorphic}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 
