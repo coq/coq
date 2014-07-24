@@ -187,12 +187,15 @@ and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr =
   | TacAtom of Loc.t * ('t,'p,'c,'i,'r,'n,'l) gen_atomic_tactic_expr
   | TacThen of
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
-      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr array *
-      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
-      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr array
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacThens of
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr list
+  | TacThens3parts of
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr array *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr array
   | TacFirst of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr list
   | TacComplete of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacSolve of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr list

@@ -54,11 +54,11 @@ GEXTEND Gram
     [ "5" RIGHTA
       [ te = binder_tactic -> te ]
     | "4" LEFTA
-      [ ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, [||], ta1, [||])
-      | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0,  [||], ta1, [||])
+      [ ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, ta1)
+      | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0,ta1)
       | ta0 = tactic_expr; ";"; "["; (first,tail) = tactic_then_gen; "]" ->
 	  match tail with
-	  | Some (t,last) -> TacThen (ta0, Array.of_list first, t, last)
+	  | Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
 	  | None -> TacThens (ta0,first) ]
     | "3" RIGHTA
       [ IDENT "try"; ta = tactic_expr -> TacTry ta

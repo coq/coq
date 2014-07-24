@@ -1014,13 +1014,12 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       Proofview.Goal.enter begin fun gl -> Tactics.tclABSTRACT
         (Option.map (Tacmach.New.of_old (pf_interp_ident ist) gl) ido) (interp_tactic ist tac)
       end
-  | TacThen (t1,tf,t,tl) ->
-      if Array.length tf = 0 && Array.length tl = 0 then
-        Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
-      else
-        Tacticals.New.tclTHENS3PARTS (interp_tactic ist t1)
-	  (Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
+  | TacThen (t1,t) ->
+      Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
   | TacThens (t1,tl) -> Tacticals.New.tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
+  | TacThens3parts (t1,tf,t,tl) ->
+      Tacticals.New.tclTHENS3PARTS (interp_tactic ist t1)
+	(Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
   | TacDo (n,tac) -> Tacticals.New.tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTimeout (n,tac) -> Tacticals.New.tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTime (s,tac) -> Tacticals.New.tclTIME s (interp_tactic ist tac)

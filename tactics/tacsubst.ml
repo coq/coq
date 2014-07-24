@@ -223,11 +223,13 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacProgress tac -> TacProgress (subst_tactic subst tac:glob_tactic_expr)
   | TacShowHyps tac -> TacShowHyps (subst_tactic subst tac:glob_tactic_expr)
   | TacAbstract (tac,s) -> TacAbstract (subst_tactic subst tac,s)
-  | TacThen (t1,tf,t2,tl) ->
-      TacThen (subst_tactic subst t1,Array.map (subst_tactic subst) tf,
-	       subst_tactic subst t2,Array.map (subst_tactic subst) tl)
+  | TacThen (t1,t2) ->
+      TacThen (subst_tactic subst t1, subst_tactic subst t2)
   | TacThens (t,tl) ->
       TacThens (subst_tactic subst t, List.map (subst_tactic subst) tl)
+  | TacThens3parts (t1,tf,t2,tl) ->
+      TacThens3parts (subst_tactic subst t1,Array.map (subst_tactic subst) tf,
+	       subst_tactic subst t2,Array.map (subst_tactic subst) tl)
   | TacDo (n,tac) -> TacDo (n,subst_tactic subst tac)
   | TacTimeout (n,tac) -> TacTimeout (n,subst_tactic subst tac)
   | TacTime (s,tac) -> TacTime (s,subst_tactic subst tac)

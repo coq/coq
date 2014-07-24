@@ -591,15 +591,15 @@ and intern_tactic_seq onlytac ist = function
   | TacShowHyps tac -> ist.ltacvars, TacShowHyps (intern_pure_tactic ist tac)
   | TacAbstract (tac,s) ->
       ist.ltacvars, TacAbstract (intern_pure_tactic ist tac,s)
-  | TacThen (t1,[||],t2,[||]) ->
+  | TacThen (t1,t2) ->
       let lfun', t1 = intern_tactic_seq onlytac ist t1 in
       let lfun'', t2 = intern_tactic_seq onlytac { ist with ltacvars = lfun' } t2 in
-      lfun'', TacThen (t1,[||],t2,[||])
-  | TacThen (t1,tf,t2,tl) ->
+      lfun'', TacThen (t1,t2)
+  | TacThens3parts (t1,tf,t2,tl) ->
       let lfun', t1 = intern_tactic_seq onlytac ist t1 in
       let ist' = { ist with ltacvars = lfun' } in
       (* Que faire en cas de (tac complexe avec Match et Thens; tac2) ?? *)
-      lfun', TacThen (t1,Array.map (intern_pure_tactic ist') tf,intern_pure_tactic ist' t2,
+      lfun', TacThens3parts (t1,Array.map (intern_pure_tactic ist') tf,intern_pure_tactic ist' t2,
 		       Array.map (intern_pure_tactic ist') tl)
   | TacThens (t,tl) ->
       let lfun', t = intern_tactic_seq true ist t in

@@ -846,11 +846,11 @@ let rec pr_tac inherited tac =
       hov 1 (pr_tac (lseq,E) t ++ pr_then () ++ spc () ++
              pr_seq_body (pr_tac ltop) tl),
       lseq
-  | TacThen (t1,[||],t2,[||]) ->
+  | TacThen (t1,t2) ->
       hov 1 (pr_tac (lseq,E) t1 ++ pr_then () ++ spc () ++
              pr_tac (lseq,L) t2),
       lseq
-  | TacThen (t1,tf,t2,tl) ->
+  | TacThens3parts (t1,tf,t2,tl) ->
       hov 1 (pr_tac (lseq,E) t1 ++ pr_then () ++ spc () ++
              pr_then_gen (pr_tac ltop) tf t2 tl),
       lseq
