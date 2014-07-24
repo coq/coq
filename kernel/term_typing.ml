@@ -162,7 +162,7 @@ let infer_declaration env kn dcl =
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
-        Future.chain ~greedy:true ~pure:true body (fun ((body, ctx), side_eff) ->
+        Future.chain ~greedy:true ~pure:true body (fun ((body, ctx),side_eff) ->
           let body = handle_side_effects env body side_eff in
 	  let env' = push_context_set ctx env in
           let j = infer env' body in
