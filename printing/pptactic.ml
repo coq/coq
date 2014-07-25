@@ -82,10 +82,6 @@ let pr_or_var pr = function
   | ArgArg x -> pr x
   | ArgVar (_,s) -> pr_id s
 
-let pr_or_metaid pr = function
-  | AI x -> pr x
-  | _ -> failwith "pr_hyp_location: unexpected quotation meta-variable"
-
 let pr_and_short_name pr (c,_) = pr c
 
 let pr_or_by_notation f = function

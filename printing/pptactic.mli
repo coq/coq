@@ -17,7 +17,6 @@ open Pattern
 open Misctypes
 
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
-val pr_or_metaid : ('a -> std_ppcmds) -> 'a or_metaid -> std_ppcmds
 val pr_and_short_name : ('a -> std_ppcmds) -> 'a and_short_name -> std_ppcmds
 val pr_or_by_notation : ('a -> std_ppcmds) -> 'a or_by_notation -> std_ppcmds
 

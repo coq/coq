@@ -102,8 +102,6 @@ let intern_hyp ist (loc,id as locid) =
   else
     Pretype_errors.error_var_not_found_loc loc id
 
-let intern_hyp_or_metaid ist id = intern_hyp ist id
-
 let intern_or_var ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)
   | ArgArg _ as x -> x
@@ -143,8 +141,8 @@ let intern_constr_reference strict ist = function
 	if strict then None else Some (CRef (r,None))
 
 let intern_move_location ist = function
-  | MoveAfter id -> MoveAfter (intern_hyp_or_metaid ist id)
-  | MoveBefore id -> MoveBefore (intern_hyp_or_metaid ist id)
+  | MoveAfter id -> MoveAfter (intern_hyp ist id)
+  | MoveBefore id -> MoveBefore (intern_hyp ist id)
   | MoveFirst -> MoveFirst
   | MoveLast -> MoveLast
 
@@ -213,7 +211,7 @@ let intern_non_tactic_reference strict ist r =
 
 let intern_message_token ist = function
   | (MsgString _ | MsgInt _ as x) -> x
-  | MsgIdent id -> MsgIdent (intern_hyp_or_metaid ist id)
+  | MsgIdent id -> MsgIdent (intern_hyp ist id)
 
 let intern_message ist = List.map (intern_message_token ist)
 
@@ -366,9 +364,9 @@ let intern_red_expr ist = function
   | (Red _ | Hnf | ExtraRedExpr _ as r ) -> r
 
 let intern_in_hyp_as ist lf (id,ipat) =
-  (intern_hyp_or_metaid ist id, Option.map (intern_intro_pattern lf ist) ipat)
+  (intern_hyp ist id, Option.map (intern_intro_pattern lf ist) ipat)
 
-let intern_hyp_list ist = List.map (intern_hyp_or_metaid ist)
+let intern_hyp_list ist = List.map (intern_hyp ist)
 
 let intern_inversion_strength lf ist = function
   | NonDepInversion (k,idl,ids) ->
@@ -383,7 +381,7 @@ let intern_inversion_strength lf ist = function
 (* Interprets an hypothesis name *)
 let intern_hyp_location ist ((occs,id),hl) =
   ((Locusops.occurrences_map (List.map (intern_or_var ist)) occs,
-   intern_hyp_or_metaid ist id), hl)
+   intern_hyp ist id), hl)
 
 (* Reads a pattern *)
 let intern_pattern ist ?(as_type=false) ltacvars = function
@@ -505,15 +503,15 @@ let rec intern_atomic lf ist x =
   | TacDecompose (l,c) -> let l = List.map (intern_inductive ist) l in
       TacDecompose (l,intern_constr ist c)
   (* Context management *)
-  | TacClear (b,l) -> TacClear (b,List.map (intern_hyp_or_metaid ist) l)
-  | TacClearBody l -> TacClearBody (List.map (intern_hyp_or_metaid ist) l)
+  | TacClear (b,l) -> TacClear (b,List.map (intern_hyp ist) l)
+  | TacClearBody l -> TacClearBody (List.map (intern_hyp ist) l)
   | TacMove (dep,id1,id2) ->
-    TacMove (dep,intern_hyp_or_metaid ist id1,intern_move_location ist id2)
+    TacMove (dep,intern_hyp ist id1,intern_move_location ist id2)
   | TacRename l ->
       TacRename (List.map (fun (id1,id2) ->
-			     intern_hyp_or_metaid ist id1,
-			     intern_hyp_or_metaid ist id2) l)
-  | TacRevert l -> TacRevert (List.map (intern_hyp_or_metaid ist) l)
+			     intern_hyp ist id1,
+			     intern_hyp ist id2) l)
+  | TacRevert l -> TacRevert (List.map (intern_hyp ist) l)
 
   (* Constructors *)
   | TacSplit (ev,bll) -> TacSplit (ev,List.map (intern_bindings ist) bll)

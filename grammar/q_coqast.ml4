@@ -71,10 +71,6 @@ let mlexpr_of_intro_pattern = function
 
 let mlexpr_of_ident_option = mlexpr_of_option (mlexpr_of_ident)
 
-let mlexpr_of_or_metaid f = function
-  | Tacexpr.AI a -> <:expr< Tacexpr.AI $f a$ >>
-  | Tacexpr.MetaId (_,id) -> <:expr< Tacexpr.AI $anti loc id$ >>
-
 let mlexpr_of_quantified_hypothesis = function
   | Misctypes.AnonHyp n -> <:expr< Glob_term.AnonHyp $mlexpr_of_int n$ >>
   | Misctypes.NamedHyp id ->  <:expr< Glob_term.NamedHyp $mlexpr_of_ident id$ >>
