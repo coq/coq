@@ -55,6 +55,7 @@ Vernacular commands
 - The "Locate" command now searches through all sorts of qualified namespaces of
   Coq: terms, modules, tactics, etc. The old behaviour of the command can be
   retrieved using the "Locate Term" command.
+- New "Derive" command to help writing program by derivation.
 
 Specification Language
 
