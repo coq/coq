@@ -270,6 +270,12 @@ val give_up : unit tactic
     is negative, then it puts the [n] last goals first.*)
 val cycle : int -> unit tactic
 
+(** [swap i j] swaps the position of goals number [i] and [j]
+    (negative numbers can be used to address goals from the end. Goals
+    are indexed from [1]. For simplicity index [0] corresponds to goal
+    [1] as well, rather than raising an error. *)
+val swap : int -> int -> unit tactic
+
 exception Timeout
 (** [tclTIMEOUT n t] can have only one success.
     In case of timeout if fails with [tclZERO Timeout]. *)

@@ -655,18 +655,40 @@ let give_up =
   Proof.set {initial with comb=[]} >>
   Proof.put (false,([],initial.comb))
 
+(** [goodmod p m] computes the representative of [p] modulo [m] in the
+    interval [[0,m-1]].*)
+let goodmod p m =
+  let p' = p mod m in
+  (* if [n] is negative [n mod l] is negative of absolute value less
+     than [l], so [(n mod l)+l] is the representative of [n] in the
+     interval [[0,l-1]].*)
+  if p' < 0 then p'+m else p'
+
 let cycle n =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   Proof.get >>= fun initial ->
   let l = List.length initial.comb in
-  let n' = n mod l in
-  (* if [n] is negative [n mod l] is negative of absolute value less
-     than [l], so [(n mod l)+l] is the representative of [n] in the
-     interval [[0,l-1]].*)
-  let n' = if n' < 0 then n'+l else n' in
+  let n' = goodmod n l in
   let (front,rear) = List.chop n' initial.comb in
   Proof.set {initial with comb=rear@front}
+
+let swap i j =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun initial ->
+  let l = List.length initial.comb in
+  let i = if i>0 then i-1 else i and j = if j>0 then j-1 else j in
+  let i = goodmod i l and j = goodmod j l in
+  let comb =
+    CList.map_i begin fun k x ->
+      match k with
+      | k when Int.equal k i -> CList.nth initial.comb j
+      | k when Int.equal k j -> CList.nth initial.comb i
+      | _ -> x
+    end 0 initial.comb
+  in
+  Proof.set {initial with comb}
 
 (*** Commands ***)
 

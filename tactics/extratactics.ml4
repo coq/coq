@@ -876,3 +876,8 @@ END
 TACTIC EXTEND cycle
 | [ "cycle" int_or_var(n) ] -> [ Proofview.cycle (out_arg n) ]
 END
+
+(* swaps goals number [i] and [j] *)
+TACTIC EXTEND swap
+| [ "swap" int_or_var(i) int_or_var(j) ] -> [ Proofview.swap (out_arg i) (out_arg j) ]
+END
