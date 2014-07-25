@@ -156,3 +156,6 @@ dev/ocamldoc/html/
 dev/ocamldoc/coq.*
 dev/ocamldoc/ocamldoc.sty
 dev/myinclude
+
+# coqide generated files (when testing)
+*.crashcoqide
