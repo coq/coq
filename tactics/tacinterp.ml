@@ -1376,6 +1376,19 @@ and interp_genarg ist env sigma concl gl x =
   let v = interp_genarg x in
   !evdref , v
 
+
+(** returns [true] for genargs which have the same meaning
+    independently of goals. *)
+
+and global_genarg =
+  let rec global_tag = function
+    | IntOrVarArgType | GenArgType -> true
+    | ListArgType t | OptArgType t -> global_tag t
+    | PairArgType (t1,t2) -> global_tag t1 && global_tag t2
+    | _ -> false
+  in
+  fun x -> global_tag (genarg_tag x)
+
 and interp_genarg_constr_list ist env sigma x =
   let lc = out_gen (glbwit (wit_list wit_constr)) x in
   let (sigma,lc) = interp_constr_list ist env sigma lc in
@@ -1798,12 +1811,19 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
 
   (* For extensions *)
-  | TacExtend (loc,opn,[]) ->
-      (* spiwack: a special case for tactics (from TACTIC EXTEND) without arguments to
-         be interpreted without a [Proofview.Goal.enter]. Eventually we should make
-         something more fine-grained by modifying [interp_genarg]. *)
+  | TacExtend (loc,opn,l) when List.for_all global_genarg l ->
+      (* spiwack: a special case for tactics (from TACTIC EXTEND) when
+         every argument can be interpreted without a
+         [Proofview.Goal.enter]. *)
       let tac = Tacenv.interp_ml_tactic opn in
-      tac [] ist
+      (* dummy values, will be ignored *)
+      let env = Environ.empty_env in
+      let sigma = Evd.empty in
+      let concl = Term.mkRel (-1) in
+      let goal = sig_it Goal.V82.dummy_goal in
+      (* /dummy values *)
+      let args = List.map (fun a -> snd(interp_genarg ist env sigma concl goal a)) l in
+      tac args ist
   | TacExtend (loc,opn,l) ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
