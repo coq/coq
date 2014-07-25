@@ -4648,6 +4648,27 @@ all: cycle -3.
 Reset Initial.
 \end{coq_eval}
 
+\subsection[\tt swap \num$_1$ \num$_2$]{\tt swap \num$_1$ \num$_2$\tacindex{swap}}
+
+This tactic switches the position of the goals of indices $\num_1$ and $\num_2$. If either $\num_1$ or $\num_2$ is negative then goals are counted from the end of the focused goal list. Goals are indexed from $1$, there is no goal with position $0$. 
+
+\Example
+\begin{coq_example*}
+Parameter P : nat -> Prop.
+Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
+\end{coq_example*}
+\begin{coq_example}
+repeat split.
+all: swap 1 3.
+all: swap 1 -1.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+
+
 \subsection[\tt shelve]{\tt shelve\tacindex{shelve}\label{shelve}}
 
 This tactic moves all goals under focus to a shelf. While on the shelf, goals
