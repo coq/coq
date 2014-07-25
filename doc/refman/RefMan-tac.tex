@@ -4626,6 +4626,28 @@ Reset Initial.
 \end{coq_eval}
 
 \section{Non-logical tactics}
+
+\subsection[\tt cycle \num]{\tt cycle \num\tacindex{cycle}}
+
+This tactic puts the {\num} first goals at the end of the list of
+goals. If {\num} is negative, it will put the last $\left|\num\right|$ goals at
+the begining of the list.
+
+\Example
+\begin{coq_example*}
+Parameter P : nat -> Prop.
+Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
+\end{coq_example*}
+\begin{coq_example}
+repeat split.
+all: cycle 2.
+all: cycle -3.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
 \subsection[\tt shelve]{\tt shelve\tacindex{shelve}\label{shelve}}
 
 This tactic moves all goals under focus to a shelf. While on the shelf, goals
