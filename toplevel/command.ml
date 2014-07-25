@@ -525,7 +525,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
   in
   (* Build the mutual inductive entry *)
   { mind_entry_params = List.map prepare_param ctx_params;
-    mind_entry_record = false;
+    mind_entry_record = None;
     mind_entry_finite = finite;
     mind_entry_inds = entries;
     mind_entry_polymorphic = poly;

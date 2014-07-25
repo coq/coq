@@ -223,8 +223,14 @@ let subst_mind_packet sub mbp =
     mind_nb_args = mbp.mind_nb_args;
     mind_reloc_tbl = mbp.mind_reloc_tbl }
 
+let subst_mind_record sub (c, ps as r) =
+  let c' = subst_mps sub c in
+  let ps' = Array.smartmap (subst_constant sub) ps in
+    if c' == c && ps' == ps then r
+    else (c', ps')
+
 let subst_mind_body sub mib =
-  { mind_record = mib.mind_record ;
+  { mind_record = Option.smartmap (subst_mind_record sub) mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = (match mib.mind_hyps with [] -> [] | _ -> assert false);

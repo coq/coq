@@ -91,7 +91,11 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
   let sechyps' = map_named_context (expmod_constr modlist) sechyps in
   let (params',inds') = abstract_inductive sechyps' nparams inds in
   let univs = Univ.UContext.union abs_ctx mib.mind_universes in
-  { mind_entry_record = mib.mind_record <> None;
+  let record = match mib.mind_record with
+    | None -> None
+    | Some (_, a) -> Some (Array.length a > 0)
+  in
+  { mind_entry_record = record;
     mind_entry_finite = mib.mind_finite;
     mind_entry_params = params';
     mind_entry_inds = inds';

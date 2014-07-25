@@ -742,17 +742,18 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
       } in
   let packets = Array.map2 build_one_packet inds recargs in
   let isrecord = 
-    let pkt = packets.(0) in
-      if isrecord (* || (Array.length pkt.mind_consnames = 1 &&  *)
-        (* inductive_sort_family pkt <> InProp) *) then
-	let rctx, _ = decompose_prod_assum pkt.mind_nf_lc.(0) in
-	let u = if p then Univ.UContext.instance ctx else Univ.Instance.empty in
-	try 
-	  let exp = compute_expansion ((kn, 0), u) params 
-	    (List.firstn pkt.mind_consnrealdecls.(0) rctx) 
-	  in Some exp
-	with UndefinableExpansion -> None
-      else None
+    match isrecord with
+    | Some true -> (* || (Array.length pkt.mind_consnames = 1 &&  *)
+      let pkt = packets.(0) in	  
+      let rctx, _ = decompose_prod_assum pkt.mind_nf_lc.(0) in
+      let u = if p then Univ.UContext.instance ctx else Univ.Instance.empty in
+	(try 
+	 let exp = compute_expansion ((kn, 0), u) params 
+	   (List.firstn pkt.mind_consnrealdecls.(0) rctx) 
+	 in Some exp
+	 with UndefinableExpansion -> (Some (mkProp, [||])))
+    | Some false -> Some (mkProp, [||])
+    | None -> None
   in
     (* Build the mutual inductive *)
     { mind_record = isrecord;
