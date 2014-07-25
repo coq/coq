@@ -61,6 +61,9 @@ exception CannotUnfocusThisWay
 (* Cannot focus on non-existing subgoals *)
 exception NoSuchGoals of int * int
 
+
+exception FullyUnfocused
+
 let _ = Errors.register_handler begin function
   | CannotUnfocusThisWay ->
     Errors.error "This proof is focused, but cannot be unfocused this way"
@@ -70,6 +73,7 @@ let _ = Errors.register_handler begin function
       Errors.errorlabstrm "Focus" Pp.(
         str"Not every goal in range ["++ int i ++ str","++int j++str"] exist."
       )
+  | FullyUnfocused -> Errors.error "The proof is not focused"
   | _ -> raise Errors.Unhandled
 end
 
@@ -152,11 +156,6 @@ let partial_proof p = Proofview.partial_proof p.entry p.proofview
 let push_focus cond inf context pr =
   { pr with focus_stack = (cond,inf,context)::pr.focus_stack }
 
-exception FullyUnfocused
-let _ = Errors.register_handler begin function
-  | FullyUnfocused -> Errors.error "The proof is not focused"
-  | _ -> raise Errors.Unhandled
-end
 (* An auxiliary function to read the kind of the next focusing step *)
 let cond_of_focus pr =
   match pr.focus_stack with
