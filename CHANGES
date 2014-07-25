@@ -209,6 +209,8 @@ Tools
 Interfaces
 
 - CoqIDE uses the new STM machinery, allowing for asynchronous edition.
+- CoqIDE highlight in yellow "unsafe" commands such as axiom
+  declarations, and tactics like "admit".
 
 Internal Infrastructure
 
