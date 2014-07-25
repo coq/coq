@@ -95,7 +95,7 @@ val close_proof : (exn -> exn) -> closed_proof
  * Both access the current proof state. The formes is supposed to be
  * chained with a computation that completed the proof *)
 
-type closed_proof_output = Entries.proof_output list * Evd.evar_universe_context
+type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context
 
 val return_proof : unit -> closed_proof_output
 val close_future_proof : feedback_id:Stateid.t ->

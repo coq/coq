@@ -283,7 +283,7 @@ let close_proof ?feedback_id ~now fpl =
     (Evd.evar_universe_context_subst universes) in
   let make_body =
     if poly || now then
-      let make_body t ((c, _ctx), eff) =
+      let make_body t (c, eff) =
 	let body = c and typ = nf t in
 	let used_univs = 
 	  Univ.LSet.union (Universes.universes_of_constr body)
@@ -298,9 +298,11 @@ let close_proof ?feedback_id ~now fpl =
 	fun t p ->
 	  Future.split2 (Future.chain ~pure:true p (make_body t))
     else
-      let univs = Evd.evar_context_universe_context universes in
-	fun t p ->
-	  Future.from_val (univs, nf t), p  
+      fun t p ->
+        let initunivs = Evd.evar_context_universe_context universes in
+	  Future.from_val (initunivs, nf t), 
+	  Future.chain ~pure:true p (fun (pt,eff) ->
+	    (pt, Evd.evar_universe_context_set (Future.force univs)), eff)
   in
   let entries =
     Future.map2 (fun p (_, t) ->
@@ -320,7 +322,7 @@ let close_proof ?feedback_id ~now fpl =
   { id = pid; entries = entries; persistence = strength; universes = universes },
   Ephemeron.get terminator
 
-type closed_proof_output = Entries.proof_output list * Evd.evar_universe_context
+type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context
 
 let return_proof () =
   let { proof } = cur_pstate () in
@@ -343,7 +345,7 @@ let return_proof () =
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
   let proofs = 
-    List.map (fun (c, _) -> ((Evarutil.nf_evars_universes evd c, Univ.ContextSet.empty), eff)) initial_goals in
+    List.map (fun (c, _) -> (Evarutil.nf_evars_universes evd c, eff)) initial_goals in
     proofs, Evd.evar_universe_context evd
 
 let close_future_proof ~feedback_id proof =
