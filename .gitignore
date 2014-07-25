@@ -157,5 +157,9 @@ dev/ocamldoc/coq.*
 dev/ocamldoc/ocamldoc.sty
 dev/myinclude
 
+# emacs save files
+*~
+\#*\#
+
 # coqide generated files (when testing)
 *.crashcoqide
