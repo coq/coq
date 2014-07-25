@@ -70,7 +70,43 @@ Specification Language
 
 Tactics
 
-- New tactic engine allowing real backtrack and multi-success tactics.
+- New tactic engine allowing dependent subgoals, fully backtracking
+  (aka multiple success) tactics, as well tactics which can consider
+  multiple goals together.
+  * New tactical (a+b) insert a bakctracking point. When (a+b);c fails
+    during the execution of c, it can backtrack and try b instead of a.
+  * New tactical (once a) removes all the backtracking point from a
+    (i.e. it selects the first success of a).
+  * Tactic "constructor" is now fully backtracking, thus deprecating
+    the need of the undocumented "contructor <tac>" syntax which is
+    now equivalent to "once (constructor; tac)". (potential source of
+    rare incompatibilities).
+  * New selector all: to qualify a tactic allows to apply a tactic to
+    all the focused goal, instead of just the first one as is the
+    default.
+  * A corresponding new option Set Default Goal Selector "all" makes
+    the tactics in scripts be applied to all the focused goal by default
+  * The semantics of recursive tactics (introduced with Ltac t :=
+    ... or let rec t := ... in ...) changes slightly as t is now
+    applied to every goal not each goal independently, in particular
+    it may be applied when no goal are left. This may cause tactics
+    such as let rec t := constructor;t to loop indefinitely. The
+    simple fix is to rewrite the recursive calls as follows: let rec t
+    := constructor;[t..] which recovers the earlier behaviour. (source
+    of rare incompatibilities)
+  * The refine tactic is changed not to use an ad hoc typing algorithm
+    to generate subgoals. It also uses the dependent subgoal feature
+    to generate goals to materialise every existential variable which
+    is introduced by the refinement (source of incompatibilies).
+  * A tactic shelve is introduded to manage the subgoals which may be
+    solved by unification: shelve removes every goal it is applied to
+    from focus. These goals can later be called back into focus by the
+    Unshelve command.
+  * A variant shelve_unifiable only removes those goals which appear
+    as existential variables in other goals. To emulate the old
+    refine, use (refine c;shelve_unifiable). This can still cause
+    incompatiblities in rare occasions.
+  * New "give_up" tactic to skip over a goal without admitting it.
 - New "cbn" tactic, a well-behaved simpl.
 - Repeated identical calls to omega should now produce identical proof terms.
 - Tactics btauto, a reflexive boolean tautology solver.
@@ -127,9 +163,6 @@ Tactics
   has been cleared or renamed in the current goal context now fail
   (possible source of incompatibilities solvable by avoiding clearing
   the relevant hypotheses).
-- Tactic "constructor" is now fully backtracking, thus deprecating the need of
-  the undocumented "contructor <tac>" syntax which is now equivalent to
-  "once (constructor; tac)". (potential source of rare incompatibilities).
 
 
 Program
