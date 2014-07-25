@@ -57,9 +57,19 @@ let new_focus_kind () =
     of just one, if anyone needs it *)
 
 exception CannotUnfocusThisWay
+
+(* Cannot focus on non-existing subgoals *)
+exception NoSuchGoals of int * int
+
 let _ = Errors.register_handler begin function
   | CannotUnfocusThisWay ->
     Errors.error "This proof is focused, but cannot be unfocused this way"
+  | NoSuchGoals (i,j) when Int.equal i j ->
+      Errors.errorlabstrm "Focus" Pp.(str"No such goal (" ++ int i ++ str").")
+  | NoSuchGoals (i,j) ->
+      Errors.errorlabstrm "Focus" Pp.(
+        str"Not every goal in range ["++ int i ++ str","++int j++str"] exist."
+      )
   | _ -> raise Errors.Unhandled
 end
 
@@ -179,7 +189,8 @@ let _unfocus pr =
 (* spiwack: there could also, easily be a focus-on-a-range tactic, is there 
    a need for it? *)
 let focus cond inf i pr =
-  _focus cond (Obj.repr inf) i i pr
+  try _focus cond (Obj.repr inf) i i pr
+  with Proofview.IndexOutOfRange -> raise (NoSuchGoals (i,i))
 
 let rec unfocus kind pr () =
   let cond = cond_of_focus pr in
