@@ -266,6 +266,10 @@ val unshelve : Goal.goal list -> proofview -> proofview
    with given up goals cannot be closed. *)
 val give_up : unit tactic
 
+(** If [n] is positive, [cycle n] puts the [n] first goal last. If [n]
+    is negative, then it puts the [n] last goals first.*)
+val cycle : int -> unit tactic
+
 exception Timeout
 (** [tclTIMEOUT n t] can have only one success.
     In case of timeout if fails with [tclZERO Timeout]. *)

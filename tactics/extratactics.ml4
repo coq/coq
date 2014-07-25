@@ -871,3 +871,8 @@ TACTIC EXTEND give_up
 | [ "give_up" ] ->
     [ Proofview.give_up ]
 END
+
+(* cycles [n] goals *)
+TACTIC EXTEND cycle
+| [ "cycle" int_or_var(n) ] -> [ Proofview.cycle (out_arg n) ]
+END

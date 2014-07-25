@@ -655,6 +655,19 @@ let give_up =
   Proof.set {initial with comb=[]} >>
   Proof.put (false,([],initial.comb))
 
+let cycle n =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun initial ->
+  let l = List.length initial.comb in
+  let n' = n mod l in
+  (* if [n] is negative [n mod l] is negative of absolute value less
+     than [l], so [(n mod l)+l] is the representative of [n] in the
+     interval [[0,l-1]].*)
+  let n' = if n' < 0 then n'+l else n' in
+  let (front,rear) = List.chop n' initial.comb in
+  Proof.set {initial with comb=rear@front}
+
 (*** Commands ***)
 
 let in_proofview p k =
