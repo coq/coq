@@ -142,6 +142,12 @@ module Logical =
     let m = m s in
     { iolist = fun nil cons -> m.iolist nil (fun x _ -> cons x nil) }
 
+  let break (f : exn -> bool) (m : 'a tactic) : 'a tactic = (); fun s ->
+    let m = m s in
+    { iolist = fun nil cons ->
+      m.iolist nil (fun x next -> cons x (fun e -> if f e then nil e else next e))
+    }
+
   type 'a reified = ('a, exn -> 'a reified) list_view IO.t
 
   let rec reflect (m : 'a reified) : 'a iolist =

@@ -285,6 +285,8 @@ let tclIFCATCH a s f =
    success. *)
 let tclONCE = Proof.once
 
+let tclBREAK = Proof.break
+
 exception MoreThanOneSuccess
 let _ = Errors.register_handler begin function
   | MoreThanOneSuccess -> Errors.error "This tactic has more than one success."

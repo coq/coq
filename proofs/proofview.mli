@@ -179,6 +179,12 @@ val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (exn -> 'b tactic) -> 'b tact
    success. *)
 val tclONCE : 'a tactic -> 'a tactic
 
+(* [tclBREAK f t] is a generalization of [tclONCE t]. Instead of stopping at the
+  first element encountered, it waits for the tactic to return an exception
+  satisfying [f], and drop the remaining results. [tclONCE t] is equivalent to
+  [tclBREAK (fun _ -> true) t]. *)
+val tclBREAK : (exn -> bool) -> 'a tactic -> 'a tactic
+
 (* [tclEXACTLY_ONCE e t] succeeds as [t] if [t] has exactly one
    success. Otherwise it fails.  It may behave differently than [t] as
    there may be extra non-logical effects used to discover that [t]
