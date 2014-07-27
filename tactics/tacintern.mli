@@ -63,7 +63,7 @@ val intern_red_expr : glob_sign -> raw_red_expr -> glob_red_expr
 val dump_glob_red_expr : raw_red_expr -> unit
 
 (* Hooks *)
-val assert_tactic_installed_hook : (string -> unit) Hook.t
+val assert_tactic_installed_hook : (ml_tactic_name -> unit) Hook.t
 val interp_atomic_ltac_hook : (Id.t -> glob_tactic_expr) Hook.t
 val interp_ltac_hook : (KerName.t -> glob_tactic_expr) Hook.t
 val strict_check : bool ref

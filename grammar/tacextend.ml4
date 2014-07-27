@@ -21,6 +21,8 @@ open Compat
 
 let dloc = <:expr< Loc.ghost >>
 
+let plugin_name = <:expr< __coq_plugin_name >>
+
 let rec make_patt = function
   | [] -> <:patt< [] >>
   | GramNonTerminal(loc',_,_,Some p)::l ->
@@ -182,7 +184,8 @@ let declare_tactic loc s c cl = match cl with
   let patt = make_patt rem in
   let vars = make_vars (List.length rem) in
   let vars = mlexpr_of_list (mlexpr_of_option mlexpr_of_ident) vars in
-  let se = mlexpr_of_string s in
+  let entry = mlexpr_of_string s in
+  let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
   let name = mlexpr_of_string name in
   let tac =
     (** Special handling of tactics without arguments: such tactics do not do
@@ -204,17 +207,18 @@ let declare_tactic loc s c cl = match cl with
       let obj () = Tacenv.register_ltac False False [($name$, False, $body$)] in
       try do {
         Tacenv.register_ml_tactic $se$ $tac$;
-        Mltop.declare_cache_obj obj __coq_plugin_name; }
+        Mltop.declare_cache_obj obj $plugin_name$; }
       with [ e when Errors.noncritical e ->
         Pp.msg_warning
           (Pp.app
-            (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))
+            (Pp.str ("Exception in tactic extend " ^ $entry$ ^": "))
             (Errors.print e)) ]; } >>
     ]
 | _ ->
   (** Otherwise we add parsing and printing rules to generate a call to a
       TacExtend tactic. *)
-  let se = mlexpr_of_string s in
+  let entry = mlexpr_of_string s in
+  let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
   let pp = make_printing_rule se cl in
   let gl = mlexpr_of_clause cl in
   let atom =
@@ -225,12 +229,12 @@ let declare_tactic loc s c cl = match cl with
     [ <:str_item< do {
       try do {
         Tacenv.register_ml_tactic $se$ $make_fun_clauses loc s cl$;
-        Mltop.declare_cache_obj $obj$ __coq_plugin_name;
+        Mltop.declare_cache_obj $obj$ $plugin_name$;
         List.iter (fun (s, r) -> Pptactic.declare_ml_tactic_pprule s r) $pp$; }
       with [ e when Errors.noncritical e ->
         Pp.msg_warning
           (Pp.app
-            (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))
+            (Pp.str ("Exception in tactic extend " ^ $entry$ ^": "))
             (Errors.print e)) ]; } >>
     ]
 

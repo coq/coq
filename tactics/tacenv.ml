@@ -31,25 +31,39 @@ let interp_alias key =
 type ml_tactic =
   typed_generic_argument list -> Geninterp.interp_sign -> unit Proofview.tactic
 
-let tac_tab = Hashtbl.create 17
+module MLName =
+struct
+  type t = ml_tactic_name
+  let compare tac1 tac2 =
+    let c = String.compare tac1.mltac_tactic tac2.mltac_tactic in
+    if c = 0 then String.compare tac1.mltac_plugin tac2.mltac_plugin
+    else c
+end
+
+module MLTacMap = Map.Make(MLName)
+
+let pr_tacname t =
+  t.mltac_plugin ^ "::" ^ t.mltac_tactic
+
+let tac_tab = ref MLTacMap.empty
 
 let register_ml_tactic ?(overwrite = false) s (t : ml_tactic) =
   let () =
-    if Hashtbl.mem tac_tab s then
+    if MLTacMap.mem s !tac_tab then
       if overwrite then
-        let () = Hashtbl.remove tac_tab s in
-        msg_warning (str ("Overwriting definition of tactic " ^ s))
+        let () = tac_tab := MLTacMap.remove s !tac_tab in
+        msg_warning (str ("Overwriting definition of tactic " ^ pr_tacname s))
       else
-        Errors.anomaly (str ("Cannot redeclare tactic " ^ s ^ "."))
+        Errors.anomaly (str ("Cannot redeclare tactic " ^ pr_tacname s ^ "."))
   in
-  Hashtbl.add tac_tab s t
+  tac_tab := MLTacMap.add s t !tac_tab
 
 let interp_ml_tactic s =
   try
-    Hashtbl.find tac_tab s
+    MLTacMap.find s !tac_tab
   with Not_found ->
     Errors.errorlabstrm ""
-      (str "The tactic " ++ str s ++ str " is not installed.")
+      (str "The tactic " ++ str (pr_tacname s) ++ str " is not installed.")
 
 let () =
   let assert_installed opn = let _ = interp_ml_tactic opn in () in

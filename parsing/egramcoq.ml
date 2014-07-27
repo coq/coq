@@ -252,7 +252,7 @@ type tactic_grammar = {
 type all_grammar_command =
   | Notation of Notation.level * notation_grammar
   | TacticGrammar of KerName.t * tactic_grammar
-  | MLTacticGrammar of string * grammar_prod_item list list
+  | MLTacticGrammar of ml_tactic_name * grammar_prod_item list list
 
 (** ML Tactic grammar extensions *)
 

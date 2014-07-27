@@ -50,7 +50,7 @@ val extend_tactic_grammar : KerName.t -> tactic_grammar -> unit
 (** Add a tactic notation rule to the parsing system. This produces a TacAlias
     tactic with the provided kernel name. *)
 
-val extend_ml_tactic_grammar : string -> grammar_prod_item list list -> unit
+val extend_ml_tactic_grammar : Tacexpr.ml_tactic_name -> grammar_prod_item list list -> unit
 (** Add a ML tactic notation rule to the parsing system. This produces a
     TacExtend tactic with the provided string as name. *)
 

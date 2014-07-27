@@ -51,7 +51,7 @@ type pp_tactic = {
   pptac_prods : int * grammar_terminals;
 }
 
-val declare_ml_tactic_pprule : string -> pp_tactic -> unit
+val declare_ml_tactic_pprule : ml_tactic_name -> pp_tactic -> unit
 val declare_notation_tactic_pprule : KerName.t -> pp_tactic -> unit
 
 val pr_clauses :  bool option ->
@@ -83,19 +83,19 @@ val pr_raw_extend:
   (constr_expr -> std_ppcmds) -> (constr_expr -> std_ppcmds) ->
   (tolerability -> raw_tactic_expr -> std_ppcmds) ->
   (constr_expr -> std_ppcmds) -> int ->
-    string -> raw_generic_argument list -> std_ppcmds
+  ml_tactic_name -> raw_generic_argument list -> std_ppcmds
 
 val pr_glob_extend:
   (glob_constr_and_expr -> std_ppcmds) -> (glob_constr_and_expr -> std_ppcmds) ->
   (tolerability -> glob_tactic_expr -> std_ppcmds) ->
   (glob_constr_pattern_and_expr -> std_ppcmds) -> int ->
-    string -> glob_generic_argument list -> std_ppcmds
+  ml_tactic_name -> glob_generic_argument list -> std_ppcmds
 
 val pr_extend :
   (Term.constr -> std_ppcmds) -> (Term.constr -> std_ppcmds) ->
   (tolerability -> glob_tactic_expr -> std_ppcmds) ->
   (constr_pattern -> std_ppcmds) -> int ->
-    string -> typed_generic_argument list -> std_ppcmds
+  ml_tactic_name -> typed_generic_argument list -> std_ppcmds
 
 val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds
 

@@ -83,6 +83,11 @@ type ('a,'t) match_rule =
   | Pat of 'a match_context_hyps list * 'a match_pattern * 't
   | All of 't
 
+type ml_tactic_name = {
+  mltac_plugin : string;
+  mltac_tactic : string;
+}
+
 (** Composite types *)
 
 (** In globalize tactics, we need to keep the initial [constr_expr] to recompute
@@ -157,7 +162,7 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacInversion of ('trm,'nam) inversion_strength * quantified_hypothesis
 
   (* For ML extensions *)
-  | TacExtend of Loc.t * string * 'lev generic_argument list
+  | TacExtend of Loc.t * ml_tactic_name * 'lev generic_argument list
 
   (* For syntax extensions *)
   | TacAlias of Loc.t * KerName.t * (Id.t * 'lev generic_argument) list

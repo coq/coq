@@ -260,7 +260,12 @@ let pr_extend_gen pr_gen lev s l =
     let p = pr_tacarg_using_rule pr_gen (pl,l) in
     if lev' > lev then surround p else p
   with Not_found ->
-    str "<" ++ str s ++ str ">" ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
+    let name = str s.mltac_plugin ++ str "::" ++ str s.mltac_tactic in
+    let args = match l with
+    | [] -> mt ()
+    | _ -> spc() ++ pr_sequence pr_gen l
+    in
+    str "<" ++ name ++ str ">" ++ args
 
 let pr_alias_gen pr_gen lev key l =
   try

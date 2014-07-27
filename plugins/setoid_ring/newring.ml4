@@ -139,9 +139,13 @@ let closed_term_ast l =
    Genarg.in_gen (Genarg.wit_list Constrarg.wit_ref) l])))
 *)
 let closed_term_ast l =
+  let tacname = {
+    mltac_plugin = "newring_plugin";
+    mltac_tactic = "closed_term";
+  } in
   let l = List.map (fun gr -> ArgArg(Loc.ghost,gr)) l in
   TacFun([Some(Id.of_string"t")],
-  TacAtom(Loc.ghost,TacExtend(Loc.ghost,"closed_term",
+  TacAtom(Loc.ghost,TacExtend(Loc.ghost,tacname,
   [Genarg.in_gen (Genarg.glbwit Constrarg.wit_constr) (GVar(Loc.ghost,Id.of_string"t"),None);
    Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Constrarg.wit_ref)) l])))
 (*
