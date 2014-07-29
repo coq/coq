@@ -103,6 +103,8 @@ GEXTEND Gram
           TacArg(!@loc,MetaIdArg (!@loc,false,id))
       | IDENT "constr"; ":"; c = Constr.constr ->
           TacArg(!@loc,ConstrMayEval(ConstrTerm c))
+      | IDENT "uconstr"; ":" ; c = Constr.constr ->
+          TacArg(!@loc,UConstr c)
       | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
 	  TacArg(!@loc, TacGeneric (genarg_of_ipattern ipat))
       | r = reference; la = LIST0 tactic_arg ->
