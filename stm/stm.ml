@@ -494,15 +494,33 @@ end = struct
 
 end
 
-let print_goals_of_state id =
-  try
-    Option.iter (fun { proof = pstate } -> Pp.feedback ~state_id:id
-      (Feedback.Goals
-        (Loc.ghost, Pp.string_of_ppcmds
-          (Printer.pr_open_subgoals
-            ~proof:(Proof_global.proof_of_state pstate) ()))))
-      (VCS.get_info id).state
-  with Proof_global.NoCurrentProof -> ()
+let print_goals_of_state, forward_feedback =
+  let already_printed = ref Stateid.Set.empty in
+  let add_to_already_printed =
+    let m = Mutex.create () in
+    fun id ->
+      Mutex.lock m;
+      already_printed := Stateid.Set.add id !already_printed;
+      Mutex.unlock m in
+  (fun id ->
+    if Stateid.Set.mem id !already_printed then ()
+    else begin
+      add_to_already_printed id;
+      try
+        Option.iter (fun { proof = pstate } ->
+          Pp.feedback ~state_id:id
+            (Feedback.Goals
+              (Loc.ghost, Pp.string_of_ppcmds
+                (Printer.pr_open_subgoals
+                  ~proof:(Proof_global.proof_of_state pstate) ()))))
+            (VCS.get_info id).state
+      with Proof_global.NoCurrentProof -> ()
+  end),
+  fun id -> function
+    | Feedback.Goals _ as msg ->
+        add_to_already_printed id;
+        Pp.feedback ~state_id:id msg
+    | msg -> Pp.feedback ~state_id:id msg
 
 (* Fills in the nodes of the VCS *)
 module State : sig
@@ -731,15 +749,6 @@ end = struct
   let build_proof_here (id,valid) loc eop =
     Future.create (State.exn_on id ~valid) (build_proof_here_core loc eop)
 
-  let slave_print_all_goals id =
-    let rec aux id =
-      print_goals_of_state id;
-      try aux (VCS.visit id).next
-      with
-      | VCS.Expired -> ()
-      | e when Errors.noncritical e -> () in
-    Future.purify (fun id -> !reach_known_state ~cache:`No id; aux id) id
-
   let slave_respond msg =
     match msg with
     | ReqBuildProof(exn_info,eop,vcs,loc,_,_) ->
@@ -757,7 +766,6 @@ end = struct
           se) (fst l);
           l, Unix.gettimeofday () -. wall_clock in
         VCS.print ();
-        if !Flags.feedback_goals then slave_print_all_goals eop;
         RespBuiltProof(rc,time)
 
   let check_task_aux extra name l i =
@@ -1001,7 +1009,7 @@ end = struct
                   (CList.init 10 (fun _ -> Universes.new_univ_level (Global.current_dirpath ()))));
                 loop ()
             | _, RespFeedback {Feedback.id = Feedback.State state_id; content = msg} ->
-                Pp.feedback ~state_id msg;
+                forward_feedback state_id msg;
                 loop ()
             | _, RespFeedback _ -> assert false (* Parsing in master process *)
           in
@@ -1088,8 +1096,15 @@ end = struct
   let slave_handshake () = WorkersPool.worker_handshake !slave_ic !slave_oc
 
   let slave_main_loop reset =
+    let feedback_queue = ref [] in
     let slave_feeder oc fb =
-      Marshal.to_channel oc (RespFeedback fb) [];
+      match fb.Feedback.content with
+      | Feedback.Goals _ -> feedback_queue := fb :: !feedback_queue
+      | _ -> Marshal.to_channel oc (RespFeedback fb) []; flush oc in
+    let flush_feeder oc =
+      List.iter (fun fb -> Marshal.to_channel oc (RespFeedback fb) [])
+        !feedback_queue;
+      feedback_queue := [];
       flush oc in
     Pp.set_feeder (slave_feeder !slave_oc);
     Universes.set_remote_new_univ_level (bufferize (fun () ->
@@ -1105,6 +1120,7 @@ end = struct
         working := true;
         report_status (name_of_request request);
         let response = slave_respond request in
+        flush_feeder !slave_oc;
         report_status "Idle";
         marshal_response !slave_oc response;
         reset ()
@@ -1140,7 +1156,7 @@ end = struct
             | Some id -> aux (n+1) m id in
           (if is_cached safe_id then [safe_id,get_cached safe_id] else [])
           @ aux 1 (prog 1 1) safe_id in
-        if !Flags.feedback_goals then slave_print_all_goals safe_id;
+        flush_feeder !slave_oc;
         marshal_response !slave_oc (RespError(err_id, safe_id, print e, states))
       | e ->
         pr_err ("Slave: critical exception: " ^ Pp.string_of_ppcmds (print e));
@@ -1370,8 +1386,7 @@ let known_state ?(redefine_qed=false) ~cache id =
     if !Flags.async_proofs_mode = Flags.APonParallel 0 then
       Pp.feedback ~state_id:id Feedback.ProcessingInMaster;
     State.define ~cache:cache_step ~redefine:redefine_qed step id;
-    if !Flags.feedback_goals && not (Flags.async_proofs_is_worker ()) then
-      print_goals_of_state id;
+    if !Flags.feedback_goals then print_goals_of_state id;
     prerr_endline ("reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
 
