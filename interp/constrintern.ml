@@ -696,30 +696,27 @@ let proj_impls r impls =
 let proj_scopes n scopes = 
   List.skipn_at_least n scopes
 
+let proj_impls_scopes p impls scopes =
+  match p with
+  | Some (r, n) -> proj_impls r impls, proj_scopes n scopes
+  | None -> impls, scopes
+
 let find_appl_head_data c =
   match c with
   | GRef (loc,ref,_) as x -> 
     let impls = implicits_of_global ref in
     let scopes = find_arguments_scope ref in
-    let isproj, impls, scopes = 
-      match is_projection_ref ref with
-      | Some (r, n) -> true, proj_impls r impls, proj_scopes n scopes
-      | None -> false, impls, scopes
-    in
+    let isproj = is_projection_ref ref in
       x, isproj, impls, scopes, []
   | GApp (_,GRef (_,ref,_),l) as x
       when l != [] && Flags.version_strictly_greater Flags.V8_2 ->
       let n = List.length l in
       let impls = implicits_of_global ref in 
       let scopes = find_arguments_scope ref in
-      let isproj, impls, scopes = 
-	match is_projection_ref ref with
-	| Some (r, n) -> true, proj_impls r impls, proj_scopes n scopes
-	| None -> false, impls, scopes
-      in
+      let isproj = is_projection_ref ref in
 	x, isproj, List.map (drop_first_implicits n) impls,
 	List.skipn_at_least n scopes,[]
-  | x -> x,false,[],[],[]
+  | x -> x,None,[],[],[]
 
 let error_not_enough_arguments loc =
   user_err_loc (loc,"",str "Abbreviation is not applied enough.")
@@ -751,7 +748,7 @@ let intern_reference ref =
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid loc qid intern env lvar us args =
   match intern_extended_global_of_qualid (loc,qid) with
-  | TrueGlobal ref -> GRef (loc, ref, us), args
+  | TrueGlobal ref -> GRef (loc, ref, us), true, args
   | SynDef sp ->
       let (ids,c) = Syntax_def.search_syntactic_definition sp in
       let nids = List.length ids in
@@ -761,34 +758,36 @@ let intern_qualid loc qid intern env lvar us args =
       let terms = make_subst ids (List.map fst args1) in
       let subst = (terms, Id.Map.empty, Id.Map.empty) in
       let infos = (Id.Map.empty, env) in
-      subst_aconstr_in_glob_constr loc intern lvar subst infos c, args2
+      subst_aconstr_in_glob_constr loc intern lvar subst infos c, false, args2
 
 (* Rule out section vars since these should have been found by intern_var *)
 let intern_non_secvar_qualid loc qid intern env lvar us args =
   match intern_qualid loc qid intern env lvar us args with
-    | GRef (_, VarRef _, _),_ -> raise Not_found
+    | GRef (_, VarRef _, _),_,_ -> raise Not_found
     | r -> r
 
 let intern_applied_reference intern env namedctx lvar us args = function
   | Qualid (loc, qid) ->
-      let r,args2 =
+      let r,projapp,args2 =
 	try intern_qualid loc qid intern env lvar us args
 	with Not_found -> error_global_not_found_loc loc qid
       in
       let x, isproj, imp, scopes, l = find_appl_head_data r in
+      let isproj = if projapp then isproj else None in
 	(x,imp,scopes,l), isproj, args2
   | Ident (loc, id) ->
-      try intern_var env lvar namedctx loc id, false, args
+      try intern_var env lvar namedctx loc id, None, args
       with Not_found ->
       let qid = qualid_of_ident id in
       try
-	let r,args2 = intern_non_secvar_qualid loc qid intern env lvar us args in
+	let r, projapp, args2 = intern_non_secvar_qualid loc qid intern env lvar us args in
 	let x, isproj, imp, scopes, l = find_appl_head_data r in
+	let isproj = if projapp then isproj else None in
 	  (x,imp,scopes,l), isproj, args2
       with Not_found ->
 	(* Extra allowance for non globalizing functions *)
 	if !interning_grammar || env.unb then
-	  (GVar (loc,id), [], [], []), false, args
+	  (GVar (loc,id), [], [], []), None, args
 	else error_global_not_found_loc loc qid
 
 let interp_reference vars r =
@@ -1472,8 +1471,8 @@ let internalize globalenv env allow_patvar lvar c =
             | CNotation (loc,ntn,([],[],[])) ->
                 let c = intern_notation intern env lvar loc ntn ([],[],[]) in
                 let x, isproj, impl, scopes, l = find_appl_head_data c in
-		  (x,impl,scopes,l), false, args
-            | x -> (intern env f,[],[],[]), false, args in
+		  (x,impl,scopes,l), None, args
+            | x -> (intern env f,[],[],[]), None, args in
           apply_impargs (isproj,isprojf) c env impargs args_scopes 
 	    (merge_impargs l args) loc
 
@@ -1712,16 +1711,17 @@ let internalize globalenv env allow_patvar lvar c =
     | [] -> l, []
 
   and apply_impargs (isproj,isprojf) c env imp subscopes l loc = 
-    let l = 
+    match isprojf with
+    | Some (r, n) ->
+      let imp, subscopes = proj_impls r imp, proj_scopes n subscopes in
       let imp = 
-	if isprojf && isproj <> None then 
+	if isproj != None then
 	  (* Drop first implicit which corresponds to record given in c.(p) notation *)
-	  List.map make_first_explicit imp
+	  List.map make_first_explicit imp 
 	else imp
-      in intern_impargs c env imp subscopes l
-    in
-      if isprojf then
-	match c, l with
+      in
+      let l = intern_impargs c env imp subscopes l in
+	(match c, l with
 	| GApp (loc', GRef (loc'', ConstRef f, _), hd :: tl), rest ->
 	  let proj = GProj (Loc.merge loc'' (loc_of_glob_constr hd), f, hd) in
 	    if List.is_empty tl then smart_gapp proj loc rest
@@ -1730,9 +1730,9 @@ let internalize globalenv env allow_patvar lvar c =
 	  let proj = GProj (Loc.merge loc' (loc_of_glob_constr hd), f, hd) in
 	    smart_gapp proj loc tl
 	| _ -> user_err_loc (loc, "apply_impargs", 
-			     str"Projection is not applied to enough arguments")
-      else 
-	(* check_projection isproj *)
+			     str"Projection is not applied to enough arguments"))
+    | None ->
+      let l = intern_impargs c env imp subscopes l in
 	smart_gapp c loc l
 
   and smart_gapp f loc = function
