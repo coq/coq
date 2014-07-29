@@ -96,7 +96,9 @@ let uniform_cond nargs lt =
   aux (nargs,lt)
 
 let class_of_global = function
-  | ConstRef sp -> CL_CONST sp
+  | ConstRef sp -> 
+    if Environ.is_projection sp (Global.env ()) 
+    then CL_PROJ sp else CL_CONST sp
   | IndRef sp -> CL_IND sp
   | VarRef id -> CL_SECVAR id
   | ConstructRef _ as c ->
@@ -140,7 +142,11 @@ let get_target t ind =
   if (ind > 1) then
     CL_FUN
   else
-    pi1 (find_class_type Evd.empty t)
+    match pi1 (find_class_type Evd.empty t) with
+    | CL_CONST p when Environ.is_projection p (Global.env ()) -> 
+      CL_PROJ p
+    | x -> x
+      
 
 let prods_of t =
   let rec aux acc d = match kind_of_term d with
