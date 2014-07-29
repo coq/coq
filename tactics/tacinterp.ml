@@ -1104,8 +1104,6 @@ and interp_tacarg ist arg : typed_generic_argument GTac.t =
       interp_external loc ist com req la_interp
   | TacFreshId l ->
       GTac.raw_enter begin fun gl ->
-      (* spiwack: I'm probably being over-conservative here,
-         pf_interp_fresh_id shouldn't raise exceptions *)
         let id = interp_fresh_id ist (Tacmach.New.pf_env gl) l in
         GTac.return (in_gen (topwit wit_intro_pattern) (dloc, IntroIdentifier id))
       end
