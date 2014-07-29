@@ -139,6 +139,8 @@ is understood as
 & | & {\tt type of} {\term}\\
 & | & {\tt external} {\qstring} {\qstring} \nelist{\tacarg}{}\\
 & | & {\tt constr :} {\term}\\
+& | & {\tt uconstr :} {\term}\\
+& | & {\tt type\_term} {\term}\\
 & | & \atomictac\\
 & | & {\qualid} \nelist{\tacarg}{}\\
 & | & {\atom}\\
@@ -852,7 +854,7 @@ where \nterm{redexpr} is a reduction tactic among {\tt red}, {\tt
 hnf}, {\tt compute}, {\tt simpl}, {\tt cbv}, {\tt lazy}, {\tt unfold},
 {\tt fold}, {\tt pattern}.
 
-\subsubsection{Type-checking a term}
+\subsubsection{Recovering the type of a term}
 %\tacindex{type of}
 \index{Ltac!type of}
 \index{type of!in Ltac}
@@ -861,6 +863,28 @@ The following returns the type of {\term}:
 
 \begin{quote}
 {\tt type of} {\term}
+\end{quote}
+
+\subsubsection[Manipulating untyped terms]{Manipulating untyped terms\index{Ltac!uconstr}\index{uconstr!in Ltac}\index{Ltac!type\_term}\index{type\_term!in Ltac}}
+
+The terms built in Ltac are well-typed by default. It may not be
+appropriate for building large terms using a recursive Ltac function:
+the term has to be entirely type checked at each step, resulting in
+potentially very slow behaviour. It is possible to build untyped terms using Ltac with the syntax
+
+\begin{quote}
+{\tt uconstr :} {\term}
+\end{quote}
+
+An untyped term, in Ltac, can contain references to hypotheses or to
+Ltac variables containing typed or untyped terms.
+
+A untyped term can be type-checked using the function {\tt type\_term}
+whose argument is parsed as an untyped term and returns a well-typed
+term which can be used in tactics.
+
+\begin{quote}
+{\tt type\_term} {\term}
 \end{quote}
 
 \subsubsection[Proving a subgoal as a separate lemma]{Proving a subgoal as a separate lemma\tacindex{abstract}
