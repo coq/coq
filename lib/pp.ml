@@ -428,7 +428,6 @@ let std_logger lvl msg = std_logger ~id:!feedback_id lvl msg
 (** Feedback *)
 
 let feeder = ref ignore
-let feedback_id = ref (Feedback.Edit 0)
 let set_id_for_feedback i = feedback_id := i
 let feedback ?state_id what =
   !feeder {
