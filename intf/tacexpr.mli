@@ -174,6 +174,10 @@ and ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg =
   | TacGeneric     of 'lev generic_argument
   | MetaIdArg      of Loc.t * bool * string
   | ConstrMayEval  of ('trm,'cst,'pat) may_eval
+  | UConstr        of 'trm  (* We can reuse ['trm] because terms and untyped terms
+                               only differ at interpretation time (and not at
+                               internalisation), and the output of interpration
+                               is not a variant of [tactic_expr]. *)
   | Reference      of 'ref
   | TacCall of Loc.t * 'ref *
       ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg list

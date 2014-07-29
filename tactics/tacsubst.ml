@@ -254,6 +254,7 @@ and subst_tactic_fun subst (var,body) = (var,subst_tactic subst body)
 and subst_tacarg subst = function
   | Reference r -> Reference (subst_reference subst r)
   | ConstrMayEval c -> ConstrMayEval (subst_raw_may_eval subst c)
+  | UConstr c -> UConstr (subst_glob_constr subst c)
   | MetaIdArg (_loc,_,_) -> assert false
   | TacCall (_loc,f,l) ->
       TacCall (_loc, subst_reference subst f, List.map (subst_tacarg subst) l)
@@ -320,6 +321,7 @@ let () =
   Genintern.register_subst0 wit_intro_pattern (fun _ v -> v);
   Genintern.register_subst0 wit_tactic subst_tactic;
   Genintern.register_subst0 wit_sort (fun _ v -> v);
-  Genintern.register_subst0 wit_clause_dft_concl (fun _ v -> v)
+  Genintern.register_subst0 wit_clause_dft_concl (fun _ v -> v);
+  Genintern.register_subst0 wit_uconstr (fun subst c -> subst_glob_constr subst c)
 
 let _ = Hook.set Auto.extern_subst_tactic subst_tactic

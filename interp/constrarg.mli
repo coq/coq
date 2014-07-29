@@ -50,6 +50,8 @@ val wit_constr_may_eval :
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) may_eval,
   constr) genarg_type
 
+val wit_uconstr : (constr_expr , glob_constr_and_expr, Glob_term.glob_constr) genarg_type
+
 val wit_open_constr :
   (open_constr_expr, open_glob_constr, Evd.open_constr) genarg_type
 

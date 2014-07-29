@@ -46,6 +46,14 @@ let to_constr v =
     match vars with [] -> Some c | _ -> None
   else None
 
+let of_uconstr c = in_gen (topwit wit_uconstr) c
+
+let to_uconstr v =
+  let v = normalize v in
+  if has_type v (topwit wit_uconstr) then
+    Some (out_gen (topwit wit_uconstr) v)
+  else None
+
 let of_int i = in_gen (topwit wit_int) i
 
 let to_int v =
@@ -138,6 +146,14 @@ let coerce_to_constr env v =
     let id = out_gen (topwit wit_var) v in
     (try [], constr_of_id env id with Not_found -> fail ())
   else fail ()
+
+let coerce_to_uconstr env v =
+  let v = Value.normalize v in
+  let fail () = raise (CannotCoerceTo "an untyped term") in
+  if has_type v (topwit wit_uconstr) then
+    out_gen (topwit wit_uconstr) v
+  else
+    fail ()
 
 let coerce_to_closed_constr env v =
   let ids,c = coerce_to_constr env v in

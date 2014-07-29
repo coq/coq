@@ -938,6 +938,7 @@ and pr_tacarg = function
   | MetaIdArg (loc,false,s) -> pr_with_comments loc (str ("constr: $" ^ s))
   | Reference r -> pr_ref r
   | ConstrMayEval c -> pr_may_eval pr_constr pr_lconstr pr_cst pr_pat c
+  | UConstr c -> str"uconstr:" ++ pr_constr c
   | TacFreshId l -> str "fresh" ++ pr_fresh_ids l
   | TacExternal (_,com,req,la) ->
       str "external" ++ spc() ++ qs com ++ spc() ++ qs req ++

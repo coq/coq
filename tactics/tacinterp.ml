@@ -453,6 +453,29 @@ let interp_fresh_id ist env l =
       Id.of_string s in
   Tactics.fresh_id_in_env avoid id env
 
+
+
+(* Extract the uconstr list from lfun *)
+let extract_ltac_uconstr_values ist env =
+  let fold id v accu =
+    try
+      let c = coerce_to_uconstr env v in
+      Id.Map.add id c accu
+    with CannotCoerceTo _ -> accu
+  in
+  Id.Map.fold fold ist.lfun Id.Map.empty
+
+(** Significantly simpler than [interp_constr], to interpret an
+    untyped constr, it suffices to substitute any bound Ltac variables
+    while redoint internalisation. *)
+let interp_uconstr ist env = function
+  | (c,None) -> c
+  | (_,Some ce) ->
+      let ltacvars = extract_ltac_uconstr_values ist env in
+      let bndvars = Id.Map.domain ist.lfun in
+      let ltacdata = (Id.Set.empty, bndvars , ltacvars) in
+      intern_gen WithoutTypeConstraint ~ltacvars:ltacdata env ce
+
 let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let constrvars = extract_ltac_constr_values ist env in
   let vars = (constrvars, ist.lfun) in
@@ -464,7 +487,7 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   | Some c ->
       let ltacvars = Id.Map.domain constrvars in
       let bndvars = Id.Map.domain ist.lfun in
-      let ltacdata = (ltacvars, bndvars) in
+      let ltacdata = (ltacvars, bndvars,Id.Map.empty) in
       intern_gen kind ~allow_patvar ~ltacvars:ltacdata env c
   in
   let trace =
@@ -1089,6 +1112,11 @@ and interp_tacarg ist arg : typed_generic_argument GTac.t =
         let (sigma,c_interp) = interp_constr_may_eval ist env sigma c in
         Proofview.V82.tclEVARS sigma <*>
         GTac.return (Value.of_constr c_interp)
+      end
+  | UConstr c ->
+      GTac.raw_enter begin fun gl ->
+        let env = Proofview.Goal.env gl in
+        GTac.return (Value.of_uconstr (interp_uconstr ist env c))
       end
   | MetaIdArg (loc,_,id) -> assert false
   | TacCall (loc,r,[]) ->
@@ -2023,6 +2051,11 @@ let () =
     (project gl, TacArg (dloc, valueIn (of_tacvalue f)))
   in
   Geninterp.register_interp0 wit_tactic interp
+
+let () =
+  Geninterp.register_interp0 wit_uconstr (fun ist gl c ->
+     project gl , interp_uconstr ist (pf_env gl) c
+  )
 
 (***************************************************************************)
 (* Other entry points *)

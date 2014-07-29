@@ -638,7 +638,7 @@ let string_of_ty = function
   | Variable -> "var"
 
 let intern_var genv (ltacvars,ntnvars) namedctx loc id =
-  let (ltacvars,unbndltacvars) = ltacvars in
+  let (ltacvars,unbndltacvars,ltacsubst) = ltacvars in
   (* Is [id] an inductive type potentially with implicit *)
   try
     let ty,expl_impls,impls,argsc = Id.Map.find id genv.impls in
@@ -652,6 +652,9 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
   if Id.Set.mem id genv.ids || Id.Set.mem id ltacvars
   then
     GVar (loc,id), [], [], []
+  (* Is [id] bound to a glob_constr in the the ltac context *)
+  else if Id.Map.mem id ltacsubst then
+    Id.Map.find id ltacsubst, [], [], []
   (* Is [id] a notation variable *)
   else if Id.Map.mem id ntnvars
   then
@@ -1549,7 +1552,7 @@ let internalize globalenv env allow_patvar lvar c =
         let solve = match solve with
         | None -> None
         | Some gen ->
-          let ((cvars, lvars), ntnvars) = lvar in
+          let ((cvars, lvars,_), ntnvars) = lvar in
           let ntnvars = Id.Map.domain ntnvars in
           let lvars = Id.Set.union lvars cvars in
           let lvars = Id.Set.union lvars ntnvars in
@@ -1769,9 +1772,9 @@ let scope_of_type_kind = function
   | OfType typ -> compute_type_scope typ
   | WithoutTypeConstraint -> None
 
-type ltac_sign = Id.Set.t * Id.Set.t
+type ltac_sign = Id.Set.t * Id.Set.t * glob_constr Id.Map.t
 
-let empty_ltac_sign = (Id.Set.empty, Id.Set.empty)
+let empty_ltac_sign = (Id.Set.empty, Id.Set.empty, Id.Map.empty)
 
 let intern_gen kind env
                ?(impls=empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=empty_ltac_sign)

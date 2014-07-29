@@ -245,7 +245,7 @@ let intern_binding_name ist x =
 let intern_constr_gen allow_patvar isarity {ltacvars=lfun; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
-  let ltacvars = (lfun, Id.Set.empty) in
+  let ltacvars = (lfun, Id.Set.empty,Id.Map.empty) in
   let c' =
     warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars env) c
   in
@@ -318,7 +318,7 @@ let intern_flag ist red =
 let intern_constr_with_occurrences ist (l,c) = (l,intern_constr ist c)
 
 let intern_constr_pattern ist ~as_type ~ltacvars pc =
-  let ltacvars = ltacvars, Id.Set.empty in
+  let ltacvars = ltacvars, Id.Set.empty,Id.Map.empty in
   let metas,pat = Constrintern.intern_constr_pattern
     ist.genv ~as_type ~ltacvars pc
   in
@@ -631,7 +631,7 @@ and intern_tactic_as_arg loc onlytac ist a =
   | TacCall _ | TacExternal _ | Reference _
   | TacDynamic _ | TacGeneric _ as a -> TacArg (loc,a)
   | Tacexp a -> a
-  | ConstrMayEval _ | TacFreshId _ as a ->
+  | ConstrMayEval _ | UConstr _ | TacFreshId _ as a ->
       if onlytac then error_tactic_expected loc else TacArg (loc,a)
   | MetaIdArg _ -> assert false
 
@@ -646,6 +646,7 @@ and intern_tactic_fun ist (var,body) =
 and intern_tacarg strict onlytac ist = function
   | Reference r -> intern_non_tactic_reference strict ist r
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
+  | UConstr c -> UConstr (intern_constr ist c)
   | MetaIdArg (loc,istac,s) ->
       (* $id can occur in Grammar tactic... *)
       let id = Id.of_string s in
@@ -785,6 +786,9 @@ let () =
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_sort (fun ist s -> (ist, s))
+
+let () =
+  Genintern.register_intern0 wit_uconstr (fun ist c -> (ist,intern_constr ist c))
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)

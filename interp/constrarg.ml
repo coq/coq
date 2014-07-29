@@ -47,6 +47,8 @@ let wit_constr = unsafe_of_type ConstrArgType
 
 let wit_constr_may_eval = unsafe_of_type ConstrMayEvalArgType
 
+let wit_uconstr = Genarg.make0 None "uconstr"
+
 let wit_open_constr = unsafe_of_type OpenConstrArgType
 
 let wit_constr_with_bindings = unsafe_of_type ConstrWithBindingsArgType
@@ -65,4 +67,5 @@ let () =
   register_name0 wit_intro_pattern "Constrarg.wit_intro_pattern";
   register_name0 wit_tactic "Constrarg.wit_tactic";
   register_name0 wit_sort "Constrarg.wit_sort";
+  register_name0 wit_uconstr "Constrarg.uconstr";
   register_name0 wit_clause_dft_concl "Constrarg.wit_clause_dft_concl";
