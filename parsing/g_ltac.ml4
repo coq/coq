@@ -127,6 +127,7 @@ GEXTEND Gram
   tactic_arg:
     [ [ IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> arg_of_expr a
       | IDENT "ltac"; ":"; n = natural -> TacGeneric (genarg_of_int n)
+      | IDENT "uconstr"; ":" ; c = Constr.constr -> UConstr c
       | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
         TacGeneric (genarg_of_ipattern ipat)
       | a = may_eval_arg -> a
