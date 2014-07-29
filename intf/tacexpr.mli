@@ -185,6 +185,7 @@ and ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg =
       ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg list
   | TacFreshId of string or_var list
   | Tacexp of ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr
+  | TacPretype of 'trm
 
 (** Generic ltac expressions.
     't : terms, 'p : patterns, 'c : constants, 'i : inductive,

@@ -1135,6 +1135,15 @@ and interp_tacarg ist arg : typed_generic_argument GTac.t =
         let id = interp_fresh_id ist (Tacmach.New.pf_env gl) l in
         GTac.return (in_gen (topwit wit_intro_pattern) (dloc, IntroIdentifier id))
       end
+  | TacPretype c ->
+      GTac.raw_enter begin fun gl ->
+        let sigma = Proofview.Goal.sigma gl in
+        let env = Proofview.Goal.env gl in
+        let c_glob = interp_uconstr ist env c in
+        let (sigma,c_interp) = Pretyping.understand_tcc sigma env c_glob in
+        Proofview.V82.tclEVARS sigma <*>
+        GTac.return (Value.of_constr c_interp)
+      end
   | Tacexp t -> val_interp ist t
   | TacDynamic(_,t) ->
       let tg = (Dyn.tag t) in

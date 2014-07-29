@@ -261,6 +261,7 @@ and subst_tacarg subst = function
   | TacExternal (_loc,com,req,la) ->
       TacExternal (_loc,com,req,List.map (subst_tacarg subst) la)
   | TacFreshId _ as x -> x
+  | TacPretype c -> TacPretype (subst_glob_constr subst c)
   | Tacexp t -> Tacexp (subst_tactic subst t)
   | TacGeneric arg -> TacGeneric (Genintern.generic_substitute subst arg)
   | TacDynamic(the_loc,t) as x ->
