@@ -738,7 +738,9 @@ and whd_simpl_stack env sigma =
  	       (match ReductionBehaviour.get (ConstRef p) with
  	       | Some (l, n, f) when List.mem `ReductionNeverUnfold f -> (* simpl never *) s'
 	       | Some (l, n, f) when not (List.is_empty l) ->
-		 let l' = List.map (fun i -> i - (pb.Declarations.proj_npars + 1)) l in
+		 let l' = List.map_filter (fun i -> 
+		   let idx = (i - (pb.Declarations.proj_npars + 1)) in
+		     if idx < 0 then None else Some idx) l in
 		 let stack = reduce_params env sigma stack l' in
 		   (match reduce_projection env sigma pb 
 		     (whd_construct_stack env sigma c) stack 

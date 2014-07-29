@@ -513,9 +513,10 @@ struct
 	| _ -> def
     in List.fold_left (aux sk) s l
 
-  let constr_of_cst_member = function
-    | Cst_const (c, u) -> mkConstU (c,u)
-    | Cst_proj (p, c) -> mkProj (p, c)
+  let constr_of_cst_member f sk = 
+    match f with
+    | Cst_const (c, u) -> mkConstU (c,u), sk
+    | Cst_proj (p, c) -> mkProj (p, c), tail 1 sk
 
   let rec zip ?(refold=false) = function
     | f, [] -> f
@@ -532,9 +533,9 @@ struct
   | f, (Fix (fix,st,_)::s) -> zip ~refold
     (mkFix fix, st @ (append_app [|f|] s))
   | f, (Cst (cst,_,_,params,cst_l)::s) when refold ->
-    zip ~refold (best_state (constr_of_cst_member cst,params @ (append_app [|f|] s)) cst_l)
+    zip ~refold (best_state (constr_of_cst_member cst (params @ (append_app [|f|] s))) cst_l)
   | f, (Cst (cst,_,_,params,_)::s) ->
-    zip ~refold (constr_of_cst_member cst,params @ (append_app [|f|] s))
+    zip ~refold (constr_of_cst_member cst (params @ (append_app [|f|] s)))
   | f, (Shift n::s) -> zip ~refold (lift n f, s)
   | f, (Proj (n,m,p)::s) -> zip ~refold (mkProj (p,f),s)
   | _, (Update _::_) -> assert false
@@ -823,17 +824,26 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		|| (nargs > 0 && Stack.args_size stack < (nargs - (npars + 1))))
 	    then fold ()
 	    else
-	      match List.map (fun x -> x - (npars + 1)) recargs with
+	      let recargs = List.map_filter (fun x -> 
+		let idx = x - npars in 
+		  if idx < 0 then None else Some idx) recargs
+	      in
+	      match recargs with
 	      |[] -> (* if nargs has been specified *)
 	      (* CAUTION : the constant is NEVER refold
                  (even when it hides a (co)fix) *)
 		let stack' = (c, Stack.Proj (npars, arg, p) :: stack) in
 		  whrec Cst_stack.empty(* cst_l *) stack'
-	      | curr::remains -> match Stack.strip_n_app curr stack with
-		| None -> fold ()
-		| Some (bef,arg,s') ->
+	      | curr::remains -> 
+		if curr == 0 then (* Try to reduce the record argument *)
 		  whrec Cst_stack.empty 
-		    (arg,Stack.Cst(Stack.Cst_proj (p, c),curr,remains,bef,cst_l)::s')
+		    (c, Stack.Cst(Stack.Cst_proj (p, c),curr,remains,Stack.empty,cst_l)::stack)
+		else
+		  match Stack.strip_n_app curr stack with
+		  | None -> fold ()
+		  | Some (bef,arg,s') ->
+		    whrec Cst_stack.empty 
+		      (arg,Stack.Cst(Stack.Cst_proj (p, c),curr,remains,bef,cst_l)::s')
       end)
     | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
       apply_subst whrec [b] cst_l c stack
@@ -898,7 +908,14 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		whrec (Cst_stack.add_cst (mkConstU const) cst_l)
 		  (body, s' @ (Stack.append_app [|x'|] s'')))
 	    | Stack.Cst_proj (p, c) ->
-	      whrec Cst_stack.empty (mkProj (p, c), s' @ (Stack.append_app [|x'|] s'')))
+	      let pb = lookup_projection p env in
+	      let npars = pb.Declarations.proj_npars in
+	      let narg = pb.Declarations.proj_arg in
+	      let stack = s' @ (Stack.append_app [|x'|] s'') in
+		match Stack.strip_n_app 0 stack with
+		| None -> assert false
+		| Some (_,arg,s'') ->
+		  whrec Cst_stack.empty (arg, Stack.Proj (npars,narg,p) :: s''))
 	  | next :: remains' -> match Stack.strip_n_app (next-curr-1) s'' with
 	    | None -> fold ()
 	    | Some (bef,arg,s''') ->
