@@ -165,6 +165,7 @@ Tactics
   has been cleared or renamed in the current goal context now fail
   (possible source of incompatibilities solvable by avoiding clearing
   the relevant hypotheses).
+- New construct "uconstr:c" and "type_term c" to build untyped terms.
 
 
 Program
