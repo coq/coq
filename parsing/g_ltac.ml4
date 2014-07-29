@@ -98,15 +98,11 @@ GEXTEND Gram
       | IDENT "external"; com = STRING; req = STRING; la = LIST1 tactic_arg ->
 	  TacArg (!@loc,TacExternal (!@loc,com,req,la))
       | st = simple_tactic -> TacAtom (!@loc,st)
-      | a = may_eval_arg -> TacArg(!@loc,a)
       | IDENT "constr"; ":"; id = METAIDENT ->
           TacArg(!@loc,MetaIdArg (!@loc,false,id))
       | IDENT "constr"; ":"; c = Constr.constr ->
           TacArg(!@loc,ConstrMayEval(ConstrTerm c))
-      | IDENT "uconstr"; ":" ; c = Constr.constr ->
-          TacArg(!@loc,UConstr c)
-      | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
-	  TacArg(!@loc, TacGeneric (genarg_of_ipattern ipat))
+      | a = tactic_top_or_arg -> TacArg(!@loc,a)
       | r = reference; la = LIST0 tactic_arg ->
           TacArg(!@loc,TacCall (!@loc,r,la)) ]
     | "0"
@@ -127,18 +123,19 @@ GEXTEND Gram
   tactic_arg:
     [ [ IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> arg_of_expr a
       | IDENT "ltac"; ":"; n = natural -> TacGeneric (genarg_of_int n)
-      | IDENT "uconstr"; ":" ; c = Constr.constr -> UConstr c
-      | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
-        TacGeneric (genarg_of_ipattern ipat)
-      | a = may_eval_arg -> a
+      | a = tactic_top_or_arg -> a
       | r = reference -> Reference r
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c)
       (* Unambigous entries: tolerated w/o "ltac:" modifier *)
       | id = METAIDENT -> MetaIdArg (!@loc,true,id)
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
-  may_eval_arg:
-    [ [ c = constr_eval -> ConstrMayEval c
+  (* Can be used as argument and at toplevel in tactic expressions. *)
+  tactic_top_or_arg:
+    [ [ IDENT "uconstr"; ":" ; c = Constr.constr -> UConstr c
+      | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
+        TacGeneric (genarg_of_ipattern ipat)
+      | c = constr_eval -> ConstrMayEval c
       | IDENT "fresh"; l = LIST0 fresh_id -> TacFreshId l
       | IDENT "type_term"; c=Constr.constr -> TacPretype c ] ]
   ;
