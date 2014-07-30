@@ -437,12 +437,9 @@ let occur_name na aty =
     | Name id -> occur_var_constr_expr id aty
     | Anonymous -> false
 
-let is_projection nargs = function
+let is_projection primproj nargs = function
   | Some r when not !Flags.raw_print && !print_projections ->
-    if true (* FIXME *) (* !Record.primitive_flag *) then
-      (match r with
-      | ConstRef c when Environ.is_projection c (Global.env ()) -> Some 1
-      | _ -> None)
+    if primproj then Some 1
     else
       (try
 	let n = Recordops.find_projection_nparams r + 1 in
@@ -460,7 +457,7 @@ let is_needed_for_correct_partial_application tail imp =
 
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
-let explicitize loc inctx impl (cf,f) args =
+let explicitize loc inctx impl (cf,primproj,f) args =
   let impl = if !Constrintern.parsing_explicit then [] else impl in
   let n = List.length args in
   let rec exprec q = function
@@ -481,22 +478,28 @@ let explicitize loc inctx impl (cf,f) args =
     | a::args, _::impl -> (a,None) :: exprec (q+1) (args,impl)
     | args, [] -> List.map (fun a -> (a,None)) args (*In case of polymorphism*)
     | [], _ -> [] in
-  match is_projection (List.length args) cf with
+  match is_projection primproj (List.length args) cf with
     | Some i ->
 	if not (List.is_empty impl) && is_status_implicit (List.nth impl (i-1)) then
  	  let args = exprec 1 (args,impl) in
- 	    CApp (loc, (None, f), args)
-	  (* let f',us = match f with CRef (f,us) -> f,us | _ -> assert false in *)
-	  (* CAppExpl (loc,(ip,f',us),args) *)
+	    if primproj then CApp (loc, (None, f), args)
+	    else 
+	      let f',us = match f with CRef (f,us) -> f,us | _ -> assert false in
+		CAppExpl (loc,(Some i,f',us), List.map fst args)
 	else
 	  let (args1,args2) = List.chop i args in
 	  let (impl1,impl2) = if List.is_empty impl then [],[] else List.chop i impl in
 	  let args1 = exprec 1 (args1,impl1) in
 	  let args2 = exprec (i+1) (args2,impl2) in
 	  CApp (loc,(Some (List.length args1),f),args1@args2)
-    | None ->
-	  let args = exprec 1 (args,impl) in
-	    if List.is_empty args then f else CApp (loc, (None, f), args)
+    | None -> 
+      let args = exprec 1 (args,impl) in
+	match cf with
+	| Some (ConstRef p) when not primproj && Environ.is_projection p (Global.env ()) -> 
+          (* Eta-expanded version of projection *)
+	  let f',us = match f with CRef (f,us) -> f,us | _ -> assert false in
+            CAppExpl (loc, (None, f', us), List.map fst args)
+	| _ -> if List.is_empty args then f else CApp (loc, (None, f), args)
 
 let extern_global loc impl f us =
   if not !Constrintern.parsing_explicit &&
@@ -506,7 +509,7 @@ let extern_global loc impl f us =
   else
     CRef (f,us)
 
-let extern_app loc inctx impl (cf,f) us args =
+let extern_app loc inctx impl (cf,primproj,f) us args =
   if List.is_empty args then
     (* If coming from a notation "Notation a := @b" *)
     CAppExpl (loc, (None, f, us), [])
@@ -515,9 +518,9 @@ let extern_app loc inctx impl (cf,f) us args =
       (!print_implicits && not !print_implicits_explicit_args)) &&
      List.exists is_status_implicit impl)
   then
-    CAppExpl (loc, (is_projection (List.length args) cf,f,us), args)
+    CAppExpl (loc, (is_projection primproj (List.length args) cf,f,us), args)
   else
-    explicitize loc inctx impl (cf,CRef (f,us)) args
+    explicitize loc inctx impl (cf,primproj,CRef (f,us)) args
 
 let rec extern_args extern scopes env args subscopes =
   match args with
@@ -663,7 +666,7 @@ let rec extern inctx scopes vars r =
 		 | Not_found | No_match | Exit ->
 		     extern_app loc inctx
 		       (select_stronger_impargs (implicits_of_global ref))
-		       (Some ref,extern_reference rloc vars ref) (extern_universes us) args
+		       (Some ref,false,extern_reference rloc vars ref) (extern_universes us) args
 	     end
 
 	 | GProj (loc,p,c) ->
@@ -675,11 +678,11 @@ let rec extern inctx scopes vars r =
 	     extern_app loc inctx 
 	     (projection_implicits (Global.env ()) p
 	      (select_stronger_impargs (implicits_of_global ref)))
-	       (Some ref, extern_reference loc vars ref)
+	       (Some ref, true, extern_reference loc vars ref)
 	       None args
 	       
 	 | _       ->
-	   explicitize loc inctx [] (None,sub_extern false scopes vars f)
+	   explicitize loc inctx [] (None,false,sub_extern false scopes vars f)
              (List.map (sub_extern true scopes vars) args))
 
   | GProj (loc,p,c) ->
@@ -903,7 +906,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
  	if List.is_empty args then e
 	else
 	  let args = extern_args (extern true) scopes vars args argsscopes in
-	  explicitize loc false argsimpls (None,e) args
+	  explicitize loc false argsimpls (None,false,e) args
       with
 	  No_match -> extern_symbol allscopes vars t rules
 
