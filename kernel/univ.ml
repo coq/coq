@@ -1770,9 +1770,9 @@ struct
   let append x y =
     if Array.length x = 0 then y
     else if Array.length y = 0 then x 
-    else hcons (Array.append x y)
+    else Array.append x y
 
-  let of_array a = hcons a
+  let of_array a = a
 
   let to_array a = a
 
