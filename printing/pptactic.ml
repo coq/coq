@@ -940,7 +940,7 @@ and pr_tacarg = function
   | ConstrMayEval c -> pr_may_eval pr_constr pr_lconstr pr_cst pr_pat c
   | UConstr c -> str"uconstr:" ++ pr_constr c
   | TacFreshId l -> str "fresh" ++ pr_fresh_ids l
-  | TacPretype c -> str "fresh" ++ pr_constr c
+  | TacPretype c -> str "type_term" ++ pr_constr c
   | TacExternal (_,com,req,la) ->
       str "external" ++ spc() ++ qs com ++ spc() ++ qs req ++
       spc() ++ prlist_with_sep spc pr_tacarg la
