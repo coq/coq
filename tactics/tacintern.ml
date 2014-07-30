@@ -631,7 +631,7 @@ and intern_tactic_as_arg loc onlytac ist a =
   | TacCall _ | TacExternal _ | Reference _
   | TacDynamic _ | TacGeneric _ as a -> TacArg (loc,a)
   | Tacexp a -> a
-  | ConstrMayEval _ | UConstr _ | TacFreshId _ | TacPretype _ as a ->
+  | ConstrMayEval _ | UConstr _ | TacFreshId _ | TacPretype _ | TacNumgoals as a ->
       if onlytac then error_tactic_expected loc else TacArg (loc,a)
   | MetaIdArg _ -> assert false
 
@@ -663,6 +663,7 @@ and intern_tacarg strict onlytac ist = function
       TacExternal (loc,com,req,List.map (intern_tacarg !strict_check false ist) la)
   | TacFreshId x -> TacFreshId (List.map (intern_or_var ist) x)
   | TacPretype c -> TacPretype (intern_constr ist c)
+  | TacNumgoals -> TacNumgoals
   | Tacexp t -> Tacexp (intern_tactic onlytac ist t)
   | TacGeneric arg ->
     let (_, arg) = Genintern.generic_intern ist arg in

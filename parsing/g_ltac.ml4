@@ -137,7 +137,8 @@ GEXTEND Gram
         TacGeneric (genarg_of_ipattern ipat)
       | c = constr_eval -> ConstrMayEval c
       | IDENT "fresh"; l = LIST0 fresh_id -> TacFreshId l
-      | IDENT "type_term"; c=Constr.constr -> TacPretype c ] ]
+      | IDENT "type_term"; c=Constr.constr -> TacPretype c
+      | IDENT "numgoals" -> TacNumgoals ] ]
   ;
   fresh_id:
     [ [ s = STRING -> ArgArg s | id = ident -> ArgVar (!@loc,id) ] ]

@@ -941,6 +941,7 @@ and pr_tacarg = function
   | UConstr c -> str"uconstr:" ++ pr_constr c
   | TacFreshId l -> str "fresh" ++ pr_fresh_ids l
   | TacPretype c -> str "type_term" ++ pr_constr c
+  | TacNumgoals -> str "numgoals"
   | TacExternal (_,com,req,la) ->
       str "external" ++ spc() ++ qs com ++ spc() ++ qs req ++
       spc() ++ prlist_with_sep spc pr_tacarg la

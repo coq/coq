@@ -971,6 +971,9 @@ struct
     bind (Proofview.Goal.raw_goals >>= fun l -> Proofview.tclUNIT (Depends l))
       (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
 
+  let lift (type a) (t:a Proofview.tactic) : a t =
+    Proofview.tclBIND t (fun x -> Proofview.tclUNIT (Uniform x))
+
   (** If the tactic returns unit, we can focus on the goals if necessary. *)
   let run m k = m >>= function
   | Uniform v -> k v
@@ -1143,6 +1146,12 @@ and interp_tacarg ist arg : typed_generic_argument GTac.t =
         let (sigma,c_interp) = Pretyping.understand_tcc sigma env c_glob in
         Proofview.V82.tclEVARS sigma <*>
         GTac.return (Value.of_constr c_interp)
+      end
+  | TacNumgoals ->
+      GTac.lift begin
+        let open Proofview.Notations in
+        Proofview.numgoals >>= fun i ->
+        Proofview.tclUNIT (Value.of_int i)
       end
   | Tacexp t -> val_interp ist t
   | TacDynamic(_,t) ->
