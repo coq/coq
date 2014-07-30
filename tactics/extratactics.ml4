@@ -881,3 +881,83 @@ END
 TACTIC EXTEND swap
 | [ "swap" int_or_var(i) int_or_var(j) ] -> [ Proofview.swap (out_arg i) (out_arg j) ]
 END
+
+
+type cmp =
+  | Eq
+  | Lt | Le
+  | Gt | Ge
+
+type 'i test =
+  | Test of cmp * 'i * 'i
+
+let wit_cmp : (cmp,cmp,cmp) Genarg.genarg_type = Genarg.make0 None "cmp"
+let wit_test : (int or_var test,int or_var test,int test) Genarg.genarg_type =
+  Genarg.make0 None "tactest"
+
+let pr_cmp = function
+  | Eq -> Pp.str"="
+  | Lt -> Pp.str"<"
+  | Le -> Pp.str"<="
+  | Gt -> Pp.str">"
+  | Ge -> Pp.str">="
+
+let pr_cmp' _prc _prlc _prt = pr_cmp
+
+let pr_test_gen f (Test(c,x,y)) =
+  Pp.(f x ++ pr_cmp c ++ f y)
+
+let pr_test = pr_test_gen (Pptactic.pr_or_var Pp.int)
+
+let pr_test' _prc _prlc _prt = pr_test
+
+let pr_itest = pr_test_gen Pp.int
+
+let pr_itest' _prc _prlc _prt = pr_itest
+
+
+
+ARGUMENT EXTEND comparison TYPED AS cmp PRINTED BY pr_cmp'
+| [ "="  ] -> [ Eq ]
+| [ "<"  ] -> [ Lt ]
+| [ "<=" ] -> [ Le ]
+| [ ">"  ] -> [ Gt ]
+| [ ">=" ] -> [ Ge ]
+    END
+
+let interp_test ist gls = function
+  | Test (c,x,y) ->
+      project gls ,
+      Test(c,Tacinterp.interp_int_or_var ist x,Tacinterp.interp_int_or_var ist y)
+
+ARGUMENT EXTEND test
+  PRINTED BY pr_itest'
+  INTERPRETED BY interp_test
+  RAW_TYPED AS test
+  RAW_PRINTED BY pr_test'
+  GLOB_TYPED AS test
+  GLOB_PRINTED BY pr_test'
+| [ int_or_var(x) comparison(c) int_or_var(y) ] -> [ Test(c,x,y) ]
+END
+
+let interp_cmp = function
+  | Eq -> Int.equal
+  | Lt -> ((<):int->int->bool)
+  | Le -> ((<=):int->int->bool)
+  | Gt -> ((>):int->int->bool)
+  | Ge -> ((>=):int->int->bool)
+
+let run_test = function
+  | Test(c,x,y) -> interp_cmp c x y
+
+let guard tst =
+  if run_test tst then
+    Proofview.tclUNIT ()
+  else
+    let msg = Pp.(str"Condition not satisfied:"++ws 1++(pr_itest tst)) in
+    Proofview.tclZERO (Errors.UserError("guard",msg))
+
+
+TACTIC EXTEND guard
+| [ "guard" test(tst) ] -> [ guard tst ]
+END

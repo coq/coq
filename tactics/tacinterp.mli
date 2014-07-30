@@ -112,6 +112,8 @@ val interp_ltac_var : (value -> 'a) -> interp_sign -> Environ.env option -> Id.t
 
 val interp_int : interp_sign -> Id.t Loc.located -> int
 
+val interp_int_or_var : interp_sign -> int or_var -> int
+
 val error_ltac_variable : Loc.t -> Id.t -> Environ.env option -> value -> string -> 'a
 
 (** Transforms a constr-expecting tactic into a tactic finding its arguments in
