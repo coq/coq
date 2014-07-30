@@ -99,6 +99,7 @@ val mark_unresolvables : ?filter:evar_filter -> evar_map -> evar_map
 val mark_resolvables   : ?filter:evar_filter -> evar_map -> evar_map
 val mark_resolvable : evar_info -> evar_info
 val is_class_evar : evar_map -> evar_info -> bool
+val is_class_type : evar_map -> types -> bool
 
 val resolve_typeclasses : ?filter:evar_filter -> ?split:bool -> ?fail:bool ->
   env -> evar_map -> evar_map

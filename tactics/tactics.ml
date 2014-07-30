@@ -87,6 +87,16 @@ let _ =
       optread  = (fun () -> !Flags.tactic_context_compat) ;
       optwrite = (fun b -> Flags.tactic_context_compat := b) }
 
+let apply_solve_class_goals = ref (false)
+let _ = Goptions.declare_bool_option {
+  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optname =
+    "Perform typeclass resolution on apply-generated subgoals.";
+  Goptions.optkey = ["Typeclass";"Resolution";"After";"Apply"];
+  Goptions.optread = (fun () -> !apply_solve_class_goals);
+  Goptions.optwrite = (fun a -> apply_solve_class_goals:=a);
+}
+
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -1052,6 +1062,17 @@ let descend_in_conjunctions tac exit c gl =
 (*            Resolution tactics                    *)
 (****************************************************)
 
+let solve_remaining_apply_goals gl = 
+  if !apply_solve_class_goals then
+    try 
+      let env = pf_env gl and sigma = project gl and concl = pf_concl gl in
+	if Typeclasses.is_class_type sigma concl then
+          let evd', c' = Typeclasses.resolve_one_typeclass env sigma concl in
+	    (tclTHEN (tclEVARS evd') (refine_no_check c')) gl
+	else tclIDTAC gl
+    with Not_found -> tclIDTAC gl
+  else tclIDTAC gl
+    
 let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
   let flags =
     if with_delta then default_unify_flags () else default_no_delta_unify_flags () in
@@ -1065,7 +1086,7 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
       let n = nb_prod thm_ty - nprod in
 	if n<0 then error "Applied theorem has not enough premisses.";
 	let clause = pf_apply make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
-	Proofview.V82.of_tactic (Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags) gl
+	  Proofview.V82.of_tactic (Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags) gl
     in
       try try_apply thm_ty0 concl_nprod
       with PretypeError _|RefinerError _|UserError _|Failure _ as exn ->
@@ -1088,7 +1109,7 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
 		Loc.raise loc exn
 	in try_red_apply thm_ty0
   in
-  try_main_apply with_destruct c gl0
+    tclTHEN (try_main_apply with_destruct c) solve_remaining_apply_goals gl0
 
 let rec apply_with_bindings_gen b e = function
   | [] -> tclIDTAC
