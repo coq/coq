@@ -305,11 +305,6 @@ module Notations : sig
 
   (* tclBIND *)
   val (>>=) : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
-  (* [t >>= k] is [t >= fun l -> tclDISPATCH (List.map k l)].
-     The [t] is supposed to return a list of values of the size of the
-     list of goals. [k] is then applied to each of this value in the
-     corresponding goal. *)
-
   (* tclTHEN *)
   val (<*>) : unit tactic -> 'a tactic -> 'a tactic
   (* tclOR *)
