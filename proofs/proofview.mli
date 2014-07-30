@@ -282,6 +282,9 @@ val cycle : int -> unit tactic
     [1] as well, rather than raising an error. *)
 val swap : int -> int -> unit tactic
 
+(** [numgoals] returns the number of goals under focus. *)
+val numgoals : int tactic
+
 exception Timeout
 (** [tclTIMEOUT n t] can have only one success.
     In case of timeout if fails with [tclZERO Timeout]. *)

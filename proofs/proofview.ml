@@ -692,6 +692,12 @@ let swap i j =
   in
   Proof.set {initial with comb}
 
+let numgoals =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun { comb } ->
+  Proof.ret (List.length comb)
+
 (*** Commands ***)
 
 let in_proofview p k =
