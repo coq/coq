@@ -12,7 +12,7 @@ type 'a t
 val create : unit -> 'a t
 val pop : 'a t -> 'a
 val push : 'a t -> 'a -> unit
-val reorder : 'a t -> ('a -> 'a -> int) -> unit
+val set_order : 'a t -> ('a -> 'a -> int) -> unit
 val wait_until_n_are_waiting_and_queue_empty : int -> 'a t -> unit
 val dump : 'a t -> 'a list
 val clear : 'a t -> unit

@@ -896,7 +896,7 @@ end = struct
   let set_perspective idl =
     let open Stateid in
     let p = List.fold_right Set.add idl Set.empty in
-    TQueue.reorder queue (fun task1 task2 ->
+    TQueue.set_order queue (fun task1 task2 ->
       let TaskBuildProof (_, a1, b1, _, _,_,_,_) = task1 in
       let TaskBuildProof (_, a2, b2, _, _,_,_,_) = task2 in
       match Set.mem a1 p || Set.mem b1 p, Set.mem a2 p || Set.mem b2 p with
