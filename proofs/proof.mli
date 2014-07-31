@@ -115,6 +115,14 @@ val focus : 'a focus_condition -> 'a -> int -> proof -> proof
 
 exception FullyUnfocused
 exception CannotUnfocusThisWay
+
+(* This is raised when trying to focus on non-existing subgoals. It is
+   handled by an error message but one may need to catched it and
+   settle a better error message in some case (suggesting a better
+   bullet for example), see proof_global.ml function Bullet.pop and
+   Bullet.push. *)
+exception NoSuchGoals of int * int
+
 (* Unfocusing command.
    Raises [FullyUnfocused] if the proof is not focused.
    Raises [CannotUnfocusThisWay] if the proof the unfocusing condition

@@ -166,7 +166,7 @@ Tactics
   (possible source of incompatibilities solvable by avoiding clearing
   the relevant hypotheses).
 - New construct "uconstr:c" and "type_term c" to build untyped terms.
-
+- The good bullet (-/+/*) is suggested sometimes when user gives a wrong one.
 
 Program
 

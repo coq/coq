@@ -374,11 +374,40 @@ module Bullet = struct
 
   type t = Vernacexpr.bullet
 
+  (* There are two reasons why a bullet may be wrong: *)
+
+  (* Either because the previous same bullet is not finished.
+     t contains either the unfinished bullet or a deeper unfinished
+     one (better suggestion to the user). *)
+  exception FailedUnfocusBullet of t
+
+  (* Or there is no more goal at this level of bullet. t is the wrong
+     bullet, looking which one is correct is not implemented yet. *)
+  exception FailedFocusBullet of t
+
   let bullet_eq b1 b2 = match b1, b2 with
   | Vernacexpr.Dash, Vernacexpr.Dash -> true
   | Vernacexpr.Star, Vernacexpr.Star -> true
   | Vernacexpr.Plus, Vernacexpr.Plus -> true
   | _ -> false
+
+  let pr_bullet b =
+    match b with
+    | Vernacexpr.Dash -> str "-"
+    | Vernacexpr.Star -> str "*"
+    | Vernacexpr.Plus -> str "+"
+
+  let _ = Errors.register_handler
+    begin function
+    | FailedUnfocusBullet b ->
+      Errors.errorlabstrm "Focus" Pp.(str"Wrong bullet: " ++ pr_bullet b
+				      ++ str" seems not finished.")
+    | FailedFocusBullet b ->
+      Errors.errorlabstrm "Focus" Pp.(str"Wrong bullet: no more goals under "
+				      ++ pr_bullet b ++ str".")
+    | _ -> raise Errors.Unhandled
+    end
+
 
   type behavior = {
     name : string;
@@ -417,12 +446,15 @@ module Bullet = struct
       in
       has_bullet (get_bullets pr)
 
-    (* precondition: the stack is not empty *)
+    (* precondition: the stack is not empty
+       this function tries to raise a more precise exception than
+       [Proof.CannotUnfocusThisWay]. This exception is then catch and
+       made more precise in function [put] below. *)
     let pop pr =
       match get_bullets pr with
       | b::_ ->
-         let pr = Proof.unfocus bullet_kind pr () in
-         pr, b
+	(try Proof.unfocus bullet_kind pr () , b
+	 with Proof.CannotUnfocusThisWay -> raise (FailedUnfocusBullet (b)))
       | _ -> assert false
 
     let push b pr =
@@ -430,10 +462,26 @@ module Bullet = struct
 
     let put p bul =
       if has_bullet bul p then
-        let rec aux p =
-          let p, b = pop p in
-          if not (bullet_eq bul b) then aux p else p in
-        push bul (aux p)
+	(* goodbullet is used to store a good bullet among the ones we
+	   pop, in case the given bullet fails. For better error message. *)
+        let rec pop_until p (goodbullet:t option) =
+          try
+	    let p, b = pop p in
+	    let newgoodbullet =
+	      (* FIXME: is push slow? probably not. And the number of
+	         bullet level is generally below 3 anyway. *)
+	      try let _ = push b p in Some b (* push didn't fail so b is OK *)
+	      with _ -> goodbullet in
+            if not (bullet_eq bul b) then pop_until p newgoodbullet else p,newgoodbullet
+	  with FailedUnfocusBullet (b) -> (* replace wrong bullet by valid one *)
+	    raise (FailedUnfocusBullet 
+		     (match goodbullet with
+		       None -> b
+		     | Some b' -> b'))
+	in
+        let p',_ = pop_until p None in
+	try push bul p'
+	with Proof.NoSuchGoals(1,1) -> raise (FailedFocusBullet bul)
       else
 	push bul p
 
