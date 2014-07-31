@@ -761,7 +761,8 @@ let intern_qualid loc qid intern env lvar us args =
       let terms = make_subst ids (List.map fst args1) in
       let subst = (terms, Id.Map.empty, Id.Map.empty) in
       let infos = (Id.Map.empty, env) in
-      subst_aconstr_in_glob_constr loc intern lvar subst infos c, false, args2
+      let projapp = match c with NRef _ -> true | _ -> false in
+	subst_aconstr_in_glob_constr loc intern lvar subst infos c, projapp, args2
 
 (* Rule out section vars since these should have been found by intern_var *)
 let intern_non_secvar_qualid loc qid intern env lvar us args =
