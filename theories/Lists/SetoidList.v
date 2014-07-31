@@ -546,6 +546,155 @@ Qed.
 
 End Fold.
 
+
+Section Fold2.
+
+Variable B:Type.
+Variable eqB:B->B->Prop.
+Variable st:Equivalence eqB.
+Variable f:A->B->B.
+Variable Comp:Proper (eqA==>eqB==>eqB) f.
+
+
+Lemma fold_right_eqlistA2 :
+  forall s s' (i j:B) (heqij: eqB i j) (heqss': eqlistA s s'),
+  eqB (fold_right f i s) (fold_right f j s').
+Proof.
+  intros s.
+  induction s;intros.
+  - inversion heqss'.
+    subst.
+    simpl.
+    assumption.
+  - inversion heqss'.
+    subst.
+    simpl.
+    apply Comp.
+    + assumption.
+    + apply IHs;assumption.
+Qed.
+
+Section Fold2_With_Restriction.
+
+Variable R : A -> A -> Prop.
+Hypothesis R_sym : Symmetric R.
+Hypothesis R_compat : Proper (eqA==>eqA==>iff) R.
+
+(** Two-argument functions that allow to reorder their arguments. *)
+Definition transpose2 (f : A -> B -> B) :=
+  forall (x y : A) (z z': B), eqB z z' -> eqB (f x (f y z)) (f y (f x z')).
+
+(** A version of transpose with restriction on where it should hold *)
+Definition transpose_restr2 (R : A -> A -> Prop)(f : A -> B -> B) :=
+  forall (x y : A) (z z': B), R x y -> eqB z z' -> eqB (f x (f y z)) (f y (f x z')).
+
+Variable TraR :transpose_restr2 R f.
+
+Lemma fold_right_commutes_restr2 :
+  forall s1 s2 x (i j:B) (heqij: eqB i j), ForallOrdPairs R (s1++x::s2) ->
+  eqB (fold_right f i (s1++x::s2)) (f x (fold_right f j (s1++s2))).
+Proof.
+induction s1; simpl; auto; intros.
+- apply Comp.
+  + destruct eqA_equiv. apply Equivalence_Reflexive.
+  + eapply fold_right_eqlistA2.
+    * assumption.
+    * reflexivity.
+- transitivity (f a (f x (fold_right f j (s1++s2)))).
+  apply Comp; auto.
+  eapply IHs1.
+  assumption.
+  invlist ForallOrdPairs; auto.
+  apply TraR.
+  invlist ForallOrdPairs; auto.
+  rewrite Forall_forall in H0; apply H0.
+  apply in_or_app; simpl; auto.
+  reflexivity.
+Qed.
+
+Lemma fold_right_equivlistA_restr2 :
+  forall s s' (i j:B) (heqij: eqB i j),
+    NoDupA s -> NoDupA s' -> ForallOrdPairs R s ->
+               eqB i j -> 
+  equivlistA s s' -> eqB (fold_right f i s) (fold_right f j s').
+Proof.
+ simple induction s.
+ destruct s'; simpl.
+ intros. assumption.
+ unfold equivlistA; intros.
+ destruct (H3 a).
+ assert (InA a nil) by auto; inv.
+ intros x l Hrec s' i j heqij N N' F eqij E; simpl in *.
+ assert (InA x s') by (rewrite <- (E x); auto).
+ destruct (InA_split H) as (s1,(y,(s2,(H1,H2)))).
+ subst s'.
+ transitivity (f x (fold_right f j (s1++s2))).
+ - apply Comp; auto.
+   apply Hrec; auto.
+   inv; auto.
+   eapply NoDupA_split; eauto.
+   invlist ForallOrdPairs; auto.
+   eapply equivlistA_NoDupA_split; eauto.
+ - transitivity (f y (fold_right f i (s1++s2))).
+   + apply Comp; auto.
+     symmetry.
+     apply fold_right_eqlistA2.
+     * assumption.
+     * reflexivity.
+   + symmetry.
+     apply fold_right_commutes_restr2.
+     symmetry.
+     assumption.
+     apply ForallOrdPairs_inclA with (x::l); auto.
+     red; intros; rewrite E; auto.
+Qed.
+
+
+Lemma fold_right_add_restr2 :
+  forall s' s i j x, NoDupA s -> NoDupA s' -> eqB i j -> ForallOrdPairs R s' -> ~ InA x s ->
+  equivlistA s' (x::s) -> eqB (fold_right f i s') (f x (fold_right f j s)).
+Proof.
+ intros; apply (@fold_right_equivlistA_restr2 s' (x::s) i j); auto.
+Qed.
+
+End Fold2_With_Restriction.
+
+Variable Tra :transpose2 f.
+
+Lemma fold_right_commutes2 : forall s1 s2 i x x',
+  eqA x x' -> 
+  eqB (fold_right f i (s1++x::s2)) (f x' (fold_right f i (s1++s2))).
+Proof.
+  induction s1;simpl;intros.
+- apply Comp;auto.
+  reflexivity.
+- transitivity (f a (f x' (fold_right f i (s1++s2)))); auto.
+  + apply Comp;auto.
+  + apply Tra.
+    reflexivity.
+Qed.
+
+Lemma fold_right_equivlistA2 :
+  forall s s' i j, NoDupA s -> NoDupA s' -> eqB i j ->
+  equivlistA s s' -> eqB (fold_right f i s) (fold_right f j s').
+Proof.
+red in Tra.
+intros; apply fold_right_equivlistA_restr2 with (R:=fun _ _ => True);
+repeat red; auto.
+apply ForallPairs_ForallOrdPairs; try red; auto.
+Qed.
+
+Lemma fold_right_add2 :
+  forall s' s i j x, NoDupA s -> NoDupA s' -> eqB i j -> ~ InA x s ->
+  equivlistA s' (x::s) -> eqB (fold_right f i s') (f x (fold_right f j s)).
+Proof.
+ intros.
+ replace (f x (fold_right f j s)) with (fold_right f j (x::s)) by auto.
+ eapply fold_right_equivlistA2;auto. 
+Qed.
+
+End Fold2.
+
 Section Remove.
 
 Hypothesis eqA_dec : forall x y : A, {eqA x y}+{~(eqA x y)}.

@@ -1118,6 +1118,27 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
    auto with *.
   Qed.
 
+  Lemma fold_Equal2 : forall m1 m2 i j, Equal m1 m2 -> eqA i j ->
+    eqA (fold f m1 i) (fold f m2 j).
+  Proof.
+  intros.
+  rewrite 2 fold_spec_right.
+  assert (NoDupA eqk (rev (elements m1))) by (auto with * ).
+  assert (NoDupA eqk (rev (elements m2))) by (auto with * ).
+  apply fold_right_equivlistA_restr2 with (R:=complement eqk)(eqA:=eqke)
+  ; auto with *.
+  - intros (k1,e1) (k2,e2) (Hk,He) a1 a2 Ha; simpl in *; apply Comp; auto.
+  - unfold complement, eq_key, eq_key_elt; repeat red. intuition eauto.
+  - intros (k,e) (k',e') z z' h h'; unfold eq_key, uncurry;simpl; auto.
+    rewrite h'.
+    auto.
+  - rewrite <- NoDupA_altdef; auto.
+  - intros (k,e).
+    rewrite 2 InA_rev, <- 2 elements_mapsto_iff, 2 find_mapsto_iff, H;
+      auto with *.
+  Qed.
+
+
   Lemma fold_Add : forall m1 m2 k e i, ~In k m1 -> Add k e m1 m2 ->
    eqA (fold f m2 i) (f k e (fold f m1 i)).
   Proof.
