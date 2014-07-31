@@ -903,6 +903,11 @@ let find_ind_eliminator ind s gl =
   let evd, c = pf_apply Evd.fresh_global gl gr in
     evd, c
 
+let new_find_ind_eliminator ind s gl =
+  let gr = lookup_eliminator ind s in
+  let evd, c = Tacmach.New.pf_apply Evd.fresh_global gl gr in
+    evd, c
+
 let find_eliminator c gl =
   let ((ind,u),t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   if is_record ind <> None then raise IsRecord;
@@ -3481,28 +3486,34 @@ let simple_destruct = function
  * May be they should be integrated into Elim ...
  *)
 
-let elim_scheme_type elim t gl =
-  let clause = mk_clenv_type_of gl elim in
+let elim_scheme_type elim t =
+  Proofview.Goal.enter begin fun gl ->
+  let clause = Tacmach.New.of_old (fun gl -> mk_clenv_type_of gl elim) gl in
   match kind_of_term (last_arg clause.templval.rebus) with
     | Meta mv ->
         let clause' =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
 	  clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
             (clenv_meta_type clause mv) clause in
-	Proofview.V82.of_tactic (Clenvtac.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false) gl
+	Clenvtac.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false
     | _ -> anomaly (Pp.str "elim_scheme_type")
+  end
 
-let elim_type t gl =
-  let (ind,t) = pf_reduce_to_atomic_ind gl t in
-  let evd, elimc = find_ind_eliminator (fst ind) (elimination_sort_of_goal gl) gl in
-    tclTHEN (tclEVARS evd) (elim_scheme_type elimc t) gl
+let elim_type t =
+  Proofview.Goal.raw_enter begin fun gl ->
+  let (ind,t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
+  let evd, elimc = new_find_ind_eliminator (fst ind) (Tacticals.New.elimination_sort_of_goal gl) gl in
+  Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evd) (elim_scheme_type elimc t)
+  end
 
-let case_type t gl =
-  let (ind,t) = pf_reduce_to_atomic_ind gl t in
+let case_type t =
+  Proofview.Goal.raw_enter begin fun gl ->
+  let (ind,t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
   let evd, elimc =
-    pf_apply build_case_analysis_scheme_default gl ind (elimination_sort_of_goal gl)
+    Tacmach.New.pf_apply build_case_analysis_scheme_default gl ind (Tacticals.New.elimination_sort_of_goal gl)
   in
-    tclTHEN (tclEVARS evd) (elim_scheme_type elimc t) gl
+  Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evd) (elim_scheme_type elimc t)
+  end
 
 
 (************************************************)

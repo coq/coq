@@ -24,7 +24,7 @@ let absurd c gls =
   let sigma, j = Coercion.inh_coerce_to_sort Loc.ghost env sigma j in
   let c = j.Environ.utj_val in
   (tclTHENS
-     (tclTHEN (elim_type (build_coq_False ())) (Proofview.V82.of_tactic (cut c)))
+     (tclTHEN (Proofview.V82.of_tactic (elim_type (build_coq_False ()))) (Proofview.V82.of_tactic (cut c)))
      ([(tclTHENS
           (Proofview.V82.of_tactic (cut (mkApp(build_coq_not (),[|c|]))))
 	  ([(tclTHEN (Proofview.V82.of_tactic intros)

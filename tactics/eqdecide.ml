@@ -138,7 +138,7 @@ let solveArg eqonleft op a1 a2 tac =
   let subtacs =
     if eqonleft then [eqCase tac;diseqCase eqonleft;default_auto]
     else [diseqCase eqonleft;eqCase tac;default_auto] in
-  (tclTHENS (Proofview.V82.tactic (elim_type decide)) subtacs)
+  (tclTHENS (elim_type decide) subtacs)
   end
 
 let solveEqBranch rectype =

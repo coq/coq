@@ -286,8 +286,8 @@ val induction_destruct : rec_flag -> evars_flag ->
 
 (** {6 Eliminations giving the type instead of the proof. } *)
 
-val case_type         : constr  -> tactic
-val elim_type         : constr  -> tactic
+val case_type         : constr  -> unit Proofview.tactic
+val elim_type         : constr  -> unit Proofview.tactic
 
 (** {6 Introduction tactics. } *)
 
