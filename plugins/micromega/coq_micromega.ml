@@ -831,25 +831,28 @@ struct
    coq_Qeq, Mc.OpEq
   ]
 
-  let parse_zop (op,args) =
+  let is_convertible gl t1 t2 = 
+   Reductionops.is_conv (Tacmach.pf_env gl) (Tacmach.project gl) t1 t2
+
+  let parse_zop gl (op,args) =
    match kind_of_term op with
     | Const (x,_) -> (assoc_const op zop_table, args.(0) , args.(1))
     | Ind((n,0),_) ->
-        if Constr.equal op (Lazy.force coq_Eq) && Constr.equal args.(0) (Lazy.force coq_Z)
+        if Constr.equal op (Lazy.force coq_Eq) && is_convertible gl args.(0) (Lazy.force coq_Z)
         then (Mc.OpEq, args.(1), args.(2))
         else raise ParseError
     |   _ -> failwith "parse_zop"
 
-  let parse_rop (op,args) =
+  let parse_rop gl (op,args) =
     match kind_of_term op with
      | Const (x,_) -> (assoc_const op rop_table, args.(0) , args.(1))
      | Ind((n,0),_) ->
-        if Constr.equal op (Lazy.force coq_Eq) && Constr.equal args.(0) (Lazy.force coq_R)
+        if Constr.equal op (Lazy.force coq_Eq) && is_convertible gl args.(0) (Lazy.force coq_R)
         then (Mc.OpEq, args.(1), args.(2))
         else raise ParseError
     |   _ -> failwith "parse_zop"
 
-  let parse_qop (op,args) =
+  let parse_qop gl (op,args) =
     (assoc_const op qop_table, args.(0) , args.(1))
 
   let is_constant t = (* This is an approx *)
@@ -1057,22 +1060,22 @@ struct
         Mc.PEpow(expr,exp))
    rop_spec
 
-  let  parse_arith parse_op parse_expr env cstr =
+  let  parse_arith parse_op parse_expr env cstr gl =
    if debug
    then Pp.msg_debug (Pp.str "parse_arith: " ++ Printer.prterm  cstr ++ fnl ());
    match kind_of_term cstr with
     | App(op,args) ->
-       let (op,lhs,rhs) = parse_op (op,args) in
+       let (op,lhs,rhs) = parse_op gl (op,args) in
        let (e1,env) = parse_expr env lhs in
        let (e2,env) = parse_expr env rhs in
         ({Mc.flhs = e1; Mc.fop = op;Mc.frhs = e2},env)
     |  _ -> failwith "error : parse_arith(2)"
 
-  let parse_zarith = parse_arith  parse_zop parse_zexpr
+  let parse_zarith = parse_arith parse_zop parse_zexpr
 
-  let parse_qarith = parse_arith  parse_qop parse_qexpr
+  let parse_qarith = parse_arith parse_qop parse_qexpr
 
-  let parse_rarith = parse_arith  parse_rop parse_rexpr
+  let parse_rarith = parse_arith parse_rop parse_rexpr
 
   (* generic parsing of arithmetic expressions *)
 
@@ -1105,11 +1108,11 @@ struct
     * This is the big generic function for formula parsers.
     *)
   
-  let parse_formula parse_atom env tg term =
+  let parse_formula gl parse_atom env tg term =
 
     let parse_atom env tg t =
       try
-        let (at,env) = parse_atom env t in
+        let (at,env) = parse_atom env t gl in
         (A(at,tg,t), env,Tag.next tg)
       with e when Errors.noncritical e -> (X(t),env,tg) in
 
@@ -1313,13 +1316,13 @@ let rec pp_proof_term o = function
 	(pp_psatz pp_z) c1 (pp_psatz pp_z) c2
      (pp_list "[" "]" pp_proof_term) rst
 
-let rec parse_hyps parse_arith env tg hyps =
+let rec parse_hyps gl parse_arith env tg hyps =
  match hyps with
   | [] -> ([],env,tg)
   | (i,t)::l ->
-     let (lhyps,env,tg) = parse_hyps parse_arith env tg l in
+     let (lhyps,env,tg) = parse_hyps gl parse_arith env tg l in
       try
-       let (c,env,tg) = parse_formula parse_arith env  tg t in
+       let (c,env,tg) = parse_formula gl parse_arith env  tg t in
 	((i,c)::lhyps, env,tg)
       with e when Errors.noncritical e -> (lhyps,env,tg)
        (*(if debug then Printf.printf "parse_arith : %s\n" x);*)
@@ -1327,10 +1330,10 @@ let rec parse_hyps parse_arith env tg hyps =
 
 (*exception ParseError*)
 
-let parse_goal parse_arith env hyps term =
+let parse_goal gl parse_arith env hyps term =
  (*  try*)
- let (f,env,tg) = parse_formula parse_arith env (Tag.from 0) term in
- let (lhyps,env,tg) = parse_hyps parse_arith env tg hyps in
+ let (f,env,tg) = parse_formula gl parse_arith env (Tag.from 0) term in
+ let (lhyps,env,tg) = parse_hyps gl parse_arith env tg hyps in
   (lhyps,f,env)
    (*  with Failure x -> raise ParseError*)
 
@@ -1633,7 +1636,7 @@ let micromega_gen
   let concl = Tacmach.pf_concl gl in
   let hyps  = Tacmach.pf_hyps_types gl in
   try
-   let (hyps,concl,env) = parse_goal parse_arith Env.empty hyps concl in
+   let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
    let env = Env.elements env in
    let spec = Lazy.force spec in
 
@@ -1697,7 +1700,7 @@ let micromega_genr prover gl =
   let concl = Tacmach.pf_concl gl in
   let hyps  = Tacmach.pf_hyps_types gl in
   try
-   let (hyps,concl,env) = parse_goal parse_arith Env.empty hyps concl in
+   let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
    let env = Env.elements env in
    let spec = Lazy.force spec in
 

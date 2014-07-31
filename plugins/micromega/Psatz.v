@@ -23,6 +23,21 @@ Require Import VarMap.
 Require Tauto.
 Declare ML Module "micromega_plugin".
 
+Ltac lia :=
+  zify ; unfold Z.succ in * ;
+  (*cbv delta - [Z.add Z.sub Z.opp Z.mul Z.pow Z.gt Z.ge Z.le Z.lt iff not] ;*) xlia ;
+  intros __wit __varmap __ff ;
+    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
+      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
+
+Ltac nia :=
+  zify ; unfold Z.succ in * ;
+  xnlia ;
+  intros __wit __varmap __ff ;
+    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
+      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
+
+
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with
   | Z =>
@@ -52,11 +67,7 @@ Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:-1.
 
 Ltac psatzl dom :=
   let tac := lazymatch dom with
-  | Z =>
-    psatzl_Z ;
-    intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-    apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity
+  | Z => lia
   | Q =>
     psatzl_Q ;
     (* If csdp is not installed, the previous step might not produce any
@@ -79,19 +90,6 @@ Ltac psatzl dom :=
 Ltac lra := 
   first [ psatzl R | psatzl Q ].
 
-Ltac lia :=
-  zify ; unfold Z.succ in * ;
-  (*cbv delta - [Z.add Z.sub Z.opp Z.mul Z.pow Z.gt Z.ge Z.le Z.lt iff not] ;*) xlia ;
-  intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
-
-Ltac nia :=
-  zify ; unfold Z.succ in * ;
-  xnlia ;
-  intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
 
 
 (* Local Variables: *)
