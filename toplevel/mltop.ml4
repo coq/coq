@@ -353,7 +353,6 @@ let print_gc () =
     str "largest_free: " ++ int stat.Gc.largest_free ++ fnl () ++
     str "fragments: " ++ int stat.Gc.fragments ++ fnl () ++
     str "compactions: " ++ int stat.Gc.compactions ++ fnl () ++
-    str "top_heap_words: " ++ int stat.Gc.top_heap_words ++ fnl () ++
-    str "stack_size: " ++ int stat.Gc.stack_size
+    str "top_heap_words: " ++ int stat.Gc.top_heap_words
   in
   ppnl(hv 0 msg)
