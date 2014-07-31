@@ -141,17 +141,11 @@ is understood as
 & | & {\tt constr :} {\term}\\
 & | & {\tt uconstr :} {\term}\\
 & | & {\tt type\_term} {\term}\\
+& | & {\tt numgoals} \\
+& | & {\tt guard} {\it test}\\
 & | & \atomictac\\
 & | & {\qualid} \nelist{\tacarg}{}\\
-& | & {\atom}\\
-\\
-{\atom} & ::= &
-           {\qualid} \\
-& | & ()\\
-& | & {\integer}\\
-& | & {\tt (} {\tacexpr} {\tt )}\\
-\\
-{\messagetoken}\!\!\!\!\!\! & ::= & {\qstring} ~|~ {\ident} ~|~ {\integer} \\
+& | & {\atom}
 \end{tabular}
 \end{centerframe}
 \caption{Syntax of the tactic language}
@@ -163,6 +157,14 @@ is understood as
 \begin{figure}[htbp]
 \begin{centerframe}
 \begin{tabular}{lcl}
+{\atom} & ::= &
+           {\qualid} \\
+& | & ()\\
+& | & {\integer}\\
+& | & {\tt (} {\tacexpr} {\tt )}\\
+\\
+{\messagetoken}\!\!\!\!\!\! & ::= & {\qstring} ~|~ {\ident} ~|~ {\integer} \\
+\\
 \tacarg & ::= & 
         {\qualid}\\
 & $|$ & {\tt ()} \\
@@ -186,6 +188,13 @@ is understood as
 & $|$ & {\tt appcontext} {\zeroone{\ident}} {\tt [} {\cpattern} {\tt ]}
            {\tt =>} {\tacexpr}\\
 & $|$ & {\tt \_ =>} {\tacexpr}\\
+\\
+{\it test} & ::= &
+        {\integer} {\tt \,=\,} {\integer}\\
+& $|$ & {\integer} {\tt \,<\,} {\integer}\\
+& $|$ & {\integer} {\tt <=} {\integer}\\
+& $|$ & {\integer} {\tt \,>\,} {\integer}\\
+& $|$ & {\integer} {\tt >=} {\integer}
 \end{tabular}
 \end{centerframe}
 \caption{Syntax of the tactic language (continued)}
@@ -886,6 +895,52 @@ term which can be used in tactics.
 \begin{quote}
 {\tt type\_term} {\term}
 \end{quote}
+
+\subsubsection[Counting the goals]{Counting the goals\index{Ltac!numgoals}\index{numgoals!in Ltac}}
+
+The number of goals under focus can be recovered using the {\tt
+  numgoals} function. Combined with the {\tt guard} command below, it
+can be used to branch over the number of goals produced by previous tactics.
+
+%% spiwack: could be a reasonable example, but unfortunately it turns out
+%% to be more confusing than anything.
+%% \begin{coq_example*}
+%% Ltac pr_numgoals := let n := numgoals in idtac n.
+
+%% Goal True /\ True /\ True.
+%% split;[|split].
+%% \end{coq_example*}
+%% \begin{coq_example}
+%% all:pr_numgoals.
+%% \end{coq_example}
+
+\subsubsection[Testing boolean expressions]{Testing boolean expressions\index{Ltac!guard}\index{guard!in Ltac}}
+
+The {\tt guard} tactic tests a boolean expression, and fails if the expression evaluates to false. If the expression evaluates to true, it succeeds without affecting the proof.
+
+\begin{quote}
+{\tt guard} {\it test}
+\end{quote}
+
+The accepted tests are simple integer comparisons.
+
+\begin{coq_example*}
+Goal True /\ True /\ True.
+split;[|split].
+\end{coq_example*}
+\begin{coq_example}
+all:let n:= numgoals in guard n<4.
+Fail all:let n:= numgoals in guard n=2.
+\end{coq_example}
+\begin{ErrMsgs}
+
+\item \errindex{Condition not satisfied}
+
+\end{ErrMsgs}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 
 \subsubsection[Proving a subgoal as a separate lemma]{Proving a subgoal as a separate lemma\tacindex{abstract}
 \index{Tacticals!abstract@{\tt abstract}}}
