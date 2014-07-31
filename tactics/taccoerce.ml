@@ -152,11 +152,8 @@ let coerce_to_uconstr env v =
   if has_type v (topwit wit_uconstr) then
     out_gen (topwit wit_uconstr) v
   else
-    let (ctx,c) = coerce_to_constr env v in
-    (* spiwack: I'm not sure what I'm doing with this context.
-       May be wrong. *)
-    let ctx = List.map (fun id -> Name id) ctx in
-    Detyping.detype false [] ctx c
+    let (_ctx,c) = coerce_to_constr env v in
+    Detyping.detype false [] [] c
 
 let coerce_to_closed_constr env v =
   let ids,c = coerce_to_constr env v in
