@@ -630,18 +630,20 @@ let check_inductive_codomain env p =
 (* The following functions are almost duplicated from indtypes.ml, except
 that they carry here a poorer environment (containing less information). *)
 let ienv_push_var (env, lra) (x,a,ra) =
-(push_rel (x,None,a) env, (Norec,ra)::lra)
+  (push_rel (x,None,a) env, (Norec,ra)::lra)
 
-let ienv_push_inductive (env, ra_env) ((mi,u),lpar) =
- let specif = (lookup_mind_specif env mi, u) in
- let env' =
-   push_rel (Anonymous,None,
-             hnf_prod_applist env (type_of_inductive env specif) lpar) env in
- let ra_env' =
-   (Imbr mi,(Rtree.mk_rec_calls 1).(0)) ::
-   List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
- (* New index of the inductive types *)
- (env', ra_env')
+let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
+  let mib = Environ.lookup_mind mind env in
+  let ntypes = mib.mind_ntypes in
+  let push_ind specif env =
+     push_rel (Anonymous,None,
+		hnf_prod_applist env (type_of_inductive env ((mib,specif),u)) lpar) env
+  in
+  let env = Array.fold_right push_ind mib.mind_packets env in
+  let rc = Array.mapi (fun j t -> (Imbr (mind,j),t)) (Rtree.mk_rec_calls ntypes) in
+  let lra_ind = Array.rev_to_list rc in
+  let ra_env = List.map (fun (r,t) -> (r,Rtree.lift ntypes t)) ra_env in
+  (env, lra_ind @ ra_env)
 
 let rec ienv_decompose_prod (env,_ as ienv) n c =
  if Int.equal n 0 then (ienv,c) else
@@ -692,30 +694,32 @@ let get_recargs_approx env ind args =
 	| err ->
 	    mk_norec
 
-  and build_recargs_nested (env,ra_env as ienv) ((mi,u), largs) =
-    let (mib,mip) = lookup_mind_specif env mi in
+  and build_recargs_nested (env,ra_env as ienv) (((mind,i),u), largs) =
+    let mib = Environ.lookup_mind mind env in
     let auxnpar = mib.mind_nparams_rec in
     let nonrecpar = mib.mind_nparams - auxnpar in
-    let (lpar,auxlargs) = List.chop auxnpar largs in
-      let auxntyp = mib.mind_ntypes in
-	(* The nested inductive type with parameters removed *)
-	let auxlcvect = abstract_mind_lc auxntyp auxnpar mip.mind_nf_lc in
-	  (* Extends the environment with a variable corresponding to
+    let (lpar,_) = List.chop auxnpar largs in
+    let auxntyp = mib.mind_ntypes in
+    (* Extends the environment with a variable corresponding to
 	     the inductive def *)
-	let (env',_ as ienv') = ienv_push_inductive ienv ((mi,u),lpar) in
-	  (* Parameters expressed in env' *)
-	let lpar' = List.map (lift auxntyp) lpar in
-	let irecargs =
-	  Array.map
-	    (function c ->
-	      let c' = hnf_prod_applist env' c lpar' in
-	      (* skip non-recursive parameters *)
-	      let (ienv',c') = ienv_decompose_prod ienv' nonrecpar c' in
-		build_recargs_constructors ienv' c')
-	    auxlcvect
-	in
-(*	let irecargs = Array.map snd irecargs_nmr in *)
-	  (Rtree.mk_rec [|mk_paths (Imbr mi) irecargs|]).(0)
+    let (env',_ as ienv') = ienv_push_inductive ienv ((mind,u),lpar) in
+    (* Parameters expressed in env' *)
+    let lpar' = List.map (lift auxntyp) lpar in
+    let mk_irecargs j specif =
+      (* The nested inductive type with parameters removed *)
+      let auxlcvect = abstract_mind_lc auxntyp auxnpar specif.mind_nf_lc in
+      let paths = Array.map
+	(function c ->
+		  let c' = hnf_prod_applist env' c lpar' in
+		  (* skip non-recursive parameters *)
+		  let (ienv',c') = ienv_decompose_prod ienv' nonrecpar c' in
+		  build_recargs_constructors ienv' c')
+	auxlcvect
+      in
+      mk_paths (Imbr (mind,j)) paths
+    in
+    let irecargs = Array.mapi mk_irecargs mib.mind_packets in
+    (Rtree.mk_rec irecargs).(i)
 
   and build_recargs_constructors ienv c =
     let rec recargs_constr_rec (env,ra_env as ienv) lrec c =
