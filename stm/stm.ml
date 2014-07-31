@@ -62,13 +62,21 @@ let vernac_interp ?proof id { verbose; loc; expr } =
   end
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
-let vernac_parse eid s =
-  set_id_for_feedback (Feedback.Edit eid);
+let vernac_parse ?newtip eid s =
+  if Option.is_empty newtip then set_id_for_feedback (Feedback.Edit eid)
+  else set_id_for_feedback (Feedback.State (Option.get newtip));
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   Flags.with_option Flags.we_are_parsing (fun () ->
-    match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
-    | None -> raise (Invalid_argument "vernac_parse")
-    | Some ast -> ast)
+    try
+      match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
+      | None -> raise (Invalid_argument "vernac_parse")
+      | Some ast -> ast
+    with e when Errors.noncritical e ->
+      let e = Errors.push e in
+      let loc = Option.default Loc.ghost (Loc.get_loc e) in
+      let msg = string_of_ppcmds (print e) in
+      Pp.feedback (Feedback.ErrorMsg (loc, msg));
+      raise e)
   ()
 
 module Vcs_ = Vcs.Make(Stateid)
@@ -1846,7 +1854,7 @@ let query ~at ?(report_with=Stateid.dummy) s =
   Future.purify (fun s ->
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
-    let _, ast as loc_ast = vernac_parse 0 s in
+    let _, ast as loc_ast = vernac_parse ~newtip:report_with 0 s in
     let clas = classify_vernac ast in
     match clas with
     | VtStm (w,_), _ ->
@@ -1860,7 +1868,7 @@ let query ~at ?(report_with=Stateid.dummy) s =
 let add ~ontop ?newtip ?(check=ignore) verb eid s =
   let cur_tip = VCS.cur_tip () in
   if Stateid.equal ontop cur_tip then begin
-    let _, ast as loc_ast = vernac_parse eid s in
+    let _, ast as loc_ast = vernac_parse ?newtip eid s in
     check(loc_ast);
     let clas = classify_vernac ast in
     match process_transaction ?newtip ~tty:false verb clas loc_ast with
