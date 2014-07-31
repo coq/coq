@@ -157,10 +157,15 @@ let rec inter cmp interlbl def n histo t t' =
       (match interlbl x x' with
       | None -> mk_node def [||]
       | Some x'' -> Node (x'', Array.map2 (inter cmp interlbl def n histo) a a'))
-  (* Mutually recursive trees are transformed into nested trees *)
-  | Rec _, Rec _ ->
-     let histo = ((t,t'),(n,0))::histo in
-     Rec(0, [|inter cmp interlbl def (n+1) histo (expand t) (expand t')|])
+  | Rec (i,v), Rec (i',v') ->
+     (* If possible, we preserve the shape of input trees *)
+     if Int.equal i i' && Int.equal (Array.length v) (Array.length v') then
+       let histo = ((t,t'),(n,i))::histo in
+       Rec(i, Array.map2 (inter cmp interlbl def (n+1) histo) v v')
+     else
+     (* Otherwise, mutually recursive trees are transformed into nested trees *)
+       let histo = ((t,t'),(n,0))::histo in
+       Rec(0, [|inter cmp interlbl def (n+1) histo (expand t) (expand t')|])
   | Rec _, _ -> inter cmp interlbl def n histo (expand t) t'
   | _ , Rec _ -> inter cmp interlbl def n histo t (expand t')
   | _ -> assert false
