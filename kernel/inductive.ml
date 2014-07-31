@@ -739,14 +739,21 @@ let get_recargs_approx env ind args =
   assigned Norec *)
   build_recargs_nested (env,[]) (ind, args)
 
-
-let get_codomain_tree env p =
+(* [get_restricted_specif env p] produces a size specification with which must
+   be intersected all size information flowing through a match with predicate p
+   in environment env. *)
+let get_restricted_specif env p =
   let absctx, ar = dest_lam_assum env p in
+  (* Optimization: if the predicate is not dependent, no restriction is needed
+     and we avoid building the recargs tree. *)
+  if noccur_with_meta 1 (rel_context_length absctx) ar then Dead_code
+  else let env = push_rel_context absctx env in
   let arctx, s = dest_prod_assum env ar in
+  let env = push_rel_context arctx env in
   let i,args = decompose_app (whd_betadeltaiota env s) in
   match kind_of_term i with
   | Ind i ->
-      let recargs = get_recargs_approx env i args in Subterm(Strict,recargs)
+     let recargs = get_recargs_approx env i args in Subterm(Strict,recargs)
   | _ -> Not_subterm
 
 (* [subterm_specif renv t] computes the recursive structure of [t] and
@@ -761,16 +768,17 @@ let rec subterm_specif renv stack t =
     match kind_of_term f with
     | Rel k -> subterm_var k renv
     | Case (ci,p,c,lbr) ->
-    let stack' = push_stack_closures renv l stack in
-    let pred_spec = get_codomain_tree renv.env p in
-        let cases_spec = branches_specif renv 
-	  (lazy_subterm_specif renv [] c) ci in
-        let stl  =
-	  Array.mapi (fun i br' ->
-	  let stack_br = push_stack_args (cases_spec.(i)) stack' in
-	    subterm_specif renv stack_br br')
-	  lbr in
-	  subterm_spec_glb pred_spec stl
+       let stack' = push_stack_closures renv l stack in
+       let pred_spec = get_restricted_specif renv.env p in
+       let cases_spec =
+	 branches_specif renv (lazy_subterm_specif renv [] c) ci
+       in
+       let stl =
+	 Array.mapi (fun i br' ->
+		     let stack_br = push_stack_args (cases_spec.(i)) stack' in
+		     subterm_specif renv stack_br br')
+		    lbr in
+       subterm_spec_glb pred_spec stl
 
     | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
       (* when proving that the fixpoint f(x)=e is less than n, it is enough
@@ -863,7 +871,10 @@ let error_partial_apply renv fx =
 
 let filter_stack_domain env ci p stack =
   let absctx, ar = dest_lam_assum env p in
-  let env = push_rel_context absctx env in
+  (* Optimization: if the predicate is not dependent, no restriction is needed
+     and we avoid building the recargs tree. *)
+  if noccur_with_meta 1 (rel_context_length absctx) ar then stack
+  else let env = push_rel_context absctx env in
   let rec filter_stack env ar stack =
     let t = whd_betadeltaiota env ar in
     match stack, kind_of_term t with
@@ -1170,9 +1181,11 @@ let check_one_cofix env nbfix def deftype =
 
 	| Case (_,p,tm,vrest) ->
 	   begin
-	    match get_codomain_tree env p with
-	    | Subterm (_, vlra') ->
-	       let vlra = inter_wf_paths vlra vlra' in
+	     let vlra = match get_restricted_specif env p with
+	     | Dead_code -> vlra
+	     | Subterm (_, vlra') -> inter_wf_paths vlra vlra'
+	     | _ -> raise (CoFixGuardError (env, ReturnPredicateNotCoInductive c))
+	     in
                if (noccur_with_meta n nbfix p) then
 		 if (noccur_with_meta n nbfix tm) then
 		   if (List.for_all (noccur_with_meta n nbfix) args) then
@@ -1183,8 +1196,6 @@ let check_one_cofix env nbfix def deftype =
 		   raise (CoFixGuardError (env,RecCallInCaseArg c))
                else
 		 raise (CoFixGuardError (env,RecCallInCasePred c))
-	    | _ ->
-	       raise (CoFixGuardError (env, ReturnPredicateNotCoInductive c))
 	   end
 
 	| Meta _ -> ()
