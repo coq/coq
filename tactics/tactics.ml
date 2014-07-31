@@ -900,24 +900,19 @@ let is_record mind = (Global.lookup_mind (fst mind)).mind_record
 
 let find_ind_eliminator ind s gl =
   let gr = lookup_eliminator ind s in
-  let evd, c = pf_apply Evd.fresh_global gl gr in
-    evd, c
-
-let new_find_ind_eliminator ind s gl =
-  let gr = lookup_eliminator ind s in
   let evd, c = Tacmach.New.pf_apply Evd.fresh_global gl gr in
     evd, c
 
 let find_eliminator c gl =
-  let ((ind,u),t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+  let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_type_of gl c) in
   if is_record ind <> None then raise IsRecord;
-  let evd, c = find_ind_eliminator ind (elimination_sort_of_goal gl) gl in
+  let evd, c = find_ind_eliminator ind (Tacticals.New.elimination_sort_of_goal gl) gl in
     evd, {elimindex = None; elimbody = (c,NoBindings)}
 
 let default_elim with_evars (c,_ as cx) =
   Proofview.tclORELSE
-    (Proofview.Goal.enter begin fun gl ->
-      let evd, elim = Tacmach.New.of_old (find_eliminator c) gl in
+    (Proofview.Goal.raw_enter begin fun gl ->
+      let evd, elim = find_eliminator c gl in
 	Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evd)
 	  (Proofview.V82.tactic (general_elim with_evars cx elim))
     end)
@@ -3012,25 +3007,25 @@ let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
     evd, (compute_scheme_signature scheme names_info ind_type_guess, scheme)
 
 let guess_elim isrec hyp0 gl =
-  let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
-  let mind,_ = pf_reduce_to_quantified_ind gl tmptyp0 in
-  let s = elimination_sort_of_goal gl in
+  let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
+  let mind,_ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
+  let s = Tacticals.New.elimination_sort_of_goal gl in
   let evd, elimc =
     if isrec && not (is_record (fst mind) <> None) then find_ind_eliminator (fst mind) s gl
     else
       if use_dependent_propositions_elimination () &&
-	dependent_no_evar (mkVar hyp0) (pf_concl gl)
+	dependent_no_evar (mkVar hyp0) (Tacmach.New.pf_concl gl)
       then
-	pf_apply build_case_analysis_scheme gl mind true s
+	Tacmach.New.pf_apply build_case_analysis_scheme gl mind true s
       else
-	pf_apply build_case_analysis_scheme_default gl mind s in
-  let elimt = pf_type_of gl elimc in
+	Tacmach.New.pf_apply build_case_analysis_scheme_default gl mind s in
+  let elimt = Tacmach.New.pf_type_of gl elimc in
     evd, ((elimc, NoBindings), elimt), mkIndU mind
 
 let given_elim hyp0 (elimc,lbind as e) gl =
-  let tmptyp0 = pf_get_hyp_typ gl hyp0 in
+  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let ind_type_guess,_ = decompose_app ((strip_prod tmptyp0)) in
-  project gl, (e, pf_type_of gl elimc), ind_type_guess
+  Proofview.Goal.sigma gl, (e, Tacmach.New.pf_type_of gl elimc), ind_type_guess
 
 let find_elim isrec elim hyp0 gl =
   match elim with
@@ -3081,7 +3076,7 @@ let get_eliminator elim gl = match elim with
   | ElimUsing (elim,indsign) ->
       Proofview.Goal.sigma gl, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc,elimt),_ as elims = Tacmach.New.of_old (guess_elim isrec id) gl in
+      let evd, (elimc,elimt),_ as elims = guess_elim isrec id gl in
       let _, (l, _) = compute_elim_signature elims id in
       evd, isrec, ({elimindex = None; elimbody = elimc}, elimt), l
 
@@ -3257,7 +3252,7 @@ let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) n
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbind) inhyps =
   Proofview.Goal.enter begin fun gl ->
-  let sigma, elim_info = Tacmach.New.of_old (find_induction_type isrec elim hyp0) gl in
+  let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
   Tacticals.New.tclTHENLIST
     [Proofview.V82.tclEVARS sigma; (atomize_param_of_ind elim_info hyp0);
     (induction_from_context isrec with_evars elim_info
@@ -3269,7 +3264,7 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbin
    parameters and arguments are given (mandatory too). *)
 let induction_without_atomization isrec with_evars elim names lid =
   Proofview.Goal.enter begin fun gl ->
-  let sigma, (indsign,scheme as elim_info) = Tacmach.New.of_old (find_elim_signature isrec elim (List.hd lid)) gl in
+  let sigma, (indsign,scheme as elim_info) = find_elim_signature isrec elim (List.hd lid) gl in
   let awaited_nargs =
     scheme.nparams + scheme.nargs
     + (if scheme.farg_in_concl then 1 else 0)
@@ -3502,7 +3497,7 @@ let elim_scheme_type elim t =
 let elim_type t =
   Proofview.Goal.raw_enter begin fun gl ->
   let (ind,t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
-  let evd, elimc = new_find_ind_eliminator (fst ind) (Tacticals.New.elimination_sort_of_goal gl) gl in
+  let evd, elimc = find_ind_eliminator (fst ind) (Tacticals.New.elimination_sort_of_goal gl) gl in
   Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evd) (elim_scheme_type elimc t)
   end
 

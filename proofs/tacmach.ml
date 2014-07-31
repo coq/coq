@@ -194,6 +194,7 @@ module New = struct
     Constrintern.construct_reference hyps id
 
   let pf_env = Proofview.Goal.env
+  let pf_concl = Proofview.Goal.concl
 
   let pf_type_of gl t =
     pf_apply type_of gl t
