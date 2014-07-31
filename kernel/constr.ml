@@ -741,9 +741,9 @@ let hasheq t1 t2 =
     | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && array_eqeq l1 l2
     | Const (c1,u1), Const (c2,u2) -> c1 == c2 && u1 == u2
     | Ind ((sp1,i1),u1), Ind ((sp2,i2),u2) -> 
-      sp1 == sp2 && Int.equal i1 i2 && Univ.Instance.eqeq u1 u2
+      sp1 == sp2 && Int.equal i1 i2 && u1 == u2
     | Construct (((sp1,i1),j1),u1), Construct (((sp2,i2),j2),u2) ->
-      sp1 == sp2 && Int.equal i1 i2 && Int.equal j1 j2 && Univ.Instance.eqeq u1 u2
+      sp1 == sp2 && Int.equal i1 i2 && Int.equal j1 j2 && u1 == u2
     | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
       ci1 == ci2 && p1 == p2 && c1 == c2 && array_eqeq bl1 bl2
     | Fix ((ln1, i1),(lna1,tl1,bl1)), Fix ((ln2, i2),(lna2,tl2,bl2)) ->

@@ -1705,7 +1705,6 @@ module Instance : sig
 
     val share : t -> t * int
 
-    val eqeq : t -> t -> bool
     val subst_fn : universe_level_subst_fn -> t -> t
     
     val pr : t -> Pp.std_ppcmds
@@ -1775,8 +1774,6 @@ struct
   let of_array a = a
 
   let to_array a = a
-
-  let eqeq = HInstancestruct.equal
 
   let subst_fn fn t = 
     let t' = CArray.smartmap fn t in

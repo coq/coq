@@ -283,9 +283,6 @@ sig
   val share : t -> t * int
   (** Simultaneous hash-consing and hash-value computation *)
 
-  val eqeq : t -> t -> bool
-  (** Rely on physical equality of subterms only *)
-
   val subst_fn : universe_level_subst_fn -> t -> t
   (** Substitution by a level-to-level function. *)
 
