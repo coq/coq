@@ -593,6 +593,13 @@ and intern_tactic_seq onlytac ist = function
       let lfun', t1 = intern_tactic_seq onlytac ist t1 in
       let lfun'', t2 = intern_tactic_seq onlytac { ist with ltacvars = lfun' } t2 in
       lfun'', TacThen (t1,t2)
+  | TacDispatch tl ->
+      ist.ltacvars , TacDispatch (List.map (intern_pure_tactic ist) tl)
+  | TacExtendTac (tf,t,tl) ->
+      ist.ltacvars ,
+      TacExtendTac (Array.map (intern_pure_tactic ist) tf,
+                    intern_pure_tactic ist t,
+		    Array.map (intern_pure_tactic ist) tl)
   | TacThens3parts (t1,tf,t2,tl) ->
       let lfun', t1 = intern_tactic_seq onlytac ist t1 in
       let ist' = { ist with ltacvars = lfun' } in

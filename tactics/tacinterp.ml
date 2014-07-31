@@ -1042,6 +1042,12 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       end
   | TacThen (t1,t) ->
       Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
+  | TacDispatch tl ->
+      Proofview.tclDISPATCH (List.map (interp_tactic ist) tl)
+  | TacExtendTac (tf,t,tl) ->
+      Proofview.tclEXTEND (Array.map_to_list (interp_tactic ist) tf)
+                          (interp_tactic ist t)
+                          (Array.map_to_list (interp_tactic ist) tl)
   | TacThens (t1,tl) -> Tacticals.New.tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
   | TacThens3parts (t1,tf,t,tl) ->
       Tacticals.New.tclTHENS3PARTS (interp_tactic ist t1)

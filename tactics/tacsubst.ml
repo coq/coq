@@ -225,6 +225,11 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacAbstract (tac,s) -> TacAbstract (subst_tactic subst tac,s)
   | TacThen (t1,t2) ->
       TacThen (subst_tactic subst t1, subst_tactic subst t2)
+  | TacDispatch tl -> TacDispatch (List.map (subst_tactic subst) tl)
+  | TacExtendTac (tf,t,tl) ->
+      TacExtendTac (Array.map (subst_tactic subst) tf,
+	            subst_tactic subst t,
+                    Array.map (subst_tactic subst) tl)
   | TacThens (t,tl) ->
       TacThens (subst_tactic subst t, List.map (subst_tactic subst) tl)
   | TacThens3parts (t1,tf,t2,tl) ->

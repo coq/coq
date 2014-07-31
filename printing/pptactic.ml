@@ -505,15 +505,28 @@ let pr_seq_body pr tl =
         prlist_with_sep (fun () -> spc () ++ str "| ") pr tl ++
         str " ]")
 
+let pr_dispatch pr tl =
+  hv 0 (str "[>" ++
+        prlist_with_sep (fun () -> spc () ++ str "| ") pr tl ++
+        str " ]")
+
 let pr_opt_tactic pr = function
   | TacId [] -> mt ()
   | t -> pr t
 
+let pr_tac_extend_gen pr tf tm tl =
+  prvect_with_sep mt (fun t -> pr t ++ spc () ++ str "| ") tf ++
+  pr_opt_tactic pr tm ++ str ".." ++
+  prvect_with_sep mt (fun t -> spc () ++ str "| " ++ pr t) tl
+
 let pr_then_gen pr tf tm tl =
   hv 0 (str "[ " ++
-        prvect_with_sep mt (fun t -> pr t ++ spc () ++ str "| ") tf ++
-	pr_opt_tactic pr tm ++ str ".." ++
-	prvect_with_sep mt (fun t -> spc () ++ str "| " ++ pr t) tl ++
+        pr_tac_extend_gen pr tf tm tl ++
+        str " ]")
+
+let pr_tac_extend pr tf tm tl =
+  hv 0 (str "[>" ++
+        pr_tac_extend_gen pr tf tm tl ++
         str " ]")
 
 let pr_hintbases = function
@@ -851,6 +864,8 @@ let rec pr_tac inherited tac =
       hov 1 (pr_tac (lseq,E) t1 ++ pr_then () ++ spc () ++
              pr_tac (lseq,L) t2),
       lseq
+  | TacDispatch tl -> pr_dispatch (pr_tac ltop) tl , lseq
+  | TacExtendTac (tf,t,tr) -> pr_tac_extend (pr_tac ltop) tf t tr , lseq
   | TacThens3parts (t1,tf,t2,tl) ->
       hov 1 (pr_tac (lseq,E) t1 ++ pr_then () ++ spc () ++
              pr_then_gen (pr_tac ltop) tf t2 tl),

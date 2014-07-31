@@ -197,6 +197,12 @@ and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr =
   | TacThen of
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacDispatch of
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr list
+  | TacExtendTac of
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr array *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr array
   | TacThens of
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr list

@@ -50,16 +50,22 @@ GEXTEND Gram
       | -> ([TacId []], None)
     ] ]
   ;
+  tactic_then_locality: (* [true] for the local variant [TacThens] and [false]
+                           for [TacExtend] *)
+  [ [ "[" ; l = OPT">" -> if Option.is_empty l then true else false ] ]
+  ;
   tactic_expr:
     [ "5" RIGHTA
       [ te = binder_tactic -> te ]
     | "4" LEFTA
       [ ta0 = tactic_expr; ";"; ta1 = binder_tactic -> TacThen (ta0, ta1)
       | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0,ta1)
-      | ta0 = tactic_expr; ";"; "["; (first,tail) = tactic_then_gen; "]" ->
-	  match tail with
-	  | Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
-	  | None -> TacThens (ta0,first) ]
+      | ta0 = tactic_expr; ";"; l = tactic_then_locality; (first,tail) = tactic_then_gen; "]" ->
+	  match l , tail with
+          | false , Some (t,last) -> TacThen (ta0,TacExtendTac (Array.of_list first, t, last))
+	  | true  , Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
+          | false , None -> TacThen (ta0,TacDispatch first)
+	  | true  , None -> TacThens (ta0,first) ]
     | "3" RIGHTA
       [ IDENT "try"; ta = tactic_expr -> TacTry ta
       | IDENT "do"; n = int_or_var; ta = tactic_expr -> TacDo (n,ta)
@@ -107,6 +113,11 @@ GEXTEND Gram
           TacArg(!@loc,TacCall (!@loc,r,la)) ]
     | "0"
       [ "("; a = tactic_expr; ")" -> a
+      | "["; ">"; (tf,tail) = tactic_then_gen; "]" ->
+          begin match tail with
+          | Some (t,tl) -> TacExtendTac(Array.of_list tf,t,tl)
+          | None -> TacDispatch tf
+          end
       | a = tactic_atom -> TacArg (!@loc,a) ] ]
   ;
   (* binder_tactic: level 5 of tactic_expr *)
