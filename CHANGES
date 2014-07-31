@@ -99,6 +99,7 @@ Tactics
   * New tactic language feature "numgoals" to count number of goals.
     Accompanied by "guard" tactic which fails if a boolean test does
     not pass.
+  * New tactical "[> ... ]" to apply tactics to individual goals.
   * The refine tactic is changed not to use an ad hoc typing algorithm
     to generate subgoals. It also uses the dependent subgoal feature
     to generate goals to materialise every existential variable which
