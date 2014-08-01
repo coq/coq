@@ -1722,23 +1722,24 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           anomaly(str"classifier: VtBack + VtLater must imply part_of_script")
 
       (* Query *)
-      | VtQuery false, VtNow when tty = true ->
+      | VtQuery (false,report_id), VtNow when tty = true ->
           finish ();
-          (try Future.purify (vernac_interp Stateid.dummy)
+          (try Future.purify (vernac_interp report_id)
                   { verbose = true; loc; expr }
            with e when Errors.noncritical e ->
              let e = Errors.push e in
-             raise(State.exn_on Stateid.dummy e)); `Ok
-      | VtQuery false, VtNow ->
-          (try vernac_interp Stateid.dummy x
+             raise(State.exn_on report_id e)); `Ok
+      | VtQuery (false,report_id), VtNow ->
+          (try vernac_interp report_id x
            with e when Errors.noncritical e ->
              let e = Errors.push e in
-             raise(State.exn_on Stateid.dummy e)); `Ok
-      | VtQuery true, w ->
+             raise(State.exn_on report_id e)); `Ok
+      | VtQuery (true,report_id), w ->
+          assert(Stateid.equal report_id Stateid.dummy);
           let id = VCS.new_node ~id:newtip () in
           VCS.commit id (Cmd (x,[]));
           Backtrack.record (); if w == VtNow then finish (); `Ok
-      | VtQuery false, VtLater ->
+      | VtQuery (false,_), VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
 
       (* Proof *)
@@ -1840,7 +1841,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
 
 let stop_worker n = Slaves.cancel_worker n
 
-let query ~at s =
+let query ~at ?(report_with=Stateid.dummy) s =
   Future.purify (fun s ->
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
@@ -1852,7 +1853,7 @@ let query ~at s =
          ~tty:false true (VtStm (w,false), VtNow) loc_ast)
     | _ ->
        ignore(process_transaction
-         ~tty:false true (VtQuery false, VtNow) loc_ast))
+         ~tty:false true (VtQuery (false,report_with), VtNow) loc_ast))
   s
 
 let add ~ontop ?newtip ?(check=ignore) verb eid s =

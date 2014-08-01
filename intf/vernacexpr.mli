@@ -449,9 +449,10 @@ type vernac_type =
   | VtQed of vernac_qed_type
   | VtProofStep
   | VtProofMode of string
-  | VtQuery of vernac_part_of_script
+  | VtQuery of vernac_part_of_script * report_with
   | VtStm of vernac_control * vernac_part_of_script
   | VtUnknown
+and report_with = Stateid.t (* report feedback on a different id *)
 and vernac_qed_type = VtKeep | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list

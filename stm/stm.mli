@@ -22,9 +22,10 @@ val add : ontop:Stateid.t -> ?newtip:Stateid.t -> ?check:(located_vernac_expr ->
   bool -> edit_id -> string ->
     Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
-(* parses and xecutes a command at a given state, throws away its side effects
-   but for the printings *)
-val query : at:Stateid.t -> string -> unit
+(* parses and executes a command at a given state, throws away its side effects
+   but for the printings.  Feedback is sent with report_with (defaults to dummy
+   state id)  *)
+val query : at:Stateid.t -> ?report_with:Stateid.t -> string -> unit
 
 (* [edit_at id] is issued to change the editing zone.  [`NewTip] is returned if
    the requested id is the new document tip hence the document portion following

@@ -20,7 +20,7 @@ let string_of_vernac_type = function
   | VtQed VtDrop -> "Qed(drop)"
   | VtProofStep -> "ProofStep"
   | VtProofMode s -> "ProofMode " ^ s
-  | VtQuery b -> "Query" ^ string_of_in_script b
+  | VtQuery (b,_) -> "Query" ^ string_of_in_script b
   | VtStm ((VtFinish|VtJoinDocument|VtObserve _|VtPrintDag|VtWait), b) ->
       "Stm" ^ string_of_in_script b
   | VtStm (VtPG, b) -> "Stm PG" ^ string_of_in_script b
@@ -42,7 +42,7 @@ let declare_vernac_classifier
 
 let elide_part_of_script_and_now (a, _) =
   match a with
-  | VtQuery _ -> VtQuery false, VtNow
+  | VtQuery (_,id) -> VtQuery (false,id), VtNow
   | VtStm (x, _) -> VtStm (x, false), VtNow
   | x -> x, VtNow
 
@@ -89,7 +89,7 @@ let rec classify_vernac e =
     | VernacEndProof _ | VernacExactProof _ -> VtQed VtKeep, VtLater
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
-    | VernacCheckMayEval _ -> VtQuery true, VtLater
+    | VernacCheckMayEval _ -> VtQuery (true,Stateid.dummy), VtLater
     (* ProofStep *)
     | VernacProof _ 
     | VernacBullet _ 
@@ -206,5 +206,5 @@ let rec classify_vernac e =
       make_polymorphic res
     else res
 
-let classify_as_query = VtQuery true, VtLater
+let classify_as_query = VtQuery (true,Stateid.dummy), VtLater
 let classify_as_sideeff = VtSideff [], VtLater
