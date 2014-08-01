@@ -123,18 +123,18 @@ type one_inductive_body = {
 
     mind_nrealargs : int; (** Number of expected real arguments of the type (no let, no params) *)
 
-    mind_nrealargs_ctxt : int; (** Length of realargs context (with let, no params) *)
+    mind_nrealdecls : int; (** Length of realargs context (with let, no params) *)
 
     mind_kelim : sorts_family list; (** List of allowed elimination sorts *)
 
     mind_nf_lc : types array; (** Head normalized constructor types so that their conclusion is atomic *)
 
-    mind_consnrealdecls : int array;
- (** Length of the signature of the constructors (with let, w/o params)
+    mind_consnrealargs : int array;
+ (** Number of expected proper arguments of the constructors (w/o params)
     (not used in the kernel) *)
 
-    mind_consnrealargs : int array;
- (** Length of the signature of the constructors (w/o let, w/o params)
+    mind_consnrealdecls : int array;
+ (** Length of the signature of the constructors (with let, w/o params)
     (not used in the kernel) *)
 
     mind_recargs : wf_paths; (** Signature of recursive arguments in the constructors *)

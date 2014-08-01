@@ -159,7 +159,7 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
   let (hdapp,args) = decompose_app t in
   let res = match kind_of_term hdapp with
   | Ind (ind,u)  ->
-      let car = mis_constr_nargs ind in
+      let car = constructors_nrealargs ind in
       let (mib,mip) = Global.lookup_inductive ind in
       if Array.for_all (fun ar -> Int.equal ar 1) car
 	&& not (mis_is_recursive (ind,mib,mip))
@@ -277,7 +277,7 @@ let match_with_equation t =
 let is_inductive_equality ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let nconstr = Array.length mip.mind_consnames in
-  Int.equal nconstr 1 && Int.equal (constructor_nrealargs (Global.env()) (ind,1)) 0
+  Int.equal nconstr 1 && Int.equal (constructor_nrealargs (ind,1)) 0
 
 let match_with_equality_type t =
   let (hdapp,args) = decompose_app t in

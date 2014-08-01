@@ -85,6 +85,8 @@
   renamed into replace_term_occ_modulo and
   replace_term_occ_decl_modulo).
 
+- API of Inductiveops made more uniform (see commit log or file itself).
+
 =========================================
 = CHANGES BETWEEN COQ V8.3 AND COQ V8.4 =
 =========================================

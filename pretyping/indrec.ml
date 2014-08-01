@@ -70,7 +70,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 	(RecursionSchemeError
 	   (NotAllowedCaseAnalysis (false, fst (Universes.fresh_sort_in_family env kind), pind)))
   in
-  let ndepar = mip.mind_nrealargs_ctxt + 1 in
+  let ndepar = mip.mind_nrealdecls + 1 in
 
   (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)
   (* mais pas très joli ... (mais manque get_sort_of à ce niveau) *)

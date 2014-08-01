@@ -876,12 +876,11 @@ let check_or_pat_variables loc ids idsl =
 (** Use only when params were NOT asked to the user.
     @return if letin are included *)
 let check_constructor_length env loc cstr len_pl pl0 =
-  let nargs = Inductiveops.mis_constructor_nargs cstr in
   let n = len_pl + List.length pl0 in
-  if Int.equal n nargs then false else
-    (Int.equal n ((fst (Inductiveops.inductive_nargs (fst cstr))) + Inductiveops.constructor_nrealhyps cstr)) ||
+  if Int.equal n (Inductiveops.constructor_nallargs cstr) then false else
+    (Int.equal n (Inductiveops.constructor_nalldecls cstr) ||
       (error_wrong_numarg_constructor_loc loc env cstr
-        (nargs - (Inductiveops.inductive_nparams (fst cstr))))
+         (Inductiveops.constructor_nrealargs cstr)))
 
 let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 =
   let impl_list = if Int.equal len_pl1 0
@@ -902,26 +901,23 @@ let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 
   in aux 0 (impl_list,pl2)
 
 let add_implicits_check_constructor_length env loc c len_pl1 pl2 =
-  let nargs = Inductiveops.mis_constructor_nargs c in
-  let nargs' = (fst (Inductiveops.inductive_nargs (fst c)))
-    + Inductiveops.constructor_nrealhyps c in
+  let nargs = Inductiveops.constructor_nallargs c in
+  let nargs' = Inductiveops.constructor_nalldecls c in
   let impls_st = implicits_of_global (ConstructRef c) in
   add_implicits_check_length (error_wrong_numarg_constructor_loc loc env c)
     nargs nargs' impls_st len_pl1 pl2
 
 let add_implicits_check_ind_length env loc c len_pl1 pl2 =
-  let (mib,mip) = Global.lookup_inductive c in
-  let nparams = mib.Declarations.mind_nparams in
-  let nargs = mip.Declarations.mind_nrealargs + nparams in
-  let nparams', nrealargs' = inductive_nargs_env env c in
+  let nallargs = inductive_nallargs_env env c in
+  let nalldecls = inductive_nalldecls_env env c in
   let impls_st = implicits_of_global (IndRef c) in
   add_implicits_check_length (error_wrong_numarg_inductive_loc loc env c)
-    nargs (nrealargs' + nparams') impls_st len_pl1 pl2
+    nallargs nalldecls impls_st len_pl1 pl2
 
 (** Do not raise NotEnoughArguments thanks to preconditions*)
 let chop_params_pattern loc ind args with_letin =
   let nparams = if with_letin
-    then fst (Inductiveops.inductive_nargs ind)
+    then Inductiveops.inductive_nparamdecls ind
     else Inductiveops.inductive_nparams ind in
   assert (nparams <= List.length args);
   let params,args = List.chop nparams args in
@@ -942,8 +938,8 @@ let find_constructor loc add_params ref =
   cstr, (function (ind,_ as c) -> match add_params with
     |Some nb_args ->
       let nb =
-        if Int.equal nb_args (Inductiveops.constructor_nrealhyps c)
-          then fst (Inductiveops.inductive_nargs ind)
+        if Int.equal nb_args (Inductiveops.constructor_nrealdecls c)
+          then Inductiveops.inductive_nparamdecls ind
           else Inductiveops.inductive_nparams ind
       in
       List.make nb ([], [(Id.Map.empty, PatVar(Loc.ghost,Anonymous))])

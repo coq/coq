@@ -160,7 +160,7 @@ let typecheck_arity env params inds =
         if ind.mind_nrealargs <> nrealargs then
              failwith "bad number of real inductive arguments";
 	let nrealargs_ctxt = rel_context_length ar_ctxt - nparamdecls in
-        if ind.mind_nrealargs_ctxt <> nrealargs_ctxt then
+        if ind.mind_nrealdecls <> nrealargs_ctxt then
              failwith "bad length of real inductive arguments signature";
 	(* We do not need to generate the universe of full_arity; if
 	   later, after the validation of the inductive definition,

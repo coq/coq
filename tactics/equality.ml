@@ -634,7 +634,7 @@ let find_positions env sigma t1 t2 =
     let hd2,args2 = whd_betadeltaiota_stack env sigma t2 in
     match (kind_of_term hd1, kind_of_term hd2) with
       | Construct (sp1,_), Construct (sp2,_)
-          when Int.equal (List.length args1) (mis_constructor_nargs_env env sp1)
+          when Int.equal (List.length args1) (constructor_nallargs_env env sp1)
             ->
 	  let sorts' =
             Sorts.List.intersect sorts (allowed_sorts env (fst sp1))
@@ -642,7 +642,7 @@ let find_positions env sigma t1 t2 =
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
 	  if eq_constructor sp1 sp2 then
-	    let nrealargs = constructor_nrealargs env sp1 in
+	    let nrealargs = constructor_nrealargs_env env sp1 in
 	    let rargs1 = List.lastn nrealargs args1 in
 	    let rargs2 = List.lastn nrealargs args2 in
             List.flatten

@@ -55,7 +55,7 @@ let make_inductive_subst mib u =
     make_universe_subst u mib.mind_universes
   else Univ.empty_level_subst
 
-let inductive_params_ctxt (mib,u) = 
+let inductive_paramdecls (mib,u) = 
   let subst = make_inductive_subst mib u in
     Vars.subst_univs_level_context subst mib.mind_params_ctxt
 
@@ -347,10 +347,10 @@ let extended_rel_list n hyps =
   reln [] 1 hyps
 
 let build_dependent_inductive ind (_,mip) params =
-  let realargs,_ = List.chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
+  let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
   applist
     (mkIndU ind,
-       List.map (lift mip.mind_nrealargs_ctxt) params
+       List.map (lift mip.mind_nrealdecls) params
        @ extended_rel_list 0 realargs)
 
 (* This exception is local *)
@@ -427,7 +427,7 @@ let type_case_branches env (pind,largs) pj c =
   let p = pj.uj_val in
   let () = is_correct_arity env c pj pind specif params in
   let lc = build_branches_type pind specif params p in
-  let ty = build_case_type env (snd specif).mind_nrealargs_ctxt p c realargs in
+  let ty = build_case_type env (snd specif).mind_nrealdecls p c realargs in
   (lc, ty)
 
 

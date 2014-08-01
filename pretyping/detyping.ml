@@ -36,7 +36,7 @@ let print_universes = Flags.univ_print
 
 let encode_inductive r =
   let indsp = global_inductive r in
-  let constr_lengths = mis_constr_nargs indsp in
+  let constr_lengths = constructors_nrealargs indsp in
   (indsp,constr_lengths)
 
 (* Parameterization of the translation from constr to ast      *)

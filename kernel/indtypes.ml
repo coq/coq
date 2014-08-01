@@ -728,7 +728,7 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
 	mind_arity = arkind;
 	mind_arity_ctxt = ar_sign;
 	mind_nrealargs = rel_context_nhyps ar_sign - nparamargs;
-	mind_nrealargs_ctxt = rel_context_length ar_sign - nparamdecls;
+	mind_nrealdecls = rel_context_length ar_sign - nparamdecls;
 	mind_kelim = kelim;
 	mind_consnames = Array.of_list cnames;
 	mind_consnrealdecls = consnrealdecls;

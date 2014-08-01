@@ -39,7 +39,7 @@ val make_inductive_subst : mutual_inductive_body -> universe_instance -> univers
 
 val inductive_instance : mutual_inductive_body -> universe_instance
 val inductive_context : mutual_inductive_body -> universe_context
-val inductive_params_ctxt : mutual_inductive_body puniverses -> rel_context
+val inductive_paramdecls : mutual_inductive_body puniverses -> rel_context
 
 val instantiate_inductive_constraints : 
   mutual_inductive_body -> universe_level_subst -> constraints

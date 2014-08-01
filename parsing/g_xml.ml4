@@ -146,8 +146,8 @@ let compute_branches_lengths ind =
   let (_,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
   mip.Declarations.mind_consnrealdecls
 
-let compute_inductive_nargs ind =
-  Inductiveops.inductive_nargs ind
+let compute_inductive_ndecls ind =
+  snd (Inductiveops.inductive_ndecls ind)
 
 (* Interpreting constr as a glob_constr *)
 
@@ -188,7 +188,7 @@ let rec interp_xml_constr = function
       let brs = List.map_i (fun i c -> (i,vars.(i),interp_xml_pattern c)) 0 yl
       in
       let mat = simple_cases_matrix_of_branches ind brs in
-      let nparams,n = compute_inductive_nargs ind in
+      let n = compute_inductive_ndecls ind in
       let nal,rtn = return_type_of_predicate ind n p in
       GCases (loc,RegularStyle,rtn,[tm,nal],mat)
   | XmlTag (loc,"MUTIND",al,[]) ->

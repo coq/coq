@@ -304,7 +304,7 @@ let build_constructors_of_type ind' argl =
 		  Impargs.implicits_of_global constructref
 		in
 		let cst_narg =
-		  Inductiveops.mis_constructor_nargs_env
+		  Inductiveops.constructor_nallargs_env
 		    (Global.env ())
 		    construct
 		in
@@ -388,7 +388,7 @@ let rec pattern_to_term_and_type env typ  = function
 	mkGVar id
   | PatCstr(loc,constr,patternl,_) ->
       let cst_narg =
-	Inductiveops.mis_constructor_nargs_env
+	Inductiveops.constructor_nallargs_env
 	  (Global.env ())
 	  constr
       in

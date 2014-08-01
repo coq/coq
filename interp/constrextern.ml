@@ -165,7 +165,7 @@ let in_debugger = ref false
 
 let add_patt_for_params ind l =
   if !in_debugger then l else
-    Util.List.addn (fst (Inductiveops.inductive_nargs ind)) (CPatAtom (Loc.ghost,None)) l
+    Util.List.addn (Inductiveops.inductive_nparamdecls ind) (CPatAtom (Loc.ghost,None)) l
 
 let drop_implicits_in_patt cst nb_expl args =
   let impl_st = (implicits_of_global cst) in
@@ -275,7 +275,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
      not explicit application. *)
   match pat with
     | PatCstr(loc,cstrsp,args,na)
-	when !in_debugger||Inductiveops.mis_constructor_has_local_defs cstrsp ->
+	when !in_debugger||Inductiveops.constructor_has_local_defs cstrsp ->
       let c = extern_reference loc Id.Set.empty (ConstructRef cstrsp) in
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       CPatCstr (loc, c, add_patt_for_params (fst cstrsp) args, [])

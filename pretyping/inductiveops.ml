@@ -104,59 +104,149 @@ let mis_nf_constructor_type ((ind,u),mib,mip) j =
   let univsubst = make_inductive_subst mib u in
     substl (List.init ntypes make_Ik) (subst_univs_level_constr univsubst specif.(j-1))
 
-(* Arity of constructors excluding parameters and local defs *)
+(* Number of constructors *)
 
-let mis_constr_nargs indsp =
-  let (mib,mip) = Global.lookup_inductive indsp in
-  let recargs = dest_subterms mip.mind_recargs in
-  Array.map List.length recargs
+let nconstructors ind =
+  let (_,mip) = Global.lookup_inductive ind in
+  Array.length mip.mind_consnames
 
-let mis_constr_nargs_env env (kn,i) =
-  let mib = Environ.lookup_mind kn env in
-  let mip = mib.mind_packets.(i) in
-  let recargs = dest_subterms mip.mind_recargs in
-  Array.map List.length recargs
-
-(* Arity of constructors excluding local defs *)
-
-let mis_constructor_nargs (indsp,j) =
-  let (mib,mip) = Global.lookup_inductive indsp in
-  recarg_length mip.mind_recargs j + mib.mind_nparams
-
-let mis_constructor_nargs_env env ((kn,i),j) =
-  let mib = Environ.lookup_mind kn env in
-  let mip = mib.mind_packets.(i) in
-  recarg_length mip.mind_recargs j + mib.mind_nparams
-
-(* Arity of constructors with arg and defs *)
-
-let mis_constructor_nhyps (indsp,j) =
-  let (mib,mip) = Global.lookup_inductive indsp in
-   mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt)
-
-let mis_constructor_nhyps_env env ((kn,i),j) =
-  let mib = Environ.lookup_mind kn env in
-  let mip = mib.mind_packets.(i) in
-   mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt)
-
-let constructor_nrealargs env (ind,j) =
+let nconstructors_env env ind =
   let (_,mip) = Inductive.lookup_mind_specif env ind in
-  recarg_length mip.mind_recargs j
+  Array.length mip.mind_consnames
 
-let constructor_nrealhyps (ind,j) =
-  let (mib,mip) = Global.lookup_inductive ind in
+(* Arity of constructors excluding parameters, excluding local defs *)
+
+let constructors_nrealargs ind =
+  let (_,mip) = Global.lookup_inductive ind in
+  mip.mind_consnrealargs
+
+let constructors_nrealargs_env env ind =
+  let (_,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_consnrealargs
+
+(* Arity of constructors excluding parameters, including local defs *)
+
+let constructors_nrealdecls ind =
+  let (_,mip) = Global.lookup_inductive ind in
+  mip.mind_consnrealdecls
+
+let constructors_nrealdecls_env env ind =
+  let (_,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_consnrealdecls
+
+(* Arity of constructors including parameters, excluding local defs *)
+
+let constructor_nallargs (indsp,j) =
+  let (mib,mip) = Global.lookup_inductive indsp in
+  mip.mind_consnrealargs.(j-1) + mib.mind_nparams
+
+let constructor_nallargs_env env ((kn,i),j) =
+  let mib = Environ.lookup_mind kn env in
+  let mip = mib.mind_packets.(i) in
+  mip.mind_consnrealargs.(j-1) + mib.mind_nparams
+
+(* Arity of constructors including params, including local defs *)
+
+let constructor_nalldecls (indsp,j) = (* TOCHANGE en decls *)
+  let (mib,mip) = Global.lookup_inductive indsp in
+  mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt)
+
+let constructor_nalldecls_env env ((kn,i),j) = (* TOCHANGE en decls *)
+  let mib = Environ.lookup_mind kn env in
+  let mip = mib.mind_packets.(i) in
+  mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt)
+
+(* Arity of constructors excluding params, excluding local defs *)
+
+let constructor_nrealargs (ind,j) =
+  let (_,mip) = Global.lookup_inductive ind in
+  mip.mind_consnrealargs.(j-1)
+
+let constructor_nrealargs_env env (ind,j) =
+  let (_,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_consnrealargs.(j-1)
+
+(* Arity of constructors excluding params, including local defs *)
+
+let constructor_nrealdecls (ind,j) = (* TOCHANGE en decls *)
+  let (_,mip) = Global.lookup_inductive ind in
   mip.mind_consnrealdecls.(j-1)
 
-let get_full_arity_sign env (ind,u) =
+let constructor_nrealdecls_env env (ind,j) = (* TOCHANGE en decls *)
+  let (_,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_consnrealdecls.(j-1)
+
+(* Length of arity, excluding params, including local defs *)
+
+let inductive_nrealdecls ind =
+  let (_,mip) = Global.lookup_inductive ind in
+  mip.mind_nrealdecls
+
+let inductive_nrealdecls_env env ind =
+  let (_,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_nrealdecls
+
+(* Full length of arity (w/o local defs) *)
+
+let inductive_nallargs ind =
+  let (mib,mip) = Global.lookup_inductive ind in
+  mib.mind_nparams + mip.mind_nrealargs
+
+let inductive_nallargs_env env ind =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  mib.mind_nparams + mip.mind_nrealargs
+
+(* Length of arity (w/o local defs) *)
+
+let inductive_nparams ind =
+  let (mib,mip) = Global.lookup_inductive ind in
+  mib.mind_nparams
+
+let inductive_nparams_env env ind =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  mib.mind_nparams
+
+(* Length of arity (with local defs) *)
+
+let inductive_nparamdecls ind =
+  let (mib,mip) = Global.lookup_inductive ind in
+  rel_context_length mib.mind_params_ctxt
+
+let inductive_nparamdecls_env env ind =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  rel_context_length mib.mind_params_ctxt
+
+(* Full length of arity (with local defs) *)
+
+let inductive_nalldecls ind =
+  let (mib,mip) = Global.lookup_inductive ind in
+  rel_context_length (mib.mind_params_ctxt) + mip.mind_nrealdecls
+
+let inductive_nalldecls_env env ind =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  rel_context_length (mib.mind_params_ctxt) + mip.mind_nrealdecls
+
+(* Others *)
+
+let inductive_paramdecls (ind,u) =
+  let (mib,mip) = Global.lookup_inductive ind in
+    Inductive.inductive_paramdecls (mib,u)
+
+let inductive_paramdecls_env env (ind,u) =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+    Inductive.inductive_paramdecls (mib,u)
+
+let inductive_alldecls (ind,u) =
+  let (mib,mip) = Global.lookup_inductive ind in
+  let subst = Inductive.make_inductive_subst mib u in
+    Vars.subst_univs_level_context subst mip.mind_arity_ctxt
+
+let inductive_alldecls_env env (ind,u) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let subst = Inductive.make_inductive_subst mib u in
     Vars.subst_univs_level_context subst mip.mind_arity_ctxt
 
-let nconstructors ind =
-  let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
-  Array.length mip.mind_consnames
-
-let mis_constructor_has_local_defs (indsp,j) =
+let constructor_has_local_defs (indsp,j) =
   let (mib,mip) = Global.lookup_inductive indsp in
   let l1 = mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt) in
   let l2 = recarg_length mip.mind_recargs j + mib.mind_nparams in
@@ -164,26 +254,9 @@ let mis_constructor_has_local_defs (indsp,j) =
 
 let inductive_has_local_defs ind =
   let (mib,mip) = Global.lookup_inductive ind in
-  let l1 = rel_context_length (mib.mind_params_ctxt) + mip.mind_nrealargs_ctxt in
+  let l1 = rel_context_length (mib.mind_params_ctxt) + mip.mind_nrealdecls in
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
   not (Int.equal l1 l2)
-
-(* Length of arity (w/o local defs) *)
-
-let inductive_nparams ind =
-  (fst (Global.lookup_inductive ind)).mind_nparams
-
-let inductive_params_ctxt (ind,u) =
-  let (mib,mip) = Global.lookup_inductive ind in
-    Inductive.inductive_params_ctxt (mib,u)
-
-let inductive_nargs ind =
-  let (mib,mip) = Global.lookup_inductive ind in
-  (rel_context_length (mib.mind_params_ctxt), mip.mind_nrealargs_ctxt)
-
-let inductive_nargs_env env ind =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  (rel_context_length (mib.mind_params_ctxt), mip.mind_nrealargs_ctxt)
 
 let allowed_sorts env (kn,i as ind) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -192,7 +265,7 @@ let allowed_sorts env (kn,i as ind) =
 (* Annotation for cases *)
 let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let print_info = { ind_nargs = mip.mind_nrealargs_ctxt; style = style } in
+  let print_info = { ind_nargs = mip.mind_nrealdecls; style = style } in
   { ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;

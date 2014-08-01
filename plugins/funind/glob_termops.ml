@@ -427,7 +427,7 @@ let rec pattern_to_term  = function
 	mkGVar id
   | PatCstr(loc,constr,patternl,_) ->
       let cst_narg =
-	Inductiveops.mis_constructor_nargs_env
+	Inductiveops.constructor_nallargs_env
 	  (Global.env ())
 	  constr
       in

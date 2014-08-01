@@ -265,7 +265,7 @@ let rec find_row_ind = function
 
 let inductive_template evdref env tmloc ind =
   let indu = evd_comb1 (Evd.fresh_inductive_instance env) evdref ind in
-  let arsign = get_full_arity_sign env indu in
+  let arsign = inductive_alldecls_env env indu in
   let hole_source = match tmloc with
     | Some loc -> fun i -> (loc, Evar_kinds.TomatchTypeParameter (ind,i))
     | None -> fun _ -> (Loc.ghost, Evar_kinds.InternalHole) in
@@ -1636,7 +1636,7 @@ let build_inversion_problem loc env sigma tms t =
     | Construct (cstr,u) -> PatCstr (Loc.ghost,cstr,[],Anonymous), acc
     | App (f,v) when isConstruct f ->
 	let cstr,u = destConstruct f in
-	let n = constructor_nrealargs env cstr in
+	let n = constructor_nrealargs_env env cstr in
 	let l = List.lastn n (Array.to_list v) in
 	let l,acc = List.fold_map' reveal_pattern l acc in
 	PatCstr (Loc.ghost,cstr,l,Anonymous), acc
@@ -1764,7 +1764,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
       | IsInd (term,IndType(indf,realargs),_) ->
           let indf' = if dolift then lift_inductive_family n indf else indf in
 	  let ((ind,u),_) = dest_ind_family indf' in
-	  let nparams_ctxt,nrealargs_ctxt = inductive_nargs_env env0 ind in
+	  let nrealargs_ctxt = inductive_nrealdecls_env env0 ind in
 	  let arsign = fst (get_arity env0 indf') in
 	  let realnal =
 	    match t with

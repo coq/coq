@@ -300,7 +300,7 @@ let get_coercion_constructor coe =
   in
   match kind_of_term c with
   | Construct (cstr,u) ->
-      (cstr, Inductiveops.constructor_nrealargs (Global.env()) cstr -1)
+      (cstr, Inductiveops.constructor_nrealargs cstr -1)
   | _ ->
       raise Not_found
 

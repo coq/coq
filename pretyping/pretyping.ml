@@ -498,7 +498,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 	Evarutil.evd_comb1 (Evd.fresh_inductive_instance env) evdref (mind,0)
       in
       let args = 
-	let ctx = smash_rel_context (Inductiveops.inductive_params_ctxt ind) in
+	let ctx = smash_rel_context (Inductiveops.inductive_paramdecls ind) in
 	  List.fold_right (fun (n, b, ty) (* par  *)args ->
 	    let ty = substl args ty in
 	    let ev = e_new_evar evdref env ~src:(loc,k) ty in

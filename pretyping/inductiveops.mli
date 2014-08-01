@@ -52,45 +52,69 @@ val mis_is_recursive :
 val mis_nf_constructor_type :
   pinductive * mutual_inductive_body * one_inductive_body -> int -> constr
 
-(** {6 Extract information from an inductive name}
+(** {6 Extract information from an inductive name} *)
 
-
-Functions without env lookup in the globalenv. *)
-
-(** Arity of constructors excluding parameters and local defs *)
-val mis_constr_nargs : inductive -> int array
-val mis_constr_nargs_env : env -> inductive -> int array
-
+(** @return number of constructors *)
 val nconstructors : inductive -> int
+val nconstructors_env : env -> inductive -> int
 
-(** @return the lengths of parameters signature and real arguments signature
-    with letin *)
-val inductive_nargs : inductive -> int * int
-val inductive_nargs_env : env -> inductive -> int * int
+(** @return arity of constructors excluding parameters, excluding local defs *)
+val constructors_nrealargs : inductive -> int array
+val constructors_nrealargs_env : env -> inductive -> int array
 
-(** @return nb of params without letin *)
+(** @return arity of constructors excluding parameters, including local defs *)
+val constructors_nrealdecls : inductive -> int array
+val constructors_nrealdecls_env : env -> inductive -> int array
+
+(** @return the arity, excluding params, including local defs *)
+val inductive_nrealdecls : inductive -> int
+val inductive_nrealdecls_env : env -> inductive -> int
+
+(** @return the arity, including params, excluding local defs *)
+val inductive_nallargs : inductive -> int
+val inductive_nallargs_env : env -> inductive -> int
+
+(** @return the arity, including params, including local defs *)
+val inductive_nalldecls : inductive -> int
+val inductive_nalldecls_env : env -> inductive -> int
+
+(** @return nb of params without local defs *)
 val inductive_nparams : inductive -> int
-val inductive_params_ctxt : pinductive -> rel_context
+val inductive_nparams_env : env -> inductive -> int
+
+(** @return nb of params with local defs *)
+val inductive_nparamdecls : inductive -> int
+val inductive_nparamdecls_env : env -> inductive -> int
+
+(** @return params context *)
+val inductive_paramdecls : pinductive -> rel_context
+val inductive_paramdecls_env : env -> pinductive -> rel_context
+
+(** @return full arity context, hence with letin *)
+val inductive_alldecls : pinductive -> rel_context
+val inductive_alldecls_env : env -> pinductive -> rel_context
+
+(** {7 Extract information from a constructor name} *)
 
 (** @return param + args without letin *)
-val mis_constructor_nargs : constructor -> int
-val mis_constructor_nargs_env : env -> constructor -> int
+val constructor_nallargs : constructor -> int
+val constructor_nallargs_env : env -> constructor -> int
 
 (** @return param + args with letin *)
-val mis_constructor_nhyps : constructor -> int
-val mis_constructor_nhyps_env : env -> constructor -> int
+val constructor_nalldecls : constructor -> int
+val constructor_nalldecls_env : env -> constructor -> int
 
 (** @return args without letin *)
-val constructor_nrealargs : env -> constructor -> int
+val constructor_nrealargs : constructor -> int
+val constructor_nrealargs_env : env -> constructor -> int
 
 (** @return args with letin *)
-val constructor_nrealhyps : constructor -> int
+val constructor_nrealdecls : constructor -> int
+val constructor_nrealdecls_env : env -> constructor -> int
 
 (** Is there local defs in params or args ? *)
-val mis_constructor_has_local_defs : constructor -> bool
+val constructor_has_local_defs : constructor -> bool
 val inductive_has_local_defs : inductive -> bool
-
-val get_full_arity_sign : env -> pinductive -> rel_context
 
 val allowed_sorts : env -> inductive -> sorts_family list
 
