@@ -95,3 +95,8 @@ val compute_displayed_let_name_in :
   renaming_flags -> Id.t list -> Name.t -> constr -> Name.t * Id.t list
 val rename_bound_vars_as_displayed :
   Id.t list -> Name.t list -> types -> types
+
+(**********************************************************************)
+(* Naming strategy for arguments in Prop when eliminating inductive types *)
+
+val use_h_based_elimination_names : unit -> bool

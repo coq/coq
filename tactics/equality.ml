@@ -337,7 +337,7 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars d
     Proofview.V82.tclEVARS sigma <*> Proofview.tclEFFECTS effs <*>
       general_elim_clause with_evars frzevars tac cls c t l
       (match lft2rgt with None -> false | Some b -> b)
-      {elimindex = None; elimbody = (elim,NoBindings)}
+      {elimindex = None; elimbody = (elim,NoBindings); elimrename = None}
   end
 
 let adjust_rewriting_direction args lft2rgt =

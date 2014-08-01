@@ -314,14 +314,6 @@ let rename_hyp id1 id2 sign =
 
 (**********************************************************************)
 
-let name_prop_vars env sigma ctxt =
-  List.map2 (fun (na,b,t as d) s ->
-    if na = Anonymous && s = prop_sort then
-      let s = match Namegen.head_name t with Some id -> string_of_id id | None -> "" in
-      (Name (add_suffix Namegen.default_prop_ident s),b,t)
-    else
-      d)
-    ctxt (sorts_of_context env sigma ctxt)
 
 (************************************************************************)
 (************************************************************************)
@@ -526,8 +518,7 @@ and mk_casegoals sigma goal goalacc p c =
   let indspec =
     try Tacred.find_hnf_rectype env sigma ct
     with Not_found -> anomaly (Pp.str "mk_casegoals") in
-  let (lbrty,conclty) =
-    type_case_branches_with_names (name_prop_vars env sigma) env indspec p c in
+  let (lbrty,conclty) = type_case_branches_with_names env indspec p c in
   (acc'',lbrty,conclty,sigma,p',c')
 
 

@@ -657,9 +657,9 @@ Other tactics
   clears (resp. reverts) H and all the hypotheses that depend on H.
 - Ltac's pattern-matching now supports matching metavariables that
   depend on variables bound upwards in the pattern.
-- Case analysis on schemes in Type containing Proposition now produces
-  "H"-based names (important source of incompatibility that can be
-  repaired by using option "Unset Standard Proposition Elimination Names").
+- New experimental option "Set Standard Proposition Elimination Names"
+  so that case analysis or induction on schemes in Type containing
+  propositions now produces "H"-based names.
 
 Tactic definitions
 

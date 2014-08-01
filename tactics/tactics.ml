@@ -829,7 +829,44 @@ let index_of_ind_arg t =
       | None -> error "Could not find inductive argument of elimination scheme."
   in aux None 0 t
 
-let elimination_clause_scheme with_evars ?(flags=elim_flags ()) i (elim, elimty, bindings) indclause gl =
+let enforce_prop_bound_names rename tac =
+  match rename with
+  | Some (isrec,nn) when Namegen.use_h_based_elimination_names () ->
+      (* Rename dependent arguments in Prop with name "H" *)
+      (* so as to avoid having hypothesis such as "t:True", "n:~A" when calling *)
+      (* elim or induction with schemes built by Indrec.build_induction_scheme *)
+      let rec aux env sigma i t =
+        if i = 0 then t else match kind_of_term t with
+        | Prod (Name _ as na,t,t') ->
+            let very_standard = true in
+            let na =
+              if Retyping.get_sort_family_of env sigma t = InProp then
+                (* "very_standard" says that we should have "H" names only, but
+                   this would break compatibility even more... *)
+                let s = match Namegen.head_name t with
+                  | Some id when not very_standard -> string_of_id id
+                  | _ -> "" in
+                Name (add_suffix Namegen.default_prop_ident s)
+              else
+                na in
+            mkProd (na,t,aux (push_rel (na,None,t) env) sigma (i-1) t')
+        | Prod (Anonymous,t,t') ->
+            mkProd (Anonymous,t,aux (push_rel (Anonymous,None,t) env) sigma (i-1) t')
+        | LetIn (na,c,t,t') ->
+            mkLetIn (na,c,t,aux (push_rel (na,Some c,t) env) sigma (i-1) t')
+        | _ -> print_int i; Pp.msg (print_constr t); assert false in
+      let rename_branch i gl =
+        let env = pf_env gl in
+        let sigma = project gl in
+        let t = pf_concl gl in
+        change_concl (aux env sigma i t) gl in
+      (if isrec then tclTHENFIRSTn else tclTHENLASTn)
+        tac
+        (Array.map rename_branch nn)
+  | _ ->
+      tac
+
+let elimination_clause_scheme with_evars ?(flags=elim_flags ()) rename i (elim, elimty, bindings) indclause gl =
   let elimclause = make_clenv_binding (pf_env gl) (project gl) (elim, elimty) bindings in
   let indmv =
     (match kind_of_term (nth_arg i elimclause.templval.rebus) with
@@ -838,7 +875,7 @@ let elimination_clause_scheme with_evars ?(flags=elim_flags ()) i (elim, elimty,
              (str "The type of elimination clause is not well-formed."))
   in
   let elimclause' = clenv_fchain ~flags indmv elimclause indclause in
-  Proofview.V82.of_tactic (Clenvtac.res_pf elimclause' ~with_evars:with_evars ~flags) gl
+  enforce_prop_bound_names rename (Proofview.V82.of_tactic (Clenvtac.res_pf elimclause' ~with_evars:with_evars ~flags)) gl
 
 (*
  * Elimination tactic with bindings and using an arbitrary
@@ -850,6 +887,7 @@ let elimination_clause_scheme with_evars ?(flags=elim_flags ()) i (elim, elimty,
 
 type eliminator = {
   elimindex : int option;  (* None = find it automatically *)
+  elimrename : (bool * int array) option; (** None = don't rename Prop hyps with H-names *)
   elimbody : constr with_bindings
 }
 
@@ -858,12 +896,12 @@ let general_elim_clause_gen elimtac indclause elim gl =
   let elimt = pf_type_of gl elimc in
   let i =
     match elim.elimindex with None -> index_of_ind_arg elimt | Some i -> i in
-  elimtac i (elimc, elimt, lbindelimc) indclause gl
+  elimtac elim.elimrename i (elimc, elimt, lbindelimc) indclause gl
 
 let general_elim with_evars (c, lbindc) elim gl =
-  let elimtac = elimination_clause_scheme with_evars in
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
+  let elimtac = elimination_clause_scheme with_evars in
   let indclause  = pf_apply make_clenv_binding gl (c, t) lbindc in
   general_elim_clause_gen elimtac indclause elim gl
 
@@ -879,7 +917,8 @@ let general_case_analysis_in_context with_evars (c,lbindc) gl =
       pf_apply build_case_analysis_scheme_default gl mind sort in
   tclTHEN (tclEVARS sigma)
   (general_elim with_evars (c,lbindc)
-   {elimindex = None; elimbody = (elim,NoBindings)}) gl
+   {elimindex = None; elimbody = (elim,NoBindings);
+    elimrename = Some (false, constructors_nrealdecls (fst mind))}) gl
 
 let general_case_analysis with_evars (c,lbindc as cx) =
   match kind_of_term c with
@@ -907,7 +946,8 @@ let find_eliminator c gl =
   let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_type_of gl c) in
   if is_record ind <> None then raise IsRecord;
   let evd, c = find_ind_eliminator ind (Tacticals.New.elimination_sort_of_goal gl) gl in
-    evd, {elimindex = None; elimbody = (c,NoBindings)}
+    evd, {elimindex = None; elimbody = (c,NoBindings);
+          elimrename = Some (true, constructors_nrealdecls ind)}
 
 let default_elim with_evars (c,_ as cx) =
   Proofview.tclORELSE
@@ -926,7 +966,9 @@ let default_elim with_evars (c,_ as cx) =
 
 let elim_in_context with_evars c = function
   | Some elim ->
-      Proofview.V82.tactic (general_elim with_evars c {elimindex = Some (-1); elimbody = elim})
+      Proofview.V82.tactic
+        (general_elim with_evars c {elimindex = Some (-1); elimbody = elim;
+                                    elimrename = None})
   | None -> default_elim with_evars c
 
 let elim with_evars (c,lbindc as cx) elim =
@@ -957,7 +999,7 @@ let clenv_fchain_in id ?(flags=elim_flags ()) mv elimclause hypclause =
     (* Set the hypothesis name in the message *)
     raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
 
-let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) id i (elim, elimty, bindings) indclause gl =
+let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) id rename i (elim, elimty, bindings) indclause gl =
   let elimclause = make_clenv_binding (pf_env gl) (project gl) (elim, elimty) bindings in
   let indmv = destMeta (nth_arg i elimclause.templval.rebus) in
   let hypmv =
@@ -978,9 +1020,9 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) id i (elim, e
   clenv_refine_in with_evars id elimclause'' gl
 
 let general_elim_clause with_evars flags id c e =
-  let elim gl = match id with
-  | None -> elimination_clause_scheme with_evars ~flags gl
-  | Some id -> elimination_in_clause_scheme with_evars ~flags id gl
+  let elim = match id with
+  | None -> elimination_clause_scheme with_evars ~flags
+  | Some id -> elimination_in_clause_scheme with_evars ~flags id
   in
   Proofview.V82.tactic (fun gl -> general_elim_clause_gen elim c e gl)
 
@@ -3052,7 +3094,7 @@ let find_induction_type isrec elim hyp0 gl =
 	let scheme = compute_elim_sig ~elimc elimt in
 	if Option.is_empty scheme.indarg then error "Cannot find induction type";
 	let indsign = compute_scheme_signature scheme hyp0 ind_guess in
-	let elim = ({elimindex = Some(-1); elimbody = elimc},elimt) in
+	let elim = ({elimindex = Some(-1); elimbody = elimc; elimrename = None},elimt) in
 	evd, scheme, ElimUsing (elim,indsign) in
   evd,(Option.get scheme.indref,scheme.nparams, elim)
 
@@ -3077,8 +3119,9 @@ let get_eliminator elim gl = match elim with
       Proofview.Goal.sigma gl, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
       let evd, (elimc,elimt),_ as elims = guess_elim isrec id gl in
-      let _, (l, _) = compute_elim_signature elims id in
-      evd, isrec, ({elimindex = None; elimbody = elimc}, elimt), l
+      let _, (l, s) = compute_elim_signature elims id in
+      let branchlengthes = List.map (fun (_,b,c) -> assert (b=None); pi1 (decompose_prod_letin c)) (List.rev s.branches) in
+      evd, isrec, ({elimindex = None; elimbody = elimc; elimrename = Some (isrec,Array.of_list branchlengthes)}, elimt), l
 
 (* Instantiate all meta variables of elimclause using lid, some elts
    of lid are parameters (first ones), the other are
@@ -3219,18 +3262,18 @@ let induction_from_context_l with_evars elim_info lid names =
     (* FIXME: Tester ca avec un principe dependant et non-dependant *)
     induction_tac_felim with_evars realindvars scheme.nparams elim
   ]) in
-  let elim = ElimUsing (({elimindex = Some scheme.index; elimbody = Option.get scheme.elimc}, scheme.elimt), indsign) in
+  let elim = ElimUsing (({elimindex = Some scheme.index; elimbody = Option.get scheme.elimc; elimrename = None}, scheme.elimt), indsign) in
   apply_induction_in_context
     None elim (hyp0::indvars) names induct_tac
 
 (* Unification between ((elimc:elimt) ?i ?j ?k ?l ... ?m) and the
    hypothesis on which the induction is made *)
 let induction_tac with_evars elim (varname,lbind) typ gl =
-  let ({elimindex=i;elimbody=(elimc,lbindelimc)},elimt) = elim in
+  let ({elimindex=i;elimbody=(elimc,lbindelimc);elimrename=rename},elimt) = elim in
   let indclause = pf_apply make_clenv_binding gl (mkVar varname,typ) lbind  in
   let i = match i with None -> index_of_ind_arg elimt | Some i -> i in
   let elimc = mkCast (elimc, DEFAULTcast, elimt) in
-  elimination_clause_scheme with_evars i (elimc, elimt, lbindelimc) indclause gl
+  elimination_clause_scheme with_evars rename i (elimc, elimt, lbindelimc) indclause gl
 
 let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) names
   inhyps =

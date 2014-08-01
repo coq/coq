@@ -446,21 +446,6 @@ let find_coinductive env sigma c =
 (* find appropriate names for pattern variables. Useful in the Case
    and Inversion (case_then_using et case_nodep_then_using) tactics. *)
 
-let h_based_elimination_names = ref false
-
-let use_h_based_elimination_names () =
-  !h_based_elimination_names (* && Flags.version_strictly_greater Flags.V8_4 *)
-
-open Goptions
-
-let _ = declare_bool_option
-	  { optsync  = true;
-            optdepr  = false;
-	    optname  = "use of \"H\"-based proposition names in elimination tactics";
-	    optkey   = ["Standard";"Proposition";"Elimination";"Names"];
-	    optread  = (fun () -> !h_based_elimination_names);
-	    optwrite = (:=) h_based_elimination_names }
-
 let is_predicate_explicitly_dep env pred arsign =
   let rec srec env pval arsign =
     let pv' = whd_betadeltaiota env Evd.empty pval in
@@ -489,9 +474,6 @@ let is_predicate_explicitly_dep env pred arsign =
           From Coq > 8.2, using or not the the effective dependency of
           the predicate is parametrable! *)
 
-	  if use_h_based_elimination_names () then
-	    dependent (mkRel 1) t
-	  else
           begin match na with
           | Anonymous -> false
           | Name _ -> true
@@ -505,13 +487,11 @@ let is_elim_predicate_explicitly_dependent env pred indf =
   let arsign,_ = get_arity env indf in
   is_predicate_explicitly_dep env pred arsign
 
-let set_names preprocess_names env n brty =
+let set_names env n brty =
   let (ctxt,cl) = decompose_prod_n_assum n brty in
-  let ctxt =
-    if use_h_based_elimination_names () then preprocess_names ctxt else ctxt in
   Namegen.it_mkProd_or_LetIn_name env cl ctxt
 
-let set_pattern_names preprocess_names env ind brv =
+let set_pattern_names env ind brv =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let arities =
     Array.map
@@ -519,9 +499,9 @@ let set_pattern_names preprocess_names env ind brv =
         rel_context_length ((prod_assum c)) -
         mib.mind_nparams)
       mip.mind_nf_lc in
-  Array.map2 (set_names preprocess_names env) arities brv
+  Array.map2 (set_names env) arities brv
 
-let type_case_branches_with_names preprocess_names env indspec p c =
+let type_case_branches_with_names env indspec p c =
   let (ind,args) = indspec in
   let (mib,mip as specif) = Inductive.lookup_mind_specif env (fst ind) in
   let nparams = mib.mind_nparams in
@@ -531,7 +511,7 @@ let type_case_branches_with_names preprocess_names env indspec p c =
   let conclty = Reduction.beta_appvect p (Array.of_list (realargs@[c])) in
   (* Adjust names *)
   if is_elim_predicate_explicitly_dependent env p (ind,params) then
-    (set_pattern_names preprocess_names env (fst ind) lbrty, conclty)
+    (set_pattern_names env (fst ind) lbrty, conclty)
   else (lbrty, conclty)
 
 (* Type of Case predicates *)
