@@ -150,10 +150,10 @@ let coerce_to_constr env v =
 let coerce_to_uconstr env v =
   let v = Value.normalize v in
   if has_type v (topwit wit_uconstr) then
-    out_gen (topwit wit_uconstr) v
+    Lazy.lazy_from_val (out_gen (topwit wit_uconstr) v)
   else
     let (_ctx,c) = coerce_to_constr env v in
-    Detyping.detype false [] [] c
+    lazy (Detyping.detype false [] [] c)
 
 let coerce_to_closed_constr env v =
   let ids,c = coerce_to_constr env v in

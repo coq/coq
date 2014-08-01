@@ -58,7 +58,7 @@ val coerce_to_int : Value.t -> int
 
 val coerce_to_constr : Environ.env -> Value.t -> constr_under_binders
 
-val coerce_to_uconstr : Environ.env -> Value.t -> Glob_term.glob_constr
+val coerce_to_uconstr : Environ.env -> Value.t -> Glob_term.glob_constr Lazy.t
 
 val coerce_to_closed_constr : Environ.env -> Value.t -> constr
 

@@ -67,7 +67,7 @@ val compute_internalization_env : env -> var_internalization_type ->
   Id.t list -> types list -> Impargs.manual_explicitation list list ->
   internalization_env
 
-type ltac_sign = Id.Set.t * Id.Set.t * glob_constr Id.Map.t
+type ltac_sign = Id.Set.t * Id.Set.t * glob_constr Lazy.t Id.Map.t
 
 type glob_binder = (Name.t * binding_kind * glob_constr option * glob_constr)
 

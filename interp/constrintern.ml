@@ -654,7 +654,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
     GVar (loc,id), [], [], []
   (* Is [id] bound to a glob_constr in the the ltac context *)
   else if Id.Map.mem id ltacsubst then
-    Id.Map.find id ltacsubst, [], [], []
+    Lazy.force (Id.Map.find id ltacsubst), [], [], []
   (* Is [id] a notation variable *)
   else if Id.Map.mem id ntnvars
   then
@@ -1769,7 +1769,7 @@ let scope_of_type_kind = function
   | OfType typ -> compute_type_scope typ
   | WithoutTypeConstraint -> None
 
-type ltac_sign = Id.Set.t * Id.Set.t * glob_constr Id.Map.t
+type ltac_sign = Id.Set.t * Id.Set.t * glob_constr Lazy.t Id.Map.t
 
 let empty_ltac_sign = (Id.Set.empty, Id.Set.empty, Id.Map.empty)
 
