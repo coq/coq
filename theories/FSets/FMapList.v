@@ -403,7 +403,7 @@ Proof.
  apply H1 with k; destruct (X.eq_dec x k); auto.
 
 
- destruct (X.compare x x'); try contradiction; clear y.
+ destruct (X.compare x x') as [Hlt|Heq|Hlt]; try contradiction; clear y.
  destruct (H0 x).
  assert (In x ((x',e')::l')).
   apply H; auto.
@@ -798,7 +798,7 @@ Proof.
  intros.
  simpl.
  destruct a as (k,e); destruct a0 as (k',e').
- destruct (X.compare k k').
+ destruct (X.compare k k') as [Hlt|Heq|Hlt].
  inversion_clear Hm.
  constructor; auto.
  assert (lelistA (ltk (elt:=elt')) (k, e') ((k',e')::m')) by auto.
@@ -922,7 +922,7 @@ Proof.
  destruct o; destruct o'; simpl in *; try discriminate; auto.
  destruct a as (k,(oo,oo')); simpl in *.
  inversion_clear H2.
- destruct (X.compare x k); simpl in *.
+ destruct (X.compare x k) as [Hlt|Heq|Hlt]; simpl in *.
  (* x < k *)
  destruct (f' (oo,oo')); simpl.
  elim_comp.
@@ -958,7 +958,7 @@ Proof.
  destruct a as (k,(oo,oo')).
  simpl.
  inversion_clear H2.
- destruct (X.compare x k).
+ destruct (X.compare x k) as [Hlt|Heq|Hlt].
  (* x < k *)
  unfold f'; simpl.
  destruct (f oo oo'); simpl.
@@ -1207,7 +1207,7 @@ Proof.
  destruct a as (x,e).
  destruct p as (x',e').
  unfold equal; simpl.
- destruct (X.compare x x'); simpl; intuition.
+ destruct (X.compare x x') as [Hlt|Heq|Hlt]; simpl; intuition.
  unfold cmp at 1.
  MD.elim_comp; clear H; simpl.
  inversion_clear Hl.
@@ -1244,7 +1244,7 @@ Lemma eq_refl : forall m : t, eq m m.
 Proof.
  intros (m,Hm); induction m; unfold eq; simpl; auto.
  destruct a.
- destruct (X.compare t0 t0) as [Hlt| |Hlt]; auto.
+ destruct (X.compare t0 t0) as [Hlt|Heq|Hlt]; auto.
  apply (MapS.Raw.MX.lt_antirefl Hlt); auto.
  split.
  apply D.eq_refl.
@@ -1258,7 +1258,7 @@ Proof.
  intros (m,Hm); induction m;
  intros (m', Hm'); destruct m'; unfold eq; simpl;
  try destruct a as (x,e); try destruct p as (x',e'); auto.
- destruct (X.compare x x'); MapS.Raw.MX.elim_comp; intuition.
+ destruct (X.compare x x')  as [Hlt|Heq|Hlt]; MapS.Raw.MX.elim_comp; intuition.
  inversion_clear Hm; inversion_clear Hm'.
  apply (IHm H0 (Build_slist H4)); auto.
 Qed.
@@ -1271,8 +1271,8 @@ Proof.
  try destruct a as (x,e);
  try destruct p as (x',e');
  try destruct p0 as (x'',e''); try contradiction; auto.
- destruct (X.compare x x');
-  destruct (X.compare x' x'');
+ destruct (X.compare x x') as [Hlt|Heq|Hlt];
+  destruct (X.compare x' x'') as [Hlt'|Heq'|Hlt'];
    MapS.Raw.MX.elim_comp; intuition.
  apply D.eq_trans with e'; auto.
  inversion_clear Hm1; inversion_clear Hm2; inversion_clear Hm3.
@@ -1287,8 +1287,8 @@ Proof.
  try destruct a as (x,e);
  try destruct p as (x',e');
  try destruct p0 as (x'',e''); try contradiction; auto.
- destruct (X.compare x x');
-  destruct (X.compare x' x'');
+ destruct (X.compare x x') as [Hlt|Heq|Hlt];
+  destruct (X.compare x' x'') as [Hlt'|Heq'|Hlt'];
    MapS.Raw.MX.elim_comp; intuition.
  left; apply D.lt_trans with e'; auto.
  left; apply lt_eq with e'; auto.
@@ -1306,7 +1306,7 @@ Proof.
  intros (m2, Hm2); destruct m2; unfold eq, lt; simpl;
  try destruct a as (x,e);
  try destruct p as (x',e'); try contradiction; auto.
- destruct (X.compare x x'); auto.
+ destruct (X.compare x x') as [Hlt|Heq|Hlt]; auto.
  intuition.
  exact (D.lt_not_eq H0 H1).
  inversion_clear Hm1; inversion_clear Hm2.

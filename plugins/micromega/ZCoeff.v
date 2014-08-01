@@ -41,19 +41,19 @@ Notation "x < y" := (rlt x y).
 
 Lemma req_refl : forall x, req x x.
 Proof.
-  destruct sor.(SORsetoid).
+  destruct sor.(SORsetoid) as (Equivalence_Reflexive,_,_).
   apply Equivalence_Reflexive.
 Qed.
 
 Lemma req_sym : forall x y, req x y -> req y x.
 Proof.
-  destruct sor.(SORsetoid).
+  destruct sor.(SORsetoid) as (_,Equivalence_Symmetric,_).
   apply Equivalence_Symmetric.
 Qed.
 
 Lemma req_trans : forall x y z, req x y -> req y z -> req x z.
 Proof.
-  destruct sor.(SORsetoid).
+  destruct sor.(SORsetoid) as (_,_,Equivalence_Transitive).
   apply Equivalence_Transitive.
 Qed.
 

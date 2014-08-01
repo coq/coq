@@ -116,7 +116,7 @@ Section first_definitions.
     simple induction x; simpl; intros.
     apply H0; red; trivial.
     case (Aeq_dec a a0); auto with datatypes.
-    intro; apply H; intros; auto.
+    intro Hneg; apply H; intros; auto.
     apply H1; red; intro.
     case H3; auto.
   Qed.
