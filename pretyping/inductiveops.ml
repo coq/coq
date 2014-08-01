@@ -176,6 +176,16 @@ let constructor_nrealdecls_env env (ind,j) = (* TOCHANGE en decls *)
   let (_,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_consnrealdecls.(j-1)
 
+(* Length of arity, excluding params, excluding local defs *)
+
+let inductive_nrealargs ind =
+  let (_,mip) = Global.lookup_inductive ind in
+  mip.mind_nrealargs
+
+let inductive_nrealargs_env env ind =
+  let (_,mip) = Inductive.lookup_mind_specif env ind in
+  mip.mind_nrealargs
+
 (* Length of arity, excluding params, including local defs *)
 
 let inductive_nrealdecls ind =

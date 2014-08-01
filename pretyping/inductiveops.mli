@@ -66,6 +66,10 @@ val constructors_nrealargs_env : env -> inductive -> int array
 val constructors_nrealdecls : inductive -> int array
 val constructors_nrealdecls_env : env -> inductive -> int array
 
+(** @return the arity, excluding params, excluding local defs *)
+val inductive_nrealargs : inductive -> int
+val inductive_nrealargs_env : env -> inductive -> int
+
 (** @return the arity, excluding params, including local defs *)
 val inductive_nrealdecls : inductive -> int
 val inductive_nrealdecls_env : env -> inductive -> int
