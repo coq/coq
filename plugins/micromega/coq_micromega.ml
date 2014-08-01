@@ -1385,7 +1385,7 @@ let rcst_domain_spec  = lazy {
 
 
 let micromega_order_change spec cert cert_typ env ff : Tacmach.tactic = 
- let ids = List.mapi (fun i _ -> (Names.Id.of_string ("__z"^(string_of_int i)))) env in 
+ let ids = Util.List.map_i (fun i _ -> (Names.Id.of_string ("__z"^(string_of_int i)))) 0 env in 
  let formula_typ = (Term.mkApp (Lazy.force coq_Cstr,[|spec.coeff|])) in
  let ff  = dump_formula formula_typ (dump_cstr spec.coeff spec.dump_coeff) ff in
  let vm = dump_varmap (spec.typ) env in
