@@ -28,11 +28,11 @@ Ltac preprocess :=
 
 Ltac lia :=
   preprocess;
-  (*cbv delta - [Z.add Z.sub Z.opp Z.mul Z.pow Z.gt Z.ge Z.le Z.lt iff not] ;*) xlia ;
+  xlia ;
   abstract (
   intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
+      apply (ZTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)).
 
 Ltac nia :=
   preprocess;
@@ -40,30 +40,31 @@ Ltac nia :=
   abstract (
   intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
+      apply (ZTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)).
 
 
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with
   | Z =>
     (sos_Z || psatz_Z d) ;
+      abstract(
     intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-    apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity
+    apply (ZTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true))
   | R =>
     (sos_R || psatz_R d) ;
     (* If csdp is not installed, the previous step might not produce any
     progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try (intros __wit __varmap __ff ;
+    try (abstract(intros __wit __varmap __ff ;
         change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
-        apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity)
+        apply (RTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
   | Q =>
     (sos_Q || psatz_Q d) ;
     (* If csdp is not installed, the previous step might not produce any
     progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try (intros __wit __varmap __ff ;
+    try  (abstract(intros __wit __varmap __ff ;
         change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
-        apply (QTautoChecker_sound __ff __wit); vm_compute ; reflexivity)
+        apply (QTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
   | _ => fail "Unsupported domain"
   end in tac.
 
@@ -77,17 +78,17 @@ Ltac psatzl dom :=
     psatzl_Q ;
     (* If csdp is not installed, the previous step might not produce any
     progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try (intros __wit __varmap __ff ;
+    try (abstract(intros __wit __varmap __ff ;
         change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
-        apply (QTautoChecker_sound __ff __wit); vm_compute ; reflexivity)
+        apply (QTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
   | R =>
     unfold Rdiv in * ; 
     psatzl_R ;
     (* If csdp is not installed, the previous step might not produce any
     progress: the rest of the tactical will then fail. Hence the 'try'. *)
-    try (intros __wit __varmap __ff ;
+    try abstract((intros __wit __varmap __ff ;
         change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
-        apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity)
+        apply (RTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)))
   | _ => fail "Unsupported domain"
   end in tac.
 

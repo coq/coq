@@ -24,19 +24,19 @@ Ltac preprocess :=
 
 Ltac lia :=
   preprocess;
-  (*cbv delta - [Z.add Z.sub Z.opp Z.mul Z.pow Z.gt Z.ge Z.le Z.lt iff not] ;*) xlia ;
+  xlia ;
   abstract (
       intros __wit __varmap __ff ;
       change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
+      apply (ZTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)).
 
 Ltac nia :=
   preprocess;
   xnlia ;
   abstract (
-  intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
+      intros __wit __varmap __ff ;
+      change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
+      apply (ZTautoChecker_sound __ff __wit); vm_cast_no_check (eq_refl true)).
 
 
 (* Local Variables: *)
