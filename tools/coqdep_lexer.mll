@@ -90,6 +90,8 @@ rule coq_action = parse
       { load_file lexbuf }
   | "Add" space+ "LoadPath" space+
       { add_loadpath lexbuf }
+  | "Time" space+
+      { coq_action lexbuf }
   | space+
       { coq_action lexbuf }
   | "(*"
