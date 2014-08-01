@@ -126,7 +126,7 @@ let nf_evar_map_undefined evm =
 (* Auxiliary functions for the conversion algorithms modulo evars
  *)
 
-let has_undefined_evars or_sorts evd t =
+let has_undefined_evars evd t =
   let rec has_ev t =
     match kind_of_term t with
     | Evar (ev,args) ->
@@ -140,7 +140,7 @@ let has_undefined_evars or_sorts evd t =
   with (Not_found | NotInstantiatedEvar) -> true
 
 let is_ground_term evd t =
-  not (has_undefined_evars true evd t)
+  not (has_undefined_evars evd t)
 
 let is_ground_env evd env =
   let is_ground_decl = function

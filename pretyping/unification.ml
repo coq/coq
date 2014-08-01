@@ -36,8 +36,6 @@ let occur_meta_or_undefined_evar evd c =
         | Evar_defined c ->
             occrec c; Array.iter occrec args
         | Evar_empty -> raise Occur)
-    | Const (_, i) (* | Ind (_, i) | Construct (_, i)  *)
-	when not (Univ.Instance.is_empty i) -> raise Occur
     | _ -> iter_constr occrec c
   in try occrec c; false with Occur | Not_found -> true
 

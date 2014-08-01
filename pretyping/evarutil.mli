@@ -79,9 +79,8 @@ val head_evar : constr -> existential_key (** may raise NoHeadEvar *)
 (* Expand head evar if any *)
 val whd_head_evar :  evar_map -> constr -> constr
 
-(* [has_undefined_evars or_sorts evd c] checks if [c] has undefined evars
-   and optionally if it contains undefined sorts. *)
-val has_undefined_evars : bool -> evar_map -> constr -> bool
+(* [has_undefined_evars evd c] checks if [c] has undefined evars. *)
+val has_undefined_evars : evar_map -> constr -> bool
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
 (** [check_evars env initial_sigma extended_sigma c] fails if some
