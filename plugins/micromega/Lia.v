@@ -19,19 +19,24 @@ Require Import VarMap.
 Require Tauto.
 Declare ML Module "micromega_plugin".
 
+Ltac preprocess :=
+  zify ; unfold Z.succ in * ; unfold Z.pred in *.
+
 Ltac lia :=
-  zify ; unfold Z.succ in * ;
+  preprocess;
   (*cbv delta - [Z.add Z.sub Z.opp Z.mul Z.pow Z.gt Z.ge Z.le Z.lt iff not] ;*) xlia ;
-  intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
+  abstract (
+      intros __wit __varmap __ff ;
+      change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
+      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
 
 Ltac nia :=
-  zify ; unfold Z.succ in * ;
+  preprocess;
   xnlia ;
+  abstract (
   intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
+      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
 
 
 (* Local Variables: *)

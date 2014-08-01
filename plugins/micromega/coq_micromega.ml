@@ -831,6 +831,11 @@ struct
    coq_Qeq, Mc.OpEq
   ]
 
+  let has_typ gl t1 typ = 
+   let ty = Retyping.get_type_of (Tacmach.pf_env gl) (Tacmach.project gl) t1 in
+   Constr.equal ty typ
+
+
   let is_convertible gl t1 t2 = 
    Reductionops.is_conv (Tacmach.pf_env gl) (Tacmach.project gl) t1 t2
 
@@ -1377,22 +1382,31 @@ let rcst_domain_spec  = lazy {
   * witness.
   *)
 
-let micromega_order_change spec cert cert_typ env ff gl =
+
+
+let micromega_order_change spec cert cert_typ env ff : Tacmach.tactic = 
+ let ids = List.mapi (fun i _ -> (Names.Id.of_string ("__z"^(string_of_int i)))) env in 
  let formula_typ = (Term.mkApp (Lazy.force coq_Cstr,[|spec.coeff|])) in
- let ff = dump_formula formula_typ (dump_cstr spec.coeff spec.dump_coeff) ff in
+ let ff  = dump_formula formula_typ (dump_cstr spec.coeff spec.dump_coeff) ff in
  let vm = dump_varmap (spec.typ) env in
+ (* todo : directly generate the proof term - or generalize befor conversion? *)
+ Tacticals.tclTHENSEQ [
+  (fun gl -> 
   Tactics.change_concl
    (set
      [
       ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
       ("__varmap", vm, Term.mkApp
        (Coqlib.gen_constant_in_modules "VarMap"
-	 [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|spec.typ|]));
+	 [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|spec.typ|])); 
       ("__wit", cert, cert_typ)
      ]
-     (Tacmach.pf_concl gl)
-   )
-   gl
+     (Tacmach.pf_concl gl)) gl);
+  Tactics.generalize env ;
+  Tacticals.tclTHENSEQ (List.map Tactics.introduction ids) ; 
+ ] 
+
+
 
 (**
   * The datastructures that aggregate prover attributes.
