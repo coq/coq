@@ -78,14 +78,14 @@ val close : unit -> std_ppcmds
 val tclose : unit -> std_ppcmds
 
 (** {6 Sending messages to the user} *)
-type message_level =
+type message_level = Feedback.message_level =
   | Debug of string
   | Info
   | Notice
   | Warning
   | Error
 
-type message = {
+type message = Feedback.message = {
   message_level : message_level;
   message_content : string;
 }
@@ -115,8 +115,7 @@ val std_logger : logger
 
 val set_logger : logger -> unit
 
-type modern_logger = id:Feedback.edit_or_state_id -> message_level -> std_ppcmds -> unit
-val set_modern_logger : modern_logger -> unit
+val log_via_feedback : unit -> unit
 
 val of_message : message -> Xml_datatype.xml
 val to_message : Xml_datatype.xml -> message

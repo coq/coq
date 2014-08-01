@@ -345,50 +345,23 @@ let msgerrnl x = msgnl_with !err_ft x
 
 (* Logging management *)
 
-type message_level =
+type message_level =  Feedback.message_level =
   | Debug of string
   | Info
   | Notice
   | Warning
   | Error
 
-type message = {
+type message = Feedback.message = {
   message_level : message_level;
   message_content : string;
 }
 
-let of_message_level = function
-  | Debug s ->
-      Serialize.constructor "message_level" "debug" [Xml_datatype.PCData s]
-  | Info -> Serialize.constructor "message_level" "info" []
-  | Notice -> Serialize.constructor "message_level" "notice" []
-  | Warning -> Serialize.constructor "message_level" "warning" []
-  | Error -> Serialize.constructor "message_level" "error" []
-let to_message_level =
-  Serialize.do_match "message_level" (fun s args -> match s with
-  | "debug" -> Debug (Serialize.raw_string args)
-  | "info" -> Info
-  | "notice" -> Notice
-  | "warning" -> Warning
-  | "error" -> Error
-  | _ -> raise Serialize.Marshal_error)
-
-let of_message msg =
-  let lvl = of_message_level msg.message_level in
-  let content = Serialize.of_string msg.message_content in
-  Xml_datatype.Element ("message", [], [lvl; content])
-let to_message xml = match xml with
-  | Xml_datatype.Element ("message", [], [lvl; content]) -> {
-      message_level = to_message_level lvl;
-      message_content = Serialize.to_string content }
-  | _ -> raise Serialize.Marshal_error
-
-let is_message = function
-  | Xml_datatype.Element ("message", _, _) -> true
-  | _ -> false
+let of_message = Feedback.of_message
+let to_message = Feedback.to_message
+let is_message = Feedback.is_message
 
 type logger = message_level -> std_ppcmds -> unit
-type modern_logger = id:Feedback.edit_or_state_id -> message_level -> std_ppcmds -> unit
 
 let print_color s x = x
 (* FIXME *)
@@ -421,7 +394,6 @@ let msg_error x = !logger ~id:!feedback_id Error x
 let msg_debug x = !logger ~id:!feedback_id (Debug "_") x
 
 let set_logger l = logger := (fun ~id:_ lvl msg -> l lvl msg)
-let set_modern_logger (l : modern_logger) = logger := l 
 
 let std_logger lvl msg = std_logger ~id:!feedback_id lvl msg
 
@@ -444,6 +416,13 @@ let set_feeder f = feeder := f
 let string_of_ppcmds c =
   msg_with Format.str_formatter c;
   Format.flush_str_formatter ()
+
+let log_via_feedback () = logger := (fun ~id lvl msg ->
+  !feeder {
+     Feedback.content = Feedback.Message {
+       message_level = lvl;
+       message_content = string_of_ppcmds msg };
+     Feedback.id = id })
 
 (* Copy paste from Util *)
 

@@ -20,6 +20,8 @@ Flags
 Control
 Loc
 Serialize
+Stateid
+Feedback
 Pp
 Segmenttree
 Unicodetable

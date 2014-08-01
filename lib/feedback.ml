@@ -9,6 +9,49 @@
 open Xml_datatype
 open Serialize
 
+type message_level =
+  | Debug of string
+  | Info
+  | Notice
+  | Warning
+  | Error
+
+type message = {
+  message_level : message_level;
+  message_content : string;
+}
+
+let of_message_level = function
+  | Debug s ->
+      Serialize.constructor "message_level" "debug" [Xml_datatype.PCData s]
+  | Info -> Serialize.constructor "message_level" "info" []
+  | Notice -> Serialize.constructor "message_level" "notice" []
+  | Warning -> Serialize.constructor "message_level" "warning" []
+  | Error -> Serialize.constructor "message_level" "error" []
+let to_message_level =
+  Serialize.do_match "message_level" (fun s args -> match s with
+  | "debug" -> Debug (Serialize.raw_string args)
+  | "info" -> Info
+  | "notice" -> Notice
+  | "warning" -> Warning
+  | "error" -> Error
+  | _ -> raise Serialize.Marshal_error)
+
+let of_message msg =
+  let lvl = of_message_level msg.message_level in
+  let content = Serialize.of_string msg.message_content in
+  Xml_datatype.Element ("message", [], [lvl; content])
+let to_message xml = match xml with
+  | Xml_datatype.Element ("message", [], [lvl; content]) -> {
+      message_level = to_message_level lvl;
+      message_content = Serialize.to_string content }
+  | _ -> raise Serialize.Marshal_error
+
+let is_message = function
+  | Xml_datatype.Element ("message", _, _) -> true
+  | _ -> false
+
+
 type edit_id = int
 type state_id = Stateid.t
 type edit_or_state_id = Edit of edit_id | State of state_id
@@ -26,6 +69,7 @@ type feedback_content =
   | ProcessingInMaster
   | Goals of Loc.t * string
   | FileLoaded of string * string
+  | Message of message
 
 type feedback = {
   id : edit_or_state_id;
@@ -51,6 +95,7 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
   | "goals", [loc;s] -> Goals (to_loc loc, to_string s)
   | "fileloaded", [dirpath; filename] ->
        FileLoaded(to_string dirpath, to_string filename)
+  | "message", [m] -> Message (to_message m)
   | _ -> raise Marshal_error)
 let of_feedback_content = function
   | AddedAxiom -> constructor "feedback_content" "addedaxiom" []
@@ -83,6 +128,7 @@ let of_feedback_content = function
       constructor "feedback_content" "fileloaded" [
         of_string dirpath;
         of_string filename ]
+  | Message m -> constructor "feedback_content" "message" [ of_message m ]
 
 let of_edit_or_state_id = function
   | Edit id -> ["object","edit"], of_edit_id id

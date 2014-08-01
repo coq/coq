@@ -1107,6 +1107,7 @@ end = struct
       feedback_queue := [];
       flush oc in
     Pp.set_feeder (slave_feeder !slave_oc);
+    Pp.log_via_feedback ();
     Universes.set_remote_new_univ_level (bufferize (fun () ->
       marshal_response !slave_oc RespGetCounterNewUnivLevel;
       match unmarshal_more_data !slave_ic with

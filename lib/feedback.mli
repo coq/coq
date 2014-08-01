@@ -8,6 +8,24 @@
 
 open Xml_datatype
 
+(* Old plain messages (used to be in Pp) *)
+type message_level =
+  | Debug of string
+  | Info
+  | Notice
+  | Warning
+  | Error
+
+type message = {
+  message_level : message_level;
+  message_content : string;
+}
+
+val of_message : message -> xml
+val to_message : xml -> message
+val is_message : xml -> bool
+
+
 (** Coq "semantic" infos obtained during parsing/execution *)
 type edit_id = int
 type state_id = Stateid.t
@@ -26,6 +44,7 @@ type feedback_content =
   | ProcessingInMaster
   | Goals of Loc.t * string
   | FileLoaded of string * string
+  | Message of message
 
 type feedback = {
   id : edit_or_state_id;
