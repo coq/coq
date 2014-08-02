@@ -128,7 +128,7 @@ let error_cannot_parse s (i,j) =
 
 let warning_module_notfound f s =
   eprintf "*** Warning: in file %s, library " f;
-  eprintf "%s.v is required and has not been found in loadpath!\n"
+  eprintf "%s.v is required and has not been found in the loadpath!\n"
     (String.concat "." s);
   flush stderr
 
