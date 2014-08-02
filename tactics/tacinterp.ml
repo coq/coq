@@ -471,10 +471,12 @@ let extract_ltac_uconstr_values ist env =
 let interp_uconstr ist env = function
   | (c,None) -> c
   | (_,Some ce) ->
-      let ltacvars = extract_ltac_uconstr_values ist env in
-      let bndvars = Id.Map.domain ist.lfun in
-      let ltacdata = (Id.Set.empty, bndvars , ltacvars) in
-      intern_gen WithoutTypeConstraint ~ltacvars:ltacdata env ce
+      let ltacvars = {
+        Constrintern.ltac_vars = Id.Set.empty;
+        ltac_bound = Id.Map.domain ist.lfun;
+        ltac_subst = extract_ltac_uconstr_values ist env;
+      } in
+      intern_gen WithoutTypeConstraint ~ltacvars env ce
 
 let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let constrvars = extract_ltac_constr_values ist env in
@@ -485,10 +487,12 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
        context at globalization time: we retype with the now known
        intros/lettac/inversion hypothesis names *)
   | Some c ->
-      let ltacvars = Id.Map.domain constrvars in
-      let bndvars = Id.Map.domain ist.lfun in
-      let ltacdata = (ltacvars, bndvars,Id.Map.empty) in
-      intern_gen kind ~allow_patvar ~ltacvars:ltacdata env c
+      let ltacvars = {
+        ltac_vars = Id.Map.domain constrvars;
+        ltac_bound = Id.Map.domain ist.lfun;
+        ltac_subst = Id.Map.empty;
+      } in
+      intern_gen kind ~allow_patvar ~ltacvars env c
   in
   let trace =
     push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist in

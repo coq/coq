@@ -245,7 +245,11 @@ let intern_binding_name ist x =
 let intern_constr_gen allow_patvar isarity {ltacvars=lfun; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
-  let ltacvars = (lfun, Id.Set.empty,Id.Map.empty) in
+  let ltacvars = {
+    Constrintern.ltac_vars = lfun;
+    ltac_bound = Id.Set.empty;
+    ltac_subst = Id.Map.empty;
+  } in
   let c' =
     warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars env) c
   in
@@ -318,7 +322,11 @@ let intern_flag ist red =
 let intern_constr_with_occurrences ist (l,c) = (l,intern_constr ist c)
 
 let intern_constr_pattern ist ~as_type ~ltacvars pc =
-  let ltacvars = ltacvars, Id.Set.empty,Id.Map.empty in
+  let ltacvars = {
+    Constrintern.ltac_vars = ltacvars;
+    ltac_bound = Id.Set.empty;
+    ltac_subst = Id.Map.empty;
+  } in
   let metas,pat = Constrintern.intern_constr_pattern
     ist.genv ~as_type ~ltacvars pc
   in
