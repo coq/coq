@@ -50,6 +50,9 @@
   let syntax_error lexbuf =
     raise (Syntax_error (Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf))
 
+  (** This is the prefix that should be pre-prepended to files due to the use
+   ** of [From], i.e. [From Xxx... Require ...]
+   **)
   let from_pre_ident = ref None
 }
 
