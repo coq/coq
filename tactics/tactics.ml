@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+let a = 1
+
 open Pp
 open Errors
 open Util
@@ -1738,6 +1740,7 @@ let assert_as first ipat c =
   end
 
 let assert_tac na = assert_as true (ipat_of_name na)
+let enough_tac na = assert_as false (ipat_of_name na)
 
 (* apply in as *)
 
@@ -1856,7 +1859,7 @@ let letin_pat_tac with_eq name c occs =
   letin_tac_gen with_eq (AbstractPattern (name,c,occs,false,tactic_infer_flags)) None
 
 (* Tactics "pose proof" (usetac=None) and "assert" (otherwise) *)
-let forward usetac ipat c =
+let forward b usetac ipat c =
   match usetac with
   | None ->
       Proofview.Goal.raw_enter begin fun gl ->
@@ -1864,10 +1867,15 @@ let forward usetac ipat c =
       Tacticals.New.tclTHENFIRST (assert_as true ipat t) (Proofview.V82.tactic (exact_no_check c))
       end
   | Some tac ->
-      Tacticals.New.tclTHENFIRST (assert_as true ipat c) tac
+      if b then
+        Tacticals.New.tclTHENFIRST (assert_as b ipat c) tac
+      else
+        Tacticals.New.tclTHENS3PARTS
+          (assert_as b ipat c) [||] tac [|Tacticals.New.tclIDTAC|]
 
-let pose_proof na c = forward None (ipat_of_name na) c
-let assert_by na t tac = forward (Some tac) (ipat_of_name na) t
+let pose_proof na c = forward true None (ipat_of_name na) c
+let assert_by na t tac = forward true (Some tac) (ipat_of_name na) t
+let enough_by na t tac = forward false (Some tac) (ipat_of_name na) t
 
 (***************************)
 (*  Generalization tactics *)

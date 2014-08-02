@@ -569,19 +569,27 @@ GEXTEND Gram
           p = clause_dft_all ->
           TacLetTac (na,c,p,false,e)
 
-      (* Begin compatibility *)
+      (* Alternative syntax for "pose proof c as id" *)
       | IDENT "assert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";
 	  c = lconstr; ")" ->
-	  TacAssert (None,Some (!@loc,IntroIdentifier id),c)
+	  TacAssert (true,None,Some (!@loc,IntroIdentifier id),c)
+
+      (* Alternative syntax for "assert c as id by tac" *)
       | IDENT "assert"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAssert (Some tac,Some (!@loc,IntroIdentifier id),c)
-      (* End compatibility *)
+	  TacAssert (true,Some tac,Some (!@loc,IntroIdentifier id),c)
+
+      (* Alternative syntax for "enough c as id by tac" *)
+      | IDENT "enough"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
+	  c = lconstr; ")"; tac=by_tactic ->
+	  TacAssert (false,Some tac,Some (!@loc,IntroIdentifier id),c)
 
       | IDENT "assert"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  TacAssert (Some tac,ipat,c)
+	  TacAssert (true,Some tac,ipat,c)
       | IDENT "pose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
-	  TacAssert (None,ipat,c)
+	  TacAssert (true,None,ipat,c)
+      | IDENT "enough"; c = constr; ipat = as_ipat; tac = by_tactic ->
+	  TacAssert (false,Some tac,ipat,c)
 
       | IDENT "generalize"; c = constr ->
 	  TacGeneralize [((AllOccurrences,c),Names.Anonymous)]

@@ -336,9 +336,10 @@ let rec mlexpr_of_atomic_tactic = function
       let l = mlexpr_of_list f l in
       <:expr< Tacexpr.TacMutualCofix $id$ $l$ >>
 
-  | Tacexpr.TacAssert (t,ipat,c) ->
+  | Tacexpr.TacAssert (b,t,ipat,c) ->
       let ipat = mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern) ipat in
-      <:expr< Tacexpr.TacAssert $mlexpr_of_option mlexpr_of_tactic t$ $ipat$
+      <:expr< Tacexpr.TacAssert $mlexpr_of_bool b$
+              $mlexpr_of_option mlexpr_of_tactic t$ $ipat$
 	      $mlexpr_of_constr c$ >>
   | Tacexpr.TacGeneralize cl ->
       <:expr< Tacexpr.TacGeneralize

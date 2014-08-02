@@ -146,8 +146,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacCofix idopt as x -> x
   | TacMutualCofix (id,l) ->
       TacMutualCofix (id, List.map (fun (id,c) -> (id,subst_glob_constr subst c)) l)
-  | TacAssert (b,na,c) ->
-      TacAssert (Option.map (subst_tactic subst) b,na,subst_glob_constr subst c)
+  | TacAssert (b,otac,na,c) ->
+      TacAssert (b,Option.map (subst_tactic subst) otac,na,subst_glob_constr subst c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (on_fst (subst_constr_with_occurrences subst))cl)
   | TacGeneralizeDep c -> TacGeneralizeDep (subst_glob_constr subst c)

@@ -1610,7 +1610,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
 	  (Tactics.mutual_cofix (interp_fresh_ident ist env id) l_interp 0)
           gl
       end
-  | TacAssert (t,ipat,c) ->
+  | TacAssert (b,t,ipat,c) ->
       Proofview.Goal.raw_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
@@ -1620,7 +1620,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let patt = interp_intro_pattern ist env in
         Tacticals.New.tclTHEN
           (Proofview.V82.tclEVARS sigma)
-          (Tactics.forward (Option.map (interp_tactic ist) t)
+          (Tactics.forward b (Option.map (interp_tactic ist) t)
               (Option.map patt ipat) c)
       end
   | TacGeneralize cl ->

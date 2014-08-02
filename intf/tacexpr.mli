@@ -117,7 +117,7 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacCofix of Id.t option
   | TacMutualCofix of Id.t * (Id.t * 'trm) list
   | TacAssert of
-      ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option *
+      bool * ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option *
       intro_pattern_expr located option * 'trm
   | TacGeneralize of ('trm with_occurrences * Name.t) list
   | TacGeneralizeDep of 'trm

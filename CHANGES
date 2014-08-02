@@ -171,6 +171,8 @@ Tactics
   the relevant hypotheses).
 - New construct "uconstr:c" and "type_term c" to build untyped terms.
 - The good bullet (-/+/*) is suggested sometimes when user gives a wrong one.
+- New tactic "enough", symmetric to "assert", but with subgoals
+  swapped, as a more friendly replacement of "cut".
 
 Program
 

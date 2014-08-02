@@ -334,13 +334,15 @@ val assert_replacing            : Id.t -> types -> tactic -> tactic
 val cut_replacing               : Id.t -> types -> tactic -> tactic
 
 val assert_as : bool -> intro_pattern_expr located option -> constr -> unit Proofview.tactic
-val forward   : unit Proofview.tactic option -> intro_pattern_expr located option -> constr -> unit Proofview.tactic
+val forward   : bool -> unit Proofview.tactic option -> intro_pattern_expr located option -> constr -> unit Proofview.tactic
 val letin_tac : (bool * intro_pattern_expr located) option -> Name.t ->
   constr -> types option -> clause -> unit Proofview.tactic
 val letin_pat_tac : (bool * intro_pattern_expr located) option -> Name.t ->
   evar_map * constr -> clause -> unit Proofview.tactic
 val assert_tac : Name.t -> types -> unit Proofview.tactic
+val enough_tac : Name.t -> types -> unit Proofview.tactic
 val assert_by  : Name.t -> types -> unit Proofview.tactic -> unit Proofview.tactic
+val enough_by  : Name.t -> types -> unit Proofview.tactic -> unit Proofview.tactic
 val pose_proof : Name.t -> constr -> unit Proofview.tactic
 
 val generalize      : constr list -> tactic

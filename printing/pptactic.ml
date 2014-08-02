@@ -682,11 +682,11 @@ and pr_atom1 = function
   | TacMutualCofix (id,l) ->
       hov 1 (str "cofix" ++ spc () ++ pr_id id ++ spc() ++
              str"with " ++ prlist_with_sep spc pr_cofix_tac l)
-  | TacAssert (Some tac,ipat,c) ->
-      hov 1 (str "assert" ++
+  | TacAssert (b,Some tac,ipat,c) ->
+      hov 1 (str (if b then "assert" else "enough") ++
              pr_assumption pr_lconstr pr_constr ipat c ++
              pr_by_tactic (pr_tac_level ltop) tac)
-  | TacAssert (None,ipat,c) ->
+  | TacAssert (_,None,ipat,c) ->
       hov 1 (str "pose proof" ++
              pr_assertion pr_lconstr pr_constr ipat c)
   | TacGeneralize l ->
