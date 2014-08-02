@@ -75,16 +75,12 @@ Section Wf_Lexicographic_Exponentiation.
   Proof.
     intros.
     inversion H.
-    generalize (app_cons_not_nil _ _ _ H1); simple induction 1.
-    cut (x ++ Cons a Nil = Cons x0 Nil); auto with sets.
-    intro.
-    generalize (app_eq_unit _ _ H0).
-    simple induction 1; simple induction 1; intros.
-    rewrite H4; auto using d_nil with sets.
-    discriminate H5.
-    generalize (app_inj_tail _ _ _ _ H0).
-    simple induction 1; intros.
-    rewrite <- H4; auto with sets.
+    - apply app_cons_not_nil in H1 as [].
+    - assert (x ++ Cons a Nil = Cons x0 Nil) by auto with sets.
+      apply app_eq_unit in H0 as [(->,_)|(_,[=])].
+      auto using d_nil.
+    - apply app_inj_tail in H0 as (<-,_).
+      assumption.
   Qed.
 
   Lemma desc_tail :
@@ -93,53 +89,25 @@ Section Wf_Lexicographic_Exponentiation.
   Proof.
     intro.
     apply rev_ind with
-      (A := A)
       (P := fun x:List =>
         forall a b:A,
-          Descl (Cons b (x ++ Cons a Nil)) -> clos_refl_trans A leA a b).
-    intros.
-
-    inversion H.
-    cut (Cons b (Cons a Nil) = (Nil ++ Cons b Nil) ++ Cons a Nil);
-      auto with sets; intro.
-    generalize H0.
-    intro.
-    generalize (app_inj_tail (l ++ Cons y Nil) (Nil ++ Cons b Nil) _ _ H4);
-      simple induction 1.
-    intros.
-
-    generalize (app_inj_tail _ _ _ _ H6); simple induction 1; intros.
-    generalize H1.
-    rewrite <- H10; rewrite <- H7; intro.
-    inversion H11; subst; [apply rt_step; assumption|apply rt_refl].
-
-    intros.
-    inversion H0.
-    generalize (app_cons_not_nil _ _ _ H3); intro.
-    elim H1.
-
-    generalize H0.
-    generalize (app_comm_cons (l ++ Cons x0 Nil) (Cons a Nil) b);
-      simple induction 1.
-    intro.
-    generalize (desc_prefix (Cons b (l ++ Cons x0 Nil)) a H5); intro.
-    generalize (H x0 b H6).
-    intro.
-    apply rt_trans with (A := A) (y := x0); auto with sets.
-
-    match goal with [ |- clos_refl_trans ?A ?R ?x ?y ] => cut (clos_refl A R x y) end.
-    intros; inversion H8; subst; [apply rt_step|apply rt_refl]; assumption.
-    generalize H1.
-    setoid_rewrite H4; intro.
-
-    generalize (app_inj_tail _ _ _ _ H8); simple induction 1.
-    intros.
-    generalize H2; generalize (app_comm_cons l (Cons x0 Nil) b).
-    intro.
-    generalize H10.
-    rewrite H12; intro.
-    generalize (app_inj_tail _ _ _ _ H13); simple induction 1.
-    intros; subst; assumption.
+          Descl (Cons b (x ++ Cons a Nil)) -> clos_refl_trans A leA a b); intros.
+    - inversion H.
+      assert (Cons b (Cons a Nil) = (Nil ++ Cons b Nil) ++ Cons a Nil) by
+        auto with sets.
+      destruct (app_inj_tail (l ++ Cons y Nil) (Nil ++ Cons b Nil) _ _ H0) as (H6,<-).
+      apply app_inj_tail in H6 as (?,<-).
+      inversion H1; subst; [apply rt_step; assumption|apply rt_refl].
+    - inversion H0.
+      + apply app_cons_not_nil in H3 as [].
+      + rewrite app_comm_cons in H0, H1. apply desc_prefix in H0.
+        pose proof (H x0 b H0).
+        apply rt_trans with (y := x0); auto with sets.
+        enough (H5:clos_refl A leA a x0) by (inversion H5; subst; [apply rt_step|apply rt_refl]; assumption).
+        apply app_inj_tail in H1 as (H1,->).
+        rewrite app_comm_cons in H1.
+        apply app_inj_tail in H1 as (_,<-).
+        assumption.
   Qed.
 
 
@@ -147,82 +115,38 @@ Section Wf_Lexicographic_Exponentiation.
     forall z:List, Descl z -> forall x y:List, z = x ++ y -> Descl x /\ Descl y.
   Proof.
     intros z D.
-    elim D.
-    intros.
-    cut (x ++ y = Nil); auto with sets; intro.
-    generalize (app_eq_nil _ _ H0); simple induction 1.
-    intros.
-    rewrite H2; rewrite H3; split; apply d_nil.
-
-    intros.
-    cut (x0 ++ y = Cons x Nil); auto with sets.
-    intros E.
-    generalize (app_eq_unit _ _ E); simple induction 1.
-    simple induction 1; intros.
-    rewrite H2; rewrite H3; split.
-    apply d_nil.
-
-    apply d_one.
-
-    simple induction 1; intros.
-    rewrite H2; rewrite H3; split.
-    apply d_one.
-
-    apply d_nil.
-
-    do 5 intro.
-    intros Hind.
-    do 2 intro.
-    generalize x0.
-    apply rev_ind with
-      (A := A)
-      (P := fun y0:List =>
-        forall x0:List,
-          (l ++ Cons y Nil) ++ Cons x Nil = x0 ++ y0 ->
-          Descl x0 /\ Descl y0).
-
-    intro.
-    generalize (app_nil_end x1).
-    simple induction 1; simple induction 1.
-    split. apply d_conc; auto with sets.
-
-    apply d_nil.
-
-    do 3 intro.
-    generalize x1.
-    apply rev_ind with
-      (A := A)
-      (P := fun l0:List =>
-        forall (x1:A) (x0:List),
-          (l ++ Cons y Nil) ++ Cons x Nil = x0 ++ l0 ++ Cons x1 Nil ->
-          Descl x0 /\ Descl (l0 ++ Cons x1 Nil)).
-
-
-    simpl.
-    split.
-    generalize (app_inj_tail _ _ _ _ H2); simple induction 1.
-    simple induction 1; auto with sets.
-
-    apply d_one.
-    do 5 intro.
-    generalize (app_ass x4 (l1 ++ Cons x2 Nil) (Cons x3 Nil)).
-    simple induction 1.
-    generalize (app_ass x4 l1 (Cons x2 Nil)); simple induction 1.
-    intro E.
-    generalize (app_inj_tail _ _ _ _ E).
-    simple induction 1; intros.
-    generalize (app_inj_tail _ _ _ _ H6); simple induction 1; intros.
-    rewrite <- H7; rewrite <- H10; generalize H6.
-    generalize (app_ass x4 l1 (Cons x2 Nil)); intro E1.
-    rewrite E1.
-    intro.
-    generalize (Hind x4 (l1 ++ Cons x2 Nil) H11).
-    simple induction 1; split.
-    auto with sets.
-
-    generalize H14.
-    rewrite <- H10; intro.
-    apply d_conc; auto with sets.
+    induction D as [ | |* H D Hind]; intros.
+    - assert (H0 : x ++ y = Nil) by auto with sets.
+      apply app_eq_nil in H0 as (->,->).
+      split; apply d_nil.
+    - assert (E : x0 ++ y = Cons x Nil) by auto with sets.
+      apply app_eq_unit in E as [(->,->)|(->,->)].
+      + split.
+        apply d_nil.
+        apply d_one.
+      + split.
+        apply d_one.
+        apply d_nil.
+    - induction y0 using rev_ind in x0, H0 |- *.
+      + rewrite <- app_nil_end in H0.
+        rewrite <- H0.
+        split.
+        apply d_conc; auto with sets.
+        apply d_nil.
+      + induction y0 using rev_ind in x1, x0, H0 |- *.
+        * simpl.
+          split.
+          apply app_inj_tail in H0 as (<-,_). assumption.
+          apply d_one.
+        * rewrite <- 2!app_ass in H0.
+          apply app_inj_tail in H0 as (H0,<-).
+          pose proof H0 as H0'.
+          apply app_inj_tail in H0' as (_,->).
+          rewrite app_ass in H0.
+          apply Hind in H0 as [].
+          split.
+          assumption.
+          apply d_conc; auto with sets.
   Qed.
 
 

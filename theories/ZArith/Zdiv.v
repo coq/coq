@@ -666,17 +666,15 @@ Theorem Zdiv_eucl_extended :
       {qr : Z * Z | let (q, r) := qr in a = b * q + r /\ 0 <= r < Z.abs b}.
 Proof.
   intros b Hb a.
-  elim (Z_le_gt_dec 0 b); intro Hb'.
-  cut (b > 0); [ intro Hb'' | omega ].
-  rewrite Z.abs_eq; [ apply Zdiv_eucl_exist; assumption | assumption ].
-  cut (- b > 0); [ intro Hb'' | omega ].
-  elim (Zdiv_eucl_exist Hb'' a); intros qr.
-  elim qr; intros q r Hqr.
-  exists (- q, r).
-  elim Hqr; intros.
-  split.
-  rewrite <- Z.mul_opp_comm; assumption.
-  rewrite Z.abs_neq; [ assumption | omega ].
+  destruct (Z_le_gt_dec 0 b) as [Hb'|Hb'].
+  - assert (Hb'' : b > 0) by omega.
+    rewrite Z.abs_eq; [ apply Zdiv_eucl_exist; assumption | assumption ].
+  - assert (Hb'' : - b > 0) by omega.
+    destruct (Zdiv_eucl_exist Hb'' a) as ((q,r),[]).
+    exists (- q, r).
+    split.
+    + rewrite <- Z.mul_opp_comm; assumption.
+    + rewrite Z.abs_neq; [ assumption | omega ].
 Qed.
 
 Arguments Zdiv_eucl_extended : default implicits.

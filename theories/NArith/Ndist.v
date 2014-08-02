@@ -71,7 +71,7 @@ Proof.
   auto with bool arith.
   intros. generalize H0 H1. case n. intros. simpl in H3. discriminate H3.
   intros. simpl. unfold Nplength in H.
-  cut (ni (Pplength p0) = ni n0). intro. inversion H4. reflexivity.
+  enough (ni (Pplength p0) = ni n0) by (inversion H4; reflexivity).
   apply H. intros. change (N.testbit_nat (Npos (xO p0)) (S k) = false). apply H2. apply lt_n_S. exact H4.
   exact H3.
   intro. case n. trivial.
@@ -104,10 +104,9 @@ Lemma ni_min_comm : forall d d':natinf, ni_min d d' = ni_min d' d.
 Proof.
   simple induction d. simple induction d'; trivial.
   simple induction d'; trivial. elim n. simple induction n0; trivial.
-  intros. elim n1; trivial. intros. unfold ni_min in H. cut (min n0 n2 = min n2 n0).
-  intro. unfold ni_min. simpl. rewrite H1. reflexivity.
-  cut (ni (min n0 n2) = ni (min n2 n0)). intros.
-  inversion H1; trivial.
+  intros. elim n1; trivial. intros. unfold ni_min in H.
+  enough (min n0 n2 = min n2 n0) by (unfold ni_min; simpl; rewrite H1; reflexivity).
+  enough (ni (min n0 n2) = ni (min n2 n0)) by (inversion H1; trivial).
   exact (H n2).
 Qed.
 
@@ -116,10 +115,10 @@ Lemma ni_min_assoc :
 Proof.
   simple induction d; trivial. simple induction d'; trivial.
   simple induction d''; trivial.
-  unfold ni_min. intro. cut (min (min n n0) n1 = min n (min n0 n1)).
-  intro. rewrite H. reflexivity.
-  generalize n0 n1. elim n; trivial.
-  simple induction n3; trivial. simple induction n5; trivial.
+  unfold ni_min. intro. 
+  enough (min (min n n0) n1 = min n (min n0 n1)) by (rewrite H; reflexivity).
+  induction n in n0, n1 |- *; trivial.
+  destruct n0; trivial. destruct n1; trivial.
   intros. simpl. auto.
 Qed.
 
@@ -174,15 +173,13 @@ Qed.
 
 Lemma ni_min_case : forall d d':natinf, ni_min d d' = d \/ ni_min d d' = d'.
 Proof.
-  simple induction d. intro. right. exact (ni_min_inf_l d').
-  simple induction d'. left. exact (ni_min_inf_r (ni n)).
-  unfold ni_min. cut (forall n0:nat, min n n0 = n \/ min n n0 = n0).
-  intros. case (H n0). intro. left. rewrite H0. reflexivity.
-  intro. right. rewrite H0. reflexivity.
-  elim n. intro. left. reflexivity.
-  simple induction n1. right. reflexivity.
-  intros. case (H n2). intro. left. simpl. rewrite H1. reflexivity.
-  intro. right. simpl. rewrite H1. reflexivity.
+  destruct d. right. exact (ni_min_inf_l d').
+  destruct d'. left. exact (ni_min_inf_r (ni n)).
+  unfold ni_min.
+  enough (min n n0 = n \/ min n n0 = n0) as [-> | ->].
+  left. reflexivity.
+  right. reflexivity.
+  destruct (Nat.min_dec n n0); [left|right]; assumption.
 Qed.
 
 Lemma ni_le_total : forall d d':natinf, ni_le d d' \/ ni_le d' d.
@@ -208,11 +205,7 @@ Qed.
 
 Lemma le_ni_le : forall m n:nat, m <= n -> ni_le (ni m) (ni n).
 Proof.
-  cut (forall m n:nat, m <= n -> min m n = m).
-  intros. unfold ni_le, ni_min. rewrite (H m n H0). reflexivity.
-  simple induction m. trivial.
-  simple induction n0. intro. inversion H0.
-  intros. simpl. rewrite (H n1 (le_S_n n n1 H1)). reflexivity.
+  intros * H. unfold ni_le, ni_min. rewrite (Peano.min_l m n H). reflexivity.
 Qed.
 
 Lemma ni_le_le : forall m n:nat, ni_le (ni m) (ni n) -> m <= n.
@@ -298,30 +291,28 @@ Proof.
   rewrite (ni_min_inf_l (Nplength a')) in H.
   rewrite (Nplength_infty a' H). simpl. apply ni_le_refl.
   intros. unfold Nplength at 1. apply Nplength_lb. intros.
-  cut (forall a'':N, N.lxor (Npos p) a' = a'' -> N.testbit_nat a'' k = false).
-  intros. apply H1. reflexivity.
+  enough (forall a'':N, N.lxor (Npos p) a' = a'' -> N.testbit_nat a'' k = false).
+  { apply H1. reflexivity. }
   intro a''. case a''. intro. reflexivity.
   intros. rewrite <- H1. rewrite (Nxor_semantics (Npos p) a' k).
   rewrite
    (Nplength_zeros (Npos p) (Pplength p)
       (eq_refl (Nplength (Npos p))) k H0).
-  generalize H. case a'. trivial.
-  intros. cut (N.testbit_nat (Npos p1) k = false). intros. rewrite H3. reflexivity.
+  destruct a'. trivial.
+  enough (N.testbit_nat (Npos p1) k = false) as -> by reflexivity.
   apply Nplength_zeros with (n := Pplength p1). reflexivity.
   apply (lt_le_trans k (Pplength p) (Pplength p1)). exact H0.
-  apply ni_le_le. exact H2.
+  apply ni_le_le. exact H.
 Qed.
 
 Lemma Nplength_ultra :
  forall a a':N,
    ni_le (ni_min (Nplength a) (Nplength a')) (Nplength (N.lxor a a')).
 Proof.
-  intros. case (ni_le_total (Nplength a) (Nplength a')). intro.
-  cut (ni_min (Nplength a) (Nplength a') = Nplength a).
-  intro. rewrite H0. apply Nplength_ultra_1. exact H.
+  intros. destruct (ni_le_total (Nplength a) (Nplength a')).
+  enough (ni_min (Nplength a) (Nplength a') = Nplength a) as -> by (apply Nplength_ultra_1; exact H).
   exact H.
-  intro. cut (ni_min (Nplength a) (Nplength a') = Nplength a').
-  intro. rewrite H0. rewrite N.lxor_comm. apply Nplength_ultra_1. exact H.
+  enough (ni_min (Nplength a) (Nplength a') = Nplength a') as -> by (rewrite N.lxor_comm; apply Nplength_ultra_1; exact H).
   rewrite ni_min_comm. exact H.
 Qed.
 

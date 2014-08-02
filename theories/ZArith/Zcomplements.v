@@ -54,17 +54,17 @@ Theorem Z_lt_abs_rec :
 Proof.
   intros P HP p.
   set (Q := fun z => 0 <= z -> P z * P (- z)).
-  cut (Q (Z.abs p)); [ intros H | apply (Z_lt_rec Q); auto with zarith ].
-  elim (Zabs_dec p); intro eq; rewrite eq;
-    elim H; auto with zarith.
-  intros x H; subst Q. 
+  enough (H:Q (Z.abs p)) by
+    (destruct (Zabs_dec p) as [-> | ->]; elim H; auto with zarith).
+  apply (Z_lt_rec Q); auto with zarith.
+  subst Q; intros x H.
   split; apply HP.
-  rewrite Z.abs_eq; auto; intros.
-  elim (H (Z.abs m)); intros; auto with zarith.
-  elim (Zabs_dec m); intro eq; rewrite eq; trivial.
-  rewrite Z.abs_neq, Z.opp_involutive; auto with zarith; intros.
-  elim (H (Z.abs m)); intros; auto with zarith.
-  elim (Zabs_dec m); intro eq; rewrite eq; trivial.
+  - rewrite Z.abs_eq; auto; intros.
+    destruct (H (Z.abs m)); auto with zarith.
+    destruct (Zabs_dec m) as [-> | ->]; trivial.
+  - rewrite Z.abs_neq, Z.opp_involutive; auto with zarith; intros.
+    destruct (H (Z.abs m)); auto with zarith.
+    destruct (Zabs_dec m) as [-> | ->]; trivial.
 Qed.
 
 Theorem Z_lt_abs_induction :
@@ -74,16 +74,17 @@ Theorem Z_lt_abs_induction :
 Proof.
   intros P HP p.
   set (Q := fun z => 0 <= z -> P z /\ P (- z)) in *.
-  cut (Q (Z.abs p)); [ intros | apply (Z_lt_induction Q); auto with zarith ].
-  elim (Zabs_dec p); intro eq; rewrite eq; elim H; auto with zarith.
-  unfold Q; clear Q; intros.
+  enough (Q (Z.abs p)) by
+    (destruct (Zabs_dec p) as [-> | ->]; elim H; auto with zarith).
+  apply (Z_lt_induction Q); auto with zarith.
+  subst Q; intros.
   split; apply HP.
-  rewrite Z.abs_eq; auto; intros.
-  elim (H (Z.abs m)); intros; auto with zarith.
-  elim (Zabs_dec m); intro eq; rewrite eq; trivial.
-  rewrite Z.abs_neq, Z.opp_involutive; auto with zarith; intros.
-  elim (H (Z.abs m)); intros; auto with zarith.
-  elim (Zabs_dec m); intro eq; rewrite eq; trivial.
+  - rewrite Z.abs_eq; auto; intros.
+    elim (H (Z.abs m)); intros; auto with zarith.
+    elim (Zabs_dec m); intro eq; rewrite eq; trivial.
+  - rewrite Z.abs_neq, Z.opp_involutive; auto with zarith; intros.
+    destruct (H (Z.abs m)); auto with zarith.
+    destruct (Zabs_dec m) as [-> | ->]; trivial.
 Qed.
 
 (** To do case analysis over the sign of [z] *)

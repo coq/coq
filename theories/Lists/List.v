@@ -227,10 +227,8 @@ Section Facts.
     intros.
     injection H.
     intro.
-    cut ([] = l ++ a0 :: l0); auto.
-    intro.
-    generalize (app_cons_not_nil _ _ _ H1); intro.
-    elim H2.
+    assert ([] = l ++ a0 :: l0) by auto.
+    apply app_cons_not_nil in H1 as [].
   Qed.
 
   Lemma app_inj_tail :
@@ -239,22 +237,20 @@ Section Facts.
     induction x as [| x l IHl];
       [ destruct y as [| a l] | destruct y as [| a l0] ];
       simpl; auto.
-    intros a b H.
-    injection H.
-    auto.
-    intros a0 b H.
-    injection H; intros.
-    generalize (app_cons_not_nil _ _ _ H0); destruct 1.
-    intros a b H.
-    injection H; intros.
-    cut ([] = l ++ [a]); auto.
-    intro.
-    generalize (app_cons_not_nil _ _ _ H2); destruct 1.
-    intros a0 b H.
-    injection H; intros.
-    destruct (IHl l0 a0 b H0).
-    split; auto.
-    rewrite <- H1; rewrite <- H2; reflexivity.
+    - intros a b H.
+      injection H.
+      auto.
+    - intros a0 b H.
+      injection H as H1 H0.
+      apply app_cons_not_nil in H0 as [].
+    - intros a b H.
+      injection H as H1 H0.
+      assert ([] = l ++ [a]) by auto.
+      apply app_cons_not_nil in H as [].
+    - intros a0 b H.
+      injection H as <- H0.
+      destruct (IHl l0 a0 b H0) as (<-,<-).
+      split; auto.
   Qed.
 
 
@@ -1003,10 +999,8 @@ End Fold_Left_Recursor.
 Lemma fold_left_length :
   forall (A:Type)(l:list A), fold_left (fun x _ => S x) l 0 = length l.
 Proof.
-  intro A.
-  cut (forall (l:list A) n, fold_left (fun x _ => S x) l n = n + length l).
-  intros.
-  exact (H l 0).
+  intros A l.
+  enough (H : forall n, fold_left (fun x _ => S x) l n = n + length l) by exact (H 0).
   induction l; simpl; auto.
   intros; rewrite IHl.
   simpl; auto with arith.

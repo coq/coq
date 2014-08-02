@@ -212,13 +212,10 @@ Section Z_BRIC_A_BRAC.
       (z < two_power_nat (S n))%Z -> (Z.div2 z < two_power_nat n)%Z.
   Proof.
     intros.
-    cut (2 * Z.div2 z < 2 * two_power_nat n)%Z; intros.
-    omega.
-
+    enough (2 * Z.div2 z < 2 * two_power_nat n)%Z by omega.
     rewrite <- two_power_nat_S.
     destruct (Zeven.Zeven_odd_dec z) as [Heven|Hodd]; intros.
     rewrite <- Zeven.Zeven_div2; auto.
-
     generalize (Zeven.Zodd_div2 z Hodd); omega.
   Qed.
 
