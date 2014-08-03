@@ -199,8 +199,9 @@ let conv_table_key infos k1 k2 cuniv =
   | ConstKey (cst, u), ConstKey (cst', u') when eq_constant_key cst cst' ->
     if Univ.Instance.equal u u' then cuniv
     else 
-      let flex = evaluable_constant cst (info_env infos) in
-	convert_instances flex u u' cuniv
+      let flex = evaluable_constant cst (info_env infos) 
+	&& RedFlags.red_set (info_flags infos) (RedFlags.fCONST cst)
+      in convert_instances flex u u' cuniv
   | VarKey id, VarKey id' when Id.equal id id' -> cuniv
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible

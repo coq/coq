@@ -101,6 +101,7 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
       mib.mind_packets in
   let sechyps' = map_named_context (expmod_constr modlist) sechyps in
   let (params',inds') = abstract_inductive sechyps' nparams inds in
+  let abs_ctx = Univ.instantiate_univ_context abs_ctx in
   let univs = Univ.UContext.union abs_ctx univs in
   let record = match mib.mind_record with
     | None -> None
