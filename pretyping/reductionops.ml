@@ -654,23 +654,23 @@ let reducible_mind_case c = match kind_of_term c with
 *)
 let magicaly_constant_of_fixbody env bd = function
   | Name.Anonymous -> bd
-  | Name.Name id -> bd
-    (* try *)
-    (*   let cst = Nametab.locate_constant *)
-    (* 	(Libnames.make_qualid DirPath.empty id) in *)
-    (*   let (cst, u), ctx = Universes.fresh_constant_instance env cst in *)
-    (*   match constant_opt_value_in env (cst,u) with *)
-    (*   | None -> bd *)
-    (*   | Some t ->  *)
-    (*     let b, csts = Universes.eq_constr_universes t bd in *)
-    (* 	let subst = Universes.Constraints.fold (fun (l,d,r) acc ->  *)
-    (* 	  Univ.LMap.add (Option.get (Universe.level l)) (Option.get (Universe.level r)) acc) *)
-    (* 	  csts Univ.LMap.empty *)
-    (* 	in *)
-    (* 	let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in *)
-    (*       if b then mkConstU (cst,inst) else bd *)
-    (* with *)
-    (* | Not_found -> bd *)
+  | Name.Name id ->
+    try
+      let cst = Nametab.locate_constant
+    	(Libnames.make_qualid DirPath.empty id) in
+      let (cst, u), ctx = Universes.fresh_constant_instance env cst in
+      match constant_opt_value_in env (cst,u) with
+      | None -> bd
+      | Some t ->
+        let b, csts = Universes.eq_constr_universes t bd in
+    	let subst = Universes.Constraints.fold (fun (l,d,r) acc ->
+    	  Univ.LMap.add (Option.get (Universe.level l)) (Option.get (Universe.level r)) acc)
+    	  csts Univ.LMap.empty
+    	in
+    	let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in
+          if b then mkConstU (cst,inst) else bd
+    with
+    | Not_found -> bd
 
 let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) =
   let nbodies = Array.length bodies in

@@ -202,7 +202,10 @@ let infer_declaration env kn dcl =
 	  let j = infer env body in
 	  let typ = constrain_type env j c.const_entry_polymorphic usubst (map_option_typ typ) in
 	  let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
-	  let def = Def (Mod_subst.from_val def) in
+	  let def = 
+	    if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
+	    else Def (Mod_subst.from_val def) 
+	  in
 	    def, typ, None
       in
 	feedback_completion_typecheck feedback_id;
