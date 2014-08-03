@@ -1092,11 +1092,18 @@ let rec subst_pat_iterator y t p = match p with
   | RCPatOr (l,pl) -> RCPatOr (l,List.map (subst_pat_iterator y t) pl)
 
 let drop_notations_pattern looked_for =
-  (* At toplevel, Constructors and Inductives are accepted, in trecursive calls
+  (* At toplevel, Constructors and Inductives are accepted, in recursive calls
      only constructor are allowed *)
-  let ensure_kind top =
-    if top then looked_for else
-      function  ConstructRef _ -> () |_ -> raise Not_found in
+  let ensure_kind top loc g =
+    try
+      if top then looked_for g else
+      match g with ConstructRef _ -> () | _ -> raise Not_found
+    with Not_found ->
+      error_invalid_pattern_notation loc
+  in
+  let test_kind top =
+    if top then looked_for else function ConstructRef _ -> () | _ -> raise Not_found
+  in
   let rec drop_syndef top env re pats =
     let (loc,qid) = qualid_of_reference re in
     try
@@ -1105,17 +1112,17 @@ let drop_notations_pattern looked_for =
 	let (vars,a) = Syntax_def.search_syntactic_definition sp in
 	(match a with
 	| NRef g ->
-	  ensure_kind top g;
+	  test_kind top g;
 	  let () = assert (List.is_empty vars) in
 	  let (_,argscs) = find_remaining_scopes [] pats g in
 	  Some (g, [], List.map2 (in_pat_sc env) argscs pats)
 	| NApp (NRef g,[]) -> (* special case : Syndef for @Cstr *)
-	      ensure_kind top g;
+	      test_kind top g;
               let () = assert (List.is_empty vars) in
 	      let (argscs,_) = find_remaining_scopes pats [] g in
 	      Some (g, List.map2 (in_pat_sc env) argscs pats, [])
-	    | NApp (NRef g,args) ->
-	      ensure_kind top g;
+	| NApp (NRef g,args) ->
+	      ensure_kind top loc g;
 	      let nvars = List.length vars in
 	      if List.length pats < nvars then error_not_enough_arguments loc;
 	      let pats1,pats2 = List.chop nvars pats in
@@ -1123,9 +1130,9 @@ let drop_notations_pattern looked_for =
 	      let idspl1 = List.map (in_not false loc env (subst, Id.Map.empty) []) args in
 	      let (_,argscs) = find_remaining_scopes pats1 pats2 g in
 	      Some (g, idspl1, List.map2 (in_pat_sc env) argscs pats2)
-	    | _ -> raise Not_found)
-	|TrueGlobal g ->
-	  ensure_kind top g;
+	| _ -> raise Not_found)
+      |TrueGlobal g ->
+	  test_kind top g;
 	  Dumpglob.add_glob loc g;
 	  let (_,argscs) = find_remaining_scopes [] pats g in
 	  Some (g,[],List.map2 (fun x -> in_pat false {env with tmp_scope = x}) argscs pats)
@@ -1157,7 +1164,7 @@ let drop_notations_pattern looked_for =
       RCPatCstr (loc, g, List.map2 (in_pat_sc env) argscs1 expl_pl, List.map2 (in_pat_sc env) argscs2 pl)
     | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[]),[])
 	when Bigint.is_strictly_pos p ->
-      fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false) (Numeral (Bigint.neg p))
+      fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false loc) (Numeral (Bigint.neg p))
 	     (env.tmp_scope,env.scopes))
     | CPatNotation (_,"( _ )",([a],[]),[]) ->
       in_pat top env a
@@ -1172,7 +1179,7 @@ let drop_notations_pattern looked_for =
     | CPatDelimiters (loc, key, e) ->
       in_pat top {env with scopes=find_delimiters_scope loc key::env.scopes;
 	tmp_scope = None} e
-    | CPatPrim (loc,p) -> fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false) p
+    | CPatPrim (loc,p) -> fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false loc) p
 				 (env.tmp_scope,env.scopes))
     | CPatAtom (loc, Some id) ->
       begin
@@ -1199,11 +1206,11 @@ let drop_notations_pattern looked_for =
 	    anomaly (str "Unbound pattern notation variable: " ++ Id.print id)
       end
     | NRef g ->
-      ensure_kind top g;
+      ensure_kind top loc g;
       let (_,argscs) = find_remaining_scopes [] args g in
       RCPatCstr (loc, g, [], List.map2 (in_pat_sc env) argscs args)
     | NApp (NRef g,pl) ->
-      ensure_kind top g;
+      ensure_kind top loc g;
       let (argscs1,argscs2) = find_remaining_scopes pl args g in
       RCPatCstr (loc, g,
 		 List.map2 (fun x -> in_not false loc {env with tmp_scope = x} fullsubst []) argscs1 pl,
@@ -1266,12 +1273,12 @@ let rec intern_pat genv aliases pat =
 
 let intern_cases_pattern genv env aliases pat =
   intern_pat genv aliases
-    (drop_notations_pattern (function  ConstructRef _ -> () |_ -> raise Not_found) env pat)
+    (drop_notations_pattern (function ConstructRef _ -> () | _ -> raise Not_found) env pat)
 
 let intern_ind_pattern genv env pat =
   let no_not =
     try
-      drop_notations_pattern (function  (IndRef _ | ConstructRef _) -> () |_ -> raise Not_found) env pat
+      drop_notations_pattern (function (IndRef _ | ConstructRef _) -> () | _ -> raise Not_found) env pat
     with InternalizationError(loc,NotAConstructor _) -> error_bad_inductive_type loc
  in
   match no_not with
