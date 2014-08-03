@@ -460,6 +460,17 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) false true ?tac c with_evars)
 	   do_hyps
 
+let apply_special_clear_request clear_flag f =
+  Proofview.Goal.raw_enter begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let env = Proofview.Goal.env gl in
+    try
+      let sigma,(c,bl) = f env sigma in
+      apply_clear_request clear_flag (use_clear_hyp_by_default ()) c
+    with
+      e when catchable_exception e -> tclIDTAC
+  end
+
 type delayed_open_constr_with_bindings =
     env -> evar_map -> evar_map * constr with_bindings
 
@@ -484,7 +495,9 @@ let general_multi_multi_rewrite with_evars l cl tac =
   in
   let rec loop = function
     | [] -> Proofview.tclUNIT ()
-    | (l2r,m,c)::l -> tclTHENFIRST (doN l2r c m) (loop l)
+    | (l2r,m,clear_flag,c)::l ->
+        tclTHENFIRST
+          (tclTHEN (doN l2r c m) (apply_special_clear_request clear_flag c)) (loop l)
   in loop l
 
 let rewriteLR = general_rewrite true AllOccurrences true true
@@ -963,7 +976,7 @@ let discrEverywhere with_evars =
 *)
 let discr_tac with_evars = function
   | None -> discrEverywhere with_evars
-  | Some c -> onInductionArg (discr with_evars) c
+  | Some c -> onInductionArg (fun clear_flag -> discr with_evars) c
 
 let discrConcl = discrClause false onConcl
 let discrHyp id = discrClause false (onHyp id)
@@ -1296,13 +1309,15 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
       inject_at_positions env sigma l2r u eq_clause posns
 	(tac (clenv_value eq_clause))
 
-let postInjEqTac ipats c n =
+let use_clear_hyp_by_default () = false
+
+let postInjEqTac clear_flag ipats c n =
   match ipats with
   | Some ipats ->
       let clear_tac =
-        if use_injection_pattern_l2r_order () && isVar c
-        then tclTRY (clear [destVar c])
-        else tclIDTAC in
+        let dft =
+          use_injection_pattern_l2r_order () || use_clear_hyp_by_default () in
+        tclTRY (apply_clear_request clear_flag dft c) in
       let intro_tac =
         if use_injection_pattern_l2r_order ()
         then intros_pattern_bound n MoveLast ipats
@@ -1310,20 +1325,20 @@ let postInjEqTac ipats c n =
       tclTHEN clear_tac intro_tac
   | None -> tclIDTAC
 
-let injEq ipats =
+let injEq clear_flag ipats =
   let l2r =
     if use_injection_pattern_l2r_order () && not (Option.is_empty ipats) then true else false
   in
-  injEqThen (fun c i -> postInjEqTac ipats c i) l2r
+  injEqThen (fun c i -> postInjEqTac clear_flag ipats c i) l2r
 
-let inj ipats with_evars = onEquality with_evars (injEq ipats)
+let inj ipats with_evars clear_flag = onEquality with_evars (injEq clear_flag ipats)
 
 let injClause ipats with_evars = function
-  | None -> onNegatedEquality with_evars (injEq ipats)
+  | None -> onNegatedEquality with_evars (injEq None ipats)
   | Some c -> onInductionArg (inj ipats with_evars) c
 
 let injConcl = injClause None false None
-let injHyp id = injClause None false (Some (ElimOnIdent (Loc.ghost,id)))
+let injHyp clear_flag id = injClause None false (Some (clear_flag,ElimOnIdent (Loc.ghost,id)))
 
 let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
   Proofview.Goal.enter begin fun gl ->
@@ -1341,10 +1356,12 @@ let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
   end
 
 let dEqThen with_evars ntac = function
-  | None -> onNegatedEquality with_evars (decompEqThen ntac)
-  | Some c -> onInductionArg (onEquality with_evars (decompEqThen ntac)) c
+  | None -> onNegatedEquality with_evars (decompEqThen (ntac None))
+  | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (decompEqThen (ntac clear_flag))) c
 
-let dEq with_evars = dEqThen with_evars (fun c x -> Proofview.tclUNIT ())
+let dEq with_evars =
+  dEqThen with_evars (fun clear_flag c x ->
+    (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c))
 
 let intro_decompe_eq tac data cl =
   Proofview.Goal.raw_enter begin fun gl ->

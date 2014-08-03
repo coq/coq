@@ -247,6 +247,9 @@ let mlexpr_of_binding = mlexpr_of_pair mlexpr_of_binding_kind mlexpr_of_constr
 let mlexpr_of_constr_with_binding =
   mlexpr_of_pair mlexpr_of_constr mlexpr_of_binding_kind
 
+let mlexpr_of_constr_with_binding_arg =
+  mlexpr_of_pair (mlexpr_of_option mlexpr_of_bool) mlexpr_of_constr_with_binding
+
 let mlexpr_of_move_location f = function
   | Misctypes.MoveAfter id -> <:expr< Misctypes.MoveAfter $f id$ >>
   | Misctypes.MoveBefore id -> <:expr< Misctypes.MoveBefore $f id$ >>
@@ -309,13 +312,13 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacExact c ->
       <:expr< Tacexpr.TacExact $mlexpr_of_constr c$ >>
   | Tacexpr.TacApply (b,false,cb,None) ->
-      <:expr< Tacexpr.TacApply $mlexpr_of_bool b$ False $mlexpr_of_list mlexpr_of_constr_with_binding cb$ None >>
+      <:expr< Tacexpr.TacApply $mlexpr_of_bool b$ False $mlexpr_of_list mlexpr_of_constr_with_binding_arg cb$ None >>
   | Tacexpr.TacElim (false,cb,cbo) ->
-      let cb = mlexpr_of_constr_with_binding cb in
+      let cb = mlexpr_of_constr_with_binding_arg cb in
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
       <:expr< Tacexpr.TacElim False $cb$ $cbo$ >>
   | Tacexpr.TacCase (false,cb) ->
-      let cb = mlexpr_of_constr_with_binding cb in
+      let cb = mlexpr_of_constr_with_binding_arg cb in
       <:expr< Tacexpr.TacCase False $cb$ >>
   | Tacexpr.TacFix (ido,n) ->
       let ido = mlexpr_of_ident_option ido in
@@ -364,7 +367,9 @@ let rec mlexpr_of_atomic_tactic = function
 	$mlexpr_of_triple
 	(mlexpr_of_list
 	   (mlexpr_of_pair
-	      mlexpr_of_induction_arg
+              (mlexpr_of_pair
+                 (mlexpr_of_option mlexpr_of_bool)
+	         mlexpr_of_induction_arg)
 	      (mlexpr_of_pair
 		 (mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern))
 		 (mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern)))))

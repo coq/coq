@@ -270,18 +270,21 @@ let intern_bindings ist = function
 let intern_constr_with_bindings ist (c,bl) =
   (intern_constr ist c, intern_bindings ist bl)
 
+let intern_constr_with_bindings_arg ist (clear,c) =
+  (clear,intern_constr_with_bindings ist c)
+
   (* TODO: catch ltac vars *)
 let intern_induction_arg ist = function
-  | ElimOnConstr c -> ElimOnConstr (intern_constr_with_bindings ist c)
-  | ElimOnAnonHyp n as x -> x
-  | ElimOnIdent (loc,id) ->
+  | clear,ElimOnConstr c -> clear,ElimOnConstr (intern_constr_with_bindings ist c)
+  | clear,ElimOnAnonHyp n as x -> x
+  | clear,ElimOnIdent (loc,id) ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
 	match intern_constr ist (CRef (Ident (dloc,id), None)) with
-	| GVar (loc,id),_ -> ElimOnIdent (loc,id)
-	| c -> ElimOnConstr (c,NoBindings)
+	| GVar (loc,id),_ -> clear,ElimOnIdent (loc,id)
+	| c -> clear,ElimOnConstr (c,NoBindings)
       else
-	ElimOnIdent (loc,id)
+	clear,ElimOnIdent (loc,id)
 
 let short_name = function
   | AN (Ident (loc,id)) when not !strict_check -> Some (loc,id)
@@ -371,8 +374,8 @@ let intern_red_expr ist = function
   | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_with_occurrences ist) o)
   | (Red _ | Hnf | ExtraRedExpr _ as r ) -> r
 
-let intern_in_hyp_as ist lf (id,ipat) =
-  (intern_hyp ist id, Option.map (intern_intro_pattern lf ist) ipat)
+let intern_in_hyp_as ist lf (clear,id,ipat) =
+  (clear,intern_hyp ist id, Option.map (intern_intro_pattern lf ist) ipat)
 
 let intern_hyp_list ist = List.map (intern_hyp ist)
 
@@ -459,12 +462,12 @@ let rec intern_atomic lf ist x =
                     intern_move_location ist hto)
   | TacExact c -> TacExact (intern_constr ist c)
   | TacApply (a,ev,cb,inhyp) ->
-      TacApply (a,ev,List.map (intern_constr_with_bindings ist) cb,
+      TacApply (a,ev,List.map (intern_constr_with_bindings_arg ist) cb,
                 Option.map (intern_in_hyp_as ist lf) inhyp)
   | TacElim (ev,cb,cbo) ->
-      TacElim (ev,intern_constr_with_bindings ist cb,
+      TacElim (ev,intern_constr_with_bindings_arg ist cb,
                Option.map (intern_constr_with_bindings ist) cbo)
-  | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings ist cb)
+  | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings_arg ist cb)
   | TacFix (idopt,n) -> TacFix (Option.map (intern_ident lf ist) idopt,n)
   | TacMutualFix (id,n,l) ->
       let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
@@ -555,7 +558,7 @@ let rec intern_atomic lf ist x =
   | TacRewrite (ev,l,cl,by) ->
       TacRewrite
 	(ev,
-	List.map (fun (b,m,c) -> (b,m,intern_constr_with_bindings ist c)) l,
+	List.map (fun (b,m,c) -> (b,m,intern_constr_with_bindings_arg ist c)) l,
 	clause_app (intern_hyp_location ist) cl,
 	Option.map (intern_pure_tactic ist) by)
   | TacInversion (inv,hyp) ->

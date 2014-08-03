@@ -169,5 +169,4 @@ Section Acc_generator.
     end.
 
 
-End Acc_generator. 
- 
+End Acc_generator.

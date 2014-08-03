@@ -768,8 +768,8 @@ and interp_intro_pattern_list_as_list ist env = function
 	List.map (interp_intro_pattern ist env) l)
   | l -> List.map (interp_intro_pattern ist env) l
 
-let interp_in_hyp_as ist env (id,ipat) =
-  (interp_hyp ist env id,Option.map (interp_intro_pattern ist env) ipat)
+let interp_in_hyp_as ist env (clear,id,ipat) =
+  (clear,interp_hyp ist env id,Option.map (interp_intro_pattern ist env) ipat)
 
 let interp_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
@@ -812,10 +812,18 @@ let interp_constr_with_bindings ist env sigma (c,bl) =
   let sigma, c = interp_open_constr ist env sigma c in
   sigma, (c,bl)
 
+let interp_constr_with_bindings_arg ist env sigma (keep,c) =
+  let sigma, c = interp_constr_with_bindings ist env sigma c in
+  sigma, (keep,c)
+
 let interp_open_constr_with_bindings ist env sigma (c,bl) =
   let sigma, bl = interp_bindings ist env sigma bl in
   let sigma, c = interp_open_constr ist env sigma c in
   sigma, (c, bl)
+
+let interp_open_constr_with_bindings_arg ist env sigma (keep,c) =
+  let sigma, c = interp_open_constr_with_bindings ist env sigma c in
+  sigma,(keep,c)
 
 let loc_of_bindings = function
 | NoBindings -> Loc.ghost
@@ -829,22 +837,26 @@ let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
   let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
   sigma, (loc,cb)
 
+let interp_open_constr_with_bindings_arg_loc ist env sigma (keep,c) =
+  let sigma, c = interp_open_constr_with_bindings_loc ist env sigma c in
+  sigma,(keep,c)
+
 let interp_induction_arg ist gl arg =
   let env = pf_env gl and sigma = project gl in
   match arg with
-  | ElimOnConstr c ->
-      ElimOnConstr (interp_constr_with_bindings ist env sigma c)
-  | ElimOnAnonHyp n as x -> x
-  | ElimOnIdent (loc,id) ->
+  | keep,ElimOnConstr c ->
+      keep,ElimOnConstr (interp_constr_with_bindings ist env sigma c)
+  | keep,ElimOnAnonHyp n as x -> x
+  | keep,ElimOnIdent (loc,id) ->
       let error () = user_err_loc (loc, "",
         strbrk "Cannot coerce " ++ pr_id id ++
         strbrk " neither to a quantified hypothesis nor to a term.")
       in
       let try_cast_id id' =
         if Tactics.is_quantified_hypothesis id' gl
-        then ElimOnIdent (loc,id')
+        then keep,ElimOnIdent (loc,id')
         else
-          (try ElimOnConstr (sigma,(constr_of_id env id',NoBindings))
+          (try keep,ElimOnConstr (sigma,(constr_of_id env id',NoBindings))
           with Not_found ->
             user_err_loc (loc,"",
             pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis."))
@@ -862,18 +874,18 @@ let interp_induction_arg ist gl arg =
           let id = out_gen (topwit wit_var) v in
           try_cast_id id
         else if has_type v (topwit wit_int) then
-          ElimOnAnonHyp (out_gen (topwit wit_int) v)
+          keep,ElimOnAnonHyp (out_gen (topwit wit_int) v)
         else match Value.to_constr v with
         | None -> error ()
-        | Some c -> ElimOnConstr (sigma,(c,NoBindings))
+        | Some c -> keep,ElimOnConstr (sigma,(c,NoBindings))
       with Not_found ->
 	(* We were in non strict (interactive) mode *)
 	if Tactics.is_quantified_hypothesis id gl then
-          ElimOnIdent (loc,id)
+          keep,ElimOnIdent (loc,id)
 	else
           let c = (GVar (loc,id),Some (CRef (Ident (loc,id),None))) in
           let (sigma,c) = interp_constr ist env sigma c in
-          ElimOnConstr (sigma,(c,NoBindings))
+          keep,ElimOnConstr (sigma,(c,NoBindings))
 
 (* Associates variables with values and gives the remaining variables and
    values *)
@@ -1544,7 +1556,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma, l =
-          List.fold_map (interp_open_constr_with_bindings_loc ist env) sigma cb
+          List.fold_map (interp_open_constr_with_bindings_arg_loc ist env) sigma cb
         in
         let tac = match cl with
           | None -> fun l -> Proofview.V82.tactic (Tactics.apply_with_bindings_gen a ev l)
@@ -1552,25 +1564,25 @@ and interp_atomic ist tac : unit Proofview.tactic =
               (fun l ->
                 Proofview.Goal.raw_enter begin fun gl ->
                   let env = Proofview.Goal.env gl in
-                  let (id,cl) = interp_in_hyp_as ist env cl in
-                  Tactics.apply_in a ev id l cl
+                  let (clear,id,cl) = interp_in_hyp_as ist env cl in
+                  Tactics.apply_in a ev clear id l cl
                 end) in
         Tacticals.New.tclWITHHOLES ev tac sigma l
       end
-  | TacElim (ev,cb,cbo) ->
+  | TacElim (ev,(keep,cb),cbo) ->
       Proofview.Goal.raw_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in 
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
         let sigma, cbo = Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
-        Tacticals.New.tclWITHHOLES ev (Tactics.elim ev cb) sigma cbo
+        Tacticals.New.tclWITHHOLES ev (Tactics.elim ev keep cb) sigma cbo
       end
-  | TacCase (ev,cb) ->
+  | TacCase (ev,(keep,cb)) ->
       Proofview.Goal.raw_enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
-        Tacticals.New.tclWITHHOLES ev (Tactics.general_case_analysis ev) sigma cb
+        Tacticals.New.tclWITHHOLES ev (Tactics.general_case_analysis ev keep) sigma cb
       end
   | TacFix (idopt,n) ->
       Proofview.Goal.raw_enter begin fun gl ->
@@ -1824,9 +1836,9 @@ and interp_atomic ist tac : unit Proofview.tactic =
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
       Proofview.Goal.raw_enter begin fun gl ->
-        let l = List.map (fun (b,m,c) ->
+        let l = List.map (fun (b,m,(keep,c)) ->
           let f env sigma = interp_open_constr_with_bindings ist env sigma c in
-	  (b,m,f)) l in
+	  (b,m,keep,f)) l in
         let env = Proofview.Goal.env gl in
         let cl = interp_clause ist env cl in
         Equality.general_multi_multi_rewrite ev l cl

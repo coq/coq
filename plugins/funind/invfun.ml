@@ -799,7 +799,7 @@ and intros_with_rewrite_aux : tactic =
 		      Proofview.V82.of_tactic Tauto.tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENSEQ[
-			Proofview.V82.of_tactic (general_case_analysis false (v,NoBindings));
+			Proofview.V82.of_tactic (simplest_case v);
 			intros_with_rewrite
 		      ] g
 		  | LetIn _ ->
@@ -836,7 +836,7 @@ let rec reflexivity_with_destruct_cases g =
       match kind_of_term (snd (destApp (pf_concl g))).(2) with
 	| Case(_,_,v,_) ->
 	    tclTHENSEQ[
-	      Proofview.V82.of_tactic (general_case_analysis false (v,NoBindings));
+	      Proofview.V82.of_tactic (simplest_case v);
 	      Proofview.V82.of_tactic intros;
 	      observe_tac "reflexivity_with_destruct_cases" reflexivity_with_destruct_cases
 	    ]
@@ -855,7 +855,7 @@ let rec reflexivity_with_destruct_cases g =
 		     if Equality.discriminable (pf_env g) (project g) t1 t2
 		     then Proofview.V82.of_tactic (Equality.discrHyp id) g
 		     else if Equality.injectable (pf_env g) (project g) t1 t2
-		     then tclTHENSEQ [Proofview.V82.of_tactic (Equality.injHyp id);thin [id];intros_with_rewrite]  g
+		     then tclTHENSEQ [Proofview.V82.of_tactic (Equality.injHyp None id);thin [id];intros_with_rewrite]  g
 		     else tclIDTAC g
 		 | _ -> tclIDTAC g
     )
@@ -1013,7 +1013,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(Simple.generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]);
 	Proofview.V82.of_tactic (Simple.intro graph_principle_id);
 	observe_tac "" (tclTHEN_i
-	  (observe_tac "elim" (Proofview.V82.of_tactic ((elim false (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings))))))
+	  (observe_tac "elim" (Proofview.V82.of_tactic (elim false None (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings)))))
 	  (fun i g -> observe_tac "prove_branche" (prove_branche i) g ))
       ]
       g

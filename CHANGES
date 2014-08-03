@@ -173,6 +173,8 @@ Tactics
 - The good bullet (-/+/*) is suggested sometimes when user gives a wrong one.
 - New tactic "enough", symmetric to "assert", but with subgoals
   swapped, as a more friendly replacement of "cut".
+- In destruct/induction, experimental modifier "!" prefixing the
+  hypothesis name to tell not erasing the hypothesis.
 
 Program
 

@@ -976,7 +976,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
 	   let rec_id = pf_nth_hyp_id g 1 in
 	   tclTHENSEQ
 	     [(* observe_tac "generalize_non_dep in generate_equation_lemma" *) (generalize_non_dep rec_id);
-	      (* observe_tac "h_case" *) (Proofview.V82.of_tactic (general_case_analysis false (mkVar rec_id,NoBindings)));
+	      (* observe_tac "h_case" *) (Proofview.V82.of_tactic (simplest_case (mkVar rec_id)));
 	      (Proofview.V82.of_tactic intros_reflexivity)] g
 	)
       ]

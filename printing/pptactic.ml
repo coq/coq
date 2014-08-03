@@ -120,8 +120,14 @@ let pr_bindings_no_with prc prlc = function
         prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
   | NoBindings -> mt ()
 
+let pr_keep keep pp x =
+  (if keep then str "!" else mt()) ++ pp x
+
 let pr_with_bindings prc prlc (c,bl) =
   prc c ++ hv 0 (pr_bindings prc prlc bl)
+
+let pr_with_bindings_arg prc prlc (keep,c) =
+  pr_keep keep (pr_with_bindings prc prlc) c
 
 let pr_with_constr prc = function
   | None -> mt ()
@@ -575,6 +581,7 @@ let make_pr_tac pr_tac_level
 let pr_bindings = pr_bindings pr_lconstr pr_constr in
 let pr_ex_bindings = pr_bindings_gen true pr_lconstr pr_constr in
 let pr_with_bindings = pr_with_bindings pr_lconstr pr_constr in
+let pr_with_bindings_arg = pr_with_bindings_arg pr_lconstr pr_constr in
 let pr_extend = pr_extend pr_constr pr_lconstr pr_tac_level pr_pat in
 let pr_alias = pr_alias pr_constr pr_lconstr pr_tac_level pr_pat in
 let pr_red_expr = pr_red_expr (pr_constr,pr_lconstr,pr_cst,pr_pat) in
@@ -667,13 +674,13 @@ and pr_atom1 = function
   | TacApply (a,ev,cb,inhyp) ->
       hov 1 ((if a then mt() else str "simple ") ++
              str (with_evars ev "apply") ++ spc () ++
-             prlist_with_sep pr_comma pr_with_bindings cb ++
+             prlist_with_sep pr_comma pr_with_bindings_arg cb ++
              pr_in_hyp_as pr_ident inhyp)
   | TacElim (ev,cb,cbo) ->
-      hov 1 (str (with_evars ev "elim") ++ pr_arg pr_with_bindings cb ++
+      hov 1 (str (with_evars ev "elim") ++ pr_arg pr_with_bindings_arg cb ++
         pr_opt pr_eliminator cbo)
   | TacCase (ev,cb) ->
-      hov 1 (str (with_evars ev "case") ++ spc () ++ pr_with_bindings cb)
+      hov 1 (str (with_evars ev "case") ++ spc () ++ pr_with_bindings_arg cb)
   | TacFix (ido,n) -> hov 1 (str "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
   | TacMutualFix (id,n,l) ->
       hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc() ++
@@ -722,8 +729,8 @@ and pr_atom1 = function
   | TacInductionDestruct (isrec,ev,(l,el,cl)) ->
       hov 1 (str (with_evars ev (if isrec then "induction" else "destruct")) ++
              spc () ++
-             prlist_with_sep pr_comma (fun (h,ids) ->
-	       pr_induction_arg pr_lconstr pr_constr h ++
+             prlist_with_sep pr_comma (fun ((keep,h),ids) ->
+	       pr_keep keep (pr_induction_arg pr_lconstr pr_constr) h ++
 	       pr_with_induction_names ids) l ++
              pr_opt pr_eliminator el ++
 	     pr_opt_no_spc (pr_clauses None pr_ident) cl)
@@ -800,7 +807,7 @@ and pr_atom1 = function
 	     prlist_with_sep
 	     (fun () -> str ","++spc())
 	     (fun (b,m,c) ->
-		pr_orient b ++ pr_multi m ++ pr_with_bindings c)
+		pr_orient b ++ pr_multi m ++ pr_with_bindings_arg c)
 	     l
 	     ++ pr_clauses (Some true) pr_ident cl
 	     ++	(match by with Some by -> pr_by_tactic (pr_tac_level ltop) by | None -> mt()))

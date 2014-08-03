@@ -308,9 +308,11 @@ let projectAndApply thin id eqname names depids =
     | _ -> tac id
     end
   in
-  let deq_trailer id _ neqns =
+  let deq_trailer id clear_flag _ neqns =
     tclTHENLIST
-      [(if not (List.is_empty names) then clear [id] else tclIDTAC);
+      [apply_clear_request clear_flag
+          (not (List.is_empty names) || use_clear_hyp_by_default ())
+          (mkVar id);
        (tclMAP_i neqns (fun idopt ->
 	 tclTRY (tclTHEN
 	   (intro_move idopt MoveLast)
@@ -325,7 +327,7 @@ let projectAndApply thin id eqname names depids =
     (* and apply a trailer which again try to substitute *)
     (fun id ->
       dEqThen false (deq_trailer id)
-	(Some (ElimOnConstr (mkVar id,NoBindings))))
+	(Some (None,ElimOnConstr (mkVar id,NoBindings))))
     id
 
 let nLastDecls i tac =

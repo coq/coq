@@ -44,10 +44,13 @@ let subst_bindings subst = function
 let subst_glob_with_bindings subst (c,bl) =
   (subst_glob_constr subst c, subst_bindings subst bl)
 
+let subst_glob_with_bindings_arg subst (clear,c) =
+  (clear,subst_glob_with_bindings subst c)
+
 let subst_induction_arg subst = function
-  | ElimOnConstr c -> ElimOnConstr (subst_glob_with_bindings subst c)
-  | ElimOnAnonHyp n as x -> x
-  | ElimOnIdent id as x -> x
+  | clear,ElimOnConstr c -> clear,ElimOnConstr (subst_glob_with_bindings subst c)
+  | clear,ElimOnAnonHyp n as x -> x
+  | clear,ElimOnIdent id as x -> x
 
 let subst_and_short_name f (c,n) =
 (*  assert (n=None); *)(* since tacdef are strictly globalized *)
@@ -135,11 +138,11 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacIntroPattern _ | TacIntrosUntil _ | TacIntroMove _ as x -> x
   | TacExact c -> TacExact (subst_glob_constr subst c)
   | TacApply (a,ev,cb,cl) ->
-      TacApply (a,ev,List.map (subst_glob_with_bindings subst) cb,cl)
+      TacApply (a,ev,List.map (subst_glob_with_bindings_arg subst) cb,cl)
   | TacElim (ev,cb,cbo) ->
-      TacElim (ev,subst_glob_with_bindings subst cb,
+      TacElim (ev,subst_glob_with_bindings_arg subst cb,
                Option.map (subst_glob_with_bindings subst) cbo)
-  | TacCase (ev,cb) -> TacCase (ev,subst_glob_with_bindings subst cb)
+  | TacCase (ev,cb) -> TacCase (ev,subst_glob_with_bindings_arg subst cb)
   | TacFix (idopt,n) as x -> x
   | TacMutualFix (id,n,l) ->
       TacMutualFix(id,n,List.map (fun (id,n,c) -> (id,n,subst_glob_constr subst c)) l)
@@ -194,7 +197,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacRewrite (ev,l,cl,by) ->
       TacRewrite (ev,
 		  List.map (fun (b,m,c) ->
-			      b,m,subst_glob_with_bindings subst c) l,
+			      b,m,subst_glob_with_bindings_arg subst c) l,
 		 cl,Option.map (subst_tactic subst) by)
   | TacInversion (DepInversion (k,c,l),hyp) ->
      TacInversion (DepInversion (k,Option.map (subst_glob_constr subst) c,l),hyp)

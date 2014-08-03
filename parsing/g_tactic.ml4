@@ -136,19 +136,19 @@ let induction_arg_of_constr (c,lbind as clbind) = match lbind with
   | _ -> ElimOnConstr clbind
 
 let mkTacCase with_evar = function
-  | [ElimOnConstr cl,(None,None)],None,None ->
-      TacCase (with_evar,cl)
+  | [(clear,ElimOnConstr cl),(None,None)],None,None ->
+      TacCase (with_evar,(clear,cl))
   (* Reinterpret numbers as a notation for terms *)
-  | [ElimOnAnonHyp n,(None,None)],None,None ->
+  | [(clear,ElimOnAnonHyp n),(None,None)],None,None ->
       TacCase (with_evar,
-        (CPrim (Loc.ghost, Numeral (Bigint.of_int n)),
-	 NoBindings))
+        (clear,(CPrim (Loc.ghost, Numeral (Bigint.of_int n)),
+	 NoBindings)))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
-  | [ElimOnIdent id,(None,None)],None,None ->
-      TacCase (with_evar,(CRef (Ident id,None),NoBindings))
+  | [(clear,ElimOnIdent id),(None,None)],None,None ->
+      TacCase (with_evar,(clear,(CRef (Ident id,None),NoBindings)))
   | ic ->
-      if List.exists (function (ElimOnAnonHyp _,_) -> true | _ -> false) (pi1 ic)
+      if List.exists (function ((_, ElimOnAnonHyp _),_) -> true | _ -> false) (pi1 ic)
       then
 	error "Use of numbers as direct arguments of 'case' is not supported.";
       TacInductionDestruct (false,with_evar,ic)
@@ -237,9 +237,14 @@ GEXTEND Gram
     [ [ c = constr -> c ] ]
   ;
   induction_arg:
-    [ [ n = natural -> ElimOnAnonHyp n
-      | c = constr_with_bindings -> induction_arg_of_constr c
+    [ [ n = natural -> (None,ElimOnAnonHyp n)
+      | c = constr_with_bindings -> (None,induction_arg_of_constr c)
+      | "!"; c = constr_with_bindings -> (Some false,induction_arg_of_constr c)
     ] ]
+  ;
+  constr_with_bindings_arg:
+    [ [ ">"; c = constr_with_bindings -> (Some true,c)
+      | c = constr_with_bindings -> (None,c) ] ]
   ;
   quantified_hypothesis:
     [ [ id = ident -> NamedHyp id
@@ -412,7 +417,7 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   in_hyp_as:
-    [ [ "in"; id = id_or_meta; ipat = as_ipat -> Some (id,ipat)
+    [ [ "in"; id = id_or_meta; ipat = as_ipat -> Some (None,id,ipat)
       | -> None ] ]
   ;
   orient:
@@ -496,12 +501,12 @@ GEXTEND Gram
     [ [ id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> (id1,id2) ] ]
   ;
   rewriter :
-    [ [ "!"; c = constr_with_bindings -> (RepeatPlus,c)
-      | ["?"| LEFTQMARK]; c = constr_with_bindings -> (RepeatStar,c)
-      | n = natural; "!"; c = constr_with_bindings -> (Precisely n,c)
-      |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings -> (UpTo n,c)
-      | n = natural; c = constr_with_bindings -> (Precisely n,c)
-      | c = constr_with_bindings -> (Precisely 1, c)
+    [ [ "!"; c = constr_with_bindings -> (RepeatPlus,(None,c))
+      | ["?"| LEFTQMARK]; c = constr_with_bindings_arg -> (RepeatStar,c)
+      | n = natural; "!"; c = constr_with_bindings -> (Precisely n,(None,c))
+      |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings_arg -> (UpTo n,c)
+      | n = natural; c = constr_with_bindings_arg -> (Precisely n,c)
+      | c = constr_with_bindings -> (Precisely 1, (None,c))
       ] ]
   ;
   oriented_rewriter :
@@ -534,17 +539,19 @@ GEXTEND Gram
 
       | IDENT "exact"; c = constr -> TacExact c
 
-      | IDENT "apply"; cl = LIST1 constr_with_bindings SEP ",";
+      | IDENT "apply"; cl = LIST1 constr_with_bindings_arg SEP ",";
           inhyp = in_hyp_as -> TacApply (true,false,cl,inhyp)
-      | IDENT "eapply"; cl = LIST1 constr_with_bindings SEP ",";
+      | IDENT "eapply"; cl = LIST1 constr_with_bindings_arg SEP ",";
           inhyp = in_hyp_as -> TacApply (true,true,cl,inhyp)
-      | IDENT "simple"; IDENT "apply"; cl = LIST1 constr_with_bindings SEP ",";
+      | IDENT "simple"; IDENT "apply";
+          cl = LIST1 constr_with_bindings_arg SEP ",";
           inhyp = in_hyp_as -> TacApply (false,false,cl,inhyp)
-      | IDENT "simple"; IDENT "eapply"; cl = LIST1 constr_with_bindings SEP",";
+      | IDENT "simple"; IDENT "eapply";
+          cl = LIST1 constr_with_bindings_arg SEP",";
           inhyp = in_hyp_as -> TacApply (false,true,cl,inhyp)
-      | IDENT "elim"; cl = constr_with_bindings; el = OPT eliminator ->
+      | IDENT "elim"; cl = constr_with_bindings_arg; el = OPT eliminator ->
           TacElim (false,cl,el)
-      | IDENT "eelim"; cl = constr_with_bindings; el = OPT eliminator ->
+      | IDENT "eelim"; cl = constr_with_bindings_arg; el = OPT eliminator ->
           TacElim (true,cl,el)
       | IDENT "case"; icl = induction_clause_list -> mkTacCase false icl
       | IDENT "ecase"; icl = induction_clause_list -> mkTacCase true icl

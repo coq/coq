@@ -1573,6 +1573,14 @@ syntax {\tt destruct ({\num})} (not very interesting anyway).
   They combine the effects of the {\tt with}, {\tt as}, {\tt eqn:}, {\tt using},
   and {\tt in} clauses.
 
+\item{\tt destruct !{\ident}}
+
+  This is a case when the destructed term is an hypothesis of the
+  context. The ``!'' modifier tells to keep the hypothesis in the
+  context after destruction.
+
+  This applies also to the other form of {\tt destruct} and {\tt edestruct}.
+
 \item{\tt case \term}\label{case}\tacindex{case}
 
   The tactic {\tt case} is a more basic tactic to perform case
@@ -1749,6 +1757,15 @@ induction n.
   These are the most general forms of {\tt induction} and {\tt
   einduction}.  It combines the effects of the {\tt with}, {\tt as},
   {\tt eqn:}, {\tt using}, and {\tt in} clauses.
+
+\item{\tt induction !{\ident}}
+
+  This is a case when the term on which to apply induction is an
+  hypothesis of the context. The ``!'' modifier tells to keep the
+  hypothesis in the context after induction.
+
+  This applies also to the other form of {\tt induction} and {\tt
+    einduction}.
 
 \item {\tt elim \term}\label{elim}
 

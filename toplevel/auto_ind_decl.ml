@@ -79,12 +79,12 @@ let andb = fun _ -> (Coqlib.build_bool_type()).Coqlib.andb
 
 let induct_on c =
   induction false
-    [Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
+    [None,Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
     None (None,None) None
 
 let destruct_on_using c id =
   destruct false
-    [Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
+    [None,Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
     None
     (None,Some (dl,IntroOrAndPattern [
                                     [dl,IntroAnonymous];
@@ -93,7 +93,7 @@ let destruct_on_using c id =
 
 let destruct_on c =
   destruct false
-    [Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
+    [None,Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
     None (None,None) None
 
 (* reconstruct the inductive with the correct deBruijn indexes *)
@@ -589,10 +589,10 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
                     Tacticals.New.tclREPEAT (
                       Tacticals.New.tclTHENLIST [
-                         apply_in false false freshz [Loc.ghost, (andb_prop(), NoBindings)] None;
+                         Simple.apply_in freshz (andb_prop());
                          Proofview.Goal.enter begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
-                            (destruct false [Tacexpr.ElimOnConstr
+                            (destruct false [None,Tacexpr.ElimOnConstr
                                       (Evd.empty,((mkVar freshz,NoBindings)))]
                                   None
                                   (None, Some (dl,IntroOrAndPattern [[
@@ -723,7 +723,7 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
                      Tacticals.New.tclTRY (
                       Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     Equality.inj None false (mkVar freshz,NoBindings);
+                     Equality.inj None false None (mkVar freshz,NoBindings);
 		     intros; (Proofview.V82.tactic simpl_in_concl);
                      Auto.default_auto;
                      Tacticals.New.tclREPEAT (

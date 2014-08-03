@@ -65,8 +65,8 @@ TACTIC EXTEND replace_term
 END
 
 let induction_arg_of_quantified_hyp = function
-  | AnonHyp n -> ElimOnAnonHyp n
-  | NamedHyp id -> ElimOnIdent (Loc.ghost,id)
+  | AnonHyp n -> None,ElimOnAnonHyp n
+  | NamedHyp id -> None,ElimOnIdent (Loc.ghost,id)
 
 (* Versions *_main must come first!! so that "1" is interpreted as a
    ElimOnAnonHyp and not as a "constr", and "id" is interpreted as a
@@ -74,7 +74,7 @@ let induction_arg_of_quantified_hyp = function
 
 let elimOnConstrWithHoles tac with_evars c =
   Tacticals.New.tclWITHHOLES with_evars (tac with_evars) 
-    c.sigma (Some (ElimOnConstr c.it))
+    c.sigma (Some (None,ElimOnConstr c.it))
 
 TACTIC EXTEND simplify_eq_main
 | [ "simplify_eq" constr_with_bindings(c) ] ->

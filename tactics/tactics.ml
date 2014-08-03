@@ -99,6 +99,19 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun a -> apply_solve_class_goals:=a);
 }
 
+let clear_hyp_by_default = ref false
+
+let use_clear_hyp_by_default () = !clear_hyp_by_default
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "default clearing of hypotheses after use";
+      optkey   = ["Default";"Clearing";"Used";"Hypotheses"];
+      optread  = (fun () -> !clear_hyp_by_default) ;
+      optwrite = (fun b -> clear_hyp_by_default := b) }
+
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -159,6 +172,16 @@ let thin l gl =
   with Evarutil.ClearDependencyError (id,err) ->
     error_clear_dependency (pf_env gl) id err
 
+let apply_clear_request clear_flag dft c =
+  let check_isvar c =
+    if not (isVar c) then
+      error "keep/clear modifiers apply only to hypothesis names." in
+  let clear = match clear_flag with
+    | None -> dft && isVar c
+    | Some clear -> check_isvar c; clear in
+  if clear then Proofview.V82.tactic (thin [destVar c])
+  else Tacticals.New.tclIDTAC
+
 let internal_cut_gen b d t gl =
   try internal_cut b d t gl
   with Evarutil.ClearDependencyError (id,err) ->
@@ -167,8 +190,8 @@ let internal_cut_gen b d t gl =
 let internal_cut = internal_cut_gen false
 let internal_cut_replace = internal_cut_gen true
 
-let internal_cut_rev_gen b d t gl =
-  try internal_cut_rev b d t gl
+let internal_cut_rev_gen b id t gl =
+  try internal_cut_rev b id t gl
   with Evarutil.ClearDependencyError (id,err) ->
     error_clear_dependency (pf_env gl) id err
 
@@ -678,31 +701,36 @@ let rec intros_move = function
    or a term with bindings *)
 
 let onOpenInductionArg tac = function
-  | ElimOnConstr cbl ->
-      tac cbl
-  | ElimOnAnonHyp n ->
+  | clear_flag,ElimOnConstr cbl ->
+      tac clear_flag cbl
+  | clear_flag,ElimOnAnonHyp n ->
       Tacticals.New.tclTHEN
         (intros_until_n n)
-        (Tacticals.New.onLastHyp (fun c -> tac (Evd.empty,(c,NoBindings))))
-  | ElimOnIdent (_,id) ->
+        (Tacticals.New.onLastHyp
+           (fun c -> tac clear_flag (Evd.empty,(c,NoBindings))))
+  | clear_flag,ElimOnIdent (_,id) ->
       (* A quantified hypothesis *)
       Tacticals.New.tclTHEN
         (try_intros_until_id_check id)
-        (tac (Evd.empty,(mkVar id,NoBindings)))
+        (tac clear_flag (Evd.empty,(mkVar id,NoBindings)))
 
 let onInductionArg tac = function
-  | ElimOnConstr cbl ->
-      tac cbl
-  | ElimOnAnonHyp n ->
-      Tacticals.New.tclTHEN (intros_until_n n) (Tacticals.New.onLastHyp (fun c -> tac (c,NoBindings)))
-  | ElimOnIdent (_,id) ->
+  | clear_flag,ElimOnConstr cbl ->
+      tac clear_flag cbl
+  | clear_flag,ElimOnAnonHyp n ->
+      Tacticals.New.tclTHEN
+        (intros_until_n n)
+        (Tacticals.New.onLastHyp (fun c -> tac clear_flag (c,NoBindings)))
+  | clear_flag,ElimOnIdent (_,id) ->
       (* A quantified hypothesis *)
-      Tacticals.New.tclTHEN (try_intros_until_id_check id) (tac (mkVar id,NoBindings))
+      Tacticals.New.tclTHEN
+        (try_intros_until_id_check id)
+        (tac clear_flag (mkVar id,NoBindings))
 
 let map_induction_arg f = function
-  | ElimOnConstr (sigma,(c,bl)) -> ElimOnConstr (f (sigma,c),bl)
-  | ElimOnAnonHyp n -> ElimOnAnonHyp n
-  | ElimOnIdent id -> ElimOnIdent id
+  | clear_flag,ElimOnConstr (sigma,(c,bl)) -> clear_flag,ElimOnConstr (f (sigma,c),bl)
+  | clear_flag,ElimOnAnonHyp n as x -> x
+  | clear_flag,ElimOnIdent id as x -> x
 
 (**************************)
 (*     Cut tactics        *)
@@ -782,13 +810,19 @@ let check_unresolved_evars_of_metas clenv =
   | _ -> ())
   (meta_list clenv.evd)
 
+let clear_of_flag flag =
+  match flag with
+  | None -> true (* default for apply in *)
+  | Some b -> b
+
 (* For a clenv expressing some lemma [C[?1:T1,...,?n:Tn] : P] and some
    goal [G], [clenv_refine_in] returns [n+1] subgoals, the [n] last
    ones (resp [n] first ones if [sidecond_first] is [true]) being the
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) id clenv gl =
+let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) clear_flag id clenv gl =
+  let with_clear = clear_of_flag clear_flag in
   let clenv = Clenvtac.clenv_pose_dependent_evars with_evars clenv in
   let clenv =
     if with_classes then
@@ -800,10 +834,15 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) id c
   if not with_evars && occur_meta new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
+  let id' = if with_clear then id else fresh_id [] id gl in
+  let exact_tac = refine_no_check new_hyp_prf in
   tclTHEN
     (tclEVARS clenv.evd)
-    ((if sidecond_first then assert_replacing else cut_replacing)
-      id new_hyp_typ (refine_no_check new_hyp_prf)) gl
+    (if sidecond_first then
+       tclTHENFIRST (internal_cut_gen with_clear id' new_hyp_typ) exact_tac
+     else
+       tclTHENLAST (internal_cut_rev_gen with_clear id' new_hyp_typ) exact_tac)
+    gl
 
 (********************************************)
 (*       Elimination tactics                *)
@@ -900,16 +939,20 @@ let general_elim_clause_gen elimtac indclause elim gl =
     match elim.elimindex with None -> index_of_ind_arg elimt | Some i -> i in
   elimtac elim.elimrename i (elimc, elimt, lbindelimc) indclause gl
 
-let general_elim with_evars (c, lbindc) elim gl =
+let general_elim with_evars clear_flag (c, lbindc) elim gl =
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let elimtac = elimination_clause_scheme with_evars in
   let indclause  = pf_apply make_clenv_binding gl (c, t) lbindc in
-  general_elim_clause_gen elimtac indclause elim gl
+  tclTHEN
+    (general_elim_clause_gen elimtac indclause elim)
+    (Proofview.V82.of_tactic
+       (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c))
+    gl
 
 (* Case analysis tactics *)
 
-let general_case_analysis_in_context with_evars (c,lbindc) gl =
+let general_case_analysis_in_context with_evars clear_flag (c,lbindc) gl =
   let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let sort = elimination_sort_of_goal gl in
   let sigma, elim =
@@ -918,19 +961,21 @@ let general_case_analysis_in_context with_evars (c,lbindc) gl =
     else
       pf_apply build_case_analysis_scheme_default gl mind sort in
   tclTHEN (tclEVARS sigma)
-  (general_elim with_evars (c,lbindc)
+  (general_elim with_evars clear_flag (c,lbindc)
    {elimindex = None; elimbody = (elim,NoBindings);
     elimrename = Some (false, constructors_nrealdecls (fst mind))}) gl
 
-let general_case_analysis with_evars (c,lbindc as cx) =
+let general_case_analysis with_evars clear_flag (c,lbindc as cx) =
   match kind_of_term c with
     | Var id when lbindc == NoBindings ->
 	Tacticals.New.tclTHEN (try_intros_until_id_check id)
-	  (Proofview.V82.tactic (general_case_analysis_in_context with_evars cx))
+	  (Proofview.V82.tactic
+             (general_case_analysis_in_context with_evars clear_flag cx))
     | _ ->
-	Proofview.V82.tactic (general_case_analysis_in_context with_evars cx)
+	Proofview.V82.tactic
+          (general_case_analysis_in_context with_evars clear_flag cx)
 
-let simplest_case c = general_case_analysis false (c,NoBindings)
+let simplest_case c = general_case_analysis false None (c,NoBindings)
 
 (* Elimination tactic with bindings but using the default elimination
  * constant associated with the type. *)
@@ -951,39 +996,39 @@ let find_eliminator c gl =
     evd, {elimindex = None; elimbody = (c,NoBindings);
           elimrename = Some (true, constructors_nrealdecls ind)}
 
-let default_elim with_evars (c,_ as cx) =
+let default_elim with_evars clear_flag (c,_ as cx) =
   Proofview.tclORELSE
     (Proofview.Goal.raw_enter begin fun gl ->
       let evd, elim = find_eliminator c gl in
 	Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evd)
-	  (Proofview.V82.tactic (general_elim with_evars cx elim))
+	  (Proofview.V82.tactic (general_elim with_evars clear_flag cx elim))
     end)
     begin function
       | IsRecord ->
           (* For records, induction principles aren't there by default
              anymore.  Instead, we do a case analysis instead. *)
-          general_case_analysis with_evars cx
+          general_case_analysis with_evars clear_flag cx
       | e -> Proofview.tclZERO e
     end
 
-let elim_in_context with_evars c = function
+let elim_in_context with_evars clear_flag c = function
   | Some elim ->
       Proofview.V82.tactic
-        (general_elim with_evars c {elimindex = Some (-1); elimbody = elim;
+        (general_elim with_evars clear_flag c {elimindex = Some (-1); elimbody = elim;
                                     elimrename = None})
-  | None -> default_elim with_evars c
+  | None -> default_elim with_evars clear_flag c
 
-let elim with_evars (c,lbindc as cx) elim =
+let elim with_evars clear_flag (c,lbindc as cx) elim =
   match kind_of_term c with
     | Var id when lbindc == NoBindings ->
 	Tacticals.New.tclTHEN (try_intros_until_id_check id)
-	  (elim_in_context with_evars cx elim)
+	  (elim_in_context with_evars clear_flag cx elim)
     | _ ->
-	elim_in_context with_evars cx elim
+	elim_in_context with_evars clear_flag cx elim
 
 (* The simplest elimination tactic, with no substitutions at all. *)
 
-let simplest_elim c = default_elim false (c,NoBindings)
+let simplest_elim c = default_elim false None (c,NoBindings)
 
 (* Elimination in hypothesis *)
 (* Typically, elimclause := (eq_ind ?x ?P ?H ?y ?Heq : ?P ?y)
@@ -1019,7 +1064,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) id rename i (
   if eq_constr hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
-  clenv_refine_in with_evars id elimclause'' gl
+  clenv_refine_in with_evars None id elimclause'' gl
 
 let general_elim_clause with_evars flags id c e =
   let elim = match id with
@@ -1117,7 +1162,7 @@ let solve_remaining_apply_goals gl =
     with Not_found -> tclIDTAC gl
   else tclIDTAC gl
     
-let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
+let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind)) gl0 =
   let flags =
     if with_delta then default_unify_flags () else default_no_delta_unify_flags () in
   (* The actual type of the theorem. It will be matched against the
@@ -1153,21 +1198,26 @@ let general_apply with_delta with_destruct with_evars (loc,(c,lbind)) gl0 =
 		Loc.raise loc exn
 	in try_red_apply thm_ty0
   in
-    tclTHEN (try_main_apply with_destruct c) solve_remaining_apply_goals gl0
+    tclTHENLIST [
+      try_main_apply with_destruct c;
+      solve_remaining_apply_goals;
+      Proofview.V82.of_tactic
+        (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c)
+    ] gl0
 
 let rec apply_with_bindings_gen b e = function
   | [] -> tclIDTAC
-  | [cb] -> general_apply b b e cb
-  | cb::cbl ->
-      tclTHENLAST (general_apply b b e cb) (apply_with_bindings_gen b e cbl)
+  | [k,cb] -> general_apply b b e k cb
+  | (k,cb)::cbl ->
+      tclTHENLAST (general_apply b b e k cb) (apply_with_bindings_gen b e cbl)
 
-let apply_with_bindings cb = apply_with_bindings_gen false false [dloc,cb]
+let apply_with_bindings cb = apply_with_bindings_gen false false [None,(dloc,cb)]
 
-let eapply_with_bindings cb = apply_with_bindings_gen false true [dloc,cb]
+let eapply_with_bindings cb = apply_with_bindings_gen false true [None,(dloc,cb)]
 
-let apply c = apply_with_bindings_gen false false [dloc,(c,NoBindings)]
+let apply c = apply_with_bindings_gen false false [None,(dloc,(c,NoBindings))]
 
-let eapply c = apply_with_bindings_gen false true [dloc,(c,NoBindings)]
+let eapply c = apply_with_bindings_gen false true [None,(dloc,(c,NoBindings))]
 
 let apply_list = function
   | c::l -> apply_with_bindings (c,ImplicitBindings l)
@@ -1212,15 +1262,19 @@ let apply_in_once_main flags innerclause (d,lbind) gl =
   in
   aux (pf_apply make_clenv_binding gl (d,thm) lbind)
 
-let apply_in_once sidecond_first with_delta with_destruct with_evars id
-  (loc,(d,lbind)) gl0 =
+let apply_in_once sidecond_first with_delta with_destruct with_evars hyp_clear_flag
+    id (clear_flag,(loc,(d,lbind))) gl0 =
   let flags = if with_delta then elim_flags () else elim_no_delta_flags () in
   let t' = pf_get_hyp_typ gl0 id in
   let innerclause = mk_clenv_from_n gl0 (Some 0) (mkVar id,t') in
   let rec aux with_destruct c gl =
     try
       let clause = apply_in_once_main flags innerclause (c,lbind) gl in
-      clenv_refine_in ~sidecond_first with_evars id clause gl
+      tclTHEN
+        (clenv_refine_in ~sidecond_first with_evars hyp_clear_flag id clause)
+        (Proofview.V82.of_tactic
+           (apply_clear_request clear_flag false c))
+        gl
     with e when with_destruct ->
       let e = Errors.push e in
       descend_in_conjunctions aux (fun _ -> raise e) c gl
@@ -1435,7 +1489,7 @@ let constructor_tac with_evars expctdnumopt i lbind =
 	(Proofview.Goal.env gl) (Proofview.Goal.sigma gl) (fst mind, i) in
       let cons = mkConstructU cons in
 	
-      let apply_tac = Proofview.V82.tactic (general_apply true false with_evars (dloc,(cons,lbind))) in
+      let apply_tac = Proofview.V82.tactic (general_apply true false with_evars None (dloc,(cons,lbind))) in
 	(Tacticals.New.tclTHENLIST
            [Proofview.V82.tclEVARS sigma; Proofview.V82.tactic (convert_concl_no_check redcl DEFAULTcast); intros; apply_tac])
   end
@@ -1770,23 +1824,23 @@ let tclMAPFIRST tacfun l =
   List.fold_right (fun x -> Tacticals.New.tclTHENFIRST (tacfun x)) l (Proofview.tclUNIT())
 
 let general_apply_in sidecond_first with_delta with_destruct with_evars
-    id lemmas ipat =
+    with_clear id lemmas ipat =
   if sidecond_first then
     (* Skip the side conditions of the applied lemma *)
     Tacticals.New.tclTHENLAST
       (tclMAPLAST
-	(apply_in_once sidecond_first with_delta with_destruct with_evars id)
+	(apply_in_once sidecond_first with_delta with_destruct with_evars with_clear id)
 	lemmas)
       (as_tac id ipat)
   else
     Tacticals.New.tclTHENFIRST
       (tclMAPFIRST
-	(apply_in_once sidecond_first with_delta with_destruct with_evars id)
+	(apply_in_once sidecond_first with_delta with_destruct with_evars with_clear id)
 	lemmas)
       (as_tac id ipat)
 
-let apply_in simple with_evars id lemmas ipat =
-  general_apply_in false simple simple with_evars id lemmas ipat
+let apply_in simple with_evars clear_flag id lemmas ipat =
+  general_apply_in false simple simple with_evars clear_flag id lemmas ipat
 
 (*****************************)
 (* Tactics abstracting terms *)
@@ -3283,7 +3337,7 @@ let induction_tac with_evars elim (varname,lbind) typ gl =
   let elimc = mkCast (elimc, DEFAULTcast, elimt) in
   elimination_clause_scheme with_evars rename i (elimc, elimt, lbindelimc) indclause gl
 
-let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) names
+let induction_from_context clear_flag isrec with_evars (indref,nparams,elim) (hyp0,lbind) names
   inhyps =
   Proofview.Goal.enter begin fun gl ->
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
@@ -3295,18 +3349,19 @@ let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) n
   let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
     induction_tac with_evars elim (hyp0,lbind) typ0;
     tclTRY (unfold_body hyp0);
-    thin [hyp0]
+    Proofview.V82.of_tactic
+      (apply_clear_request clear_flag true (mkVar hyp0))
   ]) in
   apply_induction_in_context
     (Some (hyp0,inhyps)) elim indvars names induct_tac
   end
 
-let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbind) inhyps =
+let induction_with_atomization_of_ind_arg clear_flag isrec with_evars elim names (hyp0,lbind) inhyps =
   Proofview.Goal.enter begin fun gl ->
   let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
   Tacticals.New.tclTHENLIST
     [Proofview.V82.tclEVARS sigma; (atomize_param_of_ind elim_info hyp0);
-    (induction_from_context isrec with_evars elim_info
+    (induction_from_context clear_flag isrec with_evars elim_info
       (hyp0,lbind) names inhyps)]
   end
 
@@ -3358,7 +3413,7 @@ let clear_unselected_context id inhyps cls gl =
 	  thin ids gl
       | None -> tclIDTAC gl
 
-let induction_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
+let induction_gen clear_flag isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
   let inhyps = match cls with
   | Some {onhyps=Some hyps} -> List.map (fun ((_,id),_) -> id) hyps
   | _ -> [] in
@@ -3369,7 +3424,7 @@ let induction_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
 	Tacticals.New.tclTHEN
           (Proofview.V82.tactic (clear_unselected_context id inhyps cls))
 	  (induction_with_atomization_of_ind_arg
-	    isrec with_evars elim names (id,lbind) inhyps)
+	    clear_flag isrec with_evars elim names (id,lbind) inhyps)
     | _        ->
         Proofview.Goal.raw_enter begin fun gl ->
           let env = Proofview.Goal.env gl in
@@ -3385,7 +3440,8 @@ let induction_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
 	      (letin_tac_gen with_eq
                  (AbstractPattern (Name id,(sigma,c),(Option.default allHypsAndConcl cls),false,tactic_infer_flags)) None)
 	      (induction_with_atomization_of_ind_arg
-	         isrec with_evars elim names (id,lbind) inhyps)
+	         (Some true)
+                 isrec with_evars elim names (id,lbind) inhyps)
           end
         end
 
@@ -3447,7 +3503,7 @@ let induction_destruct_core isrec with_evars (lc,elim,names,cls) =
   if Int.equal (List.length lc) 1 && not ifi then
     (* standard induction *)
     onOpenInductionArg
-      (fun c -> induction_gen isrec with_evars elim names c cls)
+      (fun clear_flag c -> induction_gen clear_flag isrec with_evars elim names c cls)
       (List.hd lc)
   else begin
     (* functional induction *)
@@ -3467,7 +3523,7 @@ let induction_destruct_core isrec with_evars (lc,elim,names,cls) =
       (* Hook to recover standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
       onInductionArg
-	(fun (c,lbind) ->
+	(fun _clear_flag (c,lbind) ->
 	  if lbind != NoBindings then
 	    error "'with' clause not supported here.";
 	  induction_gen_l isrec with_evars elim names [c]) (List.hd lc)
@@ -3475,7 +3531,7 @@ let induction_destruct_core isrec with_evars (lc,elim,names,cls) =
       let newlc =
 	List.map (fun x ->
 	  match x with (* FIXME: should we deal with ElimOnIdent? *)
-	  | ElimOnConstr (x,NoBindings) -> x
+	  | _clear_flag,ElimOnConstr (x,NoBindings) -> x
 	  | _ -> error "Don't know where to find some argument.")
 	  lc in
       induction_gen_l isrec with_evars elim names newlc
@@ -3910,10 +3966,15 @@ module Simple = struct
     generalize_gen (List.map (fun c -> ((AllOccurrences,c),Names.Anonymous))
                         cl)
 
-  let apply c = apply_with_bindings_gen false false [Loc.ghost,(c,NoBindings)]
-  let eapply c = apply_with_bindings_gen false true [Loc.ghost,(c,NoBindings)]
-  let elim c   = elim false (c,NoBindings) None
-  let case   c = general_case_analysis false (c,NoBindings)
+  let apply c =
+    apply_with_bindings_gen false false [None,(Loc.ghost,(c,NoBindings))]
+  let eapply c =
+    apply_with_bindings_gen false true [None,(Loc.ghost,(c,NoBindings))]
+  let elim c   = elim false None (c,NoBindings) None
+  let case   c = general_case_analysis false None (c,NoBindings)
+
+  let apply_in id c =
+    apply_in false false None id [None,(Loc.ghost, (c, NoBindings))] None
 
 end
 

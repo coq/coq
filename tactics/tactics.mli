@@ -93,8 +93,12 @@ val try_intros_until :
    or a term with bindings *)
 
 val onInductionArg :
-  (constr with_bindings -> unit Proofview.tactic) ->
+  (clear_flag -> constr with_bindings -> unit Proofview.tactic) ->
     constr with_bindings induction_arg -> unit Proofview.tactic
+
+(** Tell if a used hypothesis should be cleared by default or not *)
+
+val use_clear_hyp_by_default : unit -> bool
 
 (** {6 Introduction tactics with eliminations. } *)
 
@@ -157,6 +161,7 @@ val unfold_constr     : global_reference -> tactic
 val clear         : Id.t list -> tactic
 val clear_body    : Id.t list -> tactic
 val keep          : Id.t list -> tactic
+val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 
 val specialize    : constr with_bindings -> tactic
 
@@ -174,7 +179,7 @@ val apply                 : constr -> tactic
 val eapply                : constr -> tactic
 
 val apply_with_bindings_gen :
-  advanced_flag -> evars_flag -> constr with_bindings located list -> tactic
+  advanced_flag -> evars_flag -> (clear_flag * constr with_bindings located) list -> tactic
 
 val apply_with_bindings   : constr with_bindings -> tactic
 val eapply_with_bindings  : constr with_bindings -> tactic
@@ -182,8 +187,8 @@ val eapply_with_bindings  : constr with_bindings -> tactic
 val cut_and_apply         : constr -> unit Proofview.tactic
 
 val apply_in :
-  advanced_flag -> evars_flag -> Id.t -> 
-    constr with_bindings located list ->
+  advanced_flag -> evars_flag -> clear_flag -> Id.t -> 
+    (clear_flag * constr with_bindings located) list ->
     intro_pattern_expr located option -> unit Proofview.tactic
 
 (** {6 Elimination tactics. } *)
@@ -245,16 +250,17 @@ type eliminator = {
   elimbody : constr with_bindings
 }
 
-val general_elim  : evars_flag ->
+val general_elim  : evars_flag -> clear_flag ->
   constr with_bindings -> eliminator -> tactic
 
 val general_elim_clause : evars_flag -> unify_flags -> identifier option ->
   clausenv -> eliminator -> unit Proofview.tactic
 
-val default_elim  : evars_flag -> constr with_bindings -> unit Proofview.tactic
+val default_elim  : evars_flag -> clear_flag -> constr with_bindings ->
+  unit Proofview.tactic
 val simplest_elim : constr -> unit Proofview.tactic
 val elim :
-  evars_flag -> constr with_bindings -> constr with_bindings option -> unit Proofview.tactic
+  evars_flag -> clear_flag -> constr with_bindings -> constr with_bindings option -> unit Proofview.tactic
 
 val simple_induct : quantified_hypothesis -> unit Proofview.tactic
 
@@ -266,7 +272,7 @@ val induction : evars_flag ->
 
 (** {6 Case analysis tactics. } *)
 
-val general_case_analysis : evars_flag -> constr with_bindings ->  unit Proofview.tactic
+val general_case_analysis : evars_flag -> clear_flag -> constr with_bindings ->  unit Proofview.tactic
 val simplest_case         : constr -> unit Proofview.tactic
 
 val simple_destruct          : quantified_hypothesis -> unit Proofview.tactic
@@ -384,6 +390,7 @@ module Simple : sig
   val eapply : constr -> tactic
   val elim   : constr -> unit Proofview.tactic
   val case   : constr -> unit Proofview.tactic
+  val apply_in : identifier -> constr -> unit Proofview.tactic
 
 end
 

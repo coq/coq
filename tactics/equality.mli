@@ -64,7 +64,7 @@ type delayed_open_constr_with_bindings =
     env -> evar_map -> evar_map * constr with_bindings
 
 val general_multi_multi_rewrite :
-  evars_flag -> (bool * multi * delayed_open_constr_with_bindings) list ->
+  evars_flag -> (bool * multi * clear_flag * delayed_open_constr_with_bindings) list ->
     clause -> (unit Proofview.tactic * conditions) option -> unit Proofview.tactic
 
 val replace_in_clause_maybe_by : constr -> constr -> clause -> unit Proofview.tactic option -> unit Proofview.tactic
@@ -78,14 +78,14 @@ val discrEverywhere : evars_flag -> unit Proofview.tactic
 val discr_tac    : evars_flag ->
   constr with_bindings induction_arg option -> unit Proofview.tactic
 val inj          : intro_pattern_expr Loc.located list option -> evars_flag ->
-  constr with_bindings -> unit Proofview.tactic
+  clear_flag -> constr with_bindings -> unit Proofview.tactic
 val injClause    : intro_pattern_expr Loc.located list option -> evars_flag ->
   constr with_bindings induction_arg option -> unit Proofview.tactic
-val injHyp       : Id.t -> unit Proofview.tactic
+val injHyp       : clear_flag -> Id.t -> unit Proofview.tactic
 val injConcl     : unit Proofview.tactic
 
 val dEq : evars_flag -> constr with_bindings induction_arg option -> unit Proofview.tactic
-val dEqThen : evars_flag -> (constr -> int -> unit Proofview.tactic) -> constr with_bindings induction_arg option -> unit Proofview.tactic
+val dEqThen : evars_flag -> (clear_flag -> constr -> int -> unit Proofview.tactic) -> constr with_bindings induction_arg option -> unit Proofview.tactic
 
 val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> evar_map * (constr * constr * constr)

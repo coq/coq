@@ -25,13 +25,17 @@ type evars_flag = bool     (* true = pose evars       false = fail on evars *)
 type rec_flag = bool       (* true = recursive        false = not recursive *)
 type advanced_flag = bool  (* true = advanced         false = basic *)
 type letin_flag = bool     (* true = use local def    false = use Leibniz *)
+type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)
 
 type debug = Debug | Info | Off (* for trivial / auto / eauto ... *)
 
-type 'a induction_arg =
+type 'a core_induction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of Id.t located
   | ElimOnAnonHyp of int
+
+type 'a induction_arg =
+  clear_flag * 'a core_induction_arg
 
 type inversion_kind =
   | SimpleInversion
@@ -61,6 +65,8 @@ type ('constr,'id) induction_clause_list =
     'constr induction_clause list
     * 'constr with_bindings option (* using ... *)
     * 'id clause_expr option (* in ... *)
+
+type 'a with_bindings_arg = clear_flag * 'a with_bindings
 
 type multi =
   | Precisely of int
@@ -108,10 +114,10 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacIntrosUntil of quantified_hypothesis
   | TacIntroMove of Id.t option * 'nam move_location
   | TacExact of 'trm
-  | TacApply of advanced_flag * evars_flag * 'trm with_bindings list *
-      ('nam * intro_pattern_expr located option) option
-  | TacElim of evars_flag * 'trm with_bindings * 'trm with_bindings option
-  | TacCase of evars_flag * 'trm with_bindings
+  | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *
+      (clear_flag * 'nam * intro_pattern_expr located option) option
+  | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
+  | TacCase of evars_flag * 'trm with_bindings_arg
   | TacFix of Id.t option * int
   | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
   | TacCofix of Id.t option
@@ -157,7 +163,7 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
 
   (* Equality and inversion *)
   | TacRewrite of evars_flag *
-      (bool * multi * 'trm with_bindings) list * 'nam clause_expr *
+      (bool * multi * 'trm with_bindings_arg) list * 'nam clause_expr *
       ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option
   | TacInversion of ('trm,'nam) inversion_strength * quantified_hypothesis
 
