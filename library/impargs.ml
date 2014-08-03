@@ -525,10 +525,10 @@ let impls_of_context ctx =
   List.rev_map map (List.filter is_set ctx)
 
 let section_segment_of_reference = function
-  | ConstRef con -> section_segment_of_constant con
+  | ConstRef con -> pi1 (section_segment_of_constant con)
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
-      section_segment_of_mutual_inductive kn
-  | _ -> [], Univ.UContext.empty
+    pi1 (section_segment_of_mutual_inductive kn)
+  | _ -> []
 
 let adjust_side_condition p = function
   | LessArgsThan n -> LessArgsThan (n+p)
@@ -543,7 +543,7 @@ let discharge_implicits (_,(req,l)) =
   | ImplLocal -> None
   | ImplInteractive (ref,flags,exp) ->
     (try
-      let vars,_ = section_segment_of_reference ref in
+      let vars = section_segment_of_reference ref in
       (* let isproj =  *)
       (* 	 match ref with *)
       (* 	 | ConstRef cst -> is_projection cst (Global.env ()) *)
@@ -560,7 +560,7 @@ let discharge_implicits (_,(req,l)) =
   | ImplConstant (con,flags) ->
     (try
       let con' = pop_con con in
-      let vars,_ = section_segment_of_constant con in
+      let vars,_,_ = section_segment_of_constant con in
       let extra_impls = impls_of_context vars in
       let newimpls = 
 	(* if is_projection con (Global.env()) then (snd (List.hd l)) *)
@@ -572,7 +572,7 @@ let discharge_implicits (_,(req,l)) =
   | ImplMutualInductive (kn,flags) ->
     (try
       let l' = List.map (fun (gr, l) ->
-	let vars,_ = section_segment_of_reference gr in
+	let vars = section_segment_of_reference gr in
 	let extra_impls = impls_of_context vars in
 	((if isVarRef gr then gr else pop_global_reference gr),
 	 List.map (add_section_impls vars extra_impls) l)) l

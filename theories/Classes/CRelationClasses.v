@@ -66,7 +66,7 @@ Section Defs.
   (** Various combinations of reflexivity, symmetry and transitivity. *)
   
   (** A [PreOrder] is both Reflexive and Transitive. *)
-  
+
   Class PreOrder (R : crelation A)  := {
     PreOrder_Reflexive :> Reflexive R | 2 ;
     PreOrder_Transitive :> Transitive R | 2 }.
@@ -270,8 +270,7 @@ Instance iff_Transitive : Transitive iff := iff_trans.
 
 (** Logical equivalence [iff] is an equivalence crelation. *)
 
-Program Instance iff_equivalence : Equivalence iff.
-
+Program Instance iff_equivalence : Equivalence iff. 
 Program Instance arrow_Reflexive : Reflexive arrow.
 Program Instance arrow_Transitive : Transitive arrow.
 

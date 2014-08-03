@@ -363,15 +363,6 @@ let constraints_of_sfb sfb =
   | SFBmodtype mtb -> [Now mtb.typ_constraints]
   | SFBmodule mb -> [Now mb.mod_constraints]
 
-(* let add_constraints cst senv = *)
-(*   { senv with *)
-(*     env = Environ.add_constraints cst senv.env; *)
-(*     univ = Univ.Constraint.union cst senv.univ } *)
-
-(* let next_universe senv = *)
-(*   let univ = senv.max_univ in *)
-(*     univ + 1, { senv with max_univ = univ + 1 } *)
-
 (** A generic function for adding a new field in a same environment.
     It also performs the corresponding [add_constraints]. *)
 

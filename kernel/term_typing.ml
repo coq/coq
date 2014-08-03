@@ -24,21 +24,21 @@ open Entries
 open Typeops
 open Fast_typeops
 
-let constrain_type env j poly = function
+let constrain_type env j poly subst = function
   | `None -> 
     if not poly then (* Old-style polymorphism *)
       make_polymorphic_if_constant_for_ind env j
-    else RegularArity j.uj_type
+    else RegularArity (Vars.subst_univs_level_constr subst j.uj_type)
   | `Some t ->
       let tj = infer_type env t in
       let _ = judge_of_cast env j DEFAULTcast tj in
 	assert (eq_constr t tj.utj_val);
-	RegularArity t
+	RegularArity (Vars.subst_univs_level_constr subst t)
   | `SomeWJ (t, tj) ->
       let tj = infer_type env t in
       let _ = judge_of_cast env j DEFAULTcast tj in
 	assert (eq_constr t tj.utj_val);
-	RegularArity t
+	RegularArity (Vars.subst_univs_level_constr subst t)
 
 let map_option_typ = function None -> `None | Some x -> `Some x
 
@@ -65,11 +65,12 @@ let handle_side_effects env body side_eff =
       | _ -> map_constr_with_binders ((+) 1) (fun i x -> sub c i x) i x in
     let rec sub_body c u b i x = match kind_of_term x with
       | Const (c',u') when eq_constant c c' -> 
-	let subst = 
-	  Array.fold_left2 (fun subst l l' -> Univ.LMap.add l l' subst)
-	    Univ.LMap.empty (Instance.to_array u) (Instance.to_array u')
-	in 
-	  Vars.subst_univs_level_constr subst b
+	(* let subst =  *)
+	(*   Array.fold_left2 (fun subst l l' -> Univ.LMap.add l l' subst) *)
+	(*     Univ.LMap.empty (Instance.to_array u) (Instance.to_array u') *)
+	(* in  *)
+	(*   Vars.subst_univs_level_constr subst b *)
+	Vars.subst_instance_constr u' b
       | _ -> map_constr_with_binders ((+) 1) (fun i x -> sub_body c u b i x) i x in
     let fix_body (c,cb) t =
       match cb.const_body with
@@ -107,7 +108,7 @@ let hcons_j j =
 let feedback_completion_typecheck =
   Option.iter (fun state_id -> Pp.feedback ~state_id Feedback.Complete)
 
-let check_projection env kn inst body =
+let check_projection env kn usubst body =
   let cannot_recognize () = error ("Cannot recognize a projection") in
   let ctx, m = decompose_lam_assum body in
   let () = if not (isCase m) then cannot_recognize () in
@@ -136,19 +137,27 @@ let check_projection env kn inst body =
   let pb = { proj_ind = fst ci.ci_ind;
 	     proj_npars = n;
 	     proj_arg = arg;
-	     proj_type = ty;
-	     proj_body = body }
+	     proj_type = Vars.subst_univs_level_constr usubst ty;
+	     proj_body = Vars.subst_univs_level_constr usubst body }
   in pb
   
+let subst_instance_j s j =
+  { uj_val = Vars.subst_univs_level_constr s j.uj_val;
+    uj_type = Vars.subst_univs_level_constr s j.uj_type }
+
 let infer_declaration env kn dcl =
   match dcl with
   | ParameterEntry (ctx,poly,(t,uctx),nl) ->
       let env = push_context uctx env in
       let j = infer env t in
-      let t = hcons_constr (Typeops.assumption_of_judgment env j) in
-      Undef nl, RegularArity t, None, poly, uctx, false, ctx
+      let abstract = poly && not (Option.is_empty kn) in
+      let usubst, univs = Univ.abstract_universes abstract uctx in
+      let c = Typeops.assumption_of_judgment env j in
+      let t = hcons_constr (Vars.subst_univs_level_constr usubst c) in
+	Undef nl, RegularArity t, None, poly, univs, false, ctx
   | DefinitionEntry ({ const_entry_type = Some typ;
-                       const_entry_opaque = true } as c) ->
+                       const_entry_opaque = true;
+		       const_entry_polymorphic = false} as c) ->
       let env = push_context c.const_entry_universes env in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
@@ -158,7 +167,9 @@ let infer_declaration env kn dcl =
 	  let env' = push_context_set ctx env in
           let j = infer env' body in
           let j = hcons_j j in
-          let _typ = constrain_type env' j c.const_entry_polymorphic (`SomeWJ (typ,tyj)) in
+	  let subst = Univ.LMap.empty in
+          let _typ = constrain_type env' j c.const_entry_polymorphic subst
+	    (`SomeWJ (typ,tyj)) in
           feedback_completion_typecheck feedback_id;
           j.uj_val, ctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
@@ -172,28 +183,28 @@ let infer_declaration env kn dcl =
       let (body, ctx), side_eff = Future.join body in
       assert(Univ.ContextSet.is_empty ctx);
       let body = handle_side_effects env body side_eff in
+      let abstract = c.const_entry_polymorphic && not (Option.is_empty kn) in
+      let usubst, univs = Univ.abstract_universes abstract c.const_entry_universes in
       let def, typ, proj = 
 	if c.const_entry_proj then
 	  (** This should be the projection defined as a match. *)
 	  let j = infer env body in
-	  let typ = constrain_type env j c.const_entry_polymorphic (map_option_typ typ) in
+	  let typ = constrain_type env j c.const_entry_polymorphic usubst (map_option_typ typ) in
 	  (** We check it does indeed have the shape of a projection. *)
-	  let inst = Univ.UContext.instance c.const_entry_universes in
-	  let pb = check_projection env (Option.get kn) inst body in
+	  let pb = check_projection env (Option.get kn) usubst body in
 	  (** We build the eta-expanded form. *)
 	  let context, m = decompose_lam_n_assum (pb.proj_npars + 1) body in 
 	  let body' = mkProj (Option.get kn, mkRel 1) in
 	  let body = it_mkLambda_or_LetIn body' context in
-	    Def (Mod_subst.from_val (hcons_constr body)),
+	    Def (Mod_subst.from_val (hcons_constr (Vars.subst_univs_level_constr usubst body))),
 	    typ, Some pb
 	else
 	  let j = infer env body in
-	  let j = hcons_j j in
-	  let typ = constrain_type env j c.const_entry_polymorphic (map_option_typ typ) in
-	  let def = Def (Mod_subst.from_val j.uj_val) in
+	  let typ = constrain_type env j c.const_entry_polymorphic usubst (map_option_typ typ) in
+	  let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
+	  let def = Def (Mod_subst.from_val def) in
 	    def, typ, None
       in
-      let univs = c.const_entry_universes in
 	feedback_completion_typecheck feedback_id;
 	def, typ, proj, c.const_entry_polymorphic,
         univs, c.const_entry_inline_code, c.const_entry_secctx

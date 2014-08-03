@@ -20,7 +20,6 @@ val type_of_inductive    : env -> pinductive -> types
 
 (** Return type as quoted by the user *)
 val type_of_constructor  : env -> pconstructor -> types
-val type_of_constructor_in_ctx  : env -> constructor -> types Univ.in_universe_context
 val type_of_constructors : env -> pinductive -> types array
 
 (** Return constructor types in normal form *)

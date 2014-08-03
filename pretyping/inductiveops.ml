@@ -35,11 +35,6 @@ let type_of_constructor env (cstr,u) =
  Typeops.check_hyps_inclusion env (mkConstruct cstr) mib.mind_hyps;
  Inductive.type_of_constructor (cstr,u) specif
 
-let type_of_constructor_in_ctx env cstr =
- let specif =
-  Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
- Inductive.type_of_constructor_in_ctx cstr specif
-
 (* Return constructor types in user form *)
 let type_of_constructors env (ind,u as indu) =
  let specif = Inductive.lookup_mind_specif env ind in
@@ -101,8 +96,7 @@ let mis_nf_constructor_type ((ind,u),mib,mip) j =
   and nconstr = Array.length mip.mind_consnames in
   let make_Ik k = mkIndU (((fst ind),ntypes-k-1),u) in
   if j > nconstr then error "Not enough constructors in the type.";
-  let univsubst = make_inductive_subst mib u in
-    substl (List.init ntypes make_Ik) (subst_univs_level_constr univsubst specif.(j-1))
+    substl (List.init ntypes make_Ik) (subst_instance_constr u specif.(j-1))
 
 (* Number of constructors *)
 
@@ -248,13 +242,11 @@ let inductive_paramdecls_env env (ind,u) =
 
 let inductive_alldecls (ind,u) =
   let (mib,mip) = Global.lookup_inductive ind in
-  let subst = Inductive.make_inductive_subst mib u in
-    Vars.subst_univs_level_context subst mip.mind_arity_ctxt
+    Vars.subst_instance_context u mip.mind_arity_ctxt
 
 let inductive_alldecls_env env (ind,u) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let subst = Inductive.make_inductive_subst mib u in
-    Vars.subst_univs_level_context subst mip.mind_arity_ctxt
+    Vars.subst_instance_context u mip.mind_arity_ctxt
 
 let constructor_has_local_defs (indsp,j) =
   let (mib,mip) = Global.lookup_inductive indsp in
@@ -353,7 +345,6 @@ let instantiate_context sign args =
 
 let get_arity env ((ind,u),params) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let univsubst = make_inductive_subst mib u in
   let parsign =
     (* Dynamically detect if called with an instance of recursively
        uniform parameter only or also of non recursively uniform
@@ -364,11 +355,11 @@ let get_arity env ((ind,u),params) =
       snd (List.chop nnonrecparams mib.mind_params_ctxt)
     else
       parsign in
-  let parsign = Vars.subst_univs_level_context univsubst parsign in
+  let parsign = Vars.subst_instance_context u parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
   let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in
   let subst = instantiate_context parsign params in
-  let arsign = Vars.subst_univs_level_context univsubst arsign in
+  let arsign = Vars.subst_instance_context u arsign in
   (substl_rel_context subst arsign, Inductive.inductive_sort_family mip)
 
 (* Functions to build standard types related to inductive *)
@@ -583,9 +574,7 @@ let rec instantiate_universes env evdref scl is = function
 
 let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
   match mip.mind_arity with
-  | RegularArity s ->
-    let subst = Inductive.make_inductive_subst mib u in
-      sigma, subst_univs_level_constr subst s.mind_user_arity
+  | RegularArity s -> sigma, subst_instance_constr u s.mind_user_arity
   | TemplateArity ar ->
     let _,scl = Reduction.dest_arity env conclty in
     let ctx = List.rev mip.mind_arity_ctxt in

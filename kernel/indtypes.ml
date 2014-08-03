@@ -683,12 +683,20 @@ let compute_expansion ((kn, _ as ind), u) params ctx =
 let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
-  let hyps =  used_section_variables env inds in
+  let hyps = used_section_variables env inds in
   let nparamargs = rel_context_nhyps params in
   let nparamdecls = rel_context_length params in
+  let subst, ctx = Univ.abstract_universes p ctx in
+  let params = Vars.subst_univs_level_context subst params in
+  let env_ar = 
+    let ctx = Environ.rel_context env_ar in 
+    let ctx' = Vars.subst_univs_level_context subst ctx in
+      Environ.push_rel_context ctx' env
+  in
   (* Check one inductive *)
   let build_one_packet (id,cnames,lc,(ar_sign,ar_kind)) recarg =
     (* Type of constructors in normal form *)
+    let lc = Array.map (Vars.subst_univs_level_constr subst) lc in
     let splayed_lc = Array.map (dest_prod_assum env_ar) lc in
     let nf_lc = Array.map (fun (d,b) -> it_mkProd_or_LetIn b d) splayed_lc in
     let consnrealdecls =
@@ -707,7 +715,8 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
 	let s = sort_of_univ defs in
 	let kelim = allowed_sorts info s in
 	let ar = RegularArity 
-	  { mind_user_arity = ar; mind_sort = s; } in
+	  { mind_user_arity = Vars.subst_univs_level_constr subst ar; 
+	    mind_sort = sort_of_univ (Univ.subst_univs_level_universe subst defs); } in
 	  ar, kelim in
     (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in
@@ -726,7 +735,7 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
       (* Build the inductive packet *)
       { mind_typename = id;
 	mind_arity = arkind;
-	mind_arity_ctxt = ar_sign;
+	mind_arity_ctxt = Vars.subst_univs_level_context subst ar_sign;
 	mind_nrealargs = rel_context_nhyps ar_sign - nparamargs;
 	mind_nrealdecls = rel_context_length ar_sign - nparamdecls;
 	mind_kelim = kelim;

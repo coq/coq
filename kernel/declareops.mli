@@ -29,6 +29,7 @@ val constant_has_body : constant_body -> bool
     Only use this function if you know what you're doing. *)
 
 val body_of_constant : constant_body -> Term.constr option
+val type_of_constant : constant_body -> constant_type
 val constraints_of_constant : constant_body -> Univ.constraints
 val universes_of_constant : constant_body -> Univ.universe_context
 

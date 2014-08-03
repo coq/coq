@@ -382,8 +382,9 @@ let find_opening_node id =
 type variable_info = Names.Id.t * Decl_kinds.binding_kind * Term.constr option * Term.types
 
 type variable_context = variable_info list
-type abstr_list = variable_context Univ.in_universe_context Names.Cmap.t *
-  variable_context Univ.in_universe_context Names.Mindmap.t
+type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
+		  
+type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
 let sectab =
   Summary.ref ([] : ((Names.Id.t * Decl_kinds.binding_kind * 
@@ -427,8 +428,9 @@ let add_section_replacement f g hyps =
   | (vars,exps,abs)::sl ->
     let sechyps,ctx = extract_hyps (vars,hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
+    let subst, ctx = Univ.abstract_universes true ctx in
     let args = instance_from_variable_context (List.rev sechyps) in
-    sectab := (vars,f (Univ.UContext.instance ctx,args) exps,g (sechyps,ctx) abs)::sl
+    sectab := (vars,f (Univ.UContext.instance ctx,args) exps,g (sechyps,subst,ctx) abs)::sl
 
 let add_section_kn kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
@@ -464,7 +466,7 @@ let full_replacement_context () = List.map pi2 !sectab
 let full_section_segment_of_constant con =
   List.map (fun (vars,_,(x,_)) -> fun hyps ->
     named_of_variable_context
-      (try fst (Names.Cmap.find con x)
+      (try pi1 (Names.Cmap.find con x)
        with Not_found -> fst (extract_hyps (vars, hyps)))) !sectab
 
 (*************)

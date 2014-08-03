@@ -458,8 +458,9 @@ let ungeneralized_type_of_constant_type t =
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = Declareops.body_of_constant cb in
-  let typ = ungeneralized_type_of_constant_type cb.const_type in
-  let univs = Declareops.universes_of_constant cb in
+  let typ = Declareops.type_of_constant cb in
+  let typ = ungeneralized_type_of_constant_type typ in
+  let univs = Univ.instantiate_univ_context (Declareops.universes_of_constant cb) in
   hov 0 (pr_polymorphic cb.const_polymorphic ++
     match val_0 with
     | None ->

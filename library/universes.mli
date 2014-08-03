@@ -84,10 +84,10 @@ val leq_constr_universes : constr -> constr -> bool universe_constrained
     the instantiated constraints. *)
 
 val fresh_instance_from_context : universe_context -> 
-  (universe_instance * universe_level_subst) constrained
+  universe_instance constrained
 
 val fresh_instance_from : universe_context -> universe_instance option ->
-  (universe_instance * universe_level_subst) in_universe_context_set
+  universe_instance in_universe_context_set
 
 val fresh_sort_in_family : env -> sorts_family -> 
   sorts in_universe_context_set

@@ -210,7 +210,7 @@ let discharge_class (_,cl) =
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in
   if cl_impl' == cl.cl_impl then cl else
-    let ctx, uctx = abs_context cl in
+    let ctx, usubst, uctx = abs_context cl in
     let ctx, subst = rel_of_variable_context ctx in
     let context = discharge_context ctx subst cl.cl_context in
     let props = discharge_rel_context subst (succ (List.length (fst cl.cl_context))) cl.cl_props in
@@ -379,7 +379,7 @@ let remove_instance i =
   remove_instance_hint i.is_impl
 
 let declare_instance pri local glob =
-  let ty = Global.type_of_global_unsafe (*FIXME*) glob in
+  let ty = Global.type_of_global_unsafe glob in
     match class_of_constr ty with
     | Some (rels, ((tc,_), args) as _cl) ->
       add_instance (new_instance tc pri (not local) (Flags.use_polymorphic_flag ()) glob)

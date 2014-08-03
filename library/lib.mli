@@ -162,12 +162,13 @@ val xml_close_section : (Names.Id.t -> unit) Hook.t
 type variable_info = Names.Id.t * Decl_kinds.binding_kind *
     Term.constr option * Term.types
 type variable_context = variable_info list 
+type abstr_info = variable_context * Univ.universe_level_subst * Univ.UContext.t
 
 val instance_from_variable_context : variable_context -> Names.Id.t array
 val named_of_variable_context : variable_context -> Context.named_context
 
-val section_segment_of_constant : Names.constant -> variable_context Univ.in_universe_context
-val section_segment_of_mutual_inductive: Names.mutual_inductive -> variable_context Univ.in_universe_context
+val section_segment_of_constant : Names.constant -> abstr_info
+val section_segment_of_mutual_inductive: Names.mutual_inductive -> abstr_info
 
 val section_instance : Globnames.global_reference -> Univ.universe_instance * Names.Id.t array
 val is_in_section : Globnames.global_reference -> bool

@@ -59,10 +59,7 @@ let check_privacy_block mib =
 (* Christine Paulin, 1996 *)
 
 let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
-  let usubst = Inductive.make_inductive_subst mib u in
-  let lnamespar = Vars.subst_univs_level_context usubst
-    mib.mind_params_ctxt
-  in
+  let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
   let () = check_privacy_block mib in
   let () = 
     if not (Sorts.List.mem kind (elim_sorts specif)) then
@@ -282,9 +279,8 @@ let mis_make_indrec env sigma listdepkind mib u =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let evdref = ref sigma in
-  let usubst = Inductive.make_inductive_subst mib u in
   let lnonparrec,lnamesparrec =
-    context_chop (nparams-nparrec) (Vars.subst_univs_level_context usubst mib.mind_params_ctxt) in
+    context_chop (nparams-nparrec) (Vars.subst_instance_context u mib.mind_params_ctxt) in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.make mib.mind_ntypes (None : (bool * constr) option) in

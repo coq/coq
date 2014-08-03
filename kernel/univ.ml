@@ -254,6 +254,7 @@ struct
     | Prop
     | Set
     | Level of int * DirPath.t
+    | Var of int
 
   (* Hash-consing *)
 
@@ -264,6 +265,7 @@ struct
       | Set, Set -> true
       | Level (n,d), Level (n',d') ->
         Int.equal n n' && DirPath.equal d d'
+      | Var n, Var n' -> true
       | _ -> false
 
   let compare u v =
@@ -278,20 +280,26 @@ struct
       if i1 < i2 then -1
       else if i1 > i2 then 1
       else DirPath.compare dp1 dp2
-
+    | Level _, _ -> -1
+    | _, Level _ -> 1
+    | Var n, Var m -> Int.compare n m
+      
   let hcons = function
     | Prop as x -> x
     | Set as x -> x
     | Level (n,d) as x -> 
       let d' = Names.DirPath.hcons d in
         if d' == d then x else Level (n,d')
+    | Var n as x -> x
 
   open Hashset.Combine
 
   let hash = function
     | Prop -> combinesmall 1 0
     | Set -> combinesmall 1 1
-    | Level (n, d) -> combinesmall 2 (combine n (Names.DirPath.hash d))
+    | Var n -> combinesmall 2 n
+    | Level (n, d) -> combinesmall 3 (combine n (Names.DirPath.hash d))
+
 end
 
 module Level = struct
@@ -302,6 +310,7 @@ module Level = struct
   | Prop
   | Set
   | Level of int * DirPath.t
+  | Var of int
 
   (** Embed levels with their hash value *)
   type t = { 
@@ -365,6 +374,7 @@ module Level = struct
     | Prop -> "Prop"
     | Set -> "Set"
     | Level (n,d) -> Names.DirPath.to_string d^"."^string_of_int n
+    | Var n -> "Var(" ^ string_of_int n ^ ")"
 
   let pr u = str (to_string u)
 
@@ -373,6 +383,10 @@ module Level = struct
     | Prop, Set | Set, Prop -> true
     | _ -> false
 
+  let vars = Array.init 20 (fun i -> make (Var i))
+
+  let var n = 
+    if n < 20 then vars.(n) else make (Var n)
 
   let make m n = make (Level (n, Names.DirPath.hcons m))
 
@@ -1690,7 +1704,7 @@ let level_subst_of f =
     with Not_found -> l
      
 module Instance : sig 
-    type t
+    type t = Level.t array
 
     val empty : t
     val is_empty : t -> bool
@@ -1894,12 +1908,6 @@ type 'a in_universe_context_set = 'a * universe_context_set
 
 (** Substitutions. *)
 
-let make_universe_subst inst (ctx, csts) = 
-  try Array.fold_left2 (fun acc c i -> LMap.add c i acc)
-        LMap.empty (Instance.to_array ctx) (Instance.to_array inst)
-  with Invalid_argument _ -> 
-    anomaly (Pp.str "Mismatched instance and context when building universe substitution")
-
 let empty_subst = LMap.empty
 let is_empty_subst = LMap.is_empty
 
@@ -1929,10 +1937,6 @@ let subst_univs_level_constraints subst csts =
   Constraint.fold 
     (fun c -> Option.fold_right Constraint.add (subst_univs_level_constraint subst c))
     csts Constraint.empty 
-
-(** Substitute instance inst for ctx in csts *)
-let instantiate_univ_context subst (_, csts) = 
-  subst_univs_level_constraints subst csts
 
 (** With level to universe substitutions. *)
 type universe_subst_fn = universe_level -> universe
@@ -1975,6 +1979,62 @@ let subst_univs_constraints subst csts =
   Constraint.fold 
     (fun c cstrs -> subst_univs_constraint subst c cstrs)
     csts Constraint.empty 
+
+
+let subst_instance_level s l =
+  match l.Level.data with
+  | Level.Var n -> s.(n) 
+  | _ -> l
+
+let subst_instance_instance s i = 
+  Array.smartmap (fun l -> subst_instance_level s l) i
+
+let subst_instance_universe s u =
+  let f x = Universe.Expr.map (fun u -> subst_instance_level s u) x in
+  let u' = Universe.smartmap f u in
+    if u == u' then u
+    else Universe.sort u'
+
+let subst_instance_constraint s (u,d,v as c) =
+  let u' = subst_instance_level s u in
+  let v' = subst_instance_level s v in
+    if u' == u && v' == v then c
+    else (u',d,v')
+
+let subst_instance_constraints s csts =
+  Constraint.fold 
+    (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
+    csts Constraint.empty 
+
+(** Substitute instance inst for ctx in csts *)
+let instantiate_univ_context (ctx, csts) = 
+  (ctx, subst_instance_constraints ctx csts)
+
+let instantiate_univ_constraints u (_, csts) = 
+  subst_instance_constraints u csts
+
+let make_instance_subst i = 
+  let arr = Instance.to_array i in
+    Array.fold_left_i (fun i acc l ->
+      LMap.add l (Level.var i) acc)
+      LMap.empty arr
+
+let make_inverse_instance_subst i = 
+  let arr = Instance.to_array i in
+    Array.fold_left_i (fun i acc l ->
+      LMap.add (Level.var i) l acc)
+      LMap.empty arr
+
+let abstract_universes poly ctx =
+  let instance = UContext.instance ctx in
+    if poly then
+      let subst = make_instance_subst instance in
+      let cstrs = subst_univs_level_constraints subst 
+	(UContext.constraints ctx)
+      in
+      let ctx = UContext.make (instance, cstrs) in
+	subst, ctx
+    else empty_level_subst, ctx
 
 (** Pretty-printing *)
 
@@ -2065,7 +2125,11 @@ let eq_levels = Level.equal
 let equal_universes = Universe.equal
 
 
-(*
+let subst_instance_constraints = 
+  if Flags.profile then 
+    let key = Profile.declare_profile "subst_instance_constraints" in
+      Profile.profile2 key subst_instance_constraints
+  else subst_instance_constraints
 
 let merge_constraints = 
   if Flags.profile then 
@@ -2089,4 +2153,3 @@ let check_leq =
     let check_leq_key = Profile.declare_profile "check_leq" in
       Profile.profile3 check_leq_key check_leq
   else check_leq
-*)

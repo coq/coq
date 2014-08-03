@@ -532,8 +532,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 	      (mk_tycon (applist (mkIndU ind, args))) in
 	    j', (ind, args))
     in
-    let usubst = make_inductive_subst (fst (lookup_mind_specif env ind)) u in
-    let ty = Vars.subst_univs_level_constr usubst ty in
+    let ty = Vars.subst_instance_constr u ty in
     let ty = substl (recty.uj_val :: List.rev pars) ty in
     let j = {uj_val = mkProj (cst,recty.uj_val); uj_type = ty} in
       inh_conv_coerce_to_tycon loc env evdref j tycon

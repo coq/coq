@@ -35,14 +35,12 @@ val lookup_mind_specif : env -> inductive -> mind_specif
 (** {6 Functions to build standard types related to inductive } *)
 val ind_subst : mutual_inductive -> mutual_inductive_body -> universe_instance -> constr list
 
-val make_inductive_subst : mutual_inductive_body -> universe_instance -> universe_level_subst
-
 val inductive_instance : mutual_inductive_body -> universe_instance
 val inductive_context : mutual_inductive_body -> universe_context
 val inductive_paramdecls : mutual_inductive_body puniverses -> rel_context
 
 val instantiate_inductive_constraints : 
-  mutual_inductive_body -> universe_level_subst -> constraints
+  mutual_inductive_body -> universe_instance -> constraints
 
 val constrained_type_of_inductive : env -> mind_specif puniverses -> types constrained
 val constrained_type_of_inductive_knowing_parameters : 
@@ -59,7 +57,6 @@ val elim_sorts : mind_specif -> sorts_family list
 
 val constrained_type_of_constructor : pconstructor -> mind_specif -> types constrained
 val type_of_constructor : pconstructor -> mind_specif -> types
-val type_of_constructor_in_ctx : constructor -> mind_specif -> types in_universe_context
 
 (** Return constructor types in normal form *)
 val arities_of_constructors : pinductive -> mind_specif -> types array

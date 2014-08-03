@@ -27,15 +27,14 @@ sig
   val equal : t -> t -> bool
   (** Equality function *)
 
-  (* val hash : t -> int *)
-  (** Hash function *)
-
   val make : Names.DirPath.t -> int -> t
   (** Create a new universe level from a unique identifier and an associated
       module path. *)
 
   val pr : t -> Pp.std_ppcmds
   (** Pretty-printing *)
+
+  val var : int -> t
 end
 
 type universe_level = Level.t
@@ -370,11 +369,6 @@ val subst_univs_level_level : universe_level_subst -> universe_level -> universe
 val subst_univs_level_universe : universe_level_subst -> universe -> universe
 val subst_univs_level_constraints : universe_level_subst -> constraints -> constraints
 
-(** Make a universe level substitution: the instances must match. *)
-val make_universe_subst : Instance.t -> universe_context -> universe_level_subst
-(** Get the instantiated graph. *)
-val instantiate_univ_context : universe_level_subst -> universe_context -> constraints
-
 (** Level to universe substitutions. *)
 
 val empty_subst : universe_subst
@@ -383,6 +377,21 @@ val make_subst : universe_subst -> universe_subst_fn
 
 val subst_univs_universe : universe_subst_fn -> universe -> universe
 val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
+
+(** Substitution of instances *)
+val subst_instance_instance : universe_instance -> universe_instance -> universe_instance
+val subst_instance_universe : universe_instance -> universe -> universe
+val subst_instance_constraints : universe_instance -> constraints -> constraints
+
+val make_instance_subst : universe_instance -> universe_level_subst
+val make_inverse_instance_subst : universe_instance -> universe_level_subst
+
+val abstract_universes : bool -> universe_context -> universe_level_subst * universe_context
+
+(** Get the instantiated graph. *)
+val instantiate_univ_context : universe_context -> universe_context
+
+val instantiate_univ_constraints : universe_instance -> universe_context -> constraints
 
 (** {6 Pretty-printing of universes. } *)
 

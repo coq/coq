@@ -43,9 +43,9 @@ module SearchBlacklist =
    of the object, the assumptions that will make it possible to print its type,
    and the constr term that represent its type. *)
 
-let iter_constructors indsp fn env nconstr =
+let iter_constructors indsp u fn env nconstr =
   for i = 1 to nconstr do
-    let typ, _ = Inductiveops.type_of_constructor_in_ctx env (indsp, i) in
+    let typ = Inductiveops.type_of_constructor env ((indsp, i), u) in
     fn (ConstructRef (indsp, i)) env typ
   done
 
@@ -68,11 +68,12 @@ let iter_declarations (fn : global_reference -> env -> constr -> unit) =
     let mib = Global.lookup_mind mind in
     let iter_packet i mip =
       let ind = (mind, i) in
-      let i = (ind, Inductive.inductive_instance mib) in
+      let u = Inductive.inductive_instance mib in
+      let i = (ind, u) in
       let typ = Inductiveops.type_of_inductive env i in
       let () = fn (IndRef ind) env typ in
       let len = Array.length mip.mind_user_lc in
-      iter_constructors ind fn env len
+      iter_constructors ind u fn env len
     in
     Array.iteri iter_packet mib.mind_packets
   | _ -> ()

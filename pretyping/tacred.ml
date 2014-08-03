@@ -896,6 +896,12 @@ let whd_simpl_orelse_delta_but_fix_old env sigma c =
   in app_stack (redrec (c, empty_stack))
 *)
 
+let whd_simpl_stack = 
+  if Flags.profile then 
+    let key = Profile.declare_profile "whd_simpl_stack" in
+      Profile.profile3 key whd_simpl_stack
+  else whd_simpl_stack
+
 (* Same as [whd_simpl] but also reduces constants that do not hide a
    reducible fix, but does this reduction of constants only until it
    immediately hides a non reducible fix or a cofix *)

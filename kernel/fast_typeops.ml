@@ -302,8 +302,7 @@ let judge_of_projection env p c ct =
     with Not_found -> error_case_not_inductive env (make_judge c ct)
   in
     assert(eq_mind pb.proj_ind (fst ind));
-    let usubst = make_inductive_subst (fst (lookup_mind_specif env ind)) u in
-    let ty = Vars.subst_univs_level_constr usubst pb.Declarations.proj_type in
+    let ty = Vars.subst_instance_constr u pb.Declarations.proj_type in
       substl (c :: List.rev args) ty
       
 

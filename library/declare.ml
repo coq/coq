@@ -158,9 +158,9 @@ let discharge_constant ((sp, kn), obj) =
 
   let from = Global.lookup_constant con in
   let modlist = replacement_context () in
-  let hyps,uctx = section_segment_of_constant con in
+  let hyps,subst,uctx = section_segment_of_constant con in
   let new_hyps = (discharged_hyps kn hyps) @ obj.cst_hyps in
-  let abstract = (named_of_variable_context hyps, uctx) in
+  let abstract = (named_of_variable_context hyps, subst, uctx) in
   let new_decl = GlobalRecipe{ from; info = { Opaqueproof.modlist; abstract}} in
   Some { obj with cst_hyps = new_hyps; cst_decl = new_decl; }
 
@@ -227,7 +227,14 @@ let declare_sideff env fix_exn se =
     | Declarations.TemplateArity _ -> None in
   let cst_of cb =
     let pt, opaque = pt_opaque_of cb in
-    let ty = ty_of cb in
+    let univs, subst = 
+      if cb.const_polymorphic then
+	let univs = Univ.instantiate_univ_context cb.const_universes in
+	  univs, Vars.subst_instance_constr (Univ.UContext.instance univs)
+      else cb.const_universes, fun x -> x
+    in
+    let pt = (subst (fst pt), snd pt) in
+    let ty = Option.map subst (ty_of cb) in
     { cst_decl = ConstantEntry (DefinitionEntry {
         const_entry_body = Future.from_here ~fix_exn (pt, Declareops.no_seff);
         const_entry_secctx = Some cb.Declarations.const_hyps;
@@ -236,7 +243,7 @@ let declare_sideff env fix_exn se =
         const_entry_inline_code = false;
         const_entry_feedback = None;
 	const_entry_polymorphic = cb.const_polymorphic;
-	const_entry_universes = cb.const_universes;
+	const_entry_universes = univs;
 	const_entry_proj = false;
     });
     cst_hyps = [] ;
@@ -352,7 +359,7 @@ let discharge_inductive ((sp,kn),(dhyps,mie)) =
   let mind = Global.mind_of_delta_kn kn in
   let mie = Global.lookup_mind mind in
   let repl = replacement_context () in
-  let sechyps,uctx = section_segment_of_mutual_inductive mind in
+  let sechyps,usubst,uctx = section_segment_of_mutual_inductive mind in
   Some (discharged_hyps kn sechyps,
         Discharge.process_inductive (named_of_variable_context sechyps,uctx) repl mie)
 

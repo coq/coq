@@ -83,3 +83,7 @@ val subst_univs_constr : universe_subst -> constr -> constr
 
 val subst_univs_level_constr : universe_level_subst -> constr -> constr
 val subst_univs_level_context : Univ.universe_level_subst -> rel_context -> rel_context
+
+(** Instance substitution for polymorphism. *)
+val subst_instance_constr : universe_instance -> constr -> constr
+val subst_instance_context : universe_instance -> rel_context -> rel_context

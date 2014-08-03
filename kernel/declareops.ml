@@ -37,10 +37,22 @@ let hcons_template_arity ar =
 
 (** {6 Constants } *)
 
+let instantiate cb c =
+  if cb.const_polymorphic then 
+    Vars.subst_instance_constr (Univ.UContext.instance cb.const_universes) c
+  else c
+
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
-  | Def c -> Some (force_constr c)
-  | OpaqueDef o -> Some (Opaqueproof.force_proof o)
+  | Def c -> Some (instantiate cb (force_constr c))
+  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof o))
+
+let type_of_constant cb =
+  match cb.const_type with
+  | RegularArity t as x -> 
+    let t' = instantiate cb t in
+      if t' == t then x else RegularArity t'
+  | TemplateArity _ as x -> x
 
 let constraints_of_constant cb = Univ.Constraint.union 
   (Univ.UContext.constraints cb.const_universes)
@@ -57,7 +69,9 @@ let universes_of_constant cb =
       (Univ.ContextSet.to_context (Opaqueproof.force_constraints o))
 
 let universes_of_polymorphic_constant cb = 
-  if cb.const_polymorphic then universes_of_constant cb
+  if cb.const_polymorphic then 
+    let univs = universes_of_constant cb in
+      Univ.instantiate_univ_context univs
   else Univ.UContext.empty
 
 let constant_has_body cb = match cb.const_body with
