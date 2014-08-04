@@ -349,6 +349,7 @@ end = struct
   let get_branch head = get_branch !vcs head
   let get_branch_pos head = (get_branch head).pos
   let new_node ?(id=Stateid.fresh ()) () =
+    assert(Vcs_.get_info !vcs id = None);
     vcs := set_info !vcs id (default_info ());
     id
   let merge id ~ours ?into branch =
@@ -573,9 +574,10 @@ end = struct
 
   let is_cached id =
     Stateid.equal id !cur_id ||
-    match VCS.get_info id with
-    | { state = Some _ } -> true
-    | _ -> false
+    try match VCS.get_info id with
+      | { state = Some _ } -> true
+      | _ -> false
+    with VCS.Expired -> false
 
   let install_cached id =
     if Stateid.equal id !cur_id then () else (* optimization *)
@@ -1980,7 +1982,7 @@ let edit_at id =
     match Stateid.get e with
     | None ->
         VCS.print ();
-        anomaly (str ("edit_at: "^string_of_ppcmds (Errors.print_no_report e)))
+        anomaly (str ("edit_at "^Stateid.to_string id^": "^string_of_ppcmds (Errors.print_no_report e)))
     | Some (_, id) ->
         prerr_endline ("Failed at state " ^ Stateid.to_string id);
         VCS.restore vcs;
