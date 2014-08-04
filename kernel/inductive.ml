@@ -1107,9 +1107,10 @@ let check_one_cofix env nbfix def deftype =
                     then process_args_of_constr (lr, lrar)
                     else raise (CoFixGuardError
 		                 (env,RecCallInNonRecArgOfConstructor t))
-                  else
-                    check_rec_call env true n rar t;
-                    process_args_of_constr (lr, lrar)
+                  else begin
+                      check_rec_call env true n rar t;
+                      process_args_of_constr (lr, lrar)
+		    end
               | [],_ -> ()
               | _ -> anomaly_ill_typed ()
             in process_args_of_constr (realargs, lra)
