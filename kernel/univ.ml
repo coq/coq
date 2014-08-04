@@ -265,7 +265,7 @@ struct
       | Set, Set -> true
       | Level (n,d), Level (n',d') ->
         Int.equal n n' && DirPath.equal d d'
-      | Var n, Var n' -> true
+      | Var n, Var n' -> Int.equal n n'
       | _ -> false
 
   let compare u v =
