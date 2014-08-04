@@ -145,6 +145,7 @@ type +'a tactic
 val apply : Environ.env -> 'a tactic -> proofview -> 'a
                                                    * proofview
                                                    * (bool*Goal.goal list*Goal.goal list)
+                                                   * Proofview_monad.Info.tree
 
 (** {7 Monadic primitives} *)
 
@@ -470,6 +471,18 @@ module Refine : sig
   val refine_casted : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map*Constr.t) -> unit tactic
   (** Like {!refine} except the refined term is coerced to the conclusion of the
       current goal. *)
+
+end
+
+
+(** {6 Trace} *)
+
+module Trace : sig
+
+  val log : Proofview_monad.lazy_msg -> unit tactic
+  val name_tactic : Proofview_monad.lazy_msg -> 'a tactic -> 'a tactic
+
+  val pr_info : Proofview_monad.Info.tree -> Pp.std_ppcmds
 
 end
 

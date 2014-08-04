@@ -209,10 +209,10 @@ type +'a tactic = 'a Proof.t
 
 (** Applies a tactic to the current proofview. *)
 let apply env t sp =
-  let (next_r,(next_state,_),status) =
+  let (next_r,(next_state,_),status,info) =
     Logic_monad.NonLogical.run (Proof.run t () (sp,env))
   in
-  next_r,next_state,status
+  next_r,next_state,status,Trace.to_tree info
 
 
 
@@ -712,9 +712,10 @@ let tclTIMEOUT n t =
         | e -> Logic_monad.NonLogical.raise e
       end
   end >>= function
-    | Util.Inl (res,s,m) ->
+    | Util.Inl (res,s,m,i) ->
         Proof.set s >>
         Proof.put m >>
+        Proof.update (fun _ -> i) >>
         return res
     | Util.Inr e -> tclZERO e
 
@@ -959,6 +960,19 @@ end
 
 
 
+(** {6 Trace} *)
+
+module Trace = struct
+
+  let log m = InfoL.leaf (Info.Msg m)
+  let name_tactic m t = InfoL.tag (Info.Tactic m) t
+
+  let pr_info = Info.print
+
+end
+
+
+
 (** {6 Non-logical state} *)
 
 module NonLogical = Logic_monad.NonLogical
@@ -1054,7 +1068,7 @@ module V82 = struct
   let of_tactic t gls =
     try
       let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] } in
-      let (_,final,_) = apply (GoalV82.env gls.Evd.sigma gls.Evd.it) t init in
+      let (_,final,_,_) = apply (GoalV82.env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = final.comb }
     with Logic_monad.TacticFailure e as src ->
       let src = Errors.push src in

@@ -154,6 +154,12 @@ module type Param = sig
   (** Read-write *)
   type s
 
+  (** Update-only. Essentially a writer on [u->u]. *)
+  type u
+
+  (** [u] must be pointed. *)
+  val uunit : u
+
 end
 
 
@@ -164,6 +170,7 @@ struct
       state-passing-style monad.*)
   type state = {
     rstate : P.e;
+    ustate : P.u;
     wstate : P.w;
     sstate : P.s;
   }
@@ -256,6 +263,9 @@ struct
   let put (w : P.w) : unit t = (); fun s ->
     { iolist = fun nil cons -> cons ((), { s with wstate = P.wprod s.wstate w }) nil }
 
+  let update (f : P.u -> P.u) : unit t = (); fun s ->
+    { iolist = fun nil cons -> cons ((), { s with ustate = f s.ustate }) nil }
+
   (** List observation *)
 
   let once (m : 'a t) : 'a t = (); fun s ->
@@ -295,10 +305,10 @@ struct
       end }
 
   let run m r s =
-    let s = { wstate = P.wunit; rstate = r; sstate = s } in
+    let s = { wstate = P.wunit; ustate = P.uunit; rstate = r; sstate = s } in
     let m = m s in
     let nil e = NonLogical.raise (TacticFailure e) in
-    let cons (x, s) _ = NonLogical.return (x, s.sstate, s.wstate) in
+    let cons (x, s) _ = NonLogical.return (x, s.sstate, s.wstate, s.ustate) in
     m.iolist nil cons
 
  end

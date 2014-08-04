@@ -118,6 +118,12 @@ module type Param = sig
   (** Read-write *)
   type s
 
+  (** Update-only. Essentially a writer on [u->u]. *)
+  type u
+
+  (** [u] must be pointed. *)
+  val uunit : u
+
 end
 
 module Logical (P:Param) : sig
@@ -131,6 +137,7 @@ module Logical (P:Param) : sig
   val modify : (P.s -> P.s) -> unit t
   val put : P.w -> unit t
   val current : P.e t
+  val update : (P.u -> P.u) -> unit t
 
   val zero : exn -> 'a t
   val plus : 'a t -> (exn -> 'a t) -> 'a t
@@ -140,5 +147,5 @@ module Logical (P:Param) : sig
 
   val lift : 'a NonLogical.t -> 'a t
 
-  val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w) NonLogical.t
+  val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w * P.u) NonLogical.t
 end
