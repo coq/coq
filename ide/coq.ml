@@ -151,12 +151,12 @@ let print_status = function
 let check_connection args =
   let lines = ref [] in
   let argstr = String.concat " " (List.map Filename.quote args) in
-  let cmd = Filename.quote (coqtop_path ()) ^ " -batch " ^ argstr in
+  let cmd = Filename.quote (coqtop_path ()) ^ " -batch -ideslave " ^ argstr in
   let cmd = requote cmd in
   try
-    let ic = Unix.open_process_in cmd in
-    lines := read_all_lines ic;
-    match Unix.close_process_in ic with
+    let oc,ic,ec = Unix.open_process_full cmd (Unix.environment ()) in
+    lines := read_all_lines oc @ read_all_lines ec;
+    match Unix.close_process_full (oc,ic,ec) with
     | Unix.WEXITED 0 -> () (* coqtop seems ok *)
     | st -> raise (WrongExitStatus (print_status st))
   with e -> connection_error cmd !lines e
