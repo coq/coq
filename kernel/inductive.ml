@@ -1113,7 +1113,7 @@ let rec codomain_is_coind env c =
 	  raise (CoFixGuardError (env, CodomainNotInductiveType b)))
 
 let check_one_cofix env nbfix def deftype =
-  let rec check_rec_call env alreadygrd n vlra  t =
+  let rec check_rec_call env alreadygrd n tree vlra  t =
     if not (noccur_with_meta n nbfix t) then
       let c,args = decompose_app (whd_betadeltaiota env t) in
       match kind_of_term c with
@@ -1125,7 +1125,7 @@ let check_one_cofix env nbfix def deftype =
             else if not(List.for_all (noccur_with_meta n nbfix) args) then
 	      raise (CoFixGuardError (env,NestedRecursiveOccurrences))
 	| Construct ((_,i as cstr_kn),u)  ->
-            let lra = (dest_subterms vlra).(i-1) in
+            let lra = vlra.(i-1) in
             let mI = inductive_of_constructor cstr_kn in
 	    let (mib,mip) = lookup_mind_specif env mI in
             let realargs = List.skipn mib.mind_nparams args in
@@ -1137,7 +1137,7 @@ let check_one_cofix env nbfix def deftype =
                     else raise (CoFixGuardError
 		                 (env,RecCallInNonRecArgOfConstructor t))
                   else begin
-                      check_rec_call env true n rar t;
+                      check_rec_call env true n rar (dest_subterms rar) t;
                       process_args_of_constr (lr, lrar)
 		    end
               | [],_ -> ()
@@ -1148,7 +1148,7 @@ let check_one_cofix env nbfix def deftype =
 	    let () = assert (List.is_empty args) in
             if noccur_with_meta n nbfix a then
               let env' = push_rel (x, None, a) env in
-              check_rec_call env' alreadygrd (n+1) vlra b
+              check_rec_call env' alreadygrd (n+1) tree vlra b
             else
 	      raise (CoFixGuardError (env,RecCallInTypeOfAbstraction a))
 
@@ -1158,8 +1158,8 @@ let check_one_cofix env nbfix def deftype =
 	      if Array.for_all (noccur_with_meta n nbfix) varit then
 		let nbfix = Array.length vdefs in
 		let env' = push_rec_types recdef env in
-		(Array.iter (check_rec_call env' alreadygrd (n+nbfix) vlra) vdefs;
-		 List.iter (check_rec_call env alreadygrd n vlra) args)
+		(Array.iter (check_rec_call env' alreadygrd (n+nbfix) tree vlra) vdefs;
+		 List.iter (check_rec_call env alreadygrd n tree vlra) args)
               else
 		raise (CoFixGuardError (env,RecCallInTypeOfDef c))
 	    else
@@ -1167,15 +1167,16 @@ let check_one_cofix env nbfix def deftype =
 
 	| Case (_,p,tm,vrest) ->
 	   begin
-	     let vlra = match restrict_spec env (Subterm (Strict, vlra)) p with
+	     let tree = match restrict_spec env (Subterm (Strict, tree)) p with
 	     | Dead_code -> assert false
-	     | Subterm (_, vlra') -> vlra'
+	     | Subterm (_, tree') -> tree'
 	     | _ -> raise (CoFixGuardError (env, ReturnPredicateNotCoInductive c))
 	     in
                if (noccur_with_meta n nbfix p) then
 		 if (noccur_with_meta n nbfix tm) then
 		   if (List.for_all (noccur_with_meta n nbfix) args) then
-		     Array.iter (check_rec_call env alreadygrd n vlra) vrest
+		     let vlra = dest_subterms tree in
+		     Array.iter (check_rec_call env alreadygrd n tree vlra) vrest
 		   else
 		     raise (CoFixGuardError (env,RecCallInCaseFun c))
 		 else
@@ -1186,13 +1187,13 @@ let check_one_cofix env nbfix def deftype =
 
 	| Meta _ -> ()
         | Evar _ ->
-	    List.iter (check_rec_call env alreadygrd n vlra) args
+	    List.iter (check_rec_call env alreadygrd n tree vlra) args
 
 	| _    -> raise (CoFixGuardError (env,NotGuardedForm t)) in
 
   let ((mind, _),_) = codomain_is_coind env deftype in
   let vlra = lookup_subterms env mind in
-  check_rec_call env false 1 vlra def
+  check_rec_call env false 1 vlra (dest_subterms vlra) def
 
 (* The  function which checks that the whole block of definitions
    satisfies the guarded condition *)
