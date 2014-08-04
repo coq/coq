@@ -103,6 +103,9 @@ let rec classify_vernac e =
     | VernacUnsetOption (["Default";"Proof";"Using"])
     | VernacSetOption (["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
+    | VernacDefinition (
+       (Some Decl_kinds.Discharge,Decl_kinds.Definition),(_,i),ProveBody _) ->
+        VtStartProof("Classic",Doesn'tGuaranteeOpacity,[i]), VtLater
     | VernacDefinition (_,(_,i),ProveBody _) ->
         VtStartProof("Classic",GuaranteesOpacity,[i]), VtLater
     | VernacStartTheoremProof (_,l,_) ->
