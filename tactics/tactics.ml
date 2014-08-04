@@ -3748,7 +3748,7 @@ let abstract_subproof id gk tac =
   let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
     try Pfedit.build_constant_by_tactic ~goal_kind:gk id ectx secsign concl solve_tac
-    with Proof_errors.TacticFailure e as src ->
+    with Proofview_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
        means that [e] comes from [tac] failing to yield enough

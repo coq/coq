@@ -224,7 +224,7 @@ let apply env t sp =
 
 
 let catchable_exception = function
-  | Proof_errors.Exception _ -> false
+  | Proofview_monad.Exception _ -> false
   | e -> Errors.noncritical e
 
 
@@ -578,8 +578,8 @@ let tclTIMEOUT n t =
           (fun r -> Proofview_monad.NonLogical.ret (Util.Inl r))
       end
       begin function
-        | Proof_errors.Timeout -> Proofview_monad.NonLogical.ret (Util.Inr Timeout)
-        | Proof_errors.TacticFailure e as src ->
+        | Proofview_monad.Timeout -> Proofview_monad.NonLogical.ret (Util.Inr Timeout)
+        | Proofview_monad.TacticFailure e as src ->
           let e = Backtrace.app_backtrace ~src ~dst:e in
           Proofview_monad.NonLogical.ret (Util.Inr e)
         | e -> Proofview_monad.NonLogical.raise e
@@ -812,7 +812,7 @@ module V82 = struct
       let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] } in
       let (_,final,_) = apply (Goal.V82.env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = final.comb }
-    with Proof_errors.TacticFailure e as src ->
+    with Proofview_monad.TacticFailure e as src ->
       let src = Errors.push src in
       let e = Backtrace.app_backtrace ~src ~dst:e in
       raise e

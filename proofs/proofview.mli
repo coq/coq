@@ -465,8 +465,8 @@ module NonLogical : sig
      [()]. *)
   val seq : unit t -> 'a t -> 'a t
 
-  (* [new_ref x] creates a reference containing [x]. *)
-  val new_ref : 'a -> 'a ref t
+  (* [ref x] creates a reference containing [x]. *)
+  val ref : 'a -> 'a ref t
   (* [set r x] assigns [x] to [r]. *)
   val set : 'a ref -> 'a -> unit t
   (* [get r] returns the value of [r] *)

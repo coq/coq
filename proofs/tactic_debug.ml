@@ -76,9 +76,9 @@ let goal_com tac =
 (* [run (new_ref _)] gives us a ref shared among [NonLogical.t]
    expressions. It avoids parametrizing everything over a
    reference. *)
-let skipped = Proofview.NonLogical.run (Proofview.NonLogical.new_ref 0)
-let skip = Proofview.NonLogical.run (Proofview.NonLogical.new_ref 0)
-let breakpoint = Proofview.NonLogical.run (Proofview.NonLogical.new_ref None)
+let skipped = Proofview.NonLogical.run (Proofview.NonLogical.ref 0)
+let skip = Proofview.NonLogical.run (Proofview.NonLogical.ref 0)
+let breakpoint = Proofview.NonLogical.run (Proofview.NonLogical.ref None)
 
 let rec drop_spaces inst i =
   if String.length inst > i && inst.[i] == ' ' then drop_spaces inst (i+1)
