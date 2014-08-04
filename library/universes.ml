@@ -505,7 +505,8 @@ let subst_univs_fn_puniverses lsubst (c, u as cu) =
   let u' = Instance.subst_fn lsubst u in
     if u' == u then cu else (c, u')
 
-let nf_evars_and_universes_gen f subst =
+let nf_evars_and_universes_opt_subst f subst =
+  let subst = fun l -> match LMap.find l subst with None -> raise Not_found | Some l' -> l' in
   let lsubst = Univ.level_subst_of subst in
   let rec aux c =
     match kind_of_term c with
@@ -527,10 +528,6 @@ let nf_evars_and_universes_gen f subst =
 	if u' == u then c else mkSort (sort_of_univ u')
     | _ -> map_constr aux c
   in aux
-
-let nf_evars_and_universes_opt_subst f subst =
-  let subst = fun l -> match LMap.find l subst with None -> raise Not_found | Some l' -> l' in
-    nf_evars_and_universes_gen f subst
 
 let fresh_universe_context_set_instance ctx =
   if ContextSet.is_empty ctx then LMap.empty, ctx
@@ -788,9 +785,7 @@ let normalize_context_set ctx us algs =
   (* Noneqs is now in canonical form w.r.t. equality constraints, 
      and contains only inequality constraints. *)
   let noneqs = subst_univs_level_constraints subst noneqs in
-  let us = 
-    LMap.subst_union (LMap.map (fun v -> Some (Universe.make v)) subst) us
-  in
+  let us = LMap.fold (fun u v acc -> LMap.add u (Some (Universe.make v)) acc) subst us in
   (* Compute the left and right set of flexible variables, constraints
      mentionning other variables remain in noneqs. *)
   let noneqs, ucstrsl, ucstrsr = 

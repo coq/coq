@@ -959,12 +959,12 @@ let merge_uctx rigid uctx ctx' =
     match rigid with
     | UnivRigid -> uctx
     | UnivFlexible b ->
-      let uvars' = Univ.LMap.subst_union uctx.uctx_univ_variables 
-	(Univ.LMap.bind (fun _ -> None) (Univ.ContextSet.levels ctx')) in
+      let levels = Univ.ContextSet.levels ctx' in
+      let uvars' = Univ.LMap.bind (fun _ -> None) levels in
+      let uvars' = Univ.LMap.fold Univ.LMap.add uctx.uctx_univ_variables uvars' in
 	if b then
 	  { uctx with uctx_univ_variables = uvars';
-	  uctx_univ_algebraic = Univ.LSet.union uctx.uctx_univ_algebraic 
-	      (Univ.ContextSet.levels ctx') }
+	  uctx_univ_algebraic = Univ.LSet.union uctx.uctx_univ_algebraic levels }
 	else { uctx with uctx_univ_variables = uvars' }
   in
     { uctx with uctx_local = Univ.ContextSet.union uctx.uctx_local ctx';
