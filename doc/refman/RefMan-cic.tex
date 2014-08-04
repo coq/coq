@@ -735,7 +735,7 @@ with forest : Set :=
 % parameters variables.
 The \Coq\ type-checker verifies that all
 parameters are applied in the correct manner in the conclusion of the
-type of each constructors~:
+type of each constructors:
 
 In particular, the following definition will not be accepted because 
 there is an occurrence of \List\ which is not applied to the parameter
@@ -918,7 +918,7 @@ quantifier $\exists X.P(X)$.
 Inductive exProp (P:Prop->Prop) : Prop 
   := exP_intro : forall X:Prop, P X -> exProp P.
 \end{coq_example*}
-The same definition on \Set{} is not allowed and fails~:
+The same definition on \Set{} is not allowed and fails:
 \begin{coq_eval}
 (********** The following is not correct and should produce **********)
 (*** Error: Large non-propositional inductive types must be in Type***)
@@ -1167,7 +1167,7 @@ $m$ in an inductive type $I$ and we want to prove a property
 which possibly depends on $m$. For this, it is enough to prove the
 property for $m = (c_i~u_1\ldots  u_{p_i})$ for each constructor of $I$.
 
-The \Coq{} term for this proof will be written~:
+The \Coq{} term for this proof will be written:
 \[\kw{match}~m~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
   (c_n~x_{n1}~...~x_{np_n}) \Ra f_n~ \kw{end}\]
 In this expression, if
@@ -1185,7 +1185,7 @@ one corresponds to object $m$. \Coq{} can sometimes infer this
 predicate but sometimes not. The concrete syntax for describing this
 predicate uses the \kw{as\ldots in\ldots return} construction. For
 instance, let us assume that $I$ is an unary predicate with one
-parameter. The predicate is made explicit using the syntax~:
+parameter. The predicate is made explicit using the syntax:
 \[\kw{match}~m~\kw{as}~ x~ \kw{in}~ I~\verb!_!~a~ \kw{return}~ P
  ~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
   (c_n~x_{n1}~...~x_{np_n}) \Ra f_n \kw{end}\]
@@ -1204,7 +1204,7 @@ must be seen as an \emph{inductive type pattern}. Notice that
 expansion of implicit arguments and notations apply to this pattern.
 
 For the purpose of presenting the inference rules, we use a more
-compact notation~:
+compact notation:
 \[ \Case{(\lb a x \mto P)}{m}{ \lb x_{11}~...~x_{1p_1} \mto f_1 ~|~\ldots~|~
   \lb x_{n1}...x_{np_n} \mto f_n}\]
 
@@ -1275,20 +1275,21 @@ sort \Prop.
 $P$ in \Prop{} could not be used for computation and are consequently
 ignored by the extraction mechanism.
 Assume $A$ and $B$ are two propositions, and the logical disjunction
-$A\vee B$ is defined inductively by~:
+$A\vee B$ is defined inductively by:
 \begin{coq_example*}
 Inductive or (A B:Prop) : Prop :=
-  lintro : A -> or A B | rintro : B -> or A B.
+  or_introl : A -> or A B | or_intror : B -> or A B.
 \end{coq_example*}
 The following definition which computes a boolean value by case over
-the proof of \texttt{or A B} is not accepted~:
+the proof of \texttt{or A B} is not accepted:
 \begin{coq_eval}
 (***************************************************************)
 (*** This example should fail with ``Incorrect elimination'' ***)
 \end{coq_eval}
 \begin{coq_example}
+Set Asymmetric Patterns.
 Definition choice (A B: Prop) (x:or A B) := 
-   match x with lintro a => true | rintro b => false end.
+   match x with or_introl a => true | or_intror b => false end.
 \end{coq_example}
 From the computational point of view, the structure of the proof of
 \texttt{(or A B)} in this term is needed for computing the boolean
@@ -1320,7 +1321,7 @@ In the same spirit, elimination on $P$ of type $I\ra
 on $P$ of type $I\ra \Set$ by cumulativity. It also implies that there
 is two proofs of the same property which are provably different,
 contradicting the proof-irrelevance property which is sometimes a
-useful axiom~:
+useful axiom:
 \begin{coq_example}
 Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 \end{coq_example}
@@ -1476,7 +1477,7 @@ to the general reduction rule:
 The second operator for elimination is fixpoint definition. 
 This fixpoint may involve several mutually recursive definitions.
 The basic concrete syntax for a recursive set of mutually recursive 
-declarations is (with $\Gamma_i$ contexts)~: 
+declarations is (with $\Gamma_i$ contexts): 
 \[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with}~ f_n
 (\Gamma_n) :A_n:=t_n\]
 The terms are obtained by projections from this set of declarations
@@ -1713,7 +1714,7 @@ while it will type-check, if one use instead the \texttt{coqtop
   -impredicative-set} command.
 
 The major change in the theory concerns the rule for product formation
-in the sort \Set, which is extended to a domain in any sort~:
+in the sort \Set, which is extended to a domain in any sort:
 \begin{description}
 \item [Prod]  \index{Typing rules!Prod (impredicative Set)}
 \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~~~
@@ -1728,7 +1729,7 @@ quantifier (\texttt{exSet}).
 
 There should be restrictions on the eliminations which can be
 performed on such definitions. The eliminations rules in the
-impredicative system for sort \Set{} become~:
+impredicative system for sort \Set{} become:
 \begin{description}
 \item[\Set] \inference{\frac{s \in
       \{\Prop, \Set\}}{\compat{I:\Set}{I\ra s}}
