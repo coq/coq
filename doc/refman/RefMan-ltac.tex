@@ -914,17 +914,15 @@ The number of goals under focus can be recovered using the {\tt
   numgoals} function. Combined with the {\tt guard} command below, it
 can be used to branch over the number of goals produced by previous tactics.
 
-%% spiwack: could be a reasonable example, but unfortunately it turns out
-%% to be more confusing than anything.
-%% \begin{coq_example*}
-%% Ltac pr_numgoals := let n := numgoals in idtac n.
+\begin{coq_example*}
+Ltac pr_numgoals := let n := numgoals in idtac "There are" n "goals".
 
-%% Goal True /\ True /\ True.
-%% split;[|split].
-%% \end{coq_example*}
-%% \begin{coq_example}
-%% all:pr_numgoals.
-%% \end{coq_example}
+Goal True /\ True /\ True.
+split;[|split].
+\end{coq_example*}
+\begin{coq_example}
+all:pr_numgoals.
+\end{coq_example}
 
 \subsubsection[Testing boolean expressions]{Testing boolean expressions\index{Ltac!guard}\index{guard!in Ltac}}
 
