@@ -215,7 +215,7 @@ let merge_occurrences loc cl = function
 
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
-  bindings red_expr int_or_var open_constr
+  bindings red_expr int_or_var open_constr uconstr
   simple_intropattern clause_dft_concl;
 
   int_or_var:
@@ -232,6 +232,9 @@ GEXTEND Gram
   ;
   open_constr:
     [ [ c = constr -> ((),c) ] ]
+  ;
+  uconstr:
+    [ [ c = constr -> c ] ]
   ;
   induction_arg:
     [ [ n = natural -> ElimOnAnonHyp n

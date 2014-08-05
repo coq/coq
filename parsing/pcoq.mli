@@ -213,6 +213,7 @@ module Tactic :
     val constr_with_bindings : constr_expr with_bindings Gram.entry
     val bindings : constr_expr bindings Gram.entry
     val constr_may_eval : (constr_expr,reference or_by_notation,constr_expr) may_eval Gram.entry
+    val uconstr : constr_expr Gram.entry
     val quantified_hypothesis : quantified_hypothesis Gram.entry
     val int_or_var : int or_var Gram.entry
     val red_expr : raw_red_expr Gram.entry
