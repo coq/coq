@@ -1179,7 +1179,7 @@ let drop_notations_pattern looked_for =
     | CPatDelimiters (loc, key, e) ->
       in_pat top {env with scopes=find_delimiters_scope loc key::env.scopes;
 	tmp_scope = None} e
-    | CPatPrim (loc,p) -> fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false loc) p
+    | CPatPrim (loc,p) -> fst (Notation.interp_prim_token_cases_pattern_expr loc (test_kind false) p
 				 (env.tmp_scope,env.scopes))
     | CPatAtom (loc, Some id) ->
       begin

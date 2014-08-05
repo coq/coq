@@ -1397,7 +1397,7 @@ Qed.
     match p with
     | xI _ => rpow r (Cp_phi (Npos p))
     | xO _ => rpow r (Cp_phi (Npos p))
-    | 1%positive => r
+    | 1 => r
     end == pow_pos rmul r p.
  Proof. destruct p; now rewrite ?pow_th.(rpow_pow_N). Qed.
 
