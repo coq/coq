@@ -351,7 +351,7 @@ Ltac Ring RNG lemma lH :=
       || fail "typing error while applying ring");
     [ ((let prh := proofHyp_tac lH in exact prh)
         || idtac "can not automatically prove hypothesis :";
-           idtac " maybe a left member of a hypothesis is not a monomial")
+           [> idtac " maybe a left member of a hypothesis is not a monomial"..])
     | vm_compute;
       (exact (eq_refl true) || fail "not a valid ring equation")]).
 
