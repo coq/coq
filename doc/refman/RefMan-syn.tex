@@ -1102,7 +1102,7 @@ syntax
 {\tt hyp\_list} $|$
 {\tt ne\_hyp\_list} \\ & $|$ &
 % {\tt quantified\_hypothesis} \\ & $|$ &
-{\tt constr} $|$
+{\tt constr} $|$ {\tt uconstr} $|$
 {\tt constr\_list} $|$
 {\tt ne\_constr\_list} \\ & $|$ &
 %{\tt castedopenconstr} $|$
@@ -1146,6 +1146,7 @@ Tactic argument type & parsed as & interpreted as & as in tactic \\
 %%{\tt\small quantified\_hypothesis} & identifier or integer & a named or non dep. hyp. of the goal & {\tt intros until}\\
 {\tt\small reference} & qualified identifier & a global reference of term & {\tt unfold}\\
 {\tt\small constr} & term & a term & {\tt exact} \\
+{\tt\small uconstr} & term & an untyped term & {\tt refine} \\
 %% castedopenconstr actually not supported
 %%{\tt\small castedopenconstr} & term & a term with its sign. of exist. var. & {\tt refine}\\
 {\tt\small integer} & integer & an integer &  \\
