@@ -885,7 +885,8 @@ The following returns the type of {\term}:
 The terms built in Ltac are well-typed by default. It may not be
 appropriate for building large terms using a recursive Ltac function:
 the term has to be entirely type checked at each step, resulting in
-potentially very slow behavior. It is possible to build untyped terms using Ltac with the syntax
+potentially very slow behavior. It is possible to build untyped terms
+using Ltac with the syntax
 
 \begin{quote}
 {\tt uconstr :} {\term}
@@ -901,6 +902,12 @@ term which can be used in tactics.
 \begin{quote}
 {\tt type\_term} {\term}
 \end{quote}
+
+Untyped terms built using {\tt uconstr :} can also be used as
+arguments to the {\tt refine} tactic~\ref{refine}. In that case the
+untyped term is type checked against the conclusion of the goal, and
+the holes which are not solved by the typing procedure are turned into
+new subgoals.
 
 \subsubsection[Counting the goals]{Counting the goals\index{Ltac!numgoals}\index{numgoals!in Ltac}}
 
