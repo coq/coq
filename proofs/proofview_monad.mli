@@ -83,6 +83,9 @@ module NonLogical : sig
   val catch : 'a t -> (exn -> 'a t) -> 'a t
   val timeout : int -> 'a t -> 'a t
 
+  (** Construct a monadified side-effect. Exceptions raised by the argument are
+      wrapped with {!Exception}. *)
+  val make : (unit -> 'a) -> 'a t
 
   (** [run] performs effects. *)
   val run : 'a t -> 'a

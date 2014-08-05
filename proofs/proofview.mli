@@ -496,6 +496,9 @@ module NonLogical : sig
      [Proof_errors.Timeout]. *)
   val timeout : int -> 'a t -> 'a t
 
+  (** [make f] internalize effects done by [f] in the monad. Exceptions raised
+      by [f] are encapsulated the same way {!raise} does it. *)
+  val make : (unit -> 'a) -> 'a t
 
   (* [run c] performs [c]'s side effects for real. *)
   val run : 'a t -> 'a

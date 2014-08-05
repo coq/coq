@@ -115,6 +115,12 @@ struct
   let timeout = fun n t -> (); fun () ->
     Control.timeout n t (Exception Timeout)
 
+  let make f = (); fun () ->
+    try f ()
+    with e when Errors.noncritical e ->
+      let e = Errors.push e in
+      Pervasives.raise (Exception e)
+
   let run = fun x ->
     try x () with Exception e as src ->
       let src = Errors.push src in
