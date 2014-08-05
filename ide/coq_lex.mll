@@ -13,6 +13,7 @@
 
   let utf8_lexeme_start lexbuf =
     Lexing.lexeme_start lexbuf - !utf8_adjust
+    + String.length (Lexing.lexeme lexbuf) - 1
 }
 
 let space = [' ' '\n' '\r' '\t' '\012'] (* '\012' is form-feed *)
@@ -33,7 +34,7 @@ rule coq_string = parse
 and comment = parse
   | "(*" { let _  = comment lexbuf in comment lexbuf }
   | "\"" { let () = coq_string lexbuf in comment lexbuf }
-  | "*)" { Some (utf8_lexeme_start lexbuf + 1) }
+  | "*)" { Some (utf8_lexeme_start lexbuf) }
   | eof { None }
   | utf8_extra_byte { incr utf8_adjust; comment lexbuf }
   | _ { comment lexbuf }
@@ -68,7 +69,7 @@ and sentence initial stamp = parse
   | undotted_sep {
       (* Separators like { or } and bullets * - + are only active
 	 at the start of a sentence *)
-      if initial then stamp (Lexing.lexeme_end lexbuf) Tags.Script.sentence;
+      if initial then stamp (utf8_lexeme_start lexbuf) Tags.Script.sentence;
       sentence initial stamp lexbuf
     }
   | space+ {
