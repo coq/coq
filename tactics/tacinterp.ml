@@ -707,35 +707,35 @@ let interp_constr_may_eval ist env sigma c =
   end
 
 (** TODO: should use dedicated printers *)
-let rec message_of_value gl v =
+let rec message_of_value env v =
   let v = Value.normalize v in
   if has_type v (topwit wit_tacvalue) then str "<tactic>"
   else if has_type v (topwit wit_constr) then
-    pr_constr_env (pf_env gl) (out_gen (topwit wit_constr) v)
+    pr_constr_env env (out_gen (topwit wit_constr) v)
   else if has_type v (topwit wit_constr_under_binders) then
     let c = out_gen (topwit wit_constr_under_binders) v in
-    pr_constr_under_binders_env (pf_env gl) c
+    pr_constr_under_binders_env env c
   else if has_type v (topwit wit_unit) then str "()"
   else if has_type v (topwit wit_int) then int (out_gen (topwit wit_int) v)
   else if has_type v (topwit wit_intro_pattern) then
     Miscprint.pr_intro_pattern (out_gen (topwit wit_intro_pattern) v)
   else if has_type v (topwit wit_constr_context) then
-    pr_constr_env (pf_env gl) (out_gen (topwit wit_constr_context) v)
+    pr_constr_env env (out_gen (topwit wit_constr_context) v)
   else match Value.to_list v with
   | Some l ->
-    let print v = message_of_value gl v in
+    let print v = message_of_value env v in
     prlist_with_sep spc print l
   | None ->
     str "<abstr>" (** TODO *)
 
-let interp_message_token ist gl = function
+let interp_message_token ist env = function
   | MsgString s -> str s
   | MsgInt n -> int n
   | MsgIdent (loc,id) ->
       let v =
 	try Id.Map.find id ist.lfun
 	with Not_found -> user_err_loc (loc,"",pr_id id ++ str" not found.") in
-      message_of_value gl v
+      message_of_value env v
 
 let interp_message_nl ist gl = function
   | [] -> mt()
@@ -1049,12 +1049,12 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacId s ->
       Proofview.tclTHEN
         (Proofview.V82.tactic begin fun gl ->
-          tclIDTAC_MESSAGE (interp_message_nl ist gl s) gl
+          tclIDTAC_MESSAGE (interp_message_nl ist (pf_env gl) s) gl
         end)
         (Proofview.tclLIFT (db_breakpoint (curr_debug ist) s))
   | TacFail (n,s) ->
       Proofview.V82.tactic begin fun gl ->
-        tclFAIL (interp_int_or_var ist n) (interp_message ist gl s) gl
+        tclFAIL (interp_int_or_var ist n) (interp_message ist (pf_env gl) s) gl
       end
   | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
   | TacShowHyps tac ->
