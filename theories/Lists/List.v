@@ -21,6 +21,16 @@ Set Implicit Arguments.
 
 Open Scope list_scope.
 
+(** Standard notations for lists. 
+In a special module to avoid conflicts. *)
+Module ListNotations.
+Notation " [ ] " := nil (format "[ ]") : list_scope.
+Notation " [ x ] " := (cons x nil) : list_scope.
+Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) : list_scope.
+End ListNotations.
+
+Import ListNotations.
+
 Section Lists.
 
   Variable A : Type.
@@ -29,41 +39,30 @@ Section Lists.
 
   Definition hd (default:A) (l:list A) :=
     match l with
-      | nil => default
+      | [] => default
       | x :: _ => x
     end.
 
   Definition hd_error (l:list A) :=
     match l with
-      | nil => error
+      | [] => error
       | x :: _ => value x
     end.
 
   Definition tl (l:list A) :=
     match l with
-      | nil => nil
+      | [] => nil
       | a :: m => m
     end.
 
   (** The [In] predicate *)
   Fixpoint In (a:A) (l:list A) : Prop :=
     match l with
-      | nil => False
+      | [] => False
       | b :: m => b = a \/ In a m
     end.
 
 End Lists.
-
-
-(** Standard notations for lists. 
-In a special module to avoid conflict. *)
-Module ListNotations.
-Notation " [ ] " := nil : list_scope.
-Notation " [ x ] " := (cons x nil) : list_scope.
-Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) : list_scope.
-End ListNotations.
-
-Import ListNotations.
 
 Section Facts.
 
