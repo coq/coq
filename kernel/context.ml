@@ -23,10 +23,13 @@ open Names
 (***************************************************************************)
 
 type named_declaration = Id.t * Constr.t option * Constr.t
+type named_list_declaration = Id.t list * Constr.t option * Constr.t
 type rel_declaration = Name.t * Constr.t option * Constr.t
 
-let map_named_declaration f (id, (v : Constr.t option), ty) =
+let map_named_declaration_skel f (id, (v : Constr.t option), ty) =
   (id, Option.map f v, f ty)
+let map_named_list_declaration = map_named_declaration_skel
+let map_named_declaration = map_named_declaration_skel
 
 let map_rel_declaration = map_named_declaration
 
@@ -77,6 +80,7 @@ let rel_context_nhyps hyps =
     goal assumptions. *)
 
 type named_context = named_declaration list
+type compacted_named_context = named_list_declaration list
 
 let empty_named_context = []
 

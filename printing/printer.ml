@@ -219,7 +219,7 @@ let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t*)
 (**********************************************************************)
 (* Contexts and declarations                                          *)
 
-let pr_var_decl env (id,c,typ) =
+let pr_var_decl_skel pr_id env (id,c,typ) =
   let pbody = match c with
     | None ->  (mt ())
     | Some c ->
@@ -230,6 +230,12 @@ let pr_var_decl env (id,c,typ) =
   let pt = pr_ltype_core true env typ in
   let ptyp = (str" : " ++ pt) in
   (pr_id id ++ hov 0 (pbody ++ ptyp))
+
+let pr_var_decl env (id,c,typ) =
+  pr_var_decl_skel pr_id env (id,c,typ)
+
+let pr_var_list_decl env (l,c,typ) =
+  hov 0 (pr_var_decl_skel (fun ids -> prlist_with_sep pr_comma pr_id ids) env (l,c,typ))
 
 let pr_rel_decl env (na,c,typ) =
   let pbody = match c with

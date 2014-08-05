@@ -19,10 +19,13 @@ open Names
     purpose) *)
 
 type named_declaration = Id.t * Constr.t option * Constr.t
+type named_list_declaration = Id.t list * Constr.t option * Constr.t
 type rel_declaration = Name.t * Constr.t option * Constr.t
 
 val map_named_declaration :
   (Constr.t -> Constr.t) -> named_declaration -> named_declaration
+val map_named_list_declaration :
+  (Constr.t -> Constr.t) -> named_list_declaration -> named_list_declaration
 val map_rel_declaration :
   (Constr.t -> Constr.t) -> rel_declaration -> rel_declaration
 
@@ -51,6 +54,7 @@ val eq_rel_declaration :
 
 type named_context = named_declaration list
 type section_context = named_context
+type compacted_named_context = named_list_declaration list
 type rel_context = rel_declaration list
 (** In [rel_context], more recent declaration is on top *)
 

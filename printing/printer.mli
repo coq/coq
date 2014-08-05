@@ -106,6 +106,7 @@ val pr_pconstructor        : env -> pconstructor -> std_ppcmds
 val pr_ne_context_of       : std_ppcmds -> env -> std_ppcmds
 
 val pr_var_decl            : env -> named_declaration -> std_ppcmds
+val pr_var_list_decl       : env -> named_list_declaration -> std_ppcmds
 val pr_rel_decl            : env -> rel_declaration -> std_ppcmds
 
 val pr_named_context       : env -> named_context -> std_ppcmds
