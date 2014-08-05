@@ -953,9 +953,9 @@ let rec pr_vernac = function
       str "with" ++ spc() ++pr_raw_tactic te
   | VernacProofMode s -> str ("Proof Mode "^s)
   | VernacBullet b -> begin match b with
-      | Dash -> str"-"
-      | Star -> str"*"
-      | Plus -> str"+"
+      | Dash n -> str (String.make n '-')
+      | Star n -> str (String.make n '*')
+      | Plus n -> str (String.make n '+')
   end ++ spc()
   | VernacSubproof None -> str "{"
   | VernacSubproof (Some i) -> str "BeginSubproof " ++ int i

@@ -386,16 +386,16 @@ module Bullet = struct
   exception FailedFocusBullet of t
 
   let bullet_eq b1 b2 = match b1, b2 with
-  | Vernacexpr.Dash, Vernacexpr.Dash -> true
-  | Vernacexpr.Star, Vernacexpr.Star -> true
-  | Vernacexpr.Plus, Vernacexpr.Plus -> true
+  | Vernacexpr.Dash n1, Vernacexpr.Dash n2 -> n1 = n2
+  | Vernacexpr.Star n1, Vernacexpr.Star n2 -> n1 = n2
+  | Vernacexpr.Plus n1, Vernacexpr.Plus n2 -> n1 = n2
   | _ -> false
 
   let pr_bullet b =
     match b with
-    | Vernacexpr.Dash -> str "-"
-    | Vernacexpr.Star -> str "*"
-    | Vernacexpr.Plus -> str "+"
+    | Vernacexpr.Dash n -> str (String.make n '-')
+    | Vernacexpr.Star n -> str (String.make n '*')
+    | Vernacexpr.Plus n -> str (String.make n '+')
 
   let _ = Errors.register_handler
     begin function

@@ -17,6 +17,7 @@ type t =
   | INT of string
   | STRING of string
   | LEFTQMARK
+  | BULLET of string
   | EOI
 
 val extract_string : t -> string

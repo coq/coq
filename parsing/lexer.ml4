@@ -435,6 +435,14 @@ let find_keyword id s =
   | None -> raise Not_found
   | Some c -> KEYWORD c
 
+let process_sequence bp c cs =
+  let rec aux n cs =
+    match Stream.peek cs with
+    | Some c' when c == c' -> Stream.junk cs; aux (n+1) cs
+    | _ -> BULLET (String.make n c), (bp, Stream.count cs)
+  in
+  aux 1 cs
+
 (* Must be a special token *)
 let process_chars bp c cs =
   let t = progress_from_byte None (-1) !token_tree cs c in
@@ -495,10 +503,15 @@ let rec next_token = parser bp
       let () = match t with
       | KEYWORD "." ->
         if not (blank_or_eof s) then err (bp,ep+1) Undefined_token;
-        if Flags.do_beautify() then between_com := true;
+        between_com := true;
       | _ -> ()
       in
       (t, (bp,ep))
+  | [< ' ('-'|'+'|'*' as c); s >] ->
+      let t =
+        if !between_com then process_sequence bp c s else process_chars bp c s
+      in
+      comment_stop bp; t
   | [< ''?'; s >] ep ->
       let t = parse_after_qmark bp s in comment_stop bp; (t, (ep, bp))
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
@@ -531,7 +544,9 @@ let rec next_token = parser bp
             (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
         | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart), _) ->
             let t = process_chars bp (Stream.next s) s in
-            comment_stop bp; t
+            let new_between_com = match t with
+              (KEYWORD ("{"|"}"),_) -> !between_com | _ -> false in
+            comment_stop bp; between_com := new_between_com; t
         | EmptyStream ->
             comment_stop bp; (EOI, (bp, bp + 1))
 

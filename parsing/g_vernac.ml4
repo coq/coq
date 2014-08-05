@@ -62,6 +62,14 @@ let _ = Proof_global.register_proof_mode {Proof_global.
 					    reset = set_noedit_mode
 					 }
 
+let make_bullet s =
+  let n = String.length s in
+  match s.[0] with
+  | '-' -> Dash n
+  | '+' -> Plus n
+  | '*' -> Star n
+  | _ -> assert false
+
 let default_command_entry =
   Gram.Entry.of_parser "command_entry"
     (fun strm -> Gram.parse_tokens_after_filter (get_command_entry ()) strm)
@@ -129,16 +137,11 @@ GEXTEND Gram
   ;
 
   subprf:
-  [ [
-      "-" -> VernacBullet Dash
-    | "*" -> VernacBullet Star
-    | "+" -> VernacBullet Plus
+  [ [ s = BULLET -> VernacBullet (make_bullet s)
     | "{" -> VernacSubproof None
     | "}" -> VernacEndSubproof
     ] ]
   ;
-
-
 
   subgoal_command: 
     [ [ c = check_command; "." ->

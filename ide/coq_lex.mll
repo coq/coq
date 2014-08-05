@@ -17,7 +17,7 @@
 
 let space = [' ' '\n' '\r' '\t' '\012'] (* '\012' is form-feed *)
 
-let undotted_sep = [ '{' '}' '-' '+' '*' ]
+let undotted_sep = '{' | '}' | '-'+ | '+'+ | '*'+
 
 let dot_sep = '.' (space | eof)
 
@@ -68,7 +68,7 @@ and sentence initial stamp = parse
   | undotted_sep {
       (* Separators like { or } and bullets * - + are only active
 	 at the start of a sentence *)
-      if initial then stamp (utf8_lexeme_start lexbuf) Tags.Script.sentence;
+      if initial then stamp (Lexing.lexeme_end lexbuf) Tags.Script.sentence;
       sentence initial stamp lexbuf
     }
   | space+ {

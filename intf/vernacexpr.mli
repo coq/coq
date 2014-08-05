@@ -230,9 +230,9 @@ type register_kind =
   | RegisterInline
 
 type bullet =
-    | Dash
-    | Star
-    | Plus
+    | Dash of int
+    | Star of int
+    | Plus of int
 
 (** {6 Types concerning Stm} *)
 type 'a stm_vernac =
