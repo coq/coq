@@ -350,7 +350,7 @@ type vernac_expr =
 
   (* Solving *)
 
-  | VernacSolve of goal_selector * raw_tactic_expr * bool
+  | VernacSolve of goal_selector * int option * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)

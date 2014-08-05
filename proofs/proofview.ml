@@ -967,7 +967,9 @@ module Trace = struct
   let log m = InfoL.leaf (Info.Msg m)
   let name_tactic m t = InfoL.tag (Info.Tactic m) t
 
-  let pr_info = Info.print
+  let pr_info ?(lvl=0) info =
+    assert (lvl >= 0);
+    Info.(print (collapse lvl info))
 
 end
 

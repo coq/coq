@@ -126,7 +126,8 @@ val get_used_variables : unit -> Context.section_context option
     proof is focused or if there is no [n]th subgoal. [solve SelectAll
     tac] applies [tac] to all subgoals. *)
 
-val solve : ?with_end_tac:unit Proofview.tactic -> Vernacexpr.goal_selector -> unit Proofview.tactic ->
+val solve : ?with_end_tac:unit Proofview.tactic ->
+      Vernacexpr.goal_selector -> int option -> unit Proofview.tactic ->
       Proof.proof -> Proof.proof*bool
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current

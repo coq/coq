@@ -31,7 +31,7 @@ let start_proof (id : Id.t) str sigma hyps c ?init_tac terminator =
   let env = Global.env () in
   ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
-    | None -> p,true
+    | None -> p,(true,[])
     | Some tac -> Proof.run_tactic env tac p))
 
 let cook_this_proof p =
@@ -87,7 +87,7 @@ let current_proof_statement () =
     | (id,([concl],strength)) -> id,strength,concl
     | _ -> Errors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement")
 
-let solve ?with_end_tac gi tac pr =
+let solve ?with_end_tac gi info_lvl tac pr =
   try 
     let tac = match with_end_tac with
       | None -> tac
@@ -99,7 +99,13 @@ let solve ?with_end_tac gi tac pr =
       | Vernacexpr.SelectAllParallel ->
           Errors.anomaly(str"SelectAllParallel not handled by Stm")
     in
-    Proof.run_tactic (Global.env ()) tac pr
+    let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac pr in
+    let () =
+      match info_lvl with
+      | None -> ()
+      | Some i -> Pp.ppnl (hov 0 (Proofview.Trace.pr_info ~lvl:i info))
+    in
+    (p,status)
   with
     | Proof_global.NoCurrentProof  -> Errors.error "No focused proof"
     | CList.IndexOutOfRange ->
@@ -108,7 +114,7 @@ let solve ?with_end_tac gi tac pr =
 	                            Errors.errorlabstrm "" msg
         | _ -> assert false
 
-let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) tac)
+let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) None tac)
 
 let instantiate_nth_evar_com n com = 
   Proof_global.simple_with_current_proof (fun _ p -> Proof.V82.instantiate_evar n com p)

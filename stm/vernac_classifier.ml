@@ -97,7 +97,7 @@ let rec classify_vernac e =
     | VernacCheckMayEval _ ->
         VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
     (* ProofStep *)
-    | VernacSolve (SelectAllParallel,_,_) -> VtProofStep true, VtLater
+    | VernacSolve (SelectAllParallel,_,_,_) -> VtProofStep true, VtLater
     | VernacProof _ 
     | VernacBullet _ 
     | VernacFocus _ | VernacUnfocus

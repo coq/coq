@@ -1125,7 +1125,7 @@ module Partac = struct
 
   let vernac_interp cancel nworkers safe_id id { verbose; loc; expr = e } =
     let e, etac, time, fail =
-      let rec find time fail = function VernacSolve(_,re,b) -> re, b, time, fail
+      let rec find time fail = function VernacSolve(_,_,re,b) -> re, b, time, fail
         | VernacTime [_,e] -> find true fail e
         | VernacFail e -> find time true e
         | _ -> errorlabstrm "Stm" (str"unsupported") in find false false e in
@@ -1137,7 +1137,7 @@ module Partac = struct
       let open SubTask in
       let res = CList.map_i (fun i g ->
         let f,assign= Future.create_delegate (State.exn_on id ~valid:safe_id) in
-        let t_ast = { verbose;loc;expr = VernacSolve(SelectNth i,e,etac) } in
+        let t_ast = { verbose;loc;expr = VernacSolve(SelectNth i,None,e,etac) } in
         let t_name = Goal.uid g in
         TaskQueue.enqueue_task
           { t_state = safe_id; t_state_fb = id;
