@@ -105,29 +105,30 @@ let pr_binding prc = function
 let pr_bindings prc prlc = function
   | ImplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
-      prlist_with_sep spc prc l
+      hv 0 (prlist_with_sep spc prc l)
   | ExplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
-        prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
+        hv 0 (prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l)
   | NoBindings -> mt ()
 
 let pr_bindings_no_with prc prlc = function
   | ImplicitBindings l ->
-      brk (1,1) ++
+      brk (0,1) ++
       prlist_with_sep spc prc l
   | ExplicitBindings l ->
-      brk (1,1) ++
+      brk (0,1) ++
         prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
   | NoBindings -> mt ()
 
-let pr_keep keep pp x =
-  (if keep then str "!" else mt()) ++ pp x
+let pr_clear_flag clear_flag pp x =
+  (match clear_flag with Some false -> str "!" | Some true -> str ">" | None -> mt())
+  ++ pp x
 
 let pr_with_bindings prc prlc (c,bl) =
-  prc c ++ hv 0 (pr_bindings prc prlc bl)
+  prc c ++ pr_bindings prc prlc bl
 
-let pr_with_bindings_arg prc prlc (keep,c) =
-  pr_keep keep (pr_with_bindings prc prlc) c
+let pr_with_bindings_arg prc prlc (clear_flag,c) =
+  pr_clear_flag clear_flag (pr_with_bindings prc prlc) c
 
 let pr_with_constr prc = function
   | None -> mt ()
@@ -330,7 +331,7 @@ let pr_esubst prc l =
   in
   prlist_with_sep spc pr_qhyp l
 
-let pr_bindings_gen for_ex prlc prc = function
+let pr_bindings_gen for_ex prc prlc = function
   | ImplicitBindings l ->
       spc () ++
       hv 2 ((if for_ex then mt() else str "with" ++ spc ()) ++
@@ -341,10 +342,10 @@ let pr_bindings_gen for_ex prlc prc = function
             pr_esubst prlc l)
   | NoBindings -> mt ()
 
-let pr_bindings prlc prc = pr_bindings_gen false prlc prc
+let pr_bindings prc prlc = pr_bindings_gen false prc prlc
 
-let pr_with_bindings prlc prc (c,bl) =
-  hov 1 (prc c ++ pr_bindings prlc prc bl)
+let pr_with_bindings prc prlc (c,bl) =
+  hov 1 (prc c ++ pr_bindings prc prlc bl)
 
 let pr_as_ipat pat = str "as " ++ Miscprint.pr_intro_pattern pat
 let pr_eqn_ipat pat = str "eqn:" ++ Miscprint.pr_intro_pattern pat
@@ -374,11 +375,11 @@ let pr_as_name = function
 let pr_pose_as_style prc na c =
   spc() ++ prc c ++ pr_as_name na
 
-let pr_pose prlc prc na c = match na with
+let pr_pose prc prlc na c = match na with
   | Anonymous -> spc() ++ prc c
   | Name id -> spc() ++ surround (pr_id id ++ str " :=" ++ spc() ++ prlc c)
 
-let pr_assertion _prlc prc ipat c = match ipat with
+let pr_assertion prc _prlc ipat c = match ipat with
 (* Use this "optimisation" or use only the general case ?
   | IntroIdentifier id ->
       spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
@@ -386,11 +387,11 @@ let pr_assertion _prlc prc ipat c = match ipat with
   | ipat ->
       spc() ++ prc c ++ pr_as_ipat ipat
 
-let pr_assumption prlc prc ipat c = match ipat with
-(* Use this "optimisation" or use only the general case ?
-  | IntroIdentifier id ->
-      spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
-*)
+let pr_assumption prc prlc ipat c = match ipat with
+(* Use this "optimisation" or use only the general case ?*)
+(* it seems that this "optimisation" is somehow more natural *)
+  | Some (_,IntroIdentifier id) ->
+      spc() ++ surround (pr_id id ++ str " :" ++ spc() ++ prlc c)
   | ipat ->
       spc() ++ prc c ++ pr_as_ipat ipat
 
@@ -415,7 +416,8 @@ let pr_simple_hyp_clause pr_id = function
 
 let pr_in_hyp_as pr_id = function
   | None -> mt ()
-  | Some (id,ipat) -> pr_simple_hyp_clause pr_id [id] ++ pr_as_ipat ipat
+  | Some (clear,id,ipat) ->
+      pr_in (spc () ++ pr_clear_flag clear pr_id id) ++ pr_as_ipat ipat
 
 let pr_clauses default_is_concl pr_id = function
   | { onhyps=Some []; concl_occs=AllOccurrences }
@@ -443,8 +445,8 @@ let pr_multi = function
   | RepeatStar -> str "?"
   | RepeatPlus -> str "!"
 
-let pr_induction_arg prlc prc = function
-  | ElimOnConstr c -> pr_with_bindings prlc prc c
+let pr_induction_arg prc prlc = function
+  | ElimOnConstr c -> pr_with_bindings prc prlc c
   | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
   | ElimOnAnonHyp n -> int n
 
@@ -578,10 +580,10 @@ let make_pr_tac pr_tac_level
    pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,pr_alias,strip_prod_binders, pr_gen) =
 
 (* some shortcuts *)
-let pr_bindings = pr_bindings pr_lconstr pr_constr in
-let pr_ex_bindings = pr_bindings_gen true pr_lconstr pr_constr in
-let pr_with_bindings = pr_with_bindings pr_lconstr pr_constr in
-let pr_with_bindings_arg = pr_with_bindings_arg pr_lconstr pr_constr in
+let pr_bindings = pr_bindings pr_constr pr_lconstr in
+let pr_ex_bindings = pr_bindings_gen true pr_constr pr_lconstr in
+let pr_with_bindings = pr_with_bindings pr_constr pr_lconstr in
+let pr_with_bindings_arg = pr_with_bindings_arg pr_constr pr_lconstr in
 let pr_extend = pr_extend pr_constr pr_lconstr pr_tac_level pr_pat in
 let pr_alias = pr_alias pr_constr pr_lconstr pr_tac_level pr_pat in
 let pr_red_expr = pr_red_expr (pr_constr,pr_lconstr,pr_cst,pr_pat) in
@@ -691,11 +693,11 @@ and pr_atom1 = function
              str"with " ++ prlist_with_sep spc pr_cofix_tac l)
   | TacAssert (b,Some tac,ipat,c) ->
       hov 1 (str (if b then "assert" else "enough") ++
-             pr_assumption pr_lconstr pr_constr ipat c ++
+             pr_assumption pr_constr pr_lconstr ipat c ++
              pr_by_tactic (pr_tac_level ltop) tac)
   | TacAssert (_,None,ipat,c) ->
       hov 1 (str "pose proof" ++
-             pr_assertion pr_lconstr pr_constr ipat c)
+             pr_assertion pr_constr pr_lconstr ipat c)
   | TacGeneralize l ->
       hov 1 (str "generalize" ++ spc () ++
              prlist_with_sep pr_comma (fun (cl,na) ->
@@ -705,7 +707,7 @@ and pr_atom1 = function
       hov 1 (str "generalize" ++ spc () ++ str "dependent" ++
              pr_constrarg c)
   | TacLetTac (na,c,cl,true,_) when Locusops.is_nowhere cl ->
-      hov 1 (str "pose" ++ pr_pose pr_lconstr pr_constr na c)
+      hov 1 (str "pose" ++ pr_pose pr_constr pr_lconstr na c)
   | TacLetTac (na,c,cl,b,e) ->
       hov 1 ((if b then str "set" else str "remember") ++
              (if b then pr_pose pr_lconstr else pr_pose_as_style)
@@ -729,8 +731,8 @@ and pr_atom1 = function
   | TacInductionDestruct (isrec,ev,(l,el,cl)) ->
       hov 1 (str (with_evars ev (if isrec then "induction" else "destruct")) ++
              spc () ++
-             prlist_with_sep pr_comma (fun ((keep,h),ids) ->
-	       pr_keep keep (pr_induction_arg pr_lconstr pr_constr) h ++
+             prlist_with_sep pr_comma (fun ((clear_flag,h),ids) ->
+	       pr_clear_flag clear_flag (pr_induction_arg pr_constr pr_lconstr) h ++
 	       pr_with_induction_names ids) l ++
              pr_opt pr_eliminator el ++
 	     pr_opt_no_spc (pr_clauses None pr_ident) cl)

@@ -365,7 +365,7 @@ let pr_grammar_tactic_rule n (_,pil,t) =
 
 let pr_statement head (id,(bl,c,guard)) =
   assert (not (Option.is_empty id));
-  hov 1
+  hov 2
     (head ++ spc() ++ pr_lident (Option.get id) ++ spc() ++
     (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
     pr_opt (pr_guard_annot pr_lconstr_expr bl) guard ++
