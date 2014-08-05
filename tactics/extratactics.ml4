@@ -359,24 +359,20 @@ let refine_red_flags =
 
 let refine_locs = { Locus.onhyps=None; concl_occs=Locus.AllOccurrences }
 
-let refine_tac (ist, c) =
-  Proofview.Goal.enter (fun gl ->
-    let env = Proofview.Goal.env gl in
-    let constrvars = Tacinterp.extract_ltac_constr_values ist env in
-    let vars = (constrvars, ist.Geninterp.lfun) in
+let refine_tac c =
     let c = Goal.Refinable.make begin fun h ->
       Goal.bind Goal.concl (fun concl ->
         let flags = Pretyping.all_no_fail_flags in
         let tycon = Pretyping.OfType concl in
-        Goal.Refinable.constr_of_raw h tycon flags vars c)
+        Goal.Refinable.constr_of_raw h tycon flags Id.Map.(empty,empty) c)
     end in
     Proofview.Goal.lift c begin fun c ->
       Proofview.tclSENSITIVE (Goal.refine c) <*>
       Proofview.V82.tactic (reduce refine_red_flags refine_locs)
-    end)
+    end
 
 TACTIC EXTEND refine
-  [ "refine" glob(c) ] -> [  refine_tac c ]
+  [ "refine" uconstr(c) ] -> [  refine_tac c ]
 END
 
 (**********************************************************************)
