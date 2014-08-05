@@ -467,9 +467,18 @@ let extract_ltac_uconstr_values ist env =
 
 (** Significantly simpler than [interp_constr], to interpret an
     untyped constr, it suffices to substitute any bound Ltac variables
-    while redoint internalisation. *)
+    while redoing internalisation. *)
+let subst_in_ucconstr subst =
+  let rec subst_in_ucconstr = function
+  | Glob_term.GVar (_,id) as x ->
+      begin try Lazy.force (Id.Map.find id subst)
+      with Not_found -> x end
+  | c -> Glob_ops.map_glob_constr subst_in_ucconstr c
+  in
+  subst_in_ucconstr
+
 let interp_uconstr ist env = function
-  | (c,None) -> c
+  | (c,None) -> subst_in_ucconstr (extract_ltac_uconstr_values ist env) c
   | (_,Some ce) ->
       let ltacvars = {
         Constrintern.ltac_vars = Id.Set.empty;
