@@ -67,5 +67,5 @@ let () =
   register_name0 wit_intro_pattern "Constrarg.wit_intro_pattern";
   register_name0 wit_tactic "Constrarg.wit_tactic";
   register_name0 wit_sort "Constrarg.wit_sort";
-  register_name0 wit_uconstr "Constrarg.uconstr";
+  register_name0 wit_uconstr "Constrarg.wit_uconstr";
   register_name0 wit_clause_dft_concl "Constrarg.wit_clause_dft_concl";
