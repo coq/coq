@@ -456,7 +456,6 @@ let rec intern_atomic lf ist x =
   (* Basic tactics *)
   | TacIntroPattern l ->
       TacIntroPattern (List.map (intern_intro_pattern lf ist) l)
-  | TacIntrosUntil hyp -> TacIntrosUntil (intern_quantified_hypothesis ist hyp)
   | TacIntroMove (ido,hto) ->
       TacIntroMove (Option.map (intern_ident lf ist) ido,
                     intern_move_location ist hto)

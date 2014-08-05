@@ -246,7 +246,9 @@ let coerce_to_quantified_hypothesis v =
     NamedHyp id
   else if has_type v (topwit wit_int) then
     AnonHyp (out_gen (topwit wit_int) v)
-  else raise (CannotCoerceTo "a quantified hypothesis")
+  else match Value.to_constr v with
+  | Some c when isVar c -> NamedHyp (destVar c)
+  | _ -> raise (CannotCoerceTo "a quantified hypothesis")
 
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
@@ -255,9 +257,7 @@ let coerce_to_decl_or_quant_hyp env v =
   if has_type v (topwit wit_int) then
     AnonHyp (out_gen (topwit wit_int) v)
   else
-    try
-      let hyp = coerce_to_hyp env v in
-      NamedHyp hyp
+    try coerce_to_quantified_hypothesis v
     with CannotCoerceTo _ ->
       raise (CannotCoerceTo "a declared or quantified hypothesis")
 

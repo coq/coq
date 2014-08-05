@@ -139,3 +139,9 @@ TACTIC EXTEND esplit_with
     Tacticals.New.tclWITHHOLES true (Tactics.split_with_bindings true) sigma [bl]
   ]
 END
+
+(** Intro *)
+
+TACTIC EXTEND intros_until
+  [ "intros" "until" quantified_hypothesis(h) ] -> [ Tactics.intros_until h ]
+END

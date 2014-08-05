@@ -528,9 +528,7 @@ GEXTEND Gram
   simple_tactic:
     [ [
       (* Basic tactics *)
-        IDENT "intros"; IDENT "until"; id = quantified_hypothesis ->
-	  TacIntrosUntil id
-      | IDENT "intros"; pl = intropatterns -> TacIntroPattern pl
+        IDENT "intros"; pl = intropatterns -> TacIntroPattern pl
       | IDENT "intro"; id = ident; hto = move_location ->
 	  TacIntroMove (Some id, hto)
       | IDENT "intro"; hto = move_location -> TacIntroMove (None, hto)

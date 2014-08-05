@@ -111,7 +111,6 @@ type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
 type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   (* Basic tactics *)
   | TacIntroPattern of intro_pattern_expr located list
-  | TacIntrosUntil of quantified_hypothesis
   | TacIntroMove of Id.t option * 'nam move_location
   | TacExact of 'trm
   | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *

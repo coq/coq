@@ -665,8 +665,6 @@ and pr_atom1 = function
   | TacIntroPattern (_::_ as p) ->
       hov 1 (str "intros" ++ spc () ++
              prlist_with_sep spc Miscprint.pr_intro_pattern p)
-  | TacIntrosUntil h ->
-      hv 1 (str "intros until" ++ pr_arg pr_quantified_hypothesis h)
   | TacIntroMove (None,MoveLast) as t -> pr_atom0 t
   | TacIntroMove (Some id,MoveLast) -> str "intro " ++ pr_id id
   | TacIntroMove (ido,hto) ->

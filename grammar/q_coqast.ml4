@@ -303,8 +303,6 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacIntroPattern pl ->
       let pl = mlexpr_of_list (mlexpr_of_located mlexpr_of_intro_pattern) pl in
       <:expr< Tacexpr.TacIntroPattern $pl$ >>
-  | Tacexpr.TacIntrosUntil h ->
-      <:expr< Tacexpr.TacIntrosUntil $mlexpr_of_quantified_hypothesis h$ >>
   | Tacexpr.TacIntroMove (idopt,idopt') ->
       let idopt = mlexpr_of_ident_option idopt in
       let idopt'= mlexpr_of_move_location mlexpr_of_hyp idopt' in

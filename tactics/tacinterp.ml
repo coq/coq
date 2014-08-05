@@ -1532,11 +1532,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let patterns = interp_intro_pattern_list_as_list ist env l in
         Tactics.intro_patterns patterns
       end
-  | TacIntrosUntil hyp ->
-      begin try (* interp_quantified_hypothesis can raise an exception *)
-        Tactics.intros_until (interp_quantified_hypothesis ist hyp)
-      with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
-      end
   | TacIntroMove (ido,hto) ->
       Proofview.Goal.raw_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
