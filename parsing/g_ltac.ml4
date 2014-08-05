@@ -143,12 +143,12 @@ GEXTEND Gram
   ;
   (* Can be used as argument and at toplevel in tactic expressions. *)
   tactic_top_or_arg:
-    [ [ IDENT "uconstr"; ":" ; c = Constr.constr -> UConstr c
+    [ [ IDENT "uconstr"; ":" ; c = uconstr -> UConstr c
       | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
         TacGeneric (genarg_of_ipattern ipat)
       | c = constr_eval -> ConstrMayEval c
       | IDENT "fresh"; l = LIST0 fresh_id -> TacFreshId l
-      | IDENT "type_term"; c=Constr.constr -> TacPretype c
+      | IDENT "type_term"; c=uconstr -> TacPretype c
       | IDENT "numgoals" -> TacNumgoals ] ]
   ;
   fresh_id:
