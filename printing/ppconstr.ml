@@ -583,6 +583,14 @@ let modular_constr_pr = pr
 let rec fix rf x =rf (fix rf) x
 let pr = fix modular_constr_pr mt
 
+let transf env c =
+  if !Flags.beautify_file then
+    let r = Constrintern.for_grammar (Constrintern.intern_constr env) c in
+    Constrextern.extern_glob_constr (Termops.vars_of_env env) r
+  else c
+
+let pr prec c = pr prec (transf (Global.env()) c)
+
 let pr_simpleconstr = function
   | CAppExpl (_,(None,f,us),[]) -> str "@" ++ pr_cref f us
   | c -> pr lsimpleconstr c
