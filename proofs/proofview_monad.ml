@@ -247,6 +247,18 @@ struct
   let current : rt tactic = (); fun s ->
     { iolist = fun nil cons -> cons (s.rstate, s) nil }
 
+  let set_local (type a) (rstate : rt) (t:a tactic) : a tactic = (); fun s ->
+    let tl = t { s with rstate } in
+    let reinstate = s.rstate in
+    { iolist = fun nil cons ->
+      tl.iolist nil (fun (a,s') nil -> cons (a, { s' with rstate=reinstate }) nil)}
+
+  let modify_local (type a) (f:rt->rt) (t:a tactic) : a tactic = (); fun s ->
+    let tl = t { s with rstate = f s.rstate } in
+    let reinstate = s.rstate in
+    { iolist = fun nil cons ->
+      tl.iolist nil (fun (a,s') nil -> cons (a, { s' with rstate=reinstate }) nil)}
+
   let put (w : wt) : unit tactic = (); fun s ->
     { iolist = fun nil cons -> cons ((), { s with wstate = merge w s.wstate }) nil }
 

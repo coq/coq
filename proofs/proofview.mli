@@ -246,10 +246,15 @@ val tclPROGRESS : 'a tactic -> 'a tactic
 val tclEVARMAP : Evd.evar_map tactic
 
 (* [tclENV] doesn't affect the proof, it returns the current
-   environment.  It is not the environment of a particular goal,
-   rather the "global" environment of the proof. The goal-wise
-   environment is returned by {!Proofview.Goal.env}. *)
+   environment. It can be the global context or, in the context of a
+   {!Proofview.Goal.enter}, the context of the goal. In the latter
+   case, the context is the same as the environment returned by
+   {!Proofview.Goal.env} on the enclosing goal. *)
 val tclENV : Environ.env tactic
+
+(* [tclIN_ENV e t] is the same as tactic [t] except that the global
+   environment it observes (obtained by {!tclENV}) is [e].  *)
+val tclIN_ENV : Environ.env -> 'a tactic -> 'a tactic
 
 (* [tclEFFECTS eff] add the effects [eff] to the current state. *)
 val tclEFFECTS : Declareops.side_effects -> unit tactic

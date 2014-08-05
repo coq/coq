@@ -549,6 +549,8 @@ let tclEVARMAP =
 
 let tclENV = Proof.current
 
+let tclIN_ENV = Proof.set_local
+
 let tclEFFECTS eff =
   Proof.modify (fun initial -> emit_side_effects eff initial)
 
@@ -875,6 +877,9 @@ module Goal = struct
   end
 
   let enter f =
+    (* the global environment of the tactic is changed to that of
+       the goal *)
+    let f gl = Proof.set_local (env gl) (f gl) in
     list_iter_goal () begin fun goal () ->
       Proof.current >>= fun env ->
       tclEVARMAP >>= fun sigma ->
@@ -892,6 +897,9 @@ module Goal = struct
   end
 
   let raw_enter f =
+    (* the global environment of the tactic is changed to that of
+       the goal *)
+    let f gl = Proof.set_local (env gl) (f gl) in
     list_iter_goal () begin fun goal () ->
       Proof.current >>= fun env ->
       tclEVARMAP >>= fun sigma ->

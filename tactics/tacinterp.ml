@@ -978,11 +978,23 @@ struct
 
   let enter f =
     bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
-      (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
+      (fun gl ->
+        (* the global environment of the tactic is changed to that of
+           the goal *)
+        Proofview.tclIN_ENV (Proofview.Goal.env gl) (
+          Proofview.V82.wrap_exceptions (fun () -> f gl)
+        )
+      )
 
   let raw_enter f =
     bind (Proofview.Goal.raw_goals >>= fun l -> Proofview.tclUNIT (Depends l))
-      (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
+      (fun gl ->
+        (* the global environment of the tactic is changed to that of
+           the goal *)
+        Proofview.tclIN_ENV (Proofview.Goal.env gl) (
+          Proofview.V82.wrap_exceptions (fun () -> f gl)
+        )
+      )
 
   let lift (type a) (t:a Proofview.tactic) : a t =
     Proofview.tclBIND t (fun x -> Proofview.tclUNIT (Uniform x))
