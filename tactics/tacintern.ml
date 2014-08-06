@@ -495,8 +495,6 @@ let rec intern_atomic lf ist x =
         List.map (intern_constr ist) lems,l)
 
   (* Derived basic tactics *)
-  | TacSimpleInductionDestruct (isrec,h) ->
-      TacSimpleInductionDestruct (isrec,intern_quantified_hypothesis ist h)
   | TacInductionDestruct (ev,isrec,(l,el,cls)) ->
       TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats)) ->
 	      (intern_induction_arg ist c,

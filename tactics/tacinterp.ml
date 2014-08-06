@@ -1688,9 +1688,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
 
   (* Derived basic tactics *)
-  | TacSimpleInductionDestruct (isrec,h) ->
-      let h = interp_quantified_hypothesis ist h in
-      if isrec then Tactics.simple_induct h else Tactics.simple_destruct h
   | TacInductionDestruct (isrec,ev,(l,el,cls)) ->
       (* spiwack: some unknown part of destruct needs the goal to be
          prenormalised. *)

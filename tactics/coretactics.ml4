@@ -175,3 +175,13 @@ END
 TACTIC EXTEND intros_until
   [ "intros" "until" quantified_hypothesis(h) ] -> [ Tactics.intros_until h ]
 END
+
+(** Simple induction / destruct *)
+
+TACTIC EXTEND simple_induction
+  [ "simple" "induction" quantified_hypothesis(h) ] -> [ Tactics.simple_induct h ]
+END
+
+TACTIC EXTEND simple_destruct
+  [ "simple" "destruct" quantified_hypothesis(h) ] -> [ Tactics.simple_destruct h ]
+END

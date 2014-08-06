@@ -130,7 +130,6 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
       intro_pattern_expr located option
 
   (* Derived basic tactics *)
-  | TacSimpleInductionDestruct of rec_flag * quantified_hypothesis
   | TacInductionDestruct of
       rec_flag * evars_flag * ('trm,'nam) induction_clause_list
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis

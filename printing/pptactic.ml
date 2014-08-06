@@ -721,9 +721,6 @@ and pr_atom1 = function
 	     ++ str "in" ++ pr_hyp_location pr_ident (id,[],(hloc,ref None)))
 *)
   (* Derived basic tactics *)
-  | TacSimpleInductionDestruct (isrec,h) ->
-      hov 1 (str "simple " ++ str (if isrec then "induction" else "destruct")
-             ++ pr_arg pr_quantified_hypothesis h)
   | TacInductionDestruct (isrec,ev,(l,el,cl)) ->
       hov 1 (str (with_evars ev (if isrec then "induction" else "destruct")) ++
              spc () ++

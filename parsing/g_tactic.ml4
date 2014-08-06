@@ -608,16 +608,12 @@ GEXTEND Gram
       | IDENT "generalize"; IDENT "dependent"; c = constr -> TacGeneralizeDep c
 
       (* Derived basic tactics *)
-      | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->
-          TacSimpleInductionDestruct (true,h)
       | IDENT "induction"; ic = induction_clause_list ->
 	  TacInductionDestruct (true,false,ic)
       | IDENT "einduction"; ic = induction_clause_list ->
 	  TacInductionDestruct(true,true,ic)
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
-      | IDENT "simple"; IDENT "destruct"; h = quantified_hypothesis ->
-          TacSimpleInductionDestruct (false,h)
       | IDENT "destruct"; icl = induction_clause_list ->
 	  TacInductionDestruct(false,false,icl)
       | IDENT "edestruct";  icl = induction_clause_list ->

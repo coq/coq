@@ -162,7 +162,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacAuto (d,n,lems,l) -> TacAuto (d,n,List.map (subst_glob_constr subst) lems,l)
 
   (* Derived basic tactics *)
-  | TacSimpleInductionDestruct (isrec,h) as x -> x
   | TacInductionDestruct (isrec,ev,(l,el,cls)) ->
       let l' = List.map (fun (c,ids) -> subst_induction_arg subst c, ids) l in
       let el' = Option.map (subst_glob_with_bindings subst) el in

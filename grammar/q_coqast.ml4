@@ -357,9 +357,6 @@ let rec mlexpr_of_atomic_tactic = function
       >>
 
   (* Derived basic tactics *)
-  | Tacexpr.TacSimpleInductionDestruct (isrec,h) ->
-      <:expr< Tacexpr.TacSimpleInductionDestruct $mlexpr_of_bool isrec$
-                  $mlexpr_of_quantified_hypothesis h$ >>
   | Tacexpr.TacInductionDestruct (isrec,ev,l) ->
       <:expr< Tacexpr.TacInductionDestruct $mlexpr_of_bool isrec$ $mlexpr_of_bool ev$
 	$mlexpr_of_triple
