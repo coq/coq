@@ -645,10 +645,6 @@ GEXTEND Gram
       | "exists"; bll = opt_bindings -> TacSplit (false,bll)
       | IDENT "eexists"; bll = opt_bindings ->
 	  TacSplit (true,bll)
-      | IDENT "constructor"; n = nat_or_var; l = with_bindings ->
-	  TacConstructor (false,n,l)
-      | IDENT "econstructor"; n = nat_or_var; l = with_bindings ->
-	  TacConstructor (true,n,l)
       (* Equivalence relations *)
       | IDENT "symmetry"; "in"; cl = in_clause -> TacSymmetry cl
 

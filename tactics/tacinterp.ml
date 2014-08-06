@@ -1760,15 +1760,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
         Tacticals.New.tclWITHHOLES ev (Tactics.split_with_bindings ev) sigma bll
       end
-  | TacConstructor (ev,n,bl) ->
-      Proofview.Goal.raw_enter begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = Proofview.Goal.sigma gl in
-        let sigma, bl = interp_bindings ist env sigma bl in
-        Tacticals.New.tclWITHHOLES ev
-          (Tactics.constructor_tac ev None (interp_int_or_var ist n)) sigma bl
-      end
-
   (* Conversion *)
   | TacReduce (r,cl) ->
       Proofview.V82.tactic begin fun gl -> 

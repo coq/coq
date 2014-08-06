@@ -390,10 +390,6 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacSplit (ev,l) ->
       <:expr< Tacexpr.TacSplit
         ($mlexpr_of_bool ev$, $mlexpr_of_list mlexpr_of_binding_kind l$)>>
-  | Tacexpr.TacConstructor (ev,n,l) ->
-      let n = mlexpr_of_or_var mlexpr_of_int n in
-      <:expr< Tacexpr.TacConstructor $mlexpr_of_bool ev$ $n$ $mlexpr_of_binding_kind l$>>
-
   (* Conversion *)
   | Tacexpr.TacReduce (r,cl) ->
       let l = mlexpr_of_clause cl in

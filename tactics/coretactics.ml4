@@ -106,10 +106,30 @@ END
 
 TACTIC EXTEND constructor
   [ "constructor" ] -> [ Tactics.any_constructor false None ]
+| [ "constructor" int_or_var(i) ] -> [
+    let i = Tacinterp.interp_int_or_var ist i in
+    Tactics.constructor_tac false None i NoBindings
+  ]
+| [ "constructor" int_or_var(i) "with" bindings(bl) ] -> [
+    let { Evd.sigma = sigma; it = bl } = bl in
+    let i = Tacinterp.interp_int_or_var ist i in
+    let tac c = Tactics.constructor_tac false None i c in
+    Tacticals.New.tclWITHHOLES false tac sigma bl
+  ]
 END
 
 TACTIC EXTEND econstructor
   [ "econstructor" ] -> [ Tactics.any_constructor true None ]
+| [ "econstructor" int_or_var(i) ] -> [
+    let i = Tacinterp.interp_int_or_var ist i in
+    Tactics.constructor_tac true None i NoBindings
+  ]
+| [ "econstructor" int_or_var(i) "with" bindings(bl) ] -> [
+    let { Evd.sigma = sigma; it = bl } = bl in
+    let i = Tacinterp.interp_int_or_var ist i in
+    let tac c = Tactics.constructor_tac true None i c in
+    Tacticals.New.tclWITHHOLES true tac sigma bl
+  ]
 END
 
 (** Specialize *)

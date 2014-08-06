@@ -523,7 +523,6 @@ let rec intern_atomic lf ist x =
 
   (* Constructors *)
   | TacSplit (ev,bll) -> TacSplit (ev,List.map (intern_bindings ist) bll)
-  | TacConstructor (ev,n,bl) -> TacConstructor (ev,intern_or_var ist n,intern_bindings ist bl)
 
   (* Conversion *)
   | TacReduce (r,cl) ->

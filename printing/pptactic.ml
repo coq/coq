@@ -778,10 +778,6 @@ and pr_atom1 = function
 
   (* Constructors *)
   | TacSplit (ev,l) -> hov 1 (str (with_evars ev "exists") ++ prlist_with_sep (fun () -> str",") pr_ex_bindings l)
-  | TacConstructor (ev,n,l) ->
-      hov 1 (str (with_evars ev "constructor") ++
-             pr_or_var pr_intarg n ++ pr_bindings l)
-
   (* Conversion *)
   | TacReduce (r,h) ->
       hov 1 (pr_red_expr r ++

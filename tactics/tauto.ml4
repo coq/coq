@@ -153,6 +153,11 @@ let flatten_contravariant_conj flags ist =
 
 (** Dealing with disjunction *)
 
+let constructor i =
+  let name = { Tacexpr.mltac_plugin = "coretactics"; mltac_tactic = "constructor" } in
+  let i = in_gen (rawwit Constrarg.wit_int_or_var) (Misctypes.ArgArg i) in
+  Tacexpr.TacAtom (Loc.ghost, Tacexpr.TacExtend (Loc.ghost, name, [i]))
+
 let is_disj flags ist =
   let t = assoc_var "X1" ist in
   if (not flags.binary_mode_bugged_detection || bugged_is_binary t) &&
@@ -176,12 +181,11 @@ let flatten_contravariant_disj flags ist =
       let hyp = valueIn (Value.of_constr hyp) in
       iter_tac (List.map_i (fun i arg ->
 	let typ = valueIn (Value.of_constr (mkArrow arg c)) in
-	let i = Tacexpr.TacGeneric (in_gen (rawwit wit_int) i) in
+	let ci = constructor i in
 	<:tactic<
           let typ := $typ in
           let hyp := $hyp in
-	  let i := $i in
-	  assert typ by (intro; apply hyp; constructor i; assumption)
+	  assert typ by (intro; apply hyp; $ci; assumption)
 	>>) 1 args) <:tactic< let hyp := $hyp in clear hyp >>
   | _ ->
       <:tactic<fail>>
@@ -199,9 +203,10 @@ let not_dep_intros ist =
 let axioms flags ist =
   let t_is_unit_or_eq = tacticIn (is_unit_or_eq flags)
   and t_is_empty = tacticIn is_empty in
+  let c1 = constructor 1 in
     <:tactic<
     match reverse goal with
-      | |- ?X1 => $t_is_unit_or_eq; constructor 1
+      | |- ?X1 => $t_is_unit_or_eq; $c1
       | _:?X1 |- _ => $t_is_empty; elimtype X1; assumption
       | _:?X1 |- ?X1 => assumption
     end >>
@@ -214,6 +219,7 @@ let simplif flags ist =
   and t_flatten_contravariant_disj = tacticIn (flatten_contravariant_disj flags)
   and t_is_disj = tacticIn (is_disj flags)
   and t_not_dep_intros = tacticIn not_dep_intros in
+  let c1 = constructor 1 in
   <:tactic<
     $t_not_dep_intros;
     repeat
@@ -231,7 +237,7 @@ let simplif flags ist =
           $t_is_unit_or_eq; cut X2;
 	    [ intro; clear id
 	    | (* id : forall (_: ?X1), ?X2 |- ?X2 *)
-	      cut X1; [exact id| constructor 1; fail]
+	      cut X1; [exact id| $c1; fail]
 	    ]
         | id: forall (_ : ?X1), ?X2|- _ =>
           $t_flatten_contravariant_conj
