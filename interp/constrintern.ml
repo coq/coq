@@ -69,7 +69,6 @@ type glob_binder = (Name.t * binding_kind * glob_constr option * glob_constr)
 type ltac_sign = {
   ltac_vars : Id.Set.t;
   ltac_bound : Id.Set.t;
-  ltac_subst : glob_constr Lazy.t Id.Map.t;
 }
 
 let interning_grammar = ref false
@@ -657,9 +656,6 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
   if Id.Set.mem id genv.ids || Id.Set.mem id ltacvars.ltac_vars
   then
     GVar (loc,id), [], [], []
-  (* Is [id] bound to a glob_constr in the the ltac context *)
-  else if Id.Map.mem id ltacvars.ltac_subst then
-    Lazy.force (Id.Map.find id ltacvars.ltac_subst), [], [], []
   (* Is [id] a notation variable *)
   else if Id.Map.mem id ntnvars
   then
@@ -1784,7 +1780,6 @@ let scope_of_type_kind = function
 let empty_ltac_sign = {
   ltac_vars = Id.Set.empty;
   ltac_bound = Id.Set.empty;
-  ltac_subst = Id.Map.empty;
 }
 
 let intern_gen kind env

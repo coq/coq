@@ -248,7 +248,6 @@ let intern_constr_gen allow_patvar isarity {ltacvars=lfun; genv=env} c =
   let ltacvars = {
     Constrintern.ltac_vars = lfun;
     ltac_bound = Id.Set.empty;
-    ltac_subst = Id.Map.empty;
   } in
   let c' =
     warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars env) c
@@ -328,7 +327,6 @@ let intern_constr_pattern ist ~as_type ~ltacvars pc =
   let ltacvars = {
     Constrintern.ltac_vars = ltacvars;
     ltac_bound = Id.Set.empty;
-    ltac_subst = Id.Map.empty;
   } in
   let metas,pat = Constrintern.intern_constr_pattern
     ist.genv ~as_type ~ltacvars pc

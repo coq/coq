@@ -480,7 +480,6 @@ let interp_uconstr ist env = function
       let ltacvars = {
         Constrintern.ltac_vars = Id.(Set.union (Map.domain typed) (Map.domain untyped));
         ltac_bound = Id.Map.domain ist.lfun;
-        ltac_subst = Id.Map.empty;
       } in
       { closure ; term =  intern_gen WithoutTypeConstraint ~ltacvars env ce }
 
@@ -496,7 +495,6 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
       let ltacvars = {
         ltac_vars = Id.Map.domain constrvars;
         ltac_bound = Id.Map.domain ist.lfun;
-        ltac_subst = Id.Map.empty;
       } in
       intern_gen kind ~allow_patvar ~ltacvars env c
   in

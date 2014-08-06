@@ -72,8 +72,6 @@ type ltac_sign = {
   (** Variables of Ltac which may be bound to a term *)
   ltac_bound : Id.Set.t;
   (** Other variables of Ltac *)
-  ltac_subst : glob_constr Lazy.t Id.Map.t;
-  (** Substitution for untyped terms *)
 }
 
 val empty_ltac_sign : ltac_sign
