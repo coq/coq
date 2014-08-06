@@ -633,12 +633,12 @@ nested types should be traversed, pruning the tree otherwise. This code is very
 close to check_positive in indtypes.ml, but does no positivy check and does not
 compute the number of recursive arguments. *)
 let get_recargs_approx env tree ind args =
-  let rec build_recargs (env, ra_env as ienv) otree c =
+  let rec build_recargs (env, ra_env as ienv) tree c =
     let x,largs = decompose_app (whd_betadeltaiota env c) in
     match kind_of_term x with
     | Prod (na,b,d) ->
        assert (List.is_empty largs);
-       build_recargs (ienv_push_var ienv (na, b, mk_norec)) otree d
+       build_recargs (ienv_push_var ienv (na, b, mk_norec)) tree d
     | Rel k ->
        (* Free variables are allowed and assigned Norec *)
        (try snd (List.nth ra_env (k-1))
@@ -646,13 +646,9 @@ let get_recargs_approx env tree ind args =
     | Ind ind_kn ->
        (* When the inferred tree allows it, we consider that we have a potential
        nested inductive type *)
-       begin match otree with
-	     | Some tree ->
-		begin match dest_recarg tree with
-		      | Imbr kn' | Mrec kn' when eq_ind (fst ind_kn) kn' ->
-				    build_recargs_nested ienv tree (ind_kn, largs)
-		      | _ -> mk_norec
-		end
+       begin match dest_recarg tree with
+	     | Imbr kn' | Mrec kn' when eq_ind (fst ind_kn) kn' ->
+			   build_recargs_nested ienv tree (ind_kn, largs)
 	     | _ -> mk_norec
        end
     | err ->
@@ -672,10 +668,12 @@ let get_recargs_approx env tree ind args =
     let (env',_ as ienv') = ienv_push_inductive ienv ((mind,u),lpar) in
     (* Parameters expressed in env' *)
     let lpar' = List.map (lift auxntyp) lpar in
-    (* In case of mutual inductive types, no need to keep the tree since nested
-       mutual inductive types are not supported. *)
-    let otree =
-      if Int.equal auxntyp 1 then Some (dest_subterms tree) else None
+    (* In case of mutual inductive types, we use the recargs tree which was
+    computed statically. This is fine because nested inductive types with
+    mutually recursive containers are not supported. *)
+    let trees =
+      if Int.equal auxntyp 1 then [|dest_subterms tree|]
+      else Array.map (fun mip -> dest_subterms mip.mind_recargs) mib.mind_packets
     in
     let mk_irecargs j specif =
       (* The nested inductive type with parameters removed *)
@@ -685,10 +683,7 @@ let get_recargs_approx env tree ind args =
 	 let c' = hnf_prod_applist env' c lpar' in
 	 (* skip non-recursive parameters *)
 	 let (ienv',c') = ienv_decompose_prod ienv' nonrecpar c' in
-	 let otree =
-	   match otree with None -> None | Some tree -> Some tree.(k)
-	 in
-	 build_recargs_constructors ienv' otree c')
+	 build_recargs_constructors ienv' trees.(j).(k) c')
 	auxlcvect
       in
       mk_paths (Imbr (mind,j)) paths
@@ -696,21 +691,20 @@ let get_recargs_approx env tree ind args =
     let irecargs = Array.mapi mk_irecargs mib.mind_packets in
     (Rtree.mk_rec irecargs).(i)
 
-  and build_recargs_constructors ienv otrees c =
-    let rec recargs_constr_rec (env,ra_env as ienv) otrees lrec c =
+  and build_recargs_constructors ienv trees c =
+    let rec recargs_constr_rec (env,ra_env as ienv) trees lrec c =
       let x,largs = decompose_app (whd_betadeltaiota env c) in
 	match kind_of_term x with
 
           | Prod (na,b,d) ->
 	     let () = assert (List.is_empty largs) in
-             let recarg = build_recargs ienv (Option.map List.hd otrees) b in
+             let recarg = build_recargs ienv (List.hd trees) b in
              let ienv' = ienv_push_var ienv (na,b,mk_norec) in
-	     let otrees = Option.map List.tl otrees in
-             recargs_constr_rec ienv' otrees (recarg::lrec) d
+             recargs_constr_rec ienv' (List.tl trees) (recarg::lrec) d
           | hd ->
              List.rev lrec
     in
-    recargs_constr_rec ienv otrees [] c
+    recargs_constr_rec ienv trees [] c
   in
   (* starting with ra_env = [] seems safe because any unbounded Rel will be
   assigned Norec *)
