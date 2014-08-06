@@ -94,8 +94,6 @@ let initial_atomic =
         "cofix", TacCofix None;
         "trivial", TacTrivial (Off,[],None);
         "auto", TacAuto(Off,None,[],None);
-        "constructor", TacAnyConstructor (false,None);
-        "econstructor", TacAnyConstructor (true,None);
       ]
   in
   let fold accu (s, t) = Id.Map.add (Id.of_string s) t accu in

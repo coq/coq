@@ -646,8 +646,6 @@ let pr_cofix_tac (id,c) =
 let rec pr_atom0 = function
   | TacIntroPattern [] -> str "intros"
   | TacIntroMove (None,MoveLast) -> str "intro"
-  | TacAnyConstructor (false,None) -> str "constructor"
-  | TacAnyConstructor (true,None) -> str "econstructor"
   | TacTrivial (d,[],Some []) -> str (string_of_debug d ^ "trivial")
   | TacAuto (d,None,[],Some []) -> str (string_of_debug d ^ "auto")
   | TacClear (true,[]) -> str "clear"
@@ -780,9 +778,6 @@ and pr_atom1 = function
 
   (* Constructors *)
   | TacSplit (ev,l) -> hov 1 (str (with_evars ev "exists") ++ prlist_with_sep (fun () -> str",") pr_ex_bindings l)
-  | TacAnyConstructor (ev,Some t) ->
-      hov 1 (str (with_evars ev "constructor") ++ pr_arg (pr_tac_level (latom,E)) t)
-  | TacAnyConstructor (ev,None) as t -> pr_atom0 t
   | TacConstructor (ev,n,l) ->
       hov 1 (str (with_evars ev "constructor") ++
              pr_or_var pr_intarg n ++ pr_bindings l)

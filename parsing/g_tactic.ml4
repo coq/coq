@@ -649,9 +649,6 @@ GEXTEND Gram
 	  TacConstructor (false,n,l)
       | IDENT "econstructor"; n = nat_or_var; l = with_bindings ->
 	  TacConstructor (true,n,l)
-      | IDENT "constructor"; t = OPT tactic -> TacAnyConstructor (false,t)
-      | IDENT "econstructor"; t = OPT tactic -> TacAnyConstructor (true,t)
-
       (* Equivalence relations *)
       | IDENT "symmetry"; "in"; cl = in_clause -> TacSymmetry cl
 

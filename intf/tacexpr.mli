@@ -149,8 +149,6 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
 
   (* Trmuctors *)
   | TacSplit of evars_flag * 'trm bindings list
-  | TacAnyConstructor of evars_flag *
-      ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option
   | TacConstructor of evars_flag * int or_var * 'trm bindings
 
   (* Conversion *)

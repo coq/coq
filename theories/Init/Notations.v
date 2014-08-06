@@ -90,3 +90,13 @@ Declare ML Module "g_class".
 Declare ML Module "g_eqdecide".
 Declare ML Module "g_rewrite".
 Declare ML Module "tauto".
+
+(** Small hack to overcome the fact that the (e)constructor tactics need to have
+    a proper parsing rule, because the variants with arguments conflicts
+    with it. *)
+Module CoreTactics.
+Declare ML Module "coretactics".
+End CoreTactics.
+
+Tactic Notation "constructor" := CoreTactics.constructor.
+Tactic Notation "econstructor" := CoreTactics.econstructor.

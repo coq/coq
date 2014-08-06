@@ -102,6 +102,16 @@ TACTIC EXTEND eright_with
   ]
 END
 
+(** Constructor *)
+
+TACTIC EXTEND constructor
+  [ "constructor" ] -> [ Tactics.any_constructor false None ]
+END
+
+TACTIC EXTEND econstructor
+  [ "econstructor" ] -> [ Tactics.any_constructor true None ]
+END
+
 (** Specialize *)
 
 TACTIC EXTEND specialize
