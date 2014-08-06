@@ -359,12 +359,14 @@ let refine_red_flags =
 
 let refine_locs = { Locus.onhyps=None; concl_occs=Locus.AllOccurrences }
 
-let refine_tac c =
+let refine_tac {Glob_term.closure=closure;term=term} =
     let c = Goal.Refinable.make begin fun h ->
       Goal.bind Goal.concl (fun concl ->
         let flags = Pretyping.all_no_fail_flags in
         let tycon = Pretyping.OfType concl in
-        Goal.Refinable.constr_of_raw h tycon flags Id.Map.(empty,empty) c)
+        Goal.Refinable.constr_of_raw h tycon flags
+          Glob_term.(closure.typed,closure.untyped,Id.Map.empty) term
+      )
     end in
     Proofview.Goal.lift c begin fun c ->
       Proofview.tclSENSITIVE (Goal.refine c) <*>

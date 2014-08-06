@@ -46,8 +46,9 @@ open Misctypes
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 type var_map = constr_under_binders Id.Map.t
+type uconstr_var_map = Glob_term.closed_glob_constr Id.Map.t
 type unbound_ltac_var_map = Genarg.tlevel Genarg.generic_argument Id.Map.t
-type ltac_var_map = var_map * unbound_ltac_var_map
+type ltac_var_map = var_map * uconstr_var_map * unbound_ltac_var_map
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr
 
@@ -236,7 +237,7 @@ let protected_get_type_of env sigma c =
       (str "Cannot reinterpret " ++ quote (print_constr c) ++
        str " in the current environment.")
 
-let pretype_id loc env evdref (lvar,unbndltacvars) id =
+let pretype_id pretype loc env evdref (lvar,globvar,unbndltacvars) id =
   let sigma = !evdref in
   (* Look for the binder of [id] *)
   try
@@ -249,6 +250,13 @@ let pretype_id loc env evdref (lvar,unbndltacvars) id =
       let subst = List.map (invert_ltac_bound_name env id) ids in
       let c = substl subst c in
 	{ uj_val = c; uj_type = protected_get_type_of env sigma c }
+    with Not_found -> try
+       let {closure;term} = Id.Map.find id globvar in
+       (* spiwack: I'm catching [Not_found] potentially too eagerly
+          here, as the call to the main pretyping function is caught
+          inside the try but I want to avoid refactoring this function
+          too much for now. *)
+       pretype env evdref (closure.typed,closure.untyped,unbndltacvars) term
     with Not_found ->
         (* Check if [id] is a ltac variable not bound to a term *)
 	(* and build a nice error message *)
@@ -366,7 +374,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 
   | GVar (loc, id) ->
     inh_conv_coerce_to_tycon loc env evdref
-      (pretype_id loc env evdref lvar id)
+      (pretype_id (fun e r l t -> pretype tycon e r l t) loc env evdref lvar id)
       tycon
 
   | GEvar (loc, evk, instopt) ->
@@ -402,7 +410,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
         | Some ty -> ty
         | None ->
           new_type_evar evdref env loc in
-      let ist = snd lvar in
+      let ist = Util.pi3 lvar in
       let (c, sigma) = Hook.get f_genarg_interp ty env !evdref ist arg in
       let () = evdref := sigma in
       { uj_val = c; uj_type = ty }
@@ -899,7 +907,7 @@ let no_classes_no_fail_inference_flags = {
 let all_and_fail_flags = default_inference_flags true
 let all_no_fail_flags = default_inference_flags false
 
-let empty_lvar : ltac_var_map = (Id.Map.empty, Id.Map.empty)
+let empty_lvar : ltac_var_map = (Id.Map.empty, Id.Map.empty, Id.Map.empty)
 
 let on_judgment f j =
   let c = mkCast(j.uj_val,DEFAULTcast, j.uj_type) in

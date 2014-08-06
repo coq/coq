@@ -72,3 +72,13 @@ and cases_clause = (Loc.t * Id.t list * cases_pattern list * glob_constr)
 (** [(p,il,cl,t)] = "|'cl' => 't'". Precondition: the free variables
     of [t] are members of [il]. *)
 and cases_clauses = cases_clause list
+
+(** A globalised term together with a closure representing the value
+    of its free variables. Intended for use when these variables are taken
+    from the Ltac environment. *)
+type closure = {
+  typed: Pattern.constr_under_binders Id.Map.t ;
+  untyped:closed_glob_constr Id.Map.t }
+and closed_glob_constr = {
+  closure: closure;
+  term: glob_constr }

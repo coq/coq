@@ -457,39 +457,36 @@ let interp_fresh_id ist env l =
 
 (* Extract the uconstr list from lfun *)
 let extract_ltac_uconstr_values ist env =
-  let fold id v accu =
+  let open Glob_term in
+  let fold id v ({typed;untyped} as accu) =
     try
       let c = coerce_to_uconstr env v in
-      Id.Map.add id c accu
-    with CannotCoerceTo _ -> accu
+      { typed ; untyped = Id.Map.add id c untyped }
+    with CannotCoerceTo _ -> try
+      let c = coerce_to_constr env v in
+      { typed = Id.Map.add id c typed ; untyped }
+    with CannotCoerceTo _ ->
+      accu
   in
-  Id.Map.fold fold ist.lfun Id.Map.empty
+  Id.Map.fold fold ist.lfun { typed = Id.Map.empty ; untyped = Id.Map.empty }
 
 (** Significantly simpler than [interp_constr], to interpret an
-    untyped constr, it suffices to substitute any bound Ltac variables
-    while redoing internalisation. *)
-let subst_in_ucconstr subst =
-  let rec subst_in_ucconstr = function
-  | Glob_term.GVar (_,id) as x ->
-      begin try Lazy.force (Id.Map.find id subst)
-      with Not_found -> x end
-  | c -> Glob_ops.map_glob_constr subst_in_ucconstr c
-  in
-  subst_in_ucconstr
-
+    untyped constr, it suffices to adjoin a closure environment. *)
 let interp_uconstr ist env = function
-  | (c,None) -> subst_in_ucconstr (extract_ltac_uconstr_values ist env) c
+  | (term,None) ->
+      { closure = extract_ltac_uconstr_values ist env ; term }
   | (_,Some ce) ->
+      let ( {typed ; untyped } as closure) = extract_ltac_uconstr_values ist env in
       let ltacvars = {
-        Constrintern.ltac_vars = Id.Set.empty;
+        Constrintern.ltac_vars = Id.(Set.union (Map.domain typed) (Map.domain untyped));
         ltac_bound = Id.Map.domain ist.lfun;
-        ltac_subst = extract_ltac_uconstr_values ist env;
+        ltac_subst = Id.Map.empty;
       } in
-      intern_gen WithoutTypeConstraint ~ltacvars env ce
+      { closure ; term =  intern_gen WithoutTypeConstraint ~ltacvars env ce }
 
 let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let constrvars = extract_ltac_constr_values ist env in
-  let vars = (constrvars, ist.lfun) in
+  let vars = (constrvars, Id.Map.empty, ist.lfun) in
   let c = match ce with
   | None -> c
     (* If at toplevel (ce<>None), the error can be due to an incorrect
@@ -1189,8 +1186,11 @@ and interp_tacarg ist arg : typed_generic_argument GTac.t =
       GTac.raw_enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
-        let c_glob = interp_uconstr ist env c in
-        let (sigma,c_interp) = Pretyping.understand_tcc sigma env c_glob in
+        let {closure;term} = interp_uconstr ist env c in
+        let vars = closure.typed , closure.untyped , ist.lfun in
+        let (sigma,c_interp) =
+          Pretyping.understand_ltac constr_flags sigma env vars WithoutTypeConstraint term
+        in
         Proofview.V82.tclEVARS sigma <*>
         GTac.return (Value.of_constr c_interp)
       end

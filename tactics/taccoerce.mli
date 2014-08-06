@@ -37,8 +37,8 @@ sig
 
   val of_constr : constr -> t
   val to_constr : t -> constr option
-  val of_uconstr : Glob_term.glob_constr -> t
-  val to_uconstr : t -> Glob_term.glob_constr option
+  val of_uconstr : Glob_term.closed_glob_constr -> t
+  val to_uconstr : t -> Glob_term.closed_glob_constr option
   val of_int : int -> t
   val to_int : t -> int option
   val to_list : t -> t list option
@@ -58,7 +58,7 @@ val coerce_to_int : Value.t -> int
 
 val coerce_to_constr : Environ.env -> Value.t -> constr_under_binders
 
-val coerce_to_uconstr : Environ.env -> Value.t -> Glob_term.glob_constr Lazy.t
+val coerce_to_uconstr : Environ.env -> Value.t -> Glob_term.closed_glob_constr
 
 val coerce_to_closed_constr : Environ.env -> Value.t -> constr
 

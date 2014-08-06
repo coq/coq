@@ -1173,7 +1173,7 @@ let explain_ltac_call_trace last trace loc =
   | Proof_type.LtacAtomCall te ->
       quote (Pptactic.pr_glob_tactic (Global.env())
               (Tacexpr.TacAtom (Loc.ghost,te)))
-  | Proof_type.LtacConstrInterp (c,(vars,unboundvars)) ->
+  | Proof_type.LtacConstrInterp (c,(vars,_,unboundvars)) ->
       quote (pr_glob_constr_env (Global.env()) c) ++
         (if not (Id.Map.is_empty vars) then
           strbrk " (with " ++
