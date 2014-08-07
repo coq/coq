@@ -23,8 +23,6 @@
     | AddLoadPath of string
     | AddRecLoadPath of string * qualid
 
-  let comment_depth = ref 0
-
   exception Fin_fichier
   exception Syntax_error of int*int
 
@@ -104,7 +102,7 @@ rule coq_action = parse
   | space+
       { coq_action lexbuf }
   | "(*"
-      { comment_depth := 1; comment lexbuf; coq_action lexbuf }
+      { comment lexbuf; coq_action lexbuf }
   | eof
       { raise Fin_fichier}
   | _
@@ -112,7 +110,7 @@ rule coq_action = parse
 
 and from_rule = parse
   | "(*"
-      { comment_depth := 1; comment lexbuf; require_file lexbuf }
+      { comment lexbuf; from_rule lexbuf }
   | space+
       { from_rule lexbuf }
   | coq_ident
@@ -127,7 +125,7 @@ and from_rule = parse
 
 and consume_require = parse
   | "(*"
-      { comment_depth := 1; comment lexbuf; consume_require lexbuf }
+      { comment lexbuf; consume_require lexbuf }
   | space+
       { consume_require lexbuf }
   | "Require" space+
@@ -139,7 +137,7 @@ and consume_require = parse
 
 and add_loadpath = parse
   | "(*"
-      { comment_depth := 1; comment lexbuf; add_loadpath lexbuf }
+      { comment lexbuf; add_loadpath lexbuf }
   | space+
       { add_loadpath lexbuf }
   | eof
@@ -150,7 +148,7 @@ and add_loadpath = parse
 
 and add_loadpath_as = parse
   | "(*"
-      { comment_depth := 1; comment lexbuf; add_loadpath_as lexbuf }
+      { comment lexbuf; add_loadpath_as lexbuf }
   | space+
       { add_loadpath_as lexbuf }
   | "as"
@@ -186,8 +184,8 @@ and caml_action = parse
       { caml_action lexbuf }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { caml_action lexbuf }
-  | "(*" (* "*)" *)
-      { comment_depth := 1; comment lexbuf; caml_action lexbuf }
+  | "(*"
+      { comment lexbuf; caml_action lexbuf }
   | "#" | "&"  | "&&" | "'" | "(" | ")" | "*" | "," | "?" | "->" | "." | ".."
    | ".(" | ".[" | ":" | "::" | ":=" | ";" | ";;" | "<-" | "=" | "[" | "[|"
    | "[<" | "]" | "_" | "{" | "|" | "||" | "|]" | ">]" | "}" | "!=" | "-"
@@ -212,11 +210,10 @@ and caml_action = parse
   | _ { caml_action lexbuf }
 
 and comment = parse
-  | "(*" (* "*)" *)
-      { comment_depth := succ !comment_depth; comment lexbuf }
+  | "(*"
+      { comment lexbuf; comment lexbuf }
   | "*)"
-      { comment_depth := pred !comment_depth;
-        if !comment_depth > 0 then comment lexbuf }
+      { () }
   | "'" [^ '\\' '\''] "'"
       { comment lexbuf }
   | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'"
@@ -256,7 +253,7 @@ and load_file = parse
 
 and require_file = parse
   | "(*"
-      { comment_depth := 1; comment lexbuf; require_file lexbuf }
+      { comment lexbuf; require_file lexbuf }
   | space+
       { require_file lexbuf }
   | coq_ident
@@ -291,7 +288,7 @@ and parse_dot = parse
 
 and coq_qual_id = parse
   | "(*"
-      { comment_depth := 1; comment lexbuf; coq_qual_id lexbuf }
+      { comment lexbuf; coq_qual_id lexbuf }
   | space+
       { coq_qual_id lexbuf }
   | coq_ident
@@ -307,7 +304,7 @@ and coq_qual_id = parse
 
 and coq_qual_id_tail = parse
   | "(*"
-      { comment_depth := 1; comment lexbuf; coq_qual_id_tail lexbuf }
+      { comment lexbuf; coq_qual_id_tail lexbuf }
   | space+
       { coq_qual_id_tail lexbuf }
   | coq_field
@@ -324,7 +321,7 @@ and coq_qual_id_tail = parse
 
 and coq_qual_id_list = parse
   | "(*"
-      { comment_depth := 1; comment lexbuf; coq_qual_id_list lexbuf }
+      { comment lexbuf; coq_qual_id_list lexbuf }
   | space+
       { coq_qual_id_list lexbuf }
   | coq_ident
@@ -342,8 +339,7 @@ and modules = parse
   | space+
       { modules lexbuf }
   | "(*"
-      { comment_depth := 1; comment lexbuf;
-        modules lexbuf }
+      { comment lexbuf; modules lexbuf }
   | '"' [^'"']* '"'
       { let lex = (Lexing.lexeme lexbuf) in
 	let str = String.sub lex 1 (String.length lex - 2) in
