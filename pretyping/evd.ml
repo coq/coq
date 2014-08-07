@@ -1617,10 +1617,10 @@ let pr_evar_constraints pbs =
   in
   prlist_with_sep fnl pr_evconstr pbs
 
-let pr_evar_map_gen pr_evars sigma =
+let pr_evar_map_gen with_univs pr_evars sigma =
   let { universes = uvs } = sigma in
-  let evs = if has_no_evar sigma then mt () else pr_evars sigma
-  and svs = pr_evar_universe_context uvs
+  let evs = if has_no_evar sigma then mt () else pr_evars sigma ++ fnl ()
+  and svs = if with_univs then pr_evar_universe_context uvs else mt ()
   and cstrs =
     if List.is_empty sigma.conv_pbs then mt ()
     else
@@ -1666,11 +1666,11 @@ let pr_evar_by_filter filter sigma =
   in
   prdef ++ prundef
 
-let pr_evar_map depth sigma =
-  pr_evar_map_gen (fun sigma -> pr_evar_by_depth depth sigma) sigma
+let pr_evar_map ?(with_univs=true) depth sigma =
+  pr_evar_map_gen with_univs (fun sigma -> pr_evar_by_depth depth sigma) sigma
 
-let pr_evar_map_filter filter sigma =
-  pr_evar_map_gen (fun sigma -> pr_evar_by_filter filter sigma) sigma
+let pr_evar_map_filter ?(with_univs=true) filter sigma =
+  pr_evar_map_gen with_univs (fun sigma -> pr_evar_by_filter filter sigma) sigma
 
 let pr_metaset metas =
   str "[" ++ pr_sequence pr_meta (Metaset.elements metas) ++ str "]"

@@ -875,7 +875,7 @@ let pr_constraints printenv env evd evars cstrs =
       pe ++ evs ++ fnl() ++ h 0 (pr_evar_constraints cstrs)
     else
       let filter evk _ = Evar.Map.mem evk evars in
-      pr_evar_map_filter filter evd
+      pr_evar_map_filter ~with_univs:false filter evd
 
 let explain_unsatisfiable_constraints env evd constr comp =
   let (_, constraints) = Evd.extract_all_conv_pbs evd in

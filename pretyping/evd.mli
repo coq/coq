@@ -517,8 +517,8 @@ type unsolvability_explanation = SeveralInstancesFound of int
 
 val pr_evar_info : evar_info -> Pp.std_ppcmds
 val pr_evar_constraints : evar_constraint list -> Pp.std_ppcmds
-val pr_evar_map : int option -> evar_map -> Pp.std_ppcmds
-val pr_evar_map_filter : (Evar.t -> evar_info -> bool) ->
+val pr_evar_map : ?with_univs:bool -> int option -> evar_map -> Pp.std_ppcmds
+val pr_evar_map_filter : ?with_univs:bool -> (Evar.t -> evar_info -> bool) ->
   evar_map -> Pp.std_ppcmds
 val pr_metaset : Metaset.t -> Pp.std_ppcmds
 val pr_evar_universe_context : evar_universe_context -> Pp.std_ppcmds
