@@ -298,7 +298,7 @@ let projectAndApply thin id eqname names depids =
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =
-    Proofview.Goal.raw_enter begin fun gl ->
+    Proofview.Goal.enter begin fun gl ->
     (** We only look at the type of hypothesis "id" *)
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
     let (t,t1,t2) = Hipattern.dest_nf_eq gl hyp in

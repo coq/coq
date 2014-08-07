@@ -924,7 +924,7 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   end
 
 let onEquality with_evars tac (c,lbindc) =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let type_of = pf_type_of gl in
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
   let t = type_of c in
@@ -1214,7 +1214,7 @@ let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 let eqdep_dec = qualid_of_string "Coq.Logic.Eqdep_dec"
 
 let inject_if_homogenous_dependent_pair ty =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   try
     let eq,u,(t,t1,t2) = find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
@@ -1484,9 +1484,9 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
 exception NothingToRewrite
 
 let cutSubstInConcl_RL eqn =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let (lbeq,u,(t,e1,e2 as eq)) = find_eq_data_decompose gl eqn in
-  let concl = pf_nf_concl gl in
+  let concl = pf_concl gl in
   let sigma,body,expected_goal = pf_apply subst_tuple_term gl e2 e1 concl in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
     Proofview.V82.tclEVARS sigma <*>

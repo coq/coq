@@ -1568,7 +1568,7 @@ let my_find_eq_data_decompose gl t =
       -> raise ConstrMatching.PatternMatchingFailure
 
 let intro_decomp_eq loc l thin tac id =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let c = mkVar id in
   let t = Tacmach.New.pf_type_of gl c in
   let _,t = Tacmach.New.pf_reduce_to_quantified_ind gl t in
