@@ -82,11 +82,7 @@ let dot = '.' ( space+ | eof)
 
 rule coq_action = parse
   | "Require" space+
-      { require_file lexbuf }
-  | "Require" space+ "Export" space+
-      { require_file lexbuf }
-  | "Require" space+ "Import" space+
-      { require_file lexbuf }
+      { require_modifiers lexbuf }
   | "Local"? "Declare" space+ "ML" space+ "Module" space+
       { mllist := []; modules lexbuf }
   | "Load" space+
@@ -123,13 +119,27 @@ and from_rule = parse
   | _
       { syntax_error lexbuf }
 
+and require_modifiers = parse
+  | "(*"
+      { comment lexbuf; require_modifiers lexbuf }
+  | "Import" space+
+      { require_file lexbuf }
+  | "Export" space+
+      { require_file lexbuf }
+  | space+
+      { require_modifiers lexbuf }
+  | eof
+      { syntax_error lexbuf }
+  | _
+      { backtrack lexbuf ; require_file lexbuf }
+
 and consume_require = parse
   | "(*"
       { comment lexbuf; consume_require lexbuf }
   | space+
       { consume_require lexbuf }
   | "Require" space+
-      { require_file lexbuf }
+      { require_modifiers lexbuf }
   | eof
       { syntax_error lexbuf }
   | _
