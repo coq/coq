@@ -873,6 +873,7 @@ module Goal = struct
     let concl = Reductionops.nf_evar sigma concl in
     let map_nf c = Reductionops.nf_evar sigma c in
     let hyps = Environ.map_named_val map_nf hyps in
+    let env = Environ.reset_with_named_context hyps env in
     f {env=env;sigma=sigma;hyps=hyps;concl=concl;self=self}
   end
 
