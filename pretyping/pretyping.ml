@@ -48,7 +48,11 @@ type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 type var_map = constr_under_binders Id.Map.t
 type uconstr_var_map = Glob_term.closed_glob_constr Id.Map.t
 type unbound_ltac_var_map = Genarg.tlevel Genarg.generic_argument Id.Map.t
-type ltac_var_map = var_map * uconstr_var_map * unbound_ltac_var_map
+type ltac_var_map = {
+  ltac_constrs : var_map;
+  ltac_uconstrs : uconstr_var_map;
+  ltac_genargs : unbound_ltac_var_map;
+}
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr
 
@@ -237,7 +241,7 @@ let protected_get_type_of env sigma c =
       (str "Cannot reinterpret " ++ quote (print_constr c) ++
        str " in the current environment.")
 
-let pretype_id pretype loc env evdref (lvar,globvar,unbndltacvars) id =
+let pretype_id pretype loc env evdref lvar id =
   let sigma = !evdref in
   (* Look for the binder of [id] *)
   try
@@ -246,21 +250,22 @@ let pretype_id pretype loc env evdref (lvar,globvar,unbndltacvars) id =
   with Not_found ->
     (* Check if [id] is an ltac variable *)
     try
-      let (ids,c) = Id.Map.find id lvar in
+      let (ids,c) = Id.Map.find id lvar.ltac_constrs in
       let subst = List.map (invert_ltac_bound_name env id) ids in
       let c = substl subst c in
 	{ uj_val = c; uj_type = protected_get_type_of env sigma c }
     with Not_found -> try
-       let {closure;term} = Id.Map.find id globvar in
+       let {closure;term} = Id.Map.find id lvar.ltac_uconstrs in
+       let lvar = { lvar with ltac_constrs = closure.typed; ltac_uconstrs = closure.untyped } in
        (* spiwack: I'm catching [Not_found] potentially too eagerly
           here, as the call to the main pretyping function is caught
           inside the try but I want to avoid refactoring this function
           too much for now. *)
-       pretype env evdref (closure.typed,closure.untyped,unbndltacvars) term
+       pretype env evdref lvar term
     with Not_found ->
         (* Check if [id] is a ltac variable not bound to a term *)
 	(* and build a nice error message *)
-      if Id.Map.mem id unbndltacvars then
+      if Id.Map.mem id lvar.ltac_genargs then
 	user_err_loc (loc,"",
           str "Variable " ++ pr_id id ++ str " should be bound to a term.");
       (* Check if [id] is a section or goal variable *)
@@ -362,7 +367,7 @@ let is_GHole = function
   | GHole _ -> true
   | _ -> false
 
-let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
+let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var_map) t =
   let inh_conv_coerce_to_tycon = inh_conv_coerce_to_tycon resolve_tc in
   let pretype_type = pretype_type resolve_tc in
   let pretype = pretype resolve_tc in
@@ -410,7 +415,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
         | Some ty -> ty
         | None ->
           new_type_evar evdref env loc in
-      let ist = Util.pi3 lvar in
+      let ist = lvar.ltac_genargs in
       let (c, sigma) = Hook.get f_genarg_interp ty env !evdref ist arg in
       let () = evdref := sigma in
       { uj_val = c; uj_type = ty }
@@ -907,7 +912,11 @@ let no_classes_no_fail_inference_flags = {
 let all_and_fail_flags = default_inference_flags true
 let all_no_fail_flags = default_inference_flags false
 
-let empty_lvar : ltac_var_map = (Id.Map.empty, Id.Map.empty, Id.Map.empty)
+let empty_lvar : ltac_var_map = {
+  ltac_constrs = Id.Map.empty;
+  ltac_uconstrs = Id.Map.empty;
+  ltac_genargs = Id.Map.empty;
+}
 
 let on_judgment f j =
   let c = mkCast(j.uj_val,DEFAULTcast, j.uj_type) in

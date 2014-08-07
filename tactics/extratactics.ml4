@@ -364,8 +364,11 @@ let refine_tac {Glob_term.closure=closure;term=term} =
       Goal.bind Goal.concl (fun concl ->
         let flags = Pretyping.all_no_fail_flags in
         let tycon = Pretyping.OfType concl in
-        Goal.Refinable.constr_of_raw h tycon flags
-          Glob_term.(closure.typed,closure.untyped,Id.Map.empty) term
+        let lvar = { Pretyping.empty_lvar with
+          Pretyping.ltac_constrs = closure.Glob_term.typed;
+          Pretyping.ltac_uconstrs = closure.Glob_term.untyped;
+        } in
+        Goal.Refinable.constr_of_raw h tycon flags lvar term
       )
     end in
     Proofview.Goal.lift c begin fun c ->

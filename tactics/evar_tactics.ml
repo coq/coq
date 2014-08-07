@@ -44,7 +44,12 @@ let instantiate_tac n (ist,rawc) ido =
     let evi = Evd.find sigma evk in
     let filtered = Evd.evar_filtered_env evi in
     let constrvars = Tacinterp.extract_ltac_constr_values ist filtered in
-    let sigma' = w_refine (evk,evi) ((constrvars,Names.Id.Map.empty, ist.Geninterp.lfun),rawc) sigma in
+    let lvar = {
+      Pretyping.ltac_constrs = constrvars;
+      ltac_uconstrs = Names.Id.Map.empty;
+      ltac_genargs = ist.Geninterp.lfun;
+    } in
+    let sigma' = w_refine (evk,evi) (lvar ,rawc) sigma in
     tclEVARS sigma' gl
   end
 

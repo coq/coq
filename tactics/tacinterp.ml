@@ -485,7 +485,11 @@ let interp_uconstr ist env = function
 
 let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let constrvars = extract_ltac_constr_values ist env in
-  let vars = (constrvars, Id.Map.empty, ist.lfun) in
+  let vars = {
+    Pretyping.ltac_constrs = constrvars;
+    Pretyping.ltac_uconstrs = Id.Map.empty;
+    Pretyping.ltac_genargs = ist.lfun;
+  } in
   let c = match ce with
   | None -> c
     (* If at toplevel (ce<>None), the error can be due to an incorrect
@@ -1185,7 +1189,11 @@ and interp_tacarg ist arg : typed_generic_argument GTac.t =
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let {closure;term} = interp_uconstr ist env c in
-        let vars = closure.typed , closure.untyped , ist.lfun in
+        let vars = {
+          Pretyping.ltac_constrs = closure.typed;
+          Pretyping.ltac_uconstrs = closure.untyped;
+          Pretyping.ltac_genargs = ist.lfun;
+        } in
         let (sigma,c_interp) =
           Pretyping.understand_ltac constr_flags sigma env vars WithoutTypeConstraint term
         in
