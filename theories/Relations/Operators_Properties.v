@@ -35,7 +35,8 @@ Section Properties.
 
   Section Clos_Refl_Trans.
 
-    Local Notation "R *" := (clos_refl_trans R) (at level 8, left associativity).
+    Local Notation "R *" := (clos_refl_trans R)
+      (at level 8, left associativity, format "R *").
 
     (** Correctness of the reflexive-transitive closure operator *)
 

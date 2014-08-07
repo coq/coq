@@ -451,7 +451,7 @@ let pr pr sep inherited a =
       lfix
   | CProdN _ ->
       let (bl,a) = extract_prod_binders a in
-      hov 2 (
+      hov 0 (
 	hov 2 (pr_delimited_binders pr_forall spc
                  (pr mt ltop) bl) ++
         str "," ++ pr spc ltop a),

@@ -420,8 +420,9 @@ let pr_in_hyp_as pr_id = function
       pr_in (spc () ++ pr_clear_flag clear pr_id id) ++ pr_as_ipat ipat
 
 let pr_clauses default_is_concl pr_id = function
-  | { onhyps=Some []; concl_occs=AllOccurrences }
-      when (match default_is_concl with Some true -> true | _ -> false) -> mt ()
+  | { onhyps=Some []; concl_occs=occs }
+      when (match default_is_concl with Some true -> true | _ -> false) ->
+      pr_with_occurrences mt (occs,())
   | { onhyps=None; concl_occs=AllOccurrences }
       when (match default_is_concl with Some false -> true | _ -> false) -> mt ()
   | { onhyps=None; concl_occs=NoOccurrences } ->
@@ -706,8 +707,8 @@ and pr_atom1 = function
       hov 1 (str "pose" ++ pr_pose pr_constr pr_lconstr na c)
   | TacLetTac (na,c,cl,b,e) ->
       hov 1 ((if b then str "set" else str "remember") ++
-             (if b then pr_pose pr_lconstr else pr_pose_as_style)
-	        pr_constr na c ++
+             (if b then pr_pose pr_constr pr_lconstr na c
+              else pr_pose_as_style pr_constr na c) ++
              pr_opt (fun p -> pr_eqn_ipat p ++ spc ()) e ++
              pr_clauses (Some b) pr_ident cl)
 (*  | TacInstantiate (n,c,ConclLocation ()) ->
@@ -853,7 +854,7 @@ let rec pr_tac inherited tac =
       lfun
   | TacThens (t,tl) ->
       hov 1 (pr_tac (lseq,E) t ++ pr_then () ++ spc () ++
-             pr_seq_body (pr_tac ltop) tl),
+             pr_seq_body (pr_opt_tactic (pr_tac ltop)) tl),
       lseq
   | TacThen (t1,t2) ->
       hov 1 (pr_tac (lseq,E) t1 ++ pr_then () ++ spc () ++
