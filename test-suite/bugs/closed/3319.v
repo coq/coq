@@ -3,6 +3,7 @@ Set Implicit Arguments.
 Inductive paths {A : Type} (a : A) : A -> Type :=
   idpath : paths a a
                  where "x = y" := (@paths _ x y) : type_scope.
+
 Record PreCategory := { obj :> Type; morphism : obj -> obj -> Type }.
 Record NotionOfStructure (X : PreCategory) :=
   { structure :> X -> Type;
@@ -14,15 +15,11 @@ Section precategory.
   Variable P : NotionOfStructure X.
   Local Notation object := { x : X & P x }.
   Record morphism' (xa yb : object) := {}.
-  Fail Lemma issig_morphism xa yb
+
+  Lemma issig_morphism xa yb
   : { f : morphism X (projT1 xa) (projT1 yb)
     & is_structure_homomorphism _ _ _ f (projT2 xa) (projT2 yb) }
-    = morphism' xa yb. (* Toplevel input, characters 169-171:
-Error:
-In environment
-X : PreCategory
-P : NotionOfStructure X
-xa : {x : _ & ?26 x}
-yb : {x : _ & ?26 x}
-The term "xa" has type "{x : _ & ?26 x}" while it is expected to have type
- "{x : X & P x}". *)
+    = morphism' xa yb. 
+  Proof.
+    admit.
+  Defined.

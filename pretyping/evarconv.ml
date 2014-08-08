@@ -396,21 +396,21 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     ise_try evd [f1; (consume_stack on_left apprF apprM); f3] in
   let flex_rigid on_left ev (termF, skF as apprF) (termR, skR as apprR) =
     let switch f a b = if on_left then f a b else f b a in
-    match Stack.list_of_app_stack skF with
+    let f1 evd = 
+      match Stack.list_of_app_stack skF with
       | None -> consume_stack on_left apprF apprR evd
       | Some lF ->
-	let f1 evd =
-	  miller_pfenning on_left
-	    (fun () -> (* Postpone the use of an heuristic *)
-	      switch (fun x y ->
-		Success (add_conv_pb (pbty,env,Stack.zip x,Stack.zip y) evd)) apprF apprR)
-	    ev lF apprR evd
-	and f2 evd =
-	  if isLambda termR then
-	    eta env evd false skR termR skF termF
-	  else UnifFailure (evd,NotSameHead)
-	in ise_try evd [f1;f2] in
-
+	miller_pfenning on_left
+	  (fun () -> (* Postpone the use of an heuristic *)
+	    switch (fun x y ->
+	      Success (add_conv_pb (pbty,env,Stack.zip x,Stack.zip y) evd)) apprF apprR)
+	  ev lF apprR evd
+    in
+    let f2 evd =
+      if isLambda termR then
+	eta env evd false skR termR skF termF
+      else UnifFailure (evd,NotSameHead)
+    in ise_try evd [f1;f2] in
   let app_empty = match sk1, sk2 with [], [] -> true | _ -> false in
   (* Evar must be undefined since we have flushed evars *)
   let () = if !debug_unification then
