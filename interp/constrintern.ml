@@ -1675,7 +1675,6 @@ let internalize globalenv env allow_patvar lvar c =
     it_mkGLambda loc2 bl (intern env body)
 
   and intern_impargs c env l subscopes args =
-    let l = select_impargs_size (List.length args) l in
     let eargs, rargs = extract_explicit_arg l args in
     if !parsing_explicit then
       if Id.Map.is_empty eargs then intern_args env subscopes rargs
@@ -1713,35 +1712,49 @@ let internalize globalenv env allow_patvar lvar c =
 	  intern_args env subscopes rargs
     in aux 1 l subscopes eargs rargs
 
-  and make_first_explicit (l, r) =
-    match r with
-    | hd :: tl -> l, None :: tl
-    | [] -> l, []
+  and make_first_explicit l =
+    match l with
+    | hd :: tl -> None :: tl
+    | [] -> []
+
+  and projection_implicits n noargs l = 
+    if n == 0 then Some l
+    else match l with 
+    | hd :: tl when is_status_implicit hd ->
+      if maximal_insertion_of hd || not noargs then
+	projection_implicits (pred n) noargs tl
+      else None
+    | _ -> None
 
   and apply_impargs (isproj,isprojf) c env imp subscopes l loc = 
-    match isprojf with
-    | Some (r, n) ->
-      let imp, subscopes = proj_impls r imp, proj_scopes n subscopes in
-      let imp = 
-	if isproj != None then
-	  (* Drop first implicit which corresponds to record given in c.(p) notation *)
-	  List.map make_first_explicit imp 
-	else imp
-      in
-      let l = intern_impargs c env imp subscopes l in
-	(match c, l with
-	| GApp (loc', GRef (loc'', ConstRef f, _), hd :: tl), rest ->
-	  let proj = GProj (Loc.merge loc'' (loc_of_glob_constr hd), f, hd) in
-	    if List.is_empty tl then smart_gapp proj loc rest
-	    else GApp (loc, proj, tl @ rest)
-	| GRef (loc', ConstRef f, _), hd :: tl -> 
-	  let proj = GProj (Loc.merge loc' (loc_of_glob_constr hd), f, hd) in
-	    smart_gapp proj loc tl
-	| _ -> user_err_loc (loc, "apply_impargs", 
-			     str"Projection is not applied to enough arguments"))
-    | None ->
+    let imp = select_impargs_size (List.length l) imp in
+    let default () =
       let l = intern_impargs c env imp subscopes l in
 	smart_gapp c loc l
+    in
+      match isprojf with
+      | Some (r, n) ->
+	(match projection_implicits n (List.is_empty l) imp with
+	| Some imp -> 
+	  let subscopes = proj_scopes n subscopes in
+	  let imp = 
+	    if isproj != None then
+	      (* Drop first implicit which corresponds to record given in c.(p) notation *)
+	      make_first_explicit imp
+	    else imp
+	  in
+	  let l = intern_impargs c env imp subscopes l in
+	    (match c, l with
+	    | GApp (loc', GRef (loc'', ConstRef f, _), hd :: tl), rest ->
+	      let proj = GProj (Loc.merge loc'' (loc_of_glob_constr hd), f, hd) in
+		if List.is_empty tl then smart_gapp proj loc rest
+		else GApp (loc, proj, tl @ rest)
+	    | GRef (loc', ConstRef f, _), hd :: tl -> 
+	      let proj = GProj (Loc.merge loc' (loc_of_glob_constr hd), f, hd) in
+		smart_gapp proj loc tl
+	    | _ -> default ())
+	| None -> default ())
+      | None -> default ()
 
   and smart_gapp f loc = function
     | [] -> f

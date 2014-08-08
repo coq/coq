@@ -479,13 +479,13 @@ let explicitize loc inctx impl (cf,primproj,f) args =
     | args, [] -> List.map (fun a -> (a,None)) args (*In case of polymorphism*)
     | [], _ -> [] in
   match is_projection primproj (List.length args) cf with
-    | Some i ->
+    | Some i as ip ->
 	if not (List.is_empty impl) && is_status_implicit (List.nth impl (i-1)) then
  	  let args = exprec 1 (args,impl) in
 	    if primproj then CApp (loc, (None, f), args)
-	    else 
+	    else
 	      let f',us = match f with CRef (f,us) -> f,us | _ -> assert false in
-		CAppExpl (loc,(Some i,f',us), List.map fst args)
+		CAppExpl (loc,(ip,f',us),List.map fst args)
 	else
 	  let (args1,args2) = List.chop i args in
 	  let (impl1,impl2) = if List.is_empty impl then [],[] else List.chop i impl in
@@ -497,8 +497,7 @@ let explicitize loc inctx impl (cf,primproj,f) args =
 	match cf with
 	| Some (ConstRef p) when not primproj && Environ.is_projection p (Global.env ()) -> 
           (* Eta-expanded version of projection *)
-	  let f',us = match f with CRef (f,us) -> f,us | _ -> assert false in
-            CAppExpl (loc, (None, f', us), List.map fst args)
+          CApp (loc, (None, f), args)
 	| _ -> if List.is_empty args then f else CApp (loc, (None, f), args)
 
 let extern_global loc impl f us =
