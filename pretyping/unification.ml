@@ -509,13 +509,15 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
               evarsubst)
 	    else error_cannot_unify_local curenv sigma (m,n,cM)
 	| Evar (evk,_ as ev), _
-            when not (Evar.Set.mem evk flags.frozen_evars) ->
+            when not (Evar.Set.mem evk flags.frozen_evars) 
+	      && not (occur_evar evk cN) ->
 	    let cmvars = free_rels cM and cnvars = free_rels cN in
 	      if Int.Set.subset cnvars cmvars then
 		sigma,metasubst,((curenv,ev,cN)::evarsubst)
 	      else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Evar (evk,_ as ev)
-            when not (Evar.Set.mem evk flags.frozen_evars) ->
+            when not (Evar.Set.mem evk flags.frozen_evars)
+	      && not (occur_evar evk cM) ->
 	    let cmvars = free_rels cM and cnvars = free_rels cN in
 	      if Int.Set.subset cmvars cnvars then
 		sigma,metasubst,((curenv,ev,cM)::evarsubst)
@@ -546,8 +548,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	| _, Lambda (na,t2,c2) when flags.modulo_eta ->
 	    unirec_rec (push (na,t2) curenvnb) CONV true wt substn
 	      (mkApp (lift 1 cM,[|mkRel 1|])) c2
-
-	(* TODO: eta for records *)
+	(* For records, eta-expansion is done through unify_app -> expand -> infer_conv *)
 
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
             (try 
