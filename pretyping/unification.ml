@@ -1228,12 +1228,8 @@ let make_pattern_test inf_flags env sigma0 (sigma,c) =
     | e when Errors.noncritical e -> raise (NotUnifiable None) in
   let merge_fun c1 c2 =
     match c1, c2 with
-    | Some (evd,c1), Some (_,c2) ->
-      (try let evd = w_typed_unify env evd Reduction.CONV flags c1 c2 in
-	     Some (evd, c1)
-       with
-       | PretypeError (_,_,CannotUnify (c1,c2,Some e)) -> raise (NotUnifiable (Some (c1,c2,e)))
-       | e when Errors.noncritical e -> raise (NotUnifiable None))
+    | Some (evd,c1) as x, Some (_,c2) ->
+      if is_conv env sigma c1 c2 then x else raise (NotUnifiable None)
     | Some _, None -> c1
     | None, Some _ -> c2
     | None, None -> None in

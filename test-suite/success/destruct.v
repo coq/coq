@@ -93,3 +93,20 @@ Goal let T:=nat in forall (x:nat) (g:T -> nat), g x = 0.
 intros.
 destruct (g _). (* This was failing in at least r14571 *)
 Abort.
+
+(* Check that subterm selection does not solve existing evars *)
+
+Goal exists x, S x = S 0.
+eexists.
+Fail destruct (S _). (* Incompatible occurrences *)
+Abort.
+
+Goal exists x, S 0 = S x.
+eexists.
+Fail destruct (S _). (* Incompatible occurrences *)
+Abort.
+
+Goal exists n p:nat, (S n,S n) = (S p,S p) /\ p = n.
+do 2 eexists.
+Fail destruct (_, S _). (* Was succeeding at some time in trunk *)
+Show Proof.
