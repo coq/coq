@@ -176,7 +176,7 @@ let cook_constr { Opaqueproof.modlist ; abstract } c =
   abstract_constant_body (expmod c) hyps
 
 let lift_univs cb subst =
-  if cb.const_polymorphic then
+  if cb.const_polymorphic && not (Univ.LMap.is_empty subst) then
     let inst = Univ.UContext.instance cb.const_universes in
     let cstrs = Univ.UContext.constraints cb.const_universes in
     let len = Univ.LMap.cardinal subst in
