@@ -1876,6 +1876,11 @@ struct
   let union (univs, cst) (univs', cst') =
     LSet.union univs univs', Constraint.union cst cst'
 
+  let append (univs, cst) (univs', cst') =
+    let univs = LSet.fold LSet.add univs univs' in
+    let cst = Constraint.fold Constraint.add cst cst' in
+    (univs, cst)
+
   let diff (univs, cst) (univs', cst') =
     LSet.diff univs univs', Constraint.diff cst cst'
 

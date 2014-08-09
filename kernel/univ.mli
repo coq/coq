@@ -339,6 +339,11 @@ sig
   val of_set : universe_set -> t
 
   val union : t -> t -> t
+
+  val append : t -> t -> t
+  (** Variant of {!union} which is more efficient when the left argument is
+      much smaller than the right one. *)
+
   val diff : t -> t -> t
   val add_universe : universe_level -> t -> t
   val add_constraints : constraints -> t -> t
