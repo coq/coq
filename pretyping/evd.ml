@@ -955,24 +955,25 @@ let universe_subst evd =
   evd.universes.uctx_univ_variables
 
 let merge_uctx rigid uctx ctx' =
+  let open Univ in
   let uctx = 
     match rigid with
     | UnivRigid -> uctx
     | UnivFlexible b ->
-      let levels = Univ.ContextSet.levels ctx' in
+      let levels = ContextSet.levels ctx' in
       let fold u accu =
-        if Univ.LMap.mem u accu then accu
-        else Univ.LMap.add u None accu
+        if LMap.mem u accu then accu
+        else LMap.add u None accu
       in
-      let uvars' = Univ.LSet.fold fold levels uctx.uctx_univ_variables in
+      let uvars' = LSet.fold fold levels uctx.uctx_univ_variables in
 	if b then
 	  { uctx with uctx_univ_variables = uvars';
-	  uctx_univ_algebraic = Univ.LSet.union uctx.uctx_univ_algebraic levels }
+	  uctx_univ_algebraic = LSet.union uctx.uctx_univ_algebraic levels }
 	else { uctx with uctx_univ_variables = uvars' }
   in
-    { uctx with uctx_local = Univ.ContextSet.union uctx.uctx_local ctx';
-      uctx_universes = Univ.merge_constraints (Univ.ContextSet.constraints ctx') 
-	uctx.uctx_universes }
+  let uctx_local = ContextSet.append ctx' uctx.uctx_local in
+  let uctx_universes = merge_constraints (ContextSet.constraints ctx') uctx.uctx_universes in
+  { uctx with uctx_local; uctx_universes }
 
 let merge_context_set rigid evd ctx' = 
   {evd with universes = merge_uctx rigid evd.universes ctx'}
