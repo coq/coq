@@ -210,7 +210,14 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 	| _ ->
           (try Array.fold_left2 (sorec stk) (sorec stk subst c1 c2) arg1 arg2
            with Invalid_argument _ -> raise PatternMatchingFailure))
-	  
+
+      | PApp (PRef (ConstRef c1),arg1), Proj (p2,c2) when eq_constant c1 p2 ->
+	let pb = Environ.lookup_projection p2 (Global.env ()) in
+	let pars = pb.Declarations.proj_npars in
+	  if Array.length arg1 == pars + 1 then
+	    sorec stk subst arg1.(pars) c2
+	  else raise PatternMatchingFailure
+
       | PProj (p1,c1), Proj (p2,c2) when eq_constant p1 p2 ->
           sorec stk subst c1 c2
 
