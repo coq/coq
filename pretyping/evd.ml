@@ -960,8 +960,11 @@ let merge_uctx rigid uctx ctx' =
     | UnivRigid -> uctx
     | UnivFlexible b ->
       let levels = Univ.ContextSet.levels ctx' in
-      let uvars' = Univ.LMap.bind (fun _ -> None) levels in
-      let uvars' = Univ.LMap.fold Univ.LMap.add uctx.uctx_univ_variables uvars' in
+      let fold u accu =
+        if Univ.LMap.mem u accu then accu
+        else Univ.LMap.add u None accu
+      in
+      let uvars' = Univ.LSet.fold fold levels uctx.uctx_univ_variables in
 	if b then
 	  { uctx with uctx_univ_variables = uvars';
 	  uctx_univ_algebraic = Univ.LSet.union uctx.uctx_univ_algebraic levels }
