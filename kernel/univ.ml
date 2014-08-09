@@ -1879,11 +1879,17 @@ struct
   let diff (univs, cst) (univs', cst') =
     LSet.diff univs univs', Constraint.diff cst cst'
 
-  let add_constraints (univs, cst) cst' =
+  let add_universe u (univs, cst) =
+    LSet.add u univs, cst
+
+  let add_constraints cst' (univs, cst) =
     univs, Constraint.union cst cst'
 
-  let add_universes univs ctx =
-    union (of_instance univs) ctx
+  let add_instance inst (univs, cst) =
+    let v = Instance.to_array inst in
+    let fold accu u = LSet.add u accu in
+    let univs = Array.fold_left fold univs v in
+    (univs, cst)
 
   let to_context (ctx, cst) =
     (Instance.of_array (Array.of_list (LSet.elements ctx)), cst)

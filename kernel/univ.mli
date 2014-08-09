@@ -340,8 +340,9 @@ sig
 
   val union : t -> t -> t
   val diff : t -> t -> t
-  val add_constraints : t -> constraints -> t
-  val add_universes : Instance.t -> t -> t
+  val add_universe : universe_level -> t -> t
+  val add_constraints : constraints -> t -> t
+  val add_instance : Instance.t -> t -> t
 
   (** Arbitrary choice of linear order of the variables *)
   val to_context : t -> universe_context

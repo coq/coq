@@ -989,7 +989,7 @@ let with_context_set rigid d (a, ctx) =
 let uctx_new_univ_variable rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
   let u = Universes.new_univ_level (Global.current_dirpath ()) in
-  let ctx' = Univ.ContextSet.union ctx (Univ.ContextSet.singleton u) in
+  let ctx' = Univ.ContextSet.add_universe u ctx in
   let uctx' = 
     match rigid with
     | UnivRigid -> uctx
