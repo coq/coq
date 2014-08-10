@@ -810,41 +810,39 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		      whrec Cst_stack.empty (arg,Stack.Cst(Stack.Cst_const const,curr,remains,bef,cst_l)::s')
        )
     | Proj (p, c) when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST p) ->
-      (match (lookup_constant p env).Declarations.const_proj with
-      | None -> assert false
-      | Some pb -> begin
-	let npars = pb.Declarations.proj_npars 
-	and arg = pb.Declarations.proj_arg in
-	  match ReductionBehaviour.get (Globnames.ConstRef p) with
-	  | None ->
-	    let stack' = (c, Stack.Proj (npars, arg, p) :: stack) in
-	      whrec Cst_stack.empty(* cst_l *) stack'
-	  | Some (recargs, nargs, flags) ->
-	    if (List.mem `ReductionNeverUnfold flags
-		|| (nargs > 0 && Stack.args_size stack < (nargs - (npars + 1))))
-	    then fold ()
-	    else
-	      let recargs = List.map_filter (fun x -> 
-		let idx = x - npars in 
-		  if idx < 0 then None else Some idx) recargs
-	      in
-	      match recargs with
-	      |[] -> (* if nargs has been specified *)
-	      (* CAUTION : the constant is NEVER refold
-                 (even when it hides a (co)fix) *)
-		let stack' = (c, Stack.Proj (npars, arg, p) :: stack) in
-		  whrec Cst_stack.empty(* cst_l *) stack'
-	      | curr::remains -> 
-		if curr == 0 then (* Try to reduce the record argument *)
-		  whrec Cst_stack.empty 
-		    (c, Stack.Cst(Stack.Cst_proj (p, c),curr,remains,Stack.empty,cst_l)::stack)
-		else
-		  match Stack.strip_n_app curr stack with
-		  | None -> fold ()
-		  | Some (bef,arg,s') ->
-		    whrec Cst_stack.empty 
-		      (arg,Stack.Cst(Stack.Cst_proj (p, c),curr,remains,bef,cst_l)::s')
-      end)
+      (let pb = lookup_projection p env in
+       let npars = pb.Declarations.proj_npars 
+       and arg = pb.Declarations.proj_arg in
+	 match ReductionBehaviour.get (Globnames.ConstRef p) with
+	 | None ->
+	   let stack' = (c, Stack.Proj (npars, arg, p) :: stack) in
+	     whrec Cst_stack.empty(* cst_l *) stack'
+	 | Some (recargs, nargs, flags) ->
+	   if (List.mem `ReductionNeverUnfold flags
+	       || (nargs > 0 && Stack.args_size stack < (nargs - (npars + 1))))
+	   then fold ()
+	   else
+	     let recargs = List.map_filter (fun x -> 
+	       let idx = x - npars in 
+		 if idx < 0 then None else Some idx) recargs
+	     in
+	       match recargs with
+	       |[] -> (* if nargs has been specified *)
+		(* CAUTION : the constant is NEVER refold
+                   (even when it hides a (co)fix) *)
+		 let stack' = (c, Stack.Proj (npars, arg, p) :: stack) in
+		   whrec Cst_stack.empty(* cst_l *) stack'
+	       | curr::remains -> 
+		 if curr == 0 then (* Try to reduce the record argument *)
+		   whrec Cst_stack.empty 
+		     (c, Stack.Cst(Stack.Cst_proj (p, c),curr,remains,Stack.empty,cst_l)::stack)
+		 else
+		   match Stack.strip_n_app curr stack with
+		   | None -> fold ()
+		   | Some (bef,arg,s') ->
+		     whrec Cst_stack.empty 
+		       (arg,Stack.Cst(Stack.Cst_proj (p, c),curr,remains,bef,cst_l)::s'))
+
     | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
       apply_subst whrec [b] cst_l c stack
     | Cast (c,_,_) -> whrec cst_l (c, stack)

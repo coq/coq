@@ -497,22 +497,34 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    ise_try evd [f1; f2]
 	      
 	| Proj (p, t), Const (p',_) when eq_constant p p' ->
-	  let pb = Environ.lookup_projection p env in
-	    (match Stack.strip_n_app pb.Declarations.proj_npars sk2' with
-	    | Some (pars, t', rest) ->
-	      ise_and evd
-		[(fun i -> evar_conv_x ts env i CONV t t');
-		 (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 rest)]
-	    | None -> UnifFailure (evd, NotSameHead))
+	  let f1 i = 
+	    let pb = Environ.lookup_projection p env in
+	      (match Stack.strip_n_app pb.Declarations.proj_npars sk2' with
+	      | Some (pars, t', rest) ->
+		ise_and i
+		  [(fun i -> evar_conv_x ts env i CONV t t');
+		   (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 rest)]
+	      | None -> UnifFailure (evd, NotSameHead))
+	  and f2 i =
+            let out1 = whd_betaiota_deltazeta_for_iota_state ts env i csts1 (v1,sk1')
+            and out2 = whd_betaiota_deltazeta_for_iota_state ts env i csts2 (v2,sk2')
+	    in evar_eqappr_x ts env i pbty out1 out2
+	  in ise_try evd [f1;f2]
 
 	| Const (p',_), Proj (p, t) when eq_constant p p' ->
-	  let pb = Environ.lookup_projection p env in
-	    (match Stack.strip_n_app pb.Declarations.proj_npars sk1' with
-	    | Some (pars, t', rest) ->
-	      ise_and evd
-		[(fun i -> evar_conv_x ts env i CONV t t');
-		 (fun i -> exact_ise_stack2 env i (evar_conv_x ts) rest sk2)]
-	    | None -> UnifFailure (evd, NotSameHead))
+	  let f1 i = 
+	    let pb = Environ.lookup_projection p env in
+	      (match Stack.strip_n_app pb.Declarations.proj_npars sk1' with
+	      | Some (pars, t', rest) ->
+		ise_and i
+		  [(fun i -> evar_conv_x ts env i CONV t t');
+		   (fun i -> exact_ise_stack2 env i (evar_conv_x ts) rest sk2)]
+	      | None -> UnifFailure (evd, NotSameHead))
+	  and f2 i =
+            let out1 = whd_betaiota_deltazeta_for_iota_state ts env i csts1 (v1,sk1')
+            and out2 = whd_betaiota_deltazeta_for_iota_state ts env i csts2 (v2,sk2')
+	    in evar_eqappr_x ts env i pbty out1 out2
+	  in ise_try evd [f1;f2]
 
 	| _, _ ->
 	let f1 i = 
