@@ -501,7 +501,7 @@ let rec next_token = parser bp
       (* We enforce that "." should either be part of a larger keyword,
          for instance ".(", or followed by a blank or eof. *)
       let () = match t with
-      | KEYWORD "." ->
+      | KEYWORD ("." | "...") ->
         if not (blank_or_eof s) then err (bp,ep+1) Undefined_token;
         between_com := true;
       | _ -> ()

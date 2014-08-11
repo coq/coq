@@ -270,7 +270,7 @@ let print_toplevel_error e =
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
   let rec dot st = match Compat.get_tok (Stream.next st) with
-    | Tok.KEYWORD "." -> ()
+    | Tok.KEYWORD ("."|"...") -> ()
     | Tok.EOI -> raise End_of_input
     | _ -> dot st
   in
