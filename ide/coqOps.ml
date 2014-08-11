@@ -732,7 +732,8 @@ object(self)
 
   method handle_reset_initial why =
     let action () =
-      if why = Coq.Unexpected then warning "Coqtop died badly. Resetting.";
+      if why = Coq.Unexpected then warning "Coqtop died badly. Resetting."
+      else
       (* clear the stack *)
       if Doc.focused document then Doc.unfocus document;
       while not (Doc.is_empty document) do
