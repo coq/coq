@@ -805,7 +805,7 @@ let normalize_context_set ctx us algs =
       in (noneqs, ucstrsl', ucstrsr'))
     noneqs (Constraint.empty, LMap.empty, LMap.empty)
   in
-  (* Now we construct the instanciation of each variable. *)
+  (* Now we construct the instantiation of each variable. *)
   let ctx', us, algs, inst, noneqs = 
     minimize_univ_variables ctx us algs ucstrsr ucstrsl noneqs
   in
