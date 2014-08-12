@@ -187,7 +187,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
        a "Let" definition, in the former it is an assumption of [t],
        in the latter is must be unfolded like a Const.
     The other cases are straightforward recursion.
-    Calls to the environment are memoized, thus avoiding to explore
+    Calls to the environment are memoized, thus avoiding exploration of
     the DAG of the environment as if it was a tree (can cause
     exponential behavior and prevent the algorithm from terminating
     in reasonable time). [s] is a set of [context_object], representing
