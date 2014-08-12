@@ -1,13 +1,13 @@
-Arguments minus n m : simpl nomatch. 
-About minus.
-Arguments minus n / m : simpl nomatch. 
-About minus.
-Arguments minus !n / m : simpl nomatch. 
-About minus.
-Arguments minus !n !m /.
-About minus.
-Arguments minus !n !m.
-About minus.
+Arguments Nat.sub n m : simpl nomatch.
+About Nat.sub.
+Arguments Nat.sub n / m : simpl nomatch.
+About Nat.sub.
+Arguments Nat.sub !n / m : simpl nomatch.
+About Nat.sub.
+Arguments Nat.sub !n !m /.
+About Nat.sub.
+Arguments Nat.sub !n !m.
+About Nat.sub.
 Definition pf (D1 C1 : Type) (f : D1 -> C1) (D2 C2 : Type) (g : D2 -> C2) := 
   fun x => (f (fst x), g (snd x)).
 Delimit Scope foo_scope with F.
@@ -44,7 +44,7 @@ Record r := { pi :> nat -> bool -> unit }.
 Notation "$" := 3 (only parsing) : foo_scope.
 Notation "$" := true (only parsing) : bar_scope.
 Delimit Scope bar_scope with B.
-Arguments pi _ _%F _%B. 
+Arguments pi _ _%F _%B.
 Check (forall w : r, pi w $ $ = tt).
 Fail Check (forall w : r, w $ $ = tt).
 Axiom w : r.

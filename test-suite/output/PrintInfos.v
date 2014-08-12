@@ -6,9 +6,9 @@ Print eq_refl.
 About eq_refl.
 Print Implicit eq_refl.
 
-Print plus.
-About plus.
-Print Implicit plus.
+Print Nat.add.
+About Nat.add.
+Print Implicit Nat.add.
 
 About plus_n_O.
 
