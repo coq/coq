@@ -270,7 +270,7 @@ Fixpoint elements_aux (acc : list (key*elt)) m : list (key*elt) :=
    | Node l x d r _ => elements_aux ((x,d) :: elements_aux acc r) l
   end.
 
-(** then [elements] is an instanciation with an empty [acc] *)
+(** then [elements] is an instantiation with an empty [acc] *)
 
 Definition elements := elements_aux nil.
 

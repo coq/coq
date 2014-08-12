@@ -56,8 +56,8 @@ let sort_of env c =
      More formally, a type scheme has type $(x_1:X_1)\ldots(x_n:X_n)s$ with
      [s = Set], [Prop] or [Type]
    \item [Default] denotes the other cases. It may be inexact after
-     instanciation. For example [(X:Type)X] is [Default] and may give [Set]
-     after instanciation, which is rather [TypeScheme]
+     instantiation. For example [(X:Type)X] is [Default] and may give [Set]
+     after instantiation, which is rather [TypeScheme]
    \item [Logic] denotes a term of sort [Prop], or a type scheme on sort [Prop]
    \item [Info] is the opposite. The same example [(X:Type)X] shows
      that an [Info] term might in fact be [Logic] later on.

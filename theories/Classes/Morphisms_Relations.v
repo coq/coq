@@ -38,7 +38,7 @@ Lemma predicate_implication_pointwise (l : Tlist) :
   Proper (@predicate_implication l ==> pointwise_lifting impl l) id.
 Proof. do 2 red. unfold predicate_implication. auto. Qed.
 
-(** The instanciation at relation allows to rewrite applications of relations
+(** The instantiation at relation allows to rewrite applications of relations
     [R x y] to [R' x y]  when [R] and [R'] are in [relation_equivalence]. *)
 
 Instance relation_equivalence_pointwise :

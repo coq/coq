@@ -32,10 +32,10 @@ let set_typeclass_transparency gr local c = Hook.get set_typeclass_transparency 
 let (classes_transparent_state, classes_transparent_state_hook) = Hook.make ()
 let classes_transparent_state () = Hook.get classes_transparent_state ()
 
-let solve_instanciation_problem = ref (fun _ _ _ -> assert false)
+let solve_instantiation_problem = ref (fun _ _ _ -> assert false)
 
 let resolve_one_typeclass env evm t =
-  !solve_instanciation_problem env evm t
+  !solve_instantiation_problem env evm t
 
 type direction = Forward | Backward
 
@@ -552,10 +552,10 @@ let has_typeclasses filter evd =
   in
   Evar.Map.exists check (Evd.undefined_map evd)
 
-let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
+let solve_instantiations_problem = ref (fun _ _ _ _ _ -> assert false)
 
 let solve_problem env evd filter split fail =
-  !solve_instanciations_problem env evd filter split fail
+  !solve_instantiations_problem env evd filter split fail
 
 (** Profiling resolution of typeclasses *)
 (* let solve_classeskey = Profile.declare_profile "solve_typeclasses" *)
