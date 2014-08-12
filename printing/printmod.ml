@@ -18,7 +18,7 @@ open Goptions
     - The "short" one, that just prints the names of the fields.
     - The "rich" one, that also tries to print the types of the fields.
     The short version used to be the default behavior, but now we print
-    types by default. The following option allows to change this.
+    types by default. The following option allows changing this.
     Technically, the environments in this file are either None in
     the "short" mode or (Some env) in the "rich" one.
 *)

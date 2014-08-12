@@ -320,7 +320,7 @@ Section Equivalences.
    [Definition Eq_rec_eq :=
       forall (P:U -> Set) (p:U) (x:P p) (h:p = p), x = eq_rec p P x p h.]
 
-    Typically, [eq_rect_eq] allows to prove UIP and Streicher's K what
+    Typically, [eq_rect_eq] allows proving UIP and Streicher's K what
     does not seem possible with [eq_rec_eq]. In particular, the proof of [UIP]
     requires to use [eq_rect_eq] on [fun y -> x=y] which is in [Type] but not
     in [Set].

@@ -443,7 +443,7 @@ apply (Rtrans _ m).
 Undo.
 \end{coq_eval}
 
-More elegantly, {\tt apply Rtrans with (y:=m)} allows to only mention
+More elegantly, {\tt apply Rtrans with (y:=m)} allows only mentioning
 the unknown {\tt m}:
 
 \begin{coq_example*}
@@ -1093,7 +1093,7 @@ matching the pattern.
 
 \item {\tt set ( {\ident} := {\term} ) in {\occgoalset}}
 
-This notation allows to specify which occurrences of {\term} have to
+This notation allows specifying which occurrences of {\term} have to
 be substituted in the context. The {\tt in {\occgoalset}} clause is an
 occurrence clause whose syntax and behavior are described in
 Section~\ref{Occurrences clauses}.
@@ -1151,7 +1151,7 @@ Section~\ref{Occurrences clauses}.
 \label{decompose}
 \tacindex{decompose}
 
-This tactic allows to recursively decompose a
+This tactic recursively decomposes a
 complex proposition in order to obtain atomic ones.
 
 \Example
@@ -1392,7 +1392,7 @@ existential variable.
 \tacindex{instantiate}
 \label{instantiate}
 
-The {\tt instantiate} tactic allows to refine (see Section~\ref{refine})
+The {\tt instantiate} tactic refines (see Section~\ref{refine})
 an existential variable
 with the term \term. The \num\  argument is the position of the
 existential variable from right to left in the conclusion. This cannot be
@@ -1430,7 +1430,7 @@ a hypothesis or in the body or the type of a local definition.
 \label{admit}
 
 The {\tt admit} tactic ``solves'' the current subgoal by an
-axiom. This typically allows to temporarily skip a subgoal so as to
+axiom. This typically allows temporarily skiping a subgoal so as to
 progress further in the rest of the proof. To know if some proof still
 relies on unproved subgoals, one can use the command {\tt Print
 Assumptions} (see Section~\ref{PrintAssumptions}). Admitted subgoals
@@ -1473,7 +1473,7 @@ The proof of {\tt False} is searched in the hypothesis named \ident.
 \label{contradict}
 \tacindex{contradict}
 
-This tactic allows to manipulate negated hypothesis and goals. The
+This tactic allows manipulating negated hypothesis and goals. The
 name \ident\ should correspond to a hypothesis. With
 {\tt contradict H}, the current goal and context is transformed in
 the following way:
@@ -1834,8 +1834,8 @@ induction n.
 
 Allows the user to give explicitly an elimination predicate
 {\term$_2$} that is not the standard one for the underlying inductive
-type of {\term$_1$}. The {\bindinglist} clause allows to
-instantiate premises of the type of {\term$_2$}.
+type of {\term$_1$}. The {\bindinglist} clause allows
+instantiating premises of the type of {\term$_2$}.
 
 \item{\tt elim {\term$_1$} with {\bindinglist$_1$} using {\term$_2$} with {\bindinglist$_2$}}\\
      {\tt eelim {\term$_1$} with {\bindinglist$_1$} using {\term$_2$} with {\bindinglist$_2$}}
@@ -2055,7 +2055,7 @@ details.
   as {\disjconjintropattern} using \term$_{m+1}$ with \bindinglist}
 
  Similarly to \texttt{Induction} and \texttt{elim}
- (see Section~\ref{Tac-induction}), this allows to give explicitly the
+ (see Section~\ref{Tac-induction}), this allows giving explicitly the
  name of the introduced variables, the
  induction principle, and the values of dependent premises of the
  elimination scheme, including \emph{predicates} for mutual induction
@@ -2312,13 +2312,13 @@ Abort.
 
 \item \texttt{inversion {\num} as \intropattern}
 
-  This allows to name the hypotheses introduced by
+  This allows naming the hypotheses introduced by
   \texttt{inversion \num} in the context.
 
 \item \tacindex{inversion\_clear \dots\ as} \texttt{inversion\_clear
   {\ident} as \intropattern}
 
-  This allows to name the hypotheses introduced by
+  This allows naming the hypotheses introduced by
   \texttt{inversion\_clear} in the context.
 
 \item \tacindex{inversion \dots\ in} \texttt{inversion {\ident}
@@ -2332,7 +2332,7 @@ Abort.
   {\ident} as {\intropattern} in \ident$_1$ \dots\
   \ident$_n$}
 
-  This allows to name the hypotheses introduced in the context by
+  This allows naming the hypotheses introduced in the context by
   \texttt{inversion {\ident} in \ident$_1$ \dots\ \ident$_n$}.
 
 \item \tacindex{inversion\_clear \dots\ in} \texttt{inversion\_clear
@@ -2346,7 +2346,7 @@ Abort.
   \texttt{inversion\_clear {\ident} as {\intropattern}
   in \ident$_1$ \dots\ \ident$_n$}
 
-  This allows to name the hypotheses introduced in the context by
+  This allows naming the hypotheses introduced in the context by
   \texttt{inversion\_clear {\ident} in \ident$_1$ \dots\ \ident$_n$}.
 
 \item \tacindex{dependent inversion} \texttt{dependent inversion \ident}
@@ -2358,7 +2358,7 @@ Abort.
 \item \tacindex{dependent inversion \dots\ as } \texttt{dependent
     inversion {\ident} as \intropattern}
 
-  This allows to name the hypotheses introduced in the context by
+  This allows naming the hypotheses introduced in the context by
   \texttt{dependent inversion} {\ident}.
 
 \item \tacindex{dependent inversion\_clear} \texttt{dependent
@@ -2370,7 +2370,7 @@ Abort.
 \item \tacindex{dependent inversion\_clear \dots\ as}
   \texttt{dependent inversion\_clear {\ident} as \intropattern}
 
-  This allows to name the hypotheses introduced in the context by
+  This allows naming the hypotheses introduced in the context by
   \texttt{dependent inversion\_clear} {\ident}.
 
 \item \tacindex{dependent inversion \dots\ with} \texttt{dependent
@@ -2387,7 +2387,7 @@ Abort.
   \texttt{dependent inversion {\ident} as {\intropattern}
   with \term}
 
-  This allows to name the hypotheses introduced in the context by
+  This allows naming the hypotheses introduced in the context by
   \texttt{dependent inversion {\ident} with \term}.
 
 \item \tacindex{dependent inversion\_clear \dots\ with}
@@ -2400,7 +2400,7 @@ Abort.
   \texttt{dependent inversion\_clear {\ident} as
   {\intropattern} with \term}
 
-  This allows to name the hypotheses introduced in the context by
+  This allows naming the hypotheses introduced in the context by
   \texttt{dependent inversion\_clear {\ident} with \term}.
 
 \item \tacindex{simple inversion} \texttt{simple inversion \ident}
@@ -2412,7 +2412,7 @@ Abort.
 \item \tacindex{simple inversion \dots\ as} \texttt{simple inversion
   {\ident} as \intropattern}
 
-  This allows to name the hypotheses introduced in the context by
+  This allows naming the hypotheses introduced in the context by
   \texttt{simple inversion}.
 
 \item \tacindex{inversion \dots\ using} \texttt{inversion {\ident}
@@ -4400,11 +4400,11 @@ defined using \texttt{Function} (see Section~\ref{Function}).
 \item {\tt functional inversion \ident\ \qualid}\\
   {\tt functional inversion \num\ \qualid}
 
-  In case the hypothesis {\ident} (or {\num}) has a type of the form
+  If the hypothesis {\ident} (or {\num}) has a type of the form
   \texttt{\qualid$_1$\ \term$_1$\dots\term$_n$\ =\ \qualid$_2$\
     \term$_{n+1}$\dots\term$_{n+m}$} where \qualid$_1$ and \qualid$_2$
-  are valid candidates to functional inversion, this variant allows to
-  choose which must be inverted.
+  are valid candidates to functional inversion, this variant allows
+  choosing which {\qualid} is inverted.
 \end{Variants}
 
 

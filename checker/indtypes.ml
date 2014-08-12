@@ -211,7 +211,7 @@ let allowed_sorts issmall isunit s =
 
   (* Unitary/empty Prop: elimination to all sorts are realizable *)
   (* unless the type is large. If it is large, forbids large elimination *)
-  (* which otherwise allows to simulate the inconsistent system Type:Type *)
+  (* which otherwise allows simulating the inconsistent system Type:Type *)
   | InProp when isunit -> if issmall then all_sorts else small_sorts
 
   (* Other propositions: elimination only to Prop *)

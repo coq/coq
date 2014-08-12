@@ -9,7 +9,7 @@
 (** * The Set universe seen as a synonym for Type *)
 
 (** After loading this file, Set becomes just another name for Type.
-    This allows to easily perform a Set-to-Type migration, or at least
+    This allows easily performing a Set-to-Type migration, or at least
     test whether a development relies or not on specific features of
     Set: simply insert some Require Export of this file at starting
     points of the development and try to recompile...  *)

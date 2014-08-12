@@ -53,7 +53,7 @@ experience using the \DPL .
 \item The focusing mechanism is constrained so that only one goal at
   a time is visible.
 \item Giving a statement that Coq cannot prove does not produce an
-  error, only a warning: this allows to go on with the proof and fill
+  error, only a warning: this allows going on with the proof and fill
   the gap later.
 \item Tactics can still be used for justifications and after
 {\texttt{escape}}.
@@ -224,7 +224,7 @@ inside a procedural proof inside a mathematical proof ...
 
 \subsection{Computation steps}
 
-The {\tt reconsider ... as} command allows to change the type of a hypothesis or of {\tt thesis} to a convertible one.
+The {\tt reconsider ... as} command allows changing the type of a hypothesis or of {\tt thesis} to a convertible one.
 
 \begin{coq_eval}
 Theorem T: let a:=false in let b:= true in ( if a then True else False -> if b then True else False).
@@ -478,7 +478,7 @@ Abort.
 \end{coq_eval}
 
 Now, an example with the {\tt suffices} command. {\tt suffices}
-is a sort of dual for {\tt have}: it allows to replace the conclusion
+is a sort of dual for {\tt have}: it allows replacing the conclusion
 (or part of it) by a sufficient condition. 
 
 \begin{coq_eval}

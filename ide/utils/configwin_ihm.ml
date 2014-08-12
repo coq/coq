@@ -67,7 +67,7 @@ let html_config_file_and_option () =
 let last_dir = ref "";;
 
 (** This function allows the user to select a file and returns the
-   selected file name. An optional function allows to change the
+   selected file name. An optional function allows changing the
    behaviour of the ok button.
    A VOIR : mutli-selection ? *)
 let select_files ?dir

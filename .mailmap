@@ -1,6 +1,6 @@
 ## Coq contributors
 ##
-## This file allows to join the different accounts of a same person.
+## This file allows joining the different accounts of a same person.
 ## Cf for instance: git shortlog -nse. More details via: man git shortlog
 ##
 ## To avoid spam issues, we use by default a pseudo-email <login@gforge>

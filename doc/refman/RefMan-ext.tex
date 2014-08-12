@@ -14,7 +14,7 @@ records as is done in many programming languages.  Its syntax is
 described on Figure~\ref{record-syntax}.  In fact, the \verb+Record+
 macro is more general than the usual record types, since it allows
 also for ``manifest'' expressions. In this sense, the \verb+Record+
-construction allows to define ``signatures''.
+construction allows defining ``signatures''.
 
 \begin{figure}[h]
 \begin{centerframe}
@@ -208,7 +208,7 @@ Record point := { x : nat; y : nat }.
 Definition a := Build_point 5 3.
 \end{coq_example}
 
-The following syntax allows to create objects by using named fields. The
+The following syntax allows creating objects by using named fields. The
 fields do not have to be in any particular order, nor do they have to be all
 present if the missing ones can be inferred or prompted for (see
 Section~\ref{Program}).
@@ -859,8 +859,8 @@ subgoals belonging to a Lemma {\ident}{\tt\_tcc}. % These subgoals are independe
 \index{Sections}
 \label{Section}}
 
-The sectioning mechanism allows to organize a proof in structured
-sections. Then local declarations become available (see
+The sectioning mechanism can be used to to organize a proof in
+structured sections. Then local declarations become available (see
 Section~\ref{Basic-definitions}).
 
 \subsection{\tt Section {\ident}\comindex{Section}}

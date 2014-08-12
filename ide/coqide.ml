@@ -1377,7 +1377,7 @@ let check_for_geoproof_input () =
     full name, with the last occurrence of "coqide" replaced by "coqtop".
     This should correctly handle the ".opt", ".byte", ".exe" situations.
     If the replacement fails, we default to "coqtop", hoping it's somewhere
-    in the path. Note that the -coqtop option to coqide allows to override
+    in the path. Note that the -coqtop option to coqide overrides
     this default coqtop path *)
 
 let read_coqide_args argv =

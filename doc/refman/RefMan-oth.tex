@@ -399,7 +399,7 @@ A lemma whose fully-qualified name contains any of the declared substrings
 will be removed from the search results.
 The default blacklisted substrings are {\tt "\_admitted"
   "\_subproof" "Private\_"}. The command {\tt Remove Search Blacklist
-  ...} allows to expunge this blacklist.
+  ...} allows expunging this blacklist.
 
 % \begin{tabbing}
 % \ \ \ \ \=11.\ \=\kill
@@ -877,7 +877,7 @@ extra commands and end on a state $\num' \leq \num$ if necessary.
 \begin{Variants}
 \item {\tt Backtrack $\num_1$ $\num_2$ $\num_3$}.\comindex{Backtrack}\\
   {\tt Backtrack} is a \emph{deprecated} form of {\tt BackTo} which
-  allows to explicitely manipulate the proof environment. The three
+  allows explicitely manipulating the proof environment. The three
   numbers $\num_1$, $\num_2$ and $\num_3$ represent the following:
 \begin{itemize}
 \item $\num_3$: Number of \texttt{Abort} to perform, i.e. the number
@@ -1121,7 +1121,7 @@ constant.
 
 \subsection{\tt Declare Reduction \ident\ := {\rm\sl convtactic}.}
 
-This command allows to give a short name to a reduction expression,
+This command allows giving a short name to a reduction expression,
 for instance {\tt lazy beta delta [foo bar]}. This short name can
 then be used in {\tt Eval \ident\ in ...} or {\tt eval} directives.
 This command accepts the {\tt Local} modifier, for discarding

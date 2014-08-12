@@ -48,7 +48,7 @@ Is ok because the longer regexp is recognized first.
 
 If non-nil the optional INSERT-FUN is the function to be called when inserting
 the form (instead of inserting INSERT, except when using \\[expand-abbrev]). This
-allows to write functions asking for more information to assist the user.
+allows writing functions asking for more information to assist the user.
 
 If non-nil the optional HIDE specifies that this form should not appear in the
 menu but only in interactive completions.

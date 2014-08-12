@@ -224,7 +224,7 @@ type section_subset_expr =
 
 type section_subset_descr = SsAll | SsType | SsExpr of section_subset_expr
 
-(* This type allows to register inline of constants in native compiler.
+(* This type allows registering the inlining of constants in native compiler.
    It will be extended with primitive inductive types and operators *)
 type register_kind = 
   | RegisterInline
