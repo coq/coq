@@ -120,7 +120,8 @@ let hdchar env c =
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
 	let id = match lna.(i) with Name id -> id | _ -> assert false in
 	lowercase_first_char id
-    | Meta _ | Evar _ | Case (_, _, _, _) -> "y"
+    | Evar _ (* We could do better... *)
+    | Meta _ | Case (_, _, _, _) -> "y"
   in
   hdrec 0 c
 

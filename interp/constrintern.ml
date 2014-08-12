@@ -1581,10 +1581,12 @@ let internalize globalenv env allow_patvar lvar c =
 	GHole (loc, k, solve)
     | CPatVar (loc, n) when allow_patvar ->
 	GPatVar (loc, n)
+    | CPatVar (loc, (false,n)) ->
+	GEvar (loc, n, None)
     | CPatVar (loc, _) ->
-	raise (InternalizationError (loc,IllegalMetavariable))
+        raise (InternalizationError (loc,IllegalMetavariable))
     | CEvar (loc, n, l) ->
-	GEvar (loc, n, Option.map (List.map (intern env)) l)
+	GEvar (loc, n, Option.map (List.map (on_snd (intern env))) l)
     | CSort (loc, s) ->
 	GSort(loc,s)
     | CCast (loc, c1, c2) ->

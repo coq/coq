@@ -77,7 +77,8 @@ val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map 
 
 (** Interprets tactic expressions *)
 
-val interp_hyp :  interp_sign -> Environ.env -> Id.t Loc.located -> Id.t
+val interp_hyp : interp_sign -> Environ.env -> Evd.evar_map ->
+  Id.t Loc.located -> Id.t
 
 val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map ->
  glob_constr_and_expr bindings -> Evd.evar_map * constr bindings
@@ -105,13 +106,15 @@ val hide_interp : bool -> raw_tactic_expr -> unit Proofview.tactic option -> uni
 
 (** Internals that can be useful for syntax extensions. *)
 
-val interp_ltac_var : (value -> 'a) -> interp_sign -> Environ.env option -> Id.t Loc.located -> 'a
+val interp_ltac_var : (value -> 'a) -> interp_sign ->
+  (Environ.env * Evd.evar_map) option -> Id.t Loc.located -> 'a
 
 val interp_int : interp_sign -> Id.t Loc.located -> int
 
 val interp_int_or_var : interp_sign -> int or_var -> int
 
-val error_ltac_variable : Loc.t -> Id.t -> Environ.env option -> value -> string -> 'a
+val error_ltac_variable : Loc.t -> Id.t ->
+  (Environ.env * Evd.evar_map) option -> value -> string -> 'a
 
 (** Transforms a constr-expecting tactic into a tactic finding its arguments in
     the Ltac environment according to the given names. *)

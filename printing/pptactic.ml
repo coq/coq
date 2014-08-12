@@ -1096,7 +1096,7 @@ let _ = Hook.set Tactic_debug.tactic_printer
   (fun x -> pr_glob_tactic (Global.env()) x)
 
 let _ = Hook.set Tactic_debug.match_pattern_printer
-  (fun env hyp -> pr_match_pattern (pr_constr_pattern_env env) hyp)
+  (fun env sigma hyp -> pr_match_pattern (pr_constr_pattern_env env sigma) hyp)
 
 let _ = Hook.set Tactic_debug.match_rule_printer
   (fun rl ->

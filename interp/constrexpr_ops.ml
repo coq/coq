@@ -151,9 +151,8 @@ let rec constr_expr_eq e1 e2 =
   | CHole _, CHole _ -> true
   | CPatVar(_,(b1, i1)), CPatVar(_,(b2, i2)) ->
     (b1 : bool) == b2 && Id.equal i1 i2
-  | CEvar (_, ev1, c1), CEvar (_, ev2, c2) ->
-    Evar.equal ev1 ev2 &&
-    Option.equal (List.equal constr_expr_eq) c1 c2
+  | CEvar (_, id1, c1), CEvar (_, id2, c2) ->
+    Id.equal id1 id2 && Option.equal (List.equal instance_eq) c1 c2
   | CSort(_,s1), CSort(_,s2) ->
     Miscops.glob_sort_eq s1 s2
   | CCast(_,a1,(CastConv b1|CastVM b1)), CCast(_,a2,(CastConv b2|CastVM b2)) ->
@@ -225,6 +224,9 @@ and constr_notation_substitution_eq (e1, el1, bl1) (e2, el2, bl2) =
   List.equal constr_expr_eq e1 e2 &&
   List.equal (List.equal constr_expr_eq) el1 el2 &&
   List.equal (List.equal local_binder_eq) bl1 bl2
+
+and instance_eq (x1,c1) (x2,c2) =
+  Id.equal x1 x2 && constr_expr_eq c1 c2
 
 let constr_loc = function
   | CRef (Ident (loc,_),_) -> loc

@@ -270,6 +270,33 @@ let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv gl =
     clenv_unify CUMUL ~flags
       (meta_reducible_instance clenv.evd clenv.templtyp) concl clenv
 
+let adjust_meta_source evd mv = function
+  | loc,Evar_kinds.VarInstance id ->
+    let rec match_name c l =
+      match kind_of_term c, l with
+      | Lambda (Name id,_,c), a::l when Constr.equal a (mkMeta mv) -> Some id
+      | Lambda (_,_,c), a::l -> match_name c l
+      | _ -> None in
+    (* This is very ad hoc code so that an evar inherits the name of the binder
+       in situations like "ex_intro (fun x => P) ?ev p" *)
+    let f = function (mv',(Cltyp (_,t) | Clval (_,_,t))) ->
+      if Metaset.mem mv t.freemetas then
+        let f,l = decompose_app t.rebus in
+        match kind_of_term f with
+        | Meta mv'' ->
+          (match meta_opt_fvalue evd mv'' with
+          | Some (c,_) -> match_name c.rebus l
+          | None -> None)
+        | Evar ev ->
+          (match existential_opt_value evd ev with
+          | Some c -> match_name c l
+          | None -> None)
+        | _ -> None
+      else None in
+    let id = try List.find_map f (Evd.meta_list evd) with Not_found -> id in
+    loc,Evar_kinds.VarInstance id
+  | src -> src
+
 (* [clenv_pose_metas_as_evars clenv dep_mvs]
  * For each dependent evar in the clause-env which does not have a value,
  * pose a value for it by constructing a fresh evar.  We do this in
@@ -306,8 +333,10 @@ let clenv_pose_metas_as_evars clenv dep_mvs =
       (* This assumes no cycle in the dependencies - is it correct ? *)
       if occur_meta ty then fold clenv (mvs@[mv])
       else
+        let src = evar_source_of_meta mv clenv.evd in
+        let src = adjust_meta_source clenv.evd mv src in
 	let (evd,evar) =
-	  new_evar clenv.evd (cl_env clenv) ~src:(Loc.ghost,Evar_kinds.GoalEvar) ty in
+	  new_evar clenv.evd (cl_env clenv) ~src ty in
 	let clenv = clenv_assign mv evar {clenv with evd=evd} in
 	fold clenv mvs in
   fold clenv dep_mvs

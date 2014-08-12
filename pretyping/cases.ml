@@ -41,22 +41,24 @@ type pattern_matching_error =
   | NonExhaustive of cases_pattern list
   | CannotInferPredicate of (constr * types) array
 
-exception PatternMatchingError of env * pattern_matching_error
+exception PatternMatchingError of env * evar_map * pattern_matching_error
 
-let raise_pattern_matching_error (loc,ctx,te) =
-  Loc.raise loc (PatternMatchingError(ctx,te))
+let raise_pattern_matching_error (loc,env,sigma,te) =
+  Loc.raise loc (PatternMatchingError(env,sigma,te))
 
-let error_bad_pattern_loc loc cstr ind =
-  raise_pattern_matching_error (loc, Global.env(), BadPattern (cstr,ind))
+let error_bad_pattern_loc loc env sigma cstr ind =
+  raise_pattern_matching_error
+    (loc, env, sigma, BadPattern (cstr,ind))
 
 let error_bad_constructor_loc loc cstr ind =
-  raise_pattern_matching_error (loc, Global.env(), BadConstructor (cstr,ind))
+  raise_pattern_matching_error
+    (loc, Global.env(), Evd.empty, BadConstructor (cstr,ind))
 
 let error_wrong_numarg_constructor_loc loc env c n =
-  raise_pattern_matching_error (loc, env, WrongNumargConstructor(c,n))
+  raise_pattern_matching_error (loc, env, Evd.empty, WrongNumargConstructor(c,n))
 
 let error_wrong_numarg_inductive_loc loc env c n =
-  raise_pattern_matching_error (loc, env, WrongNumargInductive(c,n))
+  raise_pattern_matching_error (loc, env, Evd.empty, WrongNumargInductive(c,n))
 
 let rec list_try_compile f = function
   | [a] -> f a
@@ -479,18 +481,18 @@ let check_and_adjust_constructor env ind cstrs = function
 	with Not_found ->
 	  error_bad_constructor_loc loc cstr ind
 
-let check_all_variables typ mat =
+let check_all_variables env sigma typ mat =
   List.iter
     (fun eqn -> match current_pattern eqn with
        | PatVar (_,id) -> ()
        | PatCstr (loc,cstr_sp,_,_) ->
-	   error_bad_pattern_loc loc cstr_sp typ)
+	   error_bad_pattern_loc loc env sigma cstr_sp typ)
     mat
 
 let check_unused_pattern env eqn =
   if not !(eqn.used) then
     raise_pattern_matching_error
-      (eqn.eqn_loc, env, UnusedClause eqn.patterns)
+      (eqn.eqn_loc, env, Evd.empty, UnusedClause eqn.patterns)
 
 let set_used_pattern eqn = eqn.used := true
 
@@ -1254,7 +1256,7 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
   let () = match submat with
   | [] ->
     raise_pattern_matching_error
-      (Loc.ghost, pb.env, NonExhaustive (complete_history history))
+      (Loc.ghost, pb.env, Evd.empty, NonExhaustive (complete_history history))
   | _ -> ()
   in
 
@@ -1301,7 +1303,7 @@ and match_current pb (initial,tomatch) =
   let ((current,typ),deps,dep) = tomatch in
   match typ with
     | NotInd (_,typ) ->
-	check_all_variables typ pb.mat;
+	check_all_variables pb.env !(pb.evdref) typ pb.mat;
 	compile_all_variables initial tomatch pb
     | IsInd (_,(IndType(indf,realargs) as indt),names) ->
 	let mind,_ = dest_ind_family indf in

@@ -38,7 +38,7 @@ type object_pr = {
   print_named_decl          : Id.t * constr option * types -> std_ppcmds;
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
-  print_typed_value_in_env  : Environ.env -> Term.constr * Term.types -> Pp.std_ppcmds;
+  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> Term.constr * Term.types -> Pp.std_ppcmds;
   print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> unsafe_judgment -> std_ppcmds;
 }
 
@@ -395,9 +395,9 @@ let print_located_qualid ref = print_located_qualid "object" [`TERM; `LTAC; `MOD
 (**** Printing declarations and judgments *)
 (****  Gallina layer                  *****)
 
-let gallina_print_typed_value_in_env env (trm,typ) =
-  (pr_lconstr_env env trm ++ fnl () ++
-     str "     : " ++ pr_ltype_env env typ)
+let gallina_print_typed_value_in_env env sigma (trm,typ) =
+  (pr_lconstr_env env sigma trm ++ fnl () ++
+     str "     : " ++ pr_ltype_env env sigma typ)
 
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside pr_lconstr, so that
@@ -541,9 +541,9 @@ let gallina_print_context with_values =
   in
   prec
 
-let gallina_print_eval red_fun env evmap _ {uj_val=trm;uj_type=typ} =
-  let ntrm = red_fun env evmap trm in
-  (str "     = " ++ gallina_print_typed_value_in_env env (ntrm,typ))
+let gallina_print_eval red_fun env sigma _ {uj_val=trm;uj_type=typ} =
+  let ntrm = red_fun env sigma trm in
+  (str "     = " ++ gallina_print_typed_value_in_env env sigma (ntrm,typ))
 
 (******************************************)
 (**** Printing abstraction layer          *)
@@ -581,15 +581,15 @@ let print_eval x = !object_pr.print_eval x
 (**** Printing declarations and judgments *)
 (****  Abstract layer                 *****)
 
-let print_typed_value x = print_typed_value_in_env (Global.env ()) x
+let print_typed_value x = print_typed_value_in_env (Global.env ()) Evd.empty x
 
-let print_judgment env {uj_val=trm;uj_type=typ} =
-  print_typed_value_in_env env (trm, typ)
+let print_judgment env sigma {uj_val=trm;uj_type=typ} =
+  print_typed_value_in_env env sigma (trm, typ)
 
-let print_safe_judgment env j =
+let print_safe_judgment env sigma j =
   let trm = Safe_typing.j_val j in
   let typ = Safe_typing.j_type j in
-  print_typed_value_in_env env (trm, typ)
+  print_typed_value_in_env env sigma (trm, typ)
 
 (*********************)
 (* *)

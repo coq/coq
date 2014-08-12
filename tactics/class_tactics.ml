@@ -211,7 +211,7 @@ let catchable = function
   | Refiner.FailError _ -> true
   | e -> Logic.catchable_exception e
 
-let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
+let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) evs (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
 
 let pr_depth l = prlist_with_sep (fun () -> str ".") int (List.rev l)
 
@@ -395,7 +395,7 @@ let hints_tac hints =
 	| [] ->
 	  if not foundone && !typeclasses_debug then
 	    msg_debug (pr_depth info.auto_depth ++ str": no match for " ++
-		     Printer.pr_constr_env (Goal.V82.env s gl) concl ++
+		     Printer.pr_constr_env (Goal.V82.env s gl) s concl ++
 		     spc () ++ int (List.length poss) ++ str" possibilities");
 	  fk ()
     in aux 1 false poss }

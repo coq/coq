@@ -285,7 +285,7 @@ let find_applied_relation metas loc env sigma c left2right =
     | Some c -> c
     | None ->
 	user_err_loc (loc, "decompose_applied_relation",
-		     str"The type" ++ spc () ++ Printer.pr_constr_env env ctype ++
+		     str"The type" ++ spc () ++ Printer.pr_constr_env env sigma ctype ++
 		       spc () ++ str"of this term does not end with an applied relation.")
 
 (* To add rewriting rules to a base *)

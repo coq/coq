@@ -497,7 +497,7 @@ let is_instance = function
   | _ -> false
 
 let is_implicit_arg = function
-| Evar_kinds.GoalEvar -> false
+| Evar_kinds.GoalEvar _ -> false
 | _ -> true
   (* match k with *)
   (*     ImplicitArg (ref, (n, id), b) -> true *)
@@ -538,10 +538,10 @@ open Evar_kinds
 type evar_filter = existential_key -> Evar_kinds.t -> bool
 
 let all_evars _ _ = true
-let all_goals _ = function GoalEvar -> true | _ -> false
+let all_goals _ = function GoalEvar _ -> true | _ -> false
 let no_goals ev evi = not (all_goals ev evi)
 let no_goals_or_obligations _ = function
-  | GoalEvar | QuestionMark _ -> false
+  | GoalEvar _ | QuestionMark _ -> false
   | _ -> true
 
 let mark_resolvability filter b sigma =

@@ -69,7 +69,7 @@ let show_top_evars () =
   let pfts = get_pftreestate () in
   let gls = Proof.V82.subgoals pfts in
   let sigma = gls.Evd.sigma in
-  msg_notice (pr_evars_int 1 (Evarutil.non_instantiated sigma))
+  msg_notice (pr_evars_int sigma 1 (Evarutil.non_instantiated sigma))
 
 let show_universes () =
   let pfts = get_pftreestate () in
@@ -1117,7 +1117,7 @@ let default_env () = {
 let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
     let t,ctx = Constrintern.interp_type Evd.empty (Global.env()) c in
-    let t = Detyping.detype false [] [] t in
+    let t = Detyping.detype false [] [] Evd.empty t in
     let t = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl
@@ -1469,13 +1469,13 @@ let vernac_check_may_eval redexp glopt rc =
   let c = nf c in
   let j =
     try
-      Evarutil.check_evars env sigma sigma' c;
+      Evarutil.check_evars env Evd.empty sigma' c;
       Arguments_renaming.rename_typing env c
     with Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) ->
       Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c) in
   match redexp with
     | None ->
-	msg_notice (print_judgment env j ++ Printer.pr_universe_ctx uctx)
+	msg_notice (print_judgment env sigma' j ++ Printer.pr_universe_ctx uctx)
     | Some r ->
         Tacintern.dump_glob_red_expr r;
         let (sigma',r_interp) = interp_redexp env sigma' r in
@@ -1489,14 +1489,14 @@ let vernac_declare_reduction locality s r =
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =
   let env = Global.env() in
-  let evmap = Evd.from_env env in
-  let c,ctx = interp_constr evmap env c in
+  let sigma = Evd.from_env env in
+  let c,ctx = interp_constr sigma env c in
   let senv = Global.safe_env() in
   let cstrs = snd (Evd.evar_universe_context_set ctx) in
   let senv = Safe_typing.add_constraints cstrs senv in
   let j = Safe_typing.typing senv c in
   let env = Safe_typing.env_of_safe_env senv in
-    msg_notice (print_safe_judgment env j)
+    msg_notice (print_safe_judgment env sigma j)
 
 let vernac_print = function
   | PrintTables -> msg_notice (print_tables ())

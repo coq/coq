@@ -14,4 +14,7 @@ open Locus
 val instantiate_tac : int -> Tacinterp.interp_sign * Glob_term.glob_constr ->
   (Id.t * hyp_location_flag, unit) location -> unit Proofview.tactic
 
+val instantiate_tac_by_name : Id.t ->
+  Tacinterp.interp_sign * Glob_term.glob_constr -> unit Proofview.tactic
+
 val let_evar : Name.t -> Term.types -> unit Proofview.tactic

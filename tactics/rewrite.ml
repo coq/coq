@@ -2004,7 +2004,7 @@ let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite_clause
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
 let not_declared env ty rel =
-  Tacticals.New.tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared " ++
+  Tacticals.New.tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env Evd.empty rel ++ str" is not a declared " ++
 		str ty ++ str" relation. Maybe you need to require the Setoid library")
 
 let setoid_proof ty fn fallback =

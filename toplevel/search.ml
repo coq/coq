@@ -85,8 +85,8 @@ let generic_search = iter_declarations
 
 (** Standard display *)
 
-let plain_display accu ref a c =
-  let pc = pr_lconstr_env a c in
+let plain_display accu ref env c =
+  let pc = pr_lconstr_env env Evd.empty c in
   let pr = pr_global ref in
   accu := hov 2 (pr ++ str":" ++ spc () ++ pc) :: !accu
 
@@ -312,7 +312,7 @@ let interface_search flags =
     let answer = {
       coq_object_prefix = prefix;
       coq_object_qualid = qualid;
-      coq_object_object = string_of_ppcmds (pr_lconstr_env env constr);
+      coq_object_object = string_of_ppcmds (pr_lconstr_env env Evd.empty constr);
     } in
     ans := answer :: !ans;
   in

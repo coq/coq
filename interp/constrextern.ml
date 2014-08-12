@@ -142,7 +142,7 @@ let insert_pat_alias loc p = function
 (* conversion of references                                           *)
 
 let extern_evar loc n l =
-  if !print_evar_arguments then CEvar (loc,n,l) else CEvar (loc,n,None)
+(*  if !print_evar_arguments then*) CEvar (loc,n,l) (*else CEvar (loc,n,None)*)
 
 (** We allow customization of the global_reference printer.
     For instance, in the debugger the tables of global references
@@ -674,7 +674,7 @@ let rec extern inctx scopes vars r =
   | GEvar (loc,n,None) when !print_meta_as_hole -> CHole (loc, None, None)
 
   | GEvar (loc,n,l) ->
-      extern_evar loc n (Option.map (List.map (extern false scopes vars)) l)
+      extern_evar loc n (Option.map (List.map (on_snd (extern false scopes vars))) l)
 
   | GPatVar (loc,n) ->
       if !print_meta_as_hole then CHole (loc, None, None) else CPatVar (loc,n)
@@ -988,7 +988,7 @@ let extern_glob_type vars c =
 
 let loc = Loc.ghost (* for constr and pattern, locations are lost *)
 
-let extern_constr_gen goal_concl_style scopt env t =
+let extern_constr_gen goal_concl_style scopt env sigma t =
   (* "goal_concl_style" means do alpha-conversion using the "goal" convention *)
   (* i.e.: avoid using the names of goal/section/rel variables and the short *)
   (* names of global definitions of current module when computing names for *)
@@ -998,20 +998,20 @@ let extern_constr_gen goal_concl_style scopt env t =
   (* consideration; see namegen.ml for further details *)
   let avoid = if goal_concl_style then ids_of_context env else [] in
   let rel_env_names = names_of_rel_context env in
-  let r = Detyping.detype goal_concl_style avoid rel_env_names t in
+  let r = Detyping.detype goal_concl_style avoid rel_env_names sigma t in
   let vars = vars_of_env env in
   extern false (scopt,[]) vars r
 
-let extern_constr_in_scope goal_concl_style scope env t =
-  extern_constr_gen goal_concl_style (Some scope) env t
+let extern_constr_in_scope goal_concl_style scope env sigma t =
+  extern_constr_gen goal_concl_style (Some scope) env sigma t
 
-let extern_constr goal_concl_style env t =
-  extern_constr_gen goal_concl_style None env t
+let extern_constr goal_concl_style env sigma t =
+  extern_constr_gen goal_concl_style None env sigma t
 
-let extern_type goal_concl_style env t =
+let extern_type goal_concl_style env sigma t =
   let avoid = if goal_concl_style then ids_of_context env else [] in
   let rel_env_names = names_of_rel_context env in
-  let r = Detyping.detype goal_concl_style avoid rel_env_names t in
+  let r = Detyping.detype goal_concl_style avoid rel_env_names sigma t in
   extern_glob_type (vars_of_env env) r
 
 let extern_sort s = extern_glob_sort (detype_sort s)
@@ -1023,10 +1023,14 @@ let any_any_branch =
   (* | _ => _ *)
   (loc,[],[PatVar (loc,Anonymous)],GHole (loc,Evar_kinds.InternalHole,None))
 
-let rec glob_of_pat env = function
+let rec glob_of_pat env sigma = function
   | PRef ref -> GRef (loc,ref,None)
   | PVar id -> GVar (loc,id)
-  | PEvar (n,l) -> GEvar (loc,n,Some (Array.map_to_list (glob_of_pat env) l))
+  | PEvar (evk,l) ->
+      let test id = function PVar id' -> Id.equal id id' | _ -> false in
+      let l = Evd.evar_instance_array test (Evd.find sigma evk) l in
+      let id = Evd.evar_ident evk sigma in
+      GEvar (loc,id,Some (List.map (on_snd (glob_of_pat env sigma)) l))
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
 	| Name id   -> id
@@ -1036,29 +1040,29 @@ let rec glob_of_pat env = function
       GVar (loc,id)
   | PMeta None -> GHole (loc,Evar_kinds.InternalHole, None)
   | PMeta (Some n) -> GPatVar (loc,(false,n))
-  | PProj (p,c) -> GApp (loc,GRef (loc, ConstRef p,None),[glob_of_pat env c])
+  | PProj (p,c) -> GApp (loc,GRef (loc, ConstRef p,None),[glob_of_pat env sigma c])
   | PApp (f,args) ->
-      GApp (loc,glob_of_pat env f,Array.map_to_list (glob_of_pat env) args)
+      GApp (loc,glob_of_pat env sigma f,Array.map_to_list (glob_of_pat env sigma) args)
   | PSoApp (n,args) ->
       GApp (loc,GPatVar (loc,(true,n)),
-        List.map (glob_of_pat env) args)
+        List.map (glob_of_pat env sigma) args)
   | PProd (na,t,c) ->
-      GProd (loc,na,Explicit,glob_of_pat env t,glob_of_pat (na::env) c)
+      GProd (loc,na,Explicit,glob_of_pat env sigma t,glob_of_pat (na::env) sigma c)
   | PLetIn (na,t,c) ->
-      GLetIn (loc,na,glob_of_pat env t, glob_of_pat (na::env) c)
+      GLetIn (loc,na,glob_of_pat env sigma t, glob_of_pat (na::env) sigma c)
   | PLambda (na,t,c) ->
-      GLambda (loc,na,Explicit,glob_of_pat env t, glob_of_pat (na::env) c)
+      GLambda (loc,na,Explicit,glob_of_pat env sigma t, glob_of_pat (na::env) sigma c)
   | PIf (c,b1,b2) ->
-      GIf (loc, glob_of_pat env c, (Anonymous,None),
-           glob_of_pat env b1, glob_of_pat env b2)
+      GIf (loc, glob_of_pat env sigma c, (Anonymous,None),
+           glob_of_pat env sigma b1, glob_of_pat env sigma b2)
   | PCase ({cip_style=LetStyle; cip_ind_args=None},PMeta None,tm,[(0,n,b)]) ->
-      let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat env b) in
-      GLetTuple (loc,nal,(Anonymous,None),glob_of_pat env tm,b)
+      let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat env sigma b) in
+      GLetTuple (loc,nal,(Anonymous,None),glob_of_pat env sigma tm,b)
   | PCase (info,p,tm,bl) ->
       let mat = match bl, info.cip_ind with
 	| [], _ -> []
 	| _, Some ind ->
-	  let bl' = List.map (fun (i,n,c) -> (i,n,glob_of_pat env c)) bl in
+	  let bl' = List.map (fun (i,n,c) -> (i,n,glob_of_pat env sigma c)) bl in
 	  simple_cases_matrix_of_branches ind bl'
 	| _, None -> anomaly (Pp.str "PCase with some branches but unknown inductive")
       in
@@ -1067,18 +1071,18 @@ let rec glob_of_pat env = function
       let indnames,rtn = match p, info.cip_ind, info.cip_ind_args with
 	| PMeta None, _, _ -> (Anonymous,None),None
 	| _, Some ind, Some nargs ->
-	  return_type_of_predicate ind nargs (glob_of_pat env p)
+	  return_type_of_predicate ind nargs (glob_of_pat env sigma p)
 	| _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive")
       in
-      GCases (loc,RegularStyle,rtn,[glob_of_pat env tm,indnames],mat)
-  | PFix f -> Detyping.detype false [] env (mkFix f)
-  | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
+      GCases (loc,RegularStyle,rtn,[glob_of_pat env sigma tm,indnames],mat)
+  | PFix f -> Detyping.detype false [] env sigma (mkFix f)
+  | PCoFix c -> Detyping.detype false [] env sigma (mkCoFix c)
   | PSort s -> GSort (loc,s)
 
-let extern_constr_pattern env pat =
-  extern true (None,[]) Id.Set.empty (glob_of_pat env pat)
+let extern_constr_pattern env sigma pat =
+  extern true (None,[]) Id.Set.empty (glob_of_pat env sigma pat)
 
-let extern_rel_context where env sign =
-  let a = detype_rel_context where [] (names_of_rel_context env) sign in
+let extern_rel_context where env sigma sign =
+  let a = detype_rel_context where [] (names_of_rel_context env) sigma sign in
   let vars = vars_of_env env in
   pi3 (extern_local_binder (None,[]) vars a)

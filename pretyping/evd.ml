@@ -219,6 +219,17 @@ let map_evar_info f evi =
     evar_concl = f evi.evar_concl;
     evar_candidates = Option.map (List.map f) evi.evar_candidates }
 
+type existential_name = Id.t
+
+let evar_ident_info evi =
+  match evi.evar_source with
+  | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
+  | _,Evar_kinds.VarInstance id -> id
+  | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
+  | _ ->
+      let env = reset_with_named_context evi.evar_hyps (Global.env()) in
+      Namegen.id_of_name_using_hdchar env evi.evar_concl Anonymous
+
 (* spiwack: Revised hierarchy :
    - Evar.Map ( Maps of existential_keys )
    - EvarInfoMap ( .t = evar_info Evar.Map.t * evar_info Evar.Map )
@@ -231,7 +242,7 @@ exception NotInstantiatedEvar
 
 (* Note: let-in contributes to the instance *)
 
-let make_evar_instance_array info args =
+let evar_instance_array test_id info args =
   let len = Array.length args in
   let rec instrec filter ctxt i = match filter, ctxt with
   | [], [] ->
@@ -242,7 +253,7 @@ let make_evar_instance_array info args =
   | true :: filter, (id, _, _) :: ctxt ->
     if i < len then
       let c = Array.unsafe_get args i in
-      if isVarId id c then instrec filter ctxt (succ i)
+      if test_id id c then instrec filter ctxt (succ i)
       else (id, c) :: instrec filter ctxt (succ i)
     else instance_mismatch ()
   | _ -> instance_mismatch ()
@@ -250,12 +261,17 @@ let make_evar_instance_array info args =
   match Filter.repr (evar_filter info) with
   | None ->
     let map i (id, _, _) =
-      if (i < len) then (id, Array.unsafe_get args i)
+      if (i < len) then
+        let c = Array.unsafe_get args i in
+        if test_id id c then None else Some (id,c)
       else instance_mismatch ()
     in
-    List.map_i map 0 (evar_context info)
+    List.map_filter_i map (evar_context info)
   | Some filter ->
     instrec filter (evar_context info) 0
+
+let make_evar_instance_array info args =
+  evar_instance_array isVarId info args
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in
@@ -580,6 +596,7 @@ type evar_map = {
   last_mods  : Evar.Set.t;
   metas      : clbinding Metamap.t;
   effects    : Declareops.side_effects;
+  evar_names : Id.t EvMap.t * existential_key Idmap.t;
 }
 
 (*** Lifting primitive from EvarMap. ***)
@@ -594,9 +611,23 @@ let progress_evar_map d1 d2 =
 
 let add d e i = match i.evar_body with
 | Evar_empty ->
-  { d with undf_evars = EvMap.add e i d.undf_evars; }
+  let evar_names =
+    let (evtoid,idtoev as x) = d.evar_names in
+    if EvMap.mem e evtoid then
+      x
+    else
+      let id = evar_ident_info i in
+      let id = Namegen.next_ident_away_from id
+        (fun id -> Idmap.mem id idtoev) in
+    (EvMap.add e id evtoid, Idmap.add id e idtoev) in
+  { d with undf_evars = EvMap.add e i d.undf_evars; evar_names }
 | Evar_defined _ ->
-  { d with defn_evars = EvMap.add e i d.defn_evars; }
+  let evar_names =
+    let (evtoid,idtoev as x) = d.evar_names in
+    try let id = EvMap.find e evtoid in
+        (EvMap.remove e evtoid, Idmap.remove id idtoev)
+    with Not_found -> x in
+  { d with defn_evars = EvMap.add e i d.defn_evars; evar_names }
 
 let remove d e =
   let undf_evars = EvMap.remove e d.undf_evars in
@@ -742,6 +773,7 @@ let empty = {
   last_mods  = Evar.Set.empty;
   metas      = Metamap.empty;
   effects    = Declareops.no_seff;
+  evar_names = (EvMap.empty,Idmap.empty); (* id<->key for undefined evars *)
 }
 
 let from_env ?ctx e = 
@@ -772,6 +804,15 @@ let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
 
 let evar_source evk d = (find d evk).evar_source
 
+let evar_ident evk evd =
+  try EvMap.find evk (fst evd.evar_names)
+  with Not_found ->
+    (* Unnamed (non-dependent) evar *)
+    Id.of_string (string_of_existential evk)
+
+let evar_key id evd =
+  Idmap.find id (snd evd.evar_names)
+
 let define_aux def undef evk body =
   let oldinfo =
     try EvMap.find evk undef
@@ -792,7 +833,12 @@ let define evk body evd =
   | [] ->  evd.last_mods
   | _ -> Evar.Set.add evk evd.last_mods
   in
-  { evd with defn_evars; undf_evars; last_mods; }
+  let evar_names =
+    let (evtoid,idtoev) = evd.evar_names in
+    let id = EvMap.find evk evtoid in
+    (EvMap.remove evk evtoid, Idmap.remove id idtoev)
+  in
+  { evd with defn_evars; undf_evars; last_mods; evar_names }
 
 let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) 
     ?(filter=Filter.identity) ?candidates ?(store=Store.empty) evd =
@@ -810,7 +856,32 @@ let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole))
     evar_candidates = candidates;
     evar_extra = store; }
   in
-  { evd with undf_evars = EvMap.add evk evar_info evd.undf_evars; }
+  let evar_names =
+    let (evtoid,idtoev) = evd.evar_names in
+    let id = evar_ident_info evar_info in
+    let id = Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
+    (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
+  in
+  { evd with undf_evars = EvMap.add evk evar_info evd.undf_evars; evar_names }
+
+let restrict evk evk' filter ?candidates evd =
+  let evar_info = EvMap.find evk evd.undf_evars in
+  let evar_info' =
+    { evar_info with evar_filter = filter;
+      evar_candidates = candidates;
+      evar_extra = Store.empty } in
+  let evar_names =
+    let (evtoid,idtoev) = evd.evar_names in
+    let id = EvMap.find evk evtoid in
+    (EvMap.add evk' id (EvMap.remove evk evtoid),
+     Idmap.add id evk' (Idmap.remove id idtoev))
+  in
+  let ctxt = Filter.filter_list filter (evar_context evar_info) in
+  let id_inst = Array.map_of_list (fun (id,_,_) -> mkVar id) ctxt in
+  let body = mkEvar(evk',id_inst) in
+  let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
+  { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
+    defn_evars; evar_names }
 
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)
@@ -1273,7 +1344,9 @@ let set_metas evd metas = {
   conv_pbs = evd.conv_pbs;
   last_mods = evd.last_mods;
   metas;
-  effects = evd.effects; }
+  effects = evd.effects;
+  evar_names = evd.evar_names;
+}
 
 let meta_list evd = metamap_to_list evd.metas
 
@@ -1405,6 +1478,11 @@ let subst_defined_metas bl c =
       substrec (pi2 (List.find select bl))
     | _ -> map_constr substrec c
   in try Some (substrec c) with Not_found -> None
+
+let evar_source_of_meta mv evd =
+  match meta_name evd mv with
+  | Anonymous -> (Loc.ghost,Evar_kinds.GoalEvar)
+  | Name id -> (Loc.ghost,Evar_kinds.VarInstance id)
 
 (*******************************************************************)
 type open_constr = evar_map * constr
@@ -1633,23 +1711,24 @@ let pr_evar_map_gen with_univs pr_evars sigma =
   in
   evs ++ svs ++ cstrs ++ metas
 
-let pr_evar_list l =
+let pr_evar_list sigma l =
   let pr (ev, evi) =
     h 0 (str (string_of_existential ev) ++
-      str "==" ++ pr_evar_info evi)
+      str "==" ++ pr_evar_info evi ++
+      str " {" ++ pr_id (evar_ident ev sigma) ++ str "}")
   in
   h 0 (prlist_with_sep fnl pr l)
 
 let pr_evar_by_depth depth sigma = match depth with
 | None ->
   (* Print all evars *)
-  str"EVARS:"++brk(0,1)++pr_evar_list (to_list sigma)++fnl()
+  str"EVARS:"++brk(0,1)++pr_evar_list sigma (to_list sigma)++fnl()
 | Some n ->
   (* Print all evars *)
   str"UNDEFINED EVARS:"++
   (if Int.equal n 0 then mt() else str" (+level "++int n++str" closure):")++
   brk(0,1)++
-  pr_evar_list (evar_dependency_closure n sigma)++fnl()
+  pr_evar_list sigma (evar_dependency_closure n sigma)++fnl()
 
 let pr_evar_by_filter filter sigma =
   let defined = Evar.Map.filter filter sigma.defn_evars in
@@ -1657,12 +1736,12 @@ let pr_evar_by_filter filter sigma =
   let prdef =
     if Evar.Map.is_empty defined then mt ()
     else str "DEFINED EVARS:" ++ brk (0, 1) ++
-      pr_evar_list (Evar.Map.bindings defined)
+      pr_evar_list sigma (Evar.Map.bindings defined)
   in
   let prundef =
     if Evar.Map.is_empty undefined then mt ()
     else str "UNDEFINED EVARS:" ++ brk (0, 1) ++
-      pr_evar_list (Evar.Map.bindings undefined)
+      pr_evar_list sigma (Evar.Map.bindings undefined)
   in
   prdef ++ prundef
 

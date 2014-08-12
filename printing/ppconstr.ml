@@ -174,15 +174,13 @@ let pr_prim_token = function
   | Numeral n -> str (Bigint.to_string n)
   | String s -> qs s
 
-let pr_evar pr n l =
-  hov 0 (str (Evd.string_of_existential n) ++
+let pr_evar pr id l =
+  hov 0 (str "?" ++ pr_id id ++
   (match l with
+   | None | Some [] -> mt()
    | Some l ->
-       spc () ++ pr_in_comment
-         (fun l ->
-	   str"[" ++ hov 0 (prlist_with_sep pr_comma (pr ltop) l) ++ str"]")
-         (List.rev l)
-   | None -> mt()))
+       let f (id,c) = pr_id id ++ str ":=" ++ pr ltop c in
+       str"@{" ++ hov 0 (prlist_with_sep pr_comma f l) ++ str"}"))
 
 let las = lapp
 let lpator = 100

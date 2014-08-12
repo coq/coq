@@ -17,7 +17,20 @@ open Locus
 
 (* The instantiate tactic *)
 
-let instantiate_tac n (ist,rawc) ido =
+let instantiate_evar evk (ist,rawc) sigma =
+  let evi = Evd.find sigma evk in
+  let filtered = Evd.evar_filtered_env evi in
+  let constrvars = Tacinterp.extract_ltac_constr_values ist filtered in
+  let lvar = {
+    Pretyping.ltac_constrs = constrvars;
+    ltac_uconstrs = Names.Id.Map.empty;
+    ltac_idents = Names.Id.Map.empty;
+    ltac_genargs = ist.Geninterp.lfun;
+  } in
+  let sigma' = w_refine (evk,evi) (lvar ,rawc) sigma in
+  tclEVARS sigma'
+
+let instantiate_tac n c ido =
   Proofview.V82.tactic begin fun gl ->
   let sigma = gl.sigma in
   let evl =
@@ -37,21 +50,20 @@ let instantiate_tac n (ist,rawc) ido =
 		  (match decl with
 		      (_,Some body,_) -> evar_list sigma body
 		    | _ -> error "Not a defined hypothesis.") in
-    if List.length evl < n then
-      error "Not enough uninstantiated existential variables.";
-    if n <= 0 then error "Incorrect existential variable index.";
-    let evk,_ = List.nth evl (n-1) in
-    let evi = Evd.find sigma evk in
-    let filtered = Evd.evar_filtered_env evi in
-    let constrvars = Tacinterp.extract_ltac_constr_values ist filtered in
-    let lvar = {
-      Pretyping.ltac_constrs = constrvars;
-      ltac_uconstrs = Names.Id.Map.empty;
-      ltac_idents = Names.Id.Map.empty;
-      ltac_genargs = ist.Geninterp.lfun;
-    } in
-    let sigma' = w_refine (evk,evi) (lvar ,rawc) sigma in
-    tclEVARS sigma' gl
+  if List.length evl < n then
+    error "Not enough uninstantiated existential variables.";
+  if n <= 0 then error "Incorrect existential variable index.";
+  let evk,_ = List.nth evl (n-1) in
+  instantiate_evar evk c sigma gl
+  end
+
+let instantiate_tac_by_name id c =
+  Proofview.V82.tactic begin fun gl ->
+  let sigma = gl.sigma in
+  let evk =
+    try Evd.evar_key id sigma
+    with Not_found -> error "Unknown existential variable." in
+  instantiate_evar evk c sigma gl
   end
 
 let let_evar name typ =

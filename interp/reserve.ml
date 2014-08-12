@@ -108,7 +108,7 @@ let constr_key c =
 let revert_reserved_type t =
   try
     let reserved = KeyMap.find (constr_key t) !reserve_revtable in
-    let t = Detyping.detype false [] [] t in
+    let t = Detyping.detype false [] [] Evd.empty t in
     (* pedrot: if [Notation_ops.match_notation_constr] may raise [Failure _]
         then I've introduced a bug... *)
     let filter _ pat =

@@ -316,7 +316,7 @@ let rec match_aliases names constr = function
       let args,bnames,body = match_aliases qnames body q in
 	st::args,bnames,body
 
-let detype_ground c = Detyping.detype false [] [] c
+let detype_ground c = Detyping.detype false [] [] Evd.empty c
 
 let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
   let et,pinfo =

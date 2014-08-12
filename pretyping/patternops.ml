@@ -157,7 +157,7 @@ let pattern_of_constr sigma t =
           | Evar_kinds.MatchingVar (b,id) ->
               ctx := (id,None,existential_type sigma ev)::!ctx;
               assert (not b); PMeta (Some id)
-          | Evar_kinds.GoalEvar -> PEvar (evk,Array.map pattern_of_constr ctxt)
+          | Evar_kinds.GoalEvar _ -> PEvar (evk,Array.map pattern_of_constr ctxt)
           | _ -> PMeta None)
     | Case (ci,p,a,br) ->
         let cip =

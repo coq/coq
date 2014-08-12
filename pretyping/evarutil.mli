@@ -48,6 +48,9 @@ val e_new_type_evar : evar_map ref ->
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
 
+val restrict_evar : evar_map -> existential_key -> Filter.t ->
+  constr list option -> evar_map * existential_key
+
 (** Polymorphic constants *)
 
 val new_global : evar_map -> Globnames.global_reference -> evar_map * constr

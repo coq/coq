@@ -118,7 +118,7 @@ let mk_open_instance id idc gl m t=
       let nid=(fresh_id avoid var_id gl) in
 	(Name nid,None,dummy_constr)::(aux (n-1) (nid::avoid)) in
   let nt=it_mkLambda_or_LetIn revt (aux m []) in
-  let rawt=Detyping.detype false [] [] nt in
+  let rawt=Detyping.detype false [] [] evmap nt in
   let rec raux n t=
     if Int.equal n 0 then t else
       match t with

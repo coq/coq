@@ -152,12 +152,12 @@ let intern_place ist = function
     ConclLocation () -> ConclLocation ()
   | HypLocation (id,hl) -> HypLocation (Tacintern.intern_hyp ist id,hl)
 
-let interp_place ist env = function
+let interp_place ist env sigma = function
     ConclLocation () -> ConclLocation ()
-  | HypLocation (id,hl) -> HypLocation (Tacinterp.interp_hyp ist env id,hl)
+  | HypLocation (id,hl) -> HypLocation (Tacinterp.interp_hyp ist env sigma id,hl)
 
 let interp_place ist gl p =
-  Tacmach.project gl , interp_place ist (Tacmach.pf_env gl) p
+  Tacmach.project gl , interp_place ist (Tacmach.pf_env gl) (Tacmach.project gl) p
 
 let subst_place subst pl = pl
 

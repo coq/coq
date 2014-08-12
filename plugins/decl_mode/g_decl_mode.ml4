@@ -26,8 +26,8 @@ let pr_goal gs =
   let preamb,thesis,penv,pc =
     (str "     *** Declarative Mode ***" ++ fnl ()++fnl ()),
     (str "thesis := "  ++ fnl ()),
-    Printer.pr_context_of env,
-    Printer.pr_goal_concl_style_env env (Goal.V82.concl sigma g)
+    Printer.pr_context_of env sigma,
+    Printer.pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g)
   in
     preamb ++
     str"  " ++ hv 0 (penv ++ fnl () ++

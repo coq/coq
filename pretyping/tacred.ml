@@ -28,7 +28,7 @@ open Pretype_errors
 (* Errors *)
 
 type reduction_tactic_error =
-    InvalidAbstraction of env * constr * (env * Type_errors.type_error)
+    InvalidAbstraction of env * Evd.evar_map * constr * (env * Type_errors.type_error)
 
 exception ReductionTacticError of reduction_tactic_error
 
@@ -1112,7 +1112,7 @@ let pattern_occs loccs_trm env sigma c =
     let _ = Typing.type_of env sigma abstr_trm in
     applist(abstr_trm, List.map snd loccs_trm)
   with Type_errors.TypeError (env',t) ->
-    raise (ReductionTacticError (InvalidAbstraction (env,abstr_trm,(env',t))))
+    raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))
 
 (* Used in several tactics. *)
 

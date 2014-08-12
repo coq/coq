@@ -340,7 +340,7 @@ let raw_push_named (na,raw_value,raw_typ) env =
 
 let add_pat_variables pat typ env : Environ.env =
   let rec add_pat_variables env pat typ  : Environ.env =
-    observe (str "new rel env := " ++ Printer.pr_rel_context_of env);
+    observe (str "new rel env := " ++ Printer.pr_rel_context_of env Evd.empty);
 
     match pat with
       | PatVar(_,na) -> Environ.push_rel (na,None,typ) env
@@ -376,7 +376,7 @@ let add_pat_variables pat typ env : Environ.env =
 	~init:(env,[])
     )
   in
-  observe (str "new var env := " ++ Printer.pr_named_context_of res);
+  observe (str "new var env := " ++ Printer.pr_named_context_of res Evd.empty);
   res
 
 
@@ -405,7 +405,7 @@ let rec pattern_to_term_and_type env typ  = function
 	Array.to_list
 	  (Array.init
 	     (cst_narg - List.length patternl)
-	     (fun i -> Detyping.detype false [] (Termops.names_of_rel_context env) csta.(i))
+	     (fun i -> Detyping.detype false [] (Termops.names_of_rel_context env) Evd.empty csta.(i))
 	  )
       in
       let patl_as_term =
@@ -488,7 +488,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		*)
 		let rt_as_constr,ctx = Pretyping.understand Evd.empty env rt in
 		let rt_typ = Typing.type_of env Evd.empty rt_as_constr in
-		let res_raw_type = Detyping.detype false [] (Termops.names_of_rel_context env) rt_typ in
+		let res_raw_type = Detyping.detype false [] (Termops.names_of_rel_context env) Evd.empty rt_typ in
 		let res = fresh_id args_res.to_avoid "_res" in
 		let new_avoid = res::args_res.to_avoid in
 		let res_rt = mkGVar res in
@@ -743,7 +743,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 			in
 			let raw_typ_of_id =
 			  Detyping.detype false []
-			    (Termops.names_of_rel_context env_with_pat_ids) typ_of_id
+			    (Termops.names_of_rel_context env_with_pat_ids) Evd.empty typ_of_id
 			in
 			mkGProd (Name id,raw_typ_of_id,acc))
 		     pat_ids
@@ -787,7 +787,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	      List.map3
 	      (fun pat e typ_as_constr ->
 		 let this_pat_ids = ids_of_pat pat in
-		 let typ = Detyping.detype false [] (Termops.names_of_rel_context new_env) typ_as_constr in
+		 let typ = Detyping.detype false [] (Termops.names_of_rel_context new_env) Evd.empty typ_as_constr in
 		 let pat_as_term = pattern_to_term pat in
 		 List.fold_right
 		   (fun id  acc ->
@@ -795,7 +795,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		      then (Prod (Name id),
 		      let typ_of_id = Typing.type_of new_env Evd.empty (mkVar id) in
 		      let raw_typ_of_id =
-			Detyping.detype false [] (Termops.names_of_rel_context new_env) typ_of_id
+			Detyping.detype false [] (Termops.names_of_rel_context new_env) Evd.empty typ_of_id
 		      in
 		      raw_typ_of_id
 			   )::acc
@@ -951,7 +951,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			    GRef (Loc.ghost,Globnames.IndRef (fst ind),None),
 			    (List.map
 			      (fun p -> Detyping.detype false []
-				 (Termops.names_of_rel_context env)
+				 (Termops.names_of_rel_context env) Evd.empty
 				 p) params)@(Array.to_list
 				      (Array.make
 					 (List.length args' - nparam)
@@ -980,10 +980,12 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 				     | Name id' ->
 					 (id',Detyping.detype false []
 					    (Termops.names_of_rel_context env)
+                                            Evd.empty
 					    arg)::acc
 				 else if isVar var_as_constr
 				 then (destVar var_as_constr,Detyping.detype false []
 					 (Termops.names_of_rel_context env)
+                                         Evd.empty
 					 arg)::acc
 				 else acc
 			      )

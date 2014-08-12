@@ -449,11 +449,12 @@ END
 open Tacticals
 
 TACTIC EXTEND instantiate
-  [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
+  [ "instantiate" "(" ident(id) ":=" lglob(c) ")" ] ->
+    [ Tacticals.New.tclTHEN (instantiate_tac_by_name id c) Proofview.V82.nf_evar_goals ]
+| [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
     [ Tacticals.New.tclTHEN (instantiate_tac i c hl) Proofview.V82.nf_evar_goals ]
 | [ "instantiate" ] -> [ Proofview.V82.nf_evar_goals ]
 END
-
 
 (**********************************************************************)
 (** Nijmegen "step" tactic for setoid rewriting                       *)
@@ -628,8 +629,8 @@ let hResolve id c occ t gl =
   let env = Termops.clear_named_body id (pf_env gl) in
   let env_ids = Termops.ids_of_context env in
   let env_names = Termops.names_of_rel_context env in
-  let c_raw = Detyping.detype true env_ids env_names c in 
-  let t_raw = Detyping.detype true env_ids env_names t in 
+  let c_raw = Detyping.detype true env_ids env_names sigma c in
+  let t_raw = Detyping.detype true env_ids env_names sigma t in
   let rec resolve_hole t_hole =
     try 
       Pretyping.understand sigma env t_hole

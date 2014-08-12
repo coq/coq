@@ -122,7 +122,7 @@ let query (s,id) = Stm.query ~at:id s; read_stdout ()
 
 let hyp_next_tac sigma env (id,_,ast) =
   let id_s = Names.Id.to_string id in
-  let type_s = string_of_ppcmds (pr_ltype_env env ast) in
+  let type_s = string_of_ppcmds (pr_ltype_env env sigma ast) in
   [
     ("clear "^id_s),("clear "^id_s^".");
     ("apply "^id_s),("apply "^id_s^".");
@@ -184,10 +184,10 @@ let process_goal sigma g =
   let id = Goal.uid g in
   let ccl =
     let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
-    string_of_ppcmds (pr_goal_concl_style_env env norm_constr) in
+    string_of_ppcmds (pr_goal_concl_style_env env sigma norm_constr) in
   let process_hyp d =
     let d = Context.map_named_list_declaration (Reductionops.nf_evar sigma) d in
-    (string_of_ppcmds (pr_var_list_decl min_env d)) in
+    (string_of_ppcmds (pr_var_list_decl min_env sigma d)) in
   let hyps =
     List.map process_hyp (compact_named_context (Environ.named_context env)) in
   { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
@@ -222,7 +222,7 @@ let evars () =
     let pfts = Proof_global.give_me_the_proof () in
     let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
     let exl = Evar.Map.bindings (Evarutil.non_instantiated sigma) in
-    let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar ev); } in
+    let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
     let el = List.map map_evar exl in
     Some el
   with Proof_global.NoCurrentProof -> None

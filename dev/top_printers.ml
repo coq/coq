@@ -200,8 +200,8 @@ let ppuniverse_context_future c =
 let ppuniverses u = pp (Univ.pr_universes u)
 
 let ppenv e = pp
-  (str "[" ++ pr_named_context_of e ++ str "]" ++ spc() ++
-   str "[" ++ pr_rel_context e (rel_context e) ++ str "]")
+  (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
+   str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]")
 
 let pptac = (fun x -> pp(Pptactic.pr_glob_tactic (Global.env()) x))
 
@@ -457,7 +457,7 @@ let in_current_context f c =
   let (evmap,sign) =
     try Pfedit.get_current_goal_context ()
     with e when Logic.catchable_exception e -> (Evd.empty, Global.env()) in
-  f (fst (Constrintern.interp_constr evmap sign c))(*FIXME*)
+  f (fst (Constrintern.interp_constr sign evmap c))(*FIXME*)
 
 (* We expand the result of preprocessing to be independent of camlp4
 

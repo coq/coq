@@ -386,6 +386,8 @@ let is_GHole = function
   | GHole _ -> true
   | _ -> false
 
+let evars = ref Id.Map.empty
+
 let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var_map) t =
   let inh_conv_coerce_to_tycon = inh_conv_coerce_to_tycon resolve_tc in
   let pretype_type = pretype_type resolve_tc in
@@ -405,13 +407,17 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
       (pretype_id (fun e r l t -> pretype tycon e r l t) loc env evdref lvar id)
       tycon
 
-  | GEvar (loc, evk, instopt) ->
+  | GEvar (loc, id, instopt) ->
       (* Ne faudrait-il pas s'assurer que hyps est bien un
 	 sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
+      let evk =
+        try Evd.evar_key id !evdref
+        with Not_found ->
+          user_err_loc (loc,"",str "Unknown existential variable.") in
       let hyps = evar_filtered_context (Evd.find !evdref evk) in
       let args = match instopt with
         | None -> Array.of_list (instance_from_named_context hyps)
-        | Some inst -> failwith "Evar subtitutions not implemented" in
+        | Some inst -> error "Non-identity subtitutions of existential variables not implemented" in
       let c = mkEvar (evk, args) in
       let j = (Retyping.get_judgment_of env !evdref c) in
 	inh_conv_coerce_to_tycon loc env evdref j tycon

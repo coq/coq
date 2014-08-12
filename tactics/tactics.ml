@@ -152,7 +152,7 @@ end
 let convert x y = convert_gen Reduction.CONV x y
 let convert_leq x y = convert_gen Reduction.CUMUL x y
 
-let clear_dependency_msg env id = function
+let clear_dependency_msg env sigma id = function
   | Evarutil.OccurHypInSimpleClause None ->
       pr_id id ++ str " is used in conclusion."
   | Evarutil.OccurHypInSimpleClause (Some id') ->
@@ -160,12 +160,12 @@ let clear_dependency_msg env id = function
   | Evarutil.EvarTypingBreak ev ->
       str "Cannot remove " ++ pr_id id ++
       strbrk " without breaking the typing of " ++
-      Printer.pr_existential env ev ++ str"."
+      Printer.pr_existential env sigma ev ++ str"."
 
-let error_clear_dependency env id err =
-  errorlabstrm "" (clear_dependency_msg env id err)
+let error_clear_dependency env sigma id err =
+  errorlabstrm "" (clear_dependency_msg env sigma id err)
 
-let replacing_dependency_msg env id = function
+let replacing_dependency_msg env sigma id = function
   | Evarutil.OccurHypInSimpleClause None ->
       str "Cannot change " ++ pr_id id ++ str ", it is used in conclusion."
   | Evarutil.OccurHypInSimpleClause (Some id') ->
@@ -174,20 +174,20 @@ let replacing_dependency_msg env id = function
   | Evarutil.EvarTypingBreak ev ->
       str "Cannot change " ++ pr_id id ++
       strbrk " without breaking the typing of " ++
-      Printer.pr_existential env ev ++ str"."
+      Printer.pr_existential env sigma ev ++ str"."
 
-let error_replacing_dependency env id err =
-  errorlabstrm "" (replacing_dependency_msg env id err)
+let error_replacing_dependency env sigma id err =
+  errorlabstrm "" (replacing_dependency_msg env sigma id err)
 
 let thin l gl =
   try thin l gl
   with Evarutil.ClearDependencyError (id,err) ->
-    error_clear_dependency (pf_env gl) id err
+    error_clear_dependency (pf_env gl) (project gl) id err
 
 let thin_for_replacing l gl =
   try Tacmach.thin l gl
   with Evarutil.ClearDependencyError (id,err) ->
-    error_replacing_dependency (pf_env gl) id err
+    error_replacing_dependency (pf_env gl) (project gl) id err
 
 let apply_clear_request clear_flag dft c =
   let check_isvar c =
@@ -271,7 +271,7 @@ let assert_before_then_gen b naming t tac =
          (fun gl ->
            try internal_cut b id t gl
            with Evarutil.ClearDependencyError (id,err) ->
-             error_replacing_dependency (pf_env gl) id err))
+             error_replacing_dependency (pf_env gl) (project gl) id err))
       (tac id)
   end
 
@@ -289,7 +289,7 @@ let assert_after_then_gen b naming t tac =
          (fun gl ->
            try internal_cut_rev b id t gl
            with Evarutil.ClearDependencyError (id,err) ->
-             error_replacing_dependency (pf_env gl) id err))
+             error_replacing_dependency (pf_env gl) (project gl) id err))
       (tac id)
   end
 
@@ -1563,7 +1563,7 @@ let clear_wildcards ids =
     with ClearDependencyError (id,err) ->
       (* Intercept standard [thin] error message *)
       Loc.raise loc
-        (error_clear_dependency (pf_env gl) (Id.of_string "_") err))
+        (error_clear_dependency (pf_env gl) (project gl) (Id.of_string "_") err))
     ids)
 
 (*   Takes a list of booleans, and introduces all the variables

@@ -19,6 +19,8 @@ open Globnames
 open Decl_kinds
 open Misctypes
 
+type existential_name = Id.t
+
 (**  The kind of patterns that occurs in "match ... with ... end"
 
      locs here refers to the ident's location, not whole pat *)
@@ -30,7 +32,7 @@ type cases_pattern =
 type glob_constr =
   | GRef of (Loc.t * global_reference * glob_level list option)
   | GVar of (Loc.t * Id.t)
-  | GEvar of Loc.t * existential_key * glob_constr list option
+  | GEvar of Loc.t * existential_name * (Id.t * glob_constr) list option
   | GPatVar of Loc.t * (bool * patvar) (** Used for patterns only *)
   | GApp of Loc.t * glob_constr * glob_constr list
   | GLambda of Loc.t * Name.t * binding_kind *  glob_constr * glob_constr

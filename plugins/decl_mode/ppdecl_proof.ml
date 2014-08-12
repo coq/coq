@@ -20,6 +20,8 @@ let pr_label = function
     Anonymous -> mt ()
   | Name id -> pr_id id ++ spc () ++ str ":" ++ spc ()
 
+let pr_constr env c = pr_constr env Evd.empty c
+
 let pr_justification_items env = function
     Some [] -> mt ()
   | Some (_::_ as l) ->

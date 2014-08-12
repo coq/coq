@@ -146,13 +146,13 @@ let print_body is_impl env mp (l,body) =
 	  | None -> mt ()
 	  | Some env ->
 	    str " :" ++ spc () ++
-	    hov 0 (Printer.pr_ltype_env env 
+	    hov 0 (Printer.pr_ltype_env env Evd.empty (* No evars in modules *)
 		     (Typeops.type_of_constant_type env cb.const_type)) ++
 	    (match cb.const_body with
 	      | Def l when is_impl ->
 		spc () ++
 		hov 2 (str ":= " ++
-		       Printer.pr_lconstr_env env (Mod_subst.force_constr l))
+		       Printer.pr_lconstr_env env Evd.empty (Mod_subst.force_constr l))
 	      | _ -> mt ()) ++ str "." ++
 	    Printer.pr_universe_ctx cb.const_universes)
     | SFBmind mib ->

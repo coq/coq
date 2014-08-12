@@ -342,6 +342,10 @@ let push_rel_context_to_named_context env typ =
 
 let default_source = (Loc.ghost,Evar_kinds.InternalHole)
 
+let restrict_evar evd evk filter candidates =
+  let evk' = new_untyped_evar () in
+  Evd.restrict evk evk' filter ?candidates evd, evk'
+
 let new_pure_evar_full evd evi =
   let evk = new_untyped_evar () in
   let evd = Evd.add evd evk evi in

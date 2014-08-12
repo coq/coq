@@ -177,7 +177,7 @@ let send_whelp req s =
   let _ = CUnix.run_command ~hook:print_string command in ()
 
 let whelp_constr req c =
-  let c = detype false [whelm_special] [] c in
+  let c = detype false [whelm_special] [] Evd.empty c in
   send_whelp req (make_string uri_of_constr c)
 
 let whelp_constr_expr req c =

@@ -17,7 +17,7 @@ open Locus
 open Univ
 
 type reduction_tactic_error =
-    InvalidAbstraction of env * constr * (env * Type_errors.type_error)
+    InvalidAbstraction of env * evar_map * constr * (env * Type_errors.type_error)
 
 exception ReductionTacticError of reduction_tactic_error
 

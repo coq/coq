@@ -125,11 +125,6 @@ let rec subst_meta_instances bl c =
 
 (** [env] should be the context in which the metas live *)
 
-let evar_source_of_meta mv evd =
-  match Evd.meta_name evd mv with
-  | Anonymous -> (Loc.ghost,Evar_kinds.GoalEvar)
-  | Name id -> (Loc.ghost,Evar_kinds.VarInstance id)
-
 let pose_all_metas_as_evars env evd t =
   let evdref = ref evd in
   let rec aux t = match kind_of_term t with
@@ -139,7 +134,7 @@ let pose_all_metas_as_evars env evd t =
        | None ->
         let {rebus=ty;freemetas=mvs} = Evd.meta_ftype evd mv in
         let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
-        let src = evar_source_of_meta mv !evdref in
+        let src = Evd.evar_source_of_meta mv !evdref in
         let ev = Evarutil.e_new_evar evdref env ~src ty in
         evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) !evdref;
         ev)

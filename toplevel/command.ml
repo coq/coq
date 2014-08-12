@@ -845,7 +845,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
     let error () =
       user_err_loc (constr_loc r,
 		    "Command.build_wellfounded",
-		    Printer.pr_constr_env env rel ++ str " is not an homogeneous binary relation.")
+		    Printer.pr_constr_env env !evdref rel ++ str " is not an homogeneous binary relation.")
     in
       try
 	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 relty in

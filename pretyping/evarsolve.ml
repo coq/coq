@@ -146,13 +146,7 @@ let restrict_evar_key evd evk filter candidates =
       let candidates = match candidates with
       | NoUpdate -> evi.evar_candidates
       | UpdateWith c -> Some c in
-      let ccl = evi.evar_concl in
-      let sign = evar_hyps evi in
-      let src = evi.evar_source in
-      let evd,newevk = new_pure_evar evd sign ccl ~src ~filter ?candidates in
-      let ctxt = Filter.filter_list filter (evar_context evi) in
-      let id_inst = inst_of_vars ctxt in
-      Evd.define evk (mkEvar(newevk,id_inst)) evd,newevk
+      restrict_evar evd evk filter candidates
     end
 
 (* Restrict an applied evar and returns its restriction in the same context *)

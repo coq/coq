@@ -23,7 +23,9 @@ let depends_on_evar evk _ (pbty,_,t1,t2) =
   try Evar.equal (head_evar t2) evk
   with NoHeadEvar -> false
 
-let define_and_solve_constraints evk c evd =
+let define_and_solve_constraints evk c env evd =
+  if Termops.occur_evar evk c then
+    Pretype_errors.error_occur_check env evd evk c;
   let evd = define evk c evd in
   let (evd,pbs) = extract_changed_conv_pbs evd (depends_on_evar evk) in
   match
@@ -55,7 +57,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
         (loc,"",Pp.str ("Instance is not well-typed in the environment of " ^
 			string_of_existential evk))
   in
-  define_and_solve_constraints evk typed_c (evars_reset_evd sigma' sigma)
+  define_and_solve_constraints evk typed_c env (evars_reset_evd sigma' sigma)
 
 (* vernac command Existential *)
 

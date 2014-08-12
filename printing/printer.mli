@@ -21,45 +21,45 @@ open Glob_term
 
 (** Terms *)
 
-val pr_lconstr_env         : env -> constr -> std_ppcmds
+val pr_lconstr_env         : env -> evar_map -> constr -> std_ppcmds
 val pr_lconstr             : constr -> std_ppcmds
-val pr_lconstr_goal_style_env : env -> constr -> std_ppcmds
+val pr_lconstr_goal_style_env : env -> evar_map -> constr -> std_ppcmds
 
-val pr_constr_env          : env -> constr -> std_ppcmds
+val pr_constr_env          : env -> evar_map -> constr -> std_ppcmds
 val pr_constr              : constr -> std_ppcmds
-val pr_constr_goal_style_env : env -> constr -> std_ppcmds
+val pr_constr_goal_style_env : env -> evar_map -> constr -> std_ppcmds
 
 (** Same, but resilient to [Nametab] errors. Prints fully-qualified
     names when [shortest_qualid_of_global] has failed. Prints "??"
     in case of remaining issues (such as reference not in env). *)
 
-val safe_pr_lconstr_env         : env -> constr -> std_ppcmds
+val safe_pr_lconstr_env         : env -> evar_map -> constr -> std_ppcmds
 val safe_pr_lconstr             : constr -> std_ppcmds
 
-val safe_pr_constr_env          : env -> constr -> std_ppcmds
+val safe_pr_constr_env          : env -> evar_map -> constr -> std_ppcmds
 val safe_pr_constr              : constr -> std_ppcmds
 
 
-val pr_open_constr_env     : env -> open_constr -> std_ppcmds
+val pr_open_constr_env     : env -> evar_map -> open_constr -> std_ppcmds
 val pr_open_constr         : open_constr -> std_ppcmds
 
-val pr_open_lconstr_env    : env -> open_constr -> std_ppcmds
+val pr_open_lconstr_env    : env -> evar_map -> open_constr -> std_ppcmds
 val pr_open_lconstr        : open_constr -> std_ppcmds
 
-val pr_constr_under_binders_env  : env -> constr_under_binders -> std_ppcmds
+val pr_constr_under_binders_env  : env -> evar_map -> constr_under_binders -> std_ppcmds
 val pr_constr_under_binders      : constr_under_binders -> std_ppcmds
 
-val pr_lconstr_under_binders_env : env -> constr_under_binders -> std_ppcmds
+val pr_lconstr_under_binders_env : env -> evar_map -> constr_under_binders -> std_ppcmds
 val pr_lconstr_under_binders     : constr_under_binders -> std_ppcmds
 
-val pr_goal_concl_style_env : env -> types -> std_ppcmds
-val pr_ltype_env           : env -> types -> std_ppcmds
+val pr_goal_concl_style_env : env -> evar_map -> types -> std_ppcmds
+val pr_ltype_env           : env -> evar_map -> types -> std_ppcmds
 val pr_ltype               : types -> std_ppcmds
 
-val pr_type_env            : env -> types -> std_ppcmds
+val pr_type_env            : env -> evar_map -> types -> std_ppcmds
 val pr_type                : types -> std_ppcmds
 
-val pr_ljudge_env          : env -> unsafe_judgment -> std_ppcmds * std_ppcmds
+val pr_ljudge_env          : env -> evar_map -> unsafe_judgment -> std_ppcmds * std_ppcmds
 val pr_ljudge              : unsafe_judgment -> std_ppcmds * std_ppcmds
 
 val pr_lglob_constr_env      : env -> glob_constr -> std_ppcmds
@@ -68,10 +68,10 @@ val pr_lglob_constr          : glob_constr -> std_ppcmds
 val pr_glob_constr_env       : env -> glob_constr -> std_ppcmds
 val pr_glob_constr           : glob_constr -> std_ppcmds
 
-val pr_lconstr_pattern_env : env -> constr_pattern -> std_ppcmds
+val pr_lconstr_pattern_env : env -> evar_map -> constr_pattern -> std_ppcmds
 val pr_lconstr_pattern     : constr_pattern -> std_ppcmds
 
-val pr_constr_pattern_env  : env -> constr_pattern -> std_ppcmds
+val pr_constr_pattern_env  : env -> evar_map -> constr_pattern -> std_ppcmds
 val pr_constr_pattern      : constr_pattern -> std_ppcmds
 
 val pr_cases_pattern       : cases_pattern -> std_ppcmds
@@ -90,8 +90,8 @@ val pr_global_env          : Id.Set.t -> global_reference -> std_ppcmds
 val pr_global              : global_reference -> std_ppcmds
 
 val pr_constant            : env -> constant -> std_ppcmds
-val pr_existential_key     : existential_key -> std_ppcmds
-val pr_existential         : env -> existential -> std_ppcmds
+val pr_existential_key     : evar_map -> existential_key -> std_ppcmds
+val pr_existential         : env -> evar_map -> existential -> std_ppcmds
 val pr_constructor         : env -> constructor -> std_ppcmds
 val pr_inductive           : env -> inductive -> std_ppcmds
 val pr_evaluable_reference : evaluable_global_reference -> std_ppcmds
@@ -103,17 +103,17 @@ val pr_pconstructor        : env -> pconstructor -> std_ppcmds
 
 (** Contexts *)
 
-val pr_ne_context_of       : std_ppcmds -> env -> std_ppcmds
+val pr_ne_context_of       : std_ppcmds -> env -> evar_map -> std_ppcmds
 
-val pr_var_decl            : env -> named_declaration -> std_ppcmds
-val pr_var_list_decl       : env -> named_list_declaration -> std_ppcmds
-val pr_rel_decl            : env -> rel_declaration -> std_ppcmds
+val pr_var_decl            : env -> evar_map -> named_declaration -> std_ppcmds
+val pr_var_list_decl       : env -> evar_map -> named_list_declaration -> std_ppcmds
+val pr_rel_decl            : env -> evar_map -> rel_declaration -> std_ppcmds
 
-val pr_named_context       : env -> named_context -> std_ppcmds
-val pr_named_context_of    : env -> std_ppcmds
-val pr_rel_context         : env -> rel_context -> std_ppcmds
-val pr_rel_context_of      : env -> std_ppcmds
-val pr_context_of          : env -> std_ppcmds
+val pr_named_context       : env -> evar_map -> named_context -> std_ppcmds
+val pr_named_context_of    : env -> evar_map -> std_ppcmds
+val pr_rel_context         : env -> evar_map -> rel_context -> std_ppcmds
+val pr_rel_context_of      : env -> evar_map -> std_ppcmds
+val pr_context_of          : env -> evar_map -> std_ppcmds
 
 (** Predicates *)
 
@@ -131,8 +131,8 @@ val pr_concl               : int -> evar_map -> goal -> std_ppcmds
 
 val pr_open_subgoals       : ?proof:Proof.proof -> unit -> std_ppcmds
 val pr_nth_open_subgoal    : int -> std_ppcmds
-val pr_evar                : (evar * evar_info) -> std_ppcmds
-val pr_evars_int           : int -> evar_info Evar.Map.t -> std_ppcmds
+val pr_evar                : evar_map -> (evar * evar_info) -> std_ppcmds
+val pr_evars_int           : evar_map -> int -> evar_info Evar.Map.t -> std_ppcmds
 
 val pr_prim_rule           : prim_rule -> std_ppcmds
 

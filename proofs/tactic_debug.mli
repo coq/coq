@@ -11,6 +11,7 @@ open Pattern
 open Names
 open Tacexpr
 open Term
+open Evd
 
 (** This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
@@ -18,7 +19,7 @@ open Term
 
 val tactic_printer : (glob_tactic_expr -> Pp.std_ppcmds) Hook.t
 val match_pattern_printer :
-  (env -> constr_pattern match_pattern -> Pp.std_ppcmds) Hook.t
+  (env -> evar_map -> constr_pattern match_pattern -> Pp.std_ppcmds) Hook.t
 val match_rule_printer :
   ((Tacexpr.glob_constr_and_expr * constr_pattern,glob_tactic_expr) match_rule -> Pp.std_ppcmds) Hook.t
 
@@ -53,7 +54,7 @@ val db_mc_pattern_success : debug_info -> unit Proofview.NonLogical.t
 
 (** Prints a failure message for an hypothesis pattern *)
 val db_hyp_pattern_failure :
-  debug_info -> env -> Name.t * constr_pattern match_pattern -> unit Proofview.NonLogical.t
+  debug_info -> env -> evar_map -> Name.t * constr_pattern match_pattern -> unit Proofview.NonLogical.t
 
 (** Prints a matching failure message for a rule *)
 val db_matching_failure : debug_info -> unit Proofview.NonLogical.t

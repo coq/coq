@@ -856,7 +856,7 @@ let rec solve_obligation prg num tac =
 			  ignore(auto_solve_obligations (Some prg.prg_name) None ~oblset:deps)
 		  | _ -> ()));
 	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
-		     Printer.pr_constr_env (Global.env ()) obl.obl_type);
+		     Printer.pr_constr_env (Global.env ()) Evd.empty obl.obl_type);
 	    ignore (Pfedit.by (snd (get_default_tactic ())));
 	    Option.iter (fun tac -> Pfedit.set_end_tac tac) tac
       | l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
@@ -962,7 +962,7 @@ let show_obligations_of_prg ?(msg=true) prg =
 			 decr showed;
 			 msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
 				   str "of" ++ spc() ++ str (Id.to_string n) ++ str ":" ++ spc () ++
-				   hov 1 (Printer.pr_constr_env (Global.env ()) x.obl_type ++ 
+				   hov 1 (Printer.pr_constr_env (Global.env ()) Evd.empty x.obl_type ++
 					    str "." ++ fnl ())))
 		   | Some _ -> ())
       obls
@@ -979,8 +979,8 @@ let show_term n =
   let prg = get_prog_err n in
   let n = prg.prg_name in
     (str (Id.to_string n) ++ spc () ++ str":" ++ spc () ++
-	     Printer.pr_constr_env (Global.env ()) prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
-	    ++ Printer.pr_constr_env (Global.env ()) prg.prg_body)
+	     Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
+	    ++ Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_body)
 
 let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
     ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ -> ())) obls =

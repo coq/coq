@@ -254,12 +254,12 @@ let db_mc_pattern_success debug =
   else return ()
 
 (* Prints a failure message for an hypothesis pattern *)
-let db_hyp_pattern_failure debug env (na,hyp) =
+let db_hyp_pattern_failure debug env sigma (na,hyp) =
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str ("The pattern hypothesis"^(hyp_bound na)^
                 " cannot match: ") ++
-           Hook.get prmatchpatt env hyp)
+           Hook.get prmatchpatt env sigma hyp)
   else return ()
 
 (* Prints a matching failure message for a rule *)

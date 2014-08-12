@@ -599,7 +599,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	       | App(f,[| _;_;args2 |]) -> args2
 	       | _ ->
 		   observe (str "cannot compute new term value : " ++ pr_gls g' ++ fnl () ++ str "last hyp is" ++
-			      pr_lconstr_env (pf_env g') new_term_value_eq
+			      pr_lconstr_env (pf_env g') Evd.empty new_term_value_eq
 			   );
 		   anomaly (Pp.str "cannot compute new term value")
 	   in
