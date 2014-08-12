@@ -60,7 +60,7 @@ Vernacular commands
 Specification Language
 
 - Slight changes in unification error messages.
-- Added a syntax $(...)$ allowing to put tactics in terms.
+- Added a syntax $(...)$ that allows putting tactics in terms.
 - Constants in pattern-matching branches now respect the same rules regarding
   implicit arguments than in applicative position. The old behaviour can be
   recovered by the command "Set Asymmetric Patterns". (possible source of
