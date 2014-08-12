@@ -980,9 +980,9 @@ Inductive p_step : Set :=
   | P_STEP : step -> p_step
   | P_NOP : p_step.
 
-(* List of normalizations to perform : with a constructor of type
-   [p_step] allowing the visiting of both left and right branches, we would be
-   able to restrict to only one normalization by hypothesis.
+(* List of normalizations to perform : if the type [p_step] had a constructor
+   that indicated visiting both left and right branches, we would be able to
+   restrict ourselves to the case of only one normalization by hypothesis.
    And since all hypothesis are useful (otherwise they wouldn't be included),
    we would be able to replace [h_step] by a simple list. *)
 
