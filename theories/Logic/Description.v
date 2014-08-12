@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (** This file provides a constructive form of definite description; it
-    allows to build functions from the proof of their existence in any
+    allows building functions from the proof of their existence in any
     context; this is weaker than Church's iota operator *)
 
 Require Import ChoiceFacts.

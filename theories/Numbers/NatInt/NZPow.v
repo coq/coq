@@ -30,7 +30,7 @@ Module Type NZPowSpec (Import A : NZOrdAxiomsSig')(Import B : Pow' A).
 End NZPowSpec.
 
 (** The above [pow_neg_r] specification is useless (and trivially
-   provable) for N. Having it here allows to already derive
+   provable) for N. Having it here already allows deriving
    some slightly more general statements. *)
 
 Module Type NZPow (A : NZOrdAxiomsSig) := Pow A <+ NZPowSpec A.

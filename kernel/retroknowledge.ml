@@ -19,7 +19,7 @@ open Term
 (* Type declarations, these types shouldn't be exported they are accessed
    through specific functions. As being mutable and all it is wiser *)
 (* These types are put into two distinct categories: proactive and reactive.
-   Proactive information allows to find the name of a combinator, constructor
+   Proactive information allows finding the name of a combinator, constructor
    or inductive type handling a specific function.
    Reactive information is, on the other hand, everything you need to know
    about a specific name.*)

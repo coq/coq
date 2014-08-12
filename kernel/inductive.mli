@@ -99,7 +99,7 @@ val check_cofix : env -> cofixpoint -> unit
 
 (** {6 Support for sort-polymorphic inductive types } *)
 
-(** The "polyprop" optional argument below allows to control
+(** The "polyprop" optional argument below controls
     the "Prop-polymorphism". By default, it is allowed.
     But when "polyprop=false", the following exception is raised
     when a polymorphic singleton inductive type becomes Prop due to

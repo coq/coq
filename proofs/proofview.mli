@@ -449,7 +449,7 @@ module Refine : sig
 
 end
 
-(* The [NonLogical] module allows to execute side effects in tactics
+(* The [NonLogical] module allows the execution of side effects in tactics
    (non-logical side-effects are not discarded at failures). *)
 module NonLogical : sig
 

@@ -286,7 +286,7 @@ Reset eqproof.
 \noindent Instead of giving an explicit definition, 
 we can use the proof editor of Coq to help us in 
 the construction of the proof.
-A tactic \verb!Cofix! allows to place a \verb!CoFixpoint! definition
+A tactic \verb!Cofix! allows placing a \verb!CoFixpoint! definition
 inside a proof. 
 This tactic introduces a variable in the context which has
 the same type as the current goal, and its application stands
@@ -331,8 +331,8 @@ with the tactic \verb!Cofix!. Remark that once it has been used
 the application of tactics performing automatic proof search in 
 the environment (like for example \verb!Auto!)
 could introduce unguarded recursive calls in the proof.
-The command \verb!Guarded! allows to verify 
-if the guarded condition has been violated 
+The command \verb!Guarded! verifies
+that the guarded condition has been not violated 
 during the construction of the proof. This command can be
 applied even if the proof term is not complete.
 

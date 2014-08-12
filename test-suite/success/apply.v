@@ -164,8 +164,8 @@ intros.
 apply H with (y:=y).
 (* [x] had two possible instances: [S 0], coming from unifying the
    type of [y] with [I ?n] and [succ 0] coming from the unification with
-   the goal; only the first one allows to make the next apply (which
-   does not work modulo delta) working *)
+   the goal; only the first one allows the next apply (which
+   does not work modulo delta) work *)
 apply H0.
 Qed.
 

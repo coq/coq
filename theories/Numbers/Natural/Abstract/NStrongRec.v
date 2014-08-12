@@ -24,7 +24,7 @@ Variable A : Type.
 Variable Aeq : relation A.
 Variable Aeq_equiv : Equivalence Aeq.
 
-(** [strong_rec] allows to define a recursive function [phi] given by
+(** [strong_rec] allows defining a recursive function [phi] given by
     an equation [phi(n) = F(phi)(n)] where recursive calls to [phi]
     in [F] are made on strictly lower numbers than [n].
 

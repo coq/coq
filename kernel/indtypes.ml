@@ -220,7 +220,7 @@ let typecheck_inductive env ctx mie =
   let env' = push_context ctx env in
   let (env_params, params) = infer_local_decls env' mie.mind_entry_params in
   (* We first type arity of each inductive definition *)
-  (* This allows to build the environment of arities and to share *)
+  (* This allows building the environment of arities and to share *)
   (* the set of constraints *)
   let env_arities, rev_arity_list =
     List.fold_left
@@ -633,7 +633,7 @@ let allowed_sorts is_smashed s =
 (* Previous comment: *)
 (* Unitary/empty Prop: elimination to all sorts are realizable *)
 (* unless the type is large. If it is large, forbids large elimination *)
-(* which otherwise allows to simulate the inconsistent system Type:Type. *)
+(* which otherwise allows simulating the inconsistent system Type:Type. *)
 (* -> this is now handled by is_smashed: *)
 (* - all_sorts in case of small, unitary Prop (not smashed) *)
 (* - logical_sorts in case of large, unitary Prop (smashed) *)

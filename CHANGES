@@ -37,7 +37,7 @@ Vernacular commands
 
 - The command "Record foo ..." does not generate induction principles
   (foo_rect, foo_rec, foo_ind) anymore by default (feature wish #2693).
-  A flag "Set/Unset Record Elimination Schemes" allows to change this.
+  A flag "Set/Unset Record Elimination Schemes" allows changing this.
   The tactic "induction" on a record is now actually doing "destruct".
 - The "Open Scope" command can now be given also a delimiter (e.g. Z).
 - The "Definition" command now allows the "Local" modifier, allowing
@@ -50,7 +50,7 @@ Vernacular commands
   recursively added to the load path, so files from installed libraries
   now need to be fully qualified for the "Require" command to find them.
   The tools/update-require script can be used to convert a development.
-- A new Print Strategies command allows to visualize the opacity status
+- A new Print Strategies command allows visualizing the opacity status
   of the whole engine.
 - The "Locate" command now searches through all sorts of qualified namespaces of
   Coq: terms, modules, tactics, etc. The old behaviour of the command can be
@@ -82,7 +82,7 @@ Tactics
     the need of the undocumented "contructor <tac>" syntax which is
     now equivalent to "once (constructor; tac)". (potential source of
     rare incompatibilities).
-  * New selector all: to qualify a tactic allows to apply a tactic to
+  * New selector all: to qualify a tactic allows applying a tactic to
     all the focused goal, instead of just the first one as is the
     default.
   * A corresponding new option Set Default Goal Selector "all" makes

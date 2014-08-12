@@ -5,7 +5,7 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-(* Compiling the theories allows to test parsing and typing but not printing *)
+(* Compiling the theories allows testing parsing and typing but not printing *)
 (* This file tests that pretty-printing does not fail                        *)
 (* Test of exact output is not specified                                     *)
 

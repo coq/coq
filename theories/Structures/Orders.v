@@ -95,7 +95,7 @@ Module Type OrderedTypeFull' :=
  OrderedTypeFull <+ EqLtLeNotation <+ CmpNotation.
 
 (** NB: in [OrderedType], an [eq_dec] could be deduced from [compare].
-  But adding this redundant field allows to see an [OrderedType] as a
+  But adding this redundant field allows seeing an [OrderedType] as a
   [DecidableType]. *)
 
 (** * Versions with [eq] being the usual Leibniz equality of Coq *)

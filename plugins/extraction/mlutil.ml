@@ -796,7 +796,7 @@ let branch_as_cst (l,_,c) =
    When searching for the best factorisation below, we'll try both.
 *)
 
-(* The following structure allows to record which element occurred
+(* The following structure allows recording which element occurred
    at what position, and then finally return the most frequent
    element and its positions. *)
 

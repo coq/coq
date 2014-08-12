@@ -244,7 +244,7 @@ module Refinable = struct
     handle := fusion delta_list !handle
 
   (* [constr_of_raw h tycon flags] is a pretyping function.
-      The [tycon] argument allows to put a type constraint on the returned term.
+      The [tycon] argument allows putting a type constraint on the returned term.
       The [flags] argument is passed to the pretyper.
       The principal argument is a [glob_constr] which is then pretyped in the
       context of a term, the remaining evars are registered to the handle.

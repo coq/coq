@@ -3,7 +3,7 @@
 \label{BNF-syntax} % Used referred to as a chapter label
 
 This chapter describes \gallina, the specification language of {\Coq}.
-It allows to develop mathematical theories and to prove specifications
+It allows developing mathematical theories and to prove specifications
 of programs.  The theories are built from axioms, hypotheses,
 parameters, lemmas, theorems and definitions of constants, functions,
 predicates and sets. The syntax of logical objects involved in
@@ -989,7 +989,7 @@ Check nat_ind.
 
 This is the well known structural induction principle over natural
 numbers, i.e. the second-order form of Peano's induction principle.
-It allows to prove some universal property of natural numbers ({\tt
+It allows proving some universal property of natural numbers ({\tt
 forall n:nat, P n}) by induction on {\tt n}.
 
 The types of {\tt nat\_rec} and {\tt nat\_rect} are similar, except
@@ -1327,7 +1327,7 @@ constructions. The command:
   \ident$_0$ {\tt \}} : type$_0$ := \term$_0$ 
   \comindex{Fixpoint}\label{Fixpoint}}
 \end{center}
-allows to define functions by pattern-matching over inductive objects 
+allows defining functions by pattern-matching over inductive objects 
 using a fixed point construction.
 The meaning of this declaration is to define {\it ident} a recursive
 function with arguments specified by the binders in {\params} such
@@ -1610,7 +1610,7 @@ The command can be used also with {\tt Lemma},
 
 \item {\tt Definition {\ident} \zeroone{\binders} : {\type}.}
 
-This allows to define a term of type {\type} using the proof editing mode. It
+This allows defining a term of type {\type} using the proof editing mode. It
 behaves as {\tt Theorem} but is intended to be used in conjunction with
   {\tt Defined} (see \ref{Defined}) in order to define a
  constant of which the computational behavior is relevant.
