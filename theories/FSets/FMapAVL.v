@@ -370,7 +370,7 @@ Fixpoint map_option (elt elt' : Type)(f : key -> elt -> option elt')(m : t elt)
 (** * Optimized map2
 
   Suggestion by B. Gregoire: a [map2] function with specialized
-  arguments allowing to bypass some tree traversal. Instead of one
+  arguments that allows bypassing some tree traversal. Instead of one
   [f0] of type [key -> option elt -> option elt' -> option elt''],
   we ask here for:
   - [f] which is a specialisation of [f0] when first option isn't [None]

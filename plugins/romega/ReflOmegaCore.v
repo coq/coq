@@ -981,7 +981,7 @@ Inductive p_step : Set :=
   | P_NOP : p_step.
 
 (* List of normalizations to perform : with a constructor of type
-   [p_step] allowing to visit both left and right branches, we would be
+   [p_step] allowing the visiting of both left and right branches, we would be
    able to restrict to only one normalization by hypothesis.
    And since all hypothesis are useful (otherwise they wouldn't be included),
    we would be able to replace [h_step] by a simple list. *)
@@ -1014,7 +1014,7 @@ Inductive e_step : Set :=
 (* For each reified data-type, we define an efficient equality test.
    It is not the one produced by [Decide Equality].
 
-   Then we prove two theorem allowing to eliminate such equalities :
+   Then we prove two theorem allowing elimination of such equalities :
    \begin{verbatim}
    (t1,t2: typ) (eq_typ t1 t2) = true -> t1 = t2.
    (t1,t2: typ) (eq_typ t1 t2) = false -> ~ t1 = t2.

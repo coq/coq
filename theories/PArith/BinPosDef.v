@@ -18,7 +18,7 @@
 
 Require Export BinNums.
 
-(** Postfix notation for positive numbers, allowing to mimic
+(** Postfix notation for positive numbers, which allows mimicking
     the position of bits in a big-endian representation.
     For instance, we can write [1~1~0] instead of [(xO (xI xH))]
     for the number 6 (which is 110 in binary notation).
