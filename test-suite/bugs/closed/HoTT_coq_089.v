@@ -1,3 +1,4 @@
+Set Implicit Arguments. 
 Set Universe Polymorphism.
 Set Printing Universes.
 

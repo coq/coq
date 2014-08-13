@@ -1,4 +1,5 @@
 Set Primitive Projections.
+Set Implicit Arguments.
 Record sigT {A} (P : A -> Type) := existT { projT1 : A ; projT2 : P projT1 }.
 Notation pr1 := (@projT1 _ _).
 

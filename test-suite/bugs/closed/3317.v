@@ -1,3 +1,4 @@
+Set Implicit Arguments. 
 Module A.
   Set Universe Polymorphism.
   Set Primitive Projections.

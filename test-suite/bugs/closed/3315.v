@@ -1,5 +1,6 @@
 Set Universe Polymorphism.
 Set Primitive Projections.
+Set Implicit Arguments.
 Record sigT {A : Type} (P : A -> Type) := existT { projT1 : A; projT2 : P projT1 }.
 Arguments existT {A} _ _ _.
 Definition unpack_sigma' {A} {P : A -> Type} (Q : sigT P -> Type) (u : sigT P) :
