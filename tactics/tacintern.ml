@@ -203,7 +203,7 @@ let intern_non_tactic_reference strict ist r =
   (* By convention, use IntroIdentifier for unbound ident, when not in a def *)
   match r with
   | Ident (loc,id) when not strict ->
-    let ipat = in_gen (glbwit wit_intro_pattern) (loc, IntroIdentifier id) in
+    let ipat = in_gen (glbwit wit_intro_pattern) (loc, IntroNaming (IntroIdentifier id)) in
     TacGeneric ipat
   | _ ->
   (* Reference not found *)
@@ -216,19 +216,34 @@ let intern_message_token ist = function
 let intern_message ist = List.map (intern_message_token ist)
 
 let rec intern_intro_pattern lf ist = function
-  | loc, IntroOrAndPattern l ->
-      loc, IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
-  | loc, IntroInjection l ->
-      loc, IntroInjection (List.map (intern_intro_pattern lf ist) l)
-  | loc, IntroIdentifier id ->
-      loc, IntroIdentifier (intern_ident lf ist id)
-  | loc, IntroFresh id ->
-      loc, IntroFresh (intern_ident lf ist id)
-  | loc, (IntroWildcard | IntroAnonymous | IntroRewrite _ | IntroForthcoming _)
-      as x -> x
+  | loc, IntroNaming pat ->
+      loc, IntroNaming (intern_intro_pattern_naming lf ist pat)
+  | loc, IntroAction pat ->
+      loc, IntroAction (intern_intro_pattern_action lf ist pat)
+  | loc, IntroForthcoming _ as x -> x
+
+and intern_intro_pattern_naming lf ist = function
+  | IntroIdentifier id ->
+      IntroIdentifier (intern_ident lf ist id)
+  | IntroFresh id ->
+      IntroFresh (intern_ident lf ist id)
+  | IntroWildcard | IntroAnonymous as x -> x
+
+and intern_intro_pattern_action lf ist = function
+  | IntroOrAndPattern l ->
+      IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
+  | IntroInjection l ->
+      IntroInjection (List.map (intern_intro_pattern lf ist) l)
+  | IntroRewrite _ as x -> x
 
 and intern_or_and_intro_pattern lf ist =
   List.map (List.map (intern_intro_pattern lf ist))
+
+let intern_or_and_intro_pattern_loc lf ist (loc,l) =
+  (loc,intern_or_and_intro_pattern lf ist l)
+
+let intern_intro_pattern_naming_loc lf ist (loc,pat) =
+  (loc,intern_intro_pattern_naming lf ist pat)
 
 let intern_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
@@ -380,10 +395,10 @@ let intern_hyp_list ist = List.map (intern_hyp ist)
 let intern_inversion_strength lf ist = function
   | NonDepInversion (k,idl,ids) ->
       NonDepInversion (k,intern_hyp_list ist idl,
-      Option.map (intern_intro_pattern lf ist) ids)
+      Option.map (intern_or_and_intro_pattern_loc lf ist) ids)
   | DepInversion (k,copt,ids) ->
       DepInversion (k, Option.map (intern_constr ist) copt,
-      Option.map (intern_intro_pattern lf ist) ids)
+      Option.map (intern_or_and_intro_pattern_loc lf ist) ids)
   | InversionUsing (c,idl) ->
       InversionUsing (intern_constr ist c, intern_hyp_list ist idl)
 
@@ -486,7 +501,7 @@ let rec intern_atomic lf ist x =
       let na = intern_name lf ist na in
       TacLetTac (na,intern_constr ist c,
                  (clause_app (intern_hyp_location ist) cls),b,
-		 (Option.map (intern_intro_pattern lf ist) eqpat))
+		 (Option.map (intern_intro_pattern_naming_loc lf ist) eqpat))
 
   (* Automation tactics *)
   | TacTrivial (d,lems,l) -> TacTrivial (d,List.map (intern_constr ist) lems,l)
@@ -498,8 +513,8 @@ let rec intern_atomic lf ist x =
   | TacInductionDestruct (ev,isrec,(l,el,cls)) ->
       TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats)) ->
 	      (intern_induction_arg ist c,
-               (Option.map (intern_intro_pattern lf ist) ipato,
-	        Option.map (intern_intro_pattern lf ist) ipats))) l,
+               (Option.map (intern_intro_pattern_naming_loc lf ist) ipato,
+	        Option.map (intern_or_and_intro_pattern_loc lf ist) ipats))) l,
                Option.map (intern_constr_with_bindings ist) el,
                Option.map (clause_app (intern_hyp_location ist)) cls))
   | TacDoubleInduction (h1,h2) ->

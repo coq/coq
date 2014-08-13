@@ -102,12 +102,16 @@ val use_clear_hyp_by_default : unit -> bool
 
 (** {6 Introduction tactics with eliminations. } *)
 
-val intro_pattern  : Id.t move_location -> intro_pattern_expr -> unit Proofview.tactic
 val intro_patterns : intro_pattern_expr located list -> unit Proofview.tactic
-val intros_pattern :
-  Id.t move_location -> intro_pattern_expr located list -> unit Proofview.tactic
-val intros_pattern_bound :
-  int -> Id.t move_location -> intro_pattern_expr located list -> unit Proofview.tactic
+val intro_patterns_to : Id.t move_location -> intro_pattern_expr located list ->
+  unit Proofview.tactic
+val intro_patterns_bound_to : int -> Id.t move_location ->
+  intro_pattern_expr located list -> unit Proofview.tactic
+val intro_pattern_to : Id.t move_location -> intro_pattern_expr ->
+  unit Proofview.tactic
+
+(** Implements "intros", with [] standing for "**" *)
+val intros_patterns : intro_pattern_expr located list -> unit Proofview.tactic
 
 (** {6 Exact tactics. } *)
 
@@ -267,7 +271,8 @@ val simple_induct : quantified_hypothesis -> unit Proofview.tactic
 val induction : evars_flag -> 
   (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
-    intro_pattern_expr located option * intro_pattern_expr located option ->
+    intro_pattern_naming_expr located option *
+    or_and_intro_pattern_expr located option ->
       clause option -> unit Proofview.tactic
 
 (** {6 Case analysis tactics. } *)
@@ -279,14 +284,16 @@ val simple_destruct          : quantified_hypothesis -> unit Proofview.tactic
 val destruct : evars_flag ->
   (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
-    intro_pattern_expr located option * intro_pattern_expr located option ->
+    intro_pattern_naming_expr located option *
+    or_and_intro_pattern_expr located option ->
       clause option -> unit Proofview.tactic
 
 (** {6 Generic case analysis / induction tactics. } *)
 
 val induction_destruct : rec_flag -> evars_flag ->
   ((evar_map * constr with_bindings) induction_arg *
-  (intro_pattern_expr located option * intro_pattern_expr located option))
+  (intro_pattern_naming_expr located option *
+   or_and_intro_pattern_expr located option))
   list *
   constr with_bindings option *
   clause option -> unit Proofview.tactic
@@ -341,9 +348,9 @@ val cut_replacing               : Id.t -> types -> unit Proofview.tactic -> unit
 
 val assert_as : bool -> intro_pattern_expr located option -> constr -> unit Proofview.tactic
 val forward   : bool -> unit Proofview.tactic option -> intro_pattern_expr located option -> constr -> unit Proofview.tactic
-val letin_tac : (bool * intro_pattern_expr located) option -> Name.t ->
+val letin_tac : (bool * intro_pattern_naming_expr located) option -> Name.t ->
   constr -> types option -> clause -> unit Proofview.tactic
-val letin_pat_tac : (bool * intro_pattern_expr located) option -> Name.t ->
+val letin_pat_tac : (bool * intro_pattern_naming_expr located) option -> Name.t ->
   evar_map * constr -> clause -> unit Proofview.tactic
 val assert_tac : Name.t -> types -> unit Proofview.tactic
 val enough_tac : Name.t -> types -> unit Proofview.tactic

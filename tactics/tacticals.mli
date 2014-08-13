@@ -125,7 +125,7 @@ val fix_empty_or_and_pattern : int -> or_and_intro_pattern_expr ->
 
 (** Useful for [as intro_pattern] modifier *)
 val compute_induction_names :
-  int -> intro_pattern_expr located option ->
+  int -> or_and_intro_pattern_expr located option ->
     intro_pattern_expr located list array
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
@@ -242,11 +242,11 @@ module New : sig
     constr -> unit Proofview.tactic
 
   val case_then_using :
-    intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
+    or_and_intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
     constr option -> pinductive -> Term.constr * Term.types -> unit Proofview.tactic
 
   val case_nodep_then_using :
-    intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
+    or_and_intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
     constr option -> pinductive -> Term.constr * Term.types -> unit Proofview.tactic
 
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic

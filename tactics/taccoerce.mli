@@ -52,6 +52,9 @@ val coerce_to_ident : bool -> Environ.env -> Value.t -> Id.t
 
 val coerce_to_intro_pattern : Environ.env -> Value.t -> intro_pattern_expr
 
+val coerce_to_intro_pattern_naming :
+  Environ.env -> Value.t -> intro_pattern_naming_expr
+
 val coerce_to_hint_base : Value.t -> string
 
 val coerce_to_int : Value.t -> int

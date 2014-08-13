@@ -17,14 +17,18 @@ type patvar = Id.t
 (** Introduction patterns *)
 
 type intro_pattern_expr =
-  | IntroOrAndPattern of or_and_intro_pattern_expr
-  | IntroInjection of (Loc.t * intro_pattern_expr) list
+  | IntroForthcoming of bool
+  | IntroNaming of intro_pattern_naming_expr
+  | IntroAction of intro_pattern_action_expr
+and intro_pattern_naming_expr =
   | IntroWildcard
-  | IntroRewrite of bool
   | IntroIdentifier of Id.t
   | IntroFresh of Id.t
-  | IntroForthcoming of bool
   | IntroAnonymous
+and intro_pattern_action_expr =
+  | IntroOrAndPattern of or_and_intro_pattern_expr
+  | IntroInjection of (Loc.t * intro_pattern_expr) list
+  | IntroRewrite of bool
 and or_and_intro_pattern_expr = (Loc.t * intro_pattern_expr) list list
 
 (** Move destination for hypothesis *)

@@ -177,12 +177,10 @@ let check_or_and_pattern_size loc names n =
 let compute_induction_names n = function
   | None ->
       Array.make n []
-  | Some (loc,IntroOrAndPattern names) ->
+  | Some (loc,names) ->
       let names = fix_empty_or_and_pattern n names in
       check_or_and_pattern_size loc names n;
       Array.of_list names
-  | Some (loc,_) ->
-      user_err_loc (loc,"",str "Disjunctive/conjunctive introduction pattern expected.")
 
 let compute_construtor_signatures isrec ((_,k as ity),u) =
   let rec analrec c recargs =

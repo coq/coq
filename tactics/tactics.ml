@@ -1630,7 +1630,8 @@ let (forward_subst_one, subst_one) = Hook.make ()
 let error_unexpected_extra_pattern loc bound pat =
   let _,nb = Option.get bound in
   let s1,s2,s3 = match pat with
-  | IntroIdentifier _ -> "name", (String.plural nb " introduction pattern"), "no"
+  | IntroNaming (IntroIdentifier _) ->
+      "name", (String.plural nb " introduction pattern"), "no"
   | _ -> "introduction pattern", "", "none" in
   user_err_loc (loc,"",str "Unexpected " ++ str s1 ++ str " (" ++
     (if Int.equal nb 0 then (str s3 ++ str s2) else
@@ -1674,13 +1675,16 @@ let intro_or_and_pattern loc bracketed ll thin tac id =
        nv (Array.of_list ll))
   end
 
-let rewrite_hyp l2r id =
+let rewrite_hyp assert_style l2r id =
   let rew_on l2r =
     Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) in
   let subst_on l2r x rhs =
     Hook.get forward_subst_one true x (id,rhs,l2r) in
   let clear_var_and_eq c =
     tclTRY (tclTHEN (clear [id]) (tclTRY (clear [destVar c]))) in
+  if assert_style then
+    rew_on l2r allHypsAndConcl
+  else
   Proofview.Goal.raw_enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_type_of gl in
@@ -1706,16 +1710,16 @@ let rewrite_hyp l2r id =
   end
 
 let rec explicit_intro_names = function
-| (_, IntroIdentifier id) :: l ->
-    id :: explicit_intro_names l
-| (_, (IntroWildcard | IntroAnonymous | IntroFresh _
-      | IntroRewrite _ | IntroForthcoming _)) :: l -> explicit_intro_names l
-| (_, IntroOrAndPattern ll) :: l' ->
+| (_, IntroForthcoming _) :: l -> explicit_intro_names l
+| (_, IntroNaming (IntroIdentifier id)) :: l -> id :: explicit_intro_names l
+| (_, IntroAction (IntroOrAndPattern ll)) :: l' ->
     List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
-| (_, IntroInjection l) :: l' ->
+| (_, IntroAction (IntroInjection l)) :: l' ->
     explicit_intro_names (l@l')
-| [] ->
-    []
+| (_, (IntroNaming (IntroWildcard | IntroAnonymous | IntroFresh _)
+     | IntroAction (IntroRewrite _))) :: l ->
+     explicit_intro_names l
+| [] -> []
 
 let wild_id = Id.of_string "_tmp"
 
@@ -1744,55 +1748,64 @@ let exceed_bound n = function
      to ensure that dependent hypotheses are cleared in the right
      dependency order (see bug #1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
-let rec intros_patterns b avoid ids thin destopt bound n tac = function
-  | [] when fit_bound n bound -> tac ids thin
+let rec intro_patterns_core b avoid ids thin destopt bound n tac = function
+  | [] when fit_bound n bound ->
+      tac ids thin
   | [] ->
       (* Behave as IntroAnonymous *)
-      intro_then_gen (NamingAvoid avoid)
-	destopt true false
-        (fun id -> intros_patterns b avoid (id::ids) thin destopt bound (n+1) tac [])
+      intro_patterns_core b avoid ids thin destopt bound n tac
+        [dloc,IntroNaming IntroAnonymous]
   | (loc,pat) :: l ->
   if exceed_bound n bound then error_unexpected_extra_pattern loc bound pat else
+  match pat with
+  | IntroForthcoming onlydeps ->
+      intro_forthcoming_then_gen (NamingAvoid (avoid@explicit_intro_names l))
+	  destopt onlydeps n bound
+        (fun ids -> intro_patterns_core b avoid ids thin destopt bound
+          (n+List.length ids) tac l)
+  | IntroAction pat ->
+      intro_then_gen (NamingAvoid(avoid@explicit_intro_names l))
+	MoveLast true false
+        (intro_pattern_action loc (b || not (List.is_empty l)) false pat thin
+          (fun thin bound' -> intro_patterns_core b avoid ids thin destopt bound' 0
+            (fun ids thin ->
+              intro_patterns_core b avoid ids thin destopt bound (n+1) tac l)))
+  | IntroNaming pat ->
+      intro_pattern_naming loc b avoid ids pat thin destopt bound n tac l
+
+and intro_pattern_naming loc b avoid ids pat thin destopt bound n tac l =
   match pat with
   | IntroWildcard ->
       intro_then_gen (NamingBasedOn(wild_id,avoid@explicit_intro_names l))
 	MoveLast true false
-        (fun id -> intros_patterns b avoid ids ((loc,id)::thin) destopt bound (n+1) tac l)
+        (fun id -> intro_patterns_core b avoid ids ((loc,id)::thin) destopt bound (n+1) tac l)
   | IntroIdentifier id ->
       check_thin_clash_then id thin avoid (fun thin ->
         intro_then_gen (NamingMustBe (loc,id)) destopt true false
-          (fun id -> intros_patterns b avoid (id::ids) thin destopt bound (n+1) tac l))
+          (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound (n+1) tac l))
   | IntroAnonymous ->
       intro_then_gen (NamingAvoid (avoid@explicit_intro_names l))
 	destopt true false
-        (fun id -> intros_patterns b avoid (id::ids) thin destopt bound (n+1) tac l)
+        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound (n+1) tac l)
   | IntroFresh id ->
       (* todo: avoid thinned names to interfere with generation of fresh name *)
       intro_then_gen (NamingBasedOn (id, avoid@explicit_intro_names l))
 	destopt true false
-        (fun id -> intros_patterns b avoid (id::ids) thin destopt bound (n+1) tac l)
-  | IntroForthcoming onlydeps ->
-      intro_forthcoming_then_gen (NamingAvoid (avoid@explicit_intro_names l))
-	  destopt onlydeps n bound
-        (fun ids -> intros_patterns b avoid ids thin destopt bound (n+List.length ids) tac l)
-  | IntroOrAndPattern ll ->
-      intro_then_force
-	(intro_or_and_pattern loc (b || not (List.is_empty l)) ll thin
-	   (fun thin bound' -> intros_patterns b avoid ids thin destopt bound' 0 (fun ids thin -> intros_patterns b avoid ids thin destopt bound (n+1) tac l)))
-  | IntroInjection l' ->
-      intro_then_force
-	(intro_decomp_eq loc l' thin
-	   (fun thin bound' -> intros_patterns b avoid ids thin destopt bound' 0 (fun ids thin -> intros_patterns b avoid ids thin destopt bound (n+1) tac l)))
-  | IntroRewrite l2r ->
-      intro_then_gen (NamingAvoid(avoid@explicit_intro_names l))
-	MoveLast true false
-        (fun id ->
-	  Tacticals.New.tclTHENLAST (* Skip the side conditions of the rewriting step *)
-	    (rewrite_hyp l2r id)
-	    (intros_patterns b avoid ids thin destopt bound (n+1) tac l))
+        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound (n+1) tac l)
 
-let intros_pattern_bound n destopt =
-  intros_patterns true [] [] [] destopt
+and intro_pattern_action loc b style pat thin tac id = match pat with
+  | IntroOrAndPattern ll ->
+      intro_or_and_pattern loc b ll thin tac id
+  | IntroInjection l' ->
+      intro_decomp_eq loc l' thin tac id
+  | IntroRewrite l2r ->
+      Tacticals.New.tclTHENLAST
+        (* Skip the side conditions of the rewriting step *)
+	(rewrite_hyp style l2r id)
+        (tac thin None [])
+
+let intro_patterns_bound_to n destopt =
+  intro_patterns_core true [] [] [] destopt
     (Some (true,n)) 0 (fun _ -> clear_wildcards)
 
 (* The following boolean governs what "intros []" do on examples such
@@ -1802,16 +1815,19 @@ let intros_pattern_bound n destopt =
  *)
 let bracketing_last_or_and_intro_pattern = false 
 
-let intros_pattern destopt =
-  intros_patterns bracketing_last_or_and_intro_pattern
+let intro_patterns_to destopt =
+  intro_patterns_core bracketing_last_or_and_intro_pattern
     [] [] [] destopt None 0 (fun _ l -> clear_wildcards l)
 
-let intro_pattern destopt pat =
-  intros_pattern destopt [dloc,pat]
+let intro_pattern_to destopt pat =
+  intro_patterns_to destopt [dloc,pat]
 
-let intro_patterns = function
-  | [] -> Tacticals.New.tclREPEAT intro
-  | l  -> intros_pattern MoveLast l
+let intro_patterns = intro_patterns_to MoveLast
+
+(* Implements "intros" *)
+let intros_patterns = function
+  | [] -> intros
+  | l -> intro_patterns_to MoveLast l
 
 (**************************)
 (*   Other cut tactics    *)
@@ -1823,31 +1839,17 @@ let rec prepare_naming loc = function
   | IntroFresh id -> NamingBasedOn (id,[])
   | IntroWildcard ->
       error "Did you really mind erasing the newly generated hypothesis?"
-  | IntroRewrite _
-  | IntroOrAndPattern _
-  | IntroInjection _
-  | IntroForthcoming _ -> assert false
 
 let rec prepare_intros_loc loc dft = function
-  | IntroIdentifier _
-  | IntroAnonymous
-  | IntroFresh _
-  | IntroWildcard as ipat ->
+  | IntroNaming ipat ->
       prepare_naming loc ipat,
       (fun _ -> Proofview.tclUNIT ())
-  | IntroRewrite l2r ->
+  | IntroAction ipat ->
       prepare_naming loc dft,
-      (fun id -> Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl)
-  | IntroOrAndPattern ll ->
-      prepare_naming loc dft,
-      (intro_or_and_pattern loc true ll []
-	 (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0
-           (fun _ l -> clear_wildcards l)))
-  | IntroInjection l ->
-      prepare_naming loc dft,
-      (intro_decomp_eq loc l []
-	 (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0
-           (fun _ l -> clear_wildcards l)))
+      (let tac thin bound =
+        intro_patterns_core true [] [] thin MoveLast bound 0
+          (fun _ l -> clear_wildcards l) in
+      fun id -> intro_pattern_action loc true true ipat [] tac id)
   | IntroForthcoming _ -> user_err_loc
       (loc,"",str "Introduction pattern for one hypothesis expected.")
 
@@ -1857,7 +1859,7 @@ let prepare_intros dft = function
 
 let ipat_of_name = function
   | Anonymous -> None
-  | Name id -> Some (dloc, IntroIdentifier id)
+  | Name id -> Some (dloc, IntroNaming (IntroIdentifier id))
 
  let head_ident c =
    let c = fst (decompose_app ((strip_lam_assum c))) in
@@ -1882,20 +1884,14 @@ let enough_tac na = assert_as false (ipat_of_name na)
 (* apply in as *)
 
 let as_tac id ipat = match ipat with
-  | Some (loc,IntroRewrite l2r) ->
-      Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
-  | Some (loc,IntroOrAndPattern ll) ->
-      intro_or_and_pattern loc true ll []
-        (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0 (fun _ l -> clear_wildcards l))
-        id
-  | Some (loc,IntroInjection l) ->
-      intro_decomp_eq loc l []
-        (fun thin bound -> intros_patterns true [] [] thin MoveLast bound 0 (fun _ l -> clear_wildcards l))
-        id
-  | Some (loc,
-      (IntroIdentifier _ | IntroAnonymous | IntroFresh _ |
-       IntroWildcard | IntroForthcoming _)) ->
-      user_err_loc (loc,"", str "Disjunctive/conjunctive pattern expected")
+  | Some (loc,IntroAction pat) ->
+      let tac thin bound =
+        intro_patterns_core true [] [] thin MoveLast bound 0
+          (fun _ l -> clear_wildcards l) in
+      intro_pattern_action loc true true pat [] tac id
+  | Some (loc, (IntroNaming _ | IntroForthcoming _)) ->
+      user_err_loc (loc,"",
+                    str "Disjunctive, conjunctive or equality pattern expected")
   | None -> Proofview.tclUNIT ()
 
 let tclMAPLAST tacfun l =
@@ -2254,23 +2250,22 @@ let check_unused_names names =
        ++ str": " ++ prlist_with_sep spc Miscprint.pr_intro_pattern names)
 
 let intropattern_of_name gl avoid = function
-  | Anonymous -> IntroAnonymous
-  | Name id -> IntroIdentifier (new_fresh_id avoid id gl)
-
+  | Anonymous -> IntroNaming IntroAnonymous
+  | Name id -> IntroNaming (IntroIdentifier (new_fresh_id avoid id gl))
 
 let rec consume_pattern avoid na isdep gl = function
   | [] -> ((dloc, intropattern_of_name gl avoid na), [])
-  | (loc,IntroAnonymous)::names ->
-      let avoid = avoid@explicit_intro_names names in
-      ((loc,intropattern_of_name gl avoid na), names)
   | (loc,IntroForthcoming true)::names when not isdep ->
       consume_pattern avoid na isdep gl names
   | (loc,IntroForthcoming _)::names as fullpat ->
       let avoid = avoid@explicit_intro_names names in
       ((loc,intropattern_of_name gl avoid na), fullpat)
-  | (loc,IntroFresh id')::names ->
+  | (loc,IntroNaming IntroAnonymous)::names ->
       let avoid = avoid@explicit_intro_names names in
-      ((loc,IntroIdentifier (new_fresh_id avoid id' gl)), names)
+      ((loc,intropattern_of_name gl avoid na), names)
+  | (loc,IntroNaming (IntroFresh id'))::names ->
+      let avoid = avoid@explicit_intro_names names in
+      ((loc,IntroNaming (IntroIdentifier (new_fresh_id avoid id' gl))), names)
   | pat::names -> (pat,names)
 
 let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
@@ -2282,16 +2277,16 @@ let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
     (intros_move rstatus)
     (intros_move newlstatus)
 
-let safe_dest_intros_patterns avoid thin dest pat tac =
+let safe_dest_intro_patterns avoid thin dest pat tac =
   Proofview.tclORELSE
-    (intros_patterns true avoid [] thin dest None 0 tac pat)
+    (intro_patterns_core true avoid [] thin dest None 0 tac pat)
     begin function
       | UserError ("move_hyp",_) ->
     (* May happen if the lemma has dependent arguments that are resolved
        only after cook_sign is called, e.g. as in "destruct dec" in context
        "dec:forall x, {x=0}+{x<>0};  a:A  |- if dec a then True else False"
        where argument a of dec will be found only lately *)
-          intros_patterns true avoid [] [] MoveLast None 0 tac pat
+          intro_patterns_core true avoid [] [] MoveLast None 0 tac pat
       | e -> Proofview.tclZERO e
     end
 
@@ -2331,17 +2326,17 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
         (IndArg,depind,hyprecname) :: ra' ->
         Proofview.Goal.raw_enter begin fun gl ->
         let (recpat,names) = match names with
-          | [loc,IntroIdentifier id as pat] ->
+          | [loc,IntroNaming (IntroIdentifier id) as pat] ->
               let id' = next_ident_away (add_prefix "IH" id) avoid in
-	      (pat, [dloc, IntroIdentifier id'])
+	      (pat, [dloc, IntroNaming (IntroIdentifier id')])
           | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
         let dest = get_recarg_dest dests in
-        safe_dest_intros_patterns avoid thin dest [recpat] (fun ids thin ->
+        safe_dest_intro_patterns avoid thin dest [recpat] (fun ids thin ->
         Proofview.Goal.raw_enter begin fun gl ->
           let (hyprec,names) =
             consume_pattern avoid (Name hyprecname) depind gl names
           in
-	  safe_dest_intros_patterns avoid thin MoveLast [hyprec] (fun ids' thin ->
+	  safe_dest_intro_patterns avoid thin MoveLast [hyprec] (fun ids' thin ->
 	    peel_tac ra' (update_dest dests ids') names thin)
         end)
         end
@@ -2350,7 +2345,7 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names =
           consume_pattern avoid (Name hyprecname) dep gl names in
-	safe_dest_intros_patterns avoid thin MoveLast [pat] (fun ids thin ->
+	safe_dest_intro_patterns avoid thin MoveLast [pat] (fun ids thin ->
         peel_tac ra' (update_dest dests ids) names thin)
         end
     | (RecArg,dep,recvarname) :: ra' ->
@@ -2358,14 +2353,14 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
         let (pat,names) =
           consume_pattern avoid (Name recvarname) dep gl names in
         let dest = get_recarg_dest dests in
-	safe_dest_intros_patterns avoid thin dest [pat] (fun ids thin ->
+	safe_dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
     | (OtherArg,dep,_) :: ra' ->
         Proofview.Goal.raw_enter begin fun gl ->
         let (pat,names) = consume_pattern avoid Anonymous dep gl names in
         let dest = get_recarg_dest dests in
-	safe_dest_intros_patterns avoid thin dest [pat] (fun ids thin ->
+	safe_dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
     | [] ->
@@ -3536,7 +3531,7 @@ let induction_gen clear_flag isrec with_evars elim (eqname,names) (sigma,(c,lbin
 let induction_gen_l isrec with_evars elim (eqname,names) lc =
   if not (Option.is_empty eqname) then
     errorlabstrm "" (str "Do not know what to do with " ++
-      Miscprint.pr_intro_pattern (Option.get eqname));
+      Miscprint.pr_intro_pattern_naming (snd (Option.get eqname)));
   let newlc = ref [] in
   let letids = ref [] in
   let rec atomize_list l =

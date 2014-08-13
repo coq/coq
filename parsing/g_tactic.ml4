@@ -274,30 +274,30 @@ GEXTEND Gram
   intropatterns:
     [ [ l = LIST0 nonsimple_intropattern -> l ]]
   ;
-  disjunctive_intropattern:
-    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> !@loc,IntroOrAndPattern tc
-      | "()" -> !@loc,IntroOrAndPattern [[]]
-      | "("; si = simple_intropattern; ")" -> !@loc,IntroOrAndPattern [[si]]
+  or_and_intropattern:
+    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> tc
+      | "()" -> [[]]
+      | "("; si = simple_intropattern; ")" -> [[si]]
       | "("; si = simple_intropattern; ",";
-             tc = LIST1 simple_intropattern SEP "," ; ")" ->
-	       !@loc,IntroOrAndPattern [si::tc]
+             tc = LIST1 simple_intropattern SEP "," ; ")" -> [si::tc]
       | "("; si = simple_intropattern; "&";
 	     tc = LIST1 simple_intropattern SEP "&" ; ")" ->
 	  (* (A & B & C) is translated into (A,(B,C)) *)
 	  let rec pairify = function
-	    | ([]|[_]|[_;_]) as l -> IntroOrAndPattern [l]
-	    | t::q -> IntroOrAndPattern [[t;(loc_of_ne_list q,pairify q)]]
-	  in !@loc,pairify (si::tc)
-      | "[="; tc = intropatterns; "]" -> !@loc,IntroInjection tc
- ] ]
+	    | ([]|[_]|[_;_]) as l -> [l]
+	    | t::q -> [[t;(loc_of_ne_list q,IntroAction (IntroOrAndPattern (pairify q)))]]
+	  in pairify (si::tc) ] ]
+  ;
+  equality_intropattern:
+    [ [ "->" -> IntroRewrite true
+      | "<-" -> IntroRewrite false
+      | "[="; tc = intropatterns; "]" -> IntroInjection tc ] ]
   ;
   naming_intropattern:
-    [ [ prefix = pattern_ident -> !@loc, IntroFresh prefix
-      | "?" -> !@loc, IntroAnonymous
-      | id = ident -> !@loc, IntroIdentifier id
-      | "_" -> !@loc, IntroWildcard
-      | "->" -> !@loc, IntroRewrite true
-      | "<-" -> !@loc, IntroRewrite false ] ]
+    [ [ prefix = pattern_ident -> IntroFresh prefix
+      | "?" -> IntroAnonymous
+      | id = ident -> IntroIdentifier id
+      | "_" -> IntroWildcard ] ]
   ;
   nonsimple_intropattern:
     [ [ l = simple_intropattern -> l
@@ -305,8 +305,9 @@ GEXTEND Gram
       | "**" -> !@loc, IntroForthcoming false ]]
   ;
   simple_intropattern:
-    [ [ pat = disjunctive_intropattern -> pat
-      | pat = naming_intropattern -> pat ] ]
+    [ [ pat = or_and_intropattern -> !@loc, IntroAction (IntroOrAndPattern pat)
+      | pat = equality_intropattern -> !@loc, IntroAction pat
+      | pat = naming_intropattern -> !@loc, IntroNaming pat ] ]
   ;
   simple_binding:
     [ [ "("; id = ident; ":="; c = lconstr; ")" -> (!@loc, NamedHyp id, c)
@@ -472,15 +473,23 @@ GEXTEND Gram
     [ [ "as"; ipat = simple_intropattern -> Some ipat
       | -> None ] ]
   ;
-  with_inversion_names:
-    [ [ "as"; ipat = simple_intropattern -> Some ipat
+  or_and_intropattern_loc:
+    [ [ ipat = or_and_intropattern -> !@loc, ipat
+      | id = ident ->
+          !@loc,
+          (* coding, see tacinterp.ml: *)
+          [[Loc.ghost, IntroNaming (IntroIdentifier id)]]
+      ] ]
+  ;
+  as_or_and_ipat:
+    [ [ "as"; ipat = or_and_intropattern_loc -> Some ipat
       | -> None ] ]
   ;
   eqn_ipat:
-    [ [ IDENT "eqn"; ":"; id = naming_intropattern -> Some id
-      | IDENT "_eqn"; ":"; id = naming_intropattern ->
+    [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> Some (!@loc, pat)
+      | IDENT "_eqn"; ":"; pat = naming_intropattern ->
         let msg = "Obsolete syntax \"_eqn:H\" could be replaced by \"eqn:H\"" in
-        msg_warning (strbrk msg); Some id
+        msg_warning (strbrk msg); Some (!@loc, pat)
       | IDENT "_eqn" ->
         let msg = "Obsolete syntax \"_eqn\" could be replaced by \"eqn:?\"" in
         msg_warning (strbrk msg); Some (!@loc, IntroAnonymous)
@@ -513,7 +522,7 @@ GEXTEND Gram
     [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
   ;
   induction_clause:
-    [ [ c = induction_arg; pat = as_ipat; eq = eqn_ipat -> (c,(eq,pat)) ] ]
+    [ [ c = induction_arg; pat = as_or_and_ipat; eq = eqn_ipat -> (c,(eq,pat)) ] ]
   ;
   induction_clause_list:
     [ [ ic = LIST1 induction_clause SEP ",";
@@ -577,17 +586,17 @@ GEXTEND Gram
       (* Alternative syntax for "pose proof c as id" *)
       | IDENT "assert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";
 	  c = lconstr; ")" ->
-	  TacAtom (!@loc, TacAssert (true,None,Some (!@loc,IntroIdentifier id),c))
+	  TacAtom (!@loc, TacAssert (true,None,Some (!@loc,IntroNaming (IntroIdentifier id)),c))
 
       (* Alternative syntax for "assert c as id by tac" *)
       | IDENT "assert"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (!@loc, TacAssert (true,Some tac,Some (!@loc,IntroIdentifier id),c))
+	  TacAtom (!@loc, TacAssert (true,Some tac,Some (!@loc,IntroNaming (IntroIdentifier id)),c))
 
       (* Alternative syntax for "enough c as id by tac" *)
       | IDENT "enough"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAtom (!@loc, TacAssert (false,Some tac,Some (!@loc,IntroIdentifier id),c))
+	  TacAtom (!@loc, TacAssert (false,Some tac,Some (!@loc,IntroNaming (IntroIdentifier id)),c))
 
       | IDENT "assert"; c = constr; ipat = as_ipat; tac = by_tactic ->
 	  TacAtom (!@loc, TacAssert (true,Some tac,ipat,c))
@@ -654,18 +663,18 @@ GEXTEND Gram
 	  | IDENT "inversion" -> FullInversion
 	  | IDENT "inversion_clear" -> FullInversionClear ];
 	  hyp = quantified_hypothesis;
-	  ids = with_inversion_names; co = OPT ["with"; c = constr -> c] ->
+	  ids = as_or_and_ipat; co = OPT ["with"; c = constr -> c] ->
 	    TacAtom (!@loc, TacInversion (DepInversion (k,co,ids),hyp))
       | IDENT "simple"; IDENT "inversion";
-	  hyp = quantified_hypothesis; ids = with_inversion_names;
+	  hyp = quantified_hypothesis; ids = as_or_and_ipat;
 	  cl = in_hyp_list ->
 	    TacAtom (!@loc, TacInversion (NonDepInversion (SimpleInversion, cl, ids), hyp))
       | IDENT "inversion";
-	  hyp = quantified_hypothesis; ids = with_inversion_names;
+	  hyp = quantified_hypothesis; ids = as_or_and_ipat;
 	  cl = in_hyp_list ->
 	    TacAtom (!@loc, TacInversion (NonDepInversion (FullInversion, cl, ids), hyp))
       | IDENT "inversion_clear";
-	  hyp = quantified_hypothesis; ids = with_inversion_names;
+	  hyp = quantified_hypothesis; ids = as_or_and_ipat;
 	  cl = in_hyp_list ->
 	    TacAtom (!@loc, TacInversion (NonDepInversion (FullInversionClear, cl, ids), hyp))
       | IDENT "inversion"; hyp = quantified_hypothesis;

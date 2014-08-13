@@ -12,6 +12,10 @@ open Misctypes
 
 val pr_intro_pattern : intro_pattern_expr Loc.located -> Pp.std_ppcmds
 
+val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds
+
+val pr_intro_pattern_naming : intro_pattern_naming_expr -> Pp.std_ppcmds
+
 (** Printing of [move_location] *)
 
 val pr_move_location :

@@ -83,6 +83,9 @@ let pr_intro_as_pat prc _ _ pat =
       spc () ++ str "as" ++ spc () ++ Miscprint.pr_intro_pattern pat
     | None -> mt ()
 
+let out_disjunctive = function
+  | loc, IntroAction (IntroOrAndPattern l) -> (loc,l)
+  | _ -> Errors.error "Disjunctive or conjunctive intro pattern expected."
 
 ARGUMENT EXTEND with_names TYPED AS simple_intropattern_opt PRINTED BY pr_intro_as_pat
 |   [ "as"  simple_intropattern(ipat) ] -> [ Some ipat ]
@@ -100,7 +103,7 @@ TACTIC EXTEND newfunind
 	 | [c] -> c
 	 | c::cl -> applist(c,cl)
        in
-       Extratactics.onSomeWithHoles (fun x -> Proofview.V82.tactic (functional_induction true c x pat)) princl ]
+       Extratactics.onSomeWithHoles (fun x -> Proofview.V82.tactic (functional_induction true c x (Option.map out_disjunctive pat))) princl ]
 END
 (***** debug only ***)
 TACTIC EXTEND snewfunind
@@ -111,7 +114,7 @@ TACTIC EXTEND snewfunind
 	 | [c] -> c
 	 | c::cl -> applist(c,cl)
        in
-       Extratactics.onSomeWithHoles (fun x -> Proofview.V82.tactic (functional_induction false c x pat)) princl ]
+       Extratactics.onSomeWithHoles (fun x -> Proofview.V82.tactic (functional_induction false c x (Option.map out_disjunctive pat))) princl ]
 END
 
 

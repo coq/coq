@@ -375,15 +375,15 @@ let rewrite_equations_gene othin neqns ba =
      Some thin: the equations are rewritten, and cleared if thin is true *)
 
 let rec get_names allow_conj (loc,pat) = match pat with
-  | IntroWildcard ->
+  | IntroNaming IntroWildcard ->
       error "Discarding pattern not allowed for inversion equations."
-  | IntroAnonymous | IntroForthcoming _ ->
+  | IntroNaming IntroAnonymous | IntroForthcoming _ ->
       error "Anonymous pattern not allowed for inversion equations."
-  | IntroFresh _ ->
+  | IntroNaming (IntroFresh _) ->
       error "Fresh pattern not allowed for inversion equations."
-  | IntroRewrite _->
+  | IntroAction (IntroRewrite _) ->
       error "Rewriting pattern not allowed for inversion equations."
-  | IntroOrAndPattern [l] ->
+  | IntroAction (IntroOrAndPattern [l]) ->
       let get_name id = Option.get (fst (get_names false id)) in
       if allow_conj then begin match l with
       | [] -> (None, [])
@@ -392,11 +392,11 @@ let rec get_names allow_conj (loc,pat) = match pat with
         (Some n, n :: List.map get_name l)
       end else
 	error"Nested conjunctive patterns not allowed for inversion equations."
-  | IntroInjection l ->
+  | IntroAction (IntroInjection l) ->
       error "Injection patterns not allowed for inversion equations."
-  | IntroOrAndPattern l ->
+  | IntroAction (IntroOrAndPattern l) ->
       error "Disjunctive patterns not allowed for inversion equations."
-  | IntroIdentifier id ->
+  | IntroNaming (IntroIdentifier id) ->
       (Some id,[id])
 
 let extract_eqn_names = function

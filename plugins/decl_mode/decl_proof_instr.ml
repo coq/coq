@@ -735,7 +735,7 @@ let consider_tac c hyps gls =
     | _ ->
 	let id = pf_get_new_id (Id.of_string "_tmp") gls in
 	tclTHEN
-	  (Proofview.V82.of_tactic (forward true None (Some (Loc.ghost, IntroIdentifier id)) c))
+	  (Proofview.V82.of_tactic (pose_proof (Name id) c))
  	  (consider_match false [] [id] hyps) gls
 
 

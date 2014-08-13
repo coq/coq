@@ -58,15 +58,21 @@ let mlexpr_of_by_notation f = function
       let loc = of_coqloc loc in
       <:expr< Misctypes.ByNotation $dloc$ $str:s$ $mlexpr_of_option mlexpr_of_string sco$ >>
 
-let mlexpr_of_intro_pattern = function
+let mlexpr_of_intro_pattern_disjunctive = function
+  _ -> failwith "mlexpr_of_intro_pattern_disjunctive: TODO"
+
+let mlexpr_of_intro_pattern_naming = function
   | Misctypes.IntroWildcard -> <:expr< Misctypes.IntroWildcard >>
   | Misctypes.IntroAnonymous -> <:expr< Misctypes.IntroAnonymous >>
   | Misctypes.IntroFresh id -> <:expr< Misctypes.IntroFresh (mlexpr_of_ident $dloc$ id) >>
-  | Misctypes.IntroForthcoming b -> <:expr< Misctypes.IntroForthcoming (mlexpr_of_bool $dloc$ b) >>
   | Misctypes.IntroIdentifier id ->
       <:expr< Misctypes.IntroIdentifier (mlexpr_of_ident $dloc$ id) >>
-  | Misctypes.IntroOrAndPattern _ | Misctypes.IntroRewrite _
-  | Misctypes.IntroInjection _ ->
+
+let mlexpr_of_intro_pattern = function
+  | Misctypes.IntroForthcoming b -> <:expr< Misctypes.IntroForthcoming (mlexpr_of_bool $dloc$ b) >>
+  | Misctypes.IntroNaming pat ->
+      <:expr< Misctypes.IntroNaming $mlexpr_of_intro_pattern_naming pat$ >>
+  | Misctypes.IntroAction _ ->
       failwith "mlexpr_of_intro_pattern: TODO"
 
 let mlexpr_of_ident_option = mlexpr_of_option (mlexpr_of_ident)
@@ -366,8 +372,8 @@ let rec mlexpr_of_atomic_tactic = function
                  (mlexpr_of_option mlexpr_of_bool)
 	         mlexpr_of_induction_arg)
 	      (mlexpr_of_pair
-		 (mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern))
-		 (mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern)))))
+		 (mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern_naming))
+		 (mlexpr_of_option (mlexpr_of_intro_pattern_disjunctive)))))
 	(mlexpr_of_option mlexpr_of_constr_with_binding)
 	(mlexpr_of_option mlexpr_of_clause) l$ >>
 

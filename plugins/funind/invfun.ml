@@ -271,7 +271,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       List.map
 	(fun (_,_,br_type) ->
 	   List.map
-	     (fun id -> Loc.ghost, IntroIdentifier id)
+	     (fun id -> Loc.ghost, IntroNaming (IntroIdentifier id))
 	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
 	)
 	branches
@@ -329,7 +329,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       	List.fold_right
       	  (fun (_,pat) acc ->
       	     match pat with
-	       | IntroIdentifier id -> id::acc
+	       | IntroNaming (IntroIdentifier id) -> id::acc
       	       | _ -> anomaly (Pp.str "Not an identifier")
       	  )
       	  (List.nth intro_pats (pred i))

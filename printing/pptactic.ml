@@ -347,26 +347,23 @@ let pr_bindings prc prlc = pr_bindings_gen false prc prlc
 let pr_with_bindings prc prlc (c,bl) =
   hov 1 (prc c ++ pr_bindings prc prlc bl)
 
-let pr_as_ipat pat = str "as " ++ Miscprint.pr_intro_pattern pat
-let pr_eqn_ipat pat = str "eqn:" ++ Miscprint.pr_intro_pattern pat
+let pr_as_disjunctive_ipat (_,ipatl) =
+  str "as " ++ Miscprint.pr_or_and_intro_pattern ipatl
+let pr_eqn_ipat (_,ipat) = str "eqn:" ++ Miscprint.pr_intro_pattern_naming ipat
+let pr_as_ipat = function
+  | None -> mt ()
+  | Some ipat -> str "as " ++ Miscprint.pr_intro_pattern ipat
 
 let pr_with_induction_names = function
   | None, None -> mt ()
   | Some eqpat, None -> spc () ++ hov 1 (pr_eqn_ipat eqpat)
-  | None, Some ipat -> spc () ++ hov 1 (pr_as_ipat ipat)
+  | None, Some ipat -> spc () ++ hov 1 (pr_as_disjunctive_ipat ipat)
   | Some eqpat, Some ipat ->
-    spc () ++ hov 1 (pr_as_ipat ipat ++ spc () ++ pr_eqn_ipat eqpat)
-
-let pr_as_intro_pattern ipat =
-  spc () ++ hov 1 (str "as" ++ spc () ++ Miscprint.pr_intro_pattern ipat)
+    spc () ++ hov 1 (pr_as_disjunctive_ipat ipat ++ spc () ++ pr_eqn_ipat eqpat)
 
 let pr_with_inversion_names = function
   | None -> mt ()
-  | Some ipat -> pr_as_intro_pattern ipat
-
-let pr_as_ipat = function
-  | None -> mt ()
-  | Some ipat -> pr_as_intro_pattern ipat
+  | Some ipat -> pr_as_disjunctive_ipat ipat
 
 let pr_as_name = function
   | Anonymous -> mt ()
@@ -390,7 +387,7 @@ let pr_assertion prc _prlc ipat c = match ipat with
 let pr_assumption prc prlc ipat c = match ipat with
 (* Use this "optimisation" or use only the general case ?*)
 (* it seems that this "optimisation" is somehow more natural *)
-  | Some (_,IntroIdentifier id) ->
+  | Some (_,IntroNaming (IntroIdentifier id)) ->
       spc() ++ surround (pr_id id ++ str " :" ++ spc() ++ prlc c)
   | ipat ->
       spc() ++ prc c ++ pr_as_ipat ipat

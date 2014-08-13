@@ -12,17 +12,23 @@ open Pp
 (** Printing of [intro_pattern] *)
 
 let rec pr_intro_pattern (_,pat) = match pat with
+  | IntroForthcoming true -> str "*"
+  | IntroForthcoming false -> str "**"
+  | IntroNaming p -> pr_intro_pattern_naming p
+  | IntroAction p -> pr_intro_pattern_action p
+
+and pr_intro_pattern_naming = function
+  | IntroWildcard -> str "_"
+  | IntroIdentifier id -> Nameops.pr_id id
+  | IntroFresh id -> str "?" ++ Nameops.pr_id id
+  | IntroAnonymous -> str "?"
+
+and pr_intro_pattern_action = function
   | IntroOrAndPattern pll -> pr_or_and_intro_pattern pll
   | IntroInjection pl ->
       str "[=" ++ hv 0 (prlist_with_sep spc pr_intro_pattern pl) ++ str "]"
-  | IntroWildcard -> str "_"
   | IntroRewrite true -> str "->"
   | IntroRewrite false -> str "<-"
-  | IntroIdentifier id -> Nameops.pr_id id
-  | IntroFresh id -> str "?" ++ Nameops.pr_id id
-  | IntroForthcoming true -> str "*"
-  | IntroForthcoming false -> str "**"
-  | IntroAnonymous -> str "?"
 
 and pr_or_and_intro_pattern = function
   | [pl] ->

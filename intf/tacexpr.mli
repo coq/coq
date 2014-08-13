@@ -44,9 +44,9 @@ type inversion_kind =
 
 type ('c,'id) inversion_strength =
   | NonDepInversion of
-      inversion_kind * 'id list * intro_pattern_expr located option
+      inversion_kind * 'id list * or_and_intro_pattern_expr located option
   | DepInversion of
-      inversion_kind * 'c option * intro_pattern_expr located option
+      inversion_kind * 'c option * or_and_intro_pattern_expr located option
   | InversionUsing of 'c * 'id list
 
 type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
@@ -58,8 +58,8 @@ type 'id message_token =
 
 type 'constr induction_clause =
     'constr with_bindings induction_arg *
-    (intro_pattern_expr located option (* eqn:... *)
-    * intro_pattern_expr located option) (* as ... *)
+    (intro_pattern_naming_expr located option (* eqn:... *)
+    * or_and_intro_pattern_expr located option) (* as ... *)
 
 type ('constr,'id) induction_clause_list =
     'constr induction_clause list
@@ -127,7 +127,7 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacGeneralize of ('trm with_occurrences * Name.t) list
   | TacGeneralizeDep of 'trm
   | TacLetTac of Name.t * 'trm * 'nam clause_expr * letin_flag *
-      intro_pattern_expr located option
+      intro_pattern_naming_expr located option
 
   (* Derived basic tactics *)
   | TacInductionDestruct of

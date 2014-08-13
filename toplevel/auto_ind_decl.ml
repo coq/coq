@@ -86,9 +86,8 @@ let destruct_on_using c id =
   destruct false
     [None,Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
     None
-    (None,Some (dl,IntroOrAndPattern [
-                                    [dl,IntroAnonymous];
-                                    [dl,IntroIdentifier id]]))
+    (None,Some (dl,[[dl,IntroNaming IntroAnonymous];
+                    [dl,IntroNaming (IntroIdentifier id)]]))
     None
 
 let destruct_on c =
@@ -595,9 +594,9 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                             (destruct false [None,Tacexpr.ElimOnConstr
                                       (Evd.empty,((mkVar freshz,NoBindings)))]
                                   None
-                                  (None, Some (dl,IntroOrAndPattern [[
-                                    dl,IntroIdentifier fresht;
-                                    dl,IntroIdentifier freshz]])) None)
+                                  (None, Some (dl,[[
+                                    dl,IntroNaming (IntroIdentifier fresht);
+                                    dl,IntroNaming (IntroIdentifier freshz)]])) None)
                          end
                         ]);
 (*

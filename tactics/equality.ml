@@ -1320,8 +1320,8 @@ let postInjEqTac clear_flag ipats c n =
         tclTRY (apply_clear_request clear_flag dft c) in
       let intro_tac =
         if use_injection_pattern_l2r_order ()
-        then intros_pattern_bound n MoveLast ipats
-        else intros_pattern MoveLast ipats in
+        then intro_patterns_bound_to n MoveLast ipats
+        else intro_patterns_to MoveLast ipats in
       tclTHEN clear_tac intro_tac
   | None -> tclIDTAC
 

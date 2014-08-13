@@ -87,6 +87,10 @@
 
 - API of Inductiveops made more uniform (see commit log or file itself).
 
+- API of intros_pattern style tactic changed; "s" is dropped in
+  "intros_pattern" and "intros_patterns" is not anymore behaving like
+  tactic "intros" on the empty list.
+
 =========================================
 = CHANGES BETWEEN COQ V8.3 AND COQ V8.4 =
 =========================================
