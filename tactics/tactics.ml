@@ -375,20 +375,17 @@ let change_and_check cv_pb t env sigma c =
   let sigma, t' = t env sigma in
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
     if b then sigma, t'
-    else raise ConstrMatching.PatternMatchingFailure
+    else errorlabstrm "convert-check-hyp" (str "Not convertible.")
 
 let change_and_check_subst cv_pb subst t env sigma c =
   let t' env sigma = 
     let sigma, t = t env sigma in
       sigma, replace_vars (Id.Map.bindings subst) t 
   in change_and_check cv_pb t' env sigma c
-      
+
 (* Use cumulativity only if changing the conclusion not a subterm *)
 let change_on_subterm cv_pb t = function
-  | None -> fun env sigma c ->
-    (try change_and_check cv_pb t env sigma c
-     with ConstrMatching.PatternMatchingFailure ->
-       errorlabstrm "convert-check-hyp" (str "Not convertible."))
+  | None -> change_and_check cv_pb t
   | Some occl ->
     e_contextually false occl
       (fun subst -> change_and_check_subst Reduction.CONV subst t)
