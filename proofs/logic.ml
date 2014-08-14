@@ -573,6 +573,7 @@ let prim_refiner r sigma goal =
 	       raise (RefinerError IntroNeedsProduct))
 
     | Cut (b,replace,id,t) ->
+(*        if !check && not (Retyping.get_sort_of env sigma t) then*)
         let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma t) in
 	let sign,t,cl,sigma =
 	  if replace then

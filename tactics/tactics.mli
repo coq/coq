@@ -175,14 +175,14 @@ val revert        : Id.t list -> unit Proofview.tactic
 val apply_type : constr -> constr list -> tactic
 val bring_hyps : named_context -> unit Proofview.tactic
 
-val apply                 : constr -> tactic
-val eapply                : constr -> tactic
+val apply                 : constr -> unit Proofview.tactic
+val eapply                : constr -> unit Proofview.tactic
 
 val apply_with_bindings_gen :
-  advanced_flag -> evars_flag -> (clear_flag * constr with_bindings located) list -> tactic
+  advanced_flag -> evars_flag -> (clear_flag * constr with_bindings located) list -> unit Proofview.tactic
 
-val apply_with_bindings   : constr with_bindings -> tactic
-val eapply_with_bindings  : constr with_bindings -> tactic
+val apply_with_bindings   : constr with_bindings -> unit Proofview.tactic
+val eapply_with_bindings  : constr with_bindings -> unit Proofview.tactic
 
 val cut_and_apply         : constr -> unit Proofview.tactic
 
@@ -251,7 +251,7 @@ type eliminator = {
 }
 
 val general_elim  : evars_flag -> clear_flag ->
-  constr with_bindings -> eliminator -> tactic
+  constr with_bindings -> eliminator -> unit Proofview.tactic
 
 val general_elim_clause : evars_flag -> unify_flags -> identifier option ->
   clausenv -> eliminator -> unit Proofview.tactic
@@ -336,8 +336,8 @@ val intros_transitivity         : constr option -> unit Proofview.tactic
 
 val cut                         : constr -> unit Proofview.tactic
 val cut_intro                   : constr -> unit Proofview.tactic
-val assert_replacing            : Id.t -> types -> tactic -> tactic
-val cut_replacing               : Id.t -> types -> tactic -> tactic
+val assert_replacing            : Id.t -> types -> unit Proofview.tactic -> unit Proofview.tactic
+val cut_replacing               : Id.t -> types -> unit Proofview.tactic -> unit Proofview.tactic
 
 val assert_as : bool -> intro_pattern_expr located option -> constr -> unit Proofview.tactic
 val forward   : bool -> unit Proofview.tactic option -> intro_pattern_expr located option -> constr -> unit Proofview.tactic
@@ -386,8 +386,8 @@ module Simple : sig
   val generalize      : constr list -> tactic
   val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> tactic
 
-  val apply  : constr -> tactic
-  val eapply : constr -> tactic
+  val apply  : constr -> unit Proofview.tactic
+  val eapply : constr -> unit Proofview.tactic
   val elim   : constr -> unit Proofview.tactic
   val case   : constr -> unit Proofview.tactic
   val apply_in : identifier -> constr -> unit Proofview.tactic

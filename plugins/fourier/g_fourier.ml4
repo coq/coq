@@ -13,5 +13,5 @@ open FourierR
 DECLARE PLUGIN "fourier_plugin"
 
 TACTIC EXTEND fourier
-  [ "fourierz" ] -> [ Proofview.V82.tactic fourier ]
+  [ "fourierz" ] -> [ fourier () ]
 END

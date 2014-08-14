@@ -1691,7 +1691,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           List.fold_map (interp_open_constr_with_bindings_arg_loc ist env) sigma cb
         in
         let tac = match cl with
-          | None -> fun l -> Proofview.V82.tactic (Tactics.apply_with_bindings_gen a ev l)
+          | None -> fun l -> Tactics.apply_with_bindings_gen a ev l
           | Some cl ->
               (fun l ->
                 Proofview.Goal.raw_enter begin fun gl ->

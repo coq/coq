@@ -486,7 +486,7 @@ let f_equal =
         else
           Tacticals.New.tclTRY (Tacticals.New.tclTHEN
           ((new_app_global _eq [|ty; c1; c2|]) Tactics.cut)
-          (Tacticals.New.tclTRY ((new_app_global _refl_equal [||]) (fun c -> Proofview.V82.tactic (apply c)))))
+          (Tacticals.New.tclTRY ((new_app_global _refl_equal [||]) apply)))
       with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
     in
     Proofview.tclORELSE

@@ -79,8 +79,8 @@ let apply_tac_list tac glls =
 
 let one_step l gl =
   [Proofview.V82.of_tactic Tactics.intro]
-  @ (List.map Tactics.Simple.eapply (List.map mkVar (pf_ids_of_hyps gl)))
-  @ (List.map Tactics.Simple.eapply l)
+  @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) (List.map mkVar (pf_ids_of_hyps gl)))
+  @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) l)
   @ (List.map assumption (pf_ids_of_hyps gl))
 
 let rec prolog l n gl =
@@ -122,7 +122,7 @@ let unify_e_resolve poly flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv' in
   let clenv' = clenv_unique_resolver ~flags clenv' gls in
     tclTHEN (Refiner.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
-      (Tactics.Simple.eapply (Vars.subst_univs_level_constr subst c)) gls
+      (Proofview.V82.of_tactic (Tactics.Simple.eapply (Vars.subst_univs_level_constr subst c))) gls
 
 let e_exact poly flags (c,clenv) =
   let clenv', subst = 

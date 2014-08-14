@@ -37,7 +37,7 @@ let elim_id id =
   Proofview.Goal.enter begin fun gl ->
     simplest_elim (Tacmach.New.pf_global id gl)
   end
-let resolve_id id gl = apply (pf_global gl id) gl
+let resolve_id id gl = Proofview.V82.of_tactic (apply (pf_global gl id)) gl
 
 let timing timer_name f arg = f arg
 

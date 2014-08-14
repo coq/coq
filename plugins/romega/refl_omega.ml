@@ -1283,7 +1283,7 @@ let resolution env full_reified_goal systems_list =
   Tactics.generalize
     (l_generalize_arg @ List.map Term.mkVar (List.tl l_hyps)) >>
   Tactics.change_concl reified >>
-  Tactics.apply (app coq_do_omega [|decompose_tactic; normalization_trace|]) >>
+  Proofview.V82.of_tactic (Tactics.apply (app coq_do_omega [|decompose_tactic; normalization_trace|])) >>
   show_goal >>
   Tactics.normalise_vm_in_concl >>
   (*i Alternatives to the previous line:
@@ -1292,7 +1292,7 @@ let resolution env full_reified_goal systems_list =
    - Skip the conversion check and rely directly on the QED:
       Tacmach.convert_concl_no_check (Lazy.force coq_True) Term.VMcast >>
   i*)
-  Tactics.apply (Lazy.force coq_I)
+  Proofview.V82.of_tactic (Tactics.apply (Lazy.force coq_I))
 
 let total_reflexive_omega_tactic gl =
   Coqlib.check_required_library ["Coq";"romega";"ROmega"];

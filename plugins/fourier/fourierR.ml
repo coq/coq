@@ -377,10 +377,10 @@ let tac_zero_inf_pos gl (n,d) =
    let tacn=ref (apply (get coq_Rlt_zero_1)) in
    let tacd=ref (apply (get coq_Rlt_zero_1)) in
    for _i = 1 to n - 1 do
-       tacn:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacn); done;
+       tacn:=(Tacticals.New.tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacn); done;
    for _i = 1 to d - 1 do
-       tacd:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacd); done;
-   (tclTHENS (apply (get coq_Rlt_mult_inv_pos)) [!tacn;!tacd])
+       tacd:=(Tacticals.New.tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacd); done;
+   (Tacticals.New.tclTHENS (apply (get coq_Rlt_mult_inv_pos)) [!tacn;!tacd])
 ;;
 
 (* preuve que 0<=n*1/d
@@ -391,10 +391,10 @@ let tac_zero_infeq_pos gl (n,d)=
                  else (apply (get coq_Rle_zero_1))) in
    let tacd=ref (apply (get coq_Rlt_zero_1)) in
    for  _i = 1 to n - 1 do
-       tacn:=(tclTHEN (apply (get coq_Rle_zero_pos_plus1)) !tacn); done;
+       tacn:=(Tacticals.New.tclTHEN (apply (get coq_Rle_zero_pos_plus1)) !tacn); done;
    for _i = 1 to d - 1 do
-       tacd:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacd); done;
-   (tclTHENS (apply (get coq_Rle_mult_inv_pos)) [!tacn;!tacd])
+       tacd:=(Tacticals.New.tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacd); done;
+   (Tacticals.New.tclTHENS (apply (get coq_Rle_mult_inv_pos)) [!tacn;!tacd])
 ;;
 
 (* preuve que 0<(-n)*(1/d) => False
@@ -402,14 +402,14 @@ let tac_zero_infeq_pos gl (n,d)=
 let tac_zero_inf_false gl (n,d) =
     if n=0 then (apply (get coq_Rnot_lt0))
     else
-     (tclTHEN (apply (get coq_Rle_not_lt))
+     (Tacticals.New.tclTHEN (apply (get coq_Rle_not_lt))
 	      (tac_zero_infeq_pos gl (-n,d)))
 ;;
 
 (* preuve que 0<=(-n)*(1/d) => False
 *)
 let tac_zero_infeq_false gl (n,d) =
-     (tclTHEN (apply (get coq_Rlt_not_le_frac_opp))
+     (Tacticals.New.tclTHEN (apply (get coq_Rlt_not_le_frac_opp))
 	      (tac_zero_inf_pos gl (-n,d)))
 ;;
 
@@ -423,14 +423,14 @@ let my_cut c gl=
 let exact = exact_check;;
 
 let tac_use h =
-  let tac = Proofview.V82.of_tactic (exact h.hname) in
+  let tac = exact h.hname in
   match h.htype with
     "Rlt" -> tac
   |"Rle" -> tac
-  |"Rgt" -> (tclTHEN (apply (get coq_Rfourier_gt_to_lt)) tac)
-  |"Rge" -> (tclTHEN (apply (get coq_Rfourier_ge_to_le)) tac)
-  |"eqTLR" -> (tclTHEN (apply (get coq_Rfourier_eqLR_to_le)) tac)
-  |"eqTRL" -> (tclTHEN (apply (get coq_Rfourier_eqRL_to_le)) tac)
+  |"Rgt" -> (Tacticals.New.tclTHEN (apply (get coq_Rfourier_gt_to_lt)) tac)
+  |"Rge" -> (Tacticals.New.tclTHEN (apply (get coq_Rfourier_ge_to_le)) tac)
+  |"eqTLR" -> (Tacticals.New.tclTHEN (apply (get coq_Rfourier_eqLR_to_le)) tac)
+  |"eqTRL" -> (Tacticals.New.tclTHEN (apply (get coq_Rfourier_eqRL_to_le)) tac)
   |_->assert false
 ;;
 
@@ -462,43 +462,44 @@ let mkAppL a =
 exception GoalDone
 
 (* Résolution d'inéquations linéaires dans R *)
-let rec fourier gl=
+let rec fourier () =
+  Proofview.Goal.enter begin fun gl ->
+    let concl = Proofview.Goal.concl gl in
     Coqlib.check_required_library ["Coq";"fourier";"Fourier"];
-    let goal = strip_outer_cast (pf_concl gl) in
+    let goal = strip_outer_cast concl in
     let fhyp=Id.of_string "new_hyp_for_fourier" in
     (* si le but est une inéquation, on introduit son contraire,
        et le but à prouver devient False *)
-    try (let tac =
-     match (kind_of_term goal) with
+    try 
+      match (kind_of_term goal) with
       App (f,args) ->
       (match (string_of_R_constr f) with
 	     "Rlt" ->
-	       (tclTHEN
-	         (tclTHEN (apply (get coq_Rfourier_not_ge_lt))
-			  (Proofview.V82.of_tactic (intro_using  fhyp)))
-		 fourier)
+	       (Tacticals.New.tclTHEN
+	         (Tacticals.New.tclTHEN (apply (get coq_Rfourier_not_ge_lt))
+			  (intro_using  fhyp))
+		 (fourier ()))
 	    |"Rle" ->
-	     (tclTHEN
-	      (tclTHEN (apply (get coq_Rfourier_not_gt_le))
-		       (Proofview.V82.of_tactic (intro_using  fhyp)))
-			fourier)
+	     (Tacticals.New.tclTHEN
+	      (Tacticals.New.tclTHEN (apply (get coq_Rfourier_not_gt_le))
+		       (intro_using  fhyp))
+			(fourier ()))
 	    |"Rgt" ->
-	     (tclTHEN
-	      (tclTHEN (apply (get coq_Rfourier_not_le_gt))
-		       (Proofview.V82.of_tactic (intro_using  fhyp)))
-	      fourier)
+	     (Tacticals.New.tclTHEN
+	      (Tacticals.New.tclTHEN (apply (get coq_Rfourier_not_le_gt))
+		       (intro_using  fhyp))
+	      (fourier ()))
 	    |"Rge" ->
-	     (tclTHEN
-	      (tclTHEN (apply (get coq_Rfourier_not_lt_ge))
-		       (Proofview.V82.of_tactic (intro_using  fhyp)))
-	      fourier)
+	     (Tacticals.New.tclTHEN
+	      (Tacticals.New.tclTHEN (apply (get coq_Rfourier_not_lt_ge))
+		       (intro_using  fhyp))
+	      (fourier ()))
 	    |_-> raise GoalDone)
         |_-> raise GoalDone
-      in tac gl)
      with GoalDone ->
     (* les hypothèses *)
     let hyps = List.map (fun (h,t)-> (mkVar h,t))
-                        (list_of_sign (pf_hyps gl)) in
+                        (list_of_sign (Proofview.Goal.hyps gl)) in
     let lineq =ref [] in
     List.iter (fun h -> try (lineq:=(ineq1_of_constr h)@(!lineq))
 		        with NoIneq -> ())
@@ -506,7 +507,7 @@ let rec fourier gl=
     (* lineq = les inéquations découlant des hypothèses *)
     if !lineq=[] then Errors.error "No inequalities";
     let res=fourier_lineq (!lineq) in
-    let tac=ref tclIDTAC in
+    let tac=ref (Proofview.tclUNIT ()) in
     if res=[]
     then Errors.error "fourier failed"
     (* l'algorithme de Fourier a réussi: on va en tirer une preuve Coq *)
@@ -551,11 +552,11 @@ let rec fourier gl=
 	   let tc=rational_to_real cres in
        (* puis sa preuve *)
            let tac1=ref (if h1.hstrict
-                         then (tclTHENS (apply (get coq_Rfourier_lt))
+                         then (Tacticals.New.tclTHENS (apply (get coq_Rfourier_lt))
                                  [tac_use h1;
                                   tac_zero_inf_pos  gl
                                       (rational_to_fraction c1)])
-                         else (tclTHENS (apply (get coq_Rfourier_le))
+                         else (Tacticals.New.tclTHENS (apply (get coq_Rfourier_le))
                                  [tac_use h1;
 				  tac_zero_inf_pos  gl
                                       (rational_to_fraction c1)])) in
@@ -563,20 +564,20 @@ let rec fourier gl=
            List.iter (fun (h,c)->
              (if (!s)
 	      then (if h.hstrict
-	            then tac1:=(tclTHENS (apply (get coq_Rfourier_lt_lt))
+	            then tac1:=(Tacticals.New.tclTHENS (apply (get coq_Rfourier_lt_lt))
 			       [!tac1;tac_use h;
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)])
-	            else tac1:=(tclTHENS (apply (get coq_Rfourier_lt_le))
+	            else tac1:=(Tacticals.New.tclTHENS (apply (get coq_Rfourier_lt_le))
 			       [!tac1;tac_use h;
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)]))
 	      else (if h.hstrict
-	            then tac1:=(tclTHENS (apply (get coq_Rfourier_le_lt))
+	            then tac1:=(Tacticals.New.tclTHENS (apply (get coq_Rfourier_le_lt))
 			       [!tac1;tac_use h;
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)])
-	            else tac1:=(tclTHENS (apply (get coq_Rfourier_le_le))
+	            else tac1:=(Tacticals.New.tclTHENS (apply (get coq_Rfourier_le_le))
 			       [!tac1;tac_use h;
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)])));
@@ -586,43 +587,43 @@ let rec fourier gl=
                       then tac_zero_inf_false gl (rational_to_fraction cres)
                       else tac_zero_infeq_false gl (rational_to_fraction cres)
            in
-           tac:=(tclTHENS (my_cut ineq)
-                     [tclTHEN (change_concl
+           tac:=(Tacticals.New.tclTHENS (Proofview.V82.tactic (my_cut ineq))
+                     [Tacticals.New.tclTHEN (Proofview.V82.tactic (change_concl
 			       (mkAppL [| get coq_not; ineq|]
-				       ))
-		      (tclTHEN (apply (if sres then get coq_Rnot_lt_lt
+				       )))
+		      (Tacticals.New.tclTHEN (apply (if sres then get coq_Rnot_lt_lt
 					       else get coq_Rnot_le_le))
-			    (tclTHENS (Proofview.V82.of_tactic (Equality.replace
+			    (Tacticals.New.tclTHENS (Equality.replace
 				       (mkAppL [|get coq_Rminus;!t2;!t1|]
 					       )
-				       tc))
+				       tc)
 		 	       [tac2;
-                                (tclTHENS
-				  (Proofview.V82.of_tactic (Equality.replace
+                                (Tacticals.New.tclTHENS
+				  (Equality.replace
 				    (mkApp (get coq_Rinv,
 				      [|get coq_R1|]))
-				    (get coq_R1)))
+				    (get coq_R1))
 (* en attendant Field, ça peut aider Ring de remplacer 1/1 par 1 ... *)
 
-      			        [tclORELSE
-                                   (* TODO : Ring.polynom []*) tclIDTAC
-                                   tclIDTAC;
-				 pf_constr_of_global (get coq_sym_eqT) (fun symeq ->
-					  (tclTHEN (apply symeq)
+      			        [Tacticals.New.tclORELSE
+                                   (* TODO : Ring.polynom []*) (Proofview.tclUNIT ())
+                                   (Proofview.tclUNIT ());
+				 Tacticals.New.pf_constr_of_global (get coq_sym_eqT) (fun symeq ->
+					  (Tacticals.New.tclTHEN (apply symeq)
 						(apply (get coq_Rinv_1))))]
 
 					 )
 				]));
                        !tac1]);
-	   tac:=(tclTHENS (Proofview.V82.of_tactic (cut (get coq_False)))
-				  [tclTHEN (Proofview.V82.of_tactic intro) (Proofview.V82.of_tactic (contradiction None));
+	   tac:=(Tacticals.New.tclTHENS (cut (get coq_False))
+				  [Tacticals.New.tclTHEN intro (contradiction None);
 				   !tac])
       |_-> assert false) |_-> assert false
 	  );
 (*    ((tclTHEN !tac (tclFAIL 1 (* 1 au hasard... *))) gl) *)
-      (!tac gl)
+      !tac
 (*      ((tclABSTRACT None !tac) gl) *)
-
+  end
 ;;
 
 (*

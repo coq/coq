@@ -117,7 +117,7 @@ let diseqCase eqonleft =
   (tclTHEN (choose_noteq eqonleft)
   (tclTHEN  (Proofview.V82.tactic red_in_concl)
   (tclTHEN  (intro_using absurd)
-  (tclTHEN  (Proofview.V82.tactic (Simple.apply (mkVar diseq)))
+  (tclTHEN  (Simple.apply (mkVar diseq))
   (tclTHEN  (Extratactics.injHyp absurd)
             (full_trivial [])))))))
 

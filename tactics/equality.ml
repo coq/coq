@@ -563,7 +563,7 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt =
 	    (clear [id]));
 	 tclFIRST
 	   [assumption;
-	    tclTHEN (Proofview.V82.tactic (apply sym)) assumption;
+	    tclTHEN (apply sym) assumption;
 	    try_prove_eq
 	   ]
 	]))
@@ -1513,9 +1513,8 @@ let cutSubstInHyp_LR eqn id =
   let sigma,body,expected_goal = pf_apply subst_tuple_term gl e1 e2 idtyp in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   let refine = Proofview.V82.tactic (fun gl -> Tacmach.refine_no_check (mkVar id) gl) in
-  let subst = Proofview.V82.of_tactic (tclTHENFIRST (bareRevSubstInConcl (lbeq,u) body eq) refine) in
-    Proofview.V82.tclEVARS sigma <*>
-      Proofview.V82.tactic (fun gl -> cut_replacing id expected_goal subst gl)
+  let subst = tclTHENFIRST (bareRevSubstInConcl (lbeq,u) body eq) refine in
+    Proofview.V82.tclEVARS sigma <*> (cut_replacing id expected_goal subst)
   end
 
 let cutSubstInHyp_RL eqn id =

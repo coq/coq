@@ -314,7 +314,7 @@ let coq_nnpp_path =
 
 let tauto_classical flags nnpp =
   Proofview.tclORELSE
-    (Tacticals.New.tclTHEN (Proofview.V82.tactic (apply nnpp)) (tauto_intuitionistic flags))
+    (Tacticals.New.tclTHEN (apply nnpp) (tauto_intuitionistic flags))
     begin function
       | UserError _ -> Proofview.tclZERO (UserError ("tauto" , str "Classical tauto failed."))
       | e -> Proofview.tclZERO e

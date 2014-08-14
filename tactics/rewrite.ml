@@ -1426,7 +1426,7 @@ let cl_rewrite_clause_tac ?abs strat clause gl =
 	let tac = 
 	  match clause, p with
 	  | Some id, Some p ->
-	      cut_replacing id newt (Tacmach.refine p)
+	      Proofview.V82.of_tactic (cut_replacing id newt (Proofview.V82.tactic (Tacmach.refine p)))
 	  | Some id, None -> 
 	      change_in_hyp None (fun env sigma -> sigma, newt) (id, InHypTypeOnly)
 	  | None, Some p ->
@@ -2025,7 +2025,7 @@ let setoid_reflexivity =
   setoid_proof "reflexive"
     (fun env evm car rel -> 
       tac_open (poly_proof PropGlobal.get_reflexive_proof TypeGlobal.get_reflexive_proof
-		  env evm car rel) apply)
+		  env evm car rel) (fun c -> Proofview.V82.of_tactic (apply c)))
     (reflexivity_red true)
 
 let setoid_symmetry =
@@ -2034,7 +2034,7 @@ let setoid_symmetry =
       tac_open
 	(poly_proof PropGlobal.get_symmetric_proof TypeGlobal.get_symmetric_proof
 	   env evm car rel)
-	apply)
+	(fun c -> Proofview.V82.of_tactic (apply c)))
     (symmetry_red true)
     
 let setoid_transitivity c =
@@ -2043,8 +2043,8 @@ let setoid_transitivity c =
       tac_open (poly_proof PropGlobal.get_transitive_proof TypeGlobal.get_transitive_proof
 	   env evm car rel)
 	(fun proof -> match c with
-	| None -> eapply proof
-	| Some c -> apply_with_bindings (proof,ImplicitBindings [ c ])))
+	| None -> Proofview.V82.of_tactic (eapply proof)
+	| Some c -> Proofview.V82.of_tactic (apply_with_bindings (proof,ImplicitBindings [ c ]))))
     (transitivity_red true c)
     
 let setoid_symmetry_in id =
@@ -2063,7 +2063,7 @@ let setoid_symmetry_in id =
   let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
     tclTHENS (Proofview.V82.of_tactic (Tactics.cut new_hyp))
       [ intro_replacing id;
-	tclTHENLIST [ Proofview.V82.of_tactic intros; Proofview.V82.of_tactic setoid_symmetry; apply (mkVar id); Proofview.V82.of_tactic Tactics.assumption ] ]
+	Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ]) ]
       gl)
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity

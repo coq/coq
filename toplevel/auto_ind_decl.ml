@@ -387,7 +387,7 @@ let do_replace_lb lb_scheme_key aavoid narg p q =
            in
            Tacticals.New.tclTHENLIST [
              Proofview.tclEFFECTS eff;
-             Equality.replace p q ; Proofview.V82.tactic (apply app) ; Auto.default_auto]
+             Equality.replace p q ; apply app ; Auto.default_auto]
   end
 
 (* used in the bool -> leib side *)
@@ -456,7 +456,7 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                 Tacticals.New.tclTHENLIST [
                   Proofview.tclEFFECTS eff;
                   Equality.replace_by t1 t2
-                    (Tacticals.New.tclTHEN (Proofview.V82.tactic (apply app)) (Auto.default_auto)) ;
+                    (Tacticals.New.tclTHEN (apply app) (Auto.default_auto)) ;
                   aux q1 q2 ]
               )
         )
@@ -727,7 +727,7 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
 		     intros; (Proofview.V82.tactic simpl_in_concl);
                      Auto.default_auto;
                      Tacticals.New.tclREPEAT (
-                      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (apply (andb_true_intro()));
+                      Tacticals.New.tclTHENLIST [apply (andb_true_intro());
                                   simplest_split ;Auto.default_auto ]
                       );
                       Proofview.Goal.enter begin fun gls ->
@@ -892,7 +892,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
 	    (* left *)
 	    Tacticals.New.tclTHENLIST [
 	      simplest_left;
-              Proofview.V82.tactic (apply (mkApp(blI,Array.map(fun x->mkVar x) xargs)));
+              apply (mkApp(blI,Array.map(fun x->mkVar x) xargs));
               Auto.default_auto
             ]
             ;
@@ -908,7 +908,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
               assert_by (Name freshH3)
 		(mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|]))
 		(Tacticals.New.tclTHENLIST [
-		  Proofview.V82.tactic (apply (mkApp(lbI,Array.map (fun x->mkVar x) xargs)));
+		  apply (mkApp(lbI,Array.map (fun x->mkVar x) xargs));
                   Auto.default_auto
 		]);
 	      Equality.general_rewrite_bindings_in true
