@@ -1954,10 +1954,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
            (Refiner.tclEVARS hypinfo.cl.evd)
 	   (cl_rewrite_clause_tac ~abs:(Some abs) strat cl)) gl
     with RewriteFailure e ->
-      let {c1=x; c2=y} = hypinfo in
-	raise (Pretype_errors.PretypeError
-		  (pf_env gl,project gl,
-		  Pretype_errors.NoOccurrenceFound ((if l2r then x else y), cl)))
+      tclFAIL 0 (str"setoid rewrite failed: " ++ e) gl
 
 open Proofview.Notations
 
