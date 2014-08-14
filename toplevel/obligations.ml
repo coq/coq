@@ -613,9 +613,9 @@ let shrink_body c =
      (b, 1, []) ctx
   in List.map (fun (c,t) -> (c,None,t)) ctx, b', Array.of_list args
       
-let declare_obligation prg obl body uctx =
+let declare_obligation prg obl body ty uctx =
   let body = prg.prg_reduce body in
-  let ty = prg.prg_reduce obl.obl_type in
+  let ty = Option.map prg.prg_reduce ty in
   match obl.obl_status with
   | Evar_kinds.Expand -> { obl with obl_body = Some (TermObl body) }
   | Evar_kinds.Define opaque ->
@@ -628,7 +628,7 @@ let declare_obligation prg obl body uctx =
       let ce = 
         { const_entry_body = Future.from_val((body,Univ.ContextSet.empty),Declareops.no_seff);
           const_entry_secctx = None;
-	  const_entry_type = if List.is_empty ctx then Some ty else None;
+	  const_entry_type = if List.is_empty ctx then ty else None;
 	  const_entry_proj = false;
 	  const_entry_polymorphic = poly;
 	  const_entry_universes = uctx;
@@ -793,8 +793,8 @@ let solve_by_tac name evi t poly ctx =
   let body, eff = Future.force entry.Entries.const_entry_body in
   assert(Declareops.side_effects_is_empty eff);
   assert(Univ.ContextSet.is_empty (snd body));
-  Inductiveops.control_only_guard (Global.env ()) (fst body) (*FIXME ignoring the context...*);
-  (fst body), ctx'
+  Inductiveops.control_only_guard (Global.env ()) (fst body);
+  (fst body), entry.Entries.const_entry_type, ctx'
 
 let rec solve_obligation prg num tac =
   let user_num = succ num in
@@ -891,13 +891,13 @@ and solve_obligation_by_tac prg obls i tac =
 		  | Some t -> t
 		  | None -> snd (get_default_tactic ())
 	    in
-	    let t, ctx = 
+	    let t, ty, ctx = 
 	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac 
 	        (pi2 !prg.prg_kind) !prg.prg_ctx
 	    in
 	    let uctx = Evd.evar_context_universe_context ctx in
 	      prg := {!prg with prg_ctx = ctx};
-	      obls.(i) <- declare_obligation !prg obl t uctx;
+	      obls.(i) <- declare_obligation !prg obl t ty uctx;
 	      true
 	  else false
 	with e when Errors.noncritical e ->
