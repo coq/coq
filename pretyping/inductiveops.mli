@@ -121,6 +121,10 @@ val inductive_has_local_defs : inductive -> bool
 
 val allowed_sorts : env -> inductive -> sorts_family list
 
+(** Primitive projections *)
+val projection_nparams : projection -> int
+val projection_nparams_env : env -> projection -> int
+
 (** Extract information from an inductive family *)
 
 type constructor_summary = {

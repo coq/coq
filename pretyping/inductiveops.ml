@@ -264,6 +264,12 @@ let allowed_sorts env (kn,i as ind) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_kelim
 
+let projection_nparams_env env p = 
+  let pb = lookup_projection p env in
+    pb.proj_npars
+
+let projection_nparams p = projection_nparams_env (Global.env ()) p
+
 (* Annotation for cases *)
 let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in

@@ -530,15 +530,25 @@ let rec extern_args extern scopes env args subscopes =
 	  | scopt::subscopes -> (scopt,scopes), subscopes in
 	extern argscopes env a :: extern_args extern scopes env args subscopes
 
-let rec remove_coercions inctx = function
-  | GApp (loc,GRef (_,r,_),args) as c
-      when  not (!Flags.raw_print || !print_coercions)
-      ->
+
+let match_coercion_app = function
+  | GApp (loc,GRef (_,r,_),args) -> Some (loc, r, 0, args)
+  | GProj (loc, r, arg) -> 
+    let pars = Inductiveops.projection_nparams r in
+      Some (loc, ConstRef r, pars, [arg])
+  | GApp (loc,GProj (_, r, c), args) -> 
+    let pars = Inductiveops.projection_nparams r in
+      Some (loc, ConstRef r, pars, c :: args)
+  | _ -> None
+
+let rec remove_coercions inctx c =
+  match match_coercion_app c with
+  | Some (loc,r,pars,args) when not (!Flags.raw_print || !print_coercions) ->
       let nargs = List.length args in
       (try match Classops.hide_coercion r with
-	  | Some n when n < nargs && (inctx || n+1 < nargs) ->
+	  | Some n when (n - pars) < nargs && (inctx || (n - pars)+1 < nargs) ->
 	      (* We skip a coercion *)
-	      let l = List.skipn n args in
+	      let l = List.skipn (n - pars) args in
 	      let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
               (* Recursively remove the head coercions *)
 	      let a' = remove_coercions true a in
@@ -553,7 +563,7 @@ let rec remove_coercions inctx = function
 	      if List.is_empty l then a' else GApp (loc,a',l)
 	  | _ -> c
       with Not_found -> c)
-  | c -> c
+  | _ -> c
 
 let rec flatten_application = function
   | GApp (loc,GApp(_,a,l'),l) -> flatten_application (GApp (loc,a,l'@l))
