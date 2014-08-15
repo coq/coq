@@ -369,11 +369,3 @@ let check_evars env sigma extsigma origsigma =
 let gl_check_evars env sigma extsigma gl =
   let origsigma = gl.sigma in
   check_evars env sigma extsigma origsigma
-
-let tclWITHHOLES accept_unresolved_holes tac sigma c gl =
-  if sigma == project gl then tac c gl
-  else
-    let res = tclTHEN (tclEVARS sigma) (tac c) gl in
-    if not accept_unresolved_holes then
-      gl_check_evars (pf_env gl) (res).sigma sigma gl;
-    res

@@ -138,9 +138,3 @@ val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 (* Check that holes in arguments have been resolved *)
 (* spiwack: used in [tclWITHHOLES] both newer and older copy. *)
 val check_evars : Environ.env -> evar_map -> evar_map -> evar_map -> unit
-
-(** [tclWITHHOLES solve_holes tac (sigma,c)] applies [tac] to [c] which
-   may have unresolved holes; if [solve_holes] these holes must be
-   resolved after application of the tactic; [sigma] must be an
-   extension of the sigma of the goal *)
-val tclWITHHOLES : bool -> ('a -> tactic) -> evar_map -> 'a -> tactic

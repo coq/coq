@@ -1637,11 +1637,12 @@ and interp_atomic ist tac : unit Proofview.tactic =
               (Option.map patt ipat) c)
       end
   | TacGeneralize cl ->
-      Proofview.V82.tactic begin fun gl ->
-        let sigma = project gl in
-        let env = pf_env gl in
+      let tac arg = Proofview.V82.tactic (Tactics.Simple.generalize_gen arg) in
+      Proofview.Goal.raw_enter begin fun gl ->
+        let sigma = Proofview.Goal.sigma gl in
+        let env = Proofview.Goal.env gl in
         let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
-        tclWITHHOLES false (Tactics.Simple.generalize_gen) sigma cl gl
+        Tacticals.New.tclWITHHOLES false tac sigma cl
       end
   | TacGeneralizeDep c ->
       (new_interp_constr ist c)
