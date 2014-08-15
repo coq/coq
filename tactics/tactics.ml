@@ -1805,14 +1805,21 @@ and intro_pattern_action loc b style pat thin tac id = match pat with
         (* Skip the side conditions of the rewriting step *)
 	(rewrite_hyp style l2r id)
         (tac thin None [])
-  | IntroApplyOn (c,(loc,pat)) ->
+  | IntroApplyOn (f,(loc,pat)) ->
       let naming,tac_ipat = prepare_intros_loc loc (IntroIdentifier id) pat in
       let clear = do_replace (Some id) naming in
-      Tacticals.New.tclTHENFIRST
-        (* Skip the side conditions of the apply *)
-        (apply_in_once false true true true (Some (clear,naming)) id
-           (None,(Evd.empty,(c,NoBindings))) tac_ipat)
-	(tac thin None [])
+      Proofview.Goal.raw_enter begin fun gl ->
+        let sigma = Proofview.Goal.sigma gl in
+        let env = Proofview.Goal.env gl in
+        let sigma,c = f env sigma in
+        Tacticals.New.tclWITHHOLES false
+          (Tacticals.New.tclTHENFIRST
+             (* Skip the side conditions of the apply *)
+             (apply_in_once false true true true (Some (clear,naming)) id
+                (None,(sigma,(c,NoBindings))) tac_ipat))
+          sigma
+	  (tac thin None [])
+      end
 
 and prepare_intros_loc loc dft = function
   | IntroNaming ipat ->
@@ -2228,7 +2235,7 @@ let check_unused_names names =
   if not (List.is_empty names) && Flags.is_verbose () then
     msg_warning
       (str"Unused introduction " ++ str (String.plural (List.length names) "pattern")
-       ++ str": " ++ prlist_with_sep spc (Miscprint.pr_intro_pattern Printer.pr_constr) names)
+       ++ str": " ++ prlist_with_sep spc (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (snd (c (Global.env()) Evd.empty)))) names)
 
 let intropattern_of_name gl avoid = function
   | Anonymous -> IntroNaming IntroAnonymous

@@ -106,9 +106,16 @@ type open_glob_constr = unit * glob_constr_and_expr
 
 type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
 
-type intro_pattern = Term.constr intro_pattern_expr located
-type intro_patterns = Term.constr intro_pattern_expr located list
-type or_and_intro_pattern = Term.constr or_and_intro_pattern_expr located
+type delayed_open_constr_with_bindings =
+    Environ.env -> Evd.evar_map -> Evd.evar_map * Term.constr with_bindings
+
+type delayed_open_constr =
+    Environ.env -> Evd.evar_map -> Evd.evar_map * Term.constr
+
+type intro_pattern = delayed_open_constr intro_pattern_expr located
+type intro_patterns = delayed_open_constr intro_pattern_expr located list
+type or_and_intro_pattern = delayed_open_constr or_and_intro_pattern_expr located
+type intro_pattern_naming = intro_pattern_naming_expr located
 
 (** Generic expressions for atomic tactics *)
 

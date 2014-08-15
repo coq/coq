@@ -78,10 +78,13 @@ END
 
 
 let pr_intro_as_pat prc _ _ pat =
+  failwith "todo"
+(*
   match pat with
     | Some pat ->
-      spc () ++ str "as" ++ spc () ++ Miscprint.pr_intro_pattern prc pat
+      spc () ++ str "as" ++ spc () ++ Miscprint.pr_intro_pattern prc  pat
     | None -> mt ()
+*)
 
 let out_disjunctive = function
   | loc, IntroAction (IntroOrAndPattern l) -> (loc,l)

@@ -725,7 +725,9 @@ let rec message_of_value env v =
   else if has_type v (topwit wit_unit) then str "()"
   else if has_type v (topwit wit_int) then int (out_gen (topwit wit_int) v)
   else if has_type v (topwit wit_intro_pattern) then
-    Miscprint.pr_intro_pattern (pr_constr_env env) (out_gen (topwit wit_intro_pattern) v)
+    Miscprint.pr_intro_pattern
+      (fun c -> pr_constr_env env (snd (c env Evd.empty)))
+      (out_gen (topwit wit_intro_pattern) v)
   else if has_type v (topwit wit_constr_context) then
     pr_constr_env env (out_gen (topwit wit_constr_context) v)
   else match Value.to_list v with
@@ -776,7 +778,7 @@ and interp_intro_pattern_action ist env sigma = function
       let sigma,l = interp_intro_pattern_list_as_list ist env sigma l in
       sigma, IntroInjection l
   | IntroApplyOn (c,ipat) ->
-      let sigma,c = interp_constr ist env sigma c in
+      let c = fun env sigma -> interp_constr ist env sigma c in
       let sigma,ipat = interp_intro_pattern ist env sigma ipat in
       sigma, IntroApplyOn (c,ipat)
   | IntroRewrite _ as x -> sigma, x

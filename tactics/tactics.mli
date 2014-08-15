@@ -107,7 +107,7 @@ val intro_patterns_to : Id.t move_location -> intro_patterns ->
   unit Proofview.tactic
 val intro_patterns_bound_to : int -> Id.t move_location -> intro_patterns ->
   unit Proofview.tactic
-val intro_pattern_to : Id.t move_location -> constr intro_pattern_expr ->
+val intro_pattern_to : Id.t move_location -> delayed_open_constr intro_pattern_expr ->
   unit Proofview.tactic
 
 (** Implements user-level "intros", with [] standing for "**" *)
@@ -269,8 +269,7 @@ val simple_induct : quantified_hypothesis -> unit Proofview.tactic
 val induction : evars_flag -> 
   (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
-    intro_pattern_naming_expr located option *
-    constr or_and_intro_pattern_expr located option ->
+    intro_pattern_naming option * or_and_intro_pattern option ->
       clause option -> unit Proofview.tactic
 
 (** {6 Case analysis tactics. } *)
@@ -282,8 +281,7 @@ val simple_destruct       : quantified_hypothesis -> unit Proofview.tactic
 val destruct : evars_flag ->
   (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
-    intro_pattern_naming_expr located option *
-    constr or_and_intro_pattern_expr located option ->
+    intro_pattern_naming option * or_and_intro_pattern option ->
       clause option -> unit Proofview.tactic
 
 (** {6 Generic case analysis / induction tactics. } *)
@@ -292,9 +290,7 @@ val destruct : evars_flag ->
 
 val induction_destruct : rec_flag -> evars_flag ->
   ((evar_map * constr with_bindings) induction_arg *
-  (intro_pattern_naming_expr located option *
-   constr or_and_intro_pattern_expr located option))
-  list *
+  (intro_pattern_naming option * or_and_intro_pattern option)) list *
   constr with_bindings option *
   clause option -> unit Proofview.tactic
 
@@ -372,12 +368,12 @@ val cut        : types -> unit Proofview.tactic
 
 (** {6 Tactics for adding local definitions. } *)
 
-val letin_tac : (bool * intro_pattern_naming_expr located) option ->
+val letin_tac : (bool * intro_pattern_naming) option ->
   Name.t -> constr -> types option -> clause -> unit Proofview.tactic
 
 (** Common entry point for user-level "set", "pose" and "remember" *)
 
-val letin_pat_tac : (bool * intro_pattern_naming_expr located) option ->
+val letin_pat_tac : (bool * intro_pattern_naming) option ->
   Name.t -> evar_map * constr -> clause -> unit Proofview.tactic
 
 (** {6 Generalize tactics. } *)

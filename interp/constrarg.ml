@@ -24,7 +24,7 @@ let unsafe_of_type (t : argument_type) : ('a, 'b, 'c) Genarg.genarg_type =
 
 let wit_int_or_var = unsafe_of_type IntOrVarArgType
 
-let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, constr intro_pattern_expr located) genarg_type =
+let wit_intro_pattern : (Constrexpr.constr_expr intro_pattern_expr located, glob_constr_and_expr intro_pattern_expr located, intro_pattern) genarg_type =
   Genarg.make0 None "intropattern"
 
 let wit_tactic : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type =

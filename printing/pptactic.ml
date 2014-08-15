@@ -1024,7 +1024,7 @@ let () =
     Constrarg.wit_intro_pattern
     (Miscprint.pr_intro_pattern pr_constr_expr)
     (Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr c))
-    (Miscprint.pr_intro_pattern pr_constr);
+    (Miscprint.pr_intro_pattern (fun c -> pr_constr (snd (c (Global.env()) Evd.empty))));
   Genprint.register_print0
     Constrarg.wit_clause_dft_concl
     (pr_clauses (Some true) pr_lident)

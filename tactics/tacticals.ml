@@ -151,7 +151,7 @@ type branch_args = {
   nassums    : int;         (* the number of assumptions to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
                                true=recursive argument, false=constant *)
-  branchnames : constr intro_pattern_expr Loc.located list}
+  branchnames : Tacexpr.intro_patterns}
 
 type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
