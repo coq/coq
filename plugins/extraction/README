@@ -6,7 +6,7 @@
 What is it ?
 ------------
 
-The extraction is a mechanism allowing to produce functional code
+The extraction is a mechanism that produces functional code
 (Ocaml/Haskell/Scheme) out of any Coq terms (either programs or
 proofs).
 

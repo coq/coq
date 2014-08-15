@@ -88,7 +88,7 @@ module Refinable : sig
 
 
   (* [constr_of_raw h tycon flags] is a pretyping function.
-      The [tycon] argument allows to put a type constraint on the returned term.
+      The [tycon] argument allows putting a type constraint on the returned term.
       The [flags] argument is passed to the pretyper.
       The principal argument is a [glob_constr] which is then pretyped in the
       context of a term, the remaining evars are registered to the handle.
@@ -100,7 +100,7 @@ module Refinable : sig
   (* [constr_of_open_constr h check_type] transforms an open constr into a 
      goal-sensitive constr, adding the undefined variables to the set of subgoals.
      If [check_type] is true, the term is coerced to the conclusion of the goal.
-     It allows to do refinement with already-built terms with holes.
+     It allows us to do refinement with already-built terms with holes.
   *)
   val constr_of_open_constr : handle -> bool -> Evd.open_constr -> Term.constr sensitive
 

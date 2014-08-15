@@ -654,7 +654,7 @@ Section Basics.
  f_equal; auto.
  Qed.
 
- (** This equivalence allows to prove easily the following delicate
+ (** This equivalence allows proving easily the following delicate
      result *)
 
  Lemma EqShiftL_twice_plus_one : forall k x y,

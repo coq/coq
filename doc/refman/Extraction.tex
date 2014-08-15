@@ -150,7 +150,7 @@ Default is Unset. Normaly, when the extraction of an inductive type
 produces a singleton type (i.e. a type with only one constructor, and
 only one argument to this constructor), the inductive structure is
 removed and this type is seen as an alias to the inner type.
-The typical example is {\tt sig}. This option allows to disable this
+The typical example is {\tt sig}. This option allows disabling this
 optimization when one wishes to preserve the inductive structure of types.
 
 \item \comindex{Set Extraction AutoInline}
@@ -219,7 +219,7 @@ this constant is not declared in the generated file.
 \item \comindex{Extraction Implicit}
  {\tt Extraction Implicit} \qualid\ [ \ident$_1$ \dots\ \ident$_n$ ].
 
-This experimental command allows to declare some arguments of
+This experimental command allows declaring some arguments of
 \qualid\ as implicit, i.e. useless in extracted code and hence to
 be removed by extraction. Here \qualid\ can be any function or
 inductive constructor, and \ident$_i$ are the names of the concerned

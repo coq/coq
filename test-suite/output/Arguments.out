@@ -2,7 +2,7 @@ Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
-The reduction tactics unfold Nat.sub avoiding to expose match constructs
+The reduction tactics unfold Nat.sub but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat
@@ -10,7 +10,7 @@ Nat.sub : nat -> nat -> nat
 Nat.sub is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 The reduction tactics unfold Nat.sub when applied to 1 argument
-  avoiding to expose match constructs
+  but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat
@@ -19,7 +19,7 @@ Nat.sub is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 The reduction tactics unfold Nat.sub
   when the 1st argument evaluates to a constructor and
-  when applied to 1 argument avoiding to expose match constructs
+  when applied to 1 argument but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat

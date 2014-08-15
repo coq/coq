@@ -141,8 +141,8 @@ exception Missing_cp of groupable_cp
 or used to generate command line arguments.
 
 The basic usage is to have only one group and one configuration file,
-but this mechanism allows to have more,
-for instance to have another smaller group for the options to pass on the command line.
+but this mechanism allows having more,
+for instance having another smaller group for the options to pass on the command line.
 *)
 class group : object
   (** Adds a cp to the group.

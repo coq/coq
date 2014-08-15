@@ -50,7 +50,7 @@ open Pre_env
 (* Access to these variables is performed by the [Koffsetclosure n]       *)
 (* instruction that shifts the environment pointer of [n] fields.         *)
 
-(* This allows to represent mutual fixpoints in just one block.           *)
+(* This allows representing mutual fixpoints in just one block.           *)
 (* [Ct1 | ... | Ctn] is an array holding code pointers of the fixpoint    *)
 (* types. They are used in conversion tests (which requires that          *)
 (* fixpoint types must be convertible). Their environment is the one of   *)

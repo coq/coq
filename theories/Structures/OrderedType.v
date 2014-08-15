@@ -49,7 +49,7 @@ Module Type OrderedType.
   Include MiniOrderedType.
 
   (** A [eq_dec] can be deduced from [compare] below. But adding this
-     redundant field allows to see an OrderedType as a DecidableType. *)
+     redundant field allows seeing an OrderedType as a DecidableType. *)
   Parameter eq_dec : forall x y, { eq x y } + { ~ eq x y }.
 
 End OrderedType.

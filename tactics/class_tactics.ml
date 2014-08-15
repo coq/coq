@@ -559,7 +559,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
     evd, term
 
 let _ =
-  Typeclasses.solve_instanciation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)
+  Typeclasses.solve_instantiation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)
 
 (** [split_evars] returns groups of undefined evars according to dependencies *)
 
@@ -688,16 +688,16 @@ let solve_inst debug depth env evd filter split fail =
   resolve_typeclass_evars debug depth env evd filter split fail
 
 let _ =
-  Typeclasses.solve_instanciations_problem :=
+  Typeclasses.solve_instantiations_problem :=
     solve_inst false !typeclasses_depth
 
 let set_typeclasses_debug d = (:=) typeclasses_debug d;
-  Typeclasses.solve_instanciations_problem := solve_inst d !typeclasses_depth
+  Typeclasses.solve_instantiations_problem := solve_inst d !typeclasses_depth
 
 let get_typeclasses_debug () = !typeclasses_debug
 
 let set_typeclasses_depth d = (:=) typeclasses_depth d;
-  Typeclasses.solve_instanciations_problem := solve_inst !typeclasses_debug !typeclasses_depth
+  Typeclasses.solve_instantiations_problem := solve_inst !typeclasses_debug !typeclasses_depth
 
 let get_typeclasses_depth () = !typeclasses_depth
 

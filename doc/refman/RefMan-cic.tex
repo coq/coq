@@ -17,7 +17,7 @@ We call this calculus the
   Constructions}\index{Predicative Calculus of
   (Co)Inductive Constructions} (\pCIC\ in short).
 In Section~\ref{impredicativity} we give the extra-rules for \iCIC. A
-  compiling option of \Coq{} allows to type-check theories in this
+  compiling option of \Coq{} allows type-checking theories in this
   extended system.
 
 In \CIC\, all objects have a {\em type}. There are types for functions (or
@@ -31,7 +31,7 @@ written {\it ``x:T''}. One also says: {\it ``x has type T''}.
 The terms of {\CIC} are detailed in Section~\ref{Terms}.
 
 In \CIC\, there is an internal reduction mechanism. In particular, it
-allows to decide if two programs are {\em intentionally} equal (one
+can decide if two programs are {\em intentionally} equal (one
 says {\em convertible}). Convertibility is presented in section 
 \ref{convertibility}.
 
@@ -447,7 +447,7 @@ recursively convertible to $u'_1$, or, symmetrically, $u_2$ is $\lb
 x:T\mto u'_2$ and $u_1\,x$ is recursively convertible to $u'_2$.  We
 then write $\WTEGCONV{t_1}{t_2}$.
 
-The convertibility relation allows to introduce a new typing rule
+The convertibility relation allows introducing a new typing rule
 which says that two convertible well-formed types have the same
 inhabitants.
 

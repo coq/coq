@@ -68,7 +68,7 @@ Ltac absurd_hyp H :=
   let T := type of H in
   absurd T.
 
-(* A useful complement to contradict. Here H:A while G allows to conclude ~A *)
+(* A useful complement to contradict. Here H:A while G allows concluding ~A *)
 
 Ltac false_hyp H G :=
   let T := type of H in absurd T; [ apply G | assumption ].

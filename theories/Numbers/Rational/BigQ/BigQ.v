@@ -33,7 +33,7 @@ Module BigN_BigZ <: NType_ZType BigN.BigN BigZ.
  Qed.
 End BigN_BigZ.
 
-(** This allows to build [BigQ] out of [BigN] and [BigQ] via [QMake] *)
+(** This allows building [BigQ] out of [BigN] and [BigQ] via [QMake] *)
 
 Delimit Scope bigQ_scope with bigQ.
 

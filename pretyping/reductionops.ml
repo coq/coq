@@ -110,7 +110,7 @@ module ReductionBehaviour = struct
        let never = List.mem `ReductionNeverUnfold flags in
        let nomatch = List.mem `ReductionDontExposeCase flags in
        let pp_nomatch = spc() ++ if nomatch then
-				   str "avoiding to expose match constructs" else str"" in
+				   str "but avoid exposing match constructs" else str"" in
        let pp_recargs = spc() ++ str "when the " ++
 			  pr_enum (fun x -> pr_nth (x+1)) recargs ++ str (String.plural (List.length recargs) " argument") ++
 			  str (String.plural (if List.length recargs >= 2 then 1 else 2) " evaluate") ++

@@ -126,5 +126,5 @@ sig
 end
 (** The functions defined in this module are the same as the main ones, except
     that they are all higher-order, and their function arguments have an
-    additional parameter. This allows to prevent closure creation in critical
+    additional parameter. This allows us to prevent closure creation in critical
     cases. *)

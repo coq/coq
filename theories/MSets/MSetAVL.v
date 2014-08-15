@@ -312,7 +312,7 @@ Local Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans.
 Local Hint Resolve elements_spec2.
 
 (* Sometimes functional induction will expose too much of
-   a tree structure. The following tactic allows to factor back
+   a tree structure. The following tactic allows factoring back
    a Node whose internal parts occurs nowhere else. *)
 
 (* TODO: why Ltac instead of Tactic Notation don't work ? why clear ? *)

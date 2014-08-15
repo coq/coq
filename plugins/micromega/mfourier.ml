@@ -633,7 +633,7 @@ struct
 
   let choose_primal_equation eqs sys_l =
 
-    (* Counts the number of equations refering to variable [v] --
+    (* Counts the number of equations referring to variable [v] --
        It looks like nb_cst is dead...
     *)
     let is_primal_equation_var v =
