@@ -438,13 +438,42 @@ module New = struct
   let tclPROGRESS t =
     Proofview.tclINDEPENDENT (Proofview.tclPROGRESS t)
 
+  (* Check that holes in arguments have been resolved *)
+
+  let check_evars env sigma extsigma origsigma =
+    let rec is_undefined_up_to_restriction sigma evk =
+      match Evd.evar_body (Evd.find sigma evk) with
+      | Evd.Evar_empty -> true
+      | Evd.Evar_defined c -> match Term.kind_of_term c with
+        | Term.Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
+        | _ -> 
+          (* We make the assumption that there is no way no refine an
+            evar remaining after typing from the initial term given to
+            apply/elim and co tactics, is it correct? *)
+          false in
+    let rest =
+      Evd.fold_undefined (fun evk evi acc ->
+        if is_undefined_up_to_restriction sigma evk && not (Evd.mem origsigma evk)
+        then
+          evi::acc
+        else
+          acc)
+        extsigma []
+    in
+    match rest with
+    | [] -> ()
+    | evi :: _ ->
+      let (loc,k) = evi.Evd.evar_source in
+      let evi = Evarutil.nf_evar_info sigma evi in
+      Pretype_errors.error_unsolvable_implicit loc env sigma evi k None
+
   let tclWITHHOLES accept_unresolved_holes tac sigma x =
     tclEVARMAP >>= fun sigma_initial ->
       if sigma == sigma_initial then tac x
       else
         let check_evars env new_sigma sigma initial_sigma =
           try
-            Refiner.check_evars env new_sigma sigma initial_sigma;
+            check_evars env new_sigma sigma initial_sigma;
             tclUNIT ()
           with e when Errors.noncritical e ->
             tclZERO e

@@ -134,7 +134,3 @@ val tclIFTHENSVELSE   : tactic -> tactic array -> tactic ->tactic
    Equivalent to [(tac1;try tac2)||tac2] *)
 
 val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
-
-(* Check that holes in arguments have been resolved *)
-(* spiwack: used in [tclWITHHOLES] both newer and older copy. *)
-val check_evars : Environ.env -> evar_map -> evar_map -> evar_map -> unit
