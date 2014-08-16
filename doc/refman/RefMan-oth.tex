@@ -895,27 +895,6 @@ extra commands and end on a state $\num' \leq \num$ if necessary.
   The destination state label is unknown.
 \end{ErrMsgs}
 
-\section{State files}
-
-\subsection[\tt Write State \str.]{\tt Write State \str.\comindex{Write State}}
-Writes the current state into a file \str{} for
-use in a further session. This file can be given as the {\tt
-  inputstate} argument of the commands {\tt coqtop} and {\tt coqc}.
-
-\begin{Variants}
-\item {\tt Write State \ident}\\
- Equivalent to {\tt Write State "}{\ident}{\tt .coq"}.
- The state is saved in the current directory (see Section~\ref{Pwd}).
-\end{Variants}
-
-\subsection[\tt Restore State \str.]{\tt Restore State \str.\comindex{Restore State}}
-  Restores the state contained in the file \str.
-
-\begin{Variants}
-\item {\tt Restore State \ident}\\
- Equivalent to {\tt Restore State "}{\ident}{\tt .coq"}.
-\end{Variants}
-
 \section{Quitting and debugging}
 
 \subsection[\tt Quit.]{\tt Quit.\comindex{Quit}}

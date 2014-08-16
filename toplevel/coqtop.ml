@@ -80,11 +80,15 @@ let unset_toplevel_name () = toplevel_name := None
 let remove_top_ml () = Mltop.remove ()
 
 let inputstate = ref ""
-let set_inputstate s = inputstate:=s
+let set_inputstate s =
+  let () = msg_warning (str "The inputstate option is deprecated and discouraged.") in
+  inputstate:=s
 let inputstate () = if not (String.is_empty !inputstate) then intern_state !inputstate
 
 let outputstate = ref ""
-let set_outputstate s = outputstate:=s
+let set_outputstate s =
+  let () = msg_warning (str "The outputstate option is deprecated and discouraged.") in
+  outputstate:=s
 let outputstate () = if not (String.is_empty !outputstate) then extern_state !outputstate
 
 let set_include d p recursive implicit =
