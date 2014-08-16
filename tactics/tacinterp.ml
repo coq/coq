@@ -128,25 +128,26 @@ let pr_value env v =
   else
     str "a value of type" ++ spc () ++ pr_argument_type (genarg_tag v)
 
+let pr_closure env ist body =
+  let pp_body = Pptactic.pr_glob_tactic env body in
+  let pr_sep () = fnl () in
+  let pr_iarg (id, arg) =
+    let arg = pr_argument_type (genarg_tag arg) in
+    hov 0 (pr_id id ++ spc () ++ str ":" ++ spc () ++ arg)
+  in
+  let pp_iargs = v 0 (prlist_with_sep pr_sep pr_iarg (Id.Map.bindings ist)) in
+  pp_body ++ fnl() ++ str "in environment " ++ fnl() ++ pp_iargs
+
 let pr_inspect env expr result =
   let pp_expr = Pptactic.pr_glob_tactic env expr in
   let pp_result =
     if has_type result (topwit wit_tacvalue) then
     match to_tacvalue result with
-    | VFun (_, il, ul, b) ->
-      let pp_body = Pptactic.pr_glob_tactic env b in
-      let pr_sep () = str ", " in
-      let pr_iarg (id, _) = pr_id id in
-      let pr_uarg = function
-      | None -> str "_"
-      | Some id -> pr_id id
-      in
-      let pp_iargs = prlist_with_sep pr_sep pr_iarg (Id.Map.bindings il) in
-      let pp_uargs = prlist_with_sep pr_sep pr_uarg ul in
-      str "a VFun with body " ++ fnl() ++ pp_body ++ fnl() ++
-        str "instantiated arguments " ++ fnl() ++ pp_iargs ++ fnl () ++
-        str "uninstantiated arguments " ++ fnl() ++ pp_uargs
-    | VRec _ -> str "a VRec"
+    | VFun (_, ist, ul, b) ->
+      let body = if List.is_empty ul then b else (TacFun (ul, b)) in
+      str "a closure with body " ++ fnl() ++ pr_closure env ist body
+    | VRec (ist, body) ->
+      str "a recursive closure" ++ fnl () ++ pr_closure env !ist body
     else
       let pp_type = pr_argument_type (genarg_tag result) in
       str "an object of type" ++ spc () ++ pp_type
