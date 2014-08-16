@@ -430,3 +430,12 @@ Undo.
 (* H' is displayed as (forall n0, n=n0) *)
 apply H' with (n0:=0).
 Qed.
+
+(* Check that evars originally present in goal do not prevent apply in to work*)
+
+Goal (forall x, x <= 0 -> x = 0) -> exists x, x <= 0 -> 0 = 0.
+intros.
+eexists.
+intros.
+apply H in H0.
+Abort.

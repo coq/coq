@@ -795,13 +795,14 @@ let error_uninstantiated_metas t clenv =
   let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta")
   in errorlabstrm "" (str "Cannot find an instance for " ++ pr_id id ++ str".")
 
-let check_unresolved_evars_of_metas clenv =
+let check_unresolved_evars_of_metas sigma clenv =
   (* This checks that Metas turned into Evars by *)
   (* Refiner.pose_all_metas_as_evars are resolved *)
   List.iter (fun (mv,b) -> match b with
   | Clval (_,(c,_),_) ->
     (match kind_of_term c.rebus with
-    | Evar (evk,_) when Evd.is_undefined clenv.evd evk ->
+    | Evar (evk,_) when Evd.is_undefined clenv.evd evk
+                     && not (Evd.mem sigma evk) ->
       error_uninstantiated_metas (mkMeta mv) clenv
     | _ -> ())
   | _ -> ())
@@ -818,16 +819,16 @@ let clear_of_flag flag =
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) clear_flag id clenv gl =
+let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) clear_flag id clenv0 gl =
   let with_clear = clear_of_flag clear_flag in
-  let clenv = Clenvtac.clenv_pose_dependent_evars with_evars clenv in
+  let clenv = Clenvtac.clenv_pose_dependent_evars with_evars clenv0 in
   let clenv =
     if with_classes then
       { clenv with evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd }
     else clenv
   in
   let new_hyp_typ = clenv_type clenv in
-  if not with_evars then check_unresolved_evars_of_metas clenv;
+  if not with_evars then check_unresolved_evars_of_metas clenv0.evd clenv;
   if not with_evars && occur_meta new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
