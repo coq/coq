@@ -438,7 +438,7 @@ let occur_name na aty =
     | Anonymous -> false
 
 let is_projection primproj nargs = function
-  | Some r when not !Flags.raw_print && !print_projections ->
+  | Some r when not !in_debugger && not !Flags.raw_print && !print_projections ->
     if primproj then Some 1
     else
       (try
@@ -495,7 +495,7 @@ let explicitize loc inctx impl (cf,primproj,f) args =
     | None -> 
       let args = exprec 1 (args,impl) in
 	match cf with
-	| Some (ConstRef p) when not primproj && Environ.is_projection p (Global.env ()) -> 
+	| Some (ConstRef p) when not !in_debugger && not primproj && Environ.is_projection p (Global.env ()) -> 
           (* Eta-expanded version of projection *)
           CApp (loc, (None, f), args)
 	| _ -> if List.is_empty args then f else CApp (loc, (None, f), args)
