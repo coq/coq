@@ -1115,6 +1115,34 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
 	(strbrk "The general \"info\" tactic is currently not working." ++ fnl () ++
 	   strbrk "Some specific verbose tactics may exist instead, such as info_trivial, info_auto, info_eauto.");
       eval_tactic ist tac
+  (* For extensions *)
+  | TacML (loc,opn,l) when List.for_all global_genarg l ->
+      (* spiwack: a special case for tactics (from TACTIC EXTEND) when
+         every argument can be interpreted without a
+         [Proofview.Goal.enter]. *)
+      let tac = Tacenv.interp_ml_tactic opn in
+      (* dummy values, will be ignored *)
+      let env = Environ.empty_env in
+      let sigma = Evd.empty in
+      let concl = Term.mkRel (-1) in
+      let goal = sig_it Goal.V82.dummy_goal in
+      (* /dummy values *)
+      let args = List.map (fun a -> snd(interp_genarg ist env sigma concl goal a)) l in
+      tac args ist
+  | TacML (loc,opn,l) ->
+      Proofview.Goal.enter begin fun gl ->
+        let env = Proofview.Goal.env gl in
+        let goal_sigma = Proofview.Goal.sigma gl in
+        let concl = Proofview.Goal.concl gl in
+        let goal = Proofview.Goal.goal gl in
+        let tac = Tacenv.interp_ml_tactic opn in
+        let (sigma,args) =
+          Evd.MonadR.List.map_right
+            (fun a sigma -> interp_genarg ist env sigma concl goal a) l goal_sigma
+        in
+        Proofview.V82.tclEVARS sigma <*>
+        tac args ist
+      end
 
 and force_vrec ist v : typed_generic_argument GTac.t =
   let v = Value.normalize v in
@@ -1878,34 +1906,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
           hyps
       end
 
-  (* For extensions *)
-  | TacExtend (loc,opn,l) when List.for_all global_genarg l ->
-      (* spiwack: a special case for tactics (from TACTIC EXTEND) when
-         every argument can be interpreted without a
-         [Proofview.Goal.enter]. *)
-      let tac = Tacenv.interp_ml_tactic opn in
-      (* dummy values, will be ignored *)
-      let env = Environ.empty_env in
-      let sigma = Evd.empty in
-      let concl = Term.mkRel (-1) in
-      let goal = sig_it Goal.V82.dummy_goal in
-      (* /dummy values *)
-      let args = List.map (fun a -> snd(interp_genarg ist env sigma concl goal a)) l in
-      tac args ist
-  | TacExtend (loc,opn,l) ->
-      Proofview.Goal.enter begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let goal_sigma = Proofview.Goal.sigma gl in
-        let concl = Proofview.Goal.concl gl in
-        let goal = Proofview.Goal.goal gl in
-        let tac = Tacenv.interp_ml_tactic opn in
-        let (sigma,args) =
-          Evd.MonadR.List.map_right
-            (fun a sigma -> interp_genarg ist env sigma concl goal a) l goal_sigma
-        in
-        Proofview.V82.tclEVARS sigma <*>
-        tac args ist
-      end
   | TacAlias (loc,s,l) ->
       let body = Tacenv.interp_alias s in
       let rec f x = match genarg_tag x with

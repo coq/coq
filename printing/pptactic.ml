@@ -654,8 +654,6 @@ let rec pr_atom0 = function
 
   (* Main tactic printer *)
 and pr_atom1 = function
-  | TacExtend (loc,s,l) ->
-      pr_with_comments loc (pr_extend 1 s l)
   | TacAlias (loc,kn,l) ->
       pr_with_comments loc (pr_alias 1 kn (List.map snd l))
 
@@ -938,6 +936,8 @@ let rec pr_tac inherited tac =
          prlist_with_sep spc pr_tacarg l)),
       lcall
   | TacArg (_,a) -> pr_tacarg a, latom
+  | TacML (loc,s,l) ->
+      pr_with_comments loc (pr_extend 1 s l), lcall
   in
   if prec_less prec inherited then strm
   else str"(" ++ strm ++ str")"

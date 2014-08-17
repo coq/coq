@@ -26,7 +26,7 @@ let interp_alias key =
   try KNmap.find key !alias_map
   with Not_found -> Errors.anomaly (str "Unknown tactic alias: " ++ KerName.print key)
 
-(** ML tactic extensions (TacExtend) *)
+(** ML tactic extensions (TacML) *)
 
 type ml_tactic =
   typed_generic_argument list -> Geninterp.interp_sign -> unit Proofview.tactic

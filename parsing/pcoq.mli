@@ -217,7 +217,7 @@ module Tactic :
     val quantified_hypothesis : quantified_hypothesis Gram.entry
     val int_or_var : int or_var Gram.entry
     val red_expr : raw_red_expr Gram.entry
-    val simple_tactic : raw_atomic_tactic_expr Gram.entry
+    val simple_tactic : raw_tactic_expr Gram.entry
     val simple_intropattern : intro_pattern_expr located Gram.entry
     val clause_dft_concl : Names.Id.t Loc.located Locus.clause_expr Gram.entry
     val tactic_arg : raw_tactic_arg Gram.entry

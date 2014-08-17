@@ -156,7 +156,7 @@ let flatten_contravariant_conj flags ist =
 let constructor i =
   let name = { Tacexpr.mltac_plugin = "coretactics"; mltac_tactic = "constructor" } in
   let i = in_gen (rawwit Constrarg.wit_int_or_var) (Misctypes.ArgArg i) in
-  Tacexpr.TacAtom (Loc.ghost, Tacexpr.TacExtend (Loc.ghost, name, [i]))
+  Tacexpr.TacML (Loc.ghost, name, [i])
 
 let is_disj flags ist =
   let t = assoc_var "X1" ist in

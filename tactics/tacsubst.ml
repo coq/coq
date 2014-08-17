@@ -203,8 +203,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacInversion (InversionUsing (subst_glob_constr subst c,cl),hyp)
 
   (* For extensions *)
-  | TacExtend (_loc,opn,l) ->
-      TacExtend (dloc,opn,List.map (subst_genarg subst) l)
   | TacAlias (_,s,l) ->
       let s = subst_kn subst s in
       TacAlias (dloc,s,List.map (fun (id,a) -> (id,subst_genarg subst a)) l)
@@ -253,6 +251,7 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacSolve l -> TacSolve (List.map (subst_tactic subst) l)
   | TacComplete tac -> TacComplete (subst_tactic subst tac)
   | TacArg (_,a) -> TacArg (dloc,subst_tacarg subst a)
+  | TacML (_loc,opn,l) -> TacML (dloc,opn,List.map (subst_genarg subst) l)
 
 and subst_tactic_fun subst (var,body) = (var,subst_tactic subst body)
 

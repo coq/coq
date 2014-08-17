@@ -1196,7 +1196,7 @@ let explain_ltac_call_trace last trace loc =
 let skip_extensions trace =
   let rec aux = function
   | (_,Proof_type.LtacAtomCall
-      (Tacexpr.TacAlias _ | Tacexpr.TacExtend _) as tac) :: tail -> [tac]
+      (Tacexpr.TacAlias _) as tac) :: tail -> [tac]
   | _ :: tail -> aux tail
   | [] -> [] in
   List.rev (aux (List.rev trace))

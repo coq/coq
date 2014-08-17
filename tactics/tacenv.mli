@@ -43,7 +43,7 @@ val interp_ltac : KerName.t -> glob_tactic_expr
 
 type ml_tactic =
   typed_generic_argument list -> Geninterp.interp_sign -> unit Proofview.tactic
-(** Type of external tactics, used by [TacExtend]. *)
+(** Type of external tactics, used by [TacML]. *)
 
 val register_ml_tactic : ?overwrite:bool -> ml_tactic_name -> ml_tactic -> unit
 (** Register an external tactic. *)

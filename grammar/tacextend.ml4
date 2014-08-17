@@ -197,10 +197,10 @@ let declare_tactic loc s c cl = match cl with
       let f = Compat.make_fun loc [patt, vala None, <:expr< fun $lid:"ist"$ -> $tac$ >>] in
       <:expr< Tacinterp.lift_constr_tac_to_ml_tac $vars$ $f$ >>
   in
-  (** Arguments are not passed directly to the ML tactic in the TacExtend node,
+  (** Arguments are not passed directly to the ML tactic in the TacML node,
       the ML tactic retrieves its arguments in the [ist] environment instead.
       This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
-  let body = <:expr< Tacexpr.TacFun ($vars$, Tacexpr.TacAtom ($dloc$, Tacexpr.TacExtend($dloc$, $se$, []))) >> in
+  let body = <:expr< Tacexpr.TacFun ($vars$, Tacexpr.TacML ($dloc$, $se$, [])) >> in
   let name = <:expr< Libnames.Ident($dloc$, Names.Id.of_string $name$) >> in
   declare_str_items loc
     [ <:str_item< do {
@@ -216,7 +216,7 @@ let declare_tactic loc s c cl = match cl with
     ]
 | _ ->
   (** Otherwise we add parsing and printing rules to generate a call to a
-      TacExtend tactic. *)
+      TacML tactic. *)
   let entry = mlexpr_of_string s in
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
   let pp = make_printing_rule se cl in

@@ -52,7 +52,7 @@ val extend_tactic_grammar : KerName.t -> tactic_grammar -> unit
 
 val extend_ml_tactic_grammar : Tacexpr.ml_tactic_name -> grammar_prod_item list list -> unit
 (** Add a ML tactic notation rule to the parsing system. This produces a
-    TacExtend tactic with the provided string as name. *)
+    TacML tactic with the provided string as name. *)
 
 val recover_constr_grammar : notation -> Notation.level -> notation_grammar
 (** For a declared grammar, returns the rule + the ordered entry types

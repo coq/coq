@@ -162,9 +162,6 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
       ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option
   | TacInversion of ('trm,'nam) inversion_strength * quantified_hypothesis
 
-  (* For ML extensions *)
-  | TacExtend of Loc.t * ml_tactic_name * 'lev generic_argument list
-
   (* For syntax extensions *)
   | TacAlias of Loc.t * KerName.t * (Id.t * 'lev generic_argument) list
 
@@ -247,6 +244,8 @@ and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr =
       ('p,('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr) match_rule list
   | TacFun of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_fun_ast
   | TacArg of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_arg located
+  (* For ML extensions *)
+  | TacML of Loc.t * ml_tactic_name * 'l generic_argument list
 
 and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_fun_ast =
     Id.t option list * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr

@@ -103,7 +103,7 @@ GEXTEND Gram
 	  l = LIST0 message_token -> TacFail (n,l)
       | IDENT "external"; com = STRING; req = STRING; la = LIST1 tactic_arg ->
 	  TacArg (!@loc,TacExternal (!@loc,com,req,la))
-      | st = simple_tactic -> TacAtom (!@loc,st)
+      | st = simple_tactic -> st
       | IDENT "constr"; ":"; id = METAIDENT ->
           TacArg(!@loc,MetaIdArg (!@loc,false,id))
       | IDENT "constr"; ":"; c = Constr.constr ->

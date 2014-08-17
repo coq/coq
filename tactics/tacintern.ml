@@ -559,9 +559,6 @@ let rec intern_atomic lf ist x =
         intern_quantified_hypothesis ist hyp)
 
   (* For extensions *)
-  | TacExtend (loc,opn,l) ->
-      Hook.get f_assert_tactic_installed opn;
-      TacExtend (adjust_loc loc,opn,List.map (intern_genarg ist) l)
   | TacAlias (loc,s,l) ->
       let l = List.map (fun (id,a) -> (id,intern_genarg ist a)) l in
       TacAlias (loc,s,l)
@@ -636,6 +633,9 @@ and intern_tactic_seq onlytac ist = function
   | TacSolve l -> ist.ltacvars, TacSolve (List.map (intern_pure_tactic ist) l)
   | TacComplete tac -> ist.ltacvars, TacComplete (intern_pure_tactic ist tac)
   | TacArg (loc,a) -> ist.ltacvars, intern_tactic_as_arg loc onlytac ist a
+  | TacML (loc,opn,l) ->
+      let () = Hook.get f_assert_tactic_installed opn in
+      ist.ltacvars, TacML (adjust_loc loc,opn,List.map (intern_genarg ist) l)
 
 and intern_tactic_as_arg loc onlytac ist a =
   match intern_tacarg !strict_check onlytac ist a with
