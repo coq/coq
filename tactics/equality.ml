@@ -1447,6 +1447,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   let expected_goal = nf_betaiota sigma expected_goal in
   (* Retype to get universes right *)
   let sigma, expected_goal_ty = Typing.e_type_of env sigma expected_goal in
+  let sigma, _ = Typing.e_type_of env sigma body in
     sigma,body,expected_goal
 
 (* Like "replace" but decompose dependent equalities                      *)

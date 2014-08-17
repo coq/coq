@@ -1949,6 +1949,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
     let _, res = substrat (hypinfo, 0) env avoid t ty cstr evars in
     (), res
   in
+  init_setoid ();
     try
       tclWEAK_PROGRESS 
 	(tclTHEN
@@ -1965,7 +1966,6 @@ let general_s_rewrite_clause x =
     | Some id -> general_s_rewrite (Some id)
 
 let general_s_rewrite_clause x y z w ~new_goals =
-  newtactic_init_setoid () <*>
   Proofview.V82.tactic (general_s_rewrite_clause x y z w ~new_goals)
 
 let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite_clause

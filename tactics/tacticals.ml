@@ -379,7 +379,7 @@ module New = struct
     tclINDEPENDENT begin
       tclIFCATCH t1
         (fun () -> t2)
-        (fun _ -> t3)
+        (fun e -> Proofview.tclORELSE t3 (fun e' -> tclZERO e))
     end
   let tclIFTHENSVELSE t1 a t3 =
     tclIFCATCH t1

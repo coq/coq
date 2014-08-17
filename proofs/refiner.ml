@@ -272,11 +272,14 @@ let ite_gen tcal tac_if continue tac_else gl=
     if !success then
       raise e
     else
-      tac_else gl in
-    try
-      tcal tac_if0 continue gl
-    with (* Breakpoint *)
-      | e when Errors.noncritical e -> catch_failerror e; tac_else0 e gl
+      try
+        tac_else gl
+      with
+        e' when Errors.noncritical e' -> raise e in
+  try
+    tcal tac_if0 continue gl
+  with (* Breakpoint *)
+  | e when Errors.noncritical e -> catch_failerror e; tac_else0 e gl
 
 (* Try the first tactic and, if it succeeds, continue with
    the second one, and if it fails, use the third one *)
