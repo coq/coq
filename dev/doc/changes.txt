@@ -91,6 +91,9 @@
   "intros_pattern" and "intros_patterns" is not anymore behaving like
   tactic "intros" on the empty list.
 
+- API of cut tactics changed: cut_intro should be replaced by
+  "enough_tac Anonymous"
+
 =========================================
 = CHANGES BETWEEN COQ V8.3 AND COQ V8.4 =
 =========================================

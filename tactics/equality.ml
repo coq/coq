@@ -907,7 +907,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort =
   let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
   Proofview.V82.tclEVARS sigma <*>
   Proofview.tclEFFECTS eff <*>
-  tclTHENS (cut_intro absurd_term)
+  tclTHENS (assert_after Anonymous absurd_term)
     [onLastHypId gen_absurdity; (Proofview.V82.tactic (refine pf))]
 
 let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
@@ -1514,7 +1514,8 @@ let cutSubstInHyp_LR eqn id =
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   let refine = Proofview.V82.tactic (fun gl -> Tacmach.refine_no_check (mkVar id) gl) in
   let subst = tclTHENFIRST (bareRevSubstInConcl (lbeq,u) body eq) refine in
-    Proofview.V82.tclEVARS sigma <*> (cut_replacing id expected_goal subst)
+    Proofview.V82.tclEVARS sigma <*>
+      tclTHENLAST (assert_after_replacing id expected_goal) subst
   end
 
 let cutSubstInHyp_RL eqn id =

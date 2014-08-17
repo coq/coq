@@ -1426,7 +1426,7 @@ let cl_rewrite_clause_tac ?abs strat clause gl =
 	let tac = 
 	  match clause, p with
 	  | Some id, Some p ->
-	      Proofview.V82.of_tactic (cut_replacing id newt (Proofview.V82.tactic (Tacmach.refine p)))
+	      tclTHENLAST (Proofview.V82.of_tactic (assert_after_replacing id newt)) (Tacmach.refine p)
 	  | Some id, None -> 
 	      change_in_hyp None (fun env sigma -> sigma, newt) (id, InHypTypeOnly)
 	  | None, Some p ->
@@ -2061,9 +2061,10 @@ let setoid_symmetry_in id =
   let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
   let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
   let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
-    tclTHENS (Proofview.V82.of_tactic (Tactics.cut new_hyp))
-      [ intro_replacing id;
-	Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ]) ]
+   Proofview.V82.of_tactic
+    (Tacticals.New.tclTHENLAST
+      (Tactics.assert_after_replacing id new_hyp)
+      (Tacticals.New.tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ]))
       gl)
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity

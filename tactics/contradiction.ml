@@ -18,24 +18,26 @@ open Misctypes
 
 (* Absurd *)
 
-let absurd c gls =
-  let env = pf_env gls and sigma = project gls in
-  let j = Retyping.get_judgment_of env sigma c in
-  let sigma, j = Coercion.inh_coerce_to_sort Loc.ghost env sigma j in
-  let c = j.Environ.utj_val in
-  (tclTHENS
-     (tclTHEN (Proofview.V82.of_tactic (elim_type (build_coq_False ()))) (Proofview.V82.of_tactic (cut c)))
-     ([(tclTHENS
-          (Proofview.V82.of_tactic (cut (mkApp(build_coq_not (),[|c|]))))
-	  ([(tclTHEN (Proofview.V82.of_tactic intros)
-	       ((fun gl ->
-		   let ida = pf_nth_hyp_id gl 1
-                   and idna = pf_nth_hyp_id gl 2 in
-                   exact_no_check (mkApp(mkVar idna,[|mkVar ida|])) gl)));
-            tclIDTAC]));
-       tclIDTAC])) { gls with Evd.sigma; }
+let mk_absurd_proof t =
+  let id = Namegen.default_dependent_ident in
+  mkLambda (Names.Name id,mkApp(build_coq_not (),[|t|]),
+    mkLambda (Names.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
 
-let absurd c = Proofview.V82.tactic (absurd c)
+let absurd c =
+  Proofview.Goal.raw_enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let j = Retyping.get_judgment_of env sigma c in
+    let sigma, j = Coercion.inh_coerce_to_sort Loc.ghost env sigma j in
+    let t = j.Environ.utj_val in
+    Tacticals.New.tclTHENLIST [
+      Proofview.V82.tclEVARS sigma;
+      elim_type (build_coq_False ());
+      Simple.apply (mk_absurd_proof t)
+    ]
+  end
+
+let absurd c = absurd c
 
 (* Contradiction *)
 

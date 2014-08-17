@@ -109,7 +109,7 @@ let clean_tmp gls =
     clean_all (tmp_ids gls) gls
 
 let assert_postpone id t =
-  assert_tac (Name id) t
+  assert_before (Name id) t
 
 (* start a proof *)
 

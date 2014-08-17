@@ -1059,7 +1059,7 @@ let termination_proof_header is_mes input_type ids args_id relation
 	(tclTHENS
 	   (observe_tac
 	      (str "first assert")
-	      (Proofview.V82.of_tactic (assert_tac
+	      (Proofview.V82.of_tactic (assert_before
 		 (Name wf_rec_arg)
 		 (mkApp (delayed_force acc_rel,
 			 [|input_type;relation;mkVar rec_arg_id|])
@@ -1071,7 +1071,7 @@ let termination_proof_header is_mes input_type ids args_id relation
 	     tclTHENS
 	       (observe_tac
 		  (str "second assert")
-		  (Proofview.V82.of_tactic (assert_tac
+		  (Proofview.V82.of_tactic (assert_before
 		     (Name wf_thm)
 		     (mkApp (delayed_force well_founded,[|input_type;relation|]))
 		  ))

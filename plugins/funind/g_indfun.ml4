@@ -324,7 +324,7 @@ let poseq_unsafe idunsafe cstr gl =
   tclTHEN
     (Proofview.V82.of_tactic (Tactics.letin_tac None (Name idunsafe) cstr None Locusops.allHypsAndConcl))
     (tclTHENFIRST
-      (Proofview.V82.of_tactic (Tactics.assert_tac Anonymous (mkEq typ (mkVar idunsafe) cstr)))
+      (Proofview.V82.of_tactic (Tactics.assert_before Anonymous (mkEq typ (mkVar idunsafe) cstr)))
       (Proofview.V82.of_tactic Tactics.reflexivity))
     gl
 

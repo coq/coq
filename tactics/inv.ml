@@ -483,7 +483,7 @@ let raw_inversion inv_kind id status names =
     let neqns = List.length realargs in
     tclTHEN (Proofview.V82.tclEVARS sigma)
       (tclTHENS
-        (assert_tac Anonymous cut_concl)
+        (assert_before Anonymous cut_concl)
         [case_tac names
             (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
             (Some elim_predicate) ind (c, t);

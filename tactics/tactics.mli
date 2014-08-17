@@ -280,7 +280,7 @@ val induction : evars_flag ->
 val general_case_analysis : evars_flag -> clear_flag -> constr with_bindings ->  unit Proofview.tactic
 val simplest_case         : constr -> unit Proofview.tactic
 
-val simple_destruct          : quantified_hypothesis -> unit Proofview.tactic
+val simple_destruct       : quantified_hypothesis -> unit Proofview.tactic
 val destruct : evars_flag ->
   (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
@@ -300,8 +300,8 @@ val induction_destruct : rec_flag -> evars_flag ->
 
 (** {6 Eliminations giving the type instead of the proof. } *)
 
-val case_type         : constr  -> unit Proofview.tactic
-val elim_type         : constr  -> unit Proofview.tactic
+val case_type         : types -> unit Proofview.tactic
+val elim_type         : types -> unit Proofview.tactic
 
 (** {6 Introduction tactics. } *)
 
@@ -341,22 +341,46 @@ val transitivity                : constr -> unit Proofview.tactic
 val etransitivity               : unit Proofview.tactic
 val intros_transitivity         : constr option -> unit Proofview.tactic
 
-val cut                         : constr -> unit Proofview.tactic
-val cut_intro                   : constr -> unit Proofview.tactic
-val assert_replacing            : Id.t -> types -> unit Proofview.tactic -> unit Proofview.tactic
-val cut_replacing               : Id.t -> types -> unit Proofview.tactic -> unit Proofview.tactic
+(** {6 Cut tactics. } *)
 
-val assert_as : bool -> intro_pattern_expr located option -> constr -> unit Proofview.tactic
-val forward   : bool -> unit Proofview.tactic option -> intro_pattern_expr located option -> constr -> unit Proofview.tactic
-val letin_tac : (bool * intro_pattern_naming_expr located) option -> Name.t ->
-  constr -> types option -> clause -> unit Proofview.tactic
-val letin_pat_tac : (bool * intro_pattern_naming_expr located) option -> Name.t ->
-  evar_map * constr -> clause -> unit Proofview.tactic
-val assert_tac : Name.t -> types -> unit Proofview.tactic
-val enough_tac : Name.t -> types -> unit Proofview.tactic
-val assert_by  : Name.t -> types -> unit Proofview.tactic -> unit Proofview.tactic
-val enough_by  : Name.t -> types -> unit Proofview.tactic -> unit Proofview.tactic
-val pose_proof : Name.t -> constr -> unit Proofview.tactic
+val assert_before_replacing: Id.t -> types -> unit Proofview.tactic
+val assert_after_replacing : Id.t -> types -> unit Proofview.tactic
+val assert_before : Name.t -> types -> unit Proofview.tactic
+val assert_after  : Name.t -> types -> unit Proofview.tactic
+
+val assert_as     : (* true = before *) bool ->
+  intro_pattern_expr located option -> constr -> unit Proofview.tactic
+
+(** Implements the tactics assert, enough and pose proof; note that "by"
+    applies on the first goal for both assert and enough *)
+
+val assert_by  : Name.t -> types -> unit Proofview.tactic ->
+  unit Proofview.tactic
+val enough_by  : Name.t -> types -> unit Proofview.tactic ->
+  unit Proofview.tactic
+val pose_proof : Name.t -> constr ->
+  unit Proofview.tactic
+
+(** Common entry point for user-level "assert", "enough" and "pose proof" *)
+
+val forward   : bool -> unit Proofview.tactic option ->
+  intro_pattern_expr located option -> constr -> unit Proofview.tactic
+
+(** Implements the tactic cut, actually a modus ponens rule *)
+
+val cut        : types -> unit Proofview.tactic
+
+(** {6 Tactics for adding local definitions. } *)
+
+val letin_tac : (bool * intro_pattern_naming_expr located) option ->
+  Name.t -> constr -> types option -> clause -> unit Proofview.tactic
+
+(** Common entry point for user-level "set", "pose" and "remember" *)
+
+val letin_pat_tac : (bool * intro_pattern_naming_expr located) option ->
+  Name.t -> evar_map * constr -> clause -> unit Proofview.tactic
+
+(** {6 Generalize tactics. } *)
 
 val generalize      : constr list -> tactic
 val generalize_gen  : ((occurrences * constr) * Name.t) list -> tactic

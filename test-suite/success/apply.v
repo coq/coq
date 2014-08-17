@@ -439,3 +439,10 @@ eexists.
 intros.
 apply H in H0.
 Abort.
+
+(* Check correct failure of apply in when hypothesis is dependent *)
+
+Goal forall H:0=0, H = H.
+intros.
+Fail apply eq_sym in H.
+Abort.

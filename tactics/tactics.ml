@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-let a = 1
-
 open Pp
 open Errors
 open Util
@@ -155,22 +153,42 @@ end
 let convert x y = convert_gen Reduction.CONV x y
 let convert_leq x y = convert_gen Reduction.CUMUL x y
 
-let error_clear_dependency env id = function
+let clear_dependency_msg env id = function
   | Evarutil.OccurHypInSimpleClause None ->
-      errorlabstrm "" (pr_id id ++ str " is used in conclusion.")
+      pr_id id ++ str " is used in conclusion."
   | Evarutil.OccurHypInSimpleClause (Some id') ->
-      errorlabstrm ""
-        (pr_id id ++ strbrk " is used in hypothesis " ++ pr_id id' ++ str".")
+      pr_id id ++ strbrk " is used in hypothesis " ++ pr_id id' ++ str"."
   | Evarutil.EvarTypingBreak ev ->
-      errorlabstrm ""
-        (str "Cannot remove " ++ pr_id id ++
-	 strbrk " without breaking the typing of " ++
-	 Printer.pr_existential env ev ++ str".")
+      str "Cannot remove " ++ pr_id id ++
+      strbrk " without breaking the typing of " ++
+      Printer.pr_existential env ev ++ str"."
+
+let error_clear_dependency env id err =
+  errorlabstrm "" (clear_dependency_msg env id err)
+
+let replacing_dependency_msg env id = function
+  | Evarutil.OccurHypInSimpleClause None ->
+      str "Cannot change " ++ pr_id id ++ str ", it is used in conclusion."
+  | Evarutil.OccurHypInSimpleClause (Some id') ->
+      str "Cannot change " ++ pr_id id ++
+      strbrk ", it is used in hypothesis " ++ pr_id id' ++ str"."
+  | Evarutil.EvarTypingBreak ev ->
+      str "Cannot change " ++ pr_id id ++
+      strbrk " without breaking the typing of " ++
+      Printer.pr_existential env ev ++ str"."
+
+let error_replacing_dependency env id err =
+  errorlabstrm "" (replacing_dependency_msg env id err)
 
 let thin l gl =
   try thin l gl
   with Evarutil.ClearDependencyError (id,err) ->
     error_clear_dependency (pf_env gl) id err
+
+let thin_for_replacing l gl =
+  try Tacmach.thin l gl
+  with Evarutil.ClearDependencyError (id,err) ->
+    error_replacing_dependency (pf_env gl) id err
 
 let apply_clear_request clear_flag dft c =
   let check_isvar c =
@@ -223,6 +241,10 @@ type name_flag =
   | NamingBasedOn of Id.t * Id.t list
   | NamingMustBe of Loc.t * Id.t
 
+let naming_of_name = function
+  | Anonymous -> NamingAvoid []
+  | Name id -> NamingMustBe (dloc,id)
+
 let find_name repl decl naming gl = match naming with
   | NamingAvoid idl ->
       (* this case must be compatible with [find_intro_names] below. *)
@@ -242,29 +264,41 @@ let find_name repl decl naming gl = match naming with
 (*            Cut rule                                        *)
 (**************************************************************)
 
-let internal_cut_gen b naming t =
+let assert_before_then_gen b naming t tac =
   Proofview.Goal.raw_enter begin fun gl ->
-  try 
     let id = find_name b (Anonymous,None,t) naming gl in
-    Proofview.V82.tactic (internal_cut b id t)
-  with Evarutil.ClearDependencyError (id,err) ->
-    error_clear_dependency (Proofview.Goal.env gl) id err
+    Tacticals.New.tclTHENLAST
+      (Proofview.V82.tactic
+         (fun gl ->
+           try internal_cut b id t gl
+           with Evarutil.ClearDependencyError (id,err) ->
+             error_replacing_dependency (pf_env gl) id err))
+      (tac id)
   end
 
-let internal_cut = internal_cut_gen false
-let internal_cut_replace = internal_cut_gen true
+let assert_before_gen b naming t =
+  assert_before_then_gen b naming t (fun _ -> Proofview.tclUNIT ())
 
-let internal_cut_rev_gen b naming t =
+let assert_before na = assert_before_gen false (naming_of_name na)
+let assert_before_replacing id = assert_before_gen true (NamingMustBe (dloc,id))
+
+let assert_after_then_gen b naming t tac =
   Proofview.Goal.raw_enter begin fun gl ->
-  try
     let id = find_name b (Anonymous,None,t) naming gl in
-    Proofview.V82.tactic (internal_cut_rev b id t)
-  with Evarutil.ClearDependencyError (id,err) ->
-    error_clear_dependency (Proofview.Goal.env gl) id err
+    Tacticals.New.tclTHENFIRST
+      (Proofview.V82.tactic
+         (fun gl ->
+           try internal_cut_rev b id t gl
+           with Evarutil.ClearDependencyError (id,err) ->
+             error_replacing_dependency (pf_env gl) id err))
+      (tac id)
   end
 
-let internal_cut_rev = internal_cut_rev_gen false
-let internal_cut_rev_replace = internal_cut_rev_gen true
+let assert_after_gen b naming t =
+  assert_after_then_gen b naming t (fun _ -> (Proofview.tclUNIT ()))
+
+let assert_after na = assert_after_gen false (naming_of_name na)
+let assert_after_replacing id = assert_after_gen true (NamingMustBe (dloc,id))
 
 (**************************************************************)
 (*          Fixpoints and CoFixpoints                         *)
@@ -605,22 +639,6 @@ let rec get_next_hyp_position id = function
       else
 	get_next_hyp_position id right
 
-let thin_for_replacing l gl =
-  try Tacmach.thin l gl
-  with Evarutil.ClearDependencyError (id,err) -> match err with
-  | Evarutil.OccurHypInSimpleClause None ->
-      errorlabstrm ""
-      (str "Cannot change " ++ pr_id id ++ str ", it is used in conclusion.")
-  | Evarutil.OccurHypInSimpleClause (Some id') ->
-      errorlabstrm ""
-        (str "Cannot change " ++ pr_id id ++
-	 strbrk ", it is used in hypothesis " ++ pr_id id' ++ str".")
-  | Evarutil.EvarTypingBreak ev ->
-      errorlabstrm ""
-        (str "Cannot change " ++ pr_id id ++
-	 strbrk " without breaking the typing of " ++
-	 Printer.pr_existential (pf_env gl) ev ++ str".")
-
 let intro_replacing id gl =
   let next_hyp = get_next_hyp_position id (pf_hyps gl) in
   tclTHENLIST
@@ -742,9 +760,9 @@ let map_induction_arg f = function
   | clear_flag,ElimOnAnonHyp n as x -> x
   | clear_flag,ElimOnIdent id as x -> x
 
-(**************************)
-(*     Cut tactics        *)
-(**************************)
+(****************************************)
+(* tactic "cut" (actually modus ponens) *)
+(****************************************)
 
 let cut c =
   Proofview.Goal.raw_enter begin fun gl ->
@@ -774,38 +792,6 @@ let cut c =
     else
       Tacticals.New.tclZEROMSG (str "Not a proposition or a type.")
   end
-
-let cut_intro t = Tacticals.New.tclTHENFIRST (cut t) intro
-
-(* [assert_replacing id T tac] adds the subgoals of the proof of [T]
-   before the current goal
-
-   id:T0                 id:T0    id:T
-   =====   ------>   tac(=====) + ====
-    G                     T        G
-
-   It fails if the hypothesis to replace appears in the goal or in
-   another hypothesis.
-*)
-
-let assert_replacing id t tac =
-  Tacticals.New.tclTHENFIRST
-    (internal_cut_replace (NamingMustBe (dloc,id)) t) tac
-
-(* [cut_replacing id T tac] adds the subgoals of the proof of [T]
-   after the current goal
-
-   id:T0             id:T       id:T0
-   =====   ------>   ==== + tac(=====)
-    G                 G          T
-
-   It fails if the hypothesis to replace appears in the goal or in
-   another hypothesis.
-*)
-
-let cut_replacing id t tac =
-  Tacticals.New.tclTHENLAST
-    (internal_cut_rev_replace (NamingMustBe (dloc,id)) t) tac
 
 let error_uninstantiated_metas t clenv =
   let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
@@ -853,10 +839,10 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) nami
     (Proofview.V82.tclEVARS clenv.evd)
     (if sidecond_first then
        Tacticals.New.tclTHENFIRST
-         (internal_cut_gen with_clear naming new_hyp_typ) exact_tac
+         (assert_before_gen with_clear naming new_hyp_typ) exact_tac
      else
        Tacticals.New.tclTHENLAST
-         (internal_cut_rev_gen with_clear naming new_hyp_typ) exact_tac)
+         (assert_after_gen with_clear naming new_hyp_typ) exact_tac)
 
 (********************************************)
 (*       Elimination tactics                *)
@@ -1178,7 +1164,7 @@ let descend_in_conjunctions tac exit c =
 	    | None -> Tacticals.New.tclFAIL 0 (mt())
 	    | Some (p,pt) ->
 	    Tacticals.New.tclTHENS
-	      (internal_cut (NamingAvoid []) pt)
+	      (assert_before Anonymous pt)
 	      [Proofview.V82.tactic (refine p); (* Might be ill-typed due to forbidden elimination. *)
 	       Tacticals.New.onLastHypId (fun id ->
                  Tacticals.New.tclTHEN
@@ -1520,7 +1506,7 @@ let specialize (c,lbind) g =
        | Var id when Id.List.mem id (pf_ids_of_hyps g) ->
 	   tclTHEN tac
 	     (tclTHENFIRST
-	       (fun g -> Proofview.V82.of_tactic (internal_cut_replace (NamingMustBe (dloc,id)) (pf_type_of g term)) g)
+	       (fun g -> Proofview.V82.of_tactic (assert_before_replacing id (pf_type_of g term)) g)
 	       (exact_no_check term)) g
        | _ -> tclTHEN tac
 	   (tclTHENLAST
@@ -1830,7 +1816,7 @@ let intros_patterns = function
   | l -> intro_patterns_to MoveLast l
 
 (**************************)
-(*   Other cut tactics    *)
+(*   Forward reasoning    *)
 (**************************)
 
 let rec prepare_naming loc = function
@@ -1872,14 +1858,8 @@ let do_replace id = function
 let assert_as first ipat c =
   let naming,tac = prepare_intros IntroAnonymous ipat in
   let repl = do_replace (head_ident c) naming in
-  Tacticals.New.tclTHENS
-    ((if first then internal_cut_gen
-      else internal_cut_rev_gen) repl naming c)
-    (if first then [Proofview.tclUNIT (); Tacticals.New.onLastHypId tac]
-     else [Tacticals.New.onLastHypId tac; Proofview.tclUNIT ()])
-
-let assert_tac na = assert_as true (ipat_of_name na)
-let enough_tac na = assert_as false (ipat_of_name na)
+  if first then assert_before_then_gen repl naming c tac
+  else assert_after_then_gen repl naming c tac
 
 (* apply in as *)
 
@@ -1990,7 +1970,7 @@ let letin_tac with_eq name c ty occs =
 let letin_pat_tac with_eq name c occs =
   letin_tac_gen with_eq (AbstractPattern (name,c,occs,false,tactic_infer_flags)) None
 
-(* Tactics "pose proof" (usetac=None) and "assert" (otherwise) *)
+(* Tactics "pose proof" (usetac=None) and "assert"/"enough" (otherwise) *)
 let forward b usetac ipat c =
   match usetac with
   | None ->

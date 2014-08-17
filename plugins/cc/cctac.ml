@@ -328,7 +328,7 @@ let refute_tac c t1 t2 p =
   let neweq= new_app_global _eq [|intype;tt1;tt2|] in
   let hid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) gl in
   let false_t=mkApp (c,[|mkVar hid|]) in
-    Tacticals.New.tclTHENS (neweq (assert_tac (Name hid)))
+    Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
       [proof_tac p; simplest_elim false_t]
   end
 
@@ -347,7 +347,7 @@ let convert_to_goal_tac c t1 t2 p =
   let x = Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) gl in
   let identity=mkLambda (Name x,sort,mkRel 1) in
   let endt=app_global _eq_rect [|sort;tt1;identity;c;tt2;mkVar e|] in
-    Tacticals.New.tclTHENS (neweq (assert_tac (Name e)))
+    Tacticals.New.tclTHENS (neweq (assert_before (Name e)))
       [proof_tac p; Proofview.V82.tactic (endt refine_exact_check)]
   end
 
@@ -356,7 +356,7 @@ let convert_to_hyp_tac c1 t1 c2 t2 p =
   let tt2=constr_of_term t2 in
   let h = Tacmach.New.of_old (pf_get_new_id (Id.of_string "H")) gl in
   let false_t=mkApp (c2,[|mkVar h|]) in
-    Tacticals.New.tclTHENS (assert_tac (Name h) tt2)
+    Tacticals.New.tclTHENS (assert_before (Name h) tt2)
       [convert_to_goal_tac c1 t1 t2 p;
        simplest_elim false_t]
   end
@@ -389,7 +389,7 @@ let discriminate_tac (cstr,u as cstru) p =
           [|outtype;trivial;pred;identity;concl;injt|] k) in
     let neweq=new_app_global _eq [|intype;t1;t2|] in
     Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evm)
-      (Tacticals.New.tclTHENS (neweq (assert_tac (Name hid)))
+      (Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
         [proof_tac p; Proofview.V82.tactic (endt refine_exact_check)])
   end
 
