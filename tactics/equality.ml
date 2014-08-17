@@ -249,7 +249,7 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
   If occurrences are set, use general rewrite.
 *)
 
-let (forward_general_rewrite_clause, general_rewrite_clause) = Hook.make ()
+let (forward_general_setoid_rewrite_clause, general_setoid_rewrite_clause) = Hook.make ()
 
 (* Do we have a JMeq instance on twice the same domains ? *)
 
@@ -359,7 +359,7 @@ let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
 let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
     ((c,l) : constr with_bindings) with_evars =
   if occs != AllOccurrences then (
-    rewrite_side_tac (Hook.get forward_general_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac)
+    rewrite_side_tac (Hook.get forward_general_setoid_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac)
   else
     Proofview.Goal.raw_enter begin fun gl ->
       let sigma = Proofview.Goal.sigma gl in
@@ -374,7 +374,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
       | None ->
 	  Proofview.tclORELSE
             begin
-	      rewrite_side_tac (Hook.get forward_general_rewrite_clause cls
+	      rewrite_side_tac (Hook.get forward_general_setoid_rewrite_clause cls
 				   lft2rgt occs (c,l) ~new_goals:[]) tac
             end
             begin function
@@ -413,7 +413,7 @@ let general_rewrite_in l2r occs frzevars dep_proof_ok ?tac id c =
   general_rewrite_ebindings_clause (Some id) l2r occs
     frzevars dep_proof_ok ?tac (c,NoBindings)
 
-let general_multi_rewrite l2r with_evars ?tac c cl =
+let general_rewrite_clause l2r with_evars ?tac c cl =
   let occs_of = occurrences_map (List.fold_left
     (fun acc ->
       function ArgArg x -> x :: acc | ArgVar _ -> acc)
@@ -474,14 +474,14 @@ let apply_special_clear_request clear_flag f =
 type delayed_open_constr_with_bindings =
     env -> evar_map -> evar_map * constr with_bindings
 
-let general_multi_multi_rewrite with_evars l cl tac =
+let general_multi_rewrite with_evars l cl tac =
   let do1 l2r f =
     Proofview.Goal.raw_enter begin fun gl ->
       let sigma = Proofview.Goal.sigma gl in
       let env = Proofview.Goal.env gl in
       let sigma,c = f env sigma in
       tclWITHHOLES with_evars
-        (general_multi_rewrite l2r with_evars ?tac c) sigma cl
+        (general_rewrite_clause l2r with_evars ?tac c) sigma cl
     end
   in
   let rec doN l2r c = function
@@ -522,14 +522,24 @@ let check_setoid cl =
     ((Locusops.occurrences_map (fun x -> x) cl.concl_occs <> AllOccurrences) &&
 	(Locusops.occurrences_map (fun x -> x) cl.concl_occs <> NoOccurrences))
     cl.onhyps
-    
+
+let replace_core clause l2r eq =
+  if check_setoid clause
+  then init_setoid ();
+  tclTHENFIRST
+    (assert_as false None eq)
+    (onLastHypId (fun id ->
+      tclTHEN
+        (tclTRY (general_rewrite_clause l2r false (mkVar id,NoBindings) clause))
+	(clear [id])))
+
 (* eq,sym_eq : equality on Type and its symmetry theorem
-   c2 c1 : c1 is to be replaced by c2
+   c1 c2 : c1 is to be replaced by c2
    unsafe : If true, do not check that c1 and c2 are convertible
    tac : Used to prove the equality c1 = c2
    gl : goal *)
 
-let multi_replace clause c2 c1 unsafe try_prove_eq_opt =
+let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   let try_prove_eq =
     match try_prove_eq_opt with
       | None -> Proofview.tclUNIT ()
@@ -551,30 +561,26 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt =
   | Some evd ->
     let e = build_coq_eq () in
     let sym = build_coq_eq_sym () in
+    Tacticals.New.pf_constr_of_global sym (fun sym ->
     Tacticals.New.pf_constr_of_global e (fun e ->
     let eq = applist (e, [t1;c1;c2]) in
-    if check_setoid clause
-    then init_setoid ();
-    Tacticals.New.pf_constr_of_global sym (fun sym ->
-      tclTHENS (assert_as false None eq)
-	[onLastHypId (fun id ->
-	  tclTHEN
-	    (tclTRY (general_multi_rewrite false false (mkVar id,NoBindings) clause))
-	    (clear [id]));
-	 tclFIRST
-	   [assumption;
-	    tclTHEN (apply sym) assumption;
-	    try_prove_eq
-	   ]
-	]))
+    tclTHENLAST
+      (replace_core clause l2r eq)
+      (tclFIRST
+         [assumption;
+          tclTHEN (apply sym) assumption;
+          try_prove_eq
+         ])))
   end
 
-let replace c2 c1 = multi_replace onConcl c2 c1 false None
+let replace c1 c2 =
+  replace_using_leibniz onConcl c2 c1 false false None
 
-let replace_by c2 c1 tac = multi_replace onConcl c2 c1 false (Some tac)
+let replace_by c1 c2 tac =
+  replace_using_leibniz onConcl c2 c1 false false (Some tac)
 
-let replace_in_clause_maybe_by c2 c1 cl tac_opt =
-  multi_replace cl c2 c1 false tac_opt
+let replace_in_clause_maybe_by c1 c2 cl tac_opt =
+  replace_using_leibniz cl c2 c1 false false tac_opt
 
 (* End of Eduardo's code. The rest of this file could be improved
    using the functions match_with_equation, etc that I defined
@@ -1597,7 +1603,6 @@ let unfold_body x =
   end
   end
 
-
 let restrict_to_eq_and_identity eq = (* compatibility *)
   if not (is_global glob_eq eq) &&
     not (is_global glob_identity eq) 
@@ -1713,7 +1718,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
   subst_gen flags.rewrite_dependent_proof ids
   end
 
-(* Rewrite the first assumption for which the condition faildir does not fail
+(* Rewrite the first assumption for which a condition holds
    and gives the direction of the rewrite *)
 
 let cond_eq_term_left c t gl =
@@ -1736,14 +1741,14 @@ let cond_eq_term c t gl =
     else failwith "not convertible"
   with ConstrMatching.PatternMatchingFailure -> failwith "not an equality"
 
-let rewrite_multi_assumption_cond cond_eq_term cl =
+let rewrite_assumption_cond cond_eq_term cl =
   let rec arec hyps gl = match hyps with
     | [] -> error "No such assumption."
     | (id,_,t) ::rest ->
 	begin
 	  try
             let dir = cond_eq_term t gl in
-	    general_multi_rewrite dir false (mkVar id,NoBindings) cl
+	    general_rewrite_clause dir false (mkVar id,NoBindings) cl
 	  with | Failure _ | UserError _ -> arec rest gl
 	end
   in
@@ -1752,17 +1757,22 @@ let rewrite_multi_assumption_cond cond_eq_term cl =
     arec hyps gl
   end
 
-let replace_multi_term dir_opt c  =
+(* Generalize "subst x" to substitution of subterm appearing as an
+   equation in the context, but not clearing the hypothesis *)
+
+let replace_term dir_opt c  =
   let cond_eq_fun =
     match dir_opt with
       | None -> cond_eq_term c
       | Some true -> cond_eq_term_left c
       | Some false -> cond_eq_term_right c
   in
-  rewrite_multi_assumption_cond cond_eq_fun
+  rewrite_assumption_cond cond_eq_fun
+
+(* Declare rewriting tactic for intro patterns "<-" and "->" *)
 
 let _ =
-  let gmr l2r with_evars tac c = general_multi_rewrite l2r with_evars tac c in
-  Hook.set Tactics.general_multi_rewrite gmr
+  let gmr l2r with_evars tac c = general_rewrite_clause l2r with_evars tac c in
+  Hook.set Tactics.general_rewrite_clause gmr
 
 let _ = Hook.set Tactics.subst_one subst_one

@@ -1968,7 +1968,7 @@ let general_s_rewrite_clause x y z w ~new_goals =
   newtactic_init_setoid () <*>
   Proofview.V82.tactic (general_s_rewrite_clause x y z w ~new_goals)
 
-let _ = Hook.set Equality.general_rewrite_clause general_s_rewrite_clause
+let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite_clause
 
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 

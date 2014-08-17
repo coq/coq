@@ -2680,14 +2680,6 @@ the same variants as {\tt rewrite} has.
 
 \end{Variants}
 
-
-\subsection{\tt cutrewrite -> \term$_1$ = \term$_2$}
-\label{cutrewrite}
-\tacindex{cutrewrite}
-
-This tactic acts like {\tt replace {\term$_1$} with {\term$_2$}}
-(see below).
-
 \subsection{\tt replace \term$_1$ with \term$_2$}
 \label{tactic:replace}
 \tacindex{replace \dots\ with}
@@ -2737,6 +2729,21 @@ n}| assumption || symmetry; try assumption]}.
     \nterm{clause}~(see Section~\ref{Conversion-tactics}) and not only
     in the conclusion of the goal.
     The \nterm{clause} argument must not contain any \texttt{type of} nor \texttt{value of}.
+
+\item {\tt cutrewrite <- (\term$_1$ = \term$_2$)}
+%\label{cutrewrite}
+\tacindex{cutrewrite}
+
+This tactic is deprecated. It acts like {\tt replace {\term$_2$} with
+  {\term$_1$}}, or, equivalently as {\tt enough} (\term$_1$ =
+\term$_2$) {\tt as <-}.
+
+\item {\tt cutrewrite -> (\term$_1$ = \term$_2$)}
+%\label{cutrewrite}
+\tacindex{cutrewrite}
+
+This tactic is deprecated. It can be replaced by {\tt enough}
+(\term$_1$ = \term$_2$) {\tt as ->}.
 
 \end{Variants}
 

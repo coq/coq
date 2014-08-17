@@ -38,9 +38,9 @@ let replace_in_clause_maybe_by (sigma1,c1) c2 cl  tac =
     sigma1
     (Option.map Tacinterp.eval_tactic tac)
 
-let replace_multi_term dir_opt (sigma,c) cl =
+let replace_term dir_opt (sigma,c) cl =
   Tacticals.New.tclWITHHOLES false
-    (replace_multi_term dir_opt c)
+    (replace_term dir_opt c)
     sigma
     cl
 
@@ -51,17 +51,17 @@ END
 
 TACTIC EXTEND replace_term_left
   [ "replace"  "->" open_constr(c) clause(cl) ]
-  -> [ replace_multi_term (Some true) c cl ]
+  -> [ replace_term (Some true) c cl ]
 END
 
 TACTIC EXTEND replace_term_right
   [ "replace"  "<-" open_constr(c) clause(cl) ]
-  -> [ replace_multi_term (Some false) c cl ]
+  -> [ replace_term (Some false) c cl ]
 END
 
 TACTIC EXTEND replace_term
   [ "replace" open_constr(c) clause(cl) ]
-  -> [ replace_multi_term None c cl ]
+  -> [ replace_term None c cl ]
 END
 
 let induction_arg_of_quantified_hyp = function
@@ -171,6 +171,10 @@ TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) "in" hyp(id) ]
     -> [ rewriteInHyp b c id ]
 END
+
+(** To be deprecated?, "cutrewrite (t=u) as <-" is equivalent to
+    "replace u with t" or "enough (t=u) as <-" and 
+    "cutrewrite (t=u) as ->" is equivalent to "enough (t=u) as ->". *)
 
 TACTIC EXTEND cut_rewrite
 | [ "cutrewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b eqn ]

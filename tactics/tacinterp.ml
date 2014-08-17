@@ -1986,7 +1986,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
 	  (b,m,keep,f)) l in
         let env = Proofview.Goal.env gl in
         let cl = interp_clause ist env cl in
-        Equality.general_multi_multi_rewrite ev l cl
+        Equality.general_multi_rewrite ev l cl
           (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by),
                                  Equality.Naive)
                       by)

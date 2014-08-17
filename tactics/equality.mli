@@ -41,7 +41,7 @@ val rewriteRL : ?tac:(unit Proofview.tactic * conditions) -> constr  -> unit Pro
 
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
-val general_rewrite_clause :
+val general_setoid_rewrite_clause :
   (Id.t option -> orientation -> occurrences -> constr with_bindings ->
    new_goals:constr list -> unit Proofview.tactic) Hook.t
 
@@ -57,13 +57,13 @@ val general_rewrite_in          :
   orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag -> 
   ?tac:(unit Proofview.tactic * conditions) -> Id.t -> constr -> evars_flag -> unit Proofview.tactic
 
-val general_multi_rewrite :
+val general_rewrite_clause :
   orientation -> evars_flag -> ?tac:(unit Proofview.tactic * conditions) -> constr with_bindings -> clause -> unit Proofview.tactic
 
 type delayed_open_constr_with_bindings =
     env -> evar_map -> evar_map * constr with_bindings
 
-val general_multi_multi_rewrite :
+val general_multi_rewrite :
   evars_flag -> (bool * multi * clear_flag * delayed_open_constr_with_bindings) list ->
     clause -> (unit Proofview.tactic * conditions) option -> unit Proofview.tactic
 
@@ -114,10 +114,10 @@ val subst : Id.t list -> unit Proofview.tactic
 val subst_all : ?flags:subst_tactic_flags -> unit -> unit Proofview.tactic
 
 (* Replace term *)
-(* [replace_multi_term dir_opt c cl]
+(* [replace_term dir_opt c cl]
    perfoms replacement of [c] by the first value found in context
    (according to [dir] if given to get the rewrite direction)  in the clause [cl]
 *)
-val replace_multi_term : bool option -> constr -> clause -> unit Proofview.tactic
+val replace_term : bool option -> constr -> clause -> unit Proofview.tactic
 
 val set_eq_dec_scheme_kind : mutual scheme_kind -> unit

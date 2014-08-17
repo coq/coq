@@ -1608,7 +1608,7 @@ let simplest_split = split NoBindings
 (*****************************)
 
 (* Rewriting function for rewriting one hypothesis at the time *)
-let (forward_general_multi_rewrite, general_multi_rewrite) = Hook.make ()
+let (forward_general_rewrite_clause, general_rewrite_clause) = Hook.make ()
 
 (* Rewriting function for substitution (x=t) everywhere at the same time *)
 let (forward_subst_one, subst_one) = Hook.make ()
@@ -1663,7 +1663,7 @@ let intro_or_and_pattern loc bracketed ll thin tac id =
 
 let rewrite_hyp assert_style l2r id =
   let rew_on l2r =
-    Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) in
+    Hook.get forward_general_rewrite_clause l2r false (mkVar id,NoBindings) in
   let subst_on l2r x rhs =
     Hook.get forward_subst_one true x (id,rhs,l2r) in
   let clear_var_and_eq c =
