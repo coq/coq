@@ -110,7 +110,7 @@ val intro_patterns_bound_to : int -> Id.t move_location ->
 val intro_pattern_to : Id.t move_location -> intro_pattern_expr ->
   unit Proofview.tactic
 
-(** Implements "intros", with [] standing for "**" *)
+(** Implements user-level "intros", with [] standing for "**" *)
 val intros_patterns : intro_pattern_expr located list -> unit Proofview.tactic
 
 (** {6 Exact tactics. } *)
@@ -197,7 +197,6 @@ val apply_in :
 
 (** {6 Elimination tactics. } *)
 
-
 (*
    The general form of an induction principle is the following:
 
@@ -244,7 +243,6 @@ type elim_scheme = {
   farg_in_concl: bool;     (** true if (f...) appears at the end of conclusion *)
 }
 
-
 val compute_elim_sig : ?elimc: constr with_bindings -> types -> elim_scheme
 
 (** elim principle with the index of its inductive arg *)
@@ -290,6 +288,8 @@ val destruct : evars_flag ->
 
 (** {6 Generic case analysis / induction tactics. } *)
 
+(** Implements user-level "destruct" and "induction" *)
+
 val induction_destruct : rec_flag -> evars_flag ->
   ((evar_map * constr with_bindings) induction_arg *
   (intro_pattern_naming_expr located option *
@@ -303,7 +303,7 @@ val induction_destruct : rec_flag -> evars_flag ->
 val case_type         : types -> unit Proofview.tactic
 val elim_type         : types -> unit Proofview.tactic
 
-(** {6 Introduction tactics. } *)
+(** {6 Constructor tactics. } *)
 
 val constructor_tac      : evars_flag -> int option -> int ->
   constr bindings -> unit Proofview.tactic
@@ -322,7 +322,7 @@ val simplest_left        : unit Proofview.tactic
 val simplest_right       : unit Proofview.tactic
 val simplest_split       : unit Proofview.tactic
 
-(** {6 Logical connective tactics. } *)
+(** {6 Equality tactics. } *)
 
 val setoid_reflexivity : unit Proofview.tactic Hook.t
 val reflexivity_red             : bool -> unit Proofview.tactic
@@ -389,6 +389,8 @@ val new_generalize_gen  : ((occurrences * constr) * Name.t) list -> unit Proofvi
 
 val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> tactic
 
+(** {6 Other tactics. } *)
+
 val unify           : ?state:Names.transparent_state -> constr -> constr -> tactic
 
 val tclABSTRACT : Id.t option -> unit Proofview.tactic -> unit Proofview.tactic
@@ -404,11 +406,12 @@ val general_rewrite_clause :
 val subst_one :
   (bool -> Id.t -> Id.t * constr * bool -> unit Proofview.tactic) Hook.t
 
-
 val declare_intro_decomp_eq :
   ((int -> unit Proofview.tactic) -> Coqlib.coq_eq_data * types *
    (types * constr * constr) ->
    constr * types -> unit Proofview.tactic) -> unit
+
+(** {6 Simple form of basic tactics. } *)
 
 module Simple : sig
   (** Simplified version of some of the above tactics *)
@@ -425,7 +428,8 @@ module Simple : sig
 
 end
 
-(** Tacticals defined directly in term of Proofview *)
+(** {6 Tacticals defined directly in term of Proofview} *)
+
 module New : sig
 
   val refine : Evd.open_constr -> unit Proofview.tactic

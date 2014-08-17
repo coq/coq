@@ -274,6 +274,11 @@ let match_with_equation t =
         else raise NoEquationFound
     | _ -> raise NoEquationFound
 
+(* Note: An "equality type" is any type with a single argument-free
+   constructor: it captures eq, eq_dep, JMeq, eq_true, etc. but also
+   True/unit which is the degenerate equality type (isomorphic to ()=());
+   in particular, True/unit are provable by "reflexivity" *)
+
 let is_inductive_equality ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let nconstr = Array.length mip.mind_consnames in
@@ -287,6 +292,8 @@ let match_with_equality_type t =
 
 let is_equality_type t = op2bool (match_with_equality_type t)
 
+(* Arrows/Implication/Negation *)
+
 let coq_arrow_pattern = PATTERN [ ?X1 -> ?X2 ]
 
 let match_arrow_pattern t =
@@ -296,6 +303,13 @@ let match_arrow_pattern t =
       assert (Id.equal m1 meta1 && Id.equal m2 meta2); (arg, mind)
     | _ -> anomaly (Pp.str "Incorrect pattern matching")
 
+let match_with_imp_term c=
+  match kind_of_term c with
+    | Prod (_,a,b) when not (dependent (mkRel 1) b) ->Some (a,b)
+    | _              -> None
+
+let is_imp_term c = op2bool (match_with_imp_term c)
+
 let match_with_nottype t =
   try
     let (arg,mind) = match_arrow_pattern t in
@@ -304,19 +318,14 @@ let match_with_nottype t =
 
 let is_nottype t = op2bool (match_with_nottype t)
 
+(* Forall *)
+
 let match_with_forall_term c=
   match kind_of_term c with
     | Prod (nam,a,b) -> Some (nam,a,b)
     | _            -> None
 
 let is_forall_term c = op2bool (match_with_forall_term c)
-
-let match_with_imp_term c=
-  match kind_of_term c with
-    | Prod (_,a,b) when not (dependent (mkRel 1) b) ->Some (a,b)
-    | _              -> None
-
-let is_imp_term c = op2bool (match_with_imp_term c)
 
 let match_with_nodep_ind t =
   let (hdapp,args) = decompose_app t in
