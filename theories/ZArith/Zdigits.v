@@ -152,7 +152,7 @@ Section Z_BRIC_A_BRAC.
   Lemma binary_value_pos :
     forall (n:nat) (bv:Bvector n), (binary_value n bv >= 0)%Z.
   Proof.
-    induction bv as [| a n v IHbv]; simpl.
+    induction bv as [| a n v IHbv]; cbn.
     omega.
 
     destruct a; destruct (binary_value n v); simpl; auto.
