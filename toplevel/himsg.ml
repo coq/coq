@@ -1194,9 +1194,8 @@ let explain_ltac_call_trace last trace loc =
            pr_enum pr_call calls ++ strbrk kind_of_last_call)
 
 let skip_extensions trace =
+  (** FIXME: handle TacAlias & TacML *)
   let rec aux = function
-  | (_,Proof_type.LtacAtomCall
-      (Tacexpr.TacAlias _) as tac) :: tail -> [tac]
   | _ :: tail -> aux tail
   | [] -> [] in
   List.rev (aux (List.rev trace))

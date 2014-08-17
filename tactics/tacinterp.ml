@@ -1116,6 +1116,108 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
 	   strbrk "Some specific verbose tactics may exist instead, such as info_trivial, info_auto, info_eauto.");
       eval_tactic ist tac
   (* For extensions *)
+  | TacAlias (loc,s,l) ->
+      let body = Tacenv.interp_alias s in
+      let rec f x = match genarg_tag x with
+      | QuantHypArgType | RedExprArgType
+      | ConstrWithBindingsArgType
+      | BindingsArgType
+      | OptArgType _ | PairArgType _ -> (** generic handler *)
+        GTac.enter begin fun gl ->
+          let sigma = Proofview.Goal.sigma gl in
+          let env = Proofview.Goal.env gl in
+          let concl = Proofview.Goal.concl gl in
+          let goal = Proofview.Goal.goal gl in
+          let (sigma, arg) = interp_genarg ist env sigma concl goal x in
+          Proofview.V82.tclEVARS sigma <*> GTac.return arg
+        end
+      | _ as tag -> (** Special treatment. TODO: use generic handler  *)
+        GTac.enter begin fun gl ->
+          let sigma = Proofview.Goal.sigma gl in
+          let env = Proofview.Goal.env gl in
+          match tag with
+          | IntOrVarArgType ->
+              GTac.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x))
+          | IdentArgType ->
+              GTac.return (value_of_ident (interp_fresh_ident ist env
+                                               (out_gen (glbwit wit_ident) x)))
+          | VarArgType ->
+              GTac.return (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
+          | GenArgType -> f (out_gen (glbwit wit_genarg) x)
+          | ConstrArgType ->
+              let (sigma,v) =
+                Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl
+              in
+              Proofview.V82.tclEVARS sigma <*>
+              GTac.return v
+          | OpenConstrArgType ->
+              let (sigma,v) =
+                Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl in
+              Proofview.V82.tclEVARS sigma <*>
+              GTac.return v
+          | ConstrMayEvalArgType ->
+              let (sigma,c_interp) =
+                interp_constr_may_eval ist env sigma
+                  (out_gen (glbwit wit_constr_may_eval) x)
+              in
+              Proofview.V82.tclEVARS sigma <*>
+              GTac.return (Value.of_constr c_interp)
+          | ListArgType ConstrArgType ->
+              let wit = glbwit (wit_list wit_constr) in
+              let (sigma,l_interp) = Tacmach.New.of_old begin fun gl ->
+                Evd.MonadR.List.map_right
+                  (fun c sigma -> mk_constr_value ist { gl with sigma=sigma } c)
+                  (out_gen wit x)
+                  (project gl)
+              end gl in
+              Proofview.V82.tclEVARS sigma <*>
+              GTac.return (in_gen (topwit (wit_list wit_genarg)) l_interp)
+          | ListArgType VarArgType ->
+              let wit = glbwit (wit_list wit_var) in
+              GTac.return (
+                let ans = List.map (mk_hyp_value ist env) (out_gen wit x) in
+                in_gen (topwit (wit_list wit_genarg)) ans
+              )
+          | ListArgType IntOrVarArgType ->
+              let wit = glbwit (wit_list wit_int_or_var) in
+              let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
+              GTac.return (in_gen (topwit (wit_list wit_genarg)) ans)
+          | ListArgType IdentArgType ->
+              let wit = glbwit (wit_list wit_ident) in
+              let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
+              let ans = List.map mk_ident (out_gen wit x) in
+              GTac.return (in_gen (topwit (wit_list wit_genarg)) ans)
+          | ListArgType t  ->
+              GenargTac.app_list (fun y -> f y) x
+          | ExtraArgType _ ->
+              let (>>=) = GTac.bind in
+              (** Special treatment of tactics *)
+              if has_type x (glbwit wit_tactic) then
+                let tac = out_gen (glbwit wit_tactic) x in
+                val_interp ist tac >>= fun v ->
+                GTac.return v
+              else
+                let goal = Proofview.Goal.goal gl in
+                let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
+                Proofview.V82.tclEVARS newsigma <*>
+                GTac.return v
+          | _ -> assert false
+        end
+      in
+      let (>>=) = GTac.bind in
+      let addvar (x, v) accu =
+        f v >>= fun v ->
+        GTac.return (Id.Map.add x v accu)
+      in
+      let tac = GTacList.fold_right addvar l ist.lfun >>= fun lfun ->
+        let trace = push_trace (loc,LtacNotationCall s) ist in
+        let ist = {
+          lfun = lfun;
+          extra = TacStore.set ist.extra f_trace trace; } in
+        val_interp ist body
+      in
+      GTac.run tac (fun v -> tactic_of_value ist v)
+
   | TacML (loc,opn,l) when List.for_all global_genarg l ->
       (* spiwack: a special case for tactics (from TACTIC EXTEND) when
          every argument can be interpreted without a
@@ -1905,108 +2007,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
           c_interp
           hyps
       end
-
-  | TacAlias (loc,s,l) ->
-      let body = Tacenv.interp_alias s in
-      let rec f x = match genarg_tag x with
-      | QuantHypArgType | RedExprArgType
-      | ConstrWithBindingsArgType
-      | BindingsArgType
-      | OptArgType _ | PairArgType _ -> (** generic handler *)
-        GTac.enter begin fun gl ->
-          let sigma = Proofview.Goal.sigma gl in
-          let env = Proofview.Goal.env gl in
-          let concl = Proofview.Goal.concl gl in
-          let goal = Proofview.Goal.goal gl in
-          let (sigma, arg) = interp_genarg ist env sigma concl goal x in
-          Proofview.V82.tclEVARS sigma <*> GTac.return arg
-        end
-      | _ as tag -> (** Special treatment. TODO: use generic handler  *)
-        GTac.enter begin fun gl ->
-          let sigma = Proofview.Goal.sigma gl in
-          let env = Proofview.Goal.env gl in
-          match tag with
-          | IntOrVarArgType ->
-              GTac.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x))
-          | IdentArgType ->
-              GTac.return (value_of_ident (interp_fresh_ident ist env
-	                                       (out_gen (glbwit wit_ident) x)))
-          | VarArgType ->
-              GTac.return (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
-          | GenArgType -> f (out_gen (glbwit wit_genarg) x)
-          | ConstrArgType ->
-              let (sigma,v) =
-                Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl
-              in
-              Proofview.V82.tclEVARS sigma <*>
-	      GTac.return v
-          | OpenConstrArgType ->
-              let (sigma,v) =
-                Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl in
-              Proofview.V82.tclEVARS sigma <*>
-	      GTac.return v
-          | ConstrMayEvalArgType ->
-              let (sigma,c_interp) =
-                interp_constr_may_eval ist env sigma
-                  (out_gen (glbwit wit_constr_may_eval) x)
-              in
-              Proofview.V82.tclEVARS sigma <*>
-	      GTac.return (Value.of_constr c_interp)
-          | ListArgType ConstrArgType ->
-              let wit = glbwit (wit_list wit_constr) in
-              let (sigma,l_interp) = Tacmach.New.of_old begin fun gl ->
-                Evd.MonadR.List.map_right
-                  (fun c sigma -> mk_constr_value ist { gl with sigma=sigma } c)
-                  (out_gen wit x)
-                  (project gl)
-              end gl in
-              Proofview.V82.tclEVARS sigma <*>
-              GTac.return (in_gen (topwit (wit_list wit_genarg)) l_interp)
-          | ListArgType VarArgType ->
-              let wit = glbwit (wit_list wit_var) in
-              GTac.return (
-                let ans = List.map (mk_hyp_value ist env) (out_gen wit x) in
-                in_gen (topwit (wit_list wit_genarg)) ans
-              )
-          | ListArgType IntOrVarArgType ->
-              let wit = glbwit (wit_list wit_int_or_var) in
-              let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
-              GTac.return (in_gen (topwit (wit_list wit_genarg)) ans)
-          | ListArgType IdentArgType ->
-              let wit = glbwit (wit_list wit_ident) in
-	      let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
-	      let ans = List.map mk_ident (out_gen wit x) in
-              GTac.return (in_gen (topwit (wit_list wit_genarg)) ans)
-          | ListArgType t  ->
-              GenargTac.app_list (fun y -> f y) x
-          | ExtraArgType _ ->
-              let (>>=) = GTac.bind in
-              (** Special treatment of tactics *)
-              if has_type x (glbwit wit_tactic) then
-                let tac = out_gen (glbwit wit_tactic) x in
-                val_interp ist tac >>= fun v ->
-                GTac.return v
-              else
-                let goal = Proofview.Goal.goal gl in
-                let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
-                Proofview.V82.tclEVARS newsigma <*>
-                GTac.return v
-          | _ -> assert false
-        end
-      in
-      let (>>=) = GTac.bind in
-      let addvar (x, v) accu =
-        f v >>= fun v ->
-        GTac.return (Id.Map.add x v accu)
-      in
-      let tac = GTacList.fold_right addvar l ist.lfun >>= fun lfun ->
-        let trace = push_trace (loc,LtacNotationCall s) ist in
-        let ist = {
-          lfun = lfun;
-          extra = TacStore.set ist.extra f_trace trace; } in
-        val_interp ist body
-      in
-      GTac.run tac (fun v -> tactic_of_value ist v)
 
 (* Initial call for interpretation *)
 

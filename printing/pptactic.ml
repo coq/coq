@@ -654,9 +654,6 @@ let rec pr_atom0 = function
 
   (* Main tactic printer *)
 and pr_atom1 = function
-  | TacAlias (loc,kn,l) ->
-      pr_with_comments loc (pr_alias 1 kn (List.map snd l))
-
   (* Basic tactics *)
   | TacIntroPattern [] as t -> pr_atom0 t
   | TacIntroPattern (_::_ as p) ->
@@ -916,10 +913,6 @@ let rec pr_tac inherited tac =
       pr_tac (lcomplete,E) t, lcomplete
   | TacId l ->
       str "idtac" ++ prlist (pr_arg (pr_message_token pr_ident)) l, latom
-  | TacAtom (loc,TacAlias (_,kn,l)) ->
-      pr_with_comments loc
-        (pr_alias (level_of inherited) kn (List.map snd l)),
-      latom
   | TacAtom (loc,t) ->
       pr_with_comments loc (hov 1 (pr_atom1 t)), ltatom
   | TacArg(_,Tacexp e) -> pr_tac_level (latom,E) e, latom
@@ -938,6 +931,8 @@ let rec pr_tac inherited tac =
   | TacArg (_,a) -> pr_tacarg a, latom
   | TacML (loc,s,l) ->
       pr_with_comments loc (pr_extend 1 s l), lcall
+  | TacAlias (loc,kn,l) ->
+      pr_with_comments loc (pr_alias (level_of inherited) kn (List.map snd l)), latom
   in
   if prec_less prec inherited then strm
   else str"(" ++ strm ++ str")"

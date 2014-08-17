@@ -274,7 +274,7 @@ let head_is_ident tg = match tg.tacgram_prods with
 
 let add_tactic_entry kn tg =
   let entry, pos = get_tactic_entry tg.tacgram_level in
-  let mkact loc l = (TacAtom(loc, TacAlias (loc,kn,l)):raw_tactic_expr) in
+  let mkact loc l = (TacAlias (loc,kn,l):raw_tactic_expr) in
   let () =
     if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then
       error "Notation for simple tactic must start with an identifier."

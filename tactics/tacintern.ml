@@ -558,11 +558,6 @@ let rec intern_atomic lf ist x =
       TacInversion (intern_inversion_strength lf ist inv,
         intern_quantified_hypothesis ist hyp)
 
-  (* For extensions *)
-  | TacAlias (loc,s,l) ->
-      let l = List.map (fun (id,a) -> (id,intern_genarg ist a)) l in
-      TacAlias (loc,s,l)
-
 and intern_tactic onlytac ist tac = snd (intern_tactic_seq onlytac ist tac)
 
 and intern_tactic_seq onlytac ist = function
@@ -633,6 +628,11 @@ and intern_tactic_seq onlytac ist = function
   | TacSolve l -> ist.ltacvars, TacSolve (List.map (intern_pure_tactic ist) l)
   | TacComplete tac -> ist.ltacvars, TacComplete (intern_pure_tactic ist tac)
   | TacArg (loc,a) -> ist.ltacvars, intern_tactic_as_arg loc onlytac ist a
+
+  (* For extensions *)
+  | TacAlias (loc,s,l) ->
+      let l = List.map (fun (id,a) -> (id,intern_genarg ist a)) l in
+      ist.ltacvars, TacAlias (loc,s,l)
   | TacML (loc,opn,l) ->
       let () = Hook.get f_assert_tactic_installed opn in
       ist.ltacvars, TacML (adjust_loc loc,opn,List.map (intern_genarg ist) l)
