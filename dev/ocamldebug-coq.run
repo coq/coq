@@ -18,7 +18,7 @@ exec $OCAMLDEBUG \
 	-I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar \
 	-I $COQTOP/lib -I $COQTOP/intf -I $COQTOP/kernel \
 	-I $COQTOP/library -I $COQTOP/pretyping -I $COQTOP/parsing \
-        -I $COQTOP/interp -I $COQTOP/proofs -I $COQTOP/tactics \
+        -I $COQTOP/interp -I $COQTOP/proofs -I $COQTOP/tactics -I $COQTOP/stm \
 	-I $COQTOP/toplevel -I $COQTOP/dev -I $COQTOP/config \
         -I $COQTOP/plugins/cc         -I $COQTOP/plugins/dp \
         -I $COQTOP/plugins/extraction -I $COQTOP/plugins/field \
