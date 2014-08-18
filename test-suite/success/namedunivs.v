@@ -79,7 +79,7 @@ Proof.
 Defined.
 
 Definition paths_downward_closed_lt (A : Type@{i}) (x y : A) :
-  @paths (liftlt@{j i} A) x y -> paths x y.
+  @paths (liftlt@{i j} A) x y -> paths x y.
 Proof. 
   intros. destruct X. exact (idpath _).
 Defined.
