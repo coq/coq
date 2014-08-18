@@ -1512,15 +1512,15 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	| Some id, (undef, None, newt) ->
             Proofview.V82.tactic (Tacmach.convert_hyp_no_check (id, None, newt))
 	| None, (undef, Some p, newt) ->
-	    let refable = Goal.Refinable.make
-	      (fun handle -> 
-		 Goal.bind env
-		   (fun env -> Goal.bind (Refinable.mkEvar handle env newt)
-		      (fun ev ->
-			 Goal.Refinable.constr_of_open_constr handle true 
-			   (undef, mkApp (p, [| ev |])))))
-	    in
-	      Proofview.tclSENSITIVE (Goal.bind refable Goal.refine)
+            Proofview.Goal.raw_enter begin fun gl ->
+            let env = Proofview.Goal.env gl in
+            let make h =
+              let (h, ()) = Proofview.Refine.update h (fun _ -> undef, ()) in
+              let (h, ev) = Proofview.Refine.new_evar h env newt in
+              h, mkApp (p, [| ev |])
+            in
+            Proofview.Refine.refine make
+            end
 	| None, (undef, None, newt) ->
             Proofview.V82.tactic (Tacmach.convert_concl_no_check newt DEFAULTcast)
   in
