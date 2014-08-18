@@ -1509,8 +1509,8 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	match is_hyp, res with
 	| Some id, (undef, Some p, newt) ->
 	    assert_replacing id newt (new_refine (undef, p))
-	| Some id, (undef, None, newt) -> 
-	    Proofview.tclSENSITIVE (Goal.convert_hyp false (id, None, newt))
+	| Some id, (undef, None, newt) ->
+            Proofview.V82.tactic (Tacmach.convert_hyp_no_check (id, None, newt))
 	| None, (undef, Some p, newt) ->
 	    let refable = Goal.Refinable.make
 	      (fun handle -> 
@@ -1522,7 +1522,7 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	    in
 	      Proofview.tclSENSITIVE (Goal.bind refable Goal.refine)
 	| None, (undef, None, newt) ->
-	    Proofview.tclSENSITIVE (Goal.convert_concl false newt)
+            Proofview.V82.tactic (Tacmach.convert_concl_no_check newt DEFAULTcast)
   in
   let info =
     bind_gl_info
