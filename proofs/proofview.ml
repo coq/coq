@@ -993,6 +993,14 @@ struct
     refine f
   end
 
+  let update (evd, gls) f =
+    let nevd, ans = f evd in
+    let fold ev _ accu =
+      if not (Evd.mem evd ev) then build_goal ev :: accu else accu
+    in
+    let gls = Evd.fold_undefined fold nevd gls in
+    (nevd, gls), ans
+
 end
 
 module NonLogical = Proofview_monad.NonLogical
