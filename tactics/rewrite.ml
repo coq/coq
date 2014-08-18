@@ -1902,7 +1902,8 @@ let unification_rewrite l2r c1 c2 cl car rel but env =
        ~flags:{ rewrite_unif_flags with Unification.resolve_evars = true } env
         cl.evd ((if l2r then c1 else c2),but)
     with
-	Pretype_errors.PretypeError _ ->
+    | ex when Pretype_errors.precatchable_exception ex || 
+      Typeclasses_errors.unsatisfiable_exception ex ->
 	  (* ~flags:(true,true) to make Ring work (since it really
              exploits conversion) *)
 	  Unification.w_unify_to_subterm 

@@ -1334,11 +1334,15 @@ let make_abstraction env evd ccl abs =
    Unifies [cl] to every subterm of [op] until it finds a match.
    Fails if no match is found *)
 let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
+  let bestexn = ref None in
   let rec matchrec cl =
     let cl = strip_outer_cast cl in
     (try
        if closed0 cl && not (isEvar cl)
-       then w_typed_unify env evd CONV flags op cl,cl
+       then
+	 (try w_typed_unify env evd CONV flags op cl,cl
+	  with ex when Typeclasses_errors.unsatisfiable_exception ex ->
+	    bestexn := Some ex; error "Unsat")
        else error "Bound 1"
      with ex when precatchable_exception ex ->
        (match kind_of_term cl with
@@ -1390,7 +1394,9 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   in
   try matchrec cl
   with ex when precatchable_exception ex ->
-    raise (PretypeError (env,evd,NoOccurrenceFound (op, None)))
+    match !bestexn with
+    | None -> raise (PretypeError (env,evd,NoOccurrenceFound (op, None)))
+    | Some e -> raise e
 
 (* Tries to find all instances of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] and return all the matches.

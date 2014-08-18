@@ -581,7 +581,7 @@ let make_pr_tac pr_tac_level
    pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,pr_alias,strip_prod_binders, pr_gen) =
 
 (* some shortcuts *)
-let pr_bindings = pr_bindings pr_constr pr_lconstr in
+let _pr_bindings = pr_bindings pr_constr pr_lconstr in
 let pr_ex_bindings = pr_bindings_gen true pr_constr pr_lconstr in
 let pr_with_bindings = pr_with_bindings pr_constr pr_lconstr in
 let pr_with_bindings_arg = pr_with_bindings_arg pr_constr pr_lconstr in
