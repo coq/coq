@@ -87,16 +87,6 @@ module Refinable : sig
   val resolve_typeclasses : ?filter:Typeclasses.evar_filter -> ?split:bool -> ?fail:bool -> unit -> unit sensitive
 
 
-  (* [constr_of_raw h tycon flags] is a pretyping function.
-      The [tycon] argument allows to put a type constraint on the returned term.
-      The [flags] argument is passed to the pretyper.
-      The principal argument is a [glob_constr] which is then pretyped in the
-      context of a term, the remaining evars are registered to the handle.
-      It is the main component of the toplevel refine tactic.*)
-  val constr_of_raw : handle -> Pretyping.typing_constraint ->
-    Pretyping.inference_flags -> Pretyping.ltac_var_map ->
-    Glob_term.glob_constr -> Term.constr sensitive
-
   (* [constr_of_open_constr h check_type] transforms an open constr into a 
      goal-sensitive constr, adding the undefined variables to the set of subgoals.
      If [check_type] is true, the term is coerced to the conclusion of the goal.

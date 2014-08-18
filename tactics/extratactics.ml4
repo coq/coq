@@ -364,21 +364,19 @@ let refine_red_flags =
 let refine_locs = { Locus.onhyps=None; concl_occs=Locus.AllOccurrences }
 
 let refine_tac {Glob_term.closure=closure;term=term} =
-    let c = Goal.Refinable.make begin fun h ->
-      Goal.bind Goal.concl (fun concl ->
-        let flags = Pretyping.all_no_fail_flags in
-        let tycon = Pretyping.OfType concl in
-        let lvar = { Pretyping.empty_lvar with
-          Pretyping.ltac_constrs = closure.Glob_term.typed;
-          Pretyping.ltac_uconstrs = closure.Glob_term.untyped;
-        } in
-        Goal.Refinable.constr_of_raw h tycon flags lvar term
-      )
-    end in
-    Proofview.Goal.lift c begin fun c ->
-      Proofview.tclSENSITIVE (Goal.refine c) <*>
-      Proofview.V82.tactic (reduce refine_red_flags refine_locs)
-    end
+  Proofview.Goal.enter begin fun gl ->
+    let concl = Proofview.Goal.concl gl in
+    let env = Proofview.Goal.env gl in
+    let flags = Pretyping.all_no_fail_flags in
+    let tycon = Pretyping.OfType concl in
+    let lvar = { Pretyping.empty_lvar with
+      Pretyping.ltac_constrs = closure.Glob_term.typed;
+      Pretyping.ltac_uconstrs = closure.Glob_term.untyped;
+    } in
+    let update evd = Pretyping.understand_ltac flags evd env lvar tycon term in
+    Proofview.Refine.refine_casted (fun h -> Proofview.Refine.update h update) <*>
+    Proofview.V82.tactic (reduce refine_red_flags refine_locs)
+  end
 
 TACTIC EXTEND refine
   [ "refine" uconstr(c) ] -> [  refine_tac c ]

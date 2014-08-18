@@ -243,27 +243,6 @@ module Refinable = struct
        many things to go wrong. *)
     handle := fusion delta_list !handle
 
-  (* [constr_of_raw h tycon flags] is a pretyping function.
-      The [tycon] argument allows to put a type constraint on the returned term.
-      The [flags] argument is passed to the pretyper.
-      The principal argument is a [glob_constr] which is then pretyped in the
-      context of a term, the remaining evars are registered to the handle.
-      It is the main component of the toplevel refine tactic.*)
-  (* spiwack: it is not entirely satisfactory to have this function here. Plus it is
-      a bit hackish. However it does not seem possible to move it out until
-      pretyping is defined as some proof procedure. *)
-  let constr_of_raw handle tycon flags lvar rawc = (); fun env rdefs gl info ->
-    (* We need to keep trace of what [rdefs] was originally*)
-    let init_defs = !rdefs in
-    (* call to [understand_tcc_evars] returns a constr with undefined evars
-       these evars will be our new goals *)
-    let (sigma, open_constr) =
-      Pretyping.understand_ltac flags !rdefs env lvar tycon rawc
-    in
-    let () = rdefs := sigma in
-    let () = update_handle handle init_defs !rdefs in
-    open_constr
-
   let constr_of_open_constr handle check_type (evars, c) = (); fun env rdefs gl info ->
     let () = update_handle handle !rdefs evars in
     rdefs := Evd.fold (fun ev evi evd -> if not (Evd.mem !rdefs ev) then Evd.add evd ev evi else evd) evars !rdefs;
