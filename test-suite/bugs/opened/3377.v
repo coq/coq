@@ -1,4 +1,5 @@
 Set Primitive Projections.
+Set Implicit Arguments.
 Record prod A B := pair { fst : A; snd : B}.
 
 Goal fst (@pair Type Type Type Type).
