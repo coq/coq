@@ -11,11 +11,11 @@ open Pp
 
 (** Printing of [intro_pattern] *)
 
-let rec pr_intro_pattern (_,pat) = match pat with
+let rec pr_intro_pattern prc (_,pat) = match pat with
   | IntroForthcoming true -> str "*"
   | IntroForthcoming false -> str "**"
   | IntroNaming p -> pr_intro_pattern_naming p
-  | IntroAction p -> pr_intro_pattern_action p
+  | IntroAction p -> pr_intro_pattern_action prc p
 
 and pr_intro_pattern_naming = function
   | IntroWildcard -> str "_"
@@ -23,19 +23,21 @@ and pr_intro_pattern_naming = function
   | IntroFresh id -> str "?" ++ Nameops.pr_id id
   | IntroAnonymous -> str "?"
 
-and pr_intro_pattern_action = function
-  | IntroOrAndPattern pll -> pr_or_and_intro_pattern pll
+and pr_intro_pattern_action prc = function
+  | IntroOrAndPattern pll -> pr_or_and_intro_pattern prc pll
   | IntroInjection pl ->
-      str "[=" ++ hv 0 (prlist_with_sep spc pr_intro_pattern pl) ++ str "]"
+      str "[=" ++ hv 0 (prlist_with_sep spc (pr_intro_pattern prc) pl) ++
+      str "]"
+  | IntroApplyOn (c,pat) -> pr_intro_pattern prc pat ++ str "/" ++ prc c
   | IntroRewrite true -> str "->"
   | IntroRewrite false -> str "<-"
 
-and pr_or_and_intro_pattern = function
+and pr_or_and_intro_pattern prc = function
   | [pl] ->
-      str "(" ++ hv 0 (prlist_with_sep pr_comma pr_intro_pattern pl) ++ str ")"
+      str "(" ++ hv 0 (prlist_with_sep pr_comma (pr_intro_pattern prc) pl) ++ str ")"
   | pll ->
       str "[" ++
-      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
+      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc (pr_intro_pattern prc)) pll)
       ++ str "]"
 
 (** Printing of [move_location] *)

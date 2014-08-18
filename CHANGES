@@ -144,6 +144,8 @@ Tactics
 - Now "appcontext" and "context" behave the same. The old buggy behaviour of
   "context" can be retrieved at parse time by setting the
   "Tactic Compat Context" flag. (possible source of incompatibilities).
+- New introduction pattern p/c which applies lemma c on the fly on the
+  hypothesis under consideration before continuing with introduction pattern p.
 - New introduction pattern [= x1 .. xn] applies "injection as [x1 .. xn]"
   on the fly if next hypothesis to introduce is an injectible equality
   (idea borrowed from Georges Gonthier). Introduction pattern [=] applies

@@ -347,23 +347,28 @@ let pr_bindings prc prlc = pr_bindings_gen false prc prlc
 let pr_with_bindings prc prlc (c,bl) =
   hov 1 (prc c ++ pr_bindings prc prlc bl)
 
-let pr_as_disjunctive_ipat (_,ipatl) =
-  str "as " ++ Miscprint.pr_or_and_intro_pattern ipatl
+let pr_as_disjunctive_ipat prc (_,ipatl) =
+  str "as " ++ Miscprint.pr_or_and_intro_pattern prc ipatl
 let pr_eqn_ipat (_,ipat) = str "eqn:" ++ Miscprint.pr_intro_pattern_naming ipat
-let pr_as_ipat = function
-  | None -> mt ()
-  | Some ipat -> str "as " ++ Miscprint.pr_intro_pattern ipat
 
-let pr_with_induction_names = function
+let pr_with_induction_names prc = function
   | None, None -> mt ()
   | Some eqpat, None -> spc () ++ hov 1 (pr_eqn_ipat eqpat)
-  | None, Some ipat -> spc () ++ hov 1 (pr_as_disjunctive_ipat ipat)
+  | None, Some ipat -> spc () ++ hov 1 (pr_as_disjunctive_ipat prc ipat)
   | Some eqpat, Some ipat ->
-    spc () ++ hov 1 (pr_as_disjunctive_ipat ipat ++ spc () ++ pr_eqn_ipat eqpat)
+      spc () ++
+      hov 1 (pr_as_disjunctive_ipat prc ipat ++ spc () ++ pr_eqn_ipat eqpat)
 
-let pr_with_inversion_names = function
+let pr_as_intro_pattern prc ipat =
+  spc () ++ hov 1 (str "as" ++ spc () ++ Miscprint.pr_intro_pattern prc ipat)
+
+let pr_with_inversion_names prc = function
   | None -> mt ()
-  | Some ipat -> pr_as_disjunctive_ipat ipat
+  | Some ipat -> pr_as_disjunctive_ipat prc ipat
+
+let pr_as_ipat prc = function
+  | None -> mt ()
+  | Some ipat -> pr_as_intro_pattern prc ipat
 
 let pr_as_name = function
   | Anonymous -> mt ()
@@ -382,7 +387,7 @@ let pr_assertion prc _prlc ipat c = match ipat with
       spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
 *)
   | ipat ->
-      spc() ++ prc c ++ pr_as_ipat ipat
+      spc() ++ prc c ++ pr_as_ipat prc ipat
 
 let pr_assumption prc prlc ipat c = match ipat with
 (* Use this "optimisation" or use only the general case ?*)
@@ -390,7 +395,7 @@ let pr_assumption prc prlc ipat c = match ipat with
   | Some (_,IntroNaming (IntroIdentifier id)) ->
       spc() ++ surround (pr_id id ++ str " :" ++ spc() ++ prlc c)
   | ipat ->
-      spc() ++ prc c ++ pr_as_ipat ipat
+      spc() ++ prc c ++ pr_as_ipat prc ipat
 
 let pr_by_tactic prt = function
   | TacId [] -> mt ()
@@ -411,10 +416,10 @@ let pr_simple_hyp_clause pr_id = function
   | [] -> mt ()
   | l -> pr_in (spc () ++ prlist_with_sep spc pr_id l)
 
-let pr_in_hyp_as pr_id = function
+let pr_in_hyp_as prc pr_id = function
   | None -> mt ()
   | Some (clear,id,ipat) ->
-      pr_in (spc () ++ pr_clear_flag clear pr_id id) ++ pr_as_ipat ipat
+      pr_in (spc () ++ pr_clear_flag clear pr_id id) ++ pr_as_ipat prc ipat
 
 let pr_clauses default_is_concl pr_id = function
   | { onhyps=Some []; concl_occs=occs }
@@ -655,7 +660,7 @@ and pr_atom1 = function
   | TacIntroPattern [] as t -> pr_atom0 t
   | TacIntroPattern (_::_ as p) ->
       hov 1 (str "intros" ++ spc () ++
-             prlist_with_sep spc Miscprint.pr_intro_pattern p)
+             prlist_with_sep spc (Miscprint.pr_intro_pattern pr_constr) p)
   | TacIntroMove (None,MoveLast) as t -> pr_atom0 t
   | TacIntroMove (Some id,MoveLast) -> str "intro " ++ pr_id id
   | TacIntroMove (ido,hto) ->
@@ -666,7 +671,7 @@ and pr_atom1 = function
       hov 1 ((if a then mt() else str "simple ") ++
              str (with_evars ev "apply") ++ spc () ++
              prlist_with_sep pr_comma pr_with_bindings_arg cb ++
-             pr_in_hyp_as pr_ident inhyp)
+             pr_in_hyp_as pr_constr pr_ident inhyp)
   | TacElim (ev,cb,cbo) ->
       hov 1 (str (with_evars ev "elim") ++ pr_arg pr_with_bindings_arg cb ++
         pr_opt pr_eliminator cbo)
@@ -719,7 +724,7 @@ and pr_atom1 = function
              spc () ++
              prlist_with_sep pr_comma (fun ((clear_flag,h),ids) ->
 	       pr_clear_flag clear_flag (pr_induction_arg pr_constr pr_lconstr) h ++
-	       pr_with_induction_names ids) l ++
+	       pr_with_induction_names pr_constr ids) l ++
              pr_opt pr_eliminator el ++
 	     pr_opt_no_spc (pr_clauses None pr_ident) cl)
   | TacDoubleInduction (h1,h2) ->
@@ -795,11 +800,11 @@ and pr_atom1 = function
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       hov 1 (str "dependent " ++ pr_induction_kind k ++ spc () ++
       pr_quantified_hypothesis hyp ++
-      pr_with_inversion_names ids ++ pr_with_constr pr_constr c)
+      pr_with_inversion_names pr_constr ids ++ pr_with_constr pr_constr c)
   | TacInversion (NonDepInversion (k,cl,ids),hyp) ->
       hov 1 (pr_induction_kind k ++ spc () ++
       pr_quantified_hypothesis hyp ++
-      pr_with_inversion_names ids ++ pr_simple_hyp_clause pr_ident cl)
+      pr_with_inversion_names pr_constr ids ++ pr_simple_hyp_clause pr_ident cl)
   | TacInversion (InversionUsing (c,cl),hyp) ->
       hov 1 (str "inversion" ++ spc() ++ pr_quantified_hypothesis hyp ++
       spc () ++ str "using" ++ spc () ++ pr_constr c ++
@@ -1017,12 +1022,12 @@ let () =
     pr_reference (pr_or_var (pr_located pr_global)) pr_global;
   Genprint.register_print0
     Constrarg.wit_intro_pattern
-    Miscprint.pr_intro_pattern
-    Miscprint.pr_intro_pattern
-    Miscprint.pr_intro_pattern;
+    (Miscprint.pr_intro_pattern pr_constr_expr)
+    (Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr c))
+    (Miscprint.pr_intro_pattern pr_constr);
   Genprint.register_print0
     Constrarg.wit_clause_dft_concl
-    (pr_clauses (Some true) (pr_lident))
+    (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) pr_lident)
     (pr_clauses (Some true) (fun id -> pr_lident (Loc.ghost,id)))
   ;

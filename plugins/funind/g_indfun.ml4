@@ -80,7 +80,7 @@ END
 let pr_intro_as_pat prc _ _ pat =
   match pat with
     | Some pat ->
-      spc () ++ str "as" ++ spc () ++ Miscprint.pr_intro_pattern pat
+      spc () ++ str "as" ++ spc () ++ Miscprint.pr_intro_pattern prc pat
     | None -> mt ()
 
 let out_disjunctive = function

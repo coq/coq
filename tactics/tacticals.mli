@@ -108,7 +108,7 @@ type branch_args = {
   nassums    : int;         (** the number of assumptions to be introduced *)
   branchsign : bool list;   (** the signature of the branch.
                                true=recursive argument, false=constant *)
-  branchnames : intro_pattern_expr located list}
+  branchnames : intro_patterns}
 
 type branch_assumptions = {
   ba        : branch_args;     (** the branch args *)
@@ -117,16 +117,16 @@ type branch_assumptions = {
 (** [check_disjunctive_pattern_size loc pats n] returns an appropriate 
    error message if |pats| <> n *)
 val check_or_and_pattern_size :
-  Loc.t -> or_and_intro_pattern_expr -> int -> unit
+  Loc.t -> constr or_and_intro_pattern_expr -> int -> unit
 
 (** Tolerate "[]" to mean a disjunctive pattern of any length *)
-val fix_empty_or_and_pattern : int -> or_and_intro_pattern_expr ->
-  or_and_intro_pattern_expr
+val fix_empty_or_and_pattern : int -> constr or_and_intro_pattern_expr ->
+  constr or_and_intro_pattern_expr
 
 (** Useful for [as intro_pattern] modifier *)
 val compute_induction_names :
-  int -> or_and_intro_pattern_expr located option ->
-    intro_pattern_expr located list array
+  int -> constr or_and_intro_pattern_expr located option ->
+    intro_patterns array
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
 val elimination_sort_of_hyp  : Id.t -> goal sigma -> sorts_family
@@ -242,11 +242,11 @@ module New : sig
     constr -> unit Proofview.tactic
 
   val case_then_using :
-    or_and_intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
+    constr or_and_intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
     constr option -> pinductive -> Term.constr * Term.types -> unit Proofview.tactic
 
   val case_nodep_then_using :
-    or_and_intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
+    constr or_and_intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
     constr option -> pinductive -> Term.constr * Term.types -> unit Proofview.tactic
 
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic

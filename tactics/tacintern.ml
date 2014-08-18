@@ -215,36 +215,6 @@ let intern_message_token ist = function
 
 let intern_message ist = List.map (intern_message_token ist)
 
-let rec intern_intro_pattern lf ist = function
-  | loc, IntroNaming pat ->
-      loc, IntroNaming (intern_intro_pattern_naming lf ist pat)
-  | loc, IntroAction pat ->
-      loc, IntroAction (intern_intro_pattern_action lf ist pat)
-  | loc, IntroForthcoming _ as x -> x
-
-and intern_intro_pattern_naming lf ist = function
-  | IntroIdentifier id ->
-      IntroIdentifier (intern_ident lf ist id)
-  | IntroFresh id ->
-      IntroFresh (intern_ident lf ist id)
-  | IntroWildcard | IntroAnonymous as x -> x
-
-and intern_intro_pattern_action lf ist = function
-  | IntroOrAndPattern l ->
-      IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
-  | IntroInjection l ->
-      IntroInjection (List.map (intern_intro_pattern lf ist) l)
-  | IntroRewrite _ as x -> x
-
-and intern_or_and_intro_pattern lf ist =
-  List.map (List.map (intern_intro_pattern lf ist))
-
-let intern_or_and_intro_pattern_loc lf ist (loc,l) =
-  (loc,intern_or_and_intro_pattern lf ist l)
-
-let intern_intro_pattern_naming_loc lf ist (loc,pat) =
-  (loc,intern_intro_pattern_naming lf ist pat)
-
 let intern_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
@@ -286,6 +256,38 @@ let intern_constr_with_bindings ist (c,bl) =
 
 let intern_constr_with_bindings_arg ist (clear,c) =
   (clear,intern_constr_with_bindings ist c)
+
+let rec intern_intro_pattern lf ist = function
+  | loc, IntroNaming pat ->
+      loc, IntroNaming (intern_intro_pattern_naming lf ist pat)
+  | loc, IntroAction pat ->
+      loc, IntroAction (intern_intro_pattern_action lf ist pat)
+  | loc, IntroForthcoming _ as x -> x
+
+and intern_intro_pattern_naming lf ist = function
+  | IntroIdentifier id ->
+      IntroIdentifier (intern_ident lf ist id)
+  | IntroFresh id ->
+      IntroFresh (intern_ident lf ist id)
+  | IntroWildcard | IntroAnonymous as x -> x
+
+and intern_intro_pattern_action lf ist = function
+  | IntroOrAndPattern l ->
+      IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
+  | IntroInjection l ->
+      IntroInjection (List.map (intern_intro_pattern lf ist) l)
+  | IntroRewrite _ as x -> x
+  | IntroApplyOn (c,pat) ->
+      IntroApplyOn (intern_constr ist c, intern_intro_pattern lf ist pat)
+
+and intern_or_and_intro_pattern lf ist =
+  List.map (List.map (intern_intro_pattern lf ist))
+
+let intern_or_and_intro_pattern_loc lf ist (loc,l) =
+  (loc,intern_or_and_intro_pattern lf ist l)
+
+let intern_intro_pattern_naming_loc lf ist (loc,pat) =
+  (loc,intern_intro_pattern_naming lf ist pat)
 
   (* TODO: catch ltac vars *)
 let intern_induction_arg ist = function

@@ -307,6 +307,8 @@ GEXTEND Gram
   simple_intropattern:
     [ [ pat = or_and_intropattern -> !@loc, IntroAction (IntroOrAndPattern pat)
       | pat = equality_intropattern -> !@loc, IntroAction pat
+      | pat = simple_intropattern; "/"; c = constr ->
+          !@loc, IntroAction (IntroApplyOn (c,pat))
       | pat = naming_intropattern -> !@loc, IntroNaming pat ] ]
   ;
   simple_binding:

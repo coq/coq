@@ -10,9 +10,11 @@ open Misctypes
 
 (** Printing of [intro_pattern] *)
 
-val pr_intro_pattern : intro_pattern_expr Loc.located -> Pp.std_ppcmds
+val pr_intro_pattern :
+  ('a -> Pp.std_ppcmds) -> 'a intro_pattern_expr Loc.located -> Pp.std_ppcmds
 
-val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds
+val pr_or_and_intro_pattern :
+  ('a -> Pp.std_ppcmds) -> 'a or_and_intro_pattern_expr -> Pp.std_ppcmds
 
 val pr_intro_pattern_naming : intro_pattern_naming_expr -> Pp.std_ppcmds
 

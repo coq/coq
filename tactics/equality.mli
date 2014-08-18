@@ -77,9 +77,9 @@ val discrHyp     : Id.t -> unit Proofview.tactic
 val discrEverywhere : evars_flag -> unit Proofview.tactic
 val discr_tac    : evars_flag ->
   constr with_bindings induction_arg option -> unit Proofview.tactic
-val inj          : intro_pattern_expr Loc.located list option -> evars_flag ->
+val inj          : intro_patterns option -> evars_flag ->
   clear_flag -> constr with_bindings -> unit Proofview.tactic
-val injClause    : intro_pattern_expr Loc.located list option -> evars_flag ->
+val injClause    : intro_patterns option -> evars_flag ->
   constr with_bindings induction_arg option -> unit Proofview.tactic
 val injHyp       : clear_flag -> Id.t -> unit Proofview.tactic
 val injConcl     : unit Proofview.tactic

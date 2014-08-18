@@ -821,7 +821,7 @@ let make_naming id t = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) naming id clenv0 =
+let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) naming id clenv0 tac =
   let clenv = Clenvtac.clenv_pose_dependent_evars with_evars clenv0 in
   let clenv =
     if with_classes then
@@ -839,10 +839,10 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) nami
     (Proofview.V82.tclEVARS clenv.evd)
     (if sidecond_first then
        Tacticals.New.tclTHENFIRST
-         (assert_before_gen with_clear naming new_hyp_typ) exact_tac
+         (assert_before_then_gen with_clear naming new_hyp_typ tac) exact_tac
      else
        Tacticals.New.tclTHENLAST
-         (assert_after_gen with_clear naming new_hyp_typ) exact_tac)
+         (assert_after_then_gen with_clear naming new_hyp_typ tac) exact_tac)
 
 (********************************************)
 (*       Elimination tactics                *)
@@ -1083,6 +1083,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) id rename i (
     errorlabstrm "general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
   clenv_refine_in with_evars None id elimclause''
+    (fun id -> Proofview.tclUNIT ())
   end
 
 let general_elim_clause with_evars flags id c e =
@@ -1325,7 +1326,7 @@ let apply_in_once_main flags innerclause env sigma (d,lbind) =
   aux (make_clenv_binding env sigma (d,thm) lbind)
 
 let apply_in_once sidecond_first with_delta with_destruct with_evars naming
-    id (clear_flag,(loc,(d,lbind))) =
+    id (clear_flag,(loc,(d,lbind))) tac =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
@@ -1338,9 +1339,11 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
     let sigma = Proofview.Goal.sigma gl in
     try
       let clause = apply_in_once_main flags innerclause env sigma (c,lbind) in
-      Tacticals.New.tclTHEN
-        (clenv_refine_in ~sidecond_first with_evars naming id clause)
-        (apply_clear_request clear_flag false c)
+      clenv_refine_in ~sidecond_first with_evars naming id clause
+        (fun id ->
+          Tacticals.New.tclTHEN
+            (apply_clear_request clear_flag false c)
+            (tac id))
     with e when with_destruct ->
       let e = Errors.push e in
       descend_in_conjunctions aux (fun _ -> raise e) c
@@ -1695,6 +1698,17 @@ let rewrite_hyp assert_style l2r id =
         Tacticals.New.tclZEROMSG (str"Cannot find a known equation.")
   end
 
+let rec prepare_naming loc = function
+  | IntroIdentifier id -> NamingMustBe (loc,id)
+  | IntroAnonymous -> NamingAvoid []
+  | IntroFresh id -> NamingBasedOn (id,[])
+  | IntroWildcard ->
+      error "Did you really mind erasing the newly generated hypothesis?"
+
+let do_replace id = function
+  | NamingMustBe (_,id') when Option.equal Id.equal id (Some id') -> true
+  | _ -> false
+
 let rec explicit_intro_names = function
 | (_, IntroForthcoming _) :: l -> explicit_intro_names l
 | (_, IntroNaming (IntroIdentifier id)) :: l -> id :: explicit_intro_names l
@@ -1702,6 +1716,8 @@ let rec explicit_intro_names = function
     List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
 | (_, IntroAction (IntroInjection l)) :: l' ->
     explicit_intro_names (l@l')
+| (_, IntroAction (IntroApplyOn (c,pat))) :: l' ->
+    explicit_intro_names (pat::l')
 | (_, (IntroNaming (IntroWildcard | IntroAnonymous | IntroFresh _)
      | IntroAction (IntroRewrite _))) :: l ->
      explicit_intro_names l
@@ -1789,6 +1805,27 @@ and intro_pattern_action loc b style pat thin tac id = match pat with
         (* Skip the side conditions of the rewriting step *)
 	(rewrite_hyp style l2r id)
         (tac thin None [])
+  | IntroApplyOn (c,(loc,pat)) ->
+      let naming,tac_ipat = prepare_intros_loc loc (IntroIdentifier id) pat in
+      let clear = do_replace (Some id) naming in
+      Tacticals.New.tclTHENFIRST
+        (* Skip the side conditions of the apply *)
+        (apply_in_once false true true true (Some (clear,naming)) id
+           (None,(Evd.empty,(c,NoBindings))) tac_ipat)
+	(tac thin None [])
+
+and prepare_intros_loc loc dft = function
+  | IntroNaming ipat ->
+      prepare_naming loc ipat,
+      (fun _ -> Proofview.tclUNIT ())
+  | IntroAction ipat ->
+      prepare_naming loc dft,
+      (let tac thin bound =
+        intro_patterns_core true [] [] thin MoveLast bound 0
+          (fun _ l -> clear_wildcards l) in
+      fun id -> intro_pattern_action loc true true ipat [] tac id)
+  | IntroForthcoming _ -> user_err_loc
+      (loc,"",str "Introduction pattern for one hypothesis expected.")
 
 let intro_patterns_bound_to n destopt =
   intro_patterns_core true [] [] [] destopt
@@ -1819,26 +1856,6 @@ let intros_patterns = function
 (*   Forward reasoning    *)
 (**************************)
 
-let rec prepare_naming loc = function
-  | IntroIdentifier id -> NamingMustBe (loc,id)
-  | IntroAnonymous -> NamingAvoid []
-  | IntroFresh id -> NamingBasedOn (id,[])
-  | IntroWildcard ->
-      error "Did you really mind erasing the newly generated hypothesis?"
-
-let rec prepare_intros_loc loc dft = function
-  | IntroNaming ipat ->
-      prepare_naming loc ipat,
-      (fun _ -> Proofview.tclUNIT ())
-  | IntroAction ipat ->
-      prepare_naming loc dft,
-      (let tac thin bound =
-        intro_patterns_core true [] [] thin MoveLast bound 0
-          (fun _ l -> clear_wildcards l) in
-      fun id -> intro_pattern_action loc true true ipat [] tac id)
-  | IntroForthcoming _ -> user_err_loc
-      (loc,"",str "Introduction pattern for one hypothesis expected.")
-
 let prepare_intros dft = function
   | None -> prepare_naming dloc dft, (fun _id -> Proofview.tclUNIT ())
   | Some (loc,ipat) -> prepare_intros_loc loc dft ipat
@@ -1851,10 +1868,6 @@ let ipat_of_name = function
    let c = fst (decompose_app ((strip_lam_assum c))) in
    if isVar c then Some (destVar c) else None
 
-let do_replace id = function
-  | NamingMustBe (_,id') when Option.equal Id.equal id (Some id') -> true
-  | _ -> false
-
 let assert_as first ipat c =
   let naming,tac = prepare_intros IntroAnonymous ipat in
   let repl = do_replace (head_ident c) naming in
@@ -1863,39 +1876,27 @@ let assert_as first ipat c =
 
 (* apply in as *)
 
-let as_tac id ipat = match ipat with
-  | Some (loc,IntroAction pat) ->
-      let tac thin bound =
-        intro_patterns_core true [] [] thin MoveLast bound 0
-          (fun _ l -> clear_wildcards l) in
-      intro_pattern_action loc true true pat [] tac id
-  | Some (loc, (IntroNaming _ | IntroForthcoming _)) ->
-      user_err_loc (loc,"",
-                    str "Disjunctive, conjunctive or equality pattern expected")
-  | None -> Proofview.tclUNIT ()
-
-let tclMAPLAST tacfun l =
-  List.fold_right (fun x -> Tacticals.New.tclTHENLAST (tacfun x)) l (Proofview.tclUNIT())
-
-let tclMAPFIRST tacfun l =
-  List.fold_right (fun x -> Tacticals.New.tclTHENFIRST (tacfun x)) l (Proofview.tclUNIT())
-
 let general_apply_in sidecond_first with_delta with_destruct with_evars
     with_clear id lemmas ipat =
-  let tac (naming,lemma) =
+  let tac (naming,lemma) tac id =
     apply_in_once sidecond_first with_delta with_destruct with_evars
-      naming id lemma in
+      naming id lemma tac in
   let naming,ipat_tac = prepare_intros (IntroIdentifier id) ipat in
   let clear = do_replace (Some id) naming in
-  let lemmas_target =
+  let lemmas_target, last_lemma_target =
     let last,first = List.sep_last lemmas in
-    List.map (fun lem -> (None,lem)) first @ [(Some (clear,naming),last)]
+    List.map (fun lem -> (None,lem)) first, (Some (clear,naming),last)
   in
+  (* We chain apply_in_once, ending with an intro pattern *)
+  List.fold_right tac lemmas_target (tac last_lemma_target ipat_tac) id
+
+(*
   if sidecond_first then
     (* Skip the side conditions of the applied lemma *)
     Tacticals.New.tclTHENLAST (tclMAPLAST tac lemmas_target) (ipat_tac id)
   else
     Tacticals.New.tclTHENFIRST (tclMAPFIRST tac lemmas_target) (ipat_tac id)
+*)
 
 let apply_in simple with_evars clear_flag id lemmas ipat =
   general_apply_in false simple simple with_evars clear_flag id lemmas ipat
@@ -2227,7 +2228,7 @@ let check_unused_names names =
   if not (List.is_empty names) && Flags.is_verbose () then
     msg_warning
       (str"Unused introduction " ++ str (String.plural (List.length names) "pattern")
-       ++ str": " ++ prlist_with_sep spc Miscprint.pr_intro_pattern names)
+       ++ str": " ++ prlist_with_sep spc (Miscprint.pr_intro_pattern Printer.pr_constr) names)
 
 let intropattern_of_name gl avoid = function
   | Anonymous -> IntroNaming IntroAnonymous

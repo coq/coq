@@ -50,7 +50,10 @@ val coerce_to_constr_context : Value.t -> constr
 
 val coerce_to_ident : bool -> Environ.env -> Value.t -> Id.t
 
-val coerce_to_intro_pattern : Environ.env -> Value.t -> intro_pattern_expr
+val coerce_to_intro_pattern : Environ.env -> Value.t -> constr intro_pattern_expr
+
+val coerce_to_intro_pattern_naming :
+  Environ.env -> Value.t -> intro_pattern_naming_expr
 
 val coerce_to_intro_pattern_naming :
   Environ.env -> Value.t -> intro_pattern_naming_expr
@@ -71,7 +74,7 @@ val coerce_to_evaluable_ref :
 val coerce_to_constr_list : Environ.env -> Value.t -> constr list
 
 val coerce_to_intro_pattern_list :
-  Loc.t -> Environ.env -> Value.t -> intro_pattern_expr Loc.located list
+  Loc.t -> Environ.env -> Value.t -> Tacexpr.intro_patterns
 
 val coerce_to_hyp : Environ.env -> Value.t -> Id.t
 

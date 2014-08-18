@@ -44,9 +44,9 @@ type inversion_kind =
 
 type ('c,'id) inversion_strength =
   | NonDepInversion of
-      inversion_kind * 'id list * or_and_intro_pattern_expr located option
+      inversion_kind * 'id list * 'c or_and_intro_pattern_expr located option
   | DepInversion of
-      inversion_kind * 'c option * or_and_intro_pattern_expr located option
+      inversion_kind * 'c option * 'c or_and_intro_pattern_expr located option
   | InversionUsing of 'c * 'id list
 
 type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
@@ -59,7 +59,7 @@ type 'id message_token =
 type 'constr induction_clause =
     'constr with_bindings induction_arg *
     (intro_pattern_naming_expr located option (* eqn:... *)
-    * or_and_intro_pattern_expr located option) (* as ... *)
+    * 'constr or_and_intro_pattern_expr located option) (* as ... *)
 
 type ('constr,'id) induction_clause_list =
     'constr induction_clause list
@@ -106,15 +106,19 @@ type open_glob_constr = unit * glob_constr_and_expr
 
 type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
 
+type intro_pattern = Term.constr intro_pattern_expr located
+type intro_patterns = Term.constr intro_pattern_expr located list
+type or_and_intro_pattern = Term.constr or_and_intro_pattern_expr located
+
 (** Generic expressions for atomic tactics *)
 
 type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   (* Basic tactics *)
-  | TacIntroPattern of intro_pattern_expr located list
+  | TacIntroPattern of 'trm intro_pattern_expr located list
   | TacIntroMove of Id.t option * 'nam move_location
   | TacExact of 'trm
   | TacApply of advanced_flag * evars_flag * 'trm with_bindings_arg list *
-      (clear_flag * 'nam * intro_pattern_expr located option) option
+      (clear_flag * 'nam * 'trm intro_pattern_expr located option) option
   | TacElim of evars_flag * 'trm with_bindings_arg * 'trm with_bindings option
   | TacCase of evars_flag * 'trm with_bindings_arg
   | TacFix of Id.t option * int
@@ -123,7 +127,7 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacMutualCofix of Id.t * (Id.t * 'trm) list
   | TacAssert of
       bool * ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option *
-      intro_pattern_expr located option * 'trm
+      'trm intro_pattern_expr located option * 'trm
   | TacGeneralize of ('trm with_occurrences * Name.t) list
   | TacGeneralizeDep of 'trm
   | TacLetTac of Name.t * 'trm * 'nam clause_expr * letin_flag *

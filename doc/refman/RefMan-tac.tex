@@ -538,16 +538,14 @@ This works as {\tt apply \nelist{{\term} with {\bindinglist}}{,} in
 {\ident}} but turns unresolved bindings into existential variables, if
 any, instead of failing.
 
-\item {\tt apply \nelist{{\term} with {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
+\item {\tt apply \nelist{{\term} with {\bindinglist}}{,} in {\ident} as {\intropattern}}
 
 This works as {\tt apply \nelist{{\term} with {\bindinglist}}{,} in
-{\ident}} then destructs the hypothesis {\ident} along
-{\disjconjintropattern} as {\tt destruct {\ident} as
-{\disjconjintropattern}} would.
+{\ident}} then applies the {\intropattern} to the hypothesis {\ident}.
 
-\item {\tt eapply \nelist{{\term} with {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
+\item {\tt eapply \nelist{{\term} with {\bindinglist}}{,} in {\ident} as {\intropattern}}
 
-This works as {\tt apply \nelist{{\term} with {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}} but using {\tt eapply}.
+This works as {\tt apply \nelist{{\term} with {\bindinglist}}{,} in {\ident} as {\intropattern}} but using {\tt eapply}.
 
 \item {\tt simple apply {\term} in {\ident}}
 \tacindex{simple apply \dots\ in}
@@ -562,8 +560,8 @@ conversion of {\tt id ?1234} and {\tt O} where {\tt ?1234} is a variable to
 instantiate.  Tactic {\tt simple apply {\term} in {\ident}} does not
 either traverse tuples as {\tt apply {\term} in {\ident}} does.
 
-\item {\tt \zeroone{simple} apply \nelist{{\term} \zeroone{with {\bindinglist}}}{,} in {\ident} \zeroone{as {\disjconjintropattern}}}\\
-{\tt \zeroone{simple} eapply \nelist{{\term} \zeroone{with {\bindinglist}}}{,} in {\ident} \zeroone{as {\disjconjintropattern}}}
+\item {\tt \zeroone{simple} apply \nelist{{\term} \zeroone{with {\bindinglist}}}{,} in {\ident} \zeroone{as {\intropattern}}}\\
+{\tt \zeroone{simple} eapply \nelist{{\term} \zeroone{with {\bindinglist}}}{,} in {\ident} \zeroone{as {\intropattern}}}
 
 This summarizes the different syntactic variants of {\tt apply {\term}
   in {\ident}} and {\tt eapply {\term} in {\ident}}.
@@ -796,18 +794,29 @@ either:
   \item the pattern \texttt{?\ident}
   \item an identifier
   \end{itemize}
-\item a {\em composite introduction pattern}, i.e. either one of:
+\item a {\em destructing introduction pattern} which itself classifies into:
   \begin{itemize}
-  \item a disjunction of lists of patterns:
-  {\tt [$p_{11}$ \dots\ $p_{1m_1}$ | \dots\ | $p_{11}$ \dots\ $p_{nm_n}$]}
-  \item a conjunction of patterns: {\tt ($p_1$ , \dots\ , $p_n$)}
-  \item a pattern for decomposing an equality: {\tt [= $p_1$ \dots\ $p_n$]}
-  \item a list of patterns {\tt ($p_1$ \&\ \dots\ \&\ $p_n$)}
-   for sequence of right-associative binary constructs
+  \item a {\em disjunctive/conjunctive introduction pattern}, i.e. either one of:
+    \begin{itemize}
+    \item a disjunction of lists of patterns:
+      {\tt [$p_{11}$ \dots\ $p_{1m_1}$ | \dots\ | $p_{11}$ \dots\ $p_{nm_n}$]}
+    \item a conjunction of patterns: {\tt ($p_1$ , \dots\ , $p_n$)}
+    \item a list of patterns {\tt ($p_1$ \&\ \dots\ \&\ $p_n$)}
+      for sequence of right-associative binary constructs
+    \end{itemize}
+  \item an {\em equality introduction pattern}, i.e. either one of:
+    \begin{itemize}
+    \item a pattern for decomposing an equality: {\tt [= $p_1$ \dots\ $p_n$]}
+    \item the rewriting orientations: {\tt ->} or {\tt <-}
+    \end{itemize}
+  \item the on-the-fly application of a lemma: $p${\tt /{\term}}
   \end{itemize}
 \item the wildcard: {\tt \_}
-\item the rewriting orientations: {\tt ->} or {\tt <-}
 \end{itemize}
+
+Introduction patterns can be combined into lists. An {\em introduction
+  pattern list} is a list of introduction patterns possibly containing
+the filling introduction patterns {\tt *} and {\tt **}.
 
 Assuming a goal of type $Q \to P$ (non-dependent product), or
 of type $\forall x:T,~P$ (dependent product), the behavior of
@@ -843,6 +852,13 @@ introduction pattern~$p$:
   of the constructor of $I$ (observe that {\tt ($p_1$, {\ldots},
   $p_n$)} is an alternative notation for {\tt [$p_1$ {\ldots}
   $p_n$]});
+\item introduction via {\tt ($p_1$ \& \dots\ \& $p_n$)}
+  is a shortcut for introduction via
+  {\tt ($p_1$,(\ldots,(\dots,$p_n$)\ldots))}; it expects the
+  hypothesis to be a sequence of right-associative binary inductive
+  constructors such as {\tt conj} or {\tt ex\_intro}; for instance, an
+  hypothesis with type {\tt A\verb|/\|exists x, B\verb|/\|C\verb|/\|D} can be
+  introduced via pattern {\tt (a \& x \& b \& c \& d)};
 \item if the product is over an equality type, then a pattern of the
   form {\tt [=$p_{1}$ \dots\ $p_n$]} applies either {\tt injection}
   (see Section~\ref{injection}) or {\tt discriminate} (see
@@ -854,13 +870,16 @@ introduction pattern~$p$:
   %TODO!
   %if {\tt discriminate} is applicable, the list of patterns $p_{1}$
   %\dots\ $p_n$ is supposed to be empty;
-\item introduction via {\tt ($p_1$ \& \dots\ \& $p_n$)}
-  is a shortcut for introduction via
-  {\tt ($p_1$,(\ldots,(\dots,$p_n$)\ldots))}; it expects the
-  hypothesis to be a sequence of right-associative binary inductive
-  constructors such as {\tt conj} or {\tt ex\_intro}; for instance, an
-  hypothesis with type {\tt A\verb|/\|exists x, B\verb|/\|C\verb|/\|D} can be
-  introduced via pattern {\tt (a \& x \& b \& c \& d)};
+\item introduction over {\tt ->} (respectively {\tt <-}) expects the
+  hypothesis to be an equality and the right-hand-side (respectively
+  the left-hand-side) is replaced by the left-hand-side (respectively
+  the right-hand-side) in both the conclusion and the context of the goal;
+  if moreover the term to substitute is a variable, the hypothesis is
+  removed;
+\item introduction over a pattern $p${\tt /{\term}} first applies
+  {\term} on the hypothesis to be introduced (as in {\tt apply
+  }{\term} {\tt in}), prior to the application of the introduction
+  pattern $p$;
 \item introduction on the wildcard depends on whether the product is
   dependent or not: in the non-dependent case, it erases the
   corresponding hypothesis (i.e. it behaves as an {\tt intro} followed
@@ -868,26 +887,37 @@ introduction pattern~$p$:
   case, it succeeds and erases the variable only if the wildcard is
   part of a more complex list of introduction patterns that also
   erases the hypotheses depending on this variable;
-\item introduction over {\tt ->} (respectively {\tt <-}) expects the
-  hypothesis to be an equality and the right-hand-side (respectively
-  the left-hand-side) is replaced by the left-hand-side (respectively
-  the right-hand-side) in both the conclusion and the context of the goal;
-  if moreover the term to substitute is a variable, the hypothesis is
-  removed.
+\item introduction over {\tt *} introduces all forthcoming quantified
+  variables appearing in a row; introduction over {\tt **} introduces
+  all forthcoming quantified variables or hypotheses until the goal is
+  not any more a quantification or an implication.
+\end{itemize}
+
+Then, if $p_1$ ... $p_n$ is a list of introduction patterns possibly
+containing {\tt *} or {\tt **}, {\tt intros $p_1$ ... $p_n$}
+\begin{itemize}
+\item introduction over {\tt *} introduces all forthcoming quantified
+  variables appearing in a row;
+\item introduction over {\tt **} introduces all forthcoming quantified
+  variables or hypotheses until the goal is not any more a
+  quantification or an implication;
+\item introduction over an introduction pattern $p$ introduces the
+  forthcoming quantified variables or premisse of the goal and applies
+  the introduction pattern $p$ to it.
 \end{itemize}
 
 \Example
 
 \begin{coq_example}
 Goal forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
-intros A B C [a| [_ c]] f.
+intros * [a | (_,c)] f.
 apply (f a).
 exact c.
 Qed.
 \end{coq_example}
 
-\Rem {\tt intros $p_1~\ldots~p_n$} is not equivalent to \texttt{intros
-  $p_1$;\ldots; intros $p_n$} for the following reasons:
+\Rem {\tt intros $p_1~\ldots~p_n$} is not fully equivalent to
+\texttt{intros $p_1$;\ldots; intros $p_n$} for the following reasons:
 \begin{itemize}
 \item A wildcard pattern never succeeds when applied isolated on a
   dependent product, while it succeeds as part of a list of
@@ -1193,9 +1223,10 @@ in the list of subgoals remaining to prove.
   introduction pattern (in particular, if {\intropattern} is {\ident},
   the tactic behaves like \texttt{assert ({\ident} :\ {\form})}).
 
-  If {\intropattern} is a disjunctive/conjunctive introduction
-  pattern, the tactic behaves like \texttt{assert {\form}} then destructing the
-  resulting hypothesis using the given introduction pattern.
+  If {\intropattern} is a disjunctive/conjunctive or an equality
+  introduction pattern, the tactic behaves like \texttt{assert
+    {\form}} followed by an application of the given introduction
+  pattern to the resulting hypothesis.
 
 \item \texttt{assert {\form} as {\intropattern} by {\tac}}
 
@@ -1215,9 +1246,9 @@ in the list of subgoals remaining to prove.
   exact {\term}} where \texttt{T} is the type of {\term}.
 
   In particular, \texttt{pose proof {\term} as {\ident}} behaves as
-  \texttt{assert ({\ident} := {\term})} and \texttt{pose proof {\term} as
-  {\disjconjintropattern}\tacindex{pose proof}} behaves
-  like \texttt{destruct {\term} as {\disjconjintropattern}}.
+  \texttt{assert ({\ident} := {\term})} and \texttt{pose proof {\term}
+    as {\intropattern}\tacindex{pose proof}} is the same as applying
+  the {\intropattern} to {\term}.
 
 \item \texttt{enough ({\ident} :\ {\form})}\tacindex{enough}
 
@@ -1514,15 +1545,15 @@ syntax {\tt destruct ({\num})} (not very interesting anyway).
   This behaves as {\tt destruct {\term}} but uses the names in
   {\intropattern} to name the variables introduced in the context.
   The {\intropattern} must have the form {\tt [} $p_{11}$ \ldots
-  $p_{1n_1}$ {\tt |} {\ldots} {\tt |} $p_{m1}$ \ldots $p_{mn_m}$ {\tt
-    ]} with $m$ being the number of constructors of the type of
+    $p_{1n_1}$ {\tt |} {\ldots} {\tt |} $p_{m1}$ \ldots $p_{mn_m}$
+    {\tt ]} with $m$ being the number of constructors of the type of
   {\term}. Each variable introduced by {\tt destruct} in the context
   of the $i^{th}$ goal gets its name from the list $p_{i1}$ \ldots
   $p_{in_i}$ in order. If there are not enough names, {\tt destruct}
   invents names for the remaining variables to introduce. More
-  generally, the $p_{ij}$ can be any disjunctive/conjunctive
-  introduction pattern (see Section~\ref{intros-pattern}). This
-  provides a concise notation for nested destruction.
+  generally, the $p_{ij}$ can be any introduction pattern (see
+  Section~\ref{intros-pattern}). This provides a concise notation for
+  chaining destruction of an hypothesis.
 
 %  It is recommended to use this variant of {\tt destruct} for
 %  robust proof scripts.

@@ -15,14 +15,14 @@ open Tacexpr
 type inversion_status = Dep of constr option | NoDep
 
 val inv_clause :
-  inversion_kind -> or_and_intro_pattern_expr located option -> Id.t list ->
+  inversion_kind -> constr or_and_intro_pattern_expr located option -> Id.t list ->
     quantified_hypothesis -> unit Proofview.tactic
 
-val inv : inversion_kind -> or_and_intro_pattern_expr located option ->
+val inv : inversion_kind -> constr or_and_intro_pattern_expr located option ->
   quantified_hypothesis -> unit Proofview.tactic
 
 val dinv : inversion_kind -> constr option ->
-  or_and_intro_pattern_expr located option -> quantified_hypothesis -> unit Proofview.tactic
+  constr or_and_intro_pattern_expr located option -> quantified_hypothesis -> unit Proofview.tactic
 
 val inv_tac : Id.t -> unit Proofview.tactic
 val inv_clear_tac : Id.t -> unit Proofview.tactic

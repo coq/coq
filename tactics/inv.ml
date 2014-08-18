@@ -396,6 +396,8 @@ let rec get_names allow_conj (loc,pat) = match pat with
       error "Injection patterns not allowed for inversion equations."
   | IntroAction (IntroOrAndPattern l) ->
       error "Disjunctive patterns not allowed for inversion equations."
+  | IntroAction (IntroApplyOn (c,pat)) ->
+      error "Apply patterns not allowed for inversion equations."
   | IntroNaming (IntroIdentifier id) ->
       (Some id,[id])
 

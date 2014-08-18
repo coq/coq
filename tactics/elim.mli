@@ -14,7 +14,7 @@ open Misctypes
 (** Eliminations tactics. *)
 
 val introCaseAssumsThen :
-  (intro_pattern_expr Loc.located list -> branch_assumptions -> unit Proofview.tactic) ->
+  (Tacexpr.intro_patterns -> branch_assumptions -> unit Proofview.tactic) ->
     branch_args -> unit Proofview.tactic
 
 val h_decompose       : inductive list -> constr -> unit Proofview.tactic
