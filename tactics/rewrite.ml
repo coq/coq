@@ -1459,10 +1459,15 @@ let cl_rewrite_clause_tac ?abs strat clause gl =
 let bind_gl_info f =
   bind concl (fun c -> bind env (fun v -> bind defs (fun ev -> f c v ev))) 
 
-let new_refine c : Goal.subgoals Goal.sensitive =
-  let refable = Goal.Refinable.make
-    (fun handle -> Goal.Refinable.constr_of_open_constr handle true c) 
-  in Goal.bind refable Goal.refine
+let new_refine (evd, c) =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let update _ =
+    let evd = Evarconv.consider_remaining_unif_problems env evd in
+    (evd, c)
+  in
+  Proofview.Refine.refine_casted (fun h -> Proofview.Refine.update h update)
+  end
 
 let assert_replacing id newt tac = 
   let prf = Proofview.Goal.enter begin fun gl ->
@@ -1503,7 +1508,7 @@ let cl_rewrite_clause_newtac ?abs strat clause =
     | Some (Some res) ->
 	match is_hyp, res with
 	| Some id, (undef, Some p, newt) ->
-	    assert_replacing id newt (Proofview.tclSENSITIVE (new_refine (undef, p)))
+	    assert_replacing id newt (new_refine (undef, p))
 	| Some id, (undef, None, newt) -> 
 	    Proofview.tclSENSITIVE (Goal.convert_hyp false (id, None, newt))
 	| None, (undef, Some p, newt) ->
