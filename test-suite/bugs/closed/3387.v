@@ -16,6 +16,6 @@ Proof.
   let x := constr:(Type) in
   let y := constr:(Obj set_cat) in
   first [ unify x y | fail 2 "no unify" ];
-    change x with y. (* Error: Not convertible. *)
+    change x with y at -1. (* Error: Not convertible. *)
   reflexivity.
 Defined.
