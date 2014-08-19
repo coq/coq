@@ -1456,9 +1456,6 @@ let cl_rewrite_clause_tac ?abs strat clause gl =
   in tac gl
 
 
-let bind_gl_info f =
-  bind concl (fun c -> bind env (fun v -> bind defs (fun ev -> f c v ev))) 
-
 let new_refine (evd, c) =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -1524,23 +1521,24 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	| None, (undef, None, newt) ->
             Proofview.V82.tactic (Tacmach.convert_concl_no_check newt DEFAULTcast)
   in
-  let info =
-    bind_gl_info
-      (fun concl env sigma ->
-	 let ty, is_hyp =
-	   match clause with
-	   | Some id -> Environ.named_type id env, Some id
-	   | None -> concl, None
-	 in
-	   try 
-	     let res = 
-	       cl_rewrite_clause_aux ?abs strat env [] sigma ty is_hyp 
-	     in return (res, is_hyp)
-	   with
-	   | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
-	     raise (RewriteFailure (str"Unable to satisfy the rewriting constraints."
-			++ fnl () ++ Himsg.explain_typeclass_error env e)))
-  in Proofview.Goal.lift info (fun i -> treat i)
+  Proofview.Goal.enter begin fun gl ->
+    let concl = Proofview.Goal.concl gl in
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let ty, is_hyp =
+      match clause with
+      | Some id -> Environ.named_type id env, Some id
+      | None -> concl, None
+    in
+    try
+      let res =
+        cl_rewrite_clause_aux ?abs strat env [] sigma ty is_hyp
+      in treat (res, is_hyp)
+    with
+    | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
+      raise (RewriteFailure (str"Unable to satisfy the rewriting constraints."
+                ++ fnl () ++ Himsg.explain_typeclass_error env e))
+  end
 
 let newtactic_init_setoid () =
   try init_setoid (); Proofview.tclUNIT ()
