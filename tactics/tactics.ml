@@ -1164,13 +1164,8 @@ let descend_in_conjunctions tac exit c =
 	    match make_projection env sigma params cstr sign elim i n c u with
 	    | None -> Tacticals.New.tclFAIL 0 (mt())
 	    | Some (p,pt) ->
-	    Tacticals.New.tclTHENS
-	      (assert_before Anonymous pt)
-	      [Proofview.V82.tactic (refine p); (* Might be ill-typed due to forbidden elimination. *)
-	       Tacticals.New.onLastHypId (fun id ->
-                 Tacticals.New.tclTHEN
-                   (tac (not isrec) (mkVar id))
-                   (Proofview.V82.tactic (thin [id])))]
+                (* Might be ill-typed due to forbidden elimination. *)
+                tac (not isrec) p
             end))
     | None ->
 	raise Exit
@@ -1344,7 +1339,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
           Tacticals.New.tclTHEN
             (apply_clear_request clear_flag false c)
             (tac id))
-    with e when with_destruct ->
+    with e when with_destruct && when Errors.noncritical e ->
       let e = Errors.push e in
       descend_in_conjunctions aux (fun _ -> raise e) c
     end

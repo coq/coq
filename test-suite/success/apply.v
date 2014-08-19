@@ -446,3 +446,19 @@ Goal forall H:0=0, H = H.
 intros.
 Fail apply eq_sym in H.
 Abort.
+
+(* Check naming pattern in apply in *)
+
+Goal ((False /\ (True -> True))) -> True -> True.
+intros F H.
+apply F in H as H0. (* Check that H0 is not used internally *)
+exact H0.
+Qed.
+
+Goal ((False /\ (True -> True/\True))) -> True -> True/\True.
+intros F H.
+apply F in H as (?,?).
+split.
+exact H. (* Check that generated names are H and H0 *)
+exact H0.
+Qed.
