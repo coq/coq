@@ -463,6 +463,15 @@ Abort.
 Goal forall H:0=0, H = H.
 intros.
 Fail apply eq_sym in H.
+
+(* Check that unresolved evars not originally present in goal prevent
+   apply in to work*)
+
+Goal (forall x y, x <= 0 -> x + y = 0) -> exists x, x <= 0 -> 0 = 0.
+intros.
+eexists.
+intros.
+Fail apply H in H0.
 Abort.
 
 (* Check naming pattern in apply in *)
