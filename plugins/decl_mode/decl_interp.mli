@@ -12,4 +12,4 @@ open Decl_expr
 
 val intern_proof_instr : glob_sign -> raw_proof_instr -> glob_proof_instr
 val interp_proof_instr : Decl_mode.pm_info ->
-  Evd.evar_map -> Environ.env -> glob_proof_instr -> proof_instr
+  Environ.env -> Evd.evar_map -> glob_proof_instr -> proof_instr

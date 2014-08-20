@@ -277,7 +277,7 @@ let inductive_template evdref env tmloc ind =
 	match b with
         | None ->
 	    let ty' = substl subst ty in
-	    let e = e_new_evar evdref env ~src:(hole_source n) ty' in
+	    let e = e_new_evar env evdref ~src:(hole_source n) ty' in
 	    (e::subst,e::evarl,n+1)
 	| Some b ->
 	    (substl subst b::subst,evarl,n+1))
@@ -352,7 +352,7 @@ let coerce_to_indtype typing_fun evdref env matx tomatchl =
 (* Utils *)
 
 let mkExistential env ?(src=(Loc.ghost,Evar_kinds.InternalHole)) evdref =
-  let e, u = e_new_type_evar evdref univ_flexible_alg env ~src:src in e
+  let e, u = e_new_type_evar env evdref univ_flexible_alg ~src:src in e
 
 let evd_comb2 f evdref x y =
   let (evd',y) = f !evdref x y in
@@ -1574,7 +1574,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
-        let ev = e_new_evar evdref env ~src:(loc, Evar_kinds.CasesType) ty in
+        let ev = e_new_evar env evdref ~src:(loc, Evar_kinds.CasesType) ty in
         evdref := add_conv_pb (Reduction.CONV,env,substl inst ev,t) !evdref;
         ev
     | _ ->
@@ -1603,7 +1603,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
       let filter = Filter.make (rel_filter @ named_filter) in
       let candidates = u :: List.map mkRel vl in
       let ev =
-	e_new_evar evdref extenv ~src:(loc, Evar_kinds.CasesType)
+	e_new_evar extenv evdref ~src:(loc, Evar_kinds.CasesType)
 	  ~filter ~candidates ty in
       lift k ev
   in
@@ -1617,7 +1617,7 @@ let build_tycon loc env tycon_env subst tycon extenv evdref t =
 	let n = rel_context_length (rel_context env) in
 	let n' = rel_context_length (rel_context tycon_env) in
 	let impossible_case_type, u =
-	  e_new_type_evar evdref univ_flexible_alg env ~src:(loc,Evar_kinds.ImpossibleCase) in
+	  e_new_type_evar env evdref univ_flexible_alg ~src:(loc,Evar_kinds.ImpossibleCase) in
 	(lift (n'-n) impossible_case_type, mkSort u)
     | Some t ->
         let t = abstract_tycon loc tycon_env evdref subst tycon extenv t in
@@ -1858,7 +1858,7 @@ let prepare_predicate_from_arsign_tycon loc tomatchs arsign c =
  * tycon to make the predicate if it is not closed.
  *)
 
-let prepare_predicate loc typing_fun sigma env tomatchs arsign tycon pred =
+let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
   let preds =
     match pred, tycon with
     (* No type annotation *)
@@ -1878,7 +1878,7 @@ let prepare_predicate loc typing_fun sigma env tomatchs arsign tycon pred =
 	| Some t -> sigma,t
 	| None -> 
 	  let sigma, (t, _) = 
-	    new_type_evar univ_flexible_alg sigma env ~src:(loc, Evar_kinds.CasesType) in
+	    new_type_evar env sigma univ_flexible_alg ~src:(loc, Evar_kinds.CasesType) in
 	    sigma, t
 	in
         (* First strategy: we build an "inversion" predicate *)
@@ -2439,7 +2439,7 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
      with the type of arguments to match; if none is provided, we
      build alternative possible predicates *)
   let arsign = extract_arity_signature env tomatchs tomatchl in
-  let preds = prepare_predicate loc typing_fun !evdref env tomatchs arsign tycon predopt in
+  let preds = prepare_predicate loc typing_fun env !evdref tomatchs arsign tycon predopt in
 
   let compile_for_one_predicate (sigma,nal,pred) =
     (* We push the initial terms to match and push their alias to rhs' envs *)

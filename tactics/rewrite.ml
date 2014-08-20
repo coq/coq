@@ -106,12 +106,12 @@ let cstrevars evars = snd evars
 
 let new_cstr_evar (evd,cstrs) env t =
   let s = Typeclasses.set_resolvable Evd.Store.empty false in
-  let evd', t = Evarutil.new_evar ~store:s evd env t in
+  let evd', t = Evarutil.new_evar ~store:s env evd t in
   let ev, _ = destEvar t in
     (evd', Evar.Set.add ev cstrs), t
 
 (** Building or looking up instances. *)
-let e_new_cstr_evar evars env t =
+let e_new_cstr_evar env evars t =
   let evd', t = new_cstr_evar !evars env t in evars := evd'; t
 
 (** Building or looking up instances. *)
@@ -364,7 +364,7 @@ end) = struct
 	  (try
 	   let params, args = Array.chop (Array.length args - 2) args in
 	   let env' = Environ.push_rel_context rels env in
-	   let evars, (evar, _) = Evarutil.new_type_evar Evd.univ_flexible sigma env' in
+	   let evars, (evar, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
 	   let evars, inst = 
 	     app_poly env (evars,Evar.Set.empty)
 	       rewrite_relation_class [| evar; mkApp (c, params) |] in
@@ -424,7 +424,7 @@ module TypeGlobal = struct
 
 
   let inverse env (evd,cstrs) car rel = 
-    let evd, (sort,_) = Evarutil.new_type_evar Evd.univ_flexible evd env in
+    let evd, (sort,_) = Evarutil.new_type_evar env evd Evd.univ_flexible in
       app_poly_check env (evd,cstrs) coq_inverse [| car ; car; sort; rel |]
 
 end
@@ -1334,7 +1334,7 @@ module Strategies =
     let fold_glob c : 'a pure_strategy =
       fun state env avoid t ty cstr evars ->
 (* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
-	let sigma, c = Pretyping.understand_tcc (goalevars evars) env c in
+	let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
 	let unfolded =
 	  try Tacred.try_red_product env sigma c
 	  with e when Errors.noncritical e ->
@@ -1595,13 +1595,13 @@ let cl_rewrite_clause l left2right occs clause gl =
     cl_rewrite_clause_strat strat clause gl
 
 let apply_glob_constr c l2r occs = fun () env avoid t ty cstr evars ->
-  let evd, c = (Pretyping.understand_tcc (goalevars evars) env c) in
+  let evd, c = (Pretyping.understand_tcc env (goalevars evars) c) in
     apply_lemma l2r (general_rewrite_unif_flags ()) (Evd.empty, (c, NoBindings)) 
       None occs () env avoid t ty cstr (evd, cstrevars evars)
 
 let interp_glob_constr_list env sigma =
   List.map (fun c -> 
-	      let evd, c = Pretyping.understand_tcc sigma env c in
+	      let evd, c = Pretyping.understand_tcc env sigma c in
 		(evd, (c, NoBindings)), true, None)
 
 (* Syntax for rewriting with strategies *)
@@ -1792,7 +1792,7 @@ let declare_projection n instance_id r =
 
 let build_morphism_signature m =
   let env = Global.env () in
-  let m,ctx = Constrintern.interp_constr Evd.empty env m in
+  let m,ctx = Constrintern.interp_constr env Evd.empty m in
   let sigma = Evd.from_env ~ctx env in
   let t = Typing.type_of env sigma m in
   let cstrs =
@@ -1810,7 +1810,7 @@ let build_morphism_signature m =
     (fun (ty, rel) ->
       Option.iter (fun rel ->
 	let default = e_app_poly env evd PropGlobal.default_relation [| ty; rel |] in
-	  ignore(e_new_cstr_evar evd env default))
+	  ignore(e_new_cstr_evar env evd default))
 	rel)
     cstrs
   in

@@ -474,9 +474,9 @@ VERNAC COMMAND EXTEND MergeFunind CLASSIFIED AS SIDEFF
   [ "Mergeschemes" "(" ident(id1) ne_ident_list(cl1) ")"
       "with" "(" ident(id2) ne_ident_list(cl2)  ")" "using" ident(id) ] ->
      [
-       let f1,ctx = Constrintern.interp_constr Evd.empty (Global.env())
+       let f1,ctx = Constrintern.interp_constr (Global.env()) Evd.empty
 	 (CRef (Libnames.Ident (Loc.ghost,id1),None)) in
-       let f2,ctx' = Constrintern.interp_constr Evd.empty (Global.env())
+       let f2,ctx' = Constrintern.interp_constr (Global.env()) Evd.empty
 	 (CRef (Libnames.Ident (Loc.ghost,id2),None)) in
        let f1type = Typing.type_of (Global.env()) Evd.empty f1 in
        let f2type = Typing.type_of (Global.env()) Evd.empty f2 in

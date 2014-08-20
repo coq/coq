@@ -434,8 +434,8 @@ let start_proof_com kind thms hook =
   let env0 = Global.env () in
   let evdref = ref (Evd.from_env env0) in
   let thms = List.map (fun (sopt,(bl,t,guard)) ->
-    let impls, ((env, ctx), imps) = interp_context_evars evdref env0 bl in
-    let t', imps' = interp_type_evars_impls ~impls evdref env t in
+    let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
+    let t', imps' = interp_type_evars_impls ~impls env evdref t in
     check_evars_are_solved env Evd.empty !evdref;
     let ids = List.map pi1 ctx in
       (compute_proof_name (pi1 kind) sopt,

@@ -49,11 +49,11 @@ let _ =
       optread  = (fun () -> !typeclasses_strict);
       optwrite = (fun b -> typeclasses_strict := b); }
 
-let interp_fields_evars evars env impls_env nots l =
+let interp_fields_evars env evars impls_env nots l =
   List.fold_left2
     (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
-      let t', impl = interp_type_evars_impls evars env ~impls t in
-      let b' = Option.map (fun x -> fst (interp_casted_constr_evars_impls evars env ~impls x t')) b in
+      let t', impl = interp_type_evars_impls env evars ~impls t in
+      let b' = Option.map (fun x -> fst (interp_casted_constr_evars_impls env evars ~impls x t')) b in
       let impls =
 	match i with
 	| Anonymous -> impls
@@ -94,11 +94,11 @@ let typecheck_params_and_fields def id t ps nots fs =
 	(function LocalRawDef (b, _) -> error default_binder_kind b
 	   | LocalRawAssum (ls, bk, ce) -> List.iter (error bk) ls) ps
   in 
-  let impls_env, ((env1,newps), imps) = interp_context_evars evars env0 ps in
+  let impls_env, ((env1,newps), imps) = interp_context_evars env0 evars ps in
   let t' = match t with 
     | Some t -> 
        let env = push_rel_context newps env0 in
-       let s = interp_type_evars evars env ~impls:empty_internalization_env t in
+       let s = interp_type_evars env evars ~impls:empty_internalization_env t in
        let sred = Reductionops.whd_betadeltaiota env !evars s in
 	 (match kind_of_term sred with
 	 | Sort s' -> 
@@ -113,7 +113,7 @@ let typecheck_params_and_fields def id t ps nots fs =
   let fullarity = it_mkProd_or_LetIn t' newps in
   let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
   let env2,impls,newfs,data =
-    interp_fields_evars evars env_ar impls_env nots (binders_of_decls fs)
+    interp_fields_evars env_ar evars impls_env nots (binders_of_decls fs)
   in
   let sigma = 
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar Evd.empty !evars in
@@ -316,11 +316,11 @@ let structure_signature ctx =
     match l with [] -> Evd.empty
       | [(_,_,typ)] ->
         let env = Environ.empty_named_context_val in
-        let (evm, _) = Evarutil.new_pure_evar evm env typ in
+        let (evm, _) = Evarutil.new_pure_evar env evm typ in
         evm
       | (_,_,typ)::tl ->
           let env = Environ.empty_named_context_val in
-          let (evm, ev) = Evarutil.new_pure_evar evm env typ in
+          let (evm, ev) = Evarutil.new_pure_evar env evm typ in
 	  let new_tl = Util.List.map_i
 	    (fun pos (n,c,t) -> n,c,
 	       Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) 1 tl in

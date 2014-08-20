@@ -130,7 +130,7 @@ let rec abstract_glob_constr c = function
       List.fold_right (fun x b -> Constrexpr_ops.mkLambdaC([x],k,t,b)) idl
         (abstract_glob_constr c bl)
 
-let interp_casted_constr_with_implicits sigma env impls c  =
+let interp_casted_constr_with_implicits env sigma impls c  =
   Constrintern.intern_gen Pretyping.WithoutTypeConstraint env ~impls
     ~allow_patvar:false c
 
@@ -148,7 +148,7 @@ let build_newrecursive
     List.fold_left
       (fun (env,impls) ((_,recname),bl,arityc,_) ->
         let arityc = Constrexpr_ops.prod_constr_expr arityc bl in
-        let arity,ctx = Constrintern.interp_type sigma env0 arityc in
+        let arity,ctx = Constrintern.interp_type env0 sigma arityc in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity [] in
         (Environ.push_named (recname,None,arity) env, Id.Map.add recname impl impls))
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
@@ -157,7 +157,7 @@ let build_newrecursive
     let f (_,bl,_,def) =
       let def = abstract_glob_constr def bl in
       interp_casted_constr_with_implicits
-        sigma rec_sign rec_impls def
+        rec_sign sigma rec_impls def
     in
     States.with_state_protection (List.map f) lnameargsardef
   in

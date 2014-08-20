@@ -1116,7 +1116,7 @@ let default_env () = {
 
 let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
-    let t,ctx = Constrintern.interp_type Evd.empty (Global.env()) c in
+    let t,ctx = Constrintern.interp_type (Global.env()) Evd.empty c in
     let t = Detyping.detype false [] [] Evd.empty t in
     let t = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)
@@ -1460,7 +1460,7 @@ let get_current_context_of_args = function
 
 let vernac_check_may_eval redexp glopt rc =
   let (sigma, env) = get_current_context_of_args glopt in
-  let sigma', c = interp_open_constr sigma env rc in
+  let sigma', c = interp_open_constr env sigma rc in
   let sigma' = Evarconv.consider_remaining_unif_problems env sigma' in
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
@@ -1490,7 +1490,7 @@ let vernac_declare_reduction locality s r =
 let vernac_global_check c =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let c,ctx = interp_constr sigma env c in
+  let c,ctx = interp_constr env sigma c in
   let senv = Global.safe_env() in
   let cstrs = snd (Evd.evar_universe_context_set ctx) in
   let senv = Safe_typing.add_constraints cstrs senv in

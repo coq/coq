@@ -74,7 +74,7 @@ let type_ctx_instance evars env ctx inst subst =
       let t' = substl subst t in
       let c', l =
 	match b with
-	| None -> interp_casted_constr_evars evars env (List.hd l) t', List.tl l
+	| None -> interp_casted_constr_evars env evars (List.hd l) t', List.tl l
 	| Some b -> substl subst b, l
       in
       let d = na, Some c', t' in
@@ -133,8 +133,8 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
     else tclass 
   in
   let k, u, cty, ctx', ctx, len, imps, subst =
-    let impls, ((env', ctx), imps) = interp_context_evars evars env ctx in
-    let c', imps' = interp_type_evars_impls ~impls evars env' tclass in
+    let impls, ((env', ctx), imps) = interp_context_evars env evars ctx in
+    let c', imps' = interp_type_evars_impls ~impls env' evars tclass in
     let len = List.length ctx in
     let imps = imps @ Impargs.lift_implicits len imps' in
     let ctx', c = decompose_prod_assum c' in
@@ -200,7 +200,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	match props with
 	| None -> if List.is_empty k.cl_props then Some (Inl subst) else None
 	| Some (Inr term) ->
-	    let c = interp_casted_constr_evars evars env' term cty in
+	    let c = interp_casted_constr_evars env' evars term cty in
 	      Some (Inr (c, subst))
 	| Some (Inl props) ->
 	    let get_id =
@@ -327,7 +327,7 @@ let named_of_rel_context l =
 let context poly l =
   let env = Global.env() in
   let evars = ref Evd.empty in
-  let _, ((env', fullctx), impls) = interp_context_evars evars env l in
+  let _, ((env', fullctx), impls) = interp_context_evars env evars l in
   let subst = Evarutil.evd_comb0 Evarutil.nf_evars_and_universes evars in
   let fullctx = Context.map_rel_context subst fullctx in
   let ce t = Evarutil.check_evars env Evd.empty !evars t in

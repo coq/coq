@@ -335,8 +335,7 @@ let clenv_pose_metas_as_evars clenv dep_mvs =
       else
         let src = evar_source_of_meta mv clenv.evd in
         let src = adjust_meta_source clenv.evd mv src in
-	let (evd,evar) =
-	  new_evar clenv.evd (cl_env clenv) ~src ty in
+	let (evd,evar) = new_evar (cl_env clenv) clenv.evd ~src ty in
 	let clenv = clenv_assign mv evar {clenv with evd=evd} in
 	fold clenv mvs in
   fold clenv dep_mvs

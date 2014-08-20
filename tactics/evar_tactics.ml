@@ -71,7 +71,7 @@ let let_evar name typ =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
-    let sigma',evar = Evarutil.new_evar sigma env ~src typ in
+    let sigma',evar = Evarutil.new_evar env sigma ~src typ in
     Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS sigma'))
       (Tactics.letin_tac None name evar None Locusops.nowhere)
   end

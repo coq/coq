@@ -182,7 +182,7 @@ let whelp_constr req c =
 
 let whelp_constr_expr req c =
   let (sigma,env)= Lemmas.get_current_context () in
-  let _,c = interp_open_constr sigma env c in
+  let _,c = interp_open_constr env sigma c in
   whelp_constr req c
 
 let whelp_locate s =

@@ -40,7 +40,7 @@ let init sigma =
   | (env, typ) :: l ->
     let ret, { solution = sol; comb = comb } = aux l in
     let src = (Loc.ghost,Evar_kinds.GoalEvar) in
-    let (new_defs , econstr) = Evarutil.new_evar sol env ~src typ in
+    let (new_defs , econstr) = Evarutil.new_evar env sol ~src typ in
     let (e, _) = Term.destEvar econstr in
     let gl = Goal.build e in
     let entry = (econstr, typ) :: ret in
@@ -59,7 +59,7 @@ let dependent_init =
   let rec aux = function
   | TNil sigma -> [], { solution = sigma; comb = []; }
   | TCons (env, sigma, typ, t) ->
-    let (sigma, econstr ) = Evarutil.new_evar sigma env typ in
+    let (sigma, econstr ) = Evarutil.new_evar env sigma typ in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let (e, _) = Term.destEvar econstr in
     let gl = Goal.build e in
@@ -950,7 +950,7 @@ struct
 
   let new_evar (evd, evs) env typ =
     let src = (Loc.ghost, Evar_kinds.GoalEvar) in
-    let (evd, ev) = Evarutil.new_evar evd env ~src typ in
+    let (evd, ev) = Evarutil.new_evar env evd ~src typ in
     let evd = Typeclasses.mark_unresolvables 
       ~filter:(fun ev' _ -> Evar.equal (fst (Term.destEvar ev)) ev') evd in
     let (evk, _) = Term.destEvar ev in

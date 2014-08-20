@@ -34,7 +34,7 @@ let start_deriving f suchthat lemma =
         TCons ( env , sigma , f_type , (fun sigma ef ->
         let env' = Environ.push_named (f , (Some ef) , f_type) env in
         let evdref = ref sigma in
-        let suchthat = Constrintern.interp_type_evars evdref env' suchthat in
+        let suchthat = Constrintern.interp_type_evars env' evdref suchthat in
         TCons ( env' , !evdref , suchthat , (fun sigma _ ->
         TNil sigma))))))
     in

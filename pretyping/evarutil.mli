@@ -22,28 +22,28 @@ val mk_new_meta : unit -> constr
 
 (** {6 Creating a fresh evar given their type and context} *)
 val new_evar :
-  evar_map -> env -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  env -> evar_map -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t -> types -> evar_map * constr
 
 val new_pure_evar :
-  evar_map -> named_context_val -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  named_context_val -> evar_map -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t -> types -> evar_map * evar
 
 val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
 
 (** the same with side-effects *)
 val e_new_evar :
-  evar_map ref -> env -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  env -> evar_map ref -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t -> types -> constr
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
-  ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> rigid -> evar_map -> env -> 
+  env -> evar_map -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> rigid ->
   evar_map * (constr * sorts)
 
-val e_new_type_evar : evar_map ref ->
-  ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> rigid -> env -> constr * sorts
+val e_new_type_evar : env -> evar_map ref ->
+  ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> rigid -> constr * sorts
 
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr

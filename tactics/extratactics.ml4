@@ -269,7 +269,7 @@ let add_rewrite_hint bases ort t lcsr =
   let env = Global.env() and sigma = Evd.empty in
   let poly = Flags.is_universe_polymorphism () in 
   let f ce = 
-    let c, ctx = Constrintern.interp_constr sigma env ce in
+    let c, ctx = Constrintern.interp_constr env sigma ce in
     let ctx =
       if poly then 
 	Evd.evar_universe_context_set ctx
@@ -372,7 +372,7 @@ let refine_tac {Glob_term.closure=closure;term=term} =
       Pretyping.ltac_uconstrs = closure.Glob_term.untyped;
       Pretyping.ltac_idents = closure.Glob_term.idents;
     } in
-    let update evd = Pretyping.understand_ltac flags evd env lvar tycon term in
+    let update evd = Pretyping.understand_ltac flags env evd lvar tycon term in
     Proofview.Refine.refine ~unsafe:false (fun h -> Proofview.Refine.update h update) <*>
     Proofview.V82.tactic (reduce refine_red_flags refine_locs)
   end
@@ -505,7 +505,7 @@ let inTransitivity : bool * constr -> obj =
 (* Main entry points *)
 
 let add_transitivity_lemma left lem =
- let lem',ctx (*FIXME*) = Constrintern.interp_constr Evd.empty (Global.env ()) lem in
+ let lem',ctx (*FIXME*) = Constrintern.interp_constr (Global.env ()) Evd.empty lem in
   add_anonymous_leaf (inTransitivity (left,lem'))
 
 (* Vernacular syntax *)
@@ -545,8 +545,8 @@ END
 
 VERNAC COMMAND EXTEND RetroknowledgeRegister CLASSIFIED AS SIDEFF
  | [ "Register" constr(c) "as" retroknowledge_field(f) "by" constr(b)] ->
-           [ let tc,ctx = Constrintern.interp_constr Evd.empty (Global.env ()) c in
-             let tb,ctx(*FIXME*) = Constrintern.interp_constr Evd.empty (Global.env ()) b in
+           [ let tc,ctx = Constrintern.interp_constr (Global.env ()) Evd.empty c in
+             let tb,ctx(*FIXME*) = Constrintern.interp_constr (Global.env ()) Evd.empty b in
              Global.register f tc tb ]
 END
 
@@ -633,7 +633,7 @@ let hResolve id c occ t gl =
   let t_raw = Detyping.detype true env_ids env_names sigma t in
   let rec resolve_hole t_hole =
     try 
-      Pretyping.understand sigma env t_hole
+      Pretyping.understand env sigma t_hole
     with
       | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
           let loc = match Loc.get_loc e with None -> Loc.ghost | Some loc -> loc in

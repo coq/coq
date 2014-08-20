@@ -70,10 +70,10 @@ val allow_anonymous_refs : bool ref
     unresolved holes as evars and returning the typing contexts of
     these evars. Work as [understand_gen] for the rest. *)
 
-val understand_tcc : ?flags:inference_flags -> evar_map -> env ->
+val understand_tcc : ?flags:inference_flags -> env -> evar_map ->
   ?expected_type:typing_constraint -> glob_constr -> open_constr
 
-val understand_tcc_evars : ?flags:inference_flags -> evar_map ref -> env ->
+val understand_tcc_evars : ?flags:inference_flags -> env -> evar_map ref ->
   ?expected_type:typing_constraint -> glob_constr -> constr
 
 (** More general entry point with evars from ltac *)
@@ -89,21 +89,21 @@ val understand_tcc_evars : ?flags:inference_flags -> evar_map ref -> env ->
 *)
 
 val understand_ltac : inference_flags ->
-  evar_map -> env -> ltac_var_map ->
+  env -> evar_map -> ltac_var_map ->
   typing_constraint -> glob_constr -> pure_open_constr
 
 (** Standard call to get a constr from a glob_constr, resolving implicit args *)
 
 val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
-  evar_map -> env -> glob_constr -> constr Evd.in_evar_universe_context
+  env -> evar_map -> glob_constr -> constr Evd.in_evar_universe_context
 
 (** Idem but returns the judgment of the understood term *)
 
-val understand_judgment : evar_map -> env -> 
+val understand_judgment : env -> evar_map -> 
   glob_constr -> unsafe_judgment Evd.in_evar_universe_context
 
 (** Idem but do not fail on unresolved evars *)
-val understand_judgment_tcc : evar_map ref -> env -> 
+val understand_judgment_tcc : env -> evar_map ref ->
   glob_constr -> unsafe_judgment
 
 (** Trying to solve remaining evars and remaining conversion problems
@@ -128,7 +128,7 @@ val pretype_type :
   ltac_var_map -> glob_constr -> unsafe_type_judgment
 
 val ise_pretype_gen :
-  inference_flags -> evar_map -> env ->
+  inference_flags -> env -> evar_map ->
   ltac_var_map -> typing_constraint -> glob_constr -> evar_map * constr
 
 (**/**)

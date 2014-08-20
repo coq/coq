@@ -351,7 +351,7 @@ let new_pure_evar_full evd evi =
   let evd = Evd.add evd evk evi in
   (evd, evk)
 
-let new_pure_evar evd sign ?(src=default_source) ?filter ?candidates ?store typ =
+let new_pure_evar sign evd ?(src=default_source) ?filter ?candidates ?store typ =
   let newevk = new_untyped_evar() in
   let evd = evar_declare sign newevk typ ~src ?filter ?candidates ?store evd in
   (evd,newevk)
@@ -359,12 +359,12 @@ let new_pure_evar evd sign ?(src=default_source) ?filter ?candidates ?store typ 
 let new_evar_instance sign evd typ ?src ?filter ?candidates ?store instance =
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
-  let evd,newevk = new_pure_evar evd sign ?src ?filter ?candidates ?store typ in
+  let evd,newevk = new_pure_evar sign evd ?src ?filter ?candidates ?store typ in
   (evd,mkEvar (newevk,Array.of_list instance))
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar evd env ?src ?filter ?candidates ?store typ =
+let new_evar env evd ?src ?filter ?candidates ?store typ =
   let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env typ in
   let candidates = Option.map (List.map (subst2 subst vsubst)) candidates in
   let instance =
@@ -373,13 +373,13 @@ let new_evar evd env ?src ?filter ?candidates ?store typ =
     | Some filter -> Filter.filter_list filter instance in
   new_evar_instance sign evd typ' ?src ?filter ?candidates ?store instance
 
-let new_type_evar ?src ?filter rigid evd env =
+let new_type_evar env evd ?src ?filter rigid =
   let evd', s = new_sort_variable rigid evd in
-  let evd', e = new_evar evd' env ?src ?filter (mkSort s) in
+  let evd', e = new_evar env evd' ?src ?filter (mkSort s) in
     evd', (e, s)
 
-let e_new_type_evar evdref ?src ?filter rigid env =
-  let evd', c = new_type_evar ?src ?filter rigid !evdref env in
+let e_new_type_evar env evdref ?src ?filter rigid =
+  let evd', c = new_type_evar env !evdref ?src ?filter rigid in
     evdref := evd';
     c
 
@@ -392,8 +392,8 @@ let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
     evdref := evd'; mkSort s
 
   (* The same using side-effect *)
-let e_new_evar evdref env ?(src=default_source) ?filter ?candidates ?store ty =
-  let (evd',ev) = new_evar !evdref env ~src:src ?filter ?candidates ?store ty in
+let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ty =
+  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?store ty in
   evdref := evd';
   ev
 
@@ -482,7 +482,7 @@ let rec check_and_clear_in_constr evdref err ids c =
             if Id.Map.is_empty rids then c
             else
 	      let env = Context.fold_named_context push_named nhyps ~init:(empty_env) in
-	      let ev'= e_new_evar evdref env ~src:(evar_source evk !evdref) nconcl in
+	      let ev'= e_new_evar env evdref ~src:(evar_source evk !evdref) nconcl in
 	      evdref := Evd.define evk ev' !evdref;
 	      let (evk',_) = destEvar ev' in
 	    (* spiwack: hacking session to mark the old [evk] as having been "cleared" *)
@@ -704,17 +704,17 @@ let define_pure_evar_as_product evd evk =
   let evenv = evar_env evi in
   let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
   let s = destSort evi.evar_concl in
-  let evd1,(dom,u1) = new_type_evar univ_flexible_alg evd evenv ~filter:(evar_filter evi) in
+  let evd1,(dom,u1) = new_type_evar evenv evd univ_flexible_alg ~filter:(evar_filter evi) in
   let evd2,rng =
     let newenv = push_named (id, None, dom) evenv in
     let src = evar_source evk evd1 in
     let filter = Filter.extend 1 (evar_filter evi) in
       if is_prop_sort s then
        (* Impredicative product, conclusion must fall in [Prop]. *)
-        new_evar evd1 newenv evi.evar_concl ~src ~filter
+        new_evar newenv evd1 evi.evar_concl ~src ~filter
       else
 	let evd3, (rng, srng) =
-	  new_type_evar univ_flexible_alg evd1 newenv ~src ~filter in
+	  new_type_evar newenv evd1 univ_flexible_alg ~src ~filter in
 	let prods = Univ.sup (univ_of_sort u1) (univ_of_sort srng) in
 	let evd3 = Evd.set_leq_sort evd3 (Type prods) s in
 	  evd3, rng
@@ -757,7 +757,7 @@ let define_pure_evar_as_lambda env evd evk =
   let newenv = push_named (id, None, dom) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in
-  let evd2,body = new_evar evd1 newenv ~src (subst1 (mkVar id) rng) ~filter in
+  let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in
   let lam = mkLambda (Name id, dom, subst_var id body) in
   Evd.define evk lam evd2, lam
 

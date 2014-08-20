@@ -512,7 +512,7 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let trace =
     push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist in
   let (evd,c) =
-    catch_error trace (understand_ltac flags sigma env vars kind) c
+    catch_error trace (understand_ltac flags env sigma vars kind) c
   in
   (* spiwack: to avoid unnecessary modifications of tacinterp, as this
      function already use effect, I call [run] hoping it doesn't mess
@@ -622,8 +622,8 @@ let interp_unfold ist env sigma (occs,qid) =
 let interp_flag ist env sigma red =
   { red with rConst = List.map (interp_evaluable ist env sigma) red.rConst }
 
-let interp_constr_with_occurrences ist sigma env (occs,c) =
-  let (sigma,c_interp) = interp_constr ist sigma env c in
+let interp_constr_with_occurrences ist env sigma (occs,c) =
+  let (sigma,c_interp) = interp_constr ist env sigma c in
   sigma , (interp_occurrences ist occs, c_interp)
 
 let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, c) =
@@ -1323,7 +1323,7 @@ and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
           Pretyping.ltac_genargs = ist.lfun;
         } in
         let (sigma,c_interp) =
-          Pretyping.understand_ltac constr_flags sigma env vars WithoutTypeConstraint term
+          Pretyping.understand_ltac constr_flags env sigma vars WithoutTypeConstraint term
         in
         Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return (Value.of_constr c_interp))
       end

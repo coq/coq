@@ -912,7 +912,7 @@ let prepare_hint check env init (sigma,c) =
 let interp_hints poly =
   fun h ->
   let f c =
-    let evd,c = Constrintern.interp_open_constr Evd.empty (Global.env()) c in
+    let evd,c = Constrintern.interp_open_constr (Global.env()) Evd.empty c in
       prepare_hint true (Global.env()) Evd.empty (evd,c) in
   let fr r =
     let gr = global_with_alias r in

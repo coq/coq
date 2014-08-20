@@ -1150,7 +1150,7 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
 	else
 	  let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
 	  let evd, ev3 = 
-	    Evarutil.new_pure_evar evd (Evd.evar_hyps evi) 
+	    Evarutil.new_pure_evar (Evd.evar_hyps evi) evd
 	      ~src:evi.evar_source ~filter:evi.evar_filter 
 	      ?candidates:evi.evar_candidates (it_mkProd_or_LetIn (mkSort k) ctx) 
 	  in

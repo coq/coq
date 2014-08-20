@@ -1449,7 +1449,7 @@ let vm_cast_no_check c gl =
 
 
 let exact_proof c gl =
-  let c,ctx = Constrintern.interp_casted_constr (project gl) (pf_env gl) c (pf_concl gl)
+  let c,ctx = Constrintern.interp_casted_constr (pf_env gl) (project gl) c (pf_concl gl)
   in tclTHEN (tclEVARUNIVCONTEXT ctx) (refine_no_check c) gl
 
 let assumption =
@@ -3021,7 +3021,7 @@ let specialize_eqs id gl =
 	| _ ->
 	    if in_eqs then acc, in_eqs, ctx, ty
 	    else
-	      let e = e_new_evar evars (push_rel_context ctx env) t in
+	      let e = e_new_evar (push_rel_context ctx env) evars t in
 		aux false ((na, Some e, t) :: ctx) (mkApp (lift 1 acc, [| mkRel 1 |])) b)
     | t -> acc, in_eqs, ctx, ty
   in

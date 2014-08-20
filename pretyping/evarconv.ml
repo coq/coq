@@ -763,7 +763,7 @@ and conv_record trs env evd (ctx,(h,h'),c,bs,(params,params1),(us,us2),(ts,ts1),
 	      (i,t2::ks, m-1, test)
 	  else
 	    let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
-            let (i',ev) = new_evar i env ~src:dloc (substl ks b) in
+            let (i',ev) = new_evar env i ~src:dloc (substl ks b) in
 	    (i', ev :: ks, m - 1,test))
 	(evd,[],List.length bs - 1,fun i -> Success i) bs
     in

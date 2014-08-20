@@ -1278,7 +1278,7 @@ let understand_my_constr c gls =
     | GEvar _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark Evar_kinds.Expand,None)
     | rc ->  map_glob_constr frob rc
   in
-  Pretyping.understand_tcc (sig_sig gls) env ~expected_type:(Pretyping.OfType (pf_concl gls)) (frob rawc)
+  Pretyping.understand_tcc env (sig_sig gls) ~expected_type:(Pretyping.OfType (pf_concl gls)) (frob rawc)
 
 let my_refine c gls =
   let oc = understand_my_constr c gls in
@@ -1458,7 +1458,7 @@ let do_instr raw_instr pts =
       let ist = {ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty; genv = env} in
       let glob_instr = intern_proof_instr ist raw_instr in
       let instr =
-	interp_proof_instr (get_its_info gl) sigma env glob_instr in
+	interp_proof_instr (get_its_info gl) env sigma glob_instr in
       ignore (Pfedit.by (Proofview.V82.tactic (tclTHEN (eval_instr instr) clean_tmp)))
     else () end;
   postprocess pts raw_instr.instr;

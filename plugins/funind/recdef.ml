@@ -194,7 +194,7 @@ let (value_f:constr list -> global_reference -> constr) =
 			       Anonymous)],
 	  GVar(d0,v_id)])
     in
-    let body = fst (understand Evd.empty env glob_body)(*FIXME*) in
+    let body = fst (understand env Evd.empty glob_body)(*FIXME*) in
     it_mkLambda_or_LetIn body context
 
 let (declare_f : Id.t -> logical_kind -> constr list -> global_reference -> global_reference) =
@@ -1340,7 +1340,7 @@ let open_new_goal build_proof ctx using_lemmas ref_ goal_name (gls_type,decompos
 	 	     (fun c ->
 	 		Proofview.V82.of_tactic (Tacticals.New.tclTHENLIST
 	 		  [intros;
-	 		   Simple.apply (fst (interp_constr Evd.empty (Global.env()) c)) (*FIXME*);
+	 		   Simple.apply (fst (interp_constr (Global.env()) Evd.empty c)) (*FIXME*);
 	 		   Tacticals.New.tclCOMPLETE Auto.default_auto
 	 		  ])
 	 	     )
@@ -1461,10 +1461,10 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
     generate_induction_principle using_lemmas : unit =
   let env = Global.env() in
   let evd = ref (Evd.from_env env) in
-  let function_type = interp_type_evars evd env type_of_f in
+  let function_type = interp_type_evars env evd type_of_f in
   let env = push_named (function_name,None,function_type) env in
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
-  let ty = interp_type_evars evd env ~impls:rec_impls eq in
+  let ty = interp_type_evars env evd ~impls:rec_impls eq in
   let evm, nf = Evarutil.nf_evars_and_universes !evd in
   let equation_lemma_type = nf_betaiotazeta (nf ty) in
   let function_type = nf function_type in
@@ -1492,8 +1492,8 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in  
   let relation =
     fst (*FIXME*)(interp_constr
-      Evd.empty
       env_with_pre_rec_args
+      Evd.empty
       r)
   in
   let tcc_lemma_name = add_suffix function_name "_tcc" in

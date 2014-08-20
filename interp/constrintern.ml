@@ -1846,55 +1846,55 @@ let intern_pattern globalenv patt =
 
 (* All evars resolved *)
 
-let interp_gen kind sigma env ?(impls=empty_internalization_env) c =
+let interp_gen kind env sigma ?(impls=empty_internalization_env) c =
   let c = intern_gen kind ~impls env c in
-  understand ~expected_type:kind sigma env c
+  understand ~expected_type:kind env sigma c
 
-let interp_constr sigma env ?(impls=empty_internalization_env) c =
-  interp_gen WithoutTypeConstraint sigma env c
+let interp_constr env sigma ?(impls=empty_internalization_env) c =
+  interp_gen WithoutTypeConstraint env sigma c
 
-let interp_type sigma env ?(impls=empty_internalization_env) c =
-  interp_gen IsType sigma env ~impls c
+let interp_type env sigma ?(impls=empty_internalization_env) c =
+  interp_gen IsType env sigma ~impls c
 
-let interp_casted_constr sigma env ?(impls=empty_internalization_env) c typ =
-  interp_gen (OfType typ) sigma env ~impls c
+let interp_casted_constr env sigma ?(impls=empty_internalization_env) c typ =
+  interp_gen (OfType typ) env sigma ~impls c
 
 (* Not all evars expected to be resolved *)
 
-let interp_open_constr sigma env c =
-  understand_tcc sigma env (intern_constr env c)
+let interp_open_constr env sigma c =
+  understand_tcc env sigma (intern_constr env c)
 
 (* Not all evars expected to be resolved and computation of implicit args *)
 
-let interp_constr_evars_gen_impls evdref
-    env ?(impls=empty_internalization_env) expected_type c =
+let interp_constr_evars_gen_impls env evdref
+    ?(impls=empty_internalization_env) expected_type c =
   let c = intern_gen expected_type ~impls env c in
   let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:(expected_type == IsType) c in
-    understand_tcc_evars evdref env ~expected_type c, imps
+    understand_tcc_evars env evdref ~expected_type c, imps
 
-let interp_constr_evars_impls evdref env ?(impls=empty_internalization_env) c =
-  interp_constr_evars_gen_impls evdref env ~impls WithoutTypeConstraint c
+let interp_constr_evars_impls env evdref ?(impls=empty_internalization_env) c =
+  interp_constr_evars_gen_impls env evdref ~impls WithoutTypeConstraint c
 
-let interp_casted_constr_evars_impls evdref env ?(impls=empty_internalization_env) c typ =
-  interp_constr_evars_gen_impls evdref env ~impls (OfType typ) c
+let interp_casted_constr_evars_impls env evdref ?(impls=empty_internalization_env) c typ =
+  interp_constr_evars_gen_impls env evdref ~impls (OfType typ) c
 
-let interp_type_evars_impls evdref env ?(impls=empty_internalization_env) c =
-  interp_constr_evars_gen_impls evdref env ~impls IsType c
+let interp_type_evars_impls env evdref ?(impls=empty_internalization_env) c =
+  interp_constr_evars_gen_impls env evdref ~impls IsType c
 
 (* Not all evars expected to be resolved, with side-effect on evars *)
 
-let interp_constr_evars_gen evdref env ?(impls=empty_internalization_env) expected_type c =
+let interp_constr_evars_gen env evdref ?(impls=empty_internalization_env) expected_type c =
   let c = intern_gen expected_type ~impls env c in
-  understand_tcc_evars evdref env ~expected_type c
+  understand_tcc_evars env evdref ~expected_type c
 
-let interp_constr_evars evdref env ?(impls=empty_internalization_env) c =
-  interp_constr_evars_gen evdref env WithoutTypeConstraint ~impls c
+let interp_constr_evars env evdref ?(impls=empty_internalization_env) c =
+  interp_constr_evars_gen env evdref WithoutTypeConstraint ~impls c
 
-let interp_casted_constr_evars evdref env ?(impls=empty_internalization_env) c typ =
-  interp_constr_evars_gen evdref env ~impls (OfType typ) c
+let interp_casted_constr_evars env evdref ?(impls=empty_internalization_env) c typ =
+  interp_constr_evars_gen env evdref ~impls (OfType typ) c
 
-let interp_type_evars evdref env ?(impls=empty_internalization_env) c =
-  interp_constr_evars_gen evdref env IsType ~impls c
+let interp_type_evars env evdref ?(impls=empty_internalization_env) c =
+  interp_constr_evars_gen env evdref IsType ~impls c
 
 (* Miscellaneous *)
 
@@ -1921,15 +1921,15 @@ let interp_notation_constr ?(impls=empty_internalization_env) nenv a =
 
 (* Interpret binders and contexts  *)
 
-let interp_binder sigma env na t =
+let interp_binder env sigma na t =
   let t = intern_gen IsType env t in
   let t' = locate_if_isevar (loc_of_glob_constr t) na t in
-  understand ~expected_type:IsType sigma env t'
+  understand ~expected_type:IsType env sigma t'
 
-let interp_binder_evars evdref env na t =
+let interp_binder_evars env evdref na t =
   let t = intern_gen IsType env t in
   let t' = locate_if_isevar (loc_of_glob_constr t) na t in
-  understand_tcc_evars evdref env ~expected_type:IsType t'
+  understand_tcc_evars env evdref ~expected_type:IsType t'
 
 open Environ
 
@@ -1947,7 +1947,7 @@ let intern_context global_level env impl_env binders =
   with InternalizationError (loc,e) ->
     user_err_loc (loc,"internalize", explain_internalization_error e)
 
-let interp_rawcontext_evars evdref env bl =
+let interp_rawcontext_evars env evdref bl =
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->
@@ -1955,7 +1955,7 @@ let interp_rawcontext_evars evdref env bl =
 	    None ->
 	      let t' = locate_if_isevar (loc_of_glob_constr t) na t in
 	      let t =
-                understand_tcc_evars evdref env ~expected_type:IsType t' in
+                understand_tcc_evars env evdref ~expected_type:IsType t' in
 	      let d = (na,None,t) in
 	      let impls =
 		if k == Implicit then
@@ -1965,14 +1965,14 @@ let interp_rawcontext_evars evdref env bl =
 	      in
 		(push_rel d env, d::params, succ n, impls)
 	  | Some b ->
-	      let c = understand_judgment_tcc evdref env b in
+	      let c = understand_judgment_tcc env evdref b in
 	      let d = (na, Some c.uj_val, c.uj_type) in
 		(push_rel d env, d::params, succ n, impls))
       (env,[],1,[]) (List.rev bl)
   in (env, par), impls
 
-let interp_context_evars ?(global_level=false) ?(impl_env=empty_internalization_env) evdref env params =
+let interp_context_evars ?(global_level=false) ?(impl_env=empty_internalization_env) env evdref params =
   let int_env,bl = intern_context global_level env impl_env params in
-  let x = interp_rawcontext_evars evdref env bl in
+  let x = interp_rawcontext_evars env evdref bl in
   int_env, x
 

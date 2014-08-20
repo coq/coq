@@ -127,7 +127,7 @@ let mk_open_instance id idc gl m t=
 	      GLambda(loc,name,k,GHole (Loc.ghost,Evar_kinds.BinderType name,None),t1)
 	| _-> anomaly (Pp.str "can't happen") in
   let ntt=try
-    fst (Pretyping.understand evmap env (raux m rawt))(*FIXME*)
+    fst (Pretyping.understand env evmap (raux m rawt))(*FIXME*)
   with e when Errors.noncritical e ->
     error "Untypable instance, maybe higher-order non-prenex quantification" in
     decompose_lam_n_assum m ntt

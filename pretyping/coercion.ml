@@ -81,7 +81,7 @@ let inh_pattern_coerce_to loc pat ind1 ind2 =
 open Program
 
 let make_existential loc ?(opaque = Evar_kinds.Define true) env evdref c =
-  Evarutil.e_new_evar evdref env ~src:(loc, Evar_kinds.QuestionMark opaque) c
+  Evarutil.e_new_evar env evdref ~src:(loc, Evar_kinds.QuestionMark opaque) c
 
 let app_opt env evdref f t =
   whd_betaiota !evdref (app_opt f t)

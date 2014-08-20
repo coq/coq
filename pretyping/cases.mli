@@ -114,8 +114,8 @@ val compile : 'a pattern_matching_problem -> Environ.unsafe_judgment
 val prepare_predicate :            Loc.t ->
            (Evarutil.type_constraint ->
             Environ.env -> Evd.evar_map ref -> 'a -> Environ.unsafe_judgment) ->
-           Evd.evar_map ->
            Environ.env ->
+           Evd.evar_map ->
            (Term.types * tomatch_type) list ->
            Context.rel_context list ->
            Constr.constr option ->

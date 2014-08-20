@@ -364,9 +364,9 @@ let pretype_sort evdref = function
   | GSet -> judge_of_set
   | GType s -> evd_comb1 judge_of_Type evdref s
 
-let new_type_evar evdref env loc =
+let new_type_evar env evdref loc =
   let e, s = 
-    evd_comb0 (fun evd -> Evarutil.new_type_evar univ_flexible_alg evd env ~src:(loc,Evar_kinds.InternalHole)) evdref
+    evd_comb0 (fun evd -> Evarutil.new_type_evar env evd univ_flexible_alg ~src:(loc,Evar_kinds.InternalHole)) evdref
   in e
 
 let get_projection env cst =
@@ -426,24 +426,24 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     let ty =
       match tycon with
       | Some ty -> ty
-      | None -> new_type_evar evdref env loc in
+      | None -> new_type_evar env evdref loc in
     let k = Evar_kinds.MatchingVar (someta,n) in
-      { uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
+      { uj_val = e_new_evar env evdref ~src:(loc,k) ty; uj_type = ty }
 
   | GHole (loc, k, None) ->
       let ty =
         match tycon with
         | Some ty -> ty
         | None ->
-          new_type_evar evdref env loc in
-        { uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
+          new_type_evar env evdref loc in
+        { uj_val = e_new_evar env evdref ~src:(loc,k) ty; uj_type = ty }
 
   | GHole (loc, k, Some arg) ->
       let ty =
         match tycon with
         | Some ty -> ty
         | None ->
-          new_type_evar evdref env loc in
+          new_type_evar env evdref loc in
       let ist = lvar.ltac_genargs in
       let (c, sigma) = Hook.get f_genarg_interp ty env !evdref ist arg in
       let () = evdref := sigma in
@@ -543,7 +543,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	let ctx = smash_rel_context (Inductiveops.inductive_paramdecls ind) in
 	  List.fold_right (fun (n, b, ty) (* par  *)args ->
 	    let ty = substl args ty in
-	    let ev = e_new_evar evdref env ~src:(loc,k) ty in
+	    let ev = e_new_evar env evdref ~src:(loc,k) ty in
 	      ev :: args) ctx []
       in (ind, List.rev args)
     in
@@ -830,7 +830,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	| None ->
 	  let p = match tycon with
 	    | Some ty -> ty
-	    | None -> new_type_evar evdref env loc
+	    | None -> new_type_evar env evdref loc
 	  in
 	    it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
       let pred = nf_evar !evdref pred in
@@ -929,7 +929,7 @@ and pretype_type resolve_tc valcon env evdref lvar = function
 	       utj_type = s }
        | None ->
 	   let s = evd_comb0 (new_sort_variable univ_flexible_alg) evdref in
-	     { utj_val = e_new_evar evdref env ~src:(loc, knd) (mkSort s);
+	     { utj_val = e_new_evar env evdref ~src:(loc, knd) (mkSort s);
 	       utj_type = s})
   | c ->
       let j = pretype resolve_tc empty_tycon env evdref lvar c in
@@ -943,7 +943,7 @@ and pretype_type resolve_tc valcon env evdref lvar = function
 	      error_unexpected_type_loc
                 (loc_of_glob_constr c) env !evdref tj.utj_val v
 
-let ise_pretype_gen flags sigma env lvar kind c =
+let ise_pretype_gen flags env sigma lvar kind c =
   let evdref = ref sigma in
   let c' = match kind with
     | WithoutTypeConstraint ->
@@ -984,7 +984,7 @@ let on_judgment f j =
   let (c,_,t) = destCast (f c) in
   {uj_val = c; uj_type = t}
 
-let understand_judgment sigma env c =
+let understand_judgment env sigma c =
   let evdref = ref sigma in
   let j = pretype true empty_tycon env evdref empty_lvar c in
   let j = on_judgment (fun c ->
@@ -992,14 +992,14 @@ let understand_judgment sigma env c =
       evdref := evd; c) j
   in j, Evd.evar_universe_context !evdref
 
-let understand_judgment_tcc evdref env c =
+let understand_judgment_tcc env evdref c =
   let j = pretype true empty_tycon env evdref empty_lvar c in
   on_judgment (fun c ->
     let (evd,c) = process_inference_flags all_no_fail_flags env Evd.empty (!evdref,c) in
     evdref := evd; c) j
 
-let ise_pretype_gen_ctx flags sigma env lvar kind c =
-  let evd, c = ise_pretype_gen flags sigma env lvar kind c in
+let ise_pretype_gen_ctx flags env sigma lvar kind c =
+  let evd, c = ise_pretype_gen flags env sigma lvar kind c in
   let evd, f = Evarutil.nf_evars_and_universes evd in
     f c, Evd.evar_universe_context evd
 
@@ -1008,16 +1008,16 @@ let ise_pretype_gen_ctx flags sigma env lvar kind c =
 let understand
     ?(flags=all_and_fail_flags)
     ?(expected_type=WithoutTypeConstraint)
-    sigma env c =
-  ise_pretype_gen_ctx flags sigma env empty_lvar expected_type c
+    env sigma c =
+  ise_pretype_gen_ctx flags env sigma empty_lvar expected_type c
 
-let understand_tcc ?(flags=all_no_fail_flags) sigma env ?(expected_type=WithoutTypeConstraint) c =
-  ise_pretype_gen flags sigma env empty_lvar expected_type c
+let understand_tcc ?(flags=all_no_fail_flags) env sigma ?(expected_type=WithoutTypeConstraint) c =
+  ise_pretype_gen flags env sigma empty_lvar expected_type c
 
-let understand_tcc_evars ?(flags=all_no_fail_flags) evdref env ?(expected_type=WithoutTypeConstraint) c =
-  let sigma, c = ise_pretype_gen flags !evdref env empty_lvar expected_type c in
+let understand_tcc_evars ?(flags=all_no_fail_flags) env evdref ?(expected_type=WithoutTypeConstraint) c =
+  let sigma, c = ise_pretype_gen flags env !evdref empty_lvar expected_type c in
   evdref := sigma;
   c
 
-let understand_ltac flags sigma env lvar kind c =
-  ise_pretype_gen flags sigma env lvar kind c
+let understand_ltac flags env sigma lvar kind c =
+  ise_pretype_gen flags env sigma lvar kind c

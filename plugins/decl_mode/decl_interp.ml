@@ -143,14 +143,14 @@ let intern_proof_instr globs instr=
 
 (* INTERP *)
 
-let interp_justification_items sigma env =
-    Option.map (List.map (fun c -> fst (*FIXME*)(understand sigma env (fst c))))
+let interp_justification_items env sigma =
+    Option.map (List.map (fun c -> fst (*FIXME*)(understand env sigma (fst c))))
 
-let interp_constr check_sort sigma env c =
+let interp_constr check_sort env sigma c =
   if check_sort then
-    fst (understand sigma env ~expected_type:IsType (fst c) (* FIXME *))
+    fst (understand env sigma ~expected_type:IsType (fst c) (* FIXME *))
   else
-    fst (understand sigma env (fst c))
+    fst (understand env sigma (fst c))
 
 let special_whd env =
   let infos=Closure.create_clos_infos Closure.betadeltaiota env in
@@ -172,16 +172,16 @@ let get_eq_typ info env =
   let typ = decompose_eq env (get_last env) in
     typ
 
-let interp_constr_in_type typ sigma env c =
-  fst (understand sigma env (fst c) ~expected_type:(OfType typ))(*FIXME*)
+let interp_constr_in_type typ env sigma c =
+  fst (understand env sigma (fst c) ~expected_type:(OfType typ))(*FIXME*)
 
-let interp_statement interp_it sigma env st =
+let interp_statement interp_it env sigma st =
   {st_label=st.st_label;
-   st_it=interp_it sigma env st.st_it}
+   st_it=interp_it env sigma st.st_it}
 
-let interp_constr_or_thesis check_sort sigma env = function
+let interp_constr_or_thesis check_sort env sigma = function
     Thesis n -> Thesis n
-  | This c -> This (interp_constr check_sort sigma env c)
+  | This c -> This (interp_constr check_sort env sigma c)
 
 let abstract_one_hyp inject h glob =
   match h with
@@ -212,11 +212,11 @@ let rec match_hyps blend names constr = function
       let rhyps,head = match_hyps blend qnames body q in
 	qhyp::rhyps,head
 
-let interp_hyps_gen inject blend sigma env hyps head =
-  let constr= fst(*FIXME*) (understand sigma env (glob_constr_of_hyps inject hyps head)) in
+let interp_hyps_gen inject blend env sigma hyps head =
+  let constr= fst(*FIXME*) (understand env sigma (glob_constr_of_hyps inject hyps head)) in
     match_hyps blend [] constr hyps
 
-let interp_hyps sigma env hyps = fst (interp_hyps_gen fst (fun x _ -> x) sigma env hyps glob_prop)
+let interp_hyps env sigma hyps = fst (interp_hyps_gen fst (fun x _ -> x) env sigma hyps glob_prop)
 
 let dummy_prefix= Id.of_string "__"
 
@@ -318,7 +318,7 @@ let rec match_aliases names constr = function
 
 let detype_ground c = Detyping.detype false [] [] Evd.empty c
 
-let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
+let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
   let et,pinfo =
     match info.pm_stack with
 	Per(et,pi,_,_)::_ -> et,pi
@@ -365,7 +365,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
   let term3=List.fold_right let_in_one_alias aliases term2 in
   let term4=List.fold_right prod_one_id loc_ids term3 in
   let term5=List.fold_right prod_one_hyp params term4 in
-  let constr = fst (understand  sigma env term5)(*FIXME*) in
+  let constr = fst (understand env sigma term5)(*FIXME*) in
   let tparams,nam4,rest4 = match_args destProd [] constr params in
   let tpatvars,nam3,rest3 = match_args destProd nam4 rest4 loc_ids in
   let taliases,nam2,rest2 = match_aliases nam3 rest3 aliases in
@@ -382,22 +382,22 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	     pat_pat=patt;
 	     pat_expr=pat},thyps
 
-let interp_cut interp_it sigma env cut=
-  let nenv,nstat = interp_it sigma env cut.cut_stat in
+let interp_cut interp_it env sigma cut=
+  let nenv,nstat = interp_it env sigma cut.cut_stat in
     {cut with
        cut_stat=nstat;
-       cut_by=interp_justification_items sigma nenv cut.cut_by}
+       cut_by=interp_justification_items nenv sigma cut.cut_by}
 
-let interp_no_bind interp_it sigma env x =
-  env,interp_it sigma env x
+let interp_no_bind interp_it env sigma x =
+  env,interp_it env sigma x
 
-let interp_suffices_clause sigma env (hyps,cot)=
+let interp_suffices_clause env sigma (hyps,cot)=
   let (locvars,_) as res =
     match cot with
 	This (c,_) ->
-	  let nhyps,nc = interp_hyps_gen fst (fun x _ -> x) sigma env hyps c in
+	  let nhyps,nc = interp_hyps_gen fst (fun x _ -> x) env sigma hyps c in
 	  nhyps,This nc
-      | Thesis Plain as th  -> interp_hyps sigma env hyps,th
+      | Thesis Plain as th  -> interp_hyps env sigma hyps,th
       | Thesis (For n) -> error "\"thesis for\" is not applicable here." in
   let push_one hyp env0 =
     match hyp with
@@ -408,9 +408,9 @@ let interp_suffices_clause sigma env (hyps,cot)=
   let nenv = List.fold_right push_one locvars env in
     nenv,res
 
-let interp_casee sigma env = function
-    Real c -> Real (fst (understand sigma env (fst c)))(*FIXME*)
-  | Virtual cut -> Virtual (interp_cut (interp_no_bind (interp_statement (interp_constr true))) sigma env cut)
+let interp_casee env sigma = function
+    Real c -> Real (fst (understand env sigma (fst c)))(*FIXME*)
+  | Virtual cut -> Virtual (interp_cut (interp_no_bind (interp_statement (interp_constr true))) env sigma cut)
 
 let abstract_one_arg = function
     (loc,(id,None)) ->
@@ -424,50 +424,50 @@ let abstract_one_arg = function
 let glob_constr_of_fun args body =
   List.fold_right abstract_one_arg args (fst body)
 
-let interp_fun sigma env args body =
-  let constr=fst (*FIXME*) (understand sigma env (glob_constr_of_fun args body)) in
+let interp_fun env sigma args body =
+  let constr=fst (*FIXME*) (understand env sigma (glob_constr_of_fun args body)) in
     match_args destLambda [] constr args
 
-let rec interp_bare_proof_instr info (sigma:Evd.evar_map) (env:Environ.env) = function
-    Pthus i -> Pthus (interp_bare_proof_instr info sigma env i)
-  | Pthen i -> Pthen (interp_bare_proof_instr info sigma env i)
-  | Phence i -> Phence (interp_bare_proof_instr info sigma env i)
+let rec interp_bare_proof_instr info env sigma = function
+    Pthus i -> Pthus (interp_bare_proof_instr info env sigma i)
+  | Pthen i -> Pthen (interp_bare_proof_instr info env sigma i)
+  | Phence i -> Phence (interp_bare_proof_instr info env sigma i)
   | Pcut c -> Pcut (interp_cut
 		      (interp_no_bind (interp_statement
 					 (interp_constr_or_thesis true)))
-		      sigma env c)
+		      env sigma c)
   | Psuffices c ->
-      Psuffices (interp_cut interp_suffices_clause sigma env c)
+      Psuffices (interp_cut interp_suffices_clause env sigma c)
   | Prew (s,c) -> Prew (s,interp_cut
 			  (interp_no_bind (interp_statement
 			     (interp_constr_in_type (get_eq_typ info env))))
-			  sigma env c)
+			  env sigma c)
 
-  | Psuppose hyps -> Psuppose (interp_hyps sigma env hyps)
+  | Psuppose hyps -> Psuppose (interp_hyps env sigma hyps)
   | Pcase (params,pat,hyps) ->
-      let tparams,tpat,thyps = interp_cases info sigma env params pat hyps in
+      let tparams,tpat,thyps = interp_cases info env sigma params pat hyps in
 	Pcase (tparams,tpat,thyps)
   | Ptake witl ->
-      Ptake (List.map (fun c -> fst (*FIXME*) (understand sigma env (fst c))) witl)
-  | Pconsider (c,hyps) -> Pconsider (interp_constr false sigma env c,
-				     interp_hyps sigma env hyps)
-  | Pper (et,c) -> Pper (et,interp_casee sigma env c)
+      Ptake (List.map (fun c -> fst (*FIXME*) (understand env sigma (fst c))) witl)
+  | Pconsider (c,hyps) -> Pconsider (interp_constr false env sigma c,
+				     interp_hyps env sigma hyps)
+  | Pper (et,c) -> Pper (et,interp_casee env sigma c)
   | Pend bt -> Pend bt
   | Pescape -> Pescape
-  | Passume hyps -> Passume (interp_hyps sigma env hyps)
-  | Pgiven hyps -> Pgiven (interp_hyps sigma env hyps)
-  | Plet hyps -> Plet (interp_hyps sigma env hyps)
-  | Pclaim st -> Pclaim (interp_statement (interp_constr true) sigma env st)
-  | Pfocus st -> Pfocus (interp_statement (interp_constr true) sigma env st)
+  | Passume hyps -> Passume (interp_hyps env sigma hyps)
+  | Pgiven hyps -> Pgiven (interp_hyps env sigma hyps)
+  | Plet hyps -> Plet (interp_hyps env sigma hyps)
+  | Pclaim st -> Pclaim (interp_statement (interp_constr true) env sigma st)
+  | Pfocus st -> Pfocus (interp_statement (interp_constr true) env sigma st)
   | Pdefine (id,args,body) ->
-      let nargs,_,nbody = interp_fun sigma env args body in
+      let nargs,_,nbody = interp_fun env sigma args body in
 	Pdefine (id,nargs,nbody)
   | Pcast (id,typ) ->
-      Pcast(id,interp_constr true sigma env typ)
+      Pcast(id,interp_constr true env sigma typ)
 
-let interp_proof_instr info sigma env instr=
+let interp_proof_instr info env sigma instr=
   {emph = instr.emph;
-   instr = interp_bare_proof_instr info sigma env instr.instr}
+   instr = interp_bare_proof_instr info env sigma instr.instr}
 
 
 

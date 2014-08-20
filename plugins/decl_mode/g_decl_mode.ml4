@@ -55,8 +55,8 @@ let pr_glob_proof_instr _ _ _ instr = Empty.abort instr
 let interp_proof_instr _ { Evd.it = gl ; sigma = sigma }=
   Decl_interp.interp_proof_instr 
     (Decl_mode.get_info sigma gl)
-    (sigma)
     (Goal.V82.env sigma gl)
+    (sigma)
 
 let vernac_decl_proof () = 
   let pf = Proof_global.give_me_the_proof () in

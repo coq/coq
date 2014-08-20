@@ -763,7 +763,7 @@ let injectable env sigma t1 t2 =
 
  *)
 
-(* [descend_then sigma env head dirn]
+(* [descend_then env sigma head dirn]
 
    returns the number of products introduced, and the environment
    which is active, in the body of the case-branch given by [dirn],
@@ -778,7 +778,7 @@ let injectable env sigma t1 t2 =
    the continuation then constructs the case-split.
  *)
 
-let descend_then sigma env head dirn =
+let descend_then env sigma head dirn =
   let IndType (indf,_) =
     try find_rectype env sigma (get_type_of env sigma head)
     with Not_found ->
@@ -821,7 +821,7 @@ let descend_then sigma env head dirn =
    constructs a case-split on [headval], with the [dirn]-th branch
    giving [True], and all the rest giving False. *)
 
-let construct_discriminator sigma env dirn c sort =
+let construct_discriminator env sigma dirn c sort =
   let IndType(indf,_) =
     try find_rectype env sigma (get_type_of env sigma c)
     with Not_found ->
@@ -848,12 +848,12 @@ let construct_discriminator sigma env dirn c sort =
   let ci = make_case_info env ind RegularStyle in
   mkCase (ci, p, c, Array.of_list brl)
 
-let rec build_discriminator sigma env dirn c sort = function
-  | [] -> construct_discriminator sigma env dirn c sort
+let rec build_discriminator env sigma dirn c sort = function
+  | [] -> construct_discriminator env sigma dirn c sort
   | ((sp,cnum),argnum)::l ->
-      let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
+      let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
-      let subval = build_discriminator sigma cnum_env dirn newc sort l  in
+      let subval = build_discriminator cnum_env sigma dirn newc sort l  in
       kont subval (build_coq_False (),mkSort (Prop Null))
 
 (* Note: discrimination could be more clever: if some elimination is
@@ -919,7 +919,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort =
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (e,None,t) env in
   let discriminator =
-    build_discriminator sigma e_env dirn (mkVar e) sort cpath in
+    build_discriminator e_env sigma dirn (mkVar e) sort cpath in
   let sigma,(pf, absurd_term), eff = 
     discrimination_pf env sigma e (t,t1,t2) discriminator lbeq in
   let pf_ty = mkArrow eqn absurd_term in
@@ -1111,7 +1111,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       let (a,p_i_minus_1) = match whd_beta_stack !evdref p_i with
 	| (_sigS,[a;p]) -> (a,p)
  	| _ -> anomaly ~label:"sig_clausal_form" (Pp.str "should be a sigma type") in
-      let ev = Evarutil.e_new_evar evdref env a in
+      let ev = Evarutil.e_new_evar env evdref a in
       let rty = beta_applist(p_i_minus_1,[ev]) in
       let tuple_tail = sigrec_clausal_form (siglen-1) rty in
       match
@@ -1161,7 +1161,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 
    If [zty] has no dependencies, this is simple. Otherwise, assume
    [zty] has free (de Bruijn) variables in,...i1 then the role of
-   [make_iterated_tuple sigma env (term,typ) (z,zty)] is to build the
+   [make_iterated_tuple env sigma (term,typ) (z,zty)] is to build the
    tuple
 
    [existT [xn]Pn Rel(in) .. (existT [x2]P2 Rel(i2) (existT [x1]P1 Rel(i1) z))]
@@ -1200,19 +1200,19 @@ let make_iterated_tuple env sigma dflt (z,zty) =
   let sigma, dfltval = sig_clausal_form env sigma sort_of_zty n tuplety dflt in
     sigma, (tuple,tuplety,dfltval)
 
-let rec build_injrec sigma env dflt c = function
+let rec build_injrec env sigma dflt c = function
   | [] -> make_iterated_tuple env sigma dflt (c,type_of env sigma c)
   | ((sp,cnum),argnum)::l ->
     try
-      let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
+      let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
-      let sigma, (subval,tuplety,dfltval) = build_injrec sigma cnum_env dflt newc l in
+      let sigma, (subval,tuplety,dfltval) = build_injrec cnum_env sigma dflt newc l in
 	sigma, (kont subval (dfltval,tuplety), tuplety,dfltval)
     with
 	UserError _ -> failwith "caught"
 
-let build_injector sigma env dflt c cpath =
-  let sigma, (injcode,resty,_) = build_injrec sigma env dflt c cpath in
+let build_injector env sigma dflt c cpath =
+  let sigma, (injcode,resty,_) = build_injrec env sigma dflt c cpath in
     sigma, (injcode,resty)
 
 (*
@@ -1289,7 +1289,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
   let filter (cpath, t1', t2') =
     try
       (* arbitrarily take t1' as the injector default value *)
-      let sigma, (injbody,resty) = build_injector !evdref e_env t1' (mkVar e) cpath in
+      let sigma, (injbody,resty) = build_injector e_env !evdref t1' (mkVar e) cpath in
       let injfun = mkNamedLambda e t injbody in
       let sigma,congr = Evd.fresh_global env sigma eq.congr in
       let pf = applist(congr,[t;resty;injfun;t1;t2]) in
