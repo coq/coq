@@ -30,7 +30,7 @@ beaufiles=`find . -name \*.v$BEAUTIFYSUFFIX`
 for i in $beaufiles; do
   j=`dirname $i`/`basename $i .v$BEAUTIFYSUFFIX`.v
   echo Upgrading $j in the beautification directory
-  mv -u -f $i $j
+  if [ $i -nt $j ]; then mv -f $i $j; fi
 done
 echo ---- Recompiling beautified files in the beautification directory -----
 make clean
@@ -44,7 +44,7 @@ vfiles=`find . -name \*.v`
 cd ..
 for i in $vfiles; do
   echo Upgrading $i in current directory
-  mv -u -f $NEWARCHIVE/$i $i
+  if [ $NEWARCHIVE/$i -nt $i ]; then mv -f $NEWARCHIVE/$i $i; fi
 done
 echo -------- Beautification completed -------------------------------------
 echo Old files are in directory '"'$OLDARCHIVE'"'
