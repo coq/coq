@@ -94,6 +94,7 @@ let solve ?with_end_tac gi tac pr =
       | Some etac -> Proofview.tclTHEN tac etac in
     let tac = match gi with
       | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
+      | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac
       | Vernacexpr.SelectAll -> tac
       | Vernacexpr.SelectAllParallel ->
           Errors.anomaly(str"SelectAllParallel not handled by Stm")
@@ -101,7 +102,7 @@ let solve ?with_end_tac gi tac pr =
     Proof.run_tactic (Global.env ()) tac pr
   with
     | Proof_global.NoCurrentProof  -> Errors.error "No focused proof"
-    | Proofview.IndexOutOfRange -> 
+    | Proofview.IndexOutOfRange ->
         match gi with
 	| Vernacexpr.SelectNth i -> let msg = str "No such goal: " ++ int i ++ str "." in
 	                            Errors.errorlabstrm "" msg

@@ -127,6 +127,7 @@ GEXTEND Gram
 
   selector:
     [ [ n=natural; ":" -> SelectNth n
+      | "["; id = ident; "]"; ":" -> SelectId id
       | IDENT "all" ; ":" -> SelectAll
       | IDENT "par" ; ":" -> SelectAllParallel ] ]
   ;

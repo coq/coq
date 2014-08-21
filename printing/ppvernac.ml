@@ -769,6 +769,7 @@ let rec pr_vernac = function
   | VernacSolve (i,tac,deftac) ->
       let pr_goal_selector = function
         | SelectNth i -> int i ++ str":"
+        | SelectId id -> pr_id id ++ str":"
         | SelectAll -> str"all" ++ str":"
         | SelectAllParallel -> str"par"
       in

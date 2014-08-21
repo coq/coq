@@ -197,6 +197,8 @@ val tclEXACTLY_ONCE : exn -> 'a tactic -> 'a tactic
 exception NoSuchGoals of int
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
 
+val tclFOCUSID : Names.Id.t -> 'a tactic -> 'a tactic
+
 (* Focuses a tactic at a range of subgoals, found by their indices.
    The other goals are restored to the focus when the tactic is done.
 

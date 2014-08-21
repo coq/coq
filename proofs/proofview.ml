@@ -330,6 +330,23 @@ let tclFOCUS_gen nosuchgoal i j t =
 let tclFOCUS i j t = tclFOCUS_gen (tclZERO (NoSuchGoals (j+1-i))) i j t
 let tclTRYFOCUS i j t = tclFOCUS_gen (tclUNIT ()) i j t
 
+let tclFOCUSID id t =
+  let (>>=) = Proof.bind in
+  let (>>) = Proof.seq in
+  Proof.get >>= fun initial ->
+  let rec aux n = function
+    | [] -> tclZERO (NoSuchGoals 1)
+    | g::l ->
+        if Names.Id.equal (Goal.goal_ident initial.solution g) id then
+          let (focused,context) = focus n n initial in
+          Proof.set focused >>
+            t >>= fun result ->
+          Proof.modify (fun next -> unfocus context next) >>
+            Proof.ret result
+        else
+          aux (n+1) l in
+  aux 1 initial.comb
+
 
 (* Dispatch tacticals are used to apply a different tactic to each goal under
    consideration. They come in two flavours:
