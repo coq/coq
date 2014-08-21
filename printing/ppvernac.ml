@@ -130,7 +130,7 @@ let pr_search a b pr_p = match a with
   | SearchRewrite c -> str"SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchAbout sl -> str"Search" ++ spc() ++ prlist_with_sep spc pr_search_about sl ++ pr_in_out_modules b
 
-let pr_locality local = if local then str "Local " else mt ()
+let pr_locality local = if local then str "Local" else str "Global"
 
 let pr_explanation (e,b,f) =
   let a = match e with
