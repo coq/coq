@@ -152,16 +152,6 @@ let bind e f = (); fun env rdefs goal info ->
   let r = f a in
   r env rdefs goal info
 
-(* monadic return on sensitive expressions *)
-let return v = () ; fun _ _ _ _ -> v
-
-(* interpretation of "open" constr *)
-(* spiwack: it is a wrapper around [Constrintern.interp_open_constr].
-    In an ideal world, this could/should be the other way round.
-    As of now, though, it seems at least quite useful to build tactics. *)
-let interp_constr cexpr = (); fun env rdefs _ _ ->
-  Constrintern.interp_constr_evars rdefs env cexpr
-
 (* Type of constr with holes used by refine. *)
 (* The list of evars doesn't necessarily contain all the evars in the constr,
     only those the constr has introduced. *)
@@ -174,26 +164,12 @@ type refinable = {
 }
 
 module Refinable = struct
-  type t = refinable
-
-  type handle = Evd.evar list ref
 
   let make t = (); fun env rdefs gl info ->
     let r = ref [] in
     let me = t r in
     let me = me env rdefs gl info in
     { me = me; my_evars = !r }
-  let make_with t = (); fun env rdefs gl info ->
-    let r = ref [] in
-    let t = t r in
-    let (me,side) = t env rdefs gl info in
-    ({ me = me ; my_evars = !r }, side)
-
-  let mkEvar handle env typ = (); fun _ rdefs _ _ ->
-    let ev = Evarutil.e_new_evar rdefs env typ in
-    let (e,_) = destEvar ev in
-    handle := e::!handle;
-    ev
 
   (* [with_type c typ] constrains term [c] to have type [typ].  *)
   let with_type t typ = (); fun env rdefs _ _ ->
@@ -208,14 +184,6 @@ module Refinable = struct
     in
     rdefs := new_defs;
     j'.Environ.uj_val
-
-  (* spiwack: it is not very fine grain since it solves all typeclasses holes,
-      not only those containing the current goal, or a given term. But it
-      seems to fit our needs so far. *)
-  let resolve_typeclasses ?filter ?split ?(fail=false) () = (); fun env rdefs _ _ ->
-    rdefs:=Typeclasses.resolve_typeclasses ?filter ?split ~fail env !rdefs
-
-
 
   (* a pessimistic (i.e : there won't be many positive answers) filter
      over evar_maps, acting only on undefined evars *)
@@ -270,176 +238,13 @@ let refine step = (); fun env rdefs gl info ->
   in
   { subgoals = subgoals }
 
-
-(*** Cleaning  goals ***)
-
-let clear ids = (); fun env rdefs gl info ->
-  let hyps = Evd.evar_hyps info in
-  let concl = Evd.evar_concl info in
-  let (hyps,concl) = Evarutil.clear_hyps_in_evi rdefs hyps concl ids in
-  let cleared_env = Environ.reset_with_named_context hyps env in
-  let cleared_concl = Evarutil.e_new_evar rdefs cleared_env concl in
-  let (cleared_evar,_) = destEvar cleared_concl in
-  let cleared_goal = descendent gl cleared_evar in
-  rdefs := Evd.define gl.content cleared_concl !rdefs;
-  { subgoals = [cleared_goal] }
-
-let wrap_apply_to_hyp_and_dependent_on sign id f g =
-  try Environ.apply_to_hyp_and_dependent_on sign id f g
-  with Environ.Hyp_not_found ->
-    Errors.error "No such assumption"
-
-let check_typability env sigma c =
-  let _ = Typing.type_of env sigma c in ()
-
-let recheck_typability (what,id) env sigma t =
-  try check_typability env sigma t
-  with e when Errors.noncritical e ->
-    let s = match what with
-      | None -> "the conclusion"
-      | Some id -> "hypothesis "^(Names.Id.to_string id) in
-    Errors.error
-      ("The correctness of "^s^" relies on the body of "^(Names.Id.to_string id))
-
-let remove_hyp_body env sigma id =
-  let sign =
-    wrap_apply_to_hyp_and_dependent_on (Environ.named_context_val env) id
-      (fun (_,c,t) _ ->
-	match c with
-	| None -> Errors.error ((Names.Id.to_string id)^" is not a local definition")
-	| Some c ->(id,None,t))
-      (fun (id',c,t as d) sign ->
-	(
-	  begin
-	    let env = Environ.reset_with_named_context sign env in
-	    match c with
-	    | None ->  recheck_typability (Some id',id) env sigma t
-	    | Some b ->
-		let b' = mkCast (b,DEFAULTcast, t) in
-		recheck_typability (Some id',id) env sigma b'
-	  end;d))
-  in
-  Environ.reset_with_named_context sign env
-
-
-let clear_body idents = (); fun env rdefs gl info ->
-  let info = content !rdefs gl in
-  let full_env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
-  let aux env id =
-     let env' = remove_hyp_body env !rdefs id in
-       recheck_typability (None,id) env' !rdefs (Evd.evar_concl info);
-       env'
-  in
-  let new_env =
-    List.fold_left aux full_env idents
-  in
-  let concl = Evd.evar_concl info in
-  let (defs',new_constr) = Evarutil.new_evar !rdefs new_env concl in
-  let (new_evar,_) = destEvar new_constr in
-  let new_goal = descendent gl new_evar in
-  rdefs := Evd.define gl.content new_constr defs';
-  { subgoals = [new_goal] }
-
-
-(*** Sensitive primitives ***)
-
-(* representation of the goal in form of an {!Evd.evar_info} *)
-let info _ _ _ info = info
-
-(* [concl] is the conclusion of the current goal *)
-let concl _ _ _ info =
-  Evd.evar_concl info
-
-(* [hyps] is the [named_context_val] representing the hypotheses
-   of the current goal *)
-let hyps _ _ _ info =
-  Evd.evar_hyps info
-
-(* [env] is the current [Environ.env] containing both the
-   environment in which the proof is ran, and the goal hypotheses *)
-let env env _ _ _ = env
-
-(* [defs] is the [Evd.evar_map] at the current evaluation point *)
-let defs _ rdefs _ _ =
-  !rdefs
+let refine_open_constr c =
+  let pf h = Refinable.constr_of_open_constr h true c in
+  bind (Refinable.make pf) refine
 
 let enter f = (); fun env rdefs gl info ->
   let sigma = !rdefs in
   f env sigma (Evd.evar_hyps info) (Evd.evar_concl info) gl
-
-(*** Conversion in goals ***)
-
-let convert_hyp check (id,b,bt as d) = (); fun env rdefs gl info ->
-  let sigma = !rdefs in
-  (* This function substitutes the new type and body definitions
-     in the appropriate variable when used with {!Environ.apply_hyps}. *)
-  let replace_function =
-    (fun _ (_,c,ct) _ ->
-       if check && not (Reductionops.is_conv env sigma bt ct) then
-	 Errors.error ("Incorrect change of the type of "^(Names.Id.to_string id));
-       if check && not (Option.equal (Reductionops.is_conv env sigma) b c) then
-	 Errors.error ("Incorrect change of the body of "^(Names.Id.to_string id));
-       d)
-  in
-  (* Modified named context. *)
-  let new_hyps =
-    let hyps = hyps env rdefs gl info in
-    Environ.apply_to_hyp hyps id replace_function
-  in
-  let new_env = Environ.reset_with_named_context new_hyps env in
-  let new_constr =
-    let concl = concl env rdefs gl info in
-    Evarutil.e_new_evar rdefs new_env concl
-  in
-  let (new_evar,_) = destEvar new_constr in
-  let new_goal = descendent gl new_evar in
-  rdefs := Evd.define gl.content new_constr !rdefs;
-  { subgoals = [new_goal] }
-
-let convert_concl check cl' = (); fun env rdefs gl info ->
-  let sigma = !rdefs in
-  let cl = concl env rdefs gl info in
-  check_typability env sigma cl';
-  if (not check) || Reductionops.is_conv_leq env sigma cl' cl then
-    let new_constr =
-      Evarutil.e_new_evar rdefs env cl'
-    in
-    let (new_evar,_) = destEvar new_constr in
-    let new_goal = descendent gl new_evar in
-    rdefs := Evd.define gl.content new_constr !rdefs;
-    { subgoals = [new_goal] }
-  else
-    Errors.error "convert-concl rule passed non-converting term"
-
-
-(*** Bureaucracy in hypotheses ***)
-
-(* Renames a hypothesis. *)
-let rename_hyp_sign id1 id2 sign =
-  let subst = [id1,mkVar id2] in
-  let replace_vars c = replace_vars subst c in
-  Environ.apply_to_hyp_and_dependent_on sign id1
-    (fun (_,b,t) _ -> (id2,b,t))
-    (fun d _ -> map_named_declaration replace_vars d)
-
-let rename_hyp id1 id2 = (); fun env rdefs gl info ->
-  let hyps = hyps env rdefs gl info in
-  if not (Names.Id.equal id1 id2) &&
-    Names.Id.List.mem id2
-      (Termops.ids_of_named_context (Environ.named_context_of_val hyps))
-  then
-    Errors.error ((Names.Id.to_string id2)^" is already used.");
-  let new_hyps = rename_hyp_sign id1 id2 hyps in
-  let new_env = Environ.reset_with_named_context new_hyps env in
-  let old_concl = concl env rdefs gl info in
-  let new_concl = Vars.replace_vars [id1,mkVar id2] old_concl in
-  let new_subproof = Evarutil.e_new_evar rdefs new_env new_concl in
-  let new_subproof = Vars.replace_vars [id2,mkVar id1] new_subproof in
-  let (new_evar,_) = destEvar new_subproof in
-  let new_goal = descendent gl new_evar in
-  rdefs := Evd.define gl.content new_subproof !rdefs;
-  { subgoals = [new_goal] }
-
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the
@@ -579,8 +384,4 @@ module V82 = struct
 					    t
 				       ) ~init:(concl sigma gl) env
 
-  let to_sensitive f = (); fun _ rsigma g _ ->
-    f { Evd.it = g ; sigma = !rsigma }
-  let change_evar_map sigma = (); fun _ rsigma _ _ ->
-    (rsigma := sigma)
 end

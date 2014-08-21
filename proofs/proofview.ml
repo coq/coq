@@ -851,24 +851,6 @@ module Goal = struct
   let hyps { hyps=hyps } = Environ.named_context_of_val hyps
   let concl { concl=concl } = concl
 
-  let lift s k =
-    (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-    let (>>=) = Proof.bind in
-    let (>>) = Proof.seq in
-    Proof.current >>= fun env ->
-    Proof.get >>= fun step ->
-    try
-      let (ks,sigma) =
-        Evd.Monad.List.map begin fun g sigma ->
-          Util.on_fst k (Goal.eval s env sigma g)
-        end step.comb step.solution
-      in
-      Proof.set { step with solution=sigma } >>
-      tclDISPATCH ks
-    with e when catchable_exception e ->
-      let e = Errors.push e in
-      tclZERO e
-
   let enter_t f = Goal.enter begin fun env sigma hyps concl self ->
     let concl = Reductionops.nf_evar sigma concl in
     let map_nf c = Reductionops.nf_evar sigma c in

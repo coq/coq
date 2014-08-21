@@ -394,10 +394,6 @@ module Goal : sig
   val env : 'a t -> Environ.env
   val sigma : 'a t -> Evd.evar_map
 
-  (* [lift_sensitive s k] applies [s] in each goal independently
-     raising result [a] then continues with [k a]. *)
-  val lift : 'a Goal.sensitive -> ('a->unit tactic) -> unit tactic
-
   (* [enter t] execute the goal-dependent tactic [t] in each goal
      independently. In particular [t] need not backtrack the same way in
      each goal. *)

@@ -4050,11 +4050,9 @@ module New = struct
   open Locus
 
   let refine c =
-    let c = Goal.Refinable.make begin fun h ->
-      Goal.Refinable.constr_of_open_constr h true c
-    end in
-    Proofview.Goal.lift c begin fun c ->
-      Proofview.tclSENSITIVE (Goal.refine c) <*>
+    Proofview.Goal.enter begin fun gl ->
+    let pf = Goal.refine_open_constr c in
+    Proofview.tclSENSITIVE pf <*>
       Proofview.V82.tactic (reduce
          (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
          {onhyps=None; concl_occs=AllOccurrences }
