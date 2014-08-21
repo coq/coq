@@ -1337,7 +1337,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
        if closed0 cl && not (isEvar cl)
        then
 	 (try w_typed_unify env evd CONV flags op cl,cl
-	  with ex when Typeclasses_errors.unsatisfiable_exception ex ->
+	  with ex when Pretype_errors.unsatisfiable_exception ex ->
 	    bestexn := Some ex; error "Unsat")
        else error "Bound 1"
      with ex when precatchable_exception ex ->

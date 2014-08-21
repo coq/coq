@@ -660,6 +660,57 @@ let explain_cannot_unify_occurrences env sigma nested (cl2,pos2,t2) (cl1,pos1,t1
   pr_lconstr_env env t1 ++ strbrk " at position " ++ 
   pr_position (cl1,pos1) ++ ppreason ++ str "."
 
+let pr_constraints printenv env evd evars cstrs =
+  let (ev, evi) = Evar.Map.choose evars in
+    if Evar.Map.for_all (fun ev' evi' ->
+      eq_named_context_val evi.evar_hyps evi'.evar_hyps) evars
+    then
+      let l = Evar.Map.bindings evars in
+      let pe =
+        if printenv then
+          pr_ne_context_of (str "In environment:") (mt ())
+            (reset_with_named_context evi.evar_hyps env) ++ fnl ()
+        else mt ()
+      in
+      let evs =
+        prlist_with_sep (fun () -> fnl ())
+        (fun (ev, evi) -> str(string_of_existential ev) ++
+            str " : " ++ pr_lconstr evi.evar_concl) l
+      in
+      pe ++ evs ++ fnl() ++ h 0 (pr_evar_constraints cstrs)
+    else
+      let filter evk _ = Evar.Map.mem evk evars in
+      pr_evar_map_filter ~with_univs:false filter evd
+
+let explain_unsatisfiable_constraints env evd constr comp =
+  let (_, constraints) = Evd.extract_all_conv_pbs evd in
+  let undef = Evd.undefined_map (Evarutil.nf_evar_map_undefined evd) in
+  (** Only keep evars that are subject to resolution and members of the given
+     component. *)
+  let is_kept evk evi = match comp with
+  | None -> Typeclasses.is_resolvable evi
+  | Some comp -> Typeclasses.is_resolvable evi && Evar.Set.mem evk comp
+  in
+  let undef = 
+    let m = Evar.Map.filter is_kept undef in
+      if Evar.Map.is_empty m then undef
+      else m
+  in
+  match constr with
+  | None ->
+    str "Unable to satisfy the following constraints:" ++ fnl () ++
+    pr_constraints true env evd undef constraints
+  | Some (ev, k) ->
+    let cstr =
+      let remaining = Evar.Map.remove ev undef in
+      if not (Evar.Map.is_empty remaining) then
+        str "With the following constraints:" ++ fnl () ++
+          pr_constraints false env evd remaining constraints
+      else mt ()
+    in
+    let info = Evar.Map.find ev undef in
+    explain_typeclass_resolution env info k ++ fnl () ++ cstr
+
 let explain_pretype_error env sigma err =
   let env = Evarutil.env_nf_betaiotaevar sigma env in
   let env = make_all_name_different env in
@@ -693,7 +744,7 @@ let explain_pretype_error env sigma err =
   | NonLinearUnification (m,c) -> explain_non_linear_unification env m c
   | TypingError t -> explain_type_error env sigma t
   | CannotUnifyOccurrences (b,c1,c2,e) -> explain_cannot_unify_occurrences env sigma b c1 c2 e
-
+  | UnsatisfiableConstraints (c,comp) -> explain_unsatisfiable_constraints env sigma c comp
 (* Module errors *)
 
 open Modops
@@ -850,62 +901,6 @@ let pr_constr_exprs exprs =
 	 (fun d pps -> ws 2 ++ Ppconstr.pr_constr_expr d ++ pps)
          exprs (mt ()))
 
-let explain_no_instance env (_,id) l =
-  str "No instance found for class " ++ Nameops.pr_id id ++ spc () ++
-  str "applied to arguments" ++ spc () ++
-    pr_sequence (pr_lconstr_env env) l
-
-let pr_constraints printenv env evd evars cstrs =
-  let (ev, evi) = Evar.Map.choose evars in
-    if Evar.Map.for_all (fun ev' evi' ->
-      eq_named_context_val evi.evar_hyps evi'.evar_hyps) evars
-    then
-      let l = Evar.Map.bindings evars in
-      let pe =
-        if printenv then
-          pr_ne_context_of (str "In environment:") (mt ())
-            (reset_with_named_context evi.evar_hyps env) ++ fnl ()
-        else mt ()
-      in
-      let evs =
-        prlist_with_sep (fun () -> fnl ())
-        (fun (ev, evi) -> str(string_of_existential ev) ++
-            str " : " ++ pr_lconstr evi.evar_concl) l
-      in
-      pe ++ evs ++ fnl() ++ h 0 (pr_evar_constraints cstrs)
-    else
-      let filter evk _ = Evar.Map.mem evk evars in
-      pr_evar_map_filter ~with_univs:false filter evd
-
-let explain_unsatisfiable_constraints env evd constr comp =
-  let (_, constraints) = Evd.extract_all_conv_pbs evd in
-  let undef = Evd.undefined_map (Evarutil.nf_evar_map_undefined evd) in
-  (** Only keep evars that are subject to resolution and members of the given
-     component. *)
-  let is_kept evk evi = match comp with
-  | None -> Typeclasses.is_resolvable evi
-  | Some comp -> Typeclasses.is_resolvable evi && Evar.Set.mem evk comp
-  in
-  let undef = 
-    let m = Evar.Map.filter is_kept undef in
-      if Evar.Map.is_empty m then undef
-      else m
-  in
-  match constr with
-  | None ->
-    str "Unable to satisfy the following constraints:" ++ fnl () ++
-    pr_constraints true env evd undef constraints
-  | Some (ev, k) ->
-    let cstr =
-      let remaining = Evar.Map.remove ev undef in
-      if not (Evar.Map.is_empty remaining) then
-        str "With the following constraints:" ++ fnl () ++
-          pr_constraints false env evd remaining constraints
-      else mt ()
-    in
-    let info = Evar.Map.find ev undef in
-    explain_typeclass_resolution env info k ++ fnl () ++ cstr
-
 let explain_mismatched_contexts env c i j =
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
     hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_rel_context env j) ++
@@ -915,9 +910,6 @@ let explain_mismatched_contexts env c i j =
 let explain_typeclass_error env = function
   | NotAClass c -> explain_not_a_class env c
   | UnboundMethod (cid, id) -> explain_unbound_method env cid id
-  | NoInstance (id, l) -> explain_no_instance env id l
-  | UnsatisfiableConstraints (evd, c, comp) ->
-      explain_unsatisfiable_constraints env evd c comp
   | MismatchedContextInstance (c,i,j) -> explain_mismatched_contexts env c i j
 
 (* Refiner errors *)

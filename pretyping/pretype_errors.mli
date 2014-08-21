@@ -52,6 +52,9 @@ type pretype_error =
   | NotProduct of constr
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
+  | UnsatisfiableConstraints of
+    (existential_key * Evar_kinds.t) option * Evar.Set.t option
+    (** unresolvable evar, connex component *)
 
 exception PretypeError of env * Evd.evar_map * pretype_error
 
@@ -134,3 +137,11 @@ val error_not_product_loc :
 (** {6 Error in conversion from AST to glob_constr } *)
 
 val error_var_not_found_loc : Loc.t -> Id.t -> 'b
+
+(** {6 Typeclass errors } *)
+
+val unsatisfiable_constraints : env -> Evd.evar_map -> Evd.evar option ->
+  Evar.Set.t option -> 'a
+
+val unsatisfiable_exception : exn -> bool
+

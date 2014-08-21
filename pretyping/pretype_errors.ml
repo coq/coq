@@ -51,6 +51,8 @@ type pretype_error =
   | NotProduct of constr
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
+  | UnsatisfiableConstraints of
+    (existential_key * Evar_kinds.t) option * Evar.Set.t option
 
 exception PretypeError of env * Evd.evar_map * pretype_error
 
@@ -150,3 +152,20 @@ let error_not_product_loc loc env sigma c =
 
 let error_var_not_found_loc loc s =
   raise_pretype_error (loc, empty_env, Evd.empty, VarNotFound s)
+
+(*s Typeclass errors *)
+
+let unsatisfiable_constraints env evd ev comp =
+  match ev with
+  | None ->
+    let err = UnsatisfiableConstraints (None, comp) in
+    raise (PretypeError (env,evd,err))
+  | Some ev ->
+    let loc, kind = Evd.evar_source ev evd in
+    let err = UnsatisfiableConstraints (Some (ev, kind), comp) in
+    Loc.raise loc (PretypeError (env,evd,err))
+
+let unsatisfiable_exception exn =
+  match exn with
+  | PretypeError (_, _, UnsatisfiableConstraints _) -> true
+  | _ -> false

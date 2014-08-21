@@ -54,7 +54,8 @@ let is_unification_error = function
 | NoOccurrenceFound _ | CannotUnifyBindingType _
 | ActualTypeNotCoercible _ | UnifOccurCheck _
 | CannotFindWellTypedAbstraction _ | WrongAbstractionType _
-| UnsolvableImplicit _| AbstractionOverMeta _ -> true
+| UnsolvableImplicit _| AbstractionOverMeta _
+| UnsatisfiableConstraints _ -> true
 | _ -> false
 
 let catchable_exception = function
@@ -64,9 +65,7 @@ let catchable_exception = function
   (* reduction errors *)
   | Tacred.ReductionTacticError _ -> true
   (* unification and typing errors *)
-  | PretypeError(_,_, e) -> is_unification_error e || is_typing_error e
-  | Typeclasses_errors.TypeClassError
-      (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true
+  | PretypeError(_,_, e) -> is_unification_error e || is_typing_error e 
   | _ -> false
 
 let error_no_such_hypothesis id = raise (RefinerError (NoSuchHyp id))

@@ -602,8 +602,8 @@ let error_unresolvable env comp evd =
     else (found, accu)
    in
   let (_, ev) = Evd.fold_undefined fold evd (true, None) in
-  Typeclasses_errors.unsatisfiable_constraints
-    (Evarutil.nf_env_evar evd env) evd ev comp
+    Pretype_errors.unsatisfiable_constraints
+      (Evarutil.nf_env_evar evd env) evd ev comp
 
 (** Check if an evar is concerned by the current resolution attempt,
     (and in particular is in the current component), and also update

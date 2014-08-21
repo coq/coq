@@ -21,6 +21,7 @@ open Tacticals
 open Tacmach
 open Tactics
 open Clenv
+open Pretype_errors
 open Typeclasses
 open Typeclasses_errors
 open Classes
@@ -1449,10 +1450,11 @@ let cl_rewrite_clause_tac ?abs strat clause gl =
       let res = cl_rewrite_clause_aux ?abs strat (pf_env gl) [] sigma concl is_hyp in
 	treat res
     with
-    | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
+    | Pretype_errors.PretypeError (env, sigma, 
+				   (Pretype_errors.UnsatisfiableConstraints _ as e)) ->
 	Refiner.tclFAIL 0
 	  (str"Unable to satisfy the rewriting constraints."
-	   ++ fnl () ++ Himsg.explain_typeclass_error env e)
+	   ++ fnl () ++ Himsg.explain_pretype_error env sigma e)
   in tac gl
 
 
@@ -1535,9 +1537,9 @@ let cl_rewrite_clause_newtac ?abs strat clause =
         cl_rewrite_clause_aux ?abs strat env [] sigma ty is_hyp
       in treat (res, is_hyp)
     with
-    | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
+    | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
       raise (RewriteFailure (str"Unable to satisfy the rewriting constraints."
-                ++ fnl () ++ Himsg.explain_typeclass_error env e))
+			     ++ fnl () ++ Himsg.explain_pretype_error env evd e))
   end
 
 let newtactic_init_setoid () =
@@ -1905,13 +1907,12 @@ let unification_rewrite l2r c1 c2 cl car rel but env =
        ~flags:{ rewrite_unif_flags with Unification.resolve_evars = true } env
         cl.evd ((if l2r then c1 else c2),but)
     with
-    | ex when Pretype_errors.precatchable_exception ex || 
-      Typeclasses_errors.unsatisfiable_exception ex ->
-	  (* ~flags:(true,true) to make Ring work (since it really
-             exploits conversion) *)
-	  Unification.w_unify_to_subterm 
-	  ~flags:{ rewrite2_unif_flags with Unification.resolve_evars = true }
-	    env cl.evd ((if l2r then c1 else c2),but)
+    | ex when Pretype_errors.precatchable_exception ex ->
+	(* ~flags:(true,true) to make Ring work (since it really
+           exploits conversion) *)
+      Unification.w_unify_to_subterm 
+        ~flags:{ rewrite2_unif_flags with Unification.resolve_evars = true }
+        env cl.evd ((if l2r then c1 else c2),but)
   in
   let cl' = {cl with evd = evd'} in
   let cl' = Clenvtac.clenv_pose_dependent_evars true cl' in
