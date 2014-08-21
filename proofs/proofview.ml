@@ -309,9 +309,9 @@ let tclEXACTLY_ONCE e t =
 
 
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
-exception NoSuchGoals
+exception NoSuchGoals of int
 let _ = Errors.register_handler begin function
-  | NoSuchGoals -> Errors.error "No such goals."
+  | NoSuchGoals n -> Errors.error ("No such " ^ String.plural n "goal" ^".")
   | _ -> raise Errors.Unhandled
 end
 let tclFOCUS_gen nosuchgoal i j t =
@@ -327,7 +327,7 @@ let tclFOCUS_gen nosuchgoal i j t =
     Proof.ret result
   with IndexOutOfRange -> nosuchgoal
 
-let tclFOCUS i j t = tclFOCUS_gen (tclZERO NoSuchGoals) i j t
+let tclFOCUS i j t = tclFOCUS_gen (tclZERO (NoSuchGoals (j+1-i))) i j t
 let tclTRYFOCUS i j t = tclFOCUS_gen (tclUNIT ()) i j t
 
 

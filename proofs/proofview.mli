@@ -194,7 +194,7 @@ val tclEXACTLY_ONCE : exn -> 'a tactic -> 'a tactic
 
    If the specified range doesn't correspond to existing goals, fails
    with [NoSuchGoals]. *)
-exception NoSuchGoals
+exception NoSuchGoals of int
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
 
 (* Focuses a tactic at a range of subgoals, found by their indices.
