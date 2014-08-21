@@ -717,12 +717,12 @@ let rec pr_vernac = function
   | VernacCanonical q -> str"Canonical Structure" ++ spc() ++ pr_smart_global q
   | VernacCoercion (_,id,c1,c2) ->
       hov 1 (
-	str"Coercion" ++
+	str"Coercion" ++ spc() ++
 	pr_smart_global id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++
 	spc() ++ str">->" ++ spc() ++ pr_class_rawexpr c2)
   | VernacIdentityCoercion (_,id,c1,c2) ->
       hov 1 (
-	str"Identity Coercion" ++ pr_lident id ++
+	str"Identity Coercion" ++ spc() ++ pr_lident id ++
 	spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++ spc() ++ str">->" ++
 	spc() ++ pr_class_rawexpr c2)
 
