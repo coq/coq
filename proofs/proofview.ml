@@ -39,7 +39,8 @@ let init sigma =
   | [] ->  [], { solution = sigma; comb = []; }
   | (env, typ) :: l ->
     let ret, { solution = sol; comb = comb } = aux l in
-    let (new_defs , econstr) = Evarutil.new_evar sol env typ in
+    let src = (Loc.ghost,Evar_kinds.GoalEvar) in
+    let (new_defs , econstr) = Evarutil.new_evar sol env ~src typ in
     let (e, _) = Term.destEvar econstr in
     let gl = Goal.build e in
     let entry = (econstr, typ) :: ret in
