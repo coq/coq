@@ -245,7 +245,7 @@ let pr_module_binders l pr_c =
 
 let pr_type_option pr_c = function
   | CHole (loc, k, _) -> mt()
-  | _ as c -> brk(0,2) ++ str":" ++ pr_c c
+  | _ as c -> brk(0,2) ++ str" :" ++ pr_c c
 
 let pr_decl_notation prc ((loc,ntn),c,scopt) =
   fnl () ++ str "where " ++ qs ntn ++ str " := " ++ prc c ++
