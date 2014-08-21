@@ -775,7 +775,7 @@ let rec pr_vernac = function
 		 prlist_with_sep (fun () -> str " <+ ") pr_mt m)
   | VernacInclude (mexprs) ->
       let pr_m = pr_module_ast_inl false pr_lconstr in
-      hov 2 (str"Include " ++
+      hov 2 (str"Include" ++ spc() ++
 	     prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
