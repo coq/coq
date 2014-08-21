@@ -392,6 +392,10 @@ let pr_goal_tag g =
   let s = " (ID " ^ Goal.uid g ^ ")" in
   str (emacs_str s)
 
+(* display a goal name *)
+let pr_goal_name sigma g =
+  str " " ++ Pp.surround (pr_id (Goal.goal_ident sigma g))
+
 (* display the conclusion of a goal *)
 let pr_concl n sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
@@ -439,7 +443,7 @@ let default_pr_subgoal n sigma =
     | g::rest ->
 	if Int.equal p 1 then
           let pg = default_pr_goal { sigma=sigma ; it=g; } in
-          v 0 (str "subgoal " ++ int n ++ pr_goal_tag g
+          v 0 (str "subgoal " ++ int n ++ pr_goal_tag g ++ pr_goal_name sigma g 
 	       ++ str " is:" ++ cut () ++ pg)
 	else
 	  prrec (p-1) rest
@@ -543,7 +547,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
       let pg = default_pr_goal { it = g ; sigma = sigma; } in
       v 0 (
 	str "1" ++ focused_if_needed ++ str"subgoal" ++ print_extra
-        ++ pr_goal_tag g ++ cut () ++ pg
+        ++ pr_goal_tag g ++ pr_goal_name sigma g ++ cut () ++ pg
 	++ emacs_print_dependent_evars sigma seeds
       )
   | g1::rest ->

@@ -31,8 +31,9 @@ type goal = {
 (* spiwack: I don't deal with the tags, yet. It is a worthy discussion
    whether we do want some tags displayed besides the goal or not. *)
 
-
 let pr_goal {content = e} = str "GOAL:" ++ Pp.int (Evar.repr e)
+
+let goal_ident sigma {content = e} = Evd.evar_ident e sigma
 
 (* access primitive *)
 (* invariant : [e] must exist in [em] *)
