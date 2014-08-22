@@ -96,7 +96,10 @@ let explicit_flags =
   let open Constrextern in
   [ []; (** First, try with the current flags *)
     [print_implicits]; (** Then with implicit *)
-    [print_implicits; print_coercions; print_no_symbol] (** Then more! *) ]
+    [print_universes]; (** Then with universes *)
+    [print_universes; print_implicits]; (** With universes AND implicits *)
+    [print_implicits; print_coercions; print_no_symbol]; (** Then more! *)
+    [print_universes; print_implicits; print_coercions; print_no_symbol] (** and more! *) ]
 
 let pr_explicit env t1 t2 = pr_explicit_aux env t1 t2 explicit_flags
 
