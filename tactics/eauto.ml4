@@ -593,7 +593,7 @@ TACTIC EXTEND autounfoldify
 END
 
 TACTIC EXTEND unify
-| ["unify" constr(x) constr(y) ] -> [ Proofview.V82.tactic (unify x y) ]
+| ["unify" constr(x) constr(y) ] -> [ unify x y ]
 | ["unify" constr(x) constr(y) "with" preident(base)  ] -> [
     let table = try Some (searchtable_map base) with Not_found -> None in
     match table with
@@ -602,7 +602,7 @@ TACTIC EXTEND unify
       Proofview.tclZERO (UserError ("", msg))
     | Some t ->
       let state = Hint_db.transparent_state t in
-      Proofview.V82.tactic (unify ~state x y)
+      unify ~state x y
   ]
 END
 

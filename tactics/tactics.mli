@@ -387,7 +387,7 @@ val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -
 
 (** {6 Other tactics. } *)
 
-val unify           : ?state:Names.transparent_state -> constr -> constr -> tactic
+val unify           : ?state:Names.transparent_state -> constr -> constr -> unit Proofview.tactic
 
 val tclABSTRACT : Id.t option -> unit Proofview.tactic -> unit Proofview.tactic
 

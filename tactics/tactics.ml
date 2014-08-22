@@ -4004,7 +4004,8 @@ let admit_as_an_axiom =
 (*     gl *)
 (* >>>>>>> .merge_file_iUuzZK *)
 
-let unify ?(state=full_transparent_state) x y gl =
+let unify ?(state=full_transparent_state) x y =
+  Proofview.Goal.enter begin fun gl ->
   try
     let flags =
       {(default_unify_flags ()) with
@@ -4013,9 +4014,10 @@ let unify ?(state=full_transparent_state) x y gl =
        modulo_delta_in_merge = Some state;
        modulo_conv_on_closed_terms = Some state}
     in
-    let evd = w_unify (pf_env gl) (project gl) Reduction.CONV ~flags x y
-    in tclEVARS evd gl
-  with e when Errors.noncritical e -> tclFAIL 0 (str"Not unifiable") gl
+    let evd = w_unify (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) Reduction.CONV ~flags x y
+    in Proofview.V82.tclEVARS evd
+  with e when Errors.noncritical e -> Tacticals.New.tclFAIL 0 (str"Not unifiable")
+  end
 
 module Simple = struct
   (** Simplified version of some of the above tactics *)
