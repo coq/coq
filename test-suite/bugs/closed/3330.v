@@ -1103,3 +1103,8 @@ cannot be applied to the terms
 The 5th term has type "Functor (C ^op * D) set_cat"
 which should be coercible to "object (C ^op * D -> set_cat)".
 *)
+End Core.
+
+End HoTT.
+
+End HoTT_DOT_categories_DOT_NaturalTransformation_DOT_Composition_DOT_Core.
