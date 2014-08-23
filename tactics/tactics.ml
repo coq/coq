@@ -677,7 +677,7 @@ let pf_lookup_hypothesis_as_renamed_gen red h gl =
   with Redelimination -> None
 
 let is_quantified_hypothesis id g =
-  match pf_lookup_hypothesis_as_renamed_gen true (NamedHyp id) g with
+  match pf_lookup_hypothesis_as_renamed_gen false (NamedHyp id) g with
     | Some _ -> true
     | None -> false
 
