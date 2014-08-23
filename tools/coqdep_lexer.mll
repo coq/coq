@@ -49,6 +49,11 @@
 
   let syntax_error lexbuf =
     raise (Syntax_error (Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf))
+
+  (** This is the prefix that should be pre-prepended to files due to the use
+   ** of [From], i.e. [From Xxx... Require ...]
+   **)
+  let from_pre_ident = ref None
 }
 
 let space = [' ' '\t' '\n' '\r']
@@ -79,17 +84,19 @@ let dot = '.' ( space+ | eof)
 
 rule coq_action = parse
   | "Require" space+
-      { require_file lexbuf }
-  | "Require" space+ "Export" space+
-      { require_file lexbuf}
-  | "Require" space+ "Import" space+
-      { require_file lexbuf}
+      { require_modifiers lexbuf }
   | "Local"? "Declare" space+ "ML" space+ "Module" space+
-      { mllist := []; modules lexbuf}
+      { mllist := []; modules lexbuf }
   | "Load" space+
       { load_file lexbuf }
   | "Add" space+ "LoadPath" space+
       { add_loadpath lexbuf }
+  | "Time" space+
+      { coq_action lexbuf }
+  | "Timeout" space+ ['0'-'9']+ space+
+      { coq_action lexbuf }
+  | "From" space+
+      { from_rule lexbuf }
   | space+
       { coq_action lexbuf }
   | "(*"
@@ -98,6 +105,47 @@ rule coq_action = parse
       { raise Fin_fichier}
   | _
       { skip_to_dot lexbuf; coq_action lexbuf }
+
+and from_rule = parse
+  | "(*"
+      { comment_depth := 1; comment lexbuf; from_rule lexbuf }
+  | space+
+      { from_rule lexbuf }
+  | coq_ident
+      { module_current_name := [Lexing.lexeme lexbuf];
+	from_pre_ident := Some (coq_qual_id_tail lexbuf);
+	module_names := [];
+	consume_require lexbuf }
+  | eof
+      { syntax_error lexbuf }
+  | _
+      { syntax_error lexbuf }
+
+and require_modifiers = parse
+  | "(*"
+      { comment_depth := 1; comment lexbuf; require_modifiers lexbuf }
+  | "Import" space+
+      { require_file lexbuf }
+  | "Export" space+
+      { require_file lexbuf }
+  | space+
+      { require_modifiers lexbuf }
+  | eof
+      { syntax_error lexbuf }
+  | _
+      { backtrack lexbuf ; require_file lexbuf }
+
+and consume_require = parse
+  | "(*"
+      { comment_depth := 1; comment lexbuf; consume_require lexbuf }
+  | space+
+      { consume_require lexbuf }
+  | "Require" space+
+      { require_modifiers lexbuf }
+  | eof
+      { syntax_error lexbuf }
+  | _
+      { syntax_error lexbuf }
 
 and add_loadpath = parse
   | "(*"
@@ -226,7 +274,12 @@ and require_file = parse
         module_names := [coq_qual_id_tail lexbuf];
         let qid = coq_qual_id_list lexbuf in
         parse_dot lexbuf;
-        Require qid }
+	match !from_pre_ident with
+	  None ->
+          Require qid
+	| Some from ->
+	  (from_pre_ident := None ;
+	   Require (List.map (fun x -> from @ x) qid)) }
   | '"' [^'"']* '"' (*'"'*)
       { let s = Lexing.lexeme lexbuf in
         parse_dot lexbuf;
