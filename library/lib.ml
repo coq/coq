@@ -313,7 +313,7 @@ let start_compilation s mp =
   comp_name := Some s;
   path_prefix := prefix
 
-let end_compilation dir =
+let end_compilation_checks dir =
   let _ =
     try match snd (find_entry_p is_opening_node) with
       | OpenedSection _ -> error "There are some open sections."
@@ -338,6 +338,9 @@ let end_compilation dir =
 	    (str "The current open module has name" ++ spc () ++ pr_dirpath m ++
              spc () ++ str "and not" ++ spc () ++ pr_dirpath m);
   in
+  oname
+
+let end_compilation oname =
   let (after,mark,before) = split_lib_at_opening oname in
   comp_name := None;
   !path_prefix,after
