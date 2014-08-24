@@ -704,7 +704,7 @@ let initial_about () =
     else ""
   in
   let msg = initial_string ^ version_info ^ log_file_message () in
-  notebook#current_term.messages#add msg
+  on_current_term (fun term -> term.messages#add msg)
 
 let coq_icon () =
   (* May raise Nof_found *)
