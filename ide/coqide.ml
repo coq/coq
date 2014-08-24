@@ -94,7 +94,35 @@ let make_coqtop_args = function
       |Append_args -> get_args the_file @ !sup_args
       |Subst_args -> get_args the_file
 
-let create_session f = Session.create f (make_coqtop_args f)
+(** Setting drag & drop on widgets *)
+
+let load_file_cb : (string -> unit) ref = ref ignore
+
+let drop_received context ~x ~y data ~info ~time =
+  if data#format = 8 then begin
+    let files = Str.split (Str.regexp "\r?\n") data#data in
+    let path = Str.regexp "^file://\\(.*\\)$" in
+    List.iter (fun f ->
+      if Str.string_match path f 0 then
+        !load_file_cb (Str.matched_group 1 f)
+    ) files;
+    context#finish ~success:true ~del:false ~time
+  end else context#finish ~success:false ~del:false ~time
+
+let drop_targets = [
+  { Gtk.target = "text/uri-list"; Gtk.flags = []; Gtk.info = 0}
+]
+
+let set_drag (w : GObj.drag_ops) =
+  w#dest_set drop_targets ~actions:[`COPY;`MOVE];
+  w#connect#data_received ~callback:drop_received
+
+(** Session management *)
+
+let create_session f =
+  let ans = Session.create f (make_coqtop_args f) in
+  let _ = set_drag ans.script#drag in
+  ans
 
 (** Auxiliary functions for the File operations *)
 
@@ -208,6 +236,8 @@ let crash_save exitcode =
   exit exitcode
 
 end
+
+let () = load_file_cb := (fun s -> FileAux.load_file s)
 
 (** Callbacks for the File menu *)
 
@@ -915,21 +945,6 @@ let emit_to_focus window sgn =
   let obj = Gobject.unsafe_cast focussed_widget in
   try GtkSignal.emit_unit obj ~sgn with _ -> ()
 
-let drop_received context ~x ~y data ~info ~time =
-  if data#format = 8 then begin
-    let files = Str.split (Str.regexp "\r?\n") data#data in
-    let path = Str.regexp "^file://\\(.*\\)$" in
-    List.iter (fun f ->
-      if Str.string_match path f 0 then
-        FileAux.load_file (Str.matched_group 1 f)
-    ) files;
-    context#finish ~success:true ~del:false ~time
-  end else context#finish ~success:false ~del:false ~time
-
-let drop_targets = [
-  { Gtk.target = "text/uri-list"; Gtk.flags = []; Gtk.info = 0}
-]
-
 (** {2 Creation of the main coqide window } *)
 
 let build_ui () =
@@ -944,8 +959,7 @@ let build_ui () =
     with _ -> ()
   in
   let _ = w#event#connect#delete ~callback:(fun _ -> File.quit (); true) in
-  w#drag#dest_set drop_targets ~actions:[`COPY;`MOVE];
-  let _ = w#drag#connect#data_received ~callback:drop_received in
+  let _ = set_drag w#drag in
 
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
 
