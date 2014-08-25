@@ -228,7 +228,7 @@ module PatternMatching (E:StaticEnvironment) = struct
     | Term p ->
         begin 
           try
-            put_subst (ConstrMatching.extended_matches p term) <*>
+            put_subst (ConstrMatching.extended_matches E.env E.sigma p term) <*>
             return lhs
           with ConstrMatching.PatternMatchingFailure -> fail
         end
@@ -247,7 +247,7 @@ module PatternMatching (E:StaticEnvironment) = struct
             | Some nctx -> Proofview.tclOR (k lhs nctx) (fun e -> (map s e).stream k ctx)
         }
       in
-      map (ConstrMatching.match_subterm_gen with_app_context p term) matching_error
+      map (ConstrMatching.match_subterm_gen E.env E.sigma with_app_context p term) matching_error
 
 
   (** [rule_match_term term rule] matches the term [term] with the

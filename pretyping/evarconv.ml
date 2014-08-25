@@ -319,17 +319,22 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
 	   destroy beta-redexes that can be used for 1st-order unification *)
         let term1 = apprec_nohdbeta ts env evd term1 in
         let term2 = apprec_nohdbeta ts env evd term2 in
+	let default () = evar_eqappr_x ts env evd pbty
+          (whd_nored_state evd (term1,Stack.empty), Cst_stack.empty)
+          (whd_nored_state evd (term2,Stack.empty), Cst_stack.empty)
+	in
         begin match kind_of_term term1, kind_of_term term2 with
         | Evar ev, _ when Evd.is_undefined evd (fst ev) ->
-          solve_simple_eqn (evar_conv_x ts) env evd
-            (position_problem true pbty,ev,term2)
+          (match solve_simple_eqn (evar_conv_x ts) env evd
+	    (position_problem true pbty,ev,term2) with
+	    | UnifFailure (_, Pretype_errors.OccurCheck _) -> default ()
+	    | x -> x)
         | _, Evar ev when Evd.is_undefined evd (fst ev) ->
-          solve_simple_eqn (evar_conv_x ts) env evd
-            (position_problem false pbty,ev,term1)
-        | _ ->
-          evar_eqappr_x ts env evd pbty
-            (whd_nored_state evd (term1,Stack.empty), Cst_stack.empty)
-            (whd_nored_state evd (term2,Stack.empty), Cst_stack.empty)
+          (match solve_simple_eqn (evar_conv_x ts) env evd
+            (position_problem false pbty,ev,term1) with
+	    | UnifFailure (_, Pretype_errors.OccurCheck _) -> default ()
+	    | x -> x)
+        | _ -> default ()
         end
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
@@ -338,13 +343,18 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     UnifFailure (i,ConversionFailed (env, Stack.zip appr1, Stack.zip appr2)) in
   let miller_pfenning on_left fallback ev lF apprM evd =
     let tM = Stack.zip apprM in
-    match is_unification_pattern_evar env evd ev lF tM with
+    let cont res = 
+      match res with
       | None -> fallback ()
       | Some l1' -> (* Miller-Pfenning's patterns unification *)
 	let t2 = nf_evar evd tM in
 	let t2 = solve_pattern_eqn env l1' t2 in
-	solve_simple_eqn (evar_conv_x ts) env evd
-	  (position_problem on_left pbty,ev,t2) in
+	  solve_simple_eqn (evar_conv_x ts) env evd
+	    (position_problem on_left pbty,ev,t2) 
+    in
+      try cont (is_unification_pattern_evar_occur env evd ev lF tM)
+      with Occur -> UnifFailure (evd,OccurCheck (fst ev,tM))
+  in
   let consume_stack on_left (termF,skF) (termO,skO) evd =
     let switch f a b = if on_left then f a b else f b a in
     let not_only_app = Stack.not_purely_applicative skO in
@@ -407,9 +417,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  ev lF apprR evd
     in
     let f2 evd =
-      if isLambda termR then
-	eta env evd false skR termR skF termF
-      else UnifFailure (evd,NotSameHead)
+      match kind_of_term termR with
+      | Lambda _ -> eta env evd false skR termR skF termF
+      | Construct u -> eta_constructor ts env evd skR u skF termF
+      | _ -> UnifFailure (evd,NotSameHead)
     in ise_try evd [f1;f2] in
   let app_empty = match sk1, sk2 with [], [] -> true | _ -> false in
   (* Evar must be undefined since we have flushed evars *)

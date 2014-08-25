@@ -30,31 +30,31 @@ type bound_ident_map = Id.t Id.Map.t
    assignment of metavariables; it raises [PatternMatchingFailure] if
    not matchable; bindings are given in increasing order based on the
    numbers given in the pattern *)
-val matches : constr_pattern -> constr -> patvar_map
+val matches : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
 
 (** [matches_head pat c] does the same as [matches pat c] but accepts
     [pat] to match an applicative prefix of [c] *)
-val matches_head : constr_pattern -> constr -> patvar_map
+val matches_head : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
 
 (** [extended_matches pat c] also returns the names of bound variables
    in [c] that matches the bound variables in [pat]; if several bound
    variables or metavariables have the same name, the metavariable,
    or else the rightmost bound variable, takes precedence *)
 val extended_matches :
-  constr_pattern -> constr -> bound_ident_map * extended_patvar_map
+  env -> Evd.evar_map -> constr_pattern -> constr -> bound_ident_map * extended_patvar_map
 
 (** [is_matching pat c] just tells if [c] matches against [pat] *)
-val is_matching : constr_pattern -> constr -> bool
+val is_matching : env -> Evd.evar_map -> constr_pattern -> constr -> bool
 
 (** [is_matching_head pat c] just tells if [c] or an applicative
     prefix of it matches against [pat] *)
-val is_matching_head : constr_pattern -> constr -> bool
+val is_matching_head : env -> Evd.evar_map -> constr_pattern -> constr -> bool
 
 (** [matches_conv env sigma] matches up to conversion in environment
    [(env,sigma)] when constants in pattern are concerned; it raises
    [PatternMatchingFailure] if not matchable; bindings are given in
    increasing order based on the numbers given in the pattern *)
-val matches_conv :env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
+val matches_conv : env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
 
 (** The type of subterm matching results: a substitution + a context
    (whose hole is denoted here with [special_meta]) *)
@@ -64,20 +64,20 @@ type matching_result =
 
 (** [match_subterm n pat c] returns the substitution and the context
    corresponding to each **closed** subterm of [c] matching [pat]. *)
-val match_subterm : constr_pattern -> constr -> matching_result IStream.t
+val match_subterm : env -> Evd.evar_map -> constr_pattern -> constr -> matching_result IStream.t
 
 (** [match_appsubterm pat c] returns the substitution and the context
    corresponding to each **closed** subterm of [c] matching [pat],
    considering application contexts as well. *)
-val match_appsubterm : constr_pattern -> constr -> matching_result IStream.t
+val match_appsubterm : env -> Evd.evar_map -> constr_pattern -> constr -> matching_result IStream.t
 
 (** [match_subterm_gen] calls either [match_subterm] or [match_appsubterm] *)
-val match_subterm_gen : bool (** true = with app context *) ->
+val match_subterm_gen : env -> Evd.evar_map -> bool (** true = with app context *) ->
    constr_pattern -> constr -> matching_result IStream.t
 
 (** [is_matching_appsubterm pat c] tells if a subterm of [c] matches
    against [pat] taking partial subterms into consideration *)
-val is_matching_appsubterm : ?closed:bool -> constr_pattern -> constr -> bool
+val is_matching_appsubterm : ?closed:bool -> env -> Evd.evar_map -> constr_pattern -> constr -> bool
 
 (** [is_matching_conv env sigma pat c] tells if [c] matches against [pat]
    up to conversion for constants in patterns *)

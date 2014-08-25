@@ -245,6 +245,9 @@ let coq_refl_jm_pattern       = PATTERN [ forall A:_, forall x:A, _ A x A x ]
 
 open Globnames
 
+let is_matching x y = is_matching (Global.env ()) Evd.empty x y
+let matches x y = matches (Global.env ()) Evd.empty x y
+
 let match_with_equation t =
   if not (isApp t) then raise NoEquationFound;
   let (hdapp,args) = destApp t in

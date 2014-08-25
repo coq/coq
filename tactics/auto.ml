@@ -1218,16 +1218,20 @@ si après Intros la conclusion matche le pattern.
 let (forward_interp_tactic, extern_interp) = Hook.make ()
 
 let conclPattern concl pat tac =
-  let constr_bindings =
+  let constr_bindings env sigma =
     match pat with
     | None -> Proofview.tclUNIT Id.Map.empty
     | Some pat ->
-	try Proofview.tclUNIT (ConstrMatching.matches pat concl)
+	try
+	  Proofview.tclUNIT (ConstrMatching.matches env sigma pat concl)
 	with ConstrMatching.PatternMatchingFailure ->
           Proofview.tclZERO (UserError ("conclPattern",str"conclPattern"))
   in
-  constr_bindings >>= fun constr_bindings ->
-  Hook.get forward_interp_tactic constr_bindings tac
+   Proofview.Goal.raw_enter (fun gl ->
+     let env = Proofview.Goal.env gl in
+     let sigma = Proofview.Goal.sigma gl in
+       constr_bindings env sigma >>= fun constr_bindings ->
+     Hook.get forward_interp_tactic constr_bindings tac)
 
 (***********************************************************)
 (** A debugging / verbosity framework for trivial and auto *)
@@ -1461,7 +1465,8 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) 
        if exists_evaluable_reference (pf_env gl) c then
 	 tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl) gl
        else tclFAIL 0 (str"Unbound reference") gl)
-    | Extern tacast -> conclPattern concl p tacast
+    | Extern tacast -> 
+      conclPattern concl p tacast
   in
   tclLOG dbg (fun () -> pr_autotactic t) tactic
 

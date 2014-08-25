@@ -138,18 +138,18 @@ let merge_binding allow_bound_rels stk n cT subst =
   in
   constrain n c subst
 
-let matches_core convert allow_partial_app allow_bound_rels pat c =
+let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
   let convref ref c = 
     match ref, kind_of_term c with
     | VarRef id, Var id' -> Names.id_eq id id'
     | ConstRef c, Const (c',_) -> Names.eq_constant c c'
     | IndRef i, Ind (i', _) -> Names.eq_ind i i'
     | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'
-    | _, _ -> (match convert with 
-               | None -> false
-	       | Some (env,sigma) -> 
-	         let sigma,c' = Evd.fresh_global env sigma ref in
-		   is_conv env sigma c' c)
+    | _, _ -> 
+      (if convert then 
+	  let sigma,c' = Evd.fresh_global env sigma ref in
+	    is_conv env sigma c' c
+       else false)
   in
   let rec sorec stk subst p t =
     let cT = strip_outer_cast t in
@@ -210,6 +210,12 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 	| _ ->
           (try Array.fold_left2 (sorec stk) (sorec stk subst c1 c2) arg1 arg2
            with Invalid_argument _ -> raise PatternMatchingFailure))
+
+      | PApp (PMeta (Some n), [|c1|]), Proj (p2, c2) ->
+      	  let ty = Retyping.get_type_of env sigma c2 in
+	  let term = mkLambda (Name (id_of_string "x"), ty, mkProj (p2, mkRel 1)) in
+      	  let subst = merge_binding allow_bound_rels stk n term subst in
+      	    sorec stk subst c1 c2
 
       | PApp (PRef (ConstRef c1),arg1), Proj (p2,c2) when eq_constant c1 p2 ->
 	let pb = Environ.lookup_projection p2 (Global.env ()) in
@@ -277,13 +283,13 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
   in
   sorec [] (Id.Map.empty, Id.Map.empty) pat c
 
-let matches_core_closed convert allow_partial_app pat c =
-  let names, subst = matches_core convert allow_partial_app false pat c in
+let matches_core_closed env sigma convert allow_partial_app pat c =
+  let names, subst = matches_core env sigma convert allow_partial_app false pat c in
   (names, Id.Map.map snd subst)
 
-let extended_matches = matches_core None true true
+let extended_matches env sigma = matches_core env sigma false true true
 
-let matches pat c = snd (matches_core_closed None true pat c)
+let matches env sigma pat c = snd (matches_core_closed env sigma false true pat c)
 
 let special_meta = (-1)
 
@@ -295,7 +301,7 @@ let mkresult s c n = IStream.Cons ( { m_sub=s; m_ctx=c; } , (IStream.thunk n) )
 
 let isPMeta = function PMeta _ -> true | _ -> false
 
-let matches_head pat c =
+let matches_head env sigma pat c =
   let head =
     match pat, kind_of_term c with
     | PApp (c1,arg1), App (c2,arg2) ->
@@ -304,40 +310,40 @@ let matches_head pat c =
         if n1 < Array.length arg2 then mkApp (c2,Array.sub arg2 0 n1) else c
     | c1, App (c2,arg2) when not (isPMeta c1) -> c2
     | _ -> c in
-  matches pat head
+  matches env sigma pat head
 
 (* Tells if it is an authorized occurrence and if the instance is closed *)
-let authorized_occ partial_app closed pat c mk_ctx next =
+let authorized_occ env sigma partial_app closed pat c mk_ctx next =
   try
-    let sigma = matches_core_closed None partial_app pat c in
-    if closed && Id.Map.exists (fun _ c -> not (closed0 c)) (snd sigma)
+    let subst = matches_core_closed env sigma false partial_app pat c in
+    if closed && Id.Map.exists (fun _ c -> not (closed0 c)) (snd subst)
     then next ()
-    else mkresult sigma (mk_ctx (mkMeta special_meta)) next
+    else mkresult subst (mk_ctx (mkMeta special_meta)) next
   with PatternMatchingFailure -> next ()
 
 (* Tries to match a subterm of [c] with [pat] *)
-let sub_match ?(partial_app=false) ?(closed=true) pat c =
+let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
   let rec aux c mk_ctx next =
   match kind_of_term c with
   | Cast (c1,k,c2) ->
       let next_mk_ctx lc = mk_ctx (mkCast (List.hd lc, k,c2)) in
       let next () = try_aux [c1] next_mk_ctx next in
-      authorized_occ partial_app closed pat c mk_ctx next
+      authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Lambda (x,c1,c2) ->
       let next_mk_ctx lc = mk_ctx (mkLambda (x,List.hd lc,List.nth lc 1)) in
       let next () = try_aux [c1;c2] next_mk_ctx next in
-      authorized_occ partial_app closed pat c mk_ctx next
+      authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Prod (x,c1,c2) ->
       let next_mk_ctx lc = mk_ctx (mkProd (x,List.hd lc,List.nth lc 1)) in
       let next () = try_aux [c1;c2] next_mk_ctx next in
-      authorized_occ partial_app closed pat c mk_ctx next
+      authorized_occ env sigma partial_app closed pat c mk_ctx next
   | LetIn (x,c1,t,c2) ->
       let next_mk_ctx = function
       | [c1;c2] -> mkLetIn (x,c1,t,c2)
       | _ -> assert false
       in
       let next () = try_aux [c1;c2] next_mk_ctx next in
-      authorized_occ partial_app closed pat c mk_ctx next
+      authorized_occ env sigma partial_app closed pat c mk_ctx next
   | App (c1,lc) ->
       let next () =
         let topdown = true in
@@ -367,14 +373,14 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
             mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
           try_aux (c1::Array.to_list lc) mk_ctx next
       in
-      authorized_occ partial_app closed pat c mk_ctx next
+      authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Case (ci,hd,c1,lc) ->
       let next_mk_ctx = function
       | [] -> assert false
       | c1 :: lc -> mk_ctx (mkCase (ci,hd,c1,Array.of_list lc))
       in
       let next () = try_aux (c1 :: Array.to_list lc) next_mk_ctx next in
-      authorized_occ partial_app closed pat c mk_ctx next
+      authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Fix (indx,(names,types,bodies)) ->
     let nb_fix = Array.length types in
     let next_mk_ctx le =
@@ -383,7 +389,7 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
     let next () =
       try_aux
 	((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next in
-    authorized_occ partial_app closed pat c mk_ctx next
+    authorized_occ env sigma partial_app closed pat c mk_ctx next
   | CoFix (i,(names,types,bodies)) ->
     let nb_fix = Array.length types in
     let next_mk_ctx le =
@@ -391,13 +397,13 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
       mk_ctx (mkCoFix (i,(names, Array.of_list ntypes, Array.of_list nbodies))) in
     let next () =
       try_aux ((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next in
-    authorized_occ partial_app closed pat c mk_ctx next
+    authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Proj (p,c') ->
     let next_mk_ctx le = mk_ctx (mkProj (p,List.hd le)) in
     let next () = try_aux [c'] next_mk_ctx next in
-      authorized_occ partial_app closed pat c mk_ctx next
+      authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Construct _| Ind _|Evar _|Const _ | Rel _|Meta _|Var _|Sort _ ->
-      authorized_occ partial_app closed pat c mk_ctx next
+      authorized_occ env sigma partial_app closed pat c mk_ctx next
 
   (* Tries [sub_match] for all terms in the list *)
   and try_aux lc mk_ctx next =
@@ -412,26 +418,28 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
   let result () = aux c (fun x -> x) lempty in
   IStream.thunk result
 
-let match_subterm pat c = sub_match pat c
+let match_subterm env sigma pat c = sub_match env sigma pat c
 
-let match_appsubterm pat c = sub_match ~partial_app:true pat c
+let match_appsubterm env sigma pat c = 
+  sub_match ~partial_app:true env sigma pat c
 
-let match_subterm_gen app pat c = sub_match ~partial_app:app pat c
+let match_subterm_gen env sigma app pat c = 
+  sub_match ~partial_app:app env sigma pat c
 
-let is_matching pat c =
-  try let _ = matches pat c in true
+let is_matching env sigma pat c =
+  try let _ = matches env sigma pat c in true
   with PatternMatchingFailure -> false
 
-let is_matching_head pat c =
-  try let _ = matches_head pat c in true
+let is_matching_head env sigma pat c =
+  try let _ = matches_head env sigma pat c in true
   with PatternMatchingFailure -> false
 
-let is_matching_appsubterm ?(closed=true) pat c =
-  let results = sub_match ~partial_app:true ~closed pat c in
+let is_matching_appsubterm ?(closed=true) env sigma pat c =
+  let results = sub_match ~partial_app:true ~closed env sigma pat c in
   not (IStream.is_empty results)
 
 let matches_conv env sigma c p =
-  snd (matches_core_closed (Some (env,sigma)) false c p)
+  snd (matches_core_closed env sigma true false c p)
 
 let is_matching_conv env sigma pat n =
   try let _ = matches_conv env sigma pat n in true

@@ -51,6 +51,10 @@ val solve_simple_eqn : conv_fun -> ?choose:bool -> env ->  evar_map ->
 
 val reconsider_conv_pbs : conv_fun -> evar_map -> unification_result
 
+(** Raises [Occur] if the evar occurs in the evar-expanded version of the term. *)
+val is_unification_pattern_evar_occur : env -> evar_map -> existential -> constr list ->
+  constr -> constr list option
+
 val is_unification_pattern_evar : env -> evar_map -> existential -> constr list ->
   constr -> constr list option
 

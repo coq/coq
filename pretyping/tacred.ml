@@ -930,10 +930,10 @@ let simpl env sigma c = strong whd_simpl env sigma c
 
 (* Reduction at specific subterms *)
 
-let matches_head c t =
+let matches_head env sigma c t =
   match kind_of_term t with
-    | App (f,_) -> ConstrMatching.matches c f
-    | Proj (p, _) -> ConstrMatching.matches c (mkConst p)
+    | App (f,_) -> ConstrMatching.matches env sigma c f
+    | Proj (p, _) -> ConstrMatching.matches env sigma c (mkConst p)
     | _ -> raise ConstrMatching.PatternMatchingFailure
 
 let e_contextually byhead (occs,c) f env sigma t =
@@ -946,7 +946,8 @@ let e_contextually byhead (occs,c) f env sigma t =
     else
     try
       let subst =
-        if byhead then matches_head c t else ConstrMatching.matches c t in
+        if byhead then matches_head env sigma c t 
+	else ConstrMatching.matches env sigma c t in
       let ok =
 	if nowhere_except_in then Int.List.mem !pos locs
 	else not (Int.List.mem !pos locs) in

@@ -418,16 +418,23 @@ let is_unification_pattern_meta env nb m l t =
   else
     None
 
-let is_unification_pattern_evar env evd (evk,args) l t =
-  if List.for_all (fun x -> isRel x || isVar x) l && noccur_evar env evd evk t
+let is_unification_pattern_evar_occur env evd (evk,args) l t =
+  if List.for_all (fun x -> isRel x || isVar x) l
   then
-    let args = remove_instance_local_defs evd evk args in
-    let n = List.length args in
-    match find_unification_pattern_args env (args @ l) t with
-    | Some l -> Some (List.skipn n l)
-    | _ -> None
+    if not (noccur_evar env evd evk t) then raise Occur
+    else
+      let args = remove_instance_local_defs evd evk args in
+      let n = List.length args in
+	match find_unification_pattern_args env (args @ l) t with
+	| Some l -> Some (List.skipn n l)
+	| _ -> None
   else
-    None
+    if noccur_evar env evd evk t then None
+    else raise Occur
+
+let is_unification_pattern_evar env evd ev l t =
+  try is_unification_pattern_evar_occur env evd ev l t
+  with Occur -> None
 
 let is_unification_pattern_pure_evar env evd (evk,args) t =
   let is_ev = is_unification_pattern_evar env evd (evk,args) [] t in
