@@ -183,13 +183,38 @@ let rec to_avoid id = function
 | [] -> false
 | id' :: avoid -> Id.equal id id' || to_avoid id avoid
 
+let occur_rel p env id =
+  try
+    let name = lookup_name_of_rel p env in
+    begin match name with
+    | Name id' -> Id.equal id' id
+    | Anonymous -> false
+    end
+  with Not_found -> false (* Unbound indice : may happen in debug *)
+
+let visibly_occur_id id (nenv,c) =
+  let rec occur n c = match kind_of_term c with
+    | Const _ | Ind _ | Construct _ | Var _
+      when
+        let short = shortest_qualid_of_global Id.Set.empty (global_of_constr c) in
+        qualid_eq short (qualid_of_ident id) ->
+      raise Occur
+    | Rel p when p>n && occur_rel (p-n) nenv id -> raise Occur
+    | _ -> iter_constr_with_binders succ occur n c
+  in
+  try occur 1 c; false
+  with Occur -> true
+    | Not_found -> false (* Happens when a global is not in the env *)
+
 (* Now, there are different renaming strategies... *)
 
 (* 1- Looks for a fresh name for printing in cases pattern *)
 
-let next_name_away_in_cases_pattern na avoid =
+let next_name_away_in_cases_pattern env_t na avoid =
   let id = match na with Name id -> id | Anonymous -> default_dependent_ident in
-  next_ident_away_from id (fun id -> to_avoid id avoid || is_constructor id)
+  let bad id = to_avoid id avoid || is_constructor id
+                                 || visibly_occur_id id env_t in
+  next_ident_away_from id bad
 
 (* 2- Looks for a fresh name for introduction in goal *)
 
@@ -262,29 +287,6 @@ let make_all_name_different env =
    looks for name of same base with lower available subscript beyond current
    subscript *)
 
-let occur_rel p env id =
-  try
-    let name = lookup_name_of_rel p env in
-    begin match name with
-    | Name id' -> Id.equal id' id
-    | Anonymous -> false
-    end
-  with Not_found -> false (* Unbound indice : may happen in debug *)
-
-let visibly_occur_id id (nenv,c) =
-  let rec occur n c = match kind_of_term c with
-    | Const _ | Ind _ | Construct _ | Var _
-      when
-        let short = shortest_qualid_of_global Id.Set.empty (global_of_constr c) in
-        qualid_eq short (qualid_of_ident id) ->
-      raise Occur
-    | Rel p when p>n && occur_rel (p-n) nenv id -> raise Occur
-    | _ -> iter_constr_with_binders succ occur n c
-  in
-  try occur 1 c; false
-  with Occur -> true
-    | Not_found -> false (* Happens when a global is not in the env *)
-
 let next_ident_away_for_default_printing env_t id avoid =
   let bad id = to_avoid id avoid || visibly_occur_id id env_t in
   next_ident_away_from id bad
@@ -318,13 +320,13 @@ let next_name_away_for_default_printing env_t na avoid =
 *)
 
 type renaming_flags =
-  | RenamingForCasesPattern
+  | RenamingForCasesPattern of (Name.t list * constr)
   | RenamingForGoal
   | RenamingElsewhereFor of (Name.t list * constr)
 
 let next_name_for_display flags =
   match flags with
-  | RenamingForCasesPattern -> next_name_away_in_cases_pattern
+  | RenamingForCasesPattern env_t -> next_name_away_in_cases_pattern env_t
   | RenamingForGoal -> next_name_away_in_goal
   | RenamingElsewhereFor env_t -> next_name_away_for_default_printing env_t
 

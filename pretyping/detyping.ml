@@ -223,7 +223,7 @@ let update_name na ((_,e),c) =
       na
 
 let rec decomp_branch ndecls nargs nal b (avoid,env as e) c =
-  let flag = if b then RenamingForGoal else RenamingForCasesPattern in
+  let flag = if b then RenamingForGoal else RenamingForCasesPattern (env,c) in
   if Int.equal ndecls 0 then (List.rev nal,(e,c))
   else
     let na,c,f,nargs' =
@@ -536,12 +536,13 @@ and detype_eqn isgoal avoid env constr construct_nargs branch =
     if force_wildcard () && noccurn 1 b then
       PatVar (dl,Anonymous),avoid,(add_name Anonymous env),ids
     else
-      let id = next_name_away_in_cases_pattern x avoid in
-      PatVar (dl,Name id),id::avoid,(add_name (Name id) env),id::ids
+      let flag = if isgoal then RenamingForGoal else RenamingForCasesPattern (env,b) in
+      let na,avoid' = compute_displayed_name_in flag avoid x b in
+      PatVar (dl,na),avoid',(add_name na env),add_vname ids na
   in
   let rec buildrec ids patlist avoid env n b =
     if Int.equal n 0 then
-      (dl, ids,
+      (dl, Id.Set.elements ids,
        [PatCstr(dl, constr, List.rev patlist,Anonymous)],
        detype isgoal avoid env b)
     else
@@ -566,7 +567,7 @@ and detype_eqn isgoal avoid env constr construct_nargs branch =
 	    buildrec new_ids (pat::patlist) new_avoid new_env (n-1) new_b
 
   in
-  buildrec [] [] avoid env construct_nargs branch
+  buildrec Id.Set.empty [] avoid env construct_nargs branch
 
 and detype_binder isgoal bk avoid env na ty c =
   let flag = if isgoal then RenamingForGoal else RenamingElsewhereFor (env,c) in

@@ -1193,8 +1193,8 @@ let indirect_dependency d decls =
   pi1 (List.hd (List.filter (fun (id,_,_) -> dependent_in_decl (mkVar id) d) decls))
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env initial_sigma (sigma,c) =
-  let sigma = Pretyping.solve_remaining_evars flags env initial_sigma sigma
-  in Evd.evar_universe_context sigma, nf_evar sigma c
+(*  let sigma = Pretyping.solve_remaining_evars flags env initial_sigma sigma
+in*) Evd.evar_universe_context sigma, nf_evar sigma c
 
 let default_matching_flags sigma = {
   modulo_conv_on_closed_terms = Some empty_transparent_state;

@@ -64,7 +64,7 @@ val next_ident_away_in_goal : Id.t -> Id.t list -> Id.t
 val next_global_ident_away : Id.t -> Id.t list -> Id.t
 
 (** Avoid clashing with a constructor name already used in current module *)
-val next_name_away_in_cases_pattern : Name.t -> Id.t list -> Id.t
+val next_name_away_in_cases_pattern : (Termops.names_context * constr) -> Name.t -> Id.t list -> Id.t
 
 (** Default is [default_non_dependent_ident] *)
 val next_name_away  : Name.t -> Id.t list -> Id.t
@@ -81,7 +81,7 @@ val set_reserved_typed_name : (types -> Name.t) -> unit
    Making name distinct for displaying *)
 
 type renaming_flags =
-  | RenamingForCasesPattern (** avoid only global constructors *)
+  | RenamingForCasesPattern of (Name.t list * constr) (** avoid only global constructors *)
   | RenamingForGoal (** avoid all globals (as in intro) *)
   | RenamingElsewhereFor of (Name.t list * constr)
 
