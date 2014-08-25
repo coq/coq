@@ -51,10 +51,6 @@ val solve_simple_eqn : conv_fun -> ?choose:bool -> env ->  evar_map ->
 
 val reconsider_conv_pbs : conv_fun -> evar_map -> unification_result
 
-(** Raises [Occur] if the evar occurs in the evar-expanded version of the term. *)
-val is_unification_pattern_evar_occur : env -> evar_map -> existential -> constr list ->
-  constr -> constr list option
-
 val is_unification_pattern_evar : env -> evar_map -> existential -> constr list ->
   constr -> constr list option
 
@@ -62,6 +58,8 @@ val is_unification_pattern : env * int -> evar_map -> constr -> constr list ->
   constr -> constr list option
 
 val solve_pattern_eqn : env -> constr list -> constr -> constr
+
+val noccur_evar : env -> evar_map -> Evar.t -> constr -> bool
 
 exception IllTypedInstance of env * types * types
 

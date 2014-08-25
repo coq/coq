@@ -319,41 +319,33 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
 	   destroy beta-redexes that can be used for 1st-order unification *)
         let term1 = apprec_nohdbeta ts env evd term1 in
         let term2 = apprec_nohdbeta ts env evd term2 in
-	let default () = evar_eqappr_x ts env evd pbty
-          (whd_nored_state evd (term1,Stack.empty), Cst_stack.empty)
-          (whd_nored_state evd (term2,Stack.empty), Cst_stack.empty)
-	in
         begin match kind_of_term term1, kind_of_term term2 with
-        | Evar ev, _ when Evd.is_undefined evd (fst ev) ->
-          (match solve_simple_eqn (evar_conv_x ts) env evd
-	    (position_problem true pbty,ev,term2) with
-	    | UnifFailure (_, Pretype_errors.OccurCheck _) -> default ()
-	    | x -> x)
-        | _, Evar ev when Evd.is_undefined evd (fst ev) ->
-          (match solve_simple_eqn (evar_conv_x ts) env evd
-            (position_problem false pbty,ev,term1) with
-	    | UnifFailure (_, Pretype_errors.OccurCheck _) -> default ()
-	    | x -> x)
-        | _ -> default ()
+        | Evar ev, _ when Evd.is_undefined evd (fst ev)
+	&& noccur_evar env evd (fst ev) term2 ->
+          solve_simple_eqn (evar_conv_x ts) env evd
+            (position_problem true pbty,ev,term2)
+        | _, Evar ev when Evd.is_undefined evd (fst ev)
+	&& noccur_evar env evd (fst ev) term1 ->
+          solve_simple_eqn (evar_conv_x ts) env evd
+            (position_problem false pbty,ev,term1)
+        | _ ->
+          evar_eqappr_x ts env evd pbty
+            (whd_nored_state evd (term1,Stack.empty), Cst_stack.empty)
+            (whd_nored_state evd (term2,Stack.empty), Cst_stack.empty)
         end
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     ((term1,sk1 as appr1),csts1) ((term2,sk2 as appr2),csts2) =
   let default_fail i = (* costly *)
     UnifFailure (i,ConversionFailed (env, Stack.zip appr1, Stack.zip appr2)) in
-  let miller_pfenning on_left fallback ev lF apprM evd =
-    let tM = Stack.zip apprM in
-    let cont res = 
-      match res with
+  let miller_pfenning on_left fallback ev lF tM evd =
+    match is_unification_pattern_evar env evd ev lF tM with
       | None -> fallback ()
       | Some l1' -> (* Miller-Pfenning's patterns unification *)
 	let t2 = nf_evar evd tM in
 	let t2 = solve_pattern_eqn env l1' t2 in
 	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem on_left pbty,ev,t2) 
-    in
-      try cont (is_unification_pattern_evar_occur env evd ev lF tM)
-      with Occur -> UnifFailure (evd,OccurCheck (fst ev,tM))
   in
   let consume_stack on_left (termF,skF) (termO,skO) evd =
     let switch f a b = if on_left then f a b else f b a in
@@ -393,12 +385,14 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let not_only_app = Stack.not_purely_applicative skM in
     let f1 i =
       match Stack.list_of_app_stack skF with
-	| None -> default_fail evd
-	| Some lF ->  miller_pfenning on_left
-	  (fun () -> if not_only_app then (* Postpone the use of an heuristic *)
-	      switch (fun x y -> Success (add_conv_pb (pbty,env,Stack.zip x,Stack.zip y) i)) apprF apprM
+      | None -> default_fail evd
+      | Some lF -> 
+        let tM = Stack.zip apprM in
+	  miller_pfenning on_left
+	    (fun () -> if not_only_app then (* Postpone the use of an heuristic *)
+	      switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i)) (Stack.zip apprF) tM
 	    else default_fail i)
-	  ev lF apprM i
+	  ev lF tM i
     and f3 i =
 	switch (evar_eqappr_x ts env i pbty) (apprF,cstsF)
 	  (whd_betaiota_deltazeta_for_iota_state ts env i cstsM vM)
@@ -406,22 +400,26 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     ise_try evd [f1; (consume_stack on_left apprF apprM); f3] in
   let flex_rigid on_left ev (termF, skF as apprF) (termR, skR as apprR) =
     let switch f a b = if on_left then f a b else f b a in
-    let f1 evd = 
-      match Stack.list_of_app_stack skF with
-      | None -> consume_stack on_left apprF apprR evd
-      | Some lF ->
-	miller_pfenning on_left
-	  (fun () -> (* Postpone the use of an heuristic *)
-	    switch (fun x y ->
-	      Success (add_conv_pb (pbty,env,Stack.zip x,Stack.zip y) evd)) apprF apprR)
-	  ev lF apprR evd
-    in
-    let f2 evd =
+    let eta evd =
       match kind_of_term termR with
       | Lambda _ -> eta env evd false skR termR skF termF
       | Construct u -> eta_constructor ts env evd skR u skF termF
       | _ -> UnifFailure (evd,NotSameHead)
-    in ise_try evd [f1;f2] in
+    in
+    let f evd =
+      match Stack.list_of_app_stack skF with
+      | None -> consume_stack on_left apprF apprR evd
+      | Some lF ->
+        let tR = Stack.zip apprR in
+	  miller_pfenning on_left
+	    (fun () ->
+	      ise_try evd 
+	        [eta;(* Postpone the use of an heuristic *)
+		 (fun i -> switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i))
+	           (Stack.zip apprF) tR)])
+	    ev lF tR evd
+    in ise_try evd [f; eta]
+  in
   let app_empty = match sk1, sk2 with [], [] -> true | _ -> false in
   (* Evar must be undefined since we have flushed evars *)
   let () = if !debug_unification then

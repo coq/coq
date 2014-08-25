@@ -450,6 +450,30 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst) tyM tyN =
 	else error_cannot_unify env sigma (m,n)
     else sigma
 
+let is_eta_constructor_app env f l1 =
+  match kind_of_term f with
+  | Construct (((_, i as ind), j), u) when i == 0 && j == 1 ->
+    let mib = lookup_mind (fst ind) env in
+      (match mib.Declarations.mind_record with
+      | Some (exp,projs) when Array.length projs > 0
+        && mib.Declarations.mind_finite -> 
+        Array.length projs == Array.length l1 - mib.Declarations.mind_nparams
+      | _ -> false)
+  | _ -> false
+
+let eta_constructor_app env f l1 term =
+  match kind_of_term f with
+  | Construct (((_, i as ind), j), u) ->
+    let mib = lookup_mind (fst ind) env in
+      (match mib.Declarations.mind_record with
+      | Some (exp,projs) ->
+        let pars = mib.Declarations.mind_nparams in
+	let l1' = Array.sub l1 pars (Array.length l1 - pars) in
+	let l2 = Array.map (fun p -> mkProj (p, term)) projs in
+	  l1', l2
+      | _ -> assert false)
+  | _ -> assert false
+
 let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb b wt ((sigma,metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
@@ -548,8 +572,18 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	| _, Lambda (na,t2,c2) when flags.modulo_eta ->
 	    unirec_rec (push (na,t2) curenvnb) CONV true wt substn
 	      (mkApp (lift 1 cM,[|mkRel 1|])) c2
-	(* For records, eta-expansion is done through unify_app -> expand -> infer_conv *)
 
+	(* For records *)
+	| App (f, l1), _ when flags.modulo_eta && is_eta_constructor_app env f l1 ->
+	  let l1', l2' = eta_constructor_app env f l1 cN in
+	   Array.fold_left2 
+	     (unirec_rec curenvnb CONV true wt) substn l1' l2'
+
+	| _, App (f, l2) when flags.modulo_eta && is_eta_constructor_app env f l2 ->
+	  let l2', l1' = eta_constructor_app env f l2 cM in
+	   Array.fold_left2 
+	     (unirec_rec curenvnb CONV true wt) substn l1' l2'
+	   
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
             (try 
 	       Array.fold_left2 (unirec_rec curenvnb CONV true wt)
