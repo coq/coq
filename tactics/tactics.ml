@@ -1339,7 +1339,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
           Tacticals.New.tclTHEN
             (apply_clear_request clear_flag false c)
             (tac id))
-    with e when with_destruct && when Errors.noncritical e ->
+    with e when with_destruct && Errors.noncritical e ->
       let e = Errors.push e in
       descend_in_conjunctions aux (fun _ -> raise e) c
     end
