@@ -830,22 +830,20 @@ let restrict_universe_context (univs,csts) s =
   (* Universes that are not necessary to typecheck the term.
      E.g. univs introduced by tactics and not used in the proof term. *)
   let diff = LSet.diff univs s in
-  let is_useless l r =
-    let lmem = LSet.mem l diff 
-    and rmem = LSet.mem r diff in
-      lmem && rmem
-      (* if lmem then *)
-      (* 	rmem || not (LSet.mem r univs) *)
-      (* else *)
-      (* 	rmem && not (LSet.mem l s) *)
-  in
-  let (univscstrs, csts) =
-    Constraint.fold
-      (fun (l,d,r as c) (univs, csts) ->
-        if is_useless l r then (univs, csts)
-	else (LSet.add l (LSet.add r univs), Constraint.add c csts))
-    csts (LSet.empty, Constraint.empty)
-  in (LSet.inter univs (LSet.union s univscstrs), csts)
+  let rec aux diff candid univs ness = 
+    let (diff', candid', univs', ness') = 
+      Constraint.fold
+	(fun (l, d, r as c) (diff, candid, univs, csts) ->
+	  if not (LSet.mem l diff) then
+	    (LSet.remove r diff, candid, univs, Constraint.add c csts)
+	  else if not (LSet.mem r diff) then
+	    (LSet.remove l diff, candid, univs, Constraint.add c csts)
+	  else (diff, Constraint.add c candid, univs, csts))
+	candid (diff, Constraint.empty, univs, ness)
+    in
+      if ness' == ness then (LSet.diff univs diff', ness)
+      else aux diff' candid' univs' ness'
+  in aux diff csts univs Constraint.empty
 
 let simplify_universe_context (univs,csts) =
   let uf = UF.create () in
