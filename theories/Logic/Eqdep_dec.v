@@ -73,7 +73,7 @@ Section EqdepDec.
   Let nu_inv (y:A) (v:x = y) : x = y := comp (nu (eq_refl x)) v.
 
 
-  Remark nu_left_inv_one_var : forall (y:A) (u:x = y), nu_inv (nu u) = u.
+  Remark nu_left_inv_on : forall (y:A) (u:x = y), nu_inv (nu u) = u.
   Proof.
     intros.
     case u; unfold nu_inv.
@@ -81,20 +81,20 @@ Section EqdepDec.
   Qed.
 
 
-  Theorem eq_proofs_unicity_one_var : forall (y:A) (p1 p2:x = y), p1 = p2.
+  Theorem eq_proofs_unicity_on : forall (y:A) (p1 p2:x = y), p1 = p2.
   Proof.
     intros.
-    elim nu_left_inv_one_var with (u := p1).
-    elim nu_left_inv_one_var with (u := p2).
+    elim nu_left_inv_on with (u := p1).
+    elim nu_left_inv_on with (u := p2).
     elim nu_constant with y p1 p2.
     reflexivity.
   Qed.
 
-  Theorem K_dec_one_var :
+  Theorem K_dec_on :
     forall P:x = x -> Prop, P (eq_refl x) -> forall p:x = x, P p.
   Proof.
     intros.
-    elim eq_proofs_unicity_one_var with x (eq_refl x) p.
+    elim eq_proofs_unicity_on with x (eq_refl x) p.
     trivial.
   Qed.
 
@@ -110,7 +110,7 @@ Section EqdepDec.
     end.
 
 
-  Theorem inj_right_pair_one_var :
+  Theorem inj_right_pair_on :
     forall (P:A -> Prop) (y y':P x),
       ex_intro P x y = ex_intro P x y' -> y = y'.
   Proof.
@@ -118,7 +118,7 @@ Section EqdepDec.
     cut (proj (ex_intro P x y) y = proj (ex_intro P x y') y).
     simpl.
     destruct (eq_dec x) as [Heq|Hneq].
-    elim Heq using K_dec_one_var; trivial.
+    elim Heq using K_dec_on; trivial.
 
     intros.
     case Hneq; trivial.
@@ -140,16 +140,16 @@ End EqdepDec.
 
 Theorem eq_proofs_unicity A (eq_dec : forall x y : A, x = y \/ x <> y) (x : A)
 : forall (y:A) (p1 p2:x = y), p1 = p2.
-Proof (@eq_proofs_unicity_one_var A x (eq_dec x)).
+Proof (@eq_proofs_unicity_on A x (eq_dec x)).
 
 Theorem K_dec A (eq_dec : forall x y : A, x = y \/ x <> y) (x : A)
 : forall P:x = x -> Prop, P (eq_refl x) -> forall p:x = x, P p.
-Proof (@K_dec_one_var A x (eq_dec x)).
+Proof (@K_dec_on A x (eq_dec x)).
 
 Theorem inj_right_pair A (eq_dec : forall x y : A, x = y \/ x <> y) (x : A)
 : forall (P:A -> Prop) (y y':P x),
     ex_intro P x y = ex_intro P x y' -> y = y'.
-Proof (@inj_right_pair_one_var A x (eq_dec x)).
+Proof (@inj_right_pair_on A x (eq_dec x)).
 
 Require Import EqdepFacts.
 
@@ -340,7 +340,7 @@ Proof.
   intros A eq_dec.
   apply eq_dep_eq__inj_pair2.
   apply eq_rect_eq__eq_dep_eq.
-  unfold Eq_rect_eq, Eq_rect_eq_one_var.
+  unfold Eq_rect_eq, Eq_rect_eq_on.
   intros; apply eq_rect_eq_dec.
   apply eq_dec.
 Qed.

@@ -237,39 +237,39 @@ Section Equivalences.
 
   (** Invariance by Substitution of Reflexive Equality Proofs *)
 
-  Definition Eq_rect_eq_one_var (p : U) (Q : U -> Type) (x : Q p) :=
+  Definition Eq_rect_eq_on (p : U) (Q : U -> Type) (x : Q p) :=
     forall (h : p = p), x = eq_rect p Q x p h.
-  Definition Eq_rect_eq := forall p Q x, Eq_rect_eq_one_var p Q x.
+  Definition Eq_rect_eq := forall p Q x, Eq_rect_eq_on p Q x.
 
   (** Injectivity of Dependent Equality *)
 
-  Definition Eq_dep_eq_one_var (P : U -> Type) (p : U) (x : P p) :=
+  Definition Eq_dep_eq_on (P : U -> Type) (p : U) (x : P p) :=
     forall (y : P p), eq_dep p x p y -> x = y.
-  Definition Eq_dep_eq := forall P p x, Eq_dep_eq_one_var P p x.
+  Definition Eq_dep_eq := forall P p x, Eq_dep_eq_on P p x.
 
   (** Uniqueness of Identity Proofs (UIP) *)
 
-  Definition UIP_one_var_ (x y : U) (p1 : x = y) :=
+  Definition UIP_on_ (x y : U) (p1 : x = y) :=
     forall (p2 : x = y), p1 = p2.
-  Definition UIP_ := forall x y p1, UIP_one_var_ x y p1.
+  Definition UIP_ := forall x y p1, UIP_on_ x y p1.
 
   (** Uniqueness of Reflexive Identity Proofs *)
 
-  Definition UIP_refl_one_var_ (x : U) :=
+  Definition UIP_refl_on_ (x : U) :=
     forall (p : x = x), p = eq_refl x.
-  Definition UIP_refl_ := forall x, UIP_refl_one_var_ x.
+  Definition UIP_refl_ := forall x, UIP_refl_on_ x.
 
   (** Streicher's axiom K *)
 
-  Definition Streicher_K_one_var_ (x : U) (P : x = x -> Prop) :=
+  Definition Streicher_K_on_ (x : U) (P : x = x -> Prop) :=
     P (eq_refl x) -> forall p : x = x, P p.
-  Definition Streicher_K_ := forall x P, Streicher_K_one_var_ x P.
+  Definition Streicher_K_ := forall x P, Streicher_K_on_ x P.
 
   (** Injectivity of Dependent Equality is a consequence of *)
   (** Invariance by Substitution of Reflexive Equality Proof *)
 
-  Lemma eq_rect_eq_one_var__eq_dep1_eq_one_var (p : U) (P : U -> Type) (y : P p) :
-    Eq_rect_eq_one_var p P y -> forall (x : P p), eq_dep1 p x p y -> x = y.
+  Lemma eq_rect_eq_on__eq_dep1_eq_on (p : U) (P : U -> Type) (y : P p) :
+    Eq_rect_eq_on p P y -> forall (x : P p), eq_dep1 p x p y -> x = y.
   Proof.
     intro eq_rect_eq.
     simple destruct 1; intro.
@@ -278,24 +278,24 @@ Section Equivalences.
   Lemma eq_rect_eq__eq_dep1_eq :
     Eq_rect_eq -> forall (P:U->Type) (p:U) (x y:P p), eq_dep1 p x p y -> x = y.
   Proof (fun eq_rect_eq P p y x =>
-           @eq_rect_eq_one_var__eq_dep1_eq_one_var p P x (eq_rect_eq p P x) y).
+           @eq_rect_eq_on__eq_dep1_eq_on p P x (eq_rect_eq p P x) y).
 
-  Lemma eq_rect_eq_one_var__eq_dep_eq_one_var (p : U) (P : U -> Type) (x : P p) :
-    Eq_rect_eq_one_var p P x -> Eq_dep_eq_one_var P p x.
+  Lemma eq_rect_eq_on__eq_dep_eq_on (p : U) (P : U -> Type) (x : P p) :
+    Eq_rect_eq_on p P x -> Eq_dep_eq_on P p x.
   Proof.
     intros eq_rect_eq; red; intros.
-    symmetry; apply (eq_rect_eq_one_var__eq_dep1_eq_one_var _ _ _ eq_rect_eq).
+    symmetry; apply (eq_rect_eq_on__eq_dep1_eq_on _ _ _ eq_rect_eq).
     apply eq_dep_sym in H; apply eq_dep_dep1; trivial.
   Qed.
   Lemma eq_rect_eq__eq_dep_eq : Eq_rect_eq -> Eq_dep_eq.
   Proof (fun eq_rect_eq P p x y =>
-           @eq_rect_eq_one_var__eq_dep_eq_one_var p P x (eq_rect_eq p P x) y).
+           @eq_rect_eq_on__eq_dep_eq_on p P x (eq_rect_eq p P x) y).
 
   (** Uniqueness of Identity Proofs (UIP) is a consequence of *)
   (** Injectivity of Dependent Equality *)
 
-  Lemma eq_dep_eq_one_var__UIP_one_var (x y : U) (p1 : x = y) :
-    Eq_dep_eq_one_var (fun y => x = y) x eq_refl -> UIP_one_var_ x y p1.
+  Lemma eq_dep_eq_on__UIP_on (x y : U) (p1 : x = y) :
+    Eq_dep_eq_on (fun y => x = y) x eq_refl -> UIP_on_ x y p1.
   Proof.
     intro eq_dep_eq; red.
     elim p1 using eq_indd.
@@ -305,37 +305,37 @@ Section Equivalences.
   Qed.
   Lemma eq_dep_eq__UIP : Eq_dep_eq -> UIP_.
   Proof (fun eq_dep_eq x y p1 =>
-           @eq_dep_eq_one_var__UIP_one_var x y p1 (eq_dep_eq _ _ _)).
+           @eq_dep_eq_on__UIP_on x y p1 (eq_dep_eq _ _ _)).
 
   (** Uniqueness of Reflexive Identity Proofs is a direct instance of UIP *)
 
-  Lemma UIP_one_var__UIP_refl_one_var (x : U) :
-    UIP_one_var_ x x eq_refl -> UIP_refl_one_var_ x.
+  Lemma UIP_on__UIP_refl_on (x : U) :
+    UIP_on_ x x eq_refl -> UIP_refl_on_ x.
   Proof.
     intro UIP; red; intros; symmetry; apply UIP.
   Qed.
   Lemma UIP__UIP_refl : UIP_ -> UIP_refl_.
   Proof (fun UIP x p =>
-           @UIP_one_var__UIP_refl_one_var x (UIP x x eq_refl) p).
+           @UIP_on__UIP_refl_on x (UIP x x eq_refl) p).
 
   (** Streicher's axiom K is a direct consequence of Uniqueness of
       Reflexive Identity Proofs *)
 
-  Lemma UIP_refl_one_var__Streicher_K_one_var (x : U) (P : x = x -> Prop) :
-    UIP_refl_one_var_ x -> Streicher_K_one_var_ x P.
+  Lemma UIP_refl_on__Streicher_K_on (x : U) (P : x = x -> Prop) :
+    UIP_refl_on_ x -> Streicher_K_on_ x P.
   Proof.
     intro UIP_refl; red; intros; rewrite UIP_refl; assumption.
   Qed.
   Lemma UIP_refl__Streicher_K : UIP_refl_ -> Streicher_K_.
   Proof (fun UIP_refl x P =>
-           @UIP_refl_one_var__Streicher_K_one_var x P (UIP_refl x)).
+           @UIP_refl_on__Streicher_K_on x P (UIP_refl x)).
 
   (** We finally recover from K the Invariance by Substitution of
       Reflexive Equality Proofs *)
 
-  Lemma Streicher_K_one_var__eq_rect_eq_one_var (p : U) (P : U -> Type) (x : P p) :
-    Streicher_K_one_var_ p (fun h => x = rew -> [P] h in x)
-    -> Eq_rect_eq_one_var p P x.
+  Lemma Streicher_K_on__eq_rect_eq_on (p : U) (P : U -> Type) (x : P p) :
+    Streicher_K_on_ p (fun h => x = rew -> [P] h in x)
+    -> Eq_rect_eq_on p P x.
   Proof.
     intro Streicher_K; red; intros.
     apply Streicher_K.
@@ -343,7 +343,7 @@ Section Equivalences.
   Qed.
   Lemma Streicher_K__eq_rect_eq : Streicher_K_ -> Eq_rect_eq.
   Proof (fun Streicher_K p P x =>
-           @Streicher_K_one_var__eq_rect_eq_one_var p P x (Streicher_K p _)).
+           @Streicher_K_on__eq_rect_eq_on p P x (Streicher_K p _)).
 
 (** Remark: It is reasonable to think that [eq_rect_eq] is strictly
     stronger than [eq_rec_eq] (which is [eq_rect_eq] restricted on [Set]):
@@ -363,8 +363,8 @@ End Equivalences.
     proof of inclusion of h-level n into h-level n+1; see hlevelntosn
     in https://github.com/vladimirias/Foundations.git). *)
 
-Theorem UIP_shift_one_var (X : Type) (x : X) :
-  UIP_refl_one_var_ X x -> forall y : x = x, UIP_refl_one_var_ (x = x) y.
+Theorem UIP_shift_on (X : Type) (x : X) :
+  UIP_refl_on_ X x -> forall y : x = x, UIP_refl_on_ (x = x) y.
 Proof.
   intros UIP_refl y.
   rewrite (UIP_refl y).
@@ -384,7 +384,7 @@ Proof.
 Qed.
 Theorem UIP_shift : forall U, UIP_refl_ U -> forall x:U, UIP_refl_ (x = x).
 Proof (fun U UIP_refl x =>
-         @UIP_shift_one_var U x (UIP_refl x)).
+         @UIP_shift_on U x (UIP_refl x)).
 
 Section Corollaries.
 
@@ -393,12 +393,12 @@ Section Corollaries.
   (** UIP implies the injectivity of equality on dependent pairs in Type *)
 
 
- Definition Inj_dep_pair_one_var (P : U -> Type) (p : U) (x : P p) :=
+ Definition Inj_dep_pair_on (P : U -> Type) (p : U) (x : P p) :=
    forall (y : P p), existT P p x = existT P p y -> x = y.
- Definition Inj_dep_pair := forall P p x, Inj_dep_pair_one_var P p x.
+ Definition Inj_dep_pair := forall P p x, Inj_dep_pair_on P p x.
 
- Lemma eq_dep_eq_one_var__inj_pair2_one_var (P : U -> Type) (p : U) (x : P p) :
-   Eq_dep_eq_one_var U P p x -> Inj_dep_pair_one_var P p x.
+ Lemma eq_dep_eq_on__inj_pair2_on (P : U -> Type) (p : U) (x : P p) :
+   Eq_dep_eq_on U P p x -> Inj_dep_pair_on P p x.
  Proof.
    intro eq_dep_eq; red; intros.
    apply eq_dep_eq.
@@ -407,7 +407,7 @@ Section Corollaries.
  Qed.
  Lemma eq_dep_eq__inj_pair2 : Eq_dep_eq U -> Inj_dep_pair.
  Proof (fun eq_dep_eq P p x =>
-          @eq_dep_eq_one_var__inj_pair2_one_var P p x (eq_dep_eq P p x)).
+          @eq_dep_eq_on__inj_pair2_on P p x (eq_dep_eq P p x)).
 
 End Corollaries.
 
