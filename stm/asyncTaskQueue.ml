@@ -143,9 +143,9 @@ module Make(T : Task) = struct
         | [] -> !Flags.async_proofs_flags_for_workers @
                 ["-toploop"; T.name^"top";
                  "-worker-id"; id]
-        | ("-ideslave"|"-emacs"|"-emacs-U")::tl -> set_slave_opt tl
+        | ("-ideslave"|"-emacs"|"-emacs-U"|"-batch")::tl -> set_slave_opt tl
         | ("-async-proofs" |"-toploop" |"-vi2vo" |"-compile"
-          |"-compile-verbose")::_::tl -> set_slave_opt tl
+        |  "-load-vernac-source" | "-compile-verbose")::_::tl -> set_slave_opt tl
         | x::tl -> x :: set_slave_opt tl in
       let args =
         Array.of_list (set_slave_opt (List.tl (Array.to_list Sys.argv))) in
