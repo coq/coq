@@ -101,9 +101,19 @@ BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 DEPFLAGS= $(LOCALINCLUDES) -I ide -I ide/utils
 
+ifeq ($(ARCH),Darwin)
+LINKMETADATA=-ccopt "-sectcreate __TEXT __info_plist config/Info-$(notdir $@).plist"
+CODESIGN=codesign -s -
+else
+LINKMETADATA=
+CODESIGN=true
+endif
+
 define bestocaml
 $(if $(OPT),\
-$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -o $@ $(1) $(addsuffix .cmxa,$(2)) $^ && $(STRIP) $@,\
+$(if $(findstring $@,$(PRIVATEBINARIES)),\
+  $(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -o $@ $(1) $(addsuffix .cmxa,$(2)) $^ && $(STRIP) $@,\
+  $(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) $(LINKMETADATA) -o $@ $(1) $(addsuffix .cmxa,$(2)) $^ && $(STRIP) $@ && $(CODESIGN) $@),\
 $(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
 endef
 
@@ -212,8 +222,9 @@ minibyte: $(COQTOPBYTE) pluginsbyte
 ifeq ($(BEST),opt)
 $(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(TOPLOOPCMA:.cma=.cmxs)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -thread -o $@
+	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) $(LINKMETADATA) -thread -o $@
 	$(STRIP) $@
+	$(CODESIGN) $@
 else
 $(COQTOPEXE): $(COQTOPBYTE)
 	cp $< $@
@@ -229,8 +240,9 @@ CHKLIBS:=$(LOCALCHKLIBS) -I $(MYCAMLP4LIB)
 ifeq ($(BEST),opt)
 $(CHICKEN): checker/check.cmxa checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -thread -o $@ $(SYSCMXA) $^
+	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) $(LINKMETADATA) -thread -o $@ $(SYSCMXA) $^
 	$(STRIP) $@
+	$(CODESIGN) $@
 else
 $(CHICKEN): $(CHICKENBYTE)
 	cp $< $@
@@ -445,7 +457,7 @@ $(COQIDEAPP)/Contents/Resources:$(COQIDEAPP)/Contents/Resources/etc $(COQIDEAPP)
 	$(INSTALLLIB) ide/MacOS/*.icns $@
 
 $(COQIDEAPP):$(COQIDEAPP)/Contents/Resources
-	codesign -s - $@
+	$(CODESIGN) $@
 
 ###########################################################################
 # tests
