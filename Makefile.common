@@ -22,8 +22,6 @@ COQTOPEXE:=bin/coqtop$(EXE)
 CHICKENBYTE:=bin/coqchk.byte$(EXE)
 CHICKEN:=bin/coqchk$(EXE)
 
-FAKEIDE:=bin/fake_ide$(EXE)
-
 ifeq ($(CAMLP4),camlp4)
 CAMLP4MOD:=camlp4lib
 else
@@ -95,8 +93,11 @@ GALLINA:=bin/gallina$(EXE)
 COQTEX:=bin/coq-tex$(EXE)
 COQWC:=bin/coqwc$(EXE)
 COQDOC:=bin/coqdoc$(EXE)
+FAKEIDE:=bin/fake_ide$(EXE)
 
 TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)
+
+PRIVATEBINARIES:=$(FAKEIDE) $(COQDEPBOOT)
 
 ###########################################################################
 # Documentation
