@@ -12,6 +12,8 @@ open Util
 open Locus
 open Misctypes
 
+open Proofview.Notations
+
 DECLARE PLUGIN "coretactics"
 
 TACTIC EXTEND reflexivity
@@ -67,7 +69,7 @@ END
 TACTIC EXTEND left_with
   [ "left" "with" bindings(bl) ] -> [
     let { Evd.sigma = sigma ; it = bl } = bl in
-    Tacticals.New.tclWITHHOLES false (Tactics.left_with_bindings false) sigma bl
+    Proofview.V82.tclEVARS sigma <*> Tactics.left_with_bindings false bl
   ]
 END
 
@@ -91,7 +93,7 @@ END
 TACTIC EXTEND right_with
   [ "right" "with" bindings(bl) ] -> [
     let { Evd.sigma = sigma ; it = bl } = bl in
-    Tacticals.New.tclWITHHOLES false (Tactics.right_with_bindings false) sigma bl
+    Proofview.V82.tclEVARS sigma <*> Tactics.right_with_bindings false bl
   ]
 END
 
@@ -114,7 +116,7 @@ TACTIC EXTEND constructor
     let { Evd.sigma = sigma; it = bl } = bl in
     let i = Tacinterp.interp_int_or_var ist i in
     let tac c = Tactics.constructor_tac false None i c in
-    Tacticals.New.tclWITHHOLES false tac sigma bl
+    Proofview.V82.tclEVARS sigma <*> tac bl
   ]
 END
 
@@ -138,7 +140,7 @@ TACTIC EXTEND specialize
   [ "specialize" constr_with_bindings(c) ] -> [
     let { Evd.sigma = sigma; it = c } = c in
     let specialize c = Proofview.V82.tactic (Tactics.specialize c) in
-    Tacticals.New.tclWITHHOLES false specialize sigma c
+    Proofview.V82.tclEVARS sigma <*> specialize c
   ]
 END
 
@@ -159,7 +161,7 @@ END
 TACTIC EXTEND split_with
   [ "split" "with" bindings(bl) ] -> [
     let { Evd.sigma = sigma ; it = bl } = bl in
-    Tacticals.New.tclWITHHOLES false (Tactics.split_with_bindings false) sigma [bl]
+    Proofview.V82.tclEVARS sigma <*> Tactics.split_with_bindings false [bl]
   ]
 END
 

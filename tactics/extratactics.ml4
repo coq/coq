@@ -21,6 +21,7 @@ open Util
 open Evd
 open Equality
 open Misctypes
+open Proofview.Notations
 
 DECLARE PLUGIN "extratactics"
 
@@ -32,17 +33,14 @@ TACTIC EXTEND admit
   [ "admit" ] -> [ admit_as_an_axiom ]
 END
 
-let replace_in_clause_maybe_by (sigma1,c1) c2 cl  tac =
-  Tacticals.New.tclWITHHOLES false
+let replace_in_clause_maybe_by (sigma,c1) c2 cl  tac =
+  Proofview.V82.tclEVARS sigma <*>
     (replace_in_clause_maybe_by c1 c2 cl)
-    sigma1
     (Option.map Tacinterp.eval_tactic tac)
 
 let replace_term dir_opt (sigma,c) cl =
-  Tacticals.New.tclWITHHOLES false
-    (replace_term dir_opt c)
-    sigma
-    cl
+  Proofview.V82.tclEVARS sigma <*>
+    (replace_term dir_opt c) cl
 
 TACTIC EXTEND replace
    ["replace" open_constr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
@@ -204,7 +202,7 @@ END
 
 let onSomeWithHoles tac = function
   | None -> tac None
-  | Some c -> Tacticals.New.tclWITHHOLES false tac c.sigma (Some c.it)
+  | Some c -> Proofview.V82.tclEVARS c.sigma <*> tac (Some c.it)
 
 TACTIC EXTEND contradiction
  [ "contradiction" constr_with_bindings_opt(c) ] ->
@@ -248,8 +246,8 @@ END
 
 let rewrite_star clause orient occs (sigma,c) (tac : glob_tactic_expr option) =
   let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
-  Tacticals.New. tclWITHHOLES false
-    (general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings)) sigma true
+  Proofview.V82.tclEVARS sigma <*>
+    general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true
 
 TACTIC EXTEND rewrite_star
 | [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] ->

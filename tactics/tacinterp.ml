@@ -1716,7 +1716,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma,l' = interp_intro_pattern_list_as_list ist env sigma l in
-        Tacticals.New.tclWITHHOLES false Tactics.intros_patterns sigma l'
+        Proofview.V82.tclEVARS sigma <*> Tactics.intros_patterns l'
       end
   | TacIntroMove (ido,hto) ->
       Proofview.Goal.raw_enter begin fun gl ->
@@ -1808,7 +1808,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let sigma, ipat = interp_intro_pattern_option ist env sigma ipat in
         let tac = Option.map (interp_tactic ist) t in
-        Tacticals.New.tclWITHHOLES false (Tactics.forward b tac ipat) sigma c
+        Proofview.V82.tclEVARS sigma <*> Tactics.forward b tac ipat c
       end
   | TacGeneralize cl ->
       let tac arg = Proofview.V82.tactic (Tactics.Simple.generalize_gen arg) in
@@ -1816,7 +1816,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
-        Tacticals.New.tclWITHHOLES false tac sigma cl
+        Proofview.V82.tclEVARS sigma <*> tac cl
       end
   | TacGeneralizeDep c ->
       (new_interp_constr ist c)
@@ -1838,9 +1838,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
             let with_eq = if b then None else Some (true,id) in
             Tactics.letin_tac with_eq na c None cl
           in
-	  Tacticals.New.tclWITHHOLES false
-            (let_tac b (interp_fresh_name ist env na) c_interp clp)
-            sigma eqpat
+	  Proofview.V82.tclEVARS sigma <*>
+            let_tac b (interp_fresh_name ist env na) c_interp clp eqpat
         else
         (* We try to keep the pattern structure as much as possible *)
           let let_pat_tac b na c cl eqpat =
@@ -1848,9 +1847,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
             let with_eq = if b then None else Some (true,id) in
             Tactics.letin_pat_tac with_eq na c cl
           in
-	  Tacticals.New.tclWITHHOLES false
-            (let_pat_tac b (interp_fresh_name ist env na)
-            (interp_pure_open_constr ist env sigma c) clp) sigma eqpat
+          let_pat_tac b (interp_fresh_name ist env na)
+            (interp_pure_open_constr ist env sigma c) clp eqpat
       end
 
   (* Automation tactics *)
@@ -2024,7 +2022,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env hyp in
         let sigma,ids = interp_or_and_intro_pattern_option ist env sigma ids in
-        Tacticals.New.tclWITHHOLES false (Inv.dinv k c_interp ids) sigma dqhyps
+        Proofview.V82.tclEVARS sigma <*> Inv.dinv k c_interp ids dqhyps
       end
   | TacInversion (NonDepInversion (k,idl,ids),hyp) ->
       Proofview.Goal.raw_enter begin fun gl ->
@@ -2033,8 +2031,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let hyps = interp_hyp_list ist env idl in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env hyp in
         let sigma, ids = interp_or_and_intro_pattern_option ist env sigma ids in
-        Tacticals.New.tclWITHHOLES false (Inv.inv_clause k ids hyps)
-          sigma dqhyps
+        Proofview.V82.tclEVARS sigma <*> Inv.inv_clause k ids hyps dqhyps
       end
   | TacInversion (InversionUsing (c,idl),hyp) ->
       Proofview.Goal.raw_enter begin fun gl ->
