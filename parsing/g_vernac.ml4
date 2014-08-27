@@ -215,6 +215,7 @@ GEXTEND Gram
       | IDENT "Register"; IDENT "Inline"; id = identref ->
           VernacRegister(id, RegisterInline)
       | IDENT "Universe"; l = LIST1 identref -> VernacUniverse l
+      | IDENT "Universes"; l = LIST1 identref -> VernacUniverse l
       | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> VernacConstraint l
   ] ]
   ;
