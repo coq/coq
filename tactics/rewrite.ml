@@ -443,7 +443,12 @@ let split_head = function
   | [] -> assert(false)
 
 let evd_convertible env evd x y =
-  try ignore(Evarconv.the_conv_x env x y evd); true
+  try let evd = Evarconv.the_conv_x env x y evd in 
+      (* Unfortunately, the_conv_x might say they are unifiable even if some
+	 unsolvable constraints remain, so we check them here *)
+      let evd = Evarconv.consider_remaining_unif_problems env evd in
+	Evarconv.check_problems_are_solved env evd;
+	true
   with e when Errors.noncritical e -> false
 
 let convertible env evd x y =
