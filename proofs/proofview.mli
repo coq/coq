@@ -416,8 +416,9 @@ module Goal : sig
   val refresh_sigma : 'a t -> 'a t tactic
 end
 
-(** A light interface for building tactics out of partial term. It should be
-    easier to use than the {!Goal} one. *)
+(** A light interface for building tactics out of partial term. Be careful,
+    the [refine] function does not do any typechecking, so you may construct
+    ill-typed terms without noticing. *)
 module Refine : sig
 
   type handle
@@ -429,9 +430,6 @@ module Refine : sig
   val fresh_constructor_instance :
     handle -> Environ.env -> Names.constructor -> handle * Constr.pconstructor
   (** Creates a constructor with fresh universe variables. *)
-
-  val with_type : handle -> Environ.env -> Term.constr -> Term.types -> handle*Term.constr
-  (** [with_type h env c t] coerces refinable term [c] to type [t]. *)
 
   val update : handle -> (Evd.evar_map -> Evd.evar_map * 'a) -> handle * 'a
   (** [update h f] update the handle by applying [f] to the underlying evar map.
@@ -446,8 +444,8 @@ module Refine : sig
       function are caught. *)
 
   val refine_casted : (handle -> handle * Constr.t) -> unit tactic
-  (** Like {!refine} except the refined term is coerced to has, as its
-      type, the conclusion of the current goal. *)
+  (** Like {!refine} except the refined term is coerced to the conclusion of the
+      current goal. *)
 
 end
 
