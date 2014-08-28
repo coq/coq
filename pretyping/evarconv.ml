@@ -319,19 +319,25 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
 	   destroy beta-redexes that can be used for 1st-order unification *)
         let term1 = apprec_nohdbeta ts env evd term1 in
         let term2 = apprec_nohdbeta ts env evd term2 in
-        begin match kind_of_term term1, kind_of_term term2 with
-        | Evar ev, _ when Evd.is_undefined evd (fst ev)
-	&& noccur_evar env evd (fst ev) term2 ->
-          solve_simple_eqn (evar_conv_x ts) env evd
-            (position_problem true pbty,ev,term2)
-        | _, Evar ev when Evd.is_undefined evd (fst ev)
-	&& noccur_evar env evd (fst ev) term1 ->
-          solve_simple_eqn (evar_conv_x ts) env evd
-            (position_problem false pbty,ev,term1)
-        | _ ->
+	let default () = 
           evar_eqappr_x ts env evd pbty
             (whd_nored_state evd (term1,Stack.empty), Cst_stack.empty)
             (whd_nored_state evd (term2,Stack.empty), Cst_stack.empty)
+	in
+          begin match kind_of_term term1, kind_of_term term2 with
+          | Evar ev, _ when Evd.is_undefined evd (fst ev) ->
+            (match solve_simple_eqn (evar_conv_x ts) env evd
+              (position_problem true pbty,ev,term2) with
+	      | UnifFailure (_,OccurCheck _) -> 
+		(* Eta-expansion might apply *) default ()
+	      | x -> x)
+          | _, Evar ev when Evd.is_undefined evd (fst ev) ->
+            (match solve_simple_eqn (evar_conv_x ts) env evd
+              (position_problem false pbty,ev,term1) with
+	      | UnifFailure (_, OccurCheck _) ->
+		(* Eta-expansion might apply *) default () 
+	      | x -> x)
+          | _ -> default ()
         end
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
