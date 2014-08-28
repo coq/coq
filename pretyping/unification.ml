@@ -395,7 +395,12 @@ let oracle_order env cf1 cf2 =
       match cf2 with
       | None -> Some true
       | Some k2 ->
-          Some (Conv_oracle.oracle_order (Environ.oracle env) false (translate_key k1) (translate_key k2))
+	match k1, k2 with
+	| IsProj (p, _), IsKey (ConstKey (p',_)) when eq_constant p p' -> Some false
+	| IsKey (ConstKey (p,_)), IsProj (p', _) when eq_constant p p' -> Some true
+	| _ ->
+          Some (Conv_oracle.oracle_order (Environ.oracle env) false
+		  (translate_key k1) (translate_key k2))
 
 let is_rigid_head flags t =
   match kind_of_term t with
@@ -574,15 +579,23 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	      (mkApp (lift 1 cM,[|mkRel 1|])) c2
 
 	(* For records *)
-	| App (f, l1), _ when flags.modulo_eta && is_eta_constructor_app env f l1 ->
-	  let l1', l2' = eta_constructor_app env f l1 cN in
-	   Array.fold_left2 
-	     (unirec_rec curenvnb CONV true wt) substn l1' l2'
+	| App (f1, l1), _ when flags.modulo_eta && is_eta_constructor_app env f1 l1 ->
+	  (try let l1', l2' = eta_constructor_app env f1 l1 cN in
+		 Array.fold_left2 
+		   (unirec_rec curenvnb CONV true wt) substn l1' l2'
+	   with ex when precatchable_exception ex -> 
+	     (match kind_of_term cN with
+             | App (f2,l2) -> unify_app curenvnb pb b substn cM f1 l1 cN f2 l2
+             | _ -> unify_not_same_head curenvnb pb b wt substn cM cN))
 
-	| _, App (f, l2) when flags.modulo_eta && is_eta_constructor_app env f l2 ->
-	  let l2', l1' = eta_constructor_app env f l2 cM in
-	   Array.fold_left2 
-	     (unirec_rec curenvnb CONV true wt) substn l1' l2'
+	| _, App (f2, l2) when flags.modulo_eta && is_eta_constructor_app env f2 l2 ->
+	  (try let l2', l1' = eta_constructor_app env f2 l2 cM in
+		 Array.fold_left2 
+		   (unirec_rec curenvnb CONV true wt) substn l1' l2'
+	   with ex when precatchable_exception ex -> 
+	     (match kind_of_term cM with
+             | App (f1,l1) -> unify_app curenvnb pb b substn cM f1 l1 cN f2 l2
+             | _ -> unify_not_same_head curenvnb pb b wt substn cM cN))
 	   
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
             (try 
