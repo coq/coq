@@ -219,6 +219,20 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
   let x = match name with Some n -> Name n | None -> Namegen.named_hd (Global.env()) r Anonymous in
   let fields = instantiate_possibly_recursive_type indu paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
+  let primitive = 
+    if !primitive_flag then 
+      let is_primitive = 
+	match mib.mind_record with
+	| Some (projs, _) -> Array.length projs > 0
+	| None -> false
+      in
+	if not is_primitive then 
+	  Flags.if_verbose msg_warning
+	    (hov 0 (str "The record " ++ Printer.pr_inductive env indsp ++ 
+		      str" could not be defined as a primitive record"));
+	is_primitive
+    else false
+  in
   let (_,_,kinds,sp_projs,_) =
     List.fold_left3
       (fun (nfi,i,kinds,sp_projs,subst) coe (fi,optci,ti) impls ->
@@ -247,7 +261,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
 	      let kn =
 	        try
 		  let makeprim =
-		    if !primitive_flag && optci = None then 
+		    if primitive && optci = None then 
 		      Some (fst indsp, i)
 		    else None
 		  in
@@ -276,12 +290,14 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
 	        Class.try_add_new_coercion_with_source refi ~local:false poly ~source:cl
 	      end;
 	      let constr_fip =
-		if !primitive_flag then mkProj (kn,mkRel 1)
+		if primitive then mkProj (kn,mkRel 1)
 		else
 		  let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 		    applist (mkConstU (kn,u),proj_args) 
 	      in
-		(Some kn::sp_projs, i+1, Projection constr_fip::subst)
+	      let i = if Option.is_empty optci then i+1 else i in
+		(Some kn::sp_projs, i,
+		  Projection constr_fip::subst)
             with NotDefinable why ->
 	      warning_or_error coe indsp why;
 	      (None::sp_projs,i,NoProjection fi::subst) in
