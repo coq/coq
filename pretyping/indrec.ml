@@ -60,7 +60,11 @@ let check_privacy_block mib =
 
 let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
-  let () = check_privacy_block mib in
+  let indf = make_ind_family(pind, Termops.extended_rel_list 0 lnamespar) in
+  let constrs = get_constructors env indf in
+  let projs = get_projections env indf in
+
+  let () = if Option.is_empty projs then check_privacy_block mib in
   let () = 
     if not (Sorts.List.mem kind (elim_sorts specif)) then
       raise
@@ -73,8 +77,6 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   (* mais pas très joli ... (mais manque get_sort_of à ce niveau) *)
   let env' = push_rel_context lnamespar env in
 
-  let indf = make_ind_family(pind, Termops.extended_rel_list 0 lnamespar) in
-  let constrs = get_constructors env indf in
 
   let rec add_branch env k =
     if Int.equal k (Array.length mip.mind_consnames) then
@@ -97,11 +99,16 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 	   (Anonymous,depind,pbody))
           arsign
       in
-      it_mkLambda_or_LetIn_name env'
-       	(mkCase (ci, lift ndepar p,
-		     mkRel 1,
-		     Termops.rel_vect ndepar k))
-       	deparsign
+      let obj = 
+	match projs with
+	| None -> mkCase (ci, lift ndepar p,  mkRel 1,
+			  Termops.rel_vect ndepar k)
+	| Some ps -> 
+	  let term = mkApp (mkRel 2, Array.map (fun p -> mkProj (p, mkRel 1)) ps) in
+	  let ty = mkApp (mkRel 3, [| mkRel 1 |]) in
+	    mkCast (term, DEFAULTcast, ty)
+      in
+	it_mkLambda_or_LetIn_name env' obj deparsign
     else
       let cs = lift_constructor (k+1) constrs.(k) in
       let t = build_branch_type env dep (mkRel (k+1)) cs in

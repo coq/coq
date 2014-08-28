@@ -63,7 +63,7 @@ type definition_entry = {
   const_entry_type        : types option;
   const_entry_polymorphic : bool;
   const_entry_universes   : Univ.universe_context;
-  const_entry_proj        : bool;
+  const_entry_proj        : (mutual_inductive * int) option;
   const_entry_opaque      : bool;
   const_entry_inline_code : bool }
 

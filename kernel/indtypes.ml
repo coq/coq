@@ -661,24 +661,50 @@ exception UndefinableExpansion
     build an expansion function.
     The term built is expecting to be substituted first by 
     a substitution of the form [params, x : ind params] *)
-let compute_expansion ((kn, _ as ind), u) params ctx =
+let compute_projections ((kn, _ as ind), u as indsp) nparamargs params
+    mind_consnrealdecls mind_consnrealargs ctx =
   let mp, dp, l = repr_mind kn in
-  let make_proj id = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
-  let projections acc (na, b, t) =
+  let rp = mkApp (mkIndU indsp, rel_vect 0 nparamargs) in
+  let ci = 
+    let print_info = { ind_nargs = 0; style = LetStyle } in
+      { ci_ind     = ind;
+	ci_npar    = nparamargs;
+	ci_cstr_ndecls = mind_consnrealdecls;
+	ci_cstr_nargs = mind_consnrealargs;
+	ci_pp_info = print_info }
+  in
+  let len = List.length ctx in
+  let x = Name (id_of_string "r") in
+  let compat_body ccl i = 
+    (* [ccl] is defined in context [params;x:rp] *)
+    (* [ccl'] is defined in context [params;x:rp;x:rp] *)
+    let ccl' = liftn 1 2 ccl in
+    let p = mkLambda (x, lift 1 rp, ccl') in
+    let branch = it_mkLambda_or_LetIn (mkRel (len - i)) ctx in
+    let body = mkCase (ci, p, mkRel 1, [|branch|]) in
+      it_mkLambda_or_LetIn (mkLambda (x,rp,body)) params
+  in
+  let projections (na, b, t) (i, j, kns, pbs, subst) =
     match b with
-    | Some c -> acc
-    | None -> 
+    | Some c -> (i, j+1, kns, pbs, c :: subst)
+    | None ->
       match na with
-      | Name id -> make_proj id :: acc
+      | Name id ->
+	let kn = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
+	let ty = substl subst (liftn 1 j t) in
+	let term = mkProj (kn, mkRel 1) in
+	let compat = compat_body ty i in
+	let etab = it_mkLambda_or_LetIn (mkLambda (x, rp, term)) params in
+	let etat = it_mkProd_or_LetIn (mkProd (x, rp, ty)) params in
+	let body = { proj_ind = fst ind; proj_npars = nparamargs;
+		     proj_arg = i; proj_type = ty; proj_eta = etab, etat; 
+		     proj_body = compat } in
+	  (i + 1, j + 1, kn :: kns, body :: pbs, term :: subst)
       | Anonymous -> raise UndefinableExpansion
   in
-  let projs = List.fold_left projections [] ctx in
-  let projarr = Array.of_list projs in
-  let exp = 
-    mkApp (mkConstructU ((ind, 1),u),
-	   Array.append (rel_appvect 1 params)
- 	     (Array.map (fun p -> mkProj (p, mkRel 1)) projarr))
-   in exp, projarr
+  let (_, _, kns, pbs, subst) = List.fold_right projections ctx (0, 1, [], [], []) in
+    Array.of_list (List.rev kns),
+    Array.of_list (List.rev pbs)
 
 let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
@@ -750,18 +776,21 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
 	mind_reloc_tbl = rtbl;
       } in
   let packets = Array.map2 build_one_packet inds recargs in
+  let pkt = packets.(0) in	  
   let isrecord = 
     match isrecord with
-    | Some true -> (* || (Array.length pkt.mind_consnames = 1 &&  *)
-      let pkt = packets.(0) in	  
+    | Some true when pkt.mind_kelim == all_sorts && Array.length pkt.mind_consnames == 1 ->
+      (** The elimination criterion ensures that all projections can be defined. *)
       let rctx, _ = decompose_prod_assum pkt.mind_nf_lc.(0) in
       let u = if p then Univ.UContext.instance ctx else Univ.Instance.empty in
 	(try 
-	 let exp = compute_expansion ((kn, 0), u) params 
-	   (List.firstn pkt.mind_consnrealdecls.(0) rctx) 
-	 in Some exp
-	 with UndefinableExpansion -> (Some (mkProp, [||])))
-    | Some false -> Some (mkProp, [||])
+	   let fields = List.firstn pkt.mind_consnrealdecls.(0) rctx in
+	   let kns, projs = 
+	     compute_projections ((kn, 0), u) nparamargs params
+	       pkt.mind_consnrealdecls pkt.mind_consnrealargs fields
+	   in Some (kns, projs)
+	 with UndefinableExpansion -> Some ([||], [||]))
+    | Some _ -> Some ([||], [||])
     | None -> None
   in
     (* Build the mutual inductive *)

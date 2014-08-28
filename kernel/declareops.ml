@@ -237,11 +237,11 @@ let subst_mind_packet sub mbp =
     mind_nb_args = mbp.mind_nb_args;
     mind_reloc_tbl = mbp.mind_reloc_tbl }
 
-let subst_mind_record sub (c, ps as r) =
-  let c' = subst_mps sub c in
+let subst_mind_record sub (ps, pb as r) =
   let ps' = Array.smartmap (subst_constant sub) ps in
-    if c' == c && ps' == ps then r
-    else (c', ps')
+  let pb' = Array.smartmap (subst_const_proj sub) pb in
+    if ps' == ps && pb' == pb then r
+    else (ps', pb')
 
 let subst_mind_body sub mib =
   { mind_record = Option.smartmap (subst_mind_record sub) mib.mind_record ;

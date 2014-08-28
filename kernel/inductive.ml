@@ -294,6 +294,12 @@ let get_instantiated_arity (ind,u) (mib,mip) params =
 
 let elim_sorts (_,mip) = mip.mind_kelim
 
+let is_private (mib,_) = mib.mind_private = Some true
+let is_primitive_record (mib,_) = 
+  match mib.mind_record with
+  | Some (projs, _) when Array.length projs > 0 -> true
+  | _ -> false
+
 let extended_rel_list n hyps =
   let rec reln l p = function
     | (_,None,_) :: hyps -> reln (mkRel (n+p) :: l) (p+1) hyps
@@ -391,12 +397,13 @@ let type_case_branches env (pind,largs) pj c =
 (* Checking the case annotation is relevent *)
 
 let check_case_info env (indsp,u) ci =
-  let (mib,mip) = lookup_mind_specif env indsp in
+  let (mib,mip as spec) = lookup_mind_specif env indsp in
   if
     not (eq_ind indsp ci.ci_ind) ||
     not (Int.equal mib.mind_nparams ci.ci_npar) ||
     not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls) ||
-    not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs)
+    not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs) ||
+    is_primitive_record spec
   then raise (TypeError(env,WrongCaseInfo((indsp,u),ci)))
 
 (************************************************************************)

@@ -388,7 +388,6 @@ let judge_of_projection env p cj =
     assert(eq_mind pb.proj_ind (fst ind));
     let ty = Vars.subst_instance_constr u pb.Declarations.proj_type in
     let ty = substl (cj.uj_val :: List.rev args) ty in
-      (* TODO: Universe polymorphism for projections *)
       {uj_val = mkProj (p,cj.uj_val);
        uj_type = ty}
 

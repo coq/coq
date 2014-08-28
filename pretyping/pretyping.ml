@@ -678,25 +678,46 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	  error_case_not_inductive_loc cloc env !evdref cj
     in
     let cstrs = get_constructors env indf in
-      if not (Int.equal (Array.length cstrs) 1) then
-        user_err_loc (loc,"",str "Destructing let is only for inductive types" ++
-	  str " with one constructor.");
-      let cs = cstrs.(0) in
-	if not (Int.equal (List.length nal) cs.cs_nargs) then
-          user_err_loc (loc,"", str "Destructing let on this type expects " ++ 
-	    int cs.cs_nargs ++ str " variables.");
-	let fsign = List.map2 (fun na (_,c,t) -> (na,c,t))
-          (List.rev nal) cs.cs_args in
-	let env_f = push_rel_context fsign env in
-	  (* Make dependencies from arity signature impossible *)
-	let arsgn =
-	  let arsgn,_ = get_arity env indf in
-	    if not !allow_anonymous_refs then
-	      List.map (fun (_,b,t) -> (Anonymous,b,t)) arsgn
-	    else arsgn
-	in
-	let psign = (na,None,build_dependent_inductive env indf)::arsgn in
-	let nar = List.length arsgn in
+    if not (Int.equal (Array.length cstrs) 1) then
+      user_err_loc (loc,"",str "Destructing let is only for inductive types" ++
+	str " with one constructor.");
+    let cs = cstrs.(0) in
+    if not (Int.equal (List.length nal) cs.cs_nargs) then
+      user_err_loc (loc,"", str "Destructing let on this type expects " ++ 
+	int cs.cs_nargs ++ str " variables.");
+    let fsign, record = 
+      match get_projections env indf with
+      | None -> List.map2 (fun na (_,c,t) -> (na,c,t))
+	(List.rev nal) cs.cs_args, false
+      | Some ps ->
+	let rec aux n k names l =
+	  match names, l with
+	  | na :: names, ((_, None, t) :: l) -> 
+	    (na, Some (lift (cs.cs_nargs - n) (mkProj (ps.(cs.cs_nargs - k), cj.uj_val))), t)
+	    :: aux (n+1) (k + 1) names l
+	  | na :: names, ((_, c, t) :: l) -> 
+	    (na, c, t) :: aux (n+1) k names l
+	  | [], [] -> []
+	  | _ -> assert false
+	in aux 1 1 (List.rev nal) cs.cs_args, true
+    in
+    let obj ind p v f =
+      if not record then 
+	let f = it_mkLambda_or_LetIn f fsign in
+	let ci = make_case_info env (fst ind) LetStyle in
+	  mkCase (ci, p, cj.uj_val,[|f|]) 
+      else it_mkLambda_or_LetIn f fsign
+    in
+    let env_f = push_rel_context fsign env in
+      (* Make dependencies from arity signature impossible *)
+    let arsgn =
+      let arsgn,_ = get_arity env indf in
+	if not !allow_anonymous_refs then
+	  List.map (fun (_,b,t) -> (Anonymous,b,t)) arsgn
+	else arsgn
+    in
+      let psign = (na,None,build_dependent_inductive env indf)::arsgn in
+      let nar = List.length arsgn in
 	  (match po with
 	  | Some p ->
 	    let env_p = push_rel_context psign env in
@@ -710,18 +731,16 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	    let lp = lift cs.cs_nargs p in
 	    let fty = hnf_lam_applist env !evdref lp inst in
 	    let fj = pretype (mk_tycon fty) env_f evdref lvar d in
-	    let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 	    let v =
 	      let ind,_ = dest_ind_family indf in
-	      let ci = make_case_info env (fst ind) LetStyle in
 		Typing.check_allowed_sort env !evdref ind cj.uj_val p;
-		mkCase (ci, p, cj.uj_val,[|f|]) in
+		obj ind p cj.uj_val fj.uj_val
+	    in
 	      { uj_val = v; uj_type = substl (realargs@[cj.uj_val]) ccl }
 
 	  | None ->
 	    let tycon = lift_tycon cs.cs_nargs tycon in
 	    let fj = pretype tycon env_f evdref lvar d in
-	    let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 	    let ccl = nf_evar !evdref fj.uj_type in
 	    let ccl =
 	      if noccur_between 1 cs.cs_nargs ccl then
@@ -733,9 +752,8 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	    let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
 	    let v =
 	      let ind,_ = dest_ind_family indf in
-	      let ci = make_case_info env (fst ind) LetStyle in
 		Typing.check_allowed_sort env !evdref ind cj.uj_val p;
-		mkCase (ci, p, cj.uj_val,[|f|])
+		obj ind p cj.uj_val fj.uj_val
 	    in { uj_val = v; uj_type = ccl })
 
   | GIf (loc,c,(na,po),b1,b2) ->

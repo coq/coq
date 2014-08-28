@@ -866,22 +866,19 @@ let rec get_parameters depth n argstk =
 let eta_expand_ind_stacks env ind m s (f, s') =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
-    | Some (exp,projs) when Array.length projs > 0 
+    | Some (projs,pbs) when Array.length projs > 0 
       && mib.Declarations.mind_finite -> 
-      let primitive = Environ.is_projection projs.(0) env in
-	if primitive then
-	  (* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
-	     arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
-	  let pars = mib.Declarations.mind_nparams in
-	  let right = fapp_stack (f, s') in
-	  let (depth, args, s) = strip_update_shift_app m s in
-	  (** Try to drop the params, might fail on partially applied constructors. *)
-	  let argss = try_drop_parameters depth pars args in
-	  let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
-					     term = FProj (p, right) }) projs in
-	    argss, [Zapp hstack]
-	else raise Not_found (* disallow eta-exp for non-primitive records *)
-    | _ -> raise Not_found
+	(* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
+	   arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
+      let pars = mib.Declarations.mind_nparams in
+      let right = fapp_stack (f, s') in
+      let (depth, args, s) = strip_update_shift_app m s in
+      (** Try to drop the params, might fail on partially applied constructors. *)
+      let argss = try_drop_parameters depth pars args in
+      let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
+					 term = FProj (p, right) }) projs in
+	argss, [Zapp hstack]	
+    | _ -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
 let rec project_nth_arg n argstk =
   match argstk with

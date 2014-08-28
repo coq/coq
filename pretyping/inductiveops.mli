@@ -140,6 +140,8 @@ val get_constructor :
   int -> constructor_summary
 val get_arity        : env -> inductive_family -> rel_context * sorts_family
 val get_constructors : env -> inductive_family -> constructor_summary array
+val get_projections  : env -> inductive_family -> constant array option
+
 val build_dependent_constructor : constructor_summary -> constr
 val build_dependent_inductive   : env -> inductive_family -> constr
 val make_arity_signature : env -> bool -> inductive_family -> rel_context

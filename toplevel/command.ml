@@ -578,7 +578,9 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
 		       constrimpls)
       impls;
   if_verbose msg_info (minductive_message names);
-  if mie.mind_entry_private == None then declare_default_schemes mind;
+  if mie.mind_entry_private == None
+    && not (mie.mind_entry_record = Some true)
+  then declare_default_schemes mind;
   mind
 
 type one_inductive_impls =

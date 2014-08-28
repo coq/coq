@@ -103,3 +103,7 @@ val e_contextually : bool -> occurrences * constr_pattern ->
 (** Returns the same inductive if it is allowed for pattern-matching
     raises an error otherwise. **)
 val check_privacy : env -> inductive puniverses -> inductive puniverses
+
+(** Returns the same inductive if it is not a primitive record
+    raises an error otherwise. **)
+val check_not_primitive_record : env -> inductive puniverses -> inductive puniverses

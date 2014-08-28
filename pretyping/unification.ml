@@ -471,7 +471,7 @@ let eta_constructor_app env f l1 term =
   | Construct (((_, i as ind), j), u) ->
     let mib = lookup_mind (fst ind) env in
       (match mib.Declarations.mind_record with
-      | Some (exp,projs) ->
+      | Some (projs, _) ->
         let pars = mib.Declarations.mind_nparams in
 	let l1' = Array.sub l1 pars (Array.length l1 - pars) in
 	let l2 = Array.map (fun p -> mkProj (p, term)) projs in

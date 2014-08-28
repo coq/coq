@@ -53,7 +53,8 @@ type projection_body = {
   proj_npars : int;
   proj_arg : int;
   proj_type : types; (* Type under params *)
-  proj_body : constr; (* For compatibility, the match version *)
+  proj_eta : constr * types; (* Eta-expanded term and type *)
+  proj_body : constr; (* For compatibility with VMs only, the match version *)
 }
 
 type constant_def =
@@ -152,9 +153,10 @@ type mutual_inductive_body = {
 
     mind_packets : one_inductive_body array;  (** The component of the mutual inductive block *)
 
-    mind_record : (constr * constant array) option;  
+    mind_record : (constant array * projection_body array) option;  
     (** Whether the inductive type has been declared as a record, 
-	In that case we get its canonical eta-expansion and list of projections. *)
+	In the case it is primitive we get its projection names and checked
+	projection bodies, otherwise both arrays are empty. *)
 
     mind_finite : bool;  (** Whether the type is inductive or coinductive *)
 

@@ -215,6 +215,8 @@ let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
   in
   let projection pb =
     let c' = abstract_constant_body (expmod pb.proj_body) hyps in
+    let etab = abstract_constant_body (expmod (fst pb.proj_eta)) hyps in
+    let etat = abstract_constant_body (expmod (snd pb.proj_eta)) hyps in
     let ((mind, _), _), n' =
       try 
 	let c' = share_univs cache (IndRef (pb.proj_ind,0)) Univ.Instance.empty modlist in
@@ -229,6 +231,7 @@ let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
     in
     let ctx, ty' = decompose_prod_n (n' + pb.proj_npars + 1) typ in
       { proj_ind = mind; proj_npars = pb.proj_npars + n'; proj_arg = pb.proj_arg;
+	proj_eta = etab, etat;
 	proj_type = ty'; proj_body = c' }
   in
   let univs = UContext.union abs_ctx univs in

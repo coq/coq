@@ -760,7 +760,7 @@ and conv_record trs env evd (ctx,(h,h'),c,bs,(params,params1),(us,us2),(ts,ts1),
 and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
-    | Some (exp,projs) when Array.length projs > 0
+    | Some (projs, pbs) when Array.length projs > 0
       && mib.Declarations.mind_finite -> 
       let pars = mib.Declarations.mind_nparams in
 	(try 

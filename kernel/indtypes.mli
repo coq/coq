@@ -41,5 +41,6 @@ val check_inductive : env -> mutual_inductive -> mutual_inductive_entry -> mutua
 val enforce_indices_matter : unit -> unit
 val is_indices_matter : unit -> bool
 
-val compute_expansion : pinductive -> 
-  Context.rel_context -> Context.rel_context -> (constr * constant array)
+val compute_projections : pinductive -> int -> Context.rel_context -> int array -> int array -> 
+  Context.rel_context -> 
+  (constant array * projection_body array)

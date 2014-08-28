@@ -1110,9 +1110,18 @@ let pattern_occs loccs_trm env sigma c =
 (* Used in several tactics. *)
 
 let check_privacy env ind =
-  if (fst (Inductive.lookup_mind_specif env (fst ind))).Declarations.mind_private = Some true then
-    errorlabstrm "" (str "case analysis on a private type")
+  let spec = Inductive.lookup_mind_specif env (fst ind) in
+  if Inductive.is_private spec then
+    errorlabstrm "" (str "case analysis on a private type.")
   else ind
+
+let check_not_primitive_record env ind =
+  let spec = Inductive.lookup_mind_specif env (fst ind) in
+    if Inductive.is_primitive_record spec then
+      errorlabstrm "" (str "case analysis on a primitive record type: " ++
+		       str "use projections or let instead.")
+    else ind
+
 (* put t as t'=(x1:A1)..(xn:An)B with B an inductive definition of name name
    return name, B and t' *)
 

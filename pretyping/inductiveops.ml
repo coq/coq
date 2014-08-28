@@ -331,6 +331,12 @@ let get_constructors env (ind,params) =
   Array.init (Array.length mip.mind_consnames)
     (fun j -> get_constructor (ind,mib,mip,params) (j+1))
 
+let get_projections env (ind,params) =
+  let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
+    match mib.mind_record with
+    | Some (projs, pbs) when Array.length projs > 0 -> Some projs
+    | _ -> None
+
 (* substitution in a signature *)
 
 let substnl_rel_context subst n sign =

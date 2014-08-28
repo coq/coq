@@ -53,6 +53,9 @@ val type_of_inductive_knowing_parameters :
 
 val elim_sorts : mind_specif -> sorts_family list
 
+val is_private : mind_specif -> bool
+val is_primitive_record : mind_specif -> bool
+
 (** Return type as quoted by the user *)
 
 val constrained_type_of_constructor : pconstructor -> mind_specif -> types constrained

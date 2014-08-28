@@ -219,13 +219,13 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
   let x = match name with Some n -> Name n | None -> Namegen.named_hd (Global.env()) r Anonymous in
   let fields = instantiate_possibly_recursive_type indu paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
-  let (_,kinds,sp_projs,_) =
+  let (_,_,kinds,sp_projs,_) =
     List.fold_left3
-      (fun (nfi,kinds,sp_projs,subst) coe (fi,optci,ti) impls ->
-	let (sp_projs,subst) =
+      (fun (nfi,i,kinds,sp_projs,subst) coe (fi,optci,ti) impls ->
+	let (sp_projs,i,subst) =
 	  match fi with
 	  | Anonymous ->
-	      (None::sp_projs,NoProjection fi::subst)
+	      (None::sp_projs,i,NoProjection fi::subst)
 	  | Name fid ->
             try
               let ccl = subst_projection fid subst ti in
@@ -247,8 +247,9 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
 	      let kn =
 	        try
 		  let makeprim =
-		    if !primitive_flag && optci = None then true
-		    else false
+		    if !primitive_flag && optci = None then 
+		      Some (fst indsp, i)
+		    else None
 		  in
 		  let cie = {
                     const_entry_body =
@@ -280,12 +281,12 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
 		  let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 		    applist (mkConstU (kn,u),proj_args) 
 	      in
-		(Some kn::sp_projs, Projection constr_fip::subst)
+		(Some kn::sp_projs, i+1, Projection constr_fip::subst)
             with NotDefinable why ->
 	      warning_or_error coe indsp why;
-	      (None::sp_projs,NoProjection fi::subst) in
-      (nfi-1,(fi, Option.is_empty optci)::kinds,sp_projs,subst))
-      (List.length fields,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
+	      (None::sp_projs,i,NoProjection fi::subst) in
+      (nfi-1,i,(fi, Option.is_empty optci)::kinds,sp_projs,subst))
+      (List.length fields,0,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
   in (kinds,sp_projs)
 
 let structure_signature ctx =
@@ -341,6 +342,13 @@ let declare_structure finite infer poly ctx id idbuild paramimpls params arity f
   let cstr = (rsp,1) in
   let kinds,sp_projs = declare_projections rsp ~kind ?name coers fieldimpls fields in
   let build = ConstructRef cstr in
+  let () = 
+    if !primitive_flag then
+      (* declare_mutual won't have tried to define the eliminations, we do it now that 
+	 the projections have been defined. *)
+      Indschemes.declare_default_schemes kn
+    else ()
+  in
   let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
   Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs);
   rsp
