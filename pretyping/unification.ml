@@ -1526,7 +1526,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
 
 let secondOrderAbstraction env evd flags typ (p, oplist) =
   (* Remove delta when looking for a subterm *)
-  let flags = { flags with modulo_delta = (fst flags.modulo_delta, Cpred.empty) } in
+  let flags = { flags with modulo_delta = empty_transparent_state } in
   let (evd',cllist) = w_unify_to_subterm_list env evd flags p oplist typ in
   let typp = Typing.meta_type evd' p in
   let evd',(pred,predtyp) = abstract_list_all env evd' typp typ cllist in

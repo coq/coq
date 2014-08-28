@@ -110,3 +110,13 @@ Goal exists n p:nat, (S n,S n) = (S p,S p) /\ p = n.
 do 2 eexists.
 Fail destruct (_, S _). (* Was succeeding at some time in trunk *)
 Show Proof.
+
+(* Avoid unnatural selection of a subterm larger than expected *)
+
+Goal let g := fun x:nat => x in g (S 0) = 0.
+intro.
+destruct S.
+(* Check that it is not the larger subterm "f (S 0)" which is
+   selected, as it was the case in 8.4 *)
+unfold g at 1.
+Abort.
