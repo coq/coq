@@ -102,7 +102,10 @@ let classify =
     (* Exceptions (from a previous version of this function).           *)
     mk_lookup_table_from_unicode_tables_for Symbol
       [
-        single 0x000B2;            (* Squared.                          *)
+        [(0x000B2, 0x000B3)];      (* Superscript 2-3.                  *)
+        single 0x000B9;            (* Superscript 1.                    *)
+        single 0x02070;            (* Superscript 0.                    *)
+        [(0x02074, 0x02079)];      (* Superscript 4-9.                  *)
         single 0x0002E;            (* Dot.                              *)
       ];
     mk_lookup_table_from_unicode_tables_for Letter
