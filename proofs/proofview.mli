@@ -140,9 +140,6 @@ val apply : Environ.env -> 'a tactic -> proofview -> 'a
 (* Unit of the tactic monad *)
 val tclUNIT : 'a -> 'a tactic
  
-(* Unit but checks for interrupts *) 
-val tclCHECKINTERRUPT : 'a -> 'a tactic
-
 (* Bind operation of the tactic monad *)
 val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
 
@@ -258,6 +255,9 @@ val tclIN_ENV : Environ.env -> 'a tactic -> 'a tactic
 
 (* [tclEFFECTS eff] add the effects [eff] to the current state. *)
 val tclEFFECTS : Declareops.side_effects -> unit tactic
+
+(* Checks for interrupts *)
+val tclCHECKINTERRUPT : unit tactic
 
 (* Shelves all the goals under focus. The goals are placed on the
    shelf for later use (or being solved by side-effects). *)

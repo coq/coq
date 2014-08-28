@@ -411,7 +411,7 @@ module New = struct
   let rec tclREPEAT0 t =
     tclINDEPENDENT begin
       tclIFCATCH t
-        (fun () -> tclCHECKINTERRUPT () <*> tclREPEAT0 t)
+        (fun () -> tclCHECKINTERRUPT <*> tclREPEAT0 t)
         (fun e -> catch_failerror e <*> tclUNIT ())
     end
   let tclREPEAT t =
