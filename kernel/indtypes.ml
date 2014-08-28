@@ -661,7 +661,7 @@ exception UndefinableExpansion
     build an expansion function.
     The term built is expecting to be substituted first by 
     a substitution of the form [params, x : ind params] *)
-let compute_projections ((kn, _ as ind), u as indsp) nparamargs params
+let compute_projections ((kn, _ as ind), u as indsp) n nparamargs params
     mind_consnrealdecls mind_consnrealargs ctx =
   let mp, dp, l = repr_mind kn in
   let rp = mkApp (mkIndU indsp, rel_vect 0 nparamargs) in
@@ -674,7 +674,7 @@ let compute_projections ((kn, _ as ind), u as indsp) nparamargs params
 	ci_pp_info = print_info }
   in
   let len = List.length ctx in
-  let x = Name (id_of_string "r") in
+  let x = Name (Id.of_string (Unicode.lowercase_first_char (Id.to_string n))) in
   let compat_body ccl i = 
     (* [ccl] is defined in context [params;x:rp] *)
     (* [ccl'] is defined in context [params;x:rp;x:rp] *)
@@ -786,7 +786,7 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
 	(try 
 	   let fields = List.firstn pkt.mind_consnrealdecls.(0) rctx in
 	   let kns, projs = 
-	     compute_projections ((kn, 0), u) nparamargs params
+	     compute_projections ((kn, 0), u) pkt.mind_typename nparamargs params
 	       pkt.mind_consnrealdecls pkt.mind_consnrealargs fields
 	   in Some (kns, projs)
 	 with UndefinableExpansion -> Some ([||], [||]))
