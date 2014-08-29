@@ -31,8 +31,8 @@ let interp = Interp.obj
 let register_interp0 = Interp.register0
 
 let generic_interp ist gl v =
-  let unpack wit v =
-    let (sigma, ans) = interp wit ist gl v in
+  let unpacker wit v =
+    let (sigma, ans) = interp wit ist gl (glb v) in
     (sigma, in_gen (topwit wit) ans)
   in
-  glb_unpack { glb_unpack = unpack; } v
+  unpack { unpacker; } v

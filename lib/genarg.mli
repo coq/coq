@@ -143,18 +143,16 @@ val has_type : 'co generic_argument -> ('a, 'co) abstract_argument_type -> bool
 
 (** {6 Destructors} *)
 
-type 'r raw_unpack =
-  { raw_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'a -> 'r }
+type ('a, 'b, 'c, 'l) cast
 
-type 'r glb_unpack =
-  { glb_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'b -> 'r }
+val raw : ('a, 'b, 'c, rlevel) cast -> 'a
+val glb : ('a, 'b, 'c, glevel) cast -> 'b
+val top : ('a, 'b, 'c, tlevel) cast -> 'c
 
-type 'r top_unpack =
-  { top_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'c -> 'r }
+type ('r, 'l) unpacker =
+  { unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> ('a, 'b, 'c, 'l) cast -> 'r }
 
-val raw_unpack : 'r raw_unpack -> rlevel generic_argument -> 'r
-val glb_unpack : 'r glb_unpack -> glevel generic_argument -> 'r
-val top_unpack : 'r top_unpack -> tlevel generic_argument -> 'r
+val unpack : ('r, 'l) unpacker -> 'l generic_argument -> 'r
 (** Existential-type destructors. *)
 
 (** {6 Manipulation of generic arguments}

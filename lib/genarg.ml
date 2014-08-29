@@ -159,18 +159,16 @@ type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
 type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
 
-type 'r raw_unpack =
-  { raw_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'a -> 'r }
+type ('a, 'b, 'c, 'l) cast = Obj.t
 
-type 'r glb_unpack =
-  { glb_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'b -> 'r }
+let raw = Obj.obj
+let glb = Obj.obj
+let top = Obj.obj
 
-type 'r top_unpack =
-  { top_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'c -> 'r }
+type ('r, 'l) unpacker =
+  { unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> ('a, 'b, 'c, 'l) cast -> 'r }
 
-let raw_unpack pack (t, obj) = pack.raw_unpack t (Obj.obj obj)
-let glb_unpack pack (t, obj) = pack.glb_unpack t (Obj.obj obj)
-let top_unpack pack (t, obj) = pack.top_unpack t (Obj.obj obj)
+let unpack pack (t, obj) = pack.unpacker t (Obj.obj obj)
 
 (** Creating args *)
 

@@ -39,11 +39,11 @@ let intern = Intern.obj
 let register_intern0 = Intern.register0
 
 let generic_intern ist v =
-  let unpack wit v =
-    let (ist, v) = intern wit ist v in
+  let unpacker wit v =
+    let (ist, v) = intern wit ist (raw v) in
     (ist, in_gen (glbwit wit) v)
   in
-  raw_unpack { raw_unpack = unpack; } v
+  unpack { unpacker; } v
 
 (** Substitution functions *)
 
@@ -51,7 +51,7 @@ let substitute = Subst.obj
 let register_subst0 = Subst.register0
 
 let generic_substitute subs v =
-  let unpack wit v = in_gen (glbwit wit) (substitute wit subs v) in
-  glb_unpack { glb_unpack = unpack; } v
+  let unpacker wit v = in_gen (glbwit wit) (substitute wit subs (glb v)) in
+  unpack { unpacker; } v
 
 let () = Hook.set Detyping.subst_genarg_hook generic_substitute
