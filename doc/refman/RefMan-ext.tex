@@ -922,36 +922,25 @@ section is closed.
 
 \section{Libraries and qualified names}
 
-\subsection{Names of libraries and files
+\subsection{Names of libraries
 \label{Libraries}
-\index{Libraries}
-\index{Physical paths}
-\index{Logical paths}}
-
-\paragraph{Libraries}
+\index{Libraries}}
 
 The theories developed in {\Coq} are stored in {\em library files}
 which are hierarchically classified into {\em libraries} and {\em
-sublibraries}. To express this hierarchy, library names are
+  sublibraries}. To express this hierarchy, library names are
 represented by qualified identifiers {\qualid}, i.e. as list of
 identifiers separated by dots (see Section~\ref{qualid}). For
 instance, the library file {\tt Mult} of the standard {\Coq} library
-{\tt Arith} has name {\tt Coq.Arith.Mult}. The identifier
-that starts the name of a library is called a {\em library root}.
-All library files of the standard library of {\Coq} have reserved root
-{\tt Coq} but library file names based on other roots can be obtained
-by using {\tt coqc} options {\tt -I} or {\tt -R} (see
-Section~\ref{coqoptions}). Also, when an interactive {\Coq} session
-starts, a library of root {\tt Top} is started, unless option {\tt
--top} or {\tt -notop} is set (see Section~\ref{coqoptions}).
-
-As library files are stored on the file system of the underlying
-operating system, a translation from file-system names to {\Coq} names
-is needed. In this translation, names in the file system are called
-{\em physical} paths while {\Coq} names are contrastingly called {\em
-logical} names. Logical names are mapped to physical paths using the
-commands {\tt Add LoadPath} or {\tt Add Rec LoadPath} (see
-Sections~\ref{AddLoadPath} and~\ref{AddRecLoadPath}).
+{\tt Arith} is named {\tt Coq.Arith.Mult}. The identifier that starts
+the name of a library is called a {\em library root}.  All library
+files of the standard library of {\Coq} have the reserved root {\tt Coq}
+but library file names based on other roots can be obtained by using
+{\Coq} commands ({\tt coqc}, {\tt coqtop}, {\tt coqdep}, \dots) options
+{\tt -Q} or {\tt -R} (see Section~\ref{coqoptions}). Also, when an
+interactive {\Coq} session starts, a library of root {\tt Top} is
+started, unless option {\tt -top} or {\tt -notop} is set (see
+Section~\ref{coqoptions}).
 
 \subsection{Qualified names
 \label{LongNames}
@@ -998,11 +987,6 @@ partially qualified name is mapped to the absolute name in {\Coq} name
 table. Definitions flagged as {\tt Local} are only accessible with their
 fully qualified name (see \ref{Definition}).
 
-A similar table exists for library file names. It is updated by the
-vernacular commands {\tt Add LoadPath} and {\tt Add Rec LoadPath} (or
-their equivalent as options of the {\Coq} executables, {\tt -I} and
-{\tt -R}).
-
 It may happen that a visible name is hidden by the short name or a
 qualified name of another construction. In this case, the name that
 has been hidden must be referred to using one more level of
@@ -1023,6 +1007,61 @@ Locate nat.
 
 \SeeAlso Command {\tt Locate} in Section~\ref{Locate} and {\tt Locate
 Library} in Section~\ref{Locate Library}.
+
+\subsection{Libraries and filesystem\label{loadpath}\index{Loadpath}
+\index{Physical paths} \index{Logical paths}}
+
+Please note that the questions described here have been subject to
+redesign in Coq v8.5. Former versions of Coq use the same terminology
+to describe slightly different things.
+
+Compiled files (\texttt{.vo} and \texttt{.vi}) store sub-libraries. In
+order to refer to them inside {\Coq}, a translation from file-system
+names to {\Coq} names is needed. In this translation, names in the
+file system are called {\em physical} paths while {\Coq} names are
+contrastingly called {\em logical} names.
+
+A logical name {\tt Lib} can associated to a physical path
+\textrm{\textsl{path}} using the command line option {\tt -Q}
+\textrm{\textsl{path}} {\tt Lib}. This associates a logical name to
+all the compiled files in the directory tree rooted at
+\textrm{\textsl{path}}. The name associated to the file {\tt
+  path/fOO/Bar/File.vo} is {\tt Lib.fOO.Bar.File}. Subdirectories
+corresponding to invalid {\Coq} identifiers are skipped, and, by
+convention, subdirectories named {\tt CVS} or {\tt \_darcs} are
+skipped too.
+
+{\Coq} commands also associate automatically a logical path to files
+in the repository trees rooted at the directory from where the command
+is launched, \textit{coqlib}\texttt{/user-contrib/}, the directories
+listed in the \verb:$COQPATH:, \verb:${XDG_DATA_HOME}/coq/: and
+\verb:${XDG_DATA_DIRS}/coq/: environment variables (see
+\url{http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html})
+with the same $/ \to .$ convention but no prefix.
+
+The command line option \texttt{-R} is a variant of \texttt{-Q} that
+associates to a physical path the same logical path as \texttt{-Q}, as
+well as all suffixes of that logical path. The option \texttt{-R}
+\textrm{\textsl{path}} \texttt{Lib} associates to
+\texttt{path/fOO/Bar/File.vo} the logical names
+\texttt{Lib.fOO.Bar.File}, \texttt{fOO.Bar.File}, \texttt{Bar.File}
+and \texttt{File}. If several files with identical base name are
+present in different subdirectories of a recursive loadpath, which of
+these files is found first may be system-dependent and explicit
+qualification is recommended.
+
+There are currently two loadpaths in {\Coq}. There is one loadpath
+where seeking {\Coq} files (extensions \texttt{.v} or \texttt{.vo} or
+\texttt{.vi}) whose management has been explained just above, and one
+where seeking Objective Caml files. The Objective Caml loadpath is
+managed using the option \texttt{-I path}. As in {\ocaml} world, there
+is nether a notion of logical name prefix nor a way to access files in
+subdirectories of \texttt{path}. See the command \texttt{Declare ML
+  Module} in Section~\ref{compiled} to understand the need of the
+Objective Caml loadpath.
+
+See Section~\ref{coqoptions} for a more general view over the {\Coq}
+command line options.
 
 %% \paragraph{The special case of remarks and facts}
 %% 

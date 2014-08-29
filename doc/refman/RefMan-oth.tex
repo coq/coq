@@ -708,12 +708,11 @@ This print the name of all \ocaml{} modules loaded with \texttt{Declare
   ML Module}. To know from where these module were loaded, the user
 should use the command \texttt{Locate File} (see Section~\ref{Locate File})
 
-\section[Loadpath]{Loadpath\label{loadpath}\index{Loadpath}}
+\section[Loadpath]{Loadpath}
 
-There are currently two loadpaths in \Coq. A loadpath where seeking
-{\Coq} files (extensions {\tt .v} or {\tt .vo} or {\tt .vi}) and one where
-seeking Objective Caml files. The default loadpath contains the
-directory ``\texttt{.}'' denoting the current directory and mapped to the empty logical path (see Section~\ref{LongNames}).
+Loadpaths are preferably managed using {\Coq} command line options
+(see Section~\ref{loadpath}) but there remains vernacular commands to
+manage them.
 
 \subsection[\tt Pwd.]{\tt Pwd.\comindex{Pwd}\label{Pwd}}
 This command displays the current working directory.
@@ -729,15 +728,9 @@ which can be any valid path.
 
 \subsection[\tt Add LoadPath {\str} as {\dirpath}.]{\tt Add LoadPath {\str} as {\dirpath}.\comindex{Add LoadPath}\label{AddLoadPath}}
 
-This command adds the physical directory {\str} to the current {\Coq}
-loadpath and maps it to the logical directory {\dirpath}, which means
-that every file \textrm{\textsl{dirname}}/\textrm{\textsl{basename.v}}
-physically lying in subdirectory {\str}/\textrm{\textsl{dirname}}
-becomes accessible in {\Coq} through absolute logical name
-{\dirpath}{\tt .}\textrm{\textsl{dirname}}{\tt
-.}\textrm{\textsl{basename}}.
-
-\Rem {\tt Add LoadPath} also adds {\str} to the current ML loadpath.
+This command is equivament to the command line option {\tt -Q {\dirpath}
+  {\str}}. It adds the physical directory {\str} to the current {\Coq}
+loadpath and maps it to the logical directory {\dirpath}.
 
 \begin{Variants}
 \item {\tt Add LoadPath {\str}.}\\
@@ -745,29 +738,9 @@ Performs as {\tt Add LoadPath {\str} as {\dirpath}} but for the empty directory 
 \end{Variants}
 
 \subsection[\tt Add Rec LoadPath {\str} as {\dirpath}.]{\tt Add Rec LoadPath {\str} as {\dirpath}.\comindex{Add Rec LoadPath}\label{AddRecLoadPath}}
-This command adds the physical directory {\str} and all its subdirectories to
-the current \Coq\ loadpath. The top directory {\str} is mapped to the
-logical directory {\dirpath} and any subdirectory {\textsl{pdir}} of it is
-mapped to logical name {\dirpath}{\tt .}\textsl{pdir} and
-recursively. Subdirectories corresponding to invalid {\Coq}
-identifiers are skipped, and, by convention, subdirectories named {\tt
-CVS} or {\tt \_darcs} are skipped too.
-
-Otherwise, said, {\tt Add Rec LoadPath {\str} as {\dirpath}} behaves
-as {\tt Add LoadPath {\str} as {\dirpath}} excepts that files lying in
-validly named subdirectories of {\str} need not be qualified to be
-found.
-
-In case of files with identical base name, files lying in most recently
-declared {\dirpath} are found first and explicit qualification is
-required to refer to the other files of same base name.
-
-If several files with identical base name are present in different
-subdirectories of a recursive loadpath declared via a single instance of
-{\tt Add Rec LoadPath}, which of these files is found first is
-system-dependent and explicit qualification is recommended.
-
-\Rem {\tt Add Rec LoadPath} also recursively adds {\str} to the current ML loadpath.
+This command is equivalent to the command line option {\tt -R {\dirpath}
+  {\str}}. It adds the physical directory {\str} and all its
+subdirectories to the current {\Coq} loadpath.
 
 \begin{Variants}
 \item {\tt Add Rec LoadPath {\str}.}\\
@@ -789,14 +762,10 @@ Works as {\tt Print LoadPath} but displays only the paths that extend the {\dirp
 This command adds the path {\str} to the current Objective Caml loadpath (see
 the command {\tt Declare ML Module} in the Section~\ref{compiled}).
 
-\Rem This command is implied by {\tt Add LoadPath {\str} as {\dirpath}}.
-
 \subsection[\tt Add Rec ML Path {\str}.]{\tt Add Rec ML Path {\str}.\comindex{Add Rec ML Path}}
 This command adds the directory {\str} and all its subdirectories 
 to the current Objective Caml loadpath (see
 the command {\tt Declare ML Module} in the Section~\ref{compiled}).
-
-\Rem This command is implied by {\tt Add Rec LoadPath {\str} as {\dirpath}}.
 
 \subsection[\tt Print ML Path {\str}.]{\tt Print ML Path {\str}.\comindex{Print ML Path}}
 This command displays the current Objective Caml loadpath.
