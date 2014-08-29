@@ -336,25 +336,43 @@ Qed.
 (* From 12612, descent in conjunctions is more powerful *)
 (* The following, which was failing badly in bug 1980, is now
    properly rejected, as descend in conjunctions builds an
-   ill-formed elimination from Prop to Type. *)
+   ill-formed elimination from Prop to Type.
+
+   Added Aug 2014: why it fails is now that trivial unification ?x = goal is
+   rejected by the descent in conjunctions to avoid surprising results. *)
 
 Goal True.
 Fail eapply ex_intro.
 exact I.
 Qed.
 
-(* The following, which were not accepted, are now accepted as
-    expected by descent in conjunctions *)
+Goal True.
+Fail eapply (ex_intro _).
+exact I.
+Qed.
+
+(* Note: the following succeed directly (i.e. w/o "exact I") since
+   Aug 2014 since the descent in conjunction does not use a "cut"
+   anymore: the iota-redex is contracted and we get rid of the
+   uninstantiated evars
+
+   Is it good or not? Maybe it does not matter so much.
 
 Goal True.
 eapply (ex_intro (fun _ => True) I).    
-exact I.
+exact I. (* Not needed since Aug 2014 *)
+Qed.
+
+Goal True.
+eapply (ex_intro (fun _ => True) I _).    
+exact I. (* Not needed since Aug 2014 *)
 Qed.
 
 Goal True.
 eapply (fun (A:Prop) (x:A) => conj I x).
-exact I.
+exact I. (* Not needed since Aug 2014 *)
 Qed.
+*)
 
 (* The following was not accepted from r12612 to r12657 *)
 

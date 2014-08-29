@@ -1109,8 +1109,10 @@ let make_projection env sigma params cstr sign elim i n c u =
       if
 	(* excludes dependent projection types *)
 	noccur_between 1 (n-i-1) t
-	(* excludes flexible projection types *)
+	(* to avoid surprising unifications, excludes flexible
+	projection types or lambda which will be instantiated by Meta/Evar *)
 	&& not (isEvar (fst (whd_betaiota_stack sigma t)))
+	&& not (isRel t && destRel t > n-i)
       then
         let t = lift (i+1-n) t in
 	let abselim = beta_applist (elim,params@[t;branch]) in
