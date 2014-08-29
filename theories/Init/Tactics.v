@@ -240,3 +240,59 @@ Tactic Notation "clear" "dependent" hyp(h) :=
 
 Tactic Notation "revert" "dependent" hyp(h) :=
  generalize dependent h.
+
+(** Apply a lemma under binders *)
+(** This tactic will run [tac] underneath the binders of [H] *)
+Ltac make_tac_under_binders_using_in tac using_tac H :=
+  let rec_tac := make_tac_under_binders_using_in tac using_tac in
+  match type of H with
+    | forall x : ?T, @?P x
+      => let ret := constr:(fun x' : T =>
+                              let Hx := H x' in
+                              $(let ret' := rec_tac Hx in
+                                exact ret')$) in
+         let ret' := (eval cbv zeta in ret) in
+         constr:(ret')
+    | _ => let ret := constr:($(let H' := fresh in
+                                pose H as H';
+                                tac H';
+                                [ exact H'
+                                | solve [ using_tac
+                                        | let G := match goal with |- ?G => constr:(G) end in
+                                          repeat match goal with H : _ |- _ => revert H end;
+                                          let G' := match goal with |- ?G => constr:(G) end in
+                                          fail 1
+                                               "Cannot use" using_tac "to solve side-condition goal" G "."
+                                               "Extended goal with context:" G' ].. ])$) in
+           let ret' := (eval cbv beta zeta in ret) in
+           constr:(ret')
+  end.
+
+(** Run [tac] on a hypothesis, underneath its binders *)
+Ltac do_tac_under_binders_using_in tac using_tac H :=
+  let H' := make_tac_under_binders_using_in tac using_tac H in
+  let H'' := fresh in
+  pose proof H' as H'';
+    clear H;
+    rename H'' into H.
+
+Tactic Notation "constrbinder" "apply" constr(lem) "in" constr(H) "using" tactic3(tac)
+  := make_tac_under_binders_using_in ltac:(fun H' => apply lem in H') tac H.
+Tactic Notation "constrbinder" "eapply" open_constr(lem) "in" constr(H) "using" tactic3(tac)
+  := constrbinder apply lem in H using tac.
+
+Tactic Notation "binder" "apply" constr(lem) "in" constr(H) "using" tactic3(tac)
+  := do_tac_under_binders_using_in ltac:(fun H' => apply lem in H') tac H.
+Tactic Notation "binder" "eapply" open_constr(lem) "in" constr(H) "using" tactic3(tac)
+  := binder apply lem in H using tac.
+
+(** [constrbinder apply lem in H] will [apply lem in H] underneath the
+    binders of [H], and return the resulting term.  [H] need not be a
+    hypothesis. *)
+Tactic Notation "constrbinder" "apply" constr(lem) "in" constr(H) := constrbinder apply lem in H using idtac.
+Tactic Notation "constrbinder" "eapply" open_constr(lem) "in" constr(H) := constrbinder eapply lem in H using idtac.
+
+(** [constrbinder apply lem in H] will [apply lem in H] underneath the
+    binders of [H], which must be a hypothesis. *)
+Tactic Notation "binder" "apply" constr(lem) "in" constr(H) := binder apply lem in H using idtac.
+Tactic Notation "binder" "eapply" open_constr(lem) "in" constr(H) := binder eapply lem in H using idtac.
