@@ -296,3 +296,26 @@ Tactic Notation "constrbinder" "eapply" open_constr(lem) "in" constr(H) := const
     binders of [H], which must be a hypothesis. *)
 Tactic Notation "binder" "apply" constr(lem) "in" constr(H) := binder apply lem in H using idtac.
 Tactic Notation "binder" "eapply" open_constr(lem) "in" constr(H) := binder eapply lem in H using idtac.
+
+(** Example of usage: *)
+Example ex_funext (Funext : Type) {fs : Funext}
+        (path_forall : forall (_ : Funext) A B (f g : forall x : A, B x), (forall x, f x = g x) -> f = g)
+        {A} f g
+        (H' : forall x y z w : A, f x y z w = g x y z w :> A)
+: f = g.
+Proof.
+  (** We need to apply [path_forall] under binders five times in [H'].  We use a different variant each time to demonstrate the various ways of using this tactic.  In a normal proof, you'd probably just do [do 5 binder apply (@path_forall _) in H'] or just [repeat binder apply (@path_forall _) in H']. *)
+  (** If we do [binder apply path_forall in H'], we are told that Coq can't infer the argument [A] to [path_forall].  Instead, we can [binder eapply] it, to tell Coq to defer inference and use an evar for now. *)
+  Fail binder apply (@path_forall _ _) in H'.
+  binder eapply (@path_forall _ _) in H'.
+  (** Alternatively, we can make [A] explicit.  But then we get an error about not being able to resolve the instance of [Funext].  We can either tell Coq to solve the side condition using the [assumption] tactic. *)
+  (* Fail binder apply @path_forall in H'.*)
+  binder apply @path_forall in H' using assumption.
+  binder apply @path_forall in H' using exact fs.
+  binder apply (@path_forall fs) in H'.
+  (** Now we have removed all arguments to [f] and [g] in [H']. *)
+  exact H'.
+  (** We [Abort], so that we don't get an extra constant floating around. *)
+Abort.
+
+(** N.B. [constrbinder apply] is like [binder apply], except that it constructs a new term and returns it, rather than applying a lemma in-place to a hypothesis.  It's primarily useful as plumbing for higher-level tactics. *)
