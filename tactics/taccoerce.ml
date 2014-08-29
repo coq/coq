@@ -64,7 +64,8 @@ let to_int v =
 
 let to_list v =
   let v = normalize v in
-  try Some (fold_list (fun v accu -> v :: accu) v [])
+  let list_unpacker wit l = List.map (fun v -> in_gen (topwit wit) v) (top l) in
+  try Some (list_unpack { list_unpacker } v)
   with Failure _ -> None
 
 end

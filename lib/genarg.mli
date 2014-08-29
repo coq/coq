@@ -160,39 +160,24 @@ val unpack : ('r, 'l) unpacker -> 'l generic_argument -> 'r
 Those functions fail if they are applied to an argument which has not the right
 dynamic type. *)
 
-val fold_list :
- ('a generic_argument -> 'c -> 'c) -> 'a generic_argument -> 'c -> 'c
+type ('r, 'l) list_unpacker =
+  { list_unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type ->
+    ('a list, 'b list, 'c list, 'l) cast -> 'r }
 
-val fold_opt :
- ('a generic_argument -> 'c) -> 'c -> 'a generic_argument -> 'c
+val list_unpack : ('r, 'l) list_unpacker -> 'l generic_argument -> 'r
 
-val fold_pair :
- ('a generic_argument -> 'a generic_argument -> 'c) ->
-      'a generic_argument -> 'c
+type ('r, 'l) opt_unpacker =
+  { opt_unpacker : 'a 'b 'c. ('a, 'b, 'c) genarg_type ->
+    ('a option, 'b option, 'c option, 'l) cast -> 'r }
 
-(** [app_list0] fails if applied to an argument not of tag [List0 t]
-    for some [t]; it's the responsability of the caller to ensure it *)
+val opt_unpack : ('r, 'l) opt_unpacker -> 'l generic_argument -> 'r
 
-val app_list : ('a generic_argument -> 'b generic_argument) ->
-'a generic_argument -> 'b generic_argument
+type ('r, 'l) pair_unpacker =
+  { pair_unpacker : 'a1 'a2 'b1 'b2 'c1 'c2.
+    ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
+    (('a1 * 'a2), ('b1 * 'b2), ('c1 * 'c2), 'l) cast -> 'r }
 
-val app_opt : ('a generic_argument -> 'b generic_argument) ->
-'a generic_argument -> 'b generic_argument
-
-val app_pair :
-  ('a generic_argument -> 'b generic_argument) ->
-      ('a generic_argument -> 'b generic_argument)
-   -> 'a generic_argument -> 'b generic_argument
-
-module Monadic (M:Monad.S) : sig
-
-  (** [Monadic.app_list f x] maps the monadic computation [f] on
-      elements of [x], provided [x] has the tag [List0 t] for some [t]. It
-      fails otherwise. *)
-  val app_list : ('a generic_argument -> 'b generic_argument M.t) ->
-    'a generic_argument -> 'b generic_argument M.t
-
-end
+val pair_unpack : ('r, 'l) pair_unpacker -> 'l generic_argument -> 'r
 
 (** {6 Type reification} *)
 

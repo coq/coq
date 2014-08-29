@@ -751,9 +751,31 @@ and intern_genarg ist x =
   | BindingsArgType ->
       in_gen (glbwit wit_bindings)
         (intern_bindings ist (out_gen (rawwit wit_bindings) x))
-  | ListArgType _ -> app_list (intern_genarg ist) x
-  | OptArgType _ -> app_opt (intern_genarg ist) x
-  | PairArgType _ -> app_pair (intern_genarg ist) (intern_genarg ist) x
+  | ListArgType _ ->
+      let list_unpacker wit l =
+        let map x =
+          let ans = intern_genarg ist (in_gen (rawwit wit) x) in
+          out_gen (glbwit wit) ans
+        in
+        in_gen (glbwit (wit_list wit)) (List.map map (raw l))
+      in
+      list_unpack { list_unpacker } x
+  | OptArgType _ ->
+      let opt_unpacker wit o = match raw o with
+      | None -> in_gen (glbwit (wit_opt wit)) None
+      | Some x ->
+        let s = out_gen (glbwit wit) (intern_genarg ist (in_gen (rawwit wit) x)) in
+        in_gen (glbwit (wit_opt wit)) (Some s)
+      in
+      opt_unpack { opt_unpacker } x
+  | PairArgType _ ->
+      let pair_unpacker wit1 wit2 o =
+        let p, q = raw o in
+        let p = out_gen (glbwit wit1) (intern_genarg ist (in_gen (rawwit wit1) p)) in
+        let q = out_gen (glbwit wit2) (intern_genarg ist (in_gen (rawwit wit2) q)) in
+        in_gen (glbwit (wit_pair wit1 wit2)) (p, q)
+      in
+      pair_unpack { pair_unpacker } x
   | ExtraArgType s ->
       snd (Genintern.generic_intern ist x)
 

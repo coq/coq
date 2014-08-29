@@ -1073,8 +1073,6 @@ end
 module GTac' = Monad_.Make(GTac)
 module GTacList = GTac'.List
 
-module GenargTac = Genarg.Monadic(struct include GTac module List = GTacList end)
-
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist (tac:glob_tactic_expr) : typed_generic_argument GTac.t =
   let value_interp ist = match tac with
@@ -1236,7 +1234,16 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
               let ans = List.map mk_ident (out_gen wit x) in
               GTac.return (in_gen (topwit (wit_list wit_genarg)) ans)
           | ListArgType t  ->
-              GenargTac.app_list (fun y -> f y) x
+              let open GTac in
+              let list_unpacker wit l =
+                let map x =
+                  f (in_gen (glbwit wit) x) >>= fun v ->
+                  GTac.return (out_gen (topwit wit) v)
+                in
+                GTacList.map map (glb l) >>= fun l ->
+                GTac.return (in_gen (topwit (wit_list wit)) l)
+              in
+              list_unpack { list_unpacker } x
           | ExtraArgType _ ->
               let (>>=) = GTac.bind in
               (** Special treatment of tactics *)
@@ -1629,9 +1636,30 @@ and interp_genarg ist env sigma concl gl x =
 	evdref := sigma;
 	v
     | ListArgType VarArgType -> interp_genarg_var_list ist env x
-    | ListArgType _ -> app_list interp_genarg x
-    | OptArgType _ -> app_opt interp_genarg x
-    | PairArgType _ -> app_pair interp_genarg interp_genarg x
+    | ListArgType _ ->
+      let list_unpacker wit l =
+        let map x =
+          out_gen (topwit wit) (interp_genarg (in_gen (glbwit wit) x))
+        in
+        in_gen (topwit (wit_list wit)) (List.map map (glb l))
+      in
+      list_unpack { list_unpacker } x
+    | OptArgType _ ->
+      let opt_unpacker wit o = match glb o with
+      | None -> in_gen (topwit (wit_opt wit)) None
+      | Some x ->
+        let x = out_gen (topwit wit) (interp_genarg (in_gen (glbwit wit) x)) in
+        in_gen (topwit (wit_opt wit)) (Some x)
+      in
+      opt_unpack { opt_unpacker } x
+    | PairArgType _ ->
+      let pair_unpacker wit1 wit2 o =
+        let (p, q) = glb o in
+        let p = out_gen (topwit wit1) (interp_genarg (in_gen (glbwit wit1) p)) in
+        let q = out_gen (topwit wit2) (interp_genarg (in_gen (glbwit wit2) q)) in
+        in_gen (topwit (wit_pair wit1 wit2)) (p, q)
+      in
+      pair_unpack { pair_unpacker } x
     | ExtraArgType s ->
         let (sigma,v) = Geninterp.generic_interp ist { Evd.it=gl;sigma=(!evdref) } x in
 	evdref:=sigma;

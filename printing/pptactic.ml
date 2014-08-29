@@ -164,15 +164,25 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
   | BindingsArgType ->
       pr_bindings_no_with prc prlc (out_gen (rawwit wit_bindings) x)
   | ListArgType _ ->
-      hov 0 (pr_sequence (pr_raw_generic prc prlc prtac prpat prref)
-	(fold_list (fun a l -> a::l) x []))
-  | OptArgType _ -> hov 0 (fold_opt (pr_raw_generic prc prlc prtac prpat prref) (mt()) x)
+      let list_unpacker wit l =
+        let map x = pr_raw_generic prc prlc prtac prpat prref (in_gen (rawwit wit) x) in
+        pr_sequence map (raw l)
+      in
+      hov 0 (list_unpack { list_unpacker } x)
+  | OptArgType _ ->
+      let opt_unpacker wit o = match raw o with
+      | None -> mt ()
+      | Some x -> pr_raw_generic prc prlc prtac prpat prref (in_gen (rawwit wit) x)
+      in
+      hov 0 (opt_unpack { opt_unpacker } x)
   | PairArgType _ ->
-      hov 0
-        (fold_pair
-	  (fun a b -> pr_sequence (pr_raw_generic prc prlc prtac prpat prref)
-            [a;b])
-	  x)
+      let pair_unpacker wit1 wit2 o =
+        let p, q = raw o in
+        let p = in_gen (rawwit wit1) p in
+        let q = in_gen (rawwit wit2) q in
+        pr_sequence (pr_raw_generic prc prlc prtac prpat prref) [p; q]
+      in
+      hov 0 (pair_unpack { pair_unpacker } x)
   | ExtraArgType s ->
       try pi1 (String.Map.find s !genarg_pprule) prc prlc prtac x
       with Not_found -> Genprint.generic_raw_print x
@@ -201,14 +211,25 @@ let rec pr_glb_generic prc prlc prtac prpat x =
   | BindingsArgType ->
       pr_bindings_no_with prc prlc (out_gen (glbwit wit_bindings) x)
   | ListArgType _ ->
-      hov 0 (pr_sequence (pr_glb_generic prc prlc prtac prpat)
-	(fold_list (fun a l -> a::l) x []))
-  | OptArgType _ -> hov 0 (fold_opt (pr_glb_generic prc prlc prtac prpat) (mt()) x)
+      let list_unpacker wit l =
+        let map x = pr_glb_generic prc prlc prtac prpat (in_gen (glbwit wit) x) in
+        pr_sequence map (glb l)
+      in
+      hov 0 (list_unpack { list_unpacker } x)
+  | OptArgType _ ->
+      let opt_unpacker wit o = match glb o with
+      | None -> mt ()
+      | Some x -> pr_glb_generic prc prlc prtac prpat (in_gen (glbwit wit) x)
+      in
+      hov 0 (opt_unpack { opt_unpacker } x)
   | PairArgType _ ->
-      hov 0
-        (fold_pair
-	  (fun a b -> pr_sequence (pr_glb_generic prc prlc prtac prpat) [a;b])
-	  x)
+      let pair_unpacker wit1 wit2 o =
+        let p, q = glb o in
+        let p = in_gen (glbwit wit1) p in
+        let q = in_gen (glbwit wit2) q in
+        pr_sequence (pr_glb_generic prc prlc prtac prpat) [p; q]
+      in
+      hov 0 (pair_unpack { pair_unpacker } x)
   | ExtraArgType s ->
       try pi2 (String.Map.find s !genarg_pprule) prc prlc prtac x
       with Not_found -> Genprint.generic_glb_print x
@@ -232,14 +253,25 @@ let rec pr_top_generic prc prlc prtac prpat x =
   | BindingsArgType ->
       pr_bindings_no_with prc prlc (out_gen (topwit wit_bindings) x).Evd.it
   | ListArgType _ ->
-      hov 0 (pr_sequence (pr_top_generic prc prlc prtac prpat)
-	(fold_list (fun a l -> a::l) x []))
-  | OptArgType _ -> hov 0 (fold_opt (pr_top_generic prc prlc prtac prpat) (mt()) x)
+      let list_unpacker wit l =
+        let map x = pr_top_generic prc prlc prtac prpat (in_gen (topwit wit) x) in
+        pr_sequence map (top l)
+      in
+      hov 0 (list_unpack { list_unpacker } x)
+  | OptArgType _ ->
+      let opt_unpacker wit o = match top o with
+      | None -> mt ()
+      | Some x -> pr_top_generic prc prlc prtac prpat (in_gen (topwit wit) x)
+      in
+      hov 0 (opt_unpack { opt_unpacker } x)
   | PairArgType _ ->
-      hov 0
-        (fold_pair (fun a b -> pr_sequence (pr_top_generic prc prlc prtac prpat)
-          [a;b])
-	  x)
+      let pair_unpacker wit1 wit2 o =
+        let p, q = top o in
+        let p = in_gen (topwit wit1) p in
+        let q = in_gen (topwit wit2) q in
+        pr_sequence (pr_top_generic prc prlc prtac prpat) [p; q]
+      in
+      hov 0 (pair_unpack { pair_unpacker } x)
   | ExtraArgType s ->
       try pi3 (String.Map.find s !genarg_pprule) prc prlc prtac x
       with Not_found -> Genprint.generic_top_print x
@@ -247,13 +279,8 @@ let rec pr_top_generic prc prlc prtac prpat x =
 let rec tacarg_using_rule_token pr_gen = function
   | Some s :: l, al -> str s :: tacarg_using_rule_token pr_gen (l,al)
   | None :: l, a :: al ->
-      let print_it =
-        match genarg_tag a with
-        | OptArgType _ -> fold_opt (fun _ -> true) false a
-        | _ -> true
-      in
       let r = tacarg_using_rule_token pr_gen (l,al) in
-      if print_it then pr_gen a :: r else r
+      pr_gen a :: r
   | [], [] -> []
   | _ -> failwith "Inconsistent arguments of extended tactic"
 
