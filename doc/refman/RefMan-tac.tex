@@ -3049,32 +3049,36 @@ The term \verb+forall n:nat, (plus (S n) (S n))+ is not reduced by {\tt hnf}.
 \Rem The $\delta$ rule only applies to transparent constants
 (see Section~\ref{Opaque} on transparency and opacity).
 
-\subsection{\tt simpl}
-\tacindex{simpl}
+\subsection{\texorpdfstring{\texttt{cbn}}{cbn} and \texorpdfstring{\texttt{simpl}}{simpl}}
+\tacindex{cbn} \tacindex{simpl}
 
-This tactic applies to any goal. The tactic {\tt simpl} first applies
-$\beta\iota$-reduction rule.  Then it expands transparent constants
-and tries to reduce {\tt T'} according, once more, to $\beta\iota$
-rules. But when the $\iota$ rule is not applicable then possible
-$\delta$-reductions are not applied.  For instance trying to use {\tt
-simpl} on {\tt (plus n O)=n} changes nothing.  Notice that only
-transparent constants whose name can be reused as such in the
-recursive calls are possibly unfolded. For instance a constant defined
-by {\tt plus' := plus} is possibly unfolded and reused in the
-recursive calls, but a constant such as {\tt succ := plus (S O)} is
-never unfolded.
+These tactics apply to any goal. They try to reduce a term to
+something still readable instead of fully normalizing it. They perform
+a sort of strong normalisation with two key differences:
+\begin{itemize}
+\item They unfold a constant if and only if it leads to an
+  $\iota$-reduction, i.e. reducing a match or unfold a fixpoint.
+\item While reducing (co)fixpoints, the tactics use the name of the
+  constant the (co)fixpoint comes from instead of the (co)fixpoint
+  definition in recursive calls.
+\end{itemize}
 
-The behavior of {\tt simpl} can be tuned using the {\tt Arguments} vernacular
-command as follows:
-\comindex{Arguments}
+The \texttt{cbn} tactic claims to be a more principled, faster and more
+predictable replacement for \texttt{simpl}.
+
+The \texttt{cbn} tactic accepts the same flags as \texttt{cbv} and
+\texttt{lazy}.  The behavior of both \texttt{simpl} and \texttt{cbn}
+can be tuned using the \texttt{Arguments} vernacular command as
+follows: \comindex{Arguments}
 \begin{itemize}
 \item
-A constant can be marked to be never unfolded by {\tt simpl}:
+A constant can be marked to be never unfolded by \texttt{cbn} or
+\texttt{simpl}:
 \begin{coq_example*}
 Arguments minus x y : simpl never.
 \end{coq_example*}
-After that command an expression like {\tt (minus (S x) y)} is left untouched by
-the {\tt simpl} tactic.
+After that command an expression like \texttt{(minus (S x) y)} is left
+untouched by the tactics \texttt{cbn} and \texttt{simpl}.
 \item
 A constant can be marked to be unfolded only if applied to enough arguments.
 The number of arguments required can be specified using
@@ -3088,7 +3092,7 @@ Arguments fcomp {A B C} f g x /.
 After that command the expression {\tt (f \verb+\+o g)} is left untouched by
 {\tt simpl} while {\tt ((f \verb+\+o g) t)} is reduced to {\tt (f (g t))}.
 The same mechanism can be used to make a constant volatile, i.e. always
-unfolded by {\tt simpl}.
+unfolded.
 \begin{coq_example*}
 Definition volatile := fun x : nat => x.
 Arguments volatile / x.
@@ -3114,8 +3118,31 @@ expression {\tt (minus (S (S x)) (S y))} is simplified to
 {\tt (minus (S x) y)} even if an extra simplification is possible.
 \end{itemize}
 
+In detail, the tactic \texttt{simpl} first applies
+$\beta\iota$-reduction.  Then, it expands transparent constants and
+tries to reduce further using $\beta\iota$-reduction. But, when no
+$\iota$ rule is applied after unfolding then $\delta$-reductions are
+not applied. For instance trying to use \texttt{simpl} on
+\texttt{(plus n O)=n} changes nothing.
+
+Notice that only transparent constants whose name can be reused in the
+recursive calls are possibly unfolded by \texttt{simpl}. For instance
+a constant defined by \texttt{plus' := plus} is possibly unfolded and
+reused in the recursive calls, but a constant such as \texttt{succ :=
+  plus (S O)} is never unfolded. This is the main difference between
+\texttt{simpl} and \texttt{cbn}. The tactic \texttt{cbn} reduces
+whenever it will be able to reuse it or not: \texttt{succ t} is
+reduced to \texttt{S t}.
+
 \tacindex{simpl \dots\ in}
 \begin{Variants}
+\item {\tt cbn [\qualid$_1$\ldots\qualid$_k$]}\\
+      {\tt cbn -[\qualid$_1$\ldots\qualid$_k$]}
+
+  These are respectively synonyms of {\tt cbn beta delta
+  [\qualid$_1$\ldots\qualid$_k$] iota zeta} and {\tt cbn beta delta
+  -[\qualid$_1$\ldots\qualid$_k$] iota zeta} (see \ref{vmcompute}).
+
 \item {\tt simpl {\term}}
 
   This applies {\tt simpl} only to the occurrences of {\term} in the
