@@ -1311,26 +1311,6 @@ let iter_fail f a =
 (* make_abstraction: a variant of w_unify_to_subterm which works on
    contexts, with evars, and possibly with occurrences *)
 
-let out_arg = function
-  | Misctypes.ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable")
-  | Misctypes.ArgArg x -> x
-
-let occurrences_of_hyp id cls =
-  let rec hyp_occ = function
-      [] -> None
-    | ((occs,id'),hl)::_ when Id.equal id id' ->
-        Some (occurrences_map (List.map out_arg) occs, hl)
-    | _::l -> hyp_occ l in
-  match cls.onhyps with
-      None -> Some (AllOccurrences,InHyp)
-    | Some l -> hyp_occ l
-
-let occurrences_of_goal cls =
-  if cls.concl_occs == NoOccurrences then None
-  else Some (occurrences_map (List.map out_arg) cls.concl_occs)
-
-let in_every_hyp cls = Option.is_empty cls.onhyps
-
 let indirectly_dependent c d decls =
   not (isVar c) &&
     (* This test is not needed if the original term is a variable, but
@@ -1432,7 +1412,7 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
   let mkvarid () = mkVar id in
   let compute_dependency _ (hyp,_,_ as d) depdecls =
     match occurrences_of_hyp hyp occs with
-    | None ->
+    | NoOccurrences, InHyp ->
         if indirectly_dependent c d depdecls then
           (* Told explicitly not to abstract over [d], but it is dependent *)
           let id' = indirect_dependency d depdecls in
@@ -1441,7 +1421,7 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
             ++ str ".")
         else
           depdecls
-    | Some ((AllOccurrences, InHyp) as occ) ->
+    | (AllOccurrences, InHyp) as occ ->
         let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
         if Context.eq_named_declaration d newdecl
            && not (indirectly_dependent c d depdecls)
@@ -1451,14 +1431,13 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
           else depdecls
         else
           newdecl :: depdecls
-    | Some occ ->
+    | occ ->
         replace_term_occ_decl_modulo occ test mkvarid d :: depdecls in
   try
     let depdecls = fold_named_context compute_dependency env ~init:[] in
     let ccl = match occurrences_of_goal occs with
-      | None -> concl
-      | Some occ ->
-          replace_term_occ_modulo occ test mkvarid concl
+      | NoOccurrences -> concl
+      | occ -> replace_term_occ_modulo occ test mkvarid concl
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (pi1(List.last depdecls)) in

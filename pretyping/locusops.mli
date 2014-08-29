@@ -35,3 +35,10 @@ val is_nowhere : 'a clause_expr -> bool
 
 val simple_clause_of : (unit -> Id.t list) -> clause -> simple_clause
 val concrete_clause_of : (unit -> Id.t list) -> clause -> concrete_clause
+
+(** Miscellaneous functions *)
+
+val occurrences_of_hyp : Id.t -> Id.t clause_expr ->
+  occurrences * hyp_location_flag
+val occurrences_of_goal : 'a clause_expr -> occurrences
+val in_every_hyp : 'a clause_expr -> bool
