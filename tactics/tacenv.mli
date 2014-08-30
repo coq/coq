@@ -33,8 +33,14 @@ val register_atomic_ltac : Id.t -> glob_tactic_expr -> unit
 val interp_atomic_ltac : Id.t -> glob_tactic_expr
 (** Find a Coq built-in tactic by name. Raise [Not_found] if it is absent. *)
 
-val register_ltac :
-  Vernacexpr.locality_flag -> bool -> (Libnames.reference * bool * raw_tactic_expr) list -> unit
+val register_ltac : bool -> Id.t -> glob_tactic_expr -> unit
+(** Register a new Ltac with the given name and body. If the boolean flag is set
+    to true, then this is a local definition. It also puts the Ltac name in the
+    nametab, so that it can be used unqualified. *)
+
+val redefine_ltac : bool -> KerName.t -> glob_tactic_expr -> unit
+(** Replace a Ltac with the given name and body. If the boolean flag is set
+    to true, then this is a local redefinition. *)
 
 val interp_ltac : KerName.t -> glob_tactic_expr
 (** Find a user-defined tactic by name. Raise [Not_found] if it is absent. *)

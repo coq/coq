@@ -201,10 +201,10 @@ let declare_tactic loc s c cl = match cl with
       the ML tactic retrieves its arguments in the [ist] environment instead.
       This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
   let body = <:expr< Tacexpr.TacFun ($vars$, Tacexpr.TacML ($dloc$, $se$, [])) >> in
-  let name = <:expr< Libnames.Ident($dloc$, Names.Id.of_string $name$) >> in
+  let name = <:expr< Names.Id.of_string $name$ >> in
   declare_str_items loc
     [ <:str_item< do {
-      let obj () = Tacenv.register_ltac False False [($name$, False, $body$)] in
+      let obj () = Tacenv.register_ltac False $name$ $body$ in
       try do {
         Tacenv.register_ml_tactic $se$ $tac$;
         Mltop.declare_cache_obj obj $plugin_name$; }

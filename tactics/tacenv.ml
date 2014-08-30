@@ -110,18 +110,6 @@ let register_atomic_ltac id tac =
 
 let interp_atomic_ltac id = Id.Map.find id !atomic_mactab
 
-let is_primitive_ltac_ident id =
-  try
-    match Pcoq.parse_string Pcoq.Tactic.tactic id with
-     | Tacexpr.TacArg _ -> false
-     | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
-  with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
-
-let is_atomic_kn kn =
-  let (_,_,l) = repr_kn kn in
-  (Id.Map.mem (Label.to_id l) !atomic_mactab)
-  || (is_primitive_ltac_ident (Label.to_string l))
-
 (***************************************************************************)
 (* Tactic registration *)
 
@@ -191,60 +179,11 @@ let inMD : bool * (tacdef_kind * glob_tactic_expr) -> obj =
      subst_function = subst_md;
      classify_function = classify_md}
 
-(* Adds a definition for tactics in the table *)
-let make_absolute_name ident repl =
-  let loc = loc_of_reference ident in
-  if repl then
-    let kn =
-      try Nametab.locate_tactic (snd (qualid_of_reference ident))
-      with Not_found ->
-        Errors.user_err_loc (loc, "",
-                    str "There is no Ltac named " ++ pr_reference ident ++ str ".")
-    in
-    UpdateTac kn
-  else
-    let id = Constrexpr_ops.coerce_reference_to_id ident in
-    let kn = Lib.make_kn id in
-    let () = if KNmap.mem kn !mactab then
-      Errors.user_err_loc (loc, "",
-        str "There is already an Ltac named " ++ pr_reference ident ++ str".")
-    in
-    let () = if is_atomic_kn kn then
-      msg_warning (str "The Ltac name " ++ pr_reference ident ++
-        str " may be unusable because of a conflict with a notation.")
-    in
-    NewTac id
+let register_ltac local id tac =
+  ignore (Lib.add_leaf id (inMD (local, (NewTac id, tac))))
 
-let register_ltac local isrec tacl =
-  let map (ident, local, body) =
-    let name = make_absolute_name ident local in
-    (name, body)
-  in
-  let rfun = List.map map tacl in
-  let ltacrecvars =
-    let fold accu (op, _) = match op with
-    | UpdateTac _ -> accu
-    | NewTac id -> Id.Map.add id (Lib.make_kn id) accu
-    in
-    if isrec then List.fold_left fold Id.Map.empty rfun
-    else Id.Map.empty
-  in
-  let ist = { (Tacintern.make_empty_glob_sign ()) with Genintern.ltacrecvars; } in
-  let map (name, body) =
-    let body = Flags.with_option Tacintern.strict_check (Tacintern.intern_tactic_or_tacarg ist) body in
-    (name, body)
-  in
-  let defs = List.map map rfun in
-  let iter def = match def with
-  | NewTac id, _ ->
-    let _ = Lib.add_leaf id (inMD (local, def)) in
-    Flags.if_verbose msg_info (Nameops.pr_id id ++ str " is defined")
-  | UpdateTac kn, _ ->
-    let _ = Lib.add_anonymous_leaf (inMD (local, def)) in
-    let name = Nametab.shortest_qualid_of_tactic kn in
-    Flags.if_verbose msg_info (Libnames.pr_qualid name ++ str " is redefined")
-  in
-  List.iter iter defs
+let redefine_ltac local kn tac =
+  Lib.add_anonymous_leaf (inMD (local, (UpdateTac kn, tac)))
 
 let () =
   Hook.set Tacintern.interp_ltac_hook interp_ltac;

@@ -887,9 +887,77 @@ let vernac_restore_state file =
 (************)
 (* Commands *)
 
+type tacdef_kind =
+  | NewTac of Id.t
+  | UpdateTac of Nametab.ltac_constant
+
+let is_defined_tac kn =
+  try ignore (Tacenv.interp_ltac kn); true with Not_found -> false
+
+let make_absolute_name ident repl =
+  let loc = loc_of_reference ident in
+  if repl then
+    let kn =
+      try Nametab.locate_tactic (snd (qualid_of_reference ident))
+      with Not_found ->
+        Errors.user_err_loc (loc, "",
+                    str "There is no Ltac named " ++ pr_reference ident ++ str ".")
+    in
+    UpdateTac kn
+  else
+    let id = Constrexpr_ops.coerce_reference_to_id ident in
+    let kn = Lib.make_kn id in
+    let () = if is_defined_tac kn then
+      Errors.user_err_loc (loc, "",
+        str "There is already an Ltac named " ++ pr_reference ident ++ str".")
+    in
+    let is_primitive =
+      try
+        match Pcoq.parse_string Pcoq.Tactic.tactic (Id.to_string id) with
+        | Tacexpr.TacArg _ -> false
+        | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
+      with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
+    in
+    let () = if is_primitive then
+      msg_warning (str "The Ltac name " ++ pr_reference ident ++
+        str " may be unusable because of a conflict with a notation.")
+    in
+    NewTac id
+
+let register_ltac local isrec tacl =
+  let map (ident, repl, body) =
+    let name = make_absolute_name ident repl in
+    (name, body)
+  in
+  let rfun = List.map map tacl in
+  let ltacrecvars =
+    let fold accu (op, _) = match op with
+    | UpdateTac _ -> accu
+    | NewTac id -> Id.Map.add id (Lib.make_kn id) accu
+    in
+    if isrec then List.fold_left fold Id.Map.empty rfun
+    else Id.Map.empty
+  in
+  let ist = { (Tacintern.make_empty_glob_sign ()) with Genintern.ltacrecvars; } in
+  let map (name, body) =
+    let body = Flags.with_option Tacintern.strict_check (Tacintern.intern_tactic_or_tacarg ist) body in
+    (name, body)
+  in
+  let defs = List.map map rfun in
+  let iter (def, tac) = match def with
+  | NewTac id ->
+    Tacenv.register_ltac local id tac;
+    Flags.if_verbose msg_info (Nameops.pr_id id ++ str " is defined")
+  | UpdateTac kn ->
+    Tacenv.redefine_ltac local kn tac;
+    let name = Nametab.shortest_qualid_of_tactic kn in
+    Flags.if_verbose msg_info (Libnames.pr_qualid name ++ str " is redefined")
+  in
+  List.iter iter defs
+
 let vernac_declare_tactic_definition locality (x,def) =
   let local = make_module_locality locality in
-  Tacenv.register_ltac local x def
+  register_ltac local x def
 
 let vernac_create_hintdb locality id b =
   let local = make_module_locality locality in
