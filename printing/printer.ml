@@ -778,7 +778,7 @@ let print_mutual_inductive env mind mib =
     str (if mib.mind_finite then "Inductive " else "CoInductive ") ++
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
       (print_one_inductive env mib) inds ++
-      pr_universe_ctx mib.mind_universes)
+      pr_universe_ctx (Univ.instantiate_univ_context mib.mind_universes))
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -820,7 +820,7 @@ let print_record env mind mib =
         (fun (id,b,c) ->
 	  pr_id id ++ str (if b then " : " else " := ") ++
 	  pr_lconstr_env envpar c) fields) ++ str" }" ++
-      pr_universe_ctx mib.mind_universes)
+      pr_universe_ctx (Univ.instantiate_univ_context mib.mind_universes))
 
 let pr_mutual_inductive_body env mind mib =
   if mib.mind_record <> None && not !Flags.raw_print then

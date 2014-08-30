@@ -374,6 +374,7 @@ val is_empty_level_subst : universe_level_subst -> bool
 val subst_univs_level_level : universe_level_subst -> universe_level -> universe_level
 val subst_univs_level_universe : universe_level_subst -> universe -> universe
 val subst_univs_level_constraints : universe_level_subst -> constraints -> constraints
+val subst_univs_level_instance : universe_level_subst -> universe_instance -> universe_instance
 
 (** Level to universe substitutions. *)
 

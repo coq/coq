@@ -240,64 +240,60 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
 	  match fi with
 	  | Anonymous ->
 	      (None::sp_projs,i,NoProjection fi::subst)
-	  | Name fid ->
-            try
-              let ccl = subst_projection fid subst ti in
-	      let body = match optci with
-              | Some ci -> subst_projection fid subst ci
-              | None ->
-	        (* [ccl] is defined in context [params;x:rp] *)
-		(* [ccl'] is defined in context [params;x:rp;x:rp] *)
-		let ccl' = liftn 1 2 ccl in
-		let p = mkLambda (x, lift 1 rp, ccl') in
-		let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
-		let ci = Inductiveops.make_case_info env indsp LetStyle in
-		  mkCase (ci, p, mkRel 1, [|branch|]) 
-	      in
-	      let proj =
-	        it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
-              let projtyp =
-                it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
-	      let kn =
+	  | Name fid -> try
+	    let kn, term = 
+	      if optci = None && primitive then 
+		  (** Already defined in the kernel silently *)
+		let kn = destConstRef (Nametab.locate (Libnames.qualid_of_ident fid)) in
+		  Declare.definition_message fid;
+		  kn, mkProj (kn,mkRel 1)
+	      else
+		let ccl = subst_projection fid subst ti in
+		let body = match optci with
+		  | Some ci -> subst_projection fid subst ci
+		  | None ->
+	            (* [ccl] is defined in context [params;x:rp] *)
+		    (* [ccl'] is defined in context [params;x:rp;x:rp] *)
+		    let ccl' = liftn 1 2 ccl in
+		    let p = mkLambda (x, lift 1 rp, ccl') in
+		    let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
+		    let ci = Inductiveops.make_case_info env indsp LetStyle in
+		      mkCase (ci, p, mkRel 1, [|branch|]) 
+		in
+		let proj =
+	          it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
+		let projtyp =
+                  it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
 	        try
-		  let makeprim =
-		    if primitive && optci = None then 
-		      Some (fst indsp, i)
-		    else None
-		  in
-		  let cie = {
-                    const_entry_body =
-                      Future.from_val (Term_typing.mk_pure_proof proj);
-                    const_entry_secctx = None;
-                    const_entry_type = Some projtyp;
+		  let entry = {
+		    const_entry_body =
+		      Future.from_val (Term_typing.mk_pure_proof proj);
+		    const_entry_secctx = None;
+		    const_entry_type = Some projtyp;
 		    const_entry_polymorphic = poly;
 		    const_entry_universes = ctx;
-		    const_entry_proj = makeprim;
-                    const_entry_opaque = false;
-                    const_entry_inline_code = false;
-                    const_entry_feedback = None;
-                  } in
-		  let k = (DefinitionEntry cie,IsDefinition kind) in
+		    const_entry_opaque = false;
+		    const_entry_inline_code = false;
+		    const_entry_feedback = None } in
+		  let k = (DefinitionEntry entry,IsDefinition kind) in
 		  let kn = declare_constant ~internal:KernelSilent fid k in
-		  Declare.definition_message fid;
-		  kn
+		  let constr_fip =
+		    let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
+		      applist (mkConstU (kn,u),proj_args) 
+		  in
+		    Declare.definition_message fid;
+		    kn, constr_fip
                 with Type_errors.TypeError (ctx,te) ->
-                  raise (NotDefinable (BadTypedProj (fid,ctx,te))) in
-	      let refi = ConstRef kn in
-	      Impargs.maybe_declare_manual_implicits false refi impls;
-	      if coe then begin
-	        let cl = Class.class_of_global (IndRef indsp) in
+                  raise (NotDefinable (BadTypedProj (fid,ctx,te))) 
+	    in
+	    let refi = ConstRef kn in
+	    Impargs.maybe_declare_manual_implicits false refi impls;
+	    if coe then begin
+	      let cl = Class.class_of_global (IndRef indsp) in
 	        Class.try_add_new_coercion_with_source refi ~local:false poly ~source:cl
-	      end;
-	      let constr_fip =
-		if primitive then mkProj (kn,mkRel 1)
-		else
-		  let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
-		    applist (mkConstU (kn,u),proj_args) 
-	      in
-	      let i = if Option.is_empty optci then i+1 else i in
-		(Some kn::sp_projs, i,
-		  Projection constr_fip::subst)
+	    end;
+	    let i = if Option.is_empty optci then i+1 else i in
+	      (Some kn::sp_projs, i, Projection term::subst)
             with NotDefinable why ->
 	      warning_or_error coe indsp why;
 	      (None::sp_projs,i,NoProjection fi::subst) in
@@ -358,13 +354,6 @@ let declare_structure finite infer poly ctx id idbuild paramimpls params arity f
   let cstr = (rsp,1) in
   let kinds,sp_projs = declare_projections rsp ~kind ?name coers fieldimpls fields in
   let build = ConstructRef cstr in
-  let () = 
-    if !primitive_flag then
-      (* declare_mutual won't have tried to define the eliminations, we do it now that 
-	 the projections have been defined. *)
-      Indschemes.declare_default_schemes kn
-    else ()
-  in
   let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
   Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs);
   rsp

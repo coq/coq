@@ -1937,6 +1937,11 @@ let subst_univs_level_universe subst u =
   let u' = Universe.smartmap f u in
     if u == u' then u
     else Universe.sort u'
+
+let subst_univs_level_instance subst i =
+  let i' = Instance.subst_fn (subst_univs_level_level subst) i in
+    if i == i' then i
+    else i'
 	
 let subst_univs_level_constraint subst (u,d,v) =
   let u' = subst_univs_level_level subst u 

@@ -120,7 +120,6 @@ let define id internal ctx c t =
       { const_entry_body = c;
         const_entry_secctx = None;
         const_entry_type = t;
-	const_entry_proj = None;
 	const_entry_polymorphic = true;
 	const_entry_universes = Evd.universe_context ctx;
         const_entry_opaque = false;

@@ -316,8 +316,7 @@ let close_proof ?feedback_id ~now fpl =
 	  const_entry_inline_code = false;
 	  const_entry_opaque = true;
 	  const_entry_universes = univs;
-	  const_entry_polymorphic = poly;
-	  const_entry_proj = None})
+	  const_entry_polymorphic = poly})
       fpl initial_goals in
   { id = pid; entries = entries; persistence = strength; universes = universes },
   Ephemeron.get terminator

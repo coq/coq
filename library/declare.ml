@@ -199,7 +199,6 @@ let definition_entry ?(opaque=false) ?(inline=false) ?types
   { const_entry_body = Future.from_val ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
-    const_entry_proj = None;
     const_entry_polymorphic = poly;
     const_entry_universes = univs;
     const_entry_opaque = opaque;
@@ -244,7 +243,6 @@ let declare_sideff env fix_exn se =
         const_entry_feedback = None;
 	const_entry_polymorphic = cb.const_polymorphic;
 	const_entry_universes = univs;
-	const_entry_proj = None;
     });
     cst_hyps = [] ;
     cst_kind =  Decl_kinds.IsDefinition Decl_kinds.Definition;
@@ -391,6 +389,19 @@ let inInductive : inductive_obj -> obj =
     subst_function = ident_subst_function;
     discharge_function = discharge_inductive }
 
+let declare_projections mind =
+  let spec,_ = Inductive.lookup_mind_specif (Global.env ()) (mind,0) in
+    match spec.mind_record with
+    | Some (kns, pjs) -> 
+      Array.iteri (fun i kn -> 
+	let id = Label.to_id (Constant.label kn) in
+	let entry = {proj_entry_ind = mind; proj_entry_arg = i} in
+	let kn' = declare_constant id (ProjectionEntry entry,
+				       IsDefinition StructureComponent) 
+	in
+	  assert(eq_constant kn kn')) kns
+    | None -> ()
+
 (* for initial declaration *)
 let declare_mind isrecord mie =
   let id = match mie.mind_entry_inds with
@@ -398,6 +409,7 @@ let declare_mind isrecord mie =
     | [] -> anomaly (Pp.str "cannot declare an empty list of inductives") in
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   let mind = Global.mind_of_delta_kn kn in
+  declare_projections mind;
   declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
   if_xml (Hook.get f_xml_declare_inductive) (isrecord,oname);

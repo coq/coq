@@ -782,7 +782,11 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
     | Some true when pkt.mind_kelim == all_sorts && Array.length pkt.mind_consnames == 1 ->
       (** The elimination criterion ensures that all projections can be defined. *)
       let rctx, _ = decompose_prod_assum pkt.mind_nf_lc.(0) in
-      let u = if p then Univ.UContext.instance ctx else Univ.Instance.empty in
+      let u = 
+	if p then 
+	  subst_univs_level_instance subst (Univ.UContext.instance ctx)
+	else Univ.Instance.empty 
+      in
 	(try 
 	   let fields = List.firstn pkt.mind_consnrealdecls.(0) rctx in
 	   let kns, projs = 

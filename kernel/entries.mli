@@ -57,14 +57,13 @@ type const_entry_body = proof_output Future.computation
 
 type definition_entry = {
   const_entry_body   : const_entry_body;
-  (* List of sectoin variables *)
+  (* List of section variables *)
   const_entry_secctx : Context.section_context option;
   (* State id on which the completion of type checking is reported *)
   const_entry_feedback : Stateid.t option;
   const_entry_type        : types option;
   const_entry_polymorphic : bool;
   const_entry_universes   : Univ.universe_context;
-  const_entry_proj        : (mutual_inductive * int) option;
   const_entry_opaque      : bool;
   const_entry_inline_code : bool }
 
@@ -73,9 +72,14 @@ type inline = int option (* inlining level, None for no inlining *)
 type parameter_entry = 
     Context.section_context option * bool * types Univ.in_universe_context * inline 
 
+type projection_entry = {
+  proj_entry_ind : mutual_inductive;
+  proj_entry_arg : int }
+
 type constant_entry =
   | DefinitionEntry of definition_entry
   | ParameterEntry of parameter_entry
+  | ProjectionEntry of projection_entry
 
 (** {6 Modules } *)
 

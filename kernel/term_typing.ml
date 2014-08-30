@@ -122,6 +122,7 @@ let infer_declaration env kn dcl =
       let c = Typeops.assumption_of_judgment env j in
       let t = hcons_constr (Vars.subst_univs_level_constr usubst c) in
 	Undef nl, RegularArity t, None, poly, univs, false, ctx
+
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
 		       const_entry_polymorphic = false} as c) ->
@@ -143,6 +144,7 @@ let infer_declaration env kn dcl =
       def, RegularArity typ, None, c.const_entry_polymorphic, 
 	c.const_entry_universes,
 	c.const_entry_inline_code, c.const_entry_secctx
+
   | DefinitionEntry c ->
       let env = push_context c.const_entry_universes env in
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
@@ -152,34 +154,30 @@ let infer_declaration env kn dcl =
       let body = handle_side_effects env body side_eff in
       let abstract = c.const_entry_polymorphic && not (Option.is_empty kn) in
       let usubst, univs = Univ.abstract_universes abstract c.const_entry_universes in
-      let def, typ, proj = 
-	match c.const_entry_proj with
-	| Some (ind, i) -> (* Bind c to a checked primitive projection *)
-	  let mib, _ = Inductive.lookup_mind_specif env (ind,0) in
-	  let kn, pb = 
-	    match mib.mind_record with
-	    | Some (kns, pbs) -> 
-	      if i < Array.length pbs then
-		kns.(i), pbs.(i)
-	      else assert false
-	    | None -> assert false
-	  in
-	  let term = Vars.subst_univs_level_constr usubst (fst pb.proj_eta) in
-	  let typ = Vars.subst_univs_level_constr usubst (snd pb.proj_eta) in
-	    Def (Mod_subst.from_val (hcons_constr term)), RegularArity typ, Some pb 
-	| None ->
-	  let j = infer env body in
-	  let typ = constrain_type env j c.const_entry_polymorphic usubst (map_option_typ typ) in
-	  let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
-	  let def = 
-	    if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
-	    else Def (Mod_subst.from_val def) 
-	  in
-	    def, typ, None
+      let j = infer env body in
+      let typ = constrain_type env j c.const_entry_polymorphic usubst (map_option_typ typ) in
+      let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
+      let def = 
+	if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
+	else Def (Mod_subst.from_val def) 
       in
 	feedback_completion_typecheck feedback_id;
-	def, typ, proj, c.const_entry_polymorphic,
+	def, typ, None, c.const_entry_polymorphic,
         univs, c.const_entry_inline_code, c.const_entry_secctx
+
+  | ProjectionEntry {proj_entry_ind = ind; proj_entry_arg = i} ->
+    let mib, _ = Inductive.lookup_mind_specif env (ind,0) in
+    let kn, pb = 
+      match mib.mind_record with
+      | Some (kns, pbs) -> 
+	if i < Array.length pbs then
+	  kns.(i), pbs.(i)
+	else assert false
+      | None -> assert false
+    in
+    let term, typ = pb.proj_eta in
+      Def (Mod_subst.from_val (hcons_constr term)), RegularArity typ, Some pb,
+      mib.mind_polymorphic, mib.mind_universes, false, None
 
 let global_vars_set_constant_type env = function
   | RegularArity t -> global_vars_set env t
