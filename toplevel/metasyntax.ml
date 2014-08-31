@@ -132,22 +132,21 @@ type ml_tactic_grammar_obj = {
   (** ML-side unique name *)
   mltacobj_prod : grammar_prod_item list list;
   (** Grammar rules generating the ML tactic. *)
-  mltacobj_atom : atomic_entry list;
-  (** ML tactic notations whose use can be restricted to an identifier. *)
 }
 
+(** ML tactic notations whose use can be restricted to an identifier are added
+    as true Ltac entries. *)
 let extend_atomic_tactic name entries =
   let add_atomic (id, args) = match args with
   | None -> ()
   | Some args ->
     let body = Tacexpr.TacML (Loc.ghost, name, args) in
-    Tacenv.register_atomic_ltac (Names.Id.of_string id) body
+    Tacenv.register_ltac false (Names.Id.of_string id) body
   in
   List.iter add_atomic entries
 
 let cache_ml_tactic_notation (_, obj) =
-  extend_ml_tactic_grammar obj.mltacobj_name obj.mltacobj_prod;
-  extend_atomic_tactic obj.mltacobj_name obj.mltacobj_atom
+  extend_ml_tactic_grammar obj.mltacobj_name obj.mltacobj_prod
 
 let open_ml_tactic_notation i obj =
   if Int.equal i 1 then cache_ml_tactic_notation obj
@@ -164,9 +163,9 @@ let add_ml_tactic_notation name prods atomic =
   let obj = {
     mltacobj_name = name;
     mltacobj_prod = prods;
-    mltacobj_atom = atomic;
   } in
-  Lib.add_anonymous_leaf (inMLTacticGrammar obj)
+  Lib.add_anonymous_leaf (inMLTacticGrammar obj);
+  extend_atomic_tactic name atomic
 
 (**********************************************************************)
 (* Printing grammar entries                                           *)

@@ -146,18 +146,13 @@ let intern_move_location ist = function
   | MoveFirst -> MoveFirst
   | MoveLast -> MoveLast
 
-let (f_interp_atomic_ltac, interp_atomic_ltac_hook) = Hook.make ()
 let (f_interp_ltac, interp_ltac_hook) = Hook.make ()
 
 (* Internalize an isolated reference in position of tactic *)
 
 let intern_isolated_global_tactic_reference r =
   let (loc,qid) = qualid_of_reference r in
-  try TacCall (loc,ArgArg (loc,locate_tactic qid),[])
-  with Not_found ->
-  match r with
-  | Ident (_, id) -> Tacexp (Hook.get f_interp_atomic_ltac id)
-  | _ -> raise Not_found
+  TacCall (loc,ArgArg (loc,locate_tactic qid),[])
 
 let intern_isolated_tactic_reference strict ist r =
   (* An ltac reference *)

@@ -9,8 +9,10 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Util
+open Names
 open Locus
 open Misctypes
+open Genredexpr
 
 open Proofview.Notations
 
@@ -187,3 +189,35 @@ END
 TACTIC EXTEND simple_destruct
   [ "simple" "destruct" quantified_hypothesis(h) ] -> [ Tactics.simple_destruct h ]
 END
+
+(* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
+
+open Tacexpr
+
+let initial_atomic () =
+  let dloc = Loc.ghost in
+  let nocl = {onhyps=Some[];concl_occs=AllOccurrences} in
+  let iter (s, t) =
+    let body = TacAtom (dloc, t) in
+    Tacenv.register_ltac false (Id.of_string s) body
+  in
+  let ans = List.iter iter
+      [ "red", TacReduce(Red false,nocl);
+        "hnf", TacReduce(Hnf,nocl);
+        "simpl", TacReduce(Simpl None,nocl);
+        "compute", TacReduce(Cbv Redops.all_flags,nocl);
+        "intro", TacIntroMove(None,MoveLast);
+        "intros", TacIntroPattern [];
+        "cofix", TacCofix None;
+        "trivial", TacTrivial (Off,[],None);
+        "auto", TacAuto(Off,None,[],None);
+      ]
+  in
+  let iter (s, t) = Tacenv.register_ltac false (Id.of_string s) t in
+  List.iter iter
+      [ "idtac",TacId [];
+        "fail", TacFail(ArgArg 0,[]);
+        "fresh", TacArg(dloc,TacFreshId [])
+      ]
+
+let () = Mltop.declare_cache_obj initial_atomic "coretactics"

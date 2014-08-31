@@ -25,14 +25,6 @@ val interp_alias : alias -> glob_tactic_expr
 
 (** {5 Coq tactic definitions} *)
 
-(** FIXME: one day we should merge atomic tactics and user-defined ones. *)
-
-val register_atomic_ltac : Id.t -> glob_tactic_expr -> unit
-(** Register a Coq built-in tactic. Should not be used by plugins. *)
-
-val interp_atomic_ltac : Id.t -> glob_tactic_expr
-(** Find a Coq built-in tactic by name. Raise [Not_found] if it is absent. *)
-
 val register_ltac : bool -> Id.t -> glob_tactic_expr -> unit
 (** Register a new Ltac with the given name and body. If the boolean flag is set
     to true, then this is a local definition. It also puts the Ltac name in the

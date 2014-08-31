@@ -69,47 +69,6 @@ let () =
   let assert_installed opn = let _ = interp_ml_tactic opn in () in
   Hook.set Tacintern.assert_tactic_installed_hook assert_installed
 
-(** Coq tactic definitions. *)
-
-(* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
-
-
-let initial_atomic =
-  let open Locus in
-  let open Misctypes in
-  let open Genredexpr in
-  let dloc = Loc.ghost in
-  let nocl = {onhyps=Some[];concl_occs=AllOccurrences} in
-  let fold accu (s, t) =
-    let body = TacAtom (dloc, t) in
-    Id.Map.add (Id.of_string s) body accu
-  in
-  let ans = List.fold_left fold Id.Map.empty
-      [ "red", TacReduce(Red false,nocl);
-        "hnf", TacReduce(Hnf,nocl);
-        "simpl", TacReduce(Simpl None,nocl);
-        "compute", TacReduce(Cbv Redops.all_flags,nocl);
-        "intro", TacIntroMove(None,MoveLast);
-        "intros", TacIntroPattern [];
-        "cofix", TacCofix None;
-        "trivial", TacTrivial (Off,[],None);
-        "auto", TacAuto(Off,None,[],None);
-      ]
-  in
-  let fold accu (s, t) = Id.Map.add (Id.of_string s) t accu in
-  List.fold_left fold ans
-      [ "idtac",TacId [];
-        "fail", TacFail(ArgArg 0,[]);
-        "fresh", TacArg(dloc,TacFreshId [])
-      ]
-
-let atomic_mactab = Summary.ref ~name:"atomic_tactics" initial_atomic
-
-let register_atomic_ltac id tac =
-  atomic_mactab := Id.Map.add id tac !atomic_mactab
-
-let interp_atomic_ltac id = Id.Map.find id !atomic_mactab
-
 (***************************************************************************)
 (* Tactic registration *)
 
@@ -186,5 +145,4 @@ let redefine_ltac local kn tac =
   Lib.add_anonymous_leaf (inMD (local, (UpdateTac kn, tac)))
 
 let () =
-  Hook.set Tacintern.interp_ltac_hook interp_ltac;
-  Hook.set Tacintern.interp_atomic_ltac_hook interp_atomic_ltac
+  Hook.set Tacintern.interp_ltac_hook interp_ltac
