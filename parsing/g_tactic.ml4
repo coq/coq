@@ -629,8 +629,6 @@ GEXTEND Gram
 	  TacAtom (!@loc, TacInductionDestruct(false,false,icl))
       | IDENT "edestruct";  icl = induction_clause_list ->
 	  TacAtom (!@loc, TacInductionDestruct(false,true,icl))
-      | IDENT "decompose"; "["; l = LIST1 smart_global; "]"; c = constr
-        -> TacAtom (!@loc, TacDecompose (l,c))
 
       (* Automation tactic *)
       | d = trivial; lems = auto_using; db = hintbases -> TacAtom (!@loc, TacTrivial (d,lems,db))

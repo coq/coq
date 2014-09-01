@@ -512,8 +512,6 @@ let rec intern_atomic lf ist x =
       let h1 = intern_quantified_hypothesis ist h1 in
       let h2 = intern_quantified_hypothesis ist h2 in
       TacDoubleInduction (h1,h2)
-  | TacDecompose (l,c) -> let l = List.map (intern_inductive ist) l in
-      TacDecompose (l,intern_constr ist c)
   (* Context management *)
   | TacClear (b,l) -> TacClear (b,List.map (intern_hyp ist) l)
   | TacClearBody l -> TacClearBody (List.map (intern_hyp ist) l)

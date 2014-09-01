@@ -144,7 +144,6 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacInductionDestruct of
       rec_flag * evars_flag * ('trm,'nam) induction_clause_list
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
-  | TacDecompose of 'ind list * 'trm
 
   (* Automation tactics *)
   | TacTrivial of debug * 'trm list * string list option

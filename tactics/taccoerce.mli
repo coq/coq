@@ -82,8 +82,6 @@ val coerce_to_hyp_list : Environ.env -> Value.t -> Id.t list
 
 val coerce_to_reference : Environ.env -> Value.t -> Globnames.global_reference
 
-val coerce_to_inductive : Value.t -> inductive
-
 val coerce_to_quantified_hypothesis : Value.t -> quantified_hypothesis
 
 val coerce_to_decl_or_quant_hyp : Environ.env -> Value.t -> quantified_hypothesis

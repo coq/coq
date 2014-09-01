@@ -969,3 +969,17 @@ let guard tst =
 TACTIC EXTEND guard
 | [ "guard" test(tst) ] -> [ guard tst ]
 END
+
+let decompose l c =
+  Proofview.Goal.raw_enter begin fun gl ->
+    let to_ind c =
+      if isInd c then Univ.out_punivs (destInd c)
+      else error "not an inductive type"
+    in
+    let l = List.map to_ind l in
+    Elim.h_decompose l c
+  end
+
+TACTIC EXTEND decompose
+| [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose l c ]
+END

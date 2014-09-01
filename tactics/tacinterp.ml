@@ -364,10 +364,6 @@ let interp_reference ist env = function
         VarRef v
       with Not_found -> error_global_not_found_loc loc (qualid_of_ident id)
 
-let interp_inductive ist = function
-  | ArgArg r -> r
-  | ArgVar locid -> interp_ltac_var coerce_to_inductive ist None locid
-
 let try_interp_evaluable env (loc, id) =
   let v = Environ.lookup_named id env in
   match v with
@@ -1924,11 +1920,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
       let h1 = interp_quantified_hypothesis ist h1 in
       let h2 = interp_quantified_hypothesis ist h2 in
       Elim.h_double_induction h1 h2
-  | TacDecompose (l,c) ->
-      (new_interp_constr ist c) begin fun c ->
-        let l = List.map (interp_inductive ist) l in
-        Elim.h_decompose l c
-      end
   (* Context management *)
   | TacClear (b,l) ->
       Proofview.V82.tactic begin fun gl ->

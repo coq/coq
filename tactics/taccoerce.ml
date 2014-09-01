@@ -232,11 +232,6 @@ let coerce_to_reference env v =
     end
   | None -> raise (CannotCoerceTo "a reference")
 
-let coerce_to_inductive v =
-  match Value.to_constr v with
-  | Some c when isInd c -> Univ.out_punivs (destInd c)
-  | _ -> raise (CannotCoerceTo "an inductive type")
-
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
 let coerce_to_quantified_hypothesis v =

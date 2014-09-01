@@ -759,10 +759,6 @@ and pr_atom1 = function
         (str "double induction" ++
          pr_arg pr_quantified_hypothesis h1 ++
 	 pr_arg pr_quantified_hypothesis h2)
-  | TacDecompose (l,c) ->
-      hov 1 (str "decompose" ++ spc () ++
-        hov 0 (str "[" ++ prlist_with_sep spc pr_ind l
-	  ++ str "]" ++ pr_constrarg c))
   (* Automation tactics *)
   | TacTrivial (_,[],Some []) as x -> pr_atom0 x
   | TacTrivial (d,lems,db) ->
