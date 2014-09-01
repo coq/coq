@@ -142,10 +142,14 @@ module Make(T : Task) = struct
       let rec set_slave_opt = function
         | [] -> !Flags.async_proofs_flags_for_workers @
                 ["-toploop"; T.name^"top";
-                 "-worker-id"; id]
+                 "-worker-id"; id;
+                 "-async-proofs-worker-priority";
+                   Flags.string_of_priority !Flags.async_proofs_worker_priority]
         | ("-ideslave"|"-emacs"|"-emacs-U"|"-batch")::tl -> set_slave_opt tl
         | ("-async-proofs" |"-toploop" |"-vi2vo" |"-compile"
-        |  "-load-vernac-source" | "-compile-verbose")::_::tl -> set_slave_opt tl
+          |"-load-vernac-source" |"-compile-verbose"
+          |"-async-proofs-worker-priority" |"-worker-id") :: _ :: tl ->
+          set_slave_opt tl
         | x::tl -> x :: set_slave_opt tl in
       let args =
         Array.of_list (set_slave_opt (List.tl (Array.to_list Sys.argv))) in
@@ -155,6 +159,9 @@ module Make(T : Task) = struct
     let task_expired = ref false in
     let task_cancelled = ref false in
     let worker_age = ref `Fresh in
+    let got_token = ref false in
+    let giveback_token () =
+      if !got_token then (CoqworkmgrApi.giveback 1; got_token := false) in
     CThread.prepare_in_channel_for_thread_friendly_io ic;
     try
       while not !die do
@@ -166,6 +173,8 @@ module Make(T : Task) = struct
         begin try
           let req = T.request_of_task !worker_age task in
           if req = None then raise Expired;
+          ignore(CoqworkmgrApi.get 1); got_token := true;
+          prerr_endline ("got execution token");
           marshal_request oc (Request (Option.get req));
           Worker.kill_if proc ~sec:1 (fun () ->
             task_expired := !cancel_switch;
@@ -177,7 +186,7 @@ module Make(T : Task) = struct
             match response with
             | Response resp ->
                 (match T.use_response task resp with
-                | `Stay -> last_task := None; ()
+                | `Stay -> last_task := None; giveback_token ()
                 | `StayReset -> last_task := None; raise KillRespawn)
             | RespGetCounterNewUnivLevel ->
                 marshal_more_data oc (MoreDataUnivLevel
@@ -205,19 +214,25 @@ module Make(T : Task) = struct
       raise Die
     with
     | KillRespawn ->
+        giveback_token ();
         Worker.kill proc; ignore(Worker.wait proc);
         manage_slave ~cancel:cancel_user_req ~die id respawn
-    | (Die | TQueue.BeingDestroyed) -> Worker.kill proc;ignore(Worker.wait proc)
+    | (Die | TQueue.BeingDestroyed) ->
+        giveback_token ();
+        Worker.kill proc;ignore(Worker.wait proc)
     | Sys_error _ | Invalid_argument _ | End_of_file when !task_expired ->
+        giveback_token ();
         T.on_task_cancellation_or_expiration !last_task;
         ignore(Worker.wait proc);
         manage_slave ~cancel:cancel_user_req ~die id respawn
     | Sys_error _ | Invalid_argument _ | End_of_file when !task_cancelled ->
+        giveback_token ();
         msg_warning(strbrk "The worker was cancelled.");
         T.on_task_cancellation_or_expiration !last_task;
         Worker.kill proc; ignore(Worker.wait proc);
         manage_slave ~cancel:cancel_user_req ~die id respawn
     | Sys_error _ | Invalid_argument _ | End_of_file ->
+        giveback_token ();
         match T.on_slave_death !last_task with
         | `Stay -> 
             msg_warning(strbrk "The worker process died badly.");

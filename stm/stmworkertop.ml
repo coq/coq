@@ -9,6 +9,7 @@
 let () = Coqtop.toploop_init := (fun args ->
         Flags.make_silent true;
         Stm.slave_init_stdout ();
+        CoqworkmgrApi.init !Flags.async_proofs_worker_priority;
         args)
 
 let () = Coqtop.toploop_run := Stm.slave_main_loop

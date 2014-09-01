@@ -5,6 +5,7 @@ TQueue
 WorkerPool
 Vernac_classifier
 Lemmas
+CoqworkmgrApi
 AsyncTaskQueue
 Stm
 Vi_checking

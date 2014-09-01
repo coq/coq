@@ -634,6 +634,11 @@ $(COQDOC): $(patsubst %.cma,%$(BESTLIB),$(COQDOCCMO:.cmo=$(BESTOBJ)))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,str unix)
 
+$(COQWORKMGR): $(addsuffix $(BESTOBJ), stm/coqworkmgrApi tools/coqworkmgr) \
+		$(addsuffix $(BESTLIB), lib/clib)
+	$(SHOW)'OCAMLBEST -o $@'
+	$(HIDE)$(call bestocaml,, $(SYSMOD) clib)
+
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 

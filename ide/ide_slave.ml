@@ -466,6 +466,7 @@ let () = Coqtop.toploop_init := (fun args ->
         let args = parse args in
         Flags.make_silent true;
         init_stdout ();
+        CoqworkmgrApi.(init High);
         args)
 
 let () = Coqtop.toploop_run := loop

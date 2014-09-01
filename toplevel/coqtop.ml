@@ -41,7 +41,9 @@ let print_header () =
 let warning s = msg_warning (strbrk s)
 
 let toploop = ref None
-let toploop_init = ref (fun x -> x)
+let toploop_init = ref (fun x ->
+  CoqworkmgrApi.(init !Flags.async_proofs_worker_priority);
+  x)
 let toploop_run = ref (fun () ->
   if Dumpglob.dump () then begin
     if_verbose warning "Dumpglob cannot be used in interactive mode.";
@@ -228,6 +230,11 @@ let no_compat_ntn = ref false
 let print_where = ref false
 let print_config = ref false
 
+let get_priority opt s =
+  try Flags.priority_of_string s
+  with Invalid_argument _ ->
+    prerr_endline ("Error: low/high expected after "^opt); exit 1
+
 let get_async_proofs_mode opt = function
   | "off" -> Flags.APoff
   | "on" -> Flags.APon
@@ -359,6 +366,8 @@ let parse_args arglist =
         Flags.async_proofs_n_workers := (get_int opt (next ()))
     |"-async-proofs-tac-j" ->
         Flags.async_proofs_n_tacworkers := (get_int opt (next ()))
+    |"-async-proofs-worker-priority" ->
+        Flags.async_proofs_worker_priority := get_priority opt (next ())
     |"-async-proofs-private-flags" ->
         Flags.async_proofs_private_flags := Some (next ());
     |"-worker-id" -> set_worker_id opt (next ())

@@ -57,6 +57,13 @@ let async_proofs_always_delegate = ref false
 let async_proofs_never_reopen_branch = ref false
 let async_proofs_flags_for_workers = ref []
 let async_proofs_worker_id = ref "master"
+type priority = Low | High
+let async_proofs_worker_priority = ref Low
+let string_of_priority = function Low -> "low" | High -> "high"
+let priority_of_string = function
+  | "low" -> Low
+  | "high" -> High
+  | _ -> raise (Invalid_argument "priority_of_string")
 
 let async_proofs_is_worker () =
   !async_proofs_worker_id <> "master"

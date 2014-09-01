@@ -1,8 +1,8 @@
-\achapter{Asynchronous Proof Processing}
+\achapter{Asynchronous and Parallel Proof Processing}
 \aauthor{Enrico Tassi}
 
 \label{pralitp}
-\index{Asynchronous Proof Processing!presentation}
+\index{Asynchronous and Parallel Proof Processing!presentation}
 
 This chapter explains how proofs can be asynchronously processed by Coq.
 This feature improves the reactiveness of the system when used in interactive
@@ -144,6 +144,25 @@ that producing a $.vo$ file gives.  In particular universe constraints
 are checked to be consistent for every single proof, but not globally.
 Hence this compilation mode is only useful for quick regression testing
 and on developments not making heavy use of the $Type$ hierarchy.
+
+\subsection{Limiting the number of parallel workers}
+\label{coqworkmgr}
+
+Many Coq processes may run on the same computer, and each of them may start
+many additional worker processes. 
+The $coqworkmgr$ utility lets one limit the number of workers, globally.
+
+The utility acecpts the $-j$ argument to specify the maximum number of
+workers (defaults to 2).  $coqworkmgr$ autmatically starts in the
+background and prints an enviroment variable assignement like
+$COQWORKMGR\_SOCKET=localhost:45634$.  The user must set this variable in
+all the shells from which he will start Coq processes.  If one uses just
+one terminal running the bash shell, then $export `coqworkmgr -j 4`$ will
+do the job.
+
+After that all Coq processes, like $coqide$ and $coqc$ will honor such
+limit, globally.
+
 
 %%% Local Variables: 
 %%% mode: latex

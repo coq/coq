@@ -26,6 +26,10 @@ val async_proofs_always_delegate : bool ref
 val async_proofs_never_reopen_branch : bool ref
 val async_proofs_flags_for_workers : string list ref
 val async_proofs_worker_id : string ref
+type priority = Low | High
+val async_proofs_worker_priority : priority ref
+val string_of_priority : priority -> string
+val priority_of_string : string -> priority
 
 val debug : bool ref
 
