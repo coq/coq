@@ -69,12 +69,6 @@ let find_recvar qid ist = Id.Map.find qid ist.ltacrecvars
 (* a "var" is a ltac var or a var introduced by an intro tactic *)
 let find_var id ist = Id.Set.mem id ist.ltacvars
 
-(* a "ctxvar" is a var introduced by an intro tactic (Intro/LetTac/...) *)
-let find_ctxvar id ist = Id.Set.mem id ist.ltacvars
-
-(* a "ltacvar" is an ltac var (Let-In/Fun/...) *)
-let find_ltacvar id ist = Id.Set.mem id ist.ltacvars
-
 let find_hyp id ist =
   Id.List.mem id (ids_of_named_context (Environ.named_context ist.genv))
 
@@ -121,7 +115,7 @@ let intern_global_reference ist = function
 
 let intern_ltac_variable ist = function
   | Ident (loc,id) ->
-      if find_ltacvar id ist then
+      if find_var id ist then
 	(* A local variable of any type *)
 	ArgVar (loc,id)
       else
@@ -133,7 +127,7 @@ let intern_ltac_variable ist = function
 let intern_constr_reference strict ist = function
   | Ident (_,id) as r when not strict && find_hyp id ist ->
       GVar (dloc,id), Some (CRef (r,None))
-  | Ident (_,id) as r when find_ctxvar id ist ->
+  | Ident (_,id) as r when find_var id ist ->
       GVar (dloc,id), if strict then None else Some (CRef (r,None))
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
@@ -318,10 +312,10 @@ let intern_evaluable_reference_or_by_notation ist = function
 
 (* Globalize a reduction expression *)
 let intern_evaluable ist = function
-  | AN (Ident (loc,id)) when find_ltacvar id ist -> ArgVar (loc,id)
+  | AN (Ident (loc,id)) when find_var id ist -> ArgVar (loc,id)
   | AN (Ident (loc,id)) when not !strict_check && find_hyp id ist ->
       ArgArg (EvalVarRef id, Some (loc,id))
-  | AN (Ident (loc,id)) when find_ctxvar id ist ->
+  | AN (Ident (loc,id)) when find_var id ist ->
       ArgArg (EvalVarRef id, if !strict_check then None else Some (loc,id))
   | r ->
       let e = intern_evaluable_reference_or_by_notation ist r in
@@ -673,7 +667,7 @@ and intern_tacarg strict onlytac ist = function
   | MetaIdArg (loc,istac,s) ->
       (* $id can occur in Grammar tactic... *)
       let id = Id.of_string s in
-      if find_ltacvar id ist then
+      if find_var id ist then
 	if istac then Reference (ArgVar (adjust_loc loc,id))
 	else ConstrMayEval (ConstrTerm (GVar (adjust_loc loc,id), None))
       else error_syntactic_metavariables_not_allowed loc
