@@ -311,7 +311,7 @@ end = struct
       let c1 = add_to_clus_or_ids from cf in
       List.iter (fun (dest, trans) ->
        let c2 = add_to_clus_or_ids dest (Dag.cluster_of graph dest) in
-       fprintf oc "%s -> %s [label=%s,labelfloat=%b];\n"
+       fprintf oc "%s -> %s [xlabel=%s,labelfloat=%b];\n"
            (node from) (node dest) (edge trans) (c1 && c2)) l
     );
     StateidSet.iter (nodefmt oc) !ids;
