@@ -483,10 +483,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 
     | MaybeFlexible (v1,sk1'), MaybeFlexible (v2,sk2') -> begin
         match kind_of_term term1, kind_of_term term2 with
-        | LetIn (na,b1,t1,c'1), LetIn (_,b2,_,c'2) ->
+        | LetIn (na,b1,t1,c'1), LetIn (_,b2,t2,c'2) ->
         let f1 i =
           ise_and i
-	    [(fun i -> evar_conv_x ts env i CONV b1 b2);
+	    [(fun i -> evar_conv_x ts env i CONV t1 t2);
+	     (fun i -> evar_conv_x ts env i CONV b1 b2);
 	     (fun i ->
 	       let b = nf_evar i b1 in
 	       let t = nf_evar i t1 in
