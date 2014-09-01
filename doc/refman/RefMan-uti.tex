@@ -78,47 +78,72 @@ See the man page of {\tt coqdep} for more details and options.
 \index{Makefile@{\tt Makefile}}
 \index{CoqMakefile@{\tt coq\_Makefile}}}
 
-When a proof development becomes large, is split into several files or contains
-Ocaml plugins, it becomes crucial to use a tool like {\tt make} to compile
-\Coq\ modules.
+\paragraph{\_CoqProject}
+When a proof development becomes a larger project, split into several
+files or containing {\ocaml} plugins, files share common options that
+must be specified to all the executables used during the development
+of the project. It is therefore convenient to write a file that could
+be read all the components (the IDE, the compiler, etc.) that
+specify all the files and the common options of the project.
 
-The writing of a generic and complete {\tt Makefile} may be a tedious work
-and that's why \Coq\ provides a tool to automate its creation,
-{\tt coq\_makefile}.
+An attempt to set up a format to write project files has been made
+from the command line option of the {\Coq} makefile generator
+\texttt{coq\_makefile}. It is described by \texttt{\% coq\_makefile
+  --help}. The default name for the project file understood by
+\texttt{coq\_makefile}, \texttt{coqide} and \texttt{Proof General} is
+\texttt{\_CoqProject}.
 
-You can get a description of the arguments by the command \texttt{\% coq\_makefile
-  --help}.  Arguments can be directly written on the command line interface but it is recommended
-to write them in a file ({\tt \_CoqProject} by default) and then call {\tt
-  coq\_makefile -f \_CoqProject -o Makefile}. That means options are read from {\tt
-  \_CoqProject} and written in {\tt Makefile}. This way, {\tt Makefile} will be
-automagically regenerated when something changes in {\tt \_CoqProject}.
-
-The first time you use this tool, you may be happy with:
+A minimal usable project file can probably be obtained by the
+invocation
 \begin{quotation}
-\texttt{\% \{ echo '-R .} {\em MyFancyLib} \texttt{' ; find -name '*.v' -print \} >
-  \_CoqProject \&\& coq\_makefile -f \_CoqProject -o Makefile}
+\texttt{\% \{ echo '-R .} \textit{MyFancyLib} \texttt{' ; find . -name
+  '*.v' -print \} > \_CoqProject}
 \end{quotation}
 
-To customize things further, remember the following:
+While customizing a project file, mind the following requirements:
 \begin{itemize}
-\item \Coq files must end in {\tt .v}, \ocaml modules in {\tt .ml4} if they
-  require camlp preproccessing (and in {\tt .ml} otherwise), and \ocaml module
-  signatures in {\tt .mli}.
-\item Whenever a directory is passed as argument, any inner {\tt Makefile} will be
-  recursively called.
-\item {\tt -R} option is for \Coq, {\tt -I} for \ocaml. The same directory can be
-  ``included'' by both.
+\item {\Coq} files must end in \texttt{.v}, {\ocaml} modules in
+  \texttt{.ml4} if they require camlp preproccessing (and in
+  \texttt{.ml} otherwise), {\ocaml} module signatures, library
+  description and packing files respectively in \texttt{.mli},
+  \texttt{.mllib} and \texttt{.mlpack}.
 
-  Using {\tt -R} option gives a correct logical path and a correct installation
-  emplacement to your coq files.
-\item If your files depend on an external library, never use {\tt -R \dots} to
-  include it in the path, the {\em make clean} command would erase it! Take
-  advantage of the \verb:COQPATH: variable (see \ref{envars}) instead if
-  necessary.
+Any other argument that is not a valid option will be considered as a
+subdirectory. A specified subdirectory must have an inner
+\texttt{Makefile}. The phony targets \texttt{all} and \texttt{clean}
+will recursively call this target in all the subdirectories.
+
+\item \texttt{-R} and \texttt{-I} options are for {\Coq}, \texttt{-I}
+  for {\ocaml}. The same directory may be ``included'' by both.
+
+  Using \texttt{-R} or \texttt{-Q} gives a correct logical path
+  and a correct installation location to your coq files.
+\item dependency on an external library must not be declared using a
+  \texttt{-Q \dots} in the \texttt{\_CoqProject} to include it in the
+  path, as the \textit{make clean} command would erase it! Instead,
+  install your dependency in a place automatically included by
+  {\Coq}. You can take advantage of the \texttt{COQPATH} variable
+  (see \ref{envars}) without installation if necessary.
+\item Use \texttt{-extra-phony} with no command to add an extra
+  dependencies on already defined rules. For example the following
+  skeleton appends something to the \texttt{install} rule:
+\begin{quotation}
+\texttt{-extra-phony ``install'' ``install-my-stuff'' ``''
+  -extra-phony ``install-my-stuff'' ``'' ``something''}
+\end{quotation}
 \end{itemize}
 
-Under normal circumstances, the only other variable that you may use is
-\verb:$COQBIN: to specify the directory where the binaries are.
+\paragraph{Coq\_makefile}
+The writing of a generic and complete \texttt{Makefile} may be tedious
+work and that's why {\Coq} provides a tool to automate its creation
+from the \texttt{\_CoqProject} file, \texttt{coq\_makefile}.
+
+Use
+\begin{quotation}
+\texttt{coq\_makefile -f \_CoqProject -o Makefile}
+\end{quotation}
+to generate a \texttt{Makefile} the first time. \texttt{Makefile} will be
+automatically regenerated when \texttt{\_CoqProject} is updated afterward.
 
 \section[Documenting \Coq\ files with coqdoc]{Documenting \Coq\ files with coqdoc\label{coqdoc}
 \index{Coqdoc@{\sf coqdoc}}}
