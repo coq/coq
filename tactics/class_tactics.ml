@@ -52,21 +52,26 @@ open Auto
 
 open Unification
 
-let auto_unif_flags = {
-  modulo_conv_on_closed_terms = Some full_transparent_state;
+let auto_core_unif_flags st = {
+  modulo_conv_on_closed_terms = Some st;
   use_metas_eagerly_in_conv_on_closed_terms = true;
-  modulo_delta = var_full_transparent_state;
-  modulo_delta_types = full_transparent_state;
-  modulo_delta_in_merge = None;
+  modulo_delta = st;
+  modulo_delta_types = st;
   check_applied_meta_types = false;
-  resolve_evars = false;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
   frozen_evars = Evar.Set.empty;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = true;
-  modulo_eta = true;
-  allow_K_in_toplevel_higher_order_unification = false
+  modulo_eta = false;
+}
+
+let auto_unif_flags st = {
+  core_unify_flags = auto_core_unif_flags st;
+  merge_unify_flags = auto_core_unif_flags st;
+  subterm_unify_flags = auto_core_unif_flags st;
+  allow_K_in_toplevel_higher_order_unification = false;
+  resolve_evars = false
 }
 
 let rec eq_constr_mod_evars x y =
@@ -129,12 +134,6 @@ let with_prods nprods poly (c, clenv) f gls =
 
 (** Hack to properly solve dependent evars that are typeclasses *)
 
-let flags_of_state st =
-  {auto_unif_flags with
-    modulo_conv_on_closed_terms = Some st; modulo_delta = st;
-     modulo_delta_types = st;
-     modulo_eta = false}
-
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl =
     Eauto.registered_e_assumption ::
@@ -156,10 +155,10 @@ and e_my_find_search db_list local_db hdc complete concl =
     List.map_append
       (fun db ->
 	if Hint_db.use_dn db then
-	  let flags = flags_of_state (Hint_db.transparent_state db) in
+	  let flags = auto_unif_flags (Hint_db.transparent_state db) in
 	    List.map (fun x -> (flags, x)) (Hint_db.map_auto (hdc,concl) db)
 	else
-	  let flags = flags_of_state (Hint_db.transparent_state db) in
+	  let flags = auto_unif_flags (Hint_db.transparent_state db) in
 	    List.map (fun x -> (flags, x)) (Hint_db.map_all hdc db))
       (local_db::db_list)
   in
@@ -760,7 +759,7 @@ let is_ground c gl =
   else tclFAIL 0 (str"Not ground") gl
 
 let autoapply c i gl =
-  let flags = flags_of_state (Auto.Hint_db.transparent_state (Auto.searchtable_map i)) in
+  let flags = auto_unif_flags (Auto.Hint_db.transparent_state (Auto.searchtable_map i)) in
   let cty = pf_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
   unify_e_resolve false flags (c,ce) gl

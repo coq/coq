@@ -529,56 +529,72 @@ let _ =
 let rewrite_transparent_state () =
   Auto.Hint_db.transparent_state (Auto.searchtable_map rewrite_db)
 
-let rewrite_unif_flags = {
+let rewrite_core_unif_flags = {
   Unification.modulo_conv_on_closed_terms = None;
   Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
   Unification.modulo_delta = empty_transparent_state;
   Unification.modulo_delta_types = full_transparent_state;
-  Unification.modulo_delta_in_merge = None;
   Unification.check_applied_meta_types = true;
-  Unification.resolve_evars = false;
   Unification.use_pattern_unification = true;
   Unification.use_meta_bound_pattern_unification = true;
   Unification.frozen_evars = Evar.Set.empty;
   Unification.restrict_conv_on_strict_subterms = false;
   Unification.modulo_betaiota = false;
   Unification.modulo_eta = true;
-  Unification.allow_K_in_toplevel_higher_order_unification = true
 }
 
-let rewrite2_unif_flags =
+let rewrite_unif_flags = {
+  Unification.core_unify_flags = rewrite_core_unif_flags;
+  Unification.merge_unify_flags = rewrite_core_unif_flags;
+  Unification.subterm_unify_flags = rewrite_core_unif_flags;
+  Unification.allow_K_in_toplevel_higher_order_unification = true;
+  Unification.resolve_evars = true
+}
+
+let rewrite2_unif_core_flags =
   {  Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
      Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
      Unification.modulo_delta = empty_transparent_state;
      Unification.modulo_delta_types = conv_transparent_state;
-     Unification.modulo_delta_in_merge = None;
      Unification.check_applied_meta_types = true;
-     Unification.resolve_evars = false;
      Unification.use_pattern_unification = true;
      Unification.use_meta_bound_pattern_unification = true;
      Unification.frozen_evars = Evar.Set.empty;
      Unification.restrict_conv_on_strict_subterms = false;
      Unification.modulo_betaiota = true;
      Unification.modulo_eta = true;
-     Unification.allow_K_in_toplevel_higher_order_unification = true
   }
 
-let general_rewrite_unif_flags () = 
+let rewrite2_unif_flags = {
+  Unification.core_unify_flags = rewrite2_unif_core_flags;
+  Unification.merge_unify_flags = rewrite2_unif_core_flags;
+  Unification.subterm_unify_flags = rewrite2_unif_core_flags;
+  Unification.allow_K_in_toplevel_higher_order_unification = true;
+  Unification.resolve_evars = true
+}
+
+let general_rewrite_unif_flags () =
   let ts = rewrite_transparent_state () in
+  let core_flags =
     {  Unification.modulo_conv_on_closed_terms = Some ts;
        Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
        Unification.modulo_delta = ts;
        Unification.modulo_delta_types = ts;
-       Unification.modulo_delta_in_merge = None;
        Unification.check_applied_meta_types = true;
-       Unification.resolve_evars = false;
        Unification.use_pattern_unification = true;
        Unification.use_meta_bound_pattern_unification = true;
        Unification.frozen_evars = Evar.Set.empty;
        Unification.restrict_conv_on_strict_subterms = false;
        Unification.modulo_betaiota = true;
-       Unification.modulo_eta = true;
-       Unification.allow_K_in_toplevel_higher_order_unification = true }
+       Unification.modulo_eta = true }
+  in {
+    Unification.core_unify_flags = core_flags;
+    Unification.merge_unify_flags = core_flags;
+    Unification.subterm_unify_flags = { core_flags with Unification.modulo_delta = empty_transparent_state };
+    Unification.allow_K_in_toplevel_higher_order_unification = true;
+    Unification.resolve_evars = true
+  }
+
 
 let refresh_hypinfo env sigma hypinfo =
   let {c=c} = hypinfo in

@@ -10,22 +10,30 @@ open Term
 open Environ
 open Evd
 
-type unify_flags = {
+type core_unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option;
   use_metas_eagerly_in_conv_on_closed_terms : bool;
   modulo_delta : Names.transparent_state;
   modulo_delta_types : Names.transparent_state;
-  modulo_delta_in_merge : Names.transparent_state option;
   check_applied_meta_types : bool;
-  resolve_evars : bool;
   use_pattern_unification : bool;
   use_meta_bound_pattern_unification : bool;
   frozen_evars : Evar.Set.t;
   restrict_conv_on_strict_subterms : bool;
   modulo_betaiota : bool;
   modulo_eta : bool;
-  allow_K_in_toplevel_higher_order_unification : bool
 }
+
+type unify_flags = {
+  core_unify_flags : core_unify_flags;
+  merge_unify_flags : core_unify_flags;
+  subterm_unify_flags : core_unify_flags;
+  allow_K_in_toplevel_higher_order_unification : bool;
+  resolve_evars : bool
+}
+
+val default_core_unify_flags : unit -> core_unify_flags
+val default_no_delta_core_unify_flags : unit -> core_unify_flags
 
 val default_unify_flags : unit -> unify_flags
 val default_no_delta_unify_flags : unit -> unify_flags
@@ -79,14 +87,14 @@ val abstract_list_all :
 
 (* For tracing *)
 
-val w_merge : env -> bool -> unify_flags -> evar_map *
+val w_merge : env -> bool -> core_unify_flags -> evar_map *
   (metavariable * constr * (instance_constraint * instance_typing_status)) list *
   (env * types pexistential * types) list -> evar_map
 
 val unify_0 :            Environ.env ->
            Evd.evar_map ->
            Evd.conv_pb ->
-           unify_flags ->
+           core_unify_flags ->
            Term.types ->
            Term.types ->
            Evd.evar_map * Evd.metabinding list *
@@ -98,7 +106,7 @@ val unify_0_with_initial_metas :
            bool ->
            Environ.env ->
            Evd.conv_pb ->
-           unify_flags ->
+           core_unify_flags ->
            Term.types ->
            Term.types ->
            Evd.evar_map * Evd.metabinding list *

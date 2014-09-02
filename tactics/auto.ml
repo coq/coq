@@ -1113,22 +1113,34 @@ let priority l = List.filter (fun (_, hint) -> Int.equal hint.pri 0) l
 
 open Unification
 
-let auto_unif_flags = {
-  modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly_in_conv_on_closed_terms = false;
-  modulo_delta = empty_transparent_state;
+let auto_core_unif_flags_of st1 st2 useeager = {
+  modulo_conv_on_closed_terms = Some st1;
+  use_metas_eagerly_in_conv_on_closed_terms = useeager;
+  modulo_delta = st2;
   modulo_delta_types = full_transparent_state;
-  modulo_delta_in_merge = None;
   check_applied_meta_types = false;
-  resolve_evars = true;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true;
   frozen_evars = Evar.Set.empty;
   restrict_conv_on_strict_subterms = false; (* Compat *)
   modulo_betaiota = false;
   modulo_eta = true;
-  allow_K_in_toplevel_higher_order_unification = false
 }
+
+let auto_unif_flags_of st1 st2 useeager =
+  let flags = auto_core_unif_flags_of st1 st2 useeager in {
+  core_unify_flags = flags;
+  merge_unify_flags = flags;
+  subterm_unify_flags = { flags with modulo_delta = empty_transparent_state };
+  allow_K_in_toplevel_higher_order_unification = false;
+  resolve_evars = true
+}
+
+let auto_unif_flags =
+  auto_unif_flags_of full_transparent_state empty_transparent_state false
+
+let auto_flags_of_state st =
+  auto_unif_flags_of full_transparent_state st false
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
@@ -1370,9 +1382,14 @@ let tclTRY_dbg d tac =
 (* Papageno : cette fonction a été pas mal simplifiée depuis que la base
   de Hint impérative a été remplacée par plusieurs bases fonctionnelles *)
 
+let auto_unif_flags =
+  auto_unif_flags_of full_transparent_state empty_transparent_state false
+
 let flags_of_state st =
-  {auto_unif_flags with
-    modulo_conv_on_closed_terms = Some st; modulo_delta = st}
+  auto_unif_flags_of st st false
+
+let auto_flags_of_state st =
+  auto_unif_flags_of full_transparent_state st false
 
 let hintmap_of hdc concl =
   match hdc with
@@ -1418,7 +1435,6 @@ and my_find_search mod_delta =
   else my_find_search_nodelta
 
 and my_find_search_delta db_list local_db hdc concl =
-  let flags = {auto_unif_flags with use_metas_eagerly_in_conv_on_closed_terms = true} in
   let f = hintmap_of hdc concl in
     if occur_existential concl then
       List.map_append
@@ -1427,7 +1443,7 @@ and my_find_search_delta db_list local_db hdc concl =
 	    let flags = flags_of_state (Hint_db.transparent_state db) in
 	      List.map (fun x -> (Some flags,x)) (f db)
 	  else
-	    let flags = {flags with modulo_delta = Hint_db.transparent_state db} in
+	    let flags = auto_flags_of_state (Hint_db.transparent_state db) in
 	      List.map (fun x -> (Some flags,x)) (f db))
 	(local_db::db_list)
     else
@@ -1444,7 +1460,7 @@ and my_find_search_delta db_list local_db hdc concl =
 		  if (Id.Pred.is_empty ids && Cpred.is_empty csts)
 		  then Hint_db.map_auto (hdc,concl) db
 		  else Hint_db.map_all hdc db
-	    in {flags with modulo_delta = st}, l
+	    in auto_flags_of_state st, l
 	  in List.map (fun x -> (Some flags,x)) l)
       	(local_db::db_list)
 

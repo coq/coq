@@ -93,21 +93,26 @@ let res_pf ?(with_evars=false) ?(flags=dft ()) clenv =
    d'une même Meta sont compatibles. D'ailleurs le "fst" jette les metas
    provenant de w_Unify. (Utilisé seulement dans prolog.ml) *)
 
-let fail_quick_unif_flags = {
+let fail_quick_core_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = full_transparent_state;
-  modulo_delta_in_merge = None;
   check_applied_meta_types = false;
-  resolve_evars = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true; (* ? *)
   frozen_evars = Evar.Set.empty;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = false;
   modulo_eta = true;
-  allow_K_in_toplevel_higher_order_unification = false
+}
+
+let fail_quick_unif_flags = {
+  core_unify_flags = fail_quick_core_unif_flags;
+  merge_unify_flags = fail_quick_core_unif_flags;
+  subterm_unify_flags = fail_quick_core_unif_flags;
+  allow_K_in_toplevel_higher_order_unification = false;
+  resolve_evars = false
 }
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)

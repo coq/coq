@@ -211,7 +211,7 @@ let _ =
       optread  = (fun () -> !global_evars_pattern_unification_flag);
       optwrite = (:=) global_evars_pattern_unification_flag }
 
-type unify_flags = {
+type core_unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option;
     (* What this flag controls was activated with all constants transparent, *)
     (* even for auto, since Coq V5.10 *)
@@ -226,20 +226,9 @@ type unify_flags = {
 
   modulo_delta_types : Names.transparent_state;
 
-  modulo_delta_in_merge : Names.transparent_state option;
-    (* This controls whether unfoldability is different when trying to unify *)
-    (* several instances of the same metavariable *)
-    (* Typical situation is when we give a pattern to be matched *)
-    (* syntactically against a subterm but we want the metas of the *)
-    (* pattern to be modulo convertibility *)
-
   check_applied_meta_types : bool;
     (* This controls whether meta's applied to arguments have their *)
     (* type unified with the type of their instance *)
-
-  resolve_evars : bool;
-    (* This says if type classes instances resolution must be used to infer *)
-    (* the remaining evars *)
 
   use_pattern_unification : bool;
     (* This says if type classes instances resolution must be used to infer *)
@@ -263,49 +252,81 @@ type unify_flags = {
 
   modulo_eta : bool;
     (* Support eta in the reduction *)
+}
 
-  allow_K_in_toplevel_higher_order_unification : bool
-    (* This is used only in second/higher order unification when looking for *)
-    (* subterms (rewrite and elim) *)
+type unify_flags = {
+  core_unify_flags : core_unify_flags;
+    (* Governs unification of problems of the form "t(?x) = u(?x)" in apply *)
+
+  merge_unify_flags : core_unify_flags;
+    (* These are the flags to be used when trying to unify *)
+    (* several instances of the same metavariable *)
+    (* Typical situation is when we give a pattern to be matched *)
+    (* syntactically against a subterm but we want the metas of the *)
+    (* pattern to be modulo convertibility *)
+
+  subterm_unify_flags : core_unify_flags;
+    (* Governs unification of problems of the form "?X a1..an = u" in apply, *)
+    (* hence in rewrite and elim *)
+
+  allow_K_in_toplevel_higher_order_unification : bool;
+    (* Tells in second-order abstraction over subterms which have not *)
+    (* been found in term are allowed (used for rewrite, elim, or *)
+    (* apply with a lemma whose type has the form "?X a1 ... an") *)
+
+  resolve_evars : bool
+    (* This says if type classes instances resolution must be used to infer *)
+    (* the remaining evars *)
 }
 
 (* Default flag for unifying a type against a type (e.g. apply) *)
 (* We set all conversion flags (no flag should be modified anymore) *)
-let default_unify_flags () = 
-  let ts = Names.full_transparent_state in
-  { modulo_conv_on_closed_terms = Some ts;
+let default_core_unify_flags () =
+  let ts = Names.full_transparent_state in {
+  modulo_conv_on_closed_terms = Some ts;
   use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = ts;
   modulo_delta_types = ts;
-  modulo_delta_in_merge = None;
   check_applied_meta_types = true;
-  resolve_evars = false;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
   frozen_evars = Evar.Set.empty;
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = true;
   modulo_eta = true;
-  allow_K_in_toplevel_higher_order_unification = false
-      (* in fact useless when not used in w_unify_to_subterm_list *)
-}
+ }
 
-let set_merge_flags flags =
-  match flags.modulo_delta_in_merge with
-  | None -> flags
-  | Some ts ->
-    { flags with modulo_delta = ts; modulo_conv_on_closed_terms = Some ts }
+(* Default flag for first-order or second-order unification of a type *)
+(* against another type (e.g. apply)                                  *)
+(* We set all conversion flags (no flag should be modified anymore)   *)
+let default_unify_flags () =
+  let flags = default_core_unify_flags () in {
+  core_unify_flags = flags;
+  merge_unify_flags = flags;
+  subterm_unify_flags = { flags with modulo_delta = empty_transparent_state };
+  allow_K_in_toplevel_higher_order_unification = false; (* Why not? *)
+  resolve_evars = false
+}
 
 (* Default flag for the "simple apply" version of unification of a *)
 (* type against a type (e.g. apply) *)
-(* We set only the flags available at the time the new "apply" extends *)
+(* We set only the flags available at the time the new "apply" extended *)
 (* out of "simple apply" *)
-let default_no_delta_unify_flags () = { (default_unify_flags ()) with
+let default_no_delta_core_unify_flags () = { (default_core_unify_flags ()) with
   modulo_delta = empty_transparent_state;
   check_applied_meta_types = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true;
   modulo_betaiota = false;
+}
+
+let default_no_delta_unify_flags () =
+  let flags = default_no_delta_core_unify_flags () in {
+  core_unify_flags = flags;
+  merge_unify_flags = flags;
+  subterm_unify_flags = flags;
+  allow_K_in_toplevel_higher_order_unification = false;
+  resolve_evars = false
 }
 
 (* Default flags for looking for subterms in elimination tactics *)
@@ -313,16 +334,33 @@ let default_no_delta_unify_flags () = { (default_unify_flags ()) with
 (* allow_K) because only closed terms are involved in *)
 (* induction/destruct/case/elim and w_unify_to_subterm_list does not *)
 (* call w_unify for induction/destruct/case/elim  (13/6/2011) *)
-let elim_flags () = { (default_unify_flags ()) with
-  restrict_conv_on_strict_subterms = false; (* ? *)
+let elim_core_flags () = { (default_core_unify_flags ()) with
   modulo_betaiota = false;
-  allow_K_in_toplevel_higher_order_unification = true
 }
 
-let elim_no_delta_flags () = { (elim_flags ()) with
+let elim_flags () =
+  let flags = elim_core_flags () in {
+  core_unify_flags = flags;
+  merge_unify_flags = flags;
+  subterm_unify_flags = { flags with modulo_delta = empty_transparent_state };
+  allow_K_in_toplevel_higher_order_unification = true;
+  resolve_evars = false
+}
+
+let elim_no_delta_core_flags () = { (elim_core_flags ()) with
   modulo_delta = empty_transparent_state;
   check_applied_meta_types = false;
   use_pattern_unification = false;
+  modulo_betaiota = false;
+}
+
+let elim_no_delta_flags () =
+  let flags = elim_no_delta_core_flags () in {
+  core_unify_flags = flags;
+  merge_unify_flags = flags;
+  subterm_unify_flags = flags;
+  allow_K_in_toplevel_higher_order_unification = true;
+  resolve_evars = false
 }
 
 let use_evars_pattern_unification flags =
@@ -1034,7 +1072,7 @@ let w_merge env with_types flags (evd,metas,evars) =
 	if Evd.is_defined evd evk then
 	  let v = Evd.existential_value evd ev in
 	  let (evd,metas',evars'') =
-	    unify_0 curenv evd CONV (set_merge_flags flags) rhs v in
+	    unify_0 curenv evd CONV flags rhs v in
 	  w_merge_rec evd (metas'@metas) (evars''@evars') eqns
     	else begin
 	  (* This can make rhs' ill-typed if metas are *)
@@ -1114,7 +1152,7 @@ let w_merge env with_types flags (evd,metas,evars) =
     let sp_env = Global.env_of_context ev.evar_hyps in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (evd'',mc,ec) =
-      unify_0 sp_env evd' CUMUL (set_merge_flags flags)
+      unify_0 sp_env evd' CUMUL flags
         (get_type_of sp_env evd' c) ev.evar_concl in
     let evd''' = w_merge_rec evd'' mc ec [] in
     if evd' == evd'''
@@ -1137,7 +1175,7 @@ let w_merge env with_types flags (evd,metas,evars) =
 
 let w_unify_meta_types env ?(flags=default_unify_flags ()) evd =
   let metas,evd = retract_coercible_metas evd in
-  w_merge env true flags (evd,metas,[])
+  w_merge env true flags.merge_unify_flags (evd,metas,[])
 
 (* [w_unify env evd M N]
    performs a unification of M and N, generating a bunch of
@@ -1165,32 +1203,33 @@ let check_types env flags (sigma,_,_ as subst) m n =
       (get_type_of env sigma n)
   else subst
 
-let try_resolve_typeclasses env evd flags m n =
-  if flags.resolve_evars then
+let try_resolve_typeclasses env evd flag m n =
+  if flag then
     Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~split:false
       ~fail:true env evd
   else evd
 
 let w_unify_core_0 env evd with_types cv_pb flags m n =
   let (mc1,evd') = retract_coercible_metas evd in
-  let (sigma,ms,es) = check_types env flags (evd,mc1,[]) m n in
+  let (sigma,ms,es) = check_types env flags.core_unify_flags (evd,mc1,[]) m n in
   let subst2 =
-     unify_0_with_initial_metas (evd',ms,es) false env cv_pb flags m n
+     unify_0_with_initial_metas (evd',ms,es) false env cv_pb
+       flags.core_unify_flags m n
   in
-  let evd = w_merge env with_types flags subst2 in
-  try_resolve_typeclasses env evd flags m n
+  let evd = w_merge env with_types flags.merge_unify_flags subst2 in
+  try_resolve_typeclasses env evd flags.resolve_evars m n
 
 let w_typed_unify env evd = w_unify_core_0 env evd true
 
 let w_typed_unify_array env evd flags f1 l1 f2 l2 =
-  let flags' = { flags with resolve_evars = false } in
   let f1,l1,f2,l2 = adjust_app_array_size f1 l1 f2 l2 in
   let (mc1,evd') = retract_coercible_metas evd in
-  let fold_subst subst m n = unify_0_with_initial_metas subst true env CONV flags' m n in
+  let fold_subst subst m n = unify_0_with_initial_metas subst true env CONV flags.core_unify_flags  m n in
   let subst = fold_subst (evd', [], []) f1 f2 in
   let subst = Array.fold_left2 fold_subst subst l1 l2 in
-  let evd = w_merge env true flags subst in
-  try_resolve_typeclasses env evd flags (mkApp(f1,l1)) (mkApp(f2,l2))
+  let evd = w_merge env true flags.merge_unify_flags subst in
+  try_resolve_typeclasses env evd flags.resolve_evars
+    (mkApp(f1,l1)) (mkApp(f2,l2))
 
 (* takes a substitution s, an open term op and a closed term cl
    try to find a subterm of cl which matches op, if op is just a Meta
@@ -1243,14 +1282,13 @@ let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env initial_sig
   let sigma = Pretyping.solve_remaining_evars flags env initial_sigma sigma
   in Evd.evar_universe_context sigma, nf_evar sigma c
 
-let default_matching_flags sigma = {
+let default_matching_core_flags sigma =
+  let ts = Names.full_transparent_state in {
   modulo_conv_on_closed_terms = Some empty_transparent_state;
   use_metas_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = empty_transparent_state;
-  modulo_delta_types = full_transparent_state;
-  modulo_delta_in_merge = Some full_transparent_state;
+  modulo_delta_types = ts;
   check_applied_meta_types = true;
-  resolve_evars = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = false;
   frozen_evars =
@@ -1259,7 +1297,26 @@ let default_matching_flags sigma = {
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = false;
   modulo_eta = false;
-  allow_K_in_toplevel_higher_order_unification = false
+}
+
+let default_matching_merge_flags sigma =
+  let ts = Names.full_transparent_state in
+  let flags = default_matching_core_flags sigma in {
+  flags with
+    modulo_conv_on_closed_terms = Some ts;
+    modulo_delta = ts;
+    modulo_betaiota = true;
+    modulo_eta = true;
+    use_pattern_unification = true;
+}
+
+let default_matching_flags sigma =
+  let flags = default_matching_core_flags sigma in {
+  core_unify_flags = flags;
+  merge_unify_flags = default_matching_merge_flags sigma;
+  subterm_unify_flags = flags; (* does not matter *)
+  resolve_evars = false;
+  allow_K_in_toplevel_higher_order_unification = false;
 }
 
 (* This supports search of occurrences of term from a pattern *)
@@ -1539,15 +1596,16 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
 
 let secondOrderAbstraction env evd flags typ (p, oplist) =
   (* Remove delta when looking for a subterm *)
-  let flags = { flags with modulo_delta = empty_transparent_state } in
+  let flags = { flags with core_unify_flags = flags.subterm_unify_flags } in
   let (evd',cllist) = w_unify_to_subterm_list env evd flags p oplist typ in
   let typp = Typing.meta_type evd' p in
   let evd',(pred,predtyp) = abstract_list_all env evd' typp typ cllist in
   let evd', b = infer_conv ~pb:CUMUL env evd' predtyp typp in
-    if not b then
-      error_wrong_abstraction_type env evd'
-  	(Evd.meta_name evd p) pred typp predtyp;
-    w_merge env false flags (evd',[p,pred,(Conv,TypeProcessed)],[])
+  if not b then
+    error_wrong_abstraction_type env evd'
+      (Evd.meta_name evd p) pred typp predtyp;
+  w_merge env false flags.merge_unify_flags
+    (evd',[p,pred,(Conv,TypeProcessed)],[])
 
   (* let evd',metas,evars =  *)
   (*   try unify_0 env evd' CUMUL flags predtyp typp  *)
@@ -1560,7 +1618,8 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
 let secondOrderDependentAbstraction env evd flags typ (p, oplist) =
   let typp = Typing.meta_type evd p in
   let evd, pred = abstract_list_all_with_dependencies env evd typp typ oplist in
-  w_merge env false flags (evd,[p,pred,(Conv,TypeProcessed)],[])
+  w_merge env false flags.merge_unify_flags
+    (evd,[p,pred,(Conv,TypeProcessed)],[])
 
 let secondOrderAbstractionAlgo dep =
   if dep then secondOrderDependentAbstraction else secondOrderAbstraction

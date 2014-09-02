@@ -1351,7 +1351,8 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
   Proofview.Goal.nf_enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let flags = if with_delta then elim_flags () else elim_no_delta_flags () in
+  let flags =
+    if with_delta then default_unify_flags () else default_no_delta_unify_flags () in
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
   let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
   let targetid = find_name true (Anonymous,None,t') naming gl in
@@ -4095,12 +4096,15 @@ let admit_as_an_axiom =
 let unify ?(state=full_transparent_state) x y =
   Proofview.Goal.nf_enter begin fun gl ->
   try
-    let flags =
-      {(default_unify_flags ()) with
-       modulo_delta = state;
-       modulo_delta_types = state;
-       modulo_delta_in_merge = Some state;
-       modulo_conv_on_closed_terms = Some state}
+    let core_flags =
+      { (default_unify_flags ()).core_unify_flags with
+	modulo_delta = state;
+	modulo_conv_on_closed_terms = Some state} in
+    (* What to do on merge and subterm flags?? *)
+    let flags = { (default_unify_flags ()) with
+      core_unify_flags = core_flags;
+      merge_unify_flags = core_flags;
+      subterm_unify_flags = { core_flags with modulo_delta = empty_transparent_state } }
     in
     let evd = w_unify (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) Reduction.CONV ~flags x y
     in Proofview.V82.tclEVARS evd

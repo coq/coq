@@ -201,7 +201,7 @@ val priority : ('a * pri_auto_tactic) list -> ('a * pri_auto_tactic) list
 
 val default_search_depth : int ref
 
-val auto_unif_flags : Unification.unify_flags
+val auto_flags_of_state : transparent_state -> Unification.unify_flags
 
 (** Try unification with the precompiled clause, then use registered Apply *)
 val unify_resolve_nodelta : polymorphic -> (constr * clausenv) -> tactic

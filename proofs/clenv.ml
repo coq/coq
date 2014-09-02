@@ -360,7 +360,7 @@ let clenv_fchain ?(flags=fchain_flags ()) mv clenv nextclenv =
       env = nextclenv.env } in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
-    clenv_unify ~flags:flags CUMUL
+    clenv_unify ~flags CUMUL
       (clenv_term clenv' nextclenv.templtyp)
       (clenv_meta_type clenv' mv)
       clenv' in

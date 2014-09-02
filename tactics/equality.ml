@@ -41,6 +41,7 @@ open Locus
 open Locusops
 open Misctypes
 open Proofview.Notations
+open Unification
 
 (* Options *)
 
@@ -99,22 +100,27 @@ type conditions =
    -- Eduardo (19/8/97)
 *)
 
+let rewrite_core_unif_flags = {
+  modulo_conv_on_closed_terms = None;
+  use_metas_eagerly_in_conv_on_closed_terms = true;
+  modulo_delta = empty_transparent_state;
+  modulo_delta_types = empty_transparent_state;
+  check_applied_meta_types = true;
+  use_pattern_unification = true;
+  use_meta_bound_pattern_unification = true;
+  frozen_evars = Evar.Set.empty;
+  restrict_conv_on_strict_subterms = false;
+  modulo_betaiota = false;
+  modulo_eta = true;
+}
+
 let rewrite_unif_flags = {
-  Unification.modulo_conv_on_closed_terms = None;
-  Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
-  Unification.modulo_delta = empty_transparent_state;
-  Unification.modulo_delta_types = empty_transparent_state;
-  Unification.modulo_delta_in_merge = None;
-  Unification.check_applied_meta_types = true;
-  Unification.resolve_evars = true;
-  Unification.use_pattern_unification = true;
-  Unification.use_meta_bound_pattern_unification = true;
-  Unification.frozen_evars = Evar.Set.empty;
-  Unification.restrict_conv_on_strict_subterms = false;
-  Unification.modulo_betaiota = false;
-  Unification.modulo_eta = true;
-  Unification.allow_K_in_toplevel_higher_order_unification = false
+  core_unify_flags = rewrite_core_unif_flags;
+  merge_unify_flags = rewrite_core_unif_flags;
+  subterm_unify_flags = rewrite_core_unif_flags;
+  allow_K_in_toplevel_higher_order_unification = false;
     (* allow_K does not matter in practice because calls w_typed_unify *)
+  resolve_evars = true
 }
 
 let freeze_initial_evars sigma flags clause =
@@ -127,7 +133,10 @@ let freeze_initial_evars sigma flags clause =
       if Evar.Set.mem evk newevars then evars
       else Evar.Set.add evk evars)
       sigma Evar.Set.empty in
-  { flags with Unification.frozen_evars = evars }
+  {flags with
+    core_unify_flags = {flags.core_unify_flags with frozen_evars = evars};
+    merge_unify_flags = {flags.merge_unify_flags with frozen_evars = evars};
+    subterm_unify_flags = {flags.subterm_unify_flags with frozen_evars = evars}}
 
 let make_flags frzevars sigma flags clause =
   if frzevars then freeze_initial_evars sigma flags clause else flags
@@ -150,7 +159,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   in
   let flags = make_flags frzevars (Proofview.Goal.sigma gl) rewrite_unif_flags eqclause in
   let occs =
-    Unification.w_unify_to_subterm_all ~flags env eqclause.evd
+    w_unify_to_subterm_all ~flags env eqclause.evd
       ((if l2r then c1 else c2),concl)
   in List.map try_occ occs
 
@@ -160,33 +169,38 @@ let instantiate_lemma gl c ty l l2r concl =
   let eqclause = pf_apply Clenv.make_clenv_binding gl (c,t) l in
    [eqclause]
 
-let rewrite_conv_closed_unif_flags = {
-  Unification.modulo_conv_on_closed_terms = Some full_transparent_state;
+let rewrite_conv_closed_core_unif_flags = {
+  modulo_conv_on_closed_terms = Some full_transparent_state;
     (* We have this flag for historical reasons, it has e.g. the consequence *)
     (* to rewrite "?x+2" in "y+(1+1)=0" or to rewrite "?x+?x" in "2+(1+1)=0" *)
 
-  Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
+  use_metas_eagerly_in_conv_on_closed_terms = true;
     (* Combined with modulo_conv_on_closed_terms, this flag allows since 8.2 *)
     (* to rewrite e.g. "?x+(2+?x)" in "1+(1+2)=0" *)
 
-  Unification.modulo_delta = empty_transparent_state;
-  Unification.modulo_delta_types = full_transparent_state;
-  Unification.modulo_delta_in_merge = None;
-  Unification.check_applied_meta_types = true;
-  Unification.resolve_evars = false;
-  Unification.use_pattern_unification = true;
+  modulo_delta = empty_transparent_state;
+  modulo_delta_types = full_transparent_state;
+  check_applied_meta_types = true;
+  use_pattern_unification = true;
     (* To rewrite "?n x y" in "y+x=0" when ?n is *)
     (* a preexisting evar of the goal*)
 
-  Unification.use_meta_bound_pattern_unification = true;
+  use_meta_bound_pattern_unification = true;
 
-  Unification.frozen_evars = Evar.Set.empty;
+  frozen_evars = Evar.Set.empty;
     (* This is set dynamically *)
 
-  Unification.restrict_conv_on_strict_subterms = false;
-  Unification.modulo_betaiota = false;
-  Unification.modulo_eta = true;
-  Unification.allow_K_in_toplevel_higher_order_unification = false
+  restrict_conv_on_strict_subterms = false;
+  modulo_betaiota = false;
+  modulo_eta = true;
+}
+
+let rewrite_conv_closed_unif_flags = {
+  core_unify_flags = rewrite_conv_closed_core_unif_flags;
+  merge_unify_flags = rewrite_conv_closed_core_unif_flags;
+  subterm_unify_flags = rewrite_conv_closed_core_unif_flags;
+  allow_K_in_toplevel_higher_order_unification = false;
+  resolve_evars = false
 }
 
 let rewrite_elim with_evars frzevars cls c e =
