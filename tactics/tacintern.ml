@@ -100,12 +100,6 @@ let intern_or_var ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)
   | ArgArg _ as x -> x
 
-let intern_inductive_or_by_notation = smart_global_inductive
-
-let intern_inductive ist = function
-  | AN (Ident (loc,id)) when find_var id ist -> ArgVar (loc,id)
-  | r -> ArgArg (intern_inductive_or_by_notation r)
-
 let intern_global_reference ist = function
   | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
   | r ->
@@ -315,8 +309,6 @@ let intern_evaluable ist = function
   | AN (Ident (loc,id)) when find_var id ist -> ArgVar (loc,id)
   | AN (Ident (loc,id)) when not !strict_check && find_hyp id ist ->
       ArgArg (EvalVarRef id, Some (loc,id))
-  | AN (Ident (loc,id)) when find_var id ist ->
-      ArgArg (EvalVarRef id, if !strict_check then None else Some (loc,id))
   | r ->
       let e = intern_evaluable_reference_or_by_notation ist r in
       let na = short_name r in
@@ -453,6 +445,9 @@ let clause_app f = function
       { onhyps=Some(List.map f l); concl_occs=nl}
 
 let (f_assert_tactic_installed, assert_tactic_installed_hook) = Hook.make ()
+
+let map_raw wit f ist x =
+  in_gen (glbwit wit) (f ist (out_gen (rawwit wit) x))
 
 (* Globalizes tactics : raw_tactic_expr -> glob_tactic_expr *)
 let rec intern_atomic lf ist x =
@@ -707,36 +702,28 @@ and intern_match_rule onlytac ist = function
 
 and intern_genarg ist x =
   match genarg_tag x with
-  | IntOrVarArgType ->
-      in_gen (glbwit wit_int_or_var)
-        (intern_or_var ist (out_gen (rawwit wit_int_or_var) x))
+  | IntOrVarArgType -> map_raw wit_int_or_var intern_or_var ist x
   | IdentArgType ->
-      let lf = ref Id.Set.empty in
-      in_gen (glbwit wit_ident)
-	(intern_ident lf ist (out_gen (rawwit wit_ident) x))
+    let lf = ref Id.Set.empty in
+    map_raw wit_ident (intern_ident lf) ist x
   | VarArgType ->
-      in_gen (glbwit wit_var) (intern_hyp ist (out_gen (rawwit wit_var) x))
+    map_raw wit_var intern_hyp ist x
   | GenArgType ->
-      in_gen (glbwit wit_genarg) (intern_genarg ist (out_gen (rawwit wit_genarg) x))
+    map_raw wit_genarg intern_genarg ist x
   | ConstrArgType ->
-      in_gen (glbwit wit_constr) (intern_constr ist (out_gen (rawwit wit_constr) x))
+    map_raw wit_constr intern_constr ist x
   | ConstrMayEvalArgType ->
-      in_gen (glbwit wit_constr_may_eval)
-        (intern_constr_may_eval ist (out_gen (rawwit wit_constr_may_eval) x))
+    map_raw wit_constr_may_eval intern_constr_may_eval ist x
   | QuantHypArgType ->
-      in_gen (glbwit wit_quant_hyp)
-        (intern_quantified_hypothesis ist (out_gen (rawwit wit_quant_hyp) x))
+    map_raw wit_quant_hyp intern_quantified_hypothesis ist x
   | RedExprArgType ->
-      in_gen (glbwit wit_red_expr) (intern_red_expr ist (out_gen (rawwit wit_red_expr) x))
+    map_raw wit_red_expr intern_red_expr ist x
   | OpenConstrArgType ->
-      in_gen (glbwit wit_open_constr)
-        ((),intern_constr ist (snd (out_gen (rawwit wit_open_constr) x)))
+    map_raw wit_open_constr (fun ist -> on_snd (intern_constr ist)) ist x
   | ConstrWithBindingsArgType ->
-      in_gen (glbwit wit_constr_with_bindings)
-        (intern_constr_with_bindings ist (out_gen (rawwit wit_constr_with_bindings) x))
+    map_raw wit_constr_with_bindings intern_constr_with_bindings ist x
   | BindingsArgType ->
-      in_gen (glbwit wit_bindings)
-        (intern_bindings ist (out_gen (rawwit wit_bindings) x))
+    map_raw wit_bindings intern_bindings ist x
   | ListArgType _ ->
       let list_unpacker wit l =
         let map x =
