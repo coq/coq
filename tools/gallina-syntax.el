@@ -360,6 +360,11 @@
     ("Inductive (3 args)" "indv3" "Inductive # : # :=\n| # : #\n| # : #\n| # : #." t )
     ("Inductive (4 args)" "indv4" "Inductive # : # :=\n| # : #\n| # : #\n| # : #\n| # : #." t )
     ("Inductive (5 args)" "indv5" "Inductive # : # :=\n| # : #\n| # : #\n| # : #\n| # : #\n| # : #." t )
+    ("Variant" "indv" "Variant # : # := # : #." t "Variant")
+    ("Variant (2 args)" "indv2" "Variant # : # :=\n| # : #\n| # : #." t )
+    ("Variant (3 args)" "indv3" "Variant # : # :=\n| # : #\n| # : #\n| # : #." t )
+    ("Variant (4 args)" "indv4" "Variant # : # :=\n| # : #\n| # : #\n| # : #\n| # : #." t )
+    ("Variant (5 args)" "indv5" "Variant # : # :=\n| # : #\n| # : #\n| # : #\n| # : #\n| # : #." t )
     ("Let" "Let" "Let # : # := #." t "Let")
     ("Ltac" "ltac" "Ltac # := #" t "Ltac")
     ("Module :=" "mo" "Module # : # := #." t ) ; careful

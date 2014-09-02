@@ -652,7 +652,7 @@ let rec pr_vernac = function
         let (_,_,_,k,_),_ = List.hd l in
 	match k with Record -> "Record" | Structure -> "Structure"
 	  | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
-	  | Class _ -> "Class" in
+	  | Class _ -> "Class" | Variant -> "Variant" in
       hov 1 (pr_oneind key (List.hd l)) ++
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
 

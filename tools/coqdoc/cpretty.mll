@@ -313,6 +313,7 @@ let def_token =
   | "Boxed"
   | "CoFixpoint"
   | "Record"
+  | "Variant"
   | "Structure"
   | "Scheme"
   | "Inductive"

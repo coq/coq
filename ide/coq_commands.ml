@@ -92,6 +92,7 @@ let commands = [
    ];
   ["Read Module";
    "Record";
+   "Variant";
    "Remark";
    "Remove LoadPath";
    "Remove Printing Constructor";

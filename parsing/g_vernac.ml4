@@ -269,7 +269,8 @@ GEXTEND Gram
   ;
   finite_token:
     [ [ "Inductive" -> (Inductive_kw,Finite)
-      | "CoInductive" -> (CoInductive,CoFinite) ] ]
+      | "CoInductive" -> (CoInductive,CoFinite)
+      | "Variant" -> (Variant,BiFinite) ] ]
   ;
   infer_token:
     [ [ IDENT "Infer" -> true | -> false ] ]

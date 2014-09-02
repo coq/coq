@@ -50,6 +50,7 @@ let is_keyword =
       "subgoal"; "subgoals"; "vm_compute";
       "Opaque"; "Transparent"; "Time";
       "Extraction"; "Extract";
+      "Variant";
       (* Program *)
       "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
