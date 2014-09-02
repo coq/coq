@@ -173,7 +173,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacClearBody l as x -> x
   | TacMove (dep,id1,id2) as x -> x
   | TacRename l as x -> x
-  | TacRevert _ as x -> x
 
   (* Constructors *)
   | TacSplit (ev,bll) -> TacSplit (ev,List.map (subst_bindings subst) bll)

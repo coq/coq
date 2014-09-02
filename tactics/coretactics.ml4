@@ -180,6 +180,12 @@ TACTIC EXTEND intros_until
   [ "intros" "until" quantified_hypothesis(h) ] -> [ Tactics.intros_until h ]
 END
 
+(** Revert *)
+
+TACTIC EXTEND revert
+  [ "revert" ne_hyp_list(hl) ] -> [ Tactics.revert hl ]
+END
+
 (** Simple induction / destruct *)
 
 TACTIC EXTEND simple_induction
@@ -201,7 +207,7 @@ let initial_atomic () =
     let body = TacAtom (dloc, t) in
     Tacenv.register_ltac false (Id.of_string s) body
   in
-  let ans = List.iter iter
+  let () = List.iter iter
       [ "red", TacReduce(Red false,nocl);
         "hnf", TacReduce(Hnf,nocl);
         "simpl", TacReduce(Simpl None,nocl);

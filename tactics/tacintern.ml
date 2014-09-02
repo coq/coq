@@ -521,7 +521,6 @@ let rec intern_atomic lf ist x =
       TacRename (List.map (fun (id1,id2) ->
 			     intern_hyp ist id1,
 			     intern_hyp ist id2) l)
-  | TacRevert l -> TacRevert (List.map (intern_hyp ist) l)
 
   (* Constructors *)
   | TacSplit (ev,bll) -> TacSplit (ev,List.map (intern_bindings ist) bll)

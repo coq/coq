@@ -154,7 +154,6 @@ type ('trm,'pat,'cst,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacClearBody of 'nam list
   | TacMove of bool * 'nam * 'nam move_location
   | TacRename of ('nam *'nam) list
-  | TacRevert of 'nam list
 
   (* Trmuctors *)
   | TacSplit of evars_flag * 'trm bindings list

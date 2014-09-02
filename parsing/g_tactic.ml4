@@ -644,7 +644,6 @@ GEXTEND Gram
       | IDENT "move"; hfrom = id_or_meta; hto = move_location ->
 	  TacAtom (!@loc, TacMove (true,hfrom,hto))
       | IDENT "rename"; l = LIST1 rename SEP "," -> TacAtom (!@loc, TacRename l)
-      | IDENT "revert"; l = LIST1 id_or_meta -> TacAtom (!@loc, TacRevert l)
 
       (* Constructors *)
       | "exists"; bll = opt_bindings -> TacAtom (!@loc, TacSplit (false,bll))

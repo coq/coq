@@ -791,8 +791,6 @@ and pr_atom1 = function
 	   (fun (i1,i2) ->
 	      pr_ident i1 ++ spc () ++ str "into" ++ spc () ++ pr_ident i2)
 	   l)
-  | TacRevert l ->
-      hov 1 (str "revert" ++ spc () ++ prlist_with_sep spc pr_ident l)
 
   (* Constructors *)
   | TacSplit (ev,l) -> hov 1 (str (with_evars ev "exists") ++ prlist_with_sep (fun () -> str",") pr_ex_bindings l)

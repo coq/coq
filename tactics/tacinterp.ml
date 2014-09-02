@@ -1944,11 +1944,6 @@ and interp_atomic ist tac : unit Proofview.tactic =
 	  interp_fresh_ident ist env (snd id2)) l)
           gl
       end
-  | TacRevert l ->
-      Proofview.Goal.raw_enter begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        Tactics.revert (interp_hyp_list ist env l)
-      end
 
   (* Constructors *)
   | TacSplit (ev,bll) ->
