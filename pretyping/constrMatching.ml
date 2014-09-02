@@ -80,16 +80,33 @@ let add_binders na1 na2 (names, terms as subst) = match na1, na2 with
     (names, terms)
 | _ -> subst
 
-let build_lambda toabstract stk (m : constr) =
-  let rec buildrec m k stk = match stk with
-  | [] -> m
-  | (_, na, t) :: tl ->
-    if Int.Set.mem k toabstract then
-      buildrec (mkLambda (na, t, m)) (k + 1) tl
-    else
-      buildrec (lift (-1) m) (k + 1) tl
+let rec build_lambda vars stk m = match vars with
+| [] ->
+  let len = List.length stk in
+  lift (-1 * len) m
+| n :: vars ->
+  (* change [ x1 ... xn y z1 ... zm |- t ] into
+     [ x1 ... xn z1 ... zm |- lam y. t ] *)
+  let len = List.length stk in
+  let init i =
+    if i < pred n then mkRel (i + 2)
+    else if Int.equal i (pred n) then mkRel 1
+    else mkRel (i + 1)
   in
-  buildrec m 1 stk
+  let m = substl (List.init len init) m in
+  let pre, suf = List.chop (pred n) stk in
+  match suf with
+  | [] -> assert false
+  | (_, na, t) :: suf ->
+    let map i = if i > n then pred i else i in
+    let vars = List.map map vars in
+    (** Check that the abstraction is legal *)
+    let frels = free_rels t in
+    let brels = List.fold_right Int.Set.add vars Int.Set.empty in
+    let () = if not (Int.Set.subset frels brels) then raise PatternMatchingFailure in
+    (** Create the abstraction *)
+    let m = mkLambda (na, t, m) in
+    build_lambda vars (pre @ suf) m
 
 let rec extract_bound_aux k accu frels stk = match stk with
 | [] -> accu
@@ -155,13 +172,15 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
     let cT = strip_outer_cast t in
     match p,kind_of_term cT with
       | PSoApp (n,args),m ->
-        let fold accu = function
-        | PRel n -> Int.Set.add n accu
+        let fold (ans, seen) = function
+        | PRel n ->
+          let () = if Int.Set.mem n seen then error "Non linear second-order pattern" in
+          (n :: ans, Int.Set.add n seen)
         | _ -> error "Only bound indices allowed in second order pattern matching."
         in
-        let relargs = List.fold_left fold Int.Set.empty args in
+        let relargs, relset = List.fold_left fold ([], Int.Set.empty) args in
         let frels = free_rels cT in
-        if Int.Set.subset frels relargs then
+        if Int.Set.subset frels relset then
           constrain n ([], build_lambda relargs stk cT) subst
         else
           raise PatternMatchingFailure
