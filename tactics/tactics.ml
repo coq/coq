@@ -245,7 +245,7 @@ let naming_of_name = function
   | Anonymous -> NamingAvoid []
   | Name id -> NamingMustBe (dloc,id)
 
-let find_name repl decl naming gl = match naming with
+let find_name mayrepl decl naming gl = match naming with
   | NamingAvoid idl ->
       (* this case must be compatible with [find_intro_names] below. *)
       let env = Proofview.Goal.env gl in
@@ -256,7 +256,7 @@ let find_name repl decl naming gl = match naming with
       (* When name is given, we allow to hide a global name *)
       let ids_of_hyps = Tacmach.New.pf_ids_of_hyps gl in
       let id' = next_ident_away id ids_of_hyps in
-      if not repl && not (Id.equal id' id) then
+      if not mayrepl && not (Id.equal id' id) then
         user_err_loc (loc,"",pr_id id ++ str" is already used.");
       id
 
@@ -811,9 +811,9 @@ let check_unresolved_evars_of_metas sigma clenv =
   | _ -> ())
   (meta_list clenv.evd)
 
-let make_naming id t = function
-  | None -> (true,NamingMustBe (dloc,id)) (* default for apply in *)
-  | Some naming -> naming
+let do_replace id = function
+  | NamingMustBe (_,id') when Option.equal Id.equal id (Some id') -> true
+  | _ -> false
 
 (* For a clenv expressing some lemma [C[?1:T1,...,?n:Tn] : P] and some
    goal [G], [clenv_refine_in] returns [n+1] subgoals, the [n] last
@@ -821,7 +821,7 @@ let make_naming id t = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) naming id clenv0 tac =
+let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) targetid id clenv0 tac =
   let clenv = Clenvtac.clenv_pose_dependent_evars with_evars clenv0 in
   let clenv =
     if with_classes then
@@ -834,7 +834,8 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) nami
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
   let exact_tac = Proofview.V82.tactic (refine_no_check new_hyp_prf) in
-  let with_clear,naming = make_naming id new_hyp_prf naming in
+  let naming = NamingMustBe (dloc,targetid) in
+  let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
     (Proofview.V82.tclEVARS clenv.evd)
     (if sidecond_first then
@@ -1082,7 +1083,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) id rename i (
   if eq_constr hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
-  clenv_refine_in with_evars None id elimclause''
+  clenv_refine_in with_evars id id elimclause''
     (fun id -> Proofview.tclUNIT ())
   end
 
@@ -1138,7 +1139,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       | None -> None
   in elim
 
-let descend_in_conjunctions tac exit c =
+let descend_in_conjunctions avoid tac exit c =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
@@ -1166,8 +1167,10 @@ let descend_in_conjunctions tac exit c =
 	    match make_projection env sigma params cstr sign elim i n c u with
 	    | None -> Tacticals.New.tclFAIL 0 (mt())
 	    | Some (p,pt) ->
-                (* Might be ill-typed due to forbidden elimination. *)
-                tac (not isrec) p
+	    Tacticals.New.tclTHENS
+	      (assert_before_gen false (NamingAvoid avoid) pt)
+	      [Proofview.V82.tactic (refine p); (* Might be ill-typed due to forbidden elimination. *)
+	       Tacticals.New.onLastHypId (tac (not isrec))]
             end))
     | None ->
 	raise Exit
@@ -1236,8 +1239,11 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
 	       second order unification *)
             let tac =
 	      if with_destruct then
-                descend_in_conjunctions
-                  try_main_apply
+                descend_in_conjunctions []
+                  (fun b id ->
+                    Tacticals.New.tclTHEN
+                      (try_main_apply b (mkVar id))
+                      (Proofview.V82.tactic (thin [id])))
                   (fun _ -> Proofview.tclZERO (Loc.add_loc exn0 loc)) c
 	      else
 		Proofview.tclZERO (Loc.add_loc exn0 loc) in
@@ -1330,23 +1336,26 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
   let flags = if with_delta then elim_flags () else elim_no_delta_flags () in
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
   let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
-  let rec aux with_destruct c =
+  let targetid = find_name true (Anonymous,None,t') naming gl in
+  let rec aux clear_flag with_destruct c =
     Proofview.Goal.raw_enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     try
       let clause = apply_in_once_main flags innerclause env sigma (c,lbind) in
-      clenv_refine_in ~sidecond_first with_evars naming id clause
+      clenv_refine_in ~sidecond_first with_evars targetid id clause
         (fun id ->
           Tacticals.New.tclTHEN
             (apply_clear_request clear_flag false c)
             (tac id))
     with e when with_destruct && Errors.noncritical e ->
       let e = Errors.push e in
-      descend_in_conjunctions aux (fun _ -> raise e) c
+      descend_in_conjunctions [targetid]
+        (fun b id -> aux (Some true) b (mkVar id))
+        (fun _ -> raise e) c
     end
   in
-  aux with_destruct d
+  aux clear_flag with_destruct d
   end
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
@@ -1702,10 +1711,6 @@ let rec prepare_naming loc = function
   | IntroWildcard ->
       error "Did you really mind erasing the newly generated hypothesis?"
 
-let do_replace id = function
-  | NamingMustBe (_,id') when Option.equal Id.equal id (Some id') -> true
-  | _ -> false
-
 let rec explicit_intro_names = function
 | (_, IntroForthcoming _) :: l -> explicit_intro_names l
 | (_, IntroNaming (IntroIdentifier id)) :: l -> id :: explicit_intro_names l
@@ -1804,7 +1809,6 @@ and intro_pattern_action loc b style pat thin tac id = match pat with
         (tac thin None [])
   | IntroApplyOn (f,(loc,pat)) ->
       let naming,tac_ipat = prepare_intros_loc loc (IntroIdentifier id) pat in
-      let clear = do_replace (Some id) naming in
       Proofview.Goal.raw_enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
@@ -1812,7 +1816,7 @@ and intro_pattern_action loc b style pat thin tac id = match pat with
         Proofview.V82.tclEVARS sigma <*>
           (Tacticals.New.tclTHENFIRST
              (* Skip the side conditions of the apply *)
-             (apply_in_once false true true true (Some (clear,naming)) id
+             (apply_in_once false true true true naming id
                 (None,(sigma,(c,NoBindings))) tac_ipat))
 	  (tac thin None [])
       end
@@ -1885,10 +1889,9 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
     apply_in_once sidecond_first with_delta with_destruct with_evars
       naming id lemma tac in
   let naming,ipat_tac = prepare_intros (IntroIdentifier id) ipat in
-  let clear = do_replace (Some id) naming in
   let lemmas_target, last_lemma_target =
     let last,first = List.sep_last lemmas in
-    List.map (fun lem -> (None,lem)) first, (Some (clear,naming),last)
+    List.map (fun lem -> (NamingMustBe (dloc,id),lem)) first, (naming,last)
   in
   (* We chain apply_in_once, ending with an intro pattern *)
   List.fold_right tac lemmas_target (tac last_lemma_target ipat_tac) id

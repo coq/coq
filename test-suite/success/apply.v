@@ -489,3 +489,10 @@ split.
 exact H. (* Check that generated names are H and H0 *)
 exact H0.
 Qed.
+
+(* This failed at some time in between 18 August 2014 and 2 September 2014 *)
+
+Goal forall A B C: Prop, (True -> A -> B /\ C) -> A -> B.
+intros * H.
+apply H.
+Abort.
