@@ -762,7 +762,7 @@ and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
     | Some (projs, pbs) when Array.length projs > 0
-      && mib.Declarations.mind_finite -> 
+      && mib.Declarations.mind_finite <> Decl_kinds.CoFinite -> 
       let pars = mib.Declarations.mind_nparams in
 	(try 
 	   let l1' = Stack.tail pars sk1 in

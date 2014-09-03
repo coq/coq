@@ -48,7 +48,7 @@ let match_with_non_recursive_type t =
         let (hdapp,args) = decompose_app t in
         (match kind_of_term hdapp with
            | Ind (ind,u) ->
-               if not (Global.lookup_mind (fst ind)).mind_finite then
+               if (Global.lookup_mind (fst ind)).mind_finite == Decl_kinds.CoFinite then
 		 Some (hdapp,args)
 	       else
 		 None

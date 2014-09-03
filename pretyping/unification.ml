@@ -461,7 +461,7 @@ let is_eta_constructor_app env f l1 =
     let mib = lookup_mind (fst ind) env in
       (match mib.Declarations.mind_record with
       | Some (exp,projs) when Array.length projs > 0
-        && mib.Declarations.mind_finite -> 
+        && mib.Declarations.mind_finite <> Decl_kinds.CoFinite -> 
         Array.length projs == Array.length l1 - mib.Declarations.mind_nparams
       | _ -> false)
   | _ -> false

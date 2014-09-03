@@ -272,7 +272,7 @@ let theory_output_string ?(do_not_quote = false) s =
 
 let kind_of_inductive isrecord kn =
  "DEFINITION",
- if (fst (Global.lookup_inductive (kn,0))).Declarations.mind_finite
+ if (fst (Global.lookup_inductive (kn,0))).Declarations.mind_finite <> Decl_kinds.CoFinite
  then begin 
    match isrecord with 
    | Declare.KernelSilent -> "Record"
@@ -389,7 +389,7 @@ let print internal glob_ref kind xml_library_root =
 	    Declarations.mind_packets=packs ;
             Declarations.mind_hyps=hyps;
             Declarations.mind_finite=finite} = mib in
-          Cic2acic.Inductive kn,mk_inductive_obj kn mib packs variables nparams hyps finite
+          Cic2acic.Inductive kn,mk_inductive_obj kn mib packs variables nparams hyps (finite<>Decl_kinds.CoFinite)
     | Globnames.ConstructRef _ ->
        Errors.error ("a single constructor cannot be printed in XML")
   in

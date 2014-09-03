@@ -44,7 +44,7 @@ type mutual_inductive_entry = {
   mind_entry_record : bool option; 
   (** Some true: primitive record
       Some false: non-primitive record *)
-  mind_entry_finite : bool;
+  mind_entry_finite : Decl_kinds.recursivity_kind;
   mind_entry_params : (Id.t * local_entry) list;
   mind_entry_inds : one_inductive_entry list;
   mind_entry_polymorphic : bool;

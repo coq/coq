@@ -355,8 +355,8 @@ let ind2name = Id.of_string "__ind2"
     be co-inductive, and for the moment they must not be mutual
     either. *)
 let verify_inds mib1 mib2 =
-  if not mib1.mind_finite then error "First argument is coinductive";
-  if not mib2.mind_finite then error "Second argument is coinductive";
+  if mib1.mind_finite == Decl_kinds.CoFinite then error "First argument is coinductive";
+  if mib2.mind_finite == Decl_kinds.CoFinite then error "Second argument is coinductive";
   if not (Int.equal mib1.mind_ntypes 1) then error "First argument is mutual";
   if not (Int.equal mib2.mind_ntypes 1) then error "Second argument is mutual";
   ()
@@ -885,7 +885,7 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
   (* Declare inductive *)
   let indl,_,_ = Command.extract_mutual_inductive_declaration_components [(indexpr,[])] in
   let mie,impls = Command.interp_mutual_inductive indl [] 
-          false (*FIXMEnon-poly *) false (* means not private *) true (* means: not coinductive *) in
+          false (*FIXMEnon-poly *) false (* means not private *) Decl_kinds.Finite (* means: not coinductive *) in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (Command.declare_mutual_inductive_with_eliminations Declare.UserVerbose mie impls)
 

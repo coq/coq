@@ -158,7 +158,7 @@ type mutual_inductive_body = {
 	In the case it is primitive we get its projection names and checked
 	projection bodies, otherwise both arrays are empty. *)
 
-    mind_finite : bool;  (** Whether the type is inductive or coinductive *)
+    mind_finite : Decl_kinds.recursivity_kind;  (** Whether the type is inductive or coinductive *)
 
     mind_ntypes : int;  (** Number of types in the block *)
 

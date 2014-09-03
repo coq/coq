@@ -111,10 +111,19 @@ let type_of_global_ref gr =
     | Globnames.IndRef ind ->
 	let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
 	  if mib.Declarations.mind_record <> None then
-	    if mib.Declarations.mind_finite then "rec"
-	    else "corec"
-	  else if mib.Declarations.mind_finite then "ind"
-	  else "coind"
+            let open Decl_kinds in
+            begin match mib.Declarations.mind_finite with
+            | Finite -> "indrec"
+            | BiFinite -> "rec"
+	    | CoFinite -> "corec"
+            end
+	  else
+            let open Decl_kinds in
+            begin match mib.Declarations.mind_finite with
+            | Finite -> "ind"
+            | BiFinite -> "variant"
+	    | CoFinite -> "coind"
+            end
     | Globnames.ConstructRef _ -> "constr"
 
 let remove_sections dir =

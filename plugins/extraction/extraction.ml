@@ -220,7 +220,7 @@ let eq_record x y =
 let mib_equal m1 m2 =
   Array.equal oib_equal m1.mind_packets m1.mind_packets &&
   eq_record m1.mind_record m2.mind_record &&
-  (m1.mind_finite : bool) == m2.mind_finite &&
+  (m1.mind_finite : Decl_kinds.recursivity_kind) == m2.mind_finite &&
   Int.equal m1.mind_ntypes m2.mind_ntypes &&
   List.equal eq_named_declaration m1.mind_hyps m2.mind_hyps &&
   Int.equal m1.mind_nparams m2.mind_nparams &&
@@ -437,7 +437,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	let ip = (kn, 0) in
 	let r = IndRef ip in
 	if is_custom r then raise (I Standard);
-	if not mib.mind_finite then raise (I Coinductive);
+	if mib.mind_finite == Decl_kinds.CoFinite then raise (I Coinductive);
 	if not (Int.equal mib.mind_ntypes 1) then raise (I Standard);
 	let p,u = packets.(0) in
 	if p.ip_logical then raise (I Standard);

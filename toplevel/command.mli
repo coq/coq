@@ -90,7 +90,7 @@ type one_inductive_impls =
 
 val interp_mutual_inductive :
   structured_inductive_expr -> decl_notation list -> polymorphic ->
-    private_flag -> bool(*finite*) ->
+    private_flag -> Decl_kinds.recursivity_kind ->
     mutual_inductive_entry * one_inductive_impls list
 
 (** Registering a mutual inductive definition together with its
@@ -104,7 +104,7 @@ val declare_mutual_inductive_with_eliminations :
 
 val do_mutual_inductive :
   (one_inductive_expr * decl_notation list) list -> polymorphic -> 
-  private_flag -> bool -> unit
+  private_flag -> Decl_kinds.recursivity_kind -> unit
 
 (** {6 Fixpoints and cofixpoints} *)
 

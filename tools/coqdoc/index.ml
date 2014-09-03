@@ -273,9 +273,9 @@ let type_of_string = function
   | "def" | "coe" | "subclass" | "canonstruc" | "fix" | "cofix"
   | "ex" | "scheme" -> Definition
   | "prf" | "thm" -> Lemma
-  | "ind" | "coind" -> Inductive
+  | "ind" | "variant" | "coind" -> Inductive
   | "constr" -> Constructor
-  | "rec" | "corec" -> Record
+  | "indrec" | "rec" | "corec" -> Record
   | "proj" -> Projection
   | "class" -> Class
   | "meth" -> Method

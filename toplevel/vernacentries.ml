@@ -556,7 +556,7 @@ let vernac_inductive poly lo finite infer indl =
       | _ -> Errors.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
-    do_mutual_inductive indl poly lo (finite != CoFinite)
+    do_mutual_inductive indl poly lo finite
 
 let vernac_fixpoint locality poly local l =
   let local = enforce_locality_exp locality local in

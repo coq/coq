@@ -160,8 +160,14 @@ let print_body is_impl env mp (l,body) =
 	let env = Option.get env in
 	Printer.pr_mutual_inductive_body env (MutInd.make2 mp l) mib
       with e when Errors.noncritical e ->
-	(if mib.mind_finite then str "Inductive " else str "CoInductive")
-	++ name)
+        let keyword =
+          let open Decl_kinds in
+          match mib.mind_finite with
+          | Finite -> "Inductive "
+          | BiFinite -> "Variant "
+          | CoFinite -> "CoInductive "
+        in
+	str keyword ++ name)
 
 let print_struct is_impl env mp struc =
   prlist_with_sep spc (print_body is_impl env mp) struc

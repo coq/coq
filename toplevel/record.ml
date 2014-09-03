@@ -344,7 +344,7 @@ let declare_structure finite infer poly ctx id idbuild paramimpls params arity f
   let mie =
     { mind_entry_params = List.map degenerate_decl params;
       mind_entry_record = Some !primitive_flag;
-      mind_entry_finite = finite != CoFinite;
+      mind_entry_finite = finite;
       mind_entry_inds = [mie_ind];
       mind_entry_polymorphic = poly;
       mind_entry_private = None;

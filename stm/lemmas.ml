@@ -93,7 +93,7 @@ let find_mutually_recursive_statements thms =
           (match kind_of_term t with
           | Ind ((kn,_ as ind), u) when
               let mind = Global.lookup_mind kn in
-              mind.mind_finite && Option.is_empty b ->
+              mind.mind_finite == Decl_kinds.Finite && Option.is_empty b ->
               [ind,x,i],[]
           | _ ->
               error "Decreasing argument is not an inductive assumption.")
@@ -110,7 +110,7 @@ let find_mutually_recursive_statements thms =
           match kind_of_term t with
           | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
-                mind.mind_finite && Option.is_empty b ->
+                mind.mind_finite <> Decl_kinds.CoFinite && Option.is_empty b ->
               [ind,x,i]
           | _ ->
               []) 0 (List.rev whnf_hyp_hds)) in
@@ -120,7 +120,7 @@ let find_mutually_recursive_statements thms =
         match kind_of_term whnf_ccl with
         | Ind ((kn,_ as ind),u) when
               let mind = Global.lookup_mind kn in
-              Int.equal mind.mind_ntypes n && not mind.mind_finite ->
+              Int.equal mind.mind_ntypes n && mind.mind_finite == Decl_kinds.CoFinite ->
             [ind,x,0]
         | _ ->
             [] in

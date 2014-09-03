@@ -780,8 +780,15 @@ let print_one_inductive env mib ((_,i) as ind) =
 let print_mutual_inductive env mind mib =
   let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x))
   in
+  let keyword =
+    let open Decl_kinds in
+    match mib.mind_finite with
+    | Finite -> "Inductive "
+    | BiFinite -> "Variant "
+    | CoFinite -> "CoInductive "
+  in
   hov 0 (pr_polymorphic mib.mind_polymorphic ++
-    str (if mib.mind_finite then "Inductive " else "CoInductive ") ++
+    str keyword ++
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
       (print_one_inductive env mib) inds ++
       pr_universe_ctx (Univ.instantiate_univ_context mib.mind_universes))

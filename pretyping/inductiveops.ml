@@ -441,7 +441,7 @@ let find_inductive env sigma c =
   let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
   match kind_of_term t with
     | Ind ind
-        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite ->
+        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> Decl_kinds.CoFinite ->
         (ind, l)
     | _ -> raise Not_found
 
@@ -449,7 +449,7 @@ let find_coinductive env sigma c =
   let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
   match kind_of_term t with
     | Ind ind
-        when not (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite ->
+        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == Decl_kinds.CoFinite ->
         (ind, l)
     | _ -> raise Not_found
 
