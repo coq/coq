@@ -820,10 +820,17 @@ let print_record env mind mib =
   let cstrtype = hnf_prod_applist env cstrtypes.(0) args in
   let fields = get_fields cstrtype in
   let envpar = push_rel_context params env in
+  let keyword =
+    let open Decl_kinds in
+    match mib.mind_finite with
+    | BiFinite -> "Record "
+    | Finite -> "Inductive "
+    | CoFinite -> "CoInductive "
+  in
   hov 0 (
     hov 0 (
       pr_polymorphic mib.mind_polymorphic ++
-      str "Record " ++ pr_id mip.mind_typename ++ brk(1,4) ++
+      str keyword ++ pr_id mip.mind_typename ++ brk(1,4) ++
       print_params env params ++
       str ": " ++ pr_lconstr_env envpar arity ++ brk(1,2) ++
       str ":= " ++ pr_id mip.mind_consnames.(0)) ++
