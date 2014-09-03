@@ -168,7 +168,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 	    is_conv env sigma c' c
        else false)
   in
-  let rec sorec stk subst p t =
+  let rec sorec stk env subst p t =
     let cT = strip_outer_cast t in
     match p,kind_of_term cT with
       | PSoApp (n,args),m ->
@@ -203,10 +203,10 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 
       | PSort (GType _), Sort (Type _) -> subst
 
-      | PApp (p, [||]), _ -> sorec stk subst p t
+      | PApp (p, [||]), _ -> sorec stk env subst p t
 
       | PApp (PApp (h, a1), a2), _ ->
-          sorec stk subst (PApp(h,Array.append a1 a2)) t
+          sorec stk env subst (PApp(h,Array.append a1 a2)) t
 
       | PApp (PMeta meta,args1), App (c2,args2) when allow_partial_app ->
           let p = Array.length args2 - Array.length args1 in
@@ -217,46 +217,56 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
               match meta with
               | None -> subst
               | Some n -> merge_binding allow_bound_rels stk n c subst in
-            Array.fold_left2 (sorec stk) subst args1 args22
+            Array.fold_left2 (sorec stk env) subst args1 args22
           else raise PatternMatchingFailure
 
       | PApp (c1,arg1), App (c2,arg2) ->
 	(match c1, kind_of_term c2 with
-	| PRef (ConstRef r), Proj _ ->
-      	  (let subst = (sorec stk subst (PProj (r,arg1.(0))) c2) in
-	     try Array.fold_left2 (sorec stk) subst (Array.tl arg1) arg2
-	     with Invalid_argument _ -> raise PatternMatchingFailure)
+	| PRef (ConstRef r), Proj (p,c) ->
+      	  let pb = Environ.lookup_projection p env in
+	  let npars = pb.Declarations.proj_npars in
+	  let narg1 = Array.length arg1 in
+	    if narg1 >= npars + 1 then
+	      let pars, args = Array.chop (npars + 1) arg1 in
+	      let subst = sorec stk env subst (PApp (c1, pars)) c2 in
+		try Array.fold_left2 (sorec stk env) subst args arg2
+		with Invalid_argument _ -> raise PatternMatchingFailure
+	    else raise PatternMatchingFailure
 	| _ ->
-          (try Array.fold_left2 (sorec stk) (sorec stk subst c1 c2) arg1 arg2
+          (try Array.fold_left2 (sorec stk env) (sorec stk env subst c1 c2) arg1 arg2
            with Invalid_argument _ -> raise PatternMatchingFailure))
 
       | PApp (PMeta (Some n), [|c1|]), Proj (p2, c2) ->
       	  let ty = Retyping.get_type_of env sigma c2 in
 	  let term = mkLambda (Name (id_of_string "x"), ty, mkProj (p2, mkRel 1)) in
       	  let subst = merge_binding allow_bound_rels stk n term subst in
-      	    sorec stk subst c1 c2
+      	    sorec stk env subst c1 c2
 
       | PApp (PRef (ConstRef c1),arg1), Proj (p2,c2) when eq_constant c1 p2 ->
-	let pb = Environ.lookup_projection p2 (Global.env ()) in
-	let pars = pb.Declarations.proj_npars in
-	  if Array.length arg1 == pars + 1 then
-	    sorec stk subst arg1.(pars) c2
+	let pb = Environ.lookup_projection p2 env in
+	let npars = pb.Declarations.proj_npars in
+	  if Array.length arg1 == npars + 1 then
+      	    let ty = Retyping.get_type_of env sigma c2 in
+	    let _, pars' = Inductive.find_rectype env ty in
+	    let subst = List.fold_left2 (sorec stk env) subst 
+	      (Array.to_list (Array.sub arg1 0 npars)) pars' in
+	      sorec stk env subst arg1.(npars) c2
 	  else raise PatternMatchingFailure
 
       | PProj (p1,c1), Proj (p2,c2) when eq_constant p1 p2 ->
-          sorec stk subst c1 c2
+          sorec stk env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
-	  sorec ((na1,na2,c2)::stk)
-            (add_binders na1 na2 (sorec stk subst c1 c2)) d1 d2
+	  sorec ((na1,na2,c2)::stk) (Environ.push_rel (na2,None,c2) env)
+            (add_binders na1 na2 (sorec stk env subst c1 c2)) d1 d2
 
       | PLambda (na1,c1,d1), Lambda(na2,c2,d2) ->
-	  sorec ((na1,na2,c2)::stk)
-            (add_binders na1 na2 (sorec stk subst c1 c2)) d1 d2
+	  sorec ((na1,na2,c2)::stk) (Environ.push_rel (na2,None,c2) env)
+            (add_binders na1 na2 (sorec stk env subst c1 c2)) d1 d2
 
       | PLetIn (na1,c1,d1), LetIn(na2,c2,t2,d2) ->
-	  sorec ((na1,na2,t2)::stk)
-            (add_binders na1 na2 (sorec stk subst c1 c2)) d1 d2
+	  sorec ((na1,na2,t2)::stk) (Environ.push_rel (na2,Some c2,t2) env)
+            (add_binders na1 na2 (sorec stk env subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
 	  let ctx,b2 = decompose_lam_n_assum ci.ci_cstr_ndecls.(0) b2 in
@@ -269,7 +279,8 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 	    let s' =
 	      List.fold_left (fun l (na,_,t) -> (Anonymous,na,t)::l) stk ctx' in
 	    let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in
-	    sorec s' (sorec s (sorec stk subst a1 a2) b1 b2) b1' b2'
+	    sorec s' (Environ.push_rel_context ctx' env)
+	      (sorec s (Environ.push_rel_context ctx env) (sorec stk env subst a1 a2) b1 b2) b1' b2'
           else
             raise PatternMatchingFailure
 
@@ -290,9 +301,9 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 	    (* (ind,j+1) is normally known to be a correct constructor
 	       and br2 a correct match over the same inductive *)
 	    assert (j < n2);
-	    sorec stk subst c br2.(j)
+	    sorec stk env subst c br2.(j)
 	  in
-	  let chk_head = sorec stk (sorec stk subst a1 a2) p1 p2 in
+	  let chk_head = sorec stk env (sorec stk env subst a1 a2) p1 p2 in
 	  List.fold_left chk_branch chk_head br1
 
       |	PFix c1, Fix _ when eq_constr (mkFix c1) cT -> subst
@@ -300,7 +311,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
       | _ -> raise PatternMatchingFailure
 
   in
-  sorec [] (Id.Map.empty, Id.Map.empty) pat c
+  sorec [] env (Id.Map.empty, Id.Map.empty) pat c
 
 let matches_core_closed env sigma convert allow_partial_app pat c =
   let names, subst = matches_core env sigma convert allow_partial_app false pat c in
