@@ -73,6 +73,32 @@ let pr_lconstr c = quote (pr_lconstr c)
 let pr_lconstr_env e c = quote (pr_lconstr_env e c)
 let pr_ljudge_env e c = let v,t = pr_ljudge_env e c in (quote v,quote t)
 
+(** A canonisation procedure for constr such that comparing there
+    externalisation catches more equalities *)
+let canonize_constr c =
+  (* replaces all the names in binders by [dn] ("default name"),
+     ensures that [alpha]-equivalent terms will have the same
+     externalisation. *)
+  let dn = Name.Anonymous in
+  let rec canonize_binders c =
+    match Term.kind_of_term c with
+    | Prod (_,t,b) -> mkProd(dn,t,b)
+    | Lambda (_,t,b) -> mkLambda(dn,t,b)
+    | LetIn (_,u,t,b) -> mkLetIn(dn,u,t,b)
+    | _ -> Term.map_constr canonize_binders c
+  in
+  canonize_binders c
+
+(** Tries to realize when the two terms, albeit different are printed the same. *)
+let display_eq ~flags env t1 t2 =
+  (* terms are canonized, then their externalisation is compared syntactically *)
+  let open Constrextern in
+  let t1 = canonize_constr t1 in
+  let t2 = canonize_constr t2 in
+  let ct1 = Flags.with_options flags (fun () -> extern_constr false env t1) () in
+  let ct2 = Flags.with_options flags (fun () -> extern_constr false env t2) () in
+  Constrexpr_ops.constr_expr_eq ct1 ct2
+
 (** This function adds some explicit printing flags if the two arguments are
     printed alike. *)
 let rec pr_explicit_aux env t1 t2 = function
@@ -80,16 +106,16 @@ let rec pr_explicit_aux env t1 t2 = function
   (** no specified flags: default. *)
   (quote (Printer.pr_lconstr_env env t1), quote (Printer.pr_lconstr_env env t2))
 | flags :: rem ->
-  let open Constrextern in
-  let ct1 = Flags.with_options flags (fun () -> extern_constr false env t1) ()
-  in
-  let ct2 = Flags.with_options flags (fun () -> extern_constr false env t2) ()
-  in
-  let equal = Constrexpr_ops.constr_expr_eq ct1 ct2 in
+  let equal = display_eq ~flags env t1 t2 in
   if equal then
     (** The two terms are the same from the user point of view *)
     pr_explicit_aux env t1 t2 rem
   else
+    let open Constrextern in
+    let ct1 = Flags.with_options flags (fun () -> extern_constr false env t1) ()
+    in
+    let ct2 = Flags.with_options flags (fun () -> extern_constr false env t2) ()
+    in
     quote (Ppconstr.pr_lconstr_expr ct1), quote (Ppconstr.pr_lconstr_expr ct2)
 
 let explicit_flags =
