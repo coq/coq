@@ -1337,7 +1337,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
   let t' = Tacmach.New.pf_get_hyp_typ id gl in
   let innerclause = mk_clenv_from_env env sigma (Some 0) (mkVar id,t') in
   let targetid = find_name true (Anonymous,None,t') naming gl in
-  let rec aux clear_flag with_destruct c =
+  let rec aux idstoclear with_destruct c =
     Proofview.Goal.raw_enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
@@ -1345,17 +1345,19 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
       let clause = apply_in_once_main flags innerclause env sigma (c,lbind) in
       clenv_refine_in ~sidecond_first with_evars targetid id clause
         (fun id ->
-          Tacticals.New.tclTHEN
-            (apply_clear_request clear_flag false c)
-            (tac id))
+          Tacticals.New.tclTHENLIST [
+            apply_clear_request clear_flag false c;
+            Proofview.V82.tactic (thin idstoclear);
+            tac id
+          ])
     with e when with_destruct && Errors.noncritical e ->
       let e = Errors.push e in
-      descend_in_conjunctions [targetid]
-        (fun b id -> aux (Some true) b (mkVar id))
-        (fun _ -> raise e) c
+        (descend_in_conjunctions [targetid]
+           (fun b id -> aux (id::idstoclear) b (mkVar id))
+           (fun _ -> raise e) c)
     end
   in
-  aux clear_flag with_destruct d
+  aux [] with_destruct d
   end
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into

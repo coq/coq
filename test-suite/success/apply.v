@@ -496,3 +496,17 @@ Goal forall A B C: Prop, (True -> A -> B /\ C) -> A -> B.
 intros * H.
 apply H.
 Abort.
+
+(* This failed between 2 and 3 September 2014 *)
+
+Goal forall A B C D:Prop, (A<->B)/\(C<->D) -> A -> B.
+intros.
+apply H in H0.
+pose proof I as H1. (* Test that H1 does not exist *)
+Abort.
+
+Goal forall A B C D:Prop, (A<->B)/\(C<->D) -> A.
+intros.
+apply H.
+pose proof I as H0. (* Test that H0 does not exist *)
+Abort.
