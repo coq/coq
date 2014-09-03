@@ -196,7 +196,9 @@ let pr_grammar = function
       str "Entry binder_tactic is" ++ fnl () ++
       pr_entry Pcoq.Tactic.binder_tactic ++
       str "Entry simple_tactic is" ++ fnl () ++
-      pr_entry Pcoq.Tactic.simple_tactic
+      pr_entry Pcoq.Tactic.simple_tactic ++
+      str "Entry tactic_arg is" ++ fnl () ++
+      pr_entry Pcoq.Tactic.tactic_arg
   | "vernac" ->
       str "Entry vernac is" ++ fnl () ++
       pr_entry Pcoq.Vernac_.vernac ++
