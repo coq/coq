@@ -536,6 +536,10 @@ let vernac_inductive poly lo finite infer indl =
 	| _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
   match indl with
+  | [ ( _ , _ , _ ,Record, Constructors _ ),_ ] ->
+      Errors.error "The Record keyword cannot be used to define a variant type. Use Variant instead."
+  | [ (_ , _ , _ ,Variant, RecordDecl _),_ ] ->
+      Errors.error "The Variant keyword cannot be used to define a record type. Use Record instead."
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
       vernac_record (match b with Class true -> Class false | _ -> b)
 	poly finite infer id bl c oc fs
