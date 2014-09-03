@@ -510,3 +510,20 @@ intros.
 apply H.
 pose proof I as H0. (* Test that H0 does not exist *)
 Abort.
+
+(* The first example below failed at some time in between 18 August
+   2014 and 2 September 2014 *)
+
+Goal forall x, 2=0 -> x+1=2 -> (forall x, S x = 0) -> True.
+intros x H H0 H1.
+eapply eq_trans in H. 2:apply H0.
+rewrite H1 in H.
+change (x+0=0) in H. (* Check the result in H1 *)
+Abort.
+
+Goal forall x, 2=x+1 -> (forall x, S x = 0) -> 2 = 0.
+intros x H H0.
+eapply eq_trans. apply H.
+rewrite H0.
+change (x+0=0).
+Abort.
