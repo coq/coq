@@ -105,8 +105,10 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 			  Termops.rel_vect ndepar k)
 	| Some ps -> 
 	  let term = mkApp (mkRel 2, Array.map (fun p -> mkProj (p, mkRel 1)) ps) in
-	  let ty = mkApp (mkRel 3, [| mkRel 1 |]) in
-	    mkCast (term, DEFAULTcast, ty)
+	    if dep then
+	      let ty = mkApp (mkRel 3, [| mkRel 1 |]) in 
+		mkCast (term, DEFAULTcast, ty)
+	    else term
       in
 	it_mkLambda_or_LetIn_name env' obj deparsign
     else
