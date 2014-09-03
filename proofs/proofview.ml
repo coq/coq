@@ -849,25 +849,19 @@ module Goal = struct
   let hyps { hyps=hyps } = Environ.named_context_of_val hyps
   let concl { concl=concl } = concl
 
-  let enter_t f = Goal.enter begin fun env sigma hyps concl self ->
-    let concl = Reductionops.nf_evar sigma concl in
-    let map_nf c = Reductionops.nf_evar sigma c in
-    let hyps = Environ.map_named_val map_nf hyps in
-    let env = Environ.reset_with_named_context hyps env in
-    f {env=env;sigma=sigma;hyps=hyps;concl=concl;self=self}
+  let enter_t = Goal.nf_enter begin fun env sigma hyps concl self ->
+    {env=env;sigma=sigma;hyps=hyps;concl=concl;self=self}
   end
 
   let enter f =
     (* the global environment of the tactic is changed to that of
        the goal *)
-    let f gl = Proof.set_local (env gl) (f gl) in
     list_iter_goal () begin fun goal () ->
       Proof.current >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try
-        (* enter_t cannot modify the sigma. *)
-        let (t,_) = Goal.eval (enter_t f) env sigma goal in
-        t
+        let (gl, sigma) = Goal.eval enter_t env sigma goal in
+        tclTHEN (V82.tclEVARS sigma) ((Proof.set_local gl.env) (f gl))
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
@@ -902,7 +896,7 @@ module Goal = struct
       | None -> None (** ppedrot: Is this check really necessary? *)
       | Some goal ->
         (** The sigma is unchanged. *)
-        let (gl, _) = Goal.eval (enter_t (fun gl -> gl)) env sigma goal in
+        let (gl, _) = Goal.eval enter_t env sigma goal in
         Some gl
     in
     tclUNIT (List.map_filter map step.comb)

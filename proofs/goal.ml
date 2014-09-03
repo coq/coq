@@ -246,6 +246,19 @@ let enter f = (); fun env rdefs gl info ->
   let sigma = !rdefs in
   f env sigma (Evd.evar_hyps info) (Evd.evar_concl info) gl
 
+let nf_enter f = (); fun env rdefs gl info ->
+  let sigma = !rdefs in
+  if gl.cache == sigma then
+    f env sigma (Evd.evar_hyps info) (Evd.evar_concl info) gl
+  else
+    let info = Evarutil.nf_evar_info sigma info in
+    let sigma = Evd.add sigma gl.content info in
+    let gl = { gl with cache = sigma } in
+    let () = rdefs := sigma in
+    let hyps = Evd.evar_hyps info in
+    let env = Environ.reset_with_named_context hyps env in
+    f env sigma hyps (Evd.evar_concl info) gl
+
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the
    internal types. *)

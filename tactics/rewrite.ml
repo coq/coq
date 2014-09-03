@@ -33,7 +33,6 @@ open Locus
 open Locusops
 open Decl_kinds
 open Elimschemes
-open Goal
 open Environ
 open Tacinterp
 open Termops
