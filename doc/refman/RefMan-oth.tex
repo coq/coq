@@ -169,7 +169,7 @@ This command displays the extracted term from
 {\term}. The extraction is processed according to the distinction
 between {\Set} and {\Prop}; that is to say, between logical and
 computational content (see Section~\ref{Sorts}). The extracted term is
-displayed in Objective Caml syntax, where global identifiers are still
+displayed in {\ocaml} syntax, where global identifiers are still
 displayed as in \Coq\ terms.
 
 \begin{Variants}
@@ -680,17 +680,17 @@ This command displays the list of library files loaded in the current
 imported.
 
 \subsection[\tt Declare ML Module {\str$_1$} .. {\str$_n$}.]{\tt Declare ML Module {\str$_1$} .. {\str$_n$}.\comindex{Declare ML Module}}
-This commands loads the Objective Caml compiled files {\str$_1$} {\ldots}
+This commands loads the {\ocaml} compiled files {\str$_1$} {\ldots}
 {\str$_n$} (dynamic link). It is mainly used to load tactics
 dynamically.
 % (see Chapter~\ref{WritingTactics}).
  The files are
-searched into the current Objective Caml loadpath (see the command {\tt
-Add ML Path} in the Section~\ref{loadpath}).  Loading of Objective Caml
+searched into the current {\ocaml} loadpath (see the command {\tt
+Add ML Path} in the Section~\ref{loadpath}).  Loading of {\ocaml}
 files is only possible under the bytecode version of {\tt coqtop}
 (i.e. {\tt coqtop} called with options {\tt -byte}, see chapter 
 \ref{Addoc-coqc}), or when Coq has been compiled with a version of
-Objective Caml that supports native {\tt Dynlink} ($\ge$ 3.11).
+{\ocaml} that supports native {\tt Dynlink} ($\ge$ 3.11).
 
 \begin{Variants}
 \item {\tt Local Declare ML Module {\str$_1$} .. {\str$_n$}.}\\
@@ -759,16 +759,16 @@ Works as {\tt Print LoadPath} but displays only the paths that extend the {\dirp
 \end{Variants}
 
 \subsection[\tt Add ML Path {\str}.]{\tt Add ML Path {\str}.\comindex{Add ML Path}}
-This command adds the path {\str} to the current Objective Caml loadpath (see
+This command adds the path {\str} to the current {\ocaml} loadpath (see
 the command {\tt Declare ML Module} in the Section~\ref{compiled}).
 
 \subsection[\tt Add Rec ML Path {\str}.]{\tt Add Rec ML Path {\str}.\comindex{Add Rec ML Path}}
 This command adds the directory {\str} and all its subdirectories 
-to the current Objective Caml loadpath (see
+to the current {\ocaml} loadpath (see
 the command {\tt Declare ML Module} in the Section~\ref{compiled}).
 
 \subsection[\tt Print ML Path {\str}.]{\tt Print ML Path {\str}.\comindex{Print ML Path}}
-This command displays the current Objective Caml loadpath.
+This command displays the current {\ocaml} loadpath.
 This command makes sense only under the bytecode version of {\tt
 coqtop}, i.e. using option {\tt -byte} (see the
 command {\tt Declare ML Module} in the section
@@ -874,7 +874,7 @@ This command permits to quit \Coq.
 This is used mostly as a debug facility by \Coq's implementors
 and does not concern the casual user.
 This command permits to leave {\Coq} temporarily and enter the
-Objective Caml toplevel. The Objective Caml command:
+{\ocaml} toplevel. The {\ocaml} command:
 
 \begin{flushleft}
 \begin{verbatim}
