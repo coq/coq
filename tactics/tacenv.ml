@@ -85,14 +85,22 @@ let add (kn,td) = mactab := KNmap.add kn td !mactab
 let replace (kn,td) = mactab := KNmap.add kn td !mactab
 
 let load_md i ((sp, kn), (local, id ,t)) = match id with
-| None -> Nametab.push_tactic (Until i) sp kn; add (kn, t)
+| None ->
+  let () = if not local then Nametab.push_tactic (Until i) sp kn in
+  add (kn, t)
 | Some kn -> add (kn, t)
 
 let open_md i ((sp, kn), (local, id ,t)) = match id with
-| None -> Nametab.push_tactic (Exactly i) sp kn; add (kn, t)
+| None ->
+  let () = if not local then Nametab.push_tactic (Exactly i) sp kn in
+  add (kn, t)
 | Some kn -> add (kn, t)
 
-let cache_md x = load_md 1 x
+let cache_md ((sp, kn), (local, id ,t)) = match id with
+| None ->
+  let () = Nametab.push_tactic (Until 1) sp kn in
+  add (kn, t)
+| Some kn -> add (kn, t)
 
 let subst_kind subst id = match id with
 | None -> None
@@ -101,8 +109,7 @@ let subst_kind subst id = match id with
 let subst_md (subst, (local, id, t)) =
   (local, subst_kind subst id, Tacsubst.subst_tactic subst t)
 
-let classify_md (local, _, _ as o) =
-  if local then Dispose else Substitute o
+let classify_md (local, _, _ as o) = Substitute o
 
 let inMD : bool * Nametab.ltac_constant option * glob_tactic_expr -> obj =
   declare_object {(default_object "TAC-DEFINITION") with

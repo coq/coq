@@ -470,6 +470,8 @@ let exists_module = exists_dir
 
 let exists_modtype sp = MPTab.exists sp !the_modtypetab
 
+let exists_tactic kn = KnTab.exists kn !the_tactictab
+
 (* Reverse locate functions ***********************************************)
 
 let path_of_global ref =

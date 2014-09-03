@@ -127,6 +127,7 @@ val exists_modtype : full_path -> bool
 val exists_dir : DirPath.t -> bool
 val exists_section : DirPath.t -> bool (** deprecated synonym of [exists_dir] *)
 val exists_module : DirPath.t -> bool (** deprecated synonym of [exists_dir] *)
+val exists_tactic : full_path -> bool (** deprecated synonym of [exists_dir] *)
 
 (** {6 These functions locate qualids into full user names } *)
 
