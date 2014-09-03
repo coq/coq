@@ -331,16 +331,6 @@ let declare_structure finite infer poly ctx id idbuild paramimpls params arity f
       mind_entry_consnames = [idbuild];
       mind_entry_lc = [type_constructor] }
   in
-  (* spiwack: raises an error if the structure is supposed to be non-recursive,
-        but isn't *)
-  (* there is probably a way to push this to "declare_mutual" *)
-  begin match  finite with
-  | BiFinite ->
-      if Termops.dependent (mkRel (nparams+1)) (it_mkProd_or_LetIn mkProp fields) then
-	error ("Records declared with the keyword Record or Structure cannot be recursive." ^
-               "You can, however, define recursive records using the Inductive or CoInductive command.")
-  | _ -> ()
-  end;
   let mie =
     { mind_entry_params = List.map degenerate_decl params;
       mind_entry_record = Some !primitive_flag;

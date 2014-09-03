@@ -578,7 +578,32 @@ let extract_mutual_inductive_declaration_components indl =
   let indl = extract_inductive indl in
   (params,indl), coes, List.flatten ntnl
 
+let is_recursive mie =
+  let rec is_recursive_constructor lift typ =
+    match Term.kind_of_term typ with
+    | Prod (_,arg,rest) ->
+        Termops.dependent (mkRel lift) arg ||
+        is_recursive_constructor (lift+1) rest
+    | _ -> false
+  in
+  match mie.mind_entry_inds with
+  | [ind] ->
+      let nparams = List.length mie.mind_entry_params in
+      List.exists (fun t -> is_recursive_constructor (nparams+1) t) ind.mind_entry_lc
+  | _ -> false
+
 let declare_mutual_inductive_with_eliminations isrecord mie impls =
+  (* spiwack: raises an error if the structure is supposed to be non-recursive,
+        but isn't *)
+  begin match mie.mind_entry_finite with
+  | BiFinite when is_recursive mie ->
+      if Option.has_some mie.mind_entry_record then
+        error ("Records declared with the keywords Record or Structure cannot be recursive." ^
+                  "You can, however, define recursive records using the Inductive or CoInductive command.")
+      else
+        error ("Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command.")
+  | _ -> ()
+  end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_,kn) = declare_mind isrecord mie in
   let mind = Global.mind_of_delta_kn kn in
