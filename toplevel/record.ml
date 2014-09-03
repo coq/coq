@@ -319,7 +319,7 @@ let structure_signature ctx =
 
 open Typeclasses
 
-let declare_structure finite infer poly ctx id idbuild paramimpls params arity fieldimpls fields
+let declare_structure finite poly ctx id idbuild paramimpls params arity fieldimpls fields
     ?(kind=StructureComponent) ?name is_coe coers sign =
   let nparams = List.length params and nfields = List.length fields in
   let args = Termops.extended_rel_list nfields params in
@@ -357,7 +357,7 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
 
-let declare_class finite def infer poly ctx id idbuild paramimpls params arity fieldimpls fields
+let declare_class finite def poly ctx id idbuild paramimpls params arity fieldimpls fields
     ?(kind=StructureComponent) ?name is_coe coers priorities sign =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -399,7 +399,7 @@ let declare_class finite def infer poly ctx id idbuild paramimpls params arity f
 	  cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
 	let idarg = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
-	let ind = declare_structure BiFinite infer poly ctx (snd id) idbuild paramimpls
+	let ind = declare_structure BiFinite poly ctx (snd id) idbuild paramimpls
 	  params arity fieldimpls fields
 	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields) sign
 	in
@@ -434,7 +434,7 @@ open Vernacexpr
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions 
    or subinstances *)
-let definition_structure (kind,poly,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
+let definition_structure (kind,poly,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
   let cfs,notations = List.split cfs in
   let cfs,priorities = List.split cfs in
   let coers,fs = List.split cfs in
@@ -455,14 +455,14 @@ let definition_structure (kind,poly,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,i
   let sign = structure_signature (fields@params) in
     match kind with
     | Class def ->
-	let gr = declare_class finite def infer poly ctx (loc,idstruc) idbuild
+	let gr = declare_class finite def poly ctx (loc,idstruc) idbuild
 	  implpars params arity implfs fields is_coe coers priorities sign in
 	gr
     | _ ->
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits
 	    (succ (List.length params)) impls) implfs in
-	let ind = declare_structure finite infer poly ctx idstruc 
+	let ind = declare_structure finite poly ctx idstruc 
 	  idbuild implpars params arity implfs 
 	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
 	IndRef ind

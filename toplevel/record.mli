@@ -26,7 +26,7 @@ val declare_projections :
   (Name.t * bool) list * constant option list
 
 val declare_structure : Decl_kinds.recursivity_kind ->
-  bool (**infer?*) -> bool (** polymorphic?*) -> Univ.universe_context ->
+  bool (** polymorphic?*) -> Univ.universe_context ->
   Id.t -> Id.t ->
   manual_explicitation list -> rel_context -> (** params *) constr -> (** arity *)
   Impargs.manual_explicitation list list -> rel_context -> (** fields *)
@@ -37,6 +37,6 @@ val declare_structure : Decl_kinds.recursivity_kind ->
   inductive
 
 val definition_structure :
-  inductive_kind * Decl_kinds.polymorphic * Decl_kinds.recursivity_kind * bool(**infer?*)* lident with_coercion * local_binder list *
+  inductive_kind * Decl_kinds.polymorphic * Decl_kinds.recursivity_kind * lident with_coercion * local_binder list *
   (local_decl_expr with_instance with_priority with_notation) list *
   Id.t * constr_expr option -> global_reference

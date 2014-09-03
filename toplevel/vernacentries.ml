@@ -512,7 +512,7 @@ let vernac_assumption locality poly (local, kind) l nl =
   let status = do_assumptions kind nl l in
   if not status then Pp.feedback Feedback.AddedAxiom
 
-let vernac_record k poly finite infer struc binders sort nameopt cfs =
+let vernac_record k poly finite struc binders sort nameopt cfs =
   let const = match nameopt with
     | None -> add_prefix "Build_" (snd (snd struc))
     | Some (_,id as lid) ->
@@ -523,9 +523,9 @@ let vernac_record k poly finite infer struc binders sort nameopt cfs =
 	match x with
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
-    ignore(Record.definition_structure (k,poly,finite,infer,struc,binders,cfs,const,sort))
+    ignore(Record.definition_structure (k,poly,finite,struc,binders,cfs,const,sort))
 
-let vernac_inductive poly lo finite infer indl =
+let vernac_inductive poly lo finite indl =
   if Dumpglob.dump () then
     List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
       match cstrs with
@@ -542,13 +542,13 @@ let vernac_inductive poly lo finite infer indl =
       Errors.error "The Variant keyword cannot be used to define a record type. Use Record instead."
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
       vernac_record (match b with Class true -> Class false | _ -> b)
-	poly finite infer id bl c oc fs
+	poly finite id bl c oc fs
   | [ ( id , bl , c , Class true, Constructors [l]), _ ] ->
       let f =
 	let (coe, ((loc, id), ce)) = l in
 	let coe' = if coe then Some true else None in
 	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
-      in vernac_record (Class true) poly finite infer id bl c None [f]
+      in vernac_record (Class true) poly finite id bl c None [f]
   | [ ( id , bl , c , Class true, _), _ ] ->
       Errors.error "Definitional classes must have a single method"
   | [ ( id , bl , c , Class false, Constructors _), _ ] ->
@@ -1774,7 +1774,7 @@ let interp ?proof locality poly c =
   | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
-  | VernacInductive (priv,finite,infer,l) -> vernac_inductive poly priv finite infer l
+  | VernacInductive (priv,finite,l) -> vernac_inductive poly priv finite l
   | VernacFixpoint (local, l) -> vernac_fixpoint locality poly local l
   | VernacCoFixpoint (local, l) -> vernac_cofixpoint locality poly local l
   | VernacScheme l -> vernac_scheme l

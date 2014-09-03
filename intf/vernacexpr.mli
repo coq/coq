@@ -139,7 +139,6 @@ type instance_flag  = bool option
   (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
 type export_flag    = bool (* true = Export;        false = Import         *)
 type inductive_flag = Decl_kinds.recursivity_kind
-type infer_flag     = bool (* true = try to Infer record; false = nothing  *)
 type onlyparsing_flag = Flags.compat_version option
  (* Some v = Parse only;  None = Print also.
     If v<>Current, it contains the name of the coq version
@@ -298,7 +297,7 @@ type vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (locality option * assumption_object_kind) *
       inline * simple_binder with_coercion list
-  | VernacInductive of private_flag * inductive_flag * infer_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       locality option * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of

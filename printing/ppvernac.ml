@@ -623,7 +623,7 @@ let rec pr_vernac = function
       hov 2
         (pr_assumption_token (n > 1) stre ++ spc() ++
         pr_ne_params_list pr_lconstr_expr l)
-  | VernacInductive (p,f,i,l) ->
+  | VernacInductive (p,f,l) ->
       let pr_constructor (coe,(id,c)) =
         hov 2 (pr_lident id ++ str" " ++
                (if coe then str":>" else str":") ++
@@ -641,7 +641,6 @@ let rec pr_vernac = function
       let pr_oneind key (((coe,id),indpar,s,k,lc),ntn) =
 	hov 0 (
 	    str key ++ spc() ++
-	      (if i then str"Infer " else str"") ++
               (if coe then str"> " else str"") ++ pr_lident id ++
               pr_and_type_binders_arg indpar ++ spc() ++
 	      Option.cata (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) (mt()) s ++
