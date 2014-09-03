@@ -51,15 +51,23 @@ let _ =
       optread  = (fun () -> !elim_flag) ;
       optwrite = (fun b -> elim_flag := b) }
 
-let record_elim_flag = ref false
+let bifinite_elim_flag = ref false
 let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
-      optname  = "automatic declaration of induction schemes for records";
+      optname  = "automatic declaration of induction schemes for non-recursive types";
+      optkey   = ["Nonrecursive";"Elimination";"Schemes"];
+      optread  = (fun () -> !bifinite_elim_flag) ;
+      optwrite = (fun b -> bifinite_elim_flag := b) }
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = true; (* compatibility 2014-09-03*)
+      optname  = "automatic declaration of induction schemes for non-recursive types";
       optkey   = ["Record";"Elimination";"Schemes"];
-      optread  = (fun () -> !record_elim_flag) ;
-      optwrite = (fun b -> record_elim_flag := b) }
+      optread  = (fun () -> !bifinite_elim_flag) ;
+      optwrite = (fun b -> bifinite_elim_flag := b) }
 
 let case_flag = ref false
 let _ =
@@ -469,7 +477,7 @@ let map_inductive_block f kn n = for i=0 to n-1 do f (kn,i) done
 let declare_default_schemes kn =
   let mib = Global.lookup_mind kn in
   let n = Array.length mib.mind_packets in
-  if !elim_flag && (mib.mind_record = None || !record_elim_flag) then
+  if !elim_flag && (mib.mind_finite <> BiFinite || !bifinite_elim_flag) then
     declare_induction_schemes kn;
   if !case_flag then map_inductive_block declare_one_case_analysis_scheme kn n;
   if is_eq_flag() then try_declare_beq_scheme kn;
