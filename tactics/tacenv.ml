@@ -88,49 +88,27 @@ let interp_ltac r = KNmap.find r !mactab
 let add (kn,td) = mactab := KNmap.add kn td !mactab
 let replace (kn,td) = mactab := KNmap.add kn td !mactab
 
-type tacdef_kind =
-  | NewTac of Id.t
-  | UpdateTac of Nametab.ltac_constant
+let load_md i ((sp, kn), (local, id ,t)) = match id with
+| None -> Nametab.push_tactic (Until i) sp kn; add (kn, t)
+| Some kn -> add (kn, t)
 
-let load_md i ((sp,kn),(local,defs)) =
-  let dp,_ = repr_path sp in
-  let mp,dir,_ = repr_kn kn in
-  let (id, t) = defs in
-    match id with
-      | NewTac id ->
-          let sp = make_path dp id in
-          let kn = Names.make_kn mp dir (Label.of_id id) in
-            Nametab.push_tactic (Until i) sp kn;
-            add (kn,t)
-      | UpdateTac kn -> replace (kn,t)
-
-let open_md i ((sp,kn),(local,defs)) =
-  let dp,_ = repr_path sp in
-  let mp,dir,_ = repr_kn kn in
-  let (id, t) = defs in
-    match id with
-        NewTac id ->
-          let sp = make_path dp id in
-          let kn = Names.make_kn mp dir (Label.of_id id) in
-            Nametab.push_tactic (Exactly i) sp kn
-      | UpdateTac kn -> ()
+let open_md i ((sp, kn), (local, id ,t)) = match id with
+| None -> Nametab.push_tactic (Exactly i) sp kn; add (kn, t)
+| Some kn -> add (kn, t)
 
 let cache_md x = load_md 1 x
 
-let subst_kind subst id =
-  match id with
-    | NewTac _ -> id
-    | UpdateTac kn -> UpdateTac (Mod_subst.subst_kn subst kn)
+let subst_kind subst id = match id with
+| None -> None
+| Some kn -> Some (Mod_subst.subst_kn subst kn)
 
-let subst_md (subst,(local,defs)) =
-  (local,
-   let (id, t) = defs in
-     (subst_kind subst id,Tacsubst.subst_tactic subst t))
+let subst_md (subst, (local, id, t)) =
+  (local, subst_kind subst id, Tacsubst.subst_tactic subst t)
 
-let classify_md (local,defs as o) =
+let classify_md (local, _, _ as o) =
   if local then Dispose else Substitute o
 
-let inMD : bool * (tacdef_kind * glob_tactic_expr) -> obj =
+let inMD : bool * Nametab.ltac_constant option * glob_tactic_expr -> obj =
   declare_object {(default_object "TAC-DEFINITION") with
      cache_function  = cache_md;
      load_function   = load_md;
@@ -139,10 +117,10 @@ let inMD : bool * (tacdef_kind * glob_tactic_expr) -> obj =
      classify_function = classify_md}
 
 let register_ltac local id tac =
-  ignore (Lib.add_leaf id (inMD (local, (NewTac id, tac))))
+  ignore (Lib.add_leaf id (inMD (local, None, tac)))
 
 let redefine_ltac local kn tac =
-  Lib.add_anonymous_leaf (inMD (local, (UpdateTac kn, tac)))
+  Lib.add_anonymous_leaf (inMD (local, Some kn, tac))
 
 let () =
   Hook.set Tacintern.interp_ltac_hook interp_ltac
