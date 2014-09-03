@@ -556,7 +556,9 @@ let vernac_inductive poly lo finite indl =
   | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] ->
       Errors.error "where clause not supported for (co)inductive records"
   | _ -> let unpack = function
-      | ( (_, id) , bl , c , _ , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
+      | ( (false, id) , bl , c , _ , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
+      | ( (true,_),_,_,_,Constructors _),_ ->
+          Errors.error "Variant types do not handle the \"> Name\" syntax, which is reserved for records. Use the \":>\" syntax on constructors instead."
       | _ -> Errors.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
