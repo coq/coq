@@ -343,7 +343,10 @@ let pr_ltac_or_var pr = function
 
 let pr_ltac_constant kn =
   if !Constrextern.in_debugger then pr_kn kn
-  else pr_qualid (Nametab.shortest_qualid_of_tactic kn)
+  else try
+    pr_qualid (Nametab.shortest_qualid_of_tactic kn)
+  with Not_found -> (* local tactic not accessible anymore *)
+    str "<" ++ pr_kn kn ++ str ">"
 
 let pr_evaluable_reference_env env = function
   | EvalVarRef id -> pr_id id
