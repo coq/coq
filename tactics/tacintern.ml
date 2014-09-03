@@ -134,8 +134,6 @@ let intern_move_location ist = function
   | MoveFirst -> MoveFirst
   | MoveLast -> MoveLast
 
-let (f_interp_ltac, interp_ltac_hook) = Hook.make ()
-
 (* Internalize an isolated reference in position of tactic *)
 
 let intern_isolated_global_tactic_reference r =
@@ -444,8 +442,6 @@ let clause_app f = function
   | { onhyps=Some l; concl_occs=nl } ->
       { onhyps=Some(List.map f l); concl_occs=nl}
 
-let (f_assert_tactic_installed, assert_tactic_installed_hook) = Hook.make ()
-
 let map_raw wit f ist x =
   in_gen (glbwit wit) (f ist (out_gen (rawwit wit) x))
 
@@ -632,7 +628,7 @@ and intern_tactic_seq onlytac ist = function
       let l = List.map (fun (id,a) -> (id,intern_genarg ist a)) l in
       ist.ltacvars, TacAlias (loc,s,l)
   | TacML (loc,opn,l) ->
-      let () = Hook.get f_assert_tactic_installed opn in
+      let () = ignore (Tacenv.interp_ml_tactic opn) in
       ist.ltacvars, TacML (adjust_loc loc,opn,List.map (intern_genarg ist) l)
 
 and intern_tactic_as_arg loc onlytac ist a =
@@ -777,7 +773,7 @@ let pr_ltac_fun_arg = function
 let print_ltac id =
  try
   let kn = Nametab.locate_tactic id in
-  let l,t = split_ltac_fun (Hook.get f_interp_ltac kn) in
+  let l,t = split_ltac_fun (Tacenv.interp_ltac kn) in
   hv 2 (
     hov 2 (str "Ltac" ++ spc() ++ pr_qualid id ++
            prlist pr_ltac_fun_arg l ++ spc () ++ str ":=")

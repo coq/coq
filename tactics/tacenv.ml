@@ -65,10 +65,6 @@ let interp_ml_tactic s =
     Errors.errorlabstrm ""
       (str "The tactic " ++ str (pr_tacname s) ++ str " is not installed.")
 
-let () =
-  let assert_installed opn = let _ = interp_ml_tactic opn in () in
-  Hook.set Tacintern.assert_tactic_installed_hook assert_installed
-
 (***************************************************************************)
 (* Tactic registration *)
 
@@ -121,6 +117,3 @@ let register_ltac local id tac =
 
 let redefine_ltac local kn tac =
   Lib.add_anonymous_leaf (inMD (local, Some kn, tac))
-
-let () =
-  Hook.set Tacintern.interp_ltac_hook interp_ltac
