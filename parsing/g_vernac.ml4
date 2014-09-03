@@ -220,17 +220,6 @@ GEXTEND Gram
   ] ]
   ;
 
-  gallina_ext:
-    [ [ priv = private_token; 
-	b = record_token; oc = opt_coercion; name = identref;
-        ps = binders;
-	s = OPT [ ":"; s = lconstr -> s ];
-	cfs = [ ":="; l = constructor_list_or_record_decl -> l
-	  | -> RecordDecl (None, []) ] ->
-	  let (recf,indf) = b in
-	    VernacInductive (priv,indf,[((oc,name),ps,s,recf,cfs),[]])
-  ] ]
-  ;
   thm_token:
     [ [ "Theorem" -> Theorem
       | IDENT "Lemma" -> Lemma
@@ -270,15 +259,13 @@ GEXTEND Gram
   finite_token:
     [ [ "Inductive" -> (Inductive_kw,Finite)
       | "CoInductive" -> (CoInductive,CoFinite)
-      | "Variant" -> (Variant,BiFinite) ] ]
+      | "Variant" -> (Variant,BiFinite)
+      | IDENT "Record" -> (Record,BiFinite)
+      | IDENT "Structure" -> (Structure,BiFinite)
+      | IDENT "Class" -> (Class true,BiFinite) ] ]
   ;
   private_token:
     [ [ IDENT "Private" -> true | -> false ] ]
-  ;
-  record_token:
-    [ [ IDENT "Record" -> (Record,BiFinite)
-      | IDENT "Structure" -> (Structure,BiFinite)
-      | IDENT "Class" -> (Class true,BiFinite) ] ]
   ;
   (* Simple definitions *)
   def_body:
@@ -304,10 +291,14 @@ GEXTEND Gram
     | -> [] ] ]
   ;
   (* Inductives and records *)
+  opt_constructors_or_fields:
+    [ [ ":="; lc = constructor_list_or_record_decl -> lc
+      | -> RecordDecl (None, []) ] ]
+  ;
   inductive_definition:
-    [ [ id = identref; oc = opt_coercion; indpar = binders;
+    [ [ oc = opt_coercion; id = identref; indpar = binders;
         c = OPT [ ":"; c = lconstr -> c ];
-        ":="; lc = constructor_list_or_record_decl; ntn = decl_notation ->
+        lc=opt_constructors_or_fields; ntn = decl_notation ->
 	   (((oc,id),indpar,c,lc),ntn) ] ]
   ;
   constructor_list_or_record_decl:
