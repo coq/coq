@@ -1102,13 +1102,14 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacMatchGoal _ | TacMatch _ -> assert false
   | TacId s ->
       Proofview.tclTHEN
-        (Proofview.tclENV >>= fun env ->
+        (Proofview.Goal.enter begin fun gl ->
           let msg =
-            try Proofview.tclUNIT (interp_message_nl ist env s)
+            try Proofview.tclUNIT (interp_message_nl ist (Proofview.Goal.env gl) s)
             with e when Errors.noncritical e -> Proofview.tclZERO e
           in
           msg >>= fun msg ->
-          Proofview.tclLIFT (Proofview.NonLogical.print (Pp.hov 0 msg)))
+          Proofview.tclLIFT (Proofview.NonLogical.print (Pp.hov 0 msg))
+        end)
         (Proofview.tclLIFT (db_breakpoint (curr_debug ist) s))
   | TacFail (n,s) ->
       Proofview.V82.tactic begin fun gl ->
