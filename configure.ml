@@ -538,15 +538,20 @@ let check_camlp5 testcma = match !Prefs.camlp5dir with
       in die msg
   | None ->
     let dir,_ = tryrun "camlp5" ["-where"] in
-    if dir <> "" then dir
-    else if Sys.file_exists (camllib/"camlp5"/testcma) then
-      camllib/"camlp5"
-    else if Sys.file_exists (camllib/"site-lib"/"camlp5"/testcma) then
-      camllib/"site-lib"/"camlp5"
-    else
-      let () = printf "No Camlp5 installation found." in
-      let () = printf "Looking for Camlp4 instead...\n" in
-      raise NoCamlp5
+    let dir2 =
+      if Sys.file_exists (camllib/"camlp5"/testcma) then
+        camllib/"camlp5"
+      else if Sys.file_exists (camllib/"site-lib"/"camlp5"/testcma) then
+        camllib/"site-lib"/"camlp5"
+      else
+        let () = printf "No Camlp5 installation found." in
+        let () = printf "Looking for Camlp4 instead...\n" in
+        raise NoCamlp5
+      in
+    (* if the two values are different than camlp5 has been relocated
+     * and will not be able to find its own files, so we prefer the
+     * path where the files actually do exist *)
+    if dir = "" then dir2 else if dir <> dir2 then dir2 else dir
 
 let check_camlp5_version () =
   let s = camlexec.p4 in
@@ -744,6 +749,7 @@ let coqide =
 let lablgtkincludes = ref ""
 let idearchflags = ref ""
 let idearchfile = ref ""
+let idecdepsflags = ref ""
 let idearchdef = ref "X11"
 
 let coqide_flags () =
@@ -758,6 +764,7 @@ let coqide_flags () =
       end
     | "opt", "win32" ->
       idearchfile := "ide/ide_win32_stubs.o";
+      idecdepsflags := "-custom";
       idearchdef := "WIN32"
     | _, "win32" ->
       idearchdef := "WIN32"
@@ -1140,7 +1147,9 @@ let write_makefile f =
   pr "# CoqIde (no/byte/opt)\n";
   pr "HASCOQIDE=%s\n" coqide;
   pr "IDEFLAGS=%s\n" !idearchflags;
-  pr "IDEOPTDEPS=%s\n" !idearchfile;
+  pr "IDEOPTCDEPS=%s\n" !idearchfile;
+  pr "IDECDEPS=%s\n" !idearchfile;
+  pr "IDECDEPSFLAGS=%s\n" !idecdepsflags;
   pr "IDEINT=%s\n\n" !idearchdef;
   pr "# Defining REVISION\n";
   pr "CHECKEDOUT=%s\n\n" vcs;

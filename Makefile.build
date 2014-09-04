@@ -321,7 +321,7 @@ ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa lablgtk.cmxa \
-		lablgtksourceview2.cmxa str.cmxa $(IDEFLAGS:.cma=.cmxa) $^
+		lablgtksourceview2.cmxa str.cmxa $(IDEFLAGS:.cma=.cmxa) $(IDECDEPSFLAGS) $^
 	$(STRIP) $@
 else
 $(COQIDE): $(COQIDEBYTE)
@@ -656,9 +656,9 @@ bin/votour: lib/cObj$(BESTOBJ) checker/values$(BESTOBJ) checker/votour.ml
 
 ifeq ($(CAMLP4),camlp4)
 tools/compat5.cmo: tools/compat5.mlp
-	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) -impl' -impl $<
+	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) -I $(MYCAMLP4LIB) -impl' -impl $<
 tools/compat5b.cmo: tools/compat5b.mlp
-	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) -impl' -impl $<
+	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) -I $(MYCAMLP4LIB) -impl' -impl $<
 else
 tools/compat5.cmo: tools/compat5.ml
 	$(OCAMLC) -c $<
@@ -877,7 +877,7 @@ dev/printers.cma: | dev/printers.mllib.d
 grammar/grammar.cma: | grammar/grammar.mllib.d
 	$(SHOW)'Testing $@'
 	@touch test.ml4
-	$(HIDE)$(CAMLP4O) -I $(CAMLLIB) $^ -impl test.ml4 -o test.ml
+	$(HIDE)$(CAMLP4O) -I $(CAMLLIB) -I $(MYCAMLP4LIB) $^ -impl test.ml4 -o test.ml
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) test.ml -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
@@ -885,7 +885,7 @@ grammar/grammar.cma: | grammar/grammar.mllib.d
 
 ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
+	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
 
 # pretty printing of the revision number when compiling a checked out
 # source tree
@@ -1019,7 +1019,7 @@ plugins/%_mod.ml: plugins/%.mllib
 
 %.ml: %.ml4 | %.ml4.d tools/compat5.cmo tools/compat5b.cmo
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(PR_O) -I $(CAMLLIB) tools/compat5.cmo \
+	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $(PR_O) -I $(CAMLLIB) tools/compat5.cmo \
 	  $(call CAMLP4DEPS,$<) $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@
 
 %.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d
