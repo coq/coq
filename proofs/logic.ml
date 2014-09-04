@@ -113,6 +113,35 @@ let clear_hyps2 sigma ids sign t cl =
 
 (* The ClearBody tactic *)
 
+let recheck_typability (what,id) env sigma t =
+  try check_typability env sigma t
+  with e when Errors.noncritical e ->
+    let s = match what with
+      | None -> "the conclusion"
+      | Some id -> "hypothesis "^(Id.to_string id) in
+    error
+      ("The correctness of "^s^" relies on the body of "^(Id.to_string id))
+
+let remove_hyp_body env sigma id =
+  let sign =
+    apply_to_hyp_and_dependent_on (named_context_val env) id
+      (fun (_,c,t) _ ->
+	match c with
+	| None -> error ((Id.to_string id)^" is not a local definition.")
+	| Some c ->(id,None,t))
+      (fun (id',c,t as d) sign ->
+	(if !check then
+	  begin
+	    let env = reset_with_named_context sign env in
+	    match c with
+	    | None ->  recheck_typability (Some id',id) env sigma t
+	    | Some b ->
+		let b' = mkCast (b,DEFAULTcast, t) in
+		recheck_typability (Some id',id) env sigma b'
+	  end;d))
+  in
+  reset_with_named_context sign env
+
 (* Reordering of the context *)
 
 (* faire le minimum d'echanges pour que l'ordre donne soit un *)
@@ -678,6 +707,17 @@ let prim_refiner r sigma goal =
 	in
 	let sigma = Goal.V82.partial_solution sigma goal ev in
 	  ([gl], sigma)
+
+    | ThinBody ids ->
+	let clear_aux env id =
+          let env' = remove_hyp_body env sigma id in
+            if !check then recheck_typability (None,id) env' sigma cl;
+            env'
+	in
+	let sign' = named_context_val (List.fold_left clear_aux env ids) in
+     	let (sg,ev,sigma) = mk_goal sign' cl in
+	let sigma = Goal.V82.partial_solution sigma goal ev in
+     	  ([sg], sigma)
 
     | Move (withdep, hfrom, hto) ->
   	let (left,right,declfrom,toleft) =

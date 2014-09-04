@@ -163,7 +163,7 @@ val unfold_constr     : global_reference -> tactic
 (** {6 Modification of the local context. } *)
 
 val clear         : Id.t list -> tactic
-val clear_body    : Id.t list -> unit Proofview.tactic
+val clear_body    : Id.t list -> tactic
 val keep          : Id.t list -> tactic
 val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 

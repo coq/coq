@@ -127,6 +127,10 @@ let convert_hyp_no_check d gl =
 let thin_no_check ids gl =
   if List.is_empty ids then tclIDTAC gl else refiner (Thin ids) gl
 
+(* This does not check dependencies *)
+let thin_body_no_check ids gl =
+  if List.is_empty ids then tclIDTAC gl else refiner (ThinBody ids) gl
+
 let move_hyp_no_check with_dep id1 id2 gl =
   refiner (Move (with_dep,id1,id2)) gl
 
@@ -151,6 +155,7 @@ let refine c           = with_check (refine_no_check c)
 let convert_concl d sty = with_check (convert_concl_no_check d sty)
 let convert_hyp d      = with_check (convert_hyp_no_check d)
 let thin c             = with_check (thin_no_check c)
+let thin_body c        = with_check (thin_body_no_check c)
 let move_hyp b id id'  = with_check (move_hyp_no_check b id id')
 let rename_hyp l       = with_check (rename_hyp_no_check l)
 

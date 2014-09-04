@@ -27,6 +27,7 @@ type prim_rule =
   | Convert_concl of types * cast_kind
   | Convert_hyp of named_declaration
   | Thin of Id.t list
+  | ThinBody of Id.t list
   | Move of bool * Id.t * Id.t move_location
   | Rename of Id.t * Id.t
 
