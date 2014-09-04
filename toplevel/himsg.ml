@@ -472,8 +472,8 @@ let explain_ill_typed_rec_body env sigma i names vdefj vargs =
   let vdefj = Evarutil.jv_nf_evar sigma vdefj in
   let vargs = Array.map (Evarutil.nf_evar sigma) vargs in
   let env = make_all_name_different env in
-  let pvd,pvdt = pr_ljudge_env env (vdefj.(i)) in
-  let pv = pr_lconstr_env env vargs.(i) in
+  let pvd = pr_lconstr_env env vdefj.(i).uj_val in
+  let pvdt, pv = pr_explicit env vdefj.(i).uj_type vargs.(i) in
   str "The " ++
   (match vdefj with [|_|] -> mt () | _ -> pr_nth (i+1) ++ spc ()) ++
   str "recursive definition" ++ spc () ++ pvd ++ spc () ++
