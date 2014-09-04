@@ -353,26 +353,32 @@ let authorized_occ env sigma partial_app closed pat c mk_ctx next =
 
 (* Tries to match a subterm of [c] with [pat] *)
 let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
-  let rec aux c mk_ctx next =
+  let rec aux env c mk_ctx next =
   match kind_of_term c with
   | Cast (c1,k,c2) ->
       let next_mk_ctx lc = mk_ctx (mkCast (List.hd lc, k,c2)) in
-      let next () = try_aux [c1] next_mk_ctx next in
+      let next () = try_aux [env] [c1] next_mk_ctx next in
       authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Lambda (x,c1,c2) ->
       let next_mk_ctx lc = mk_ctx (mkLambda (x,List.hd lc,List.nth lc 1)) in
-      let next () = try_aux [c1;c2] next_mk_ctx next in
+      let next () = 
+	let env' = Environ.push_rel (x,None,c1) env in
+	  try_aux [env;env'] [c1; c2] next_mk_ctx next in
       authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Prod (x,c1,c2) ->
       let next_mk_ctx lc = mk_ctx (mkProd (x,List.hd lc,List.nth lc 1)) in
-      let next () = try_aux [c1;c2] next_mk_ctx next in
+      let next () = 
+	let env' = Environ.push_rel (x,None,c1) env in
+	  try_aux [env;env'] [c1;c2] next_mk_ctx next in
       authorized_occ env sigma partial_app closed pat c mk_ctx next
   | LetIn (x,c1,t,c2) ->
       let next_mk_ctx = function
       | [c1;c2] -> mkLetIn (x,c1,t,c2)
       | _ -> assert false
       in
-      let next () = try_aux [c1;c2] next_mk_ctx next in
+      let next () = 
+	let env' = Environ.push_rel (x,Some c1,t) env in
+	  try_aux [env;env'] [c1;c2] next_mk_ctx next in
       authorized_occ env sigma partial_app closed pat c mk_ctx next
   | App (c1,lc) ->
       let next () =
@@ -384,24 +390,24 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
             let mk_ctx = function
               | [app';c] -> mk_ctx (mkApp (app',[|c|]))
               | _ -> assert false in
-            try_aux [app;Array.last lc] mk_ctx next
+            try_aux [env] [app;Array.last lc] mk_ctx next
           else
             let rec aux2 app args next =
               match args with
               | [] ->
                   let mk_ctx le =
                     mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
-                  try_aux (c1::Array.to_list lc) mk_ctx next
+                  try_aux [env] (c1::Array.to_list lc) mk_ctx next
               | arg :: args ->
                   let app = mkApp (app,[|arg|]) in
                   let next () = aux2 app args next in
                   let mk_ctx ce = mk_ctx (mkApp (ce, Array.of_list args)) in
-                  aux app mk_ctx next in
+                  aux env app mk_ctx next in
             aux2 c1 (Array.to_list lc) next
         else
           let mk_ctx le =
             mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
-          try_aux (c1::Array.to_list lc) mk_ctx next
+          try_aux [env] (c1::Array.to_list lc) mk_ctx next
       in
       authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Case (ci,hd,c1,lc) ->
@@ -409,7 +415,7 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
       | [] -> assert false
       | c1 :: lc -> mk_ctx (mkCase (ci,hd,c1,Array.of_list lc))
       in
-      let next () = try_aux (c1 :: Array.to_list lc) next_mk_ctx next in
+      let next () = try_aux [env] (c1 :: Array.to_list lc) next_mk_ctx next in
       authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Fix (indx,(names,types,bodies)) ->
     let nb_fix = Array.length types in
@@ -418,7 +424,7 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
       mk_ctx (mkFix (indx,(names, Array.of_list ntypes, Array.of_list nbodies))) in
     let next () =
       try_aux
-	((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next in
+	[env] ((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next in
     authorized_occ env sigma partial_app closed pat c mk_ctx next
   | CoFix (i,(names,types,bodies)) ->
     let nb_fix = Array.length types in
@@ -426,26 +432,31 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
       let (ntypes,nbodies) = CList.chop nb_fix le in
       mk_ctx (mkCoFix (i,(names, Array.of_list ntypes, Array.of_list nbodies))) in
     let next () =
-      try_aux ((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next in
+      try_aux [env] ((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next in
     authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Proj (p,c') ->
     let next_mk_ctx le = mk_ctx (mkProj (p,List.hd le)) in
-    let next () = try_aux [c'] next_mk_ctx next in
+    let next () = try_aux [env] [c'] next_mk_ctx next in
       authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Construct _| Ind _|Evar _|Const _ | Rel _|Meta _|Var _|Sort _ ->
       authorized_occ env sigma partial_app closed pat c mk_ctx next
 
   (* Tries [sub_match] for all terms in the list *)
-  and try_aux lc mk_ctx next =
-    let rec try_sub_match_rec lacc = function
-      | [] -> next ()
-      | c::tl ->
+  and try_aux lenv lc mk_ctx next =
+    let rec try_sub_match_rec lacc lenv lc = 
+      match lenv, lc with
+      | _, [] -> next ()
+      | env :: tlenv, c::tl ->
           let mk_ctx ce = mk_ctx (List.rev_append lacc (ce::tl)) in
-          let next () = try_sub_match_rec (c::lacc) tl in
-          aux c mk_ctx next in
-    try_sub_match_rec [] lc in
+          let next () = 
+	    let env' = match tlenv with [] -> lenv | _ -> tlenv in
+	      try_sub_match_rec (c::lacc) env' tl 
+	  in
+            aux env c mk_ctx next 
+      | _ -> assert false in
+    try_sub_match_rec [] lenv lc in
   let lempty () = IStream.Nil in
-  let result () = aux c (fun x -> x) lempty in
+  let result () = aux env c (fun x -> x) lempty in
   IStream.thunk result
 
 let match_subterm env sigma pat c = sub_match env sigma pat c
