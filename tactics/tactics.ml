@@ -138,7 +138,6 @@ let introduction    = Tacmach.introduction
 let refine          = Tacmach.refine
 let convert_concl   = Tacmach.convert_concl
 let convert_hyp     = Tacmach.convert_hyp
-let thin_body       = Tacmach.thin_body
 
 let convert_gen pb x y =
   Proofview.Goal.raw_enter begin fun gl ->
@@ -2009,7 +2008,7 @@ let letin_tac_gen with_eq abs ty =
             sigma, term,
             Tacticals.New.tclTHEN
 	      (intro_gen (NamingMustBe (loc,heq)) (decode_hyp lastlhyp) true false)
-	      (Proofview.V82.tactic (thin_body [heq;id]))
+	      (clear_body [heq;id])
       | None ->
 	  (Proofview.Goal.sigma gl, mkNamedLetIn id c t ccl, Proofview.tclUNIT ()) in
     Tacticals.New.tclTHEN

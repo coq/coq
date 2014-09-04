@@ -222,7 +222,7 @@ let add_justification_hyps keep items gls =
 	  let id=pf_get_new_id local_hyp_prefix gls in
 	    keep:=Id.Set.add id !keep;
 	    tclTHEN (Proofview.V82.of_tactic (letin_tac None (Names.Name id) c None Locusops.nowhere))
-              (thin_body [id]) gls in
+              (Proofview.V82.of_tactic (clear_body [id])) gls in
     tclMAP add_aux items gls
 
 let prepare_goal items gls =
