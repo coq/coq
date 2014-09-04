@@ -263,11 +263,10 @@ and execute_recdef env evdref (names,lar,vdef) =
 
 and execute_array env evdref = Array.map (execute env evdref)
 
-let check env evd c t =
-  let evdref = ref evd in
+let check env evdref c t =
   let j = execute env evdref c in
   if not (Evarconv.e_cumul env evdref j.uj_type t) then
-    error_actual_type env j (nf_evar evd t)
+    error_actual_type env j (nf_evar !evdref t)
 
 (* Type of a constr *)
 

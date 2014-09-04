@@ -920,7 +920,7 @@ end
 
 module Refine =
 struct
-  type handle = Evd.evar_map * goal list
+  type handle = Evd.evar_map * Evar.t list
 
   let new_evar (evd, evs) env typ =
     let src = (Loc.ghost, Evar_kinds.GoalEvar) in
@@ -928,7 +928,7 @@ struct
     let evd = Typeclasses.mark_unresolvables 
       ~filter:(fun ev' _ -> Evar.equal (fst (Term.destEvar ev)) ev') evd in
     let (evk, _) = Term.destEvar ev in
-    let h = (evd, build_goal evk :: evs) in
+    let h = (evd, evk :: evs) in
     (h, ev)
 
   let fresh_constructor_instance (evd,evs) env construct =
@@ -943,29 +943,46 @@ struct
     in
     (evd,evs) , j'.Environ.uj_val
 
-  let refine f = Goal.raw_enter begin fun gl ->
+  let typecheck_evar ev env sigma =
+    let info = Evd.find sigma ev in
+    let evdref = ref sigma in
+    let env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
+    let _ = Typing.sort_of env evdref (Evd.evar_concl info) in
+    !evdref
+
+  let typecheck_proof c concl env sigma =
+    let evdref = ref sigma in
+    let () = Typing.check env evdref c concl in
+    !evdref
+
+  let refine ?(unsafe = false) f = Goal.raw_enter begin fun gl ->
     let sigma = Goal.sigma gl in
+    let env = Goal.env gl in
+    let concl = Goal.concl gl in
     let handle = (sigma, []) in
     let ((sigma, evs), c) = f handle in
+    (** Check that the introduced evars are well-typed *)
+    let fold accu ev = typecheck_evar ev env accu in
+    let sigma = if unsafe then sigma else List.fold_left fold sigma evs in
+    (** Check that the refined term is typesafe *)
+    let sigma = if unsafe then sigma else typecheck_proof c concl env sigma in
+    (** Proceed to the refinement *)
     let sigma = partial_solution sigma gl.Goal.self c in
-    let modify start = { solution = sigma; comb = undefined sigma (List.rev evs); } in
-    Proof.modify modify
+    let comb = undefined sigma (List.rev_map build_goal evs) in
+    Proof.set { solution = sigma; comb; }
   end
 
-  let refine_casted f = Goal.raw_enter begin fun gl ->
+  let refine_casted ?(unsafe = false) f = Goal.raw_enter begin fun gl ->
     let concl = Goal.concl gl in
     let env = Goal.env gl in
-    let f h =
-      let (h,c) = f h in
-      with_type h env c concl
-    in
-    refine f
+    let f h = let (h, c) = f h in with_type h env c concl in
+    refine ~unsafe f
   end
 
   let update (evd, gls) f =
     let nevd, ans = f evd in
     let fold ev _ accu =
-      if not (Evd.mem evd ev) then build_goal ev :: accu else accu
+      if not (Evd.mem evd ev) then ev :: accu else accu
     in
     let gls = Evd.fold_undefined fold nevd gls in
     (nevd, gls), ans

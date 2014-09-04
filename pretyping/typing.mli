@@ -25,7 +25,7 @@ val e_type_of : ?refresh:bool -> env -> evar_map -> constr -> evar_map * types
 val sort_of : env -> evar_map ref -> types -> sorts
 
 (** Typecheck a term has a given type (assuming the type is OK) *)
-val check   : env -> evar_map -> constr -> types -> unit
+val check   : env -> evar_map ref -> constr -> types -> unit
 
 (** Returns the instantiated type of a metavariable *)
 val meta_type : evar_map -> metavariable -> types

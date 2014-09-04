@@ -783,7 +783,7 @@ let cut c =
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_of_hyps gl) in
       (** Backward compat: normalize [c]. *)
       let c = local_strong whd_betaiota sigma c in
-      Proofview.Refine.refine begin fun h ->
+      Proofview.Refine.refine ~unsafe:true begin fun h ->
         let (h, f) = Proofview.Refine.new_evar h env (mkArrow c (Vars.lift 1 concl)) in
         let (h, x) = Proofview.Refine.new_evar h env c in
         let f = mkLambda (Name id, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
@@ -1404,7 +1404,7 @@ let cut_and_apply c =
 (* let refine_no_check = Profile.profile2 refine_no_checkkey refine_no_check *)
 
 let new_exact_no_check c =
-  Proofview.Refine.refine (fun h -> (h, c))
+  Proofview.Refine.refine ~unsafe:true (fun h -> (h, c))
 
 let exact_check c =
   Proofview.Goal.raw_enter begin fun gl ->
@@ -1446,7 +1446,7 @@ let assumption =
     in
     if is_same_type then
       (Proofview.V82.tclEVARS sigma) <*>
-	Proofview.Refine.refine (fun h -> (h, mkVar id))
+	Proofview.Refine.refine ~unsafe:true (fun h -> (h, mkVar id))
     else arec gl only_eq rest
   in
   let assumption_tac gl =
