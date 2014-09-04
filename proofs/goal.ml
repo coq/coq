@@ -99,14 +99,14 @@ let equal evars1 gl1 evars2 gl2 =
    the hypotheses, the conclusion or the body of the evar_info
    [evi]. Note: since we want to use it on goals, the body is actually
    supposed to be empty. *)
-let contained_in_info e evi =
-  Evar.Set.mem e (Evarutil.evars_of_evar_info evi)
+let contained_in_info sigma e evi =
+  Evar.Set.mem e (Evarutil.(evars_of_evar_info (nf_evar_info sigma evi)))
 
 (* [depends_on sigma src tgt] checks whether the goal [src] appears as an
    existential variable in the definition of the goal [tgt] in [sigma]. *)
 let depends_on sigma src tgt =
   let evi = Evd.find sigma tgt.content in
-  contained_in_info src.content evi
+  contained_in_info sigma src.content evi
 
 (* [unifiable sigma g l] checks whether [g] appears in another subgoal
    of [l]. The list [l] may contain [g], but it does not affect the
