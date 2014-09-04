@@ -837,7 +837,6 @@ module Goal = struct
   type 'a t = {
     env : Environ.env;
     sigma : Evd.evar_map;
-    hyps : Environ.named_context_val;
     concl : Term.constr ;
     self : Goal.goal ; (* for compatibility with old-style definitions *)
   }
@@ -846,11 +845,11 @@ module Goal = struct
 
   let env { env=env } = env
   let sigma { sigma=sigma } = sigma
-  let hyps { hyps=hyps } = Environ.named_context_of_val hyps
+  let hyps { env=env } = Environ.named_context env
   let concl { concl=concl } = concl
 
-  let enter_t = Goal.nf_enter begin fun env sigma hyps concl self ->
-    {env=env;sigma=sigma;hyps=hyps;concl=concl;self=self}
+  let enter_t = Goal.nf_enter begin fun env sigma concl self ->
+    {env=env;sigma=sigma;concl=concl;self=self}
   end
 
   let enter f =
@@ -865,8 +864,8 @@ module Goal = struct
         tclZERO e
     end
 
-  let raw_enter_t f = Goal.enter begin fun env sigma hyps concl self ->
-    f {env=env;sigma=sigma;hyps=hyps;concl=concl;self=self}
+  let raw_enter_t f = Goal.enter begin fun env sigma concl self ->
+    f {env=env;sigma=sigma;concl=concl;self=self}
   end
 
   let raw_enter f =

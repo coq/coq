@@ -133,6 +133,6 @@ val refine_open_constr : Evd.open_constr -> subgoals sensitive
 
 (* [enter] combines [env], [defs], [hyps] and [concl] in a single
    primitive. *)
-val enter : (Environ.env -> Evd.evar_map -> Environ.named_context_val -> Term.constr -> goal -> 'a) -> 'a sensitive
+val enter : (Environ.env -> Evd.evar_map -> Term.constr -> goal -> 'a) -> 'a sensitive
 
-val nf_enter : (Environ.env -> Evd.evar_map -> Environ.named_context_val -> Term.constr -> goal -> 'a) -> 'a sensitive
+val nf_enter : (Environ.env -> Evd.evar_map -> Term.constr -> goal -> 'a) -> 'a sensitive
