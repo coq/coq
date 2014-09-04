@@ -368,6 +368,10 @@ module Level = struct
       let c = Int.compare (hash u) (hash v) in
 	if c == 0 then RawLevel.compare (data u) (data v)
 	else c
+
+  let natural_compare u v =
+    if u == v then 0
+    else RawLevel.compare (data u) (data v)
 	    
   let to_string x = 
     match data x with
@@ -1896,8 +1900,11 @@ struct
     let univs = Array.fold_left fold univs v in
     (univs, cst)
 
+  let sort_levels a = 
+    Array.sort Level.natural_compare a; a
+
   let to_context (ctx, cst) =
-    (Instance.of_array (Array.of_list (LSet.elements ctx)), cst)
+    (Instance.of_array (sort_levels (Array.of_list (LSet.elements ctx))), cst)
 
   let of_context (ctx, cst) =
     (Instance.levels ctx, cst)

@@ -12,7 +12,7 @@ open Environ
 open Evd
 
 (** This module provides the typing machine with existential variables
-   (but without universes). *)
+    and universes. *)
 
 (** Typecheck a term and return its type *)
 val type_of : env -> evar_map -> constr -> types
