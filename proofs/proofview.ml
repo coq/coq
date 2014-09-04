@@ -547,6 +547,8 @@ let tclEVARMAP =
 
 let tclENV = Proof.current
 
+let tclUPDATE_ENV = Proof.update
+
 let tclEFFECTS eff =
   Proof.modify (fun initial -> emit_side_effects eff initial)
 

@@ -3939,8 +3939,13 @@ let abstract_subproof id gk tac =
   let effs = cons_side_effects eff
     Entries.(snd (Future.force const.const_entry_body)) in
   let args = List.rev (instance_from_named_context sign) in
-  let solve = Proofview.V82.tclEVARS evd <*>
-    Proofview.tclEFFECTS effs <*> new_exact_no_check (applist (lem, args)) in
+  let solve =
+    Proofview.V82.tclEVARS evd <*>
+    Proofview.tclEFFECTS effs <*>
+    (** Hack around *)
+    Proofview.tclUPDATE_ENV (Global.env ()) <*>
+    new_exact_no_check (applist (lem, args))
+  in
   if not safe then Proofview.mark_as_unsafe <*> solve else solve
   end
 

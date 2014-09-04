@@ -134,6 +134,7 @@ module Logical : sig
   val modify : (logicalState -> logicalState) -> unit t
   val put : logicalMessageType -> unit t
   val current : logicalEnvironment t
+  val update : logicalEnvironment -> unit t
 
   val zero : exn -> 'a t
   val plus : 'a t -> (exn -> 'a t) -> 'a t

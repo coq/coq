@@ -253,6 +253,9 @@ struct
   let current : rt tactic = (); fun s ->
     { iolist = fun nil cons -> cons (s.rstate, s) nil }
 
+  let update (rstate : rt) : unit tactic = (); fun s ->
+    { iolist = fun nil cons -> cons ((), { s with rstate }) nil }
+
   let put (w : wt) : unit tactic = (); fun s ->
     { iolist = fun nil cons -> cons ((), { s with wstate = merge w s.wstate }) nil }
 
