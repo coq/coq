@@ -97,9 +97,9 @@ Remark here that the field
 %\medskip
 
 Let us now see the work done by the {\tt Record} macro.  First the
-macro generates an inductive definition with just one constructor:
+macro generates a variant type definition with just one constructor:
 \begin{quote}
-{\tt Inductive {\ident} {\params} :{\sort} :=} \\
+{\tt Variant {\ident} {\params} :{\sort} :=} \\
 \qquad {\tt
   {\ident$_0$} ({\ident$_1$}:{\term$_1$}) .. ({\ident$_n$}:{\term$_n$}).}
 \end{quote}
@@ -160,6 +160,11 @@ raises an  error). To define recursive  records, one can  use the {\tt
   Inductive} and {\tt CoInductive} keywords, resulting in an inductive
 or  co-inductive record.  A  \emph{caveat}, however,  is that  records
 cannot appear in mutually inductive (or co-inductive) definitions.
+Induction schemes are automatically generated for inductive records.
+Automatic generation of induction schemes for non-recursive records
+defined with the {\tt Record} keyword can be activated with the
+{\tt Nonrecursive Elimination Schemes} option
+(see~\ref{set-nonrecursive-elimination-schemes}).
 
 \begin{Warnings}
 \item {\tt Warning: {\ident$_i$} cannot be defined.}

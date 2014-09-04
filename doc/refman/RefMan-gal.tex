@@ -929,7 +929,9 @@ section and depending on {\ident} are prefixed by the let-in definition
 \index{Inductive definitions}
 \label{gal-Inductive-Definitions}
 \comindex{Inductive}
-\label{Inductive}}
+\label{Inductive}
+\comindex{Variant}
+\label{Variant}}
 
 We gradually explain simple inductive types, simple
 annotated inductive types, simple parametric inductive types, 
@@ -1107,6 +1109,16 @@ Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
 \end{coq_example*}
 This is an alternative definition of lists where we specify the
 arguments of the constructors rather than their full type.
+\item
+\begin{coq_example*}
+Variant sum (A B:Set) : Set := left : A->sum A B | right : B->Sum A B.
+\end{coq_example*}
+The {\tt Variant} keyword is identical to the {\tt Inductive} keyword,
+except that it disallows recursive definition of types (in particular
+lists cannot be defined with the {\tt Variant} keyword). No induction
+scheme is generated for this variant, unless the option
+{\tt Nonrecursive Elimination Schemes} is set
+(see~\ref{set-nonrecursive-elimination-schemes}).
 \end{Variants}
 
 \begin{ErrMsgs}
