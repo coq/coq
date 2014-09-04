@@ -100,7 +100,6 @@ val refine           : constr -> tactic
 val convert_concl    : types -> cast_kind -> tactic
 val convert_hyp      : named_declaration -> tactic
 val thin             : Id.t list -> tactic
-val thin_body        : Id.t list -> tactic
 val move_hyp         : bool -> Id.t -> Id.t move_location -> tactic
 val rename_hyp       : (Id.t*Id.t) list -> tactic
 
