@@ -277,8 +277,7 @@ let type_of env evd c =
 
 (* Sort of a type *)
 
-let sort_of env evd c =
-  let evdref = ref evd in
+let sort_of env evdref c =
   let j = execute env evdref c in
   let a = e_type_judgment env evdref j in
   a.utj_type

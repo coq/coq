@@ -1379,9 +1379,10 @@ exception RewriteFailure of Pp.std_ppcmds
 type result = (evar_map * constr option * types) option option
 
 let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
-  let evars = (sigma, Evar.Set.empty) in
+  let evdref = ref sigma in
+  let sort = Typing.sort_of env evdref concl in
+  let evars = (!evdref, Evar.Set.empty) in
   let evars, cstr =
-    let sort = Typing.sort_of env (goalevars evars) concl in
     let prop, (evars, arrow) = 
       if is_prop_sort sort then true, app_poly_sort true env evars impl [||]
       else false, app_poly_sort false env evars TypeGlobal.arrow [||]

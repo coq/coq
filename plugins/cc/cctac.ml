@@ -45,7 +45,8 @@ let whd_delta env=
 
 (* decompose member of equality in an applicative format *)
 
-let sf_of env sigma c = family_of_sort (sort_of env sigma c)
+(** FIXME: evar leak *)
+let sf_of env sigma c = family_of_sort (sort_of env (ref sigma) c)
 
 let rec decompose_term env sigma t=
     match kind_of_term (whd env t) with

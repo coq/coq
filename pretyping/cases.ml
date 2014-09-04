@@ -2337,7 +2337,7 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
 	    let pred = prepare_predicate_from_arsign_tycon loc tomatchs sign t in
 	      (* The tycon may be ill-typed after abstraction. *)
 	    let env' = push_rel_context (context_of_arsign sign) env in
-	      ignore(Typing.sort_of env' !evdref pred); pred
+	      ignore(Typing.sort_of env' evdref pred); pred
 	  with e when Errors.noncritical e ->
 	    let nar = List.fold_left (fun n sign -> List.length sign + n) 0 sign in
 	      lift nar t

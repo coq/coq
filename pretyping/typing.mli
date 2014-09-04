@@ -22,7 +22,7 @@ val type_of : env -> evar_map -> constr -> types
 val e_type_of : ?refresh:bool -> env -> evar_map -> constr -> evar_map * types
 
 (** Typecheck a type and return its sort *)
-val sort_of : env -> evar_map -> types -> sorts
+val sort_of : env -> evar_map ref -> types -> sorts
 
 (** Typecheck a term has a given type (assuming the type is OK) *)
 val check   : env -> evar_map -> constr -> types -> unit
