@@ -141,7 +141,7 @@ type 'a sensitive =
    as an optimisation (it shouldn't change during the evaluation). *)
 let eval t env defs gl =
   let info = content defs gl in
-  let env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
+  let env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env in
   let rdefs = ref defs in
   let r = t env rdefs gl info in
   ( r , !rdefs )
@@ -255,7 +255,7 @@ let nf_enter f = (); fun env rdefs gl info ->
     let sigma = Evd.add sigma gl.content info in
     let gl = { gl with cache = sigma } in
     let () = rdefs := sigma in
-    let hyps = Evd.evar_hyps info in
+    let hyps = Evd.evar_filtered_hyps info in
     let env = Environ.reset_with_named_context hyps env in
     f env sigma (Evd.evar_concl info) gl
 
