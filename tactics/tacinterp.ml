@@ -42,6 +42,61 @@ open Tacintern
 open Taccoerce
 open Proofview.Notations
 
+(** Goal-sensitive tactics *)
+module GTac =
+struct
+  type 'a garg =
+  | Uniform of 'a
+  | Depends of 'a list
+
+  (** Type of tactics potentially goal-dependent. If it contains a [Depends],
+      then the length of the inner list is guaranteed to be the number of
+      currently focussed goals. Otherwise it means the tactic does not depends
+      on the current set of focussed goals. *)
+  type 'a t = 'a garg Proofview.tactic
+
+  let return (x : 'a) : 'a t = Proofview.tclUNIT (Uniform x)
+
+  let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
+  | Uniform x -> f x
+  | Depends l ->
+    let f arg = f arg >>= function
+    | Uniform x ->
+      (** We dispatch the uniform result on each goal under focus, as we know
+          that the [m] argument was actually dependent. *)
+      Proofview.Goal.raw_goals >>= fun l ->
+      let ans = List.map (fun _ -> x) l in
+      Proofview.tclUNIT ans
+    | Depends l -> Proofview.tclUNIT l
+    in
+    Proofview.tclDISPATCHL (List.map f l) >>= fun l ->
+    Proofview.tclUNIT (Depends (List.concat l))
+
+  let enter f =
+    bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
+      (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
+
+  let raw_enter f =
+    bind (Proofview.Goal.raw_goals >>= fun l -> Proofview.tclUNIT (Depends l))
+      (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
+
+  let lift (type a) (t:a Proofview.tactic) : a t =
+    Proofview.tclBIND t (fun x -> Proofview.tclUNIT (Uniform x))
+
+  (** If the tactic returns unit, we can focus on the goals if necessary. *)
+  let run m k = m >>= function
+  | Uniform v -> k v
+  | Depends l ->
+    let tacs = List.map k l in
+    Proofview.tclDISPATCH tacs
+
+  let (>>=) = bind
+
+end
+
+module GTac' = Monad_.Make(GTac)
+module GTacList = GTac'.List
+
 let safe_msgnl s =
   Proofview.NonLogical.catch
     (Proofview.NonLogical.print (s++fnl()))
@@ -710,46 +765,59 @@ let interp_constr_may_eval ist env sigma c =
   end
 
 (** TODO: should use dedicated printers *)
-let rec message_of_value gl v =
+let rec message_of_value v =
   let v = Value.normalize v in
-  if has_type v (topwit wit_tacvalue) then str "<tactic>"
+  let open Tacmach.New in
+  let open GTac in
+  if has_type v (topwit wit_tacvalue) then
+    GTac.return (str "<tactic>")
   else if has_type v (topwit wit_constr) then
-    pr_constr_env (pf_env gl) (out_gen (topwit wit_constr) v)
+    let v = out_gen (topwit wit_constr) v in
+    GTac.enter begin fun gl -> GTac.return (pr_constr_env (pf_env gl) v) end
   else if has_type v (topwit wit_constr_under_binders) then
     let c = out_gen (topwit wit_constr_under_binders) v in
-    pr_constr_under_binders_env (pf_env gl) c
-  else if has_type v (topwit wit_unit) then str "()"
-  else if has_type v (topwit wit_int) then int (out_gen (topwit wit_int) v)
+    GTac.enter begin fun gl ->
+      GTac.return (pr_constr_under_binders_env (pf_env gl) c)
+    end
+  else if has_type v (topwit wit_unit) then
+    GTac.return (str "()")
+  else if has_type v (topwit wit_int) then
+    GTac.return (int (out_gen (topwit wit_int) v))
   else if has_type v (topwit wit_intro_pattern) then
-    Miscprint.pr_intro_pattern
-      (fun c -> pr_constr_env env (snd (c env Evd.empty)))
-      (out_gen (topwit wit_intro_pattern) v)
+    let p = out_gen (topwit wit_intro_pattern) v in
+    let print env c = pr_constr_env env (snd (c env Evd.empty)) in
+    GTac.enter begin fun gl ->
+      GTac.return (Miscprint.pr_intro_pattern (fun c -> print (pf_env gl) c) p)
+    end
   else if has_type v (topwit wit_constr_context) then
-    pr_constr_env (pf_env gl) (out_gen (topwit wit_constr_context) v)
+    let c = out_gen (topwit wit_constr_context) v in
+    GTac.enter begin fun gl -> GTac.return (pr_constr_env (pf_env gl) c) end
   else match Value.to_list v with
   | Some l ->
-    let print v = message_of_value gl v in
-    prlist_with_sep spc print l
+    GTacList.map message_of_value l >>= fun l ->
+    GTac.return (prlist_with_sep spc (fun x -> x) l)
   | None ->
-    str "<abstr>" (** TODO *)
+    GTac.return (str "<abstr>") (** TODO *)
 
-let interp_message_token ist gl = function
-  | MsgString s -> str s
-  | MsgInt n -> int n
+let interp_message_token ist = function
+  | MsgString s -> GTac.return (str s)
+  | MsgInt n -> GTac.return (int n)
   | MsgIdent (loc,id) ->
-      let v =
-	try Id.Map.find id ist.lfun
-	with Not_found -> user_err_loc (loc,"",pr_id id ++ str" not found.") in
-      message_of_value gl v
+    let v = try Some (Id.Map.find id ist.lfun) with Not_found -> None in
+    match v with
+    | None -> Tacticals.New.tclZEROMSG (pr_id id ++ str" not found.")
+    | Some v -> message_of_value v
 
-let interp_message_nl ist gl = function
-  | [] -> mt()
-  | l -> prlist_with_sep spc (interp_message_token ist gl) l ++ fnl()
+let interp_message_nl ist l =
+  let open GTac in
+  GTacList.map (interp_message_token ist) l >>= function
+  | [] -> GTac.return (mt ())
+  | l -> GTac.return (prlist_with_sep spc (fun x -> x) l ++ fnl ())
 
-let interp_message ist gl l =
-  (* Force evaluation of interp_message_token so that potential errors
-     are raised now and not at printing time *)
-  prlist_with_sep spc (interp_message_token ist gl) l
+let interp_message ist l =
+  let open GTac in
+  GTacList.map (interp_message_token ist) l >>= fun l ->
+  GTac.return (prlist_with_sep spc (fun x -> x) l)
 
 let rec interp_intro_pattern ist env sigma = function
   | loc, IntroAction pat ->
@@ -1003,60 +1071,6 @@ let mk_int_or_var_value ist c = in_gen (topwit wit_int) (interp_int_or_var ist c
 
 let pack_sigma (sigma,c) = {it=c;sigma=sigma;}
 
-module GTac =
-struct
-  type 'a garg =
-  | Uniform of 'a
-  | Depends of 'a list
-
-  (** Type of tactics potentially goal-dependent. If it contains a [Depends],
-      then the length of the inner list is guaranteed to be the number of
-      currently focussed goals. Otherwise it means the tactic does not depends
-      on the current set of focussed goals. *)
-  type 'a t = 'a garg Proofview.tactic
-
-  let return (x : 'a) : 'a t = Proofview.tclUNIT (Uniform x)
-
-  let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
-  | Uniform x -> f x
-  | Depends l ->
-    let f arg = f arg >>= function
-    | Uniform x ->
-      (** We dispatch the uniform result on each goal under focus, as we know
-          that the [m] argument was actually dependent. *)
-      Proofview.Goal.raw_goals >>= fun l ->
-      let ans = List.map (fun _ -> x) l in
-      Proofview.tclUNIT ans
-    | Depends l -> Proofview.tclUNIT l
-    in
-    Proofview.tclDISPATCHL (List.map f l) >>= fun l ->
-    Proofview.tclUNIT (Depends (List.concat l))
-
-  let enter f =
-    bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
-      (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
-
-  let raw_enter f =
-    bind (Proofview.Goal.raw_goals >>= fun l -> Proofview.tclUNIT (Depends l))
-      (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
-
-  let lift (type a) (t:a Proofview.tactic) : a t =
-    Proofview.tclBIND t (fun x -> Proofview.tclUNIT (Uniform x))
-
-  (** If the tactic returns unit, we can focus on the goals if necessary. *)
-  let run m k = m >>= function
-  | Uniform v -> k v
-  | Depends l ->
-    let tacs = List.map k l in
-    Proofview.tclDISPATCH tacs
-
-  let (>>=) = bind
-
-end
-
-module GTac' = Monad_.Make(GTac)
-module GTacList = GTac'.List
-
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist (tac:glob_tactic_expr) : typed_generic_argument GTac.t =
   let value_interp ist = match tac with
@@ -1088,16 +1102,19 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       catch_error_tac (push_trace(loc,call) ist) (interp_atomic ist t)
   | TacFun _ | TacLetIn _ -> assert false
   | TacMatchGoal _ | TacMatch _ -> assert false
+  | TacId [] ->
+      (** Optimization *)
+      Proofview.tclLIFT (db_breakpoint (curr_debug ist) [])
   | TacId s ->
+      let msg = interp_message_nl ist s in
+      let tac l = Proofview.tclLIFT (Proofview.NonLogical.print (hov 0 l)) in
       Proofview.tclTHEN
-        (Proofview.V82.tactic begin fun gl ->
-          tclIDTAC_MESSAGE (interp_message_nl ist gl s) gl
-        end)
+        (GTac.run msg tac)
         (Proofview.tclLIFT (db_breakpoint (curr_debug ist) s))
   | TacFail (n,s) ->
-      Proofview.V82.tactic begin fun gl ->
-        tclFAIL (interp_int_or_var ist n) (interp_message ist gl s) gl
-      end
+      let msg = interp_message ist s in
+      let tac l = Proofview.V82.tactic (fun gl -> tclFAIL (interp_int_or_var ist n) l gl) in
+      GTac.run msg tac
   | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
   | TacShowHyps tac ->
          Proofview.V82.tactic begin

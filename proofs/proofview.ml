@@ -857,7 +857,7 @@ module Goal = struct
       tclEVARMAP >>= fun sigma ->
       try
         let (gl, sigma) = Goal.eval enter_t env sigma goal in
-        tclTHEN (V82.tclEVARS sigma) ((Proof.set_local gl.env) (f gl))
+        tclTHEN (V82.tclEVARS sigma) (f gl)
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
