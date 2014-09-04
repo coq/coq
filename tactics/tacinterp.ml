@@ -1928,8 +1928,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
         if b then Tactics.keep l gl else Tactics.clear l gl
       end
   | TacClearBody l ->
-      Proofview.V82.tactic begin fun gl ->
-        Tactics.clear_body (interp_hyp_list ist (pf_env gl) l) gl
+      Proofview.Goal.raw_enter begin fun gl ->
+        Tactics.clear_body (interp_hyp_list ist (Tacmach.New.pf_env gl) l)
       end
   | TacMove (dep,id1,id2) ->
       Proofview.V82.tactic begin fun gl -> 

@@ -1467,7 +1467,58 @@ let assumption =
 let clear ids = (* avant seul dyn_clear n'echouait pas en [] *)
   if List.is_empty ids then tclIDTAC else thin ids
 
-let clear_body = thin_body
+let on_the_bodies = function
+| [] -> assert false
+| [id] -> str " depends on the body of " ++ pr_id id
+| l -> str " depends on the bodies of " ++ pr_sequence pr_id l
+
+let check_is_type env ty msg =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let evdref = ref sigma in
+  try
+    let _ = Typing.sort_of env evdref ty in
+    Proofview.V82.tclEVARS !evdref
+  with e when Errors.noncritical e ->
+    msg e
+
+let clear_body ids =
+  Proofview.Goal.raw_enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
+    let ctx = named_context env in
+    let map (id, body, t as decl) = match body with
+    | None ->
+      let () = if List.mem_f Id.equal id ids then
+        errorlabstrm "" (str "Hypothesis " ++ pr_id id ++ str " is not a local definition")
+      in
+      decl
+    | Some _ ->
+      if List.mem_f Id.equal id ids then (id, None, t) else decl
+    in
+    let ctx = List.map map ctx in
+    let base_env = reset_context env in
+    let env = push_named_context ctx base_env in
+    let check_hyps =
+      let check env (id, _, t as decl) =
+        let msg _ = Tacticals.New.tclZEROMSG
+          (str "Hypothesis " ++ pr_id id ++ on_the_bodies ids)
+        in
+        check_is_type env t msg <*> Proofview.tclUNIT (push_named decl env)
+      in
+      let checks = Proofview.Monad.List.fold_left check base_env (List.rev ctx) in
+      Proofview.tclIGNORE checks
+    in
+    let check_concl =
+      let msg _ = Tacticals.New.tclZEROMSG
+        (str "Conclusion" ++ on_the_bodies ids)
+      in
+      check_is_type env concl msg
+    in
+    check_hyps <*> check_concl <*>
+    Proofview.Refine.refine ~unsafe:true begin fun h ->
+      Proofview.Refine.new_evar h env concl
+    end
+  end
 
 let clear_wildcards ids =
   Proofview.V82.tactic (tclMAP (fun (loc,id) gl ->

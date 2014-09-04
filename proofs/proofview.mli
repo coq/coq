@@ -427,6 +427,10 @@ module Refine : sig
   val new_evar : handle -> Environ.env -> Constr.types -> handle * Constr.t
   (** Create a new hole that will be added to the goals to solve. *)
 
+  val new_evar_instance : handle -> Environ.named_context_val ->
+    Constr.types -> Constr.t list -> handle * Constr.t
+  (** Create a new hole with the given signature and instance. *)
+
   val fresh_constructor_instance :
     handle -> Environ.env -> Names.constructor -> handle * Constr.pconstructor
   (** Creates a constructor with fresh universe variables. *)

@@ -930,6 +930,15 @@ struct
     let h = (evd, evk :: evs) in
     (h, ev)
 
+  let new_evar_instance (evd, evs) ctx typ inst =
+    let src = (Loc.ghost, Evar_kinds.GoalEvar) in
+    let (evd, ev) = Evarutil.new_evar_instance ctx evd ~src typ inst in
+    let evd = Typeclasses.mark_unresolvables 
+      ~filter:(fun ev' _ -> Evar.equal (fst (Term.destEvar ev)) ev') evd in
+    let (evk, _) = Term.destEvar ev in
+    let h = (evd, evk :: evs) in
+    (h, ev)
+
   let fresh_constructor_instance (evd,evs) env construct =
     let (evd,pconstruct) = Evd.fresh_constructor_instance env evd construct in
     (evd,evs) , pconstruct
