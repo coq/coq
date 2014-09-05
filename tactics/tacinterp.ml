@@ -42,61 +42,6 @@ open Tacintern
 open Taccoerce
 open Proofview.Notations
 
-(** Goal-sensitive tactics *)
-module GTac =
-struct
-  type 'a garg =
-  | Uniform of 'a
-  | Depends of 'a list
-
-  (** Type of tactics potentially goal-dependent. If it contains a [Depends],
-      then the length of the inner list is guaranteed to be the number of
-      currently focussed goals. Otherwise it means the tactic does not depends
-      on the current set of focussed goals. *)
-  type 'a t = 'a garg Proofview.tactic
-
-  let return (x : 'a) : 'a t = Proofview.tclUNIT (Uniform x)
-
-  let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
-  | Uniform x -> f x
-  | Depends l ->
-    let f arg = f arg >>= function
-    | Uniform x ->
-      (** We dispatch the uniform result on each goal under focus, as we know
-          that the [m] argument was actually dependent. *)
-      Proofview.Goal.raw_goals >>= fun l ->
-      let ans = List.map (fun _ -> x) l in
-      Proofview.tclUNIT ans
-    | Depends l -> Proofview.tclUNIT l
-    in
-    Proofview.tclDISPATCHL (List.map f l) >>= fun l ->
-    Proofview.tclUNIT (Depends (List.concat l))
-
-  let enter f =
-    bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
-      (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
-
-  let raw_enter f =
-    bind (Proofview.Goal.raw_goals >>= fun l -> Proofview.tclUNIT (Depends l))
-      (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
-
-  let lift (type a) (t:a Proofview.tactic) : a t =
-    Proofview.tclBIND t (fun x -> Proofview.tclUNIT (Uniform x))
-
-  (** If the tactic returns unit, we can focus on the goals if necessary. *)
-  let run m k = m >>= function
-  | Uniform v -> k v
-  | Depends l ->
-    let tacs = List.map k l in
-    Proofview.tclDISPATCH tacs
-
-  let (>>=) = bind
-
-end
-
-module GTac' = Monad_.Make(GTac)
-module GTacList = GTac'.List
-
 let safe_msgnl s =
   Proofview.NonLogical.catch
     (Proofview.NonLogical.print (s++fnl()))
@@ -768,56 +713,56 @@ let interp_constr_may_eval ist env sigma c =
 let rec message_of_value v =
   let v = Value.normalize v in
   let open Tacmach.New in
-  let open GTac in
+  let open Ftactic in
   if has_type v (topwit wit_tacvalue) then
-    GTac.return (str "<tactic>")
+    Ftactic.return (str "<tactic>")
   else if has_type v (topwit wit_constr) then
     let v = out_gen (topwit wit_constr) v in
-    GTac.enter begin fun gl -> GTac.return (pr_constr_env (pf_env gl) v) end
+    Ftactic.enter begin fun gl -> Ftactic.return (pr_constr_env (pf_env gl) v) end
   else if has_type v (topwit wit_constr_under_binders) then
     let c = out_gen (topwit wit_constr_under_binders) v in
-    GTac.enter begin fun gl ->
-      GTac.return (pr_constr_under_binders_env (pf_env gl) c)
+    Ftactic.enter begin fun gl ->
+      Ftactic.return (pr_constr_under_binders_env (pf_env gl) c)
     end
   else if has_type v (topwit wit_unit) then
-    GTac.return (str "()")
+    Ftactic.return (str "()")
   else if has_type v (topwit wit_int) then
-    GTac.return (int (out_gen (topwit wit_int) v))
+    Ftactic.return (int (out_gen (topwit wit_int) v))
   else if has_type v (topwit wit_intro_pattern) then
     let p = out_gen (topwit wit_intro_pattern) v in
     let print env c = pr_constr_env env (snd (c env Evd.empty)) in
-    GTac.enter begin fun gl ->
-      GTac.return (Miscprint.pr_intro_pattern (fun c -> print (pf_env gl) c) p)
+    Ftactic.enter begin fun gl ->
+      Ftactic.return (Miscprint.pr_intro_pattern (fun c -> print (pf_env gl) c) p)
     end
   else if has_type v (topwit wit_constr_context) then
     let c = out_gen (topwit wit_constr_context) v in
-    GTac.enter begin fun gl -> GTac.return (pr_constr_env (pf_env gl) c) end
+    Ftactic.enter begin fun gl -> Ftactic.return (pr_constr_env (pf_env gl) c) end
   else match Value.to_list v with
   | Some l ->
-    GTacList.map message_of_value l >>= fun l ->
-    GTac.return (prlist_with_sep spc (fun x -> x) l)
+    Ftactic.List.map message_of_value l >>= fun l ->
+    Ftactic.return (prlist_with_sep spc (fun x -> x) l)
   | None ->
-    GTac.return (str "<abstr>") (** TODO *)
+    Ftactic.return (str "<abstr>") (** TODO *)
 
 let interp_message_token ist = function
-  | MsgString s -> GTac.return (str s)
-  | MsgInt n -> GTac.return (int n)
+  | MsgString s -> Ftactic.return (str s)
+  | MsgInt n -> Ftactic.return (int n)
   | MsgIdent (loc,id) ->
     let v = try Some (Id.Map.find id ist.lfun) with Not_found -> None in
     match v with
-    | None -> Tacticals.New.tclZEROMSG (pr_id id ++ str" not found.")
+    | None -> Ftactic.lift (Tacticals.New.tclZEROMSG (pr_id id ++ str" not found."))
     | Some v -> message_of_value v
 
 let interp_message_nl ist l =
-  let open GTac in
-  GTacList.map (interp_message_token ist) l >>= function
-  | [] -> GTac.return (mt ())
-  | l -> GTac.return (prlist_with_sep spc (fun x -> x) l ++ fnl ())
+  let open Ftactic in
+  Ftactic.List.map (interp_message_token ist) l >>= function
+  | [] -> Ftactic.return (mt ())
+  | l -> Ftactic.return (prlist_with_sep spc (fun x -> x) l ++ fnl ())
 
 let interp_message ist l =
-  let open GTac in
-  GTacList.map (interp_message_token ist) l >>= fun l ->
-  GTac.return (prlist_with_sep spc (fun x -> x) l)
+  let open Ftactic in
+  Ftactic.List.map (interp_message_token ist) l >>= fun l ->
+  Ftactic.return (prlist_with_sep spc (fun x -> x) l)
 
 let rec interp_intro_pattern ist env sigma = function
   | loc, IntroAction pat ->
@@ -1072,10 +1017,10 @@ let mk_int_or_var_value ist c = in_gen (topwit wit_int) (interp_int_or_var ist c
 let pack_sigma (sigma,c) = {it=c;sigma=sigma;}
 
 (* Interprets an l-tac expression into a value *)
-let rec val_interp ist (tac:glob_tactic_expr) : typed_generic_argument GTac.t =
+let rec val_interp ist (tac:glob_tactic_expr) : typed_generic_argument Ftactic.t =
   let value_interp ist = match tac with
   | TacFun (it, body) ->
-    GTac.return (of_tacvalue (VFun (extract_trace ist, ist.lfun, it, body)))
+    Ftactic.return (of_tacvalue (VFun (extract_trace ist, ist.lfun, it, body)))
   | TacLetIn (true,l,u) -> interp_letrec ist l u
   | TacLetIn (false,l,u) -> interp_letin ist l u
   | TacMatchGoal (lz,lr,lmr) -> interp_match_goal ist lz lr lmr
@@ -1083,7 +1028,7 @@ let rec val_interp ist (tac:glob_tactic_expr) : typed_generic_argument GTac.t =
   | TacArg (loc,a) -> interp_tacarg ist a
   | t ->
     (** Delayed evaluation *)
-    GTac.return (of_tacvalue (VFun (extract_trace ist, ist.lfun, [], t)))
+    Ftactic.return (of_tacvalue (VFun (extract_trace ist, ist.lfun, [], t)))
   in
   Control.check_for_interrupt ();
   match curr_debug ist with
@@ -1092,7 +1037,7 @@ let rec val_interp ist (tac:glob_tactic_expr) : typed_generic_argument GTac.t =
           let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
           value_interp ist
         in
-	debug_prompt lev tac eval
+	Ftactic.debug_prompt lev tac eval
   | _ -> value_interp ist
       
 
@@ -1109,12 +1054,12 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let msg = interp_message_nl ist s in
       let tac l = Proofview.tclLIFT (Proofview.NonLogical.print (hov 0 l)) in
       Proofview.tclTHEN
-        (GTac.run msg tac)
+        (Ftactic.run msg tac)
         (Proofview.tclLIFT (db_breakpoint (curr_debug ist) s))
   | TacFail (n,s) ->
       let msg = interp_message ist s in
       let tac l = Proofview.V82.tactic (fun gl -> tclFAIL (interp_int_or_var ist n) l gl) in
-      GTac.run msg tac
+      Ftactic.run msg tac
   | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
   | TacShowHyps tac ->
          Proofview.V82.tactic begin
@@ -1166,45 +1111,42 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       | ConstrWithBindingsArgType
       | BindingsArgType
       | OptArgType _ | PairArgType _ -> (** generic handler *)
-        GTac.enter begin fun gl ->
+        Ftactic.enter begin fun gl ->
           let sigma = Proofview.Goal.sigma gl in
           let env = Proofview.Goal.env gl in
           let concl = Proofview.Goal.concl gl in
           let goal = Proofview.Goal.goal gl in
           let (sigma, arg) = interp_genarg ist env sigma concl goal x in
-          Proofview.V82.tclEVARS sigma <*> GTac.return arg
+          Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return arg)
         end
       | _ as tag -> (** Special treatment. TODO: use generic handler  *)
-        GTac.enter begin fun gl ->
+        Ftactic.enter begin fun gl ->
           let sigma = Proofview.Goal.sigma gl in
           let env = Proofview.Goal.env gl in
           match tag with
           | IntOrVarArgType ->
-              GTac.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x))
+              Ftactic.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x))
           | IdentArgType ->
-              GTac.return (value_of_ident (interp_fresh_ident ist env
+              Ftactic.return (value_of_ident (interp_fresh_ident ist env
                                                (out_gen (glbwit wit_ident) x)))
           | VarArgType ->
-              GTac.return (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
+              Ftactic.return (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
           | GenArgType -> f (out_gen (glbwit wit_genarg) x)
           | ConstrArgType ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl
               in
-              Proofview.V82.tclEVARS sigma <*>
-              GTac.return v
+              Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return v)
           | OpenConstrArgType ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl in
-              Proofview.V82.tclEVARS sigma <*>
-              GTac.return v
+              Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return v)
           | ConstrMayEvalArgType ->
               let (sigma,c_interp) =
                 interp_constr_may_eval ist env sigma
                   (out_gen (glbwit wit_constr_may_eval) x)
               in
-              Proofview.V82.tclEVARS sigma <*>
-              GTac.return (Value.of_constr c_interp)
+              Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return (Value.of_constr c_interp))
           | ListArgType ConstrArgType ->
               let wit = glbwit (wit_list wit_constr) in
               let (sigma,l_interp) = Tacmach.New.of_old begin fun gl ->
@@ -1213,62 +1155,60 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
                   (out_gen wit x)
                   (project gl)
               end gl in
-              Proofview.V82.tclEVARS sigma <*>
-              GTac.return (in_gen (topwit (wit_list wit_genarg)) l_interp)
+              Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return (in_gen (topwit (wit_list wit_genarg)) l_interp))
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
-              GTac.return (
+              Ftactic.return (
                 let ans = List.map (mk_hyp_value ist env) (out_gen wit x) in
                 in_gen (topwit (wit_list wit_genarg)) ans
               )
           | ListArgType IntOrVarArgType ->
               let wit = glbwit (wit_list wit_int_or_var) in
               let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
-              GTac.return (in_gen (topwit (wit_list wit_genarg)) ans)
+              Ftactic.return (in_gen (topwit (wit_list wit_genarg)) ans)
           | ListArgType IdentArgType ->
               let wit = glbwit (wit_list wit_ident) in
               let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
               let ans = List.map mk_ident (out_gen wit x) in
-              GTac.return (in_gen (topwit (wit_list wit_genarg)) ans)
+              Ftactic.return (in_gen (topwit (wit_list wit_genarg)) ans)
           | ListArgType t  ->
-              let open GTac in
+              let open Ftactic in
               let list_unpacker wit l =
                 let map x =
                   f (in_gen (glbwit wit) x) >>= fun v ->
-                  GTac.return (out_gen (topwit wit) v)
+                  Ftactic.return (out_gen (topwit wit) v)
                 in
-                GTacList.map map (glb l) >>= fun l ->
-                GTac.return (in_gen (topwit (wit_list wit)) l)
+                Ftactic.List.map map (glb l) >>= fun l ->
+                Ftactic.return (in_gen (topwit (wit_list wit)) l)
               in
               list_unpack { list_unpacker } x
           | ExtraArgType _ ->
-              let (>>=) = GTac.bind in
+              let (>>=) = Ftactic.bind in
               (** Special treatment of tactics *)
               if has_type x (glbwit wit_tactic) then
                 let tac = out_gen (glbwit wit_tactic) x in
                 val_interp ist tac >>= fun v ->
-                GTac.return v
+                Ftactic.return v
               else
                 let goal = Proofview.Goal.goal gl in
                 let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
-                Proofview.V82.tclEVARS newsigma <*>
-                GTac.return v
+                Ftactic.(lift (Proofview.V82.tclEVARS newsigma) <*> return v)
           | _ -> assert false
         end
       in
-      let (>>=) = GTac.bind in
+      let (>>=) = Ftactic.bind in
       let addvar (x, v) accu =
         f v >>= fun v ->
-        GTac.return (Id.Map.add x v accu)
+        Ftactic.return (Id.Map.add x v accu)
       in
-      let tac = GTacList.fold_right addvar l ist.lfun >>= fun lfun ->
+      let tac = Ftactic.List.fold_right addvar l ist.lfun >>= fun lfun ->
         let trace = push_trace (loc,LtacNotationCall s) ist in
         let ist = {
           lfun = lfun;
           extra = TacStore.set ist.extra f_trace trace; } in
         val_interp ist body
       in
-      GTac.run tac (fun v -> tactic_of_value ist v)
+      Ftactic.run tac (fun v -> tactic_of_value ist v)
 
   | TacML (loc,opn,l) when List.for_all global_genarg l ->
       (* spiwack: a special case for tactics (from TACTIC EXTEND) when
@@ -1298,25 +1238,25 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
         tac args ist
       end
 
-and force_vrec ist v : typed_generic_argument GTac.t =
+and force_vrec ist v : typed_generic_argument Ftactic.t =
   let v = Value.normalize v in
   if has_type v (topwit wit_tacvalue) then
     let v = to_tacvalue v in
     match v with
     | VRec (lfun,body) -> val_interp {ist with lfun = !lfun} body
-    | v -> GTac.return (of_tacvalue v)
-  else GTac.return v
+    | v -> Ftactic.return (of_tacvalue v)
+  else Ftactic.return v
 
-and interp_ltac_reference loc' mustbetac ist r : typed_generic_argument GTac.t =
+and interp_ltac_reference loc' mustbetac ist r : typed_generic_argument Ftactic.t =
   match r with
   | ArgVar (loc,id) ->
       let v =
         try Id.Map.find id ist.lfun
         with Not_found -> in_gen (topwit wit_var) id
       in
-      GTac.bind (force_vrec ist v) begin fun v ->
+      Ftactic.bind (force_vrec ist v) begin fun v ->
       let v = propagate_trace ist loc id v in
-      if mustbetac then GTac.return (coerce_to_tactic loc id v) else GTac.return v
+      if mustbetac then Ftactic.return (coerce_to_tactic loc id v) else Ftactic.return v
       end
   | ArgArg (loc,r) ->
       let ids = extract_ids [] ist.lfun in
@@ -1326,49 +1266,47 @@ and interp_ltac_reference loc' mustbetac ist r : typed_generic_argument GTac.t =
       let ist = { lfun = Id.Map.empty; extra = extra; } in
       val_interp ist (Tacenv.interp_ltac r)
 
-and interp_tacarg ist arg : typed_generic_argument GTac.t =
+and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
   match arg with
   | TacGeneric arg ->
-      GTac.enter begin fun gl ->
+      Ftactic.enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let goal = Proofview.Goal.goal gl in
         let (sigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} arg in
-        Proofview.V82.tclEVARS sigma <*>
-        GTac.return v
+        Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return v)
       end
   | Reference r -> interp_ltac_reference dloc false ist r
   | ConstrMayEval c ->
-      GTac.raw_enter begin fun gl ->
+      Ftactic.raw_enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let (sigma,c_interp) = interp_constr_may_eval ist env sigma c in
-        Proofview.V82.tclEVARS sigma <*>
-        GTac.return (Value.of_constr c_interp)
+        Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return (Value.of_constr c_interp))
       end
   | UConstr c ->
-      GTac.raw_enter begin fun gl ->
+      Ftactic.raw_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
-        GTac.return (Value.of_uconstr (interp_uconstr ist env c))
+        Ftactic.return (Value.of_uconstr (interp_uconstr ist env c))
       end
   | MetaIdArg (loc,_,id) -> assert false
   | TacCall (loc,r,[]) ->
       interp_ltac_reference loc true ist r
   | TacCall (loc,f,l) ->
-      let (>>=) = GTac.bind in
+      let (>>=) = Ftactic.bind in
       interp_ltac_reference loc true ist f >>= fun fv ->
-      GTacList.map (fun a -> interp_tacarg ist a) l >>= fun largs ->
+      Ftactic.List.map (fun a -> interp_tacarg ist a) l >>= fun largs ->
       interp_app loc ist fv largs
   | TacExternal (loc,com,req,la) ->
-      let (>>=) = GTac.bind in
-      GTacList.map (fun a -> interp_tacarg ist a) la >>= fun la_interp ->
+      let (>>=) = Ftactic.bind in
+      Ftactic.List.map (fun a -> interp_tacarg ist a) la >>= fun la_interp ->
       interp_external loc ist com req la_interp
   | TacFreshId l ->
-      GTac.raw_enter begin fun gl ->
+      Ftactic.raw_enter begin fun gl ->
         let id = interp_fresh_id ist (Tacmach.New.pf_env gl) l in
-        GTac.return (in_gen (topwit wit_intro_pattern) (dloc, IntroNaming (IntroIdentifier id)))
+        Ftactic.return (in_gen (topwit wit_intro_pattern) (dloc, IntroNaming (IntroIdentifier id)))
       end
   | TacPretype c ->
-      GTac.raw_enter begin fun gl ->
+      Ftactic.raw_enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let {closure;term} = interp_uconstr ist env c in
@@ -1380,11 +1318,10 @@ and interp_tacarg ist arg : typed_generic_argument GTac.t =
         let (sigma,c_interp) =
           Pretyping.understand_ltac constr_flags sigma env vars WithoutTypeConstraint term
         in
-        Proofview.V82.tclEVARS sigma <*>
-        GTac.return (Value.of_constr c_interp)
+        Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return (Value.of_constr c_interp))
       end
   | TacNumgoals ->
-      GTac.lift begin
+      Ftactic.lift begin
         let open Proofview.Notations in
         Proofview.numgoals >>= fun i ->
         Proofview.tclUNIT (Value.of_int i)
@@ -1395,16 +1332,16 @@ and interp_tacarg ist arg : typed_generic_argument GTac.t =
       if String.equal tg "tactic" then
         val_interp ist (tactic_out t ist)
       else if String.equal tg "value" then
-        GTac.return (value_out t)
+        Ftactic.return (value_out t)
       else if String.equal tg "constr" then
-        GTac.return (Value.of_constr (constr_out t))
+        Ftactic.return (Value.of_constr (constr_out t))
       else
         Errors.anomaly ~loc:dloc ~label:"Tacinterp.val_interp"
 	  (str "Unknown dynamic: <" ++ str (Dyn.tag t) ++ str ">")
 
 (* Interprets an application node *)
-and interp_app loc ist fv largs : typed_generic_argument GTac.t =
-  let (>>=) = GTac.bind in
+and interp_app loc ist fv largs : typed_generic_argument Ftactic.t =
+  let (>>=) = Ftactic.bind in
   let fail = Tacticals.New.tclZEROMSG (str "Illegal tactic application.") in
   let fv = Value.normalize fv in
   if has_type fv (topwit wit_tacvalue) then
@@ -1439,9 +1376,9 @@ and interp_app loc ist fv largs : typed_generic_argument GTac.t =
 	    (fun () ->
 	      str"evaluation returns"++fnl()++pr_value None v)
         end <*>
-        if List.is_empty lval then GTac.return v else interp_app loc ist v lval
+        if List.is_empty lval then Ftactic.return v else interp_app loc ist v lval
       else
-        GTac.return (of_tacvalue (VFun(trace,newlfun,lvar,body)))
+        Ftactic.return (of_tacvalue (VFun(trace,newlfun,lvar,body)))
     | _ -> fail
   else fail
 
@@ -1463,7 +1400,7 @@ and tactic_of_value ist vle =
   else Proofview.tclZERO (UserError ("" , str"Expression does not evaluate to a tactic."))
 
 and eval_value ist tac =
-  let (>>=) = GTac.bind in
+  let (>>=) = Ftactic.bind in
   val_interp ist tac >>= fun v ->
   if has_type v (topwit wit_tacvalue) then match to_tacvalue v with
   | VFun (trace,lfun,[],t) ->
@@ -1472,9 +1409,9 @@ and eval_value ist tac =
         extra = TacStore.set ist.extra f_trace trace; } in
       let tac = eval_tactic ist t in
       let dummy = VFun (extract_trace ist, Id.Map.empty, [], TacId []) in
-      catch_error_tac trace (tac <*> GTac.return (of_tacvalue dummy))
-  | _ -> GTac.return v
-  else GTac.return v
+      catch_error_tac trace (tac <*> Ftactic.return (of_tacvalue dummy))
+  | _ -> Ftactic.return v
+  else Ftactic.return v
 
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist llc u =
@@ -1496,7 +1433,7 @@ and interp_letin ist llc u =
     let ist = { ist with lfun } in
     val_interp ist u
   | ((_, id), body) :: defs ->
-    GTac.bind (interp_tacarg ist body) (fun v ->
+    Ftactic.bind (interp_tacarg ist body) (fun v ->
     fold (Id.Map.add id v lfun) defs)
   in
   fold ist.lfun llc
@@ -1535,7 +1472,7 @@ and interp_match_successes lz ist tac =
 
 (* Interprets the Match expressions *)
 and interp_match ist lz constr lmr =
-  let (>>=) = GTac.bind in
+  let (>>=) = Ftactic.bind in
   begin Proofview.tclORELSE
     (interp_ltac_constr ist constr)
     begin function
@@ -1545,7 +1482,7 @@ and interp_match ist lz constr lmr =
           Proofview.tclZERO e
     end
   end >>= fun constr ->
-  GTac.raw_enter begin fun gl ->
+  Ftactic.raw_enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
@@ -1554,7 +1491,7 @@ and interp_match ist lz constr lmr =
 
 (* Interprets the Match Context expressions *)
 and interp_match_goal ist lz lr lmr =
-    GTac.enter begin fun gl ->
+    Ftactic.enter begin fun gl ->
       let sigma = Proofview.Goal.sigma gl in
       let env = Proofview.Goal.env gl in
       let hyps = Proofview.Goal.hyps gl in
@@ -1565,7 +1502,7 @@ and interp_match_goal ist lz lr lmr =
     end
 
 and interp_external loc ist com req la =
-  GTac.enter begin fun gl ->
+  Ftactic.enter begin fun gl ->
   let f ch = Tacmach.New.of_old (fun gl -> extern_request ch req gl la) gl in
   let g ch = internalise_tacarg ch in
   interp_tacarg ist (System.connect f g com)
@@ -1689,13 +1626,13 @@ and interp_genarg_var_list ist env x =
   in_gen (topwit (wit_list wit_var)) lc
 
 (* Interprets tactic expressions : returns a "constr" *)
-and interp_ltac_constr ist e : constr GTac.t =
-  let (>>=) = GTac.bind in
+and interp_ltac_constr ist e : constr Ftactic.t =
+  let (>>=) = Ftactic.bind in
   begin Proofview.tclORELSE
       (val_interp ist e)
       begin function
         | Not_found ->
-            GTac.raw_enter begin fun gl ->
+            Ftactic.raw_enter begin fun gl ->
               let env = Proofview.Goal.env gl in
               Proofview.tclLIFT begin
                 debugging_step ist (fun () ->
@@ -1707,7 +1644,7 @@ and interp_ltac_constr ist e : constr GTac.t =
         | e -> Proofview.tclZERO e
       end
   end >>= fun result ->
-  GTac.raw_enter begin fun gl ->
+  Ftactic.raw_enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let result = Value.normalize result in
   try
@@ -1718,7 +1655,7 @@ and interp_ltac_constr ist e : constr GTac.t =
           str " has value " ++ fnl() ++
           pr_constr_env env cresult)
     end <*>
-    GTac.return cresult
+    Ftactic.return cresult
   with CannotCoerceTo _ ->
     let env = Proofview.Goal.env gl in
     Proofview.tclZERO (UserError ( "",
@@ -1730,7 +1667,7 @@ and interp_ltac_constr ist e : constr GTac.t =
 
 (* Interprets tactic expressions : returns a "tactic" *)
 and interp_tactic ist tac : unit Proofview.tactic =
-  GTac.run (val_interp ist tac) (fun v -> tactic_of_value ist v)
+  Ftactic.run (val_interp ist tac) (fun v -> tactic_of_value ist v)
 
 (* Interprets a primitive tactic *)
 and interp_atomic ist tac : unit Proofview.tactic =
@@ -2167,9 +2104,9 @@ let () =
 (***************************************************************************)
 (* Other entry points *)
 
-let val_interp ist tac k = GTac.run (val_interp ist tac) k
+let val_interp ist tac k = Ftactic.run (val_interp ist tac) k
 
-let interp_ltac_constr ist c k = GTac.run (interp_ltac_constr ist c) k
+let interp_ltac_constr ist c k = Ftactic.run (interp_ltac_constr ist c) k
 
 let interp_redexp env sigma r =
   let ist = default_ist () in

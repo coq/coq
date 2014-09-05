@@ -24,6 +24,13 @@ module type Def = sig
 
 end
 
+module type ListS = sig
+  type 'a t
+  val map : ('a -> 'b t) -> 'a list -> 'b list t
+  val map_right : ('a -> 'b t) -> 'a list -> 'b list t
+  val fold_right : ('a -> 'b -> 'b t) -> 'a list -> 'b -> 'b t
+  val fold_left : ('a -> 'b -> 'a t) -> 'a -> 'b list -> 'a t
+end
 
 module type S = sig
 
