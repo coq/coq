@@ -628,7 +628,7 @@ and intern_tactic_seq onlytac ist = function
       let l = List.map (fun (id,a) -> (id,intern_genarg ist a)) l in
       ist.ltacvars, TacAlias (loc,s,l)
   | TacML (loc,opn,l) ->
-      let () = ignore (Tacenv.interp_ml_tactic opn) in
+      let _ignore = Tacenv.interp_ml_tactic opn in
       ist.ltacvars, TacML (adjust_loc loc,opn,List.map (intern_genarg ist) l)
 
 and intern_tactic_as_arg loc onlytac ist a =
