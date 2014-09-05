@@ -462,17 +462,21 @@ let interp_fresh_id ist env l =
 (* Extract the uconstr list from lfun *)
 let extract_ltac_uconstr_values ist env =
   let open Glob_term in
-  let fold id v ({typed;untyped} as accu) =
+  let fold id v ({idents;typed;untyped} as accu) =
     try
       let c = coerce_to_uconstr env v in
-      { typed ; untyped = Id.Map.add id c untyped }
+      { idents ; typed ; untyped = Id.Map.add id c untyped }
     with CannotCoerceTo _ -> try
       let c = coerce_to_constr env v in
-      { typed = Id.Map.add id c typed ; untyped }
+      { idents ; typed = Id.Map.add id c typed ; untyped }
+    with CannotCoerceTo _ -> try
+      let id' = coerce_to_ident false env v in
+      { idents = Id.Map.add id id' idents ; typed ; untyped }
     with CannotCoerceTo _ ->
       accu
   in
-  Id.Map.fold fold ist.lfun { typed = Id.Map.empty ; untyped = Id.Map.empty }
+  let empty =  { idents = Id.Map.empty ;typed = Id.Map.empty ; untyped = Id.Map.empty } in
+  Id.Map.fold fold ist.lfun empty
 
 (** Significantly simpler than [interp_constr], to interpret an
     untyped constr, it suffices to adjoin a closure environment. *)
@@ -1314,7 +1318,7 @@ and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
         let vars = {
           Pretyping.ltac_constrs = closure.typed;
           Pretyping.ltac_uconstrs = closure.untyped;
-          Pretyping.ltac_idents = Id.Map.empty;
+          Pretyping.ltac_idents = closure.idents;
           Pretyping.ltac_genargs = ist.lfun;
         } in
         let (sigma,c_interp) =

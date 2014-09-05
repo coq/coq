@@ -77,6 +77,7 @@ and cases_clauses = cases_clause list
     of its free variables. Intended for use when these variables are taken
     from the Ltac environment. *)
 type closure = {
+  idents:Id.t Id.Map.t;
   typed: Pattern.constr_under_binders Id.Map.t ;
   untyped:closed_glob_constr Id.Map.t }
 and closed_glob_constr = {

@@ -370,6 +370,7 @@ let refine_tac {Glob_term.closure=closure;term=term} =
     let lvar = { Pretyping.empty_lvar with
       Pretyping.ltac_constrs = closure.Glob_term.typed;
       Pretyping.ltac_uconstrs = closure.Glob_term.untyped;
+      Pretyping.ltac_idents = closure.Glob_term.idents;
     } in
     let update evd = Pretyping.understand_ltac flags evd env lvar tycon term in
     Proofview.Refine.refine_casted (fun h -> Proofview.Refine.update h update) <*>
