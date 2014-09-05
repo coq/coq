@@ -390,6 +390,10 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	tycon
 
   | GVar (loc, id) ->
+    let id =
+      try Id.Map.find id lvar.ltac_idents
+      with Not_found -> id
+    in
     inh_conv_coerce_to_tycon loc env evdref
       (pretype_id (fun e r l t -> pretype tycon e r l t) loc env evdref lvar id)
       tycon
@@ -645,16 +649,21 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     let (name',dom,rng) = evd_comb1 (split_tycon loc env) evdref tycon' in
     let dom_valcon = valcon_of_tycon dom in
     let j = pretype_type dom_valcon env evdref lvar c1 in
+    (* The name specified by ltac is used also to create bindings. So
+       the substitution must also be applied on variables before they are
+       looked up in the rel context. *)
+    let name = ltac_interp_name lvar name in
     let var = (name,None,j.utj_val) in
     let j' = pretype rng (push_rel var env) evdref lvar c2 in
-    (* The name specified by ltac is used only *after* pretying, when all bound
-       names have been resolved to rels. *)
-    let name = ltac_interp_name lvar name in
     let resj = judge_of_abstraction env (orelse_name name name') j j' in
       inh_conv_coerce_to_tycon loc env evdref resj tycon
 
   | GProd(loc,name,bk,c1,c2)        ->
     let j = pretype_type empty_valcon env evdref lvar c1 in
+    (* The name specified by ltac is used also to create bindings. So
+       the substitution must also be applied on variables before they are
+       looked up in the rel context. *)
+    let name = ltac_interp_name lvar name in
     let j' = match name with
       | Anonymous ->
         let j = pretype_type empty_valcon env evdref lvar c2 in
@@ -666,9 +675,6 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     in
     let resj =
       try
-        (* The name specified by ltac is used only *after* pretying, when all bound
-           names have been resolved to rels. *)
-        let name = ltac_interp_name lvar name in
         judge_of_product env name j j'
       with TypeError _ as e -> let e = Errors.push e in Loc.raise loc e in
       inh_conv_coerce_to_tycon loc env evdref resj tycon
@@ -682,12 +688,13 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
       | _ -> pretype empty_tycon env evdref lvar c1
     in
     let t = j.uj_type in
+    (* The name specified by ltac is used also to create bindings. So
+       the substitution must also be applied on variables before they are
+       looked up in the rel context. *)
+    let name = ltac_interp_name lvar name in
     let var = (name,Some j.uj_val,t) in
     let tycon = lift_tycon 1 tycon in
     let j' = pretype tycon (push_rel var env) evdref lvar c2 in
-    (* The name specified by ltac is used only *after* pretying, when all bound
-       names have been resolved to rels. *)
-    let name = ltac_interp_name lvar name in
       { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	uj_type = subst1 j.uj_val j'.uj_type }
 
