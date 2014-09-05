@@ -854,7 +854,7 @@ let rec get_parameters depth n argstk =
 	(* strip_update_shift_app only produces Zapp and Zshift items *)
 
 
-(** [eta_expand_ind_stacks env ind c s t] computes stacks correspoding 
+(** [eta_expand_ind_stack env ind c s t] computes stacks correspoding 
     to the conversion of the eta expansion of t, considered as an inhabitant 
     of ind, and the Constructor c of this inductive type applied to arguments
     s.
@@ -863,7 +863,7 @@ let rec get_parameters depth n argstk =
     @raises Not_found if the inductive is not a primitive record, or if the 
     constructor is partially applied.
  *)
-let eta_expand_ind_stacks env ind m s (f, s') =
+let eta_expand_ind_stack env ind m s (f, s') =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
     | Some (projs,pbs) when Array.length projs > 0 

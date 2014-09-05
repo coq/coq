@@ -91,7 +91,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
       | IndType ((_,0), mib) -> mib
       | _ -> error ()
   in
-  let mib2 =  subst_mind subst2 mib2 in
+  let mib2 = subst_mind subst2 mib2 in
   let check eq f = if not (eq (f mib1) (f mib2)) then error () in
   let bool_equal (x : bool) (y : bool) = x = y in
   let u = 
@@ -100,6 +100,16 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
       check Univ.Instance.equal (fun x -> Univ.UContext.instance x.mind_universes);
       Univ.UContext.instance mib1.mind_universes)
     else Univ.Instance.empty
+  in
+  let eq_projection_body p1 p2 =
+    let check eq f = if not (eq (f p1) (f p2)) then error () in
+    check eq_mind (fun x -> x.proj_ind);
+    check (==) (fun x -> x.proj_npars);
+    check (==) (fun x -> x.proj_arg);
+    check (eq_constr) (fun x -> x.proj_type);
+    check (eq_constr) (fun x -> fst x.proj_eta);
+    check (eq_constr) (fun x -> snd x.proj_eta);
+    check (eq_constr) (fun x -> x.proj_body); true
   in
   let check_inductive_type env t1 t2 =
 
@@ -161,7 +171,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
       (arities_of_specif (kn,u) (mib1,p1))
       (arities_of_specif (kn,u) (mib2,p2))
   in
-  check bool_equal (fun mib -> mib.mind_finite);
+  check (==) (fun mib -> mib.mind_finite);
   check Int.equal (fun mib -> mib.mind_ntypes);
   assert (Array.length mib1.mind_packets >= 1
 	    && Array.length mib2.mind_packets >= 1);
@@ -188,8 +198,9 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   let record_equal x y =
     match x, y with
     | None, None -> true
-    | Some (r1,p1), Some (r2,p2) ->
-      eq_constr r1 r2 && Array.for_all2 eq_con_chk p1 p2
+    | Some (p1,pb1), Some (p2,pb2) ->
+      Array.for_all2 eq_con_chk p1 p2 &&
+      Array.for_all2 eq_projection_body pb1 pb2
     | _, _ -> false
   in
   check record_equal (fun mib -> mib.mind_record);

@@ -357,7 +357,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 	     | FConstruct ((ind2,j2),u2) ->
 	       (try
  	     	  let v2, v1 = 
- 		    eta_expand_ind_stacks (infos_env infos) ind2 hd2 v2 (snd appr1)
+ 		    eta_expand_ind_stack (infos_env infos) ind2 hd2 v2 (snd appr1)
  		  in convert_stacks univ infos lft1 lft2 v1 v2
  	     	with Not_found -> raise NotConvertible)
 	     | _ -> raise NotConvertible)
@@ -370,7 +370,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 	     match c1 with 
 	     | FConstruct ((ind1,j1),u1) ->
  	       (try let v1, v2 = 
-		      eta_expand_ind_stacks (infos_env infos) ind1 hd1 v1 (snd appr2)
+		      eta_expand_ind_stack (infos_env infos) ind1 hd1 v1 (snd appr2)
 		    in convert_stacks univ infos lft1 lft2 v1 v2
 		with Not_found -> raise NotConvertible)
 	     | _ -> raise NotConvertible)

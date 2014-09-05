@@ -434,7 +434,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	     | FConstruct ((ind2,j2),u2) ->
 	       (try
  	     	  let v2, v1 =
- 	     	    eta_expand_ind_stacks (info_env infos) ind2 hd2 v2 (snd appr1)
+ 	     	    eta_expand_ind_stack (info_env infos) ind2 hd2 v2 (snd appr1)
  	     	  in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
  	     	with Not_found -> raise NotConvertible)
 	     | _ -> raise NotConvertible)
@@ -447,7 +447,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	     match c1 with
 	     | FConstruct ((ind1,j1),u1) ->
  	       (try let v1, v2 =
-	     	      eta_expand_ind_stacks (info_env infos) ind1 hd1 v1 (snd appr2)
+	     	      eta_expand_ind_stack (info_env infos) ind1 hd1 v1 (snd appr2)
 	     	    in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
 	     	with Not_found -> raise NotConvertible)
 	     | _ -> raise NotConvertible)
@@ -472,14 +472,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FConstruct ((ind1,j1),u1), _) ->
       (try
     	 let v1, v2 =
-    	   eta_expand_ind_stacks (info_env infos) ind1 hd1 v1 (snd appr2)
+    	   eta_expand_ind_stack (info_env infos) ind1 hd1 v1 (snd appr2)
     	 in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 
     | (_, FConstruct ((ind2,j2),u2)) ->
       (try
     	 let v2, v1 =
-    	   eta_expand_ind_stacks (info_env infos) ind2 hd2 v2 (snd appr1)
+    	   eta_expand_ind_stack (info_env infos) ind2 hd2 v2 (snd appr1)
     	 in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 

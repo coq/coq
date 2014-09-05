@@ -196,6 +196,7 @@ type projection_body = {
   proj_npars : int;
   proj_arg : int;
   proj_type : constr; (* Type under params *)
+  proj_eta : constr * constr; (* Eta-expanded term and type *)
   proj_body : constr; (* For compatibility, the match version *)
 }
 
@@ -231,6 +232,11 @@ type regular_inductive_arity = {
   mind_user_arity : constr;
   mind_sort : sorts;
 }
+
+type recursivity_kind =
+  | Finite (** = inductive *)
+  | CoFinite (** = coinductive *)
+  | BiFinite (** = non-recursive, like in "Record" definitions *)
 
 type inductive_arity = (regular_inductive_arity, template_arity) declaration_arity
 
@@ -283,11 +289,11 @@ type mutual_inductive_body = {
 
     mind_packets : one_inductive_body array;  (** The component of the mutual inductive block *)
 
-    mind_record : (constr * constant array) option;  
+    mind_record : (constant array * projection_body array) option;  
     (** Whether the inductive type has been declared as a record, 
 	In that case we get its canonical eta-expansion and list of projections. *)
 
-    mind_finite : bool;  (** Whether the type is inductive or coinductive *)
+    mind_finite : recursivity_kind;  (** Whether the type is inductive or coinductive *)
 
     mind_ntypes : int;  (** Number of types in the block *)
 

@@ -187,7 +187,7 @@ val whd_val : clos_infos -> fconstr -> constr
 val whd_stack :
   clos_infos -> fconstr -> stack -> fconstr * stack
 
-(** [eta_expand_ind_stacks env ind c s t] computes stacks correspoding 
+(** [eta_expand_ind_stack env ind c s t] computes stacks correspoding 
     to the conversion of the eta expansion of t, considered as an inhabitant 
     of ind, and the Constructor c of this inductive type applied to arguments
     s.
@@ -196,7 +196,7 @@ val whd_stack :
     @raises Not_found if the inductive is not a primitive record, or if the 
     constructor is partially applied.
  *)
-val eta_expand_ind_stacks : env -> inductive -> fconstr -> stack -> 
+val eta_expand_ind_stack : env -> inductive -> fconstr -> stack -> 
    (fconstr * stack) -> stack * stack
 
 (** Conversion auxiliary functions to do step by step normalisation *)
