@@ -170,7 +170,7 @@ type engagement = ImpredicativeSet
 
 
 type template_arity = {
-  template_param_levels : Univ.universe option list;
+  template_param_levels : Univ.universe_level option list;
   template_level : Univ.universe;
 }
 
@@ -212,8 +212,6 @@ type constant_body = {
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-    const_constraints : Univ.constraints;
-    const_native_name : native_name ref;
     const_polymorphic : bool; (** Is it polymorphic or not *)
     const_universes : constant_universes;
     const_proj : projection_body option;

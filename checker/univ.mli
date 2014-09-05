@@ -18,6 +18,7 @@ sig
   (** Create a new universe level from a unique identifier and an associated
       module path. *)
 
+  val equal : t -> t -> bool
 end
 
 type universe_level = Level.t
@@ -122,7 +123,7 @@ val check_constraints : constraints -> universes -> bool
 (** {6 Support for old-style sort-polymorphism } *)
 
 val subst_large_constraints :
-  (universe * universe) list -> universe -> universe
+  (universe_level * universe) list -> universe -> universe
 
 (** {6 Support for universe polymorphism } *)
 
@@ -208,6 +209,19 @@ val make_subst : universe_subst -> universe_subst_fn
 
 val subst_univs_universe : universe_subst_fn -> universe -> universe
 val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
+
+
+(** Substitution of instances *)
+val subst_instance_instance : universe_instance -> universe_instance -> universe_instance
+val subst_instance_universe : universe_instance -> universe -> universe
+val subst_instance_constraints : universe_instance -> constraints -> constraints
+
+(* val make_instance_subst : universe_instance -> universe_level_subst *)
+(* val make_inverse_instance_subst : universe_instance -> universe_level_subst *)
+
+(** Get the instantiated graph. *)
+val instantiate_univ_context : universe_context -> universe_context
+val instantiate_univ_constraints : universe_instance -> universe_context -> constraints
 
 (** {6 Pretty-printing of universes. } *)
 

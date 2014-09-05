@@ -24,6 +24,11 @@ let family_of_sort = function
 
 let family_equal = (==)
 
+let sort_of_univ u =
+  if Univ.is_type0m_univ u then Prop Null
+  else if Univ.is_type0_univ u then Prop Pos
+  else Type u
+
 (********************************************************************)
 (*       Constructions as implemented                               *)
 (********************************************************************)
@@ -469,3 +474,44 @@ let subst_univs_level_constr subst c =
 
 let subst_univs_level_context s = 
   map_rel_context (subst_univs_level_constr s)
+
+let subst_instance_constr subst c =
+  if Univ.Instance.is_empty subst then c
+  else
+    let f u = Univ.subst_instance_instance subst u in
+    let changed = ref false in
+    let rec aux t = 
+      match t with
+      | Const (c, u) -> 
+	if Univ.Instance.is_empty u then t
+	else 
+          let u' = f u in 
+	    if u' == u then t
+	    else (changed := true; Const (c, u'))
+      | Ind (i, u) ->
+	if Univ.Instance.is_empty u then t
+	else 
+	  let u' = f u in 
+	    if u' == u then t
+	    else (changed := true; Ind (i, u'))
+      | Construct (c, u) ->
+	if Univ.Instance.is_empty u then t
+	else 
+          let u' = f u in 
+	    if u' == u then t
+	    else (changed := true; Construct (c, u'))
+      | Sort (Type u) -> 
+         let u' = Univ.subst_instance_universe subst u in
+	   if u' == u then t else 
+	     (changed := true; Sort (sort_of_univ u'))
+      | _ -> map_constr aux t
+    in
+    let c' = aux c in
+      if !changed then c' else c
+
+(* let substkey = Profile.declare_profile "subst_instance_constr";; *)
+(* let subst_instance_constr inst c = Profile.profile2 substkey subst_instance_constr inst c;; *)
+
+let subst_instance_context s ctx = 
+  if Univ.Instance.is_empty s then ctx
+  else map_rel_context (fun x -> subst_instance_constr s x) ctx

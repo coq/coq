@@ -2003,7 +2003,6 @@ let subst_univs_constraints subst csts =
     (fun c cstrs -> subst_univs_constraint subst c cstrs)
     csts Constraint.empty 
 
-
 let subst_instance_level s l =
   match l.Level.data with
   | Level.Var n -> s.(n) 

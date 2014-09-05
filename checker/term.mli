@@ -56,3 +56,7 @@ val eq_constr : constr -> constr -> bool
 val subst_univs_constr : Univ.universe_subst -> constr -> constr
 val subst_univs_level_constr : Univ.universe_level_subst -> constr -> constr
 val subst_univs_level_context : Univ.universe_level_subst -> rel_context -> rel_context
+
+(** Instance substitution for polymorphism. *)
+val subst_instance_constr : Univ.universe_instance -> constr -> constr
+val subst_instance_context : Univ.universe_instance -> rel_context -> rel_context

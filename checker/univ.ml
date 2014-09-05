@@ -246,6 +246,7 @@ struct
     | Prop
     | Set
     | Level of int * DirPath.t
+    | Var of int
 
   (* Hash-consing *)
 
@@ -256,6 +257,7 @@ struct
       | Set, Set -> true
       | Level (n,d), Level (n',d') ->
         Int.equal n n' && DirPath.equal d d'
+      | Var n, Var n' -> Int.equal n n'
       | _ -> false
 
   let compare u v =
@@ -270,6 +272,9 @@ struct
       if i1 < i2 then -1
       else if i1 > i2 then 1
       else DirPath.compare dp1 dp2
+    | Level _, _ -> -1
+    | _, Level _ -> 1
+    | Var n, Var m -> Int.compare n m
 
   let hcons = function
     | Prop as x -> x
@@ -277,13 +282,15 @@ struct
     | Level (n,d) as x -> 
       let d' = Names.DirPath.hcons d in
         if d' == d then x else Level (n,d')
+    | Var n as x -> x
 
   open Hashset.Combine
 
   let hash = function
     | Prop -> combinesmall 1 0
     | Set -> combinesmall 1 1
-    | Level (n, d) -> combinesmall 2 (combine n (Names.DirPath.hash d))
+    | Var n -> combinesmall 2 n
+    | Level (n, d) -> combinesmall 3 (combine n (Names.DirPath.hash d))
 end
 
 module Level = struct
@@ -294,6 +301,7 @@ module Level = struct
   | Prop
   | Set
   | Level of int * DirPath.t
+  | Var of int
 
   (** Embed levels with their hash value *)
   type t = { 
@@ -357,6 +365,7 @@ module Level = struct
     | Prop -> "Prop"
     | Set -> "Set"
     | Level (n,d) -> Names.DirPath.to_string d^"."^string_of_int n
+    | Var i -> "Var("^string_of_int i^")"
 
   let pr u = str (to_string u)
 
@@ -1149,13 +1158,9 @@ let remove_large_constraint u v min =
   | None -> Huniv.remove (Universe.Expr.make u) v
 
 let subst_large_constraint u u' v =
-  match level u with
-  | Some u ->
-      (* if is_direct_constraint u v then  *)
-	Universe.sup u' (remove_large_constraint u v type0m_univ)
-      (* else v *)
-  | _ ->
-      anomaly (Pp.str "expect a universe level")
+  (* if is_direct_constraint u v then  *)
+  Universe.sup u' (remove_large_constraint u v type0m_univ)
+  (* else v *)
 
 let subst_large_constraints =
   List.fold_right (fun (u,u') -> subst_large_constraint u u')
@@ -1181,7 +1186,7 @@ let level_subst_of f =
     with Not_found -> l
      
 module Instance : sig 
-    type t
+    type t = Level.t array
 
     val empty : t
     val is_empty : t -> bool
@@ -1329,9 +1334,42 @@ let subst_univs_level_constraints subst csts =
     (fun c -> Option.fold_right Constraint.add (subst_univs_level_constraint subst c))
     csts Constraint.empty 
 
+(* let instantiate_univ_context subst (_, csts) =  *)
+(*   subst_univs_level_constraints subst csts *)
+
 (** Substitute instance inst for ctx in csts *)
-let instantiate_univ_context subst (_, csts) = 
-  subst_univs_level_constraints subst csts
+
+let subst_instance_level s l =
+  match l.Level.data with
+  | Level.Var n -> s.(n) 
+  | _ -> l
+
+let subst_instance_instance s i = 
+  Array.smartmap (fun l -> subst_instance_level s l) i
+
+let subst_instance_universe s u =
+  let f x = Universe.Expr.map (fun u -> subst_instance_level s u) x in
+  let u' = Universe.smartmap f u in
+    if u == u' then u
+    else Universe.sort u'
+
+let subst_instance_constraint s (u,d,v as c) =
+  let u' = subst_instance_level s u in
+  let v' = subst_instance_level s v in
+    if u' == u && v' == v then c
+    else (u',d,v')
+
+let subst_instance_constraints s csts =
+  Constraint.fold 
+    (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
+    csts Constraint.empty 
+
+(** Substitute instance inst for ctx in csts *)
+let instantiate_univ_context (ctx, csts) = 
+  (ctx, subst_instance_constraints ctx csts)
+
+let instantiate_univ_constraints u (_, csts) = 
+  subst_instance_constraints u csts
 
 (** With level to universe substitutions. *)
 type universe_subst_fn = universe_level -> universe
