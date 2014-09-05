@@ -671,9 +671,12 @@ let interp_may_eval f ist env sigma = function
       sigma , (fst (Redexpr.reduction_of_red_expr env redexp) env sigma c_interp)
   | ConstrContext ((loc,s),c) ->
       (try
-	let (sigma,ic) = f ist env sigma c
-	and ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
-	sigma , subst_meta [ConstrMatching.special_meta,ic] ctxt
+	let (sigma,ic) = f ist env sigma c in
+	let ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
+	let evdref = ref sigma in
+	let c = subst_meta [ConstrMatching.special_meta,ic] ctxt in
+	let c = Typing.solve_evars env evdref c in
+	!evdref , c
       with
 	| Not_found ->
 	    user_err_loc (loc, "interp_may_eval",
