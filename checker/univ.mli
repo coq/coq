@@ -197,19 +197,12 @@ val is_empty_level_subst : universe_level_subst -> bool
 val subst_univs_level_level : universe_level_subst -> universe_level -> universe_level
 val subst_univs_level_universe : universe_level_subst -> universe -> universe
 
-(** Make a universe level substitution: the instances must match. *)
-val make_universe_subst : Instance.t -> universe_context -> universe_level_subst
-(** Get the instantiated graph. *)
-val instantiate_univ_context : universe_level_subst -> universe_context -> constraints
-
 (** Level to universe substitutions. *)
 
 val is_empty_subst : universe_subst -> bool
 val make_subst : universe_subst -> universe_subst_fn
 
 val subst_univs_universe : universe_subst_fn -> universe -> universe
-val subst_univs_constraints : universe_subst_fn -> constraints -> constraints
-
 
 (** Substitution of instances *)
 val subst_instance_instance : universe_instance -> universe_instance -> universe_instance

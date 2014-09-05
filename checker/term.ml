@@ -404,77 +404,6 @@ let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
 let map_constr f c = map_constr_with_binders (fun x -> x) (fun _ c -> f c) 0 c
 
-let subst_univs_fn_constr f c =
-  let changed = ref false in
-  let fu = Univ.subst_univs_universe f in
-  let fi = Univ.Instance.subst_fn (Univ.level_subst_of f) in
-  let rec aux t = 
-    match t with
-    | Sort (Type u) -> 
-      let u' = fu u in
-	if u' == u then t else 
-	  (changed := true; Sort (Type u'))
-    | Const (c, u) -> 
-      let u' = fi u in 
-	if u' == u then t
-	else (changed := true; Const (c, u'))
-    | Ind (i, u) ->
-      let u' = fi u in 
-	if u' == u then t
-	else (changed := true; Ind (i, u'))
-    | Construct (c, u) ->
-      let u' = fi u in 
-	if u' == u then t
-	else (changed := true; Construct (c, u'))
-    | _ -> map_constr aux t
-  in 
-  let c' = aux c in
-    if !changed then c' else c
-
-let subst_univs_constr subst c =
-  if Univ.is_empty_subst subst then c
-  else 
-    let f = Univ.make_subst subst in
-      subst_univs_fn_constr f c
-
-
-let subst_univs_level_constr subst c =
-  if Univ.is_empty_level_subst subst then c
-  else 
-    let f = Univ.Instance.subst_fn (Univ.subst_univs_level_level subst) in
-    let changed = ref false in
-    let rec aux t = 
-      match t with
-      | Const (c, u) -> 
-	if Univ.Instance.is_empty u then t
-	else 
-          let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; Const (c, u'))
-      | Ind (i, u) ->
-	if Univ.Instance.is_empty u then t
-	else 
-	  let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; Ind (i, u'))
-      | Construct (c, u) ->
-	if Univ.Instance.is_empty u then t
-	else 
-          let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; Construct (c, u'))
-      | Sort (Type u) -> 
-         let u' = Univ.subst_univs_level_universe subst u in
-	   if u' == u then t else 
-	     (changed := true; Sort (Type u'))
-      | _ -> map_constr aux t
-    in
-    let c' = aux c in
-      if !changed then c' else c
-
-let subst_univs_level_context s = 
-  map_rel_context (subst_univs_level_constr s)
-
 let subst_instance_constr subst c =
   if Univ.Instance.is_empty subst then c
   else
@@ -508,9 +437,6 @@ let subst_instance_constr subst c =
     in
     let c' = aux c in
       if !changed then c' else c
-
-(* let substkey = Profile.declare_profile "subst_instance_constr";; *)
-(* let subst_instance_constr inst c = Profile.profile2 substkey subst_instance_constr inst c;; *)
 
 let subst_instance_context s ctx = 
   if Univ.Instance.is_empty s then ctx

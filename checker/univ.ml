@@ -1299,14 +1299,7 @@ type universe_context = UContext.t
 
 (** Substitutions. *)
 
-let make_universe_subst inst (ctx, csts) = 
-  try Array.fold_left2 (fun acc c i -> LMap.add c i acc)
-        LMap.empty (Instance.to_array ctx) (Instance.to_array inst)
-  with Invalid_argument _ -> 
-    anomaly (Pp.str "Mismatched instance and context when building universe substitution")
-
 let is_empty_subst = LMap.is_empty
-
 let empty_level_subst = LMap.empty
 let is_empty_level_subst = LMap.is_empty
 
@@ -1322,20 +1315,6 @@ let subst_univs_level_universe subst u =
   let u' = Universe.smartmap f u in
     if u == u' then u
     else Universe.sort u'
-	
-let subst_univs_level_constraint subst (u,d,v) =
-  let u' = subst_univs_level_level subst u 
-  and v' = subst_univs_level_level subst v in
-    if d != Lt && Level.equal u' v' then None
-    else Some (u',d,v')
-
-let subst_univs_level_constraints subst csts =
-  Constraint.fold 
-    (fun c -> Option.fold_right Constraint.add (subst_univs_level_constraint subst c))
-    csts Constraint.empty 
-
-(* let instantiate_univ_context subst (_, csts) =  *)
-(*   subst_univs_level_constraints subst csts *)
 
 (** Substitute instance inst for ctx in csts *)
 
@@ -1394,24 +1373,6 @@ let subst_univs_universe fn ul =
       in
 	List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.Huniv.tip u))
 	  substs nosubst
-
-let subst_univs_level fn l = 
-  try Some (fn l)
-  with Not_found -> None
-
-let subst_univs_constraint fn (u,d,v as c) cstrs =
-  let u' = subst_univs_level fn u in
-  let v' = subst_univs_level fn v in
-  match u', v' with
-  | None, None -> Constraint.add c cstrs
-  | Some u, None -> enforce_univ_constraint (u,d,make v) cstrs
-  | None, Some v -> enforce_univ_constraint (make u,d,v) cstrs
-  | Some u, Some v -> enforce_univ_constraint (u,d,v) cstrs
-
-let subst_univs_constraints subst csts =
-  Constraint.fold 
-    (fun c cstrs -> subst_univs_constraint subst c cstrs)
-    csts Constraint.empty 
 
 (** Pretty-printing *)
 
