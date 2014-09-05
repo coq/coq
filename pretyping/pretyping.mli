@@ -36,6 +36,8 @@ type ltac_var_map = {
   (** Ltac variables bound to constrs *)
   ltac_uconstrs : uconstr_var_map;
   (** Ltac variables bound to untyped constrs *)
+  ltac_idents: Id.t Id.Map.t;
+  (** Ltac variables bound to identifiers *)
   ltac_genargs : unbound_ltac_var_map;
   (** Ltac variables bound to other kinds of arguments *)
 }

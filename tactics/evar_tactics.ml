@@ -47,6 +47,7 @@ let instantiate_tac n (ist,rawc) ido =
     let lvar = {
       Pretyping.ltac_constrs = constrvars;
       ltac_uconstrs = Names.Id.Map.empty;
+      ltac_idents = Names.Id.Map.empty;
       ltac_genargs = ist.Geninterp.lfun;
     } in
     let sigma' = w_refine (evk,evi) (lvar ,rawc) sigma in

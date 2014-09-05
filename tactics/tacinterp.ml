@@ -492,6 +492,7 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let vars = {
     Pretyping.ltac_constrs = constrvars;
     Pretyping.ltac_uconstrs = Id.Map.empty;
+    Pretyping.ltac_idents = Id.Map.empty;
     Pretyping.ltac_genargs = ist.lfun;
   } in
   let c = match ce with
@@ -1313,6 +1314,7 @@ and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
         let vars = {
           Pretyping.ltac_constrs = closure.typed;
           Pretyping.ltac_uconstrs = closure.untyped;
+          Pretyping.ltac_idents = Id.Map.empty;
           Pretyping.ltac_genargs = ist.lfun;
         } in
         let (sigma,c_interp) =

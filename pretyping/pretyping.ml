@@ -51,6 +51,7 @@ type unbound_ltac_var_map = Genarg.tlevel Genarg.generic_argument Id.Map.t
 type ltac_var_map = {
   ltac_constrs : var_map;
   ltac_uconstrs : uconstr_var_map;
+  ltac_idents: Id.t Id.Map.t;
   ltac_genargs : unbound_ltac_var_map;
 }
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
@@ -226,6 +227,17 @@ let inh_conv_coerce_to_tycon resolve_tc loc env evdref j = function
 let orelse_name name name' = match name with
   | Anonymous -> name'
   | _ -> name
+
+let ltac_interp_name { ltac_idents ; ltac_genargs } = function
+  | Anonymous -> Anonymous
+  | Name id as n ->
+      try Name (Id.Map.find id ltac_idents)
+      with Not_found ->
+        if Id.Map.mem id ltac_genargs then
+          errorlabstrm "" (str"Ltac variable"++spc()++ pr_id id ++
+                           spc()++str"is not bound to an identifier."++spc()++
+                           str"It cannot be used in a binder.")
+        else n
 
 let invert_ltac_bound_name env id0 id =
   try mkRel (pi1 (lookup_rel_id id (rel_context env)))
@@ -635,6 +647,9 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     let j = pretype_type dom_valcon env evdref lvar c1 in
     let var = (name,None,j.utj_val) in
     let j' = pretype rng (push_rel var env) evdref lvar c2 in
+    (* The name specified by ltac is used only *after* pretying, when all bound
+       names have been resolved to rels. *)
+    let name = ltac_interp_name lvar name in
     let resj = judge_of_abstraction env (orelse_name name name') j j' in
       inh_conv_coerce_to_tycon loc env evdref resj tycon
 
@@ -650,7 +665,11 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
           pretype_type empty_valcon env' evdref lvar c2
     in
     let resj =
-      try judge_of_product env name j j'
+      try
+        (* The name specified by ltac is used only *after* pretying, when all bound
+           names have been resolved to rels. *)
+        let name = ltac_interp_name lvar name in
+        judge_of_product env name j j'
       with TypeError _ as e -> let e = Errors.push e in Loc.raise loc e in
       inh_conv_coerce_to_tycon loc env evdref resj tycon
 
@@ -666,6 +685,9 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     let var = (name,Some j.uj_val,t) in
     let tycon = lift_tycon 1 tycon in
     let j' = pretype tycon (push_rel var env) evdref lvar c2 in
+    (* The name specified by ltac is used only *after* pretying, when all bound
+       names have been resolved to rels. *)
+    let name = ltac_interp_name lvar name in
       { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	uj_type = subst1 j.uj_val j'.uj_type }
 
@@ -933,6 +955,7 @@ let all_no_fail_flags = default_inference_flags false
 let empty_lvar : ltac_var_map = {
   ltac_constrs = Id.Map.empty;
   ltac_uconstrs = Id.Map.empty;
+  ltac_idents = Id.Map.empty;
   ltac_genargs = Id.Map.empty;
 }
 
