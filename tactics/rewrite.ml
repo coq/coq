@@ -1617,8 +1617,8 @@ let rec strategy_of_ast = function
   | StratUnary (f, s) -> 
     let s' = strategy_of_ast s in
     let f' = match f with
-      | "subterms" -> all_subterms
-      | "subterm" -> one_subterm
+      | "all_subterms" -> all_subterms
+      | "one_subterm" -> one_subterm
       | "innermost" -> Strategies.innermost
       | "outermost" -> Strategies.outermost
       | "bottomup" -> Strategies.bu
