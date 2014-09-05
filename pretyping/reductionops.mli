@@ -41,6 +41,7 @@ module Cst_stack : sig
   val add_cst : constr -> t -> t
   val best_cst : t -> (constr * constr list) option
   val best_replace : constr -> t -> constr -> constr
+  val reference : t -> Constant.t option
   val pr : t -> Pp.std_ppcmds
 end
 
@@ -237,7 +238,7 @@ val find_conclusion : env -> evar_map -> constr -> (constr,constr) kind_of_term
 val is_arity : env ->  evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
 
-val contract_fix : ?env:Environ.env -> fixpoint -> constr
+val contract_fix : ?env:Environ.env -> ?reference:Constant.t -> fixpoint -> constr
 val fix_recarg : fixpoint -> constr Stack.t -> (int * constr) option
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)

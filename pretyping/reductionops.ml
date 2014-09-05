@@ -173,6 +173,10 @@ module Cst_stack = struct
     | (cst,params,[])::_ -> Some(cst,params)
     | _ -> None
 
+  let reference t = match best_cst t with
+    | Some (c, _) when Term.isConst c -> Some (fst (Term.destConst c))
+    | _ -> None
+
   (** [best_replace d cst_l c] makes the best replacement for [d]
       by [cst_l] in [c] *)
   let best_replace d cst_l c =
@@ -656,12 +660,12 @@ let reducible_mind_case c = match kind_of_term c with
     f x := t. End M. Definition f := u. and say goodbye to any hope
     of refolding M.f this way ...
 *)
-let magicaly_constant_of_fixbody env bd = function
+let magicaly_constant_of_fixbody env reference bd = function
   | Name.Anonymous -> bd
   | Name.Name id ->
     try
-      let cst = Nametab.locate_constant
-    	(Libnames.make_qualid DirPath.empty id) in
+      let (cst_mod,cst_sect,_) = Constant.repr3 reference in
+      let cst = Constant.make3 cst_mod cst_sect (Label.of_id id) in
       let (cst, u), ctx = Universes.fresh_constant_instance env cst in
       match constant_opt_value_in env (cst,u) with
       | None -> bd
@@ -676,7 +680,7 @@ let magicaly_constant_of_fixbody env bd = function
     with
     | Not_found -> bd
 
-let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) =
+let contract_cofix ?env ?reference (bodynum,(names,types,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j =
     let ind = nbodies-j-1 in
@@ -685,13 +689,13 @@ let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) =
       let bd = mkCoFix (ind,typedbodies) in
       match env with
       | None -> bd
-      | Some e -> magicaly_constant_of_fixbody e bd names.(ind) in
+      | Some e -> magicaly_constant_of_fixbody e (Option.get reference) bd names.(ind) in
   let closure = List.init nbodies make_Fi in
   substl closure bodies.(bodynum)
 
 (** Similar to the "fix" case below *)
 let reduce_and_refold_cofix recfun env cst_l cofix sk =
-  let raw_answer = contract_cofix ~env cofix in
+  let raw_answer = contract_cofix ~env ?reference:(Cst_stack.reference cst_l) cofix in
   apply_subst
     (fun x (t,sk') -> recfun x (Cst_stack.best_replace (mkCoFix cofix) cst_l t,sk'))
     [] Cst_stack.empty raw_answer sk
@@ -710,7 +714,7 @@ let reduce_mind_case mia =
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
-let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies)) =
+let contract_fix ?env ?reference ((recindices,bodynum),(names,types,bodies as typedbodies)) =
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
@@ -719,7 +723,7 @@ let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies))
 	let bd = mkFix ((recindices,ind),typedbodies) in
 	match env with
 	| None -> bd
-	| Some e -> magicaly_constant_of_fixbody e bd names.(ind) in
+	| Some e -> magicaly_constant_of_fixbody e (Option.get reference) bd names.(ind) in
     let closure = List.init nbodies make_Fi in
     substl closure bodies.(bodynum)
 
@@ -728,7 +732,7 @@ let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies))
     Other rels are directly substituted by constants "magically found from the
     context" in contract_fix *)
 let reduce_and_refold_fix recfun env cst_l fix sk =
-  let raw_answer = contract_fix ~env fix in
+  let raw_answer = contract_fix ~env ?reference:(Cst_stack.reference cst_l) fix in
   apply_subst
     (fun x (t,sk') -> recfun x (Cst_stack.best_replace (mkFix fix) cst_l t,sk'))
     [] Cst_stack.empty raw_answer sk
