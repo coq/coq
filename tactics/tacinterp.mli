@@ -121,3 +121,6 @@ val error_ltac_variable : Loc.t -> Id.t -> Environ.env option -> value -> string
     the Ltac environment according to the given names. *)
 val lift_constr_tac_to_ml_tac : Id.t option list ->
   (constr list -> Geninterp.interp_sign -> unit Proofview.tactic) -> Tacenv.ml_tactic
+
+val default_ist : unit -> Geninterp.interp_sign
+(** Empty ist with debug set on the current value. *)

@@ -255,37 +255,39 @@ let simplif flags ist =
         end;
         $t_not_dep_intros) >>
 
-let rec tauto_intuit flags t_reduce solver ist =
+let rec tauto_intuit flags t_reduce solver =
   let t_axioms = tacticIn (axioms flags)
   and t_simplif = tacticIn (simplif flags)
-  and t_is_disj = tacticIn (is_disj flags)
-  and t_tauto_intuit = tacticIn (tauto_intuit flags t_reduce solver) in
-  let t_solver = globTacticIn (fun _ist -> solver) in
-  <:tactic<
+  and t_is_disj = tacticIn (is_disj flags) in
+  let lfun = Id.Map.singleton (Id.of_string "t_solver") solver in
+  let ist = { default_ist () with lfun = lfun; } in
+  let vars = [Id.of_string "t_solver"] in
+  (vars, ist, <:tactic<
+   let rec t_tauto_intuit :=
    ($t_simplif;$t_axioms
    || match reverse goal with
       | id:forall(_: forall (_: ?X1), ?X2), ?X3|- _ =>
 	  cut X3;
-	    [ intro; clear id; $t_tauto_intuit
+	    [ intro; clear id; t_tauto_intuit
 	    | cut (forall (_: X1), X2);
 		[ exact id
 		| generalize (fun y:X2 => id (fun x:X1 => y)); intro; clear id;
-		  solve [ $t_tauto_intuit ]]]
+		  solve [ t_tauto_intuit ]]]
       | id:forall (_:not ?X1), ?X3|- _ =>
 	  cut X3;
-	    [ intro; clear id; $t_tauto_intuit
-	    | cut (not X1); [ exact id | clear id; intro; solve [$t_tauto_intuit ]]]
+	    [ intro; clear id; t_tauto_intuit
+	    | cut (not X1); [ exact id | clear id; intro; solve [t_tauto_intuit ]]]
       | |- ?X1 =>
-          $t_is_disj; solve [left;$t_tauto_intuit | right;$t_tauto_intuit]
+          $t_is_disj; solve [left;t_tauto_intuit | right;t_tauto_intuit]
       end
     ||
     (* NB: [|- _ -> _] matches any product *)
-    match goal with | |- forall (_ : _),  _ => intro; $t_tauto_intuit
-    |  |- _  => $t_reduce;$t_solver
+    match goal with | |- forall (_ : _),  _ => intro; t_tauto_intuit
+    |  |- _  => $t_reduce;t_solver
     end
     ||
-    $t_solver
-   ) >>
+    t_solver
+   ) in t_tauto_intuit >>)
 
 let reduction_not_iff _ist =
   match !negation_unfolding, unfold_iff () with
@@ -296,12 +298,18 @@ let reduction_not_iff _ist =
 
 let t_reduction_not_iff = tacticIn reduction_not_iff
 
-let intuition_gen flags tac =
-  interp (tacticIn (tauto_intuit flags t_reduction_not_iff tac))
+let intuition_gen ist flags tac =
+  Proofview.Goal.enter begin fun gl ->
+  let tac = Value.of_closure ist tac in
+  let env = Proofview.Goal.env gl in
+  let vars, ist, intuition = tauto_intuit flags t_reduction_not_iff tac in
+  let glb_intuition = Tacintern.glob_tactic_env vars env intuition in
+  eval_tactic_ist ist glb_intuition
+  end
 
 let tauto_intuitionistic flags =
   Proofview.tclORELSE
-    (intuition_gen flags <:tactic<fail>>)
+    (intuition_gen (default_ist ()) flags <:tactic<fail>>)
     begin function
       | Refiner.FailError _ | UserError _ ->
           Proofview.tclZERO (UserError ("tauto" , str "tauto failed."))
@@ -376,11 +384,11 @@ TACTIC EXTEND dtauto
 END
 
 TACTIC EXTEND intuition
-| [ "intuition" ] -> [ intuition_gen tauto_uniform_unit_flags default_intuition_tac ]
-| [ "intuition" tactic(t) ] -> [ intuition_gen tauto_uniform_unit_flags t ]
+| [ "intuition" ] -> [ intuition_gen ist tauto_uniform_unit_flags default_intuition_tac ]
+| [ "intuition" tactic(t) ] -> [ intuition_gen ist tauto_uniform_unit_flags t ]
 END
 
 TACTIC EXTEND dintuition
-| [ "dintuition" ] -> [ intuition_gen tauto_power_flags default_intuition_tac ]
-| [ "dintuition" tactic(t) ] -> [ intuition_gen tauto_power_flags t ]
+| [ "dintuition" ] -> [ intuition_gen ist tauto_power_flags default_intuition_tac ]
+| [ "dintuition" tactic(t) ] -> [ intuition_gen ist tauto_power_flags t ]
 END
