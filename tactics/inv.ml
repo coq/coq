@@ -276,11 +276,48 @@ let generalizeRewriteIntros tac depids id =
      intros_replacing (ids_of_named_context dids)])
   end
 
-let rec tclMAP_i n tacfun = function
-  | [] -> tclDO n (tacfun None)
-  | a::l ->
-      if Int.equal n 0 then Proofview.tclZERO (Errors.UserError ("", Pp.str"Too many names."))
-      else tclTHEN (tacfun (Some a)) (tclMAP_i (n-1) tacfun l)
+let error_too_many_names pats =
+  let loc = Loc.join_loc (fst (List.hd pats)) (fst (List.last pats)) in
+  user_err_loc (loc,"",
+    str "Unexpected " ++
+    str (String.plural (List.length pats) "introduction pattern") ++
+    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (snd (c (Global.env()) Evd.empty)))) pats ++
+    str ".")
+
+let rec get_names (allow_conj,issimple) (loc,pat as x) = match pat with
+  | IntroNaming IntroWildcard ->
+      error "Discarding pattern not allowed for inversion equations."
+  | IntroNaming IntroAnonymous | IntroForthcoming _ ->
+      error "Anonymous pattern not allowed for inversion equations."
+  | IntroNaming (IntroFresh _) ->
+      error "Fresh pattern not allowed for inversion equations."
+  | IntroAction (IntroRewrite _) ->
+      error "Rewriting pattern not allowed for inversion equations."
+  | IntroAction (IntroOrAndPattern [[]]) when allow_conj -> (None, [])
+  | IntroAction (IntroOrAndPattern [(_,IntroNaming (IntroIdentifier id)) :: _ as l])
+      when allow_conj -> (Some id,l)
+  | IntroAction (IntroOrAndPattern [_]) ->
+      if issimple then
+        error"Conjunctive patterns not allowed for simple inversion equations."
+      else
+        error"Nested conjunctive patterns not allowed for inversion equations."
+  | IntroAction (IntroInjection l) ->
+      error "Injection patterns not allowed for inversion equations."
+  | IntroAction (IntroOrAndPattern l) ->
+      error "Disjunctive patterns not allowed for inversion equations."
+  | IntroAction (IntroApplyOn (c,pat)) ->
+      error "Apply patterns not allowed for inversion equations."
+  | IntroNaming (IntroIdentifier id) ->
+      (Some id,[x])
+
+let rec tclMAP_i allow_conj n tacfun = function
+  | [] -> tclDO n (tacfun (None,[]))
+  | a::l as l' ->
+      if Int.equal n 0 then error_too_many_names l'
+      else
+        tclTHEN
+          (tacfun (get_names allow_conj a))
+          (tclMAP_i allow_conj (n-1) tacfun l)
 
 let remember_first_eq id x = if !x == MoveLast then x := MoveAfter id
 
@@ -313,7 +350,7 @@ let projectAndApply thin id eqname names depids =
       [apply_clear_request clear_flag
           (not (List.is_empty names) || use_clear_hyp_by_default ())
           (mkVar id);
-       (tclMAP_i neqns (fun idopt ->
+       (tclMAP_i (false,false) neqns (function (idopt,_) ->
 	 tclTRY (tclTHEN
 	   (intro_move idopt MoveLast)
 	   (* try again to substitute and if still not a variable after *)
@@ -338,50 +375,19 @@ let nLastDecls i tac =
      None: the equations are introduced, but not rewritten
      Some thin: the equations are rewritten, and cleared if thin is true *)
 
-let rec get_names allow_conj (loc,pat) = match pat with
-  | IntroNaming IntroWildcard ->
-      error "Discarding pattern not allowed for inversion equations."
-  | IntroNaming IntroAnonymous | IntroForthcoming _ ->
-      error "Anonymous pattern not allowed for inversion equations."
-  | IntroNaming (IntroFresh _) ->
-      error "Fresh pattern not allowed for inversion equations."
-  | IntroAction (IntroRewrite _) ->
-      error "Rewriting pattern not allowed for inversion equations."
-  | IntroAction (IntroOrAndPattern [l]) ->
-      let get_name id = Option.get (fst (get_names false id)) in
-      if allow_conj then begin match l with
-      | [] -> (None, [])
-      | id :: l ->
-        let n = get_name id in
-        (Some n, n :: List.map get_name l)
-      end else
-	error"Nested conjunctive patterns not allowed for inversion equations."
-  | IntroAction (IntroInjection l) ->
-      error "Injection patterns not allowed for inversion equations."
-  | IntroAction (IntroOrAndPattern l) ->
-      error "Disjunctive patterns not allowed for inversion equations."
-  | IntroAction (IntroApplyOn (c,pat)) ->
-      error "Apply patterns not allowed for inversion equations."
-  | IntroNaming (IntroIdentifier id) ->
-      (Some id,[id])
-
-let extract_eqn_names = function
-  | None -> None,[]
-  | Some x -> x
-
-let rewrite_equations othin neqns names ba =
+let rewrite_equations as_mode othin neqns names ba =
   Proofview.Goal.nf_enter begin fun gl ->
-  let names = List.map (get_names true) names in
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
-  let rewrite_eqns =
-    let first_eq = ref MoveLast in
-    match othin with
-      | Some thin ->
-          tclTHENLIST
-            [(nLastDecls neqns (fun ctx -> bring_hyps (List.rev ctx)));
+  let first_eq = ref MoveLast in
+  match othin with
+    | Some thin ->
+        tclTHENLIST
+            [tclDO neqns intro;
+             bring_hyps nodepids;
+             clear (ids_of_named_context nodepids);
+             (nLastDecls neqns (fun ctx -> bring_hyps (List.rev ctx)));
              (nLastDecls neqns (fun ctx -> clear (ids_of_named_context ctx)));
-	     tclMAP_i neqns (fun o ->
-	       let idopt,names = extract_eqn_names o in
+	     tclMAP_i (true,false) neqns (fun (idopt,names) ->
                (tclTHEN
 		 (intro_move idopt MoveLast)
 		 (onLastHypId (fun id ->
@@ -391,13 +397,16 @@ let rewrite_equations othin neqns names ba =
 	       intro_move None (if thin then MoveLast else !first_eq))
 	       nodepids;
 	     (tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids)]
-      | None -> tclIDTAC
-  in
-  (tclTHENLIST
-    [tclDO neqns intro;
-     bring_hyps nodepids;
-     clear (ids_of_named_context nodepids);
-     rewrite_eqns])
+    | None ->
+        (* simple inversion *)
+        if as_mode then
+          tclMAP_i (false,true) neqns (fun (idopt,_) ->
+	    intro_move idopt MoveLast) names
+        else
+          (tclTHENLIST
+             [tclDO neqns intro;
+              bring_hyps nodepids;
+              clear (ids_of_named_context nodepids)])
   end
 
 let interp_inversion_kind = function
@@ -405,15 +414,14 @@ let interp_inversion_kind = function
   | FullInversion -> Some false
   | FullInversionClear -> Some true
 
-let rewrite_equations_tac othin id neqns names ba =
+let rewrite_equations_tac as_mode othin id neqns names ba =
   let othin = interp_inversion_kind othin in
-  let tac = rewrite_equations othin neqns names ba in
+  let tac = rewrite_equations as_mode othin neqns names ba in
   match othin with
   | Some true (* if Inversion_clear, clear the hypothesis *) ->
     tclTHEN tac (tclTRY (clear [id]))
   | _ ->
     tac
-
 
 let raw_inversion inv_kind id status names =
   Proofview.Goal.nf_enter begin fun gl ->
@@ -445,11 +453,13 @@ let raw_inversion inv_kind id status names =
       Proofview.Refine.refine (fun h -> h, prf)
     in
     let neqns = List.length realargs in
+    let as_mode = names != None in
     tclTHEN (Proofview.V82.tclEVARS sigma)
       (tclTHENS
         (assert_before Anonymous cut_concl)
         [case_tac names
-            (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
+            (introCaseAssumsThen
+               (rewrite_equations_tac as_mode inv_kind id neqns))
             (Some elim_predicate) ind (c, t);
         onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
   end
