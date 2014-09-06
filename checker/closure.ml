@@ -799,13 +799,11 @@ let rec knh info m stk =
     | FCast(t,_,_) -> knh info t stk
 
     | FProj (p,c) ->
-        (* if red_set info.i_flags (fCONST p) then *)
-          (match try Some (lookup_projection p (info.i_env)) with Not_found -> None with
-	  | None -> (m, stk)
-	  | Some pb ->
-	     knh info c (Zproj (pb.proj_npars, pb.proj_arg, p)
-			 :: zupdate m stk))
-	(* else (m,stk) *)
+      if red_set info.i_flags (fCONST p) then
+        (let pb = lookup_projection p (info.i_env) in
+	   knh info c (Zproj (pb.proj_npars, pb.proj_arg, p)
+		       :: zupdate m stk))
+      else (m,stk)
 
 (* cases where knh stops *)
     | (FFlex _|FLetIn _|FConstruct _|FEvar _|

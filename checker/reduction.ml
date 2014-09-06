@@ -216,13 +216,9 @@ let oracle_order fl1 fl2 =
     | _ -> false
 
 let unfold_projection infos p c =
-  (* if RedFlags.red_set infos.i_flags (RedFlags.fCONST p) then *)
-    (match try Some (lookup_projection p (infos_env infos)) with Not_found -> None with
-    | Some pb -> 
-      let s = Zproj (pb.proj_npars, pb.proj_arg, p) in
-	Some (c, s)
-    | None -> None)
-  (* else None *)
+  let pb = lookup_projection p (infos_env infos) in
+  let s = Zproj (pb.proj_npars, pb.proj_arg, p) in
+    (c, s)
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv univ cv_pb infos lft1 lft2 term1 term2 =
@@ -297,35 +293,13 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 		| None -> raise NotConvertible) in
             eqappr univ cv_pb infos app1 app2)
 	  
-    | (FProj (p1,c1), FProj (p2, c2)) ->
-      (* Projections: prefer unfolding to first-order unification,
-	 which will happen naturally if the terms c1, c2 are not in constructor
-	 form *)
-      (match unfold_projection infos p1 c1 with
-      | Some (def1,s1) -> 
-	eqappr univ cv_pb infos (lft1, whd_stack infos def1 (s1 :: v1)) appr2
-      | None ->
-	match unfold_projection infos p2 c2 with
-	| Some (def2,s2) ->
-	  eqappr univ cv_pb infos appr1 (lft2, whd_stack infos def2 (s2 :: v2))
-	| None -> 
-          if Names.eq_con_chk p1 p2 && compare_stack_shape v1 v2 then
-	    let () = ccnv univ CONV infos el1 el2 c1 c2 in
-	      convert_stacks univ infos lft1 lft2 v1 v2
-	  else (* Two projections in WHNF: unfold *)
-	    raise NotConvertible)
-
-    | (FProj (p1,c1), t2) ->
-      (match unfold_projection infos p1 c1 with
-      | Some (def1,s1) ->
-         eqappr univ cv_pb infos (lft1, whd_stack infos def1 (s1 :: v1)) appr2
-      | None -> raise NotConvertible)
-      
+    | (FProj (p1,c1), _) ->
+      let (def1, s1) = unfold_projection infos p1 c1 in
+        eqappr univ cv_pb infos (lft1, whd_stack infos def1 (s1 :: v1)) appr2
+	  
     | (_, FProj (p2,c2)) ->
-      (match unfold_projection infos p2 c2 with
-      | Some (def2,s2) -> 
-         eqappr univ cv_pb infos appr1 (lft2, whd_stack infos def2 (s2 :: v2))
-      | None -> raise NotConvertible)
+      let (def2, s2) = unfold_projection infos p2 c2 in
+        eqappr univ cv_pb infos appr1 (lft2, whd_stack infos def2 (s2 :: v2))
 
     (* other constructors *)
     | (FLambda _, FLambda _) ->

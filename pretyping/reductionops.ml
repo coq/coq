@@ -989,10 +989,9 @@ let local_whd_state_gen flags sigma =
       | _ -> s)
 
     | Proj (p,c) when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST p) ->
-      (match (lookup_constant p (Global.env ())).Declarations.const_proj with
-      | None -> assert false
-      | Some pb -> whrec (c, Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p)
-        :: stack))
+      (let pb = lookup_projection p (Global.env ()) in
+	 whrec (c, Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p)
+           :: stack))
 
     | Case (ci,p,d,lf) ->
       whrec (d, Stack.Case (ci,p,lf,Cst_stack.empty) :: stack)
