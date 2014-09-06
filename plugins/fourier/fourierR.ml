@@ -463,7 +463,7 @@ exception GoalDone
 
 (* Résolution d'inéquations linéaires dans R *)
 let rec fourier () =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     Coqlib.check_required_library ["Coq";"fourier";"Fourier"];
     let goal = strip_outer_cast concl in

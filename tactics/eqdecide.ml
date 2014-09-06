@@ -132,7 +132,7 @@ let match_eqdec c =
 (* /spiwack *)
 
 let solveArg eqonleft op a1 a2 tac =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let rectype = pf_type_of gl a1 in
   let decide = mkDecideEqGoal eqonleft op rectype a1 a2 in
   let subtacs =
@@ -144,7 +144,7 @@ let solveArg eqonleft op a1 a2 tac =
 let solveEqBranch rectype =
   Proofview.tclORELSE
     begin
-      Proofview.Goal.raw_enter begin fun gl ->
+      Proofview.Goal.enter begin fun gl ->
         let concl = pf_nf_concl gl in
         match_eqdec concl >>= fun (eqonleft,op,lhs,rhs,_) ->
           let (mib,mip) = Global.lookup_inductive rectype in
@@ -171,7 +171,7 @@ let hd_app c = match kind_of_term c with
 let decideGralEquality =
   Proofview.tclORELSE
     begin
-      Proofview.Goal.raw_enter begin fun gl ->
+      Proofview.Goal.enter begin fun gl ->
         let concl = pf_nf_concl gl in
         match_eqdec concl >>= fun (eqonleft,_,c1,c2,typ) ->
         let headtyp = hd_app (pf_compute gl typ) in
@@ -193,7 +193,7 @@ let decideGralEquality =
 let decideEqualityGoal = tclTHEN intros decideGralEquality
 
 let decideEquality rectype =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let decide = mkGenDecideEqGoal rectype gl in
   (tclTHENS (cut decide) [default_auto;decideEqualityGoal])
   end
@@ -202,7 +202,7 @@ let decideEquality rectype =
 (* The tactic Compare *)
 
 let compare c1 c2 =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let rectype = pf_type_of gl c1 in
   let decide = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 in
   (tclTHENS (cut decide)

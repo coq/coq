@@ -29,7 +29,7 @@ let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
   | Uniform x ->
     (** We dispatch the uniform result on each goal under focus, as we know
         that the [m] argument was actually dependent. *)
-    Proofview.Goal.raw_goals >>= fun l ->
+    Proofview.Goal.goals >>= fun l ->
     let ans = List.map (fun _ -> x) l in
     Proofview.tclUNIT ans
   | Depends l -> Proofview.tclUNIT l
@@ -37,12 +37,12 @@ let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
   Proofview.tclDISPATCHL (List.map f l) >>= fun l ->
   Proofview.tclUNIT (Depends (List.concat l))
 
-let enter f =
-  bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
+let nf_enter f =
+  bind (Proofview.Goal.nf_goals >>= fun l -> Proofview.tclUNIT (Depends l))
     (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
 
-let raw_enter f =
-  bind (Proofview.Goal.raw_goals >>= fun l -> Proofview.tclUNIT (Depends l))
+let enter f =
+  bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
     (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
 
 let lift (type a) (t:a Proofview.tactic) : a t =

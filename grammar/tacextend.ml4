@@ -189,7 +189,7 @@ let declare_tactic loc s c cl = match cl with
   let name = mlexpr_of_string name in
   let tac =
     (** Special handling of tactics without arguments: such tactics do not do
-        a Proofview.Goal.enter to compute their arguments. It matters for some
+        a Proofview.Goal.nf_enter to compute their arguments. It matters for some
         whole-prof tactics like [shelve_unifiable]. *)
     if List.is_empty rem then
       <:expr< fun _ $lid:"ist"$ -> $tac$ >>

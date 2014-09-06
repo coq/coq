@@ -848,8 +848,24 @@ module Goal = struct
   let hyps { env=env } = Environ.named_context env
   let concl { concl=concl } = concl
 
-  let enter_t = Goal.nf_enter begin fun env sigma concl self ->
+  let nf_enter_t = Goal.nf_enter begin fun env sigma concl self ->
     {env=env;sigma=sigma;concl=concl;self=self}
+  end
+
+  let nf_enter f =
+    list_iter_goal () begin fun goal () ->
+      Proof.current >>= fun env ->
+      tclEVARMAP >>= fun sigma ->
+      try
+        let (gl, sigma) = Goal.eval nf_enter_t env sigma goal in
+        tclTHEN (V82.tclEVARS sigma) (f gl)
+      with e when catchable_exception e ->
+        let e = Errors.push e in
+        tclZERO e
+    end
+
+  let enter_t f = Goal.enter begin fun env sigma concl self ->
+    f {env=env;sigma=sigma;concl=concl;self=self}
   end
 
   let enter f =
@@ -857,29 +873,27 @@ module Goal = struct
       Proof.current >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try
-        let (gl, sigma) = Goal.eval enter_t env sigma goal in
-        tclTHEN (V82.tclEVARS sigma) (f gl)
-      with e when catchable_exception e ->
-        let e = Errors.push e in
-        tclZERO e
-    end
-
-  let raw_enter_t f = Goal.enter begin fun env sigma concl self ->
-    f {env=env;sigma=sigma;concl=concl;self=self}
-  end
-
-  let raw_enter f =
-    list_iter_goal () begin fun goal () ->
-      Proof.current >>= fun env ->
-      tclEVARMAP >>= fun sigma ->
-      try
         (* raw_enter_t cannot modify the sigma. *)
-        let (t,_) = Goal.eval (raw_enter_t f) env sigma goal in
+        let (t,_) = Goal.eval (enter_t f) env sigma goal in
         t
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
     end
+
+  let nf_goals =
+    Proof.current >>= fun env ->
+    Proof.get >>= fun step ->
+    let sigma = step.solution in
+    let map goal =
+      match Goal.advance sigma goal with
+      | None -> None (** ppedrot: Is this check really necessary? *)
+      | Some goal ->
+        (** The sigma is unchanged. *)
+        let (gl, _) = Goal.eval nf_enter_t env sigma goal in
+        Some gl
+    in
+    tclUNIT (List.map_filter map step.comb)
 
   let goals =
     Proof.current >>= fun env ->
@@ -890,21 +904,7 @@ module Goal = struct
       | None -> None (** ppedrot: Is this check really necessary? *)
       | Some goal ->
         (** The sigma is unchanged. *)
-        let (gl, _) = Goal.eval enter_t env sigma goal in
-        Some gl
-    in
-    tclUNIT (List.map_filter map step.comb)
-
-  let raw_goals =
-    Proof.current >>= fun env ->
-    Proof.get >>= fun step ->
-    let sigma = step.solution in
-    let map goal =
-      match Goal.advance sigma goal with
-      | None -> None (** ppedrot: Is this check really necessary? *)
-      | Some goal ->
-        (** The sigma is unchanged. *)
-        let (gl, _) = Goal.eval (raw_enter_t (fun gl -> gl)) env sigma goal in
+        let (gl, _) = Goal.eval (enter_t (fun gl -> gl)) env sigma goal in
         Some gl
     in
     tclUNIT (List.map_filter map step.comb)
@@ -963,7 +963,7 @@ struct
     let () = Typing.check env evdref c concl in
     !evdref
 
-  let refine ?(unsafe = false) f = Goal.raw_enter begin fun gl ->
+  let refine ?(unsafe = false) f = Goal.enter begin fun gl ->
     let sigma = Goal.sigma gl in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
@@ -980,7 +980,7 @@ struct
     Proof.set { solution = sigma; comb; }
   end
 
-  let refine_casted ?(unsafe = false) f = Goal.raw_enter begin fun gl ->
+  let refine_casted ?(unsafe = false) f = Goal.enter begin fun gl ->
     let concl = Goal.concl gl in
     let env = Goal.env gl in
     let f h = let (h, c) = f h in with_type h env c concl in

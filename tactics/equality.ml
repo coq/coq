@@ -190,7 +190,7 @@ let rewrite_conv_closed_unif_flags = {
 }
 
 let rewrite_elim with_evars frzevars cls c e =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let flags = make_flags frzevars (Proofview.Goal.sigma gl) rewrite_conv_closed_unif_flags c in
   general_elim_clause with_evars flags cls c e
   end
@@ -228,7 +228,7 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
          (general_elim_clause with_evars frzevars cls c elim))
       tac
   in
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let instantiate_lemma concl =
       if not all then instantiate_lemma gl c t l l2r concl
       else instantiate_lemma_all frzevars gl c t l l2r concl
@@ -328,7 +328,7 @@ let type_of_clause cls gl = match cls with
   | Some id -> pf_get_hyp_typ id gl
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let isatomic = isProd (whd_zeta hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let type_of_cls = type_of_clause cls gl in
@@ -361,7 +361,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
   if occs != AllOccurrences then (
     rewrite_side_tac (Hook.get forward_general_setoid_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac)
   else
-    Proofview.Goal.raw_enter begin fun gl ->
+    Proofview.Goal.enter begin fun gl ->
       let sigma = Proofview.Goal.sigma gl in
       let env = Proofview.Goal.env gl in
     let ctype = get_type_of env sigma c in
@@ -451,7 +451,7 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
             let ids_of_hyps = pf_ids_of_hyps gl in
 	    Id.Set.fold (fun id l -> List.remove Id.equal id l) ids_in_c ids_of_hyps
 	  in
-          Proofview.Goal.raw_enter begin fun gl ->
+          Proofview.Goal.enter begin fun gl ->
             do_hyps_atleastonce (ids gl)
           end
 	in
@@ -461,7 +461,7 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
 	   do_hyps
 
 let apply_special_clear_request clear_flag f =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     try
@@ -476,7 +476,7 @@ type delayed_open_constr_with_bindings =
 
 let general_multi_rewrite with_evars l cl tac =
   let do1 l2r f =
-    Proofview.Goal.raw_enter begin fun gl ->
+    Proofview.Goal.enter begin fun gl ->
       let sigma = Proofview.Goal.sigma gl in
       let env = Proofview.Goal.env gl in
       let sigma,c = f env sigma in
@@ -545,7 +545,7 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
       | None -> Proofview.tclUNIT ()
       | Some tac ->  tclCOMPLETE tac
   in
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let get_type_of = pf_apply get_type_of gl in
   let t1 = get_type_of c1
   and t2 = get_type_of c2 in
@@ -854,7 +854,7 @@ let rec build_discriminator sigma env dirn c sort = function
 *)
 
 let gen_absurdity id =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let hyp_typ = pf_get_hyp_typ id (Proofview.Goal.assume gl) in
   let hyp_typ = pf_nf_evar gl hyp_typ in
   if is_empty_type hyp_typ
@@ -918,7 +918,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort =
 
 let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     match find_positions env sigma t1 t2 with
@@ -930,7 +930,7 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   end
 
 let onEquality with_evars tac (c,lbindc) =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let type_of = pf_type_of gl in
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
   let t = type_of c in
@@ -945,7 +945,7 @@ let onEquality with_evars tac (c,lbindc) =
   end
 
 let onNegatedEquality with_evars tac =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let ccl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
@@ -1220,7 +1220,7 @@ let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 let eqdep_dec = qualid_of_string "Coq.Logic.Eqdep_dec"
 
 let inject_if_homogenous_dependent_pair ty =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   try
     let eq,u,(t,t1,t2) = find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
@@ -1347,7 +1347,7 @@ let injConcl = injClause None false None
 let injHyp clear_flag id = injClause None false (Some (clear_flag,ElimOnIdent (Loc.ghost,id)))
 
 let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let sort = pf_apply get_type_of gl (Proofview.Goal.concl gl) in
     let sigma =  clause.evd in
     let env = Proofview.Goal.env gl in
@@ -1370,7 +1370,7 @@ let dEq with_evars =
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c))
 
 let intro_decompe_eq tac data cl =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let cl = pf_apply make_clenv_binding gl cl NoBindings in
     decompEqThen (fun _ -> tac) data cl
   end
@@ -1458,7 +1458,7 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
 exception NothingToRewrite
 
 let cutSubstInConcl l2r eqn =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
   let typ = pf_concl gl in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
@@ -1473,7 +1473,7 @@ let cutSubstInConcl l2r eqn =
    end
 
 let cutSubstInHyp l2r eqn id =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
   let typ = pf_get_hyp_typ id gl in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
@@ -1510,7 +1510,7 @@ let cutRewriteInHyp l2r eqn id = cutRewriteClause l2r eqn (Some id)
 let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
 
 let substClause l2r c cls =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let eq = pf_apply get_type_of gl c in
   tclTHENS (cutSubstClause l2r eq cls)
     [Proofview.tclUNIT (); Proofview.V82.tactic (exact_no_check c)]
@@ -1540,7 +1540,7 @@ user = raise user error specific to rewrite
 (* Substitutions tactics (JCF) *)
 
 let unfold_body x =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   (** We normalize the given hypothesis immediately. *)
   let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
   let (_, xval, _) = Context.lookup_named x hyps in
@@ -1580,7 +1580,7 @@ let is_eq_x gl x (id,_,c) =
    erase hyp and x; proceed by generalizing all dep hyps *)
 
 let subst_one dep_proof_ok x (hyp,rhs,dir) =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let hyps = Proofview.Goal.hyps gl in
   let concl = Proofview.Goal.concl gl in
@@ -1612,7 +1612,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
    it everywhere, and erase hyp and x; proceed by generalizing all dep hyps *)
 
 let subst_one_var dep_proof_ok x =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let gl = Proofview.Goal.assume gl in
     let (_,xval,_) = pf_get_hyp x gl in
     (* If x has a body, simply replace x with body and clear x *)
@@ -1654,7 +1654,7 @@ let default_subst_tactic_flags () =
     { only_leibniz = true; rewrite_dependent_proof = false }
 
 let subst_all ?(flags=default_subst_tactic_flags ()) () =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let find_eq_data_decompose = find_eq_data_decompose gl in
   let test (_,c) =
     try
@@ -1708,7 +1708,7 @@ let rewrite_assumption_cond cond_eq_term cl =
 	  with | Failure _ | UserError _ -> arec rest gl
 	end
   in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let hyps = Proofview.Goal.hyps gl in
     arec hyps gl
   end

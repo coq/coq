@@ -75,10 +75,10 @@ let rec eq_constr_mod_evars x y =
   | _, _ -> compare_constr eq_constr_mod_evars x y
 
 let progress_evars t =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let check =
-      Proofview.Goal.enter begin fun gl' ->
+      Proofview.Goal.nf_enter begin fun gl' ->
         let newconcl = Proofview.Goal.concl gl' in
         if eq_constr_mod_evars concl newconcl
         then Tacticals.New.tclFAIL 0 (str"No progress made (modulo evars)")

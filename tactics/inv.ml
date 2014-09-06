@@ -268,7 +268,7 @@ Nota: with Inversion_clear, only four useless hypotheses
 *)
 
 let generalizeRewriteIntros tac depids id =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let dids = dependent_hyps id depids gl in
   (tclTHENLIST
     [bring_hyps dids; tac;
@@ -298,7 +298,7 @@ let projectAndApply thin id eqname names depids =
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
     (** We only look at the type of hypothesis "id" *)
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
     let (t,t1,t2) = Hipattern.dest_nf_eq gl hyp in
@@ -331,12 +331,12 @@ let projectAndApply thin id eqname names depids =
     id
 
 let nLastDecls i tac =
-  Proofview.Goal.enter (fun gl -> tac (nLastDecls gl i))
+  Proofview.Goal.nf_enter (fun gl -> tac (nLastDecls gl i))
 
 (* Inversion qui n'introduit pas les hypotheses, afin de pouvoir les nommer
    soi-meme (proposition de Valerie). *)
 let rewrite_equations_gene othin neqns ba =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let rewrite_eqns =
     match othin with
@@ -406,7 +406,7 @@ let extract_eqn_names = function
   | Some x -> x
 
 let rewrite_equations othin neqns names ba =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let names = List.map (get_names true) names in
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let rewrite_eqns =
@@ -454,7 +454,7 @@ let rewrite_equations_tac (gene, othin) id neqns names ba =
 
 
 let raw_inversion inv_kind id status names =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
@@ -531,12 +531,12 @@ let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
  * back to their places in the hyp-list. *)
 
 let invIn k names ids id =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let concl = Proofview.Goal.concl gl in
     let nb_prod_init = nb_prod concl in
     let intros_replace_ids =
-      Proofview.Goal.raw_enter begin fun gl ->
+      Proofview.Goal.enter begin fun gl ->
         let concl = pf_nf_concl gl in
         let nb_of_new_hyp =
           nb_prod concl - (List.length hyps + nb_prod_init)

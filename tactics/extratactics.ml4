@@ -362,7 +362,7 @@ let refine_red_flags =
 let refine_locs = { Locus.onhyps=None; concl_occs=Locus.AllOccurrences }
 
 let refine_tac {Glob_term.closure=closure;term=term} =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let flags = Pretyping.all_no_fail_flags in
@@ -690,7 +690,7 @@ END
 exception Found of unit Proofview.tactic
 
 let rewrite_except h =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
   Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else 
       Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
@@ -709,11 +709,11 @@ let refl_equal =
   should be replaced by a call to the tactic but I don't know how to
   call it before it is defined. *)
 let  mkCaseEq a  : unit Proofview.tactic =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let type_of_a = Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g a) gl in
        Tacticals.New.tclTHENLIST
          [Proofview.V82.tactic (Tactics.Simple.generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
-          Proofview.Goal.enter begin fun gl ->
+          Proofview.Goal.nf_enter begin fun gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
             Proofview.V82.tactic begin
@@ -726,12 +726,12 @@ let  mkCaseEq a  : unit Proofview.tactic =
 
 
 let case_eq_intros_rewrite x =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let n = nb_prod (Proofview.Goal.concl gl) in
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
       let concl = Proofview.Goal.concl gl in
       let hyps = Tacmach.New.pf_ids_of_hyps gl in
       let n' = nb_prod concl in
@@ -762,7 +762,7 @@ let destauto t =
   with Found tac -> tac
 
 let destauto_in id = 
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let ctype = Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g (mkVar id)) gl in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
@@ -770,7 +770,7 @@ let destauto_in id =
   end
 
 TACTIC EXTEND destauto
-| [ "destauto" ] -> [ Proofview.Goal.enter (fun gl -> destauto (Proofview.Goal.concl gl)) ]
+| [ "destauto" ] -> [ Proofview.Goal.nf_enter (fun gl -> destauto (Proofview.Goal.concl gl)) ]
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 
@@ -972,7 +972,7 @@ TACTIC EXTEND guard
 END
 
 let decompose l c =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let to_ind c =
       if isInd c then Univ.out_punivs (destInd c)
       else error "not an inductive type"

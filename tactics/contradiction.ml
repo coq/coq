@@ -24,7 +24,7 @@ let mk_absurd_proof t =
     mkLambda (Names.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
 
 let absurd c =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let j = Retyping.get_judgment_of env sigma c in
@@ -47,13 +47,13 @@ let filter_hyp f tac =
     | [] -> Proofview.tclZERO Not_found
     | (id,_,t)::rest when f t -> tac id
     | _::rest -> seek rest in
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
     seek hyps
   end
 
 let contradiction_context =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let rec seek_neg l = match l with
@@ -66,7 +66,7 @@ let contradiction_context =
 	  else match kind_of_term typ with
 	  | Prod (na,t,u) when is_empty_type u ->
 	      (Proofview.tclORELSE
-                 (Proofview.Goal.raw_enter begin fun gl ->
+                 (Proofview.Goal.enter begin fun gl ->
                    let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in
 	           filter_hyp (fun typ -> is_conv_leq typ t)
 		     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
@@ -89,7 +89,7 @@ let is_negation_of env sigma typ t =
     | _ -> false
 
 let contradiction_term (c,lbind as cl) =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_type_of gl in

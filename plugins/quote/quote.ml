@@ -446,7 +446,7 @@ let quote_terms ivs lc =
   yet. *)
 
 let quote f lid =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let f = Tacmach.New.pf_global f gl in
     let cl = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
     let ivs = compute_ivs f cl gl in
@@ -462,7 +462,7 @@ let quote f lid =
   end
 
 let gen_quote cont c f lid =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let f = Tacmach.New.pf_global f gl in
   let cl = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
   let ivs = compute_ivs f cl gl in

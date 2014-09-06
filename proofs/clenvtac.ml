@@ -83,7 +83,7 @@ open Unification
 let dft = default_unify_flags
 
 let res_pf ?(with_evars=false) ?(flags=dft ()) clenv =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let clenv gl = clenv_unique_resolver ~flags clenv gl in
     clenv_refine with_evars (Tacmach.New.of_old clenv (Proofview.Goal.assume gl))
   end
@@ -112,7 +112,7 @@ let fail_quick_unif_flags = {
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
 let unify ?(flags=fail_quick_unif_flags) m =
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let env = Tacmach.New.pf_env gl in
     let n = Tacmach.New.pf_nf_concl gl in
     let evd = create_goal_evar_defs (Proofview.Goal.sigma gl) in

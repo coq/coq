@@ -394,19 +394,19 @@ module Goal : sig
   val env : 'a t -> Environ.env
   val sigma : 'a t -> Evd.evar_map
 
-  (* [enter t] execute the goal-dependent tactic [t] in each goal
+  (* [nf_enter t] execute the goal-dependent tactic [t] in each goal
      independently. In particular [t] need not backtrack the same way in
      each goal. *)
-  val enter : ([ `NF ] t -> unit tactic) -> unit tactic
+  val nf_enter : ([ `NF ] t -> unit tactic) -> unit tactic
 
-  (** Same as enter, but does not normalize the goal beforehand. *)
-  val raw_enter : ([ `LZ ] t -> unit tactic) -> unit tactic
+  (** Same as nf_enter, but does not normalize the goal beforehand. *)
+  val enter : ([ `LZ ] t -> unit tactic) -> unit tactic
 
   (** Recover the list of current goals under focus *)
-  val goals : [ `NF ] t list tactic
+  val nf_goals : [ `NF ] t list tactic
 
   (** Recover the list of current goals under focus, without evar-normalization *)
-  val raw_goals : [ `LZ ] t list tactic
+  val goals : [ `LZ ] t list tactic
 
   (* compatibility: avoid if possible *)
   val goal : [ `NF ] t -> Goal.goal

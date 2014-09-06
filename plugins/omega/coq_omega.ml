@@ -34,7 +34,7 @@ open OmegaSolver
 (* Added by JCF, 09/03/98 *)
 
 let elim_id id =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     simplest_elim (Tacmach.New.pf_global id gl)
   end
 let resolve_id id gl = Proofview.V82.of_tactic (apply (pf_global gl id)) gl
@@ -1416,7 +1416,7 @@ let reintroduce id =
 open Proofview.Notations
 
 let coq_omega =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   clear_constr_tables ();
   let hyps_types = Tacmach.New.pf_hyps_types gl in
   let destructure_omega = Tacmach.New.of_old destructure_omega gl in
@@ -1469,7 +1469,7 @@ let coq_omega =
 let coq_omega = coq_omega
 
 let nat_inject =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let is_conv = Tacmach.New.pf_apply Reductionops.is_conv gl in
   let rec explore p t : unit Proofview.tactic =
     try match destructurate_term t with
@@ -1673,7 +1673,7 @@ let onClearedName id tac =
   (* so renaming may be necessary *)
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (tclTRY (clear [id])))
-    (Proofview.Goal.enter begin fun gl ->
+    (Proofview.Goal.nf_enter begin fun gl ->
      let id = Tacmach.New.of_old (fresh_id [] id) gl in
      Tacticals.New.tclTHEN (Proofview.V82.tactic (introduction id)) (tac id)
     end)
@@ -1681,14 +1681,14 @@ let onClearedName id tac =
 let onClearedName2 id tac =
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (tclTRY (clear [id])))
-    (Proofview.Goal.enter begin fun gl ->
+    (Proofview.Goal.nf_enter begin fun gl ->
      let id1 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_left")) gl in
      let id2 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_right")) gl in
       Tacticals.New.tclTHENLIST [ Proofview.V82.tactic (introduction id1); Proofview.V82.tactic (introduction id2); tac id1 id2 ]
     end)
 
 let destructure_hyps =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let type_of = Tacmach.New.pf_type_of gl in
   let decidability = Tacmach.New.of_old decidability gl in
   let pf_nf = Tacmach.New.of_old pf_nf gl in
@@ -1831,7 +1831,7 @@ let destructure_hyps =
   end
 
 let destructure_goal =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let decidability = Tacmach.New.of_old decidability gl in
     let rec loop t =

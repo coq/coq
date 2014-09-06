@@ -56,7 +56,7 @@ let instantiate_tac n (ist,rawc) ido =
 
 let let_evar name typ =
   let src = (Loc.ghost,Evar_kinds.GoalEvar) in
-  Proofview.Goal.raw_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let sigma',evar = Evarutil.new_evar sigma env ~src typ in

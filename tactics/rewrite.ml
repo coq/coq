@@ -1464,7 +1464,7 @@ let cl_rewrite_clause_tac ?abs strat clause gl =
 
 
 let new_refine (evd, c) =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let update _ =
     let evd = Evarconv.consider_remaining_unif_problems env evd in
@@ -1474,7 +1474,7 @@ let new_refine (evd, c) =
   end
 
 let assert_replacing id newt tac = 
-  let prf = Proofview.Goal.enter begin fun gl ->
+  let prf = Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let nc' =
@@ -1516,7 +1516,7 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	| Some id, (undef, None, newt) ->
             Proofview.V82.tactic (Tacmach.convert_hyp_no_check (id, None, newt))
 	| None, (undef, Some p, newt) ->
-            Proofview.Goal.raw_enter begin fun gl ->
+            Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
             let make h =
               let (h, ()) = Proofview.Refine.update h (fun _ -> undef, ()) in
@@ -1528,7 +1528,7 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	| None, (undef, None, newt) ->
             Proofview.V82.tactic (Tacmach.convert_concl_no_check newt DEFAULTcast)
   in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
@@ -1986,7 +1986,7 @@ let not_declared env ty rel =
 		str ty ++ str" relation. Maybe you need to require the Setoid library")
 
 let setoid_proof ty fn fallback =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.nf_enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let concl = Proofview.Goal.concl gl in

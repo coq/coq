@@ -516,21 +516,21 @@ module New = struct
     mkVar (nthHypId m gl)
 
   let onNthHypId m tac =
-    Proofview.Goal.raw_enter begin fun gl -> tac (nthHypId m gl) end
+    Proofview.Goal.enter begin fun gl -> tac (nthHypId m gl) end
   let onNthHyp m tac =
-    Proofview.Goal.raw_enter begin fun gl -> tac (nthHyp m gl) end
+    Proofview.Goal.enter begin fun gl -> tac (nthHyp m gl) end
 
   let onLastHypId = onNthHypId 1
   let onLastHyp   = onNthHyp 1
 
   let onNthDecl m tac =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
       Proofview.tclUNIT (nthDecl m gl) >>= tac
     end
   let onLastDecl  = onNthDecl 1
 
   let ifOnHyp pred tac1 tac2 id =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
     let typ = Tacmach.New.pf_get_hyp_typ id gl in
     if pred (id,typ) then
       tac1 id
@@ -538,10 +538,10 @@ module New = struct
       tac2 id
     end
 
-  let onHyps find tac = Proofview.Goal.enter (fun gl -> tac (find gl))
+  let onHyps find tac = Proofview.Goal.nf_enter (fun gl -> tac (find gl))
 
   let afterHyp id tac =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
     let hyps = Proofview.Goal.hyps gl in
     let rem, _ = List.split_when (fun (hyp,_,_) -> Id.equal hyp id) hyps in
     tac rem
@@ -552,17 +552,17 @@ module New = struct
     None :: List.map Option.make hyps
 
   let tryAllHyps tac =
-    Proofview.Goal.raw_enter begin fun gl ->
+    Proofview.Goal.enter begin fun gl ->
     let hyps = Tacmach.New.pf_ids_of_hyps gl in
     tclFIRST_PROGRESS_ON tac hyps
     end
   let tryAllHypsAndConcl tac =
-    Proofview.Goal.raw_enter begin fun gl ->
+    Proofview.Goal.enter begin fun gl ->
       tclFIRST_PROGRESS_ON tac (fullGoal gl)
     end
 
   let onClause tac cl =
-    Proofview.Goal.raw_enter begin fun gl ->
+    Proofview.Goal.enter begin fun gl ->
     let hyps = Tacmach.New.pf_ids_of_hyps gl in
     tclMAP tac (Locusops.simple_clause_of (fun () -> hyps) cl)
     end
@@ -571,7 +571,7 @@ module New = struct
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
       isrec allnames tac predicate ind (c, t) =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
     let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
     (** FIXME: evar leak. *)
     let sigma, elim = Tacmach.New.of_old (mk_elim ind) gl in
@@ -627,7 +627,7 @@ module New = struct
     end
 
   let elimination_then tac c =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
     let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
@@ -644,13 +644,13 @@ module New = struct
     general_elim_then_using gl_make_case_nodep false
 
   let elim_on_ba tac ba =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
     let branches = Tacmach.New.of_old (make_elim_branch_assumptions ba) gl in
     tac branches
     end
 
   let case_on_ba tac ba = 
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
     let branches = Tacmach.New.of_old (make_case_branch_assumptions ba) gl in
     tac branches
     end
@@ -670,7 +670,7 @@ module New = struct
   | Some id -> elimination_sort_of_hyp id gl
 
   let pf_constr_of_global ref tac =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
       let env = Proofview.Goal.env gl in
       let sigma = Proofview.Goal.sigma gl in
       let (sigma, c) = Evd.fresh_global env sigma ref in
