@@ -40,6 +40,8 @@ let compare_stack_shape stk1 stk2 =
     | (_, (Zupdate _|Zshift _)::s2) -> compare_rec bal stk1 s2
     | (Zapp l1::s1, _) -> compare_rec (bal+Array.length l1) s1 stk2
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
+    | (Zproj (n1,m1,p1)::s1, Zproj (n2,m2,p2)::s2) ->
+        Int.equal bal 0 && compare_rec 0 s1 s2
     | (Zcase(c1,_,_)::s1, Zcase(c2,_,_)::s2) ->
         bal=0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
@@ -131,6 +133,9 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 =
             | (Zlapp a1,Zlapp a2) -> Array.iter2 f a1 a2
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 f fx1 fx2; cmp_rec a1 a2
+	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
+	      if not (Names.eq_con_chk c1 c2) then 
+		raise NotConvertible
             | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
                 if not (fmind ci1.ci_ind ci2.ci_ind) then
 		  raise NotConvertible;
@@ -238,6 +243,11 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
   (* compute the lifts that apply to the head of the term (hd1 and hd2) *)
   let el1 = el_stack lft1 v1 in
   let el2 = el_stack lft2 v2 in
+  let () = Print.print_pure_constr (whd_val infos hd1);
+    Pp.pp (Pp.str " conv ");
+    Print.print_pure_constr (whd_val infos hd2);
+    Pp.ppnl (Pp.str "")
+  in
   match (fterm_of hd1, fterm_of hd2) with
     (* case of leaves *)
     | (FAtom a1, FAtom a2) ->
@@ -265,7 +275,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
 	(try (* try first intensional equality *)
-	  if  eq_table_key fl1 fl2
+	  if eq_table_key fl1 fl2
           then convert_stacks univ infos lft1 lft2 v1 v2
           else raise NotConvertible
         with NotConvertible ->
@@ -391,6 +401,21 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
            convert_stacks univ infos lft1 lft2 v1 v2)
          else raise NotConvertible
 
+     (* Eta expansion of records *)
+     | (FConstruct ((ind1,j1),u1), _) ->
+       (try
+    	  let v1, v2 =
+    	    eta_expand_ind_stack (infos_env infos) ind1 hd1 v1 (snd appr2)
+    	  in convert_stacks univ infos lft1 lft2 v1 v2
+	with Not_found -> raise NotConvertible)
+	 
+     | (_, FConstruct ((ind2,j2),u2)) ->
+       (try
+    	  let v2, v1 =
+    	    eta_expand_ind_stack (infos_env infos) ind2 hd2 v2 (snd appr1)
+    	  in convert_stacks univ infos lft1 lft2 v1 v2
+	with Not_found -> raise NotConvertible)
+
      | (FFix ((op1,(_,tys1,cl1)),e1), FFix((op2,(_,tys2,cl2)),e2)) ->
 	 if op1 = op2
 	 then
@@ -443,7 +468,19 @@ let clos_fconv cv_pb env t1 t2 =
 
 let fconv cv_pb env t1 t2 =
   if eq_constr t1 t2 then ()
-  else clos_fconv cv_pb env t1 t2
+  else 
+    try clos_fconv cv_pb env t1 t2
+    with NotConvertible ->
+      let open Pp in
+	if !Flags.debug then (
+	  Pp.ppnl (str "  conversion failed: ");
+	  Print.print_pure_constr t1;
+	  Pp.ppnl (str " and ");
+	  Print.print_pure_constr t2);
+	raise NotConvertible
+	  
+
+
 
 let conv = fconv CONV
 let conv_leq = fconv CUMUL
@@ -483,7 +520,7 @@ let dest_prod env =
   in
   decrec env empty_rel_context
 
-(* The same but preserving lets *)
+(* The same but preserving lets in the context, not internal ones. *)
 let dest_prod_assum env =
   let rec prodec_rec env l ty =
     let rty = whd_betadeltaiota_nolet env ty in
@@ -495,7 +532,10 @@ let dest_prod_assum env =
         let d = (x,Some b,t) in
 	prodec_rec (push_rel d env) (d::l) c
     | Cast (c,_,_)    -> prodec_rec env l c
-    | _               -> l,rty
+    | _               ->
+      let rty' = whd_betadeltaiota env rty in
+	if Term.eq_constr rty' rty then l, rty
+	else prodec_rec env l rty'
   in
   prodec_rec env empty_rel_context
 

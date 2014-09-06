@@ -37,11 +37,16 @@ let check_constant_declaration env kn cb =
         check_polymorphic_arity env' ctxt par;
 	env', it_mkProd_or_LetIn (Sort(Type par.template_level)) ctxt 
   in
-  let body = 
+  let () = 
     match body_of_constant cb with
     | Some bd ->
-      let j = infer envty bd in
-        conv_leq envty j ty
+      (match cb.const_proj with 
+      | None -> let j = infer envty bd in
+		  conv_leq envty j ty
+      | Some pb -> 
+	let env' = add_constant kn cb env' in
+	let j = infer env' bd in
+	  conv_leq envty j ty)
     | None -> ()
   in
   if cb.const_polymorphic then add_constant kn cb env

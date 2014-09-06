@@ -264,12 +264,12 @@ type one_inductive_body = {
 
     mind_nf_lc : constr array; (** Head normalized constructor types so that their conclusion is atomic *)
 
-    mind_consnrealdecls : int array;
- (** Length of the signature of the constructors (with let, w/o params)
-    (not used in the kernel) *)
-
     mind_consnrealargs : int array;
  (** Length of the signature of the constructors (w/o let, w/o params)
+    (not used in the kernel) *)
+
+    mind_consnrealdecls : int array;
+ (** Length of the signature of the constructors (with let, w/o params)
     (not used in the kernel) *)
 
     mind_recargs : wf_paths; (** Signature of recursive arguments in the constructors *)

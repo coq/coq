@@ -468,7 +468,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
            convert_stacks l2r infos lft1 lft2 v1 v2 cuniv)
         else raise NotConvertible
 	  
-      (* Eta expansion of records *)
+    (* Eta expansion of records *)
     | (FConstruct ((ind1,j1),u1), _) ->
       (try
     	 let v1, v2 =
