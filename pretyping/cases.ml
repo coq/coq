@@ -1277,6 +1277,13 @@ let build_branch initial current realargs deps (realnames,curname) pb arsign eqn
 
 *)
 
+let mk_case pb (ci,pred,c,brs) =
+  let mib = lookup_mind (fst ci.ci_ind) pb.env in
+    match mib.mind_record with
+    | Some (cs, pbs) when Array.length pbs > 0 -> 
+      Reduction.beta_appvect brs.(0) (Array.map (fun p -> mkProj (p, c)) cs)
+    | _ -> mkCase (ci,pred,c,brs)
+
 (**********************************************************************)
 (* Main compiling descent *)
 let rec compile pb =
@@ -1323,7 +1330,7 @@ and match_current pb (initial,tomatch) =
 	      pred current indt (names,dep) tomatch in
 	  let ci = make_case_info pb.env (fst mind) pb.casestyle in
 	  let pred = nf_betaiota !(pb.evdref) pred in
-	  let case = mkCase (ci,pred,current,brvals) in
+	  let case = mk_case pb (ci,pred,current,brvals) in
 	  Typing.check_allowed_sort pb.env !(pb.evdref) mind current pred;
 	  { uj_val = applist (case, inst);
 	    uj_type = prod_applist typ inst }
