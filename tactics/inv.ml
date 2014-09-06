@@ -333,42 +333,6 @@ let projectAndApply thin id eqname names depids =
 let nLastDecls i tac =
   Proofview.Goal.nf_enter (fun gl -> tac (nLastDecls gl i))
 
-(* Inversion qui n'introduit pas les hypotheses, afin de pouvoir les nommer
-   soi-meme (proposition de Valerie). *)
-let rewrite_equations_gene othin neqns ba =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
-  let rewrite_eqns =
-    match othin with
-      | Some thin ->
-          onLastHypId
-            (fun last ->
-              tclTHENLIST
-                [tclDO neqns
-                     (tclTHEN intro
-                        (onLastHypId
-                           (fun id ->
-                              tclTRY
-			        (projectAndApply thin id (ref MoveLast)
-				  [] depids))));
-
-                  afterHyp last (fun ctx -> bring_hyps (List.rev ctx));
-                  afterHyp last (fun ctx -> clear (ids_of_named_context ctx)) ])
-      | None -> tclIDTAC
-  in
-  (tclTHENLIST
-    [tclDO neqns intro;
-     bring_hyps nodepids;
-     clear (ids_of_named_context nodepids);
-     (nLastDecls neqns (fun ctx -> bring_hyps (List.rev ctx)));
-     (nLastDecls neqns (fun ctx -> clear (ids_of_named_context ctx)));
-     rewrite_eqns;
-     (tclMAP (fun (id,_,_ as d) ->
-               (tclORELSE (clear [id])
-                 (tclTHEN (bring_hyps [d]) (clear [id]))))
-       depids)])
-  end
-
 (* Introduction of the equations on arguments
    othin: discriminates Simple Inversion, Inversion and Inversion_clear
      None: the equations are introduced, but not rewritten
@@ -441,11 +405,9 @@ let interp_inversion_kind = function
   | FullInversion -> Some false
   | FullInversionClear -> Some true
 
-let rewrite_equations_tac (gene, othin) id neqns names ba =
+let rewrite_equations_tac othin id neqns names ba =
   let othin = interp_inversion_kind othin in
-  let tac =
-    if gene then rewrite_equations_gene othin neqns ba
-    else rewrite_equations othin neqns names ba in
+  let tac = rewrite_equations othin neqns names ba in
   match othin with
   | Some true (* if Inversion_clear, clear the hypothesis *) ->
     tclTHEN tac (tclTRY (clear [id]))
@@ -511,17 +473,17 @@ let inversion inv_kind status names id =
 
 (* Specializing it... *)
 
-let inv_gen gene thin status names =
-  try_intros_until (inversion (gene,thin) status names)
+let inv_gen thin status names =
+  try_intros_until (inversion thin status names)
 
 open Tacexpr
 
-let inv k = inv_gen false k NoDep
+let inv k = inv_gen k NoDep
 
 let inv_tac id       = inv FullInversion None (NamedHyp id)
 let inv_clear_tac id = inv FullInversionClear None (NamedHyp id)
 
-let dinv k c = inv_gen false k (Dep c)
+let dinv k c = inv_gen k (Dep c)
 
 let dinv_tac id       = dinv FullInversion None None (NamedHyp id)
 let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
@@ -550,7 +512,7 @@ let invIn k names ids id =
     Proofview.tclORELSE
       (tclTHENLIST
          [bring_hyps hyps;
-          inversion (false,k) NoDep names id;
+          inversion k NoDep names id;
           intros_replace_ids])
       (wrap_inv_error id)
   end
