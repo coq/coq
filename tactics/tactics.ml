@@ -1480,6 +1480,19 @@ let check_is_type env ty msg =
   with e when Errors.noncritical e ->
     msg e
 
+let check_decl env (_, c, ty) msg =
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let evdref = ref sigma in
+  try
+    let _ = Typing.sort_of env evdref ty in
+    let _ = match c with
+    | None -> ()
+    | Some c -> Typing.check env evdref c ty
+    in
+    Proofview.V82.tclEVARS !evdref
+  with e when Errors.noncritical e ->
+    msg e
+
 let clear_body ids =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -1498,11 +1511,11 @@ let clear_body ids =
     let base_env = reset_context env in
     let env = push_named_context ctx base_env in
     let check_hyps =
-      let check env (id, _, t as decl) =
+      let check env (id, _, _ as decl) =
         let msg _ = Tacticals.New.tclZEROMSG
           (str "Hypothesis " ++ pr_id id ++ on_the_bodies ids)
         in
-        check_is_type env t msg <*> Proofview.tclUNIT (push_named decl env)
+        check_decl env decl msg <*> Proofview.tclUNIT (push_named decl env)
       in
       let checks = Proofview.Monad.List.fold_left check base_env (List.rev ctx) in
       Proofview.tclIGNORE checks
