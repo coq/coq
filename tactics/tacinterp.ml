@@ -1199,12 +1199,10 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
               in
               list_unpack { list_unpacker } x
           | ExtraArgType _ ->
-              let (>>=) = Ftactic.bind in
               (** Special treatment of tactics *)
               if has_type x (glbwit wit_tactic) then
                 let tac = out_gen (glbwit wit_tactic) x in
-                val_interp ist tac >>= fun v ->
-                Ftactic.return v
+                val_interp ist tac
               else
                 let goal = Proofview.Goal.goal gl in
                 let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
