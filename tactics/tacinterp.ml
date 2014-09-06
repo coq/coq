@@ -61,7 +61,31 @@ let (wit_tacvalue : (Empty.t, Empty.t, tacvalue) Genarg.genarg_type) =
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
 let to_tacvalue v = out_gen (topwit wit_tacvalue) v
 
-module Value = Taccoerce.Value
+module TacStore = Geninterp.TacStore
+
+let f_avoid_ids : Id.t list TacStore.field = TacStore.field ()
+(* ids inherited from the call context (needed to get fresh ids) *)
+let f_debug : debug_info TacStore.field = TacStore.field ()
+let f_trace : ltac_trace TacStore.field = TacStore.field ()
+
+(* Signature for interpretation: val_interp and interpretation functions *)
+type interp_sign = Geninterp.interp_sign = {
+  lfun : value Id.Map.t;
+  extra : TacStore.t }
+
+let extract_trace ist = match TacStore.get ist.extra f_trace with
+| None -> []
+| Some l -> l
+
+module Value = struct
+
+  include Taccoerce.Value
+
+  let of_closure ist tac =
+    let closure = VFun (extract_trace ist, ist.lfun, [], tac) in
+    of_tacvalue closure
+
+end
 
 let dloc = Loc.ghost
 
@@ -77,13 +101,6 @@ let catching_error call_trace fail e =
     fail located_exc
   end
 
-module TacStore = Geninterp.TacStore
-
-let f_avoid_ids : Id.t list TacStore.field = TacStore.field ()
-(* ids inherited from the call context (needed to get fresh ids) *)
-let f_debug : debug_info TacStore.field = TacStore.field ()
-let f_trace : ltac_trace TacStore.field = TacStore.field ()
-
 let catch_error call_trace f x =
   try f x
   with e when Errors.noncritical e ->
@@ -94,11 +111,6 @@ let catch_error_tac call_trace tac =
   Proofview.tclORELSE
     tac
     (catching_error call_trace Proofview.tclZERO)
-
-(* Signature for interpretation: val_interp and interpretation functions *)
-type interp_sign = Geninterp.interp_sign = {
-  lfun : value Id.Map.t;
-  extra : TacStore.t }
 
 let curr_debug ist = match TacStore.get ist.extra f_debug with
 | None -> DebugOff
@@ -174,10 +186,6 @@ let valueIn t = TacDynamic (Loc.ghost, value_in t)
 let push_trace call ist = match TacStore.get ist.extra f_trace with
 | None -> [call]
 | Some trace -> call :: trace
-
-let extract_trace ist = match TacStore.get ist.extra f_trace with
-| None -> []
-| Some l -> l
 
 let propagate_trace ist loc id v =
   let v = Value.normalize v in

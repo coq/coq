@@ -22,6 +22,7 @@ sig
   val of_int : int -> t
   val to_int : t -> int option
   val to_list : t -> t list option
+  val of_closure : Geninterp.interp_sign -> glob_tactic_expr -> t
 end
 
 (** Values for interpretation *)
