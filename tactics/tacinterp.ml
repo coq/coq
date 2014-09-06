@@ -1414,20 +1414,6 @@ and tactic_of_value ist vle =
     eval_tactic ist tac
   else Proofview.tclZERO (UserError ("" , str"Expression does not evaluate to a tactic."))
 
-and eval_value ist tac =
-  let (>>=) = Ftactic.bind in
-  val_interp ist tac >>= fun v ->
-  if has_type v (topwit wit_tacvalue) then match to_tacvalue v with
-  | VFun (trace,lfun,[],t) ->
-      let ist = {
-        lfun = lfun;
-        extra = TacStore.set ist.extra f_trace trace; } in
-      let tac = eval_tactic ist t in
-      let dummy = VFun (extract_trace ist, Id.Map.empty, [], TacId []) in
-      catch_error_tac trace (tac <*> Ftactic.return (of_tacvalue dummy))
-  | _ -> Ftactic.return v
-  else Ftactic.return v
-
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist llc u =
   Proofview.tclUNIT () >>= fun () -> (* delay for the effects of [lref], just in case. *)
@@ -1456,10 +1442,23 @@ and interp_letin ist llc u =
 (** [interp_match_success lz ist succ] interprets a single matching success
     (of type {!TacticMatching.t}). *)
 and interp_match_success ist { TacticMatching.subst ; context ; terms ; lhs } =
+  let (>>=) = Ftactic.bind in
   let lctxt = Id.Map.map interp_context context in
   let hyp_subst = Id.Map.map Value.of_constr terms in
   let lfun = extend_values_with_bindings subst (lctxt +++ hyp_subst +++ ist.lfun) in
-  eval_value {ist with lfun=lfun} lhs
+  let ist = { ist with lfun } in
+  val_interp ist lhs >>= fun v ->
+  if has_type v (topwit wit_tacvalue) then match to_tacvalue v with
+  | VFun (trace,lfun,[],t) ->
+      let ist = {
+        lfun = lfun;
+        extra = TacStore.set ist.extra f_trace trace; } in
+      let tac = eval_tactic ist t in
+      let dummy = VFun (extract_trace ist, Id.Map.empty, [], TacId []) in
+      catch_error_tac trace (tac <*> Ftactic.return (of_tacvalue dummy))
+  | _ -> Ftactic.return v
+  else Ftactic.return v
+
 
 (** [interp_match_successes lz ist s] interprets the stream of
     matching of successes [s]. If [lz] is set to true, then only the
