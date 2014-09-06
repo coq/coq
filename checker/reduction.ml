@@ -473,7 +473,7 @@ let fconv cv_pb env t1 t2 =
     with NotConvertible ->
       let open Pp in
 	if !Flags.debug then (
-	  Pp.ppnl (str "  conversion failed: ");
+	  Pp.ppnl (str "  conversion failed on: ");
 	  Print.print_pure_constr t1;
 	  Pp.ppnl (str " and ");
 	  Print.print_pure_constr t2);
