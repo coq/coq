@@ -239,11 +239,6 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
   (* compute the lifts that apply to the head of the term (hd1 and hd2) *)
   let el1 = el_stack lft1 v1 in
   let el2 = el_stack lft2 v2 in
-  let () = Print.print_pure_constr (whd_val infos hd1);
-    Pp.pp (Pp.str " conv ");
-    Print.print_pure_constr (whd_val infos hd2);
-    Pp.ppnl (Pp.str "")
-  in
   match (fterm_of hd1, fterm_of hd2) with
     (* case of leaves *)
     | (FAtom a1, FAtom a2) ->
@@ -442,19 +437,7 @@ let clos_fconv cv_pb env t1 t2 =
 
 let fconv cv_pb env t1 t2 =
   if eq_constr t1 t2 then ()
-  else 
-    try clos_fconv cv_pb env t1 t2
-    with NotConvertible ->
-      let open Pp in
-	if !Flags.debug then (
-	  Pp.ppnl (str "  conversion failed on: ");
-	  Print.print_pure_constr t1;
-	  Pp.ppnl (str " and ");
-	  Print.print_pure_constr t2);
-	raise NotConvertible
-	  
-
-
+  else clos_fconv cv_pb env t1 t2
 
 let conv = fconv CONV
 let conv_leq = fconv CUMUL
