@@ -1728,17 +1728,17 @@ induction n.
   {\tt (}$p_{1}$ {\tt ,} {\ldots} {\tt ,} $p_{n}${\tt )} can be used instead of
   {\tt [} $p_{1}$ {\ldots} $p_{n}$ {\tt ]}.
 
-\item{\tt induction {\term} eqn:{\namingintropattern}}
+%% \item{\tt induction {\term} eqn:{\namingintropattern}}
 
-  This behaves as {\tt induction {\term}} but adds an equation between
-  {\term} and the value that {\term} takes in each of the induction
-  case.  The name of the equation is built according to
-  {\namingintropattern} which can be an identifier, a ``?'', etc, as
-  indicated in Section~\ref{intros-pattern}.
+%%   This behaves as {\tt induction {\term}} but adds an equation between
+%%   {\term} and the value that {\term} takes in each of the induction
+%%   case.  The name of the equation is built according to
+%%   {\namingintropattern} which can be an identifier, a ``?'', etc, as
+%%   indicated in Section~\ref{intros-pattern}.
 
-\item{\tt induction {\term} as {\disjconjintropattern} eqn:{\namingintropattern}}
+%% \item{\tt induction {\term} as {\disjconjintropattern} eqn:{\namingintropattern}}
 
-  This combines the two previous forms.
+%%   This combines the two previous forms.
 
 \item{\tt induction {\term} with \bindinglist}
 
@@ -1779,15 +1779,15 @@ induction n.
   Section~\ref{Occurrences clauses}.
 
 \item {\tt induction {\term$_1$} with {\bindinglist$_1$}
-       as {\disjconjintropattern} eqn:{\namingintropattern}
+       as {\disjconjintropattern} %% eqn:{\namingintropattern}
        using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}\\
      {\tt einduction {\term$_1$} with {\bindinglist$_1$}
-       as {\disjconjintropattern} eqn:{\namingintropattern}
+       as {\disjconjintropattern} %% eqn:{\namingintropattern}
        using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}
 
   These are the most general forms of {\tt induction} and {\tt
-  einduction}.  It combines the effects of the {\tt with}, {\tt as},
-  {\tt eqn:}, {\tt using}, and {\tt in} clauses.
+  einduction}.  It combines the effects of the {\tt with}, {\tt as}, %%{\tt eqn:},
+  {\tt using}, and {\tt in} clauses.
 
 \item{\tt induction !{\ident}}
 
