@@ -329,7 +329,7 @@ let remember_first_eq id x = if !x == MoveLast then x := MoveAfter id
    If it can discriminate then the goal is proved, if not tries to use it as
    a rewrite rule. It erases the clause which is given as input *)
 
-let projectAndApply thin id eqname names depids =
+let projectAndApply as_mode thin id eqname names depids =
   let subst_hyp l2r id =
     tclTHEN (tclTRY(rewriteInConcl l2r (mkVar id)))
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
@@ -345,11 +345,9 @@ let projectAndApply thin id eqname names depids =
     | _ -> tac id
     end
   in
-  let deq_trailer id clear_flag _ neqns =
+  let deq_trailer id _ _ neqns =
     tclTHENLIST
-      [apply_clear_request clear_flag
-          (not (List.is_empty names) || use_clear_hyp_by_default ())
-          (mkVar id);
+      [if as_mode then clear [id] else tclIDTAC;
        (tclMAP_i (false,false) neqns (function (idopt,_) ->
 	 tclTRY (tclTHEN
 	   (intro_move idopt MoveLast)
@@ -357,7 +355,7 @@ let projectAndApply thin id eqname names depids =
 	   (* decomposition, arbitrarily try to rewrite RL !? *)
 	   (tclTRY (onLastHypId (substHypIfVariable (fun id -> subst_hyp false id))))))
 	 names);
-       (if List.is_empty names then clear [id] else tclIDTAC)]
+       (if as_mode then tclIDTAC else clear [id])]
   in
   substHypIfVariable
     (* If no immediate variable in the equation, try to decompose it *)
@@ -391,7 +389,7 @@ let rewrite_equations as_mode othin neqns names ba =
                (tclTHEN
 		 (intro_move idopt MoveLast)
 		 (onLastHypId (fun id ->
-		   tclTRY (projectAndApply thin id first_eq names depids)))))
+		   tclTRY (projectAndApply as_mode thin id first_eq names depids)))))
 	       names;
 	     tclMAP (fun (id,_,_) -> tclIDTAC >>= fun () -> (* delay for [first_eq]. *)
 	       intro_move None (if thin then MoveLast else !first_eq))
