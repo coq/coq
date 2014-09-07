@@ -362,6 +362,9 @@ let interp_ind_arity evdref env ind =
   let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
   let t, impls = understand_tcc_evars evdref env ~expected_type:IsType c, imps in
   let pseudo_poly = check_anonymous_type c in
+  let () = if not (Reduction.is_arity env t) then
+    user_err_loc (constr_loc ind.ind_arity, "", str "Not an arity")
+  in
     t, pseudo_poly, impls
 
 let interp_cstrs evdref env impls mldata arity ind =
