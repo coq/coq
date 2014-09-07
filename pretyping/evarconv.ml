@@ -344,6 +344,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     ((term1,sk1 as appr1),csts1) ((term2,sk2 as appr2),csts2) =
   let default_fail i = (* costly *)
     UnifFailure (i,ConversionFailed (env, Stack.zip appr1, Stack.zip appr2)) in
+  let quick_fail i = (* not costly, loses info *)
+    UnifFailure (i, NotSameHead)
+  in
   let miller_pfenning on_left fallback ev lF tM evd =
     match is_unification_pattern_evar env evd ev lF tM with
       | None -> fallback ()
@@ -399,11 +402,15 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	      switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i)) (Stack.zip apprF) tM
 	    else default_fail i)
 	  ev lF tM i
+    and f2 i = 
+      if not (Stack.is_empty skF && Stack.is_empty skM) then
+        consume_stack on_left apprF apprM i
+      else quick_fail i
     and f3 i =
-	switch (evar_eqappr_x ts env i pbty) (apprF,cstsF)
-	  (whd_betaiota_deltazeta_for_iota_state ts env i cstsM vM)
+      switch (evar_eqappr_x ts env i pbty) (apprF,cstsF)
+	(whd_betaiota_deltazeta_for_iota_state ts env i cstsM vM)
     in
-    ise_try evd [f1; (consume_stack on_left apprF apprM); f3] in
+    ise_try evd [f1; f2; f3] in
   let flex_rigid on_left ev (termF, skF as apprF) (termR, skR as apprR) =
     let switch f a b = if on_left then f a b else f b a in
     let eta evd =
