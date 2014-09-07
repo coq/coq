@@ -603,6 +603,10 @@ let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast false false
 
 let intro_then_force = intro_then_gen (NamingAvoid []) MoveLast true false
 
+let intro_move idopt hto = match idopt with
+  | None -> intro_gen (NamingAvoid []) hto true false
+  | Some id -> intro_gen (NamingMustBe (dloc,id)) hto true false
+
 (**** Multiple introduction tactics ****)
 
 let rec intros_using = function
@@ -630,33 +634,36 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
   in
   aux n []
 
-let rec get_next_hyp_position id = function
+let rec get_next_hyp_position id l = function
   | [] -> raise (RefinerError (NoSuchHyp id))
   | (hyp,_,_) :: right ->
       if Id.equal hyp id then
-	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveLast
+	match right with
+        | (id,_,_)::_ -> (try List.assoc id l with Not_found -> MoveBefore id)
+        | [] -> MoveLast
       else
-	get_next_hyp_position id right
+	get_next_hyp_position id l right
 
 let intro_replacing id gl =
-  let next_hyp = get_next_hyp_position id (pf_hyps gl) in
+  let next_hyp = get_next_hyp_position id [] (pf_hyps gl) in
   tclTHENLIST
     [thin_for_replacing [id]; introduction id; move_hyp true id next_hyp] gl
 
+(* We have e.g. [x, y, y', x', y'' |- forall y y' y'', G] and want to
+   reintroduce y, y,' y''. Note that we have to clear y, y' and y''
+   before introducing y because y' or y'' can e.g. depend on old y. *)
+
 let intros_replacing ids =
-  let rec introrec = function
-    | [] -> Proofview.tclUNIT()
-    | id::tl ->
-	Tacticals.New.tclTHEN (Tacticals.New.tclORELSE (Proofview.V82.tactic (intro_replacing id)) (intro_using id))
-           (introrec tl)
-  in
-  introrec ids
+  Proofview.Goal.enter begin fun gl ->
+    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let posl = List.fold_right (fun id posl ->
+      (id,get_next_hyp_position id posl hyps) :: posl) ids [] in
+    Tacticals.New.tclTHEN
+      (Proofview.V82.tactic (thin_for_replacing ids))
+      (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some id) pos) posl)
+  end
 
 (* User-level introduction tactics *)
-
-let intro_move idopt hto = match idopt with
-  | None -> intro_gen (NamingAvoid []) hto true false
-  | Some id -> intro_gen (NamingMustBe (dloc,id)) hto true false
 
 let pf_lookup_hypothesis_as_renamed env ccl = function
   | AnonHyp n -> Detyping.lookup_index_as_renamed env ccl n
