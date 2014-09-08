@@ -1492,7 +1492,7 @@ end = struct
           VtStm (VtBack oid, true), VtLater
       | VernacBacktrack (id,_,_)
       | VernacBackTo id ->
-          VtStm (VtBack (Stateid.of_int id), true), VtNow
+          VtStm (VtBack (Stateid.of_int id), not !Flags.print_emacs), VtNow
       | _ -> VtUnknown, VtNow
     with
     | Not_found ->
