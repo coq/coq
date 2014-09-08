@@ -209,12 +209,14 @@ let init_gc () =
     between coqtop and coqc. *)
 
 let usage () =
-  if !batch_mode then
-    Usage.print_usage_coqc ()
-  else
-    Usage.print_usage_coqtop () ;
-  flush stderr ;
-  exit 1
+  Envars.set_coqlib Errors.error;
+  init_load_path ();
+  if !batch_mode then Usage.print_usage_coqc ()
+  else begin
+    Mltop.load_ml_objects_raw_rex
+      (Str.regexp (if Mltop.is_native then "^.*top.cmxs$" else "^.*top.cma$"));
+    Usage.print_usage_coqtop ()
+  end
 
 let error_missing_arg s =
   prerr_endline ("Error: extra argument expected after option "^s);

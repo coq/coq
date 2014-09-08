@@ -53,14 +53,12 @@ let all_subdirs ~unix_path:root =
   if exists_dir root then traverse root [];
   List.rev !l
 
+let rec search paths test =
+  match paths with
+  | [] -> []
+  | lpe :: rem -> test lpe @ search rem test
+
 let where_in_path ?(warn=true) path filename =
-  let rec search = function
-    | lpe :: rem ->
-	let f = Filename.concat lpe filename in
-	  if Sys.file_exists f
-	  then (lpe,f) :: search rem
-	  else search rem
-    | [] -> [] in
   let check_and_warn l = match l with
   | [] -> raise Not_found
   | (lpe, f) :: l' ->
@@ -77,7 +75,19 @@ let where_in_path ?(warn=true) path filename =
     in
     (lpe, f)
   in
-  check_and_warn (search path)
+  check_and_warn (search path (fun lpe ->
+    let f = Filename.concat lpe filename in
+    if Sys.file_exists f then [lpe,f] else []))
+
+let where_in_path_rex path rex =
+  search path (fun lpe ->
+    let files = Sys.readdir lpe in
+    CList.map_filter (fun name ->
+      try
+        ignore(Str.search_forward rex name 0);
+        Some (lpe,Filename.concat lpe name)
+      with Not_found -> None)
+      (Array.to_list files))
 
 let find_file_in_path ?(warn=true) paths filename =
   if not (Filename.is_implicit filename) then

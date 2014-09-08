@@ -55,6 +55,7 @@ val add_known_module : string -> unit
 val module_is_known : string -> bool
 val load_ml_object : string -> string -> unit
 val load_ml_object_raw : string -> unit
+val load_ml_objects_raw_rex : Str.regexp -> unit
 
 (** {5 Initialization functions} *)
 

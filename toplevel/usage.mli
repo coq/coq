@@ -13,6 +13,9 @@ val version : int -> 'a
 (** {6 Prints the usage on the error output, preceeded by a user-provided message. } *)
 val print_usage : string -> unit
 
+(** {6 Enable toploop plugins to insert some text in the usage message. } *)
+val add_to_usage : string -> string -> unit
+
 (** {6 Prints the usage on the error output. } *)
 val print_usage_coqtop : unit -> unit
 val print_usage_coqc : unit -> unit

@@ -14,6 +14,9 @@ let version ret =
 
 (* print the usage of coqtop (or coqc) on channel co *)
 
+let extra_usage = ref []
+let add_to_usage name text = extra_usage := (name,text) :: !extra_usage
+
 let print_usage_channel co command =
   output_string co command;
   output_string co "Coq options are:\n";
@@ -63,15 +66,22 @@ let print_usage_channel co command =
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -time                  display the time taken by each command\
 \n  -h, --help             print this list of options\
-\n  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\
-\n"
+\n";
+  List.iter (fun (name, text) ->
+    output_string co
+     ("\nWith the flag '-toploop "^name^
+        "' these extra option are also available:\n"^
+      text^"\n"))
+    !extra_usage
 
 (* print the usage on standard error *)
 
 let print_usage = print_usage_channel stderr
 
 let print_usage_coqtop () =
-  print_usage "Usage: coqtop <options>\n\n"
+  print_usage "Usage: coqtop <options>\n\n";
+  flush stderr ;
+  exit 1
 
 let print_usage_coqc () =
   print_usage "Usage: coqc <options> <Coq options> file...\n\
@@ -80,7 +90,9 @@ let print_usage_coqc () =
 \n  -image f  specify an alternative executable for Coq\
 \n  -opt      run the native-code version of Coq\
 \n  -byte     run the bytecode version of Coq\
-\n  -t        keep temporary files\n\n"
+\n  -t        keep temporary files\n\n";
+  flush stderr ;
+  exit 1
 
 (* Print the configuration information *)
 

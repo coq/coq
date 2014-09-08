@@ -294,6 +294,9 @@ let load_ml_object mname fname=
   init_ml_object mname
 
 let load_ml_object_raw fname = dir_ml_load (file_of_name fname)
+let load_ml_objects_raw_rex rex =
+  List.iter (fun (_,fp) -> dir_ml_load (file_of_name (Filename.basename fp)))
+    (System.where_in_path_rex !coq_mlpath_copy rex)
 
 (* Summary of declared ML Modules *)
 

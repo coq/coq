@@ -470,3 +470,5 @@ let () = Coqtop.toploop_init := (fun args ->
         args)
 
 let () = Coqtop.toploop_run := loop
+
+let () = Usage.add_to_usage "coqidetop" "  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\n"
