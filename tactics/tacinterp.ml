@@ -500,11 +500,11 @@ let interp_uconstr ist env = function
       { closure ; term =  intern_gen WithoutTypeConstraint ~ltacvars env ce }
 
 let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
-  let constrvars = extract_ltac_constr_values ist env in
+  let constrvars = extract_ltac_uconstr_values ist env in
   let vars = {
-    Pretyping.ltac_constrs = constrvars;
-    Pretyping.ltac_uconstrs = Id.Map.empty;
-    Pretyping.ltac_idents = Id.Map.empty;
+    Pretyping.ltac_constrs = constrvars.typed;
+    Pretyping.ltac_uconstrs = constrvars.untyped;
+    Pretyping.ltac_idents = constrvars.idents;
     Pretyping.ltac_genargs = ist.lfun;
   } in
   let c = match ce with
@@ -513,8 +513,15 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
        context at globalization time: we retype with the now known
        intros/lettac/inversion hypothesis names *)
   | Some c ->
+      let constr_context =
+        Id.Set.union
+          (Id.Map.domain constrvars.typed)
+       (Id.Set.union
+          (Id.Map.domain constrvars.untyped)
+          (Id.Map.domain constrvars.idents))
+      in
       let ltacvars = {
-        ltac_vars = Id.Map.domain constrvars;
+        ltac_vars = constr_context;
         ltac_bound = Id.Map.domain ist.lfun;
       } in
       intern_gen kind ~allow_patvar ~ltacvars env c
