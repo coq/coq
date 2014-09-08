@@ -177,6 +177,8 @@ Tactics
 - New construct "uconstr:c" and "type_term c" to build untyped terms.
 - Binders in terms defined in Ltac (either "constr" or "uconstr") can
   now take their names from identifier defined in Ltac.
+- The "refine" tactic now accepts untyped terms built with "uconstr"
+  so that terms with holes can be constructed piecewise in Ltac.
 - New bullets --, ++, **, ---, +++, ***, ... made available.
 - The good bullet is suggested sometimes when user gives a wrong one.
 - New tactic "enough", symmetric to "assert", but with subgoals
