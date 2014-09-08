@@ -172,6 +172,8 @@ Tactics
   (possible source of incompatibilities solvable by avoiding clearing
   the relevant hypotheses).
 - New construct "uconstr:c" and "type_term c" to build untyped terms.
+- Binders in terms defined in Ltac (either "constr" or "uconstr") can
+  now take their names from identifier defined in Ltac.
 - New bullets --, ++, **, ---, +++, ***, ... made available.
 - The good bullet is suggested sometimes when user gives a wrong one.
 - New tactic "enough", symmetric to "assert", but with subgoals
