@@ -342,7 +342,12 @@ module New = struct
         Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
           begin tclEXTEND (Array.to_list l1) repeat (Array.to_list l2) end
           begin function
-            | SizeMismatch -> tclFAIL 0 (str"Incorrect number of goals")
+            | SizeMismatch (i,_)->
+                let errmsg =
+                  str"Incorrect number of goals" ++ spc() ++
+                  str"(expected "++int i++str" tactics)"
+                in
+                tclFAIL 0 errmsg
             | reraise -> tclZERO reraise
           end
     end
@@ -360,7 +365,12 @@ module New = struct
       t <*>Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
           begin tclDISPATCH l end
           begin function
-            | SizeMismatch -> tclFAIL 0 (str"Incorrect number of goals")
+            | SizeMismatch (i,_)->
+                let errmsg =
+                  str"Incorrect number of goals" ++ spc() ++
+                  str"(expected "++int i++str" tactics)"
+                in
+                tclFAIL 0 errmsg
             | reraise -> tclZERO reraise
           end
     end

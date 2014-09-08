@@ -216,8 +216,9 @@ val tclTRYFOCUS : int -> int -> unit tactic -> unit tactic
    the corresponding goal.
 
    When the length of the tactic list is not the number of goal,
-   raises [SizeMismatch] *)
-exception SizeMismatch
+   raises [SizeMismatch (g,t)] where [g] is the number of available
+   goals, and [t] the number of tactics passed. *)
+exception SizeMismatch of int*int
 val tclDISPATCH : unit tactic list -> unit tactic
 val tclDISPATCHL : 'a tactic list -> 'a list tactic
 

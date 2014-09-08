@@ -340,9 +340,15 @@ let tclTRYFOCUS i j t = tclFOCUS_gen (tclUNIT ()) i j t
    the tactic returns a list of the same size as the argument list (of
    tactics), each element being the result of the tactic executed in
    the corresponding goal. *)
-exception SizeMismatch
+exception SizeMismatch of int*int
 let _ = Errors.register_handler begin function
-  | SizeMismatch -> Errors.error "Incorrect number of goals."
+  | SizeMismatch (i,_) ->
+      let open Pp in
+      let errmsg =
+        str"Incorrect number of goals" ++ spc() ++
+        str"(expected "++int i++str" tactics)."
+      in
+      Errors.errorlabstrm "" errmsg
   | _ -> raise Errors.Unhandled
 end
 
@@ -361,16 +367,24 @@ let rec list_iter l s i =
       list_iter l r i
 
 (* val list_iter : 'a list -> 'b list -> 'c -> ('a -> 'b -> 'c -> 'c tactic) -> 'c tactic *)
-let rec list_iter2 l1 l2 s i =
+let list_iter2 l1 l2 s i =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = tclBIND in
-  match l1 , l2 with
-  | [] , [] -> tclUNIT s
-  | [a] , [b] -> i a b s
-  | a::l1 , b::l2 ->
-      i a b s >>= fun r ->
-      list_iter2 l1 l2 r i
-  | _ , _ -> tclZERO SizeMismatch
+  let rec list_iter2 l1 l2 s i =
+    match l1 , l2 with
+    | [] , [] -> tclUNIT s
+    | [a] , [b] -> i a b s
+    | a::l1 , b::l2 ->
+        i a b s >>= fun r ->
+        list_iter2 l1 l2 r i
+    | _ , _ -> tclZERO (SizeMismatch (0,0)) (* placeholder *)
+  in
+  tclORELSE
+    (list_iter2 l1 l2 s i)
+    begin function
+      | SizeMismatch _ -> tclZERO (SizeMismatch (List.length l1,List.length l2))
+      | reraise -> tclZERO reraise
+    end
 
 (* A variant of [Proof.set] specialized on the comb. Doesn't change
    the underlying "solution" (i.e. [evar_map]) *)
@@ -438,7 +452,7 @@ let tclDISPATCHGEN f join tacs =
         Proof.get >>= fun initial ->
         match initial.comb with
         | [] -> tclUNIT (join [])
-        | _ -> tclZERO SizeMismatch
+        | _ -> tclZERO (SizeMismatch (List.length initial.comb,0))
       end
   | [tac] ->
       begin
@@ -450,7 +464,7 @@ let tclDISPATCHGEN f join tacs =
               ~adv:begin fun _ ->
                 Proof.map (fun res -> join [res]) (f tac)
               end
-        | _ -> tclZERO SizeMismatch
+        | _ -> tclZERO (SizeMismatch(List.length initial.comb,1))
       end
   | _ ->
       let iter _ t cur = Proof.map (fun y -> y :: cur) (f t) in
@@ -470,13 +484,13 @@ let extend_to_list startxs rx endxs l =
   in
   let rec tail to_match rest =
     match rest, to_match with
-    | [] , _::_ -> raise SizeMismatch
+    | [] , _::_ -> raise (SizeMismatch(0,0)) (* placeholder *)
     | _::rest , _::to_match -> tail to_match rest
     | _ , [] -> duplicate endxs rest
   in
   let rec copy pref rest =
     match rest,pref with
-    | [] , _::_ -> raise SizeMismatch
+    | [] , _::_ -> raise (SizeMismatch(0,0)) (* placeholder *)
     | _::rest, a::pref -> a::(copy pref rest)
     | _ , [] -> tail endxs rest
   in
@@ -489,7 +503,13 @@ let tclEXTEND tacs1 rtac tacs2 =
   try
     let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
     tclDISPATCH tacs
-  with SizeMismatch -> tclZERO SizeMismatch
+  with SizeMismatch _ ->
+    tclZERO (SizeMismatch(
+      List.length step.comb,
+      (List.length tacs1)+(List.length tacs2)))
+(* spiwack: failure occur only when the number of goals is too
+   small. Hence we can assume that [rtac] is replicated 0 times for
+   any error message. *)
 
 let tclINDEPENDENT tac =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
