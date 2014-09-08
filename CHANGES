@@ -76,7 +76,10 @@ Tactics
 
 - New tactic engine allowing dependent subgoals, fully backtracking
   (aka multiple success) tactics, as well tactics which can consider
-  multiple goals together.
+  multiple goals together. In the new tactic engine, instantiation
+  information of existential variables is always propagated to
+  tactics, removing the need to manually use the "instantiate" tactics
+  to mark propagation points.
   * New tactical (a+b) insert a bakctracking point. When (a+b);c fails
     during the execution of c, it can backtrack and try b instead of a.
   * New tactical (once a) removes all the backtracking point from a
