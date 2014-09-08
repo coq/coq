@@ -25,7 +25,7 @@ Local Open Scope Z_scope.
 (** [Zpower_nat z n] is the n-th power of [z] when [n] is an unary
     integer (type [nat]) and [z] a signed integer (type [Z]) *)
 
-Definition Zpower_nat (z:Z)(n:nat) := Nat.iter n (Z.mul z) 1.
+Definition Zpower_nat (z:Z) := nat_rect _ 1 (fun _ => Z.mul z).
 
 Lemma Zpower_nat_0_r z : Zpower_nat z 0 = 1.
 Proof. reflexivity. Qed.
@@ -255,7 +255,7 @@ Section power_div_with_rest.
   Proof.
    rewrite Pos2Nat.inj_iter, two_power_pos_nat.
    induction (Pos.to_nat p); simpl; trivial.
-   destruct (Nat.iter _ _ _) as ((q,r),d).
+   destruct (nat_rect _ _ _ _) as ((q,r),d).
    unfold Zdiv_rest_aux. rewrite two_power_nat_S; now f_equal.
   Qed.
 

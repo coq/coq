@@ -192,7 +192,7 @@ Qed.
 
 Theorem inj_iter :
   forall p {A} (f:A->A) (x:A),
-    Pos.iter f x p = Nat.iter (to_nat p) f x.
+    Pos.iter f x p = nat_rect _ x (fun _ => f) (to_nat p).
 Proof.
  induction p using peano_ind.
  - trivial.

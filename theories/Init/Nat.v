@@ -280,8 +280,8 @@ Fixpoint testbit a n : bool :=
    | S n => testbit (div2 a) n
  end.
 
-Definition shiftl a n := iter n double a.
-Definition shiftr a n := iter n div2 a.
+Definition shiftl a := nat_rect _ a (fun _ => double).
+Definition shiftr a := nat_rect _ a (fun _ => div2).
 
 Fixpoint bitwise (op:bool->bool->bool) n a b :=
  match n with
