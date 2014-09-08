@@ -74,6 +74,10 @@ let vernac_parse ?newtip eid s =
       raise e)
   ()
 
+let pr_open_cur_subgoals () =
+  try Printer.pr_open_subgoals ()
+  with Proof_global.NoCurrentProof -> Pp.str""
+
 module Vcs_ = Vcs.Make(Stateid)
 type future_proof = Proof_global.closed_proof_output Future.computation
 type proof_mode = string
@@ -1680,12 +1684,14 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           VCS.commit id (Alias oid);
+          Pp.msg_notice (pr_open_cur_subgoals ());
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtStm (VtBack id, false), VtNow ->
           prerr_endline ("undo to state " ^ Stateid.to_string id);
           Backtrack.backto id;
           VCS.checkout_shallowest_proof_branch ();
-          Reach.known_state ~cache:(interactive ()) id; `Ok
+          Reach.known_state ~cache:(interactive ()) id;
+          Pp.msg_notice (pr_open_cur_subgoals ()); `Ok
       | VtStm (VtBack id, false), VtLater ->
           anomaly(str"classifier: VtBack + VtLater must imply part_of_script")
 
