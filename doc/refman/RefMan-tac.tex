@@ -4776,6 +4776,24 @@ all: swap 1 -1.
 Reset Initial.
 \end{coq_eval}
 
+\subsection[\tt revgoals]{\tt revgoals\tacindex{revgoals}}
+
+This tactics reverses the list of the focused goals.
+
+\Example
+\begin{coq_example*}
+Parameter P : nat -> Prop.
+Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
+\end{coq_example*}
+\begin{coq_example}
+repeat split.
+all: revgoals.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
 
 
 \subsection[\tt shelve]{\tt shelve\tacindex{shelve}\label{shelve}}
