@@ -228,6 +228,7 @@ Tools
   the files without playing the proof scripts, asynchronously checking
   that the quickly generated proofs are correct and generating the object
   files from the quickly generated proofs.
+- The XML plugin was discontinued and removed from the source.
 
 Interfaces
 
