@@ -692,6 +692,12 @@ let swap i j =
   in
   Proof.set {initial with comb}
 
+let revgoals =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun initial ->
+  Proof.set {initial with comb=List.rev initial.comb}
+
 let numgoals =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in

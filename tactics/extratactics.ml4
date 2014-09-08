@@ -891,6 +891,11 @@ TACTIC EXTEND swap
 | [ "swap" int_or_var(i) int_or_var(j) ] -> [ Proofview.swap (out_arg i) (out_arg j) ]
 END
 
+(* reverses the list of focused goals *)
+TACTIC EXTEND revgoals
+| [ "revgoals" ] -> [ Proofview.revgoals ]
+END
+
 
 type cmp =
   | Eq
