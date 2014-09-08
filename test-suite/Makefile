@@ -346,25 +346,7 @@ modules/%.vo: modules/%.v
 # Miscellaneous tests
 #######################################################################
 
-misc: misc/xml.log misc/deps-order.log misc/universes.log
-
-# Test xml compilation
-xml: misc/xml.log
-misc/xml.log:
-	@echo "TEST      misc/xml"
-	$(HIDE){ \
-	  echo $(call log_intro,xml); \
-	  rm -rf misc/xml; \
-	  COQ_XML_LIBRARY_ROOT=misc/xml \
-	  $(bincoqc) -xml misc/berardi_test 2>&1; times; \
-	  if [ ! -d misc/xml ]; then \
-	    echo $(log_failure); \
-	    echo "    misc/xml... failed"; \
-	  else \
-	    echo $(log_success); \
-	    echo "    misc/xml...apparently ok"; \
-	  fi; rm -rf misc/xml; \
-	} > "$@"
+misc: misc/deps-order.log misc/universes.log
 
 # Check that both coqdep and coqtop/coqc supports -R
 # Check that both coqdep and coqtop/coqc takes the later -R

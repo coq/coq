@@ -430,7 +430,6 @@ let parse_args arglist =
     |"-verbose-compat-notations" -> verb_compat_ntn := true
     |"-vm" -> use_vm := true
     |"-where" -> print_where := true
-    |"-xml" -> Flags.xml_export := true
 
     (* Deprecated options *)
     |"-byte" -> warning "option -byte deprecated, call with .byte suffix"
@@ -446,6 +445,7 @@ let parse_args arglist =
     |"-force-load-proofs" -> warning "Obsolete option \"-force-load-proofs\"."
     |"-unsafe" -> warning "Obsolete option \"-unsafe\"."; ignore (next ())
     |"-quality" -> warning "Obsolete option \"-quality\"."
+    |"-xml" -> warning "Obsolete option \"-xml\"."
 
     (* Unknown option *)
     | s -> extras := s :: !extras

@@ -76,8 +76,6 @@ let profile = false
 
 let print_emacs = ref false
 
-let xml_export = ref false
-
 let ide_slave = ref false
 let ideslave_coqtop_flags = ref None
 

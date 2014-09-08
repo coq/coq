@@ -70,11 +70,6 @@ val set_declare_scheme :
    the whole block (boolean must be true iff it is a record) *)
 val declare_mind : internal_flag -> mutual_inductive_entry -> object_name
 
-(** Hooks for XML output *)
-val xml_declare_variable : (object_name -> unit) Hook.t
-val xml_declare_constant : (internal_flag * constant -> unit) Hook.t
-val xml_declare_inductive : (internal_flag * object_name -> unit) Hook.t
-
 (** Declaration messages *)
 
 val definition_message : Id.t -> unit

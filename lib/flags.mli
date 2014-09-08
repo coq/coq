@@ -37,8 +37,6 @@ val profile : bool
 
 val print_emacs : bool ref
 
-val xml_export : bool ref
-
 val ide_slave : bool ref
 val ideslave_coqtop_flags : string option ref
 

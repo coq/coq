@@ -209,56 +209,6 @@ let with_magic_number_check f a =
     (str"File " ++ str fname ++ strbrk" has bad magic number." ++ spc () ++
     strbrk "It is corrupted or was compiled with another version of Coq.")
 
-(* Communication through files with another executable *)
-
-let connect writefun readfun com =
-  (* step 0 : prepare temporary files and I/O channels *)
-  let name = Filename.basename com in
-  let req,req_wr =
-    try Filename.open_temp_file ("coq-"^name^"-in") ".xml"
-    with Sys_error s -> error ("Cannot set connection to "^com^"("^s^")") in
-  let ans,ans_wr =
-    try Filename.open_temp_file ("coq-"^name^"-out") ".xml"
-    with Sys_error s ->
-      close_out req_wr;
-      error ("Cannot set connection from "^com^"("^s^")") in
-  let ans_wr' = Unix.descr_of_out_channel ans_wr in
-  (* step 1 : fill the request file *)
-  writefun req_wr;
-  close_out req_wr;
-  (* step 2a : prepare the request-reading descriptor for the sub-process *)
-  let req_rd' =
-    try Unix.openfile req [Unix.O_RDONLY] 0o644
-    with Unix.Unix_error (err,_,_) ->
-      close_out ans_wr;
-      let msg = Unix.error_message err in
-      error ("Cannot set connection to "^com^"("^msg^")")
-  in
-  (* step 2b : launch the sub-process *)
-  let pid =
-    try Unix.create_process com [|com|] req_rd' ans_wr' Unix.stdout
-    with Unix.Unix_error (err,_,_) ->
-      Unix.close req_rd'; close_out ans_wr; Unix.unlink req; Unix.unlink ans;
-      let msg = Unix.error_message err in
-      error ("Cannot execute "^com^"("^msg^")") in
-  Unix.close req_rd';
-  close_out ans_wr;
-  (* step 2c : wait for termination of the sub-process *)
-  (match CUnix.waitpid_non_intr pid with
-    | Unix.WEXITED 127 -> error (com^": cannot execute")
-    | Unix.WEXITED 0 -> ()
-    | _ -> error (com^" exited abnormally"));
-  (* step 3 : read the answer and handle it *)
-  let ans_rd =
-    try open_in ans
-    with Sys_error s -> error ("Cannot read output of "^com^"("^s^")") in
-  let a = readfun ans_rd in
-  close_in ans_rd;
-  (* step 4 : cleanup the temporary files *)
-  unlink req;
-  unlink ans;
-  a
-
 (* Time stamps. *)
 
 type time = float * float * float

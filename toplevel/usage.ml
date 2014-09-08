@@ -61,9 +61,6 @@ let print_usage_channel co command =
 \n  -with-geoproof (yes|no) to (de)activate special functions for Geoproof within Coqide (default is yes)\
 \n  -impredicative-set     set sort Set impredicative\
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
-\n  -xml                   export XML files either to the hierarchy rooted in\
-\n                         the directory $COQ_XML_LIBRARY_ROOT (if set) or to\
-\n                         stdout (if unset)\
 \n  -time                  display the time taken by each command\
 \n  -h, --help             print this list of options\
 \n  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\
