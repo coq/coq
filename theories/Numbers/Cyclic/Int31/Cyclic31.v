@@ -75,34 +75,34 @@ Section Basics.
 
  (** * Iterated shift to the right *)
 
- Definition nshiftr n x := iter_nat n _ shiftr x.
+ Definition nshiftr x := nat_rect _ x (fun _ => shiftr).
 
  Lemma nshiftr_S :
-  forall n x, nshiftr (S n) x = shiftr (nshiftr n x).
+  forall n x, nshiftr x (S n) = shiftr (nshiftr x n).
  Proof.
  reflexivity.
  Qed.
 
  Lemma nshiftr_S_tail :
-  forall n x, nshiftr (S n) x = nshiftr n (shiftr x).
+  forall n x, nshiftr x (S n) = nshiftr (shiftr x) n.
  Proof.
  intros n; elim n; simpl; auto.
  intros; now f_equal.
  Qed.
 
- Lemma nshiftr_n_0 : forall n, nshiftr n 0 = 0.
+ Lemma nshiftr_n_0 : forall n, nshiftr 0 n = 0.
  Proof.
  induction n; simpl; auto.
  rewrite IHn; auto.
  Qed.
 
- Lemma nshiftr_size : forall x, nshiftr size x = 0.
+ Lemma nshiftr_size : forall x, nshiftr x size = 0.
  Proof.
  destruct x; simpl; auto.
  Qed.
 
  Lemma nshiftr_above_size : forall k x, size<=k ->
-  nshiftr k x = 0.
+  nshiftr x k = 0.
  Proof.
  intros.
  replace k with ((k-size)+size)%nat by omega.
@@ -113,33 +113,33 @@ Section Basics.
 
  (** * Iterated shift to the left *)
 
- Definition nshiftl n x := iter_nat n _ shiftl x.
+ Definition nshiftl x := nat_rect _ x (fun _ => shiftl).
 
  Lemma nshiftl_S :
-  forall n x, nshiftl (S n) x = shiftl (nshiftl n x).
+  forall n x, nshiftl x (S n) = shiftl (nshiftl x n).
  Proof.
  reflexivity.
  Qed.
 
  Lemma nshiftl_S_tail :
-  forall n x, nshiftl (S n) x = nshiftl n (shiftl x).
- Proof.
+  forall n x, nshiftl x (S n) = nshiftl (shiftl x) n.
+ Proof. 
  intros n; elim n; simpl; intros; now f_equal.
  Qed.
 
- Lemma nshiftl_n_0 : forall n, nshiftl n 0 = 0.
+ Lemma nshiftl_n_0 : forall n, nshiftl 0 n = 0.
  Proof.
  induction n; simpl; auto.
  rewrite IHn; auto.
  Qed.
 
- Lemma nshiftl_size : forall x, nshiftl size x = 0.
+ Lemma nshiftl_size : forall x, nshiftl x size = 0.
  Proof.
  destruct x; simpl; auto.
  Qed.
 
  Lemma nshiftl_above_size : forall k x, size<=k ->
-  nshiftl k x = 0.
+  nshiftl x k = 0.
  Proof.
  intros.
  replace k with ((k-size)+size)%nat by omega.
@@ -149,13 +149,13 @@ Section Basics.
  Qed.
 
  Lemma firstr_firstl :
-  forall x, firstr x = firstl (nshiftl (pred size) x).
+  forall x, firstr x = firstl (nshiftl x (pred size)).
  Proof.
  destruct x; simpl; auto.
  Qed.
 
  Lemma firstl_firstr :
-  forall x, firstl x = firstr (nshiftr (pred size) x).
+  forall x, firstl x = firstr (nshiftr x (pred size)).
  Proof.
  destruct x; simpl; auto.
  Qed.
@@ -163,13 +163,13 @@ Section Basics.
  (** More advanced results about [nshiftr] *)
 
  Lemma nshiftr_predsize_0_firstl : forall x,
-  nshiftr (pred size) x = 0 -> firstl x = D0.
+  nshiftr x (pred size) = 0 -> firstl x = D0.
  Proof.
  destruct x; compute; intros H; injection H; intros; subst; auto.
  Qed.
 
  Lemma nshiftr_0_propagates : forall n p x, n <= p ->
-  nshiftr n x = 0 -> nshiftr p x = 0.
+  nshiftr x n = 0 -> nshiftr x p = 0.
  Proof.
  intros.
  replace p with ((p-n)+n)%nat by omega.
@@ -179,7 +179,7 @@ Section Basics.
  Qed.
 
  Lemma nshiftr_0_firstl : forall n x, n < size ->
-  nshiftr n x = 0 -> firstl x = D0.
+  nshiftr x n = 0 -> firstl x = D0.
  Proof.
  intros.
  apply nshiftr_predsize_0_firstl.
@@ -196,15 +196,15 @@ Section Basics.
   forall x, P x.
  Proof.
  intros.
- assert (forall n, n<=size -> P (nshiftr (size - n) x)).
+ assert (forall n, n<=size -> P (nshiftr x (size - n))).
  induction n; intros.
  rewrite nshiftr_size; auto.
  rewrite sneakl_shiftr.
  apply H0.
- change (P (nshiftr (S (size - S n)) x)).
+ change (P (nshiftr x (S (size - S n)))).
  replace (S (size - S n))%nat with (size - n)%nat by omega.
  apply IHn; omega.
- change x with (nshiftr (size-size) x); auto.
+ change x with (nshiftr x (size-size)); auto.
  Qed.
 
  Lemma int31_ind_twice : forall P : int31->Prop,
@@ -235,8 +235,8 @@ Section Basics.
 
  Lemma recr_aux_converges :
   forall n p x, n <= size -> n <= p ->
-  recr_aux n A case0 caserec (nshiftr (size - n) x) =
-  recr_aux p A case0 caserec (nshiftr (size - n) x).
+  recr_aux n A case0 caserec (nshiftr x (size - n)) =
+  recr_aux p A case0 caserec (nshiftr x (size - n)).
  Proof.
  induction n.
  simpl minus; intros.
@@ -245,9 +245,9 @@ Section Basics.
  destruct p.
  inversion H0.
  unfold recr_aux; fold recr_aux.
- destruct (iszero (nshiftr (size - S n) x)); auto.
+ destruct (iszero (nshiftr x (size - S n))); auto.
  f_equal.
- change (shiftr (nshiftr (size - S n) x)) with (nshiftr (S (size - S n)) x).
+ change (shiftr (nshiftr x (size - S n))) with (nshiftr x (S (size - S n))).
  replace (S (size - S n))%nat with (size - n)%nat by omega.
  apply IHn; auto with arith.
  Qed.
@@ -258,7 +258,7 @@ Section Basics.
  Proof.
  intros.
  unfold recr.
- change x with (nshiftr (size - size) x).
+ change x with (nshiftr x (size - size)).
  rewrite (recr_aux_converges size (S size)); auto with arith.
  rewrite recr_aux_eqn; auto.
  Qed.
@@ -435,22 +435,22 @@ Section Basics.
 
  Lemma phibis_aux_bounded :
   forall n x, n <= size ->
-  (phibis_aux n (nshiftr (size-n) x) < 2 ^ (Z.of_nat n))%Z.
+  (phibis_aux n (nshiftr x (size-n)) < 2 ^ (Z.of_nat n))%Z.
  Proof.
  induction n.
  simpl minus; unfold phibis_aux; simpl; auto with zarith.
  intros.
  unfold phibis_aux, recrbis_aux; fold recrbis_aux;
-  fold (phibis_aux n (shiftr (nshiftr (size - S n) x))).
- assert (shiftr (nshiftr (size - S n) x) =  nshiftr (size-n) x).
+  fold (phibis_aux n (shiftr (nshiftr x (size - S n)))).
+ assert (shiftr (nshiftr x (size - S n)) =  nshiftr x (size-n)).
   replace (size - n)%nat with (S (size - (S n))) by omega.
   simpl; auto.
  rewrite H0.
  assert (H1 : n <= size) by omega.
  specialize (IHn x H1).
- set (y:=phibis_aux n (nshiftr (size - n) x)) in *.
+ set (y:=phibis_aux n (nshiftr x (size - n))) in *.
  rewrite Nat2Z.inj_succ, Z.pow_succ_r; auto with zarith.
- case_eq (firstr (nshiftr (size - S n) x)); intros.
+ case_eq (firstr (nshiftr x (size - S n))); intros.
  rewrite Z.double_spec; auto with zarith.
  rewrite Z.succ_double_spec; auto with zarith.
  Qed.
@@ -461,12 +461,12 @@ Section Basics.
  rewrite <- phibis_aux_equiv.
  split.
  apply phibis_aux_pos.
- change x with (nshiftr (size-size) x).
+ change x with (nshiftr x (size-size)).
  apply phibis_aux_bounded; auto.
  Qed.
 
  Lemma phibis_aux_lowerbound :
-  forall n x, firstr (nshiftr n x) = D1 ->
+  forall n x, firstr (nshiftr x n) = D1 ->
   (2 ^ Z.of_nat n <= phibis_aux (S n) x)%Z.
  Proof.
  induction n.
@@ -508,7 +508,7 @@ Section Basics.
  (** After killing [n] bits at the left, are the numbers equal ?*)
 
  Definition EqShiftL n x y :=
-  nshiftl n x = nshiftl n y.
+  nshiftl x n = nshiftl y n.
 
  Lemma EqShiftL_zero : forall x y, EqShiftL O x y <-> x = y.
  Proof.
@@ -600,7 +600,7 @@ Section Basics.
   end.
 
  Lemma i2l_nshiftl : forall n x, n<=size ->
-  i2l (nshiftl n x) = cstlist _ D0 n ++ firstn (size-n) (i2l x).
+  i2l (nshiftl x n) = cstlist _ D0 n ++ firstn (size-n) (i2l x).
  Proof.
  induction n.
  intros.
@@ -644,13 +644,13 @@ Section Basics.
  unfold EqShiftL.
  assert (k <= size) by omega.
  split; intros.
- assert (i2l (nshiftl k x) = i2l (nshiftl k y)) by (f_equal; auto).
+ assert (i2l (nshiftl x k) = i2l (nshiftl y k)) by (f_equal; auto).
  rewrite 2 i2l_nshiftl in H1; auto.
  eapply app_inv_head; eauto.
- assert (i2l (nshiftl k x) = i2l (nshiftl k y)).
+ assert (i2l (nshiftl x k) = i2l (nshiftl y k)).
   rewrite 2 i2l_nshiftl; auto.
   f_equal; auto.
- rewrite <- (l2i_i2l (nshiftl k x)), <- (l2i_i2l (nshiftl k y)).
+ rewrite <- (l2i_i2l (nshiftl x k)), <- (l2i_i2l (nshiftl y k)).
  f_equal; auto.
  Qed.
 
@@ -818,30 +818,30 @@ Section Basics.
 
  Lemma phi_inv_phi_aux :
   forall n x, n <= size ->
-   phi_inv (phibis_aux n (nshiftr (size-n) x)) =
-   nshiftr (size-n) x.
+   phi_inv (phibis_aux n (nshiftr x (size-n))) =
+   nshiftr x (size-n).
  Proof.
  induction n.
  intros; simpl minus.
  rewrite nshiftr_size; auto.
  intros.
  unfold phibis_aux, recrbis_aux; fold recrbis_aux;
-  fold (phibis_aux n (shiftr (nshiftr (size-S n) x))).
- assert (shiftr (nshiftr (size - S n) x) = nshiftr (size-n) x).
+  fold (phibis_aux n (shiftr (nshiftr x (size-S n)))).
+ assert (shiftr (nshiftr x (size - S n)) = nshiftr x (size-n)).
   replace (size - n)%nat with (S (size - (S n))); auto; omega.
  rewrite H0.
- case_eq (firstr (nshiftr (size - S n) x)); intros.
+ case_eq (firstr (nshiftr x (size - S n))); intros.
 
  rewrite phi_inv_double.
  rewrite IHn by omega.
  rewrite <- H0.
- remember (nshiftr (size - S n) x) as y.
+ remember (nshiftr x (size - S n)) as y.
  destruct y; simpl in H1; rewrite H1; auto.
 
  rewrite phi_inv_double_plus_one.
  rewrite IHn by omega.
  rewrite <- H0.
- remember (nshiftr (size - S n) x) as y.
+ remember (nshiftr x (size - S n)) as y.
  destruct y; simpl in H1; rewrite H1; auto.
  Qed.
 
@@ -849,7 +849,7 @@ Section Basics.
  Proof.
  intros.
  rewrite <- phibis_aux_equiv.
- replace x with (nshiftr (size - size) x) by auto.
+ replace x with (nshiftr x (size - size)) by auto.
  apply phi_inv_phi_aux; auto.
  Qed.
 
@@ -874,7 +874,7 @@ Section Basics.
   end.
 
  Lemma p2ibis_bounded : forall n p,
-  nshiftr n (snd (p2ibis n p)) = 0.
+  nshiftr (snd (p2ibis n p)) n = 0.
  Proof.
  induction n.
  simpl; intros; auto.
@@ -1739,7 +1739,7 @@ Section Int31_Specs.
  Proof.
  intros.
  rewrite head031_equiv.
- assert (nshiftl size x = 0%int31).
+ assert (nshiftl x size = 0%int31).
   apply nshiftl_size.
  revert x H H0.
  unfold size at 2 5.
@@ -1837,7 +1837,7 @@ Section Int31_Specs.
  Proof.
  intros.
  rewrite tail031_equiv.
- assert (nshiftr size x = 0%int31).
+ assert (nshiftr x size = 0%int31).
   apply nshiftr_size.
  revert x H H0.
  induction size.
