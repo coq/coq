@@ -90,7 +90,7 @@ Tactics
     default.
   * A corresponding new option Set Default Goal Selector "all" makes
     the tactics in scripts be applied to all the focused goal by default
-  * New tactics "cycle" and "swap" to reorder goals.
+  * New tactics "revgoals", "cycle" and "swap" to reorder goals.
   * The semantics of recursive tactics (introduced with Ltac t :=
     ... or let rec t := ... in ...) changes slightly as t is now
     applied to every goal not each goal independently, in particular
