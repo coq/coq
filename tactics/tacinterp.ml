@@ -468,7 +468,7 @@ let interp_fresh_id ist env l =
 
 
 (* Extract the uconstr list from lfun *)
-let extract_ltac_uconstr_values ist env =
+let extract_ltac_constr_context ist env =
   let open Glob_term in
   let fold id v ({idents;typed;untyped} as accu) =
     try
@@ -490,9 +490,9 @@ let extract_ltac_uconstr_values ist env =
     untyped constr, it suffices to adjoin a closure environment. *)
 let interp_uconstr ist env = function
   | (term,None) ->
-      { closure = extract_ltac_uconstr_values ist env ; term }
+      { closure = extract_ltac_constr_context ist env ; term }
   | (_,Some ce) ->
-      let ( {typed ; untyped } as closure) = extract_ltac_uconstr_values ist env in
+      let ( {typed ; untyped } as closure) = extract_ltac_constr_context ist env in
       let ltacvars = {
         Constrintern.ltac_vars = Id.(Set.union (Map.domain typed) (Map.domain untyped));
         ltac_bound = Id.Map.domain ist.lfun;
@@ -500,7 +500,7 @@ let interp_uconstr ist env = function
       { closure ; term =  intern_gen WithoutTypeConstraint ~ltacvars env ce }
 
 let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
-  let constrvars = extract_ltac_uconstr_values ist env in
+  let constrvars = extract_ltac_constr_context ist env in
   let vars = {
     Pretyping.ltac_constrs = constrvars.typed;
     Pretyping.ltac_uconstrs = constrvars.untyped;
