@@ -103,10 +103,6 @@ val interp : raw_tactic_expr -> unit Proofview.tactic
 
 val hide_interp : bool -> raw_tactic_expr -> unit Proofview.tactic option -> unit Proofview.tactic
 
-(** Declare the xml printer *)
-val declare_xml_printer :
-  (out_channel -> Environ.env -> Evd.evar_map -> constr -> unit) -> unit
-
 (** Internals that can be useful for syntax extensions. *)
 
 val interp_ltac_var : (value -> 'a) -> interp_sign -> Environ.env option -> Id.t Loc.located -> 'a

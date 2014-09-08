@@ -122,11 +122,6 @@ grammar/vernacextend.ml
 grammar/argextend.ml
 parsing/pcoq.ml
 parsing/lexer.ml
-plugins/xml/proofTree2Xml.ml
-plugins/xml/acic2Xml.ml
-plugins/xml/xml.ml
-plugins/xml/dumptree.ml
-plugins/xml/xmlentries.ml
 plugins/setoid_ring/newring.ml
 plugins/field/field.ml
 plugins/nsatz/nsatz.ml

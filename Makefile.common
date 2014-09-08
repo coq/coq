@@ -175,7 +175,6 @@ MICROMEGACMA:=plugins/micromega/micromega_plugin.cma
 QUOTECMA:=plugins/quote/quote_plugin.cma
 RINGCMA:=plugins/setoid_ring/newring_plugin.cma
 NSATZCMA:=plugins/nsatz/nsatz_plugin.cma
-XMLCMA:=plugins/xml/xml_plugin.cma
 FOURIERCMA:=plugins/fourier/fourier_plugin.cma
 EXTRACTIONCMA:=plugins/extraction/extraction_plugin.cma
 FUNINDCMA:=plugins/funind/recdef_plugin.cma
@@ -195,7 +194,7 @@ DERIVECMA:=plugins/Derive/derive_plugin.cma
 
 PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
         $(QUOTECMA) $(RINGCMA) \
-        $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
+        $(FOURIERCMA) $(EXTRACTIONCMA) \
         $(CCCMA)  $(FOCMA) $(RTAUTOCMA) $(BTAUTOCMA) \
         $(FUNINDCMA) $(NSATZCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA) \
 	$(DERIVECMA)
@@ -203,7 +202,7 @@ PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
 ifneq ($(HASNATDYNLINK),false)
  STATICPLUGINS:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) \
-	$(XMLCMA) $(FUNINDCMA) $(NATSYNTAXCMA)
+	$(FUNINDCMA) $(NATSYNTAXCMA)
  INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
  PLUGINS:=$(PLUGINSCMA)
  PLUGINSOPT:=$(PLUGINSCMA:.cma=.cmxs)
@@ -314,12 +313,11 @@ FUNINDVO:=$(call cat_vo_itarget, plugins/funind)
 BTAUTOVO:=$(call cat_vo_itarget, plugins/btauto)
 RTAUTOVO:=$(call cat_vo_itarget, plugins/rtauto)
 EXTRACTIONVO:=$(call cat_vo_itarget, plugins/extraction)
-XMLVO:=
 CCVO:=
 DERIVEVO:=$(call cat_vo_itarget, plugins/Derive)
 
 PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) \
-	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
+	    $(FOURIERVO) $(CCVO) $(FUNINDVO) \
 	    $(RTAUTOVO) $(BTAUTOVO) $(RINGVO) $(QUOTEVO) \
             $(NSATZVO) $(EXTRACTIONVO) $(DERIVEVO)
 

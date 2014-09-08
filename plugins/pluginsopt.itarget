@@ -8,7 +8,6 @@ fourier/fourier_plugin.cmxa
 romega/romega_plugin.cmxa
 omega/omega_plugin.cmxa
 micromega/micromega_plugin.cmxa
-xml/xml_plugin.cmxa
 cc/cc_plugin.cmxa
 nsatz/nsatz_plugin.cmxa
 funind/recdef_plugin.cmxa

@@ -258,8 +258,6 @@ and subst_tacarg subst = function
   | MetaIdArg (_loc,_,_) -> assert false
   | TacCall (_loc,f,l) ->
       TacCall (_loc, subst_reference subst f, List.map (subst_tacarg subst) l)
-  | TacExternal (_loc,com,req,la) ->
-      TacExternal (_loc,com,req,List.map (subst_tacarg subst) la)
   | TacFreshId _ as x -> x
   | TacPretype c -> TacPretype (subst_glob_constr subst c)
   | TacNumgoals -> TacNumgoals

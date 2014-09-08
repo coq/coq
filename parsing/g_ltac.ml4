@@ -101,8 +101,6 @@ GEXTEND Gram
       | IDENT "idtac"; l = LIST0 message_token -> TacId l
       | IDENT "fail"; n = [ n = int_or_var -> n | -> fail_default_value ];
 	  l = LIST0 message_token -> TacFail (n,l)
-      | IDENT "external"; com = STRING; req = STRING; la = LIST1 tactic_arg ->
-	  TacArg (!@loc,TacExternal (!@loc,com,req,la))
       | st = simple_tactic -> st
       | IDENT "constr"; ":"; c = Constr.constr ->
           TacArg(!@loc,ConstrMayEval(ConstrTerm c))

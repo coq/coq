@@ -633,7 +633,7 @@ and intern_tactic_seq onlytac ist = function
 
 and intern_tactic_as_arg loc onlytac ist a =
   match intern_tacarg !strict_check onlytac ist a with
-  | TacCall _ | TacExternal _ | Reference _
+  | TacCall _ | Reference _
   | TacDynamic _ | TacGeneric _ as a -> TacArg (loc,a)
   | Tacexp a -> a
   | ConstrMayEval _ | UConstr _ | TacFreshId _ | TacPretype _ | TacNumgoals as a ->
@@ -664,8 +664,6 @@ and intern_tacarg strict onlytac ist = function
       TacCall (loc,
         intern_applied_tactic_reference ist f,
         List.map (intern_tacarg !strict_check false ist) l)
-  | TacExternal (loc,com,req,la) ->
-      TacExternal (loc,com,req,List.map (intern_tacarg !strict_check false ist) la)
   | TacFreshId x -> TacFreshId (List.map (intern_or_var ist) x)
   | TacPretype c -> TacPretype (intern_constr ist c)
   | TacNumgoals -> TacNumgoals

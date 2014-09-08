@@ -552,7 +552,7 @@ noreal: unicode logic arith bool zarith qarith lists sets fsets \
 # 3) plugins
 ###########################################################################
 
-.PHONY: plugins omega micromega setoid_ring nsatz xml extraction
+.PHONY: plugins omega micromega setoid_ring nsatz extraction
 .PHONY: fourier funind cc rtauto btauto pluginsopt pluginsbyte
 
 plugins: $(PLUGINSVO)
@@ -560,7 +560,6 @@ omega: $(OMEGAVO) $(OMEGACMA) $(ROMEGAVO) $(ROMEGACMA)
 micromega: $(MICROMEGAVO) $(MICROMEGACMA) $(CSDPCERT)
 setoid_ring: $(RINGVO) $(RINGCMA)
 nsatz: $(NSATZVO) $(NSATZCMA)
-xml: $(XMLVO) $(XMLCMA)
 extraction: $(EXTRACTIONCMA)
 fourier: $(FOURIERVO) $(FOURIERCMA)
 funind: $(FUNINDCMA) $(FUNINDVO)

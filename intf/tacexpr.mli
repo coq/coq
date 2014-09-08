@@ -185,8 +185,6 @@ and ('trm,'pat,'cst,'ref,'nam,'lev) gen_tactic_arg =
   | Reference      of 'ref
   | TacCall of Loc.t * 'ref *
       ('trm,'pat,'cst,'ref,'nam,'lev) gen_tactic_arg list
-  | TacExternal of Loc.t * string * string *
-      ('trm,'pat,'cst,'ref,'nam,'lev) gen_tactic_arg list
   | TacFreshId of string or_var list
   | Tacexp of ('trm,'pat,'cst,'ref,'nam,'lev) gen_tactic_expr
   | TacPretype of 'trm

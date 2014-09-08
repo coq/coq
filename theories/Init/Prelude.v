@@ -22,6 +22,5 @@ Declare ML Module "decl_mode_plugin".
 Declare ML Module "cc_plugin".
 Declare ML Module "ground_plugin".
 Declare ML Module "recdef_plugin".
-Declare ML Module "xml_plugin".
 (* Default substrings not considered by queries like SearchAbout *)
 Add Search Blacklist "_admitted" "_subproof" "Private_".
