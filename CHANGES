@@ -35,10 +35,13 @@ Logic
 
 Vernacular commands
 
+- A command "Variant" allows to define non-recursive variant types.
 - The command "Record foo ..." does not generate induction principles
-  (foo_rect, foo_rec, foo_ind) anymore by default (feature wish #2693).
-  A flag "Set/Unset Record Elimination Schemes" allows changing this.
-  The tactic "induction" on a record is now actually doing "destruct".
+  (foo_rect, foo_rec, foo_ind) anymore by default (feature wish
+  #2693). The command "Variant foo ..." does not either.  A flag
+  "Set/Unset Nonrecursive Elimination Schemes" allows changing this.
+  The tactic "induction" on a "Record" or a "Variant" is now actually
+  doing "destruct".
 - The "Open Scope" command can now be given also a delimiter (e.g. Z).
 - The "Definition" command now allows the "Local" modifier, allowing
   for non-importable definitions.
