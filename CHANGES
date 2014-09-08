@@ -59,6 +59,7 @@ Vernacular commands
   Coq: terms, modules, tactics, etc. The old behaviour of the command can be
   retrieved using the "Locate Term" command.
 - New "Derive" command to help writing program by derivation.
+- "Undo" undoes any command, not just tactics.
 
 Specification Language
 
