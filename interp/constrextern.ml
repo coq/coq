@@ -493,12 +493,25 @@ let explicitize loc inctx impl (cf,primproj,f) args =
 	  let args2 = exprec (i+1) (args2,impl2) in
 	  CApp (loc,(Some (List.length args1),f),args1@args2)
     | None -> 
-      let args = exprec 1 (args,impl) in
-	match cf with
-	| Some (ConstRef p) when not !in_debugger && not primproj && Environ.is_projection p (Global.env ()) -> 
-          (* Eta-expanded version of projection *)
-          CApp (loc, (None, f), args)
-	| _ -> if List.is_empty args then f else CApp (loc, (None, f), args)
+      match cf with
+      | Some (ConstRef p) when not !in_debugger && not primproj && Environ.is_projection p (Global.env ()) -> 
+        (* Eta-expanded version of projection, print explicited if the implicit application would be parsed
+	   as a primitive projection application. *)
+        let proj = Environ.lookup_projection p (Global.env ()) in
+	let expl = 
+	  if List.length args > proj.Declarations.proj_npars then
+	    List.for_all is_status_implicit (List.firstn proj.Declarations.proj_npars impl)
+	  else false
+	in
+	  if expl then
+	    let f',us = match f with CRef (f,us) -> f,us | _ -> assert false in
+	      CAppExpl (loc,(None,f',us),args)
+	  else
+            let args = exprec 1 (args,impl) in
+              CApp (loc, (None, f), args)
+      | _ -> 
+        let args = exprec 1 (args,impl) in
+	  if List.is_empty args then f else CApp (loc, (None, f), args)
 
 let extern_global loc impl f us =
   if not !Constrintern.parsing_explicit &&
