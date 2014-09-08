@@ -132,7 +132,7 @@ let set_buffer_handlers
     try ignore(buffer#get_mark (`NAME "stop_of_input"))
     with GText.No_such_mark _ -> assert false in
   let get_insert () = buffer#get_iter_at_mark `INSERT in
-  let debug_edit_zone () = if !Minilib.debug then begin
+  let debug_edit_zone () = if false (*!Minilib.debug*) then begin
     buffer#remove_tag Tags.Script.edit_zone
       ~start:buffer#start_iter ~stop:buffer#end_iter;
     buffer#apply_tag Tags.Script.edit_zone
