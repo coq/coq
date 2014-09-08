@@ -152,8 +152,13 @@ GEXTEND Gram
   sort:
     [ [ "Set"  -> GSet
       | "Prop" -> GProp
-      | "Type" -> GType None
-      | "Type"; "@{"; id = ident; "}" -> GType (Some (Id.to_string id))
+      | "Type" -> GType []
+      | "Type"; "@{"; u = universe; "}" -> GType (List.map Id.to_string u)
+      ] ]
+  ;
+  universe:
+    [ [ "max("; ids = LIST1 ident SEP ","; ")" -> ids
+      | id = ident -> [id]
       ] ]
   ;
   lconstr:

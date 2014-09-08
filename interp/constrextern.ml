@@ -595,8 +595,8 @@ let extern_optimal_prim_token scopes r r' =
 let extern_glob_sort = function
   | GProp -> GProp
   | GSet -> GSet
-  | GType (Some _) as s when !print_universes -> s
-  | GType _ -> GType None
+  | GType _ as s when !print_universes -> s
+  | GType _ -> GType []
 
 let extern_universes = function
   | Some _ as l when !print_universes -> l

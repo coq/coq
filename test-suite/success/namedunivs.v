@@ -30,6 +30,9 @@ Definition foo' {A : Type@{i}} (o : option@{i} A) : option@{i} A :=
 Definition foo'' {A : Type@{i}} (o : option@{j} A) : option@{k} A :=
   o.
 
+
+Definition testm (A : Type@{i}) : Type@{max(i,j)} := A.
+
 (* Inductive prod (A : Type@{i}) (B : Type@{j}) := *)
 (*   | pair : A -> B -> prod A B. *)
 
@@ -42,7 +45,6 @@ Definition foo'' {A : Type@{i}} (o : option@{j} A) : option@{k} A :=
 (*   match p with *)
 (*     | pair _ _ a b => b *)
 (*   end. *)
-
 
 (* Inductive paths {A : Type} : A -> A -> Type := *)
 (* | idpath (a : A) : paths a a. *)

@@ -30,7 +30,7 @@ EXTEND
   sort:
     [ [ "Set"  -> Misctypes.GSet
       | "Prop" -> Misctypes.GProp
-      | "Type" -> Misctypes.GType None ] ]
+      | "Type" -> Misctypes.GType [] ] ]
   ;
   ident:
     [ [ s = string -> <:expr< Names.Id.of_string $str:s$ >> ] ]

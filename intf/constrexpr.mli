@@ -61,7 +61,7 @@ and cases_pattern_notation_substitution =
     cases_pattern_expr list *     (** for constr subterms *)
     cases_pattern_expr list list  (** for recursive notations *)
 
-type instance_expr = Misctypes.glob_sort list
+type instance_expr = Misctypes.glob_level list
 
 type constr_expr =
   | CRef of reference * instance_expr option

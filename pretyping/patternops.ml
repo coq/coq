@@ -129,7 +129,7 @@ let pattern_of_constr sigma t =
     | Var id -> PVar id
     | Sort (Prop Null) -> PSort GProp
     | Sort (Prop Pos) -> PSort GSet
-    | Sort (Type _) -> PSort (GType None)
+    | Sort (Type _) -> PSort (GType [])
     | Cast (c,_,_)      -> pattern_of_constr c
     | LetIn (na,c,_,b) -> PLetIn (na,pattern_of_constr c,pattern_of_constr b)
     | Prod (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)

@@ -1064,7 +1064,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	       (fun entry ->
 		  (fst (fst(Future.force entry.Entries.const_entry_body)), Option.get entry.Entries.const_entry_type )
 	       )
-	       (make_scheme (Array.map_to_list (fun const -> const,GType None) funs))
+	       (make_scheme (Array.map_to_list (fun const -> const,GType []) funs))
 	    )
     in
     let proving_tac =

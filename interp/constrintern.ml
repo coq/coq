@@ -1360,7 +1360,9 @@ let internalize globalenv env allow_patvar lvar c =
   let rec intern env = function
     | CRef (ref,us) as x ->
 	let (c,imp,subscopes,l),isproj,_ =
-	  intern_applied_reference intern env (Environ.named_context globalenv) lvar us [] ref in
+	  intern_applied_reference intern env (Environ.named_context globalenv) 
+	    lvar us [] ref 
+	in
 	  apply_impargs (None, isproj) c env imp subscopes l (constr_loc x)
 
     | CFix (loc, (locid,iddef), dl) ->

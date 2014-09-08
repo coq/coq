@@ -731,7 +731,7 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
       match_in u alp metas (match_in u alp metas sigma c1 c2) t1 t2
   | GCast(_,c1, CastCoerce), NCast(c2, CastCoerce) ->
       match_in u alp metas sigma c1 c2
-  | GSort (_,GType _), NSort (GType None) when not u -> sigma
+  | GSort (_,GType _), NSort (GType _) when not u -> sigma
   | GSort (_,s1), NSort s2 when Miscops.glob_sort_eq s1 s2 -> sigma
   | GPatVar _, NHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, NHole _ -> sigma

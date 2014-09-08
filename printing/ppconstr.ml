@@ -108,12 +108,18 @@ let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 
+let pr_univ l = 
+  match l with
+  | [x] -> str x
+  | l -> str"max(" ++ prlist_with_sep (fun () -> str",") str l ++ str")"
+  
 let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
 let pr_glob_sort = function
   | GProp -> str "Prop"
   | GSet -> str "Set"
-  | GType u -> hov 0 (str "Type" ++ pr_opt_no_spc (pr_univ_annot str) u)
+  | GType [] -> str "Type"
+  | GType u -> hov 0 (str "Type" ++ pr_univ_annot pr_univ u)
 
 let pr_id = pr_id
 let pr_name = pr_name

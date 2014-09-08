@@ -98,26 +98,36 @@ let ((constr_in : constr -> Dyn.t),
      (constr_out : Dyn.t -> constr)) = Dyn.create "constr"
 
 (** Miscellaneous interpretation functions *)
+let interp_universe_level_name evd s =
+  let names, _ = Universes.global_universe_names () in
+  try
+    let id = try Id.of_string s with _ -> raise Not_found in
+      evd, Idmap.find id names
+  with Not_found ->
+    try let level = Evd.universe_of_name evd s in
+	  evd, level
+    with Not_found -> 
+      new_univ_level_variable ~name:s univ_rigid evd
 
-let interp_universe_name evd = function
+let interp_universe evd = function
+  | [] -> let evd, l = new_univ_level_variable univ_rigid evd in
+	    evd, Univ.Universe.make l
+  | l ->
+    List.fold_left (fun (evd, u) l -> 
+      let evd', l = interp_universe_level_name evd l in
+	(evd', Univ.sup u (Univ.Universe.make l)))
+    (evd, Univ.Universe.type0m) l
+
+let interp_universe_level evd = function
   | None -> new_univ_level_variable univ_rigid evd
-  | Some s ->
-    try
-      let id = try Id.of_string s with _ -> raise Not_found in
-      let names, _ = Universes.global_universe_names () in
-	evd, Idmap.find id names
-    with Not_found ->
-      try let level = Evd.universe_of_name evd s in
-	    evd, level
-      with Not_found -> 
-	new_univ_level_variable ~name:s univ_rigid evd
-	
+  | Some s -> interp_universe_level_name evd s
+
 let interp_sort evd = function
   | GProp -> evd, Prop Null
   | GSet -> evd, Prop Pos
   | GType n -> 
-    let evd, l = interp_universe_name evd n in
-      evd, Type (Univ.Universe.make l)
+    let evd, u = interp_universe evd n in
+      evd, Type u
 
 let interp_elimination_sort = function
   | GProp -> InProp
@@ -303,7 +313,7 @@ let evar_kind_of_term sigma c =
 let interp_universe_level_name evd = function
   | GProp -> evd, Univ.Level.prop
   | GSet -> evd, Univ.Level.set
-  | GType s -> interp_universe_name evd s
+  | GType s -> interp_universe_level evd s
 
 let pretype_global loc rigid env evd gr us = 
   let evd, instance = 
@@ -330,8 +340,6 @@ let pretype_ref loc evdref env ref us =
   | VarRef id ->
       (* Section variable *)
       (try let (_,_,ty) = lookup_named id env in
-   	   (* let ctx = Decls.variable_context id in *)
-	   (*   evdref := Evd.merge_context_set univ_rigid !evdref ctx; *)
 	     make_judge (mkVar id) ty
        with Not_found ->
          (* This may happen if env is a goal env and section variables have
@@ -345,8 +353,7 @@ let pretype_ref loc evdref env ref us =
       make_judge c ty
 
 let judge_of_Type evd s =
-  let evd, l = interp_universe_name evd s in
-  let s = Univ.Universe.make l in
+  let evd, s = interp_universe evd s in
   let judge = 
     { uj_val = mkSort (Type s); uj_type = mkSort (Type (Univ.super s)) }
   in

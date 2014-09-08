@@ -333,7 +333,7 @@ let prepare_param = function
 let rec check_anonymous_type ind =
   let open Glob_term in
     match ind with
-    | GSort (_, GType None) -> true
+    | GSort (_, GType []) -> true
     | GProd (_, _, _, _, e) 
     | GLetIn (_, _, _, e)
     | GLambda (_, _, _, _, e)
@@ -570,7 +570,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ((_,indname),_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.cata (fun x -> x) (CSort (Loc.ghost,GType None)) ar;
+    ind_arity = Option.cata (fun x -> x) (CSort (Loc.ghost,GType [])) ar;
     ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
   }) indl
 
