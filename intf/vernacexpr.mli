@@ -453,7 +453,7 @@ type vernac_type =
   | VtStm of vernac_control * vernac_part_of_script
   | VtUnknown
 and report_with = Stateid.t (* report feedback on a different id *)
-and vernac_qed_type = VtKeep | VtDrop (* Qed/Admitted, Abort *)
+and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list
 and vernac_is_alias = bool

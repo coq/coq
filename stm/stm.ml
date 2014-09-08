@@ -1154,7 +1154,7 @@ let delegate_policy_check time =
   else !Flags.async_proofs_mode <> Flags.APoff &&
        (time >= 1.0 || !Flags.async_proofs_always_delegate)
 
-let collect_proof cur hd brkind id =
+let collect_proof keep cur hd brkind id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id);
  let no_name = "" in
  let name = function
@@ -1164,58 +1164,72 @@ let collect_proof cur hd brkind id =
  let is_defined = function
    | _, { expr = VernacEndProof (Proved (false,_)) } -> true
    | _ -> false in
+ let proof_using_ast = function
+   | Some (_, ({ expr = VernacProof(_,Some _) } as v)) -> Some v
+   | _ -> None in
+ let has_proof_using x = proof_using_ast x <> None in
+ let proof_no_using = function
+   | Some (_, ({ expr = VernacProof(t,None) } as v)) -> t,v
+   | _ -> assert false in
+ let has_proof_no_using = function
+   | Some (_, { expr = VernacProof(_,None) }) -> true
+   | _ -> false in
+ let parent = function Some (p, _) -> p | None -> assert false in
  let rec collect last accn id =
     let view = VCS.visit id in
-    match last, view.step with
-    | _, `Cmd (x, _, _) -> collect (Some (id,x)) (id::accn) view.next
-    | _, `Alias _ -> `Sync (no_name,`Alias)
-    | _, `Fork(_,_,_,_::_::_)-> `Sync (no_name,`MutualProofs)
-    | _, `Fork(_,_,Doesn'tGuaranteeOpacity,_) ->
-        `Sync (no_name,`Doesn'tGuaranteeOpacity)
-    | Some (parent, ({ expr = VernacProof(_,Some _)} as v)),
-      `Fork (_, hd', GuaranteesOpacity, ids) ->
+    match view.step with
+    | `Cmd (x, _, _) -> collect (Some (id,x)) (id::accn) view.next
+    (* An Alias could jump everywhere... we hope we can ignore it*)
+    | `Alias _ -> `Sync (no_name,None,`Alias)
+    | `Fork(_,_,_,_::_::_)-> `Sync (no_name,proof_using_ast last,`MutualProofs)
+    | `Fork(_,_,Doesn'tGuaranteeOpacity,_) ->
+        `Sync (no_name,proof_using_ast last,`Doesn'tGuaranteeOpacity)
+    | `Fork (_,hd',GuaranteesOpacity,ids) when has_proof_using last ->
         let name = name ids in
         let time = get_hint_bp_time name in
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         if delegate_policy_check time
-        then `ASync (parent,Some v,accn,name)
-        else `Sync (name,`Policy)
-    | Some (parent, ({ expr = VernacProof(t,None)} as v)),
-      `Fork (_, hd', GuaranteesOpacity, ids) when
-       not (State.is_cached parent) &&
+        then `ASync (parent last,proof_using_ast last,accn,name)
+        else `Sync (name,proof_using_ast last,`Policy)
+    | `Fork (_, hd', GuaranteesOpacity, ids) when
+       has_proof_no_using last && not (State.is_cached (parent last)) &&
        !Flags.compilation_mode = Flags.BuildVi ->
         (try
           let name = name ids in
           let hint, time = get_hint_ctx loc, get_hint_bp_time name in
           assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
+          let t, v = proof_no_using last in
           v.expr <- VernacProof(t, Some hint);
           if delegate_policy_check time
-          then `ASync (parent,Some v,accn,name)
-          else `Sync (name,`Policy)
-        with Not_found -> `Sync (no_name,`NoHint))
-    | Some (parent, _), `Fork (_, hd', GuaranteesOpacity, ids) ->
+          then `ASync (parent last,proof_using_ast last,accn,name)
+          else `Sync (name,proof_using_ast last,`Policy)
+        with Not_found -> `Sync (no_name,None,`NoHint))
+    | `Fork (_, hd', GuaranteesOpacity, ids) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         let time = get_hint_bp_time name in
         if delegate_policy_check time
-        then `MaybeASync (parent, accn, name)
-        else `Sync (name,`Policy)
-    | _, `Sideff _ -> `Sync (no_name,`NestedProof)
-    | _ -> `Sync (no_name,`Unknown) in
+        then `MaybeASync (parent last, None, accn, name)
+        else `Sync (name,None,`Policy)
+    | `Sideff _ -> `Sync (no_name,None,`NestedProof)
+    | _ -> `Sync (no_name,None,`Unknown) in
  match cur, (VCS.visit id).step, brkind with
  |( parent, { expr = VernacExactProof _ }), `Fork _, _ ->
-     `Sync (no_name,`Immediate)
+     `Sync (no_name,None,`Immediate)
  | _, _, { VCS.kind = `Edit _ }  -> collect (Some cur) [] id
  | _ ->
-     if is_defined cur then `Sync (no_name,`Transparent)
+     if is_defined cur then `Sync (no_name,None,`Transparent)
+     else if keep == VtDrop then `Sync (no_name,None,`Aborted)
      else
        let rc = collect (Some cur) [] id in
-       if not (State.is_cached id) || !Flags.async_proofs_always_delegate then rc
+       if keep == VtKeep &&
+          (not(State.is_cached id) || !Flags.async_proofs_always_delegate)
+       then rc
        else (* we already have the proof, no gain in delaying *)
          match rc with
-         | `Sync(name,_) -> `Sync (name,`AlreadyEvaluated)
-         | `MaybeASync(_,_,name) -> `Sync (name,`AlreadyEvaluated)
-         | `ASync(_,_,_,name) -> `Sync (name,`AlreadyEvaluated)
+         | `Sync(name,pua,_) -> `Sync (name,pua,`AlreadyEvaluated)
+         | `MaybeASync(_,pua,_,name) -> `Sync (name,pua,`AlreadyEvaluated)
+         | `ASync(_,pua,_,name) -> `Sync (name,pua,`AlreadyEvaluated)
 
 let string_of_reason = function
   | `Transparent -> "Transparent"
@@ -1226,6 +1240,7 @@ let string_of_reason = function
   | `Alias -> "Alias"
   | `NoHint -> "NoHint"
   | `Doesn'tGuaranteeOpacity -> "Doesn'tGuaranteeOpacity"
+  | `Aborted -> "Aborted"
   | _ -> "Unknown Reason"
 
 let wall_clock_last_fork = ref 0.0
@@ -1271,20 +1286,21 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), `Yes
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
-          | `ASync (start, proof_using_ast, nodes, name) -> (fun () ->
+          | `ASync (start, pua, nodes, name) -> (fun () ->
+                assert(keep == VtKeep);
                 prerr_endline ("Asynchronous " ^ Stateid.to_string id);
                 VCS.create_cluster nodes ~tip:id;
-                begin match keep, brinfo, qed.fproof with
-                | VtKeep, { VCS.kind = `Edit _ }, None -> assert false
-                | VtKeep, { VCS.kind = `Edit _ }, Some (ofp, cancel) ->
+                begin match brinfo, qed.fproof with
+                | { VCS.kind = `Edit _ }, None -> assert false
+                | { VCS.kind = `Edit _ }, Some (ofp, cancel) ->
                     assert(redefine_qed = true);
                     VCS.create_cluster nodes ~tip:id;
                     let fp, cancel = Slaves.build_proof
                       ~loc:x.loc ~exn_info:(id,eop) ~start ~stop:eop ~name in
                     Future.replace ofp fp;
                     qed.fproof <- Some (fp, cancel)
-                | VtKeep, { VCS.kind = `Proof _ }, Some _ -> assert false
-                | VtKeep, { VCS.kind = `Proof _ }, None ->
+                | { VCS.kind = `Proof _ }, Some _ -> assert false
+                | { VCS.kind = `Proof _ }, None ->
                     reach ~cache:`Shallow start;
                     let fp, cancel = Slaves.build_proof
                       ~loc:x.loc ~exn_info:(id,eop) ~start ~stop:eop ~name in
@@ -1294,50 +1310,45 @@ let known_state ?(redefine_qed=false) ~cache id =
                     reach view.next;
                     vernac_interp id ~proof x;
                     feedback ~state_id:id Feedback.Incomplete
-                | VtDrop, _, _ ->
-                    reach view.next;
-                    Option.iter (vernac_interp start) proof_using_ast;
-                    vernac_interp id x
-                | _, { VCS.kind = `Master }, _ -> assert false
+                | { VCS.kind = `Master }, _ -> assert false
                 end;
                 Proof_global.discard_all ()
               ), if redefine_qed then `No else `Yes
-          | `Sync (name, `Immediate) -> (fun () -> 
+          | `Sync (name, _, `Immediate) -> (fun () -> 
                 assert (Stateid.equal view.next eop);
                 reach eop; vernac_interp id x; Proof_global.discard_all ()
               ), `Yes
-          | `Sync (name, reason) -> (fun () ->
+          | `Sync (name, pua, reason) -> (fun () ->
                 prerr_endline ("Synchronous " ^ Stateid.to_string id ^ " " ^
                   string_of_reason reason);
                 reach eop;
                 let wall_clock = Unix.gettimeofday () in
                 record_pb_time name x.loc (wall_clock -. !wall_clock_last_fork);
-                begin match keep with
-                | VtKeep ->
-                    let proof =
-                      Proof_global.close_proof (State.exn_on id ~valid:eop) in
-                    reach view.next;
-                    let wall_clock2 = Unix.gettimeofday () in
-                    vernac_interp id ~proof x;
-                    let wall_clock3 = Unix.gettimeofday () in
-                    Aux_file.record_in_aux_at x.loc "proof_check_time"
-                      (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2))
-                | VtDrop ->
-                    reach view.next;
-                    vernac_interp id x
-                end;
+                let proof =
+                  if keep != VtKeep then None
+                  else Some(Proof_global.close_proof
+                              (State.exn_on id ~valid:eop)) in
+                if proof = None then prerr_endline "NONE!!!!!";
+                reach view.next;
+                if keep == VtKeepAsAxiom then
+                  Option.iter (vernac_interp id) pua;
+                let wall_clock2 = Unix.gettimeofday () in
+                vernac_interp id ?proof x;
+                let wall_clock3 = Unix.gettimeofday () in
+                Aux_file.record_in_aux_at x.loc "proof_check_time"
+                  (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2));
                 Proof_global.discard_all ()
               ), `Yes
-          | `MaybeASync (start, nodes, name) -> (fun () ->
+          | `MaybeASync (start, pua, nodes, name) -> (fun () ->
                 prerr_endline ("MaybeAsynchronous " ^ Stateid.to_string id);
                 reach ~cache:`Shallow start;
                 (* no sections *)
                 if List.is_empty (Environ.named_context (Global.env ()))
-                then fst (aux (`ASync (start, None, nodes, name))) ()
-                else fst (aux (`Sync (name, `Unknown))) ()
+                then fst (aux (`ASync (start, pua, nodes, name))) ()
+                else fst (aux (`Sync (name, pua, `Unknown))) ()
               ), if redefine_qed then `No else `Yes
           in
-          aux (collect_proof (view.next, x) brname brinfo eop)
+          aux (collect_proof keep (view.next, x) brname brinfo eop)
       | `Sideff (`Ast (x,_)) -> (fun () ->
             reach view.next; vernac_interp id x
           ), cache
@@ -1536,21 +1547,11 @@ let wait () =
   VCS.print ()
 
 let join () =
-  let rec jab id =
-    if Stateid.equal id Stateid.initial then ()
-    else
-      let view = VCS.visit id in
-      match view.step with
-      | `Qed ({ keep = VtDrop }, eop) ->
-           Future.purify observe eop; jab view.next
-      | _ -> jab view.next in
   finish ();
   wait ();
   prerr_endline "Joining the environment";
   Global.join_safe_environment ();
   VCS.print ();
-  prerr_endline "Joining the aborted proofs";
-  jab (VCS.get_branch_pos VCS.Branch.master);
   VCS.print ()
 
 type tasks = Slaves.tasks * RemoteCounter.remote_counters_status
@@ -1590,7 +1591,7 @@ let merge_proof_branch ?id qast keep brname =
       let id = VCS.new_node ?id () in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.delete_branch brname;
-      if keep == VtKeep then VCS.propagate_sideff None;
+      if keep <> VtDrop then VCS.propagate_sideff None;
       `Ok
   | { VCS.kind = `Edit (mode, qed_id, master_id) } ->
       let ofp =

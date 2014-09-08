@@ -17,6 +17,7 @@ let string_of_vernac_type = function
   | VtStartProof _ -> "StartProof"
   | VtSideff _ -> "Sideff"
   | VtQed VtKeep -> "Qed(keep)"
+  | VtQed VtKeepAsAxiom -> "Qed(admitted)"
   | VtQed VtDrop -> "Qed(drop)"
   | VtProofStep false -> "ProofStep"
   | VtProofStep true -> "ProofStep (parallel)"
@@ -86,7 +87,8 @@ let rec classify_vernac e =
         | VtQed _, _ -> VtProofStep false, VtNow
         | (VtStartProof _ | VtUnknown), _ -> VtUnknown, VtNow)
     (* Qed *)
-    | VernacEndProof Admitted | VernacAbort _ -> VtQed VtDrop, VtLater
+    | VernacAbort _ -> VtQed VtDrop, VtLater
+    | VernacEndProof Admitted -> VtQed VtKeepAsAxiom, VtLater
     | VernacEndProof _ | VernacExactProof _ -> VtQed VtKeep, VtLater
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
