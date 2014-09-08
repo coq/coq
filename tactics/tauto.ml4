@@ -80,6 +80,10 @@ let _ =
 
 (** Test *)
 
+let make_lfun l =
+  let fold accu (id, v) = Id.Map.add (Id.of_string id) v accu in
+  List.fold_left fold Id.Map.empty l
+
 let is_empty ist =
   if is_empty_type (assoc_var "X1" ist) then
     <:tactic<idtac>>
@@ -259,7 +263,7 @@ let rec tauto_intuit flags t_reduce solver =
   let t_axioms = tacticIn (axioms flags)
   and t_simplif = tacticIn (simplif flags)
   and t_is_disj = tacticIn (is_disj flags) in
-  let lfun = Id.Map.singleton (Id.of_string "t_solver") solver in
+  let lfun = make_lfun [("t_solver", solver)] in
   let ist = { default_ist () with lfun = lfun; } in
   let vars = [Id.of_string "t_solver"] in
   (vars, ist, <:tactic<
