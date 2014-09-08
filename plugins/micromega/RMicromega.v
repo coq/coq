@@ -243,7 +243,6 @@ Proof.
   unfold IQR ; intros.
   simpl.
   repeat rewrite mult_IZR.
-  simpl.  
   rewrite Pos2Nat.inj_mul.
   rewrite mult_INR.
   repeat INR_nat_of_P.
@@ -260,8 +259,8 @@ Proof.
   simpl.
   intros.
   unfold Qinv.
-  destruct x ; simpl in *.
-  destruct Qnum ; simpl.
+  destruct x.
+  destruct Qnum ; simpl in *.
   exfalso. auto with zarith.
   clear H.
   repeat INR_nat_of_P.

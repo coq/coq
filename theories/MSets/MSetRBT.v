@@ -987,7 +987,7 @@ Proof.
     rewrite app_length, <- elements_cardinal. simpl.
     rewrite Nat.add_succ_r, <- Nat.succ_le_mono.
     apply Nat.add_le_mono_l. }
- simpl. rewrite elements_node, app_ass. now subst.
+ rewrite elements_node, app_ass. now subst.
 Qed.
 
 Lemma treeify_aux_spec n (p:bool) :
@@ -1012,7 +1012,7 @@ Qed.
 Lemma plength_aux_spec l p :
   Pos.to_nat (plength_aux l p) = length l + Pos.to_nat p.
 Proof.
- revert p. induction l; simpl; trivial.
+ revert p. induction l; trivial. simpl plength_aux.
  intros. now rewrite IHl, Pos2Nat.inj_succ, Nat.add_succ_r.
 Qed.
 
@@ -1058,7 +1058,7 @@ Lemma filter_aux_elements s f acc :
  filter_aux f s acc = List.filter f (elements s) ++ acc.
 Proof.
  revert acc.
- induction s as [|c l IHl x r IHr]; simpl; trivial.
+ induction s as [|c l IHl x r IHr]; trivial.
  intros acc.
  rewrite elements_node, filter_app. simpl.
  destruct (f x); now rewrite IHl, IHr, app_ass.

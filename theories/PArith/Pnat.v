@@ -196,7 +196,8 @@ Theorem inj_iter :
 Proof.
  induction p using peano_ind.
  - trivial.
- - intros. rewrite inj_succ, iter_succ. simpl. now f_equal.
+ - intros. rewrite inj_succ, iter_succ. 
+  simpl. f_equal. apply IHp.
 Qed.
 
 End Pos2Nat.
@@ -210,7 +211,7 @@ Module Nat2Pos.
 Theorem id (n:nat) : n<>0 -> Pos.to_nat (Pos.of_nat n) = n.
 Proof.
  induction n as [|n H]; trivial. now destruct 1.
- intros _. simpl. destruct n. trivial.
+ intros _. simpl Pos.of_nat. destruct n. trivial.
  rewrite Pos2Nat.inj_succ. f_equal. now apply H.
 Qed.
 

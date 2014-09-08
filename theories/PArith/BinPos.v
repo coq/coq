@@ -649,7 +649,7 @@ Theorem sub_mask_carry_spec p q :
   sub_mask_carry p q = pred_mask (sub_mask p q).
 Proof.
   revert q. induction p as [p IHp|p IHp| ]; destruct q; simpl;
-   try reflexivity; try rewrite IHp;
+   try reflexivity; rewrite ?IHp;
    destruct (sub_mask p q) as [|[r|r| ]|] || destruct p; auto.
 Qed.
 

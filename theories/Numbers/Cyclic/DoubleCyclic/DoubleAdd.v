@@ -194,9 +194,9 @@ Section DoubleAdd.
 
   Lemma spec_ww_add_c  : forall x y, [+[ww_add_c x y]] = [[x]] + [[y]].
   Proof.
-   destruct x as [ |xh xl];simpl;trivial.
-   destruct y as [ |yh yl];simpl. rewrite Z.add_0_r;trivial.
-   replace ([|xh|] * wB + [|xl|] + ([|yh|] * wB + [|yl|]))
+   destruct x as [ |xh xl];trivial.
+   destruct y as [ |yh yl]. rewrite Z.add_0_r;trivial.
+   simpl. replace ([|xh|] * wB + [|xl|] + ([|yh|] * wB + [|yl|]))
    with (([|xh|]+[|yh|])*wB + ([|xl|]+[|yl|])). 2:ring.
    generalize (spec_w_add_c xl yl);destruct (w_add_c xl yl) as [l|l];
     intros H;unfold interp_carry in H;rewrite <- H.
@@ -218,10 +218,11 @@ Section DoubleAdd.
 
    Lemma spec_ww_add_c_cont  : P x y (ww_add_c_cont x y).
    Proof.
-    destruct x as [ |xh xl];simpl;trivial.
+    destruct x as [ |xh xl];trivial.
     apply spec_f0;trivial.
-    destruct y as [ |yh yl];simpl.
-    apply spec_f0;simpl;rewrite Z.add_0_r;trivial.
+    destruct y as [ |yh yl].
+    apply spec_f0;rewrite Z.add_0_r;trivial.
+    simpl.
     generalize (spec_w_add_c xl yl);destruct (w_add_c xl yl) as [l|l];
      intros H;unfold interp_carry in H.
     generalize (spec_w_add_c xh yh);destruct (w_add_c xh yh) as [h|h];
@@ -234,10 +235,10 @@ Section DoubleAdd.
      as [h|h]; intros H1;unfold interp_carry in *.
     apply spec_f0;simpl;rewrite H1. rewrite Z.mul_add_distr_r.
     rewrite <- Z.add_assoc;rewrite H;ring.
-    apply spec_f1.  simpl;rewrite spec_w_WW;rewrite wwB_wBwB.
+    apply spec_f1. rewrite spec_w_WW;rewrite wwB_wBwB.
     rewrite Z.add_assoc; rewrite Z.pow_2_r; rewrite <- Z.mul_add_distr_r.
     rewrite Z.mul_1_l in H1;rewrite H1. rewrite Z.mul_add_distr_r.
-    rewrite <- Z.add_assoc;rewrite H;ring.
+    rewrite <- Z.add_assoc;rewrite H; simpl; ring.
    Qed.
 
   End Cont.
@@ -245,11 +246,11 @@ Section DoubleAdd.
   Lemma spec_ww_add_carry_c :
          forall x y, [+[ww_add_carry_c x y]] = [[x]] + [[y]] + 1.
   Proof.
-   destruct x as [ |xh xl];intro y;simpl.
+   destruct x as [ |xh xl];intro y.
    exact (spec_ww_succ_c y).
-   destruct y as [ |yh yl];simpl.
+   destruct y as [ |yh yl].
    rewrite Z.add_0_r;exact (spec_ww_succ_c (WW xh xl)).
-   replace ([|xh|] * wB + [|xl|] + ([|yh|] * wB + [|yl|]) + 1)
+   simpl; replace ([|xh|] * wB + [|xl|] + ([|yh|] * wB + [|yl|]) + 1)
    with (([|xh|]+[|yh|])*wB + ([|xl|]+[|yl|]+1)). 2:ring.
    generalize (spec_w_add_carry_c xl yl);destruct (w_add_carry_c xl yl)
     as [l|l];intros H;unfold interp_carry in H;rewrite <- H.
@@ -281,7 +282,7 @@ Section DoubleAdd.
 
   Lemma spec_ww_add : forall x y, [[ww_add x y]] = ([[x]] + [[y]]) mod wwB.
   Proof.
-   destruct x as [ |xh xl];intros y;simpl.
+   destruct x as [ |xh xl];intros y.
    rewrite Zmod_small;trivial. apply spec_ww_to_Z;trivial.
    destruct y as [ |yh yl].
    change [[W0]] with 0;rewrite Z.add_0_r.
@@ -299,7 +300,7 @@ Section DoubleAdd.
   Lemma spec_ww_add_carry :
 	 forall x y, [[ww_add_carry x y]] = ([[x]] + [[y]] + 1) mod wwB.
   Proof.
-   destruct x as [ |xh xl];intros y;simpl.
+   destruct x as [ |xh xl];intros y.
    exact (spec_ww_succ y).
    destruct y as [ |yh yl].
    change [[W0]] with 0;rewrite Z.add_0_r. exact (spec_ww_succ (WW xh xl)).

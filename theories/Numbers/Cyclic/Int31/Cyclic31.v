@@ -1414,7 +1414,7 @@ Section Int31_Specs.
  generalize (phi_bounded a1)(phi_bounded a2)(phi_bounded b); intros.
  assert ([|b|]>0) by (auto with zarith).
  generalize (Z_div_mod (phi2 a1 a2) [|b|] H4) (Z_div_pos (phi2 a1 a2) [|b|] H4).
- unfold Z.div; destruct (Z.div_eucl (phi2 a1 a2) [|b|]); simpl.
+ unfold Z.div; destruct (Z.div_eucl (phi2 a1 a2) [|b|]).
  rewrite ?phi_phi_inv.
  destruct 1; intros.
  unfold phi2 in *.
@@ -1444,7 +1444,7 @@ Section Int31_Specs.
  unfold div31; intros.
  assert ([|b|]>0) by (auto with zarith).
  generalize (Z_div_mod [|a|] [|b|] H0) (Z_div_pos [|a|] [|b|] H0).
- unfold Z.div; destruct (Z.div_eucl [|a|] [|b|]); simpl.
+ unfold Z.div; destruct (Z.div_eucl [|a|] [|b|]).
  rewrite ?phi_phi_inv.
  destruct 1; intros.
  rewrite H1, Z.mul_comm.
@@ -1467,7 +1467,7 @@ Section Int31_Specs.
  assert ([|b|]>0) by (auto with zarith).
  unfold Z.modulo.
  generalize (Z_div_mod [|a|] [|b|] H0).
- destruct (Z.div_eucl [|a|] [|b|]); simpl.
+ destruct (Z.div_eucl [|a|] [|b|]).
  rewrite ?phi_phi_inv.
  destruct 1; intros.
  generalize (phi_bounded b); intros.
@@ -1480,15 +1480,14 @@ Section Int31_Specs.
   unfold gcd31.
   induction (2*size)%nat; intros.
   reflexivity.
-  simpl.
+  simpl euler.
   unfold compare31.
   change [|On|] with 0.
   generalize (phi_bounded j)(phi_bounded i); intros.
   case_eq [|j|]; intros.
   simpl; intros.
   generalize (Zabs_spec [|i|]); omega.
-  simpl.
-  rewrite IHn, H1; f_equal.
+  simpl. rewrite IHn, H1; f_equal.
   rewrite spec_mod, H1; auto.
   rewrite H1; compute; auto.
   rewrite H1 in H; destruct H as [H _]; compute in H; elim H; auto.
@@ -1521,7 +1520,7 @@ Section Int31_Specs.
  simpl; auto.
  simpl; intros.
  case_eq (firstr i); intros H; rewrite 2 IHn;
-  unfold phibis_aux; simpl; rewrite H; fold (phibis_aux n (shiftr i));
+  unfold phibis_aux; simpl; rewrite ?H; fold (phibis_aux n (shiftr i));
   generalize (phibis_aux_pos n (shiftr i)); intros;
   set (z := phibis_aux n (shiftr i)) in *; clearbody z;
   rewrite <- nat_rect_plus.
@@ -1575,10 +1574,9 @@ Section Int31_Specs.
  clear p H; revert x y.
 
  induction n.
- simpl; intros.
- change (Z.pow_pos 2 31) with (2^31).
+ simpl Z.of_nat; intros.
  rewrite Z.mul_1_r.
- replace ([|y|] / 2^31) with 0.
+ replace ([|y|] / 2^(31-0)) with 0.
  rewrite Z.add_0_r.
  symmetry; apply Zmod_small; apply phi_bounded.
  symmetry; apply Zdiv_small; apply phi_bounded.
@@ -1666,7 +1664,7 @@ Section Int31_Specs.
  Proof.
   intros.
   generalize (phi_inv_phi x).
-  rewrite H; simpl.
+  rewrite H; simpl phi_inv.
   intros H'; rewrite <- H'.
   simpl; auto.
  Qed.
@@ -1774,7 +1772,7 @@ Section Int31_Specs.
  Proof.
   intros.
   generalize (phi_inv_phi x).
-  rewrite H; simpl.
+  rewrite H; simpl phi_inv.
   intros H'; rewrite <- H'.
   simpl; auto.
  Qed.
@@ -2121,7 +2119,7 @@ Section Int31_Specs.
  unfold phi2; rewrite Hc1.
  assert (0 <= [|il|]/[|j|]) by (apply Z_div_pos; auto with zarith).
  rewrite Z.mul_comm, Z_div_plus_full_l; unfold base; auto with zarith.
- unfold Z.pow, Z.pow_pos in Hj1; simpl in Hj1; auto with zarith.
+ simpl wB in Hj1. unfold Z.pow_pos in Hj1. simpl in Hj1. auto with zarith.
  case (Z.le_gt_cases (2 ^ 30) [|j|]); intros Hjj.
  rewrite spec_compare; case Z.compare_spec;
   rewrite div312_phi; auto; intros Hc;
@@ -2260,9 +2258,8 @@ Section Int31_Specs.
  intros Hihl1.
  generalize (spec_sub_c il il1).
  case sub31c; intros il2 Hil2.
- simpl interp_carry in Hil2.
  rewrite spec_compare; case Z.compare_spec.
- unfold interp_carry.
+ unfold interp_carry in *.
  intros H1; split.
  rewrite Z.pow_2_r, <- Hihl1.
  unfold phi2; ring[Hil2 H1].
@@ -2279,7 +2276,7 @@ Section Int31_Specs.
  rewrite Z.mul_add_distr_r, Z.add_0_r; auto with zarith.
  case (phi_bounded il1); intros H3 _.
  apply Z.add_le_mono; auto with zarith.
- unfold interp_carry; change (1 * 2 ^ Z.of_nat size) with base.
+ unfold interp_carry in *; change (1 * 2 ^ Z.of_nat size) with base.
  rewrite Z.pow_2_r, <- Hihl1, Hil2.
  intros H1.
  rewrite <- Z.le_succ_l, <- Z.add_1_r in H1.
@@ -2383,8 +2380,8 @@ Qed.
 
  Lemma spec_eq0 : forall x, ZnZ.eq0 x = true -> [|x|] = 0.
  Proof.
- clear; unfold ZnZ.eq0; simpl.
- unfold compare31; simpl; intros.
+ clear; unfold ZnZ.eq0, int31_ops.
+ unfold compare31; intros.
  change [|0|] with 0 in H.
  apply Z.compare_eq.
  now destruct ([|x|] ?= 0).
@@ -2395,7 +2392,7 @@ Qed.
  Lemma spec_is_even : forall x,
       if ZnZ.is_even x then [|x|] mod 2 = 0 else [|x|] mod 2 = 1.
  Proof.
- unfold ZnZ.is_even; simpl; intros.
+ unfold ZnZ.is_even, int31_ops; intros.
  generalize (spec_div x 2).
  destruct (x/2)%int31 as (q,r); intros.
  unfold compare31.
@@ -2420,7 +2417,7 @@ Qed.
 
  Lemma spec_lor x y : [| ZnZ.lor x y |] = Z.lor [|x|] [|y|].
  Proof.
- unfold ZnZ.lor; simpl. unfold lor31.
+ unfold ZnZ.lor,int31_ops. unfold lor31.
  rewrite phi_phi_inv.
  apply Z.mod_small; split; trivial.
  - apply Z.lor_nonneg; split; apply phi_bounded.
@@ -2431,7 +2428,7 @@ Qed.
 
  Lemma spec_land x y : [| ZnZ.land x y |] = Z.land [|x|] [|y|].
  Proof.
- unfold ZnZ.land; simpl. unfold land31.
+ unfold ZnZ.land, int31_ops. unfold land31.
  rewrite phi_phi_inv.
  apply Z.mod_small; split; trivial.
  - apply Z.land_nonneg; left; apply phi_bounded.
@@ -2443,7 +2440,7 @@ Qed.
 
  Lemma spec_lxor x y : [| ZnZ.lxor x y |] = Z.lxor [|x|] [|y|].
  Proof.
- unfold ZnZ.lxor; simpl. unfold lxor31.
+ unfold ZnZ.lxor, int31_ops. unfold lxor31.
  rewrite phi_phi_inv.
  apply Z.mod_small; split; trivial.
  - apply Z.lxor_nonneg; split; intros; apply phi_bounded.

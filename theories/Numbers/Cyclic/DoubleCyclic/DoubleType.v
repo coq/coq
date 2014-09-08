@@ -14,6 +14,7 @@ Require Import ZArith.
 Local Open Scope Z_scope.
 
 Definition base digits := Z.pow 2 (Zpos digits).
+Arguments base digits: simpl never.
 
 Section Carry.
 

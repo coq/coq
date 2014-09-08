@@ -152,10 +152,8 @@ Qed.
 Theorem Zpow_mod_correct a m n :
  n <> 0 -> Zpow_mod a m n = (a ^ m) mod n.
 Proof.
-  intros Hn. destruct m; simpl.
-  - trivial.
+  intros Hn. destruct m; simpl; trivial.
   - apply Zpow_mod_pos_correct; auto with zarith.
-  - rewrite Z.mod_0_l; auto with zarith.
 Qed.
 
 (* Complements about power and number theory. *)

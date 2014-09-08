@@ -196,9 +196,9 @@ Qed.
 Lemma make_last_nth_1 : forall A n i x def, i <> n ->
   list_nth i (@make_last A n x def) def = def.
 Proof.
-intros A n; induction n using Pos.peano_rect; intros i x def Hd; simpl.
-+ unfold make_last; rewrite Pos.peano_rect_base.
-  induction i using Pos.peano_case; [elim Hd; reflexivity|].
+intros A n; induction n using Pos.peano_rect; intros i x def Hd;
+  unfold make_last; simpl.
++ induction i using Pos.peano_case; [elim Hd; reflexivity|].
   rewrite list_nth_succ, list_nth_nil; reflexivity.
 + unfold make_last; rewrite Pos.peano_rect_succ; fold (make_last n x def).
   induction i using Pos.peano_case.

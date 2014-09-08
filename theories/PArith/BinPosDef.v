@@ -537,7 +537,7 @@ Definition iter_op {A}(op:A->A->A) :=
   end.
 
 Definition to_nat (x:positive) : nat := iter_op plus x (S O).
-
+Arguments to_nat x: simpl never.
 (** ** From Peano natural numbers to binary positive numbers *)
 
 (** A version preserving positive numbers, and sending 0 to 1. *)

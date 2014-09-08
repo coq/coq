@@ -146,7 +146,7 @@ Module Make (W0:CyclicType) <: NType.
  Theorem spec_add: forall x y, [add x y] = [x] + [y].
  Proof.
   intros x y. rewrite add_fold. apply spec_same_level; clear x y.
-  intros n x y. simpl.
+  intros n x y. cbv beta iota zeta.
   generalize (ZnZ.spec_add_c x y); case ZnZ.add_c; intros z H.
   rewrite spec_mk_t. assumption.
   rewrite spec_mk_t_S. unfold interp_carry in H.

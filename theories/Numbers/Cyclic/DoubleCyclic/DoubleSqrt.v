@@ -266,8 +266,8 @@ Section DoubleSqrt.
       if ww_is_even x then [[x]] mod 2 = 0 else [[x]] mod 2 = 1.
 clear spec_more_than_1_digit.
 intros x; case x; simpl ww_is_even.
+ reflexivity.
  simpl.
- rewrite Zmod_small; auto with zarith.
  intros w1 w2; simpl.
  unfold base.
  rewrite Zplus_mod; auto with zarith.

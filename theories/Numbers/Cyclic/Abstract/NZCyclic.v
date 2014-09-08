@@ -106,7 +106,7 @@ Qed.
 
 Theorem one_succ : one == succ zero.
 Proof.
-zify; simpl. now rewrite one_mod_wB.
+zify; simpl Z.add. now rewrite one_mod_wB.
 Qed.
 
 Theorem two_succ : two == succ one.

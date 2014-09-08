@@ -59,7 +59,7 @@ Section Log_pos. (* Log of positive integers *)
 
   Lemma Zlog2_up_log_sup : forall p, Z.log2_up (Zpos p) = log_sup p.
   Proof.
-   induction p; simpl.
+   induction p; simpl log_sup.
    - change (Zpos p~1) with (2*(Zpos p)+1).
      rewrite Z.log2_up_succ_double, Zlog2_log_inf; try easy.
      unfold Z.succ. now rewrite !(Z.add_comm _ 1), Z.add_assoc.

@@ -84,8 +84,8 @@ Qed.
 Lemma inj_div2 a : N.to_nat (N.div2 a) = Nat.div2 (N.to_nat a).
 Proof.
  destruct a as [|[p|p| ]]; trivial.
- - simpl N.to_nat. now rewrite Pos2Nat.inj_xI, Nat.div2_succ_double.
- - simpl N.to_nat. now rewrite Pos2Nat.inj_xO, Nat.div2_double.
+ - unfold N.div2, N.to_nat. now rewrite Pos2Nat.inj_xI, Nat.div2_succ_double.
+ - unfold N.div2, N.to_nat. now rewrite Pos2Nat.inj_xO, Nat.div2_double.
 Qed.
 
 Lemma inj_compare a a' :

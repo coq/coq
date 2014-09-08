@@ -1433,14 +1433,14 @@ Lemma flatten_e_elements :
  elements l ++ flatten_e (More x d r e) =
  elements (Node l x d r z) ++ flatten_e e.
 Proof.
- intros; simpl; apply elements_node.
+ intros; apply elements_node.
 Qed.
 
 Lemma cons_1 : forall (s:t elt) e,
   flatten_e (cons s e) = elements s ++ flatten_e e.
 Proof.
-  induction s; simpl; auto; intros.
-  rewrite IHs1; apply flatten_e_elements; auto.
+  induction s; auto; intros.
+  simpl flatten_e; rewrite IHs1; apply flatten_e_elements; auto.
 Qed.
 
 (** Proof of correction for the comparison *)
@@ -1478,7 +1478,7 @@ Lemma equal_cont_IfEq : forall m1 cont e2 l,
   (forall e, IfEq (cont e) l (flatten_e e)) ->
   IfEq (equal_cont cmp m1 cont e2) (elements m1 ++ l) (flatten_e e2).
 Proof.
- induction m1 as [|l1 Hl1 x1 d1 r1 Hr1 h1]; simpl; intros; auto.
+ induction m1 as [|l1 Hl1 x1 d1 r1 Hr1 h1]; intros; auto.
  rewrite <- elements_node; simpl.
  apply Hl1; auto.
  clear e2; intros [|x2 d2 r2 e2].
@@ -2084,7 +2084,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
    (forall e, Cmp (cont e) l (P.flatten_e e)) ->
    Cmp (compare_cont s1 cont e2) (R.elements s1 ++ l) (P.flatten_e e2).
   Proof.
-   induction s1 as [|l1 Hl1 x1 d1 r1 Hr1 h1]; simpl; intros; auto.
+   induction s1 as [|l1 Hl1 x1 d1 r1 Hr1 h1]; intros; auto.
    rewrite <- P.elements_node; simpl.
    apply Hl1; auto. clear e2. intros [|x2 d2 r2 e2].
    simpl; auto.
