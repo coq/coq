@@ -195,7 +195,8 @@ let reduction_of_red_expr env =
       if internal then (e_red try_red_product,DEFAULTcast)
       else (e_red red_product,DEFAULTcast)
   | Hnf -> (e_red hnf_constr,DEFAULTcast)
-  | Simpl o -> (contextualize (if head_style then whd_simpl else simpl) simpl o,DEFAULTcast)
+  | Simpl (_f,o) ->
+     (contextualize (if head_style then whd_simpl else simpl) simpl o,DEFAULTcast)
   | Cbv f -> (e_red (cbv_norm_flags (make_flag f)),DEFAULTcast)
   | Cbn f ->
     let f = strong (fun env evd x -> Stack.zip ~refold:true

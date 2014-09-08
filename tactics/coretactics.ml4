@@ -210,7 +210,7 @@ let initial_atomic () =
   let () = List.iter iter
       [ "red", TacReduce(Red false,nocl);
         "hnf", TacReduce(Hnf,nocl);
-        "simpl", TacReduce(Simpl None,nocl);
+        "simpl", TacReduce(Simpl (Redops.all_flags,None),nocl);
         "compute", TacReduce(Cbv Redops.all_flags,nocl);
         "intro", TacIntroMove(None,MoveLast);
         "intros", TacIntroPattern [];

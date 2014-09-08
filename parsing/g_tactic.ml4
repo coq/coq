@@ -342,7 +342,7 @@ GEXTEND Gram
   red_tactic:
     [ [ IDENT "red" -> Red false
       | IDENT "hnf" -> Hnf
-      | IDENT "simpl"; po = OPT ref_or_pattern_occ -> Simpl po
+      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ -> Simpl (all_with d,po)
       | IDENT "cbv"; s = strategy_flag -> Cbv s
       | IDENT "cbn"; s = strategy_flag -> Cbn s
       | IDENT "lazy"; s = strategy_flag -> Lazy s
@@ -357,7 +357,7 @@ GEXTEND Gram
   red_expr:
     [ [ IDENT "red" -> Red false
       | IDENT "hnf" -> Hnf
-      | IDENT "simpl"; po = OPT ref_or_pattern_occ -> Simpl po
+      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ -> Simpl (all_with d,po)
       | IDENT "cbv"; s = strategy_flag -> Cbv s
       | IDENT "cbn"; s = strategy_flag -> Cbn s
       | IDENT "lazy"; s = strategy_flag -> Lazy s

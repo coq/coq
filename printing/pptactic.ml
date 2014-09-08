@@ -118,16 +118,27 @@ module Make
         hov 1 (pr c ++ spc () ++ keyword "at" ++ str" - " ++
                  hov 0 (prlist_with_sep spc (pr_or_var int) nl))
 
+  exception ComplexRedFlag
+
+  let pr_short_red_flag pr r =
+    if not r.rBeta ||  not r.rIota ||  not r.rZeta then raise ComplexRedFlag
+    else if List.is_empty r.rConst then
+      if r.rDelta then mt () else raise ComplexRedFlag
+    else (if r.rDelta then str "-" else mt ()) ++
+	   hov 0 (str "[" ++ prlist_with_sep spc pr r.rConst ++ str "]")
+
   let pr_red_flag pr r =
-    (if r.rBeta then pr_arg str "beta" else mt ()) ++
-      (if r.rIota then pr_arg str "iota" else mt ()) ++
-      (if r.rZeta then pr_arg str "zeta" else mt ()) ++
-      (if List.is_empty r.rConst then
-          if r.rDelta then pr_arg str "delta"
-          else mt ()
-       else
-          pr_arg str "delta " ++ (if r.rDelta then str "-" else mt ()) ++
-            hov 0 (str "[" ++ prlist_with_sep spc pr r.rConst ++ str "]"))
+    try pr_short_red_flag pr r
+    with complexRedFlags ->
+      (if r.rBeta then pr_arg str "beta" else mt ()) ++
+	(if r.rIota then pr_arg str "iota" else mt ()) ++
+	(if r.rZeta then pr_arg str "zeta" else mt ()) ++
+	(if List.is_empty r.rConst then
+	   if r.rDelta then pr_arg str "delta"
+	   else mt ()
+	 else
+	   pr_arg str "delta " ++ (if r.rDelta then str "-" else mt ()) ++
+	     hov 0 (str "[" ++ prlist_with_sep spc pr r.rConst ++ str "]"))
 
   let pr_union pr1 pr2 = function
     | Inl a -> pr1 a
@@ -136,7 +147,8 @@ module Make
   let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
     | Red false -> keyword "red"
     | Hnf -> keyword "hnf"
-    | Simpl o -> keyword "simpl" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
+    | Simpl (f,o) -> keyword "simpl" ++ (pr_short_red_flag pr_ref f)
+		     ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
     | Cbv f ->
       if f.rBeta && f.rIota && f.rZeta && f.rDelta && List.is_empty f.rConst then
         keyword "compute"

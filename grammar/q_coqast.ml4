@@ -196,7 +196,8 @@ let mlexpr_of_occ_ref_or_constr =
 let mlexpr_of_red_expr = function
   | Genredexpr.Red b -> <:expr< Genredexpr.Red $mlexpr_of_bool b$ >>
   | Genredexpr.Hnf -> <:expr< Genredexpr.Hnf >>
-  | Genredexpr.Simpl o -> <:expr< Genredexpr.Simpl $mlexpr_of_option mlexpr_of_occ_ref_or_constr o$ >>
+  | Genredexpr.Simpl (f,o) ->
+      <:expr< Genredexpr.Simpl $mlexpr_of_red_flags f$ $mlexpr_of_option mlexpr_of_occ_ref_or_constr o$ >>
   | Genredexpr.Cbv f ->
       <:expr< Genredexpr.Cbv $mlexpr_of_red_flags f$ >>
   | Genredexpr.Cbn f ->

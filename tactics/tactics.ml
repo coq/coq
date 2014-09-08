@@ -467,7 +467,7 @@ let bind_red_expr_occurrences occs nbcl redexp =
   let has_at_clause = function
     | Unfold l -> List.exists (fun (occl,_) -> occl != AllOccurrences) l
     | Pattern l -> List.exists (fun (occl,_) -> occl != AllOccurrences) l
-    | Simpl (Some (occl,_)) -> occl != AllOccurrences
+    | Simpl (_,Some (occl,_)) -> occl != AllOccurrences
     | _ -> false in
   if occs == AllOccurrences then
     if nbcl > 1 && has_at_clause redexp then
@@ -490,11 +490,11 @@ let bind_red_expr_occurrences occs nbcl redexp =
 	  error_illegal_clause ()
 	else
 	  Pattern [(occs,c)]
-    | Simpl (Some (occl,c)) ->
+    | Simpl (f,Some (occl,c)) ->
 	if occl != AllOccurrences then
 	  error_illegal_clause ()
 	else
-	  Simpl (Some (occs,c))
+	  Simpl (f,Some (occs,c))
     | CbvVm (Some (occl,c)) ->
         if occl != AllOccurrences then
           error_illegal_clause ()
@@ -506,7 +506,7 @@ let bind_red_expr_occurrences occs nbcl redexp =
         else
           CbvNative (Some (occs,c))
     | Red _ | Hnf | Cbv _ | Lazy _ | Cbn _
-    | ExtraRedExpr _ | Fold _ | Simpl None | CbvVm None | CbvNative None ->
+    | ExtraRedExpr _ | Fold _ | Simpl (_,None) | CbvVm None | CbvNative None ->
 	error_occurrences_not_unsupported ()
     | Unfold [] | Pattern [] ->
 	assert false

@@ -32,7 +32,7 @@ type 'a glob_red_flag = {
 type ('a,'b,'c) red_expr_gen =
   | Red of bool
   | Hnf
-  | Simpl of ('b,'c) Util.union Locus.with_occurrences option
+  | Simpl of 'b glob_red_flag*('b,'c) Util.union Locus.with_occurrences option
   | Cbv of 'b glob_red_flag
   | Cbn of 'b glob_red_flag
   | Lazy of 'b glob_red_flag
