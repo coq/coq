@@ -1003,9 +1003,9 @@ let simplest_case c = general_case_analysis false None (c,NoBindings)
 (* Elimination tactic with bindings but using the default elimination
  * constant associated with the type. *)
 
-exception IsRecord
+exception IsNonrec
 
-let is_record mind = (Global.lookup_mind (fst mind)).mind_record
+let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Decl_kinds.BiFinite
 
 let find_ind_eliminator ind s gl =
   let gr = lookup_eliminator ind s in
@@ -1014,7 +1014,7 @@ let find_ind_eliminator ind s gl =
 
 let find_eliminator c gl =
   let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_type_of gl c) in
-  if is_record ind <> None then raise IsRecord;
+  if is_nonrec ind then raise IsNonrec;
   let evd, c = find_ind_eliminator ind (Tacticals.New.elimination_sort_of_goal gl) gl in
     evd, {elimindex = None; elimbody = (c,NoBindings);
           elimrename = Some (true, constructors_nrealdecls ind)}
@@ -1027,7 +1027,7 @@ let default_elim with_evars clear_flag (c,_ as cx) =
 	  (general_elim with_evars clear_flag cx elim)
     end)
     begin function
-      | IsRecord ->
+      | IsNonrec ->
           (* For records, induction principles aren't there by default
              anymore.  Instead, we do a case analysis instead. *)
           general_case_analysis with_evars clear_flag cx
@@ -3251,7 +3251,7 @@ let guess_elim isrec hyp0 gl =
   let mind,_ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
   let s = Tacticals.New.elimination_sort_of_goal gl in
   let evd, elimc =
-    if isrec && not (is_record (fst mind) <> None) then find_ind_eliminator (fst mind) s gl
+    if isrec && not (is_nonrec (fst mind)) then find_ind_eliminator (fst mind) s gl
     else
       if use_dependent_propositions_elimination () &&
 	dependent_no_evar (mkVar hyp0) (Tacmach.New.pf_concl gl)
