@@ -1466,7 +1466,8 @@ end = struct
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let oid = fold_until (fun n (id,_,_) ->
             if Int.equal n 0 then `Stop id else `Cont (n-1)) n id in
-          VtStm (VtBack oid, true), VtLater
+          if n = 1 && !Flags.coqtop_ui then VtStm (VtBack oid, false), VtNow
+          else VtStm (VtBack oid, true), VtLater
       | VernacUndoTo _
       | VernacRestart as e ->
           let m = match e with VernacUndoTo m -> m | _ -> 0 in

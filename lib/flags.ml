@@ -75,6 +75,7 @@ let debug = ref false
 let profile = false
 
 let print_emacs = ref false
+let coqtop_ui = ref false
 
 let ide_slave = ref false
 let ideslave_coqtop_flags = ref None
