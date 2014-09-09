@@ -748,7 +748,8 @@ let rec message_of_value v =
     Ftactic.List.map message_of_value l >>= fun l ->
     Ftactic.return (prlist_with_sep spc (fun x -> x) l)
   | None ->
-    Ftactic.return (str "<abstr>") (** TODO *)
+    let tag = pr_argument_type (genarg_tag v) in
+    Ftactic.return (str "<" ++ tag ++ str ">") (** TODO *)
 
 let interp_message_token ist = function
   | MsgString s -> Ftactic.return (str s)
