@@ -38,6 +38,16 @@ has_spaces() {
 REVISION=1
 BASE="/cygdrive/c/CoqSDK-$REVISION"
 
+# Windows has a version of FIND in C:/Windows/system32/find, and we don't want to use that
+if [ -x /usr/bin/find ]
+then
+  FIND=/usr/bin/find
+else
+  echo "WARNING: /usr/bin/find does not exist.  Falling back on:"
+  which find
+  FIND=find
+fi
+
 WGET_ARGS="-N -q"
 
 if [ "$(has_spaces $BASE; echo $?)" -ne 0 ]; then
@@ -149,7 +159,7 @@ install_ocaml() {
   cp -r tmp/\$_OUTDIR/lib "$BASE/"
   cp -r tmp/lib "$BASE/"
   cp -r tmp/\$_OUTDIR/etc "$BASE/"
-  find "$BASE" -name '*.dll' -o -name '*.exe' | tr '\n' '\0' \
+  "$FIND" "$BASE" -name '*.dll' -o -name '*.exe' | tr '\n' '\0' \
 	  | xargs -0 chmod a+x
   mv "$BASE/lib/topfind" "$BASE/lib/topfind.in"
   sed -i 's|@SITELIB@|@BASE@/lib/site-lib|g' "$BASE/lib/topfind.in"
