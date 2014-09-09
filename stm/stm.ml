@@ -817,7 +817,7 @@ module Task = struct
 
   let on_marshal_error s { t_exn_info; t_stop; t_assign; t_loc } =
     if !fallback_to_lazy_if_marshal_error then begin
-      msg_warning(strbrk("Marshalling error: "^s^". "^
+      msg_error(strbrk("Marshalling error: "^s^". "^
         "The system state could not be sent to the worker process. "^
         "Falling back to local, lazy, evaluation."));
       t_assign(`Comp(build_proof_here t_exn_info t_loc t_stop));
