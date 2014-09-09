@@ -37,7 +37,7 @@ let string_of_vernac_classification (t,w) =
 
 let classifiers = ref []
 let declare_vernac_classifier
-  (s : string)
+  (s : Vernacexpr.extend_name)
   (f : Genarg.raw_generic_argument list -> unit -> vernac_classification)
 =
   classifiers := !classifiers @ [s,f]
@@ -201,7 +201,7 @@ let rec classify_vernac e =
     (* Plugins should classify their commands *)
     | VernacExtend (s,l) ->
         try List.assoc s !classifiers l ()
-        with Not_found -> anomaly(str"No classifier for"++spc()++str s)
+        with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s))
   and classify_vernac_list = function
     (* spiwack: It would be better to define a monoid on classifiers.
        So that the classifier of the list would be the composition of

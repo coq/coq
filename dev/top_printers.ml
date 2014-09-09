@@ -476,7 +476,7 @@ open Egramml
 
 let _ =
   try
-    Vernacinterp.vinterp_add "PrintConstr"
+    Vernacinterp.vinterp_add ("PrintConstr", 0)
       (function
          [c] when genarg_tag c = ConstrArgType && true ->
            let c = out_gen (rawwit wit_constr) c in
@@ -485,15 +485,15 @@ let _ =
   with
     e -> Pp.pp (Errors.print e)
 let _ =
-  extend_vernac_command_grammar "PrintConstr" None
-    [[GramTerminal "PrintConstr";
+  extend_vernac_command_grammar ("PrintConstr", 0) None
+    [GramTerminal "PrintConstr";
       GramNonTerminal
         (Loc.ghost,ConstrArgType,Aentry ("constr","constr"),
-	 Some (Names.Id.of_string "c"))]]
+	 Some (Names.Id.of_string "c"))]
 
 let _ =
   try
-    Vernacinterp.vinterp_add "PrintPureConstr"
+    Vernacinterp.vinterp_add ("PrintPureConstr", 0)
       (function
          [c] when genarg_tag c = ConstrArgType && true ->
            let c = out_gen (rawwit wit_constr) c in
@@ -502,11 +502,11 @@ let _ =
   with
     e -> Pp.pp (Errors.print e)
 let _ =
-  extend_vernac_command_grammar "PrintPureConstr" None
-    [[GramTerminal "PrintPureConstr";
+  extend_vernac_command_grammar ("PrintPureConstr", 0) None
+    [GramTerminal "PrintPureConstr";
       GramNonTerminal
         (Loc.ghost,ConstrArgType,Aentry ("constr","constr"),
-	 Some (Names.Id.of_string "c"))]]
+	 Some (Names.Id.of_string "c"))]
 
 (* Setting printer of unbound global reference *)
 open Names

@@ -67,17 +67,6 @@ let pr_gen t =
     pr_constr_expr
     pr_reference t
 
-let rec extract_signature = function
-  | [] -> []
-  | Egramml.GramNonTerminal (_,t,_,_) :: l -> t :: extract_signature l
-  | _::l -> extract_signature l
-
-let rec match_vernac_rule tys = function
-    [] -> raise Not_found
-  | pargs::rls ->
-      if List.equal Genarg.argument_type_eq (extract_signature pargs) tys then pargs
-      else match_vernac_rule tys rls
-
 let sep = fun _ -> spc()
 let sep_v2 = fun _ -> str"," ++ spc()
 
@@ -972,10 +961,9 @@ and pr_vernac_list l =
 and pr_extend s cl =
   let pr_arg a =
     try pr_gen a
-    with Failure _ -> str ("<error in "^s^">") in
+    with Failure _ -> str ("<error in "^fst s^">") in
   try
-    let rls = String.List.assoc s (Egramml.get_extend_vernac_grammars()) in
-    let rl = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
+    let rl = Egramml.get_extend_vernac_rule s in
     let start,rl,cl =
       match rl with
       | Egramml.GramTerminal s :: rl -> str s, rl, cl
@@ -991,7 +979,7 @@ and pr_extend s cl =
         (start,cl) rl in
     hov 1 pp
   with Not_found ->
-    hov 1 (str ("TODO("^s) ++ prlist_with_sep sep pr_arg cl ++ str ")")
+    hov 1 (str ("TODO("^fst s) ++ prlist_with_sep sep pr_arg cl ++ str ")")
 
 in pr_vernac
 

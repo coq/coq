@@ -12,14 +12,14 @@ open Errors
 (* Table of vernac entries *)
 let vernac_tab =
   (Hashtbl.create 51 :
-    (string, Genarg.raw_generic_argument list -> unit -> unit) Hashtbl.t)
+    (Vernacexpr.extend_name, (Genarg.raw_generic_argument list -> unit -> unit)) Hashtbl.t)
 
 let vinterp_add s f =
   try
     Hashtbl.add vernac_tab s f
   with Failure _ ->
     errorlabstrm "vinterp_add"
-      (str"Cannot add the vernac command " ++ str s ++ str" twice.")
+      (str"Cannot add the vernac command " ++ str (fst s) ++ str" twice.")
 
 let overwriting_vinterp_add s f =
   begin
@@ -32,9 +32,9 @@ let overwriting_vinterp_add s f =
 let vinterp_map s =
   try
     Hashtbl.find vernac_tab s
-  with Not_found ->
+  with Failure _ | Not_found ->
     errorlabstrm "Vernac Interpreter"
-      (str"Cannot find vernac command " ++ str s ++ str".")
+      (str"Cannot find vernac command " ++ str (fst s) ++ str".")
 
 let vinterp_init () = Hashtbl.clear vernac_tab
 

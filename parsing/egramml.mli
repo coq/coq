@@ -17,11 +17,10 @@ type grammar_prod_item =
       Pcoq.prod_entry_key * Names.Id.t option
 
 val extend_vernac_command_grammar :
-  string -> Vernacexpr.vernac_expr Pcoq.Gram.entry option ->
-    grammar_prod_item list list -> unit
+  Vernacexpr.extend_name -> Vernacexpr.vernac_expr Pcoq.Gram.entry option ->
+    grammar_prod_item list -> unit
 
-val get_extend_vernac_grammars :
-  unit -> (string * grammar_prod_item list list) list
+val get_extend_vernac_rule : Vernacexpr.extend_name -> grammar_prod_item list
 
 (** Utility function reused in Egramcoq : *)
 

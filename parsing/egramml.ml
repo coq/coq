@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Compat
 open Names
 open Pcoq
@@ -45,11 +46,18 @@ let make_rule mkact pt =
 (** Vernac grammar extensions *)
 
 let vernac_exts = ref []
-let get_extend_vernac_grammars () = !vernac_exts
+
+let get_extend_vernac_rule (s, i) =
+  try
+    let find ((name, j), _) = String.equal name s && Int.equal i j in
+    let (_, rules) = List.find find !vernac_exts in
+    rules
+  with
+  | Failure _ -> raise Not_found
 
 let extend_vernac_command_grammar s nt gl =
   let nt = Option.default Vernac_.command nt in
   vernac_exts := (s,gl) :: !vernac_exts;
   let mkact loc l = VernacExtend (s,List.map snd l) in
-  let rules = List.map (make_rule mkact) gl in
+  let rules = [make_rule mkact gl] in
   maybe_uncurry (Gram.extend nt) (None,[(None, None, List.rev rules)])

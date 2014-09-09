@@ -223,6 +223,8 @@ type section_subset_expr =
 
 type section_subset_descr = SsAll | SsType | SsExpr of section_subset_expr
 
+type extend_name = string * int
+
 (* This type allows registering the inlining of constants in native compiler.
    It will be extended with primitive inductive types and operators *)
 type register_kind = 
@@ -427,7 +429,7 @@ type vernac_expr =
   | VernacToplevelControl of exn
 
   (* For extension *)
-  | VernacExtend of string * Genarg.raw_generic_argument list
+  | VernacExtend of extend_name * Genarg.raw_generic_argument list
 
   (* Flags *)
   | VernacProgram of vernac_expr

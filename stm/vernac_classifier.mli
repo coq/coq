@@ -16,7 +16,7 @@ val classify_vernac : vernac_expr -> vernac_classification
 
 (** Install a vernacular classifier for VernacExtend *)
 val declare_vernac_classifier :
-  string -> (raw_generic_argument list -> unit -> vernac_classification) -> unit
+  Vernacexpr.extend_name -> (raw_generic_argument list -> unit -> vernac_classification) -> unit
 
 (** Set by Stm *)
 val set_undo_classifier : (vernac_expr -> vernac_classification) -> unit
