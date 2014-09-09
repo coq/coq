@@ -8,8 +8,15 @@
 # by Jason Gross <jgross@mit.edu>
 # License: Expat/MIT http://opensource.org/licenses/MIT
 
+# This script reads the following environment variables:
+# VERBOSE     - set to non-empty to have wget/this script be more verbose, for debugging purposes
+# BASE        - set to non-empty to give a different location for the zip file, e.g., if /cygdrive/c is full or doesn't exist
+
 set -e
-# set -x
+if [ ! -z "$VERBOSE" ]
+then
+  set -x
+fi
 
 # Resources
 ocaml=ocaml-4.01.0-i686-mingw64-installer3.exe
@@ -24,7 +31,7 @@ glib_URL='http://dl.arirux.de/5/binaries32/'$glib
 gtk_URL='http://dl.arirux.de/5/binaries32/'$gtk
 camlp5_URL='http://pauillac.inria.fr/~ddr/camlp5/distrib/src/'$camlp5
 
-cygwin=setup-x86.exe
+cygwin=setup-${HOSTTYPE/i6/x}.exe
 cygwin_URL='http://cygwin.com/'$cygwin
 cygwin_PKGS=p7zip,zip,sed,make,mingw64-i686-gcc-g++,mingw64-i686-gcc-core,mingw64-i686-gcc,patch,rlwrap,libreadline6,diffutils
 
@@ -35,15 +42,40 @@ has_spaces() {
 # http://www.dependencywalker.com/depends22_x86.zip
 
 # The SDK itself
-REVISION=1
-BASE="/cygdrive/c/CoqSDK-$REVISION"
+REVISION=2
+# support for working on computers that don't have a C: drive
+if [ -z "$BASE" ]
+then
+  TRUE_BASE=/cygdrive/c
+else
+  # get absolute path
+  TRUE_BASE="$(readlink -f "$BASE")"
+fi
+BASE="$TRUE_BASE/CoqSDK-$REVISION"
+
+if [ -z "$VERBOSE" ]
+then
+  WGET_ARGS="-N -q"
+else
+  WGET_ARGS="-N"
+fi
+
+# Windows has a version of FIND in C:/Windows/system32/find, and we don't want to use that
+if [ -x /usr/bin/find ]
+then
+  FIND=/usr/bin/find
+else
+  echo "WARNING: /usr/bin/find does not exist.  Falling back on:"
+  which find
+  FIND=find
+fi
 
 WGET_ARGS="-N -q"
 
 if [ "$(has_spaces $BASE; echo $?)" -ne 0 ]; then
-    echo "ERROR: The current base directory ($BASE) has spaces."
-    echo "ERROR: building lablgtk would fail."
-    exit 1
+  echo "ERROR: The current base directory ($BASE) has spaces."
+  echo "ERROR: building lablgtk would fail."
+  exit 1
 fi
 
 cyg_install() {
@@ -97,8 +129,6 @@ make_environ() {
 	        > "\$BASE/lib/topfind"
 	sed s"|@BASE@|\$(cygpath -m "\$BASE")|g" "\$BASE/etc/findlib.conf.in" \\
 	        > "\$BASE/etc/findlib.conf"
-	EOF
-  cat >> "$BASE/environ" <<- EOF
 	echo "Good.  You can now build Coq and Coqide from cygwin."
 	EOF
   popd >/dev/null
@@ -149,7 +179,7 @@ install_ocaml() {
   cp -r tmp/\$_OUTDIR/lib "$BASE/"
   cp -r tmp/lib "$BASE/"
   cp -r tmp/\$_OUTDIR/etc "$BASE/"
-  find "$BASE" -name '*.dll' -o -name '*.exe' | tr '\n' '\0' \
+  "$FIND" "$BASE" -name '*.dll' -o -name '*.exe' | tr '\n' '\0' \
 	  | xargs -0 chmod a+x
   mv "$BASE/lib/topfind" "$BASE/lib/topfind.in"
   sed -i 's|@SITELIB@|@BASE@/lib/site-lib|g' "$BASE/lib/topfind.in"
