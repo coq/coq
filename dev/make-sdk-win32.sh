@@ -62,9 +62,9 @@ fi
 WGET_ARGS="-N -q"
 
 if [ "$(has_spaces $BASE; echo $?)" -ne 0 ]; then
-    echo "ERROR: The current base directory ($BASE) has spaces."
-    echo "ERROR: building lablgtk would fail."
-    exit 1
+  echo "ERROR: The current base directory ($BASE) has spaces."
+  echo "ERROR: building lablgtk would fail."
+  exit 1
 fi
 
 cyg_install() {
@@ -118,8 +118,6 @@ make_environ() {
 	        > "\$BASE/lib/topfind"
 	sed s"|@BASE@|\$(cygpath -m "\$BASE")|g" "\$BASE/etc/findlib.conf.in" \\
 	        > "\$BASE/etc/findlib.conf"
-	EOF
-  cat >> "$BASE/environ" <<- EOF
 	echo "Good.  You can now build Coq and Coqide from cygwin."
 	EOF
   popd >/dev/null
