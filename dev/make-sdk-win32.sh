@@ -8,6 +8,9 @@
 # by Jason Gross <jgross@mit.edu>
 # License: Expat/MIT http://opensource.org/licenses/MIT
 
+# This script reads the following environment variables:
+# BASE        - set to non-empty to give a different location for the zip file, e.g., if /cygdrive/c is full or doesn't exist
+
 set -e
 # set -x
 
@@ -36,7 +39,15 @@ has_spaces() {
 
 # The SDK itself
 REVISION=1
-BASE="/cygdrive/c/CoqSDK-$REVISION"
+# support for working on computers that don't have a C: drive
+if [ -z "$BASE" ]
+then
+  TRUE_BASE=/cygdrive/c
+else
+  # get absolute path
+  TRUE_BASE="$(readlink -f "$BASE")"
+fi
+BASE="$TRUE_BASE/CoqSDK-$REVISION"
 
 # Windows has a version of FIND in C:/Windows/system32/find, and we don't want to use that
 if [ -x /usr/bin/find ]
