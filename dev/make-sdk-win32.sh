@@ -9,10 +9,14 @@
 # License: Expat/MIT http://opensource.org/licenses/MIT
 
 # This script reads the following environment variables:
+# VERBOSE     - set to non-empty to have wget/this script be more verbose, for debugging purposes
 # BASE        - set to non-empty to give a different location for the zip file, e.g., if /cygdrive/c is full or doesn't exist
 
 set -e
-# set -x
+if [ ! -z "$VERBOSE" ]
+then
+  set -x
+fi
 
 # Resources
 ocaml=ocaml-4.01.0-i686-mingw64-installer3.exe
@@ -48,6 +52,13 @@ else
   TRUE_BASE="$(readlink -f "$BASE")"
 fi
 BASE="$TRUE_BASE/CoqSDK-$REVISION"
+
+if [ -z "$VERBOSE" ]
+then
+  WGET_ARGS="-N -q"
+else
+  WGET_ARGS="-N"
+fi
 
 # Windows has a version of FIND in C:/Windows/system32/find, and we don't want to use that
 if [ -x /usr/bin/find ]
