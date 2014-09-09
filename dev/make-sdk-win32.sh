@@ -42,7 +42,7 @@ has_spaces() {
 # http://www.dependencywalker.com/depends22_x86.zip
 
 # The SDK itself
-REVISION=1
+REVISION=2
 # support for working on computers that don't have a C: drive
 if [ -z "$BASE" ]
 then
