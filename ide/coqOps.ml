@@ -29,7 +29,7 @@ module SentenceId : sig
     start : GText.mark;
     stop : GText.mark;
     mutable flags : flag list;
-    mutable tooltips : (int * int * string lazy_t) list;
+    mutable tooltips : (int * int * string) list;
     edit_id : int;
   }
 
@@ -42,8 +42,8 @@ module SentenceId : sig
   val remove_flag : sentence -> mem_flag -> unit
   val same_sentence : sentence -> sentence -> bool
   val hidden_edit_id : unit -> int
-  val find_all_tooltips : sentence -> int -> string lazy_t list
-  val add_tooltip : sentence -> int -> int -> string lazy_t -> unit
+  val find_all_tooltips : sentence -> int -> string list
+  val add_tooltip : sentence -> int -> int -> string -> unit
 
   val dbg_to_string :
     GText.buffer -> bool -> Stateid.t option -> sentence -> Pp.std_ppcmds
@@ -54,7 +54,7 @@ end = struct
     start : GText.mark;
     stop : GText.mark;
     mutable flags : flag list;
-    mutable tooltips : (int * int * string lazy_t) list;
+    mutable tooltips : (int * int * string) list;
     edit_id : int;
   }
 
@@ -98,7 +98,7 @@ end = struct
       (ellipsize
         (String.concat ","
           (List.map (fun (a,b,t) ->
-             Printf.sprintf "<%d,%d> %s" a b (Lazy.force t)) s.tooltips))))
+             Printf.sprintf "<%d,%d> %s" a b t) s.tooltips))))
 
 
 end
@@ -184,7 +184,7 @@ object(self)
       let ss =
         find_all_tooltips s
           (iter#offset - (buffer#get_iter_at_mark s.start)#offset) in
-      let msg = String.concat "\n" (CList.uniquize (List.map Lazy.force ss)) in
+      let msg = String.concat "\n" (CList.uniquize ss) in
       GtkBase.Tooltip.set_icon_from_stock tooltip `INFO `BUTTON;
       script#misc#set_tooltip_markup ("<tt>" ^ msg ^ "</tt>")
     end else begin
@@ -306,7 +306,7 @@ object(self)
     let post = Ideutils.glib_utf8_pos_to_offset phrase ~off:post_chars in
     let start = start_sentence#forward_chars pre in
     let stop = start_sentence#forward_chars post in
-    let markup = lazy text in
+    let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
     add_tooltip sentence pre post markup
 
