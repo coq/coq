@@ -117,7 +117,10 @@ let load_vernac_obj () =
 
 let require_prelude () =
   let vo = Envars.coqlib () / "theories/Init/Prelude.vo" in
-  Library.require_library_from_dirpath [Coqlib.prelude_module,vo] (Some true)
+  let vi = Envars.coqlib () / "theories/Init/Prelude.vi" in
+  let m =
+    if Sys.file_exists vo then vo else if Sys.file_exists vi then vi else vo in
+  Library.require_library_from_dirpath [Coqlib.prelude_module,m] (Some true)
 
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
