@@ -15,7 +15,7 @@ SetCompressor lzma
 !define COQ_SRC_PATH "..\.."
 !define OUTFILE "coq-installer-${VERSION}.exe"
 
-!include "MUI.nsh"
+!include "MUI2.nsh"
 !include "FileAssociation.nsh"
 
 ;--------------------------------
@@ -27,7 +27,7 @@ SetCompressor lzma
   OutFile "${OUTFILE}"
 
   ;Folder selection page
-  InstallDir "$PROGRAMFILES\${MY_PRODUCT}"
+  InstallDir "C:\${MY_PRODUCT}"
   
   ;Remember install folder
   InstallDirRegKey HKCU "Software\${MY_PRODUCT}" ""
@@ -38,6 +38,7 @@ SetCompressor lzma
   !insertmacro MUI_PAGE_WELCOME
   !insertmacro MUI_PAGE_LICENSE "${COQ_SRC_PATH}/LICENSE"
   !insertmacro MUI_PAGE_COMPONENTS
+  !define MUI_DIRECTORYPAGE_TEXT_TOP "Select where to install Coq.  The path MUST not include spaces."
   !insertmacro MUI_PAGE_DIRECTORY
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
@@ -58,6 +59,22 @@ SetCompressor lzma
   ;Description
   LangString DESC_1 ${LANG_ENGLISH} "This package contains Coq and CoqIDE."
   LangString DESC_2 ${LANG_ENGLISH} "This package contains the development files (*.cmi, *.cmo, *.cmx, ...) needed in order to build a plugin for Coq."
+
+;--------------------------------
+; Check for white spaces
+Function .onVerifyInstDir
+  StrLen $0 "$INSTDIR"
+  StrCpy $1 0
+  ${While} $1 < $0
+    StrCpy $3 $INSTDIR 1 $1
+    StrCmp $3 " " SpacesInPath
+    IntOp $1 $1 + 1
+  ${EndWhile}
+  Goto done
+  SpacesInPath:
+  Abort
+  done:
+FunctionEnd
 
 ;--------------------------------
 ;Data
@@ -110,9 +127,10 @@ Section "Coq" Sec1
 
   ; CoqIDE
   SetOutPath "$INSTDIR\ide\"
-  File /r ${COQ_SRC_PATH}\ide\*.png
-  File /r ${COQ_SRC_PATH}\ide\*.lang
-  File /r ${COQ_SRC_PATH}\ide\*.xml
+  File ${COQ_SRC_PATH}\ide\*.png
+  SetOutPath "$INSTDIR\share\gtksourceview-2.0\language-specs\"
+  File ${COQ_SRC_PATH}\ide\*.lang
+  File ${COQ_SRC_PATH}\ide\*.xml
 
   ; Start Menu Entries
   SetOutPath "$INSTDIR"
@@ -173,16 +191,6 @@ Section "Coq files for plugin developers" Sec2
   File /r ${COQ_SRC_PATH}\*.cmo
   File /r ${COQ_SRC_PATH}\*.a
   File /r ${COQ_SRC_PATH}\*.o
-  SetOutPath "$INSTDIR\bin\"
-  File ${GTK_RUNTIME}\bin\ocaml*.exe
-  File ${GTK_RUNTIME}\bin\camlp5*.exe
-  SetOutPath "$INSTDIR\ocaml\lib\"
-  File ${GTK_RUNTIME}\lib\*.cm*
-  File ${GTK_RUNTIME}\lib\*.a
-  File ${GTK_RUNTIME}\lib\stublibs\*
-  File ${GTK_RUNTIME}\lib\threads\*
-  File ${GTK_RUNTIME}\lib\compiler-libs\*
-  File ${GTK_RUNTIME}\lib\camlp5\*
 
 SectionEnd
 
