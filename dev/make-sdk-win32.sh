@@ -27,7 +27,7 @@ glib_URL='http://dl.arirux.de/5/binaries32/'$glib
 gtk_URL='http://dl.arirux.de/5/binaries32/'$gtk
 camlp5_URL='http://pauillac.inria.fr/~ddr/camlp5/distrib/src/'$camlp5
 
-cygwin=setup-x86.exe
+cygwin=setup-${HOSTTYPE/i6/x}.exe
 cygwin_URL='http://cygwin.com/'$cygwin
 cygwin_PKGS=p7zip,zip,sed,make,mingw64-i686-gcc-g++,mingw64-i686-gcc-core,mingw64-i686-gcc,patch,rlwrap,libreadline6,diffutils
 
