@@ -378,7 +378,9 @@ let set_manual_implicits env flags enriching autoimps l =
           l, imp, m
       in
       let imps' = merge (k+1) l' imps in
-      let m = Option.map (fun (b,f) -> set_maximality imps' b, f) m in
+      let m = Option.map (fun (b,f) -> 
+	(* match imp with Some Manual -> (b,f) *)
+	(* | _ ->  *)set_maximality imps' b, f) m in
       Option.map (set_implicit id imp) m :: imps'
   | (Anonymous,imp)::imps ->
       let l', forced = try_forced k l in

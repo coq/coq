@@ -61,3 +61,115 @@ Fixpoint yn (n : nat) (y : Y) : Y :=
 
 Lemma eta_ind'  (y: Y) : Some (yn 100 y) = Some {| next := (yn 100 y).(next) |}.
 Proof. reflexivity. Defined.
+
+
+(* 
+  Rules for parsing and printing of primitive projections and their eta expansions.
+  If r : R A where R is a primitive record with implicit parameter A.
+  If p : forall {A} (r : R A) {A : Set}, list (A * B).
+*)
+
+Record R {A : Type} := { p : forall {X : Set}, A * X }.
+Arguments R : clear implicits.
+
+Record R' {A : Type} := { p' : forall X : Set, A * X }.
+Arguments R' : clear implicits.
+
+Unset Printing All.
+
+Parameter r : R nat.
+
+Check (r.(p)).
+Set Printing Projections.
+Check (r.(p)).
+Unset Printing Projections.
+Set Printing All.
+Check (r.(p)).
+Unset Printing All.
+  
+(* Check (r.(p)).
+   Elaborates to a primitive application, X arg implicit.
+   Of type nat * ?ex
+   No Printing All: p r
+   Set Printing Projections.: r.(p)
+   Printing All: r.(@p) ?ex
+ *)
+
+Check p r.
+Set Printing Projections.
+Check p r.
+Unset Printing Projections.
+Set Printing All.
+Check p r.
+Unset Printing All.
+
+(* Same elaboration, printing for p r *)
+
+(** Explicit version of the primitive projection, under applied w.r.t implicit arguments
+      can be printed only using projection notation. r.(@p) *)
+Check r.(@p). 
+Set Printing Projections.
+Check r.(@p). 
+Unset Printing Projections.
+Set Printing All.
+Check r.(@p).
+Unset Printing All.
+  
+(** Explicit version of the primitive projection, applied to its implicit arguments
+      can be printed only using projection notation r.(p), r.(@p) in fully explicit form *)
+Check r.(@p) nat.
+Set Printing Projections.
+Check r.(@p) nat. 
+Unset Printing Projections.
+Set Printing All.
+Check r.(@p) nat.
+Unset Printing All.
+
+Parameter r' : R' nat.
+
+Check (r'.(p')).
+Set Printing Projections.
+Check (r'.(p')).
+Unset Printing Projections.
+Set Printing All.
+Check (r'.(p')).
+Unset Printing All.
+  
+(* Check (r'.(p')).
+   Elaborates to a primitive application, X arg explicit.
+   Of type forall X : Set, nat * X
+   No Printing All: p' r'
+   Set Printing Projections.: r'.(p')
+   Printing All: r'.(p')
+ *)
+
+Check p' r'.
+Set Printing Projections.
+Check p' r'.
+Unset Printing Projections.
+Set Printing All.
+Check p' r'.
+Unset Printing All.
+
+(* Same elaboration, printing for p r *)
+
+(** Explicit version of the primitive projection, under applied w.r.t implicit arguments
+      can be printed only using projection notation. r.(@p) *)
+Check r'.(@p'). 
+Set Printing Projections.
+Check r'.(@p'). 
+Unset Printing Projections.
+Set Printing All.
+Check r'.(@p').
+Unset Printing All.
+  
+(** Explicit version of the primitive projection, applied to its implicit arguments
+      can be printed only using projection notation r.(p), r.(@p) in fully explicit form *)
+Check p' r' nat. 
+Set Printing Projections.
+Check p' r' nat. 
+Unset Printing Projections.
+Set Printing All.
+Check p' r' nat. 
+Unset Printing All.
+

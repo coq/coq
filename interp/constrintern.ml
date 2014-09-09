@@ -1458,13 +1458,19 @@ let internalize globalenv env allow_patvar lvar c =
 	intern {env with tmp_scope = None;
 		  scopes = find_delimiters_scope loc key :: env.scopes} e
     | CAppExpl (loc, (isproj,ref,us), args) ->
-        let (f,_,args_scopes,_),_,args =
+        let (f,_,args_scopes,_),isprojf,args =
 	  let args = List.map (fun a -> (a,None)) args in
 	  intern_applied_reference intern env (Environ.named_context globalenv) 
-	    lvar us args ref in
-	(* check_projection isproj (List.length args) f; *)
-	(* Rem: GApp(_,f,[]) stands for @f *)
-	  GApp (loc, f, intern_args env args_scopes (List.map fst args))
+	    lvar us args ref 
+	in
+	  (match isproj, isprojf with
+	  | Some i, Some (r, n) -> (* Explicit application of primitive projection *)
+	    let scopes = proj_scopes n args_scopes in
+	    let args = intern_args env args_scopes (List.map fst args) in
+	      GApp (loc, GProj (loc, r, List.hd args), List.tl args)
+	  | _ ->
+	    (* Rem: GApp(_,f,[]) stands for @f *)
+	    GApp (loc, f, intern_args env args_scopes (List.map fst args)))
 
     | CApp (loc, (isproj,f), args) ->
         let isproj,f,args = match f with
@@ -1737,7 +1743,7 @@ let internalize globalenv env allow_patvar lvar c =
       match isprojf with
       | Some (r, n) ->
 	(match projection_implicits n (List.is_empty l) imp with
-	| Some imp -> 
+	| Some imp -> (* A primitive projection *)
 	  let subscopes = proj_scopes n subscopes in
 	  let imp = 
 	    if isproj != None then

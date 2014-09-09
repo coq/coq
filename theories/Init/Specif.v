@@ -285,7 +285,7 @@ Section Exc.
   Definition value := @Some A.
   Definition error := @None A.
 End Exc.
-Arguments error [A].
+Arguments error {A}.
 
 Definition except := False_rec. (* for compatibility with previous versions *)
 

@@ -151,7 +151,7 @@ Inductive option (A:Type) : Type :=
   | Some : A -> option A
   | None : option A.
 
-Arguments None [A].
+Arguments None {A}.
 
 Definition option_map (A B:Type) (f:A->B) (o : option A) : option B :=
   match o with
@@ -224,7 +224,7 @@ Inductive list (A : Type) : Type :=
  | nil : list A
  | cons : A -> list A -> list A.
 
-Arguments nil [A].
+Arguments nil {A}.
 Infix "::" := cons (at level 60, right associativity) : list_scope.
 Delimit Scope list_scope with list.
 Bind Scope list_scope with list.
