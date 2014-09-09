@@ -186,7 +186,8 @@ module Make(T : Task) = struct
             match response with
             | Response resp ->
                 (match T.use_response task resp with
-                | `Stay -> last_task := None; giveback_token ()
+                | `Stay ->
+                     last_task := None; worker_age := `Old; giveback_token ()
                 | `StayReset -> last_task := None; raise KillRespawn)
             | RespGetCounterNewUnivLevel ->
                 marshal_more_data oc (MoreDataUnivLevel
@@ -209,7 +210,6 @@ module Make(T : Task) = struct
               string_of_ppcmds (print e));
             flush_all ()
         end;
-        worker_age := `Old;
       done;
       raise Die
     with
