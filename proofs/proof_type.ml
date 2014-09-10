@@ -45,6 +45,7 @@ type rule = prim_rule
 (** Ltac traces *)
 
 type ltac_call_kind =
+  | LtacMLCall of glob_tactic_expr
   | LtacNotationCall of KerName.t
   | LtacNameCall of ltac_constant
   | LtacAtomCall of glob_atomic_tactic_expr

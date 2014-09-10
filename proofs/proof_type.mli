@@ -68,6 +68,7 @@ type tactic = goal sigma -> goal list sigma
 (** TODO: Move those definitions somewhere sensible *)
 
 type ltac_call_kind =
+  | LtacMLCall of glob_tactic_expr
   | LtacNotationCall of KerName.t
   | LtacNameCall of ltac_constant
   | LtacAtomCall of glob_atomic_tactic_expr

@@ -1188,6 +1188,8 @@ let explain_ltac_call_trace last trace loc =
   let pr_call ck = match ck with
   | Proof_type.LtacNotationCall kn -> quote (KerName.print kn)
   | Proof_type.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
+  | Proof_type.LtacMLCall t ->
+      quote (Pptactic.pr_glob_tactic (Global.env()) t)
   | Proof_type.LtacVarCall (id,t) ->
       quote (Nameops.pr_id id) ++ strbrk " (bound to " ++
         Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
@@ -1215,9 +1217,10 @@ let explain_ltac_call_trace last trace loc =
            pr_enum pr_call calls ++ strbrk kind_of_last_call)
 
 let skip_extensions trace =
-  (** FIXME: handle TacAlias & TacML *)
   let rec aux = function
-  | _ :: tail -> aux tail
+  | (_,(Proof_type.LtacNotationCall _ | Proof_type.LtacMLCall _) as tac)
+      :: _ -> [tac]
+  | t :: tail -> t :: aux tail
   | [] -> [] in
   List.rev (aux (List.rev trace))
 

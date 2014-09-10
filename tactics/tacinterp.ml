@@ -1216,6 +1216,8 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       Ftactic.run tac (fun v -> tactic_of_value ist v)
 
   | TacML (loc,opn,l) when List.for_all global_genarg l ->
+      let trace = push_trace (loc,LtacMLCall tac) ist in
+      let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       (* spiwack: a special case for tactics (from TACTIC EXTEND) when
          every argument can be interpreted without a
          [Proofview.Goal.nf_enter]. *)
@@ -1227,8 +1229,10 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let goal = sig_it Goal.V82.dummy_goal in
       (* /dummy values *)
       let args = List.map (fun a -> snd(interp_genarg ist env sigma concl goal a)) l in
-      tac args ist
+      catch_error_tac trace (tac args ist)
   | TacML (loc,opn,l) ->
+      let trace = push_trace (loc,LtacMLCall tac) ist in
+      let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       Proofview.Goal.nf_enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let goal_sigma = Proofview.Goal.sigma gl in
@@ -1240,7 +1244,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
             (fun a sigma -> interp_genarg ist env sigma concl goal a) l goal_sigma
         in
         Proofview.V82.tclEVARS sigma <*>
-        tac args ist
+        catch_error_tac trace (tac args ist)
       end
 
 and force_vrec ist v : typed_generic_argument Ftactic.t =
