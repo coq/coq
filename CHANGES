@@ -189,6 +189,7 @@ Tactics
   swapped, as a more friendly replacement of "cut".
 - In destruct/induction, experimental modifier "!" prefixing the
   hypothesis name to tell not erasing the hypothesis.
+- Bug fixes in "inversion as" may occasionally lead to incompatibilities.
 
 Program
 

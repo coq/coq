@@ -2272,7 +2272,7 @@ several times. See Section~\ref{Derive-Inversion}.
 
 \item \tacindex{inversion \dots\ as} \texttt{inversion {\ident} as \intropattern}
 
-  This behaves as \texttt{inversion} but using names in
+  This generally behaves as \texttt{inversion} but using names in
   {\intropattern} for naming hypotheses. The {\intropattern} must have
   the form {\tt [} $p_{11} \ldots p_{1n_1}$ {\tt |} {\ldots} {\tt |}
   $p_{m1} \ldots p_{mn_m}$ {\tt ]} with $m$ being the number of
@@ -2293,6 +2293,13 @@ several times. See Section~\ref{Derive-Inversion}.
   \mbox{\dots} $p_{ijq}$]} (or, equivalently, {\tt ($p_{ij1}$,
   \dots, $p_{ijq}$)}) where $q$ is the number of subequalities
   obtained from splitting the original equation. Here is an example.
+
+  The \texttt{inversion \dots\ as} variant of \texttt{inversion}
+  generally behaves in a slightly more expectable way than
+  \texttt{inversion} (no artificial duplication of some hypotheses
+  referring to other hypotheses) To take benefit of these
+  improvements, it is enough to use \texttt{inversion \dots\ as []},
+  letting the names being finally chosen by {\Coq}.
 
 \begin{coq_eval}
 Require Import List.
@@ -2319,7 +2326,10 @@ Abort.
   {\ident} as \intropattern}
 
   This allows naming the hypotheses introduced by
-  \texttt{inversion\_clear} in the context.
+  \texttt{inversion\_clear} in the context. Notice that hypothesis
+  names can be provided as if \texttt{inversion} were called, even
+  though the \texttt{inversion\_clear} will eventually erase the
+  hypotheses.
 
 \item \tacindex{inversion \dots\ in} \texttt{inversion {\ident}
   in \ident$_1$ \dots\ \ident$_n$}

@@ -68,6 +68,7 @@ val intro_mustbe_force   : Id.t -> unit Proofview.tactic
 val intro_then           : (Id.t -> unit Proofview.tactic) -> unit Proofview.tactic
 val intros_using         : Id.t list -> unit Proofview.tactic
 val intros_replacing     : Id.t list -> unit Proofview.tactic
+val intros_possibly_replacing : Id.t list -> unit Proofview.tactic
 
 val intros               : unit Proofview.tactic
 

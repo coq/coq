@@ -136,3 +136,23 @@ Goal True -> True.
 intro.
 Fail inversion H using False.
 Fail inversion foo using True_ind.
+
+(* Was failing at some time between 7 and 10 September 2014 *)
+(* even though, it is not clear that the resulting context is interesting *)
+
+Parameter P:nat*nat->Prop.
+Inductive IND : nat * nat -> { x : nat * nat | P x } * nat -> Prop :=
+CONSTR a b (H:P (a,b)) c : IND (a,b) (exist _ (a,b) H, c).
+
+Goal forall x y z t u (H':P (z,t)), IND (x,y) (exist _ (z,t) H', u) -> x = z.
+intros * Hyp.
+inversion Hyp.
+  (* By the way, why is "H" removed even in non-clear mode ? *)
+reflexivity.
+Qed.
+
+Goal forall x y z t u (H':P (z,t)), IND (x,y) (exist _ (z,t) H', u) -> x = z.
+intros * Hyp.
+inversion Hyp as (a,b,H,c,(H1_1,H1_2),(H2_1,H2_2,H2_3)).
+reflexivity.
+Qed.

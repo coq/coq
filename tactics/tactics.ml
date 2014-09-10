@@ -596,6 +596,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
 let intro_gen n m f d = intro_then_gen n m f d (fun _ -> Proofview.tclUNIT ())
 let intro_mustbe_force id = intro_gen (NamingMustBe (dloc,id)) MoveLast true false
 let intro_using id = intro_gen (NamingBasedOn (id,[])) MoveLast false false
+
 let intro_then = intro_then_gen (NamingAvoid []) MoveLast false false
 let intro = intro_gen (NamingAvoid []) MoveLast false false
 let introf = intro_gen (NamingAvoid []) MoveLast true false
@@ -653,6 +654,20 @@ let intro_replacing id gl =
    reintroduce y, y,' y''. Note that we have to clear y, y' and y''
    before introducing y because y' or y'' can e.g. depend on old y. *)
 
+(* This version assumes that replacement is actually possible *)
+let intros_possibly_replacing ids =
+  Proofview.Goal.enter begin fun gl ->
+    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+    let posl = List.fold_right (fun id posl ->
+      (id,get_next_hyp_position id posl hyps) :: posl) ids [] in
+    Tacticals.New.tclTHEN
+      (Tacticals.New.tclMAP (fun id -> Tacticals.New.tclTRY (Proofview.V82.tactic (thin_for_replacing [id]))) ids)
+      (Tacticals.New.tclMAP (fun (id,pos) ->
+        Tacticals.New.tclORELSE (intro_move (Some id) pos) (intro_using id))
+         posl)
+  end
+
+(* This version assumes that replacement is actually possible *)
 let intros_replacing ids =
   Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in

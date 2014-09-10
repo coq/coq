@@ -267,13 +267,14 @@ Summary: nine useless hypotheses!
 Nota: with Inversion_clear, only four useless hypotheses
 *)
 
-let generalizeRewriteIntros tac depids id =
+let generalizeRewriteIntros as_mode tac depids id =
   Proofview.Goal.nf_enter begin fun gl ->
   let dids = dependent_hyps id depids gl in
+  let reintros = if as_mode then intros_replacing else intros_possibly_replacing in
   (tclTHENLIST
     [bring_hyps dids; tac;
      (* may actually fail to replace if dependent in a previous eq *)
-     intros_replacing (ids_of_named_context dids)])
+     reintros (ids_of_named_context dids)])
   end
 
 let error_too_many_names pats =
@@ -340,12 +341,13 @@ let projectAndApply as_mode thin id eqname names depids =
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
     let (t,t1,t2) = Hipattern.dest_nf_eq gl hyp in
     match (kind_of_term t1, kind_of_term t2) with
-    | Var id1, _ -> generalizeRewriteIntros (subst_hyp true id) depids id1
-    | _, Var id2 -> generalizeRewriteIntros (subst_hyp false id) depids id2
+    | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
+    | _, Var id2 -> generalizeRewriteIntros as_mode (subst_hyp false id) depids id2
     | _ -> tac id
     end
   in
-  let deq_trailer id _ _ neqns =
+  let deq_trailer id clear_flag _ neqns =
+    assert (clear_flag == None);
     tclTHENLIST
       [if as_mode then clear [id] else tclIDTAC;
        (tclMAP_i (false,false) neqns (function (idopt,_) ->
@@ -356,6 +358,9 @@ let projectAndApply as_mode thin id eqname names depids =
 	   (tclTRY (onLastHypId (substHypIfVariable (fun id -> subst_hyp false id))))))
 	 names);
        (if as_mode then tclIDTAC else clear [id])]
+          (* Doing the above late breaks the computation of dids in 
+             generalizeRewriteIntros, and hence breaks proper intros_replacing
+             but it is needed for compatibility *)
   in
   substHypIfVariable
     (* If no immediate variable in the equation, try to decompose it *)
