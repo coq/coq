@@ -103,6 +103,14 @@ Set Printing All.
 Check p r.
 Unset Printing All.
 
+Check p r (X:=nat).
+Set Printing Projections.
+Check p r (X:=nat).
+Unset Printing Projections.
+Set Printing All.
+Check p r (X:=nat).
+Unset Printing All.
+
 (* Same elaboration, printing for p r *)
 
 (** Explicit version of the primitive projection, under applied w.r.t implicit arguments
@@ -116,7 +124,7 @@ Check r.(@p).
 Unset Printing All.
   
 (** Explicit version of the primitive projection, applied to its implicit arguments
-      can be printed only using projection notation r.(p), r.(@p) in fully explicit form *)
+      can be printed using application notation r.(p), r.(@p) in fully explicit form *)
 Check r.(@p) nat.
 Set Printing Projections.
 Check r.(@p) nat. 
@@ -129,7 +137,7 @@ Parameter r' : R' nat.
 
 Check (r'.(p')).
 Set Printing Projections.
-Check (r'.(p')).
+Check (r'.(p')). 
 Unset Printing Projections.
 Set Printing All.
 Check (r'.(p')).
@@ -140,7 +148,7 @@ Unset Printing All.
    Of type forall X : Set, nat * X
    No Printing All: p' r'
    Set Printing Projections.: r'.(p')
-   Printing All: r'.(p')
+   Printing All: r'.(@p')
  *)
 
 Check p' r'.

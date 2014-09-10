@@ -1466,7 +1466,7 @@ let internalize globalenv env allow_patvar lvar c =
 	  (match isproj, isprojf with
 	  | Some i, Some (r, n) -> (* Explicit application of primitive projection *)
 	    let scopes = proj_scopes n args_scopes in
-	    let args = intern_args env args_scopes (List.map fst args) in
+	    let args = intern_args env scopes (List.map fst args) in
 	      GApp (loc, GProj (loc, r, List.hd args), List.tl args)
 	  | _ ->
 	    (* Rem: GApp(_,f,[]) stands for @f *)
@@ -1725,12 +1725,12 @@ let internalize globalenv env allow_patvar lvar c =
     | hd :: tl -> None :: tl
     | [] -> []
 
-  and projection_implicits n noargs l = 
+  and projection_application_implicits n noargs l = 
     if n == 0 then Some l
     else match l with 
     | hd :: tl when is_status_implicit hd ->
       if maximal_insertion_of hd || not noargs then
-	projection_implicits (pred n) noargs tl
+	projection_application_implicits (pred n) noargs tl
       else None
     | _ -> None
 
@@ -1741,16 +1741,11 @@ let internalize globalenv env allow_patvar lvar c =
 	smart_gapp c loc l
     in
       match isprojf with
-      | Some (r, n) ->
-	(match projection_implicits n (List.is_empty l) imp with
-	| Some imp -> (* A primitive projection *)
-	  let subscopes = proj_scopes n subscopes in
-	  let imp = 
-	    if isproj != None then
-	      (* Drop first implicit which corresponds to record given in c.(p) notation *)
-	      make_first_explicit imp
-	    else imp
-	  in
+      | Some (r, n) -> (* A primitive projection *)
+	let subscopes = proj_scopes n subscopes in
+	if isproj != None then (* In projection notation: we remove the parameters *)
+	  let imp = projection_implicits (Global.env()) r imp in
+	  let imp = make_first_explicit imp in (* For the record argument *)
 	  let l = intern_impargs c env imp subscopes l in
 	    (match c, l with
 	    | GApp (loc', GRef (loc'', ConstRef f, _), hd :: tl), rest ->
@@ -1760,8 +1755,22 @@ let internalize globalenv env allow_patvar lvar c =
 	    | GRef (loc', ConstRef f, _), hd :: tl -> 
 	      let proj = GProj (Loc.merge loc' (loc_of_glob_constr hd), f, hd) in
 		smart_gapp proj loc tl
-	    | _ -> default ())
-	| None -> default ())
+	    | _ -> assert false)
+	else (* Not in projection notation, parse as primitive only if the implicits
+		allow *)
+	  (match projection_application_implicits n (List.is_empty l) imp with
+	  | Some imp ->
+	    let l = intern_impargs c env imp subscopes l in
+	      (match c, l with
+	      | GApp (loc', GRef (loc'', ConstRef f, _), hd :: tl), rest ->
+		let proj = GProj (Loc.merge loc'' (loc_of_glob_constr hd), f, hd) in
+		  if List.is_empty tl then smart_gapp proj loc rest
+		  else GApp (loc, proj, tl @ rest)
+	      | GRef (loc', ConstRef f, _), hd :: tl -> 
+		let proj = GProj (Loc.merge loc' (loc_of_glob_constr hd), f, hd) in
+		  smart_gapp proj loc tl
+	      | _ -> default ())
+	  | None -> default ())
       | None -> default ()
 
   and smart_gapp f loc = function

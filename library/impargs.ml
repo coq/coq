@@ -410,10 +410,6 @@ let compute_constant_implicits flags manual cst =
   let ty = Typeops.type_of_constant_type env cb.const_type in
   let impls = compute_semi_auto_implicits env flags manual ty in
     impls
-    (* match cb.const_proj with *)
-    (* | None -> impls *)
-    (* | Some {proj_npars = n} ->  *)
-    (* List.map (fun (x,args) -> x, CList.skipn_at_least n args) impls *)
 
 (*s Inductives and constructors. Their implicit arguments are stored
    in an array, indexed by the inductive number, of pairs $(i,v)$ where

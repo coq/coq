@@ -437,23 +437,29 @@ let occur_name na aty =
     | Name id -> occur_var_constr_expr id aty
     | Anonymous -> false
 
-let is_projection primproj nargs cf =
-  if primproj then Some 1
-  else 
-    match cf with
-    | Some r when not !in_debugger && not !Flags.raw_print && !print_projections ->
-      (try
-	let n = Recordops.find_projection_nparams r + 1 in
-	  if n <= nargs then
-	  (* For primitive projections, r.(p) and r.(@p) are reserved to the 
-	     non-eta-expanded version of the constant, we disallow printing 
-	     of the eta-expanded projection as a projection *)
-	    if Environ.is_projection (destConstRef r) (Global.env()) then None
-	    else Some n 
-	  else None
-       with Not_found -> None)
-    | _ -> None
-
+let is_projection primprojapp nargs cf =
+  let env = Global.env () in
+    match primprojapp with 
+    | Some r ->
+      let pb = Environ.lookup_projection r env in
+	Some pb.Declarations.proj_npars, Some 1
+    | None ->
+      match cf with
+      | Some (ConstRef p) when Environ.is_projection p (Global.env()) ->
+	let pb = Environ.lookup_projection p env in
+        (* For primitive projections, r.(p) and r.(@p) are reserved to the 
+	   non-eta-expanded version of the constant, we disallow printing 
+	   of the eta-expanded projection as a projection *)
+	  Some pb.Declarations.proj_npars, None
+      | Some r when not !in_debugger && not !Flags.raw_print && !print_projections ->
+	(try
+	   let n = Recordops.find_projection_nparams r + 1 in
+	     if n <= nargs then None, None
+	     else None, Some n
+	 with Not_found -> None, None)
+      | _ -> None, None
+      
+	
 let is_hole = function CHole _ -> true | _ -> false
 
 let is_significant_implicit a =
@@ -464,9 +470,18 @@ let is_needed_for_correct_partial_application tail imp =
 
 exception Expl
 
+let params_implicit n impl = 
+  let rec aux n impl =
+    if n == 0 then true
+    else match impl with
+    | [] -> false
+    | imp :: impl when is_status_implicit imp -> aux (pred n) impl
+    | _ -> false
+  in aux n impl
+
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
-let explicitize loc inctx impl (cf,primproj,f) args =
+let explicitize loc inctx impl (cf,primprojapp,f) args =
   let impl = if !Constrintern.parsing_explicit then [] else impl in
   let n = List.length args in
   let rec exprec q = function
@@ -491,39 +506,36 @@ let explicitize loc inctx impl (cf,primproj,f) args =
       raise Expl
     | [], _ -> []
   in
-  let ip = is_projection primproj (List.length args) cf in
+  let primproj, ip = is_projection primprojapp (List.length args) cf in
   let expl () = 
     match ip with
     | Some i ->
-      if not (List.is_empty impl) && is_status_implicit (List.nth impl (i-1)) then
-	if primproj then
-	  let args = exprec 1 (args,impl) in		  
-	    CApp (loc, (None, f), args)
-	else raise Expl
-      else
-	let (args1,args2) = List.chop i args in
-	let (impl1,impl2) = if List.is_empty impl then [],[] else List.chop i impl in
-	let args1 = exprec 1 (args1,impl1) in
-	let args2 = exprec (i+1) (args2,impl2) in
-	let len = List.length args1 in
-	let ip = (* Printing primitive projection as application *) 
-	  if len == 1 && primproj && not !print_projections && not !Flags.raw_print then None
-	  else Some len
-	in
-	  CApp (loc,(ip,f),args1@args2)
+      (match primproj with
+      | Some npars -> (* Primitive projection in projection notation *)
+	let projimpl = CList.skipn_at_least npars impl in
+	  if not !print_projections && not !Flags.raw_print && params_implicit npars impl then
+	    (* Printing primitive projection as application *)
+	    let args = exprec 1 (args,projimpl) in		  
+	      CApp (loc, (None, f), args)
+	  else (** Printing as projection *)
+	    let args = exprec 1 (args,projimpl) in
+	      CApp (loc, (Some i,f),args)
+      | None -> (** Regular constant in projection notation *)
+	if not (List.is_empty impl) && is_status_implicit (List.nth impl (i-1)) then
+	  raise Expl
+	else
+	  let (args1,args2) = List.chop i args in
+	  let (impl1,impl2) = if List.is_empty impl then [],[] else List.chop i impl in
+	  let args1 = exprec 1 (args1,impl1) in
+	  let args2 = exprec (i+1) (args2,impl2) in
+	  let ip = Some (List.length args1) in
+	    CApp (loc,(ip,f),args1@args2))
     | None ->
-      match cf with
-      | Some (ConstRef p) when not !in_debugger && not primproj 
-	  && Environ.is_projection p (Global.env ()) -> 
+      match primproj with
+      | Some npars when List.length args > npars && params_implicit npars impl ->
         (* Eta-expanded version of projection, print explicited if the implicit 
 	   application would be parsed as a primitive projection application. *)
-        let proj = Environ.lookup_projection p (Global.env ()) in
-	  if List.length args > proj.Declarations.proj_npars &&
-	    List.for_all is_status_implicit (List.firstn proj.Declarations.proj_npars impl)
-	  then raise Expl
-	  else
-            let args = exprec 1 (args,impl) in
-              CApp (loc, (None, f), args)
+	raise Expl
       | _ -> 
         let args = exprec 1 (args,impl) in
 	  if List.is_empty args then f else CApp (loc, (None, f), args)
@@ -531,7 +543,7 @@ let explicitize loc inctx impl (cf,primproj,f) args =
     try expl ()
     with Expl -> 
       let f',us = match f with CRef (f,us) -> f,us | _ -> assert false in
-      let ip = if primproj || !print_projections then ip else None in
+      let ip = if primprojapp != None || !print_projections then ip else None in
 	CAppExpl (loc, (ip, f', us), args)
 
 let is_start_implicit = function
@@ -554,10 +566,10 @@ let extern_app loc inctx impl (cf,primproj,f) us args =
       (!print_implicits && not !print_implicits_explicit_args)) &&
      List.exists is_status_implicit impl)
   then
-    if primproj then
+    if primproj != None then
       CAppExpl (loc, (Some 1,f,us), args)
     else
-      CAppExpl (loc, (is_projection primproj (List.length args) cf,f,us), args)
+      CAppExpl (loc, (snd (is_projection primproj (List.length args) cf),f,us), args)
   else
     explicitize loc inctx impl (cf,primproj,CRef (f,us)) args
 
@@ -715,7 +727,7 @@ let rec extern inctx scopes vars r =
 		 | Not_found | No_match | Exit ->
 		     extern_app loc inctx
 		       (select_stronger_impargs (implicits_of_global ref))
-		       (Some ref,false,extern_reference rloc vars ref) (extern_universes us) args
+		       (Some ref,None,extern_reference rloc vars ref) (extern_universes us) args
 	     end
 
 	 | GProj (loc,p,c) ->
@@ -725,13 +737,12 @@ let rec extern inctx scopes vars r =
 	     extern_args (extern true) (snd scopes) vars (c :: args) subscopes 
 	   in
 	     extern_app loc inctx 
-	     (projection_implicits (Global.env ()) p
-	      (select_stronger_impargs (implicits_of_global ref)))
-	       (Some ref, true, extern_reference loc vars ref)
+	     (select_stronger_impargs (implicits_of_global ref))
+	       (Some ref, Some p, extern_reference loc vars ref)
 	       None args
 	       
 	 | _       ->
-	   explicitize loc inctx [] (None,false,sub_extern false scopes vars f)
+	   explicitize loc inctx [] (None,None,sub_extern false scopes vars f)
              (List.map (sub_extern true scopes vars) args))
 
   | GProj (loc,p,c) ->
@@ -955,7 +966,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
  	if List.is_empty args then e
 	else
 	  let args = extern_args (extern true) scopes vars args argsscopes in
-	  explicitize loc false argsimpls (None,false,e) args
+	  explicitize loc false argsimpls (None,None,e) args
       with
 	  No_match -> extern_symbol allscopes vars t rules
 
