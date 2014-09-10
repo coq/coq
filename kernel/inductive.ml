@@ -814,6 +814,13 @@ let rec subterm_specif renv stack t =
       (* Metas and evars are considered OK *)
     | (Meta _|Evar _) -> Dead_code
 
+    | Proj (p, c) -> 
+      let subt = subterm_specif renv stack c in
+	(match subt with
+	| Subterm (s, wf) -> Subterm (Strict, wf)
+	| Dead_code -> Dead_code
+	| Not_subterm -> Not_subterm)
+
       (* Other terms are not subterms *)
     | _ -> Not_subterm
 

@@ -378,10 +378,27 @@ let mis_make_indrec env sigma listdepkind mib u =
 		      (Anonymous,depind',concl))
 		  arsign'
 	      in
-		it_mkLambda_or_LetIn_name env
-		  (mkCase (ci, pred,
-		          mkRel 1,
-			  branches))
+	      let obj = 
+		let projs = get_projections env indf in
+		  match projs with
+		  | None -> (mkCase (ci, pred,
+				     mkRel 1,
+				     branches))
+		  | Some ps -> 
+		    let branch = branches.(0) in
+		    let ctx, br = decompose_lam_assum branch in
+		    let n, subst = 
+		      List.fold_right (fun (na,b,t) (i, subst) ->
+			if b == None then 
+			  let t = mkProj (ps.(i), mkRel 1) in
+			    (i + 1, t :: subst)
+			else (i, mkRel 0 :: subst))
+			ctx (0, [])
+		    in
+		    let term = substl subst br in
+		      term
+	      in
+		it_mkLambda_or_LetIn_name env obj
 		  (Termops.lift_rel_context nrec deparsign)
 	    in
 

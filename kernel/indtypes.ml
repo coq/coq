@@ -686,14 +686,14 @@ let compute_projections ((kn, _ as ind), u as indsp) n nparamargs params
   in
   let projections (na, b, t) (i, j, kns, pbs, subst) =
     match b with
-    | Some c -> (i, j+1, kns, pbs, c :: subst)
+    | Some c -> (i, j+1, kns, pbs, substl subst c :: subst)
     | None ->
       match na with
       | Name id ->
 	let kn = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
 	let ty = substl subst (liftn 1 j t) in
 	let term = mkProj (kn, mkRel 1) in
-	let compat = compat_body ty i in
+	let compat = compat_body ty (j - 1) in
 	let etab = it_mkLambda_or_LetIn (mkLambda (x, rp, term)) params in
 	let etat = it_mkProd_or_LetIn (mkProd (x, rp, ty)) params in
 	let body = { proj_ind = fst ind; proj_npars = nparamargs;
