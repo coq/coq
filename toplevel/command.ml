@@ -587,6 +587,7 @@ let is_recursive mie =
     | Prod (_,arg,rest) ->
         Termops.dependent (mkRel lift) arg ||
         is_recursive_constructor (lift+1) rest
+    | LetIn (na,b,t,rest) -> is_recursive_constructor (lift+1) rest
     | _ -> false
   in
   match mie.mind_entry_inds with
