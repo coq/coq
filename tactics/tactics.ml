@@ -635,18 +635,16 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
   in
   aux n []
 
-let rec get_next_hyp_position id l = function
+let rec get_next_hyp_position id = function
   | [] -> raise (RefinerError (NoSuchHyp id))
   | (hyp,_,_) :: right ->
       if Id.equal hyp id then
-	match right with
-        | (id,_,_)::_ -> (try List.assoc id l with Not_found -> MoveBefore id)
-        | [] -> MoveLast
+	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveLast
       else
-	get_next_hyp_position id l right
+	get_next_hyp_position id right
 
 let intro_replacing id gl =
-  let next_hyp = get_next_hyp_position id [] (pf_hyps gl) in
+  let next_hyp = get_next_hyp_position id (pf_hyps gl) in
   tclTHENLIST
     [thin_for_replacing [id]; introduction id; move_hyp true id next_hyp] gl
 
@@ -655,13 +653,13 @@ let intro_replacing id gl =
    before introducing y because y' or y'' can e.g. depend on old y. *)
 
 (* This version assumes that replacement is actually possible *)
+(* (ids given in the introduction order) *)
 let intros_possibly_replacing ids =
   Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-    let posl = List.fold_right (fun id posl ->
-      (id,get_next_hyp_position id posl hyps) :: posl) ids [] in
+    let posl = List.map (fun id -> (id,get_next_hyp_position id hyps)) ids in
     Tacticals.New.tclTHEN
-      (Tacticals.New.tclMAP (fun id -> Tacticals.New.tclTRY (Proofview.V82.tactic (thin_for_replacing [id]))) ids)
+      (Tacticals.New.tclMAP (fun id -> Tacticals.New.tclTRY (Proofview.V82.tactic (thin_for_replacing [id]))) (List.rev ids))
       (Tacticals.New.tclMAP (fun (id,pos) ->
         Tacticals.New.tclORELSE (intro_move (Some id) pos) (intro_using id))
          posl)
@@ -671,8 +669,7 @@ let intros_possibly_replacing ids =
 let intros_replacing ids =
   Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-    let posl = List.fold_right (fun id posl ->
-      (id,get_next_hyp_position id posl hyps) :: posl) ids [] in
+    let posl = List.map (fun id -> (id,get_next_hyp_position id hyps)) ids in
     Tacticals.New.tclTHEN
       (Proofview.V82.tactic (thin_for_replacing ids))
       (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some id) pos) posl)
