@@ -254,21 +254,22 @@ let invert_name labs l na0 env sigma ref = function
    last one before the Fix if the latter is mutually defined *)
 
 let compute_consteval_direct sigma env ref =
-  let rec srec env n labs c =
+  let rec srec env n labs onlyproj c =
     let c',l = whd_betadelta_stack env sigma c in
     match kind_of_term c' with
-      | Lambda (id,t,g) when List.is_empty l ->
-	  srec (push_rel (id,None,t) env) (n+1) (t::labs) g
-      | Fix fix ->
+      | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
+	  srec (push_rel (id,None,t) env) (n+1) (t::labs) onlyproj g
+      | Fix fix when not onlyproj ->
 	  (try check_fix_reversibility labs l fix
 	  with Elimconst -> NotAnElimination)
-      | Case (_,_,d,_) when isRel d -> EliminationCases n
+      | Case (_,_,d,_) when isRel d && not onlyproj -> EliminationCases n
+      | Case (_,_,d,_) -> srec env n labs true d
       | Proj (p, d) when isRel d -> EliminationProj n
       | _ -> NotAnElimination
   in
   match unsafe_reference_opt_value sigma env ref with
     | None -> NotAnElimination
-    | Some c -> srec env 0 [] c
+    | Some c -> srec env 0 [] false c
 
 let compute_consteval_mutual_fix sigma env ref =
   let rec srec env minarg labs ref c =
@@ -575,7 +576,7 @@ let reduce_projection env sigma pb (recarg'hd,stack') stack =
     in Reduced (List.nth stack' proj_narg, stack)
   | _ -> NotReducible)
 
-let reduce_proj env sigma whfun c =
+let reduce_proj env sigma whfun whfun' c =
   (* Pp.msgnl (str" reduce_proj: " ++ print_constr c); *)
   let rec redrec s =
     match kind_of_term s with
@@ -590,6 +591,11 @@ let reduce_proj env sigma whfun c =
 	      pb.Declarations.proj_npars + pb.Declarations.proj_arg
 	  in List.nth cargs proj_narg
 	| _ -> raise Redelimination)
+    | Case (n,p,c,brs) -> 
+      let c' = redrec c in
+      let p = (n,p,c',brs) in
+	(try special_red_case env sigma whfun' p
+	 with Redelimination -> mkCase p)
     | _ -> raise Redelimination
   in redrec c
 
@@ -661,7 +667,8 @@ let rec red_elim_const env sigma ref u largs =
 	let c = reference_value sigma env ref u in
 	let c', lrest = whd_nothing_for_iota env sigma (applist(c,largs)) in
 	let whfun = whd_construct_stack env sigma in
-	  (reduce_proj env sigma whfun c', lrest), nocase
+	let whfun' = whd_simpl_stack env sigma in
+	  (reduce_proj env sigma whfun whfun' c', lrest), nocase
     | EliminationFix (min,minfxargs,infos) when nargs >= min ->
 	let c = reference_value sigma env ref u in
 	let d, lrest = whd_nothing_for_iota env sigma (applist(c,largs)) in
