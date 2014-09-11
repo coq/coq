@@ -52,7 +52,7 @@ open Auto
 
 open Unification
 
-let auto_core_unif_flags st = {
+let auto_core_unif_flags st freeze = {
   modulo_conv_on_closed_terms = Some st;
   use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = st;
@@ -60,18 +60,19 @@ let auto_core_unif_flags st = {
   check_applied_meta_types = false;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
-  frozen_evars = Evar.Set.empty;
+  frozen_evars = freeze;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = true;
   modulo_eta = false;
 }
 
-let auto_unif_flags st = {
-  core_unify_flags = auto_core_unif_flags st;
-  merge_unify_flags = auto_core_unif_flags st;
-  subterm_unify_flags = auto_core_unif_flags st;
-  allow_K_in_toplevel_higher_order_unification = false;
-  resolve_evars = false
+let auto_unif_flags freeze st = 
+  let fl = auto_core_unif_flags st freeze in
+  { core_unify_flags = fl;
+    merge_unify_flags = fl;
+    subterm_unify_flags = fl;
+    allow_K_in_toplevel_higher_order_unification = false;
+    resolve_evars = false
 }
 
 let rec eq_constr_mod_evars x y =
@@ -115,7 +116,8 @@ let unify_resolve poly flags (c,clenv) gls =
   let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
   let clenv' = connect_clenv gls clenv' in
   let clenv' = clenv_unique_resolver ~flags clenv' gls in
-  Proofview.V82.of_tactic (Clenvtac.clenv_refine false(*uhoh, was true*) ~with_classes:false clenv') gls
+  Proofview.V82.of_tactic 
+    (Clenvtac.clenv_refine false ~with_classes:false clenv') gls
 
 let clenv_of_prods poly nprods (c, clenv) gls =
   if poly || Int.equal nprods 0 then Some clenv
@@ -143,22 +145,31 @@ let rec e_trivial_fail_db db_list local_db goal =
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
 	      (Hint_db.add_list hintl local_db) g'))) ::
-    (List.map (fun (x,_,_,_,_) -> x) (e_trivial_resolve db_list local_db (pf_concl goal)))
+    (List.map (fun (x,_,_,_,_) -> x) 
+     (e_trivial_resolve db_list local_db (project goal) (pf_concl goal)))
   in
   tclFIRST (List.map tclCOMPLETE tacl) goal
 
-and e_my_find_search db_list local_db hdc complete concl =
+and e_my_find_search db_list local_db hdc complete sigma concl =
   let hdc = head_of_constr_reference hdc in
   let prods, concl = decompose_prod_assum concl in
   let nprods = List.length prods in
+  let freeze = 
+    try
+      let cl = Typeclasses.class_info hdc in
+	if cl.cl_strict then
+	  Evarutil.evars_of_term concl
+	else Evar.Set.empty
+    with _ -> Evar.Set.empty
+  in
   let hintl =
     List.map_append
       (fun db ->
 	if Hint_db.use_dn db then
-	  let flags = auto_unif_flags (Hint_db.transparent_state db) in
+	  let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
 	    List.map (fun x -> (flags, x)) (Hint_db.map_auto (hdc,concl) db)
 	else
-	  let flags = auto_unif_flags (Hint_db.transparent_state db) in
+	  let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
 	    List.map (fun x -> (flags, x)) (Hint_db.map_all hdc db))
       (local_db::db_list)
   in
@@ -174,9 +185,7 @@ and e_my_find_search db_list local_db hdc complete concl =
 	        (if complete then tclIDTAC else e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c])
 	  | Extern tacast ->
-(* 	    tclTHEN *)
-(* 	      (fun gl -> Refiner.tclEVARS (mark_unresolvables (project gl)) gl) *)
-	      Proofview.V82.of_tactic (conclPattern concl p tacast)
+	    Proofview.V82.of_tactic (conclPattern concl p tacast)
       in
       let tac = if complete then tclCOMPLETE tac else tac in
 	match t with
@@ -186,16 +195,16 @@ and e_my_find_search db_list local_db hdc complete concl =
 	    (tac,b,false, name, lazy (pr_autotactic t))
   in List.map tac_of_hint hintl
 
-and e_trivial_resolve db_list local_db gl =
+and e_trivial_resolve db_list local_db sigma concl =
   try
     e_my_find_search db_list local_db
-    (head_constr_bound gl) true gl
+     (head_constr_bound concl) true sigma concl
   with Bound | Not_found -> []
 
-let e_possible_resolve db_list local_db gl =
+let e_possible_resolve db_list local_db sigma concl =
   try
     e_my_find_search db_list local_db
-      (head_constr_bound gl) false gl
+      (head_constr_bound concl) false sigma concl
   with Bound | Not_found -> []
 
 let catchable = function
@@ -334,7 +343,7 @@ let hints_tac hints =
   { skft = fun sk fk {it = gl,info; sigma = s;} ->
       let concl = Goal.V82.concl s gl in
       let tacgl = {it = gl; sigma = s;} in
-      let poss = e_possible_resolve hints info.hints concl in
+      let poss = e_possible_resolve hints info.hints s concl in
       let rec aux i foundone = function
 	| (tac, _, b, name, pp) :: tl ->
 	  let derivs = path_derivate info.auto_cut name in
@@ -759,7 +768,8 @@ let is_ground c gl =
   else tclFAIL 0 (str"Not ground") gl
 
 let autoapply c i gl =
-  let flags = auto_unif_flags (Auto.Hint_db.transparent_state (Auto.searchtable_map i)) in
+  let flags = auto_unif_flags Evar.Set.empty 
+    (Auto.Hint_db.transparent_state (Auto.searchtable_map i)) in
   let cty = pf_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
   unify_e_resolve false flags (c,ce) gl

@@ -39,6 +39,16 @@ let _ =
       optread  = (fun () -> !primitive_flag) ;
       optwrite = (fun b -> primitive_flag := b) }
 
+let typeclasses_strict = ref false
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "strict typeclass resolution";
+      optkey   = ["Typeclasses";"Strict";"Resolution"];
+      optread  = (fun () -> !typeclasses_strict);
+      optwrite = (fun b -> typeclasses_strict := b); }
+
 let interp_fields_evars evars env impls_env nots l =
   List.fold_left2
     (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
@@ -420,6 +430,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
   in
   let k =
     { cl_impl = impl;
+      cl_strict = !typeclasses_strict;
       cl_context = ctx_context;
       cl_props = fields;
       cl_projs = projs }

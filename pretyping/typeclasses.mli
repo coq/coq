@@ -34,6 +34,9 @@ type typeclass = {
       no name is provided. The [int option option] indicates subclasses whose hint has
       the given priority. *)
   cl_projs : (Name.t * (direction * int option) option * constant option) list;
+
+  (** Whether we use matching or full unification during resolution *)
+  cl_strict : bool; 
 }
 
 type instance

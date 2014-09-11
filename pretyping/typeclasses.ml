@@ -52,6 +52,8 @@ type typeclass = {
 
   (* The method implementaions as projections. *)
   cl_projs : (Name.t * (direction * int option) option * constant option) list;
+  
+  cl_strict : bool;
 }
 
 type typeclasses = typeclass Refmap.t
@@ -174,7 +176,8 @@ let subst_class (subst,cl) =
   { cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_context cl.cl_context;
     cl_props = do_subst_ctx cl.cl_props;
-    cl_projs = do_subst_projs cl.cl_projs; }
+    cl_projs = do_subst_projs cl.cl_projs;
+    cl_strict = cl.cl_strict }
 
 let discharge_class (_,cl) =
   let repl = Lib.replacement_context () in
@@ -214,10 +217,13 @@ let discharge_class (_,cl) =
     let ctx, subst = rel_of_variable_context ctx in
     let context = discharge_context ctx subst cl.cl_context in
     let props = discharge_rel_context subst (succ (List.length (fst cl.cl_context))) cl.cl_props in
-    { cl_impl = cl_impl';
-      cl_context = context;
-      cl_props = props;
-      cl_projs = List.smartmap (fun (x, y, z) -> x, y, Option.smartmap Lib.discharge_con z) cl.cl_projs }
+    let discharge_proj (x, y, z) = x, y, Option.smartmap Lib.discharge_con z in
+      { cl_impl = cl_impl';
+	cl_context = context;
+	cl_props = props;
+	cl_projs = List.smartmap discharge_proj cl.cl_projs;
+	cl_strict = cl.cl_strict;
+      }
 
 let rebuild_class cl = 
   try 
@@ -411,7 +417,8 @@ let add_constant_class cst =
     { cl_impl = ConstRef cst;
       cl_context = (List.map (const None) ctx, ctx);
       cl_props = [(Anonymous, None, arity)];
-      cl_projs = []
+      cl_projs = [];
+      cl_strict = false;
     }
   in add_class tc;
     set_typeclass_transparency (EvalConstRef cst) false false
@@ -429,7 +436,8 @@ let add_inductive_class ind =
       { cl_impl = IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;
 	cl_props = [Anonymous, None, ty];
-	cl_projs = [] }
+	cl_projs = [];
+	cl_strict = false }
   in add_class k
       
 (*
