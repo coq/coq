@@ -104,7 +104,7 @@ END
 
 (* By default the strategy for "rewrite_db" is top-down *)
 
-let db_strat db = StratUnary ("topdown", StratHints (false, db))
+let db_strat db = StratUnary (Topdown, StratHints (false, db))
 let cl_rewrite_clause_db db = cl_rewrite_clause_strat (strategy_of_ast (db_strat db))
 
 let cl_rewrite_clause_db = 
