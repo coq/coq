@@ -37,7 +37,7 @@ Definition prod_rect' A B (P : prod A B -> Type) (u : forall (fst : A) (snd : B)
 Definition conv : @prod_rect = @prod_rect'.
 Proof. reflexivity. Defined.
 
-Fail Definition imposs :=
+Definition imposs :=
   (fun A B P f (p : prod A B) => match p as p0 return P p0 with
                                    | {| fst := x ; snd := x0 |} => f x x0
                                  end).

@@ -1,4 +1,3 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter" "-nois") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 8657 lines to
 4731 lines, then from 4174 lines to 192 lines, then from 161 lines to 55 lines,
 then from 51 lines to 37 lines, then from 43 lines to 30 lines *)
@@ -19,7 +18,7 @@ Open Scope type_scope.
 
 Definition iff A B := prod (A -> B) (B -> A).
 Infix "<->" := iff : type_scope.
-Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a where "x =
+Inductive paths {A : Type@{i}} (a : A) : A -> Type@{i} := idpath : paths a a where "x =
 y" := (@paths _ x y) : type_scope.
 Class Contr_internal (A : Type) := { center : A ; contr : (forall y : A, center
 = y) }.

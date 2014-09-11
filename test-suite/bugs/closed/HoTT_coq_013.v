@@ -1,9 +1,9 @@
 Set Implicit Arguments.
 Generalizable All Variables.
 
-Polymorphic Record Category (obj : Type) :=.
+Polymorphic Variant Category (obj : Type) :=.
 
-            Polymorphic Record Functor objC (C : Category objC) objD (D : Category objD) :=.
+            Polymorphic Variant Functor objC (C : Category objC) objD (D : Category objD) :=.
 
             Polymorphic Definition ComposeFunctors objC C objD D objE E (G : @Functor objD D objE E) (F : @Functor objC C objD D) : Functor C E.
 Admitted.

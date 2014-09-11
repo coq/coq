@@ -36,4 +36,4 @@ Notation typeof x := ($(let T := type of x in exact T)$) (only parsing).
 Check eq_refl : typeof (@prod_rect) = typeof (@prod_rect').
 
 (* Check for the recursion principle I want *)
-Fail Check eq_refl : @prod_rect = @prod_rect'.
+Check eq_refl : @prod_rect = @prod_rect'.

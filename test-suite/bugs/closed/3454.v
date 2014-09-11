@@ -13,7 +13,7 @@ Check (fun r : @rimpl true 0 => r.(foo) (x:=0)).
 Check (fun r : @rimpl true 0 => @foo true 0 r 0).
 Check (fun r : @rimpl true 0 => foo r (x:=0)).
 Check (fun r : @rimpl true 0 => @foo _ _ r 0).
-Check (fun r : @rimpl true 0 => r.(@foo _ _)).
+Check (fun r : @rimpl true 0 => r.(@foo)).
 Check (fun r : @rimpl true 0 => r.(foo)).
 
 Notation "{ x : T  & P }" := (@sigT T P).
