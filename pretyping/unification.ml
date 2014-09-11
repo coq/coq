@@ -676,14 +676,12 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	| Proj (p1,c1), Proj (p2,c2) ->
 	    if eq_constant p1 p2 then
 	      try 
-	        let c1, c2, substn = 
-		   if isCast c1 && isCast c2 then
-		     let (c1,_,tc1) = destCast c1 in
-		     let (c2,_,tc2) = destCast c2 in
-		       c1, c2, unirec_rec curenvnb CONV true false substn tc1 tc2
-		   else c1, c2, substn
-		in
-		  unirec_rec curenvnb CONV true wt substn c1 c2
+		let substn = unirec_rec curenvnb CONV true wt substn c1 c2 in
+		  try (* Force unification of the types to fill in parameters *)
+		    let ty1 = get_type_of curenv ~lax:true sigma c1 in
+		    let ty2 = get_type_of curenv ~lax:true sigma c2 in
+		      unirec_rec curenvnb CONV true false substn ty1 ty2
+		  with RetypeError _ -> substn
 	      with ex when precatchable_exception ex ->
 	        unify_not_same_head curenvnb pb b wt substn cM cN
 	    else
