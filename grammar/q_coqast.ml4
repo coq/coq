@@ -176,7 +176,10 @@ let rec mlexpr_of_constr = function
                $mlexpr_of_list (mlexpr_of_list mlexpr_of_constr) substl$,[]) >>
   | Constrexpr.CPatVar (loc,n) ->
       let loc = of_coqloc loc in
-      <:expr< Constrexpr.CPatVar $dloc$ $mlexpr_of_pair mlexpr_of_bool mlexpr_of_ident n$ >>
+      <:expr< Constrexpr.CPatVar $dloc$ $mlexpr_of_ident n$ >>
+  | Constrexpr.CEvar (loc,n,[]) ->
+      let loc = of_coqloc loc in
+      <:expr< Constrexpr.CEvar $dloc$ $mlexpr_of_ident n$ [] >>
   | _ -> failwith "mlexpr_of_constr: TODO"
 
 let mlexpr_of_occ_constr =

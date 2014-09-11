@@ -229,6 +229,8 @@ val evar_instance_array : (Id.t -> 'a -> bool) -> evar_info ->
 
 val instantiate_evar_array : evar_info -> constr -> constr array -> constr
 
+val complete_instance : named_context -> (Id.t * constr) list -> constr array
+
 val subst_evar_defs_light : substitution -> evar_map -> evar_map
 (** Assume empty universe constraints in [evar_map] and [conv_pbs] *)
 

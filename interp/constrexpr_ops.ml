@@ -149,10 +149,10 @@ let rec constr_expr_eq e1 e2 =
     constr_expr_eq t1 t2 &&
     constr_expr_eq f1 f2
   | CHole _, CHole _ -> true
-  | CPatVar(_,(b1, i1)), CPatVar(_,(b2, i2)) ->
-    (b1 : bool) == b2 && Id.equal i1 i2
+  | CPatVar(_,i1), CPatVar(_,i2) ->
+    Id.equal i1 i2
   | CEvar (_, id1, c1), CEvar (_, id2, c2) ->
-    Id.equal id1 id2 && Option.equal (List.equal instance_eq) c1 c2
+    Id.equal id1 id2 && List.equal instance_eq c1 c2
   | CSort(_,s1), CSort(_,s2) ->
     Miscops.glob_sort_eq s1 s2
   | CCast(_,a1,(CastConv b1|CastVM b1)), CCast(_,a2,(CastConv b2|CastVM b2)) ->

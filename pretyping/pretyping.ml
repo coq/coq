@@ -407,7 +407,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
       (pretype_id (fun e r l t -> pretype tycon e r l t) loc env evdref lvar id)
       tycon
 
-  | GEvar (loc, id, instopt) ->
+  | GEvar (loc, id, inst) ->
       (* Ne faudrait-il pas s'assurer que hyps est bien un
 	 sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
       let evk =
@@ -415,9 +415,9 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
         with Not_found ->
           user_err_loc (loc,"",str "Unknown existential variable.") in
       let hyps = evar_filtered_context (Evd.find !evdref evk) in
-      let args = match instopt with
-        | None -> Array.of_list (instance_from_named_context hyps)
-        | Some inst -> error "Non-identity subtitutions of existential variables not implemented" in
+      let f c = (pretype empty_tycon env evdref lvar c).uj_val in
+      let inst = List.map (on_snd f) inst in
+      let args = complete_instance hyps inst in
       let c = mkEvar (evk, args) in
       let j = (Retyping.get_judgment_of env !evdref c) in
 	inh_conv_coerce_to_tycon loc env evdref j tycon

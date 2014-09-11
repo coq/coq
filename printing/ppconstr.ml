@@ -177,8 +177,8 @@ let pr_prim_token = function
 let pr_evar pr id l =
   hov 0 (str "?" ++ pr_id id ++
   (match l with
-   | None | Some [] -> mt()
-   | Some l ->
+   | [] -> mt()
+   | l ->
        let f (id,c) = pr_id id ++ str ":=" ++ pr ltop c in
        str"@{" ++ hov 0 (prlist_with_sep pr_comma f l) ++ str"}"))
 
@@ -554,7 +554,7 @@ let pr pr sep inherited a =
 
   | CHole _ -> str "_", latom
   | CEvar (_,n,l) -> pr_evar (pr mt) n l, latom
-  | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
+  | CPatVar (_,p) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_glob_sort s, latom
   | CCast (_,a,b) ->
       hv 0 (pr mt (lcast,L) a ++ cut () ++

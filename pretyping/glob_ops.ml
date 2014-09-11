@@ -65,7 +65,7 @@ let rec glob_constr_eq c1 c2 = match c1, c2 with
 | GVar (_, id1), GVar (_, id2) -> Id.equal id1 id2
 | GEvar (_, id1, arg1), GEvar (_, id2, arg2) ->
   Id.equal id1 id2 &&
-  Option.equal (fun l1 l2 -> List.equal instance_eq l1 l2) arg1 arg2
+  List.equal instance_eq arg1 arg2
 | GPatVar (_, (b1, pat1)), GPatVar (_, (b2, pat2)) ->
   (b1 : bool) == b2 && Id.equal pat1 pat2
 | GApp (_, f1, arg1), GApp (_, f2, arg2) ->

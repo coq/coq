@@ -1579,14 +1579,18 @@ let internalize globalenv env allow_patvar lvar c =
           Some glb
         in
 	GHole (loc, k, solve)
+    (* Parsing pattern variables *)
     | CPatVar (loc, n) when allow_patvar ->
-	GPatVar (loc, n)
-    | CPatVar (loc, (false,n)) ->
-	GEvar (loc, n, None)
+	GPatVar (loc, (true,n))
+    | CEvar (loc, n, []) when allow_patvar ->
+	GPatVar (loc, (false,n))
+    (* end *)
+    (* Parsing existential variables *)
+    | CEvar (loc, n, l) ->
+	GEvar (loc, n, List.map (on_snd (intern env)) l)
     | CPatVar (loc, _) ->
         raise (InternalizationError (loc,IllegalMetavariable))
-    | CEvar (loc, n, l) ->
-	GEvar (loc, n, Option.map (List.map (on_snd (intern env))) l)
+    (* end *)
     | CSort (loc, s) ->
 	GSort(loc,s)
     | CCast (loc, c1, c2) ->

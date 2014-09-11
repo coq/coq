@@ -671,13 +671,14 @@ let rec extern inctx scopes vars r =
 
   | GVar (loc,id) -> CRef (Ident (loc,id),None)
 
-  | GEvar (loc,n,None) when !print_meta_as_hole -> CHole (loc, None, None)
+  | GEvar (loc,n,[]) when !print_meta_as_hole -> CHole (loc, None, None)
 
   | GEvar (loc,n,l) ->
-      extern_evar loc n (Option.map (List.map (on_snd (extern false scopes vars))) l)
+      extern_evar loc n (List.map (on_snd (extern false scopes vars)) l)
 
-  | GPatVar (loc,n) ->
-      if !print_meta_as_hole then CHole (loc, None, None) else CPatVar (loc,n)
+  | GPatVar (loc,(b,n)) ->
+      if !print_meta_as_hole then CHole (loc, None, None) else
+        if b then CPatVar (loc,n) else CEvar (loc,n,[])
 
   | GApp (loc,f,args) ->
       (match f with
@@ -1030,7 +1031,7 @@ let rec glob_of_pat env sigma = function
       let test id = function PVar id' -> Id.equal id id' | _ -> false in
       let l = Evd.evar_instance_array test (Evd.find sigma evk) l in
       let id = Evd.evar_ident evk sigma in
-      GEvar (loc,id,Some (List.map (on_snd (glob_of_pat env sigma)) l))
+      GEvar (loc,id,List.map (on_snd (glob_of_pat env sigma)) l)
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
 	| Name id   -> id

@@ -405,7 +405,7 @@ let rec detype isgoal avoid env sigma t =
     | Meta n ->
 	(* Meta in constr are not user-parsable and are mapped to Evar *)
         (* using numbers to be unparsable *)
-	GEvar (dl, Id.of_string (string_of_int n), None)
+	GEvar (dl, Id.of_string (string_of_int n), [])
     | Var id ->
 	(try let _ = Global.lookup_named id in GRef (dl, VarRef id, None)
 	 with Not_found -> GVar (dl, id))
@@ -439,10 +439,10 @@ let rec detype isgoal avoid env sigma t =
     | Evar (evk,cl) ->
       let id,l =
         try Evd.evar_ident evk sigma,
-            Some (Evd.evar_instance_array isVarId (Evd.find sigma evk) cl)
-        with Not_found -> Id.of_string ("X" ^ string_of_int (Evar.repr evk)), None in
+            Evd.evar_instance_array isVarId (Evd.find sigma evk) cl
+        with Not_found -> Id.of_string ("X" ^ string_of_int (Evar.repr evk)), [] in
         GEvar (dl,id,
-               Option.map (List.map (on_snd (detype isgoal avoid env sigma))) l)
+               List.map (on_snd (detype isgoal avoid env sigma)) l)
     | Ind (ind_sp,u) ->
 	GRef (dl, IndRef ind_sp, detype_instance u)
     | Construct (cstr_sp,u) ->

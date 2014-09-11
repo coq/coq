@@ -279,6 +279,22 @@ let instantiate_evar_array info c args =
   | [] -> c
   | _ -> replace_vars inst c
 
+let complete_instance hyps update =
+  let oldinst = List.map (fun (id,_,_) -> mkVar id) hyps in
+  let rec aux seen newinst = function
+    | [] -> newinst
+    | (id,c) :: l ->
+        if List.mem id seen then
+          user_err_loc (Loc.ghost,"",pr_id id ++ str "appears more than once.")
+        else
+          let l1,l2 = List.split_when (fun c -> isVarId id c) newinst in
+          match l2 with
+          | [] ->
+              user_err_loc (Loc.ghost,"",str "No such variable in the signature of the existential variable: " ++ pr_id id)
+          | _::tl ->
+              aux (id::seen) (l1 @ c :: tl) l in
+  Array.of_list (aux [] oldinst update)
+
 module StringOrd = struct type t = string let compare = String.compare end
 module UNameMap = struct
 

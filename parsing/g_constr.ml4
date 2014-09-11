@@ -193,7 +193,7 @@ GEXTEND Gram
       | "@"; f=global; i = instance; args=LIST0 NEXT -> CAppExpl(!@loc,(None,f,i),args)
       | "@"; (locid,id) = pattern_identref; args=LIST1 identref ->
           let args = List.map (fun x -> CRef (Ident x,None), None) args in
-          CApp(!@loc,(None,CPatVar(locid,(true,id))),args) ]
+          CApp(!@loc,(None,CPatVar(locid,id)),args) ]
     | "9"
         [ ".."; c = operconstr LEVEL "0"; ".." ->
           CAppExpl (!@loc,(None,Ident (!@loc,ldots_var),None),[c]) ]
@@ -289,7 +289,14 @@ GEXTEND Gram
       | n=INT -> CPrim (!@loc, Numeral (Bigint.of_string n))
       | s=string -> CPrim (!@loc, String s)
       | "_" -> CHole (!@loc, None, None)
-      | id=pattern_ident -> CPatVar(!@loc,(false,id)) ] ]
+      | id=pattern_ident; inst = evar_instance -> CEvar(!@loc,id,inst) ] ]
+  ;
+  inst:
+    [ [ id = ident; ":="; c = lconstr -> (id,c) ] ]
+  ;
+  evar_instance:
+    [ [ "@{"; l = LIST1 inst SEP ","; "}" -> l
+      | -> [] ] ]
   ;
   instance:
     [ [ "@{"; l = LIST1 level; "}" -> Some l
