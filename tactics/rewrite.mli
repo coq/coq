@@ -18,10 +18,18 @@ open Tacinterp
 
 (** TODO: document and clean me! *)
 
+type unary_strategy = 
+    Subterms | Subterm | Innermost | Outermost
+  | Bottomup | Topdown | Progress | Try | Any | Repeat
+
+type binary_strategy = 
+  | Compose | Choice
+
 type ('constr,'redexpr) strategy_ast = 
   | StratId | StratFail | StratRefl
-  | StratUnary of string * ('constr,'redexpr) strategy_ast
-  | StratBinary of string * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
+  | StratUnary of unary_strategy * ('constr,'redexpr) strategy_ast
+  | StratBinary of binary_strategy 
+    * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
   | StratConstr of 'constr * bool
   | StratTerms of 'constr list
   | StratHints of bool * string

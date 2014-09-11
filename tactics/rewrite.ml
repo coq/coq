@@ -1606,10 +1606,18 @@ let interp_glob_constr_list env sigma =
 
 (* Syntax for rewriting with strategies *)
 
+type unary_strategy = 
+    Subterms | Subterm | Innermost | Outermost
+  | Bottomup | Topdown | Progress | Try | Any | Repeat
+
+type binary_strategy = 
+  | Compose | Choice
+
 type ('constr,'redexpr) strategy_ast = 
   | StratId | StratFail | StratRefl
-  | StratUnary of string * ('constr,'redexpr) strategy_ast
-  | StratBinary of string * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
+  | StratUnary of unary_strategy * ('constr,'redexpr) strategy_ast
+  | StratBinary of binary_strategy 
+    * ('constr,'redexpr) strategy_ast * ('constr,'redexpr) strategy_ast
   | StratConstr of 'constr * bool
   | StratTerms of 'constr list
   | StratHints of bool * string
@@ -1633,25 +1641,23 @@ let rec strategy_of_ast = function
   | StratUnary (f, s) -> 
     let s' = strategy_of_ast s in
     let f' = match f with
-      | "all_subterms" -> all_subterms
-      | "one_subterm" -> one_subterm
-      | "innermost" -> Strategies.innermost
-      | "outermost" -> Strategies.outermost
-      | "bottomup" -> Strategies.bu
-      | "topdown" -> Strategies.td
-      | "progress" -> Strategies.progress
-      | "try" -> Strategies.try_
-      | "any" -> Strategies.any
-      | "repeat" -> Strategies.repeat
-      | _ -> anomaly ~label:"strategy_of_ast" (str"Unkwnon strategy: " ++ str f)
+      | Subterms -> all_subterms
+      | Subterm -> one_subterm
+      | Innermost -> Strategies.innermost
+      | Outermost -> Strategies.outermost
+      | Bottomup -> Strategies.bu
+      | Topdown -> Strategies.td
+      | Progress -> Strategies.progress
+      | Try -> Strategies.try_
+      | Any -> Strategies.any
+      | Repeat -> Strategies.repeat
     in f' s'
   | StratBinary (f, s, t) ->
     let s' = strategy_of_ast s in
     let t' = strategy_of_ast t in
     let f' = match f with
-      | "compose" -> Strategies.seq
-      | "choice" -> Strategies.choice
-      | _ -> anomaly ~label:"strategy_of_ast" (str"Unkwnon strategy: " ++ str f)
+      | Compose -> Strategies.seq
+      | Choice -> Strategies.choice
     in f' s' t'
   | StratConstr (c, b) -> apply_glob_constr (fst c) b AllOccurrences
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id
