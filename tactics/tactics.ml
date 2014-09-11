@@ -656,12 +656,15 @@ let intro_replacing id gl =
 
 (* This version assumes that replacement is actually possible *)
 (* (ids given in the introduction order) *)
+(* We keep a sub-optimality in cleaing for compatibility with *)
+(* the behavior of inversion *)
 let intros_possibly_replacing ids =
+  let suboptimal = true in
   Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
     let posl = List.map (fun id -> (id,get_next_hyp_position id hyps)) ids in
     Tacticals.New.tclTHEN
-      (Tacticals.New.tclMAP (fun id -> Tacticals.New.tclTRY (Proofview.V82.tactic (thin_for_replacing [id]))) (List.rev ids))
+      (Tacticals.New.tclMAP (fun id -> Tacticals.New.tclTRY (Proofview.V82.tactic (thin_for_replacing [id]))) (if suboptimal then ids else List.rev ids))
       (Tacticals.New.tclMAP (fun (id,pos) ->
         Tacticals.New.tclORELSE (intro_move (Some id) pos) (intro_using id))
          posl)
