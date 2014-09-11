@@ -156,3 +156,36 @@ intros * Hyp.
 inversion Hyp as (a,b,H,c,(H1_1,H1_2),(H2_1,H2_2,H2_3)).
 reflexivity.
 Qed.
+
+(* Up to September 2014, Mapp below was called MApp0 because of a bug
+   in intro_replacing (short version of bug 2164.v)
+   (example taken from CoLoR) *)
+
+Parameter Term : Type.
+Parameter isApp : Term -> Prop.
+Parameter appBodyL : forall M, isApp M -> Prop.
+Parameter lower : forall M Mapp, appBodyL M Mapp -> Term.
+
+Inductive BetaStep : Term -> Term -> Prop :=
+  Beta M Mapp Mabs : BetaStep M (lower M Mapp Mabs).
+
+Goal forall M N, BetaStep M N -> True.
+intros M N H.
+inversion H as (P,Mapp,Mabs,H0,H1).
+clear Mapp Mabs H0 H1.
+exact Logic.I.
+Qed.
+
+(* Up to September 2014, H0 below was renamed called H1 because of a collision
+   with the automaticallly generated names for equations.
+   (example taken from CoLoR) *)
+
+Inductive term := Var | Fun : term -> term -> term.
+Inductive lt : term -> term -> Prop :=
+  mpo f g ss ts : lt Var (Fun f ts) -> lt (Fun f ss) (Fun g ts).
+
+Goal forall f g ss ts, lt (Fun f ss) (Fun g ts) -> lt Var (Fun f ts).
+intros.
+inversion H as (f',g',ss',ts',H0).
+exact H0.
+Qed.

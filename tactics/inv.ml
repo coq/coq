@@ -330,7 +330,7 @@ let remember_first_eq id x = if !x == MoveLast then x := MoveAfter id
    If it can discriminate then the goal is proved, if not tries to use it as
    a rewrite rule. It erases the clause which is given as input *)
 
-let projectAndApply as_mode thin id eqname names depids =
+let projectAndApply as_mode thin avoid id eqname names depids =
   let subst_hyp l2r id =
     tclTHEN (tclTRY(rewriteInConcl l2r (mkVar id)))
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
@@ -352,7 +352,7 @@ let projectAndApply as_mode thin id eqname names depids =
       [if as_mode then clear [id] else tclIDTAC;
        (tclMAP_i (false,false) neqns (function (idopt,_) ->
 	 tclTRY (tclTHEN
-	   (intro_move idopt MoveLast)
+	   (intro_move_avoid idopt avoid MoveLast)
 	   (* try again to substitute and if still not a variable after *)
 	   (* decomposition, arbitrarily try to rewrite RL !? *)
 	   (tclTRY (onLastHypId (substHypIfVariable (fun id -> subst_hyp false id))))))
@@ -382,6 +382,7 @@ let rewrite_equations as_mode othin neqns names ba =
   Proofview.Goal.nf_enter begin fun gl ->
   let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let first_eq = ref MoveLast in
+  let avoid = if as_mode then List.map pi1 nodepids else [] in
   match othin with
     | Some thin ->
         tclTHENLIST
@@ -392,12 +393,13 @@ let rewrite_equations as_mode othin neqns names ba =
              (nLastDecls neqns (fun ctx -> clear (ids_of_named_context ctx)));
 	     tclMAP_i (true,false) neqns (fun (idopt,names) ->
                (tclTHEN
-		 (intro_move idopt MoveLast)
+		 (intro_move_avoid idopt avoid MoveLast)
 		 (onLastHypId (fun id ->
-		   tclTRY (projectAndApply as_mode thin id first_eq names depids)))))
+		   tclTRY (projectAndApply as_mode thin avoid id first_eq names depids)))))
 	       names;
 	     tclMAP (fun (id,_,_) -> tclIDTAC >>= fun () -> (* delay for [first_eq]. *)
-	       intro_move None (if thin then MoveLast else !first_eq))
+               let idopt = if as_mode then Some id else None in
+	       intro_move idopt (if thin then MoveLast else !first_eq))
 	       nodepids;
 	     (tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids)]
     | None ->

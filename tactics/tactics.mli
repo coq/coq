@@ -57,6 +57,7 @@ val find_intro_names : rel_context -> goal sigma -> Id.t list
 val intro                : unit Proofview.tactic
 val introf               : unit Proofview.tactic
 val intro_move        : Id.t option -> Id.t move_location -> unit Proofview.tactic
+val intro_move_avoid  : Id.t option -> Id.t list -> Id.t move_location -> unit Proofview.tactic
 
   (** [intro_avoiding idl] acts as intro but prevents the new Id.t
      to belong to [idl] *)

@@ -604,9 +604,11 @@ let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast false false
 
 let intro_then_force = intro_then_gen (NamingAvoid []) MoveLast true false
 
-let intro_move idopt hto = match idopt with
-  | None -> intro_gen (NamingAvoid []) hto true false
+let intro_move_avoid idopt avoid hto = match idopt with
+  | None -> intro_gen (NamingAvoid avoid) hto true false
   | Some id -> intro_gen (NamingMustBe (dloc,id)) hto true false
+
+let intro_move idopt hto = intro_move_avoid idopt [] hto
 
 (**** Multiple introduction tactics ****)
 
