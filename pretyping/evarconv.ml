@@ -97,6 +97,22 @@ let position_problem l2r = function
   | CONV -> None
   | CUMUL -> Some l2r
 
+let occur_rigidly ev evd t = 
+  let (l, app) = decompose_app_vect t in 
+  let rec aux t = 
+    match kind_of_term (whd_evar evd t) with
+    | App (f, c) -> if aux f then Array.exists aux c else false
+    | Construct _ | Ind _ | Sort _ | Meta _ | Fix _ | CoFix _ -> true
+    | Proj (p, c) -> not (aux c)
+    | Evar (ev',_) -> if Evar.equal ev ev' then raise Occur else false
+    | Cast (p, _, _) -> aux p
+    | Lambda _ | LetIn _ -> false
+    | Const _ -> false
+    | Prod (_, b, t) -> ignore(aux b || aux t); true
+    | Rel _ | Var _ -> false
+    | Case _ -> false
+  in Array.exists (fun t -> try ignore(aux t); false with Occur -> true) app
+
 (* [check_conv_record (t1,l1) (t2,l2)] tries to decompose the problem
    (t1 l1) = (t2 l2) into a problem
 
@@ -428,8 +444,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    (fun () ->
 	      ise_try evd 
 	        [eta;(* Postpone the use of an heuristic *)
-		 (fun i -> switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i))
-	           (Stack.zip apprF) tR)])
+		 (fun i -> 
+		   if not (occur_rigidly (fst ev) i tR) then
+		     switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i))
+	               (Stack.zip apprF) tR
+		   else quick_fail i)])
 	    ev lF tR evd
     in ise_try evd [f; eta]
   in
