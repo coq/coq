@@ -804,6 +804,9 @@ module V82 = struct
   let tclEVARS evd =
     Proof.modify (fun ps -> { ps with solution = evd })
 
+  let tclEVARSADVANCE evd =
+    Proof.modify (fun ps -> { solution = evd; comb = undefined evd ps.comb })
+
   let tclEVARUNIVCONTEXT ctx = 
     Proof.modify (fun ps -> { ps with solution = Evd.set_universe_context ps.solution ctx })
       

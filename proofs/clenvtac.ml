@@ -123,7 +123,7 @@ let unify ?(flags=fail_quick_unif_flags) m =
     let evd = create_goal_evar_defs (Proofview.Goal.sigma gl) in
     try
       let evd' = w_unify env evd CONV ~flags m n in
-      Proofview.V82.tclEVARS evd'
+	Proofview.V82.tclEVARSADVANCE evd'
     with e when Errors.noncritical e ->
       (** This is Tacticals.tclFAIL *)
       Proofview.tclZERO (FailError (0, lazy (Errors.print e)))

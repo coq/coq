@@ -334,8 +334,12 @@ module V82 : sig
   (* normalises the evars in the goals, and stores the result in
      solution. *)
   val nf_evar_goals : unit tactic
-
+    
+  (* Assumes the new evar_map does not change existing goals *)
   val tclEVARS : Evd.evar_map -> unit tactic
+    
+  (* Assumes the new evar_map might be solving some existing goals *)
+  val tclEVARSADVANCE : Evd.evar_map -> unit tactic
 
   (* Set the evar universe context *)
   val tclEVARUNIVCONTEXT : Evd.evar_universe_context -> unit tactic
