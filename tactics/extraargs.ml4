@@ -205,27 +205,16 @@ END
 
 let pr_by_arg_tac prtac opt_c = pr_by_arg_tac () () prtac opt_c
 
-(* spiwack argument for the commands of the retroknowledge *)
-
-let wit_r_nat_field =
-  Genarg.create_arg None "r_nat_field"
-let wit_r_n_field =
-  Genarg.create_arg None "r_n_field"
-let wit_r_int31_field =
-  Genarg.create_arg None "r_int31_field"
-let wit_r_field =
-  Genarg.create_arg None "r_field"
-
 (* spiwack: the print functions are incomplete, but I don't know what they are
 	used for *)
-let pr_r_nat_field _ _ _ natf =
+let pr_r_nat_field natf =
   str "nat " ++
   match natf with
     | Retroknowledge.NatType -> str "type"
     | Retroknowledge.NatPlus -> str "plus"
     | Retroknowledge.NatTimes -> str "times"
 
-let pr_r_n_field _ _ _ nf =
+let pr_r_n_field  nf =
   str "binary N " ++
   match nf with
     | Retroknowledge.NPositive -> str "positive"
@@ -237,7 +226,7 @@ let pr_r_n_field _ _ _ nf =
     | Retroknowledge.NPlus -> str "plus"
     | Retroknowledge.NTimes -> str "times"
 
-let pr_r_int31_field _ _ _ i31f =
+let pr_r_int31_field i31f =
   str "int31 " ++
   match i31f with
     | Retroknowledge.Int31Bits -> str "bits"
@@ -250,16 +239,15 @@ let pr_r_int31_field _ _ _ i31f =
     | Retroknowledge.Int31Times -> str "times"
     | _ -> assert false
 
-let pr_retroknowledge_field _ _ _ f =
+let pr_retroknowledge_field f =
   match f with
  (* | Retroknowledge.KEq -> str "equality"
   | Retroknowledge.KNat natf -> pr_r_nat_field () () () natf
   | Retroknowledge.KN nf -> pr_r_n_field () () () nf *)
-  | Retroknowledge.KInt31 (group, i31f) -> (pr_r_int31_field () () () i31f) ++
+  | Retroknowledge.KInt31 (group, i31f) -> (pr_r_int31_field i31f) ++
                                            str "in " ++ str group
 
-ARGUMENT EXTEND retroknowledge_nat
-TYPED AS r_nat_field
+VERNAC ARGUMENT EXTEND retroknowledge_nat
 PRINTED BY pr_r_nat_field
 | [ "nat" "type" ] -> [ Retroknowledge.NatType ]
 | [ "nat" "plus" ] -> [ Retroknowledge.NatPlus ]
@@ -267,8 +255,7 @@ PRINTED BY pr_r_nat_field
 END
 
 
-ARGUMENT EXTEND retroknowledge_binary_n
-TYPED AS r_n_field
+VERNAC ARGUMENT EXTEND retroknowledge_binary_n
 PRINTED BY pr_r_n_field
 | [ "binary" "N" "positive" ] -> [ Retroknowledge.NPositive ]
 | [ "binary" "N" "type" ] -> [ Retroknowledge.NType ]
@@ -280,8 +267,7 @@ PRINTED BY pr_r_n_field
 | [ "binary" "N" "times" ] -> [ Retroknowledge.NTimes ]
 END
 
-ARGUMENT EXTEND retroknowledge_int31
-TYPED AS r_int31_field
+VERNAC ARGUMENT EXTEND retroknowledge_int31
 PRINTED BY pr_r_int31_field
 | [ "int31" "bits" ] -> [ Retroknowledge.Int31Bits ]
 | [ "int31" "type" ] -> [ Retroknowledge.Int31Type ]
@@ -308,8 +294,7 @@ PRINTED BY pr_r_int31_field
 | [ "int31" "lxor" ] -> [ Retroknowledge.Int31Lxor ]
 END
 
-ARGUMENT EXTEND retroknowledge_field
-TYPED AS r_field
+VERNAC ARGUMENT EXTEND retroknowledge_field
 PRINTED BY pr_retroknowledge_field
 (*| [ "equality" ] -> [ Retroknowledge.KEq ]
 | [ retroknowledge_nat(n)] -> [ Retroknowledge.KNat n ]

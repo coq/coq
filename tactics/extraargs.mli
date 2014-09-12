@@ -57,4 +57,4 @@ val pr_by_arg_tac :
 (** Spiwack: Primitive for retroknowledge registration *)
 
 val retroknowledge_field : Retroknowledge.field Pcoq.Gram.entry
-val wit_retroknowledge_field : Retroknowledge.field Genarg.uniform_genarg_type
+val wit_retroknowledge_field : (Retroknowledge.field, unit, unit) Genarg.genarg_type
