@@ -10,14 +10,14 @@ Jean-Christophe Filliatre (jcfillia@lri.fr),
 
 CONTENTS:
 
-    coq.el         A major mode for editing Coq files in Gnu Emacs
+    gallina.el     A major mode for editing Coq files in Gnu Emacs
 
 USAGE:
 
 Add the following lines to your .emacs file:
 
 (setq auto-mode-alist (cons '("\\.v$" . coq-mode) auto-mode-alist))
-(autoload 'coq-mode "coq" "Major mode for editing Coq vernacular." t)
+(autoload 'coq-mode "gallina" "Major mode for editing Coq vernacular." t)
 
 The Coq major mode is triggered by visiting a file with extension .v,
 or manually by M-x coq-mode. It gives you the correct syntax table for

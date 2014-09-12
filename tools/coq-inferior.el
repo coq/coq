@@ -52,7 +52,7 @@
 ;; "~/.emacs":
 ;;
 ;;   (setq auto-mode-alist (cons '("\\.v$" . coq-mode) auto-mode-alist))
-;;   (autoload 'coq-mode "coq" "Major mode for editing Coq vernacular." t)
+;;   (autoload 'coq-mode "gallina" "Major mode for editing Coq vernacular." t)
 ;;   (autoload 'run-coq "inferior-coq" "Run an inferior Coq process." t)
 ;;   (autoload 'run-coq-other-window "inferior-coq"
 ;;     "Run an inferior Coq process in a new window." t)
@@ -78,7 +78,7 @@
 ;; From -0.0 to 1.0 brought into existence.
 
 
-(require 'coq)
+(require 'gallina)
 (require 'comint)
 
 (setq coq-program-name "coqtop")

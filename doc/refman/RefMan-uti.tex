@@ -177,7 +177,7 @@ have been completely produced with {\tt coq-tex}.
 
 \subsection{The \Coq\ Emacs mode}
 
-\Coq\ comes with a Major mode for \emacs, {\tt coq.el}. This mode provides
+\Coq\ comes with a Major mode for \emacs, {\tt gallina.el}. This mode provides
 syntax highlighting
 and also a rudimentary indentation facility
 in the style of the Caml \emacs\ mode.
@@ -186,7 +186,7 @@ Add the following lines to your \verb!.emacs! file:
 
 \begin{verbatim}
   (setq auto-mode-alist (cons '("\\.v$" . coq-mode) auto-mode-alist))
-  (autoload 'coq-mode "coq" "Major mode for editing Coq vernacular." t)
+  (autoload 'coq-mode "gallina" "Major mode for editing Coq vernacular." t)
 \end{verbatim}
 
 The \Coq\ major mode is triggered by visiting a file with extension {\tt .v},

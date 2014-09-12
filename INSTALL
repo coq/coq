@@ -161,7 +161,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    in you .emacs file:
 
         (setq auto-mode-alist (cons '("\\.v$" . coq-mode) auto-mode-alist))
-        (autoload 'coq-mode "coq" "Major mode for editing Coq vernacular." t)
+        (autoload 'coq-mode "gallina" "Major mode for editing Coq vernacular." t)
 
 7- You can now clean all the sources. (You can even erase them.)
 

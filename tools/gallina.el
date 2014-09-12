@@ -8,8 +8,8 @@
 ; compatibility code for proofgeneral files
 (require 'coq-font-lock)
 ; ProofGeneral files. remember to remove coq version tests in
-; coq-syntax.el
-(require 'coq-syntax)
+; gallina-syntax.el
+(require 'gallina-syntax)
 
 (defvar coq-mode-map nil
   "Keymap used in Coq mode.")
