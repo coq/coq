@@ -1555,7 +1555,7 @@ let build_inversion_problem loc env sigma tms t =
 	patl@pat::patl',acc_sign,acc
     | (t, NotInd (bo,typ)) :: tms ->
       let pat,acc = make_patvar t acc in
-      let d = (alias_of_pat pat,None,t) in
+      let d = (alias_of_pat pat,None,typ) in
       let patl,acc_sign,acc = aux (n+1) (push_rel d env) (d::acc_sign) tms acc in
       pat::patl,acc_sign,acc in
   let avoid0 = ids_of_context env in
