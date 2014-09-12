@@ -840,8 +840,6 @@ let apply_rule unify loccs : ('a * int) pure_strategy =
     else not (List.mem occ occs) 
   in
     fun (hypinfo, occ) env avoid t ty cstr evars ->
-      (* if not (eq_env !hypinfo.cl.env env) then *)
-      (* 	hypinfo := refresh_hypinfo env (goalevars evars) !hypinfo; *)
       let unif = unify hypinfo env evars t in
 	match unif with
 	| None -> ((hypinfo, occ), Fail)

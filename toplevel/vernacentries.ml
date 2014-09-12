@@ -792,7 +792,7 @@ let vernac_declare_instances locality ids pri =
   List.iter (fun id -> Classes.existing_instance glob id pri) ids
 
 let vernac_declare_class id =
-  Classes.declare_class id
+  Record.declare_existing_class (Nametab.global id)
 
 (***********)
 (* Solving *)

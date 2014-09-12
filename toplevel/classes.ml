@@ -44,14 +44,7 @@ let _ =
   Hook.set Typeclasses.set_typeclass_transparency_hook set_typeclass_transparency;
   Hook.set Typeclasses.classes_transparent_state_hook
     (fun () -> Auto.Hint_db.transparent_state (Auto.searchtable_map typeclasses_db))
-    
-let declare_class g =
-  match global g with
-  | ConstRef x -> Typeclasses.add_constant_class x
-  | IndRef x -> Typeclasses.add_inductive_class x
-  | _ -> user_err_loc (loc_of_reference g, "declare_class", 
-		      Pp.str"Unsupported class type, only constants and inductives are allowed")
-    
+        
 (** TODO: add subinstances *)
 let existing_instance glob g pri =
   let c = global g in

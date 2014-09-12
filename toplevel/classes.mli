@@ -20,10 +20,6 @@ val mismatched_params : env -> constr_expr list -> rel_context -> 'a
 
 val mismatched_props : env -> constr_expr list -> rel_context -> 'a
 
-(** Post-hoc class declaration. *)
-
-val declare_class : reference -> unit
-
 (** Instance declaration *)
 
 val existing_instance : bool -> reference -> int option -> unit

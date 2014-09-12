@@ -37,6 +37,10 @@ type typeclass = {
 
   (** Whether we use matching or full unification during resolution *)
   cl_strict : bool; 
+
+  (** Whether we can assume that instances are unique, which allows 
+      no backtracking and sharing of resolution. *)
+  cl_unique : bool; 
 }
 
 type instance
@@ -46,10 +50,6 @@ val typeclasses : unit -> typeclass list
 val all_instances : unit -> instance list
 
 val add_class : typeclass -> unit
-
-val add_constant_class : constant -> unit
-
-val add_inductive_class : inductive -> unit
 
 val new_instance : typeclass -> int option -> bool -> Decl_kinds.polymorphic -> 
   global_reference -> instance
@@ -104,9 +104,9 @@ val mark_resolvable : evar_info -> evar_info
 val is_class_evar : evar_map -> evar_info -> bool
 val is_class_type : evar_map -> types -> bool
 
-val resolve_typeclasses : ?filter:evar_filter -> ?split:bool -> ?fail:bool ->
-  env -> evar_map -> evar_map
-val resolve_one_typeclass : env -> evar_map -> types -> open_constr
+val resolve_typeclasses : ?filter:evar_filter -> ?unique:bool -> 
+  ?split:bool -> ?fail:bool -> env -> evar_map -> evar_map
+val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> types -> open_constr
 
 val set_typeclass_transparency_hook : (evaluable_global_reference -> bool (*local?*) -> bool -> unit) Hook.t
 val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> unit
@@ -122,8 +122,8 @@ val add_instance_hint : global_reference_or_constr -> global_reference list ->
   bool -> int option -> Decl_kinds.polymorphic -> unit
 val remove_instance_hint : global_reference -> unit
 
-val solve_instantiations_problem : (env -> evar_map -> evar_filter -> bool -> bool -> evar_map) ref
-val solve_instantiation_problem : (env -> evar_map -> types -> open_constr) ref
+val solve_instantiations_problem : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) ref
+val solve_instantiation_problem : (env -> evar_map -> types -> bool -> open_constr) ref
 
 val declare_instance : int option -> bool -> global_reference -> unit
 

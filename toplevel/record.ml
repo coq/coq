@@ -49,6 +49,16 @@ let _ =
       optread  = (fun () -> !typeclasses_strict);
       optwrite = (fun b -> typeclasses_strict := b); }
 
+let typeclasses_unique = ref false
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "unique typeclass instances";
+      optkey   = ["Typeclasses";"Unique";"Instances"];
+      optread  = (fun () -> !typeclasses_unique);
+      optwrite = (fun b -> typeclasses_unique := b); }
+
 let interp_fields_evars env evars impls_env nots l =
   List.fold_left2
     (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
@@ -431,6 +441,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
   let k =
     { cl_impl = impl;
       cl_strict = !typeclasses_strict;
+      cl_unique = !typeclasses_unique;
       cl_context = ctx_context;
       cl_props = fields;
       cl_projs = projs }
@@ -439,6 +450,46 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
 (*       if sub then match p with (_, _, Some p) -> declare_instance_cst true p pri | _ -> ()) *)
 (*       k.cl_projs coers priorities; *)
   add_class k; impl
+
+
+let add_constant_class cst =
+  let ty = Universes.unsafe_type_of_global (ConstRef cst) in
+  let ctx, arity = decompose_prod_assum ty in
+  let tc = 
+    { cl_impl = ConstRef cst;
+      cl_context = (List.map (const None) ctx, ctx);
+      cl_props = [(Anonymous, None, arity)];
+      cl_projs = [];
+      cl_strict = !typeclasses_strict;
+      cl_unique = !typeclasses_unique
+    }
+  in add_class tc;
+    set_typeclass_transparency (EvalConstRef cst) false false
+      
+let add_inductive_class ind =
+  let mind, oneind = Global.lookup_inductive ind in
+  let k =
+    let ctx = oneind.mind_arity_ctxt in
+    let inst = Univ.UContext.instance mind.mind_universes in
+    let ty = Inductive.type_of_inductive_knowing_parameters
+      (push_rel_context ctx (Global.env ()))
+      ((mind,oneind),inst)
+      (Array.map (fun x -> lazy x) (Termops.extended_rel_vect 0 ctx))
+    in
+      { cl_impl = IndRef ind;
+	cl_context = List.map (const None) ctx, ctx;
+	cl_props = [Anonymous, None, ty];
+	cl_projs = [];
+	cl_strict = !typeclasses_strict;
+	cl_unique = !typeclasses_unique }
+  in add_class k
+
+let declare_existing_class g =
+  match g with
+  | ConstRef x -> add_constant_class x
+  | IndRef x -> add_inductive_class x
+  | _ -> user_err_loc (Loc.dummy_loc, "declare_existing_class", 
+		      Pp.str"Unsupported class type, only constants and inductives are allowed")
 
 open Vernacexpr
 

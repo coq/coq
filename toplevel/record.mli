@@ -40,3 +40,5 @@ val definition_structure :
   inductive_kind * Decl_kinds.polymorphic * Decl_kinds.recursivity_kind * lident with_coercion * local_binder list *
   (local_decl_expr with_instance with_priority with_notation) list *
   Id.t * constr_expr option -> global_reference
+
+val declare_existing_class : global_reference -> unit
