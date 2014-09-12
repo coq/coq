@@ -608,8 +608,8 @@ let level_of (n,p) = match p with E -> n | L -> n-1 | Prec n -> n | Any -> lseq
 (** A printer for tactics that polymorphically works on the three
     "raw", "glob" and "typed" levels *)
 
-type ('trm,'pat,'cst,'ref,'nam,'lev) printer = {
-  pr_tactic : tolerability -> ('trm,'pat,'cst,'ref,'nam,'lev) gen_tactic_expr -> std_ppcmds;
+type 'a printer = {
+  pr_tactic : tolerability -> 'a gen_tactic_expr -> std_ppcmds;
   pr_constr : 'trm -> std_ppcmds;
   pr_lconstr : 'trm -> std_ppcmds;
   pr_pattern : 'pat -> std_ppcmds;
@@ -621,6 +621,15 @@ type ('trm,'pat,'cst,'ref,'nam,'lev) printer = {
   pr_extend : int -> ml_tactic_name -> 'lev generic_argument list -> std_ppcmds;
   pr_alias : int -> KerName.t -> 'lev generic_argument list -> std_ppcmds;
 }
+
+constraint 'a = <
+    term:'trm;
+    pattern:'pat;
+    constant:'cst;
+    reference:'ref;
+    name:'nam;
+    level:'lev
+>
 
 let make_pr_tac pr
   (strip_prod_binders) =
