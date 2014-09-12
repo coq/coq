@@ -844,15 +844,15 @@ let do_replace id = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) targetid id clenv0 tac =
-  let clenv = Clenvtac.clenv_pose_dependent_evars with_evars clenv0 in
+let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) targetid id sigma0 clenv tac =
+  let clenv = Clenvtac.clenv_pose_dependent_evars with_evars clenv in
   let clenv =
     if with_classes then
       { clenv with evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd }
     else clenv
   in
   let new_hyp_typ = clenv_type clenv in
-  if not with_evars then check_unresolved_evars_of_metas clenv0.evd clenv;
+  if not with_evars then check_unresolved_evars_of_metas sigma0 clenv;
   if not with_evars && occur_meta new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
@@ -1106,7 +1106,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) id rename i (
   if eq_constr hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
-  clenv_refine_in with_evars id id elimclause''
+  clenv_refine_in with_evars id id sigma elimclause''
     (fun id -> Proofview.tclUNIT ())
   end
 
@@ -1367,7 +1367,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
     let sigma = Proofview.Goal.sigma gl in
     try
       let clause = apply_in_once_main flags innerclause env sigma (c,lbind) in
-      clenv_refine_in ~sidecond_first with_evars targetid id clause
+      clenv_refine_in ~sidecond_first with_evars targetid id sigma clause
         (fun id ->
           Tacticals.New.tclTHENLIST [
             apply_clear_request clear_flag false c;
