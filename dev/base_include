@@ -188,7 +188,7 @@ let e s = Constrintern.intern_constr (Global.env()) (parse_constr s);;
    implicit syntax *)
 
 let constr_of_string s = 
-  Constrintern.interp_constr Evd.empty (Global.env()) (parse_constr s);;
+  Constrintern.interp_constr (Global.env()) Evd.empty (parse_constr s);;
 
 (* get the body of a constant *)
 
@@ -207,7 +207,7 @@ let get_nth_goal n = nth_goal_of_pftreestate n (Pfedit.get_pftreestate ());;
 let current_goal () = get_nth_goal 1;;
 *)
 let pf_e gl s = 
-  Constrintern.interp_constr (project gl) (pf_env gl) (parse_constr s);;
+  Constrintern.interp_constr (pf_env gl) (project gl) (parse_constr s);;
 
 (* Set usual printing since the global env is available from the tracer *)
 let _ = Constrextern.in_debugger := false
