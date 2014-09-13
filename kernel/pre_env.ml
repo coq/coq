@@ -46,7 +46,8 @@ type globals = {
 
 type stratification = {
   env_universes : universes;
-  env_engagement : engagement option
+  env_engagement : engagement option;
+  env_type_in_type : bool
 }
 
 type val_kind =
@@ -92,7 +93,8 @@ let empty_env = {
   env_nb_rel = 0;
   env_stratification = {
     env_universes = initial_universes;
-    env_engagement = None };
+    env_engagement = None;
+    env_type_in_type = false};
   env_conv_oracle = Conv_oracle.empty;
   retroknowledge = Retroknowledge.initial_retroknowledge }
 

@@ -953,7 +953,7 @@ and pretype_type resolve_tc valcon env evdref lvar = function
 	       match kind_of_term (whd_betadeltaiota env sigma t) with
                | Sort s -> s
                | Evar ev when is_Type (existential_type sigma ev) ->
-		   evd_comb1 (define_evar_as_sort) evdref ev
+		   evd_comb1 (define_evar_as_sort env) evdref ev
                | _ -> anomaly (Pp.str "Found a type constraint which is not a type")
            in
 	     { utj_val = v;

@@ -177,7 +177,7 @@ let is_cumul = function CUMUL -> true | CONV -> false
 
 type 'a universe_compare = 
   { (* Might raise NotConvertible *)
-    compare : conv_pb -> sorts -> sorts -> 'a -> 'a;
+    compare : env -> conv_pb -> sorts -> sorts -> 'a -> 'a;
     compare_instances: bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
   } 
 
@@ -187,8 +187,8 @@ type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a 
 
 type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
 
-let sort_cmp_universes pb s0 s1 (u, check) =
-  (check.compare pb s0 s1 u, check)
+let sort_cmp_universes env pb s0 s1 (u, check) =
+  (check.compare env pb s0 s1 u, check)
 
 let convert_instances flex u u' (s, check) =
   (check.compare_instances flex u u' s, check)
@@ -310,7 +310,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	   | (Sort s1, Sort s2) ->
 	       if not (is_empty_stack v1 && is_empty_stack v2) then
 		 anomaly (Pp.str "conversion was given ill-typed terms (Sort)");
-	       sort_cmp_universes cv_pb s1 s2 cuniv
+	       sort_cmp_universes (env_of_infos infos) cv_pb s1 s2 cuniv
 	   | (Meta n, Meta m) ->
                if Int.equal n m
 	       then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
@@ -552,7 +552,7 @@ let check_eq univs u u' =
 let check_leq univs u u' = 
   if not (check_leq univs u u') then raise NotConvertible
 
-let check_sort_cmp_universes pb s0 s1 univs =
+let check_sort_cmp_universes env pb s0 s1 univs =
   match (s0,s1) with
     | (Prop c1, Prop c2) when is_cumul pb ->
       begin match c1, c2 with
@@ -566,13 +566,14 @@ let check_sort_cmp_universes pb s0 s1 univs =
 	| CUMUL -> check_leq univs u0 u
 	| CONV -> check_eq univs u0 u)
     | (Type u, Prop c) -> raise NotConvertible
-    | (Type u1, Type u2) -> 
+    | (Type u1, Type u2) ->
+        if not (type_in_type env) then 
 	(match pb with
 	| CUMUL -> check_leq univs u1 u2
 	| CONV -> check_eq univs u1 u2)
 
-let checked_sort_cmp_universes pb s0 s1 univs =
-  check_sort_cmp_universes pb s0 s1 univs; univs
+let checked_sort_cmp_universes env pb s0 s1 univs =
+  check_sort_cmp_universes env pb s0 s1 univs; univs
 
 let check_convert_instances _flex u u' univs =
   if Univ.Instance.check_eq univs u u' then univs
@@ -593,7 +594,7 @@ let infer_leq (univs, cstrs as cuniv) u u' =
     let cstrs' = Univ.enforce_leq u u' cstrs in
       univs, cstrs'
 
-let infer_cmp_universes pb s0 s1 univs =
+let infer_cmp_universes env pb s0 s1 univs =
   match (s0,s1) with
     | (Prop c1, Prop c2) when is_cumul pb ->
       begin match c1, c2 with
@@ -607,10 +608,12 @@ let infer_cmp_universes pb s0 s1 univs =
 	| CUMUL -> infer_leq univs u0 u
 	| CONV -> infer_eq univs u0 u)
     | (Type u, Prop c) -> raise NotConvertible
-    | (Type u1, Type u2) -> 
+    | (Type u1, Type u2) ->
+        if not (type_in_type env) then
 	(match pb with
 	| CUMUL -> infer_leq univs u1 u2
 	| CONV -> infer_eq univs u1 u2)
+        else univs
 
 let infer_convert_instances flex u u' (univs,cstrs) =
   (univs, Univ.enforce_eq_instances u u' cstrs)

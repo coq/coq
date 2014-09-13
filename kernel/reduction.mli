@@ -38,7 +38,7 @@ type conv_pb = CONV | CUMUL
 
 type 'a universe_compare = 
   { (* Might raise NotConvertible *)
-    compare : conv_pb -> sorts -> sorts -> 'a -> 'a;
+    compare : env -> conv_pb -> sorts -> sorts -> 'a -> 'a;
     compare_instances: bool (* Instance of a flexible constant? *) -> 
 		       Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
   } 
@@ -50,7 +50,7 @@ type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a 
 type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
 
 val check_sort_cmp_universes :
-  conv_pb -> sorts -> sorts -> Univ.universes -> unit
+  env -> conv_pb -> sorts -> sorts -> Univ.universes -> unit
 
 (* val sort_cmp : *)
 (*     conv_pb -> sorts -> sorts -> Univ.constraints -> Univ.constraints *)

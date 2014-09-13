@@ -1233,10 +1233,10 @@ let check_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y 
     | Univ.UniverseInconsistency _ -> false
     | e when is_anomaly e -> error "Conversion test raised an anomaly"
 
-let sigma_compare_sorts pb s0 s1 sigma =
+let sigma_compare_sorts env pb s0 s1 sigma =
   match pb with
   | Reduction.CONV -> Evd.set_eq_sort sigma s0 s1
-  | Reduction.CUMUL -> Evd.set_leq_sort sigma s0 s1
+  | Reduction.CUMUL -> Evd.set_leq_sort env sigma s0 s1
     
 let sigma_compare_instances flex i0 i1 sigma =
   try Evd.set_eq_instances ~flex sigma i0 i1

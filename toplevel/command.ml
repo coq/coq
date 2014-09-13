@@ -434,7 +434,7 @@ let inductive_levels env evdref poly arities inds =
 	  (** Indices contribute. *)
 	  if Indtypes.is_indices_matter () && List.length ctx > 0 then (
 	    let ilev = sign_level env !evdref ctx in
-	      Evd.set_leq_sort evd (Type ilev) du)
+	      Evd.set_leq_sort env evd (Type ilev) du)
 	  else evd
 	in
         (** Constructors contribute. *)
@@ -444,14 +444,14 @@ let inductive_levels env evdref poly arities inds =
 	      raise (Indtypes.InductiveError Indtypes.LargeNonPropInductiveNotInType)
 	    else evd
 	  else
-	    Evd.set_leq_sort evd (Type cu) du
+	    Evd.set_leq_sort env evd (Type cu) du
 	in
 	let evd = 
 	  if len >= 2 && Univ.is_type0m_univ cu then 
 	   (** "Polymorphic" type constraint and more than one constructor, 
 	       should not land in Prop. Add constraint only if it would
 	       land in Prop directly (no informative arguments as well). *)
-	    Evd.set_leq_sort evd (Prop Pos) du
+	    Evd.set_leq_sort env evd (Prop Pos) du
 	  else evd
 	in evd)
     !evdref (Array.to_list levels') destarities sizes

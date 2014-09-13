@@ -679,7 +679,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	       let evd' =
 		 if pbty == CONV
 		 then Evd.set_eq_sort evd s1 s2
-		 else Evd.set_leq_sort evd s1 s2
+		 else Evd.set_leq_sort env evd s1 s2
 	       in Success evd'
 	     with Univ.UniverseInconsistency p ->
                UnifFailure (evd,UnifUnivInconsistency p)

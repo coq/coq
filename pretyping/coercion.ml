@@ -403,7 +403,7 @@ let inh_coerce_to_sort loc env evd j =
     match kind_of_term typ with
     | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
     | Evar ev when not (is_defined evd (fst ev)) ->
-	let (evd',s) = define_evar_as_sort evd ev in
+	let (evd',s) = define_evar_as_sort env evd ev in
 	  (evd',{ utj_val = j.uj_val; utj_type = s })
     | _ ->
 	inh_tosort_force loc env evd j

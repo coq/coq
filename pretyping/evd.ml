@@ -1193,7 +1193,7 @@ let set_eq_instances ?(flex=false) d u1 u2 =
   add_universe_constraints d
     (Universes.enforce_eq_instances_univs flex u1 u2 Universes.Constraints.empty)
 
-let set_leq_sort evd s1 s2 =
+let set_leq_sort env evd s1 s2 =
   let s1 = normalize_sort evd s1 
   and s2 = normalize_sort evd s2 in
   match is_eq_sort s1 s2 with
@@ -1205,7 +1205,9 @@ let set_leq_sort evd s1 s2 =
     (* else if Univ.is_type0m_univ u2 then  *)
     (*   raise (Univ.UniverseInconsistency (Univ.Le, u1, u2, [])) *)
     (* else  *)
+      if not (type_in_type env) then
       add_universe_constraints evd (Universes.Constraints.singleton (u1,Universes.ULe,u2))
+      else evd
 	    
 let check_eq evd s s' =
   Univ.check_eq evd.universes.uctx_universes s s'

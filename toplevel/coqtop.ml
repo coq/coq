@@ -70,6 +70,10 @@ let set_engagement c = engagement := Some c
 let engage () =
   match !engagement with Some c -> Global.set_engagement c | None -> ()
 
+let type_in_type = ref false
+let set_type_in_type () = type_in_type := true
+let set_hierarchy () = if !type_in_type then Global.set_type_in_type ()
+
 let set_batch_mode () = batch_mode := true
 
 let toplevel_default_name = DirPath.make [Id.of_string "Top"]
@@ -430,6 +434,7 @@ let parse_args arglist =
     |"-quiet"|"-silent" -> Flags.make_silent true
     |"-quick" -> Flags.compilation_mode := BuildVi
     |"-time" -> Flags.time := true
+    |"-type-in-type" -> set_type_in_type ()
     |"-unicode" -> add_require "Utf8_core"
     |"-v"|"--version" -> Usage.version (exitcode ())
     |"-verbose-compat-notations" -> verb_compat_ntn := true
@@ -494,6 +499,7 @@ let init arglist =
       Mltop.init_known_plugins ();
       set_vm_opt ();
       engage ();
+      set_hierarchy ();
       (* Be careful to set these variables after the inputstate *)
       Syntax_def.set_verbose_compat_notations !verb_compat_ntn;
       Syntax_def.set_compat_notations (not !no_compat_ntn);

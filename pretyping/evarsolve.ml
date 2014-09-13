@@ -59,8 +59,8 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
     let status = if inferred then Evd.univ_flexible_alg else Evd.univ_flexible in
     let s' = evd_comb0 (new_sort_variable status) evdref in
     let evd = 
-      if dir then set_leq_sort !evdref s' s
-      else set_leq_sort !evdref s s'
+      if dir then set_leq_sort env !evdref s' s
+      else set_leq_sort env !evdref s s'
     in
       modified := true; evdref := evd; mkSort s'
     | Prod (na,u,v) -> 
@@ -1154,7 +1154,7 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
 	      ~src:evi.evar_source ~filter:evi.evar_filter 
 	      ?candidates:evi.evar_candidates (it_mkProd_or_LetIn (mkSort k) ctx) 
 	  in
-	  let evd = Evd.set_leq_sort (Evd.set_leq_sort evd k i) k j in
+	  let evd = Evd.set_leq_sort env (Evd.set_leq_sort env evd k i) k j in
 	  let evd = solve_evar_evar ~force f g env evd (Some false) (ev3,args1) ev1 in
 	    f env evd pbty ev2 (whd_evar evd (mkEvar (ev3,args1)))
     with Reduction.NotArity -> 

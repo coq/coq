@@ -38,7 +38,7 @@ let e_type_judgment env evdref j =
   match kind_of_term (whd_betadeltaiota env !evdref j.uj_type) with
     | Sort s -> {utj_val = j.uj_val; utj_type = s }
     | Evar ev ->
-        let (evd,s) = Evarutil.define_evar_as_sort !evdref ev in
+        let (evd,s) = Evarutil.define_evar_as_sort env !evdref ev in
         evdref := evd; { utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_type env j
 

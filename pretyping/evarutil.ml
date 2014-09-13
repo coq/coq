@@ -716,7 +716,7 @@ let define_pure_evar_as_product evd evk =
 	let evd3, (rng, srng) =
 	  new_type_evar newenv evd1 univ_flexible_alg ~src ~filter in
 	let prods = Univ.sup (univ_of_sort u1) (univ_of_sort srng) in
-	let evd3 = Evd.set_leq_sort evd3 (Type prods) s in
+	let evd3 = Evd.set_leq_sort evenv evd3 (Type prods) s in
 	  evd3, rng
   in
   let prod = mkProd (Name id, dom, subst_var id rng) in
@@ -780,12 +780,12 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
 
 (* Refining an evar to a sort *)
 
-let define_evar_as_sort evd (ev,args) =
+let define_evar_as_sort env evd (ev,args) =
   let evd, u = new_univ_variable univ_rigid evd in
   let evi = Evd.find_undefined evd ev in 
   let s = Type u in
   let evd' = Evd.define ev (mkSort s) evd in
-    Evd.set_leq_sort evd' (Type (Univ.super u)) (destSort evi.evar_concl), s
+    Evd.set_leq_sort env evd' (Type (Univ.super u)) (destSort evi.evar_concl), s
 
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)

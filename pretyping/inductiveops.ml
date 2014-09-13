@@ -557,7 +557,7 @@ let rec instantiate_universes env evdref scl is = function
         else
           (* unconstrained sort: replace by fresh universe *)
           let evm, s = Evd.new_sort_variable Evd.univ_flexible !evdref in
-	  let evm = Evd.set_leq_sort evm s (Sorts.sort_of_univ u) in
+	  let evm = Evd.set_leq_sort env evm s (Sorts.sort_of_univ u) in
 	    evdref := evm; s
       in
       (na,None,mkArity(ctx,s)):: instantiate_universes env evdref scl is (sign, exp)

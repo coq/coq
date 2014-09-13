@@ -273,8 +273,6 @@ val drop_side_effects : evar_map -> evar_map
     point. This section defines the relevant manipulation functions. *)
 
 val whd_sort_variable : evar_map -> constr -> constr
-val set_leq_sort : evar_map -> sorts -> sorts -> evar_map
-val set_eq_sort : evar_map -> sorts -> sorts -> evar_map
 
 exception UniversesDiffer
 
@@ -462,7 +460,7 @@ val whd_sort_variable : evar_map -> constr -> constr
 val normalize_universe : evar_map -> Univ.universe -> Univ.universe
 val normalize_universe_instance : evar_map -> Univ.universe_instance -> Univ.universe_instance
 
-val set_leq_sort : evar_map -> sorts -> sorts -> evar_map
+val set_leq_sort : env -> evar_map -> sorts -> sorts -> evar_map
 val set_eq_sort : evar_map -> sorts -> sorts -> evar_map
 val has_lub : evar_map -> Univ.universe -> Univ.universe -> evar_map
 val set_eq_level : evar_map -> Univ.universe_level -> Univ.universe_level -> evar_map

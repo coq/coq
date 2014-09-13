@@ -1111,6 +1111,8 @@ let create_clos_infos ?(evars=fun _ -> None) flgs env =
   create (fun _ -> inject) flgs env evars
 let oracle_of_infos infos = Environ.oracle infos.i_cache.i_env
 
+let env_of_infos infos = infos.i_cache.i_env
+
 let infos_with_reds infos reds = 
   { infos with i_flags = reds }
 

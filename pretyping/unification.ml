@@ -588,7 +588,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	    (try 
 	       let sigma' = 
 		 if pb == CUMUL
-		 then Evd.set_leq_sort sigma s1 s2 
+		 then Evd.set_leq_sort env sigma s1 s2 
 		 else Evd.set_eq_sort sigma s1 s2 
 	       in (sigma', metasubst, evarsubst)
 	     with e when Errors.noncritical e ->

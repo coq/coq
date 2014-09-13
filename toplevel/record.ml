@@ -126,7 +126,7 @@ let typecheck_params_and_fields def id t ps nots fs =
       if Sorts.is_prop aritysort || 
 	(Sorts.is_set aritysort && engagement env0 = Some ImpredicativeSet) then
 	evars
-      else Evd.set_leq_sort evars (Type univ) aritysort
+      else Evd.set_leq_sort env_ar evars (Type univ) aritysort
   in
   let evars, nf = Evarutil.nf_evars_and_universes evars in
   let newps = map_rel_context nf newps in
