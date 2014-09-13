@@ -58,6 +58,10 @@ sig
   (** Horizontal composition : [compose f1 f2] only keeps parts of [f2] where
       [f1] is set. In particular, [f1] and [f2] must have the same length. *)
 
+  val apply_subfilter : t -> bool list -> t
+  (** [apply_subfilter f1 f2] applies filter [f2] where [f1] is [true]. In
+      particular, the length of [f2] is the number of times [f1] is [true] *)
+
   val restrict_upon : t -> int -> (int -> bool) -> t option
   (** Ad-hoc primitive. *)
 

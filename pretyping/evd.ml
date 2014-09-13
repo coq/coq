@@ -28,6 +28,7 @@ sig
   val filter_array : t -> 'a array -> 'a array
   val extend : int -> t -> t
   val compose : t -> t -> t
+  val apply_subfilter : t -> bool list -> t
   val restrict_upon : t -> int -> (int -> bool) -> t option
   val map_along : (bool -> 'a -> bool) -> t -> 'a list -> t
   val make : bool list -> t
@@ -81,7 +82,12 @@ struct
     | None -> None
     | Some f2 -> normalize (CList.filter_with f1 f2)
 
-  let apply_subfilter filter subfilter =
+  let apply_subfilter_array filter subfilter =
+    (** In both cases we statically know that the argument will contain at
+        least one [false] *)
+    match filter with
+    | None -> Some (Array.to_list subfilter)
+    | Some f ->
     let len = Array.length subfilter in
     let fold b (i, ans) =
       if b then
@@ -90,19 +96,16 @@ struct
       else
         (i, false :: ans)
     in
-    snd (List.fold_right fold filter (pred len, []))
+    Some (snd (List.fold_right fold f (pred len, [])))
+
+  let apply_subfilter filter subfilter =
+    apply_subfilter_array filter (Array.of_list subfilter)
 
   let restrict_upon f len p =
     let newfilter = Array.init len p in
     if Array.for_all (fun id -> id) newfilter then None
     else
-      (** In both cases we statically know that the argument will contain at
-          least one [false] *)
-      let nf = match f with
-      | None -> Some (Array.to_list newfilter)
-      | Some f -> Some (apply_subfilter f newfilter)
-      in
-      Some nf
+      Some (apply_subfilter_array f newfilter)
 
   let map_along f flt l =
     let ans = match flt with
