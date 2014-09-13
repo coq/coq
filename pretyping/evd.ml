@@ -609,24 +609,36 @@ let progress_evar_map d1 d2 =
   in
   not (d1 == d2) && EvMap.exists is_new d1.undf_evars
 
+let add_name_newly_undefined evk evi (evtoid,idtoev) =
+    let id = evar_ident_info evi in
+    let id = Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
+    (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
+
+let add_name_undefined evk evi (evtoid,idtoev as evar_names) =
+  if EvMap.mem evk evtoid then
+    evar_names
+  else
+    add_name_newly_undefined evk evi evar_names
+
+let remove_name_defined evk (evtoid,idtoev) =
+  let id = EvMap.find evk evtoid in
+  (EvMap.remove evk evtoid, Idmap.remove id idtoev)
+
+let remove_name_possibly_already_defined evk evar_names =
+  try remove_name_defined evk evar_names
+  with Not_found -> evar_names
+
+let reassign_name_defined evk evk' (evtoid,idtoev) =
+  let id = EvMap.find evk evtoid in
+  (EvMap.add evk' id (EvMap.remove evk evtoid),
+   Idmap.add id evk' (Idmap.remove id idtoev))
+
 let add d e i = match i.evar_body with
 | Evar_empty ->
-  let evar_names =
-    let (evtoid,idtoev as x) = d.evar_names in
-    if EvMap.mem e evtoid then
-      x
-    else
-      let id = evar_ident_info i in
-      let id = Namegen.next_ident_away_from id
-        (fun id -> Idmap.mem id idtoev) in
-    (EvMap.add e id evtoid, Idmap.add id e idtoev) in
+  let evar_names = add_name_undefined e i d.evar_names in
   { d with undf_evars = EvMap.add e i d.undf_evars; evar_names }
 | Evar_defined _ ->
-  let evar_names =
-    let (evtoid,idtoev as x) = d.evar_names in
-    try let id = EvMap.find e evtoid in
-        (EvMap.remove e evtoid, Idmap.remove id idtoev)
-    with Not_found -> x in
+  let evar_names = remove_name_possibly_already_defined e d.evar_names in
   { d with defn_evars = EvMap.add e i d.defn_evars; evar_names }
 
 let remove d e =
@@ -833,11 +845,7 @@ let define evk body evd =
   | [] ->  evd.last_mods
   | _ -> Evar.Set.add evk evd.last_mods
   in
-  let evar_names =
-    let (evtoid,idtoev) = evd.evar_names in
-    let id = EvMap.find evk evtoid in
-    (EvMap.remove evk evtoid, Idmap.remove id idtoev)
-  in
+  let evar_names = remove_name_defined evk evd.evar_names in
   { evd with defn_evars; undf_evars; last_mods; evar_names }
 
 let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) 
@@ -856,12 +864,7 @@ let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole))
     evar_candidates = candidates;
     evar_extra = store; }
   in
-  let evar_names =
-    let (evtoid,idtoev) = evd.evar_names in
-    let id = evar_ident_info evar_info in
-    let id = Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
-    (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
-  in
+  let evar_names = add_name_newly_undefined evk evar_info evd.evar_names in
   { evd with undf_evars = EvMap.add evk evar_info evd.undf_evars; evar_names }
 
 let restrict evk evk' filter ?candidates evd =
@@ -870,12 +873,7 @@ let restrict evk evk' filter ?candidates evd =
     { evar_info with evar_filter = filter;
       evar_candidates = candidates;
       evar_extra = Store.empty } in
-  let evar_names =
-    let (evtoid,idtoev) = evd.evar_names in
-    let id = EvMap.find evk evtoid in
-    (EvMap.add evk' id (EvMap.remove evk evtoid),
-     Idmap.add id evk' (Idmap.remove id idtoev))
-  in
+  let evar_names = reassign_name_defined evk evk' evd.evar_names in
   let ctxt = Filter.filter_list filter (evar_context evar_info) in
   let id_inst = Array.map_of_list (fun (id,_,_) -> mkVar id) ctxt in
   let body = mkEvar(evk',id_inst) in
@@ -990,15 +988,26 @@ let merge2 def undef def' undef' =
   let undef = EvMap.fold EvMap.add undef' undef in
     (def, undef)
 
+let merge_names evar_names def' undef' =
+  (* FIXME: does sigma' contain all undefined variables of sigma? If not, some
+  names given in sigma' for new undefined variables can change when merged to
+  sigma which could already have an evar of this name *)
+  let evar_names =
+    EvMap.fold
+      (fun n _ evar_names -> remove_name_possibly_already_defined n evar_names)
+      def' evar_names in
+  EvMap.fold add_name_undefined undef' evar_names
+
 let merge_metas metas1 metas2 =
   List.fold_left (fun m (n,v) -> Metamap.add n v m)
     metas2 (metamap_to_list metas1)
 
 let merge orig ext = 
   let defn, undf = merge2 orig.defn_evars orig.undf_evars ext.defn_evars ext.undf_evars in
+  let evar_names = merge_names orig.evar_names ext.defn_evars ext.undf_evars in
   let universes = union_evar_universe_context orig.universes ext.universes in
     { orig with defn_evars = defn; undf_evars = undf;
-      universes;
+      universes; evar_names;
       metas = merge_metas orig.metas ext.metas }
 
 (* let merge_key = Profile.declare_profile "merge" *)
