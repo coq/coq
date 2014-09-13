@@ -450,9 +450,9 @@ let rec check_and_clear_in_constr evdref err ids c =
 	       removed *)
 	    let evi = Evd.find_undefined !evdref evk in
 	    let ctxt = Evd.evar_filtered_context evi in
-	    let (nhyps,nargs,rids) =
+	    let (rids,filter) =
               List.fold_right2
-                (fun (rid, ob,c as h) a (hy,ar,ri) ->
+                (fun (rid, ob,c as h) a (ri,filter) ->
                   try
                   (* Check if some id to clear occurs in the instance
                      a of rid in ev and remember the dependency *)
@@ -467,9 +467,9 @@ let rec check_and_clear_in_constr evdref err ids c =
                     in
                     let () = Id.Map.iter check ri in
                   (* No dependency at all, we can keep this ev's context hyp *)
-                    (h::hy, a::ar, ri)
-                  with Depends id -> (hy, ar, Id.Map.add rid id ri))
-		ctxt (Array.to_list l) ([],[],Id.Map.empty) in
+                    (ri, true::filter)
+                  with Depends id -> (Id.Map.add rid id ri, false::filter))
+		ctxt (Array.to_list l) (Id.Map.empty,[]) in
 	    (* Check if some rid to clear in the context of ev has dependencies
 	       in the type of ev and adjust the source of the dependency *)
 	    let nconcl =
@@ -481,10 +481,10 @@ let rec check_and_clear_in_constr evdref err ids c =
 
             if Id.Map.is_empty rids then c
             else
-	      let env = Context.fold_named_context push_named nhyps ~init:(empty_env) in
-	      let ev'= e_new_evar env evdref ~src:(evar_source evk !evdref) nconcl in
-	      evdref := Evd.define evk ev' !evdref;
-	      let (evk',_) = destEvar ev' in
+              let origfilter = Evd.evar_filter evi in
+              let filter = Evd.Filter.apply_subfilter origfilter filter in
+              let evd,_ = restrict_evar !evdref evk filter None in
+              evdref := evd;
 	    (* spiwack: hacking session to mark the old [evk] as having been "cleared" *)
 	      let evi = Evd.find !evdref evk in
 	      let extra = evi.evar_extra in
@@ -492,7 +492,7 @@ let rec check_and_clear_in_constr evdref err ids c =
 	      let evi' = { evi with evar_extra = extra' } in
 	      evdref := Evd.add !evdref evk evi' ;
 	    (* spiwack: /hacking session *)
-	      mkEvar(evk', Array.of_list nargs)
+              whd_evar !evdref c
 
       | _ -> map_constr (check_and_clear_in_constr evdref err ids) c
 
