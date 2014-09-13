@@ -392,9 +392,12 @@ let pr_goal_tag g =
   let s = " (ID " ^ Goal.uid g ^ ")" in
   str (emacs_str s)
 
+let display_name = false
+
 (* display a goal name *)
 let pr_goal_name sigma g =
-  str " " ++ Pp.surround (pr_id (Goal.goal_ident sigma g))
+  if display_name then str " " ++ Pp.surround (pr_id (Goal.goal_ident sigma g))
+  else mt ()
 
 (* display the conclusion of a goal *)
 let pr_concl n sigma g =
@@ -402,7 +405,7 @@ let pr_concl n sigma g =
   let env = Goal.V82.env sigma g in
   let pc = pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g) in
     str (emacs_str "")  ++
-      str "subgoal " ++ int n ++ pr_goal_tag g ++
+      str "subgoal " ++ int n ++ pr_goal_tag g ++ pr_goal_name sigma g ++
       str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)
@@ -519,7 +522,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
   in
   let print_multiple_goals g l =
     if pr_first then
-      default_pr_goal { it = g ; sigma = sigma; } ++
+      default_pr_goal { it = g ; sigma = sigma; } ++ fnl () ++
       pr_rec 2 l
     else 
       pr_rec 1 (g::l)
@@ -554,8 +557,10 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
       let goals = print_multiple_goals g1 rest in
       v 0 (
 	int(List.length rest+1) ++ focused_if_needed ++ str"subgoals" ++
-          print_extra ++ cut () ++
-          str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
+          print_extra ++
+          str ((if display_name then (fun x -> x) else emacs_str) ", subgoal 1")
+        ++ pr_goal_tag g1
+        ++ pr_goal_name sigma g1 ++ cut ()
 	++ goals
 	++ emacs_print_dependent_evars sigma seeds
       )
