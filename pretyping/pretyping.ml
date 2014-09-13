@@ -231,6 +231,14 @@ let inh_conv_coerce_to_tycon resolve_tc loc env evdref j = function
   | Some t ->
       evd_comb2 (Coercion.inh_conv_coerce_to resolve_tc loc env) evdref j t
 
+let check_instance loc subst = function
+  | [] -> ()
+  | (id,_) :: _ ->
+      if List.mem_assoc id subst then
+        user_err_loc (loc,"",pr_id id ++ str "appears more than once.")
+      else
+        user_err_loc (loc,"",str "No such variable in the signature of the existential variable: " ++ pr_id id ++ str ".")
+
 (* used to enforce a name in Lambda when the type constraints itself
    is named, hence possibly dependent *)
 
@@ -415,9 +423,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
         with Not_found ->
           user_err_loc (loc,"",str "Unknown existential variable.") in
       let hyps = evar_filtered_context (Evd.find !evdref evk) in
-      let f c = (pretype empty_tycon env evdref lvar c).uj_val in
-      let inst = List.map (on_snd f) inst in
-      let args = complete_instance hyps inst in
+      let args = pretype_instance resolve_tc env evdref lvar loc hyps evk inst in
       let c = mkEvar (evk, args) in
       let j = (Retyping.get_judgment_of env !evdref c) in
 	inh_conv_coerce_to_tycon loc env evdref j tycon
@@ -910,6 +916,31 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	let v = mkCast (cj.uj_val, k, tval) in
 	  { uj_val = v; uj_type = tval }
     in inh_conv_coerce_to_tycon loc env evdref cj tycon
+
+and pretype_instance resolve_tc env evdref lvar loc hyps evk update =
+  let f (id,_,t) (subst,update) =
+    let t = replace_vars subst t in
+    let c, update =
+      try
+        let c = List.assoc id update in
+        let c = pretype resolve_tc (mk_tycon t) env evdref lvar c in
+        c.uj_val, List.remove_assoc id update
+      with Not_found ->
+      try
+        let (n,_,t') = lookup_rel_id id (rel_context env) in
+        if is_conv env !evdref t t' then raise Not_found else mkRel n, update
+      with Not_found ->
+      try
+        let (_,_,t') = lookup_named id env in
+        if is_conv env !evdref t t' then raise Not_found else mkVar id, update
+      with Not_found ->
+        user_err_loc (loc,"",str "Cannot interpret " ++
+          pr_existential_key !evdref evk ++
+          str " in current context: no binding for " ++ pr_id id ++ str ".") in
+    ((id,c)::subst, update) in
+  let subst,inst = List.fold_right f hyps ([],update) in
+  check_instance loc subst inst;
+  Array.map_of_list snd subst
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
 and pretype_type resolve_tc valcon env evdref lvar = function

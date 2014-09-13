@@ -225,7 +225,7 @@ let pr_puniverses f env (c,u) =
    else mt ())
 
 let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)
-let pr_existential_key sigma evk = str "?" ++ pr_id (evar_ident evk sigma)
+let pr_existential_key = Evd.pr_existential_key
 let pr_existential env sigma ev = pr_lconstr_env env sigma (mkEvar ev)
 let pr_inductive env ind = pr_lconstr_env env Evd.empty (mkInd ind)
 let pr_constructor env cstr = pr_lconstr_env env Evd.empty (mkConstruct cstr)

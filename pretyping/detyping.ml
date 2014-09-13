@@ -439,7 +439,7 @@ let rec detype isgoal avoid env sigma t =
     | Evar (evk,cl) ->
       let id,l =
         try Evd.evar_ident evk sigma,
-            Evd.evar_instance_array isVarId (Evd.find sigma evk) cl
+            Evd.evar_instance_array (fun id c -> try let n = List.index Name.equal (Name id) env in isRelN n c with Not_found -> isVarId id c) (Evd.find sigma evk) cl
         with Not_found -> Id.of_string ("X" ^ string_of_int (Evar.repr evk)), [] in
         GEvar (dl,id,
                List.map (on_snd (detype isgoal avoid env sigma)) l)

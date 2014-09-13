@@ -295,7 +295,7 @@ GEXTEND Gram
     [ [ id = ident; ":="; c = lconstr -> (id,c) ] ]
   ;
   evar_instance:
-    [ [ "@{"; l = LIST1 inst SEP ","; "}" -> l
+    [ [ "@{"; l = LIST1 inst SEP ";"; "}" -> l
       | -> [] ] ]
   ;
   instance:

@@ -180,7 +180,7 @@ let pr_evar pr id l =
    | [] -> mt()
    | l ->
        let f (id,c) = pr_id id ++ str ":=" ++ pr ltop c in
-       str"@{" ++ hov 0 (prlist_with_sep pr_comma f l) ++ str"}"))
+       str"@{" ++ hov 0 (prlist_with_sep pr_semicolon f l) ++ str"}"))
 
 let las = lapp
 let lpator = 100
