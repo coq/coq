@@ -631,10 +631,11 @@ let poly_inverse sort =
 let eq_env x y = x == y
 
 let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
+  assert (not hypinfo.abs);
   if isEvar t then None else 
     try
       let hypinfo = 
-      if hypinfo.abs || eq_env hypinfo.cl.env env then hypinfo
+      if eq_env hypinfo.cl.env env then hypinfo
       else refresh_hypinfo env sigma hypinfo
     in
     let {cl=cl; prf=prf; car=car; rel=rel; c1=c1; c2=c2; c=c; abs=abs} = 
@@ -643,10 +644,6 @@ let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
     let evd' = Evd.merge sigma cl.evd in
     let cl = { cl with evd = evd' } in
     let hypinfo, evd', prf, c1, c2, car, rel =
-      if abs then
-	let env' = clenv_unify ~flags:rewrite_unif_flags CONV left t cl in
-	  (hypinfo, env'.evd, prf, c1, c2, car, rel)
-      else
 	let env' = clenv_unify ~flags CONV left t cl in
 	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
 	  let evd' = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
@@ -677,6 +674,33 @@ let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
 	  let evars, rel' = poly_inverse hypinfo.sort env evars car rel in
 	    evars, (prf, (car, rel', c2, c1))
     in Some (hypinfo, evd, res)
+  with 
+  | e when Class_tactics.catchable e -> None
+  | Reduction.NotConvertible -> None
+
+let unify_abs l2r env (sigma, cstrs) hypinfo t =
+  assert (hypinfo.abs && Option.is_empty hypinfo.c);
+  if isEvar t then None else 
+    try
+    let {cl=cl; prf=prf; car=car; rel=rel; c1=c1; c2=c2; } = 
+      hypinfo in
+    let left = if l2r then c1 else c2 in
+    let evd' = Evd.merge sigma cl.evd in
+    let cl = { cl with evd = evd' } in
+    let env' = clenv_unify ~flags:rewrite_unif_flags CONV left t cl in
+    let evd' = env'.evd in
+    let evars = evd', cstrs in
+    let evd, res =
+      if l2r then evars, (prf, (car, rel, c1, c2))
+      else
+        try
+          let evars, symprf = get_symmetric_proof hypinfo.sort env evars car rel in
+            evars, (mkApp (symprf, [| c1 ; c2 ; prf |]),
+                    (car, rel, c2, c1))
+        with Not_found ->
+          let evars, rel' = poly_inverse hypinfo.sort env evars car rel in
+            evars, (prf, (car, rel', c2, c1))
+    in Some ((), evd, res)
   with 
   | e when Class_tactics.catchable e -> None
   | Reduction.NotConvertible -> None
@@ -811,7 +835,7 @@ let apply_constraint env avoid car rel prf cstr res =
 
 let eq_env x y = x == y
 
-let apply_rule l2r flags by loccs : (hypinfo * int) pure_strategy =
+let apply_rule unify loccs : ('a * int) pure_strategy =
   let (nowhere_except_in,occs) = convert_occs loccs in
   let is_occ occ =
     if nowhere_except_in 
@@ -821,7 +845,7 @@ let apply_rule l2r flags by loccs : (hypinfo * int) pure_strategy =
     fun (hypinfo, occ) env avoid t ty cstr evars ->
       (* if not (eq_env !hypinfo.cl.env env) then *)
       (* 	hypinfo := refresh_hypinfo env (goalevars evars) !hypinfo; *)
-      let unif = unify_eqn l2r flags env evars hypinfo by t in
+      let unif = unify hypinfo env evars t in
 	match unif with
 	| None -> ((hypinfo, occ), Fail)
 	| Some (hypinfo, evars', (prf, (car, rel, c1, c2))) ->
@@ -843,7 +867,8 @@ let apply_lemma l2r flags (evm,c) by loccs : strategy =
 	decompose_applied_relation env (goalevars evars) evars'
 	  None c
     in
-    let _, res = apply_rule l2r flags by loccs (hypinfo,0) env avoid t ty cstr evars in
+    let unify hypinfo env evars t = unify_eqn l2r flags env evars hypinfo by t in
+    let _, res = apply_rule unify loccs (hypinfo,0) env avoid t ty cstr evars in
       (), res
 
 let e_app_poly env evars f args =
@@ -1368,7 +1393,8 @@ let rewrite_with l2r flags c occs : strategy =
     let gevars = goalevars evars in
     let hypinfo = decompose_applied_relation_expr env gevars c in
     let avoid = get_hypinfo_ids hypinfo @ avoid in
-    let app = apply_rule l2r flags None occs in
+    let unify hypinfo env evars t = unify_eqn l2r flags env evars hypinfo None t in
+    let app = apply_rule unify occs in
     let strat = 
       Strategies.fix (fun aux -> 
 	Strategies.choice app (subterm true default_flags aux))
@@ -1972,12 +1998,13 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 (* let cl_rewrite_clause_tac = Profile.profile5 rewriteclaustac_key cl_rewrite_clause_tac *)
 
 let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
-  let app = apply_rule l2r rewrite_unif_flags None occs in
+  let abs, hypinfo = get_hyp gl (project gl) (c,l) cl l2r in
+  let unify () env evars t = unify_abs l2r env evars hypinfo t in
+  let app = apply_rule unify occs in
   let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
   let substrat = Strategies.fix recstrat in
-  let abs, hypinfo = get_hyp gl (project gl) (c,l) cl l2r in
   let strat () env avoid t ty cstr evars =
-    let _, res = substrat (hypinfo, 0) env avoid t ty cstr evars in
+    let _, res = substrat ((), 0) env avoid t ty cstr evars in
     (), res
   in
   init_setoid ();
