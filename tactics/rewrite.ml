@@ -1379,11 +1379,7 @@ let rewrite_with l2r flags c occs : strategy =
 let apply_strategy (s : strategy) env avoid concl (prop, cstr) evars =
   let ty = Retyping.get_type_of env (goalevars evars) concl in
   let _, res = s () env avoid concl ty (prop, Some cstr) evars in
-    match res with
-    | Fail -> None
-    | Identity -> Some None
-    | Success res ->
-	Some (Some (res.rew_prf, res.rew_evars, res.rew_car, res.rew_from, res.rew_to))
+  res
 
 let solve_constraints env (evars,cstrs) =
   let filter = all_constraints cstrs in
@@ -1414,16 +1410,17 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
   in
   let eq = apply_strategy strat env avoid concl cstr evars in
     match eq with
-    | None -> None
-    | Some None -> Some None
-    | Some (Some (p, (evars, cstrs), car, oldt, newt)) ->
-      let evars' = solve_constraints env (evars, cstrs) in
-      let newt = Evarutil.nf_evar evars' newt in
+    | Fail -> None
+    | Identity -> Some None
+    | Success res ->
+      let (_, cstrs) = res.rew_evars in
+      let evars' = solve_constraints env res.rew_evars in
+      let newt = Evarutil.nf_evar evars' res.rew_to in
       let evars = (* Keep only original evars (potentially instantiated) and goal evars,
 		     the rest has been defined and substituted already. *)
 	Evar.Set.fold (fun ev acc -> Evd.remove acc ev) cstrs evars'
       in
-      let res = match p with
+      let res = match res.rew_prf with
 	| RewCast c -> None
 	| RewPrf (rel, p) ->
 	  let p = nf_zeta env evars' (Evarutil.nf_evar evars' p) in

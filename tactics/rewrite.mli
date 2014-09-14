@@ -116,6 +116,4 @@ val apply_strategy :
   Names.Id.t list ->
   Term.constr ->
   bool * Term.constr ->
-  evars ->
-  (rewrite_proof * evars * Term.constr * Term.constr * Term.constr)
-    option option
+  evars -> rewrite_result
