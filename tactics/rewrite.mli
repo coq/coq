@@ -50,10 +50,13 @@ type rewrite_result_info = {
   rew_evars : evars;
 }
 
-type rewrite_result = rewrite_result_info option
+type rewrite_result =
+| Fail
+| Identity
+| Success of rewrite_result_info
 
 type 'a pure_strategy = 'a -> Environ.env -> Id.t list -> constr -> types ->
-  (bool (* prop *) * constr option) -> evars -> 'a * rewrite_result option
+  (bool (* prop *) * constr option) -> evars -> 'a * rewrite_result
 
 type strategy = unit pure_strategy
 
