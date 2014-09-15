@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Names
 open Term
 open Environ
 open Evd
@@ -105,3 +106,33 @@ val clenv_push_prod : clausenv -> clausenv
 (** {6 Pretty-print (debug only) } *)
 val pr_clenv : clausenv -> Pp.std_ppcmds
 
+(** {6 Evar version} *)
+
+type hole = {
+  hole_evar : constr;
+  hole_type : types;
+  hole_deps  : bool * bool;
+  (** Dependent in hypotheses then in conclusion *)
+  hole_name : Name.t;
+}
+
+type clause = {
+  cl_holes : hole list;
+  cl_concl : types;
+}
+
+val make_evar_clause : env -> evar_map -> int option -> types ->
+  (evar_map * clause)
+(** An evar version of {!make_clenv_binding}. Given a type [t],
+    [evar_environments env sigma n t bl] tries to eliminate at most [n] products
+    of the type [t] by filling it with evars. It returns the resulting type
+    together with the list of holes generated. Assumes that [t] is well-typed
+    in the environment. *)
+
+val solve_evar_clause : env -> evar_map -> bool -> clause -> constr bindings ->
+  evar_map
+(** [solve_evar_clause env sigma hyps cl bl] tries to solve the holes contained
+    in [cl] according to the [bl] argument. Assumes that [bl] are well-typed in
+    the environment. The boolean [hyps] is a compatibility flag that allows to
+    consider arguments to be dependent only when they appear in hypotheses and
+    not in the conclusion. *)
