@@ -512,7 +512,7 @@ let eta_constructor_app env f l1 term =
       | _ -> assert false)
   | _ -> assert false
 
-let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
+let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb b wt ((sigma,metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
     and cN = Evarutil.whd_head_evar sigma curn in
@@ -675,7 +675,10 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		  try (* Force unification of the types to fill in parameters *)
 		    let ty1 = get_type_of curenv ~lax:true sigma c1 in
 		    let ty2 = get_type_of curenv ~lax:true sigma c2 in
-		      unirec_rec curenvnb CONV true false substn ty1 ty2
+		      unify_0_with_initial_metas substn true env cv_pb 
+			{ flags with modulo_delta = full_transparent_state;
+			  modulo_betaiota = true }
+			ty1 ty2
 		  with RetypeError _ -> substn
 	      with ex when precatchable_exception ex ->
 	        unify_not_same_head curenvnb pb b wt substn cM cN
