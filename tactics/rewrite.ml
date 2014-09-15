@@ -630,94 +630,9 @@ let poly_inverse sort =
 
 let eq_env x y = x == y
 
-let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
-  assert (not hypinfo.abs);
-  if isEvar t then None else 
-    try
-      let hypinfo = 
-      if eq_env hypinfo.cl.env env then hypinfo
-      else refresh_hypinfo env sigma hypinfo
-    in
-    let {cl=cl; prf=prf; car=car; rel=rel; c1=c1; c2=c2; c=c; abs=abs} = 
-      hypinfo in
-    let left = if l2r then c1 else c2 in
-    let evd' = Evd.merge sigma cl.evd in
-    let cl = { cl with evd = evd' } in
-    let hypinfo, evd', prf, c1, c2, car, rel =
-	let env' = clenv_unify ~flags CONV left t cl in
-	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
-	  let evd' = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
-	    ~fail:true env'.env env'.evd in
-	  let env' = { env' with evd = evd' } in
-	  let env', prf = solve_remaining_by by env' (Clenv.clenv_value env') in	   
-	  let nf c = Evarutil.nf_evar env'.evd (Clenv.clenv_nf_meta env' c) in
-	  let c1 = nf c1 and c2 = nf c2
-	  and car = nf car and rel = nf rel
-	  and prf = nf prf in
-	  let ty1 = Retyping.get_type_of env'.env env'.evd c1
-	  and ty2 = Retyping.get_type_of env'.env env'.evd c2
-	  in
-	    if convertible env env'.evd ty2 ty1 then 
-	      let hypinfo = refresh_hypinfo env env'.evd hypinfo in
-		(hypinfo, env'.evd, prf, c1, c2, car, rel)
-	    else raise Reduction.NotConvertible
-    in
-    let evars = evd', cstrs in
-    let evd, res =
-      if l2r then evars, (prf, (car, rel, c1, c2))
-      else
-	try
-	  let evars, symprf = get_symmetric_proof hypinfo.sort env evars car rel in
-	    evars, (mkApp (symprf, [| c1 ; c2 ; prf |]),
-		    (car, rel, c2, c1))
-	with Not_found ->
-	  let evars, rel' = poly_inverse hypinfo.sort env evars car rel in
-	    evars, (prf, (car, rel', c2, c1))
-    in Some (hypinfo, evd, res)
-  with 
-  | e when Class_tactics.catchable e -> None
-  | Reduction.NotConvertible -> None
-
-let unify_abs l2r env (sigma, cstrs) hypinfo t =
-  assert (hypinfo.abs && Option.is_empty hypinfo.c);
-  if isEvar t then None else 
-    try
-    let {cl=cl; prf=prf; car=car; rel=rel; c1=c1; c2=c2; } = 
-      hypinfo in
-    let left = if l2r then c1 else c2 in
-    let evd' = Evd.merge sigma cl.evd in
-    let cl = { cl with evd = evd' } in
-    let env' = clenv_unify ~flags:rewrite_unif_flags CONV left t cl in
-    let evd' = env'.evd in
-    let evars = evd', cstrs in
-    let evd, res =
-      if l2r then evars, (prf, (car, rel, c1, c2))
-      else
-        try
-          let evars, symprf = get_symmetric_proof hypinfo.sort env evars car rel in
-            evars, (mkApp (symprf, [| c1 ; c2 ; prf |]),
-                    (car, rel, c2, c1))
-        with Not_found ->
-          let evars, rel' = poly_inverse hypinfo.sort env evars car rel in
-            evars, (prf, (car, rel', c2, c1))
-    in Some ((), evd, res)
-  with 
-  | e when Class_tactics.catchable e -> None
-  | Reduction.NotConvertible -> None
-
-type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
-
-let default_flags = { under_lambdas = true; on_morphisms = true; }
-
 type rewrite_proof = 
   | RewPrf of constr * constr
   | RewCast of cast_kind
-
-let map_rewprf f p = match p with
-  | RewPrf (x, y) -> RewPrf (f x, f y)
-  | RewCast _ -> p
-
-let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
 type rewrite_result_info = {
   rew_car : constr;
@@ -737,6 +652,90 @@ type 'a pure_strategy = 'a -> Environ.env -> Id.t list -> constr -> types ->
     'a * rewrite_result
 
 type strategy = unit pure_strategy
+
+let symmetry env sort rew =
+  let { rew_evars = evars; rew_car = car; } = rew in
+  let (rew_evars, rew_prf) = match rew.rew_prf with
+  | RewCast _ -> (rew.rew_evars, rew.rew_prf)
+  | RewPrf (rel, prf) ->
+    try
+      let evars, symprf = get_symmetric_proof sort env evars car rel in
+      let prf = mkApp (symprf, [| rew.rew_from ; rew.rew_to ; prf |]) in
+      (evars, RewPrf (rel, prf))
+    with Not_found ->
+      let evars, rel = poly_inverse sort env evars car rel in
+      (evars, RewPrf (rel, prf))
+  in
+  { rew with rew_from = rew.rew_to; rew_to = rew.rew_from; rew_prf; rew_evars; }
+
+let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
+  assert (not hypinfo.abs);
+  if isEvar t then None else 
+    try
+      let hypinfo = 
+      if eq_env hypinfo.cl.env env then hypinfo
+      else refresh_hypinfo env sigma hypinfo
+    in
+    let {cl=cl; prf=prf; car=car; rel=rel; c1=c1; c2=c2; c=c; abs=abs} = 
+      hypinfo in
+    let left = if l2r then c1 else c2 in
+    let evd' = Evd.merge sigma cl.evd in
+    let cl = { cl with evd = evd' } in
+    let hypinfo, evd', prf, c1, c2, rew_car, rel =
+	let env' = clenv_unify ~flags CONV left t cl in
+	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
+	  let evd' = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
+	    ~fail:true env'.env env'.evd in
+	  let env' = { env' with evd = evd' } in
+	  let env', prf = solve_remaining_by by env' (Clenv.clenv_value env') in	   
+	  let nf c = Evarutil.nf_evar env'.evd (Clenv.clenv_nf_meta env' c) in
+	  let c1 = nf c1 and c2 = nf c2
+	  and car = nf car and rel = nf rel
+	  and prf = nf prf in
+	  let ty1 = Retyping.get_type_of env'.env env'.evd c1
+	  and ty2 = Retyping.get_type_of env'.env env'.evd c2
+	  in
+	    if convertible env env'.evd ty2 ty1 then 
+	      let hypinfo = refresh_hypinfo env env'.evd hypinfo in
+		(hypinfo, env'.evd, prf, c1, c2, car, rel)
+	    else raise Reduction.NotConvertible
+    in
+    let rew_evars = evd', cstrs in
+    let rew_prf = RewPrf (rel, prf) in
+    let rew = { rew_evars; rew_prf; rew_car; rew_from = c1; rew_to = c2; } in
+    let rew = if l2r then rew else symmetry env hypinfo.sort rew in
+    Some (hypinfo, rew)
+  with 
+  | e when Class_tactics.catchable e -> None
+  | Reduction.NotConvertible -> None
+
+let unify_abs l2r env (sigma, cstrs) hypinfo t =
+  assert (hypinfo.abs && Option.is_empty hypinfo.c);
+  if isEvar t then None else 
+    try
+    let {cl=cl; car=rew_car; rel=rel; c1=c1; c2=c2; } = hypinfo in
+    let left = if l2r then c1 else c2 in
+    let evd' = Evd.merge sigma cl.evd in
+    let cl = { cl with evd = evd' } in
+    let env' = clenv_unify ~flags:rewrite_unif_flags CONV left t cl in
+    let rew_evars = env'.evd, cstrs in
+    let rew_prf = RewPrf (hypinfo.rel, hypinfo.prf) in
+    let rew = { rew_prf; rew_car; rew_evars; rew_from = c1; rew_to = c2; } in
+    let rew = if l2r then rew else symmetry env hypinfo.sort rew in
+    Some ((), rew)
+  with 
+  | e when Class_tactics.catchable e -> None
+  | Reduction.NotConvertible -> None
+
+type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
+
+let default_flags = { under_lambdas = true; on_morphisms = true; }
+
+let map_rewprf f p = match p with
+  | RewPrf (x, y) -> RewPrf (f x, f y)
+  | RewCast _ -> p
+
+let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
 let make_eq () =
 (*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq ())
@@ -835,6 +834,10 @@ let apply_constraint env avoid car rel prf cstr res =
 
 let eq_env x y = x == y
 
+let coerce env avoid cstr res = 
+  let rel, prf = get_rew_prf res in
+    apply_constraint env avoid res.rew_car rel prf cstr res
+
 let apply_rule unify loccs : ('a * int) pure_strategy =
   let (nowhere_except_in,occs) = convert_occs loccs in
   let is_occ occ =
@@ -848,16 +851,15 @@ let apply_rule unify loccs : ('a * int) pure_strategy =
       let unif = unify hypinfo env evars t in
 	match unif with
 	| None -> ((hypinfo, occ), Fail)
-	| Some (hypinfo, evars', (prf, (car, rel, c1, c2))) ->
+        | Some (hypinfo, rew) ->
 	  let occ = succ occ in
 	  let res = 
 	    if not (is_occ occ) then Fail
-	    else if eq_constr t c2 then Identity
+	    else if eq_constr t rew.rew_to then Identity
 	    else
-	      let res = { rew_car = ty; rew_from = c1;
-			  rew_to = c2; rew_prf = RewPrf (rel, prf); 
-			  rew_evars = evars' }
-	      in Success (apply_constraint env avoid car rel prf cstr res)
+	      let res = { rew with rew_car = ty } in
+              let rel, prf = get_rew_prf res in
+              Success (apply_constraint env avoid rew.rew_car rel prf cstr res)
 	  in ((hypinfo, occ), res)
 	    
 let apply_lemma l2r flags (evm,c) by loccs : strategy =
@@ -947,10 +949,6 @@ let unfold_match env sigma sk app =
   | _ -> app
 
 let is_rew_cast = function RewCast _ -> true | _ -> false
-
-let coerce env avoid cstr res = 
-  let rel, prf = get_rew_prf res in
-    apply_constraint env avoid res.rew_car rel prf cstr res
 
 let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
   let rec aux state env avoid t ty (prop, cstr) evars =
