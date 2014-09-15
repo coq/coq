@@ -209,9 +209,9 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
           sorec stk env subst (PApp(h,Array.append a1 a2)) t
 
       | PApp (PMeta meta,args1), App (c2,args2) when allow_partial_app ->
-         (let p = Array.length args2 - Array.length args1 in
-          if p >= 0 then
-            let args21, args22 = Array.chop p args2 in
+         (let diff = Array.length args2 - Array.length args1 in
+          if diff >= 0 then
+            let args21, args22 = Array.chop diff args2 in
 	    let c = mkApp(c2,args21) in
             let subst =
               match meta with
@@ -220,11 +220,19 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
             Array.fold_left2 (sorec stk env) subst args1 args22
           else (* Might be a projection on the right *)
 	    match kind_of_term c2 with
-	    | Proj _ -> 
-	      let subst = sorec stk env subst (PApp (PMeta meta, [|args1.(0)|])) c2 in
-		Array.fold_left2 (sorec stk env) subst (Array.tl args1) args2
+	    | Proj (pr, c) ->
+	      if diff == -1 then (* Do as if it was p c args2 *)
+		let subst = sorec stk env subst (PApp (PMeta meta, [|args1.(0)|])) c2 in
+		  Array.fold_left2 (sorec stk env) subst (Array.tl args1) args2
+	      else (* diff < 0, Expand the projection completely: p params c args2 *)
+      		let ty = Retyping.get_type_of env sigma c in
+		let (i,u), ind_args = Inductive.find_rectype env ty in
+		let term = mkApp (mkConstU (pr,u), 
+				  Array.of_list (ind_args @ (c :: Array.to_list args2)))
+		in
+		  sorec stk env subst p term
 	    | _ -> raise PatternMatchingFailure)
-
+	   
       | PApp (c1,arg1), App (c2,arg2) ->
 	let diff = Array.length arg2 - Array.length arg1 in
 	(match c1, kind_of_term c2 with
@@ -249,12 +257,19 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
           try Array.fold_left2 (sorec stk env) (sorec stk env subst c1 c2) arg1 arg2
           with Invalid_argument _ -> raise PatternMatchingFailure)
 
-      | PApp (PMeta (Some n), [|c1|]), Proj (p2, c2) ->
-      	  let ty = Retyping.get_type_of env sigma c2 in
-	  let term = mkLambda (Name (id_of_string "x"), ty, mkProj (p2, mkRel 1)) in
-      	  let subst = merge_binding allow_bound_rels stk n term subst in
-      	    sorec stk env subst c1 c2
-
+      | PApp (PMeta (Some n), args), Proj (pr, c2) ->
+      	let ty = Retyping.get_type_of env sigma c2 in
+	let (i,u), ind_args = Inductive.find_rectype env ty in
+	  if Array.length args == 1 then 
+	    let term = mkApp (mkConstU (pr,u), Array.of_list ind_args) in
+	    let subst = merge_binding allow_bound_rels stk n term subst in
+      	      sorec stk env subst args.(0) c2
+	  else 
+	    let term = 
+	      mkApp (mkConstU (pr,u), Array.of_list (ind_args @ [c2]))
+	    in 
+	      sorec stk env subst p term
+		
       | PApp (PRef (ConstRef c1),arg1), Proj (p2,c2) when eq_constant c1 p2 ->
 	let pb = Environ.lookup_projection p2 env in
 	let npars = pb.Declarations.proj_npars in
