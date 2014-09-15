@@ -442,7 +442,14 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
 	 | _ ->
 	     second.skft
 	       (fun {it=gls';sigma=s'} fk' -> 
-		 aux s' (gls'::acc) fk' gls)
+		 let fk'' =
+		   if not info.unique && List.is_empty gls' &&
+		     not (needs_backtrack (Goal.V82.env s gl) s
+			    info.is_evar (Goal.V82.concl s gl))
+		   then fk
+		   else fk'
+		 in
+		   aux s' (gls'::acc) fk'' gls)
 	       fk {it = (gl,info); sigma = s; })
     | [] -> Somek2 (List.rev acc, s, fk)
   in fun {it = gls; sigma = s; } fk ->

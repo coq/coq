@@ -39,3 +39,44 @@ Definition foo' (b b' : B) := _ : B.
 
 Set Typeclasses Unique Solutions.
 Definition foo'' (d d' : D) := _ : D.
+
+(** Cut backtracking *)
+Module BacktrackGreenCut.
+  Unset Typeclasses Unique Solutions.
+  Class C (A : Type) := c : A.
+
+  Class D (A : Type) : Type := { c_of_d :> C A }.
+  
+  Instance D1 : D unit.
+  Admitted.
+  
+  Instance D2 : D unit.
+  Admitted.
+
+  (** Two instances of D unit, but when searching for [C unit], no 
+      backtracking on the second instance should be needed except
+      in dependent cases. Check by adding an unresolvable constraint.
+   *)
+
+  Variable f : D unit -> C bool -> True.
+  Fail Definition foo := f _ _. 
+  
+  Fail Definition foo' := let y := _ : D unit in let x := _ : C bool in f _ x. 
+  
+  Unset Typeclasses Strict Resolution.
+  Class Transitive (A : Type) := { trans : True }.
+  Class PreOrder (A : Type) := { preorder_trans :> Transitive A }.
+  Class PartialOrder (A : Type) := { partialorder_trans :> Transitive A }.
+  Class PartialOrder' (A : Type) := { partialorder_trans' :> Transitive A }.
+  
+  Instance: PreOrder nat. Admitted.
+  Instance: PartialOrder nat. Admitted.
+  
+  Class NoInst (A : Type) := {}.
+    
+  Variable foo : forall `{ T : Transitive nat } `{ NoInst (let x:=@trans _ T in nat) }, nat.
+  
+  Fail Definition bar := foo.
+
+
+End BacktrackGreenCut.
