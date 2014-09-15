@@ -392,7 +392,7 @@ let pr_goal_tag g =
   let s = " (ID " ^ Goal.uid g ^ ")" in
   str (emacs_str s)
 
-let display_name = false
+let display_name = true
 
 (* display a goal name *)
 let pr_goal_name sigma g =
@@ -453,18 +453,20 @@ let default_pr_subgoal n sigma =
   in
   prrec n
 
+let pr_internal_existential_key ev = str (string_of_existential ev)
+
 let emacs_print_dependent_evars sigma seeds =
   let evars () =
     let evars = Evarutil.gather_dependent_evars sigma seeds in
     let evars =
       Evar.Map.fold begin fun e i s ->
-	let e' = pr_existential_key sigma e in
+	let e' = pr_internal_existential_key e in
 	match i with
 	| None -> s ++ str" " ++ e' ++ str " open,"
 	| Some i ->
 	  s ++ str " " ++ e' ++ str " using " ++
 	    Evar.Set.fold begin fun d s ->
-	      pr_existential_key sigma d ++ str " " ++ s
+	      pr_internal_existential_key d ++ str " " ++ s
 	    end i (str ",")
       end evars (str "")
     in
