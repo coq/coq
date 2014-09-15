@@ -218,7 +218,7 @@ let extend_with_auto_hints l seq gl=
 	       seqref:=add_formula Hint gr typ !seqref gl
 	   with Not_found->())
       | _-> () in
-  let g _ l = List.iter f l in
+  let g _ _ l = List.iter f l in
   let h dbname=
     let hdb=
       try

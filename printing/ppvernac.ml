@@ -172,6 +172,9 @@ let pr_hints db h pr_c pr_pat =
     | HintsTransparency (l, b) ->
         str (if b then "Transparent " else "Opaque ") ++ prlist_with_sep sep
 	  pr_reference l
+    | HintsMode (m, l) ->
+        str "Mode " ++ pr_reference m ++ spc() ++ prlist_with_sep spc 
+	  (fun b -> if b then str"+" else str"-") l
     | HintsConstructors c ->
         str"Constructors" ++ spc() ++ prlist_with_sep spc pr_reference c
     | HintsExtern (n,c,tac) ->

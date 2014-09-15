@@ -151,12 +151,11 @@ let rec e_trivial_fail_db db_list local_db goal =
   tclFIRST (List.map tclCOMPLETE tacl) goal
 
 and e_my_find_search db_list local_db hdc complete sigma concl =
-  let hdc = head_of_constr_reference hdc in
   let prods, concl = decompose_prod_assum concl in
   let nprods = List.length prods in
   let freeze = 
     try
-      let cl = Typeclasses.class_info hdc in
+      let cl = Typeclasses.class_info (fst hdc) in
 	if cl.cl_strict then
 	  Evarutil.evars_of_term concl
 	else Evar.Set.empty
@@ -165,12 +164,13 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
   let hintl =
     List.map_append
       (fun db ->
-	if Hint_db.use_dn db then
-	  let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
-	    List.map (fun x -> (flags, x)) (Hint_db.map_auto (hdc,concl) db)
-	else
-	  let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
-	    List.map (fun x -> (flags, x)) (Hint_db.map_all hdc db))
+	let tacs = 
+	  if Hint_db.use_dn db then (* Using dnet *)
+	    Hint_db.map_eauto hdc concl db
+	  else Hint_db.map_existential hdc concl db
+	in
+	let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
+	  List.map (fun x -> (flags, x)) tacs)
       (local_db::db_list)
   in
   let tac_of_hint =
@@ -198,13 +198,13 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
 and e_trivial_resolve db_list local_db sigma concl =
   try
     e_my_find_search db_list local_db
-     (head_constr_bound concl) true sigma concl
+     (decompose_app_bound concl) true sigma concl
   with Bound | Not_found -> []
 
 let e_possible_resolve db_list local_db sigma concl =
   try
     e_my_find_search db_list local_db
-      (head_constr_bound concl) false sigma concl
+      (decompose_app_bound concl) false sigma concl
   with Bound | Not_found -> []
 
 let catchable = function

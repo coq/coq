@@ -1,5 +1,3 @@
-Set Typeclasses Strict Resolution.
-
 (* Set Typeclasses Unique Instances *)
 (** This lets typeclass search assume that instance heads are unique,
     so if one matches no other need to be tried,
@@ -14,6 +12,10 @@ Set Typeclasses Unique Instances.
 (* Unique *)
 Class D.
 Class C (A : Type) := c : A.
+
+Hint Mode C +.
+Fail Definition test := c.
+
 Unset Typeclasses Unique Instances.
 Instance : B -> D -> C nat := fun _ _ => 0.
 Instance : A -> D -> C nat := fun _ _ => 0.

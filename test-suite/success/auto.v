@@ -24,3 +24,24 @@ auto using (pair O).
 Undo.
 eauto using (pair O).
 Qed.
+
+Create HintDb test discriminated.
+
+Parameter foo : forall x, x = x + 0.
+Hint Resolve foo : test.
+
+Variable C : nat -> Type -> Prop.
+
+Variable c_inst : C 0 nat.
+
+Hint Resolve c_inst : test.
+
+Hint Mode C - + : test.
+Hint Resolve c_inst : test2.
+Hint Mode C + + : test2.
+
+Goal exists n, C n nat.
+Proof.
+  eexists. Fail progress debug eauto with test2. 
+  progress eauto with test.
+Qed.

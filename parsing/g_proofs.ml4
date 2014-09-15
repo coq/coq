@@ -146,6 +146,7 @@ GEXTEND Gram
       | IDENT "Immediate"; lc = LIST1 reference_or_constr -> HintsImmediate lc
       | IDENT "Transparent"; lc = LIST1 global -> HintsTransparency (lc, true)
       | IDENT "Opaque"; lc = LIST1 global -> HintsTransparency (lc, false)
+      | IDENT "Mode"; l = global; m = mode -> HintsMode (l, m)
       | IDENT "Unfold"; lqid = LIST1 global -> HintsUnfold lqid
       | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc
       | IDENT "Extern"; n = natural; c = OPT constr_pattern ; "=>";
@@ -155,5 +156,8 @@ GEXTEND Gram
   constr_body:
     [ [ ":="; c = lconstr -> c
       | ":"; t = lconstr; ":="; c = lconstr -> CCast(!@loc,c,CastConv t) ] ]
+  ;
+  mode:
+    [ [ l = LIST1 ["+" -> true | "-" -> false] -> l ] ]
   ;
 END

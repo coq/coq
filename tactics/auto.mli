@@ -73,13 +73,27 @@ module Hint_db :
     val empty : transparent_state -> bool -> t
     val find : global_reference -> t -> search_entry
     val map_none : t -> pri_auto_tactic list
+
+    (** All hints associated to the reference *)
     val map_all : global_reference -> t -> pri_auto_tactic list
-    val map_auto : global_reference * constr -> t -> pri_auto_tactic list
+
+    (** All hints associated to the reference, respecting modes if evars appear in the 
+	arguments, _not_ using the discrimination net. *)
+    val map_existential : (global_reference * constr array) -> constr -> t -> pri_auto_tactic list
+
+    (** All hints associated to the reference, respecting modes if evars appear in the 
+	arguments and using the discrimination net. *)
+    val map_eauto : (global_reference * constr array) -> constr -> t -> pri_auto_tactic list
+
+    (** All hints associated to the reference, respecting modes if evars appear in the 
+	arguments. *)
+    val map_auto : (global_reference * constr array) -> constr -> t -> pri_auto_tactic list
+
     val add_one : hint_entry -> t -> t
     val add_list : (hint_entry) list -> t -> t
     val remove_one : global_reference -> t -> t
     val remove_list : global_reference list -> t -> t
-    val iter : (global_reference option -> pri_auto_tactic list -> unit) -> t -> unit
+    val iter : (global_reference option -> bool array list -> pri_auto_tactic list -> unit) -> t -> unit
 
     val use_dn : t -> bool
     val transparent_state : t -> transparent_state
@@ -108,6 +122,7 @@ type hints_entry =
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
+  | HintsModeEntry of global_reference * bool list      
   | HintsExternEntry of
       int * (patvar list * constr_pattern) option * Tacexpr.glob_tactic_expr
 

@@ -141,19 +141,19 @@ let rec e_trivial_fail_db db_list local_db goal =
 	      (Hint_db.add_list hintl local_db) g'))) ::
     (List.map fst (e_trivial_resolve db_list local_db (pf_concl goal)) )
   in
-  tclFIRST (List.map tclCOMPLETE tacl) goal
+    tclFIRST (List.map tclCOMPLETE tacl) goal
 
 and e_my_find_search db_list local_db hdc concl =
-  let hdc = head_of_constr_reference hdc in
   let hintl =
     if occur_existential concl then
       List.map_append (fun db ->
 	let flags = auto_flags_of_state (Hint_db.transparent_state db) in
-	  List.map (fun x -> flags, x) (Hint_db.map_all hdc db)) (local_db::db_list)
+	  List.map (fun x -> flags, x) (Hint_db.map_existential hdc concl db)
+   (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)) (local_db::db_list)
     else
       List.map_append (fun db ->
 	let flags = auto_flags_of_state (Hint_db.transparent_state db) in
-	  List.map (fun x -> flags, x) (Hint_db.map_auto (hdc,concl) db)) (local_db::db_list)
+	  List.map (fun x -> flags, x) (Hint_db.map_auto hdc concl db)) (local_db::db_list)
   in
   let tac_of_hint =
     fun (st, {pri = b; pat = p; code = t; poly = poly}) ->
@@ -177,13 +177,13 @@ and e_trivial_resolve db_list local_db gl =
   try
     priority
       (e_my_find_search db_list local_db
-	 (head_constr_bound gl) gl)
+	 (decompose_app_bound gl) gl)
   with Bound | Not_found -> []
 
 let e_possible_resolve db_list local_db gl =
   try List.map snd
     (e_my_find_search db_list local_db
-	(head_constr_bound gl) gl)
+	(decompose_app_bound gl) gl)
   with Bound | Not_found -> []
 
 let find_first_goal gls =
