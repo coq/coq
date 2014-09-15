@@ -395,6 +395,9 @@ module Goal : sig
   (** Assume that you do not need the goal to be normalized. *)
   val assume : 'a t -> [ `NF ] t
 
+  (** Normalises the argument goal. *)
+  val normalize : 'a t -> [ `NF ] t tactic
+
   (* [concl], [hyps], [env] and [sigma] given a goal [gl] return
      respectively the conclusion of [gl], the hypotheses of [gl], the
      environment of [gl] (i.e. the global environment and the hypotheses)
@@ -411,9 +414,6 @@ module Goal : sig
 
   (** Same as nf_enter, but does not normalize the goal beforehand. *)
   val enter : ([ `LZ ] t -> unit tactic) -> unit tactic
-
-  (** Recover the list of current goals under focus *)
-  val nf_goals : [ `NF ] t list tactic
 
   (** Recover the list of current goals under focus, without evar-normalization *)
   val goals : [ `LZ ] t list tactic

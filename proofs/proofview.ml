@@ -911,6 +911,12 @@ module Goal = struct
         tclZERO e
     end
 
+  let normalize { self } =
+    Proof.current >>= fun env ->
+    tclEVARMAP >>= fun sigma ->
+    let (gl,sigma) = Goal.eval nf_enter_t env sigma self in
+    tclTHEN (V82.tclEVARS sigma) (tclUNIT gl)
+
   let enter_t f = Goal.enter begin fun env sigma concl self ->
     f {env=env;sigma=sigma;concl=concl;self=self}
   end
@@ -927,20 +933,6 @@ module Goal = struct
         let e = Errors.push e in
         tclZERO e
     end
-
-  let nf_goals =
-    Proof.current >>= fun env ->
-    Proof.get >>= fun step ->
-    let sigma = step.solution in
-    let map goal =
-      match Goal.advance sigma goal with
-      | None -> None (** ppedrot: Is this check really necessary? *)
-      | Some goal ->
-        (** The sigma is unchanged. *)
-        let (gl, _) = Goal.eval nf_enter_t env sigma goal in
-        Some gl
-    in
-    tclUNIT (List.map_filter map step.comb)
 
   let goals =
     Proof.current >>= fun env ->

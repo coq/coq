@@ -38,8 +38,10 @@ let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
   Proofview.tclUNIT (Depends (List.concat l))
 
 let nf_enter f =
-  bind (Proofview.Goal.nf_goals >>= fun l -> Proofview.tclUNIT (Depends l))
-    (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
+  bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
+    (fun gl ->
+      Proofview.Goal.normalize gl >>= fun nfgl ->
+      Proofview.V82.wrap_exceptions (fun () -> f nfgl))
 
 let enter f =
   bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
