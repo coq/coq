@@ -707,12 +707,10 @@ let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
   | e when Class_tactics.catchable e -> None
   | Reduction.NotConvertible -> None
 
-let unify_abs evd (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
+let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
   if isEvar t then None else 
     try
     let left = if l2r then c1 else c2 in
-    (** ppedrot: do we really need to merge? *)
-    let sigma = Evd.merge sigma evd in
     let sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV left t in
     let rew_evars = sigma, cstrs in
     let rew_prf = RewPrf (rel, prf) in
@@ -1978,7 +1976,7 @@ let unification_rewrite l2r c1 c2 cl car rel but env =
 let get_hyp gl (c,l) clause l2r =
   let evars = project gl in
   let env = pf_env gl in
-  let hi = decompose_applied_relation ~diff:false (pf_env gl) evars evars None (c,l) in
+  let hi = decompose_applied_relation ~diff:false env evars evars None (c,l) in
   let but = match clause with
     | Some id -> pf_get_hyp_typ gl id 
     | None -> Evarutil.nf_evar evars (pf_concl gl)
@@ -1992,7 +1990,7 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 
 let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
-  let unify () env evars t = unify_abs evd res l2r sort env evars t in
+  let unify () env evars t = unify_abs res l2r sort env evars t in
   let app = apply_rule unify occs in
   let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
   let substrat = Strategies.fix recstrat in
