@@ -275,6 +275,10 @@ let pretype_id pretype loc env evdref lvar id =
   let sigma = !evdref in
   (* Look for the binder of [id] *)
   try
+    let id =
+      try Id.Map.find id lvar.ltac_idents
+      with Not_found -> id
+    in
     let (n,_,typ) = lookup_rel_id id (rel_context env) in
       { uj_val  = mkRel n; uj_type = lift n typ }
   with Not_found ->
@@ -411,10 +415,6 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	tycon
 
   | GVar (loc, id) ->
-    let id =
-      try Id.Map.find id lvar.ltac_idents
-      with Not_found -> id
-    in
     inh_conv_coerce_to_tycon loc env evdref
       (pretype_id (fun e r l t -> pretype tycon e r l t) loc env evdref lvar id)
       tycon
