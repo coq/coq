@@ -392,7 +392,7 @@ let pr_goal_tag g =
   let s = " (ID " ^ Goal.uid g ^ ")" in
   str (emacs_str s)
 
-let display_name = true
+let display_name = false
 
 (* display a goal name *)
 let pr_goal_name sigma g =
