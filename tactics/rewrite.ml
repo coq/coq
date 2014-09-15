@@ -669,8 +669,8 @@ let symmetry env sort rew =
 
 let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
   if isEvar t then None else 
-    try
-      let hypinfo = 
+  try
+    let hypinfo =
       if eq_env hypinfo.cl.env env then hypinfo
       else refresh_hypinfo env sigma hypinfo
     in
@@ -679,26 +679,22 @@ let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
     let left = if l2r then c1 else c2 in
     let evd' = Evd.merge sigma cl.evd in
     let cl = { cl with evd = evd' } in
-    let hypinfo, evd', prf, c1, c2, rew_car, rel =
-	let env' = clenv_unify ~flags CONV left t cl in
-	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
-	  let evd' = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
-	    ~fail:true env'.env env'.evd in
-	  let env' = { env' with evd = evd' } in
-	  let env', prf = solve_remaining_by by env' (Clenv.clenv_value env') in	   
-	  let nf c = Evarutil.nf_evar env'.evd (Clenv.clenv_nf_meta env' c) in
-	  let c1 = nf c1 and c2 = nf c2
-	  and car = nf car and rel = nf rel
-	  and prf = nf prf in
-	  let ty1 = Retyping.get_type_of env'.env env'.evd c1
-	  and ty2 = Retyping.get_type_of env'.env env'.evd c2
-	  in
-	    if convertible env env'.evd ty2 ty1 then 
-	      let hypinfo = refresh_hypinfo env env'.evd hypinfo in
-		(hypinfo, env'.evd, prf, c1, c2, car, rel)
-	    else raise Reduction.NotConvertible
-    in
-    let rew_evars = evd', cstrs in
+    let env' = clenv_unify ~flags CONV left t cl in
+    let env' = Clenvtac.clenv_pose_dependent_evars true env' in
+    let evd' = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
+      ~fail:true env env'.evd in
+    let env' = { env' with evd = evd' } in
+    let env', prf = solve_remaining_by by env' (Clenv.clenv_value env') in
+    let evd = env'.evd in
+    let nf c = Evarutil.nf_evar evd (Reductionops.nf_meta evd c) in
+    let c1 = nf c1 and c2 = nf c2
+    and rew_car = nf car and rel = nf rel
+    and prf = nf prf in
+    let ty1 = Retyping.get_type_of env evd c1 in
+    let ty2 = Retyping.get_type_of env evd c2 in
+    let () = if not (convertible env evd ty2 ty1) then raise Reduction.NotConvertible in
+    let hypinfo = refresh_hypinfo env evd hypinfo in
+    let rew_evars = evd, cstrs in
     let rew_prf = RewPrf (rel, prf) in
     let rew = { rew_evars; rew_prf; rew_car; rew_from = c1; rew_to = c2; } in
     let rew = if l2r then rew else symmetry env hypinfo.sort rew in
