@@ -143,7 +143,7 @@ Qed.
 
 Ltac check_binding y := cut ((fun y => y) = S).
 Goal True.
-check_binding true.
+check_binding ipattern:H.
 Abort.
 
 (* Check that variables explicitly parsed as ltac variables are not
