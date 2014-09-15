@@ -453,18 +453,23 @@ let interp_fresh_id ist env sigma l =
 (* Extract the uconstr list from lfun *)
 let extract_ltac_constr_context ist env =
   let open Glob_term in
-  let fold id v ({idents;typed;untyped} as accu) =
-    try
-      let c = coerce_to_uconstr env v in
-      { idents ; typed ; untyped = Id.Map.add id c untyped }
-    with CannotCoerceTo _ -> try
-      let c = coerce_to_constr env v in
-      { idents ; typed = Id.Map.add id c typed ; untyped }
-    with CannotCoerceTo _ -> try
-      let id' = coerce_to_ident false env v in
-      { idents = Id.Map.add id id' idents ; typed ; untyped }
-    with CannotCoerceTo _ ->
-      accu
+  let add_uconstr id env v map =
+    try Id.Map.add id (coerce_to_uconstr env v) map
+    with CannotCoerceTo _ -> map
+  in
+  let add_constr id env v map =
+    try Id.Map.add id (coerce_to_constr env v) map
+    with CannotCoerceTo _ -> map
+  in
+  let add_ident id env v map =
+    try Id.Map.add id (coerce_to_ident false env v) map
+    with CannotCoerceTo _ -> map
+  in
+  let fold id v {idents;typed;untyped} =
+    let idents = add_ident id env v idents in
+    let typed = add_constr id env v typed in
+    let untyped = add_uconstr id env v untyped in
+    { idents ; typed ; untyped }
   in
   let empty =  { idents = Id.Map.empty ;typed = Id.Map.empty ; untyped = Id.Map.empty } in
   Id.Map.fold fold ist.lfun empty
