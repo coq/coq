@@ -462,7 +462,6 @@ type hypinfo = {
   c1 : constr;
   c2 : constr;
   c  : (Tacinterp.interp_sign * Tacexpr.glob_constr_and_expr with_bindings) option;
-  abs : bool;
 }
 
 let get_symmetric_proof b = 
@@ -503,7 +502,7 @@ let decompose_applied_relation ?(diff=true) env origsigma sigma orig (c,l) =
 	in
 	  Some { cl=eqclause; prf=value;
 		 car=ty1; rel = equiv; sort = Sorts.is_prop sort;
-		 c1=c1; c2=c2; c=orig; abs=false }
+		 c1=c1; c2=c2; c=orig; }
   in
     match find_rel ctype with
     | Some c -> c
@@ -669,14 +668,13 @@ let symmetry env sort rew =
   { rew with rew_from = rew.rew_to; rew_to = rew.rew_from; rew_prf; rew_evars; }
 
 let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
-  assert (not hypinfo.abs);
   if isEvar t then None else 
     try
       let hypinfo = 
       if eq_env hypinfo.cl.env env then hypinfo
       else refresh_hypinfo env sigma hypinfo
     in
-    let {cl=cl; prf=prf; car=car; rel=rel; c1=c1; c2=c2; c=c; abs=abs} = 
+    let {cl=cl; prf=prf; car=car; rel=rel; c1=c1; c2=c2; c=c;} = 
       hypinfo in
     let left = if l2r then c1 else c2 in
     let evd' = Evd.merge sigma cl.evd in
@@ -709,19 +707,17 @@ let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
   | e when Class_tactics.catchable e -> None
   | Reduction.NotConvertible -> None
 
-let unify_abs l2r env (sigma, cstrs) hypinfo t =
-  assert (hypinfo.abs && Option.is_empty hypinfo.c);
+let unify_abs evd (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
   if isEvar t then None else 
     try
-    let {cl=cl; car=rew_car; rel=rel; c1=c1; c2=c2; } = hypinfo in
     let left = if l2r then c1 else c2 in
-    let evd' = Evd.merge sigma cl.evd in
-    let cl = { cl with evd = evd' } in
-    let env' = clenv_unify ~flags:rewrite_unif_flags CONV left t cl in
-    let rew_evars = env'.evd, cstrs in
-    let rew_prf = RewPrf (hypinfo.rel, hypinfo.prf) in
-    let rew = { rew_prf; rew_car; rew_evars; rew_from = c1; rew_to = c2; } in
-    let rew = if l2r then rew else symmetry env hypinfo.sort rew in
+    (** ppedrot: do we really need to merge? *)
+    let sigma = Evd.merge sigma evd in
+    let sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV left t in
+    let rew_evars = sigma, cstrs in
+    let rew_prf = RewPrf (rel, prf) in
+    let rew = { rew_car = car; rew_from = c1; rew_to = c2; rew_prf; rew_evars; } in
+    let rew = if l2r then rew else symmetry env sort rew in
     Some ((), rew)
   with 
   | e when Class_tactics.catchable e -> None
@@ -1974,21 +1970,20 @@ let unification_rewrite l2r c1 c2 cl car rel but env =
   check_evar_map_of_evars_defs cl'.evd;
   let prf = nf (Clenv.clenv_value cl') and prfty = nf (Clenv.clenv_type cl') in
   let sort = sort_of_rel env evd' but in
-  let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty }
-    (* evd = Evd.diff cl'.evd (project gl) }  *)
-  in
   let abs = prf, prfty in
-    abs, {cl=cl'; prf=(mkRel 1); car=car; rel=rel; 
-	  c1=c1; c2=c2; c=None; abs=true; sort = Sorts.is_prop sort}
+  let prf = mkRel 1 in
+  let res = (car, rel, prf, c1, c2) in
+  abs, cl'.evd, res, Sorts.is_prop sort
 
-let get_hyp gl evars (c,l) clause l2r =
+let get_hyp gl (c,l) clause l2r =
+  let evars = project gl in
   let env = pf_env gl in
   let hi = decompose_applied_relation ~diff:false (pf_env gl) evars evars None (c,l) in
   let but = match clause with
     | Some id -> pf_get_hyp_typ gl id 
     | None -> Evarutil.nf_evar evars (pf_concl gl)
   in
-    unification_rewrite l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but env
+  unification_rewrite l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but env
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 
@@ -1996,8 +1991,8 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 (* let cl_rewrite_clause_tac = Profile.profile5 rewriteclaustac_key cl_rewrite_clause_tac *)
 
 let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
-  let abs, hypinfo = get_hyp gl (project gl) (c,l) cl l2r in
-  let unify () env evars t = unify_abs l2r env evars hypinfo t in
+  let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
+  let unify () env evars t = unify_abs evd res l2r sort env evars t in
   let app = apply_rule unify occs in
   let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
   let substrat = Strategies.fix recstrat in
@@ -2009,7 +2004,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
     try
       tclWEAK_PROGRESS 
 	(tclTHEN
-           (Refiner.tclEVARS hypinfo.cl.evd)
+           (Refiner.tclEVARS evd)
 	   (cl_rewrite_clause_tac ~abs:(Some abs) strat cl)) gl
     with RewriteFailure e ->
       tclFAIL 0 (str"setoid rewrite failed: " ++ e) gl
