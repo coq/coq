@@ -460,7 +460,7 @@ let is_projection primprojapp nargs cf =
       | _ -> None, None
       
 	
-let is_hole = function CHole _ -> true | _ -> false
+let is_hole = function CHole _ | CEvar _ -> true | _ -> false
 
 let is_significant_implicit a =
   not (is_hole a)
@@ -547,7 +547,7 @@ let explicitize loc inctx impl (cf,primprojapp,f) args =
 	CAppExpl (loc, (ip, f', us), args)
 
 let is_start_implicit = function
-  | imp :: _ -> is_status_implicit imp (* && maximal_insertion_of imp *)
+  | imp :: _ -> is_status_implicit imp && maximal_insertion_of imp
   | [] -> false
 
 let extern_global loc impl f us =
