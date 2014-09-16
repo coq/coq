@@ -67,7 +67,7 @@ proof.
 end proof.
 Qed.
 
-Require Omega.
+Require Import Omega.
 
 Lemma even_double_n: (forall m, even (double m)).
 proof.
