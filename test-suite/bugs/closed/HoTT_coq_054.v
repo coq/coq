@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-emacs") -*- *)
 Inductive Empty : Prop := .
 
 Inductive paths {A : Type} (a : A) : A -> Type :=
@@ -47,10 +47,10 @@ Theorem ex2_8 {A B A' B' : Type} (g : A -> A') (h : B -> B') (x y : A + B)
                          | inl y' => ap g
                          | inr y' => idmap
                        end
-           | inr x' => match y as y return match y return Type with
+           | inr x' => match y as y return match y return Prop with
                                                inr y' => x' = y'
                                              | _ => Empty
-                                           end -> match f y return Type with
+                                           end -> match f y return Prop with
                                                     | inr y' => h x' = y'
                                                     | _ => Empty end with
                          | inl y' => idmap

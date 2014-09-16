@@ -437,28 +437,14 @@ let occur_name na aty =
     | Name id -> occur_var_constr_expr id aty
     | Anonymous -> false
 
-let is_projection primprojapp nargs cf =
-  let env = Global.env () in
-    match primprojapp with 
-    | Some r ->
-      let pb = Environ.lookup_projection r env in
-	Some pb.Declarations.proj_npars, Some 1
-    | None ->
-      match cf with
-      | Some (ConstRef p) when Environ.is_projection p (Global.env()) ->
-	let pb = Environ.lookup_projection p env in
-        (* For primitive projections, r.(p) and r.(@p) are reserved to the 
-	   non-eta-expanded version of the constant, we disallow printing 
-	   of the eta-expanded projection as a projection *)
-	  Some pb.Declarations.proj_npars, None
-      | Some r when not !in_debugger && not !Flags.raw_print && !print_projections ->
-	(try
-	   let n = Recordops.find_projection_nparams r + 1 in
-	     if n <= nargs then None, None
-	     else None, Some n
-	 with Not_found -> None, None)
-      | _ -> None, None
-      
+let is_projection nargs = function
+  | Some r when not !in_debugger && not !Flags.raw_print && !print_projections ->
+    (try
+       let n = Recordops.find_projection_nparams r + 1 in
+	 if n <= nargs then None
+	 else Some n
+     with Not_found -> None)
+  | _ -> None
 	
 let is_hole = function CHole _ | CEvar _ -> true | _ -> false
 
@@ -481,7 +467,7 @@ let params_implicit n impl =
 
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
-let explicitize loc inctx impl (cf,primprojapp,f) args =
+let explicitize loc inctx impl (cf,f) args =
   let impl = if !Constrintern.parsing_explicit then [] else impl in
   let n = List.length args in
   let rec exprec q = function
@@ -506,44 +492,27 @@ let explicitize loc inctx impl (cf,primprojapp,f) args =
       raise Expl
     | [], _ -> []
   in
-  let primproj, ip = is_projection primprojapp (List.length args) cf in
+  let ip = is_projection (List.length args) cf in
   let expl () = 
     match ip with
     | Some i ->
-      (match primproj with
-      | Some npars -> (* Primitive projection in projection notation *)
-	let projimpl = CList.skipn_at_least npars impl in
-	  if not !print_projections && not !Flags.raw_print && params_implicit npars impl then
-	    (* Printing primitive projection as application *)
-	    let args = exprec 1 (args,projimpl) in		  
-	      CApp (loc, (None, f), args)
-	  else (** Printing as projection *)
-	    let args = exprec 1 (args,projimpl) in
-	      CApp (loc, (Some i,f),args)
-      | None -> (** Regular constant in projection notation *)
-	if not (List.is_empty impl) && is_status_implicit (List.nth impl (i-1)) then
-	  raise Expl
-	else
-	  let (args1,args2) = List.chop i args in
-	  let (impl1,impl2) = if List.is_empty impl then [],[] else List.chop i impl in
-	  let args1 = exprec 1 (args1,impl1) in
-	  let args2 = exprec (i+1) (args2,impl2) in
-	  let ip = Some (List.length args1) in
-	    CApp (loc,(ip,f),args1@args2))
-    | None ->
-      match primproj with
-      | Some npars when List.length args > npars && params_implicit npars impl ->
-        (* Eta-expanded version of projection, print explicited if the implicit 
-	   application would be parsed as a primitive projection application. *)
+      if not (List.is_empty impl) && is_status_implicit (List.nth impl (i-1)) then
 	raise Expl
-      | _ -> 
-        let args = exprec 1 (args,impl) in
-	  if List.is_empty args then f else CApp (loc, (None, f), args)
+      else
+	let (args1,args2) = List.chop i args in
+	let (impl1,impl2) = if List.is_empty impl then [],[] else List.chop i impl in
+	let args1 = exprec 1 (args1,impl1) in
+	let args2 = exprec (i+1) (args2,impl2) in
+	let ip = Some (List.length args1) in
+	  CApp (loc,(ip,f),args1@args2)
+    | None ->
+      let args = exprec 1 (args,impl) in
+	if List.is_empty args then f else CApp (loc, (None, f), args)
   in
     try expl ()
     with Expl -> 
       let f',us = match f with CRef (f,us) -> f,us | _ -> assert false in
-      let ip = if primprojapp != None || !print_projections then ip else None in
+      let ip = if !print_projections then ip else None in
 	CAppExpl (loc, (ip, f', us), args)
 
 let is_start_implicit = function
@@ -557,7 +526,7 @@ let extern_global loc impl f us =
   else
     CRef (f,us)
 
-let extern_app loc inctx impl (cf,primproj,f) us args =
+let extern_app loc inctx impl (cf,f) us args =
   if List.is_empty args then
     (* If coming from a notation "Notation a := @b" *)
     CAppExpl (loc, (None, f, us), [])
@@ -566,12 +535,9 @@ let extern_app loc inctx impl (cf,primproj,f) us args =
       (!print_implicits && not !print_implicits_explicit_args)) &&
      List.exists is_status_implicit impl)
   then
-    if primproj != None then
-      CAppExpl (loc, (Some 1,f,us), args)
-    else
-      CAppExpl (loc, (snd (is_projection primproj (List.length args) cf),f,us), args)
+    CAppExpl (loc, (is_projection (List.length args) cf,f,us), args)
   else
-    explicitize loc inctx impl (cf,primproj,CRef (f,us)) args
+    explicitize loc inctx impl (cf,CRef (f,us)) args
 
 let rec extern_args extern scopes env args subscopes =
   match args with
@@ -585,12 +551,6 @@ let rec extern_args extern scopes env args subscopes =
 
 let match_coercion_app = function
   | GApp (loc,GRef (_,r,_),args) -> Some (loc, r, 0, args)
-  | GProj (loc, r, arg) -> 
-    let pars = Inductiveops.projection_nparams r in
-      Some (loc, ConstRef r, pars, [arg])
-  | GApp (loc,GProj (_, r, c), args) -> 
-    let pars = Inductiveops.projection_nparams r in
-      Some (loc, ConstRef r, pars, c :: args)
   | _ -> None
 
 let rec remove_coercions inctx c =
@@ -728,26 +688,12 @@ let rec extern inctx scopes vars r =
 		 | Not_found | No_match | Exit ->
 		     extern_app loc inctx
 		       (select_stronger_impargs (implicits_of_global ref))
-		       (Some ref,None,extern_reference rloc vars ref) (extern_universes us) args
+		       (Some ref,extern_reference rloc vars ref) (extern_universes us) args
 	     end
-
-	 | GProj (loc,p,c) ->
-	   let ref = ConstRef p in
-	   let subscopes = find_arguments_scope ref in
-	   let args =
-	     extern_args (extern true) (snd scopes) vars (c :: args) subscopes 
-	   in
-	     extern_app loc inctx 
-	     (select_stronger_impargs (implicits_of_global ref))
-	       (Some ref, Some p, extern_reference loc vars ref)
-	       None args
 	       
 	 | _       ->
-	   explicitize loc inctx [] (None,None,sub_extern false scopes vars f)
+	   explicitize loc inctx [] (None,sub_extern false scopes vars f)
              (List.map (sub_extern true scopes vars) args))
-
-  | GProj (loc,p,c) ->
-    extern inctx scopes vars (GApp (loc,r',[]))
 
   | GLetIn (loc,na,t,c) ->
       CLetIn (loc,(loc,na),sub_extern false scopes vars t,
@@ -967,7 +913,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
  	if List.is_empty args then e
 	else
 	  let args = extern_args (extern true) scopes vars args argsscopes in
-	  explicitize loc false argsimpls (None,None,e) args
+	  explicitize loc false argsimpls (None,e) args
       with
 	  No_match -> extern_symbol allscopes vars t rules
 
@@ -989,7 +935,7 @@ let extern_glob_type vars c =
 
 let loc = Loc.ghost (* for constr and pattern, locations are lost *)
 
-let extern_constr_gen goal_concl_style scopt env sigma t =
+let extern_constr_gen lax goal_concl_style scopt env sigma t =
   (* "goal_concl_style" means do alpha-conversion using the "goal" convention *)
   (* i.e.: avoid using the names of goal/section/rel variables and the short *)
   (* names of global definitions of current module when computing names for *)
@@ -998,21 +944,19 @@ let extern_constr_gen goal_concl_style scopt env sigma t =
   (* those goal/section/rel variables that occurs in the subterm under *)
   (* consideration; see namegen.ml for further details *)
   let avoid = if goal_concl_style then ids_of_context env else [] in
-  let rel_env_names = names_of_rel_context env in
-  let r = Detyping.detype goal_concl_style avoid rel_env_names sigma t in
+  let r = Detyping.detype ~lax goal_concl_style avoid env sigma t in
   let vars = vars_of_env env in
   extern false (scopt,[]) vars r
 
 let extern_constr_in_scope goal_concl_style scope env sigma t =
-  extern_constr_gen goal_concl_style (Some scope) env sigma t
+  extern_constr_gen false goal_concl_style (Some scope) env sigma t
 
-let extern_constr goal_concl_style env sigma t =
-  extern_constr_gen goal_concl_style None env sigma t
+let extern_constr ?(lax=false) goal_concl_style env sigma t =
+  extern_constr_gen lax goal_concl_style None env sigma t
 
 let extern_type goal_concl_style env sigma t =
   let avoid = if goal_concl_style then ids_of_context env else [] in
-  let rel_env_names = names_of_rel_context env in
-  let r = Detyping.detype goal_concl_style avoid rel_env_names sigma t in
+  let r = Detyping.detype goal_concl_style avoid env sigma t in
   extern_glob_type (vars_of_env env) r
 
 let extern_sort s = extern_glob_sort (detype_sort s)
@@ -1076,14 +1020,14 @@ let rec glob_of_pat env sigma = function
 	| _ -> anomaly (Pp.str "PCase with non-trivial predicate but unknown inductive")
       in
       GCases (loc,RegularStyle,rtn,[glob_of_pat env sigma tm,indnames],mat)
-  | PFix f -> Detyping.detype false [] env sigma (mkFix f)
-  | PCoFix c -> Detyping.detype false [] env sigma (mkCoFix c)
+  | PFix f -> Detyping.detype_names false [] env (Global.env()) sigma (mkFix f) (** FIXME bad env *)
+  | PCoFix c -> Detyping.detype_names false [] env (Global.env()) sigma (mkCoFix c)
   | PSort s -> GSort (loc,s)
 
 let extern_constr_pattern env sigma pat =
   extern true (None,[]) Id.Set.empty (glob_of_pat env sigma pat)
 
 let extern_rel_context where env sigma sign =
-  let a = detype_rel_context where [] (names_of_rel_context env) sigma sign in
+  let a = detype_rel_context where [] (names_of_rel_context env,env) sigma sign in
   let vars = vars_of_env env in
   pi3 (extern_local_binder (None,[]) vars a)

@@ -539,56 +539,6 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     let j = pretype_sort evdref s in
       inh_conv_coerce_to_tycon loc env evdref j tycon
 
-  | GProj (loc, p, arg) ->
-    let (cst, mind, n, m, ty) = 
-      try get_projection env p 
-      with Not_found ->
-	user_err_loc (loc,"",str "Not a projection")
-    in
-    let mk_ty k = 
-      let ind = 
-	Evarutil.evd_comb1 (Evd.fresh_inductive_instance env) evdref (mind,0)
-      in
-      let args = 
-	let ctx = smash_rel_context (Inductiveops.inductive_paramdecls ind) in
-	  List.fold_right (fun (n, b, ty) (* par  *)args ->
-	    let ty = substl args ty in
-	    let ev = e_new_evar env evdref ~src:(loc,k) ty in
-	      ev :: args) ctx []
-      in (ind, List.rev args)
-    in
-    let argtycon =
-      match arg with
-      | GHole (loc, k, _) -> (* Typeclass projection application: 
-				create the necessary type constraint *)
-	let ind, args = mk_ty k in
-	  mk_tycon (applist (mkIndU ind, args))
-      | _ -> empty_tycon
-    in
-    let recty = pretype argtycon env evdref lvar arg in
-    let recty, ((ind,u), pars) = 
-      try
-	let IndType (indf, _ (*[]*)) = 
-	  find_rectype env !evdref recty.uj_type
-	in 
-	let ((ind', _), _) as indf = dest_ind_family indf in
-	  if not (eq_ind ind' (mind,0)) then raise Not_found
-	  else recty, indf
-      with Not_found -> 
-	(match argtycon with
-	| Some ty -> assert false
-	| None -> 
-	  let ind, args = mk_ty Evar_kinds.InternalHole in
-	  let j' = 
-	    inh_conv_coerce_to_tycon (loc_of_glob_constr arg) env evdref recty 
-	      (mk_tycon (applist (mkIndU ind, args))) in
-	    j', (ind, args))
-    in
-    let ty = Vars.subst_instance_constr u ty in
-    let ty = substl (recty.uj_val :: List.rev pars) ty in
-    let j = {uj_val = mkProj (cst,recty.uj_val); uj_type = ty} in
-      inh_conv_coerce_to_tycon loc env evdref j tycon
-
   | GApp (loc,f,args) ->
     let fj = pretype empty_tycon env evdref lvar f in
     let floc = loc_of_glob_constr f in
@@ -654,6 +604,17 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	    let c = evd_comb1 (Evarsolve.refresh_universes (Some true) env) evdref c in
 	    let t = Retyping.get_type_of env !evdref c in
 	      make_judge c (* use this for keeping evars: resj.uj_val *) t
+	  else if isConst f then
+	    let c,_ = destConst f in (* Internalize as primitive projection *)
+	      if is_projection c env then
+		let pb = lookup_projection c env in 
+		let npars = pb.Declarations.proj_npars and argslen = Array.length args in
+		  if npars < argslen then
+		    let proj = mkProj (c, args.(npars)) in
+		    let args = Array.sub args (npars+1) (argslen - (npars + 1)) in
+		      make_judge (mkApp (proj,args)) resj.uj_type
+		  else resj
+	      else resj
 	  else resj
       | _ -> resj 
     in

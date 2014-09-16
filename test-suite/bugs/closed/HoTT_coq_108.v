@@ -115,7 +115,7 @@ Section path_functor.
   Proof.
     intros [H' H''].
     destruct F, G; simpl in *.
-    induction H'; induction H''; simpl.
+    induction H'. (* while destruct H' works *) destruct H''.
     apply ap11; [ apply ap | ];
     apply center; abstract exact _.
     Set Printing Universes.

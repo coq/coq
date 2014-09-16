@@ -773,7 +773,7 @@ let merge_inductive_body (shift:merge_infos) avoid (oib1:one_inductive_body)
   let mkrawcor nme avoid typ =
     (* first replace rel 1 by a varname *)
     let substindtyp = substitterm 0 (mkRel 1) (mkVar nme) typ in
-    Detyping.detype false (Id.Set.elements avoid) [] Evd.empty substindtyp in
+    Detyping.detype false (Id.Set.elements avoid) (Global.env()) Evd.empty substindtyp in
   let lcstr1: glob_constr list =
     Array.to_list (Array.map (mkrawcor ind1name avoid) oib1.mind_user_lc) in
   (* add  to avoid all indentifiers of lcstr1 *)
@@ -854,7 +854,7 @@ let glob_constr_list_to_inductive_expr prms1 prms2 mib1 mib2 shift
 let mkProd_reldecl (rdecl:rel_declaration) (t2:glob_constr) =
   match rdecl with
     | (nme,None,t) ->
-        let traw = Detyping.detype false [] [] Evd.empty t in
+        let traw = Detyping.detype false [] (Global.env()) Evd.empty t in
         GProd (Loc.ghost,nme,Explicit,traw,t2)
     | (_,Some _,_) -> assert false
 

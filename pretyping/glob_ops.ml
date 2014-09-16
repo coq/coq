@@ -159,9 +159,6 @@ let map_glob_constr_left_to_right f = function
       let comp2 = Util.List.map_left (fun (tm,x) -> (f tm,x)) tml in
       let comp3 = Util.List.map_left (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl in
       GCases (loc,sty,comp1,comp2,comp3)
-  | GProj (loc,p,c) -> 
-      let comp1 = f c in
-      GProj (loc,p,comp1)
   | GLetTuple (loc,nal,(na,po),b,c) ->
       let comp1 = Option.map f po in
       let comp2 = f b in
@@ -189,7 +186,6 @@ let fold_glob_constr f acc =
   let rec fold acc = function
   | GVar _ -> acc
   | GApp (_,c,args) -> List.fold_left fold (fold acc c) args
-  | GProj (_,p,c) -> fold acc c
   | GLambda (_,_,_,b,c) | GProd (_,_,_,b,c) | GLetIn (_,_,b,c) ->
       fold (fold acc b) c
   | GCases (_,_,rtntypopt,tml,pl) ->
@@ -228,7 +224,6 @@ let occur_glob_constr id =
   let rec occur = function
     | GVar (loc,id') -> Id.equal id id'
     | GApp (loc,f,args) -> (occur f) || (List.exists occur args)
-    | GProj (loc,p,c) -> occur c
     | GLambda (loc,na,bk,ty,c) ->
       (occur ty) || (not (same_id na id) && (occur c))
     | GProd (loc,na,bk,ty,c) ->
@@ -278,7 +273,6 @@ let free_glob_vars  =
   let rec vars bounded vs = function
     | GVar (loc,id') -> if Id.Set.mem id' bounded then vs else Id.Set.add id' vs
     | GApp (loc,f,args) -> List.fold_left (vars bounded) vs (f::args)
-    | GProj (loc,p,c) -> vars bounded vs c
     | GLambda (loc,na,_,ty,c) | GProd (loc,na,_,ty,c) | GLetIn (loc,na,ty,c) ->
 	let vs' = vars bounded vs ty in
 	let bounded' = add_name_to_ids bounded na in
@@ -340,7 +334,6 @@ let loc_of_glob_constr = function
   | GEvar (loc,_,_) -> loc
   | GPatVar (loc,_) -> loc
   | GApp (loc,_,_) -> loc
-  | GProj (loc,p,c) -> loc
   | GLambda (loc,_,_,_,_) -> loc
   | GProd (loc,_,_,_,_) -> loc
   | GLetIn (loc,_,_,_) -> loc

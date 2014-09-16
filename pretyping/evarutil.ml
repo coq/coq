@@ -21,6 +21,8 @@ open Evd
 open Reductionops
 open Pretype_errors
 
+(** Combinators *)
+
 let evd_comb0 f evdref =
   let (evd',x) = f !evdref in
     evdref := evd';
@@ -472,7 +474,7 @@ let rec check_and_clear_in_constr evdref err ids c =
 		ctxt (Array.to_list l) (Id.Map.empty,[]) in
 	    (* Check if some rid to clear in the context of ev has dependencies
 	       in the type of ev and adjust the source of the dependency *)
-	    let nconcl =
+	    let _nconcl =
 	      try
                 let nids = Id.Map.domain rids in
                 check_and_clear_in_constr evdref (EvarTypingBreak ev) nids (evar_concl evi)

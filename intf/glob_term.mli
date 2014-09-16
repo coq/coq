@@ -41,7 +41,6 @@ type glob_constr =
   | GCases of Loc.t * case_style * glob_constr option * tomatch_tuples * cases_clauses
       (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in
 	  [MatchStyle]) *)
-  | GProj of Loc.t * projection * glob_constr
   | GLetTuple of Loc.t * Name.t list * (Name.t * glob_constr option) *
       glob_constr * glob_constr
   | GIf of Loc.t * glob_constr * (Name.t * glob_constr option) * glob_constr * glob_constr

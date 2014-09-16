@@ -115,22 +115,22 @@ Unset Printing All.
 
 (** Explicit version of the primitive projection, under applied w.r.t implicit arguments
       can be printed only using projection notation. r.(@p) *)
-Check r.(@p). 
+Check r.(@p _). 
 Set Printing Projections.
-Check r.(@p). 
+Check r.(@p _). 
 Unset Printing Projections.
 Set Printing All.
-Check r.(@p).
+Check r.(@p _).
 Unset Printing All.
   
 (** Explicit version of the primitive projection, applied to its implicit arguments
       can be printed using application notation r.(p), r.(@p) in fully explicit form *)
-Check r.(@p) nat.
+Check r.(@p _) nat.
 Set Printing Projections.
-Check r.(@p) nat. 
+Check r.(@p _) nat. 
 Unset Printing Projections.
 Set Printing All.
-Check r.(@p) nat.
+Check r.(@p _) nat.
 Unset Printing All.
 
 Parameter r' : R' nat.
@@ -163,12 +163,12 @@ Unset Printing All.
 
 (** Explicit version of the primitive projection, under applied w.r.t implicit arguments
       can be printed only using projection notation. r.(@p) *)
-Check r'.(@p'). 
+Check r'.(@p' _). 
 Set Printing Projections.
-Check r'.(@p'). 
+Check r'.(@p' _). 
 Unset Printing Projections.
 Set Printing All.
-Check r'.(@p').
+Check r'.(@p' _).
 Unset Printing All.
   
 (** Explicit version of the primitive projection, applied to its implicit arguments
@@ -181,3 +181,10 @@ Set Printing All.
 Check p' r' nat. 
 Unset Printing All.
 
+Check (@p' nat).
+Check p'.
+Set Printing All.
+
+Check (@p' nat).
+Check p'.
+Unset Printing All.

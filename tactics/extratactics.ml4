@@ -628,9 +628,8 @@ let hResolve id c occ t gl =
   let sigma = project gl in 
   let env = Termops.clear_named_body id (pf_env gl) in
   let env_ids = Termops.ids_of_context env in
-  let env_names = Termops.names_of_rel_context env in
-  let c_raw = Detyping.detype true env_ids env_names sigma c in
-  let t_raw = Detyping.detype true env_ids env_names sigma t in
+  let c_raw = Detyping.detype true env_ids env sigma c in
+  let t_raw = Detyping.detype true env_ids env sigma t in
   let rec resolve_hole t_hole =
     try 
       Pretyping.understand env sigma t_hole

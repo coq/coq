@@ -144,7 +144,6 @@ let rec uri_of_constr c =
   | GRef (_,ref,_) ->  uri_of_global ref
   | GHole _ | GEvar _ -> url_string "?"
   | GSort (_,s) -> url_string (whelp_of_glob_sort s)
-  | GProj _ -> assert false
   | GApp (_,f,args) ->
       let inst,rest = merge (section_parameters f) args in
       uri_of_constr f; url_char ' '; uri_params uri_of_constr inst;
@@ -176,14 +175,14 @@ let send_whelp req s =
   let command = Util.subst_command_placeholder browser_cmd_fmt url in
   let _ = CUnix.run_command ~hook:print_string command in ()
 
-let whelp_constr req c =
-  let c = detype false [whelm_special] [] Evd.empty c in
+let whelp_constr env sigma req c =
+  let c = detype false [whelm_special] env sigma c in
   send_whelp req (make_string uri_of_constr c)
 
 let whelp_constr_expr req c =
   let (sigma,env)= Lemmas.get_current_context () in
   let _,c = interp_open_constr env sigma c in
-  whelp_constr req c
+  whelp_constr env sigma req c
 
 let whelp_locate s =
   send_whelp "locate" s
@@ -194,7 +193,7 @@ let whelp_elim ind =
 let on_goal f =
   let gls = Proof.V82.subgoals (get_pftreestate ()) in
   let gls = { gls with Evd.it = List.hd gls.Evd.it }  in
-  f (Termops.it_mkNamedProd_or_LetIn (pf_concl gls) (pf_hyps gls))
+  f (pf_env gls) (project gls) (Termops.it_mkNamedProd_or_LetIn (pf_concl gls) (pf_hyps gls))
 
 type whelp_request =
   | Locate of string
@@ -204,7 +203,7 @@ type whelp_request =
 let whelp = function
   | Locate s -> whelp_locate s
   | Elim ind -> whelp_elim ind
-  | Constr (s,c) -> whelp_constr s c
+  | Constr (s,c) -> whelp_constr (Global.env()) (Evd.empty) s c
 
 VERNAC ARGUMENT EXTEND whelp_constr_request
 | [ "Match" ] -> [ "match" ]
@@ -221,5 +220,5 @@ END
 VERNAC COMMAND EXTEND WhelpHint CLASSIFIED AS QUERY
 | [ "Whelp" "Hint" constr(c) ] -> [ whelp_constr_expr "hint" c ]
 | [ "Whelp" "Hint" ] => [ Vernacexpr.VtProofStep false, Vernacexpr.VtLater ] ->
-  [ on_goal (whelp_constr "hint") ]
+  [ on_goal (fun env sigma -> whelp_constr env sigma "hint") ]
 END

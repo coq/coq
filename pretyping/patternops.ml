@@ -324,8 +324,6 @@ let rec pat_of_raw metas vars = function
   (* Hack pour ne pas réécrire une interprétation complète des patterns*)
   | GApp (_, GPatVar (_,(true,n)), cl) ->
       metas := n::!metas; PSoApp (n, List.map (pat_of_raw metas vars) cl)
-  | GProj (_, p, c) ->
-      PProj (p, pat_of_raw metas vars c)
   | GApp (_,c,cl) ->
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))

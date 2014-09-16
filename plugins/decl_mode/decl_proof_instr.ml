@@ -1272,8 +1272,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 
 let understand_my_constr c gls =
   let env = pf_env gls in
-  let nc = names_of_rel_context env in
-  let rawc = Detyping.detype false [] nc Evd.empty c in
+  let rawc = Detyping.detype false [] env Evd.empty c in
   let rec frob = function
     | GEvar _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark Evar_kinds.Expand,None)
     | rc ->  map_glob_constr frob rc

@@ -316,7 +316,7 @@ let rec match_aliases names constr = function
       let args,bnames,body = match_aliases qnames body q in
 	st::args,bnames,body
 
-let detype_ground c = Detyping.detype false [] [] Evd.empty c
+let detype_ground env c = Detyping.detype false [] env Evd.empty c
 
 let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
   let et,pinfo =
@@ -334,7 +334,7 @@ let interp_cases info env sigma params (pat:cases_pattern_expr) hyps =
 	     str "expected.") in
   let app_ind =
     let rind = GRef (Loc.ghost,Globnames.IndRef pinfo.per_ind,None) in
-    let rparams = List.map detype_ground pinfo.per_params in
+    let rparams = List.map (detype_ground env) pinfo.per_params in
     let rparams_rec =
       List.map
 	(fun (loc,(id,_)) ->

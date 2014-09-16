@@ -31,6 +31,8 @@ let dl = Loc.ghost
 (** Should we keep details of universes during detyping ? *)
 let print_universes = Flags.univ_print
 
+let add_name na b t (nenv, env) = add_name na nenv, push_rel (na, b, t) env
+
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
 
@@ -215,7 +217,7 @@ let lookup_index_as_renamed env t n =
 (**********************************************************************)
 (* Fragile algorithm to reverse pattern-matching compilation          *)
 
-let update_name na ((_,e),c) =
+let update_name na ((_,(e,_)),c) =
   match na with
   | Name _ when force_wildcard () && noccurn (List.index Name.equal na e) c ->
       Anonymous
@@ -223,19 +225,20 @@ let update_name na ((_,e),c) =
       na
 
 let rec decomp_branch ndecls nargs nal b (avoid,env as e) c =
-  let flag = if b then RenamingForGoal else RenamingForCasesPattern (env,c) in
+  let flag = if b then RenamingForGoal else RenamingForCasesPattern (fst env,c) in
   if Int.equal ndecls 0 then (List.rev nal,(e,c))
   else
-    let na,c,f,nargs' =
+    let na,c,f,nargs',body,t =
       match kind_of_term (strip_outer_cast c) with
-	| Lambda (na,_,c) -> na,c,compute_displayed_let_name_in,nargs-1
-	| LetIn (na,_,_,c) when ndecls>nargs ->
-            na,c,compute_displayed_name_in,nargs
-	| _ ->
+	| Lambda (na,t,c) -> na,c,compute_displayed_let_name_in,nargs-1,None,t
+	| LetIn (na,b,t,c) when ndecls>nargs ->
+            na,c,compute_displayed_name_in,nargs,Some b,t
+	| LetIn (na,b,t,c) ->
 	    Name default_dependent_ident,(applist (lift 1 c, [mkRel 1])),
-	    compute_displayed_name_in,nargs-1 in
+	    compute_displayed_name_in,nargs-1,Some b,t 
+	| _ -> assert false in
     let na',avoid' = f flag avoid na c in
-    decomp_branch (ndecls-1) nargs' (na'::nal) b (avoid',add_name na' env) c
+    decomp_branch (ndecls-1) nargs' (na'::nal) b (avoid',add_name na' body t env) c
 
 let rec build_tree na isgoal e ci cl =
   let mkpat n rhs pl = PatCstr(dl,(ci.ci_ind,n+1),pl,update_name na rhs) in
@@ -250,7 +253,7 @@ and align_tree nal isgoal (e,c as rhs) = match nal with
   | na::nal ->
     match kind_of_term c with
     | Case (ci,p,c,cl) when
-        eq_constr c (mkRel (List.index Name.equal na (snd e)))
+        eq_constr c (mkRel (List.index Name.equal na (fst (snd e))))
 	&& (* don't contract if p dependent *)
 	computable p (ci.ci_pp_info.ind_nargs) ->
 	let clauses = build_tree na isgoal e ci cl in
@@ -393,10 +396,10 @@ let detype_instance l =
   if Univ.Instance.is_empty l then None
   else Some (List.map detype_level (Array.to_list (Univ.Instance.to_array l)))
 
-let rec detype isgoal avoid env sigma t =
+let rec detype flags avoid env sigma t =
   match kind_of_term (collapse_appl t) with
     | Rel n ->
-      (try match lookup_name_of_rel n env with
+      (try match lookup_name_of_rel n (fst env) with
 	 | Name id   -> GVar (dl, id)
 	 | Anonymous -> !detype_anonymous dl n
        with Not_found ->
@@ -411,19 +414,19 @@ let rec detype isgoal avoid env sigma t =
 	 with Not_found -> GVar (dl, id))
     | Sort s -> GSort (dl,detype_sort s)
     | Cast (c1,REVERTcast,c2) when not !Flags.raw_print ->
-        detype isgoal avoid env sigma c1
+        detype flags avoid env sigma c1
     | Cast (c1,k,c2) ->
-        let d1 = detype isgoal avoid env sigma c1 in
-	let d2 = detype isgoal avoid env sigma c2 in
+        let d1 = detype flags avoid env sigma c1 in
+	let d2 = detype flags avoid env sigma c2 in
     let cast = match k with
     | VMcast -> CastVM d2
     | NATIVEcast -> CastNative d2
     | _ -> CastConv d2
     in
 	GCast(dl,d1,cast)
-    | Prod (na,ty,c) -> detype_binder isgoal BProd avoid env sigma na ty c
-    | Lambda (na,ty,c) -> detype_binder isgoal BLambda avoid env sigma na ty c
-    | LetIn (na,b,_,c) -> detype_binder isgoal BLetIn avoid env sigma na b c
+    | Prod (na,ty,c) -> detype_binder flags BProd avoid env sigma na None ty c
+    | Lambda (na,ty,c) -> detype_binder flags BLambda avoid env sigma na None ty c
+    | LetIn (na,b,ty,c) -> detype_binder flags BLetIn avoid env sigma na (Some b) ty c
     | App (f,args) ->
       let mkapp f' args' = 
  	match f' with
@@ -431,66 +434,79 @@ let rec detype isgoal avoid env sigma t =
  	  GApp (dl,f',args''@args')
  	| _ -> GApp (dl,f',args')
       in
-	mkapp (detype isgoal avoid env sigma f)
-	  (Array.map_to_list (detype isgoal avoid env sigma) args)
+	mkapp (detype flags avoid env sigma f)
+	  (Array.map_to_list (detype flags avoid env sigma) args)
     | Const (sp,u) -> GRef (dl, ConstRef sp, detype_instance u)
     | Proj (p,c) ->
-        GProj (dl, p, detype isgoal avoid env sigma c)
+      (try 
+	 let ty = Retyping.get_type_of (snd env) sigma c in
+	 let (ind, args) = Inductive.find_rectype (snd env) ty in
+	   GApp (dl, GRef (dl, ConstRef p, None), 
+		 List.map (detype flags avoid env sigma) (args @ [c]))
+       with e when fst flags (* lax mode, used by debug printers only *) ->
+	 GApp (dl, GRef (dl, ConstRef p, None), 
+	       [detype flags avoid env sigma c])
+       | e -> raise e)
     | Evar (evk,cl) ->
       let id,l =
         try Evd.evar_ident evk sigma,
-            Evd.evar_instance_array (fun id c -> try let n = List.index Name.equal (Name id) env in isRelN n c with Not_found -> isVarId id c) (Evd.find sigma evk) cl
+          Evd.evar_instance_array 
+	    (fun id c -> 
+	      try let n = List.index Name.equal (Name id) (fst env) in 
+		    isRelN n c 
+	      with Not_found -> isVarId id c) 
+	    (Evd.find sigma evk) cl
         with Not_found -> Id.of_string ("X" ^ string_of_int (Evar.repr evk)), [] in
         GEvar (dl,id,
-               List.map (on_snd (detype isgoal avoid env sigma)) l)
+               List.map (on_snd (detype flags avoid env sigma)) l)
     | Ind (ind_sp,u) ->
 	GRef (dl, IndRef ind_sp, detype_instance u)
     | Construct (cstr_sp,u) ->
 	GRef (dl, ConstructRef cstr_sp, detype_instance u)
     | Case (ci,p,c,bl) ->
 	let comp = computable p (ci.ci_pp_info.ind_nargs) in
-	detype_case comp (detype isgoal avoid env sigma)
-	  (detype_eqns isgoal avoid env sigma ci comp)
+	detype_case comp (detype flags avoid env sigma)
+	  (detype_eqns flags avoid env sigma ci comp)
 	  is_nondep_branch avoid
 	  (ci.ci_ind,ci.ci_pp_info.style,
 	   ci.ci_cstr_ndecls,ci.ci_pp_info.ind_nargs)
 	  (Some p) c bl
-    | Fix (nvn,recdef) -> detype_fix isgoal avoid env sigma nvn recdef
-    | CoFix (n,recdef) -> detype_cofix isgoal avoid env sigma n recdef
+    | Fix (nvn,recdef) -> detype_fix flags avoid env sigma nvn recdef
+    | CoFix (n,recdef) -> detype_cofix flags avoid env sigma n recdef
 
-and detype_fix isgoal avoid env sigma (vn,_ as nvn) (names,tys,bodies) =
+and detype_fix flags avoid env sigma (vn,_ as nvn) (names,tys,bodies) =
   let def_avoid, def_env, lfi =
-    Array.fold_left
-      (fun (avoid, env, l) na ->
+    Array.fold_left2
+      (fun (avoid, env, l) na ty ->
 	 let id = next_name_away na avoid in
-	 (id::avoid, add_name (Name id) env, id::l))
-      (avoid, env, []) names in
+	 (id::avoid, add_name (Name id) None ty env, id::l))
+      (avoid, env, []) names tys in
   let n = Array.length tys in
   let v = Array.map3
-    (fun c t i -> share_names isgoal (i+1) [] def_avoid def_env sigma c (lift n t))
+    (fun c t i -> share_names flags (i+1) [] def_avoid def_env sigma c (lift n t))
     bodies tys vn in
   GRec(dl,GFix (Array.map (fun i -> Some i, GStructRec) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)
 
-and detype_cofix isgoal avoid env sigma n (names,tys,bodies) =
+and detype_cofix flags avoid env sigma n (names,tys,bodies) =
   let def_avoid, def_env, lfi =
-    Array.fold_left
-      (fun (avoid, env, l) na ->
+    Array.fold_left2
+      (fun (avoid, env, l) na ty ->
 	 let id = next_name_away na avoid in
-	 (id::avoid, add_name (Name id) env, id::l))
-      (avoid, env, []) names in
+	 (id::avoid, add_name (Name id) None ty env, id::l))
+      (avoid, env, []) names tys in
   let ntys = Array.length tys in
   let v = Array.map2
-    (fun c t -> share_names isgoal 0 [] def_avoid def_env sigma c (lift ntys t))
+    (fun c t -> share_names flags 0 [] def_avoid def_env sigma c (lift ntys t))
     bodies tys in
   GRec(dl,GCoFix n,Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)
 
-and share_names isgoal n l avoid env sigma c t =
+and share_names flags n l avoid env sigma c t =
   match kind_of_term c, kind_of_term t with
     (* factorize even when not necessary to have better presentation *)
     | Lambda (na,t,c), Prod (na',t',c') ->
@@ -498,67 +514,67 @@ and share_names isgoal n l avoid env sigma c t =
             Name _, _ -> na
           | _, Name _ -> na'
           | _ -> na in
-        let t = detype isgoal avoid env sigma t in
+        let t' = detype flags avoid env sigma t in
 	let id = next_name_away na avoid in
-        let avoid = id::avoid and env = add_name (Name id) env in
-        share_names isgoal (n-1) ((Name id,Explicit,None,t)::l) avoid env sigma c c'
+        let avoid = id::avoid and env = add_name (Name id) None t env in
+        share_names flags (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
     (* May occur for fix built interactively *)
     | LetIn (na,b,t',c), _ when n > 0 ->
-        let t' = detype isgoal avoid env sigma t' in
-        let b = detype isgoal avoid env sigma b in
+        let t'' = detype flags avoid env sigma t' in
+        let b' = detype flags avoid env sigma b in
 	let id = next_name_away na avoid in
-        let avoid = id::avoid and env = add_name (Name id) env in
-        share_names isgoal n ((Name id,Explicit,Some b,t')::l) avoid env sigma c (lift 1 t)
+        let avoid = id::avoid and env = add_name (Name id) (Some b) t' env in
+        share_names flags n ((Name id,Explicit,Some b',t'')::l) avoid env sigma c (lift 1 t)
     (* Only if built with the f/n notation or w/o let-expansion in types *)
     | _, LetIn (_,b,_,t) when n > 0 ->
-	share_names isgoal n l avoid env sigma c (subst1 b t)
+	share_names flags n l avoid env sigma c (subst1 b t)
     (* If it is an open proof: we cheat and eta-expand *)
     | _, Prod (na',t',c') when n > 0 ->
-        let t' = detype isgoal avoid env sigma t' in
+        let t'' = detype flags avoid env sigma t' in
 	let id = next_name_away na' avoid in
-        let avoid = id::avoid and env = add_name (Name id) env in
+        let avoid = id::avoid and env = add_name (Name id) None t' env in
         let appc = mkApp (lift 1 c,[|mkRel 1|]) in
-        share_names isgoal (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma appc c'
+        share_names flags (n-1) ((Name id,Explicit,None,t'')::l) avoid env sigma appc c'
     (* If built with the f/n notation: we renounce to share names *)
     | _ ->
         if n>0 then msg_warning (strbrk "Detyping.detype: cannot factorize fix enough");
-        let c = detype isgoal avoid env sigma c in
-        let t = detype isgoal avoid env sigma t in
+        let c = detype flags avoid env sigma c in
+        let t = detype flags avoid env sigma t in
         (List.rev l,c,t)
 
-and detype_eqns isgoal avoid env sigma ci computable constructs consnargsl bl =
+and detype_eqns flags avoid env sigma ci computable constructs consnargsl bl =
   try
     if !Flags.raw_print || not (reverse_matching ()) then raise Exit;
-    let mat = build_tree Anonymous isgoal (avoid,env) ci bl in
-    List.map (fun (pat,((avoid,env),c)) -> (dl,[],[pat],detype isgoal avoid env sigma c))
+    let mat = build_tree Anonymous (snd flags) (avoid,env) ci bl in
+    List.map (fun (pat,((avoid,env),c)) -> (dl,[],[pat],detype flags avoid env sigma c))
       mat
   with e when Errors.noncritical e ->
     Array.to_list
-      (Array.map3 (detype_eqn isgoal avoid env sigma) constructs consnargsl bl)
+      (Array.map3 (detype_eqn flags avoid env sigma) constructs consnargsl bl)
 
-and detype_eqn isgoal avoid env sigma constr construct_nargs branch =
-  let make_pat x avoid env b ids =
+and detype_eqn (lax,isgoal as flags) avoid env sigma constr construct_nargs branch =
+  let make_pat x avoid env b body ty ids =
     if force_wildcard () && noccurn 1 b then
-      PatVar (dl,Anonymous),avoid,(add_name Anonymous env),ids
+      PatVar (dl,Anonymous),avoid,(add_name Anonymous body ty env),ids
     else
-      let flag = if isgoal then RenamingForGoal else RenamingForCasesPattern (env,b) in
+      let flag = if isgoal then RenamingForGoal else RenamingForCasesPattern (fst env,b) in
       let na,avoid' = compute_displayed_name_in flag avoid x b in
-      PatVar (dl,na),avoid',(add_name na env),add_vname ids na
+      PatVar (dl,na),avoid',(add_name na body ty env),add_vname ids na
   in
   let rec buildrec ids patlist avoid env n b =
     if Int.equal n 0 then
       (dl, Id.Set.elements ids,
        [PatCstr(dl, constr, List.rev patlist,Anonymous)],
-       detype isgoal avoid env sigma b)
+       detype flags avoid env sigma b)
     else
       match kind_of_term b with
-	| Lambda (x,_,b) ->
-	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
+	| Lambda (x,t,b) ->
+	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b None t ids in
             buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b
 
-	| LetIn (x,_,_,b) ->
-	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
-            buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b
+	| LetIn (x,b,t,b') ->
+	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b' (Some b) t ids in
+            buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b'
 
 	| Cast (c,_,_) ->    (* Oui, il y a parfois des cast *)
 	    buildrec ids patlist avoid env n c
@@ -568,24 +584,24 @@ and detype_eqn isgoal avoid env sigma constr construct_nargs branch =
             (* nommage de la nouvelle variable *)
 	    let new_b = applist (lift 1 b, [mkRel 1]) in
             let pat,new_avoid,new_env,new_ids =
-	      make_pat Anonymous avoid env new_b ids in
+	      make_pat Anonymous avoid env new_b None mkProp ids in
 	    buildrec new_ids (pat::patlist) new_avoid new_env (n-1) new_b
 
   in
   buildrec Id.Set.empty [] avoid env construct_nargs branch
 
-and detype_binder isgoal bk avoid env sigma na ty c =
-  let flag = if isgoal then RenamingForGoal else RenamingElsewhereFor (env,c) in
+and detype_binder (lax,isgoal as flags) bk avoid env sigma na body ty c =
+  let flag = if isgoal then RenamingForGoal else RenamingElsewhereFor (fst env,c) in
   let na',avoid' = match bk with
   | BLetIn -> compute_displayed_let_name_in flag avoid na c
   | _ -> compute_displayed_name_in flag avoid na c in
-  let r =  detype isgoal avoid' (add_name na' env) sigma c in
+  let r =  detype flags avoid' (add_name na' body ty env) sigma c in
   match bk with
-  | BProd -> GProd (dl, na',Explicit,detype false avoid env sigma ty, r)
-  | BLambda -> GLambda (dl, na',Explicit,detype false avoid env sigma ty, r)
-  | BLetIn -> GLetIn (dl, na',detype false avoid env sigma ty, r)
+  | BProd -> GProd (dl, na',Explicit,detype (lax,false) avoid env sigma ty, r)
+  | BLambda -> GLambda (dl, na',Explicit,detype (lax,false) avoid env sigma ty, r)
+  | BLetIn -> GLetIn (dl, na',detype (lax,false) avoid env sigma (Option.get body), r)
 
-let detype_rel_context where avoid env sigma sign =
+let detype_rel_context ?(lax=false) where avoid env sigma sign =
   let where = Option.map (fun c -> it_mkLambda_or_LetIn c sign) where in
   let rec aux avoid env = function
   | [] -> []
@@ -596,14 +612,19 @@ let detype_rel_context where avoid env sigma sign =
 	| Some c ->
 	    if b != None then
 	      compute_displayed_let_name_in
-                (RenamingElsewhereFor (env,c)) avoid na c
+                (RenamingElsewhereFor (fst env,c)) avoid na c
 	    else
 	      compute_displayed_name_in
-                (RenamingElsewhereFor (env,c)) avoid na c in
-      let b = Option.map (detype false avoid env sigma) b in
-      let t = detype false avoid env sigma t in
-      (na',Explicit,b,t) :: aux avoid' (add_name na' env) rest
+                (RenamingElsewhereFor (fst env,c)) avoid na c in
+      let b' = Option.map (detype (lax,false) avoid env sigma) b in
+      let t' = detype (lax,false) avoid env sigma t in
+      (na',Explicit,b',t') :: aux avoid' (add_name na' b t env) rest
   in aux avoid env (List.rev sign)
+
+let detype_names isgoal avoid nenv env sigma t = 
+  detype (false,isgoal) avoid (nenv,env) sigma t
+let detype ?(lax=false) isgoal avoid env sigma t =
+  detype (lax,isgoal) avoid (names_of_rel_context env, env) sigma t
 
 (**********************************************************************)
 (* Module substitution: relies on detyping                            *)
@@ -624,7 +645,7 @@ let rec subst_glob_constr subst raw =
   | GRef (loc,ref,u) ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then raw else
-         detype false [] [] Evd.empty t
+         detype false [] (Global.env()) Evd.empty t
 
   | GVar _ -> raw
   | GEvar _ -> raw
@@ -635,12 +656,6 @@ let rec subst_glob_constr subst raw =
       and rl' = List.smartmap (subst_glob_constr subst) rl in
 	if r' == r && rl' == rl then raw else
 	  GApp(loc,r',rl')
-
-  | GProj (loc,p,c) -> 
-    let p' = subst_constant subst p in
-    let c' = subst_glob_constr subst c in
-      if p' == p && c' == c then raw
-      else GProj (loc,p',c')
 
   | GLambda (loc,n,bk,r1,r2) ->
       let r1' = subst_glob_constr subst r1 and r2' = subst_glob_constr subst r2 in

@@ -138,7 +138,8 @@ let pr_constr_pattern t =
 
 let pr_sort s = pr_glob_sort (extern_sort s)
 
-let _ = Termops.set_print_constr (fun env -> pr_lconstr_env env Evd.empty)
+let _ = Termops.set_print_constr 
+  (fun env t -> pr_lconstr_expr (extern_constr ~lax:true false env Evd.empty t))
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 let pr_univ_cstr (c:Univ.constraints) =

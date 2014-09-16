@@ -405,7 +405,7 @@ let rec pattern_to_term_and_type env typ  = function
 	Array.to_list
 	  (Array.init
 	     (cst_narg - List.length patternl)
-	     (fun i -> Detyping.detype false [] (Termops.names_of_rel_context env) Evd.empty csta.(i))
+	     (fun i -> Detyping.detype false [] env Evd.empty csta.(i))
 	  )
       in
       let patl_as_term =
@@ -488,7 +488,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		*)
 		let rt_as_constr,ctx = Pretyping.understand env Evd.empty rt in
 		let rt_typ = Typing.type_of env Evd.empty rt_as_constr in
-		let res_raw_type = Detyping.detype false [] (Termops.names_of_rel_context env) Evd.empty rt_typ in
+		let res_raw_type = Detyping.detype false [] env Evd.empty rt_typ in
 		let res = fresh_id args_res.to_avoid "_res" in
 		let new_avoid = res::args_res.to_avoid in
 		let res_rt = mkGVar res in
@@ -559,7 +559,6 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		*)
 		build_entry_lc env funnames avoid (mkGApp(b,args))
 	    | GRec _ -> error "Not handled GRec"
-            | GProj _ -> error "Not handled GProj"
 	    | GProd _ -> error "Cannot apply a type"
 	end (* end of the application treatement *)
 
@@ -662,7 +661,6 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 
 	end
     | GRec _ -> error "Not handled GRec"
-    | GProj _ -> error "Not handled GProj"
     | GCast(_,b,_) ->
 	build_entry_lc env funnames  avoid b
 and build_entry_lc_from_case env funname make_discr
@@ -743,7 +741,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 			in
 			let raw_typ_of_id =
 			  Detyping.detype false []
-			    (Termops.names_of_rel_context env_with_pat_ids) Evd.empty typ_of_id
+			    env_with_pat_ids Evd.empty typ_of_id
 			in
 			mkGProd (Name id,raw_typ_of_id,acc))
 		     pat_ids
@@ -787,7 +785,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	      List.map3
 	      (fun pat e typ_as_constr ->
 		 let this_pat_ids = ids_of_pat pat in
-		 let typ = Detyping.detype false [] (Termops.names_of_rel_context new_env) Evd.empty typ_as_constr in
+		 let typ = Detyping.detype false [] new_env Evd.empty typ_as_constr in
 		 let pat_as_term = pattern_to_term pat in
 		 List.fold_right
 		   (fun id  acc ->
@@ -795,7 +793,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		      then (Prod (Name id),
 		      let typ_of_id = Typing.type_of new_env Evd.empty (mkVar id) in
 		      let raw_typ_of_id =
-			Detyping.detype false [] (Termops.names_of_rel_context new_env) Evd.empty typ_of_id
+			Detyping.detype false [] new_env Evd.empty typ_of_id
 		      in
 		      raw_typ_of_id
 			   )::acc
@@ -951,7 +949,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			    GRef (Loc.ghost,Globnames.IndRef (fst ind),None),
 			    (List.map
 			      (fun p -> Detyping.detype false []
-				 (Termops.names_of_rel_context env) Evd.empty
+				 env Evd.empty
 				 p) params)@(Array.to_list
 				      (Array.make
 					 (List.length args' - nparam)
@@ -979,12 +977,12 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 				     | Anonymous -> acc
 				     | Name id' ->
 					 (id',Detyping.detype false []
-					    (Termops.names_of_rel_context env)
+					    env
                                             Evd.empty
 					    arg)::acc
 				 else if isVar var_as_constr
 				 then (destVar var_as_constr,Detyping.detype false []
-					 (Termops.names_of_rel_context env)
+					 env
                                          Evd.empty
 					 arg)::acc
 				 else acc
@@ -1183,7 +1181,7 @@ let rec compute_cst_params relnames params = function
 		 discriminitation ones *)
   | GSort _ -> params
   | GHole _ -> params
-  | GIf _ | GRec _ | GCast _ | GProj _->
+  | GIf _ | GRec _ | GCast _ ->
       raise (UserError("compute_cst_params", str "Not handled case"))
 and compute_cst_params_from_app acc (params,rtl) =
   match params,rtl with

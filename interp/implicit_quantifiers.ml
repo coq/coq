@@ -127,7 +127,6 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
 	  else (id, loc) :: vs
 	else vs
     | GApp (loc,f,args) -> List.fold_left (vars bound) vs (f::args)
-    | GProj (loc,p,c) -> vars bound vs c
     | GLambda (loc,na,_,ty,c) | GProd (loc,na,_,ty,c) | GLetIn (loc,na,ty,c) ->
 	let vs' = vars bound vs ty in
 	let bound' = add_name_to_ids bound na in

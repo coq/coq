@@ -456,7 +456,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
   (* Evar must be undefined since we have flushed evars *)
   let () = if !debug_unification then
 	     let open Pp in
-	     pp (v 0 (pr_state appr1 ++ cut () ++ pr_state appr2 ++ cut ()) ++ fnl ()) in
+	     pp (v 0 (pr_state appr1 ++ cut () ++ pr_state appr2 ++ cut ()) 
+		 ++ fnl ()) in
   match (flex_kind_of_term ts env term1 sk1, flex_kind_of_term ts env term2 sk2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 i =

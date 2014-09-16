@@ -1,8 +1,11 @@
 Set Primitive Projections.
 Set Implicit Arguments.
+
+Record prod {A} {B}:= pair { fst : A ; snd : B }.
+Notation " A * B " := (@prod A B) : type_scope.
 Record sigT {A} (P : A -> Type) := existT { projT1 : A ; projT2 : P projT1 }.
 Notation pr1 := (@projT1 _ _).
-
+Arguments prod : clear implicits.
 
 Check (@projT1 _ (fun x : nat => x = x)).
 Check (fun s : @sigT nat (fun x : nat => x = x) => s.(projT1)).
@@ -13,7 +16,7 @@ Check (fun r : @rimpl true 0 => r.(foo) (x:=0)).
 Check (fun r : @rimpl true 0 => @foo true 0 r 0).
 Check (fun r : @rimpl true 0 => foo r (x:=0)).
 Check (fun r : @rimpl true 0 => @foo _ _ r 0).
-Check (fun r : @rimpl true 0 => r.(@foo)).
+Check (fun r : @rimpl true 0 => r.(@foo _ _)).
 Check (fun r : @rimpl true 0 => r.(foo)).
 
 Notation "{ x : T  & P }" := (@sigT T P).
