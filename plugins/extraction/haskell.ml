@@ -36,7 +36,7 @@ let preamble mod_name used_modules usf =
   in
   (if not usf.magic then mt ()
    else
-     str "{-# OPTIONS_GHC -cpp -fglasgow-exts #-}\n" ++
+     str "{-# OPTIONS_GHC -cpp -XMagicHash #-}\n" ++
      str "{- For Hugs, use the option -F\"cpp -P -traditional\" -}\n\n")
   ++
   str "module " ++ pr_upper_id mod_name ++ str " where" ++ fnl2 () ++
