@@ -54,13 +54,14 @@ let preamble mod_name comment used_modules usf =
   (if List.is_empty used_modules then mt () else fnl ()) ++
   (if not usf.magic then mt ()
    else str "\
-\nunsafeCoerce :: a -> b\
 \n#ifdef __GLASGOW_HASKELL__\
 \nimport qualified GHC.Base\
+\nunsafeCoerce :: a -> b\
 \nunsafeCoerce = GHC.Base.unsafeCoerce#\
 \n#else\
 \n-- HUGS\
 \nimport qualified IOExts\
+\nunsafeCoerce :: a -> b\
 \nunsafeCoerce = IOExts.unsafeCoerce\
 \n#endif" ++ fnl2 ())
   ++
