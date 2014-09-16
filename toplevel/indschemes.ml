@@ -182,7 +182,8 @@ let try_declare_scheme what f internal names kn =
         alarm what internal (msg ++ str ".")
     | e when Errors.noncritical e ->
 	alarm what internal
-	  (str "Unknown exception during scheme creation.")
+	  (str "Unknown exception during scheme creation: "++
+           str (Printexc.to_string e))
 
 let beq_scheme_msg mind =
   let mib = Global.lookup_mind mind in
