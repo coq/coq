@@ -1362,6 +1362,9 @@ let known_state ?(redefine_qed=false) ~cache id =
             inject_non_pstate s
           ), cache
     in
+    let cache_step =
+      if !Flags.async_proofs_cache = Some Flags.Force then `Yes
+      else cache_step in
     if Flags.async_proofs_is_master () then
       Pp.feedback ~state_id:id Feedback.ProcessingInMaster;
     State.define ~cache:cache_step ~redefine:redefine_qed step id;
@@ -1470,7 +1473,8 @@ end = struct
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let oid = fold_until (fun n (id,_,_) ->
             if Int.equal n 0 then `Stop id else `Cont (n-1)) n id in
-          if n = 1 && !Flags.coqtop_ui then VtStm (VtBack oid, false), VtNow
+          if n = 1 && !Flags.coqtop_ui && not !Flags.batch_mode then
+           VtStm (VtBack oid, false), VtNow
           else VtStm (VtBack oid, true), VtLater
       | VernacUndoTo _
       | VernacRestart as e ->
@@ -1684,7 +1688,9 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           VCS.commit id (Alias oid);
-          Pp.msg_notice (pr_open_cur_subgoals ());
+          if (!Flags.coqtop_ui && not !Flags.batch_mode) ||
+             !Flags.print_emacs then
+            Pp.msg_notice (pr_open_cur_subgoals ());
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtStm (VtBack id, false), VtNow ->
           prerr_endline ("undo to state " ^ Stateid.to_string id);

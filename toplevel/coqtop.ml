@@ -250,6 +250,11 @@ let get_async_proofs_mode opt = function
   | "lazy" -> Flags.APonLazy
   | _ -> prerr_endline ("Error: on/off/lazy expected after "^opt); exit 1
 
+let get_cache opt = function
+  | "force" -> Some Flags.Force
+  | _ -> prerr_endline ("Error: force expected after "^opt); exit 1
+
+
 let set_worker_id opt s =
   assert (s <> "master");
   Flags.async_proofs_worker_id := s
@@ -373,6 +378,8 @@ let parse_args arglist =
         Flags.async_proofs_mode := get_async_proofs_mode opt (next())
     |"-async-proofs-j" ->
         Flags.async_proofs_n_workers := (get_int opt (next ()))
+    |"-async-proofs-cache" ->
+        Flags.async_proofs_cache := get_cache opt (next ())
     |"-async-proofs-tac-j" ->
         Flags.async_proofs_n_tacworkers := (get_int opt (next ()))
     |"-async-proofs-worker-priority" ->

@@ -17,6 +17,8 @@ val compilation_mode : compilation_mode ref
 
 type async_proofs = APoff | APonLazy | APon
 val async_proofs_mode : async_proofs ref
+type cache = Force
+val async_proofs_cache : cache option ref
 val async_proofs_n_workers : int ref
 val async_proofs_n_tacworkers : int ref
 val async_proofs_private_flags : string option ref

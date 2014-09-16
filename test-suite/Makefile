@@ -33,7 +33,7 @@ LIB := ..
 coqtop := $(BIN)coqtop -boot -q -batch -R prerequisite TestSuite
 bincoqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
 
-command := $(coqtop) -top Top -load-vernac-source
+command := $(coqtop) -top Top -async-proofs-cache force -load-vernac-source
 coqc := $(coqtop) -compile
 coqdep := $(BIN)coqdep -coqlib $(LIB)
 
