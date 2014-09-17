@@ -77,14 +77,12 @@ TACTIC EXTEND newfuninv
 END
 
 
-let pr_intro_as_pat prc _ _ pat =
-  failwith "todo"
-(*
+let pr_intro_as_pat _prc _ _ pat =
   match pat with
     | Some pat ->
-      spc () ++ str "as" ++ spc () ++ Miscprint.pr_intro_pattern prc  pat
+      spc () ++ str "as" ++ spc () ++ (* Miscprint.pr_intro_pattern prc  pat *)
+        str"<simple_intropattern>"
     | None -> mt ()
-*)
 
 let out_disjunctive = function
   | loc, IntroAction (IntroOrAndPattern l) -> (loc,l)
