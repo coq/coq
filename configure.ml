@@ -763,7 +763,7 @@ let coqide_flags () =
         idearchdef := "QUARTZ"
       end
     | "opt", "win32" ->
-      idearchfile := "ide/ide_win32_stubs.o";
+      idearchfile := "ide/ide_win32_stubs.o ide/coq_icon.o";
       idecdepsflags := "-custom";
       idearchflags := "-ccopt '-subsystem windows'";
       idearchdef := "WIN32"

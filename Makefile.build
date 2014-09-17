@@ -953,6 +953,10 @@ COND_OPTFLAGS= \
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)cd $(dir $<) && $(OCAMLC) -ccopt "$(CFLAGS)" -c $(notdir $<)
 
+%.o: %.rc
+	$(SHOW)'WINDRES    $<'
+	$(HIDE)i686-w64-mingw32-windres -i $< -o $@
+
 %.cmi: %.mli | %.mli.d
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -c $<
