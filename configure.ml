@@ -765,8 +765,10 @@ let coqide_flags () =
     | "opt", "win32" ->
       idearchfile := "ide/ide_win32_stubs.o";
       idecdepsflags := "-custom";
+      idearchflags := "-ccopt '-subsystem windows'";
       idearchdef := "WIN32"
     | _, "win32" ->
+      idearchflags := "-ccopt '-subsystem windows'";
       idearchdef := "WIN32"
     | _ -> ()
 

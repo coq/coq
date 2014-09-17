@@ -12,9 +12,6 @@ if [ ! -e bin/make.exe ]; then
   wget -O $ZIP $URL2 && 7z x $ZIP "bin/*"
   rm -rf $ZIP
 fi
-ocamlc unix.cma tools/mkwinapp.ml -o bin/mkwinapp.exe
-bin/mkwinapp.exe bin/coqide.exe
-bin/mkwinapp.exe bin/coqide.byte.exe
 VERSION=`grep ^VERSION= config/Makefile | cut -d = -f 2`
 cd dev/nsis
 "$NSIS" -DVERSION=$VERSION -DGTK_RUNTIME="`cygpath -w $BASE`" coq.nsi
