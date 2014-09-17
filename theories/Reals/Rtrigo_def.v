@@ -340,7 +340,7 @@ Proof.
   apply INR_eq; repeat rewrite S_INR; rewrite plus_INR; repeat rewrite mult_INR;
     rewrite plus_INR; rewrite mult_INR; repeat rewrite S_INR;
       replace (INR 0) with 0; [ ring | reflexivity ].
-Defined.
+Qed.
 
 Lemma sin_no_R0 : forall n:nat, sin_n n <> 0.
 Proof.
