@@ -55,7 +55,6 @@
 	  <include>
 	    <context ref="comment-in-comment"/>
 	    <context ref="string"/>
-	    <context ref="escape-seq"/>
 	  </include>
 	</context>
 	<context id="comment" style-ref="comment" class="comment" class-disabled="no-spell-check">
@@ -68,11 +67,9 @@
 	      <include>
 		<context ref="comment-in-comment"/>
 		<context ref="string"/>
-		<context ref="escape-seq"/>
 	      </include>
 	    </context>
 	    <context ref="string"/>
-	    <context ref="escape-seq"/>
 	  </include>
 	</context>
 	<context id="declaration">
