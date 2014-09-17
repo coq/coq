@@ -1244,7 +1244,9 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let goal = Evar.unsafe_of_int (-1) in
       (* /dummy values *)
       let args = List.map (fun a -> snd(interp_genarg ist env sigma concl goal a)) l in
-      catch_error_tac trace (tac args ist)
+      let name () = Pptactic.pr_tactic env (TacML(loc,opn,args)) in
+      Proofview.Trace.name_tactic name
+        (catch_error_tac trace (tac args ist))
   | TacML (loc,opn,l) ->
       let trace = push_trace (loc,LtacMLCall tac) ist in
       let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
@@ -1259,7 +1261,9 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
             (fun a sigma -> interp_genarg ist env sigma concl goal a) l goal_sigma
         in
         Proofview.Unsafe.tclEVARS sigma <*>
-        catch_error_tac trace (tac args ist)
+        let name () = Pptactic.pr_tactic env (TacML(loc,opn,args)) in
+        Proofview.Trace.name_tactic name
+          (catch_error_tac trace (tac args ist))
       end
 
 and force_vrec ist v : typed_generic_argument Ftactic.t =
