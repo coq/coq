@@ -77,23 +77,6 @@ Function .onVerifyInstDir
 FunctionEnd
 
 ;--------------------------------
-;Data
-  
-Function .onInit
-  SetOutPath $TEMP
-  File /oname=coq_splash.bmp "coq_splash.bmp"
-	InitPluginsDir
-
-  advsplash::show 1000 600 400 -1 $TEMP\coq_splash
-
-  Pop $0 ; $0 has '1' if the user closed the splash screen early,
-         ; '0' if everything closed normal, and '-1' if some error occured.
-
-  Delete $TEMP\coq_splash.bmp
-FunctionEnd
-
-
-;--------------------------------
 ;Installer Sections
 
 
