@@ -194,7 +194,9 @@
 	  <keyword>Section</keyword>
 	  <keyword>Arguments</keyword>
 	  <keyword>Implicit\%{space}+Arguments</keyword>
-	  <keyword>(Import)|(Include)</keyword>
+	  <keyword>Import</keyword>
+	  <keyword>Include</keyword>
+	  <keyword>Export</keyword>
 	  <keyword>Require(\%{space}+((Import)|(Export)))?</keyword>
 	  <keyword>(Recursive\%{space}+)?Extraction(\%{space}+(Language\%{space}+(Ocaml)|(Haskell)|(Scheme)|(Toplevel))|(Library)|((No)?Inline)|(Blacklist))?</keyword>
 	  <keyword>Extract\%{space}+(Inlined\%{space}+)?(Constant)|(Inductive)</keyword>
