@@ -59,21 +59,15 @@ let clenv_pose_dependent_evars with_evars clenv =
       (RefinerError (UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));
   clenv_pose_metas_as_evars clenv dep_mvs
 
-let clenv_evars clenv value =
-  let templset = Evar.Set.union (Evarutil.evars_of_term value)
-    (Evarutil.evars_of_term (clenv_type clenv))
-  in fun ev _ -> Evar.Set.mem ev templset
-
 let clenv_refine with_evars ?(with_classes=true) clenv =
   (** ppedrot: a Goal.enter here breaks things, because the tactic below may
       solve goals by side effects, while the compatibility layer keeps those
       useless goals. That deserves a FIXME. *)
   Proofview.V82.tactic begin fun gl ->
   let clenv = clenv_pose_dependent_evars with_evars clenv in
-  let value = clenv_value clenv in
   let evd' =
     if with_classes then
-      let evd' = Typeclasses.resolve_typeclasses ~filter:(clenv_evars clenv value)
+      let evd' = Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
         ~fail:(not with_evars) clenv.env clenv.evd
       in Typeclasses.mark_unresolvables ~filter:Typeclasses.all_goals evd'
     else clenv.evd
@@ -81,7 +75,7 @@ let clenv_refine with_evars ?(with_classes=true) clenv =
   let clenv = { clenv with evd = evd' } in
   tclTHEN
     (tclEVARS (Evd.clear_metas evd'))
-    (refine_no_check (clenv_cast_meta clenv value)) gl
+    (refine_no_check (clenv_cast_meta clenv (clenv_value clenv))) gl
   end
 
 open Unification
