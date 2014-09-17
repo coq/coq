@@ -167,7 +167,7 @@ let clenv_assign mv rhs clenv =
     error "clenv_assign: circularity in unification";
   try
     if meta_defined clenv.evd mv then
-      if not (eq_constr (fst (meta_fvalue clenv.evd mv)).rebus rhs) then
+      if not (eq_constr clenv.evd (fst (meta_fvalue clenv.evd mv)).rebus rhs) then
         error_incompatible_inst clenv mv
       else
 	clenv
@@ -480,7 +480,7 @@ let clenv_match_args bl clenv =
       (fun clenv (loc,b,c) ->
 	let k = meta_of_binder clenv loc mvs b in
         if meta_defined clenv.evd k then
-          if eq_constr (fst (meta_fvalue clenv.evd k)).rebus c then clenv
+          if eq_constr clenv.evd (fst (meta_fvalue clenv.evd k)).rebus c then clenv
           else error_already_defined b
         else
 	  clenv_assign_binding clenv k c)

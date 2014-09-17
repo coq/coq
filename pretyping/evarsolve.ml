@@ -351,7 +351,7 @@ let rec expand_and_check_vars aliases = function
 
 module Constrhash = Hashtbl.Make
   (struct type t = constr
-          let equal = eq_constr
+          let equal = Term.eq_constr
           let hash = hash_constr
    end)
 
@@ -495,7 +495,7 @@ let make_projectable_subst aliases sigma evi args =
             | Var id' ->
                 let idc = normalize_alias_var evar_aliases id' in
                 let sub = try Id.Map.find idc all with Not_found -> [] in
-                if List.exists (fun (c,_,_) -> eq_constr a c) sub then
+                if List.exists (fun (c,_,_) -> eq_constr sigma a c) sub then
                   (rest,all,cstrs)
                 else
                   (rest,
@@ -648,15 +648,15 @@ let rec assoc_up_to_alias sigma aliases y yc = function
   | [] -> raise Not_found
   | (c,cc,id)::l ->
       let c' = whd_evar sigma c in
-      if eq_constr y c' then id
+      if eq_constr sigma y c' then id
       else
         match l with
         | _ :: _ -> assoc_up_to_alias sigma aliases y yc l
         | [] ->
           (* Last chance, we reason up to alias conversion *)
           match (if c == c' then cc else normalize_alias_opt aliases c') with
-          | Some cc when eq_constr yc cc -> id
-          | _ -> if eq_constr yc c then id else raise Not_found
+          | Some cc when eq_constr sigma yc cc -> id
+          | _ -> if eq_constr sigma yc c then id else raise Not_found
 
 let rec find_projectable_vars with_evars aliases sigma y subst =
   let yc = normalize_alias aliases y in
@@ -1172,7 +1172,7 @@ type conv_fun_bool =
  * depend on these args). *)
 
 let solve_refl ?(can_drop=false) conv_algo env evd pbty evk argsv1 argsv2 =
-  if Array.equal eq_constr argsv1 argsv2 then evd else
+  if Array.equal (eq_constr evd) argsv1 argsv2 then evd else
   (* Filter and restrict if needed *)
   let args = Array.map2 (fun a1 a2 -> (a1, a2)) argsv1 argsv2 in
   let untypedfilter =

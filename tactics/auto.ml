@@ -146,14 +146,14 @@ let eq_pri_auto_tactic (_, x) (_, y) =
   if Int.equal x.pri y.pri && Option.equal constr_pattern_eq x.pat y.pat then
     match x.code,y.code with
       | Res_pf (cstr,_),Res_pf (cstr1,_) -> 
-	   eq_constr cstr cstr1
+	  Term.eq_constr cstr cstr1
       | ERes_pf (cstr,_),ERes_pf (cstr1,_) -> 
-	  eq_constr cstr cstr1
+	  Term.eq_constr cstr cstr1
       | Give_exact (cstr,_),Give_exact (cstr1,_)  -> 
-	  eq_constr cstr cstr1
+	  Term.eq_constr cstr cstr1
       | Res_pf_THEN_trivial_fail (cstr,_)
 	  ,Res_pf_THEN_trivial_fail (cstr1,_) -> 
-	  eq_constr cstr cstr1
+	  Term.eq_constr cstr cstr1
       | _,_ -> false
   else
     false

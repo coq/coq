@@ -1588,8 +1588,8 @@ let is_eq_x gl x (id,_,c) =
   try
     let c = pf_nf_evar gl c in
     let (_,lhs,rhs) = pi3 (find_eq_data_decompose gl c) in
-    if (eq_constr x lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
-    if (eq_constr x rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
+    if (Term.eq_constr x lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
+    if (Term.eq_constr x rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
   with ConstrMatching.PatternMatchingFailure ->
     ()
 
@@ -1679,7 +1679,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
       let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
       if flags.only_leibniz then restrict_to_eq_and_identity eq;
       (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
-      if eq_constr x y then failwith "caught";
+      if Term.eq_constr x y then failwith "caught";
       match kind_of_term x with Var x -> x | _ ->
       match kind_of_term y with Var y -> y | _ -> failwith "caught"
     with ConstrMatching.PatternMatchingFailure -> failwith "caught"

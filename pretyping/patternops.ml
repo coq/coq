@@ -75,8 +75,8 @@ and cofixpoint_eq (i1, r1) (i2, r2) =
 
 and rec_declaration_eq (n1, c1, r1) (n2, c2, r2) =
   Array.equal Name.equal n1 n2 &&
-  Array.equal eq_constr c1 c2 &&
-  Array.equal eq_constr r1 r2
+  Array.equal Term.eq_constr c1 c2 &&
+  Array.equal Term.eq_constr r1 r2
 
 let rec occur_meta_pattern = function
   | PApp (f,args) ->

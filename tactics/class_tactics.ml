@@ -249,7 +249,7 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
       | _ ->
 	  let env' = Environ.push_rel_context ctx env in
 	  let ty' = whd_betadeltaiota env' ar in
-	       if not (eq_constr ty' ar) then iscl env' ty'
+	       if not (Term.eq_constr ty' ar) then iscl env' ty'
 	       else false
   in
   let is_class = iscl env cty in
@@ -278,13 +278,14 @@ let pf_filtered_hyps gls =
   Goal.V82.hyps gls.Evd.sigma (sig_it gls)
 
 let make_hints g st only_classes sign =
+  let sigma = project g in
   let paths, hintlist =
     List.fold_left
     (fun (paths, hints) hyp ->
       let consider =
 	try let (_, b, t) = Global.lookup_named (pi1 hyp) in
 	      (* Section variable, reindex only if the type changed *)
-	      not (eq_constr t (pi3 hyp))
+	      not (eq_constr sigma t (pi3 hyp))
 	with Not_found -> true
      in
       if consider then 

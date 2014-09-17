@@ -198,19 +198,6 @@ let evar_filtered_env evi = match Filter.repr (evar_filter evi) with
   in
   make_env filter (evar_context evi)
 
-let eq_evar_body b1 b2 = match b1, b2 with
-| Evar_empty, Evar_empty -> true
-| Evar_defined t1, Evar_defined t2 -> eq_constr t1 t2
-| _ -> false
-
-let eq_evar_info ei1 ei2 =
-  ei1 == ei2 ||
-    eq_constr ei1.evar_concl ei2.evar_concl &&
-    eq_named_context_val (ei1.evar_hyps) (ei2.evar_hyps) &&
-    eq_evar_body ei1.evar_body ei2.evar_body
-    (** ppedrot: [eq_constr] may be a bit too permissive here *)
-
-
 let map_evar_body f = function
   | Evar_empty -> Evar_empty
   | Evar_defined d -> Evar_defined (f d)
@@ -1345,6 +1332,29 @@ let conversion env d pb t u =
 let test_conversion env d pb t u =
   try conversion_gen env d pb t u; true
   with _ -> false
+
+let eq_constr d t u =
+  Term.eq_constr_univs d.universes.uctx_universes t u
+
+let eq_named_context_val d ctx1 ctx2 = 
+  ctx1 == ctx2 ||
+    let c1 = named_context_of_val ctx1 and c2 = named_context_of_val ctx2 in
+    let eq_named_declaration (i1, c1, t1) (i2, c2, t2) =
+      Id.equal i1 i2 && Option.equal (eq_constr d) c1 c2 && (eq_constr d) t1 t2
+    in List.equal eq_named_declaration c1 c2
+
+let eq_evar_body d b1 b2 = match b1, b2 with
+| Evar_empty, Evar_empty -> true
+| Evar_defined t1, Evar_defined t2 -> eq_constr d t1 t2
+| _ -> false
+
+let eq_evar_info d ei1 ei2 =
+  ei1 == ei2 ||
+    eq_constr d ei1.evar_concl ei2.evar_concl &&
+    eq_named_context_val d (ei1.evar_hyps) (ei2.evar_hyps) &&
+    eq_evar_body d ei1.evar_body ei2.evar_body
+    (** ppedrot: [eq_constr] may be a bit too permissive here *)
+
 
 (**********************************************************)
 (* Accessing metas *)

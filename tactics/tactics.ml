@@ -1124,7 +1124,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
   let hypclause = mk_clenv_from_env env sigma (Some 0) (hyp, hyp_typ) in
   let elimclause'' = clenv_fchain_in id ~flags hypmv elimclause' hypclause in
   let new_hyp_typ  = clenv_type elimclause'' in
-  if eq_constr hyp_typ new_hyp_typ then
+  if eq_constr sigma hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
   clenv_refine_in with_evars id id sigma elimclause''
@@ -3065,14 +3065,14 @@ let specialize_eqs id gl =
     match kind_of_term ty with
     | Prod (na, t, b) ->
 	(match kind_of_term t with
-	| App (eq, [| eqty; x; y |]) when eq_constr (Lazy.force coq_eq) eq ->
+	| App (eq, [| eqty; x; y |]) when eq_constr !evars (Lazy.force coq_eq) eq ->
 	    let c = if noccur_between 1 (List.length ctx) x then y else x in
 	    let pt = mkApp (Lazy.force coq_eq, [| eqty; c; c |]) in
 	    let p = mkApp (Lazy.force coq_eq_refl, [| eqty; c |]) in
 	      if unif (push_rel_context ctx env) evars pt t then
 		aux true ctx (mkApp (acc, [| p |])) (subst1 p b)
 	      else acc, in_eqs, ctx, ty
-	| App (heq, [| eqty; x; eqty'; y |]) when eq_constr heq (Lazy.force coq_heq) ->
+	| App (heq, [| eqty; x; eqty'; y |]) when eq_constr !evars heq (Lazy.force coq_heq) ->
 	    let eqt, c = if noccur_between 1 (List.length ctx) x then eqty', y else eqty, x in
 	    let pt = mkApp (Lazy.force coq_heq, [| eqt; c; eqt; c |]) in
 	    let p = mkApp (Lazy.force coq_heq_refl, [| eqt; c |]) in
@@ -3262,16 +3262,16 @@ let compute_scheme_signature scheme names_info ind_type_guess =
       | Some (_,Some _,_) ->
 	  error "Strange letin, cannot recognize an induction scheme."
       | None -> (* Non standard scheme *)
-	  let cond hd = eq_constr hd ind_type_guess && not scheme.farg_in_concl
+	  let cond hd = Term.eq_constr hd ind_type_guess && not scheme.farg_in_concl
 	  in (cond, fun _ _ -> ())
       | Some ( _,None,ind) -> (* Standard scheme from an inductive type *)
 	  let indhd,indargs = decompose_app ind in
-	  let cond hd = eq_constr hd indhd in
+	  let cond hd = Term.eq_constr hd indhd in
 	  let check_concl is_pred p =
 	    (* Check again conclusion *)
 	    let ccl_arg_ok = is_pred (p + scheme.nargs + 1) f == IndArg in
 	    let ind_is_ok =
-	      List.equal eq_constr
+	      List.equal Term.eq_constr
 		(List.lastn scheme.nargs indargs)
 		(extended_rel_list 0 scheme.args) in
 	    if not (ccl_arg_ok && ind_is_ok) then
@@ -4030,10 +4030,10 @@ let intros_transitivity  n  = Tacticals.New.tclTHEN intros (transitivity_gen n)
    is solved by tac *)
 
 (** d1 is the section variable in the global context, d2 in the goal context *)
-let interpretable_as_section_decl d1 d2 = match d2,d1 with
+let interpretable_as_section_decl evd d1 d2 = match d2,d1 with
   | (_,Some _,_), (_,None,_) -> false
-  | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr b1 b2 && eq_constr t1 t2
-  | (_,None,t1), (_,_,t2) -> eq_constr t1 t2
+  | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr evd b1 b2 && eq_constr evd t1 t2
+  | (_,None,t1), (_,_,t2) -> eq_constr evd t1 t2
 
 let abstract_subproof id gk tac =
   let open Tacticals.New in
@@ -4042,11 +4042,12 @@ let abstract_subproof id gk tac =
   Proofview.Goal.nf_enter begin fun gl ->
   let current_sign = Global.named_context()
   and global_sign = Proofview.Goal.hyps gl in
+  let sigma = Proofview.Goal.sigma gl in
   let sign,secsign =
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) ->
 	if mem_named_context id current_sign &&
-          interpretable_as_section_decl (Context.lookup_named id current_sign) d
+          interpretable_as_section_decl sigma (Context.lookup_named id current_sign) d
         then (s1,push_named_context_val d s2)
 	else (add_named_decl d s1,s2))
       global_sign (empty_named_context,empty_named_context_val) in

@@ -830,7 +830,7 @@ let first_order_unification ts env evd (ev1,l1) (term2,l2) =
 let choose_less_dependent_instance evk evd term args =
   let evi = Evd.find_undefined evd evk in
   let subst = make_pure_subst evi args in
-  let subst' = List.filter (fun (id,c) -> eq_constr c term) subst in
+  let subst' = List.filter (fun (id,c) -> eq_constr evd c term) subst in
   match subst' with
   | [] -> None
   | (id, _) :: _ -> Some (Evd.define evk (mkVar id) evd)
@@ -840,7 +840,7 @@ let apply_on_subterm evdref f c t =
     (* By using eq_constr, we make an approximation, for instance, we *)
     (* could also be interested in finding a term u convertible to t *)
     (* such that c occurs in u *)
-    if eq_constr c t then f k
+    if eq_constr !evdref c t then f k
     else
       match kind_of_term t with
       | Evar (evk,args) when Evd.is_undefined !evdref evk ->
@@ -1002,7 +1002,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let app_empty = Array.is_empty l1 && Array.is_empty l2 in
   match kind_of_term term1, kind_of_term term2 with
   | Evar (evk1,args1), (Rel _|Var _) when app_empty
-      && List.for_all (fun a -> eq_constr a term2 || isEvar a)
+      && List.for_all (fun a -> eq_constr evd a term2 || isEvar a)
         (remove_instance_local_defs evd evk1 args1) ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
@@ -1010,7 +1010,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       | Some evd -> Success evd
       | None -> UnifFailure (evd, ConversionFailed (env,term1,term2)))
   | (Rel _|Var _), Evar (evk2,args2) when app_empty
-      && List.for_all (fun a -> eq_constr a term1 || isEvar a)
+      && List.for_all (fun a -> eq_constr evd a term1 || isEvar a)
         (remove_instance_local_defs evd evk2 args2) ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)

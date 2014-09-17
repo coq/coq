@@ -94,7 +94,7 @@ let solution sigma g =
 let equal evars1 gl1 evars2 gl2 =
   let evi1 = content evars1 gl1 in
   let evi2 = content evars2 gl2 in
-  Evd.eq_evar_info evi1 evi2
+  Evd.eq_evar_info evars2 evi1 evi2
 
 (* [contained_in_info e evi] checks whether the evar [e] appears in
    the hypotheses, the conclusion or the body of the evar_info

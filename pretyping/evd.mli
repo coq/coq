@@ -103,8 +103,6 @@ type evar_info = {
   (** Extra store, used for clever hacks. *)
 }
 
-val eq_evar_info : evar_info -> evar_info -> bool
-
 val make_evar : named_context_val -> types -> evar_info
 val evar_concl : evar_info -> constr
 val evar_context : evar_info -> named_context
@@ -213,6 +211,9 @@ val add_constraints : evar_map -> Univ.constraints -> evar_map
 
 val undefined_map : evar_map -> evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
+
+val eq_evar_info : evar_map -> evar_info -> evar_info -> bool
+(** Compare the evar_info's up to the universe constraints of the evar map. *)
 
 (** {6 Instantiating partial terms} *)
 
@@ -516,6 +517,9 @@ val conversion : env -> evar_map -> conv_pb -> constr -> constr -> evar_map
 
 (** This one forgets about the assignemts of universes. *)
 val test_conversion : env -> evar_map -> conv_pb -> constr -> constr -> bool
+
+(** Syntactic equality up to universe constraints. *)
+val eq_constr : evar_map -> constr -> constr -> bool
 
 (********************************************************************
    constr with holes *)
