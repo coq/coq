@@ -28,7 +28,10 @@ Require Export Ranalysis4.
 Require Export Rpower.
 Local Open Scope R_scope.
 
-Axiom AppVar : R.
+Definition AppVar : R.
+Proof.
+exact R0.
+Qed.
 
 (**********)
 Ltac intro_hyp_glob trm :=
