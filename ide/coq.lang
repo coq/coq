@@ -174,10 +174,11 @@
 	  <keyword>Resolve</keyword>
 	  <keyword>Immediate</keyword>
 	  <keyword>Constructors</keyword>
-	  <keyword>unfold</keyword>
+	  <keyword>Unfold</keyword>
 	  <keyword>Opaque</keyword>
 	  <keyword>Transparent</keyword>
 	  <keyword>Extern</keyword>
+	  <keyword>Rewrite</keyword>
 	</context>
 	<context id="scope-command" style-ref="vernac-keyword">
 	  <suffix>\%{space}+Scope</suffix>
