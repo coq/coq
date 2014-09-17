@@ -717,11 +717,11 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
   and reduce curenvnb pb b wt (sigma, metas, evars as substn) cM cN =
     if use_full_betaiota flags && not (subterm_restriction b flags) then
       let cM' = do_reduce flags.modulo_delta curenvnb sigma cM in
-	if not (eq_constr sigma cM cM') then
+	if not (Term.eq_constr cM cM') then
 	  unirec_rec curenvnb pb b wt substn cM' cN
 	else
 	  let cN' = do_reduce flags.modulo_delta curenvnb sigma cN in
-	    if not (eq_constr sigma cN cN') then
+	    if not (Term.eq_constr cN cN') then
 	      unirec_rec curenvnb pb b wt substn cM cN'
 	    else error_cannot_unify (fst curenvnb) sigma (cM,cN)
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -1500,7 +1500,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
 let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
   let return a b =
     let (evd,c as a) = a () in
-      if List.exists (fun (evd',c') -> eq_constr evd' c c') b then b else a :: b
+      if List.exists (fun (evd',c') -> Term.eq_constr c c') b then b else a :: b
   in
   let fail str _ = error str in
   let bind f g a =
@@ -1577,7 +1577,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
         in
 	  if not flags.allow_K_in_toplevel_higher_order_unification &&
             (* ensure we found a different instance *)
-	    List.exists (fun op -> eq_constr evd op cl) l
+	    List.exists (fun op -> Term.eq_constr op cl) l
 	  then error_non_linear_unification env evd hdmeta cl
 	  else (evd',cl::l)
       else if flags.allow_K_in_toplevel_higher_order_unification 

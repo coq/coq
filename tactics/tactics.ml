@@ -1124,7 +1124,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
   let hypclause = mk_clenv_from_env env sigma (Some 0) (hyp, hyp_typ) in
   let elimclause'' = clenv_fchain_in id ~flags hypmv elimclause' hypclause in
   let new_hyp_typ  = clenv_type elimclause'' in
-  if eq_constr sigma hyp_typ new_hyp_typ then
+  if Term.eq_constr hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
   clenv_refine_in with_evars id id sigma elimclause''
@@ -3065,14 +3065,14 @@ let specialize_eqs id gl =
     match kind_of_term ty with
     | Prod (na, t, b) ->
 	(match kind_of_term t with
-	| App (eq, [| eqty; x; y |]) when eq_constr !evars (Lazy.force coq_eq) eq ->
+	| App (eq, [| eqty; x; y |]) when Term.eq_constr (Lazy.force coq_eq) eq ->
 	    let c = if noccur_between 1 (List.length ctx) x then y else x in
 	    let pt = mkApp (Lazy.force coq_eq, [| eqty; c; c |]) in
 	    let p = mkApp (Lazy.force coq_eq_refl, [| eqty; c |]) in
 	      if unif (push_rel_context ctx env) evars pt t then
 		aux true ctx (mkApp (acc, [| p |])) (subst1 p b)
 	      else acc, in_eqs, ctx, ty
-	| App (heq, [| eqty; x; eqty'; y |]) when eq_constr !evars heq (Lazy.force coq_heq) ->
+	| App (heq, [| eqty; x; eqty'; y |]) when Term.eq_constr heq (Lazy.force coq_heq) ->
 	    let eqt, c = if noccur_between 1 (List.length ctx) x then eqty', y else eqty, x in
 	    let pt = mkApp (Lazy.force coq_heq, [| eqt; c; eqt; c |]) in
 	    let p = mkApp (Lazy.force coq_heq_refl, [| eqt; c |]) in
@@ -4032,8 +4032,8 @@ let intros_transitivity  n  = Tacticals.New.tclTHEN intros (transitivity_gen n)
 (** d1 is the section variable in the global context, d2 in the goal context *)
 let interpretable_as_section_decl evd d1 d2 = match d2,d1 with
   | (_,Some _,_), (_,None,_) -> false
-  | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr evd b1 b2 && eq_constr evd t1 t2
-  | (_,None,t1), (_,_,t2) -> eq_constr evd t1 t2
+  | (_,Some b1,t1), (_,Some b2,t2) -> e_eq_constr evd b1 b2 && e_eq_constr evd t1 t2
+  | (_,None,t1), (_,_,t2) -> e_eq_constr evd t1 t2
 
 let abstract_subproof id gk tac =
   let open Tacticals.New in
@@ -4042,25 +4042,25 @@ let abstract_subproof id gk tac =
   Proofview.Goal.nf_enter begin fun gl ->
   let current_sign = Global.named_context()
   and global_sign = Proofview.Goal.hyps gl in
-  let sigma = Proofview.Goal.sigma gl in
+  let evdref = ref (Proofview.Goal.sigma gl) in
   let sign,secsign =
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) ->
 	if mem_named_context id current_sign &&
-          interpretable_as_section_decl sigma (Context.lookup_named id current_sign) d
+          interpretable_as_section_decl evdref (Context.lookup_named id current_sign) d
         then (s1,push_named_context_val d s2)
 	else (add_named_decl d s1,s2))
       global_sign (empty_named_context,empty_named_context_val) in
   let id = next_global_ident_away id (pf_ids_of_hyps gl) in
   let concl = it_mkNamedProd_or_LetIn (Proofview.Goal.concl gl) sign in
   let concl =
-    try flush_and_check_evars (Proofview.Goal.sigma gl) concl
+    try flush_and_check_evars !evdref concl
     with Uninstantiated_evar _ ->
       error "\"abstract\" cannot handle existentials." in
 
   let evd, ctx, concl =
     (* FIXME: should be done only if the tactic succeeds *)
-    let evd, nf = nf_evars_and_universes (Proofview.Goal.sigma gl) in
+    let evd, nf = nf_evars_and_universes !evdref in
     let ctx = Evd.universe_context_set evd in
       evd, ctx, nf concl
   in
