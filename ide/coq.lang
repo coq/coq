@@ -26,7 +26,7 @@
     <define-regex id="first_ident_char">[_\p{L}]</define-regex>
     <define-regex id="ident_char">[_\p{L}'\pN]</define-regex>
     <define-regex id="ident">\%{first_ident_char}\%{ident_char}*</define-regex>
-    <define-regex id="qualit">(\%{ident}*\.)*\%{ident}</define-regex>
+    <define-regex id="qualit">(\%{ident}\.)*\%{ident}</define-regex>
     <define-regex id="undotted_sep">[-+*{}]</define-regex>
     <define-regex id="dot_sep">\.(\s|\z)</define-regex>
     <define-regex id="single_decl">(Definition)|(Let)|(Example)|(SubClass)|(Fixpoint)|(CoFixpoint)|(Scheme)|(Function)|(Hypothesis)|(Axiom)|(Variable)|(Parameter)|(Conjecture)|(Inductive)|(CoInductive)|(Record)|(Structure)|(Ltac)|(Instance)|(Context)|(Class)|(Module(\%{space}+Type)?)|(Existing\%{space}+Instance)|(Canonical\%{space}+Structure)</define-regex>
