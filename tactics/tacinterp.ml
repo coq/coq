@@ -899,16 +899,12 @@ let loc_of_bindings = function
 | ImplicitBindings l -> loc_of_glob_constr (fst (List.last l))
 | ExplicitBindings l -> pi1 (List.last l)
 
-let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
+let interp_open_constr_with_bindings_loc ist ((c,_),bl as cb) =
   let loc1 = loc_of_glob_constr c in
   let loc2 = loc_of_bindings bl in
   let loc = if Loc.is_ghost loc2 then loc1 else Loc.merge loc1 loc2 in
-  let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
-  sigma, (loc,cb)
-
-let interp_open_constr_with_bindings_arg_loc ist env sigma (keep,c) =
-  let sigma, c = interp_open_constr_with_bindings_loc ist env sigma c in
-  sigma,(keep,c)
+  let f env sigma = interp_open_constr_with_bindings ist env sigma cb in
+    (loc,f)
 
 let interp_induction_arg ist gl arg =
   let env = pf_env gl and sigma = project gl in
@@ -1704,14 +1700,15 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
-        let sigma, l =
-          List.fold_map (interp_open_constr_with_bindings_arg_loc ist env) sigma cb
-        in
+	let l = List.map (fun (k,c) ->
+          let loc, f = interp_open_constr_with_bindings_loc ist c in
+	    (k,(loc,f))) cb 
+	in
         let sigma,tac = match cl with
-          | None -> sigma, fun l -> Tactics.apply_with_bindings_gen a ev l
+          | None -> sigma, fun l -> Tactics.apply_with_delayed_bindings_gen a ev l
           | Some cl ->
               let sigma,(clear,id,cl) = interp_in_hyp_as ist env sigma cl in
-              sigma, fun l -> Tactics.apply_in a ev clear id l cl in
+              sigma, fun l -> Tactics.apply_delayed_in a ev clear id l cl in
         Tacticals.New.tclWITHHOLES ev tac sigma l
       end
   | TacElim (ev,(keep,cb),cbo) ->
