@@ -34,6 +34,7 @@ Definition shift (c : bool) (a : ascii) :=
 (** Definition of a decidable function that is effective *)
 
 Definition ascii_dec : forall a b : ascii, {a = b} + {a <> b}.
+Proof.
   decide equality; apply bool_dec.
 Defined.
 

@@ -29,6 +29,7 @@ Local Open Scope string_scope.
 (** Equality is decidable *)
 
 Definition string_dec : forall s1 s2 : string, {s1 = s2} + {s1 <> s2}.
+Proof.
  decide equality; apply ascii_dec.
 Defined.
 
@@ -41,7 +42,6 @@ Fixpoint append (s1 s2 : string) : string :=
   | EmptyString => s2
   | String c s1' => String c (s1' ++ s2)
   end
-
 where "s1 ++ s2" := (append s1 s2) : string_scope.
 
 (******************************)
@@ -379,7 +379,7 @@ Definition findex n s1 s2 :=
 (**
   The concrete syntax for strings in scope string_scope follows the
   Coq convention for strings: all ascii characters of code less than
-  128 are litteral to the exception of the character `double quote'
+  128 are literals to the exception of the character `double quote'
   which must be doubled.
 
   Strings that involve ascii characters of code >= 128 which are not

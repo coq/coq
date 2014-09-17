@@ -126,11 +126,13 @@ Proof.
 Qed.
 
 Add Morphism Qmult' : Qmult'_comp.
+Proof.
   intros; unfold Qmult'.
   rewrite H, H0; auto with qarith.
 Qed.
 
 Add Morphism Qminus' : Qminus'_comp.
+Proof.
   intros; unfold Qminus'.
   rewrite H, H0; auto with qarith.
 Qed.

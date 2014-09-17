@@ -32,8 +32,7 @@ Section Well_founded.
   (* Notation Fix_F := (Fix_F_sub P F_sub) (only parsing). (* alias *) *)
   (* Definition Fix (x:A) := Fix_F_sub P F_sub x (Rwf x). *)
 
-  Hypothesis
-    F_ext :
+  Hypothesis F_ext :
     forall (x:A) (f g:forall y:{y:A | R y x}, P (`y)),
       (forall y:{y : A | R y x}, f y = g y) -> F_sub x f = F_sub x g.
 
@@ -63,6 +62,7 @@ Section Well_founded.
       Fix_sub x =
       let f_sub := F_sub in
         f_sub x (fun y: {y : A | R y x} => Fix_sub (`y)).
+  Proof.
     exact Fix_eq.
   Qed.
 

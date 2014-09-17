@@ -28,6 +28,7 @@ Lemma atan_sub_correct :
  forall u v, 1 + u * v <> 0 -> -PI/2 < atan u - atan v < PI/2 ->
    -PI/2 < atan (atan_sub u v) < PI/2 ->
    atan u = atan v + atan (atan_sub u v).
+Proof.
 intros u v pn0 uvint aint.
 assert (cos (atan u) <> 0).
  destruct (atan_bound u); apply Rgt_not_eq, cos_gt_0; auto.
@@ -45,6 +46,7 @@ Qed.
 
 Lemma tech : forall x y , -1 <= x <= 1 -> -1 < y < 1 -> 
   -PI/2 < atan x - atan y < PI/2.
+Proof.
 assert (ut := PI_RGT_0).
 intros x y [xm1 x1] [ym1 y1].
 assert (-(PI/4) <= atan x).
@@ -68,6 +70,7 @@ Qed.
 
 (* A simple formula, reasonably efficient. *)
 Lemma Machin_2_3 : PI/4 = atan(/2) + atan(/3).
+Proof.
 assert (utility : 0 < PI/2) by (apply PI2_RGT_0).
 rewrite <- atan_1.
 rewrite (atan_sub_correct 1 (/2)).
@@ -78,6 +81,7 @@ apply atan_bound.
 Qed.
 
 Lemma Machin_4_5_239 : PI/4 = 4 * atan (/5) - atan(/239).
+Proof.
 rewrite <- atan_1.
 rewrite (atan_sub_correct 1 (/5));
  [ | apply Rgt_not_eq; fourier | apply tech; try split; fourier |
@@ -106,6 +110,7 @@ unfold atan_sub; field.
 Qed.
 
 Lemma Machin_2_3_7 : PI/4 = 2 * atan(/3) + (atan (/7)).
+Proof.
 rewrite <- atan_1.
 rewrite (atan_sub_correct 1 (/3));
  [ | apply Rgt_not_eq; fourier | apply tech; try split; fourier |

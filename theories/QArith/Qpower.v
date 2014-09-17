@@ -41,6 +41,7 @@ try destruct (Qmult_integral _ _ H0); auto.
 Qed.
 
 Lemma Qpower_pos_positive : forall p n, 0 <= p -> 0 <= Qpower_positive p n.
+Proof.
 intros p n Hp.
 induction n; simpl; repeat apply Qmult_le_0_compat;assumption.
 Qed.

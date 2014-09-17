@@ -14,6 +14,7 @@ Require Export QArith_base.
 Definition Q2R (x : Q) : R := (IZR (Qnum x) * / IZR (QDen x))%R.
 
 Lemma IZR_nz : forall p : positive, IZR (Zpos p) <> 0%R.
+Proof.
 intros; apply not_O_IZR; auto with qarith.
 Qed.
 
@@ -162,6 +163,7 @@ field; auto.
 Qed.
 
 Lemma Q2R_minus : forall x y : Q, Q2R (x-y) = (Q2R x - Q2R y)%R.
+Proof.
 unfold Qminus; intros; rewrite Q2R_plus; rewrite Q2R_opp; auto.
 Qed.
 

@@ -221,6 +221,7 @@ Proof.
 Qed.
 
 Lemma cosn_no_R0 : forall n:nat, cos_n n <> 0.
+Proof.
   intro; unfold cos_n; unfold Rdiv; apply prod_neq_R0.
   apply pow_nonzero; discrR.
   apply Rinv_neq_0_compat.
@@ -233,6 +234,7 @@ Definition cos_in (x l:R) : Prop :=
 
 (**********)
 Lemma exist_cos : forall x:R, { l:R | cos_in x l }.
+Proof.
   intro; generalize (Alembert_C3 cos_n x cosn_no_R0 Alembert_cos).
   unfold Pser, cos_in; trivial.
 Qed.
