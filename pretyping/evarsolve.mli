@@ -69,3 +69,9 @@ val check_evar_instance :
 
 val remove_instance_local_defs :
   evar_map -> existential_key -> constr array -> constr list
+
+(* This is up to partial applications and primitive projection expansion *)
+val map_constr_with_binders_left_to_right : 
+  (Context.rel_declaration -> (env * 'a) -> (env * 'a)) ->
+  ((env * 'a) -> constr -> constr) ->
+  (env * 'a) -> evar_map -> constr -> constr

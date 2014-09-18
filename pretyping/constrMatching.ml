@@ -154,7 +154,7 @@ let merge_binding allow_bound_rels stk n cT subst =
       else raise PatternMatchingFailure
   in
   constrain n c subst
-
+      
 let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
   let convref ref c = 
     match ref, kind_of_term c with
@@ -221,65 +221,28 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
           else (* Might be a projection on the right *)
 	    match kind_of_term c2 with
 	    | Proj (pr, c) ->
-	      if diff == -1 then (* Do as if it was p c args2 *)
-		let subst = sorec stk env subst (PApp (PMeta meta, [|args1.(0)|])) c2 in
-		  Array.fold_left2 (sorec stk env) subst (Array.tl args1) args2
-	      else (* diff < 0, Expand the projection completely: p params c args2 *)
-      		let ty = Retyping.get_type_of env sigma c in
-		let (i,u), ind_args = Inductive.find_rectype env ty in
-		let term = mkApp (mkConstU (pr,u), 
-				  Array.of_list (ind_args @ (c :: Array.to_list args2)))
-		in
-		  sorec stk env subst p term
+	      let term = Retyping.expand_projection env sigma pr c (Array.to_list args2) in
+		sorec stk env subst p term
 	    | _ -> raise PatternMatchingFailure)
 	   
       | PApp (c1,arg1), App (c2,arg2) ->
-	let diff = Array.length arg2 - Array.length arg1 in
 	(match c1, kind_of_term c2 with
+	| PRef (ConstRef r), Proj (pr,c) when not (eq_constant r pr) ->
+	  raise PatternMatchingFailure
 	  (* eta-expanded version of projection against projection *)
-	| PRef (ConstRef r), Proj (p,c) when eq_constant r p ->
-      	  let pb = Environ.lookup_projection p env in
-	  let npars = pb.Declarations.proj_npars in
-	  let narg1 = Array.length arg1 in
-	    if narg1 >= npars + 1 then
-	      let pars, args = Array.chop (npars + 1) arg1 in
-	      let subst = sorec stk env subst (PApp (c1, pars)) c2 in
-		try Array.fold_left2 (sorec stk env) subst args arg2
-		with Invalid_argument _ -> raise PatternMatchingFailure
-	    else raise PatternMatchingFailure
-         (* meta against projection *)
-	| PMeta meta, Proj (p,c) when diff != 0 -> 
-          if diff == -1 then (* One more arg for the meta *)
-	    Array.fold_left2 (sorec stk env) (sorec stk env subst (PApp (c1, [|arg1.(0)|])) c2)
-	      (Array.tl arg1) arg2
-	  else raise PatternMatchingFailure
-	| _ ->
+	| _, Proj (pr,c) ->
+	  let term = Retyping.expand_projection env sigma pr c (Array.to_list arg2) in
+	    sorec stk env subst p term
+	| _, _ ->
           try Array.fold_left2 (sorec stk env) (sorec stk env subst c1 c2) arg1 arg2
           with Invalid_argument _ -> raise PatternMatchingFailure)
-
-      | PApp (PMeta (Some n), args), Proj (pr, c2) ->
-      	let ty = Retyping.get_type_of env sigma c2 in
-	let (i,u), ind_args = Inductive.find_rectype env ty in
-	  if Array.length args == 1 then 
-	    let term = mkApp (mkConstU (pr,u), Array.of_list ind_args) in
-	    let subst = merge_binding allow_bound_rels stk n term subst in
-      	      sorec stk env subst args.(0) c2
-	  else 
-	    let term = 
-	      mkApp (mkConstU (pr,u), Array.of_list (ind_args @ [c2]))
-	    in 
-	      sorec stk env subst p term
-		
-      | PApp (PRef (ConstRef c1),arg1), Proj (p2,c2) when eq_constant c1 p2 ->
-	let pb = Environ.lookup_projection p2 env in
-	let npars = pb.Declarations.proj_npars in
-	  if Array.length arg1 == npars + 1 then
-      	    let ty = Retyping.get_type_of env sigma c2 in
-	    let _, pars' = Inductive.find_rectype env ty in
-	    let subst = List.fold_left2 (sorec stk env) subst 
-	      (Array.to_list (Array.sub arg1 0 npars)) pars' in
-	      sorec stk env subst arg1.(npars) c2
-	  else raise PatternMatchingFailure
+	  
+      | PApp (PRef (ConstRef c1), _), Proj (pr, c2) when not (eq_constant c1 pr) -> 
+	raise PatternMatchingFailure
+	
+      | PApp (c, args), Proj (pr, c2) ->
+	let term = Retyping.expand_projection env sigma pr c2 [] in
+	  sorec stk env subst p term
 
       | PProj (p1,c1), Proj (p2,c2) when eq_constant p1 p2 ->
           sorec stk env subst c1 c2
@@ -464,7 +427,12 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
     authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Proj (p,c') ->
     let next_mk_ctx le = mk_ctx (mkProj (p,List.hd le)) in
-    let next () = try_aux [env] [c'] next_mk_ctx next in
+    let next () = 
+      if partial_app then
+	let term = Retyping.expand_projection env sigma p c' [] in
+	  aux env term mk_ctx next
+      else
+	try_aux [env] [c'] next_mk_ctx next in
       authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Construct _| Ind _|Evar _|Const _ | Rel _|Meta _|Var _|Sort _ ->
       authorized_occ env sigma partial_app closed pat c mk_ctx next

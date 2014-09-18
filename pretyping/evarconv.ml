@@ -835,8 +835,8 @@ let choose_less_dependent_instance evk evd term args =
   | [] -> None
   | (id, _) :: _ -> Some (Evd.define evk (mkVar id) evd)
 
-let apply_on_subterm evdref f c t =
-  let rec applyrec (k,c as kc) t =
+let apply_on_subterm env evdref f c t =
+  let rec applyrec (env,(k,c) as acc) t =
     (* By using eq_constr, we make an approximation, for instance, we *)
     (* could also be interested in finding a term u convertible to t *)
     (* such that c occurs in u *)
@@ -845,13 +845,14 @@ let apply_on_subterm evdref f c t =
       match kind_of_term t with
       | Evar (evk,args) when Evd.is_undefined !evdref evk ->
           let ctx = evar_filtered_context (Evd.find_undefined !evdref evk) in
-          let g (_,b,_) a = if Option.is_empty b then applyrec kc a else a in
+          let g (_,b,_) a = if Option.is_empty b then applyrec acc a else a in
           mkEvar (evk, Array.of_list (List.map2 g ctx (Array.to_list args)))
       | _ ->
-        map_constr_with_binders_left_to_right (fun d (k,c) -> (k+1,lift 1 c))
-	  applyrec kc t
+        map_constr_with_binders_left_to_right
+	  (fun d (env,(k,c)) -> (push_rel d env, (k+1,lift 1 c)))
+	  applyrec acc !evdref t
   in
-  applyrec (0,c) t
+  applyrec (env,(0,c)) t
 
 let filter_possible_projections c ty ctxt args =
   let fv1 = free_rels c in
@@ -932,7 +933,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
         evdref := evd;
         evsref := (fst (destEvar ev),evty)::!evsref;
         ev in
-      set_holes evdref (apply_on_subterm evdref set_var c rhs) subst
+      set_holes evdref (apply_on_subterm env_rhs evdref set_var c rhs) subst
   | [] -> rhs in
 
   let subst = make_subst (ctxt,Array.to_list args,argoccs) in

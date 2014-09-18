@@ -973,9 +973,9 @@ let e_contextually byhead (occs,c) f env sigma t =
       else
 	t
     with ConstrMatching.PatternMatchingFailure ->
-      map_constr_with_binders_left_to_right
+      Evarsolve.map_constr_with_binders_left_to_right 
 	(fun d (env,c) -> (push_rel d env,lift_pattern 1 c))
-        traverse envc t
+        traverse envc sigma t
   in
   let t' = traverse (env,c) t in
   if List.exists (fun o -> o >= !pos) locs then error_invalid_occurrence locs;

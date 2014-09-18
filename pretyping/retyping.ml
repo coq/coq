@@ -241,3 +241,9 @@ let sorts_of_context env evc ctxt =
       let s = get_sort_of env evc t in
       (push_rel d env,s::sorts) in
   snd (aux ctxt)
+
+let expand_projection env sigma pr c args =
+  let ty = get_type_of env sigma c in
+  let (i,u), ind_args = Inductive.find_rectype env ty in
+    mkApp (mkConstU (pr,u), 
+	   Array.of_list (ind_args @ (c :: args)))

@@ -45,3 +45,5 @@ val type_of_global_reference_knowing_conclusion :
   env -> evar_map -> constr -> types -> evar_map * types
 
 val sorts_of_context : env -> evar_map -> rel_context -> sorts list
+
+val expand_projection : env -> evar_map -> Names.projection -> constr -> constr list -> constr
