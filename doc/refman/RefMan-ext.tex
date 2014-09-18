@@ -717,7 +717,7 @@ each branch.
 
 Function does not support partial application of the function being defined. Thus, the following example cannot be accepted due to the presence of partial application of \ident{wrong} into the body of \ident{wrong}~:
 \begin{coq_example*}
-  Function wrong (C:nat) {\ldots} : nat := 
+  Function wrong (C:nat) : nat := 
     List.hd(List.map wrong (C::nil)).
 \end{coq_example*}
 
