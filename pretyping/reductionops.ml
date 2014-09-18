@@ -911,9 +911,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	|args, (Stack.Fix (f,s',cst_l)::s'') ->
 	  let x' = Stack.zip(x,args) in
 	  let out_sk = s' @ (Stack.append_app [|x'|] s'') in
-	  if tactic_mode
-	  then reduce_and_refold_fix whrec env cst_l f out_sk
-	  else whrec Cst_stack.empty (contract_fix f, out_sk)
+	  reduce_and_refold_fix whrec env cst_l f out_sk
 	|args, (Stack.Cst (const,curr,remains,s',cst_l) :: s'') ->
 	  let x' = Stack.zip(x,args) in
 	  begin match remains with
@@ -949,9 +947,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') ->
-	  if tactic_mode
-	  then reduce_and_refold_cofix whrec env cst_l cofix stack
-	  else whrec Cst_stack.empty (contract_cofix cofix, stack)
+	  reduce_and_refold_cofix whrec env cst_l cofix stack
 	|_ -> fold ()
       else fold ()
 
