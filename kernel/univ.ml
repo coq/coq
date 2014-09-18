@@ -10,8 +10,10 @@
 (* Functional code by Jean-Christophe Filliâtre for Coq V7.0 [1999] *)
 (* Extension with algebraic universes by HH for Coq V7.0 [Sep 2001] *)
 (* Additional support for sort-polymorphic inductive types by HH [Mar 2006] *)
+(* Support for universe polymorphism by MS [2014] *)
 
-(* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey *)
+(* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey, Matthieu Sozeau, 
+   Pierre-Marie Pédrot *)
 
 open Pp
 open Errors
@@ -152,9 +154,6 @@ module HList = struct
     Node.make(Cons(e, l))
     
   let tip e = Node.make (Cons(e, nil))
-
-  (* let cons ?(sorted=true) e l = *)
-  (*   if sorted then sorted_cons e l else cons e l *)
 
   let fold f l acc =
     let rec loop acc l = match l.Hcons.node with
