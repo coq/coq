@@ -543,15 +543,18 @@ let check_camlp5 testcma = match !Prefs.camlp5dir with
         camllib/"camlp5"
       else if Sys.file_exists (camllib/"site-lib"/"camlp5"/testcma) then
         camllib/"site-lib"/"camlp5"
-      else
-        let () = printf "No Camlp5 installation found." in
-        let () = printf "Looking for Camlp4 instead...\n" in
-        raise NoCamlp5
-      in
+      else ""
+    in
     (* if the two values are different than camlp5 has been relocated
      * and will not be able to find its own files, so we prefer the
      * path where the files actually do exist *)
-    if dir = "" then dir2 else if dir <> dir2 then dir2 else dir
+    if dir2 = "" then
+      if dir = "" then
+        let () = printf "No Camlp5 installation found." in
+        let () = printf "Looking for Camlp4 instead...\n" in
+        raise NoCamlp5
+      else dir
+    else dir2
 
 let check_camlp5_version () =
   let s = camlexec.p4 in
