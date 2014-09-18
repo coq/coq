@@ -942,8 +942,12 @@ module Goal = struct
       match Goal.advance sigma goal with
       | None -> None (** ppedrot: Is this check really necessary? *)
       | Some goal ->
-        (** The sigma is unchanged. *)
-        let (gl, _) = Goal.eval (enter_t (fun gl -> gl)) env sigma goal in
+        let gl =
+          tclEVARMAP >>= fun sigma ->
+          (** The sigma is unchanged. *)
+          let (gl, _) = Goal.eval (enter_t (fun gl -> gl)) env sigma goal in
+          tclUNIT gl
+        in
         Some gl
     in
     tclUNIT (List.map_filter map step.comb)

@@ -40,12 +40,13 @@ let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
 let nf_enter f =
   bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
     (fun gl ->
+      gl >>= fun gl ->
       Proofview.Goal.normalize gl >>= fun nfgl ->
       Proofview.V82.wrap_exceptions (fun () -> f nfgl))
 
 let enter f =
   bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
-    (fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
+    (fun gl -> gl >>= fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
 
 let lift (type a) (t:a Proofview.tactic) : a t =
   Proofview.tclBIND t (fun x -> Proofview.tclUNIT (Uniform x))

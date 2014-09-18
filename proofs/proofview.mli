@@ -416,7 +416,7 @@ module Goal : sig
   val enter : ([ `LZ ] t -> unit tactic) -> unit tactic
 
   (** Recover the list of current goals under focus, without evar-normalization *)
-  val goals : [ `LZ ] t list tactic
+  val goals : [ `LZ ] t tactic list tactic
 
   (* compatibility: avoid if possible *)
   val goal : [ `NF ] t -> Goal.goal
