@@ -530,7 +530,7 @@ let all_evars _ _ = true
 let all_goals _ = function GoalEvar -> true | _ -> false
 let no_goals ev evi = not (all_goals ev evi)
 let no_goals_or_obligations _ = function
-  | GoalEvar | QuestionMark _ -> false
+  | VarInstance _ | GoalEvar | QuestionMark _ -> false
   | _ -> true
 
 let mark_resolvability filter b sigma =
