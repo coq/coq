@@ -367,7 +367,7 @@ Section Proof_irrelevance_EM_CC.
   Proof.
     refine (or_elim _ _ _ _ _ (em (b1 = b2))); intro H.
     trivial.
-    apply (paradox B p2b b2p (p2p2 H) p2p1).
+    apply (NoRetractFromSmallPropositionToProp.paradox B p2b b2p (p2p2 H) p2p1).
   Qed.
 
 End Proof_irrelevance_EM_CC.
