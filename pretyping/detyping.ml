@@ -438,15 +438,14 @@ let rec detype flags avoid env sigma t =
 	  (Array.map_to_list (detype flags avoid env sigma) args)
     | Const (sp,u) -> GRef (dl, ConstRef sp, detype_instance u)
     | Proj (p,c) ->
-      (try 
-	 let ty = Retyping.get_type_of (snd env) sigma c in
-	 let (ind, args) = Inductive.find_rectype (snd env) ty in
-	   GApp (dl, GRef (dl, ConstRef p, None), 
-		 List.map (detype flags avoid env sigma) (args @ [c]))
-       with e when fst flags (* lax mode, used by debug printers only *) ->
-	 GApp (dl, GRef (dl, ConstRef p, None), 
-	       [detype flags avoid env sigma c])
-       | e -> raise e)
+      if fst flags || !Flags.in_debugger || !Flags.in_toplevel then
+	(* lax mode, used by debug printers only *) 
+	GApp (dl, GRef (dl, ConstRef p, None), 
+	      [detype flags avoid env sigma c])
+      else let ty = Retyping.get_type_of (snd env) sigma c in
+	   let (ind, args) = Inductive.find_rectype (snd env) ty in
+	     GApp (dl, GRef (dl, ConstRef p, None), 
+		   List.map (detype flags avoid env sigma) (args @ [c]))
     | Evar (evk,cl) ->
       let id,l =
         try Evd.evar_ident evk sigma,

@@ -552,6 +552,6 @@ let short_string_of_ref loc _ = function
 (* Anticipate that printers can be used from ocamldebug and that 
    pretty-printer should not make calls to the global env since ocamldebug
    runs in a different process and does not have the proper env at hand *)
-let _ = Constrextern.in_debugger := true
+let _ = Flags.in_debugger := true
 let _ = Constrextern.set_extern_reference
   (if !rawdebug then raw_string_of_ref else short_string_of_ref)

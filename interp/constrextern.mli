@@ -59,8 +59,6 @@ val set_extern_reference :
 val get_extern_reference :
   unit -> (Loc.t -> Id.Set.t -> global_reference -> reference)
 
-val in_debugger : bool ref
-
 (** This governs printing of implicit arguments. If [with_implicits] is
    on and not [with_arguments] then implicit args are printed prefixed
    by "!"; if [with_implicits] and [with_arguments] are both on the

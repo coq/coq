@@ -126,8 +126,9 @@ let retype ?(polyprop=true) sigma =
           (subst_type env sigma (type_of env f) (Array.to_list args))
     | Proj (p,c) -> 
        let Inductiveops.IndType(pars,realargs) =
-         try Inductiveops.find_rectype env sigma (type_of env c)
-         with Not_found -> anomaly ~label:"type_of" (str "Bad recursive type") 
+	 let ty = type_of env c in
+           try Inductiveops.find_rectype env sigma ty
+           with Not_found -> retype_error BadRecursiveType
        in
        let (_,u), pars = dest_ind_family pars in
 	 substl (c :: List.rev pars) (Typeops.type_of_projection env (p,u))

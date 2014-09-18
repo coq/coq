@@ -34,6 +34,8 @@ val string_of_priority : priority -> string
 val priority_of_string : string -> priority
 
 val debug : bool ref
+val in_debugger : bool ref
+val in_toplevel : bool ref
 
 val profile : bool
 

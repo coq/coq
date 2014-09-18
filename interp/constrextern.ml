@@ -158,13 +158,11 @@ let get_extern_reference () = !my_extern_reference
 
 let extern_reference loc vars l = !my_extern_reference loc vars l
 
-let in_debugger = ref false
-
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
 
 let add_patt_for_params ind l =
-  if !in_debugger then l else
+  if !Flags.in_debugger then l else
     Util.List.addn (Inductiveops.inductive_nparamdecls ind) (CPatAtom (Loc.ghost,None)) l
 
 let drop_implicits_in_patt cst nb_expl args =
@@ -275,7 +273,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
      not explicit application. *)
   match pat with
     | PatCstr(loc,cstrsp,args,na)
-	when !in_debugger||Inductiveops.constructor_has_local_defs cstrsp ->
+	when !Flags.in_debugger||Inductiveops.constructor_has_local_defs cstrsp ->
       let c = extern_reference loc Id.Set.empty (ConstructRef cstrsp) in
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       CPatCstr (loc, c, add_patt_for_params (fst cstrsp) args, [])
@@ -402,7 +400,7 @@ let rec extern_symbol_ind_pattern allscopes vars ind args = function
 let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
   (* pboutill: There are letins in pat which is incompatible with notations and
      not explicit application. *)
-  if !in_debugger||Inductiveops.inductive_has_local_defs ind then
+  if !Flags.in_debugger||Inductiveops.inductive_has_local_defs ind then
     let c = extern_reference Loc.ghost vars (IndRef ind) in
     let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
     CPatCstr (Loc.ghost, c, add_patt_for_params ind args, [])
@@ -438,7 +436,7 @@ let occur_name na aty =
     | Anonymous -> false
 
 let is_projection nargs = function
-  | Some r when not !in_debugger && not !Flags.raw_print && !print_projections ->
+  | Some r when not !Flags.in_debugger && not !Flags.raw_print && !print_projections ->
     (try
        let n = Recordops.find_projection_nparams r + 1 in
 	 if n <= nargs then None
@@ -731,7 +729,7 @@ let rec extern inctx scopes vars r =
        (na',Option.map (fun (loc,ind,nal) ->
 	 let args = List.map (fun x -> PatVar (Loc.ghost, x)) nal in
 	 let fullargs =
-	   if !in_debugger then args else
+	   if !Flags.in_debugger then args else
 	     Notation_ops.add_patterns_for_params ind args in
 	 extern_ind_pattern_in_scope scopes vars ind fullargs
 	) x))) tml in
@@ -944,7 +942,7 @@ let extern_constr_gen lax goal_concl_style scopt env sigma t =
   (* those goal/section/rel variables that occurs in the subterm under *)
   (* consideration; see namegen.ml for further details *)
   let avoid = if goal_concl_style then ids_of_context env else [] in
-  let r = Detyping.detype ~lax goal_concl_style avoid env sigma t in
+  let r = Detyping.detype ~lax:lax goal_concl_style avoid env sigma t in
   let vars = vars_of_env env in
   extern false (scopt,[]) vars r
 

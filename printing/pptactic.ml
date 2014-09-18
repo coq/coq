@@ -342,7 +342,7 @@ let pr_ltac_or_var pr = function
   | ArgVar (loc,id) -> pr_with_comments loc (pr_id id)
 
 let pr_ltac_constant kn =
-  if !Constrextern.in_debugger then pr_kn kn
+  if !Flags.in_debugger then pr_kn kn
   else try
     pr_qualid (Nametab.shortest_qualid_of_tactic kn)
   with Not_found -> (* local tactic not accessible anymore *)

@@ -73,6 +73,8 @@ let async_proofs_is_master () =
   !async_proofs_mode = APon && !async_proofs_worker_id = "master"
 
 let debug = ref false
+let in_debugger = ref false
+let in_toplevel = ref false
 
 let profile = false
 

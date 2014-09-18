@@ -1325,6 +1325,7 @@ let make_pattern_test inf_flags env sigma0 (sigma,c) =
     with
     | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
         raise (NotUnifiable (Some (c1,c2,e)))
+    (** MS: This is pretty bad, it catches Not_found for example *)
     | e when Errors.noncritical e -> raise (NotUnifiable None) in
   let merge_fun c1 c2 =
     match c1, c2 with
