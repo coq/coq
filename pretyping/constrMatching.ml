@@ -229,7 +229,11 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 	(match c1, kind_of_term c2 with
 	| PRef (ConstRef r), Proj (pr,c) when not (eq_constant r pr) ->
 	  raise PatternMatchingFailure
-	  (* eta-expanded version of projection against projection *)
+	| PProj (pr1,c1), Proj (pr,c) ->
+	  if eq_constant pr1 pr then 
+	    try Array.fold_left2 (sorec stk env) (sorec stk env subst c1 c) arg1 arg2
+	    with Invalid_argument _ -> raise PatternMatchingFailure
+	  else raise PatternMatchingFailure
 	| _, Proj (pr,c) ->
 	  let term = Retyping.expand_projection env sigma pr c (Array.to_list arg2) in
 	    sorec stk env subst p term

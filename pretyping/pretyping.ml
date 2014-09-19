@@ -563,6 +563,16 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	      with Not_found -> []
       else []
     in
+    let app_f = 
+      match kind_of_term fj.uj_val with
+      | Const (p, u) when Environ.is_projection p env ->
+	let pb = Environ.lookup_projection p env in
+	let npars = pb.Declarations.proj_npars in
+	  fun n -> 
+	    if n == npars + 1 then fun _ v -> mkProj (p, v)
+	    else fun f v -> applist (f, [v])
+      | _ -> fun _ f v -> applist (f, [v])
+    in
     let rec apply_rec env n resj candargs = function
       | [] -> resj
       | c::rest ->
@@ -581,7 +591,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 		  args, nf_evar !evdref (j_val hj)
 		else [], j_val hj
 	    in
-	    let value, typ = applist (j_val resj, [ujval]), subst1 ujval c2 in
+	    let value, typ = app_f n (j_val resj) ujval, subst1 ujval c2 in
 	    let j = { uj_val = value; uj_type = typ } in
 	      apply_rec env (n+1) j candargs rest
 		
@@ -604,17 +614,6 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	    let c = evd_comb1 (Evarsolve.refresh_universes (Some true) env) evdref c in
 	    let t = Retyping.get_type_of env !evdref c in
 	      make_judge c (* use this for keeping evars: resj.uj_val *) t
-	  else if isConst f then
-	    let c,_ = destConst f in (* Internalize as primitive projection *)
-	      if is_projection c env then
-		let pb = lookup_projection c env in 
-		let npars = pb.Declarations.proj_npars and argslen = Array.length args in
-		  if npars < argslen then
-		    let proj = mkProj (c, args.(npars)) in
-		    let args = Array.sub args (npars+1) (argslen - (npars + 1)) in
-		      make_judge (mkApp (proj,args)) resj.uj_type
-		  else resj
-	      else resj
 	  else resj
       | _ -> resj 
     in
