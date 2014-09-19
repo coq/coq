@@ -850,7 +850,7 @@ let apply_on_subterm env evdref f c t =
       | _ ->
         map_constr_with_binders_left_to_right
 	  (fun d (env,(k,c)) -> (push_rel d env, (k+1,lift 1 c)))
-	  applyrec acc !evdref t
+	  applyrec acc t
   in
   applyrec (env,(0,c)) t
 

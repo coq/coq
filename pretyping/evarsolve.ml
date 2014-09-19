@@ -101,14 +101,6 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
   in
     if !modified then !evdref, t' else !evdref, t
 
-let map_constr_with_binders_left_to_right g f (env, l as acc) sigma c = 
-  match kind_of_term c with
-  | Proj (p, r) -> (* Treat specially for partial applications *)
-    let t = Retyping.expand_projection env sigma p r [] in
-      map_constr_with_binders_left_to_right g f	acc t
-  | _ -> map_constr_with_binders_left_to_right g f acc c
-      
-
 (************************)
 (* Unification results  *)
 (************************)

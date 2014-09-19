@@ -150,8 +150,7 @@ let pattern_of_constr sigma t =
     | Const (sp,u)  -> PRef (ConstRef (constant_of_kn(canonical_con sp)))
     | Ind (sp,u)    -> PRef (canonical_gr (IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
-    | Proj (p, c) ->  
-        PProj (constant_of_kn(canonical_con p), pattern_of_constr c)
+    | Proj (p, c) -> PProj (constant_of_kn(canonical_con p), pattern_of_constr c)
     | Evar (evk,ctxt as ev) ->
         (match snd (Evd.evar_source evk sigma) with
           | Evar_kinds.MatchingVar (b,id) ->

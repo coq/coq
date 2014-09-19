@@ -945,6 +945,26 @@ let matches_head env sigma c t =
 
 let is_pattern_meta = function Pattern.PMeta _ -> true | _ -> false
 
+(** FIXME: Specific function to handle projections: it ignores what happens on the
+    parameters. This is a temporary fix while rewrite etc... are not up to equivalence
+    of the projection and it's eta expanded form.
+*)
+let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c = 
+  match kind_of_term c with
+  | Proj (p, r) -> (* Treat specially for partial applications *)
+    let t = Retyping.expand_projection env sigma p r [] in
+    let hdf, al = destApp t in
+    let a = al.(Array.length al - 1) in
+    let app = (mkApp (t, Array.sub al 0 (Array.length al - 1))) in
+    let app' = f acc app in
+    let a' = f acc a in
+    let hdf', al' = destApp app' in
+      if hdf' == hdf then
+        (* Still the same projection, we ignore the change in parameters *)
+	mkProj (p, a')
+      else mkApp (app', [| a' |])
+  | _ -> map_constr_with_binders_left_to_right g f acc c
+
 let e_contextually byhead (occs,c) f env sigma t =
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
@@ -977,9 +997,9 @@ let e_contextually byhead (occs,c) f env sigma t =
       else
 	t
     with ConstrMatching.PatternMatchingFailure ->
-      map_constr_with_binders_left_to_right 
+      change_map_constr_with_binders_left_to_right 
 	(fun d (env,c) -> (push_rel d env,lift_pattern 1 c))
-        traverse envc t
+        traverse envc sigma t
   in
   let t' = traverse (env,c) t in
   if List.exists (fun o -> o >= !pos) locs then error_invalid_occurrence locs;
