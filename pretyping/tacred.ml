@@ -943,6 +943,8 @@ let matches_head env sigma c t =
     | Proj (p, _) -> ConstrMatching.matches env sigma c (mkConst p)
     | _ -> raise ConstrMatching.PatternMatchingFailure
 
+let is_pattern_meta = function Pattern.PMeta _ -> true | _ -> false
+
 let e_contextually byhead (occs,c) f env sigma t =
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
@@ -960,7 +962,9 @@ let e_contextually byhead (occs,c) f env sigma t =
 	else not (Int.List.mem !pos locs) in
       incr pos;
       if ok then
-        let subst' = Id.Map.map (traverse envc) subst in
+        let subst' =
+          if is_pattern_meta c then subst
+          else (* progress is ensured *) Id.Map.map (traverse envc) subst in
 	let evm, t = f subst' env !evd t in
 	  (evd := evm; t)
       else if byhead then

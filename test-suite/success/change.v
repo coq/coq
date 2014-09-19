@@ -38,3 +38,10 @@ Fail change True with (let (x,a) := ex_intro _ True (eq_refl True) in x).
 Fail change True with
         match ex_intro _ True (eq_refl True) with ex_intro x _ => x end.
 Abort.
+
+(* Check absence of loop in identity substitution (was failing up to
+   Sep 2014, see #3641) *)
+
+Goal True.
+change ?x with x.
+Abort.
