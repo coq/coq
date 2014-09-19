@@ -24,12 +24,14 @@ glib=base-windows-0.18.1.1.13.356@BUILD_ec06e9.txz
 gtk=base-gtk-2.24.18.1.58@BUILD_594ca8.txz
 lablgtk=lablgtk-2.18.0.tar.gz
 camlp5=camlp5-6.11.tgz
+nsis=nsis-2.46-setup.exe
 
 ocaml_URL='http://yquem.inria.fr/~protzenk/caml-installer/'$ocaml
 lablgtk_URL='https://forge.ocamlcore.org/frs/download.php/1261/'$lablgtk
 glib_URL='http://dl.arirux.de/5/binaries32/'$glib
 gtk_URL='http://dl.arirux.de/5/binaries32/'$gtk
 camlp5_URL='http://pauillac.inria.fr/~ddr/camlp5/distrib/src/'$camlp5
+nsis_URL='http://netcologne.dl.sourceforge.net/project/nsis/NSIS%202/2.46/'$nsis
 
 cygwin=setup-${HOSTTYPE/i6/x}.exe
 cygwin_URL='http://cygwin.com/'$cygwin
@@ -42,7 +44,7 @@ has_spaces() {
 # http://www.dependencywalker.com/depends22_x86.zip
 
 # The SDK itself
-REVISION=2
+REVISION=85-1
 # support for working on computers that don't have a C: drive
 if [ -z "$BASE" ]
 then
@@ -156,6 +158,10 @@ download() {
   if [ ! -e "$camlp5" ]; then
     echo "- downloading camlp5..."
     wget $WGET_ARGS "$camlp5_URL"
+  fi
+  if [ ! -e "$nsis" ]; then
+    echo "- downloading nsis..."
+    wget $WGET_ARGS "$nsis_URL"
   fi
 }
 
@@ -307,6 +313,18 @@ build_install_camlp5() {
   cd ../..
 }
 
+install_nsis() {
+  echo "Installing $nsis"
+  rm -rf tmp
+  mkdir -p tmp
+  7z -otmp x $nsis >/dev/null
+  mkdir "$BASE/NSIS"
+  cp -r tmp/\$_OUTDIR/* "$BASE/NSIS"
+  rm -rf tmp/\$_OUTDIR
+  rm -rf tmp/\$PLUGINSDIR
+  cp -r tmp/* "$BASE/NSIS"
+}
+
 zip_sdk() {
   echo "Generating CoqSDK-${REVISION}.zip"
   here="`pwd`"
@@ -334,6 +352,7 @@ if [ -z "$1" ]; then
   download
   cleanup
   install_base
+  install_nsis
   install_ocaml
   install_gtk
   make_environ
