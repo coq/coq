@@ -328,40 +328,63 @@ let map_left2 f a g b =
 let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> c
-  | Cast (c,k,t) -> let c' = f l c in mkCast (c',k,f l t)
-  | Prod (na,t,c) ->
+  | Cast (b,k,t) -> 
+    let b' = f l b in 
+    let t' = f l t in
+      if b' == b && t' == t then c
+      else mkCast (b',k,t')
+  | Prod (na,t,b) ->
       let t' = f l t in
-      mkProd (na, t', f (g (na,None,t) l) c)
-  | Lambda (na,t,c) ->
+      let b' = f (g (na,None,t) l) b in
+	if t' == t && b' == b then c
+	else mkProd (na, t', b')
+  | Lambda (na,t,b) ->
       let t' = f l t in
-      mkLambda (na, t', f (g (na,None,t) l) c)
-  | LetIn (na,b,t,c) ->
-      let b' = f l b in
+      let b' = f (g (na,None,t) l) b in
+	if t' == t && b' == b then c
+	else mkLambda (na, t', b')
+  | LetIn (na,bo,t,b) ->
+      let bo' = f l bo in
       let t' = f l t in
-      let c' = f (g (na,Some b,t) l) c in
-      mkLetIn (na, b', t', c')
+      let b' = f (g (na,Some bo,t) l) b in
+	if bo' == bo && t' == t && b' == b then c
+	else mkLetIn (na, bo', t', b')	    
   | App (c,[||]) -> assert false
-  | App (c,al) ->
+  | App (t,al) ->
       (*Special treatment to be able to recognize partially applied subterms*)
       let a = al.(Array.length al - 1) in
-      let hd = f l (mkApp (c, Array.sub al 0 (Array.length al - 1))) in
-      mkApp (hd, [| f l a |])
-  | Proj (p,c) ->
-      mkProj (p, f l c)
-  | Evar (e,al) -> mkEvar (e, Array.map_left (f l) al)
-  | Case (ci,p,c,bl) ->
+      let app = (mkApp (t, Array.sub al 0 (Array.length al - 1))) in
+      let app' = f l app in
+      let a' = f l a in
+	if app' == app && a' == a then c
+	else mkApp (app', [| a' |])
+  | Proj (p,b) ->
+    let b' = f l b in
+      if b' == b then c
+      else mkProj (p, b')
+  | Evar (e,al) -> 
+    let al' = Array.map_left (f l) al in
+      if Array.for_all2 (==) al' al then c
+      else mkEvar (e, al')
+  | Case (ci,p,b,bl) ->
       (* In v8 concrete syntax, predicate is after the term to match! *)
-      let c' = f l c in
+      let b' = f l b in
       let p' = f l p in
-      mkCase (ci, p', c', Array.map_left (f l) bl)
+      let bl' = Array.map_left (f l) bl in
+	if b' == b && p' == p && bl' == bl then c
+	else mkCase (ci, p', b', bl')
   | Fix (ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
       let (tl', bl') = map_left2 (f l) tl (f l') bl in
-      mkFix (ln,(lna,tl',bl'))
+	if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
+	then c
+	else mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
       let (tl', bl') = map_left2 (f l) tl (f l') bl in
-      mkCoFix (ln,(lna,tl',bl'))
+	if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
+	then c
+	else mkCoFix (ln,(lna,tl',bl'))
 
 (* strong *)
 let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
