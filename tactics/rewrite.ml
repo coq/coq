@@ -839,9 +839,9 @@ let apply_rule unify loccs : ('a * int) pure_strategy =
               Success (apply_constraint env avoid rew.rew_car rel prf cstr res)
 	  in ((hypinfo, occ), res)
 	    
-let apply_lemma l2r flags (evm,c) by loccs : strategy =
+let apply_lemma l2r flags oc by loccs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
-    let sigma = Evd.merge sigma evm in
+    let sigma, c = oc sigma in
     let sigma, hypinfo = decompose_applied_relation env sigma None c in
     let evars = (sigma, cstrs) in
     let unify hypinfo env evars t = unify_eqn l2r flags env evars hypinfo by t in
@@ -1303,10 +1303,10 @@ module Strategies =
 	choice tac (apply_lemma l2r flags l by AllOccurrences))
 	fail cs
 
-    let inj_open hint =
+    let inj_open hint = (); fun sigma ->
       let ctx = Evd.evar_universe_context_of hint.Autorewrite.rew_ctx in
-      (Evd.from_env ~ctx (Global.env()),
-       (hint.Autorewrite.rew_lemma, NoBindings))
+      let sigma = Evd.merge_universe_context sigma ctx in
+      (sigma, (hint.Autorewrite.rew_lemma, NoBindings))
 
     let old_hints (db : string) : 'a pure_strategy =
       let rules = Autorewrite.find_rewrites db in
@@ -1592,15 +1592,20 @@ let cl_rewrite_clause l left2right occs clause gl =
   let strat = rewrite_with left2right (general_rewrite_unif_flags ()) l occs in
     cl_rewrite_clause_strat strat clause gl
 
-let apply_glob_constr c l2r occs = fun () env avoid t ty cstr evars ->
-  let evd, c = (Pretyping.understand_tcc env (goalevars evars) c) in
-    apply_lemma l2r (general_rewrite_unif_flags ()) (Evd.empty, (c, NoBindings)) 
-      None occs () env avoid t ty cstr (evd, cstrevars evars)
+let apply_glob_constr c l2r occs = (); fun () env avoid t ty cstr evars ->
+  let c sigma =
+    let (sigma, c) = Pretyping.understand_tcc env sigma c in
+    (sigma, (c, NoBindings))
+  in
+  let flags = general_rewrite_unif_flags () in
+  apply_lemma l2r flags c None occs () env avoid t ty cstr evars
 
-let interp_glob_constr_list env sigma =
-  List.map (fun c -> 
-	      let evd, c = Pretyping.understand_tcc env sigma c in
-		(evd, (c, NoBindings)), true, None)
+let interp_glob_constr_list env =
+  let make c = (); fun sigma ->
+    let sigma, c = Pretyping.understand_tcc env sigma c in
+    (sigma, (c, NoBindings))
+  in
+  List.map (fun c -> make c, true, None)
 
 (* Syntax for rewriting with strategies *)
 
@@ -1661,7 +1666,7 @@ let rec strategy_of_ast = function
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id
   | StratTerms l -> 
     (fun () env avoid t ty cstr evars ->
-     let l' = interp_glob_constr_list env (goalevars evars) (List.map fst l) in
+     let l' = interp_glob_constr_list env (List.map fst l) in
        Strategies.lemmas rewrite_unif_flags l' () env avoid t ty cstr evars)
   | StratEval r -> 
     (fun () env avoid t ty cstr evars ->
