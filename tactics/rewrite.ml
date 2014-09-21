@@ -2040,10 +2040,6 @@ let setoid_proof ty fn fallback =
               fallback
               begin function
                 | Hipattern.NoEquationFound ->
-                (* spiwack: [Errors.push] here is unlikely to do what
-                   it's intended to, or anything meaningful for that
-                   matter. *)
-                    let e = Errors.push e in
 	            begin match e with
 	            | Not_found ->
 	                let rel, args = decompose_app_rel env sigma concl in
