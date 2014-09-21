@@ -32,6 +32,10 @@ Logic
     projection application.
   - [pattern x at n], [rewrite x at n] and in general abstraction and selection
     of occurrences may fail due to the disappearance of parameters.
+- New universe polymorphism.
+- New option -type-in-type to collapse the universe hierarchy (this makes the
+  logic inconsistent).
+
 
 Vernacular commands
 
