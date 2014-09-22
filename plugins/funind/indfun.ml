@@ -151,7 +151,9 @@ let build_newrecursive
       (fun (env,impls) ((_,recname),bl,arityc,_) ->
         let arityc = Topconstr.prod_constr_expr arityc bl in
         let arity = Constrintern.interp_type sigma env0 arityc in
-	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity [] in
+	let evdref =  ref (sigma) in
+	let _, (_, impls') = Constrintern.interp_context_evars evdref env bl in
+	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity impls' in
         (Environ.push_named (recname,None,arity) env, Idmap.add recname impl impls))
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
   let recdef =
