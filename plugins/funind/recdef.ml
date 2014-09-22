@@ -462,7 +462,8 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) =
 	      jinfo.apP (f,args) expr_info continuation_tac in 
 	    travel_args jinfo
 	      expr_info.is_main_branch new_continuation_tac new_infos
-	  | _ -> assert false 
+	  | Case _ ->  errorlabstrm "Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain an applied match (See Limitation in Section 2.3 of refman)")
+	  | _ -> anomaly (Pp.str "travel_aux : unexpected "++ Printer.pr_lconstr expr_info.info)
       end
     | Cast(t,_,_) -> travel jinfo continuation_tac {expr_info with info=t}
     | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ ->
