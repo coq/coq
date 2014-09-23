@@ -435,35 +435,95 @@ End Paradox.
 
 End NoRetractFromTypeToProp.
 
-(** * [Prop<>Type]. *)
+(** * [A<>Type] *)
 
-Module PropNeqType.
+(** No Coq universe can be equal to one of its elements. *)
 
-Import NoRetractFromTypeToProp.
+Module TypeNeqSmallType.
 
 Section Paradox.
 
-Notation "'rew2' <- H 'in' H'" := (@eq_rect_r Type2 _ (fun X : Type2 => X) H' _ H)
-    (at level 10, H' at level 10).
-Notation "'rew2' H 'in' H'" := (@eq_rect Type2 _ (fun X : Type2 => X) H' _ H)
-    (at level 10, H' at level 10).
+(** ** Universe [U] is equal to one of its elements. *)
 
-Variable Heq : Prop = Type1 :> Type2.
+Let U := Type.
+Variable A:U.
+Hypothesis h : U=A.
 
-Definition down : Type1 -> Prop := fun A => rew2 <- Heq in A.
-Definition up : Prop -> Type1 := fun A => rew2 Heq in A.
+(** ** Universe [U] is a retract of [A] *)
 
-Lemma up_down : forall (A:Type1), up (down A) = A :> Type1.
+(** The following context is actually sufficient for the paradox to
+    hold. The hypothesis [h:U=A] is only used to define [down], [up]
+    and [up_down]. *)
+
+Let down (X:U) : A := @eq_rect _ _ (fun X => X) X _ h.
+Let up   (X:A) : U := @eq_rect_r _ _ (fun X => X) X _ h.
+
+Lemma up_down : forall (X:U), up (down X) = X.
 Proof.
-unfold up, down. rewrite Heq. reflexivity.
-Defined.
+  unfold up,down.
+  rewrite <- h.
+  reflexivity.
+Qed.
+
 
 Theorem paradox : False.
 Proof.
-apply paradox with down up.
-apply up_down.
+  Generic.paradox p.
+  (** Large universe *)
+  + exact U.
+  + exact (fun X=>X).
+  + cbn. exact (fun X F => forall x:X, F x).
+  + cbn. exact (fun _ _ x => x).
+  + cbn. exact (fun _ _ x => x).
+  + cbn. easy.
+  + exact (fun F => forall x:A, F (up x)).
+  + cbn. exact (fun _ f => fun x:A => f (up x)).
+  + cbn. intros * f X.
+    specialize (f (down X)).
+    rewrite up_down in f.
+    exact f.
+  + cbn. intros ? f X.
+    destruct (up_down X). cbn.
+    reflexivity.
+  (** Small universe *)
+  + exact A.
+  (** The interpretation of [A] as a universe is [U]. *)
+  + cbn. exact up.
+  + cbn. exact (fun _ F => down (forall x, up (F x))).
+  + cbn. intros ? ? f.
+    rewrite up_down.
+    exact f.
+  + cbn. intros ? ? f.
+    rewrite up_down in f.
+    exact f.
+  + cbn. exact (fun _ F => down (forall x, up (F x))).
+  + cbn. intros ? ? f.
+    rewrite up_down.
+    exact f.
+  + cbn. intros ? ? f.
+    rewrite up_down in f.
+    exact f.
+  + cbn. exact (down False).
+  + rewrite up_down in p.
+    exact p.
 Qed.
 
 End Paradox.
+
+End TypeNeqSmallType.
+
+(** * [Prop<>Type]. *)
+
+(** Special case of [TypeNeqSmallType]. *)
+
+Module PropNeqType.
+
+Theorem paradox : Prop <> Type.
+Proof.
+  intros h.
+  refine (TypeNeqSmallType.paradox _ _).
+  + exact Prop.
+  + easy.
+Qed.
 
 End PropNeqType.
