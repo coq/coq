@@ -59,6 +59,8 @@
 
 Set Universe Polymorphism.
 
+(* begin show *)
+
 (** * A modular proof of Hurkens's paradox. *)
 
 (** It relies on an axiomatisation of a shallow embedding of system U-
@@ -527,3 +529,5 @@ Proof.
 Qed.
 
 End PropNeqType.
+
+(* end show *)
