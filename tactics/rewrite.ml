@@ -462,6 +462,7 @@ type hypinfo = {
   c1 : constr;
   c2 : constr;
   c  : (Tacinterp.interp_sign * Tacexpr.glob_constr_and_expr with_bindings) option;
+  to_refresh : bool;
 }
 
 let get_symmetric_proof b = 
@@ -497,7 +498,7 @@ let decompose_applied_relation env sigma orig (c,l) =
 	let value = Clenv.clenv_value eqclause in
 	  Some (eqclause.evd, { cl=eqclause; prf=value;
 		 car=ty1; rel = equiv; sort = Sorts.is_prop sort;
-		 c1=c1; c2=c2; c=orig; })
+		 c1=c1; c2=c2; c=orig; to_refresh = false})
   in
     match find_rel ctype with
     | Some c -> c
@@ -592,8 +593,16 @@ let general_rewrite_unif_flags () =
 
 let refresh_hypinfo env sigma hypinfo =
     match hypinfo.c with
-    | Some c ->
-      (* Refresh the clausenv to not get the same meta twice in the goal. *)
+    | Some c when hypinfo.to_refresh ->
+      (* Refresh the clausenv to not get the same meta twice in the goal
+	 and be able to capture binders under them *)
+      decompose_applied_relation_expr env sigma c
+    | Some c when hypinfo.cl.env != env ->
+      	(* If the lemma actually generates existential variables, we cannot 
+	   use it here as it will polute the evar map with existential variables
+	   that might not ever get instantiated (e.g. if we rewrite under a binder
+	   and need to refresh [c] again) *)
+       (* TODO: remove bindings in sigma corresponding to c *)
       decompose_applied_relation_expr env sigma c
     | _ ->
       let cl = { hypinfo.cl with evd = sigma } in
@@ -687,7 +696,7 @@ let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
     let rew_prf = RewPrf (rel, prf) in
     let rew = { rew_evars; rew_prf; rew_car; rew_from = c1; rew_to = c2; } in
     let rew = if l2r then rew else symmetry env hypinfo.sort rew in
-    Some (hypinfo, rew)
+    Some ({ hypinfo with to_refresh = true}, rew)
   with 
   | e when Class_tactics.catchable e -> None
   | Reduction.NotConvertible -> None
@@ -828,17 +837,16 @@ let apply_rule unify loccs : ('a * int) pure_strategy =
       let unif = unify hypinfo env evars t in
 	match unif with
 	| None -> ((hypinfo, occ), Fail)
-        | Some (hypinfo, rew) ->
+        | Some (hypinfo', rew) ->
 	  let occ = succ occ in
-	  let res = 
-	    if not (is_occ occ) then Fail
-	    else if eq_constr t rew.rew_to then Identity
+	    if not (is_occ occ) then ((hypinfo, occ), Fail)
+	    else if eq_constr t rew.rew_to then ((hypinfo, occ), Identity)
 	    else
 	      let res = { rew with rew_car = ty } in
               let rel, prf = get_rew_prf res in
-              Success (apply_constraint env avoid rew.rew_car rel prf cstr res)
-	  in ((hypinfo, occ), res)
-	    
+	      let res = Success (apply_constraint env avoid rew.rew_car rel prf cstr res) in
+		((hypinfo', occ), res)
+		  
 let apply_lemma l2r flags oc by loccs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
     let sigma, c = oc sigma in
@@ -1360,9 +1368,24 @@ let get_hypinfo_ids {c = opt} =
   | Some (is, gc) ->
     let avoid = Option.default [] (TacStore.get is.extra f_avoid_ids) in
       Id.Map.fold (fun id _ accu -> id :: accu) is.lfun avoid
+
+(** A dummy initial clauseenv to avoid generating initial evars before
+    even finding a first application of the rewriting lemma, in setoid_rewrite
+    mode *)
+
+let init_hypinfo env sigma c = 
+  { cl = { env = env; evd = sigma; templval = mk_freelisted mkProp; 
+	   templtyp = mk_freelisted mkProp };
+    prf = mkProp; car = mkProp; rel = mkProp; sort = true; c1 = mkProp; c2 = mkProp; 
+    c = c; to_refresh = true }
       
 let rewrite_with l2r flags c occs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
+    (** FIXME: This is wrong... the evars in c should not register to the global sigma
+	as the hypothesis might need to be refreshed, e.g. to rewrite under binders
+	and the initial version will not be used while its evars will appear in 
+	the final sigma. Leaving for now to not impact performance, but should be
+	fixed using matching with patterns to avoid costly retypings instead. *)
     let sigma, hypinfo = decompose_applied_relation_expr env sigma c in
     let avoid = get_hypinfo_ids hypinfo @ avoid in
     let unify hypinfo env evars t = unify_eqn l2r flags env evars hypinfo None t in
