@@ -577,13 +577,11 @@ let reduce_projection env sigma pb (recarg'hd,stack') stack =
   | _ -> NotReducible)
 
 let reduce_proj env sigma whfun whfun' c =
-  (* Pp.msgnl (str" reduce_proj: " ++ print_constr c); *)
   let rec redrec s =
     match kind_of_term s with
     | Proj (proj, c) -> 
       let c' = try redrec c with Redelimination -> c in
       let constr, cargs = whfun c' in
-	(* Pp.msgnl (str" reduce_proj: constructor: " ++ print_constr constr); *)
 	(match kind_of_term constr with
 	| Construct _ -> 
 	  let proj_narg = 
@@ -920,6 +918,15 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
     | Some c ->
       (match kind_of_term (strip_lam c) with
       | CoFix _ | Fix _ -> s'
+      | Proj (p,c) when
+	  (match kind_of_term constr with
+	  | Const (c', _) -> eq_constant p c'
+	  | _ -> false) ->
+	let pb = Environ.lookup_projection p env in
+	  if List.length stack <= pb.Declarations.proj_npars then
+	    (** Do not show the eta-expanded form *)
+	    s'
+	  else redrec (applist (c, stack))
       | _ -> redrec (applist(c, stack)))
     | None -> s'
   in
@@ -1016,7 +1023,6 @@ let contextually byhead occs f env sigma t =
 let match_constr_evaluable_ref sigma c evref = 
   match kind_of_term c, evref with
   | Const (c,u), EvalConstRef c' when eq_constant c c' -> Some u
-  | Proj (p,c), EvalConstRef p' when eq_constant p p' -> Some Univ.Instance.empty
   | Var id, EvalVarRef id' when id_eq id id' -> Some Univ.Instance.empty
   | _, _ -> None
 
@@ -1024,10 +1030,7 @@ let substlin env sigma evalref n (nowhere_except_in,locs) c =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref n in
   assert (List.for_all (fun x -> x >= 0) locs);
-  let value u = 
-    value_of_evaluable_ref env evalref u 
-          (* Some (whd_betaiotazeta sigma c) *)
-  in
+  let value u = value_of_evaluable_ref env evalref u in
   let rec substrec () c =
     if nowhere_except_in && !pos > maxocc then c
     else 
@@ -1058,11 +1061,18 @@ let unfold env sigma name =
   else
     error (string_of_evaluable_ref env name^" is opaque.")
 
+let is_projection env = function
+  | EvalVarRef _ -> false
+  | EvalConstRef c -> Environ.is_projection c env
+
 (* [unfoldoccs : (readable_constraints -> (int list * full_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.
  * at the occurrences of occ_list. If occ_list is empty, unfold all occurences.
  * Performs a betaiota reduction after unfolding. *)
 let unfoldoccs env sigma (occs,name) c =
+  if is_projection env name then
+    error ("Cannot unfold primitie projection " ^ string_of_evaluable_ref env name)
+  else
   let unfo nowhere_except_in locs =
     let (nbocc,uc) = substlin env sigma name 1 (nowhere_except_in,locs) c in
     if Int.equal nbocc 1 then
