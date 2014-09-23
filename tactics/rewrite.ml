@@ -1381,13 +1381,7 @@ let init_hypinfo env sigma c =
       
 let rewrite_with l2r flags c occs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
-    (** FIXME: This is wrong... the evars in c should not register to the global sigma
-	as the hypothesis might need to be refreshed, e.g. to rewrite under binders
-	and the initial version will not be used while its evars will appear in 
-	the final sigma. Leaving for now to not impact performance, but should be
-	fixed using matching with patterns to avoid costly retypings instead. *)
-    let sigma, hypinfo = decompose_applied_relation_expr env sigma c in
-    let avoid = get_hypinfo_ids hypinfo @ avoid in
+    let hypinfo = init_hypinfo env sigma (Some c) in
     let unify hypinfo env evars t = unify_eqn l2r flags env evars hypinfo None t in
     let app = apply_rule unify occs in
     let strat = 
