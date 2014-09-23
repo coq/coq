@@ -94,6 +94,10 @@ Proof.
   intros; unfold Rsqr; apply sqrt_square; assumption.
 Qed.
 
+Lemma sqrt_pow2 : forall x, 0 <= x -> sqrt (x ^ 2) = x.
+intros; simpl; rewrite Rmult_1_r, sqrt_square; auto.
+Qed.
+
 Lemma sqrt_Rsqr_abs : forall x:R, sqrt (Rsqr x) = Rabs x.
 Proof.
   intro x; rewrite Rsqr_abs; apply sqrt_Rsqr; apply Rabs_pos.
@@ -517,3 +521,4 @@ Proof.
   reflexivity.
   reflexivity.
 Qed.
+

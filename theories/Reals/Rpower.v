@@ -20,8 +20,10 @@ Require Import Ranalysis1.
 Require Import Exp_prop.
 Require Import Rsqrt_def.
 Require Import R_sqrt.
+Require Import Sqrt_reg.
 Require Import MVT.
 Require Import Ranalysis4.
+Require Import Fourier.
 Local Open Scope R_scope.
 
 Lemma P_Rmin : forall (P:R -> Prop) (x y:R), P x -> P y -> P (Rmin x y).
@@ -700,4 +702,129 @@ Proof.
   apply derivable_pt_lim_id.
   ring.
   apply derivable_pt_lim_exp.
+Qed.
+
+(* added later. *)
+
+Lemma Rpower_mult_distr :  
+  forall x y z, 0 < x -> 0 < y ->
+   Rpower x z * Rpower y z = Rpower (x * y) z.
+intros x y z x0 y0; unfold Rpower.
+rewrite <- exp_plus, ln_mult, Rmult_plus_distr_l; auto.
+Qed.
+
+Lemma Rle_Rpower_l a b c: 0 <= c -> 0 < a <= b -> Rpower a c <= Rpower b c. 
+Proof.
+intros [c0 | c0];
+ [ | intros; rewrite <- c0, !Rpower_O; [apply Rle_refl | |] ].
+  intros [a0 [ab|ab]].
+   left; apply exp_increasing.
+   now apply Rmult_lt_compat_l; auto; apply ln_increasing; fourier.
+  rewrite ab; apply Rle_refl.
+ apply Rlt_le_trans with a; tauto.
+tauto.
+Qed.
+
+(* arcsinh function *)
+
+Definition arcsinh x := ln (x + sqrt (x ^ 2 + 1)).
+
+Lemma arcsinh_sinh : forall x, arcsinh (sinh x) = x.
+intros x; unfold sinh, arcsinh.
+assert (Rminus_eq_0 : forall r, r - r = 0) by (intros; ring).
+pattern 1 at 5; rewrite <- exp_0, <- (Rminus_eq_0 x); unfold Rminus.
+rewrite exp_plus.
+match goal with |- context[sqrt ?a] => 
+  replace a with (((exp x + exp(-x))/2)^2) by field
+end.
+rewrite sqrt_pow2;
+ [|apply Rlt_le, Rmult_lt_0_compat;[apply Rplus_lt_0_compat; apply exp_pos |
+                            apply Rinv_0_lt_compat, Rlt_0_2]].
+match goal with |- context[ln ?a] => replace a with (exp x) by field end. 
+rewrite ln_exp; reflexivity.
+Qed.
+
+Lemma sinh_arcsinh x : sinh (arcsinh x) = x. 
+unfold sinh, arcsinh.
+assert (cmp : 0 < x + sqrt (x ^ 2 + 1)).
+ destruct (Rle_dec x 0).
+  replace (x ^ 2) with ((-x) ^ 2) by ring.
+  assert (sqrt ((- x) ^ 2) < sqrt ((-x)^2+1)).
+   apply sqrt_lt_1_alt.
+   split;[apply pow_le | ]; fourier.
+  pattern x at 1; replace x with (- (sqrt ((- x) ^ 2))).
+   assert (t:= sqrt_pos ((-x)^2)); fourier.
+  simpl; rewrite Rmult_1_r, sqrt_square, Ropp_involutive;[reflexivity | fourier].
+  apply Rplus_lt_le_0_compat;[apply Rnot_le_gt; assumption | apply sqrt_pos].
+rewrite exp_ln;[ | assumption].
+rewrite exp_Ropp, exp_ln;[ | assumption].
+assert (Rmult_minus_distr_r :
+         forall x y z, (x - y) * z = x * z - y * z) by (intros; ring).
+apply Rminus_diag_uniq; unfold Rdiv; rewrite Rmult_minus_distr_r.
+assert (t: forall x y z, x - z = y -> x - y - z = 0);[ | apply t; clear t].
+ intros a b c H; rewrite <- H; ring.
+apply Rmult_eq_reg_l with (2 * (x + sqrt (x ^ 2 + 1)));[ |
+ apply Rgt_not_eq, Rmult_lt_0_compat;[apply Rlt_0_2 | assumption]].
+assert (pow2_sqrt : forall x, 0 <= x -> sqrt x ^ 2 = x) by
+ (intros; simpl; rewrite Rmult_1_r, sqrt_sqrt; auto).
+field_simplify;[rewrite pow2_sqrt;[field | ] | apply Rgt_not_eq; fourier].
+apply Rplus_le_le_0_compat;[simpl; rewrite Rmult_1_r; apply (Rle_0_sqr x)|apply Rlt_le, Rlt_0_1].
+Qed.
+
+Lemma derivable_pt_lim_arcsinh :
+  forall x, derivable_pt_lim arcsinh x (/sqrt (x ^ 2 + 1)).
+intros x; unfold arcsinh.
+assert (0 < x + sqrt (x ^ 2 + 1)).
+ destruct (Rle_dec x 0);
+  [ | assert (0 < x) by (apply Rnot_le_gt; assumption);
+    apply Rplus_lt_le_0_compat; auto; apply sqrt_pos].
+ replace (x ^ 2) with ((-x) ^ 2) by ring.
+ assert (sqrt ((- x) ^ 2) < sqrt ((-x)^2+1)).
+  apply sqrt_lt_1_alt.
+  split;[apply pow_le|]; fourier.
+ pattern x at 1; replace x with (- (sqrt ((- x) ^ 2))).
+  assert (t:= sqrt_pos ((-x)^2)); fourier.
+ simpl; rewrite Rmult_1_r, sqrt_square, Ropp_involutive; auto; fourier.
+assert (0 < x ^ 2 + 1).
+ apply Rplus_le_lt_0_compat;[simpl; rewrite Rmult_1_r; apply Rle_0_sqr|fourier].
+replace (/sqrt (x ^ 2 + 1)) with
+ (/(x + sqrt (x ^ 2 + 1)) * 
+    (1 + (/(2 * sqrt (x ^ 2 + 1)) * (INR 2 * x ^ 1 + 0)))).
+apply (derivable_pt_lim_comp (fun x => x + sqrt (x ^ 2 + 1)) ln).
+ apply (derivable_pt_lim_plus).
+  apply derivable_pt_lim_id.
+   apply (derivable_pt_lim_comp (fun x => x ^ 2 + 1) sqrt x).
+    apply derivable_pt_lim_plus.
+     apply derivable_pt_lim_pow.
+    apply derivable_pt_lim_const.
+   apply derivable_pt_lim_sqrt; assumption.
+  apply derivable_pt_lim_ln; assumption.
+ replace (INR 2 * x ^ 1 + 0) with (2 * x) by (simpl; ring).
+replace (1 + / (2 * sqrt (x ^ 2 + 1)) * (2 * x)) with
+ (((sqrt (x ^ 2 + 1) + x))/sqrt (x ^ 2 + 1));
+ [ | field; apply Rgt_not_eq, sqrt_lt_R0; assumption].
+apply Rmult_eq_reg_l with (x + sqrt (x ^ 2 + 1));
+  [ | apply Rgt_not_eq; assumption].
+rewrite <- Rmult_assoc, Rinv_r;[field | ]; apply Rgt_not_eq; auto;
+  apply sqrt_lt_R0; assumption.
+Qed.
+
+Lemma arcsinh_lt : forall x y, x < y -> arcsinh x < arcsinh y.
+intros x y xy.
+case (Rle_dec (arcsinh y) (arcsinh x));[ | apply Rnot_le_lt ].
+intros abs; case (Rlt_not_le _ _ xy).
+rewrite <- (sinh_arcsinh y), <- (sinh_arcsinh x).
+destruct abs as [lt | q];[| rewrite q; fourier].
+apply Rlt_le, sinh_lt; assumption.
+Qed.
+
+Lemma arcsinh_le : forall x y, x <= y -> arcsinh x <= arcsinh y.
+intros x y [xy | xqy].
+ apply Rlt_le, arcsinh_lt; assumption.
+rewrite xqy; apply Rle_refl.
+Qed.
+
+Lemma arcsinh_0 : arcsinh 0 = 0.
+ unfold arcsinh; rewrite pow_ne_zero, !Rplus_0_l, sqrt_1, ln_1;
+  [reflexivity | discriminate].
 Qed.

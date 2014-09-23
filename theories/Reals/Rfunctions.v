@@ -520,6 +520,12 @@ Proof.
   apply Rle_trans with (Rabs y); [ apply Rabs_pos | exact H ].
 Qed.
 
+Lemma Rsqr_pow2 : forall x, Rsqr x = x ^ 2.
+Proof.
+intros; unfold Rsqr; simpl; rewrite Rmult_1_r; reflexivity.
+Qed.
+
+
 (*******************************)
 (** *       PowerRZ            *)
 (*******************************)
@@ -781,6 +787,13 @@ Proof.
     replace (a + c - (b + d)) with (a - b + (c - d)).
   exact (Rabs_triang (a - b) (c - d)).
   ring.
+Qed.
+
+Lemma R_dist_mult_l : forall a b c,
+  R_dist (a * b) (a * c) = Rabs a * R_dist b c.
+Proof.
+unfold R_dist. 
+intros a b c; rewrite <- Rmult_minus_distr_l, Rabs_mult; reflexivity.
 Qed.
 
 (*******************************)

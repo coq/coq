@@ -711,7 +711,7 @@ Proof.
 Qed.
 
 (*********************************************************)
-(** ** Substraction                                      *)
+(** ** Subtraction                                      *)
 (*********************************************************)
 
 Lemma Rminus_0_r : forall r, r - 0 = r.
@@ -1370,6 +1370,11 @@ Proof.
   now rewrite Rplus_0_r.
 Qed.
 
+Lemma Rlt_Rminus : forall a b:R, a < b -> 0 < b - a.
+Proof.
+  intros a b; apply Rgt_minus.
+Qed.
+
 (**********)
 Lemma Rle_minus : forall r1 r2, r1 <= r2 -> r1 - r2 <= 0.
 Proof.
@@ -1398,6 +1403,9 @@ Proof.
   apply Rplus_gt_compat_r; assumption.
   ring.
 Qed.
+
+Lemma Rminus_gt_0_lt : forall a b, 0 < b - a -> a < b.
+Proof. intro; intro; apply Rminus_gt. Qed.
 
 (**********)
 Lemma Rminus_le : forall r1 r2, r1 - r2 <= 0 -> r1 <= r2.
@@ -1980,6 +1988,10 @@ Proof.
   apply Rinv_le_contravar with (1 := H).
 Qed.
 
+Lemma Ropp_div : forall x y, -x/y = - (x / y).
+intros x y; unfold Rdiv; ring.
+Qed.
+
 Lemma double : forall r1, 2 * r1 = r1 + r1.
 Proof.
   intro; ring.
@@ -2053,6 +2065,29 @@ Proof.
   intros; elim (completeness E H H0); intros; split with x; assumption.
 Qed.
 
+Lemma Rdiv_lt_0_compat : forall a b, 0 < a -> 0 < b -> 0 < a/b.
+Proof. 
+intros; apply Rmult_lt_0_compat;[|apply Rinv_0_lt_compat]; assumption.
+Qed.
+
+Lemma Rdiv_plus_distr : forall a b c, (a + b)/c = a/c + b/c.
+intros a b c; apply Rmult_plus_distr_r.
+Qed.
+
+Lemma Rdiv_minus_distr : forall a b c, (a - b)/c = a/c - b/c.
+intros a b c; unfold Rminus, Rdiv; rewrite Rmult_plus_distr_r; ring.
+Qed.
+
+(* A test for equality function. *)
+Lemma Req_EM_T : forall r1 r2:R, {r1 = r2} + {r1 <> r2}.
+Proof.
+  intros; destruct (total_order_T r1 r2) as [[H|]|H].
+  - right; red; intros ->; elim (Rlt_irrefl r2 H).
+  - left; assumption.
+  - right; red; intros ->; elim (Rlt_irrefl r2 H).
+Qed.
+
+
 (*********************************************************)
 (** * Definitions of new types                           *)
 (*********************************************************)
@@ -2069,6 +2104,7 @@ Record negreal : Type := mknegreal {neg :> R; cond_neg : neg < 0}.
 
 Record nonzeroreal : Type := mknonzeroreal
   {nonzero :> R; cond_nonzero : nonzero <> 0}.
+
 
 (** Compatibility *)
 

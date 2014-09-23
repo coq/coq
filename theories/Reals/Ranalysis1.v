@@ -77,6 +77,23 @@ Definition continuity f : Prop := forall x:R, continuity_pt f x.
 Arguments continuity_pt f%F x0%R.
 Arguments continuity f%F.
 
+Lemma continuity_pt_locally_ext :
+  forall f g a x, 0 < a -> (forall y, R_dist y x < a -> f y = g y) ->
+  continuity_pt f x -> continuity_pt g x.
+intros f g a x a0 q cf eps ep.
+destruct (cf eps ep) as [a' [a'p Pa']].
+exists (Rmin a a'); split.
+ unfold Rmin; destruct (Rle_dec a a').
+  assumption.
+ assumption.
+intros y cy; rewrite <- !q.
+  apply Pa'.
+  split;[| apply Rlt_le_trans with (Rmin a a');[ | apply Rmin_r]];tauto.
+ rewrite R_dist_eq; assumption.   
+apply Rlt_le_trans with (Rmin a a');[ | apply Rmin_l]; tauto.
+Qed.
+
+
 (**********)
 Lemma continuity_pt_plus :
   forall f1 f2 (x0:R),
@@ -477,6 +494,47 @@ Proof.
   auto with real.
 Qed.
 
+(* Extensionally equal functions have the same derivative. *)
+
+Lemma derivable_pt_lim_ext : forall f g x l, (forall z, f z = g z) -> 
+  derivable_pt_lim f x l -> derivable_pt_lim g x l.
+intros f g x l fg df e ep; destruct (df e ep) as [d pd]; exists d; intros h;
+rewrite <- !fg; apply pd.
+Qed.
+
+(* extensionally equal functions have the same derivative, locally. *)
+
+Lemma derivable_pt_lim_locally_ext : forall f g x a b l, 
+  a < x < b ->
+  (forall z, a < z < b -> f z = g z) ->
+  derivable_pt_lim f x l -> derivable_pt_lim g x l.
+intros f g x a b l axb fg df e ep.
+destruct (df e ep) as [d pd].
+assert (d'h : 0 < Rmin d (Rmin (b - x) (x - a))).
+ apply Rmin_pos;[apply cond_pos | apply Rmin_pos; apply Rlt_Rminus; tauto].
+exists (mkposreal _ d'h); simpl; intros h hn0 cmp.
+rewrite <- !fg;[ |assumption | ].
+  apply pd;[assumption |].
+ apply Rlt_le_trans with (1 := cmp), Rmin_l.
+assert (-h < x - a).
+ apply Rle_lt_trans with (1 := Rle_abs _).
+ rewrite Rabs_Ropp; apply Rlt_le_trans with (1 := cmp).
+ rewrite Rmin_assoc; apply Rmin_r.
+assert (h < b - x).
+ apply Rle_lt_trans with (1 := Rle_abs _).
+ apply Rlt_le_trans with (1 := cmp).
+ rewrite Rmin_comm, <- Rmin_assoc; apply Rmin_l.
+split.
+ apply (Rplus_lt_reg_l (- h)).
+ replace ((-h) + (x + h)) with x by ring.
+ apply (Rplus_lt_reg_r (- a)).
+ replace (((-h) + a) + - a) with (-h) by ring.
+ assumption.
+apply (Rplus_lt_reg_r (- x)).
+replace (x + h + - x) with h by ring.
+assumption.
+Qed.
+
 
 (***********************************)
 (** * derivability -> continuity   *)
@@ -637,6 +695,24 @@ Proof.
   replace (a * l) with (0 * f x + a * l); [ idtac | ring ].
   apply (derivable_pt_lim_mult (fct_cte a) f x 0 l); assumption.
   unfold mult_real_fct, mult_fct, fct_cte; reflexivity.
+Qed.
+
+Lemma derivable_pt_lim_div_scal :
+  forall f x l a, derivable_pt_lim f x l ->
+     derivable_pt_lim (fun y => f y / a) x (l / a).
+intros f x l a df;
+  apply (derivable_pt_lim_ext (fun y => /a * f y)).
+ intros z; rewrite Rmult_comm; reflexivity.
+unfold Rdiv; rewrite Rmult_comm; apply derivable_pt_lim_scal; assumption.
+Qed.
+
+Lemma derivable_pt_lim_scal_right :
+  forall f x l a, derivable_pt_lim f x l ->
+     derivable_pt_lim (fun y => f y * a) x (l * a).
+intros f x l a df;
+  apply (derivable_pt_lim_ext (fun y => a * f y)).
+ intros z; rewrite Rmult_comm; reflexivity.
+unfold Rdiv; rewrite Rmult_comm; apply derivable_pt_lim_scal; assumption.
 Qed.
 
 Lemma derivable_pt_lim_id : forall x:R, derivable_pt_lim id x 1.

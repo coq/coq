@@ -13,6 +13,7 @@ Require Import Rtrigo1.
 Require Import Ranalysis1.
 Require Import Ranalysis3.
 Require Import Exp_prop.
+Require Import MVT.
 Local Open Scope R_scope.
 
 (**********)
@@ -398,3 +399,14 @@ Proof.
   intro; apply derive_pt_eq_0.
   apply derivable_pt_lim_sinh.
 Qed.
+
+Lemma sinh_lt : forall x y, x < y -> sinh x < sinh y.
+intros x y xy; destruct (MVT_cor2 sinh cosh x y xy) as [c [Pc _]].
+ intros; apply derivable_pt_lim_sinh.
+apply Rplus_lt_reg_l with (Ropp (sinh x)); rewrite Rplus_opp_l, Rplus_comm.
+unfold Rminus at 1 in Pc; rewrite Pc; apply Rmult_lt_0_compat;[ | ].
+ unfold cosh; apply Rmult_lt_0_compat;[|apply Rinv_0_lt_compat, Rlt_0_2].
+ now apply Rplus_lt_0_compat; apply exp_pos.
+now apply Rlt_Rminus; assumption.
+Qed.
+

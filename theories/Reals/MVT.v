@@ -710,3 +710,32 @@ Proof.
     unfold constant_D_eq in H8; assert (H9 := H8 _ H2);
       unfold minus_fct in H9; rewrite <- H9; ring.
 Qed.
+
+(* A variant of MVT using absolute values. *)
+Lemma MVT_abs : 
+  forall (f f' : R -> R) (a b : R),
+  (forall c : R, Rmin a b <= c <= Rmax a b ->
+      derivable_pt_lim f c (f' c)) ->
+  exists c : R, Rabs (f b - f a) = Rabs (f' c) * Rabs (b - a) /\
+             Rmin a b <= c <= Rmax a b.
+Proof.
+intros f f' a b.
+destruct (Rle_dec a b) as [aleb | blta].
+ destruct (Req_dec a b) as [ab | anb].
+  unfold Rminus; intros _; exists a; split.
+   now rewrite <- ab, !Rplus_opp_r, Rabs_R0, Rmult_0_r.
+  split;[apply Rmin_l | apply Rmax_l].
+ rewrite Rmax_right, Rmin_left; auto; intros derv.
+ destruct (MVT_cor2 f f' a b) as [c [hc intc]];
+  [destruct aleb;[assumption | contradiction] | apply derv | ].
+ exists c; rewrite hc, Rabs_mult;split;
+  [reflexivity | unfold Rle; tauto].
+assert (b < a) by (apply Rnot_le_gt; assumption).
+assert (b <= a) by (apply Rlt_le; assumption).
+rewrite Rmax_left, Rmin_right; try assumption; intros derv.
+destruct (MVT_cor2 f f' b a) as [c [hc intc]];
+ [assumption | apply derv | ].
+exists c; rewrite <- Rabs_Ropp, Ropp_minus_distr, hc, Rabs_mult.
+split;[now rewrite <- (Rabs_Ropp (b - a)), Ropp_minus_distr| unfold Rle; tauto].
+Qed.
+

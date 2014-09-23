@@ -394,6 +394,15 @@ Proof.
   red; intro; rewrite H6 in H; elim (Rlt_irrefl _ H).
 Qed.
 
+Lemma Riemann_integrable_ext :
+  forall f g a b, 
+    (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) ->
+    Riemann_integrable f a b -> Riemann_integrable g a b.
+intros f g a b fg rif eps; destruct (rif eps) as [phi [psi [P1 P2]]].
+exists phi; exists psi;split;[ | assumption ].
+intros t intt; rewrite <- fg;[ | assumption].
+apply P1; assumption.
+Qed.
 (**********)
 Definition RiemannInt (f:R -> R) (a b:R) (pr:Riemann_integrable f a b) : R :=
   let (a,_) := RiemannInt_exists pr RinvN RinvN_cv in a.
@@ -989,14 +998,6 @@ Proof.
     [ rewrite Rmult_0_r; rewrite double; pattern (RiemannInt pr) at 2;
       rewrite H; apply Rplus_opp_r
       | discrR ].
-Qed.
-
-Lemma Req_EM_T : forall r1 r2:R, {r1 = r2} + {r1 <> r2}.
-Proof.
-  intros; destruct (total_order_T r1 r2) as [[H|]|H].
-  - right; red; intros ->; elim (Rlt_irrefl r2 H).
-  - left; assumption.
-  - right; red; intros ->; elim (Rlt_irrefl r2 H).
 Qed.
 
 (* L1([a,b]) is a vectorial space *)
@@ -3217,3 +3218,38 @@ Proof.
           | assert (H0 := RiemannInt_P1 pr); rewrite (RiemannInt_P8 pr H0);
             rewrite (RiemannInt_P33 _ H0 H); ring ] ].
 Qed.
+
+(* RiemannInt *)
+Lemma RiemannInt_const_bound :
+  forall f a b l u (h : Riemann_integrable f a b), a <= b ->
+    (forall x, a < x < b -> l <= f x <= u) ->
+    l * (b - a) <= RiemannInt h <= u * (b - a).
+intros f a b l u ri ab intf.
+rewrite <- !(fun l => RiemannInt_P15 (RiemannInt_P14 a b l)).
+split; apply RiemannInt_P19; try assumption;
+ intros x intx; unfold fct_cte; destruct (intf x intx); assumption.
+Qed.
+
+Lemma Riemann_integrable_scal :
+  forall f a b k, 
+     Riemann_integrable f a b ->
+     Riemann_integrable (fun x => k * f x) a b.
+intros f a b k ri.
+apply Riemann_integrable_ext with
+   (f := fun x => 0 + k * f x).
+ intros; ring.
+apply (RiemannInt_P10 _ (RiemannInt_P14 _ _ 0) ri).
+Qed.
+
+Arguments Riemann_integrable_scal [f a b] k _ eps.
+
+Lemma Riemann_integrable_Ropp :
+  forall f a b, Riemann_integrable f a b -> 
+    Riemann_integrable (fun x => - f x) a b.
+intros ff a b h.
+apply Riemann_integrable_ext with (f := fun x => (-1) * ff x).
+intros; ring.
+apply Riemann_integrable_scal; assumption.
+Qed.
+
+Arguments Riemann_integrable_Ropp [f a b] _ eps.

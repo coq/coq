@@ -10,11 +10,115 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Ranalysis1.
+Require Import MVT.
 Require Import Max.
 Require Import Even.
+Require Import Fourier.
 Local Open Scope R_scope.
 
+(* Boule is French for Ball *)
+
 Definition Boule (x:R) (r:posreal) (y:R) : Prop := Rabs (y - x) < r.
+
+(* General properties of balls. *)
+
+Lemma Boule_convex : forall c d x y z,
+  Boule c d x -> Boule c d y -> x <= z <= y -> Boule c d z.
+intros c d x y z bx b_y intz.
+unfold Boule in bx, b_y; apply Rabs_def2 in bx;
+apply Rabs_def2 in b_y; apply Rabs_def1;
+ [apply Rle_lt_trans with (y - c);[apply Rplus_le_compat_r|]|
+  apply Rlt_le_trans with (x - c);[|apply Rplus_le_compat_r]];tauto.
+Qed.
+
+Definition boule_of_interval x y (h : x < y) :
+  {c :R & {r : posreal | c - r = x /\ c + r = y}}.
+exists ((x + y)/2).
+assert (radius : 0 < (y - x)/2).
+ unfold Rdiv; apply Rmult_lt_0_compat.
+  apply Rlt_Rminus; assumption.
+ now apply Rinv_0_lt_compat, Rlt_0_2.
+ exists (mkposreal _ radius).
+ simpl; split; unfold Rdiv; field.
+Qed.
+
+Definition boule_in_interval x y z (h : x < z < y) :
+  {c : R & {r | Boule c r z /\  x < c - r /\ c + r < y}}.
+Proof.
+assert (cmp : x * /2 + z * /2 < z * /2 + y * /2).
+destruct h as [h1 h2].
+rewrite Rplus_comm; apply Rplus_lt_compat_l, Rmult_lt_compat_r.
+ apply Rinv_0_lt_compat, Rlt_0_2.
+apply Rlt_trans with z; assumption.
+destruct (boule_of_interval _ _ cmp) as [c [r [P1 P2]]].
+assert (0 < /2) by (apply Rinv_0_lt_compat, Rlt_0_2).
+exists c, r; split.
+ destruct h; unfold Boule; simpl; apply Rabs_def1.
+  apply Rplus_lt_reg_l with c; rewrite P2;
+  replace (c + (z - c)) with (z * / 2 + z * / 2) by field.
+  apply Rplus_lt_compat_l, Rmult_lt_compat_r;assumption.
+ apply Rplus_lt_reg_l with c; change (c + - r) with (c - r);
+ rewrite P1;
+ replace (c + (z - c)) with (z * / 2 + z * / 2) by field.
+ apply Rplus_lt_compat_r, Rmult_lt_compat_r;assumption.
+destruct h; split.
+ replace x with (x * / 2 + x * / 2) by field; rewrite P1.
+ apply Rplus_lt_compat_l, Rmult_lt_compat_r;assumption.
+replace y with (y * / 2 + y * /2) by field; rewrite P2.
+apply Rplus_lt_compat_r, Rmult_lt_compat_r;assumption.
+Qed.
+
+Lemma Ball_in_inter : forall c1 c2 r1 r2 x,
+  Boule c1 r1 x -> Boule c2 r2 x ->
+  {r3 : posreal | forall y, Boule x r3 y -> Boule c1 r1 y /\ Boule c2 r2 y}.
+intros c1 c2 [r1 r1p] [r2 r2p] x; unfold Boule; simpl; intros in1 in2.
+assert (Rmax (c1 - r1)(c2 - r2) < x).
+ apply Rmax_lub_lt;[revert in1 | revert in2]; intros h;
+  apply Rabs_def2 in h; destruct h as [_ u];
+  apply (fun h => Rplus_lt_reg_r _ _ _ (Rle_lt_trans _ _ _ h u)), Req_le; ring.
+assert (x < Rmin (c1 + r1) (c2 + r2)).
+ apply Rmin_glb_lt;[revert in1 | revert in2]; intros h;
+ apply Rabs_def2 in h; destruct h as [u _];
+ apply (fun h => Rplus_lt_reg_r _ _ _ (Rlt_le_trans _ _ _ u h)), Req_le; ring.
+assert (t: 0 < Rmin (x - Rmax (c1 - r1) (c2 - r2))
+              (Rmin (c1 + r1) (c2 + r2) - x)).
+ apply Rmin_glb_lt; apply Rlt_Rminus; assumption.
+exists (mkposreal _ t).
+apply Rabs_def2 in in1; destruct in1.
+apply Rabs_def2 in in2; destruct in2.
+assert (c1 - r1 <= Rmax (c1 - r1) (c2 - r2)) by apply Rmax_l.
+assert (c2 - r2 <= Rmax (c1 - r1) (c2 - r2)) by apply Rmax_r.
+assert (Rmin (c1 + r1) (c2 + r2) <= c1 + r1) by apply Rmin_l.
+assert (Rmin (c1 + r1) (c2 + r2) <= c2 + r2) by apply Rmin_r.
+assert (Rmin (x - Rmax (c1 - r1) (c2 - r2)) 
+         (Rmin (c1 + r1) (c2 + r2) - x) <= x - Rmax (c1 - r1) (c2 - r2))
+ by apply Rmin_l.
+assert (Rmin (x - Rmax (c1 - r1) (c2 - r2)) 
+         (Rmin (c1 + r1) (c2 + r2) - x) <= Rmin (c1 + r1) (c2 + r2) - x)
+ by apply Rmin_r.
+simpl.
+intros y h; apply Rabs_def2 in h; destruct h as [h h'].
+apply Rmin_Rgt in h; destruct h as [cmp1 cmp2].
+apply Rplus_lt_reg_r in cmp2; apply Rmin_Rgt in cmp2.
+rewrite Ropp_Rmin, Ropp_minus_distr in h'.
+apply Rmax_Rlt in h'; destruct h' as [cmp3 cmp4];
+apply Rplus_lt_reg_r in cmp3; apply Rmax_Rlt in cmp3;
+split; apply Rabs_def1.
+apply (fun h => Rplus_lt_reg_l _ _ _ (Rle_lt_trans _ _ _ h (proj1 cmp2))), Req_le;
+ ring.
+apply (fun h => Rplus_lt_reg_l _ _ _ (Rlt_le_trans _ _ _ (proj1 cmp3) h)), Req_le;
+ ring.
+apply (fun h => Rplus_lt_reg_l _ _ _ (Rle_lt_trans _ _ _ h (proj2 cmp2))), Req_le;
+ ring.
+apply (fun h => Rplus_lt_reg_l _ _ _ (Rlt_le_trans _ _ _ (proj2 cmp3) h)), Req_le;
+ ring.
+Qed.
+
+Lemma Boule_center : forall x r, Boule x r x.
+Proof.
+intros x [r rpos]; unfold Boule, Rminus; simpl; rewrite Rplus_opp_r.
+rewrite Rabs_pos_eq;[assumption | apply Rle_refl].
+Qed.
 
 (** Uniform convergence *)
 Definition CVU (fn:nat -> R -> R) (f:R -> R) (x:R)
@@ -257,4 +361,243 @@ Proof.
     rewrite Rminus_0_r; pattern (Rabs x) at 1;
       rewrite <- Rplus_0_r; apply Rplus_lt_compat_l; apply Rlt_0_1.
   apply Rplus_le_lt_0_compat; [ apply Rabs_pos | apply Rlt_0_1 ].
+Qed.
+
+(* Uniform convergence implies pointwise simple convergence *)
+Lemma CVU_cv : forall f g c d, CVU f g c d ->
+   forall x, Boule c d x -> Un_cv (fun n => f n x) (g x).
+intros f g c d cvu x bx eps ep; destruct (cvu eps ep) as [N Pn].
+ exists N; intros n nN; rewrite R_dist_sym; apply Pn; assumption.
+Qed.
+
+(* convergence is preserved through extensional equality *)
+Lemma CVU_ext_lim :
+  forall f g1 g2 c d, CVU f g1 c d -> (forall x, Boule c d x -> g1 x = g2 x) ->
+    CVU f g2 c d.
+intros f g1 g2 c d cvu q eps ep; destruct (cvu _ ep) as [N Pn].
+exists N; intros; rewrite <- q; auto.
+Qed.
+
+(* When a sequence of derivable functions converge pointwise towards
+  a function g, with the derivatives converging uniformly towards
+  a function g', then the function g' is the derivative of g. *)
+
+Lemma CVU_derivable :
+  forall f f' g g' c d,
+   CVU f' g' c d ->
+   (forall x, Boule c d x -> Un_cv (fun n => f n x) (g x)) ->
+   (forall n x, Boule c d x -> derivable_pt_lim (f n) x (f' n x)) ->
+   forall x, Boule c d x -> derivable_pt_lim g x (g' x).
+intros f f' g g' c d cvu cvp dff' x bx.
+set (rho_ :=
+       fun n y =>
+           if Req_EM_T y x then
+              f' n x
+           else ((f n y - f n x)/ (y - x))).
+set (rho := fun y =>
+               if Req_EM_T y x then
+                  g' x
+               else (g y - g x)/(y - x)).
+assert (ctrho : forall n z, Boule c d z -> continuity_pt (rho_ n) z).
+ intros n z bz.
+ destruct (Req_EM_T x z) as [xz | xnz].
+  rewrite <- xz.
+  intros eps' ep'.
+  destruct (dff' n x bx eps' ep') as [alp Pa].
+  exists (pos alp);split;[apply cond_pos | ].
+  intros z'; unfold rho_, D_x, dist, R_met; simpl; intros [[_ xnz'] dxz'].
+   destruct (Req_EM_T z' x) as [abs | _].
+    case xnz'; symmetry; exact abs.
+   destruct (Req_EM_T x x) as [_ | abs];[ | case abs; reflexivity].
+  pattern z' at 1; replace z' with (x + (z' - x)) by ring.
+  apply Pa;[intros h; case xnz';
+    replace z' with (z' - x + x) by ring; rewrite h, Rplus_0_l;
+       reflexivity | exact dxz'].
+ destruct (Ball_in_inter c c d d z bz bz) as [delta Pd].
+ assert (dz :  0 < Rmin delta (Rabs (z - x))).
+  now apply Rmin_glb_lt;[apply cond_pos | apply Rabs_pos_lt; intros zx0; case xnz;
+                       replace z with (z - x + x) by ring; rewrite zx0, Rplus_0_l].
+ assert (t' : forall y : R,
+      R_dist y z < Rmin delta (Rabs (z - x)) ->
+      (fun z : R => (f n z - f n x) / (z - x)) y = rho_ n y).
+  intros y dyz; unfold rho_; destruct (Req_EM_T y x) as [xy | xny].
+   rewrite xy in dyz.
+   destruct (Rle_dec  delta (Rabs (z - x))).
+    rewrite Rmin_left, R_dist_sym in dyz; unfold R_dist in dyz; fourier.
+   rewrite Rmin_right, R_dist_sym in dyz; unfold R_dist in dyz;
+      [case (Rlt_irrefl _ dyz) |apply Rlt_le, Rnot_le_gt; assumption].
+  reflexivity.
+ apply (continuity_pt_locally_ext (fun z => (f n z - f n x)/(z - x))
+             (rho_ n) _ z dz t'); clear t'.
+ apply continuity_pt_div.
+   apply continuity_pt_minus.
+    apply derivable_continuous_pt; eapply exist; apply dff'; assumption.
+   apply continuity_pt_const; intro; intro; reflexivity.
+  apply continuity_pt_minus;
+   [apply derivable_continuous_pt; exists 1; apply derivable_pt_lim_id
+   | apply continuity_pt_const; intro; reflexivity].
+ intros zx0; case xnz; replace z with (z - x + x) by ring.
+ rewrite zx0, Rplus_0_l; reflexivity.
+assert (CVU rho_ rho c d ).
+ intros eps ep.
+ assert (ep8 : 0 < eps/8).
+  fourier.
+ destruct (cvu _ ep8) as [N Pn1].
+ assert (cauchy1 : forall n p, (N <= n)%nat -> (N <= p)%nat ->
+           forall z, Boule c d z -> Rabs (f' n z - f' p z) < eps/4).
+  intros n p nN pN z bz; replace (eps/4) with (eps/8 + eps/8) by field.
+  rewrite <- Rabs_Ropp.
+  replace (-(f' n z - f' p z)) with (g' z - f' n z - (g' z - f' p z)) by ring.
+  apply Rle_lt_trans with (1 := Rabs_triang _ _); rewrite Rabs_Ropp.
+  apply Rplus_lt_compat; apply Pn1; assumption.
+ assert (step_2 : forall n p, (N <= n)%nat -> (N <= p)%nat ->
+         forall y, Boule c d y -> x <> y ->
+         Rabs ((f n y - f n x)/(y - x) - (f p y - f p x)/(y - x)) < eps/4).
+  intros n p nN pN y b_y xny.
+  assert (mm0 : (Rmin x y = x /\ Rmax x y = y) \/ 
+                (Rmin x y = y /\ Rmax x y = x)).
+   destruct (Rle_dec x y) as [H | H].
+    rewrite Rmin_left, Rmax_right.
+      left; split; reflexivity.
+     assumption.
+    assumption.
+   rewrite Rmin_right, Rmax_left.
+     right; split; reflexivity.
+    apply Rlt_le, Rnot_le_gt; assumption.
+   apply Rlt_le, Rnot_le_gt; assumption.
+  assert (mm : Rmin x y < Rmax x y).
+   destruct mm0 as [[q1 q2] | [q1 q2]]; generalize (Rminmax x y); rewrite q1, q2.
+    intros h; destruct h;[ assumption| contradiction].
+   intros h; destruct h as [h | h];[assumption | rewrite h in xny; case xny; reflexivity].
+  assert (dm : forall z, Rmin x y <= z <= Rmax x y ->
+            derivable_pt_lim (fun x => f n x - f p x) z (f' n z - f' p z)).
+   intros z intz; apply derivable_pt_lim_minus.
+    apply dff'; apply Boule_convex with (Rmin x y) (Rmax x y);
+      destruct mm0 as [[q1 q2] | [q1 q2]]; revert intz; rewrite ?q1, ?q2; intros;
+     try assumption.
+   apply dff'; apply Boule_convex with (Rmin x y) (Rmax x y);
+      destruct mm0 as [[q1 q2] | [q1 q2]]; revert intz; rewrite ?q1, ?q2; intros;
+     try assumption.
+
+  replace ((f n y - f n x) / (y - x) - (f p y - f p x) / (y - x))
+    with (((f n y - f p y) - (f n x - f p x))/(y - x)) by
+    (field; intros yx0; case xny; replace y with (y - x + x) by ring;
+     rewrite yx0, Rplus_0_l; reflexivity).
+  destruct (MVT_cor2 (fun x => f n x - f p x) (fun x => f' n x - f' p x)
+             (Rmin x y) (Rmax x y) mm dm) as [z [Pz inz]].
+  destruct mm0 as [[q1 q2] | [q1 q2]].
+   replace ((f n y - f p y - (f n x - f p x))/(y - x)) with
+    ((f n (Rmax x y) - f p (Rmax x y) - (f  n (Rmin x y) - f p (Rmin x y)))/
+      (Rmax x y - Rmin x y)) by (rewrite q1, q2; reflexivity).
+   unfold Rdiv; rewrite Pz, Rmult_assoc, Rinv_r, Rmult_1_r.
+    apply cauchy1; auto.
+    apply Boule_convex with (Rmin x y) (Rmax x y);
+      revert inz; rewrite ?q1, ?q2; intros;
+     try assumption.
+    split; apply Rlt_le; tauto.
+   rewrite q1, q2; apply Rminus_eq_contra, not_eq_sym; assumption.
+  replace ((f n y - f p y - (f n x - f p x))/(y - x)) with
+    ((f n (Rmax x y) - f p (Rmax x y) - (f  n (Rmin x y) - f p (Rmin x y)))/
+      (Rmax x y - Rmin x y)).
+   unfold Rdiv; rewrite Pz, Rmult_assoc, Rinv_r, Rmult_1_r.
+    apply cauchy1; auto.
+    apply Boule_convex with (Rmin x y) (Rmax x y);
+     revert inz; rewrite ?q1, ?q2; intros;
+    try assumption; split; apply Rlt_le; tauto.
+   rewrite q1, q2; apply Rminus_eq_contra; assumption.
+  rewrite q1, q2; field; split; 
+    apply Rminus_eq_contra;[apply not_eq_sym |]; assumption.
+ assert (unif_ac :
+  forall n p, (N <= n)%nat -> (N <= p)%nat ->
+     forall y, Boule c d y ->
+       Rabs (rho_ n y - rho_ p y) <= eps/2).
+  intros n p nN pN y b_y.
+  destruct (Req_dec x y) as [xy | xny].
+   destruct (Ball_in_inter c c d d x bx bx) as [delta Pdelta].
+   destruct (ctrho n y b_y _ ep8) as [d' [dp Pd]].
+   destruct (ctrho p y b_y _ ep8) as [d2 [dp2 Pd2]].
+   assert (mmpos : 0 < (Rmin (Rmin d' d2) delta)/2).
+    apply Rmult_lt_0_compat; repeat apply Rmin_glb_lt; try assumption.
+     apply cond_pos.
+    apply Rinv_0_lt_compat, Rlt_0_2.
+   apply Rle_trans with (1 := R_dist_tri _ _ (rho_ n (y + Rmin (Rmin d' d2) delta/2))).
+   replace (eps/2) with (eps/8 + (eps/4 + eps/8)) by field.
+   apply Rplus_le_compat.
+    rewrite R_dist_sym; apply Rlt_le, Pd;split;[split;[exact I | ] | ].
+      apply Rminus_not_eq_right; rewrite Rplus_comm; unfold Rminus;
+      rewrite Rplus_assoc, Rplus_opp_r, Rplus_0_r; apply Rgt_not_eq; assumption.
+    simpl; unfold R_dist.
+    unfold Rminus; rewrite (Rplus_comm y), Rplus_assoc, Rplus_opp_r, Rplus_0_r.
+    rewrite Rabs_pos_eq;[ |apply Rlt_le; assumption ].
+    apply Rlt_le_trans with (Rmin (Rmin d' d2) delta);[fourier | ].
+    apply Rle_trans with (Rmin d' d2); apply Rmin_l.
+   apply Rle_trans with (1 := R_dist_tri _ _ (rho_ p (y + Rmin (Rmin d' d2) delta/2))).
+   apply Rplus_le_compat.
+    apply Rlt_le.
+    replace (rho_ n (y + Rmin (Rmin d' d2) delta / 2)) with
+          ((f n (y + Rmin (Rmin d' d2) delta / 2) - f n x)/
+            ((y + Rmin (Rmin d' d2) delta / 2) - x)).
+     replace (rho_ p (y + Rmin (Rmin d' d2) delta / 2)) with
+          ((f p (y + Rmin (Rmin d' d2) delta / 2) - f p x)/
+             ((y + Rmin (Rmin d' d2) delta / 2) - x)).
+      apply step_2; auto; try fourier.
+      assert (0 < pos delta) by (apply cond_pos).
+      apply Boule_convex with y (y + delta/2).
+        assumption.
+       destruct (Pdelta (y + delta/2)); auto.
+       rewrite xy; unfold Boule; rewrite Rabs_pos_eq; try fourier; auto.
+      split; try fourier.
+      apply Rplus_le_compat_l, Rmult_le_compat_r;[ | apply Rmin_r].
+       now apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
+      apply Rminus_not_eq_right; rewrite xy; apply Rgt_not_eq; fourier.
+     unfold rho_.
+     destruct (Req_EM_T (y + Rmin (Rmin d' d2) delta/2) x) as [ymx | ymnx].
+      case (RIneq.Rle_not_lt _ _ (Req_le _ _ ymx)); fourier.
+     reflexivity.
+    unfold rho_.
+    destruct (Req_EM_T (y + Rmin (Rmin d' d2) delta / 2) x) as [ymx | ymnx].
+     case (RIneq.Rle_not_lt _ _ (Req_le _ _ ymx)); fourier.
+    reflexivity.
+   apply Rlt_le, Pd2; split;[split;[exact I | apply Rlt_not_eq; fourier] | ].
+   simpl; unfold R_dist.
+   unfold Rminus; rewrite (Rplus_comm y), Rplus_assoc, Rplus_opp_r, Rplus_0_r.
+   rewrite Rabs_pos_eq;[ | fourier].
+   apply Rlt_le_trans with (Rmin (Rmin d' d2) delta); [fourier |].
+   apply Rle_trans with (Rmin d' d2).
+    solve[apply Rmin_l].
+   solve[apply Rmin_r].
+  apply Rlt_le, Rlt_le_trans with (eps/4);[ | fourier].
+  unfold rho_; destruct (Req_EM_T y x); solve[auto].
+ assert (unif_ac' : forall p, (N <= p)%nat ->
+           forall y, Boule c d y -> Rabs (rho y - rho_ p y) < eps).
+  assert (cvrho : forall y, Boule c d y -> Un_cv (fun n => rho_ n y) (rho y)).
+   intros y b_y; unfold rho_, rho; destruct (Req_EM_T y x).
+    intros eps' ep'; destruct (cvu eps' ep') as [N2 Pn2].
+    exists N2; intros n nN2; rewrite R_dist_sym; apply Pn2; assumption.
+   apply CV_mult.
+    apply CV_minus.
+     apply cvp; assumption.
+    apply cvp; assumption.
+   intros eps' ep'; simpl; exists 0%nat; intros; rewrite R_dist_eq; assumption.
+  intros p pN y b_y.
+  replace eps with (eps/2 + eps/2) by field.
+  assert (ep2 : 0 < eps/2) by fourier.
+  destruct (cvrho y b_y _ ep2) as [N2 Pn2].
+  apply Rle_lt_trans with (1 := R_dist_tri _ _ (rho_ (max N N2) y)).
+  apply Rplus_lt_le_compat.
+   solve[rewrite R_dist_sym; apply Pn2, Max.le_max_r].
+  apply unif_ac; auto; solve [apply Max.le_max_l].
+ exists N; intros; apply unif_ac'; solve[auto].
+intros eps ep.
+destruct (CVU_continuity _ _ _ _ H ctrho x bx eps ep) as [delta [dp Pd]].
+exists (mkposreal _ dp); intros h hn0 dh.
+replace ((g (x + h) - g x) / h) with (rho (x + h)).
+ replace (g' x) with (rho x).
+  apply Pd; unfold D_x, no_cond;split;[split;[solve[auto] | ] | ].
+   intros xxh; case hn0; replace h with (x + h - x) by ring; rewrite <- xxh; ring.
+  simpl; unfold R_dist; replace (x + h - x) with h by ring; exact dh.
+ unfold rho; destruct (Req_EM_T x x) as [ _ | abs];[ | case abs]; reflexivity.
+unfold rho; destruct (Req_EM_T (x + h) x) as [abs | _];[ | ].
+ case hn0; replace h with (x + h - x) by ring; rewrite abs; ring.
+replace (x + h - x) with h by ring; reflexivity.
 Qed.

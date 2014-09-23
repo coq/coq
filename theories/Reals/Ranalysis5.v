@@ -1037,62 +1037,6 @@ Definition mkposreal_lb_ub (x lb ub:R) (lb_lt_x:lb<x) (x_lt_ub:x<ub) : posreal.
 Defined.
 (* end hide *)
 
-Definition boule_of_interval x y (h : x < y) :
-  {c :R & {r : posreal | c - r = x /\ c + r = y}}.
-exists ((x + y)/2).
-assert (radius : 0 < (y - x)/2).
- unfold Rdiv; apply Rmult_lt_0_compat; fourier.
- exists (mkposreal _ radius).
- simpl; split; unfold Rdiv; field.
-Qed.
-
-Definition boule_in_interval x y z (h : x < z < y) :
-  {c : R & {r | Boule c r z /\  x < c - r /\ c + r < y}}.
-Proof.
-assert (cmp : x * /2 + z * /2 < z * /2 + y * /2).
-destruct h as [h1 h2]; fourier.
-destruct (boule_of_interval _ _ cmp) as [c [r [P1 P2]]].
-exists c, r; split.
- destruct h; unfold Boule; simpl; apply Rabs_def1; fourier.
-destruct h; split; fourier.
-Qed.
-
-Lemma Ball_in_inter : forall c1 c2 r1 r2 x,
-  Boule c1 r1 x -> Boule c2 r2 x ->
-  {r3 : posreal | forall y, Boule x r3 y -> Boule c1 r1 y /\ Boule c2 r2 y}.
-intros c1 c2 [r1 r1p] [r2 r2p] x; unfold Boule; simpl; intros in1 in2.
-assert (Rmax (c1 - r1)(c2 - r2) < x).
- apply Rmax_lub_lt;[revert in1 | revert in2]; intros h;
-  apply Rabs_def2 in h; destruct h; fourier.
-assert (x < Rmin (c1 + r1) (c2 + r2)).
- apply Rmin_glb_lt;[revert in1 | revert in2]; intros h;
-  apply Rabs_def2 in h; destruct h; fourier.
-assert (t: 0 < Rmin (x - Rmax (c1 - r1) (c2 - r2)) 
-              (Rmin (c1 + r1) (c2 + r2) - x)).
- apply Rmin_glb_lt; fourier.
-exists (mkposreal _ t).
-apply Rabs_def2 in in1; destruct in1.
-apply Rabs_def2 in in2; destruct in2.
-assert (c1 - r1 <= Rmax (c1 - r1) (c2 - r2)) by apply Rmax_l.
-assert (c2 - r2 <= Rmax (c1 - r1) (c2 - r2)) by apply Rmax_r.
-assert (Rmin (c1 + r1) (c2 + r2) <= c1 + r1) by apply Rmin_l.
-assert (Rmin (c1 + r1) (c2 + r2) <= c2 + r2) by apply Rmin_r.
-assert (Rmin (x - Rmax (c1 - r1) (c2 - r2)) 
-         (Rmin (c1 + r1) (c2 + r2) - x) <= x - Rmax (c1 - r1) (c2 - r2))
- by apply Rmin_l.
-assert (Rmin (x - Rmax (c1 - r1) (c2 - r2)) 
-         (Rmin (c1 + r1) (c2 + r2) - x) <= Rmin (c1 + r1) (c2 + r2) - x)
- by apply Rmin_r.
-simpl.
-intros y h; apply Rabs_def2 in h; destruct h;split; apply Rabs_def1; fourier.
-Qed.
-
-Lemma Boule_center : forall x r, Boule x r x.
-Proof.
-intros x [r rpos]; unfold Boule, Rminus; simpl; rewrite Rplus_opp_r.
-rewrite Rabs_pos_eq;[assumption | apply Rle_refl].
-Qed.
-
 Lemma derivable_pt_lim_CVU : forall (fn fn':nat -> R -> R) (f g:R->R)
       (x:R) c r, Boule c r x ->
       (forall y n, Boule c r y -> derivable_pt_lim (fn n) y (fn' n y)) ->

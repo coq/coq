@@ -965,12 +965,6 @@ Proof.
     intros; exists (f0 x0); apply H4.
 Qed.
 
-Lemma Rlt_Rminus : forall a b:R, a < b -> 0 < b - a.
-Proof.
-  intros; apply Rplus_lt_reg_l with a; rewrite Rplus_0_r;
-    replace (a + (b - a)) with b; [ assumption | ring ].
-Qed.
-
 Lemma prolongement_C0 :
   forall (f:R -> R) (a b:R),
     a <= b ->
