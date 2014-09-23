@@ -56,24 +56,24 @@
       (see http://www.cs.ru.nl/~herman/PUBS/newnote.ps.gz).
 *)
 
-(* Pleasing coqdoc! *)
-
 
 Set Universe Polymorphism.
 
-(** A modular proof of Hurkens's paradox. It relies on an
-    axiomatisation of a shallow embedding of system U- (i.e.  types of
-    U- are interepreted by types of Coq). The universes are encoding
-    in a style, due to Martin-Löf, where they are given with a set of
-    name and a family [El:Name->Type] which interprets each name into
-    a type. This allows the encoding of universe to be decoupled from
-    Coq's universes. Dependent products and abstractions are similarly
-    postulated rather than encoded as Coq's dependent products and
-    abstractions. *)
+(** * A modular proof of Hurkens's paradox. *)
+
+(** It relies on an axiomatisation of a shallow embedding of system U-
+    (i.e.  types of U- are interepreted by types of Coq). The
+    universes are encoding in a style, due to Martin-Löf, where they
+    are given with a set of name and a family [El:Name->Type] which
+    interprets each name into a type. This allows the encoding of
+    universe to be decoupled from Coq's universes. Dependent products
+    and abstractions are similarly postulated rather than encoded as
+    Coq's dependent products and abstractions. *)
 
 Module Generic.
 
-(** Notations used in the proof. *)
+(* begin hide *)
+(* Notations used in the proof. Hidden in coqdoc. *)
 
 Reserved Notation "'∀₁' x : A , B" (at level 200, x ident, A at level 200,right associativity).
 Reserved Notation "A '⟶₁' B" (at level 99, right associativity, B at level 200).
@@ -90,10 +90,11 @@ Reserved Notation "'∀₀¹' A : U , F" (at level 200, A ident, right associati
 Reserved Notation "'λ₀¹' x , u" (at level 200, x ident, right associativity).
 Reserved Notation "f '·₀' [ A ]" (at level 5, left associativity).
 
+(* end hide *)
+
 Section Paradox.
 
-(* arnaud: do some Coqdoc formatting *)
-(** Axiomatisation of impredicative universes in a Martin-Löf style *)
+(** ** Axiomatisation of impredicative universes in a Martin-Löf style *)
 
 (** System U- has two impredicative universes. In the proof of the
     paradox they are slightly asymetric (in particular the reduction
@@ -102,10 +103,10 @@ Section Paradox.
     actual system U-. *)
 
 
-(** Large universe *)
+(** *** Large universe *)
 Variable U1 : Type.
 Variable El1 : U1 -> Type.
-(** Closure by small product *)
+(** **** Closure by small product *)
 Variable Forall1 : forall u:U1, (El1 u -> U1) -> U1.
   Notation "'∀₁' x : A , B" := (Forall1 A (fun x => B)).
   Notation "A '⟶₁' B" := (Forall1 A (fun _ => B)).
@@ -115,7 +116,8 @@ Variable app1 : forall u B (f:El1 (Forall1 u B)) (x:El1 u), El1 (B x).
   Notation "f '·₁' x" := (app1 _ _ f x).
 Variable beta1 : forall u B (f:forall x:El1 u, El1 (B x)) x,
                    (λ₁ y, f y) ·₁ x = f x.
-(** Closure by large products ([U1] only needs to quantify over itself) *)
+(** **** Closure by large products *)
+(** [U1] only needs to quantify over itself. *)
 Variable ForallU1 : (U1->U1) -> U1.
   Notation "'∀₂' A , F" := (ForallU1 (fun A => F)).
 Variable lamU1 : forall F, (forall A:U1, El1 (F A)) -> El1 (∀₂ A, F A).
@@ -125,12 +127,13 @@ Variable appU1 : forall F (f:El1(∀₂ A,F A)) (A:U1), El1 (F A).
 Variable betaU1 : forall F (f:forall A:U1, El1 (F A)) A,
                     (λ₂ x, f x) ·₁ [ A ] = f A.
 
-(** Small universe *)
+(** *** Small universe *)
 (** The small universe is an element of the large one. *)
 Variable u0 : U1.
 Notation U0 := (El1 u0).
 Variable El0 : U0 -> Type.
-(** Closure by small product, [U0] does not need reduction rules *)
+(** **** Closure by small product *)
+(** [U0] does not need reduction rules *)
 Variable Forall0 : forall u:U0, (El0 u -> U0) -> U0.
   Notation "'∀₀' x : A , B" := (Forall0 A (fun x => B)).
   Notation "A '⟶₀' B" := (Forall0 A (fun _ => B)).
@@ -138,7 +141,7 @@ Variable lam0 : forall u B, (forall x:El0 u, El0 (B x)) -> El0 (∀₀ x:u, B x)
   Notation "'λ₀' x , u" := (lam0 _ _ (fun x => u)).
 Variable app0 : forall u B (f:El0 (Forall0 u B)) (x:El0 u), El0 (B x).
   Notation "f '·₀' x" := (app0 _ _ f x).
-(** Closure by large products *)
+(** **** Closure by large products *)
 Variable ForallU0 : forall u:U1, (El1 u->U0) -> U0.
   Notation "'∀₀¹' A : U , F" := (ForallU0 U (fun A => F)).
 Variable lamU0 : forall U F, (forall A:El1 U, El0 (F A)) -> El0 (∀₀¹ A:U, F A).
@@ -146,7 +149,7 @@ Variable lamU0 : forall U F, (forall A:El1 U, El0 (F A)) -> El0 (∀₀¹ A:U, F
 Variable appU0 : forall U F (f:El0(∀₀¹ A:U,F A)) (A:El1 U), El0 (F A).
   Notation "f '·₀' [ A ]" := (appU0 _ _ f A).
 
-(** Automating the rewrite rules of our encoding. *)
+(** ** Automating the rewrite rules of our encoding. *)
 Local Ltac simplify :=
   (* spiwack: ideally we could use [rewrite_strategy] here, but I am a tad
      scared of the idea of depending on setoid rewrite in such a simple
@@ -159,12 +162,12 @@ Local Ltac simplify_in h :=
   lazy beta in h.
 
 
-(** Hurkens's paradox. *)
+(** ** Hurkens's paradox. *)
 
 (** An inhabitant of [U0] standing for [False]. *)
 Variable F:U0.
 
-(** Preliminary definitions *)
+(** *** Preliminary definitions *)
 
 Definition V : U1 := ∀₂ A, ((A ⟶₁ u0) ⟶₁ A ⟶₁ u0) ⟶₁ A ⟶₁ u0.
 Definition U : U1 := V ⟶₁ u0.
@@ -182,7 +185,7 @@ Definition I (x:El1 U) : U0 :=
   (∀₀¹ i:U⟶₁u0, le i x ⟶₀ i ·₁ (λ₁ v, (sb v) ·₁ [U] ·₁ le' ·₁ x)) ⟶₀ F
 .
 
-(** Proof *)
+(** *** Proof *)
 
 Lemma Omega : El0 (∀₀¹ i:U⟶₁u0, induct i ⟶₀ i ·₁ WF).
 Proof.
@@ -242,10 +245,13 @@ Qed.
 
 End Paradox.
 
+(** The [paradox] tactic can be called as a shortcut to use the paradox. *)
 Ltac paradox h :=
   refine ((fun h => _) (paradox _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ));cycle 1.
 
 End Generic.
+
+(** * Impredicative universes are not retracts. *)
 
 (** There can be no retract to an impredicative Coq universe from a
     smaller type. In this version of the proof, the impredicativity of
@@ -261,7 +267,7 @@ Let      U2    := Type.
 Let      U1:U2 := Type.
 Variable U0:U1.
 
-(** [U1] is impredicative *)
+(** *** [U1] is impredicative *)
 Variable u22u1 : U2 -> U1.
 Hypothesis u22u1_unit   : forall (c:U2), c -> u22u1 c.
 (** [u22u1_counit] and [u22u1_coherent] only apply to dependent
@@ -276,13 +282,13 @@ Hypothesis u22u1_counit : forall (F:U1->U1), u22u1 (forall A,F A) -> (forall A,F
 Hypothesis u22u1_coherent : forall (F:U1 -> U1) (f:forall x:U1, F x) (x:U1), 
                               u22u1_counit _ (u22u1_unit _ f) x = f x.
 
-(** [U0] is a retract of [U1] *)
+(** *** [U0] is a retract of [U1] *)
 Variable u02u1 : U0 -> U1.
 Variable u12u0 : U1 -> U0.
 Hypothesis u12u0_unit   : forall (b:U1), b -> u02u1 (u12u0 b).
 Hypothesis u12u0_counit : forall (b:U1), u02u1 (u12u0 b) -> b.
 
-(** Paradox *)
+(** ** Paradox *)
 
 Theorem paradox : forall F:U1, F.
 Proof.
@@ -319,21 +325,28 @@ End Paradox.
 
 End NoRetractToImpredicativeUniverse.
 
+(** * Prop is not a retract *)
 
-(** * Inconsistency of the existence in the pure Calculus of Constructions of a retract from Prop into a small type of Prop *)
+(** The existence in the pure Calculus of Constructions of a retract
+    from Prop into a small type of Prop is inconsistent. This is a
+    special case of the previous result. *)
 
 Module NoRetractFromSmallPropositionToProp.
 
 Section Paradox.
 
-(** Assumption of a retract from Prop to a small type in Prop, using *)
-(*     equivalence as the equality on propositions *)
+(** ** Retract of [Prop] in a small type *)
+
+(** The retract is axiomatized using logical equivalence as the
+    equality on propositions. *)
 
 Variable bool : Prop.
 Variable p2b : Prop -> bool.
 Variable b2p : bool -> Prop.
 Hypothesis p2p1 : forall A:Prop, b2p (p2b A) -> A.
 Hypothesis p2p2 : forall A:Prop, A -> b2p (p2b A).
+
+(** ** Paradox *)
 
 Theorem paradox : forall B:Prop, B.
 Proof.
@@ -359,9 +372,12 @@ End Paradox.
 
 End NoRetractFromSmallPropositionToProp.
 
-(** * Inconsistency of the existence in the Calculus of Constructions with universes of a retract from some Type universe into Prop. *)
+(** * Large universes are no retracts of [Prop]. *)
 
-(** Note: Assuming the context [down:Type->Prop; up:Prop->Type; forth:
+(** The existence in the Calculus of Constructions with universes of a
+    retract from some [Type] universe into [Prop] is inconsistent. *)
+
+(* Note: Assuming the context [down:Type->Prop; up:Prop->Type; forth:
       forall (A:Type), A -> up (down A); back: forall (A:Type), up
       (down A) -> A; H: forall (A:Type) (P:A->Type) (a:A),
       P (back A (forth A a)) -> P a] is probably enough.  *)
@@ -373,11 +389,13 @@ Definition Type1 := Type : Type2.
 
 Section Paradox.
 
-(** Assumption of a retract from Type into Prop *)
+(** ** Assumption of a retract from Type into Prop *)
 
 Variable down : Type1 -> Prop.
 Variable up : Prop -> Type1.
 Hypothesis up_down : forall (A:Type1), up (down A) = A :> Type1.
+
+(** ** Paradox *)
 
 Theorem paradox : forall P:Prop, P.
 Proof.
@@ -417,7 +435,7 @@ End Paradox.
 
 End NoRetractFromTypeToProp.
 
-(** Application: Prop<>Type for some given Type *)
+(** * [Prop<>Type]. *)
 
 Module PropNeqType.
 
