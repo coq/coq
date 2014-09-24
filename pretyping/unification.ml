@@ -28,6 +28,15 @@ open Locus
 open Locusops
 open Find_subterm
 
+let keyed_unification = ref (false)
+let _ = Goptions.declare_bool_option {
+  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optname = "Unification is keyed";
+  Goptions.optkey = ["Keyed";"Unification"];
+  Goptions.optread = (fun () -> !keyed_unification);
+  Goptions.optwrite = (fun a -> keyed_unification:=a);
+}
+
 let occur_meta_or_undefined_evar evd c =
   let rec occrec c = match kind_of_term c with
     | Meta _ -> raise Occur
@@ -1448,6 +1457,29 @@ let make_abstraction env evd ccl abs =
       make_abstraction_core name
         (make_eq_test env evd c) (evd,c) ty occs check_occs env ccl
 
+let rec constr_key c =
+  let open Globnames in 
+  match kind_of_term c with
+  | Const (c, _) -> ConstRef c
+  | Ind (i, u) -> IndRef i
+  | Construct (c,u) -> ConstructRef c
+  | Var id -> VarRef id
+  | App (f, _) -> constr_key f
+  | Proj (p, _) -> ConstRef p
+  | Cast (p, _, _) -> constr_key p
+  | Lambda _
+  | Prod _
+  | Case _
+  | Fix _ | CoFix _
+  | Rel _ | Meta _ | Evar _ | Sort _ | LetIn _ -> raise Not_found
+
+let keyed_unify env evd op cl = 
+  if not !keyed_unification then true
+  else
+    let k1 = constr_key op in
+    let k2 = constr_key cl in
+      Globnames.eq_gr k1 k2 || Keys.equiv_keys k1 k2
+
 (* Tries to find an instance of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] until it finds a match.
    Fails if no match is found *)
@@ -1456,7 +1488,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   let rec matchrec cl =
     let cl = strip_outer_cast cl in
     (try
-       if closed0 cl && not (isEvar cl) then
+       if closed0 cl && not (isEvar cl) && keyed_unify env evd op cl then
 	 (try w_typed_unify env evd CONV flags op cl,cl
 	  with ex when Pretype_errors.unsatisfiable_exception ex ->
 	    bestexn := Some ex; error "Unsat")
@@ -1588,7 +1620,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
       if isMeta op then
 	if flags.allow_K_in_toplevel_higher_order_unification then (evd,op::l)
 	else error_abstraction_over_meta env evd hdmeta (destMeta op)
-      else if occur_meta_or_existential op then
+      else if occur_meta_or_existential op || !keyed_unification then
         let (evd',cl) =
           try
 	    (* This is up to delta for subterms w/o metas ... *)
