@@ -518,13 +518,13 @@ val conversion : env -> evar_map -> conv_pb -> constr -> constr -> evar_map
 val test_conversion : env -> evar_map -> conv_pb -> constr -> constr -> bool
 (** This one forgets about the assignemts of universes. *)
 
-val eq_constr : evar_map -> constr -> constr -> evar_map * bool
+val eq_constr_univs : evar_map -> constr -> constr -> evar_map * bool
 (** Syntactic equality up to universes, recording the associated constraints *)
 
-val e_eq_constr : evar_map ref -> constr -> constr -> bool
+val e_eq_constr_univs : evar_map ref -> constr -> constr -> bool
 (** Syntactic equality up to universes. *)
 
-val eq_constr_test : evar_map -> constr -> constr -> bool
+val eq_constr_univs_test : evar_map -> constr -> constr -> bool
 (** Syntactic equality up to universes, throwing away the (consistent) constraints
     in case of success. *)
 

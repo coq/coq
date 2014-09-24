@@ -840,7 +840,7 @@ let apply_on_subterm env evdref f c t =
     (* By using eq_constr, we make an approximation, for instance, we *)
     (* could also be interested in finding a term u convertible to t *)
     (* such that c occurs in u *)
-    if e_eq_constr evdref c t then f k
+    if e_eq_constr_univs evdref c t then f k
     else
       match kind_of_term t with
       | Evar (evk,args) when Evd.is_undefined !evdref evk ->

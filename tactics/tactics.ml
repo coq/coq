@@ -4033,8 +4033,9 @@ let intros_transitivity  n  = Tacticals.New.tclTHEN intros (transitivity_gen n)
 (** d1 is the section variable in the global context, d2 in the goal context *)
 let interpretable_as_section_decl evd d1 d2 = match d2,d1 with
   | (_,Some _,_), (_,None,_) -> false
-  | (_,Some b1,t1), (_,Some b2,t2) -> e_eq_constr evd b1 b2 && e_eq_constr evd t1 t2
-  | (_,None,t1), (_,_,t2) -> e_eq_constr evd t1 t2
+  | (_,Some b1,t1), (_,Some b2,t2) -> 
+    e_eq_constr_univs evd b1 b2 && e_eq_constr_univs evd t1 t2
+  | (_,None,t1), (_,_,t2) -> e_eq_constr_univs evd t1 t2
 
 let abstract_subproof id gk tac =
   let open Tacticals.New in

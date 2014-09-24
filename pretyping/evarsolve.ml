@@ -1173,7 +1173,7 @@ type conv_fun_bool =
 
 let solve_refl ?(can_drop=false) conv_algo env evd pbty evk argsv1 argsv2 =
   let evdref = ref evd in
-  if Array.equal (e_eq_constr evdref) argsv1 argsv2 then !evdref else
+  if Array.equal (e_eq_constr_univs evdref) argsv1 argsv2 then !evdref else
   (* Filter and restrict if needed *)
   let args = Array.map2 (fun a1 a2 -> (a1, a2)) argsv1 argsv2 in
   let untypedfilter =
