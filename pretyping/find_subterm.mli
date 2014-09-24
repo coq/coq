@@ -12,6 +12,7 @@ open Context
 open Term
 open Evd
 open Pretype_errors
+open Environ
 
 (** Finding subterms, possibly up to some unification function,
     possibly at some given occurrences *)
@@ -34,7 +35,7 @@ type 'a testing_function = {
 
 (** This is the basic testing function, looking for exact matches of a
     closed term *)
-val make_eq_univs_test : evar_map -> constr -> evar_map testing_function
+val make_eq_univs_test : env -> evar_map -> constr -> evar_map testing_function
 
 (** [replace_term_occ_modulo occl test mk c] looks in [c] for subterm
     modulo a testing function [test] and replaces successfully
@@ -53,12 +54,12 @@ val replace_term_occ_decl_modulo :
 (** [subst_closed_term_occ occl c d] replaces occurrences of
     closed [c] at positions [occl] by [Rel 1] in [d] (see also Note OCC),
     unifying universes which results in a set of constraints. *)
-val subst_closed_term_occ : evar_map -> occurrences -> constr -> 
+val subst_closed_term_occ : env -> evar_map -> occurrences -> constr -> 
   constr -> constr * evar_map
 
 (** [subst_closed_term_occ_decl evd occl c decl] replaces occurrences of 
     closed [c] at positions [occl] by [Rel 1] in [decl]. *)
-val subst_closed_term_occ_decl : evar_map ->
+val subst_closed_term_occ_decl : env -> evar_map ->
   occurrences * hyp_location_flag ->
   constr -> named_declaration -> named_declaration * evar_map
 

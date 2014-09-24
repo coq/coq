@@ -215,6 +215,39 @@ let leq_constr_universes m n =
     let res = compare_leq m n in
       res, !cstrs
 
+let compare_head_gen_proj env equ eqs eqc' m n =
+  match kind_of_term m, kind_of_term n with
+  | Proj (p, c), App (f, args)
+  | App (f, args), Proj (p, c) -> 
+    (match kind_of_term f with
+    | Const (p', u) when eq_constant p p' -> 
+      let pb = Environ.lookup_projection p env in
+      let npars = pb.Declarations.proj_npars in
+	if Array.length args == npars + 1 then
+	  eqc' c args.(npars)
+	else false
+    | _ -> false)
+  | _ -> Constr.compare_head_gen equ eqs eqc' m n
+    
+let eq_constr_universes_proj env m n =
+  if m == n then true, Constraints.empty
+  else 
+    let cstrs = ref Constraints.empty in
+    let eq_universes strict l l' = 
+      cstrs := enforce_eq_instances_univs strict l l' !cstrs; true in
+    let eq_sorts s1 s2 = 
+      if Sorts.equal s1 s2 then true
+      else
+	(cstrs := Constraints.add 
+	   (Sorts.univ_of_sort s1, UEq, Sorts.univ_of_sort s2) !cstrs;
+	 true)
+    in
+    let rec eq_constr' m n = 
+      m == n ||	compare_head_gen_proj env eq_universes eq_sorts eq_constr' m n
+    in
+    let res = eq_constr' m n in
+      res, !cstrs
+
 (* Generator of levels *)
 let new_univ_level, set_remote_new_univ_level =
   RemoteCounter.new_counter ~name:"Universes" 0 ~incr:((+) 1)

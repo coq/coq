@@ -1137,7 +1137,7 @@ let abstract_scheme env sigma (locc,a) c =
   if occur_meta a then
     mkLambda (na,ta,c)
   else
-    let c', sigma' = subst_closed_term_occ sigma locc a c in
+    let c', sigma' = subst_closed_term_occ env sigma locc a c in
       mkLambda (na,ta,c') 
 
 let pattern_occs loccs_trm env sigma c =

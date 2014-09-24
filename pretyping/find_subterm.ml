@@ -139,9 +139,9 @@ let replace_term_occ_decl_modulo (plocs,hyploc) test bywhat d =
 
 (** Finding an exact subterm *)
 
-let make_eq_univs_test evd c =
+let make_eq_univs_test env evd c =
   { match_fun = (fun evd c' ->
-    let b, cst = Universes.eq_constr_universes c c' in
+    let b, cst = Universes.eq_constr_universes_proj env c c' in
       if b then
 	try Evd.add_universe_constraints evd cst
 	with Evd.UniversesDiffer -> raise (NotUnifiable None)
@@ -151,14 +151,14 @@ let make_eq_univs_test evd c =
   last_found = None
 } 
 
-let subst_closed_term_occ evd occs c t =
-  let test = make_eq_univs_test evd c in
+let subst_closed_term_occ env evd occs c t =
+  let test = make_eq_univs_test env evd c in
   let bywhat () = mkRel 1 in
   let t' = replace_term_occ_modulo occs test bywhat t in
     t', test.testing_state
 
-let subst_closed_term_occ_decl evd (plocs,hyploc) c d =
-  let test = make_eq_univs_test evd c in
+let subst_closed_term_occ_decl env evd (plocs,hyploc) c d =
+  let test = make_eq_univs_test env evd c in
   let bywhat () = mkRel 1 in
   proceed_with_occurrences
     (map_named_declaration_with_hyploc

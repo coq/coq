@@ -61,7 +61,7 @@ let abstract_scheme env evd c l lname_typ =
        else *) 
        if occur_meta a then mkLambda_name env (na,ta,t), evd
        else
-	 let t', evd' = Find_subterm.subst_closed_term_occ evd locc a t in
+	 let t', evd' = Find_subterm.subst_closed_term_occ env evd locc a t in
 	   mkLambda_name env (na,ta,t'), evd')
     (c,evd)
     (List.rev l)
@@ -399,7 +399,8 @@ let key_of env b flags f =
   if subterm_restriction b flags then None else
   match kind_of_term f with
   | Const (cst, u) when is_transparent env (ConstKey cst) &&
-      Cpred.mem cst (snd flags.modulo_delta) ->
+      (Cpred.mem cst (snd flags.modulo_delta)
+       || Environ.is_projection cst env) ->
       Some (IsKey (ConstKey (cst, u)))
   | Var id when is_transparent env (VarKey id) && 
       Id.Pred.mem id (fst flags.modulo_delta) ->
@@ -676,7 +677,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 		    let ty1 = get_type_of curenv ~lax:true sigma c1 in
 		    let ty2 = get_type_of curenv ~lax:true sigma c2 in
 		      unify_0_with_initial_metas substn true env cv_pb 
-			{ flags with modulo_delta = full_transparent_state;
+			{ flags with modulo_conv_on_closed_terms = Some full_transparent_state;
+			  modulo_delta = full_transparent_state;
 			  modulo_betaiota = true }
 			ty1 ty2
 		  with RetypeError _ -> substn
@@ -1344,11 +1346,11 @@ let make_pattern_test inf_flags env sigma0 (sigma,c) =
      Evd.evar_universe_context univs,
      subst_univs_constr subst (nf_evar sigma c))
 
-let make_eq_test evd c =
+let make_eq_test env evd c =
   let out cstr =
     Evd.evar_universe_context cstr.testing_state, c
   in
-    (make_eq_univs_test evd c, out)
+    (make_eq_univs_test env evd c, out)
 
 let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env concl =
   let id =
@@ -1425,7 +1427,7 @@ let make_abstraction env evd ccl abs =
         (make_pattern_test flags env evd c) c None occs check_occs env ccl
   | AbstractExact (name,c,ty,occs,check_occs) ->
       make_abstraction_core name
-        (make_eq_test evd c) (evd,c) ty occs check_occs env ccl
+        (make_eq_test env evd c) (evd,c) ty occs check_occs env ccl
 
 (* Tries to find an instance of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] until it finds a match.
@@ -1435,8 +1437,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   let rec matchrec cl =
     let cl = strip_outer_cast cl in
     (try
-       if closed0 cl && not (isEvar cl)
-       then
+       if closed0 cl && not (isEvar cl) then
 	 (try w_typed_unify env evd CONV flags op cl,cl
 	  with ex when Pretype_errors.unsatisfiable_exception ex ->
 	    bestexn := Some ex; error "Unsat")

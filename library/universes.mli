@@ -80,6 +80,10 @@ val eq_constr_universes : constr -> constr -> bool universe_constrained
     alpha, casts, application grouping and the universe constraints in [c]. *)
 val leq_constr_universes : constr -> constr -> bool universe_constrained
 
+(** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
+    application grouping and the universe constraints in [c]. *)
+val eq_constr_universes_proj : env -> constr -> constr -> bool universe_constrained
+
 (** Build a fresh instance for a given context, its associated substitution and 
     the instantiated constraints. *)
 
