@@ -306,6 +306,9 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Notation "s  [<=]  t" := (Subset s t) (at level 70, no associativity).
 
   Definition eq := Equal.
+
+  Declare Equivalent Keys Equal eq.
+
   Definition lt m m' := compare_fun m m' = Lt.
 
   (** Specification of [In] *)

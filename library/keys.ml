@@ -1,7 +1,16 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2012     *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+(** Keys for unification and indexing *)
+
 open Globnames
 open Term
 open Libobject
-
 
 type key = 
   | KGlob of global_reference
@@ -51,16 +60,23 @@ end
 module Keymap = HMap.Make(KeyOrdered)
 module Keyset = Keymap.Set
 
-(* Union-find structure for references to be considered equivalent *)
+(* Mapping structure for references to be considered equivalent *)
 
-module KeyUF = Unionfind.Make(Keyset)(Keymap)
+type keys = Keyset.t Keymap.t
 
-let keys = (* Summary.ref ( *)KeyUF.create ()(* ) ~name:"Keys_decl" *)
+let keys = Summary.ref Keymap.empty ~name:"Keys_decl"
 
-let add_keys k v = KeyUF.union k v keys
+let add_kv k v m =
+  try Keymap.modify k (fun k' vs -> Keyset.add v vs) m
+  with Not_found -> Keymap.add k (Keyset.singleton v) m
+
+let add_keys k v = 
+  keys := add_kv k v (add_kv v k !keys)
 
 let equiv_keys k k' =
-  k == k' || KeyUF.find k keys == KeyUF.find k' keys
+  k == k' || KeyOrdered.equal k k' ||
+    try Keyset.mem k' (Keymap.find k !keys)
+    with Not_found -> false
 
 (** Registration of keys as an object *)
 
@@ -79,8 +95,8 @@ let subst_keys (subst,(k,k')) =
   (subst_key subst k, subst_key subst k')
 
 let discharge_key = function
-  | KGlob (VarRef _) -> None
-  | KGlob g -> Some (KGlob (pop_global_reference g))
+  | KGlob g when Lib.is_in_section g ->
+    if isVarRef g then None else Some (KGlob (pop_global_reference g))
   | x -> Some x
 
 let discharge_keys (_,(k,k')) =
@@ -101,26 +117,54 @@ let inKeys : key_obj -> obj =
     discharge_function = discharge_keys;
     rebuild_function = rebuild_keys }
 
-let declare_keys ref ref' =
+let declare_equiv_keys ref ref' =
   Lib.add_anonymous_leaf (inKeys (ref,ref'))
 
-let rec constr_key c =
+let constr_key c =
   let open Globnames in 
-  match kind_of_term c with
-  | Const (c, _) -> KGlob (ConstRef c)
-  | Ind (i, u) -> KGlob (IndRef i)
-  | Construct (c,u) -> KGlob (ConstructRef c)
-  | Var id -> KGlob (VarRef id)
-  | App (f, _) -> constr_key f
-  | Proj (p, _) -> KGlob (ConstRef p)
-  | Cast (p, _, _) -> constr_key p
-  | Lambda _ -> KLam 
-  | Prod _ -> KProd
-  | Case _ -> KCase
-  | Fix _ -> KFix
-  | CoFix _ -> KCoFix
-  | Rel _ -> KRel
-  | Meta _ -> KMeta
-  | Evar _ -> KEvar
-  | Sort _ -> KSort 
-  | LetIn _ -> KLet
+  try 
+    let rec aux k = 
+      match kind_of_term k with
+      | Const (c, _) -> KGlob (ConstRef c)
+      | Ind (i, u) -> KGlob (IndRef i)
+      | Construct (c,u) -> KGlob (ConstructRef c)
+      | Var id -> KGlob (VarRef id)
+      | App (f, _) -> aux f
+      | Proj (p, _) -> KGlob (ConstRef (Names.Projection.constant p))
+      | Cast (p, _, _) -> aux p
+      | Lambda _ -> KLam 
+      | Prod _ -> KProd
+      | Case _ -> KCase
+      | Fix _ -> KFix
+      | CoFix _ -> KCoFix
+      | Rel _ -> KRel
+      | Meta _ -> raise Not_found
+      | Evar _ -> raise Not_found
+      | Sort _ -> KSort 
+      | LetIn _ -> KLet
+    in Some (aux c)
+  with Not_found -> None
+
+open Pp
+
+let pr_key pr_global = function
+  | KGlob gr -> pr_global gr
+  | KLam -> str"Lambda"
+  | KLet -> str"Let"
+  | KProd -> str"Product"
+  | KSort -> str"Sort"
+  | KEvar -> str"Evar"
+  | KCase -> str"Case"
+  | KFix -> str"Fix"
+  | KCoFix -> str"CoFix"
+  | KRel -> str"Rel"
+  | KMeta -> str"Meta"
+
+let pr_keyset pr_global v = 
+  prlist_with_sep spc (pr_key pr_global) (Keyset.elements v)
+
+let pr_mapping pr_global k v = 
+  pr_key pr_global k ++ str" <-> " ++ pr_keyset pr_global v
+
+let pr_keys pr_global =
+  Keymap.fold (fun k v acc -> pr_mapping pr_global k v ++ fnl () ++ acc) !keys (mt())

@@ -10,11 +10,14 @@ open Globnames
 
 type key
 
-val declare_keys : key -> key -> unit
+val declare_equiv_keys : key -> key -> unit
 (** Declare two keys as being equivalent. *)
 
 val equiv_keys : key -> key -> bool
 (** Check equivalence of keys. *)
 
-val constr_key : Term.constr -> key
+val constr_key : Term.constr -> key option
 (** Compute the head key of a term. *)
+
+val pr_keys : (global_reference -> Pp.std_ppcmds) -> Pp.std_ppcmds
+(** Pretty-print the mapping *)

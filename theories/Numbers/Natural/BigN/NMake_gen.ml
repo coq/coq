@@ -961,6 +961,11 @@ pr "  end.";
 pr "";
 
 pr " Ltac unfold_red := unfold reduce, %s." (iter_name 1 size "reduce_" ",");
+pr "";
+for i = 0 to size do
+pr " Declare Equivalent Keys reduce reduce_%i." i;
+done;
+pr " Declare Equivalent Keys reduce_n reduce_%i." (size + 1);
 
 pr "
  Ltac solve_red :=

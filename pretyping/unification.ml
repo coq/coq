@@ -1457,11 +1457,17 @@ let make_abstraction env evd ccl abs =
       make_abstraction_core name
         (make_eq_test env evd c) (evd,c) ty occs check_occs env ccl
 
-let keyed_unify env evd kop cl = 
-  if not !keyed_unification then true
-  else
-    let k2 = Keys.constr_key cl in
-      Keys.equiv_keys kop k2
+let keyed_unify env evd kop = 
+  if not !keyed_unification then fun cl -> true
+  else 
+    match kop with 
+    | None -> fun _ -> true
+    | Some kop ->
+      fun cl ->
+	let kc = Keys.constr_key cl in
+	  match kc with
+	  | None -> false
+	  | Some kc -> Keys.equiv_keys kop kc
 
 (* Tries to find an instance of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] until it finds a match.

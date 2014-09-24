@@ -172,13 +172,12 @@ Proof.
   apply sum_eq.
   intros; apply H1.
   unfold N; apply le_lt_trans with n; [ assumption | apply lt_n_Sn ].
-  intros; unfold Bn, Cn.
-  replace (S N - S i)%nat with (N - i)%nat; reflexivity.
+  reflexivity.
   unfold An; fold N; rewrite <- minus_n_n; rewrite H0;
     simpl; ring.
   apply sum_eq.
-  intros; unfold An, Bn; replace (S N - S i)%nat with (N - i)%nat;
-    [ idtac | reflexivity ].
+  intros; unfold An, Bn.
+  change (S N - S i)%nat with (N - i)%nat.
   rewrite <- pascal;
     [ ring
       | apply le_lt_trans with n; [ assumption | unfold N; apply lt_n_Sn ] ].

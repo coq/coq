@@ -320,6 +320,7 @@ Section CompareRec.
  Let double_to_Z_pos: forall n x, 0 <= double_to_Z n x < double_wB n :=
    (spec_double_to_Z wm_base wm_to_Z wm_to_Z_pos).
 
+ Declare Equivalent Keys compare0_mn compare0_m.
 
  Lemma spec_compare0_mn: forall n x,
    compare0_mn n x = (0 ?= double_to_Z n x).

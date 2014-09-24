@@ -1033,16 +1033,18 @@ Section POWER.
   now destruct pe.
   Qed.
 
+  Arguments norm_aux !pe : simpl nomatch.
+
   Lemma norm_aux_spec l pe :
     PEeval l pe == (norm_aux pe)@l.
   Proof.
    intros.
-   induction pe.
-   - now rewrite (morph0 CRmorph).
+   induction pe; cbn.
+   - now rewrite (morph0 CRmorph). 
    - now rewrite (morph1 CRmorph).
    - reflexivity.
    - apply mkX_ok.
-   - simpl PEeval. rewrite IHpe1, IHpe2.
+   - rewrite IHpe1, IHpe2.
      assert (H1 := norm_aux_PEopp pe1).
      assert (H2 := norm_aux_PEopp pe2).
      rewrite norm_aux_PEadd.

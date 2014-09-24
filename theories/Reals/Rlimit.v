@@ -174,6 +174,8 @@ Definition limit_in (X X':Metric_Space) (f:Base X -> Base X')
 Definition R_met : Metric_Space :=
   Build_Metric_Space R R_dist R_dist_pos R_dist_sym R_dist_refl R_dist_tri.
 
+Declare Equivalent Keys dist R_dist.
+
 (*******************************)
 (** *      Limit 1 arg         *)
 (*******************************)

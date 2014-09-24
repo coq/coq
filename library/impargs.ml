@@ -542,17 +542,9 @@ let discharge_implicits (_,(req,l)) =
   | ImplInteractive (ref,flags,exp) ->
     (try
       let vars = section_segment_of_reference ref in
-      (* let isproj =  *)
-      (* 	 match ref with *)
-      (* 	 | ConstRef cst -> is_projection cst (Global.env ()) *)
-      (* 	 | _ -> false *)
-      (* in *)
       let ref' = if isVarRef ref then ref else pop_global_reference ref in
       let extra_impls = impls_of_context vars in
-      let l' = 
-	(* if isproj then [ref',snd (List.hd l)] *)
-	(* else *)
-	  [ref', List.map (add_section_impls vars extra_impls) (snd (List.hd l))] in
+      let l' = [ref', List.map (add_section_impls vars extra_impls) (snd (List.hd l))] in
       Some (ImplInteractive (ref',flags,exp),l')
     with Not_found -> (* ref not defined in this section *) Some (req,l))
   | ImplConstant (con,flags) ->
@@ -560,10 +552,7 @@ let discharge_implicits (_,(req,l)) =
       let con' = pop_con con in
       let vars,_,_ = section_segment_of_constant con in
       let extra_impls = impls_of_context vars in
-      let newimpls = 
-	(* if is_projection con (Global.env()) then (snd (List.hd l)) *)
-	(* else *) List.map (add_section_impls vars extra_impls) (snd (List.hd l))
-      in
+      let newimpls = List.map (add_section_impls vars extra_impls) (snd (List.hd l)) in
       let l' = [ConstRef con',newimpls] in
 	Some (ImplConstant (con',flags),l')
     with Not_found -> (* con not defined in this section *) Some (req,l))

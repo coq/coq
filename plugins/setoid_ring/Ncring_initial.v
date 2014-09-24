@@ -192,6 +192,7 @@ Lemma gen_phiZ_opp : forall x, [- x] == - [x].
  Lemma gen_phiZ_ext : forall x y : Z, x = y -> [x] == [y].
  Proof. intros;subst;reflexivity. Qed.
 
+Declare Equivalent Keys bracket gen_phiZ.
 (*proof that [.] satisfies morphism specifications*)
 Global Instance gen_phiZ_morph :
 (@Ring_morphism (Z:Type) R _ _ _ _ _ _ _ Zops Zr _ _ _ _ _ _ _ _ _ gen_phiZ) . (* beurk!*)

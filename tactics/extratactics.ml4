@@ -994,3 +994,19 @@ let decompose l c =
 TACTIC EXTEND decompose
 | [ "decompose" "[" ne_constr_list(l) "]" constr(c) ] -> [ decompose l c ]
 END
+
+(** library/keys *)
+
+VERNAC COMMAND EXTEND Declare_keys CLASSIFIED AS SIDEFF
+| [ "Declare" "Equivalent" "Keys" constr(c) constr(c') ] -> [ 
+  let it c = snd (Constrintern.interp_open_constr (Global.env ()) Evd.empty c) in 
+  let k1 = Keys.constr_key (it c) in
+  let k2 = Keys.constr_key (it c') in
+    match k1, k2 with
+    | Some k1, Some k2 -> Keys.declare_equiv_keys k1 k2
+    | _ -> () ]
+END
+
+VERNAC COMMAND EXTEND Print_keys CLASSIFIED AS QUERY
+| [ "Print" "Equivalent" "Keys" ] -> [ msg_info (Keys.pr_keys Printer.pr_global) ]
+END

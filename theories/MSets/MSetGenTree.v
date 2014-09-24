@@ -970,6 +970,8 @@ Definition lt (s1 s2 : tree) : Prop :=
  exists s1' s2', Ok s1' /\ Ok s2' /\ eq s1 s1' /\ eq s2 s2'
    /\ L.lt (elements s1') (elements s2').
 
+Declare Equivalent Keys L.eq equivlistA.
+
 Instance lt_strorder : StrictOrder lt.
 Proof.
  split.

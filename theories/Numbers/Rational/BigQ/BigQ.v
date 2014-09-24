@@ -88,6 +88,8 @@ exact BigQ.add_opp_diag_r. exact BigQ.neq_1_0.
 exact BigQ.div_mul_inv. exact BigQ.mul_inv_diag_l.
 Qed.
 
+Declare Equivalent Keys pow_N pow_pos.
+
 Lemma BigQpowerth :
  power_theory 1 BigQ.mul BigQ.eq Z.of_N BigQ.power.
 Proof.

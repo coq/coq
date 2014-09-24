@@ -126,9 +126,7 @@ Let B (n : Z) := A (ZnZ.of_Z n).
 
 Lemma B0 : B 0.
 Proof.
-unfold B.
-setoid_replace (ZnZ.of_Z 0) with zero. assumption.
-red; zify. apply ZnZ.of_Z_correct. auto using gt_wB_0 with zarith.
+unfold B. apply A0.
 Qed.
 
 Lemma BS : forall n : Z, 0 <= n -> n < wB - 1 -> B n -> B (n + 1).

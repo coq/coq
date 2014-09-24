@@ -674,6 +674,8 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   Definition cardinal_e_2 ee :=
    (cardinal_e (fst ee) + cardinal_e (snd ee))%nat.
 
+  Local Unset Keyed Unification.
+
   Function compare_aux (ee:Raw.enumeration D.t * Raw.enumeration D.t)
    { measure cardinal_e_2 ee } : comparison :=
   match ee with
