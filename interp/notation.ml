@@ -940,17 +940,28 @@ let pr_visibility prglob = function
 (* Mapping notations to concrete syntax *)
 
 type unparsing_rule = unparsing list * precedence
-
+type extra_unparsing_rules = (string * string) list
 (* Concrete syntax for symbolic-extension table *)
 let printing_rules =
-  ref (String.Map.empty : unparsing_rule String.Map.t)
+  ref (String.Map.empty : (unparsing_rule * extra_unparsing_rules) String.Map.t)
 
-let declare_notation_printing_rule ntn unpl =
-  printing_rules := String.Map.add ntn unpl !printing_rules
+let declare_notation_printing_rule ntn ~extra unpl =
+  printing_rules := String.Map.add ntn (unpl,extra) !printing_rules
 
 let find_notation_printing_rule ntn =
-  try String.Map.find ntn !printing_rules
+  try fst (String.Map.find ntn !printing_rules)
   with Not_found -> anomaly (str "No printing rule found for " ++ str ntn)
+let find_notation_extra_printing_rules ntn =
+  try snd (String.Map.find ntn !printing_rules)
+  with Not_found -> []
+let add_notation_extra_printing_rule ntn k v =
+  try
+    printing_rules := 
+      let p, pp = String.Map.find ntn !printing_rules in
+      String.Map.add ntn (p, (k,v) :: pp) !printing_rules
+  with Not_found ->
+    user_err_loc (Loc.ghost,"add_notation_extra_printing_rule",
+      str "No such Notation.")
 
 (**********************************************************************)
 (* Synchronisation with reset *)

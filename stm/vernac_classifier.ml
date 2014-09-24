@@ -178,7 +178,7 @@ let rec classify_vernac e =
         VtSideff [id], if bl = [] then VtLater else VtNow
     (* These commands alter the parser *)
     | VernacOpenCloseScope _ | VernacDelimiters _ | VernacBindScope _
-    | VernacInfix _ | VernacNotation _ | VernacSyntaxExtension _ 
+    | VernacInfix _ | VernacNotation _ | VernacNotationAddFormat _ | VernacSyntaxExtension _ 
     | VernacSyntacticDefinition _
     | VernacDeclareTacticDefinition _ | VernacTacticNotation _
     | VernacRequire _ | VernacImport _ | VernacInclude _

@@ -344,7 +344,8 @@ let pr_syntax_modifier = function
   | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
   | SetOnlyParsing Flags.Current -> str"only parsing"
   | SetOnlyParsing v -> str("compat \"" ^ Flags.pr_version v ^ "\"")
-  | SetFormat s -> str"format " ++ pr_located qs s
+  | SetFormat("text",s) -> str"format " ++ pr_located qs s
+  | SetFormat(k,s) -> str"format " ++ qs k ++ spc() ++ pr_located qs s
 
 let pr_syntax_modifiers = function
   | [] -> mt()
@@ -571,6 +572,8 @@ let rec pr_vernac = function
   | VernacSyntaxExtension (_,(s,l)) ->
       str"Reserved Notation" ++ spc() ++ pr_located qs s ++
       pr_syntax_modifiers l
+  | VernacNotationAddFormat(s,k,v) ->
+      str"Format Notation " ++ qs s ++ spc () ++ qs k ++ spc() ++ qs v
 
   (* Gallina *)
   | VernacDefinition (d,id,b) -> (* A verifier... *)

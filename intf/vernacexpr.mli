@@ -206,7 +206,7 @@ type syntax_modifier =
   | SetAssoc of Extend.gram_assoc
   | SetEntryType of string * Extend.simple_constr_prod_entry_key
   | SetOnlyParsing of Flags.compat_version
-  | SetFormat of string located
+  | SetFormat of string * string located
 
 type proof_end =
   | Admitted
@@ -290,6 +290,7 @@ type vernac_expr =
   | VernacNotation of
       obsolete_locality * constr_expr * (lstring * syntax_modifier list) *
       scope_name option
+  | VernacNotationAddFormat of string * string * string
 
   (* Gallina *)
   | VernacDefinition of

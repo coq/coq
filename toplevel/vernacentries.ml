@@ -1770,6 +1770,8 @@ let interp ?proof locality poly c =
   | VernacInfix (local,mv,qid,sc) -> vernac_infix locality local mv qid sc
   | VernacNotation (local,c,infpl,sc) ->
       vernac_notation locality local c infpl sc
+  | VernacNotationAddFormat(n,k,v) ->
+      Metasyntax.add_notation_extra_printing_rule n k v
 
   (* Gallina *)
   | VernacDefinition (k,lid,d) -> vernac_definition locality poly k lid d

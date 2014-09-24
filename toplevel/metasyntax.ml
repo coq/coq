@@ -790,6 +790,7 @@ type syntax_extension = {
   synext_notation : notation;
   synext_notgram : notation_grammar;
   synext_unparsing : unparsing list;
+  synext_extra : (string * string) list;
 }
 
 type syntax_extension_obj = locality_flag * syntax_extension list
@@ -806,7 +807,8 @@ let cache_one_syntax_extension se =
     (* Declare the parsing rule *)
     Egramcoq.extend_constr_grammar prec se.synext_notgram;
     (* Declare the printing rule *)
-    Notation.declare_notation_printing_rule ntn (se.synext_unparsing, fst prec)
+    Notation.declare_notation_printing_rule ntn
+      ~extra:se.synext_extra (se.synext_unparsing, fst prec)
 
 let cache_syntax_extension (_, (_, sy)) =
   List.iter cache_one_syntax_extension sy
@@ -839,38 +841,40 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
 
 let interp_modifiers modl =
   let onlyparsing = ref false in
-  let rec interp assoc level etyps format = function
+  let rec interp assoc level etyps format extra = function
     | [] ->
-	(assoc,level,etyps,!onlyparsing,format)
+	(assoc,level,etyps,!onlyparsing,format,extra)
     | SetEntryType (s,typ) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
 	  error (s^" is already assigned to an entry or constr level.");
-	interp assoc level ((id,typ)::etyps) format l
+	interp assoc level ((id,typ)::etyps) format extra l
     | SetItemLevel ([],n) :: l ->
-	interp assoc level etyps format l
+	interp assoc level etyps format extra l
     | SetItemLevel (s::idl,n) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
 	  error (s^" is already assigned to an entry or constr level.");
 	let typ = ETConstr (n,()) in
-	interp assoc level ((id,typ)::etyps) format (SetItemLevel (idl,n)::l)
+	interp assoc level ((id,typ)::etyps) format extra (SetItemLevel (idl,n)::l)
     | SetLevel n :: l ->
 	if not (Option.is_empty level) then error "A level is given more than once.";
-	interp assoc (Some n) etyps format l
+	interp assoc (Some n) etyps format extra l
     | SetAssoc a :: l ->
 	if not (Option.is_empty assoc) then error"An associativity is given more than once.";
-	interp (Some a) level etyps format l
+	interp (Some a) level etyps format extra l
     | SetOnlyParsing _ :: l ->
 	onlyparsing := true;
-	interp assoc level etyps format l
-    | SetFormat s :: l ->
+	interp assoc level etyps format extra l
+    | SetFormat ("text",s) :: l ->
 	if not (Option.is_empty format) then error "A format is given more than once.";
-	interp assoc level etyps (Some s) l
-  in interp None None [] None modl
+	interp assoc level etyps (Some s) extra l
+    | SetFormat (k,(_,s)) :: l ->
+	interp assoc level etyps format ((k,s) :: extra) l
+  in interp None None [] None [] modl
 
 let check_infix_modifiers modifiers =
-  let (assoc,level,t,b,fmt) = interp_modifiers modifiers in
+  let (assoc,level,t,b,fmt,extra) = interp_modifiers modifiers in
   if not (List.is_empty t) then
     error "Explicit entry level or type unexpected in infix notation."
 
@@ -1035,7 +1039,7 @@ let remove_curly_brackets l =
   in aux true l
 
 let compute_syntax_data df modifiers =
-  let (assoc,n,etyps,onlyparse,fmt) = interp_modifiers modifiers in
+  let (assoc,n,etyps,onlyparse,fmt,extra) = interp_modifiers modifiers in
   let assoc = match assoc with None -> (* default *) Some NonA | a -> a in
   let toks = split_notation_string df in
   let (recvars,mainvars,symbols) = analyze_notation_tokens toks in
@@ -1062,16 +1066,16 @@ let compute_syntax_data df modifiers =
   let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
   let i_data = (onlyparse,recvars,mainvars,(ntn_for_interp,df')) in
   (* Return relevant data for interpretation and for parsing/printing *)
-  (msgs,i_data,i_typs,sy_fulldata)
+  (msgs,i_data,i_typs,sy_fulldata,extra)
 
 let compute_pure_syntax_data df mods =
-  let (msgs,(onlyparse,_,_,_),_,sy_data) = compute_syntax_data df mods in
+  let (msgs,(onlyparse,_,_,_),_,sy_data,extra) = compute_syntax_data df mods in
   let msgs =
     if onlyparse then
       (msg_warning,
       strbrk "The only parsing modifier has no effect in Reserved Notation.")::msgs
     else msgs in
-  msgs, sy_data
+  msgs, sy_data, extra
 
 (**********************************************************************)
 (* Registration of notations interpretation                            *)
@@ -1154,11 +1158,13 @@ let recover_syntax ntn =
   try
     let prec = Notation.level_of_notation ntn in
     let pp_rule,_ = Notation.find_notation_printing_rule ntn in
+    let pp_extra_rules = Notation.find_notation_extra_printing_rules ntn in
     let pa_rule = Egramcoq.recover_constr_grammar ntn prec in
     { synext_level = prec;
       synext_notation = ntn;
       synext_notgram = pa_rule;
-      synext_unparsing = pp_rule; }
+      synext_unparsing = pp_rule;
+      synext_extra = pp_extra_rules }
   with Not_found ->
     raise NoSyntaxRule
 
@@ -1190,7 +1196,7 @@ let make_pp_rule (n,typs,symbols,fmt) =
   | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
   | Some fmt -> hunks_of_format (n, List.split typs) (symbols, parse_format fmt)
 
-let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) =
+let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) extra =
   let pa_rule = make_pa_rule i_typs sy_data ntn in
   let pp_rule = make_pp_rule sy_data in
   let sy = {
@@ -1198,6 +1204,7 @@ let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) =
     synext_notation = ntn;
     synext_notgram = pa_rule;
     synext_unparsing = pp_rule;
+    synext_extra = extra;
   } in
   (* By construction, the rule for "{ _ }" is declared, but we need to
      redeclare it because the file where it is declared needs not be open
@@ -1212,9 +1219,9 @@ let to_map l =
   List.fold_left fold Id.Map.empty l
 
 let add_notation_in_scope local df c mods scope =
-  let (msgs,i_data,i_typs,sy_data) = compute_syntax_data df mods in
+  let (msgs,i_data,i_typs,sy_data,extra) = compute_syntax_data df mods in
   (* Prepare the parsing and printing rules *)
-  let sy_rules = make_syntax_rules sy_data in
+  let sy_rules = make_syntax_rules sy_data extra in
   (* Prepare the interpretation *)
   let (onlyparse, recvars,mainvars, df') = i_data in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
@@ -1276,8 +1283,8 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
 (* Notations without interpretation (Reserved Notation) *)
 
 let add_syntax_extension local ((loc,df),mods) =
-  let msgs, sy_data = compute_pure_syntax_data df mods in
-  let sy_rules = make_syntax_rules sy_data in
+  let msgs, sy_data, extra = compute_pure_syntax_data df mods in
+  let sy_rules = make_syntax_rules sy_data extra in
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))
 
@@ -1310,6 +1317,13 @@ let add_notation local c ((loc,df),modifiers) sc =
     add_notation_in_scope local df c modifiers sc
   in
   Dumpglob.dump_notation (loc,df') sc true
+
+let add_notation_extra_printing_rule df k v =
+  let notk = 
+    let dfs = split_notation_string df in
+    let _,_, symbs = analyze_notation_tokens dfs in
+    make_notation_key symbs in
+  Notation.add_notation_extra_printing_rule notk k v
 
 (* Infix notations *)
 

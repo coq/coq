@@ -34,6 +34,8 @@ val add_infix : locality_flag -> (lstring * syntax_modifier list) ->
 val add_notation : locality_flag -> constr_expr ->
   (lstring * syntax_modifier list) -> scope_name option -> unit
 
+val add_notation_extra_printing_rule : string -> string -> string -> unit
+
 (** Declaring delimiter keys and default scopes *)
 
 val add_delimiters : scope_name -> string -> unit

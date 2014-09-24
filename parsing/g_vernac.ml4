@@ -1026,6 +1026,8 @@ GEXTEND Gram
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
            VernacNotation (local,c,(s,modl),sc)
+     | IDENT "Format"; IDENT "Notation"; n = STRING; s = STRING; fmt = STRING ->
+           VernacNotationAddFormat (n,s,fmt)
 
      | IDENT "Tactic"; IDENT "Notation"; n = tactic_level;
 	 pil = LIST1 production_item; ":="; t = Tactic.tactic
@@ -1072,7 +1074,11 @@ GEXTEND Gram
         SetOnlyParsing Flags.Current
       | IDENT "compat"; s = STRING ->
         SetOnlyParsing (Coqinit.get_compat_version s)
-      | IDENT "format"; s = [s = STRING -> (!@loc,s)] -> SetFormat s
+      | IDENT "format"; s1 = [s = STRING -> (!@loc,s)];
+                        s2 = OPT [s = STRING -> (!@loc,s)] ->
+          begin match s1, s2 with
+          | (_,k), Some s -> SetFormat(k,s)
+          | s, None -> SetFormat ("text",s) end
       | x = IDENT; ","; l = LIST1 [id = IDENT -> id ] SEP ","; "at";
         lev = level -> SetItemLevel (x::l,lev)
       | x = IDENT; "at"; lev = level -> SetItemLevel ([x],lev)
