@@ -385,8 +385,18 @@ let interp_occurrences ist occs =
 let interp_hyp_location ist env sigma ((occs,id),hl) =
   ((interp_occurrences ist occs,interp_hyp ist env sigma id),hl)
 
+let interp_hyp_location_list_as_list ist env sigma ((occs,id),hl as x) =
+  match occs,hl with
+  | AllOccurrences,InHyp ->
+      List.map (fun id -> ((AllOccurrences,id),InHyp))
+        (interp_hyp_list_as_list ist env sigma id)
+  | _,_ -> [interp_hyp_location ist env sigma x]
+
+let interp_hyp_location_list ist env sigma l =
+  List.flatten (List.map (interp_hyp_location_list_as_list ist env sigma) l)
+
 let interp_clause ist env sigma { onhyps=ol; concl_occs=occs } : clause =
-  { onhyps=Option.map(List.map (interp_hyp_location ist env sigma)) ol;
+  { onhyps=Option.map (interp_hyp_location_list ist env sigma) ol;
     concl_occs=interp_occurrences ist occs }
 
 (* Interpretation of constructions *)
