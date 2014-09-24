@@ -377,8 +377,10 @@ let pr_bindings prc prlc = pr_bindings_gen false prc prlc
 let pr_with_bindings prc prlc (c,bl) =
   hov 1 (prc c ++ pr_bindings prc prlc bl)
 
-let pr_as_disjunctive_ipat prc (_,ipatl) =
-  str "as " ++ Miscprint.pr_or_and_intro_pattern prc ipatl
+let pr_as_disjunctive_ipat prc ipatl =
+  str "as " ++
+  pr_or_var (fun (loc,p) -> Miscprint.pr_or_and_intro_pattern prc p) ipatl
+
 let pr_eqn_ipat (_,ipat) = str "eqn:" ++ Miscprint.pr_intro_pattern_naming ipat
 
 let pr_with_induction_names prc = function

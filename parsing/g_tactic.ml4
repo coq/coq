@@ -476,12 +476,8 @@ GEXTEND Gram
       | -> None ] ]
   ;
   or_and_intropattern_loc:
-    [ [ ipat = or_and_intropattern -> !@loc, ipat
-      | id = ident ->
-          !@loc,
-          (* coding, see tacinterp.ml: *)
-          [[Loc.ghost, IntroNaming (IntroIdentifier id)]]
-      ] ]
+    [ [ ipat = or_and_intropattern -> ArgArg (!@loc,ipat)
+      | locid = identref -> ArgVar locid ] ]
   ;
   as_or_and_ipat:
     [ [ "as"; ipat = or_and_intropattern_loc -> Some ipat

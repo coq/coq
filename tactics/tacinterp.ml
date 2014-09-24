@@ -830,14 +830,13 @@ let interp_intro_pattern_naming_option ist env sigma = function
 
 let interp_or_and_intro_pattern_option ist env sigma = function
   | None -> sigma, None
-  | Some (loc,l) ->
-      let sigma, l = match l with
-      | [[loc',IntroNaming (IntroIdentifier id)]] when (* Hack, see g_tactic.ml4 *) loc' = dloc ->
-        (match coerce_to_intro_pattern env (Id.Map.find id ist.lfun) with
-        | IntroAction (IntroOrAndPattern l) -> sigma, l
-        | _ ->
-          raise (CannotCoerceTo "a disjunctive/conjunctive introduction pattern"))
-      | l -> interp_or_and_intro_pattern ist env sigma l in
+  | Some (ArgVar (loc,id)) ->
+      (match coerce_to_intro_pattern env (Id.Map.find id ist.lfun) with
+      | IntroAction (IntroOrAndPattern l) -> sigma, Some (loc,l)
+      | _ ->
+        raise (CannotCoerceTo "a disjunctive/conjunctive introduction pattern"))
+  | Some (ArgArg (loc,l)) ->
+      let sigma,l = interp_or_and_intro_pattern ist env sigma l in
       sigma, Some (loc,l)
 
 let interp_intro_pattern_option ist env sigma = function

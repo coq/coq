@@ -96,9 +96,13 @@ let intern_hyp ist (loc,id as locid) =
   else
     Pretype_errors.error_var_not_found_loc loc id
 
-let intern_or_var ist = function
+let intern_or_var f ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)
-  | ArgArg _ as x -> x
+  | ArgArg x -> ArgArg (f x)
+
+let intern_int_or_var = intern_or_var (fun (n : int) -> n)
+let intern_id_or_var = intern_or_var (fun (id : Id.t) -> id)
+let intern_string_or_var = intern_or_var (fun (s : string) -> s)
 
 let intern_global_reference ist = function
   | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
@@ -264,8 +268,9 @@ and intern_intro_pattern_action lf ist = function
 and intern_or_and_intro_pattern lf ist =
   List.map (List.map (intern_intro_pattern lf ist))
 
-let intern_or_and_intro_pattern_loc lf ist (loc,l) =
-  (loc,intern_or_and_intro_pattern lf ist l)
+let intern_or_and_intro_pattern_loc lf ist l =
+  intern_or_var (fun (loc,l) -> (loc,intern_or_and_intro_pattern lf ist l))
+    ist l
 
 let intern_intro_pattern_naming_loc lf ist (loc,pat) =
   (loc,intern_intro_pattern_naming lf ist pat)
@@ -385,7 +390,7 @@ let intern_inversion_strength lf ist = function
 
 (* Interprets an hypothesis name *)
 let intern_hyp_location ist ((occs,id),hl) =
-  ((Locusops.occurrences_map (List.map (intern_or_var ist)) occs,
+  ((Locusops.occurrences_map (List.map (intern_int_or_var ist)) occs,
    intern_hyp ist id), hl)
 
 (* Reads a pattern *)
@@ -488,7 +493,7 @@ let rec intern_atomic lf ist x =
   (* Automation tactics *)
   | TacTrivial (d,lems,l) -> TacTrivial (d,List.map (intern_constr ist) lems,l)
   | TacAuto (d,n,lems,l) ->
-      TacAuto (d,Option.map (intern_or_var ist) n,
+      TacAuto (d,Option.map (intern_int_or_var ist) n,
         List.map (intern_constr ist) lems,l)
 
   (* Derived basic tactics *)
@@ -574,7 +579,7 @@ and intern_tactic_seq onlytac ist = function
       TacMatch (lz,intern_tactic_or_tacarg ist c,intern_match_rule onlytac ist lmr)
   | TacId l -> ist.ltacvars, TacId (intern_message ist l)
   | TacFail (n,l) ->
-      ist.ltacvars, TacFail (intern_or_var ist n,intern_message ist l)
+      ist.ltacvars, TacFail (intern_int_or_var ist n,intern_message ist l)
   | TacProgress tac -> ist.ltacvars, TacProgress (intern_pure_tactic ist tac)
   | TacShowHyps tac -> ist.ltacvars, TacShowHyps (intern_pure_tactic ist tac)
   | TacAbstract (tac,s) ->
@@ -602,12 +607,12 @@ and intern_tactic_seq onlytac ist = function
       (* Que faire en cas de (tac complexe avec Match et Thens; tac2) ?? *)
       lfun', TacThens (t, List.map (intern_pure_tactic ist') tl)
   | TacDo (n,tac) ->
-      ist.ltacvars, TacDo (intern_or_var ist n,intern_pure_tactic ist tac)
+      ist.ltacvars, TacDo (intern_int_or_var ist n,intern_pure_tactic ist tac)
   | TacTry tac -> ist.ltacvars, TacTry (intern_pure_tactic ist tac)
   | TacInfo tac -> ist.ltacvars, TacInfo (intern_pure_tactic ist tac)
   | TacRepeat tac -> ist.ltacvars, TacRepeat (intern_pure_tactic ist tac)
   | TacTimeout (n,tac) ->
-      ist.ltacvars, TacTimeout (intern_or_var ist n,intern_tactic onlytac ist tac)
+      ist.ltacvars, TacTimeout (intern_int_or_var ist n,intern_tactic onlytac ist tac)
   | TacTime (s,tac) ->
       ist.ltacvars, TacTime (s,intern_tactic onlytac ist tac)
   | TacOr (tac1,tac2) ->
@@ -664,7 +669,7 @@ and intern_tacarg strict onlytac ist = function
       TacCall (loc,
         intern_applied_tactic_reference ist f,
         List.map (intern_tacarg !strict_check false ist) l)
-  | TacFreshId x -> TacFreshId (List.map (intern_or_var ist) x)
+  | TacFreshId x -> TacFreshId (List.map (intern_string_or_var ist) x)
   | TacPretype c -> TacPretype (intern_constr ist c)
   | TacNumgoals -> TacNumgoals
   | Tacexp t -> Tacexp (intern_tactic onlytac ist t)
@@ -696,7 +701,7 @@ and intern_match_rule onlytac ist = function
 
 and intern_genarg ist x =
   match genarg_tag x with
-  | IntOrVarArgType -> map_raw wit_int_or_var intern_or_var ist x
+  | IntOrVarArgType -> map_raw wit_int_or_var intern_int_or_var ist x
   | IdentArgType ->
     let lf = ref Id.Set.empty in
     map_raw wit_ident (intern_ident lf) ist x

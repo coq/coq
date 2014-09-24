@@ -44,9 +44,9 @@ type inversion_kind =
 
 type ('c,'id) inversion_strength =
   | NonDepInversion of
-      inversion_kind * 'id list * 'c or_and_intro_pattern_expr located option
+      inversion_kind * 'id list * 'c or_and_intro_pattern_expr located or_var option
   | DepInversion of
-      inversion_kind * 'c option * 'c or_and_intro_pattern_expr located option
+      inversion_kind * 'c option * 'c or_and_intro_pattern_expr located or_var option
   | InversionUsing of 'c * 'id list
 
 type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
@@ -59,7 +59,7 @@ type 'id message_token =
 type 'constr induction_clause =
     'constr with_bindings induction_arg *
     (intro_pattern_naming_expr located option (* eqn:... *)
-    * 'constr or_and_intro_pattern_expr located option) (* as ... *)
+    * 'constr or_and_intro_pattern_expr located or_var option) (* as ... *)
 
 type ('constr,'id) induction_clause_list =
     'constr induction_clause list
