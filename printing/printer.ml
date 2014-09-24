@@ -623,10 +623,7 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
 	    ++ fnl () ++ fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] shelf
 	  | _ , _, _ ->
-	    (* emacs mode: xml-like flag for detecting information message *)
-	    str (emacs_str "<infomsg>") ++
 	    str "This subproof is complete, but there are still unfocused goals."
-	    ++ str (emacs_str "</infomsg>")
 	    ++ fnl () ++ fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds shelf [] bgoals
 	  end
