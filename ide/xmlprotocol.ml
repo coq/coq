@@ -187,6 +187,7 @@ module ReifType : sig
   val string_t       : string val_t
   val int_t          : int val_t
   val bool_t         : bool val_t
+  val xml_t          : Xml_datatype.xml val_t
   
   val option_t       : 'a val_t -> 'a option val_t
   val list_t         : 'a val_t -> 'a list val_t
@@ -217,7 +218,7 @@ module ReifType : sig
 end = struct
 
   type value_type =
-    | Unit | String | Int | Bool
+    | Unit | String | Int | Bool | Xml
 
     | Option of value_type
     | List of value_type
@@ -237,6 +238,7 @@ end = struct
   let string_t       = String
   let int_t          = Int
   let bool_t         = Bool
+  let xml_t          = Xml
 
   let option_t x     = Option x
   let list_t x       = List x
@@ -257,6 +259,7 @@ end = struct
     let rec convert ty : 'a -> xml = match ty with
       | Unit          -> Obj.magic of_unit
       | Bool          -> Obj.magic of_bool
+      | Xml           -> Obj.magic (fun x -> x)
       | String        -> Obj.magic of_string
       | Int           -> Obj.magic of_int
       | State         -> Obj.magic of_status
@@ -279,6 +282,7 @@ end = struct
     let rec convert ty : xml -> 'a = match ty with
       | Unit          -> Obj.magic to_unit
       | Bool          -> Obj.magic to_bool
+      | Xml           -> Obj.magic (fun x -> x)
       | String        -> Obj.magic to_string
       | Int           -> Obj.magic to_int
       | State         -> Obj.magic to_status
@@ -353,6 +357,7 @@ end = struct
   | Unit          -> Obj.magic pr_unit
   | Bool          -> Obj.magic pr_bool
   | String        -> Obj.magic pr_string
+  | Xml           -> Obj.magic Xml_printer.to_string_fmt
   | Int           -> Obj.magic pr_int
   | State         -> Obj.magic pr_status
   | Option_state  -> Obj.magic pr_option_state
@@ -375,6 +380,7 @@ end = struct
   | Unit          -> "unit"
   | Bool          -> "bool"
   | String        -> "string"
+  | Xml           -> "xml"
   | Int           -> "int"
   | State         -> assert(true : status exists); "Interface.status"
   | Option_state  -> assert(true : option_state exists); "Interface.option_state"
@@ -435,6 +441,7 @@ let about_sty_t : about_sty val_t = unit_t
 let init_sty_t : init_sty val_t = option_t string_t
 let interp_sty_t : interp_sty val_t = pair_t (pair_t bool_t bool_t) string_t
 let stop_worker_sty_t : stop_worker_sty val_t = string_t
+let print_ast_sty_t : print_ast_sty val_t = state_id_t
 
 let add_rty_t : add_rty val_t =
   pair_t state_id_t (pair_t (union_t unit_t state_id_t) string_t)
@@ -457,6 +464,7 @@ let about_rty_t : about_rty val_t = coq_info_t
 let init_rty_t : init_rty val_t = state_id_t
 let interp_rty_t : interp_rty val_t = pair_t state_id_t (union_t string_t string_t)
 let stop_worker_rty_t : stop_worker_rty val_t = unit_t
+let print_ast_rty_t : print_ast_rty val_t = xml_t
 
 let ($) x = erase x
 let calls = [|  
@@ -476,6 +484,7 @@ let calls = [|
   "Init",       ($)init_sty_t,        ($)init_rty_t;
   "Interp",     ($)interp_sty_t,      ($)interp_rty_t;
   "StopWorker", ($)stop_worker_sty_t, ($)stop_worker_rty_t;
+  "PrintAst",   ($)print_ast_sty_t,   ($)print_ast_rty_t;
 |]
 
 type 'a call =
@@ -496,6 +505,7 @@ type 'a call =
   | StopWorker of stop_worker_sty
   (* retrocompatibility *)
   | Interp     of interp_sty
+  | PrintAst   of print_ast_sty
 
 let id_of_call = function
   | Add _        -> 0
@@ -514,6 +524,7 @@ let id_of_call = function
   | Init _       -> 13
   | Interp _     -> 14
   | StopWorker _ -> 15
+  | PrintAst _   -> 16
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -535,6 +546,7 @@ let quit x        : quit_rty call        = Quit x
 let init x        : init_rty call        = Init x
 let interp x      : interp_rty call      = Interp x
 let stop_worker x : stop_worker_rty call = StopWorker x
+let print_ast   x : print_ast_rty call   = PrintAst x
 
 let abstract_eval_call handler (c : 'a call) : 'a value =
   let mkGood x : 'a value = Good (Obj.magic x) in
@@ -556,6 +568,7 @@ let abstract_eval_call handler (c : 'a call) : 'a value =
     | Init x       -> mkGood (handler.init x)
     | Interp x     -> mkGood (handler.interp x)
     | StopWorker x -> mkGood (handler.stop_worker x)
+    | PrintAst x   -> mkGood (handler.print_ast x)
   with any ->
     Fail (handler.handle_exn any)
 
@@ -577,6 +590,7 @@ let of_answer (q : 'a call) (v : 'a value) : xml = match q with
   | Init _       -> of_value (of_value_type init_rty_t       ) (Obj.magic v)
   | Interp _     -> of_value (of_value_type interp_rty_t     ) (Obj.magic v)
   | StopWorker _ -> of_value (of_value_type stop_worker_rty_t) (Obj.magic v)
+  | PrintAst _   -> of_value (of_value_type print_ast_rty_t  ) (Obj.magic v)
 
 let to_answer (q : 'a call) (x : xml) : 'a value = match q with
   | Add _        -> Obj.magic (to_value (to_value_type add_rty_t        ) x)
@@ -595,6 +609,7 @@ let to_answer (q : 'a call) (x : xml) : 'a value = match q with
   | Init _       -> Obj.magic (to_value (to_value_type init_rty_t       ) x)
   | Interp _     -> Obj.magic (to_value (to_value_type interp_rty_t     ) x)
   | StopWorker _ -> Obj.magic (to_value (to_value_type stop_worker_rty_t) x)
+  | PrintAst _   -> Obj.magic (to_value (to_value_type print_ast_rty_t  ) x)
 
 let of_call (q : 'a call) : xml =
   let mkCall x = constructor "call" (str_of_call q) [x] in
@@ -615,6 +630,7 @@ let of_call (q : 'a call) : xml =
   | Init x       -> mkCall (of_value_type init_sty_t        x)
   | Interp x     -> mkCall (of_value_type interp_sty_t      x)
   | StopWorker x -> mkCall (of_value_type stop_worker_sty_t x)
+  | PrintAst x   -> mkCall (of_value_type print_ast_sty_t   x)
 
 let to_call : xml -> unknown call =
   do_match "call" (fun s a ->
@@ -636,6 +652,7 @@ let to_call : xml -> unknown call =
     | "Init"       -> Init       (mkCallArg init_sty_t        a)
     | "Interp"     -> Interp     (mkCallArg interp_sty_t      a)
     | "StopWorker" -> StopWorker (mkCallArg stop_worker_sty_t a)
+    | "PrintAst"   -> PrintAst   (mkCallArg print_ast_sty_t   a)
     | _ -> raise Marshal_error)
 
 (** Debug printing *)
@@ -664,6 +681,7 @@ let pr_full_value call value = match call with
   | Init _       -> pr_value_gen (print init_rty_t       ) (Obj.magic value)
   | Interp _     -> pr_value_gen (print interp_rty_t     ) (Obj.magic value)
   | StopWorker _ -> pr_value_gen (print stop_worker_rty_t) (Obj.magic value)
+  | PrintAst _   -> pr_value_gen (print print_ast_rty_t  ) (Obj.magic value)
 let pr_call call = match call with
   | Add x        -> str_of_call call ^ " " ^ print add_sty_t         x
   | Edit_at x    -> str_of_call call ^ " " ^ print edit_at_sty_t     x
@@ -681,6 +699,7 @@ let pr_call call = match call with
   | Init x       -> str_of_call call ^ " " ^ print init_sty_t        x
   | Interp x     -> str_of_call call ^ " " ^ print interp_sty_t      x
   | StopWorker x -> str_of_call call ^ " " ^ print stop_worker_sty_t x
+  | PrintAst x   -> str_of_call call ^ " " ^ print print_ast_sty_t   x
 
 let document to_string_fmt =
   Printf.printf "=== Available calls ===\n\n";

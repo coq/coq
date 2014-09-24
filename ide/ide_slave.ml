@@ -375,6 +375,7 @@ let eval_call xml_oc log c =
     Interface.interp = interruptible interp;
     Interface.handle_exn = handle_exn;
     Interface.stop_worker = Stm.stop_worker;
+    Interface.print_ast = Stm.print_ast;
   } in
   Xmlprotocol.abstract_eval_call handler c
 

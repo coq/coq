@@ -31,6 +31,7 @@ val init        : init_sty        -> init_rty call
 val stop_worker : stop_worker_sty -> stop_worker_rty call
 (* retrocompatibility *)
 val interp      : interp_sty      -> interp_rty call
+val print_ast      : print_ast_sty      -> print_ast_rty call
 
 val abstract_eval_call : handler -> 'a call -> 'a value
 
