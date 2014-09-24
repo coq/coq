@@ -549,35 +549,23 @@ let retroknowledge f env =
 let registered env field =
     retroknowledge mem env field
 
-(* spiwack: this unregistration function is not in operation yet. It should
-            not be used *)
-(* this unregistration function assumes that no "constr" can hold two different
-   places in the retroknowledge. There is no reason why it shouldn't be true,
-   but in case someone needs it, remember to add special branches to the
-   unregister function *)
-let unregister env field =
+let register_one env field entry =
+  { env with retroknowledge = Retroknowledge.add_field env.retroknowledge field entry }
+
+(* [register env field entry] may register several fields when needed *)
+let register env field entry =
   match field with
-    | KInt31 (_,Int31Type) ->
-	(*there is only one matching kind due to the fact that Environ.env
-          is abstract, and that the only function which add elements to the
-          retroknowledge is Environ.register which enforces this shape *)
-	(match kind_of_term (retroknowledge find env field) with
-	   | Ind i31t -> let i31c = mkConstructUi (i31t, 1) in
-	     {env with retroknowledge =
-		 remove (retroknowledge clear_info env i31c) field}
-	   | _ -> assert false)
-    |_ -> {env with retroknowledge =
-	   try
-	     remove (retroknowledge clear_info env
-                       (retroknowledge find env field)) field
-	   with Not_found ->
-	     retroknowledge remove env field}
-
-
+    | KInt31 (grp, Int31Type) ->
+        let i31c = match kind_of_term entry with
+                     | Ind i31t -> mkConstructUi (i31t, 1)
+		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type")
+	in
+        register_one (register_one env (KInt31 (grp,Int31Constructor)) i31c) field entry
+    | field -> register_one env field entry
 
 (* the Environ.register function syncrhonizes the proactive and reactive
    retroknowledge. *)
-let register =
+let dispatch =
 
   (* subfunction used for static decompilation of int31 (after a vm_compute,
      see pretyping/vnorm.ml for more information) *)
@@ -598,126 +586,94 @@ let register =
 	  mkApp(mkConstruct(ind, 1), array_of_int tag)
   in
 
-  (* subfunction which adds the information bound to the constructor of
-     the int31 type to the reactive retroknowledge *)
-  let add_int31c retroknowledge c =
-    let rk = add_vm_constant_static_info retroknowledge c
-                                         Cbytegen.compile_structured_int31
-    in
-    let rk =
-      add_vm_constant_dynamic_info rk c Cbytegen.dynamic_int31_compilation
-    in
-    let rk =
-      add_native_constant_static_info rk c Nativelambda.compile_static_int31
-    in
-    add_native_constant_dynamic_info rk c Nativelambda.compile_dynamic_int31
-  in
-
-  (* subfunction which adds the compiling information of an
+  (* subfunction which dispatches the compiling information of an
      int31 operation which has a specific vm instruction (associates
      it to the name of the coq definition in the reactive retroknowledge) *)
-  let add_int31_op retroknowledge v n op prim kn =
-    let rk =
-      add_vm_compiling_info retroknowledge v (Cbytegen.op_compilation n op kn)
-    in
-    add_native_compiling_info rk v (Nativelambda.compile_prim prim kn)
+  let int31_op n op prim kn =
+    { empty_reactive_info with
+      vm_compiling = Some (Cbytegen.op_compilation n op kn);
+      native_compiling = Some (Nativelambda.compile_prim prim kn);
+    }
   in
 
-  let add_int31_before_match rk grp v =
-    let rk = add_vm_before_match_info rk v Cbytegen.int31_escape_before_match in
-    match kind_of_term (Retroknowledge.find rk (KInt31 (grp,Int31Bits))) with
-    | Ind (i31bit_type,_) ->
-    add_native_before_match_info rk v (Nativelambda.before_match_int31 i31bit_type)
-    | _ ->
-       anomaly ~label:"Environ.register" (Pp.str "Int31Bits should be an inductive type")
-  in
-
-fun env field value ->
-  (* subfunction which shortens the (very often use) registration of binary
-     operators to the reactive retroknowledge. *)
-  let add_int31_binop_from_const op prim =
+fun rk value field ->
+  (* subfunction which shortens the (very common) dispatch of operations *)
+  let int31_op_from_const n op prim =
     match kind_of_term value with
-      | Const (kn,_) ->  retroknowledge add_int31_op env value 2
-	                               op prim kn
+      | Const (kn,_) ->  int31_op n op prim kn
       | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant")
   in
-  let add_int31_unop_from_const op prim =
-    match kind_of_term value with
-      | Const (kn,_) ->  retroknowledge add_int31_op env value 1
-	                               op prim kn
-      | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant")
-  in
-  (* subfunction which completes the function constr_of_int31 above
-     by performing the actual retroknowledge operations *)
-  let add_int31_decompilation_from_type rk =
-    (* invariant : the type of bits is registered, otherwise the function
-       would raise Not_found. The invariant is enforced in safe_typing.ml *)
-    match field with
-      | KInt31 (grp, Int31Type) ->
-	  (match kind_of_term (Retroknowledge.find rk (KInt31 (grp,Int31Bits))) with
-	    | Ind (i31bit_type,_) ->
-		(match kind_of_term value with
-		  | Ind (i31t,_) ->
-		      Retroknowledge.add_vm_decompile_constant_info rk
-		               value (constr_of_int31 i31t i31bit_type)
-		  | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type"))
-	    | _ -> anomaly ~label:"Environ.register" (Pp.str "Int31Bits should be an inductive type"))
-      | _ -> anomaly ~label:"Environ.register" (Pp.str "add_int31_decompilation_from_type called with an abnormal field")
-  in
-  {env with retroknowledge =
-  let retroknowledge_with_reactive_info =
+  let int31_binop_from_const op prim = int31_op_from_const 2 op prim in
+  let int31_unop_from_const op prim = int31_op_from_const 1 op prim in
   match field with
     | KInt31 (grp, Int31Type) ->
-        let i31c = match kind_of_term value with
-                     | Ind i31t -> mkConstructUi (i31t, 1)
-		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type")
-	in
-	add_int31_decompilation_from_type
-	  (add_int31_before_match
-	     (retroknowledge add_int31c env i31c) grp value)
-    | KInt31 (_, Int31Plus) -> add_int31_binop_from_const Cbytecodes.Kaddint31
+        let int31bit =
+          (* invariant : the type of bits is registered, otherwise the function
+             would raise Not_found. The invariant is enforced in safe_typing.ml *)
+          match field with
+          | KInt31 (grp, Int31Type) -> Retroknowledge.find rk (KInt31 (grp,Int31Bits))
+          | _ -> anomaly ~label:"Environ.register"
+              (Pp.str "add_int31_decompilation_from_type called with an abnormal field")
+        in
+        let i31bit_type =
+          match kind_of_term int31bit with
+          | Ind (i31bit_type,_) -> i31bit_type
+          |  _ -> anomaly ~label:"Environ.register"
+              (Pp.str "Int31Bits should be an inductive type")
+        in
+        let int31_decompilation =
+          match kind_of_term value with
+          | Ind (i31t,_) ->
+              constr_of_int31 i31t i31bit_type
+          | _ -> anomaly ~label:"Environ.register"
+              (Pp.str "should be an inductive type")
+        in
+        { empty_reactive_info with
+          vm_decompile_const = Some int31_decompilation;
+          vm_before_match = Some Cbytegen.int31_escape_before_match;
+          native_before_match = Some (Nativelambda.before_match_int31 i31bit_type);
+        }
+    | KInt31 (_, Int31Constructor) ->
+        { empty_reactive_info with
+          vm_constant_static = Some Cbytegen.compile_structured_int31;
+          vm_constant_dynamic = Some Cbytegen.dynamic_int31_compilation;
+          native_constant_static = Some Nativelambda.compile_static_int31;
+          native_constant_dynamic = Some Nativelambda.compile_dynamic_int31;
+        }
+    | KInt31 (_, Int31Plus) -> int31_binop_from_const Cbytecodes.Kaddint31
 							  Primitives.Int31add
-    | KInt31 (_, Int31PlusC) -> add_int31_binop_from_const Cbytecodes.Kaddcint31
+    | KInt31 (_, Int31PlusC) -> int31_binop_from_const Cbytecodes.Kaddcint31
 							   Primitives.Int31addc
-    | KInt31 (_, Int31PlusCarryC) -> add_int31_binop_from_const Cbytecodes.Kaddcarrycint31
+    | KInt31 (_, Int31PlusCarryC) -> int31_binop_from_const Cbytecodes.Kaddcarrycint31
 								Primitives.Int31addcarryc
-    | KInt31 (_, Int31Minus) -> add_int31_binop_from_const Cbytecodes.Ksubint31
+    | KInt31 (_, Int31Minus) -> int31_binop_from_const Cbytecodes.Ksubint31
 							   Primitives.Int31sub
-    | KInt31 (_, Int31MinusC) -> add_int31_binop_from_const Cbytecodes.Ksubcint31
+    | KInt31 (_, Int31MinusC) -> int31_binop_from_const Cbytecodes.Ksubcint31
 							    Primitives.Int31subc
-    | KInt31 (_, Int31MinusCarryC) -> add_int31_binop_from_const
+    | KInt31 (_, Int31MinusCarryC) -> int31_binop_from_const
 	                                Cbytecodes.Ksubcarrycint31 Primitives.Int31subcarryc
-    | KInt31 (_, Int31Times) -> add_int31_binop_from_const Cbytecodes.Kmulint31
+    | KInt31 (_, Int31Times) -> int31_binop_from_const Cbytecodes.Kmulint31
 							   Primitives.Int31mul
-    | KInt31 (_, Int31TimesC) -> add_int31_binop_from_const Cbytecodes.Kmulcint31
-							    Primitives.Int31mulc
-    | KInt31 (_, Int31Div21) -> (* this is a ternary operation *)
-                                (match kind_of_term value with
-				 | Const (kn,u) ->
-				     retroknowledge add_int31_op env value 3
-	                               Cbytecodes.Kdiv21int31 Primitives.Int31div21 kn
-				 | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant"))
-    | KInt31 (_, Int31Div) -> add_int31_binop_from_const Cbytecodes.Kdivint31
+    | KInt31 (_, Int31TimesC) -> int31_binop_from_const Cbytecodes.Kmulcint31
+							   Primitives.Int31mulc
+    | KInt31 (_, Int31Div21) -> int31_op_from_const 3 Cbytecodes.Kdiv21int31
+                                                           Primitives.Int31div21
+    | KInt31 (_, Int31Div) -> int31_binop_from_const Cbytecodes.Kdivint31
 							 Primitives.Int31div
-    | KInt31 (_, Int31AddMulDiv) -> (* this is a ternary operation *)
-                                (match kind_of_term value with
-				 | Const (kn,u) ->
-				     retroknowledge add_int31_op env value 3
-	                               Cbytecodes.Kaddmuldivint31 Primitives.Int31addmuldiv kn
-				 | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant"))
-    | KInt31 (_, Int31Compare) -> add_int31_binop_from_const Cbytecodes.Kcompareint31
+    | KInt31 (_, Int31AddMulDiv) -> int31_op_from_const 3 Cbytecodes.Kaddmuldivint31
+                                                         Primitives.Int31addmuldiv
+    | KInt31 (_, Int31Compare) -> int31_binop_from_const Cbytecodes.Kcompareint31
 							     Primitives.Int31compare
-    | KInt31 (_, Int31Head0) -> add_int31_unop_from_const Cbytecodes.Khead0int31
+    | KInt31 (_, Int31Head0) -> int31_unop_from_const Cbytecodes.Khead0int31
 							  Primitives.Int31head0
-    | KInt31 (_, Int31Tail0) -> add_int31_unop_from_const Cbytecodes.Ktail0int31
+    | KInt31 (_, Int31Tail0) -> int31_unop_from_const Cbytecodes.Ktail0int31
 							  Primitives.Int31tail0
-    | KInt31 (_, Int31Lor) -> add_int31_binop_from_const Cbytecodes.Klorint31
+    | KInt31 (_, Int31Lor) -> int31_binop_from_const Cbytecodes.Klorint31
 							 Primitives.Int31lor
-    | KInt31 (_, Int31Land) -> add_int31_binop_from_const Cbytecodes.Klandint31
+    | KInt31 (_, Int31Land) -> int31_binop_from_const Cbytecodes.Klandint31
 							  Primitives.Int31land
-    | KInt31 (_, Int31Lxor) -> add_int31_binop_from_const Cbytecodes.Klxorint31
+    | KInt31 (_, Int31Lxor) -> int31_binop_from_const Cbytecodes.Klxorint31
 							  Primitives.Int31lxor
-    | _ -> env.retroknowledge
-  in
-  Retroknowledge.add_field retroknowledge_with_reactive_info field value
-  }
+    | _ -> empty_reactive_info
+
+let _ = Hook.set Retroknowledge.dispatch_hook dispatch

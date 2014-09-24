@@ -284,8 +284,6 @@ val retroknowledge : (retroknowledge->'a) -> env -> 'a
 
 val registered : env -> field -> bool
 
-val unregister : env -> field -> env
-
 val register : env -> field -> Retroknowledge.entry -> env
 
 (** Native compiler *)

@@ -34,6 +34,7 @@ type n_field =
 type int31_field =
   | Int31Bits
   | Int31Type
+  | Int31Constructor
   | Int31Twice
   | Int31TwicePlusOne
   | Int31Phi
@@ -133,58 +134,54 @@ val get_native_before_match_info : retroknowledge -> entry ->
 				   Nativeinstr.prefix -> constructor ->
 				   Nativeinstr.lambda -> Nativeinstr.lambda
 
+
 (** the following functions are solely used in Pre_env and Environ to implement
    the functions  register and unregister (and mem) of Environ *)
 val add_field : retroknowledge -> field -> entry -> retroknowledge
 val mem : retroknowledge -> field -> bool
-val remove : retroknowledge -> field -> retroknowledge
+(* val remove : retroknowledge -> field -> retroknowledge *)
 val find : retroknowledge -> field -> entry
 
-(** the following function manipulate the reactive information of values
-   they are only used by the functions of Pre_env, and Environ to implement
-   the functions register and unregister of Environ *)
-val add_vm_compiling_info : retroknowledge-> entry ->
-                            (bool -> Cbytecodes.comp_env -> constr array -> int ->
-                            Cbytecodes.bytecodes -> Cbytecodes.bytecodes) ->
-                            retroknowledge
-val add_vm_constant_static_info : retroknowledge-> entry ->
-                                  (bool->constr array->
-                                      Cbytecodes.structured_constant) ->
-                                  retroknowledge
-val add_vm_constant_dynamic_info : retroknowledge-> entry ->
-                                   (bool -> Cbytecodes.comp_env ->
-                                   Cbytecodes.block array -> int ->
-                                   Cbytecodes.bytecodes -> Cbytecodes.bytecodes) ->
-                                   retroknowledge
-val add_vm_before_match_info : retroknowledge -> entry ->
-                              (bool->Cbytecodes.bytecodes->Cbytecodes.bytecodes) ->
-                              retroknowledge
 
-val add_vm_decompile_constant_info : retroknowledge -> entry ->
-                                    (int -> constr) -> retroknowledge
+(** Dispatching type for the above [get_*] functions. *)
+type reactive_info = {(*information required by the compiler of the VM *)
+  vm_compiling :
+      (*fastcomputation flag -> continuation -> result *)
+      (bool->Cbytecodes.comp_env->constr array ->
+       int->Cbytecodes.bytecodes->Cbytecodes.bytecodes)
+      option;
+  vm_constant_static :
+      (*fastcomputation flag -> constructor -> args -> result*)
+      (bool->constr array->Cbytecodes.structured_constant)
+      option;
+  vm_constant_dynamic :
+      (*fastcomputation flag -> constructor -> reloc -> args -> sz -> cont -> result *)
+      (bool->Cbytecodes.comp_env->Cbytecodes.block array->int->
+         Cbytecodes.bytecodes->Cbytecodes.bytecodes)
+      option;
+  (* fastcomputation flag -> cont -> result *)
+  vm_before_match : (bool -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes) option;
+  (* tag (= compiled int for instance) -> result *)
+  vm_decompile_const : (int -> Term.constr) option;
 
-val add_native_compiling_info : retroknowledge-> entry ->
-				(bool -> Nativeinstr.prefix ->
-			         Nativeinstr.lambda array -> Nativeinstr.lambda) ->
-				retroknowledge
+  native_compiling :
+      (bool -> Nativeinstr.prefix -> Nativeinstr.lambda array ->
+       Nativeinstr.lambda) option;
 
-val add_native_constant_static_info : retroknowledge -> entry ->
-                                  (bool -> constr array ->
-                                      Nativeinstr.lambda) ->
-                                  retroknowledge
+  native_constant_static :
+      (bool -> constr array -> Nativeinstr.lambda) option;
 
-val add_native_constant_dynamic_info : retroknowledge -> entry ->
-                                   (bool -> Nativeinstr.prefix -> constructor ->
-				      Nativeinstr.lambda array ->
-				      Nativeinstr.lambda) ->
-                                   retroknowledge
+  native_constant_dynamic :
+      (bool -> Nativeinstr.prefix -> constructor ->
+       Nativeinstr.lambda array -> Nativeinstr.lambda) option;
 
-val add_native_before_match_info : retroknowledge -> entry ->
-				   (bool -> Nativeinstr.prefix -> constructor ->
-				      Nativeinstr.lambda -> Nativeinstr.lambda) ->
-				   retroknowledge
+  native_before_match : (bool -> Nativeinstr.prefix -> constructor ->
+			 Nativeinstr.lambda -> Nativeinstr.lambda) option
 
-val clear_info : retroknowledge-> entry -> retroknowledge
+}
 
+val empty_reactive_info : reactive_info
 
-
+(** Hook to be set after the compiler are installed to dispatch fields
+    into the above [get_*] functions. *)
+val dispatch_hook : (retroknowledge -> entry -> field -> reactive_info) Hook.t

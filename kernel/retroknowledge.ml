@@ -16,19 +16,14 @@
 open Names
 open Term
 
-(* Type declarations, these types shouldn't be exported they are accessed
-   through specific functions. As being mutable and all it is wiser *)
-(* These types are put into two distinct categories: proactive and reactive.
-   Proactive information allows finding the name of a combinator, constructor
-   or inductive type handling a specific function.
-   Reactive information is, on the other hand, everything you need to know
-   about a specific name.*)
+(* The retroknowledge defines a bijective correspondance between some
+   [entry]-s (which are, in fact, merely terms) and [field]-s which
+   are roles assigned to these entries. *)
 
 (* aliased type for clarity purpose*)
 type entry = Constr.t
 
-(* the following types correspond to the different "things"
-   the kernel can learn about. These are the fields of the proactive knowledge*)
+(* [field]-s are the roles the kernel can learn of. *)
 type nat_field =
   | NatType
   | NatPlus
@@ -47,6 +42,7 @@ type n_field =
 type int31_field =
   | Int31Bits
   | Int31Type
+  | Int31Constructor
   | Int31Twice
   | Int31TwicePlusOne
   | Int31Phi
@@ -70,9 +66,9 @@ type int31_field =
   | Int31Lxor
 
 type field =
- (* | KEq
-  | KNat of nat_field
-  | KN of n_field *)
+  (* | KEq
+     | KNat of nat_field
+     | KN of n_field *)
   | KInt31 of string*int31_field
 
 
@@ -83,23 +79,16 @@ type flags = {fastcomputation : bool}
 
 
 
-(*A definition of maps from strings to pro_int31, to be able
-  to have any amount of coq representation for the 31bits integers *)
+(* The [proactive] knowledge contains the mapping [field->entry]. *)
 
 module Proactive =
   Map.Make (struct type t = field let compare = compare end)
 
 type proactive = entry Proactive.t
 
-(* the reactive knowledge is represented as a functionaly map
-   from the type of terms (actually it is the terms whose outermost
-   layer is unfolded (typically by Term.kind_of_term)) to the
-   type reactive_end which is a record containing all the kind of reactive
-   information needed *)
-(* todo: because of the bug with output state, reactive_end should eventually
-   contain no function. A forseen possibility is to make it a map from
-   a finite type describing the fields to the field of proactive retroknowledge
-   (and then to make as many functions as needed in environ.ml) *)
+(* The [reactive] knowledge contains the mapping
+   [entry->field]. Fields are later to be interpreted as a
+   [reactive_info]. *)
 
 module EntryOrd =
 struct
@@ -109,7 +98,7 @@ end
 
 module Reactive = Map.Make (EntryOrd)
 
-type reactive_end = {(*information required by the compiler of the VM *)
+type reactive_info = {(*information required by the compiler of the VM *)
   vm_compiling :
       (*fastcomputation flag -> continuation -> result *)
       (bool->Cbytecodes.comp_env->constr array ->
@@ -147,7 +136,7 @@ type reactive_end = {(*information required by the compiler of the VM *)
 
 
 
-and reactive = reactive_end Reactive.t
+and reactive = field Reactive.t
 
 and retroknowledge = {flags : flags; proactive : proactive; reactive : reactive}
 
@@ -174,7 +163,7 @@ let initial_retroknowledge =
    proactive = initial_proactive;
    reactive = initial_reactive }
 
-let empty_reactive_end =
+let empty_reactive_info =
   { vm_compiling = None ;
     vm_constant_static = None;
     vm_constant_dynamic = None;
@@ -188,184 +177,82 @@ let empty_reactive_end =
 
 
 
+(* adds a binding [entry<->field]. *)
+let add_field knowledge field entry =
+  {knowledge with
+    proactive = Proactive.add field entry knowledge.proactive;
+    reactive = Reactive.add entry field knowledge.reactive}
 
 (* acces functions for proactive retroknowledge *)
-let add_field knowledge field value =
-  {knowledge with proactive = Proactive.add field value knowledge.proactive}
-
 let mem knowledge field =
   Proactive.mem field knowledge.proactive
-
-let remove knowledge field =
-  {knowledge with proactive = Proactive.remove field knowledge.proactive}
 
 let find knowledge field =
   Proactive.find field knowledge.proactive
 
 
+let (dispatch,dispatch_hook) = Hook.make ()
 
-
+let dispatch_reactive entry retroknowledge =
+  Hook.get dispatch retroknowledge entry (Reactive.find entry retroknowledge.reactive)
 
 (*access functions for reactive retroknowledge*)
 
 (* used for compiling of functions (add, mult, etc..) *)
 let get_vm_compiling_info knowledge key =
-  match (Reactive.find key knowledge.reactive).vm_compiling
+  match (dispatch_reactive key knowledge).vm_compiling
   with
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
 
 (* used for compilation of fully applied constructors *)
 let get_vm_constant_static_info knowledge key =
-  match (Reactive.find key knowledge.reactive).vm_constant_static
+  match (dispatch_reactive key knowledge).vm_constant_static
   with
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
 
 (* used for compilation of partially applied constructors *)
 let get_vm_constant_dynamic_info knowledge key =
-  match (Reactive.find key knowledge.reactive).vm_constant_dynamic
+  match (dispatch_reactive key knowledge).vm_constant_dynamic
   with
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
 
 let get_vm_before_match_info knowledge key =
-  match (Reactive.find key knowledge.reactive).vm_before_match
+  match (dispatch_reactive key knowledge).vm_before_match
   with
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
 
 let get_vm_decompile_constant_info knowledge key =
-  match (Reactive.find key knowledge.reactive).vm_decompile_const
+  match (dispatch_reactive key knowledge).vm_decompile_const
   with
     | None -> raise Not_found
     | Some f -> f
 
 let get_native_compiling_info knowledge key =
-  match (Reactive.find key knowledge.reactive).native_compiling
+  match (dispatch_reactive key knowledge).native_compiling
   with
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
 
 (* used for compilation of fully applied constructors *)
 let get_native_constant_static_info knowledge key =
-  match (Reactive.find key knowledge.reactive).native_constant_static
+  match (dispatch_reactive key knowledge).native_constant_static
   with
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
 
 (* used for compilation of partially applied constructors *)
 let get_native_constant_dynamic_info knowledge key =
-  match (Reactive.find key knowledge.reactive).native_constant_dynamic
+  match (dispatch_reactive key knowledge).native_constant_dynamic
   with
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
 
 let get_native_before_match_info knowledge key =
-  match (Reactive.find key knowledge.reactive).native_before_match
+  match (dispatch_reactive key knowledge).native_before_match
   with
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
-
-(* functions manipulating reactive knowledge *)
-let add_vm_compiling_info knowledge value nfo =
-  {knowledge with reactive =
-   try
-     Reactive.add value
-       {(Reactive.find value (knowledge.reactive)) with vm_compiling = Some nfo}
-       knowledge.reactive
-   with Not_found ->
-     Reactive.add value {empty_reactive_end with vm_compiling = Some nfo}
-       knowledge.reactive
-  }
-
-let add_vm_constant_static_info knowledge value nfo =
-  {knowledge with reactive =
-   try
-     Reactive.add value
-       {(Reactive.find value (knowledge.reactive)) with vm_constant_static = Some nfo}
-       knowledge.reactive
-   with Not_found ->
-     Reactive.add value {empty_reactive_end with vm_constant_static = Some nfo}
-       knowledge.reactive
-  }
-
-let add_vm_constant_dynamic_info knowledge value nfo =
-  {knowledge with reactive =
-   try
-     Reactive.add value
-       {(Reactive.find value (knowledge.reactive)) with vm_constant_dynamic = Some nfo}
-       knowledge.reactive
-   with Not_found ->
-     Reactive.add value {empty_reactive_end with vm_constant_dynamic = Some nfo}
-       knowledge.reactive
-  }
-
-let add_vm_before_match_info knowledge value nfo =
-  {knowledge with reactive =
-   try
-     Reactive.add value
-       {(Reactive.find value (knowledge.reactive)) with vm_before_match = Some nfo}
-       knowledge.reactive
-   with Not_found ->
-     Reactive.add value {empty_reactive_end with vm_before_match = Some nfo}
-       knowledge.reactive
-  }
-
-let add_vm_decompile_constant_info knowledge value nfo =
-  {knowledge with reactive =
-   try
-     Reactive.add value
-       {(Reactive.find value (knowledge.reactive)) with vm_decompile_const = Some nfo}
-       knowledge.reactive
-   with Not_found ->
-     Reactive.add value {empty_reactive_end with vm_decompile_const = Some nfo}
-       knowledge.reactive
-  }
-
-let add_native_compiling_info knowledge value nfo =
-  {knowledge with reactive =
-   try
-     Reactive.add value
-       {(Reactive.find value (knowledge.reactive)) with native_compiling = Some nfo}
-       knowledge.reactive
-   with Not_found ->
-     Reactive.add value {empty_reactive_end with native_compiling = Some nfo}
-       knowledge.reactive
-  }
-
-let add_native_constant_static_info knowledge value nfo =
-  {knowledge with reactive =
-   try
-     Reactive.add value
-       {(Reactive.find value (knowledge.reactive)) with native_constant_static = Some nfo}
-       knowledge.reactive
-   with Not_found ->
-     Reactive.add value {empty_reactive_end with native_constant_static = Some nfo}
-       knowledge.reactive
-  }
-
-let add_native_constant_dynamic_info knowledge value nfo =
-  {knowledge with reactive =
-   try
-     Reactive.add value
-       {(Reactive.find value (knowledge.reactive)) with native_constant_dynamic = Some nfo}
-       knowledge.reactive
-   with Not_found ->
-     Reactive.add value {empty_reactive_end with native_constant_dynamic = Some nfo}
-       knowledge.reactive
-  }
-
-let add_native_before_match_info knowledge value nfo =
-  {knowledge with reactive =
-   try
-     Reactive.add value
-       {(Reactive.find value (knowledge.reactive)) with native_before_match = Some nfo}
-       knowledge.reactive
-   with Not_found ->
-     Reactive.add value {empty_reactive_end with native_before_match = Some nfo}
-       knowledge.reactive
-  }
-
-let clear_info knowledge value =
-  {knowledge with reactive = Reactive.remove value knowledge.reactive}
