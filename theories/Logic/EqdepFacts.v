@@ -376,7 +376,7 @@ Proof.
                          (eq_sym (UIP (eq_refl x) (eq_refl x)))).
   - destruct z. unfold e. destruct (UIP _ _). reflexivity.
   - change
-      (match eq_refl x as y' in _ = x' return y' = y' -> Type with
+      (match eq_refl x as y' in _ = x' return y' = y' -> Prop with
        | eq_refl => fun z => z = (eq_refl (eq_refl x))
        end (eq_trans (eq_trans (UIP (eq_refl x) (eq_refl x)) z)
                      (eq_sym (UIP (eq_refl x) (eq_refl x))))).

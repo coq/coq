@@ -1071,7 +1071,7 @@ let is_projection env = function
  * Performs a betaiota reduction after unfolding. *)
 let unfoldoccs env sigma (occs,name) c =
   if is_projection env name then
-    error ("Cannot unfold primitie projection " ^ string_of_evaluable_ref env name)
+    error ("Cannot unfold primitive projection " ^ string_of_evaluable_ref env name)
   else
   let unfo nowhere_except_in locs =
     let (nbocc,uc) = substlin env sigma name 1 (nowhere_except_in,locs) c in
