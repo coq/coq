@@ -8,8 +8,13 @@
 
 open Globnames
 
-val declare_keys : global_reference -> global_reference -> unit
+type key
+
+val declare_keys : key -> key -> unit
 (** Declare two keys as being equivalent. *)
 
-val equiv_keys : global_reference -> global_reference -> bool
+val equiv_keys : key -> key -> bool
 (** Check equivalence of keys. *)
+
+val constr_key : Term.constr -> key
+(** Compute the head key of a term. *)
