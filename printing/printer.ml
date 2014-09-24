@@ -611,7 +611,7 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
           | [] , [] , _ ->
 	    (* emacs mode: xml-like flag for detecting information message *)
 	    str (emacs_str "<infomsg>") ++
-	    str "No more, however there are goals you gave up. You need to go back and solve them."
+	    str "No more goals, however there are goals you gave up. You need to go back and solve them."
 	    ++ str (emacs_str "</infomsg>")
 	    ++ fnl () ++ fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] given_up
