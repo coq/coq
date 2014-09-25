@@ -64,7 +64,7 @@ struct
   | Root of 'a option array
   | DSet of int * 'a option * 'a t
 
-  let empty n = ref (Root (Array.create n None))
+  let empty n = ref (Root (Array.make n None))
 
   let rec rerootk t k = match !t with
   | Root _ -> k ()

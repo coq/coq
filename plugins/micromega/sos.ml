@@ -282,14 +282,14 @@ let poly_variables (p:poly) =
 (* Order monomials for human presentation.                                   *)
 (* ------------------------------------------------------------------------- *)
 
-let humanorder_varpow (x1,k1) (x2,k2) = x1 < x2 or x1 = x2 && k1 > k2;;
+let humanorder_varpow (x1,k1) (x2,k2) = x1 < x2 || x1 = x2 && k1 > k2;;
 
 let humanorder_monomial =
   let rec ord l1 l2 = match (l1,l2) with
     _,[] -> true
   | [],_ -> false
-  | h1::t1,h2::t2 -> humanorder_varpow h1 h2 or h1 = h2 && ord t1 t2 in
-  fun m1 m2 -> m1 = m2 or
+  | h1::t1,h2::t2 -> humanorder_varpow h1 h2 || h1 = h2 && ord t1 t2 in
+  fun m1 m2 -> m1 = m2 ||
                ord (sort humanorder_varpow (graph m1))
                    (sort humanorder_varpow (graph m2));;
 
@@ -602,7 +602,7 @@ let run_csdp dbg obj mats =
 
 let csdp obj mats =
   let rv,res = run_csdp (!debugging) obj mats in
-  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+  (if rv = 1 || rv = 2 then failwith "csdp: Problem is infeasible"
    else if rv = 3 then ()
     (* Format.print_string "csdp warning: Reduced accuracy";
      Format.print_newline() *)
@@ -653,7 +653,7 @@ let linear_program_basic a =
   let mats =  List.map (fun j -> diagonal (column j a)) (1--n)
   and obj = vector_const (Int 1) m in
   let rv,res = run_csdp false obj mats in
-  if rv = 1 or rv = 2 then false
+  if rv = 1 || rv = 2 then false
   else if rv = 0 then true
   else failwith "linear_program: An error occurred in the SDP solver";;
 
@@ -667,7 +667,7 @@ let linear_program a b =
   let mats = diagonal b :: List.map (fun j -> diagonal (column j a)) (1--n)
   and obj = vector_const (Int 1) m in
   let rv,res = run_csdp false obj mats in
-  if rv = 1 or rv = 2 then false
+  if rv = 1 || rv = 2 then false
   else if rv = 0 then true
   else failwith "linear_program: An error occurred in the SDP solver";;
 
@@ -968,7 +968,7 @@ let run_csdp dbg nblocks blocksizes obj mats =
 
 let csdp nblocks blocksizes obj mats =
   let rv,res = run_csdp (!debugging) nblocks blocksizes obj mats in
-  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+  (if rv = 1 || rv = 2 then failwith "csdp: Problem is infeasible"
    else if rv = 3 then ()
     (*Format.print_string "csdp warning: Reduced accuracy";
      Format.print_newline() *)
@@ -1439,7 +1439,7 @@ let run_csdp dbg obj mats =
 
 let csdp obj mats =
   let rv,res = run_csdp (!debugging) obj mats in
-  (if rv = 1 or rv = 2 then failwith "csdp: Problem is infeasible"
+  (if rv = 1 || rv = 2 then failwith "csdp: Problem is infeasible"
     else if rv = 3 then ()
 (*    (Format.print_string "csdp warning: Reduced accuracy";
      Format.print_newline()) *)
