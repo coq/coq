@@ -38,8 +38,11 @@
     - The [NoRetractFromTypeToProp] module proves that [Prop] cannot
       be a retract of a larger type.
 
-    - The [Prop_neq_Type] module proves that [Prop] is different from
-      any larger [Type].
+    - The [TypeNeqSmallType] module proves that [Type] is different
+      from any smaller type.
+
+    - The [PropNeqType] module proves that [Prop] is different from
+      any larger [Type]. It is an instance of the previous result.
 
     References:
 
