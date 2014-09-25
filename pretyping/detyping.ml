@@ -32,6 +32,10 @@ let dl = Loc.ghost
 let print_universes = Flags.univ_print
 
 let add_name na b t (nenv, env) = add_name na nenv, push_rel (na, b, t) env
+let add_name_opt na b t (nenv, env) = 
+  match t with
+  | None -> Termops.add_name na nenv, env
+  | Some t -> add_name na b t (nenv, env)
 
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
@@ -230,15 +234,16 @@ let rec decomp_branch ndecls nargs nal b (avoid,env as e) c =
   else
     let na,c,f,nargs',body,t =
       match kind_of_term (strip_outer_cast c) with
-	| Lambda (na,t,c) -> na,c,compute_displayed_let_name_in,nargs-1,None,t
+	| Lambda (na,t,c) -> na,c,compute_displayed_let_name_in,nargs-1,None,Some t
 	| LetIn (na,b,t,c) when ndecls>nargs ->
-            na,c,compute_displayed_name_in,nargs,Some b,t
-	| LetIn (na,b,t,c) ->
-	    Name default_dependent_ident,(applist (lift 1 c, [mkRel 1])),
-	    compute_displayed_name_in,nargs-1,Some b,t 
-	| _ -> assert false in
+            na,c,compute_displayed_name_in,nargs,Some b,Some t
+	| _ ->
+	  Name default_dependent_ident,(applist (lift 1 c, [mkRel 1])),
+	    compute_displayed_name_in,nargs-1,None,None
+    in
     let na',avoid' = f flag avoid na c in
-    decomp_branch (ndecls-1) nargs' (na'::nal) b (avoid',add_name na' body t env) c
+    decomp_branch (ndecls-1) nargs' (na'::nal) b 
+      (avoid', add_name_opt na' body t env) c
 
 let rec build_tree na isgoal e ci cl =
   let mkpat n rhs pl = PatCstr(dl,(ci.ci_ind,n+1),pl,update_name na rhs) in
