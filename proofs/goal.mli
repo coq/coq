@@ -120,9 +120,6 @@ end
 
 (*** Goal tactics. DEPRECATED. ***)
 
-(* Goal tactics are [subgoal sensitive]-s *)
-type subgoals = private { subgoals: goal list }
-
 (* Goal sensitive values *)
 type +'a sensitive
 
@@ -130,8 +127,6 @@ type +'a sensitive
 val eval :
   'a sensitive -> Environ.env -> Evd.evar_map -> goal ->
     'a * Evd.evar_map
-
-val refine_open_constr : Evd.open_constr -> subgoals sensitive
 
 (* [enter] combines [env], [defs], [hyps] and [concl] in a single
    primitive. *)

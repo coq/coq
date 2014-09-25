@@ -125,9 +125,6 @@ let partition_unifiable sigma l =
 (*** Goal tactics ***)
 
 
-(* Goal tactics are [subgoal sensitive]-s *)
-type subgoals = { subgoals: goal list }
-
 (* type of the base elements of the goal API.*)
 (* it has an extra evar_info with respect to what would be expected,
    it is supposed to be the evar_info of the goal in the evar_map.
@@ -152,96 +149,6 @@ let bind e f = (); fun env rdefs goal info ->
   let a = e env rdefs goal info in
   let r = f a in
   r env rdefs goal info
-
-(* Type of constr with holes used by refine. *)
-(* The list of evars doesn't necessarily contain all the evars in the constr,
-    only those the constr has introduced. *)
-(* The variables in [myevars] are supposed to be stored
-   in decreasing order. Breaking this invariant might cause
-   many things to go wrong. *)
-type refinable = {
-  me: constr;
-  my_evars: Evd.evar list
-}
-
-module Refinable = struct
-
-  let make t = (); fun env rdefs gl info ->
-    let r = ref [] in
-    let me = t r in
-    let me = me env rdefs gl info in
-    { me = me; my_evars = !r }
-
-  (* [with_type c typ] constrains term [c] to have type [typ].  *)
-  let with_type t typ = (); fun env rdefs _ _ ->
-    (* spiwack: this function assumes that no evars can be created during
-        this sort of coercion.
-        If it is not the case it could produce bugs. We would need to add a handle
-        and add the new evars to it. *)
-    let my_type = Retyping.get_type_of env !rdefs t in
-    let j = Environ.make_judge t my_type in
-    let (new_defs,j') =
-      Coercion.inh_conv_coerce_to true (Loc.ghost) env !rdefs j typ
-    in
-    rdefs := new_defs;
-    j'.Environ.uj_val
-
-  (* a pessimistic (i.e : there won't be many positive answers) filter
-     over evar_maps, acting only on undefined evars *)
-  let evar_map_filter_undefined f evm =
-    let fold ev evi accu = if f ev evi then ev :: accu else accu in
-    (** We rely on the LTR order of fold here... *)
-    Evar.Map.fold fold (Evd.undefined_map evm) []
-
-  (* Union, sorted in decreasing order, of two lists of evars in decreasing order. *)
-  let rec fusion l1 l2 = match l1 , l2 with
-    | [] , _ -> l2
-    | _ , [] -> l1
-    | a::l1 , b::_ when a > b -> a::(fusion l1 l2)
-    | a::l1 , b::l2 when Evar.equal a b -> a::(fusion l1 l2)
-    | _ , b::l2 -> b::(fusion l1 l2)
-
-  let update_handle handle init_defs post_defs =
-    (* [delta_list] holds the evars that have been introduced by this
-       refinement (but not immediatly solved) *)
-    let filter ev _ = not (Evd.mem init_defs ev) in
-    (* spiwack: this is the hackish part, don't know how to do any better though. *)
-    let delta_list = evar_map_filter_undefined filter post_defs in
-    (* The variables in [myevars] are supposed to be stored
-       in decreasing order. Breaking this invariant might cause
-       many things to go wrong. *)
-    handle := fusion delta_list !handle
-
-  let constr_of_open_constr handle check_type (evars, c) = (); fun env rdefs gl info ->
-    let () = update_handle handle !rdefs evars in
-    rdefs := Evd.fold (fun ev evi evd -> if not (Evd.mem !rdefs ev) then Evd.add evd ev evi else evd) evars !rdefs;
-    if check_type then with_type c (Evd.evar_concl (content !rdefs gl)) env rdefs gl info
-    else c
-
-end
-
-(* [refine t] takes a refinable term and use it as a partial proof for current
-    goal. *)
-let refine step = (); fun env rdefs gl info ->
-  (* subgoals to return *)
-  (* The evars in [my_evars] are stored in reverse order.
-     It is expectingly better however to display the goal
-     in increasing order. *)
-  rdefs := Evarconv.consider_remaining_unif_problems env !rdefs ;
-  let subgoals = List.map (descendent gl) (List.rev step.my_evars) in
-  (* creates the new [evar_map] by defining the evar of the current goal
-     as being [refine_step]. *)
-  let new_defs = Evd.define gl.content (step.me) !rdefs in
-  rdefs := new_defs;
-  (* Filtering the [subgoals] for uninstanciated (=unsolved) goals. *)
-  let subgoals =
-    Option.List.flatten (List.map (advance !rdefs) subgoals)
-  in
-  { subgoals = subgoals }
-
-let refine_open_constr c =
-  let pf h = Refinable.constr_of_open_constr h true c in
-  bind (Refinable.make pf) refine
 
 let enter f = (); fun env rdefs gl info ->
   let sigma = !rdefs in

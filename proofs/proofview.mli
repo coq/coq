@@ -235,10 +235,6 @@ val tclEXTEND : unit tactic list -> unit tactic -> unit tactic list -> unit tact
    backtracking in another. *)
 val tclINDEPENDENT : unit tactic -> unit tactic
 
-(* [tclSENSITIVE] views goal-type tactics as a special kind of tactics.*)
-val tclSENSITIVE : Goal.subgoals Goal.sensitive -> unit tactic 
-
-
 (* [tclPROGRESS t] behaves has [t] as long as [t] progresses. *)
 val tclPROGRESS : 'a tactic -> 'a tactic
 

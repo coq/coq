@@ -545,33 +545,6 @@ let tclNEWGOALS gls =
   { step with comb = step.comb @ gls }
   end
 
-(* No backtracking can happen here, hence, as opposed to the dispatch tacticals,
-    everything is done in one step. *)
-let sensitive_on_proofview s env step =
-  let wrap g ((defs, partial_list) as partial_res) = 
-    match Goal.advance defs g with
-    | None -> partial_res
-    | Some g ->
-      let { Goal.subgoals = sg } , d' = Goal.eval s env defs g in
-      (d', sg::partial_list)
-  in
-  let ( new_defs , combed_subgoals ) = 
-    List.fold_right wrap step.comb (step.solution,[])
-  in
-  { solution = new_defs; comb = List.flatten combed_subgoals; }
-
-let tclSENSITIVE s =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Proof.bind in
-  Proof.current >>= fun env ->
-  Proof.get >>= fun step ->
-  try
-    let next = sensitive_on_proofview s env step in
-    Proof.set next
-  with e when catchable_exception e ->
-    let e = Errors.push e in
-    tclZERO e
-
 let tclPROGRESS t =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in

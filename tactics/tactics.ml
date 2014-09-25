@@ -4203,6 +4203,38 @@ module Simple = struct
 
 end
 
+
+(* [with_type c typ] constrains term [c] to have type [typ].  *)
+let with_type t typ env sigma =
+  (* spiwack: this function assumes that no evars can be created during
+      this sort of coercion.
+      If it is not the case it could produce bugs. We would need to add a handle
+      and add the new evars to it. *)
+  let my_type = Retyping.get_type_of env sigma t in
+  let j = Environ.make_judge t my_type in
+  let (sigma, j') =
+    Coercion.inh_conv_coerce_to true (Loc.ghost) env sigma j typ
+  in
+  (sigma, j'.Environ.uj_val)
+
+let update_handle handle init_defs post_defs =
+  let filter ev _ = not (Evd.mem init_defs ev) in
+  let fold ev evi accu = if filter ev evi then Evar.Set.add ev accu else accu in
+  Evd.fold_undefined fold post_defs handle
+
+let constr_of_open_constr handle (evars, c) env sigma concl =
+  let () = handle := update_handle !handle sigma evars in
+  let fold ev evi evd = if not (Evd.mem sigma ev) then Evd.add evd ev evi else evd in
+  let sigma = Evd.fold fold evars sigma in
+  with_type c concl env sigma
+
+let refine_open_constr c env sigma concl =
+  let handle = ref Evar.Set.empty in
+  let sigma, pf = constr_of_open_constr handle c env sigma concl in
+  let sigma = Evarconv.consider_remaining_unif_problems env sigma in
+  let subgoals = List.map Goal.build (Evar.Set.elements !handle) in
+  (subgoals, pf, sigma)
+
 (** Tacticals defined directly in term of Proofview *)
 module New = struct
   open Proofview.Notations
@@ -4214,8 +4246,13 @@ module New = struct
 
   let refine c =
     Proofview.Goal.nf_enter begin fun gl ->
-    let pf = Goal.refine_open_constr c in
-    Proofview.tclSENSITIVE pf <*>
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let concl = Proofview.Goal.concl gl in
+    let (gls, pf, sigma) = refine_open_constr c env sigma concl in
+    Proofview.V82.tclEVARS sigma <*>
+    Proofview.Refine.refine ~unsafe:true (fun h -> (h, pf)) <*>
+    Proofview.tclNEWGOALS gls <*>
       Proofview.V82.tactic (reduce
          (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
          {onhyps=None; concl_occs=AllOccurrences }
