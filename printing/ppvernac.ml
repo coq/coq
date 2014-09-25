@@ -401,7 +401,7 @@ let pr_record_field ((x, pri), ntn) =
     prx ++ prpri ++ prlist (pr_decl_notation pr_constr) ntn
 in
 let pr_record_decl b c fs =
-    pr_opt pr_lident c ++ str"{"  ++
+    pr_opt pr_lident c ++ (if c = None then str"{" else str" {") ++
     hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}")
 in
 
@@ -628,7 +628,6 @@ let rec pr_vernac = function
             fnl() ++ str fst_sep ++
             prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l
        | RecordDecl (c,fs) ->
-	    spc() ++
 	    pr_record_decl b c fs in
       let pr_oneind key (((coe,id),indpar,s,k,lc),ntn) =
 	hov 0 (
@@ -674,7 +673,7 @@ let rec pr_vernac = function
       let pr_onecorec (((loc,id),bl,c,def),ntn) =
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
         spc() ++ pr_lconstr_expr c ++
-        pr_opt (fun def -> str" :=" ++ brk(1,2) ++ pr_lconstr def) def ++
+        pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) def ++
 	prlist (pr_decl_notation pr_constr) ntn
       in
       hov 0 (str local ++ str "CoFixpoint" ++ spc() ++
