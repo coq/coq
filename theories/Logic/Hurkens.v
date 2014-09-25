@@ -333,7 +333,7 @@ End NoRetractToImpredicativeUniverse.
 (** * Prop is not a retract *)
 
 (** The existence in the pure Calculus of Constructions of a retract
-    from Prop into a small type of Prop is inconsistent. This is a
+    from [Prop] into a small type of [Prop] is inconsistent. This is a
     special case of the previous result. *)
 
 Module NoRetractFromSmallPropositionToProp.
