@@ -262,6 +262,11 @@ val tclEFFECTS : Declareops.side_effects -> unit tactic
 (* Checks for interrupts *)
 val tclCHECKINTERRUPT : unit tactic
 
+(* [tclNEWGOALS gls] adds the goals [gls] to the ones currently being proved,
+   appending them to the list of focussed goals. If a goal is already solved,
+   it is not added. Prefer the other primitives when possible. *)
+val tclNEWGOALS : Goal.goal list -> unit tactic
+
 (* Shelves all the goals under focus. The goals are placed on the
    shelf for later use (or being solved by side-effects). *)
 val shelve : unit tactic

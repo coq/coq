@@ -538,6 +538,13 @@ let tclINDEPENDENT tac =
   | [_] -> tac
   | _ -> list_iter_goal () (fun _ () -> tac)
 
+let tclNEWGOALS gls =
+  Proof.modify begin fun step ->
+  let map gl = Goal.advance step.solution gl in
+  let gls = List.map_filter map gls in
+  { step with comb = step.comb @ gls }
+  end
+
 (* No backtracking can happen here, hence, as opposed to the dispatch tacticals,
     everything is done in one step. *)
 let sensitive_on_proofview s env step =
