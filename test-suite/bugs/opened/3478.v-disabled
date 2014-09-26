@@ -1,0 +1,8 @@
+Set Primitive Projections.
+Record foo := { foom :> Type }.
+Canonical Structure default_foo := fun T => {| foom := T |}.
+Record bar T := { bar1 : T }.
+Goal forall (s : foo) (x : foom s), True.
+Proof.
+  intros.
+  Timeout 1 pose (x : bar _) as x'.

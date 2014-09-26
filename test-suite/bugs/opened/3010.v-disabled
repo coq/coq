@@ -1,0 +1,1 @@
+Definition em {A R} (k : forall s : sum A _, match s with inl x => R x | inr y => R end) := k (inr (fun x => k (inl x))).

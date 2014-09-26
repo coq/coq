@@ -1,0 +1,4 @@
+Fixpoint a (_:unit):=
+match eq_refl with
+|eq_refl => a
+end.
