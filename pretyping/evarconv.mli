@@ -63,7 +63,7 @@ val set_solve_evars : (env -> evar_map ref -> constr -> constr) -> unit
 (* For debugging *)
 val evar_conv_x : transparent_state ->
   env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
-val evar_eqappr_x : ?rhs_is_already_stuck:bool -> transparent_state ->
+val evar_eqappr_x : ?rhs_is_already_stuck:bool -> transparent_state * bool ->
   env -> evar_map ->
     conv_pb -> state * Cst_stack.t -> state * Cst_stack.t ->
       Evarsolve.unification_result

@@ -308,9 +308,6 @@ let declare_canonical_structure ref =
 let lookup_canonical_conversion (proj,pat) =
   assoc_pat pat (Refmap.find proj !object_table)
 
-  (* let cst, u' = destConst cs.o_DEF in *)
-  (*   { cs with o_DEF = mkConstU (cst, u) } *)
-
 let is_open_canonical_projection env sigma (c,args) =
   try
     let ref = global_of_constr c in

@@ -159,7 +159,7 @@ let check_conv_record (t1,sk1) (t2,sk2) =
       [], c, sk1
     | None ->
       match Stack.strip_n_app nparams sk1 with
-      | Some (params1, c1,extra_args1) -> params1, c1, extra_args1
+      | Some (params1, c1, extra_args1) -> params1, c1, extra_args1
       | _ -> raise Not_found in
   let us2,extra_args2 =
     let l_us = List.length us in
@@ -319,7 +319,7 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
   let ground_test =
     if is_ground_term evd term1 && is_ground_term evd term2 then (
       let evd, b = 
-	try infer_conv ~pb:pbty ~ts env evd term1 term2 
+	try infer_conv ~pb:pbty ~ts:(fst ts) env evd term1 term2 
 	with Univ.UniverseInconsistency _ -> evd, false
       in
 	if b then Some (evd, true)
@@ -333,8 +333,8 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
     | None ->
 	(* Until pattern-unification is used consistently, use nohdbeta to not
 	   destroy beta-redexes that can be used for 1st-order unification *)
-        let term1 = apprec_nohdbeta ts env evd term1 in
-        let term2 = apprec_nohdbeta ts env evd term2 in
+        let term1 = apprec_nohdbeta (fst ts) env evd term1 in
+        let term2 = apprec_nohdbeta (fst ts) env evd term2 in
 	let default () = 
           evar_eqappr_x ts env evd pbty
             (whd_nored_state evd (term1,Stack.empty), Cst_stack.empty)
@@ -389,7 +389,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let c = nf_evar evd c1 in
     let env' = push_rel (na,None,c) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
-      ts env' evd Cst_stack.empty (c'1, Stack.empty) in
+      (fst ts) env' evd Cst_stack.empty (c'1, Stack.empty) in
     let out2 = whd_nored_state evd
       (Stack.zip (term', sk' @ [Stack.Shift 1]), Stack.append_app [|mkRel 1|] Stack.empty), Cst_stack.empty in
     if onleft then evar_eqappr_x ts env' evd CONV out1 out2
@@ -424,7 +424,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       else quick_fail i
     and f3 i =
       switch (evar_eqappr_x ts env i pbty) (apprF,cstsF)
-	(whd_betaiota_deltazeta_for_iota_state ts env i cstsM vM)
+	(whd_betaiota_deltazeta_for_iota_state (fst ts) env i cstsM vM)
     in
     ise_try evd [f1; f2; f3] in
   let flex_rigid on_left ev (termF, skF as apprF) (termR, skR as apprR) =
@@ -458,7 +458,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	     let open Pp in
 	     pp (v 0 (pr_state appr1 ++ cut () ++ pr_state appr2 ++ cut ()) 
 		 ++ fnl ()) in
-  match (flex_kind_of_term ts env term1 sk1, flex_kind_of_term ts env term2 sk2) with
+  match (flex_kind_of_term (fst ts) env term1 sk1, flex_kind_of_term (fst ts) env term2 sk2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 i =
 	  match ise_stack2 false env i (evar_conv_x ts) sk1 sk2 with
@@ -521,8 +521,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	       evar_conv_x ts (push_rel (na,Some b,t) env) i pbty c'1 c'2);
 	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1' sk2')]
 	and f2 i =
-          let out1 = whd_betaiota_deltazeta_for_iota_state ts env i csts1 (v1,sk1')
-          and out2 = whd_betaiota_deltazeta_for_iota_state ts env i csts2 (v2,sk2')
+          let out1 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts1 (v1,sk1')
+          and out2 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts2 (v2,sk2')
 	  in evar_eqappr_x ts env i pbty out1 out2
 	in
 	ise_try evd [f1; f2]
@@ -533,8 +533,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    [(fun i -> evar_conv_x ts env i CONV c c');
 	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1' sk2')]
 	  and f2 i =
-            let out1 = whd_betaiota_deltazeta_for_iota_state ts env i csts1 (v1,sk1')
-            and out2 = whd_betaiota_deltazeta_for_iota_state ts env i csts2 (v2,sk2')
+            let out1 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts1 (v1,sk1')
+            and out2 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts2 (v2,sk2')
 	    in evar_eqappr_x ts env i pbty out1 out2
 	  in
 	    ise_try evd [f1; f2]
@@ -549,8 +549,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 		   (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 rest)]
 	      | None -> UnifFailure (evd, NotSameHead))
 	  and f2 i =
-            let out1 = whd_betaiota_deltazeta_for_iota_state ts env i csts1 (v1,sk1')
-            and out2 = whd_betaiota_deltazeta_for_iota_state ts env i csts2 (v2,sk2')
+            let out1 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts1 (v1,sk1')
+            and out2 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts2 (v2,sk2')
 	    in evar_eqappr_x ts env i pbty out1 out2
 	  in ise_try evd [f1;f2]
 
@@ -564,8 +564,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 		   (fun i -> exact_ise_stack2 env i (evar_conv_x ts) rest sk2)]
 	      | None -> UnifFailure (evd, NotSameHead))
 	  and f2 i =
-            let out1 = whd_betaiota_deltazeta_for_iota_state ts env i csts1 (v1,sk1')
-            and out2 = whd_betaiota_deltazeta_for_iota_state ts env i csts2 (v2,sk2')
+            let out1 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts1 (v1,sk1')
+            and out2 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts2 (v2,sk2')
 	    in evar_eqappr_x ts env i pbty out1 out2
 	  in ise_try evd [f1;f2]
 
@@ -585,9 +585,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 			 (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1' sk2')]
 	    else UnifFailure (i,NotSameHead)
 	and f2 i =
-	  (try conv_record ts env i
-             (try check_conv_record appr1 appr2
-	      with Not_found -> check_conv_record appr2 appr1)
+	  (try 
+	     if not (snd ts) then raise Not_found
+	     else conv_record ts env i
+               (try check_conv_record appr1 appr2
+		with Not_found -> check_conv_record appr2 appr1)
            with Not_found -> UnifFailure (i,NoCanonicalStructure))
 	and f3 i =
           (* heuristic: unfold second argument first, exception made
@@ -603,7 +605,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
             | Lambda _ -> assert (match args with [] -> true | _ -> false); true
             | LetIn (_,b,_,c) -> is_unnamed
 	     (fst (whd_betaiota_deltazeta_for_iota_state
-		      ts env i Cst_stack.empty (subst1 b c, args)))
+		      (fst ts) env i Cst_stack.empty (subst1 b c, args)))
 	    | Fix _ -> true (* Partially applied fix can be the result of a whd call *)
 	    | Proj (p, c) -> true
             | Case _ | App _| Cast _ -> assert false in
@@ -611,7 +613,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    let applicative_stack = fst (Stack.strip_app sk2') in
 	    is_unnamed
 	      (fst (whd_betaiota_deltazeta_for_iota_state
-		      ts env i Cst_stack.empty (v2, applicative_stack))) in
+		      (fst ts) env i Cst_stack.empty (v2, applicative_stack))) in
           let rhs_is_already_stuck =
             rhs_is_already_stuck || rhs_is_stuck_and_unnamed () in
 
@@ -619,12 +621,12 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    && (not (Stack.not_purely_applicative sk1')) then
 	    evar_eqappr_x ~rhs_is_already_stuck ts env i pbty
 	      (whd_betaiota_deltazeta_for_iota_state
-		 ts env i (Cst_stack.add_cst term1 csts1) (v1,sk1'))
+		 (fst ts) env i (Cst_stack.add_cst term1 csts1) (v1,sk1'))
 	      (appr2,csts2)
 	  else
 	    evar_eqappr_x ts env i pbty (appr1,csts1)
 	      (whd_betaiota_deltazeta_for_iota_state
-		 ts env i (Cst_stack.add_cst term2 csts2) (v2,sk2'))
+		 (fst ts) env i (Cst_stack.add_cst term2 csts2) (v2,sk2'))
 	in
 	ise_try evd [f1; f2; f3]
     end
@@ -644,24 +646,28 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 
     | MaybeFlexible (v1,sk1), Rigid ->
 	let f3 i =
-	  (try conv_record ts env i (check_conv_record appr1 appr2)
+	  (try 
+	     if not (snd ts) then raise Not_found
+	     else conv_record ts env i (check_conv_record appr1 appr2)
            with Not_found -> UnifFailure (i,NoCanonicalStructure))
 	and f4 i =
 	  evar_eqappr_x ts env i pbty
 	    (whd_betaiota_deltazeta_for_iota_state
-	       ts env i (Cst_stack.add_cst term1 csts1) (v1,sk1))
+	       (fst ts) env i (Cst_stack.add_cst term1 csts1) (v1,sk1))
 	    (appr2,csts2)
 	in
 	  ise_try evd [f3; f4]
 
     | Rigid, MaybeFlexible (v2,sk2) ->
 	let f3 i =
-	  (try conv_record ts env i (check_conv_record appr2 appr1)
+	  (try
+	     if not (snd ts) then raise Not_found
+	     else conv_record ts env i (check_conv_record appr2 appr1)
            with Not_found -> UnifFailure (i,NoCanonicalStructure))
 	and f4 i =
 	  evar_eqappr_x ts env i pbty (appr1,csts1)
 	    (whd_betaiota_deltazeta_for_iota_state
-	       ts env i (Cst_stack.add_cst term2 csts2) (v2,sk2))
+	       (fst ts) env i (Cst_stack.add_cst term2 csts2) (v2,sk2))
 	in
 	  ise_try evd [f3; f4]
 
@@ -797,13 +803,15 @@ and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
 	     let term = Stack.zip (term2,sk2) in 
 	       List.map (fun p -> mkProj (p, term)) (Array.to_list projs)
 	   in
-	     exact_ise_stack2 env evd (evar_conv_x ts) l1' 
+	     exact_ise_stack2 env evd (evar_conv_x (fst ts, false)) l1' 
 	       (Stack.append_app_list l2' Stack.empty)
 	 with 
 	 | Invalid_argument _ ->
 	   (* Stack.tail: partially applied constructor *)
 	   UnifFailure(evd,NotSameHead))
     | _ -> UnifFailure (evd,NotSameHead)
+
+let evar_conv_x ts = evar_conv_x (ts, true)
 
 (* Profiling *)
 let evar_conv_x =
