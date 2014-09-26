@@ -35,6 +35,20 @@
       specialisation of the [NoRetractToImpredicativeUniverse] module
       to the case where the impredicative sort is [Prop].
 
+    - The [NoRetractToModalProposition] module is a strengthening of
+      the [NoRetractFromSmallPropositionToProp] module.  It shows that
+      given a monadic modality (aka closure operator) [M], the type of
+      modal propositions (i.e. such that [M A -> A]) cannot be a
+      retract of a modal proposition. It is an example of use of the
+      paradox where the universes of system U- are not mapped to
+      universes of Coq.
+
+    - The [NoRetractToNegativeProp] module is the specialisation of
+      the [NoRetractFromSmallPropositionToProp] module where the
+      modality is double-negation. This result implies that the
+      principle of weak excluded middle ([forall A, ~~A\/~A]) implies
+      a weak variant of proof irrelevance.
+
     - The [NoRetractFromTypeToProp] module proves that [Prop] cannot
       be a retract of a larger type.
 
@@ -185,7 +199,7 @@ Definition le' : El1 ((U⟶₁u0) ⟶₁ U ⟶₁ u0) := λ₁ i, λ₁ x, le i 
 Definition induct (i:El1 (U⟶₁u0)) : U0 :=
   ∀₀¹ x:U, le i x ⟶₀ i ·₁ x.
 
-Definition WF : El1 U := λ₁ z, (induct (z·₁[U] ·₁ le')).
+Definition WF : El1 U := λ₁b z, (induct (z·₁[U] ·₁ le')).
 Definition I (x:El1 U) : U0 :=
   (∀₀¹ i:U⟶₁u0, le i x ⟶₀ i ·₁ (λ₁ v, (sb v) ·₁ [U] ·₁ le' ·₁ x)) ⟶₀ F
 .
@@ -376,6 +390,149 @@ Qed.
 End Paradox.
 
 End NoRetractFromSmallPropositionToProp.
+
+(** * Modal fragments of [Prop] are not retracts *)
+
+(** In presence of a a monadic modality on [Prop], we can define a
+    subset of [Prop] of modal propositions which is also a complete
+    Heyting algebra. These cannot be a retract of a modal
+    proposition. This is a case where the universe in system U- are
+    not encoded as Coq universes. *)
+
+Module NoRetractToModalProposition.
+
+(** ** Monadic modality *)
+
+Section Paradox.
+
+Variable M : Prop -> Prop.
+Hypothesis unit : forall A:Prop, A -> M A.
+Hypothesis join : forall A:Prop, M (M A) -> M A.
+Hypothesis incr : forall A B:Prop, (A->B) -> M A -> M B.
+
+Lemma strength: forall A (P:A->Prop), M(forall x:A,P x) -> forall x:A,M(P x).
+Proof.
+  eauto.
+Qed.
+
+(** ** The universe of modal propositions *)
+
+Definition MProp := { P:Prop | M P -> P }.
+Definition El : MProp -> Prop := @proj1_sig _ _.
+
+Lemma modal : forall P:MProp, M(El P) -> El P.
+Proof.
+  intros [P m]. cbn.
+  exact m.
+Qed.
+
+Definition Forall {A:Type} (P:A->MProp) : MProp.
+Proof.
+  refine (exist _ _ _).
+  + exact (forall x:A, El (P x)).
+  + intros h x.
+    eapply strength in h.
+    eauto using modal.
+Defined.
+
+(** ** Retract of the modal fragment of [Prop] in a small type *)
+
+(** The retract is axiomatized using logical equivalence as the
+    equality on propositions. *)
+
+Variable bool : MProp.
+Variable p2b : MProp -> El bool.
+Variable b2p : El bool -> MProp.
+Hypothesis p2p1 : forall A:MProp, El (b2p (p2b A)) -> El A.
+Hypothesis p2p2 : forall A:MProp, El A -> El (b2p (p2b A)).
+
+(** ** Paradox *)
+
+Theorem paradox : forall B:MProp, El B.
+Proof.
+  intros B.
+  Generic.paradox h.
+  (** Large universe *)
+  + exact MProp.
+  + exact El.
+  + exact (fun _ => Forall).
+  + cbn. exact (fun _ _ f => f).
+  + cbn. exact (fun _ _ f => f).
+  + cbn. easy.
+  + exact Forall.
+  + cbn. exact (fun _ f => f).
+  + cbn. exact (fun _ f => f).
+  + cbn. easy.
+  (** Small universe *)
+  + exact bool.
+  + exact (fun b => El (b2p b)).
+  + cbn. exact (fun _ F => p2b (Forall (fun x => b2p (F x)))).
+  + cbn. auto.
+  + cbn. intros * f.
+    apply p2p1 in f. cbn in f.
+    exact f.
+  + exact (fun _ F => p2b (Forall (fun x => b2p (F x)))).
+  + cbn. auto.
+  + cbn. intros * f.
+    apply p2p1 in f. cbn in f.
+    exact f.
+  + apply p2b.
+    exact B.
+  + cbn in h. auto.
+Qed.
+
+End Paradox.
+
+End NoRetractToModalProposition.
+
+(** * The negative fragment of [Prop] is not a retract *)
+
+(** The existence in the pure Calculus of Constructions of a retract
+    from the negative fragment of [Prop] into a negative proposition
+    is inconsistent. This is an instance of the previous result. *)
+
+Module NoRetractToNegativeProp.
+
+(** ** The universe of negative propositions. *)
+
+Definition NProp := { P:Prop | ~~P -> P }.
+Definition El : NProp -> Prop := @proj1_sig _ _.
+
+Section Paradox.
+
+(** ** Retract of the negative fragment of [Prop] in a small type *)
+
+(** The retract is axiomatized using logical equivalence as the
+    equality on propositions. *)
+
+Variable bool : NProp.
+Variable p2b : NProp -> El bool.
+Variable b2p : El bool -> NProp.
+Hypothesis p2p1 : forall A:NProp, El (b2p (p2b A)) -> El A.
+Hypothesis p2p2 : forall A:NProp, El A -> El (b2p (p2b A)).
+
+(** ** Paradox *)
+
+Theorem paradox : forall B:NProp, El B.
+Proof.
+  intros B.
+  refine ((fun h => _) (NoRetractToModalProposition.paradox _ _ _ _ _ _ _ _ _ _));cycle 1.
+  + exact (fun P => ~~P).
+  + cbn. auto.
+  + cbn. auto.
+  + cbn. auto.
+  + exact bool.
+  + exact p2b.
+  + exact b2p.
+  + auto.
+  + auto.
+  + exact B.
+  + exact h.
+Qed.
+
+End Paradox.
+
+End NoRetractToNegativeProp.
 
 (** * Large universes are no retracts of [Prop]. *)
 
