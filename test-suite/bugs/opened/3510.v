@@ -31,4 +31,4 @@ Lemma match_option_comm_2 T (p : option T) A B R (f : forall (x : A) (y : B x), 
       end.
 admit.
 Defined.
-Hint Rewrite match_option_fn match_option_comm_2 : matchdb.
+Fail Hint Rewrite match_option_fn match_option_comm_2 : matchdb.

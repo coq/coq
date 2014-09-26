@@ -15,4 +15,4 @@ Lemma match_bool_comm_1 (b : bool) A B (F : forall x : A, B x) t f
 admit.
 Defined.
 Hint Rewrite match_bool_fn : matchdb.
-Hint Rewrite match_bool_comm_1 : matchdb.
+Fail Hint Rewrite match_bool_comm_1 : matchdb.

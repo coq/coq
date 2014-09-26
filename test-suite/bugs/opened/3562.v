@@ -1,2 +1,2 @@
 Theorem t: True.
-destruct 0 as x.
+Fail destruct 0 as x.

@@ -24,4 +24,4 @@ Goal forall (C D : hSet), IsEquiv (fun x : C = D => (equiv_path C D (ap setT x))
   apply @isequiv_compose; [ | admit ].
   solve [ apply isequiv_ap_setT ].
   Undo.
-  typeclasses eauto.
+  Fail typeclasses eauto.

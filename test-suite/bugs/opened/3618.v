@@ -93,7 +93,7 @@ Class inO {fs : Funext} {subU : ReflectiveSubuniverse} (T : Type) :=
 Global Instance hprop_inO {fs : Funext} {subU : ReflectiveSubuniverse} (T : Type) : IsTrunc (trunc_S minus_two) (inO T) .
 Admitted.
 
-Definition equiv_O_rectnd {fs : Funext} {subU : ReflectiveSubuniverse}
+Fail Definition equiv_O_rectnd {fs : Funext} {subU : ReflectiveSubuniverse}
            (P Q : Type) {Q_inO : inO_internal Q}
 : IsEquiv (fun f => compose f (O_unit P))
 := _.
