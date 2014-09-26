@@ -339,8 +339,8 @@ Section Proof_irrelevance_EM_CC.
 
   (** [p2b] and [b2p] form a retract if [~b1=b2] *)
 
-  Definition p2b A := or_elim A (~ A) B (fun _ => b1) (fun _ => b2) (em A).
-  Definition b2p b := b1 = b.
+  Let p2b A := or_elim A (~ A) B (fun _ => b1) (fun _ => b2) (em A).
+  Let b2p b := b1 = b.
 
   Lemma p2p1 : forall A:Prop, A -> b2p (p2b A).
   Proof.
@@ -372,11 +372,85 @@ Section Proof_irrelevance_EM_CC.
 
 End Proof_irrelevance_EM_CC.
 
-(** Remark: Hurkens' paradox still holds with a retract from the
-    _negative_ fragment of [Prop] into [bool], hence weak classical
-    logic, i.e. [forall A, ~A\/~~A], is enough for deriving
-    proof-irrelevance.
-*)
+(** Hurkens' paradox still holds with a retract from the _negative_
+    fragment of [Prop] into [bool], hence weak classical logic,
+    i.e. [forall A, ~A\/~~A], is enough for deriving a weak version of
+    proof-irrelevance. This is enough to derive a contradiction from a
+    [Set]-bound weak excluded middle wih an impredicative [Set]
+    universe. *)
+
+Section Proof_irrelevance_WEM_CC.
+
+  Variable or : Prop -> Prop -> Prop.
+  Variable or_introl : forall A B:Prop, A -> or A B.
+  Variable or_intror : forall A B:Prop, B -> or A B.
+  Hypothesis or_elim : forall A B C:Prop, (A -> C) -> (B -> C) -> or A B -> C.
+  Hypothesis
+    or_elim_redl :
+    forall (A B C:Prop) (f:A -> C) (g:B -> C) (a:A),
+      f a = or_elim A B C f g (or_introl A B a).
+  Hypothesis
+    or_elim_redr :
+    forall (A B C:Prop) (f:A -> C) (g:B -> C) (b:B),
+      g b = or_elim A B C f g (or_intror A B b).
+  Hypothesis
+    or_dep_elim :
+    forall (A B:Prop) (P:or A B -> Prop),
+      (forall a:A, P (or_introl A B a)) ->
+      (forall b:B, P (or_intror A B b)) -> forall b:or A B, P b.
+
+  Hypothesis wem : forall A:Prop, or (~~A) (~ A).
+
+  Local Notation NProp := NoRetractToNegativeProp.NProp.
+  Local Notation El := NoRetractToNegativeProp.El.
+  
+  Variable B : Prop.
+  Variables b1 b2 : B.
+
+  (** [p2b] and [b2p] form a retract if [~b1=b2] *)
+
+  Let p2b (A:NProp) := or_elim (~~El A) (~El A) B (fun _ => b1) (fun _ => b2) (wem (El A)).
+  Let b2p b : NProp := exist (fun P=>~~P -> P) (~~(b1 = b)) (fun h x => h (fun k => k x)).
+
+  Lemma wp2p1 : forall A:NProp, El A -> El (b2p (p2b A)).
+  Proof.
+    intros A. unfold p2b.
+    apply or_dep_elim with  (b := wem (El A)).
+    + intros nna a.
+      rewrite <- or_elim_redl.
+      cbn. auto.
+    + intros n x.
+      destruct (n x).
+  Qed.
+
+  Lemma wp2p2 : b1 <> b2 -> forall A:NProp, El (b2p (p2b A)) -> El A.
+  Proof.
+    intro not_eq_b1_b2.
+    intros A. unfold p2b.
+    apply or_dep_elim with  (b := wem (El A)).
+    + cbn.
+      intros x _.
+      destruct A. cbn in x |- *.
+      auto.
+    + intros na.
+      rewrite <- or_elim_redr. cbn.
+      intros h. destruct (h not_eq_b1_b2).
+  Qed.
+
+  (** By Hurkens's paradox, we get a weak form of proof irrelevance. *)
+
+  Theorem wproof_irrelevance_cc : ~~(b1 = b2).
+  Proof.
+    intros h.
+    refine (let NB := exist (fun P=>~~P -> P) B _ in _).
+    { exact (fun _ => b1). }
+    pose proof (NoRetractToNegativeProp.paradox NB p2b b2p (wp2p2 h) wp2p1) as paradox.
+    refine (let F := exist (fun P=>~~P->P) False _ in _).
+    { auto. }
+    exact (paradox F).
+  Qed.
+
+End Proof_irrelevance_WEM_CC.
 
 (************************************************************************)
 (** ** CIC |- excluded-middle -> proof-irrelevance               *)
@@ -404,6 +478,23 @@ Section Proof_irrelevance_CCI.
   Qed.
 
 End Proof_irrelevance_CCI.
+
+(** The same holds with weak excluded middle. The proof is a little
+    more involved, however. *)
+
+
+
+Section Weak_proof_irrelevance_CCI.
+
+  Hypothesis wem : forall A:Prop, ~~A \/ ~ A.
+
+  Theorem wem_proof_irrelevance_cci : forall (B:Prop) (b1 b2:B), ~~b1 = b2.
+  Proof.
+    exact (wproof_irrelevance_cc or or_introl or_intror or_ind or_elim_redl
+      or_elim_redr or_indd wem).
+  Qed.
+
+End Weak_proof_irrelevance_CCI.
 
 (** Remark: in the Set-impredicative CCI, Hurkens' paradox still holds with
     [bool] in [Set] and since [~true=false] for [true] and [false]
