@@ -199,7 +199,7 @@ Definition le' : El1 ((U⟶₁u0) ⟶₁ U ⟶₁ u0) := λ₁ i, λ₁ x, le i 
 Definition induct (i:El1 (U⟶₁u0)) : U0 :=
   ∀₀¹ x:U, le i x ⟶₀ i ·₁ x.
 
-Definition WF : El1 U := λ₁b z, (induct (z·₁[U] ·₁ le')).
+Definition WF : El1 U := λ₁ z, (induct (z·₁[U] ·₁ le')).
 Definition I (x:El1 U) : U0 :=
   (∀₀¹ i:U⟶₁u0, le i x ⟶₀ i ·₁ (λ₁ v, (sb v) ·₁ [U] ·₁ le' ·₁ x)) ⟶₀ F
 .
