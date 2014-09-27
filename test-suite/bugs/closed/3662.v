@@ -39,9 +39,8 @@ Defined.
 Lemma eta A B : forall x : prod A B, x = pair (fst x) (snd x). reflexivity. Qed.
 
 Goal forall x : prod nat nat, fst x = 0.
-  intros. unfold fst. rewrite (eta x). cbv iota. cbv delta. cbv iota.
-  cbv delta. 
-  match goal with
+  intros. unfold fst.
+  Fail match goal with
     | [ |- fst ?x = 0 ] => idtac
   end.
 Abort.
