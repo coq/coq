@@ -21,6 +21,7 @@ open Misctypes
 open Decl_kinds
 open Pattern
 open Evd
+open Environ
 
 let case_info_pattern_eq i1 i2 =
   i1.cip_style == i2.cip_style &&
@@ -122,7 +123,7 @@ let head_of_constr_reference c = match kind_of_term c with
 
 let pattern_of_constr env sigma t =
   let ctx = ref [] in
-  let rec pattern_of_constr t =
+  let rec pattern_of_constr env t =
   match kind_of_term t with
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
@@ -130,10 +131,13 @@ let pattern_of_constr env sigma t =
     | Sort (Prop Null) -> PSort GProp
     | Sort (Prop Pos) -> PSort GSet
     | Sort (Type _) -> PSort (GType [])
-    | Cast (c,_,_)      -> pattern_of_constr c
-    | LetIn (na,c,_,b) -> PLetIn (na,pattern_of_constr c,pattern_of_constr b)
-    | Prod (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)
-    | Lambda (na,c,b) -> PLambda (na,pattern_of_constr c,pattern_of_constr b)
+    | Cast (c,_,_)      -> pattern_of_constr env c
+    | LetIn (na,c,t,b) -> PLetIn (na,pattern_of_constr env c,
+				  pattern_of_constr (push_rel (na,Some c,t) env) b)
+    | Prod (na,c,b)   -> PProd (na,pattern_of_constr env c,
+				pattern_of_constr (push_rel (na, None, c) env) b)
+    | Lambda (na,c,b) -> PLambda (na,pattern_of_constr env c,
+				  pattern_of_constr (push_rel (na, None, c) env) b)
     | App (f,a) ->
         (match
           match kind_of_term f with
@@ -145,19 +149,19 @@ let pattern_of_constr env sigma t =
                 | _ -> None)
             | _ -> None
           with
-            | Some n -> PSoApp (n,Array.to_list (Array.map pattern_of_constr a))
-            | None -> PApp (pattern_of_constr f,Array.map (pattern_of_constr) a))
+            | Some n -> PSoApp (n,Array.to_list (Array.map (pattern_of_constr env) a))
+            | None -> PApp (pattern_of_constr env f,Array.map (pattern_of_constr env) a))
     | Const (sp,u)  -> PRef (ConstRef (constant_of_kn(canonical_con sp)))
     | Ind (sp,u)    -> PRef (canonical_gr (IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
-    | Proj (p, c) -> PProj (Projection.map (fun kn -> constant_of_kn(canonical_con kn)) p,
-			    pattern_of_constr c)
+    | Proj (p, c) -> 
+      pattern_of_constr env (Retyping.expand_projection env sigma p c [])
     | Evar (evk,ctxt as ev) ->
         (match snd (Evd.evar_source evk sigma) with
           | Evar_kinds.MatchingVar (b,id) ->
               ctx := (id,None,existential_type sigma ev)::!ctx;
               assert (not b); PMeta (Some id)
-          | Evar_kinds.GoalEvar -> PEvar (evk,Array.map pattern_of_constr ctxt)
+          | Evar_kinds.GoalEvar -> PEvar (evk,Array.map (pattern_of_constr env) ctxt)
           | _ -> PMeta None)
     | Case (ci,p,a,br) ->
         let cip =
@@ -167,13 +171,13 @@ let pattern_of_constr env sigma t =
 	    cip_extensible = false }
 	in
 	let branch_of_constr i c =
-	  (i, ci.ci_cstr_ndecls.(i), pattern_of_constr c)
+	  (i, ci.ci_cstr_ndecls.(i), pattern_of_constr env c)
 	in
-	PCase (cip, pattern_of_constr p, pattern_of_constr a,
+	PCase (cip, pattern_of_constr env p, pattern_of_constr env a,
 	       Array.to_list (Array.mapi branch_of_constr br))
     | Fix f -> PFix f
     | CoFix f -> PCoFix f in
-  let p = pattern_of_constr t in
+  let p = pattern_of_constr env t in
   (* side-effect *)
   (* Warning: the order of dependencies in ctx is not ensured *)
   (!ctx,p)

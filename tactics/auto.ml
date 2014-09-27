@@ -604,7 +604,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
         let sigma' = Evd.merge_context_set univ_flexible dummy_goal.sigma ctx in
         let ce = mk_clenv_from { dummy_goal with sigma = sigma' } (c,cty) in
 	let c' = clenv_type (* ~reduce:false *) ce in
-	let pat = snd (Patternops.pattern_of_constr env sigma c') in
+	let pat = snd (Patternops.pattern_of_constr env ce.evd c') in
         let hd =
 	  try head_pattern_bound pat
           with BoundPattern -> failwith "make_apply_entry" in
@@ -701,7 +701,7 @@ let make_trivial env sigma poly ?(name=PathAny) r =
   let ce = mk_clenv_from dummy_goal (c,t) in
   (Some hd, { pri=1;
 	      poly = poly;
-              pat = Some (snd (Patternops.pattern_of_constr env sigma (clenv_type ce)));
+              pat = Some (snd (Patternops.pattern_of_constr env ce.evd (clenv_type ce)));
 	      name = name;
               code=Res_pf_THEN_trivial_fail(c,t,ctx) })
   
