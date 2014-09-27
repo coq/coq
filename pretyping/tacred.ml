@@ -1070,9 +1070,6 @@ let is_projection env = function
  * at the occurrences of occ_list. If occ_list is empty, unfold all occurences.
  * Performs a betaiota reduction after unfolding. *)
 let unfoldoccs env sigma (occs,name) c =
-  if is_projection env name then
-    error ("Cannot unfold primitive projection " ^ string_of_evaluable_ref env name)
-  else
   let unfo nowhere_except_in locs =
     let (nbocc,uc) = substlin env sigma name 1 (nowhere_except_in,locs) c in
     if Int.equal nbocc 1 then

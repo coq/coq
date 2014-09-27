@@ -59,6 +59,8 @@ type cbv_value =
  *      the subs S, pat is information on the patterns of the Case
  *      (Weak reduction: we propagate the sub only when the selected branch
  *      is determined)
+ *   PROJ(p,pb,stk) means the term is in a primitive projection p, itself in stk.
+ *      pb is the associated projection body
  *
  * Important remark: the APPs should be collapsed:
  *    (APP (l,(APP ...))) forbidden
@@ -176,9 +178,9 @@ let cofixp_reducible flgs _ stk =
 
 (* The main recursive functions
  *
- * Go under applications and cases (pushed in the stack), expand head
- * constants or substitued de Bruijn, and try to make appear a
- * constructor, a lambda or a fixp in the head. If not, it is a value
+ * Go under applications and cases/projections (pushed in the stack), 
+ * expand head constants or substitued de Bruijn, and try to a make a
+ * constructor, a lambda or a fixp appear in the head. If not, it is a value
  * and is completely computed here. The head redexes are NOT reduced:
  * the function returns the pair of a cbv_value and its stack.  *
  * Invariant: if the result of norm_head is CONSTR or (CO)FIXP, it last
@@ -197,9 +199,14 @@ let rec norm_head info env t stack =
   | Cast (ct,_,_) -> norm_head info env ct stack
   
   | Proj (p, c) -> 
+    let p' =
+      if red_set (info_flags info) (fCONST (Projection.constant p)) then
+	Projection.unfold p
+      else p
+    in 
     let pinfo = Environ.lookup_projection p (info_env info) in
-    norm_head info env c (PROJ (p, pinfo, stack))
-
+      norm_head info env c (PROJ (p', pinfo, stack))
+	
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:
    * when reducing closed terms, n is always 0 *)
@@ -257,12 +264,14 @@ and norm_head_ref k info env stack normt =
  * we build a value.
  *)
 and cbv_stack_term info stack env t =
-  match norm_head info env t stack with
-    (* a lambda meets an application -> BETA *)
-    | (LAM (nlams,ctxt,b,env), APP (args, stk))
+  cbv_stack_value info env (norm_head info env t stack)
+
+and cbv_stack_value info env = function
+  (* a lambda meets an application -> BETA *)
+  | (LAM (nlams,ctxt,b,env), APP (args, stk))
       when red_set (info_flags info) fBETA ->
-        let nargs = Array.length args in
-        if nargs == nlams then
+    let nargs = Array.length args in
+      if nargs == nlams then
           cbv_stack_term info stk (subs_cons(args,env)) b
         else if nlams < nargs then
           let env' = subs_cons(Array.sub args 0 nlams, env) in
@@ -296,11 +305,17 @@ and cbv_stack_term info stack env t =
             when red_set (info_flags info) fIOTA ->
                     cbv_stack_term info stk env br.(n-1)
 
+    (* constructor in a Projection -> IOTA *)
+    | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,pi,stk)))
+        when red_set (info_flags info) fIOTA && Projection.unfolded p ->
+      let arg = args.(pi.Declarations.proj_npars + pi.Declarations.proj_arg) in
+	cbv_stack_value info env (arg, stk)
+
     (* may be reduced later by application *)
     | (FIXP(fix,env,[||]), APP(appl,TOP)) -> FIXP(fix,env,appl)
     | (COFIXP(cofix,env,[||]), APP(appl,TOP)) -> COFIXP(cofix,env,appl)
     | (CONSTR(c,[||]), APP(appl,TOP)) -> CONSTR(c,appl)
-
+      
     (* definitely a value *)
     | (head,stk) -> mkSTACK(head, stk)
 
