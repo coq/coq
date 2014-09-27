@@ -187,8 +187,6 @@ let is_transparent_gr (ids, csts) = function
   | ConstRef cst -> Cpred.mem cst csts
   | IndRef _ | ConstructRef _ -> false
 
-let dummy_goal = Goal.V82.dummy_goal
-
 let strip_params env c = 
   match kind_of_term c with
   | App (f, args) -> 
@@ -198,19 +196,21 @@ let strip_params env c =
 	(match cb.Declarations.const_proj with
 	| Some pb -> 
 	  let n = pb.Declarations.proj_npars in
-	    mkApp (mkProj (Projection.make p false, args.(n)), 
-		   Array.sub args (n+1) (Array.length args - (n + 1)))
+	    if Array.length args > n then
+	      mkApp (mkProj (Projection.make p false, args.(n)), 
+		     Array.sub args (n+1) (Array.length args - (n + 1)))
+	    else c
 	| None -> c)
     | _ -> c)
   | _ -> c
 
 let instantiate_hint p =
   let mk_clenv c cty ctx =
-    let sigma = Evd.merge_context_set univ_flexible dummy_goal.sigma ctx in
-    let goal = { dummy_goal with sigma = sigma } in
-    let cl = mk_clenv_from goal (c,cty) in 
+    let env = Global.env () in
+    let sigma = Evd.merge_context_set univ_flexible (Evd.from_env env) ctx in
+    let cl = mk_clenv_from_env (Global.env()) sigma None (c,cty) in 
       {cl with templval = 
-	  { cl.templval with rebus = strip_params (Global.env()) cl.templval.rebus };
+	  { cl.templval with rebus = strip_params env cl.templval.rebus };
 	env = empty_env}
   in
   let code = match p.code with
@@ -601,8 +601,8 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
   let cty = if hnf then hnf_constr env sigma cty else cty in
     match kind_of_term cty with
     | Prod _ ->
-        let sigma' = Evd.merge_context_set univ_flexible dummy_goal.sigma ctx in
-        let ce = mk_clenv_from { dummy_goal with sigma = sigma' } (c,cty) in
+        let sigma' = Evd.merge_context_set univ_flexible sigma ctx in
+        let ce = mk_clenv_from_env env sigma' None (c,cty) in
 	let c' = clenv_type (* ~reduce:false *) ce in
 	let pat = snd (Patternops.pattern_of_constr env ce.evd c') in
         let hd =
@@ -696,9 +696,10 @@ let make_mode ref m =
       
 let make_trivial env sigma poly ?(name=PathAny) r =
   let c,ctx = fresh_global_or_constr env sigma poly r in
+  let sigma = Evd.merge_context_set univ_flexible sigma ctx in
   let t = hnf_constr env sigma (type_of env sigma c) in
   let hd = head_of_constr_reference (head_constr t) in
-  let ce = mk_clenv_from dummy_goal (c,t) in
+  let ce = mk_clenv_from_env env sigma None (c,t) in
   (Some hd, { pri=1;
 	      poly = poly;
               pat = Some (snd (Patternops.pattern_of_constr env ce.evd (clenv_type ce)));
