@@ -760,6 +760,13 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun a -> debug_RAKAM:=a);
 }
 
+let equal_stacks (x, l) (y, l') =
+  let f_equal (x,lft1) (y,lft2) = Constr.equal (Vars.lift lft1 x) (Vars.lift lft2 y) in
+  let eq_fix (a,b) (c,d) = f_equal (Constr.mkFix a, b) (Constr.mkFix c, d) in
+    match Stack.equal f_equal eq_fix l l' with
+    | None -> false
+    | Some (lft1,lft2) -> f_equal (x, lft1) (y, lft2) 
+
 let rec whd_state_gen ?csts tactic_mode flags env sigma =
   let rec whrec cst_l (x, stack as s) =
     let () = if !debug_RAKAM then
@@ -808,17 +815,11 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		  if List.mem `ReductionDontExposeCase flags then
 		    let app_sk,sk = Stack.strip_app stack in
 		    let (tm',sk'),cst_l' =
-		      whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, app_sk) in
-		    let f_equal (x,lft1) (y,lft2) = Constr.equal (Vars.lift lft1 x) (Vars.lift lft2 y) in
-		    if
-		      (match Stack.equal f_equal
-			  (fun (a,b) (c,d) -> f_equal (Constr.mkFix a, b) (Constr.mkFix c, d))
-			  app_sk sk' with
-			  | None -> false
-			  | Some (lft1,lft2) -> f_equal (x, lft1) (tm', lft2)
-		      ) || Stack.not_purely_applicative sk'
-		    then fold ()
-		    else whrec cst_l' (tm', sk' @ sk)
+		      whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, app_sk) 
+		    in
+		      if equal_stacks (x, app_sk) (tm', sk') || Stack.not_purely_applicative sk'
+		      then fold ()
+		      else whrec cst_l' (tm', sk' @ sk)
 		  else match recargs with
 		  |[] -> (* if nargs has been specified *)
 			 (* CAUTION : the constant is NEVER refold
@@ -837,7 +838,9 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	 match ReductionBehaviour.get (Globnames.ConstRef kn) with
 	 | None ->
 	   let stack' = (c, Stack.Proj (npars, arg, kn) :: stack) in
-	     whrec Cst_stack.empty(* cst_l *) stack'
+	   let stack'', csts = whrec Cst_stack.empty stack' in
+	     if equal_stacks stack' stack'' then fold ()
+	     else stack'', csts
 	 | Some (recargs, nargs, flags) ->
 	   if (List.mem `ReductionNeverUnfold flags
 	       || (nargs > 0 && Stack.args_size stack < (nargs - (npars + 1))))
