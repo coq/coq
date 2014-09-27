@@ -103,7 +103,7 @@ val mkConst : constant -> constr
 val mkConstU : pconstant -> constr
 
 (** Constructs a projection application *)
-val mkProj : (constant * constr) -> constr
+val mkProj : (projection * constr) -> constr
 
 (** Inductive types *)
 
@@ -190,7 +190,7 @@ type ('constr, 'types) kind_of_term =
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of constant * 'constr
+  | Proj      of projection * 'constr
 
 (** User view of [constr]. For [App], it is ensured there is at
    least one argument and the function is not itself an applicative

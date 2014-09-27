@@ -782,7 +782,33 @@ let kn_ord = KerName.compare
 (** Compatibility layer for [Constant] *)
 
 type constant = Constant.t
-type projection = constant
+
+
+module Projection = 
+struct 
+  type t = constant * bool
+    
+  let make c b = (c, b)
+
+  let constant = fst
+  let unfolded = snd
+  let unfold (c, b as p) = if b then p else (c, true)
+  let equal (c, b) (c', b') = Constant.equal c c' && b == b'
+  let hash (c, b) = (if b then 0 else 1) + Constant.hash c
+  let hashcons (c, b as x) = 
+    let c' = hcons_con c in 
+      if c' == c then x else (c', b)
+
+  let compare (c, b) (c', b') =
+    if b == b' then Constant.CanOrd.compare c c'
+    else if b then 1 else -1
+
+  let map f (c, b as x) =
+    let c' = f c in
+      if c' == c then x else (c', b)
+end
+
+type projection = Projection.t
 
 let constant_of_kn = Constant.make1
 let constant_of_kn_equiv = Constant.make

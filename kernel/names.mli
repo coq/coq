@@ -634,7 +634,25 @@ val kn_ord : kernel_name -> kernel_name -> int
 type constant = Constant.t
 (** @deprecated Alias type *)
 
-type projection = constant
+module Projection : sig
+  type t
+    
+  val make : constant -> bool -> t
+
+  val constant : t -> constant
+  val unfolded : t -> bool
+  val unfold : t -> t
+
+  val equal : t -> t -> bool
+  val hash : t -> int
+  val hashcons : t -> t
+
+  val compare : t -> t -> int
+    
+  val map : (constant -> constant) -> t -> t
+end
+
+type projection = Projection.t
 
 val constant_of_kn_equiv : KerName.t -> KerName.t -> constant
 (** @deprecated Same as [Constant.make] *)

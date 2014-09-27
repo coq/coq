@@ -370,7 +370,7 @@ let use_metas_pattern_unification flags nb l =
 
 type key = 
   | IsKey of Closure.table_key
-  | IsProj of constant * constr
+  | IsProj of projection * constr
 
 let expand_table_key env = function
   | ConstKey cst -> constant_opt_value_in env cst
@@ -380,7 +380,8 @@ let expand_table_key env = function
 let unfold_projection env p stk =
   (match try Some (lookup_projection p env) with Not_found -> None with
   | Some pb -> 
-    let s = Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p) in
+    let s = Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
+			Projection.constant p) in
       s :: stk
   | None -> assert false)
 
@@ -405,7 +406,8 @@ let key_of env b flags f =
   | Var id when is_transparent env (VarKey id) && 
       Id.Pred.mem id (fst flags.modulo_delta) ->
     Some (IsKey (VarKey id))
-  | Proj (p, c) when Cpred.mem p (snd flags.modulo_delta) ->
+  | Proj (p, c) when Projection.unfolded p
+      || Cpred.mem (Projection.constant p) (snd flags.modulo_delta) ->
     Some (IsProj (p, c))
   | _ -> None
   
@@ -417,7 +419,7 @@ let translate_key = function
 
 let translate_key = function
   | IsKey k -> translate_key k    
-  | IsProj (c, _) -> ConstKey c
+  | IsProj (c, _) -> ConstKey (Projection.constant c)
   
 let oracle_order env cf1 cf2 =
   match cf1 with
@@ -430,8 +432,10 @@ let oracle_order env cf1 cf2 =
       | None -> Some true
       | Some k2 ->
 	match k1, k2 with
-	| IsProj (p, _), IsKey (ConstKey (p',_)) when eq_constant p p' -> Some false
-	| IsKey (ConstKey (p,_)), IsProj (p', _) when eq_constant p p' -> Some true
+	| IsProj (p, _), IsKey (ConstKey (p',_)) 
+	  when eq_constant (Projection.constant p) p' -> Some false
+	| IsKey (ConstKey (p,_)), IsProj (p', _) 
+	  when eq_constant p (Projection.constant p') -> Some true
 	| _ ->
           Some (Conv_oracle.oracle_order (Environ.oracle env) false
 		  (translate_key k1) (translate_key k2))
@@ -508,7 +512,7 @@ let eta_constructor_app env f l1 term =
       | Some (projs, _) ->
         let pars = mib.Declarations.mind_nparams in
 	let l1' = Array.sub l1 pars (Array.length l1 - pars) in
-	let l2 = Array.map (fun p -> mkProj (p, term)) projs in
+	let l2 = Array.map (fun p -> mkProj (Projection.make p false, term)) projs in
 	  l1', l2
       | _ -> assert false)
   | _ -> assert false
@@ -666,11 +670,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
              | Some l ->
 	         solve_pattern_eqn_array curenvnb f2 l cM substn)
 
-	| App (f1,l1), App (f2,l2) ->
-            unify_app curenvnb pb b substn cM f1 l1 cN f2 l2
-
 	| Proj (p1,c1), Proj (p2,c2) ->
-	    if eq_constant p1 p2 then
+	    if eq_constant (Projection.constant p1) (Projection.constant p2) then
 	      try 
 		let substn = unirec_rec curenvnb CONV true wt substn c1 c2 in
 		  try (* Force unification of the types to fill in parameters *)
@@ -679,6 +680,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 		      unify_0_with_initial_metas substn true env cv_pb 
 			{ flags with modulo_conv_on_closed_terms = Some full_transparent_state;
 			  modulo_delta = full_transparent_state;
+			  modulo_eta = true;
 			  modulo_betaiota = true }
 			ty1 ty2
 		  with RetypeError _ -> substn
@@ -686,6 +688,23 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	        unify_not_same_head curenvnb pb b wt substn cM cN
 	    else
 	      unify_not_same_head curenvnb pb b wt substn cM cN
+
+	| App (f1, l1), Proj (p', c) when isConst f1 && 
+	    eq_constant (fst (destConst f1)) (Projection.constant p') -> 
+	  expand curenvnb pb b false substn cM f1 l1 cN cN [||]
+
+	| Proj (p', c), App (f1, l1) when isConst f1 && 
+	    eq_constant (fst (destConst f1)) (Projection.constant p') -> 
+	  expand curenvnb pb b false substn cM f1 l1 cN cN [||]
+
+	| App (f1,l1), App (f2,l2) ->
+	  (match kind_of_term f1, kind_of_term f2 with
+	  | Const (p, u), Proj (p', c) when eq_constant p (Projection.constant p') -> 
+	    expand curenvnb pb b false substn cM f1 l1 cN f2 l2
+	  | Proj (p', _), Const (p, _) when eq_constant p (Projection.constant p') ->
+	    expand curenvnb pb b false substn cM f1 l1 cN f2 l2
+	  | _ ->
+            unify_app curenvnb pb b substn cM f1 l1 cN f2 l2)
 
 	| _ ->
             unify_not_same_head curenvnb pb b wt substn cM cN

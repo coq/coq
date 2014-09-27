@@ -328,7 +328,7 @@ let template_polymorphic_pconstant (cst,u) env =
   else template_polymorphic_constant cst env
 
 let lookup_projection cst env =
-  match (lookup_constant cst env).const_proj with 
+  match (lookup_constant (Projection.constant cst) env).const_proj with 
   | Some pb -> pb
   | None -> anomaly (Pp.str "lookup_projection: constant is not a projection")
 

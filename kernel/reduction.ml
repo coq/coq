@@ -275,12 +275,14 @@ let in_whnf (t,stk) =
     | FLOCKED -> assert false
 
 let unfold_projection infos p c =
-  if RedFlags.red_set infos.i_flags (RedFlags.fCONST p) then
-    (match try Some (lookup_projection p (info_env infos)) with Not_found -> None with
-    | Some pb -> 
-      let s = Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p) in
-	Some (c, s)
-    | None -> None)
+  let unf = Projection.unfolded p in
+    if unf || RedFlags.red_set infos.i_flags (RedFlags.fCONST (Projection.constant p)) then
+      (match try Some (lookup_projection p (info_env infos)) with Not_found -> None with
+      | Some pb -> 
+	let s = Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
+		       Projection.constant p) in
+	  Some (c, s)
+      | None -> None)
   else None
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
@@ -368,7 +370,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	| Some (def2,s2) ->
 	  eqappr cv_pb l2r infos appr1 (lft2, whd def2 (s2 :: v2)) cuniv
 	| None -> 
-          if eq_constant p1 p2 && compare_stack_shape v1 v2 then
+          if Projection.equal p1 p2 && compare_stack_shape v1 v2 then
 	    let u1 = ccnv CONV l2r infos el1 el2 c1 c2 cuniv in
 	      convert_stacks l2r infos lft1 lft2 v1 v2 u1
 	  else (* Two projections in WHNF: unfold *)

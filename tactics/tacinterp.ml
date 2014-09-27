@@ -584,7 +584,7 @@ let interp_pure_open_constr ist =
 let interp_typed_pattern ist env sigma (c,_) =
   let sigma, c =
     interp_gen WithoutTypeConstraint ist true pure_open_constr_flags env sigma c in
-  pattern_of_constr sigma c
+  pattern_of_constr env sigma c
 
 (* Interprets a constr expression casted by the current goal *)
 let pf_interp_casted_constr ist gl c =
@@ -986,7 +986,7 @@ let eval_pattern lfun ist env sigma (_,pat as c) =
   if use_types then
     snd (interp_typed_pattern ist env sigma c)
   else
-    instantiate_pattern sigma lfun pat
+    instantiate_pattern env sigma lfun pat
 
 let read_pattern lfun ist env sigma = function
   | Subterm (b,ido,c) -> Subterm (b,ido,eval_pattern lfun ist env sigma c)

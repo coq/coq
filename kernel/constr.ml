@@ -85,7 +85,7 @@ type ('constr, 'types) kind_of_term =
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of constant * 'constr
+  | Proj      of projection * 'constr
 (* constr is the fixpoint of the previous type. Requires option
    -rectypes of the Caml compiler to be set *)
 type t = (t,t) kind_of_term
@@ -486,7 +486,7 @@ let compare_head_gen eq_universes eq_sorts f t1 t2 =
     Int.equal (Array.length l1) (Array.length l2) &&
       f c1 c2 && Array.equal f l1 l2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal f l1 l2
-  | Proj (p1,c1), Proj (p2,c2) -> eq_constant p1 p2 && f c1 c2
+  | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && f c1 c2
   | Const (c1,u1), Const (c2,u2) -> eq_constant c1 c2 && eq_universes true u1 u2
   | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && eq_universes false u1 u2
   | Construct (c1,u1), Construct (c2,u2) -> eq_constructor c1 c2 && eq_universes false u1 u2
@@ -523,7 +523,7 @@ let compare_head_gen_leq eq_universes eq_sorts leq_sorts eq leq t1 t2 =
   | App (c1,l1), App (c2,l2) ->
     Int.equal (Array.length l1) (Array.length l2) &&
       eq c1 c2 && Array.equal eq l1 l2
-  | Proj (p1,c1), Proj (p2,c2) -> eq_constant p1 p2 && eq c1 c2
+  | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal eq l1 l2
   | Const (c1,u1), Const (c2,u2) -> eq_constant c1 c2 && eq_universes true u1 u2
   | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && eq_universes false u1 u2
@@ -657,7 +657,7 @@ let constr_ord_int f t1 t2 =
     | App (Cast(c1,_,_),l1), _ -> f (mkApp (c1,l1)) t2
     | _, App (Cast(c2, _,_),l2) -> f t1 (mkApp (c2,l2))
     | App (c1,l1), App (c2,l2) -> (f =? (Array.compare f)) c1 c2 l1 l2
-    | Proj (p1,c1), Proj (p2,c2) -> (con_ord =? f) p1 p2 c1 c2
+    | Proj (p1,c1), Proj (p2,c2) -> (Projection.compare =? f) p1 p2 c1 c2
     | Evar (e1,l1), Evar (e2,l2) ->
         (Evar.compare =? (Array.compare f)) e1 e2 l1 l2
     | Const (c1,u1), Const (c2,u2) -> con_ord c1 c2
@@ -820,8 +820,8 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 	(Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
       | Proj (p,c) ->
         let c, hc = sh_rec c in
-	let p' = sh_con p in
-	  (Proj (p', c), combinesmall 17 (combine (Constant.hash p') hc))
+	let p' = Projection.hashcons p in
+	  (Proj (p', c), combinesmall 17 (combine (Projection.hash p') hc))
       | Const (c,u) ->
 	let c' = sh_con c in
 	let u', hu = sh_instance u in
@@ -906,7 +906,7 @@ let rec hash t =
     | App (c,l) ->
       combinesmall 7 (combine (hash_term_array l) (hash c))
     | Proj (p,c) ->
-      combinesmall 17 (combine (Constant.hash p) (hash c))
+      combinesmall 17 (combine (Projection.hash p) (hash c))
     | Evar (e,l) ->
       combinesmall 8 (combine (Evar.hash e) (hash_term_array l))
     | Const (c,u) ->

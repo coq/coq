@@ -585,7 +585,7 @@ let reduce_proj env sigma whfun whfun' c =
 	(match kind_of_term constr with
 	| Construct _ -> 
 	  let proj_narg = 
-	    let pb = Option.get ((lookup_constant proj env).Declarations.const_proj) in
+	    let pb = lookup_projection proj env in
 	      pb.Declarations.proj_npars + pb.Declarations.proj_arg
 	  in List.nth cargs proj_narg
 	| _ -> raise Redelimination)
@@ -738,24 +738,26 @@ and whd_simpl_stack env sigma =
 
       | Proj (p, c) ->
         (try 
-	   if is_evaluable env (EvalConstRef p) then
-	     let pb = Option.get ((lookup_constant p env).Declarations.const_proj) in
- 	       (match ReductionBehaviour.get (ConstRef p) with
- 	       | Some (l, n, f) when List.mem `ReductionNeverUnfold f -> (* simpl never *) s'
-	       | Some (l, n, f) when not (List.is_empty l) ->
-		 let l' = List.map_filter (fun i -> 
-		   let idx = (i - (pb.Declarations.proj_npars + 1)) in
-		     if idx < 0 then None else Some idx) l in
-		 let stack = reduce_params env sigma stack l' in
-		   (match reduce_projection env sigma pb 
-		     (whd_construct_stack env sigma c) stack 
-		    with
-		    | Reduced s' -> redrec (applist s')
-		    | NotReducible -> s')
- 	       | _ ->
-		 match reduce_projection env sigma pb (whd_construct_stack env sigma c) stack with
-		 | Reduced s' -> redrec (applist s')
-		 | NotReducible -> s')
+	   let unf = Projection.unfolded p in
+	     if unf || is_evaluable env (EvalConstRef (Projection.constant p)) then
+	       let pb = lookup_projection p env in
+ 		 (match unf, ReductionBehaviour.get (ConstRef (Projection.constant p)) with
+ 		 | false, Some (l, n, f) when List.mem `ReductionNeverUnfold f -> 
+                   (* simpl never *) s'
+		 | false, Some (l, n, f) when not (List.is_empty l) ->
+		   let l' = List.map_filter (fun i -> 
+		     let idx = (i - (pb.Declarations.proj_npars + 1)) in
+		       if idx < 0 then None else Some idx) l in
+		   let stack = reduce_params env sigma stack l' in
+		     (match reduce_projection env sigma pb 
+		       (whd_construct_stack env sigma c) stack 
+		      with
+		      | Reduced s' -> redrec (applist s')
+		      | NotReducible -> s')
+ 		 | _ ->
+		   match reduce_projection env sigma pb (whd_construct_stack env sigma c) stack with
+		   | Reduced s' -> redrec (applist s')
+		   | NotReducible -> s')
 	   else s'
 	 with Redelimination -> s')
 	  
@@ -826,12 +828,10 @@ let try_red_product env sigma c =
 	  | Construct _ -> c
 	  | _ -> redrec env c
 	in
-	  (match match_eval_proj env p with
-	  | Some pb -> 
-            (match reduce_projection env sigma pb (whd_betaiotazeta_stack sigma c') [] with
-	    | Reduced s -> simpfun (applist s)
-	    | NotReducible -> raise Redelimination)
-	  | None -> raise Redelimination)
+	let pb = lookup_projection p env in
+          (match reduce_projection env sigma pb (whd_betaiotazeta_stack sigma c') [] with
+	  | Reduced s -> simpfun (applist s)
+	  | NotReducible -> raise Redelimination)
       | _ -> 
         (match match_eval_ref env x with
         | Some (ref, u) ->
@@ -920,7 +920,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
       | CoFix _ | Fix _ -> s'
       | Proj (p,c) when
 	  (match kind_of_term constr with
-	  | Const (c', _) -> eq_constant p c'
+	  | Const (c', _) -> eq_constant (Projection.constant p) c'
 	  | _ -> false) ->
 	let pb = Environ.lookup_projection p env in
 	  if List.length stack <= pb.Declarations.proj_npars then
@@ -947,7 +947,7 @@ let simpl env sigma c = strong whd_simpl env sigma c
 let matches_head env sigma c t =
   match kind_of_term t with
     | App (f,_) -> ConstrMatching.matches env sigma c f
-    | Proj (p, _) -> ConstrMatching.matches env sigma c (mkConst p)
+    | Proj (p, _) -> ConstrMatching.matches env sigma c (mkConst (Projection.constant p))
     | _ -> raise ConstrMatching.PatternMatchingFailure
 
 let is_pattern_meta = function Pattern.PMeta _ -> true | _ -> false

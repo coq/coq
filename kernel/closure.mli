@@ -64,7 +64,10 @@ module type RedFlagsSig = sig
 
   (** Tests if a reduction kind is set *)
   val red_set : reds -> red_kind -> bool
-
+    
+  (** This tests if the projection is in unfolded state already or
+      is unfodable due to delta. *)
+  val red_projection : reds -> projection -> bool
 end
 
 module RedFlags : RedFlagsSig
@@ -113,7 +116,7 @@ type fterm =
   | FInd of inductive puniverses
   | FConstruct of constructor puniverses
   | FApp of fconstr * fconstr array
-  | FProj of constant * fconstr
+  | FProj of projection * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCases of case_info * fconstr * fconstr * fconstr array

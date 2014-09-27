@@ -33,7 +33,7 @@ type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
 let decomp_pat =
   let rec decrec acc = function
     | PApp (f,args) -> decrec (Array.to_list args @ acc) f
-    | PProj (p, c) -> (PRef (ConstRef p), c :: acc)
+    | PProj (p, c) -> (PRef (ConstRef (Projection.constant p)), c :: acc)
     | c -> (c,acc)
   in
   decrec []
@@ -41,7 +41,7 @@ let decomp_pat =
 let decomp =
   let rec decrec acc c = match kind_of_term c with
     | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
-    | Proj (p, c) -> (mkConst p, c :: acc)
+    | Proj (p, c) -> (mkConst (Projection.constant p), c :: acc)
     | Cast (c1,_,_) -> decrec acc c1
     | _ -> (c,acc)
   in

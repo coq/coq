@@ -124,7 +124,7 @@ let head_constr_bound t =
   let hd,args = decompose_app ccl in
   match kind_of_term hd with
     | Const _ | Ind _ | Construct _ | Var _ -> hd
-    | Proj (p, _) -> mkConst p
+    | Proj (p, _) -> mkConst (Projection.constant p)
     | _ -> raise Bound
 
 let head_constr c =
@@ -139,7 +139,7 @@ let decompose_app_bound t =
     | Ind (i,u) -> IndRef i, args
     | Construct (c,u) -> ConstructRef c, args
     | Var id -> VarRef id, args
-    | Proj (p, c) -> ConstRef p, Array.cons c args
+    | Proj (p, c) -> ConstRef (Projection.constant p), Array.cons c args
     | _ -> raise Bound
 
 (******************************************)
@@ -1172,7 +1172,7 @@ let make_projection env sigma params cstr sign elim i n c u =
 	  let args = extended_rel_vect 0 sign in
 	  let proj =
 	    if Environ.is_projection proj env then
-	      mkProj (proj, mkApp (c, args))
+	      mkProj (Projection.make proj false, mkApp (c, args))
 	    else
 	      mkApp (mkConstU (proj,u), Array.append (Array.of_list params)
 		[|mkApp (c, args)|])

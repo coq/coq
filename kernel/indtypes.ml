@@ -692,14 +692,15 @@ let compute_projections ((kn, _ as ind), u as indsp) n nparamargs params
       | Name id ->
 	let kn = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
 	let ty = substl subst (liftn 1 j t) in
-	let term = mkProj (kn, mkRel 1) in
+	let term = mkProj (Projection.make kn true, mkRel 1) in
+	let fterm = mkProj (Projection.make kn false, mkRel 1) in
 	let compat = compat_body ty (j - 1) in
 	let etab = it_mkLambda_or_LetIn (mkLambda (x, rp, term)) params in
 	let etat = it_mkProd_or_LetIn (mkProd (x, rp, ty)) params in
 	let body = { proj_ind = fst ind; proj_npars = nparamargs;
 		     proj_arg = i; proj_type = ty; proj_eta = etab, etat; 
 		     proj_body = compat } in
-	  (i + 1, j + 1, kn :: kns, body :: pbs, term :: subst)
+	  (i + 1, j + 1, kn :: kns, body :: pbs, fterm :: subst)
       | Anonymous -> raise UndefinableExpansion
   in
   let (_, _, kns, pbs, subst) = List.fold_right projections ctx (0, 1, [], [], []) in

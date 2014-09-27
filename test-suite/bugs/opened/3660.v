@@ -18,10 +18,10 @@ admit.
 Defined.
 Local Open Scope equiv_scope.
 Axiom equiv_path : forall (A B : Type) (p : A = B), A <~> B.
+
 Goal forall (C D : hSet), IsEquiv (fun x : C = D => (equiv_path C D (ap setT x))).
   intros.
   change (IsEquiv (equiv_path C D o @ap _ _ setT C D)).
   apply @isequiv_compose; [ | admit ].
-  solve [ apply isequiv_ap_setT ].
-  Undo.
-  Fail typeclasses eauto.
+  Set Typeclasses Debug. 
+  typeclasses eauto.

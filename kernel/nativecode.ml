@@ -1923,7 +1923,8 @@ let rec compile_deps env sigma prefix ~interactive init t =
       comp_stack, (mind_updates, const_updates)
   | Construct (((mind,_),_),u) -> compile_mind_deps env prefix ~interactive init mind
   | Proj (p,c) ->
-      compile_deps env sigma prefix ~interactive init (mkApp (mkConst p, [|c|]))
+    let term = mkApp (mkConst (Projection.constant p), [|c|]) in
+      compile_deps env sigma prefix ~interactive init term
   | Case (ci, p, c, ac) ->
       let mind = fst ci.ci_ind in
       let init = compile_mind_deps env prefix ~interactive init mind in

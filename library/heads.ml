@@ -84,7 +84,7 @@ let kind_of_head env t =
   | Meta _ | Evar _ -> NotImmediatelyComputableHead
   | App (c,al) -> aux k (Array.to_list al @ l) c b
   | Proj (p,c) ->
-      (try on_subterm k (c :: l) b (constant_head p)
+      (try on_subterm k (c :: l) b (constant_head (Projection.constant p))
        with Not_found -> assert false)
 
   | Case (_,_,c,_) -> aux k [] c true

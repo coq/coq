@@ -208,7 +208,7 @@ sig
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array * Cst_stack.t
-  | Proj of int * int * projection
+  | Proj of int * int * constant
   | Fix of fixpoint * 'a t * Cst_stack.t
   | Cst of 'a cst_member * int * int list * 'a t * Cst_stack.t
   | Shift of int
@@ -262,7 +262,7 @@ struct
   type 'a member =
   | App of 'a app_node
   | Case of Term.case_info * 'a * 'a array * Cst_stack.t
-  | Proj of int * int * projection
+  | Proj of int * int * constant
   | Fix of fixpoint * 'a t * Cst_stack.t
   | Cst of 'a cst_member * int * int list * 'a t * Cst_stack.t
   | Shift of int
@@ -302,7 +302,7 @@ struct
 	if Univ.Instance.is_empty u then Constant.print c
 	else str"(" ++ Constant.print c ++ str ", " ++ Univ.Instance.pr u ++ str")"
       | Cst_proj (p, c) ->
-	pr_c c ++ str".(" ++ Constant.print p ++ str")"
+	pr_c c ++ str".(" ++ Constant.print (Projection.constant p) ++ str")"
 
   let empty = []
   let is_empty = CList.is_empty
@@ -329,7 +329,7 @@ struct
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
 	Constant.equal c1 c2 && Univ.Instance.equal u1 u2
       | Cst_proj (p1,c1), Cst_proj (p2,c2) ->
-	Constant.equal p1 p2 && f (c1,lft1) (c2,lft2)
+	Projection.equal p1 p2 && f (c1,lft1) (c2,lft2)
       | _, _ -> false
     in
     let rec equal_rec sk1 lft1 sk2 lft2  =
@@ -347,7 +347,7 @@ struct
 	then equal_rec s1 lft1 s2 lft2
 	else None
       | (Proj (n1,m1,p)::s1, Proj(n2,m2,p2)::s2) ->
-	if Int.equal n1 n2 && Int.equal m1 m2 && Names.Constant.CanOrd.equal p p2
+	if Int.equal n1 n2 && Int.equal m1 m2 && Constant.equal p p2
 	then equal_rec s1 lft1 s2 lft2
 	else None
       | Fix (f1,s1,_) :: s1', Fix (f2,s2,_) :: s2' ->
@@ -537,7 +537,7 @@ struct
   | f, (Cst (cst,_,_,params,_)::s) ->
     zip ~refold (constr_of_cst_member cst (params @ (append_app [|f|] s)))
   | f, (Shift n::s) -> zip ~refold (lift n f, s)
-  | f, (Proj (n,m,p)::s) -> zip ~refold (mkProj (p,f),s)
+  | f, (Proj (n,m,p)::s) -> zip ~refold (mkProj (Projection.make p true,f),s)
   | _, (Update _::_) -> assert false
 end
 
@@ -829,13 +829,14 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		    | Some (bef,arg,s') ->
 		      whrec Cst_stack.empty (arg,Stack.Cst(Stack.Cst_const const,curr,remains,bef,cst_l)::s')
        )
-    | Proj (p, c) when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST p) ->
+    | Proj (p, c) when Closure.RedFlags.red_projection flags p ->
       (let pb = lookup_projection p env in
+       let kn = Projection.constant p in
        let npars = pb.Declarations.proj_npars 
        and arg = pb.Declarations.proj_arg in
-	 match ReductionBehaviour.get (Globnames.ConstRef p) with
+	 match ReductionBehaviour.get (Globnames.ConstRef kn) with
 	 | None ->
-	   let stack' = (c, Stack.Proj (npars, arg, p) :: stack) in
+	   let stack' = (c, Stack.Proj (npars, arg, kn) :: stack) in
 	     whrec Cst_stack.empty(* cst_l *) stack'
 	 | Some (recargs, nargs, flags) ->
 	   if (List.mem `ReductionNeverUnfold flags
@@ -850,7 +851,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	       |[] -> (* if nargs has been specified *)
 		(* CAUTION : the constant is NEVER refold
                    (even when it hides a (co)fix) *)
-		 let stack' = (c, Stack.Proj (npars, arg, p) :: stack) in
+		 let stack' = (c, Stack.Proj (npars, arg, kn) :: stack) in
 		   whrec Cst_stack.empty(* cst_l *) stack'
 	       | curr::remains -> 
 		 if curr == 0 then (* Try to reduce the record argument *)
@@ -931,7 +932,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		match Stack.strip_n_app 0 stack with
 		| None -> assert false
 		| Some (_,arg,s'') ->
-		  whrec Cst_stack.empty (arg, Stack.Proj (npars,narg,p) :: s''))
+		  whrec Cst_stack.empty (arg, Stack.Proj (npars,narg,Projection.constant p) :: s''))
 	  | next :: remains' -> match Stack.strip_n_app (next-curr-1) s'' with
 	    | None -> fold ()
 	    | Some (bef,arg,s''') ->
@@ -984,9 +985,10 @@ let local_whd_state_gen flags sigma =
 	| _ -> s)
       | _ -> s)
 
-    | Proj (p,c) when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST p) ->
+    | Proj (p,c) when Closure.RedFlags.red_projection flags p ->
       (let pb = lookup_projection p (Global.env ()) in
-	 whrec (c, Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p)
+	 whrec (c, Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
+			       Projection.constant p)
            :: stack))
 
     | Case (ci,p,d,lf) ->

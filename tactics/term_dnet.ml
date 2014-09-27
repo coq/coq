@@ -288,7 +288,7 @@ struct
       Array.fold_left (fun c a -> Term (DApp (c,a)))
         (pat_of_constr f) (Array.map pat_of_constr ca)
     | Proj (p,c) -> 
-        Term (DApp (Term (DRef (ConstRef p)), pat_of_constr c))
+        Term (DApp (Term (DRef (ConstRef (Projection.constant p))), pat_of_constr c))
 
     and ctx_of_constr ctx c = match kind_of_term c with
     | Prod (_,t,c)   -> ctx_of_constr (Term(DCons((pat_of_constr t,None),ctx))) c

@@ -197,7 +197,7 @@ let rec norm_head info env t stack =
   | Cast (ct,_,_) -> norm_head info env ct stack
   
   | Proj (p, c) -> 
-    let pinfo = Option.get ((Environ.lookup_constant p (info_env info)).Declarations.const_proj) in
+    let pinfo = Environ.lookup_projection p (info_env info) in
     norm_head info env c (PROJ (p, pinfo, stack))
 
   (* constants, axioms

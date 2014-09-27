@@ -31,7 +31,7 @@ type cl_typ =
   | CL_SECVAR of variable
   | CL_CONST of constant
   | CL_IND of inductive
-  | CL_PROJ of projection
+  | CL_PROJ of constant
 
 type cl_info_typ = {
   cl_param : int
@@ -196,7 +196,8 @@ let find_class_type sigma t =
   match kind_of_term t' with
     | Var id -> CL_SECVAR id, Univ.Instance.empty, args
     | Const (sp,u) -> CL_CONST sp, u, args
-    | Proj (p, c) -> CL_PROJ p, Univ.Instance.empty, c :: args
+    | Proj (p, c) when not (Projection.unfolded p) ->
+      CL_PROJ (Projection.constant p), Univ.Instance.empty, c :: args
     | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
     | Prod (_,_,_) -> CL_FUN, Univ.Instance.empty, []
     | Sort _ -> CL_SORT, Univ.Instance.empty, []
@@ -406,7 +407,7 @@ let reference_arity_length ref =
 
 let projection_arity_length p =
   let len = reference_arity_length (ConstRef p) in
-  let pb = Environ.lookup_projection p (Global.env ()) in 
+  let pb = Environ.lookup_projection (Projection.make p false) (Global.env ()) in 
     len - pb.Declarations.proj_npars
 
 let class_params = function

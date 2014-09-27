@@ -104,7 +104,8 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 	| None -> mkCase (ci, lift ndepar p,  mkRel 1,
 			  Termops.rel_vect ndepar k)
 	| Some ps -> 
-	  let term = mkApp (mkRel 2, Array.map (fun p -> mkProj (p, mkRel 1)) ps) in
+	  let term = mkApp (mkRel 2, 
+			    Array.map (fun p -> mkProj (Projection.make p true, mkRel 1)) ps) in
 	    if dep then
 	      let ty = mkApp (mkRel 3, [| mkRel 1 |]) in 
 		mkCast (term, DEFAULTcast, ty)
@@ -390,7 +391,7 @@ let mis_make_indrec env sigma listdepkind mib u =
 		    let n, subst = 
 		      List.fold_right (fun (na,b,t) (i, subst) ->
 			if b == None then 
-			  let t = mkProj (ps.(i), mkRel 1) in
+			  let t = mkProj (Projection.make ps.(i) true, mkRel 1) in
 			    (i + 1, t :: subst)
 			else (i, mkRel 0 :: subst))
 			ctx (0, [])

@@ -123,12 +123,13 @@ let expmod_constr cache modlist c =
 
       | Proj (p, c') ->
           (try 
-	     let p' = share_univs (ConstRef p) Univ.Instance.empty modlist in
+	     let p' = share_univs (ConstRef (Projection.constant p)) Univ.Instance.empty modlist in
+	     let make c = Projection.make c (Projection.unfolded p) in
 	     match kind_of_term p' with
-	     | Const (p',_) -> mkProj (p', substrec c')
+	     | Const (p',_) -> mkProj (make p', substrec c')
 	     | App (f, args) -> 
 	       (match kind_of_term f with 
-	       | Const (p', _) -> mkProj (p', substrec c')
+	       | Const (p', _) -> mkProj (make p', substrec c')
 	       | _ -> assert false)
 	     | _ -> assert false
 	   with Not_found -> map_constr substrec c)

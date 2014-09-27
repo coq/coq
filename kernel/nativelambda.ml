@@ -586,7 +586,8 @@ let rec lambda_of_constr env sigma c =
   | Construct _ ->  lambda_of_app env sigma c empty_args
 
   | Proj (p, c) ->
-      mkLapp (Lproj (get_const_prefix !global_env p, p)) [|lambda_of_constr env sigma c|]
+    let kn = Projection.constant p in
+      mkLapp (Lproj (get_const_prefix !global_env kn, kn)) [|lambda_of_constr env sigma c|]
 
   | Case(ci,t,a,branches) ->  
       let (mind,i as ind) = ci.ci_ind in

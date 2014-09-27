@@ -106,7 +106,7 @@ let rec head_pattern_bound t =
     | PCase (_,p,c,br) -> head_pattern_bound c
     | PRef r         -> r
     | PVar id        -> VarRef id
-    | PProj (p,c)    -> ConstRef p
+    | PProj (p,c)    -> ConstRef (Projection.constant p)
     | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _
 	-> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
@@ -120,7 +120,7 @@ let head_of_constr_reference c = match kind_of_term c with
   | Var id -> VarRef id
   | _ -> anomaly (Pp.str "Not a rigid reference")
 
-let pattern_of_constr sigma t =
+let pattern_of_constr env sigma t =
   let ctx = ref [] in
   let rec pattern_of_constr t =
   match kind_of_term t with
@@ -150,7 +150,8 @@ let pattern_of_constr sigma t =
     | Const (sp,u)  -> PRef (ConstRef (constant_of_kn(canonical_con sp)))
     | Ind (sp,u)    -> PRef (canonical_gr (IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
-    | Proj (p, c) -> PProj (constant_of_kn(canonical_con p), pattern_of_constr c)
+    | Proj (p, c) -> PProj (Projection.map (fun kn -> constant_of_kn(canonical_con kn)) p,
+			    pattern_of_constr c)
     | Evar (evk,ctxt as ev) ->
         (match snd (Evd.evar_source evk sigma) with
           | Evar_kinds.MatchingVar (b,id) ->
@@ -203,7 +204,7 @@ let error_instantiate_pattern id l =
     ++ strbrk " in pattern because the term refers to " ++ pr_enum pr_id l
     ++ strbrk " which " ++ str is ++ strbrk " not bound in the pattern.")
 
-let instantiate_pattern sigma lvar c =
+let instantiate_pattern env sigma lvar c =
   let rec aux vars = function
   | PVar id as x ->
       (try
@@ -215,7 +216,7 @@ let instantiate_pattern sigma lvar c =
               ctx
           in
 	  let c = substl inst c in
-	  snd (pattern_of_constr sigma c)
+	  snd (pattern_of_constr env sigma c)
 	with Not_found (* List.index failed *) ->
 	  let vars =
 	    List.map_filter (function Name id -> Some id | _ -> None) vars in
@@ -240,13 +241,13 @@ let rec subst_pattern subst pat =
   | PRef ref ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then pat else
-	 snd (pattern_of_constr Evd.empty t)
+	 snd (pattern_of_constr (Global.env()) Evd.empty t)
   | PVar _
   | PEvar _
   | PRel _ -> pat
   | PProj (p,c) -> 
-      let p',t = subst_global subst (ConstRef p) in
-      let p' = destConstRef p' in
+      let p' = Projection.map (fun p -> 
+	destConstRef (fst (subst_global subst (ConstRef p)))) p in
       let c' = subst_pattern subst c in
 	if p' == p && c' == c then pat else
 	  PProj(p',c')

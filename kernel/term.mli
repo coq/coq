@@ -86,7 +86,7 @@ type ('constr, 'types) kind_of_term = ('constr, 'types) Constr.kind_of_term =
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
-  | Proj      of constant * 'constr
+  | Proj      of projection * 'constr
 
 type values = Constr.values
 
@@ -405,7 +405,7 @@ val mkLambda : Name.t * types * constr -> constr
 val mkLetIn : Name.t * constr * types * constr -> constr
 val mkApp : constr * constr array -> constr
 val mkConst : constant -> constr
-val mkProj : (constant * constr) -> constr
+val mkProj : projection * constr -> constr
 val mkInd : inductive -> constr
 val mkConstruct : constructor -> constr
 val mkConstU : constant puniverses -> constr

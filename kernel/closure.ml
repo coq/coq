@@ -88,6 +88,7 @@ module type RedFlagsSig = sig
   val red_add_transparent : reds -> transparent_state -> reds
   val mkflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
+  val red_projection : reds -> projection -> bool
 end
 
 module RedFlags = (struct
@@ -167,6 +168,10 @@ module RedFlags = (struct
     | IOTA -> incr_cnt red.r_iota iota
     | DELTA -> (* Used for Rel/Var defined in context *)
 	incr_cnt red.r_delta delta
+
+  let red_projection red p = 
+    if Projection.unfolded p then true
+    else red_set red (fCONST (Projection.constant p))
 
 end : RedFlagsSig)
 
@@ -338,7 +343,7 @@ and fterm =
   | FInd of pinductive
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
-  | FProj of constant * fconstr
+  | FProj of projection * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCases of case_info * fconstr * fconstr * fconstr array
@@ -708,7 +713,7 @@ let rec zip m stk rem = match stk with
   let t = FCases(ci, p, m, br) in
   zip {norm=neutr m.norm; term=t} s rem
 | Zproj (i,j,cst) :: s -> 
-  zip {norm=neutr m.norm; term=FProj (cst,m)} s rem
+  zip {norm=neutr m.norm; term=FProj (Projection.make cst true,m)} s rem
 | Zfix(fx,par)::s ->
   zip fx par ((Zapp [|m|] :: s) :: rem)
 | Zshift(n)::s ->
@@ -876,7 +881,7 @@ let eta_expand_ind_stack env ind m s (f, s') =
       (** Try to drop the params, might fail on partially applied constructors. *)
       let argss = try_drop_parameters depth pars args in
       let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
-					 term = FProj (p, right) }) projs in
+					 term = FProj (Projection.make p true, right) }) projs in
 	argss, [Zapp hstack]	
     | _ -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
@@ -932,11 +937,13 @@ let rec knh info m stk =
            | (None, stk') -> (m,stk'))
     | FCast(t,_,_) -> knh info t stk
     | FProj (p,c) ->
-        if red_set info.i_flags (fCONST p) then
+      let unf = Projection.unfolded p in
+        if unf || red_set info.i_flags (fCONST (Projection.constant p)) then
           (match try Some (lookup_projection p (info_env info)) with Not_found -> None with
 	  | None -> (m, stk)
 	  | Some pb ->
-	     knh info c (Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p)
+	     knh info c (Zproj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
+				Projection.constant p)
 			 :: zupdate m stk))
 	else (m,stk)
 
@@ -1033,7 +1040,7 @@ let rec zip_term zfun m stk =
         let t = mkCase(ci, zfun p, m, Array.map zfun br) in
         zip_term zfun t s
     | Zproj(_,_,p)::s -> 
-        let t = mkProj (p, m) in 
+        let t = mkProj (Projection.make p true, m) in 
 	zip_term zfun t s
     | Zfix(fx,par)::s ->
         let h = mkApp(zip_term zfun (zfun fx) par,[|m|]) in

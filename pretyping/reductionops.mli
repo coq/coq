@@ -57,7 +57,7 @@ module Stack : sig
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array * Cst_stack.t
-  | Proj of int * int * projection
+  | Proj of int * int * constant
   | Fix of fixpoint * 'a t * Cst_stack.t
   | Cst of 'a cst_member * int (** current foccussed arg *) * int list (** remaining args *)
     * 'a t * Cst_stack.t

@@ -501,11 +501,12 @@ let rec compile_constr reloc c sz cont =
   | Evar _ -> invalid_arg "Cbytegen.compile_constr : Evar"
   | Proj (p,c) -> 
     (* compile_const reloc p [|c|] sz cont *)
-    let cb = lookup_constant p !global_env in
+    let kn = Projection.constant p in
+    let cb = lookup_constant kn !global_env in
       (* TODO: better representation of projections *)
     let pb = Option.get cb.const_proj in
     let args = Array.make pb.proj_npars mkProp in
-      compile_const reloc p Univ.Instance.empty (Array.append args [|c|]) sz cont
+      compile_const reloc kn Univ.Instance.empty (Array.append args [|c|]) sz cont
 
   | Cast(c,_,_) -> compile_constr reloc c sz cont
 

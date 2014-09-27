@@ -350,7 +350,7 @@ let apply_coercion env sigma p hj typ_cl =
 	    (if isid then
 	      { uj_val = ja.uj_val; uj_type = jres.uj_type }
 	     else if isproj then
-	       { uj_val = mkProj (fst (destConst fv.uj_val), ja.uj_val); 
+	       { uj_val = mkProj (Projection.make (fst (destConst fv.uj_val)) false, ja.uj_val); 
 		 uj_type = jres.uj_type }
 	     else
 	      jres),

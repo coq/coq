@@ -203,7 +203,9 @@ let rec conv_eq env pb t1 t2 cu =
 	else raise NotConvertible
     | Const c1, Const c2 -> eq_puniverses eq_constant c1 c2 cu
     | Proj (p1,c1), Proj (p2,c2) ->
-	if eq_constant p1 p2 then conv_eq env pb c1 c2 cu else raise NotConvertible
+	if eq_constant (Projection.constant p1) (Projection.constant p2) then
+	  conv_eq env pb c1 c2 cu 
+	else raise NotConvertible
     | Ind c1, Ind c2 ->
        eq_puniverses eq_ind c1 c2 cu
     | Construct c1, Construct c2 ->

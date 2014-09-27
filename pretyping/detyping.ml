@@ -445,12 +445,22 @@ let rec detype flags avoid env sigma t =
     | Proj (p,c) ->
       if fst flags || !Flags.in_debugger || !Flags.in_toplevel then
 	(* lax mode, used by debug printers only *) 
-	GApp (dl, GRef (dl, ConstRef p, None), 
+	GApp (dl, GRef (dl, ConstRef (Projection.constant p), None), 
 	      [detype flags avoid env sigma c])
-      else let ty = Retyping.get_type_of (snd env) sigma c in
-	   let (ind, args) = Inductive.find_rectype (snd env) ty in
-	     GApp (dl, GRef (dl, ConstRef p, None), 
-		   List.map (detype flags avoid env sigma) (args @ [c]))
+      else 
+	if Projection.unfolded p then
+	  (** Print the compatibility match version *)
+	  let pb = Environ.lookup_projection p (snd env) in
+	  let body = pb.Declarations.proj_body in
+	  let ty = Retyping.get_type_of (snd env) sigma c in
+	  let (ind, args) = Inductive.find_rectype (snd env) ty in
+	  let body' = strip_lam_assum body in
+	    detype flags avoid env sigma (substl (c :: List.rev args) body')
+	else
+	  let ty = Retyping.get_type_of (snd env) sigma c in
+	  let (ind, args) = Inductive.find_rectype (snd env) ty in
+	    GApp (dl, GRef (dl, ConstRef (Projection.constant p), None), 
+		  List.map (detype flags avoid env sigma) (args @ [c]))
     | Evar (evk,cl) ->
       let id,l =
         try Evd.evar_ident evk sigma,

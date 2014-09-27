@@ -425,15 +425,15 @@ and applist_proj c l =
 and applist_projection c l =
   match kind_of_term c with
   | Const c when Environ.is_projection (fst c) (Global.env()) ->
+    let p = Projection.make (fst c) false in
     (match l with 
     | [] -> (* Expand the projection *)
-      let kn = fst c in
       let ty,_ = Typeops.type_of_constant (Global.env ()) c in
-      let pb = Environ.lookup_projection kn (Global.env()) in
+      let pb = Environ.lookup_projection p (Global.env()) in
       let ctx,_ = Term.decompose_prod_n_assum (pb.Declarations.proj_npars + 1) ty in
-	it_mkLambda_or_LetIn (mkProj(kn,mkRel 1)) ctx
+	it_mkLambda_or_LetIn (mkProj(p,mkRel 1)) ctx
     | hd :: tl ->
-      applistc (mkProj (fst c, hd)) tl)
+      applistc (mkProj (p, hd)) tl)
   | _ -> applistc c l
 
 let rec canonize_name c =
@@ -456,9 +456,10 @@ let rec canonize_name c =
 	  mkLetIn (na, func b,func t,func ct)
       | App (ct,l) ->
 	  mkApp (func ct,Array.smartmap func l)
-      | Proj(kn,c) ->
-        let canon_const = constant_of_kn (canonical_con kn) in 
-	  (mkProj (canon_const, func c))
+      | Proj(p,c) ->
+	let p' = Projection.map (fun kn ->
+          constant_of_kn (canonical_con kn)) p in 
+	  (mkProj (p', func c))
       | _ -> c
 
 (* rebuild a term from a pattern and a substitution *)

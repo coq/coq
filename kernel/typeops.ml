@@ -184,7 +184,8 @@ let judge_of_constant_knowing_parameters env (kn,u as cst) args =
 let judge_of_constant env cst =
   judge_of_constant_knowing_parameters env cst [||]
 
-let type_of_projection env (cst,u) =
+let type_of_projection env (p,u) =
+  let cst = Projection.constant p in
   let cb = lookup_constant cst env in
   match cb.const_proj with
   | Some pb -> 

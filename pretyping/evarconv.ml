@@ -33,18 +33,24 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun a -> debug_unification:=a);
 }
 
-let unfold_projection env p c stk =
+let unfold_projection env ts p c stk =
   (match try Some (lookup_projection p env) with Not_found -> None with
   | Some pb -> 
+    let cst = Projection.constant p in
     let unfold () = 
-      let s = Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, p) in
+      let s = Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
+			  Projection.constant p) in
 	Some (c, s :: stk)
     in
-      (match ReductionBehaviour.get (Globnames.ConstRef p) with
-      | None -> unfold ()
-      | Some (recargs, nargs, flags) ->
-	if (List.mem `ReductionNeverUnfold flags) then None
-	else unfold ())
+      if Projection.unfolded p then unfold ()
+      else 
+	if is_transparent_constant ts cst then
+	  (match ReductionBehaviour.get (Globnames.ConstRef cst) with
+	  | None -> unfold ()
+	  | Some (recargs, nargs, flags) ->
+	    if (List.mem `ReductionNeverUnfold flags) then None
+	    else unfold ())
+	else None
   | None -> None)
 
 let eval_flexible_term ts env c stk =
@@ -64,10 +70,7 @@ let eval_flexible_term ts env c stk =
        with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c, stk)
   | Lambda _ -> Some (c, stk)
-  | Proj (p, c) -> 
-    if is_transparent_constant ts p
-    then unfold_projection env p c stk
-    else None
+  | Proj (p, c) -> unfold_projection env ts p c stk
   | _ -> assert false
 
 type flex_kind_of_term =
@@ -527,7 +530,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	in
 	ise_try evd [f1; f2]
 
-	| Proj (p, c), Proj (p', c') when eq_constant p p' ->
+	| Proj (p, c), Proj (p', c') when Projection.equal p p' ->
 	  let f1 i = 
 	    ise_and i 
 	    [(fun i -> evar_conv_x ts env i CONV c c');
@@ -539,7 +542,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  in
 	    ise_try evd [f1; f2]
 	      
-	| Proj (p, t), Const (p',_) when eq_constant p p' ->
+	| Proj (p, t), Const (p',_) when eq_constant (Projection.constant p) p' ->
 	  let f1 i = 
 	    let pb = Environ.lookup_projection p env in
 	      (match Stack.strip_n_app pb.Declarations.proj_npars sk2' with
@@ -554,7 +557,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    in evar_eqappr_x ts env i pbty out1 out2
 	  in ise_try evd [f1;f2]
 
-	| Const (p',_), Proj (p, t) when eq_constant p p' ->
+	| Const (p',_), Proj (p, t) when eq_constant  (Projection.constant p) p' ->
 	  let f1 i = 
 	    let pb = Environ.lookup_projection p env in
 	      (match Stack.strip_n_app pb.Declarations.proj_npars sk1' with
@@ -801,7 +804,7 @@ and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
 	   let l1' = Stack.tail pars sk1 in
 	   let l2' = 
 	     let term = Stack.zip (term2,sk2) in 
-	       List.map (fun p -> mkProj (p, term)) (Array.to_list projs)
+	       List.map (fun p -> mkProj (Projection.make p false, term)) (Array.to_list projs)
 	   in
 	     exact_ise_stack2 env evd (evar_conv_x (fst ts, false)) l1' 
 	       (Stack.append_app_list l2' Stack.empty)

@@ -227,10 +227,10 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 	   
       | PApp (c1,arg1), App (c2,arg2) ->
 	(match c1, kind_of_term c2 with
-	| PRef (ConstRef r), Proj (pr,c) when not (eq_constant r pr) ->
+	| PRef (ConstRef r), Proj (pr,c) when not (eq_constant r (Projection.constant pr)) ->
 	  raise PatternMatchingFailure
 	| PProj (pr1,c1), Proj (pr,c) ->
-	  if eq_constant pr1 pr then 
+	  if eq_constant (Projection.constant pr1) (Projection.constant pr) then 
 	    try Array.fold_left2 (sorec stk env) (sorec stk env subst c1 c) arg1 arg2
 	    with Invalid_argument _ -> raise PatternMatchingFailure
 	  else raise PatternMatchingFailure
@@ -241,14 +241,16 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
           try Array.fold_left2 (sorec stk env) (sorec stk env subst c1 c2) arg1 arg2
           with Invalid_argument _ -> raise PatternMatchingFailure)
 	  
-      | PApp (PRef (ConstRef c1), _), Proj (pr, c2) when not (eq_constant c1 pr) -> 
+      | PApp (PRef (ConstRef c1), _), Proj (pr, c2) when not (eq_constant c1 
+								(Projection.constant pr)) -> 
 	raise PatternMatchingFailure
 	
       | PApp (c, args), Proj (pr, c2) ->
 	let term = Retyping.expand_projection env sigma pr c2 [] in
 	  sorec stk env subst p term
 
-      | PProj (p1,c1), Proj (p2,c2) when eq_constant p1 p2 ->
+      | PProj (p1,c1), Proj (p2,c2) when 
+	  eq_constant (Projection.constant p1) (Projection.constant p2) ->
           sorec stk env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
