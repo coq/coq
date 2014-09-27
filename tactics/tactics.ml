@@ -3554,7 +3554,7 @@ let induction_tac with_evars elim (varname,lbind) typ gl =
   Proofview.V82.of_tactic
     (elimination_clause_scheme with_evars rename i (elimc, elimt, lbindelimc) indclause) gl
 
-let induction_from_context clear_flag isrec with_evars (indref,nparams,elim) (hyp0,lbind) names
+let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) names
   inhyps =
   Proofview.Goal.nf_enter begin fun gl ->
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
@@ -3566,19 +3566,18 @@ let induction_from_context clear_flag isrec with_evars (indref,nparams,elim) (hy
   let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
     induction_tac with_evars elim (hyp0,lbind) typ0;
     tclTRY (unfold_body hyp0);
-    Proofview.V82.of_tactic
-      (apply_clear_request clear_flag true (mkVar hyp0))
+    thin [hyp0]
   ]) in
   apply_induction_in_context
     (Some (hyp0,inhyps)) elim indvars names induct_tac
   end
 
-let induction_with_atomization_of_ind_arg clear_flag isrec with_evars elim names (hyp0,lbind) inhyps =
+let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbind) inhyps =
   Proofview.Goal.nf_enter begin fun gl ->
   let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
   Tacticals.New.tclTHENLIST
     [Proofview.V82.tclEVARS sigma; (atomize_param_of_ind elim_info hyp0);
-    (induction_from_context clear_flag isrec with_evars elim_info
+    (induction_from_context isrec with_evars elim_info
       (hyp0,lbind) names inhyps)]
   end
 
@@ -3637,11 +3636,11 @@ let induction_gen clear_flag isrec with_evars elim (eqname,names) (sigma,(c,lbin
   match kind_of_term c with
     | Var id when not (mem_named_context id (Global.named_context()))
 	        && lbind == NoBindings && not with_evars && Option.is_empty eqname
-                && not (has_selected_occurrences cls) ->
+                && clear_flag == None && not (has_selected_occurrences cls) ->
 	Tacticals.New.tclTHEN
           (Proofview.V82.tactic (clear_unselected_context id inhyps cls))
 	  (induction_with_atomization_of_ind_arg
-	    clear_flag isrec with_evars elim names (id,lbind) inhyps)
+	    isrec with_evars elim names (id,lbind) inhyps)
     | _        ->
         Proofview.Goal.enter begin fun gl ->
           let env = Proofview.Goal.env gl in
@@ -3657,7 +3656,6 @@ let induction_gen clear_flag isrec with_evars elim (eqname,names) (sigma,(c,lbin
 	      (letin_tac_gen with_eq
                  (AbstractPattern (Name id,(sigma,c),(Option.default allHypsAndConcl cls),false,tactic_infer_flags)) None)
 	      (induction_with_atomization_of_ind_arg
-	         (Some true)
                  isrec with_evars elim names (id,lbind) inhyps)
           end
         end
