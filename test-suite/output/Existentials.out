@@ -1,3 +1,5 @@
-Existential 1 = ?7 : [p : nat  q := S p : nat  n : nat  m : nat |- ?9 = m] 
-Existential 2 = ?9 : [n : nat  m : nat |- nat] 
-Existential 3 = ?10 : [q : nat  n : nat  m : nat |- n = ?9] 
+Existential 1 =
+?Goal1 : [p : nat  q := S p : nat  n : nat  m : nat |- ?y = m] 
+Existential 2 =
+?y : [p : nat  q := S p : nat  n : nat  m : nat |- nat] (p, q cannot be used)
+Existential 3 = ?Goal0 : [q : nat  n : nat  m : nat |- n = ?y] 
