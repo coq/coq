@@ -799,9 +799,6 @@ and whd_construct_stack env sigma s =
    sequence of products; fails if no delta redex is around
 *)
 
-let match_eval_proj env proj =
-  ((lookup_constant proj env).Declarations.const_proj)
-
 let try_red_product env sigma c =
   let simpfun = clos_norm_flags betaiotazeta env sigma in
   let rec redrec env x =

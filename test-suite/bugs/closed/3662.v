@@ -45,3 +45,4 @@ Goal forall x : prod nat nat, fst x = 0.
     | [ |- fst ?x = 0 ] => idtac
   end.
 Abort.
+

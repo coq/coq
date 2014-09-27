@@ -26,7 +26,7 @@ Ltac head_hnf_under_binders x :=
     | ?y => y
   end.
 Goal forall s : @hSet nat, True.
-intros. 
+intros.
 let x := head_hnf_under_binders setT in pose x.
 
 set (foo := eq_refl (@setT nat)). generalize foo. simpl. cbn. 
@@ -42,8 +42,12 @@ Ltac head_hnf_under_binders x :=
     | ?y => y
   end.
 Goal setT = setT.
- Fail progress unfold setT. (* should not succeed *)
+ progress unfold setT. (* should not succeed *)
  match goal with
     | |- (fun h => setT h) = (fun h => setT h) => fail 1 "should not eta-expand"
     | _ => idtac
   end. (* should not fail *)
+Abort.
+
+Goal forall h, setT h = setT h.
+Proof. intro. progress unfold setT. 
