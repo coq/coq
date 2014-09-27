@@ -47,11 +47,21 @@ exception NoCoercion
 exception NoCoercionNoUnifier of evar_map * unification_error
 
 (* Here, funj is a coercion therefore already typed in global context *)
-let apply_coercion_args env evd check argl funj =
+let apply_coercion_args env evd check isproj argl funj =
   let evdref = ref evd in
   let rec apply_rec acc typ = function
-    | [] -> { uj_val = applist (j_val funj,argl);
-	      uj_type = typ }
+    | [] ->
+      if isproj then
+	let cst = fst (destConst (j_val funj)) in
+	let p = Projection.make cst false in
+	let pb = lookup_projection p env in
+	let args = List.skipn pb.Declarations.proj_npars argl in
+	let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
+	  { uj_val = applist (mkProj (p, hd), tl);
+	    uj_type = typ }
+      else
+	{ uj_val = applist (j_val funj,argl);
+	  uj_type = typ }
     | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
       match kind_of_term (whd_betadeltaiota env evd typ) with
       | Prod (_,c1,c2) ->
@@ -345,13 +355,10 @@ let apply_coercion env sigma p hj typ_cl =
 	  let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
 	  let argl = (class_args_of env sigma typ_cl)@[ja.uj_val] in
 	  let sigma, jres = 
-	    apply_coercion_args env sigma true argl fv 
+	    apply_coercion_args env sigma true isproj argl fv 
 	  in
 	    (if isid then
 	      { uj_val = ja.uj_val; uj_type = jres.uj_type }
-	     else if isproj then
-	       { uj_val = mkProj (Projection.make (fst (destConst fv.uj_val)) false, ja.uj_val); 
-		 uj_type = jres.uj_type }
 	     else
 	      jres),
 	    jres.uj_type,sigma)
