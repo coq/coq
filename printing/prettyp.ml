@@ -206,15 +206,15 @@ let print_polymorphism ref =
 
 let print_primitive_record mipv = function
   | Some (ps,_) when Array.length ps > 0 -> 
-    pr_id mipv.(0).mind_typename ++ str" is primitive and has eta conversion."
-  | _ -> mt()
-
+    [pr_id mipv.(0).mind_typename ++ str" is primitive and has eta conversion."]
+  | _ -> []
+    
 let print_primitive ref =
   match ref with 
   | IndRef ind -> 
     let mib,_ = Global.lookup_inductive ind in
       print_primitive_record mib.mind_packets mib.mind_record
-  | _ -> mt()
+  | _ -> []
     
 let print_name_infos ref =
   let poly = print_polymorphism ref in
@@ -229,7 +229,7 @@ let print_name_infos ref =
        print_ref true ref; blankline]
     else
       [] in
-  poly :: print_primitive ref ::
+  poly :: print_primitive ref @
   type_info_for_implicit @
   print_renames_list (mt()) renames @
   print_impargs_list (mt()) impls @
@@ -446,7 +446,7 @@ let gallina_print_inductive sp =
   let mipv = mib.mind_packets in
   pr_mutual_inductive_body env sp mib ++
   with_line_skip
-    (print_primitive_record mipv mib.mind_record ::
+    (print_primitive_record mipv mib.mind_record @
      print_inductive_renames sp mipv @
      print_inductive_implicit_args sp mipv @
      print_inductive_argument_scopes sp mipv)
