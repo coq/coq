@@ -390,7 +390,7 @@ let unfold_projection env p stk =
   (match try Some (lookup_projection p env) with Not_found -> None with
   | Some pb -> 
     let s = Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
-			Projection.constant p) in
+			p, Cst_stack.empty) in
       s :: stk
   | None -> assert false)
 
@@ -519,9 +519,10 @@ let eta_constructor_app env f l1 term =
     let mib = lookup_mind (fst ind) env in
       (match mib.Declarations.mind_record with
       | Some (projs, _) ->
-        let pars = mib.Declarations.mind_nparams in
-	let l1' = Array.sub l1 pars (Array.length l1 - pars) in
-	let l2 = Array.map (fun p -> mkProj (Projection.make p false, term)) projs in
+        let npars = mib.Declarations.mind_nparams in
+	let pars, l1' = Array.chop npars l1 in
+	let arg = Array.append pars [|term|] in
+	let l2 = Array.map (fun p -> mkApp (mkConstU (p,u), arg)) projs in
 	  l1', l2
       | _ -> assert false)
   | _ -> assert false
@@ -653,6 +654,33 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	     with ex when precatchable_exception ex ->
 	       reduce curenvnb pb b wt substn cM cN)
 
+	| Proj (p1,c1), Proj (p2,c2) ->
+	    if eq_constant (Projection.constant p1) (Projection.constant p2) then
+	      try 
+		let substn = unirec_rec curenvnb CONV true wt substn c1 c2 in
+		  try (* Force unification of the types to fill in parameters *)
+		    let ty1 = get_type_of curenv ~lax:true sigma c1 in
+		    let ty2 = get_type_of curenv ~lax:true sigma c2 in
+		      unify_0_with_initial_metas substn true env cv_pb 
+			{ flags with modulo_conv_on_closed_terms = Some full_transparent_state;
+			  modulo_delta = full_transparent_state;
+			  modulo_eta = true;
+			  modulo_betaiota = true }
+			ty1 ty2
+		  with RetypeError _ -> substn
+	      with ex when precatchable_exception ex ->
+	        unify_not_same_head curenvnb pb b wt substn cM cN
+	    else
+	      unify_not_same_head curenvnb pb b wt substn cM cN
+
+	| Proj (p1,c1), _ when not (Projection.unfolded p1) ->
+	  let cM' = Retyping.expand_projection curenv sigma p1 c1 [] in
+	    unirec_rec curenvnb CONV true false substn cM' cN
+
+	| _, Proj (p2,c2) when not (Projection.unfolded p2) ->
+	  let cN' = Retyping.expand_projection curenv sigma p2 c2 [] in
+	    unirec_rec curenvnb CONV true false substn cM cN'
+
 	| App (f1,l1), _ when 
 	    (isMeta f1 && use_metas_pattern_unification flags nb l1
             || use_evars_pattern_unification flags && isAllowedEvar flags f1) ->
@@ -679,41 +707,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
              | Some l ->
 	         solve_pattern_eqn_array curenvnb f2 l cM substn)
 
-	| Proj (p1,c1), Proj (p2,c2) ->
-	    if eq_constant (Projection.constant p1) (Projection.constant p2) then
-	      try 
-		let substn = unirec_rec curenvnb CONV true wt substn c1 c2 in
-		  try (* Force unification of the types to fill in parameters *)
-		    let ty1 = get_type_of curenv ~lax:true sigma c1 in
-		    let ty2 = get_type_of curenv ~lax:true sigma c2 in
-		      unify_0_with_initial_metas substn true env cv_pb 
-			{ flags with modulo_conv_on_closed_terms = Some full_transparent_state;
-			  modulo_delta = full_transparent_state;
-			  modulo_eta = true;
-			  modulo_betaiota = true }
-			ty1 ty2
-		  with RetypeError _ -> substn
-	      with ex when precatchable_exception ex ->
-	        unify_not_same_head curenvnb pb b wt substn cM cN
-	    else
-	      unify_not_same_head curenvnb pb b wt substn cM cN
-
-	| App (f1, l1), Proj (p', c) when isConst f1 && 
-	    eq_constant (fst (destConst f1)) (Projection.constant p') -> 
-	  expand curenvnb pb b false substn cM f1 l1 cN cN [||]
-
-	| Proj (p', c), App (f1, l1) when isConst f1 && 
-	    eq_constant (fst (destConst f1)) (Projection.constant p') -> 
-	  expand curenvnb pb b false substn cM f1 l1 cN cN [||]
-
 	| App (f1,l1), App (f2,l2) ->
-	  (match kind_of_term f1, kind_of_term f2 with
-	  | Const (p, u), Proj (p', c) when eq_constant p (Projection.constant p') -> 
-	    expand curenvnb pb b false substn cM f1 l1 cN f2 l2
-	  | Proj (p', _), Const (p, _) when eq_constant p (Projection.constant p') ->
-	    expand curenvnb pb b false substn cM f1 l1 cN f2 l2
-	  | _ ->
-            unify_app curenvnb pb b substn cM f1 l1 cN f2 l2)
+            unify_app curenvnb pb b substn cM f1 l1 cN f2 l2
 
 	| _ ->
             unify_not_same_head curenvnb pb b wt substn cM cN

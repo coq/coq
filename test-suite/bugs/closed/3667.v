@@ -18,8 +18,8 @@ Definition set_cat : PreCategory.
                              (fun x y => x -> y))).
 Defined.
 Goal forall (A : PreCategory) (F : Functor A set_cat)
-            (a : A) (x : F a), x = x.
+            (a : A) (x : F a) (nt :NaturalTransformation F F), x = x.
   intros. 
-  pose (fun c d m => ap10 (commutes x c d m)).
+  pose (fun c d m => ap10 (commutes nt c d m)).
 
 

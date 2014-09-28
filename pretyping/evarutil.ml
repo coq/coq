@@ -705,7 +705,8 @@ let define_pure_evar_as_product evd evk =
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
   let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
-  let s = destSort evi.evar_concl in
+  let concl = whd_evar evd evi.evar_concl in
+  let s = destSort concl in
   let evd1,(dom,u1) = new_type_evar evenv evd univ_flexible_alg ~filter:(evar_filter evi) in
   let evd2,rng =
     let newenv = push_named (id, None, dom) evenv in
@@ -713,7 +714,7 @@ let define_pure_evar_as_product evd evk =
     let filter = Filter.extend 1 (evar_filter evi) in
       if is_prop_sort s then
        (* Impredicative product, conclusion must fall in [Prop]. *)
-        new_evar newenv evd1 evi.evar_concl ~src ~filter
+        new_evar newenv evd1 concl ~src ~filter
       else
 	let evd3, (rng, srng) =
 	  new_type_evar newenv evd1 univ_flexible_alg ~src ~filter in
