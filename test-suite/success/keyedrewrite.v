@@ -1,3 +1,5 @@
+Set Keyed Unification.
+
 Section foo.
 Variable f : nat -> nat. 
 
