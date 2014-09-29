@@ -1818,6 +1818,20 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
     handle_failure e vcs tty
 
 (** STM interface ******************************************************* **)
+  
+let print_ast id =
+  try
+    match VCS.visit id with
+    | { step = `Cmd ({ loc; expr }, _, _) } 
+    | { step = `Fork ({ loc; expr }, _, _, _) } 
+    | { step = `Qed ({ qast = { loc; expr } }, _) } ->
+        let xml = 
+          try Texmacspp.tmpp expr loc
+          with e -> Xml_datatype.PCData ("ERROR " ^ Printexc.to_string e) in
+        xml;
+    | _ -> Xml_datatype.PCData "ERROR"
+  with _ -> Xml_datatype.PCData "ERROR"
+ 
 
 let stop_worker n = Slaves.cancel_worker n
 

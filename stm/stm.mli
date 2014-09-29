@@ -66,6 +66,8 @@ val slave_init_stdout : unit -> unit
 val tacslave_main_loop : unit -> unit
 val tacslave_init_stdout : unit -> unit
 
+val print_ast : Stateid.t -> Xml_datatype.xml
+
 (* Filename *)
 val set_compilation_hints : string -> unit
 
