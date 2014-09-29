@@ -310,6 +310,12 @@ let destCase c = match kind_of_term c with
 
 let isCase c =  match kind_of_term c with Case _ -> true | _ -> false
 
+let isProj c =  match kind_of_term c with Proj _ -> true | _ -> false
+
+let destProj c = match kind_of_term c with
+  | Proj (p, c) -> (p, c)
+  | _ -> raise DestKO
+
 let destFix c = match kind_of_term c with
   | Fix fix -> fix
   | _ -> raise DestKO

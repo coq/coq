@@ -33,62 +33,52 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun a -> debug_unification:=a);
 }
 
-let unfold_projection env evd ts p c stk =
-  (match try Some (lookup_projection p env) with Not_found -> None with
-  | Some pb -> 
+let unfold_projection env evd ts p c =
+  if Projection.unfolded p then Some c
+  else     
     let cst = Projection.constant p in
-    let unfold () = 
-      let s = Stack.Proj (pb.Declarations.proj_npars, pb.Declarations.proj_arg, 
-			  p, Cst_stack.empty) in
-	Some (c, s :: stk)
-    in
-    let unfold_app () =
-      let t' = Retyping.expand_projection env evd p c [] in
-      let f, args = destApp t' in
-      let stk = Stack.append_app args stk in
-	Some (f, stk)
-    in
-      if Projection.unfolded p then unfold ()
-      else 
-	if is_transparent_constant ts cst then
+      if is_transparent_constant ts cst then
+	let unfold_app () =
+	  let t' = Retyping.expand_projection env evd p c [] in
+	    Some t'
+	in
 	  (match ReductionBehaviour.get (Globnames.ConstRef cst) with
 	  | None -> unfold_app ()
 	  | Some (recargs, nargs, flags) ->
 	    if (List.mem `ReductionNeverUnfold flags) then None
 	    else unfold_app ())
-	else None
-  | None -> None)
+      else None
 
-let eval_flexible_term ts env evd c stk =
+let eval_flexible_term ts env evd c =
   match kind_of_term c with
   | Const (c,u as cu) ->
       if is_transparent_constant ts c
-      then Option.map (fun x -> x, stk) (constant_opt_value_in env cu)
+      then constant_opt_value_in env cu
       else None
   | Rel n ->
-      (try let (_,v,_) = lookup_rel n env in Option.map (fun t -> lift n t, stk) v
+      (try let (_,v,_) = lookup_rel n env in Option.map (lift n) v
       with Not_found -> None)
   | Var id ->
       (try
 	 if is_transparent_variable ts id then
-	   let (_,v,_) = lookup_named id env in Option.map (fun t -> t, stk) v
+	   let (_,v,_) = lookup_named id env in v
 	 else None
        with Not_found -> None)
-  | LetIn (_,b,_,c) -> Some (subst1 b c, stk)
-  | Lambda _ -> Some (c, stk)
-  | Proj (p, c) -> unfold_projection env evd ts p c stk
+  | LetIn (_,b,_,c) -> Some (subst1 b c)
+  | Lambda _ -> Some c
+  | Proj (p, c) -> unfold_projection env evd ts p c
   | _ -> assert false
 
 type flex_kind_of_term =
   | Rigid
-  | MaybeFlexible of Constr.t * Constr.t Stack.t (* reducible but not necessarily reduced *)
+  | MaybeFlexible of Constr.t (* reducible but not necessarily reduced *)
   | Flexible of existential
 
 let flex_kind_of_term ts env evd c sk =
   match kind_of_term c with
     | LetIn _ | Rel _ | Const _ | Var _ | Proj _ ->
-      Option.cata (fun (x,y) -> MaybeFlexible (x,y)) Rigid (eval_flexible_term ts env evd c sk)
-    | Lambda _ when not (Option.is_empty (Stack.decomp sk)) -> MaybeFlexible (c, sk)
+      Option.cata (fun x -> MaybeFlexible x) Rigid (eval_flexible_term ts env evd c)
+    | Lambda _ when not (Option.is_empty (Stack.decomp sk)) -> MaybeFlexible c
     | Evar ev -> Flexible ev
     | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ -> Rigid
     | Meta _ -> Rigid
@@ -437,7 +427,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       else quick_fail i
     and f3 i =
       switch (evar_eqappr_x ts env i pbty) (apprF,cstsF)
-	(whd_betaiota_deltazeta_for_iota_state (fst ts) env i cstsM vM)
+	(whd_betaiota_deltazeta_for_iota_state (fst ts) env i cstsM (vM,skM))
     in
     ise_try evd [f1; f2; f3] in
   let flex_rigid on_left ev (termF, skF as apprF) (termR, skR as apprR) =
@@ -471,7 +461,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	     let open Pp in
 	     pp (v 0 (pr_state appr1 ++ cut () ++ pr_state appr2 ++ cut ()) 
 		 ++ fnl ()) in
-  match (flex_kind_of_term (fst ts) env evd term1 sk1, flex_kind_of_term (fst ts) env evd term2 sk2) with
+  match (flex_kind_of_term (fst ts) env evd term1 sk1, 
+	 flex_kind_of_term (fst ts) env evd term2 sk2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 i =
 	  match ise_stack2 false env i (evar_conv_x ts) sk1 sk2 with
@@ -515,13 +506,13 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	in
 	ise_try evd [f1; f2]
 
-    | Flexible ev1, MaybeFlexible (v2,sk2) -> 
-      flex_maybeflex true ev1 (appr1,csts1) (appr2,csts2) (v2,sk2)
+    | Flexible ev1, MaybeFlexible v2 ->
+      flex_maybeflex true ev1 (appr1,csts1) (appr2,csts2) v2
 
-    | MaybeFlexible (v1,sk1), Flexible ev2 -> 
-      flex_maybeflex false ev2 (appr2,csts2) (appr1,csts1) (v1,sk1)
+    | MaybeFlexible v1, Flexible ev2 -> 
+      flex_maybeflex false ev2 (appr2,csts2) (appr1,csts1) v1
 
-    | MaybeFlexible (v1,sk1'), MaybeFlexible (v2,sk2') -> begin
+    | MaybeFlexible v1, MaybeFlexible v2 -> begin
         match kind_of_term term1, kind_of_term term2 with
         | LetIn (na,b1,t1,c'1), LetIn (_,b2,t2,c'2) ->
         let f1 i =
@@ -532,22 +523,23 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	       let b = nf_evar i b1 in
 	       let t = nf_evar i t1 in
 	       evar_conv_x ts (push_rel (na,Some b,t) env) i pbty c'1 c'2);
-	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1' sk2')]
+	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
 	and f2 i =
-          let out1 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts1 (v1,sk1')
-          and out2 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts2 (v2,sk2')
+          let out1 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts1 (v1,sk1)
+          and out2 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts2 (v2,sk2)
 	  in evar_eqappr_x ts env i pbty out1 out2
 	in
 	ise_try evd [f1; f2]
 
-	| Proj (p, c), Proj (p', c') when Projection.equal p p' ->
+	| Proj (p, c), Proj (p', c') 
+	  when Constant.equal (Projection.constant p) (Projection.constant p') ->
 	  let f1 i = 
 	    ise_and i 
 	    [(fun i -> evar_conv_x ts env i CONV c c');
-	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1' sk2')]
+	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
 	  and f2 i =
-            let out1 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts1 (v1,sk1')
-            and out2 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts2 (v2,sk2')
+            let out1 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts1 (v1,sk1)
+            and out2 = whd_betaiota_deltazeta_for_iota_state (fst ts) env i csts2 (v2,sk2)
 	    in evar_eqappr_x ts env i pbty out1 out2
 	  in
 	    ise_try evd [f1; f2]
@@ -565,7 +557,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 		try Success (Evd.add_universe_constraints i univs)
 		with UniversesDiffer -> UnifFailure (i,NotSameHead)
 		| Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
-			 (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1' sk2')]
+			 (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
 	    else UnifFailure (i,NotSameHead)
 	and f2 i =
 	  (try 
@@ -593,7 +585,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    | Proj (p, c) -> true
             | Case _ | App _| Cast _ -> assert false in
           let rhs_is_stuck_and_unnamed () =
-	    let applicative_stack = fst (Stack.strip_app sk2') in
+	    let applicative_stack = fst (Stack.strip_app sk2) in
 	    is_unnamed
 	      (fst (whd_betaiota_deltazeta_for_iota_state
 		      (fst ts) env i Cst_stack.empty (v2, applicative_stack))) in
@@ -601,15 +593,15 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
             rhs_is_already_stuck || rhs_is_stuck_and_unnamed () in
 
 	  if (isLambda term1 || rhs_is_already_stuck)
-	    && (not (Stack.not_purely_applicative sk1')) then
+	    && (not (Stack.not_purely_applicative sk1)) then
 	    evar_eqappr_x ~rhs_is_already_stuck ts env i pbty
 	      (whd_betaiota_deltazeta_for_iota_state
-		 (fst ts) env i (Cst_stack.add_cst term1 csts1) (v1,sk1'))
+		 (fst ts) env i (Cst_stack.add_cst term1 csts1) (v1,sk1))
 	      (appr2,csts2)
 	  else
 	    evar_eqappr_x ts env i pbty (appr1,csts1)
 	      (whd_betaiota_deltazeta_for_iota_state
-		 (fst ts) env i (Cst_stack.add_cst term2 csts2) (v2,sk2'))
+		 (fst ts) env i (Cst_stack.add_cst term2 csts2) (v2,sk2))
 	in
 	ise_try evd [f1; f2; f3]
     end
@@ -627,7 +619,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     | Flexible ev1, Rigid -> flex_rigid true ev1 appr1 appr2
     | Rigid, Flexible ev2 -> flex_rigid false ev2 appr2 appr1
 
-    | MaybeFlexible (v1,sk1), Rigid ->
+    | MaybeFlexible v1, Rigid ->
 	let f3 i =
 	  (try 
 	     if not (snd ts) then raise Not_found
@@ -641,7 +633,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	in
 	  ise_try evd [f3; f4]
 
-    | Rigid, MaybeFlexible (v2,sk2) ->
+    | Rigid, MaybeFlexible v2 ->
 	let f3 i =
 	  (try
 	     if not (snd ts) then raise Not_found

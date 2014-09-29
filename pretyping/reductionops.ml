@@ -189,7 +189,7 @@ module Cst_stack = struct
     let p_c = Termops.print_constr in
     prlist_with_sep pr_semicolon
       (fun (c,params,args) ->
-	hov 1 (p_c c ++ spc () ++ pr_sequence p_c params ++ spc () ++ str "(args:" ++
+	hov 1 (str"(" ++ p_c c ++ str ")" ++ spc () ++ pr_sequence p_c params ++ spc () ++ str "(args:" ++
 		 pr_sequence (fun (i,el) -> prvect_with_sep spc p_c (Array.sub el i (Array.length el - i))) args ++
 		 str ")")) l
 end
@@ -329,7 +329,8 @@ struct
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
 	Constant.equal c1 c2 && Univ.Instance.equal u1 u2
       | Cst_proj (p1,c1), Cst_proj (p2,c2) ->
-	Projection.equal p1 p2 && f (c1,lft1) (c2,lft2)
+	Constant.equal (Projection.constant p1) (Projection.constant p2)
+	&& f (c1,lft1) (c2,lft2)
       | _, _ -> false
     in
     let rec equal_rec sk1 lft1 sk2 lft2  =
@@ -838,7 +839,10 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
        let kn = Projection.constant p in
        let npars = pb.Declarations.proj_npars 
        and arg = pb.Declarations.proj_arg in
-	 match ReductionBehaviour.get (Globnames.ConstRef kn) with
+	 if not tactic_mode then 
+	   let stack' = (c, Stack.Proj (npars, arg, p, cst_l) :: stack) in
+	     whrec Cst_stack.empty stack'
+	 else match ReductionBehaviour.get (Globnames.ConstRef kn) with
 	 | None ->
 	   let stack' = (c, Stack.Proj (npars, arg, p, cst_l) :: stack) in
 	   let stack'', csts = whrec Cst_stack.empty stack' in

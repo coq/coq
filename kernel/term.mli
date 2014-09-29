@@ -112,6 +112,7 @@ val isConstruct : constr -> bool
 val isFix : constr -> bool
 val isCoFix : constr -> bool
 val isCase : constr -> bool
+val isProj : constr -> bool
 
 val is_Prop : constr -> bool
 val is_Set  : constr -> bool
@@ -182,6 +183,9 @@ return P in t1], or [if c then t1 else t2])
 @return [(info,c,fun args x => P,[|...|fun yij => ti| ...|])]
 where [info] is pretty-printing information *)
 val destCase : constr -> case_info * constr * constr * constr array
+
+(** Destructs a projection *)
+val destProj : constr -> projection * constr
 
 (** Destructs the {% $ %}i{% $ %}th function of the block
    [Fixpoint f{_ 1} ctx{_ 1} = b{_ 1}

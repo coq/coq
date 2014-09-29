@@ -603,7 +603,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	    (try 
 	       let sigma' = 
 		 if pb == CUMUL
-		 then Evd.set_leq_sort env sigma s1 s2 
+		 then Evd.set_leq_sort curenv sigma s1 s2 
 		 else Evd.set_eq_sort sigma s1 s2 
 	       in (sigma', metasubst, evarsubst)
 	     with e when Errors.noncritical e ->
@@ -627,8 +627,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	      (mkApp (lift 1 cM,[|mkRel 1|])) c2
 
 	(* For records *)
-	| App (f1, l1), _ when flags.modulo_eta && is_eta_constructor_app env f1 l1 ->
-	  (try let l1', l2' = eta_constructor_app env f1 l1 cN in
+	| App (f1, l1), _ when flags.modulo_eta && is_eta_constructor_app curenv f1 l1 ->
+	  (try let l1', l2' = eta_constructor_app curenv f1 l1 cN in
 		 Array.fold_left2 
 		   (unirec_rec curenvnb CONV true wt) substn l1' l2'
 	   with ex when precatchable_exception ex -> 
@@ -636,8 +636,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
              | App (f2,l2) -> unify_app curenvnb pb b substn cM f1 l1 cN f2 l2
              | _ -> unify_not_same_head curenvnb pb b wt substn cM cN))
 
-	| _, App (f2, l2) when flags.modulo_eta && is_eta_constructor_app env f2 l2 ->
-	  (try let l2', l1' = eta_constructor_app env f2 l2 cM in
+	| _, App (f2, l2) when flags.modulo_eta && is_eta_constructor_app curenv f2 l2 ->
+	  (try let l2', l1' = eta_constructor_app curenv f2 l2 cM in
 		 Array.fold_left2 
 		   (unirec_rec curenvnb CONV true wt) substn l1' l2'
 	   with ex when precatchable_exception ex -> 
@@ -661,7 +661,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 		  try (* Force unification of the types to fill in parameters *)
 		    let ty1 = get_type_of curenv ~lax:true sigma c1 in
 		    let ty2 = get_type_of curenv ~lax:true sigma c2 in
-		      unify_0_with_initial_metas substn true env cv_pb 
+		      unify_0_with_initial_metas substn true curenv cv_pb 
 			{ flags with modulo_conv_on_closed_terms = Some full_transparent_state;
 			  modulo_delta = full_transparent_state;
 			  modulo_eta = true;
@@ -777,7 +777,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
       | None -> (* some undefined Metas in cN *) None
       | Some n1 ->
           (* No subterm restriction there, too much incompatibilities *)
-	  let sigma, b = infer_conv ~pb ~ts:convflags env sigma m1 n1 in
+	  let sigma, b = infer_conv ~pb ~ts:convflags curenv sigma m1 n1 in
 	    if b then Some (sigma, metasubst, evarsubst)
 	    else 
 	      if is_ground_term sigma m1 && is_ground_term sigma n1 then
@@ -787,7 +787,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
       match res with
       | Some substn -> substn
       | None ->
-      let cf1 = key_of env b flags f1 and cf2 = key_of env b flags f2 in
+      let cf1 = key_of curenv b flags f1 and cf2 = key_of curenv b flags f2 in
 	match oracle_order curenv cf1 cf2 with
 	| None -> error_cannot_unify curenv sigma (cM,cN)
 	| Some true ->
@@ -815,11 +815,11 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 		| None ->
 		    error_cannot_unify curenv sigma (cM,cN)))
 
-  and canonical_projections curenvnb pb b cM cN (sigma,_,_ as substn) =
+  and canonical_projections (curenv, _ as curenvnb) pb b cM cN (sigma,_,_ as substn) =
     let f1 () =
       if isApp cM then
 	let f1l1 = whd_nored_state sigma (cM,Stack.empty) in
-	  if is_open_canonical_projection env sigma f1l1 then
+	  if is_open_canonical_projection curenv sigma f1l1 then
 	    let f2l2 = whd_nored_state sigma (cN,Stack.empty) in
 	      solve_canonical_projection curenvnb pb b cM f1l1 cN f2l2 substn
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -835,7 +835,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	try f1 () with e when precatchable_exception e ->
 	  if isApp cN then
 	    let f2l2 = whd_nored_state sigma (cN, Stack.empty) in
-	      if is_open_canonical_projection env sigma f2l2 then
+	      if is_open_canonical_projection curenv sigma f2l2 then
 		let f1l1 = whd_nored_state sigma (cM, Stack.empty) in
 		  solve_canonical_projection curenvnb pb b cN f2l2 cM f1l1 substn
 	      else error_cannot_unify (fst curenvnb) sigma (cM,cN)
