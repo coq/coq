@@ -901,12 +901,10 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
   | Evar (evk2,_) -> fst (evar_source evk2 evd)
   | _ -> Loc.ghost
 
-let evar_list evd c =
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (evk, _ as ev) when mem evd evk -> ev :: acc
-    | _ -> fold_constr evrec acc c in
-  evrec [] c
+(** The following functions return the set of evars immediately
+    contained in the object *)
+
+(* including defined evars, excluding instances *)
 
 let collect_evars c =
   let rec collrec acc c =
@@ -915,6 +913,40 @@ let collect_evars c =
       | _       -> fold_constr collrec acc c
   in
   collrec Evar.Set.empty c
+
+(* including defined evars and instances of evars *)
+
+(* excluding defined evars *)
+
+let evar_list c =
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (evk, _ as ev) -> ev :: acc
+    | _ -> fold_constr evrec acc c in
+  evrec [] c
+
+let evars_of_term c =
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
+    | _ -> fold_constr evrec acc c
+  in
+  evrec Evar.Set.empty c
+
+let evars_of_named_context nc =
+  List.fold_right (fun (_, b, t) s ->
+    Option.fold_left (fun s t ->
+      Evar.Set.union s (evars_of_term t))
+      (Evar.Set.union s (evars_of_term t)) b)
+    nc Evar.Set.empty
+
+let evars_of_filtered_evar_info evi =
+  Evar.Set.union (evars_of_term evi.evar_concl)
+    (Evar.Set.union
+	(match evi.evar_body with
+	| Evar_empty -> Evar.Set.empty
+	| Evar_defined b -> evars_of_term b)
+	(evars_of_named_context (evar_filtered_context evi)))
 
 (**********************************************************)
 (* Side effects *)
@@ -1669,7 +1701,7 @@ let compute_evar_dependency_graph (sigma : evar_map) =
     in
     match evar_body evi with
     | Evar_empty -> assert false
-    | Evar_defined c -> Evar.Set.fold fold_ev (collect_evars c) acc
+    | Evar_defined c -> Evar.Set.fold fold_ev (evars_of_term c) acc
   in
   EvMap.fold fold sigma.defn_evars EvMap.empty
 

@@ -127,7 +127,7 @@ let freeze_initial_evars sigma flags clause =
   (* We take evars of the type: this may include old evars! For excluding *)
   (* all old evars, including the ones occurring in the rewriting lemma, *)
   (* we would have to take the clenv_value *)
-  let newevars = Evd.collect_evars (clenv_type clause) in
+  let newevars = Evd.evars_of_term (clenv_type clause) in
   let evars =
     fold_undefined (fun evk _ evars ->
       if Evar.Set.mem evk newevars then evars

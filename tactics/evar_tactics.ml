@@ -35,20 +35,20 @@ let instantiate_tac n c ido =
   let sigma = gl.sigma in
   let evl =
     match ido with
-	ConclLocation () -> evar_list sigma (pf_concl gl)
+	ConclLocation () -> evar_list (pf_concl gl)
       | HypLocation (id,hloc) ->
 	  let decl = Environ.lookup_named_val id (Goal.V82.hyps sigma (sig_it gl)) in
 	    match hloc with
 		InHyp ->
 		  (match decl with
-		      (_,None,typ) -> evar_list sigma typ
+		      (_,None,typ) -> evar_list typ
 		    | _ -> error
 			"Please be more specific: in type or value?")
 	      | InHypTypeOnly ->
-		  let (_, _, typ) = decl in evar_list sigma typ
+		  let (_, _, typ) = decl in evar_list typ
 	      | InHypValueOnly ->
 		  (match decl with
-		      (_,Some body,_) -> evar_list sigma body
+		      (_,Some body,_) -> evar_list body
 		    | _ -> error "Not a defined hypothesis.") in
   if List.length evl < n then
     error "Not enough uninstantiated existential variables.";

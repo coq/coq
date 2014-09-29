@@ -153,19 +153,11 @@ let rec chop_product n t =
       | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop b) else None
       | _ -> None
 
-let evars_of_evar_info evi =
-  Evar.Set.union (Evarutil.evars_of_term evi.evar_concl)
-    (Evar.Set.union
-	(match evi.evar_body with
-	| Evar_empty -> Evar.Set.empty
-	| Evar_defined b -> Evarutil.evars_of_term b)
-	(Evarutil.evars_of_named_context (evar_filtered_context evi)))
-
 let evar_dependencies evm oev =
   let one_step deps =
     Evar.Set.fold (fun ev s ->
       let evi = Evd.find evm ev in
-      let deps' = evars_of_evar_info evi in
+      let deps' = evars_of_filtered_evar_info evi in
       if Evar.Set.mem oev deps' then
 	invalid_arg ("Ill-formed evar map: cycle detected for evar " ^ string_of_existential oev)
       else Evar.Set.union deps' s)

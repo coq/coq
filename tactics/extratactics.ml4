@@ -665,7 +665,7 @@ END
 
 let hget_evar n gl =
   let sigma = project gl in
-  let evl = evar_list sigma (pf_concl gl) in
+  let evl = evar_list (pf_concl gl) in
   if List.length evl < n then
     error "Not enough uninstantiated existential variables.";
   if n <= 0 then error "Incorrect existential variable index.";

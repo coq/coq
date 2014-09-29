@@ -82,6 +82,7 @@ type evar_body =
   | Evar_empty
   | Evar_defined of constr
 
+
 module Store : Store.S
 (** Datatype used to store additional information in evar maps. *)
 
@@ -374,8 +375,20 @@ val extract_changed_conv_pbs : evar_map ->
 val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
 val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t
 
-val evar_list : evar_map -> constr -> existential list
-val collect_evars : constr -> Evar.Set.t
+(** The following functions return the set of evars immediately
+    contained in the object; need the term to be evar-normal otherwise
+    defined evars are returned too. *)
+
+val evar_list : constr -> existential list
+  (** excluding evars in instances of evars and collected with
+     redundancies from right to left (used by tactic "instantiate") *)
+
+val evars_of_term : constr -> Evar.Set.t
+  (** including evars in instances of evars *)
+
+val evars_of_named_context : named_context -> Evar.Set.t
+
+val evars_of_filtered_evar_info : evar_info -> Evar.Set.t
 
 (** Metas *)
 val meta_list : evar_map -> (metavariable * clbinding) list

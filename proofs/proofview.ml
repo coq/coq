@@ -816,7 +816,7 @@ module V82 = struct
 
   let top_evars initial =
     let evars_of_initial (c,_) =
-      Evar.Set.elements (Evarutil.evars_of_term c)
+      Evar.Set.elements (Evd.evars_of_term c)
     in
     List.flatten (List.map evars_of_initial initial)
 

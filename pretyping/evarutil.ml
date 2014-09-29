@@ -128,6 +128,11 @@ let nf_evar_map_undefined evm =
 (* Auxiliary functions for the conversion algorithms modulo evars
  *)
 
+(* A probably faster though more approximative variant of
+   [has_undefined (nf_evar c)]: instances are not substituted and
+   maybe an evar occurs in an instance and it would disappear by
+   instantiation *)
+
 let has_undefined_evars evd t =
   let rec has_ev t =
     match kind_of_term t with
@@ -536,17 +541,6 @@ let clear_hyps2_in_evi evdref hyps t concl ids =
   | (nhyps,[t;nconcl]) -> (nhyps,t,nconcl)
   | _ -> assert false
 
-(** The following functions return the set of evars immediately
-    contained in the object, including defined evars *)
-
-let evars_of_term c =
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
-    | _ -> fold_constr evrec acc c
-  in
-  evrec Evar.Set.empty c
-
 (* spiwack: a few functions to gather evars on which goals depend. *)
 let queue_set q is_dependent set =
   Evar.Set.iter (fun a -> Queue.push (is_dependent,a) q) set
@@ -593,21 +587,6 @@ let gather_dependent_evars evm l =
   gather_dependent_evars q evm
 
 (* /spiwack *)
-
-let evars_of_named_context nc =
-  List.fold_right (fun (_, b, t) s ->
-    Option.fold_left (fun s t ->
-      Evar.Set.union s (evars_of_term t))
-      (Evar.Set.union s (evars_of_term t)) b)
-    nc Evar.Set.empty
-
-let evars_of_evar_info evi =
-  Evar.Set.union (evars_of_term evi.evar_concl)
-    (Evar.Set.union
-	(match evi.evar_body with
-	| Evar_empty -> Evar.Set.empty
-	| Evar_defined b -> evars_of_term b)
-	(evars_of_named_context (named_context_of_val evi.evar_hyps)))
 
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.

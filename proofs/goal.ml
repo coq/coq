@@ -101,7 +101,7 @@ let equal evars1 gl1 evars2 gl2 =
    [evi]. Note: since we want to use it on goals, the body is actually
    supposed to be empty. *)
 let contained_in_info sigma e evi =
-  Evar.Set.mem e (Evarutil.(evars_of_evar_info (nf_evar_info sigma evi)))
+  Evar.Set.mem e (Evd.evars_of_filtered_evar_info (Evarutil.nf_evar_info sigma evi))
 
 (* [depends_on sigma src tgt] checks whether the goal [src] appears as an
    existential variable in the definition of the goal [tgt] in [sigma]. *)

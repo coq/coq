@@ -157,7 +157,7 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
     try
       let cl = Typeclasses.class_info (fst hdc) in
 	if cl.cl_strict then
-	  Evarutil.evars_of_term concl
+	  Evd.evars_of_term concl
 	else Evar.Set.empty
     with _ -> Evar.Set.empty
   in

@@ -82,8 +82,9 @@ val head_evar : constr -> existential_key (** may raise NoHeadEvar *)
 (* Expand head evar if any *)
 val whd_head_evar :  evar_map -> constr -> constr
 
-(* [has_undefined_evars evd c] checks if [c] has undefined evars. *)
+(* An over-approximation of [has_undefined (nf_evars evd c)] *)
 val has_undefined_evars : evar_map -> constr -> bool
+
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
 (** [check_evars env initial_sigma extended_sigma c] fails if some
@@ -100,15 +101,6 @@ val define_evar_as_sort : env -> evar_map -> existential -> evar_map * sorts
     [vars1 |- ?x:=\vars.?y[vars1:=vars1,vars:=vars]] *)
 val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
   evar_map * existential
-
-(** The following functions return the set of evars immediately
-    contained in the object, including defined evars *)
-
-
-val evars_of_term : constr -> Evar.Set.t
-
-val evars_of_named_context : named_context -> Evar.Set.t
-val evars_of_evar_info : evar_info -> Evar.Set.t
 
 (** [gather_dependent_evars evm seeds] classifies the evars in [evm]
     as dependent_evars and goals (these may overlap). A goal is an
