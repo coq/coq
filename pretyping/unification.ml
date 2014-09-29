@@ -307,7 +307,7 @@ let default_unify_flags () =
   let flags = default_core_unify_flags () in {
   core_unify_flags = flags;
   merge_unify_flags = flags;
-  subterm_unify_flags = { flags with modulo_delta = empty_transparent_state };
+  subterm_unify_flags = { flags with modulo_delta = var_full_transparent_state };
   allow_K_in_toplevel_higher_order_unification = false; (* Why not? *)
   resolve_evars = false
 }

@@ -527,3 +527,12 @@ eapply eq_trans. apply H.
 rewrite H0.
 change (x+0=0).
 Abort.
+
+(* 2nd order apply used to have delta on local definitions even though
+   it does not have delta on global definitions; keep it by
+   compatibility while finding a more uniform way to proceed. *)
+
+Goal forall f:nat->nat, (forall P x, P (f x)) -> let x:=f 0 in x = 0.
+intros f H x.
+apply H.
+Qed.
