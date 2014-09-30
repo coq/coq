@@ -34,7 +34,7 @@ let _ = Goptions.declare_bool_option {
 }
 
 let unfold_projection env evd ts p c =
-  if Projection.unfolded p then Some c
+  if Projection.unfolded p then assert false
   else     
     let cst = Projection.constant p in
       if is_transparent_constant ts cst then

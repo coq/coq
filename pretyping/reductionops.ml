@@ -206,16 +206,16 @@ sig
   type 'a app_node
   val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
 
-  type 'a cst_member =
+  type cst_member =
     | Cst_const of pconstant
-    | Cst_proj of projection * 'a
+    | Cst_proj of projection
 
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array * Cst_stack.t
   | Proj of int * int * projection * Cst_stack.t
   | Fix of fixpoint * 'a t * Cst_stack.t
-  | Cst of 'a cst_member * int * int list * 'a t * Cst_stack.t
+  | Cst of cst_member * int * int list * 'a t * Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
@@ -261,16 +261,16 @@ struct
 		     )
 
 
-  type 'a cst_member =
+  type cst_member =
     | Cst_const of pconstant
-    | Cst_proj of projection * 'a
+    | Cst_proj of projection
 
   type 'a member =
   | App of 'a app_node
   | Case of Term.case_info * 'a * 'a array * Cst_stack.t
   | Proj of int * int * projection * Cst_stack.t
   | Fix of fixpoint * 'a t * Cst_stack.t
-  | Cst of 'a cst_member * int * int list * 'a t * Cst_stack.t
+  | Cst of cst_member * int * int list * 'a t * Cst_stack.t
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
@@ -307,8 +307,8 @@ struct
       | Cst_const (c, u) ->
 	if Univ.Instance.is_empty u then Constant.print c
 	else str"(" ++ Constant.print c ++ str ", " ++ Univ.Instance.pr u ++ str")"
-      | Cst_proj (p, c) ->
-	pr_c c ++ str".(" ++ Constant.print (Projection.constant p) ++ str")"
+      | Cst_proj p ->
+	str".(" ++ Constant.print (Projection.constant p) ++ str")"
 
   let empty = []
   let is_empty = CList.is_empty
@@ -334,9 +334,8 @@ struct
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
 	Constant.equal c1 c2 && Univ.Instance.equal u1 u2
-      | Cst_proj (p1,c1), Cst_proj (p2,c2) ->
+      | Cst_proj p1, Cst_proj p2 ->
 	Constant.equal (Projection.constant p1) (Projection.constant p2)
-	&& f (c1,lft1) (c2,lft2)
       | _, _ -> false
     in
     let rec equal_rec sk1 lft1 sk2 lft2  =
@@ -530,7 +529,10 @@ struct
   let constr_of_cst_member f sk =
     match f with
     | Cst_const (c, u) -> mkConstU (c,u), sk
-    | Cst_proj (p, c) -> mkProj (p, c), tail 1 sk
+    | Cst_proj p -> 
+      match decomp sk with
+      | Some (hd, sk) -> mkProj (p, hd), sk
+      | None -> assert false
 
   let rec zip ?(refold=false) = function
     | f, [] -> f
@@ -844,7 +846,8 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		  |curr::remains -> match Stack.strip_n_app curr stack with
 		    | None -> fold ()
 		    | Some (bef,arg,s') ->
-		      whrec Cst_stack.empty (arg,Stack.Cst(Stack.Cst_const const,curr,remains,bef,cst_l)::s')
+		      whrec Cst_stack.empty 
+			(arg,Stack.Cst(Stack.Cst_const const,curr,remains,bef,cst_l)::s')
        )
     | Proj (p, c) when Closure.RedFlags.red_projection flags p ->
       (let pb = lookup_projection p env in
@@ -878,13 +881,14 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	       | curr::remains -> 
 		 if curr == 0 then (* Try to reduce the record argument *)
 		   whrec Cst_stack.empty 
-		     (c, Stack.Cst(Stack.Cst_proj (p, c),curr,remains,Stack.empty,cst_l)::stack)
+		     (c, Stack.Cst(Stack.Cst_proj p,curr,remains,Stack.empty,cst_l)::stack)
 		 else
 		   match Stack.strip_n_app curr stack with
 		   | None -> fold ()
 		   | Some (bef,arg,s') ->
 		     whrec Cst_stack.empty 
-		       (arg,Stack.Cst(Stack.Cst_proj (p, c),curr,remains,bef,cst_l)::s'))
+		       (arg,Stack.Cst(Stack.Cst_proj p,curr,remains,
+				      Stack.append_app [|c|] bef,cst_l)::s'))
 
     | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
       apply_subst whrec [b] cst_l c stack
@@ -946,7 +950,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 	      | Some body ->
 		whrec (Cst_stack.add_cst (mkConstU const) cst_l)
 		  (body, s' @ (Stack.append_app [|x'|] s'')))
-	    | Stack.Cst_proj (p, c) ->
+	    | Stack.Cst_proj p ->
 	      let pb = lookup_projection p env in
 	      let npars = pb.Declarations.proj_npars in
 	      let narg = pb.Declarations.proj_arg in
