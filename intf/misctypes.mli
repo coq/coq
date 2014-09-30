@@ -21,11 +21,11 @@ type 'constr intro_pattern_expr =
   | IntroNaming of intro_pattern_naming_expr
   | IntroAction of 'constr intro_pattern_action_expr
 and intro_pattern_naming_expr =
-  | IntroWildcard
   | IntroIdentifier of Id.t
   | IntroFresh of Id.t
   | IntroAnonymous
 and 'constr intro_pattern_action_expr =
+  | IntroWildcard
   | IntroOrAndPattern of 'constr or_and_intro_pattern_expr
   | IntroInjection of (Loc.t * 'constr intro_pattern_expr) list
   | IntroApplyOn of 'constr * (Loc.t * 'constr intro_pattern_expr)

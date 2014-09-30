@@ -254,14 +254,14 @@ and intern_intro_pattern_naming lf ist = function
       IntroIdentifier (intern_ident lf ist id)
   | IntroFresh id ->
       IntroFresh (intern_ident lf ist id)
-  | IntroWildcard | IntroAnonymous as x -> x
+  | IntroAnonymous as x -> x
 
 and intern_intro_pattern_action lf ist = function
   | IntroOrAndPattern l ->
       IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
   | IntroInjection l ->
       IntroInjection (List.map (intern_intro_pattern lf ist) l)
-  | IntroRewrite _ as x -> x
+  | IntroWildcard | IntroRewrite _ as x -> x
   | IntroApplyOn (c,pat) ->
       IntroApplyOn (intern_constr ist c, intern_intro_pattern lf ist pat)
 

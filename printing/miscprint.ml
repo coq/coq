@@ -18,12 +18,12 @@ let rec pr_intro_pattern prc (_,pat) = match pat with
   | IntroAction p -> pr_intro_pattern_action prc p
 
 and pr_intro_pattern_naming = function
-  | IntroWildcard -> str "_"
   | IntroIdentifier id -> Nameops.pr_id id
   | IntroFresh id -> str "?" ++ Nameops.pr_id id
   | IntroAnonymous -> str "?"
 
 and pr_intro_pattern_action prc = function
+  | IntroWildcard -> str "_"
   | IntroOrAndPattern pll -> pr_or_and_intro_pattern prc pll
   | IntroInjection pl ->
       str "[=" ++ hv 0 (prlist_with_sep spc (pr_intro_pattern prc) pl) ++

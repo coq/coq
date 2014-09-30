@@ -296,8 +296,7 @@ GEXTEND Gram
   naming_intropattern:
     [ [ prefix = pattern_ident -> IntroFresh prefix
       | "?" -> IntroAnonymous
-      | id = ident -> IntroIdentifier id
-      | "_" -> IntroWildcard ] ]
+      | id = ident -> IntroIdentifier id ] ]
   ;
   nonsimple_intropattern:
     [ [ l = simple_intropattern -> l
@@ -307,6 +306,7 @@ GEXTEND Gram
   simple_intropattern:
     [ [ pat = or_and_intropattern -> !@loc, IntroAction (IntroOrAndPattern pat)
       | pat = equality_intropattern -> !@loc, IntroAction pat
+      | "_" -> !@loc, IntroAction IntroWildcard 
       | pat = simple_intropattern; "/"; c = constr ->
           !@loc, IntroAction (IntroApplyOn (c,pat))
       | pat = naming_intropattern -> !@loc, IntroNaming pat ] ]

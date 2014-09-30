@@ -286,12 +286,12 @@ let error_too_many_names pats =
     str ".")
 
 let rec get_names (allow_conj,issimple) (loc,pat as x) = match pat with
-  | IntroNaming IntroWildcard ->
-      error "Discarding pattern not allowed for inversion equations."
   | IntroNaming IntroAnonymous | IntroForthcoming _ ->
       error "Anonymous pattern not allowed for inversion equations."
   | IntroNaming (IntroFresh _) ->
       error "Fresh pattern not allowed for inversion equations."
+  | IntroAction IntroWildcard ->
+      error "Discarding pattern not allowed for inversion equations."
   | IntroAction (IntroRewrite _) ->
       error "Rewriting pattern not allowed for inversion equations."
   | IntroAction (IntroOrAndPattern [[]]) when allow_conj -> (None, [])

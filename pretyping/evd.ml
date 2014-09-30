@@ -612,8 +612,7 @@ let add_name_newly_undefined naming evk evi (evtoid,idtoev) =
           (Loc.ghost,"",str "Already an existential evar of name " ++ pr_id id);
       id'
   | Misctypes.IntroFresh id ->
-      Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev)
-  | Misctypes.IntroWildcard -> assert false in
+      Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
   (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
 
 let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =

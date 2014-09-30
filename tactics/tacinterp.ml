@@ -423,8 +423,8 @@ let rec intropattern_ids (loc,pat) = match pat with
   | IntroAction (IntroInjection l) ->
       List.flatten (List.map intropattern_ids l)
   | IntroAction (IntroApplyOn (c,pat)) -> intropattern_ids pat
-  | IntroNaming (IntroWildcard | IntroAnonymous | IntroFresh _)
-  | IntroAction (IntroRewrite _)
+  | IntroNaming (IntroAnonymous | IntroFresh _)
+  | IntroAction (IntroWildcard | IntroRewrite _)
   | IntroForthcoming _ -> []
 
 let extract_ids ids lfun =
@@ -799,7 +799,7 @@ let rec interp_intro_pattern ist env sigma = function
 and interp_intro_pattern_naming loc ist env sigma = function
   | IntroFresh id -> IntroFresh (interp_fresh_ident ist env sigma id)
   | IntroIdentifier id -> interp_intro_pattern_naming_var loc ist env sigma id
-  | (IntroWildcard | IntroAnonymous) as x -> x
+  | IntroAnonymous as x -> x
 
 and interp_intro_pattern_action ist env sigma = function
   | IntroOrAndPattern l ->
@@ -812,7 +812,7 @@ and interp_intro_pattern_action ist env sigma = function
       let c = fun env sigma -> interp_constr ist env sigma c in
       let sigma,ipat = interp_intro_pattern ist env sigma ipat in
       sigma, IntroApplyOn (c,ipat)
-  | IntroRewrite _ as x -> sigma, x
+  | IntroWildcard | IntroRewrite _ as x -> sigma, x
 
 and interp_or_and_intro_pattern ist env sigma =
   List.fold_map (interp_intro_pattern_list_as_list ist env) sigma

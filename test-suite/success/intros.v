@@ -28,3 +28,8 @@ Goal forall n p, n + p = 0.
 intros [|*]; intro p.
 Abort.
 
+(* Check non-interference of "_" with name generation *)
+Goal True -> True -> True.
+intros _ ?.
+exact H.
+Qed.

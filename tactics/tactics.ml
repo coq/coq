@@ -1852,8 +1852,6 @@ let rec prepare_naming loc = function
   | IntroIdentifier id -> NamingMustBe (loc,id)
   | IntroAnonymous -> NamingAvoid []
   | IntroFresh id -> NamingBasedOn (id,[])
-  | IntroWildcard ->
-      error "Did you really mind erasing the newly generated hypothesis?"
 
 let rec explicit_intro_names = function
 | (_, IntroForthcoming _) :: l -> explicit_intro_names l
@@ -1864,8 +1862,8 @@ let rec explicit_intro_names = function
     explicit_intro_names (l@l')
 | (_, IntroAction (IntroApplyOn (c,pat))) :: l' ->
     explicit_intro_names (pat::l')
-| (_, (IntroNaming (IntroWildcard | IntroAnonymous | IntroFresh _)
-     | IntroAction (IntroRewrite _))) :: l ->
+| (_, (IntroNaming (IntroAnonymous | IntroFresh _)
+     | IntroAction (IntroWildcard | IntroRewrite _))) :: l ->
      explicit_intro_names l
 | [] -> []
 
@@ -1883,6 +1881,16 @@ let check_thin_clash_then id thin avoid tac =
     Tacticals.New.tclTHEN (Proofview.V82.tactic (rename_hyp [id,newid])) (tac thin)
   else
     tac thin
+
+let make_tmp_naming avoid l = function
+  (* In theory, we could use a tmp id like "wild_id" for all actions
+     but we prefer to avoid it to avoid this kind of "ugly" names *)
+  (* Alternatively, we could have called check_thin_clash_then on
+     IntroAnonymous, but at the cost of a "renaming"; Note that in the
+     case of IntroFresh, we should use check_thin_clash_then anyway to
+     prevent the case of an IntroFresh precisely using the wild_id *)
+  | IntroWildcard -> NamingBasedOn (wild_id,avoid@explicit_intro_names l)
+  | _ -> NamingAvoid(avoid@explicit_intro_names l)
 
 let fit_bound n = function
   | None -> true
@@ -1912,7 +1920,7 @@ let rec intro_patterns_core b avoid ids thin destopt bound n tac = function
         (fun ids -> intro_patterns_core b avoid ids thin destopt bound
           (n+List.length ids) tac l)
   | IntroAction pat ->
-      intro_then_gen (NamingAvoid(avoid@explicit_intro_names l))
+      intro_then_gen (make_tmp_naming avoid l pat)
 	MoveLast true false
         (intro_pattern_action loc (b || not (List.is_empty l)) false pat thin
           (fun thin bound' -> intro_patterns_core b avoid ids thin destopt bound' 0
@@ -1923,10 +1931,6 @@ let rec intro_patterns_core b avoid ids thin destopt bound n tac = function
 
 and intro_pattern_naming loc b avoid ids pat thin destopt bound n tac l =
   match pat with
-  | IntroWildcard ->
-      intro_then_gen (NamingBasedOn(wild_id,avoid@explicit_intro_names l))
-	MoveLast true false
-        (fun id -> intro_patterns_core b avoid ids ((loc,id)::thin) destopt bound (n+1) tac l)
   | IntroIdentifier id ->
       check_thin_clash_then id thin avoid (fun thin ->
         intro_then_gen (NamingMustBe (loc,id)) destopt true false
@@ -1942,6 +1946,8 @@ and intro_pattern_naming loc b avoid ids pat thin destopt bound n tac l =
         (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound (n+1) tac l)
 
 and intro_pattern_action loc b style pat thin tac id = match pat with
+  | IntroWildcard ->
+      tac ((loc,id)::thin) None []
   | IntroOrAndPattern ll ->
       intro_or_and_pattern loc b ll thin tac id
   | IntroInjection l' ->
@@ -2091,8 +2097,7 @@ let letin_tac_gen with_eq abs ty =
           let heq = match ido with
             | IntroAnonymous -> new_fresh_id [id] (add_prefix "Heq" id) gl
 	    | IntroFresh heq_base -> new_fresh_id [id] heq_base gl
-            | IntroIdentifier id -> id
-	    | _ -> Errors.error "Expect an introduction pattern naming one hypothesis." in
+            | IntroIdentifier id -> id in
           let eqdata = build_coq_eq_data () in
           let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
           let sigma, eq = Evd.fresh_global env (Proofview.Goal.sigma gl) eqdata.eq in

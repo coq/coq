@@ -62,7 +62,6 @@ let mlexpr_of_intro_pattern_disjunctive = function
   _ -> failwith "mlexpr_of_intro_pattern_disjunctive: TODO"
 
 let mlexpr_of_intro_pattern_naming = function
-  | Misctypes.IntroWildcard -> <:expr< Misctypes.IntroWildcard >>
   | Misctypes.IntroAnonymous -> <:expr< Misctypes.IntroAnonymous >>
   | Misctypes.IntroFresh id -> <:expr< Misctypes.IntroFresh (mlexpr_of_ident $dloc$ id) >>
   | Misctypes.IntroIdentifier id ->
