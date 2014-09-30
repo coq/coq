@@ -49,6 +49,21 @@ val proof : proof ->
   * Goal.goal list
   * Evd.evar_map
 
+(* Generic records structured like the return type of proof *)
+type 'a pre_goals = {
+  fg_goals : 'a list;
+  (** List of the focussed goals *)
+  bg_goals : ('a list * 'a list) list;
+  (** Zipper representing the unfocussed background goals *)
+  shelved_goals : 'a list;
+  (** List of the goals on the shelf. *)
+  given_up_goals : 'a list;
+  (** List of the goals that have been given up *)
+}
+
+val map_structured_proof : proof -> (Evd.evar_map -> Goal.goal -> 'a) -> ('a pre_goals)
+
+
 (*** General proof functions ***)
 
 val start : Evd.evar_map -> (Environ.env * Term.types) list -> proof

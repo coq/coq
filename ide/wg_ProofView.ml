@@ -129,7 +129,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
   match goals with
   | None -> ()
     (* No proof in progress *)
-  | Some { Interface.fg_goals = []; bg_goals = bg; shelved_goals; given_up_goals; } ->
+  | Some { Proof.fg_goals = []; bg_goals = bg; shelved_goals; given_up_goals; } ->
     let bg = flatten (List.rev bg) in
     let evars = match evars with None -> [] | Some evs -> evs in
     begin match (bg, shelved_goals,given_up_goals, evars) with
@@ -168,7 +168,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       in
       List.iter iter bg
     end
-  | Some { Interface.fg_goals = fg } ->
+  | Some { Proof.fg_goals = fg } ->
     mode view fg hints
 
 let proof_view () =

@@ -39,16 +39,7 @@ type status = {
   (** An id describing the state of the current proof. *)
 }
 
-type goals = {
-  fg_goals : goal list;
-  (** List of the focussed goals *)
-  bg_goals : (goal list * goal list) list;
-  (** Zipper representing the unfocussed background goals *)
-  shelved_goals : goal list;
-  (** List of the goals on the shelf. *)
-  given_up_goals : goal list;
-  (** List of the goals that have been given up *)
-}
+type goals =  goal Proof.pre_goals
 
 type hint = (string * string) list
 (** A list of tactics applicable and their appearance *)

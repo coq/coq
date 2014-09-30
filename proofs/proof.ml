@@ -131,10 +131,36 @@ let proof p =
   let given_up = p.given_up in
   (goals,stack,shelf,given_up,sigma)
 
+type 'a pre_goals = {
+    fg_goals : 'a list;
+  (** List of the focussed goals *)
+  bg_goals : ('a list * 'a list) list;
+  (** Zipper representing the unfocussed background goals *)
+  shelved_goals : 'a list;
+  (** List of the goals on the shelf. *)
+  given_up_goals : 'a list;
+  (** List of the goals that have been given up *)
+}
+
+let map_structured_proof pfts process_goal: 'a pre_goals =
+  let (goals, zipper, shelf, given_up, sigma) = proof pfts in
+  let fg = List.map (process_goal sigma) goals in
+  let map_zip (lg, rg) =
+    let lg = List.map (process_goal sigma) lg in
+    let rg = List.map (process_goal sigma) rg in
+    (lg, rg)
+  in
+  let bg = List.map map_zip zipper in
+  let shelf = List.map (process_goal sigma) shelf in
+  let given_up = List.map (process_goal sigma) given_up in
+    { fg_goals = fg;
+      bg_goals = bg;
+      shelved_goals = shelf;
+      given_up_goals = given_up; }
+
 let rec unroll_focus pv = function
   | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
   | [] -> pv
-
 (* spiwack: a proof is considered completed even if its still focused, if the focus
    doesn't hide any goal.
    Unfocusing is handled in {!return}. *)
