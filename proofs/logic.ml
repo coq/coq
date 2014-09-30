@@ -530,14 +530,14 @@ let prim_refiner r sigma goal =
 	       let (sg,ev,sigma) = mk_goal (push_named_context_val (id,None,c1) sign)
 			  (subst1 (mkVar id) b) in
                let sigma = 
-		 Goal.V82.partial_solution sigma goal (mkNamedLambda id c1 ev) in
+		 Goal.V82.partial_solution_to sigma goal sg (mkNamedLambda id c1 ev) in
 	       ([sg], sigma)
 	   | LetIn (_,c1,t1,b) ->
 	       let (sg,ev,sigma) =
 		 mk_goal (push_named_context_val (id,Some c1,t1) sign)
 		   (subst1 (mkVar id) b) in
 	       let sigma = 
-		 Goal.V82.partial_solution sigma goal (mkNamedLetIn id c1 t1 ev) in
+		 Goal.V82.partial_solution_to sigma goal sg (mkNamedLetIn id c1 t1 ev) in
 	       ([sg], sigma)
 	   | _ ->
 	       raise (RefinerError IntroNeedsProduct))
@@ -559,7 +559,7 @@ let prim_refiner r sigma goal =
         let (sg2,ev2,sigma) = 
 	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
 	let oterm = Term.mkApp (mkNamedLambda id t ev2 , [| ev1 |]) in
-	let sigma = Goal.V82.partial_solution sigma goal oterm in
+	let sigma = Goal.V82.partial_solution_to sigma goal sg2 oterm in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
     | FixRule (f,n,rest,j) ->
@@ -661,12 +661,12 @@ let prim_refiner r sigma goal =
         let (sg,ev,sigma) = mk_goal sign cl' in
 	let sigma = check_conv_leq_goal env sigma cl' cl' cl in
 	let ev = if k != DEFAULTcast then mkCast(ev,k,cl) else ev in
-	let sigma = Goal.V82.partial_solution sigma goal ev in
+	let sigma = Goal.V82.partial_solution_to sigma goal sg ev in
           ([sg], sigma)
 
     | Convert_hyp (id,copt,ty) ->
 	let (gl,ev,sigma) = mk_goal (convert_hyp sign sigma (id,copt,ty)) cl in
-	let sigma = Goal.V82.partial_solution sigma goal ev in
+	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
 	([gl], sigma)
 
     (* And now the structural rules *)
@@ -676,7 +676,7 @@ let prim_refiner r sigma goal =
 	let (gl,ev,sigma) =
 	  Goal.V82.mk_goal nsigma hyps concl (Goal.V82.extra nsigma goal)
 	in
-	let sigma = Goal.V82.partial_solution sigma goal ev in
+	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
 	  ([gl], sigma)
 
     | Move (withdep, hfrom, hto) ->
@@ -685,7 +685,7 @@ let prim_refiner r sigma goal =
   	let hyps' =
 	  move_hyp withdep toleft (left,declfrom,right) hto in
 	let (gl,ev,sigma) = mk_goal hyps' cl in
-	let sigma = Goal.V82.partial_solution sigma goal ev in
+	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
   	  ([gl], sigma)
 
     | Rename (id1,id2) ->
@@ -698,5 +698,5 @@ let prim_refiner r sigma goal =
         let cl' = replace_vars [id1,mkVar id2] cl in
 	let (gl,ev,sigma) = mk_goal sign' cl' in
 	let ev = Vars.replace_vars [(id2,mkVar id1)] ev in
-	let sigma = Goal.V82.partial_solution sigma goal ev in
+	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
           ([gl], sigma)

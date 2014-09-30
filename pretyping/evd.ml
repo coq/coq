@@ -599,16 +599,28 @@ let progress_evar_map d1 d2 =
   in
   not (d1 == d2) && EvMap.exists is_new d1.undf_evars
 
-let add_name_newly_undefined evk evi (evtoid,idtoev) =
-    let id = evar_ident_info evi in
-    let id = Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
-    (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
+let add_name_newly_undefined naming evk evi (evtoid,idtoev) =
+  let id = match naming with
+  | Misctypes.IntroAnonymous ->
+      let id = evar_ident_info evi in
+      Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev)
+  | Misctypes.IntroIdentifier id ->
+      let id' =
+        Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev) in
+      if not (Names.Id.equal id id') then
+        user_err_loc
+          (Loc.ghost,"",str "Already an existential evar of name " ++ pr_id id);
+      id'
+  | Misctypes.IntroFresh id ->
+      Namegen.next_ident_away_from id (fun id -> Idmap.mem id idtoev)
+  | Misctypes.IntroWildcard -> assert false in
+  (EvMap.add evk id evtoid, Idmap.add id evk idtoev)
 
-let add_name_undefined evk evi (evtoid,idtoev as evar_names) =
+let add_name_undefined naming evk evi (evtoid,idtoev as evar_names) =
   if EvMap.mem evk evtoid then
     evar_names
   else
-    add_name_newly_undefined evk evi evar_names
+    add_name_newly_undefined naming evk evi evar_names
 
 let remove_name_defined evk (evtoid,idtoev) =
   let id = EvMap.find evk evtoid in
@@ -618,6 +630,14 @@ let remove_name_possibly_already_defined evk evar_names =
   try remove_name_defined evk evar_names
   with Not_found -> evar_names
 
+let rename evk id evd =
+  let (evtoid,idtoev) = evd.evar_names in
+  let id' = EvMap.find evk evtoid in
+  if Idmap.mem id idtoev then anomaly (str "Evar name already in use");
+  { evd with evar_names =
+      (EvMap.add evk id evtoid (* overwrite old name *),
+       Idmap.add id evk (Idmap.remove id' idtoev)) }
+
 let reassign_name_defined evk evk' (evtoid,idtoev) =
   let id = EvMap.find evk evtoid in
   (EvMap.add evk' id (EvMap.remove evk evtoid),
@@ -625,7 +645,7 @@ let reassign_name_defined evk evk' (evtoid,idtoev) =
 
 let add d e i = match i.evar_body with
 | Evar_empty ->
-  let evar_names = add_name_undefined e i d.evar_names in
+  let evar_names = add_name_undefined Misctypes.IntroAnonymous e i d.evar_names in
   { d with undf_evars = EvMap.add e i d.undf_evars; evar_names }
 | Evar_defined _ ->
   let evar_names = remove_name_possibly_already_defined e d.evar_names in
@@ -839,7 +859,8 @@ let define evk body evd =
   { evd with defn_evars; undf_evars; last_mods; evar_names }
 
 let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) 
-    ?(filter=Filter.identity) ?candidates ?(store=Store.empty) evd =
+    ?(filter=Filter.identity) ?candidates ?(store=Store.empty)
+    ?(naming=Misctypes.IntroAnonymous) evd =
   let () = match Filter.repr filter with
   | None -> ()
   | Some filter ->
@@ -854,7 +875,7 @@ let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole))
     evar_candidates = candidates;
     evar_extra = store; }
   in
-  let evar_names = add_name_newly_undefined evk evar_info evd.evar_names in
+  let evar_names = add_name_newly_undefined naming evk evar_info evd.evar_names in
   { evd with undf_evars = EvMap.add evk evar_info evd.undf_evars; evar_names }
 
 let restrict evk evk' filter ?candidates evd =
@@ -1018,7 +1039,7 @@ let merge_names evar_names def' undef' =
     EvMap.fold
       (fun n _ evar_names -> remove_name_possibly_already_defined n evar_names)
       def' evar_names in
-  EvMap.fold add_name_undefined undef' evar_names
+  EvMap.fold (add_name_undefined Misctypes.IntroAnonymous) undef' evar_names
 
 let merge_metas metas1 metas2 =
   List.fold_left (fun m (n,v) -> Metamap.add n v m)

@@ -30,3 +30,10 @@ let glob_sort_eq g1 g2 = match g1, g2 with
 | GSet, GSet -> true
 | GType l1, GType l2 -> List.for_all2 CString.equal l1 l2
 | _ -> false
+
+let intro_pattern_naming_eq nam1 nam2 = match nam1, nam2 with
+| IntroAnonymous, IntroAnonymous -> true
+| IntroIdentifier id1, IntroIdentifier id2 -> Names.Id.equal id1 id2
+| IntroWildcard, IntroWildcard -> true
+| IntroFresh id1, IntroFresh id2 -> Names.Id.equal id1 id2
+| _ -> false

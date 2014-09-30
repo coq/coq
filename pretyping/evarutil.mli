@@ -23,27 +23,32 @@ val mk_new_meta : unit -> constr
 (** {6 Creating a fresh evar given their type and context} *)
 val new_evar :
   env -> evar_map -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t -> types -> evar_map * constr
+  ?candidates:constr list -> ?store:Store.t ->
+  ?naming:Misctypes.intro_pattern_naming_expr -> types -> evar_map * constr
 
 val new_pure_evar :
   named_context_val -> evar_map -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t -> types -> evar_map * evar
+  ?candidates:constr list -> ?store:Store.t ->
+  ?naming:Misctypes.intro_pattern_naming_expr -> types -> evar_map * evar
 
 val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
 
 (** the same with side-effects *)
 val e_new_evar :
   env -> evar_map ref -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t -> types -> constr
+  ?candidates:constr list -> ?store:Store.t ->
+  ?naming:Misctypes.intro_pattern_naming_expr -> types -> constr
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
 val new_type_evar :
-  env -> evar_map -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> rigid ->
+  env -> evar_map -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  ?naming:Misctypes.intro_pattern_naming_expr -> rigid ->
   evar_map * (constr * sorts)
 
 val e_new_type_evar : env -> evar_map ref ->
-  ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> rigid -> constr * sorts
+  ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  ?naming:Misctypes.intro_pattern_naming_expr -> rigid -> constr * sorts
 
 val new_Type : ?rigid:rigid -> env -> evar_map -> evar_map * constr
 val e_new_Type : ?rigid:rigid -> env -> evar_map ref -> constr
@@ -65,7 +70,8 @@ val e_new_global : evar_map ref -> Globnames.global_reference -> constr
 val new_evar_instance :
  named_context_val -> evar_map -> types -> 
   ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t -> ?candidates:constr list -> 
-  ?store:Store.t -> constr list -> evar_map * constr
+  ?store:Store.t -> ?naming:Misctypes.intro_pattern_naming_expr ->
+  constr list -> evar_map * constr
 
 val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
 

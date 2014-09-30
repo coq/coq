@@ -149,11 +149,11 @@ let pr_expl_args pr (a,expl) =
       str "(" ++ pr_id id ++ str ":=" ++ pr ltop a ++ str ")"
 
 let pr_opt_type pr = function
-  | CHole _ -> mt ()
+  | CHole (_,_,Misctypes.IntroAnonymous,_) -> mt ()
   | t -> cut () ++ str ":" ++ pr t
 
 let pr_opt_type_spc pr = function
-  | CHole _ -> mt ()
+  | CHole (_,_,Misctypes.IntroAnonymous,_) -> mt ()
   | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
 
 let pr_lident (loc,id) =
@@ -265,7 +265,7 @@ let pr_binder many pr (nal,k,t) =
       end
     | Default b ->
       match t with
-	| CHole _ ->
+	| CHole (_,_,Misctypes.IntroAnonymous,_) ->
 	  let s = prlist_with_sep spc pr_lname nal in
 	  hov 1 (surround_implicit b s)
 	| _ ->
@@ -278,7 +278,7 @@ let pr_binder_among_many pr_c = function
   | LocalRawDef (na,c) ->
       let c,topt = match c with
         | CCast(_,c, (CastConv t|CastVM t|CastNative t)) -> c, t
-        | _ -> c, CHole (Loc.ghost, None, None) in
+        | _ -> c, CHole (Loc.ghost, None, Misctypes.IntroAnonymous, None) in
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
          str":=" ++ cut() ++ pr_c c)
 
@@ -403,7 +403,7 @@ let pr_case_item pr (tm,asin) =
 
 let pr_case_type pr po =
   match po with
-    | None | Some (CHole _) -> mt()
+    | None | Some (CHole (_,_,Misctypes.IntroAnonymous,_)) -> mt()
     | Some p ->
         spc() ++ hov 2 (str "return" ++ pr_sep_com spc (pr lsimpleconstr) p)
 
@@ -552,7 +552,11 @@ let pr pr sep inherited a =
 	hov 0 (str "else" ++ pr (fun () -> brk (1,1)) ltop b2)),
       lif
 
-  | CHole _ -> str "_", latom
+  | CHole (_,_,Misctypes.IntroIdentifier id,_) ->
+      str "?[" ++ pr_id id ++ str "]", latom
+  | CHole (_,_,Misctypes.IntroFresh id,_) ->
+      str "?[?" ++ pr_id id ++ str "]", latom
+  | CHole (_,_,_,_) -> str "_", latom
   | CEvar (_,n,l) -> pr_evar (pr mt) n l, latom
   | CPatVar (_,p) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_glob_sort s, latom

@@ -86,7 +86,7 @@ let compute_constructor_level evars env l =
 
 let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
-  | Vernacexpr.DefExpr(n,c,t) -> (n,Some c, match t with Some c -> c | None -> CHole (fst n, None, None))
+  | Vernacexpr.DefExpr(n,c,t) -> (n,Some c, match t with Some c -> c | None -> CHole (fst n, None, Misctypes.IntroAnonymous, None))
 
 let binders_of_decls = List.map binder_of_decl
 

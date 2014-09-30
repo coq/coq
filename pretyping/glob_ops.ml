@@ -96,8 +96,9 @@ let rec glob_constr_eq c1 c2 = match c1, c2 with
   Array.equal glob_constr_eq c1 c2 &&
   Array.equal glob_constr_eq t1 t2
 | GSort (_, s1), GSort (_, s2) -> Miscops.glob_sort_eq s1 s2
-| GHole (_, kn1, gn1), GHole (_, kn2, gn2) ->
-  Option.equal (==) gn1 gn2 (** Only thing sensible *)
+| GHole (_, kn1, nam1, gn1), GHole (_, kn2, nam2, gn2) ->
+  Option.equal (==) gn1 gn2 (** Only thing sensible *) &&
+  Miscops.intro_pattern_naming_eq nam1 nam2
 | GCast (_, c1, t1), GCast (_, c2, t2) ->
   glob_constr_eq c1 c2 && cast_type_eq glob_constr_eq t1 t2
 | _ -> false
@@ -342,7 +343,7 @@ let loc_of_glob_constr = function
   | GIf (loc,_,_,_,_) -> loc
   | GRec (loc,_,_,_,_,_) -> loc
   | GSort (loc,_) -> loc
-  | GHole (loc,_,_) -> loc
+  | GHole (loc,_,_,_) -> loc
   | GCast (loc,_,_) -> loc
 
 (**********************************************************************)
@@ -356,7 +357,7 @@ let rec cases_pattern_of_glob_constr na = function
       raise Not_found
     | Anonymous -> PatVar (loc,Name id)
     end
-  | GHole (loc,_,_) -> PatVar (loc,na)
+  | GHole (loc,_,_,_) -> PatVar (loc,na)
   | GRef (loc,ConstructRef cstr,_) ->
       PatCstr (loc,cstr,[],na)
   | GApp (loc,GRef (_,ConstructRef cstr,_),l) ->

@@ -429,7 +429,7 @@ GEXTEND Gram
       | -> true ]]
   ;
   simple_binder:
-    [ [ na=name -> ([na],Default Explicit,CHole (!@loc, None, None))
+    [ [ na=name -> ([na],Default Explicit,CHole (!@loc, Some (Evar_kinds.BinderType (snd na)), IntroAnonymous, None))
       | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> (nal,Default Explicit,c)
     ] ]
   ;

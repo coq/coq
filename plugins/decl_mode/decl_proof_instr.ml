@@ -1274,7 +1274,7 @@ let understand_my_constr c gls =
   let env = pf_env gls in
   let rawc = Detyping.detype false [] env Evd.empty c in
   let rec frob = function
-    | GEvar _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark Evar_kinds.Expand,None)
+    | GEvar _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark Evar_kinds.Expand,Misctypes.IntroAnonymous,None)
     | rc ->  map_glob_constr frob rc
   in
   Pretyping.understand_tcc env (sig_sig gls) ~expected_type:(Pretyping.OfType (pf_concl gls)) (frob rawc)

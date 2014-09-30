@@ -336,7 +336,7 @@ GEXTEND Gram
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c
-      | -> CHole (!@loc, None, None) ] ]
+      | -> CHole (!@loc, None, Misctypes.IntroAnonymous, None) ] ]
   ;
   (* Inductive schemes *)
   scheme:
@@ -385,7 +385,7 @@ GEXTEND Gram
 	     (None,DefExpr(id,mkCLambdaN (!@loc) l b,None)) ] ]
   ;
   record_binder:
-    [ [ id = name -> (None,AssumExpr(id,CHole (!@loc, None, None)))
+    [ [ id = name -> (None,AssumExpr(id,CHole (!@loc, None, Misctypes.IntroAnonymous, None)))
       | id = name; f = record_binder_body -> f id ] ]
   ;
   assum_list:
@@ -404,7 +404,7 @@ GEXTEND Gram
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
 	            fun l id -> (not (Option.is_empty coe),(id,mkCProdN (!@loc) l c))
             |  ->
-		 fun l id -> (false,(id,mkCProdN (!@loc) l (CHole (!@loc, None, None)))) ]
+		 fun l id -> (false,(id,mkCProdN (!@loc) l (CHole (!@loc, None, Misctypes.IntroAnonymous, None)))) ]
 	 -> t l
      ]]
 ;

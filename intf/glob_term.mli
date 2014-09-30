@@ -47,7 +47,7 @@ type glob_constr =
   | GRec of Loc.t * fix_kind * Id.t array * glob_decl list array *
       glob_constr array * glob_constr array
   | GSort of Loc.t * glob_sort
-  | GHole of (Loc.t * Evar_kinds.t * Genarg.glob_generic_argument option)
+  | GHole of (Loc.t * Evar_kinds.t * intro_pattern_naming_expr * Genarg.glob_generic_argument option)
   | GCast of Loc.t * glob_constr * glob_constr cast_type
 
 and glob_decl = Name.t * binding_kind * glob_constr option * glob_constr

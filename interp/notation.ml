@@ -442,7 +442,7 @@ let interp_prim_token =
 
 let rec rcp_of_glob looked_for = function
   | GVar (loc,id) -> RCPatAtom (loc,Some id)
-  | GHole (loc,_,_) -> RCPatAtom (loc,None)
+  | GHole (loc,_,_,_) -> RCPatAtom (loc,None)
   | GRef (loc,g,_) -> looked_for g; RCPatCstr (loc, g,[],[])
   | GApp (loc,GRef (_,g,_),l) ->
     looked_for g; RCPatCstr (loc, g, List.map (rcp_of_glob looked_for) l,[])

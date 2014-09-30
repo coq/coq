@@ -22,7 +22,7 @@ type goal = {
 			      logical information once put together
 			      with an evar_map. *)
   tags : string list;
-  (** Heriditary? tags to be displayed *)
+  (** Hereditary? tags to be displayed *)
   cache : Evd.evar_map;
   (** Invariant: for all sigma, if gl.cache == sigma and gl.content is actually
       pertaining to sigma, then gl is nf-evarized in sigma. We use this not to
@@ -245,6 +245,11 @@ module V82 = struct
   (* Instantiates a goal with an open term *)
   let partial_solution sigma { content=evk } c =
     Evd.define evk c sigma
+
+  (* Instantiates a goal with an open term, using name of goal for evk' *)
+  let partial_solution_to sigma { content=evk } { content=evk' } c =
+    let id = Evd.evar_ident evk sigma in
+    Evd.rename evk' id (Evd.define evk c sigma)
 
   (* Parts of the progress tactical *)
   let same_goal evars1 gl1 evars2 gl2 =

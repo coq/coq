@@ -16,3 +16,8 @@ val smartmap_cast_type : ('a -> 'a) -> 'a cast_type -> 'a cast_type
 (** Equalities on [glob_sort] *)
 
 val glob_sort_eq : glob_sort -> glob_sort -> bool
+
+(** Equalities on [intro_pattern_naming] *)
+
+val intro_pattern_naming_eq :
+  intro_pattern_naming_expr -> intro_pattern_naming_expr -> bool

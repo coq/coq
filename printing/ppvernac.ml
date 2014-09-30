@@ -236,7 +236,7 @@ let pr_module_binders l pr_c =
   prlist_strict (pr_module_vardecls pr_c) l
 
 let pr_type_option pr_c = function
-  | CHole (loc, k, _) -> mt()
+  | CHole (loc, k, Misctypes.IntroAnonymous, _) -> mt()
   | _ as c -> brk(0,2) ++ str" :" ++ pr_c c
 
 let pr_decl_notation prc ((loc,ntn),c,scopt) =

@@ -737,7 +737,7 @@ let rec subst_glob_constr subst raw =
 
   | GSort _ -> raw
 
-  | GHole (loc, knd, solve) ->
+  | GHole (loc, knd, naming, solve) ->
     let nknd = match knd with
     | Evar_kinds.ImplicitArg (ref, i, b) ->
       let nref, _ = subst_global subst ref in
@@ -746,7 +746,7 @@ let rec subst_glob_constr subst raw =
     in
     let nsolve = Option.smartmap (Hook.get f_subst_genarg subst) solve in
     if nsolve == solve && nknd == knd then raw
-    else GHole (loc, nknd, nsolve)
+    else GHole (loc, nknd, naming, nsolve)
 
   | GCast (loc,r1,k) ->
       let r1' = subst_glob_constr subst r1 in

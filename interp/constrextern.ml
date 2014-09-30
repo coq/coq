@@ -629,13 +629,13 @@ let rec extern inctx scopes vars r =
 
   | GVar (loc,id) -> CRef (Ident (loc,id),None)
 
-  | GEvar (loc,n,[]) when !print_meta_as_hole -> CHole (loc, None, None)
+  | GEvar (loc,n,[]) when !print_meta_as_hole -> CHole (loc, None, Misctypes.IntroAnonymous, None)
 
   | GEvar (loc,n,l) ->
       extern_evar loc n (List.map (on_snd (extern false scopes vars)) l)
 
   | GPatVar (loc,(b,n)) ->
-      if !print_meta_as_hole then CHole (loc, None, None) else
+      if !print_meta_as_hole then CHole (loc, None, Misctypes.IntroAnonymous, None) else
         if b then CPatVar (loc,n) else CEvar (loc,n,[])
 
   | GApp (loc,f,args) ->
@@ -782,7 +782,7 @@ let rec extern inctx scopes vars r =
 
   | GSort (loc,s) -> CSort (loc,extern_glob_sort s)
 
-  | GHole (loc,e,_) -> CHole (loc, Some e, None) (** TODO: extern tactics. *)
+  | GHole (loc,e,naming,_) -> CHole (loc, Some e, naming, None) (** TODO: extern tactics. *)
 
   | GCast (loc,c, c') ->
       CCast (loc,sub_extern true scopes vars c,
@@ -964,7 +964,7 @@ let extern_sort s = extern_glob_sort (detype_sort s)
 
 let any_any_branch =
   (* | _ => _ *)
-  (loc,[],[PatVar (loc,Anonymous)],GHole (loc,Evar_kinds.InternalHole,None))
+  (loc,[],[PatVar (loc,Anonymous)],GHole (loc,Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None))
 
 let rec glob_of_pat env sigma = function
   | PRef ref -> GRef (loc,ref,None)
@@ -981,7 +981,7 @@ let rec glob_of_pat env sigma = function
 	    anomaly ~label:"glob_constr_of_pattern" (Pp.str "index to an anonymous variable")
       with Not_found -> Id.of_string ("_UNBOUND_REL_"^(string_of_int n)) in
       GVar (loc,id)
-  | PMeta None -> GHole (loc,Evar_kinds.InternalHole, None)
+  | PMeta None -> GHole (loc,Evar_kinds.InternalHole, Misctypes.IntroAnonymous,None)
   | PMeta (Some n) -> GPatVar (loc,(false,n))
   | PProj (p,c) -> GApp (loc,GRef (loc, ConstRef (Projection.constant p),None),
 			 [glob_of_pat env sigma c])

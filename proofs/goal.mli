@@ -94,10 +94,13 @@ module V82 : sig
       stuff. *)
   val build : Evd.evar -> goal 
 
-
   (* Instantiates a goal with an open term *)
   val partial_solution : Evd.evar_map -> goal -> Term.constr -> Evd.evar_map
-   
+
+  (* Instantiates a goal with an open term, reusing name of goal for
+     second goal *)
+  val partial_solution_to : Evd.evar_map -> goal -> goal -> Term.constr -> Evd.evar_map
+
   (* Principal part of the weak-progress tactical *)
   val weak_progress : goal list Evd.sigma -> goal Evd.sigma -> bool
    

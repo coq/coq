@@ -246,8 +246,8 @@ val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
 
 val evar_declare :
   named_context_val -> evar -> types -> ?src:Loc.t * Evar_kinds.t ->
-      ?filter:Filter.t -> ?candidates:constr list -> ?store:Store.t -> 
-  evar_map -> evar_map
+      ?filter:Filter.t -> ?candidates:constr list -> ?store:Store.t ->
+      ?naming:Misctypes.intro_pattern_naming_expr -> evar_map -> evar_map
 (** Convenience function. Just a wrapper around {!add}. *)
 
 val restrict : evar -> evar -> Filter.t -> ?candidates:constr list ->
@@ -258,6 +258,8 @@ val evar_source : existential_key -> evar_map -> Evar_kinds.t located
     evar in a given evar map. *)
 
 val evar_ident : existential_key -> evar_map -> Id.t
+
+val rename : existential_key -> Id.t -> evar_map -> evar_map
 
 val evar_key : Id.t -> evar_map -> existential_key
 

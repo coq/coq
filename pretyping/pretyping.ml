@@ -440,15 +440,15 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     let k = Evar_kinds.MatchingVar (someta,n) in
       { uj_val = e_new_evar env evdref ~src:(loc,k) ty; uj_type = ty }
 
-  | GHole (loc, k, None) ->
+  | GHole (loc, k, naming, None) ->
       let ty =
         match tycon with
         | Some ty -> ty
         | None ->
           new_type_evar env evdref loc in
-        { uj_val = e_new_evar env evdref ~src:(loc,k) ty; uj_type = ty }
+        { uj_val = e_new_evar env evdref ~src:(loc,k) ~naming ty; uj_type = ty }
 
-  | GHole (loc, k, Some arg) ->
+  | GHole (loc, k, _naming, Some arg) ->
       let ty =
         match tycon with
         | Some ty -> ty
@@ -910,7 +910,7 @@ and pretype_instance resolve_tc env evdref lvar loc hyps evk update =
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
 and pretype_type resolve_tc valcon env evdref lvar = function
-  | GHole (loc, knd, None) ->
+  | GHole (loc, knd, naming, None) ->
       (match valcon with
        | Some v ->
            let s =
@@ -926,7 +926,7 @@ and pretype_type resolve_tc valcon env evdref lvar = function
 	       utj_type = s }
        | None ->
 	   let s = evd_comb0 (new_sort_variable univ_flexible_alg) evdref in
-	     { utj_val = e_new_evar env evdref ~src:(loc, knd) (mkSort s);
+	     { utj_val = e_new_evar env evdref ~src:(loc, knd) ~naming (mkSort s);
 	       utj_type = s})
   | c ->
       let j = pretype resolve_tc empty_tycon env evdref lvar c in

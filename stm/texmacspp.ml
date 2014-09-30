@@ -429,7 +429,7 @@ and pp_expr ?(attr=[]) e =
         (xmlOperator "evar" loc ~attr:["id", string_of_id ek] ::
           ppcel)
   | CPatVar (loc, id) -> xmlPatvar (string_of_id id) loc
-  | CHole (loc, _, _) -> xmlCst ~attr  "_" loc
+  | CHole (loc, _, _, _) -> xmlCst ~attr  "_" loc
   | CIf (loc, test, (_, ret), th, el) ->
       let return = match ret with
       | None -> []

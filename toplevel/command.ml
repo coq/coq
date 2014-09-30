@@ -53,7 +53,7 @@ let rec under_binders env f n c =
 let rec complete_conclusion a cs = function
   | CProdN (loc,bl,c) -> CProdN (loc,bl,complete_conclusion a cs c)
   | CLetIn (loc,b,t,c) -> CLetIn (loc,b,t,complete_conclusion a cs c)
-  | CHole (loc, k, _) ->
+  | CHole (loc, k, _, _) ->
       let (has_no_args,name,params) = a in
       if not has_no_args then
 	user_err_loc (loc,"",
