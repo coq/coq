@@ -1519,13 +1519,11 @@ let assert_replacing id newt tac =
       let env' = Environ.reset_with_named_context (val_of_named_context nc') env in
       let h, ev = Proofview.Refine.new_evar h env' concl in
       let h, ev' = Proofview.Refine.new_evar h env newt in
-      let inst =
-        fold_named_context
-          (fun _ (n, b, t) inst ->
-              if Id.equal n id then ev' :: inst
-              else if Option.is_empty b then mkVar n :: inst else inst)
-          env ~init:[]
+      let fold _ (n, b, t) inst =
+        if Id.equal n id then ev' :: inst
+        else mkVar n :: inst
       in
+      let inst = fold_named_context fold env ~init:[] in
       let (e, args) = destEvar ev in
       h, mkEvar (e, Array.of_list inst)
     end
