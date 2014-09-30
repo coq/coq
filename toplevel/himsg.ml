@@ -499,38 +499,33 @@ let pr_ne_context_of header footer env sigma =
   then footer
   else pr_ne_context_of header env sigma
 
-let explain_evar_kind env sigma evi = function
-  | Evar_kinds.QuestionMark _ -> str "this placeholder"
+let explain_evar_kind env = function
+  | Evar_kinds.QuestionMark _ -> strbrk "this placeholder"
   | Evar_kinds.CasesType ->
-      str "the type of this pattern-matching problem"
+      strbrk "the type of this pattern-matching problem"
   | Evar_kinds.BinderType (Name id) ->
-      str "the type of " ++ Nameops.pr_id id
+      strbrk "the type of " ++ Nameops.pr_id id
   | Evar_kinds.BinderType Anonymous ->
-      str "the type of this anonymous binder"
+      strbrk "the type of this anonymous binder"
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let id = Option.get ido in
-      str "the implicit parameter " ++
+      strbrk "the implicit parameter " ++
       pr_id id ++ spc () ++ str "of" ++
       spc () ++ Nametab.pr_global_env Id.Set.empty c
   | Evar_kinds.InternalHole ->
-      str "an internal placeholder" ++
-	Option.cata (fun evi ->
-	  let env = Evd.evar_filtered_env evi in
-	    str " of type "  ++ pr_lconstr_env env sigma evi.evar_concl ++
-	      pr_ne_context_of (str " in environment:"++ fnl ()) (mt ()) env sigma)
-	(mt ()) evi
+      strbrk "an internal placeholder"
   | Evar_kinds.TomatchTypeParameter (tyi,n) ->
-      str "the " ++ pr_nth n ++
-      str " argument of the inductive type (" ++ pr_inductive env tyi ++
-      str ") of this term"
+      strbrk "the " ++ pr_nth n ++
+      strbrk " argument of the inductive type (" ++ pr_inductive env tyi ++
+      strbrk ") of this term"
   | Evar_kinds.GoalEvar ->
-      str "an existential variable"
+      strbrk "an existential variable"
   | Evar_kinds.ImpossibleCase ->
-      str "the type of an impossible pattern-matching clause"
+      strbrk "the type of an impossible pattern-matching clause"
   | Evar_kinds.MatchingVar _ ->
       assert false
   | Evar_kinds.VarInstance id ->
-      str "an instance for the variable " ++ pr_id id
+      strbrk "an instance for the variable " ++ pr_id id
 
 let explain_unsolvability = function
   | None -> mt()
@@ -547,7 +542,13 @@ let explain_typeclass_resolution env sigma evi k =
   | _ -> mt()
 
 let explain_unsolvable_implicit env sigma evi k explain =
-  str "Cannot infer " ++ explain_evar_kind env sigma (Some evi) k ++
+  let type_of_hole =
+    let env = Evd.evar_filtered_env evi in
+    strbrk " of type "  ++ pr_lconstr_env env sigma evi.evar_concl ++
+      pr_ne_context_of (str " in environment:"++ fnl ()) (mt ()) env sigma
+  in
+  strbrk "Cannot infer " ++ explain_evar_kind env k ++
+  type_of_hole ++
   explain_unsolvability explain ++ str "." ++
   explain_typeclass_resolution env sigma evi k
 
