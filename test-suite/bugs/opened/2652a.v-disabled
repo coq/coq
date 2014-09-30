@@ -1,0 +1,106 @@
+Require Import Strings.String.
+Require Import Classes.EquivDec.
+Require Import Lists.List.
+
+Inductive Owner : Type :=
+ | server : Owner
+ | client : Owner.
+
+Inductive ClassName : Type :=
+ | className : string -> ClassName.
+
+Inductive Label : Type :=
+ | label : nat -> Owner -> Label.
+
+Inductive Var : Type :=
+ | var : string -> Var.
+
+Inductive FieldName : Type :=
+ | fieldName : string -> Owner -> FieldName.
+
+Inductive MethodCall : Type :=
+ | methodCall : string -> MethodCall.
+
+Inductive Exp : Type :=
+ | varExp : Var -> Exp
+ | fieldReference : Var -> FieldName -> Exp
+ | methodCallExp : Var -> MethodCall -> list Var -> Exp
+ | allocation : ClassName -> list Var -> Exp
+ | cast : ClassName -> Var -> Exp.
+
+Inductive Stmt : Type :=
+ | assignment : Var -> Exp -> Label -> Stmt
+ | returnStmt : Var -> Label -> Stmt
+ | fieldUpdate : Var -> FieldName -> Exp -> Label -> Stmt.
+
+Inductive Konst : Type :=
+ | konst : ClassName -> (list (ClassName * FieldName)) -> list FieldName -> (list FieldName * FieldName) -> Konst.
+
+Inductive Method : Type :=
+ | method : ClassName -> MethodCall -> list (ClassName * Var) -> list (ClassName * Var) -> (list Stmt) -> Method.
+
+Inductive Class : Type :=
+ | class : ClassName -> ClassName -> (list (ClassName * FieldName)) -> (Konst * (list Method)) -> Class.
+
+Inductive Context : Type :=
+ | context : nat -> Context.
+
+Inductive HContext : Type :=
+ | heapContext : nat -> HContext.
+
+Inductive Location := loc : nat -> Location.
+
+Definition AbsLocation := ((Var * Context) +  (FieldName * HContext)) % type.
+
+Definition CallStack := list (Stmt * Context * Var) % type.
+
+Inductive TypeState : Type :=
+ | fresh : TypeState
+ | stale : TypeState.
+
+Definition Obj := (HContext * (FieldName -> option AbsLocation) * TypeState) % type.
+
+Definition Store := Location -> option Obj.
+
+Definition OwnerStore := Owner -> Store.
+
+Definition AbsStore := AbsLocation -> option (list Obj).
+
+Definition Stack := list (Var -> option Location).
+
+Definition Batch := list Location.
+
+Definition Sigma := (Stmt * Stack * OwnerStore * AbsStore * CallStack * Context * Batch) % type.
+
+Definition update {A : Type} {B : Type} `{EqDec A} `{EqDec B} (f : A -> B) (k : A) (v : B) : (A -> B) :=
+    fun k' => if equiv_decb k' k then v else f k'.
+  
+
+Definition transfer : Label -> OwnerStore -> Batch -> (OwnerStore * Batch) :=
+  fun _ o b => (o,b).
+
+Parameter succ : Label -> Stmt.
+
+Parameter owner : Label -> Owner.
+
+Inductive concreteSingleStep : Sigma -> Sigma -> Prop :=
+ | fieldAssignmentLocal : forall v f_do  f o  so sigma_so hc m sigma'_so v' l st sigma absSigma cst c b sigma' sigma'' b',
+   (f_do = fieldName f o) -> so = owner(l) -> sigma_so = sigma(so) -> Some (hc, m, fresh) = sigma_so(st(v)) -> sigma'_so = update sigma_so st(v) (Some (hc, update m f_do st(v'), fresh))
+   -> sigma' = update sigma so sigma'_so -> o = so -> (sigma'', b') = transfer l sigma' b ->
+   concreteSingleStep ((fieldUpdate v f_do (varExp v') l), st, sigma, absSigma, cst, c, b)
+                      (succ(l), st, sigma'', absSigma, cst, c, b').
+
+ | fieldAssignmentRemote : forall v f_do  f o  so sigma_so hc m sigma'_so v' l st sigma absSigma cst c b sigma' sigma'' b',
+   (f_do = fieldName f o) -> so = owner(l) -> sigma_so = sigma(so) -> (hc, m, fresh) = sigma_so(st(v)) -> sigma'_so = update sigma_so st(v) (hc, update m f_do st(v'), fresh)
+   -> sigma' = update sigma so sigma'_so -> o <> so -> (sigma'', b') = transfer l sigma' (b ++ st(v)) ->
+   concreteSingleStep ((fieldUpdate v f_o (varExp v') l), st, sigma, absSigma, cst, c, b)
+                      (succ(l), st, sigma'', absSigma, cst, c, b'')
+ | variableStep : forall v v' l st st' sigma sigma' absSigma cst c b b', 
+   (st' = st ++ (update (fun _ => None) v st(v'))) -> (sigma',b') = transfer l sigma b ->
+   concreteSingleStep ((assignment v (varExp v') l), st, sigma, absSigma, cst, c, b) (succ(l), st', sigma', absSigma, cst, c, b')
+ | returnStep : forall v l st sigma absSigma cst c b v_ret s st' sigma' c' b',
+   (s,c',v_ret) = car(cst) -> st' = cdr(st) ++ update (fun _ => None) v_ret st(v) -> (sigma', b') = transfer l sigma b ->
+   concreteSingleStep ((returnStmt v l), st, sigma, absSigma, cst, c, b) (s, st', sigma', absSigma, cdr(cst), c', b')
+ | fieldReferenceStep : forall v v' f_do l st sigma absSigma cst c b so hc m' m st' sigma' absSigma cst c b',
+   so = owner(l) -> (hc, m', fresh) = sigma(so)(st(v')) -> m' = update m f_do l -> st' = st ++ update (fun _ => None) v l -> (sigma', b') = transfer l sigma b ->
+   concreteSingleStep ((assignment v (fieldReference v' f_do) l), st, sigma, absSigma, cst, c, b) (s, st', sigma', absSigma, cst, c, b').

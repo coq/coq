@@ -1,0 +1,187 @@
+Require Import List.
+Definition is_dec (P:Prop) := {P}+{~P}.
+Definition eq_dec (T:Type) := forall (t1 t2:T), is_dec (t1=t2).
+
+Record Label : Type := mkLabel {
+	LabElem: Type;
+	LabProd: LabElem -> LabElem -> option LabElem;
+	LabBot: LabElem -> Prop;
+	LabError: LabElem -> Prop
+}.
+
+Definition LProd (L1 L2: Label): Label := {|
+	LabElem := LabElem L1 * LabElem L2;
+	LabProd := fun lg ld => let (lg1,lg2) := lg in let (ld1,ld2) := ld in
+	  match LabProd L1 lg1 ld1, LabProd L2 lg2 ld2 with
+	    Some g, Some d => Some (g,d)
+	  | _,_ => None
+	  end;
+	LabBot l := let (l1,l2) := l in LabBot L1 l1 \/ LabBot L2 l2;
+	LabError l := let (l1,l2) := l in LabError L1 l1 \/ LabError L2 l2
+|}.
+
+Definition Lrestrict (L: Label) (S: LabElem L -> bool): Label := {|
+	LabElem := LabElem L;
+	LabProd l1 l2 := if andb (S l1) (S l2) then LabProd L l1 l2 else None;
+	LabBot l := LabBot L l;
+	LabError l := LabError L l
+|}.
+
+Notation "l1 ^* l2" := (LProd l1 l2) (at level 50).
+
+Record LTS(L:Type): Type := mkLTS {
+	State: Type;
+	Init: State -> Prop;
+	Next: State -> L -> State -> Prop
+}.
+Implicit Arguments State.
+Implicit Arguments Init.
+Implicit Arguments Next.
+
+Definition sound L (S: LTS (LabElem L)): Prop :=
+  forall s s' l, Next S s l s' -> ~LabError L l.
+
+Inductive PNext L (S1 S2:LTS (LabElem L)): State S1 * State S2 -> (LabElem L) -> State S1 * State S2 -> Prop :=
+  LNext: forall s1 s2 l1 s'1, Next S1 s1 l1 s'1 -> (forall l2, LabProd L l1 l2 = None) ->
+	PNext L S1 S2 (s1,s2) l1 (s'1,s2)
+| RNext: forall s1 s2 l2 s'2, (forall l1, LabProd L l1 l2 = None) -> Next S2 s2 l2 s'2 ->
+	PNext L S1 S2 (s1,s2) l2 (s1,s'2)
+| SNext: forall s1 s2 l1 l2 l s'1 s'2, Next S1 s1 l1 s'1 -> Next S2 s2 l2 s'2 ->
+	Some l = LabProd L l1 l2 -> PNext L S1 S2 (s1,s2) l (s'1,s'2).
+
+Definition Produit (L:Label) (S1 S2: LTS (LabElem L)): LTS (LabElem L) := {|
+	State := State S1 * State S2;
+	Init := fun s => let (s1,s2) := s in Init S1 s1 /\ Init S2 s2;
+	Next :=PNext L S1 S2
+|}.
+
+Parameter Time: Type.
+Parameter teq: forall t1 t2:Time, {t1=t2}+{t1<>t2}.
+
+Inductive TLabElem(L:Type): Type :=
+  Tdiscrete: L -> TLabElem L
+| Tdelay: Time -> TLabElem L
+| Tbot: TLabElem L.
+
+Definition TLabel L: Label := {| 
+    LabElem := TLabElem (LabElem L);
+    LabProd lt1 lt2 :=
+      match lt1, lt2 with
+        Tdiscrete l1, Tdiscrete l2 => match (LabProd L l1 l2) with Some l => Some (Tdiscrete (LabElem L) l) | None => None end
+      | Tdelay t1, Tdelay t2 => if teq t1 t2 then Some (Tdelay (LabElem L) t1) else Some  (Tbot (LabElem L))
+      | _,_ => None
+      end;
+    LabBot lt := match lt with
+      Tdiscrete l => LabBot L l
+        | Tbot => True
+        | _ => False
+    end;
+    LabError lt := match lt with
+      Tdiscrete l => LabError L l
+        | _ => False
+    end
+  |}.
+
+Parameter Var: Type.
+Parameter allv: forall P, (forall (v:Var), is_dec (P v)) -> is_dec (forall v, P v).
+Parameter DType: Type.
+Parameter Data: DType -> Type.
+Parameter vtype: Var -> DType.
+Parameter Deq: forall t (d1 d2: Data t), is_dec (d1=d2).
+
+Inductive Vctr(v:Var): Type :=
+  Wctr: Data (vtype v) -> Vctr v
+| Rctr: Data (vtype v) -> Vctr v
+| Fctr: Vctr v
+| Nctr: Vctr v.
+
+Definition isCmp v (c1 c2: Vctr v): Prop :=
+  match c1,c2 with
+    Wctr _, Nctr => True
+  | Rctr _, Rctr _  => True
+  | Rctr _, Nctr => True
+  | Rctr _, Fctr => True
+  | Nctr, _ => True
+  | _,_ => False
+  end.
+
+Lemma isCmp_dec: forall v (c1 c2: Vctr v), is_dec (isCmp v c1 c2).
+intros.
+induction c1; induction c2; simpl; intros; try (left; tauto); try (right; tauto).
+Qed.
+ 
+Definition Vprod v (c1 c2: Vctr v): (isCmp v c1 c2) -> Vctr v :=
+  match c1,c2 return isCmp v c1 c2 -> Vctr v with
+  | Wctr d, Nctr => fun h => Wctr v d
+  | Rctr d1, Rctr d2 => fun h => if Deq (vtype v) d1 d2 then Rctr v d1 else Fctr v
+  | Rctr d1, Nctr => fun h => Rctr v d1
+  | Rctr d1, Fctr => fun h => Fctr v
+  | Fctr, Rctr _ => fun h => Fctr v
+  | Fctr, Fctr  => fun h => Fctr v
+  | Fctr, Nctr => fun h => Fctr v
+  | Nctr, c2 => fun h => c2
+  | _,_ => fun h => match h with end
+  end.
+
+Inductive MLabElem: Type :=
+  Mctr: (forall v, Vctr v) -> MLabElem
+| Merr: MLabElem.
+
+Definition MProd (m1 m2: MLabElem): MLabElem :=
+  match m1,m2 with
+    Mctr c1, Mctr c2 => match allv (fun v => isCmp v (c1 v) (c2 v)) (fun v => isCmp_dec v (c1 v) (c2 v)) with
+      left h => Mctr (fun v => Vprod v (c1 v) (c2 v)  (h v))
+    | _ => Merr
+    end
+  | _,_ => Merr
+  end.
+
+Definition MLabel: Label := {|
+	LabElem := MLabElem;
+	LabProd m1 m2 := Some (MProd m1 m2);
+	LabBot m := exists c, m = Mctr c /\ exists v, c v = Fctr v;
+	LabError m := m = Merr  
+|}.
+
+Parameter Chan: Type.
+Parameter ch_eq: eq_dec Chan.
+
+Definition CLabel(S: Chan->bool): Label := {|
+	LabElem := Chan;
+	LabProd := fun c1 c2 => if ch_eq c1 c2 then if S c1 then Some c1 else None else None;
+	LabBot := fun _ => False;
+	LabError := fun _ => False
+|}.
+
+Definition FLabel(S: Chan->bool): Label :=
+	TLabel (CLabel S ^* MLabel ^* MLabel ^* MLabel).
+
+Definition FTS := LTS (LabElem (FLabel (fun _ => true))).
+Check (fun S (T1 T2: FTS) => Produit (FLabel S) T1 T2).
+(*
+Definition PAR (S: Chan -> bool) (T1 T2: FTS): FTS.
+unfold FTS in *; simpl in *.
+apply (Produit (FLabel S)).
+apply T1.
+apply T2.
+Defined.
+
+Definition PAR (S: Chan -> bool) (T1 T2: FTS): FTS :=
+	Produit (FLabel S) T1 T2.
+*)
+Lemma FTSirrel (S: Chan -> bool): FTS = LTS (LabElem (FLabel S)).
+Proof.
+ unfold FTS.
+ simpl.
+ reflexivity.
+Qed.
+
+Definition PAR (S: Chan -> bool) (T1 T2: FTS): FTS.
+revert T2; revert T1.
+rewrite (FTSirrel S).
+apply (Produit (FLabel S)).
+Defined.
+
+Record HTTS: Type := mkHTTS {
+	
+}.

@@ -1,0 +1,88 @@
+(* This used to show a bug in evarutil. which is fixed in 8.4 *)
+Require Import Strings.String.
+Require Import Classes.EquivDec.
+Require Import Lists.List.
+
+Inductive Owner : Type :=
+ | server : Owner
+ | client : Owner.
+
+Inductive ClassName : Type :=
+ | className : string -> ClassName.
+
+Inductive Label : Type :=
+ | label : nat -> Owner -> Label.
+
+Inductive Var : Type :=
+ | var : string -> Var.
+
+Inductive FieldName : Type :=
+ | fieldName : string -> Owner -> FieldName.
+
+Inductive MethodCall : Type :=
+ | methodCall : string -> MethodCall.
+
+Inductive Exp : Type :=
+ | varExp : Var -> Exp
+ | fieldReference : Var -> FieldName -> Exp
+ | methodCallExp : Var -> MethodCall -> list Var -> Exp
+ | allocation : ClassName -> list Var -> Exp
+ | cast : ClassName -> Var -> Exp.
+
+Inductive Stmt : Type :=
+ | assignment : Var -> Exp -> Label -> Stmt
+ | returnStmt : Var -> Label -> Stmt
+ | fieldUpdate : Var -> FieldName -> Exp -> Label -> Stmt.
+
+Inductive Konst : Type :=
+ | konst : ClassName -> (list (ClassName * FieldName)) -> list FieldName -> (list FieldName * FieldName) -> Konst.
+
+Inductive Method : Type :=
+ | method : ClassName -> MethodCall -> list (ClassName * Var) -> list (ClassName * Var) -> (list Stmt) -> Method.
+
+Inductive Class : Type :=
+ | class : ClassName -> ClassName -> (list (ClassName * FieldName)) -> (Konst * (list Method)) -> Class.
+
+Inductive Context : Type :=
+ | context : nat -> Context.
+
+Inductive HContext : Type :=
+ | heapContext : nat -> HContext.
+
+Inductive Location := loc : nat -> Location.
+
+Definition AbsLocation := ((Var * Context) +  (FieldName * HContext)) % type.
+
+Definition CallStack := list (Stmt * Context * Var) % type.
+
+Inductive TypeState : Type :=
+ | fresh : TypeState
+ | stale : TypeState.
+
+Definition Obj := (HContext * (FieldName -> option AbsLocation) * TypeState) % type.
+
+Definition Store := Location -> option Obj.
+
+Definition OwnerStore := Owner -> Store.
+
+Definition AbsStore := AbsLocation -> option (list Obj).
+
+Definition Stack := list (Var -> option Location).
+
+Definition Batch := list Location.
+
+Definition Sigma := (Stmt * Stack * OwnerStore * AbsStore * CallStack * Context * Batch) % type.
+
+Definition update {A : Type} {B : Type} `{EqDec A} `{EqDec B} (f : A -> B) (k : A) (v : B) : (A -> B) :=
+    fun k' => if equiv_decb k' k then v else f k'.
+
+Parameter succ : Label -> Stmt.
+
+Inductive concreteSingleStep : Sigma -> Sigma -> Prop :=
+ | fieldAssignmentLocal : forall v f_do  f o  so sigma_so hc m sigma'_so v' l st sigma absSigma cst c b sigma' sigma'' b',
+   Some (hc, m, fresh) = sigma_so(st(v)) -> sigma'_so = update sigma_so st(v) (Some (hc, update m f_do st(v'), fresh))
+   -> 
+   concreteSingleStep ((fieldUpdate v f_do (varExp v') l), st, sigma, absSigma, cst, c, b)
+                      (succ(l), st, sigma'', absSigma, cst, c, b').
+
+.
