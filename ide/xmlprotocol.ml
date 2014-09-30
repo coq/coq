@@ -145,10 +145,10 @@ let to_goal = function
 
 let of_goals g =
   let of_glist = of_list of_goal in
-  let fg = of_list of_goal g.fg_goals in
-  let bg = of_list (of_pair of_glist of_glist) g.bg_goals in
-  let shelf = of_list of_goal g.shelved_goals in
-  let given_up = of_list of_goal g.given_up_goals in
+  let fg = of_list of_goal g.Proof.fg_goals in
+  let bg = of_list (of_pair of_glist of_glist) g.Proof.bg_goals in
+  let shelf = of_list of_goal g.Proof.shelved_goals in
+  let given_up = of_list of_goal g.Proof.given_up_goals in
   Element ("goals", [], [fg; bg; shelf; given_up])
 let to_goals = function
   | Element ("goals", [], [fg; bg; shelf; given_up]) ->
@@ -157,7 +157,8 @@ let to_goals = function
     let bg = to_list (to_pair to_glist to_glist) bg in
     let shelf = to_list to_goal shelf in
     let given_up = to_list to_goal given_up in
-    { fg_goals = fg; bg_goals = bg; shelved_goals = shelf; given_up_goals = given_up }
+    { Proof.fg_goals = fg; bg_goals = bg; shelved_goals = shelf; 
+      given_up_goals = given_up }
   | _ -> raise Marshal_error
 
 let of_coq_info info =
@@ -306,8 +307,8 @@ end = struct
   let pr_int i = string_of_int i
   let pr_bool b = Printf.sprintf "%B" b
   let pr_goal (g : goals) =
-    if g.fg_goals = [] then
-      if g.bg_goals = [] then "Proof completed."
+    if g.Proof.fg_goals = [] then
+      if g.Proof.bg_goals = [] then "Proof completed."
       else
         let rec pr_focus _ = function
           | [] -> assert false
@@ -315,13 +316,13 @@ end = struct
           | (lg, rg) :: l ->
             Printf.sprintf "%i:%a"
               (List.length lg + List.length rg) pr_focus l in
-        Printf.sprintf "Still focussed: [%a]." pr_focus g.bg_goals
+        Printf.sprintf "Still focussed: [%a]." pr_focus g.Proof.bg_goals
     else
       let pr_menu s = s in
       let pr_goal { goal_hyp = hyps; goal_ccl = goal } =
         "[" ^ String.concat "; " (List.map pr_menu hyps) ^ " |- " ^
             pr_menu goal ^ "]" in
-      String.concat " " (List.map pr_goal g.fg_goals)
+      String.concat " " (List.map pr_goal g.Proof.fg_goals)
   let pr_evar (e : evar) = "[" ^ e.evar_info ^ "]"
   let pr_status (s : status) =
     let path =

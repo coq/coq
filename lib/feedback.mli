@@ -43,6 +43,7 @@ type feedback_content =
   | SlaveStatus of string * string
   | ProcessingInMaster
   | Goals of Loc.t * string
+  | StructuredGoals of Loc.t * xml
   | FileLoaded of string * string
   | Message of message
 
