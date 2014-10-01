@@ -244,7 +244,10 @@ let sorts_of_context env evc ctxt =
   snd (aux ctxt)
 
 let expand_projection env sigma pr c args =
-  let ty = get_type_of env sigma c in
-  let (i,u), ind_args = Inductiveops.find_mrectype env sigma ty in
+  let ty = get_type_of ~lax:true env sigma c in
+  let (i,u), ind_args = 
+    try Inductiveops.find_mrectype env sigma ty 
+    with Not_found -> retype_error BadRecursiveType
+  in
     mkApp (mkConstU (Projection.constant pr,u), 
 	   Array.of_list (ind_args @ (c :: args)))

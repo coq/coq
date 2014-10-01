@@ -1389,7 +1389,7 @@ let eq_constr_univs evd t u =
   let b, c = Universes.eq_constr_univs_infer evd.universes.uctx_universes t u in
     if b then 
       try let evd' = add_universe_constraints evd c in evd', b
-      with Univ.UniverseInconsistency _ -> evd, false
+      with Univ.UniverseInconsistency _ | UniversesDiffer -> evd, false
     else evd, b
 
 let e_eq_constr_univs evdref t u =

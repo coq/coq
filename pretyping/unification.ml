@@ -397,9 +397,13 @@ let unfold_projection env p stk =
 let expand_key ts env sigma = function
   | Some (IsKey k) -> expand_table_key env k
   | Some (IsProj (p, c)) -> 
-    let red = Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma 
-			  Cst_stack.empty (c, unfold_projection env p [])))
-    in if Term.eq_constr (mkProj (p, c)) red then None else Some red
+    if Projection.unfolded p then 
+      let red = Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma 
+				  Cst_stack.empty (c, unfold_projection env (Projection.unfold p) [])))
+      in if Term.eq_constr (mkProj (p, c)) red then None else Some red
+    else 
+      (try Some (Retyping.expand_projection env sigma p c [])
+       with RetypeError _ -> None)
   | None -> None
 
 let subterm_restriction is_subterm flags =
@@ -442,9 +446,11 @@ let oracle_order env cf1 cf2 =
       | Some k2 ->
 	match k1, k2 with
 	| IsProj (p, _), IsKey (ConstKey (p',_)) 
-	  when eq_constant (Projection.constant p) p' -> Some false
+	  when eq_constant (Projection.constant p) p' -> 
+	  Some (not (Projection.unfolded p))
 	| IsKey (ConstKey (p,_)), IsProj (p', _) 
-	  when eq_constant p (Projection.constant p') -> Some true
+	  when eq_constant p (Projection.constant p') -> 
+	  Some (Projection.unfolded p')
 	| _ ->
           Some (Conv_oracle.oracle_order (Environ.oracle env) false
 		  (translate_key k1) (translate_key k2))
@@ -618,6 +624,27 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	| LetIn (_,a,_,c), _ -> unirec_rec curenvnb pb b wt substn (subst1 a c) cN
 	| _, LetIn (_,a,_,c) -> unirec_rec curenvnb pb b wt substn cM (subst1 a c)
 
+
+	| Proj (p1,c1), _ when not (Projection.unfolded p1) ->
+	  let cM' =
+	    try Retyping.expand_projection curenv sigma p1 c1 []
+	    with RetypeError _ ->
+	      (** Unification can be called on ill-typed terms, due
+		  to FO and eta in particular, fail gracefully in that case *)
+	      error_cannot_unify (fst curenvnb) sigma (cM,cN)
+	  in
+	    unirec_rec curenvnb CONV true false substn cM' cN
+
+	| _, Proj (p2,c2) when not (Projection.unfolded p2) ->
+	  let cN' =
+	    try Retyping.expand_projection curenv sigma p2 c2 []
+	    with RetypeError _ ->
+	      (** Unification can be called on ill-typed terms, due
+		  to FO and eta in particular, fail gracefully in that case *)
+	      error_cannot_unify (fst curenvnb) sigma (cM,cN)
+	  in
+	    unirec_rec curenvnb CONV true false substn cM cN'
+
         (* eta-expansion *)
 	| Lambda (na,t1,c1), _ when flags.modulo_eta ->
 	    unirec_rec (push (na,t1) curenvnb) CONV true wt substn
@@ -661,25 +688,17 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 		  try (* Force unification of the types to fill in parameters *)
 		    let ty1 = get_type_of curenv ~lax:true sigma c1 in
 		    let ty2 = get_type_of curenv ~lax:true sigma c2 in
-		      unify_0_with_initial_metas substn true curenv cv_pb 
-			{ flags with modulo_conv_on_closed_terms = Some full_transparent_state;
-			  modulo_delta = full_transparent_state;
-			  modulo_eta = true;
-			  modulo_betaiota = true }
-			ty1 ty2
+		      unify_0_with_initial_metas substn true curenv cv_pb
+		    	{ flags with modulo_conv_on_closed_terms = Some full_transparent_state;
+		    	  modulo_delta = full_transparent_state;
+		    	  modulo_eta = true;
+		    	  modulo_betaiota = true }
+		    	ty1 ty2
 		  with RetypeError _ -> substn
 	      with ex when precatchable_exception ex ->
 	        unify_not_same_head curenvnb pb b wt substn cM cN
 	    else
 	      unify_not_same_head curenvnb pb b wt substn cM cN
-
-	| Proj (p1,c1), _ when not (Projection.unfolded p1) ->
-	  let cM' = Retyping.expand_projection curenv sigma p1 c1 [] in
-	    unirec_rec curenvnb CONV true false substn cM' cN
-
-	| _, Proj (p2,c2) when not (Projection.unfolded p2) ->
-	  let cN' = Retyping.expand_projection curenv sigma p2 c2 [] in
-	    unirec_rec curenvnb CONV true false substn cM cN'
 
 	| App (f1,l1), _ when 
 	    (isMeta f1 && use_metas_pattern_unification flags nb l1
@@ -713,11 +732,29 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	| _ ->
             unify_not_same_head curenvnb pb b wt substn cM cN
 
-  and unify_app curenvnb pb b substn cM f1 l1 cN f2 l2 =
+  and unify_app (curenv, nb as curenvnb) pb b (sigma, metas, evars as substn) cM f1 l1 cN f2 l2 =
     try
       let (f1,l1,f2,l2) = adjust_app_array_size f1 l1 f2 l2 in
-      Array.fold_left2 (unirec_rec curenvnb CONV true false)
-	(unirec_rec curenvnb CONV true true substn f1 f2) l1 l2
+      (* let substn = *)
+      (* 	let sigma, b = Evd.eq_constr_univs sigma f1 f2 in *)
+      (* 	  if b then (sigma,metas,evars) *)
+      (* 	  else if isEvar_or_Meta f1 || isEvar_or_Meta f2 then (sigma,metas,evars) *)
+      (* 	  else *)
+      (* 	    try *)
+      (* 	      let sigma', ty1 = Evarsolve.get_type_of_refresh curenv ~lax:true sigma f1 in *)
+      (* 	      let sigma', ty2 = Evarsolve.get_type_of_refresh curenv ~lax:true sigma f2 in *)
+      (* 	      let substn = unify_0_with_initial_metas (sigma', metas, evars) true curenv CONV *)
+      (* 	      	{ flags with modulo_conv_on_closed_terms = Some full_transparent_state; *)
+      (* 	      	  modulo_delta = full_transparent_state; *)
+      (* 	      	  modulo_eta = true; *)
+      (* 	      	  modulo_betaiota = true } *)
+      (* 	      	ty1 ty2 *)
+      (* 	      in substn *)
+      (* 	    with RetypeError _ -> *)
+      (* 	      error_cannot_unify (fst curenvnb) sigma (cM,cN) *)
+      (* in *)
+	Array.fold_left2 (unirec_rec curenvnb CONV true false)
+	  (unirec_rec curenvnb CONV true true substn f1 f2) l1 l2
     with ex when precatchable_exception ex ->
     try reduce curenvnb pb b false substn cM cN
     with ex when precatchable_exception ex ->

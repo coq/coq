@@ -101,6 +101,10 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
   in
     if !modified then !evdref, t' else !evdref, t
 
+let get_type_of_refresh ?(polyprop=true) ?(lax=false) env sigma c =
+  let ty = Retyping.get_type_of ~polyprop ~lax env sigma c in
+    refresh_universes (Some false) env sigma ty
+
 (************************)
 (* Unification results  *)
 (************************)

@@ -34,20 +34,18 @@ let _ = Goptions.declare_bool_option {
 }
 
 let unfold_projection env evd ts p c =
-  if Projection.unfolded p then assert false
-  else     
-    let cst = Projection.constant p in
-      if is_transparent_constant ts cst then
-	let unfold_app () =
-	  let t' = Retyping.expand_projection env evd p c [] in
-	    Some t'
-	in
-	  (match ReductionBehaviour.get (Globnames.ConstRef cst) with
-	  | None -> unfold_app ()
-	  | Some (recargs, nargs, flags) ->
-	    if (List.mem `ReductionNeverUnfold flags) then None
-	    else unfold_app ())
-      else None
+  let cst = Projection.constant p in
+    if is_transparent_constant ts cst then
+      let unfold_app () =
+	let t' = Retyping.expand_projection env evd p c [] in
+	  Some t'
+      in
+	(match ReductionBehaviour.get (Globnames.ConstRef cst) with
+	| None -> unfold_app ()
+	| Some (recargs, nargs, flags) ->
+	  if (List.mem `ReductionNeverUnfold flags) then None
+	  else unfold_app ())
+    else None
 
 let eval_flexible_term ts env evd c =
   match kind_of_term c with
@@ -66,7 +64,9 @@ let eval_flexible_term ts env evd c =
        with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c)
   | Lambda _ -> Some c
-  | Proj (p, c) -> unfold_projection env evd ts p c
+  | Proj (p, c) -> 
+    if Projection.unfolded p then None
+    else unfold_projection env evd ts p c
   | _ -> assert false
 
 type flex_kind_of_term =

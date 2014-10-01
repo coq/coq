@@ -69,3 +69,6 @@ val check_evar_instance :
 
 val remove_instance_local_defs :
   evar_map -> existential_key -> constr array -> constr list
+
+val get_type_of_refresh : 
+  ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * types

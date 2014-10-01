@@ -1488,13 +1488,11 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
 	  (Closure.RedFlags.red_add_transparent betadeltaiota ts) env sigma (t,args) in
 	if isConstruct t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
-      |args, (Stack.Proj (n,m,p,_) :: stack'' as stack') ->
+      |args, (Stack.Proj (n,m,p,_) :: stack'') ->
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
 	  (Closure.RedFlags.red_add_transparent betadeltaiota ts) env sigma (t,args) in
-	if isConstruct t_o then
-	  if Projection.unfolded p || Closure.is_transparent_constant ts (Projection.constant p)
-	  then whrec Cst_stack.empty (* csts_o *) (Stack.nth stack_o (n+m), stack'')
-	  else (* Won't unfold *) (whd_betaiota_state sigma (t_o, stack_o@stack'),csts')
+	if isConstruct t_o && Projection.unfolded p then
+	  whrec Cst_stack.empty (Stack.nth stack_o (n+m), stack'')
 	else s,csts'
       |_, ((Stack.App _| Stack.Shift _|Stack.Update _|Stack.Cst _) :: _|[]) -> s,csts'
   in whrec csts s
