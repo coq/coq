@@ -1049,10 +1049,10 @@ Section POWER.
      assert (H2 := norm_aux_PEopp pe2).
      rewrite norm_aux_PEadd.
      do 2 destruct get_PEopp; rewrite ?H1, ?H2; Esimpl; add_permut.
-   - simpl. rewrite IHpe1, IHpe2. Esimpl.
-   - simpl. rewrite IHpe1, IHpe2. now rewrite Pmul_ok.
-   - simpl. rewrite IHpe. Esimpl.
-   - simpl. rewrite Ppow_N_ok by reflexivity.
+   - rewrite IHpe1, IHpe2. Esimpl.
+   - rewrite IHpe1, IHpe2. now rewrite Pmul_ok.
+   - rewrite IHpe. Esimpl.
+   - rewrite Ppow_N_ok by reflexivity.
      rewrite pow_th.(rpow_pow_N). destruct n0; simpl; Esimpl.
      induction p;simpl; now rewrite ?IHp, ?IHpe, ?Pms_ok, ?Pmul_ok.
   Qed.

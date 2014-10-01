@@ -51,7 +51,7 @@ module Stack : sig
 
   val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
 
-  type 'a cst_member = 
+  type 'a cst_member =
     | Cst_const of pconstant
     | Cst_proj of projection * 'a
 

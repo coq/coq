@@ -144,6 +144,7 @@ module Cst_stack = struct
   type t = (constr * constr list * (int * constr array) list)  list
 
   let empty = []
+  let is_empty = CList.is_empty
 
   let sanity x y =
     assert(Term.eq_constr x y)
@@ -205,7 +206,7 @@ sig
   type 'a app_node
   val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
 
-  type 'a cst_member = 
+  type 'a cst_member =
     | Cst_const of pconstant
     | Cst_proj of projection * 'a
 
@@ -234,6 +235,7 @@ sig
   val strip_app : 'a t -> 'a t * 'a t
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
   val not_purely_applicative : 'a t -> bool
+  val will_expose_iota : 'a t -> bool
   val list_of_app_stack : constr t -> constr list option
   val assign : 'a t -> int -> 'a -> 'a t
   val args_size : 'a t -> int
@@ -259,7 +261,7 @@ struct
 		     )
 
 
-  type 'a cst_member = 
+  type 'a cst_member =
     | Cst_const of pconstant
     | Cst_proj of projection * 'a
 
@@ -300,9 +302,9 @@ struct
     prlist_with_sep pr_semicolon (fun x -> hov 1 (pr_member pr_c x)) l
 
   and pr_cst_member pr_c c =
-    let open Pp in 
+    let open Pp in
       match c with
-      | Cst_const (c, u) -> 
+      | Cst_const (c, u) ->
 	if Univ.Instance.is_empty u then Constant.print c
 	else str"(" ++ Constant.print c ++ str ", " ++ Univ.Instance.pr u ++ str")"
       | Cst_proj (p, c) ->
@@ -328,7 +330,7 @@ struct
     else (l.(j), sk)
 
   let equal f f_fix sk1 sk2 =
-    let equal_cst_member x lft1 y lft2 = 
+    let equal_cst_member x lft1 y lft2 =
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
 	Constant.equal c1 c2 && Univ.Instance.equal u1 u2
@@ -352,7 +354,7 @@ struct
 	then equal_rec s1 lft1 s2 lft2
 	else None
       | (Proj (n1,m1,p,_)::s1, Proj(n2,m2,p2,_)::s2) ->
-	if Int.equal n1 n2 && Int.equal m1 m2 
+	if Int.equal n1 n2 && Int.equal m1 m2
 	  && Constant.equal (Projection.constant p) (Projection.constant p2)
 	then equal_rec s1 lft1 s2 lft2
 	else None
@@ -468,6 +470,12 @@ struct
 
   let not_purely_applicative args =
     List.exists (function (Fix _ | Case _ | Proj _ | Cst _) -> true | _ -> false) args
+  let will_expose_iota args =
+    List.exists
+      (function (Fix (_,_,l) | Case (_,_,_,l) |
+		 Proj (_,_,_,l) | Cst (_,_,_,_,l)) when Cst_stack.is_empty l -> true | _ -> false)
+      args
+
   let list_of_app_stack s =
     let rec aux = function
       | App (i,a,j) :: s ->
@@ -519,7 +527,7 @@ struct
 	| _ -> def
     in List.fold_left (aux sk) s l
 
-  let constr_of_cst_member f sk = 
+  let constr_of_cst_member f sk =
     match f with
     | Cst_const (c, u) -> mkConstU (c,u), sk
     | Cst_proj (p, c) -> mkProj (p, c), tail 1 sk
@@ -543,7 +551,7 @@ struct
   | f, (Cst (cst,_,_,params,_)::s) ->
     zip ~refold (constr_of_cst_member cst (params @ (append_app [|f|] s)))
   | f, (Shift n::s) -> zip ~refold (lift n f, s)
-  | f, (Proj (n,m,p,cst_l)::s) when refold -> 
+  | f, (Proj (n,m,p,cst_l)::s) when refold ->
     zip ~refold (best_state (mkProj (p,f),s) cst_l)
   | f, (Proj (n,m,p,_)::s) -> zip ~refold (mkProj (p,f),s)
   | _, (Update _::_) -> assert false
@@ -630,7 +638,7 @@ let apply_subst recfun env cst_l t stack =
       aux (h::env) (Cst_stack.add_param h cst_l) c stacktl
     | _ -> recfun cst_l (substl env t, stack)
   in aux env cst_l t stack
-    
+
 let stacklam recfun env t stack =
   apply_subst (fun _ -> recfun) env Cst_stack.empty t stack
 
@@ -823,9 +831,9 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		  if List.mem `ReductionDontExposeCase flags then
 		    let app_sk,sk = Stack.strip_app stack in
 		    let (tm',sk'),cst_l' =
-		      whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, app_sk) 
+		      whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, app_sk)
 		    in
-		      if equal_stacks (x, app_sk) (tm', sk') || Stack.not_purely_applicative sk'
+		      if equal_stacks (x, app_sk) (tm', sk') || Stack.will_expose_iota sk'
 		      then fold ()
 		      else whrec cst_l' (tm', sk' @ sk)
 		  else match recargs with
