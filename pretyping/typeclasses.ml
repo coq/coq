@@ -527,7 +527,7 @@ open Evar_kinds
 type evar_filter = existential_key -> Evar_kinds.t -> bool
 
 let all_evars _ _ = true
-let all_goals _ = function GoalEvar -> true | _ -> false
+let all_goals _ = function VarInstance _ | GoalEvar -> true | _ -> false
 let no_goals ev evi = not (all_goals ev evi)
 let no_goals_or_obligations _ = function
   | VarInstance _ | GoalEvar | QuestionMark _ -> false
