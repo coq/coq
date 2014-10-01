@@ -358,5 +358,3 @@ let () =
   Genintern.register_subst0 wit_sort (fun _ v -> v);
   Genintern.register_subst0 wit_clause_dft_concl (fun _ v -> v);
   Genintern.register_subst0 wit_uconstr (fun subst c -> subst_glob_constr subst c)
-
-let _ = Hook.set Auto.extern_subst_tactic subst_tactic

@@ -769,8 +769,6 @@ let cache_autohint (_,(local,name,hints)) =
   | AddCut path -> add_cut name path
   | AddMode (l, m) -> add_mode name l m
 
-let (forward_subst_tactic, extern_subst_tactic) = Hook.make ()
-
 let subst_autohint (subst,(local,name,hintlist as obj)) =
   let subst_key gr =
     let (lab'', elab') = subst_global subst gr in
@@ -803,7 +801,7 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
           let ref' = subst_evaluable_reference subst ref in
           if ref==ref' then data.code else Unfold_nth ref'
       | Extern tac ->
-	  let tac' = Hook.get forward_subst_tactic subst tac in
+	  let tac' = Tacsubst.subst_tactic subst tac in
 	  if tac==tac' then data.code else Extern tac'
     in
     let name' = subst_path_atom subst data.name in

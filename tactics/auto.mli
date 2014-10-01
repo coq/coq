@@ -203,9 +203,6 @@ val extern_interp :
 val extern_intern_tac :
   (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr) Hook.t
 
-val extern_subst_tactic :
-  (substitution -> Tacexpr.glob_tactic_expr -> Tacexpr.glob_tactic_expr) Hook.t
-
 (** Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints;
    Boolean tells if lemmas with evars are allowed *)

@@ -10,7 +10,6 @@ Eqschemes
 Elimschemes
 Tactics
 Elim
-Auto
 Equality
 Contradiction
 Inv
@@ -18,6 +17,7 @@ Leminv
 Tacsubst
 Taccoerce
 Tacenv
+Auto
 Tacintern
 TacticMatching
 Tacinterp
