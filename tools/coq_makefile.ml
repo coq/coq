@@ -195,7 +195,11 @@ let install_include_by_root =
       print "\tfor i in ";
       print_list " " (List.rev_map (Format.sprintf "$(%sINC)") l);
       print "; do \\\n";
-      printf "\t install -m 0644 $$i \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
+      printf "\t if [ $${$$i%%%%top.cmxs} = $$i ]; then\\\n";
+      printf "\t  install -m 0644 $$i \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
+      printf "\t else \\\n";
+      printf "\t  install -m 0644 $$i \"$(DSTROOT)\"$(COQTOPINSTALL)/`basename $$i`; \\\n";
+      printf "\t fi\\\n";
       printf "\tdone\n"
   in function
   |None,l -> List.iter (install_dir (fun _ _ -> ())) l
@@ -437,14 +441,15 @@ let variables is_install opt (args,defs) =
   -I \"$(COQLIB)library\" -I \"$(COQLIB)parsing\" -I \"$(COQLIB)pretyping\" \\
   -I \"$(COQLIB)interp\" -I \"$(COQLIB)printing\" -I \"$(COQLIB)intf\" \\
   -I \"$(COQLIB)proofs\" -I \"$(COQLIB)tactics\" -I \"$(COQLIB)tools\" \\
-  -I \"$(COQLIB)toplevel\" -I \"$(COQLIB)stm\" -I \"$(COQLIB)grammar\"";
+  -I \"$(COQLIB)toplevel\" -I \"$(COQLIB)stm\" -I \"$(COQLIB)grammar\" \\
+  -I \"$(COQLIB)config\"";
     List.iter (fun c -> print " \\
   -I \"$(COQLIB)/"; print c; print "\"") Coq_config.plugins_dirs; print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
-    print "CAMLC?=$(OCAMLC) -c -rectypes\n";
-    print "CAMLOPTC?=$(OCAMLOPT) -c -rectypes\n";
-    print "CAMLLINK?=$(OCAMLC) -rectypes\n";
-    print "CAMLOPTLINK?=$(OCAMLOPT) -rectypes\n";
+    print "CAMLC?=$(OCAMLC) -c -rectypes -thread\n";
+    print "CAMLOPTC?=$(OCAMLOPT) -c -rectypes -thread\n";
+    print "CAMLLINK?=$(OCAMLC) -rectypes -thread\n";
+    print "CAMLOPTLINK?=$(OCAMLOPT) -rectypes -thread\n";
     print "GRAMMARS?=grammar.cma\n";
     print "ifeq ($(CAMLP4),camlp5)
 CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo
@@ -465,17 +470,20 @@ endif\n";
 	print "else\n";
         print "COQLIBINSTALL=\"${COQLIB}user-contrib\"\n";
         print "COQDOCINSTALL=\"${DOCDIR}user-contrib\"\n";
+        print "COQTOPINSTALL=\"${COQLIB}toploop\"\n";
 	print "endif\n\n"
       | Project_file.TraditionalInstall ->
           section "Install Paths.";
           print "COQLIBINSTALL=\"${COQLIB}user-contrib\"\n";
           print "COQDOCINSTALL=\"${DOCDIR}user-contrib\"\n";
+          print "COQTOPINSTALL=\"${COQLIB}toploop\"\n";
           print "\n"
       | Project_file.UserInstall ->
           section "Install Paths.";
           print "XDG_DATA_HOME?=\"$(HOME)/.local/share\"\n";
           print "COQLIBINSTALL=$(XDG_DATA_HOME)/coq\n";
           print "COQDOCINSTALL=$(XDG_DATA_HOME)/doc/coq\n";
+          print "COQTOPINSTALL=$(XDG_DATA_HOME)/coq/toploop\n";
           print "\n"
 
 let parameters () =
