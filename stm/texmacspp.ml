@@ -109,7 +109,11 @@ let xmlQed ?(attr=[]) loc = xmlWithLoc loc "qed" attr []
 
 let xmlPatvar id loc = xmlWithLoc loc "patvar" ["id", id] []
 
-let xmlReference name = Element("reference",["name", name],[])
+let xmlReference ref =
+  let name = Libnames.string_of_reference ref in
+  let i, j = Loc.unloc (Libnames.loc_of_reference ref) in
+  let b, e = string_of_int i, string_of_int j in
+  Element("reference",["name", name; "begin", b; "end", e] ,[])
 
 let xmlRequire loc ?(attr=[]) xml = xmlWithLoc loc "require" attr xml
 let xmlImport loc ?(attr=[]) xml = xmlWithLoc loc "import" attr xml
@@ -241,9 +245,11 @@ and pp_local_decl_expr lde = (* don't know what it is for now *)
   match lde with
   | AssumExpr (_, ce) -> pp_expr ce
   | DefExpr (_, ce, _) -> pp_expr ce
-and pp_inductive_expr ((_, (_, id)), lbl, ceo, _, cl_or_rdexpr) =
+and pp_inductive_expr ((_, (l, id)), lbl, ceo, _, cl_or_rdexpr) =
   (* inductive_expr *)
-  [Element ("lident", ["name", Id.to_string id], [])] @ (* inductive name *)
+  let b,e = Loc.unloc l in
+  let location = ["begin", string_of_int b; "end", string_of_int e] in
+  [Element ("lident", ["name", Id.to_string id] @ location, [])] @ (* inductive name *)
   begin match cl_or_rdexpr with
   | Constructors coel -> List.map (fun (_, (_, ce)) -> pp_expr ce) coel
   | RecordDecl (_, ldewwwl) ->
@@ -509,7 +515,7 @@ let rec tmpp v loc =
           | ByNotation(loc,name,None) -> xmlNotation [] name loc []
           | ByNotation(loc,name,Some d) ->
               xmlNotation ["delimiter",d] name loc []
-          | AN ref -> xmlReference (Libnames.string_of_reference ref)) l)
+          | AN ref -> xmlReference ref) l)
   | VernacInfix (_,((_,name),sml),ce,sn) ->
       let attrs = List.flatten (List.map attribute_of_syntax_modifier sml) in
       let sc_attr =
@@ -613,19 +619,19 @@ let rec tmpp v loc =
   | VernacEndSegment (_, id) -> xmlEndSegment loc (Id.to_string id)
   | VernacRequire (None,l) ->
       xmlRequire loc (List.map (fun ref ->
-        xmlReference (Libnames.string_of_reference ref)) l)
+        xmlReference ref) l)
   | VernacRequire (Some true,l) ->
       xmlRequire loc ~attr:["export","true"] (List.map (fun ref ->
-        xmlReference (Libnames.string_of_reference ref)) l)
+        xmlReference ref) l)
   | VernacRequire (Some false,l) ->
       xmlRequire loc ~attr:["import","true"] (List.map (fun ref ->
-        xmlReference (Libnames.string_of_reference ref)) l)
+        xmlReference ref) l)
   | VernacImport (true,l) ->
       xmlImport loc ~attr:["export","true"] (List.map (fun ref ->
-        xmlReference (Libnames.string_of_reference ref)) l)
+        xmlReference ref) l)
   | VernacImport (false,l) ->
       xmlImport loc (List.map (fun ref ->
-        xmlReference (Libnames.string_of_reference ref)) l)
+        xmlReference ref) l)
   | VernacCanonical r ->
       let attr =
         match r with
