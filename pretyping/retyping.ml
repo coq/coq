@@ -17,6 +17,7 @@ open Names
 open Reductionops
 open Environ
 open Termops
+open Arguments_renaming
 
 type retype_error =
   | NotASort
@@ -94,10 +95,10 @@ let retype ?(polyprop=true) sigma =
         let (_,_,ty) = lookup_rel n env in
         lift n ty
     | Var id -> type_of_var env id
-    | Const cst -> Typeops.type_of_constant_in env cst
+    | Const cst -> rename_type_of_constant env cst
     | Evar ev -> Evd.existential_type sigma ev
-    | Ind ind -> type_of_inductive env ind
-    | Construct cstr -> type_of_constructor env cstr
+    | Ind ind -> rename_type_of_inductive env ind
+    | Construct cstr -> rename_type_of_constructor env cstr
     | Case (_,p,c,lf) ->
         let Inductiveops.IndType(_,realargs) =
           let t = type_of env c in

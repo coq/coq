@@ -5,6 +5,7 @@ Evd
 Reductionops
 Vnorm
 Inductiveops
+Arguments_renaming
 Nativenorm
 Retyping
 Cbv
@@ -14,7 +15,6 @@ Evarutil
 Evarsolve
 Recordops
 Evarconv
-Arguments_renaming
 Typing
 Miscops
 Glob_ops

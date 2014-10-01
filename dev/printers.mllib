@@ -120,6 +120,7 @@ Glob_ops
 Redops
 Reductionops
 Inductiveops
+Arguments_renaming
 Nativenorm
 Retyping
 Cbv
@@ -128,7 +129,6 @@ Evarutil
 Evarsolve
 Recordops
 Evarconv
-Arguments_renaming
 Typing
 Patternops
 ConstrMatching
