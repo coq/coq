@@ -192,6 +192,8 @@ Pptactic
 Ppdecl_proof
 Egramml
 Egramcoq
+Tacsubst
+Tacenv
 Himsg
 Cerrors
 Locality

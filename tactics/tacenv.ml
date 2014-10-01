@@ -75,43 +75,45 @@ open Libnames
 open Libobject
 
 let mactab =
-  Summary.ref (KNmap.empty : glob_tactic_expr KNmap.t)
+  Summary.ref (KNmap.empty : (bool * glob_tactic_expr) KNmap.t)
     ~name:"tactic-definition"
 
-let interp_ltac r = KNmap.find r !mactab
+let interp_ltac r = snd (KNmap.find r !mactab)
+
+let is_ltac_for_ml_tactic r = fst (KNmap.find r !mactab)
 
 (* Declaration of the TAC-DEFINITION object *)
 let add (kn,td) = mactab := KNmap.add kn td !mactab
 let replace (kn,td) = mactab := KNmap.add kn td !mactab
 
-let load_md i ((sp, kn), (local, id ,t)) = match id with
+let load_md i ((sp, kn), (local, id, b, t)) = match id with
 | None ->
   let () = if not local then Nametab.push_tactic (Until i) sp kn in
-  add (kn, t)
-| Some kn -> add (kn, t)
+  add (kn, (b,t))
+| Some kn -> add (kn, (b,t))
 
-let open_md i ((sp, kn), (local, id ,t)) = match id with
+let open_md i ((sp, kn), (local, id, b, t)) = match id with
 | None ->
   let () = if not local then Nametab.push_tactic (Exactly i) sp kn in
-  add (kn, t)
-| Some kn -> add (kn, t)
+  add (kn, (b,t))
+| Some kn -> add (kn, (b,t))
 
-let cache_md ((sp, kn), (local, id ,t)) = match id with
+let cache_md ((sp, kn), (local, id ,b, t)) = match id with
 | None ->
   let () = Nametab.push_tactic (Until 1) sp kn in
-  add (kn, t)
-| Some kn -> add (kn, t)
+  add (kn, (b,t))
+| Some kn -> add (kn, (b,t))
 
 let subst_kind subst id = match id with
 | None -> None
 | Some kn -> Some (Mod_subst.subst_kn subst kn)
 
-let subst_md (subst, (local, id, t)) =
-  (local, subst_kind subst id, Tacsubst.subst_tactic subst t)
+let subst_md (subst, (local, id, b, t)) =
+  (local, subst_kind subst id, b, Tacsubst.subst_tactic subst t)
 
-let classify_md (local, _, _ as o) = Substitute o
+let classify_md (local, _, _, _ as o) = Substitute o
 
-let inMD : bool * Nametab.ltac_constant option * glob_tactic_expr -> obj =
+let inMD : bool * Nametab.ltac_constant option * bool * glob_tactic_expr -> obj =
   declare_object {(default_object "TAC-DEFINITION") with
      cache_function  = cache_md;
      load_function   = load_md;
@@ -119,8 +121,8 @@ let inMD : bool * Nametab.ltac_constant option * glob_tactic_expr -> obj =
      subst_function = subst_md;
      classify_function = classify_md}
 
-let register_ltac local id tac =
-  ignore (Lib.add_leaf id (inMD (local, None, tac)))
+let register_ltac ?(for_ml=false) local id tac =
+  ignore (Lib.add_leaf id (inMD (local, None, for_ml, tac)))
 
 let redefine_ltac local kn tac =
-  Lib.add_anonymous_leaf (inMD (local, Some kn, tac))
+  Lib.add_anonymous_leaf (inMD (local, Some kn, false, tac))

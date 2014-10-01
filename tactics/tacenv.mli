@@ -25,7 +25,7 @@ val interp_alias : alias -> glob_tactic_expr
 
 (** {5 Coq tactic definitions} *)
 
-val register_ltac : bool -> Id.t -> glob_tactic_expr -> unit
+val register_ltac : ?for_ml:bool -> bool -> Id.t -> glob_tactic_expr -> unit
 (** Register a new Ltac with the given name and body. If the boolean flag is set
     to true, then this is a local definition. It also puts the Ltac name in the
     nametab, so that it can be used unqualified. *)
@@ -36,6 +36,8 @@ val redefine_ltac : bool -> KerName.t -> glob_tactic_expr -> unit
 
 val interp_ltac : KerName.t -> glob_tactic_expr
 (** Find a user-defined tactic by name. Raise [Not_found] if it is absent. *)
+
+val is_ltac_for_ml_tactic : KerName.t -> bool
 
 (** {5 ML tactic extensions} *)
 

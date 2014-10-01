@@ -1217,6 +1217,8 @@ let explain_ltac_call_trace last trace loc =
 
 let skip_extensions trace =
   let rec aux = function
+  | (_,Proof_type.LtacNameCall f as tac) :: _ 
+      when Tacenv.is_ltac_for_ml_tactic f -> [tac]
   | (_,(Proof_type.LtacNotationCall _ | Proof_type.LtacMLCall _) as tac)
       :: _ -> [tac]
   | t :: tail -> t :: aux tail
