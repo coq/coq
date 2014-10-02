@@ -54,8 +54,6 @@ term position as part of a recursive pattern.
 The command has indeed failed with message:
 => Error: The reference w was not found in the current environment.
 The command has indeed failed with message:
-=> Error: x is unbound in the right-hand side.
-The command has indeed failed with message:
 => Error: in the right-hand side, y and z should appear in
 term position as part of a recursive pattern.
 The command has indeed failed with message:
@@ -89,11 +87,11 @@ Identifier 'I' now a keyword
      : Z * Z * (Z * Z) * (Z * Z) * (Z * bool * (Z * bool) * (Z * bool))
 fun f : Z -> Z -> Z -> Z => {|f; 0; 1; 2|}:Z
      : (Z -> Z -> Z -> Z) -> Z
-plus
+Init.Nat.add
      : nat -> nat -> nat
 S
      : nat -> nat
-mult
+Init.Nat.mul
      : nat -> nat -> nat
 le
      : nat -> nat -> Prop
@@ -101,7 +99,7 @@ plus
      : nat -> nat -> nat
 succ
      : nat -> nat
-mult
+Init.Nat.mul
      : nat -> nat -> nat
 le
      : nat -> nat -> Prop
@@ -120,11 +118,11 @@ fun x : option Z => match x with
                     | NONE2 => 0
                     end
      : option Z -> Z
-fun x : list ?95 => match x with
+fun x : list ?T0 => match x with
                     | NIL => NONE2
                     | (_ :') t => SOME2 t
                     end
-     : list ?95 -> option (list ?95)
+     : list ?T0 -> option (list ?T0)
 s
      : s
 Identifier 'foo' now a keyword
