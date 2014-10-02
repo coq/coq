@@ -483,15 +483,17 @@ END
 
 let cons a l = a :: l
 
-let autounfolds db occs =
+let autounfolds db occs cls gl =
   let unfolds = List.concat (List.map (fun dbname -> 
     let db = try searchtable_map dbname 
       with Not_found -> errorlabstrm "autounfold" (str "Unknown database " ++ str dbname)
     in
     let (ids, csts) = Hint_db.unfolds db in
+    let hyps = pf_ids_of_hyps gl in
+    let ids = Idset.filter (fun id -> List.mem id hyps) ids in
       Cset.fold (fun cst -> cons (AllOccurrences, EvalConstRef cst)) csts
 	(Id.Set.fold (fun id -> cons (AllOccurrences, EvalVarRef id)) ids [])) db)
-  in unfold_option unfolds
+  in unfold_option unfolds cls gl
 
 let autounfold db cls gl =
   let cls = concrete_clause_of (fun () -> pf_ids_of_hyps gl) cls in

@@ -6,4 +6,5 @@ Section foo.
 
   Goal False.
     clear B. autounfold with core.
+  Abort.
 End foo.
