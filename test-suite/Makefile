@@ -253,7 +253,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
 	  fi; \
 	} > "$@"
 
-$(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
