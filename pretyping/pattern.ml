@@ -302,6 +302,7 @@ let rec pat_of_raw metas vars = function
   | RCases (loc,sty,p,[c,(na,indnames)],brs) ->
       let pred,ind_nargs, ind = match p,indnames with
 	| Some p, Some (_,ind,n,nal) ->
+            let vars = na :: List.rev nal @ vars in
 	    rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas vars p)),
 	    Some (n,List.length nal),Some ind
 	| _ -> PMeta None, None, None in
