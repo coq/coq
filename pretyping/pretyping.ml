@@ -257,7 +257,8 @@ let ltac_interp_name { ltac_idents ; ltac_genargs } = function
                            str"It cannot be used in a binder.")
         else n
 
-let invert_ltac_bound_name env id0 id =
+let invert_ltac_bound_name lvar env id0 id =
+  let id = Id.Map.find id lvar.ltac_idents in
   try mkRel (pi1 (lookup_rel_id id (rel_context env)))
   with Not_found ->
     errorlabstrm "" (str "Ltac variable " ++ pr_id id0 ++
@@ -285,7 +286,7 @@ let pretype_id pretype loc env evdref lvar id =
     (* Check if [id] is an ltac variable *)
     try
       let (ids,c) = Id.Map.find id lvar.ltac_constrs in
-      let subst = List.map (invert_ltac_bound_name env id) ids in
+      let subst = List.map (invert_ltac_bound_name lvar env id) ids in
       let c = substl subst c in
 	{ uj_val = c; uj_type = protected_get_type_of env sigma c }
     with Not_found -> try

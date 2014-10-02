@@ -104,7 +104,7 @@ let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
     else spc () ++ str "<canonical: " ++ pr_id id ++ str ">"))))
 
 let ppconstrunderbindersidmap l = ppidmap (fun id (l,c) ->
-  Id.print id ++ str "->" ++ hov 1 (str"[" ++  prlist Id.print l ++ str"]")
+  Id.print id ++ str "->" ++ hov 1 (str"[" ++  prlist_with_sep spc Id.print l ++ str"]")
   ++ str "," ++ spc () ++ Termops.print_constr c)
 
 let ppunbound_ltac_var_map l = ppidmap (fun id arg ->
