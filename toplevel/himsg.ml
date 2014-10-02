@@ -819,6 +819,23 @@ let explain_not_match_error = function
   | NoTypeConstraintExpected ->
     strbrk "a definition whose type is constrained can only be subtype " ++
     strbrk "of a definition whose type is itself constrained"
+  | PolymorphicStatusExpected b ->
+    let status b = if b then str"polymorphic" else str"monomorphic" in
+      str "a " ++ status b ++ str" declaration was expected, but a " ++ 
+	status (not b) ++ str" declaration was found"
+  | IncompatibleInstances -> 
+    str"polymorphic universe instances do not match"
+  | IncompatibleUniverses incon ->
+    str"the universe constraints are inconsistent: " ++
+      Univ.explain_universe_inconsistency incon
+  | IncompatiblePolymorphism (env, t1, t2) ->
+    str "conversion of polymorphic values generates additional constraints: " ++
+      quote (Printer.safe_pr_lconstr_env env Evd.empty t1) ++ spc () ++
+      str "compared to " ++ spc () ++
+      quote (Printer.safe_pr_lconstr_env env Evd.empty t2)
+  | IncompatibleConstraints cst ->
+    str " the expected (polymorphic) constraints do not imply " ++
+      quote (Univ.pr_constraints cst)
 
 let explain_signature_mismatch l spec why =
   str "Signature components for label " ++ str (Label.to_string l) ++

@@ -79,8 +79,15 @@ let make_labmap mp list =
   List.fold_right add_one list empty_labmap
 
 
-let check_conv_error error why cst f env a1 a2 =
-  try Constraint.union cst (f env (Environ.universes env) a1 a2)
+let check_conv_error error why cst poly u f env a1 a2 =
+  try 
+    let a1 = Vars.subst_instance_constr u a1 in
+    let a2 = Vars.subst_instance_constr u a2 in
+    let cst' = f env (Environ.universes env) a1 a2 in
+      if poly then 
+	if Constraint.is_empty cst' then cst
+	else error (IncompatiblePolymorphism (env, a1, a2))
+      else Constraint.union cst cst'
   with NotConvertible -> error why
 
 (* for now we do not allow reorderings *)
@@ -89,15 +96,21 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   let kn1 = KerName.make2 mp1 l in
   let kn2 = KerName.make2 mp2 l in
   let error why = error_signature_mismatch l spec2 why in
-  let check_conv why cst f = check_conv_error error why cst f in
+  let check_conv why cst poly u f = check_conv_error error why cst poly u f in
   let mib1 =
     match info1 with
       | IndType ((_,0), mib) -> Declareops.subst_mind_body subst1 mib
       | _ -> error (InductiveFieldExpected mib2)
   in
+  let poly = 
+    if not (mib1.mind_polymorphic == mib2.mind_polymorphic) then
+      error (PolymorphicStatusExpected mib2.mind_polymorphic)
+    else mib2.mind_polymorphic
+  in
   let u = 
-    if mib1.mind_polymorphic then 
-      UContext.instance mib1.mind_universes 
+    if poly then 
+      Errors.error ("Checking of subtyping of polymorphic" ^
+		       " inductive types not implemented")
     else Instance.empty
   in
   let mib2 =  Declareops.subst_mind_body subst2 mib2 in
@@ -134,7 +147,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
 	error (NotConvertibleInductiveField name)
       | _ -> (s1, s2) in
     check_conv (NotConvertibleInductiveField name)
-      cst infer_conv_leq env (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
+      cst poly u infer_conv_leq env (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
   in
 
   let check_packet cst p1 p2 =
@@ -161,7 +174,8 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   let mind = mind_of_kn kn1 in
   let check_cons_types i cst p1 p2 =
     Array.fold_left3
-      (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst infer_conv env t1 t2)
+      (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst
+	poly u infer_conv env t1 t2)
       cst
       p2.mind_consnames
       (arities_of_specif (mind,u) (mib1,p1))
@@ -221,8 +235,8 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     
 let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 = 
   let error why = error_signature_mismatch l spec2 why in
-  let check_conv cst f = check_conv_error error cst f in
-  let check_type cst env t1 t2 =
+  let check_conv cst poly u f = check_conv_error error cst poly u f in
+  let check_type poly u cst env t1 t2 =
 
     let err = NotConvertibleTypeField (env, t1, t2) in
 
@@ -269,17 +283,47 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 	  t1,t2
       else
         (t1,t2) in
-    check_conv err cst infer_conv_leq env t1 t2
+      check_conv err cst poly u infer_conv_leq env t1 t2
   in
   match info1 with
     | Constant cb1 ->
       let () = assert (List.is_empty cb1.const_hyps && List.is_empty cb2.const_hyps) in
       let cb1 = Declareops.subst_const_body subst1 cb1 in
       let cb2 = Declareops.subst_const_body subst2 cb2 in
-      (* Start by checking types*)
-      let typ1 = Typeops.type_of_constant_type env cb1.const_type in
-      let typ2 = Typeops.type_of_constant_type env cb2.const_type in
-      let cst = check_type cst env typ1 typ2 in
+      (* Start by checking universes *)
+      let poly = 
+	if not (cb1.const_polymorphic == cb2.const_polymorphic) then
+	  error (PolymorphicStatusExpected cb2.const_polymorphic)
+	else cb2.const_polymorphic
+      in
+      let cst', env', u = 
+	if poly then 
+	  let ctx1 = Univ.instantiate_univ_context cb1.const_universes in
+	  let ctx2 = Univ.instantiate_univ_context cb2.const_universes in
+	  let inst1, ctx1 = Univ.UContext.dest ctx1 in
+	  let inst2, ctx2 = Univ.UContext.dest ctx2 in
+	    if not (Univ.Instance.length inst1 == Univ.Instance.length inst2) then
+	      error IncompatibleInstances
+	    else 
+	      let cstrs = Univ.enforce_eq_instances inst1 inst2 cst in
+	      let cstrs = Univ.Constraint.union cstrs ctx2 in
+		try 
+		  (* The environment with the expected universes plus equality 
+		     of the body instances with the expected instance *)
+		  let env = Environ.add_constraints cstrs env in
+		    (* Check that the given definition does not add any constraint over
+		       the expected ones, so that it can be used in place of the original. *)
+		    if Univ.check_constraints ctx1 (Environ.universes env) then
+		      cstrs, env, inst2
+		    else error (IncompatibleConstraints ctx1)
+		with Univ.UniverseInconsistency incon -> 
+		  error (IncompatibleUniverses incon)
+	else cst, env, Univ.Instance.empty
+      in
+      (* Now check types *)
+      let typ1 = Typeops.type_of_constant_type env' cb1.const_type in
+      let typ2 = Typeops.type_of_constant_type env' cb2.const_type in
+      let cst = check_type poly u cst env' typ1 typ2 in
       (* Now we check the bodies:
 	 - A transparent constant can only be implemented by a compatible
 	   transparent constant.
@@ -296,7 +340,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 		 Anyway [check_conv] will handle that afterwards. *)
 	      let c1 = Mod_subst.force_constr lc1 in
 	      let c2 = Mod_subst.force_constr lc2 in
-	      check_conv NotConvertibleBodyField cst infer_conv env c1 c2))
+	      check_conv NotConvertibleBodyField cst poly u infer_conv env' c1 c2))
    | IndType ((kn,i),mind1) ->
        ignore (Errors.error (
        "The kernel does not recognize yet that a parameter can be " ^
@@ -312,7 +356,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
       let cst = Constraint.union cst (Constraint.union cst1 cst2) in
       let error = NotConvertibleTypeField (env, arity1, typ2) in
-       check_conv error cst infer_conv_leq env arity1 typ2
+       check_conv error cst false Univ.Instance.empty infer_conv_leq env arity1 typ2
    | IndConstr (((kn,i),j) as cstr,mind1) ->
       ignore (Errors.error (
        "The kernel does not recognize yet that a parameter can be " ^
@@ -327,7 +371,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in
       let cst = Constraint.union cst (Constraint.union cst1 cst2) in
       let error = NotConvertibleTypeField (env, ty1, ty2) in
-       check_conv error cst infer_conv env ty1 ty2
+       check_conv error cst false Univ.Instance.empty infer_conv env ty1 ty2
 
 let rec check_modules cst env msb1 msb2 subst1 subst2 =
   let mty1 = module_type_of_module msb1 in

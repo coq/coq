@@ -94,6 +94,7 @@ type signature_mismatch_error =
   | NotConvertibleConstructorField of Id.t
   | NotConvertibleBodyField
   | NotConvertibleTypeField of env * types * types
+  | PolymorphicStatusExpected of bool
   | NotSameConstructorNamesField
   | NotSameInductiveNameInBlockField
   | FiniteInductiveFieldExpected of bool
@@ -103,6 +104,10 @@ type signature_mismatch_error =
   | RecordProjectionsExpected of Name.t list
   | NotEqualInductiveAliases
   | NoTypeConstraintExpected
+  | IncompatibleInstances
+  | IncompatibleUniverses of Univ.univ_inconsistency
+  | IncompatiblePolymorphism of env * types * types
+  | IncompatibleConstraints of Univ.constraints
 
 type module_typing_error =
   | SignatureMismatch of

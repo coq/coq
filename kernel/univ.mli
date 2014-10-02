@@ -273,6 +273,9 @@ sig
   val equal : t -> t -> bool
   (** Equality *)
 
+  val length : t -> int
+  (** Instance length *)
+
   val hcons : t -> t
   (** Hash-consing. *)
 
@@ -317,6 +320,8 @@ sig
     
   val instance : t -> Instance.t
   val constraints : t -> constraints
+
+  val dest : t -> Instance.t * constraints
 
   (** Keeps the order of the instances *)
   val union : t -> t -> t

@@ -1717,6 +1717,8 @@ module Instance : sig
 
     val append : t -> t -> t
     val equal : t -> t -> bool
+    val length : t -> int
+
     val hcons : t -> t
     val hash : t -> int
 
@@ -1792,6 +1794,8 @@ struct
 
   let to_array a = a
 
+  let length a = Array.length a
+
   let subst_fn fn t = 
     let t' = CArray.smartmap fn t in
       if t' == t then t else t'
@@ -1855,6 +1859,8 @@ struct
 
   let union (univs, cst) (univs', cst') =
     Instance.append univs univs', Constraint.union cst cst'
+      
+  let dest x = x
 end
 
 type universe_context = UContext.t
