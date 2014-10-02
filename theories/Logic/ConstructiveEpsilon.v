@@ -51,9 +51,9 @@ Hypothesis P_dec : forall n, {P n}+{~(P n)}.
 any number before any witness (not necessarily the [x] of [exists x :A, P x])
 makes the search eventually stops. *)
 
-Inductive before_witness : nat -> Prop :=
-  | stop : forall n, P n -> before_witness n
-  | next : forall n, before_witness (S n) -> before_witness n.
+Inductive before_witness (n:nat) : Prop :=
+  | stop : P n -> before_witness n
+  | next : before_witness (S n) -> before_witness n.
 
 (* Computation of the initial termination certificate *)
 Fixpoint O_witness (n : nat) : before_witness n -> before_witness 0 :=
@@ -67,9 +67,9 @@ is structurally smaller even in the [stop] case. *)
 Definition inv_before_witness :
   forall n, before_witness n -> ~(P n) -> before_witness (S n) :=
   fun n b =>
-    match b in before_witness n return ~ P n -> before_witness (S n) with
-      | stop n p => fun not_p => match (not_p p) with end
-      | next n b => fun _ => b
+    match b return ~ P n -> before_witness (S n) with
+      | stop _ p => fun not_p => match (not_p p) with end
+      | next _ b => fun _ => b
     end.
 
 Fixpoint linear_search m (b : before_witness m) : {n : nat | P n} :=
