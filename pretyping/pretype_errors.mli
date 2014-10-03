@@ -15,7 +15,7 @@ open Type_errors
 
 type unification_error =
   | OccurCheck of existential_key * constr
-  | NotClean of existential * constr
+  | NotClean of existential * env * constr
   | NotSameArgSize
   | NotSameHead
   | NoCanonicalStructure

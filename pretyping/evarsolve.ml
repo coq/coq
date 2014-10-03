@@ -1532,7 +1532,7 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
       reconsider_conv_pbs conv_algo evd
   with
     | NotInvertibleUsingOurAlgorithm t ->
-        UnifFailure (evd,NotClean (ev1,t))
+        UnifFailure (evd,NotClean (ev1,env,t))
     | OccurCheckIn (evd,rhs) ->
         UnifFailure (evd,OccurCheck (evk1,rhs))
     | MetaOccurInBodyInternal ->

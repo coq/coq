@@ -51,15 +51,16 @@ let contract3 env a b c = match contract env [a;b;c] with
 let contract4 env a b c d = match contract env [a;b;c;d] with
   | env, [a;b;c;d] -> (env,a,b,c),d | _ -> assert false
 
-let contract4_vect env a b c d v =
-  match contract env ([a;b;c;d] @ Array.to_list v) with
-  | env, a::b::c::d::l -> (env,a,b,c),d,Array.of_list l
+let contract1_vect env a v =
+  match contract env (a :: Array.to_list v) with
+  | env, a::l -> env,a,Array.of_list l
   | _ -> assert false
 
 let contract3' env a b c = function
   | OccurCheck (evk,d) -> let x,d = contract4 env a b c d in x,OccurCheck(evk,d)
-  | NotClean ((evk,args),d) ->
-      let x,d,args = contract4_vect env a b c d args in x,NotClean((evk,args),d)
+  | NotClean ((evk,args),env',d) ->
+      let env',d,args = contract1_vect env' d args in
+      contract3 env a b c,NotClean((evk,args),env',d)
   | ConversionFailed (env',t1,t2) ->
       let (env',t1,t2) = contract2 env' t1 t2 in
       contract3 env a b c, ConversionFailed (env',t1,t2)
@@ -264,7 +265,7 @@ let explain_unification_error env sigma p1 p2 = function
         spc () ++ str "(cannot define " ++ quote (pr_existential_key sigma evk) ++
 	strbrk " with term " ++ pr_lconstr_env env sigma rhs ++
         strbrk " that would depend on itself)"
-    | NotClean ((evk,args),c) ->
+    | NotClean ((evk,args),env,c) ->
         let c = Evarutil.nf_evar sigma c in
         let args = Array.map (Evarutil.nf_evar sigma) args in
         spc () ++ str "(cannot instantiate " ++ quote (pr_existential_key sigma evk)
