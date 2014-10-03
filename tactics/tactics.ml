@@ -283,7 +283,9 @@ let reduct_option redfun = function
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb t env sigma c =
-  if is_fconv cv_pb env sigma t c then
+  let tt = Retyping.get_type_of env sigma t in
+  let tc = Retyping.get_type_of env sigma c in
+  if is_fconv cv_pb env sigma tt tc && is_fconv cv_pb env sigma t c then
     t
   else
     errorlabstrm "convert-check-hyp" (str "Not convertible.")
