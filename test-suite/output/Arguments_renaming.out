@@ -103,7 +103,7 @@ The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor 
 myplus is transparent
 Expands to: Constant Top.myplus
-myplus
+@myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 The command has indeed failed with message:
 => Error: All arguments lists must declare the same names.
