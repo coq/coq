@@ -63,7 +63,7 @@ ifeq (,$(bogomips))
 endif
 
 log_success = "==========> SUCCESS <=========="
-log_segfault = ""==========> FAILURE <=========="
+log_segfault = "==========> FAILURE <=========="
 log_failure = "==========> FAILURE <=========="
 log_intro = "==========> TESTING $(1) <=========="
 
