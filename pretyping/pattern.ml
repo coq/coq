@@ -111,7 +111,7 @@ let pattern_of_constr sigma t =
             Evar (evk,args as ev) ->
               (match snd (Evd.evar_source evk sigma) with
                   MatchingVar (true,id) ->
-                    ctx := (id,None,existential_type sigma ev)::!ctx;
+                    ctx := (id,None,Reductionops.nf_evar sigma (existential_type sigma ev))::!ctx;
                     Some id
                 | _ -> None)
             | _ -> None
@@ -124,7 +124,7 @@ let pattern_of_constr sigma t =
     | Evar (evk,ctxt as ev) ->
         (match snd (Evd.evar_source evk sigma) with
           | MatchingVar (b,id) ->
-              ctx := (id,None,existential_type sigma ev)::!ctx;
+              ctx := (id,None,Reductionops.nf_evar sigma (existential_type sigma ev))::!ctx;
               assert (not b); PMeta (Some id)
           | GoalEvar -> PEvar (evk,Array.map pattern_of_constr ctxt)
           | _ -> PMeta None)
