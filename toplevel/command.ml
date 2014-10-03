@@ -119,12 +119,14 @@ let declare_definition ident (local,k) ce imps hook =
         let c =
           SectionLocalDef(ce.const_entry_body ,ce.const_entry_type,false) in
         let _ = declare_variable ident (Lib.cwd(),c,IsDefinition k) in
-        definition_message ident;
+        let gr = VarRef ident in
+        let () = maybe_declare_manual_implicits false gr imps in
+         definition_message ident;
         if Pfedit.refining () then
           Flags.if_warn msg_warning
 	    (str"Local definition " ++ pr_id ident ++
              str" is not visible from current goals");
-        VarRef ident
+        gr
     | (Global|Local) ->
         declare_global_definition ident ce local k imps in
   hook local r
