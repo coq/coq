@@ -829,7 +829,7 @@ let evar_ident evk evd =
   try EvMap.find evk (fst evd.evar_names)
   with Not_found ->
     (* Unnamed (non-dependent) evar *)
-    Id.of_string (string_of_existential evk)
+    add_suffix (Id.of_string "X") (string_of_int (Evar.repr evk))
 
 let evar_key id evd =
   Idmap.find id (snd evd.evar_names)
