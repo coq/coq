@@ -158,12 +158,14 @@ let declare_definition ident (local, p, k) ce imps hook =
     let c = SectionLocalDef ce in
     let _ = declare_variable ident (Lib.cwd(), c, IsDefinition k) in
     let () = definition_message ident in
+    let gr = VarRef ident in
+    let () = maybe_declare_manual_implicits false gr imps in
     let () = if Pfedit.refining () then
       let msg = strbrk "Section definition " ++
         pr_id ident ++ strbrk " is not visible from current goals" in
       msg_warning msg
     in
-    VarRef ident
+    gr
   | Discharge | Local | Global ->
     declare_global_definition ident ce local k imps in
   Lemmas.call_hook (Future.fix_exn_of ce.Entries.const_entry_body) hook local r
