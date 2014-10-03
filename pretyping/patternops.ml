@@ -144,7 +144,7 @@ let pattern_of_constr env sigma t =
             Evar (evk,args as ev) ->
               (match snd (Evd.evar_source evk sigma) with
                   Evar_kinds.MatchingVar (true,id) ->
-                    ctx := (id,None,existential_type sigma ev)::!ctx;
+                    ctx := (id,None,Evarutil.nf_evar sigma (existential_type sigma ev))::!ctx;
                     Some id
                 | _ -> None)
             | _ -> None
@@ -159,7 +159,7 @@ let pattern_of_constr env sigma t =
     | Evar (evk,ctxt as ev) ->
         (match snd (Evd.evar_source evk sigma) with
           | Evar_kinds.MatchingVar (b,id) ->
-              ctx := (id,None,existential_type sigma ev)::!ctx;
+              ctx := (id,None,Evarutil.nf_evar sigma (existential_type sigma ev))::!ctx;
               assert (not b); PMeta (Some id)
           | Evar_kinds.GoalEvar -> PEvar (evk,Array.map (pattern_of_constr env) ctxt)
           | _ -> PMeta None)
