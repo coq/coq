@@ -467,9 +467,11 @@ type change_arg = env -> evar_map -> evar_map * constr
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb t env sigma c =
   let sigma, t' = t env sigma in
+  let sigma, b = infer_conv ~pb:cv_pb env sigma (Retyping.get_type_of env sigma t') (Retyping.get_type_of env sigma c) in
+  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
-    if b then sigma, t'
-    else errorlabstrm "convert-check-hyp" (str "Not convertible.")
+  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
+  sigma, t'
 
 let change_and_check_subst cv_pb subst t env sigma c =
   let t' env sigma = 
