@@ -33,7 +33,7 @@ general principle of mutual induction for objects in type {\term$_i$}.
 
 \item {\tt Scheme Equality for \ident$_1$\comindex{Scheme Equality}}
 
-  Tries to generate a boolean equality and a proof of the
+  Tries to generate a Boolean equality and a proof of the
   decidability of the usual equality. If \ident$_i$ involves
   some other inductive types, their equality has to be defined first.
 
@@ -144,11 +144,13 @@ command {\tt Set Nonrecursive Elimination Schemes}. It can be
 deactivated again with {\tt Unset Nonrecursive Elimination Schemes}.
 \\
 
-You can also activate the automatic declaration of those boolean equalities
-(see the second variant of {\tt Scheme})  with the {\tt Set Boolean Equality Schemes}
- command. However you have to be careful with this option since
+You can also activate the automatic declaration of those Boolean equalities
+(see the second variant of {\tt Scheme})
+with respectively the commands {\tt Set Boolean Equality Schemes} and
+{\tt Set Decidable Equality Schemes}.
+However you have to be careful with this option since
 \Coq~ may now reject well-defined inductive types because it cannot compute
-a boolean equality for them.
+a Boolean equality for them.
 
 \subsection{\tt Combined Scheme}
 \label{CombinedScheme}
