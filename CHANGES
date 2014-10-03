@@ -1,3 +1,30 @@
+Changes from V8.4pl4 to V8.4pl5
+===============================
+
+Compilation
+
+- Archive made compatible 
+
+Vernacular commands
+
+- Bug #3193: implicit arguments of local definitions fixed (possible
+  source of incompatibilities).
+- New command "Print Debug GC".
+- Bug #3651: Function cannot define graph.
+
+Tactics
+
+- Bug #3657: ill-typed replacement in "change ... with ...".
+- Bug #3623: unbound evars in "change ... with ...".
+- Bug #3088: wrong return clause of a match pattern in Ltac.
+- Bug #2810: cleared local hints for autounfold.
+- Bug #3951: cleared local hints for autounfold.
+- Bug #3451: lost evars in "change ... with ...".
+
+Libraries
+
+- Bug #3413: unfortunate typo in compare_height.
+
 Changes from V8.4pl3 to V8.4pl4
 ===============================
 
