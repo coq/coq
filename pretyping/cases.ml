@@ -1070,13 +1070,38 @@ let rec ungeneralize n ng body =
 let ungeneralize_branch n k (sign,body) cs =
   (sign,ungeneralize (n+cs.cs_nargs) k body)
 
+let rec is_dependent_generalization ng body =
+  match kind_of_term body with
+  | Lambda (_,_,c) when Int.equal ng 0 ->
+      dependent (mkRel 1) c
+  | Lambda (na,t,c) ->
+      (* We traverse an inner generalization *)
+      is_dependent_generalization (ng-1) c
+  | LetIn (na,b,t,c) ->
+      (* We traverse an alias *)
+      is_dependent_generalization ng c
+  | Case (ci,p,c,brs) ->
+      (* We traverse a split *)
+      Array.exists2 (fun q c ->
+        let _,b = decompose_lam_n_assum q c in is_dependent_generalization ng b)
+        ci.ci_cstr_ndecls brs
+  | App (g,args) ->
+      (* We traverse an inner generalization *)
+      assert (isCase g);
+      is_dependent_generalization (ng+Array.length args) g
+  | _ -> assert false
+
+let is_dependent_branch k (_,br) =
+  is_dependent_generalization k br
+
 let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
       let d = map_rel_declaration (nf_evar evd) d in
       let is_d = match d with (_, None, _) -> false | _ -> true in
-      if List.exists (fun c -> dependent_decl (lift k c) d) tocheck || is_d then
+      if is_d || List.exists (fun c -> dependent_decl (lift k c) d) tocheck
+                 && Array.exists (is_dependent_branch k) brs then
         (* Dependency in the current term to match and its dependencies is real *)
         let brs,tomatch,pred,inst = aux (k+1) brs tomatch pred (mkRel n::tocheck) deps in
         let inst = match d with
@@ -1115,7 +1140,7 @@ let group_equations pb ind current cstrs mat =
   let mat =
     if first_clause_irrefutable pb.env mat then [List.hd mat] else mat in
   let brs = Array.make (Array.length cstrs) [] in
-  let only_default = ref true in
+  let only_default = ref None in
   let _ =
     List.fold_right (* To be sure it's from bottom to top *)
       (fun eqn () ->
@@ -1127,12 +1152,13 @@ let group_equations pb ind current cstrs mat =
 	       for i=1 to Array.length cstrs do
 		 let args = make_anonymous_patvars cstrs.(i-1).cs_nargs in
 		 brs.(i-1) <- (args, name, rest) :: brs.(i-1)
-	       done
+	       done;
+	       if !only_default == None then only_default := Some true
 	   | PatCstr (loc,((_,i)),args,name) ->
 	       (* This is a regular clause *)
-	       only_default := false;
+	       only_default := Some false;
 	       brs.(i-1) <- (args, name, rest) :: brs.(i-1)) mat () in
-  (brs,!only_default)
+  (brs,Option.default false !only_default)
 
 (************************************************************************)
 (* Here starts the pattern-matching compilation algorithm *)
@@ -1312,7 +1338,7 @@ and match_current pb (initial,tomatch) =
 	let arsign, _ = get_arity pb.env indf in
 	let eqns,onlydflt = group_equations pb (fst mind) current cstrs pb.mat in
         let no_cstr = Int.equal (Array.length cstrs) 0 in
-	if (not no_cstr || not (List.is_empty pb.mat)) && onlydflt  then
+	if (not no_cstr || not (List.is_empty pb.mat)) && onlydflt then
 	  compile_all_variables initial tomatch pb
 	else
 	  (* We generalize over terms depending on current term to match *)
@@ -1617,7 +1643,7 @@ let build_tycon loc env tycon_env subst tycon extenv evdref t =
 	let n = rel_context_length (rel_context env) in
 	let n' = rel_context_length (rel_context tycon_env) in
 	let impossible_case_type, u =
-	  e_new_type_evar env evdref univ_flexible_alg ~src:(loc,Evar_kinds.ImpossibleCase) in
+	  e_new_type_evar (reset_context env) evdref univ_flexible_alg ~src:(loc,Evar_kinds.ImpossibleCase) in
 	(lift (n'-n) impossible_case_type, mkSort u)
     | Some t ->
         let t = abstract_tycon loc tycon_env evdref subst tycon extenv t in

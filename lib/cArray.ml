@@ -15,6 +15,7 @@ sig
   val equal : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
   val is_empty : 'a array -> bool
   val exists : ('a -> bool) -> 'a array -> bool
+  val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
   val for_all : ('a -> bool) -> 'a array -> bool
   val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
   val for_all3 : ('a -> 'b -> 'c -> bool) ->
@@ -106,6 +107,14 @@ let exists f v =
     | n -> f (uget v n) || (exrec (n-1))
   in
   exrec ((Array.length v)-1)
+
+let exists2 f v1 v2 =
+  let rec exrec = function
+    | -1 -> false
+    | n -> f (uget v1 n) (uget v2 n) || (exrec (n-1))
+  in
+  let lv1 = Array.length v1 in
+  lv1 = Array.length v2 && exrec (lv1-1)
 
 let for_all f v =
   let rec allrec = function

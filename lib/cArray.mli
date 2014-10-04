@@ -23,6 +23,8 @@ sig
   val exists : ('a -> bool) -> 'a array -> bool
   (** As [List.exists] but on arrays. *)
 
+  val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+
   val for_all : ('a -> bool) -> 'a array -> bool
   val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
   val for_all3 : ('a -> 'b -> 'c -> bool) ->
