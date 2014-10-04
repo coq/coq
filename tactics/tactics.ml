@@ -445,16 +445,16 @@ let e_reduct_in_concl (redfun,sty) gl =
     (fun env sigma -> redfun env sigma (pf_concl gl))
     (fun c -> convert_concl_no_check c sty) gl
 
-let e_pf_reduce_decl (redfun : e_reduction_function) where (id,c,ty) env sigma =
+let e_pf_reduce_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env sigma =
   match c with
   | None ->
       if where == InHypValueOnly then
 	errorlabstrm "" (pr_id id ++ str "has no value.");
-    let sigma',ty' = redfun env sigma ty in
+    let sigma',ty' = redfun false env sigma ty in
       sigma', (id,None,ty')
   | Some b ->
-      let sigma',b' = if where != InHypTypeOnly then redfun env sigma b else sigma, b in
-      let sigma',ty' = if where != InHypValueOnly then redfun env sigma ty else sigma', ty in
+      let sigma',b' = if where != InHypTypeOnly then redfun true env sigma b else sigma, b in
+      let sigma',ty' = if where != InHypValueOnly then redfun false env sigma ty else sigma', ty in
 	sigma', (id,Some b',ty')
 
 let e_reduct_in_hyp redfun (id,where) gl =
@@ -464,33 +464,41 @@ let e_reduct_in_hyp redfun (id,where) gl =
 
 type change_arg = env -> evar_map -> evar_map * constr
 
+let weak_check env sigma deep newc origc =
+  let t1 = Retyping.get_type_of env sigma newc in
+  if deep then
+    let t2 = Retyping.get_type_of env sigma origc in
+    snd (infer_conv ~pb:Reduction.CUMUL env sigma t1 t2)
+  else
+    isSort (whd_betadeltaiota env sigma t1)
+
 (* Now we introduce different instances of the previous tacticals *)
-let change_and_check cv_pb t env sigma c =
+let change_and_check cv_pb deep t env sigma c =
   let sigma, t' = t env sigma in
-  let sigma, b = infer_conv ~pb:cv_pb env sigma (Retyping.get_type_of env sigma t') (Retyping.get_type_of env sigma c) in
-  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
+  let b = weak_check env sigma deep t' c in
+  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible1.");
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
-  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
+  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible2.");
   sigma, t'
 
 let change_and_check_subst cv_pb subst t env sigma c =
   let t' env sigma = 
     let sigma, t = t env sigma in
       sigma, replace_vars (Id.Map.bindings subst) t 
-  in change_and_check cv_pb t' env sigma c
+  in change_and_check cv_pb true t' env sigma c
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
-let change_on_subterm cv_pb t = function
-  | None -> change_and_check cv_pb t
+let change_on_subterm cv_pb deep t = function
+  | None -> change_and_check cv_pb deep t
   | Some occl ->
     e_contextually false occl
       (fun subst -> change_and_check_subst Reduction.CONV subst t)
 
 let change_in_concl occl t =
-  e_reduct_in_concl ((change_on_subterm Reduction.CUMUL t occl),DEFAULTcast)
+  e_reduct_in_concl ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)
 
 let change_in_hyp occl t id  =
-  with_check (e_reduct_in_hyp (change_on_subterm Reduction.CONV t occl) id)
+  with_check (e_reduct_in_hyp (fun x -> change_on_subterm Reduction.CONV x t occl) id)
 
 let change_option occl t = function
   | Some id -> change_in_hyp occl t id
