@@ -428,7 +428,7 @@ let cleared = Store.field ()
 
 exception Depends of Id.t
 
-let rec check_and_clear_in_constr evdref err ids c =
+let rec check_and_clear_in_constr env evdref err ids c =
   (* returns a new constr where all the evars have been 'cleaned'
      (ie the hypotheses ids have been removed from the contexts of
      evars) *)
@@ -441,14 +441,14 @@ let rec check_and_clear_in_constr evdref err ids c =
 	  check id'; c
 
       | ( Const _ | Ind _ | Construct _ ) ->
-          let vars = Environ.vars_of_global (Global.env()) c in
+          let vars = Environ.vars_of_global env c in
             Id.Set.iter check vars; c
 
       | Evar (evk,l as ev) ->
 	  if Evd.is_defined !evdref evk then
 	    (* If evk is already defined we replace it by its definition *)
 	    let nc = whd_evar !evdref c in
-	      (check_and_clear_in_constr evdref err ids nc)
+	      (check_and_clear_in_constr env evdref err ids nc)
 	  else
 	    (* We check for dependencies to elements of ids in the
 	       evar_info corresponding to e and in the instance of
@@ -482,7 +482,7 @@ let rec check_and_clear_in_constr evdref err ids c =
 	    let _nconcl =
 	      try
                 let nids = Id.Map.domain rids in
-                check_and_clear_in_constr evdref (EvarTypingBreak ev) nids (evar_concl evi)
+                check_and_clear_in_constr env evdref (EvarTypingBreak ev) nids (evar_concl evi)
 	      with ClearDependencyError (rid,err) ->
 		raise (ClearDependencyError (Id.Map.find rid rids,err)) in
 
@@ -501,19 +501,19 @@ let rec check_and_clear_in_constr evdref err ids c =
 	    (* spiwack: /hacking session *)
               whd_evar !evdref c
 
-      | _ -> map_constr (check_and_clear_in_constr evdref err ids) c
+      | _ -> map_constr (check_and_clear_in_constr env evdref err ids) c
 
-let clear_hyps_in_evi_main evdref hyps terms ids =
+let clear_hyps_in_evi_main env evdref hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occuring in evi *)
   let terms =
-    List.map (check_and_clear_in_constr evdref (OccurHypInSimpleClause None) ids) terms in
+    List.map (check_and_clear_in_constr env evdref (OccurHypInSimpleClause None) ids) terms in
   let nhyps =
     let check_context ((id,ob,c) as decl) =
       let err = OccurHypInSimpleClause (Some id) in
-      let ob' = Option.smartmap (fun c -> check_and_clear_in_constr evdref err ids c) ob in
-      let c' = check_and_clear_in_constr evdref err ids c in
+      let ob' = Option.smartmap (fun c -> check_and_clear_in_constr env evdref err ids c) ob in
+      let c' = check_and_clear_in_constr env evdref err ids c in
       if ob == ob' && c == c' then decl else (id, ob', c')
     in
     let check_value vk = match force_lazy_val vk with
@@ -531,13 +531,13 @@ let clear_hyps_in_evi_main evdref hyps terms ids =
   in
   (nhyps,terms)
 
-let clear_hyps_in_evi evdref hyps concl ids =
-  match clear_hyps_in_evi_main evdref hyps [concl] ids with
+let clear_hyps_in_evi env evdref hyps concl ids =
+  match clear_hyps_in_evi_main env evdref hyps [concl] ids with
   | (nhyps,[nconcl]) -> (nhyps,nconcl)
   | _ -> assert false
 
-let clear_hyps2_in_evi evdref hyps t concl ids =
-  match clear_hyps_in_evi_main evdref hyps [t;concl] ids with
+let clear_hyps2_in_evi env evdref hyps t concl ids =
+  match clear_hyps_in_evi_main env evdref hyps [t;concl] ids with
   | (nhyps,[t;nconcl]) -> (nhyps,t,nconcl)
   | _ -> assert false
 

@@ -82,8 +82,8 @@ let apply_pattern_coercion loc pat p =
     pat p
 
 (* raise Not_found if no coercion found *)
-let inh_pattern_coerce_to loc pat ind1 ind2 =
-  let p = lookup_pattern_path_between (ind1,ind2) in
+let inh_pattern_coerce_to loc env pat ind1 ind2 =
+  let p = lookup_pattern_path_between env (ind1,ind2) in
     apply_pattern_coercion loc pat p
 
 (* Program coercions *)

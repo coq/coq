@@ -88,7 +88,7 @@ val lookup_path_to_fun_from : env -> evar_map -> types ->
 val lookup_path_to_sort_from : env -> evar_map -> types ->
       types * inheritance_path
 val lookup_pattern_path_between :
-  inductive * inductive -> (constructor * int) list
+  env -> inductive * inductive -> (constructor * int) list
 
 (**/**)
 (* Crade *)

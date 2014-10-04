@@ -295,9 +295,9 @@ let lookup_path_to_fun_from env sigma s =
 let lookup_path_to_sort_from env sigma s =
   apply_on_class_of env sigma s lookup_path_to_sort_from_class
 
-let get_coercion_constructor coe =
+let get_coercion_constructor env coe =
   let c, _ =
-    Reductionops.whd_betadeltaiota_stack (Global.env()) Evd.empty coe.coe_value
+    Reductionops.whd_betadeltaiota_stack env Evd.empty coe.coe_value
   in
   match kind_of_term c with
   | Construct (cstr,u) ->
@@ -305,10 +305,10 @@ let get_coercion_constructor coe =
   | _ ->
       raise Not_found
 
-let lookup_pattern_path_between (s,t) =
+let lookup_pattern_path_between env (s,t) =
   let i = inductive_class_of s in
   let j = inductive_class_of t in
-  List.map get_coercion_constructor (ClPairMap.find (i,j) !inheritance_graph)
+  List.map (get_coercion_constructor env) (ClPairMap.find (i,j) !inheritance_graph)
 
 (* coercion_value : coe_index -> unsafe_judgment * bool *)
 

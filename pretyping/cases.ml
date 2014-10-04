@@ -50,9 +50,9 @@ let error_bad_pattern_loc loc env sigma cstr ind =
   raise_pattern_matching_error
     (loc, env, sigma, BadPattern (cstr,ind))
 
-let error_bad_constructor_loc loc cstr ind =
+let error_bad_constructor_loc loc env cstr ind =
   raise_pattern_matching_error
-    (loc, Global.env(), Evd.empty, BadConstructor (cstr,ind))
+    (loc, env, Evd.empty, BadConstructor (cstr,ind))
 
 let error_wrong_numarg_constructor_loc loc env c n =
   raise_pattern_matching_error (loc, env, Evd.empty, WrongNumargConstructor(c,n))
@@ -472,14 +472,13 @@ let check_and_adjust_constructor env ind cstrs = function
 	    let args' = adjust_local_defs loc (args, List.rev ci.cs_args)
 	    in PatCstr (loc, cstr, args', alias)
 	  with NotAdjustable ->
-	    error_wrong_numarg_constructor_loc loc (Global.env())
-	      cstr nb_args_constr
+	    error_wrong_numarg_constructor_loc loc env cstr nb_args_constr
       else
 	(* Try to insert a coercion *)
 	try
-	  Coercion.inh_pattern_coerce_to loc pat ind' ind
+	  Coercion.inh_pattern_coerce_to loc env pat ind' ind
 	with Not_found ->
-	  error_bad_constructor_loc loc cstr ind
+	  error_bad_constructor_loc loc env cstr ind
 
 let check_all_variables env sigma typ mat =
   List.iter
@@ -1968,7 +1967,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	    {uj_val = ty; uj_type = Typing.type_of env !evdref ty}
 	in
 	let (ind,u), params = dest_ind_family indf in
-	if not (eq_ind ind cind) then error_bad_constructor_loc l cstr ind;
+	if not (eq_ind ind cind) then error_bad_constructor_loc l env cstr ind;
 	let cstrs = get_constructors env indf in
 	let ci = cstrs.(i-1) in
 	let nb_args_constr = ci.cs_nargs in

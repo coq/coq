@@ -101,14 +101,14 @@ let check_typability env sigma c =
    (instead of iterating on the list of identifier to be removed, which
    forces the user to give them in order). *)
 
-let clear_hyps sigma ids sign cl =
+let clear_hyps env sigma ids sign cl =
   let evdref = ref (Evd.create_goal_evar_defs sigma) in
-  let (hyps,cl) = Evarutil.clear_hyps_in_evi evdref sign cl ids in
+  let (hyps,cl) = Evarutil.clear_hyps_in_evi env evdref sign cl ids in
   (hyps, cl, !evdref)
 
-let clear_hyps2 sigma ids sign t cl =
+let clear_hyps2 env sigma ids sign t cl =
   let evdref = ref (Evd.create_goal_evar_defs sigma) in
-  let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi evdref sign t cl ids in
+  let (hyps,t,cl) = Evarutil.clear_hyps2_in_evi env evdref sign t cl ids in
   (hyps, t, cl, !evdref)
 
 (* The ClearBody tactic *)
@@ -548,7 +548,7 @@ let prim_refiner r sigma goal =
 	let sign,t,cl,sigma =
 	  if replace then
 	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
-	    let sign,t,cl,sigma = clear_hyps2 sigma (Id.Set.singleton id) sign t cl in
+	    let sign,t,cl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t cl in
 	    move_hyp true false ([],(id,None,t),named_context_of_val sign)
 	      nexthyp,
 	      t,cl,sigma
@@ -672,7 +672,7 @@ let prim_refiner r sigma goal =
     (* And now the structural rules *)
     | Thin ids ->
         let ids = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty ids in
-	let (hyps,concl,nsigma) = clear_hyps sigma ids sign cl in
+	let (hyps,concl,nsigma) = clear_hyps env sigma ids sign cl in
 	let (gl,ev,sigma) =
 	  Goal.V82.mk_goal nsigma hyps concl (Goal.V82.extra nsigma goal)
 	in

@@ -1025,4 +1025,4 @@ module NonLogical = Proofview_monad.NonLogical
 let tclLIFT = Proofview_monad.Logical.lift
 
 let tclCHECKINTERRUPT =
-  tclLIFT (NonLogical.make Control.check_for_interrupt)
+   tclLIFT (NonLogical.make Control.check_for_interrupt)

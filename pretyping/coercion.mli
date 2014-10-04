@@ -59,4 +59,4 @@ val inh_conv_coerces_to : Loc.t ->
     pattern [pat] typed in [ind1] into a pattern typed in [ind2];
     raises [Not_found] if no coercion found *)
 val inh_pattern_coerce_to :
-  Loc.t  -> cases_pattern -> inductive -> inductive -> cases_pattern
+  Loc.t -> env -> cases_pattern -> inductive -> inductive -> cases_pattern
