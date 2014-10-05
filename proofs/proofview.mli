@@ -403,6 +403,8 @@ module Goal : sig
   val env : 'a t -> Environ.env
   val sigma : 'a t -> Evd.evar_map
 
+  val raw_concl : 'a t -> Term.constr
+
   (* [nf_enter t] execute the goal-dependent tactic [t] in each goal
      independently. In particular [t] need not backtrack the same way in
      each goal. *)

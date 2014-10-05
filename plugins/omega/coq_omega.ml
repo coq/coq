@@ -566,7 +566,7 @@ let abstract_path typ path t =
 
 let focused_simpl path gl =
   let newc = context (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
-  convert_concl_no_check newc DEFAULTcast gl
+  Proofview.V82.of_tactic (convert_concl_no_check newc DEFAULTcast) gl
 
 let focused_simpl path = focused_simpl path
 
@@ -1806,15 +1806,15 @@ let destructure_hyps =
 		    match destructurate_type (pf_nf typ) with
 		    | Kapp(Nat,_) ->
                         (Tacticals.New.tclTHEN
-			   (Proofview.V82.tactic (convert_hyp_no_check
+			   (convert_hyp_no_check
                                                     (i,body,
-				                     (mkApp (Lazy.force coq_neq, [| t1;t2|])))))
+				                     (mkApp (Lazy.force coq_neq, [| t1;t2|]))))
 			   (loop lit))
 		    | Kapp(Z,_) ->
                         (Tacticals.New.tclTHEN
-			   (Proofview.V82.tactic (convert_hyp_no_check
+			   (convert_hyp_no_check
                                                     (i,body,
-				                     (mkApp (Lazy.force coq_Zne, [| t1;t2|])))))
+				                     (mkApp (Lazy.force coq_Zne, [| t1;t2|]))))
 			   (loop lit))
 		    | _ -> loop lit
                   end

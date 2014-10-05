@@ -118,8 +118,38 @@ let _ =
 
 let introduction    = Tacmach.introduction
 let refine          = Tacmach.refine
-let convert_concl   = Tacmach.convert_concl
-let convert_hyp     = Tacmach.convert_hyp
+
+let convert_concl ?(unsafe=false) ty k =
+  Proofview.Goal.nf_enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let conclty = Proofview.Goal.raw_concl gl in
+    let sigma =
+      if not unsafe then begin
+        ignore (Typing.type_of env sigma ty);
+        let sigma,b = Reductionops.infer_conv env sigma ty conclty in
+        if not b then error "Not convertible.";
+        sigma
+      end else sigma in
+    Tacticals.New.tclTHEN
+      (Proofview.V82.tclEVARS sigma)
+      (Proofview.Refine.refine (fun h ->
+        let (h,x) = Proofview.Refine.new_evar h env ty in
+        (h, if k == DEFAULTcast then x else mkCast(x,k,conclty))))
+  end
+
+let convert_hyp ?(unsafe=false) d =
+  Proofview.Goal.nf_enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let ty = Proofview.Goal.raw_concl gl in
+    let sign = convert_hyp (not unsafe) (named_context_val env) sigma d in
+    let env = reset_with_named_context sign env in
+    Proofview.Refine.refine (fun h -> Proofview.Refine.new_evar h env ty)
+  end
+
+let convert_concl_no_check = convert_concl ~unsafe:true
+let convert_hyp_no_check = convert_hyp ~unsafe:true
 
 let convert_gen pb x y =
   Proofview.Goal.enter begin fun gl ->
@@ -390,11 +420,11 @@ let bind_red_expr_occurrences occs nbcl redexp =
    certain hypothesis *)
 
 let reduct_in_concl (redfun,sty) gl =
-  convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) sty gl
+  Proofview.V82.of_tactic (convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) sty) gl
 
 let reduct_in_hyp redfun (id,where) gl =
-  convert_hyp_no_check
-    (pf_reduce_decl redfun where (pf_get_hyp gl id) gl) gl
+  Proofview.V82.of_tactic (convert_hyp_no_check
+    (pf_reduce_decl redfun where (pf_get_hyp gl id) gl)) gl
 
 let revert_cast (redfun,kind as r) =
   if kind == DEFAULTcast then (redfun,REVERTcast) else r
@@ -413,7 +443,7 @@ let tclWITHEVARS f k gl =
 let e_reduct_in_concl (redfun,sty) gl =
   tclWITHEVARS
     (fun env sigma -> redfun env sigma (pf_concl gl))
-    (fun c -> convert_concl_no_check c sty) gl
+    (fun c -> Proofview.V82.of_tactic (convert_concl_no_check c sty)) gl
 
 let e_pf_reduce_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env sigma =
   match c with
@@ -430,7 +460,7 @@ let e_pf_reduce_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env
 let e_reduct_in_hyp redfun (id,where) gl =
   tclWITHEVARS
     (e_pf_reduce_decl redfun where (pf_get_hyp gl id))
-    convert_hyp_no_check gl
+    (fun s -> Proofview.V82.of_tactic (convert_hyp_no_check s)) gl
 
 type change_arg = env -> evar_map -> evar_map * constr
 
@@ -1690,7 +1720,7 @@ let constructor_tac with_evars expctdnumopt i lbind =
       let apply_tac = general_apply true false with_evars None (dloc,(cons,lbind)) in
 	(Tacticals.New.tclTHENLIST
            [Proofview.V82.tclEVARS sigma; 
-	    Proofview.V82.tactic (convert_concl_no_check redcl DEFAULTcast); 
+	    convert_concl_no_check redcl DEFAULTcast;
 	    intros; apply_tac])
   end
 
@@ -2098,9 +2128,9 @@ let letin_tac_gen with_eq abs ty =
 	let (sigma,newcl,eq_tac) = eq_tac gl in
 	  Tacticals.New.tclTHENLIST
 	    [ Proofview.V82.tclEVARS sigma;
-	      Proofview.V82.tactic (convert_concl_no_check newcl DEFAULTcast);
+	      convert_concl_no_check newcl DEFAULTcast;
               intro_gen (NamingMustBe (dloc,id)) (decode_hyp lastlhyp) true false;
-              Proofview.V82.tactic (tclMAP convert_hyp_no_check depdecls);
+              Tacticals.New.tclMAP convert_hyp_no_check depdecls;
               eq_tac ]))
   end
 
@@ -3894,7 +3924,7 @@ let symmetry_red allowred =
   match with_eqn with
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
-        (Proofview.V82.tactic (convert_concl_no_check concl DEFAULTcast))
+        (convert_concl_no_check concl DEFAULTcast)
         (Tacticals.New.pf_constr_of_global eq_data.sym apply)
   | None,eq,eq_kind -> prove_symmetry eq eq_kind
   end
@@ -3986,7 +4016,7 @@ let transitivity_red allowred t =
   match with_eqn with
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
-        (Proofview.V82.tactic (convert_concl_no_check concl DEFAULTcast))
+        (convert_concl_no_check concl DEFAULTcast)
         (match t with
 	  | None -> Tacticals.New.pf_constr_of_global eq_data.trans eapply
 	  | Some t -> Tacticals.New.pf_constr_of_global eq_data.trans (fun trans -> apply_list [trans;t]))

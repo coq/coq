@@ -32,8 +32,10 @@ val is_quantified_hypothesis : Id.t -> goal sigma -> bool
 
 val introduction    : Id.t -> tactic
 val refine          : constr -> tactic
-val convert_concl   : constr -> cast_kind -> tactic
-val convert_hyp     : named_declaration -> tactic
+val convert_concl   : ?unsafe:bool -> types -> cast_kind -> unit Proofview.tactic
+val convert_hyp     : ?unsafe:bool -> named_declaration -> unit Proofview.tactic
+val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
+val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
 val thin            : Id.t list -> tactic
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> tactic

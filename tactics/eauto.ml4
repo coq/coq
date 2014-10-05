@@ -563,7 +563,7 @@ let autounfold_one db cl gl =
     if did then
       match cl with
       | Some hyp -> change_in_hyp None (fun env sigma -> sigma, c') hyp gl
-      | None -> convert_concl_no_check c' DEFAULTcast gl
+      | None -> Proofview.V82.of_tactic (convert_concl_no_check c' DEFAULTcast) gl
     else tclFAIL 0 (str "Nothing to unfold") gl
 
 (* 	  Cset.fold (fun cst -> cons (all_occurrences, EvalConstRef cst)) csts *)
@@ -611,7 +611,7 @@ END
 
 
 TACTIC EXTEND convert_concl_no_check
-| ["convert_concl_no_check" constr(x) ] -> [ Proofview.V82.tactic (convert_concl_no_check x DEFAULTcast) ]
+| ["convert_concl_no_check" constr(x) ] -> [ convert_concl_no_check x DEFAULTcast ]
 END
 
 

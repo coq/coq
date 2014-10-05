@@ -1543,7 +1543,7 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	| Some id, (undef, Some p, newt) ->
 	    assert_replacing id newt (new_refine (undef, p))
 	| Some id, (undef, None, newt) ->
-            Proofview.V82.tactic (Tacmach.convert_hyp_no_check (id, None, newt))
+            convert_hyp_no_check (id, None, newt)
 	| None, (undef, Some p, newt) ->
             Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
@@ -1555,7 +1555,7 @@ let cl_rewrite_clause_newtac ?abs strat clause =
             Proofview.Refine.refine make
             end
 	| None, (undef, None, newt) ->
-            Proofview.V82.tactic (Tacmach.convert_concl_no_check newt DEFAULTcast)
+            convert_concl_no_check newt DEFAULTcast
   in
   Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in

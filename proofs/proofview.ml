@@ -877,6 +877,8 @@ module Goal = struct
   let hyps { env=env } = Environ.named_context env
   let concl { concl=concl } = concl
 
+  let raw_concl { concl=concl } = concl
+
   let nf_enter_t = Goal.nf_enter begin fun env sigma concl self ->
     {env=env;sigma=sigma;concl=concl;self=self}
   end

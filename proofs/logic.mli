@@ -51,3 +51,6 @@ type refiner_error =
 exception RefinerError of refiner_error
 
 val catchable_exception : exn -> bool
+
+val convert_hyp : bool -> Environ.named_context_val -> evar_map ->
+  Context.named_declaration -> Environ.named_context_val

@@ -580,7 +580,7 @@ let assume_tac hyps gls =
        tclTHEN
 	 (push_intro_tac
 	    (fun id ->
-	       convert_hyp (id,None,st.st_it)) st.st_label))
+	       Proofview.V82.of_tactic (convert_hyp (id,None,st.st_it))) st.st_label))
 	 hyps tclIDTAC gls
 
 let assume_hyps_or_theses hyps gls =
@@ -590,7 +590,7 @@ let assume_hyps_or_theses hyps gls =
 	   tclTHEN
 	     (push_intro_tac
 		(fun id ->
-		   convert_hyp (id,None,c)) nam)
+		   Proofview.V82.of_tactic (convert_hyp (id,None,c))) nam)
        | Hprop {st_label=nam;st_it=Thesis (tk)} ->
 	   tclTHEN
 	     (push_intro_tac
@@ -602,7 +602,7 @@ let assume_st hyps gls =
     (fun st ->
        tclTHEN
 	 (push_intro_tac
-	    (fun id -> convert_hyp (id,None,st.st_it)) st.st_label))
+	    (fun id -> Proofview.V82.of_tactic (convert_hyp (id,None,st.st_it))) st.st_label))
 	 hyps tclIDTAC gls
 
 let assume_st_letin hyps gls =
@@ -611,7 +611,7 @@ let assume_st_letin hyps gls =
        tclTHEN
 	 (push_intro_tac
 	    (fun id ->
-	       convert_hyp (id,Some (fst st.st_it),snd st.st_it)) st.st_label))
+	       Proofview.V82.of_tactic (convert_hyp (id,Some (fst st.st_it),snd st.st_it))) st.st_label))
 	 hyps tclIDTAC gls
 
 (* suffices *)
@@ -705,7 +705,7 @@ let rec consider_match may_intro introduced available expected gls =
 	  error "Not enough sub-hypotheses to match statements."
 	    (* should tell which ones *)
     | id::rest_ids,(Hvar st | Hprop st)::rest ->
-	tclIFTHENELSE (convert_hyp (id,None,st.st_it))
+	tclIFTHENELSE (Proofview.V82.of_tactic (convert_hyp (id,None,st.st_it)))
 	  begin
 	    match st.st_label with
 		Anonymous ->
@@ -774,11 +774,11 @@ let cast_tac id_or_thesis typ gls =
   match id_or_thesis with
       This id ->
 	let (_,body,_) = pf_get_hyp gls id in
-	  convert_hyp (id,body,typ) gls
+	  Proofview.V82.of_tactic (convert_hyp (id,body,typ)) gls
     | Thesis (For _ ) ->
 	error "\"thesis for ...\" is not applicable here."
     | Thesis Plain ->
-          convert_concl typ DEFAULTcast gls
+          Proofview.V82.of_tactic (convert_concl typ DEFAULTcast) gls
 
 (* per cases *)
 
