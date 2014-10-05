@@ -84,8 +84,6 @@ val refiner                   : rule -> tactic
 val introduction_no_check     : Id.t -> tactic
 val internal_cut_no_check     : bool -> Id.t -> types -> tactic
 val refine_no_check           : constr -> tactic
-val convert_concl_no_check    : types -> cast_kind -> tactic
-val convert_hyp_no_check      : named_declaration -> tactic
 val thin_no_check             : Id.t list -> tactic
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> tactic
@@ -97,8 +95,6 @@ val introduction     : Id.t -> tactic
 val internal_cut     : bool -> Id.t -> types -> tactic
 val internal_cut_rev : bool -> Id.t -> types -> tactic
 val refine           : constr -> tactic
-val convert_concl    : types -> cast_kind -> tactic
-val convert_hyp      : named_declaration -> tactic
 val thin             : Id.t list -> tactic
 val move_hyp         : bool -> Id.t -> Id.t move_location -> tactic
 val rename_hyp       : (Id.t*Id.t) list -> tactic

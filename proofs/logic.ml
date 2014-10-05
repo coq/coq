@@ -655,20 +655,6 @@ let prim_refiner r sigma goal =
 	let sigma = Goal.V82.partial_solution sigma goal oterm in
 	  (sgl, sigma)
 
-    (* Conversion rules *)
-    | Convert_concl (cl',k) ->
-	check_typability env sigma cl';
-        let (sg,ev,sigma) = mk_goal sign cl' in
-	let sigma = check_conv_leq_goal env sigma cl' cl' cl in
-	let ev = if k != DEFAULTcast then mkCast(ev,k,cl) else ev in
-	let sigma = Goal.V82.partial_solution_to sigma goal sg ev in
-          ([sg], sigma)
-
-    | Convert_hyp (id,copt,ty) ->
-	let (gl,ev,sigma) = mk_goal (convert_hyp !check sign sigma (id,copt,ty)) cl in
-	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
-	([gl], sigma)
-
     (* And now the structural rules *)
     | Thin ids ->
         let ids = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty ids in

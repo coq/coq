@@ -24,8 +24,6 @@ type prim_rule =
   | FixRule of Id.t * int * (Id.t * int * constr) list * int
   | Cofix of Id.t * (Id.t * constr) list * int
   | Refine of constr
-  | Convert_concl of types * cast_kind
-  | Convert_hyp of named_declaration
   | Thin of Id.t list
   | Move of bool * Id.t * Id.t move_location
   | Rename of Id.t * Id.t

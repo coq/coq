@@ -687,16 +687,6 @@ let pr_prim_rule = function
       str(if Termops.occur_meta c then "refine " else "exact ") ++
       Constrextern.with_meta_as_hole pr_constr c
 
-  | Convert_concl (c,_) ->
-      (str"change "  ++ pr_constr c)
-
-  | Convert_hyp (id,None,t) ->
-      (str"change "  ++ pr_constr t  ++ spc ()  ++ str"in "  ++ pr_id id)
-
-  | Convert_hyp (id,Some c,t) ->
-      (str"change "  ++ pr_constr c  ++ spc ()  ++ str"in "
-       ++ pr_id id ++ str" (type of "  ++ pr_id id ++ str ")")
-
   | Thin ids ->
       (str"clear "  ++ pr_sequence pr_id ids)
 
