@@ -247,11 +247,6 @@ val tclEVARMAP : Evd.evar_map tactic
    environment is returned by {!Proofview.Goal.env}. *)
 val tclENV : Environ.env tactic
 
-(* [tclUPDATE_ENV e] modifies the global environment of the tactic. It is
-   required by workarounds like the [abstract] tactical. Not to be used by the
-   casual user. *)
-val tclUPDATE_ENV : Environ.env -> unit tactic
-
 (* [tclEFFECTS eff] add the effects [eff] to the current state. *)
 val tclEFFECTS : Declareops.side_effects -> unit tactic
 

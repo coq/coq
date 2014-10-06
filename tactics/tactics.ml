@@ -4107,8 +4107,6 @@ let abstract_subproof id gk tac =
   let solve =
     Proofview.V82.tclEVARS evd <*>
     Proofview.tclEFFECTS effs <*>
-    (** Hack around *)
-    Proofview.tclUPDATE_ENV (Global.env ()) <*>
     new_exact_no_check (applist (lem, args))
   in
   if not safe then Proofview.mark_as_unsafe <*> solve else solve

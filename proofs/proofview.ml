@@ -565,10 +565,12 @@ let tclEVARMAP =
 
 let tclENV = Proof.current
 
-let tclUPDATE_ENV = Proof.update
-
 let tclEFFECTS eff =
-  Proof.modify (fun initial -> emit_side_effects eff initial)
+  Proof.bind (Proof.ret ())
+    (fun () -> (* The Global.env should be taken at exec time *)
+       Proof.seq
+         (Proof.update (Global.env ()))
+         (Proof.modify (fun initial -> emit_side_effects eff initial)))
 
 exception Timeout
 let _ = Errors.register_handler begin function
