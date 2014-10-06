@@ -195,7 +195,7 @@ let install_include_by_root =
       print "\tfor i in ";
       print_list " " (List.rev_map (Format.sprintf "$(%sINC)") l);
       print "; do \\\n";
-      printf "\t if [ $${$$i%%%%top.cmxs} = $$i ]; then\\\n";
+      printf "\t if [ $${i%%%%top.cmxs} = $$i ]; then\\\n";
       printf "\t  install -m 0644 $$i \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
       printf "\t else \\\n";
       printf "\t  install -m 0644 $$i \"$(DSTROOT)\"$(COQTOPINSTALL)/`basename $$i`; \\\n";
