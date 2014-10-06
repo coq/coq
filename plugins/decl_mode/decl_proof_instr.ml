@@ -1463,6 +1463,7 @@ let do_instr raw_instr pts =
   postprocess pts raw_instr.instr;
   (* spiwack: this should restore a compatible semantics with
      v8.3 where we never stayed focused on 0 goal. *)
+  Proof_global.set_proof_mode "Declarative" ;
   Decl_mode.maximal_unfocus ()
 
 let proof_instr raw_instr =
