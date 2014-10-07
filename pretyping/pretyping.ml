@@ -707,7 +707,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	let rec aux n k names l =
 	  match names, l with
 	  | na :: names, ((_, None, t) :: l) -> 
-	    let proj = Projection.make ps.(cs.cs_nargs - k) false in
+	    let proj = Projection.make ps.(cs.cs_nargs - k) true in
 	      (na, Some (lift (cs.cs_nargs - n) (mkProj (proj, cj.uj_val))), t)
 	    :: aux (n+1) (k + 1) names l
 	  | na :: names, ((_, c, t) :: l) -> 
