@@ -476,9 +476,9 @@ let weak_check env sigma deep newc origc =
 let change_and_check cv_pb deep t env sigma c =
   let sigma, t' = t env sigma in
   let b = weak_check env sigma deep t' c in
-  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible1.");
+  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
-  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible2.");
+  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
   sigma, t'
 
 let change_and_check_subst cv_pb subst t env sigma c =
