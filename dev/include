@@ -68,6 +68,7 @@
 #install_printer  (* Evar.Set.t *) ppexistentialset;;
 #install_printer  (* clenv *) ppclenv;;
 #install_printer  (* env *) ppenv;;
+#install_printer  (* Hint_db.t *) pphintdb;;
 
 #install_printer  (* tactic *) pptac;;
 #install_printer  (* object *) ppobj;;

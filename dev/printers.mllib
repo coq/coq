@@ -194,6 +194,10 @@ Egramml
 Egramcoq
 Tacsubst
 Tacenv
+Trie
+Dn
+Btermdn
+Hints
 Himsg
 Cerrors
 Locality
