@@ -413,7 +413,7 @@ let rec detype flags avoid env sigma t =
     | Meta n ->
 	(* Meta in constr are not user-parsable and are mapped to Evar *)
         (* using numbers to be unparsable *)
-	GEvar (dl, Id.of_string (string_of_int n), [])
+	GEvar (dl, Id.of_string ("M" ^ string_of_int n), [])
     | Var id ->
 	(try let _ = Global.lookup_named id in GRef (dl, VarRef id, None)
 	 with Not_found -> GVar (dl, id))
