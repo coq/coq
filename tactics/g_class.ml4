@@ -64,7 +64,7 @@ END
 
 TACTIC EXTEND typeclasses_eauto
 | [ "typeclasses" "eauto" "with" ne_preident_list(l) ] -> [ Proofview.V82.tactic (typeclasses_eauto l) ]
-| [ "typeclasses" "eauto" ] -> [ Proofview.V82.tactic (typeclasses_eauto ~only_classes:true [Auto.typeclasses_db]) ]
+| [ "typeclasses" "eauto" ] -> [ Proofview.V82.tactic (typeclasses_eauto ~only_classes:true [Hints.typeclasses_db]) ]
 END
 
 TACTIC EXTEND head_of_constr

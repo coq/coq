@@ -967,15 +967,15 @@ let vernac_declare_tactic_definition locality (x,def) =
 
 let vernac_create_hintdb locality id b =
   let local = make_module_locality locality in
-  Auto.create_hint_db local id full_transparent_state b
+  Hints.create_hint_db local id full_transparent_state b
 
 let vernac_remove_hints locality dbs ids =
   let local = make_module_locality locality in
-  Auto.remove_hints local dbs (List.map Smartlocate.global_with_alias ids)
+  Hints.remove_hints local dbs (List.map Smartlocate.global_with_alias ids)
 
 let vernac_hints locality poly local lb h =
   let local = enforce_module_locality locality local in
-  Auto.add_hints local lb (Auto.interp_hints poly h)
+  Hints.add_hints local lb (Hints.interp_hints poly h)
 
 let vernac_syntactic_definition locality lid x local y =
   Dumpglob.dump_definition lid false "syndef";
@@ -1528,11 +1528,11 @@ let vernac_print = function
     let univ = if b then Univ.sort_universes univ else univ in
     msg_notice (Univ.pr_universes univ)
   | PrintUniverses (b, Some s) -> dump_universes b s
-  | PrintHint r -> msg_notice (Auto.pr_hint_ref (smart_global r))
-  | PrintHintGoal -> msg_notice (Auto.pr_applicable_hint ())
-  | PrintHintDbName s -> msg_notice (Auto.pr_hint_db_by_name s)
+  | PrintHint r -> msg_notice (Hints.pr_hint_ref (smart_global r))
+  | PrintHintGoal -> msg_notice (Hints.pr_applicable_hint ())
+  | PrintHintDbName s -> msg_notice (Hints.pr_hint_db_by_name s)
   | PrintRewriteHintDbName s -> msg_notice (Autorewrite.print_rewrite_hintdb s)
-  | PrintHintDb -> msg_notice (Auto.pr_searchtable ())
+  | PrintHintDb -> msg_notice (Hints.pr_searchtable ())
   | PrintScopes ->
       msg_notice (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))
   | PrintScope s ->

@@ -1312,7 +1312,7 @@ let open_new_goal build_proof ctx using_lemmas ref_ goal_name (gls_type,decompos
 		      Eauto.eauto_with_bases
 			(true,5)
 			[Evd.empty,Lazy.force refl_equal]
-			[Auto.Hint_db.empty empty_transparent_state false]
+			[Hints.Hint_db.empty empty_transparent_state false]
 		      ]
 		    )
 		  )

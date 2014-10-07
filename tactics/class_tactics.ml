@@ -25,6 +25,7 @@ open Evd
 open Locus
 open Misctypes
 open Proofview.Notations
+open Hints
 
 (** Hint database named "typeclass_instances", now created directly in Auto *)
 
@@ -215,7 +216,7 @@ let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) evs (Evarutil.nf_
 
 let pr_depth l = prlist_with_sep (fun () -> str ".") int (List.rev l)
 
-type autoinfo = { hints : Auto.hint_db; is_evar: existential_key option;
+type autoinfo = { hints : hint_db; is_evar: existential_key option;
 		  only_classes: bool; unique : bool;
 		  auto_depth: int list; auto_last_tac: std_ppcmds Lazy.t;
 		  auto_path : global_reference option list;
@@ -750,7 +751,7 @@ let set_typeclasses_depth =
 let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl =
   try
     let dbs = List.map_filter
-      (fun db -> try Some (Auto.searchtable_map db)
+      (fun db -> try Some (searchtable_map db)
         with e when Errors.noncritical e -> None)
       dbs
     in
@@ -787,7 +788,7 @@ let is_ground c gl =
 
 let autoapply c i gl =
   let flags = auto_unif_flags Evar.Set.empty 
-    (Auto.Hint_db.transparent_state (Auto.searchtable_map i)) in
+    (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
   let cty = pf_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
   unify_e_resolve false flags (c,ce) gl

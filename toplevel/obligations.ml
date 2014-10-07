@@ -632,8 +632,8 @@ let declare_obligation prg obl body ty uctx =
 	(DefinitionEntry ce,IsProof Property)
       in
 	if not opaque then
-	  Auto.add_hints false [Id.to_string prg.prg_name]
-	    (Auto.HintsUnfoldEntry [EvalConstRef constant]);
+	  Hints.add_hints false [Id.to_string prg.prg_name]
+	    (Hints.HintsUnfoldEntry [EvalConstRef constant]);
 	definition_message obl.obl_name;
 	{ obl with obl_body = 
 	    if poly then 
@@ -813,8 +813,8 @@ let rec solve_obligation prg num tac =
 			else DefinedObl cst
 		  in
 		    if transparent then
-		      Auto.add_hints true [Id.to_string prg.prg_name]
-			(Auto.HintsUnfoldEntry [EvalConstRef cst]);
+		      Hints.add_hints true [Id.to_string prg.prg_name]
+			(Hints.HintsUnfoldEntry [EvalConstRef cst]);
 		    { obl with obl_body = Some body }
 		in
 		let obls = Array.copy obls in

@@ -28,22 +28,22 @@ open Entries
 let typeclasses_db = "typeclass_instances"
 
 let set_typeclass_transparency c local b = 
-  Auto.add_hints local [typeclasses_db] 
-    (Auto.HintsTransparencyEntry ([c], b))
+  Hints.add_hints local [typeclasses_db] 
+    (Hints.HintsTransparencyEntry ([c], b))
     
 let _ =
   Hook.set Typeclasses.add_instance_hint_hook
     (fun inst path local pri poly ->
-     let inst' = match inst with IsConstr c -> Auto.IsConstr (c, Univ.ContextSet.empty)
-       | IsGlobal gr -> Auto.IsGlobRef gr
+     let inst' = match inst with IsConstr c -> Hints.IsConstr (c, Univ.ContextSet.empty)
+       | IsGlobal gr -> Hints.IsGlobRef gr
      in
       Flags.silently (fun () ->
-	Auto.add_hints local [typeclasses_db]
-	  (Auto.HintsResolveEntry
-	     [pri, poly, false, Auto.PathHints path, inst'])) ());
+	Hints.add_hints local [typeclasses_db]
+	  (Hints.HintsResolveEntry
+	     [pri, poly, false, Hints.PathHints path, inst'])) ());
   Hook.set Typeclasses.set_typeclass_transparency_hook set_typeclass_transparency;
   Hook.set Typeclasses.classes_transparent_state_hook
-    (fun () -> Auto.Hint_db.transparent_state (Auto.searchtable_map typeclasses_db))
+    (fun () -> Hints.Hint_db.transparent_state (Hints.searchtable_map typeclasses_db))
         
 (** TODO: add subinstances *)
 let existing_instance glob g pri =

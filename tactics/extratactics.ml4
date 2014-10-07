@@ -325,11 +325,11 @@ let project_hint pri l2r r =
   in
   let ctx = Evd.universe_context_set sigma in
   let c = Declare.declare_definition ~internal:Declare.KernelSilent id (c,ctx) in
-    (pri,false,true,Auto.PathAny, Auto.IsGlobRef (Globnames.ConstRef c))
+    (pri,false,true,Hints.PathAny, Hints.IsGlobRef (Globnames.ConstRef c))
 
 let add_hints_iff l2r lc n bl =
-  Auto.add_hints true bl
-    (Auto.HintsResolveEntry (List.map (project_hint n l2r) lc))
+  Hints.add_hints true bl
+    (Hints.HintsResolveEntry (List.map (project_hint n l2r) lc))
 
 VERNAC COMMAND EXTEND HintResolveIffLR CLASSIFIED AS SIDEFF
   [ "Hint" "Resolve" "->" ne_global_list(lc) natural_opt(n)

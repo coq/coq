@@ -44,8 +44,6 @@ open Locusops
 open Misctypes
 open Proofview.Notations
 
-exception Bound
-
 let nb_prod x =
   let rec count n c =
     match kind_of_term c with
@@ -113,34 +111,6 @@ let _ =
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
-
-(****************************************)
-(* General functions                    *)
-(****************************************)
-
-let head_constr_bound t =
-  let t = strip_outer_cast t in
-  let _,ccl = decompose_prod_assum t in
-  let hd,args = decompose_app ccl in
-  match kind_of_term hd with
-    | Const _ | Ind _ | Construct _ | Var _ -> hd
-    | Proj (p, _) -> mkConst (Projection.constant p)
-    | _ -> raise Bound
-
-let head_constr c =
-  try head_constr_bound c with Bound -> error "Bound head variable."
-
-let decompose_app_bound t =
-  let t = strip_outer_cast t in
-  let _,ccl = decompose_prod_assum t in
-  let hd,args = decompose_app_vect ccl in
-  match kind_of_term hd with
-    | Const (c,u) -> ConstRef c, args
-    | Ind (i,u) -> IndRef i, args
-    | Construct (c,u) -> ConstructRef c, args
-    | Var id -> VarRef id, args
-    | Proj (p, c) -> ConstRef (Projection.constant p), Array.cons c args
-    | _ -> raise Bound
 
 (******************************************)
 (*           Primitive tactics            *)

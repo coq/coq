@@ -56,7 +56,7 @@ val empty_seq : int -> t
 val extend_with_ref_list : global_reference list ->
   t -> Proof_type.goal sigma -> t * Proof_type.goal sigma
 
-val extend_with_auto_hints : Auto.hint_db_name list ->
+val extend_with_auto_hints : Hints.hint_db_name list ->
   t -> Proof_type.goal sigma -> t * Proof_type.goal sigma
 
 val print_cmap: global_reference list CM.t -> Pp.std_ppcmds

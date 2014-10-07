@@ -204,7 +204,7 @@ let extend_with_ref_list l seq gl =
       (add_formula Hyp gr typ seq gl,gl) in
     List.fold_right f l (seq,gl)
 
-open Auto
+open Hints
 
 let extend_with_auto_hints l seq gl=
   let seqref=ref seq in

@@ -825,4 +825,4 @@ let _ =
     Flags.with_option strict_check
     (intern_pure_tactic { (make_empty_glob_sign()) with ltacvars })
   in
-  Hook.set Auto.extern_intern_tac f
+  Hook.set Hints.extern_intern_tac f

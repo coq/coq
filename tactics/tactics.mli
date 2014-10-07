@@ -26,11 +26,6 @@ open Locus
 
 (** {6 General functions. } *)
 
-exception Bound
-
-val head_constr       : constr -> constr
-val head_constr_bound : constr -> constr
-val decompose_app_bound : constr -> global_reference * constr array
 val is_quantified_hypothesis : Id.t -> goal sigma -> bool
 
 (** {6 Primitive tactics. } *)

@@ -61,6 +61,7 @@ sig
   val except : 'a eq -> 'a -> 'a list -> 'a list
   val remove : 'a eq -> 'a -> 'a list -> 'a list
   val remove_first : ('a -> bool) -> 'a list -> 'a list
+  val insert : ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val sep_last : 'a list -> 'a * 'a list
   val find_map : ('a -> 'b option) -> 'a list -> 'b
@@ -441,6 +442,13 @@ let rec remove_first p = function
   | b::l when p b -> l
   | b::l -> b::remove_first p l
   | [] -> raise Not_found
+
+let insert p v l =
+  let rec insrec = function
+    | [] -> [v]
+    | h::tl -> if p v h then v::h::tl else h::insrec tl
+  in
+  insrec l
 
 let add_set cmp x l = if mem_f cmp x l then l else x :: l
 

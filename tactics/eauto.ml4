@@ -27,6 +27,7 @@ open Tacexpr
 open Misctypes
 open Locus
 open Locusops
+open Hints
 
 DECLARE PLUGIN "eauto"
 
@@ -196,8 +197,8 @@ type search_state = {
   depth : int; (*r depth of search before failing *)
   tacres : goal list sigma;
   last_tactic : std_ppcmds Lazy.t;
-  dblist : Auto.hint_db list;
-  localdb :  Auto.hint_db list;
+  dblist : hint_db list;
+  localdb :  hint_db list;
   prev : prev_search_state
 }
 
@@ -289,7 +290,7 @@ module SearchProblem = struct
 		     let gls = {Evd.it = gl; sigma = lgls.Evd.sigma } in
 		     let hyps' = pf_hyps gls in
 		       if hyps' == hyps then List.hd s.localdb
-		       else make_local_hint_db ~ts:full_transparent_state true [] gls)
+		       else make_local_hint_db (pf_env gls) (project gls) ~ts:full_transparent_state true [])
 		     (List.firstn ((nbgl'-nbgl) + 1) (sig_it lgls))
 	       in
 		 { depth = pred s.depth; tacres = res;
@@ -369,7 +370,7 @@ let make_initial_state dbg n gl dblist localdb =
   }
 
 let e_search_auto debug (in_depth,p) lems db_list gl =
-  let local_db = make_local_hint_db ~ts:full_transparent_state true lems gl in
+  let local_db = make_local_hint_db (pf_env gl) (project gl) ~ts:full_transparent_state true lems in
   let d = mk_eauto_dbg debug in
   let tac = match in_depth,d with
     | (true,Debug) -> Search.debug_depth_first
@@ -505,7 +506,7 @@ let autounfold db cls gl =
 
 let autounfold_tac db cls gl =
   let dbs = match db with
-  | None -> String.Set.elements (Auto.current_db_names ())
+  | None -> String.Set.elements (current_db_names ())
   | Some [] -> ["core"]
   | Some l -> l
   in
@@ -661,6 +662,6 @@ END
 VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
 | [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> [
   let entry = HintsCutEntry p in
-    Auto.add_hints (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
+    Hints.add_hints (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
       (match dbnames with None -> ["core"] | Some l -> l) entry ]
 END

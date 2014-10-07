@@ -517,12 +517,12 @@ let rewrite_db = "rewrite"
 let conv_transparent_state = (Id.Pred.empty, Cpred.full)
 
 let _ = 
-  Auto.add_auto_init
+  Hints.add_hints_init
     (fun () ->
-       Auto.create_hint_db false rewrite_db conv_transparent_state true)
+       Hints.create_hint_db false rewrite_db conv_transparent_state true)
 
 let rewrite_transparent_state () =
-  Auto.Hint_db.transparent_state (Auto.searchtable_map rewrite_db)
+  Hints.Hint_db.transparent_state (Hints.searchtable_map rewrite_db)
 
 let rewrite_core_unif_flags = {
   Unification.modulo_conv_on_closed_terms = None;
