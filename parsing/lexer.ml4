@@ -502,10 +502,11 @@ let rec next_token = parser bp
       in
       (t, (bp,ep))
   | [< ' ('-'|'+'|'*' as c); s >] ->
-      let t =
-        if !between_com then process_sequence bp c s else process_chars bp c s
+      let t,new_between_com =
+        if !between_com then process_sequence bp c s,true
+        else process_chars bp c s,false
       in
-      comment_stop bp; t
+      comment_stop bp; between_com := new_between_com; t
   | [< ''?'; s >] ep ->
       let t = parse_after_qmark bp s in comment_stop bp; (t, (ep, bp))
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
