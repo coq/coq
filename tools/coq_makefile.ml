@@ -195,11 +195,7 @@ let install_include_by_root =
       print "\tfor i in ";
       print_list " " (List.rev_map (Format.sprintf "$(%sINC)") l);
       print "; do \\\n";
-      printf "\t if [ $${i%%%%top.cmxs} = $$i ]; then\\\n";
-      printf "\t  install -m 0644 $$i \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
-      printf "\t else \\\n";
-      printf "\t  install -m 0644 $$i \"$(DSTROOT)\"$(COQTOPINSTALL)/`basename $$i`; \\\n";
-      printf "\t fi\\\n";
+      printf "\t install -m 0644 $$i \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
       printf "\tdone\n"
   in function
   |None,l -> List.iter (install_dir (fun _ _ -> ())) l
@@ -271,6 +267,12 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     if (not_empty cmxsfiles) then begin
       print "install-natdynlink:\n";
       install_include_by_root where_what_cmxs;
+      print "\n";
+    end;
+    if (not_empty cmxsfiles) then begin
+      print "install-toploop: $(MLLIBFILES:.mllib=.cmxs)\n";
+      printf "\t install -d \"$(DSTROOT)\"$(COQTOPINSTALL)/\n";
+      printf "\t install -m 0644 $?  \"$(DSTROOT)\"$(COQTOPINSTALL)/\n";
       print "\n";
     end;
     print "install:";
