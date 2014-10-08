@@ -216,4 +216,9 @@ let coqdep () =
   if not !option_D then coq_dependencies ();
   if !option_w || !option_D then declare_dependencies ()
 
-let _ = Printexc.catch coqdep ()
+let _ =
+  try
+    coqdep ()
+  with Util.UserError(s,p) ->
+    let pp = if s <> "_" then Pp.(str s ++ str ": " ++ p) else p in
+    Pp.msgerrnl pp
