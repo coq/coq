@@ -37,6 +37,16 @@ let _ = Goptions.declare_bool_option {
   Goptions.optwrite = (fun a -> keyed_unification:=a);
 }
 
+let debug_unification = ref (false)
+let _ = Goptions.declare_bool_option {
+  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optname =
+    "Print states sent to tactic unification";
+  Goptions.optkey = ["Debug";"Tactic";"Unification"];
+  Goptions.optread = (fun () -> !debug_unification);
+  Goptions.optwrite = (fun a -> debug_unification:=a);
+}
+
 let occur_meta_or_undefined_evar evd c =
   let rec occrec c = match kind_of_term c with
     | Meta _ -> raise Occur
@@ -537,6 +547,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
   let rec unirec_rec (curenv,nb as curenvnb) pb b wt ((sigma,metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
     and cN = Evarutil.whd_head_evar sigma curn in
+    let () = 
+      if !debug_unification then
+	msg_debug (Termops.print_constr_env curenv cM ++ str" ~= " ++ Termops.print_constr_env curenv cN)
+    in 
       match (kind_of_term cM,kind_of_term cN) with
 	| Meta k1, Meta k2 ->
             if Int.equal k1 k2 then substn else
@@ -624,7 +638,13 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	| LetIn (_,a,_,c), _ -> unirec_rec curenvnb pb b wt substn (subst1 a c) cN
 	| _, LetIn (_,a,_,c) -> unirec_rec curenvnb pb b wt substn cM (subst1 a c)
 
-
+	(** Fast path for projections. *)
+	| Proj (p1,c1), Proj (p2,c2) when eq_constant
+	    (Projection.constant p1) (Projection.constant p2) ->
+	  (try unify_same_proj curenvnb cv_pb true wt substn c1 c2
+	   with ex when precatchable_exception ex ->
+	     unify_not_same_head curenvnb pb b wt substn cM cN)
+	    
 	| Proj (p1,c1), _ when not (Projection.unfolded p1) ->
 	  let cM' =
 	    try Retyping.expand_projection curenv sigma p1 c1 []
@@ -681,25 +701,6 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	     with ex when precatchable_exception ex ->
 	       reduce curenvnb pb b wt substn cM cN)
 
-	| Proj (p1,c1), Proj (p2,c2) ->
-	    if eq_constant (Projection.constant p1) (Projection.constant p2) then
-	      try 
-		let substn = unirec_rec curenvnb CONV true wt substn c1 c2 in
-		  try (* Force unification of the types to fill in parameters *)
-		    let ty1 = get_type_of curenv ~lax:true sigma c1 in
-		    let ty2 = get_type_of curenv ~lax:true sigma c2 in
-		      unify_0_with_initial_metas substn true curenv cv_pb
-		    	{ flags with modulo_conv_on_closed_terms = Some full_transparent_state;
-		    	  modulo_delta = full_transparent_state;
-		    	  modulo_eta = true;
-		    	  modulo_betaiota = true }
-		    	ty1 ty2
-		  with RetypeError _ -> substn
-	      with ex when precatchable_exception ex ->
-	        unify_not_same_head curenvnb pb b wt substn cM cN
-	    else
-	      unify_not_same_head curenvnb pb b wt substn cM cN
-
 	| App (f1,l1), _ when 
 	    (isMeta f1 && use_metas_pattern_unification flags nb l1
             || use_evars_pattern_unification flags && isAllowedEvar flags f1) ->
@@ -727,32 +728,25 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	         solve_pattern_eqn_array curenvnb f2 l cM substn)
 
 	| App (f1,l1), App (f2,l2) ->
-            unify_app curenvnb pb b substn cM f1 l1 cN f2 l2
+	  unify_app curenvnb pb b substn cM f1 l1 cN f2 l2
 
 	| _ ->
             unify_not_same_head curenvnb pb b wt substn cM cN
 
   and unify_app (curenv, nb as curenvnb) pb b (sigma, metas, evars as substn) cM f1 l1 cN f2 l2 =
     try
+      let expand_proj c l = 
+	match kind_of_term c with
+	| Proj (p, t) when not (Projection.unfolded p) ->
+	  (try destApp (Retyping.expand_projection curenv sigma p t (Array.to_list l))
+	   with RetypeError _ -> (** Unification can be called on ill-typed terms, due
+				     to FO and eta in particular, fail gracefully in that case *)
+	     (c, l))
+	| _ -> (c, l)
+      in
+      let f1, l1 = expand_proj f1 l1 in
+      let f2, l2 = expand_proj f2 l2 in
       let (f1,l1,f2,l2) = adjust_app_array_size f1 l1 f2 l2 in
-      (* let substn = *)
-      (* 	let sigma, b = Evd.eq_constr_univs sigma f1 f2 in *)
-      (* 	  if b then (sigma,metas,evars) *)
-      (* 	  else if isEvar_or_Meta f1 || isEvar_or_Meta f2 then (sigma,metas,evars) *)
-      (* 	  else *)
-      (* 	    try *)
-      (* 	      let sigma', ty1 = Evarsolve.get_type_of_refresh curenv ~lax:true sigma f1 in *)
-      (* 	      let sigma', ty2 = Evarsolve.get_type_of_refresh curenv ~lax:true sigma f2 in *)
-      (* 	      let substn = unify_0_with_initial_metas (sigma', metas, evars) true curenv CONV *)
-      (* 	      	{ flags with modulo_conv_on_closed_terms = Some full_transparent_state; *)
-      (* 	      	  modulo_delta = full_transparent_state; *)
-      (* 	      	  modulo_eta = true; *)
-      (* 	      	  modulo_betaiota = true } *)
-      (* 	      	ty1 ty2 *)
-      (* 	      in substn *)
-      (* 	    with RetypeError _ -> *)
-      (* 	      error_cannot_unify (fst curenvnb) sigma (cM,cN) *)
-      (* in *)
 	Array.fold_left2 (unirec_rec curenvnb CONV true false)
 	  (unirec_rec curenvnb CONV true true substn f1 f2) l1 l2
     with ex when precatchable_exception ex ->
@@ -761,6 +755,19 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
     try canonical_projections curenvnb pb b cM cN substn
     with ex when precatchable_exception ex ->
     expand curenvnb pb b false substn cM f1 l1 cN f2 l2
+
+  and unify_same_proj (curenv, nb as curenvnb) cv_pb b wt substn c1 c2 =
+    let substn = unirec_rec curenvnb CONV b wt substn c1 c2 in
+      try (* Force unification of the types to fill in parameters *)
+	let ty1 = get_type_of curenv ~lax:true sigma c1 in
+	let ty2 = get_type_of curenv ~lax:true sigma c2 in
+	  unify_0_with_initial_metas substn true curenv cv_pb
+	    { flags with modulo_conv_on_closed_terms = Some full_transparent_state;
+	      modulo_delta = full_transparent_state;
+	      modulo_eta = true;
+	      modulo_betaiota = true }
+	    ty1 ty2
+      with RetypeError _ -> substn
 
   and unify_not_same_head curenvnb pb b wt (sigma, metas, evars as substn) cM cN =
     try canonical_projections curenvnb pb b cM cN substn
