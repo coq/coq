@@ -838,8 +838,11 @@ let apply_on_subterm env evdref f c t =
   applyrec (env,(0,c)) t
 
 let filter_possible_projections c ty ctxt args =
-  let fv1 = free_rels c in
-  let fv2 = collect_vars c in
+  (* Since args in the types will be replaced by holes, we count the
+     fv of args to have a well-typed filter; don't know how necessary
+     it is however to have a well-typed filter here *)
+  let fv1 = free_rels (mkApp (c,args)) (* Hack: locally untyped *) in
+  let fv2 = collect_vars (mkApp (c,args)) in
   let len = Array.length args in
   let tyvars = collect_vars ty in
   List.map_i (fun i (id,b,_) ->
