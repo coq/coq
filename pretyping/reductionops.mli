@@ -261,7 +261,7 @@ val is_trans_conv : transparent_state -> env -> evar_map -> constr -> constr -> 
 val is_trans_conv_leq : transparent_state -> env ->  evar_map -> constr -> constr -> bool
 val is_trans_fconv : conv_pb -> transparent_state -> env ->  evar_map -> constr -> constr -> bool
 
-(** [check_conv} Checks universe constraints only.
+(** [check_conv] Checks universe constraints only.
     pb defaults to CUMUL and ts to a full transparent state.
  *)
 val check_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> constr -> constr -> bool
