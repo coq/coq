@@ -512,4 +512,9 @@ let coqdep () =
     with e -> close_out chan; raise e
   end
 
-let _ = Printexc.catch coqdep ()
+let _ =
+  try
+    coqdep ()
+  with Errors.UserError(s,p) ->
+    let pp = if s <> "_" then Pp.(str s ++ str ": " ++ p) else p in
+    Pp.msgerrnl pp
