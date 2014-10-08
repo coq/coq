@@ -432,7 +432,8 @@ module Refine : sig
   type handle
   (** A handle to thread along in state-passing style. *)
 
-  val new_evar : handle -> Environ.env -> Constr.types -> handle * Constr.t
+  val new_evar : handle -> ?main:bool ->
+    Environ.env -> Constr.types -> handle * Constr.t
   (** Create a new hole that will be added to the goals to solve. *)
 
   val new_evar_instance : handle -> Environ.named_context_val ->

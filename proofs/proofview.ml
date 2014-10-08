@@ -860,6 +860,7 @@ end
 type goal = Goal.goal
 let build_goal = Goal.build
 let partial_solution = Goal.V82.partial_solution
+let partial_solution_to = Goal.V82.partial_solution_to
 
 module Goal = struct
 
@@ -946,37 +947,49 @@ end
 
 module Refine =
 struct
-  type handle = Evd.evar_map * Evar.t list
+  type handle = Evd.evar_map * Evar.t list * Evar.t option
 
-  let new_evar (evd, evs) env typ =
+  let new_evar (evd, evs, evkmain) ?(main=false) env typ =
     let src = (Loc.ghost, Evar_kinds.GoalEvar) in
-    let (evd, ev) = Evarutil.new_evar env evd ~src typ in
+    let naming =
+      if main then
+        (* waiting for a more principled approach
+           (unnamed evars, private names?) *)
+        Misctypes.IntroFresh (Names.Id.of_string "tmp_goal")
+      else
+        Misctypes.IntroAnonymous in
+    let (evd, ev) = Evarutil.new_evar env evd ~src ~naming typ in
     let evd = Typeclasses.mark_unresolvables 
       ~filter:(fun ev' _ -> Evar.equal (fst (Term.destEvar ev)) ev') evd in
     let (evk, _) = Term.destEvar ev in
-    let h = (evd, evk :: evs) in
+    let evkmain =
+      if main then match evkmain with
+      | Some _ -> Errors.error "Only one main subgoal per instantiation."
+      | None -> Some evk
+      else evkmain in
+    let h = (evd, evk :: evs, evkmain) in
     (h, ev)
 
-  let new_evar_instance (evd, evs) ctx typ inst =
+  let new_evar_instance (evd, evs, evkmain) ctx typ inst =
     let src = (Loc.ghost, Evar_kinds.GoalEvar) in
     let (evd, ev) = Evarutil.new_evar_instance ctx evd ~src typ inst in
     let evd = Typeclasses.mark_unresolvables 
       ~filter:(fun ev' _ -> Evar.equal (fst (Term.destEvar ev)) ev') evd in
     let (evk, _) = Term.destEvar ev in
-    let h = (evd, evk :: evs) in
+    let h = (evd, evk :: evs, evkmain) in
     (h, ev)
 
-  let fresh_constructor_instance (evd,evs) env construct =
+  let fresh_constructor_instance (evd,evs,evkmain) env construct =
     let (evd,pconstruct) = Evd.fresh_constructor_instance env evd construct in
-    (evd,evs) , pconstruct
+    (evd,evs,evkmain) , pconstruct
 
-  let with_type (evd,evs) env c t =
+  let with_type (evd,evs,evkmain) env c t =
     let my_type = Retyping.get_type_of env evd c in
     let j = Environ.make_judge c my_type in
     let (evd,j') =
       Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j t
     in
-    (evd,evs) , j'.Environ.uj_val
+    (evd,evs,evkmain) , j'.Environ.uj_val
 
   let typecheck_evar ev env sigma =
     let info = Evd.find sigma ev in
@@ -994,15 +1007,17 @@ struct
     let sigma = Goal.sigma gl in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
-    let handle = (sigma, []) in
-    let ((sigma, evs), c) = f handle in
+    let handle = (sigma, [], None) in
+    let ((sigma, evs, evkmain), c) = f handle in
     (** Check that the introduced evars are well-typed *)
     let fold accu ev = typecheck_evar ev env accu in
     let sigma = if unsafe then sigma else List.fold_left fold sigma evs in
     (** Check that the refined term is typesafe *)
     let sigma = if unsafe then sigma else typecheck_proof c concl env sigma in
     (** Proceed to the refinement *)
-    let sigma = partial_solution sigma gl.Goal.self c in
+    let sigma = match evkmain with
+      | None -> partial_solution sigma gl.Goal.self c 
+      | Some evk -> partial_solution_to sigma gl.Goal.self (build_goal evk) c in
     let comb = undefined sigma (List.rev_map build_goal evs) in
     Proof.set { solution = sigma; comb; }
   end
@@ -1014,13 +1029,13 @@ struct
     refine ~unsafe f
   end
 
-  let update (evd, gls) f =
+  let update (evd, gls, evkmain) f =
     let nevd, ans = f evd in
     let fold ev _ accu =
       if not (Evd.mem evd ev) then ev :: accu else accu
     in
     let gls = Evd.fold_undefined fold nevd gls in
-    (nevd, gls), ans
+    (nevd, gls, evkmain), ans
 
 end
 
