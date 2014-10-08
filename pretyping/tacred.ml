@@ -915,7 +915,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
     | Some c ->
       (match kind_of_term (strip_lam c) with
       | CoFix _ | Fix _ -> s'
-      | Proj (p,c) when
+      | Proj (p,t) when
 	  (match kind_of_term constr with
 	  | Const (c', _) -> eq_constant (Projection.constant p) c'
 	  | _ -> false) ->
