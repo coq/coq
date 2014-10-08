@@ -450,17 +450,22 @@ let rec detype flags avoid env sigma t =
       else 
 	if Projection.unfolded p then
 	  (** Print the compatibility match version *)
-	  let pb = Environ.lookup_projection p (snd env) in
-	  let body = pb.Declarations.proj_body in
-	  let ty = Retyping.get_type_of (snd env) sigma c in
-	  let (ind, args) = Inductive.find_rectype (snd env) ty in
-	  let body' = strip_lam_assum body in
-	    detype flags avoid env sigma (substl (c :: List.rev args) body')
+	  let c' = 
+	    try 
+	      let pb = Environ.lookup_projection p (snd env) in
+	      let body = pb.Declarations.proj_body in
+	      let ty = Retyping.get_type_of (snd env) sigma c in
+	      let (ind, args) = Inductiveops.find_mrectype (snd env) sigma ty in
+	      let body' = strip_lam_assum body in
+		substl (c :: List.rev args) body'
+	    with Retyping.RetypeError _ | Not_found -> 
+	      anomaly (str"Cannot detype an unfolded primitive projection.")
+	  in detype flags avoid env sigma c'
 	else
-	  let ty = Retyping.get_type_of (snd env) sigma c in
-	  let (ind, args) = Inductive.find_rectype (snd env) ty in
-	    GApp (dl, GRef (dl, ConstRef (Projection.constant p), None), 
-		  List.map (detype flags avoid env sigma) (args @ [c]))
+	  let c = 
+	    try Retyping.expand_projection (snd env) sigma p c [] 
+	    with Retyping.RetypeError _ -> anomaly (str"Cannot detype a primitive projection")
+	  in detype flags avoid env sigma c
     | Evar (evk,cl) ->
       let id,l =
         try Evd.evar_ident evk sigma,
