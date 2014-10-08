@@ -1777,11 +1777,11 @@ let print_env_short env =
 let pr_evar_constraints pbs =
   let pr_evconstr (pbty, env, t1, t2) =
     print_env_short env ++ spc () ++ str "|-" ++ spc () ++
-      print_constr t1 ++ spc () ++
+      print_constr_env env t1 ++ spc () ++
       str (match pbty with
             | Reduction.CONV -> "=="
             | Reduction.CUMUL -> "<=") ++
-      spc () ++ print_constr t2
+      spc () ++ print_constr_env env t2
   in
   prlist_with_sep fnl pr_evconstr pbs
 

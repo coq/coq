@@ -696,16 +696,17 @@ let pr_constraints printenv env sigma evars cstrs =
       eq_named_context_val evi.evar_hyps evi'.evar_hyps) evars
     then
       let l = Evar.Map.bindings evars in
+      let env' = reset_with_named_context evi.evar_hyps env in
       let pe =
         if printenv then
           pr_ne_context_of (str "In environment:") (mt ())
-            (reset_with_named_context evi.evar_hyps env) sigma ++ fnl ()
+            env' sigma ++ fnl ()
         else mt ()
       in
       let evs =
         prlist_with_sep (fun () -> fnl ())
         (fun (ev, evi) -> pr_existential_key sigma ev ++
-            str " : " ++ pr_lconstr_env env sigma evi.evar_concl) l
+            str " : " ++ pr_lconstr_env env' sigma evi.evar_concl) l
       in
       pe ++ evs ++ fnl() ++ h 0 (pr_evar_constraints cstrs)
     else
