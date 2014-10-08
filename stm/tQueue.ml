@@ -103,15 +103,6 @@ let wait_until_n_are_waiting_and_queue_empty j tq =
   done;
   Mutex.unlock tq.lock
 
-let dump { queue; lock } =
-  let l = ref [] in
-  Mutex.lock lock;
-  while not (PriorityQueue.is_empty queue) do
-    l := PriorityQueue.pop queue :: !l
-  done;
-  Mutex.unlock lock;
-  List.rev !l
-
 let wait_until_n_are_waiting_then_snapshot j tq =
   let l = ref [] in
   Mutex.lock tq.lock;

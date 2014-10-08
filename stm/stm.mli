@@ -46,16 +46,25 @@ val stop_worker : string -> unit
 
 (* Joins the entire document.  Implies finish, but also checks proofs *)
 val join : unit -> unit
-(* To save to disk an incomplete document *)
-type tasks
-val dump_final : int Future.UUIDMap.t -> tasks
-val dump_snapshot : int Future.UUIDMap.t -> tasks
 
+(* Saves on the dist a .vi corresponding to the current status:
+   - if the worker prool is empty, all tasks are saved
+   - if the worker proof is not empty, then it waits until all workers
+     are done with their current jobs and then dumps (or fails if one
+     of the completed tasks is a failuere) *)
+val snapshot_vi : DirPath.t -> string -> unit
+
+(* Empties the task queue, can be used only if the worker pool is empty (E.g.
+ * after having built a .vi in batch mode *)
+val reset_task_queue : unit -> unit
+
+(* A .vi contains tasks to be completed *)
+type tasks
 val check_task : string -> tasks -> int -> bool
 val info_tasks : tasks -> (string * float * int) list
 val finish_tasks : string ->
   Library.seg_univ -> Library.seg_discharge -> Library.seg_proofs ->
-  tasks -> Library.seg_univ * Library.seg_proofs
+    tasks -> Library.seg_univ * Library.seg_proofs
 
 (* Id of the tip of the current branch *)
 val get_current_state : unit -> Stateid.t

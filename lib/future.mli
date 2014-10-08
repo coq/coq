@@ -61,6 +61,7 @@ module UUID : sig
 end
 
 module UUIDMap : Map.S with type key = UUID.t
+module UUIDSet : Set.S with type elt = UUID.t
 
 exception NotReady
 

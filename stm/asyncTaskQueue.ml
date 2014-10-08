@@ -304,13 +304,19 @@ module Make(T : Task) = struct
         flush_all (); exit 1
     done
 
-  let dump () =
-    assert(WorkersPool.is_empty ()); (* ATM, we allow that only if no slaves *)
-    List.map fst (TQueue.dump queue)
+  let clear () =
+    assert(WorkersPool.is_empty ()); (* We allow that only if no slaves *)
+    TQueue.clear queue
+  
+  let snapshot () =
+    List.map fst
+     (TQueue.wait_until_n_are_waiting_then_snapshot
+       (WorkersPool.n_workers ()) queue)
 
   let init n =
     WorkersPool.init n manage_slave
       (fun n -> Printf.sprintf "%s:%d" T.name n)
+
   let destroy () =
     WorkersPool.destroy ();
     TQueue.destroy queue

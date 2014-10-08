@@ -41,6 +41,7 @@ module UUID = struct
 end
 
 module UUIDMap = Map.Make(UUID)
+module UUIDSet = Set.Make(UUID)
 
 type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
 

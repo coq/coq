@@ -61,6 +61,11 @@ module Make(T : Task) : sig
 
   val set_order : (T.task -> T.task -> int) -> unit
 
-  val dump : unit -> T.task list
+  (* Take a snapshot (non destructive but waits until all workers are
+   * enqueued) *)
+  val snapshot : unit -> T.task list
+
+  (* Clears the queue, only if the worker prool is empty *)
+  val clear : unit -> unit
 
 end

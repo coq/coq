@@ -20,4 +20,7 @@ val new_counter : name:string ->
 
 type remote_counters_status
 val backup : unit -> remote_counters_status
+(* like backup but makes a copy so that further increment does not alter
+ * the snapshot *)
+val snapshot : unit -> remote_counters_status
 val restore : remote_counters_status -> unit

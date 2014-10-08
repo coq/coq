@@ -33,3 +33,13 @@ val of_xml : xml -> t
  * The initial_state_id is assumed to be safe. *)
 val add : exn -> ?valid:t -> t -> exn
 val get : exn -> (t * t) option
+
+type ('a,'b) request = {
+  exn_info : t * t;
+  stop : t;
+  document : 'b;
+  loc : Loc.t;
+  uuid     : 'a;
+  name     : string
+}
+

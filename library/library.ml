@@ -670,19 +670,35 @@ let error_recursively_dependent_library dir =
    writing the content and computing the checksum... *)
 
 let save_library_to ?todo dir f otab =
-  let f, todo, utab, dtab =
-    match todo with
+  let f, except = match todo with
     | None ->
         assert(!Flags.compilation_mode = Flags.BuildVo);
-        f ^ "o", (fun _ -> None), (fun _ -> None), (fun _ -> None)
-    | Some d ->
-        assert(!Flags.compilation_mode = Flags.BuildVi);
-        f ^ "i", (fun x -> Some (d x)),
-          (fun x -> Some (x,Univ.ContextSet.empty,false)), (fun x -> Some x) in
-  let cenv, seg, ast = Declaremods.end_library dir in
+        f ^ "o", Future.UUIDSet.empty
+    | Some (l,_) ->
+        f ^ "i",
+        List.fold_left (fun e r -> Future.UUIDSet.add r.Stateid.uuid e)
+          Future.UUIDSet.empty l in
+  let cenv, seg, ast = Declaremods.end_library ~except dir in
   let opaque_table, univ_table, disch_table, f2t_map = Opaqueproof.dump otab in
-  assert(!Flags.compilation_mode = Flags.BuildVi ||
-         Array.for_all Future.is_val opaque_table);
+  let tasks, utab, dtab =
+    match todo with
+    | None -> None, None, None
+    | Some (tasks, rcbackup) ->
+        let tasks =
+          List.map Stateid.(fun r ->
+            { r with uuid = Future.UUIDMap.find r.uuid f2t_map }) tasks in
+        Some (tasks,rcbackup),
+        Some (univ_table,Univ.ContextSet.empty,false),
+        Some disch_table in
+  let except =
+    Future.UUIDSet.fold (fun uuid acc ->
+      Int.Set.add (Future.UUIDMap.find uuid f2t_map) acc)
+      except Int.Set.empty in
+  let is_done_or_todo i x = Future.is_val x || Int.Set.mem i except in
+  Array.iteri (fun i x ->
+    if not(is_done_or_todo i x) then Errors.errorlabstrm "library"
+      Pp.(str"Proof object "++int i++str" is not checked nor to be checked"))
+    opaque_table;
   let md = {
     md_name = dir;
     md_compiled = cenv;
@@ -695,11 +711,11 @@ let save_library_to ?todo dir f otab =
   let (f',ch) = raw_extern_library f in
   try
     (* Writing vo payload *)
-    System.marshal_out_segment f' ch (md               : seg_lib);
-    System.marshal_out_segment f' ch (utab univ_table  : seg_univ option);
-    System.marshal_out_segment f' ch (dtab disch_table : seg_discharge option);
-    System.marshal_out_segment f' ch (todo f2t_map     : 'tasks option);
-    System.marshal_out_segment f' ch (opaque_table     : seg_proofs);
+    System.marshal_out_segment f' ch (md           : seg_lib);
+    System.marshal_out_segment f' ch (utab         : seg_univ option);
+    System.marshal_out_segment f' ch (dtab         : seg_discharge option);
+    System.marshal_out_segment f' ch (tasks        : 'tasks option);
+    System.marshal_out_segment f' ch (opaque_table : seg_proofs);
     close_out ch;
     (* Writing native code files *)
     if not !Flags.no_native_compiler then

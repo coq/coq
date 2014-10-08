@@ -39,3 +39,12 @@ let compare = Int.compare
 
 module Set = Set.Make(struct type t = int let compare = compare end)
 
+type ('a,'b) request = {
+  exn_info : t * t;
+  stop : t;
+  document : 'b;
+  loc : Loc.t;
+  uuid     : 'a;
+  name     : string
+}
+

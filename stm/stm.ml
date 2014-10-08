@@ -701,14 +701,6 @@ let record_pb_time proof_name loc time =
     hints := Aux_file.set !hints Loc.ghost proof_name proof_build_time
   end
  
-type 'a a_request = {
-  r_exn_info : Stateid.t * Stateid.t;
-  r_stop : Stateid.t;
-  r_document : VCS.vcs;
-  r_loc : Loc.t;
-  r_uuid     : 'a;
-  r_name     : string }
-
 exception RemoteException of std_ppcmds
 let _ = Errors.register_handler (function
   | RemoteException ppcmd -> ppcmd
@@ -730,7 +722,7 @@ module Task = struct
     t_uuid     : Future.UUID.t;
     t_name     : string }   
 
-  type request = Future.UUID.t a_request
+  type request = (Future.UUID.t,VCS.vcs) Stateid.request
   
   type error = {
     e_error_at    : Stateid.t;
@@ -746,17 +738,17 @@ module Task = struct
   let extra_env () = !async_proofs_workers_extra_env
 
   let name_of_task t = t.t_name
-  let name_of_request r = r.r_name
+  let name_of_request r = r.Stateid.name
 
   let request_of_task age { t_exn_info;t_start;t_stop;t_loc;t_uuid;t_name } =
    assert(age = `Fresh);
    try Some {
-     r_exn_info = t_exn_info;
-     r_stop = t_stop;
-     r_document = VCS.slice ~start:t_stop ~stop:t_start;
-     r_loc = t_loc;
-     r_uuid = t_uuid;
-     r_name = t_name }
+     Stateid.exn_info = t_exn_info;
+     stop = t_stop;
+     document = VCS.slice ~start:t_stop ~stop:t_start;
+     loc = t_loc;
+     uuid = t_uuid;
+     name = t_name }
    with VCS.Expired -> None
 
   let use_response { t_assign; t_loc; t_name } = function
@@ -795,13 +787,13 @@ module Task = struct
     Proof_global.return_proof ()
   let build_proof_here (id,valid) loc eop =
     Future.create (State.exn_on id ~valid) (build_proof_here_core loc eop)
-  let perform { r_exn_info; r_stop = eop; r_document = vcs; r_loc } =
+  let perform { Stateid.exn_info; stop = eop; document = vcs; loc } =
     try
       VCS.restore vcs;
       VCS.print ();
       let rc, time =
         let wall_clock = Unix.gettimeofday () in
-        let l = Future.force (build_proof_here r_exn_info r_loc eop) in
+        let l = Future.force (build_proof_here exn_info loc eop) in
         l, Unix.gettimeofday () -. wall_clock in
       VCS.print ();
       RespBuiltProof(rc,time)
@@ -877,17 +869,18 @@ module Slaves : sig
   val slave_main_loop : (unit -> unit) -> unit
   val slave_init_stdout : unit -> unit
 
-  type tasks
-  val dump_final : int Future.UUIDMap.t -> tasks
-  val dump_snapshot : int Future.UUIDMap.t -> tasks
-  val check_task : string -> tasks -> int -> bool
-  val info_tasks : tasks -> (string * float * int) list
+  type 'a tasks = ('a,VCS.vcs) Stateid.request list
+  val dump_snapshot : unit -> Future.UUID.t tasks
+  val check_task : string -> int tasks -> int -> bool
+  val info_tasks : 'a tasks -> (string * float * int) list
   val finish_task :
     string ->
     Library.seg_univ -> Library.seg_discharge -> Library.seg_proofs ->
-    tasks -> int -> Library.seg_univ
+    int tasks -> int -> Library.seg_univ
 
   val cancel_worker : string -> unit
+
+  val reset_task_queue : unit -> unit
 
   val set_perspective : Stateid.t list -> unit
 
@@ -896,19 +889,19 @@ end = struct
   module TaskQueue = AsyncTaskQueue.Make(Task)
 
   let check_task_aux extra name l i =
-    let { r_stop; r_document; r_loc; r_name } = List.nth l i in
+    let { Stateid.stop; document; loc; name = r_name } = List.nth l i in
     Pp.msg_info(
       str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
-    VCS.restore r_document;
+    VCS.restore document;
     try
-      !Task.reach_known_state ~cache:`No r_stop;
+      !Task.reach_known_state ~cache:`No stop;
       (* The original terminator, a hook, has not been saved in the .vi*)
       Proof_global.set_terminator
         (Lemmas.standard_proof_terminator []
           (Lemmas.mk_hook (fun _ _ -> ())));
       let proof = Proof_global.close_proof (fun x -> x) in
-      vernac_interp r_stop ~proof
-        { verbose = false; loc = r_loc;
+      vernac_interp stop ~proof
+        { verbose = false; loc;
           expr = (VernacEndProof (Proved (true,None))) };
       Some proof
     with e ->
@@ -938,7 +931,7 @@ end = struct
                     str (Printexc.to_string e))); None
 
   let finish_task name (u,cst,_) d p l i =
-    let bucket = (List.nth l i).r_uuid in
+    let bucket = (List.nth l i).Stateid.uuid in
     match check_task_aux (Printf.sprintf ", bucket %d" bucket) name l i with
     | None -> exit 1
     | Some (po,pt) ->
@@ -972,14 +965,14 @@ end = struct
     | None -> false
 
   let info_tasks l =
-    CList.map_i (fun i { r_loc; r_name } ->
+    CList.map_i (fun i { Stateid.loc; name } ->
       let time1 =
-        try float_of_string (Aux_file.get !hints r_loc "proof_build_time")
+        try float_of_string (Aux_file.get !hints loc "proof_build_time")
         with Not_found -> 0.0 in
       let time2 =
-        try float_of_string (Aux_file.get !hints r_loc "proof_check_time")
+        try float_of_string (Aux_file.get !hints loc "proof_check_time")
         with Not_found -> 0.0 in
-      r_name, max (time1 +. time2) 0.0001,i) 0 l
+      name, max (time1 +. time2) 0.0001,i) 0 l
 
   let set_perspective idl =
     let open Stateid in
@@ -1024,17 +1017,13 @@ end = struct
   let cancel_worker = TaskQueue.cancel_worker
 
   (* For external users this name is nicer than request *)
-  type tasks = int a_request list
-  let dump f2t_map =
-    let tasks = TaskQueue.dump () in
-    prerr_endline (Printf.sprintf "dumping %d tasks\n" (List.length tasks));
-    List.map (function r -> { r with r_uuid = Future.UUIDMap.find r.r_uuid f2t_map })
-      (CList.map_filter (Task.request_of_task `Fresh) tasks)
-  let dump_snapshot f2t_map =
+  type 'a tasks = ('a,VCS.vcs) Stateid.request list
+  let dump_snapshot () =
     let tasks = TaskQueue.snapshot () in
     prerr_endline (Printf.sprintf "dumping %d tasks\n" (List.length tasks));
-    List.map (function r -> { r with r_uuid = Future.UUIDMap.find r.r_uuid f2t_map })
-      (CList.map_filter (Task.request_of_task `Fresh) tasks)
+    CList.map_filter (Task.request_of_task `Fresh) tasks
+
+  let reset_task_queue () = TaskQueue.clear ()
 
 end
 
@@ -1236,7 +1225,8 @@ let collect_proof keep cur hd brkind id =
         else `Sync (name,proof_using_ast last,`Policy)
     | `Fork (_, hd', GuaranteesOpacity, ids) when
        has_proof_no_using last && not (State.is_cached (parent last)) &&
-       !Flags.compilation_mode = Flags.BuildVi ->
+       (!Flags.compilation_mode = Flags.BuildVi ||
+        !Flags.async_proofs_always_delegate) ->
         (try
           let name = name ids in
           let hint, time = get_hint_ctx loc, get_hint_bp_time name in
@@ -1602,8 +1592,9 @@ let join () =
   VCS.print ();
   VCS.print ()
 
-type tasks = Slaves.tasks * RemoteCounter.remote_counters_status
-let dump x = Slaves.dump x, RemoteCounter.backup ()
+let dump_snapshot () = Slaves.dump_snapshot (), RemoteCounter.snapshot ()
+type document = VCS.vcs
+type tasks = int Slaves.tasks * RemoteCounter.remote_counters_status
 let check_task name (tasks,rcbackup) i =
   RemoteCounter.restore rcbackup;
   let vcs = VCS.backup () in
@@ -1682,6 +1673,15 @@ let handle_failure e vcs tty =
       end;
       VCS.print ();
       raise e
+
+let snapshot_vi ldir long_f_dot_v =
+  finish ();
+  if List.length (VCS.branches ()) > 1 then
+    Errors.errorlabstrm "stm" (str"Cannot dump a vi with open proofs");
+  Library.save_library_to ~todo:(dump_snapshot ()) ldir long_f_dot_v
+    (Global.opaque_tables ())
+
+let reset_task_queue = Slaves.reset_task_queue
 
 let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
   let warn_if_pos a b =

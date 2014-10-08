@@ -333,8 +333,8 @@ let compile verbosely f =
       let _ = load_vernac verbosely long_f_dot_v in
       Stm.finish ();
       check_pending_proofs ();
-      Library.save_library_to ~todo:Stm.dump_final ldir long_f_dot_v
-        (Global.opaque_tables ())
+      Stm.snapshot_vi ldir long_f_dot_v;
+      Stm.reset_task_queue ()
   | Vi2Vo ->
       let open Filename in
       let open Library in

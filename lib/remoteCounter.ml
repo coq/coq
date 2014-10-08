@@ -37,6 +37,9 @@ let new_counter ~name a ~incr ~build =
 
 let backup () = !counters
 
+let snapshot () =
+  List.map (fun (n,v) -> n, Obj.repr (ref (ref !!(Obj.obj v)))) !counters
+
 let restore l =
   List.iter (fun (name, data) ->
     assert(List.mem_assoc name !counters);
