@@ -635,8 +635,11 @@ let apply_on_subterm evdref f c t =
   applyrec (0,c) t
 
 let filter_possible_projections c ty ctxt args =
-  let fv1 = free_rels c in
-  let fv2 = collect_vars c in
+  (* Since args in the types will be replaced by holes, we count the
+     fv of args to have a well-typed filter; don't know how necessary
+     it is however to have a well-typed filter here *)
+  let fv1 = free_rels (applist (c,args)) (* Hack: locally untyped *) in
+  let fv2 = collect_vars (applist (c,args)) in
   let tyvars = collect_vars ty in
   List.map2 (fun (id,b,_) a ->
     b <> None ||
