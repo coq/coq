@@ -209,6 +209,18 @@ let pf_reduce_decl redfun where (id,c,ty) gl =
       let ty' =	if where <> InHypValueOnly then redfun' ty else ty in
       (id,Some b',ty')
 
+let pf_reduce_decl_change redfun where (id,c,ty) gl =
+  let redfun' b = redfun b (pf_env gl) (project gl) in
+  match c with
+  | None ->
+      if where = InHypValueOnly then
+	errorlabstrm "" (pr_id id ++ str "has no value.");
+      (id,None,redfun' false ty)
+  | Some b ->
+      let b' = if where <> InHypTypeOnly then redfun' true b else b in
+      let ty' =	if where <> InHypValueOnly then redfun' false ty else ty in
+      (id,Some b',ty')
+
 (* Possibly equip a reduction with the occurrences mentioned in an
    occurrence clause *)
 
@@ -274,6 +286,10 @@ let reduct_in_hyp redfun (id,where) gl =
   convert_hyp_no_check
     (pf_reduce_decl redfun where (pf_get_hyp gl id) gl) gl
 
+let reduct_in_hyp_change redfun (id,where) gl =
+  convert_hyp_no_check
+    (pf_reduce_decl_change redfun where (pf_get_hyp gl id) gl) gl
+
 let revert_cast (redfun,kind as r) =
   if kind = DEFAULTcast then (redfun,REVERTcast) else r
 
@@ -281,27 +297,34 @@ let reduct_option redfun = function
   | Some id -> reduct_in_hyp (fst redfun) id
   | None    -> reduct_in_concl (revert_cast redfun)
 
+let weak_check env sigma deep newc origc =
+  let t1 = Retyping.get_type_of env sigma newc in
+  if deep then
+    let t2 = Retyping.get_type_of env sigma origc in
+    is_fconv Reduction.CUMUL env sigma t1 t2
+  else
+    isSort (whd_betadeltaiota env sigma t1)
+
 (* Now we introduce different instances of the previous tacticals *)
-let change_and_check cv_pb t env sigma c =
-  let tt = Retyping.get_type_of env sigma t in
-  let tc = Retyping.get_type_of env sigma c in
-  if is_fconv cv_pb env sigma tt tc && is_fconv cv_pb env sigma t c then
+let change_and_check cv_pb deep t env sigma c =
+  let b = weak_check env sigma deep t c in
+  if b && is_fconv cv_pb env sigma t c then
     t
   else
     errorlabstrm "convert-check-hyp" (str "Not convertible.")
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
-let change_on_subterm cv_pb t = function
-  | None -> change_and_check cv_pb t
+let change_on_subterm cv_pb deep t = function
+  | None -> change_and_check cv_pb deep t
   | Some occl ->
       contextually false occl
-        (fun subst -> change_and_check Reduction.CONV (replace_vars subst t))
+        (fun subst -> change_and_check Reduction.CONV true (replace_vars subst t))
 
 let change_in_concl occl t =
-  reduct_in_concl ((change_on_subterm Reduction.CUMUL t occl),DEFAULTcast)
+  reduct_in_concl ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)
 
 let change_in_hyp occl t id  =
-  with_check (reduct_in_hyp (change_on_subterm Reduction.CONV t occl) id)
+  with_check (reduct_in_hyp_change (fun x -> change_on_subterm Reduction.CONV x t occl) id)
 
 let change_option occl t = function
   | Some id -> change_in_hyp occl t id
