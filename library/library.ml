@@ -351,87 +351,15 @@ let access_opaque_table dp i =
     (fetch_table "opaque proofs")
     add_opaque_table !opaque_tables dp i
 let access_univ_table dp i =
-  access_table
-    (fetch_table "universe contexts of opaque proofs")
-    add_univ_table !univ_tables dp i
-
-(** Table of opaque terms from the library currently being compiled *)
-
-module OpaqueTables = struct
-
- let a_constr = Future.from_val (Term.mkRel 1)
- let a_univ = Future.from_val Univ.ContextSet.empty
- let a_discharge : Opaqueproof.cooking_info list = []
-
- let local_opaque_table = ref (Array.make 100 a_constr)
- let local_univ_table = ref (Array.make 100 a_univ)
- let local_discharge_table = ref (Array.make 100 a_discharge)
- let local_index = ref 0
-
- module FMap = Map.Make(Future.UUID)
- let f2t = ref FMap.empty
-
- let get_opaque dp i =
-   if DirPath.equal dp (Lib.library_dp ())
-   then (!local_opaque_table).(i)
-   else access_opaque_table dp i
- 
- let join_local_opaque dp i =
-   if DirPath.equal dp (Lib.library_dp ()) then
-    ignore(Future.force (!local_opaque_table).(i))
-
- let join_local_univ dp i =
-   if DirPath.equal dp (Lib.library_dp ()) then
-    ignore(Future.join (!local_univ_table).(i))
-
- let get_univ dp i =
-   if DirPath.equal dp (Lib.library_dp ())
-   then Some (!local_univ_table).(i)
-   else try Some (access_univ_table dp i) with Not_found -> None
-
- let store (d,cu) =
-  let n = !local_index in
-  incr local_index;
-  if Int.equal n (Array.length !local_opaque_table) then begin
-    let t = Array.make (2*n) a_constr in
-    Array.blit !local_opaque_table 0 t 0 n;
-    local_opaque_table := t;
-    let t = Array.make (2*n) a_univ in
-    Array.blit !local_univ_table 0 t 0 n;
-    local_univ_table := t;
-    let t = Array.make (2*n) a_discharge in
-    Array.blit !local_discharge_table 0 t 0 n;
-    local_discharge_table := t
-  end;
-  let c, u = Future.split2 ~greedy:true cu in
-  Future.sink u;
-  Future.sink c;
-  (!local_opaque_table).(n) <- c;
-  (!local_univ_table).(n) <- u;
-  (!local_discharge_table).(n) <- d;
-  f2t := FMap.add (Future.uuid cu) n !f2t;
-  Some (Lib.library_dp (), n)
-
- let dump () =
-   Array.sub !local_opaque_table 0 !local_index,
-   Array.sub !local_univ_table 0 !local_index,
-   Array.sub !local_discharge_table 0 !local_index,
-   FMap.bindings !f2t
-
- let reset () =
-   local_discharge_table := Array.make 100 a_discharge;
-   local_univ_table := Array.make 100 a_univ;
-   local_opaque_table := Array.make 100 a_constr;
-   f2t := FMap.empty;
-   local_index := 0
-
-end
+  try
+    Some (access_table 
+            (fetch_table "universe contexts of opaque proofs")
+            add_univ_table !univ_tables dp i)
+  with Not_found -> None
 
 let () =
-  Opaqueproof.set_indirect_opaque_accessor OpaqueTables.get_opaque;
-  Opaqueproof.set_indirect_univ_accessor OpaqueTables.get_univ;
-  Opaqueproof.set_join_indirect_local_opaque OpaqueTables.join_local_opaque;
-  Opaqueproof.set_join_indirect_local_univ OpaqueTables.join_local_univ
+  Opaqueproof.set_indirect_opaque_accessor access_opaque_table;
+  Opaqueproof.set_indirect_univ_accessor access_univ_table
 
 (************************************************************************)
 (* Internalise libraries *)
@@ -694,8 +622,6 @@ let start_library f =
   check_module_name file;
   check_coq_overwriting ldir0 id;
   let ldir = add_dirpath_suffix ldir0 id in
-  OpaqueTables.reset ();
-  Opaqueproof.set_indirect_creator OpaqueTables.store;
   Declaremods.start_library ldir;
   ldir,longf
 
@@ -743,7 +669,7 @@ let error_recursively_dependent_library dir =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 
-let save_library_to ?todo dir f =
+let save_library_to ?todo dir f otab =
   let f, todo, utab, dtab =
     match todo with
     | None ->
@@ -753,10 +679,8 @@ let save_library_to ?todo dir f =
         assert(!Flags.compilation_mode = Flags.BuildVi);
         f ^ "i", (fun x -> Some (d x)),
           (fun x -> Some (x,Univ.ContextSet.empty,false)), (fun x -> Some x) in
-  Opaqueproof.reset_indirect_creator ();
   let cenv, seg, ast = Declaremods.end_library dir in
-  let opaque_table, univ_table, disch_table, f2t_map =
-    OpaqueTables.dump () in
+  let opaque_table, univ_table, disch_table, f2t_map = Opaqueproof.dump otab in
   assert(!Flags.compilation_mode = Flags.BuildVi ||
          Array.for_all Future.is_val opaque_table);
   let md = {

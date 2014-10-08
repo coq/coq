@@ -87,6 +87,14 @@ val exists_objlabel  : Label.t -> bool
 val constant_of_delta_kn : kernel_name -> constant
 val mind_of_delta_kn : kernel_name -> mutual_inductive
 
+val opaque_tables : unit -> Opaqueproof.opaquetab
+val body_of_constant : constant -> Term.constr option
+val body_of_constant_body : Declarations.constant_body -> Term.constr option
+val constraints_of_constant_body :
+  Declarations.constant_body -> Univ.constraints
+val universes_of_constant_body :
+  Declarations.constant_body -> Univ.universe_context
+
 (** {6 Compiled libraries } *)
 
 val start_library : DirPath.t -> module_path

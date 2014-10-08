@@ -43,8 +43,8 @@ val import_module : bool -> qualid located -> unit
 val start_library : string -> DirPath.t * string
 
 (** {6 End the compilation of a library and save it to a ".vo" file } *)
-val save_library_to : ?todo:((Future.UUID.t * int) list -> 'tasks) ->
-  DirPath.t -> string -> unit
+val save_library_to : ?todo:(int Future.UUIDMap.t -> 'tasks) ->
+  DirPath.t -> string -> Opaqueproof.opaquetab -> unit
 
 val load_library_todo :
   string -> string * seg_lib * seg_univ * seg_discharge * 'tasks * seg_proofs

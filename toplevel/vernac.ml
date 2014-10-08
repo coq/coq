@@ -321,7 +321,7 @@ let compile verbosely f =
       Stm.join ();
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
-      Library.save_library_to ldir long_f_dot_v;
+      Library.save_library_to ldir long_f_dot_v (Global.opaque_tables ());
       Aux_file.record_in_aux_at Loc.ghost "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
@@ -333,7 +333,8 @@ let compile verbosely f =
       let _ = load_vernac verbosely long_f_dot_v in
       Stm.finish ();
       check_pending_proofs ();
-      Library.save_library_to ~todo:Stm.dump ldir long_f_dot_v
+      Library.save_library_to ~todo:Stm.dump_final ldir long_f_dot_v
+        (Global.opaque_tables ())
   | Vi2Vo ->
       let open Filename in
       let open Library in

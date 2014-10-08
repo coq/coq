@@ -86,7 +86,7 @@ let handle_side_effects env body side_eff =
 	      let univs = cb.const_universes in
 		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t)
       | OpaqueDef b -> 
-          let b = Opaqueproof.force_proof b in
+          let b = Opaqueproof.force_proof (opaque_tables env) b in
 	  let poly = cb.const_polymorphic in
 	    if not poly then
               let b_ty = Typeops.type_of_constant_type env cb.const_type in
@@ -217,9 +217,11 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
         | Undef _ -> Idset.empty
         | Def cs -> global_vars_set env (Mod_subst.force_constr cs)
         | OpaqueDef lc ->
-            let vars = global_vars_set env (Opaqueproof.force_proof lc) in
+            let vars =
+              global_vars_set env
+                (Opaqueproof.force_proof (opaque_tables env) lc) in
             (* we force so that cst are added to the env immediately after *)
-            ignore(Opaqueproof.force_constraints lc);
+            ignore(Opaqueproof.force_constraints (opaque_tables env) lc);
             !suggest_proof_using kn env vars ids_typ context_ids;
             if !Flags.compilation_mode = Flags.BuildVo then
               record_aux env ids_typ vars;

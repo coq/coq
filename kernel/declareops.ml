@@ -42,10 +42,10 @@ let instantiate cb c =
     Vars.subst_instance_constr (Univ.UContext.instance cb.const_universes) c
   else c
 
-let body_of_constant cb = match cb.const_body with
+let body_of_constant otab cb = match cb.const_body with
   | Undef _ -> None
   | Def c -> Some (instantiate cb (force_constr c))
-  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof o))
+  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof otab o))
 
 let type_of_constant cb =
   match cb.const_type with
@@ -54,23 +54,24 @@ let type_of_constant cb =
       if t' == t then x else RegularArity t'
   | TemplateArity _ as x -> x
 
-let constraints_of_constant cb = Univ.Constraint.union 
+let constraints_of_constant otab cb = Univ.Constraint.union 
   (Univ.UContext.constraints cb.const_universes)
   (match cb.const_body with
   | Undef _ -> Univ.empty_constraint
   | Def c -> Univ.empty_constraint
-  | OpaqueDef o -> Univ.ContextSet.constraints (Opaqueproof.force_constraints o))
+  | OpaqueDef o ->
+      Univ.ContextSet.constraints (Opaqueproof.force_constraints otab o))
 
-let universes_of_constant cb = 
+let universes_of_constant otab cb = 
   match cb.const_body with
   | Undef _ | Def _ -> cb.const_universes
   | OpaqueDef o -> 
     Univ.UContext.union cb.const_universes 
-      (Univ.ContextSet.to_context (Opaqueproof.force_constraints o))
+      (Univ.ContextSet.to_context (Opaqueproof.force_constraints otab o))
 
-let universes_of_polymorphic_constant cb = 
+let universes_of_polymorphic_constant otab cb = 
   if cb.const_polymorphic then 
-    let univs = universes_of_constant cb in
+    let univs = universes_of_constant otab cb in
       Univ.instantiate_univ_context univs
   else Univ.UContext.empty
 
@@ -291,9 +292,9 @@ let hcons_mind mib =
 
 (** {6 Stm machinery } *)
 
-let join_constant_body cb =
+let join_constant_body otab cb =
   match cb.const_body with
-  | OpaqueDef o -> Opaqueproof.join_opaque o
+  | OpaqueDef o -> Opaqueproof.join_opaque otab o
   | _ -> ()
 
 let string_of_side_effect = function

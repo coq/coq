@@ -46,6 +46,9 @@ val rel_context   : env -> rel_context
 val named_context : env -> named_context
 val named_context_val : env -> named_context_val
 
+val opaque_tables : env -> Opaqueproof.opaquetab
+val set_opaque_tables : env -> Opaqueproof.opaquetab -> env
+
 
 val engagement    : env -> engagement option
 val is_impredicative_set : env -> bool

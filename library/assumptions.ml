@@ -236,7 +236,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
           else (s, acc)
       else (s, acc)
     in
-      match Declareops.body_of_constant cb with
+      match Global.body_of_constant_body cb with
       | None -> do_type (Axiom kn)
       | Some body -> do_constr body s acc
 

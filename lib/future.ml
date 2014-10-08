@@ -40,6 +40,8 @@ module UUID = struct
   let equal = (==)
 end
 
+module UUIDMap = Map.Make(UUID)
+
 type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
 
 (* Val is not necessarily a final state, so the

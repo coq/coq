@@ -113,6 +113,14 @@ let lookup_modtype kn = lookup_modtype kn (env())
 
 let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
+let opaque_tables () = Environ.opaque_tables (env ())
+let body_of_constant_body cb = Declareops.body_of_constant (opaque_tables ()) cb
+let body_of_constant cst = body_of_constant_body (lookup_constant cst)
+let constraints_of_constant_body cb =
+  Declareops.constraints_of_constant (opaque_tables ()) cb
+let universes_of_constant_body cb =
+  Declareops.universes_of_constant (opaque_tables ()) cb
+
 (** Operations on kernel names *)
 
 let constant_of_delta_kn kn =
@@ -153,7 +161,9 @@ let type_of_global_unsafe r =
   | VarRef id -> Environ.named_type id env
   | ConstRef c -> 
      let cb = Environ.lookup_constant c env in 
-     let univs = Declareops.universes_of_polymorphic_constant cb in
+     let univs =
+       Declareops.universes_of_polymorphic_constant
+         (Environ.opaque_tables env) cb in
      let ty = Typeops.type_of_constant_type env cb.Declarations.const_type in
        Vars.subst_instance_constr (Univ.UContext.instance univs) ty
   | IndRef ind ->
@@ -175,7 +185,9 @@ let type_of_global_in_context env r =
   | VarRef id -> Environ.named_type id env, Univ.UContext.empty
   | ConstRef c -> 
      let cb = Environ.lookup_constant c env in 
-     let univs = Declareops.universes_of_polymorphic_constant cb in
+     let univs =
+       Declareops.universes_of_polymorphic_constant
+         (Environ.opaque_tables env) cb in
        Typeops.type_of_constant_type env cb.Declarations.const_type, univs
   | IndRef ind ->
      let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
@@ -198,7 +210,8 @@ let universes_of_global env r =
     | VarRef id -> Univ.UContext.empty
     | ConstRef c -> 
       let cb = Environ.lookup_constant c env in 
-	Declareops.universes_of_polymorphic_constant cb
+	Declareops.universes_of_polymorphic_constant
+          (Environ.opaque_tables env) cb
     | IndRef ind ->
       let (mib, oib) = Inductive.lookup_mind_specif env ind in
 	Univ.instantiate_univ_context mib.mind_universes 

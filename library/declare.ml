@@ -116,7 +116,7 @@ let open_constant i ((sp,kn), obj) =
     match (Global.lookup_constant con).const_body with
     | (Def _ | Undef _) -> ()
     | OpaqueDef lc ->
-        match Opaqueproof.get_constraints lc with
+        match Opaqueproof.get_constraints (Global.opaque_tables ())lc with
         | Some f when Future.is_val f -> Global.push_context_set (Future.force f)
         | _ -> ()
 
@@ -208,7 +208,8 @@ let declare_sideff env fix_exn se =
     match cb with
     | { const_body = Def sc } -> (Mod_subst.force_constr sc, Univ.ContextSet.empty), false
     | { const_body = OpaqueDef fc } -> 
-      (Opaqueproof.force_proof fc, Opaqueproof.force_constraints fc), true
+      (Opaqueproof.force_proof (Environ.opaque_tables env) fc,
+       Opaqueproof.force_constraints (Environ.opaque_tables env) fc), true
     | { const_body = Undef _ } -> anomaly(str"Undefined side effect")
   in
   let ty_of cb =

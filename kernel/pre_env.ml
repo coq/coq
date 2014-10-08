@@ -74,7 +74,9 @@ type env = {
   env_nb_rel        : int;
   env_stratification : stratification;
   env_conv_oracle   : Conv_oracle.oracle;
-  retroknowledge : Retroknowledge.retroknowledge }
+  retroknowledge : Retroknowledge.retroknowledge;
+  indirect_pterms : Opaqueproof.opaquetab;
+}
 
 type named_context_val = named_context * named_vals
 
@@ -96,7 +98,8 @@ let empty_env = {
     env_engagement = None;
     env_type_in_type = false};
   env_conv_oracle = Conv_oracle.empty;
-  retroknowledge = Retroknowledge.initial_retroknowledge }
+  retroknowledge = Retroknowledge.initial_retroknowledge;
+  indirect_pterms = Opaqueproof.empty_opaquetab }
 
 
 (* Rel context *)
@@ -141,7 +144,9 @@ let push_named d env =
     env_nb_rel = env.env_nb_rel;
     env_stratification = env.env_stratification;
     env_conv_oracle = env.env_conv_oracle;
-    retroknowledge = env.retroknowledge; }
+    retroknowledge = env.retroknowledge;
+    indirect_pterms = env.indirect_pterms;
+  }
 
 let lookup_named_val id env =
   snd(List.find (fun (id',_) -> Id.equal id id') env.env_named_vals)

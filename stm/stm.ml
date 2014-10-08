@@ -805,8 +805,9 @@ module Task = struct
         List.iter (fun (_,se) -> Declareops.iter_side_effects (function
           | Declarations.SEsubproof(_,
              { Declarations.const_body = Declarations.OpaqueDef f;
-      	 const_universes = univs } ) ->
-              Opaqueproof.join_opaque f
+      	       const_universes = univs } ) ->
+              (* They are Direct *)
+              Opaqueproof.join_opaque Opaqueproof.empty_opaquetab f
           | _ -> ())
         se) (fst l);
         l, Unix.gettimeofday () -. wall_clock in
@@ -885,7 +886,8 @@ module Slaves : sig
   val slave_init_stdout : unit -> unit
 
   type tasks
-  val dump : (Future.UUID.t * int) list -> tasks
+  val dump_final : int Future.UUIDMap.t -> tasks
+  val dump_snapshot : int Future.UUIDMap.t -> tasks
   val check_task : string -> tasks -> int -> bool
   val info_tasks : tasks -> (string * float * int) list
   val finish_task :
@@ -953,21 +955,24 @@ end = struct
           Nametab.locate_constant
             (Libnames.qualid_of_ident po.Proof_global.id) in
         let c = Global.lookup_constant con in
-        match c.Declarations.const_body with
-        | Declarations.OpaqueDef lc ->
-            let uc = Option.get (Opaqueproof.get_constraints lc) in
-            let uc =
-              Future.chain
-                ~greedy:true ~pure:true uc Univ.hcons_universe_context_set in
-            let pr = Opaqueproof.get_proof lc in
-            let pr = Future.chain ~greedy:true ~pure:true pr discharge in
-            let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
-            Future.sink pr;
-            let extra = Future.join uc in
-            u.(bucket) <- uc;
-            p.(bucket) <- pr;
-            u, Univ.ContextSet.union cst extra, false
-        | _ -> assert false
+        let o = match c.Declarations.const_body with
+          | Declarations.OpaqueDef o -> o
+          | _ -> assert false in
+        let uc =
+          Option.get
+            (Opaqueproof.get_constraints (Global.opaque_tables ()) o) in
+        let pr =
+          Future.from_val (Option.get (Global.body_of_constant_body c)) in
+        let uc =
+          Future.chain
+            ~greedy:true ~pure:true uc Univ.hcons_universe_context_set in
+        let pr = Future.chain ~greedy:true ~pure:true pr discharge in
+        let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
+        Future.sink pr;
+        let extra = Future.join uc in
+        u.(bucket) <- uc;
+        p.(bucket) <- pr;
+        u, Univ.ContextSet.union cst extra, false
   
   let check_task name l i =
     match check_task_aux "" name l i with
@@ -1031,7 +1036,12 @@ end = struct
   let dump f2t_map =
     let tasks = TaskQueue.dump () in
     prerr_endline (Printf.sprintf "dumping %d tasks\n" (List.length tasks));
-    List.map (function r -> { r with r_uuid = List.assoc r.r_uuid f2t_map })
+    List.map (function r -> { r with r_uuid = Future.UUIDMap.find r.r_uuid f2t_map })
+      (CList.map_filter (Task.request_of_task `Fresh) tasks)
+  let dump_snapshot f2t_map =
+    let tasks = TaskQueue.snapshot () in
+    prerr_endline (Printf.sprintf "dumping %d tasks\n" (List.length tasks));
+    List.map (function r -> { r with r_uuid = Future.UUIDMap.find r.r_uuid f2t_map })
       (CList.map_filter (Task.request_of_task `Fresh) tasks)
 
 end

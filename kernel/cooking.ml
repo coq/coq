@@ -161,10 +161,10 @@ let on_body ml hy f = function
     OpaqueDef (Opaqueproof.discharge_direct_opaque ~cook_constr:f
                  { Opaqueproof.modlist = ml; abstract = hy } o)
 
-let constr_of_def = function
+let constr_of_def otab = function
   | Undef _ -> assert false
   | Def cs -> Mod_subst.force_constr cs
-  | OpaqueDef lc -> Opaqueproof.force_proof lc
+  | OpaqueDef lc -> Opaqueproof.force_proof otab lc
 
 let expmod_constr_subst cache modlist subst c =
   let c = expmod_constr cache modlist c in
@@ -189,7 +189,8 @@ let lift_univs cb subst =
       subst, Univ.UContext.make (inst,cstrs')
   else subst, cb.const_universes
 
-let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
+let cook_constant env { from = cb; info } =
+  let { Opaqueproof.modlist; abstract } = info in
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
   let usubst, univs = lift_univs cb usubst in
@@ -211,7 +212,7 @@ let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
     | TemplateArity (ctx,s) ->
   	let t = mkArity (ctx,Type s.template_level) in
   	let typ = abstract_constant_type (expmod t) hyps in
-  	let j = make_judge (constr_of_def body) typ in
+  	let j = make_judge (constr_of_def (opaque_tables env) body) typ in
   	Typeops.make_polymorphic_if_constant_for_ind env j
   in
   let projection pb =

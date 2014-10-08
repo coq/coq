@@ -72,7 +72,7 @@ let rec check_with_def env struc (idl,c) mp equiv =
       (* In the spirit of subtyping.check_constant, we accept
          any implementations of parameters and opaques terms,
 	 as long as they have the right type *)
-      let ccst = Declareops.constraints_of_constant cb in
+      let ccst = Declareops.constraints_of_constant (opaque_tables env) cb in
       let env' = Environ.add_constraints ccst env' in
       let c',cst = match cb.const_body with
 	| Undef _ | OpaqueDef _ ->

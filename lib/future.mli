@@ -60,6 +60,8 @@ module UUID : sig
   val equal : t -> t -> bool
 end
 
+module UUIDMap : Map.S with type key = UUID.t
+
 exception NotReady
 
 type 'a computation

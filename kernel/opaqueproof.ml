@@ -21,7 +21,8 @@ type proofterm = (constr * Univ.universe_context_set) Future.computation
 type opaque =
   | Indirect of substitution list * DirPath.t * int (* subst, lib, index *)
   | Direct of cooking_info list * proofterm
-  | NoIndirect of substitution list * proofterm
+type opaquetab = (cooking_info list * proofterm) Int.Map.t * DirPath.t
+let empty_opaquetab = Int.Map.empty, DirPath.initial
 
 (* hooks *)
 let default_get_opaque dp _ =
@@ -31,87 +32,113 @@ let default_get_univ dp _ =
   Errors.error
     ("Cannot access universe constraints of opaque proofs in library " ^
     DirPath.to_string dp)
-let default_mk_indirect _ = None
-let default_join_indirect_local_opaque _ _ = ()
-let default_join_indirect_local_univ _ _ = ()
 
 let get_opaque = ref default_get_opaque
 let get_univ = ref default_get_univ
-let join_indirect_local_opaque = ref default_join_indirect_local_opaque
-let join_indirect_local_univ = ref default_join_indirect_local_univ
-let mk_indirect = ref default_mk_indirect
 
 let set_indirect_opaque_accessor f = (get_opaque := f)
 let set_indirect_univ_accessor f = (get_univ := f)
-let set_indirect_creator f = (mk_indirect := f)
-let set_join_indirect_local_opaque f = join_indirect_local_opaque := f
-let set_join_indirect_local_univ f = join_indirect_local_univ := f
-let reset_indirect_creator () = mk_indirect := default_mk_indirect
 (* /hooks *)
 
 let create cu = Direct ([],cu)
 
-let turn_indirect o = match o with
-  | Indirect _
-  | NoIndirect _ -> Errors.anomaly (Pp.str "Already an indirect opaque")
+let turn_indirect dp o (prfs,odp) = match o with
+  | Indirect _ -> Errors.anomaly (Pp.str "Already an indirect opaque")
   | Direct (d,cu) ->
       let cu = Future.chain ~pure:true cu (fun (c, u) -> hcons_constr c, u) in
-      match !mk_indirect (d,cu) with
-      | None -> Future.sink cu; NoIndirect([],cu)
-      | Some (dp,i) -> Indirect ([],dp,i)
+      let id = Int.Map.cardinal prfs in
+      let prfs = Int.Map.add id (d,cu) prfs in
+      let ndp =
+        if DirPath.equal dp odp then odp
+        else if DirPath.equal odp DirPath.initial then dp
+        else Errors.anomaly
+          (Pp.str "Using the same opaque table for multiple dirpaths") in
+      Indirect ([],dp,id), (prfs, ndp)
 
 let subst_opaque sub = function
   | Indirect (s,dp,i) -> Indirect (sub::s,dp,i)
-  | NoIndirect (s,uc) -> NoIndirect (sub::s,uc)
   | Direct _ -> Errors.anomaly (Pp.str "Substituting a Direct opaque")
 
 let iter_direct_opaque f = function
-  | Indirect _
-  | NoIndirect _ -> Errors.anomaly (Pp.str "Not a direct opaque")
+  | Indirect _ -> Errors.anomaly (Pp.str "Not a direct opaque")
   | Direct (d,cu) ->
       Direct (d,Future.chain ~pure:true cu (fun (c, u) -> f c; c, u))
 
 let discharge_direct_opaque ~cook_constr ci = function
-  | Indirect _
-  | NoIndirect _ -> Errors.anomaly (Pp.str "Not a direct opaque")
+  | Indirect _ -> Errors.anomaly (Pp.str "Not a direct opaque")
   | Direct (d,cu) ->
       Direct (ci::d,Future.chain ~pure:true cu (fun (c, u) -> cook_constr c, u))
 
-let join_opaque = function
+let join_opaque (prfs,odp) = function
   | Direct (_,cu) -> ignore(Future.join cu)
-  | NoIndirect (_,cu) -> ignore(Future.join cu)
   | Indirect (_,dp,i) ->
-      !join_indirect_local_opaque dp i;
-      !join_indirect_local_univ dp i
+      if DirPath.equal dp odp then
+        let fp = snd (Int.Map.find i prfs) in
+        ignore(Future.join fp)
 
-let force_proof = function
+let uuid_opaque (prfs,odp) = function
+  | Direct (_,cu) -> Some (Future.uuid cu)
+  | Indirect (_,dp,i) ->
+      if DirPath.equal dp odp
+      then Some (Future.uuid (snd (Int.Map.find i prfs)))
+      else None
+
+let force_proof (prfs,odp) = function
   | Direct (_,cu) ->
       fst(Future.force cu)
-  | NoIndirect (l,cu) ->
-      let c, _ = Future.force cu in
-      force_constr (List.fold_right subst_substituted l (from_val c))
   | Indirect (l,dp,i) ->
-      let c = Future.force (!get_opaque dp i) in
+      let pt =
+        if DirPath.equal dp odp
+        then Future.chain ~pure:true (snd (Int.Map.find i prfs)) fst
+        else !get_opaque dp i in
+      let c = Future.force pt in
       force_constr (List.fold_right subst_substituted l (from_val c))
 
-let force_constraints = function
-  | Direct (_,cu)
-  | NoIndirect(_,cu) -> snd(Future.force cu)
+let force_constraints (prfs,odp) = function
+  | Direct (_,cu) -> snd(Future.force cu)
   | Indirect (_,dp,i) ->
-      match !get_univ dp i with
-      | None -> Univ.ContextSet.empty
-      | Some u -> Future.force u
+      if DirPath.equal dp odp
+      then snd (Future.force (snd (Int.Map.find i prfs)))
+      else match !get_univ dp i with
+        | None -> Univ.ContextSet.empty
+        | Some u -> Future.force u
 
-let get_constraints = function
-  | Direct (_,cu)
-  | NoIndirect(_,cu) -> Some(Future.chain ~pure:true cu snd)
-  | Indirect (_,dp,i) -> !get_univ dp i
+let get_constraints (prfs,odp) = function
+  | Direct (_,cu) -> Some(Future.chain ~pure:true cu snd)
+  | Indirect (_,dp,i) ->
+      if DirPath.equal dp odp
+      then Some(Future.chain ~pure:true (snd (Int.Map.find i prfs)) snd)
+      else !get_univ dp i
 
-let get_proof = function
+let get_proof (prfs,odp) = function
   | Direct (_,cu) -> Future.chain ~pure:true cu fst
-  | NoIndirect(l,cu) ->
-      Future.chain ~pure:true cu (fun (c,_) ->
-        force_constr (List.fold_right subst_substituted l (from_val c)))
   | Indirect (l,dp,i) ->
-      Future.chain ~pure:true (!get_opaque dp i) (fun c ->
+      let pt =
+        if DirPath.equal dp odp
+        then Future.chain ~pure:true (snd (Int.Map.find i prfs)) fst
+        else !get_opaque dp i in
+      Future.chain ~pure:true pt (fun c ->
         force_constr (List.fold_right subst_substituted l (from_val c)))
+ 
+module FMap = Future.UUIDMap
+
+let a_constr = Future.from_val (Term.mkRel 1)
+let a_univ = Future.from_val Univ.ContextSet.empty
+let a_discharge : cooking_info list = []
+
+let dump (otab,_) =
+  let n = Int.Map.cardinal otab in
+  let opaque_table = Array.make n a_constr in
+  let univ_table = Array.make n a_univ in
+  let disch_table = Array.make n a_discharge in
+  let f2t_map = ref FMap.empty in
+  Int.Map.iter (fun n (d,cu) ->
+    let c, u = Future.split2 ~greedy:true cu in
+    Future.sink u;
+    Future.sink c;
+    opaque_table.(n) <- c;
+    univ_table.(n) <- u;
+    disch_table.(n) <- d;
+    f2t_map := FMap.add (Future.uuid cu) n !f2t_map)
+  otab;
+  opaque_table, univ_table, disch_table, !f2t_map

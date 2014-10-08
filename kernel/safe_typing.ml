@@ -125,13 +125,19 @@ type safe_environment =
     type_in_type : bool;
     imports : vodigest DPMap.t;
     loads : (module_path * module_body) list;
-    local_retroknowledge : Retroknowledge.action list}
+    local_retroknowledge : Retroknowledge.action list }
 
 and modvariant =
   | NONE
   | LIBRARY
   | SIG of module_parameters * safe_environment (** saved env *)
   | STRUCT of module_parameters * safe_environment (** saved env *)
+
+let rec library_dp_of_senv senv =
+  match senv.modvariant with
+  | NONE | LIBRARY -> ModPath.dp senv.modpath
+  | SIG(_,senv) -> library_dp_of_senv senv
+  | STRUCT(_,senv) -> library_dp_of_senv senv
 
 let empty_environment =
   { env = Environ.empty_env;
@@ -219,7 +225,7 @@ let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
 
 let join_safe_environment e =
-  Modops.join_structure e.revstruct;
+  Modops.join_structure (Environ.opaque_tables e.env) e.revstruct;
   List.fold_left
     (fun e fc -> add_constraints (Now (Future.join fc)) e)
     {e with future_cst = []} e.future_cst
@@ -312,9 +318,12 @@ let push_named_def (id,de) senv =
   let c,typ,univs = Term_typing.translate_local_def senv.env id de in
   let senv' = push_context univs senv in
   let c, senv' = match c with
-    | Def c -> Mod_subst.force_constr c, senv' 
-    | OpaqueDef o -> Opaqueproof.force_proof o, 
-      push_context_set (Opaqueproof.force_constraints o) senv'
+    | Def c -> Mod_subst.force_constr c, senv'
+    | OpaqueDef o ->
+        Opaqueproof.force_proof (Environ.opaque_tables senv'.env) o,
+        push_context_set
+          (Opaqueproof.force_constraints (Environ.opaque_tables senv'.env) o)
+          senv'
     | _ -> assert false in
   let env'' = safe_push_named (id,Some c,typ) senv'.env in
     {senv' with env=env''}
@@ -341,7 +350,7 @@ let labels_of_mib mib =
   Array.iter visit_mip mib.mind_packets;
   get ()
 
-let globalize_constant_universes cb =
+let globalize_constant_universes env cb =
   if cb.const_polymorphic then
     [Now Univ.Constraint.empty]
   else
@@ -350,7 +359,7 @@ let globalize_constant_universes cb =
 	(match cb.const_body with
 	| (Undef _ | Def _) -> []
 	| OpaqueDef lc ->
-	  match Opaqueproof.get_constraints lc with
+	  match Opaqueproof.get_constraints (Environ.opaque_tables env) lc with
 	  | None -> []
 	  | Some fc ->
             match Future.peek_val fc with
@@ -363,9 +372,9 @@ let globalize_mind_universes mb =
   else
     [Now (Univ.UContext.constraints mb.mind_universes)]
 
-let constraints_of_sfb sfb = 
+let constraints_of_sfb env sfb = 
   match sfb with
-  | SFBconst cb -> globalize_constant_universes cb
+  | SFBconst cb -> globalize_constant_universes env cb
   | SFBmind mib -> globalize_mind_universes mib
   | SFBmodtype mtb -> [Now mtb.typ_constraints]
   | SFBmodule mb -> [Now mb.mod_constraints]
@@ -389,7 +398,7 @@ let add_field ((l,sfb) as field) gn senv =
     | SFBmodule _ | SFBmodtype _ ->
       check_modlabel l senv; (Label.Set.singleton l, Label.Set.empty)
   in
-  let cst = constraints_of_sfb sfb in
+  let cst = constraints_of_sfb senv.env sfb in
   let senv = add_constraints_list cst senv in
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
@@ -421,13 +430,17 @@ let add_constant dir l decl senv =
       let cb = Term_typing.translate_recipe senv.env kn r in
       if DirPath.is_empty dir then Declareops.hcons_const_body cb else cb
   in
-  let cb = match cb.const_body with
+  let cb, otab = match cb.const_body with
     | OpaqueDef lc when DirPath.is_empty dir ->
       (* In coqc, opaque constants outside sections will be stored
          indirectly in a specific table *)
-      { cb with const_body = OpaqueDef (Opaqueproof.turn_indirect lc) }
-    | _ -> cb
+      let od, otab =
+        Opaqueproof.turn_indirect
+          (library_dp_of_senv senv) lc (Environ.opaque_tables senv.env) in
+      { cb with const_body = OpaqueDef od }, otab
+    | _ -> cb, (Environ.opaque_tables senv.env)
   in
+  let senv = { senv with env = Environ.set_opaque_tables senv.env otab } in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
   let senv'' = match cb.const_body with
     | Undef (Some lev) ->
@@ -588,7 +601,7 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     imports = senv.imports;
     loads = senv.loads@oldsenv.loads;
     local_retroknowledge =
-      senv.local_retroknowledge@oldsenv.local_retroknowledge }
+            senv.local_retroknowledge@oldsenv.local_retroknowledge }
 
 let end_module l restype senv =
   let mp = senv.modpath in
@@ -597,7 +610,7 @@ let end_module l restype senv =
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
   let mb = build_module_body params restype senv in
-  let newenv = oldsenv.env in
+  let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
   let newenv = set_engagement_opt newenv senv.engagement in
   let senv'=
     propagate_loads { senv with
@@ -619,7 +632,7 @@ let end_modtype l senv =
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
   let auto_tb = NoFunctor (List.rev senv.revstruct) in
-  let newenv = oldsenv.env in
+  let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
   let newenv = Environ.add_constraints senv.univ newenv in
   let newenv = set_engagement_opt newenv senv.engagement in
   let senv' = propagate_loads {senv with env=newenv} in

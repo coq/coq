@@ -48,7 +48,8 @@ val stop_worker : string -> unit
 val join : unit -> unit
 (* To save to disk an incomplete document *)
 type tasks
-val dump : (Future.UUID.t * int) list -> tasks
+val dump_final : int Future.UUIDMap.t -> tasks
+val dump_snapshot : int Future.UUIDMap.t -> tasks
 
 val check_task : string -> tasks -> int -> bool
 val info_tasks : tasks -> (string * float * int) list

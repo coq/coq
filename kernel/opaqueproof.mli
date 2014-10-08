@@ -9,6 +9,7 @@
 open Names
 open Term
 open Mod_subst
+open Int
 
 (** This module implements the handling of opaque proof terms.
     Opauqe proof terms are special since:
@@ -20,20 +21,25 @@ open Mod_subst
     and the [opaque] is turned into an index. *)
 
 type proofterm = (constr * Univ.universe_context_set) Future.computation
+type opaquetab
 type opaque
+
+val empty_opaquetab : opaquetab
 
 (** From a [proofterm] to some [opaque]. *)
 val create : proofterm -> opaque
 
-(** Turn a direct [opaque] into an indirect one, also hashconses constr *)
-val turn_indirect : opaque -> opaque
+(** Turn a direct [opaque] into an indirect one, also hashconses constr.
+ *  The integer is an hint of the maximum id used so far *)
+val turn_indirect : DirPath.t -> opaque -> opaquetab -> opaque * opaquetab
 
 (** From a [opaque] back to a [constr]. This might use the
     indirect opaque accessor configured below. *)
-val force_proof : opaque -> constr
-val force_constraints : opaque -> Univ.universe_context_set
-val get_proof : opaque -> Term.constr Future.computation
-val get_constraints : opaque -> Univ.universe_context_set Future.computation option
+val force_proof : opaquetab -> opaque -> constr
+val force_constraints : opaquetab -> opaque -> Univ.universe_context_set
+val get_proof : opaquetab -> opaque -> Term.constr Future.computation
+val get_constraints :
+  opaquetab -> opaque -> Univ.universe_context_set Future.computation option
 
 val subst_opaque : substitution -> opaque -> opaque
 val iter_direct_opaque : (constr -> unit) -> opaque -> opaque
@@ -52,7 +58,14 @@ type cooking_info = {
 val discharge_direct_opaque :
   cook_constr:(constr -> constr) -> cooking_info -> opaque -> opaque
 
-val join_opaque : opaque -> unit
+val uuid_opaque : opaquetab -> opaque -> Future.UUID.t option
+val join_opaque : opaquetab -> opaque -> unit
+
+val dump : opaquetab ->
+  Constr.t Future.computation array *
+  Univ.universe_context_set Future.computation array *
+  cooking_info list array *
+  int Future.UUIDMap.t
 
 (** When stored indirectly, opaque terms are indexed by their library
     dirpath and an integer index. The following two functions activate
@@ -61,12 +74,8 @@ val join_opaque : opaque -> unit
     any indirect link, and default accessor always raises an error.
 *)
 
-val set_indirect_creator :
-  (cooking_info list * proofterm -> (DirPath.t * int) option) -> unit
 val set_indirect_opaque_accessor :
   (DirPath.t -> int -> Term.constr Future.computation) -> unit
 val set_indirect_univ_accessor :
   (DirPath.t -> int -> Univ.universe_context_set Future.computation option) -> unit
-val set_join_indirect_local_opaque : (DirPath.t -> int -> unit) -> unit
-val set_join_indirect_local_univ : (DirPath.t -> int -> unit) -> unit
-val reset_indirect_creator : unit -> unit
+

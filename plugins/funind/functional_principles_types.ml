@@ -384,7 +384,7 @@ let get_funs_constant mp dp =
   in
   function const ->
     let find_constant_body const =
-      match body_of_constant (Global.lookup_constant const) with
+      match Global.body_of_constant const with
 	| Some body ->
 	    let body = Tacred.cbv_norm_flags
 	      (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])

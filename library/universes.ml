@@ -310,7 +310,10 @@ let unsafe_instance_from ctx =
 let fresh_constant_instance env c inst =
   let cb = lookup_constant c env in
     if cb.Declarations.const_polymorphic then
-      let inst, ctx = fresh_instance_from (Declareops.universes_of_constant cb) inst in
+      let inst, ctx =
+        fresh_instance_from
+          (Declareops.universes_of_constant (Environ.opaque_tables env) cb) inst
+      in
 	((c, inst), ctx)
     else ((c,Instance.empty), ContextSet.empty)
 
@@ -331,7 +334,8 @@ let fresh_constructor_instance env (ind,i) inst =
 let unsafe_constant_instance env c =
   let cb = lookup_constant c env in
     if cb.Declarations.const_polymorphic then
-      let inst, ctx = unsafe_instance_from (Declareops.universes_of_constant cb) in
+      let inst, ctx = unsafe_instance_from
+        (Declareops.universes_of_constant (Environ.opaque_tables env) cb) in
 	((c, inst), ctx)
     else ((c,Instance.empty), UContext.empty)
 
@@ -441,7 +445,7 @@ let type_of_reference env r =
      let cb = Environ.lookup_constant c env in
      let ty = Typeops.type_of_constant_type env cb.const_type in
        if cb.const_polymorphic then
-	 let inst, ctx = fresh_instance_from (Declareops.universes_of_constant cb) None in
+	 let inst, ctx = fresh_instance_from (Declareops.universes_of_constant (Environ.opaque_tables env) cb) None in
 	   Vars.subst_instance_constr inst ty, ctx
        else ty, ContextSet.empty
 

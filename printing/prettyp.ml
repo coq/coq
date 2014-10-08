@@ -470,10 +470,10 @@ let ungeneralized_type_of_constant_type t =
 
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
-  let val_0 = Declareops.body_of_constant cb in
+  let val_0 = Global.body_of_constant_body cb in
   let typ = Declareops.type_of_constant cb in
   let typ = ungeneralized_type_of_constant_type typ in
-  let univs = Univ.instantiate_univ_context (Declareops.universes_of_constant cb) in
+  let univs = Univ.instantiate_univ_context (Global.universes_of_constant_body cb) in
   hov 0 (pr_polymorphic cb.const_polymorphic ++
     match val_0 with
     | None ->
@@ -626,7 +626,7 @@ let print_full_pure_context () =
 	      | OpaqueDef lc ->
 		str "Theorem " ++ print_basename con ++ cut () ++
 		str " : " ++ pr_ltype typ ++ str "." ++ fnl () ++
-		str "Proof " ++ pr_lconstr (Opaqueproof.force_proof lc)
+		str "Proof " ++ pr_lconstr (Opaqueproof.force_proof (Global.opaque_tables ()) lc)
 	      | Def c ->
 		str "Definition " ++ print_basename con ++ cut () ++
 		str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
