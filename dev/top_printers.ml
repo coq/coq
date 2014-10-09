@@ -199,6 +199,8 @@ let ppuniverse_context_future c =
   let ctx = Future.force c in
     ppuniverse_context ctx
 let ppuniverses u = pp (Univ.pr_universes u)
+let ppnamedcontextval e =
+  pp (pr_named_context (Global.env ()) Evd.empty (named_context_of_val e))
 
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++

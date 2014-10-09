@@ -32,11 +32,13 @@ install_printer Top_printers.ppconstraints
 install_printer Top_printers.pptype
 install_printer Top_printers.ppj
 install_printer Top_printers.ppenv
+install_printer Top_printers.ppnamedcontextval
 install_printer Top_printers.pp_stack_t
 install_printer Top_printers.pp_cst_stack_t
 
 install_printer Top_printers.ppmetas
 install_printer Top_printers.ppevm
+install_printer Top_printers.ppgoalgoal
 install_printer Top_printers.ppgoal
 install_printer Top_printers.pphintdb
 
