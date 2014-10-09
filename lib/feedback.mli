@@ -44,6 +44,7 @@ type feedback_content =
   | ProcessingInMaster
   | Goals of Loc.t * string
   | StructuredGoals of Loc.t * xml
+  | FileDependency of string option * string
   | FileLoaded of string * string
   | Message of message
 

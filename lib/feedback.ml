@@ -69,6 +69,7 @@ type feedback_content =
   | ProcessingInMaster
   | Goals of Loc.t * string
   | StructuredGoals of Loc.t * xml
+  | FileDependency of string option * string
   | FileLoaded of string * string
   | Message of message
 
@@ -95,8 +96,10 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
        SlaveStatus(n,s)
   | "goals", [loc;s] -> Goals (to_loc loc, to_string s)
   | "structuredgoals", [loc;x]-> StructuredGoals (to_loc loc, x)
+  | "filedependency", [from; dep] ->
+      FileDependency (to_option to_string from, to_string dep)
   | "fileloaded", [dirpath; filename] ->
-       FileLoaded(to_string dirpath, to_string filename)
+      FileLoaded (to_string dirpath, to_string filename)
   | "message", [m] -> Message (to_message m)
   | _ -> raise Marshal_error)
 let of_feedback_content = function
@@ -128,7 +131,11 @@ let of_feedback_content = function
       constructor "feedback_content" "goals" [of_loc loc;of_string s]
   | StructuredGoals (loc, x) ->
       constructor "feedback_content" "structuredgoals" [of_loc loc; x]
-  | FileLoaded(dirpath, filename) ->
+  | FileDependency (from, depends_on) ->
+      constructor "feedback_content" "filedependency" [
+        of_option of_string from;
+        of_string depends_on]
+  | FileLoaded (dirpath, filename) ->
       constructor "feedback_content" "fileloaded" [
         of_string dirpath;
         of_string filename ]

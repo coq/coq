@@ -402,7 +402,11 @@ let intern_from_file f =
 
 module DPMap = Map.Make(DirPath)
 
-let rec intern_library (needed, contents) (dir, f) =
+let deps_to_string deps =
+  Array.fold_left (fun s (n, _) -> s^"\n  - "^(DirPath.to_string n)) "" deps
+
+let rec intern_library (needed, contents) (dir, f) from =
+  Pp.feedback(Feedback.FileDependency (from, f));
   (* Look if in the current logical environment *)
   try find_library dir, (needed, contents)
   with Not_found ->
@@ -417,14 +421,14 @@ let rec intern_library (needed, contents) (dir, f) =
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
   Pp.feedback(Feedback.FileLoaded(DirPath.to_string dir, f));
-  m, intern_library_deps (needed, contents) dir m
+  m, intern_library_deps (needed, contents) dir m (Some f)
 
-and intern_library_deps libs dir m =
-  let needed, contents = Array.fold_left (intern_mandatory_library dir) libs m.library_deps in
+and intern_library_deps libs dir m from =
+  let needed, contents = Array.fold_left (intern_mandatory_library dir from) libs m.library_deps in
   (dir :: needed, DPMap.add dir m contents )
 
-and intern_mandatory_library caller libs (dir,d) =
-  let m, libs = intern_library libs (try_locate_absolute_library dir) in
+and intern_mandatory_library caller from libs (dir,d) =
+  let m, libs = intern_library libs (try_locate_absolute_library dir) from in
   if not (Safe_typing.digest_match ~actual:m.library_digests ~required:d) then
     errorlabstrm "" (strbrk ("Compiled library "^ DirPath.to_string caller ^
       ".vo makes inconsistent assumptions over library " ^
@@ -432,7 +436,7 @@ and intern_mandatory_library caller libs (dir,d) =
   libs
 
 let rec_intern_library libs mref =
-  let _, libs = intern_library libs mref in
+  let _, libs = intern_library libs mref None in
   libs
 
 let check_library_short_name f dir = function
@@ -458,7 +462,7 @@ let rec_intern_by_filename_only id f =
       m.library_name, []
     end
  else
-    let needed, contents = intern_library_deps ([], DPMap.empty) m.library_name m in
+    let needed, contents = intern_library_deps ([], DPMap.empty) m.library_name m (Some f) in
     let needed = List.map (fun dir -> dir, DPMap.find dir contents) needed in
     m.library_name, needed
 
