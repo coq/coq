@@ -870,6 +870,7 @@ end
 
 type goal = Goal.goal
 let build_goal = Goal.build
+let mark_as_goal = Goal.mark_as_goal
 let partial_solution = Goal.V82.partial_solution
 let partial_solution_to = Goal.V82.partial_solution_to
 
@@ -961,7 +962,6 @@ struct
   type handle = Evd.evar_map * Evar.t list * Evar.t option
 
   let new_evar (evd, evs, evkmain) ?(main=false) env typ =
-    let src = (Loc.ghost, Evar_kinds.GoalEvar) in
     let naming =
       if main then
         (* waiting for a more principled approach
@@ -969,9 +969,7 @@ struct
         Misctypes.IntroFresh (Names.Id.of_string "tmp_goal")
       else
         Misctypes.IntroAnonymous in
-    let (evd, ev) = Evarutil.new_evar env evd ~src ~naming typ in
-    let evd = Typeclasses.mark_unresolvables 
-      ~filter:(fun ev' _ -> Evar.equal (fst (Term.destEvar ev)) ev') evd in
+    let (evd, ev) = Evarutil.new_evar env evd ~naming typ in
     let (evk, _) = Term.destEvar ev in
     let evkmain =
       if main then match evkmain with
@@ -982,10 +980,7 @@ struct
     (h, ev)
 
   let new_evar_instance (evd, evs, evkmain) ctx typ inst =
-    let src = (Loc.ghost, Evar_kinds.GoalEvar) in
-    let (evd, ev) = Evarutil.new_evar_instance ctx evd ~src typ inst in
-    let evd = Typeclasses.mark_unresolvables 
-      ~filter:(fun ev' _ -> Evar.equal (fst (Term.destEvar ev)) ev') evd in
+    let (evd, ev) = Evarutil.new_evar_instance ctx evd typ inst in
     let (evk, _) = Term.destEvar ev in
     let h = (evd, evk :: evs, evkmain) in
     (h, ev)
@@ -1029,7 +1024,9 @@ struct
     let sigma = match evkmain with
       | None -> partial_solution sigma gl.Goal.self c 
       | Some evk -> partial_solution_to sigma gl.Goal.self (build_goal evk) c in
+    (** Select the goals *)
     let comb = undefined sigma (List.rev_map build_goal evs) in
+    let sigma = List.fold_left mark_as_goal sigma comb in
     Proof.set { solution = sigma; comb; }
   end
 

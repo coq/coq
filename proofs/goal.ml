@@ -49,6 +49,11 @@ let build e =
     cache = Evd.empty;
   }
 
+let mark_as_goal evd { content } =
+  let info = Evd.find evd content in
+  let info = { info with Evd.evar_source = (fst (info.Evd.evar_source),Evar_kinds.GoalEvar) } in
+  let info = Typeclasses.mark_unresolvable info in
+  Evd.add evd content info
 
 let uid {content = e} = string_of_int (Evar.repr e)
 let get_by_uid u =

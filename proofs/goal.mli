@@ -15,6 +15,8 @@ type goal
     sort of communication pipes. But I find it heavy. *)
 val build : Evd.evar -> goal 
 
+val mark_as_goal : Evd.evar_map -> goal -> Evd.evar_map
+
 (* Gives a unique identifier to each goal. The identifier is
    guaranteed to contain no space. *)
 val uid : goal -> string
