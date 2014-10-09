@@ -67,7 +67,7 @@ CORESRCDIRS:=\
 
 PLUGINS:=\
   omega		romega 		micromega 	quote \
-  setoid_ring 	xml 		extraction 	fourier \
+  setoid_ring 	extraction 	fourier \
   cc 		funind 		firstorder 	Derive \
   rtauto 	nsatz           syntax          decl_mode	btauto
 
