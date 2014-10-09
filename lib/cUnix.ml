@@ -34,10 +34,12 @@ let rec cut_after_dirsep p pos =
   else
     String.sub p pos (String.length p - pos)
 
-(** remove all initial "./" in a path *)
+(** remove all initial "./" in a path unless the path is exactly "./" *)
 let rec remove_path_dot p =
   if CString.is_sub curdir p 0 then
-    remove_path_dot (cut_after_dirsep p curdir_len)
+    if String.length p = curdir_len
+    then Filename.current_dir_name
+    else remove_path_dot (cut_after_dirsep p curdir_len)
   else
     p
 
