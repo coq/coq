@@ -134,7 +134,7 @@ let convert_concl ?(unsafe=false) ty k =
     Tacticals.New.tclTHEN
       (Proofview.V82.tclEVARS sigma)
       (Proofview.Refine.refine (fun h ->
-        let (h,x) = Proofview.Refine.new_evar h env ty in
+        let (h,x) = Proofview.Refine.new_evar h ~main:true env ty in
         (h, if k == DEFAULTcast then x else mkCast(x,k,conclty))))
   end
 
@@ -145,7 +145,7 @@ let convert_hyp ?(unsafe=false) d =
     let ty = Proofview.Goal.raw_concl gl in
     let sign = convert_hyp (not unsafe) (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
-    Proofview.Refine.refine (fun h -> Proofview.Refine.new_evar h env ty)
+    Proofview.Refine.refine (fun h -> Proofview.Refine.new_evar h ~main:true env ty)
   end
 
 let convert_concl_no_check = convert_concl ~unsafe:true
@@ -834,7 +834,7 @@ let cut c =
       (** Backward compat: normalize [c]. *)
       let c = local_strong whd_betaiota sigma c in
       Proofview.Refine.refine ~unsafe:true begin fun h ->
-        let (h, f) = Proofview.Refine.new_evar h env (mkArrow c (Vars.lift 1 concl)) in
+        let (h, f) = Proofview.Refine.new_evar ~main:true h env (mkArrow c (Vars.lift 1 concl)) in
         let (h, x) = Proofview.Refine.new_evar h env c in
         let f = mkLambda (Name id, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
         (h, mkApp (f, [|x|]))
