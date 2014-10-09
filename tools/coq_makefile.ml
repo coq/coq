@@ -104,7 +104,7 @@ let is_prefix dir1 dir2 =
 
 let physical_dir_of_logical_dir ldir =
   let le = String.length ldir - 1 in
-  let pdir = if ldir.[le] = '.' then String.sub ldir 0 (le - 1) else String.copy ldir in
+  let pdir = if le >= 0 && ldir.[le] = '.' then String.sub ldir 0 (le - 1) else String.copy ldir in
   for i = 0 to le - 1 do
     if pdir.[i] = '.' then pdir.[i] <- '/';
   done;
@@ -139,7 +139,7 @@ let classify_files_by_root var files (inc_ml,inc_i,inc_r) =
 	    printf "\n";
 	  end;
       (* Files in the scope of a -R option (assuming they are disjoint) *)
-	list_iter_i (fun i (pdir,ldir,abspdir) ->
+	list_iter_i (fun i (pdir,_,abspdir) ->
 		       if List.exists (is_prefix abspdir) absdir_of_files then
 			 printf "%s%d=$(patsubst %s/%%,%%,$(filter %s/%%,$(%s)))\n"
 			   var i pdir pdir var)
@@ -504,12 +504,13 @@ let parameters () =
   print "TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))\n\n"
 
 let include_dirs (inc_ml,inc_i,inc_r) =
-  let parse_ml_includes l = List.map (fun (x,_) -> "-I " ^ x) l in
-  let parse_includes l = List.map (fun (x,l,_) -> "-Q " ^ x ^ " " ^ l) l in
-  let parse_rec_includes l =
-    List.map (fun (p,l,_) ->
-      let l' = if l = "" then "\"\"" else l in "-R " ^ p ^ " " ^ l')
-      l in
+  let parse_ml_includes l = List.map (fun (x,_) -> "-I \"" ^ x ^ "\"") l in
+  let parse_includes l = List.map (fun (x,l,_) ->
+				   let l' = if l = "" then "\"\"" else l in
+				   "-Q \"" ^ x ^ "\" " ^ l' ^"") l in
+  let parse_rec_includes l = List.map (fun (p,l,_) ->
+				       let l' = if l = "" then "\"\"" else l in
+				       "-R \"" ^ p ^ "\" " ^ l' ^"") l in
   let str_ml = parse_ml_includes inc_ml in
   let str_i = parse_includes inc_i in
   let str_r = parse_rec_includes inc_r in
@@ -741,13 +742,13 @@ let ensure_root_dir (v,(mli,ml4,ml,mllib,mlpack),_,_) ((ml_inc,i_inc,r_inc) as l
 
 let warn_install_at_root_directory
     (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,_) (inc_ml,inc_i,inc_r) =
-  let inc_r_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r in
-  let inc_top = List.map (fun (p,_,_) -> p) inc_r_top in
+  let inc_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r@inc_i in
+  let inc_top_p = List.map (fun (p,_,_) -> p) inc_top in
   let files = vfiles @ mlifiles @ ml4files @ mlfiles @ mllibfiles @ mlpackfiles in
-  if inc_r = [] || List.exists (fun f -> List.mem (Filename.dirname f) inc_top) files
+  if List.exists (fun f -> List.mem (Filename.dirname f) inc_top_p) files
   then
-    Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R %sis recommended\n"
-      (if inc_r_top = [] then "" else "with non trivial logical root ")
+    Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R or -Q %sis recommended\n"
+      (if inc_top = [] then "" else "with non trivial logical root ")
 
 let check_overlapping_include (_,inc_i,inc_r) =
   let pwd = Sys.getcwd () in
