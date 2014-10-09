@@ -1,0 +1,15 @@
+The xml export plugin for Coq has been discontinued for lack of users:
+it was most certainly broken while imposing a non-negligible cost on
+Coq development. Its purpose was to give export Coq's kernel objects
+in xml form for treatment by external tools.
+
+If you are looking for such a tool, you may want to look at commit
+7cfe0a70eda671ada6a46cd779ef9308f7e0fdb9 responsible for the deletion
+of this plugin (for instance, git checkout
+7cfe0a70eda671ada6a46cd779ef9308f7e0fdb9^ including the "^", will lead
+you to the last commit before the xml plugin was deleted).
+
+Bear in mind, however, that the plugin was not working properly at the
+time. You may want instead to write to the original author of the
+plugin, Claudio Sacerdoti-Coen at sacerdot@cs.unibo.it. He has a
+stable version of the plugin for an old version of Coq.
