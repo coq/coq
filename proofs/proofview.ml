@@ -162,8 +162,7 @@ let focus i j sp =
   ( { sp with comb = new_comb } , context )
 
 (* Unfocuses a proofview with respect to a context. *)
-let undefined defs l =
-  Option.List.flatten (List.map (Goal.advance defs) l)
+let undefined defs l = CList.map_filter (Goal.advance defs) l
 let unfocus c sp =
   { sp with comb = undefined sp.solution (unfocus_sublist c sp.comb) }
 
