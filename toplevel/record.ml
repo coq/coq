@@ -263,7 +263,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
 	  | Name fid -> try
 	    let kn, term = 
 	      if optci = None && primitive then 
-		  (** Already defined in the kernel silently *)
+		(** Already defined in the kernel silently *)
 		let kn = destConstRef (Nametab.locate (Libnames.qualid_of_ident fid)) in
 		  Declare.definition_message fid;
 		  kn, mkProj (Projection.make kn false,mkRel 1)
@@ -388,6 +388,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
     (* else List.map (fun x -> (ExplByPos (1, None), (true, true, true)) :: *)
     (* 		     Impargs.lift_implicits 1 x) fieldimpls *)
   in
+  let record_name = Id.of_string (Unicode.lowercase_first_char (Id.to_string (snd id))) in
   let impl, projs =
     match fields with
     | [(Name proj_name, _, field)] when def ->
@@ -401,9 +402,9 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
 	let cstu = (cst, if poly then Univ.UContext.instance ctx else Univ.Instance.empty) in
 	let inst_type = appvectc (mkConstU cstu) (Termops.rel_vect 0 (List.length params)) in
 	let proj_type =
-	  it_mkProd_or_LetIn (mkProd(Name (snd id), inst_type, lift 1 field)) params in
+	  it_mkProd_or_LetIn (mkProd(Name record_name, inst_type, lift 1 field)) params in
 	let proj_body =
-	  it_mkLambda_or_LetIn (mkLambda (Name (snd id), inst_type, mkRel 1)) params in
+	  it_mkLambda_or_LetIn (mkLambda (Name record_name, inst_type, mkRel 1)) params in
 	let proj_entry = Declare.definition_entry ~types:proj_type ~poly ~univs:ctx proj_body in
 	let proj_cst = Declare.declare_constant proj_name
 	  (DefinitionEntry proj_entry, IsDefinition Definition)
@@ -418,15 +419,14 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
 	in
 	  cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
-	let idarg = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
 	let ind = declare_structure BiFinite poly ctx (snd id) idbuild paramimpls
 	  params arity fieldimpls fields
-	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields) sign
+	  ~kind:Method ~name:record_name false (List.map (fun _ -> false) fields) sign
 	in
 	let coers = List.map2 (fun coe pri -> 
 			       Option.map (fun b -> 
 			         if b then Backward, pri else Forward, pri) coe) 
-	  coers priorities 
+	  coers priorities
 	in
 	  IndRef ind, (List.map3 (fun (id, _, _) b y -> (id, b, y))
 			 (List.rev fields) coers (Recordops.lookup_projections ind))
@@ -434,7 +434,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
   let ctx_context =
     List.map (fun (na, b, t) ->
       match Typeclasses.class_of_constr t with
-      | Some (_, ((cl,_), _)) -> Some (cl.cl_impl, true) (*FIXME: ignore universes?*)
+      | Some (_, ((cl,_), _)) -> Some (cl.cl_impl, true)
       | None -> None)
       params, params
   in
@@ -446,10 +446,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
       cl_props = fields;
       cl_projs = projs }
   in
-(*     List.iter3 (fun p sub pri -> *)
-(*       if sub then match p with (_, _, Some p) -> declare_instance_cst true p pri | _ -> ()) *)
-(*       k.cl_projs coers priorities; *)
-  add_class k; impl
+    add_class k; impl
 
 
 let add_constant_class cst =
