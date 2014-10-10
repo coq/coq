@@ -350,7 +350,7 @@ Register sub31carryc as int31 minuscarryc in "coq_int31" by True.
 Register mul31 as int31 times in "coq_int31" by True.
 Register mul31c as int31 timesc in "coq_int31" by True.
 Register div3121 as int31 div21 in "coq_int31" by True.
-Register div31 as int31 div in "coq_int31" by True.
+Register div31 as int31 diveucl in "coq_int31" by True.
 Register compare31 as int31 compare in "coq_int31" by True.
 Register addmuldiv31 as int31 addmuldiv in "coq_int31" by True.
 Register lor31 as int31 lor in "coq_int31" by True.

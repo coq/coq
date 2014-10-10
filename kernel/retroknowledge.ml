@@ -57,6 +57,7 @@ type int31_field =
   | Int31TimesC
   | Int31Div21
   | Int31Div
+  | Int31Diveucl
   | Int31AddMulDiv
   | Int31Compare
   | Int31Head0

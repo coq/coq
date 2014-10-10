@@ -285,6 +285,7 @@ PRINTED BY pr_r_int31_field
 | [ "int31" "timesc" ] -> [ Retroknowledge.Int31TimesC ]
 | [ "int31" "div21" ] -> [ Retroknowledge.Int31Div21 ]
 | [ "int31" "div" ] -> [ Retroknowledge.Int31Div ]
+| [ "int31" "diveucl" ] -> [ Retroknowledge.Int31Diveucl ]
 | [ "int31" "addmuldiv" ] -> [ Retroknowledge.Int31AddMulDiv ]
 | [ "int31" "compare" ] -> [ Retroknowledge.Int31Compare ]
 | [ "int31" "head0" ] -> [ Retroknowledge.Int31Head0 ]
