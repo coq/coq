@@ -1501,7 +1501,7 @@ let new_refine (evd, c) =
     let evd = Evarconv.consider_remaining_unif_problems env evd in
     (evd, c)
   in
-  Proofview.Refine.refine_casted (fun h -> Proofview.Refine.update h update)
+  Proofview.Refine.refine_casted update
   end
 
 let assert_replacing id newt tac = 
@@ -1515,17 +1515,17 @@ let assert_replacing id newt tac =
           else decl :: nc')
         env ~init:[]
     in
-    Proofview.Refine.refine begin fun h ->
+    Proofview.Refine.refine begin fun sigma ->
       let env' = Environ.reset_with_named_context (val_of_named_context nc') env in
-      let h, ev = Proofview.Refine.new_evar h env' concl in
-      let h, ev' = Proofview.Refine.new_evar h env newt in
+      let sigma, ev = Evarutil.new_evar env' sigma concl in
+      let sigma, ev' = Evarutil.new_evar env sigma newt in
       let fold _ (n, b, t) inst =
         if Id.equal n id then ev' :: inst
         else mkVar n :: inst
       in
       let inst = fold_named_context fold env ~init:[] in
       let (e, args) = destEvar ev in
-      h, mkEvar (e, Array.of_list inst)
+      sigma, mkEvar (e, Array.of_list inst)
     end
   end in
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
@@ -1547,10 +1547,10 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	| None, (undef, Some p, newt) ->
             Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
-            let make h =
-              let (h, ()) = Proofview.Refine.update h (fun _ -> undef, ()) in
-              let (h, ev) = Proofview.Refine.new_evar h env newt in
-              h, mkApp (p, [| ev |])
+            let make sigma =
+              let (sigma, ()) = undef, () in
+              let (sigma, ev) = Evarutil.new_evar env sigma newt in
+              sigma, mkApp (p, [| ev |])
             in
             Proofview.Refine.refine make
             end

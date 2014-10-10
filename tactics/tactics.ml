@@ -133,9 +133,9 @@ let convert_concl ?(check=true) ty k =
       end else sigma in
     Tacticals.New.tclTHEN
       (Proofview.V82.tclEVARS sigma)
-      (Proofview.Refine.refine (fun h ->
-        let (h,x) = Proofview.Refine.new_evar h ~main:true env ty in
-        (h, if k == DEFAULTcast then x else mkCast(x,k,conclty))))
+      (Proofview.Refine.refine (fun sigma ->
+        let (sigma,x) = Evarutil.new_evar env sigma ~principal:true ty in
+        (sigma, if k == DEFAULTcast then x else mkCast(x,k,conclty))))
   end
 
 let convert_hyp ?(check=true) d =
@@ -145,7 +145,7 @@ let convert_hyp ?(check=true) d =
     let ty = Proofview.Goal.raw_concl gl in
     let sign = convert_hyp check (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
-    Proofview.Refine.refine (fun h -> Proofview.Refine.new_evar h ~main:true env ty)
+    Proofview.Refine.refine (fun sigma -> Evarutil.new_evar env sigma ~principal:true ty)
   end
 
 let convert_concl_no_check = convert_concl ~check:false
@@ -834,8 +834,8 @@ let cut c =
       (** Backward compat: normalize [c]. *)
       let c = local_strong whd_betaiota sigma c in
       Proofview.Refine.refine ~unsafe:true begin fun h ->
-        let (h, f) = Proofview.Refine.new_evar ~main:true h env (mkArrow c (Vars.lift 1 concl)) in
-        let (h, x) = Proofview.Refine.new_evar h env c in
+        let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
+        let (h, x) = Evarutil.new_evar env h c in
         let f = mkLambda (Name id, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
         (h, mkApp (f, [|x|]))
       end
@@ -1468,12 +1468,12 @@ let cut_and_apply c =
       | Prod (_,c1,c2) when not (dependent (mkRel 1) c2) ->
         let concl = Proofview.Goal.concl gl in
         let env = Tacmach.New.pf_env gl in
-        Proofview.Refine.refine begin fun h ->
+        Proofview.Refine.refine begin fun sigma ->
           let typ = mkProd (Anonymous, c2, concl) in
-          let (h, f) = Proofview.Refine.new_evar h env typ in
-          let (h, x) = Proofview.Refine.new_evar h env c1 in
+          let (sigma, f) = Evarutil.new_evar env sigma typ in
+          let (sigma, x) = Evarutil.new_evar env sigma c1 in
           let ans = mkApp (f, [|mkApp (c, [|x|])|]) in
-          (h, ans)
+          (sigma, ans)
         end
       | _ -> error "lapply needs a non-dependent product."
   end
@@ -1613,8 +1613,8 @@ let clear_body ids =
       check_is_type env concl msg
     in
     check_hyps <*> check_concl <*>
-    Proofview.Refine.refine ~unsafe:true begin fun h ->
-      Proofview.Refine.new_evar h env concl
+    Proofview.Refine.refine ~unsafe:true begin fun sigma ->
+      Evarutil.new_evar env sigma concl
     end
   end
 
@@ -2183,9 +2183,9 @@ let bring_hyps hyps =
       let concl = Tacmach.New.pf_nf_concl gl in
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
       let args = Array.of_list (instance_from_named_context hyps) in
-      Proofview.Refine.refine begin fun h ->
-        let (h, ev) = Proofview.Refine.new_evar h env newcl in
-        (h, (mkApp (ev, args)))
+      Proofview.Refine.refine begin fun sigma ->
+        let (sigma, ev) = Evarutil.new_evar env sigma newcl in
+        (sigma, (mkApp (ev, args)))
       end
     end
 
@@ -2295,9 +2295,9 @@ let new_generalize_gen_let lconstr =
 	0 lconstr ((concl, sigma), [])
     in
       Proofview.V82.tclEVARS sigma <*>
-	Proofview.Refine.refine begin fun h ->
-          let (h, ev) = Proofview.Refine.new_evar h env newcl in
-            (h, (applist (ev, args)))
+	Proofview.Refine.refine begin fun sigma ->
+          let (sigma, ev) = Evarutil.new_evar env sigma newcl in
+            (sigma, (applist (ev, args)))
 	end
   end
 

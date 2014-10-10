@@ -959,16 +959,6 @@ end
 
 module Refine =
 struct
-  type handle = Evd.evar_map
-
-  let new_evar evd ?(main=false) env typ =
-    Evarutil.new_evar env evd ~principal:main typ
-
-  let new_evar_instance evd ctx typ inst =
-    Evarutil.new_evar_instance ctx evd typ inst
-
-  let fresh_constructor_instance evd env construct =
-    Evd.fresh_constructor_instance env evd construct
 
   let with_type evd env c t =
     let my_type = Retyping.get_type_of env evd c in
@@ -1018,8 +1008,6 @@ struct
     let f h = let (h, c) = f h in with_type h env c concl in
     refine ~unsafe f
   end
-
-  let update evd f = f evd
 end
 
 module NonLogical = Proofview_monad.NonLogical

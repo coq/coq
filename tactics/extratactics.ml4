@@ -373,7 +373,7 @@ let refine_tac {Glob_term.closure=closure;term=term} =
       Pretyping.ltac_idents = closure.Glob_term.idents;
     } in
     let update evd = Pretyping.understand_ltac flags env evd lvar tycon term in
-    Proofview.Refine.refine ~unsafe:false (fun h -> Proofview.Refine.update h update) <*>
+    Proofview.Refine.refine ~unsafe:false update <*>
     Proofview.V82.tactic (reduce refine_red_flags refine_locs)
   end
 
