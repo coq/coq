@@ -36,17 +36,14 @@ let _ = Goptions.declare_bool_option {
 let unfold_projection env evd ts p c =
   let cst = Projection.constant p in
     if is_transparent_constant ts cst then
-      let unfold_app () =
-	let t' = Retyping.expand_projection env evd p c [] in
-	  Some t'
-      in
-	(match ReductionBehaviour.get (Globnames.ConstRef cst) with
-	| None -> unfold_app ()
+      let c' = Some (mkProj (Projection.make cst true, c)) in
+	match ReductionBehaviour.get (Globnames.ConstRef cst) with
+	| None -> c'
 	| Some (recargs, nargs, flags) ->
 	  if (List.mem `ReductionNeverUnfold flags) then None
-	  else unfold_app ())
+	  else c'
     else None
-
+      
 let eval_flexible_term ts env evd c =
   match kind_of_term c with
   | Const (c,u as cu) ->
@@ -421,22 +418,54 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	      switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i)) (Stack.zip apprF) tM
 	    else default_fail i)
 	  ev lF tM i
-    and f2 i = 
+    and consume (termF,skF as apprF) (termM,skM as apprM) i = 
       if not (Stack.is_empty skF && Stack.is_empty skM) then
         consume_stack on_left apprF apprM i
       else quick_fail i
-    and f3 i =
+    and delta i =
       switch (evar_eqappr_x ts env i pbty) (apprF,cstsF)
 	(whd_betaiota_deltazeta_for_iota_state (fst ts) env i cstsM (vM,skM))
+    in    
+    let default i = ise_try i [f1; consume apprF apprM; delta]
     in
-    ise_try evd [f1; f2; f3] in
+      match kind_of_term termM with
+      | Proj (p, c) when not (Stack.is_empty skF) ->
+	(* Might be ?X args = p.c args', and we have to eta-expand the 
+	   primitive projection if |args| >= |args'|+1. *)
+	let nargsF = Stack.args_size skF and nargsM = Stack.args_size skM in
+	  begin
+	    (* ?X argsF' ~= (p.c ..) argsM' -> ?X ~= (p.c ..), no need to expand *)
+	    if nargsF <= nargsM then default evd
+	    else 
+	      let f =
+		try 
+		  let termM' = Retyping.expand_projection env evd p c [] in
+		  let apprM', cstsM' = 
+		    whd_betaiota_deltazeta_for_iota_state (fst ts) env evd cstsM (termM',skM)
+		  in
+		  let delta' i = 
+		    switch (evar_eqappr_x ts env i pbty) (apprF,cstsF) (apprM',cstsM') 
+		  in
+		    fun i -> ise_try i [f1; consume apprF apprM'; delta']
+		with Retyping.RetypeError _ ->
+		(* Happens thanks to w_unify building ill-typed terms *) 
+		  default
+	      in f evd
+	  end
+      | _ -> default evd
+  in
   let flex_rigid on_left ev (termF, skF as apprF) (termR, skR as apprR) =
     let switch f a b = if on_left then f a b else f b a in
-    let eta evd =
-      match kind_of_term termR with
-      | Lambda _ -> eta env evd false skR termR skF termF
-      | Construct u -> eta_constructor ts env evd skR u skF termF
-      | _ -> UnifFailure (evd,NotSameHead)
+    let eta = 
+      let did_eta = ref false in
+	fun evd ->
+	  if !did_eta then UnifFailure (evd,NotSameHead)
+	  else 
+	    (did_eta := true;
+	     match kind_of_term termR with
+	     | Lambda _ -> eta env evd false skR termR skF termF
+	     | Construct u -> eta_constructor ts env evd skR u skF termF
+	     | _ -> UnifFailure (evd,NotSameHead))
     in
     let f evd =
       match Stack.list_of_app_stack skF with
