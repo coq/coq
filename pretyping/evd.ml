@@ -220,13 +220,6 @@ let evar_ident_info evi =
       let env = reset_with_named_context evi.evar_hyps (Global.env()) in
       Namegen.id_of_name_using_hdchar env evi.evar_concl Anonymous
 
-(* spiwack: Revised hierarchy :
-   - Evar.Map ( Maps of existential_keys )
-   - EvarInfoMap ( .t = evar_info Evar.Map.t * evar_info Evar.Map )
-   - EvarMap ( .t = EvarInfoMap.t * sort_constraints )
-   - evar_map (exported)
-*)
-
 (* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
 
@@ -589,7 +582,7 @@ type evar_map = {
   evar_names : Id.t EvMap.t * existential_key Idmap.t;
 }
 
-(*** Lifting primitive from EvarMap. ***)
+(*** Lifting primitive from Evar.Map. ***)
 
 (* HH: The progress tactical now uses this function. *)
 let progress_evar_map d1 d2 =
