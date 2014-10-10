@@ -433,6 +433,11 @@ end
     ill-typed terms without noticing. *)
 module Refine : sig
 
+  val with_type : Environ.env -> Evd.evar_map ->
+    Term.constr -> Term.types -> Evd.evar_map * Term.constr
+  (** [with_type env sigma c t] ensures that [c] is of type [t]
+      inserting a coercion if needed. *)
+
   val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * Constr.t) -> unit tactic
   (** Given a term with holes that have been generated through
       {!new_evar}, this function fills the current hole with the given

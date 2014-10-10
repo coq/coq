@@ -960,7 +960,7 @@ end
 module Refine =
 struct
 
-  let with_type evd env c t =
+  let with_type env evd c t =
     let my_type = Retyping.get_type_of env evd c in
     let j = Environ.make_judge c my_type in
     let (evd,j') =
@@ -1005,7 +1005,7 @@ struct
   let refine_casted ?(unsafe = false) f = Goal.enter begin fun gl ->
     let concl = Goal.concl gl in
     let env = Goal.env gl in
-    let f h = let (h, c) = f h in with_type h env c concl in
+    let f h = let (h, c) = f h in with_type env h c concl in
     refine ~unsafe f
   end
 end
