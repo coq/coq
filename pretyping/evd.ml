@@ -572,14 +572,19 @@ type evar_constraint = conv_pb * Environ.env * constr * constr
 module EvMap = Evar.Map
 
 type evar_map = {
+  (** Existential variables *)
   defn_evars : evar_info EvMap.t;
   undf_evars : evar_info EvMap.t;
+  evar_names : Id.t EvMap.t * existential_key Idmap.t;
+  (** Universes *)
   universes  : evar_universe_context;
+  (** Conversion problems *)
   conv_pbs   : evar_constraint list;
   last_mods  : Evar.Set.t;
+  (** Metas *)
   metas      : clbinding Metamap.t;
+  (** Interactive proofs *)
   effects    : Declareops.side_effects;
-  evar_names : Id.t EvMap.t * existential_key Idmap.t;
 }
 
 (*** Lifting primitive from Evar.Map. ***)
