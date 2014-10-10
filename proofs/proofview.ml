@@ -959,9 +959,9 @@ end
 
 module Refine =
 struct
-  type handle = Evd.evar_map * Evar.t list * Evar.t option
+  type handle = Evd.evar_map * Evar.t option
 
-  let new_evar (evd, evs, evkmain) ?(main=false) env typ =
+  let new_evar (evd, evkmain) ?(main=false) env typ =
     let naming =
       if main then
         (* waiting for a more principled approach
@@ -976,26 +976,25 @@ struct
       | Some _ -> Errors.error "Only one main subgoal per instantiation."
       | None -> Some evk
       else evkmain in
-    let h = (evd, evk :: evs, evkmain) in
+    let h = (evd, evkmain) in
     (h, ev)
 
-  let new_evar_instance (evd, evs, evkmain) ctx typ inst =
+  let new_evar_instance (evd, evkmain) ctx typ inst =
     let (evd, ev) = Evarutil.new_evar_instance ctx evd typ inst in
-    let (evk, _) = Term.destEvar ev in
-    let h = (evd, evk :: evs, evkmain) in
+    let h = (evd, evkmain) in
     (h, ev)
 
-  let fresh_constructor_instance (evd,evs,evkmain) env construct =
+  let fresh_constructor_instance (evd,evkmain) env construct =
     let (evd,pconstruct) = Evd.fresh_constructor_instance env evd construct in
-    (evd,evs,evkmain) , pconstruct
+    (evd,evkmain) , pconstruct
 
-  let with_type (evd,evs,evkmain) env c t =
+  let with_type (evd,evkmain) env c t =
     let my_type = Retyping.get_type_of env evd c in
     let j = Environ.make_judge c my_type in
     let (evd,j') =
       Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j t
     in
-    (evd,evs,evkmain) , j'.Environ.uj_val
+    (evd,evkmain) , j'.Environ.uj_val
 
   let typecheck_evar ev env sigma =
     let info = Evd.find sigma ev in
@@ -1013,8 +1012,9 @@ struct
     let sigma = Goal.sigma gl in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
-    let handle = (sigma, [], None) in
-    let ((sigma, evs, evkmain), c) = f handle in
+    let handle = (Evd.reset_future_goals sigma, None) in
+    let ((sigma, evkmain), c) = f handle in
+    let evs = Evd.future_goals sigma in
     (** Check that the introduced evars are well-typed *)
     let fold accu ev = typecheck_evar ev env accu in
     let sigma = if unsafe then sigma else List.fold_left fold sigma evs in
@@ -1027,7 +1027,7 @@ struct
     (** Select the goals *)
     let comb = undefined sigma (List.rev_map build_goal evs) in
     let sigma = List.fold_left mark_as_goal sigma comb in
-    Proof.set { solution = sigma; comb; }
+    Proof.set { solution = Evd.reset_future_goals sigma; comb; }
   end
 
   let refine_casted ?(unsafe = false) f = Goal.enter begin fun gl ->
@@ -1037,13 +1037,9 @@ struct
     refine ~unsafe f
   end
 
-  let update (evd, gls, evkmain) f =
+  let update (evd, evkmain) f =
     let nevd, ans = f evd in
-    let fold ev _ accu =
-      if not (Evd.mem evd ev) then ev :: accu else accu
-    in
-    let gls = Evd.fold_undefined fold nevd gls in
-    (nevd, gls, evkmain), ans
+    (nevd, evkmain), ans
 
 end
 

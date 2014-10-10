@@ -278,6 +278,20 @@ val eval_side_effects : evar_map -> Declareops.side_effects
 val drop_side_effects : evar_map -> evar_map
 (** This should not be used. For hacking purposes. *)
 
+(** {5 Future goals} *)
+
+val declare_future_goal : Evar.t -> evar_map -> evar_map
+(** Adds an existential variable to the list of future goals. For
+    internal uses only. *)
+
+val future_goals : evar_map -> Evar.t list
+(** Retrieves the list of future goals. Used by the [refine] primitive
+    of the tactic engine. *)
+
+val reset_future_goals : evar_map -> evar_map
+(** Clears the list of future goals. Used by the [refine] primitive of
+    the tactic engine. *)
+
 (** {5 Sort variables}
 
     Evar maps also keep track of the universe constraints defined at a given

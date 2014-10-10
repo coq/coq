@@ -585,6 +585,8 @@ type evar_map = {
   metas      : clbinding Metamap.t;
   (** Interactive proofs *)
   effects    : Declareops.side_effects;
+  future_goals : Evar.t list; (** list of newly created evars,
+                                  to be eventually turned into goals if not solved.*)
 }
 
 (*** Lifting primitive from Evar.Map. ***)
@@ -793,6 +795,7 @@ let empty = {
   metas      = Metamap.empty;
   effects    = Declareops.no_seff;
   evar_names = (EvMap.empty,Idmap.empty); (* id<->key for undefined evars *)
+  future_goals = [];
 }
 
 let from_env ?ctx e = 
@@ -976,6 +979,15 @@ let drop_side_effects evd =
   { evd with effects = Declareops.no_seff; }
 
 let eval_side_effects evd = evd.effects
+
+(* Future goals *)
+let declare_future_goal evk evd =
+  { evd with future_goals = evk::evd.future_goals }
+
+let future_goals evd = evd.future_goals
+
+let reset_future_goals evd =
+  { evd with future_goals = [] }
 
 let meta_diff ext orig = 
   Metamap.fold (fun m v acc ->
@@ -1432,6 +1444,7 @@ let set_metas evd metas = {
   metas;
   effects = evd.effects;
   evar_names = evd.evar_names;
+  future_goals = evd.future_goals;
 }
 
 let meta_list evd = metamap_to_list evd.metas
