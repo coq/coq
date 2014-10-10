@@ -959,42 +959,24 @@ end
 
 module Refine =
 struct
-  type handle = Evd.evar_map * Evar.t option
+  type handle = Evd.evar_map
 
-  let new_evar (evd, evkmain) ?(main=false) env typ =
-    let naming =
-      if main then
-        (* waiting for a more principled approach
-           (unnamed evars, private names?) *)
-        Misctypes.IntroFresh (Names.Id.of_string "tmp_goal")
-      else
-        Misctypes.IntroAnonymous in
-    let (evd, ev) = Evarutil.new_evar env evd ~naming typ in
-    let (evk, _) = Term.destEvar ev in
-    let evkmain =
-      if main then match evkmain with
-      | Some _ -> Errors.error "Only one main subgoal per instantiation."
-      | None -> Some evk
-      else evkmain in
-    let h = (evd, evkmain) in
-    (h, ev)
+  let new_evar evd ?(main=false) env typ =
+    Evarutil.new_evar env evd ~principal:main typ
 
-  let new_evar_instance (evd, evkmain) ctx typ inst =
-    let (evd, ev) = Evarutil.new_evar_instance ctx evd typ inst in
-    let h = (evd, evkmain) in
-    (h, ev)
+  let new_evar_instance evd ctx typ inst =
+    Evarutil.new_evar_instance ctx evd typ inst
 
-  let fresh_constructor_instance (evd,evkmain) env construct =
-    let (evd,pconstruct) = Evd.fresh_constructor_instance env evd construct in
-    (evd,evkmain) , pconstruct
+  let fresh_constructor_instance evd env construct =
+    Evd.fresh_constructor_instance env evd construct
 
-  let with_type (evd,evkmain) env c t =
+  let with_type evd env c t =
     let my_type = Retyping.get_type_of env evd c in
     let j = Environ.make_judge c my_type in
     let (evd,j') =
       Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j t
     in
-    (evd,evkmain) , j'.Environ.uj_val
+    evd , j'.Environ.uj_val
 
   let typecheck_evar ev env sigma =
     let info = Evd.find sigma ev in
@@ -1009,12 +991,12 @@ struct
     !evdref
 
   let refine ?(unsafe = false) f = Goal.enter begin fun gl ->
-    let sigma = Goal.sigma gl in
+    let sigma = Evd.reset_future_goals (Goal.sigma gl) in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
-    let handle = (Evd.reset_future_goals sigma, None) in
-    let ((sigma, evkmain), c) = f handle in
+    let (sigma, c) = f sigma in
     let evs = Evd.future_goals sigma in
+    let evkmain = Evd.principal_future_goal sigma in
     (** Check that the introduced evars are well-typed *)
     let fold accu ev = typecheck_evar ev env accu in
     let sigma = if unsafe then sigma else List.fold_left fold sigma evs in
@@ -1037,10 +1019,7 @@ struct
     refine ~unsafe f
   end
 
-  let update (evd, evkmain) f =
-    let nevd, ans = f evd in
-    (nevd, evkmain), ans
-
+  let update evd f = f evd
 end
 
 module NonLogical = Proofview_monad.NonLogical

@@ -585,8 +585,16 @@ type evar_map = {
   metas      : clbinding Metamap.t;
   (** Interactive proofs *)
   effects    : Declareops.side_effects;
-  future_goals : Evar.t list; (** list of newly created evars,
-                                  to be eventually turned into goals if not solved.*)
+  future_goals : Evar.t list; (** list of newly created evars, to be
+                                  eventually turned into goals if not solved.*)
+  principal_future_goal : Evar.t option; (** if [Some e], [e] must be
+                                             contained
+                                             [future_goals]. The evar
+                                             [e] will inherit
+                                             properties (now: the
+                                             name) of the evar which
+                                             will be instantiated with
+                                             a term containing [e]. *)
 }
 
 (*** Lifting primitive from Evar.Map. ***)
@@ -796,6 +804,7 @@ let empty = {
   effects    = Declareops.no_seff;
   evar_names = (EvMap.empty,Idmap.empty); (* id<->key for undefined evars *)
   future_goals = [];
+  principal_future_goal = None;
 }
 
 let from_env ?ctx e = 
@@ -984,10 +993,19 @@ let eval_side_effects evd = evd.effects
 let declare_future_goal evk evd =
   { evd with future_goals = evk::evd.future_goals }
 
+let declare_principal_goal evk evd =
+  match evd.principal_future_goal with
+  | None -> { evd with
+    future_goals = evk::evd.future_goals;
+    principal_future_goal=Some evk; }
+  | Some _ -> Errors.error "Only one main subgoal per instantiation."
+
 let future_goals evd = evd.future_goals
 
+let principal_future_goal evd = evd.principal_future_goal
+
 let reset_future_goals evd =
-  { evd with future_goals = [] }
+  { evd with future_goals = [] ; principal_future_goal=None }
 
 let meta_diff ext orig = 
   Metamap.fold (fun m v acc ->
@@ -1445,6 +1463,7 @@ let set_metas evd metas = {
   effects = evd.effects;
   evar_names = evd.evar_names;
   future_goals = evd.future_goals;
+  principal_future_goal = evd.principal_future_goal;
 }
 
 let meta_list evd = metamap_to_list evd.metas

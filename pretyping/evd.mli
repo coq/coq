@@ -284,13 +284,22 @@ val declare_future_goal : Evar.t -> evar_map -> evar_map
 (** Adds an existential variable to the list of future goals. For
     internal uses only. *)
 
+val declare_principal_goal : Evar.t -> evar_map -> evar_map
+(** Adds an existential variable to the list of future goals and make
+    it principal. Only one existential variable can be made principal, an
+    error is raised otherwise. For internal uses only. *)
+
 val future_goals : evar_map -> Evar.t list
 (** Retrieves the list of future goals. Used by the [refine] primitive
     of the tactic engine. *)
 
+val principal_future_goal : evar_map -> Evar.t option
+(** Retrieves the name of the principal existential variable if there
+    is one. Used by the [refine] primitive of the tactic engine. *)
+
 val reset_future_goals : evar_map -> evar_map
-(** Clears the list of future goals. Used by the [refine] primitive of
-    the tactic engine. *)
+(** Clears the list of future goals (as well as the principal future
+    goal). Used by the [refine] primitive of the tactic engine. *)
 
 (** {5 Sort variables}
 

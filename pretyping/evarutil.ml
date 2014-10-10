@@ -360,36 +360,48 @@ let new_pure_evar_full evd evi =
   let evd = Evd.declare_future_goal evk evd in
   (evd, evk)
 
-let new_pure_evar sign evd ?(src=default_source) ?filter ?candidates ?store ?(naming=Misctypes.IntroAnonymous) typ =
+let new_pure_evar sign evd ?(src=default_source) ?filter ?candidates ?store ?naming ?(principal=false) typ =
+  let default_naming =
+    if principal then
+        (* waiting for a more principled approach
+           (unnamed evars, private names?) *)
+        Misctypes.IntroFresh (Names.Id.of_string "tmp_goal")
+      else
+        Misctypes.IntroAnonymous
+  in
+  let naming = Option.default default_naming naming in
   let newevk = new_untyped_evar() in
   let evd = evar_declare sign newevk typ ~src ?filter ?candidates ?store ~naming evd in
-  let evd = Evd.declare_future_goal newevk evd in
+  let evd =
+    if principal then Evd.declare_principal_goal newevk evd
+    else Evd.declare_future_goal newevk evd
+  in
   (evd,newevk)
 
-let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?(naming=Misctypes.IntroAnonymous) instance =
+let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?principal instance =
   assert (not !Flags.debug ||
             List.distinct (ids_of_named_context (named_context_of_val sign)));
-  let evd,newevk = new_pure_evar sign evd ?src ?filter ?candidates ?store ~naming typ in
+  let evd,newevk = new_pure_evar sign evd ?src ?filter ?candidates ?store ?naming ?principal typ in
   (evd,mkEvar (newevk,Array.of_list instance))
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar env evd ?src ?filter ?candidates ?store ?(naming=Misctypes.IntroAnonymous) typ =
+let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
   let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env typ in
   let candidates = Option.map (List.map (subst2 subst vsubst)) candidates in
   let instance =
     match filter with
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
-  new_evar_instance sign evd typ' ?src ?filter ?candidates ?store ~naming instance
+  new_evar_instance sign evd typ' ?src ?filter ?candidates ?store ?naming ?principal instance
 
-let new_type_evar env evd ?src ?filter ?(naming=Misctypes.IntroAnonymous) rigid =
+let new_type_evar env evd ?src ?filter ?naming ?principal rigid =
   let evd', s = new_sort_variable rigid evd in
-  let evd', e = new_evar env evd' ?src ?filter ~naming (mkSort s) in
+  let evd', e = new_evar env evd' ?src ?filter ?naming ?principal (mkSort s) in
     evd', (e, s)
 
-let e_new_type_evar env evdref ?src ?filter ?(naming=Misctypes.IntroAnonymous) rigid =
-  let evd', c = new_type_evar env !evdref ?src ?filter ~naming rigid in
+let e_new_type_evar env evdref ?src ?filter ?naming ?principal rigid =
+  let evd', c = new_type_evar env !evdref ?src ?filter ?naming ?principal rigid in
     evdref := evd';
     c
 
@@ -402,8 +414,8 @@ let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
     evdref := evd'; mkSort s
 
   (* The same using side-effect *)
-let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?(naming=Misctypes.IntroAnonymous) ty =
-  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?store ~naming ty in
+let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?naming ?principal ty =
+  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?store ?naming ?principal ty in
   evdref := evd';
   ev
 
