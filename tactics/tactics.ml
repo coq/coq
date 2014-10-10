@@ -297,28 +297,51 @@ let reduct_option redfun = function
   | Some id -> reduct_in_hyp (fst redfun) id
   | None    -> reduct_in_concl (revert_cast redfun)
 
-let weak_check env sigma deep newc origc =
+exception NeedGlobalCheck
+
+let check_types env sigma needglobalcheck deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
-  if deep then
+  if deep then begin
     let t2 = Retyping.get_type_of env sigma origc in
-    is_fconv Reduction.CUMUL env sigma t1 t2
+    if not (is_fconv Reduction.CUMUL env sigma t1 t2) then
+      if
+        isSort (whd_betadeltaiota env sigma t1) &&
+        isSort (whd_betadeltaiota env sigma t2)
+      then
+        needglobalcheck := true
+      else
+        errorlabstrm "convert-check-hyp" (str "Types are incompatible.")
+  end
   else
-    isSort (whd_betadeltaiota env sigma t1)
+    if not (isSort (whd_betadeltaiota env sigma t1)) then
+      errorlabstrm "convert-check-hyp" (str "Not a type.")
+
+let check_terms cv_pb env sigma t c =
+  if not (is_fconv cv_pb env sigma t c) then
+    errorlabstrm "convert-check-hyp" (str "Not convertible.");;
 
 (* Now we introduce different instances of the previous tacticals *)
-let change_and_check cv_pb deep t env sigma c =
-  let b = weak_check env sigma deep t c in
-  if b && is_fconv cv_pb env sigma t c then
-    t
-  else
-    errorlabstrm "convert-check-hyp" (str "Not convertible.")
+let change_and_check cv_pb needglobalcheck deep t env sigma c =
+  check_types env sigma needglobalcheck deep t c;
+  check_terms cv_pb env sigma t c;
+  t
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
-let change_on_subterm cv_pb deep t = function
-  | None -> change_and_check cv_pb deep t
+let change_on_subterm cv_pb deep t where env sigma c =
+  let needglobalcheck = ref false in
+  let c = match where with
+  | None -> change_and_check cv_pb (ref true) deep t env sigma c
   | Some occl ->
       contextually false occl
-        (fun subst -> change_and_check Reduction.CONV true (replace_vars subst t))
+        (fun subst -> change_and_check Reduction.CONV needglobalcheck true (replace_vars subst t))
+        env sigma c in
+  if !needglobalcheck then
+    begin
+      try ignore (Typing.type_of env sigma c)
+      with e when catchable_exception e ->
+        error "Replacement would lead to an ill-typed term."
+    end;
+  c
 
 let change_in_concl occl t =
   reduct_in_concl ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)
