@@ -16,15 +16,14 @@ module GlobalSafeEnv : sig
 
   val safe_env : unit -> Safe_typing.safe_environment
   val set_safe_env : Safe_typing.safe_environment -> unit
-  val join_safe_environment : unit -> unit
+  val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
 
 end = struct
 
 let global_env = ref Safe_typing.empty_environment
 
-let join_safe_environment () =
-  if !Flags.compilation_mode <> Flags.BuildVi then
-    global_env := Safe_typing.join_safe_environment !global_env
+let join_safe_environment ?except () =
+  global_env := Safe_typing.join_safe_environment ?except !global_env
 
 let () =
   Summary.declare_summary "Global environment"
@@ -47,7 +46,8 @@ let set_safe_env e = global_env := e
 end
 
 let safe_env = GlobalSafeEnv.safe_env
-let join_safe_environment = GlobalSafeEnv.join_safe_environment
+let join_safe_environment ?except () =
+  GlobalSafeEnv.join_safe_environment ?except ()
 
 let env () = Safe_typing.env_of_safe_env (safe_env ())
 
@@ -140,7 +140,7 @@ let mind_of_delta_kn kn =
 (** Operations on libraries *)
 
 let start_library dir = globalize (Safe_typing.start_library dir)
-let export s = Safe_typing.export !Flags.compilation_mode (safe_env ()) s
+let export ?except s = Safe_typing.export ?except (safe_env ()) s
 let import c u d = globalize (Safe_typing.import c u d)
 
 

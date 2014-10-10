@@ -292,11 +292,6 @@ let hcons_mind mib =
 
 (** {6 Stm machinery } *)
 
-let join_constant_body otab cb =
-  match cb.const_body with
-  | OpaqueDef o -> Opaqueproof.join_opaque otab o
-  | _ -> ()
-
 let string_of_side_effect = function
   | SEsubproof (c,_,_) -> Names.string_of_con c
   | SEscheme (cl,_) ->

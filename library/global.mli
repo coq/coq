@@ -98,7 +98,7 @@ val universes_of_constant_body :
 (** {6 Compiled libraries } *)
 
 val start_library : DirPath.t -> module_path
-val export : DirPath.t ->
+val export : ?except:Future.UUIDSet.t -> DirPath.t ->
   module_path * Safe_typing.compiled_library * Safe_typing.native_library
 val import :
   Safe_typing.compiled_library -> Univ.universe_context_set -> Safe_typing.vodigest ->
@@ -111,7 +111,7 @@ val import :
 
 val env_of_context : Environ.named_context_val -> Environ.env
 
-val join_safe_environment : unit -> unit
+val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
 
 val is_polymorphic : Globnames.global_reference -> bool
 val is_template_polymorphic : Globnames.global_reference -> bool

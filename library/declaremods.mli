@@ -80,7 +80,7 @@ val get_library_symbols_tbl : library_name -> Nativecode.symbol array
 val start_library : library_name -> unit
 
 val end_library :
-  library_name ->
+  ?except:Future.UUIDSet.t -> library_name ->
     Safe_typing.compiled_library * library_objects * Safe_typing.native_library
 
 (** [really_import_module mp] opens the module [mp] (in a Caml sense).

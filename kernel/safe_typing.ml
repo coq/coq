@@ -238,10 +238,12 @@ let push_context ctx = add_constraints (Now (Univ.UContext.constraints ctx))
 let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
 
-let join_safe_environment e =
-  Modops.join_structure (Environ.opaque_tables e.env) e.revstruct;
+let join_safe_environment ?(except=Future.UUIDSet.empty) e =
+  Modops.join_structure except (Environ.opaque_tables e.env) e.revstruct;
   List.fold_left
-    (fun e fc -> add_constraints (Now (Future.join fc)) e)
+    (fun e fc ->
+       if Future.UUIDSet.mem (Future.uuid fc) except then e
+       else add_constraints (Now (Future.join fc)) e)
     {e with future_cst = []} e.future_cst
 
 (** {6 Various checks } *)
@@ -745,11 +747,9 @@ let start_library dir senv =
     modvariant = LIBRARY;
     imports = senv.imports }
 
-let export compilation_mode senv dir =
+let export ?except senv dir =
   let senv =
-    try
-      if compilation_mode = Flags.BuildVi then { senv with future_cst = [] }
-      else join_safe_environment senv
+    try join_safe_environment ?except senv
     with e ->
       let e = Errors.push e in
       Errors.errorlabstrm "export" (Errors.print e)

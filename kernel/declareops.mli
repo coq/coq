@@ -75,8 +75,6 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 val subst_mind_body : substitution -> mutual_inductive_body -> mutual_inductive_body
 
-val join_constant_body : Opaqueproof.opaquetab -> constant_body -> unit
-
 (** {6 Hash-consing} *)
 
 (** Here, strictly speaking, we don't perform true hash-consing

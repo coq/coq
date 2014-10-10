@@ -873,9 +873,9 @@ let start_library dir =
   Lib.start_compilation dir mp;
   Lib.add_frozen_state ()
 
-let end_library dir =
+let end_library ?except dir =
   let oname = Lib.end_compilation_checks dir in
-  let mp,cenv,ast = Global.export dir in
+  let mp,cenv,ast = Global.export ?except dir in
   let prefix, lib_stack = Lib.end_compilation oname in
   assert (ModPath.equal mp (MPfile dir));
   let substitute, keep, _ = Lib.classify_segment lib_stack in

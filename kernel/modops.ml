@@ -611,21 +611,31 @@ let clean_bounded_mod_expr sign =
   if is_functor sign then collect_mbid MBIset.empty sign else sign
 
 (** {6 Stm machinery } *)
+let join_constant_body except otab cb =
+  match cb.const_body with
+  | OpaqueDef o ->
+      (match Opaqueproof.uuid_opaque otab o with
+      | Some uuid when not(Future.UUIDSet.mem uuid except) ->
+          Opaqueproof.join_opaque otab o
+      | _ -> ())
+  | _ -> ()
 
-let rec join_module otab mb =
-  implem_iter (join_signature otab) (join_expression otab) mb.mod_expr;
-  Option.iter (join_expression otab) mb.mod_type_alg;
-  join_signature otab mb.mod_type
-and join_modtype otab mt =
-  Option.iter (join_expression otab) mt.typ_expr_alg;
-  join_signature otab mt.typ_expr
-and join_field otab (l,body) = match body with
-  |SFBconst sb -> join_constant_body otab sb
-  |SFBmind _ -> ()
-  |SFBmodule m -> join_module otab m
-  |SFBmodtype m -> join_modtype otab m
-and join_structure otab struc = List.iter (join_field otab) struc
-and join_signature otab sign =
-  functor_iter (join_modtype otab) (join_structure otab) sign
-and join_expression otab me = functor_iter (join_modtype otab) (fun _ -> ()) me
+let join_structure except otab s =
+  let rec join_module mb =
+    implem_iter join_signature join_expression mb.mod_expr;
+    Option.iter join_expression mb.mod_type_alg;
+    join_signature mb.mod_type
+  and join_modtype mt =
+    Option.iter join_expression mt.typ_expr_alg;
+    join_signature mt.typ_expr
+  and join_field (l,body) = match body with
+    |SFBconst sb -> join_constant_body except otab sb
+    |SFBmind _ -> ()
+    |SFBmodule m -> join_module m
+    |SFBmodtype m -> join_modtype m
+  and join_structure struc = List.iter join_field struc
+  and join_signature sign =
+    functor_iter join_modtype join_structure sign
+  and join_expression me = functor_iter join_modtype (fun _ -> ()) me in
+  join_structure s
 

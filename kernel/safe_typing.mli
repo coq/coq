@@ -48,7 +48,8 @@ val is_curmod_library : safe_environment -> bool
 
 (* safe_environment has functional data affected by lazy computations,
  * thus this function returns a new safe_environment *)
-val join_safe_environment : safe_environment -> safe_environment
+val join_safe_environment :
+  ?except:Future.UUIDSet.t -> safe_environment -> safe_environment
 
 (** {6 Enriching a safe environment } *)
 
@@ -138,7 +139,7 @@ type native_library = Nativecode.global list
 val start_library : DirPath.t -> module_path safe_transformer
 
 val export :
-  Flags.compilation_mode ->
+  ?except:Future.UUIDSet.t ->
   safe_environment -> DirPath.t ->
     module_path * compiled_library * native_library
 
