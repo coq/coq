@@ -20,8 +20,8 @@ Arguments mk_zn2z_ops [t] ops.
 Arguments mk_zn2z_ops_karatsuba [t] ops.
 Arguments mk_zn2z_specs [t ops] specs.
 Arguments mk_zn2z_specs_karatsuba [t ops] specs.
-Arguments ZnZ.digits [t] Ops : rename.
-Arguments ZnZ.zdigits [t] Ops : rename.
+Arguments ZnZ.digits [t] Ops.
+Arguments ZnZ.zdigits [t] Ops.
 
 Lemma Pshiftl_nat_Zpower : forall n p,
   Zpos (Pos.shiftl_nat p n) = Zpos p * 2 ^ Z.of_nat n.

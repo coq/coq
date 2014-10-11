@@ -205,7 +205,7 @@ let print_polymorphism ref =
        else "not universe polymorphic")
 
 let print_primitive_record mipv = function
-  | Some (ps,_) when Array.length ps > 0 -> 
+  | Some (Some (_, ps,_)) ->
     [pr_id mipv.(0).mind_typename ++ str" is primitive and has eta conversion."]
   | _ -> []
     

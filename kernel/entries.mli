@@ -41,9 +41,10 @@ type one_inductive_entry = {
   mind_entry_lc : constr list }
 
 type mutual_inductive_entry = {
-  mind_entry_record : bool option; 
-  (** Some true: primitive record
-      Some false: non-primitive record *)
+  mind_entry_record : (Id.t option) option; 
+  (** Some (Some id): primitive record with id the binder name of the record
+      in projections.
+      Some None: non-primitive record *)
   mind_entry_finite : Decl_kinds.recursivity_kind;
   mind_entry_params : (Id.t * local_entry) list;
   mind_entry_inds : one_inductive_entry list;

@@ -523,8 +523,7 @@ let is_eta_constructor_app env f l1 =
   | Construct (((_, i as ind), j), u) when i == 0 && j == 1 ->
     let mib = lookup_mind (fst ind) env in
       (match mib.Declarations.mind_record with
-      | Some (exp,projs) when Array.length projs > 0
-        && mib.Declarations.mind_finite <> Decl_kinds.CoFinite -> 
+      | Some (Some (_, exp,projs)) when mib.Declarations.mind_finite <> Decl_kinds.CoFinite -> 
         Array.length projs == Array.length l1 - mib.Declarations.mind_nparams
       | _ -> false)
   | _ -> false
@@ -534,7 +533,7 @@ let eta_constructor_app env f l1 term =
   | Construct (((_, i as ind), j), u) ->
     let mib = lookup_mind (fst ind) env in
       (match mib.Declarations.mind_record with
-      | Some (projs, _) ->
+      | Some (Some (_, projs, _)) ->
         let npars = mib.Declarations.mind_nparams in
 	let pars, l1' = Array.chop npars l1 in
 	let arg = Array.append pars [|term|] in

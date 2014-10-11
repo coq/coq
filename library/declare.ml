@@ -382,7 +382,7 @@ let inInductive : inductive_obj -> obj =
 let declare_projections mind =
   let spec,_ = Inductive.lookup_mind_specif (Global.env ()) (mind,0) in
     match spec.mind_record with
-    | Some (kns, pjs) -> 
+    | Some (Some (_, kns, pjs)) -> 
       Array.iteri (fun i kn -> 
 	let id = Label.to_id (Constant.label kn) in
 	let entry = {proj_entry_ind = mind; proj_entry_arg = i} in
@@ -390,7 +390,7 @@ let declare_projections mind =
 				       IsDefinition StructureComponent) 
 	in
 	  assert(eq_constant kn kn')) kns
-    | None -> ()
+    | Some None | None -> ()
 
 (* for initial declaration *)
 let declare_mind isrecord mie =

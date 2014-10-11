@@ -21,7 +21,7 @@ val primitive_flag : bool ref
    as coercions accordingly to [coers]; it returns the absolute names of projections *)
 
 val declare_projections :
-  inductive -> ?kind:Decl_kinds.definition_object_kind -> ?name:Id.t ->
+  inductive -> ?kind:Decl_kinds.definition_object_kind -> Id.t ->
   coercion_flag list -> manual_explicitation list list -> rel_context ->
   (Name.t * bool) list * constant option list
 

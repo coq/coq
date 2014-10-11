@@ -169,11 +169,11 @@ let infer_declaration env kn dcl =
     let mib, _ = Inductive.lookup_mind_specif env (ind,0) in
     let kn, pb = 
       match mib.mind_record with
-      | Some (kns, pbs) -> 
+      | Some (Some (id, kns, pbs)) -> 
 	if i < Array.length pbs then
 	  kns.(i), pbs.(i)
 	else assert false
-      | None -> assert false
+      | _ -> assert false
     in
     let term, typ = pb.proj_eta in
       Def (Mod_subst.from_val (hcons_constr term)), RegularArity typ, Some pb,

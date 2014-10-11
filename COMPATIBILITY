@@ -24,14 +24,6 @@ Universe Polymorphism.
   (e.g. induction). Extra "Transparent" might have to be added to
   revert opacity of constants.
 
-Records, Classes.
-
-- The generated binder name of the class argument of projections 
-  in type class declarations is now the same as for the corresponding
-  record name and is the lowercase first character of the class name.
-  E.g for [Class Foo (A : Type) := foo : A -> A], foo's class argument
-  has name [f].
-
 Potential sources of incompatibilities between Coq V8.3 and V8.4
 ----------------------------------------------------------------
 

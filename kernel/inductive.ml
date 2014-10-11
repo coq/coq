@@ -297,7 +297,7 @@ let elim_sorts (_,mip) = mip.mind_kelim
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) = 
   match mib.mind_record with
-  | Some (projs, _) when Array.length projs > 0 -> true
+  | Some (Some _) -> true
   | _ -> false
 
 let extended_rel_list n hyps =

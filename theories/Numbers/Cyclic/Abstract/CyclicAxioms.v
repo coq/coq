@@ -93,13 +93,6 @@ Module ZnZ.
     lor         : t -> t -> t;
     land        : t -> t -> t;
     lxor        : t -> t -> t }.
-
- Arguments ZnZ.to_Z t Ops _ : rename.
- Arguments ZnZ.zero t Ops : rename.
- Arguments ZnZ.succ t Ops _ : rename.
- Arguments ZnZ.add_c t Ops _ _ : rename.
- Arguments ZnZ.mul_c t Ops _ _ : rename.
- Arguments ZnZ.compare t Ops _ _ : rename.
  
  Section Specs.
  Context {t : Type}{ops : Ops t}.
@@ -219,7 +212,6 @@ Module ZnZ.
  End Specs.
 
  Arguments Specs {t} ops.
- Arguments ZnZ.spec_0 t ops Specs : rename.
 
  (** Generic construction of double words *)
 

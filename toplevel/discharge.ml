@@ -104,8 +104,9 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
   let abs_ctx = Univ.instantiate_univ_context abs_ctx in
   let univs = Univ.UContext.union abs_ctx univs in
   let record = match mib.mind_record with
+    | Some (Some (id, _, _)) -> Some (Some id)
+    | Some None -> Some None
     | None -> None
-    | Some (_, a) -> Some (Array.length a > 0)
   in
   { mind_entry_record = record;
     mind_entry_finite = mib.mind_finite;

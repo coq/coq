@@ -226,7 +226,7 @@ let instantiate_possibly_recursive_type indu paramdecls fields =
   Termops.substl_rel_context (subst@[mkIndU indu]) fields
 
 (* We build projections *)
-let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls fields =
+let declare_projections indsp ?(kind=StructureComponent) binder_name coers fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let u = Inductive.inductive_instance mib in
@@ -236,15 +236,15 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
   let r = mkIndU (indsp,u) in
   let rp = applist (r, Termops.extended_rel_list 0 paramdecls) in
   let paramargs = Termops.extended_rel_list 1 paramdecls in (*def in [[params;x:rp]]*)
-  let x = match name with Some n -> Name n | None -> Namegen.named_hd (Global.env()) r Anonymous in
+  let x = Name binder_name in
   let fields = instantiate_possibly_recursive_type indu paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
   let primitive = 
     if !primitive_flag then 
       let is_primitive = 
 	match mib.mind_record with
-	| Some (projs, _) -> Array.length projs > 0
-	| None -> false
+	| Some (Some _) -> true
+	| Some None | None -> false
       in
 	if not is_primitive then 
 	  Flags.if_verbose msg_warning
@@ -345,6 +345,11 @@ let declare_structure finite poly ctx id idbuild paramimpls params arity fieldim
   let args = Termops.extended_rel_list nfields params in
   let ind = applist (mkRel (1+nparams+nfields), args) in
   let type_constructor = it_mkProd_or_LetIn ind fields in
+  let binder_name = 
+    match name with
+    | None -> Id.of_string (Unicode.lowercase_first_char (Id.to_string id)) 
+    | Some n -> n
+  in
   let mie_ind =
     { mind_entry_typename = id;
       mind_entry_arity = arity;
@@ -353,7 +358,7 @@ let declare_structure finite poly ctx id idbuild paramimpls params arity fieldim
   in
   let mie =
     { mind_entry_params = List.map degenerate_decl params;
-      mind_entry_record = Some !primitive_flag;
+      mind_entry_record = Some (if !primitive_flag then Some binder_name else None);
       mind_entry_finite = finite;
       mind_entry_inds = [mie_ind];
       mind_entry_polymorphic = poly;
@@ -362,7 +367,7 @@ let declare_structure finite poly ctx id idbuild paramimpls params arity fieldim
   let kn = Command.declare_mutual_inductive_with_eliminations KernelVerbose mie [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let cstr = (rsp,1) in
-  let kinds,sp_projs = declare_projections rsp ~kind ?name coers fieldimpls fields in
+  let kinds,sp_projs = declare_projections rsp ~kind binder_name coers fieldimpls fields in
   let build = ConstructRef cstr in
   let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
   Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs);
@@ -378,17 +383,14 @@ let implicits_of_context ctx =
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
 
 let declare_class finite def poly ctx id idbuild paramimpls params arity fieldimpls fields
-    ?(kind=StructureComponent) ?name is_coe coers priorities sign =
+    ?(kind=StructureComponent) is_coe coers priorities sign =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
-    (* if def then *)
-      let len = List.length params in
-      let impls = implicits_of_context params in
-	 List.map (fun x -> impls @ Impargs.lift_implicits (succ len) x) fieldimpls
-    (* else List.map (fun x -> (ExplByPos (1, None), (true, true, true)) :: *)
-    (* 		     Impargs.lift_implicits 1 x) fieldimpls *)
+    let len = List.length params in
+    let impls = implicits_of_context params in
+      List.map (fun x -> impls @ Impargs.lift_implicits (succ len) x) fieldimpls
   in
-  let record_name = Id.of_string (Unicode.lowercase_first_char (Id.to_string (snd id))) in
+  let binder_name = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
   let impl, projs =
     match fields with
     | [(Name proj_name, _, field)] when def ->
@@ -402,9 +404,9 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
 	let cstu = (cst, if poly then Univ.UContext.instance ctx else Univ.Instance.empty) in
 	let inst_type = appvectc (mkConstU cstu) (Termops.rel_vect 0 (List.length params)) in
 	let proj_type =
-	  it_mkProd_or_LetIn (mkProd(Name record_name, inst_type, lift 1 field)) params in
+	  it_mkProd_or_LetIn (mkProd(Name binder_name, inst_type, lift 1 field)) params in
 	let proj_body =
-	  it_mkLambda_or_LetIn (mkLambda (Name record_name, inst_type, mkRel 1)) params in
+	  it_mkLambda_or_LetIn (mkLambda (Name binder_name, inst_type, mkRel 1)) params in
 	let proj_entry = Declare.definition_entry ~types:proj_type ~poly ~univs:ctx proj_body in
 	let proj_cst = Declare.declare_constant proj_name
 	  (DefinitionEntry proj_entry, IsDefinition Definition)
@@ -421,7 +423,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
     | _ ->
 	let ind = declare_structure BiFinite poly ctx (snd id) idbuild paramimpls
 	  params arity fieldimpls fields
-	  ~kind:Method ~name:record_name false (List.map (fun _ -> false) fields) sign
+	  ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields) sign
 	in
 	let coers = List.map2 (fun coe pri -> 
 			       Option.map (fun b -> 

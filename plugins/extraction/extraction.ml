@@ -215,7 +215,7 @@ let oib_equal o1 o2 =
     Array.equal Id.equal o1.mind_consnames o2.mind_consnames
 
 let eq_record x y =
-  Option.equal (fun (x, y) (x', y') -> Array.for_all2 eq_constant x x') x y
+  Option.equal (Option.equal (fun (_, x, y) (_, x', y') -> Array.for_all2 eq_constant x x')) x y
 
 let mib_equal m1 m2 =
   Array.equal oib_equal m1.mind_packets m1.mind_packets &&

@@ -97,6 +97,15 @@ type wf_paths = recarg Rtree.t
 v}
 *)
 
+(** Record information:
+    If the record is not primitive, then None
+    Otherwise, we get:
+    - The identifier for the binder name of the record in primitive projections.
+    - The constants associated to each projection.
+    - The checked projection bodies. *)
+
+type record_body = (Id.t * constant array * projection_body array) option
+
 type regular_inductive_arity = {
   mind_user_arity : types;
   mind_sort : sorts;
@@ -153,10 +162,7 @@ type mutual_inductive_body = {
 
     mind_packets : one_inductive_body array;  (** The component of the mutual inductive block *)
 
-    mind_record : (constant array * projection_body array) option;  
-    (** Whether the inductive type has been declared as a record, 
-	In the case it is primitive we get its projection names and checked
-	projection bodies, otherwise both arrays are empty. *)
+    mind_record : record_body option; (** The record information *)
 
     mind_finite : Decl_kinds.recursivity_kind;  (** Whether the type is inductive or coinductive *)
 
