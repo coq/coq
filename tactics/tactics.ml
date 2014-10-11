@@ -464,36 +464,55 @@ let e_change_in_hyp redfun (id,where) gl =
 
 type change_arg = env -> evar_map -> evar_map * constr
 
-let weak_check env sigma deep newc origc =
+let check_types env sigma mayneedglobalcheck deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
-  if deep then
+  if deep then begin
     let t2 = Retyping.get_type_of env sigma origc in
     let sigma, t2 = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t2 in
-      snd (infer_conv ~pb:Reduction.CUMUL env sigma t1 t2)
+    if not (snd (infer_conv ~pb:Reduction.CUMUL env sigma t1 t2)) then
+      if
+        isSort (whd_betadeltaiota env sigma t1) &&
+        isSort (whd_betadeltaiota env sigma t2)
+      then
+        mayneedglobalcheck := true
+      else
+        errorlabstrm "convert-check-hyp" (str "Types are incompatible.")
+  end
   else
-    isSort (whd_betadeltaiota env sigma t1)
+    if not (isSort (whd_betadeltaiota env sigma t1)) then
+      errorlabstrm "convert-check-hyp" (str "Not a type.")
 
 (* Now we introduce different instances of the previous tacticals *)
-let change_and_check cv_pb deep t env sigma c =
+let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
   let sigma, t' = t env sigma in
-  let b = weak_check env sigma deep t' c in
-  if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
+  check_types env sigma mayneedglobalcheck deep t' c;
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
   if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
   sigma, t'
 
-let change_and_check_subst cv_pb subst t env sigma c =
+let change_and_check_subst cv_pb mayneedglobalcheck subst t env sigma c =
   let t' env sigma = 
     let sigma, t = t env sigma in
       sigma, replace_vars (Id.Map.bindings subst) t 
-  in change_and_check cv_pb true t' env sigma c
+  in change_and_check cv_pb mayneedglobalcheck true t' env sigma c
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
-let change_on_subterm cv_pb deep t = function
-  | None -> change_and_check cv_pb deep t
+let change_on_subterm cv_pb deep t where env sigma c =
+  let mayneedglobalcheck = ref false in
+  let sigma,c = match where with
+  | None -> change_and_check cv_pb mayneedglobalcheck deep t env sigma c
   | Some occl ->
-    e_contextually false occl
-      (fun subst -> change_and_check_subst Reduction.CONV subst t)
+      e_contextually false occl
+        (fun subst ->
+          change_and_check_subst Reduction.CONV mayneedglobalcheck subst t)
+        env sigma c in
+  if !mayneedglobalcheck then
+    begin
+      try ignore (Typing.type_of env sigma c)
+      with e when catchable_exception e ->
+        error "Replacement would lead to an ill-typed term."
+    end;
+  sigma,c
 
 let change_in_concl occl t =
   e_change_in_concl ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)

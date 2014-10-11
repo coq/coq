@@ -45,3 +45,8 @@ Abort.
 Goal True.
 change ?x with x.
 Abort.
+
+(* Check typability after change of type subterms *)
+Goal nat = nat :> Set.
+Fail change nat with (@id Type nat). (* would otherwise be ill-typed *)
+Abort.
