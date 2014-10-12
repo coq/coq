@@ -40,6 +40,7 @@ install_printer Top_printers.ppmetas
 install_printer Top_printers.ppevm
 install_printer Top_printers.ppgoalgoal
 install_printer Top_printers.ppgoal
+install_printer Top_printers.ppproofview
 install_printer Top_printers.pphintdb
 
 install_printer Top_printers.pptac

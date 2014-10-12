@@ -161,6 +161,9 @@ let ppgoalgoal gl = pp(Goal.pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)
 let ppgoalsigma g = pp(Printer.pr_goal g ++ pr_evar_map None (Refiner.project g))
 let pphintdb db = pp(Hints.pr_hint_db db)
+let ppproofview p =
+  let gls,sigma = Proofview.proofview p in
+  pp(pr_enum Goal.pr_goal gls ++ fnl () ++ pr_evar_map (Some 1) sigma)
 
 let ppopenconstr (x : Evd.open_constr) =
   let (evd,c) = x in pp (pr_evar_map (Some 2) evd ++ pr_constr c)

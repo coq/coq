@@ -62,6 +62,7 @@
 (*#install_printer  (* sigma goal *)  ppsigmagoal;;*)
 (*#install_printer  (* proof *)  pproof;;*)
 #install_printer  (* Goal.goal *)  ppgoalgoal;;
+#install_printer  (* proofview *)  ppproofview;;
 #install_printer  (* metaset.t *) ppmetas;;
 #install_printer  (* evar *)  ppevar;;
 #install_printer  (* evar_map *)  ppevm;;
