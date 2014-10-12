@@ -962,7 +962,7 @@ let enforce_prop_bound_names rename tac =
   | _ ->
       tac
 
-let elimination_clause_scheme with_evars ?(flags=elim_flags ()) 
+let elimination_clause_scheme with_evars ?(with_classes=true) ?(flags=elim_flags ()) 
     rename i (elim, elimty, bindings) indclause =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -975,7 +975,7 @@ let elimination_clause_scheme with_evars ?(flags=elim_flags ())
              (str "The type of elimination clause is not well-formed."))
   in
   let elimclause' = clenv_fchain ~flags indmv elimclause indclause in
-  enforce_prop_bound_names rename (Clenvtac.res_pf elimclause' ~with_evars:with_evars ~flags)
+  enforce_prop_bound_names rename (Clenvtac.res_pf elimclause' ~with_evars ~with_classes ~flags)
   end
 
 (*
@@ -1143,7 +1143,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
 
 let general_elim_clause with_evars flags id c e =
   let elim = match id with
-  | None -> elimination_clause_scheme with_evars ~flags
+  | None -> elimination_clause_scheme with_evars ~with_classes:true ~flags
   | Some id -> elimination_in_clause_scheme with_evars ~flags id
   in
   general_elim_clause_gen elim c e
@@ -3567,7 +3567,7 @@ let induction_tac with_evars elim (varname,lbind) typ gl =
   let i = match i with None -> index_of_ind_arg elimt | Some i -> i in
   let elimc = mkCast (elimc, DEFAULTcast, elimt) in
   Proofview.V82.of_tactic
-    (elimination_clause_scheme with_evars rename i (elimc, elimt, lbindelimc) indclause) gl
+    (elimination_clause_scheme with_evars ~with_classes:false rename i (elimc, elimt, lbindelimc) indclause) gl
 
 let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) names
   inhyps =
