@@ -699,7 +699,10 @@ let contract_cofix ?env ?reference (bodynum,(names,types,bodies as typedbodies))
       let bd = mkCoFix (ind,typedbodies) in
       match env with
       | None -> bd
-      | Some e -> magicaly_constant_of_fixbody e (Option.get reference) bd names.(ind) in
+      | Some e ->
+        match reference with
+        | None -> bd
+        | Some r -> magicaly_constant_of_fixbody e r bd names.(ind) in
   let closure = List.init nbodies make_Fi in
   substl closure bodies.(bodynum)
 
@@ -733,7 +736,10 @@ let contract_fix ?env ?reference ((recindices,bodynum),(names,types,bodies as ty
 	let bd = mkFix ((recindices,ind),typedbodies) in
 	match env with
 	| None -> bd
-	| Some e -> magicaly_constant_of_fixbody e (Option.get reference) bd names.(ind) in
+	| Some e ->
+          match reference with
+          | None -> bd
+          | Some r -> magicaly_constant_of_fixbody e r bd names.(ind) in
     let closure = List.init nbodies make_Fi in
     substl closure bodies.(bodynum)
 
