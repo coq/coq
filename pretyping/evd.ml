@@ -1572,6 +1572,12 @@ let evar_source_of_meta mv evd =
   | Anonymous -> (Loc.ghost,Evar_kinds.GoalEvar)
   | Name id -> (Loc.ghost,Evar_kinds.VarInstance id)
 
+let dependent_evar_ident ev evd =
+  let evi = find evd ev in
+  match evi.evar_source with
+  | (_,Evar_kinds.VarInstance id) -> id
+  | _ -> anomaly (str "Not an evar resulting of a dependent binding")
+
 (*******************************************************************)
 type open_constr = evar_map * constr
 

@@ -663,6 +663,17 @@ let shelve_unifiable =
   Proof.set {initial with comb=n} >>
   Proof.put (true,(u,[]))
 
+let check_no_dependencies =
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun initial ->
+  let (u,n) = Goal.partition_unifiable initial.solution initial.comb in
+  match u with
+  | [] -> tclUNIT ()
+  | gls ->
+      let l = List.map (Goal.dependent_goal_ident initial.solution) gls in
+      let l = List.map (fun id -> Names.Name id) l in
+      tclZERO (Logic.RefinerError (Logic.UnresolvedBindings l))
+
 (* [unshelve l p] adds all the goals in [l] at the end of the focused
    goals of p *)
 let unshelve l p =

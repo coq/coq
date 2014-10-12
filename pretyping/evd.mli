@@ -264,6 +264,9 @@ val rename : existential_key -> Id.t -> evar_map -> evar_map
 val evar_key : Id.t -> evar_map -> existential_key
 
 val evar_source_of_meta : metavariable -> evar_map -> Evar_kinds.t located
+
+val dependent_evar_ident : existential_key -> evar_map -> Id.t
+
 (** {5 Side-effects} *)
 
 val emit_side_effects : Declareops.side_effects -> evar_map -> evar_map

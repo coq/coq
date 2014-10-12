@@ -267,6 +267,10 @@ val shelve : unit tactic
    considered). *)
 val shelve_unifiable : unit tactic
 
+(* This fails with error UnresolvedBindings if some goals are
+   dependent in the current list of goals under focus *)
+val check_no_dependencies : unit tactic
+
 (* [unshelve l p] adds all the goals in [l] at the end of the focused
    goals of p *)
 val unshelve : Goal.goal list -> proofview -> proofview

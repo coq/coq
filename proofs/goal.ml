@@ -35,6 +35,8 @@ let pr_goal {content = e} = str "GOAL:" ++ Pp.int (Evar.repr e)
 
 let goal_ident sigma {content = e} = Evd.evar_ident e sigma
 
+let dependent_goal_ident sigma {content = e} = Evd.dependent_evar_ident e sigma
+
 (* access primitive *)
 (* invariant : [e] must exist in [em] *)
 let content evars { content = e } = Evd.find evars e

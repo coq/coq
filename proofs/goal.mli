@@ -27,6 +27,8 @@ val pr_goal : goal -> Pp.std_ppcmds
 
 val goal_ident : Evd.evar_map -> goal -> Names.Id.t
 
+val dependent_goal_ident : Evd.evar_map -> goal -> Names.Id.t
+
 (* [advance sigma g] returns [Some g'] if [g'] is undefined and 
     is the current avatar of [g] (for instance [g] was changed by [clear]
     into [g']). It returns [None] if [g] has been (partially) solved. *)
