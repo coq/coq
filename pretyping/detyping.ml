@@ -152,6 +152,17 @@ let _ = declare_bool_option
 	    optread  = reverse_matching;
 	    optwrite = (:=) reverse_matching_value }
 
+let print_primproj_params_value = ref true
+let print_primproj_params () = !print_primproj_params_value
+
+let _ = declare_bool_option
+	  { optsync  = true;
+            optdepr  = false;
+	    optname  = "printing of primitive projection parameters";
+	    optkey   = ["Printing";"Primitive";"Projection";"Parameters"];
+	    optread  = print_primproj_params;
+	    optwrite = (:=) print_primproj_params_value }
+
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
 
@@ -443,10 +454,20 @@ let rec detype flags avoid env sigma t =
 	  (Array.map_to_list (detype flags avoid env sigma) args)
     | Const (sp,u) -> GRef (dl, ConstRef sp, detype_instance u)
     | Proj (p,c) ->
+      let noparams () = 
+	let pb = Environ.lookup_projection p (snd env) in
+	let pars = pb.Declarations.proj_npars in
+	let hole = GHole(Loc.ghost,Evar_kinds.InternalHole,Misctypes.IntroAnonymous,None) in
+	let args = List.make pars hole in
+ 	  GApp (dl, GRef (dl, ConstRef (Projection.constant p), None), 
+		(args @ [detype flags avoid env sigma c]))
+      in
       if fst flags || !Flags.in_debugger || !Flags.in_toplevel then
-	(* lax mode, used by debug printers only *) 
-	GApp (dl, GRef (dl, ConstRef (Projection.constant p), None), 
-	      [detype flags avoid env sigma c])
+	try noparams ()
+	with _ ->
+	    (* lax mode, used by debug printers only *) 
+	  GApp (dl, GRef (dl, ConstRef (Projection.constant p), None), 
+		[detype flags avoid env sigma c])
       else 
 	if Projection.unfolded p then
 	  (** Print the compatibility match version *)
@@ -462,10 +483,13 @@ let rec detype flags avoid env sigma t =
 	      anomaly (str"Cannot detype an unfolded primitive projection.")
 	  in detype flags avoid env sigma c'
 	else
-	  let c = 
-	    try Retyping.expand_projection (snd env) sigma p c [] 
-	    with Retyping.RetypeError _ -> anomaly (str"Cannot detype a primitive projection")
-	  in detype flags avoid env sigma c
+	  if print_primproj_params () then
+	    try
+	      let c = Retyping.expand_projection (snd env) sigma p c [] in
+		detype flags avoid env sigma c
+	    with Retyping.RetypeError _ -> noparams ()
+	  else noparams ()
+
     | Evar (evk,cl) ->
       let id,l =
         try Evd.evar_ident evk sigma,
