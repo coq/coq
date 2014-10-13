@@ -107,7 +107,7 @@ type transaction =
   | Noop
 type step =
   [ `Cmd    of cmd_t
-  | `Fork   of fork_t
+  | `Fork   of fork_t * Stateid.t option
   | `Qed    of qed_t * Stateid.t
   | `Sideff of [ `Ast of ast * Stateid.t | `Id of Stateid.t ]
   | `Alias  of alias_t ]
@@ -169,7 +169,9 @@ end = struct
       match Vcs_.Dag.from_node (Vcs_.dag vcs) id with
       | [n, Cmd x] -> { step = `Cmd x; next = n }
       | [n, Alias x] -> { step = `Alias x; next = n }
-      | [n, Fork x] -> { step = `Fork x; next = n }
+      | [n, Fork x] -> { step = `Fork (x,None); next = n }
+      | [n, Fork x; p, Noop] -> { step = `Fork (x,Some p); next = n }
+      | [p, Noop; n, Fork x] -> { step = `Fork (x,Some p); next = n }
       | [n, Qed x; p, Noop]
       | [p, Noop; n, Qed x] -> { step = `Qed (x,p); next = n }
       | [n, Sideff None; p, Noop]
@@ -914,7 +916,7 @@ end = struct
       | Some (_, cur) ->
           match VCS.visit cur with
           | { step = `Cmd ( { loc }, _, _) } 
-          | { step = `Fork ( { loc }, _, _, _) } 
+          | { step = `Fork (( { loc }, _, _, _), _) } 
           | { step = `Qed ( { qast = { loc } }, _) } 
           | { step = `Sideff (`Ast ( { loc }, _)) } ->
               let start, stop = Loc.unloc loc in
@@ -1213,17 +1215,18 @@ let collect_proof keep cur hd brkind id =
     | `Cmd (x, _, _) -> collect (Some (id,x)) (id::accn) view.next
     (* An Alias could jump everywhere... we hope we can ignore it*)
     | `Alias _ -> `Sync (no_name,None,`Alias)
-    | `Fork(_,_,_,_::_::_)-> `Sync (no_name,proof_using_ast last,`MutualProofs)
-    | `Fork(_,_,Doesn'tGuaranteeOpacity,_) ->
+    | `Fork((_,_,_,_::_::_), _) ->
+         `Sync (no_name,proof_using_ast last,`MutualProofs)
+    | `Fork((_,_,Doesn'tGuaranteeOpacity,_), _) ->
         `Sync (no_name,proof_using_ast last,`Doesn'tGuaranteeOpacity)
-    | `Fork (_,hd',GuaranteesOpacity,ids) when has_proof_using last ->
+    | `Fork((_,hd',GuaranteesOpacity,ids), _) when has_proof_using last ->
         let name = name ids in
         let time = get_hint_bp_time name in
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         if delegate_policy_check time
         then `ASync (parent last,proof_using_ast last,accn,name)
         else `Sync (name,proof_using_ast last,`Policy)
-    | `Fork (_, hd', GuaranteesOpacity, ids) when
+    | `Fork((_, hd', GuaranteesOpacity, ids), _) when
        has_proof_no_using last && not (State.is_cached (parent last)) &&
        (!Flags.compilation_mode = Flags.BuildVi ||
         !Flags.async_proofs_always_delegate) ->
@@ -1237,7 +1240,7 @@ let collect_proof keep cur hd brkind id =
           then `ASync (parent last,proof_using_ast last,accn,name)
           else `Sync (name,proof_using_ast last,`Policy)
         with Not_found -> `Sync (no_name,None,`NoHint))
-    | `Fork (_, hd', GuaranteesOpacity, ids) ->
+    | `Fork((_, hd', GuaranteesOpacity, ids), _) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         let time = get_hint_bp_time name in
@@ -1313,8 +1316,17 @@ let known_state ?(redefine_qed=false) ~cache id =
             reach ~cache:`Shallow view.next;
             Partac.vernac_interp !Flags.async_proofs_n_tacworkers view.next id x
           ), cache
-      | `Fork (x,_,_,_) -> (fun () ->
+      | `Fork ((x,_,_,_), None) -> (fun () ->
             reach view.next; vernac_interp id x;
+            wall_clock_last_fork := Unix.gettimeofday ()
+          ), `Yes
+      | `Fork ((x,_,_,_), Some prev) -> (fun () ->
+            reach ~cache:`Shallow prev;
+            reach view.next;
+            (try vernac_interp id x;
+            with e when Errors.noncritical e ->
+              let e = Errors.push e in
+              raise (Stateid.add e ~valid:prev id));
             wall_clock_last_fork := Unix.gettimeofday ()
           ), `Yes
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
@@ -1383,12 +1395,11 @@ let known_state ?(redefine_qed=false) ~cache id =
           in
           aux (collect_proof keep (view.next, x) brname brinfo eop)
       | `Sideff (`Ast (x,_)) -> (fun () ->
-            reach view.next; vernac_interp id x
+            reach view.next; vernac_interp id x;
           ), cache
       | `Sideff (`Id origin) -> (fun () ->
-            let s = pure_cherry_pick_non_pstate origin in
             reach view.next;
-            inject_non_pstate s
+            inject_non_pstate (pure_cherry_pick_non_pstate origin);
           ), cache
     in
     let cache_step =
@@ -1422,14 +1433,19 @@ module Backtrack : sig
 end = struct
 
   let record () =
-    let current_branch = VCS.current_branch () in
-    let mine = current_branch, VCS.get_branch current_branch in
-    let info = VCS.get_info (VCS.get_branch_pos current_branch) in
-    let others =
-      CList.map_filter (fun b ->
-        if Vcs_.Branch.equal b current_branch then None
-        else Some(b, VCS.get_branch b)) (VCS.branches ()) in
-    info.vcs_backup <- Some (VCS.backup ()), Some { mine; others }
+    List.iter (fun current_branch ->
+      let mine = current_branch, VCS.get_branch current_branch in
+      let info = VCS.get_info (VCS.get_branch_pos current_branch) in
+      let others =
+        CList.map_filter (fun b ->
+          if Vcs_.Branch.equal b current_branch then None
+          else Some(b, VCS.get_branch b)) (VCS.branches ()) in
+      let backup = if fst info.vcs_backup <> None then fst info.vcs_backup
+        else Some (VCS.backup ()) in
+      let branches = if snd info.vcs_backup <> None then snd info.vcs_backup
+        else Some { mine; others } in
+      info.vcs_backup <- backup, branches)
+    [VCS.current_branch (); VCS.Branch.master]
 
   let backto oid =
     let info = VCS.get_info oid in
@@ -1437,11 +1453,7 @@ end = struct
     | None, _ ->
        anomaly(str"Backtrack.backto "++str(Stateid.to_string oid)++
                str": a state with no vcs_backup")
-    | Some vcs, _ ->
-        VCS.restore vcs;
-        let id = VCS.get_branch_pos (VCS.current_branch ()) in
-        if not (Stateid.equal id oid) then
-          anomaly (str "Backtrack.backto did not jump to the right state")
+    | Some vcs, _ -> VCS.restore vcs
 
   let branches_of id =
     let info = VCS.get_info id in
@@ -1462,7 +1474,7 @@ end = struct
         let ids =
           if id = Stateid.initial || id = Stateid.dummy then [] else
           match VCS.visit id with
-          | { step = `Fork (_,_,_,l) } -> l
+          | { step = `Fork ((_,_,_,l),_) } -> l
           | { step = `Cmd (_,l,_) } -> l
           | _ -> [] in
         match f acc (id, vcs, ids) with
@@ -1766,8 +1778,13 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           let id = VCS.new_node ~id:newtip () in
           let bname = VCS.mk_branch_name x in
           VCS.checkout VCS.Branch.master;
-          VCS.commit id (Fork (x, bname, guarantee, names));
-          VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1));
+          if VCS.Branch.equal head VCS.Branch.master then begin
+            VCS.commit id (Fork (x, bname, guarantee, names));
+            VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1))
+          end else begin
+            VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1));
+            VCS.merge id ~ours:(Fork (x, bname, guarantee, names)) head
+          end;
           Proof_global.activate_proof_mode mode;
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtProofMode _, VtLater ->
@@ -1862,7 +1879,7 @@ let print_ast id =
   try
     match VCS.visit id with
     | { step = `Cmd ({ loc; expr }, _, _) } 
-    | { step = `Fork ({ loc; expr }, _, _, _) } 
+    | { step = `Fork (({ loc; expr }, _, _, _), _) } 
     | { step = `Qed ({ qast = { loc; expr } }, _) } ->
         let xml = 
           try Texmacspp.tmpp expr loc
@@ -2063,7 +2080,7 @@ let get_script prf =
        Stateid.equal id Stateid.dummy then acc else
     let view = VCS.visit id in
     match view.step with
-    | `Fork (_,_,_,ns) when test ns -> acc
+    | `Fork((_,_,_,ns), _) when test ns -> acc
     | `Qed (qed, proof) -> find [qed.qast.expr, (VCS.get_info id).n_goals] proof
     | `Sideff (`Ast (x,_)) ->
          find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
