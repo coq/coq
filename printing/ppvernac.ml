@@ -861,6 +861,7 @@ let rec pr_vernac = function
         | `ReductionNeverUnfold -> str "simpl never"
         | `DefaultImplicits -> str "default implicits"
         | `Rename -> str "rename"
+        | `Assert -> str "assert"
         | `ExtraScopes -> str "extra scopes"
         | `ClearImplicits -> str "clear implicits"
         | `ClearScopes -> str "clear scopes")

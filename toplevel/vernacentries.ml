@@ -992,6 +992,7 @@ let vernac_declare_implicits locality r l =
 	(List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps)
 
 let vernac_declare_arguments locality r l nargs flags =
+  let assert_specified = List.mem `Assert flags in
   let extra_scope_flag = List.mem `ExtraScopes flags in
   let names = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
   let names, rest = List.hd names, List.tl names in
@@ -1101,12 +1102,22 @@ let vernac_declare_arguments locality r l nargs flags =
     | #Reductionops.ReductionBehaviour.flag as x :: tl -> x :: narrow tl
     | [] -> [] | _ :: tl -> narrow tl in
   let flags = narrow flags in
-  if not (List.is_empty rargs) || nargs >= 0 || not (List.is_empty flags) then
+  let some_simpl_flags_specified =
+    not (List.is_empty rargs) || nargs >= 0 || not (List.is_empty flags) in
+  if some_simpl_flags_specified then begin
     match sr with
     | ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
          (make_section_locality locality) c (rargs, nargs, flags)
     | _ -> errorlabstrm "" (strbrk "Modifiers of the behavior of the simpl tactic are relevant for constants only.")
+  end;
+  if not (some_renaming_specified ||
+          some_implicits_specified ||
+          some_scopes_specified ||
+          some_simpl_flags_specified) &&
+     not assert_specified then
+    msg_warning (strbrk "This command is just asserting the number and names of arguments of " ++ pr_global sr ++ strbrk". If this is what you want add ': assert' to silence the warning. If you want to claer implicit arguments add ': clear implicits'. If you want to clear notation scopes add ': clear scopes'")
+
 
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;

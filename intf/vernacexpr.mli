@@ -382,8 +382,9 @@ type vernac_expr =
       (explicitation * bool * bool) list list
   | VernacArguments of reference or_by_notation *
       ((Name.t * bool * (Loc.t * string) option * bool * bool) list) list *
-      int * [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename | `ExtraScopes
-            | `ClearImplicits | `ClearScopes | `DefaultImplicits ] list
+      int * [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
+              `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
+              `DefaultImplicits ] list
   | VernacArgumentsScope of reference or_by_notation *
       scope_name option list
   | VernacReserve of simple_binder list
