@@ -1116,7 +1116,7 @@ let vernac_declare_arguments locality r l nargs flags =
           some_scopes_specified ||
           some_simpl_flags_specified) &&
      not assert_specified then
-    msg_warning (strbrk "This command is just asserting the number and names of arguments of " ++ pr_global sr ++ strbrk". If this is what you want add ': assert' to silence the warning. If you want to claer implicit arguments add ': clear implicits'. If you want to clear notation scopes add ': clear scopes'")
+    msg_warning (strbrk "This command is just asserting the number and names of arguments of " ++ pr_global sr ++ strbrk". If this is what you want add ': assert' to silence the warning. If you want to clear implicit arguments add ': clear implicits'. If you want to clear notation scopes add ': clear scopes'")
 
 
 let default_env () = {
