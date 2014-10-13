@@ -119,13 +119,13 @@ let _ =
 let introduction    = Tacmach.introduction
 let refine          = Tacmach.refine
 
-let convert_concl ?(unsafe=false) ty k =
+let convert_concl ?(check=true) ty k =
   Proofview.Goal.nf_enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let conclty = Proofview.Goal.raw_concl gl in
     let sigma =
-      if not unsafe then begin
+      if check then begin
         ignore (Typing.type_of env sigma ty);
         let sigma,b = Reductionops.infer_conv env sigma ty conclty in
         if not b then error "Not convertible.";
@@ -138,18 +138,18 @@ let convert_concl ?(unsafe=false) ty k =
         (h, if k == DEFAULTcast then x else mkCast(x,k,conclty))))
   end
 
-let convert_hyp ?(unsafe=false) d =
+let convert_hyp ?(check=true) d =
   Proofview.Goal.nf_enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let ty = Proofview.Goal.raw_concl gl in
-    let sign = convert_hyp (not unsafe) (named_context_val env) sigma d in
+    let sign = convert_hyp check (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
     Proofview.Refine.refine (fun h -> Proofview.Refine.new_evar h ~main:true env ty)
   end
 
-let convert_concl_no_check = convert_concl ~unsafe:true
-let convert_hyp_no_check = convert_hyp ~unsafe:true
+let convert_concl_no_check = convert_concl ~check:false
+let convert_hyp_no_check = convert_hyp ~check:false
 
 let convert_gen pb x y =
   Proofview.Goal.enter begin fun gl ->
@@ -422,15 +422,15 @@ let bind_red_expr_occurrences occs nbcl redexp =
 let reduct_in_concl (redfun,sty) gl =
   Proofview.V82.of_tactic (convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) sty) gl
 
-let reduct_in_hyp redfun (id,where) gl =
-  Proofview.V82.of_tactic (convert_hyp_no_check
+let reduct_in_hyp ?(check=false) redfun (id,where) gl =
+  Proofview.V82.of_tactic (convert_hyp ~check
     (pf_reduce_decl redfun where (pf_get_hyp gl id) gl)) gl
 
 let revert_cast (redfun,kind as r) =
   if kind == DEFAULTcast then (redfun,REVERTcast) else r
 
-let reduct_option redfun = function
-  | Some id -> reduct_in_hyp (fst redfun) id
+let reduct_option ?(check=false) redfun = function
+  | Some id -> reduct_in_hyp ~check (fst redfun) id
   | None    -> reduct_in_concl (revert_cast redfun)
 
 (** Versions with evars to maintain the unification of universes resulting
@@ -440,12 +440,12 @@ let tclWITHEVARS f k gl =
   let evm, c' = pf_apply f gl in
     tclTHEN (tclEVARS evm) (k c') gl
 
-let e_reduct_in_concl (redfun,sty) gl =
+let e_change_in_concl (redfun,sty) gl =
   tclWITHEVARS
     (fun env sigma -> redfun env sigma (pf_concl gl))
     (fun c -> Proofview.V82.of_tactic (convert_concl_no_check c sty)) gl
 
-let e_pf_reduce_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env sigma =
+let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env sigma =
   match c with
   | None ->
       if where == InHypValueOnly then
@@ -457,10 +457,10 @@ let e_pf_reduce_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env
       let sigma',ty' = if where != InHypValueOnly then redfun false env sigma ty else sigma', ty in
 	sigma', (id,Some b',ty')
 
-let e_reduct_in_hyp redfun (id,where) gl =
+let e_change_in_hyp redfun (id,where) gl =
   tclWITHEVARS
-    (e_pf_reduce_decl redfun where (pf_get_hyp gl id))
-    (fun s -> Proofview.V82.of_tactic (convert_hyp_no_check s)) gl
+    (e_pf_change_decl redfun where (pf_get_hyp gl id))
+    (fun s -> Proofview.V82.of_tactic (convert_hyp s)) gl
 
 type change_arg = env -> evar_map -> evar_map * constr
 
@@ -495,10 +495,10 @@ let change_on_subterm cv_pb deep t = function
       (fun subst -> change_and_check_subst Reduction.CONV subst t)
 
 let change_in_concl occl t =
-  e_reduct_in_concl ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)
+  e_change_in_concl ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)
 
 let change_in_hyp occl t id  =
-  with_check (e_reduct_in_hyp (fun x -> change_on_subterm Reduction.CONV x t occl) id)
+  e_change_in_hyp (fun x -> change_on_subterm Reduction.CONV x t occl) id
 
 let change_option occl t = function
   | Some id -> change_in_hyp occl t id
@@ -518,16 +518,16 @@ let change_concl t =
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
 let red_in_concl        = reduct_in_concl (red_product,REVERTcast)
-let red_in_hyp          = reduct_in_hyp   red_product
+let red_in_hyp          = reduct_in_hyp    red_product
 let red_option          = reduct_option   (red_product,REVERTcast)
 let hnf_in_concl        = reduct_in_concl (hnf_constr,REVERTcast)
-let hnf_in_hyp          = reduct_in_hyp   hnf_constr
+let hnf_in_hyp          = reduct_in_hyp    hnf_constr
 let hnf_option          = reduct_option   (hnf_constr,REVERTcast)
 let simpl_in_concl      = reduct_in_concl (simpl,REVERTcast)
-let simpl_in_hyp        = reduct_in_hyp   simpl
+let simpl_in_hyp        = reduct_in_hyp    simpl
 let simpl_option        = reduct_option   (simpl,REVERTcast)
 let normalise_in_concl  = reduct_in_concl (compute,REVERTcast)
-let normalise_in_hyp    = reduct_in_hyp   compute
+let normalise_in_hyp    = reduct_in_hyp    compute
 let normalise_option    = reduct_option   (compute,REVERTcast)
 let normalise_vm_in_concl = reduct_in_concl (Redexpr.cbv_vm,VMcast)
 let unfold_in_concl loccname = reduct_in_concl (unfoldn loccname,REVERTcast)
@@ -549,7 +549,7 @@ let reduce redexp cl goal =
   let cl = concrete_clause_of (fun () -> pf_ids_of_hyps goal) cl in
   let redexps = reduction_clause redexp cl in
   let tac = tclMAP (fun (where,redexp) ->
-    reduct_option
+    reduct_option ~check:true
       (Redexpr.reduction_of_red_expr (pf_env goal) redexp) where) redexps in
   match redexp with
   | Fold _ | Pattern _ -> with_check tac goal

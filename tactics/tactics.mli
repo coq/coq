@@ -32,8 +32,8 @@ val is_quantified_hypothesis : Id.t -> goal sigma -> bool
 
 val introduction    : Id.t -> tactic
 val refine          : constr -> tactic
-val convert_concl   : ?unsafe:bool -> types -> cast_kind -> unit Proofview.tactic
-val convert_hyp     : ?unsafe:bool -> named_declaration -> unit Proofview.tactic
+val convert_concl   : ?check:bool -> types -> cast_kind -> unit Proofview.tactic
+val convert_hyp     : ?check:bool -> named_declaration -> unit Proofview.tactic
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
 val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
 val thin            : Id.t list -> tactic
@@ -127,8 +127,8 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 
 type change_arg = env -> evar_map -> evar_map * constr
 
-val reduct_in_hyp     : tactic_reduction -> hyp_location -> tactic
-val reduct_option     : tactic_reduction * cast_kind -> goal_location -> tactic
+val reduct_in_hyp     : ?check:bool -> tactic_reduction -> hyp_location -> tactic
+val reduct_option     : ?check:bool -> tactic_reduction * cast_kind -> goal_location -> tactic
 val reduct_in_concl   : tactic_reduction * cast_kind -> tactic
 val change_in_concl   : (occurrences * constr_pattern) option -> change_arg -> tactic
 val change_concl      : constr -> tactic
