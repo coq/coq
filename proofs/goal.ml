@@ -55,11 +55,6 @@ module V82 = struct
     let evi = Evd.find evars gl in
     Evd.evar_filtered_env evi
 
-  (* same as [env], but ensures that existential variables are
-     normalised *)
-  let nf_env evars gl =
-    Evarutil.nf_env_evar evars (env evars gl)
-
   (* Old style hyps primitive *)
   let hyps evars gl =
     let evi = Evd.find evars gl in
@@ -76,20 +71,10 @@ module V82 = struct
     let evi = Evd.find evars gl in
     evi.Evd.evar_concl
 
-  (* same as [concl] but ensures that existential variables are
-     normalised. *)
-  let nf_concl evars gl =
-    Evarutil.nf_evar evars (concl evars gl)
-
   (* Access to ".evar_extra" *)
   let extra evars gl =
     let evi = Evd.find evars gl in
     evi.Evd.evar_extra
-
-  (* Old style filtered_context primitive *)
-  let filtered_context evars gl =
-    let evi = Evd.find evars gl in
-    Evd.evar_filtered_context evi
 
   (* Old style mk_goal primitive *)
   let mk_goal evars hyps concl extra =
@@ -107,18 +92,6 @@ module V82 = struct
     let inst = Array.map_of_list (fun (id, _, _) -> mkVar id) ctxt in
     let ev = Term.mkEvar (evk,inst) in
     (evk, ev, evars)
-
-  (* Creates a dummy [goal sigma] for use in auto *)
-  let dummy_goal =
-    (* This goal seems to be marshalled somewhere. Therefore it cannot be
-       marked unresolvable for typeclasses, as non-empty Store.t-s happen
-       to have functional content. *)
-    let evi = Evd.make_evar Environ.empty_named_context_val Term.mkProp in
-    let (sigma, evk) = Evarutil.new_pure_evar_full Evd.empty evi in
-    { Evd.it = evk ; Evd.sigma = sigma; }
-
-  (* Makes a goal out of an evar *)
-  let build e = e
 
   (* Instantiates a goal with an open term *)
   let partial_solution sigma evk c =
@@ -150,7 +123,7 @@ module V82 = struct
        with a good implementation of them.
     *)
 
-  (* Used for congruence closure and change *)
+  (* Used for congruence closure  *)
   let new_goal_with sigma gl extra_hyps =
     let evi = Evd.find sigma gl in
     let hyps = evi.Evd.evar_hyps in
@@ -162,7 +135,7 @@ module V82 = struct
       { evi with Evd.evar_hyps = new_hyps; Evd.evar_filter = new_filter } in
     let new_evi = Typeclasses.mark_unresolvable new_evi in
     let (new_sigma, evk) = Evarutil.new_pure_evar_full Evd.empty new_evi in
-    { Evd.it = build evk ; sigma = new_sigma; }
+    { Evd.it = evk ; sigma = new_sigma; }
 
   (* Used by the compatibility layer and typeclasses *)
   let nf_evar sigma gl =

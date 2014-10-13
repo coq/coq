@@ -40,7 +40,7 @@ let evars_to_goals p evm =
   let goals = ref Evar.Map.empty in
   let map ev evi =
     let evi, goal = p evm ev evi in
-    let () = if goal then goals := Evar.Map.add ev (Goal.V82.build ev) !goals in
+    let () = if goal then goals := Evar.Map.add ev ev !goals in
     evi
   in
   let evm = Evd.raw_map_undefined map evm in

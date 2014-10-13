@@ -851,7 +851,7 @@ module V82 = struct
    { Evd.it = comb ; sigma = solution }
 
   let top_goals initial { solution=solution; } =
-    let goals = List.map (fun (t,_) -> Goal.V82.build (fst (Term.destEvar t))) initial in
+    let goals = List.map (fun (t,_) -> fst (Term.destEvar t)) initial in
     { Evd.it = goals ; sigma=solution; }
 
   let top_evars initial =
@@ -896,8 +896,6 @@ module V82 = struct
 end
 
 type goal = Goal.goal
-let partial_solution = Goal.V82.partial_solution
-let partial_solution_to = Goal.V82.partial_solution_to
 
 module Goal = struct
 
@@ -1022,8 +1020,11 @@ struct
     let sigma = if unsafe then sigma else typecheck_proof c concl env sigma in
     (** Proceed to the refinement *)
     let sigma = match evkmain with
-      | None -> partial_solution sigma gl.Goal.self c 
-      | Some evk -> partial_solution_to sigma gl.Goal.self evk c in
+      | None -> Evd.define gl.Goal.self c sigma
+      | Some evk ->
+          let id = Evd.evar_ident gl.Goal.self sigma in
+          Evd.rename evk id (Evd.define gl.Goal.self c sigma)
+    in
     (** Select the goals *)
     let comb = undefined sigma (List.rev evs) in
     let sigma = List.fold_left mark_as_goal sigma comb in

@@ -1237,7 +1237,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let env = Environ.empty_env in
       let sigma = Evd.empty in
       let concl = Term.mkRel (-1) in
-      let goal = sig_it Goal.V82.dummy_goal in
+      let goal = Evar.unsafe_of_int (-1) in
       (* /dummy values *)
       let args = List.map (fun a -> snd(interp_genarg ist env sigma concl goal a)) l in
       catch_error_tac trace (tac args ist)
