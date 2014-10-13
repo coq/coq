@@ -1097,9 +1097,9 @@ module SubTask = struct
       let t, uc = Future.purify (fun () ->
         vernac_interp r_state_fb r_ast;
         let _,_,_,_,sigma = Proof.proof (Proof_global.give_me_the_proof ()) in
-        match Goal.solution sigma r_goal with
-        | None -> Errors.errorlabstrm "Stm" (str "no progress")
-        | Some t ->
+        match Evd.(evar_body (find sigma r_goal)) with
+        | Evd.Evar_empty -> Errors.errorlabstrm "Stm" (str "no progress")
+        | Evd.Evar_defined t ->
             let t = Evarutil.nf_evar sigma t in
             if Evarutil.is_ground_term sigma t then
               t, Evd.evar_universe_context sigma

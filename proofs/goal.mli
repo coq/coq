@@ -8,14 +8,7 @@
 
 (* This module implements the abstract interface to goals *)
 
-type goal
-
-(* spiwack: this primitive is not extremely brilliant. It may be a good
-    idea to define goals and proof views in the same file to avoid this
-    sort of communication pipes. But I find it heavy. *)
-val build : Evd.evar -> goal 
-
-val mark_as_goal : Evd.evar_map -> goal -> Evd.evar_map
+type goal = Evar.t
 
 (* Gives a unique identifier to each goal. The identifier is
    guaranteed to contain no space. *)
@@ -27,26 +20,11 @@ val get_by_uid : string -> goal
 (* Debugging help *)
 val pr_goal : goal -> Pp.std_ppcmds
 
-val goal_ident : Evd.evar_map -> goal -> Names.Id.t
-
-val dependent_goal_ident : Evd.evar_map -> goal -> Names.Id.t
-
 (* [advance sigma g] returns [Some g'] if [g'] is undefined and 
     is the current avatar of [g] (for instance [g] was changed by [clear]
     into [g']). It returns [None] if [g] has been (partially) solved. *)
 val advance : Evd.evar_map -> goal -> goal option
 
-val solution : Evd.evar_map -> goal -> Term.constr option
-
-(* Equality function on goals. Return [true] if all of its hypotheses
-   and conclusion are equal. *)
-val equal : Evd.evar_map -> goal -> Evd.evar_map -> goal -> bool
-
-(* [partition_unifiable sigma l] partitions [l] into a pair [(u,n)]
-   where [u] is composed of the unifiable goals, i.e. the goals on
-   whose definition other goals of [l] depend, and [n] are the
-   non-unifiable goals. *)
-val partition_unifiable : Evd.evar_map -> goal list -> goal list * goal list
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture. 
    Types are different from what they used to be due to a change of the
@@ -124,19 +102,3 @@ module V82 : sig
   val abstract_type : Evd.evar_map -> goal -> Term.types 
 
 end
-
-(*** Goal tactics. DEPRECATED. ***)
-
-(* Goal sensitive values *)
-type +'a sensitive
-
-(* evaluates a goal sensitive value in a given goal (knowing the current evar_map). *)
-val eval :
-  'a sensitive -> Environ.env -> Evd.evar_map -> goal ->
-    'a * Evd.evar_map
-
-(* [enter] combines [env], [defs], [hyps] and [concl] in a single
-   primitive. *)
-val enter : (Environ.env -> Evd.evar_map -> Term.constr -> goal -> 'a) -> 'a sensitive
-
-val nf_enter : (Environ.env -> Evd.evar_map -> Term.constr -> goal -> 'a) -> 'a sensitive

@@ -42,8 +42,7 @@ let init sigma =
     let src = (Loc.ghost,Evar_kinds.GoalEvar) in
     let naming = Misctypes.IntroIdentifier (Names.Id.of_string "Main") in
     let (new_defs , econstr) = Evarutil.new_evar env sol ~src ~naming typ in
-    let (e, _) = Term.destEvar econstr in
-    let gl = Goal.build e in
+    let (gl, _) = Term.destEvar econstr in
     let entry = (econstr, typ) :: ret in
     entry, { solution = new_defs; comb = gl::comb; }
   in
@@ -62,8 +61,7 @@ let dependent_init =
   | TCons (env, sigma, typ, t) ->
     let (sigma, econstr ) = Evarutil.new_evar env sigma typ in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
-    let (e, _) = Term.destEvar econstr in
-    let gl = Goal.build e in
+    let (gl, _) = Term.destEvar econstr in
     let entry = (econstr, typ) :: ret in
     entry, { solution = sol; comb = gl :: comb; }
   in
@@ -337,7 +335,7 @@ let tclFOCUSID id t =
   let rec aux n = function
     | [] -> tclZERO (NoSuchGoals 1)
     | g::l ->
-        if Names.Id.equal (Goal.goal_ident initial.solution g) id then
+        if Names.Id.equal (Evd.evar_ident g initial.solution) id then
           let (focused,context) = focus n n initial in
           Proof.set focused >>
             t >>= fun result ->
@@ -545,6 +543,12 @@ let tclNEWGOALS gls =
   { step with comb = step.comb @ gls }
   end
 
+(* Equality function on goals *)
+let goal_equal evars1 gl1 evars2 gl2 =
+  let evi1 = Evd.find evars1 gl1 in
+  let evi2 = Evd.find evars2 gl2 in
+  Evd.eq_evar_info evars2 evi1 evi2
+
 let tclPROGRESS t =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
@@ -553,7 +557,7 @@ let tclPROGRESS t =
   Proof.get >>= fun final ->
   let test =
     Evd.progress_evar_map initial.solution final.solution &&
-    not (Util.List.for_all2eq (fun i f -> Goal.equal initial.solution i final.solution f) initial.comb final.comb)
+    not (Util.List.for_all2eq (fun i f -> goal_equal initial.solution i final.solution f) initial.comb final.comb)
   in
   if test then
     tclUNIT res
@@ -650,6 +654,33 @@ let shelve =
   Proof.set {initial with comb=[]} >>
   Proof.put (true,(initial.comb,[]))
 
+
+(* [contained_in_info e evi] checks whether the evar [e] appears in
+   the hypotheses, the conclusion or the body of the evar_info
+   [evi]. Note: since we want to use it on goals, the body is actually
+   supposed to be empty. *)
+let contained_in_info sigma e evi =
+  Evar.Set.mem e (Evd.evars_of_filtered_evar_info (Evarutil.nf_evar_info sigma evi))
+
+(* [depends_on sigma src tgt] checks whether the goal [src] appears as an
+   existential variable in the definition of the goal [tgt] in [sigma]. *)
+let depends_on sigma src tgt =
+  let evi = Evd.find sigma tgt in
+  contained_in_info sigma src evi
+
+(* [unifiable sigma g l] checks whether [g] appears in another subgoal
+   of [l]. The list [l] may contain [g], but it does not affect the
+   result. *)
+let unifiable sigma g l =
+  List.exists (fun tgt -> g != tgt && depends_on sigma g tgt) l
+
+(* [partition_unifiable sigma l] partitions [l] into a pair [(u,n)]
+   where [u] is composed of the unifiable goals, i.e. the goals on
+   whose definition other goals of [l] depend, and [n] are the
+   non-unifiable goals. *)
+let partition_unifiable sigma l =
+  List.partition (fun g -> unifiable sigma g l) l
+
 (* Shelves the unifiable goals under focus, i.e. the goals which
    appear in other goals under focus (the unfocused goals are not
    considered). *)
@@ -658,18 +689,18 @@ let shelve_unifiable =
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
   Proof.get >>= fun initial ->
-  let (u,n) = Goal.partition_unifiable initial.solution initial.comb in
+  let (u,n) = partition_unifiable initial.solution initial.comb in
   Proof.set {initial with comb=n} >>
   Proof.put (true,(u,[]))
 
 let check_no_dependencies =
   let (>>=) = Proof.bind in
   Proof.get >>= fun initial ->
-  let (u,n) = Goal.partition_unifiable initial.solution initial.comb in
+  let (u,n) = partition_unifiable initial.solution initial.comb in
   match u with
   | [] -> tclUNIT ()
   | gls ->
-      let l = List.map (Goal.dependent_goal_ident initial.solution) gls in
+      let l = List.map (fun g -> Evd.dependent_evar_ident g initial.solution) gls in
       let l = List.map (fun id -> Names.Name id) l in
       tclZERO (Logic.RefinerError (Logic.UnresolvedBindings l))
 
@@ -809,11 +840,7 @@ module V82 = struct
   (* Main function in the implementation of Grab Existential Variables.*)
   let grab pv =
     let undef = Evd.undefined_map pv.solution in
-    let goals =
-      List.map begin fun (e,_) ->
-	Goal.build e
-      end (Evar.Map.bindings undef)
-    in
+    let goals = List.map fst (Evar.Map.bindings undef) in
     { pv with comb = goals }
       
     
@@ -869,8 +896,6 @@ module V82 = struct
 end
 
 type goal = Goal.goal
-let build_goal = Goal.build
-let mark_as_goal = Goal.mark_as_goal
 let partial_solution = Goal.V82.partial_solution
 let partial_solution_to = Goal.V82.partial_solution_to
 
@@ -892,16 +917,24 @@ module Goal = struct
 
   let raw_concl { concl=concl } = concl
 
-  let nf_enter_t = Goal.nf_enter begin fun env sigma concl self ->
-    {env=env;sigma=sigma;concl=concl;self=self}
-  end
+
+  let gmake_with info env sigma goal = 
+    { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;
+      sigma = sigma ;
+      concl = Evd.evar_concl info ;
+      self = goal }
+
+  let nf_gmake env sigma goal =
+    let info = Evarutil.nf_evar_info sigma (Evd.find sigma goal) in
+    let sigma = Evd.add sigma goal info in
+    gmake_with info env sigma goal , sigma
 
   let nf_enter f =
     list_iter_goal () begin fun goal () ->
       Proof.current >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try
-        let (gl, sigma) = Goal.eval nf_enter_t env sigma goal in
+        let (gl, sigma) = nf_gmake env sigma goal in
         tclTHEN (V82.tclEVARS sigma) (f gl)
       with e when catchable_exception e ->
         let e = Errors.push e in
@@ -911,21 +944,18 @@ module Goal = struct
   let normalize { self } =
     Proof.current >>= fun env ->
     tclEVARMAP >>= fun sigma ->
-    let (gl,sigma) = Goal.eval nf_enter_t env sigma self in
+    let (gl,sigma) = nf_gmake env sigma self in
     tclTHEN (V82.tclEVARS sigma) (tclUNIT gl)
 
-  let enter_t f = Goal.enter begin fun env sigma concl self ->
-    f {env=env;sigma=sigma;concl=concl;self=self}
-  end
+  let gmake env sigma goal =
+    let info = Evd.find sigma goal in
+    gmake_with info env sigma goal
 
   let enter f =
     list_iter_goal () begin fun goal () ->
       Proof.current >>= fun env ->
       tclEVARMAP >>= fun sigma ->
-      try
-        (* raw_enter_t cannot modify the sigma. *)
-        let (t,_) = Goal.eval (enter_t f) env sigma goal in
-        t
+      try f (gmake env sigma goal)
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
@@ -941,9 +971,7 @@ module Goal = struct
       | Some goal ->
         let gl =
           tclEVARMAP >>= fun sigma ->
-          (** The sigma is unchanged. *)
-          let (gl, _) = Goal.eval (enter_t (fun gl -> gl)) env sigma goal in
-          tclUNIT gl
+          tclUNIT (gmake env sigma goal)
         in
         Some gl
     in
@@ -960,13 +988,13 @@ end
 module Refine =
 struct
 
-  let with_type env evd c t =
-    let my_type = Retyping.get_type_of env evd c in
-    let j = Environ.make_judge c my_type in
-    let (evd,j') =
-      Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j t
+  let mark_as_goal evd content =
+    let info = Evd.find evd content in
+    let info =
+      { info with Evd.evar_source = (fst (info.Evd.evar_source),Evar_kinds.GoalEvar) }
     in
-    evd , j'.Environ.uj_val
+    let info = Typeclasses.mark_unresolvable info in
+    Evd.add evd content info
 
   let typecheck_evar ev env sigma =
     let info = Evd.find sigma ev in
@@ -995,12 +1023,22 @@ struct
     (** Proceed to the refinement *)
     let sigma = match evkmain with
       | None -> partial_solution sigma gl.Goal.self c 
-      | Some evk -> partial_solution_to sigma gl.Goal.self (build_goal evk) c in
+      | Some evk -> partial_solution_to sigma gl.Goal.self evk c in
     (** Select the goals *)
-    let comb = undefined sigma (List.rev_map build_goal evs) in
+    let comb = undefined sigma (List.rev evs) in
     let sigma = List.fold_left mark_as_goal sigma comb in
     Proof.set { solution = Evd.reset_future_goals sigma; comb; }
   end
+
+  (** Useful definitions *)
+
+  let with_type env evd c t =
+    let my_type = Retyping.get_type_of env evd c in
+    let j = Environ.make_judge c my_type in
+    let (evd,j') =
+      Coercion.inh_conv_coerce_to true (Loc.ghost) env evd j t
+    in
+    evd , j'.Environ.uj_val
 
   let refine_casted ?(unsafe = false) f = Goal.enter begin fun gl ->
     let concl = Goal.concl gl in

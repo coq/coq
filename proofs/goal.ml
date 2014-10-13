@@ -21,24 +21,6 @@ type goal = Evd.evar
 
 let pr_goal e = str "GOAL:" ++ Pp.int (Evar.repr e)
 
-let goal_ident sigma e = Evd.evar_ident e sigma
-
-let dependent_goal_ident sigma e = Evd.dependent_evar_ident e sigma
-
-(* access primitive *)
-(* invariant : [e] must exist in [em] *)
-let content evars e = Evd.find evars e
-
-
-(* Builds a new (empty) goal with evar [e] *)
-let build e = e
-
-let mark_as_goal evd content =
-  let info = Evd.find evd content in
-  let info = { info with Evd.evar_source = (fst (info.Evd.evar_source),Evar_kinds.GoalEvar) } in
-  let info = Typeclasses.mark_unresolvable info in
-  Evd.add evd content info
-
 let uid e = string_of_int (Evar.repr e)
 let get_by_uid u = Evar.unsafe_of_int (int_of_string u)
 
@@ -63,79 +45,6 @@ let rec advance sigma g =
       else
         None
 
-let solution sigma g =
-  let evi = Evd.find sigma g in
-  match evi.Evd.evar_body with
-  | Evd.Evar_empty -> None
-  | Evd.Evar_defined v -> Some v
-
-(* Equality function on goals *)
-let equal evars1 gl1 evars2 gl2 =
-  let evi1 = content evars1 gl1 in
-  let evi2 = content evars2 gl2 in
-  Evd.eq_evar_info evars2 evi1 evi2
-
-(* [contained_in_info e evi] checks whether the evar [e] appears in
-   the hypotheses, the conclusion or the body of the evar_info
-   [evi]. Note: since we want to use it on goals, the body is actually
-   supposed to be empty. *)
-let contained_in_info sigma e evi =
-  Evar.Set.mem e (Evd.evars_of_filtered_evar_info (Evarutil.nf_evar_info sigma evi))
-
-(* [depends_on sigma src tgt] checks whether the goal [src] appears as an
-   existential variable in the definition of the goal [tgt] in [sigma]. *)
-let depends_on sigma src tgt =
-  let evi = Evd.find sigma tgt in
-  contained_in_info sigma src evi
-
-(* [unifiable sigma g l] checks whether [g] appears in another subgoal
-   of [l]. The list [l] may contain [g], but it does not affect the
-   result. *)
-let unifiable sigma g l =
-  List.exists (fun tgt -> g != tgt && depends_on sigma g tgt) l
-
-(* [partition_unifiable sigma l] partitions [l] into a pair [(u,n)]
-   where [u] is composed of the unifiable goals, i.e. the goals on
-   whose definition other goals of [l] depend, and [n] are the
-   non-unifiable goals. *)
-let partition_unifiable sigma l =
-  List.partition (fun g -> unifiable sigma g l) l
-
-(*** Goal tactics ***)
-
-
-(* type of the base elements of the goal API.*)
-(* it has an extra evar_info with respect to what would be expected,
-   it is supposed to be the evar_info of the goal in the evar_map.
-   The idea is that it is computed by the [run] function as an
-   optimisation, since it will generaly not change during the
-   evaluation. *)
-type 'a sensitive =
-    Environ.env -> Evd.evar_map ref -> goal -> Evd.evar_info -> 'a
-
-(* evaluates a goal sensitive value in a given goal (knowing the current evar_map). *)
-(* the evar_info corresponding to the goal is computed at once
-   as an optimisation (it shouldn't change during the evaluation). *)
-let eval t env defs gl =
-  let info = content defs gl in
-  let env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env in
-  let rdefs = ref defs in
-  let r = t env rdefs gl info in
-  ( r , !rdefs )
-
-let enter f = (); fun env rdefs gl info ->
-  let sigma = !rdefs in
-  f env sigma (Evd.evar_concl info) gl
-
-let nf_enter f = (); fun env rdefs gl info ->
-  let sigma = !rdefs in
-  let info = Evarutil.nf_evar_info sigma info in
-  let sigma = Evd.add sigma gl info in
-  let () = rdefs := sigma in
-  let hyps = Evd.evar_filtered_hyps info in
-  let env = Environ.reset_with_named_context hyps env in
-  f env sigma (Evd.evar_concl info) gl
-
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the
    internal types. *)
@@ -143,7 +52,7 @@ module V82 = struct
 
   (* Old style env primitive *)
   let env evars gl =
-    let evi = content evars gl in
+    let evi = Evd.find evars gl in
     Evd.evar_filtered_env evi
 
   (* same as [env], but ensures that existential variables are
@@ -153,7 +62,7 @@ module V82 = struct
 
   (* Old style hyps primitive *)
   let hyps evars gl =
-    let evi = content evars gl in
+    let evi = Evd.find evars gl in
     Evd.evar_filtered_hyps evi
 
   (* same as [hyps], but ensures that existential variables are
@@ -164,7 +73,7 @@ module V82 = struct
 
   (* Access to ".evar_concl" *)
   let concl evars gl =
-    let evi = content evars gl in
+    let evi = Evd.find evars gl in
     evi.Evd.evar_concl
 
   (* same as [concl] but ensures that existential variables are
@@ -174,12 +83,12 @@ module V82 = struct
 
   (* Access to ".evar_extra" *)
   let extra evars gl =
-    let evi = content evars gl in
+    let evi = Evd.find evars gl in
     evi.Evd.evar_extra
 
   (* Old style filtered_context primitive *)
   let filtered_context evars gl =
-    let evi = content evars gl in
+    let evi = Evd.find evars gl in
     Evd.evar_filtered_context evi
 
   (* Old style mk_goal primitive *)
@@ -197,7 +106,7 @@ module V82 = struct
     let ctxt = Environ.named_context_of_val hyps in
     let inst = Array.map_of_list (fun (id, _, _) -> mkVar id) ctxt in
     let ev = Term.mkEvar (evk,inst) in
-    (build evk, ev, evars)
+    (evk, ev, evars)
 
   (* Creates a dummy [goal sigma] for use in auto *)
   let dummy_goal =
@@ -206,10 +115,10 @@ module V82 = struct
        to have functional content. *)
     let evi = Evd.make_evar Environ.empty_named_context_val Term.mkProp in
     let (sigma, evk) = Evarutil.new_pure_evar_full Evd.empty evi in
-    { Evd.it = build evk ; Evd.sigma = sigma; }
+    { Evd.it = evk ; Evd.sigma = sigma; }
 
   (* Makes a goal out of an evar *)
-  let build = build
+  let build e = e
 
   (* Instantiates a goal with an open term *)
   let partial_solution sigma evk c =
@@ -222,8 +131,8 @@ module V82 = struct
 
   (* Parts of the progress tactical *)
   let same_goal evars1 gl1 evars2 gl2 =
-    let evi1 = content evars1 gl1 in
-    let evi2 = content evars2 gl2 in
+    let evi1 = Evd.find evars1 gl1 in
+    let evi2 = Evd.find evars2 gl2 in
     Term.eq_constr evi1.Evd.evar_concl evi2.Evd.evar_concl &&
     Environ.eq_named_context_val evi1.Evd.evar_hyps evi2.Evd.evar_hyps
 
@@ -243,7 +152,7 @@ module V82 = struct
 
   (* Used for congruence closure and change *)
   let new_goal_with sigma gl extra_hyps =
-    let evi = content sigma gl in
+    let evi = Evd.find sigma gl in
     let hyps = evi.Evd.evar_hyps in
     let new_hyps =
       List.fold_right Environ.push_named_context_val extra_hyps hyps in
@@ -257,7 +166,7 @@ module V82 = struct
 
   (* Used by the compatibility layer and typeclasses *)
   let nf_evar sigma gl =
-    let evi = content sigma gl in
+    let evi = Evd.find sigma gl in
     let evi = Evarutil.nf_evar_info sigma evi in
     let sigma = Evd.add sigma gl evi in
     (gl, sigma)

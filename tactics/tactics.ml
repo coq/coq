@@ -4204,7 +4204,7 @@ let refine_open_constr c env sigma concl =
   let handle = ref Evar.Set.empty in
   let sigma, pf = constr_of_open_constr handle c env sigma concl in
   let sigma = Evarconv.consider_remaining_unif_problems env sigma in
-  let subgoals = List.map Goal.build (Evar.Set.elements !handle) in
+  let subgoals = Evar.Set.elements !handle in
   (subgoals, pf, sigma)
 
 (** Tacticals defined directly in term of Proofview *)
