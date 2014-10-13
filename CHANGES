@@ -36,7 +36,6 @@ Logic
 - New option -type-in-type to collapse the universe hierarchy (this makes the
   logic inconsistent).
 
-
 Vernacular commands
 
 - A command "Variant" allows to define non-recursive variant types.
@@ -146,15 +145,17 @@ Tactics
   behaves like if matching on "?X pat1 ... patn", i.e. accepting "_"
   to be instantiated by an applicative term (experimental at this
   stage, potential source of incompatibilities).
+- In Ltac matching on goal, types of hypotheses are now interpreted in
+  the %type scope (possible source of incompatibilities).
 - "change ... in ..." and "simpl ... in ..." now consider nested
   occurrences (possible source of incompatibilities since this alters
   the numbering of occurrences).
 - The "change p with c" tactic semantics changed, now typechecking 
   "c" at each matching occurrence "t" of the pattern "p", and 
   converting "t" with "c".
-- Now "appcontext" and "context" behave the same. The old buggy behaviour of
+- Now "appcontext" and "context" behave the same. The old buggy behavior of
   "context" can be retrieved at parse time by setting the
-  "Tactic Compat Context" flag. (possible source of incompatibilities).
+  "Tactic Compat Context" flag (possible source of incompatibilities).
 - New introduction pattern p/c which applies lemma c on the fly on the
   hypothesis under consideration before continuing with introduction pattern p.
 - New introduction pattern [= x1 .. xn] applies "injection as [x1 .. xn]"
