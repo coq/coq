@@ -289,8 +289,8 @@ GEXTEND Gram
       | n=INT -> CPrim (!@loc, Numeral (Bigint.of_string n))
       | s=string -> CPrim (!@loc, String s)
       | "_" -> CHole (!@loc, None, IntroAnonymous, None)
-      | "?["; id=ident; "]"  -> CHole (!@loc, None, IntroIdentifier id, None)
-      | "?["; id=pattern_ident; "]"  -> CHole (!@loc, None, IntroFresh id, None)
+      | "?"; "["; id=ident; "]"  -> CHole (!@loc, None, IntroIdentifier id, None)
+      | "?"; "["; id=pattern_ident; "]"  -> CHole (!@loc, None, IntroFresh id, None)
       | id=pattern_ident; inst = evar_instance -> CEvar(!@loc,id,inst) ] ]
   ;
   inst:
