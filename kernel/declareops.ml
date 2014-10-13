@@ -298,9 +298,9 @@ let join_constant_body otab cb =
   | _ -> ()
 
 let string_of_side_effect = function
-  | SEsubproof (c,_) -> Names.string_of_con c
+  | SEsubproof (c,_,_) -> Names.string_of_con c
   | SEscheme (cl,_) ->
-      String.concat ", " (List.map (fun (_,c,_) -> Names.string_of_con c) cl)
+      String.concat ", " (List.map (fun (_,c,_,_) -> Names.string_of_con c) cl)
 type side_effects = side_effect list
 let no_seff = ([] : side_effects)
 let iter_side_effects f l = List.iter f (List.rev l)

@@ -71,9 +71,9 @@ let adjust_guardness_conditions const = function
                   with Not_found -> false in 
                 if exists c e then e else Environ.add_constant c cb e in
               let env = Declareops.fold_side_effects (fun env -> function
-                | SEsubproof (c, cb) -> add c cb env
+                | SEsubproof (c, cb,_) -> add c cb env
                 | SEscheme (l,_) ->
-                    List.fold_left (fun e (_,c,cb) -> add c cb e) env l)
+                    List.fold_left (fun e (_,c,cb,_) -> add c cb e) env l)
                 env (Declareops.uniquize_side_effects eff) in
               let indexes =
 	        search_guard Loc.ghost env

@@ -200,24 +200,22 @@ let declare_scheme = ref (fun _ _ -> assert false)
 let set_declare_scheme f = declare_scheme := f
 let declare_sideff env fix_exn se =
   let cbl, scheme = match se with
-    | SEsubproof (c, cb) -> [c, cb], None
+    | SEsubproof (c, cb, pt) -> [c, cb, pt], None
     | SEscheme (cbl, k) ->
-        List.map (fun (_,c,cb) -> c,cb) cbl, Some (cbl,k) in
+        List.map (fun (_,c,cb,pt) -> c,cb,pt) cbl, Some (cbl,k) in
   let id_of c = Names.Label.to_id (Names.Constant.label c) in
-  let pt_opaque_of cb =
-    match cb with
-    | { const_body = Def sc } -> (Mod_subst.force_constr sc, Univ.ContextSet.empty), false
-    | { const_body = OpaqueDef fc } -> 
-      (Opaqueproof.force_proof (Environ.opaque_tables env) fc,
-       Opaqueproof.force_constraints (Environ.opaque_tables env) fc), true
-    | { const_body = Undef _ } -> anomaly(str"Undefined side effect")
+  let pt_opaque_of cb pt =
+    match cb, pt with
+    | { const_body = Def sc }, _ -> (Mod_subst.force_constr sc, Univ.ContextSet.empty), false
+    | { const_body = OpaqueDef _ }, `Opaque(pt,univ) -> (pt, univ), true
+    | _ -> assert false
   in
   let ty_of cb =
     match cb.Declarations.const_type with
     | Declarations.RegularArity t -> Some t 
     | Declarations.TemplateArity _ -> None in
-  let cst_of cb =
-    let pt, opaque = pt_opaque_of cb in
+  let cst_of cb pt =
+    let pt, opaque = pt_opaque_of cb pt in
     let univs, subst = 
       if cb.const_polymorphic then
 	let univs = Univ.instantiate_univ_context cb.const_universes in
@@ -244,15 +242,15 @@ let declare_sideff env fix_exn se =
     try ignore(Environ.lookup_constant c env); true
     with Not_found -> false in 
   let knl =
-    CList.map_filter (fun (c,cb) ->
+    CList.map_filter (fun (c,cb,pt) ->
       if exists c then None
-      else Some (c,declare_constant_common (id_of c) (cst_of cb))) cbl in
+      else Some (c,declare_constant_common (id_of c) (cst_of cb pt))) cbl in
   match scheme with
   | None -> ()
   | Some (inds_consts,kind) ->
       !declare_scheme kind (Array.of_list
          (List.map (fun (c,kn) ->
-             CList.find_map (fun (x,c',_) ->
+             CList.find_map (fun (x,c',_,_) ->
                if Constant.equal c c' then Some (x,kn) else None) inds_consts)
            knl))
 

@@ -76,9 +76,11 @@ type constant_body = {
     const_proj : projection_body option;
     const_inline_code : bool }
 
+type seff_env = [ `Nothing | `Opaque of Constr.t * Univ.universe_context_set ]
+
 type side_effect =
-  | SEsubproof of constant * constant_body
-  | SEscheme of (inductive * constant * constant_body) list * string
+  | SEsubproof of constant * constant_body * seff_env
+  | SEscheme of (inductive * constant * constant_body * seff_env) list * string
     
 (** {6 Representation of mutual inductive types in the kernel } *)
 

@@ -49,9 +49,9 @@ let mk_pure_proof c = (c, Univ.ContextSet.empty), Declareops.no_seff
 let handle_side_effects env body side_eff =
   let handle_sideff t se =
     let cbl = match se with
-      | SEsubproof (c,cb) -> [c,cb]
-      | SEscheme (cl,_) -> List.map (fun (_,c,cb) -> c,cb) cl in
-    let not_exists (c,_) =
+      | SEsubproof (c,cb,b) -> [c,cb,b]
+      | SEscheme (cl,_) -> List.map (fun (_,c,cb,b) -> c,cb,b) cl in
+    let not_exists (c,_,_) =
       try ignore(Environ.lookup_constant c env); false
       with Not_found -> true in 
     let cbl = List.filter not_exists cbl in
@@ -72,10 +72,9 @@ let handle_side_effects env body side_eff =
 	(*   Vars.subst_univs_level_constr subst b *)
 	Vars.subst_instance_constr u' b
       | _ -> map_constr_with_binders ((+) 1) (fun i x -> sub_body c u b i x) i x in
-    let fix_body (c,cb) t =
-      match cb.const_body with
-      | Undef _ -> assert false
-      | Def b ->
+    let fix_body (c,cb,b) t =
+      match cb.const_body, b with
+      | Def b, _ ->
           let b = Mod_subst.force_constr b in
 	  let poly = cb.const_polymorphic in
 	    if not poly then
@@ -85,8 +84,7 @@ let handle_side_effects env body side_eff =
 	    else 
 	      let univs = cb.const_universes in
 		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t)
-      | OpaqueDef b -> 
-          let b = Opaqueproof.force_proof (opaque_tables env) b in
+      | OpaqueDef _, `Opaque (b,_) -> 
 	  let poly = cb.const_polymorphic in
 	    if not poly then
               let b_ty = Typeops.type_of_constant_type env cb.const_type in
@@ -95,6 +93,7 @@ let handle_side_effects env body side_eff =
 	    else
 	      let univs = cb.const_universes in
 		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t)
+      | _ -> assert false
     in
       List.fold_right fix_body cbl t
   in

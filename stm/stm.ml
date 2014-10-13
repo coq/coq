@@ -802,14 +802,6 @@ module Task = struct
       let rc, time =
         let wall_clock = Unix.gettimeofday () in
         let l = Future.force (build_proof_here r_exn_info r_loc eop) in
-        List.iter (fun (_,se) -> Declareops.iter_side_effects (function
-          | Declarations.SEsubproof(_,
-             { Declarations.const_body = Declarations.OpaqueDef f;
-      	       const_universes = univs } ) ->
-              (* They are Direct *)
-              Opaqueproof.join_opaque Opaqueproof.empty_opaquetab f
-          | _ -> ())
-        se) (fst l);
         l, Unix.gettimeofday () -. wall_clock in
       VCS.print ();
       RespBuiltProof(rc,time)
