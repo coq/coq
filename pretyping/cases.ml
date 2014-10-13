@@ -936,26 +936,30 @@ let use_unit_judge evd =
   let evd' = Evd.merge_context_set Evd.univ_flexible_alg evd ctx in
     evd', j
 
+let add_assert_false_case pb tomatch =
+  let pats = List.map (fun _ -> PatVar (Loc.ghost,Anonymous)) tomatch in
+  let aliasnames =
+    List.map_filter (function Alias _ | NonDepAlias -> Some Anonymous | _ -> None) tomatch
+  in
+  [ { patterns = pats;
+      rhs = { rhs_env = pb.env;
+	      rhs_vars = [];
+	      avoid_ids = [];
+	      it = None };
+      alias_stack = Anonymous::aliasnames;
+      eqn_loc = Loc.ghost;
+      used = ref false } ]
+
 let adjust_impossible_cases pb pred tomatch submat =
   match submat with
   | [] ->
-    begin match kind_of_term (whd_evar !(pb.evdref) pred) with
+    begin match kind_of_term pred with
     | Evar (evk,_) when snd (evar_source evk !(pb.evdref)) == Evar_kinds.ImpossibleCase ->
-	let evd, default = use_unit_judge !(pb.evdref) in
-	pb.evdref := Evd.define evk default.uj_type evd;
-      (* we add an "assert false" case *)
-      let pats = List.map (fun _ -> PatVar (Loc.ghost,Anonymous)) tomatch in
-      let aliasnames =
-	List.map_filter (function Alias _ | NonDepAlias -> Some Anonymous | _ -> None) tomatch
-      in
-      [ { patterns = pats;
-          rhs = { rhs_env = pb.env;
-	          rhs_vars = [];
-		  avoid_ids = [];
-		  it = None };
-	  alias_stack = Anonymous::aliasnames;
-	  eqn_loc = Loc.ghost;
-	  used = ref false } ]
+        if not (Evd.is_defined !(pb.evdref) evk) then begin
+	  let evd, default = use_unit_judge !(pb.evdref) in
+	  pb.evdref := Evd.define evk default.uj_type evd
+        end;
+        add_assert_false_case pb tomatch
     | _ ->
 	submat
     end

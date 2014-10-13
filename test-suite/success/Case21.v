@@ -9,3 +9,7 @@ Inductive I : bool -> bool -> Prop := C : I true true.
 Check fun x (H:I x false) => match H with end : False.
 
 Check fun x (H:I false x) => match H with end : False.
+
+Inductive I' : bool -> Type := C1  : I' true | C2 : I' true.
+
+Check fun x : I' false => match x with end : False.
