@@ -151,12 +151,6 @@ let eval t env defs gl =
   let r = t env rdefs gl info in
   ( r , !rdefs )
 
-(* monadic bind on sensitive expressions *)
-let bind e f = (); fun env rdefs goal info ->
-  let a = e env rdefs goal info in
-  let r = f a in
-  r env rdefs goal info
-
 let enter f = (); fun env rdefs gl info ->
   let sigma = !rdefs in
   f env sigma (Evd.evar_concl info) gl
