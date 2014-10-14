@@ -285,10 +285,6 @@ let unfold_projection infos p c =
       | None -> None)
   else None
 
-let check_lambda_args = function
-  | [] -> ()
-  | _ -> anomaly (Pp.str "conversion was given unreduced term (FLambda)")
-    
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
@@ -410,57 +406,53 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let cuniv = ccnv CONV l2r infos el1 el2 c1 c'1 cuniv in
         ccnv cv_pb l2r infos (el_lift el1) (el_lift el2) c2 c'2 cuniv
 
-    (* only one constant, defined var or defined rel *)
-    | (FFlex fl1, c2)      ->
-      (match unfold_reference infos fl1 with
-      | Some def1 ->
-	eqappr cv_pb l2r infos (lft1, whd def1 v1) appr2 cuniv
-      | None -> 
-	match c2 with
-	| FConstruct ((ind2,j2),u2) ->
-	  (try
- 	     let v2, v1 =
- 	       eta_expand_ind_stack (info_env infos) ind2 hd2 v2 (snd appr1)
- 	     in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
- 	   with Not_found -> raise NotConvertible)
-	| FLambda _ ->
-	  let () = check_lambda_args v2 in
-          let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
-	    eqappr CONV l2r infos
-	      (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
-	| _ -> raise NotConvertible)
-
-    | (c1, FFlex fl2)      ->
-      (match unfold_reference infos fl2 with
-      | Some def2 ->
-	eqappr cv_pb l2r infos appr1 (lft2, whd def2 v2) cuniv
-      | None -> 
-	match c1 with
-	| FConstruct ((ind1,j1),u1) ->
- 	  (try let v1, v2 =
-	     	 eta_expand_ind_stack (info_env infos) ind1 hd1 v1 (snd appr2)
-	       in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-	   with Not_found -> raise NotConvertible)
-	| FLambda _ -> 
-	  let () = check_lambda_args v1 in
-	  let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
-	    eqappr CONV l2r infos
-	      (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack v2)) cuniv
-	| _ -> raise NotConvertible)
-
     (* Eta-expansion on the fly *)
-
     | (FLambda _, _) ->
-      let () = check_lambda_args v1 in
-      let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
+        let () = match v1 with
+        | [] -> ()
+        | _ ->
+          anomaly (Pp.str "conversion was given unreduced term (FLambda)")
+        in
+        let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
 	eqappr CONV l2r infos
 	  (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack v2)) cuniv
-
     | (_, FLambda _) ->
-      let () = check_lambda_args v2 in
-      let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
+        let () = match v2 with
+        | [] -> ()
+        | _ ->
+	  anomaly (Pp.str "conversion was given unreduced term (FLambda)")
+	in
+        let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
 	eqappr CONV l2r infos
 	  (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
+
+    (* only one constant, defined var or defined rel *)
+    | (FFlex fl1, c2)      ->
+        (match unfold_reference infos fl1 with
+           | Some def1 ->
+	       eqappr cv_pb l2r infos (lft1, whd def1 v1) appr2 cuniv
+           | None -> 
+	     match c2 with
+	     | FConstruct ((ind2,j2),u2) ->
+	       (try
+ 	     	  let v2, v1 =
+ 	     	    eta_expand_ind_stack (info_env infos) ind2 hd2 v2 (snd appr1)
+ 	     	  in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+ 	     	with Not_found -> raise NotConvertible)
+	     | _ -> raise NotConvertible)
+
+    | (c1, FFlex fl2)      ->
+        (match unfold_reference infos fl2 with
+           | Some def2 ->
+	       eqappr cv_pb l2r infos appr1 (lft2, whd def2 v2) cuniv
+           | None -> 
+	     match c1 with
+	     | FConstruct ((ind1,j1),u1) ->
+ 	       (try let v1, v2 =
+	     	      eta_expand_ind_stack (info_env infos) ind1 hd1 v1 (snd appr2)
+	     	    in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+	     	with Not_found -> raise NotConvertible)
+	     | _ -> raise NotConvertible)
 	  
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
