@@ -549,16 +549,6 @@ let eta_constructor_app env f l1 term =
       | _ -> assert false)
   | _ -> assert false
 
-let debug_unification = ref (false)
-let _ = Goptions.declare_bool_option {
-  Goptions.optsync = true; Goptions.optdepr = false;
-  Goptions.optname =
-    "Print states sent to w_unify unification";
-  Goptions.optkey = ["Debug";"Tactic";"Unification"];
-  Goptions.optread = (fun () -> !debug_unification);
-  Goptions.optwrite = (fun a -> debug_unification:=a);
-}
-
 let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb opt ((sigma,metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
