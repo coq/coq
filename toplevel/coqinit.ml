@@ -93,9 +93,10 @@ let init_load_path () =
     (* first, developer specific directory to open *)
     if Coq_config.local then coq_add_path (coqlib/"dev") "dev";
     (* main loops *)
-    if Coq_config.local || !Flags.boot then
+    if Coq_config.local || !Flags.boot then begin
       let () = Mltop.add_ml_dir (coqlib/"stm") in
-      Mltop.add_ml_dir (coqlib/"ide");
+      Mltop.add_ml_dir (coqlib/"ide")
+    end;
     Mltop.add_ml_dir (coqlib/"toploop");
     (* then standard library *)
     add_stdlib_path ~unix_path:(coqlib/"theories") ~coq_root ~with_ml:false;
