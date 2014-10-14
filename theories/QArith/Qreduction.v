@@ -46,12 +46,12 @@ Proof.
   generalize (Z.ggcd_gcd a ('b)) (Zgcd_is_gcd a ('b))
     (Z.gcd_nonneg a ('b)) (Z.ggcd_correct_divisors a ('b)).
   destruct (Z.ggcd a (Zpos b)) as (g,(aa,bb)).
-  simpl. intros <- Hg1 Hg2 (Hg3,Hg4).
-  assert (Hg0 : g <> 0) by (intro; now subst g).
+  simpl. intros <- Hg1 Hg2 (Hg3,Hg4). clear H0.
+  assert (Hg0 : g <> 0). (intro; now subst g). Show Proof.
   generalize (Z.ggcd_gcd c ('d)) (Zgcd_is_gcd c ('d))
     (Z.gcd_nonneg c ('d)) (Z.ggcd_correct_divisors c ('d)).
   destruct (Z.ggcd c (Zpos d)) as (g',(cc,dd)).
-  simpl. intros <- Hg'1 Hg'2 (Hg'3,Hg'4).
+  simpl. intros <- Hg'1 Hg'2 (Hg'3,Hg'4). clear H0.
   assert (Hg'0 : g' <> 0) by (intro; now subst g').
 
   elim (rel_prime_cross_prod aa bb cc dd).

