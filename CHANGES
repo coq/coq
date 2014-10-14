@@ -3,7 +3,7 @@ Changes from V8.4pl4 to V8.4pl5
 
 Compilation
 
-- Archive made compatible 
+- Coq compilation made possible with ocaml 4.02.
 
 Vernacular commands
 
@@ -11,6 +11,11 @@ Vernacular commands
   source of incompatibilities).
 - New command "Print Debug GC".
 - Bug #3651: Function cannot define graph.
+
+Specification language
+
+- Bug #3733: Optimizing compilation of pattern matching.
+- Bug #3388: Better inference of impossible cases in pattern-matching.
 
 Tactics
 

@@ -908,10 +908,12 @@ let expand_arg tms (p,ccl) ((_,t),_,na) =
 
 let adjust_impossible_cases pb pred tomatch submat =
   if submat = [] then
-    match kind_of_term (whd_evar !(pb.evdref) pred) with
+    match kind_of_term pred with
     | Evar (evk,_) when snd (evar_source evk !(pb.evdref)) = ImpossibleCase ->
+      if not (Evd.is_defined !(pb.evdref) evk) then begin
 	let default = (coq_unit_judge ()).uj_type in
-	pb.evdref := Evd.define evk default !(pb.evdref);
+	pb.evdref := Evd.define evk default !(pb.evdref)
+      end;
       (* we add an "assert false" case *)
       let pats = List.map (fun _ -> PatVar (dummy_loc,Anonymous)) tomatch in
       let aliasnames =
@@ -1032,12 +1034,37 @@ let rec ungeneralize n ng body =
 let ungeneralize_branch n k (sign,body) cs =
   (sign,ungeneralize (n+cs.cs_nargs) k body)
 
+let rec is_dependent_generalization ng body =
+  match kind_of_term body with
+  | Lambda (_,_,c) when ng = 0 ->
+      dependent (mkRel 1) c
+  | Lambda (na,t,c) ->
+      (* We traverse an inner generalization *)
+      is_dependent_generalization (ng-1) c
+  | LetIn (na,b,t,c) ->
+      (* We traverse an alias *)
+      is_dependent_generalization ng c
+  | Case (ci,p,c,brs) ->
+      (* We traverse a split *)
+      array_exists2 (fun q c ->
+        let _,b = decompose_lam_n_assum q c in is_dependent_generalization ng b)
+        ci.ci_cstr_ndecls brs
+  | App (g,args) ->
+      (* We traverse an inner generalization *)
+      assert (isCase g);
+      is_dependent_generalization (ng+Array.length args) g
+  | _ -> assert false
+
+let is_dependent_branch k (_,br) =
+  is_dependent_generalization k br
+
 let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
       let d = map_rel_declaration (nf_evar evd) d in
-      if List.exists (fun c -> dependent_decl (lift k c) d) tocheck || pi2 d <> None then
+      if pi2 d <> None || List.exists (fun c -> dependent_decl (lift k c) d) tocheck
+                 && array_exists (is_dependent_branch k) brs then
         (* Dependency in the current term to match and its dependencies is real *)
         let brs,tomatch,pred,inst = aux (k+1) brs tomatch pred (mkRel n::tocheck) deps in
         let inst = if pi2 d = None then mkRel n::inst else inst in
@@ -1073,7 +1100,7 @@ let group_equations pb ind current cstrs mat =
   let mat =
     if first_clause_irrefutable pb.env mat then [List.hd mat] else mat in
   let brs = Array.create (Array.length cstrs) [] in
-  let only_default = ref true in
+  let only_default = ref None in
   let _ =
     List.fold_right (* To be sure it's from bottom to top *)
       (fun eqn () ->
@@ -1085,12 +1112,13 @@ let group_equations pb ind current cstrs mat =
 	       for i=1 to Array.length cstrs do
 		 let args = make_anonymous_patvars cstrs.(i-1).cs_nargs in
 		 brs.(i-1) <- (args, name, rest) :: brs.(i-1)
-	       done
+	       done;
+	       if !only_default == None then only_default := Some true
 	   | PatCstr (loc,((_,i)),args,name) ->
 	       (* This is a regular clause *)
-	       only_default := false;
+	       only_default := Some false;
 	       brs.(i-1) <- (args, name, rest) :: brs.(i-1)) mat () in
-  (brs,!only_default)
+  (brs,Option.default false !only_default)
 
 (************************************************************************)
 (* Here starts the pattern-matching compilation algorithm *)

@@ -249,6 +249,7 @@ val list_factorize_left : ('a * 'b) list -> ('a * 'b list) list
 val array_compare : ('a -> 'a -> int) -> 'a array -> 'a array -> int
 val array_equal : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
 val array_exists : ('a -> bool) -> 'a array -> bool
+val array_exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 val array_for_all : ('a -> bool) -> 'a array -> bool
 val array_for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 val array_for_all3 : ('a -> 'b -> 'c -> bool) ->

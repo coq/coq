@@ -943,6 +943,14 @@ let array_exists f v =
   in
   exrec ((Array.length v)-1)
 
+let array_exists2 f v1 v2 =
+  let rec exrec = function
+    | -1 -> false
+    | n -> f v1.(n) v2.(n) || (exrec (n-1))
+  in
+  let lv1 = Array.length v1 in
+  lv1 = Array.length v2 && exrec (lv1-1)
+
 let array_for_all f v =
   let rec allrec = function
     | -1 -> true
