@@ -198,7 +198,7 @@ open Declareops;;
 
 let constbody_of_string s =
   let b = Global.lookup_constant (Nametab.locate_constant (qualid_of_string s)) in
-  Option.get (Declareops.body_of_constant b);;
+  Option.get (Declareops.body_of_constant Opaqueproof.empty_opaquetab b);;
 
 (* Get the current goal *)
 (*
