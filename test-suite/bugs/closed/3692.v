@@ -19,7 +19,7 @@ Definition functor_prod {A A' B B' : Type} (f:A->A') (g:B->B')
 : A * B -> A' * B'.
   exact (fun z => (f (fst z), g (snd z))).
 Defined.
-Fail Definition isequiv_functor_prod `{IsEquiv A A' f} `{IsEquiv B B' g}
+Definition isequiv_functor_prod `{IsEquiv A A' f} `{IsEquiv B B' g}
 : IsEquiv (functor_prod f g)
   := @Build_IsEquiv
        _ _ (functor_prod f g) (functor_prod f^-1 g^-1)
