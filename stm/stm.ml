@@ -1228,8 +1228,7 @@ let collect_proof keep cur hd brkind id =
         else `Sync (name,proof_using_ast last,`Policy)
     | `Fork((_, hd', GuaranteesOpacity, ids), _) when
        has_proof_no_using last && not (State.is_cached (parent last)) &&
-       (!Flags.compilation_mode = Flags.BuildVi ||
-        !Flags.async_proofs_always_delegate) ->
+       !Flags.compilation_mode = Flags.BuildVi ->
         (try
           let name = name ids in
           let hint, time = get_hint_ctx loc, get_hint_bp_time name in
