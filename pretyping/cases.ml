@@ -1313,7 +1313,7 @@ let mk_case pb (ci,pred,c,brs) =
     match mib.mind_record with
     | Some (Some (_, cs, pbs)) ->
       Reduction.beta_appvect brs.(0) 
-	(Array.map (fun p -> mkProj (Projection.make p false, c)) cs)
+	(Array.map (fun p -> mkProj (Projection.make p true, c)) cs)
     | _ -> mkCase (ci,pred,c,brs)
 
 (**********************************************************************)
