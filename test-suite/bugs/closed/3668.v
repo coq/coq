@@ -11,12 +11,13 @@ Axiom IsHProp : Type -> Type.
 Inductive Bool := true | false.
 Definition negb (b : Bool) := if b then false else true.
 Hypothesis LEM : forall A : Type, IsHProp A -> A + (A -> False).
+Axiom cheat : forall {A},A.
 Module NonPrim.
   Class Contr (A : Type) := { center : A ; contr : (forall y : A, center = y) }.
   Definition Book_6_9 : forall X, X -> X.
   Proof.
     intro X.
-    pose proof (@LEM (Contr { f : X <~> X & ~(forall x, f x = x) }) $(admit)$) as contrXEquiv.
+    pose proof (@LEM (Contr { f : X <~> X & ~(forall x, f x = x) }) cheat) as contrXEquiv.
     destruct contrXEquiv as [[f H]|H]; [ exact f.1 | exact (fun x => x) ].
   Defined.
   Lemma Book_6_9_not_id b : Book_6_9 Bool b = negb b.
@@ -36,7 +37,7 @@ Module Prim.
   Definition Book_6_9 : forall X, X -> X.
   Proof.
     intro X.
-    pose proof (@LEM (Contr { f : X <~> X & ~(forall x, f x = x) }) $(admit)$) as contrXEquiv.
+    pose proof (@LEM (Contr { f : X <~> X & ~(forall x, f x = x) }) cheat) as contrXEquiv.
     destruct contrXEquiv as [[f H]|H]; [ exact (f.1) | exact (fun x => x) ].
   Defined.
   Lemma Book_6_9_not_id b : Book_6_9 Bool b = negb b.

@@ -49,13 +49,11 @@ Record Functor (C D : PreCategory) :=
   }.
 Arguments morphism_of [C%category] [D%category] F%functor [s%object d%object] m%morphism : rename, simpl nomatch.
 Notation "F '_1' m" := (morphism_of F m) (at level 10, no associativity) : morphism_scope.
-
+Axiom cheat : forall {A}, A.
 Record NaturalTransformation C D (F G : Functor C D) := { components_of :> forall c, morphism D (F c) (G c) }.
 Definition functor_category (C D : PreCategory) : PreCategory.
   exact (@Build_PreCategory (Functor C D)
-                            (@NaturalTransformation C D)
-                            $(admit)$
-                            $(admit)$).
+                            (@NaturalTransformation C D) cheat cheat).
 Defined.
 
 Local Notation "C -> D" := (functor_category C D) : category_scope.
