@@ -27,9 +27,11 @@ Fixpoint IsTrunc_internal (n : trunc_index) (A : Type) : Type :=
 
 Class IsTrunc (n : trunc_index) (A : Type) : Type :=
   Trunc_is_trunc : IsTrunc_internal n A.
-Instance istrunc_paths (A : Type) n `{H : IsTrunc (trunc_S n) A} (x y : A)
+Definition istrunc_paths (A : Type) n `{H : IsTrunc (trunc_S n) A} (x y : A)
 : IsTrunc n (x = y).
 Admitted.
+
+Hint Extern 4 (IsTrunc _ (_ = _)) => eapply @istrunc_paths : typeclass_instances.
 
 Class Funext.
 
@@ -93,8 +95,9 @@ Class inO {fs : Funext} {subU : ReflectiveSubuniverse} (T : Type) :=
 Global Instance hprop_inO {fs : Funext} {subU : ReflectiveSubuniverse} (T : Type) : IsTrunc (trunc_S minus_two) (inO T) .
 Admitted.
 
-Fail Definition equiv_O_rectnd {fs : Funext} {subU : ReflectiveSubuniverse}
-           (P Q : Type) {Q_inO : inO_internal Q}
-: IsEquiv (fun f => compose f (O_unit P))
-:= _.
+(* To avoid looping class resolution *)
+Hint Mode IsEquiv - - + : typeclass_instances. 
 
+Definition equiv_O_rectnd {fs : Funext} {subU : ReflectiveSubuniverse}
+           (P Q : Type) {Q_inO : inO_internal Q}
+: IsEquiv (fun f : O P -> P => compose f (O_unit P)) := _.

@@ -382,7 +382,7 @@ let hints_tac hints =
 	    let sgls =
 	      evars_to_goals
 		(fun evm ev evi ->
-		  if Typeclasses.is_resolvable evi &&
+		  if Typeclasses.is_resolvable evi && not (Evd.is_undefined s ev) &&
 		    (not info.only_classes || Typeclasses.is_class_evar evm evi)
 		  then Typeclasses.mark_unresolvable evi, true
 		  else evi, false) s'
