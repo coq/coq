@@ -1,6 +1,6 @@
 Set Primitive Projections.
 Class Foo (F : False) := { foo : True }.
-Arguments foo F {f}.
+Arguments foo F {Foo}.
 Print Implicit foo. (* foo : forall F : False, Foo F -> True
 
 Argument Foo is implicit and maximally inserted *)
