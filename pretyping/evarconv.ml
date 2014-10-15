@@ -62,7 +62,7 @@ let eval_flexible_term ts env evd c =
   | LetIn (_,b,_,c) -> Some (subst1 b c)
   | Lambda _ -> Some c
   | Proj (p, c) -> 
-    if Projection.unfolded p then None
+    if Projection.unfolded p then assert false
     else unfold_projection env evd ts p c
   | _ -> assert false
 
@@ -416,7 +416,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  miller_pfenning on_left
 	    (fun () -> if not_only_app then (* Postpone the use of an heuristic *)
 	      switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i)) (Stack.zip apprF) tM
-	    else default_fail i)
+	    else quick_fail i)
 	  ev lF tM i
     and consume (termF,skF as apprF) (termM,skM as apprM) i = 
       if not (Stack.is_empty skF && Stack.is_empty skM) then
@@ -611,7 +611,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	     (fst (whd_betaiota_deltazeta_for_iota_state
 		      (fst ts) env i Cst_stack.empty (subst1 b c, args)))
 	    | Fix _ -> true (* Partially applied fix can be the result of a whd call *)
-	    | Proj (p, c) -> true
+	    | Proj (p, _) -> Projection.unfolded p || Stack.not_purely_applicative args
             | Case _ | App _| Cast _ -> assert false in
           let rhs_is_stuck_and_unnamed () =
 	    let applicative_stack = fst (Stack.strip_app sk2) in
