@@ -959,14 +959,14 @@ let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c =
     let t = Retyping.expand_projection env sigma p r [] in
     let hdf, al = destApp t in
     let a = al.(Array.length al - 1) in
-    let app = (mkApp (t, Array.sub al 0 (Array.length al - 1))) in
+    let app = (mkApp (hdf, Array.sub al 0 (Array.length al - 1))) in
     let app' = f acc app in
     let a' = f acc a in
-    let hdf', al' = destApp app' in
-      if hdf' == hdf then
+      (match kind_of_term app' with
+      | App (hdf', al') when hdf' == hdf ->
         (* Still the same projection, we ignore the change in parameters *)
 	mkProj (p, a')
-      else mkApp (app', [| a' |])
+      | _ -> mkApp (app', [| a' |]))
   | _ -> map_constr_with_binders_left_to_right g f acc c
 
 let e_contextually byhead (occs,c) f env sigma t =
