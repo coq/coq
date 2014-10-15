@@ -14,7 +14,10 @@ Proof.
   apply (@ap _ _ pr1 _ y).
   Undo.
   Unset Printing Notations.
-  apply (ap pr1). admit. 
+  apply (ap pr1). 
+  Undo.
+  refine (ap pr1 _).
+admit. 
 Defined.
 
 (* Toplevel input, characters 22-28:

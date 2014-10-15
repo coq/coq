@@ -678,17 +678,31 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 
 	(* For records *)
 	| App (f1, l1), _ when flags.modulo_eta && 
+	    (* This ensures cN is an evar, meta or irreducible constant/variable
+	       and not a constructor. *)
 	    is_eta_constructor_app curenv flags.modulo_delta f1 l1 cN ->
-	  let l1', l2' = eta_constructor_app curenv f1 l1 cN in
-	  let opt' = {opt with at_top = true; with_cs = false} in
-	    Array.fold_left2 (unirec_rec curenvnb CONV opt') substn l1' l2'
+	  (try 
+	     let l1', l2' = eta_constructor_app curenv f1 l1 cN in
+	     let opt' = {opt with at_top = true; with_cs = false} in
+	       Array.fold_left2 (unirec_rec curenvnb CONV opt') substn l1' l2'
+	   with ex when precatchable_exception ex ->
+	     match kind_of_term cN with
+	     | App(f2,l2) when isMeta f2 || isEvar f2 ->
+	       unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
+	     | _ -> raise ex)
 
 	| _, App (f2, l2) when flags.modulo_eta && 
 	    is_eta_constructor_app curenv flags.modulo_delta f2 l2 cM ->
-	  let l2', l1' = eta_constructor_app curenv f2 l2 cM in
-	  let opt' = {opt with at_top = true; with_cs = false} in
-	    Array.fold_left2 (unirec_rec curenvnb CONV opt') substn l1' l2'
-	   
+	  (try 
+	     let l2', l1' = eta_constructor_app curenv f2 l2 cM in
+	     let opt' = {opt with at_top = true; with_cs = false} in
+	       Array.fold_left2 (unirec_rec curenvnb CONV opt') substn l1' l2'
+	   with ex when precatchable_exception ex ->
+	     match kind_of_term cM with
+	     | App(f1,l1) when isMeta f1 || isEvar f1 ->
+	       unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
+	     | _ -> raise ex)
+
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
             (try 
 	     let opt' = {opt with at_top = true; with_types = false} in
@@ -729,9 +743,15 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 
 	| App (f1,l1), App (f2,l2) ->
 	  unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
+	    
+	| App (f1,l1), Proj(p2,c2) ->
+	  unify_app curenvnb pb opt substn cM f1 l1 cN cN [||]
+
+	| Proj (p1,c1), App(f2,l2) ->
+	  unify_app curenvnb pb opt substn cM cM [||] cN f2 l2
 
 	| _ ->
-            unify_not_same_head curenvnb pb opt substn cM cN
+          unify_not_same_head curenvnb pb opt substn cM cN
 
   and unify_app (curenv, nb as curenvnb) pb opt (sigma, metas, evars as substn) cM f1 l1 cN f2 l2 =
     try
@@ -756,8 +776,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
       let opta = {opt with at_top = true; with_types = false} in
       let optf = {opt with at_top = true; with_types = true} in
       let (f1,l1,f2,l2) = adjust_app_array_size f1 l1 f2 l2 in
-	Array.fold_left2 (unirec_rec curenvnb CONV opta)
-	  (unirec_rec curenvnb CONV optf substn f1 f2) l1 l2
+	if Array.length l1 == 0 then error_cannot_unify (fst curenvnb) sigma (cM,cN)
+	else
+	  Array.fold_left2 (unirec_rec curenvnb CONV opta)
+	    (unirec_rec curenvnb CONV optf substn f1 f2) l1 l2
     with ex when precatchable_exception ex ->
     try reduce curenvnb pb {opt with with_types = false} substn cM cN
     with ex when precatchable_exception ex ->
