@@ -161,7 +161,7 @@ and e_my_find_search db_list local_db hdc concl =
       (b,
        let tac =
 	 match t with
-	   | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
+	   | Res_pf (term,cl) -> Proofview.V82.of_tactic (unify_resolve poly st (term,cl))
 	   | ERes_pf (term,cl) -> unify_e_resolve poly st (term,cl)
 	   | Give_exact (c,cl) -> e_exact poly st (c,cl)
 	   | Res_pf_THEN_trivial_fail (term,cl) ->

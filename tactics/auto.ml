@@ -71,17 +71,21 @@ let auto_flags_of_state st =
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
-let unify_resolve_nodelta poly (c,clenv) gl =
+let unify_resolve_nodelta poly (c,clenv) =
+  Proofview.Goal.nf_enter begin fun gl ->
   let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
-  let clenv' = connect_clenv gl clenv' in
-  let clenv'' = clenv_unique_resolver ~flags:auto_unif_flags clenv' gl in
-  Proofview.V82.of_tactic (Clenvtac.clenv_refine false clenv'') gl
+  let clenv' = Tacmach.New.of_old connect_clenv gl clenv' in
+  let clenv'' = Tacmach.New.of_old (fun gl -> clenv_unique_resolver ~flags:auto_unif_flags clenv' gl) gl in
+  Clenvtac.clenv_refine false clenv''
+  end
 
-let unify_resolve poly flags (c,clenv) gl =
+let unify_resolve poly flags (c,clenv) =
+  Proofview.Goal.nf_enter begin fun gl ->
   let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
-  let clenv' = connect_clenv gl clenv' in
-  let clenv'' = clenv_unique_resolver ~flags clenv' gl in
-  Proofview.V82.of_tactic (Clenvtac.clenv_refine false clenv'') gl
+  let clenv' = Tacmach.New.of_old connect_clenv gl clenv' in
+  let clenv'' = Tacmach.New.of_old (fun gl -> clenv_unique_resolver ~flags clenv' gl) gl in
+  Clenvtac.clenv_refine false clenv''
+  end
 
 let unify_resolve_gen poly = function
   | None -> unify_resolve_nodelta poly
@@ -356,12 +360,12 @@ and my_find_search_delta db_list local_db hdc concl =
 and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) =
   let tactic = 
     match t with
-    | Res_pf (c,cl) -> Proofview.V82.tactic (unify_resolve_gen poly flags (c,cl))
+    | Res_pf (c,cl) -> unify_resolve_gen poly flags (c,cl)
     | ERes_pf _ -> Proofview.V82.tactic (fun gl -> error "eres_pf")
     | Give_exact (c, cl)  -> exact poly (c, cl)
     | Res_pf_THEN_trivial_fail (c,cl) ->
       Tacticals.New.tclTHEN
-        (Proofview.V82.tactic (unify_resolve_gen poly flags (c,cl)))
+        (unify_resolve_gen poly flags (c,cl))
 	(* With "(debug) trivial", we shouldn't end here, and
 	   with "debug auto" we don't display the details of inner trivial *)
         (trivial_fail_db (no_dbg ()) (not (Option.is_empty flags)) db_list local_db)

@@ -27,9 +27,9 @@ val default_search_depth : int ref
 val auto_flags_of_state : transparent_state -> Unification.unify_flags
 
 (** Try unification with the precompiled clause, then use registered Apply *)
-val unify_resolve_nodelta : polymorphic -> (constr * clausenv) -> tactic
+val unify_resolve_nodelta : polymorphic -> (constr * clausenv) -> unit Proofview.tactic
 
-val unify_resolve : polymorphic -> Unification.unify_flags -> (constr * clausenv) -> tactic
+val unify_resolve : polymorphic -> Unification.unify_flags -> (constr * clausenv) -> unit Proofview.tactic
 
 (** [ConclPattern concl pat tacast]:
    if the term concl matches the pattern pat, (in sense of
