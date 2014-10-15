@@ -5,5 +5,5 @@ End NonPrim.
 Module Prim.
   Set Primitive Projections.
   Class AClass := { x : Set }.
-  Fail Arguments x {AClass}.
+  Arguments x {AClass}.
 End Prim.
