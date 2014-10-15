@@ -116,7 +116,7 @@ let build_proof uf=
     in  ptrans (ptrans pi pij) pj
 
   and constr_proof i t ipac=
-    if ipac.args=[] then
+    if ipac.args=[] || i=t then
       equal_proof i t
     else
       let npac=tail_pac ipac in
