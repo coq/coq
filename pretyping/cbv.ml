@@ -200,8 +200,9 @@ let rec norm_head info env t stack =
   
   | Proj (p, c) -> 
     let p' =
-      if red_set (info_flags info) (fCONST (Projection.constant p)) then
-	Projection.unfold p
+      if red_set (info_flags info) (fCONST (Projection.constant p)) 
+      	&& red_set (info_flags info) fBETA 
+      then Projection.unfold p
       else p
     in 
     let pinfo = Environ.lookup_projection p (info_env info) in
