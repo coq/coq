@@ -861,7 +861,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
        let npars = pb.Declarations.proj_npars 
        and arg = pb.Declarations.proj_arg in
 	 if not tactic_mode then 
-	   let stack' = (c, Stack.Proj (npars, arg, p, cst_l) :: stack) in
+	   let stack' = (c, Stack.Proj (npars, arg, p, Cst_stack.empty (*cst_l*)) :: stack) in
 	     whrec Cst_stack.empty stack'
 	 else match ReductionBehaviour.get (Globnames.ConstRef kn) with
 	 | None ->
@@ -1497,7 +1497,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
       |args, (Stack.Proj (n,m,p,_) :: stack'') ->
 	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
 	  (Closure.RedFlags.red_add_transparent betadeltaiota ts) env sigma (t,args) in
-	if isConstruct t_o && Projection.unfolded p then
+	if isConstruct t_o then
 	  whrec Cst_stack.empty (Stack.nth stack_o (n+m), stack'')
 	else s,csts'
       |_, ((Stack.App _| Stack.Shift _|Stack.Update _|Stack.Cst _) :: _|[]) -> s,csts'

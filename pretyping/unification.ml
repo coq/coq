@@ -407,13 +407,9 @@ let unfold_projection env p stk =
 let expand_key ts env sigma = function
   | Some (IsKey k) -> expand_table_key env k
   | Some (IsProj (p, c)) -> 
-    if Projection.unfolded p then 
-      let red = Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma 
-				  Cst_stack.empty (c, unfold_projection env (Projection.unfold p) [])))
-      in if Term.eq_constr (mkProj (p, c)) red then None else Some red
-    else 
-      (try Some (Retyping.expand_projection env sigma p c [])
-       with RetypeError _ -> None)
+    let red = Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma 
+				Cst_stack.empty (c, unfold_projection env p [])))
+    in if Term.eq_constr (mkProj (p, c)) red then None else Some red
   | None -> None
 
   
@@ -525,13 +521,33 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst) tyM tyN =
 	else error_cannot_unify env sigma (m,n)
     else sigma
 
-let is_eta_constructor_app env f l1 =
+
+let rec is_neutral env ts t =
+  let (f, l) = decompose_appvect t in
+    match kind_of_term f with
+    | Const (c, u) ->
+      not (Environ.evaluable_constant c env) ||
+      not (is_transparent env (ConstKey c)) ||
+      not (Cpred.mem c (snd ts))
+    | Var id -> 
+      not (Environ.evaluable_named id env) ||
+      not (is_transparent env (VarKey id)) ||
+      not (Id.Pred.mem id (fst ts))
+    | Rel n -> true
+    | Evar _ | Meta _ -> true
+    | Case (_, p, c, cl) -> is_neutral env ts c
+    | Proj (p, c) -> is_neutral env ts c
+    | _ -> false
+
+let is_eta_constructor_app env ts f l1 term =
   match kind_of_term f with
   | Construct (((_, i as ind), j), u) when i == 0 && j == 1 ->
     let mib = lookup_mind (fst ind) env in
       (match mib.Declarations.mind_record with
-      | Some (Some (_, exp,projs)) when mib.Declarations.mind_finite <> Decl_kinds.CoFinite -> 
-        Array.length projs == Array.length l1 - mib.Declarations.mind_nparams
+      | Some (Some (_,exp,projs)) when mib.Declarations.mind_finite <> Decl_kinds.CoFinite &&
+          Array.length projs == Array.length l1 - mib.Declarations.mind_nparams ->
+	(** Check that the other term is neutral *)
+	is_neutral env ts term
       | _ -> false)
   | _ -> false
 
@@ -651,26 +667,6 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	       substn c1 c2
 	   with ex when precatchable_exception ex ->
 	     unify_not_same_head curenvnb pb opt substn cM cN)
-	    
-	| Proj (p1,c1), _ when not (Projection.unfolded p1) ->
-	  let cM' =
-	    try Retyping.expand_projection curenv sigma p1 c1 []
-	    with RetypeError _ ->
-	      (** Unification can be called on ill-typed terms, due
-		  to FO and eta in particular, fail gracefully in that case *)
-	      error_cannot_unify (fst curenvnb) sigma (cM,cN)
-	  in
-	    unirec_rec curenvnb CONV {opt with at_top = true; with_types = false} substn cM' cN
-
-	| _, Proj (p2,c2) when not (Projection.unfolded p2) ->
-	  let cN' =
-	    try Retyping.expand_projection curenv sigma p2 c2 []
-	    with RetypeError _ ->
-	      (** Unification can be called on ill-typed terms, due
-		  to FO and eta in particular, fail gracefully in that case *)
-	      error_cannot_unify (fst curenvnb) sigma (cM,cN)
-	  in
-	    unirec_rec curenvnb CONV {opt with at_top = true; with_types = false} substn cM cN'
 
         (* eta-expansion *)
 	| Lambda (na,t1,c1), _ when flags.modulo_eta ->
@@ -681,23 +677,17 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	      (mkApp (lift 1 cM,[|mkRel 1|])) c2
 
 	(* For records *)
-	| App (f1, l1), _ when flags.modulo_eta && is_eta_constructor_app curenv f1 l1 ->
-	  (try let l1', l2' = eta_constructor_app curenv f1 l1 cN in
-		 Array.fold_left2 
-		   (unirec_rec curenvnb CONV {opt with at_top = true; with_cs = false}) substn l1' l2'
-	   with ex when precatchable_exception ex -> 
-	     (match kind_of_term cN with
-             | App (f2,l2) -> unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
-             | _ -> unify_not_same_head curenvnb pb opt substn cM cN))
+	| App (f1, l1), _ when flags.modulo_eta && 
+	    is_eta_constructor_app curenv flags.modulo_delta f1 l1 cN ->
+	  let l1', l2' = eta_constructor_app curenv f1 l1 cN in
+	  let opt' = {opt with at_top = true; with_cs = false} in
+	    Array.fold_left2 (unirec_rec curenvnb CONV opt') substn l1' l2'
 
-	| _, App (f2, l2) when flags.modulo_eta && is_eta_constructor_app curenv f2 l2 ->
-	  (try let l2', l1' = eta_constructor_app curenv f2 l2 cM in
-		 Array.fold_left2 
-		   (unirec_rec curenvnb CONV {opt with at_top = true; with_cs = false}) substn l1' l2'
-	   with ex when precatchable_exception ex -> 
-	     (match kind_of_term cM with
-             | App (f1,l1) -> unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
-             | _ -> unify_not_same_head curenvnb pb opt substn cM cN))
+	| _, App (f2, l2) when flags.modulo_eta && 
+	    is_eta_constructor_app curenv flags.modulo_delta f2 l2 cM ->
+	  let l2', l1' = eta_constructor_app curenv f2 l2 cM in
+	  let opt' = {opt with at_top = true; with_cs = false} in
+	    Array.fold_left2 (unirec_rec curenvnb CONV opt') substn l1' l2'
 	   
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
             (try 
@@ -718,6 +708,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
              | None ->
                  (match kind_of_term cN with
                  | App (f2,l2) -> unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
+                 | Proj _ -> unify_app curenvnb pb opt substn cM f1 l1 cN cN [||]
                  | _ -> unify_not_same_head curenvnb pb opt substn cM cN)
              | Some l ->
                  solve_pattern_eqn_array curenvnb f1 l cN substn)
@@ -731,6 +722,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
              | None ->
                  (match kind_of_term cM with
                  | App (f1,l1) -> unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
+                 | Proj _ -> unify_app curenvnb pb opt substn cM cM [||] cN f2 l2
                  | _ -> unify_not_same_head curenvnb pb opt substn cM cN)
              | Some l ->
 	         solve_pattern_eqn_array curenvnb f2 l cM substn)
@@ -743,17 +735,24 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 
   and unify_app (curenv, nb as curenvnb) pb opt (sigma, metas, evars as substn) cM f1 l1 cN f2 l2 =
     try
-      let expand_proj c l = 
-	match kind_of_term c with
-	| Proj (p, t) when not (Projection.unfolded p) ->
-	  (try destApp (Retyping.expand_projection curenv sigma p t (Array.to_list l))
-	   with RetypeError _ -> (** Unification can be called on ill-typed terms, due
-				     to FO and eta in particular, fail gracefully in that case *)
-	     (c, l))
-	| _ -> (c, l)
+      let needs_expansion p c' = 
+	match kind_of_term c' with
+	| Meta _ -> true
+	| Evar _ -> true
+	| Const (c, u) -> Constant.equal c (Projection.constant p)
+	| _ -> false
       in
-      let f1, l1 = expand_proj f1 l1 in
-      let f2, l2 = expand_proj f2 l2 in
+      let expand_proj c c' l = 
+      	match kind_of_term c with
+      	| Proj (p, t) when not (Projection.unfolded p) && needs_expansion p c' ->
+      	  (try destApp (Retyping.expand_projection curenv sigma p t (Array.to_list l))
+      	   with RetypeError _ -> (** Unification can be called on ill-typed terms, due
+      				     to FO and eta in particular, fail gracefully in that case *)
+      	     (c, l))
+      	| _ -> (c, l)
+      in
+      let f1, l1 = expand_proj f1 f2 l1 in
+      let f2, l2 = expand_proj f2 f1 l2 in
       let opta = {opt with at_top = true; with_types = false} in
       let optf = {opt with at_top = true; with_types = true} in
       let (f1,l1,f2,l2) = adjust_app_array_size f1 l1 f2 l2 in
@@ -1161,16 +1160,22 @@ let w_merge env with_types flags (evd,metas,evars) =
 	      if is_mimick_head flags.modulo_delta f then
 		let evd' =
 		  mimick_undefined_evar evd flags f (Array.length cl) evk in
-		w_merge_rec evd' metas evars eqns
+		(* let evd' = Evarconv.consider_remaining_unif_problems env evd' in *)
+		  w_merge_rec evd' metas evars eqns
 	      else
-		let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
-		w_merge_rec (solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs'')
-		  metas evars' eqns
-
+		let evd' = 
+		  let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
+		    try solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs''
+		    with Retyping.RetypeError _ ->
+		      error_cannot_unify curenv evd' (mkEvar ev,rhs'')
+		in w_merge_rec evd' metas evars' eqns
           | _ ->
 	      let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
-		w_merge_rec (solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs'')
-		  metas evars' eqns
+	      let evd' = 
+		try solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs''
+		with Retyping.RetypeError _ -> error_cannot_unify curenv evd' (mkEvar ev, rhs'')
+	      in
+		w_merge_rec evd' metas evars' eqns
 	end
     | [] ->
 
