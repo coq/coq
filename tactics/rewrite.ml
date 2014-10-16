@@ -469,6 +469,8 @@ let get_symmetric_proof b =
   if b then PropGlobal.get_symmetric_proof else TypeGlobal.get_symmetric_proof
 
 let rec decompose_app_rel env evd t = 
+  (** Head normalize for compatibility with the old meta mechanism *)
+  let t = Reductionops.whd_betaiota evd t in
   match kind_of_term t with
   | App (f, args) -> 
       if Array.length args > 1 then 
