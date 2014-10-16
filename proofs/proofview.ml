@@ -131,7 +131,7 @@ let list_goto =
 (* First component is a reverse list of what comes before
    and second component is what goes after (in the expected
    order) *)
-type focus_context = Goal.goal list * Goal.goal list
+type focus_context = Evar.t list * Evar.t list
 
 let focus_context f = f
 
@@ -447,7 +447,7 @@ let on_advance g ~solved ~adv =
    goals. The argument tactic is executed in a focus comprising only
    of the current goal, a goal which has been solved by side effect is
    skipped. The generated subgoals are concatenated in order.  *)
-(* val list_iter_goal : 'a -> (Goal.goal -> 'a -> 'a tactic) -> 'a tactic *)
+(* val list_iter_goal : 'a -> (Evar.t -> 'a -> 'a tactic) -> 'a tactic *)
 let list_iter_goal s i =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
@@ -466,7 +466,7 @@ let list_iter_goal s i =
   Proof.ret r
 
 (* spiwack: essentially a copy/paste of the above… *)
-(* val list_iter_goal : 'a list -> 'b -> (Goal.goal -> 'a -> 'b -> 'b tactic) -> 'b tactic *)
+(* val list_iter_goal : 'a list -> 'b -> (Evar.t -> 'a -> 'b -> 'b tactic) -> 'b tactic *)
 let list_iter_goal2 l s i =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
@@ -819,7 +819,7 @@ module Monad =
 
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 = struct
-  type tac = Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+  type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
 
   let tactic tac =
     (* spiwack: we ignore the dependencies between goals here,
@@ -927,15 +927,13 @@ module V82 = struct
 
 end
 
-type goal = Goal.goal
-
 module Goal = struct
 
   type 'a t = {
     env : Environ.env;
     sigma : Evd.evar_map;
     concl : Term.constr ;
-    self : Goal.goal ; (* for compatibility with old-style definitions *)
+    self : Evar.t ; (* for compatibility with old-style definitions *)
   }
 
   let assume (gl : 'a t) = (gl :> [ `NF ] t)
