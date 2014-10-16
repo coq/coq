@@ -872,7 +872,7 @@ module V82 = struct
   (* Main function in the implementation of Grab Existential Variables.*)
   let grab pv =
     let undef = Evd.undefined_map pv.solution in
-    let goals = List.map fst (Evar.Map.bindings undef) in
+    let goals = List.rev_map fst (Evar.Map.bindings undef) in
     { pv with comb = goals }
       
     
