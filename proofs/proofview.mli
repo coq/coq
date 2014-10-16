@@ -423,9 +423,6 @@ module Goal : sig
   (* compatibility: avoid if possible *)
   val goal : [ `NF ] t -> Goal.goal
 
-  (** [refresh g] updates the [sigma g] to the current value, may be
-      useful with compatibility functions like [Tacmach.New.of_old] *)
-  val refresh_sigma : 'a t -> 'a t tactic
 end
 
 (** A light interface for building tactics out of partial term. Be careful,

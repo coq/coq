@@ -977,9 +977,6 @@ module Goal = struct
 
   (* compatibility *)
   let goal { self=self } = self
-  let refresh_sigma g =
-    tclEVARMAP >>= fun sigma ->
-    tclUNIT { g with sigma }
 
 end
 
