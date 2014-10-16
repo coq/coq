@@ -468,7 +468,8 @@ let weak_check env sigma deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
   if deep then
     let t2 = Retyping.get_type_of env sigma origc in
-    snd (infer_conv ~pb:Reduction.CUMUL env sigma t1 t2)
+    let sigma, t2 = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma t2 in
+      snd (infer_conv ~pb:Reduction.CUMUL env sigma t1 t2)
   else
     isSort (whd_betadeltaiota env sigma t1)
 
