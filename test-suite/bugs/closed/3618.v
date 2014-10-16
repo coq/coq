@@ -98,6 +98,6 @@ Admitted.
 (* To avoid looping class resolution *)
 Hint Mode IsEquiv - - + : typeclass_instances. 
 
-Definition equiv_O_rectnd {fs : Funext} {subU : ReflectiveSubuniverse}
+Fail Definition equiv_O_rectnd {fs : Funext} {subU : ReflectiveSubuniverse}
            (P Q : Type) {Q_inO : inO_internal Q}
 : IsEquiv (fun f : O P -> P => compose f (O_unit P)) := _.
