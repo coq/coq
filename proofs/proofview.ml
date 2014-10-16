@@ -116,8 +116,7 @@ let init sigma =
   | (env, typ) :: l ->
     let ret, { solution = sol; comb = comb } = aux l in
     let src = (Loc.ghost,Evar_kinds.GoalEvar) in
-    let naming = Misctypes.IntroIdentifier (Names.Id.of_string "Main") in
-    let (new_defs , econstr) = Evarutil.new_evar env sol ~src ~naming typ in
+    let (new_defs , econstr) = Evarutil.new_evar env sol ~src typ in
     let (gl, _) = Term.destEvar econstr in
     let entry = (econstr, typ) :: ret in
     entry, { solution = new_defs; comb = gl::comb; }
