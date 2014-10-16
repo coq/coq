@@ -133,7 +133,7 @@ type 'a case =
    case it is [false]. *)
 val apply : Environ.env -> 'a tactic -> proofview -> 'a
                                                    * proofview
-                                                   * (bool*(Goal.goal list*Goal.goal list))
+                                                   * (bool*Goal.goal list*Goal.goal list)
 
 (*** tacticals ***)
 

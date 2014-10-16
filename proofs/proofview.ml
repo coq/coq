@@ -22,10 +22,86 @@
 
 open Pp
 open Util
+open Proofview_monad
 
 (* Type of proofviews. *)
-type proofview = Proofview_monad.proofview
-open Proofview_monad
+type proofview = { solution : Evd.evar_map; comb : Goal.goal list }
+
+(** Parameters of the logic monads *)
+module P = struct
+
+  type s = proofview * Environ.env
+
+  type e = unit
+  (* spiwack: nothing read-only anymore but it's free so I'll leave a place holder. *)
+
+  (** Status (safe/unsafe) * shelved goals * given up *)
+  type w = bool * Evar.t list * Evar.t list
+
+  let wunit = true , [] , []
+  let wprod (b1,s1,g1) (b2,s2,g2) = b1 && b2 , s1@s2 , g1@g2
+
+end
+
+(** Definition of the tactic monad *)
+module Proof = Logical(P)
+
+(** Lenses to access to components of the states *)
+module Pv = struct
+
+  type t = proofview
+
+  let get : t Proof.t = Proof.(map fst get)
+  let set (p:t) : unit Proof.t = Proof.modify (fun (_,e) -> (p,e))
+  let modify (f:t->t) : unit Proof.t = Proof.modify (fun (p,e) -> (f p,e))
+
+end
+
+module Comb = struct
+
+  type t = Evar.t list
+
+  let get : t Proof.t = Proof.map (fun {comb} -> comb) Pv.get
+  let set (c:Evar.t list) : unit Proof.t = Pv.modify (fun pv -> { pv with comb = c })
+  let modify (f:Evar.t list -> Evar.t list) : unit Proof.t =
+    Pv.modify (fun pv -> { pv with comb = f pv.comb })
+
+end
+
+module Env = struct
+
+  type t = Environ.env
+
+  let get : t Proof.t = Proof.(map snd get)
+  let set (e:t) : unit Proof.t = Proof.modify (fun (p,_) -> (p,e))
+  let modify (f:t->t) : unit Proof.t = Proof.modify (fun (p,e) -> (p,f e))
+
+end
+
+module Status = struct
+
+  type t = bool
+
+  let put (s:t) : unit Proof.t = Proof.put (s,[],[])
+
+end
+
+module Shelf = struct
+
+  type t = Evar.t list
+
+  let put (sh:t) : unit Proof.t = Proof.put (true,sh,[])
+
+end
+
+module Giveup = struct
+
+  type t = Evar.t list
+
+  let put (gs:t) : unit Proof.t = Proof.put (true,[],gs)
+
+end
+
 
 type entry = (Term.constr * Term.types) list
 
@@ -235,7 +311,6 @@ let unfocus c sp =
    - report unsafe status, shelved goals and given up goals
    - access and change the current [proofview]
    - backtrack on previous changes of the proofview *)
-module Proof = Proofview_monad.Logical
 type +'a tactic = 'a Proof.t
 
 type 'a case =
@@ -244,8 +319,10 @@ type 'a case =
 
 (* Applies a tactic to the current proofview. *)
 let apply env t sp =
-  let (((next_r,next_state),status)) = Proofview_monad.NonLogical.run (Proof.run t env sp) in
-  next_r , next_state , status
+  let (next_r,(next_state,_),status) =
+    Proofview_monad.NonLogical.run (Proof.run t () (sp,env))
+  in
+  next_r,next_state,status
 
 (*** tacticals ***)
 
@@ -344,12 +421,12 @@ let tclFOCUS_gen nosuchgoal i j t =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
-  Proof.get >>= fun initial ->
+  Pv.get >>= fun initial ->
   try
     let (focused,context) = focus i j initial in
-    Proof.set focused >>
+    Pv.set focused >>
     t >>= fun result ->
-    Proof.modify (fun next -> unfocus context next) >>
+    Pv.modify (fun next -> unfocus context next) >>
     Proof.ret result
   with IndexOutOfRange -> nosuchgoal
 
@@ -359,15 +436,15 @@ let tclTRYFOCUS i j t = tclFOCUS_gen (tclUNIT ()) i j t
 let tclFOCUSID id t =
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
-  Proof.get >>= fun initial ->
+  Pv.get >>= fun initial ->
   let rec aux n = function
     | [] -> tclZERO (NoSuchGoals 1)
     | g::l ->
         if Names.Id.equal (Evd.evar_ident g initial.solution) id then
           let (focused,context) = focus n n initial in
-          Proof.set focused >>
+          Pv.set focused >>
             t >>= fun result ->
-          Proof.modify (fun next -> unfocus context next) >>
+          Pv.modify (fun next -> unfocus context next) >>
             Proof.ret result
         else
           aux (n+1) l in
@@ -430,15 +507,10 @@ let list_iter2 l1 l2 s i =
       | reraise -> tclZERO reraise
     end
 
-(* A variant of [Proof.set] specialized on the comb. Doesn't change
-   the underlying "solution" (i.e. [evar_map]) *)
-let set_comb c =
-  Proof.modify (fun step -> { step with comb = c })
-
 let on_advance g ~solved ~adv =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Proof.get >>= fun step ->
+  Pv.get >>= fun step ->
   match advance step.solution g with
   | None -> solved (* If [first] has been solved by side effect: do nothing. *)
   | Some g -> adv g
@@ -452,17 +524,17 @@ let list_iter_goal s i =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
-  Proof.get >>= fun initial ->
+  Pv.get >>= fun initial ->
   list_iter initial.comb (s,[]) begin fun goal ((r,subgoals) as cur) ->
     on_advance goal
       ~solved: ( Proof.ret cur )
       ~adv: begin fun goal ->
-        set_comb [goal] >>
+        Comb.set [goal] >>
         i goal r >>= fun r ->
-        Proof.map (fun step -> (r, step.comb :: subgoals)) Proof.get
+        Proof.map (fun step -> (r, step.comb :: subgoals)) Pv.get
       end
   end >>= fun (r,subgoals) ->
-  set_comb (List.flatten (List.rev subgoals)) >>
+  Comb.set (List.flatten (List.rev subgoals)) >>
   Proof.ret r
 
 (* spiwack: essentially a copy/paste of the above… *)
@@ -471,17 +543,17 @@ let list_iter_goal2 l s i =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
-  Proof.get >>= fun initial ->
+  Pv.get >>= fun initial ->
   list_iter2 initial.comb l (s,[]) begin fun goal a ((r,subgoals) as cur) ->
     on_advance goal
       ~solved: ( Proof.ret cur )
       ~adv: begin fun goal ->
-        set_comb [goal] >>
+        Comb.set [goal] >>
         i goal a r >>= fun r ->
-        Proof.map (fun step -> (r, step.comb :: subgoals)) Proof.get
+        Proof.map (fun step -> (r, step.comb :: subgoals)) Pv.get
       end
   end >>= fun (r,subgoals) ->
-  set_comb (List.flatten (List.rev subgoals)) >>
+  Comb.set (List.flatten (List.rev subgoals)) >>
   Proof.ret r
 
 (* spiwack: we use an parametrised function to generate the dispatch
@@ -493,14 +565,14 @@ let tclDISPATCHGEN f join tacs =
   match tacs with
   | [] ->
       begin 
-        Proof.get >>= fun initial ->
+        Pv.get >>= fun initial ->
         match initial.comb with
         | [] -> tclUNIT (join [])
         | _ -> tclZERO (SizeMismatch (List.length initial.comb,0))
       end
   | [tac] ->
       begin
-        Proof.get >>= fun initial ->
+        Pv.get >>= fun initial ->
         match initial.comb with
         | [goal] ->
             on_advance goal
@@ -543,7 +615,7 @@ let extend_to_list startxs rx endxs l =
 let tclEXTEND tacs1 rtac tacs2 =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Proof.get >>= fun step ->
+  Pv.get >>= fun step ->
   try
     let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
     tclDISPATCH tacs
@@ -558,14 +630,14 @@ let tclEXTEND tacs1 rtac tacs2 =
 let tclINDEPENDENT tac =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Proof.get >>= fun initial ->
+  Pv.get >>= fun initial ->
   match initial.comb with
   | [] -> tclUNIT ()
   | [_] -> tac
   | _ -> list_iter_goal () (fun _ () -> tac)
 
 let tclNEWGOALS gls =
-  Proof.modify begin fun step ->
+  Pv.modify begin fun step ->
   let map gl = advance step.solution gl in
   let gls = List.map_filter map gls in
   { step with comb = step.comb @ gls }
@@ -580,9 +652,9 @@ let goal_equal evars1 gl1 evars2 gl2 =
 let tclPROGRESS t =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Proof.get >>= fun initial ->
+  Pv.get >>= fun initial ->
   t >>= fun res ->
-  Proof.get >>= fun final ->
+  Pv.get >>= fun final ->
   let test =
     Evd.progress_evar_map initial.solution final.solution &&
     not (Util.List.for_all2eq (fun i f -> goal_equal initial.solution i final.solution f) initial.comb final.comb)
@@ -593,16 +665,16 @@ let tclPROGRESS t =
     tclZERO (Errors.UserError ("Proofview.tclPROGRESS" , Pp.str"Failed to progress."))
 
 let tclEVARMAP =
-  Proof.map (fun initial -> initial.solution) Proof.get
+  Proof.map (fun initial -> initial.solution) Pv.get
 
-let tclENV = Proof.current
+let tclENV = Env.get
 
 let tclEFFECTS eff =
   Proof.bind (Proof.ret ())
     (fun () -> (* The Global.env should be taken at exec time *)
        Proof.seq
-         (Proof.update (Global.env ()))
-         (Proof.modify (fun initial -> emit_side_effects eff initial)))
+         (Env.set (Global.env ()))
+         (Pv.modify (fun initial -> emit_side_effects eff initial)))
 
 exception Timeout
 let _ = Errors.register_handler begin function
@@ -620,13 +692,12 @@ let tclTIMEOUT n t =
      a dummy value first, lest [timeout] be called when everything has
      already been computed. *)
   let t = Proof.lift (Proofview_monad.NonLogical.ret ()) >> t in
-  Proof.current >>= fun env ->
   Proof.get >>= fun initial ->
   Proof.lift begin
     Proofview_monad.NonLogical.catch
       begin
         Proofview_monad.NonLogical.bind
-          (Proofview_monad.NonLogical.timeout n (Proof.run t env initial))
+          (Proofview_monad.NonLogical.timeout n (Proof.run t () initial))
           (fun r -> Proofview_monad.NonLogical.ret (Util.Inl r))
       end
       begin function
@@ -637,7 +708,7 @@ let tclTIMEOUT n t =
         | e -> Proofview_monad.NonLogical.raise e
       end
   end >>= function
-    | Util.Inl ((res,s),m) ->
+    | Util.Inl (res,s,m) ->
         Proof.set s >>
         Proof.put m >>
         Proof.ret res
@@ -670,17 +741,16 @@ let tclTIME s t =
         tclOR (tclUNIT x) (fun e -> aux (n+1) (k e))
   in aux 0 t
 
-let mark_as_unsafe =
-  Proof.put (false,([],[]))
+let mark_as_unsafe = Status.put false
 
 (* Shelves all the goals under focus. *)
 let shelve =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
-  Proof.get >>= fun initial ->
-  Proof.set {initial with comb=[]} >>
-  Proof.put (true,(initial.comb,[]))
+  Pv.get >>= fun initial ->
+  Pv.set {initial with comb=[]} >>
+  Shelf.put initial.comb
 
 
 (* [contained_in_info e evi] checks whether the evar [e] appears in
@@ -716,14 +786,14 @@ let shelve_unifiable =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
-  Proof.get >>= fun initial ->
+  Pv.get >>= fun initial ->
   let (u,n) = partition_unifiable initial.solution initial.comb in
-  Proof.set {initial with comb=n} >>
-  Proof.put (true,(u,[]))
+  Pv.set {initial with comb=n} >>
+  Shelf.put u
 
 let check_no_dependencies =
   let (>>=) = Proof.bind in
-  Proof.get >>= fun initial ->
+  Pv.get >>= fun initial ->
   let (u,n) = partition_unifiable initial.solution initial.comb in
   match u with
   | [] -> tclUNIT ()
@@ -745,9 +815,10 @@ let give_up =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
-  Proof.get >>= fun initial ->
-  Proof.set {initial with comb=[]} >>
-  Proof.put (false,([],initial.comb))
+  Pv.get >>= fun initial ->
+  Pv.set {initial with comb=[]} >>
+  mark_as_unsafe >>
+  Giveup.put initial.comb
 
 (** [goodmod p m] computes the representative of [p] modulo [m] in the
     interval [[0,m-1]].*)
@@ -761,16 +832,16 @@ let goodmod p m =
 let cycle n =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Proof.get >>= fun initial ->
+  Pv.get >>= fun initial ->
   let l = List.length initial.comb in
   let n' = goodmod n l in
   let (front,rear) = List.chop n' initial.comb in
-  Proof.set {initial with comb=rear@front}
+  Pv.set {initial with comb=rear@front}
 
 let swap i j =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Proof.get >>= fun initial ->
+  Pv.get >>= fun initial ->
   let l = List.length initial.comb in
   let i = if i>0 then i-1 else i and j = if j>0 then j-1 else j in
   let i = goodmod i l and j = goodmod j l in
@@ -782,18 +853,18 @@ let swap i j =
       | _ -> x
     end 0 initial.comb
   in
-  Proof.set {initial with comb}
+  Pv.set {initial with comb}
 
 let revgoals =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Proof.get >>= fun initial ->
-  Proof.set {initial with comb=List.rev initial.comb}
+  Pv.get >>= fun initial ->
+  Pv.set {initial with comb=List.rev initial.comb}
 
 let numgoals =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Proof.get >>= fun { comb } ->
+  Pv.get >>= fun { comb } ->
   Proof.ret (List.length comb)
 
 (*** Commands ***)
@@ -826,7 +897,7 @@ module V82 = struct
        expectingly preserving the semantics of <= 8.2 tactics *)
     (* spiwack: convenience notations, waiting for ocaml 3.12 *)
     let (>>=) = Proof.bind in
-    Proof.get >>= fun ps ->
+    Pv.get >>= fun ps ->
     try
       let tac gl evd = 
         let glsigma  =
@@ -841,7 +912,7 @@ module V82 = struct
       in
       let (goalss,evd) = Evd.Monad.List.map tac initgoals initevd in
       let sgs = List.flatten goalss in
-      Proof.set { solution = evd; comb = sgs; }
+      Pv.set { solution = evd; comb = sgs; }
     with e when catchable_exception e ->
       let e = Errors.push e in
       tclZERO e
@@ -850,7 +921,7 @@ module V82 = struct
   (* normalises the evars in the goals, and stores the result in
      solution. *)
   let nf_evar_goals =
-    Proof.modify begin fun ps ->
+    Pv.modify begin fun ps ->
     let map g s = Goal.V82.nf_evar s g in
     let (goals,evd) = Evd.Monad.List.map map ps.comb ps.solution in
     { solution = evd; comb = goals; }
@@ -858,13 +929,13 @@ module V82 = struct
 
   (* A [Proofview.tactic] version of [Refiner.tclEVARS] *)
   let tclEVARS evd =
-    Proof.modify (fun ps -> { ps with solution = evd })
+    Pv.modify (fun ps -> { ps with solution = evd })
 
   let tclEVARSADVANCE evd =
-    Proof.modify (fun ps -> { solution = evd; comb = undefined evd ps.comb })
+    Pv.modify (fun ps -> { solution = evd; comb = undefined evd ps.comb })
 
   let tclEVARUNIVCONTEXT ctx = 
-    Proof.modify (fun ps -> { ps with solution = Evd.set_universe_context ps.solution ctx })
+    Pv.modify (fun ps -> { ps with solution = Evd.set_universe_context ps.solution ctx })
       
   let has_unresolved_evar pv =
     Evd.has_undefined pv.solution
@@ -916,8 +987,7 @@ module V82 = struct
       let e = Backtrace.app_backtrace ~src ~dst:e in
       raise e
 
-  let put_status b =
-    Proof.put (b,([],[]))
+  let put_status = Status.put
 
   let catchable_exception = catchable_exception
 
@@ -959,7 +1029,7 @@ module Goal = struct
 
   let nf_enter f =
     list_iter_goal () begin fun goal () ->
-      Proof.current >>= fun env ->
+      Env.get >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try
         let (gl, sigma) = nf_gmake env sigma goal in
@@ -970,7 +1040,7 @@ module Goal = struct
     end
 
   let normalize { self } =
-    Proof.current >>= fun env ->
+    Env.get >>= fun env ->
     tclEVARMAP >>= fun sigma ->
     let (gl,sigma) = nf_gmake env sigma self in
     tclTHEN (V82.tclEVARS sigma) (tclUNIT gl)
@@ -981,7 +1051,7 @@ module Goal = struct
 
   let enter f =
     list_iter_goal () begin fun goal () ->
-      Proof.current >>= fun env ->
+      Env.get >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try f (gmake env sigma goal)
       with e when catchable_exception e ->
@@ -990,8 +1060,8 @@ module Goal = struct
     end
 
   let goals =
-    Proof.current >>= fun env ->
-    Proof.get >>= fun step ->
+    Env.get >>= fun env ->
+    Pv.get >>= fun step ->
     let sigma = step.solution in
     let map goal =
       match advance sigma goal with
@@ -1062,7 +1132,7 @@ struct
     (** Select the goals *)
     let comb = undefined sigma (List.rev evs) in
     let sigma = List.fold_left mark_as_goal sigma comb in
-    Proof.set { solution = Evd.reset_future_goals sigma; comb; }
+    Pv.set { solution = Evd.reset_future_goals sigma; comb; }
   end
 
   (** Useful definitions *)
@@ -1085,7 +1155,7 @@ end
 
 module NonLogical = Proofview_monad.NonLogical
 
-let tclLIFT = Proofview_monad.Logical.lift
+let tclLIFT = Proof.lift
 
 let tclCHECKINTERRUPT =
    tclLIFT (NonLogical.make Control.check_for_interrupt)

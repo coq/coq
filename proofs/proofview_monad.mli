@@ -13,21 +13,6 @@
     and a logical layer which handles backtracking, proof
     manipulation, and any other effect which needs to backtrack. *)
 
-(** {6 States of the logical monad} *)
-
-type proofview = { solution : Evd.evar_map; comb : Goal.goal list }
-
-(** Read/write *)
-type logicalState = proofview
-
-(** Read only *)
-type logicalEnvironment = Environ.env
-
-(** Write only. Must be a monoid.
-
-    Status (safe/unsafe) * ( shelved goals * given up ). *)
-type logicalMessageType = bool * ( Goal.goal list * Goal.goal list )
-
 
 (** {6 Exceptions} *)
 
@@ -119,7 +104,26 @@ type ('a, 'b) list_view =
 | Nil of exn
 | Cons of 'a * 'b
 
-module Logical : sig
+(** The monad is parametrised in the types of state, environment and
+    writer. *)
+module type Param = sig
+
+  (** Read only *)
+  type e
+
+  (** Write only *)
+  type w
+
+  (** [w] must be a monoid *)
+  val wunit : w
+  val wprod : w -> w -> w
+
+  (** Read-write *)
+  type s
+
+end
+
+module Logical (P:Param) : sig
 
   type +'a t
 
@@ -129,12 +133,11 @@ module Logical : sig
   val ignore : 'a t -> unit t
   val seq : unit t -> 'a t -> 'a t
 
-  val set : logicalState -> unit t
-  val get : logicalState t
-  val modify : (logicalState -> logicalState) -> unit t
-  val put : logicalMessageType -> unit t
-  val current : logicalEnvironment t
-  val update : logicalEnvironment -> unit t
+  val set : P.s -> unit t
+  val get : P.s t
+  val modify : (P.s -> P.s) -> unit t
+  val put : P.w -> unit t
+  val current : P.e t
 
   val zero : exn -> 'a t
   val plus : 'a t -> (exn -> 'a t) -> 'a t
@@ -144,5 +147,5 @@ module Logical : sig
 
   val lift : 'a NonLogical.t -> 'a t
 
-  val run : 'a t -> logicalEnvironment -> logicalState -> (('a*logicalState)*logicalMessageType) NonLogical.t
+  val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w) NonLogical.t
 end

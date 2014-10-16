@@ -318,7 +318,7 @@ let initial_goals p = Proofview.initial_goals p.entry
 
 let run_tactic env tac pr =
   let sp = pr.proofview in
-  let (_,tacticced_proofview,(status,(to_shelve,give_up))) = Proofview.apply env tac sp in
+  let (_,tacticced_proofview,(status,to_shelve,give_up)) = Proofview.apply env tac sp in
   let shelf =
     Proofview.in_proofview tacticced_proofview begin fun sigma ->
       let pre_shelf = pr.shelf@(Evd.future_goals sigma)@to_shelve in

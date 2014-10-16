@@ -13,21 +13,6 @@
     and a logical layer which handles backtracking, proof
     manipulation, and any other effect which needs to backtrack. *)
 
-(** {6 States of the logical monad} *)
-
-type proofview = { solution : Evd.evar_map; comb : Goal.goal list }
-
-(** Read/write *)
-type logicalState = proofview
-
-(** Write only. Must be a monoid.
-
-    Status (safe/unsafe) * ( shelved goals * given up ). *)
-type logicalMessageType = bool*(Goal.goal list*Goal.goal list)
-
-(** Read only *)
-type logicalEnvironment = Environ.env
-
 
 (** {6 Exceptions} *)
 
@@ -154,22 +139,34 @@ type ('a, 'b) list_view =
   | Nil of exn
   | Cons of 'a * 'b
 
-module Logical =
+module type Param = sig
+
+  (** Read only *)
+  type e
+
+  (** Write only *)
+  type w
+
+  (** [w] must be a monoid *)
+  val wunit : w
+  val wprod : w -> w -> w
+
+  (** Read-write *)
+  type s
+
+end
+
+
+module Logical (P:Param) =
 struct
 
-  type rt = logicalEnvironment
-  type wt = logicalMessageType
-  type st = logicalState
-
+  (** All three of environment, writer and state are coded as a single
+      state-passing-style monad.*)
   type state = {
-    rstate : rt;
-    wstate : wt;
-    sstate : st;
+    rstate : P.e;
+    wstate : P.w;
+    sstate : P.s;
   }
-
-  let empty = (true, ([], []))
-
-  let merge (b1, (l1, k1)) (b2, (l2, k2)) = (b1 && b2, (l1 @ l2, k1 @ k2))
 
   (** Double-continuation backtracking monads are reasonable folklore
       for "search" implementations (including the Tac interactive
@@ -190,7 +187,7 @@ struct
       the impredicative encoding of the following stream type:
 
       [type 'a _iolist' = Nil of exn | Cons of 'a*'a iolist'
-       and 'a iolist = 'a _iolist NonLogical.t]
+      and 'a iolist = 'a _iolist NonLogical.t]
 
       Using impredicative encoding avoids intermediate allocation and
       is, empirically, very efficient in Ocaml. It also has the
@@ -206,66 +203,61 @@ struct
                      ('a -> (exn -> 'r NonLogical.t) -> 'r NonLogical.t) ->
                      'r NonLogical.t }
 
-  type 'a tactic = state -> ('a * state) iolist
+  type 'a t = state -> ('a * state) iolist
 
-  type 'a t = 'a tactic
-
-  let zero e : 'a tactic = (); fun s ->
+  let zero e : 'a t = (); fun s ->
     { iolist = fun nil cons -> nil e }
 
-  let plus m1 m2 : 'a tactic = (); fun s ->
+  let plus m1 m2 : 'a t = (); fun s ->
     let m1 = m1 s in
     { iolist = fun nil cons -> m1.iolist (fun e -> (m2 e s).iolist nil cons) cons }
 
-  let ret x : 'a tactic = (); fun s ->
+  let ret x : 'a t = (); fun s ->
     { iolist = fun nil cons -> cons (x, s) nil }
 
-  let bind (m : 'a tactic) (f : 'a -> 'b tactic) : 'b tactic = (); fun s ->
+  let bind (m : 'a t) (f : 'a -> 'b t) : 'b t = (); fun s ->
     let m = m s in
     { iolist = fun nil cons -> m.iolist nil (fun (x, s) next -> (f x s).iolist next cons) }
 
-  let seq (m : unit tactic) (f : 'a tactic) : 'a tactic = (); fun s ->
+  let seq (m : unit t) (f : 'a t) : 'a t = (); fun s ->
     let m = m s in
     { iolist = fun nil cons -> m.iolist nil (fun ((), s) next -> (f s).iolist next cons) }
 
-  let map (f : 'a -> 'b) (m : 'a tactic) : 'b tactic = (); fun s ->
+  let map (f : 'a -> 'b) (m : 'a t) : 'b t = (); fun s ->
     let m = m s in
     { iolist = fun nil cons -> m.iolist nil (fun (x, s) next -> cons (f x, s) next) }
 
-  let ignore (m : 'a tactic) : unit tactic = (); fun s ->
+  let ignore (m : 'a t) : unit t = (); fun s ->
     let m = m s in
     { iolist = fun nil cons -> m.iolist nil (fun (_, s) next -> cons ((), s) next) }
 
-  let lift (m : 'a NonLogical.t) : 'a tactic = (); fun s ->
+  let lift (m : 'a NonLogical.t) : 'a t = (); fun s ->
     { iolist = fun nil cons -> NonLogical.bind m (fun x -> cons (x, s) nil) }
 
   (** State related *)
 
-  let get : st tactic = (); fun s ->
+  let get : P.s t = (); fun s ->
     { iolist = fun nil cons -> cons (s.sstate, s) nil }
 
-  let set (sstate : st) : unit tactic = (); fun s ->
+  let set (sstate : P.s) : unit t = (); fun s ->
     { iolist = fun nil cons -> cons ((), { s with sstate }) nil }
 
-  let modify (f : st -> st) : unit tactic = (); fun s ->
+  let modify (f : P.s -> P.s) : unit t = (); fun s ->
     { iolist = fun nil cons -> cons ((), { s with sstate = f s.sstate }) nil }
 
-  let current : rt tactic = (); fun s ->
+  let current : P.e t = (); fun s ->
     { iolist = fun nil cons -> cons (s.rstate, s) nil }
 
-  let update (rstate : rt) : unit tactic = (); fun s ->
-    { iolist = fun nil cons -> cons ((), { s with rstate }) nil }
-
-  let put (w : wt) : unit tactic = (); fun s ->
-    { iolist = fun nil cons -> cons ((), { s with wstate = merge w s.wstate }) nil }
+  let put (w : P.w) : unit t = (); fun s ->
+    { iolist = fun nil cons -> cons ((), { s with wstate = P.wprod s.wstate w }) nil }
 
   (** List observation *)
 
-  let once (m : 'a tactic) : 'a tactic = (); fun s ->
+  let once (m : 'a t) : 'a t = (); fun s ->
     let m = m s in
     { iolist = fun nil cons -> m.iolist nil (fun x _ -> cons x nil) }
 
-  let break (f : exn -> bool) (m : 'a tactic) : 'a tactic = (); fun s ->
+  let break (f : exn -> bool) (m : 'a t) : 'a t = (); fun s ->
     let m = m s in
     { iolist = fun nil cons ->
       m.iolist nil (fun x next -> cons x (fun e -> if f e then nil e else next e))
@@ -284,7 +276,7 @@ struct
       NonLogical.bind m next
     }
 
-  let split (m : 'a tactic) : ('a, exn -> 'a t) list_view tactic = (); fun s ->
+  let split (m : 'a t) : ('a, exn -> 'a t) list_view t = (); fun s ->
     let m = m s in
     let rnil e = NonLogical.ret (Nil e) in
     let rcons p l = NonLogical.ret (Cons (p, l)) in
@@ -297,10 +289,10 @@ struct
       end }
 
   let run m r s =
-    let s = { wstate = empty; rstate = r; sstate = s } in
+    let s = { wstate = P.wunit; rstate = r; sstate = s } in
     let m = m s in
     let nil e = NonLogical.raise (TacticFailure e) in
-    let cons (x, s) _ = NonLogical.ret ((x, s.sstate), s.wstate) in
+    let cons (x, s) _ = NonLogical.ret (x, s.sstate, s.wstate) in
     m.iolist nil cons
 
  end
