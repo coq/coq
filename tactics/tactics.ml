@@ -4196,19 +4196,6 @@ module Simple = struct
 end
 
 
-(* [with_type c typ] constrains term [c] to have type [typ].  *)
-let with_type t typ env sigma =
-  (* spiwack: this function assumes that no evars can be created during
-      this sort of coercion.
-      If it is not the case it could produce bugs. We would need to add a handle
-      and add the new evars to it. *)
-  let my_type = Retyping.get_type_of env sigma t in
-  let j = Environ.make_judge t my_type in
-  let (sigma, j') =
-    Coercion.inh_conv_coerce_to true (Loc.ghost) env sigma j typ
-  in
-  (sigma, j'.Environ.uj_val)
-
 let update_handle handle init_defs post_defs =
   let filter ev _ = not (Evd.mem init_defs ev) in
   let fold ev evi accu = if filter ev evi then Evar.Set.add ev accu else accu in
@@ -4218,7 +4205,7 @@ let constr_of_open_constr handle (evars, c) env sigma concl =
   let () = handle := update_handle !handle sigma evars in
   let fold ev evi evd = if not (Evd.mem sigma ev) then Evd.add evd ev evi else evd in
   let sigma = Evd.fold fold evars sigma in
-  with_type c concl env sigma
+  Proofview.Refine.with_type env sigma c concl
 
 let refine_open_constr c env sigma concl =
   let handle = ref Evar.Set.empty in
