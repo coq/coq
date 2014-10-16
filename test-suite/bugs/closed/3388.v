@@ -5,7 +5,7 @@ Inductive test : bool -> bool -> Type :=
 .
 
 (* This does not work *)
-Fail Definition test_a (t : test true false) : test true false :=
+Definition test_a (t : test true false) : test true false :=
   match t with
     | test10 => test10
   end.
@@ -44,14 +44,14 @@ Definition test2_a (t : test2 true false) : test2 true false :=
   end.
 
 (* Accordingly, this now fails *)
-Fail Definition test2_b (t : test2 false true) : test2 false true :=
+Definition test2_b (t : test2 false true) : test2 false true :=
   match t with
     | test201 => test201
   end.
 
 
 (* This, too, fails *)
-Fail Definition test2_c x (t : test2 false x) : test2 false x :=
+Definition test2_c x (t : test2 false x) : test2 false x :=
   match t with
     | test201 => test201
   end.
