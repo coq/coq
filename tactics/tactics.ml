@@ -120,7 +120,7 @@ let introduction    = Tacmach.introduction
 let refine          = Tacmach.refine
 
 let convert_concl ?(check=true) ty k =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let conclty = Proofview.Goal.raw_concl gl in
@@ -139,7 +139,7 @@ let convert_concl ?(check=true) ty k =
   end
 
 let convert_hyp ?(check=true) d =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let ty = Proofview.Goal.raw_concl gl in
