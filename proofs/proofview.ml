@@ -1028,10 +1028,15 @@ struct
     !evdref
 
   let refine ?(unsafe = false) f = Goal.enter begin fun gl ->
-    let sigma = Evd.reset_future_goals (Goal.sigma gl) in
+    let sigma = Goal.sigma gl in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
-    let (sigma, c) = f sigma in
+    (** Save the [future_goals] state to restore them after the
+        refinement. *)
+    let prev_future_goals = Evd.future_goals sigma in
+    let prev_principal_goal = Evd.principal_future_goal sigma in
+    (** Create the refinement term *)
+    let (sigma, c) = f (Evd.reset_future_goals sigma) in
     let evs = Evd.future_goals sigma in
     let evkmain = Evd.principal_future_goal sigma in
     (** Check that the introduced evars are well-typed *)
@@ -1046,6 +1051,8 @@ struct
           let id = Evd.evar_ident gl.Goal.self sigma in
           Evd.rename evk id (Evd.define gl.Goal.self c sigma)
     in
+    (** Restore the [future goals] state. *)
+    let sigma = Evd.restore_future_goals sigma prev_future_goals prev_principal_goal in
     (** Select the goals *)
     let comb = undefined sigma (List.rev evs) in
     let sigma = List.fold_left mark_as_goal sigma comb in
