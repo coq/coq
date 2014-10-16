@@ -17,57 +17,30 @@ open Context
    evar is defined in the current evar_map, should not be accessed. *)
 
 (* type of the goals *)
-type goal = {
-  content : Evd.evar;      (* Corresponding evar. Allows to retrieve
-			      logical information once put together
-			      with an evar_map. *)
-  tags : string list;
-  (** Hereditary? tags to be displayed *)
-  cache : Evd.evar_map;
-  (** Invariant: for all sigma, if gl.cache == sigma and gl.content is actually
-      pertaining to sigma, then gl is nf-evarized in sigma. We use this not to
-      nf-evar goals too often. *)
-}
-(* spiwack: I don't deal with the tags, yet. It is a worthy discussion
-   whether we do want some tags displayed besides the goal or not. *)
+type goal = Evd.evar
 
-let pr_goal {content = e} = str "GOAL:" ++ Pp.int (Evar.repr e)
+let pr_goal e = str "GOAL:" ++ Pp.int (Evar.repr e)
 
-let goal_ident sigma {content = e} = Evd.evar_ident e sigma
+let goal_ident sigma e = Evd.evar_ident e sigma
 
-let dependent_goal_ident sigma {content = e} = Evd.dependent_evar_ident e sigma
+let dependent_goal_ident sigma e = Evd.dependent_evar_ident e sigma
 
 (* access primitive *)
 (* invariant : [e] must exist in [em] *)
-let content evars { content = e } = Evd.find evars e
+let content evars e = Evd.find evars e
 
 
 (* Builds a new (empty) goal with evar [e] *)
-let build e =
-  { content = e ;
-    tags = [];
-    cache = Evd.empty;
-  }
+let build e = e
 
-let mark_as_goal evd { content } =
+let mark_as_goal evd content =
   let info = Evd.find evd content in
   let info = { info with Evd.evar_source = (fst (info.Evd.evar_source),Evar_kinds.GoalEvar) } in
   let info = Typeclasses.mark_unresolvable info in
   Evd.add evd content info
 
-let uid {content = e} = string_of_int (Evar.repr e)
-let get_by_uid u =
-  (* this necessarily forget about tags.
-     when tags are to be implemented, they
-     should be done another way.
-     We could use the store in evar_extra,
-     for instance. *)
-  build (Evar.unsafe_of_int (int_of_string u))
-
-(* Builds a new goal with content evar [e] and
-   inheriting from goal [gl]*)
-let descendent gl e =
-  { gl with content = e; cache = Evd.empty }
+let uid e = string_of_int (Evar.repr e)
+let get_by_uid u = Evar.unsafe_of_int (int_of_string u)
 
 (* [advance sigma g] returns [Some g'] if [g'] is undefined and
     is the current avatar of [g] (for instance [g] was changed by [clear]
@@ -80,19 +53,18 @@ let descendent gl e =
    goal ([advance] is used to figure if a side effect has modified the
    goal) it terminates quickly. *)
 let rec advance sigma g =
-  let evi = Evd.find sigma g.content in
+  let evi = Evd.find sigma g in
   match evi.Evd.evar_body with
   | Evd.Evar_empty -> Some g
   | Evd.Evar_defined v ->
       if Option.default false (Evd.Store.get evi.Evd.evar_extra Evarutil.cleared) then
         let (e,_) = Term.destEvar v in
-        let g' = descendent g e in
-        advance sigma g'
+        advance sigma e
       else
         None
 
 let solution sigma g =
-  let evi = Evd.find sigma g.content in
+  let evi = Evd.find sigma g in
   match evi.Evd.evar_body with
   | Evd.Evar_empty -> None
   | Evd.Evar_defined v -> Some v
@@ -113,8 +85,8 @@ let contained_in_info sigma e evi =
 (* [depends_on sigma src tgt] checks whether the goal [src] appears as an
    existential variable in the definition of the goal [tgt] in [sigma]. *)
 let depends_on sigma src tgt =
-  let evi = Evd.find sigma tgt.content in
-  contained_in_info sigma src.content evi
+  let evi = Evd.find sigma tgt in
+  contained_in_info sigma src evi
 
 (* [unifiable sigma g l] checks whether [g] appears in another subgoal
    of [l]. The list [l] may contain [g], but it does not affect the
@@ -157,16 +129,12 @@ let enter f = (); fun env rdefs gl info ->
 
 let nf_enter f = (); fun env rdefs gl info ->
   let sigma = !rdefs in
-  if gl.cache == sigma then
-    f env sigma (Evd.evar_concl info) gl
-  else
-    let info = Evarutil.nf_evar_info sigma info in
-    let sigma = Evd.add sigma gl.content info in
-    let gl = { gl with cache = sigma } in
-    let () = rdefs := sigma in
-    let hyps = Evd.evar_filtered_hyps info in
-    let env = Environ.reset_with_named_context hyps env in
-    f env sigma (Evd.evar_concl info) gl
+  let info = Evarutil.nf_evar_info sigma info in
+  let sigma = Evd.add sigma gl info in
+  let () = rdefs := sigma in
+  let hyps = Evd.evar_filtered_hyps info in
+  let env = Environ.reset_with_named_context hyps env in
+  f env sigma (Evd.evar_concl info) gl
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the
@@ -244,11 +212,11 @@ module V82 = struct
   let build = build
 
   (* Instantiates a goal with an open term *)
-  let partial_solution sigma { content=evk } c =
+  let partial_solution sigma evk c =
     Evd.define evk c sigma
 
   (* Instantiates a goal with an open term, using name of goal for evk' *)
-  let partial_solution_to sigma { content=evk } { content=evk' } c =
+  let partial_solution_to sigma evk evk' c =
     let id = Evd.evar_ident evk sigma in
     Evd.rename evk' id (Evd.define evk c sigma)
 
@@ -289,12 +257,10 @@ module V82 = struct
 
   (* Used by the compatibility layer and typeclasses *)
   let nf_evar sigma gl =
-    if sigma == gl.cache then (gl, sigma)
-    else
-      let evi = content sigma gl in
-      let evi = Evarutil.nf_evar_info sigma evi in
-      let sigma = Evd.add sigma gl.content evi in
-      ({ gl with cache = sigma }, sigma)
+    let evi = content sigma gl in
+    let evi = Evarutil.nf_evar_info sigma evi in
+    let sigma = Evd.add sigma gl evi in
+    (gl, sigma)
 
   (* Goal represented as a type, doesn't take into account section variables *)
   let abstract_type sigma gl =
