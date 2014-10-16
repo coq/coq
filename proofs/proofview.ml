@@ -49,7 +49,10 @@ let init sigma =
   fun l ->
     let entry, v = aux l in
     (* Marks all the goal unresolvable for typeclasses. *)
-    entry, { v with solution = Typeclasses.mark_unresolvables v.solution }
+    let solution = Typeclasses.mark_unresolvables v.solution in
+    (* The created goal are not to be shelved. *)
+    let solution = Evd.reset_future_goals solution in
+    entry, { v with solution }
 
 type telescope =
   | TNil of Evd.evar_map
@@ -68,7 +71,10 @@ let dependent_init =
   fun t ->
     let entry, v = aux t in
     (* Marks all the goal unresolvable for typeclasses. *)
-    entry, { v with solution = Typeclasses.mark_unresolvables v.solution }
+    let solution = Typeclasses.mark_unresolvables v.solution in
+    (* The created goal are not to be shelved. *)
+    let solution = Evd.reset_future_goals solution in
+    entry, { v with solution }
 
 let initial_goals initial = initial
 
@@ -795,6 +801,8 @@ let numgoals =
 let in_proofview p k =
   k p.solution
 
+let reset_future_goals p =
+  { p with solution = Evd.reset_future_goals p.solution }
 
 
 module Notations = struct

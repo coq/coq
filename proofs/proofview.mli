@@ -313,6 +313,7 @@ module Monad : Monad.S with type +'a t = 'a tactic
 (*** Commands ***)
 
 val in_proofview : proofview -> (Evd.evar_map -> 'a) -> 'a
+val reset_future_goals : proofview -> proofview
 
 (* Notations for building tactics. *)
 module Notations : sig
