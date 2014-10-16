@@ -20,12 +20,6 @@ val get_by_uid : string -> goal
 (* Debugging help *)
 val pr_goal : goal -> Pp.std_ppcmds
 
-(* [advance sigma g] returns [Some g'] if [g'] is undefined and 
-    is the current avatar of [g] (for instance [g] was changed by [clear]
-    into [g']). It returns [None] if [g] has been (partially) solved. *)
-val advance : Evd.evar_map -> goal -> goal option
-
-
 (* Layer to implement v8.2 tactic engine ontop of the new architecture. 
    Types are different from what they used to be due to a change of the
    internal types. *)

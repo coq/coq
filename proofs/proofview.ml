@@ -159,8 +159,30 @@ let focus i j sp =
   let (new_comb, context) = focus_sublist i j sp.comb in
   ( { sp with comb = new_comb } , context )
 
+
+(* [advance sigma g] returns [Some g'] if [g'] is undefined and
+    is the current avatar of [g] (for instance [g] was changed by [clear]
+    into [g']). It returns [None] if [g] has been (partially) solved. *)
+(* spiwack: [advance] is probably performance critical, and the good
+   behaviour of its definition may depend sensitively to the actual
+   definition of [Evd.find]. Currently, [Evd.find] starts looking for
+   a value in the heap of undefined variable, which is small. Hence in
+   the most common case, where [advance] is applied to an unsolved
+   goal ([advance] is used to figure if a side effect has modified the
+   goal) it terminates quickly. *)
+let rec advance sigma g =
+  let evi = Evd.find sigma g in
+  match evi.Evd.evar_body with
+  | Evd.Evar_empty -> Some g
+  | Evd.Evar_defined v ->
+      if Option.default false (Evd.Store.get evi.Evd.evar_extra Evarutil.cleared) then
+        let (e,_) = Term.destEvar v in
+        advance sigma e
+      else
+        None
+
 (* Unfocuses a proofview with respect to a context. *)
-let undefined defs l = CList.map_filter (Goal.advance defs) l
+let undefined defs l = CList.map_filter (advance defs) l
 let unfocus c sp =
   { sp with comb = undefined sp.solution (unfocus_sublist c sp.comb) }
 
@@ -411,7 +433,7 @@ let on_advance g ~solved ~adv =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   Proof.get >>= fun step ->
-  match Goal.advance step.solution g with
+  match advance step.solution g with
   | None -> solved (* If [first] has been solved by side effect: do nothing. *)
   | Some g -> adv g
 
@@ -538,7 +560,7 @@ let tclINDEPENDENT tac =
 
 let tclNEWGOALS gls =
   Proof.modify begin fun step ->
-  let map gl = Goal.advance step.solution gl in
+  let map gl = advance step.solution gl in
   let gls = List.map_filter map gls in
   { step with comb = step.comb @ gls }
   end
@@ -707,6 +729,8 @@ let check_no_dependencies =
 (* [unshelve l p] adds all the goals in [l] at the end of the focused
    goals of p *)
 let unshelve l p =
+  (* advance the goals in case of clear *)
+  let l = CList.map_filter (fun g -> advance p.solution g) l in
   { p with comb = p.comb@l }
 
 (* Gives up on the goal under focus. Reports an unsafe status. Proofs
@@ -964,7 +988,7 @@ module Goal = struct
     Proof.get >>= fun step ->
     let sigma = step.solution in
     let map goal =
-      match Goal.advance sigma goal with
+      match advance sigma goal with
       | None -> None (** ppedrot: Is this check really necessary? *)
       | Some goal ->
         let gl =

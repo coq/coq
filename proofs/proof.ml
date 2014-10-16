@@ -321,12 +321,9 @@ let run_tactic env tac pr =
   let (_,tacticced_proofview,(status,(to_shelve,give_up))) = Proofview.apply env tac sp in
   let shelf =
     let pre_shelf = pr.shelf@to_shelve in
-    (* Compacting immediately: if someone shelves a goal, he probably
-       expects to solve it soon. *)
+    (* avoid already to count already solved goals as shelved. *)
     Proofview.in_proofview tacticced_proofview begin fun sigma ->
-      Option.List.flatten begin
-        List.map (fun g -> Goal.advance sigma g) pre_shelf
-      end
+      List.filter (fun g -> Evd.is_undefined sigma g) pre_shelf
     end
   in
   let given_up = pr.given_up@give_up in

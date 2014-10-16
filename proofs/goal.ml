@@ -24,27 +24,6 @@ let pr_goal e = str "GOAL:" ++ Pp.int (Evar.repr e)
 let uid e = string_of_int (Evar.repr e)
 let get_by_uid u = Evar.unsafe_of_int (int_of_string u)
 
-(* [advance sigma g] returns [Some g'] if [g'] is undefined and
-    is the current avatar of [g] (for instance [g] was changed by [clear]
-    into [g']). It returns [None] if [g] has been (partially) solved. *)
-(* spiwack: [advance] is probably performance critical, and the good
-   behaviour of its definition may depend sensitively to the actual
-   definition of [Evd.find]. Currently, [Evd.find] starts looking for
-   a value in the heap of undefined variable, which is small. Hence in
-   the most common case, where [advance] is applied to an unsolved
-   goal ([advance] is used to figure if a side effect has modified the
-   goal) it terminates quickly. *)
-let rec advance sigma g =
-  let evi = Evd.find sigma g in
-  match evi.Evd.evar_body with
-  | Evd.Evar_empty -> Some g
-  | Evd.Evar_defined v ->
-      if Option.default false (Evd.Store.get evi.Evd.evar_extra Evarutil.cleared) then
-        let (e,_) = Term.destEvar v in
-        advance sigma e
-      else
-        None
-
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the
    internal types. *)
