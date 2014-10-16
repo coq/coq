@@ -4196,24 +4196,6 @@ module Simple = struct
 end
 
 
-let update_handle handle init_defs post_defs =
-  let filter ev _ = not (Evd.mem init_defs ev) in
-  let fold ev evi accu = if filter ev evi then Evar.Set.add ev accu else accu in
-  Evd.fold_undefined fold post_defs handle
-
-let constr_of_open_constr handle (evars, c) env sigma concl =
-  let () = handle := update_handle !handle sigma evars in
-  let fold ev evi evd = if not (Evd.mem sigma ev) then Evd.add evd ev evi else evd in
-  let sigma = Evd.fold fold evars sigma in
-  Proofview.Refine.with_type env sigma c concl
-
-let refine_open_constr c env sigma concl =
-  let handle = ref Evar.Set.empty in
-  let sigma, pf = constr_of_open_constr handle c env sigma concl in
-  let sigma = Evarconv.consider_remaining_unif_problems env sigma in
-  let subgoals = Evar.Set.elements !handle in
-  (subgoals, pf, sigma)
-
 (** Tacticals defined directly in term of Proofview *)
 module New = struct
   open Proofview.Notations
@@ -4223,19 +4205,12 @@ module New = struct
   open Genredexpr
   open Locus
 
-  let refine c =
-    Proofview.Goal.nf_enter begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
-    let concl = Proofview.Goal.concl gl in
-    let (gls, pf, sigma) = refine_open_constr c env sigma concl in
-    Proofview.V82.tclEVARS sigma <*>
-    Proofview.Refine.refine ~unsafe:true (fun h -> (h, pf)) <*>
-    Proofview.tclNEWGOALS gls <*>
-      Proofview.V82.tactic (reduce
-         (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
-         {onhyps=None; concl_occs=AllOccurrences }
-      )
-    end
+  let reduce_after_refine =
+    Proofview.V82.tactic (reduce
+      (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
+      {onhyps=None; concl_occs=AllOccurrences })
 
+  let refine ?unsafe c =
+    Proofview.Refine.refine ?unsafe c <*>
+    reduce_after_refine
 end

@@ -349,18 +349,6 @@ END
 (**********************************************************************)
 (* Refine                                                             *)
 
-
-let refine_red_flags =
-  Genredexpr.Lazy {
-    Genredexpr.rBeta=true;
-    rIota=true;
-    rZeta=false;
-    rDelta=false;
-    rConst=[];
-  }
-
-let refine_locs = { Locus.onhyps=None; concl_occs=Locus.AllOccurrences }
-
 let refine_tac {Glob_term.closure=closure;term=term} =
   Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
@@ -373,8 +361,7 @@ let refine_tac {Glob_term.closure=closure;term=term} =
       Pretyping.ltac_idents = closure.Glob_term.idents;
     } in
     let update evd = Pretyping.understand_ltac flags env evd lvar tycon term in
-    Proofview.Refine.refine ~unsafe:false update <*>
-    Proofview.V82.tactic (reduce refine_red_flags refine_locs)
+    Tactics.New.refine ~unsafe:false update
   end
 
 TACTIC EXTEND refine

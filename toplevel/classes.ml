@@ -75,8 +75,6 @@ let type_ctx_instance evars env ctx inst subst =
     | [] -> subst
   in aux (subst, []) inst (List.rev ctx)
 
-let refine_ref = ref (fun _ -> assert(false))
-
 let id_of_class cl =
   match cl.cl_impl with
     | ConstRef kn -> let _,_,l = repr_con kn in Label.to_id l
@@ -295,12 +293,25 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	    else
 	      (Flags.silently 
 	       (fun () ->
-		Lemmas.start_proof id kind (Evd.from_env ~ctx:(Evd.evar_universe_context evm) Environ.empty_env) termtype
+                  (* spiwack: it is hard to reorder the actions to do
+                     the pretyping after the proof has opened. As a
+                     consequence, we use the low-level primitives to code
+                     the refinement manually.*)
+		let gls = Evd.future_goals evm in
+                let evm = Evd.reset_future_goals evm in
+                Lemmas.start_proof id kind evm termtype
 		(Lemmas.mk_hook
                   (fun _ -> instance_hook k pri global imps ?hook));
                  (* spiwack: I don't know what to do with the status here. *)
-		if not (Option.is_empty term) then 
-		  ignore (Pfedit.by (!refine_ref (evm, Option.get term)))
+		if not (Option.is_empty term) then
+                  let init_refine =
+                    Tacticals.New.tclTHENLIST [
+                      Proofview.Refine.refine (fun evm -> evm, Option.get term);
+                      Proofview.tclNEWGOALS gls;
+                      Tactics.New.reduce_after_refine;
+                    ]
+                  in
+		  ignore (Pfedit.by init_refine)
 		else if Flags.is_auto_intros () then
 		  ignore (Pfedit.by (Tacticals.New.tclDO len Tactics.intro));
 		(match tac with Some tac -> ignore (Pfedit.by tac) | None -> ())) ();

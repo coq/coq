@@ -1270,17 +1270,17 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
     | End_patt (_,_) , _ :: _  ->
 	anomaly ~label:"execute_cases " (Pp.str "End of branch with garbage left")
 
-let understand_my_constr c gls =
-  let env = pf_env gls in
+let understand_my_constr env sigma c concl =
+  let env = env in
   let rawc = Detyping.detype false [] env Evd.empty c in
   let rec frob = function
     | GEvar _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark Evar_kinds.Expand,Misctypes.IntroAnonymous,None)
     | rc ->  map_glob_constr frob rc
   in
-  Pretyping.understand_tcc env (sig_sig gls) ~expected_type:(Pretyping.OfType (pf_concl gls)) (frob rawc)
+  Pretyping.understand_tcc env sigma ~expected_type:(Pretyping.OfType concl) (frob rawc)
 
 let my_refine c gls =
-  let oc = understand_my_constr c gls in
+  let oc sigma = understand_my_constr (pf_env gls) sigma c (pf_concl gls) in
   Proofview.V82.of_tactic (Tactics.New.refine oc) gls
 
 (* end focus/claim *)

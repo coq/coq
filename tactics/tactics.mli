@@ -436,10 +436,12 @@ end
 
 module New : sig
 
-  val refine : Evd.open_constr -> unit Proofview.tactic
-  (** DEPRECATED. Legacy refine tactic. You should not be using this code, as
-      it may be unsound to manipulate evar maps without care. Use the
-      [Proofview.Refine] module instead. *)
+  val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map*constr) -> unit Proofview.tactic
+  (** [refine ?unsafe c] is [Proofview.Refine.refine ?unsafe c]
+      followed by beta-iota-reduction of the conclusion. *)
+
+  val reduce_after_refine : unit Proofview.tactic
+  (** The reducing tactic called after {!refine}. *)
 
   open Proofview
   val exact_proof : Constrexpr.constr_expr -> unit tactic
