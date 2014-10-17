@@ -598,7 +598,7 @@ let new_interp_constr ist c k =
   let open Proofview in
   Proofview.Goal.enter begin fun gl ->
     let (sigma, c) = interp_constr ist (Goal.env gl) (Goal.sigma gl) c in
-    Proofview.tclTHEN (Proofview.V82.tclEVARS sigma) (k c)
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (k c)
   end
 
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
@@ -1135,7 +1135,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
           let concl = Proofview.Goal.concl gl in
           let goal = Proofview.Goal.goal gl in
           let (sigma, arg) = interp_genarg ist env sigma concl goal x in
-          Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return arg)
+          Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return arg)
         end
       | _ as tag -> (** Special treatment. TODO: use generic handler  *)
         Ftactic.nf_enter begin fun gl ->
@@ -1154,17 +1154,17 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl
               in
-              Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return v)
+              Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return v)
           | OpenConstrArgType ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl in
-              Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return v)
+              Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return v)
           | ConstrMayEvalArgType ->
               let (sigma,c_interp) =
                 interp_constr_may_eval ist env sigma
                   (out_gen (glbwit wit_constr_may_eval) x)
               in
-              Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return (Value.of_constr c_interp))
+              Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (Value.of_constr c_interp))
           | ListArgType ConstrArgType ->
               let wit = glbwit (wit_list wit_constr) in
               let (sigma,l_interp) = Tacmach.New.of_old begin fun gl ->
@@ -1173,7 +1173,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
                   (out_gen wit x)
                   (project gl)
               end gl in
-              Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return (in_gen (topwit (wit_list wit_genarg)) l_interp))
+              Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (in_gen (topwit (wit_list wit_genarg)) l_interp))
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
               Ftactic.return (
@@ -1208,7 +1208,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
               else
                 let goal = Proofview.Goal.goal gl in
                 let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
-                Ftactic.(lift (Proofview.V82.tclEVARS newsigma) <*> return v)
+                Ftactic.(lift (Proofview.Unsafe.tclEVARS newsigma) <*> return v)
           | _ -> assert false
         end
       in
@@ -1254,7 +1254,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
           Evd.MonadR.List.map_right
             (fun a sigma -> interp_genarg ist env sigma concl goal a) l goal_sigma
         in
-        Proofview.V82.tclEVARS sigma <*>
+        Proofview.Unsafe.tclEVARS sigma <*>
         catch_error_tac trace (tac args ist)
       end
 
@@ -1293,7 +1293,7 @@ and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
         let sigma = Proofview.Goal.sigma gl in
         let goal = Proofview.Goal.goal gl in
         let (sigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} arg in
-        Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return v)
+        Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return v)
       end
   | Reference r -> interp_ltac_reference dloc false ist r
   | ConstrMayEval c ->
@@ -1301,7 +1301,7 @@ and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let (sigma,c_interp) = interp_constr_may_eval ist env sigma c in
-        Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return (Value.of_constr c_interp))
+        Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (Value.of_constr c_interp))
       end
   | UConstr c ->
       Ftactic.enter begin fun gl ->
@@ -1335,7 +1335,7 @@ and interp_tacarg ist arg : typed_generic_argument Ftactic.t =
         let (sigma,c_interp) =
           Pretyping.understand_ltac constr_flags env sigma vars WithoutTypeConstraint term
         in
-        Ftactic.(lift (Proofview.V82.tclEVARS sigma) <*> return (Value.of_constr c_interp))
+        Ftactic.(lift (Proofview.Unsafe.tclEVARS sigma) <*> return (Value.of_constr c_interp))
       end
   | TacNumgoals ->
       Ftactic.lift begin
@@ -1688,7 +1688,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma,l' = interp_intro_pattern_list_as_list ist env sigma l in
-        Proofview.V82.tclEVARS sigma <*> Tactics.intros_patterns l'
+        Proofview.Unsafe.tclEVARS sigma <*> Tactics.intros_patterns l'
       end
   | TacIntroMove (ido,hto) ->
       Proofview.Goal.enter begin fun gl ->
@@ -1784,7 +1784,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let sigma, ipat = interp_intro_pattern_option ist env sigma ipat in
         let tac = Option.map (interp_tactic ist) t in
-        Proofview.V82.tclEVARS sigma <*> Tactics.forward b tac ipat c
+        Proofview.Unsafe.tclEVARS sigma <*> Tactics.forward b tac ipat c
       end
   | TacGeneralize cl ->
       let tac arg = Proofview.V82.tactic (Tactics.Simple.generalize_gen arg) in
@@ -1792,7 +1792,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
-        Proofview.V82.tclEVARS sigma <*> tac cl
+        Proofview.Unsafe.tclEVARS sigma <*> tac cl
       end
   | TacGeneralizeDep c ->
       (new_interp_constr ist c)
@@ -1814,7 +1814,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
             let with_eq = if b then None else Some (true,id) in
             Tactics.letin_tac with_eq na c None cl
           in
-	  Proofview.V82.tclEVARS sigma <*>
+	  Proofview.Unsafe.tclEVARS sigma <*>
             let_tac b (interp_fresh_name ist env sigma na) c_interp clp eqpat
         else
         (* We try to keep the pattern structure as much as possible *)
@@ -1992,7 +1992,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
         let sigma,ids = interp_or_and_intro_pattern_option ist env sigma ids in
-        Proofview.V82.tclEVARS sigma <*> Inv.dinv k c_interp ids dqhyps
+        Proofview.Unsafe.tclEVARS sigma <*> Inv.dinv k c_interp ids dqhyps
       end
   | TacInversion (NonDepInversion (k,idl,ids),hyp) ->
       Proofview.Goal.enter begin fun gl ->
@@ -2001,7 +2001,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let hyps = interp_hyp_list ist env sigma idl in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
         let sigma, ids = interp_or_and_intro_pattern_option ist env sigma ids in
-        Proofview.V82.tclEVARS sigma <*> Inv.inv_clause k ids hyps dqhyps
+        Proofview.Unsafe.tclEVARS sigma <*> Inv.inv_clause k ids hyps dqhyps
       end
   | TacInversion (InversionUsing (c,idl),hyp) ->
       Proofview.Goal.enter begin fun gl ->
@@ -2010,7 +2010,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let (sigma,c_interp) = interp_constr ist env sigma c in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
         let hyps = interp_hyp_list ist env sigma idl in
-        Proofview.V82.tclEVARS sigma <*>
+        Proofview.Unsafe.tclEVARS sigma <*>
         Leminv.lemInv_clause dqhyps
           c_interp
           hyps

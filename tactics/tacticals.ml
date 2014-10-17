@@ -494,7 +494,7 @@ module New = struct
           else
             tclUNIT ()
         in
-        Proofview.V82.tclEVARS sigma <*> tac x <*> check_evars_if
+        Proofview.Unsafe.tclEVARS sigma <*> tac x <*> check_evars_if
 
   let tclTIMEOUT n t =
     Proofview.tclOR
@@ -684,7 +684,7 @@ module New = struct
       let env = Proofview.Goal.env gl in
       let sigma = Proofview.Goal.sigma gl in
       let (sigma, c) = Evd.fresh_global env sigma ref in
-      Proofview.V82.tclEVARS sigma <*> (tac c)
+      Proofview.Unsafe.tclEVARS sigma <*> (tac c)
     end
 
 end

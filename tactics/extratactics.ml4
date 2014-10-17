@@ -34,12 +34,12 @@ TACTIC EXTEND admit
 END
 
 let replace_in_clause_maybe_by (sigma,c1) c2 cl  tac =
-  Proofview.V82.tclEVARS sigma <*>
+  Proofview.Unsafe.tclEVARS sigma <*>
     (replace_in_clause_maybe_by c1 c2 cl)
     (Option.map Tacinterp.eval_tactic tac)
 
 let replace_term dir_opt (sigma,c) cl =
-  Proofview.V82.tclEVARS sigma <*>
+  Proofview.Unsafe.tclEVARS sigma <*>
     (replace_term dir_opt c) cl
 
 TACTIC EXTEND replace
@@ -202,7 +202,7 @@ END
 
 let onSomeWithHoles tac = function
   | None -> tac None
-  | Some c -> Proofview.V82.tclEVARS c.sigma <*> tac (Some c.it)
+  | Some c -> Proofview.Unsafe.tclEVARS c.sigma <*> tac (Some c.it)
 
 TACTIC EXTEND contradiction
  [ "contradiction" constr_with_bindings_opt(c) ] ->
@@ -246,7 +246,7 @@ END
 
 let rewrite_star clause orient occs (sigma,c) (tac : glob_tactic_expr option) =
   let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
-  Proofview.V82.tclEVARS sigma <*>
+  Proofview.Unsafe.tclEVARS sigma <*>
     general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true
 
 TACTIC EXTEND rewrite_star

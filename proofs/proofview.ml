@@ -864,6 +864,19 @@ let in_proofview p k =
 let reset_future_goals p =
   { p with solution = Evd.reset_future_goals p.solution }
 
+module Unsafe = struct
+
+  (* A [Proofview.tactic] version of [Refiner.tclEVARS] *)
+  let tclEVARS evd =
+    Pv.modify (fun ps -> { ps with solution = evd })
+
+  let tclEVARSADVANCE evd =
+    Pv.modify (fun ps -> { solution = evd; comb = undefined evd ps.comb })
+
+  let tclEVARUNIVCONTEXT ctx = 
+    Pv.modify (fun ps -> { ps with solution = Evd.set_universe_context ps.solution ctx })
+
+end
 
 module Notations = struct
   let (>>=) = tclBIND
@@ -876,115 +889,8 @@ open Notations
 module Monad =
   Monad.Make(struct type +'a t = 'a tactic let return=tclUNIT let (>>=)=(>>=) end)
 
-
-(*** Compatibility layer with <= 8.2 tactics ***)
-module V82 = struct
-  type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
-
-  let tactic tac =
-    (* spiwack: we ignore the dependencies between goals here,
-       expectingly preserving the semantics of <= 8.2 tactics *)
-    (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-    let (>>=) = Proof.bind in
-    Pv.get >>= fun ps ->
-    try
-      let tac gl evd = 
-        let glsigma  =
-          tac { Evd.it = gl ; sigma = evd; }  in
-        let sigma = glsigma.Evd.sigma in
-        let g = glsigma.Evd.it in
-        ( g, sigma )
-      in
-        (* Old style tactics expect the goals normalized with respect to evars. *)
-      let (initgoals,initevd) =
-        Evd.Monad.List.map (fun g s -> Goal.V82.nf_evar s g) ps.comb ps.solution
-      in
-      let (goalss,evd) = Evd.Monad.List.map tac initgoals initevd in
-      let sgs = List.flatten goalss in
-      Pv.set { solution = evd; comb = sgs; }
-    with e when catchable_exception e ->
-      let e = Errors.push e in
-      tclZERO e
-
-
-  (* normalises the evars in the goals, and stores the result in
-     solution. *)
-  let nf_evar_goals =
-    Pv.modify begin fun ps ->
-    let map g s = Goal.V82.nf_evar s g in
-    let (goals,evd) = Evd.Monad.List.map map ps.comb ps.solution in
-    { solution = evd; comb = goals; }
-    end
-
-  (* A [Proofview.tactic] version of [Refiner.tclEVARS] *)
-  let tclEVARS evd =
-    Pv.modify (fun ps -> { ps with solution = evd })
-
-  let tclEVARSADVANCE evd =
-    Pv.modify (fun ps -> { solution = evd; comb = undefined evd ps.comb })
-
-  let tclEVARUNIVCONTEXT ctx = 
-    Pv.modify (fun ps -> { ps with solution = Evd.set_universe_context ps.solution ctx })
-      
-  let has_unresolved_evar pv =
-    Evd.has_undefined pv.solution
-
-  (* Main function in the implementation of Grab Existential Variables.*)
-  let grab pv =
-    let undef = Evd.undefined_map pv.solution in
-    let goals = List.rev_map fst (Evar.Map.bindings undef) in
-    { pv with comb = goals }
-      
-    
-
-  (* Returns the open goals of the proofview together with the evar_map to 
-     interprete them. *)
-  let goals { comb = comb ; solution = solution; } =
-   { Evd.it = comb ; sigma = solution }
-
-  let top_goals initial { solution=solution; } =
-    let goals = List.map (fun (t,_) -> fst (Term.destEvar t)) initial in
-    { Evd.it = goals ; sigma=solution; }
-
-  let top_evars initial =
-    let evars_of_initial (c,_) =
-      Evar.Set.elements (Evd.evars_of_term c)
-    in
-    List.flatten (List.map evars_of_initial initial)
-
-  let instantiate_evar n com pv =
-    let (evk,_) =
-      let evl = Evarutil.non_instantiated pv.solution in
-      let evl = Evar.Map.bindings evl in
-      if (n <= 0) then
-	Errors.error "incorrect existential variable index"
-      else if List.length evl < n then
-	  Errors.error "not so many uninstantiated existential variables"
-      else
-	List.nth evl (n-1) 
-    in
-    { pv with
-	solution = Evar_refiner.instantiate_pf_com evk com pv.solution }
-
-  let of_tactic t gls =
-    try
-      let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] } in
-      let (_,final,_) = apply (Goal.V82.env gls.Evd.sigma gls.Evd.it) t init in
-      { Evd.sigma = final.solution ; it = final.comb }
-    with Proofview_monad.TacticFailure e as src ->
-      let src = Errors.push src in
-      let e = Backtrace.app_backtrace ~src ~dst:e in
-      raise e
-
-  let put_status = Status.put
-
-  let catchable_exception = catchable_exception
-
-  let wrap_exceptions f =
-    try f ()
-    with e when catchable_exception e -> let e = Errors.push e in tclZERO e
-
-end
+(* To avoid shadowing by the local [Goal] module *)
+module GoalV82 = Goal.V82
 
 module Goal = struct
 
@@ -1022,7 +928,7 @@ module Goal = struct
       tclEVARMAP >>= fun sigma ->
       try
         let (gl, sigma) = nf_gmake env sigma goal in
-        tclTHEN (V82.tclEVARS sigma) (f gl)
+        tclTHEN (Unsafe.tclEVARS sigma) (f gl)
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
@@ -1032,7 +938,7 @@ module Goal = struct
     Env.get >>= fun env ->
     tclEVARMAP >>= fun sigma ->
     let (gl,sigma) = nf_gmake env sigma self in
-    tclTHEN (V82.tclEVARS sigma) (tclUNIT gl)
+    tclTHEN (Unsafe.tclEVARS sigma) (tclUNIT gl)
 
   let gmake env sigma goal =
     let info = Evd.find sigma goal in
@@ -1148,3 +1054,106 @@ let tclLIFT = Proof.lift
 
 let tclCHECKINTERRUPT =
    tclLIFT (NonLogical.make Control.check_for_interrupt)
+
+
+
+
+
+(*** Compatibility layer with <= 8.2 tactics ***)
+module V82 = struct
+  type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
+
+  let tactic tac =
+    (* spiwack: we ignore the dependencies between goals here,
+       expectingly preserving the semantics of <= 8.2 tactics *)
+    (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+    let (>>=) = Proof.bind in
+    Pv.get >>= fun ps ->
+    try
+      let tac gl evd = 
+        let glsigma  =
+          tac { Evd.it = gl ; sigma = evd; }  in
+        let sigma = glsigma.Evd.sigma in
+        let g = glsigma.Evd.it in
+        ( g, sigma )
+      in
+        (* Old style tactics expect the goals normalized with respect to evars. *)
+      let (initgoals,initevd) =
+        Evd.Monad.List.map (fun g s -> GoalV82.nf_evar s g) ps.comb ps.solution
+      in
+      let (goalss,evd) = Evd.Monad.List.map tac initgoals initevd in
+      let sgs = List.flatten goalss in
+      Pv.set { solution = evd; comb = sgs; }
+    with e when catchable_exception e ->
+      let e = Errors.push e in
+      tclZERO e
+
+
+  (* normalises the evars in the goals, and stores the result in
+     solution. *)
+  let nf_evar_goals =
+    Pv.modify begin fun ps ->
+    let map g s = GoalV82.nf_evar s g in
+    let (goals,evd) = Evd.Monad.List.map map ps.comb ps.solution in
+    { solution = evd; comb = goals; }
+    end
+      
+  let has_unresolved_evar pv =
+    Evd.has_undefined pv.solution
+
+  (* Main function in the implementation of Grab Existential Variables.*)
+  let grab pv =
+    let undef = Evd.undefined_map pv.solution in
+    let goals = List.rev_map fst (Evar.Map.bindings undef) in
+    { pv with comb = goals }
+      
+    
+
+  (* Returns the open goals of the proofview together with the evar_map to 
+     interprete them. *)
+  let goals { comb = comb ; solution = solution; } =
+   { Evd.it = comb ; sigma = solution }
+
+  let top_goals initial { solution=solution; } =
+    let goals = List.map (fun (t,_) -> fst (Term.destEvar t)) initial in
+    { Evd.it = goals ; sigma=solution; }
+
+  let top_evars initial =
+    let evars_of_initial (c,_) =
+      Evar.Set.elements (Evd.evars_of_term c)
+    in
+    List.flatten (List.map evars_of_initial initial)
+
+  let instantiate_evar n com pv =
+    let (evk,_) =
+      let evl = Evarutil.non_instantiated pv.solution in
+      let evl = Evar.Map.bindings evl in
+      if (n <= 0) then
+	Errors.error "incorrect existential variable index"
+      else if List.length evl < n then
+	  Errors.error "not so many uninstantiated existential variables"
+      else
+	List.nth evl (n-1) 
+    in
+    { pv with
+	solution = Evar_refiner.instantiate_pf_com evk com pv.solution }
+
+  let of_tactic t gls =
+    try
+      let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] } in
+      let (_,final,_) = apply (GoalV82.env gls.Evd.sigma gls.Evd.it) t init in
+      { Evd.sigma = final.solution ; it = final.comb }
+    with Proofview_monad.TacticFailure e as src ->
+      let src = Errors.push src in
+      let e = Backtrace.app_backtrace ~src ~dst:e in
+      raise e
+
+  let put_status = Status.put
+
+  let catchable_exception = catchable_exception
+
+  let wrap_exceptions f =
+    try f ()
+    with e when catchable_exception e -> let e = Errors.push e in tclZERO e
+
+end

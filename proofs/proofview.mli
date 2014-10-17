@@ -307,6 +307,19 @@ val tclTIME : string option -> 'a tactic -> 'a tactic
 (** [mark_as_unsafe] signals that the current tactic is unsafe. *)
 val mark_as_unsafe : unit tactic
 
+module Unsafe : sig
+
+  (* Assumes the new evar_map does not change existing goals *)
+  val tclEVARS : Evd.evar_map -> unit tactic
+    
+  (* Assumes the new evar_map might be solving some existing goals *)
+  val tclEVARSADVANCE : Evd.evar_map -> unit tactic
+
+  (* Set the evar universe context *)
+  val tclEVARUNIVCONTEXT : Evd.evar_universe_context -> unit tactic
+
+end
+
 module Monad : Monad.S with type +'a t = 'a tactic
 
 (*** Commands ***)
@@ -325,60 +338,6 @@ module Notations : sig
   val (<+>) : 'a tactic -> 'a tactic -> 'a tactic
 end
 
-
-(*** Compatibility layer with <= 8.2 tactics ***)
-module V82 : sig
-  type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
-  val tactic : tac -> unit tactic
-
-  (* normalises the evars in the goals, and stores the result in
-     solution. *)
-  val nf_evar_goals : unit tactic
-    
-  (* Assumes the new evar_map does not change existing goals *)
-  val tclEVARS : Evd.evar_map -> unit tactic
-    
-  (* Assumes the new evar_map might be solving some existing goals *)
-  val tclEVARSADVANCE : Evd.evar_map -> unit tactic
-
-  (* Set the evar universe context *)
-  val tclEVARUNIVCONTEXT : Evd.evar_universe_context -> unit tactic
-
-  val has_unresolved_evar : proofview -> bool
-
-  (* Main function in the implementation of Grab Existential Variables.
-     Resets the proofview's goals so that it contains all unresolved evars
-     (in chronological order of insertion). *)
-  val grab : proofview -> proofview
-
-  (* Returns the open goals of the proofview together with the evar_map to 
-     interprete them. *)
-  val goals : proofview -> Evar.t list Evd.sigma
-
-  val top_goals : entry -> proofview -> Evar.t list Evd.sigma
-  
-  (* returns the existential variable used to start the proof *)
-  val top_evars : entry -> Evd.evar list
-    
-  (* Implements the Existential command *)
-  val instantiate_evar : int -> Constrexpr.constr_expr -> proofview -> proofview
-
-  (* Caution: this function loses quite a bit of information. It
-     should be avoided as much as possible.  It should work as
-     expected for a tactic obtained from {!V82.tactic} though. *)
-  val of_tactic : 'a tactic -> tac
-
-  (* marks as unsafe if the argument is [false] *)
-  val put_status : bool -> unit tactic
-
-  (* exception for which it is deemed to be safe to transmute into
-     tactic failure. *)
-  val catchable_exception : exn -> bool
-
-  (* transforms every Ocaml (catchable) exception into a failure in
-     the monad. *)
-  val wrap_exceptions : (unit -> 'a tactic) -> 'a tactic
-end
 
 (* The module goal provides an interface for goal-dependent tactics. *)
 (* spiwack: there are still parts of the code which depend on proofs/goal.ml.
@@ -506,3 +465,51 @@ end
 
 (* [tclLIFT c] includes the non-logical command [c] in a tactic. *)
 val tclLIFT : 'a NonLogical.t -> 'a tactic
+
+
+
+
+(*** Compatibility layer with <= 8.2 tactics ***)
+module V82 : sig
+  type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
+  val tactic : tac -> unit tactic
+
+  (* normalises the evars in the goals, and stores the result in
+     solution. *)
+  val nf_evar_goals : unit tactic
+
+  val has_unresolved_evar : proofview -> bool
+
+  (* Main function in the implementation of Grab Existential Variables.
+     Resets the proofview's goals so that it contains all unresolved evars
+     (in chronological order of insertion). *)
+  val grab : proofview -> proofview
+
+  (* Returns the open goals of the proofview together with the evar_map to 
+     interprete them. *)
+  val goals : proofview -> Evar.t list Evd.sigma
+
+  val top_goals : entry -> proofview -> Evar.t list Evd.sigma
+  
+  (* returns the existential variable used to start the proof *)
+  val top_evars : entry -> Evd.evar list
+    
+  (* Implements the Existential command *)
+  val instantiate_evar : int -> Constrexpr.constr_expr -> proofview -> proofview
+
+  (* Caution: this function loses quite a bit of information. It
+     should be avoided as much as possible.  It should work as
+     expected for a tactic obtained from {!V82.tactic} though. *)
+  val of_tactic : 'a tactic -> tac
+
+  (* marks as unsafe if the argument is [false] *)
+  val put_status : bool -> unit tactic
+
+  (* exception for which it is deemed to be safe to transmute into
+     tactic failure. *)
+  val catchable_exception : exn -> bool
+
+  (* transforms every Ocaml (catchable) exception into a failure in
+     the monad. *)
+  val wrap_exceptions : (unit -> 'a tactic) -> 'a tactic
+end

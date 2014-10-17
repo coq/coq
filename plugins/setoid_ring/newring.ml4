@@ -834,7 +834,7 @@ let ring_lookup (f:glob_tactic_expr) lH rl t =
       let rl = carg (make_term_list env evdref e.ring_carrier rl) in
       let lH = carg (make_hyp_list env evdref lH) in
       let ring = ltac_ring_structure e in
-      Proofview.tclTHEN (Proofview.V82.tclEVARS !evdref) (ltac_apply f (ring@[lH;rl]))
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (ring@[lH;rl]))
     with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
@@ -1150,7 +1150,7 @@ let field_lookup (f:glob_tactic_expr) lH rl t =
       let rl = carg (make_term_list env evdref e.field_carrier rl) in
       let lH = carg (make_hyp_list env evdref lH) in
       let field = ltac_field_structure e in
-      Proofview.tclTHEN (Proofview.V82.tclEVARS !evdref) (ltac_apply f (field@[lH;rl]))
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (field@[lH;rl]))
     with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 

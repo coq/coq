@@ -1478,13 +1478,13 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
 	match is_hyp, prf with
 	| Some id, Some p ->
             let tac = Proofview.Refine.refine (fun h -> (h, p)) <*> Proofview.tclNEWGOALS gls in
-            Proofview.V82.tclEVARS undef <*>
+            Proofview.Unsafe.tclEVARS undef <*>
 	    assert_replacing id newt tac
 	| Some id, None ->
-            Proofview.V82.tclEVARS undef <*>
+            Proofview.Unsafe.tclEVARS undef <*>
             convert_hyp_no_check (id, None, newt)
 	| None, Some p ->
-            Proofview.V82.tclEVARS undef <*>
+            Proofview.Unsafe.tclEVARS undef <*>
             Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
             let make sigma =
@@ -1494,7 +1494,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
             Proofview.Refine.refine make <*> Proofview.tclNEWGOALS gls
             end
 	| None, None ->
-            Proofview.V82.tclEVARS undef <*>
+            Proofview.Unsafe.tclEVARS undef <*>
             convert_concl_no_check newt DEFAULTcast
   in
   let beta_red _ sigma c = Reductionops.nf_betaiota sigma c in
