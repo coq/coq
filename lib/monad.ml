@@ -70,32 +70,49 @@ module Make (M:Def) : S with type +'a t = 'a M.t = struct
 
   module List = struct
 
+    (* The combinators are loop-unrolled to spare a some monadic binds
+       (it is a common optimisation to treat the last of a list of
+       bind specially) and hopefully gain some efficiency using fewer
+       jump. *)
+
     let rec map f = function
       | [] -> return []
-      | a::l ->
+      | [a] ->
           f a >>= fun a' ->
+          return [a']
+      | a::b::l ->
+          f a >>= fun a' ->
+          f b >>= fun b' ->
           map f l >>= fun l' ->
-          return (a'::l')
+          return (a'::b'::l')
 
     let rec map_right f = function
       | [] -> return []
-      | a::l ->
-          map f l >>= fun l' ->
+      | [a] ->
           f a >>= fun a' ->
-          return (a'::l')
+          return [a']
+      | a::b::l ->
+          map f l >>= fun l' ->
+          f b >>= fun b' ->
+          f a >>= fun a' ->
+          return (a'::b'::l')
 
     let rec fold_right f l x =
       match l with
       | [] -> return x
-      | a::l ->
+      | [a] -> f a x
+      | a::b::l ->
           fold_right f l x >>= fun acc ->
+          f b acc >>= fun acc ->
           f a acc
 
     let rec fold_left f x = function
       | [] -> return x
-      | a::l ->
+      | [a] -> f x a
+      | a::b::l ->
           f x a >>= fun x' ->
-          fold_left f x' l
+          f x' b >>= fun x'' ->
+          fold_left f x'' l
   end
 
 end
