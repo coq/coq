@@ -103,6 +103,8 @@ module Giveup = struct
 end
 
 
+module Monad = Monad.Make(struct type 'a t = 'a Proof.t let (>>=) = Proof.bind let return = Proof.ret end)
+
 type entry = (Term.constr * Term.types) list
 
 let proofview p =
@@ -452,40 +454,6 @@ let _ = Errors.register_handler begin function
   | _ -> raise Errors.Unhandled
 end
 
-(* A monadic list iteration function *)
-(* spiwack: may be moved to a generic libray, or maybe as extracted
-   code for extra efficiency? *)
-(* val list_iter : 'a list -> 'b -> ('a -> 'b -> 'b tactic) -> 'b tactic *)
-let rec list_iter l s i =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = tclBIND in
-  match l with
-  | [] -> tclUNIT s
-  | [a] -> i a s
-  | a::l ->
-      i a s >>= fun r ->
-      list_iter l r i
-
-(* val list_iter : 'a list -> 'b list -> 'c -> ('a -> 'b -> 'c -> 'c tactic) -> 'c tactic *)
-let list_iter2 l1 l2 s i =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = tclBIND in
-  let rec list_iter2 l1 l2 s i =
-    match l1 , l2 with
-    | [] , [] -> tclUNIT s
-    | [a] , [b] -> i a b s
-    | a::l1 , b::l2 ->
-        i a b s >>= fun r ->
-        list_iter2 l1 l2 r i
-    | _ , _ -> tclZERO (SizeMismatch (0,0)) (* placeholder *)
-  in
-  tclORELSE
-    (list_iter2 l1 l2 s i)
-    begin function
-      | SizeMismatch _ -> tclZERO (SizeMismatch (List.length l1,List.length l2))
-      | reraise -> tclZERO reraise
-    end
-
 let on_advance g ~solved ~adv =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
@@ -494,17 +462,16 @@ let on_advance g ~solved ~adv =
   | None -> solved (* If [first] has been solved by side effect: do nothing. *)
   | Some g -> adv g
 
-(* A variant of list_iter where we iter over the focused list of
+(* A variant of [Monad.List.fold_left] where we iter over the focused list of
    goals. The argument tactic is executed in a focus comprising only
    of the current goal, a goal which has been solved by side effect is
    skipped. The generated subgoals are concatenated in order.  *)
-(* val list_iter_goal : 'a -> (Evar.t -> 'a -> 'a tactic) -> 'a tactic *)
-let list_iter_goal s i =
+let fold_left_goal i s =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
   Pv.get >>= fun initial ->
-  list_iter initial.comb (s,[]) begin fun goal ((r,subgoals) as cur) ->
+  Monad.List.fold_left begin fun ((r,subgoals) as cur) goal ->
     on_advance goal
       ~solved: ( Proof.ret cur )
       ~adv: begin fun goal ->
@@ -512,28 +479,37 @@ let list_iter_goal s i =
         i goal r >>= fun r ->
         Proof.map (fun step -> (r, step.comb :: subgoals)) Pv.get
       end
-  end >>= fun (r,subgoals) ->
+  end (s,[]) initial.comb >>= fun (r,subgoals) ->
   Comb.set (List.flatten (List.rev subgoals)) >>
   Proof.ret r
 
-(* spiwack: essentially a copy/paste of the above… *)
-(* val list_iter_goal : 'a list -> 'b -> (Evar.t -> 'a -> 'b -> 'b tactic) -> 'b tactic *)
-let list_iter_goal2 l s i =
+(* A variant of [Monad.List.fold_left2] where the first list is the
+   list of focused goals. The argument tactic is executed in a focus
+   comprising only of the current goal, a goal which has been solved
+   by side effect is skipped. The generated subgoals are concatenated
+   in order. *)
+let fold_left2_goal i s l =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
   Pv.get >>= fun initial ->
-  list_iter2 initial.comb l (s,[]) begin fun goal a ((r,subgoals) as cur) ->
-    on_advance goal
-      ~solved: ( Proof.ret cur )
-      ~adv: begin fun goal ->
-        Comb.set [goal] >>
-        i goal a r >>= fun r ->
-        Proof.map (fun step -> (r, step.comb :: subgoals)) Pv.get
-      end
-  end >>= fun (r,subgoals) ->
-  Comb.set (List.flatten (List.rev subgoals)) >>
-  Proof.ret r
+  tclORELSE begin
+    Monad.List.fold_left2 tclZERO begin fun ((r,subgoals) as cur) goal a ->
+      on_advance goal
+        ~solved: ( Proof.ret cur )
+        ~adv: begin fun goal ->
+          Comb.set [goal] >>
+            i goal a r >>= fun r ->
+          Proof.map (fun step -> (r, step.comb :: subgoals)) Pv.get
+        end
+    end (s,[]) initial.comb l >>= fun (r,subgoals) ->
+    Comb.set (List.flatten (List.rev subgoals)) >>
+    Proof.ret r
+  end
+  begin function
+      | SizeMismatch _ -> tclZERO (SizeMismatch (List.length initial.comb,List.length l))
+      | reraise -> tclZERO reraise
+    end
 
 (* spiwack: we use an parametrised function to generate the dispatch
    tacticals.  [tclDISPATCHGEN] takes an argument [join] to reify the
@@ -563,7 +539,7 @@ let tclDISPATCHGEN f join tacs =
       end
   | _ ->
       let iter _ t cur = Proof.map (fun y -> y :: cur) (f t) in
-      let ans = list_iter_goal2 tacs [] iter in
+      let ans = fold_left2_goal iter [] tacs in
       Proof.map join ans
 
 let tclDISPATCH tacs = tclDISPATCHGEN Util.identity ignore tacs
@@ -613,7 +589,7 @@ let tclINDEPENDENT tac =
   match initial.comb with
   | [] -> tclUNIT ()
   | [_] -> tac
-  | _ -> list_iter_goal () (fun _ () -> tac)
+  | _ -> fold_left_goal (fun _ () -> tac) ()
 
 (* Equality function on goals *)
 let goal_equal evars1 gl1 evars2 gl2 =
@@ -876,9 +852,6 @@ end
 
 open Notations
 
-module Monad =
-  Monad.Make(struct type +'a t = 'a tactic let return=tclUNIT let (>>=)=(>>=) end)
-
 (* To avoid shadowing by the local [Goal] module *)
 module GoalV82 = Goal.V82
 
@@ -913,7 +886,7 @@ module Goal = struct
     gmake_with info env sigma goal , sigma
 
   let nf_enter f =
-    list_iter_goal () begin fun goal () ->
+    fold_left_goal begin fun goal () ->
       Env.get >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try
@@ -922,7 +895,7 @@ module Goal = struct
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
-    end
+    end ()
 
   let normalize { self } =
     Env.get >>= fun env ->
@@ -935,14 +908,14 @@ module Goal = struct
     gmake_with info env sigma goal
 
   let enter f =
-    list_iter_goal () begin fun goal () ->
+    fold_left_goal begin fun goal () ->
       Env.get >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try f (gmake env sigma goal)
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
-    end
+    end ()
 
   let goals =
     Env.get >>= fun env ->
