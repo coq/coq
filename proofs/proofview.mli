@@ -328,7 +328,7 @@ end
 
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 : sig
-  type tac = Goal.goal Evd.sigma -> Goal.goal list Evd.sigma 
+  type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
   val tactic : tac -> unit tactic
 
   (* normalises the evars in the goals, and stores the result in
@@ -353,9 +353,9 @@ module V82 : sig
 
   (* Returns the open goals of the proofview together with the evar_map to 
      interprete them. *)
-  val goals : proofview -> Goal.goal list Evd.sigma
+  val goals : proofview -> Evar.t list Evd.sigma
 
-  val top_goals : entry -> proofview -> Goal.goal list Evd.sigma
+  val top_goals : entry -> proofview -> Evar.t list Evd.sigma
   
   (* returns the existential variable used to start the proof *)
   val top_evars : entry -> Evd.evar list
@@ -421,7 +421,7 @@ module Goal : sig
   val goals : [ `LZ ] t tactic list tactic
 
   (* compatibility: avoid if possible *)
-  val goal : [ `NF ] t -> Goal.goal
+  val goal : [ `NF ] t -> Evar.t
 
 end
 
