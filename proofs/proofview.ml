@@ -156,12 +156,6 @@ let return_constr { solution = defs } c = Evarutil.nf_evar defs c
 
 let partial_proof entry pv = List.map (return_constr pv) (List.map fst entry)
 
-(* let return { initial=init; solution=defs }  = *)
-(*   let evdref = ref defs in *)
-(*   let nf,subst = Evarutil.e_nf_evars_and_universes evdref in *)
-(*   ((List.map (fun (c,t) -> (nf c, nf t)) init, subst), *)
-(*    Evd.universe_context !evdref) *)
-
 (* spiwack: this function should probably go in the Util section,
     but I'd rather have Util (or a separate module for lists)
     raise proper exceptions before *)
