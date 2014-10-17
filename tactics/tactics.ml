@@ -1850,6 +1850,9 @@ let rewrite_hyp assert_style l2r id =
     Hook.get forward_subst_one true x (id,rhs,l2r) in
   let clear_var_and_eq c =
     tclTRY (tclTHEN (clear [id]) (tclTRY (clear [destVar c]))) in
+  if assert_style then
+    rew_on l2r allHypsAndConcl
+  else
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_type_of gl in
@@ -1863,26 +1866,16 @@ let rewrite_hyp assert_style l2r id =
         else if not l2r && isVar rhs && not (occur_var env (destVar rhs) lhs) then
           subst_on l2r (destVar rhs) lhs
         else
-(*
-          if assert_style then
-            rew_on l2r allHypsAndConcl
-          else
-*)
-         (*   Tacticals.New.tclTHEN *) (rew_on l2r onConcl) (*(Proofview.V82.tactic (tclTRY (clear [id]))) *)
+          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (tclTRY (clear [id])))
     | Some (hdcncl,[c]) ->
         let l2r = not l2r in (* equality of the form eq_true *)
         if isVar c then
           Tacticals.New.tclTHEN (rew_on l2r allHypsAndConcl) 
 	    (Proofview.V82.tactic (clear_var_and_eq c))
         else
-            rew_on l2r allHypsAndConcl
-(*
-          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (tclTRY (clear [id])))*)
+          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (tclTRY (clear [id])))
     | _ ->
-        if assert_style then
-          rew_on l2r allHypsAndConcl
-        else
-          Tacticals.New.tclZEROMSG (str"Cannot find a known equation.")
+        Tacticals.New.tclZEROMSG (str"Cannot find a known equation.")
   end
 
 let rec prepare_naming loc = function
