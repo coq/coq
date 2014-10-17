@@ -849,11 +849,6 @@ let numgoals =
   Pv.get >>= fun { comb } ->
   Proof.ret (List.length comb)
 
-(*** Commands ***)
-
-let in_proofview p k =
-  k p.solution
-
 module Unsafe = struct
 
   (* A [Proofview.tactic] version of [Refiner.tclEVARS] *)

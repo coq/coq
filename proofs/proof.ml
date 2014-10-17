@@ -320,11 +320,10 @@ let run_tactic env tac pr =
   let sp = pr.proofview in
   let (_,tacticced_proofview,(status,to_shelve,give_up)) = Proofview.apply env tac sp in
   let shelf =
-    Proofview.in_proofview tacticced_proofview begin fun sigma ->
-      let pre_shelf = pr.shelf@(Evd.future_goals sigma)@to_shelve in
-      (* avoid already to count already solved goals as shelved. *)
-      List.filter (fun g -> Evd.is_undefined sigma g) pre_shelf
-    end
+    let sigma = Proofview.return tacticced_proofview in
+    let pre_shelf = pr.shelf@(Evd.future_goals sigma)@to_shelve in
+    (* avoid already to count already solved goals as shelved. *)
+    List.filter (fun g -> Evd.is_undefined sigma g) pre_shelf
   in
   let given_up = pr.given_up@give_up in
   let proofview = Proofview.Unsafe.reset_future_goals tacticced_proofview in
@@ -332,7 +331,7 @@ let run_tactic env tac pr =
 
 (*** Commands ***)
 
-let in_proof p k = Proofview.in_proofview p.proofview k
+let in_proof p k = k (Proofview.return p.proofview)
 
 (* Remove all the goals from the shelf and adds them at the end of the
    focused goals. *)
