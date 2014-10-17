@@ -1604,9 +1604,12 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
-        let ev = e_new_evar env evdref ~src:(loc, Evar_kinds.CasesType) ty in
-        evdref := add_conv_pb (Reduction.CONV,env,substl inst ev,t) !evdref;
-        ev
+        let ev' = e_new_evar env evdref ~src:(loc, Evar_kinds.CasesType) ty in
+        begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,substl inst ev') with
+        | Success evd -> evdref := evd
+        | UnifFailure _ -> assert false
+        end;
+        ev'
     | _ ->
     let good = List.filter (fun (_,u,_) -> is_conv_leq env sigma t u) subst in
     match good with
