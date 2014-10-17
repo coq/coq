@@ -108,27 +108,6 @@ type entry = (Term.constr * Term.types) list
 let proofview p =
   p.comb , p.solution
 
-(* Initialises a proofview, the argument is a list of environement, 
-   conclusion types, and optional names, creating that many initial goals. *)
-let init sigma =
-  let rec aux = function
-  | [] ->  [], { solution = sigma; comb = []; }
-  | (env, typ) :: l ->
-    let ret, { solution = sol; comb = comb } = aux l in
-    let src = (Loc.ghost,Evar_kinds.GoalEvar) in
-    let (new_defs , econstr) = Evarutil.new_evar env sol ~src typ in
-    let (gl, _) = Term.destEvar econstr in
-    let entry = (econstr, typ) :: ret in
-    entry, { solution = new_defs; comb = gl::comb; }
-  in
-  fun l ->
-    let entry, v = aux l in
-    (* Marks all the goal unresolvable for typeclasses. *)
-    let solution = Typeclasses.mark_unresolvables v.solution in
-    (* The created goal are not to be shelved. *)
-    let solution = Evd.reset_future_goals solution in
-    entry, { v with solution }
-
 type telescope =
   | TNil of Evd.evar_map
   | TCons of Environ.env * Evd.evar_map * Term.types * (Evd.evar_map -> Term.constr -> telescope)
@@ -137,7 +116,8 @@ let dependent_init =
   let rec aux = function
   | TNil sigma -> [], { solution = sigma; comb = []; }
   | TCons (env, sigma, typ, t) ->
-    let (sigma, econstr ) = Evarutil.new_evar env sigma typ in
+    let src = (Loc.ghost,Evar_kinds.GoalEvar) in
+    let (sigma, econstr ) = Evarutil.new_evar env sigma ~src typ in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let (gl, _) = Term.destEvar econstr in
     let entry = (econstr, typ) :: ret in
@@ -150,6 +130,15 @@ let dependent_init =
     (* The created goal are not to be shelved. *)
     let solution = Evd.reset_future_goals solution in
     entry, { v with solution }
+
+(* Initialises a proofview, the argument is a list of environement,
+   conclusion types, and optional names, creating that many initial goals. *)
+let init =
+  let rec aux sigma = function
+    | [] -> TNil sigma
+    | (env,g)::l -> TCons (env,sigma,g,(fun sigma _ -> aux sigma l))
+  in
+  fun sigma l -> dependent_init (aux sigma l)
 
 let initial_goals initial = initial
 
