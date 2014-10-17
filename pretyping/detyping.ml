@@ -499,7 +499,11 @@ let rec detype flags avoid env sigma t =
 		    isRelN n c 
 	      with Not_found -> isVarId id c) 
 	    (Evd.find sigma evk) cl
-        with Not_found -> Id.of_string ("X" ^ string_of_int (Evar.repr evk)), [] in
+        with Not_found ->
+          Id.of_string ("X" ^ string_of_int (Evar.repr evk)), 
+          (List.map_i (fun i c -> (Id.of_string ("A" ^ string_of_int i),c))
+             1 (Array.to_list cl))
+      in
         GEvar (dl,id,
                List.map (on_snd (detype flags avoid env sigma)) l)
     | Ind (ind_sp,u) ->
