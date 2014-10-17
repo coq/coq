@@ -52,6 +52,21 @@ module type ListS = sig
       operator calls its second argument in a tail position. *)
   val fold_left : ('a -> 'b -> 'a t) -> 'a -> 'b list -> 'a t
 
+
+  (** {6 Two-list iterators} *)
+
+  (** Raised when an combinator expects several lists of the same size
+      but finds that they are not. Exceptions must be raised inside
+      the monad, so two-list combinators take an extra argument to
+      raise the exception. *)
+  exception SizeMismatch
+
+  (** [fold_left2 r f s l1 l2] behaves like {!fold_left} but acts
+      simultaneously on two lists. Returns [r SizeMismatch] if both lists
+      do not have the same length. *)
+  val fold_left2 : (exn->'a t) ->
+    ('a -> 'b -> 'c -> 'a t) -> 'a -> 'b list -> 'c list -> 'a t
+
 end
 
 module type S = sig
@@ -113,6 +128,20 @@ module Make (M:Def) : S with type +'a t = 'a M.t = struct
           f x a >>= fun x' ->
           f x' b >>= fun x'' ->
           fold_left f x'' l
+
+
+    exception SizeMismatch
+
+    let rec fold_left2 r f x l1 l2 =
+      match l1,l2 with
+      | [] , [] -> return x
+      | [a] , [b] -> f x a b
+      | a1::a2::l1 , b1::b2::l2 ->
+          f x a1 b1 >>= fun x' ->
+          f x' a2 b2 >>= fun x'' ->
+          fold_left2 r f x'' l1 l2
+      | _ , _ -> r SizeMismatch
+
   end
 
 end
