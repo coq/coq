@@ -432,14 +432,15 @@ let pr_evar sigma (evk, evi) =
   hov 0 (pr_existential_key sigma evk ++ str " : " ++ pegl)
 
 (* Print an enumerated list of existential variables *)
-let rec pr_evars_int sigma i = function
+let rec pr_evars_int_hd head sigma i = function
   | [] -> mt ()
   | (evk,evi)::rest ->
-      (hov 0 (str "Existential " ++ int i ++ str " =" ++ spc () ++
-              pr_evar sigma (evk,evi))) ++
-      (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int sigma (i+1) rest)
+      (hov 0 (head i ++ pr_evar sigma (evk,evi))) ++
+      (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int_hd head sigma (i+1) rest)
 
-let pr_evars_int sigma i evs = pr_evars_int sigma i (Evar.Map.bindings evs)
+let pr_evars_int sigma i evs = pr_evars_int_hd (fun i -> str "Existential " ++ int i ++ str " =" ++ spc ()) sigma i (Evar.Map.bindings evs)
+
+let pr_evars sigma evs = pr_evars_int_hd (fun i -> mt ()) sigma 1 (Evar.Map.bindings evs)
 
 let default_pr_subgoal n sigma =
   let rec prrec p = function

@@ -1487,7 +1487,11 @@ let vernac_check_may_eval redexp glopt rc =
       Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c) in
   match redexp with
     | None ->
-	msg_notice (print_judgment env sigma' j ++ Printer.pr_universe_ctx uctx)
+        let l = Evarutil.non_instantiated sigma' in
+        let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma j.Environ.uj_type } in
+	msg_notice (print_judgment env sigma' j ++
+                    (if l != Evar.Map.empty then (fnl () ++ str "where" ++ fnl () ++ pr_evars sigma' l) else mt ()) ++
+                     Printer.pr_universe_ctx uctx)
     | Some r ->
         Tacintern.dump_glob_red_expr r;
         let (sigma',r_interp) = interp_redexp env sigma' r in
