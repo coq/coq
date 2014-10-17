@@ -165,8 +165,6 @@ val no_focused_goal : proof -> bool
    used. In which case it is [false]. *)
 val run_tactic : Environ.env -> unit Proofview.tactic -> proof -> proof*bool
 
-val emit_side_effects : Declareops.side_effects -> proof -> proof
-
 val maximal_unfocus : 'a focus_kind -> proof -> proof
 
 (*** Commands ***)

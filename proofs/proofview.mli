@@ -58,7 +58,6 @@ val return : proofview -> Evd.evar_map
 
 val partial_proof : entry -> proofview -> constr list
 val initial_goals : entry -> (constr * types) list
-val emit_side_effects : Declareops.side_effects -> proofview -> proofview
 
 (*** Focusing operations ***)
 

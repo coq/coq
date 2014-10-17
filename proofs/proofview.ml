@@ -167,9 +167,6 @@ let return_constr { solution = defs } c = Evarutil.nf_evar defs c
 
 let partial_proof entry pv = List.map (return_constr pv) (List.map fst entry)
 
-let emit_side_effects eff x =
-  { x with solution = Evd.emit_side_effects eff x.solution }
-
 (* let return { initial=init; solution=defs }  = *)
 (*   let evdref = ref defs in *)
 (*   let nf,subst = Evarutil.e_nf_evars_and_universes evdref in *)
@@ -667,6 +664,10 @@ let tclEVARMAP =
   Proof.map (fun initial -> initial.solution) Pv.get
 
 let tclENV = Env.get
+
+
+let emit_side_effects eff x =
+  { x with solution = Evd.emit_side_effects eff x.solution }
 
 let tclEFFECTS eff =
   Proof.bind (Proof.ret ())

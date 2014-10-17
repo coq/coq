@@ -330,9 +330,6 @@ let run_tactic env tac pr =
   let proofview = Proofview.reset_future_goals tacticced_proofview in
   { pr with proofview ; shelf ; given_up },status
 
-let emit_side_effects eff pr =
-  {pr with proofview = Proofview.emit_side_effects eff pr.proofview}
-
 (*** Commands ***)
 
 let in_proof p k = Proofview.in_proofview p.proofview k
