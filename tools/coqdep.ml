@@ -220,5 +220,6 @@ let _ =
   try
     coqdep ()
   with Util.UserError(s,p) ->
-    let pp = if s <> "_" then Pp.(str s ++ str ": " ++ p) else p in
+    let pp =
+      if s <> "_" then Pp.(++) (Pp.str s) (Pp.(++) (Pp.str ": ") p) else p in
     Pp.msgerrnl pp
