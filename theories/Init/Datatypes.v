@@ -87,7 +87,7 @@ Hint Constructors eq_true : eq_true.
 Definition is_true b := b = true.
 
 (** [is_true] can be activated as a coercion by
-   (Local) Coercion is_true : bool >-> Prop.
+   (Local) Coercion is_true : bool >-> Sorctlass.
 *)
 
 (** Additional rewriting lemmas about [eq_true] *)
