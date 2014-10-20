@@ -133,7 +133,7 @@ let convert_concl ?(check=true) ty k =
       end else sigma in
     Tacticals.New.tclTHEN
       (Proofview.V82.tclEVARS sigma)
-      (Proofview.Refine.refine (fun sigma ->
+      (Proofview.Refine.refine ~unsafe:true (fun sigma ->
         let (sigma,x) = Evarutil.new_evar env sigma ~principal:true ty in
         (sigma, if k == DEFAULTcast then x else mkCast(x,k,conclty))))
   end
@@ -145,7 +145,7 @@ let convert_hyp ?(check=true) d =
     let ty = Proofview.Goal.raw_concl gl in
     let sign = convert_hyp check (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
-    Proofview.Refine.refine (fun sigma -> Evarutil.new_evar env sigma ~principal:true ty)
+    Proofview.Refine.refine ~unsafe:true (fun sigma -> Evarutil.new_evar env sigma ~principal:true ty)
   end
 
 let convert_concl_no_check = convert_concl ~check:false
