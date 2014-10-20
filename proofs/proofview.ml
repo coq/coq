@@ -47,59 +47,52 @@ end
 module Proof = Logical(P)
 
 (** Lenses to access to components of the states *)
-module Pv = struct
-
-  type t = proofview
-
-  let get : t Proof.t = Proof.(map fst get)
-  let set (p:t) : unit Proof.t = Proof.modify (fun (_,e) -> (p,e))
-  let modify (f:t->t) : unit Proof.t = Proof.modify (fun (p,e) -> (f p,e))
-
+module type State = sig
+  type t
+  val get : t Proof.t
+  val set : t -> unit Proof.t
+  val modify : (t->t) -> unit Proof.t
 end
 
-module Comb = struct
+module type Writer = sig
+  type t
+  val put : t -> unit Proof.t
+end
 
+module Pv : State with type t := proofview = struct
+  let get = Proof.(map fst get)
+  let set p = Proof.modify (fun (_,e) -> (p,e))
+  let modify f= Proof.modify (fun (p,e) -> (f p,e))
+end
+
+module Comb : State with type t = Evar.t list = struct
+    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
   type t = Evar.t list
-
-  let get : t Proof.t = Proof.map (fun {comb} -> comb) Pv.get
-  let set (c:Evar.t list) : unit Proof.t = Pv.modify (fun pv -> { pv with comb = c })
-  let modify (f:Evar.t list -> Evar.t list) : unit Proof.t =
-    Pv.modify (fun pv -> { pv with comb = f pv.comb })
-
+  let get = Proof.map (fun {comb} -> comb) Pv.get
+  let set c = Pv.modify (fun pv -> { pv with comb = c })
+  let modify f = Pv.modify (fun pv -> { pv with comb = f pv.comb })
 end
 
-module Env = struct
-
-  type t = Environ.env
-
-  let get : t Proof.t = Proof.(map snd get)
-  let set (e:t) : unit Proof.t = Proof.modify (fun (p,_) -> (p,e))
-  let modify (f:t->t) : unit Proof.t = Proof.modify (fun (p,e) -> (p,f e))
-
+module Env : State with type t := Environ.env = struct
+  let get = Proof.(map snd get)
+  let set e = Proof.modify (fun (p,_) -> (p,e))
+  let modify f = Proof.modify (fun (p,e) -> (p,f e))
 end
 
-module Status = struct
-
-  type t = bool
-
-  let put (s:t) : unit Proof.t = Proof.put (s,[],[])
-
+module Status : Writer with type t := bool = struct
+  let put s = Proof.put (s,[],[])
 end
 
-module Shelf = struct
-
+module Shelf : Writer with type t = Evar.t list = struct
+    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
   type t = Evar.t list
-
-  let put (sh:t) : unit Proof.t = Proof.put (true,sh,[])
-
+  let put sh = Proof.put (true,sh,[])
 end
 
-module Giveup = struct
-
+module Giveup : Writer with type t = Evar.t list = struct
+    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
   type t = Evar.t list
-
-  let put (gs:t) : unit Proof.t = Proof.put (true,[],gs)
-
+  let put gs = Proof.put (true,[],gs)
 end
 
 
