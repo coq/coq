@@ -115,3 +115,5 @@ val lookup_rel : int -> rel_context -> rel_declaration
 val rel_context_length : rel_context -> int
 (** Size of the [rel_context] without LetIns *)
 val rel_context_nhyps : rel_context -> int
+(** Indicates whether a LetIn or a Lambda, starting from oldest declaration *)
+val rel_context_tags : rel_context -> bool list

@@ -76,6 +76,13 @@ let rel_context_nhyps hyps =
     | (_,Some _,_)::hyps -> nhyps acc hyps in
   nhyps 0 hyps
 
+let rel_context_tags ctx =
+  let rec aux l = function
+  | [] -> l
+  | (_,Some _,_)::ctx -> aux (true::l) ctx
+  | (_,None _,_)::ctx -> aux (false::l) ctx
+  in aux [] ctx
+
 (*s Signatures of named hypotheses. Used for section variables and
     goal assumptions. *)
 

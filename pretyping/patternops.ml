@@ -26,7 +26,7 @@ open Environ
 let case_info_pattern_eq i1 i2 =
   i1.cip_style == i2.cip_style &&
   Option.equal eq_ind i1.cip_ind i2.cip_ind &&
-  Option.equal Int.equal i1.cip_ind_args i2.cip_ind_args &&
+  Option.equal (List.equal (==)) i1.cip_ind_tags i2.cip_ind_tags &&
   i1.cip_extensible == i2.cip_extensible
 
 let rec constr_pattern_eq p1 p2 = match p1, p2 with
@@ -63,7 +63,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 (** FIXME: fixpoint and cofixpoint should be relativized to pattern *)
 
 and pattern_eq (i1, j1, p1) (i2, j2, p2) =
-  Int.equal i1 i2 && Int.equal j1 j2 && constr_pattern_eq p1 p2
+  Int.equal i1 i2 && List.equal (==) j1 j2 && constr_pattern_eq p1 p2
 
 and fixpoint_eq ((arg1, i1), r1) ((arg2, i2), r2) =
   Int.equal i1 i2 &&
@@ -167,11 +167,11 @@ let pattern_of_constr env sigma t =
         let cip =
 	  { cip_style = ci.ci_pp_info.style;
 	    cip_ind = Some ci.ci_ind;
-	    cip_ind_args = Some (ci.ci_pp_info.ind_nargs);
+	    cip_ind_tags = Some ci.ci_pp_info.ind_tags;
 	    cip_extensible = false }
 	in
 	let branch_of_constr i c =
-	  (i, ci.ci_cstr_ndecls.(i), pattern_of_constr env c)
+	  (i, ci.ci_pp_info.cstr_tags.(i), pattern_of_constr env c)
 	in
 	PCase (cip, pattern_of_constr env p, pattern_of_constr env a,
 	       Array.to_list (Array.mapi branch_of_constr br))
@@ -360,17 +360,18 @@ let rec pat_of_raw metas vars = function
       let cip =
 	{ cip_style = LetStyle;
 	  cip_ind = None;
-	  cip_ind_args = None;
+	  cip_ind_tags = None;
 	  cip_extensible = false }
       in
+      let tags = List.map (fun _ -> false) nal (* Approximation which can be without let-ins... *) in
       PCase (cip, PMeta None, pat_of_raw metas vars b,
-             [0,1,pat_of_raw metas vars c])
+             [0,tags,pat_of_raw metas vars c])
   | GCases (loc,sty,p,[c,(na,indnames)],brs) ->
       let get_ind = function
 	| (_,_,[PatCstr(_,(ind,_),_,_)],_)::_ -> Some ind
 	| _ -> None
       in
-      let ind_nargs,ind = match indnames with
+      let ind_tags,ind = match indnames with
 	| Some (_,ind,nal) -> Some (List.length nal), Some ind
 	| None -> None, get_ind brs
       in
@@ -385,7 +386,7 @@ let rec pat_of_raw metas vars = function
       let info =
 	{ cip_style = sty;
 	  cip_ind = ind;
-	  cip_ind_args = ind_nargs;
+	  cip_ind_tags = None;
 	  cip_extensible = ext }
       in
       (* Nota : when we have a non-trivial predicate,
@@ -416,7 +417,8 @@ and pats_of_glob_branches loc metas vars ind brs =
       let vars' = List.rev lna @ vars in
       let pat = rev_it_mkPLambda lna (pat_of_raw metas vars' br) in
       let ext,pats = get_pat (Int.Set.add (j-1) indexes) brs in
-      ext, ((j-1, List.length lv, pat) :: pats)
+      let tags = List.map (fun _ -> false) lv (* approximation, w/o let-in *) in
+      ext, ((j-1, tags, pat) :: pats)
     | (loc,_,_,_) :: _ -> err loc (Pp.str "Non supported pattern.")
   in
   get_pat Int.Set.empty brs
