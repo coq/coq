@@ -102,7 +102,7 @@ let solve ?with_end_tac gi tac pr =
     Proof.run_tactic (Global.env ()) tac pr
   with
     | Proof_global.NoCurrentProof  -> Errors.error "No focused proof"
-    | Proofview.IndexOutOfRange ->
+    | CList.IndexOutOfRange ->
         match gi with
 	| Vernacexpr.SelectNth i -> let msg = str "No such goal: " ++ int i ++ str "." in
 	                            Errors.errorlabstrm "" msg

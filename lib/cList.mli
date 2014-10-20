@@ -142,7 +142,20 @@ sig
   (** Merge two sorted lists and preserves the uniqueness property. *)
 
   val subset : 'a list -> 'a list -> bool
+
   val chop : int -> 'a list -> 'a list * 'a list
+  (** [chop i l] splits [l] into two lists [(l1,l2)] such that
+      [l1++l2=l] and [l1] has length [i].  It raises [Failure] when [i]
+      is negative or greater than the length of [l] *)
+
+  exception IndexOutOfRange
+  val goto: int -> 'a list -> 'a list * 'a list
+  (** [goto i l] splits [l] into two lists [(l1,l2)] such that
+      [(List.rev l1)++l2=l] and [l1] has length [i].  It raises
+      [IndexOutOfRange] when [i] is negative or greater than the
+      length of [l]. *)
+
+
   val split_when : ('a -> bool) -> 'a list -> 'a list * 'a list
   val split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
   val firstn : int -> 'a list -> 'a list

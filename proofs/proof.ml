@@ -215,7 +215,7 @@ let _unfocus pr =
    a need for it? *)
 let focus cond inf i pr =
   try _focus cond (Obj.repr inf) i i pr
-  with Proofview.IndexOutOfRange -> raise (NoSuchGoals (i,i))
+  with CList.IndexOutOfRange -> raise (NoSuchGoals (i,i))
 
 let rec unfocus kind pr () =
   let cond = cond_of_focus pr in

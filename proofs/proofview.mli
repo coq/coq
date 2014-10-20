@@ -61,10 +61,6 @@ val initial_goals : entry -> (constr * types) list
 
 (*** Focusing operations ***)
 
-(* [IndexOutOfRange] occurs in case of malformed indices
-   with respect to list lengths. *)
-exception IndexOutOfRange
-
 (* Type of the object which allow to unfocus a view.*)
 type focus_context
 

@@ -158,31 +158,6 @@ let return_constr { solution = defs } c = Evarutil.nf_evar defs c
 
 let partial_proof entry pv = List.map (return_constr pv) (List.map fst entry)
 
-(* spiwack: this function should probably go in the Util section,
-    but I'd rather have Util (or a separate module for lists)
-    raise proper exceptions before *)
-(* [IndexOutOfRange] occurs in case of malformed indices
-   with respect to list lengths. *)
-exception IndexOutOfRange
-(* no handler: should not be allowed to reach toplevel *)
-
-(* [list_goto i l] returns a pair of lists [c,t] where
-   [c] has length [i] and is the reversed of the [i] first
-   elements of [l], and [t] is the rest of the list.
-   The idea is to navigate through the list, [c] is then
-   seen as the context of the current position. 
-   Raises [IndexOutOfRange] if [i > length l]*)
-let list_goto = 
-  let rec aux acc index = function
-    | l when Int.equal index 0-> (acc,l)
-    | [] -> raise IndexOutOfRange
-    | a::q -> aux (a::acc) (index-1) q
-  in
-  fun i l ->
-    if i < 0 then
-      raise IndexOutOfRange
-    else
-      aux [] i l
 
 (* Type of the object which allow to unfocus a view.*)
 (* First component is a reverse list of what comes before
@@ -202,10 +177,10 @@ let focus_context f = f
    [focus_sublist i j l] raises [IndexOutOfRange] if
    [i > length l], or [j > length l] or [ j < i ].  *)
 let focus_sublist i j l =
-  let (left,sub_right) = list_goto (i-1) l in
+  let (left,sub_right) = CList.goto (i-1) l in
   let (sub, right) = 
     try List.chop (j-i+1) sub_right
-    with Failure _ -> raise IndexOutOfRange
+    with Failure _ -> raise CList.IndexOutOfRange
   in
   (sub, (left,right))
 
@@ -409,7 +384,7 @@ let tclFOCUS_gen nosuchgoal i j t =
     t >>= fun result ->
     Pv.modify (fun next -> unfocus context next) >>
     Proof.ret result
-  with IndexOutOfRange -> nosuchgoal
+  with CList.IndexOutOfRange -> nosuchgoal
 
 let tclFOCUS i j t = tclFOCUS_gen (tclZERO (NoSuchGoals (j+1-i))) i j t
 let tclTRYFOCUS i j t = tclFOCUS_gen (tclUNIT ()) i j t
