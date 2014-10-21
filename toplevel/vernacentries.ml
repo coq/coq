@@ -1481,16 +1481,20 @@ let vernac_check_may_eval redexp glopt rc =
   let c = nf c in
   let j =
     try
-      Evarutil.check_evars env Evd.empty sigma' c;
+      Evarutil.check_evars env sigma sigma' c;
       Arguments_renaming.rename_typing env c
     with Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) ->
       Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c) in
   match redexp with
     | None ->
-        let l = Evarutil.non_instantiated sigma' in
-        let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma j.Environ.uj_type } in
+        let l = Evar.Set.union (Evd.evars_of_term j.Environ.uj_val) (Evd.evars_of_term j.Environ.uj_type) in
+        let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma' j.Environ.uj_type } in
 	msg_notice (print_judgment env sigma' j ++
-                    (if l != Evar.Map.empty then (fnl () ++ str "where" ++ fnl () ++ pr_evars sigma' l) else mt ()) ++
+                    (if l != Evar.Set.empty then
+                        let l = Evar.Set.fold (fun ev -> Evar.Map.add ev (Evarutil.nf_evar_info sigma' (Evd.find sigma' ev))) l Evar.Map.empty in
+                        (fnl () ++ str "where" ++ fnl () ++ pr_evars sigma' l)
+                     else
+                        mt ()) ++
                      Printer.pr_universe_ctx uctx)
     | Some r ->
         Tacintern.dump_glob_red_expr r;
