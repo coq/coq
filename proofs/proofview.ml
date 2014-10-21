@@ -65,6 +65,12 @@ module Pv : State with type t := proofview = struct
   let modify f= Proof.modify (fun (p,e) -> (f p,e))
 end
 
+module Solution : State with type t := Evd.evar_map = struct
+  let get = Proof.map (fun {solution} -> solution) Pv.get
+  let set s = Pv.modify (fun pv -> { pv with solution = s })
+  let modify f = Pv.modify (fun pv -> { pv with solution = f pv.solution })
+end
+
 module Comb : State with type t = Evar.t list = struct
     (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
   type t = Evar.t list
@@ -428,8 +434,8 @@ end
 let on_advance g ~solved ~adv =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Pv.get >>= fun step ->
-  match advance step.solution g with
+  Solution.get >>= fun step ->
+  match advance step g with
   | None -> solved (* If [first] has been solved by side effect: do nothing. *)
   | Some g -> adv g
 
@@ -441,16 +447,16 @@ let iter_goal i =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
-  Pv.get >>= fun initial ->
+  Comb.get >>= fun initial ->
   Monad.List.fold_left begin fun (subgoals as cur) goal ->
     on_advance goal
       ~solved: ( Proof.ret cur )
       ~adv: begin fun goal ->
         Comb.set [goal] >>
         i goal >>
-        Proof.map (fun step -> step.comb :: subgoals) Pv.get
+        Proof.map (fun comb -> comb :: subgoals) Comb.get
       end
-  end [] initial.comb >>= fun subgoals ->
+  end [] initial >>= fun subgoals ->
   Comb.set (List.flatten (List.rev subgoals))
 
 (* A variant of [Monad.List.fold_left2] where the first list is the
@@ -470,7 +476,7 @@ let fold_left2_goal i s l =
         ~adv: begin fun goal ->
           Comb.set [goal] >>
             i goal a r >>= fun r ->
-          Proof.map (fun step -> (r, step.comb :: subgoals)) Pv.get
+          Proof.map (fun comb -> (r, comb :: subgoals)) Comb.get
         end
     end (s,[]) initial.comb l >>= fun (r,subgoals) ->
     Comb.set (List.flatten (List.rev subgoals)) >>
@@ -490,22 +496,20 @@ let tclDISPATCHGEN f join tacs =
   match tacs with
   | [] ->
       begin 
-        Pv.get >>= fun initial ->
-        match initial.comb with
+        Comb.get >>= function
         | [] -> tclUNIT (join [])
-        | _ -> tclZERO (SizeMismatch (List.length initial.comb,0))
+        | comb -> tclZERO (SizeMismatch (List.length comb,0))
       end
   | [tac] ->
       begin
-        Pv.get >>= fun initial ->
-        match initial.comb with
+        Comb.get >>= function
         | [goal] ->
             on_advance goal
               ~solved:( tclUNIT (join []) )
               ~adv:begin fun _ ->
                 Proof.map (fun res -> join [res]) (f tac)
               end
-        | _ -> tclZERO (SizeMismatch(List.length initial.comb,1))
+        | comb -> tclZERO (SizeMismatch(List.length comb,1))
       end
   | _ ->
       let iter _ t cur = Proof.map (fun y -> y :: cur) (f t) in
@@ -540,13 +544,13 @@ let extend_to_list startxs rx endxs l =
 let tclEXTEND tacs1 rtac tacs2 =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Pv.get >>= fun step ->
+  Comb.get >>= fun comb ->
   try
-    let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
+    let tacs = extend_to_list tacs1 rtac tacs2 comb in
     tclDISPATCH tacs
   with SizeMismatch _ ->
     tclZERO (SizeMismatch(
-      List.length step.comb,
+      List.length comb,
       (List.length tacs1)+(List.length tacs2)))
 (* spiwack: failure occur only when the number of goals is too
    small. Hence we can assume that [rtac] is replicated 0 times for
@@ -582,8 +586,7 @@ let tclPROGRESS t =
   else
     tclZERO (Errors.UserError ("Proofview.tclPROGRESS" , Pp.str"Failed to progress."))
 
-let tclEVARMAP =
-  Proof.map (fun initial -> initial.solution) Pv.get
+let tclEVARMAP = Solution.get
 
 let tclENV = Env.get
 
