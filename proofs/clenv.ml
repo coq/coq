@@ -551,7 +551,7 @@ let pr_clenv clenv =
 type hole = {
   hole_evar : constr;
   hole_type : types;
-  hole_deps  : bool * bool;
+  hole_deps  : bool;
   hole_name : Name.t;
 }
 
@@ -573,7 +573,7 @@ let make_evar_clause env sigma bound t =
       let hole = {
         hole_evar = ev;
         hole_type = t1;
-        hole_deps = (dep, dep);
+        hole_deps = dep;
         (* We fix it later *)
         hole_name = na;
       } in
@@ -583,20 +583,7 @@ let make_evar_clause env sigma bound t =
   | (n, _) -> (sigma, holes, t)
   in
   let (sigma, holes, t) = clrec (sigma, []) bound t in
-  let fold holes h =
-    if fst h.hole_deps then
-      (** Some subsequent term uses the hole *)
-      let (ev, _) = destEvar h.hole_evar in
-      let is_dep hole = occur_evar ev hole.hole_type in
-      let in_hyp = List.exists is_dep holes in
-      let in_ccl = occur_evar ev t in
-      let h = { h with hole_deps = (in_hyp, in_ccl) } in
-      h :: holes
-    else
-      (** The hole does not occur anywhere *)
-      h :: holes
-  in
-  let holes = List.fold_left fold [] holes in
+  let holes = List.rev holes in
   let clause = { cl_concl = t; cl_holes = holes } in
   (sigma, clause)
 
@@ -648,12 +635,23 @@ let define_with_type sigma env ev c =
 let solve_evar_clause env sigma hyp_only clause = function
 | NoBindings -> sigma
 | ImplicitBindings largs ->
-  let map h =
-    let (in_hyp, in_ccl) = h.hole_deps in
-    let depends = if hyp_only then in_hyp && not in_ccl else in_hyp || in_ccl in
-    if depends then Some h.hole_evar else None
+  let fold holes h =
+    if h.hole_deps then
+      (** Some subsequent term uses the hole *)
+      let (ev, _) = destEvar h.hole_evar in
+      let is_dep hole = occur_evar ev hole.hole_type in
+      let in_hyp = List.exists is_dep holes in
+      let in_ccl = occur_evar ev clause.cl_concl in
+      let dep = if hyp_only then in_hyp && not in_ccl else in_hyp || in_ccl in
+      let h = { h with hole_deps = dep } in
+      h :: holes
+    else
+      (** The hole does not occur anywhere *)
+      h :: holes
   in
-  let evs = List.map_filter map clause.cl_holes in
+  let holes = List.fold_left fold [] (List.rev clause.cl_holes) in
+  let map h = if h.hole_deps then Some h.hole_evar else None in
+  let evs = List.map_filter map holes in
   let len = List.length evs in
   if Int.equal len (List.length largs) then
     let fold sigma ev arg = define_with_type sigma env ev arg in

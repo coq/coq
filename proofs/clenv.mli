@@ -111,7 +111,7 @@ val pr_clenv : clausenv -> Pp.std_ppcmds
 type hole = {
   hole_evar : constr;
   hole_type : types;
-  hole_deps  : bool * bool;
+  hole_deps  : bool;
   (** Dependent in hypotheses then in conclusion *)
   hole_name : Name.t;
 }
