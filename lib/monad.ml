@@ -59,6 +59,11 @@ module type ListS = sig
       operator calls its second argument in a tail position. *)
   val fold_left : ('a -> 'b -> 'a t) -> 'a -> 'b list -> 'a t
 
+  (** Like the regular [List.iter]. The monadic effects are threaded
+      left to right. It is tail-recurisve if the [>>] operator calls
+      its second argument in a tail position. *)
+  val iter : ('a -> unit t) -> 'a list -> unit t
+
 
   (** {6 Two-list iterators} *)
 
@@ -132,6 +137,11 @@ module Make (M:Def) : S with type +'a t = 'a M.t = struct
           f x' b >>= fun x'' ->
           fold_left f x'' l
 
+    let rec iter f = function
+      | [] -> return ()
+      | [a] -> f a
+      | a::b::l -> f a >> f b >> iter f l
+
 
     exception SizeMismatch
 
@@ -148,3 +158,6 @@ module Make (M:Def) : S with type +'a t = 'a M.t = struct
   end
 
 end
+
+
+
