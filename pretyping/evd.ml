@@ -1630,6 +1630,13 @@ module MonadR =
       let (s',a) = x s in
       f a s'
 
+    let (>>) x y = fun s ->
+      let (s',()) = x s in
+      y s'
+
+    let map f x = fun s ->
+      on_snd f (x s)
+
   end)
 
 module Monad =
@@ -1642,6 +1649,13 @@ module Monad =
     let (>>=) x f = fun s ->
       let (a,s') = x s in
       f a s'
+
+    let (>>) x y = fun s ->
+      let ((),s') = x s in
+      y s'
+
+    let map f x = fun s ->
+      on_fst f (x s)
 
   end)
 

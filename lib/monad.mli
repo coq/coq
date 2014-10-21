@@ -10,17 +10,24 @@
 (** Combinators on monadic computations. *)
 
 
-(** A minimal definition necessary for the definition to go through. *)
+(** A definition of monads, each of the combinators is used in the
+    [Make] functor. *)
 module type Def = sig
 
   type +'a t
   val return : 'a -> 'a t
   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+  val (>>) : unit t -> 'a t -> 'a t
+  val map : ('a -> 'b) -> 'a t -> 'b t
 
-  (** The monadic laws must hold:
-      - [(x>>=f)>>=g] = [x>>=fun x' -> (f x'>>=g)]
-      - [return a >>= f] = [f a]
-      - [x>>=return] = [x]  *)
+(** The monadic laws must hold:
+    - [(x>>=f)>>=g] = [x>>=fun x' -> (f x'>>=g)]
+    - [return a >>= f] = [f a]
+    - [x>>=return] = [x]
+
+    As well as the following identities:
+    - [x >> y] = [x >>= fun () -> y]
+    - [map f x] = [x >>= fun x' -> f x'] *)
 
 end
 

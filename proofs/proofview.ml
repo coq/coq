@@ -96,7 +96,7 @@ module Giveup : Writer with type t = Evar.t list = struct
 end
 
 
-module Monad = Monad.Make(struct type 'a t = 'a Proof.t let (>>=) = Proof.bind let return = Proof.ret end)
+module Monad = Monad.Make(struct type 'a t = 'a Proof.t let (>>=) = Proof.bind let (>>) = Proof.seq let map = Proof.map let return = Proof.ret end)
 
 type entry = (Term.constr * Term.types) list
 

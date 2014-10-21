@@ -67,6 +67,8 @@ struct
   type 'a t = 'a focus Proofview.tactic
   let return = return
   let (>>=) = bind
+  let (>>) = (<*>)
+  let map f x = x >>= fun a -> return (f a)
 end
 
 module Ftac = Monad.Make(Self)
