@@ -472,17 +472,18 @@ let rec decompose_app_rel env evd t =
   (** Head normalize for compatibility with the old meta mechanism *)
   let t = Reductionops.whd_betaiota evd t in
   match kind_of_term t with
-  | App (f, args) -> 
-      if Array.length args > 1 then 
-	let fargs, args = Array.chop (Array.length args - 2) args in
-	  mkApp (f, fargs), args
-      else 
-	let (f', args) = decompose_app_rel env evd args.(0) in
-	let ty = Typing.type_of env evd args.(0) in
-	let f'' = mkLambda (Name default_dependent_ident, ty,
-	  mkLambda (Name (Id.of_string "y"), lift 1 ty,
-	    mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
-	in (f'', args)
+  | App (f, [||]) -> assert false
+  | App (f, [|arg|]) ->
+    let (f', argl, argr) = decompose_app_rel env evd arg in
+    let ty = Typing.type_of env evd argl in
+    let f'' = mkLambda (Name default_dependent_ident, ty,
+      mkLambda (Name (Id.of_string "y"), lift 1 ty,
+        mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
+    in (f'', argl, argr)
+  | App (f, args) ->
+    let len = Array.length args in
+    let fargs = Array.sub args 0 (Array.length args - 2) in
+    mkApp (f, fargs), args.(len - 2), args.(len - 1)
   | _ -> error "The term provided is not an applied relation."
 
 let decompose_applied_relation env sigma orig (c,l) =
@@ -491,8 +492,7 @@ let decompose_applied_relation env sigma orig (c,l) =
     let sigma, cl = Clenv.make_evar_clause env sigma None ty in
     let sigma = Clenv.solve_evar_clause env sigma true cl l in
     let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
-    let (equiv, args) = decompose_app_rel env sigma t in
-    let c1 = args.(0) and c2 = args.(1) in
+    let (equiv, c1, c2) = decompose_app_rel env sigma t in
     let ty1 = Retyping.get_type_of env sigma c1 in
     let ty2 = Retyping.get_type_of env sigma c2 in
     if not (evd_convertible env sigma ty1 ty2) then None
@@ -2007,7 +2007,7 @@ let setoid_proof ty fn fallback =
     Proofview.tclORELSE
       begin
         try
-          let rel, args = decompose_app_rel env sigma concl in
+          let rel, _, _ = decompose_app_rel env sigma concl in
           let evm = sigma in
           let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
 	    (try init_setoid () with _ -> raise Not_found);
@@ -2022,7 +2022,7 @@ let setoid_proof ty fn fallback =
                 | Hipattern.NoEquationFound ->
 	            begin match e with
 	            | Not_found ->
-	                let rel, args = decompose_app_rel env sigma concl in
+	                let rel, _, _ = decompose_app_rel env sigma concl in
 		        not_declared env ty rel
 	            | _ -> Proofview.tclZERO e
                     end
