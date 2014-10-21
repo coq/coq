@@ -404,59 +404,7 @@ end
 
 (* The [NonLogical] module allows the execution of side effects in tactics
    (non-logical side-effects are not discarded at failures). *)
-module NonLogical : sig
-
-  (* ['a t] is the monadic type of side-effect issuing commands. *)
-  type +'a t
-
-  (* ['a ref] is a type of references to assignables. *)
-  type 'a ref
-
-  (* The unit of the non-logical monad. *)
-  val ret : 'a -> 'a t
-  (* The bind of the non-logical monad. *)
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-  (* [ignore c] drops the returned value, otherwise behaves like
-     [c]. *)
-  val ignore : 'a t -> unit t
-  (* Specialised version of [bind] when the first argument return
-     [()]. *)
-  val seq : unit t -> 'a t -> 'a t
-
-  (* [ref x] creates a reference containing [x]. *)
-  val ref : 'a -> 'a ref t
-  (* [set r x] assigns [x] to [r]. *)
-  val set : 'a ref -> 'a -> unit t
-  (* [get r] returns the value of [r] *)
-  val get : 'a ref -> 'a t
-
-  (* [read_line] reads one line on the standard input. *)
-  val read_line : string t
-  (* [print_char a] prints [a] to the standard output. *)
-  val print_char : char -> unit t
-  (* [print stm] prints [stm] to the standard output. *)
-  val print : Pp.std_ppcmds -> unit t
-
-  (* [raise e] raises an error [e] which cannot be caught by logical
-     operation.*)
-  val raise : exn -> 'a t
-  (* [catch c h] runs the command [c] until it returns a value [v], in
-     which case [catch c h] behaves like [c], or [c] raises an exception
-     [e] in which case it continues with [h e]. *)
-  val catch : 'a t -> (exn -> 'a t) -> 'a t
-  (* [timeout t c] runs [c] for [t] seconds if [c] succeeds in time
-     then [timeout t c] behaves like [c], otherwise it fails with
-     [Proof_errors.Timeout]. *)
-  val timeout : int -> 'a t -> 'a t
-
-  (** [make f] internalize effects done by [f] in the monad. Exceptions raised
-      by [f] are encapsulated the same way {!raise} does it. *)
-  val make : (unit -> 'a) -> 'a t
-
-  (* [run c] performs [c]'s side effects for real. *)
-  val run : 'a t -> 'a
-
-end
+module NonLogical : module type of Proofview_monad.NonLogical
 
 (* [tclLIFT c] includes the non-logical command [c] in a tactic. *)
 val tclLIFT : 'a NonLogical.t -> 'a tactic

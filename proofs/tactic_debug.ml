@@ -16,13 +16,6 @@ let (prtac, tactic_printer) = Hook.make ()
 let (prmatchpatt, match_pattern_printer) = Hook.make ()
 let (prmatchrl, match_rule_printer) = Hook.make ()
 
-(* Notations *)
-let return = Proofview.NonLogical.ret
-let (>>=) = Proofview.NonLogical.bind
-let (>>) = Proofview.NonLogical.seq
-let (:=) = Proofview.NonLogical.set
-let (!) = Proofview.NonLogical.get
-let raise = Proofview.NonLogical.raise
 
 (* This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
@@ -92,18 +85,20 @@ let possibly_unquote s =
 
 (* (Re-)initialize debugger *)
 let db_initialize =
+  let open Proofview.NonLogical in
   (skip:=0) >> (skipped:=0) >> (breakpoint:=None)
 
 let int_of_string s =
-  try return (int_of_string s)
+  try Proofview.NonLogical.return (int_of_string s)
   with e -> Proofview.NonLogical.raise e
 
 let string_get s i =
-  try return (String.get s i)
+  try Proofview.NonLogical.return (String.get s i)
   with e -> Proofview.NonLogical.raise e
 
 (* Gives the number of steps or next breakpoint of a run command *)
 let run_com inst =
+  let open Proofview.NonLogical in
   string_get inst 0 >>= fun first_char ->
   if first_char ='r' then
     let i = drop_spaces inst 1 in
@@ -122,6 +117,7 @@ let run_com inst =
 
 (* Prints the run counter *)
 let run ini =
+  let open Proofview.NonLogical in
   if not ini then
     begin
       Proofview.NonLogical.print (str"\b\r\b\r") >>
@@ -135,7 +131,10 @@ let run ini =
 
 (* Prints the prompt *)
 let rec prompt level =
+  (* spiwack: avoid overriding by the open below *)
+  let runtrue = run true in
   begin
+    let open Proofview.NonLogical in
     Proofview.NonLogical.print (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ") >>
     let exit = (skip:=0) >> (skipped:=0) >> raise Sys.Break in
     Proofview.NonLogical.catch Proofview.NonLogical.read_line
@@ -154,7 +153,7 @@ let rec prompt level =
         prompt level
       end
     | _ ->
-        Proofview.NonLogical.catch (run_com inst >> run true >> return (DebugOn (level+1)))
+        Proofview.NonLogical.catch (run_com inst >> runtrue >> return (DebugOn (level+1)))
           begin function
             | Failure _ | Invalid_argument _ -> prompt level
             | e -> raise e
@@ -168,6 +167,9 @@ let rec prompt level =
    it serves any purpose in the current design, so we could just drop
    that. *)
 let debug_prompt lev tac f =
+  (* spiwack: avoid overriding by the open below *)
+  let runfalse = run false in
+  let open Proofview.NonLogical in
   let (>=) = Proofview.tclBIND in
   (* What to print and to do next *)
   let newlevel =
@@ -175,10 +177,10 @@ let debug_prompt lev tac f =
     if Int.equal initial_skip 0 then
       Proofview.tclLIFT !breakpoint >= fun breakpoint ->
       if Option.is_empty breakpoint then Proofview.tclTHEN (goal_com tac) (Proofview.tclLIFT (prompt lev))
-      else Proofview.tclLIFT(run false >> return (DebugOn (lev+1)))
+      else Proofview.tclLIFT(runfalse >> return (DebugOn (lev+1)))
     else Proofview.tclLIFT begin
       (!skip >>= fun s -> skip:=s-1) >>
-      run false >>
+      runfalse >>
       !skip >>= fun new_skip ->
       (if Int.equal new_skip 0 then skipped:=0 else return ()) >>
       return (DebugOn (lev+1))
@@ -199,6 +201,7 @@ let debug_prompt lev tac f =
     end
 
 let is_debug db =
+  let open Proofview.NonLogical in
   !breakpoint >>= fun breakpoint ->
   match db, breakpoint with
   | DebugOff, _ -> return false
@@ -209,6 +212,7 @@ let is_debug db =
 
 (* Prints a constr *)
 let db_constr debug env c =
+  let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str "Evaluated term: " ++ print_constr_env env c)
@@ -216,6 +220,7 @@ let db_constr debug env c =
 
 (* Prints the pattern rule *)
 let db_pattern_rule debug num r =
+  let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
   begin
@@ -231,6 +236,7 @@ let hyp_bound = function
 
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env (id,_,c) ido =
+  let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str "Hypothesis " ++
@@ -240,6 +246,7 @@ let db_matched_hyp debug env (id,_,c) ido =
 
 (* Prints the matched conclusion *)
 let db_matched_concl debug env c =
+  let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str "Conclusion has been matched: " ++ print_constr_env env c)
@@ -247,6 +254,7 @@ let db_matched_concl debug env c =
 
 (* Prints a success message when the goal has been matched *)
 let db_mc_pattern_success debug =
+  let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str "The goal has been successfully matched!" ++ fnl() ++
@@ -255,6 +263,7 @@ let db_mc_pattern_success debug =
 
 (* Prints a failure message for an hypothesis pattern *)
 let db_hyp_pattern_failure debug env sigma (na,hyp) =
+  let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str ("The pattern hypothesis"^(hyp_bound na)^
@@ -264,6 +273,7 @@ let db_hyp_pattern_failure debug env sigma (na,hyp) =
 
 (* Prints a matching failure message for a rule *)
 let db_matching_failure debug =
+  let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
     msg_tac_debug (str "This rule has failed due to matching errors!" ++ fnl() ++
@@ -272,6 +282,7 @@ let db_matching_failure debug =
 
 (* Prints an evaluation failure message for a rule *)
 let db_eval_failure debug s =
+  let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
     let s = str "message \"" ++ s ++ str "\"" in
@@ -282,6 +293,7 @@ let db_eval_failure debug s =
 
 (* Prints a logic failure message for a rule *)
 let db_logic_failure debug err =
+  let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
   begin
@@ -296,9 +308,10 @@ let is_breakpoint brkname s = match brkname, s with
   | _ -> false
 
 let db_breakpoint debug s =
+  let open Proofview.NonLogical in
   !breakpoint >>= fun opt_breakpoint ->
   match debug with
-  | DebugOn lev when not (List.is_empty s) && is_breakpoint opt_breakpoint s ->
+  | DebugOn lev when not (CList.is_empty s) && is_breakpoint opt_breakpoint s ->
       breakpoint:=None
   | _ ->
       return ()

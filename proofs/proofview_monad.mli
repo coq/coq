@@ -41,20 +41,17 @@ exception TacticFailure of exn
     operations and require little documentation. *)
 module NonLogical : sig
 
-  type +'a t
-  type 'a ref
+  include Monad.S
 
-  val ret : 'a -> 'a t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-  val map : ('a -> 'b) -> 'a t -> 'b t
   val ignore : 'a t -> unit t
-  val seq : unit t -> 'a t -> 'a t
+
+  type 'a ref
 
   val ref : 'a -> 'a ref t
   (** [Pervasives.(:=)] *)
-  val set : 'a ref -> 'a -> unit t
+  val (:=) : 'a ref -> 'a -> unit t
   (** [Pervasives.(!)] *)
-  val get : 'a ref -> 'a t
+  val (!) : 'a ref -> 'a t
 
   val read_line : string t
   val print_char : char -> unit t
@@ -125,13 +122,9 @@ end
 
 module Logical (P:Param) : sig
 
-  type +'a t
+  include Monad.S
 
-  val ret : 'a -> 'a t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-  val map : ('a -> 'b) -> 'a t -> 'b t
   val ignore : 'a t -> unit t
-  val seq : unit t -> 'a t -> 'a t
 
   val set : P.s -> unit t
   val get : P.s t

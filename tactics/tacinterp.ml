@@ -256,7 +256,7 @@ let get_debug () = !debug
 let debugging_step ist pp = match curr_debug ist with
   | DebugOn lev ->
       safe_msgnl (str "Level " ++ int lev ++ str": " ++ pp () ++ fnl())
-  | _ -> Proofview.NonLogical.ret ()
+  | _ -> Proofview.NonLogical.return ()
 
 let debugging_exception_step ist signal_anomaly e pp =
   let explain_exc =

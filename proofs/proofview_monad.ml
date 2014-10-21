@@ -47,9 +47,6 @@ end
     operations and require little documentation. *)
 module NonLogical =
 struct
-  type 'a t = unit -> 'a
-
-  type 'a ref = 'a Pervasives.ref
 
   (* The functions in this module follow the pattern that they are
      defined with the form [(); fun ()->...]. This is an optimisation
@@ -60,23 +57,26 @@ struct
      Documentation of this behaviour can be found at:
      https://ocaml.janestreet.com/?q=node/30 *)
 
-  let ret a = (); fun () -> a
+  include Monad.Make(struct
+    type 'a t = unit -> 'a
 
-  let bind a k = (); fun () -> k (a ()) ()
+    let return a = (); fun () -> a
+    let (>>=) a k = (); fun () -> k (a ()) ()
+    let (>>) a k = (); fun () -> a (); k ()
+    let map f a = (); fun () -> f (a ())
+  end)
+
+  type 'a ref = 'a Pervasives.ref
 
   let ignore a = (); fun () -> ignore (a ())
-
-  let seq a k = (); fun () -> a (); k ()
-
-  let map f a = (); fun () -> f (a ())
 
   let ref a = (); fun () -> Pervasives.ref a
 
   (** [Pervasives.(:=)] *)
-  let set r a = (); fun () -> r := a
+  let (:=) r a = (); fun () -> r := a
 
   (** [Pervasives.(!)] *)
-  let get = fun r -> (); fun () -> ! r
+  let (!) = fun r -> (); fun () -> ! r
 
   (** [Pervasives.raise]. Except that exceptions are wrapped with
       {!Exception}. *)
@@ -203,7 +203,27 @@ struct
                      ('a -> (exn -> 'r NonLogical.t) -> 'r NonLogical.t) ->
                      'r NonLogical.t }
 
-  type 'a t = state -> ('a * state) iolist
+  include Monad.Make(struct
+    type 'a t = state -> ('a * state) iolist
+
+    let return x : 'a t = (); fun s ->
+      { iolist = fun nil cons -> cons (x, s) nil }
+
+    let (>>=) (m : 'a t) (f : 'a -> 'b t) : 'b t = (); fun s ->
+      let m = m s in
+      { iolist = fun nil cons ->
+        m.iolist nil (fun (x, s) next -> (f x s).iolist next cons) }
+
+    let (>>) (m : unit t) (f : 'a t) : 'a t = (); fun s ->
+      let m = m s in
+      { iolist = fun nil cons ->
+        m.iolist nil (fun ((), s) next -> (f s).iolist next cons) }
+
+    let map (f : 'a -> 'b) (m : 'a t) : 'b t = (); fun s ->
+      let m = m s in
+      { iolist = fun nil cons -> m.iolist nil (fun (x, s) next -> cons (f x, s) next) }
+
+  end)
 
   let zero e : 'a t = (); fun s ->
     { iolist = fun nil cons -> nil e }
@@ -212,27 +232,12 @@ struct
     let m1 = m1 s in
     { iolist = fun nil cons -> m1.iolist (fun e -> (m2 e s).iolist nil cons) cons }
 
-  let ret x : 'a t = (); fun s ->
-    { iolist = fun nil cons -> cons (x, s) nil }
-
-  let bind (m : 'a t) (f : 'a -> 'b t) : 'b t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons -> m.iolist nil (fun (x, s) next -> (f x s).iolist next cons) }
-
-  let seq (m : unit t) (f : 'a t) : 'a t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons -> m.iolist nil (fun ((), s) next -> (f s).iolist next cons) }
-
-  let map (f : 'a -> 'b) (m : 'a t) : 'b t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons -> m.iolist nil (fun (x, s) next -> cons (f x, s) next) }
-
   let ignore (m : 'a t) : unit t = (); fun s ->
     let m = m s in
     { iolist = fun nil cons -> m.iolist nil (fun (_, s) next -> cons ((), s) next) }
 
   let lift (m : 'a NonLogical.t) : 'a t = (); fun s ->
-    { iolist = fun nil cons -> NonLogical.bind m (fun x -> cons (x, s) nil) }
+    { iolist = fun nil cons -> NonLogical.(m >>= fun x -> cons (x, s) nil) }
 
   (** State related *)
 
@@ -273,15 +278,16 @@ struct
       | Nil e -> nil e
       | Cons (x, l) -> cons x (fun e -> (reflect (l e)).iolist nil cons)
       in
-      NonLogical.bind m next
+      NonLogical.(m >>= next)
     }
 
   let split (m : 'a t) : ('a, exn -> 'a t) list_view t = (); fun s ->
     let m = m s in
-    let rnil e = NonLogical.ret (Nil e) in
-    let rcons p l = NonLogical.ret (Cons (p, l)) in
+    let rnil e = NonLogical.return (Nil e) in
+    let rcons p l = NonLogical.return (Cons (p, l)) in
     { iolist = fun nil cons ->
-      NonLogical.bind (m.iolist rnil rcons) begin function
+      let open NonLogical in
+      m.iolist rnil rcons >>= begin function
       | Nil e -> cons (Nil e, s) nil
       | Cons ((x, s), l) ->
         let l e = (); fun _ -> reflect (l e) in
@@ -292,7 +298,7 @@ struct
     let s = { wstate = P.wunit; rstate = r; sstate = s } in
     let m = m s in
     let nil e = NonLogical.raise (TacticFailure e) in
-    let cons (x, s) _ = NonLogical.ret (x, s.sstate, s.wstate) in
+    let cons (x, s) _ = NonLogical.return (x, s.sstate, s.wstate) in
     m.iolist nil cons
 
  end
