@@ -20,10 +20,8 @@ open Reduction
 open Tacticals
 open Tacmach
 open Tactics
-open Clenv
 open Pretype_errors
 open Typeclasses
-open Typeclasses_errors
 open Classes
 open Constrexpr
 open Globnames
@@ -34,7 +32,6 @@ open Locusops
 open Decl_kinds
 open Elimschemes
 open Environ
-open Tacinterp
 open Termops
 open Libnames
 
@@ -637,8 +634,6 @@ let all_constraints cstrs =
 let poly_inverse sort =
   if sort then PropGlobal.inverse else TypeGlobal.inverse
 
-let eq_env x y = x == y
-
 type rewrite_proof = 
   | RewPrf of constr * constr
   | RewCast of cast_kind
@@ -720,10 +715,6 @@ let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
 type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
 
 let default_flags = { under_lambdas = true; on_morphisms = true; }
-
-let map_rewprf f p = match p with
-  | RewPrf (x, y) -> RewPrf (f x, f y)
-  | RewCast _ -> p
 
 let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
@@ -821,8 +812,6 @@ let apply_constraint env avoid car rel prf cstr res =
   match snd cstr with
   | None -> res
   | Some r -> resolve_subrelation env avoid car rel (fst cstr) prf r res
-
-let eq_env x y = x == y
 
 let coerce env avoid cstr res = 
   let rel, prf = get_rew_prf res in
@@ -1364,13 +1353,6 @@ end
 
 (** The strategy for a single rewrite, dealing with occurences. *)
 
-let get_hypinfo_ids {c = opt} =
-  match opt with
-  | None -> []
-  | Some (is, gc) ->
-    let avoid = Option.default [] (TacStore.get is.extra f_avoid_ids) in
-      Id.Map.fold (fun id _ accu -> id :: accu) is.lfun avoid
-
 (** A dummy initial clauseenv to avoid generating initial evars before
     even finding a first application of the rewriting lemma, in setoid_rewrite
     mode *)
@@ -1453,16 +1435,6 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
             | Some id -> mkApp (term, [| mkVar id |])
           in Some proof
       in Some (Some (evars, res, newt))
-	      
-let new_refine (evd, c) =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let update _ =
-    let evd = Evarconv.consider_remaining_unif_problems env evd in
-    (evd, c)
-  in
-  Proofview.Refine.refine_casted update
-  end
 
 let assert_replacing id newt tac = 
   let prf = Proofview.Goal.nf_enter begin fun gl ->
@@ -1550,23 +1522,9 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
 			     ++ fnl () ++ Himsg.explain_pretype_error env evd e))
   end
 
-let newtactic_init_setoid () =
-  try init_setoid (); Proofview.tclUNIT ()
-  with e when Errors.noncritical e -> Proofview.tclZERO e
-
 let tactic_init_setoid () = 
   try init_setoid (); tclIDTAC
   with e when Errors.noncritical e -> tclFAIL 0 (str"Setoid library not loaded")
-  
-let cl_rewrite_clause_new_strat ?abs strat clause =
-  Proofview.tclTHEN (newtactic_init_setoid ())
-  (try cl_rewrite_clause_newtac ?abs strat clause
-   with RewriteFailure s ->
-   newfail 0 (str"setoid rewrite failed: " ++ s))
-
-let cl_rewrite_clause_newtac' l left2right occs clause =
-  Proofview.tclFOCUS 1 1
-    (cl_rewrite_clause_new_strat (rewrite_with left2right rewrite_unif_flags l occs) clause)
 
 let cl_rewrite_clause_strat strat clause =
   tclTHEN (tactic_init_setoid ())
@@ -1980,8 +1938,6 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
 	   (Proofview.V82.of_tactic (cl_rewrite_clause_newtac ~abs:(Some abs) ~origsigma strat cl))) gl
     with RewriteFailure e ->
       tclFAIL 0 (str"setoid rewrite failed: " ++ e) gl
-
-open Proofview.Notations
 
 let general_s_rewrite_clause x =
   match x with

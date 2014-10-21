@@ -71,10 +71,6 @@ val cl_rewrite_clause :
   interp_sign * (glob_constr_and_expr * glob_constr_and_expr bindings) ->
   bool -> Locus.occurrences -> Id.t option -> tactic
 
-val cl_rewrite_clause_newtac' :
-  interp_sign * (glob_constr_and_expr * glob_constr_and_expr bindings) ->
-  bool -> Locus.occurrences -> Id.t option -> unit Proofview.tactic
-
 val is_applied_rewrite_relation :
   env -> evar_map -> Context.rel_context -> constr -> types option
 
