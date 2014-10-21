@@ -934,18 +934,6 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
 (** The following functions return the set of evars immediately
     contained in the object *)
 
-(* including defined evars, excluding instances *)
-
-let collect_evars c =
-  let rec collrec acc c =
-    match kind_of_term c with
-      | Evar (evk,_) -> Evar.Set.add evk acc
-      | _       -> fold_constr collrec acc c
-  in
-  collrec Evar.Set.empty c
-
-(* including defined evars and instances of evars *)
-
 (* excluding defined evars *)
 
 let evar_list c =
