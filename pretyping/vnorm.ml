@@ -109,7 +109,8 @@ let build_branches_type env (mind,_ as _ind) mib mip params dep p =
      a 0) et les lambda correspondant aux realargs *)
   let build_one_branch i cty =
     let typi = type_constructor mind mib cty params in
-    let decl,indapp = decompose_prod_assum typi in
+    let decl,indapp = Reductionops.splay_prod env Evd.empty typi in
+    let decl_with_letin,_ = decompose_prod_assum typi in
     let ind,cargs = find_rectype_a env indapp in
     let nparams = Array.length params in
     let carity = snd (rtbl.(i)) in
@@ -123,7 +124,7 @@ let build_branches_type env (mind,_ as _ind) mib mip params dep p =
 	mkApp(papp,[|dep_cstr|])
       else papp
     in
-    decl, codom
+    decl, decl_with_letin, codom
   in Array.mapi build_one_branch mip.mind_nf_lc
 
 let build_case_type dep p realargs c =
@@ -195,9 +196,9 @@ and nf_stk env c t stk  =
       (* calcul des branches *)
       let bsw = branch_of_switch (nb_rel env) sw in
       let mkbranch i (n,v) =
-	let decl,codom = btypes.(i) in
-	let b = nf_val (push_rel_context decl env) v codom in
-	it_mkLambda_or_LetIn b decl
+	let decl,decl_with_letin,codom = btypes.(i) in
+	let b = nf_val (Termops.push_rels_assum decl env) v codom in
+        Termops.it_mkLambda_or_LetIn_from_no_LetIn b decl_with_letin
       in
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type dep p realargs c in

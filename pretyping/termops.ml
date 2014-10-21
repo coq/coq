@@ -250,6 +250,13 @@ let it_mkNamedProd_or_LetIn init = it_named_context_quantifier mkNamedProd_or_Le
 let it_mkNamedProd_wo_LetIn init = it_named_context_quantifier mkNamedProd_wo_LetIn ~init
 let it_mkNamedLambda_or_LetIn init = it_named_context_quantifier mkNamedLambda_or_LetIn ~init
 
+let it_mkLambda_or_LetIn_from_no_LetIn c decls =
+  let rec aux k decls c = match decls with
+  | [] -> c
+  | (na,Some b,t)::decls -> mkLetIn (na,b,t,aux (k-1) decls (liftn 1 k c))
+  | (na,None,t)::decls -> mkLambda (na,t,aux (k-1) decls c)
+  in aux (List.length decls) (List.rev decls) c
+
 (* *)
 
 (* strips head casts and flattens head applications *)

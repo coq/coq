@@ -59,6 +59,10 @@ val it_mkNamedProd_or_LetIn : types -> named_context -> types
 val it_mkNamedProd_wo_LetIn : types -> named_context -> types
 val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
 
+(* Ad hoc version reinserting letin, assuming the body is defined in
+   the context where the letins are expanded *)
+val it_mkLambda_or_LetIn_from_no_LetIn : constr -> rel_context -> constr
+
 val it_named_context_quantifier :
   (named_declaration -> 'a -> 'a) -> init:'a -> named_context -> 'a
 
