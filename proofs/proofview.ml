@@ -431,14 +431,6 @@ let _ = Errors.register_handler begin function
   | _ -> raise Errors.Unhandled
 end
 
-let on_advance g ~solved ~adv =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Proof.bind in
-  Solution.get >>= fun step ->
-  match advance step g with
-  | None -> solved (* If [first] has been solved by side effect: do nothing. *)
-  | Some g -> adv g
-
 (* A variant of [Monad.List.iter] where we iter over the focused list of
    goals. The argument tactic is executed in a focus comprising only
    of the current goal, a goal which has been solved by side effect is
@@ -449,13 +441,13 @@ let iter_goal i =
   let (>>) = Proof.seq in
   Comb.get >>= fun initial ->
   Monad.List.fold_left begin fun (subgoals as cur) goal ->
-    on_advance goal
-      ~solved: ( Proof.ret cur )
-      ~adv: begin fun goal ->
+    Solution.get >>= fun step ->
+    match advance step goal with
+    | None -> Proof.ret cur
+    | Some goal ->
         Comb.set [goal] >>
         i goal >>
         Proof.map (fun comb -> comb :: subgoals) Comb.get
-      end
   end [] initial >>= fun subgoals ->
   Comb.set (List.flatten (List.rev subgoals))
 
@@ -471,13 +463,13 @@ let fold_left2_goal i s l =
   Pv.get >>= fun initial ->
   tclORELSE begin
     Monad.List.fold_left2 tclZERO begin fun ((r,subgoals) as cur) goal a ->
-      on_advance goal
-        ~solved: ( Proof.ret cur )
-        ~adv: begin fun goal ->
+      Solution.get >>= fun step ->
+      match advance step goal with
+      | None -> Proof.ret cur
+      | Some goal ->
           Comb.set [goal] >>
             i goal a r >>= fun r ->
           Proof.map (fun comb -> (r, comb :: subgoals)) Comb.get
-        end
     end (s,[]) initial.comb l >>= fun (r,subgoals) ->
     Comb.set (List.flatten (List.rev subgoals)) >>
     Proof.ret r
@@ -502,14 +494,13 @@ let tclDISPATCHGEN f join tacs =
       end
   | [tac] ->
       begin
-        Comb.get >>= function
-        | [goal] ->
-            on_advance goal
-              ~solved:( tclUNIT (join []) )
-              ~adv:begin fun _ ->
-                Proof.map (fun res -> join [res]) (f tac)
-              end
-        | comb -> tclZERO (SizeMismatch(List.length comb,1))
+        Pv.get >>= function
+        | { comb=[goal] ; solution } ->
+            begin match advance solution goal with
+            | None -> tclUNIT (join [])
+            | Some _ -> Proof.map (fun res -> join [res]) (f tac)
+            end
+        | {comb} -> tclZERO (SizeMismatch(List.length comb,1))
       end
   | _ ->
       let iter _ t cur = Proof.map (fun y -> y :: cur) (f t) in
