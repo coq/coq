@@ -458,15 +458,21 @@ Notation demorgan4 := orb_andb_distrib_l (only parsing).
 
 (** Absorption *)
 
-Lemma absoption_andb : forall b1 b2:bool, b1 && (b1 || b2) = b1.
+Lemma absorption_andb : forall b1 b2:bool, b1 && (b1 || b2) = b1.
 Proof.
   destr_bool.
 Qed.
 
-Lemma absoption_orb : forall b1 b2:bool, b1 || b1 && b2 = b1.
+Lemma absorption_orb : forall b1 b2:bool, b1 || b1 && b2 = b1.
 Proof.
   destr_bool.
 Qed.
+
+(* begin hide *)
+(* Compatibility *)
+Notation absoption_andb := absorption_andb (only parsing).
+Notation absoption_orb := absorption_orb (only parsing).
+(* end hide *)
 
 (*********************************)
 (** * Properties of [xorb]       *)
