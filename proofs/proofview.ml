@@ -433,26 +433,25 @@ let on_advance g ~solved ~adv =
   | None -> solved (* If [first] has been solved by side effect: do nothing. *)
   | Some g -> adv g
 
-(* A variant of [Monad.List.fold_left] where we iter over the focused list of
+(* A variant of [Monad.List.iter] where we iter over the focused list of
    goals. The argument tactic is executed in a focus comprising only
    of the current goal, a goal which has been solved by side effect is
    skipped. The generated subgoals are concatenated in order.  *)
-let fold_left_goal i s =
+let iter_goal i =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
   Pv.get >>= fun initial ->
-  Monad.List.fold_left begin fun ((r,subgoals) as cur) goal ->
+  Monad.List.fold_left begin fun (subgoals as cur) goal ->
     on_advance goal
       ~solved: ( Proof.ret cur )
       ~adv: begin fun goal ->
         Comb.set [goal] >>
-        i goal r >>= fun r ->
-        Proof.map (fun step -> (r, step.comb :: subgoals)) Pv.get
+        i goal >>
+        Proof.map (fun step -> step.comb :: subgoals) Pv.get
       end
-  end (s,[]) initial.comb >>= fun (r,subgoals) ->
-  Comb.set (List.flatten (List.rev subgoals)) >>
-  Proof.ret r
+  end [] initial.comb >>= fun subgoals ->
+  Comb.set (List.flatten (List.rev subgoals))
 
 (* A variant of [Monad.List.fold_left2] where the first list is the
    list of focused goals. The argument tactic is executed in a focus
@@ -560,7 +559,7 @@ let tclINDEPENDENT tac =
   match initial.comb with
   | [] -> tclUNIT ()
   | [_] -> tac
-  | _ -> fold_left_goal (fun _ () -> tac) ()
+  | _ -> iter_goal (fun _ -> tac)
 
 (* Equality function on goals *)
 let goal_equal evars1 gl1 evars2 gl2 =
@@ -848,7 +847,7 @@ module Goal = struct
     gmake_with info env sigma goal , sigma
 
   let nf_enter f =
-    fold_left_goal begin fun goal () ->
+    iter_goal begin fun goal ->
       Env.get >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try
@@ -857,7 +856,7 @@ module Goal = struct
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
-    end ()
+    end
 
   let normalize { self } =
     Env.get >>= fun env ->
@@ -870,14 +869,14 @@ module Goal = struct
     gmake_with info env sigma goal
 
   let enter f =
-    fold_left_goal begin fun goal () ->
+    iter_goal begin fun goal ->
       Env.get >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try f (gmake env sigma goal)
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
-    end ()
+    end
 
   let goals =
     Env.get >>= fun env ->
