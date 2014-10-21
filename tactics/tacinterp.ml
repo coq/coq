@@ -2154,7 +2154,7 @@ let _ =
       let prf = Proof.start sigma [env, ty] in
       let (prf, _) =
         try Proof.run_tactic env tac prf
-        with Proofview_monad.TacticFailure e as src ->
+        with Logic_monad.TacticFailure e as src ->
           (** Catch the inner error of the monad tactic *)
           let src = Errors.push src in
           let e = Backtrace.app_backtrace ~src ~dst:e in

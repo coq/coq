@@ -24,82 +24,8 @@ open Pp
 open Util
 open Proofview_monad
 
-(* Type of proofviews. *)
-type proofview = { solution : Evd.evar_map; comb : Goal.goal list }
-
-(** Parameters of the logic monads *)
-module P = struct
-
-  type s = proofview * Environ.env
-
-  type e = unit
-  (* spiwack: nothing read-only anymore but it's free so I'll leave a place holder. *)
-
-  (** Status (safe/unsafe) * shelved goals * given up *)
-  type w = bool * Evar.t list * Evar.t list
-
-  let wunit = true , [] , []
-  let wprod (b1,s1,g1) (b2,s2,g2) = b1 && b2 , s1@s2 , g1@g2
-
-end
-
-(** Definition of the tactic monad *)
-module Proof = Logical(P)
-
-(** Lenses to access to components of the states *)
-module type State = sig
-  type t
-  val get : t Proof.t
-  val set : t -> unit Proof.t
-  val modify : (t->t) -> unit Proof.t
-end
-
-module type Writer = sig
-  type t
-  val put : t -> unit Proof.t
-end
-
-module Pv : State with type t := proofview = struct
-  let get = Proof.(map fst get)
-  let set p = Proof.modify (fun (_,e) -> (p,e))
-  let modify f= Proof.modify (fun (p,e) -> (f p,e))
-end
-
-module Solution : State with type t := Evd.evar_map = struct
-  let get = Proof.map (fun {solution} -> solution) Pv.get
-  let set s = Pv.modify (fun pv -> { pv with solution = s })
-  let modify f = Pv.modify (fun pv -> { pv with solution = f pv.solution })
-end
-
-module Comb : State with type t = Evar.t list = struct
-    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
-  type t = Evar.t list
-  let get = Proof.map (fun {comb} -> comb) Pv.get
-  let set c = Pv.modify (fun pv -> { pv with comb = c })
-  let modify f = Pv.modify (fun pv -> { pv with comb = f pv.comb })
-end
-
-module Env : State with type t := Environ.env = struct
-  let get = Proof.(map snd get)
-  let set e = Proof.modify (fun (p,_) -> (p,e))
-  let modify f = Proof.modify (fun (p,e) -> (p,f e))
-end
-
-module Status : Writer with type t := bool = struct
-  let put s = Proof.put (s,[],[])
-end
-
-module Shelf : Writer with type t = Evar.t list = struct
-    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
-  type t = Evar.t list
-  let put sh = Proof.put (true,sh,[])
-end
-
-module Giveup : Writer with type t = Evar.t list = struct
-    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
-  type t = Evar.t list
-  let put gs = Proof.put (true,[],gs)
-end
+(** Main state of tactics *)
+type proofview = Proofview_monad.proofview
 
 type entry = (Term.constr * Term.types) list
 
@@ -260,6 +186,8 @@ let unfocus c sp =
      bind on unit-returning tactics).
 *)
 
+module Proof = Logical
+
 (* type of tactics:
 
    tactics can
@@ -276,7 +204,7 @@ type 'a case =
 (* Applies a tactic to the current proofview. *)
 let apply env t sp =
   let (next_r,(next_state,_),status) =
-    Proofview_monad.NonLogical.run (Proof.run t () (sp,env))
+    Logic_monad.NonLogical.run (Proof.run t () (sp,env))
   in
   next_r,next_state,status
 
@@ -284,7 +212,7 @@ let apply env t sp =
 
 
 let catchable_exception = function
-  | Proofview_monad.Exception _ -> false
+  | Logic_monad.Exception _ -> false
   | e -> Errors.noncritical e
 
 
@@ -313,6 +241,7 @@ let tclZERO = Proof.zero
 
 (* [tclCASE t] observes the head of the tactic and returns it as a value *)
 let tclCASE t =
+  let open Logic_monad in
   let map = function
   | Nil e -> Fail e
   | Cons (x, t) -> Next (x, t)
@@ -322,6 +251,7 @@ let tclCASE t =
 (* [tclORELSE t1 t2] behaves like [t1] if [t1] succeeds at least once
    or [t2] if [t1] fails. *)
 let tclORELSE t1 t2 =
+  let open Logic_monad in
   let open Proof in
   split t1 >>= function
     | Nil e -> t2 e
@@ -331,6 +261,7 @@ let tclORELSE t1 t2 =
    succeeds at least once then it behaves as [tclBIND a s] otherwise, if [a]
    fails with [e], then it behaves as [f e]. *)
 let tclIFCATCH a s f =
+  let open Logic_monad in
   let open Proof in
   split a >>= function
     | Nil e -> f e
@@ -354,6 +285,7 @@ end
    does not have a second success. Moreover the second success may be
    conditional on the error recieved: [e] is used. *)
 let tclEXACTLY_ONCE e t =
+  let open Logic_monad in
   let open Proof in
   split t >>= function
     | Nil e -> tclZERO e
@@ -588,21 +520,21 @@ let tclTIMEOUT n t =
      (IO) monad. Hence I force it myself by asking for the evaluation of
      a dummy value first, lest [timeout] be called when everything has
      already been computed. *)
-  let t = Proof.lift (Proofview_monad.NonLogical.return ()) >> t in
+  let t = Proof.lift (Logic_monad.NonLogical.return ()) >> t in
   Proof.get >>= fun initial ->
   Proof.lift begin
-    Proofview_monad.NonLogical.catch
+    Logic_monad.NonLogical.catch
       begin
-        let open Proofview_monad.NonLogical in
+        let open Logic_monad.NonLogical in
         timeout n (Proof.run t () initial) >>= fun r ->
         return (Util.Inl r)
       end
-      begin let open Proofview_monad.NonLogical in function
-        | Proofview_monad.Timeout -> return (Util.Inr Timeout)
-        | Proofview_monad.TacticFailure e as src ->
+      begin let open Logic_monad.NonLogical in function
+        | Logic_monad.Timeout -> return (Util.Inr Timeout)
+        | Logic_monad.TacticFailure e as src ->
           let e = Backtrace.app_backtrace ~src ~dst:e in
           return (Util.Inr e)
-        | e -> Proofview_monad.NonLogical.raise e
+        | e -> Logic_monad.NonLogical.raise e
       end
   end >>= function
     | Util.Inl (res,s,m) ->
@@ -625,7 +557,7 @@ let tclTIME s t =
     let open Proof in
     tclUNIT () >>= fun () ->
     let tstart = System.get_time() in
-    Proof.split t >>= function
+    Proof.split t >>= let open Logic_monad in function
     | Nil e ->
       begin
         let tend = System.get_time() in
@@ -941,7 +873,7 @@ struct
   end
 end
 
-module NonLogical = Proofview_monad.NonLogical
+module NonLogical = Logic_monad.NonLogical
 
 let tclLIFT = Proof.lift
 
@@ -1036,7 +968,7 @@ module V82 = struct
       let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] } in
       let (_,final,_) = apply (GoalV82.env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = final.comb }
-    with Proofview_monad.TacticFailure e as src ->
+    with Logic_monad.TacticFailure e as src ->
       let src = Errors.push src in
       let e = Backtrace.app_backtrace ~src ~dst:e in
       raise e

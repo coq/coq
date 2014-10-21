@@ -404,7 +404,7 @@ end
 
 (* The [NonLogical] module allows the execution of side effects in tactics
    (non-logical side-effects are not discarded at failures). *)
-module NonLogical : module type of Proofview_monad.NonLogical
+module NonLogical : module type of Logic_monad.NonLogical
 
 (* [tclLIFT c] includes the non-logical command [c] in a tactic. *)
 val tclLIFT : 'a NonLogical.t -> 'a tactic
