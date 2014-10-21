@@ -209,18 +209,22 @@ let focus i j sp =
    goal ([advance] is used to figure if a side effect has modified the
    goal) it terminates quickly. *)
 let rec advance sigma g =
+  let open Evd in
   let evi = Evd.find sigma g in
-  match evi.Evd.evar_body with
-  | Evd.Evar_empty -> Some g
-  | Evd.Evar_defined v ->
-      if Option.default false (Evd.Store.get evi.Evd.evar_extra Evarutil.cleared) then
+  match evi.evar_body with
+  | Evar_empty -> Some g
+  | Evar_defined v ->
+      if Option.default false (Store.get evi.evar_extra Evarutil.cleared) then
         let (e,_) = Term.destEvar v in
         advance sigma e
       else
         None
 
-(* Unfocuses a proofview with respect to a context. *)
+(** [undefined defs l] is the list of goals in [l] which are still
+    unsolved (after advancing cleared goals). *)
 let undefined defs l = CList.map_filter (advance defs) l
+
+(* Unfocuses a proofview with respect to a context. *)
 let unfocus c sp =
   { sp with comb = undefined sp.solution (unfocus_sublist c sp.comb) }
 
@@ -289,7 +293,7 @@ let catchable_exception = function
 
 
 (* Unit of the tactic monad *)
-let tclUNIT a = (Proof.ret a:'a Proof.t)
+let tclUNIT = Proof.ret
 
 (* Bind operation of the tactic monad *)
 let tclBIND = Proof.bind
@@ -306,8 +310,7 @@ let tclIGNORE = Proof.ignore
 (* [tclOR t1 t2 = t1] as long as [t1] succeeds. Whenever the successes
    of [t1] have been depleted and it failed with [e], then it behaves
    as [t2 e].  No interleaving at this point. *)
-let tclOR t1 t2 =
-  Proof.plus t1 t2
+let tclOR = Proof.plus
 
 (* [tclZERO e] always fails with error message [e]*)
 let tclZERO = Proof.zero
@@ -675,9 +678,9 @@ let shelve =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
-  Pv.get >>= fun initial ->
-  Pv.set {initial with comb=[]} >>
-  Shelf.put initial.comb
+  Comb.get >>= fun initial ->
+  Comb.set [] >>
+  Shelf.put initial
 
 
 (* [contained_in_info e evi] checks whether the evar [e] appears in
@@ -697,7 +700,7 @@ let depends_on sigma src tgt =
    of [l]. The list [l] may contain [g], but it does not affect the
    result. *)
 let unifiable sigma g l =
-  List.exists (fun tgt -> g != tgt && depends_on sigma g tgt) l
+  List.exists (fun tgt -> not (Evar.equal g tgt) && depends_on sigma g tgt) l
 
 (* [partition_unifiable sigma l] partitions [l] into a pair [(u,n)]
    where [u] is composed of the unifiable goals, i.e. the goals on
@@ -715,7 +718,7 @@ let shelve_unifiable =
   let (>>) = Proof.seq in
   Pv.get >>= fun initial ->
   let (u,n) = partition_unifiable initial.solution initial.comb in
-  Pv.set {initial with comb=n} >>
+  Comb.set n >>
   Shelf.put u
 
 let check_no_dependencies =
@@ -733,7 +736,7 @@ let check_no_dependencies =
    goals of p *)
 let unshelve l p =
   (* advance the goals in case of clear *)
-  let l = CList.map_filter (fun g -> advance p.solution g) l in
+  let l = undefined p.solution l in
   { p with comb = p.comb@l }
 
 (* Gives up on the goal under focus. Reports an unsafe status. Proofs
@@ -742,10 +745,10 @@ let give_up =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
-  Pv.get >>= fun initial ->
-  Pv.set {initial with comb=[]} >>
+  Comb.get >>= fun initial ->
+  Comb.set [] >>
   mark_as_unsafe >>
-  Giveup.put initial.comb
+  Giveup.put initial
 
 (** [goodmod p m] computes the representative of [p] modulo [m] in the
     interval [[0,m-1]].*)
@@ -757,41 +760,33 @@ let goodmod p m =
   if p' < 0 then p'+m else p'
 
 let cycle n =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Proof.bind in
-  Pv.get >>= fun initial ->
-  let l = List.length initial.comb in
-  let n' = goodmod n l in
-  let (front,rear) = List.chop n' initial.comb in
-  Pv.set {initial with comb=rear@front}
+  Comb.modify begin fun initial ->
+    let l = List.length initial in
+    let n' = goodmod n l in
+    let (front,rear) = List.chop n' initial in
+    rear@front
+  end
 
 let swap i j =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Proof.bind in
-  Pv.get >>= fun initial ->
-  let l = List.length initial.comb in
-  let i = if i>0 then i-1 else i and j = if j>0 then j-1 else j in
-  let i = goodmod i l and j = goodmod j l in
-  let comb =
+  Comb.modify begin fun initial ->
+    let l = List.length initial in
+    let i = if i>0 then i-1 else i and j = if j>0 then j-1 else j in
+    let i = goodmod i l and j = goodmod j l in
     CList.map_i begin fun k x ->
       match k with
-      | k when Int.equal k i -> CList.nth initial.comb j
-      | k when Int.equal k j -> CList.nth initial.comb i
+      | k when Int.equal k i -> CList.nth initial j
+      | k when Int.equal k j -> CList.nth initial i
       | _ -> x
-    end 0 initial.comb
-  in
-  Pv.set {initial with comb}
+    end 0 initial
+  end
 
 let revgoals =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Proof.bind in
-  Pv.get >>= fun initial ->
-  Pv.set {initial with comb=List.rev initial.comb}
+  Comb.modify List.rev
 
 let numgoals =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  Pv.get >>= fun { comb } ->
+  Comb.get >>= fun comb ->
   Proof.ret (List.length comb)
 
 module Unsafe = struct
@@ -802,8 +797,7 @@ module Unsafe = struct
 
   let tclNEWGOALS gls =
     Pv.modify begin fun step ->
-      let map gl = advance step.solution gl in
-      let gls = List.map_filter map gls in
+      let gls = undefined step.solution gls in
       { step with comb = step.comb @ gls }
     end
 
