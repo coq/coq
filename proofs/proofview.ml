@@ -621,13 +621,6 @@ let tclINDEPENDENT tac =
   | [_] -> tac
   | _ -> list_iter_goal () (fun _ () -> tac)
 
-let tclNEWGOALS gls =
-  Pv.modify begin fun step ->
-  let map gl = advance step.solution gl in
-  let gls = List.map_filter map gls in
-  { step with comb = step.comb @ gls }
-  end
-
 (* Equality function on goals *)
 let goal_equal evars1 gl1 evars2 gl2 =
   let evi1 = Evd.find evars1 gl1 in
@@ -861,20 +854,28 @@ let numgoals =
 let in_proofview p k =
   k p.solution
 
-let reset_future_goals p =
-  { p with solution = Evd.reset_future_goals p.solution }
-
 module Unsafe = struct
 
   (* A [Proofview.tactic] version of [Refiner.tclEVARS] *)
   let tclEVARS evd =
     Pv.modify (fun ps -> { ps with solution = evd })
 
+  let tclNEWGOALS gls =
+    Pv.modify begin fun step ->
+      let map gl = advance step.solution gl in
+      let gls = List.map_filter map gls in
+      { step with comb = step.comb @ gls }
+    end
+
   let tclEVARSADVANCE evd =
     Pv.modify (fun ps -> { solution = evd; comb = undefined evd ps.comb })
 
   let tclEVARUNIVCONTEXT ctx = 
     Pv.modify (fun ps -> { ps with solution = Evd.set_universe_context ps.solution ctx })
+
+  let reset_future_goals p =
+    { p with solution = Evd.reset_future_goals p.solution }
+
 
 end
 

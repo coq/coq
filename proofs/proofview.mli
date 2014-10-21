@@ -252,11 +252,6 @@ val tclEFFECTS : Declareops.side_effects -> unit tactic
 (* Checks for interrupts *)
 val tclCHECKINTERRUPT : unit tactic
 
-(* [tclNEWGOALS gls] adds the goals [gls] to the ones currently being proved,
-   appending them to the list of focussed goals. If a goal is already solved,
-   it is not added. Prefer the other primitives when possible. *)
-val tclNEWGOALS : Goal.goal list -> unit tactic
-
 (* Shelves all the goals under focus. The goals are placed on the
    shelf for later use (or being solved by side-effects). *)
 val shelve : unit tactic
@@ -311,6 +306,13 @@ module Unsafe : sig
 
   (* Assumes the new evar_map does not change existing goals *)
   val tclEVARS : Evd.evar_map -> unit tactic
+
+  (* [tclNEWGOALS gls] adds the goals [gls] to the ones currently
+     being proved, appending them to the list of focussed goals. If a
+     goal is already solved, it is not added. Prefer the other
+     primitives when possible. *)
+  val tclNEWGOALS : Goal.goal list -> unit tactic
+
     
   (* Assumes the new evar_map might be solving some existing goals *)
   val tclEVARSADVANCE : Evd.evar_map -> unit tactic
@@ -318,6 +320,8 @@ module Unsafe : sig
   (* Set the evar universe context *)
   val tclEVARUNIVCONTEXT : Evd.evar_universe_context -> unit tactic
 
+  (* Clears the future goals store in the proof. *)
+  val reset_future_goals : proofview -> proofview
 end
 
 module Monad : Monad.S with type +'a t = 'a tactic
@@ -325,7 +329,6 @@ module Monad : Monad.S with type +'a t = 'a tactic
 (*** Commands ***)
 
 val in_proofview : proofview -> (Evd.evar_map -> 'a) -> 'a
-val reset_future_goals : proofview -> proofview
 
 (* Notations for building tactics. *)
 module Notations : sig

@@ -327,7 +327,7 @@ let run_tactic env tac pr =
     end
   in
   let given_up = pr.given_up@give_up in
-  let proofview = Proofview.reset_future_goals tacticced_proofview in
+  let proofview = Proofview.Unsafe.reset_future_goals tacticced_proofview in
   { pr with proofview ; shelf ; given_up },status
 
 (*** Commands ***)

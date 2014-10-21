@@ -1477,7 +1477,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
         let gls = List.rev (Evd.fold_undefined fold undef []) in
 	match is_hyp, prf with
 	| Some id, Some p ->
-            let tac = Proofview.Refine.refine (fun h -> (h, p)) <*> Proofview.tclNEWGOALS gls in
+            let tac = Proofview.Refine.refine (fun h -> (h, p)) <*> Proofview.Unsafe.tclNEWGOALS gls in
             Proofview.Unsafe.tclEVARS undef <*>
 	    assert_replacing id newt tac
 	| Some id, None ->
@@ -1491,7 +1491,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
               let (sigma, ev) = Evarutil.new_evar env sigma newt in
               sigma, mkApp (p, [| ev |])
             in
-            Proofview.Refine.refine make <*> Proofview.tclNEWGOALS gls
+            Proofview.Refine.refine make <*> Proofview.Unsafe.tclNEWGOALS gls
             end
 	| None, None ->
             Proofview.Unsafe.tclEVARS undef <*>
