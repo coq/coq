@@ -25,9 +25,9 @@ let delete_proof = Proof_global.discard
 let delete_current_proof = Proof_global.discard_current
 let delete_all_proofs = Proof_global.discard_all
 
-let start_proof (id : Id.t) str ctx hyps c ?init_tac terminator =
+let start_proof (id : Id.t) str sigma hyps c ?init_tac terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
-  Proof_global.start_proof (Evd.from_env ~ctx (Global.env ())) id str goals terminator;
+  Proof_global.start_proof sigma id str goals terminator;
   let env = Global.env () in
   ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
@@ -122,7 +122,8 @@ open Decl_kinds
 let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
-  start_proof id goal_kind ctx sign typ (fun _ -> ());
+  let evd = Evd.from_env ~ctx Environ.empty_env in
+  start_proof id goal_kind evd sign typ (fun _ -> ());
   try
     let status = by tac in
     let _,(const,univs,_) = cook_proof () in

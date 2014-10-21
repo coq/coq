@@ -350,7 +350,7 @@ let universe_proof_terminator compute_guard hook =
           save_anonymous_with_strength proof kind id
       end
 
-let start_proof id kind ctx ?sign c ?init_tac ?(compute_guard=[]) hook =
+let start_proof id kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = standard_proof_terminator compute_guard hook in
   let sign = 
     match sign with
@@ -358,9 +358,9 @@ let start_proof id kind ctx ?sign c ?init_tac ?(compute_guard=[]) hook =
     | None -> initialize_named_context_for_proof ()
   in
   !start_hook c;
-  Pfedit.start_proof id kind ctx sign c ?init_tac terminator
+  Pfedit.start_proof id kind sigma sign c ?init_tac terminator
 
-let start_proof_univs id kind ctx ?sign c ?init_tac ?(compute_guard=[]) hook =
+let start_proof_univs id kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = universe_proof_terminator compute_guard hook in
   let sign = 
     match sign with
@@ -368,7 +368,7 @@ let start_proof_univs id kind ctx ?sign c ?init_tac ?(compute_guard=[]) hook =
     | None -> initialize_named_context_for_proof ()
   in
   !start_hook c;
-  Pfedit.start_proof id kind ctx sign c ?init_tac terminator
+  Pfedit.start_proof id kind sigma sign c ?init_tac terminator
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
@@ -446,7 +446,7 @@ let start_proof_com kind thms hook =
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in
   let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
-  start_proof_with_initialization kind (Evd.evar_universe_context evd) 
+  start_proof_with_initialization kind evd
     recguard thms snl hook
 
 

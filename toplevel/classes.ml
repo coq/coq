@@ -295,7 +295,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	    else
 	      (Flags.silently 
 	       (fun () ->
-		Lemmas.start_proof id kind (Evd.evar_universe_context evm) termtype
+		Lemmas.start_proof id kind (Evd.from_env ~ctx:(Evd.evar_universe_context evm) Environ.empty_env) termtype
 		(Lemmas.mk_hook
                   (fun _ -> instance_hook k pri global imps ?hook));
                  (* spiwack: I don't know what to do with the status here. *)

@@ -56,7 +56,7 @@ val delete_all_proofs : unit -> unit
 type lemma_possible_guards = Proof_global.lemma_possible_guards
 
 val start_proof :
-  Id.t -> goal_kind -> Evd.evar_universe_context -> named_context_val -> constr ->
+  Id.t -> goal_kind -> Evd.evar_map -> named_context_val -> constr ->
   ?init_tac:unit Proofview.tactic ->
   Proof_global.proof_terminator -> unit
 

@@ -1804,7 +1804,7 @@ let add_morphism_infer glob m n =
   let poly = Flags.is_universe_polymorphism () in
   let instance_id = add_suffix n "_Proper" in
   let instance = build_morphism_signature m in
-  let ctx = Evd.empty_evar_universe_context (*FIXME *) in
+  let evd = Evd.empty (*FIXME *) in
     if Lib.is_modtype () then
       let cst = Declare.declare_constant ~internal:Declare.KernelSilent instance_id
 				(Entries.ParameterEntry 
@@ -1831,7 +1831,7 @@ let add_morphism_infer glob m n =
       let hook = Lemmas.mk_hook hook in
 	Flags.silently
 	  (fun () ->
-	    Lemmas.start_proof instance_id kind ctx instance hook;
+	    Lemmas.start_proof instance_id kind evd instance hook;
 	    ignore (Pfedit.by (Tacinterp.interp tac))) ()
 
 let add_morphism glob binders m s n =

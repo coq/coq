@@ -1046,8 +1046,9 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexe
     let init_tac =
       Option.map (List.map Proofview.V82.tactic) init_tac
     in
+    let evd = Evd.from_env ~ctx Environ.empty_env in
     Lemmas.start_proof_with_initialization (Global,poly,DefinitionBody Fixpoint)
-      ctx (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
+      evd (Some(false,indexes,init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
@@ -1081,8 +1082,9 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns
     let init_tac =
       Option.map (List.map Proofview.V82.tactic) init_tac
     in
+    let evd = Evd.from_env ~ctx Environ.empty_env in
     Lemmas.start_proof_with_initialization (Global,poly, DefinitionBody CoFixpoint)
-      ctx (Some(true,[],init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
+      evd (Some(true,[],init_tac)) thms None (Lemmas.mk_hook (fun _ _ -> ()))
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
