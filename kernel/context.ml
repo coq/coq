@@ -87,7 +87,7 @@ let rel_context_tags ctx =
     goal assumptions. *)
 
 type named_context = named_declaration list
-type compacted_named_context = named_list_declaration list
+type named_list_context = named_list_declaration list
 
 let empty_named_context = []
 
@@ -112,6 +112,7 @@ let instance_from_named_context sign =
   List.map_filter filter sign
 
 let fold_named_context f l ~init = List.fold_right f l init
+let fold_named_list_context f l ~init = List.fold_right f l init
 let fold_named_context_reverse f ~init l = List.fold_left f init l
 
 (*s Signatures of ordered section variables *)

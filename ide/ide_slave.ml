@@ -168,16 +168,6 @@ let concl_next_tac sigma concl =
     "right"
   ])
 
-let compact_named_context c =
-  let compact l (i1,c1,t1) =
-    match l with
-    | [] -> [[i1],c1,t1]
-    | (l2,c2,t2)::q ->
-       if Option.equal Constr.equal c1 c2 && Constr.equal t1 t2
-       then (i1::l2,c2,t2)::q
-       else ([i1],c1,t1)::l
-  in Context.fold_named_context_reverse compact ~init:[] c
-
 let process_goal sigma g =
   let env = Goal.V82.env sigma g in
   let min_env = Environ.reset_context env in
@@ -189,7 +179,8 @@ let process_goal sigma g =
     let d = Context.map_named_list_declaration (Reductionops.nf_evar sigma) d in
     (string_of_ppcmds (pr_var_list_decl min_env sigma d)) in
   let hyps =
-    List.map process_hyp (compact_named_context (Environ.named_context env)) in
+    List.map process_hyp
+      (Termops.compact_named_context (Environ.named_context env)) in
   { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 
 let goals () =
