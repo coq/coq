@@ -8,7 +8,7 @@
 (*                                                                      *)
 (*  A persistent hashtable                                              *)
 (*                                                                      *)
-(*  Frédéric Besson (Inria Rennes) 2009-2011                            *)
+(*  Frédéric Besson (Inria Rennes) 2009-2014                            *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -94,24 +94,50 @@ let read_key_elem inch =
     | End_of_file -> None
     | e when Errors.noncritical e -> raise InvalidTableFormat
 
-(** In win32, it seems that we should unlock the exact zone
-    that has been locked, and not the whole file *)
+(** 
+    We used to only lock/unlock regions.
+    Is-it more robust/portable to lock/unlock a fixed region e.g. [0;1]?  
+    In case of locking failure, the cache is not used.
+**)
 
-let locked_start = ref 0
+type lock_kind = Read | Write
 
-let lock fd =
-  locked_start := lseek fd 0 SEEK_CUR;
-  lockf fd F_LOCK 0
+let lock kd fd = 
+ let pos = lseek fd 0 SEEK_CUR in 
+ let success   = 
+  try 
+   ignore (lseek fd 0 SEEK_SET);
+   let lk =  match kd with 
+    | Read  -> F_RLOCK 
+    | Write -> F_LOCK in  
+   lockf fd lk 1; true
+  with Unix.Unix_error(_,_,_) -> false in
+ ignore (lseek fd pos SEEK_SET) ; 
+ success
 
-let rlock fd =
-  locked_start := lseek fd 0 SEEK_CUR;
-  lockf fd F_RLOCK 0
-
-let unlock fd =
+let unlock fd = 
   let pos = lseek fd 0 SEEK_CUR in
-  ignore (lseek fd !locked_start SEEK_SET);
-  lockf fd F_ULOCK 0;
-  ignore (lseek fd pos SEEK_SET)
+  try 
+   ignore (lseek fd 0 SEEK_SET) ; 
+   lockf fd F_ULOCK 1
+  with 
+   Unix.Unix_error(_,_,_) -> ()    
+    (* Here, this is really bad news -- 
+       there is a pending lock which could cause a deadlock.
+       Should it be an anomaly or produce a warning ?
+    *);
+  ignore (lseek fd pos SEEK_SET) 
+
+
+(* We make the assumption that an acquired lock can always be released *)
+
+let do_under_lock kd fd f = 
+ if lock kd fd
+ then
+  finally f (fun () -> unlock fd)
+ else f ()
+  
+
 
 let open_in f =
   let flags = [O_RDONLY ; O_CREAT] in
@@ -127,37 +153,30 @@ let open_in f =
 	  xload () in
     try
       (* Locking of the (whole) file while reading *)
-      rlock finch;
-      finally 
-	(fun () -> xload () ) 
-	(fun () -> 
-	   unlock finch ;
-	   close_in_noerr inch ; 
-	) ;
+      do_under_lock Read finch xload ; 
+      close_in_noerr inch ; 
       {
-	outch = out_channel_of_descr (openfile f [O_WRONLY;O_APPEND;O_CREAT] 0o666) ;
-	status = Open ;
-	htbl = htbl
+       outch = out_channel_of_descr (openfile f [O_WRONLY;O_APPEND;O_CREAT] 0o666) ;
+       status = Open ;
+       htbl = htbl
       }
     with InvalidTableFormat ->
-      (* Try to keep as many entries as possible *)
-      begin
-	let flags = [O_WRONLY; O_TRUNC;O_CREAT] in
-	let out =  (openfile f flags 0o666) in
-	let outch = out_channel_of_descr out in
-	  lock out;
-	  (try 
-	    Table.iter 
-	      (fun k e -> Marshal.to_channel outch (k,e) [Marshal.No_sharing]) htbl;
-	    flush outch ; 
-	  with e when Errors.noncritical e -> () )
-	    ;
-	    unlock out ; 
-	    { outch = outch ;
-	      status = Open ;
-	      htbl   = htbl
-	    }
-      end
+     (* The file is corrupted *)
+     begin
+      close_in_noerr inch ;
+      let flags = [O_WRONLY; O_TRUNC;O_CREAT] in
+      let out =  (openfile f flags 0o666) in
+      let outch = out_channel_of_descr out in
+      do_under_lock Write out 
+       (fun () -> 
+	Table.iter 
+	  (fun k e -> Marshal.to_channel outch (k,e) [Marshal.No_sharing]) htbl;
+        flush outch) ; 
+      { outch = outch ;
+        status = Open ;
+        htbl   = htbl
+      }
+     end
 
 
 let close t =
@@ -176,12 +195,12 @@ let add t k e =
     else
       let fd = descr_of_out_channel outch in
       begin
-	Table.add tbl k e ;
-	lock fd;
-	ignore (lseek fd 0 SEEK_END);
-	Marshal.to_channel outch (k,e) [Marshal.No_sharing] ;
-	flush outch ;
-	unlock fd
+       Table.add tbl k e ;
+       do_under_lock Write fd 
+        (fun _ -> 
+         Marshal.to_channel outch (k,e) [Marshal.No_sharing] ;
+         flush outch
+        )
       end
 
 let find t k =
