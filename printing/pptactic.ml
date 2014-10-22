@@ -321,6 +321,8 @@ let pr_raw_alias prc prlc prtac prpat =
   pr_alias_gen (pr_raw_generic prc prlc prtac prpat pr_reference)
 let pr_glob_alias prc prlc prtac prpat =
   pr_alias_gen (pr_glb_generic prc prlc prtac prpat)
+let pr_alias prc prlc prtac prpat =
+  pr_alias_gen (pr_top_generic prc prlc prtac prpat)
 
 (**********************************************************************)
 (* The tactic printer                                                 *)
@@ -413,21 +415,21 @@ let pr_pose prc prlc na c = match na with
   | Anonymous -> spc() ++ prc c
   | Name id -> spc() ++ surround (pr_id id ++ str " :=" ++ spc() ++ prlc c)
 
-let pr_assertion prc _prlc ipat c = match ipat with
+let pr_assertion prc prdc _prlc ipat c = match ipat with
 (* Use this "optimisation" or use only the general case ?
   | IntroIdentifier id ->
       spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
 *)
   | ipat ->
-      spc() ++ prc c ++ pr_as_ipat prc ipat
+      spc() ++ prc c ++ pr_as_ipat prdc ipat
 
-let pr_assumption prc prlc ipat c = match ipat with
+let pr_assumption prc prdc prlc ipat c = match ipat with
 (* Use this "optimisation" or use only the general case ?*)
 (* it seems that this "optimisation" is somehow more natural *)
   | Some (_,IntroNaming (IntroIdentifier id)) ->
       spc() ++ surround (pr_id id ++ str " :" ++ spc() ++ prlc c)
   | ipat ->
-      spc() ++ prc c ++ pr_as_ipat prc ipat
+      spc() ++ prc c ++ pr_as_ipat prdc ipat
 
 let pr_by_tactic prt = function
   | TacId [] -> mt ()
@@ -611,9 +613,11 @@ let level_of (n,p) = match p with E -> n | L -> n-1 | Prec n -> n | Any -> lseq
     "raw", "glob" and "typed" levels *)
 
 type 'a printer = {
-  pr_tactic : tolerability -> 'a gen_tactic_expr -> std_ppcmds;
+  pr_tactic : tolerability -> 'tacexpr -> std_ppcmds;
   pr_constr : 'trm -> std_ppcmds;
+  pr_uconstr: 'utrm -> std_ppcmds;
   pr_lconstr : 'trm -> std_ppcmds;
+  pr_dconstr: 'dtrm -> std_ppcmds;
   pr_pattern : 'pat -> std_ppcmds;
   pr_lpattern : 'pat -> std_ppcmds;
   pr_constant : 'cst -> std_ppcmds;
@@ -626,10 +630,13 @@ type 'a printer = {
 
 constraint 'a = <
     term:'trm;
+    utrm:'utrm;
+    dterm:'dtrm;
     pattern:'pat;
     constant:'cst;
     reference:'ref;
     name:'nam;
+    tacexpr:'tacexpr;
     level:'lev
 >
 
@@ -640,6 +647,7 @@ let make_pr_tac pr
 let _pr_bindings = pr_bindings pr.pr_constr pr.pr_lconstr in
 let pr_ex_bindings = pr_bindings_gen true pr.pr_constr pr.pr_lconstr in
 let pr_with_bindings = pr_with_bindings pr.pr_constr pr.pr_lconstr in
+let pr_with_bindings_arg_full = pr_with_bindings_arg in
 let pr_with_bindings_arg = pr_with_bindings_arg pr.pr_constr pr.pr_lconstr in
 let pr_red_expr = pr_red_expr (pr.pr_constr,pr.pr_lconstr,pr.pr_constant,pr.pr_pattern) in
 
@@ -712,7 +720,7 @@ and pr_atom1 = function
   | TacIntroPattern [] as t -> pr_atom0 t
   | TacIntroPattern (_::_ as p) ->
       hov 1 (str "intros" ++ spc () ++
-             prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_constr) p)
+             prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p)
   | TacIntroMove (None,MoveLast) as t -> pr_atom0 t
   | TacIntroMove (Some id,MoveLast) -> str "intro " ++ pr_id id
   | TacIntroMove (ido,hto) ->
@@ -723,7 +731,7 @@ and pr_atom1 = function
       hov 1 ((if a then mt() else str "simple ") ++
              str (with_evars ev "apply") ++ spc () ++
              prlist_with_sep pr_comma pr_with_bindings_arg cb ++
-             pr_in_hyp_as pr.pr_constr pr.pr_name inhyp)
+             pr_in_hyp_as pr.pr_dconstr pr.pr_name inhyp)
   | TacElim (ev,cb,cbo) ->
       hov 1 (str (with_evars ev "elim") ++ pr_arg pr_with_bindings_arg cb ++
         pr_opt pr_eliminator cbo)
@@ -739,11 +747,11 @@ and pr_atom1 = function
              str"with " ++ prlist_with_sep spc pr_cofix_tac l)
   | TacAssert (b,Some tac,ipat,c) ->
       hov 1 (str (if b then "assert" else "enough") ++
-             pr_assumption pr.pr_constr pr.pr_lconstr ipat c ++
+             pr_assumption pr.pr_constr pr.pr_dconstr pr.pr_lconstr ipat c ++
              pr_by_tactic (pr.pr_tactic ltop) tac)
   | TacAssert (_,None,ipat,c) ->
       hov 1 (str "pose proof" ++
-             pr_assertion pr.pr_constr pr.pr_lconstr ipat c)
+             pr_assertion pr.pr_constr pr.pr_dconstr pr.pr_lconstr ipat c)
   | TacGeneralize l ->
       hov 1 (str "generalize" ++ spc () ++
              prlist_with_sep pr_comma (fun (cl,na) ->
@@ -775,8 +783,8 @@ and pr_atom1 = function
       hov 1 (str (with_evars ev (if isrec then "induction" else "destruct")) ++
              spc () ++
              prlist_with_sep pr_comma (fun ((clear_flag,h),ids,cl) ->
-	       pr_clear_flag clear_flag (pr_induction_arg pr.pr_constr pr.pr_lconstr) h ++
-	       pr_with_induction_names pr.pr_constr ids ++
+	       pr_clear_flag clear_flag (pr_induction_arg pr.pr_dconstr pr.pr_dconstr) h ++
+	       pr_with_induction_names pr.pr_dconstr ids ++
 	     pr_opt_no_spc (pr_clauses None pr.pr_name) cl) l ++
              pr_opt pr_eliminator el)
   | TacDoubleInduction (h1,h2) ->
@@ -828,7 +836,7 @@ and pr_atom1 = function
       (match op with
           None -> mt()
         | Some p -> pr.pr_pattern p ++ spc () ++ str "with ") ++
-      pr.pr_constr c ++ pr_clauses (Some true) pr.pr_name h)
+      pr.pr_dconstr c ++ pr_clauses (Some true) pr.pr_name h)
 
   (* Equivalence relations *)
   | TacSymmetry cls -> str "symmetry" ++ pr_clauses (Some true) pr.pr_name cls
@@ -839,18 +847,19 @@ and pr_atom1 = function
 	     prlist_with_sep
 	     (fun () -> str ","++spc())
 	     (fun (b,m,c) ->
-		pr_orient b ++ pr_multi m ++ pr_with_bindings_arg c)
+		pr_orient b ++ pr_multi m ++
+                pr_with_bindings_arg_full pr.pr_dconstr pr.pr_dconstr c)
 	     l
 	     ++ pr_clauses (Some true) pr.pr_name cl
 	     ++	(match by with Some by -> pr_by_tactic (pr.pr_tactic ltop) by | None -> mt()))
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       hov 1 (str "dependent " ++ pr_induction_kind k ++ spc () ++
       pr_quantified_hypothesis hyp ++
-      pr_with_inversion_names pr.pr_constr ids ++ pr_with_constr pr.pr_constr c)
+      pr_with_inversion_names pr.pr_dconstr ids ++ pr_with_constr pr.pr_constr c)
   | TacInversion (NonDepInversion (k,cl,ids),hyp) ->
       hov 1 (pr_induction_kind k ++ spc () ++
       pr_quantified_hypothesis hyp ++
-      pr_with_inversion_names pr.pr_constr ids ++ pr_simple_hyp_clause pr.pr_name cl)
+      pr_with_inversion_names pr.pr_dconstr ids ++ pr_simple_hyp_clause pr.pr_name cl)
   | TacInversion (InversionUsing (c,cl),hyp) ->
       hov 1 (str "inversion" ++ spc() ++ pr_quantified_hypothesis hyp ++
       spc () ++ str "using" ++ spc () ++ pr.pr_constr c ++
@@ -992,7 +1001,7 @@ and pr_tacarg = function
   | MetaIdArg (loc,false,s) -> pr_with_comments loc (str ("constr: $" ^ s))
   | Reference r -> pr.pr_reference r
   | ConstrMayEval c -> pr_may_eval pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c
-  | UConstr c -> str"uconstr:" ++ pr.pr_constr c
+  | UConstr c -> str"uconstr:" ++ pr.pr_uconstr c
   | TacFreshId l -> str "fresh" ++ pr_fresh_ids l
   | TacPretype c -> str "type_term" ++ pr.pr_constr c
   | TacNumgoals -> str "numgoals"
@@ -1017,6 +1026,8 @@ let rec pr_raw_tactic_level n (t:raw_tactic_expr) =
   let pr = {
     pr_tactic = pr_raw_tactic_level;
     pr_constr = pr_constr_expr;
+    pr_uconstr = pr_constr_expr;
+    pr_dconstr = pr_constr_expr;
     pr_lconstr = pr_lconstr_expr;
     pr_pattern = pr_constr_pattern_expr;
     pr_lpattern = pr_lconstr_pattern_expr;
@@ -1035,7 +1046,7 @@ let pr_and_constr_expr pr (c,_) = pr c
 
 let pr_pat_and_constr_expr pr ((c,_),_) = pr c
 
-let pr_glob_tactic_level env =
+let rec pr_glob_tactic_level env n t =
   let glob_printers =
     (strip_prod_binders_glob_constr)
   in
@@ -1043,6 +1054,8 @@ let pr_glob_tactic_level env =
     let pr = {
       pr_tactic = prtac;
       pr_constr = pr_and_constr_expr (pr_glob_constr_env env);
+      pr_uconstr = pr_and_constr_expr (pr_glob_constr_env env);
+      pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
       pr_lconstr = pr_and_constr_expr (pr_lglob_constr_env env);
       pr_pattern = pr_pat_and_constr_expr (pr_glob_constr_env env);
       pr_lpattern = pr_pat_and_constr_expr (pr_lglob_constr_env env);
@@ -1059,9 +1072,51 @@ let pr_glob_tactic_level env =
     } in
     make_pr_tac pr glob_printers n t
   in
-  prtac
+  prtac n t
 
 let pr_glob_tactic env = pr_glob_tactic_level env ltop
+
+
+let strip_prod_binders_constr n ty =
+  let rec strip_ty acc n ty =
+    if n=0 then (List.rev acc, ty) else
+      match Term.kind_of_term ty with
+          Term.Prod(na,a,b) ->
+            strip_ty (([Loc.ghost,na],a)::acc) (n-1) b
+        | _ -> error "Cannot translate fix tactic: not enough products" in
+  strip_ty [] n ty
+
+let pr_tactic_level env n t =
+  let typed_printers =
+    (strip_prod_binders_constr)
+  in
+  let prtac n (t:tactic_expr) =
+    let pr = {
+      pr_tactic = pr_glob_tactic_level env;
+      pr_constr = pr_constr_env env Evd.empty;
+      pr_uconstr = (fun _ -> mt ()); (* arnaud: todo *)
+      pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
+      pr_lconstr = pr_lconstr_env env Evd.empty;
+      pr_pattern = pr_pat_and_constr_expr (pr_glob_constr_env env);
+      pr_lpattern = pr_pat_and_constr_expr (pr_lglob_constr_env env);
+      pr_constant = pr_and_short_name (pr_evaluable_reference_env env);
+      pr_reference = pr_located pr_ltac_constant;
+      pr_name = pr_id;
+      pr_generic = Genprint.generic_top_print;
+      pr_extend = pr_extend
+        (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
+        (pr_glob_tactic_level env) pr_constr_pattern;
+      pr_alias = pr_alias
+        (pr_constr_env env Evd.empty) (pr_lconstr_env env Evd.empty)
+        (pr_glob_tactic_level env) pr_constr_pattern;
+    }
+    in
+    make_pr_tac pr typed_printers n t
+  in
+  prtac n t
+
+let pr_tactic env = pr_tactic_level env ltop
+
 
 (** Registering *)
 
