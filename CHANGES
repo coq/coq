@@ -198,6 +198,9 @@ Tactics
 - In destruct/induction, experimental modifier "!" prefixing the
   hypothesis name to tell not erasing the hypothesis.
 - Bug fixes in "inversion as" may occasionally lead to incompatibilities.
+- Behavior of introduction patterns -> and <- made more uniform
+  (hypothesis is cleared, rewrite in hypotheses and conclusion and
+  erasing the variable when rewriting a variable).
 
 Program
 

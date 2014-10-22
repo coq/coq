@@ -1847,17 +1847,12 @@ let rewrite_hyp assert_style l2r id =
     Hook.get forward_general_rewrite_clause l2r false (mkVar id,NoBindings) in
   let subst_on l2r x rhs =
     Hook.get forward_subst_one true x (id,rhs,l2r) in
-  let clear_var_and_eq c =
-    tclTRY (tclTHEN (clear [id]) (tclTRY (clear [destVar c]))) in
-  if assert_style then
-    rew_on l2r allHypsAndConcl
-  else
+  let clear_var_and_eq c = tclTHEN (clear [id]) (clear [destVar c]) in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_type_of gl in
     let whd_betadeltaiota = Tacmach.New.pf_apply whd_betadeltaiota gl in
     let t = whd_betadeltaiota (type_of (mkVar id)) in
-    (* TODO: detect setoid equality? better detect the different equalities *)
     match match_with_equality_type t with
     | Some (hdcncl,[_;lhs;rhs]) ->
         if l2r && isVar lhs && not (occur_var env (destVar lhs) rhs) then
@@ -1865,16 +1860,16 @@ let rewrite_hyp assert_style l2r id =
         else if not l2r && isVar rhs && not (occur_var env (destVar rhs) lhs) then
           subst_on l2r (destVar rhs) lhs
         else
-          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (tclTRY (clear [id])))
+          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id]))
     | Some (hdcncl,[c]) ->
         let l2r = not l2r in (* equality of the form eq_true *)
         if isVar c then
           Tacticals.New.tclTHEN (rew_on l2r allHypsAndConcl) 
 	    (Proofview.V82.tactic (clear_var_and_eq c))
         else
-          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (tclTRY (clear [id])))
+          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id]))
     | _ ->
-        Tacticals.New.tclZEROMSG (str"Cannot find a known equation.")
+        Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id]))
   end
 
 let rec prepare_naming loc = function
