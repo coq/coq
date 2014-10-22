@@ -62,9 +62,6 @@ val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
    the context where the letins are expanded *)
 val it_mkLambda_or_LetIn_from_no_LetIn : constr -> rel_context -> constr
 
-val it_named_context_quantifier :
-  (named_declaration -> 'a -> 'a) -> init:'a -> named_context -> 'a
-
 (** {6 Generic iterators on constr} *)
 
 val map_constr_with_named_binders :
