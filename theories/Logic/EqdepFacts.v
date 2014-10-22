@@ -142,7 +142,7 @@ Qed.
 Notation equiv_eqex_eqdep := eq_sigT_iff_eq_dep (only parsing). (* Compat *)
 
 Lemma eq_sig_eq_dep :
-  forall (U:Prop) (P:U -> Prop) (p q:U) (x:P p) (y:P q),
+  forall (U:Type) (P:U -> Prop) (p q:U) (x:P p) (y:P q),
     exist P p x = exist P q y -> eq_dep p x q y.
 Proof.
   intros.
@@ -151,14 +151,14 @@ Proof.
 Qed.
 
 Lemma eq_dep_eq_sig :
-  forall (U:Prop) (P:U -> Prop) (p q:U) (x:P p) (y:P q),
+  forall (U:Type) (P:U -> Prop) (p q:U) (x:P p) (y:P q),
     eq_dep p x q y -> exist P p x = exist P q y.
 Proof.
   destruct 1; reflexivity.
 Qed.
 
 Lemma eq_sig_iff_eq_dep :
-  forall (U:Prop) (P:U -> Prop) (p q:U) (x:P p) (y:P q),
+  forall (U:Type) (P:U -> Prop) (p q:U) (x:P p) (y:P q),
     exist P p x = exist P q y <-> eq_dep p x q y.
 Proof.
   split; auto using eq_sig_eq_dep, eq_dep_eq_sig.
