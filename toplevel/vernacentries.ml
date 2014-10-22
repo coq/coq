@@ -438,9 +438,7 @@ let vernac_notation locality local =
 (***********)
 (* Gallina *)
 
-let start_proof_and_print k l hook =
-  start_proof_com k l hook;
-  print_subgoals ()
+let start_proof_and_print k l hook = start_proof_com k l hook
 
 let no_hook = Lemmas.mk_hook (fun _ _ -> ())
 
@@ -814,7 +812,6 @@ let vernac_solve n tcom b =
        go back to the top of the prooftree *)
     let p = Proof.maximal_unfocus command_focus p in
     p,status) in
-    print_subgoals();
     if not status then Pp.feedback Feedback.AddedAxiom
  
 
@@ -1647,13 +1644,12 @@ let vernac_focus gln =
       | Some 0 ->
          Errors.error "Invalid goal number: 0. Goal numbering starts with 1."
       | Some n ->
-         Proof.focus focus_command_cond () n p);
-  print_subgoals ()
+         Proof.focus focus_command_cond () n p)
 
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =
-  Proof_global.simple_with_current_proof (fun _ p -> Proof.unfocus command_focus p ());
-  print_subgoals ()
+  Proof_global.simple_with_current_proof
+    (fun _ p -> Proof.unfocus command_focus p ())
 
 (* Checks that a proof is fully unfocused. Raises an error if not. *)
 let vernac_unfocused () =
@@ -1677,20 +1673,15 @@ let vernac_subproof gln =
   Proof_global.simple_with_current_proof (fun _ p ->
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
-    | Some n -> Proof.focus subproof_cond () n p);
-  print_subgoals ()
+    | Some n -> Proof.focus subproof_cond () n p)
 
 let vernac_end_subproof () =
-  Proof_global.simple_with_current_proof (fun _ p -> Proof.unfocus subproof_kind p ());
-  print_subgoals ()
-
+  Proof_global.simple_with_current_proof (fun _ p ->
+    Proof.unfocus subproof_kind p ())
 
 let vernac_bullet (bullet:Proof_global.Bullet.t) =
   Proof_global.simple_with_current_proof (fun _ p ->
-    Proof_global.Bullet.put p bullet);
-  (* Makes the focus visible in emacs by re-printing the goal. *)
-  if !Flags.print_emacs then print_subgoals ()
-
+    Proof_global.Bullet.put p bullet)
 
 let vernac_show = function
   | ShowGoal goalref ->
@@ -1904,11 +1895,11 @@ let interp ?proof locality poly c =
   | VernacEndSubproof -> vernac_end_subproof ()
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
-  | VernacProof (None, None) -> print_subgoals ()
-  | VernacProof (Some tac, None) -> vernac_set_end_tac tac ; print_subgoals ()
-  | VernacProof (None, Some l) -> vernac_set_used_variables l ; print_subgoals ()
+  | VernacProof (None, None) -> ()
+  | VernacProof (Some tac, None) -> vernac_set_end_tac tac
+  | VernacProof (None, Some l) -> vernac_set_used_variables l
   | VernacProof (Some tac, Some l) -> 
-      vernac_set_end_tac tac; vernac_set_used_variables l ; print_subgoals ()
+      vernac_set_end_tac tac; vernac_set_used_variables l
   | VernacProofMode mn -> Proof_global.set_proof_mode mn
   (* Toplevel control *)
   | VernacToplevelControl e -> raise e
@@ -2062,7 +2053,11 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             Flags.program_mode := orig_program_mode
           end
         with
-          | reraise when (match reraise with Timeout -> true | e -> Errors.noncritical e) ->
+        | reraise when
+              (match reraise with
+              | Timeout -> true
+              | e -> Errors.noncritical e)
+          ->
             let e = Errors.push reraise in
             let e = locate_if_not_already loc e in
             let () = restore_timeout () in

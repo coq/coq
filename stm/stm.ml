@@ -1589,6 +1589,9 @@ let observe id =
 
 let finish () =
   observe (VCS.get_branch_pos (VCS.current_branch ()));
+  if (not !Flags.print_emacs && !Flags.coqtop_ui && not !Flags.batch_mode) ||
+     (!Flags.print_emacs && Flags.is_verbose ()) then
+    Pp.msg_notice (pr_open_cur_subgoals ());
   VCS.print ()
 
 let wait () =
@@ -1697,7 +1700,7 @@ let reset_task_queue = Slaves.reset_task_queue
 let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
   let warn_if_pos a b =
     if b then msg_warning(pr_ast a ++ str" should not be part of a script") in
-  let v, x = expr, { verbose = verbose && Flags.is_verbose(); loc; expr } in
+  let v, x = expr, { verbose = verbose; loc; expr } in
   prerr_endline ("{{{ processing: "^ string_of_ppcmds (pr_ast x));
   let vcs = VCS.backup () in
   try
@@ -1738,9 +1741,6 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           VCS.commit id (Alias oid);
-          if (!Flags.coqtop_ui && not !Flags.batch_mode) ||
-             !Flags.print_emacs then
-            Pp.msg_notice (pr_open_cur_subgoals ());
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtStm (VtBack id, false), VtNow ->
           prerr_endline ("undo to state " ^ Stateid.to_string id);
