@@ -1472,19 +1472,14 @@ and interp_match_successes lz ist tac =
       let tac = Proofview.tclONCE tac in
       tac >>= fun ans -> interp_match_success ist ans
     else
-      let decrease e = match e with
-      | FailError (0, _) -> e
-      | FailError (n, s) -> FailError (pred n, s)
-      | _ -> e
-      in
       let break e = match e with
-      | FailError (0, _) -> false
-      | FailError (n, s) -> true
-      | _ -> false
+      | FailError (0, _) -> None
+      | FailError (n, s) -> Some (FailError (pred n, s))
+      | _ -> None
       in
       let tac = Proofview.tclBREAK break tac >>= fun ans -> interp_match_success ist ans in
       (** Once a tactic has succeeded, do not backtrack anymore *)
-      Proofview.tclONCE (Proofview.tclOR tac (fun e -> Proofview.tclZERO (decrease e)))
+      Proofview.tclONCE tac
 
 (* Interprets the Match expressions *)
 and interp_match ist lz constr lmr =

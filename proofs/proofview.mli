@@ -213,10 +213,10 @@ val tclCASE : 'a tactic -> 'a case tactic
 
 (** [tclBREAK p t] is a generalization of [tclONCE t]. Instead of
     stopping after the first success, it succeeds like [t] until a
-    failure with an exception [e] such that [p e=true] is raised. At
-    which point it drop the remaining successes. [tclONCE t] is
-    equivalent to [tclBREAK (fun _ -> true) t]. *)
-val tclBREAK : (exn -> bool) -> 'a tactic -> 'a tactic
+    failure with an exception [e] such that [p e = Some e'] is raised. At
+    which point it drops the remaining successes, failing with [e'].
+    [tclONCE t] is equivalent to [tclBREAK (fun e -> Some e) t]. *)
+val tclBREAK : (exn -> exn option) -> 'a tactic -> 'a tactic
 
 
 (** {7 Focusing tactics} *)

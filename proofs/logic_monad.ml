@@ -262,10 +262,10 @@ struct
     let m = m s in
     { iolist = fun nil cons -> m.iolist nil (fun x _ -> cons x nil) }
 
-  let break (f : exn -> bool) (m : 'a t) : 'a t = (); fun s ->
+  let break (f : exn -> exn option) (m : 'a t) : 'a t = (); fun s ->
     let m = m s in
     { iolist = fun nil cons ->
-      m.iolist nil (fun x next -> cons x (fun e -> if f e then nil e else next e))
+      m.iolist nil (fun x next -> cons x (fun e -> match f e with None -> next e | Some e -> nil e))
     }
 
   (** For [reflect] and [split] see the "Backtracking, Interleaving,
