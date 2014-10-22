@@ -483,7 +483,7 @@ let rec decompose_app_rel env evd t =
     let len = Array.length args in
     let fargs = Array.sub args 0 (Array.length args - 2) in
     mkApp (f, fargs), args.(len - 2), args.(len - 1)
-  | _ -> error "The term provided is not an applied relation."
+  | _ -> error "Cannot find a relation to rewrite."
 
 let decompose_applied_relation env sigma orig (c,l) =
   let ctype = Retyping.get_type_of env sigma c in
@@ -510,7 +510,7 @@ let decompose_applied_relation env sigma orig (c,l) =
 	let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
 	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> n, None, t) ctx)) with
 	| Some c -> c
-	| None -> error "The term does not end with an applied homogeneous relation."
+	| None -> error "Cannot find an homogeneous relation to rewrite."
 
 let decompose_applied_relation_expr env sigma (is, (c,l)) =
   let sigma, cbl = Tacinterp.interp_open_constr_with_bindings is env sigma (c,l) in
@@ -2052,7 +2052,7 @@ let setoid_symmetry_in id =
   let rec split_last_two = function
     | [c1;c2] -> [],(c1, c2)
     | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
-    | _ -> error "The term provided is not an equivalence."
+    | _ -> error "Cannot find an equivalence relation to rewrite."
   in
   let others,(c1,c2) = split_last_two args in
   let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
