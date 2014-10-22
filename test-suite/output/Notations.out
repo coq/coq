@@ -118,7 +118,7 @@ fun x : list ?T0 => match x with
      : list ?T0 -> option (list ?T0)
 where
 ?T0 : [x : list ?T0 |- Type] (x cannot be used)
- s
+s
      : s
 10
      : nat
