@@ -68,7 +68,7 @@ and sentence initial stamp = parse
   | undotted_sep {
       (* Separators like { or } and bullets * - + are only active
 	 at the start of a sentence *)
-      if initial then stamp (utf8_lexeme_start lexbuf) Tags.Script.sentence;
+      if initial then stamp (utf8_lexeme_start lexbuf + String.length (Lexing.lexeme lexbuf) - 1) Tags.Script.sentence;
       sentence initial stamp lexbuf
     }
   | space+ {
