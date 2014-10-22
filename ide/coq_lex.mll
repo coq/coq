@@ -13,7 +13,6 @@
 
   let utf8_lexeme_start lexbuf =
     Lexing.lexeme_start lexbuf - !utf8_adjust
-    + String.length (Lexing.lexeme lexbuf) - 1
 }
 
 let space = [' ' '\n' '\r' '\t' '\012'] (* '\012' is form-feed *)
