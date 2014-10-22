@@ -124,18 +124,17 @@ let convert_concl ?(check=true) ty k =
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let conclty = Proofview.Goal.raw_concl gl in
-    let sigma =
-      if check then begin
-        ignore (Typing.type_of env sigma ty);
-        let sigma,b = Reductionops.infer_conv env sigma ty conclty in
-        if not b then error "Not convertible.";
-        sigma
-      end else sigma in
-    Tacticals.New.tclTHEN
-      (Proofview.Unsafe.tclEVARS sigma)
-      (Proofview.Refine.refine ~unsafe:true (fun sigma ->
-        let (sigma,x) = Evarutil.new_evar env sigma ~principal:true ty in
-        (sigma, if k == DEFAULTcast then x else mkCast(x,k,conclty))))
+    Proofview.Refine.refine ~unsafe:true begin fun sigma ->
+      let sigma =
+        if check then begin
+          ignore (Typing.type_of env sigma ty);
+          let sigma,b = Reductionops.infer_conv env sigma ty conclty in
+          if not b then error "Not convertible.";
+          sigma
+        end else sigma in
+      let (sigma,x) = Evarutil.new_evar env sigma ~principal:true ty in
+      (sigma, if k == DEFAULTcast then x else mkCast(x,k,conclty))
+    end
   end
 
 let convert_hyp ?(check=true) d =
