@@ -11,7 +11,7 @@ Goal forall d:A, match d with C a b => b end = match d with C a b => b end.
 intro.
 vm_compute.
 (* Now check that it is well-typed *)
-match goal with |- ?c = _ => try (let x := type of c in idtac) || fail 2 end.
+match goal with |- ?c = _ => first [let x := type of c in idtac | fail 2] end.
 Abort.
 
 (* A simplified form of the second problem *)
@@ -31,7 +31,7 @@ Lemma L :
 Proof.
 vm_compute.
 (* Now check that it is well-typed (the "P w" used to be turned into "P s") *)
-match goal with |- ?c => try (let x := type of c in idtac) || fail 2 end.
+match goal with |- ?c => first [let x := type of c in idtac | fail 2] end.
 Abort.
 
 (* Then the original report *)
