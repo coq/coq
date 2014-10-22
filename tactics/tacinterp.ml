@@ -1217,18 +1217,28 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
         end
       in
       let (>>=) = Ftactic.bind in
-      let addvar (x, v) accu =
-        f v >>= fun v ->
-        Ftactic.return (Id.Map.add x v accu)
+      let interp_vars =
+        Ftactic.List.map (fun (x,v) -> f v >>= fun v -> Ftactic.return (x,v)) l
       in
-      let tac = Ftactic.List.fold_right addvar l ist.lfun >>= fun lfun ->
+      let addvar (x, v) accu = Id.Map.add x v accu in
+      let tac l =
+        let lfun = List.fold_right addvar l ist.lfun in
         let trace = push_trace (loc,LtacNotationCall s) ist in
         let ist = {
           lfun = lfun;
           extra = TacStore.set ist.extra f_trace trace; } in
-        val_interp ist body
+        val_interp ist body >>= fun v ->
+        Ftactic.lift (tactic_of_value ist v)
       in
-      Ftactic.run tac (fun v -> tactic_of_value ist v)
+      let tac =
+        Ftactic.with_env interp_vars >>= fun (env,l) ->
+        let name () = Pptactic.pr_tactic env (TacAlias(loc,s,l)) in
+        Proofview.Trace.name_tactic name (tac l)
+      (* spiwack: this use of name_tactic is not robust to a
+         change of implementation of [Ftactic]. In such a situation,
+         some more elaborate solution will have to be used. *)
+      in
+      Ftactic.run tac (fun () -> Proofview.tclUNIT ())
 
   | TacML (loc,opn,l) when List.for_all global_genarg l ->
       let trace = push_trace (loc,LtacMLCall tac) ist in

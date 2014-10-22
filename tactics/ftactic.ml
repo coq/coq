@@ -48,6 +48,15 @@ let enter f =
   bind (Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l))
     (fun gl -> gl >>= fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
 
+let with_env t =
+  t >>= function
+    | Uniform a ->
+        Proofview.tclENV >>= fun env -> Proofview.tclUNIT (Uniform (env,a))
+    | Depends l ->
+        Proofview.Goal.goals >>= fun gs ->
+        Proofview.Monad.(List.map (map Proofview.Goal.env) gs) >>= fun envs ->
+        Proofview.tclUNIT (Depends (List.combine envs l))
+
 let lift (type a) (t:a Proofview.tactic) : a t =
   Proofview.tclBIND t (fun x -> Proofview.tclUNIT (Uniform x))
 
