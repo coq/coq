@@ -303,10 +303,13 @@ let try_find_ind env sigma typ realnames =
   IsInd (typ,ind,names)
 
 let inh_coerce_to_ind evdref env ty tyi =
+  let sigma = !evdref in
   let expected_typ = inductive_template evdref env None tyi in
-     (* devrait être indifférent d'exiger leq ou pas puisque pour
-        un inductif cela doit être égal *)
-  let _ = e_cumul env evdref expected_typ ty in ()
+  (* Try to refine the type with inductive information coming from the
+     constructor and renounce if not able to give more information *)
+  (* devrait être indifférent d'exiger leq ou pas puisque pour
+     un inductif cela doit être égal *)
+  if not (e_cumul env evdref expected_typ ty) then evdref := sigma
 
 let binding_vars_of_inductive = function
   | NotInd _ -> []
