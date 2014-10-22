@@ -16,6 +16,7 @@ Specification language
 
 - Bug #3733: Optimizing compilation of pattern matching.
 - Bug #3388: Better inference of impossible cases in pattern-matching.
+- Bug #3758: Evar leak in pattern-matching compilation
 
 Tactics
 
@@ -25,10 +26,16 @@ Tactics
 - Bug #2810: cleared local hints for autounfold.
 - Bug #3951: cleared local hints for autounfold.
 - Bug #3451: lost evars in "change ... with ...".
+- Bug #2729 (partially): supporting let-ins in constructors for vm_compute
 
 Libraries
 
 - Bug #3413: unfortunate typo in compare_height.
+- Bug #3751: unfortunate typos in absorption lemmas over bool.
+
+Tools
+
+- Full support of utf8 Greek letters (block U0370) in coqdoc
 
 Changes from V8.4pl3 to V8.4pl4
 ===============================
