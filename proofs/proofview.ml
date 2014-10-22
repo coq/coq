@@ -935,7 +935,7 @@ struct
     (** Select the goals *)
     let comb = undefined sigma (CList.rev evs) in
     let sigma = CList.fold_left mark_as_goal sigma comb in
-    Pv.set { solution = Evd.reset_future_goals sigma; comb; }
+    Pv.set { solution = sigma; comb; }
   end
 
   (** Useful definitions *)
