@@ -123,10 +123,12 @@ let build_branches_type env (mind,_ as _ind) mib mip u params dep p =
     let carity = snd (rtbl.(i)) in
     let crealargs = Array.sub cargs nparams (Array.length cargs - nparams) in
     let codom =
-      let papp = mkApp(lift (List.length decl) p,crealargs) in
+      let ndecl = List.length decl in
+      let papp = mkApp(lift ndecl p,crealargs) in
       if dep then
 	let cstr = ith_constructor_of_inductive ind (i+1) in
         let relargs = Array.init carity (fun i -> mkRel (carity-i)) in
+	let params = Array.map (lift ndecl) params in
 	let dep_cstr = mkApp(mkApp(mkConstructU (cstr,u),params),relargs) in
 	mkApp(papp,[|dep_cstr|])
       else papp
