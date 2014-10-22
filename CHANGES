@@ -185,7 +185,10 @@ Tactics
   the relevant hypotheses).
 - New construct "uconstr:c" and "type_term c" to build untyped terms.
 - Binders in terms defined in Ltac (either "constr" or "uconstr") can
-  now take their names from identifier defined in Ltac.
+  now take their names from identifier defined in Ltac. As a
+  consequence, a name cannot be used in a binder (constr:(fun x =>
+  ...)) if an Ltac variable of that name already exists and does not
+  contain an identifier. Source of occasional incompatibilities.
 - The "refine" tactic now accepts untyped terms built with "uconstr"
   so that terms with holes can be constructed piecewise in Ltac.
 - New bullets --, ++, **, ---, +++, ***, ... made available.
