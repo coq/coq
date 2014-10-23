@@ -8,14 +8,14 @@ fix F (t : t) : P t :=
        (let x := t in forall x0 : x, P x0 -> P (k x0)) -> forall t : t, P t
 
 t_rect is not universe polymorphic
-     = fun d : A => match d with
-                    | @C _ _ b => b
-                    end
-     : A -> 0 = 0
-     = fun d : A => match d with
-                    | @C _ _ b => b
-                    end
-     : A -> 0 = 0
+     = fun d : TT => match d with
+                     | @CTT _ _ b => b
+                     end
+     : TT -> 0 = 0
+     = fun d : TT => match d with
+                     | @CTT _ _ b => b
+                     end
+     : TT -> 0 = 0
 proj = 
 fun (x y : nat) (P : nat -> Type) (def : P x) (prf : P y) =>
 match Nat.eq_dec x y with

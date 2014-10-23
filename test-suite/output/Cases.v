@@ -5,10 +5,10 @@ Inductive t : Set :=
 
 Print t_rect.
 
-Record A : Type := C { a := 0 : nat; c: nat; b : a=a }.
+Record TT : Type := CTT { f1 := 0 : nat; f2: nat; f3 : f1=f1 }.
 
-Eval cbv in fun d:A => match d return 0 = 0 with C a _ b => b end.
-Eval lazy in fun d:A => match d return 0 = 0 with C a _ b => b end.
+Eval cbv in fun d:TT => match d return 0 = 0 with CTT a _ b => b end.
+Eval lazy in fun d:TT => match d return 0 = 0 with CTT a _ b => b end.
 
 (* Do not contract nested patterns with dependent return type *)
 (* see bug #1699 *)
