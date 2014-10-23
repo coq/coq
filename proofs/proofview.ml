@@ -414,7 +414,7 @@ let fold_left2_goal i s l =
     return r
   end
   begin function
-      | SizeMismatch _ -> tclZERO (SizeMismatch (CList.length initial.comb,CList.length l))
+      | Proof.List.SizeMismatch -> tclZERO (SizeMismatch (CList.length initial.comb,CList.length l))
       | reraise -> tclZERO reraise
     end
 
