@@ -67,7 +67,9 @@ Vernacular commands
 Specification Language
 
 - Slight changes in unification error messages.
-- Added a syntax $(...)$ that allows putting tactics in terms.
+- Added a syntax $(...)$ that allows putting tactics in terms (may
+  break user notations using "$(", fixable by inserting a space or
+  rewriting the notation).
 - Constants in pattern-matching branches now respect the same rules regarding
   implicit arguments than in applicative position. The old behaviour can be
   recovered by the command "Set Asymmetric Patterns". (possible source of
@@ -201,6 +203,9 @@ Tactics
 - Behavior of introduction patterns -> and <- made more uniform
   (hypothesis is cleared, rewrite in hypotheses and conclusion and
   erasing the variable when rewriting a variable).
+- Tactics from plugins are now active only when the corresponding
+  module is imported (source of incompatibilities, solvable by adding
+  an "Import", like e.g. "Import Omega").
 
 Program
 
