@@ -533,6 +533,7 @@ let shelve =
   let open Proof in
   Comb.get >>= fun initial ->
   Comb.set [] >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve")) >>
   Shelf.put initial
 
 
@@ -571,6 +572,7 @@ let shelve_unifiable =
   Pv.get >>= fun initial ->
   let (u,n) = partition_unifiable initial.solution initial.comb in
   Comb.set n >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve_unifiable")) >>
   Shelf.put u
 
 (** [guard_no_unifiable] fails with error [UnresolvedBindings] if some
@@ -604,6 +606,8 @@ let goodmod p m =
   if p' < 0 then p'+m else p'
 
 let cycle n =
+  let open Proof in
+  InfoL.leaf (Info.Tactic (fun () -> Pp.(str"cycle"++spc()++int n))) >>
   Comb.modify begin fun initial ->
     let l = CList.length initial in
     let n' = goodmod n l in
@@ -612,6 +616,8 @@ let cycle n =
   end
 
 let swap i j =
+  let open Proof in
+  InfoL.leaf (Info.Tactic (fun () -> Pp.(str"swap"++spc()++int i++spc()++int j))) >>
   Comb.modify begin fun initial ->
     let l = CList.length initial in
     let i = if i>0 then i-1 else i and j = if j>0 then j-1 else j in
@@ -625,6 +631,8 @@ let swap i j =
   end
 
 let revgoals =
+  let open Proof in
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"revgoals")) >>
   Comb.modify CList.rev
 
 let numgoals =
@@ -663,6 +671,7 @@ let give_up =
   Comb.get >>= fun initial ->
   Comb.set [] >>
   mark_as_unsafe >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"give_up")) >>
   Giveup.put initial
 
 
@@ -920,6 +929,9 @@ struct
     let () = Typing.check env evdref c concl in
     !evdref
 
+  let (pr_constrv,pr_constr) =
+    Hook.make ~default:(fun _env _sigma _c -> Pp.str"<constr>") ()
+
   let refine ?(unsafe = false) f = Goal.enter begin fun gl ->
     let sigma = Goal.sigma gl in
     let env = Goal.env gl in
@@ -949,6 +961,8 @@ struct
     (** Select the goals *)
     let comb = undefined sigma (CList.rev evs) in
     let sigma = CList.fold_left mark_as_goal sigma comb in
+    let open Proof in
+    InfoL.leaf (Info.Tactic (fun () -> Pp.(str"refine"++spc()++ Hook.get pr_constrv env sigma c))) >>
     Pv.set { solution = sigma; comb; }
   end
 
@@ -1024,6 +1038,7 @@ module V82 = struct
       in
       let (goalss,evd) = Evd.Monad.List.map tac initgoals initevd in
       let sgs = CList.flatten goalss in
+      InfoL.leaf (Info.Tactic (fun () -> Pp.str"<unknown>")) >>
       Pv.set { solution = evd; comb = sgs; }
     with e when catchable_exception e ->
       let e = Errors.push e in

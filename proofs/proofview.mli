@@ -450,6 +450,10 @@ end
 
 module Refine : sig
 
+  (** Printer used to print the constr which refine refines. *)
+  val pr_constr :
+    (Environ.env -> Evd.evar_map -> Term.constr -> Pp.std_ppcmds) Hook.t
+
   (** {7 Refinement primitives} *)
 
   val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * Constr.t) -> unit tactic
