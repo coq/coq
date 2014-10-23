@@ -297,7 +297,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
                      the pretyping after the proof has opened. As a
                      consequence, we use the low-level primitives to code
                      the refinement manually.*)
-		let gls = Evd.future_goals evm in
+		let gls = List.rev (Evd.future_goals evm) in
                 let evm = Evd.reset_future_goals evm in
                 Lemmas.start_proof id kind evm termtype
 		(Lemmas.mk_hook
