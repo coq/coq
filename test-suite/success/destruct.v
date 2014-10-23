@@ -98,25 +98,105 @@ Abort.
 
 Goal exists x, S x = S 0.
 eexists.
-Fail destruct (S _). (* Incompatible occurrences *)
+destruct (S _). (* Incompatible occurrences but takes the first one since Oct 2014 *)
+change (0 = S 0).
 Abort.
 
 Goal exists x, S 0 = S x.
 eexists.
-Fail destruct (S _). (* Incompatible occurrences *)
+destruct (S _). (* Incompatible occurrences but takes the first one since Oct 2014 *)
+change (0 = S ?x).
 Abort.
 
 Goal exists n p:nat, (S n,S n) = (S p,S p) /\ p = n.
 do 2 eexists.
-Fail destruct (_, S _). (* Was succeeding at some time in trunk *)
-Show Proof.
+destruct (_, S _). (* Was unifying at some time in trunk, now takes the first occurrence *)
+change ((n, n0) = (S ?p, S ?p) /\ ?p = ?n0).
+Abort.
 
 (* Avoid unnatural selection of a subterm larger than expected *)
 
 Goal let g := fun x:nat => x in g (S 0) = 0.
 intro.
 destruct S.
-(* Check that it is not the larger subterm "f (S 0)" which is
+(* Check that it is not the larger subterm "g (S 0)" which is
    selected, as it was the case in 8.4 *)
 unfold g at 1.
 Abort.
+
+(* Some tricky examples convenient to support *)
+
+Goal forall x, nat_rect (fun _ => nat) O (fun x y => S x) x = nat_rect (fun _ => nat) O (fun x y => S x) x.
+intros.
+destruct (nat_rect _ _ _ _).
+Abort.
+(* Check compatibility in selecting what is open or "shelved" *)
+
+Goal (forall x, x=0 -> nat) -> True.
+intros.
+Fail destruct H.
+edestruct H.
+- reflexivity.
+- exact Logic.I.
+- exact Logic.I.
+Qed.
+
+(* Check an example which was working with case/elim in 8.4 but not with
+   destruct/induction *)
+
+Goal forall x, (True -> x = 0) -> 0=0. 
+intros.
+destruct H.
+- trivial.
+- apply (eq_refl x).
+Qed.
+
+(* Check an example which was working with case/elim in 8.4 but not with
+   destruct/induction (not the different order between induction/destruct) *)
+
+Goal forall x, (True -> x = 0) -> 0=0. 
+intros.
+induction H.
+- apply (eq_refl x).
+- trivial.
+Qed.
+
+(* This test assumes that destruct/induction on non-dependent hypotheses behave the same
+   when using holes or not
+
+Goal forall x, (True -> x = 0) -> 0=0. 
+intros.
+destruct (H _).
+- apply I.
+- apply (eq_refl x).
+Qed.
+*)
+
+(* Check destruct vs edestruct *)
+
+Goal forall x, (forall y, y = 0 -> x = 0) -> 0=0.
+intros.
+Fail destruct H.
+edestruct H.
+- trivial.
+- apply (eq_refl x).
+Qed.
+
+Goal forall x, (forall y, y = 0 -> x = 0) -> 0=0.
+intros.
+Fail destruct (H _).
+edestruct (H _).
+- trivial.
+- apply (eq_refl x).
+Qed.
+
+Goal forall x, (forall y, y = 0 -> x = 0) -> 0=0.
+intros.
+Fail destruct (H _ _).
+(* Now a test which assumes that destruct/induction on non-dependent hypotheses behave the same
+   when using holes or not
+edestruct (H _ _).
+- trivial.
+- apply (eq_refl x).
+Qed.
+*)

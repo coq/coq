@@ -87,17 +87,22 @@ let out_arg = function
   | Misctypes.ArgVar _ -> Errors.anomaly (Pp.str "Unevaluated or_var variable")
   | Misctypes.ArgArg x -> x
 
-let occurrences_of_hyp id cls =
+let occurrences_of_hyp id =function
+  | LikeFirst -> LikeFirst
+  | AtOccs cls ->
   let rec hyp_occ = function
       [] -> NoOccurrences, InHyp
     | ((occs,id'),hl)::_ when Names.Id.equal id id' ->
         occurrences_map (List.map out_arg) occs, hl
     | _::l -> hyp_occ l in
-  match cls.onhyps with
+  AtOccs (match cls.onhyps with
       None -> AllOccurrences,InHyp
-    | Some l -> hyp_occ l
+    | Some l -> hyp_occ l)
 
-let occurrences_of_goal cls =
-  occurrences_map (List.map out_arg) cls.concl_occs
+let occurrences_of_goal = function
+  | LikeFirst -> LikeFirst
+  | AtOccs cls -> AtOccs (occurrences_map (List.map out_arg) cls.concl_occs)
 
-let in_every_hyp cls = Option.is_empty cls.onhyps
+let in_every_hyp = function
+  | LikeFirst -> true
+  | AtOccs cls -> Option.is_empty cls.onhyps

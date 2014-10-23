@@ -916,10 +916,9 @@ let interp_open_constr_with_bindings_loc ist ((c,_),bl as cb) =
     (loc,f)
 
 let interp_induction_arg ist gl arg =
-  let env = pf_env gl and sigma = project gl in
   match arg with
   | keep,ElimOnConstr c ->
-      keep,ElimOnConstr (interp_constr_with_bindings ist env sigma c)
+      keep,ElimOnConstr (fun env sigma -> interp_constr_with_bindings ist env sigma c)
   | keep,ElimOnAnonHyp n as x -> x
   | keep,ElimOnIdent (loc,id) ->
       let error () = user_err_loc (loc, "",
@@ -930,7 +929,7 @@ let interp_induction_arg ist gl arg =
         if Tactics.is_quantified_hypothesis id' gl
         then keep,ElimOnIdent (loc,id')
         else
-          (try keep,ElimOnConstr (sigma,(constr_of_id env id',NoBindings))
+          (try keep,ElimOnConstr (fun env sigma -> sigma,(constr_of_id env id',NoBindings))
           with Not_found ->
             user_err_loc (loc,"",
             pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis."))
@@ -951,15 +950,17 @@ let interp_induction_arg ist gl arg =
           keep,ElimOnAnonHyp (out_gen (topwit wit_int) v)
         else match Value.to_constr v with
         | None -> error ()
-        | Some c -> keep,ElimOnConstr (sigma,(c,NoBindings))
+        | Some c -> keep,ElimOnConstr (fun env sigma -> sigma,(c,NoBindings))
       with Not_found ->
 	(* We were in non strict (interactive) mode *)
 	if Tactics.is_quantified_hypothesis id gl then
           keep,ElimOnIdent (loc,id)
 	else
           let c = (GVar (loc,id),Some (CRef (Ident (loc,id),None))) in
-          let (sigma,c) = interp_constr ist env sigma c in
-          keep,ElimOnConstr (sigma,(c,NoBindings))
+          let f env sigma = 
+            let (sigma,c) = interp_constr ist env sigma c in
+            sigma,(c,NoBindings) in
+          keep,ElimOnConstr f
 
 (* Associates variables with values and gives the remaining variables and
    values *)
@@ -1818,9 +1819,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
             let with_eq = if b then None else Some (true,id) in
             Tactics.letin_pat_tac with_eq na c cl
           in
+          let (sigma',c) = interp_pure_open_constr ist env sigma c in
 	  Tacticals.New.tclWITHHOLES false (*in hope of a future "eset/epose"*)
             (let_pat_tac b (interp_fresh_name ist env sigma na)
-            (interp_pure_open_constr ist env sigma c) clp) sigma eqpat
+            ((sigma,sigma'),c) clp) sigma' eqpat
       end
 
   (* Automation tactics *)
@@ -1842,7 +1844,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
 
   (* Derived basic tactics *)
-  | TacInductionDestruct (isrec,ev,(l,el,cls)) ->
+  | TacInductionDestruct (isrec,ev,(l,el)) ->
       (* spiwack: some unknown part of destruct needs the goal to be
          prenormalised. *)
       Proofview.V82.nf_evar_goals <*>
@@ -1850,19 +1852,18 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma,l =
-          List.fold_map begin fun sigma (c,(ipato,ipats)) ->
+          List.fold_map begin fun sigma (c,(ipato,ipats),cls) ->
             (* TODO: move sigma as a side-effect *)
             let c = Tacmach.New.of_old (fun gl -> interp_induction_arg ist gl c) gl in
             let ipato = interp_intro_pattern_naming_option ist env sigma ipato in
             let sigma,ipats = interp_or_and_intro_pattern_option ist env sigma ipats in
-            sigma,(c,(ipato,ipats))
+            let cls = Option.map (interp_clause ist env sigma) cls in
+            sigma,(c,(ipato,ipats),cls)
           end sigma l
         in
         let sigma,el =
           Option.fold_map (interp_constr_with_bindings ist env) sigma el in
-        let interp_clause = interp_clause ist env sigma in
-        let cls = Option.map interp_clause cls in
-        Tacticals.New.tclWITHHOLES ev (Tactics.induction_destruct isrec ev) sigma (l,el,cls)
+        Tactics.induction_destruct isrec ev (l,el)
       end
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist h1 in

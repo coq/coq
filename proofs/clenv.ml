@@ -118,13 +118,13 @@ let clenv_environments evd bound t =
   in
   clrec (evd,[]) bound t
 
-let mk_clenv_from_env environ sigma n (c,cty) =
+let mk_clenv_from_env env sigma n (c,cty) =
   let evd = create_goal_evar_defs sigma in
   let (evd,args,concl) = clenv_environments evd n cty in
   { templval = mk_freelisted (applist (c,args));
     templtyp = mk_freelisted concl;
     evd = evd;
-    env = environ }
+    env = env }
 
 let mk_clenv_from_n gls n (c,cty) =
   mk_clenv_from_env (pf_env gls) gls.sigma n (c, cty)
@@ -532,6 +532,9 @@ let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
 
 let make_clenv_binding_env_apply env sigma n =
   make_clenv_binding_gen true n env sigma
+
+let make_clenv_binding_env env sigma =
+  make_clenv_binding_gen false None env sigma
 	
 let make_clenv_binding_apply env sigma n = make_clenv_binding_gen true n env sigma
 let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma

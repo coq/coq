@@ -56,15 +56,15 @@ type 'id message_token =
   | MsgInt of int
   | MsgIdent of 'id
 
-type 'constr induction_clause =
+type ('constr,'id) induction_clause =
     'constr with_bindings induction_arg *
     (intro_pattern_naming_expr located option (* eqn:... *)
     * 'constr or_and_intro_pattern_expr located or_var option) (* as ... *)
+    * 'id clause_expr option (* in ... *)
 
 type ('constr,'id) induction_clause_list =
-    'constr induction_clause list
+    ('constr,'id) induction_clause list
     * 'constr with_bindings option (* using ... *)
-    * 'id clause_expr option (* in ... *)
 
 type 'a with_bindings_arg = clear_flag * 'a with_bindings
 

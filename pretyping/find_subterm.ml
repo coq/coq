@@ -50,8 +50,7 @@ let check_used_occurrences nbocc (nowhere_except_in,locs) =
 let proceed_with_occurrences f occs x =
   match occs with
   | NoOccurrences -> x
-  | _ ->
-    (* TODO FINISH ADAPTING WITH HUGO *)
+  | occs ->
     let plocs = Locusops.convert_occs occs in
     assert (List.for_all (fun x -> x >= 0) (snd plocs));
     let (nbocc,x) = f 1 x in
@@ -85,7 +84,7 @@ type 'a testing_function = {
   match_fun : 'a -> constr -> 'a;
   merge_fun : 'a -> 'a -> 'a;
   mutable testing_state : 'a;
-  mutable last_found : ((Id.t * hyp_location_flag) option * int * constr) option
+  mutable last_found : position_reporting option
 }
 
 (* Find subterms using a testing function, but only at a list of
@@ -93,7 +92,76 @@ type 'a testing_function = {
    (b,l), b=true means no occurrence except the ones in l and b=false,
    means all occurrences except the ones in l *)
 
-let replace_term_occ_gen_modulo occs test bywhat cl occ t =
+(*
+type 'a loc_state = {
+  hyp_location : (Id.t * hyp_location_flag) option;
+  maxocc : bool * int;
+  locs : occurrences;
+  current : int;
+  like_first : bool
+}
+
+let all_found pos =
+  let nowhere_except_in, maxocc = pos.maxocc in
+  nowhere_except_in && pos.current > maxocc
+
+let is_selected pos = Locusops.is_selected pos.current pos.locs
+
+let incr pos = pos := { !pos with current = (!pos).current + 1 }
+
+let make_current_pos cl pos = function
+  | AtOccs occs ->
+    let nowhere_except_in,locs = Locusops.convert_occs occs in
+    let maxocc = List.fold_right max locs 0 in
+    { hyp_location = cl;
+      maxocc = (nowhere_except_in,maxocc);
+      locs = occs;
+      current = pos;
+      like_first = false }
+  | LikeFirst ->
+    { hyp_location = None;
+      maxocc = (false,max_int);
+      locs = AllOccurrences;
+      current = pos;
+      like_first = true }
+
+let extract pos = (pos.hyp_location,pos.current)
+
+let like_first pos = pos.like_first
+
+let replace_term_occ_gen_modulo occs test bywhat cl pos t =
+  let nested = ref false in
+  let currentpos = ref (make_current_pos cl pos occs) in
+  let add_subst t subst =
+    try
+      test.testing_state <- test.merge_fun subst test.testing_state;
+      test.last_found <- Some (extract !currentpos,t)
+    with NotUnifiable e when not (like_first !currentpos) ->
+      let lastpos = Option.get test.last_found in
+     raise
+       (SubtermUnificationError (!nested,(extract !currentpos,t),lastpos,e)) in
+  let rec substrec k t =
+    if all_found !currentpos then (* shortcut *) t else
+    try
+      let subst = test.match_fun test.testing_state t in
+      if is_selected !currentpos then
+        (add_subst t subst; incr currentpos;
+         (* Check nested matching subterms *)
+         nested := true; ignore (subst_below k t); nested := false;
+         (* Do the effective substitution *)
+         Vars.lift k (bywhat ()))
+      else
+        (incr currentpos; subst_below k t)
+    with NotUnifiable _ ->
+      subst_below k t
+  and subst_below k t =
+    map_constr_with_binders_left_to_right (fun d k -> k+1) substrec k t
+  in
+  let t' = substrec 0 t in
+  (!currentpos, t')
+*)
+
+let replace_term_occ_gen_modulo occs like_first test bywhat cl occ t =
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
@@ -101,10 +169,10 @@ let replace_term_occ_gen_modulo occs test bywhat cl occ t =
   let add_subst t subst =
     try
       test.testing_state <- test.merge_fun subst test.testing_state;
-      test.last_found <- Some (cl,!pos,t)
-    with NotUnifiable e ->
+      test.last_found <- Some ((cl,!pos),t)
+    with NotUnifiable e when not like_first ->
       let lastpos = Option.get test.last_found in
-     raise (SubtermUnificationError (!nested,(cl,!pos,t),lastpos,e)) in
+     raise (SubtermUnificationError (!nested,((cl,!pos),t),lastpos,e)) in
   let rec substrec k t =
     if nowhere_except_in && !pos > maxocc then t else
     if not (Vars.closed0 t) then subst_below k t else
@@ -127,13 +195,17 @@ let replace_term_occ_gen_modulo occs test bywhat cl occ t =
   (!pos, t')
 
 let replace_term_occ_modulo occs test bywhat t =
+  let occs',like_first =
+    match occs with AtOccs occs -> occs,false | LikeFirst -> AllOccurrences,true in
   proceed_with_occurrences
-    (replace_term_occ_gen_modulo occs test bywhat None) occs t
+    (replace_term_occ_gen_modulo occs' like_first test bywhat None) occs' t
 
-let replace_term_occ_decl_modulo (plocs,hyploc) test bywhat d =
+let replace_term_occ_decl_modulo occs test bywhat d =
+  let (plocs,hyploc),like_first =
+    match occs with AtOccs occs -> occs,false | LikeFirst -> (AllOccurrences,InHyp),true in
   proceed_with_occurrences
     (map_named_declaration_with_hyploc
-       (replace_term_occ_gen_modulo plocs test bywhat)
+       (replace_term_occ_gen_modulo plocs like_first test bywhat)
        hyploc)
     plocs d
 
@@ -157,11 +229,13 @@ let subst_closed_term_occ env evd occs c t =
   let t' = replace_term_occ_modulo occs test bywhat t in
     t', test.testing_state
 
-let subst_closed_term_occ_decl env evd (plocs,hyploc) c d =
+let subst_closed_term_occ_decl env evd occs c d =
   let test = make_eq_univs_test env evd c in
+  let (plocs,hyploc),like_first =
+    match occs with AtOccs occs -> occs,false | LikeFirst -> (AllOccurrences,InHyp),true in
   let bywhat () = mkRel 1 in
   proceed_with_occurrences
     (map_named_declaration_with_hyploc
-       (fun _ -> replace_term_occ_gen_modulo plocs test bywhat None)
+       (fun _ -> replace_term_occ_gen_modulo plocs like_first test bywhat None)
        hyploc) plocs d,
   test.testing_state

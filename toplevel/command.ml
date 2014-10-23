@@ -127,7 +127,7 @@ let interp_definition bl p red_option c ctypopt =
   red_constant_entry (rel_context_length ctx) ce red_option, !evdref, imps
 
 let check_definition (ce, evd, imps) =
-  check_evars_are_solved (Global.env ()) Evd.empty evd;
+  check_evars_are_solved (Global.env ()) evd (Evd.empty,evd);
   ce
 
 let get_locality id = function
@@ -266,7 +266,7 @@ let do_assumptions (_, poly, _ as kind) nl l =
       (env,((is_coe,idl),t,(ctx,imps)))) 
     env l 
   in
-  let evd = solve_remaining_evars all_and_fail_flags env Evd.empty !evdref in
+  let evd = solve_remaining_evars all_and_fail_flags env !evdref (Evd.empty,!evdref) in
   let l = List.map (on_pi2 (nf_evar evd)) l in
   snd (List.fold_left (fun (subst,status) ((is_coe,idl),t,(ctx,imps)) ->
     let t = replace_vars subst t in
@@ -508,7 +508,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
      () in
 
   (* Try further to solve evars, and instantiate them *)
-  let sigma = solve_remaining_evars all_and_fail_flags env_params Evd.empty !evdref in
+  let sigma = solve_remaining_evars all_and_fail_flags env_params !evdref (Evd.empty,!evdref) in
   evdref := sigma;
   (* Compute renewed arities *)
   let nf,_ = e_nf_evars_and_universes evdref in
@@ -841,7 +841,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
   let rel, _ = interp_constr_evars_impls env evdref r in
-  let () = check_evars_are_solved env Evd.empty !evdref in
+  let () = check_evars_are_solved env !evdref (Evd.empty,!evdref)  in
   let relty = Typing.type_of env !evdref rel in
   let relargty =
     let error () =
@@ -1019,7 +1019,7 @@ let interp_recursive isfix fixl notations =
   (env,rec_sign,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxnames fiximps fixannots
 
 let check_recursive isfix env evd (fixnames,fixdefs,_) =
-  check_evars_are_solved env Evd.empty evd;
+  check_evars_are_solved env evd (Evd.empty,evd);
   if List.for_all Option.has_some fixdefs then begin
     let fixdefs = List.map Option.get fixdefs in
     check_mutuality env isfix (List.combine fixnames fixdefs)

@@ -38,7 +38,7 @@ val concrete_clause_of : (unit -> Id.t list) -> clause -> concrete_clause
 
 (** Miscellaneous functions *)
 
-val occurrences_of_hyp : Id.t -> Id.t clause_expr ->
-  occurrences * hyp_location_flag
-val occurrences_of_goal : 'a clause_expr -> occurrences
-val in_every_hyp : 'a clause_expr -> bool
+val occurrences_of_hyp : Id.t -> clause or_like_first ->
+  (occurrences * hyp_location_flag) or_like_first
+val occurrences_of_goal : clause or_like_first -> occurrences or_like_first
+val in_every_hyp : clause or_like_first -> bool

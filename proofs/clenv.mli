@@ -96,6 +96,10 @@ val make_clenv_binding_env_apply :
 val make_clenv_binding_apply :
   env -> evar_map -> int option -> constr * constr -> constr bindings ->
    clausenv
+
+val make_clenv_binding_env :
+  env -> evar_map -> constr * constr -> constr bindings -> clausenv
+
 val make_clenv_binding :
   env -> evar_map -> constr * constr -> constr bindings -> clausenv
 

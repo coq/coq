@@ -1600,6 +1600,11 @@ let dependent_evar_ident ev evd =
   | _ -> anomaly (str "Not an evar resulting of a dependent binding")
 
 (*******************************************************************)
+
+type pending = (* before: *) evar_map * (* after: *) evar_map
+
+type pending_constr = pending * constr
+
 type open_constr = evar_map * constr
 
 (*******************************************************************)

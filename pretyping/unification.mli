@@ -45,7 +45,7 @@ val elim_no_delta_flags : unit -> unify_flags
 val w_unify :
   env -> evar_map -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_map
 
-(** [w_unify_to_subterm env (c,t) m] performs unification of [c] with a
+(** [w_unify_to_subterm env m (c,t)] performs unification of [c] with a
    subterm of [t]. Constraints are added to [m] and the matched
    subterm of [t] is also returned. *)
 val w_unify_to_subterm :
@@ -63,19 +63,24 @@ val w_coerce_to_type : env -> evar_map -> constr -> types -> types ->
 
 (* Looking for subterms in contexts at some occurrences, possibly with pattern*)
 
+exception PatternNotFound
+
 type abstraction_request =
-| AbstractPattern of Names.Name.t * (evar_map * constr) * Locus.clause * bool * Pretyping.inference_flags
+| AbstractPattern of bool * Names.Name.t * pending_constr * Locus.clause Locus.or_like_first * bool
 | AbstractExact of Names.Name.t * constr * types option * Locus.clause * bool
 
 val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
-  env -> Evd.evar_map -> open_constr -> Evd.evar_universe_context * constr
+  env -> Evd.evar_map -> pending_constr -> Evd.evar_map * constr
 
 type abstraction_result =
-  Names.Id.t * Context.named_declaration list * Names.Id.t option *
-    constr * (Evd.evar_universe_context * constr)
+  Names.Id.t * named_context_val *
+    Context.named_declaration list * Names.Id.t option *
+    types * (Evd.evar_map * constr) option
 
 val make_abstraction : env -> Evd.evar_map -> constr ->
   abstraction_request -> abstraction_result
+
+val pose_all_metas_as_evars : env -> evar_map -> constr -> evar_map * constr
 
 (*i This should be in another module i*)
 

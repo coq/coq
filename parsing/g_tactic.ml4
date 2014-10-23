@@ -136,19 +136,19 @@ let induction_arg_of_constr (c,lbind as clbind) = match lbind with
   | _ -> ElimOnConstr clbind
 
 let mkTacCase with_evar = function
-  | [(clear,ElimOnConstr cl),(None,None)],None,None ->
+  | [(clear,ElimOnConstr cl),(None,None),None],None ->
       TacCase (with_evar,(clear,cl))
   (* Reinterpret numbers as a notation for terms *)
-  | [(clear,ElimOnAnonHyp n),(None,None)],None,None ->
+  | [(clear,ElimOnAnonHyp n),(None,None),None],None ->
       TacCase (with_evar,
         (clear,(CPrim (Loc.ghost, Numeral (Bigint.of_int n)),
 	 NoBindings)))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
-  | [(clear,ElimOnIdent id),(None,None)],None,None ->
+  | [(clear,ElimOnIdent id),(None,None),None],None ->
       TacCase (with_evar,(clear,(CRef (Ident id,None),NoBindings)))
   | ic ->
-      if List.exists (function ((_, ElimOnAnonHyp _),_) -> true | _ -> false) (pi1 ic)
+      if List.exists (function ((_, ElimOnAnonHyp _),_,_) -> true | _ -> false) (fst ic)
       then
 	error "Use of numbers as direct arguments of 'case' is not supported.";
       TacInductionDestruct (false,with_evar,ic)
@@ -520,11 +520,17 @@ GEXTEND Gram
     [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
   ;
   induction_clause:
-    [ [ c = induction_arg; pat = as_or_and_ipat; eq = eqn_ipat -> (c,(eq,pat)) ] ]
+    [ [ c = induction_arg; pat = as_or_and_ipat; eq = eqn_ipat; cl = opt_clause
+        -> (c,(eq,pat),cl) ] ]
   ;
   induction_clause_list:
-    [ [ ic = LIST1 induction_clause SEP ",";
-	el = OPT eliminator; cl = opt_clause -> (ic,el,cl) ] ]
+    [ [ ic = LIST1 induction_clause SEP ","; el = OPT eliminator;
+        cl_tolerance = opt_clause ->
+        (* Condition for accepting "in" at the end by compatibility *)
+        match ic,el,cl_tolerance with
+        | [c,pat,None],Some _,Some _ -> ([c,pat,cl_tolerance],el)
+        | _,_,Some _ -> err ()
+        | _,_,None -> (ic,el) ]]
   ;
   move_location:
     [ [ IDENT "after"; id = id_or_meta -> MoveAfter id
@@ -613,6 +619,13 @@ GEXTEND Gram
           l = LIST0 [","; c = pattern_occ; na = as_name -> (c,na)] ->
           TacAtom (!@loc, TacGeneralize (((nl,c),na)::l))
       | IDENT "generalize"; IDENT "dependent"; c = constr -> TacAtom (!@loc, TacGeneralizeDep c)
+(* Towards a "generalize in" which generalize in place: problem: this is somehow inconsistent with "generalize at" (from 8.2) which is not in place.
+      | IDENT "generalize"; c = constr; "in"; cl = in_clause;
+          na = as_name;
+          l = LIST0 [","; c = constr; "in"; cl = in_clause; na = as_name ->
+            ((cl,c),na)] ->
+          TacGeneralize (true,((cl,c),na)::l)
+*)
 
       (* Derived basic tactics *)
       | IDENT "induction"; ic = induction_clause_list ->

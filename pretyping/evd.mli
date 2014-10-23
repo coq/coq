@@ -575,10 +575,16 @@ val eq_constr_univs_test : evar_map -> constr -> constr -> bool
 (** Syntactic equality up to universes, throwing away the (consistent) constraints
     in case of success. *)
 
-(********************************************************************
-   constr with holes *)
+(********************************************************************)
+(* constr with holes and pending resolution of classes, conversion  *)
+(* problems, candidates, etc.                                       *)
 
-type open_constr = evar_map * constr
+type pending = (* before: *) evar_map * (* after: *) evar_map
+
+type pending_constr = pending * constr
+
+type open_constr = evar_map * constr (* Special case when before is empty *)
+
 (** Partially constructed constrs. *)
 
 type unsolvability_explanation = SeveralInstancesFound of int

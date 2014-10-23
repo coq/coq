@@ -77,23 +77,15 @@ let sumbool = Coqlib.build_coq_sumbool
 
 let andb = fun _ -> (Coqlib.build_bool_type()).Coqlib.andb
 
-let induct_on c =
-  induction false
-    [None,Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
-    None (None,None) None
+let induct_on c = induction false None c None None
+
+let destruct_on c = destruct false None c None None
 
 let destruct_on_using c id =
-  destruct false
-    [None,Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
-    None
-    (None,Some (dl,[[dl,IntroNaming IntroAnonymous];
-                    [dl,IntroNaming (IntroIdentifier id)]]))
-    None
+  destruct false None c (Some (dl,[[dl,IntroNaming IntroAnonymous]])) None
 
-let destruct_on c =
-  destruct false
-    [None,Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
-    None (None,None) None
+let destruct_on_as c l =
+  destruct false None c (Some (dl,l)) None
 
 (* reconstruct the inductive with the correct deBruijn indexes *)
 let mkFullInd (ind,u) n =
@@ -591,12 +583,9 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                          Simple.apply_in freshz (andb_prop());
                          Proofview.Goal.nf_enter begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
-                            (destruct false [None,Tacexpr.ElimOnConstr
-                                      (Evd.empty,((mkVar freshz,NoBindings)))]
-                                  None
-                                  (None, Some (dl,[[
-                                    dl,IntroNaming (IntroIdentifier fresht);
-                                    dl,IntroNaming (IntroIdentifier freshz)]])) None)
+                            (destruct_on_as (mkVar freshz)
+                                  [[dl,IntroNaming (IntroIdentifier fresht);
+                                    dl,IntroNaming (IntroIdentifier freshz)]])
                          end
                         ]);
 (*

@@ -25,9 +25,7 @@ let is_rec_info scheme_info =
   List.fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
 
 let choose_dest_or_ind scheme_info =
-    if is_rec_info scheme_info
-    then Tactics.induction false
-    else Tactics.destruct false
+  Tactics.induction_destruct (is_rec_info scheme_info) false
 
 let functional_induction with_clean c princl pat =
   Dumpglob.pause ();
@@ -80,7 +78,10 @@ let functional_induction with_clean c princl pat =
 	if princ_infos.Tactics.farg_in_concl
 	then [c] else []
       in
-      List.map (fun c -> None,Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))) (args@c_list)
+      let encoded_pat_as_patlist =
+        List.make (List.length args + List.length c_list - 1) None @ [pat] in
+      List.map2 (fun c pat -> ((None,Tacexpr.ElimOnConstr (fun env sigma -> sigma,(c,NoBindings))),(None,pat),None))
+        (args@c_list) encoded_pat_as_patlist
     in
     let princ' = Some (princ,bindings) in
     let princ_vars =
@@ -113,10 +114,7 @@ let functional_induction with_clean c princl pat =
     Tacticals.tclTHEN
       (Proofview.V82.of_tactic (choose_dest_or_ind
 	 princ_infos
-	 args_as_induction_constr
-	 princ'
-	 (None,pat)
-         None))
+	 (args_as_induction_constr,princ')))
       subst_and_reduce
       g
   in

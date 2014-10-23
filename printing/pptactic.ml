@@ -771,14 +771,14 @@ and pr_atom1 = function
 	     ++ str "in" ++ pr_hyp_location pr.pr_name (id,[],(hloc,ref None)))
 *)
   (* Derived basic tactics *)
-  | TacInductionDestruct (isrec,ev,(l,el,cl)) ->
+  | TacInductionDestruct (isrec,ev,(l,el)) ->
       hov 1 (str (with_evars ev (if isrec then "induction" else "destruct")) ++
              spc () ++
-             prlist_with_sep pr_comma (fun ((clear_flag,h),ids) ->
+             prlist_with_sep pr_comma (fun ((clear_flag,h),ids,cl) ->
 	       pr_clear_flag clear_flag (pr_induction_arg pr.pr_constr pr.pr_lconstr) h ++
-	       pr_with_induction_names pr.pr_constr ids) l ++
-             pr_opt pr_eliminator el ++
-	     pr_opt_no_spc (pr_clauses None pr.pr_name) cl)
+	       pr_with_induction_names pr.pr_constr ids ++
+	     pr_opt_no_spc (pr_clauses None pr.pr_name) cl) l ++
+             pr_opt pr_eliminator el)
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "double induction" ++

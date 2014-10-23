@@ -73,5 +73,3 @@ intros.
 induction x as [y * IHx].
 change (x = x) in IHx. (* We should have IHx:x=x *)
 Abort.
-
-
