@@ -940,7 +940,7 @@ let rec mem_named_context id = function
   | _ :: sign -> mem_named_context id sign
   | [] -> false
 
-let compact_named_context sign =
+let compact_named_context_reverse sign =
   let compact l (i1,c1,t1) =
     match l with
     | [] -> [[i1],c1,t1]
@@ -948,7 +948,9 @@ let compact_named_context sign =
        if Option.equal Constr.equal c1 c2 && Constr.equal t1 t2
        then (i1::l2,c2,t2)::q
        else ([i1],c1,t1)::l
-  in List.rev (Context.fold_named_context_reverse compact ~init:[] sign)
+  in Context.fold_named_context_reverse compact ~init:[] sign
+
+let compact_named_context sign = List.rev (compact_named_context_reverse sign)
 
 let clear_named_body id env =
   let aux _ = function

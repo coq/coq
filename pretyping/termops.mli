@@ -216,6 +216,7 @@ val fold_named_context_both_sides :
     named_context -> init:'a -> 'a
 val mem_named_context : Id.t -> named_context -> bool
 val compact_named_context : named_context -> named_list_context
+val compact_named_context_reverse : named_context -> named_list_context
 
 val clear_named_body : Id.t -> env -> env
 

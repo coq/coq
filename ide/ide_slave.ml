@@ -180,7 +180,7 @@ let process_goal sigma g =
     (string_of_ppcmds (pr_var_list_decl min_env sigma d)) in
   let hyps =
     List.map process_hyp
-      (Termops.compact_named_context (Environ.named_context env)) in
+      (Termops.compact_named_context_reverse (Environ.named_context env)) in
   { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 
 let goals () =
