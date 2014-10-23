@@ -374,10 +374,11 @@ let _ = Errors.register_handler begin function
   | _ -> raise Errors.Unhandled
 end
 
-(* A variant of [Monad.List.iter] where we iter over the focused list of
-   goals. The argument tactic is executed in a focus comprising only
-   of the current goal, a goal which has been solved by side effect is
-   skipped. The generated subgoals are concatenated in order.  *)
+(** A variant of [Monad.List.iter] where we iter over the focused list
+    of goals. The argument tactic is executed in a focus comprising
+    only of the current goal, a goal which has been solved by side
+    effect is skipped. The generated subgoals are concatenated in
+    order.  *)
 let iter_goal i =
   let open Proof in
   Comb.get >>= fun initial ->
@@ -392,31 +393,29 @@ let iter_goal i =
   end [] initial >>= fun subgoals ->
   Comb.set (CList.flatten (CList.rev subgoals))
 
-(* A variant of [Monad.List.fold_left2] where the first list is the
-   list of focused goals. The argument tactic is executed in a focus
-   comprising only of the current goal, a goal which has been solved
-   by side effect is skipped. The generated subgoals are concatenated
-   in order. *)
+(** A variant of [Monad.List.fold_left2] where the first list is the
+    list of focused goals. The argument tactic is executed in a focus
+    comprising only of the current goal, a goal which has been solved
+    by side effect is skipped. The generated subgoals are concatenated
+    in order. *)
 let fold_left2_goal i s l =
   let open Proof in
   Pv.get >>= fun initial ->
-  tclORELSE begin
-    Proof.List.fold_left2 tclZERO begin fun ((r,subgoals) as cur) goal a ->
-      Solution.get >>= fun step ->
-      match advance step goal with
-      | None -> return cur
-      | Some goal ->
-          Comb.set [goal] >>
-            i goal a r >>= fun r ->
-          Proof.map (fun comb -> (r, comb :: subgoals)) Comb.get
-    end (s,[]) initial.comb l >>= fun (r,subgoals) ->
-    Comb.set (CList.flatten (CList.rev subgoals)) >>
-    return r
-  end
-  begin function
-      | Proof.List.SizeMismatch -> tclZERO (SizeMismatch (CList.length initial.comb,CList.length l))
-      | reraise -> tclZERO reraise
-    end
+  let err =
+    return () >>= fun () -> (* Delay the computation of list lengths. *)
+    tclZERO (SizeMismatch (CList.length initial.comb,CList.length l))
+  in 
+  Proof.List.fold_left2 err begin fun ((r,subgoals) as cur) goal a ->
+    Solution.get >>= fun step ->
+    match advance step goal with
+    | None -> return cur
+    | Some goal ->
+        Comb.set [goal] >>
+        i goal a r >>= fun r ->
+        Proof.map (fun comb -> (r, comb :: subgoals)) Comb.get
+  end (s,[]) initial.comb l >>= fun (r,subgoals) ->
+  Comb.set (CList.flatten (CList.rev subgoals)) >>
+  return r
 
 (** Dispatch tacticals are used to apply a different tactic to each
     goal under focus. They come in two flavours: [tclDISPATCH] takes a

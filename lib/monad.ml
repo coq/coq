@@ -67,16 +67,11 @@ module type ListS = sig
 
   (** {6 Two-list iterators} *)
 
-  (** Raised when an combinator expects several lists of the same size
-      but finds that they are not. Exceptions must be raised inside
-      the monad, so two-list combinators take an extra argument to
-      raise the exception. *)
-  exception SizeMismatch
-
   (** [fold_left2 r f s l1 l2] behaves like {!fold_left} but acts
-      simultaneously on two lists. Returns [r SizeMismatch] if both lists
-      do not have the same length. *)
-  val fold_left2 : (exn->'a t) ->
+      simultaneously on two lists. Runs [r] (presumably an
+      exception-raising computation) if both lists do not have the
+      same length. *)
+  val fold_left2 : 'a t ->
     ('a -> 'b -> 'c -> 'a t) -> 'a -> 'b list -> 'c list -> 'a t
 
 end
@@ -143,7 +138,6 @@ module Make (M:Def) : S with type +'a t = 'a M.t = struct
       | a::b::l -> f a >> f b >> iter f l
 
 
-    exception SizeMismatch
 
     let rec fold_left2 r f x l1 l2 =
       match l1,l2 with
@@ -153,7 +147,7 @@ module Make (M:Def) : S with type +'a t = 'a M.t = struct
           f x a1 b1 >>= fun x' ->
           f x' a2 b2 >>= fun x'' ->
           fold_left2 r f x'' l1 l2
-      | _ , _ -> r SizeMismatch
+      | _ , _ -> r
 
   end
 
