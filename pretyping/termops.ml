@@ -948,7 +948,7 @@ let compact_named_context sign =
        if Option.equal Constr.equal c1 c2 && Constr.equal t1 t2
        then (i1::l2,c2,t2)::q
        else ([i1],c1,t1)::l
-  in Context.fold_named_context_reverse compact ~init:[] sign
+  in List.rev (Context.fold_named_context_reverse compact ~init:[] sign)
 
 let clear_named_body id env =
   let aux _ = function
