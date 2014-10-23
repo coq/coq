@@ -1949,6 +1949,8 @@ let mk_internal_let s code =
 
 (* ML Code for conversion function *)
 let mk_conv_code env sigma prefix t1 t2 =
+  clear_symb_tbl ();
+  clear_global_tbl ();
   let gl, (mind_updates, const_updates) =
     let init = ([], empty_updates) in
     compile_deps env sigma prefix ~interactive:true init t1
@@ -1974,6 +1976,8 @@ let mk_conv_code env sigma prefix t1 t2 =
   header::gl, (mind_updates, const_updates)
 
 let mk_norm_code env sigma prefix t =
+  clear_symb_tbl ();
+  clear_global_tbl ();
   let gl, (mind_updates, const_updates) =
     let init = ([], empty_updates) in
     compile_deps env sigma prefix ~interactive:true init t
