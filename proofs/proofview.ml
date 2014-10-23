@@ -888,7 +888,9 @@ struct
   let mark_as_goal evd content =
     let info = Evd.find evd content in
     let info =
-      { info with Evd.evar_source = (fst (info.Evd.evar_source),Evar_kinds.GoalEvar) }
+      { info with Evd.evar_source = match info.Evd.evar_source with
+      | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
+      | loc,_ -> loc,Evar_kinds.GoalEvar }
     in
     let info = Typeclasses.mark_unresolvable info in
     Evd.add evd content info
