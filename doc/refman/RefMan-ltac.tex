@@ -341,7 +341,7 @@ We have a repeat loop with:
 {\tt repeat} {\tacexpr}
 \end{quote}
 {\tacexpr} is evaluated to $v$. If $v$ denotes a tactic, this tactic
-is applied to the goal. If the application fails, the tactic is
+is applied to the goal. If the application succeeds, the tactic is
 applied recursively to all the generated subgoals until it eventually
 fails.  The recursion stops in a subgoal when the tactic has failed.
 The tactic {\tt repeat {\tacexpr}} itself never fails.
