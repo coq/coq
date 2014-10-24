@@ -122,7 +122,6 @@ let refine          = Tacmach.refine
 let convert_concl ?(check=true) ty k =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
     let conclty = Proofview.Goal.raw_concl gl in
     Proofview.Refine.refine ~unsafe:true begin fun sigma ->
       let sigma =
@@ -432,6 +431,38 @@ let reduct_option ?(check=false) redfun = function
   | Some id -> reduct_in_hyp ~check (fst redfun) id
   | None    -> reduct_in_concl (revert_cast redfun)
 
+(** Tactic reduction modulo evars (for universes essentially) *)
+
+let pf_e_reduce_decl redfun where (id,c,ty) gl =
+  let sigma = project gl in
+  let redfun = redfun (pf_env gl) in
+  match c with
+  | None ->
+      if where == InHypValueOnly then
+	errorlabstrm "" (pr_id id ++ str "has no value.");
+    let sigma, ty' = redfun sigma ty in
+      sigma, (id,None,ty')
+  | Some b ->
+      let sigma, b' = if where != InHypTypeOnly then redfun sigma b else sigma, b in
+      let sigma, ty' = if where != InHypValueOnly then redfun sigma ty else sigma, ty in
+	sigma, (id,Some b',ty')
+
+let e_reduct_in_concl (redfun,sty) gl =
+  Proofview.V82.of_tactic
+    (let sigma, c' = (pf_apply redfun gl (pf_concl gl)) in
+       Proofview.Unsafe.tclEVARS sigma <*> 
+	 convert_concl_no_check c' sty) gl
+
+let e_reduct_in_hyp ?(check=false) redfun (id,where) gl =
+  Proofview.V82.of_tactic 
+    (let sigma, decl' = pf_e_reduce_decl redfun where (pf_get_hyp gl id) gl in
+       Proofview.Unsafe.tclEVARS sigma <*> 
+	 convert_hyp ~check decl') gl
+
+let e_reduct_option ?(check=false) redfun = function
+  | Some id -> e_reduct_in_hyp ~check (fst redfun) id
+  | None    -> e_reduct_in_concl (revert_cast redfun)
+
 (** Versions with evars to maintain the unification of universes resulting
     from conversions. *)
 
@@ -552,7 +583,7 @@ let normalise_vm_in_concl = reduct_in_concl (Redexpr.cbv_vm,VMcast)
 let unfold_in_concl loccname = reduct_in_concl (unfoldn loccname,REVERTcast)
 let unfold_in_hyp   loccname = reduct_in_hyp   (unfoldn loccname)
 let unfold_option   loccname = reduct_option (unfoldn loccname,DEFAULTcast)
-let pattern_option l = reduct_option (pattern_occs l,DEFAULTcast)
+let pattern_option l = e_reduct_option (pattern_occs l,DEFAULTcast)
 
 (* The main reduction function *)
 
@@ -568,7 +599,7 @@ let reduce redexp cl goal =
   let cl = concrete_clause_of (fun () -> pf_ids_of_hyps goal) cl in
   let redexps = reduction_clause redexp cl in
   let tac = tclMAP (fun (where,redexp) ->
-    reduct_option ~check:true
+    e_reduct_option ~check:true
       (Redexpr.reduction_of_red_expr (pf_env goal) redexp) where) redexps in
   match redexp with
   | Fold _ | Pattern _ -> with_check tac goal
@@ -738,8 +769,8 @@ let pf_lookup_hypothesis_as_renamed_gen red h gl =
     match pf_lookup_hypothesis_as_renamed env ccl h with
       | None when red ->
           aux
-	    ((fst (Redexpr.reduction_of_red_expr env (Red true)))
-	       env (project gl) ccl)
+	    (snd ((fst (Redexpr.reduction_of_red_expr env (Red true)))
+	       env (project gl) ccl))
       | x -> x
   in
   try aux (pf_concl gl)

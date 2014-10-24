@@ -706,7 +706,7 @@ let  mkCaseEq a  : unit Proofview.tactic =
             let env = Proofview.Goal.env gl in
             Proofview.V82.tactic begin
 	      change_concl
-	        (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl)
+	        (snd (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl))
             end
           end;
 	  simplest_case a]

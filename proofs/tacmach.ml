@@ -76,6 +76,7 @@ let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_eapply f gls x = 
   on_sig gls (fun evm -> f (pf_env gls) evm x)
 let pf_reduce = pf_apply
+let pf_e_reduce = pf_apply
 
 let pf_whd_betadeltaiota         = pf_reduce whd_betadeltaiota
 let pf_hnf_constr                = pf_reduce hnf_constr

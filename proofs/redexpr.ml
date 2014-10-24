@@ -175,25 +175,28 @@ let out_with_occurrences (occs,c) =
 
 let reduction_of_red_expr env =
   let make_flag = make_flag env in
+  let e_red f env evm c = evm, f env evm c in
   let rec reduction_of_red_expr = function
   | Red internal ->
-      if internal then (try_red_product,DEFAULTcast)
-      else (red_product,DEFAULTcast)
-  | Hnf -> (hnf_constr,DEFAULTcast)
+      if internal then (e_red try_red_product,DEFAULTcast)
+      else (e_red red_product,DEFAULTcast)
+  | Hnf -> (e_red hnf_constr,DEFAULTcast)
   | Simpl (Some (_,c as lp)) ->
-    (contextually (is_reference c) (out_with_occurrences lp)
-      (fun _ -> simpl),DEFAULTcast)
-  | Simpl None -> (simpl,DEFAULTcast)
-  | Cbv f -> (cbv_norm_flags (make_flag f),DEFAULTcast)
+    let f = contextually (is_reference c) (out_with_occurrences lp)
+      (fun _ -> simpl)
+    in (e_red f,DEFAULTcast)
+  | Simpl None -> (e_red simpl,DEFAULTcast)
+  | Cbv f -> (e_red (cbv_norm_flags (make_flag f)),DEFAULTcast)
   | Cbn f ->
-    (strong (fun env evd x -> Stack.zip ~refold:true
-      (fst (whd_state_gen true (make_flag f) env evd (x, Stack.empty)))),DEFAULTcast)
-  | Lazy f -> (clos_norm_flags (make_flag f),DEFAULTcast)
-  | Unfold ubinds -> (unfoldn (List.map out_with_occurrences ubinds),DEFAULTcast)
-  | Fold cl -> (fold_commands cl,DEFAULTcast)
+    let f = strong (fun env evd x -> Stack.zip ~refold:true
+      (fst (whd_state_gen true (make_flag f) env evd (x, Stack.empty)))) in
+      (e_red f, DEFAULTcast)
+  | Lazy f -> (e_red (clos_norm_flags (make_flag f)),DEFAULTcast)
+  | Unfold ubinds -> (e_red (unfoldn (List.map out_with_occurrences ubinds)),DEFAULTcast)
+  | Fold cl -> (e_red (fold_commands cl),DEFAULTcast)
   | Pattern lp -> (pattern_occs (List.map out_with_occurrences lp),DEFAULTcast)
   | ExtraRedExpr s ->
-      (try (String.Map.find s !reduction_tab,DEFAULTcast)
+      (try (e_red (String.Map.find s !reduction_tab),DEFAULTcast)
       with Not_found ->
 	(try reduction_of_red_expr (String.Map.find s !red_expr_tab)
 	 with Not_found ->
@@ -206,8 +209,8 @@ let reduction_of_red_expr env =
       Vnorm.cbv_vm env c tpe
     in
     let redfun = contextually b lp vmfun in
-    (redfun, VMcast)
-  | CbvVm None -> (cbv_vm, VMcast)
+    (e_red redfun, VMcast)
+  | CbvVm None -> (e_red cbv_vm, VMcast)
   | CbvNative (Some lp) ->
     let b = is_reference (snd lp) in
     let lp = out_with_occurrences lp in
@@ -217,8 +220,8 @@ let reduction_of_red_expr env =
       Nativenorm.native_norm env evars c tpe
     in
     let redfun = contextually b lp nativefun in
-    (redfun, NATIVEcast)
-  | CbvNative None -> (cbv_native, NATIVEcast)
+    (e_red redfun, NATIVEcast)
+  | CbvNative None -> (e_red cbv_native, NATIVEcast)
   in
     reduction_of_red_expr
 

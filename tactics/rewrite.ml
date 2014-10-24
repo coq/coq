@@ -1324,12 +1324,13 @@ module Strategies =
     let reduce (r : Redexpr.red_expr) : 'a pure_strategy =
 	fun state env avoid t ty cstr evars ->
           let rfn, ckind = Redexpr.reduction_of_red_expr env r in
-	  let t' = rfn env (goalevars evars) t in
+	  let evars', t' = rfn env (goalevars evars) t in
 	    if eq_constr t' t then
 	      state, Identity
 	    else
 	      state, Success { rew_car = ty; rew_from = t; rew_to = t';
-				  rew_prf = RewCast ckind; rew_evars = evars }
+			       rew_prf = RewCast ckind; 
+			       rew_evars = evars', cstrevars evars }
 	
     let fold_glob c : 'a pure_strategy =
       fun state env avoid t ty cstr evars ->

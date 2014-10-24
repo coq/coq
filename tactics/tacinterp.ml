@@ -681,7 +681,7 @@ let interp_may_eval f ist env sigma = function
   | ConstrEval (r,c) ->
       let (sigma,redexp) = interp_red_expr ist env sigma r in
       let (sigma,c_interp) = f ist env sigma c in
-      sigma , (fst (Redexpr.reduction_of_red_expr env redexp) env sigma c_interp)
+      (fst (Redexpr.reduction_of_red_expr env redexp) env sigma c_interp)
   | ConstrContext ((loc,s),c) ->
       (try
 	let (sigma,ic) = f ist env sigma c in

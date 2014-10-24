@@ -1124,21 +1124,21 @@ let compute = cbv_betadeltaiota
 (* gives [na:ta]c' such that c converts to ([na:ta]c' a), abstracting only
  * the specified occurrences. *)
 
-let abstract_scheme env sigma (locc,a) c =
+let abstract_scheme env (locc,a) (c, sigma) =
   let ta = Retyping.get_type_of env sigma a in
   let na = named_hd env ta Anonymous in
   if occur_meta ta then error "Cannot find a type for the generalisation.";
   if occur_meta a then
-    mkLambda (na,ta,c)
+    mkLambda (na,ta,c), sigma
   else
     let c', sigma' = subst_closed_term_occ env sigma locc a c in
-      mkLambda (na,ta,c') 
+      mkLambda (na,ta,c'), sigma'
 
 let pattern_occs loccs_trm env sigma c =
-  let abstr_trm = List.fold_right (abstract_scheme env sigma) loccs_trm c in
+  let abstr_trm, sigma = List.fold_right (abstract_scheme env) loccs_trm (c,sigma) in
   try
     let _ = Typing.type_of env sigma abstr_trm in
-    applist(abstr_trm, List.map snd loccs_trm)
+      sigma, applist(abstr_trm, List.map snd loccs_trm)
   with Type_errors.TypeError (env',t) ->
     raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))
 
