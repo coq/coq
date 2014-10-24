@@ -81,13 +81,15 @@ let where_in_path ?(warn=true) path filename =
 
 let where_in_path_rex path rex =
   search path (fun lpe ->
-    let files = Sys.readdir lpe in
-    CList.map_filter (fun name ->
-      try
-        ignore(Str.search_forward rex name 0);
-        Some (lpe,Filename.concat lpe name)
-      with Not_found -> None)
-      (Array.to_list files))
+    try
+      let files = Sys.readdir lpe in
+      CList.map_filter (fun name ->
+        try
+          ignore(Str.search_forward rex name 0);
+          Some (lpe,Filename.concat lpe name)
+        with Not_found -> None)
+      (Array.to_list files)
+    with Sys_error _ -> [])
 
 let find_file_in_path ?(warn=true) paths filename =
   if not (Filename.is_implicit filename) then
