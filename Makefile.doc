@@ -328,9 +328,8 @@ install-doc-printable:
 	$(INSTALLLIB) doc/faq/FAQ.v.ps $(FULLDOCDIR)/ps/FAQ.ps
 
 install-doc-index-urls:
-	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
-	$(INSTALLLIB) $(INDEXURLS) \
-		$(FULLDOCDIR)/html/refman 
+	$(MKDIR) $(FULLDATADIR)
+	$(INSTALLLIB) $(INDEXURLS) $(FULLDATADIR)
 
 # For emacs:
 # Local Variables:
