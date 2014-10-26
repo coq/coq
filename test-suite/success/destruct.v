@@ -200,3 +200,38 @@ edestruct (H _ _).
 - apply (eq_refl x).
 Qed.
 *)
+Abort.
+
+(* Test selection when not in an inductive type *)
+Parameter A:Type.
+Axiom elim: forall P, A -> P.
+Goal forall a:A, a = a.
+induction a using elim.
+Qed.
+
+Goal forall a:nat -> A, a 0 = a 1.
+intro a.
+induction (a 0) using elim.
+Qed.
+
+(* From Oct 2014, a subterm is found, as if without "using"; in 8.4,
+   it did not find a subterm *)
+
+Goal forall a:nat -> A, a 0 = a 1.
+intro a.
+induction a using elim.
+Qed.
+
+Goal forall a:nat -> A, forall b, a 0 = b.
+intros a b.
+induction a using elim.
+Qed.
+
+(* From Oct 2014, first subterm is found; in 8.4, it failed because it
+   found "a 0" and wanted to clear a *)
+
+Goal forall a:nat -> nat, a 0 = a 1.
+intro a.
+destruct a.
+change (0 = a 1).
+Abort.

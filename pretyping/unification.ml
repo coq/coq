@@ -1410,7 +1410,7 @@ let default_matching_flags (sigma,_) =
 
 exception PatternNotFound
 
-let make_pattern_test from_prefix_of_ind env sigma (pending,c) =
+let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   let flags = default_matching_flags pending in
   let n = List.length (snd (decompose_app c)) in
   let matching_fun _ t =
@@ -1427,12 +1427,8 @@ let make_pattern_test from_prefix_of_ind env sigma (pending,c) =
             applist (t,l1)
         else t in
       let sigma = w_typed_unify env sigma Reduction.CONV flags c t' in
-      let _ =
-        if from_prefix_of_ind then
-          (* We check that the subterm we found from prefix is applied *)
-          (* enough to be of inductive type *)
-          try ignore (Inductiveops.find_mrectype env sigma (Retyping.get_type_of env sigma t))
-          with UserError _ -> raise (NotUnifiable None) in
+      let ty = Retyping.get_type_of env sigma t in
+      if not (is_correct_type ty) then raise (NotUnifiable None);
       Some(sigma, t)
     with
     | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
@@ -1526,7 +1522,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
 type prefix_of_inductive_support_flag = bool
 
 type abstraction_request =
-| AbstractPattern of prefix_of_inductive_support_flag * Name.t * pending_constr * clause or_like_first * bool
+| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * pending_constr * clause or_like_first * bool
 | AbstractExact of Name.t * constr * types option * clause * bool
 
 type abstraction_result =
@@ -1536,9 +1532,9 @@ type abstraction_result =
 
 let make_abstraction env evd ccl abs =
   match abs with
-  | AbstractPattern (from_prefix,name,c,occs,check_occs) ->
+  | AbstractPattern (from_prefix,check,name,c,occs,check_occs) ->
       make_abstraction_core name
-        (make_pattern_test from_prefix env evd c)
+        (make_pattern_test from_prefix check env evd c)
         env evd (snd c) None occs check_occs ccl
   | AbstractExact (name,c,ty,occs,check_occs) ->
       make_abstraction_core name

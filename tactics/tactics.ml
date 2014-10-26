@@ -2254,7 +2254,8 @@ let letin_pat_tac with_eq id c occs =
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let ccl = Proofview.Goal.concl gl in
-    let abs = AbstractPattern (false,id,c,AtOccs occs,false) in
+    let check t = true in
+    let abs = AbstractPattern (false,check,id,c,AtOccs occs,false) in
     let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
     let sigma,c = match res with
     | None -> finish_evar_resolution ~flags:(tactic_infer_flags false) env sigma c
@@ -3789,8 +3790,9 @@ let clear_induction_arg_if_hyp is_arg_pure_hyp c env =
   else
     env
 
-let make_body env sigma is_arg_pure_hyp c lbind t =
-  let mind,typ = reduce_to_quantified_ind env sigma t in
+let make_body env sigma (is_arg_pure_hyp,_) c lbind t =
+  let decls,t = splay_prod env sigma t in
+  let typ = it_mkProd t decls in
   let indclause = make_clenv_binding env sigma (c,typ) lbind in
   let env = clear_induction_arg_if_hyp is_arg_pure_hyp c env in
   let evdref = ref indclause.evd in
@@ -3811,7 +3813,37 @@ let make_body env sigma is_arg_pure_hyp c lbind t =
   (* side-effect *)
   (!evdref, c)
 
-let pose_induction_arg clear_flag isrec with_evars is_arg_pure_hyp elim
+let check_expected_type env sigma (elimc,bl) t =
+  (* Compute the expected template type of the term in case a using
+     clause is given *)
+  let elimt = typ_of env sigma elimc in
+  let sign,_ = splay_prod env sigma elimt in
+  let n = List.length sign in
+  if n == 0 then error "Scheme cannot be applied.";
+  let sigma,cl = make_evar_clause env sigma (Some (n-1)) elimt in
+  let sigma = solve_evar_clause env sigma true cl bl in
+  let (_,u,_) = destProd cl.cl_concl in
+  Evarconv.e_cumul env (ref sigma) t u
+
+let check_enough_applied env sigma elim =
+  (* A heuristic to decide whether the induction arg is enough applied *)
+  match elim with
+  | None ->
+      (* No eliminator given *)
+      fun u ->
+      let t,_ = decompose_app (whd_betadeltaiota env sigma u) in isInd t
+  | Some elimc ->
+      let elimt = typ_of env sigma (fst elimc) in
+      let scheme = compute_elim_sig ~elimc elimt in
+      fun u -> match scheme.indref with
+      | None ->
+         (* in the absence of information, do not assume it may be
+            partially applied *)
+          true
+      | Some gr ->
+          check_expected_type env sigma elimc u
+
+let pose_induction_arg clear_flag isrec with_evars info_arg elim
      id ((pending,(c0,lbind)),(eqname,names)) t inhyps cls =
   Proofview.Goal.nf_enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -3819,16 +3851,17 @@ let pose_induction_arg clear_flag isrec with_evars is_arg_pure_hyp elim
   Proofview.Refine.refine ~unsafe:true begin fun sigma ->
   let (sigma',c') = use_bindings env sigma (c0,lbind) t in
   let occs = match cls with None -> LikeFirst | Some occs -> AtOccs occs in
-  let abs = AbstractPattern (true,Name id,(pending,c'),occs,false) in
+  let check = check_enough_applied env sigma elim in
+  let abs = AbstractPattern (snd info_arg,check,Name id,(pending,c'),occs,false) in
   let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
   | None ->
       (* pattern not found *)
       let (sigma,c0) = finish_evar_resolution ~flags:(tactic_infer_flags with_evars) env sigma (pending,c0) in
-      let (sigma,c) = make_body env sigma is_arg_pure_hyp c0 lbind t in
+      let (sigma,c) = make_body env sigma info_arg c0 lbind t in
       let t = Retyping.get_type_of env sigma c in
       let with_eq = Option.map (fun eq -> (false,eq)) eqname in
-      let env = clear_induction_arg_if_hyp is_arg_pure_hyp c0 env in
+      let env = clear_induction_arg_if_hyp (fst info_arg) c0 env in
       mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t)
 
   | Some (sigma',c) ->
@@ -3839,9 +3872,6 @@ let pose_induction_arg clear_flag isrec with_evars is_arg_pure_hyp elim
       (mkletin_goal env sigma' with_eq true (id,lastlhyp,ccl,c) None)
   end
 end
-
-let isIndType env sigma t =
-  try let _ = find_mrectype env sigma t in true with Not_found -> false
 
 let induction_gen clear_flag isrec with_evars elim
     ((_pending,(c,lbind)),(eqname,names) as arg) cls =
@@ -3856,7 +3886,8 @@ let induction_gen clear_flag isrec with_evars elim
     isVar c && not (mem_named_context (destVar c) (Global.named_context()))
     && lbind == NoBindings && not with_evars && Option.is_empty eqname
     && not (has_selected_occurrences cls) in
-  if is_arg_pure_hyp && isIndType env sigma t then
+  let enough_applied = check_enough_applied env sigma elim t in
+  if is_arg_pure_hyp && enough_applied then
     (* First case: induction on a variable already in an inductive type and
        with maximal abstraction over the variable.
        This is a situation where the induction argument is a
@@ -3874,11 +3905,12 @@ let induction_gen clear_flag isrec with_evars elim
     (* Type not the right one if partially applied but anyway for internal use*)
       let x = id_of_name_using_hdchar (Global.env()) t Anonymous in
       new_fresh_id [] x gl in
+    let info_arg = (is_arg_pure_hyp, not enough_applied) in
     if isrec then
       (* Historically, induction has side conditions last *)
       Tacticals.New.tclTHENFIRST
         (Tacticals.New.tclTHENLIST [
-          pose_induction_arg clear_flag isrec with_evars is_arg_pure_hyp elim id arg t inhyps cls;
+          pose_induction_arg clear_flag isrec with_evars info_arg elim id arg t inhyps cls;
           if with_evars
              (* do not give a success semantics to edestruct on an
                 open term yet *)
@@ -3893,7 +3925,7 @@ let induction_gen clear_flag isrec with_evars elim
       (* Historically, destruct has side conditions first *)
       Tacticals.New.tclTHENLAST
         (Tacticals.New.tclTHENLIST [
-          pose_induction_arg clear_flag isrec with_evars is_arg_pure_hyp elim id arg t inhyps cls;
+          pose_induction_arg clear_flag isrec with_evars info_arg elim id arg t inhyps cls;
           if with_evars
              (* do not give a success semantics to edestruct on an
                 open term yet *)

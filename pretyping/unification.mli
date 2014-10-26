@@ -65,8 +65,10 @@ val w_coerce_to_type : env -> evar_map -> constr -> types -> types ->
 
 exception PatternNotFound
 
+type prefix_of_inductive_support_flag = bool
+
 type abstraction_request =
-| AbstractPattern of bool * Names.Name.t * pending_constr * Locus.clause Locus.or_like_first * bool
+| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Names.Name.t * pending_constr * Locus.clause Locus.or_like_first * bool
 | AbstractExact of Names.Name.t * constr * types option * Locus.clause * bool
 
 val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
