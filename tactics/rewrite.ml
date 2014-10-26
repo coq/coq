@@ -439,13 +439,14 @@ let split_head = function
   | [] -> assert(false)
 
 let evd_convertible env evd x y =
-  try let evd = Evarconv.the_conv_x env x y evd in 
-      (* Unfortunately, the_conv_x might say they are unifiable even if some
-	 unsolvable constraints remain, so we check them here *)
-      let evd = Evarconv.consider_remaining_unif_problems env evd in
-	Evarconv.check_problems_are_solved env evd;
-	true
-  with e when Errors.noncritical e -> false
+  try
+    let evd = Evarconv.the_conv_x env x y evd in
+    (* Unfortunately, the_conv_x might say they are unifiable even if some
+        unsolvable constraints remain, so we check them here *)
+    let evd = Evarconv.consider_remaining_unif_problems env evd in
+    let () = Evarconv.check_problems_are_solved env evd in
+    Some evd
+  with e when Errors.noncritical e -> None
 
 let convertible env evd x y =
   Reductionops.is_conv_leq env evd x y
@@ -492,8 +493,9 @@ let decompose_applied_relation env sigma orig (c,l) =
     let (equiv, c1, c2) = decompose_app_rel env sigma t in
     let ty1 = Retyping.get_type_of env sigma c1 in
     let ty2 = Retyping.get_type_of env sigma c2 in
-    if not (evd_convertible env sigma ty1 ty2) then None
-    else
+    match evd_convertible env sigma ty1 ty2 with
+    | None -> None
+    | Some sigma ->
       let sort = sort_of_rel env sigma equiv in
       let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
       let value = mkApp (c, args) in
