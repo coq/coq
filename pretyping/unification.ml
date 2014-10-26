@@ -1481,7 +1481,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
         else
           (push_named_context_val d sign,depdecls)
     | (AtOccs (AllOccurrences, InHyp) | LikeFirst) as occ ->
-        let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
+        let newdecl = replace_term_occ_decl_modulo LikeFirst test mkvarid d in
         if Context.eq_named_declaration d newdecl
            && not (indirectly_dependent c d depdecls)
         then
