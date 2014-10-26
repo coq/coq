@@ -619,13 +619,6 @@ GEXTEND Gram
           l = LIST0 [","; c = pattern_occ; na = as_name -> (c,na)] ->
           TacAtom (!@loc, TacGeneralize (((nl,c),na)::l))
       | IDENT "generalize"; IDENT "dependent"; c = constr -> TacAtom (!@loc, TacGeneralizeDep c)
-(* Towards a "generalize in" which generalize in place: problem: this is somehow inconsistent with "generalize at" (from 8.2) which is not in place.
-      | IDENT "generalize"; c = constr; "in"; cl = in_clause;
-          na = as_name;
-          l = LIST0 [","; c = constr; "in"; cl = in_clause; na = as_name ->
-            ((cl,c),na)] ->
-          TacGeneralize (true,((cl,c),na)::l)
-*)
 
       (* Derived basic tactics *)
       | IDENT "induction"; ic = induction_clause_list ->
