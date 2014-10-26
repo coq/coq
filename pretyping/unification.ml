@@ -1418,7 +1418,7 @@ let make_pattern_test from_prefix_of_ind env sigma (pending,c) =
       let t' =
         if from_prefix_of_ind then
           (* We check for fully applied subterms of the form "u u1 .. un" *)
-          (* of inductive type knowning only a prefix "u u1 .. ui" *)
+          (* of inductive type knowing only a prefix "u u1 .. ui" *)
           let t,l = decompose_app t in
           let l1,l2 =
             try List.chop n l with Failure _ -> raise (NotUnifiable None) in
@@ -1450,10 +1450,6 @@ let make_pattern_test from_prefix_of_ind env sigma (pending,c) =
     testing_state = None; last_found = None },
   (fun test -> match test.testing_state with
   | None -> None
-(*
-     let sigma, c = finish_evar_resolution ~flags:inf_flags env sigma (pending,c) in
-     sigma,c
-*)
   | Some (sigma,_) ->
      let c = nf_evar sigma (local_strong whd_meta sigma c) in
      let univs, subst = nf_univ_variables sigma in

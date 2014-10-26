@@ -3515,26 +3515,6 @@ let find_induction_type isrec elim hyp0 gl =
 	evd, scheme, ElimUsing (elim,indsign) in
   evd,(Option.get scheme.indref,scheme.nparams, elim)
 
-let find_induction_type_and_adjust_indarg isrec elim (c,lbind) gl =
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
-  let tmptyp = typ_of env sigma c in
-  let typ, nrealargs = match elim with
-  | None ->
-      let mind,typ = reduce_to_quantified_ind env sigma tmptyp in
-      typ, inductive_nrealargs (fst mind)
-  | Some (e,ebind as elimc) ->
-      let elimt = Typing.type_of env sigma e in
-      let scheme = compute_elim_sig ~elimc elimt in
-      if scheme.indarg = None then error "Cannot find induction type";
-      let indref = Option.get scheme.indref in
-      let typ = reduce_to_quantified_ref env sigma indref tmptyp in
-      typ, scheme.nargs in
-  let ctxt,_ = splay_prod env sigma typ in
-  let indclause = make_clenv_binding_env env sigma (c,typ) lbind in
-  let is_partial_and_ground = ctxt <> [] && is_ground_term sigma c in
-  indclause, nrealargs, is_partial_and_ground
-
 let find_elim_signature isrec elim hyp0 gl =
   compute_elim_signature (find_elim isrec elim hyp0 gl) hyp0
 
