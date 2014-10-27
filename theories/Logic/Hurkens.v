@@ -11,8 +11,8 @@
 (** Exploiting Hurkens's paradox [[Hurkens95]] for system U- so as to
     derive various contradictory contexts.
 
-    The file is devided in various sub-modules which all follow the
-    same structure: a section introduce the contradictory hypotheses
+    The file is divided into various sub-modules which all follow the
+    same structure: a section introduces the contradictory hypotheses
     and a theorem named [paradox] concludes the module with a proof of
     [False].
 
@@ -70,7 +70,7 @@
 
     - [[Geuvers01]] H. Geuvers, "Inconsistency of Classical Logic in Type
       Theory", 2001, revised 2007
-      (see http://www.cs.ru.nl/~herman/PUBS/newnote.ps.gz).
+      (see {{http://www.cs.ru.nl/~herman/PUBS/newnote.ps.gz}}).
 *)
 
 
@@ -81,9 +81,9 @@ Set Universe Polymorphism.
 (** * A modular proof of Hurkens's paradox. *)
 
 (** It relies on an axiomatisation of a shallow embedding of system U-
-    (i.e.  types of U- are interepreted by types of Coq). The
-    universes are encoding in a style, due to Martin-Löf, where they
-    are given with a set of name and a family [El:Name->Type] which
+    (i.e.  types of U- are interpreted by types of Coq). The
+    universes are encoded in a style, due to Martin-Löf, where they
+    are given by a set of names and a family [El:Name->Type] which
     interprets each name into a type. This allows the encoding of
     universe to be decoupled from Coq's universes. Dependent products
     and abstractions are similarly postulated rather than encoded as
