@@ -271,12 +271,6 @@ module UNameMap = struct
 	| Some _, _ -> l
 	| _, _ -> r) s t
 
-    let diff ext orig =
-      fold (fun u v acc -> 
-	if mem u orig then acc 
-	else add u v acc)
-	ext empty
-
 end
 
 (* 2nd part used to check consistency on the fly. *)
@@ -338,24 +332,6 @@ let union_evar_universe_context ctx ctx' =
 (* let union_evar_universe_context_key = Profile.declare_profile "union_evar_universe_context";; *)
 (* let union_evar_universe_context =  *)
 (*   Profile.profile2 union_evar_universe_context_key union_evar_universe_context;; *)
-
-let diff_evar_universe_context ctx' ctx  =
-  if ctx == ctx' then empty_evar_universe_context
-  else
-    let local = Univ.ContextSet.diff ctx'.uctx_local ctx.uctx_local in
-    let names = UNameMap.diff ctx'.uctx_names ctx.uctx_names in
-      { uctx_names = names;
-	uctx_local = local;
-	uctx_univ_variables = 
-	  Univ.LMap.diff ctx'.uctx_univ_variables ctx.uctx_univ_variables;
-	uctx_univ_algebraic = 
-	  Univ.LSet.diff ctx'.uctx_univ_algebraic ctx.uctx_univ_algebraic;
-	uctx_universes = ctx.uctx_initial_universes;
-	uctx_initial_universes = ctx.uctx_initial_universes }
-
-(* let diff_evar_universe_context_key = Profile.declare_profile "diff_evar_universe_context";; *)
-(* let diff_evar_universe_context = *)
-(*   Profile.profile2 diff_evar_universe_context_key diff_evar_universe_context;; *)
 
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
@@ -995,42 +971,6 @@ let reset_future_goals evd =
 
 let restore_future_goals evd gls pgl =
   { evd with future_goals = gls ; principal_future_goal = pgl }
-
-let meta_diff ext orig = 
-  Metamap.fold (fun m v acc ->
-    if Metamap.mem m orig then acc
-    else Metamap.add m v acc)
-    ext Metamap.empty
-
-(** ext is supposed to be an extension of odef: 
-    it might have more defined evars, and more 
-    or less undefined ones *)
-let diff2 edef eundef odef oundef =
-  let def = 
-    if odef == edef then EvMap.empty
-    else
-      EvMap.fold (fun e v acc ->
-	if EvMap.mem e odef then acc
-	else EvMap.add e v acc)
-	edef EvMap.empty
-  in
-  let undef = 
-    if oundef == eundef then EvMap.empty
-    else
-      EvMap.fold (fun e v acc ->
-	if EvMap.mem e oundef then acc
-	else EvMap.add e v acc)
-	eundef EvMap.empty
-  in
-    (def, undef)
-
-let diff ext orig = 
-  let defn, undf = diff2 ext.defn_evars ext.undf_evars orig.defn_evars orig.undf_evars in
-  { ext with
-      defn_evars = defn; undf_evars = undf;
-      universes = diff_evar_universe_context ext.universes orig.universes;
-      metas = meta_diff ext.metas orig.metas
-  }
 
 (**********************************************************)
 (* Sort variables *)

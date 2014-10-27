@@ -190,10 +190,6 @@ val define : evar -> constr -> evar_map -> evar_map
 val cmap : (constr -> constr) -> evar_map -> evar_map
 (** Map the function on all terms in the evar map. *)
 
-val diff : evar_map -> evar_map -> evar_map
-(** [diff ext orig] assuming [ext] is an extension of [orig], 
-    return an evar map containing just the extension *)
-
 val is_evar : evar_map -> evar -> bool
 (** Alias for {!mem}. *)
 
