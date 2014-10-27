@@ -3781,20 +3781,25 @@ let use_bindings env sigma (c,lbind) typ =
   (* We lose the possibility of coercions in with-bindings *)
   pose_all_metas_as_evars env indclause.evd (clenv_value indclause)
 
-let clear_induction_arg_if_hyp is_arg_pure_hyp c env =
+let clear_induction_arg_if_hyp is_arg_pure_hyp c env ccl =
   if is_arg_pure_hyp then
+    try
     let id = destVar c in
-    fold_named_context (fun _ (id',_,_ as d) env ->
-      if Id.equal id id' then env else push_named d env)
-      env ~init:(reset_context env)
+    if occur_var env id ccl then env
+    else
+    snd (fold_named_context (fun _ (id',_,_ as d) (found,env) ->
+      if Id.equal id id' then (true,env) else
+        if occur_var_in_decl env id d then raise Exit
+        else (found,push_named d env))
+      env ~init:(false,reset_context env))
+    with Exit -> env
   else
     env
 
-let make_body env sigma (is_arg_pure_hyp,_) c lbind t =
+let make_body env0 env sigma (is_arg_pure_hyp,_) c lbind t =
   let decls,t = splay_prod env sigma t in
   let typ = it_mkProd t decls in
-  let indclause = make_clenv_binding env sigma (c,typ) lbind in
-  let env = clear_induction_arg_if_hyp is_arg_pure_hyp c env in
+  let indclause = make_clenv_binding env0 sigma (c,typ) lbind in
   let evdref = ref indclause.evd in
   let rec aux c = match kind_of_term c with
   | Meta mv ->
@@ -3813,7 +3818,7 @@ let make_body env sigma (is_arg_pure_hyp,_) c lbind t =
   (* side-effect *)
   (!evdref, c)
 
-let check_expected_type env sigma (elimc,bl) t =
+let check_expected_type env sigma (elimc,bl) =
   (* Compute the expected template type of the term in case a using
      clause is given *)
   let elimt = typ_of env sigma elimc in
@@ -3823,7 +3828,7 @@ let check_expected_type env sigma (elimc,bl) t =
   let sigma,cl = make_evar_clause env sigma (Some (n-1)) elimt in
   let sigma = solve_evar_clause env sigma true cl bl in
   let (_,u,_) = destProd cl.cl_concl in
-  Evarconv.e_cumul env (ref sigma) t u
+  fun t -> Evarconv.e_cumul env (ref sigma) t u
 
 let check_enough_applied env sigma elim =
   (* A heuristic to decide whether the induction arg is enough applied *)
@@ -3835,21 +3840,22 @@ let check_enough_applied env sigma elim =
   | Some elimc ->
       let elimt = typ_of env sigma (fst elimc) in
       let scheme = compute_elim_sig ~elimc elimt in
-      fun u -> match scheme.indref with
+      match scheme.indref with
       | None ->
          (* in the absence of information, do not assume it may be
             partially applied *)
-          true
-      | Some gr ->
-          check_expected_type env sigma elimc u
+          fun _ -> true
+      | Some _ ->
+          (* Last argument is supposed to be the induction argument *)
+          check_expected_type env sigma elimc
 
 let pose_induction_arg clear_flag isrec with_evars info_arg elim
-     id ((pending,(c0,lbind)),(eqname,names)) t inhyps cls =
+     id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls =
   Proofview.Goal.nf_enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let ccl = Proofview.Goal.concl gl in
   Proofview.Refine.refine ~unsafe:true begin fun sigma ->
-  let (sigma',c') = use_bindings env sigma (c0,lbind) t in
+  let (sigma',c') = use_bindings env sigma (c0,lbind) t0 in
   let occs = match cls with None -> LikeFirst | Some occs -> AtOccs occs in
   let check = check_enough_applied env sigma elim in
   let abs = AbstractPattern (snd info_arg,check,Name id,(pending,c'),occs,false) in
@@ -3858,11 +3864,11 @@ let pose_induction_arg clear_flag isrec with_evars info_arg elim
   | None ->
       (* pattern not found *)
       let (sigma,c0) = finish_evar_resolution ~flags:(tactic_infer_flags with_evars) env sigma (pending,c0) in
-      let (sigma,c) = make_body env sigma info_arg c0 lbind t in
+      let env' = clear_induction_arg_if_hyp (fst info_arg) c0 env ccl in
+      let (sigma,c) = make_body env env' sigma info_arg c0 lbind t0 in
       let t = Retyping.get_type_of env sigma c in
       let with_eq = Option.map (fun eq -> (false,eq)) eqname in
-      let env = clear_induction_arg_if_hyp (fst info_arg) c0 env in
-      mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t)
+      mkletin_goal env' sigma with_eq false (id,lastlhyp,ccl,c) (Some t)
 
   | Some (sigma',c) ->
       (* pattern found *)

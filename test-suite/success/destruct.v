@@ -235,3 +235,20 @@ intro a.
 destruct a.
 change (0 = a 1).
 Abort.
+
+(* This example of a variable not fully applied in the goal was working in 8.4*)
+
+Goal forall H : 0<>0, H = H.
+destruct H.
+reflexivity.
+Qed.
+
+(* Check that variables not fully applied in the goal are not erased
+   (this example was failing in 8.4 because of a forbidden "clear H" in
+   the code of "destruct H" *)
+
+Goal forall H : True -> True, H = H.
+destruct H.
+- exact I.
+- reflexivity.
+Qed.
