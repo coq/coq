@@ -203,13 +203,13 @@ Qed.
 Abort.
 
 (* Test selection when not in an inductive type *)
-Parameter A:Type.
-Axiom elim: forall P, A -> P.
-Goal forall a:A, a = a.
+Parameter T:Type.
+Axiom elim: forall P, T -> P.
+Goal forall a:T, a = a.
 induction a using elim.
 Qed.
 
-Goal forall a:nat -> A, a 0 = a 1.
+Goal forall a:nat -> T, a 0 = a 1.
 intro a.
 induction (a 0) using elim.
 Qed.
@@ -217,12 +217,12 @@ Qed.
 (* From Oct 2014, a subterm is found, as if without "using"; in 8.4,
    it did not find a subterm *)
 
-Goal forall a:nat -> A, a 0 = a 1.
+Goal forall a:nat -> T, a 0 = a 1.
 intro a.
 induction a using elim.
 Qed.
 
-Goal forall a:nat -> A, forall b, a 0 = b.
+Goal forall a:nat -> T, forall b, a 0 = b.
 intros a b.
 induction a using elim.
 Qed.
