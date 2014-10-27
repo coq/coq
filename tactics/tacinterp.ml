@@ -958,7 +958,7 @@ let interp_induction_arg ist gl arg =
 	else
           let c = (GVar (loc,id),Some (CRef (Ident (loc,id),None))) in
           let f env sigma = 
-            let (sigma,c) = interp_constr ist env sigma c in
+            let (sigma,c) = interp_open_constr ist env sigma c in
             sigma,(c,NoBindings) in
           keep,ElimOnConstr f
 

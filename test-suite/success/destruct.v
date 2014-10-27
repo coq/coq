@@ -252,3 +252,28 @@ destruct H.
 - exact I.
 - reflexivity.
 Qed.
+
+(* Check destruct on idents with maximal implicit arguments - which did
+   not work in 8.4 *)
+
+Parameter f : forall {n:nat}, n=n -> nat.
+Goal f (eq_refl 0) = 0.
+destruct f.
+Abort.
+
+(* This one was working in 8.4 (because of full conv on closed arguments) *)
+
+Class A.
+Instance a:A.
+Goal forall f : A -> nat -> nat, f (id a) 0 = f a 0.
+intros.
+destruct (f _).
+change (0=0).
+Abort.
+
+(* This one was not working in 8.4 because an occurrence of f was
+   remaining, blocking the "clear f" *)
+
+Goal forall f : A -> nat -> nat, f a 0 = f a 1.
+intros.
+destruct f.
