@@ -487,7 +487,7 @@ let rec decompose_app_rel env evd t =
 let decompose_applied_relation env sigma orig (c,l) =
   let ctype = Retyping.get_type_of env sigma c in
   let find_rel ty =
-    let sigma, cl = Clenv.make_evar_clause env sigma None ty in
+    let sigma, cl = Clenv.make_evar_clause env sigma ty in
     let sigma = Clenv.solve_evar_clause env sigma true cl l in
     let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
     let (equiv, c1, c2) = decompose_app_rel env sigma t in

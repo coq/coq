@@ -563,13 +563,18 @@ type clause = {
   cl_concl : types;
 }
 
-let make_evar_clause env sigma bound t =
+let make_evar_clause env sigma ?len t =
+  let bound = match len with
+  | None -> -1
+  | Some n -> assert (0 <= n); n
+  in
   (** FIXME: do the renaming online *)
   let t = rename_bound_vars_as_displayed [] [] t in
-  let rec clrec (sigma, holes) n t = match n, kind_of_term t with
-  | (Some 0, _) -> (sigma, holes, t)
-  | (n, Cast (t, _, _)) -> clrec (sigma, holes) n t
-  | (n, Prod (na, t1, t2)) ->
+  let rec clrec (sigma, holes) n t =
+    if n = 0 then (sigma, holes, t)
+    else match kind_of_term t with
+    | Cast (t, _, _) -> clrec (sigma, holes) n t
+    | Prod (na, t1, t2) ->
       let store = Typeclasses.set_resolvable Evd.Store.empty false in
       let sigma, ev = new_evar ~store env sigma t1 in
       let dep = dependent (mkRel 1) t2 in
@@ -581,9 +586,9 @@ let make_evar_clause env sigma bound t =
         hole_name = na;
       } in
       let t2 = if dep then subst1 ev t2 else t2 in
-      clrec (sigma, hole :: holes) (Option.map ((+) (-1)) n) t2
-  | (n, LetIn (na, b, _, t)) -> clrec (sigma, holes) n (subst1 b t)
-  | (n, _) -> (sigma, holes, t)
+      clrec (sigma, hole :: holes) (pred n) t2
+    | LetIn (na, b, _, t) -> clrec (sigma, holes) n (subst1 b t)
+    | _ -> (sigma, holes, t)
   in
   let (sigma, holes, t) = clrec (sigma, []) bound t in
   let holes = List.rev holes in
