@@ -194,10 +194,6 @@ val diff : evar_map -> evar_map -> evar_map
 (** [diff ext orig] assuming [ext] is an extension of [orig], 
     return an evar map containing just the extension *)
 
-val merge : evar_map -> evar_map -> evar_map
-(** [merge orig ext] assuming [ext] is an extension of [orig], 
-    return an evar map containing the union of the two maps *)
-
 val is_evar : evar_map -> evar -> bool
 (** Alias for {!mem}. *)
 

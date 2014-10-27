@@ -209,8 +209,6 @@ let map_evar_info f evi =
     evar_concl = f evi.evar_concl;
     evar_candidates = Option.map (List.map f) evi.evar_candidates }
 
-type existential_name = Id.t
-
 let evar_ident_info evi =
   match evi.evar_source with
   | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
@@ -1033,46 +1031,6 @@ let diff ext orig =
       universes = diff_evar_universe_context ext.universes orig.universes;
       metas = meta_diff ext.metas orig.metas
   }
-
-(** Invariant: sigma' is a partial extension of sigma: 
-    It may define variables that are undefined in sigma, 
-    or add new defined or undefined variables. It should not
-    undefine a defined variable in sigma.
-*)
-  
-let merge2 def undef def' undef' = 
-  let def, undef = 
-    EvMap.fold (fun n v (def,undef) -> 
-      EvMap.add n v def, EvMap.remove n undef)
-      def' (def,undef)
-  in
-  let undef = EvMap.fold EvMap.add undef' undef in
-    (def, undef)
-
-let merge_names evar_names def' undef' =
-  (* FIXME: does sigma' contain all undefined variables of sigma? If not, some
-  names given in sigma' for new undefined variables can change when merged to
-  sigma which could already have an evar of this name *)
-  let evar_names =
-    EvMap.fold
-      (fun n _ evar_names -> remove_name_possibly_already_defined n evar_names)
-      def' evar_names in
-  EvMap.fold (add_name_undefined Misctypes.IntroAnonymous) undef' evar_names
-
-let merge_metas metas1 metas2 =
-  List.fold_left (fun m (n,v) -> Metamap.add n v m)
-    metas2 (metamap_to_list metas1)
-
-let merge orig ext = 
-  let defn, undf = merge2 orig.defn_evars orig.undf_evars ext.defn_evars ext.undf_evars in
-  let evar_names = merge_names orig.evar_names ext.defn_evars ext.undf_evars in
-  let universes = union_evar_universe_context orig.universes ext.universes in
-    { orig with defn_evars = defn; undf_evars = undf;
-      universes; evar_names;
-      metas = merge_metas orig.metas ext.metas }
-
-(* let merge_key = Profile.declare_profile "merge" *)
-(* let merge = Profile.profile2 merge_key merge *)
 
 (**********************************************************)
 (* Sort variables *)
