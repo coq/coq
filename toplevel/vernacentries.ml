@@ -1686,7 +1686,7 @@ let vernac_bullet (bullet:Proof_global.Bullet.t) =
 let vernac_show = function
   | ShowGoal goalref ->
     let info = match goalref with
-      | OpenSubgoals -> pr_open_subgoals ()
+      | OpenSubgoals -> mt() (* the STM prints it *)
       | NthGoal n -> pr_nth_open_subgoal n
       | GoalId id -> pr_goal_by_id id
     in

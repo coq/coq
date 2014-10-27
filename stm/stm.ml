@@ -1513,7 +1513,8 @@ end = struct
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let oid = fold_until (fun n (id,_,_) ->
             if Int.equal n 0 then `Stop id else `Cont (n-1)) n id in
-          if n = 1 && !Flags.coqtop_ui && not !Flags.batch_mode then
+          if n = 1 && !Flags.coqtop_ui && not !Flags.batch_mode &&
+             not !Flags.print_emacs then
            VtStm (VtBack oid, false), VtNow
           else VtStm (VtBack oid, true), VtLater
       | VernacUndoTo _
@@ -1746,8 +1747,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           prerr_endline ("undo to state " ^ Stateid.to_string id);
           Backtrack.backto id;
           VCS.checkout_shallowest_proof_branch ();
-          Reach.known_state ~cache:(interactive ()) id;
-          Pp.msg_notice (pr_open_cur_subgoals ()); `Ok
+          Reach.known_state ~cache:(interactive ()) id; `Ok
       | VtStm (VtBack id, false), VtLater ->
           anomaly(str"classifier: VtBack + VtLater must imply part_of_script")
 
