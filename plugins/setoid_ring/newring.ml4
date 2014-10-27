@@ -193,9 +193,9 @@ let ltac_record flds =
 
 let carg c = TacDynamic(Loc.ghost,Pretyping.constr_in c)
 
-let dummy_goal env =
+let dummy_goal env sigma =
   let (gl,_,sigma) = 
-    Goal.V82.mk_goal Evd.empty (named_context_val env) mkProp Evd.Store.empty in
+    Goal.V82.mk_goal sigma (named_context_val env) mkProp Evd.Store.empty in
   {Evd.it = gl; Evd.sigma = sigma}
 
 let constr_of v = match Value.to_constr v with
@@ -212,12 +212,8 @@ let exec_tactic env evd n f args =
   let getter =
     Tacexp(TacFun(List.map(fun id -> Some id) lid,
                   Tacintern.glob_tactic(tacticIn get_res))) in
-  let gls =
-    (fun gl -> 
-      let sigma = gl.Evd.sigma in
-	tclTHEN (Refiner.tclEVARS (Evd.merge sigma evd))
-	  (Proofview.V82.of_tactic (Tacinterp.eval_tactic(ltac_call f (args@[getter])))) gl)
-      (dummy_goal env) in
+  let gl = dummy_goal env evd in
+  let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic(ltac_call f (args@[getter]))) gl in
   let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
     Array.map (fun x -> nf (constr_of x)) !res, Evd.universe_context evd
 
