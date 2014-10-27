@@ -116,7 +116,7 @@ Section Paradox.
 (** ** Axiomatisation of impredicative universes in a Martin-Löf style *)
 
 (** System U- has two impredicative universes. In the proof of the
-    paradox they are slightly asymetric (in particular the reduction
+    paradox they are slightly asymmetric (in particular the reduction
     rules of the small universe are not needed).  Therefore, the
     axioms are duplicated allowing for a weaker requirement than the
     actual system U-. *)
