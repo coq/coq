@@ -227,9 +227,6 @@ val evar_instance_array : (Id.t -> 'a -> bool) -> evar_info ->
 
 val instantiate_evar_array : evar_info -> constr -> constr array -> constr
 
-val subst_evar_defs_light : substitution -> evar_map -> evar_map
-(** Assume empty universe constraints in [evar_map] and [conv_pbs] *)
-
 val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool -> 
   evar_map ->  evar_map -> evar_map
 (** spiwack: this function seems to somewhat break the abstraction. *)
@@ -600,5 +597,3 @@ val create_evar_defs      : evar_map -> evar_map
 (** Create an [evar_map] with empty meta map: *)
 
 val create_goal_evar_defs : evar_map -> evar_map
-
-val subst_evar_map : substitution -> evar_map -> evar_map

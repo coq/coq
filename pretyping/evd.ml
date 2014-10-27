@@ -16,7 +16,6 @@ open Vars
 open Termops
 open Environ
 open Globnames
-open Mod_subst
 
 (** Generic filters *)
 module Filter :
@@ -729,29 +728,6 @@ let is_empty d =
   EvMap.is_empty d.undf_evars &&
   List.is_empty d.conv_pbs &&
   Metamap.is_empty d.metas
-
-let subst_named_context_val s = map_named_val (subst_mps s)
-
-let subst_evar_info s evi =
-  let subst_evb = function
-  | Evar_empty -> Evar_empty
-  | Evar_defined c -> Evar_defined (subst_mps s c)
-  in
-  { evi with
-      evar_concl = subst_mps s evi.evar_concl;
-      evar_hyps = subst_named_context_val s evi.evar_hyps;
-      evar_body = subst_evb evi.evar_body }
-
-let subst_evar_defs_light sub evd =
-  assert (Univ.is_initial_universes evd.universes.uctx_universes);
-  assert (List.is_empty evd.conv_pbs);
-  let map_info i = subst_evar_info sub i in
-  { evd with
-    undf_evars = EvMap.smartmap map_info evd.undf_evars;
-    defn_evars = EvMap.smartmap map_info evd.defn_evars;
-    metas = Metamap.smartmap (map_clb (subst_mps sub)) evd.metas; }
-
-let subst_evar_map = subst_evar_defs_light
 
 let cmap f evd = 
   { evd with
