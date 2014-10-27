@@ -1863,7 +1863,9 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let sigma,el =
           Option.fold_map (interp_constr_with_bindings ist env) sigma el in
-        Tactics.induction_destruct isrec ev (l,el)
+        Tacticals.New.tclTHEN
+          (Proofview.Unsafe.tclEVARS sigma)
+          (Tactics.induction_destruct isrec ev (l,el))
       end
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist h1 in
