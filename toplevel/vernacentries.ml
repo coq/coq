@@ -800,12 +800,24 @@ let command_focus = Proof.new_focus_kind ()
 let focus_command_cond = Proof.no_cond command_focus
 
 
+let print_info_trace = ref None
+
+let _ = let open Goptions in declare_int_option {
+  optsync = true;
+  optdepr = false;
+  optname = "print info trace";
+  optkey = ["Info" ; "Level"];
+  optread = (fun () -> !print_info_trace);
+  optwrite = fun n -> print_info_trace := n;
+}
+
 let vernac_solve n info tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
   let status = Proof_global.with_current_proof (fun etac p ->
     let with_end_tac = if b then Some etac else None in
     let global = match n with SelectAll -> true | _ -> false in
+    let info = Option.append info !print_info_trace in
     let (p,status) =
       solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
     in
