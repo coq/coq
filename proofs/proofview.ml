@@ -436,7 +436,7 @@ let fold_left2_goal i s l =
     successive results of [tacs] are stored in reverse order in a
     list, and [join] is used to convert the result into the expected
     form. *)
-let tclDISPATCHGEN join tacs =
+let tclDISPATCHGEN0 join tacs =
   match tacs with
   | [] ->
       begin 
@@ -460,6 +460,11 @@ let tclDISPATCHGEN join tacs =
       let iter _ t cur = Proof.map (fun y -> y :: cur) t in
       let ans = fold_left2_goal iter [] tacs in
       Proof.map join ans
+
+let tclDISPATCHGEN join tacs =
+  let branch t = InfoL.tag (Info.DBranch) t in
+  let tacs = CList.map branch tacs in
+  InfoL.tag (Info.Dispatch) (tclDISPATCHGEN0 join tacs)
 
 let tclDISPATCH tacs = tclDISPATCHGEN Pervasives.ignore tacs
 
@@ -515,7 +520,9 @@ let tclINDEPENDENT tac =
   match initial.comb with
   | [] -> tclUNIT ()
   | [_] -> tac
-  | _ -> iter_goal (fun _ -> tac)
+  | _ ->
+      let tac = InfoL.tag (Info.DBranch) tac in
+      InfoL.tag (Info.Dispatch) (iter_goal (fun _ -> tac))
 
 
 
@@ -827,15 +834,17 @@ module Goal = struct
     gmake_with info env sigma goal , sigma
 
   let nf_enter f =
+    InfoL.tag (Info.Dispatch) begin
     iter_goal begin fun goal ->
       Env.get >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try
         let (gl, sigma) = nf_gmake env sigma goal in
-        tclTHEN (Unsafe.tclEVARS sigma) (f gl)
+        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f gl))
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
+    end
     end
 
   let normalize { self } =
@@ -849,6 +858,8 @@ module Goal = struct
     gmake_with info env sigma goal
 
   let enter f =
+    let f gl = InfoL.tag (Info.DBranch) (f gl) in
+    InfoL.tag (Info.Dispatch) begin
     iter_goal begin fun goal ->
       Env.get >>= fun env ->
       tclEVARMAP >>= fun sigma ->
@@ -856,6 +867,7 @@ module Goal = struct
       with e when catchable_exception e ->
         let e = Errors.push e in
         tclZERO e
+    end
     end
 
   let goals =
