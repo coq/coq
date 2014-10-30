@@ -187,22 +187,26 @@ let look_for_possibly_mutual_statements = function
 
 let save id const cstrs do_guard (locality,poly,kind) hook =
   let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
-  let const = adjust_guardness_conditions const do_guard in
-  let k = Kindops.logical_kind_of_goal_kind kind in
-  let l,r = match locality with
-    | Discharge when Lib.sections_are_opened () ->
-	let c = SectionLocalDef const in
-	let _ = declare_variable id (Lib.cwd(), c, k) in
-	(Local, VarRef id)
-    | Local | Global | Discharge ->
-        let local = match locality with
-        | Local | Discharge -> true
-        | Global -> false
-        in
-        let kn = declare_constant id ~local (DefinitionEntry const, k) in
-	(locality, ConstRef kn) in
-  definition_message id;
-  call_hook fix_exn hook l r
+  try
+    let const = adjust_guardness_conditions const do_guard in
+    let k = Kindops.logical_kind_of_goal_kind kind in
+    let l,r = match locality with
+      | Discharge when Lib.sections_are_opened () ->
+          let c = SectionLocalDef const in
+          let _ = declare_variable id (Lib.cwd(), c, k) in
+          (Local, VarRef id)
+      | Local | Global | Discharge ->
+          let local = match locality with
+          | Local | Discharge -> true
+          | Global -> false
+          in
+          let kn = declare_constant id ~local (DefinitionEntry const, k) in
+          (locality, ConstRef kn) in
+    definition_message id;
+    call_hook (fun exn -> exn) hook l r
+  with e when Errors.noncritical e ->
+    let e = Errors.push e in
+    raise (fix_exn e)
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
