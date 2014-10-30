@@ -108,11 +108,11 @@ let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 
-let pr_univ l = 
+let pr_univ l =
   match l with
   | [x] -> str x
   | l -> str"max(" ++ prlist_with_sep (fun () -> str",") str l ++ str")"
-  
+
 let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
 let pr_glob_sort = function
@@ -129,8 +129,8 @@ let pr_patvar = pr_id
 let pr_glob_sort_instance = function
   | GProp -> str "Prop"
   | GSet -> str "Set"
-  | GType u -> 
-    (match u with 
+  | GType u ->
+    (match u with
     | Some u -> str u
     | None -> str "Type")
 
@@ -190,7 +190,7 @@ let rec pr_patt sep inh p =
   let (strm,prec) = match p with
   | CPatRecord (_, l) ->
       let pp (c, p) =
-	pr_reference c ++ spc() ++ str ":=" ++ pr_patt spc (lpatrec, Any) p in
+        pr_reference c ++ spc() ++ str ":=" ++ pr_patt spc (lpatrec, Any) p in
       str "{| " ++ prlist_with_sep pr_semicolon pp l ++ str " |}", lpatrec
   | CPatAlias (_,p,id) ->
       pr_patt mt (las,E) p ++ str " as " ++ pr_id id, las
@@ -254,23 +254,23 @@ let pr_binder many pr (nal,k,t) =
     | Generalized (b, b', t') ->
       assert (match b with Implicit -> true | _ -> false);
       begin match nal with
-	|[loc,Anonymous] ->
-	  hov 1 (str"`" ++ (surround_impl b'
-			      ((if t' then str "!" else mt ()) ++ pr t)))
-	|[loc,Name id] ->
-	  hov 1 (str "`" ++ (surround_impl b'
-			       (pr_lident (loc,id) ++ str " : " ++
-				  (if t' then str "!" else mt()) ++ pr t)))
-	|_ -> anomaly (Pp.str "List of generalized binders have alwais one element.")
+        |[loc,Anonymous] ->
+          hov 1 (str"`" ++ (surround_impl b'
+                              ((if t' then str "!" else mt ()) ++ pr t)))
+        |[loc,Name id] ->
+          hov 1 (str "`" ++ (surround_impl b'
+                               (pr_lident (loc,id) ++ str " : " ++
+                                  (if t' then str "!" else mt()) ++ pr t)))
+        |_ -> anomaly (Pp.str "List of generalized binders have alwais one element.")
       end
     | Default b ->
       match t with
-	| CHole (_,_,Misctypes.IntroAnonymous,_) ->
-	  let s = prlist_with_sep spc pr_lname nal in
-	  hov 1 (surround_implicit b s)
-	| _ ->
-	  let s = prlist_with_sep spc pr_lname nal ++ str " : " ++ pr t in
-	  hov 1 (if many then surround_impl b s else surround_implicit b s)
+        | CHole (_,_,Misctypes.IntroAnonymous,_) ->
+          let s = prlist_with_sep spc pr_lname nal in
+          hov 1 (surround_implicit b s)
+        | _ ->
+          let s = prlist_with_sep spc pr_lname nal ++ str " : " ++ pr t in
+          hov 1 (if many then surround_impl b s else surround_implicit b s)
 
 let pr_binder_among_many pr_c = function
   | LocalRawAssum (nal,k,t) ->
@@ -361,19 +361,19 @@ let pr_guard_annot pr_aux bl (n,ro) =
     | None -> mt ()
     | Some (loc, id) ->
       match (ro : Constrexpr.recursion_order_expr) with
-	| CStructRec ->
-	  let names_of_binder = function
-	    | LocalRawAssum (nal,_,_) -> nal
-	    | LocalRawDef (_,_) -> []
-	  in let ids = List.flatten (List.map names_of_binder bl) in
-	     if List.length ids > 1 then
-	       spc() ++ str "{struct " ++ pr_id id ++ str"}"
-	     else mt()
-	| CWfRec c ->
-	  spc() ++ str "{wf " ++ pr_aux c ++ spc() ++ pr_id id ++ str"}"
-	| CMeasureRec (m,r) ->
-	  spc() ++ str "{measure " ++ pr_aux m ++ spc() ++ pr_id id++
-	    (match r with None -> mt() | Some r -> str" on " ++ pr_aux r) ++ str"}"
+        | CStructRec ->
+          let names_of_binder = function
+            | LocalRawAssum (nal,_,_) -> nal
+            | LocalRawDef (_,_) -> []
+          in let ids = List.flatten (List.map names_of_binder bl) in
+             if List.length ids > 1 then
+               spc() ++ str "{struct " ++ pr_id id ++ str"}"
+             else mt()
+        | CWfRec c ->
+          spc() ++ str "{wf " ++ pr_aux c ++ spc() ++ pr_id id ++ str"}"
+        | CMeasureRec (m,r) ->
+          spc() ++ str "{measure " ++ pr_aux m ++ spc() ++ pr_id id++
+            (match r with None -> mt() | Some r -> str" on " ++ pr_aux r) ++ str"}"
 
 let pr_fixdecl pr prd dangling_with_for ((_,id),ro,bl,t,c) =
   let annot = pr_guard_annot (pr lsimpleconstr) bl ro in
@@ -419,9 +419,9 @@ let pr_proj pr pr_app a f l =
 
 let pr_appexpl pr (f,us) l =
       hov 2 (
-	str "@" ++ pr_reference f ++
-	pr_universe_instance us ++
-	prlist (pr_sep_com spc (pr (lapp,L))) l)
+        str "@" ++ pr_reference f ++
+        pr_universe_instance us ++
+        prlist (pr_sep_com spc (pr (lapp,L))) l)
 
 let pr_app pr a l =
   hov 2 (
@@ -456,7 +456,7 @@ let pr pr sep inherited a =
   | CProdN _ ->
       let (bl,a) = extract_prod_binders a in
       hov 0 (
-	hov 2 (pr_delimited_binders pr_forall spc
+        hov 2 (pr_delimited_binders pr_forall spc
                  (pr mt ltop) bl) ++
         str "," ++ pr spc ltop a),
       lprod
@@ -465,7 +465,7 @@ let pr pr sep inherited a =
       hov 0 (
         hov 2 (pr_delimited_binders pr_fun spc
                 (pr mt ltop) bl) ++
-	       pr_fun_sep ++ pr spc ltop a),
+               pr_fun_sep ++ pr spc ltop a),
       llambda
   | CLetIn (_,(_,Name x),(CFix(_,(_,x'),[_])|CCoFix(_,(_,x'),[_]) as fx), b)
       when Id.equal x x' ->
@@ -484,9 +484,9 @@ let pr pr sep inherited a =
       let c,l1 = List.sep_last l1 in
       let p = pr_proj (pr mt) pr_appexpl c (f,us) l1 in
       if not (List.is_empty l2) then
-	p ++ prlist (pr spc (lapp,L)) l2, lapp
+        p ++ prlist (pr spc (lapp,L)) l2, lapp
       else
-	p, lproj
+        p, lproj
   | CAppExpl (_,(None,Ident (_,var),us),[t])
   | CApp (_,(_,CRef(Ident(_,var),us)),[t,None])
         when Id.equal var Notation_ops.ldots_var ->
@@ -498,58 +498,58 @@ let pr pr sep inherited a =
       assert (Option.is_empty (snd c));
       let p = pr_proj (pr mt) pr_app (fst c) f l1 in
       if not (List.is_empty l2) then
-	p ++ prlist (fun a -> spc () ++ pr_expl_args (pr mt) a) l2, lapp
+        p ++ prlist (fun a -> spc () ++ pr_expl_args (pr mt) a) l2, lapp
       else
-	p, lproj
+        p, lproj
   | CApp (_,(None,a),l) -> pr_app (pr mt) a l, lapp
   | CRecord (_,w,l) ->
       let beg =
-	match w with
-	| None -> spc ()
-	| Some t -> spc () ++ pr spc ltop t ++ spc () ++ str"with" ++ spc ()
+        match w with
+        | None -> spc ()
+        | Some t -> spc () ++ pr spc ltop t ++ spc () ++ str"with" ++ spc ()
       in
-	hv 0 (str"{|" ++ beg ++
-	      prlist_with_sep pr_semicolon
-		(fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr spc ltop c)) l
-	      ++ str" |}"), latom
+        hv 0 (str"{|" ++ beg ++
+              prlist_with_sep pr_semicolon
+                (fun (id, c) -> h 1 (pr_reference id ++ spc () ++ str":=" ++ pr spc ltop c)) l
+              ++ str" |}"), latom
 
   | CCases (_,LetPatternStyle,rtntypopt,[c,asin],[(_,[(loc,[p])],b)]) ->
       hv 0 (
-	str "let '" ++
-	  hov 0 (pr_patt ltop p ++
-		 pr_asin (pr_dangling_with_for mt pr) asin ++
-		 str " :=" ++ pr spc ltop c ++
-		 pr_case_type (pr_dangling_with_for mt pr) rtntypopt ++
-		 str " in" ++ pr spc ltop b)),
-	lletpattern
+        str "let '" ++
+          hov 0 (pr_patt ltop p ++
+                 pr_asin (pr_dangling_with_for mt pr) asin ++
+                 str " :=" ++ pr spc ltop c ++
+                 pr_case_type (pr_dangling_with_for mt pr) rtntypopt ++
+                 str " in" ++ pr spc ltop b)),
+        lletpattern
   | CCases(_,_,rtntypopt,c,eqns) ->
       v 0
         (hv 0 (str "match" ++ brk (1,2) ++
-		  hov 0 (
-		    prlist_with_sep sep_v
-		      (pr_case_item (pr_dangling_with_for mt pr)) c
-		    ++ pr_case_type (pr_dangling_with_for mt pr) rtntypopt) ++
-		  spc () ++ str "with") ++
-		  prlist (pr_eqn (pr mt)) eqns ++ spc() ++ str "end"),
+                  hov 0 (
+                    prlist_with_sep sep_v
+                      (pr_case_item (pr_dangling_with_for mt pr)) c
+                    ++ pr_case_type (pr_dangling_with_for mt pr) rtntypopt) ++
+                  spc () ++ str "with") ++
+                  prlist (pr_eqn (pr mt)) eqns ++ spc() ++ str "end"),
       latom
   | CLetTuple (_,nal,(na,po),c,b) ->
       hv 0 (
         str "let " ++
-	hov 0 (str "(" ++
+        hov 0 (str "(" ++
                prlist_with_sep sep_v pr_lname nal ++
                str ")" ++
-	       pr_simple_return_type (pr mt) na po ++ str " :=" ++
+               pr_simple_return_type (pr mt) na po ++ str " :=" ++
                pr spc ltop c ++ str " in") ++
         pr spc ltop b),
       lletin
   | CIf (_,c,(na,po),b1,b2) ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
-	 parsing est lui plus tolérant) *)
+         parsing est lui plus tolérant) *)
       hv 0 (
-	hov 1 (str "if " ++ pr mt ltop c ++ pr_simple_return_type (pr mt) na po) ++
-	spc () ++
-	hov 0 (str "then" ++ pr (fun () -> brk (1,1)) ltop b1) ++ spc () ++
-	hov 0 (str "else" ++ pr (fun () -> brk (1,1)) ltop b2)),
+        hov 1 (str "if " ++ pr mt ltop c ++ pr_simple_return_type (pr mt) na po) ++
+        spc () ++
+        hov 0 (str "then" ++ pr (fun () -> brk (1,1)) ltop b1) ++ spc () ++
+        hov 0 (str "else" ++ pr (fun () -> brk (1,1)) ltop b2)),
       lif
 
   | CHole (_,_,Misctypes.IntroIdentifier id,_) ->
@@ -562,11 +562,11 @@ let pr pr sep inherited a =
   | CSort (_,s) -> pr_glob_sort s, latom
   | CCast (_,a,b) ->
       hv 0 (pr mt (lcast,L) a ++ cut () ++
-	    match b with
-	      | CastConv b -> str ":" ++ pr mt (-lcast,E) b
-	      | CastVM b -> str "<:" ++ pr mt (-lcast,E) b
-	      | CastNative b -> str "<<:" ++ pr mt (-lcast,E) b
-	      | CastCoerce -> str ":>"), lcast
+            match b with
+              | CastConv b -> str ":" ++ pr mt (-lcast,E) b
+              | CastVM b -> str "<:" ++ pr mt (-lcast,E) b
+              | CastNative b -> str "<<:" ++ pr mt (-lcast,E) b
+              | CastCoerce -> str ":>"), lcast
   | CNotation (_,"( _ )",([t],[],[])) ->
       pr (fun()->str"(") (max_int,L) t ++ str")", latom
   | CNotation (_,s,env) ->
@@ -653,9 +653,9 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
   | Simpl o -> str "simpl" ++ pr_opt (pr_with_occurrences pr_pattern) o
   | Cbv f ->
       if f.rBeta && f.rIota && f.rZeta && f.rDelta && List.is_empty f.rConst then
-	str "compute"
+        str "compute"
       else
-	hov 1 (str "cbv" ++ pr_red_flag pr_ref f)
+        hov 1 (str "cbv" ++ pr_red_flag pr_ref f)
   | Lazy f ->
       hov 1 (str "lazy" ++ pr_red_flag pr_ref f)
   | Cbn f ->
@@ -678,11 +678,11 @@ let pr_may_eval test prc prlc pr2 pr3 = function
       hov 0
         (str "eval" ++ brk (1,1) ++
          pr_red_expr (prc,prlc,pr2,pr3) r ++
-	 str " in" ++ spc() ++ prc c)
+         str " in" ++ spc() ++ prc c)
   | ConstrContext ((_,id),c) ->
       hov 0
-	(str "context " ++ pr_id id ++ spc () ++
-	 str "[" ++ prlc c ++ str "]")
+        (str "context " ++ pr_id id ++ spc () ++
+         str "[" ++ prlc c ++ str "]")
   | ConstrTypeOf c -> hov 1 (str "type of" ++ spc() ++ prc c)
   | ConstrTerm c when test c -> h 0 (str "(" ++ prc c ++ str ")")
   | ConstrTerm c -> prc c
