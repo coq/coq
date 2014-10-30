@@ -60,28 +60,45 @@ let prec_of_prim_token = function
 
 open Notation
 
-let print_hunks n pr pr_binders (terms,termlists,binders) unp =
-  let env = ref terms and envlist = ref termlists and bll = ref binders in
-  let pop r = let a = List.hd !r in r := List.tl !r; a in
-  let rec aux = function
-  | [] -> mt ()
-  | UnpMetaVar (_,prec) :: l ->
-      let c = pop env in pr (n,prec) c ++ aux l
-  | UnpListMetaVar (_,prec,sl) :: l ->
-      let cl = pop envlist in
-      let pp1 = prlist_with_sep (fun () -> aux sl) (pr (n,prec)) cl in
-      let pp2 = aux l in
-      pp1 ++ pp2
-  | UnpBinderListMetaVar (_,isopen,sl) :: l ->
-      let cl = pop bll in pr_binders (fun () -> aux sl) isopen cl ++ aux l
-  | UnpTerminal s :: l -> str s ++ aux l
-  | UnpBox (b,sub) :: l ->
-      (* Keep order: side-effects *)
-      let pp1 = ppcmd_of_box b (aux sub) in
-      let pp2 = aux l in
-      pp1 ++ pp2
-  | UnpCut cut :: l -> ppcmd_of_cut cut ++ aux l in
-  aux unp
+let print_hunks n pr pr_binders (terms, termlists, binders) unps =
+    let env = ref terms and envlist = ref termlists and bll = ref binders in
+    let pop r = let a = List.hd !r in r := List.tl !r; a in
+    (* Warning:
+       The following function enforces a very precise order of
+       evaluation of subcomponent.
+       Do not modify it unless you know what you are doing! *)
+    let rec aux = function
+      | [] ->
+        mt ()
+      | UnpMetaVar (_, prec) :: l ->
+        let c = pop env in
+        let pp2 = aux l in
+        let pp1 = pr (n, prec) c in
+        (pp1 ++ pp2)
+      | UnpListMetaVar (_, prec, sl) :: l ->
+        let cl = pop envlist in
+        let pp1 = prlist_with_sep (fun () -> aux sl) (pr (n,prec)) cl in
+        let pp2 = aux l in
+        (pp1 ++ pp2)
+      | UnpBinderListMetaVar (_, isopen, sl) :: l ->
+        let cl = pop bll in
+        let pp2 = aux l in
+        let pp1 = pr_binders (fun () -> aux sl) isopen cl in
+        (pp1 ++ pp2)
+      | UnpTerminal s :: l ->
+        let pp2 = aux l in
+        let pp1 = str s in
+        (pp1 ++ pp2)
+      | UnpBox (b,sub) :: l ->
+        let pp1 = ppcmd_of_box b (aux sub) in
+        let pp2 = aux l in
+        (pp1 ++ pp2)
+      | UnpCut cut :: l ->
+        let pp2 = aux l in
+        let pp1 = ppcmd_of_cut cut in
+        (pp1 ++ pp2)
+    in
+    aux unps
 
 let pr_notation pr pr_binders s env =
   let unpl, level = find_notation_printing_rule s in
