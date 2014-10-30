@@ -765,3 +765,20 @@ include Make (struct
     let tag_unparsing   = do_not_tag
     let tag_constr_expr = do_not_tag
 end)
+
+module RichPp (Indexer : sig
+  val index : Ppannotation.t -> string
+end) = struct
+
+  include Make (struct
+    open Ppannotation
+
+    let tag_unparsing unp t =
+      Pp.open_tag (Indexer.index (AUnparsing unp)) ++ t ++ Pp.close_tag ()
+
+    let tag_constr_expr e t =
+      Pp.open_tag (Indexer.index (AConstrExpr e)) ++ t ++ Pp.close_tag ()
+  end)
+
+end
+
