@@ -6,4 +6,19 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** This module implements pretty-printers for vernac_expr syntactic
+    objects and their subcomponents. *)
+
+(** The default pretty-printers produce {!Pp.std_ppcmds} that are
+    interpreted as raw strings. *)
 include Ppvernacsig.Pp
+
+(** The rich pretty-printers produce {!Pp.std_ppcmds} that are
+    interpreted as annotated strings. The annotations can be
+    retrieved using {!RichPp.rich_pp}. Their definitions are
+    located in {!Ppannotation.t}.
+
+    Please refer to {!RichPp} to know what are the requirements over
+    [Indexer.index] behavior. *)
+module RichPp (Indexer : sig val index : Ppannotation.t -> string end)
+  : Ppvernacsig.Pp
