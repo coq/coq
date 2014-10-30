@@ -1468,10 +1468,11 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     else
       x
   in
+  let likefirst = not (has_selected_occurrences occs) in
   let mkvarid () = mkVar id in
   let compute_dependency _ (hyp,_,_ as d) (sign,depdecls) =
     match occurrences_of_hyp hyp occs with
-    | AtOccs (NoOccurrences, InHyp) ->
+    | NoOccurrences, InHyp ->
         if indirectly_dependent c d depdecls then
           (* Told explicitly not to abstract over [d], but it is dependent *)
           let id' = indirect_dependency d depdecls in
@@ -1480,8 +1481,9 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
             ++ str ".")
         else
           (push_named_context_val d sign,depdecls)
-    | (AtOccs (AllOccurrences, InHyp) | LikeFirst) ->
-        let newdecl = replace_term_occ_decl_modulo LikeFirst test mkvarid d in
+    | AllOccurrences, InHyp as occ ->
+        let occ = if likefirst then LikeFirst else AtOccs occ in
+        let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
         if Context.eq_named_declaration d newdecl
            && not (indirectly_dependent c d depdecls)
         then
@@ -1491,15 +1493,18 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
         else
           (push_named_context_val newdecl sign, newdecl :: depdecls)
     | occ ->
-        let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
+        (* There are specific occurrences, hence not like first *)
+        let newdecl = replace_term_occ_decl_modulo (AtOccs occ) test mkvarid d in
         (push_named_context_val newdecl sign, newdecl :: depdecls) in
   try
     let sign,depdecls =
       fold_named_context compute_dependency env
         ~init:(empty_named_context_val,[]) in
     let ccl = match occurrences_of_goal occs with
-      | AtOccs NoOccurrences -> concl
-      | occ -> replace_term_occ_modulo occ test mkvarid concl
+      | NoOccurrences -> concl
+      | occ ->
+          let occ = if likefirst then LikeFirst else AtOccs occ in
+          replace_term_occ_modulo occ test mkvarid concl
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (pi1(List.last depdecls)) in
@@ -1522,7 +1527,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
 type prefix_of_inductive_support_flag = bool
 
 type abstraction_request =
-| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * pending_constr * clause or_like_first * bool
+| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * pending_constr * clause * bool
 | AbstractExact of Name.t * constr * types option * clause * bool
 
 type abstraction_result =
@@ -1539,7 +1544,7 @@ let make_abstraction env evd ccl abs =
   | AbstractExact (name,c,ty,occs,check_occs) ->
       make_abstraction_core name
         (make_eq_test env evd c)
-        env evd c ty (AtOccs occs) check_occs ccl
+        env evd c ty occs check_occs ccl
 
 let keyed_unify env evd kop = 
   if not !keyed_unification then fun cl -> true

@@ -256,9 +256,9 @@ Qed.
 (* Check destruct on idents with maximal implicit arguments - which did
    not work in 8.4 *)
 
-Parameter f : forall {n:nat}, n=n -> nat.
-Goal f (eq_refl 0) = 0.
-destruct f.
+Parameter g : forall {n:nat}, n=n -> nat.
+Goal g (eq_refl 0) = 0.
+destruct g.
 Abort.
 
 (* This one was working in 8.4 (because of full conv on closed arguments) *)
@@ -278,7 +278,7 @@ Goal forall f : A -> nat -> nat, f a 0 = f a 1.
 intros.
 destruct f.
 
-(* This one was not working in 8.4 *)
+(* This was not working in 8.4 *)
 
 Section S1.
 Variables x y : Type.
@@ -289,6 +289,34 @@ destruct H. (* Was not working in 8.4 *)
 change (x=y) in H.
 Abort.
 End S1.
+
+(* This was not working in 8.4 *)
+
+Goal forall g:nat->nat, g 0 = g 1 -> g 1 = g 2 -> g 0 = g 2.
+intros.
+induction g.
+2:change (n = g 1 -> n = g 2) in IHn.
+Abort.
+
+(* This was not working in 8.4 *)
+
+Goal forall g:nat->nat, g 0 = g 1 -> g 1 = g 2 -> g 0 = g 2. 
+intros g H H0.
+induction g in H |- *.
+Abort.
+
+(* "at" was not granted in 8.4 in the next two examples *)
+
+Goal forall g:nat->nat, g 0 = g 1 -> g 1 = g 2 -> g 0 = g 2. 
+intros g H H0.
+induction g in H at 2, H0 at 1.
+change (g 0 = 0) in H.
+Abort.
+
+Goal forall g:nat->nat, g 0 = g 1 -> g 1 = g 2 -> g 0 = g 2. 
+intros g H H0.
+Fail induction g in H at 2 |- *. (* Incompatible occurrences *)
+Abort.
 
 (* These ones are not satisfactory at the current time
 

@@ -2255,7 +2255,7 @@ let letin_pat_tac with_eq id c occs =
     let sigma = Proofview.Goal.sigma gl in
     let ccl = Proofview.Goal.concl gl in
     let check t = true in
-    let abs = AbstractPattern (false,check,id,c,AtOccs occs,false) in
+    let abs = AbstractPattern (false,check,id,c,occs,false) in
     let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
     let sigma,c = match res with
     | None -> finish_evar_resolution ~flags:(tactic_infer_flags false) env sigma c
@@ -3747,34 +3747,24 @@ let induction_without_atomization isrec with_evars elim names lid =
       (induction_from_context_l with_evars elim_info lid names)
   end
 
-let has_selected_occurrences = function
-  | None -> false
-  | Some cls ->
-      cls.concl_occs != AllOccurrences ||
-	not (Option.is_empty cls.onhyps) && List.exists (fun ((occs,_),hl) ->
-          occs != AllOccurrences || hl != InHyp) (Option.get cls.onhyps)
-
 (* assume that no occurrences are selected *)
 let clear_unselected_context id inhyps cls gl =
-  match cls with
+  if occur_var (pf_env gl) id (pf_concl gl) &&
+    cls.concl_occs == NoOccurrences
+  then errorlabstrm ""
+    (str "Conclusion must be mentioned: it depends on " ++ pr_id id
+     ++ str ".");
+  match cls.onhyps with
+  | Some hyps ->
+      let to_erase (id',_,_ as d) =
+	if Id.List.mem id' inhyps then (* if selected, do not erase *) None
+	else
+	  (* erase if not selected and dependent on id or selected hyps *)
+	  let test id = occur_var_in_decl (pf_env gl) id d in
+	  if List.exists test (id::inhyps) then Some id' else None in
+      let ids = List.map_filter to_erase (pf_hyps gl) in
+      thin ids gl
   | None -> tclIDTAC gl
-  | Some cls ->
-      if occur_var (pf_env gl) id (pf_concl gl) &&
-	 cls.concl_occs == NoOccurrences
-      then errorlabstrm ""
-	    (str "Conclusion must be mentioned: it depends on " ++ pr_id id
-	     ++ str ".");
-      match cls.onhyps with
-      | Some hyps ->
-	  let to_erase (id',_,_ as d) =
-	    if Id.List.mem id' inhyps then (* if selected, do not erase *) None
-	    else
-	      (* erase if not selected and dependent on id or selected hyps *)
-	      let test id = occur_var_in_decl (pf_env gl) id d in
-	      if List.exists test (id::inhyps) then Some id' else None in
-	  let ids = List.map_filter to_erase (pf_hyps gl) in
-	  thin ids gl
-      | None -> tclIDTAC gl
 
 let use_bindings env sigma (c,lbind) typ =
   (* We don't try to normalize the type to an inductive type because *)
@@ -3864,9 +3854,8 @@ let pose_induction_arg clear_flag isrec with_evars info_arg elim
   let ccl = Proofview.Goal.concl gl in
   Proofview.Refine.refine ~unsafe:true begin fun sigma ->
   let (sigma',c') = use_bindings env sigma (c0,lbind) t0 in
-  let occs = match cls with None -> LikeFirst | Some occs -> AtOccs occs in
   let check = check_enough_applied env sigma elim in
-  let abs = AbstractPattern (snd info_arg,check,Name id,(pending,c'),occs,false) in
+  let abs = AbstractPattern (snd info_arg,check,Name id,(pending,c'),cls,false) in
   let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
   | None ->
@@ -3895,6 +3884,7 @@ let induction_gen clear_flag isrec with_evars elim
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
+  let cls = Option.default allHypsAndConcl cls in
   let t = typ_of env sigma c in
   let is_arg_pure_hyp =
     isVar c && lbind == NoBindings && not with_evars && Option.is_empty eqname
@@ -4064,7 +4054,7 @@ let induction_destruct isrec with_evars (lc,elim) =
       let lc = List.map (on_pi1 (map_induction_arg finish_evar_resolution)) lc in
       let newlc =
         List.map (fun (x,(eqn,names),cls) ->
-          if cls <> None then error "'in' clause not yet supported here.";
+          if cls != None then error "'in' clause not yet supported here.";
 	  match x with (* FIXME: should we deal with ElimOnIdent? *)
           | _clear_flag,ElimOnConstr x ->
               if eqn <> None then error "'eqn' clause not supported here.";
