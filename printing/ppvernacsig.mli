@@ -6,4 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-include Ppvernacsig.Pp
+module type Pp = sig
+
+  (** Prints a vernac expression *)
+  val pr_vernac_body : Vernacexpr.vernac_expr -> Pp.std_ppcmds
+
+  (** Prints a vernac expression and closes it with a dot. *)
+  val pr_vernac : Vernacexpr.vernac_expr -> Pp.std_ppcmds
+
+end
