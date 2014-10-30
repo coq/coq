@@ -289,3 +289,39 @@ destruct H. (* Was not working in 8.4 *)
 change (x=y) in H.
 Abort.
 End S1.
+
+(* These ones are not satisfactory at the current time
+
+Section S2.
+Variable H : 1=1.
+Goal 0=1.
+destruct H.
+(* Should expand the n... *)
+  n := 1 : nat
+  H : n = n
+  ============================
+   0 = n
+*)
+Abort.
+End S2.
+
+(* Should expand the n... *)
+Goal 1=1->0=1.
+intro H.
+destruct H.
+(*
+  n := 1 : nat
+  ============================
+   0 = n
+*)
+
+(* Should expand the x0... *)
+Goal forall x:nat, x=x->x=1.
+intros x H.
+destruct H.
+(*
+  x : nat
+  x0 := x : nat
+  ============================
+   x0=1
+*)
