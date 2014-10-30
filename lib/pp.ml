@@ -199,6 +199,10 @@ let tb () = Glue.atom(Ppcmd_open_box Pp_tbox)
 let close () = Glue.atom(Ppcmd_close_box)
 let tclose () = Glue.atom(Ppcmd_close_tbox)
 
+(* Opening and closed of tags *)
+let open_tag t = Glue.atom(Ppcmd_open_tag t)
+let close_tag () = Glue.atom(Ppcmd_close_tag)
+
 let eval_ppcmds l = l
 
 (* In new syntax only double quote char is escaped by repeating it *)
