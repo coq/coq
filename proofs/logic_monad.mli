@@ -137,6 +137,7 @@ module Logical (P:Param) : sig
   val modify : (P.s -> P.s) -> unit t
   val put : P.w -> unit t
   val current : P.e t
+  val local : P.e -> 'a t -> 'a t
   val update : (P.u -> P.u) -> unit t
 
   val zero : exn -> 'a t

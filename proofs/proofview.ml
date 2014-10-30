@@ -210,7 +210,7 @@ type +'a tactic = 'a Proof.t
 (** Applies a tactic to the current proofview. *)
 let apply env t sp =
   let (next_r,(next_state,_),status,info) =
-    Logic_monad.NonLogical.run (Proof.run t () (sp,env))
+    Logic_monad.NonLogical.run (Proof.run t false (sp,env))
   in
   next_r,next_state,status,Trace.to_tree info
 
@@ -713,11 +713,12 @@ let tclTIMEOUT n t =
      already been computed. *)
   let t = Proof.lift (Logic_monad.NonLogical.return ()) >> t in
   Proof.get >>= fun initial ->
+  Proof.current >>= fun envvar ->
   Proof.lift begin
     Logic_monad.NonLogical.catch
       begin
         let open Logic_monad.NonLogical in
-        timeout n (Proof.run t () initial) >>= fun r ->
+        timeout n (Proof.run t envvar initial) >>= fun r ->
         return (Util.Inl r)
       end
       begin let open Logic_monad.NonLogical in function
@@ -989,6 +990,8 @@ end
 (** {6 Trace} *)
 
 module Trace = struct
+
+  let record_info_trace = InfoL.record_trace
 
   let log m = InfoL.leaf (Info.Msg m)
   let name_tactic m t = InfoL.tag (Info.Tactic m) t

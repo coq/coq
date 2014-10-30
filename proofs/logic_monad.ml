@@ -260,6 +260,11 @@ struct
   let current : P.e t = (); fun s ->
     { iolist = fun nil cons -> cons (s.rstate, s) nil }
 
+  let local (type a) (e:P.e) (m:a t) : a t = (); fun s ->
+    let m = m { s with rstate = e } in
+    { iolist = fun nil cons ->
+      m.iolist nil (fun (x,s') next -> cons (x,{s' with rstate=s.rstate}) next) }
+
   let put (w : P.w) : unit t = (); fun s ->
     { iolist = fun nil cons -> cons ((), { s with wstate = P.wprod s.wstate w }) nil }
 

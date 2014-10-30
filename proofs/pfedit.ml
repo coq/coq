@@ -92,6 +92,10 @@ let solve ?with_end_tac gi info_lvl tac pr =
     let tac = match with_end_tac with
       | None -> tac
       | Some etac -> Proofview.tclTHEN tac etac in
+    let tac = match info_lvl with
+      | None -> tac
+      | Some _ -> Proofview.Trace.record_info_trace tac
+    in
     let tac = match gi with
       | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
       | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac

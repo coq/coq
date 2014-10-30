@@ -483,6 +483,10 @@ end
 
 module Trace : sig
 
+  (** [record_info_trace t] behaves like [t] except the [info] trace
+      is stored. *)
+  val record_info_trace : 'a tactic -> 'a tactic
+
   val log : Proofview_monad.lazy_msg -> unit tactic
   val name_tactic : Proofview_monad.lazy_msg -> 'a tactic -> 'a tactic
 

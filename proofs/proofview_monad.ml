@@ -167,8 +167,8 @@ module P = struct
 
   type s = proofview * Environ.env
 
-  type e = unit
-  (* spiwack: nothing read-only anymore but it's free so I'll leave a place holder. *)
+  (** Recording info trace (true) or not. *)
+  type e = bool
 
   (** Status (safe/unsafe) * shelved goals * given up *)
   type w = bool * Evar.t list * Evar.t list
@@ -243,15 +243,28 @@ end
 
 (** Lens and utilies pertaining to the info trace *)
 module InfoL = struct
-  let update = Logical.update
+  let recording = Logical.current
+  let if_recording t =
+    let open Logical in
+    recording >>= fun r ->
+    if r then t else return ()
+
+  let record_trace t = Logical.local true t
+
+  let raw_update = Logical.update
+  let update f = if_recording (raw_update f)
   let opn a = update (Trace.opn a)
   let close = update Trace.close
   let leaf a = update (Trace.leaf a)
 
   let tag a t =
     let open Logical in
-    opn a >>
-    t >>= fun a ->
-    close >>
-    return a
+    recording >>= fun r ->
+    if r then begin
+      raw_update (Trace.opn a) >>
+      t >>= fun a ->
+      raw_update Trace.close >>
+      return a
+    end else
+      t
 end

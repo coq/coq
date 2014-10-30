@@ -81,7 +81,8 @@ module P : sig
   val wunit : w
   val wprod : w -> w -> w
 
-  type e = unit
+  (** Recording info trace (true) or not. *)
+  type e = bool
 
   type u = Info.state
 
@@ -130,6 +131,9 @@ module Giveup : Writer with type t = Evar.t list
 
 (** Lens and utilies pertaining to the info trace *)
 module InfoL : sig
+  (** [record_trace t] behaves like [t] and compute its [info] trace. *)
+  val record_trace : 'a Logical.t -> 'a Logical.t
+
   val update : (Info.state -> Info.state) -> unit Logical.t
   val opn : Info.tag -> unit Logical.t
   val close : unit Logical.t
