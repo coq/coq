@@ -6,7 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type xml =
-        | Element of (string * (string * string) list * xml list)
-        | PCData of string
+(** ['a gxml] is the type for semi-structured documents. They generalize
+    XML by allowing any kind of attributes. *)
+type 'a gxml =
+  | Element of (string * 'a * 'a gxml list)
+  | PCData of string
+
+(** [xml] is a semi-structured documents where attributes are association
+    lists from string to string. *)
+type xml = (string * string) list gxml
+
 
