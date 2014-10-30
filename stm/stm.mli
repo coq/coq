@@ -75,6 +75,8 @@ val slave_main_loop : unit -> unit
 val slave_init_stdout : unit -> unit
 val tacslave_main_loop : unit -> unit
 val tacslave_init_stdout : unit -> unit
+val queryslave_main_loop : unit -> unit
+val queryslave_init_stdout : unit -> unit
 
 val print_ast : Stateid.t -> Xml_datatype.xml
 

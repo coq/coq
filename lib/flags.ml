@@ -56,6 +56,7 @@ let async_proofs_n_workers = ref 1
 let async_proofs_n_tacworkers = ref 2
 let async_proofs_private_flags = ref None
 let async_proofs_always_delegate = ref false
+let async_queries_always_delegate = ref false
 let async_proofs_never_reopen_branch = ref false
 let async_proofs_flags_for_workers = ref []
 let async_proofs_worker_id = ref "master"

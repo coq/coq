@@ -25,6 +25,7 @@ val async_proofs_private_flags : string option ref
 val async_proofs_is_worker : unit -> bool
 val async_proofs_is_master : unit -> bool
 val async_proofs_always_delegate : bool ref
+val async_queries_always_delegate : bool ref
 val async_proofs_never_reopen_branch : bool ref
 val async_proofs_flags_for_workers : string list ref
 val async_proofs_worker_id : string ref

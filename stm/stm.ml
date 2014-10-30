@@ -87,7 +87,10 @@ type branch_type =
   [ `Master
   | `Proof of proof_mode * depth
   | `Edit of proof_mode * Stateid.t * Stateid.t ]
-type cmd_t = ast * Id.t list * bool
+type cmd_t = {
+  cast : ast;
+  cids : Id.t list;
+  cqueue : [ `MainQueue | `TacQueue of cancel_switch | `QueryQueue of cancel_switch ] }
 type fork_t = ast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Id.t list
 type qed_t = {
   qast : ast;
@@ -256,7 +259,7 @@ end = struct
     let fname =
       "stm_" ^ Str.global_replace (Str.regexp " ") "_" (System.process_id ()) in
     let string_of_transaction = function
-      | Cmd (t, _, _) | Fork (t, _,_,_) ->
+      | Cmd { cast = t } | Fork (t, _,_,_) ->
           (try string_of_ppcmds (pr_ast t) with _ -> "ERR")
       | Sideff (Some t) ->
           sprintf "Sideff(%s)"
@@ -453,7 +456,9 @@ end = struct
     let new_vcs, erased_nodes = gc old_vcs in
     Vcs_.NodeSet.iter (fun id ->
         match (Vcs_aux.visit old_vcs id).step with
-        | `Qed ({ fproof = Some (_, cancel_switch) }, _) ->
+        | `Qed ({ fproof = Some (_, cancel_switch) }, _)
+        | `Cmd { cqueue = `TacQueue cancel_switch }
+        | `Cmd { cqueue = `QueryQueue cancel_switch } ->
              cancel_switch := true
         | _ -> ())
       erased_nodes;
@@ -579,7 +584,8 @@ module State : sig
       Warning: an optimization in installed_cached requires that state
       modifying functions are always executed using this wrapper. *)
   val define :
-    ?redefine:bool -> ?cache:Summary.marshallable -> (unit -> unit) -> Stateid.t -> unit
+    ?redefine:bool -> ?cache:Summary.marshallable ->
+    ?feedback_processed: bool -> (unit -> unit) -> Stateid.t -> unit
 
   val install_cached : Stateid.t -> unit
   val is_cached : ?cache:Summary.marshallable -> Stateid.t -> bool
@@ -655,7 +661,7 @@ end = struct
         Pp.feedback ~state_id:id (Feedback.ErrorMsg (loc, msg));
         Stateid.add (Hook.get f_process_error e) ?valid id
 
-  let define ?(redefine=false) ?(cache=`No) f id =
+  let define ?(redefine=false) ?(cache=`No) ?(feedback_processed=true) f id =
     let str_id = Stateid.to_string id in
     if is_cached id && not redefine then
       anomaly (str"defining state "++str str_id++str" twice");
@@ -667,7 +673,7 @@ end = struct
       else if cache = `Shallow then freeze `Shallow id;
       prerr_endline ("setting cur id to "^str_id);
       cur_id := id;
-      feedback ~state_id:id Feedback.Processed;
+      if feedback_processed then feedback ~state_id:id Feedback.Processed;
       VCS.reached id true;
       if Proof_global.there_are_pending_proofs () then
         VCS.goals id (Proof_global.get_open_goals ());
@@ -915,7 +921,7 @@ end = struct
             spc () ++ print e)
       | Some (_, cur) ->
           match VCS.visit cur with
-          | { step = `Cmd ( { loc }, _, _) } 
+          | { step = `Cmd { cast = { loc } } }
           | { step = `Fork (( { loc }, _, _, _), _) } 
           | { step = `Qed ( { qast = { loc } }, _) } 
           | { step = `Sideff (`Ast ( { loc }, _)) } ->
@@ -1117,7 +1123,7 @@ module Partac = struct
     
   module TaskQueue = AsyncTaskQueue.Make(SubTask)
 
-  let vernac_interp nworkers safe_id id { verbose; loc; expr = e } =
+  let vernac_interp cancel nworkers safe_id id { verbose; loc; expr = e } =
     let e, etac, time, fail =
       let rec find time fail = function VernacSolve(_,re,b) -> re, b, time, fail
         | VernacTime [_,e] -> find true fail e
@@ -1136,7 +1142,7 @@ module Partac = struct
         TaskQueue.enqueue_task
           { t_state = safe_id; t_state_fb = id;
             t_assign = assign; t_ast; t_goal = g; t_name; t_kill = cancel_all }
-          (ref false);
+          cancel;
         Goal.uid g,f)
         1 goals in
       join ();
@@ -1168,6 +1174,73 @@ end
 
 let tacslave_main_loop () = Partac.slave_main_loop Ephemeron.clear
 let tacslave_init_stdout = Partac.slave_init_stdout
+
+module QueryTask = struct
+  let reach_known_state = ref (fun ?redefine_qed ~cache id -> ())
+  let set_reach_known_state f = reach_known_state := f
+  
+  type task =
+    { t_where : Stateid.t; t_for : Stateid.t ; t_what : ast }
+  
+  type request =
+    { r_where : Stateid.t ; r_for : Stateid.t ; r_what : ast; r_doc : VCS.vcs }
+  type response = unit
+
+  let name = "queryworker"
+  let extra_env _ = [||]
+
+  let request_of_task _ { t_where; t_what; t_for } =
+    try Some {
+      r_where = t_where;
+      r_for   = t_for;
+      r_doc   = VCS.slice ~start:t_where ~stop:t_where;
+      r_what  = t_what }
+    with VCS.Expired -> None
+  
+  let use_response _ _ = `StayReset
+
+  let on_marshal_error _ _ =
+    pr_err ("Fatal marshal error in query");
+    flush_all (); exit 1
+
+  let on_slave_death _ = `Stay
+  let on_task_cancellation_or_expiration _ = ()
+  
+  let forward_feedback = forward_feedback
+
+  let perform { r_where; r_doc; r_what; r_for } =
+    VCS.restore r_doc;
+    VCS.print ();
+    !reach_known_state ~cache:`No r_where;
+    try
+      vernac_interp r_for { r_what with verbose = true };
+      Pp.feedback ~state_id:r_for Feedback.Processed     
+    with e when Errors.noncritical e ->
+      let msg = string_of_ppcmds (print e) in
+      Pp.feedback ~state_id:r_for (Feedback.ErrorMsg (Loc.ghost, msg))
+    
+  let name_of_task { t_what } = string_of_ppcmds (pr_ast t_what)
+  let name_of_request { r_what } = string_of_ppcmds (pr_ast r_what)
+
+end
+
+module Query = struct
+
+  module TaskQueue = AsyncTaskQueue.Make(QueryTask)
+
+  let vernac_interp switch prev id q =
+    assert(TaskQueue.n_workers () > 0);
+    TaskQueue.enqueue_task
+      QueryTask.({ t_where = prev; t_for = id; t_what = q }) switch
+
+  let slave_main_loop = TaskQueue.slave_main_loop
+  let slave_init_stdout = TaskQueue.slave_init_stdout
+  let init () = TaskQueue.init 
+    (if !Flags.async_queries_always_delegate then 1 else 0)
+end
+
+let queryslave_main_loop () = Query.slave_main_loop Ephemeron.clear
+let queryslave_init_stdout = Query.slave_init_stdout
 
 (* Runs all transactions needed to reach a state *)
 module Reach : sig
@@ -1212,7 +1285,7 @@ let collect_proof keep cur hd brkind id =
  let rec collect last accn id =
     let view = VCS.visit id in
     match view.step with
-    | `Cmd (x, _, _) -> collect (Some (id,x)) (id::accn) view.next
+    | `Cmd { cast = x } -> collect (Some (id,x)) (id::accn) view.next
     (* An Alias could jump everywhere... we hope we can ignore it*)
     | `Alias _ -> `Sync (no_name,None,`Alias)
     | `Fork((_,_,_,_::_::_), _) ->
@@ -1302,23 +1375,29 @@ let known_state ?(redefine_qed=false) ~cache id =
       feedback ~state_id:id Feedback.Processed;
       prerr_endline ("reached (cache)")
     end else
-    let step, cache_step =
+    let step, cache_step, feedback_processed =
       let view = VCS.visit id in
       match view.step with
       | `Alias id -> (fun () ->
             reach view.next; reach id
-          ), cache
-      | `Cmd (x,_,false) -> (fun () ->
-            reach view.next; vernac_interp id x
-          ), cache
-      | `Cmd (x,_,true) -> (fun () ->
+          ), cache, true
+      | `Cmd { cast = x; cqueue = `TacQueue cancel } -> (fun () ->
             reach ~cache:`Shallow view.next;
-            Partac.vernac_interp !Flags.async_proofs_n_tacworkers view.next id x
-          ), cache
+            Partac.vernac_interp
+              cancel !Flags.async_proofs_n_tacworkers view.next id x
+          ), cache, true
+      | `Cmd { cast = x; cqueue = `QueryQueue cancel }
+        when Flags.async_proofs_is_master () -> (fun () ->
+            reach ~cache:`Shallow view.next;
+            Query.vernac_interp cancel view.next id x
+          ), cache, false
+      | `Cmd { cast = x } -> (fun () ->
+            reach view.next; vernac_interp id x
+          ), cache, true
       | `Fork ((x,_,_,_), None) -> (fun () ->
             reach view.next; vernac_interp id x;
             wall_clock_last_fork := Unix.gettimeofday ()
-          ), `Yes
+          ), `Yes, true
       | `Fork ((x,_,_,_), Some prev) -> (fun () ->
             reach ~cache:`Shallow prev;
             reach view.next;
@@ -1327,7 +1406,7 @@ let known_state ?(redefine_qed=false) ~cache id =
               let e = Errors.push e in
               raise (Stateid.add e ~valid:prev id));
             wall_clock_last_fork := Unix.gettimeofday ()
-          ), `Yes
+          ), `Yes, true
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
           | `ASync (start, pua, nodes, name) -> (fun () ->
@@ -1357,11 +1436,11 @@ let known_state ?(redefine_qed=false) ~cache id =
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
                 Proof_global.discard_all ()
-              ), if redefine_qed then `No else `Yes
+              ), (if redefine_qed then `No else `Yes), true
           | `Sync (name, _, `Immediate) -> (fun () -> 
                 assert (Stateid.equal view.next eop);
                 reach eop; vernac_interp id x; Proof_global.discard_all ()
-              ), `Yes
+              ), `Yes, true
           | `Sync (name, pua, reason) -> (fun () ->
                 prerr_endline ("Synchronous " ^ Stateid.to_string id ^ " " ^
                   string_of_reason reason);
@@ -1382,31 +1461,32 @@ let known_state ?(redefine_qed=false) ~cache id =
                 Aux_file.record_in_aux_at x.loc "proof_check_time"
                   (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2));
                 Proof_global.discard_all ()
-              ), `Yes
+              ), `Yes, true
           | `MaybeASync (start, pua, nodes, name) -> (fun () ->
                 prerr_endline ("MaybeAsynchronous " ^ Stateid.to_string id);
                 reach ~cache:`Shallow start;
                 (* no sections *)
                 if List.is_empty (Environ.named_context (Global.env ()))
-                then fst (aux (`ASync (start, pua, nodes, name))) ()
-                else fst (aux (`Sync (name, pua, `Unknown))) ()
-              ), if redefine_qed then `No else `Yes
+                then pi1 (aux (`ASync (start, pua, nodes, name))) ()
+                else pi1 (aux (`Sync (name, pua, `Unknown))) ()
+              ), (if redefine_qed then `No else `Yes), true
           in
           aux (collect_proof keep (view.next, x) brname brinfo eop)
       | `Sideff (`Ast (x,_)) -> (fun () ->
             reach view.next; vernac_interp id x;
-          ), cache
+          ), cache, true
       | `Sideff (`Id origin) -> (fun () ->
             reach view.next;
             inject_non_pstate (pure_cherry_pick_non_pstate origin);
-          ), cache
+          ), cache, true
     in
     let cache_step =
       if !Flags.async_proofs_cache = Some Flags.Force then `Yes
       else cache_step in
     if Flags.async_proofs_is_master () then
       Pp.feedback ~state_id:id Feedback.ProcessingInMaster;
-    State.define ~cache:cache_step ~redefine:redefine_qed step id;
+    State.define
+      ~cache:cache_step ~redefine:redefine_qed ~feedback_processed step id;
     if !Flags.feedback_goals then print_goals_of_state id;
     prerr_endline ("reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
@@ -1415,6 +1495,7 @@ end
 
 let _ = Task.set_reach_known_state Reach.known_state
 let _ = SubTask.set_reach_known_state Reach.known_state
+let _ = QueryTask.set_reach_known_state Reach.known_state
 
 (* The backtrack module simulates the classic behavior of a linear document *)
 module Backtrack : sig
@@ -1474,7 +1555,7 @@ end = struct
           if id = Stateid.initial || id = Stateid.dummy then [] else
           match VCS.visit id with
           | { step = `Fork ((_,_,_,l),_) } -> l
-          | { step = `Cmd (_,l,_) } -> l
+          | { step = `Cmd { cids = l } } -> l
           | _ -> [] in
         match f acc (id, vcs, ids) with
         | `Stop x -> x
@@ -1558,6 +1639,7 @@ let init () =
   if Flags.async_proofs_is_master () then begin
     prerr_endline "Initialising workers";
     Slaves.init ();
+    Query.init ();
     let opts = match !Flags.async_proofs_private_flags with
       | None -> []
       | Some s -> Str.split_delim (Str.regexp ",") s in
@@ -1767,7 +1849,10 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       | VtQuery (true,report_id), w ->
           assert(Stateid.equal report_id Stateid.dummy);
           let id = VCS.new_node ~id:newtip () in
-          VCS.commit id (Cmd (x,[],false));
+          let queue =
+            if !Flags.async_queries_always_delegate then `QueryQueue (ref false)
+            else `MainQueue in
+          VCS.commit id (Cmd { cast = x; cids = []; cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQuery (false,_), VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
@@ -1791,7 +1876,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       | VtProofMode mode, VtNow ->
           let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
-          VCS.commit id (Cmd (x,[],false));
+          VCS.commit id (Cmd {cast = x; cids=[]; cqueue = `MainQueue});
           VCS.propagate_sideff (Some x);
           List.iter
             (fun bn -> match VCS.get_branch bn with
@@ -1809,7 +1894,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           `Ok
       | VtProofStep paral, w ->
           let id = VCS.new_node ~id:newtip () in
-          VCS.commit id (Cmd (x,[],paral));
+          let queue = if paral then `TacQueue (ref false) else `MainQueue in
+          VCS.commit id (Cmd {cast = x; cids = []; cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
           let rc = merge_proof_branch ~id:newtip x keep head in
@@ -1824,7 +1910,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       | VtSideff l, w ->
           let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
-          VCS.commit id (Cmd (x,l,false));
+          VCS.commit id (Cmd { cast = x; cids = l; cqueue = `MainQueue});
           VCS.propagate_sideff (Some x);
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish (); `Ok
@@ -1846,7 +1932,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
               VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode "Classic";
             end else begin
-              VCS.commit id (Cmd (x,[],false));
+              VCS.commit id (Cmd { cast = x; cids = []; cqueue = `MainQueue});
               VCS.propagate_sideff (Some x);
               VCS.checkout_shallowest_proof_branch ();
             end in
@@ -1877,7 +1963,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
 let print_ast id =
   try
     match VCS.visit id with
-    | { step = `Cmd ({ loc; expr }, _, _) } 
+    | { step = `Cmd { cast = { loc; expr } } }
     | { step = `Fork (({ loc; expr }, _, _, _), _) } 
     | { step = `Qed ({ qast = { loc; expr } }, _) } ->
         let xml = 
@@ -2084,7 +2170,7 @@ let get_script prf =
     | `Sideff (`Ast (x,_)) ->
          find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
     | `Sideff (`Id id)  -> find acc id
-    | `Cmd (x,_,_) -> find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
+    | `Cmd {cast = x} -> find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
     | `Alias id -> find acc id
     | `Fork _ -> find acc view.next
     in
