@@ -736,7 +736,7 @@ module Task = struct
     | RespBuiltProof of Proof_global.closed_proof_output * float
     | RespError of error
 
-  let name = "stmworker"
+  let name = "proofworker"
   let extra_env () = !async_proofs_workers_extra_env
 
   let name_of_task t = t.t_name
