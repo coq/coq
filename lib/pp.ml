@@ -95,6 +95,8 @@ type 'a ppcmd_token =
   | Ppcmd_close_box
   | Ppcmd_close_tbox
   | Ppcmd_comment of int
+  | Ppcmd_open_tag of string
+  | Ppcmd_close_tag
 
 type 'a ppdir_token =
   | Ppdir_ppcmds of 'a ppcmd_token Glue.t
@@ -283,6 +285,10 @@ let pp_dirs ft =
 (*        Format.pp_open_hvbox ft 0;*)
         List.iter (pr_com ft) coms(*;
         Format.pp_close_box ft ()*)
+    | Ppcmd_open_tag name ->
+      Format.pp_open_tag ft name
+    | Ppcmd_close_tag ->
+      Format.pp_close_tag ft ()
   in
   let pp_dir = function
     | Ppdir_ppcmds cmdstream -> Glue.iter pp_cmd cmdstream
