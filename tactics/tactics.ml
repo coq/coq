@@ -3497,21 +3497,21 @@ type scheme_signature =
 
 type eliminator_source =
   | ElimUsing of (eliminator * types) * scheme_signature
-  | ElimOver of bool * Id.t
+  | ElimOver of bool * Id.t * Id.t
 
-let find_induction_type isrec elim hyp0 gl =
+let find_induction_type isrec elim hyp0 base_id gl =
   let evd,scheme,elim =
     match elim with
     | None ->
 	let evd, (elimc,elimt),_ = guess_elim isrec hyp0 gl in
 	let scheme = compute_elim_sig ~elimc elimt in
 	(* We drop the scheme waiting to know if it is dependent *)
-	evd, scheme, ElimOver (isrec,hyp0)
+	evd, scheme, ElimOver (isrec,hyp0,base_id)
     | Some e ->
 	let evd, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
 	let scheme = compute_elim_sig ~elimc elimt in
 	if Option.is_empty scheme.indarg then error "Cannot find induction type";
-	let indsign = compute_scheme_signature scheme hyp0 ind_guess in
+	let indsign = compute_scheme_signature scheme base_id ind_guess in
 	let elim = ({elimindex = Some(-1); elimbody = elimc; elimrename = None},elimt) in
 	evd, scheme, ElimUsing (elim,indsign) in
   evd,(Option.get scheme.indref,scheme.nparams, elim)
@@ -3535,9 +3535,9 @@ let is_functional_induction elim gl =
 let get_eliminator elim gl = match elim with
   | ElimUsing (elim,indsign) ->
       Proofview.Goal.sigma gl, (* bugged, should be computed *) true, elim, indsign
-  | ElimOver (isrec,id) ->
+  | ElimOver (isrec,id,base_id) ->
       let evd, (elimc,elimt),_ as elims = guess_elim isrec id gl in
-      let _, (l, s) = compute_elim_signature elims id in
+      let _, (l, s) = compute_elim_signature elims base_id in
       let branchlengthes = List.map (fun (_,b,c) -> assert (b=None); pi1 (decompose_prod_letin c)) (List.rev s.branches) in
       evd, isrec, ({elimindex = None; elimbody = elimc; elimrename = Some (isrec,Array.of_list branchlengthes)}, elimt), l
 
@@ -3705,7 +3705,9 @@ let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inh
   let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
     induction_tac with_evars elim (hyp0,NoBindings) typ0;
     tclTRY (unfold_body hyp0);
-    thin [hyp0]
+    if mem_named_context hyp0 (Global.named_context())
+    then (* Compat: can be dropped for more uniformity of behavior *) tclIDTAC
+    else thin [hyp0]
   ]) in
   apply_induction_in_context
     (Some (hyp0,inhyps)) elim indvars names induct_tac
@@ -3713,7 +3715,13 @@ let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inh
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
   Proofview.Goal.nf_enter begin fun gl ->
-  let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
+  let base_id = if mem_named_context hyp0 (Global.named_context())
+    then (* Compat: can be dropped for more uniformity of naming *)
+      let t = typ_of (Proofview.Goal.env gl) (Proofview.Goal.sigma gl) (mkVar hyp0) in
+      let x = id_of_name_using_hdchar (Global.env()) t Anonymous in
+      new_fresh_id [] x gl
+    else hyp0 in
+  let sigma, elim_info = find_induction_type isrec elim hyp0 base_id gl in
   Tacticals.New.tclTHENLIST
     [Proofview.Unsafe.tclEVARS sigma; (atomize_param_of_ind elim_info hyp0);
     (induction_from_context isrec with_evars elim_info
@@ -3889,8 +3897,7 @@ let induction_gen clear_flag isrec with_evars elim
   let sigma = Proofview.Goal.sigma gl in
   let t = typ_of env sigma c in
   let is_arg_pure_hyp =
-    isVar c && not (mem_named_context (destVar c) (Global.named_context()))
-    && lbind == NoBindings && not with_evars && Option.is_empty eqname
+    isVar c && lbind == NoBindings && not with_evars && Option.is_empty eqname
     && not (has_selected_occurrences cls) in
   let enough_applied = check_enough_applied env sigma elim t in
   if is_arg_pure_hyp && enough_applied then

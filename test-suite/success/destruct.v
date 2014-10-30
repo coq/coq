@@ -277,3 +277,15 @@ Abort.
 Goal forall f : A -> nat -> nat, f a 0 = f a 1.
 intros.
 destruct f.
+
+(* This one was not working in 8.4 *)
+
+Section S1.
+Variables x y : Type.
+Variable H : x = y.
+Goal True.
+destruct H. (* Was not working in 8.4 *)
+(* Now check that H statement has not be itself subject of the rewriting *)
+change (x=y) in H.
+Abort.
+End S1.
