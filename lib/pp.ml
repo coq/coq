@@ -16,7 +16,7 @@ module Glue : sig
      I.e. if the short list is the second argument
   *)
   type 'a t
-  
+
   val atom : 'a -> 'a t
   val glue : 'a t -> 'a t -> 'a t
   val empty : 'a t
@@ -133,18 +133,18 @@ let utf8_length s =
       match s.[!p] with
       | '\000'..'\127' -> nc := 0 (* ascii char *)
       | '\128'..'\191' -> nc := 0 (* cannot start with a continuation byte *)
-      |	'\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
-      |	'\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
-      |	'\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
-      |	'\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
-      |	'\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
-      |	'\254'..'\255' -> nc := 0 (* invalid byte *)
+      | '\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
+      | '\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
+      | '\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
+      | '\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
+      | '\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
+      | '\254'..'\255' -> nc := 0 (* invalid byte *)
     end ;
     incr p ;
     while !p < len && !nc > 0 do
       match s.[!p] with
-      |	'\128'..'\191' (* next continuation byte *) -> incr p ; decr nc
-      |	_ (* not a continuation byte *) -> nc := 0
+      | '\128'..'\191' (* next continuation byte *) -> incr p ; decr nc
+      | _ (* not a continuation byte *) -> nc := 0
     done ;
     incr cnt
   done ;
@@ -173,8 +173,8 @@ let strbrk s =
   let rec aux p n =
     if n < String.length s then
       if s.[n] = ' ' then
-	if p = n then spc() :: aux (n+1) (n+1)
-	else str (String.sub s p (n-p)) :: spc () :: aux (n+1) (n+1)
+        if p = n then spc() :: aux (n+1) (n+1)
+        else str (String.sub s p (n-p)) :: spc () :: aux (n+1) (n+1)
       else aux p (n + 1)
     else if p = n then [] else [str (String.sub s p (n-p))]
   in List.fold_left (++) Glue.empty (aux 0 0)
@@ -452,16 +452,16 @@ let prlist_sep_lastsep no_empty sep lastsep elem =
     |[] -> mt ()
     |[e] -> elem e
     |h::t -> let e = elem h in
-	if no_empty && ismt e then start t else
-	  let rec aux = function
-	    |[] -> mt ()
-	    |h::t ->
-	       let e = elem h and r = aux t in
-		 if no_empty && ismt e then r else
-		   if ismt r
-		   then let s = lastsep () in s ++ e
-		   else let s = sep () in s ++ e ++ r
-	  in let r = aux t in e ++ r
+        if no_empty && ismt e then start t else
+          let rec aux = function
+            |[] -> mt ()
+            |h::t ->
+               let e = elem h and r = aux t in
+                 if no_empty && ismt e then r else
+                   if ismt r
+                   then let s = lastsep () in s ++ e
+                   else let s = sep () in s ++ e ++ r
+          in let r = aux t in e ++ r
   in start
 
 let prlist_strict pr l = prlist_sep_lastsep true mt mt pr l
