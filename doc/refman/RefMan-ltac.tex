@@ -503,7 +503,7 @@ $v_2$ and so on. It fails if there is no solving tactic.
 
 \ErrMsg \errindex{Cannot solve the goal}
 
-\subsubsection[Identity]{Identity\tacindex{idtac}
+\subsubsection[Identity]{Identity\label{ltac:idtac}\tacindex{idtac}
 \index{Tacticals!idtac@{\tt idtac}}}
 
 The constant {\tt idtac} is the identity tactic: it leaves any goal
@@ -1028,7 +1028,57 @@ Defined {\ltac} functions can be displayed using the command
 {\tt Print Ltac {\qualid}.}
 \end{quote}
 
-\section[Debugging {\ltac} tactics]{Debugging {\ltac} tactics\comindex{Set Ltac Debug}
+\section{Debugging {\ltac} tactics}
+
+\subsection[Info trace]{Info trace\comindex{Info}\comindex{Set Info Level}
+\comindex{Unset Info Level}
+\comindex{Test Info Level}}
+
+It is possible to print the trace of the path eventually taken by an {\ltac} script. That is, the list of executed tactics, discarding all the branches which have failed. To that end the {\tt Info} command can be used with the following syntax.
+
+\begin{quote}
+{\tt Info} {\num} {\tacexpr}.
+\end{quote}
+
+The number {\num} is the unfolding level of tactics in the trace. At level $0$, the trace contains a sequence of tactics in the actual script, at level $1$, the trace will be the concatenation of the traces of these tactics, etc\ldots
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example*}
+Ltac t x := exists x; reflexivity.
+
+Goal exists n, n=0.
+\end{coq_example*}
+\begin{coq_example}
+Info 0 t 1||t 0.
+\end{coq_example}
+\begin{coq_example*}
+Undo.
+\end{coq_example*}
+\begin{coq_example}
+Info 1 t 1||t 0.
+\end{coq_example}
+
+The trace produced by {\tt Info} tries its best to be a reparsable {\ltac} script, but this goal is not achievable in all generality. So some of the output traces will contain oddities.
+
+As an additional help for debugging, the trace produced by {\tt Info} contains (in comments) the messages produced by the {\tt idtac} tacticals~\ref{ltac:idtac} at the right possition in the script. In particular, the calls to {\tt idtac} in branches which failed are not printed.
+
+An alternative to the {\tt Info} command is to use the {\tt Info Level} option as follows:
+
+\begin{quote}
+{\tt Set Info Level} \num.
+\end{quote}
+
+This will automatically print the same trace as {\tt Info \num} at each tactic call. The unfolding level can be overridden by a call to the {\tt Info} command. And this option can be turned off with:
+
+\begin{quote}
+{\tt Unset Info Level} \num.
+\end{quote}
+
+The current value for the {\tt Info Level} option can be checked using the {\tt Test Info Level} command.
+
+\subsection[Interactive debugger]{Interactive debugger\comindex{Set Ltac Debug}
 \comindex{Unset Ltac Debug}
 \comindex{Test Ltac Debug}}
 
