@@ -42,4 +42,4 @@ val occurrences_of_hyp : Id.t -> clause -> (occurrences * hyp_location_flag)
 val occurrences_of_goal : clause -> occurrences
 val in_every_hyp : clause -> bool
 
-val has_selected_occurrences : clause -> bool
+val clause_with_generic_occurrences : 'a clause_expr -> bool

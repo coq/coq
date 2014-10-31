@@ -1468,7 +1468,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     else
       x
   in
-  let likefirst = not (has_selected_occurrences occs) in
+  let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = mkVar id in
   let compute_dependency _ (hyp,_,_ as d) (sign,depdecls) =
     match occurrences_of_hyp hyp occs with
@@ -1508,7 +1508,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (pi1(List.last depdecls)) in
-      (id,sign,depdecls,lastlhyp,ccl,out test)
+    (id,sign,depdecls,lastlhyp,ccl,out test)
   with
     SubtermUnificationError e ->
       raise (PretypeError (env,sigma,CannotUnifyOccurrences e))

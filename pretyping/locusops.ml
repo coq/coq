@@ -102,7 +102,13 @@ let occurrences_of_goal cls =
 
 let in_every_hyp cls = Option.is_empty cls.onhyps
 
-let has_selected_occurrences cls =
-  cls.concl_occs != AllOccurrences ||
-  not (Option.is_empty cls.onhyps) && List.exists (fun ((occs,_),hl) ->
-    occs != AllOccurrences || hl != InHyp) (Option.get cls.onhyps)
+let clause_with_generic_occurrences cls =
+  let hyps = match cls.onhyps with
+  | None -> true
+  | Some hyps ->
+     List.for_all
+       (function ((AllOccurrences,_),InHyp) -> true | _ -> false) hyps in
+  let concl = match cls.concl_occs with
+  | AllOccurrences | NoOccurrences -> true
+  | _ -> false in
+  hyps && concl

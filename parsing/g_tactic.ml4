@@ -174,23 +174,9 @@ let map_int_or_var f = function
 
 let all_concl_occs_clause = { onhyps=Some[]; concl_occs=AllOccurrences }
 
-let has_no_specified_occs cl =
-  let forall ((occs, _), _) = match occs with
-  | AllOccurrences -> true
-  | _ -> false
-  in
-  let hyps = match cl.onhyps with
-  | None -> true
-  | Some hyps -> List.for_all forall hyps in
-  let concl = match cl.concl_occs with
-  | AllOccurrences | NoOccurrences -> true
-  | _ -> false
-  in
-  hyps && concl
-
 let merge_occurrences loc cl = function
   | None ->
-      if has_no_specified_occs cl then (None, cl)
+      if Locusops.clause_with_generic_occurrences cl then (None, cl)
       else
 	user_err_loc (loc,"",str "Found an \"at\" clause without \"with\" clause.")
   | Some (occs, p) ->
@@ -203,7 +189,7 @@ let merge_occurrences loc cl = function
       | { onhyps = Some [(AllOccurrences, id), l]; concl_occs = NoOccurrences } ->
         { cl with onhyps = Some [(occs, id), l] }
       | _ ->
-        if has_no_specified_occs cl then
+        if Locusops.clause_with_generic_occurrences cl then
           user_err_loc (loc,"",str "Unable to interpret the \"at\" clause; move it in the \"in\" clause.")
         else
           user_err_loc (loc,"",str "Cannot use clause \"at\" twice.")

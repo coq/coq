@@ -3876,6 +3876,11 @@ let pose_induction_arg clear_flag isrec with_evars info_arg elim
   end
 end
 
+let has_generic_occurrences_but_goal cls id env ccl =
+  clause_with_generic_occurrences cls &&
+  (* TODO: whd_evar of goal *)
+  (cls.concl_occs != NoOccurrences || not (occur_var env id ccl))
+
 let induction_gen clear_flag isrec with_evars elim
     ((_pending,(c,lbind)),(eqname,names) as arg) cls =
   let inhyps = match cls with
@@ -3884,11 +3889,12 @@ let induction_gen clear_flag isrec with_evars elim
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
+  let ccl = Proofview.Goal.raw_concl gl in
   let cls = Option.default allHypsAndConcl cls in
   let t = typ_of env sigma c in
   let is_arg_pure_hyp =
     isVar c && lbind == NoBindings && not with_evars && Option.is_empty eqname
-    && not (has_selected_occurrences cls) in
+    && has_generic_occurrences_but_goal cls (destVar c) env ccl in
   let enough_applied = check_enough_applied env sigma elim t in
   if is_arg_pure_hyp && enough_applied then
     (* First case: induction on a variable already in an inductive type and
