@@ -485,7 +485,8 @@ let qed_display_script = ref true
 let vernac_end_proof ?proof = function
   | Admitted -> save_proof ?proof Admitted
   | Proved (_,_) as e ->
-    if is_verbose () && !qed_display_script then Stm.show_script ?proof ();
+    if is_verbose () && !qed_display_script && !Flags.coqtop_ui then
+      Stm.show_script ?proof ();
     save_proof ?proof e
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
