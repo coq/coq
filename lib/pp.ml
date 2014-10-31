@@ -386,6 +386,7 @@ let std_logger ~id:_ level msg = match level with
 let logger = ref std_logger
 
 let feedback_id = ref (Feedback.Edit 0)
+let feedback_route = ref Feedback.default_route
 
 let msg_info x = !logger ~id:!feedback_id Info x
 let msg_notice x = !logger ~id:!feedback_id Notice x
@@ -400,10 +401,11 @@ let std_logger lvl msg = std_logger ~id:!feedback_id lvl msg
 (** Feedback *)
 
 let feeder = ref ignore
-let set_id_for_feedback i = feedback_id := i
-let feedback ?state_id what =
+let set_id_for_feedback ?(route=0) i = feedback_id := i; feedback_route := route
+let feedback ?state_id ?route what =
   !feeder {
      Feedback.content = what;
+     Feedback.route = Option.default !feedback_route route;
      Feedback.id =
        match state_id with
        | Some id -> Feedback.State id
@@ -422,6 +424,7 @@ let log_via_feedback () = logger := (fun ~id lvl msg ->
      Feedback.content = Feedback.Message {
        message_level = lvl;
        message_content = string_of_ppcmds msg };
+     Feedback.route = !feedback_route;
      Feedback.id = id })
 
 (* Copy paste from Util *)

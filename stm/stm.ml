@@ -36,7 +36,7 @@ type ast = { verbose : bool; loc : Loc.t; mutable expr : vernac_expr }
 let pr_ast { expr } = pr_vernac expr
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
-let vernac_interp ?proof id { verbose; loc; expr } =
+let vernac_interp ?proof id ?route { verbose; loc; expr } =
   let rec internal_command = function
     | VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
@@ -46,7 +46,7 @@ let vernac_interp ?proof id { verbose; loc; expr } =
   if internal_command expr then begin
     prerr_endline ("ignoring " ^ string_of_ppcmds(pr_vernac expr))
   end else begin
-    Pp.set_id_for_feedback (Feedback.State id);
+    Pp.set_id_for_feedback ?route (Feedback.State id);
     Aux_file.record_in_aux_set_at loc;
     prerr_endline ("interpreting " ^ string_of_ppcmds(pr_vernac expr));
     let interp = Hook.get f_interp in
@@ -57,9 +57,9 @@ let vernac_interp ?proof id { verbose; loc; expr } =
   end
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
-let vernac_parse ?newtip eid s =
-  if Option.is_empty newtip then set_id_for_feedback (Feedback.Edit eid)
-  else set_id_for_feedback (Feedback.State (Option.get newtip));
+let vernac_parse ?newtip ?route eid s =
+  if Option.is_empty newtip then set_id_for_feedback ?route (Feedback.Edit eid)
+  else set_id_for_feedback ?route (Feedback.State (Option.get newtip));
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   Flags.with_option Flags.we_are_parsing (fun () ->
     try
@@ -1834,19 +1834,19 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           anomaly(str"classifier: VtBack + VtLater must imply part_of_script")
 
       (* Query *)
-      | VtQuery (false,report_id), VtNow when tty = true ->
+      | VtQuery (false,(report_id,route)), VtNow when tty = true ->
           finish ();
-          (try Future.purify (vernac_interp report_id)
+          (try Future.purify (vernac_interp report_id ~route)
                   { verbose = true; loc; expr }
            with e when Errors.noncritical e ->
              let e = Errors.push e in
              raise(State.exn_on report_id e)); `Ok
-      | VtQuery (false,report_id), VtNow ->
-          (try vernac_interp report_id x
+      | VtQuery (false,(report_id,route)), VtNow ->
+          (try vernac_interp report_id ~route x
            with e when Errors.noncritical e ->
              let e = Errors.push e in
              raise(State.exn_on report_id e)); `Ok
-      | VtQuery (true,report_id), w ->
+      | VtQuery (true,(report_id,_)), w ->
           assert(Stateid.equal report_id Stateid.dummy);
           let id = VCS.new_node ~id:newtip () in
           let queue =
@@ -1976,11 +1976,12 @@ let print_ast id =
 
 let stop_worker n = Slaves.cancel_worker n
 
-let query ~at ?(report_with=Stateid.dummy) s =
+let query ~at ?(report_with=(Stateid.dummy,Feedback.default_route)) s =
   Future.purify (fun s ->
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
-    let _, ast as loc_ast = vernac_parse ~newtip:report_with 0 s in
+    let newtip, route = report_with in
+    let _, ast as loc_ast = vernac_parse ~newtip ~route 0 s in
     let clas = classify_vernac ast in
     match clas with
     | VtStm (w,_), _ ->
