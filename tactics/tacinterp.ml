@@ -1168,8 +1168,9 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacArg a -> interp_tactic ist (TacArg a)
   | TacInfo tac ->
       msg_warning
-	(strbrk "The general \"info\" tactic is currently not working." ++ fnl () ++
-	   strbrk "Some specific verbose tactics may exist instead, such as info_trivial, info_auto, info_eauto.");
+	(strbrk "The general \"info\" tactic is currently not working." ++ spc()++
+           strbrk "There is an \"Info\" command to replace it." ++fnl () ++
+	   strbrk "Some specific verbose tactics may also exist, such as info_trivial, info_auto, info_eauto.");
       eval_tactic ist tac
   (* For extensions *)
   | TacAlias (loc,s,l) ->
