@@ -540,7 +540,7 @@ let match_eval_ref_value env sigma constr =
   | Evar ev -> Evd.existential_opt_value sigma ev
   | _ -> None
 
-let special_red_case env sigma whfun (ci, p, c, lf)  =
+let special_red_case env sigma whfun (ci, p, c, lf) =
   let rec redrec s =
     let (constr, cargs) = whfun s in
     match match_eval_ref env constr with
@@ -1224,16 +1224,17 @@ let one_step_reduce env sigma c =
   in
   applist (redrec (c,[]))
 
-let isIndRef = function IndRef _ -> true | _ -> false
+let error_cannot_recognize ref =
+  errorlabstrm ""
+    (str "Cannot recognize a statement based on " ++
+     Nametab.pr_global_env Id.Set.empty ref ++ str".")
 
 let reduce_to_ref_gen allow_product env sigma ref t =
   if isIndRef ref then
     let ((mind,u),t) = reduce_to_ind_gen allow_product env sigma t in
     begin match ref with
     | IndRef mind' when eq_ind mind mind' -> t
-    | _ ->
-      errorlabstrm "" (str "Cannot recognize a statement based on " ++
-        Nametab.pr_global_env Id.Set.empty ref ++ str".")
+    | _ -> error_cannot_recognize ref
     end
   else
   (* lazily reduces to match the head of [t] with the expected [ref] *)
@@ -1241,12 +1242,10 @@ let reduce_to_ref_gen allow_product env sigma ref t =
     let c, _ = decompose_appvect (Reductionops.whd_nored sigma t) in
     match kind_of_term c with
       | Prod (n,ty,t') ->
-	  if allow_product then
+          if allow_product then
 	    elimrec (push_rel (n,None,t) env) t' ((n,None,ty)::l)
-	  else
-	     errorlabstrm ""
-	       (str "Cannot recognize an atomic statement based on " ++
-	        Nametab.pr_global_env Id.Set.empty ref ++ str".")
+          else
+            error_cannot_recognize ref
       | _ ->
 	  try
 	    if eq_gr (global_of_constr c) ref
@@ -1256,10 +1255,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
           try
 	    let t' = nf_betaiota sigma (one_step_reduce env sigma t) in
             elimrec env t' l
-          with NotStepReducible ->
-	    errorlabstrm ""
-	      (str "Cannot recognize a statement based on " ++
-	       Nametab.pr_global_env Id.Set.empty ref ++ str".")
+          with NotStepReducible -> error_cannot_recognize ref
   in
   elimrec env t []
 
