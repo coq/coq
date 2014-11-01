@@ -263,20 +263,21 @@ Abort.
 
 (* This one was working in 8.4 (because of full conv on closed arguments) *)
 
-Class A.
-Instance a:A.
-Goal forall f : A -> nat -> nat, f (id a) 0 = f a 0.
+Class E.
+Instance a:E.
+Goal forall h : E -> nat -> nat, h (id a) 0 = h a 0.
 intros.
-destruct (f _).
+destruct (h _).
 change (0=0).
 Abort.
 
 (* This one was not working in 8.4 because an occurrence of f was
    remaining, blocking the "clear f" *)
 
-Goal forall f : A -> nat -> nat, f a 0 = f a 1.
+Goal forall h : E -> nat -> nat, h a 0 = h a 1.
 intros.
-destruct f.
+destruct h.
+Abort.
 
 (* This was not working in 8.4 *)
 
@@ -292,30 +293,30 @@ End S1.
 
 (* This was not working in 8.4 *)
 
-Goal forall g:nat->nat, g 0 = g 1 -> g 1 = g 2 -> g 0 = g 2.
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2.
 intros.
-induction g.
-2:change (n = g 1 -> n = g 2) in IHn.
+induction h.
+2:change (n = h 1 -> n = h 2) in IHn.
 Abort.
 
 (* This was not working in 8.4 *)
 
-Goal forall g:nat->nat, g 0 = g 1 -> g 1 = g 2 -> g 0 = g 2. 
-intros g H H0.
-induction g in H |- *.
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
+intros h H H0.
+induction h in H |- *.
 Abort.
 
 (* "at" was not granted in 8.4 in the next two examples *)
 
-Goal forall g:nat->nat, g 0 = g 1 -> g 1 = g 2 -> g 0 = g 2. 
-intros g H H0.
-induction g in H at 2, H0 at 1.
-change (g 0 = 0) in H.
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
+intros h H H0.
+induction h in H at 2, H0 at 1.
+change (h 0 = 0) in H.
 Abort.
 
-Goal forall g:nat->nat, g 0 = g 1 -> g 1 = g 2 -> g 0 = g 2. 
-intros g H H0.
-Fail induction g in H at 2 |- *. (* Incompatible occurrences *)
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
+intros h H H0.
+Fail induction h in H at 2 |- *. (* Incompatible occurrences *)
 Abort.
 
 (* These ones are not satisfactory at the current time
@@ -329,7 +330,6 @@ destruct H.
   H : n = n
   ============================
    0 = n
-*)
 Abort.
 End S2.
 
@@ -352,4 +352,5 @@ destruct H.
   x0 := x : nat
   ============================
    x0=1
+*)
 *)
