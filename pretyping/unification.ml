@@ -1415,7 +1415,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   let n = List.length (snd (decompose_app c)) in
   let matching_fun _ t =
     try
-      let t' =
+      let t',l2 =
         if from_prefix_of_ind then
           (* We check for fully applied subterms of the form "u u1 .. un" *)
           (* of inductive type knowing only a prefix "u u1 .. ui" *)
@@ -1424,12 +1424,12 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
             try List.chop n l with Failure _ -> raise (NotUnifiable None) in
           if not (List.for_all closed0 l2) then raise (NotUnifiable None)
           else
-            applist (t,l1)
-        else t in
+            applist (t,l1), l2
+        else t, [] in
       let sigma = w_typed_unify env sigma Reduction.CONV flags c t' in
       let ty = Retyping.get_type_of env sigma t in
       if not (is_correct_type ty) then raise (NotUnifiable None);
-      Some(sigma, t)
+      Some(sigma, t, l2)
     with
     | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
         raise (NotUnifiable (Some (c1,c2,e)))
@@ -1437,7 +1437,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     | e when Errors.noncritical e -> raise (NotUnifiable None) in
   let merge_fun c1 c2 =
     match c1, c2 with
-    | Some (evd,c1) as x, Some (_,c2) ->
+    | Some (evd,c1,_) as x, Some (_,c2,_) ->
       if is_conv env sigma c1 c2 then x else raise (NotUnifiable None)
     | Some _, None -> c1
     | None, Some _ -> c2
@@ -1446,8 +1446,8 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     testing_state = None; last_found = None },
   (fun test -> match test.testing_state with
   | None -> None
-  | Some (sigma,_) ->
-     let c = nf_evar sigma (local_strong whd_meta sigma c) in
+  | Some (sigma,_,l) ->
+     let c = applist (nf_evar sigma (local_strong whd_meta sigma c),l) in
      let univs, subst = nf_univ_variables sigma in
      Some (sigma,subst_univs_constr subst c))
 
