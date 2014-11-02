@@ -3877,7 +3877,7 @@ let pose_induction_arg clear_flag isrec with_evars info_arg elim
 end
 
 let has_generic_occurrences_but_goal cls id env ccl =
-  clause_with_generic_occurrences cls &&
+  clause_with_generic_context_selection cls &&
   (* TODO: whd_evar of goal *)
   (cls.concl_occs != NoOccurrences || not (occur_var env id ccl))
 

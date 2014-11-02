@@ -43,3 +43,4 @@ val occurrences_of_goal : clause -> occurrences
 val in_every_hyp : clause -> bool
 
 val clause_with_generic_occurrences : 'a clause_expr -> bool
+val clause_with_generic_context_selection : 'a clause_expr -> bool

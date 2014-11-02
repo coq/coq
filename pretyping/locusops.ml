@@ -107,6 +107,17 @@ let clause_with_generic_occurrences cls =
   | None -> true
   | Some hyps ->
      List.for_all
+       (function ((AllOccurrences,_),_) -> true | _ -> false) hyps in
+  let concl = match cls.concl_occs with
+  | AllOccurrences | NoOccurrences -> true
+  | _ -> false in
+  hyps && concl
+
+let clause_with_generic_context_selection cls =
+  let hyps = match cls.onhyps with
+  | None -> true
+  | Some hyps ->
+     List.for_all
        (function ((AllOccurrences,_),InHyp) -> true | _ -> false) hyps in
   let concl = match cls.concl_occs with
   | AllOccurrences | NoOccurrences -> true
