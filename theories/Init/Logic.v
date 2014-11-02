@@ -467,8 +467,7 @@ Proof.
   intros.
   unfold f_equal.
   rewrite <- (eq_trans_sym_inv_l (Hf a)).
-  pattern (f a) at 1 2 3 4 5 7 8, (Hf a) at 1 2.
-  destruct (Hf a).
+  destruct (Hf a) at 1 2.
   destruct (Hf a).
   reflexivity.
 Defined.

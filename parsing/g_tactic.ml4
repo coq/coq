@@ -395,7 +395,9 @@ GEXTEND Gram
       | -> {onhyps=None; concl_occs=AllOccurrences} ] ]
   ;
   opt_clause:
-    [ [ "in"; cl = in_clause -> Some cl | -> None ] ]
+    [ [ "in"; cl = in_clause -> Some cl
+      | "at"; occs = occs_nums -> Some {onhyps=Some[]; concl_occs=occs}
+      | -> None ] ]
   ;
   concl_occ:
     [ [ "*"; occs = occs -> occs
