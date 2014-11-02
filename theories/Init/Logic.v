@@ -77,6 +77,10 @@ Definition iff (A B:Prop) := (A -> B) /\ (B -> A).
 
 Notation "A <-> B" := (iff A B) : type_scope.
 
+Definition xor (A B:Prop) := (A /\ ~ B) \/ (~ A /\ B).
+
+Notation "A (+) B" := (xor A B) : type_scope.
+
 Section Equivalence.
 
 Theorem iff_refl : forall A:Prop, A <-> A.

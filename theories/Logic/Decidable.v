@@ -80,7 +80,7 @@ Qed.
 
 Theorem not_iff :
   forall A B:Prop, decidable A -> decidable B ->
-    ~ (A <-> B) -> (A /\ ~ B) \/ (~ A /\ B).
+    ~ (A <-> B) -> (A (+) B).
 Proof.
 unfold decidable; tauto.
 Qed.
