@@ -184,17 +184,9 @@ Qed.
 
 Goal forall x, (forall y, y = 0 -> x = 0) -> 0=0.
 intros.
-Fail destruct (H _).
-edestruct (H _).
-- trivial.
-- apply (eq_refl x).
-Qed.
-
-Goal forall x, (forall y, y = 0 -> x = 0) -> 0=0.
-intros.
 Fail destruct (H _ _).
-(* Now a test which assumes that destruct/induction on non-dependent hypotheses behave the same
-   when using holes or not
+(* Now a test which assumes that edestruct on non-dependent
+   hypotheses accept unresolved subterms in the induction argument.
 edestruct (H _ _).
 - trivial.
 - apply (eq_refl x).
@@ -291,32 +283,10 @@ change (x=y) in H.
 Abort.
 End S1.
 
-(* This was not working in 8.4 *)
-
-Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2.
+(* This was not working in 8.4 because of untracked dependencies *)
+Goal forall y, forall h:forall x, x = y, h 0 = h 0.
 intros.
-induction h.
-2:change (n = h 1 -> n = h 2) in IHn.
-Abort.
-
-(* This was not working in 8.4 *)
-
-Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
-intros h H H0.
-induction h in H |- *.
-Abort.
-
-(* "at" was not granted in 8.4 in the next two examples *)
-
-Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
-intros h H H0.
-induction h in H at 2, H0 at 1.
-change (h 0 = 0) in H.
-Abort.
-
-Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
-intros h H H0.
-Fail induction h in H at 2 |- *. (* Incompatible occurrences *)
+destruct (h 0).
 Abort.
 
 (* These ones are not satisfactory at the current time
@@ -354,3 +324,59 @@ destruct H.
    x0=1
 *)
 *)
+
+(* Check support for induction arguments which do not expose an inductive
+   type rightaway *)
+
+Definition U := nat -> nat.
+Definition S' := S : U.
+Goal forall n, S' n = 0.
+intro.
+destruct S'.
+Abort.
+
+(* This was working by chance in 8.4 thanks to "accidental" use of select
+   subterms _syntactically_ equal to the first matching one. *)
+
+Parameter f2:bool -> unit.
+Parameter r2:f2 true=f2 true.
+Goal forall (P: forall b, b=b -> Prop), f2 (id true) = tt -> P (f2 true) r2.
+intros.
+destruct f2.
+Abort.
+
+(* This did not work in 8.4, because of a clear failing *)
+
+Inductive IND : forall x y:nat, x=y -> Type := CONSTR : IND 0 0 eq_refl.
+Goal forall x y e (h:x=y -> y=x) (z:IND y x (h e)), e = e /\ z = z.
+intros.
+destruct z.
+Abort.
+
+(* The two following examples show how the variables occurring in the
+   term being destruct affects the generalization; don't know if these
+   behaviors are "good". None of them was working in 8.4. *)
+
+Goal forall x y e (t:x=y) (z:x=y -> IND y x e), e = e.
+intros.
+destruct (z t).
+change (x=y) in t. (* Generalization not made *)
+Abort.
+
+Goal forall x y e (t:x=y) (z:x=y -> IND y x e), e = e /\ z t = z t.
+intros.
+destruct (z t).
+change (x=y) in t. (* Generalization not made *)
+Abort.
+
+(* Check that destruct on a scheme with a functional argument works *)
+
+Goal (forall P:Prop, (nat->nat) -> P) -> forall h:nat->nat, h 0 = h 0.
+intros.
+destruct h using H.
+Qed.
+
+Goal (forall P:Prop, (nat->nat) -> P) -> forall h:nat->nat->nat, h 0 0 = h 1 0.
+intros.
+induction (h 1) using H.
+Qed.

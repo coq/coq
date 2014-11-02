@@ -2779,11 +2779,17 @@ let find_atomic_param_of_ind nparams indtyp =
 
 exception Shunt of Id.t move_location
 
+let add_vars_of_defined_term env id vars =
+  match lookup_named id env with
+  | (_,Some c,_) -> Id.Set.union (collect_vars c) vars
+  | (_,None,_) -> vars 
+
 let cook_sign hyp0_opt indvars env =
-  let hyp0,inhyps =
+  let hyp0,inhyps,fixedvars =
   match hyp0_opt with
-  | None -> List.hd (List.rev indvars), []
-  | Some (hyp0,at_least_in_hyps) -> hyp0, at_least_in_hyps in
+  | None -> List.hd (List.rev indvars), [], Id.Set.empty
+  | Some (hyp0,at_least_in_hyps,fixedvars) -> hyp0, at_least_in_hyps, fixedvars in
+  let fixedvars = List.fold_right (add_vars_of_defined_term env) indvars fixedvars in
   (* First phase from L to R: get [indhyps], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
   let allindhyps = hyp0::indvars in
@@ -2807,7 +2813,7 @@ let cook_sign hyp0_opt indvars env =
       rhyp
     end else
       if not (List.is_empty inhyps) && Id.List.mem hyp inhyps ||
-        List.is_empty inhyps &&
+        List.is_empty inhyps && not (Id.Set.mem hyp fixedvars) &&
 	(List.exists (fun id -> occur_var_in_decl env id decl) allindhyps ||
          List.exists (fun (id,_,_) -> occur_var_in_decl env id decl) !decldeps)
       then begin
@@ -3497,21 +3503,21 @@ type scheme_signature =
 
 type eliminator_source =
   | ElimUsing of (eliminator * types) * scheme_signature
-  | ElimOver of bool * Id.t * Id.t
+  | ElimOver of bool * Id.t
 
-let find_induction_type isrec elim hyp0 base_id gl =
+let find_induction_type isrec elim hyp0 gl =
   let evd,scheme,elim =
     match elim with
     | None ->
 	let evd, (elimc,elimt),_ = guess_elim isrec hyp0 gl in
 	let scheme = compute_elim_sig ~elimc elimt in
 	(* We drop the scheme waiting to know if it is dependent *)
-	evd, scheme, ElimOver (isrec,hyp0,base_id)
+	evd, scheme, ElimOver (isrec,hyp0)
     | Some e ->
 	let evd, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
 	let scheme = compute_elim_sig ~elimc elimt in
 	if Option.is_empty scheme.indarg then error "Cannot find induction type";
-	let indsign = compute_scheme_signature scheme base_id ind_guess in
+	let indsign = compute_scheme_signature scheme hyp0 ind_guess in
 	let elim = ({elimindex = Some(-1); elimbody = elimc; elimrename = None},elimt) in
 	evd, scheme, ElimUsing (elim,indsign) in
   evd,(Option.get scheme.indref,scheme.nparams, elim)
@@ -3535,9 +3541,9 @@ let is_functional_induction elim gl =
 let get_eliminator elim gl = match elim with
   | ElimUsing (elim,indsign) ->
       Proofview.Goal.sigma gl, (* bugged, should be computed *) true, elim, indsign
-  | ElimOver (isrec,id,base_id) ->
+  | ElimOver (isrec,id) ->
       let evd, (elimc,elimt),_ as elims = guess_elim isrec id gl in
-      let _, (l, s) = compute_elim_signature elims base_id in
+      let _, (l, s) = compute_elim_signature elims id in
       let branchlengthes = List.map (fun (_,b,c) -> assert (b=None); pi1 (decompose_prod_letin c)) (List.rev s.branches) in
       evd, isrec, ({elimindex = None; elimbody = elimc; elimrename = Some (isrec,Array.of_list branchlengthes)}, elimt), l
 
@@ -3694,7 +3700,7 @@ let induction_tac with_evars elim (varname,lbind) typ gl =
   Proofview.V82.of_tactic
     (elimination_clause_scheme with_evars ~with_classes:false rename i (elimc, elimt, lbindelimc) indclause) gl
 
-let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inhyps =
+let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 fixedvars names inhyps =
   Proofview.Goal.nf_enter begin fun gl ->
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let reduce_to_quantified_ref =
@@ -3705,27 +3711,19 @@ let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inh
   let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
     induction_tac with_evars elim (hyp0,NoBindings) typ0;
     tclTRY (unfold_body hyp0);
-    if mem_named_context hyp0 (Global.named_context())
-    then (* Compat: can be dropped for more uniformity of behavior *) tclIDTAC
-    else thin [hyp0]
+    thin [hyp0]
   ]) in
   apply_induction_in_context
-    (Some (hyp0,inhyps)) elim indvars names induct_tac
+    (Some (hyp0,inhyps,fixedvars)) elim indvars names induct_tac
   end
 
-let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
+let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps fixedvars =
   Proofview.Goal.nf_enter begin fun gl ->
-  let base_id = if mem_named_context hyp0 (Global.named_context())
-    then (* Compat: can be dropped for more uniformity of naming *)
-      let t = typ_of (Proofview.Goal.env gl) (Proofview.Goal.sigma gl) (mkVar hyp0) in
-      let x = id_of_name_using_hdchar (Global.env()) t Anonymous in
-      new_fresh_id [] x gl
-    else hyp0 in
-  let sigma, elim_info = find_induction_type isrec elim hyp0 base_id gl in
+  let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
   Tacticals.New.tclTHENLIST
     [Proofview.Unsafe.tclEVARS sigma; (atomize_param_of_ind elim_info hyp0);
     (induction_from_context isrec with_evars elim_info
-      hyp0 names inhyps)]
+      hyp0 fixedvars names inhyps)]
   end
 
 (* Induction on a list of induction arguments. Analyse the elim
@@ -3766,60 +3764,35 @@ let clear_unselected_context id inhyps cls gl =
       thin ids gl
   | None -> tclIDTAC gl
 
-let use_bindings env sigma (c,lbind) typ =
-  (* We don't try to normalize the type to an inductive type because *)
-  (* we want to support cases such that "nat_rect ?A ?o ?s n" of type ?A *)
-  (* where the type "?A" is known only by matching *)
+let use_bindings env sigma elim (c,lbind) typ =
+  let typ =
+    if elim == None then
+      (* w/o an scheme, the term has to be applied at least until
+         obtaining an inductive type (even though the arity might be
+         known only by pattern-matching, as in the case of a term of
+         the form "nat_rect ?A ?o ?s n", with ?A to be inferred by
+         matching. *)
+      let sign,t = splay_prod env sigma typ in it_mkProd t sign
+    else
+      (* Otherwise, we exclude the case of an induction argument in an
+         explicitly functional type. Henceforth, we can complete the
+         pattern until it has as type an atomic type (even though this
+         atomic type can hide a functional type, for which the "using"
+         clause has a scheme). *)
+      typ in
   let rec find_clause typ =
-    try make_clenv_binding env sigma (c,typ) lbind
+    try
+      let indclause = make_clenv_binding env sigma (c,typ) lbind in
+      (* We lose the possibility of coercions in with-bindings *)
+      pose_all_metas_as_evars env indclause.evd (clenv_value indclause)
     with e when catchable_exception e ->
     try find_clause (try_red_product env sigma typ)
     with Redelimination -> raise e in
-  let indclause = find_clause typ in
-  (* We lose the possibility of coercions in with-bindings *)
-  pose_all_metas_as_evars env indclause.evd (clenv_value indclause)
+  find_clause typ
 
-let clear_induction_arg_if_hyp is_arg_pure_hyp c env ccl =
-  if is_arg_pure_hyp then
-    try
-    let id = destVar c in
-    if occur_var env id ccl then env
-    else
-    snd (fold_named_context (fun _ (id',_,_ as d) (found,env) ->
-      if Id.equal id id' then (true,env) else
-        if occur_var_in_decl env id d then raise Exit
-        else (found,push_named d env))
-      env ~init:(false,reset_context env))
-    with Exit -> env
-  else
-    env
-
-let make_body env0 env sigma (is_arg_pure_hyp,_) c lbind t =
-  let decls,t = splay_prod env sigma t in
-  let typ = it_mkProd t decls in
-  let indclause = make_clenv_binding env0 sigma (c,typ) lbind in
-  let evdref = ref indclause.evd in
-  let rec aux c = match kind_of_term c with
-  | Meta mv ->
-      (match Evd.meta_opt_fvalue !evdref mv with
-       | Some ({rebus=c},_) -> c
-       | None ->
-        let {rebus=ty;freemetas=mvs} = Evd.meta_ftype !evdref mv in
-        let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
-        let src = Evd.evar_source_of_meta mv !evdref in
-        let ev = Evarutil.e_new_evar env evdref ~src ty in
-        evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) !evdref;
-        ev)
-  | _ ->
-      Constr.map aux c in
-  let c = aux (clenv_value indclause) in
-  (* side-effect *)
-  (!evdref, c)
-
-let check_expected_type env sigma (elimc,bl) =
+let check_expected_type env sigma (elimc,bl) elimt =
   (* Compute the expected template type of the term in case a using
      clause is given *)
-  let elimt = typ_of env sigma elimc in
   let sign,_ = splay_prod env sigma elimt in
   let n = List.length sign in
   if n == 0 then error "Scheme cannot be applied.";
@@ -3845,36 +3818,62 @@ let check_enough_applied env sigma elim =
           fun _ -> true
       | Some _ ->
           (* Last argument is supposed to be the induction argument *)
-          check_expected_type env sigma elimc
+          check_expected_type env sigma elimc elimt
 
-let pose_induction_arg clear_flag isrec with_evars info_arg elim
-     id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls =
+let pose_induction_arg_then clear_flag isrec with_evars
+     (is_arg_pure_hyp,from_prefix) elim
+     id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
   Proofview.Goal.nf_enter begin fun gl ->
   let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
   let ccl = Proofview.Goal.concl gl in
-  Proofview.Refine.refine ~unsafe:true begin fun sigma ->
-  let (sigma',c') = use_bindings env sigma (c0,lbind) t0 in
   let check = check_enough_applied env sigma elim in
-  let abs = AbstractPattern (snd info_arg,check,Name id,(pending,c'),cls,false) in
+  let (sigma',c) = use_bindings env sigma elim (c0,lbind) t0 in
+  let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
   let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
   | None ->
       (* pattern not found *)
-      let (sigma,c0) = finish_evar_resolution ~flags:(tactic_infer_flags with_evars) env sigma (pending,c0) in
-      let env' = clear_induction_arg_if_hyp (fst info_arg) c0 env ccl in
-      let (sigma,c) = make_body env env' sigma info_arg c0 lbind t0 in
-      let t = Retyping.get_type_of env sigma c in
+      let fixedvars = collect_vars c in
       let with_eq = Option.map (fun eq -> (false,eq)) eqname in
-      mkletin_goal env' sigma with_eq false (id,lastlhyp,ccl,c) (Some t)
+      (* we restart using bindings after having tried type-class
+         resolution etc. on the term given by the user *)
+      let flags = tactic_infer_flags (with_evars && (* do not give a success semantics to edestruct on an open term yet *) false) in
+      let (sigma,c0) = finish_evar_resolution ~flags env sigma (pending,c0) in
+      (if isrec then
+          (* Historically, induction has side conditions last *)
+          Tacticals.New.tclTHENFIRST
+       else
+          (* and destruct has side conditions first *)
+          Tacticals.New.tclTHENLAST)
+      (Tacticals.New.tclTHENLIST [
+        Proofview.Unsafe.tclEVARS sigma;
+        Proofview.Refine.refine ~unsafe:true (fun sigma ->
+          let (sigma,c) = use_bindings env sigma elim (c0,lbind) t0 in
+          let t = Retyping.get_type_of env sigma c in
+          mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t));
+        if is_arg_pure_hyp
+        then Tacticals.New.tclTRY (Proofview.V82.tactic (thin [destVar c0]))
+        else Proofview.tclUNIT ();
+        Proofview.(if with_evars then shelve_unifiable else guard_no_unifiable);
+        Proofview.shelve_unifiable;
+        if isrec then Proofview.cycle (-1) else Proofview.tclUNIT ()
+      ])
+      (tac fixedvars)
 
   | Some (sigma',c) ->
       (* pattern found *)
+      let fixedvars = collect_vars c in
       let with_eq = Option.map (fun eq -> (false,eq)) eqname in
       (* TODO: if ind has predicate parameters, use JMeq instead of eq *)
       let env = reset_with_named_context sign env in
-      (mkletin_goal env sigma' with_eq true (id,lastlhyp,ccl,c) None)
+      Tacticals.New.tclTHENLIST [
+        Proofview.Unsafe.tclEVARS sigma';
+        Proofview.Refine.refine ~unsafe:true (fun sigma ->
+          mkletin_goal env sigma with_eq true (id,lastlhyp,ccl,c) None);
+        tac fixedvars
+      ]
   end
-end
 
 let has_generic_occurrences_but_goal cls id env ccl =
   clause_with_generic_context_selection cls &&
@@ -3893,7 +3892,8 @@ let induction_gen clear_flag isrec with_evars elim
   let cls = Option.default allHypsAndConcl cls in
   let t = typ_of env sigma c in
   let is_arg_pure_hyp =
-    isVar c && lbind == NoBindings && not with_evars && Option.is_empty eqname
+    isVar c && not (mem_named_context (destVar c) (Global.named_context()))
+    && lbind == NoBindings && not with_evars && Option.is_empty eqname
     && has_generic_occurrences_but_goal cls (destVar c) env ccl in
   let enough_applied = check_enough_applied env sigma elim t in
   if is_arg_pure_hyp && enough_applied then
@@ -3906,44 +3906,19 @@ let induction_gen clear_flag isrec with_evars elim
     Tacticals.New.tclTHEN
       (Proofview.V82.tactic (clear_unselected_context id inhyps cls))
       (induction_with_atomization_of_ind_arg
-         isrec with_evars elim names id inhyps)
+         isrec with_evars elim names id inhyps Id.Set.empty)
   else
-  (* Otherwise, we find for the pattern, possibly adding missing arguments and
+  (* Otherwise, we look for the pattern, possibly adding missing arguments and
      declaring the induction argument as a new local variable *)
     let id =
     (* Type not the right one if partially applied but anyway for internal use*)
       let x = id_of_name_using_hdchar (Global.env()) t Anonymous in
       new_fresh_id [] x gl in
     let info_arg = (is_arg_pure_hyp, not enough_applied) in
-    if isrec then
-      (* Historically, induction has side conditions last *)
-      Tacticals.New.tclTHENFIRST
-        (Tacticals.New.tclTHENLIST [
-          pose_induction_arg clear_flag isrec with_evars info_arg elim id arg t inhyps cls;
-          if with_evars
-             (* do not give a success semantics to edestruct on an
-                open term yet *)
-            && true
-          then Proofview.shelve_unifiable
-          else Proofview.guard_no_unifiable;
-          Proofview.cycle (-1);
-        ])
-        (induction_with_atomization_of_ind_arg
-           isrec with_evars elim names id inhyps)
-    else
-      (* Historically, destruct has side conditions first *)
-      Tacticals.New.tclTHENLAST
-        (Tacticals.New.tclTHENLIST [
-          pose_induction_arg clear_flag isrec with_evars info_arg elim id arg t inhyps cls;
-          if with_evars
-             (* do not give a success semantics to edestruct on an
-                open term yet *)
-            && true
-          then Proofview.shelve_unifiable
-          else Proofview.guard_no_unifiable
-        ])
-        (induction_with_atomization_of_ind_arg
-           isrec with_evars elim names id inhyps)
+    pose_induction_arg_then
+      clear_flag isrec with_evars info_arg elim id arg t inhyps cls
+    (induction_with_atomization_of_ind_arg
+       isrec with_evars elim names id inhyps)
   end
 
 (* Induction on a list of arguments. First make induction arguments

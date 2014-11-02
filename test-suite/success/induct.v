@@ -73,3 +73,43 @@ intros.
 induction x as [y * IHx].
 change (x = x) in IHx. (* We should have IHx:x=x *)
 Abort.
+
+(* This was not working in 8.4 *)
+
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2.
+intros.
+induction h.
+2:change (n = h 1 -> n = h 2) in IHn.
+Abort.
+
+(* This was not working in 8.4 *)
+
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
+intros h H H0.
+induction h in H |- *.
+Abort.
+
+(* "at" was not granted in 8.4 in the next two examples *)
+
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
+intros h H H0.
+induction h in H at 2, H0 at 1.
+change (h 0 = 0) in H.
+Abort.
+
+Goal forall h:nat->nat, h 0 = h 1 -> h 1 = h 2 -> h 0 = h 2. 
+intros h H H0.
+Fail induction h in H at 2 |- *. (* Incompatible occurrences *)
+Abort.
+
+(* Check generalization with dependencies in section variables *)
+
+Section S3.
+Variables x : nat.
+Definition cond := x = x.
+Goal cond -> x = 0.
+intros H.
+induction x as [|n IHn].
+2:change (n = 0) in IHn. (* We don't want a generalization over cond *)
+Abort.
+End S3.
