@@ -345,7 +345,7 @@ module New = struct
             | SizeMismatch (i,_)->
                 let errmsg =
                   str"Incorrect number of goals" ++ spc() ++
-                  str"(expected "++int i++str" tactics)"
+                  str"(expected "++int i++str(String.plural i " tactic") ++ str")"
                 in
                 tclFAIL 0 errmsg
             | reraise -> tclZERO reraise
@@ -368,7 +368,7 @@ module New = struct
             | SizeMismatch (i,_)->
                 let errmsg =
                   str"Incorrect number of goals" ++ spc() ++
-                  str"(expected "++int i++str" tactics)"
+                  str"(expected "++int i++str(String.plural i " tactic") ++ str")"
                 in
                 tclFAIL 0 errmsg
             | reraise -> tclZERO reraise

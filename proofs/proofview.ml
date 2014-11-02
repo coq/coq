@@ -368,7 +368,7 @@ let _ = Errors.register_handler begin function
       let open Pp in
       let errmsg =
         str"Incorrect number of goals" ++ spc() ++
-        str"(expected "++int i++str" tactics)."
+        str"(expected "++int i++str(String.plural i " tactic") ++ str")."
       in
       Errors.errorlabstrm "" errmsg
   | _ -> raise Errors.Unhandled
