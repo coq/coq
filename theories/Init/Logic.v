@@ -483,7 +483,7 @@ Proof.
   destruct (eq_id_comm_l f Hfsymf (f a)).
   destruct (eq_id_comm_l f Hfsymf a).
   unfold Hfsymf.
-  destruct (Hf a). simpl. unfold a0; clear a0.
+  destruct (Hf a). simpl.
   rewrite eq_trans_refl_l.
   reflexivity.
 Defined.

@@ -289,41 +289,22 @@ intros.
 destruct (h 0).
 Abort.
 
-(* These ones are not satisfactory at the current time
+(* Check absence of useless local definitions *)
 
 Section S2.
 Variable H : 1=1.
 Goal 0=1.
 destruct H.
-(* Should expand the n... *)
-  n := 1 : nat
-  H : n = n
-  ============================
-   0 = n
+Fail clear n. (* Check that there is no n as it was in Coq <= 8.4 *)
 Abort.
 End S2.
 
-(* Should expand the n... *)
-Goal 1=1->0=1.
-intro H.
-destruct H.
-(*
-  n := 1 : nat
-  ============================
-   0 = n
-*)
-
-(* Should expand the x0... *)
 Goal forall x:nat, x=x->x=1.
 intros x H.
 destruct H.
-(*
-  x : nat
-  x0 := x : nat
-  ============================
-   x0=1
-*)
-*)
+Fail clear n. (* Check that there is no n as it was in Coq <= 8.4 *)
+Fail clear H. (* Check that H has been removed *)
+Abort.
 
 (* Check support for induction arguments which do not expose an inductive
    type rightaway *)

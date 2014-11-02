@@ -2656,47 +2656,37 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 
 let atomize_param_of_ind (indref,nparams,_) hyp0 =
   Proofview.Goal.nf_enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let reduce_to_quantified_ref = Tacmach.New.pf_apply reduce_to_quantified_ref gl in
-  let typ0 =  reduce_to_quantified_ref indref tmptyp0 in
+  let typ0 = reduce_to_quantified_ref indref tmptyp0 in
   let prods, indtyp = decompose_prod typ0 in
-  let argl = snd (decompose_app indtyp) in
+  let ind,argl = decompose_app indtyp in
   let params = List.firstn nparams argl in
   (* le gl est important pour ne pas préévaluer *)
-  let rec atomize_one i avoid =
-    Proofview.Goal.nf_enter begin fun gl ->
+  let rec atomize_one i args =
     if not (Int.equal i nparams) then
-      let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
-      (* If argl <> [], we expect typ0 not to be quantified, in order to
-         avoid bound parameters... then we call pf_reduce_to_atomic_ind *)
-      let reduce_to_atomic_ref =
-        Tacmach.New.pf_apply reduce_to_atomic_ref gl
-      in
-      let indtyp = reduce_to_atomic_ref indref tmptyp0 in
-      let argl = snd (decompose_app indtyp) in
       let c = List.nth argl (i-1) in
-      let env = Proofview.Goal.env gl in
       match kind_of_term c with
-	| Var id when not (List.exists (occur_var env id) avoid) ->
-	    atomize_one (i-1) ((mkVar id)::avoid)
-	| Var id ->
-            let x = new_fresh_id [] id gl in
-	    Tacticals.New.tclTHEN
-	      (letin_tac None (Name x) (mkVar id) None allHypsAndConcl)
-	      (atomize_one (i-1) ((mkVar x)::avoid))
+	| Var id when not (List.exists (occur_var env id) args) ->
+	    atomize_one (i-1) (mkVar id :: args)
 	| _ ->
-            let type_of = Tacmach.New.pf_type_of gl in
-	    let id = id_of_name_using_hdchar (Global.env()) (type_of c)
-		       Anonymous in
+            let id = match kind_of_term c with
+            | Var id -> id
+            | _ ->
+                let type_of = Tacmach.New.pf_type_of gl in
+                id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
             let x = new_fresh_id [] id gl in
-	    Tacticals.New.tclTHEN
-	      (letin_tac None (Name x) c None allHypsAndConcl)
-	      (atomize_one (i-1) ((mkVar x)::avoid))
+	    Tacticals.New.tclTHENLIST [
+	      (letin_tac None (Name x) c None allHypsAndConcl);
+	      (atomize_one (i-1) (mkVar x :: args))
+            ]
     else
-      Proofview.tclUNIT ()
-    end
+      Proofview.V82.tactic
+        (change_in_hyp None (fun _ sigma -> sigma, applist (ind,params@args))
+           (hyp0,InHypTypeOnly))
   in
-  atomize_one (List.length argl) params
+  atomize_one (List.length argl) []
   end
 
 let find_atomic_param_of_ind nparams indtyp =
@@ -3721,7 +3711,7 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyp
   Proofview.Goal.nf_enter begin fun gl ->
   let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
   Tacticals.New.tclTHENLIST
-    [Proofview.Unsafe.tclEVARS sigma; (atomize_param_of_ind elim_info hyp0);
+    [Proofview.Unsafe.tclEVARS sigma; atomize_param_of_ind elim_info hyp0;
     (induction_from_context isrec with_evars elim_info
       hyp0 fixedvars names inhyps)]
   end

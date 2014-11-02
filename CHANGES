@@ -216,6 +216,7 @@ Tactics
     matching the given pattern is used
   - non-dependent destruct/induction on an hypothesis with premisses in
     an inductive type with indices is fixed
+  - residual local definitions are now correctly removed.
 
 Program
 
