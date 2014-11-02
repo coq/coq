@@ -2655,9 +2655,9 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
 let atomize_param_of_ind (indref,nparams,_) hyp0 =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
+  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
   let reduce_to_quantified_ref = Tacmach.New.pf_apply reduce_to_quantified_ref gl in
   let typ0 = reduce_to_quantified_ref indref tmptyp0 in
   let prods, indtyp = decompose_prod typ0 in
@@ -3595,8 +3595,8 @@ let induction_tac_felim with_evars indvars nparams elim gl =
    induction applies with the induction hypotheses *)
 
 let apply_induction_with_discharge induct_tac elim indhyps destopt avoid names tac =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let (sigma, isrec, elim, indsign) = get_eliminator elim gl in
+  Proofview.Goal.enter begin fun gl ->
+  let (sigma, isrec, elim, indsign) = get_eliminator elim (Proofview.Goal.assume gl) in
   let names = compute_induction_names (Array.length indsign) names in
   Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
   ((if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
@@ -3691,8 +3691,8 @@ let induction_tac with_evars elim (varname,lbind) typ gl =
     (elimination_clause_scheme with_evars ~with_classes:false rename i (elimc, elimt, lbindelimc) indclause) gl
 
 let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 fixedvars names inhyps =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
+  Proofview.Goal.enter begin fun gl ->
+  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
   let reduce_to_quantified_ref =
     Tacmach.New.pf_apply reduce_to_quantified_ref gl
   in
@@ -3708,8 +3708,8 @@ let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 fixedvars
   end
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps fixedvars =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
+  Proofview.Goal.enter begin fun gl ->
+  let sigma, elim_info = find_induction_type isrec elim hyp0 (Proofview.Goal.assume gl) in
   Tacticals.New.tclTHENLIST
     [Proofview.Unsafe.tclEVARS sigma; atomize_param_of_ind elim_info hyp0;
     (induction_from_context isrec with_evars elim_info
@@ -3813,10 +3813,10 @@ let check_enough_applied env sigma elim =
 let pose_induction_arg_then clear_flag isrec with_evars
      (is_arg_pure_hyp,from_prefix) elim
      id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let ccl = Proofview.Goal.concl gl in
+  let ccl = Proofview.Goal.raw_concl gl in
   let check = check_enough_applied env sigma elim in
   let (sigma',c) = use_bindings env sigma elim (c0,lbind) t0 in
   let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
@@ -3968,7 +3968,7 @@ let induction_destruct isrec with_evars (lc,elim) =
   match lc with
   | [] -> assert false (* ensured by syntax, but if called inside caml? *)
   | [c,(eqname,names as allnames),cls] ->
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.nf_enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in      
     let ifi = is_functional_induction elim gl in
