@@ -1749,6 +1749,22 @@ Section ReDun.
      * now apply incl_Add_inv with a l'.
   Qed.
 
+  Local Notation "'pip' P"  := (forall (p1 p2 : P), p1 = p2).
+  Lemma NoDup_In_proof_irrelevant :
+    (forall a b : A, pip (a = b)) -> NoDup l -> (forall a, pip (In a l)).
+  Proof.
+    induction l as [ | a l IHl ]; [ simpl; intros; contradiction | ].
+    simpl. intros pieqA ndt a0 in1 in2. inversion ndt; subst.
+    destruct in1, in2; subst;
+    try solve [
+          match goal with
+              H : ?x, HH : ~?x |- _
+              => elim HH; exact H
+          end
+        ];
+    apply f_equal; auto.
+  Qed.
+
 End ReDun.
 
 (** NoDup and map *)

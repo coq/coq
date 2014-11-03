@@ -58,6 +58,13 @@ Section Conjunction.
     destruct 1; trivial.
   Qed.
 
+  Local Notation "'pip' P"  := (forall (p1 p2 : P), p1 = p2).
+  Theorem conj_proof_irrelevance : pip A -> pip B -> pip (A /\ B).
+  Proof.
+    intros pipA pipB. destruct pipA, pipB.
+    apply f_equal2; auto.
+  Qed.
+
 End Conjunction.
 
 (** [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
