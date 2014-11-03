@@ -58,3 +58,6 @@ Section Finite_nat_set.
     eapply counted_list_equal_nth_char.
     intros i.
     destruct (counted_def_nth fs1 i _ ) eqn:H0.
+    (* This was not part of the initial bug report; this is to check that
+       the existential variable kept its name *)
+    change (true = counted_def_nth fs2 i ?def).
