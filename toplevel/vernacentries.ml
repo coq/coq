@@ -1490,11 +1490,11 @@ let vernac_check_may_eval redexp glopt rc =
   let env = Environ.push_context uctx env in
   let c = nf c in
   let j =
-    try
-      Evarutil.check_evars env sigma sigma' c;
-      Arguments_renaming.rename_typing env c
-    with Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) ->
-      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c) in
+    if Evarutil.has_undefined_evars sigma' c then
+      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c)
+    else
+      (* OK to call kernel which does not support evars *)
+      Arguments_renaming.rename_typing env c in
   match redexp with
     | None ->
         let l = Evar.Set.union (Evd.evars_of_term j.Environ.uj_val) (Evd.evars_of_term j.Environ.uj_type) in
