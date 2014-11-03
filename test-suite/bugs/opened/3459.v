@@ -12,8 +12,8 @@ match goal with
                                                        exact r)$) in
                            pose y
 end.
-(* Add extra test for typability *)
-match goal with P:?c |- _ => try (let x := type of c in idtac) || fail 2 end.
+(* Add extra test for typability (should not fail when bug closed) *)
+Fail match goal with P:?c |- _ => try (let x := type of c in idtac) || fail 2 end.
 Abort.
 
 (* Second report raising a Not_found at the time of 21 Oct 2014 *)
