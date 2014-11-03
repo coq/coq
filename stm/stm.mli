@@ -72,13 +72,6 @@ val get_current_state : unit -> Stateid.t
 
 (* Misc *)
 val init : unit -> unit
-val slave_main_loop : unit -> unit
-val slave_init_stdout : unit -> unit
-val tacslave_main_loop : unit -> unit
-val tacslave_init_stdout : unit -> unit
-val queryslave_main_loop : unit -> unit
-val queryslave_init_stdout : unit -> unit
-
 val print_ast : Stateid.t -> Xml_datatype.xml
 
 (* Filename *)
@@ -86,6 +79,12 @@ val set_compilation_hints : string -> unit
 
 (* Reorders the task queue putting forward what is in the perspective *)
 val set_perspective : Stateid.t list -> unit
+
+(** workers **************************************************************** **)
+
+module ProofTask : AsyncTaskQueue.Task
+module TacTask   : AsyncTaskQueue.Task
+module QueryTask : AsyncTaskQueue.Task
 
 (** read-eval-print loop compatible interface ****************************** **)
 

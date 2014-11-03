@@ -36,7 +36,7 @@ end
 
 type cancel_switch = bool ref
 
-module Make(T : Task) : sig
+module MakeQueue(T : Task) : sig
 
   (* Number of workers, 0 = lazy local *)
   val init : int -> unit
@@ -53,10 +53,6 @@ module Make(T : Task) : sig
   val join : unit -> unit
   val cancel_all : unit -> unit
 
-  (* slave process main loop *)
-  val slave_main_loop : (unit -> unit) -> unit
-  val slave_init_stdout : unit -> unit
-  
   val cancel_worker : string -> unit
 
   val set_order : (T.task -> T.task -> int) -> unit
@@ -68,4 +64,11 @@ module Make(T : Task) : sig
   (* Clears the queue, only if the worker prool is empty *)
   val clear : unit -> unit
 
+end
+
+module MakeWorker(T : Task) : sig
+
+  val main_loop : unit -> unit
+  val init_stdout : unit -> unit
+  
 end

@@ -251,7 +251,7 @@ module Make(T : Task) = struct
   let slave_ic = ref stdin
   let slave_oc = ref stdout
 
-  let slave_init_stdout () =
+  let init_stdout () =
     let ic, oc = Spawned.get_channels () in
     slave_oc := oc; slave_ic := ic
 
@@ -264,7 +264,7 @@ module Make(T : Task) = struct
 
   let slave_handshake () = WorkersPool.worker_handshake !slave_ic !slave_oc
 
-  let slave_main_loop reset =
+  let main_loop () =
     let feedback_queue = ref [] in
     let slave_feeder oc fb =
       match fb.Feedback.content with
@@ -293,7 +293,7 @@ module Make(T : Task) = struct
         flush_feeder !slave_oc;
         report_status "Idle";
         marshal_response !slave_oc response;
-        reset ()
+        Ephemeron.clear ()
       with
       | MarshalError s ->
         pr_err ("Fatal marshal error: " ^ s); flush_all (); exit 2
@@ -328,3 +328,6 @@ module Make(T : Task) = struct
   let n_workers = WorkersPool.n_workers
 
 end
+
+module MakeQueue(T : Task) = struct include Make(T) end
+module MakeWorker(T : Task) = struct include Make(T) end
