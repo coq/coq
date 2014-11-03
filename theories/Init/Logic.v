@@ -213,37 +213,40 @@ Notation "A (+) B" := (xor A B) : type_scope.
 Section Exclusive_Or.
   Theorem or_of_xor : forall A B:Prop, A (+) B -> A \/ B.
   Proof.
-    firstorder.
+    intros. destruct H; [ left | right ]; apply H.
   Qed.
 
   Theorem xor_comm : forall A B:Prop, A (+) B <-> B (+) A.
   Proof.
-    firstorder.
+    intros.
+    split; intros [ [ a nb ] | [ na b ] ];
+    try solve [ left; split; assumption ];
+    try solve [ right; split; assumption ].
   Qed.
 
   Theorem xor_proj2 : forall A B:Prop, A (+) B -> ~ A -> B.
   Proof.
-    firstorder.
+    intros A B [ [ a nb ] | [ na b ] ] na'; auto; tauto.
   Qed.
 
   Theorem xor_proj2neg : forall A B:Prop, A (+) B -> A -> ~ B.
   Proof.
-    firstorder.
+    intros A B [ [ a nb ] | [ na b ] ] na'; auto; tauto.
   Qed.
 
   Theorem xor_proj1 : forall A B:Prop, A (+) B -> ~ B -> A.
   Proof.
-    firstorder.
+    intros A B [ [ a nb ] | [ na b ] ] na'; auto; tauto.
   Qed.
 
   Theorem xor_proj1neg : forall A B:Prop, A (+) B -> B -> ~ A.
   Proof.
-    firstorder.
+    intros A B [ [ a nb ] | [ na b ] ] na'; auto; tauto.
   Qed.
 
   Theorem xor_of_or : forall A B:Prop, (A -> ~ B) -> (B -> ~ A) -> A \/ B -> A (+) B.
   Proof.
-    firstorder.
+    intros A B atnb btna [ a | b ]; [ left | right ]; split; auto.
   Qed.
 End Exclusive_Or.
 

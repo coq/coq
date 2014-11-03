@@ -80,9 +80,16 @@ Qed.
 
 Theorem not_iff :
   forall A B:Prop, decidable A -> decidable B ->
-    ~ (A <-> B) -> (A (+) B).
+    ~ (A <-> B) -> ((A /\ ~ B) \/ (~ A /\ B)).
 Proof.
 unfold decidable; tauto.
+Qed.
+
+Theorem xor_is_antivalence :
+  forall A B:Prop, decidable A -> decidable B ->
+    ~ (A <-> B) <-> A (+) B.
+Proof.
+unfold decidable; unfold xor; split; tauto.
 Qed.
 
 (** Results formulated with iff, used in FSetDecide.
