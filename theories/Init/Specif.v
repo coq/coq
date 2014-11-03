@@ -196,7 +196,7 @@ Inductive sumbool (A B:Prop) : Set :=
   | left : A -> {A} + {B}
   | right : B -> {A} + {B}
  where "{ A } + { B }" := (sumbool A B) : type_scope.
-Notation "{ A } (+) { B }" := { A /\ ~ B } + { ~ A /\ B }.
+Notation "{ A } (+) { B }" := ({ A /\ ~ B } + { ~ A /\ B }).
 
 Add Printing If sumbool.
 
