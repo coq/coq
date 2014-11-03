@@ -39,20 +39,31 @@ type status = {
   (** An id describing the state of the current proof. *)
 }
 
-type goals =  goal Proof.pre_goals
+type 'a pre_goals = {
+  fg_goals : 'a list;
+  (** List of the focussed goals *)
+  bg_goals : ('a list * 'a list) list;
+  (** Zipper representing the unfocussed background goals *)
+  shelved_goals : 'a list;
+  (** List of the goals on the shelf. *)
+  given_up_goals : 'a list;
+  (** List of the goals that have been given up *)
+}
+
+type goals =  goal pre_goals
 
 type hint = (string * string) list
 (** A list of tactics applicable and their appearance *)
 
 type option_name = string list
 
-type option_value = Goptions.option_value =
+type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
 
 (** Summary of an option status *)
-type option_state = Goptions.option_state = {
+type option_state = {
   opt_sync  : bool;
   (** Whether an option is synchronous *)
   opt_depr  : bool;
@@ -63,7 +74,7 @@ type option_state = Goptions.option_state = {
   (** The current value of the option *)
 }
 
-type search_constraint = Search.search_constraint =
+type search_constraint =
 (** Whether the name satisfies a regexp (uses Ocaml Str syntax) *)
 | Name_Pattern of string
 (** Whether the object type satisfies a pattern *)
@@ -83,7 +94,7 @@ type search_flags = (search_constraint * bool) list
     the user. [coq_object_prefix] is the missing part to recover the fully
     qualified name, i.e [fully_qualified = coq_object_prefix + coq_object_qualid].
     [coq_object_object] is the actual content of the object. *)
-type 'a coq_object = 'a Search.coq_object = {
+type 'a coq_object = {
   coq_object_prefix : string list;
   coq_object_qualid : string list;
   coq_object_object : 'a;
@@ -203,6 +214,9 @@ type stop_worker_rty = unit
 type print_ast_sty = state_id
 type print_ast_rty = Xml_datatype.xml
 
+type annotate_sty = string
+type annotate_rty = Xml_datatype.xml
+
 type handler = {
   add         : add_sty         -> add_rty;
   edit_at     : edit_at_sty     -> edit_at_rty;
@@ -218,6 +232,7 @@ type handler = {
   about       : about_sty       -> about_rty;
   stop_worker : stop_worker_sty -> stop_worker_rty;
   print_ast   : print_ast_sty   -> print_ast_rty;
+  annotate    : annotate_sty    -> annotate_rty;
   handle_exn  : handle_exn_sty  -> handle_exn_rty;
   init        : init_sty        -> init_rty;
   quit        : quit_sty        -> quit_rty;

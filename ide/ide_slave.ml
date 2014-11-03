@@ -118,6 +118,9 @@ let edit_at id =
 
 let query (s,id) = Stm.query ~at:id s; read_stdout ()
 
+let annotate phrase =
+  Xml_datatype.PCData "NOT_IMPLEMENTED_YET"
+
 (** Goal display *)
 
 let hyp_next_tac sigma env (id,_,ast) =
@@ -354,6 +357,7 @@ let eval_call xml_oc log c =
     Interface.handle_exn = handle_exn;
     Interface.stop_worker = Stm.stop_worker;
     Interface.print_ast = Stm.print_ast;
+    Interface.annotate = interruptible annotate;
   } in
   Xmlprotocol.abstract_eval_call handler c
 
@@ -368,7 +372,7 @@ let print_xml =
     Mutex.lock m;
     try Xml_printer.print oc xml; Mutex.unlock m
     with e -> let e = Errors.push e in Mutex.unlock m; raise e
-  
+
 
 let slave_logger xml_oc level message =
   (* convert the message into XML *)
@@ -420,17 +424,17 @@ let loop () =
       flush out_ch
     with
       | Xml_parser.Error (Xml_parser.Empty, _) ->
-	pr_debug "End of input, exiting gracefully.";
-	exit 0
+        pr_debug "End of input, exiting gracefully.";
+        exit 0
       | Xml_parser.Error (err, loc) ->
         pr_debug ("Syntax error in query: " ^ Xml_parser.error_msg err);
-	exit 1
+        exit 1
       | Serialize.Marshal_error ->
         pr_debug "Incorrect query.";
-	exit 1
+        exit 1
       | any ->
-	pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
-	exit 1
+        pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
+        exit 1
   done;
   pr_debug "Exiting gracefully.";
   exit 0
