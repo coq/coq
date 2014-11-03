@@ -1675,11 +1675,9 @@ let observe id =
     VCS.restore vcs;
     raise e
 
-let finish () =
+let finish ?(print_goals=false) () =
   observe (VCS.get_branch_pos (VCS.current_branch ()));
-  if (not !Flags.print_emacs && !Flags.coqtop_ui && not !Flags.batch_mode) ||
-     (!Flags.print_emacs && Flags.is_verbose ()) then
-    Pp.msg_notice (pr_open_cur_subgoals ());
+  if print_goals then Pp.msg_notice (pr_open_cur_subgoals ());
   VCS.print ()
 
 let wait () =
@@ -2131,10 +2129,17 @@ let interp verb (_,e as lexpr) =
      (!Flags.async_proofs_mode = Flags.APoff &&
       !Flags.compilation_mode = Flags.BuildVo) then
     let vcs = VCS.backup () in
-    try finish ()
+    let print_goals =
+      (if !Flags.print_emacs then Flags.is_verbose () else !Flags.coqtop_ui) &&
+      match clas with
+      | VtQuery _, _ -> false
+      | _ -> true in
+    try finish ~print_goals ()
     with e ->
       let e = Errors.push e in
       handle_failure e vcs true
+
+let finish () = finish ()
 
 let get_current_state () = VCS.cur_tip ()
 
