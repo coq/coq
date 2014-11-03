@@ -2661,30 +2661,29 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
   let reduce_to_quantified_ref = Tacmach.New.pf_apply reduce_to_quantified_ref gl in
   let typ0 = reduce_to_quantified_ref indref tmptyp0 in
   let prods, indtyp = decompose_prod typ0 in
-  let ind,argl = decompose_app indtyp in
+  let hd,argl = decompose_app indtyp in
   let params = List.firstn nparams argl in
   (* le gl est important pour ne pas préévaluer *)
   let rec atomize_one i args =
-    if not (Int.equal i nparams) then
+    if Int.equal i nparams then
+      let t = applist (hd, params @ List.map mkVar args) in
+      Proofview.V82.tactic
+        (change_in_hyp None (fun _ sigma -> sigma, t) (hyp0,InHypTypeOnly))
+    else
       let c = List.nth argl (i-1) in
       match kind_of_term c with
-	| Var id when not (List.exists (occur_var env id) args) ->
-	    atomize_one (i-1) (mkVar id :: args)
+	| Var id when not (List.mem id args) ->
+	    atomize_one (i-1) (id::args)
 	| _ ->
             let id = match kind_of_term c with
             | Var id -> id
             | _ ->
-                let type_of = Tacmach.New.pf_type_of gl in
-                id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
-            let x = new_fresh_id [] id gl in
-	    Tacticals.New.tclTHENLIST [
-	      (letin_tac None (Name x) c None allHypsAndConcl);
-	      (atomize_one (i-1) (mkVar x :: args))
-            ]
-    else
-      Proofview.V82.tactic
-        (change_in_hyp None (fun _ sigma -> sigma, applist (ind,params@args))
-           (hyp0,InHypTypeOnly))
+            let type_of = Tacmach.New.pf_type_of gl in
+            id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
+            let x = fresh_id_in_env args id env in
+	    Tacticals.New.tclTHEN
+	      (letin_tac None (Name x) c None allHypsAndConcl)
+	      (atomize_one (i-1) (x::args))
   in
   atomize_one (List.length argl) []
   end
@@ -3824,7 +3823,7 @@ let pose_induction_arg_then clear_flag isrec with_evars
   match res with
   | None ->
       (* pattern not found *)
-      let fixedvars = collect_vars c in
+      let fixedvars = (* heuristic *) match kind_of_term (fst (decompose_app c)) with Var id -> Id.Set.singleton id | _ -> Id.Set.empty in
       let with_eq = Option.map (fun eq -> (false,eq)) eqname in
       (* we restart using bindings after having tried type-class
          resolution etc. on the term given by the user *)

@@ -341,7 +341,7 @@ Abort.
 Goal forall x y e (t:x=y) (z:x=y -> IND y x e), e = e.
 intros.
 destruct (z t).
-change (x=y) in t. (* Generalization not made *)
+change (0=0) in t. (* Generalization made *)
 Abort.
 
 Goal forall x y e (t:x=y) (z:x=y -> IND y x e), e = e /\ z t = z t.
@@ -361,3 +361,11 @@ Goal (forall P:Prop, (nat->nat) -> P) -> forall h:nat->nat->nat, h 0 0 = h 1 0.
 intros.
 induction (h 1) using H.
 Qed.
+
+(* Check blocking generalization is not too strong (failed at some time) *)
+
+Goal (E -> 0=1) -> 1=0 -> True.
+intros.
+destruct (H _).
+change (0=0) in H0. (* Check generalization on H0 was made *)
+Abort.
