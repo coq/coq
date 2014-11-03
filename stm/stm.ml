@@ -584,6 +584,7 @@ module State : sig
       Warning: an optimization in installed_cached requires that state
       modifying functions are always executed using this wrapper. *)
   val define :
+    ?safe_id:Stateid.t ->
     ?redefine:bool -> ?cache:Summary.marshallable ->
     ?feedback_processed: bool -> (unit -> unit) -> Stateid.t -> unit
 
@@ -661,7 +662,9 @@ end = struct
         Pp.feedback ~state_id:id (Feedback.ErrorMsg (loc, msg));
         Stateid.add (Hook.get f_process_error e) ?valid id
 
-  let define ?(redefine=false) ?(cache=`No) ?(feedback_processed=true) f id =
+  let define ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
+        f id
+  =
     let str_id = Stateid.to_string id in
     if is_cached id && not redefine then
       anomaly (str"defining state "++str str_id++str" twice");
@@ -682,9 +685,11 @@ end = struct
       let good_id = !cur_id in
       cur_id := Stateid.dummy;
       VCS.reached id false;
-      match Stateid.get e with
-      | Some _ -> raise e
-      | None -> raise (exn_on id ~valid:good_id e)
+      match Stateid.get e, safe_id with
+      | None, None -> raise (exn_on id ~valid:good_id e)
+      | None, Some good_id -> raise (exn_on id ~valid:good_id e)
+      | Some _, None -> raise e
+      | Some (_,at), Some id -> raise (Stateid.add e ~valid:id at)
 
 end
 
@@ -1918,6 +1923,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       (* Unknown: we execute it, check for open goals and propagate sideeff *)
       | VtUnknown, VtNow ->
           let id = VCS.new_node ~id:newtip () in
+          let head_id = VCS.get_branch_pos head in
+          Reach.known_state ~cache:`Yes head_id; (* ensure it is ok *)
           let step () =
             VCS.checkout VCS.Branch.master;
             let mid = VCS.get_branch_pos VCS.Branch.master in
@@ -1936,7 +1943,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
               VCS.propagate_sideff (Some x);
               VCS.checkout_shallowest_proof_branch ();
             end in
-          State.define ~cache:`Yes step id;
+          State.define ~safe_id:head_id ~cache:`Yes step id;
           Backtrack.record (); `Ok
 
       | VtUnknown, VtLater ->
