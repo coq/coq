@@ -1454,11 +1454,14 @@ let retract_coercible_metas evd =
   let metas = Metamap.smartmapi map evd.metas in
   !mc, set_metas evd metas
 
-let subst_defined_metas bl c =
+let subst_defined_metas_evars (bl,el) c =
   let rec substrec c = match kind_of_term c with
     | Meta i ->
       let select (j,_,_) = Int.equal i j in
       substrec (pi2 (List.find select bl))
+    | Evar (evk,args) ->
+      let select (_,(evk',args'),_) = Evar.equal evk evk' && Array.equal Constr.equal args args' in
+      substrec (pi3 (List.find select el))
     | _ -> map_constr substrec c
   in try Some (substrec c) with Not_found -> None
 
