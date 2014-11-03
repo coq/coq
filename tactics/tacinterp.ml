@@ -2034,13 +2034,12 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacRename l ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun () -> Pp.str"<rename>") begin
-      Proofview.V82.tactic begin fun gl ->
-        let env = pf_env gl in
-        let sigma = project gl in
+      Proofview.Goal.enter begin fun gl ->
+        let env = Tacmach.New.pf_env gl in
+        let sigma = Proofview.Goal.sigma gl in
         Tactics.rename_hyp (List.map (fun (id1,id2) ->
 	  interp_hyp ist env sigma id1,
 	  interp_fresh_ident ist env sigma (snd id2)) l)
-          gl
       end
       end
 

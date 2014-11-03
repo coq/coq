@@ -229,7 +229,57 @@ let apply_clear_request clear_flag dft c =
 let move_hyp        = Tacmach.move_hyp
 
 (* Renaming hypotheses *)
-let rename_hyp      = Tacmach.rename_hyp
+let rename_hyp repl =
+  let fold accu (src, dst) = match accu with
+  | None -> None
+  | Some (srcs, dsts) ->
+    if Id.Set.mem src srcs then None
+    else if Id.Set.mem dst dsts then None
+    else
+      let srcs = Id.Set.add src srcs in
+      let dsts = Id.Set.add dst dsts in
+      Some (srcs, dsts)
+  in
+  let init = Some (Id.Set.empty, Id.Set.empty) in
+  let dom = List.fold_left fold init repl in
+  match dom with
+  | None -> Tacticals.New.tclZEROMSG (str "Not a one-to-one name mapping")
+  | Some (src, dst) ->
+    Proofview.Goal.enter begin fun gl ->
+      let gl = Proofview.Goal.assume gl in
+      let hyps = Proofview.Goal.hyps gl in
+      let concl = Proofview.Goal.concl gl in
+      (** Check that we do not mess variables *)
+      let fold accu (id, _, _) = Id.Set.add id accu in
+      let vars = List.fold_left fold Id.Set.empty hyps in
+      let () =
+        if not (Id.Set.subset src vars) then
+          let hyp = Id.Set.choose (Id.Set.diff src vars) in
+          raise (RefinerError (NoSuchHyp hyp))
+      in
+      let mods = Id.Set.diff vars src in
+      let () =
+        try
+          let elt = Id.Set.choose (Id.Set.inter dst mods) in
+          Errors.errorlabstrm "" (pr_id elt ++ str " is already used")
+        with Not_found -> ()
+      in
+      (** All is well *)
+      let make_subst (src, dst) = (src, mkVar dst) in
+      let subst = List.map make_subst repl in
+      let subst c = Vars.replace_vars subst c in
+      let map (id, body, t) =
+        let id = try List.assoc_f Id.equal id repl with Not_found -> id in
+        (id, Option.map subst body, subst t)
+      in
+      let nhyps = List.map map hyps in
+      let nconcl = subst concl in
+      let nctx = Environ.val_of_named_context nhyps in
+      let instance = List.map (fun (id, _, _) -> mkVar id) hyps in
+      Proofview.Refine.refine ~unsafe:true begin fun sigma ->
+        Evarutil.new_evar_instance nctx sigma nconcl instance
+      end
+    end
 
 (**************************************************************)
 (*          Fresh names                                       *)
@@ -1962,7 +2012,7 @@ let check_thin_clash_then id thin avoid tac =
     let newid = next_ident_away (add_suffix id "'") avoid in
     let thin =
       List.map (on_snd (fun id' -> if Id.equal id id' then newid else id')) thin in
-    Tacticals.New.tclTHEN (Proofview.V82.tactic (rename_hyp [id,newid])) (tac thin)
+    Tacticals.New.tclTHEN (rename_hyp [id,newid]) (tac thin)
   else
     tac thin
 
@@ -2326,7 +2376,7 @@ let revert hyps =
 let generalized_name c t ids cl = function
   | Name id as na ->
       if Id.List.mem id ids then
-	errorlabstrm "" (pr_id id ++ str " is already used");
+	errorlabstrm "" (pr_id id ++ str " is already used.");
       na
   | Anonymous ->
       match kind_of_term c with
@@ -3173,7 +3223,7 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
       | Some (newc, dep, n, vars) ->
 	  let tac =
 	    if dep then
-	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); Proofview.V82.tactic (rename_hyp [(id, oldid)]); Tacticals.New.tclDO n intro;
+	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); rename_hyp [(id, oldid)]; Tacticals.New.tclDO n intro;
 			   Proofview.V82.tactic (generalize_dep ~with_let:true (mkVar oldid))]
 	    else
 	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); Proofview.V82.tactic (clear [id]); Tacticals.New.tclDO n intro]

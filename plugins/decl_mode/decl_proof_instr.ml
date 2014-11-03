@@ -712,7 +712,7 @@ let rec consider_match may_intro introduced available expected gls =
 		  consider_match may_intro ((id,false)::introduced) rest_ids rest
 	      | Name hid ->
 		  tclTHENLIST
-		    [rename_hyp [id,hid];
+		    [Proofview.V82.of_tactic (rename_hyp [id,hid]);
 		     consider_match may_intro ((hid,true)::introduced) rest_ids rest]
 	  end
 	  begin
