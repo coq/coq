@@ -369,3 +369,10 @@ intros.
 destruct (H _).
 change (0=0) in H0. (* Check generalization on H0 was made *)
 Abort.
+
+(* Check absence of anomaly (failed at some time) *)
+
+Goal forall A (a:A) (P Q:A->Prop), (forall a, P a -> Q a) -> True.
+intros.
+Fail destruct H.
+Abort.

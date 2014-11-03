@@ -3841,11 +3841,10 @@ let pose_induction_arg_then clear_flag isrec with_evars
           let (sigma,c) = use_bindings env sigma elim (c0,lbind) t0 in
           let t = Retyping.get_type_of env sigma c in
           mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t));
+        Proofview.(if with_evars then shelve_unifiable else guard_no_unifiable);
         if is_arg_pure_hyp
         then Tacticals.New.tclTRY (Proofview.V82.tactic (thin [destVar c0]))
         else Proofview.tclUNIT ();
-        Proofview.(if with_evars then shelve_unifiable else guard_no_unifiable);
-        Proofview.shelve_unifiable;
         if isrec then Proofview.cycle (-1) else Proofview.tclUNIT ()
       ])
       (tac fixedvars)
