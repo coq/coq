@@ -43,14 +43,14 @@ type 'a pre_goals = {
   fg_goals : 'a list;
   (** List of the focussed goals *)
   bg_goals : ('a list * 'a list) list;
-  (** Zipper representing the unfocussed background goals *)
+  (** Zipper representing the unfocused background goals *)
   shelved_goals : 'a list;
   (** List of the goals on the shelf. *)
   given_up_goals : 'a list;
   (** List of the goals that have been given up *)
 }
 
-type goals =  goal pre_goals
+type goals = goal pre_goals
 
 type hint = (string * string) list
 (** A list of tactics applicable and their appearance *)
