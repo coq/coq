@@ -168,6 +168,7 @@ let rec classify_vernac e =
     | VernacDeclareReduction _
     | VernacDeclareClass _ | VernacDeclareInstances _
     | VernacRegister _
+    | VernacDeclareTacticDefinition _
     | VernacComments _ -> VtSideff [], VtLater
     (* Who knows *)
     | VernacLoad _ -> VtSideff [], VtNow
@@ -181,9 +182,10 @@ let rec classify_vernac e =
         VtSideff [id], if bl = [] then VtLater else VtNow
     (* These commands alter the parser *)
     | VernacOpenCloseScope _ | VernacDelimiters _ | VernacBindScope _
-    | VernacInfix _ | VernacNotation _ | VernacNotationAddFormat _ | VernacSyntaxExtension _ 
+    | VernacInfix _ | VernacNotation _ | VernacNotationAddFormat _
+    | VernacSyntaxExtension _ 
     | VernacSyntacticDefinition _
-    | VernacDeclareTacticDefinition _ | VernacTacticNotation _
+    | VernacTacticNotation _
     | VernacRequire _ | VernacImport _ | VernacInclude _
     | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *)
