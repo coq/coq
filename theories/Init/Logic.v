@@ -241,7 +241,7 @@ Section Exclusive_Or.
     firstorder.
   Qed.
 
-  Theorem or_to_xor : forall A B:Prop, (A -> ~ B) -> (B -> ~ A) -> A \/ B -> A (+) B.
+  Theorem xor_of_or : forall A B:Prop, (A -> ~ B) -> (B -> ~ A) -> A \/ B -> A (+) B.
   Proof.
     firstorder.
   Qed.
