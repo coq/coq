@@ -142,26 +142,25 @@ type inference_flags = {
   expand_evars : bool
 }
 
-let fold_pending_holes f (sigma,sigma') =
-  Evd.fold_undefined
-    (fun evk _ acc -> if Evd.mem sigma evk then acc else f evk acc)
-    sigma'
-
-let is_pending_hole (sigma,sigma') evk =
-  Evd.is_undefined sigma' evk && not (Evd.mem sigma evk)
+let pending_holes (sigma, sigma') =
+  let fold evk _ accu =
+    if not (Evd.mem sigma evk) then Evar.Set.add evk accu else accu
+  in
+  Evd.fold_undefined fold sigma' Evar.Set.empty
 
 let apply_typeclasses env evdref pending fail_evar =
+  let filter_pending evk = Evar.Set.mem evk pending in
   evdref := Typeclasses.resolve_typeclasses
      ~filter:(if Flags.is_program_mode () 
-	      then (fun evk evi -> is_pending_hole pending evk && Typeclasses.no_goals_or_obligations evk evi)
-              else (fun evk evi -> is_pending_hole pending evk && Typeclasses.no_goals evk evi))
+	      then (fun evk evi -> Typeclasses.no_goals_or_obligations evk evi && filter_pending evk)
+              else (fun evk evi -> Typeclasses.no_goals evk evi && filter_pending evk))
      ~split:true ~fail:fail_evar env !evdref;
   if Flags.is_program_mode () then (* Try optionally solving the obligations *)
     evdref := Typeclasses.resolve_typeclasses
-      ~filter:(fun evk evi -> is_pending_hole pending evk && Typeclasses.all_evars evk evi) ~split:true ~fail:false env !evdref
+      ~filter:(fun evk evi -> Typeclasses.all_evars evk evi && filter_pending evk) ~split:true ~fail:false env !evdref
 
 let apply_inference_hook hook evdref pending =
-  evdref := fold_pending_holes (fun evk sigma ->
+  evdref := Evar.Set.fold (fun evk sigma ->
     if Evd.is_undefined sigma evk (* in particular not defined by side-effect *)
     then
       try
@@ -184,15 +183,15 @@ let check_typeclasses_instances_are_solved env current_sigma pending =
   apply_typeclasses env (ref current_sigma) pending true
 
 let check_extra_evars_are_solved env current_sigma pending =
-  fold_pending_holes
-    (fun evk () ->
+  Evar.Set.iter
+    (fun evk ->
       if not (Evd.is_defined current_sigma evk) then
         let (loc,k) = evar_source evk current_sigma in
 	match k with
 	| Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
 	| _ ->
 	    let evi = nf_evar_info current_sigma (Evd.find_undefined current_sigma evk) in
-	    error_unsolvable_implicit loc env current_sigma evi k None) pending ()
+	    error_unsolvable_implicit loc env current_sigma evi k None) pending
 
 let check_evars_are_solved env current_sigma pending =
   check_typeclasses_instances_are_solved env current_sigma pending;
@@ -202,6 +201,7 @@ let check_evars_are_solved env current_sigma pending =
 (* Try typeclasses, hooks, unification heuristics ... *)
 
 let solve_remaining_evars flags env current_sigma pending =
+  let pending = pending_holes pending in
   let evdref = ref current_sigma in
   if flags.use_typeclasses then apply_typeclasses env evdref pending false;
   if Option.has_some flags.use_hook then
@@ -210,8 +210,12 @@ let solve_remaining_evars flags env current_sigma pending =
   if flags.fail_evar then check_evars_are_solved env !evdref pending;
   !evdref
 
+let check_evars_are_solved env current_sigma pending =
+  let pending = pending_holes pending in
+  check_evars_are_solved env current_sigma pending
+
 let process_inference_flags flags env initial_sigma (sigma,c) =
-  let sigma = solve_remaining_evars flags env sigma (initial_sigma,sigma) in
+  let sigma = solve_remaining_evars flags env sigma (initial_sigma, sigma) in
   let c = if flags.expand_evars then nf_evar sigma c else c in
   sigma,c
 
