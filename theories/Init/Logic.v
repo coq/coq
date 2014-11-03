@@ -77,10 +77,6 @@ Definition iff (A B:Prop) := (A -> B) /\ (B -> A).
 
 Notation "A <-> B" := (iff A B) : type_scope.
 
-Definition xor (A B:Prop) := (A /\ ~ B) \/ (~ A /\ B).
-
-Notation "A (+) B" := (xor A B) : type_scope.
-
 Section Equivalence.
 
 Theorem iff_refl : forall A:Prop, A <-> A.
@@ -209,6 +205,47 @@ Lemma iff_to_and : forall A B : Prop, (A <-> B) <-> (A -> B) /\ (B -> A).
 Proof.
   intros; split; intros [Hl Hr]; (split; intros; [ apply Hl | apply Hr]); assumption.
 Qed.
+
+Definition xor (A B:Prop) := (A /\ ~ B) \/ (~ A /\ B).
+
+Notation "A (+) B" := (xor A B) : type_scope.
+
+Section Exclusive_Or.
+  Theorem or_of_xor : forall A B:Prop, A (+) B -> A \/ B.
+  Proof.
+    firstorder.
+  Qed.
+
+  Theorem xor_comm : forall A B:Prop, A (+) B <-> B (+) A.
+  Proof.
+    firstorder.
+  Qed.
+
+  Theorem xor_proj2 : forall A B:Prop, A (+) B -> ~ A -> B.
+  Proof.
+    firstorder.
+  Qed.
+
+  Theorem xor_proj2neg : forall A B:Prop, A (+) B -> A -> ~ B.
+  Proof.
+    firstorder.
+  Qed.
+
+  Theorem xor_proj1 : forall A B:Prop, A (+) B -> ~ B -> A.
+  Proof.
+    firstorder.
+  Qed.
+
+  Theorem xor_proj1neg : forall A B:Prop, A (+) B -> B -> ~ A.
+  Proof.
+    firstorder.
+  Qed.
+
+  Theorem or_to_xor : forall A B:Prop, (A -> ~ B) -> (B -> ~ A) -> A \/ B -> A (+) B.
+  Proof.
+    firstorder.
+  Qed.
+End Exclusive_Or.
 
 (** [(IF_then_else P Q R)], written [IF P then Q else R] denotes
     either [P] and [Q], or [~P] and [Q] *)
