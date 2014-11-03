@@ -907,11 +907,11 @@ and pretype_instance resolve_tc env evdref lvar loc hyps evk update =
       with Not_found ->
       try
         let (n,_,t') = lookup_rel_id id (rel_context env) in
-        if is_conv env !evdref t t' then raise Not_found else mkRel n, update
+        if is_conv env !evdref t t' then mkRel n, update else raise Not_found
       with Not_found ->
       try
         let (_,_,t') = lookup_named id env in
-        if is_conv env !evdref t t' then raise Not_found else mkVar id, update
+        if is_conv env !evdref t t' then mkVar id, update else raise Not_found
       with Not_found ->
         user_err_loc (loc,"",str "Cannot interpret " ++
           pr_existential_key !evdref evk ++
