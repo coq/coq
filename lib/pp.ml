@@ -22,6 +22,7 @@ module Glue : sig
   val empty : 'a t
   val is_empty : 'a t -> bool
   val iter : ('a -> unit) -> 'a t -> unit
+  val map : ('a -> 'b) -> 'a t -> 'b t
 
 end = struct
 
@@ -33,7 +34,7 @@ end = struct
   let is_empty x = x = []
 
   let iter f g = List.iter f (List.rev g)
-
+  let map = List.map
 end
 
 open Pp_control
@@ -115,6 +116,20 @@ let app = Glue.glue
 
 let is_empty g = Glue.is_empty g
 
+let rewrite f p =
+  let strtoken = function
+    | Str_len (s, n) ->
+      let s' = f s in
+      Str_len (s', String.length s')
+    | Str_def s ->
+      Str_def (f s)
+  in
+  let rec ppcmd_token = function
+    | Ppcmd_print x -> Ppcmd_print (strtoken x)
+    | Ppcmd_box (bt, g) -> Ppcmd_box (bt, Glue.map ppcmd_token g)
+    | p -> p
+  in
+  Glue.map ppcmd_token p
 
 (* Compute length of an UTF-8 encoded string
    Rem 1 : utf8_length <= String.length (equal if pure ascii)
@@ -307,6 +322,7 @@ let pp_dirs ft =
       let reraise = Backtrace.add_backtrace reraise in
       let () = Format.pp_print_flush ft () in
       raise reraise
+
 
 
 (* pretty print on stdout and stderr *)
