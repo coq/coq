@@ -818,15 +818,9 @@ end) = struct
 
   include Make (struct
     open Ppannotation
-
-    let tag_keyword t =
-      Pp.open_tag (Indexer.index AKeyword) ++ t ++ Pp.close_tag ()
-
-    let tag_unparsing unp t =
-      Pp.open_tag (Indexer.index (AUnparsing unp)) ++ t ++ Pp.close_tag ()
-
-    let tag_constr_expr e t =
-      Pp.open_tag (Indexer.index (AConstrExpr e)) ++ t ++ Pp.close_tag ()
+    let tag_keyword       = Pp.tag (Indexer.index AKeyword)
+    let tag_unparsing unp = Pp.tag (Indexer.index (AUnparsing unp))
+    let tag_constr_expr e = Pp.tag (Indexer.index (AConstrExpr e))
   end)
 
 end

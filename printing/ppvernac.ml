@@ -1276,13 +1276,8 @@ end) = struct
 
   include Make (Ppconstr.RichPp (Indexer)) (struct
     open Ppannotation
-
-    let tag_keyword t =
-      Pp.open_tag (Indexer.index AKeyword) ++ t ++ Pp.close_tag ()
-
-    let tag_vernac v t =
-      Pp.open_tag (Indexer.index (AVernac v)) ++ t ++ Pp.close_tag ()
-
+    let tag_keyword  = Pp.tag (Indexer.index AKeyword)
+    let tag_vernac v = Pp.tag (Indexer.index (AVernac v))
   end)
 
 end

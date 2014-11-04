@@ -82,6 +82,7 @@ val tclose : unit -> std_ppcmds
 
 (** {6 Opening and closing of tags} *)
 
+val tag : string -> std_ppcmds -> std_ppcmds
 val open_tag : string -> std_ppcmds
 val close_tag : unit -> std_ppcmds
 
