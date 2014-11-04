@@ -14,6 +14,7 @@ open Constrexpr
 open Vernacexpr
 
 type t =
+  | AKeyword
   | AUnparsing  of unparsing
   | AConstrExpr of constr_expr
   | AVernac     of vernac_expr

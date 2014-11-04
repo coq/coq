@@ -11,11 +11,13 @@ open Constrexpr
 open Vernacexpr
 
 type t =
+  | AKeyword
   | AUnparsing  of unparsing
   | AConstrExpr of constr_expr
   | AVernac     of vernac_expr
 
 let tag_of_annotation = function
+  | AKeyword      -> "keyword"
   | AUnparsing _  -> "unparsing"
   | AConstrExpr _ -> "constr_expr"
   | AVernac _     -> "vernac_expr"

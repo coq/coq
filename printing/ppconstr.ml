@@ -24,12 +24,14 @@ open Genredexpr
 (*i*)
 
 module Make (Taggers : sig
+  val tag_keyword     : std_ppcmds -> std_ppcmds
   val tag_constr_expr : constr_expr -> std_ppcmds -> std_ppcmds
   val tag_unparsing   : unparsing -> std_ppcmds -> std_ppcmds
 end) = struct
 
   open Taggers
 
+  let keyword s = tag_keyword (str s)
   let sep_v = fun _ -> str"," ++ spc()
   let pr_tight_coma () = str "," ++ cut ()
 
@@ -141,10 +143,10 @@ end) = struct
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
   let pr_glob_sort = function
-    | GProp -> str "Prop"
-    | GSet -> str "Set"
-    | GType [] -> str "Type"
-    | GType u -> hov 0 (str "Type" ++ pr_univ_annot pr_univ u)
+    | GProp -> keyword "Prop"
+    | GSet -> keyword "Set"
+    | GType [] -> keyword "Type"
+    | GType u -> hov 0 (keyword "Type" ++ pr_univ_annot pr_univ u)
 
   let pr_id = pr_id
   let pr_name = pr_name
@@ -152,12 +154,14 @@ end) = struct
   let pr_patvar = pr_id
 
   let pr_glob_sort_instance = function
-    | GProp -> str "Prop"
-    | GSet -> str "Set"
+    | GProp ->
+      tag_keyword (str "Prop")
+    | GSet ->
+      tag_keyword (str "Set")
     | GType u ->
       (match u with
         | Some u -> str u
-        | None -> str "Type")
+        | None -> tag_keyword (str "Type"))
 
   let pr_universe_instance l =
     pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_glob_sort_instance)) l
@@ -184,11 +188,12 @@ end) = struct
   let pr_lident (loc,id) =
     if not (Loc.is_ghost loc) then
       let (b,_) = Loc.unloc loc in
-      pr_located pr_id (Loc.make_loc (b,b+String.length(Id.to_string id)),id)
-    else pr_id id
+      pr_located pr_id (Loc.make_loc (b,b + String.length (Id.to_string id)), id)
+    else
+      pr_id id
 
   let pr_lname = function
-  (loc,Name id) -> pr_lident (loc,id)
+    | (loc,Name id) -> pr_lident (loc,id)
     | lna -> pr_located pr_name lna
 
   let pr_or_var pr = function
@@ -200,12 +205,13 @@ end) = struct
     | String s -> qs s
 
   let pr_evar pr id l =
-    hov 0 (str "?" ++ pr_id id ++
-             (match l with
-               | [] -> mt()
-               | l ->
-                 let f (id,c) = pr_id id ++ str ":=" ++ pr ltop c in
-                 str"@{" ++ hov 0 (prlist_with_sep pr_semicolon f (List.rev l)) ++ str"}"))
+    hov 0 (
+      str "?" ++ pr_id id ++
+        (match l with
+          | [] -> mt()
+          | l ->
+            let f (id,c) = pr_id id ++ str ":=" ++ pr ltop c in
+            str"@{" ++ hov 0 (prlist_with_sep pr_semicolon f (List.rev l)) ++ str"}"))
 
   let las = lapp
   let lpator = 100
@@ -215,30 +221,48 @@ end) = struct
     let (strm,prec) = match p with
       | CPatRecord (_, l) ->
         let pp (c, p) =
-          pr_reference c ++ spc() ++ str ":=" ++ pr_patt spc (lpatrec, Any) p in
+          pr_reference c ++ spc() ++ str ":=" ++ pr_patt spc (lpatrec, Any) p
+        in
         str "{| " ++ prlist_with_sep pr_semicolon pp l ++ str " |}", lpatrec
-      | CPatAlias (_,p,id) ->
+
+      | CPatAlias (_, p, id) ->
         pr_patt mt (las,E) p ++ str " as " ++ pr_id id, las
-      | CPatCstr (_,c,[],[]) -> pr_reference c, latom
-      | CPatCstr (_,c,[],args) ->
+
+      | CPatCstr (_,c, [], []) ->
+        pr_reference c, latom
+
+      | CPatCstr (_, c, [], args) ->
         pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
-      | CPatCstr (_,c,args,[]) ->
+
+      | CPatCstr (_, c, args, []) ->
         str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
-      | CPatCstr (_,c,expl_args,extra_args) ->
+
+      | CPatCstr (_, c, expl_args, extra_args) ->
         surround (str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) expl_args)
         ++ prlist (pr_patt spc (lapp,L)) extra_args, lapp
-      | CPatAtom (_,None) -> str "_", latom
-      | CPatAtom (_,Some r) -> pr_reference r, latom
+
+      | CPatAtom (_, None) ->
+        str "_", latom
+
+      | CPatAtom (_,Some r) ->
+        pr_reference r, latom
+
       | CPatOr (_,pl) ->
         hov 0 (prlist_with_sep pr_bar (pr_patt spc (lpator,L)) pl), lpator
+
       | CPatNotation (_,"( _ )",([p],[]),[]) ->
         pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
+
       | CPatNotation (_,s,(l,ll),args) ->
         let strm_not, l_not = pr_notation (pr_patt mt) (fun _ _ _ -> mt()) s (l,ll,[]) in
         (if List.is_empty args||prec_less l_not (lapp,L) then strm_not else surround strm_not)
         ++ prlist (pr_patt spc (lapp,L)) args, if not (List.is_empty args) then lapp else l_not
-      | CPatPrim (_,p) -> pr_prim_token p, latom
-      | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimplepatt p), 1
+
+      | CPatPrim (_,p) ->
+        pr_prim_token p, latom
+
+      | CPatDelimiters (_,k,p) ->
+        pr_delimiters k (pr_patt mt lsimplepatt p), 1
     in
     let loc = cases_pattern_expr_loc p in
     pr_with_comments loc
@@ -453,17 +477,18 @@ end) = struct
       pr (lapp,L) a  ++
         prlist (fun a -> spc () ++ pr_expl_args pr a) l)
 
-  let pr_forall () = str"forall" ++ spc ()
+  let pr_forall () = keyword "forall" ++ spc ()
 
-  let pr_fun () = str"fun" ++ spc ()
+  let pr_fun () = keyword "fun" ++ spc ()
 
-  let pr_fun_sep = str " =>"
-
+  let pr_fun_sep = spc () ++ str "=>"
 
   let pr_dangling_with_for sep pr inherited a =
     match a with
-      | (CFix (_,_,[_])|CCoFix(_,_,[_])) -> pr sep (latom,E) a
-      | _ -> pr sep inherited a
+      | (CFix (_,_,[_])|CCoFix(_,_,[_])) ->
+        pr sep (latom,E) a
+      | _ ->
+        pr sep inherited a
 
   let pr pr sep inherited a =
     let return (cmds, prec) = (tag_constr_expr a cmds, prec) in
@@ -472,14 +497,14 @@ end) = struct
         return (pr_cref r us, latom)
       | CFix (_,id,fix) ->
         return (
-          hov 0 (str"fix " ++
+          hov 0 (keyword "fix" ++ spc () ++
                    pr_recursive
                    (pr_fixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) fix),
           lfix
         )
       | CCoFix (_,id,cofix) ->
         return (
-          hov 0 (str "cofix " ++
+          hov 0 (keyword "cofix" ++ spc () ++
                    pr_recursive
                    (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) cofix),
           lfix
@@ -506,15 +531,18 @@ end) = struct
           when Id.equal x x' ->
         return (
           hv 0 (
-            hov 2 (str "let " ++ pr mt ltop fx ++ str " in") ++
+            hov 2 (keyword "let" ++ spc () ++ pr mt ltop fx
+                   ++ spc ()
+                   ++ keyword "in") ++
               pr spc ltop b),
           lletin
         )
       | CLetIn (_,x,a,b) ->
         return (
           hv 0 (
-            hov 2 (str "let " ++ pr_lname x ++ str " :=" ++
-                     pr spc ltop a ++ str " in") ++
+            hov 2 (keyword "let" ++ spc () ++ pr_lname x ++ str " :="
+                   ++ pr spc ltop a ++ spc ()
+                   ++ keyword "in") ++
               pr spc ltop b),
           lletin
         )
@@ -552,8 +580,11 @@ end) = struct
       | CRecord (_,w,l) ->
         let beg =
           match w with
-            | None -> spc ()
-            | Some t -> spc () ++ pr spc ltop t ++ spc () ++ str"with" ++ spc ()
+            | None ->
+              spc ()
+            | Some t ->
+              spc () ++ pr spc ltop t ++ spc ()
+              ++ keyword "with" ++ spc ()
         in
         return (
           hv 0 (str"{|" ++ beg ++
@@ -565,35 +596,37 @@ end) = struct
       | CCases (_,LetPatternStyle,rtntypopt,[c,asin],[(_,[(loc,[p])],b)]) ->
         return (
           hv 0 (
-            str "let '" ++
+            keyword "let" ++ spc () ++ str"'" ++
               hov 0 (pr_patt ltop p ++
                        pr_asin (pr_dangling_with_for mt pr) asin ++
                        str " :=" ++ pr spc ltop c ++
                        pr_case_type (pr_dangling_with_for mt pr) rtntypopt ++
-                       str " in" ++ pr spc ltop b)),
+                       spc () ++ keyword "in" ++ pr spc ltop b)),
           lletpattern
         )
       | CCases(_,_,rtntypopt,c,eqns) ->
         return (
           v 0
-            (hv 0 (str "match" ++ brk (1,2) ++
+            (hv 0 (keyword "match" ++ brk (1,2) ++
                      hov 0 (
                        prlist_with_sep sep_v
                          (pr_case_item (pr_dangling_with_for mt pr)) c
                        ++ pr_case_type (pr_dangling_with_for mt pr) rtntypopt) ++
-                     spc () ++ str "with") ++
-               prlist (pr_eqn (pr mt)) eqns ++ spc() ++ str "end"),
+                     spc () ++ keyword "with") ++
+               prlist (pr_eqn (pr mt)) eqns ++ spc()
+             ++ keyword "end"),
           latom
         )
       | CLetTuple (_,nal,(na,po),c,b) ->
         return (
           hv 0 (
-            str "let " ++
+            keyword "let" ++ spc () ++
               hov 0 (str "(" ++
                        prlist_with_sep sep_v pr_lname nal ++
                        str ")" ++
                        pr_simple_return_type (pr mt) na po ++ str " :=" ++
-                       pr spc ltop c ++ str " in") ++
+                       pr spc ltop c ++ spc ()
+                     ++ keyword "in") ++
               pr spc ltop b),
           lletin
         )
@@ -602,10 +635,12 @@ end) = struct
          parsing est lui plus tolérant) *)
         return (
           hv 0 (
-            hov 1 (str "if " ++ pr mt ltop c ++ pr_simple_return_type (pr mt) na po) ++
+            hov 1 (keyword "if" ++ spc () ++ pr mt ltop c
+                   ++ pr_simple_return_type (pr mt) na po) ++
               spc () ++
-              hov 0 (str "then" ++ pr (fun () -> brk (1,1)) ltop b1) ++ spc () ++
-              hov 0 (str "else" ++ pr (fun () -> brk (1,1)) ltop b2)),
+              hov 0 (keyword "then"
+                     ++ pr (fun () -> brk (1,1)) ltop b1) ++ spc () ++
+              hov 0 (keyword "else" ++ pr (fun () -> brk (1,1)) ltop b2)),
         lif
         )
 
@@ -655,7 +690,7 @@ end) = struct
 
   type precedence =  Ppextend.precedence * Ppextend.parenRelation
   let modular_constr_pr = pr
-  let rec fix rf x =rf (fix rf) x
+  let rec fix rf x = rf (fix rf) x
   let pr = fix modular_constr_pr mt
 
   let transf env c =
@@ -692,13 +727,15 @@ end) = struct
 
   let pr_with_occurrences pr (occs,c) =
     match occs with
-      | AllOccurrences -> pr c
-      | NoOccurrences -> failwith "pr_with_occurrences: no occurrences"
+      | AllOccurrences ->
+        pr c
+      | NoOccurrences ->
+        failwith "pr_with_occurrences: no occurrences"
       | OnlyOccurrences nl ->
-        hov 1 (pr c ++ spc() ++ str"at " ++
+        hov 1 (pr c ++ spc () ++ keyword "at" ++ spc () ++
                  hov 0 (prlist_with_sep spc (pr_or_var int) nl))
       | AllOccurrencesBut nl ->
-        hov 1 (pr c ++ spc() ++ str"at - " ++
+        hov 1 (pr c ++ spc () ++ keyword "at" ++ str" - " ++
                  hov 0 (prlist_with_sep spc (pr_or_var int) nl))
 
   let pr_red_flag pr r =
@@ -715,46 +752,54 @@ end) = struct
   let pr_metaid id = str"?" ++ pr_id id
 
   let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
-    | Red false -> str "red"
-    | Hnf -> str "hnf"
-    | Simpl o -> str "simpl" ++ pr_opt (pr_with_occurrences pr_pattern) o
+    | Red false -> keyword "red"
+    | Hnf -> keyword "hnf"
+    | Simpl o -> keyword "simpl" ++ pr_opt (pr_with_occurrences pr_pattern) o
     | Cbv f ->
       if f.rBeta && f.rIota && f.rZeta && f.rDelta && List.is_empty f.rConst then
-        str "compute"
+        keyword "compute"
       else
-        hov 1 (str "cbv" ++ pr_red_flag pr_ref f)
+        hov 1 (keyword "cbv" ++ pr_red_flag pr_ref f)
     | Lazy f ->
-      hov 1 (str "lazy" ++ pr_red_flag pr_ref f)
+      hov 1 (keyword "lazy" ++ pr_red_flag pr_ref f)
     | Cbn f ->
-      hov 1 (str "cbn" ++ pr_red_flag pr_ref f)
+      hov 1 (keyword "cbn" ++ pr_red_flag pr_ref f)
     | Unfold l ->
-      hov 1 (str "unfold" ++ spc() ++
+      hov 1 (keyword "unfold" ++ spc() ++
                prlist_with_sep pr_comma (pr_with_occurrences pr_ref) l)
-    | Fold l -> hov 1 (str "fold" ++ prlist (pr_arg pr_constr) l)
+    | Fold l -> hov 1 (keyword "fold" ++ prlist (pr_arg pr_constr) l)
     | Pattern l ->
-      hov 1 (str "pattern" ++
+      hov 1 (keyword "pattern" ++
                pr_arg (prlist_with_sep pr_comma (pr_with_occurrences pr_constr)) l)
 
-    | Red true -> error "Shouldn't be accessible from user."
-    | ExtraRedExpr s -> str s
-    | CbvVm o -> str "vm_compute" ++ pr_opt (pr_with_occurrences pr_pattern) o
-    | CbvNative o -> str "native_compute" ++ pr_opt (pr_with_occurrences pr_pattern) o
+    | Red true ->
+      error "Shouldn't be accessible from user."
+    | ExtraRedExpr s ->
+      str s
+    | CbvVm o ->
+      keyword "vm_compute" ++ pr_opt (pr_with_occurrences pr_pattern) o
+    | CbvNative o ->
+      keyword "native_compute" ++ pr_opt (pr_with_occurrences pr_pattern) o
 
   let pr_may_eval test prc prlc pr2 pr3 = function
     | ConstrEval (r,c) ->
       hov 0
-        (str "eval" ++ brk (1,1) ++
-           pr_red_expr (prc,prlc,pr2,pr3) r ++
-           str " in" ++ spc() ++ prc c)
+        (keyword "eval" ++ brk (1,1) ++
+           pr_red_expr (prc,prlc,pr2,pr3) r ++ spc () ++
+           keyword "in" ++ spc() ++ prc c)
     | ConstrContext ((_,id),c) ->
       hov 0
-        (str "context " ++ pr_id id ++ spc () ++
+        (keyword "context" ++ spc () ++ pr_id id ++ spc () ++
            str "[" ++ prlc c ++ str "]")
-    | ConstrTypeOf c -> hov 1 (str "type of" ++ spc() ++ prc c)
-    | ConstrTerm c when test c -> h 0 (str "(" ++ prc c ++ str ")")
-    | ConstrTerm c -> prc c
+    | ConstrTypeOf c ->
+      hov 1 (keyword "type of" ++ spc() ++ prc c)
+    | ConstrTerm c when test c ->
+      h 0 (str "(" ++ prc c ++ str ")")
+    | ConstrTerm c ->
+      prc c
 
-  let pr_may_eval a = pr_may_eval (fun _ -> false) a
+  let pr_may_eval a =
+    pr_may_eval (fun _ -> false) a
 
 end
 
@@ -762,6 +807,7 @@ end
     with tagging functions that do nothing. *)
 include Make (struct
     let do_not_tag _ x = x
+    let tag_keyword     = do_not_tag ()
     let tag_unparsing   = do_not_tag
     let tag_constr_expr = do_not_tag
 end)
@@ -772,6 +818,9 @@ end) = struct
 
   include Make (struct
     open Ppannotation
+
+    let tag_keyword t =
+      Pp.open_tag (Indexer.index AKeyword) ++ t ++ Pp.close_tag ()
 
     let tag_unparsing unp t =
       Pp.open_tag (Indexer.index (AUnparsing unp)) ++ t ++ Pp.close_tag ()
