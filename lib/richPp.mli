@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** This module produces semi-structured pretty-printing. *)
+(** This module offers semi-structured pretty-printing. *)
 
 (** A pretty printer module must use an instance of the following
     functor to index annotations. The index must be used as Format.tag
