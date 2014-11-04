@@ -125,12 +125,6 @@ let thin_no_check ids gl =
 let move_hyp_no_check with_dep id1 id2 gl =
   refiner (Move (with_dep,id1,id2)) gl
 
-let rec rename_hyp_no_check l gl = match l with
-  | [] -> tclIDTAC gl
-  | (id1,id2)::l ->
-      tclTHEN (refiner (Rename (id1,id2)))
-	(rename_hyp_no_check l) gl
-
 let mutual_fix f n others j gl =
   with_check (refiner (FixRule (f,n,others,j))) gl
 
@@ -145,7 +139,6 @@ let internal_cut_rev b d t = with_check (internal_cut_rev_no_check b d t)
 let refine c           = with_check (refine_no_check c)
 let thin c             = with_check (thin_no_check c)
 let move_hyp b id id'  = with_check (move_hyp_no_check b id id')
-let rename_hyp l       = with_check (rename_hyp_no_check l)
 
 (* Pretty-printers *)
 

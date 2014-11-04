@@ -26,7 +26,6 @@ type prim_rule =
   | Refine of constr
   | Thin of Id.t list
   | Move of bool * Id.t * Id.t move_location
-  | Rename of Id.t * Id.t
 
 (** Nowadays, the only rules we'll consider are the primitive rules *)
 

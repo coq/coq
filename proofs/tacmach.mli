@@ -100,7 +100,6 @@ val internal_cut_rev : bool -> Id.t -> types -> tactic
 val refine           : constr -> tactic
 val thin             : Id.t list -> tactic
 val move_hyp         : bool -> Id.t -> Id.t move_location -> tactic
-val rename_hyp       : (Id.t*Id.t) list -> tactic
 
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : goal sigma -> Pp.std_ppcmds

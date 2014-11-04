@@ -673,16 +673,3 @@ let prim_refiner r sigma goal =
 	let (gl,ev,sigma) = mk_goal hyps' cl in
 	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
   	  ([gl], sigma)
-
-    | Rename (id1,id2) ->
-        if !check && not (Id.equal id1 id2) &&
-	  Id.List.mem id2
-            (ids_of_named_context (named_context_of_val sign))
-        then
-          error ((Id.to_string id2)^" is already used.");
-        let sign' = rename_hyp id1 id2 sign in
-        let cl' = replace_vars [id1,mkVar id2] cl in
-	let (gl,ev,sigma) = mk_goal sign' cl' in
-	let ev = Vars.replace_vars [(id2,mkVar id1)] ev in
-	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
-          ([gl], sigma)
