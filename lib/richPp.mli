@@ -9,8 +9,8 @@
 (** This module offers semi-structured pretty-printing. *)
 
 (** A pretty printer module must use an instance of the following
-    functor to index annotations. The index must be used as Format.tag
-    during the pretty-printing. *)
+    functor to index annotations. The index is to be used as a
+    [Format.tag] during the pretty-printing. *)
 
 (** The indices are Format.tags. *)
 type index = Format.tag (* = string *)
