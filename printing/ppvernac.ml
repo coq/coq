@@ -14,7 +14,6 @@ open Util
 open Extend
 open Vernacexpr
 open Pputils
-open Pptactic
 open Libnames
 open Constrexpr
 open Constrexpr_ops
@@ -22,6 +21,7 @@ open Decl_kinds
 
 module Make
   (Ppconstr : Ppconstrsig.Pp)
+  (Pptactic : Pptacticsig.Pp)
   (Taggers  : sig
     val tag_keyword : std_ppcmds -> std_ppcmds
     val tag_vernac  : vernac_expr -> std_ppcmds -> std_ppcmds
@@ -30,6 +30,7 @@ module Make
 
   open Taggers
   open Ppconstr
+  open Pptactic
 
   let keyword s = tag_keyword (str s)
 
@@ -1263,7 +1264,7 @@ module Make
 
 end
 
-include Make (Ppconstr) (struct
+include Make (Ppconstr) (Pptactic) (struct
   let do_not_tag _ x = x
   let tag_keyword = do_not_tag ()
   let tag_vernac  = do_not_tag
@@ -1273,10 +1274,13 @@ module RichPp (Indexer : sig
   val index : Ppannotation.t -> string
 end) = struct
 
-  include Make (Ppconstr.RichPp (Indexer)) (struct
-    open Ppannotation
-    let tag_keyword  = Pp.tag (Indexer.index AKeyword)
-    let tag_vernac v = Pp.tag (Indexer.index (AVernac v))
-  end)
+  include Make
+    (Ppconstr.RichPp (Indexer))
+    (Pptactic.RichPp (Indexer))
+    (struct
+      open Ppannotation
+      let tag_keyword  = Pp.tag (Indexer.index AKeyword)
+      let tag_vernac v = Pp.tag (Indexer.index (AVernac v))
+     end)
 
 end
