@@ -58,13 +58,6 @@ Section Conjunction.
     destruct 1; trivial.
   Qed.
 
-  Local Notation "'pip' P"  := (forall (p1 p2 : P), p1 = p2).
-  Theorem conj_proof_irrelevance : pip A -> pip B -> pip (A /\ B).
-  Proof.
-    intros pipA pipB. destruct pipA, pipB.
-    apply f_equal2; auto.
-  Qed.
-
 End Conjunction.
 
 (** [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
@@ -617,3 +610,12 @@ Qed.
 
 Declare Left Step iff_stepl.
 Declare Right Step iff_trans.
+
+Section conj_proof_irrelevance.
+  Local Notation "'pip' P"  := (forall (p1 p2 : P), p1 = p2)(at level 80).
+  Theorem conj_proof_irrelevance : forall A B : Prop, pip A -> pip B -> pip (A /\ B).
+  Proof.
+    intros A B pipA pipB conj1 conj2. destruct conj1, conj2.
+    apply f_equal2; auto.
+  Qed.
+End conj_proof_irrelevance.
