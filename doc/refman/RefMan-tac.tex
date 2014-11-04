@@ -783,6 +783,9 @@ the tactic {\tt intro} applies the tactic {\tt hnf} until the tactic
 \index{Introduction patterns}
 \index{Naming introduction patterns}
 \index{Disjunctive/conjunctive introduction patterns}
+\index{Disjunctive/conjunctive introduction patterns}
+\index{Equality introduction patterns}
+
 
 This extension of the tactic {\tt intros} combines introduction of
 variables or hypotheses and case analysis. An {\em introduction pattern} is
@@ -873,9 +876,10 @@ introduction pattern~$p$:
 \item introduction over {\tt ->} (respectively {\tt <-}) expects the
   hypothesis to be an equality and the right-hand-side (respectively
   the left-hand-side) is replaced by the left-hand-side (respectively
-  the right-hand-side) in both the conclusion and the context of the goal;
-  if moreover the term to substitute is a variable, the hypothesis is
-  removed;
+  the right-hand-side) in the conclusion of the goal; the hypothesis
+  itself is erased; if the term to substitute is a variable, it is
+  substituted also in the context of goal and the variable is removed
+  too;
 \item introduction over a pattern $p${\tt /{\term}} first applies
   {\term} on the hypothesis to be introduced (as in {\tt apply
   }{\term} {\tt in}), prior to the application of the introduction
@@ -1223,10 +1227,18 @@ in the list of subgoals remaining to prove.
   introduction pattern (in particular, if {\intropattern} is {\ident},
   the tactic behaves like \texttt{assert ({\ident} :\ {\form})}).
 
-  If {\intropattern} is a disjunctive/conjunctive or an equality
+  If {\intropattern} is a disjunctive/conjunctive 
   introduction pattern, the tactic behaves like \texttt{assert
-    {\form}} followed by an application of the given introduction
-  pattern to the resulting hypothesis.
+    {\form}} followed by a {\tt destruct} using this introduction pattern.
+
+  If {\intropattern} is a rewriting intropattern pattern, the tactic
+  behaves like \texttt{assert {\form}} followed by a call to {\tt
+    subst} on the resulting hypothesis, if applicable, or to {\tt
+    rewrite} otherwise.
+
+  If {\intropattern} is an injection intropattern pattern, the tactic
+  behaves like \texttt{assert {\form}} followed by {\tt injection}
+  using this introduction pattern.
 
 \item \texttt{assert {\form} as {\intropattern} by {\tac}}
 

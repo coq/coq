@@ -1807,7 +1807,7 @@ let compile_constant env sigma prefix ~interactive con cb =
       let ci = { ci_ind = ind; ci_npar = mib.mind_nparams; 
 		 ci_cstr_nargs = [|0|];
 		 ci_cstr_ndecls = [||] (*FIXME*);
-		 ci_pp_info = { ind_nargs = 0; style = RegularStyle } } in
+		 ci_pp_info = { ind_tags = []; cstr_tags = [||] (*FIXME*); style = RegularStyle } } in
       let asw = { asw_ind = ind; asw_prefix = prefix; asw_ci = ci;
 		  asw_reloc = tbl; asw_finite = true } in
       let c_uid = fresh_lname Anonymous in
@@ -1949,6 +1949,8 @@ let mk_internal_let s code =
 
 (* ML Code for conversion function *)
 let mk_conv_code env sigma prefix t1 t2 =
+  clear_symb_tbl ();
+  clear_global_tbl ();
   let gl, (mind_updates, const_updates) =
     let init = ([], empty_updates) in
     compile_deps env sigma prefix ~interactive:true init t1
@@ -1974,6 +1976,8 @@ let mk_conv_code env sigma prefix t1 t2 =
   header::gl, (mind_updates, const_updates)
 
 let mk_norm_code env sigma prefix t =
+  clear_symb_tbl ();
+  clear_global_tbl ();
   let gl, (mind_updates, const_updates) =
     let init = ([], empty_updates) in
     compile_deps env sigma prefix ~interactive:true init t

@@ -51,6 +51,7 @@ let pr_lconstr_core goal_concl_style env sigma t =
 
 let pr_lconstr_env env = pr_lconstr_core false env
 let pr_constr_env env = pr_constr_core false env
+let _ = Hook.set Proofview.Refine.pr_constr pr_constr_env
 
 let pr_lconstr_goal_style_env env = pr_lconstr_core true env
 let pr_constr_goal_style_env env = pr_constr_core true env
@@ -304,10 +305,11 @@ let pr_rel_context_of env sigma =
 (* Prints an env (variables and de Bruijn). Separator: newline *)
 let pr_context_unlimited env sigma =
   let sign_env =
-    fold_named_context
-      (fun env d pps ->
-         let pidt =  pr_var_decl env sigma d in (pps ++ fnl () ++ pidt))
-      env ~init:(mt ())
+    Context.fold_named_list_context
+      (fun d pps ->
+         let pidt =  pr_var_list_decl env sigma d in
+         (pps ++ fnl () ++ pidt))
+      (Termops.compact_named_context (named_context env)) ~init:(mt ())
   in
   let db_env =
     fold_rel_context
@@ -330,16 +332,16 @@ let pr_context_limit n env sigma =
   else
     let k = lgsign-n in
     let _,sign_env =
-      fold_named_context
-        (fun env d (i,pps) ->
+      Context.fold_named_list_context
+        (fun d (i,pps) ->
            if i < k then
 	     (i+1, (pps ++str "."))
 	   else
-             let pidt = pr_var_decl env sigma d in
+             let pidt = pr_var_list_decl env sigma d in
 	     (i+1, (pps ++ fnl () ++
 		      str (emacs_str "") ++
 		      pidt)))
-        env ~init:(0,(mt ()))
+        (Termops.compact_named_context (Environ.named_context env)) ~init:(0,(mt ()))
     in
     let db_env =
       fold_rel_context

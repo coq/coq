@@ -180,7 +180,7 @@ let change_hyp_with_using msg hyp_id t tac : tactic =
       [tclTHENLIST
       [
 	(* observe_tac "change_hyp_with_using thin" *) (thin [hyp_id]);
-	(* observe_tac "change_hyp_with_using rename " *) (rename_hyp [prov_id,hyp_id])
+	(* observe_tac "change_hyp_with_using rename " *) (Proofview.V82.of_tactic (rename_hyp [prov_id,hyp_id]))
       ]] g
 
 exception TOREMOVE
@@ -642,7 +642,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
             Refiner.tclEVARS evm;
 	    Proofview.V82.of_tactic (pose_proof (Name prov_hid) c);
 	    thin [hid];
-	    rename_hyp [prov_hid,hid]
+	    Proofview.V82.of_tactic (rename_hyp [prov_hid,hid])
 	  ] g
       )
       ( (*
@@ -986,7 +986,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
       i*)
     (mk_equation_id f_id)
     (Decl_kinds.Global, false, (Decl_kinds.Proof Decl_kinds.Theorem))
-  Evd.empty_evar_universe_context
+  Evd.empty
   lemma_type
   (Lemmas.mk_hook (fun _ _ -> ()));
   ignore (Pfedit.by (Proofview.V82.tactic prove_replacement));

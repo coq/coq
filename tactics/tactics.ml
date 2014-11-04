@@ -59,8 +59,24 @@ let dloc = Loc.ghost
 
 let typ_of = Retyping.get_type_of
 
-(* Option for 8.2 compatibility *)
+(* Option for 8.4 compatibility *)
 open Goptions
+let legacy_elim_if_not_fully_applied_argument = ref false
+
+let use_legacy_elim_if_not_fully_applied_argument () =
+  !legacy_elim_if_not_fully_applied_argument
+  || Flags.version_less_or_equal Flags.V8_4
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "partially applied elimination argument legacy";
+      optkey   = ["Legacy";"Partially";"Applied";"Elimination";"Argument"];
+      optread  = (fun () -> !legacy_elim_if_not_fully_applied_argument) ;
+      optwrite = (fun b -> legacy_elim_if_not_fully_applied_argument := b) }
+
+(* Option for 8.2 compatibility *)
 let dependent_propositions_elimination = ref true
 
 let use_dependent_propositions_elimination () =
@@ -122,20 +138,18 @@ let refine          = Tacmach.refine
 let convert_concl ?(check=true) ty k =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
     let conclty = Proofview.Goal.raw_concl gl in
-    let sigma =
-      if check then begin
-        ignore (Typing.type_of env sigma ty);
-        let sigma,b = Reductionops.infer_conv env sigma ty conclty in
-        if not b then error "Not convertible.";
-        sigma
-      end else sigma in
-    Tacticals.New.tclTHEN
-      (Proofview.V82.tclEVARS sigma)
-      (Proofview.Refine.refine (fun sigma ->
-        let (sigma,x) = Evarutil.new_evar env sigma ~principal:true ty in
-        (sigma, if k == DEFAULTcast then x else mkCast(x,k,conclty))))
+    Proofview.Refine.refine ~unsafe:true begin fun sigma ->
+      let sigma =
+        if check then begin
+          ignore (Typing.type_of env sigma ty);
+          let sigma,b = Reductionops.infer_conv env sigma ty conclty in
+          if not b then error "Not convertible.";
+          sigma
+        end else sigma in
+      let (sigma,x) = Evarutil.new_evar env sigma ~principal:true ty in
+      (sigma, if k == DEFAULTcast then x else mkCast(x,k,conclty))
+    end
   end
 
 let convert_hyp ?(check=true) d =
@@ -145,7 +159,7 @@ let convert_hyp ?(check=true) d =
     let ty = Proofview.Goal.raw_concl gl in
     let sign = convert_hyp check (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
-    Proofview.Refine.refine (fun sigma -> Evarutil.new_evar env sigma ~principal:true ty)
+    Proofview.Refine.refine ~unsafe:true (fun sigma -> Evarutil.new_evar env sigma ~principal:true ty)
   end
 
 let convert_concl_no_check = convert_concl ~check:false
@@ -155,7 +169,7 @@ let convert_gen pb x y =
   Proofview.Goal.enter begin fun gl ->
     try
       let sigma = Tacmach.New.pf_apply Evd.conversion gl pb x y in
-      Proofview.V82.tclEVARS sigma
+      Proofview.Unsafe.tclEVARS sigma
     with (* Reduction.NotConvertible *) _ ->
       (** FIXME: Sometimes an anomaly is raised from conversion *)
       Tacticals.New.tclFAIL 0 (str "Not convertible")
@@ -215,7 +229,57 @@ let apply_clear_request clear_flag dft c =
 let move_hyp        = Tacmach.move_hyp
 
 (* Renaming hypotheses *)
-let rename_hyp      = Tacmach.rename_hyp
+let rename_hyp repl =
+  let fold accu (src, dst) = match accu with
+  | None -> None
+  | Some (srcs, dsts) ->
+    if Id.Set.mem src srcs then None
+    else if Id.Set.mem dst dsts then None
+    else
+      let srcs = Id.Set.add src srcs in
+      let dsts = Id.Set.add dst dsts in
+      Some (srcs, dsts)
+  in
+  let init = Some (Id.Set.empty, Id.Set.empty) in
+  let dom = List.fold_left fold init repl in
+  match dom with
+  | None -> Tacticals.New.tclZEROMSG (str "Not a one-to-one name mapping")
+  | Some (src, dst) ->
+    Proofview.Goal.enter begin fun gl ->
+      let gl = Proofview.Goal.assume gl in
+      let hyps = Proofview.Goal.hyps gl in
+      let concl = Proofview.Goal.concl gl in
+      (** Check that we do not mess variables *)
+      let fold accu (id, _, _) = Id.Set.add id accu in
+      let vars = List.fold_left fold Id.Set.empty hyps in
+      let () =
+        if not (Id.Set.subset src vars) then
+          let hyp = Id.Set.choose (Id.Set.diff src vars) in
+          raise (RefinerError (NoSuchHyp hyp))
+      in
+      let mods = Id.Set.diff vars src in
+      let () =
+        try
+          let elt = Id.Set.choose (Id.Set.inter dst mods) in
+          Errors.errorlabstrm "" (pr_id elt ++ str " is already used")
+        with Not_found -> ()
+      in
+      (** All is well *)
+      let make_subst (src, dst) = (src, mkVar dst) in
+      let subst = List.map make_subst repl in
+      let subst c = Vars.replace_vars subst c in
+      let map (id, body, t) =
+        let id = try List.assoc_f Id.equal id repl with Not_found -> id in
+        (id, Option.map subst body, subst t)
+      in
+      let nhyps = List.map map hyps in
+      let nconcl = subst concl in
+      let nctx = Environ.val_of_named_context nhyps in
+      let instance = List.map (fun (id, _, _) -> mkVar id) hyps in
+      Proofview.Refine.refine ~unsafe:true begin fun sigma ->
+        Evarutil.new_evar_instance nctx sigma nconcl instance
+      end
+    end
 
 (**************************************************************)
 (*          Fresh names                                       *)
@@ -433,6 +497,38 @@ let reduct_option ?(check=false) redfun = function
   | Some id -> reduct_in_hyp ~check (fst redfun) id
   | None    -> reduct_in_concl (revert_cast redfun)
 
+(** Tactic reduction modulo evars (for universes essentially) *)
+
+let pf_e_reduce_decl redfun where (id,c,ty) gl =
+  let sigma = project gl in
+  let redfun = redfun (pf_env gl) in
+  match c with
+  | None ->
+      if where == InHypValueOnly then
+	errorlabstrm "" (pr_id id ++ str "has no value.");
+    let sigma, ty' = redfun sigma ty in
+      sigma, (id,None,ty')
+  | Some b ->
+      let sigma, b' = if where != InHypTypeOnly then redfun sigma b else sigma, b in
+      let sigma, ty' = if where != InHypValueOnly then redfun sigma ty else sigma, ty in
+	sigma, (id,Some b',ty')
+
+let e_reduct_in_concl (redfun,sty) gl =
+  Proofview.V82.of_tactic
+    (let sigma, c' = (pf_apply redfun gl (pf_concl gl)) in
+       Proofview.Unsafe.tclEVARS sigma <*> 
+	 convert_concl_no_check c' sty) gl
+
+let e_reduct_in_hyp ?(check=false) redfun (id,where) gl =
+  Proofview.V82.of_tactic 
+    (let sigma, decl' = pf_e_reduce_decl redfun where (pf_get_hyp gl id) gl in
+       Proofview.Unsafe.tclEVARS sigma <*> 
+	 convert_hyp ~check decl') gl
+
+let e_reduct_option ?(check=false) redfun = function
+  | Some id -> e_reduct_in_hyp ~check (fst redfun) id
+  | None    -> e_reduct_in_concl (revert_cast redfun)
+
 (** Versions with evars to maintain the unification of universes resulting
     from conversions. *)
 
@@ -553,7 +649,7 @@ let normalise_vm_in_concl = reduct_in_concl (Redexpr.cbv_vm,VMcast)
 let unfold_in_concl loccname = reduct_in_concl (unfoldn loccname,REVERTcast)
 let unfold_in_hyp   loccname = reduct_in_hyp   (unfoldn loccname)
 let unfold_option   loccname = reduct_option (unfoldn loccname,DEFAULTcast)
-let pattern_option l = reduct_option (pattern_occs l,DEFAULTcast)
+let pattern_option l = e_reduct_option (pattern_occs l,DEFAULTcast)
 
 (* The main reduction function *)
 
@@ -569,7 +665,7 @@ let reduce redexp cl goal =
   let cl = concrete_clause_of (fun () -> pf_ids_of_hyps goal) cl in
   let redexps = reduction_clause redexp cl in
   let tac = tclMAP (fun (where,redexp) ->
-    reduct_option ~check:true
+    e_reduct_option ~check:true
       (Redexpr.reduction_of_red_expr (pf_env goal) redexp) where) redexps in
   match redexp with
   | Fold _ | Pattern _ -> with_check tac goal
@@ -739,8 +835,8 @@ let pf_lookup_hypothesis_as_renamed_gen red h gl =
     match pf_lookup_hypothesis_as_renamed env ccl h with
       | None when red ->
           aux
-	    ((fst (Redexpr.reduction_of_red_expr env (Red true)))
-	       env (project gl) ccl)
+	    (snd ((fst (Redexpr.reduction_of_red_expr env (Red true)))
+	       env (project gl) ccl))
       | x -> x
   in
   try aux (pf_concl gl)
@@ -798,19 +894,32 @@ let rec intros_move = function
 (* Apply a tactic on a quantified hypothesis, an hypothesis in context
    or a term with bindings *)
 
-let onOpenInductionArg tac = function
-  | clear_flag,ElimOnConstr cbl ->
-      tac clear_flag cbl
+let onOpenInductionArg env sigma tac = function
+  | clear_flag,ElimOnConstr f ->
+      let (sigma',cbl) = f env sigma in
+      let pending = (sigma,sigma') in
+      Tacticals.New.tclTHEN
+        (Proofview.Unsafe.tclEVARS sigma')
+        (tac clear_flag (pending,cbl))
   | clear_flag,ElimOnAnonHyp n ->
       Tacticals.New.tclTHEN
         (intros_until_n n)
         (Tacticals.New.onLastHyp
-           (fun c -> tac clear_flag (Evd.empty,(c,NoBindings))))
+           (fun c ->
+             Proofview.Goal.enter begin fun gl ->
+             let sigma = Proofview.Goal.sigma gl in
+             let pending = (sigma,sigma) in
+             tac clear_flag (pending,(c,NoBindings))
+             end))
   | clear_flag,ElimOnIdent (_,id) ->
       (* A quantified hypothesis *)
       Tacticals.New.tclTHEN
         (try_intros_until_id_check id)
-        (tac clear_flag (Evd.empty,(mkVar id,NoBindings)))
+        (Proofview.Goal.enter begin fun gl ->
+         let sigma = Proofview.Goal.sigma gl in
+         let pending = (sigma,sigma) in
+         tac clear_flag (pending,(mkVar id,NoBindings))
+        end)
 
 let onInductionArg tac = function
   | clear_flag,ElimOnConstr cbl ->
@@ -826,7 +935,7 @@ let onInductionArg tac = function
         (tac clear_flag (mkVar id,NoBindings))
 
 let map_induction_arg f = function
-  | clear_flag,ElimOnConstr (sigma,(c,bl)) -> clear_flag,ElimOnConstr (f (sigma,c),bl)
+  | clear_flag,ElimOnConstr g -> clear_flag,ElimOnConstr (f g)
   | clear_flag,ElimOnAnonHyp n as x -> x
   | clear_flag,ElimOnIdent id as x -> x
 
@@ -909,7 +1018,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true)
   let naming = NamingMustBe (dloc,targetid) in
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
-    (Proofview.V82.tclEVARS clenv.evd)
+    (Proofview.Unsafe.tclEVARS clenv.evd)
     (if sidecond_first then
        Tacticals.New.tclTHENFIRST
          (assert_before_then_gen with_clear naming new_hyp_typ tac) exact_tac
@@ -1051,7 +1160,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
       build_case_analysis_scheme env sigma mind true sort
     else
       build_case_analysis_scheme_default env sigma mind sort in
-  Tacticals.New.tclTHEN (Proofview.V82.tclEVARS sigma)
+  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
   (general_elim with_evars clear_flag (c,lbindc)
    {elimindex = None; elimbody = (elim,NoBindings);
     elimrename = Some (false, constructors_nrealdecls (fst mind))})
@@ -1090,7 +1199,7 @@ let default_elim with_evars clear_flag (c,_ as cx) =
   Proofview.tclORELSE
     (Proofview.Goal.enter begin fun gl ->
       let evd, elim = find_eliminator c gl in
-	Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evd)
+	Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evd)
 	  (general_elim with_evars clear_flag cx elim)
     end)
     begin function
@@ -1266,7 +1375,7 @@ let solve_remaining_apply_goals =
       if Typeclasses.is_class_type sigma concl then
         let evd', c' = Typeclasses.resolve_one_typeclass env sigma concl in
 	Tacticals.New.tclTHEN
-          (Proofview.V82.tclEVARS evd')
+          (Proofview.Unsafe.tclEVARS evd')
           (Proofview.V82.tactic (refine_no_check c'))
 	else Proofview.tclUNIT ()
     with Not_found -> Proofview.tclUNIT ()
@@ -1460,7 +1569,7 @@ let apply_in_delayed_once sidecond_first with_delta with_destruct with_evars nam
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sigma, c = f env sigma in
-      Proofview.V82.tclEVARS sigma <*>
+      Proofview.Unsafe.tclEVARS sigma <*>
 	(apply_in_once sidecond_first with_delta with_destruct with_evars naming id 
 	   (clear_flag,(loc,c)) tac)
   end
@@ -1518,7 +1627,7 @@ let exact_check c =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let sigma, ct = Typing.e_type_of env sigma c in
-    Proofview.V82.tclEVARS sigma <*>
+    Proofview.Unsafe.tclEVARS sigma <*>
       Tacticals.New.tclTHEN (convert_leq ct concl) (new_exact_no_check c)
   end
 
@@ -1550,7 +1659,7 @@ let assumption =
         infer_conv env sigma t concl
     in
     if is_same_type then
-      (Proofview.V82.tclEVARS sigma) <*>
+      (Proofview.Unsafe.tclEVARS sigma) <*>
 	Proofview.Refine.refine ~unsafe:true (fun h -> (h, mkVar id))
     else arec gl only_eq rest
   in
@@ -1582,7 +1691,7 @@ let check_is_type env ty msg =
   let evdref = ref sigma in
   try
     let _ = Typing.sort_of env evdref ty in
-    Proofview.V82.tclEVARS !evdref
+    Proofview.Unsafe.tclEVARS !evdref
   with e when Errors.noncritical e ->
     msg e
 
@@ -1595,7 +1704,7 @@ let check_decl env (_, c, ty) msg =
     | None -> ()
     | Some c -> Typing.check env evdref c ty
     in
-    Proofview.V82.tclEVARS !evdref
+    Proofview.Unsafe.tclEVARS !evdref
   with e when Errors.noncritical e ->
     msg e
 
@@ -1739,7 +1848,7 @@ let constructor_tac with_evars expctdnumopt i lbind =
 	
       let apply_tac = general_apply true false with_evars None (dloc,(cons,lbind)) in
 	(Tacticals.New.tclTHENLIST
-           [Proofview.V82.tclEVARS sigma; 
+           [Proofview.Unsafe.tclEVARS sigma; 
 	    convert_concl_no_check redcl DEFAULTcast;
 	    intros; apply_tac])
   end
@@ -1848,17 +1957,12 @@ let rewrite_hyp assert_style l2r id =
     Hook.get forward_general_rewrite_clause l2r false (mkVar id,NoBindings) in
   let subst_on l2r x rhs =
     Hook.get forward_subst_one true x (id,rhs,l2r) in
-  let clear_var_and_eq c =
-    tclTRY (tclTHEN (clear [id]) (tclTRY (clear [destVar c]))) in
-  if assert_style then
-    rew_on l2r allHypsAndConcl
-  else
+  let clear_var_and_eq c = tclTHEN (clear [id]) (clear [destVar c]) in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_type_of gl in
     let whd_betadeltaiota = Tacmach.New.pf_apply whd_betadeltaiota gl in
     let t = whd_betadeltaiota (type_of (mkVar id)) in
-    (* TODO: detect setoid equality? better detect the different equalities *)
     match match_with_equality_type t with
     | Some (hdcncl,[_;lhs;rhs]) ->
         if l2r && isVar lhs && not (occur_var env (destVar lhs) rhs) then
@@ -1866,16 +1970,16 @@ let rewrite_hyp assert_style l2r id =
         else if not l2r && isVar rhs && not (occur_var env (destVar rhs) lhs) then
           subst_on l2r (destVar rhs) lhs
         else
-          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (tclTRY (clear [id])))
+          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id]))
     | Some (hdcncl,[c]) ->
         let l2r = not l2r in (* equality of the form eq_true *)
         if isVar c then
           Tacticals.New.tclTHEN (rew_on l2r allHypsAndConcl) 
 	    (Proofview.V82.tactic (clear_var_and_eq c))
         else
-          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (tclTRY (clear [id])))
+          Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id]))
     | _ ->
-        Tacticals.New.tclZEROMSG (str"Cannot find a known equation.")
+        Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (clear [id]))
   end
 
 let rec prepare_naming loc = function
@@ -1908,7 +2012,7 @@ let check_thin_clash_then id thin avoid tac =
     let newid = next_ident_away (add_suffix id "'") avoid in
     let thin =
       List.map (on_snd (fun id' -> if Id.equal id id' then newid else id')) thin in
-    Tacticals.New.tclTHEN (Proofview.V82.tactic (rename_hyp [id,newid])) (tac thin)
+    Tacticals.New.tclTHEN (rename_hyp [id,newid]) (tac thin)
   else
     tac thin
 
@@ -1993,7 +2097,7 @@ and intro_pattern_action loc b style pat thin tac id = match pat with
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma,c = f env sigma in
-        Proofview.V82.tclEVARS sigma <*>
+        Proofview.Unsafe.tclEVARS sigma <*>
           (Tacticals.New.tclTHENFIRST
              (* Skip the side conditions of the apply *)
              (apply_in_once false true true true naming id
@@ -2098,11 +2202,11 @@ let apply_delayed_in simple with_evars clear_flag id lemmas ipat =
 (* Implementation without generalisation: abbrev will be lost in hyps in *)
 (* in the extracted proof *)
 
-let tactic_infer_flags = {
+let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
   Pretyping.use_unif_heuristics = true;
   Pretyping.use_hook = Some solve_by_implicit_tactic;
-  Pretyping.fail_evar = true;
+  Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true }
 
 let decode_hyp = function
@@ -2115,22 +2219,20 @@ let decode_hyp = function
    [...x:=c:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
 *)
 
-let letin_tac_gen with_eq abs ty =
-  Proofview.Goal.nf_enter begin fun gl ->
+let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
+  Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let evd = Proofview.Goal.sigma gl in
-    let ccl = Proofview.Goal.concl gl in
-    let (id,depdecls,lastlhyp,ccl,(ctx,c)) = make_abstraction env evd ccl abs in
-    let t = match ty with Some t -> t | _ -> typ_of env (Proofview.Goal.sigma gl) c in
+    let sigma = Proofview.Goal.sigma gl in
+    let t = match ty with Some t -> t | _ -> typ_of env sigma c in
     let eq_tac gl = match with_eq with
       | Some (lr,(loc,ido)) ->
           let heq = match ido with
             | IntroAnonymous -> new_fresh_id [id] (add_prefix "Heq" id) gl
-	    | IntroFresh heq_base -> new_fresh_id [id] heq_base gl
+            | IntroFresh heq_base -> new_fresh_id [id] heq_base gl
             | IntroIdentifier id -> id in
           let eqdata = build_coq_eq_data () in
           let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
-          let sigma, eq = Evd.fresh_global env (Proofview.Goal.sigma gl) eqdata.eq in
+          let sigma, eq = Evd.fresh_global env sigma eqdata.eq in
           let sigma, refl = Evd.fresh_global env sigma eqdata.refl in
           let eq = applist (eq,args) in
           let refl = applist (refl, [t;mkVar id]) in
@@ -2141,24 +2243,77 @@ let letin_tac_gen with_eq abs ty =
 	      (intro_gen (NamingMustBe (loc,heq)) (decode_hyp lastlhyp) true false)
 	      (clear_body [heq;id])
       | None ->
-	  (Proofview.Goal.sigma gl, mkNamedLetIn id c t ccl, Proofview.tclUNIT ()) in
-    Tacticals.New.tclTHEN
-      (Proofview.V82.tclEVARUNIVCONTEXT ctx)
-      (Proofview.Goal.nf_enter (fun gl -> 
-	let (sigma,newcl,eq_tac) = eq_tac gl in
-	  Tacticals.New.tclTHENLIST
-	    [ Proofview.V82.tclEVARS sigma;
-	      convert_concl_no_check newcl DEFAULTcast;
-              intro_gen (NamingMustBe (dloc,id)) (decode_hyp lastlhyp) true false;
-              Tacticals.New.tclMAP convert_hyp_no_check depdecls;
-              eq_tac ]))
+	  (sigma, mkNamedLetIn id c t ccl, Proofview.tclUNIT ()) in
+    let (sigma,newcl,eq_tac) = eq_tac gl in
+    Tacticals.New.tclTHENLIST
+      [ Proofview.Unsafe.tclEVARS sigma;
+	convert_concl_no_check newcl DEFAULTcast;
+        intro_gen (NamingMustBe (dloc,id)) (decode_hyp lastlhyp) true false;
+        Tacticals.New.tclMAP convert_hyp_no_check depdecls;
+        eq_tac ]
   end
 
-let letin_tac with_eq name c ty occs =
-  letin_tac_gen with_eq (AbstractExact (name,c,ty,occs,true)) ty
+let insert_before decls lasthyp env =
+  match lasthyp with
+  | None -> push_named_context decls env
+  | Some id ->
+  Environ.fold_named_context
+    (fun _ (id',_,_ as d) env ->
+      let env = if Id.equal id id' then push_named_context decls env else env in
+      push_named d env)
+    ~init:(reset_context env) env
 
-let letin_pat_tac with_eq name c occs =
-  letin_tac_gen with_eq (AbstractPattern (name,c,occs,false,tactic_infer_flags)) None
+(* unsafe *)
+
+let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
+  let body = if dep then Some c else None in
+  let t = match ty with Some t -> t | _ -> typ_of env sigma c in
+  match with_eq with
+  | Some (lr,(loc,ido)) ->
+      let heq = match ido with
+      | IntroAnonymous -> fresh_id_in_env [id] (add_prefix "Heq" id) env
+      | IntroFresh heq_base -> fresh_id_in_env [id] heq_base env
+      | IntroIdentifier id -> id in
+      let eqdata = build_coq_eq_data () in
+      let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
+      let sigma, eq = Evd.fresh_global env sigma eqdata.eq in
+      let sigma, refl = Evd.fresh_global env sigma eqdata.refl in
+      let eq = applist (eq,args) in
+      let refl = applist (refl, [t;mkVar id]) in
+      let newenv = insert_before [id,body,t;heq,None,eq] lastlhyp env in
+      let (sigma,x) = new_evar newenv sigma ~principal:true ccl in
+      (sigma,mkNamedLetIn id c t (mkNamedLetIn heq refl eq x))
+  | None ->
+      let newenv = insert_before [id,body,t] lastlhyp env in
+      let (sigma,x) = new_evar newenv sigma ~principal:true ccl in
+      (sigma,mkNamedLetIn id c t x)
+
+let letin_tac with_eq id c ty occs =
+  Proofview.Goal.nf_enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let ccl = Proofview.Goal.concl gl in
+    let abs = AbstractExact (id,c,ty,occs,true) in
+    let (id,_,depdecls,lastlhyp,ccl,_) = make_abstraction env sigma ccl abs in
+    (* We keep the original term to match *)
+    letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty
+  end
+
+let letin_pat_tac with_eq id c occs =
+  Proofview.Goal.nf_enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let ccl = Proofview.Goal.concl gl in
+    let check t = true in
+    let abs = AbstractPattern (false,check,id,c,occs,false) in
+    let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
+    let sigma,c = match res with
+    | None -> finish_evar_resolution ~flags:(tactic_infer_flags false) env sigma c
+    | Some (sigma,c) -> (sigma,c) in
+    Tacticals.New.tclTHEN
+      (Proofview.Unsafe.tclEVARS sigma)
+      (letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) None)
+  end
 
 (* Tactics "pose proof" (usetac=None) and "assert"/"enough" (otherwise) *)
 let forward b usetac ipat c =
@@ -2221,7 +2376,7 @@ let revert hyps =
 let generalized_name c t ids cl = function
   | Name id as na ->
       if Id.List.mem id ids then
-	errorlabstrm "" (pr_id id ++ str " is already used");
+	errorlabstrm "" (pr_id id ++ str " is already used.");
       na
   | Anonymous ->
       match kind_of_term c with
@@ -2243,7 +2398,7 @@ let generalize_goal_gen env ids i ((occs,c,b),na) t (cl,evd) =
   let decls,cl = decompose_prod_n_assum i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
   let newdecls,_ = decompose_prod_n_assum i (subst_term_gen eq_constr_nounivs c dummy_prod) in
-  let cl',evd' = subst_closed_term_occ env evd occs c (it_mkProd_or_LetIn cl newdecls) in
+  let cl',evd' = subst_closed_term_occ env evd (AtOccs occs) c (it_mkProd_or_LetIn cl newdecls) in
   let na = generalized_name c t ids cl' na in
     mkProd_or_LetIn (na,b,t) cl', evd'
 
@@ -2314,7 +2469,7 @@ let new_generalize_gen_let lconstr =
 	    generalize_goal_gen env ids i o t cl, args)
 	0 lconstr ((concl, sigma), [])
     in
-      Proofview.V82.tclEVARS sigma <*>
+      Proofview.Unsafe.tclEVARS sigma <*>
 	Proofview.Refine.refine begin fun sigma ->
           let (sigma, ev) = Evarutil.new_evar env sigma newcl in
             (sigma, (applist (ev, args)))
@@ -2550,48 +2705,37 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
 let atomize_param_of_ind (indref,nparams,_) hyp0 =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
   let reduce_to_quantified_ref = Tacmach.New.pf_apply reduce_to_quantified_ref gl in
-  let typ0 =  reduce_to_quantified_ref indref tmptyp0 in
+  let typ0 = reduce_to_quantified_ref indref tmptyp0 in
   let prods, indtyp = decompose_prod typ0 in
-  let argl = snd (decompose_app indtyp) in
+  let hd,argl = decompose_app indtyp in
   let params = List.firstn nparams argl in
   (* le gl est important pour ne pas préévaluer *)
-  let rec atomize_one i avoid =
-    Proofview.Goal.nf_enter begin fun gl ->
-    if not (Int.equal i nparams) then
-      let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
-      (* If argl <> [], we expect typ0 not to be quantified, in order to
-         avoid bound parameters... then we call pf_reduce_to_atomic_ind *)
-      let reduce_to_atomic_ref =
-        Tacmach.New.pf_apply reduce_to_atomic_ref gl
-      in
-      let indtyp = reduce_to_atomic_ref indref tmptyp0 in
-      let argl = snd (decompose_app indtyp) in
+  let rec atomize_one i args =
+    if Int.equal i nparams then
+      let t = applist (hd, params @ List.map mkVar args) in
+      Proofview.V82.tactic
+        (change_in_hyp None (fun _ sigma -> sigma, t) (hyp0,InHypTypeOnly))
+    else
       let c = List.nth argl (i-1) in
-      let env = Proofview.Goal.env gl in
       match kind_of_term c with
-	| Var id when not (List.exists (occur_var env id) avoid) ->
-	    atomize_one (i-1) ((mkVar id)::avoid)
-	| Var id ->
-            let x = new_fresh_id [] id gl in
-	    Tacticals.New.tclTHEN
-	      (letin_tac None (Name x) (mkVar id) None allHypsAndConcl)
-	      (atomize_one (i-1) ((mkVar x)::avoid))
+	| Var id when not (List.mem id args) ->
+	    atomize_one (i-1) (id::args)
 	| _ ->
+            let id = match kind_of_term c with
+            | Var id -> id
+            | _ ->
             let type_of = Tacmach.New.pf_type_of gl in
-	    let id = id_of_name_using_hdchar (Global.env()) (type_of c)
-		       Anonymous in
-            let x = new_fresh_id [] id gl in
+            id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
+            let x = fresh_id_in_env args id env in
 	    Tacticals.New.tclTHEN
 	      (letin_tac None (Name x) c None allHypsAndConcl)
-	      (atomize_one (i-1) ((mkVar x)::avoid))
-    else
-      Proofview.tclUNIT ()
-    end
+	      (atomize_one (i-1) (x::args))
   in
-  atomize_one (List.length argl) params
+  atomize_one (List.length argl) []
   end
 
 let find_atomic_param_of_ind nparams indtyp =
@@ -2674,11 +2818,17 @@ let find_atomic_param_of_ind nparams indtyp =
 
 exception Shunt of Id.t move_location
 
+let add_vars_of_defined_term env id vars =
+  match lookup_named id env with
+  | (_,Some c,_) -> Id.Set.union (collect_vars c) vars
+  | (_,None,_) -> vars 
+
 let cook_sign hyp0_opt indvars env =
-  let hyp0,inhyps =
+  let hyp0,inhyps,fixedvars =
   match hyp0_opt with
-  | None -> List.hd (List.rev indvars), []
-  | Some (hyp0,at_least_in_hyps) -> hyp0, at_least_in_hyps in
+  | None -> List.hd (List.rev indvars), [], Id.Set.empty
+  | Some (hyp0,at_least_in_hyps,fixedvars) -> hyp0, at_least_in_hyps, fixedvars in
+  let fixedvars = List.fold_right (add_vars_of_defined_term env) indvars fixedvars in
   (* First phase from L to R: get [indhyps], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
   let allindhyps = hyp0::indvars in
@@ -2702,7 +2852,7 @@ let cook_sign hyp0_opt indvars env =
       rhyp
     end else
       if not (List.is_empty inhyps) && Id.List.mem hyp inhyps ||
-        List.is_empty inhyps &&
+        List.is_empty inhyps && not (Id.Set.mem hyp fixedvars) &&
 	(List.exists (fun id -> occur_var_in_decl env id decl) allindhyps ||
          List.exists (fun (id,_,_) -> occur_var_in_decl env id decl) !decldeps)
       then begin
@@ -3073,7 +3223,7 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
       | Some (newc, dep, n, vars) ->
 	  let tac =
 	    if dep then
-	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); Proofview.V82.tactic (rename_hyp [(id, oldid)]); Tacticals.New.tclDO n intro;
+	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); rename_hyp [(id, oldid)]; Tacticals.New.tclDO n intro;
 			   Proofview.V82.tactic (generalize_dep ~with_let:true (mkVar oldid))]
 	    else
 	      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (refine newc); Proofview.V82.tactic (clear [id]); Tacticals.New.tclDO n intro]
@@ -3280,7 +3430,7 @@ let compute_elim_sig ?elimc elimt =
 	      };
 	    raise Exit);
     raise Exit(* exit anyway *)
-  with Exit -> (* Ending by computing indrev: *)
+  with Exit -> (* Ending by computing indref: *)
     match !res.indarg with
       | None -> !res (* No indref *)
       | Some ( _,Some _,_) -> error_ind_scheme ""
@@ -3288,7 +3438,7 @@ let compute_elim_sig ?elimc elimt =
 	  let indhd,indargs = decompose_app ind in
 	  try {!res with indref = Some (global_of_constr indhd) }
 	  with e when Errors.noncritical e ->
-            error "Cannot find the inductive type of the inductive scheme.";;
+            error "Cannot find the inductive type of the inductive scheme."
 
 let compute_scheme_signature scheme names_info ind_type_guess =
   let f,l = decompose_app scheme.concl in
@@ -3494,10 +3644,10 @@ let induction_tac_felim with_evars indvars nparams elim gl =
    induction applies with the induction hypotheses *)
 
 let apply_induction_with_discharge induct_tac elim indhyps destopt avoid names tac =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let (sigma, isrec, elim, indsign) = get_eliminator elim gl in
+  Proofview.Goal.enter begin fun gl ->
+  let (sigma, isrec, elim, indsign) = get_eliminator elim (Proofview.Goal.assume gl) in
   let names = compute_induction_names (Array.length indsign) names in
-  Tacticals.New.tclTHEN (Proofview.V82.tclEVARS sigma)
+  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
   ((if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
     (Tacticals.New.tclTHEN
        (induct_tac elim)
@@ -3589,31 +3739,30 @@ let induction_tac with_evars elim (varname,lbind) typ gl =
   Proofview.V82.of_tactic
     (elimination_clause_scheme with_evars ~with_classes:false rename i (elimc, elimt, lbindelimc) indclause) gl
 
-let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) names
-  inhyps =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
+let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 fixedvars names inhyps =
+  Proofview.Goal.enter begin fun gl ->
+  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
   let reduce_to_quantified_ref =
     Tacmach.New.pf_apply reduce_to_quantified_ref gl
   in
   let typ0 = reduce_to_quantified_ref indref tmptyp0 in
   let indvars = find_atomic_param_of_ind nparams ((strip_prod typ0)) in
   let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
-    induction_tac with_evars elim (hyp0,lbind) typ0;
+    induction_tac with_evars elim (hyp0,NoBindings) typ0;
     tclTRY (unfold_body hyp0);
     thin [hyp0]
   ]) in
   apply_induction_in_context
-    (Some (hyp0,inhyps)) elim indvars names induct_tac
+    (Some (hyp0,inhyps,fixedvars)) elim indvars names induct_tac
   end
 
-let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbind) inhyps =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
+let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps fixedvars =
+  Proofview.Goal.enter begin fun gl ->
+  let sigma, elim_info = find_induction_type isrec elim hyp0 (Proofview.Goal.assume gl) in
   Tacticals.New.tclTHENLIST
-    [Proofview.V82.tclEVARS sigma; (atomize_param_of_ind elim_info hyp0);
+    [Proofview.Unsafe.tclEVARS sigma; atomize_param_of_ind elim_info hyp0;
     (induction_from_context isrec with_evars elim_info
-      (hyp0,lbind) names inhyps)]
+      hyp0 fixedvars names inhyps)]
   end
 
 (* Induction on a list of induction arguments. Analyse the elim
@@ -3631,81 +3780,198 @@ let induction_without_atomization isrec with_evars elim names lid =
   if not (Int.equal nlid awaited_nargs)
   then Tacticals.New.tclZEROMSG (str"Not the right number of induction arguments.")
   else
-    Proofview.tclTHEN (Proofview.V82.tclEVARS sigma)
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (induction_from_context_l with_evars elim_info lid names)
   end
 
-let has_selected_occurrences = function
-  | None -> false
-  | Some cls ->
-      cls.concl_occs != AllOccurrences ||
-	not (Option.is_empty cls.onhyps) && List.exists (fun ((occs,_),hl) ->
-          occs != AllOccurrences || hl != InHyp) (Option.get cls.onhyps)
-
 (* assume that no occurrences are selected *)
 let clear_unselected_context id inhyps cls gl =
-  match cls with
+  if occur_var (pf_env gl) id (pf_concl gl) &&
+    cls.concl_occs == NoOccurrences
+  then errorlabstrm ""
+    (str "Conclusion must be mentioned: it depends on " ++ pr_id id
+     ++ str ".");
+  match cls.onhyps with
+  | Some hyps ->
+      let to_erase (id',_,_ as d) =
+	if Id.List.mem id' inhyps then (* if selected, do not erase *) None
+	else
+	  (* erase if not selected and dependent on id or selected hyps *)
+	  let test id = occur_var_in_decl (pf_env gl) id d in
+	  if List.exists test (id::inhyps) then Some id' else None in
+      let ids = List.map_filter to_erase (pf_hyps gl) in
+      thin ids gl
   | None -> tclIDTAC gl
-  | Some cls ->
-      if occur_var (pf_env gl) id (pf_concl gl) &&
-	 cls.concl_occs == NoOccurrences
-      then errorlabstrm ""
-	    (str "Conclusion must be mentioned: it depends on " ++ pr_id id
-	     ++ str ".");
-      match cls.onhyps with
-      | Some hyps ->
-	  let to_erase (id',_,_ as d) =
-	    if Id.List.mem id' inhyps then (* if selected, do not erase *) None
-	    else
-	      (* erase if not selected and dependent on id or selected hyps *)
-	      let test id = occur_var_in_decl (pf_env gl) id d in
-	      if List.exists test (id::inhyps) then Some id' else None in
-	  let ids = List.map_filter to_erase (pf_hyps gl) in
-	  thin ids gl
-      | None -> tclIDTAC gl
 
-let induction_gen clear_flag isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
+let use_bindings env sigma elim (c,lbind) typ =
+  let typ =
+    if elim == None then
+      (* w/o an scheme, the term has to be applied at least until
+         obtaining an inductive type (even though the arity might be
+         known only by pattern-matching, as in the case of a term of
+         the form "nat_rect ?A ?o ?s n", with ?A to be inferred by
+         matching. *)
+      let sign,t = splay_prod env sigma typ in it_mkProd t sign
+    else
+      (* Otherwise, we exclude the case of an induction argument in an
+         explicitly functional type. Henceforth, we can complete the
+         pattern until it has as type an atomic type (even though this
+         atomic type can hide a functional type, for which the "using"
+         clause has a scheme). *)
+      typ in
+  let rec find_clause typ =
+    try
+      let indclause = make_clenv_binding env sigma (c,typ) lbind in
+      (* We lose the possibility of coercions in with-bindings *)
+      pose_all_metas_as_evars env indclause.evd (clenv_value indclause)
+    with e when catchable_exception e ->
+    try find_clause (try_red_product env sigma typ)
+    with Redelimination -> raise e in
+  find_clause typ
+
+let check_expected_type env sigma (elimc,bl) elimt =
+  (* Compute the expected template type of the term in case a using
+     clause is given *)
+  let sign,_ = splay_prod env sigma elimt in
+  let n = List.length sign in
+  if n == 0 then error "Scheme cannot be applied.";
+  let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
+  let sigma = solve_evar_clause env sigma true cl bl in
+  let (_,u,_) = destProd cl.cl_concl in
+  fun t -> Evarconv.e_cumul env (ref sigma) t u
+
+let check_enough_applied env sigma elim =
+  (* A heuristic to decide whether the induction arg is enough applied *)
+  match elim with
+  | None ->
+      (* No eliminator given *)
+      fun u ->
+      let t,_ = decompose_app (whd_betadeltaiota env sigma u) in isInd t
+  | Some elimc ->
+      let elimt = typ_of env sigma (fst elimc) in
+      let scheme = compute_elim_sig ~elimc elimt in
+      match scheme.indref with
+      | None ->
+         (* in the absence of information, do not assume it may be
+            partially applied *)
+          fun _ -> true
+      | Some _ ->
+          (* Last argument is supposed to be the induction argument *)
+          check_expected_type env sigma elimc elimt
+
+let pose_induction_arg_then clear_flag isrec with_evars
+     (is_arg_pure_hyp,from_prefix) elim
+     id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let ccl = Proofview.Goal.raw_concl gl in
+  let check = check_enough_applied env sigma elim in
+  let (sigma',c) = use_bindings env sigma elim (c0,lbind) t0 in
+  let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
+  let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
+  match res with
+  | None ->
+      (* pattern not found *)
+      let fixedvars = (* heuristic *) match kind_of_term (fst (decompose_app c)) with Var id -> Id.Set.singleton id | _ -> Id.Set.empty in
+      let with_eq = Option.map (fun eq -> (false,eq)) eqname in
+      (* we restart using bindings after having tried type-class
+         resolution etc. on the term given by the user *)
+      let flags = tactic_infer_flags (with_evars && (* do not give a success semantics to edestruct on an open term yet *) false) in
+      let (sigma,c0) = finish_evar_resolution ~flags env sigma (pending,c0) in
+      (if isrec then
+          (* Historically, induction has side conditions last *)
+          Tacticals.New.tclTHENFIRST
+       else
+          (* and destruct has side conditions first *)
+          Tacticals.New.tclTHENLAST)
+      (Tacticals.New.tclTHENLIST [
+        Proofview.Unsafe.tclEVARS sigma;
+        Proofview.Refine.refine ~unsafe:true (fun sigma ->
+          let (sigma,c) = use_bindings env sigma elim (c0,lbind) t0 in
+          let t = Retyping.get_type_of env sigma c in
+          mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t));
+        Proofview.(if with_evars then shelve_unifiable else guard_no_unifiable);
+        if is_arg_pure_hyp
+        then Tacticals.New.tclTRY (Proofview.V82.tactic (thin [destVar c0]))
+        else Proofview.tclUNIT ();
+        if isrec then Proofview.cycle (-1) else Proofview.tclUNIT ()
+      ])
+      (tac fixedvars)
+
+  | Some (sigma',c) ->
+      (* pattern found *)
+      let fixedvars = collect_vars c in
+      let with_eq = Option.map (fun eq -> (false,eq)) eqname in
+      (* TODO: if ind has predicate parameters, use JMeq instead of eq *)
+      let env = reset_with_named_context sign env in
+      Tacticals.New.tclTHENLIST [
+        Proofview.Unsafe.tclEVARS sigma';
+        Proofview.Refine.refine ~unsafe:true (fun sigma ->
+          mkletin_goal env sigma with_eq true (id,lastlhyp,ccl,c) None);
+        tac fixedvars
+      ]
+  end
+
+let has_generic_occurrences_but_goal cls id env ccl =
+  clause_with_generic_context_selection cls &&
+  (* TODO: whd_evar of goal *)
+  (cls.concl_occs != NoOccurrences || not (occur_var env id ccl))
+
+let induction_gen clear_flag isrec with_evars elim
+    ((_pending,(c,lbind)),(eqname,names) as arg) cls =
   let inhyps = match cls with
   | Some {onhyps=Some hyps} -> List.map (fun ((_,id),_) -> id) hyps
   | _ -> [] in
-  match kind_of_term c with
-    | Var id when not (mem_named_context id (Global.named_context()))
-	        && lbind == NoBindings && not with_evars && Option.is_empty eqname
-                && clear_flag == None && not (has_selected_occurrences cls) ->
-	Tacticals.New.tclTHEN
-          (Proofview.V82.tactic (clear_unselected_context id inhyps cls))
-	  (induction_with_atomization_of_ind_arg
-	    isrec with_evars elim names (id,lbind) inhyps)
-    | _        ->
-        Proofview.Goal.enter begin fun gl ->
-          let env = Proofview.Goal.env gl in
-	  let x = id_of_name_using_hdchar (Global.env()) (typ_of env sigma c)
-	        Anonymous in
-          let id = new_fresh_id [] x gl in
-	(* We need the equality name now *)
-	  let with_eq = Option.map (fun eq -> (false,eq)) eqname in
-	(* TODO: if ind has predicate parameters, use JMeq instead of eq *)
-          Proofview.Goal.enter begin fun gl ->
-	    Tacticals.New.tclTHEN
-            (* Warning: letin is buggy when c is not of inductive type *)
-	      (letin_tac_gen with_eq
-                 (AbstractPattern (Name id,(sigma,c),(Option.default allHypsAndConcl cls),false,tactic_infer_flags)) None)
-	      (induction_with_atomization_of_ind_arg
-                 isrec with_evars elim names (id,lbind) inhyps)
-          end
-        end
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let ccl = Proofview.Goal.raw_concl gl in
+  let cls = Option.default allHypsAndConcl cls in
+  let t = typ_of env sigma c in
+  let is_arg_pure_hyp =
+    isVar c && not (mem_named_context (destVar c) (Global.named_context()))
+    && lbind == NoBindings && not with_evars && Option.is_empty eqname
+    && has_generic_occurrences_but_goal cls (destVar c) env ccl in
+  let enough_applied = check_enough_applied env sigma elim t in
+  if is_arg_pure_hyp && enough_applied then
+    (* First case: induction on a variable already in an inductive type and
+       with maximal abstraction over the variable.
+       This is a situation where the induction argument is a
+       clearable variable of the goal w/o occurrence selection
+       and w/o equality kept: no need to generalize *)
+    let id = destVar c in
+    Tacticals.New.tclTHEN
+      (Proofview.V82.tactic (clear_unselected_context id inhyps cls))
+      (induction_with_atomization_of_ind_arg
+         isrec with_evars elim names id inhyps Id.Set.empty)
+  else
+  (* Otherwise, we look for the pattern, possibly adding missing arguments and
+     declaring the induction argument as a new local variable *)
+    let id =
+    (* Type not the right one if partially applied but anyway for internal use*)
+      let x = id_of_name_using_hdchar (Global.env()) t Anonymous in
+      new_fresh_id [] x gl in
+    let info_arg = (is_arg_pure_hyp, not enough_applied) in
+    pose_induction_arg_then
+      clear_flag isrec with_evars info_arg elim id arg t inhyps cls
+    (induction_with_atomization_of_ind_arg
+       isrec with_evars elim names id inhyps)
+  end
 
 (* Induction on a list of arguments. First make induction arguments
    atomic (using letins), then do induction. The specificity here is
    that all arguments and parameters of the scheme are given
    (mandatory for the moment), so we don't need to deal with
     parameters of the inductive type as in induction_gen. *)
-let induction_gen_l isrec with_evars elim (eqname,names) lc =
-  if not (Option.is_empty eqname) then
-    errorlabstrm "" (str "Do not know what to do with " ++
-      Miscprint.pr_intro_pattern_naming (snd (Option.get eqname)));
+let induction_gen_l isrec with_evars elim names lc =
   let newlc = ref [] in
   let letids = ref [] in
+  let lc = List.map (function
+    | (c,None) -> c
+    | (c,Some(loc,eqname)) ->
+      user_err_loc (loc,"",str "Do not know what to do with " ++
+                         Miscprint.pr_intro_pattern_naming eqname)) lc in
   let rec atomize_list l =
     match l with
       | [] -> Proofview.tclUNIT ()
@@ -3746,66 +4012,89 @@ let induction_gen_l isrec with_evars elim (eqname,names) lc =
    principles).
    TODO: really unify induction with one and induction with several
    args *)
-let induction_destruct_core isrec with_evars (lc,elim,names,cls) =
-  assert (List.length lc > 0); (* ensured by syntax, but if called inside caml? *)
-  Proofview.Goal.enter begin fun gl ->
-  let ifi = is_functional_induction elim gl in
-  if Int.equal (List.length lc) 1 && not ifi then
-    (* standard induction *)
-    onOpenInductionArg
-      (fun clear_flag c -> induction_gen clear_flag isrec with_evars elim names c cls)
-      (List.hd lc)
-  else begin
-    (* functional induction *)
-    (* Several induction hyps: induction scheme is mandatory *)
-    if Option.is_empty elim
-    then
-      errorlabstrm "" (strbrk "Induction scheme must be given when several induction hypotheses are given.\n" ++
-      str "Example: induction x1 x2 x3 using my_scheme.");
-    if not (Option.is_empty cls) then
-      error "'in' clause not supported here.";
-    let finish_evar_resolution (sigma, c) =
-      snd (finish_evar_resolution (Proofview.Goal.env gl) (Proofview.Goal.sigma gl) (sigma, c))
-    in
-    let lc = List.map (map_induction_arg finish_evar_resolution) lc in
-    begin match lc with
-    | [_] ->
-      (* Hook to recover standard induction on non-standard induction schemes *)
+let induction_destruct isrec with_evars (lc,elim) =
+  match lc with
+  | [] -> assert false (* ensured by syntax, but if called inside caml? *)
+  | [c,(eqname,names as allnames),cls] ->
+    Proofview.Goal.nf_enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in      
+    let ifi = is_functional_induction elim gl in
+    if not ifi then
+      (* standard induction *)
+      onOpenInductionArg env sigma
+      (fun clear_flag c -> induction_gen clear_flag isrec with_evars elim (c,allnames) cls) c
+    else begin
+      (* Standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
+      if not (Option.is_empty cls) then error "'in' clause not supported here.";
+      let finish_evar_resolution f =
+        let (sigma',(c,lbind)) = f env sigma in
+        let pending = (sigma,sigma') in
+        snd (finish_evar_resolution env sigma' (pending,c)),lbind in
+      let c = map_induction_arg finish_evar_resolution c in
       onInductionArg
 	(fun _clear_flag (c,lbind) ->
 	  if lbind != NoBindings then
 	    error "'with' clause not supported here.";
-	  induction_gen_l isrec with_evars elim names [c]) (List.hd lc)
-    | _ ->
+	  induction_gen_l isrec with_evars elim names [c,eqname]) c
+    end
+    end
+  | _ ->
+    Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in      
+    if elim = None then
+      (* Several arguments, without "using" clause *)
+      (* TODO: Do as if the arguments after the first one were called with *)
+      (* "destruct", but selecting occurrences on the initial copy of *)
+      (* the goal *)
+      let (a,b,cl) = List.hd lc in
+      let l = List.tl lc in
+      (* TODO *)
+      Tacticals.New.tclTHEN
+        (onOpenInductionArg env sigma (fun clear_flag a ->
+          induction_gen clear_flag isrec with_evars None (a,b) cl) a)
+        (Tacticals.New.tclMAP (fun (a,b,cl) ->
+          Proofview.Goal.enter begin fun gl ->
+          let env = Proofview.Goal.env gl in
+          let sigma = Proofview.Goal.sigma gl in      
+          onOpenInductionArg env sigma (fun clear_flag a ->
+            induction_gen clear_flag false with_evars None (a,b) cl) a
+          end) l)
+    else
+      (* Several induction hyps with induction scheme *)
+      let finish_evar_resolution f =
+        let (sigma',(c,lbind)) = f env sigma in
+        let pending = (sigma,sigma') in
+	if lbind != NoBindings then
+	  error "'with' clause not supported here.";
+        snd (finish_evar_resolution env sigma' (pending,c)) in
+      let lc = List.map (on_pi1 (map_induction_arg finish_evar_resolution)) lc in
       let newlc =
-	List.map (fun x ->
+        List.map (fun (x,(eqn,names),cls) ->
+          if cls != None then error "'in' clause not yet supported here.";
 	  match x with (* FIXME: should we deal with ElimOnIdent? *)
-	  | _clear_flag,ElimOnConstr (x,NoBindings) -> x
+          | _clear_flag,ElimOnConstr x ->
+              if eqn <> None then error "'eqn' clause not supported here.";
+              (x,names)
 	  | _ -> error "Don't know where to find some argument.")
 	  lc in
+      (* Check that "as", if any, is given only on the last argument *)
+      let names,rest = List.sep_last (List.map snd newlc) in
+      if List.exists (fun n -> not (Option.is_empty n)) rest then
+        error "'as' clause with multiple arguments and 'using' clause can only occur last.";
+      let newlc = List.map (fun (x,_) -> (x,None)) newlc in
       induction_gen_l isrec with_evars elim names newlc
     end
-  end
-  end
 
-let induction_destruct isrec with_evars = function
-  | [],_,_ -> Proofview.tclUNIT ()
-  | [a,b],el,cl -> induction_destruct_core isrec with_evars ([a],el,b,cl)
-  | (a,b)::l,None,cl ->
-      Tacticals.New.tclTHEN
-        (induction_destruct_core isrec with_evars ([a],None,b,cl))
-        (Tacticals.New.tclMAP (fun (a,b) -> induction_destruct_core false with_evars ([a],None,b,cl)) l)
-  | l,Some el,cl ->
-      let check_basic_using = function
-        | a,(None,None) -> a
-	| _ -> error "Unsupported syntax for \"using\"."
-      in
-      let l' = List.map check_basic_using l in
-      induction_destruct_core isrec with_evars (l', Some el, (None,None), cl)
+let induction ev clr c l e =
+  induction_gen clr true ev e 
+    (((Evd.empty,Evd.empty),(c,NoBindings)),(None,l)) None
 
-let induction ev lc e idl cls = induction_destruct_core true ev (lc,e,idl,cls)
-let destruct ev lc e idl cls = induction_destruct_core false ev (lc,e,idl,cls)
+let destruct ev clr c l e =
+  induction_gen clr false ev e
+    (((Evd.empty,Evd.empty),(c,NoBindings)),(None,l)) None
 
 (* The registered tactic, which calls the default elimination
  * if no elimination constant is provided. *)
@@ -3855,7 +4144,7 @@ let elim_type t =
   Proofview.Goal.enter begin fun gl ->
   let (ind,t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
   let evd, elimc = find_ind_eliminator (fst ind) (Tacticals.New.elimination_sort_of_goal gl) gl in
-  Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evd) (elim_scheme_type elimc t)
+  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type elimc t)
   end
 
 let case_type t =
@@ -3864,7 +4153,7 @@ let case_type t =
   let evd, elimc =
     Tacmach.New.pf_apply build_case_analysis_scheme_default gl ind (Tacticals.New.elimination_sort_of_goal gl)
   in
-  Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evd) (elim_scheme_type elimc t)
+  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type elimc t)
   end
 
 
@@ -4103,7 +4392,7 @@ let abstract_subproof id gk tac =
   let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
     try Pfedit.build_constant_by_tactic ~goal_kind:gk id ectx secsign concl solve_tac
-    with Proofview_monad.TacticFailure e as src ->
+    with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
        means that [e] comes from [tac] failing to yield enough
@@ -4125,7 +4414,7 @@ let abstract_subproof id gk tac =
     Entries.(snd (Future.force const.const_entry_body)) in
   let args = List.rev (instance_from_named_context sign) in
   let solve =
-    Proofview.V82.tclEVARS evd <*>
+    Proofview.Unsafe.tclEVARS evd <*>
     Proofview.tclEFFECTS effs <*>
     new_exact_no_check (applist (lem, args))
   in
@@ -4168,7 +4457,7 @@ let unify ?(state=full_transparent_state) x y =
       subterm_unify_flags = { core_flags with modulo_delta = empty_transparent_state } }
     in
     let evd = w_unify (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) Reduction.CONV ~flags x y
-    in Proofview.V82.tclEVARS evd
+    in Proofview.Unsafe.tclEVARS evd
   with e when Errors.noncritical e -> Tacticals.New.tclFAIL 0 (str"Not unifiable")
   end
 
@@ -4196,37 +4485,6 @@ module Simple = struct
 end
 
 
-(* [with_type c typ] constrains term [c] to have type [typ].  *)
-let with_type t typ env sigma =
-  (* spiwack: this function assumes that no evars can be created during
-      this sort of coercion.
-      If it is not the case it could produce bugs. We would need to add a handle
-      and add the new evars to it. *)
-  let my_type = Retyping.get_type_of env sigma t in
-  let j = Environ.make_judge t my_type in
-  let (sigma, j') =
-    Coercion.inh_conv_coerce_to true (Loc.ghost) env sigma j typ
-  in
-  (sigma, j'.Environ.uj_val)
-
-let update_handle handle init_defs post_defs =
-  let filter ev _ = not (Evd.mem init_defs ev) in
-  let fold ev evi accu = if filter ev evi then Evar.Set.add ev accu else accu in
-  Evd.fold_undefined fold post_defs handle
-
-let constr_of_open_constr handle (evars, c) env sigma concl =
-  let () = handle := update_handle !handle sigma evars in
-  let fold ev evi evd = if not (Evd.mem sigma ev) then Evd.add evd ev evi else evd in
-  let sigma = Evd.fold fold evars sigma in
-  with_type c concl env sigma
-
-let refine_open_constr c env sigma concl =
-  let handle = ref Evar.Set.empty in
-  let sigma, pf = constr_of_open_constr handle c env sigma concl in
-  let sigma = Evarconv.consider_remaining_unif_problems env sigma in
-  let subgoals = Evar.Set.elements !handle in
-  (subgoals, pf, sigma)
-
 (** Tacticals defined directly in term of Proofview *)
 module New = struct
   open Proofview.Notations
@@ -4236,19 +4494,12 @@ module New = struct
   open Genredexpr
   open Locus
 
-  let refine c =
-    Proofview.Goal.nf_enter begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
-    let concl = Proofview.Goal.concl gl in
-    let (gls, pf, sigma) = refine_open_constr c env sigma concl in
-    Proofview.V82.tclEVARS sigma <*>
-    Proofview.Refine.refine ~unsafe:true (fun h -> (h, pf)) <*>
-    Proofview.tclNEWGOALS gls <*>
-      Proofview.V82.tactic (reduce
-         (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
-         {onhyps=None; concl_occs=AllOccurrences }
-      )
-    end
+  let reduce_after_refine =
+    Proofview.V82.tactic (reduce
+      (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
+      {onhyps=None; concl_occs=AllOccurrences })
 
+  let refine ?unsafe c =
+    Proofview.Refine.refine ?unsafe c <*>
+    reduce_after_refine
 end

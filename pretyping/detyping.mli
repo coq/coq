@@ -34,10 +34,10 @@ val detype : ?lax:bool -> bool -> Id.t list -> env -> evar_map -> constr -> glob
 
 val detype_case :
   bool -> ('a -> glob_constr) ->
-  (constructor array -> int array -> 'a array ->
+  (constructor array -> bool list array -> 'a array ->
     (Loc.t * Id.t list * cases_pattern list * glob_constr) list) ->
-  ('a -> int -> bool) ->
-  Id.t list -> inductive * case_style * int array * int ->
+  ('a -> bool list -> bool) ->
+  Id.t list -> inductive * case_style * bool list array * bool list ->
     'a option -> 'a -> 'a array -> glob_constr
 
 val detype_sort : sorts -> glob_sort
@@ -55,11 +55,11 @@ val synthetize_type : unit -> bool
 
 (** Utilities to transform kernel cases to simple pattern-matching problem *)
 
-val it_destRLambda_or_LetIn_names : int -> glob_constr -> Name.t list * glob_constr
+val it_destRLambda_or_LetIn_names : bool list -> glob_constr -> Name.t list * glob_constr
 val simple_cases_matrix_of_branches :
-  inductive -> (int * int * glob_constr) list -> cases_clauses
+  inductive -> (int * bool list * glob_constr) list -> cases_clauses
 val return_type_of_predicate :
-  inductive -> int -> glob_constr -> predicate_pattern * glob_constr option
+  inductive -> bool list -> glob_constr -> predicate_pattern * glob_constr option
 
 val subst_genarg_hook :
   (substitution -> Genarg.glob_generic_argument -> Genarg.glob_generic_argument) Hook.t

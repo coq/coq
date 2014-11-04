@@ -187,22 +187,26 @@ let look_for_possibly_mutual_statements = function
 
 let save id const cstrs do_guard (locality,poly,kind) hook =
   let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
-  let const = adjust_guardness_conditions const do_guard in
-  let k = Kindops.logical_kind_of_goal_kind kind in
-  let l,r = match locality with
-    | Discharge when Lib.sections_are_opened () ->
-	let c = SectionLocalDef const in
-	let _ = declare_variable id (Lib.cwd(), c, k) in
-	(Local, VarRef id)
-    | Local | Global | Discharge ->
-        let local = match locality with
-        | Local | Discharge -> true
-        | Global -> false
-        in
-        let kn = declare_constant id ~local (DefinitionEntry const, k) in
-	(locality, ConstRef kn) in
-  definition_message id;
-  call_hook fix_exn hook l r
+  try
+    let const = adjust_guardness_conditions const do_guard in
+    let k = Kindops.logical_kind_of_goal_kind kind in
+    let l,r = match locality with
+      | Discharge when Lib.sections_are_opened () ->
+          let c = SectionLocalDef const in
+          let _ = declare_variable id (Lib.cwd(), c, k) in
+          (Local, VarRef id)
+      | Local | Global | Discharge ->
+          let local = match locality with
+          | Local | Discharge -> true
+          | Global -> false
+          in
+          let kn = declare_constant id ~local (DefinitionEntry const, k) in
+          (locality, ConstRef kn) in
+    definition_message id;
+    call_hook (fun exn -> exn) hook l r
+  with e when Errors.noncritical e ->
+    let e = Errors.push e in
+    raise (fix_exn e)
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
@@ -350,7 +354,7 @@ let universe_proof_terminator compute_guard hook =
           save_anonymous_with_strength proof kind id
       end
 
-let start_proof id kind ctx ?sign c ?init_tac ?(compute_guard=[]) hook =
+let start_proof id kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = standard_proof_terminator compute_guard hook in
   let sign = 
     match sign with
@@ -358,9 +362,9 @@ let start_proof id kind ctx ?sign c ?init_tac ?(compute_guard=[]) hook =
     | None -> initialize_named_context_for_proof ()
   in
   !start_hook c;
-  Pfedit.start_proof id kind ctx sign c ?init_tac terminator
+  Pfedit.start_proof id kind sigma sign c ?init_tac terminator
 
-let start_proof_univs id kind ctx ?sign c ?init_tac ?(compute_guard=[]) hook =
+let start_proof_univs id kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = universe_proof_terminator compute_guard hook in
   let sign = 
     match sign with
@@ -368,7 +372,7 @@ let start_proof_univs id kind ctx ?sign c ?init_tac ?(compute_guard=[]) hook =
     | None -> initialize_named_context_for_proof ()
   in
   !start_hook c;
-  Pfedit.start_proof id kind ctx sign c ?init_tac terminator
+  Pfedit.start_proof id kind sigma sign c ?init_tac terminator
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
@@ -436,7 +440,7 @@ let start_proof_com kind thms hook =
   let thms = List.map (fun (sopt,(bl,t,guard)) ->
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
-    check_evars_are_solved env Evd.empty !evdref;
+    check_evars_are_solved env !evdref (Evd.empty,!evdref);
     let ids = List.map pi1 ctx in
       (compute_proof_name (pi1 kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
@@ -446,7 +450,7 @@ let start_proof_com kind thms hook =
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in
   let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
-  start_proof_with_initialization kind (Evd.evar_universe_context evd) 
+  start_proof_with_initialization kind evd
     recguard thms snl hook
 
 

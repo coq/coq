@@ -238,7 +238,7 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
   let try_clause c =
     side_tac
       (tclTHEN
-         (Proofview.V82.tclEVARS c.evd)
+         (Proofview.Unsafe.tclEVARS c.evd)
          (general_elim_clause with_evars frzevars cls c elim))
       tac
   in
@@ -348,7 +348,7 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars d
   let type_of_cls = type_of_clause cls gl in
   let dep = dep_proof_ok && dep_fun c type_of_cls in
   let (sigma,elim,effs) = find_elim hdcncl lft2rgt dep cls (Some t) gl in
-    Proofview.V82.tclEVARS sigma <*> Proofview.tclEFFECTS effs <*>
+    Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclEFFECTS effs <*>
       general_elim_clause with_evars frzevars tac cls c t l
       (match lft2rgt with None -> false | Some b -> b)
       {elimindex = None; elimbody = (elim,NoBindings); elimrename = None}
@@ -925,7 +925,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort =
   let pf_ty = mkArrow eqn absurd_term in
   let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
   let pf = Clenvtac.clenv_value_cast_meta absurd_clause in
-  Proofview.V82.tclEVARS sigma <*>
+  Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.tclEFFECTS eff <*>
   tclTHENS (assert_after Anonymous absurd_term)
     [onLastHypId gen_absurdity; (Proofview.V82.tactic (refine pf))]
@@ -954,7 +954,7 @@ let onEquality with_evars tac (c,lbindc) =
   let eqn = clenv_type eq_clause' in
   let (eq,u,eq_args) = find_this_eq_data_decompose gl eqn in
   tclTHEN
-    (Proofview.V82.tclEVARS eq_clause'.evd)
+    (Proofview.Unsafe.tclEVARS eq_clause'.evd)
     (tac (eq,eqn,eq_args) eq_clause')
   end
 
@@ -1308,7 +1308,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
   if List.is_empty injectors then
     Proofview.tclZERO (Errors.UserError ("Equality.inj" , str "Failed to decompose the equality."))
   else
-    Proofview.tclTHEN (Proofview.V82.tclEVARS !evdref)
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
     (Proofview.tclBIND
       (Proofview.Monad.List.map
          (fun (pf,ty) -> tclTHENS (cut ty)
@@ -1482,7 +1482,7 @@ let cutSubstInConcl l2r eqn =
   let sigma,typ,expected = pf_apply subst_tuple_term gl e1 e2 typ in
   tclTHENFIRST
     (tclTHENLIST [
-       (Proofview.V82.tclEVARS sigma);
+       (Proofview.Unsafe.tclEVARS sigma);
        (Proofview.V82.tactic (change_concl typ)); (* Put in pattern form *)
        (replace_core onConcl l2r eqn)
     ])
@@ -1497,7 +1497,7 @@ let cutSubstInHyp l2r eqn id =
   let sigma,typ,expected = pf_apply subst_tuple_term gl e1 e2 typ in
   tclTHENFIRST
     (tclTHENLIST [
-       (Proofview.V82.tclEVARS sigma);
+       (Proofview.Unsafe.tclEVARS sigma);
        (Proofview.V82.tactic (change_in_hyp None (fun _ s -> s,typ) (id,InHypTypeOnly)));
        (replace_core (onHyp id) l2r eqn)
     ])

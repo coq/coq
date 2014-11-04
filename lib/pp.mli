@@ -134,9 +134,11 @@ val is_message : Xml_datatype.xml -> bool
  * since the two phases are performed sequentially) *)
 
 val feedback :
-  ?state_id:Feedback.state_id -> Feedback.feedback_content -> unit
+  ?state_id:Feedback.state_id ->
+  ?route:Feedback.route_id -> Feedback.feedback_content -> unit
 
-val set_id_for_feedback : Feedback.edit_or_state_id -> unit
+val set_id_for_feedback :
+  ?route:Feedback.route_id -> Feedback.edit_or_state_id -> unit
 val set_feeder : (Feedback.feedback -> unit) -> unit
 
 (** {6 Utilities} *)

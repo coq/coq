@@ -999,7 +999,7 @@ let rec glob_of_pat env sigma = function
   | PIf (c,b1,b2) ->
       GIf (loc, glob_of_pat env sigma c, (Anonymous,None),
            glob_of_pat env sigma b1, glob_of_pat env sigma b2)
-  | PCase ({cip_style=LetStyle; cip_ind_args=None},PMeta None,tm,[(0,n,b)]) ->
+  | PCase ({cip_style=LetStyle; cip_ind_tags=None},PMeta None,tm,[(0,n,b)]) ->
       let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat env sigma b) in
       GLetTuple (loc,nal,(Anonymous,None),glob_of_pat env sigma tm,b)
   | PCase (info,p,tm,bl) ->
@@ -1012,7 +1012,7 @@ let rec glob_of_pat env sigma = function
       in
       let mat = if info.cip_extensible then mat @ [any_any_branch] else mat
       in
-      let indnames,rtn = match p, info.cip_ind, info.cip_ind_args with
+      let indnames,rtn = match p, info.cip_ind, info.cip_ind_tags with
 	| PMeta None, _, _ -> (Anonymous,None),None
 	| _, Some ind, Some nargs ->
 	  return_type_of_predicate ind nargs (glob_of_pat env sigma p)

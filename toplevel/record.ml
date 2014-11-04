@@ -126,7 +126,7 @@ let typecheck_params_and_fields def id t ps nots fs =
     interp_fields_evars env_ar evars impls_env nots (binders_of_decls fs)
   in
   let sigma = 
-    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar Evd.empty !evars in
+    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar !evars (Evd.empty,!evars) in
   let evars, nf = Evarutil.nf_evars_and_universes sigma in
   let arity = nf t' in
   let evars = 

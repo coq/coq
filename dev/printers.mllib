@@ -177,7 +177,7 @@ Refiner
 Clenv
 Evar_refiner
 Proof_errors
-Proofview_gen
+Logic_monad
 Proofview_monad
 Proofview
 Proof

@@ -103,7 +103,7 @@ let exact poly (c,clenv) =
   in
   Proofview.Goal.enter begin fun gl ->
     let sigma = Evd.merge_universe_context (Proofview.Goal.sigma gl) ctx in
-    Tacticals.New.tclTHEN (Proofview.V82.tclEVARS sigma) (exact_check c')
+    Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (exact_check c')
   end
 
 (* Util *)

@@ -44,6 +44,11 @@ val enter : ([ `LZ ] Proofview.Goal.t -> 'a t) -> 'a t
 (** Enter a goal, without evar normalization. The resulting tactic is
     focussed. *)
 
+val with_env : 'a t -> (Environ.env*'a) t
+(** [with_env t] returns, in addition to the return type of [t], an
+    environment, which is the global environment if [t] does not focus on
+    goals, or the local goal environment if [t] focuses on goals. *)
+
 (** {5 Notations} *)
 
 val (>>=) : 'a t -> ('a -> 'b t) -> 'b t

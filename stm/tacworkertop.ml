@@ -6,11 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+module W = AsyncTaskQueue.MakeWorker(Stm.TacTask)
+
 let () = Coqtop.toploop_init := (fun args ->
         Flags.make_silent true;
-        Stm.tacslave_init_stdout ();
+        W.init_stdout ();
         CoqworkmgrApi.init !Flags.async_proofs_worker_priority;
         args)
 
-let () = Coqtop.toploop_run := Stm.tacslave_main_loop
+let () = Coqtop.toploop_run := W.main_loop
 

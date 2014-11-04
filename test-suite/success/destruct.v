@@ -98,25 +98,281 @@ Abort.
 
 Goal exists x, S x = S 0.
 eexists.
-Fail destruct (S _). (* Incompatible occurrences *)
+destruct (S _). (* Incompatible occurrences but takes the first one since Oct 2014 *)
+change (0 = S 0).
 Abort.
 
 Goal exists x, S 0 = S x.
 eexists.
-Fail destruct (S _). (* Incompatible occurrences *)
+destruct (S _). (* Incompatible occurrences but takes the first one since Oct 2014 *)
+change (0 = S ?x).
 Abort.
 
 Goal exists n p:nat, (S n,S n) = (S p,S p) /\ p = n.
 do 2 eexists.
-Fail destruct (_, S _). (* Was succeeding at some time in trunk *)
-Show Proof.
+destruct (_, S _). (* Was unifying at some time in trunk, now takes the first occurrence *)
+change ((n, n0) = (S ?p, S ?p) /\ ?p = ?n0).
+Abort.
 
 (* Avoid unnatural selection of a subterm larger than expected *)
 
 Goal let g := fun x:nat => x in g (S 0) = 0.
 intro.
 destruct S.
-(* Check that it is not the larger subterm "f (S 0)" which is
+(* Check that it is not the larger subterm "g (S 0)" which is
    selected, as it was the case in 8.4 *)
 unfold g at 1.
+Abort.
+
+(* Some tricky examples convenient to support *)
+
+Goal forall x, nat_rect (fun _ => nat) O (fun x y => S x) x = nat_rect (fun _ => nat) O (fun x y => S x) x.
+intros.
+destruct (nat_rect _ _ _ _).
+Abort.
+(* Check compatibility in selecting what is open or "shelved" *)
+
+Goal (forall x, x=0 -> nat) -> True.
+intros.
+Fail destruct H.
+edestruct H.
+- reflexivity.
+- exact Logic.I.
+- exact Logic.I.
+Qed.
+
+(* Check an example which was working with case/elim in 8.4 but not with
+   destruct/induction *)
+
+Goal forall x, (True -> x = 0) -> 0=0. 
+intros.
+destruct H.
+- trivial.
+- apply (eq_refl x).
+Qed.
+
+(* Check an example which was working with case/elim in 8.4 but not with
+   destruct/induction (not the different order between induction/destruct) *)
+
+Goal forall x, (True -> x = 0) -> 0=0. 
+intros.
+induction H.
+- apply (eq_refl x).
+- trivial.
+Qed.
+
+(* This test assumes that destruct/induction on non-dependent hypotheses behave the same
+   when using holes or not
+
+Goal forall x, (True -> x = 0) -> 0=0. 
+intros.
+destruct (H _).
+- apply I.
+- apply (eq_refl x).
+Qed.
+*)
+
+(* Check destruct vs edestruct *)
+
+Goal forall x, (forall y, y = 0 -> x = 0) -> 0=0.
+intros.
+Fail destruct H.
+edestruct H.
+- trivial.
+- apply (eq_refl x).
+Qed.
+
+Goal forall x, (forall y, y = 0 -> x = 0) -> 0=0.
+intros.
+Fail destruct (H _ _).
+(* Now a test which assumes that edestruct on non-dependent
+   hypotheses accept unresolved subterms in the induction argument.
+edestruct (H _ _).
+- trivial.
+- apply (eq_refl x).
+Qed.
+*)
+Abort.
+
+(* Test selection when not in an inductive type *)
+Parameter T:Type.
+Axiom elim: forall P, T -> P.
+Goal forall a:T, a = a.
+induction a using elim.
+Qed.
+
+Goal forall a:nat -> T, a 0 = a 1.
+intro a.
+induction (a 0) using elim.
+Qed.
+
+(* From Oct 2014, a subterm is found, as if without "using"; in 8.4,
+   it did not find a subterm *)
+
+Goal forall a:nat -> T, a 0 = a 1.
+intro a.
+induction a using elim.
+Qed.
+
+Goal forall a:nat -> T, forall b, a 0 = b.
+intros a b.
+induction a using elim.
+Qed.
+
+(* From Oct 2014, first subterm is found; in 8.4, it failed because it
+   found "a 0" and wanted to clear a *)
+
+Goal forall a:nat -> nat, a 0 = a 1.
+intro a.
+destruct a.
+change (0 = a 1).
+Abort.
+
+(* This example of a variable not fully applied in the goal was working in 8.4*)
+
+Goal forall H : 0<>0, H = H.
+destruct H.
+reflexivity.
+Qed.
+
+(* Check that variables not fully applied in the goal are not erased
+   (this example was failing in 8.4 because of a forbidden "clear H" in
+   the code of "destruct H" *)
+
+Goal forall H : True -> True, H = H.
+destruct H.
+- exact I.
+- reflexivity.
+Qed.
+
+(* Check destruct on idents with maximal implicit arguments - which did
+   not work in 8.4 *)
+
+Parameter g : forall {n:nat}, n=n -> nat.
+Goal g (eq_refl 0) = 0.
+destruct g.
+Abort.
+
+(* This one was working in 8.4 (because of full conv on closed arguments) *)
+
+Class E.
+Instance a:E.
+Goal forall h : E -> nat -> nat, h (id a) 0 = h a 0.
+intros.
+destruct (h _).
+change (0=0).
+Abort.
+
+(* This one was not working in 8.4 because an occurrence of f was
+   remaining, blocking the "clear f" *)
+
+Goal forall h : E -> nat -> nat, h a 0 = h a 1.
+intros.
+destruct h.
+Abort.
+
+(* This was not working in 8.4 *)
+
+Section S1.
+Variables x y : Type.
+Variable H : x = y.
+Goal True.
+destruct H. (* Was not working in 8.4 *)
+(* Now check that H statement has not be itself subject of the rewriting *)
+change (x=y) in H.
+Abort.
+End S1.
+
+(* This was not working in 8.4 because of untracked dependencies *)
+Goal forall y, forall h:forall x, x = y, h 0 = h 0.
+intros.
+destruct (h 0).
+Abort.
+
+(* Check absence of useless local definitions *)
+
+Section S2.
+Variable H : 1=1.
+Goal 0=1.
+destruct H.
+Fail clear n. (* Check that there is no n as it was in Coq <= 8.4 *)
+Abort.
+End S2.
+
+Goal forall x:nat, x=x->x=1.
+intros x H.
+destruct H.
+Fail clear n. (* Check that there is no n as it was in Coq <= 8.4 *)
+Fail clear H. (* Check that H has been removed *)
+Abort.
+
+(* Check support for induction arguments which do not expose an inductive
+   type rightaway *)
+
+Definition U := nat -> nat.
+Definition S' := S : U.
+Goal forall n, S' n = 0.
+intro.
+destruct S'.
+Abort.
+
+(* This was working by chance in 8.4 thanks to "accidental" use of select
+   subterms _syntactically_ equal to the first matching one. *)
+
+Parameter f2:bool -> unit.
+Parameter r2:f2 true=f2 true.
+Goal forall (P: forall b, b=b -> Prop), f2 (id true) = tt -> P (f2 true) r2.
+intros.
+destruct f2.
+Abort.
+
+(* This did not work in 8.4, because of a clear failing *)
+
+Inductive IND : forall x y:nat, x=y -> Type := CONSTR : IND 0 0 eq_refl.
+Goal forall x y e (h:x=y -> y=x) (z:IND y x (h e)), e = e /\ z = z.
+intros.
+destruct z.
+Abort.
+
+(* The two following examples show how the variables occurring in the
+   term being destruct affects the generalization; don't know if these
+   behaviors are "good". None of them was working in 8.4. *)
+
+Goal forall x y e (t:x=y) (z:x=y -> IND y x e), e = e.
+intros.
+destruct (z t).
+change (0=0) in t. (* Generalization made *)
+Abort.
+
+Goal forall x y e (t:x=y) (z:x=y -> IND y x e), e = e /\ z t = z t.
+intros.
+destruct (z t).
+change (x=y) in t. (* Generalization not made *)
+Abort.
+
+(* Check that destruct on a scheme with a functional argument works *)
+
+Goal (forall P:Prop, (nat->nat) -> P) -> forall h:nat->nat, h 0 = h 0.
+intros.
+destruct h using H.
+Qed.
+
+Goal (forall P:Prop, (nat->nat) -> P) -> forall h:nat->nat->nat, h 0 0 = h 1 0.
+intros.
+induction (h 1) using H.
+Qed.
+
+(* Check blocking generalization is not too strong (failed at some time) *)
+
+Goal (E -> 0=1) -> 1=0 -> True.
+intros.
+destruct (H _).
+change (0=0) in H0. (* Check generalization on H0 was made *)
+Abort.
+
+(* Check absence of anomaly (failed at some time) *)
+
+Goal forall A (a:A) (P Q:A->Prop), (forall a, P a -> Q a) -> True.
+intros.
+Fail destruct H.
 Abort.

@@ -55,6 +55,7 @@ let is_message = function
 type edit_id = int
 type state_id = Stateid.t
 type edit_or_state_id = Edit of edit_id | State of state_id
+type route_id = int
 
 type feedback_content =
   | AddedAxiom
@@ -76,6 +77,7 @@ type feedback_content =
 type feedback = {
   id : edit_or_state_id;
   content : feedback_content;
+  route : route_id;
 }
 
 let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
@@ -148,13 +150,16 @@ let of_edit_or_state_id = function
 let of_feedback msg =
   let content = of_feedback_content msg.content in
   let obj, id = of_edit_or_state_id msg.id in
-  Element ("feedback", obj, [id;content])
+  let route = string_of_int msg.route in
+  Element ("feedback", obj @ ["route",route], [id;content])
 let to_feedback xml = match xml with
-  | Element ("feedback", ["object","edit"], [id;content]) -> {
+  | Element ("feedback", ["object","edit";"route",route], [id;content]) -> {
       id = Edit(to_edit_id id);
+      route = int_of_string route;
       content = to_feedback_content content }
-  | Element ("feedback", ["object","state"], [id;content]) -> { 
+  | Element ("feedback", ["object","state";"route",route], [id;content]) -> { 
       id = State(Stateid.of_xml id);
+      route = int_of_string route;
       content = to_feedback_content content }
   | _ -> raise Marshal_error
 
@@ -162,3 +167,4 @@ let is_feedback = function
   | Element ("feedback", _, _) -> true
   | _ -> false
 
+let default_route = 0

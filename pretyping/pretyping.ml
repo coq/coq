@@ -142,19 +142,26 @@ type inference_flags = {
   expand_evars : bool
 }
 
-let apply_typeclasses env evdref fail_evar =
+let pending_holes (sigma, sigma') =
+  let fold evk _ accu =
+    if not (Evd.mem sigma evk) then Evar.Set.add evk accu else accu
+  in
+  Evd.fold_undefined fold sigma' Evar.Set.empty
+
+let apply_typeclasses env evdref pending fail_evar =
+  let filter_pending evk = Evar.Set.mem evk pending in
   evdref := Typeclasses.resolve_typeclasses
      ~filter:(if Flags.is_program_mode () 
-	      then Typeclasses.no_goals_or_obligations else Typeclasses.no_goals)
+	      then (fun evk evi -> Typeclasses.no_goals_or_obligations evk evi && filter_pending evk)
+              else (fun evk evi -> Typeclasses.no_goals evk evi && filter_pending evk))
      ~split:true ~fail:fail_evar env !evdref;
   if Flags.is_program_mode () then (* Try optionally solving the obligations *)
     evdref := Typeclasses.resolve_typeclasses
-      ~filter:Typeclasses.all_evars ~split:true ~fail:false env !evdref
+      ~filter:(fun evk evi -> Typeclasses.all_evars evk evi && filter_pending evk) ~split:true ~fail:false env !evdref
 
-let apply_inference_hook hook initial_sigma evdref =
-  evdref := fold_undefined (fun evk evi sigma ->
-    if not (Evd.mem initial_sigma evk) &&
-      is_undefined sigma evk (* i.e. not defined by side-effect *)
+let apply_inference_hook hook evdref pending =
+  evdref := Evar.Set.fold (fun evk sigma ->
+    if Evd.is_undefined sigma evk (* in particular not defined by side-effect *)
     then
       try
         let c = hook sigma evk in
@@ -162,7 +169,7 @@ let apply_inference_hook hook initial_sigma evdref =
       with Exit ->
         sigma
     else
-      sigma) !evdref !evdref
+      sigma) pending !evdref
 
 let apply_heuristics env evdref fail_evar =
   (* Resolve eagerly, potentially making wrong choices *)
@@ -171,39 +178,44 @@ let apply_heuristics env evdref fail_evar =
   with e when Errors.noncritical e ->
     let e = Errors.push e in if fail_evar then raise e
 
-let check_typeclasses_instances_are_solved env sigma =
+let check_typeclasses_instances_are_solved env current_sigma pending =
   (* Naive way, call resolution again with failure flag *)
-  apply_typeclasses env (ref sigma) true
+  apply_typeclasses env (ref current_sigma) pending true
 
-let check_extra_evars_are_solved env initial_sigma sigma =
-  Evd.fold_undefined
-    (fun evk evi () ->
-      if not (Evd.mem initial_sigma evk) then
-        let (loc,k) = evar_source evk sigma in
+let check_extra_evars_are_solved env current_sigma pending =
+  Evar.Set.iter
+    (fun evk ->
+      if not (Evd.is_defined current_sigma evk) then
+        let (loc,k) = evar_source evk current_sigma in
 	match k with
 	| Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
 	| _ ->
-	    let evi = nf_evar_info sigma (Evd.find_undefined sigma evk) in
-	    error_unsolvable_implicit loc env sigma evi k None) sigma ()
+	    let evi = nf_evar_info current_sigma (Evd.find_undefined current_sigma evk) in
+	    error_unsolvable_implicit loc env current_sigma evi k None) pending
 
-let check_evars_are_solved env initial_sigma sigma =
-  check_typeclasses_instances_are_solved env sigma;
-  check_problems_are_solved env sigma;
-  check_extra_evars_are_solved env initial_sigma sigma
+let check_evars_are_solved env current_sigma pending =
+  check_typeclasses_instances_are_solved env current_sigma pending;
+  check_problems_are_solved env current_sigma;
+  check_extra_evars_are_solved env current_sigma pending
 
 (* Try typeclasses, hooks, unification heuristics ... *)
 
-let solve_remaining_evars flags env initial_sigma sigma =
-  let evdref = ref sigma in
-  if flags.use_typeclasses then apply_typeclasses env evdref false;
+let solve_remaining_evars flags env current_sigma pending =
+  let pending = pending_holes pending in
+  let evdref = ref current_sigma in
+  if flags.use_typeclasses then apply_typeclasses env evdref pending false;
   if Option.has_some flags.use_hook then
-    apply_inference_hook (Option.get flags.use_hook env) initial_sigma evdref;
+    apply_inference_hook (Option.get flags.use_hook env) evdref pending;
   if flags.use_unif_heuristics then apply_heuristics env evdref false;
-  if flags.fail_evar then check_evars_are_solved env initial_sigma !evdref;
+  if flags.fail_evar then check_evars_are_solved env !evdref pending;
   !evdref
 
+let check_evars_are_solved env current_sigma pending =
+  let pending = pending_holes pending in
+  check_evars_are_solved env current_sigma pending
+
 let process_inference_flags flags env initial_sigma (sigma,c) =
-  let sigma = solve_remaining_evars flags env initial_sigma sigma in
+  let sigma = solve_remaining_evars flags env sigma (initial_sigma, sigma) in
   let c = if flags.expand_evars then nf_evar sigma c else c in
   sigma,c
 
@@ -895,11 +907,11 @@ and pretype_instance resolve_tc env evdref lvar loc hyps evk update =
       with Not_found ->
       try
         let (n,_,t') = lookup_rel_id id (rel_context env) in
-        if is_conv env !evdref t t' then raise Not_found else mkRel n, update
+        if is_conv env !evdref t t' then mkRel n, update else raise Not_found
       with Not_found ->
       try
         let (_,_,t') = lookup_named id env in
-        if is_conv env !evdref t t' then raise Not_found else mkVar id, update
+        if is_conv env !evdref t t' then mkVar id, update else raise Not_found
       with Not_found ->
         user_err_loc (loc,"",str "Cannot interpret " ++
           pr_existential_key !evdref evk ++

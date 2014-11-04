@@ -350,7 +350,7 @@ type vernac_expr =
 
   (* Solving *)
 
-  | VernacSolve of goal_selector * raw_tactic_expr * bool
+  | VernacSolve of goal_selector * int option * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
@@ -458,7 +458,7 @@ type vernac_type =
   | VtQuery of vernac_part_of_script * report_with
   | VtStm of vernac_control * vernac_part_of_script
   | VtUnknown
-and report_with = Stateid.t (* report feedback on a different id *)
+and report_with = Stateid.t * Feedback.route_id (* feedback on id/route *)
 and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list

@@ -34,6 +34,11 @@ let internal_declare_summary hash sumname sdecl =
 
 let all_declared_summaries = ref Int.Set.empty
 
+let summary_names = ref []
+let name_of_summary name =
+  try List.assoc name !summary_names
+  with Not_found -> "summary name not found"
+
 let declare_summary sumname decl =
   let hash = String.hash sumname in
   let () = if Int.Map.mem hash !summaries then
@@ -42,6 +47,7 @@ let declare_summary sumname decl =
       (str "Colliding summary names: " ++ str sumname ++ str " vs. " ++ str name)
   in
   all_declared_summaries := Int.Set.add hash !all_declared_summaries;
+  summary_names := (hash, sumname) :: !summary_names;
   internal_declare_summary hash sumname decl
 
 type frozen = {
@@ -93,6 +99,14 @@ let unfreeze_summaries fs =
         let () = decl.unfreeze_function state in rstates
       else
         let () = decl.init_function () in states
+  in
+  let fold id decl state =
+    try fold id decl state
+    with e when Errors.noncritical e ->
+      let e = Errors.push e in
+      Printf.eprintf "Error unfrezing summay %s\n%s\n%!"
+        (name_of_summary id) (Pp.string_of_ppcmds (Errors.print e));
+      raise e
   in
   (** We rely on the order of the frozen list, and the order of folding *)
   ignore (Int.Map.fold_left fold !summaries fs.summaries)

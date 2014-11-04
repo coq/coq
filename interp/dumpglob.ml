@@ -153,7 +153,6 @@ let dump_reference loc modpath ident ty =
 let dump_modref loc mp ty =
   let (dp, l) = Lib.split_modpath mp in
   let filepath = Names.DirPath.to_string dp in
-  let l = if List.is_empty l then l else List.drop_last l in
   let modpath = Names.DirPath.to_string (Names.DirPath.make l) in
   let ident = "<>" in
   dump_ref loc filepath modpath ident ty

@@ -679,7 +679,7 @@ let pr_position (cl,pos) =
     | Some (id,Locus.InHypValueOnly) -> str " of the body of hypothesis " ++ pr_id id in
   int pos ++ clpos
 
-let explain_cannot_unify_occurrences env sigma nested (cl2,pos2,t2) (cl1,pos1,t1) e =
+let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1),t1) e =
   let s = if nested then "Found nested occurrences of the pattern"
     else "Found incompatible occurrences of the pattern" in
   let ppreason = match e with None -> mt() | Some (c1,c2,e) -> explain_unification_error env sigma c1 c2 (Some e) in

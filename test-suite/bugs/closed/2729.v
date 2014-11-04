@@ -1,3 +1,41 @@
+(* This bug report actually revealed two bugs in the reconstruction of
+   a term with "match" in the vm *)
+
+(* A simplified form of the first problem *)
+
+(* Reconstruction of terms normalized with vm when a constructor has *)
+(* let-ins arguments *)
+
+Record A : Type := C { a := 0 : nat; b : a=a }.
+Goal forall d:A, match d with C a b => b end = match d with C a b => b end.
+intro.
+vm_compute.
+(* Now check that it is well-typed *)
+match goal with |- ?c = _ => first [let x := type of c in idtac | fail 2] end.
+Abort.
+
+(* A simplified form of the second problem *)
+
+Parameter P : nat -> Type.
+
+Inductive box A := Box : A -> box A.
+
+Axiom com : {m : nat & box (P m) }.
+
+Lemma L :
+  (let (w, s) as com' return (com' = com -> Prop) := com in
+   let (s0) as s0
+     return (existT (fun m : nat => box (P m)) w s0 = com -> Prop) := s in
+   fun _ : existT (fun m : nat => box (P m)) w (Box (P w) s0) = com =>
+   True) eq_refl.
+Proof.
+vm_compute.
+(* Now check that it is well-typed (the "P w" used to be turned into "P s") *)
+match goal with |- ?c => first [let x := type of c in idtac | fail 2] end.
+Abort.
+
+(* Then the original report *)
+
 Require Import Equality.
 
 Parameter NameSet : Set.
