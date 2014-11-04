@@ -26,7 +26,7 @@ module Indexer (Annotation : sig type t end) : sig
 
 end
 
-(** Each annotation of the semi-structures document refers to the
+(** Each annotation of the semi-structured document refers to the
     substring it annotates. *)
 type 'annotation located = {
   annotation : 'annotation option;
