@@ -29,7 +29,7 @@ end
 (** Each annotation of the semi-structures document refers to the
     substring it annotates. *)
 type 'annotation located = {
-  annotation : 'annotation;
+  annotation : 'annotation option;
   startpos   : int;
   endpos     : int
 }
@@ -39,7 +39,7 @@ type 'annotation located = {
     that represents (located) annotations of this string. *)
 val rich_pp :
   (unit -> (index -> 'annotation)) ->
-  Pp.std_ppcmds ->
+  (unit -> Pp.std_ppcmds) ->
   string * ('annotation located) Xml_datatype.gxml
 
 (** [annotations_positions ssdoc] returns a list associating each

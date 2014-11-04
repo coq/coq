@@ -11,7 +11,7 @@ open Xml_datatype
 type index = Format.tag
 
 type 'annotation located = {
-  annotation : 'annotation;
+  annotation : 'annotation option;
   startpos   : int;
   endpos     : int
 }
@@ -39,23 +39,48 @@ let rich_pp get_annotations ppcmds =
 
       Each inserted tag is an index to an annotation.
   *)
-  let tagged_pp =
-    let b = Buffer.create 13 in
-    Buffer.add_string b "<pp>";
-    Format.set_tags true;
-    Pp.pp_with (Format.formatter_of_buffer b) ppcmds;
-    Format.set_tags false;
-    Buffer.add_string b "</pp>";
-    Buffer.contents b
+  let tagged_pp = Format.(
+    (** Warning: The following instructions are valid only if
+        [str_formatter] is not used for another purpose in
+        Pp.pp_with. *)
+    let ft = str_formatter in
+    pp_set_tags ft true;
+    pp_open_tag ft "pp";
+    let fof = pp_get_formatter_out_functions ft () in
+    pp_set_formatter_out_functions ft { fof with
+      out_spaces = fun k ->
+        for i = 0 to k - 1 do
+          Buffer.add_string stdbuf "&nbsp;"
+        done
+    };
+    Pp.(pp_with ft (rewrite Xml_printer.pcdata_to_string (ppcmds ())));
+    pp_close_tag ft ();
+    let output = flush_str_formatter () in
+    pp_set_formatter_out_functions ft fof;
+    pp_set_tags ft false;
+    output
+  )
   in
-
   (** Second, we retrieve the final function that relates
       each tag to an annotation. *)
   let get = get_annotations () in
 
   (** Third, we parse the resulting string. It is a valid XML
-      document (in the sense of Xml_parser). *)
-  let xml_pp = Xml_parser.(parse (make (SString tagged_pp))) in
+      document (in the sense of Xml_parser). As blanks are
+      meaningful we deactivate canonicalization in the XML
+      parser. *)
+  let xml_pp =
+    try
+      Xml_parser.(parse ~do_not_canonicalize:true (make (SString tagged_pp)))
+    with Xml_parser.Error e ->
+      Printf.eprintf
+        "Broken invariant (RichPp): \n\
+         The output semi-structured pretty-printing is ill-formed.\n\
+         Please report.\n\
+         %s"
+        (Xml_parser.error e);
+      exit 1
+  in
 
   (** Fourth, the low-level XML is turned into a high-level
       semi-structured document that contains a located annotation in
@@ -64,13 +89,16 @@ let rich_pp get_annotations ppcmds =
   let rec node buffer = function
     | Element (index, [], cs) ->
       let startpos, endpos, cs = children buffer cs in
-      let annotation = get index in
+      let annotation = try Some (get index) with _ -> None in
       (Element (index, { annotation; startpos; endpos }, cs), endpos)
+
     | PCData s ->
       Buffer.add_string buffer s;
       (PCData s, Buffer.length buffer)
+
     | _ ->
       assert false (* Because of the form of XML produced by Format. *)
+
   and children buffer cs =
     let startpos   = Buffer.length buffer in
     let cs, endpos =
@@ -84,14 +112,15 @@ let rich_pp get_annotations ppcmds =
   let pp_buffer = Buffer.create 13 in
   let xml, _ = node pp_buffer xml_pp in
 
-  (** That's it. We return the raw pretty-printing and its annotations
-      tree. *)
+  (** We return the raw pretty-printing and its annotations tree. *)
   (Buffer.contents pp_buffer, xml)
 
 let annotations_positions xml =
   let rec node accu = function
-    | Element (_, { annotation; startpos; endpos }, cs) ->
+    | Element (_, { annotation = Some annotation; startpos; endpos }, cs) ->
       children ((annotation, (startpos, endpos)) :: accu) cs
+    | Element (_, _, cs) ->
+      children accu cs
     | _ ->
       accu
   and children accu cs =
@@ -101,16 +130,22 @@ let annotations_positions xml =
 
 let xml_of_rich_pp tag_of_annotation attributes_of_annotation xml =
   let rec node = function
-    | Element (_, { annotation; startpos; endpos }, cs) ->
+    | Element (index, { annotation; startpos; endpos }, cs) ->
       let attributes =
         [ "startpos", string_of_int startpos;
           "endpos", string_of_int endpos
         ]
-        @ attributes_of_annotation annotation
+        @ (match annotation with
+          | None -> []
+          | Some annotation -> attributes_of_annotation annotation
+        )
       in
-      Element (tag_of_annotation annotation,
-               attributes,
-               List.map node cs)
+      let tag =
+        match annotation with
+          | None -> index
+          | Some annotation -> tag_of_annotation annotation
+      in
+      Element (tag, attributes, List.map node cs)
     | PCData s ->
       PCData s
   in

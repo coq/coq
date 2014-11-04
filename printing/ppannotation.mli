@@ -17,3 +17,7 @@ type t =
   | AUnparsing  of unparsing
   | AConstrExpr of constr_expr
   | AVernac     of vernac_expr
+
+val tag_of_annotation : t -> string
+
+val attributes_of_annotation : t -> (string * string) list
