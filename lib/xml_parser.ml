@@ -114,40 +114,46 @@ let canonicalize l =
   if has_elt then List.filter (function PCData s -> not (is_blank s) | _ -> true) l
   else l
 
-let rec read_node s =
-  match pop s with
-    | Xml_lexer.PCData s -> PCData s
-    | Xml_lexer.Tag (tag, attr, true) -> Element (tag, attr, [])
-    | Xml_lexer.Tag (tag, attr, false) ->
-      let elements = read_elems tag s in
-      Element (tag, attr, canonicalize elements)
-    | t ->
-      push t s;
-      raise NoMoreData
-and read_elems tag s =
-  let elems = ref [] in
-  (try
-     while true do
-       let node = read_node s in
-       match node, !elems with
-         | PCData c , (PCData c2) :: q ->
-           elems := PCData (c2 ^ c) :: q
-         | _, l ->
-           elems := node :: l
-     done
-   with
-       NoMoreData -> ());
-  match pop s with
-    | Xml_lexer.Endtag s when s = tag -> List.rev !elems
-    | t -> raise (Internal_error (EndOfTagExpected tag))
+let rec read_xml do_not_canonicalize s =
+  let rec read_node s =
+    match pop s with
+      | Xml_lexer.PCData s -> PCData s
+      | Xml_lexer.Tag (tag, attr, true) -> Element (tag, attr, [])
+      | Xml_lexer.Tag (tag, attr, false) ->
+        let elements = read_elems tag s in
+        let elements =
+          if do_not_canonicalize then elements else canonicalize elements
+        in
+        Element (tag, attr, elements)
+      | t ->
+        push t s;
+        raise NoMoreData
 
-let rec read_xml s =
-  let node = read_node s in
-  match node with
-    | Element _ -> node
+  and read_elems tag s =
+    let elems = ref [] in
+    (try
+       while true do
+         let node = read_node s in
+         match node, !elems with
+           | PCData c , (PCData c2) :: q ->
+             elems := PCData (c2 ^ c) :: q
+           | _, l ->
+             elems := node :: l
+       done
+     with
+         NoMoreData -> ());
+    match pop s with
+      | Xml_lexer.Endtag s when s = tag -> List.rev !elems
+      | t -> raise (Internal_error (EndOfTagExpected tag))
+  in
+  match read_node s with
+    | (Element _) as node ->
+      node
     | PCData c ->
-      if is_blank c then read_xml s
-      else raise (Xml_lexer.Error Xml_lexer.ENodeExpected)
+      if is_blank c then
+        read_xml do_not_canonicalize s
+      else
+        raise (Xml_lexer.Error Xml_lexer.ENodeExpected)
 
 let convert = function
   | Xml_lexer.EUnterminatedComment -> UnterminatedComment
@@ -168,10 +174,10 @@ let error_of_exn xparser = function
     (*let e = Errors.push e in: We do not record backtrace here. *)
     raise e
 
-let do_parse xparser =
+let do_parse do_not_canonicalize xparser =
   try
     Xml_lexer.init xparser.source;
-    let x = read_xml xparser in
+    let x = read_xml do_not_canonicalize xparser in
     if xparser.check_eof && pop xparser <> Xml_lexer.Eof then raise (Internal_error EOFExpected);
     Xml_lexer.close ();
     x
@@ -179,7 +185,8 @@ let do_parse xparser =
     Xml_lexer.close ();
     raise (!xml_error (error_of_exn xparser any) xparser.source)
 
-let parse p = do_parse p
+let parse ?(do_not_canonicalize=false) p =
+  do_parse do_not_canonicalize p
 
 let error_msg = function
   | UnterminatedComment -> "Unterminated comment"
