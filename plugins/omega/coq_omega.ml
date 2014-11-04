@@ -1675,7 +1675,7 @@ let onClearedName id tac =
     (Proofview.V82.tactic (tclTRY (clear [id])))
     (Proofview.Goal.nf_enter begin fun gl ->
      let id = Tacmach.New.of_old (fresh_id [] id) gl in
-     Tacticals.New.tclTHEN (Proofview.V82.tactic (introduction id)) (tac id)
+     Tacticals.New.tclTHEN (introduction id) (tac id)
     end)
 
 let onClearedName2 id tac =
@@ -1684,7 +1684,7 @@ let onClearedName2 id tac =
     (Proofview.Goal.nf_enter begin fun gl ->
      let id1 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_left")) gl in
      let id2 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_right")) gl in
-      Tacticals.New.tclTHENLIST [ Proofview.V82.tactic (introduction id1); Proofview.V82.tactic (introduction id2); tac id1 id2 ]
+      Tacticals.New.tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
     end)
 
 let destructure_hyps =
