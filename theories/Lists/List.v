@@ -1749,8 +1749,8 @@ Section ReDun.
      * now apply incl_Add_inv with a l'.
   Qed.
 
-  Local Notation "'pip' P"  := (forall (p1 p2 : P), p1 = p2).
-  Lemma NoDup_In_proof_irrelevant :
+  Local Notation "'pip' P"  := (forall (p1 p2 : P), p1 = p2)(at level 80).
+  Lemma NoDup_In_proof_irrelevant l :
     (forall a b : A, pip (a = b)) -> NoDup l -> (forall a, pip (In a l)).
   Proof.
     induction l as [ | a l IHl ]; [ simpl; intros; contradiction | ].
@@ -1766,11 +1766,11 @@ Section ReDun.
   Qed.
 
   Require Import Eqdep_dec.
-  Lemma NoDup_In_proof_irrelevant2 :
+  Lemma NoDup_In_proof_irrelevant2 l :
     (forall a b : A, {a=b}+{a<>b}) -> NoDup l -> (forall a, pip (In a l)).
   Proof.
     intros eq_A_dec ndl.
-    apply NoDup_In_proof_irrelevant; [ assumption | ].
+    apply NoDup_In_proof_irrelevant; [ | assumption ].
     apply eq_proofs_unicity. intros. destruct (eq_A_dec x y); auto.
   Qed.
 
