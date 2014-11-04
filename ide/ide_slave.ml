@@ -119,7 +119,14 @@ let edit_at id =
 let query (s,id) = Stm.query ~at:id s; read_stdout ()
 
 let annotate phrase =
-  Xml_datatype.PCData "FIXME"
+  let (loc, ast) =
+    let pa = Pcoq.Gram.parsable (Stream.of_string phrase) in
+    Vernac.parse_sentence (pa,None)
+  in
+  let (_, _, xml) =
+    RichPrinter.richpp_vernac ast
+  in
+  xml
 
 (** Goal display *)
 
