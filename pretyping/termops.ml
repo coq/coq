@@ -222,6 +222,13 @@ let it_mkNamedProd_or_LetIn init = it_named_context_quantifier mkNamedProd_or_Le
 let it_mkNamedProd_wo_LetIn init = it_named_context_quantifier mkNamedProd_wo_LetIn ~init
 let it_mkNamedLambda_or_LetIn init = it_named_context_quantifier mkNamedLambda_or_LetIn ~init
 
+let it_mkLambda_or_LetIn_from_no_LetIn c decls =
+  let rec aux k decls c = match decls with
+  | [] -> c
+  | (na,Some b,t)::decls -> mkLetIn (na,b,t,aux (k-1) decls (liftn 1 k c))
+  | (na,None,t)::decls -> mkLambda (na,t,aux (k-1) decls c)
+  in aux (List.length decls) (List.rev decls) c
+
 (* *)
 
 (* strips head casts and flattens head applications *)
@@ -932,6 +939,18 @@ let rec mem_named_context id = function
   | (id',_,_) :: _ when Id.equal id id' -> true
   | _ :: sign -> mem_named_context id sign
   | [] -> false
+
+let compact_named_context_reverse sign =
+  let compact l (i1,c1,t1) =
+    match l with
+    | [] -> [[i1],c1,t1]
+    | (l2,c2,t2)::q ->
+       if Option.equal Constr.equal c1 c2 && Constr.equal t1 t2
+       then (i1::l2,c2,t2)::q
+       else ([i1],c1,t1)::l
+  in Context.fold_named_context_reverse compact ~init:[] sign
+
+let compact_named_context sign = List.rev (compact_named_context_reverse sign)
 
 let clear_named_body id env =
   let aux _ = function

@@ -2,10 +2,8 @@ true ? 0; 1
      : nat
 if true as x return (x ? nat; bool) then 0 else true
      : nat
-Identifier 'proj1' now a keyword
 fun e : nat * nat => proj1 e
      : nat * nat -> nat
-Identifier 'decomp' now a keyword
 decomp (true, true) as t, u in (t, u)
      : bool * bool
 ! (0 = 0)
@@ -28,18 +26,14 @@ forall n n0 : nat, ### (n = n0)
      : list nat
 (1; 2, 4)
      : nat * nat * nat
-Identifier 'ifzero' now a keyword
 ifzero 3
      : bool
-Identifier 'pred' now a keyword
 pred 3
      : nat
 fun n : nat => pred n
      : nat -> nat
 fun n : nat => pred n
      : nat -> nat
-Identifier 'ifn' now a keyword
-Identifier 'is' now a keyword
 fun x : nat => ifn x is succ n then n else 0
      : nat -> nat
 1 -
@@ -78,7 +72,6 @@ Nil
      : forall A : Type, list A
 NIL:list nat
      : list nat
-Identifier 'I' now a keyword
 (false && I 3)%bool /\ I 6
      : Prop
 [|1, 2, 3; 4, 5, 6|]
@@ -123,14 +116,14 @@ fun x : list ?T0 => match x with
                     | (_ :') t => SOME2 t
                     end
      : list ?T0 -> option (list ?T0)
+where
+?T0 : [x : list ?T0 |- Type] (x cannot be used)
 s
      : s
-Identifier 'foo' now a keyword
 10
      : nat
 fun _ : nat => 9
      : nat -> nat
-Identifier 'ONE' now a keyword
 fun (x : nat) (p : x = x) => match p with
                              | ONE => ONE
                              end = p

@@ -102,7 +102,7 @@ let process_vernac_interp_error exn = match exn with
       exc
 
 let rec strip_wrapping_exceptions = function
-  | Proofview_monad.TacticFailure e as src ->
+  | Logic_monad.TacticFailure e as src ->
     let e = Backtrace.app_backtrace ~src ~dst:e in
     strip_wrapping_exceptions e
   | exc -> exc

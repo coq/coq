@@ -86,3 +86,9 @@ type goal_location = hyp_location option
    the conclusion (conclusion is represented by None) *)
 
 type simple_clause = Id.t option list
+
+(** {6 A notion of occurrences allowing to express "all occurrences
+       convertible to the first which matches"} *)
+
+type 'a or_like_first = AtOccs of 'a | LikeFirst
+

@@ -30,6 +30,9 @@ val is_message : xml -> bool
 type edit_id = int
 type state_id = Stateid.t
 type edit_or_state_id = Edit of edit_id | State of state_id
+type route_id = int
+
+val default_route : route_id
 
 type feedback_content =
   | AddedAxiom
@@ -49,8 +52,9 @@ type feedback_content =
   | Message of message
 
 type feedback = {
-  id : edit_or_state_id;
-  content : feedback_content;
+  id : edit_or_state_id;       (* The document part concerned *)
+  content : feedback_content;  (* The payload *)
+  route : route_id;            (* Extra routing info *)
 }
 
 val of_feedback : feedback -> xml

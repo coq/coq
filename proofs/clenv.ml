@@ -118,13 +118,13 @@ let clenv_environments evd bound t =
   in
   clrec (evd,[]) bound t
 
-let mk_clenv_from_env environ sigma n (c,cty) =
+let mk_clenv_from_env env sigma n (c,cty) =
   let evd = create_goal_evar_defs sigma in
   let (evd,args,concl) = clenv_environments evd n cty in
   { templval = mk_freelisted (applist (c,args));
     templtyp = mk_freelisted concl;
     evd = evd;
-    env = environ }
+    env = env }
 
 let mk_clenv_from_n gls n (c,cty) =
   mk_clenv_from_env (pf_env gls) gls.sigma n (c, cty)
@@ -532,6 +532,9 @@ let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
 
 let make_clenv_binding_env_apply env sigma n =
   make_clenv_binding_gen true n env sigma
+
+let make_clenv_binding_env env sigma =
+  make_clenv_binding_gen false None env sigma
 	
 let make_clenv_binding_apply env sigma n = make_clenv_binding_gen true n env sigma
 let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
@@ -544,3 +547,131 @@ let pr_clenv clenv =
     (str"TEMPL: " ++ print_constr clenv.templval.rebus ++
      str" : " ++ print_constr clenv.templtyp.rebus ++ fnl () ++
      pr_evar_map (Some 2) clenv.evd)
+
+(****************************************************************)
+(** Evar version of mk_clenv *)
+
+type hole = {
+  hole_evar : constr;
+  hole_type : types;
+  hole_deps  : bool;
+  hole_name : Name.t;
+}
+
+type clause = {
+  cl_holes : hole list;
+  cl_concl : types;
+}
+
+let make_evar_clause env sigma ?len t =
+  let bound = match len with
+  | None -> -1
+  | Some n -> assert (0 <= n); n
+  in
+  (** FIXME: do the renaming online *)
+  let t = rename_bound_vars_as_displayed [] [] t in
+  let rec clrec (sigma, holes) n t =
+    if n = 0 then (sigma, holes, t)
+    else match kind_of_term t with
+    | Cast (t, _, _) -> clrec (sigma, holes) n t
+    | Prod (na, t1, t2) ->
+      let store = Typeclasses.set_resolvable Evd.Store.empty false in
+      let sigma, ev = new_evar ~store env sigma t1 in
+      let dep = dependent (mkRel 1) t2 in
+      let hole = {
+        hole_evar = ev;
+        hole_type = t1;
+        hole_deps = dep;
+        (* We fix it later *)
+        hole_name = na;
+      } in
+      let t2 = if dep then subst1 ev t2 else t2 in
+      clrec (sigma, hole :: holes) (pred n) t2
+    | LetIn (na, b, _, t) -> clrec (sigma, holes) n (subst1 b t)
+    | _ -> (sigma, holes, t)
+  in
+  let (sigma, holes, t) = clrec (sigma, []) bound t in
+  let holes = List.rev holes in
+  let clause = { cl_concl = t; cl_holes = holes } in
+  (sigma, clause)
+
+let explain_no_such_bound_variable holes id =
+  let fold h accu = match h.hole_name with
+  | Anonymous -> accu
+  | Name id -> id :: accu
+  in
+  let mvl = List.fold_right fold holes [] in
+  let expl = match mvl with
+  | [] -> str " (no bound variables at all in the expression)."
+  | [id] -> str "(possible name is: " ++ pr_id id ++ str ")."
+  | _ -> str "(possible names are: " ++ pr_enum pr_id mvl ++ str ")."
+  in
+  errorlabstrm "" (str "No such bound variable " ++ pr_id id ++ expl)
+
+let evar_with_name holes id =
+  let map h = match h.hole_name with
+  | Anonymous -> None
+  | Name id' -> if Id.equal id id' then Some h else None
+  in
+  let hole = List.map_filter map holes in
+  match hole with
+  | [] -> explain_no_such_bound_variable holes id
+  | [h] -> h.hole_evar
+  | _ ->
+    errorlabstrm ""
+      (str "Binder name \"" ++ pr_id id ++
+        str "\" occurs more than once in clause.")
+
+let evar_of_binder holes = function
+| NamedHyp s -> evar_with_name holes s
+| AnonHyp n ->
+  try
+    let h = List.nth holes (pred n) in
+    h.hole_evar
+  with e when Errors.noncritical e ->
+    errorlabstrm "" (str "No such binder.")
+
+let define_with_type sigma env ev c =
+  let t = Retyping.get_type_of env sigma ev in
+  let ty = Retyping.get_type_of env sigma c in
+  let j = Environ.make_judge c ty in
+  let (sigma, j) = Coercion.inh_conv_coerce_to true (Loc.ghost) env sigma j t in
+  let (ev, _) = destEvar ev in
+  let sigma = Evd.define ev j.Environ.uj_val sigma in
+  sigma
+
+let solve_evar_clause env sigma hyp_only clause = function
+| NoBindings -> sigma
+| ImplicitBindings largs ->
+  let fold holes h =
+    if h.hole_deps then
+      (** Some subsequent term uses the hole *)
+      let (ev, _) = destEvar h.hole_evar in
+      let is_dep hole = occur_evar ev hole.hole_type in
+      let in_hyp = List.exists is_dep holes in
+      let in_ccl = occur_evar ev clause.cl_concl in
+      let dep = if hyp_only then in_hyp && not in_ccl else in_hyp || in_ccl in
+      let h = { h with hole_deps = dep } in
+      h :: holes
+    else
+      (** The hole does not occur anywhere *)
+      h :: holes
+  in
+  let holes = List.fold_left fold [] (List.rev clause.cl_holes) in
+  let map h = if h.hole_deps then Some h.hole_evar else None in
+  let evs = List.map_filter map holes in
+  let len = List.length evs in
+  if Int.equal len (List.length largs) then
+    let fold sigma ev arg = define_with_type sigma env ev arg in
+    let sigma = List.fold_left2 fold sigma evs largs in
+    sigma
+  else
+    error_not_right_number_missing_arguments len
+| ExplicitBindings lbind ->
+  let () = check_bindings lbind in
+  let fold sigma (_, binder, c) =
+    let ev = evar_of_binder clause.cl_holes binder in
+    define_with_type sigma env ev c
+  in
+  let sigma = List.fold_left fold sigma lbind in
+  sigma

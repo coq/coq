@@ -31,7 +31,7 @@ let absurd c =
     let sigma, j = Coercion.inh_coerce_to_sort Loc.ghost env sigma j in
     let t = j.Environ.utj_val in
     Tacticals.New.tclTHENLIST [
-      Proofview.V82.tclEVARS sigma;
+      Proofview.Unsafe.tclEVARS sigma;
       elim_type (build_coq_False ());
       Simple.apply (mk_absurd_proof t)
     ]

@@ -438,9 +438,7 @@ let vernac_notation locality local =
 (***********)
 (* Gallina *)
 
-let start_proof_and_print k l hook =
-  start_proof_com k l hook;
-  print_subgoals ()
+let start_proof_and_print k l hook = start_proof_com k l hook
 
 let no_hook = Lemmas.mk_hook (fun _ _ -> ())
 
@@ -487,7 +485,8 @@ let qed_display_script = ref true
 let vernac_end_proof ?proof = function
   | Admitted -> save_proof ?proof Admitted
   | Proved (_,_) as e ->
-    if is_verbose () && !qed_display_script then Stm.show_script ?proof ();
+    if is_verbose () && !qed_display_script && !Flags.coqtop_ui then
+      Stm.show_script ?proof ();
     save_proof ?proof e
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
@@ -801,20 +800,31 @@ let command_focus = Proof.new_focus_kind ()
 let focus_command_cond = Proof.no_cond command_focus
 
 
-let vernac_solve n tcom b =
+let print_info_trace = ref None
+
+let _ = let open Goptions in declare_int_option {
+  optsync = true;
+  optdepr = false;
+  optname = "print info trace";
+  optkey = ["Info" ; "Level"];
+  optread = (fun () -> !print_info_trace);
+  optwrite = fun n -> print_info_trace := n;
+}
+
+let vernac_solve n info tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
   let status = Proof_global.with_current_proof (fun etac p ->
     let with_end_tac = if b then Some etac else None in
     let global = match n with SelectAll -> true | _ -> false in
+    let info = Option.append info !print_info_trace in
     let (p,status) =
-      solve n (Tacinterp.hide_interp global tcom None) ?with_end_tac p
+      solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
     in
     (* in case a strict subtree was completed,
        go back to the top of the prooftree *)
     let p = Proof.maximal_unfocus command_focus p in
     p,status) in
-    print_subgoals();
     if not status then Pp.feedback Feedback.AddedAxiom
  
 
@@ -1480,22 +1490,26 @@ let vernac_check_may_eval redexp glopt rc =
   let env = Environ.push_context uctx env in
   let c = nf c in
   let j =
-    try
-      Evarutil.check_evars env Evd.empty sigma' c;
-      Arguments_renaming.rename_typing env c
-    with Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) ->
-      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c) in
+    if Evarutil.has_undefined_evars sigma' c then
+      Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c)
+    else
+      (* OK to call kernel which does not support evars *)
+      Arguments_renaming.rename_typing env c in
   match redexp with
     | None ->
-        let l = Evarutil.non_instantiated sigma' in
-        let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma j.Environ.uj_type } in
+        let l = Evar.Set.union (Evd.evars_of_term j.Environ.uj_val) (Evd.evars_of_term j.Environ.uj_type) in
+        let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma' j.Environ.uj_type } in
 	msg_notice (print_judgment env sigma' j ++
-                    (if l != Evar.Map.empty then (fnl () ++ str "where" ++ fnl () ++ pr_evars sigma' l) else mt ()) ++
+                    (if l != Evar.Set.empty then
+                        let l = Evar.Set.fold (fun ev -> Evar.Map.add ev (Evarutil.nf_evar_info sigma' (Evd.find sigma' ev))) l Evar.Map.empty in
+                        (fnl () ++ str "where" ++ fnl () ++ pr_evars sigma' l)
+                     else
+                        mt ()) ++
                      Printer.pr_universe_ctx uctx)
     | Some r ->
         Tacintern.dump_glob_red_expr r;
         let (sigma',r_interp) = interp_redexp env sigma' r in
-	let redfun = fst (reduction_of_red_expr env r_interp) in
+	let redfun env evm c = snd (fst (reduction_of_red_expr env r_interp) env evm c) in
 	msg_notice (print_eval redfun env sigma' rc j)
 
 let vernac_declare_reduction locality s r =
@@ -1643,13 +1657,12 @@ let vernac_focus gln =
       | Some 0 ->
          Errors.error "Invalid goal number: 0. Goal numbering starts with 1."
       | Some n ->
-         Proof.focus focus_command_cond () n p);
-  print_subgoals ()
+         Proof.focus focus_command_cond () n p)
 
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =
-  Proof_global.simple_with_current_proof (fun _ p -> Proof.unfocus command_focus p ());
-  print_subgoals ()
+  Proof_global.simple_with_current_proof
+    (fun _ p -> Proof.unfocus command_focus p ())
 
 (* Checks that a proof is fully unfocused. Raises an error if not. *)
 let vernac_unfocused () =
@@ -1673,20 +1686,15 @@ let vernac_subproof gln =
   Proof_global.simple_with_current_proof (fun _ p ->
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
-    | Some n -> Proof.focus subproof_cond () n p);
-  print_subgoals ()
+    | Some n -> Proof.focus subproof_cond () n p)
 
 let vernac_end_subproof () =
-  Proof_global.simple_with_current_proof (fun _ p -> Proof.unfocus subproof_kind p ());
-  print_subgoals ()
-
+  Proof_global.simple_with_current_proof (fun _ p ->
+    Proof.unfocus subproof_kind p ())
 
 let vernac_bullet (bullet:Proof_global.Bullet.t) =
   Proof_global.simple_with_current_proof (fun _ p ->
-    Proof_global.Bullet.put p bullet);
-  (* Makes the focus visible in emacs by re-printing the goal. *)
-  if !Flags.print_emacs then print_subgoals ()
-
+    Proof_global.Bullet.put p bullet)
 
 let vernac_show = function
   | ShowGoal goalref ->
@@ -1831,7 +1839,7 @@ let interp ?proof locality poly c =
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)
-  | VernacSolve (n,tac,b) -> vernac_solve n tac b
+  | VernacSolve (n,info,tac,b) -> vernac_solve n info tac b
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
 
   (* Auxiliary file and library management *)
@@ -1900,11 +1908,11 @@ let interp ?proof locality poly c =
   | VernacEndSubproof -> vernac_end_subproof ()
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
-  | VernacProof (None, None) -> print_subgoals ()
-  | VernacProof (Some tac, None) -> vernac_set_end_tac tac ; print_subgoals ()
-  | VernacProof (None, Some l) -> vernac_set_used_variables l ; print_subgoals ()
+  | VernacProof (None, None) -> ()
+  | VernacProof (Some tac, None) -> vernac_set_end_tac tac
+  | VernacProof (None, Some l) -> vernac_set_used_variables l
   | VernacProof (Some tac, Some l) -> 
-      vernac_set_end_tac tac; vernac_set_used_variables l ; print_subgoals ()
+      vernac_set_end_tac tac; vernac_set_used_variables l
   | VernacProofMode mn -> Proof_global.set_proof_mode mn
   (* Toplevel control *)
   | VernacToplevelControl e -> raise e
@@ -2058,7 +2066,11 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             Flags.program_mode := orig_program_mode
           end
         with
-          | reraise when (match reraise with Timeout -> true | e -> Errors.noncritical e) ->
+        | reraise when
+              (match reraise with
+              | Timeout -> true
+              | e -> Errors.noncritical e)
+          ->
             let e = Errors.push reraise in
             let e = locate_if_not_already loc e in
             let () = restore_timeout () in

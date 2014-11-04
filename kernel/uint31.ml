@@ -105,15 +105,15 @@ let div21 = select div21_32 div21_64
 let lt_32 x y = (x lxor 0x40000000) < (y lxor 0x40000000)
 
 (* Do not remove the type information it is really important for 
-   efficiancy *)
+   efficiency *)
 let lt_64 (x:int) (y:int) = x < y
 let lt = select lt_32 lt_64
 
-(* Do not remove the type information it is really important for 
-   efficiancy *)    
 let le_32 x y = 
  (x lxor 0x40000000) <= (y lxor 0x40000000)
 
+(* Do not remove the type information it is really important for
+   efficiency *)
 let le_64 (x:int) (y:int) = x <= y
 let le = select le_32 le_64
 
@@ -121,7 +121,7 @@ let equal (x:int) (y:int) = x == y
     
 let cmp_32 x y = Int32.compare (uint_32 x) (uint_32 y)
 (* Do not remove the type information it is really important for 
-   efficiancy *)
+   efficiency *)
 let cmp_64 (x:int) (y:int) = compare x y
 let compare = select cmp_32 cmp_64
   

@@ -64,6 +64,14 @@ let flatten = function
   | _ -> None
 
 
+(** [append x y] is the first element of the concatenation of [x] and
+    [y] seen as lists. *)
+let append o1 o2 =
+  match o1 with
+  | Some _ -> o1
+  | None  -> o2
+
+
 (** {6 "Iterators"} ***)
 
 (** [iter f x] executes [f y] if [x] equals [Some y]. It does nothing

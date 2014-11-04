@@ -172,7 +172,7 @@ let computable p k =
        works for normal eta-expanded term. For non eta-expanded or
        non-normal terms, it may affirm the pred is synthetisable
        because of an undetected ultimate dependent variable in the second
-       clause, or else, it may affirms the pred non synthetisable
+       clause, or else, it may affirm the pred non synthetisable
        because of a non normal term in the fourth clause.
        A solution could be to store, in the MutCase, the eta-expanded
        normal form of pred to decide if it depends on its variables
@@ -239,26 +239,29 @@ let update_name na ((_,(e,_)),c) =
   | _ ->
       na
 
-let rec decomp_branch ndecls nargs nal b (avoid,env as e) c =
+let rec decomp_branch tags nal b (avoid,env as e) c =
   let flag = if b then RenamingForGoal else RenamingForCasesPattern (fst env,c) in
-  if Int.equal ndecls 0 then (List.rev nal,(e,c))
-  else
-    let na,c,f,nargs',body,t =
-      match kind_of_term (strip_outer_cast c) with
-	| Lambda (na,t,c) -> na,c,compute_displayed_let_name_in,nargs-1,None,Some t
-	| LetIn (na,b,t,c) when ndecls>nargs ->
-            na,c,compute_displayed_name_in,nargs,Some b,Some t
-	| _ ->
+  match tags with
+  | [] -> (List.rev nal,(e,c))
+  | b::tags ->
+      let na,c,f,body,t =
+        match kind_of_term (strip_outer_cast c), b with
+	| Lambda (na,t,c),false -> na,c,compute_displayed_let_name_in,None,Some t
+	| LetIn (na,b,t,c),true ->
+            na,c,compute_displayed_name_in,Some b,Some t
+	| _, false ->
 	  Name default_dependent_ident,(applist (lift 1 c, [mkRel 1])),
-	    compute_displayed_name_in,nargs-1,None,None
+	    compute_displayed_name_in,None,None
+	| _, true ->
+	  Anonymous,lift 1 c,compute_displayed_name_in,None,None
     in
     let na',avoid' = f flag avoid na c in
-    decomp_branch (ndecls-1) nargs' (na'::nal) b 
+    decomp_branch tags (na'::nal) b
       (avoid', add_name_opt na' body t env) c
 
 let rec build_tree na isgoal e ci cl =
   let mkpat n rhs pl = PatCstr(dl,(ci.ci_ind,n+1),pl,update_name na rhs) in
-  let cnl = ci.ci_cstr_ndecls in
+  let cnl = ci.ci_pp_info.cstr_tags in
   let cna = ci.ci_cstr_nargs in
   List.flatten
     (List.init (Array.length cl)
@@ -271,7 +274,7 @@ and align_tree nal isgoal (e,c as rhs) = match nal with
     | Case (ci,p,c,cl) when
         eq_constr c (mkRel (List.index Name.equal na (fst (snd e))))
 	&& (* don't contract if p dependent *)
-	computable p (ci.ci_pp_info.ind_nargs) ->
+	computable p (List.length ci.ci_pp_info.ind_tags) (* FIXME: can do better *) ->
 	let clauses = build_tree na isgoal e ci cl in
 	List.flatten
           (List.map (fun (pat,rhs) ->
@@ -284,7 +287,7 @@ and align_tree nal isgoal (e,c as rhs) = match nal with
 	List.map (fun (hd,rest) -> pat::hd,rest) mat
 
 and contract_branch isgoal e (cdn,can,mkpat,b) =
-  let nal,rhs = decomp_branch cdn can [] isgoal e b in
+  let nal,rhs = decomp_branch cdn [] isgoal e b in
   let mat = align_tree nal isgoal rhs in
   List.map (fun (hd,rhs) -> (mkpat rhs hd,rhs)) mat
 
@@ -292,27 +295,32 @@ and contract_branch isgoal e (cdn,can,mkpat,b) =
 (* Transform internal representation of pattern-matching into list of *)
 (* clauses                                                            *)
 
-let is_nondep_branch c n =
+let is_nondep_branch c l =
   try
-    let sign,ccl = decompose_lam_n_assum n c in
+    (* FIXME: do better using tags from l *)
+    let sign,ccl = decompose_lam_n_assum (List.length l) c in
     noccur_between 1 (rel_context_length sign) ccl
   with e when Errors.noncritical e -> (* Not eta-expanded or not reduced *)
     false
 
-let extract_nondep_branches test c b n =
-  let rec strip n r = if Int.equal n 0 then r else
-    match r with
-      | GLambda (_,_,_,_,t) -> strip (n-1) t
-      | GLetIn (_,_,_,t) -> strip (n-1) t
-      | _ -> assert false in
-  if test c n then Some (strip n b) else None
+let extract_nondep_branches test c b l =
+  let rec strip l r =
+    match r,l with
+      | r, [] -> r
+      | GLambda (_,_,_,_,t), false::l -> strip l t
+      | GLetIn (_,_,_,t), true::l -> strip l t
+      (* FIXME: do we need adjustment? *)
+      | _,_ -> assert false in
+  if test c l then Some (strip l b) else None
 
-let it_destRLambda_or_LetIn_names n c =
-  let rec aux n nal c =
-    if Int.equal n 0 then (List.rev nal,c) else match c with
-      | GLambda (_,na,_,_,c) -> aux (n-1) (na::nal) c
-      | GLetIn (_,na,_,c) -> aux (n-1) (na::nal) c
-      | _ ->
+let it_destRLambda_or_LetIn_names l c =
+  let rec aux l nal c =
+    match c, l with
+      | _, [] -> (List.rev nal,c)
+      | GLambda (_,na,_,_,c), false::l -> aux l (na::nal) c
+      | GLetIn (_,na,_,c), true::l -> aux l (na::nal) c
+      | _, true::l -> (* let-expansion *) aux l (Anonymous :: nal) c
+      | _, false::l ->
           (* eta-expansion *)
 	  let next l =
 	    let x = next_ident_away default_dependent_ident l in
@@ -322,14 +330,14 @@ let it_destRLambda_or_LetIn_names n c =
 	  in
 	  let x = next (free_glob_vars c) in
 	  let a = GVar (dl,x) in
-	  aux (n-1) (Name x :: nal)
+	  aux l (Name x :: nal)
             (match c with
               | GApp (loc,p,l) -> GApp (loc,p,l@[a])
               | _ -> (GApp (dl,c,[a])))
-  in aux n [] c
+  in aux l [] c
 
 let detype_case computable detype detype_eqns testdep avoid data p c bl =
-  let (indsp,st,consnargsl,k) = data in
+  let (indsp,st,constagsl,k) = data in
   let synth_type = synthetize_type () in
   let tomatch = detype c in
   let alias, aliastyp, pred=
@@ -367,20 +375,20 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   match tag, aliastyp with
   | LetStyle, None ->
       let bl' = Array.map detype bl in
-      let (nal,d) = it_destRLambda_or_LetIn_names consnargsl.(0) bl'.(0) in
+      let (nal,d) = it_destRLambda_or_LetIn_names constagsl.(0) bl'.(0) in
       GLetTuple (dl,nal,(alias,pred),tomatch,d)
   | IfStyle, None ->
       let bl' = Array.map detype bl in
       let nondepbrs =
-	Array.map3 (extract_nondep_branches testdep) bl bl' consnargsl in
+	Array.map3 (extract_nondep_branches testdep) bl bl' constagsl in
       if Array.for_all ((!=) None) nondepbrs then
 	GIf (dl,tomatch,(alias,pred),
              Option.get nondepbrs.(0),Option.get nondepbrs.(1))
       else
-	let eqnl = detype_eqns constructs consnargsl bl in
+	let eqnl = detype_eqns constructs constagsl bl in
 	GCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
   | _ ->
-      let eqnl = detype_eqns constructs consnargsl bl in
+      let eqnl = detype_eqns constructs constagsl bl in
       GCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
 let detype_sort = function
@@ -513,12 +521,12 @@ let rec detype flags avoid env sigma t =
     | Construct (cstr_sp,u) ->
 	GRef (dl, ConstructRef cstr_sp, detype_instance u)
     | Case (ci,p,c,bl) ->
-	let comp = computable p (ci.ci_pp_info.ind_nargs) in
+	let comp = computable p (List.length (ci.ci_pp_info.ind_tags)) in
 	detype_case comp (detype flags avoid env sigma)
 	  (detype_eqns flags avoid env sigma ci comp)
 	  is_nondep_branch avoid
 	  (ci.ci_ind,ci.ci_pp_info.style,
-	   ci.ci_cstr_ndecls,ci.ci_pp_info.ind_nargs)
+	   ci.ci_pp_info.cstr_tags,ci.ci_pp_info.ind_tags)
 	  (Some p) c bl
     | Fix (nvn,recdef) -> detype_fix flags avoid env sigma nvn recdef
     | CoFix (n,recdef) -> detype_cofix flags avoid env sigma n recdef
@@ -610,31 +618,35 @@ and detype_eqn (lax,isgoal as flags) avoid env sigma constr construct_nargs bran
       let na,avoid' = compute_displayed_name_in flag avoid x b in
       PatVar (dl,na),avoid',(add_name na body ty env),add_vname ids na
   in
-  let rec buildrec ids patlist avoid env n b =
-    if Int.equal n 0 then
-      (dl, Id.Set.elements ids,
-       [PatCstr(dl, constr, List.rev patlist,Anonymous)],
-       detype flags avoid env sigma b)
-    else
-      match kind_of_term b with
-	| Lambda (x,t,b) ->
+  let rec buildrec ids patlist avoid env l b =
+    match kind_of_term b, l with
+      | _, [] ->
+        (dl, Id.Set.elements ids,
+         [PatCstr(dl, constr, List.rev patlist,Anonymous)],
+         detype flags avoid env sigma b)
+      | Lambda (x,t,b), false::l ->
 	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b None t ids in
-            buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b
+            buildrec new_ids (pat::patlist) new_avoid new_env l b
 
-	| LetIn (x,b,t,b') ->
+      | LetIn (x,b,t,b'), true::l ->
 	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b' (Some b) t ids in
-            buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b'
+            buildrec new_ids (pat::patlist) new_avoid new_env l b'
 
-	| Cast (c,_,_) ->    (* Oui, il y a parfois des cast *)
-	    buildrec ids patlist avoid env n c
+      | Cast (c,_,_), l ->    (* Oui, il y a parfois des cast *)
+	    buildrec ids patlist avoid env l c
 
-	| _ -> (* eta-expansion : n'arrivera plus lorsque tous les
-                  termes seront construits à partir de la syntaxe Cases *)
+      | _, true::l ->
+	    let pat = PatVar (dl,Anonymous) in
+            buildrec ids (pat::patlist) avoid env l b
+
+      | _, false::l ->
+            (* eta-expansion : n'arrivera plus lorsque tous les
+               termes seront construits à partir de la syntaxe Cases *)
             (* nommage de la nouvelle variable *)
 	    let new_b = applist (lift 1 b, [mkRel 1]) in
             let pat,new_avoid,new_env,new_ids =
 	      make_pat Anonymous avoid env new_b None mkProp ids in
-	    buildrec new_ids (pat::patlist) new_avoid new_env (n-1) new_b
+	    buildrec new_ids (pat::patlist) new_avoid new_env l new_b
 
   in
   buildrec Id.Set.empty [] avoid env construct_nargs branch
@@ -800,6 +812,6 @@ let simple_cases_matrix_of_branches ind brs =
       (Loc.ghost,ids,[p],c))
     brs
 
-let return_type_of_predicate ind nrealargs_ctxt pred =
-  let nal,p = it_destRLambda_or_LetIn_names (nrealargs_ctxt+1) pred in
+let return_type_of_predicate ind nrealargs_tags pred =
+  let nal,p = it_destRLambda_or_LetIn_names (nrealargs_tags@[false]) pred in
   (List.hd nal, Some (Loc.ghost, ind, List.tl nal)), Some p

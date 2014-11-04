@@ -40,7 +40,7 @@ let preamble mod_name comment used_modules usf =
   in
   (if not usf.magic then mt ()
    else
-     str "{-# OPTIONS_GHC -cpp -fglasgow-exts #-}" ++ fnl () ++
+     str "{-# OPTIONS_GHC -cpp -XMagicHash #-}" ++ fnl () ++
      str "{- For Hugs, use the option -F\"cpp -P -traditional\" -}")
   ++ fnl () ++ fnl ()
   ++
@@ -54,13 +54,14 @@ let preamble mod_name comment used_modules usf =
   (if List.is_empty used_modules then mt () else fnl ()) ++
   (if not usf.magic then mt ()
    else str "\
-\nunsafeCoerce :: a -> b\
 \n#ifdef __GLASGOW_HASKELL__\
 \nimport qualified GHC.Base\
+\nunsafeCoerce :: a -> b\
 \nunsafeCoerce = GHC.Base.unsafeCoerce#\
 \n#else\
 \n-- HUGS\
 \nimport qualified IOExts\
+\nunsafeCoerce :: a -> b\
 \nunsafeCoerce = IOExts.unsafeCoerce\
 \n#endif" ++ fnl2 ())
   ++

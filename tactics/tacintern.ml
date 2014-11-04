@@ -497,13 +497,13 @@ let rec intern_atomic lf ist x =
         List.map (intern_constr ist) lems,l)
 
   (* Derived basic tactics *)
-  | TacInductionDestruct (ev,isrec,(l,el,cls)) ->
-      TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats)) ->
+  | TacInductionDestruct (ev,isrec,(l,el)) ->
+      TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats),cls) ->
 	      (intern_induction_arg ist c,
                (Option.map (intern_intro_pattern_naming_loc lf ist) ipato,
-	        Option.map (intern_or_and_intro_pattern_loc lf ist) ipats))) l,
-               Option.map (intern_constr_with_bindings ist) el,
-               Option.map (clause_app (intern_hyp_location ist)) cls))
+               Option.map (intern_or_and_intro_pattern_loc lf ist) ipats),
+               Option.map (clause_app (intern_hyp_location ist)) cls)) l,
+               Option.map (intern_constr_with_bindings ist) el))
   | TacDoubleInduction (h1,h2) ->
       let h1 = intern_quantified_hypothesis ist h1 in
       let h2 = intern_quantified_hypothesis ist h2 in

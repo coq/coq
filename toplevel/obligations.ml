@@ -798,7 +798,8 @@ let rec solve_obligation prg num tac =
       | [] ->
           let obl = subst_deps_obl obls obl in
           let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
-            Lemmas.start_proof_univs obl.obl_name kind prg.prg_ctx obl.obl_type
+            let evd = Evd.from_env ~ctx:prg.prg_ctx Environ.empty_env in
+            Lemmas.start_proof_univs obl.obl_name kind evd obl.obl_type
               (fun ctx' -> Lemmas.mk_hook (fun strength gr ->
 		let cst = match gr with ConstRef cst -> cst | _ -> assert false in
 		let obl =

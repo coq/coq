@@ -278,7 +278,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
     Lemmas.start_proof
       new_princ_name
       (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem))
-      (*FIXME*) Evd.empty_evar_universe_context
+      (*FIXME*) Evd.empty
     new_principle_type
       hook
     ;

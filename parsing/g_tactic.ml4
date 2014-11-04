@@ -136,19 +136,19 @@ let induction_arg_of_constr (c,lbind as clbind) = match lbind with
   | _ -> ElimOnConstr clbind
 
 let mkTacCase with_evar = function
-  | [(clear,ElimOnConstr cl),(None,None)],None,None ->
+  | [(clear,ElimOnConstr cl),(None,None),None],None ->
       TacCase (with_evar,(clear,cl))
   (* Reinterpret numbers as a notation for terms *)
-  | [(clear,ElimOnAnonHyp n),(None,None)],None,None ->
+  | [(clear,ElimOnAnonHyp n),(None,None),None],None ->
       TacCase (with_evar,
         (clear,(CPrim (Loc.ghost, Numeral (Bigint.of_int n)),
 	 NoBindings)))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
-  | [(clear,ElimOnIdent id),(None,None)],None,None ->
+  | [(clear,ElimOnIdent id),(None,None),None],None ->
       TacCase (with_evar,(clear,(CRef (Ident id,None),NoBindings)))
   | ic ->
-      if List.exists (function ((_, ElimOnAnonHyp _),_) -> true | _ -> false) (pi1 ic)
+      if List.exists (function ((_, ElimOnAnonHyp _),_,_) -> true | _ -> false) (fst ic)
       then
 	error "Use of numbers as direct arguments of 'case' is not supported.";
       TacInductionDestruct (false,with_evar,ic)
@@ -174,23 +174,9 @@ let map_int_or_var f = function
 
 let all_concl_occs_clause = { onhyps=Some[]; concl_occs=AllOccurrences }
 
-let has_no_specified_occs cl =
-  let forall ((occs, _), _) = match occs with
-  | AllOccurrences -> true
-  | _ -> false
-  in
-  let hyps = match cl.onhyps with
-  | None -> true
-  | Some hyps -> List.for_all forall hyps in
-  let concl = match cl.concl_occs with
-  | AllOccurrences | NoOccurrences -> true
-  | _ -> false
-  in
-  hyps && concl
-
 let merge_occurrences loc cl = function
   | None ->
-      if has_no_specified_occs cl then (None, cl)
+      if Locusops.clause_with_generic_occurrences cl then (None, cl)
       else
 	user_err_loc (loc,"",str "Found an \"at\" clause without \"with\" clause.")
   | Some (occs, p) ->
@@ -203,7 +189,7 @@ let merge_occurrences loc cl = function
       | { onhyps = Some [(AllOccurrences, id), l]; concl_occs = NoOccurrences } ->
         { cl with onhyps = Some [(occs, id), l] }
       | _ ->
-        if has_no_specified_occs cl then
+        if Locusops.clause_with_generic_occurrences cl then
           user_err_loc (loc,"",str "Unable to interpret the \"at\" clause; move it in the \"in\" clause.")
         else
           user_err_loc (loc,"",str "Cannot use clause \"at\" twice.")
@@ -409,7 +395,9 @@ GEXTEND Gram
       | -> {onhyps=None; concl_occs=AllOccurrences} ] ]
   ;
   opt_clause:
-    [ [ "in"; cl = in_clause -> Some cl | -> None ] ]
+    [ [ "in"; cl = in_clause -> Some cl
+      | "at"; occs = occs_nums -> Some {onhyps=Some[]; concl_occs=occs}
+      | -> None ] ]
   ;
   concl_occ:
     [ [ "*"; occs = occs -> occs
@@ -520,11 +508,17 @@ GEXTEND Gram
     [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
   ;
   induction_clause:
-    [ [ c = induction_arg; pat = as_or_and_ipat; eq = eqn_ipat -> (c,(eq,pat)) ] ]
+    [ [ c = induction_arg; pat = as_or_and_ipat; eq = eqn_ipat; cl = opt_clause
+        -> (c,(eq,pat),cl) ] ]
   ;
   induction_clause_list:
-    [ [ ic = LIST1 induction_clause SEP ",";
-	el = OPT eliminator; cl = opt_clause -> (ic,el,cl) ] ]
+    [ [ ic = LIST1 induction_clause SEP ","; el = OPT eliminator;
+        cl_tolerance = opt_clause ->
+        (* Condition for accepting "in" at the end by compatibility *)
+        match ic,el,cl_tolerance with
+        | [c,pat,None],Some _,Some _ -> ([c,pat,cl_tolerance],el)
+        | _,_,Some _ -> err ()
+        | _,_,None -> (ic,el) ]]
   ;
   move_location:
     [ [ IDENT "after"; id = id_or_meta -> MoveAfter id

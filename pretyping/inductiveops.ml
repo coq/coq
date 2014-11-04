@@ -273,7 +273,14 @@ let projection_nparams p = projection_nparams_env (Global.env ()) p
 (* Annotation for cases *)
 let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let print_info = { ind_nargs = mip.mind_nrealdecls; style = style } in
+  let ind_tags =
+    rel_context_tags (List.firstn mip.mind_nrealargs mip.mind_arity_ctxt) in
+  let cstr_tags =
+    Array.map2 (fun c n ->
+      let d,_ = decompose_prod_assum c in
+      rel_context_tags (List.firstn n d))
+      mip.mind_nf_lc mip.mind_consnrealdecls in
+  let print_info = { ind_tags; cstr_tags; style } in
   { ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;

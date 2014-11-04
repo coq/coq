@@ -6,293 +6,265 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** This file defines the low-level monadic operations used by the
-    tactic monad. The monad is divided into two layers: a non-logical
-    layer which consists in operations which will not (or cannot) be
-    backtracked in case of failure (input/output or persistent state)
-    and a logical layer which handles backtracking, proof
-    manipulation, and any other effect which needs to backtrack. *)
+(** This file defines the datatypes used as internal states by the
+    tactic monad, and specialises the [Logic_monad] to these type. *)
 
+(** {6 Trees/forest for traces} *)
 
-(** {6 Exceptions} *)
+module Trace = struct
 
+  (** The intent is that an ['a forest] is a list of messages of type
+      ['a]. But messages can stand for a list of more precise
+      messages, hence the structure is organised as a tree. *)
+  type 'a forest = 'a tree list
+  and  'a tree   = Seq of 'a * 'a forest
 
-(** To help distinguish between exceptions raised by the IO monad from
-    the one used natively by Coq, the former are wrapped in
-    [Exception].  It is only used internally so that [catch] blocks of
-    the IO monad would only catch exceptions raised by the [raise]
-    function of the IO monad, and not for instance, by system
-    interrupts. Also used in [Proofview] to avoid capturing exception
-    from the IO monad ([Proofview] catches errors in its compatibility
-    layer, and when lifting goal-level expressions). *)
-exception Exception of exn
-(** This exception is used to signal abortion in [timeout] functions. *)
-exception Timeout
-(** This exception is used by the tactics to signal failure by lack of
-    successes, rather than some other exceptions (like system
-    interrupts). *)
-exception TacticFailure of exn
+  (** To build a trace incrementally, we use an intermediary data
+      structure on which we can define an S-expression like language
+      (like a simplified xml except the closing tags do not carry a
+      name). Note that nodes are built from right to left in ['a
+      incr], the result is mirrored when returning so that in the
+      exposed interface, the forest is read from left to right.
 
-let _ = Errors.register_handler begin function
-  | Timeout -> Errors.errorlabstrm "Some timeout function" (Pp.str"Timeout!")
-  | Exception e -> Errors.print e
-  | TacticFailure e -> Errors.print e
-  | _ -> Pervasives.raise Errors.Unhandled
-end
+      Concretely, we want to add a new tree to a forest: and we are
+      building it by adding new trees to the left of its left-most
+      subtrees which is built the same way. *)
+  type 'a incr = { head:'a forest ; opened: 'a tree list }
 
-(** {6 Non-logical layer} *)
+  (** S-expression like language as ['a incr] transformers. It is the
+      responsibility of the library builder not to use [close] when no
+      tag is open. *)
+  let empty_incr = { head=[] ; opened=[] }
+  let opn a { head ; opened } = { head ; opened = Seq(a,[])::opened }
+  let close { head ; opened } =
+    match opened with
+    | [a] -> { head = a::head ; opened=[] }
+    | a::Seq(b,f)::opened -> { head ; opened=Seq(b,a::f)::opened }
+    | [] -> assert false
+  let leaf a s = close (opn a s)
 
-(** The non-logical monad is a simple [unit -> 'a] (i/o) monad. The
-    operations are simple wrappers around corresponding usual
-    operations and require little documentation. *)
-module NonLogical =
-struct
-  type 'a t = unit -> 'a
+  (** Returning a forest. It is the responsibility of the library
+      builder to close all the tags. *)
+  (* spiwack: I may want to close the tags instead, to deal with
+     interruptions. *)
+  let rec mirror f = List.rev_map mirror_tree f
+  and mirror_tree (Seq(a,f)) = Seq(a,mirror f)
 
-  type 'a ref = 'a Pervasives.ref
-
-  (* The functions in this module follow the pattern that they are
-     defined with the form [(); fun ()->...]. This is an optimisation
-     which signals to the compiler that the function is usually partially
-     applied up to the [();]. Without this annotation, partial
-     applications can be significantly slower.
-
-     Documentation of this behaviour can be found at:
-     https://ocaml.janestreet.com/?q=node/30 *)
-
-  let ret a = (); fun () -> a
-
-  let bind a k = (); fun () -> k (a ()) ()
-
-  let ignore a = (); fun () -> ignore (a ())
-
-  let seq a k = (); fun () -> a (); k ()
-
-  let map f a = (); fun () -> f (a ())
-
-  let ref a = (); fun () -> Pervasives.ref a
-
-  (** [Pervasives.(:=)] *)
-  let set r a = (); fun () -> r := a
-
-  (** [Pervasives.(!)] *)
-  let get = fun r -> (); fun () -> ! r
-
-  (** [Pervasives.raise]. Except that exceptions are wrapped with
-      {!Exception}. *)
-  let raise = fun e -> (); fun () -> raise (Exception e)
-
-  (** [try ... with ...] but restricted to {!Exception}. *)
-  let catch = fun s h -> ();
-    fun () -> try s ()
-      with Exception e as src ->
-        let src = Errors.push src in
-        let e = Backtrace.app_backtrace ~src ~dst:e in
-        h e ()
-
-  let read_line = fun () -> try Pervasives.read_line () with e -> let e = Errors.push e in raise e ()
-
-  let print_char = fun c -> (); fun () -> print_char c
-
-  (** {!Pp.pp}. The buffer is also flushed. *)
-  let print = fun s -> (); fun () -> try Pp.pp s; Pp.pp_flush () with e -> let e = Errors.push e in raise e ()
-
-  let timeout = fun n t -> (); fun () ->
-    Control.timeout n t (Exception Timeout)
-
-  let make f = (); fun () ->
-    try f ()
-    with e when Errors.noncritical e ->
-      let e = Errors.push e in
-      Pervasives.raise (Exception e)
-
-  let run = fun x ->
-    try x () with Exception e as src ->
-      let src = Errors.push src in
-      let e = Backtrace.app_backtrace ~src ~dst:e in
-      Pervasives.raise e
-end
-
-(** {6 Logical layer} *)
-
-(** The logical monad is a backtracking monad on top of which is
-    layered a state monad (which is used to implement all of read/write,
-    read only, and write only effects). The state monad being layered on
-    top of the backtracking monad makes it so that the state is
-    backtracked on failure.
-
-    Backtracking differs from regular exception in that, writing (+)
-    for exception catching and (>>=) for bind, we require the
-    following extra distributivity laws:
-
-    x+(y+z) = (x+y)+z
-
-    zero+x = x
-
-    x+zero = x
-
-    (x+y)>>=k = (x>>=k)+(y>>=k) *)
-
-(** A view type for the logical monad, which is a form of list, hence
-    we can decompose it with as a list. *)
-type ('a, 'b) list_view =
-  | Nil of exn
-  | Cons of 'a * 'b
-
-module type Param = sig
-
-  (** Read only *)
-  type e
-
-  (** Write only *)
-  type w
-
-  (** [w] must be a monoid *)
-  val wunit : w
-  val wprod : w -> w -> w
-
-  (** Read-write *)
-  type s
+  let to_tree = function
+    | { head ; opened=[] } -> mirror head
+    | { head ; opened=_::_} -> assert false
 
 end
 
 
-module Logical (P:Param) =
-struct
 
-  (** All three of environment, writer and state are coded as a single
-      state-passing-style monad.*)
-  type state = {
-    rstate : P.e;
-    wstate : P.w;
-    sstate : P.s;
-  }
+(** {6 State types} *)
 
-  (** Double-continuation backtracking monads are reasonable folklore
-      for "search" implementations (including the Tac interactive
-      prover's tactics). Yet it's quite hard to wrap your head around
-      these.  I recommand reading a few times the "Backtracking,
-      Interleaving, and Terminating Monad Transformers" paper by
-      O. Kiselyov, C. Shan, D. Friedman, and A. Sabry.  The peculiar
-      shape of the monadic type is reminiscent of that of the
-      continuation monad transformer.
+(** We typically label nodes of [Trace.tree] with messages to
+    print. But we don't want to compute the result. *)
+type lazy_msg = unit -> Pp.std_ppcmds
+let pr_lazy_msg msg = msg ()
 
-      The paper also contains the rational for the [split] abstraction.
+(** Info trace. *)
+module Info = struct
 
-      An explanation of how to derive such a monad from mathematical
-      principles can be found in "Kan Extensions for Program
-      Optimisation" by Ralf Hinze.
+  (** The type of the tags for [info]. *)
+  type tag =
+    | Msg of lazy_msg (** A simple message *)
+    | Tactic of lazy_msg (** A tactic call *)
+    | Dispatch  (** A call to [tclDISPATCH]/[tclEXTEND] *)
+    | DBranch  (** A special marker to delimit individual branch of a dispatch. *)
 
-      A somewhat concrete view is that the type ['a iolist] is, in fact
-      the impredicative encoding of the following stream type:
+  type state = tag Trace.incr
+  type tree = tag Trace.forest
 
-      [type 'a _iolist' = Nil of exn | Cons of 'a*'a iolist'
-      and 'a iolist = 'a _iolist NonLogical.t]
 
-      Using impredicative encoding avoids intermediate allocation and
-      is, empirically, very efficient in Ocaml. It also has the
-      practical benefit that the monadic operation are independent of
-      the underlying monad, which simplifies the code and side-steps
-      the limited inlining of Ocaml.
 
-      In that vision, [bind] is simply [concat_map] (though the cps
-      version is significantly simpler), [plus] is concatenation, and
-      [split] is pattern-matching. *)
-  type 'a iolist =
-      { iolist : 'r. (exn -> 'r NonLogical.t) ->
-                     ('a -> (exn -> 'r NonLogical.t) -> 'r NonLogical.t) ->
-                     'r NonLogical.t }
+  let pr_in_comments m = Pp.(str"(* "++pr_lazy_msg m++str" *)")
 
-  type 'a t = state -> ('a * state) iolist
+  let unbranch = function
+    | Trace.Seq (DBranch,brs) -> brs
+    | _ -> assert false
 
-  let zero e : 'a t = (); fun s ->
-    { iolist = fun nil cons -> nil e }
 
-  let plus m1 m2 : 'a t = (); fun s ->
-    let m1 = m1 s in
-    { iolist = fun nil cons -> m1.iolist (fun e -> (m2 e s).iolist nil cons) cons }
+  let is_empty_branch = let open Trace in function
+    | Seq(DBranch,[]) -> true
+    | _ -> false
 
-  let ret x : 'a t = (); fun s ->
-    { iolist = fun nil cons -> cons (x, s) nil }
+  (** Dispatch with empty branches are (supposed to be) equivalent to
+      [idtac] which need not appear, so they are removed from the
+      trace. *)
+  let dispatch brs =
+    let open Trace in
+    if CList.for_all is_empty_branch brs then None
+    else Some (Seq(Dispatch,brs))
 
-  let bind (m : 'a t) (f : 'a -> 'b t) : 'b t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons -> m.iolist nil (fun (x, s) next -> (f x s).iolist next cons) }
+  let constr = let open Trace in function
+    | Dispatch -> dispatch
+    | t -> fun br -> Some (Seq(t,br))
 
-  let seq (m : unit t) (f : 'a t) : 'a t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons -> m.iolist nil (fun ((), s) next -> (f s).iolist next cons) }
+  let rec compress_tree = let open Trace in function
+    | Seq(t,f) -> constr t (compress f)
+  and compress f =
+    CList.map_filter compress_tree f
 
-  let map (f : 'a -> 'b) (m : 'a t) : 'b t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons -> m.iolist nil (fun (x, s) next -> cons (f x, s) next) }
+  let rec is_empty = let open Trace in function
+    | Seq(Dispatch,brs) -> List.for_all is_empty brs
+    | Seq(DBranch,br) -> List.for_all is_empty br
+    | _ -> false
 
-  let ignore (m : 'a t) : unit t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons -> m.iolist nil (fun (_, s) next -> cons ((), s) next) }
+  (** [with_sep] is [true] when [Tactic m] must be printed with a
+      trailing semi-colon. *)
+  let rec pr_tree with_sep = let open Trace in function
+    | Seq (Msg m,[]) -> pr_in_comments m
+    | Seq (Tactic m,_) ->
+        let tail = if with_sep then Pp.str";" else Pp.mt () in
+        Pp.(pr_lazy_msg m ++ tail)
+    | Seq (Dispatch,brs) ->
+        let tail = if with_sep then Pp.str";" else Pp.mt () in
+        Pp.(pr_dispatch brs++tail)
+    | Seq (Msg _,_::_) | Seq (DBranch,_) -> assert false
+  and pr_dispatch brs =
+    let open Pp in
+    let brs = List.map unbranch brs in
+    match brs with
+    | [br] -> pr_forest br
+    | _ ->
+        let sep () = spc()++str"|"++spc() in
+        let branches = prlist_with_sep sep pr_forest brs in
+        str"[>"++spc()++branches++spc()++str"]"
+  and pr_forest = function
+    | [] -> Pp.mt ()
+    | [tr] -> pr_tree false tr
+    | tr::l -> Pp.(pr_tree true tr ++ pr_forest l)
 
-  let lift (m : 'a NonLogical.t) : 'a t = (); fun s ->
-    { iolist = fun nil cons -> NonLogical.bind m (fun x -> cons (x, s) nil) }
+  let print f =
+    pr_forest (compress f)
 
-  (** State related *)
+  let rec collapse_tree n t =
+    let open Trace in
+    match n , t with
+    | 0 , t -> [t]
+    | _ , (Seq(Tactic _,[]) as t) -> [t]
+    | n , Seq(Tactic _,f) -> collapse (pred n) f
+    | n , Seq(Dispatch,brs) -> [Seq(Dispatch, (collapse n brs))]
+    | n , Seq(DBranch,br) -> [Seq(DBranch, (collapse n br))]
+    | _ , (Seq(Msg _,_) as t) -> [t]
+  and collapse n f =
+    CList.map_append (collapse_tree n) f
+end
 
-  let get : P.s t = (); fun s ->
-    { iolist = fun nil cons -> cons (s.sstate, s) nil }
 
-  let set (sstate : P.s) : unit t = (); fun s ->
-    { iolist = fun nil cons -> cons ((), { s with sstate }) nil }
+(** Type of proof views: current [evar_map] together with the list of
+    focused goals. *)
+type proofview = { solution : Evd.evar_map; comb : Goal.goal list }
 
-  let modify (f : P.s -> P.s) : unit t = (); fun s ->
-    { iolist = fun nil cons -> cons ((), { s with sstate = f s.sstate }) nil }
 
-  let current : P.e t = (); fun s ->
-    { iolist = fun nil cons -> cons (s.rstate, s) nil }
+(** {6 Instantiation of the logic monad} *)
 
-  let put (w : P.w) : unit t = (); fun s ->
-    { iolist = fun nil cons -> cons ((), { s with wstate = P.wprod s.wstate w }) nil }
+(** Parameters of the logic monads *)
+module P = struct
 
-  (** List observation *)
+  type s = proofview * Environ.env
 
-  let once (m : 'a t) : 'a t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons -> m.iolist nil (fun x _ -> cons x nil) }
+  (** Recording info trace (true) or not. *)
+  type e = bool
 
-  let break (f : exn -> bool) (m : 'a t) : 'a t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons ->
-      m.iolist nil (fun x next -> cons x (fun e -> if f e then nil e else next e))
-    }
+  (** Status (safe/unsafe) * shelved goals * given up *)
+  type w = bool * Evar.t list * Evar.t list
 
-  (** For [reflect] and [split] see the "Backtracking, Interleaving,
-      and Terminating Monad Transformers" paper.  *)
-  type 'a reified = ('a, exn -> 'a reified) list_view NonLogical.t
+  let wunit = true , [] , []
+  let wprod (b1,s1,g1) (b2,s2,g2) = b1 && b2 , s1@s2 , g1@g2
 
-  let rec reflect (m : 'a reified) : 'a iolist =
-    { iolist = fun nil cons ->
-      let next = function
-      | Nil e -> nil e
-      | Cons (x, l) -> cons x (fun e -> (reflect (l e)).iolist nil cons)
-      in
-      NonLogical.bind m next
-    }
+  type u = Info.state
 
-  let split (m : 'a t) : ('a, exn -> 'a t) list_view t = (); fun s ->
-    let m = m s in
-    let rnil e = NonLogical.ret (Nil e) in
-    let rcons p l = NonLogical.ret (Cons (p, l)) in
-    { iolist = fun nil cons ->
-      NonLogical.bind (m.iolist rnil rcons) begin function
-      | Nil e -> cons (Nil e, s) nil
-      | Cons ((x, s), l) ->
-        let l e = (); fun _ -> reflect (l e) in
-        cons (Cons (x, l), s) nil
-      end }
+  let uunit = Trace.empty_incr
 
-  let run m r s =
-    let s = { wstate = P.wunit; rstate = r; sstate = s } in
-    let m = m s in
-    let nil e = NonLogical.raise (TacticFailure e) in
-    let cons (x, s) _ = NonLogical.ret (x, s.sstate, s.wstate) in
-    m.iolist nil cons
+end
 
- end
+module Logical = Logic_monad.Logical(P)
+
+
+(** {6 Lenses to access to components of the states} *)
+
+module type State = sig
+  type t
+  val get : t Logical.t
+  val set : t -> unit Logical.t
+  val modify : (t->t) -> unit Logical.t
+end
+
+module type Writer = sig
+  type t
+  val put : t -> unit Logical.t
+end
+
+module Pv : State with type t := proofview = struct
+  let get = Logical.(map fst get)
+  let set p = Logical.modify (fun (_,e) -> (p,e))
+  let modify f= Logical.modify (fun (p,e) -> (f p,e))
+end
+
+module Solution : State with type t := Evd.evar_map = struct
+  let get = Logical.map (fun {solution} -> solution) Pv.get
+  let set s = Pv.modify (fun pv -> { pv with solution = s })
+  let modify f = Pv.modify (fun pv -> { pv with solution = f pv.solution })
+end
+
+module Comb : State with type t = Evar.t list = struct
+    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
+  type t = Evar.t list
+  let get = Logical.map (fun {comb} -> comb) Pv.get
+  let set c = Pv.modify (fun pv -> { pv with comb = c })
+  let modify f = Pv.modify (fun pv -> { pv with comb = f pv.comb })
+end
+
+module Env : State with type t := Environ.env = struct
+  let get = Logical.(map snd get)
+  let set e = Logical.modify (fun (p,_) -> (p,e))
+  let modify f = Logical.modify (fun (p,e) -> (p,f e))
+end
+
+module Status : Writer with type t := bool = struct
+  let put s = Logical.put (s,[],[])
+end
+
+module Shelf : Writer with type t = Evar.t list = struct
+    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
+  type t = Evar.t list
+  let put sh = Logical.put (true,sh,[])
+end
+
+module Giveup : Writer with type t = Evar.t list = struct
+    (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
+  type t = Evar.t list
+  let put gs = Logical.put (true,[],gs)
+end
+
+(** Lens and utilies pertaining to the info trace *)
+module InfoL = struct
+  let recording = Logical.current
+  let if_recording t =
+    let open Logical in
+    recording >>= fun r ->
+    if r then t else return ()
+
+  let record_trace t = Logical.local true t
+
+  let raw_update = Logical.update
+  let update f = if_recording (raw_update f)
+  let opn a = update (Trace.opn a)
+  let close = update Trace.close
+  let leaf a = update (Trace.leaf a)
+
+  let tag a t =
+    let open Logical in
+    recording >>= fun r ->
+    if r then begin
+      raw_update (Trace.opn a) >>
+      t >>= fun a ->
+      raw_update Trace.close >>
+      return a
+    end else
+      t
+end

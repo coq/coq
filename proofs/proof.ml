@@ -215,7 +215,7 @@ let _unfocus pr =
    a need for it? *)
 let focus cond inf i pr =
   try _focus cond (Obj.repr inf) i i pr
-  with Proofview.IndexOutOfRange -> raise (NoSuchGoals (i,i))
+  with CList.IndexOutOfRange -> raise (NoSuchGoals (i,i))
 
 let rec unfocus kind pr () =
   let cond = cond_of_focus pr in
@@ -318,24 +318,20 @@ let initial_goals p = Proofview.initial_goals p.entry
 
 let run_tactic env tac pr =
   let sp = pr.proofview in
-  let (_,tacticced_proofview,(status,to_shelve,give_up)) = Proofview.apply env tac sp in
+  let (_,tacticced_proofview,(status,to_shelve,give_up),info_trace) = Proofview.apply env tac sp in
   let shelf =
-    Proofview.in_proofview tacticced_proofview begin fun sigma ->
-      let pre_shelf = pr.shelf@(Evd.future_goals sigma)@to_shelve in
-      (* avoid already to count already solved goals as shelved. *)
-      List.filter (fun g -> Evd.is_undefined sigma g) pre_shelf
-    end
+    let sigma = Proofview.return tacticced_proofview in
+    let pre_shelf = pr.shelf@(List.rev (Evd.future_goals sigma))@to_shelve in
+    (* avoid already to count already solved goals as shelved. *)
+    List.filter (fun g -> Evd.is_undefined sigma g) pre_shelf
   in
   let given_up = pr.given_up@give_up in
-  let proofview = Proofview.reset_future_goals tacticced_proofview in
-  { pr with proofview ; shelf ; given_up },status
-
-let emit_side_effects eff pr =
-  {pr with proofview = Proofview.emit_side_effects eff pr.proofview}
+  let proofview = Proofview.Unsafe.reset_future_goals tacticced_proofview in
+  { pr with proofview ; shelf ; given_up },(status,info_trace)
 
 (*** Commands ***)
 
-let in_proof p k = Proofview.in_proofview p.proofview k
+let in_proof p k = k (Proofview.return p.proofview)
 
 (* Remove all the goals from the shelf and adds them at the end of the
    focused goals. *)

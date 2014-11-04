@@ -80,6 +80,7 @@ open Pattern
 open Patternops
 open Cbv
 open Classops
+open Arguments_renaming
 open Pretyping
 open Cbv
 open Classops
@@ -103,7 +104,15 @@ open Namegen
 open Indrec
 open Typing
 open Inductiveops
+open Locusops
+open Find_subterm
 open Unification
+open Miscops
+open Miscops
+open Nativenorm
+open Typeclasses
+open Typeclasses_errors
+open Vnorm
 
 open Constrextern
 open Constrintern
@@ -123,14 +132,20 @@ open Prettyp
 open Search
 
 open Evar_refiner
+open Goal
 open Logic
 open Pfedit
+open Proof
+open Proofview
+open Proof_using
+open Proof_global
 open Proof_type
 open Redexpr
 open Refiner
 open Tacmach
-open Decl_proof_instr
 open Tactic_debug
+
+open Decl_proof_instr
 open Decl_mode
 
 open Auto

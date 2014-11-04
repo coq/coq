@@ -52,7 +52,7 @@ We let also
 - IPL^2   = 2nd-order functional minimal predicate logic (with ex. quant.)
 - IPL_2^2 = 2nd-order impredicative, 2nd-order functional minimal pred. logic (with ex. quant.)
 
-with no prerequisite on the non-emptyness of domains
+with no prerequisite on the non-emptiness of domains
 
 Table of contents
 
@@ -96,7 +96,7 @@ Local Unset Intuition Negation Unfolding.
 
 (** Choice, reification and description schemes *)
 
-(** We make them all polymorphic. most of them have existentials as conclusion
+(** We make them all polymorphic. Most of them have existentials as conclusion
     so they require polymorphism otherwise their first application (e.g. to an
     existential in [Set]) will fix the level of [A].
 *)
@@ -340,7 +340,7 @@ Qed.
 
 (** We show that the guarded formulations of the axiom of choice
    are equivalent to their "omniscient" variant and comes from the non guarded
-   formulation in presence either of the independance of general premises
+   formulation in presence either of the independence of general premises
    or subset types (themselves derivable from subtypes thanks to proof-
    irrelevance) *)
 

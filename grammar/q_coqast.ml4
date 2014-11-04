@@ -367,17 +367,18 @@ let rec mlexpr_of_atomic_tactic = function
   (* Derived basic tactics *)
   | Tacexpr.TacInductionDestruct (isrec,ev,l) ->
       <:expr< Tacexpr.TacInductionDestruct $mlexpr_of_bool isrec$ $mlexpr_of_bool ev$
-	$mlexpr_of_triple
+	$mlexpr_of_pair
 	(mlexpr_of_list
-	   (mlexpr_of_pair
-              (mlexpr_of_pair
+	   (mlexpr_of_triple
+	      (mlexpr_of_pair
                  (mlexpr_of_option mlexpr_of_bool)
-	         mlexpr_of_induction_arg)
+                 mlexpr_of_induction_arg)
 	      (mlexpr_of_pair
 		 (mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern_naming))
-		 (mlexpr_of_option (mlexpr_of_intro_pattern_disjunctive)))))
+		 (mlexpr_of_option (mlexpr_of_intro_pattern_disjunctive)))
+	      (mlexpr_of_option mlexpr_of_clause)))
 	(mlexpr_of_option mlexpr_of_constr_with_binding)
-	(mlexpr_of_option mlexpr_of_clause) l$ >>
+ l$ >>
 
   (* Context management *)
   | Tacexpr.TacClear (b,l) ->

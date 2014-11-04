@@ -190,14 +190,6 @@ val define : evar -> constr -> evar_map -> evar_map
 val cmap : (constr -> constr) -> evar_map -> evar_map
 (** Map the function on all terms in the evar map. *)
 
-val diff : evar_map -> evar_map -> evar_map
-(** [diff ext orig] assuming [ext] is an extension of [orig], 
-    return an evar map containing just the extension *)
-
-val merge : evar_map -> evar_map -> evar_map
-(** [merge orig ext] assuming [ext] is an extension of [orig], 
-    return an evar map containing the union of the two maps *)
-
 val is_evar : evar_map -> evar -> bool
 (** Alias for {!mem}. *)
 
@@ -234,9 +226,6 @@ val evar_instance_array : (Id.t -> 'a -> bool) -> evar_info ->
   'a array -> (Id.t * 'a) list
 
 val instantiate_evar_array : evar_info -> constr -> constr array -> constr
-
-val subst_evar_defs_light : substitution -> evar_map -> evar_map
-(** Assume empty universe constraints in [evar_map] and [conv_pbs] *)
 
 val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool -> 
   evar_map ->  evar_map -> evar_map
@@ -575,10 +564,16 @@ val eq_constr_univs_test : evar_map -> constr -> constr -> bool
 (** Syntactic equality up to universes, throwing away the (consistent) constraints
     in case of success. *)
 
-(********************************************************************
-   constr with holes *)
+(********************************************************************)
+(* constr with holes and pending resolution of classes, conversion  *)
+(* problems, candidates, etc.                                       *)
 
-type open_constr = evar_map * constr
+type pending = (* before: *) evar_map * (* after: *) evar_map
+
+type pending_constr = pending * constr
+
+type open_constr = evar_map * constr (* Special case when before is empty *)
+
 (** Partially constructed constrs. *)
 
 type unsolvability_explanation = SeveralInstancesFound of int
@@ -602,5 +597,3 @@ val create_evar_defs      : evar_map -> evar_map
 (** Create an [evar_map] with empty meta map: *)
 
 val create_goal_evar_defs : evar_map -> evar_map
-
-val subst_evar_map : substitution -> evar_map -> evar_map

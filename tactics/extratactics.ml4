@@ -34,12 +34,12 @@ TACTIC EXTEND admit
 END
 
 let replace_in_clause_maybe_by (sigma,c1) c2 cl  tac =
-  Proofview.V82.tclEVARS sigma <*>
+  Proofview.Unsafe.tclEVARS sigma <*>
     (replace_in_clause_maybe_by c1 c2 cl)
     (Option.map Tacinterp.eval_tactic tac)
 
 let replace_term dir_opt (sigma,c) cl =
-  Proofview.V82.tclEVARS sigma <*>
+  Proofview.Unsafe.tclEVARS sigma <*>
     (replace_term dir_opt c) cl
 
 TACTIC EXTEND replace
@@ -202,7 +202,7 @@ END
 
 let onSomeWithHoles tac = function
   | None -> tac None
-  | Some c -> Proofview.V82.tclEVARS c.sigma <*> tac (Some c.it)
+  | Some c -> Proofview.Unsafe.tclEVARS c.sigma <*> tac (Some c.it)
 
 TACTIC EXTEND contradiction
  [ "contradiction" constr_with_bindings_opt(c) ] ->
@@ -246,7 +246,7 @@ END
 
 let rewrite_star clause orient occs (sigma,c) (tac : glob_tactic_expr option) =
   let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
-  Proofview.V82.tclEVARS sigma <*>
+  Proofview.Unsafe.tclEVARS sigma <*>
     general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true
 
 TACTIC EXTEND rewrite_star
@@ -349,18 +349,6 @@ END
 (**********************************************************************)
 (* Refine                                                             *)
 
-
-let refine_red_flags =
-  Genredexpr.Lazy {
-    Genredexpr.rBeta=true;
-    rIota=true;
-    rZeta=false;
-    rDelta=false;
-    rConst=[];
-  }
-
-let refine_locs = { Locus.onhyps=None; concl_occs=Locus.AllOccurrences }
-
 let refine_tac {Glob_term.closure=closure;term=term} =
   Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
@@ -373,8 +361,7 @@ let refine_tac {Glob_term.closure=closure;term=term} =
       Pretyping.ltac_idents = closure.Glob_term.idents;
     } in
     let update evd = Pretyping.understand_ltac flags env evd lvar tycon term in
-    Proofview.Refine.refine ~unsafe:false update <*>
-    Proofview.V82.tactic (reduce refine_red_flags refine_locs)
+    Tactics.New.refine ~unsafe:false update
   end
 
 TACTIC EXTEND refine
@@ -719,7 +706,7 @@ let  mkCaseEq a  : unit Proofview.tactic =
             let env = Proofview.Goal.env gl in
             Proofview.V82.tactic begin
 	      change_concl
-	        (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl)
+	        (snd (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl))
             end
           end;
 	  simplest_case a]

@@ -56,7 +56,7 @@ val delete_all_proofs : unit -> unit
 type lemma_possible_guards = Proof_global.lemma_possible_guards
 
 val start_proof :
-  Id.t -> goal_kind -> Evd.evar_universe_context -> named_context_val -> constr ->
+  Id.t -> goal_kind -> Evd.evar_map -> named_context_val -> constr ->
   ?init_tac:unit Proofview.tactic ->
   Proof_global.proof_terminator -> unit
 
@@ -126,7 +126,8 @@ val get_used_variables : unit -> Context.section_context option
     proof is focused or if there is no [n]th subgoal. [solve SelectAll
     tac] applies [tac] to all subgoals. *)
 
-val solve : ?with_end_tac:unit Proofview.tactic -> Vernacexpr.goal_selector -> unit Proofview.tactic ->
+val solve : ?with_end_tac:unit Proofview.tactic ->
+      Vernacexpr.goal_selector -> int option -> unit Proofview.tactic ->
       Proof.proof -> Proof.proof*bool
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current

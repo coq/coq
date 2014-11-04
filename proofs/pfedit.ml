@@ -25,13 +25,13 @@ let delete_proof = Proof_global.discard
 let delete_current_proof = Proof_global.discard_current
 let delete_all_proofs = Proof_global.discard_all
 
-let start_proof (id : Id.t) str ctx hyps c ?init_tac terminator =
+let start_proof (id : Id.t) str sigma hyps c ?init_tac terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
-  Proof_global.start_proof (Evd.from_env ~ctx (Global.env ())) id str goals terminator;
+  Proof_global.start_proof sigma id str goals terminator;
   let env = Global.env () in
   ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
-    | None -> p,true
+    | None -> p,(true,[])
     | Some tac -> Proof.run_tactic env tac p))
 
 let cook_this_proof p =
@@ -87,11 +87,15 @@ let current_proof_statement () =
     | (id,([concl],strength)) -> id,strength,concl
     | _ -> Errors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement")
 
-let solve ?with_end_tac gi tac pr =
+let solve ?with_end_tac gi info_lvl tac pr =
   try 
     let tac = match with_end_tac with
       | None -> tac
       | Some etac -> Proofview.tclTHEN tac etac in
+    let tac = match info_lvl with
+      | None -> tac
+      | Some _ -> Proofview.Trace.record_info_trace tac
+    in
     let tac = match gi with
       | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
       | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac
@@ -99,16 +103,22 @@ let solve ?with_end_tac gi tac pr =
       | Vernacexpr.SelectAllParallel ->
           Errors.anomaly(str"SelectAllParallel not handled by Stm")
     in
-    Proof.run_tactic (Global.env ()) tac pr
+    let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac pr in
+    let () =
+      match info_lvl with
+      | None -> ()
+      | Some i -> Pp.ppnl (hov 0 (Proofview.Trace.pr_info ~lvl:i info))
+    in
+    (p,status)
   with
     | Proof_global.NoCurrentProof  -> Errors.error "No focused proof"
-    | Proofview.IndexOutOfRange ->
+    | CList.IndexOutOfRange ->
         match gi with
 	| Vernacexpr.SelectNth i -> let msg = str "No such goal: " ++ int i ++ str "." in
 	                            Errors.errorlabstrm "" msg
         | _ -> assert false
 
-let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) tac)
+let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) None tac)
 
 let instantiate_nth_evar_com n com = 
   Proof_global.simple_with_current_proof (fun _ p -> Proof.V82.instantiate_evar n com p)
@@ -122,7 +132,8 @@ open Decl_kinds
 let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
-  start_proof id goal_kind ctx sign typ (fun _ -> ());
+  let evd = Evd.from_env ~ctx Environ.empty_env in
+  start_proof id goal_kind evd sign typ (fun _ -> ());
   try
     let status = by tac in
     let _,(const,univs,_) = cook_proof () in

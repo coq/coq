@@ -70,6 +70,8 @@ sig
   val merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
   val subset : 'a list -> 'a list -> bool
   val chop : int -> 'a list -> 'a list * 'a list
+  exception IndexOutOfRange
+  val goto : int -> 'a list -> 'a list * 'a list
   val split_when : ('a -> bool) -> 'a list -> 'a list * 'a list
   val split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
   val firstn : int -> 'a list -> 'a list
@@ -596,17 +598,28 @@ let subset l1 l2 =
   in
   look l1
 
+(** [goto i l] splits [l] into two lists [(l1,l2)] such that
+    [(List.rev l1)++l2=l] and [l1] has length [i].  It raises
+    [IndexOutOfRange] when [i] is negative or greater than the
+    length of [l]. *)
+exception IndexOutOfRange
+let goto n l =
+  let rec goto i acc = function
+    | tl when Int.equal i 0 -> (acc, tl)
+    | h::t -> goto (pred i) (h::acc) t
+    | [] -> raise IndexOutOfRange
+  in
+  goto n [] l
+
 (* [chop i l] splits [l] into two lists [(l1,l2)] such that
    [l1++l2=l] and [l1] has length [i].
    It raises [Failure] when [i] is negative or greater than the length of [l]  *)
 
 let chop n l =
-  let rec chop_aux i acc = function
-    | tl when Int.equal i 0 -> (List.rev acc, tl)
-    | h::t -> chop_aux (pred i) (h::acc) t
-    | [] -> failwith "List.chop"
-  in
-  chop_aux n [] l
+  try let (h,t) = goto n l in (List.rev h,t)
+  with IndexOutOfRange -> failwith "List.chop"
+    (* spiwack: should raise [IndexOutOfRange] but I'm afraid of missing
+       a try/with when replacing the exception. *)
 
 (* [split_when p l] splits [l] into two lists [(l1,a::l2)] such that
     [l1++(a::l2)=l], [p a=true] and [p b = false] for every element [b] of [l1].

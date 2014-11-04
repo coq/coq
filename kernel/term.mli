@@ -47,7 +47,7 @@ type case_style = Constr.case_style =
   LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
 
 type case_printing = Constr.case_printing =
-  { ind_nargs : int; style     : case_style }
+  { ind_tags : bool list; cstr_tags : bool list array; style : case_style }
 
 type case_info = Constr.case_info =
   { ci_ind        : inductive;

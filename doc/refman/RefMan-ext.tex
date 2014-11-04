@@ -1268,6 +1268,13 @@ After the above declaration is issued, implicit arguments can just (and
 have to) be skipped in any expression involving an application of
 {\qualid}.
 
+Implicit arguments can be cleared with the following syntax:
+
+\begin{quote}
+{\tt Arguments {\qualid} : clear implicits
+\comindex{Arguments}}
+\end{quote}
+
 \begin{Variants}
 \item {\tt Global Arguments {\qualid} \nelist{\possiblybracketedident}{}
 \comindex{Global Arguments}}
@@ -1402,21 +1409,6 @@ Variables (a b c : X) (r1 : R a b) (r2 : R b c).
 \begin{coq_example}
 Check (p r1 r2).
 \end{coq_example}
-
-Implicit arguments can be cleared with the following syntax:
-
-\begin{quote}
-{\tt Arguments {\qualid} : clear implicits
-\comindex{Arguments}}
-\end{quote}
-
-In the following example implict arguments declarations for the {\tt nil}
-constant are cleared:
-\begin{coq_example}
-Arguments cons : clear implicits.
-Print Implicit cons.
-\end{coq_example}
-
 
 \subsection{Mode for automatic declaration of implicit arguments
 \label{Auto-implicit}

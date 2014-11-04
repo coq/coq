@@ -759,10 +759,6 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl 
       eauto ?limit:!typeclasses_depth ~only_classes ~st dbs gl
    with Not_found -> tclFAIL 0 (str" typeclasses eauto failed on: " ++ Printer.pr_goal gl) gl
 
-let _ = Classes.refine_ref := begin fun c ->
-  Tactics.New.refine c
-end
-
 (** Take the head of the arity of a constr.
     Used in the partial application tactic. *)
 

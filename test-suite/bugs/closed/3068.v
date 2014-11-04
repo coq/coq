@@ -57,4 +57,4 @@ Section Finite_nat_set.
     intros H.
     eapply counted_list_equal_nth_char.
     intros i.
-    Fail destruct (counted_def_nth fs1 i _ ) eqn:H0.
+    destruct (counted_def_nth fs1 i _ ) eqn:H0.

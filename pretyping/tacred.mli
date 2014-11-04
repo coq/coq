@@ -62,7 +62,7 @@ val fold_commands : constr list ->  reduction_function
 
 (** Pattern *)
 val pattern_occs : (occurrences * constr) list -> env -> evar_map -> constr -> 
-  constr
+   evar_map * constr
 
 (** Rem: Lazy strategies are defined in Reduction *)
 

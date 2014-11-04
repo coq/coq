@@ -65,11 +65,6 @@ let handle_side_effects env body side_eff =
       | _ -> map_constr_with_binders ((+) 1) (fun i x -> sub c i x) i x in
     let rec sub_body c u b i x = match kind_of_term x with
       | Const (c',u') when eq_constant c c' -> 
-	(* let subst =  *)
-	(*   Array.fold_left2 (fun subst l l' -> Univ.LMap.add l l' subst) *)
-	(*     Univ.LMap.empty (Instance.to_array u) (Instance.to_array u') *)
-	(* in  *)
-	(*   Vars.subst_univs_level_constr subst b *)
 	Vars.subst_instance_constr u' b
       | _ -> map_constr_with_binders ((+) 1) (fun i x -> sub_body c u b i x) i x in
     let fix_body (c,cb,b) t =

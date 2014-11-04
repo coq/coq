@@ -108,14 +108,17 @@ val understand_judgment_tcc : env -> evar_map ref ->
 
 (** Trying to solve remaining evars and remaining conversion problems
     with type classes, heuristics, and possibly an external solver *)
+(* For simplicity, it is assumed that current map has no other evars
+   with candidate and no other conversion problems that the one in
+   [pending], however, it can contain more evars than the pending ones. *)
 
 val solve_remaining_evars : inference_flags ->
-  env -> (* initial map *) evar_map -> (* map to solve *) evar_map -> evar_map
+  env -> (* initial map *) evar_map -> (* map to solve *) pending -> evar_map
 
 (** Checking evars are all solved and reporting an appropriate error message *)
 
 val check_evars_are_solved :
-  env -> (* initial map: *) evar_map -> (* map to check: *) evar_map -> unit
+  env -> (* current map: *) evar_map -> (* map to check: *) pending -> unit
 
 (**/**)
 (** Internal of Pretyping... *)

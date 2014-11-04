@@ -51,101 +51,86 @@ exception EmptyHeap
 
 module Functional(X : Ordered) = struct
 
-  (* Heaps are encoded as complete binary trees, i.e., binary trees
-     which are full expect, may be, on the bottom level where it is filled
-     from the left.
-     These trees also enjoy the heap property, namely the value of any node
-     is greater or equal than those of its left and right subtrees.
-
-     There are 4 kinds of complete binary trees, denoted by 4 constructors:
-     [FFF] for a full binary tree (and thus 2 full subtrees);
-     [PPF] for a partial tree with a partial left subtree and a full
-     right subtree;
-     [PFF] for a partial tree with a full left subtree and a full right subtree
-     (but of different heights);
-     and [PFP] for a partial tree with a full left subtree and a partial
-     right subtree. *)
+  (* Heaps are encoded as Braun trees, that are binary trees
+     where size r <= size l <= size r + 1 for each node Node (l, x, r) *)
 
   type t =
-    | Empty
-    | FFF of t * X.t * t (* full    (full,    full) *)
-    | PPF of t * X.t * t (* partial (partial, full) *)
-    | PFF of t * X.t * t (* partial (full,    full) *)
-    | PFP of t * X.t * t (* partial (full,    partial) *)
+    | Leaf
+    | Node of t * X.t * t
 
   type elt = X.t
 
-  let empty = Empty
+  let empty = Leaf
 
-  (* smart constructors for insertion *)
-  let p_f l x r = match l with
-    | Empty | FFF _ -> PFF (l, x, r)
-    | _ -> PPF (l, x, r)
-
-  let pf_ l x = function
-    | Empty | FFF _ as r -> FFF (l, x, r)
-    | r -> PFP (l, x, r)
+  let is_empty t = t = Leaf
 
   let rec add x = function
-    | Empty ->
-	FFF (Empty, x, Empty)
-    (* insertion to the left *)
-    | FFF (l, y, r) | PPF (l, y, r) ->
-	if X.compare x y > 0 then p_f (add y l) x r else p_f (add x l) y r
-    (* insertion to the right *)
-    | PFF (l, y, r) | PFP (l, y, r) ->
-	if X.compare x y > 0 then pf_ l x (add y r) else pf_ l y (add x r)
+    | Leaf ->
+        Node (Leaf, x, Leaf)
+    | Node (l, y, r) ->
+        if X.compare x y >= 0 then
+          Node (add y r, x, l)
+        else
+          Node (add x r, y, l)
+
+  let rec extract = function
+    | Leaf ->
+        assert false
+    | Node (Leaf, y, r) ->
+        assert (r = Leaf);
+        y, Leaf
+    | Node (l, y, r) ->
+        let x, l = extract l in
+        x, Node (r, y, l)
+
+  let is_above x = function
+    | Leaf -> true
+    | Node (_, y, _) -> X.compare x y >= 0
+
+  let rec replace_min x = function
+    | Node (l, _, r) when is_above x l && is_above x r ->
+        Node (l, x, r)
+    | Node ((Node (_, lx, _) as l), _, r) when is_above lx r ->
+        (* lx <= x, rx necessarily *)
+        Node (replace_min x l, lx, r)
+    | Node (l, _, (Node (_, rx, _) as r)) ->
+        (* rx <= x, lx necessarily *)
+        Node (l, rx, replace_min x r)
+    | Leaf | Node (Leaf, _, _) | Node (_, _, Leaf) ->
+        assert false
+
+  (* merges two Braun trees [l] and [r],
+     with the assumption that [size r <= size l <= size r + 1] *)
+  let rec merge l r = match l, r with
+    | _, Leaf ->
+        l
+    | Node (ll, lx, lr), Node (_, ly, _) ->
+        if X.compare lx ly >= 0 then
+          Node (r, lx, merge ll lr)
+        else
+          let x, l = extract l in
+          Node (replace_min x r, ly, l)
+    | Leaf, _ ->
+        assert false (* contradicts the assumption *)
 
   let maximum = function
-    | Empty -> raise EmptyHeap
-    | FFF (_, x, _) | PPF (_, x, _) | PFF (_, x, _) | PFP (_, x, _) -> x
+    | Leaf -> raise EmptyHeap
+    | Node (_, x, _) -> x
 
-  (* smart constructors for removal; note that they are different
-     from the ones for insertion! *)
-  let p_f l x r = match l with
-    | Empty | FFF _ -> FFF (l, x, r)
-    | _ -> PPF (l, x, r)
-
-  let pf_ l x = function
-    | Empty | FFF _ as r -> PFF (l, x, r)
-    | r -> PFP (l, x, r)
-
-  let rec remove = function
-    | Empty ->
-	raise EmptyHeap
-    | FFF (Empty, _, Empty) ->
-	Empty
-    | PFF (l, _, Empty) ->
-	l
-    (* remove on the left *)
-    | PPF (l, x, r) | PFF (l, x, r) ->
-        let xl = maximum l in
-	let xr = maximum r in
-	let l' = remove l in
-	if X.compare xl xr >= 0 then
-	  p_f l' xl r
-	else
-	  p_f l' xr (add xl (remove r))
-    (* remove on the right *)
-    | FFF (l, x, r) | PFP (l, x, r) ->
-        let xl = maximum l in
-	let xr = maximum r in
-	let r' = remove r in
-	if X.compare xl xr > 0 then
-	  pf_ (add xr (remove l)) xl r'
-	else
-	  pf_ l xr r'
+  let remove = function
+    | Leaf ->
+        raise EmptyHeap
+    | Node (l, _, r) ->
+        merge l r
 
   let rec iter f = function
-    | Empty ->
-	()
-    | FFF (l, x, r) | PPF (l, x, r) | PFF (l, x, r) | PFP (l, x, r) ->
-	iter f l; f x; iter f r
+    | Leaf -> ()
+    | Node (l, x, r) -> iter f l; f x; iter f r
 
   let rec fold f h x0 = match h with
-    | Empty ->
+    | Leaf ->
 	x0
-    | FFF (l, x, r) | PPF (l, x, r) | PFF (l, x, r) | PFP (l, x, r) ->
+    | Node (l, x, r) ->
 	fold f l (fold f r (f x x0))
 
 end

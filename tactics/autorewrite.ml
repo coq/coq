@@ -96,7 +96,7 @@ let one_base general_rewrite_maybe_in tac_main bas =
     let c' = Vars.subst_univs_level_constr subst c in
     let sigma = Proofview.Goal.sigma gl in
     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
-    Tacticals.New.tclTHEN (Proofview.V82.tclEVARS sigma)
+    Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (general_rewrite_maybe_in dir c' tc)
   ) in
   let lrul = List.map (fun h -> 

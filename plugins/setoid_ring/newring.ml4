@@ -193,9 +193,9 @@ let ltac_record flds =
 
 let carg c = TacDynamic(Loc.ghost,Pretyping.constr_in c)
 
-let dummy_goal env =
+let dummy_goal env sigma =
   let (gl,_,sigma) = 
-    Goal.V82.mk_goal Evd.empty (named_context_val env) mkProp Evd.Store.empty in
+    Goal.V82.mk_goal sigma (named_context_val env) mkProp Evd.Store.empty in
   {Evd.it = gl; Evd.sigma = sigma}
 
 let constr_of v = match Value.to_constr v with
@@ -212,12 +212,8 @@ let exec_tactic env evd n f args =
   let getter =
     Tacexp(TacFun(List.map(fun id -> Some id) lid,
                   Tacintern.glob_tactic(tacticIn get_res))) in
-  let gls =
-    (fun gl -> 
-      let sigma = gl.Evd.sigma in
-	tclTHEN (Refiner.tclEVARS (Evd.merge sigma evd))
-	  (Proofview.V82.of_tactic (Tacinterp.eval_tactic(ltac_call f (args@[getter])))) gl)
-      (dummy_goal env) in
+  let gl = dummy_goal env evd in
+  let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic(ltac_call f (args@[getter]))) gl in
   let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
     Array.map (fun x -> nf (constr_of x)) !res, Evd.universe_context evd
 
@@ -783,7 +779,7 @@ VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
   | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods(l) ] ->
     [ let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
       add_theory id (ic t) set k cst (pre,post) power sign div]
-  | [ "Print" "Rings" ] => [Vernacexpr.VtQuery (true, Stateid.dummy), Vernacexpr.VtLater] -> [
+  | [ "Print" "Rings" ] => [Vernac_classifier.classify_as_query] -> [
     msg_notice (strbrk "The following ring structures have been declared:");
     Spmap.iter (fun fn fi ->
       msg_notice (hov 2
@@ -834,7 +830,7 @@ let ring_lookup (f:glob_tactic_expr) lH rl t =
       let rl = carg (make_term_list env evdref e.ring_carrier rl) in
       let lH = carg (make_hyp_list env evdref lH) in
       let ring = ltac_ring_structure e in
-      Proofview.tclTHEN (Proofview.V82.tclEVARS !evdref) (ltac_apply f (ring@[lH;rl]))
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (ring@[lH;rl]))
     with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
@@ -1114,7 +1110,7 @@ VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
 | [ "Add" "Field" ident(id) ":" constr(t) field_mods(l) ] ->
   [ let (k,set,inj,cst_tac,pre,post,power,sign,div) = process_field_mods l in
     add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign div]
-| [ "Print" "Fields" ] => [Vernacexpr.VtQuery (true, Stateid.dummy), Vernacexpr.VtLater] -> [
+| [ "Print" "Fields" ] => [Vernac_classifier.classify_as_query] -> [
     msg_notice (strbrk "The following field structures have been declared:");
     Spmap.iter (fun fn fi ->
       msg_notice (hov 2
@@ -1150,7 +1146,7 @@ let field_lookup (f:glob_tactic_expr) lH rl t =
       let rl = carg (make_term_list env evdref e.field_carrier rl) in
       let lH = carg (make_hyp_list env evdref lH) in
       let field = ltac_field_structure e in
-      Proofview.tclTHEN (Proofview.V82.tclEVARS !evdref) (ltac_apply f (field@[lH;rl]))
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (field@[lH;rl]))
     with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
