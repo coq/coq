@@ -1222,7 +1222,6 @@ module Make
           return (keyword "BeginSubproof" ++ spc () ++ int i)
         | VernacEndSubproof ->
           return (str "}")
->>>>>>> Ppannotation.t: New constructor AVernac.
 
     and pr_vernac_list l =
       hov 2 (str"[" ++ spc() ++
