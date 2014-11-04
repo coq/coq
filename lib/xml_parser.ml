@@ -124,8 +124,7 @@ let rec read_node s =
     | t ->
       push t s;
       raise NoMoreData
-and
-    read_elems tag s =
+and read_elems tag s =
   let elems = ref [] in
   (try
      while true do
