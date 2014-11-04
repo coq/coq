@@ -1765,6 +1765,15 @@ Section ReDun.
     apply f_equal; auto.
   Qed.
 
+  Require Import Eqdep_dec.
+  Lemma NoDup_In_proof_irrelevant2 :
+    (forall a b : A, {a=b}+{a<>b}) -> NoDup l -> (forall a, pip (In a l)).
+  Proof.
+    intros eq_A_dec ndl.
+    apply NoDup_In_proof_irrelevant; [ assumption | ].
+    apply eq_proofs_unicity. intros. destruct (eq_A_dec x y); auto.
+  Qed.
+
 End ReDun.
 
 (** NoDup and map *)
