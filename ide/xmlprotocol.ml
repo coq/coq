@@ -695,25 +695,27 @@ let pr_full_value call value = match call with
   | StopWorker _ -> pr_value_gen (print stop_worker_rty_t) (Obj.magic value)
   | PrintAst _   -> pr_value_gen (print print_ast_rty_t  ) (Obj.magic value)
   | Annotate _   -> pr_value_gen (print annotate_rty_t   ) (Obj.magic value)
-let pr_call call = match call with
-  | Add x        -> str_of_call call ^ " " ^ print add_sty_t         x
-  | Edit_at x    -> str_of_call call ^ " " ^ print edit_at_sty_t     x
-  | Query x      -> str_of_call call ^ " " ^ print query_sty_t       x
-  | Goal x       -> str_of_call call ^ " " ^ print goals_sty_t       x
-  | Evars x      -> str_of_call call ^ " " ^ print evars_sty_t       x
-  | Hints x      -> str_of_call call ^ " " ^ print hints_sty_t       x
-  | Status x     -> str_of_call call ^ " " ^ print status_sty_t      x
-  | Search x     -> str_of_call call ^ " " ^ print search_sty_t      x
-  | GetOptions x -> str_of_call call ^ " " ^ print get_options_sty_t x
-  | SetOptions x -> str_of_call call ^ " " ^ print set_options_sty_t x
-  | MkCases x    -> str_of_call call ^ " " ^ print mkcases_sty_t     x
-  | Quit x       -> str_of_call call ^ " " ^ print quit_sty_t        x
-  | About x      -> str_of_call call ^ " " ^ print about_sty_t       x
-  | Init x       -> str_of_call call ^ " " ^ print init_sty_t        x
-  | Interp x     -> str_of_call call ^ " " ^ print interp_sty_t      x
-  | StopWorker x -> str_of_call call ^ " " ^ print stop_worker_sty_t x
-  | PrintAst x   -> str_of_call call ^ " " ^ print print_ast_sty_t   x
-  | Annotate x   -> str_of_call call ^ " " ^ print annotate_sty_t    x
+let pr_call call =
+  let return what x = str_of_call call ^ " " ^ print what x in
+  match call with
+    | Add x        -> return add_sty_t x
+    | Edit_at x    -> return edit_at_sty_t x
+    | Query x      -> return query_sty_t x
+    | Goal x       -> return goals_sty_t x
+    | Evars x      -> return evars_sty_t x
+    | Hints x      -> return hints_sty_t x
+    | Status x     -> return status_sty_t x
+    | Search x     -> return search_sty_t x
+    | GetOptions x -> return get_options_sty_t x
+    | SetOptions x -> return set_options_sty_t x
+    | MkCases x    -> return mkcases_sty_t x
+    | Quit x       -> return quit_sty_t x
+    | About x      -> return about_sty_t x
+    | Init x       -> return init_sty_t x
+    | Interp x     -> return interp_sty_t x
+    | StopWorker x -> return stop_worker_sty_t x
+    | PrintAst x   -> return print_ast_sty_t x
+    | Annotate x   -> return annotate_sty_t x
 
 let document to_string_fmt =
   Printf.printf "=== Available calls ===\n\n";
