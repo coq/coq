@@ -159,25 +159,29 @@ let print_location_in_file {outer=s;inner=fname} loc =
       if String.equal s fname then mt() else errstrm ++ str":" ++ fnl()
     in
     let (bp,ep) = Loc.unloc loc in
-    let ic = open_in fname in
-    let rec line_of_pos lin bol cnt =
-      if cnt < bp then
-        if input_char ic == '\n'
-        then line_of_pos (lin + 1) (cnt +1) (cnt+1)
-        else line_of_pos lin bol (cnt+1)
-      else (lin, bol)
-    in
+    let line_of_pos lin bol cnt =
+      try
+        let ic = open_in fname in
+        let rec line_of_pos lin bol cnt =
+          if cnt < bp then
+            if input_char ic == '\n'
+            then line_of_pos (lin + 1) (cnt +1) (cnt+1)
+            else line_of_pos lin bol (cnt+1)
+          else (lin, bol)
+        in
+        let rc = line_of_pos lin bol cnt in
+        close_in ic;
+        rc
+      with Sys_error _ -> 0, 0 in
     try
       let (line, bol) = line_of_pos 1 0 0 in
-      close_in ic;
       hov 0 (* No line break so as to follow emacs error message format *)
         (errstrm ++ str"File " ++ str ("\""^fname^"\"") ++
            str", line " ++ int line ++ str", characters " ++
            Cerrors.print_loc (Loc.make_loc (bp-bol,ep-bol))) ++ str":" ++
         fnl ()
     with e when Errors.noncritical e ->
-      (close_in ic;
-       hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ())
+       hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ()
 
 let valid_buffer_loc ib loc =
   not (Loc.is_ghost loc) &&

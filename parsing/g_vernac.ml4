@@ -152,11 +152,12 @@ GEXTEND Gram
                     | _ ->
                         VernacError (UserError ("",str"Typing and evaluation commands, cannot be used with the \"all:\" selector."))
                   end
-      | tac = Tactic.tactic;
+      | info = OPT [IDENT "Info";n=natural -> n];
+        tac = Tactic.tactic;
         use_dft_tac = [ "." -> false | "..." -> true ] ->
         (fun g ->
             let g = Option.default (Proof_global.get_default_goal_selector ()) g in
-            VernacSolve(g,tac,use_dft_tac)) ] ]
+            VernacSolve(g,info,tac,use_dft_tac)) ] ]
   ;
   located_vernac:
     [ [ v = vernac -> !@loc, v ] ]

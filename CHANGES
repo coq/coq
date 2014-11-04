@@ -67,7 +67,9 @@ Vernacular commands
 Specification Language
 
 - Slight changes in unification error messages.
-- Added a syntax $(...)$ that allows putting tactics in terms.
+- Added a syntax $(...)$ that allows putting tactics in terms (may
+  break user notations using "$(", fixable by inserting a space or
+  rewriting the notation).
 - Constants in pattern-matching branches now respect the same rules regarding
   implicit arguments than in applicative position. The old behaviour can be
   recovered by the command "Set Asymmetric Patterns". (possible source of
@@ -185,7 +187,10 @@ Tactics
   the relevant hypotheses).
 - New construct "uconstr:c" and "type_term c" to build untyped terms.
 - Binders in terms defined in Ltac (either "constr" or "uconstr") can
-  now take their names from identifier defined in Ltac.
+  now take their names from identifier defined in Ltac. As a
+  consequence, a name cannot be used in a binder (constr:(fun x =>
+  ...)) if an Ltac variable of that name already exists and does not
+  contain an identifier. Source of occasional incompatibilities.
 - The "refine" tactic now accepts untyped terms built with "uconstr"
   so that terms with holes can be constructed piecewise in Ltac.
 - New bullets --, ++, **, ---, +++, ***, ... made available.
@@ -195,6 +200,23 @@ Tactics
 - In destruct/induction, experimental modifier "!" prefixing the
   hypothesis name to tell not erasing the hypothesis.
 - Bug fixes in "inversion as" may occasionally lead to incompatibilities.
+- Behavior of introduction patterns -> and <- made more uniform
+  (hypothesis is cleared, rewrite in hypotheses and conclusion and
+  erasing the variable when rewriting a variable).
+- Tactics from plugins are now active only when the corresponding
+  module is imported (source of incompatibilities, solvable by adding
+  an "Import", like e.g. "Import Omega").
+- Semantics of destruct/induction has been made more regular in some
+  edge cases, possibly leading to incompatibilies:
+  - new goals are now opened when the term does not match a subterm of
+    the goal and has unresolved holes, while in 8.4 these holes were
+    turned into existential variables
+  - when no "at" option is given, the historical semantics which
+    selects all subterms syntactically identical to the first subterm
+    matching the given pattern is used
+  - non-dependent destruct/induction on an hypothesis with premisses in
+    an inductive type with indices is fixed
+  - residual local definitions are now correctly removed.
 
 Program
 

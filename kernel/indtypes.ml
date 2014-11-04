@@ -666,7 +666,8 @@ let compute_projections ((kn, _ as ind), u as indsp) n x nparamargs params
   let mp, dp, l = repr_mind kn in
   let rp = mkApp (mkIndU indsp, rel_vect 0 nparamargs) in
   let ci = 
-    let print_info = { ind_nargs = 0; style = LetStyle } in
+    let print_info =
+      { ind_tags = []; cstr_tags = [|rel_context_tags ctx|]; style = LetStyle } in
       { ci_ind     = ind;
 	ci_npar    = nparamargs;
 	ci_cstr_ndecls = mind_consnrealdecls;

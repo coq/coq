@@ -6,146 +6,139 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** This file defines the low-level monadic operations used by the
-    tactic monad. The monad is divided into two layers: a non-logical
-    layer which consists in operations which will not (or cannot) be
-    backtracked in case of failure (input/output or persistent state)
-    and a logical layer which handles backtracking, proof
-    manipulation, and any other effect which needs to backtrack. *)
+(** This file defines the datatypes used as internal states by the
+    tactic monad, and specialises the [Logic_monad] to these type. *)
 
+(** {6 Traces} *)
 
-(** {6 Exceptions} *)
+module Trace : sig
 
+  (** The intent is that an ['a forest] is a list of messages of type
+      ['a]. But messages can stand for a list of more precise
+      messages, hence the structure is organised as a tree. *)
+  type 'a forest = 'a tree list
+  and  'a tree   = Seq of 'a * 'a forest
 
-(** To help distinguish between exceptions raised by the IO monad from
-    the one used natively by Coq, the former are wrapped in
-    [Exception].  It is only used internally so that [catch] blocks of
-    the IO monad would only catch exceptions raised by the [raise]
-    function of the IO monad, and not for instance, by system
-    interrupts. Also used in [Proofview] to avoid capturing exception
-    from the IO monad ([Proofview] catches errors in its compatibility
-    layer, and when lifting goal-level expressions). *)
-exception Exception of exn
-(** This exception is used to signal abortion in [timeout] functions. *)
-exception Timeout
-(** This exception is used by the tactics to signal failure by lack of
-    successes, rather than some other exceptions (like system
-    interrupts). *)
-exception TacticFailure of exn
+  (** To build a trace incrementally, we use an intermediary data
+      structure on which we can define an S-expression like language
+      (like a simplified xml except the closing tags do not carry a
+      name). *)
+  type 'a incr
+  val to_tree : 'a incr -> 'a forest
 
+  (** [open a] opens a tag with name [a]. *)
+  val opn : 'a -> 'a incr -> 'a incr
 
-(** {6 Non-logical layer} *)
+  (** [close] closes the last open tag. It is the responsibility of
+      the user to close all the tags. *)
+  val close : 'a incr -> 'a incr
 
-(** The non-logical monad is a simple [unit -> 'a] (i/o) monad. The
-    operations are simple wrappers around corresponding usual
-    operations and require little documentation. *)
-module NonLogical : sig
-
-  type +'a t
-  type 'a ref
-
-  val ret : 'a -> 'a t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-  val map : ('a -> 'b) -> 'a t -> 'b t
-  val ignore : 'a t -> unit t
-  val seq : unit t -> 'a t -> 'a t
-
-  val ref : 'a -> 'a ref t
-  (** [Pervasives.(:=)] *)
-  val set : 'a ref -> 'a -> unit t
-  (** [Pervasives.(!)] *)
-  val get : 'a ref -> 'a t
-
-  val read_line : string t
-  val print_char : char -> unit t
-  (** {!Pp.pp}. The buffer is also flushed. *)
-  val print : Pp.std_ppcmds -> unit t
-
-  (** [Pervasives.raise]. Except that exceptions are wrapped with
-      {!Exception}. *)
-  val raise : exn -> 'a t
-  (** [try ... with ...] but restricted to {!Exception}. *)
-  val catch : 'a t -> (exn -> 'a t) -> 'a t
-  val timeout : int -> 'a t -> 'a t
-
-  (** Construct a monadified side-effect. Exceptions raised by the argument are
-      wrapped with {!Exception}. *)
-  val make : (unit -> 'a) -> 'a t
-
-  (** [run] performs effects. *)
-  val run : 'a t -> 'a
+  (** [leaf] creates an empty tag with name [a]. *)
+  val leaf : 'a -> 'a incr -> 'a incr
 
 end
 
+(** {6 State types} *)
 
-(** {6 Logical layer} *)
+(** We typically label nodes of [Trace.tree] with messages to
+    print. But we don't want to compute the result. *)
+type lazy_msg = unit -> Pp.std_ppcmds
 
-(** The logical monad is a backtracking monad on top of which is
-    layered a state monad (which is used to implement all of read/write,
-    read only, and write only effects). The state monad being layered on
-    top of the backtracking monad makes it so that the state is
-    backtracked on failure.
+(** Info trace. *)
+module Info : sig
 
-    Backtracking differs from regular exception in that, writing (+)
-    for exception catching and (>>=) for bind, we require the
-    following extra distributivity laws:
+  (** The type of the tags for [info]. *)
+  type tag =
+    | Msg of lazy_msg (** A simple message *)
+    | Tactic of lazy_msg (** A tactic call *)
+    | Dispatch  (** A call to [tclDISPATCH]/[tclEXTEND] *)
+    | DBranch  (** A special marker to delimit individual branch of a dispatch. *)
 
-    x+(y+z) = (x+y)+z
+  type state = tag Trace.incr
+  type tree = tag Trace.forest
 
-    zero+x = x
+  val print : tree -> Pp.std_ppcmds
 
-    x+zero = x
+  (** [collapse n t] flattens the first [n] levels of [Tactic] in an
+      info trace, effectively forgetting about the [n] top level of
+      names (if there are fewer, the last name is kept). *)
+  val collapse : int -> tree -> tree
 
-    (x+y)>>=k = (x>>=k)+(y>>=k) *)
+end
 
-(** A view type for the logical monad, which is a form of list, hence
-    we can decompose it with as a list. *)
-type ('a, 'b) list_view =
-| Nil of exn
-| Cons of 'a * 'b
+(** Type of proof views: current [evar_map] together with the list of
+    focused goals. *)
+type proofview = { solution : Evd.evar_map; comb : Goal.goal list }
 
-(** The monad is parametrised in the types of state, environment and
-    writer. *)
-module type Param = sig
+(** {6 Instantiation of the logic monad} *)
 
-  (** Read only *)
-  type e
+module P : sig
+  type s = proofview * Environ.env
 
-  (** Write only *)
-  type w
+  (** Status (safe/unsafe) * shelved goals * given up *)
+  type w = bool * Evar.t list * Evar.t list
 
-  (** [w] must be a monoid *)
   val wunit : w
   val wprod : w -> w -> w
 
-  (** Read-write *)
-  type s
+  (** Recording info trace (true) or not. *)
+  type e = bool
 
+  type u = Info.state
+
+  val uunit : u
 end
 
-module Logical (P:Param) : sig
+module Logical : module type of Logic_monad.Logical(P)
 
-  type +'a t
 
-  val ret : 'a -> 'a t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-  val map : ('a -> 'b) -> 'a t -> 'b t
-  val ignore : 'a t -> unit t
-  val seq : unit t -> 'a t -> 'a t
+(** {6 Lenses to access to components of the states} *)
 
-  val set : P.s -> unit t
-  val get : P.s t
-  val modify : (P.s -> P.s) -> unit t
-  val put : P.w -> unit t
-  val current : P.e t
+module type State = sig
+  type t
+  val get : t Logical.t
+  val set : t -> unit Logical.t
+  val modify : (t->t) -> unit Logical.t
+end
 
-  val zero : exn -> 'a t
-  val plus : 'a t -> (exn -> 'a t) -> 'a t
-  val split : 'a t -> (('a,(exn->'a t)) list_view) t
-  val once : 'a t -> 'a t
-  val break : (exn -> bool) -> 'a t -> 'a t
+module type Writer = sig
+  type t
+  val put : t -> unit Logical.t
+end
 
-  val lift : 'a NonLogical.t -> 'a t
+(** Lens to the [proofview]. *)
+module Pv : State with type t := proofview
 
-  val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w) NonLogical.t
+(** Lens to the [evar_map] of the proofview. *)
+module Solution : State with type t := Evd.evar_map
+
+(** Lens to the list of focused goals. *)
+module Comb : State with type t = Evar.t list
+
+(** Lens to the global environment. *)
+module Env : State with type t := Environ.env
+
+(** Lens to the tactic status ([true] if safe, [false] if unsafe) *)
+module Status : Writer with type t := bool
+
+(** Lens to the list of goals which have been shelved during the
+    execution of the tactic. *)
+module Shelf : Writer with type t = Evar.t list
+
+(** Lens to the list of goals which were given up during the execution
+    of the tactic. *)
+module Giveup : Writer with type t = Evar.t list
+
+(** Lens and utilies pertaining to the info trace *)
+module InfoL : sig
+  (** [record_trace t] behaves like [t] and compute its [info] trace. *)
+  val record_trace : 'a Logical.t -> 'a Logical.t
+
+  val update : (Info.state -> Info.state) -> unit Logical.t
+  val opn : Info.tag -> unit Logical.t
+  val close : unit Logical.t
+  val leaf : Info.tag -> unit Logical.t
+
+  (** [tag a t] opens tag [a] runs [t] then closes the tag. *)
+  val tag : Info.tag -> 'a Logical.t -> 'a Logical.t
 end

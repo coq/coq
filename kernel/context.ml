@@ -76,11 +76,18 @@ let rel_context_nhyps hyps =
     | (_,Some _,_)::hyps -> nhyps acc hyps in
   nhyps 0 hyps
 
+let rel_context_tags ctx =
+  let rec aux l = function
+  | [] -> l
+  | (_,Some _,_)::ctx -> aux (true::l) ctx
+  | (_,None,_)::ctx -> aux (false::l) ctx
+  in aux [] ctx
+
 (*s Signatures of named hypotheses. Used for section variables and
     goal assumptions. *)
 
 type named_context = named_declaration list
-type compacted_named_context = named_list_declaration list
+type named_list_context = named_list_declaration list
 
 let empty_named_context = []
 
@@ -105,6 +112,7 @@ let instance_from_named_context sign =
   List.map_filter filter sign
 
 let fold_named_context f l ~init = List.fold_right f l init
+let fold_named_list_context f l ~init = List.fold_right f l init
 let fold_named_context_reverse f ~init l = List.fold_left f init l
 
 (*s Signatures of ordered section variables *)

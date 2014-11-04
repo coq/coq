@@ -16,7 +16,6 @@ open Vars
 open Termops
 open Environ
 open Globnames
-open Mod_subst
 
 (** Generic filters *)
 module Filter :
@@ -209,8 +208,6 @@ let map_evar_info f evi =
     evar_concl = f evi.evar_concl;
     evar_candidates = Option.map (List.map f) evi.evar_candidates }
 
-type existential_name = Id.t
-
 let evar_ident_info evi =
   match evi.evar_source with
   | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
@@ -273,12 +270,6 @@ module UNameMap = struct
 	| Some _, _ -> l
 	| _, _ -> r) s t
 
-    let diff ext orig =
-      fold (fun u v acc -> 
-	if mem u orig then acc 
-	else add u v acc)
-	ext empty
-
 end
 
 (* 2nd part used to check consistency on the fly. *)
@@ -340,24 +331,6 @@ let union_evar_universe_context ctx ctx' =
 (* let union_evar_universe_context_key = Profile.declare_profile "union_evar_universe_context";; *)
 (* let union_evar_universe_context =  *)
 (*   Profile.profile2 union_evar_universe_context_key union_evar_universe_context;; *)
-
-let diff_evar_universe_context ctx' ctx  =
-  if ctx == ctx' then empty_evar_universe_context
-  else
-    let local = Univ.ContextSet.diff ctx'.uctx_local ctx.uctx_local in
-    let names = UNameMap.diff ctx'.uctx_names ctx.uctx_names in
-      { uctx_names = names;
-	uctx_local = local;
-	uctx_univ_variables = 
-	  Univ.LMap.diff ctx'.uctx_univ_variables ctx.uctx_univ_variables;
-	uctx_univ_algebraic = 
-	  Univ.LSet.diff ctx'.uctx_univ_algebraic ctx.uctx_univ_algebraic;
-	uctx_universes = ctx.uctx_initial_universes;
-	uctx_initial_universes = ctx.uctx_initial_universes }
-
-(* let diff_evar_universe_context_key = Profile.declare_profile "diff_evar_universe_context";; *)
-(* let diff_evar_universe_context = *)
-(*   Profile.profile2 diff_evar_universe_context_key diff_evar_universe_context;; *)
 
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
@@ -756,29 +729,6 @@ let is_empty d =
   List.is_empty d.conv_pbs &&
   Metamap.is_empty d.metas
 
-let subst_named_context_val s = map_named_val (subst_mps s)
-
-let subst_evar_info s evi =
-  let subst_evb = function
-  | Evar_empty -> Evar_empty
-  | Evar_defined c -> Evar_defined (subst_mps s c)
-  in
-  { evi with
-      evar_concl = subst_mps s evi.evar_concl;
-      evar_hyps = subst_named_context_val s evi.evar_hyps;
-      evar_body = subst_evb evi.evar_body }
-
-let subst_evar_defs_light sub evd =
-  assert (Univ.is_initial_universes evd.universes.uctx_universes);
-  assert (List.is_empty evd.conv_pbs);
-  let map_info i = subst_evar_info sub i in
-  { evd with
-    undf_evars = EvMap.smartmap map_info evd.undf_evars;
-    defn_evars = EvMap.smartmap map_info evd.defn_evars;
-    metas = Metamap.smartmap (map_clb (subst_mps sub)) evd.metas; }
-
-let subst_evar_map = subst_evar_defs_light
-
 let cmap f evd = 
   { evd with
       metas = Metamap.map (map_clb f) evd.metas;
@@ -934,18 +884,6 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
 (** The following functions return the set of evars immediately
     contained in the object *)
 
-(* including defined evars, excluding instances *)
-
-let collect_evars c =
-  let rec collrec acc c =
-    match kind_of_term c with
-      | Evar (evk,_) -> Evar.Set.add evk acc
-      | _       -> fold_constr collrec acc c
-  in
-  collrec Evar.Set.empty c
-
-(* including defined evars and instances of evars *)
-
 (* excluding defined evars *)
 
 let evar_list c =
@@ -1009,82 +947,6 @@ let reset_future_goals evd =
 
 let restore_future_goals evd gls pgl =
   { evd with future_goals = gls ; principal_future_goal = pgl }
-
-let meta_diff ext orig = 
-  Metamap.fold (fun m v acc ->
-    if Metamap.mem m orig then acc
-    else Metamap.add m v acc)
-    ext Metamap.empty
-
-(** ext is supposed to be an extension of odef: 
-    it might have more defined evars, and more 
-    or less undefined ones *)
-let diff2 edef eundef odef oundef =
-  let def = 
-    if odef == edef then EvMap.empty
-    else
-      EvMap.fold (fun e v acc ->
-	if EvMap.mem e odef then acc
-	else EvMap.add e v acc)
-	edef EvMap.empty
-  in
-  let undef = 
-    if oundef == eundef then EvMap.empty
-    else
-      EvMap.fold (fun e v acc ->
-	if EvMap.mem e oundef then acc
-	else EvMap.add e v acc)
-	eundef EvMap.empty
-  in
-    (def, undef)
-
-let diff ext orig = 
-  let defn, undf = diff2 ext.defn_evars ext.undf_evars orig.defn_evars orig.undf_evars in
-  { ext with
-      defn_evars = defn; undf_evars = undf;
-      universes = diff_evar_universe_context ext.universes orig.universes;
-      metas = meta_diff ext.metas orig.metas
-  }
-
-(** Invariant: sigma' is a partial extension of sigma: 
-    It may define variables that are undefined in sigma, 
-    or add new defined or undefined variables. It should not
-    undefine a defined variable in sigma.
-*)
-  
-let merge2 def undef def' undef' = 
-  let def, undef = 
-    EvMap.fold (fun n v (def,undef) -> 
-      EvMap.add n v def, EvMap.remove n undef)
-      def' (def,undef)
-  in
-  let undef = EvMap.fold EvMap.add undef' undef in
-    (def, undef)
-
-let merge_names evar_names def' undef' =
-  (* FIXME: does sigma' contain all undefined variables of sigma? If not, some
-  names given in sigma' for new undefined variables can change when merged to
-  sigma which could already have an evar of this name *)
-  let evar_names =
-    EvMap.fold
-      (fun n _ evar_names -> remove_name_possibly_already_defined n evar_names)
-      def' evar_names in
-  EvMap.fold (add_name_undefined Misctypes.IntroAnonymous) undef' evar_names
-
-let merge_metas metas1 metas2 =
-  List.fold_left (fun m (n,v) -> Metamap.add n v m)
-    metas2 (metamap_to_list metas1)
-
-let merge orig ext = 
-  let defn, undf = merge2 orig.defn_evars orig.undf_evars ext.defn_evars ext.undf_evars in
-  let evar_names = merge_names orig.evar_names ext.defn_evars ext.undf_evars in
-  let universes = union_evar_universe_context orig.universes ext.universes in
-    { orig with defn_evars = defn; undf_evars = undf;
-      universes; evar_names;
-      metas = merge_metas orig.metas ext.metas }
-
-(* let merge_key = Profile.declare_profile "merge" *)
-(* let merge = Profile.profile2 merge_key merge *)
 
 (**********************************************************)
 (* Sort variables *)
@@ -1612,6 +1474,11 @@ let dependent_evar_ident ev evd =
   | _ -> anomaly (str "Not an evar resulting of a dependent binding")
 
 (*******************************************************************)
+
+type pending = (* before: *) evar_map * (* after: *) evar_map
+
+type pending_constr = pending * constr
+
 type open_constr = evar_map * constr
 
 (*******************************************************************)
@@ -1642,6 +1509,13 @@ module MonadR =
       let (s',a) = x s in
       f a s'
 
+    let (>>) x y = fun s ->
+      let (s',()) = x s in
+      y s'
+
+    let map f x = fun s ->
+      on_snd f (x s)
+
   end)
 
 module Monad =
@@ -1654,6 +1528,13 @@ module Monad =
     let (>>=) x f = fun s ->
       let (a,s') = x s in
       f a s'
+
+    let (>>) x y = fun s ->
+      let ((),s') = x s in
+      y s'
+
+    let map f x = fun s ->
+      on_fst f (x s)
 
   end)
 

@@ -13,7 +13,7 @@ Require Import ExtrOcamlBasic.
 
 (** NB: The extracted code should be linked with [nums.cm(x)a]
     from ocaml's stdlib and with the wrapper [big.ml] that
-    simlifies the use of [Big_int] (it could be found in the sources
+    simplifies the use of [Big_int] (it can be found in the sources
     of Coq). *)
 
 (** Disclaimer: trying to obtain efficient certified programs

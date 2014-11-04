@@ -675,7 +675,7 @@ let mkDestructEq :
       (fun g2 ->
 	change_in_concl None
 	  (fun env sigma -> 
-	    sigma, pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) Evd.empty (pf_concl g2)) g2);
+	    pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) sigma (pf_concl g2)) g2);
       Proofview.V82.of_tactic (simplest_case expr)]), to_revert
 
 
@@ -1250,7 +1250,7 @@ let is_opaque_constant c =
     | Declarations.Undef _ -> true
     | Declarations.Def _ -> false
 
-let open_new_goal build_proof ctx using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
+let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
   (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)
   let current_proof_name = get_current_proof_name () in
   let name = match goal_name with
@@ -1276,7 +1276,7 @@ let open_new_goal build_proof ctx using_lemmas ref_ goal_name (gls_type,decompos
     let lid = ref [] in
     let h_num = ref (-1) in
     Proof_global.discard_all ();
-    build_proof Evd.empty_evar_universe_context
+    build_proof Evd.empty
       (  fun gls ->
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
 	   tclTHENLIST
@@ -1324,7 +1324,7 @@ let open_new_goal build_proof ctx using_lemmas ref_ goal_name (gls_type,decompos
   Lemmas.start_proof
     na
     (Decl_kinds.Global, false (* FIXME *), Decl_kinds.Proof Decl_kinds.Lemma)
-    ctx gls_type
+    sigma gls_type
     (Lemmas.mk_hook hook);
   if Indfun_common.is_strict_tcc  ()
   then
@@ -1380,7 +1380,10 @@ let com_terminate
   start_proof ctx tclIDTAC tclIDTAC;
   try
     let sigma, new_goal_type = build_new_goal_type () in
-    open_new_goal start_proof (Evd.evar_universe_context sigma)
+    let sigma =
+      Evd.from_env ~ctx:(Evd.evar_universe_context sigma) Environ.empty_env
+    in
+    open_new_goal start_proof sigma
       using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
       (new_goal_type);
@@ -1416,11 +1419,14 @@ let (com_eqn : int -> Id.t ->
 	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant")
     in
     let (evmap, env) = Lemmas.get_current_context() in
+    let evmap =
+      Evd.from_env ~ctx:(Evd.evar_universe_context evmap) Environ.empty_env
+    in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (Lemmas.start_proof eq_name (Global, false, Proof Lemma)
        ~sign:(Environ.named_context_val env)
-       (Evd.evar_universe_context evmap)
+       evmap
        equation_lemma_type
        (Lemmas.mk_hook (fun _ _ -> ()));
      ignore (by
@@ -1488,7 +1494,6 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let equation_id = add_suffix function_name "_equation" in
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
-  let ctx = Evd.evar_universe_context evm in
   let functional_ref = declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~ctx:(Evd.universe_context evm) res in
   let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in  
   let relation =
@@ -1542,5 +1547,5 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       term_id
       using_lemmas
       (List.length res_vars)
-      ctx (Lemmas.mk_hook hook))
+      evm (Lemmas.mk_hook hook))
     ()

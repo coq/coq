@@ -660,8 +660,8 @@ fun rk value field ->
 							   Primitives.Int31mulc
     | KInt31 (_, Int31Div21) -> int31_op_from_const 3 Cbytecodes.Kdiv21int31
                                                            Primitives.Int31div21
-    | KInt31 (_, Int31Div) -> int31_binop_from_const Cbytecodes.Kdivint31
-							 Primitives.Int31div
+    | KInt31 (_, Int31Diveucl) -> int31_binop_from_const Cbytecodes.Kdivint31
+							 Primitives.Int31diveucl
     | KInt31 (_, Int31AddMulDiv) -> int31_op_from_const 3 Cbytecodes.Kaddmuldivint31
                                                          Primitives.Int31addmuldiv
     | KInt31 (_, Int31Compare) -> int31_binop_from_const Cbytecodes.Kcompareint31

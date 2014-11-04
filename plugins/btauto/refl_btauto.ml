@@ -179,7 +179,7 @@ module Btauto = struct
   let print_counterexample p env gl =
     let var = lapp witness [|p|] in
     (* Compute an assignment that dissatisfies the goal *)
-    let var = Tacmach.pf_reduction_of_red_expr gl (Genredexpr.CbvVm None) var in
+    let _, var = Tacmach.pf_reduction_of_red_expr gl (Genredexpr.CbvVm None) var in
     let rec to_list l = match decomp_term l with
     | Term.App (c, _)
       when c === (Lazy.force CoqList._nil) -> []

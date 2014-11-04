@@ -22,11 +22,13 @@ let string_of_vernac_type = function
   | VtProofStep false -> "ProofStep"
   | VtProofStep true -> "ProofStep (parallel)"
   | VtProofMode s -> "ProofMode " ^ s
-  | VtQuery (b,_) -> "Query" ^ string_of_in_script b
+  | VtQuery (b,(id,route)) ->
+      "Query " ^ string_of_in_script b ^ " report " ^ Stateid.to_string id ^
+      " route " ^ string_of_int route
   | VtStm ((VtFinish|VtJoinDocument|VtObserve _|VtPrintDag|VtWait), b) ->
-      "Stm" ^ string_of_in_script b
-  | VtStm (VtPG, b) -> "Stm PG" ^ string_of_in_script b
-  | VtStm (VtBack _, b) -> "Stm Back" ^ string_of_in_script b
+      "Stm " ^ string_of_in_script b
+  | VtStm (VtPG, b) -> "Stm PG " ^ string_of_in_script b
+  | VtStm (VtBack _, b) -> "Stm Back " ^ string_of_in_script b
 
 let string_of_vernac_when = function
   | VtLater -> "Later"
@@ -92,9 +94,10 @@ let rec classify_vernac e =
     | VernacEndProof _ | VernacExactProof _ -> VtQed VtKeep, VtLater
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
-    | VernacCheckMayEval _ -> VtQuery (true,Stateid.dummy), VtLater
+    | VernacCheckMayEval _ ->
+        VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
     (* ProofStep *)
-    | VernacSolve (SelectAllParallel,_,_) -> VtProofStep true, VtLater
+    | VernacSolve (SelectAllParallel,_,_,_) -> VtProofStep true, VtLater
     | VernacProof _ 
     | VernacBullet _ 
     | VernacFocus _ | VernacUnfocus
@@ -165,6 +168,7 @@ let rec classify_vernac e =
     | VernacDeclareReduction _
     | VernacDeclareClass _ | VernacDeclareInstances _
     | VernacRegister _
+    | VernacDeclareTacticDefinition _
     | VernacComments _ -> VtSideff [], VtLater
     (* Who knows *)
     | VernacLoad _ -> VtSideff [], VtNow
@@ -178,9 +182,10 @@ let rec classify_vernac e =
         VtSideff [id], if bl = [] then VtLater else VtNow
     (* These commands alter the parser *)
     | VernacOpenCloseScope _ | VernacDelimiters _ | VernacBindScope _
-    | VernacInfix _ | VernacNotation _ | VernacNotationAddFormat _ | VernacSyntaxExtension _ 
+    | VernacInfix _ | VernacNotation _ | VernacNotationAddFormat _
+    | VernacSyntaxExtension _ 
     | VernacSyntacticDefinition _
-    | VernacDeclareTacticDefinition _ | VernacTacticNotation _
+    | VernacTacticNotation _
     | VernacRequire _ | VernacImport _ | VernacInclude _
     | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *)
@@ -215,5 +220,6 @@ let rec classify_vernac e =
       make_polymorphic res
     else res
 
-let classify_as_query = VtQuery (true,Stateid.dummy), VtLater
+let classify_as_query =
+  VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
 let classify_as_sideeff = VtSideff [], VtLater

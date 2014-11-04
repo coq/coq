@@ -26,7 +26,8 @@ type metavariable = int
 type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle 
   | RegularStyle (** infer printing form from number of constructor *)
 type case_printing =
-  { ind_nargs : int; (** length of the arity of the inductive type *)
+  { ind_tags : bool list; (** tell whether letin or lambda in the arity of the inductive type *)
+    cstr_tags : bool list array; (** tell whether letin or lambda in the signature of each constructor *)
     style     : case_style }
 
 (** the integer is the number of real args, needed for reduction *)

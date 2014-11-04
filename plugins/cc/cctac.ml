@@ -390,7 +390,7 @@ let discriminate_tac (cstr,u as cstru) p =
         app_global _eq_rect
           [|outtype;trivial;pred;identity;concl;injt|] k) in
     let neweq=new_app_global _eq [|intype;t1;t2|] in
-    Tacticals.New.tclTHEN (Proofview.V82.tclEVARS evm)
+    Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evm)
       (Tacticals.New.tclTHENS (neweq (assert_before (Name hid)))
         [proof_tac p; Proofview.V82.tactic (endt refine_exact_check)])
   end

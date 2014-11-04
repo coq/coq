@@ -90,7 +90,7 @@ let abstract_scheme env evd c l lname_typ =
 
 let abstract_list_all env evd typ c l =
   let ctxt,_ = splay_prod_n env evd (List.length l) typ in
-  let l_with_all_occs = List.map (function a -> (AllOccurrences,a)) l in
+  let l_with_all_occs = List.map (function a -> (LikeFirst,a)) l in
   let p,evd = abstract_scheme env evd c l_with_all_occs ctxt in
   let evd,typp =
     try Typing.e_type_of env evd p
@@ -1362,9 +1362,10 @@ let indirectly_dependent c d decls =
 let indirect_dependency d decls =
   pi1 (List.hd (List.filter (fun (id,_,_) -> dependent_in_decl (mkVar id) d) decls))
 
-let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env initial_sigma (sigma,c) =
-  let sigma = Pretyping.solve_remaining_evars flags env initial_sigma sigma
-  in Evd.evar_universe_context sigma, nf_evar sigma c
+let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
+  let sigma = Pretyping.solve_remaining_evars flags env current_sigma pending in
+  let sigma, subst = nf_univ_variables sigma in
+  sigma, subst_univs_constr subst (nf_evar sigma c)
 
 let default_matching_core_flags sigma =
   let ts = Names.full_transparent_state in {
@@ -1394,7 +1395,7 @@ let default_matching_merge_flags sigma =
     use_pattern_unification = true;
 }
 
-let default_matching_flags sigma =
+let default_matching_flags (sigma,_) =
   let flags = default_matching_core_flags sigma in {
   core_unify_flags = flags;
   merge_unify_flags = default_matching_merge_flags sigma;
@@ -1404,12 +1405,31 @@ let default_matching_flags sigma =
 }
 
 (* This supports search of occurrences of term from a pattern *)
+(* from_prefix is useful e.g. for subterms in an inductive type: we can say *)
+(* "destruct t" and it finds "t u" *)
 
-let make_pattern_test inf_flags env sigma0 (sigma,c) =
-  let flags = default_matching_flags sigma0 in
+exception PatternNotFound
+
+let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
+  let flags = default_matching_flags pending in
+  let n = List.length (snd (decompose_app c)) in
   let matching_fun _ t =
-    try let sigma = w_typed_unify env sigma Reduction.CONV flags c t in
-	  Some(sigma, t)
+    try
+      let t',l2 =
+        if from_prefix_of_ind then
+          (* We check for fully applied subterms of the form "u u1 .. un" *)
+          (* of inductive type knowing only a prefix "u u1 .. ui" *)
+          let t,l = decompose_app t in
+          let l1,l2 =
+            try List.chop n l with Failure _ -> raise (NotUnifiable None) in
+          if not (List.for_all closed0 l2) then raise (NotUnifiable None)
+          else
+            applist (t,l1), l2
+        else t, [] in
+      let sigma = w_typed_unify env sigma Reduction.CONV flags c t' in
+      let ty = Retyping.get_type_of env sigma t in
+      if not (is_correct_type ty) then raise (NotUnifiable None);
+      Some(sigma, t, l2)
     with
     | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
         raise (NotUnifiable (Some (c1,c2,e)))
@@ -1417,7 +1437,7 @@ let make_pattern_test inf_flags env sigma0 (sigma,c) =
     | e when Errors.noncritical e -> raise (NotUnifiable None) in
   let merge_fun c1 c2 =
     match c1, c2 with
-    | Some (evd,c1) as x, Some (_,c2) ->
+    | Some (evd,c1,_) as x, Some (_,c2,_) ->
       if is_conv env sigma c1 c2 then x else raise (NotUnifiable None)
     | Some _, None -> c1
     | None, Some _ -> c2
@@ -1425,22 +1445,21 @@ let make_pattern_test inf_flags env sigma0 (sigma,c) =
   { match_fun = matching_fun; merge_fun = merge_fun;
     testing_state = None; last_found = None },
   (fun test -> match test.testing_state with
-  | None ->
-      finish_evar_resolution ~flags:inf_flags env sigma0 (sigma,c)
-  | Some (sigma,_) ->
+  | None -> None
+  | Some (sigma,_,l) ->
+     let c = applist (nf_evar sigma (local_strong whd_meta sigma c),l) in
      let univs, subst = nf_univ_variables sigma in
-     Evd.evar_universe_context univs,
-     subst_univs_constr subst (nf_evar sigma c))
+     Some (sigma,subst_univs_constr subst c))
 
 let make_eq_test env evd c =
   let out cstr =
-    Evd.evar_universe_context cstr.testing_state, c
+    match cstr.last_found with None -> None | _ -> Some (cstr.testing_state, c)
   in
-    (make_eq_univs_test env evd c, out)
+  (make_eq_univs_test env evd c, out)
 
-let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env concl =
+let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
   let id =
-    let t = match ty with Some t -> t | None -> get_type_of env sigmac c in
+    let t = match ty with Some t -> t | None -> get_type_of env sigma c in
     let x = id_of_name_using_hdchar (Global.env()) t name in
     let ids = ids_of_named_context (named_context env) in
     if name == Anonymous then next_ident_away_in_goal x ids else
@@ -1449,8 +1468,9 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
     else
       x
   in
+  let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = mkVar id in
-  let compute_dependency _ (hyp,_,_ as d) depdecls =
+  let compute_dependency _ (hyp,_,_ as d) (sign,depdecls) =
     match occurrences_of_hyp hyp occs with
     | NoOccurrences, InHyp ->
         if indirectly_dependent c d depdecls then
@@ -1460,31 +1480,38 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
             ++ str " without also abstracting or erasing " ++ Nameops.pr_id hyp
             ++ str ".")
         else
-          depdecls
-    | (AllOccurrences, InHyp) as occ ->
+          (push_named_context_val d sign,depdecls)
+    | AllOccurrences, InHyp as occ ->
+        let occ = if likefirst then LikeFirst else AtOccs occ in
         let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
         if Context.eq_named_declaration d newdecl
            && not (indirectly_dependent c d depdecls)
         then
           if check_occs && not (in_every_hyp occs)
-          then raise (PretypeError (env,sigmac,NoOccurrenceFound (c,Some hyp)))
-          else depdecls
+          then raise (PretypeError (env,sigma,NoOccurrenceFound (c,Some hyp)))
+          else (push_named_context_val d sign, depdecls)
         else
-          newdecl :: depdecls
+          (push_named_context_val newdecl sign, newdecl :: depdecls)
     | occ ->
-        replace_term_occ_decl_modulo occ test mkvarid d :: depdecls in
+        (* There are specific occurrences, hence not like first *)
+        let newdecl = replace_term_occ_decl_modulo (AtOccs occ) test mkvarid d in
+        (push_named_context_val newdecl sign, newdecl :: depdecls) in
   try
-    let depdecls = fold_named_context compute_dependency env ~init:[] in
+    let sign,depdecls =
+      fold_named_context compute_dependency env
+        ~init:(empty_named_context_val,[]) in
     let ccl = match occurrences_of_goal occs with
       | NoOccurrences -> concl
-      | occ -> replace_term_occ_modulo occ test mkvarid concl
+      | occ ->
+          let occ = if likefirst then LikeFirst else AtOccs occ in
+          replace_term_occ_modulo occ test mkvarid concl
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (pi1(List.last depdecls)) in
-    (id,depdecls,lastlhyp,ccl,out test)
+    (id,sign,depdecls,lastlhyp,ccl,out test)
   with
     SubtermUnificationError e ->
-      raise (PretypeError (env,sigmac,CannotUnifyOccurrences e))
+      raise (PretypeError (env,sigma,CannotUnifyOccurrences e))
 
 (** [make_abstraction] is the main entry point to abstract over a term
     or pattern at some occurrences; it returns:
@@ -1497,22 +1524,27 @@ let make_abstraction_core name (test,out) (sigmac,c) ty occs check_occs env conc
     - the term or pattern to abstract fully instantiated
 *)
 
+type prefix_of_inductive_support_flag = bool
+
 type abstraction_request =
-| AbstractPattern of Name.t * (evar_map * constr) * clause * bool * Pretyping.inference_flags
+| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * pending_constr * clause * bool
 | AbstractExact of Name.t * constr * types option * clause * bool
 
 type abstraction_result =
-  Names.Id.t * Context.named_declaration list * Names.Id.t option *
-    constr * (Evd.evar_universe_context * constr)
+  Names.Id.t * named_context_val *
+    Context.named_declaration list * Names.Id.t option *
+    types * (Evd.evar_map * constr) option
 
 let make_abstraction env evd ccl abs =
   match abs with
-  | AbstractPattern (name,c,occs,check_occs,flags) ->
+  | AbstractPattern (from_prefix,check,name,c,occs,check_occs) ->
       make_abstraction_core name
-        (make_pattern_test flags env evd c) c None occs check_occs env ccl
+        (make_pattern_test from_prefix check env evd c)
+        env evd (snd c) None occs check_occs ccl
   | AbstractExact (name,c,ty,occs,check_occs) ->
       make_abstraction_core name
-        (make_eq_test env evd c) (evd,c) ty occs check_occs env ccl
+        (make_eq_test env evd c)
+        env evd c ty occs check_occs ccl
 
 let keyed_unify env evd kop = 
   if not !keyed_unification then fun cl -> true

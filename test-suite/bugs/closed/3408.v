@@ -160,4 +160,4 @@ eapply acc_Abs.
 Defined.
 
 Time Eval native_compute in sizeF_delay (build_large 2).
-Fail Time Eval native_compute in sizeF_guard (build_large 2).
+Time Eval native_compute in sizeF_guard (build_large 2).

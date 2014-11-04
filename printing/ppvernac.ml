@@ -771,14 +771,20 @@ let rec pr_vernac = function
       hov 2 (str"Include" ++ spc() ++
 	     prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
   (* Solving *)
-  | VernacSolve (i,tac,deftac) ->
+  | VernacSolve (i,info,tac,deftac) ->
       let pr_goal_selector = function
         | SelectNth i -> int i ++ str":"
         | SelectId id -> pr_id id ++ str":"
         | SelectAll -> str"all" ++ str":"
         | SelectAllParallel -> str"par"
       in
+      let pr_info =
+        match info with
+        | None -> mt ()
+        | Some i -> str"Info"++spc()++int i++spc()
+      in
       (if i = Proof_global.get_default_goal_selector () then mt() else pr_goal_selector i) ++
+      pr_info ++
       pr_raw_tactic tac
       ++ (if deftac then str ".." else mt ())
   | VernacSolveExistential (i,c) ->

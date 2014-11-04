@@ -164,13 +164,14 @@ val unfold_constr     : global_reference -> tactic
 
 val clear         : Id.t list -> tactic
 val clear_body    : Id.t list -> unit Proofview.tactic
+val unfold_body   : Id.t -> tactic
 val keep          : Id.t list -> tactic
 val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
 
 val specialize    : constr with_bindings -> tactic
 
 val move_hyp      : bool -> Id.t -> Id.t move_location -> tactic
-val rename_hyp    : (Id.t * Id.t) list -> tactic
+val rename_hyp    : (Id.t * Id.t) list -> unit Proofview.tactic
 
 val revert        : Id.t list -> unit Proofview.tactic
 
@@ -274,11 +275,8 @@ val elim :
 
 val simple_induct : quantified_hypothesis -> unit Proofview.tactic
 
-val induction : evars_flag -> 
-  (evar_map * constr with_bindings) induction_arg list ->
-  constr with_bindings option ->
-    intro_pattern_naming option * or_and_intro_pattern option ->
-      clause option -> unit Proofview.tactic
+val induction : evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
+  constr with_bindings option -> unit Proofview.tactic
 
 (** {6 Case analysis tactics. } *)
 
@@ -286,21 +284,18 @@ val general_case_analysis : evars_flag -> clear_flag -> constr with_bindings -> 
 val simplest_case         : constr -> unit Proofview.tactic
 
 val simple_destruct       : quantified_hypothesis -> unit Proofview.tactic
-val destruct : evars_flag ->
-  (evar_map * constr with_bindings) induction_arg list ->
-  constr with_bindings option ->
-    intro_pattern_naming option * or_and_intro_pattern option ->
-      clause option -> unit Proofview.tactic
+val destruct : evars_flag -> clear_flag -> constr -> or_and_intro_pattern option ->
+  constr with_bindings option -> unit Proofview.tactic
 
 (** {6 Generic case analysis / induction tactics. } *)
 
 (** Implements user-level "destruct" and "induction" *)
 
 val induction_destruct : rec_flag -> evars_flag ->
-  ((evar_map * constr with_bindings) induction_arg *
-  (intro_pattern_naming option * or_and_intro_pattern option)) list *
-  constr with_bindings option *
-  clause option -> unit Proofview.tactic
+  (delayed_open_constr_with_bindings induction_arg
+   * (intro_pattern_naming option * or_and_intro_pattern option)
+   * clause option) list *
+  constr with_bindings option -> unit Proofview.tactic
 
 (** {6 Eliminations giving the type instead of the proof. } *)
 
@@ -382,7 +377,7 @@ val letin_tac : (bool * intro_pattern_naming) option ->
 (** Common entry point for user-level "set", "pose" and "remember" *)
 
 val letin_pat_tac : (bool * intro_pattern_naming) option ->
-  Name.t -> evar_map * constr -> clause -> unit Proofview.tactic
+  Name.t -> pending_constr -> clause -> unit Proofview.tactic
 
 (** {6 Generalize tactics. } *)
 
@@ -436,10 +431,12 @@ end
 
 module New : sig
 
-  val refine : Evd.open_constr -> unit Proofview.tactic
-  (** DEPRECATED. Legacy refine tactic. You should not be using this code, as
-      it may be unsound to manipulate evar maps without care. Use the
-      [Proofview.Refine] module instead. *)
+  val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map*constr) -> unit Proofview.tactic
+  (** [refine ?unsafe c] is [Proofview.Refine.refine ?unsafe c]
+      followed by beta-iota-reduction of the conclusion. *)
+
+  val reduce_after_refine : unit Proofview.tactic
+  (** The reducing tactic called after {!refine}. *)
 
   open Proofview
   val exact_proof : Constrexpr.constr_expr -> unit tactic

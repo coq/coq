@@ -981,8 +981,8 @@ let prepare_hint check env init (sigma,c) =
       mkNamedLambda id t (iter (replace_term evar (mkVar id) c)) in
   let c' = iter c in
     if check then Evarutil.check_evars (Global.env()) Evd.empty sigma c';
-    let diff = Evd.diff sigma init in
-      IsConstr (c', Evd.universe_context_set diff)
+    let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
+      IsConstr (c', diff)
 
 let interp_hints poly =
   fun h ->

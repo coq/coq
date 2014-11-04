@@ -211,6 +211,7 @@ module Latex = struct
       printf "\\usepackage{fullpage}\n";
       printf "\\usepackage{coqdoc}\n";
       printf "\\usepackage{amsmath,amssymb}\n";
+      printf "\\usepackage{url}\n";
       (match !toc_depth with
        | None -> ()
        | Some n -> printf "\\setcounter{tocdepth}{%i}\n" n);

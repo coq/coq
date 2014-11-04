@@ -289,7 +289,7 @@ let checknav loc ast =
   if is_deep_navigation_vernac ast then
     user_error loc "Navigation commands forbidden in nested commands"
 
-let eval_expr loc_ast = vernac_com true checknav loc_ast
+let eval_expr loc_ast = vernac_com (Flags.is_verbose()) checknav loc_ast
 
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =

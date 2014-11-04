@@ -459,7 +459,7 @@ let raw_inversion inv_kind id status names =
     in
     let neqns = List.length realargs in
     let as_mode = names != None in
-    tclTHEN (Proofview.V82.tclEVARS sigma)
+    tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (tclTHENS
         (assert_before Anonymous cut_concl)
         [case_tac names

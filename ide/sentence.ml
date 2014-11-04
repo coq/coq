@@ -91,7 +91,7 @@ let tag_on_insert buffer =
     (** The status of "{" "}" as sentence delimiters is too fragile.
         We retag up to the next "." instead. *)
     let stop = grab_ending_dot insert in
-    try split_slice_lax buffer start stop
+    try split_slice_lax buffer start#backward_char stop
     with Coq_lex.Unterminated ->
       (* This shouldn't happen frequently. Either:
          - we are at eof, with indeed an unfinished sentence.

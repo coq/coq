@@ -114,7 +114,7 @@ val get_open_goals : unit -> int
     no current proof.
     The return boolean is set to [false] if an unsafe tactic has been used. *)
 val with_current_proof :
-  (unit Proofview.tactic -> Proof.proof -> Proof.proof*bool) -> bool
+  (unit Proofview.tactic -> Proof.proof -> Proof.proof*'a) -> 'a
 val simple_with_current_proof :
   (unit Proofview.tactic -> Proof.proof -> Proof.proof) -> unit
 

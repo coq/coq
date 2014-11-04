@@ -54,7 +54,7 @@ val eq_rel_declaration :
 
 type named_context = named_declaration list
 type section_context = named_context
-type compacted_named_context = named_list_declaration list
+type named_list_context = named_list_declaration list
 type rel_context = rel_declaration list
 (** In [rel_context], more recent declaration is on top *)
 
@@ -73,6 +73,9 @@ val named_context_equal : named_context -> named_context -> bool
 (** {6 Recurrence on [named_context]: older declarations processed first } *)
 val fold_named_context :
   (named_declaration -> 'a -> 'a) -> named_context -> init:'a -> 'a
+
+val fold_named_list_context :
+  (named_list_declaration -> 'a -> 'a) -> named_list_context -> init:'a -> 'a
 
 (** newer declarations first *)
 val fold_named_context_reverse :
@@ -115,3 +118,5 @@ val lookup_rel : int -> rel_context -> rel_declaration
 val rel_context_length : rel_context -> int
 (** Size of the [rel_context] without LetIns *)
 val rel_context_nhyps : rel_context -> int
+(** Indicates whether a LetIn or a Lambda, starting from oldest declaration *)
+val rel_context_tags : rel_context -> bool list
