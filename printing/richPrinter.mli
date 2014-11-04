@@ -32,4 +32,4 @@ type rich_pp =
     * Xml_datatype.xml
 
 (** [richpp_vernac phrase] produces a rich pretty-printing of [phrase]. *)
-val richpp_vernac : Vernac.vernac_expr -> rich_pp
+val richpp_vernac : Vernacexpr.vernac_expr -> rich_pp
