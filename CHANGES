@@ -217,6 +217,7 @@ Tactics
   - non-dependent destruct/induction on an hypothesis with premisses in
     an inductive type with indices is fixed
   - residual local definitions are now correctly removed.
+- The replace tactic may now replace variables in parallel.
 
 Program
 

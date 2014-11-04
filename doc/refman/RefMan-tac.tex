@@ -1068,7 +1068,10 @@ unchanged.
 \item {\tt rename {\ident$_1$} into {\ident$_2$}, \ldots,
     {\ident$_{2k-1}$} into {\ident$_{2k}$}}
 
-This is equivalent to the sequence of the corresponding atomic {\tt rename}.
+This renames the variables {\ident$_1$} \ldots {\ident$_2k-1$} into respectively
+{\ident$_2$} \ldots {\ident$_2k$} in parallel. In particular, the target
+identifiers may contain identifiers that exist in the source context, as long
+as the latter are also renamed by the same tactic.
 
 \end{Variants}
 
