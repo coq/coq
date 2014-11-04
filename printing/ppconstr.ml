@@ -75,7 +75,7 @@ end) = struct
     let return unp pp1 pp2 = tag_unparsing unp (pp1 ++ pp2) in
     (* Warning:
        The following function enforces a very precise order of
-       evaluation of subcomponent.
+       evaluation of sub-components.
        Do not modify it unless you know what you are doing! *)
     let rec aux = function
       | [] ->
