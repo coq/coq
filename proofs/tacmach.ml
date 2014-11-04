@@ -105,10 +105,6 @@ let pf_matches                  = pf_apply ConstrMatching.matches_conv
 
 let refiner = refiner
 
-(* This does not check that the variable name is not here *)
-let introduction_no_check id =
-  refiner (Intro id)
-
 let internal_cut_no_check replace id t gl =
   refiner (Cut (true,replace,id,t)) gl
 
@@ -133,7 +129,6 @@ let mutual_cofix f others j gl =
 
 (* Versions with consistency checks *)
 
-let introduction id    = with_check (introduction_no_check id)
 let internal_cut b d t = with_check (internal_cut_no_check b d t)
 let internal_cut_rev b d t = with_check (internal_cut_rev_no_check b d t)
 let refine c           = with_check (refine_no_check c)

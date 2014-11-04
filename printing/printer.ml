@@ -652,9 +652,6 @@ let pr_goal_by_id id =
 (* Elementary tactics *)
 
 let pr_prim_rule = function
-  | Intro id ->
-      str"intro " ++ pr_id id
-
   | Cut (b,replace,id,t) ->
      if b then
        (* TODO: express "replace" *)

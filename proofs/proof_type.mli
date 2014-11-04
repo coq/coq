@@ -19,7 +19,6 @@ open Misctypes
    is used by [Proof_tree] and [Refiner] *)
 
 type prim_rule =
-  | Intro of Id.t
   | Cut of bool * bool * Id.t * types
   | FixRule of Id.t * int * (Id.t * int * constr) list * int
   | Cofix of Id.t * (Id.t * constr) list * int

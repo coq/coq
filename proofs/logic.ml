@@ -522,26 +522,6 @@ let prim_refiner r sigma goal =
   in
   match r with
     (* Logical rules *)
-    | Intro id ->
-    	if !check && mem_named_context id (named_context_of_val sign) then
-	  error ("Variable " ^ Id.to_string id ^ " is already declared.");
-        (match kind_of_term (strip_outer_cast cl) with
-	   | Prod (_,c1,b) ->
-	       let (sg,ev,sigma) = mk_goal (push_named_context_val (id,None,c1) sign)
-			  (subst1 (mkVar id) b) in
-               let sigma = 
-		 Goal.V82.partial_solution_to sigma goal sg (mkNamedLambda id c1 ev) in
-	       ([sg], sigma)
-	   | LetIn (_,c1,t1,b) ->
-	       let (sg,ev,sigma) =
-		 mk_goal (push_named_context_val (id,Some c1,t1) sign)
-		   (subst1 (mkVar id) b) in
-	       let sigma = 
-		 Goal.V82.partial_solution_to sigma goal sg (mkNamedLetIn id c1 t1 ev) in
-	       ([sg], sigma)
-	   | _ ->
-	       raise (RefinerError IntroNeedsProduct))
-
     | Cut (b,replace,id,t) ->
 (*        if !check && not (Retyping.get_sort_of env sigma t) then*)
         let (sg1,ev1,sigma) = mk_goal sign (nf_betaiota sigma t) in

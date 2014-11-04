@@ -726,7 +726,7 @@ let case_eq_intros_rewrite x =
       let h = Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) gl in
       Tacticals.New.tclTHENLIST [
                     Tacticals.New.tclDO (n'-n-1) intro;
-		    Proofview.V82.tactic (Tacmach.introduction h);
+		    introduction h;
 		    rewrite_except h]
     end
   ]

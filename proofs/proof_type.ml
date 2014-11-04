@@ -27,7 +27,6 @@ type goal = Goal.goal
 type tactic = goal sigma -> goal list sigma 
 
 type prim_rule =
-  | Intro of Id.t
   | Cut of bool * bool * Id.t * types
   | FixRule of Id.t * int * (Id.t * int * constr) list * int
   | Cofix of Id.t * (Id.t * constr) list * int
