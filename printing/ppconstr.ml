@@ -812,7 +812,7 @@ include Make (struct
     let tag_constr_expr = do_not_tag
 end)
 
-module RichPp (Indexer : sig
+module Richpp (Indexer : sig
   val index : Ppannotation.t -> string
 end) = struct
 

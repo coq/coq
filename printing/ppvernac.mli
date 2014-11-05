@@ -20,5 +20,5 @@ include Ppvernacsig.Pp
 
     Please refer to {!RichPp} to know what are the requirements over
     [Indexer.index] behavior. *)
-module RichPp (Indexer : sig val index : Ppannotation.t -> string end)
+module Richpp (Indexer : sig val index : Ppannotation.t -> string end)
   : Ppvernacsig.Pp

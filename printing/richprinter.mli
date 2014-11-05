@@ -14,9 +14,9 @@
     as standard XML attributes, please refer to {!Ppannotation}.
 
     In addition to these annotations, each node of the semi-structured
-    document contains a [startpos] and an [endpos] attributes that
+    document contains a [startpos] and an [endpos] attribute that
     relate this node to the raw pretty-printing.
-    Please refer to {!RichPp} for more details. *)
+    Please refer to {!Richpp} for more details. *)
 
 (** A rich pretty-print is composed of: *)
 type rich_pp =
@@ -25,7 +25,7 @@ type rich_pp =
 
     (** - a generalized semi-structured document whose attributes are
         annotations ; *)
-    * Ppannotation.t RichPp.located Xml_datatype.gxml
+    * Ppannotation.t Richpp.located Xml_datatype.gxml
 
     (** - an XML document, representing annotations as usual textual
         XML attributes. *)

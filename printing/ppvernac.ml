@@ -1272,13 +1272,13 @@ include Make (Ppconstr) (Pptactic) (struct
   let tag_vernac  = do_not_tag
 end)
 
-module RichPp (Indexer : sig
+module Richpp (Indexer : sig
   val index : Ppannotation.t -> string
 end) = struct
 
   include Make
-    (Ppconstr.RichPp (Indexer))
-    (Pptactic.RichPp (Indexer))
+    (Ppconstr.Richpp (Indexer))
+    (Pptactic.Richpp (Indexer))
     (struct
       open Ppannotation
       let tag_keyword  = Pp.tag (Indexer.index AKeyword)

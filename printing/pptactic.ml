@@ -1339,14 +1339,14 @@ let _ = Hook.set Tactic_debug.match_rule_printer
     pr_match_rule false (pr_glob_tactic (Global.env()))
       (fun (_,p) -> pr_constr_pattern p) rl)
 
-module RichPp (Indexer : sig
+module Richpp (Indexer : sig
   val index : Ppannotation.t -> string
 end) = struct
 
-  include Make (Ppconstr.RichPp (Indexer)) (struct
+  include Make (Ppconstr.Richpp (Indexer)) (struct
     open Ppannotation
     open Indexer
-    let tag_keyword       = Pp.tag (Indexer.index AKeyword)
+    let tag_keyword                   = Pp.tag (Indexer.index AKeyword)
     let tag_glob_tactic_expr        e = Pp.tag (index (AGlobTacticExpr e))
     let tag_glob_atomic_tactic_expr a = Pp.tag (index (AGlobAtomicTacticExpr a))
     let tag_raw_tactic_expr         e = Pp.tag (index (ARawTacticExpr e))
