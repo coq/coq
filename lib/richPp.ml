@@ -40,23 +40,55 @@ let rich_pp get_annotations ppcmds =
       Each inserted tag is an index to an annotation.
   *)
   let tagged_pp = Format.(
+
     (** Warning: The following instructions are valid only if
         [str_formatter] is not used for another purpose in
         Pp.pp_with. *)
+
     let ft = str_formatter in
+
+    (** We reuse {!Format} standard way of producing tags
+        inside pretty-printing. *)
     pp_set_tags ft true;
+
+    (** The whole output must be a valid document. To that
+        end, we nest the document inside a tag named <pp>. *)
     pp_open_tag ft "pp";
-    let fof = pp_get_formatter_out_functions ft () in
-    pp_set_formatter_out_functions ft { fof with
-      out_spaces = fun k ->
-        for i = 0 to k - 1 do
-          Buffer.add_string stdbuf "&nbsp;"
-        done
-    };
+
+    (** XML ignores spaces. The problem is that our pretty-printings
+        are based on spaces to indent. To solve that problem, we
+        systematically output non-breakable spaces, which are properly
+        honored by XML.
+
+        To do so, we reconfigure the [str_formatter] temporarily by
+        hijacking the function that output spaces. *)
+    let out, flush, newline, std_spaces =
+      pp_get_all_formatter_output_functions ft ()
+    in
+    let set = pp_set_all_formatter_output_functions ft ~out ~flush ~newline in
+    set ~spaces:(fun k ->
+      for i = 0 to k - 1 do
+        Buffer.add_string stdbuf "&nbsp;"
+      done
+    );
+
+    (** Some characters must be escaped in XML. This is done by the
+        following rewriting of the strings held by pretty-printing
+        commands. *)
     Pp.(pp_with ft (rewrite Xml_printer.pcdata_to_string (ppcmds ())));
+
+    (** Insert </p>. *)
     pp_close_tag ft ();
+
+    (** Get the final string. *)
     let output = flush_str_formatter () in
-    pp_set_formatter_out_functions ft fof;
+
+    (** Finalize by restoring the state of the [str_formatter] and the
+        default behavior of Format. By the way, there may be a bug here:
+        there is no {!Format.pp_get_tags} and therefore if the tags flags
+        was already set to true before executing this piece of code, the
+        state of Format is not restored. *)
+    set ~spaces:std_spaces;
     pp_set_tags ft false;
     output
   )
