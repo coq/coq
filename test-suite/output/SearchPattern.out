@@ -35,8 +35,6 @@ Nat.sqrt: nat -> nat
 Nat.log2_iter: nat -> nat -> nat -> nat -> nat
 Nat.log2: nat -> nat
 Nat.div2: nat -> nat
-Nat.shiftl: nat -> nat -> nat
-Nat.shiftr: nat -> nat -> nat
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
 Nat.land: nat -> nat -> nat
 Nat.lor: nat -> nat -> nat
@@ -62,8 +60,6 @@ Nat.sqrt: nat -> nat
 Nat.log2_iter: nat -> nat -> nat -> nat -> nat
 Nat.log2: nat -> nat
 Nat.div2: nat -> nat
-Nat.shiftl: nat -> nat -> nat
-Nat.shiftr: nat -> nat -> nat
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
 Nat.land: nat -> nat -> nat
 Nat.lor: nat -> nat -> nat
