@@ -348,7 +348,7 @@ module Make
   prlist_with_sep pr_semicolon (pr_params pr_c)
 *)
 
-  let pr_thm_token k = str (Kindops.string_of_theorem_kind k)
+  let pr_thm_token k = keyword (Kindops.string_of_theorem_kind k)
 
   let pr_syntax_modifier = function
     | SetItemLevel (l,NextLevel) ->
