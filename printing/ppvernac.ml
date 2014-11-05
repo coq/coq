@@ -696,7 +696,7 @@ module Make
         | VernacDefinition (d,id,b) -> (* A verifier... *)
           let pr_def_token (l,dk) =
             let l = match l with Some x -> x | None -> Decl_kinds.Global in
-            str (Kindops.string_of_definition_kind (l,false,dk))
+            keyword (Kindops.string_of_definition_kind (l,false,dk))
           in
           let pr_reduce = function
             | None -> mt()
@@ -716,10 +716,12 @@ module Make
               (pr_binders_arg bl, str" :" ++ pr_spc_lconstr t, None) in
           let (binds,typ,c) = pr_def_body b in
           return (
-            hov 2 (pr_def_token d ++ spc() ++ pr_lident id ++ binds ++ typ ++
-                     (match c with
-                       | None -> mt()
-                       | Some cc -> str" :=" ++ spc() ++ cc))
+            hov 2 (
+              pr_def_token d ++ spc()
+              ++ pr_lident id ++ binds ++ typ
+              ++ (match c with
+                | None -> mt()
+                | Some cc -> str" :=" ++ spc() ++ cc))
           )
 
         | VernacStartTheoremProof (ki,l,_) ->
