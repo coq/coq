@@ -2750,7 +2750,9 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
     else
       let c = List.nth argl (i-1) in
       match kind_of_term c with
-	| Var id when not (List.mem id args) ->
+	| Var id when not (List.mem id args) &&
+                      not (List.exists (occur_var env id) params) ->
+            (* We know that the name can be cleared after destruction *)
 	    atomize_one (i-1) (id::args)
 	| _ ->
             let id = match kind_of_term c with
@@ -2781,8 +2783,9 @@ let find_atomic_param_of_ind nparams indtyp =
   Id.Set.elements !indvars;
 
 
-(* [cook_sign] builds the lists [indhyps] of hyps that must be
-   erased, the lists of hyps to be generalize [(hdeps,tdeps)] on the
+(* [cook_sign] builds the lists [beforetoclear] (preceding the
+   ind. var.) and [aftertoclear] (coming after the ind. var.)  of hyps
+   that must be erased, the lists of hyps to be generalize [decldeps] on the
    goal together with the places [(lstatus,rstatus)] where to re-intro
    them after induction. To know where to re-intro the dep hyp, we
    remember the name of the hypothesis [lhyp] after which (if the dep
@@ -2832,7 +2835,7 @@ let find_atomic_param_of_ind nparams indtyp =
    would have posed no problem. But for uniformity, we decided to use
    the right hyp for all hyps on the right of H4.
 
-   Others solutions are welcome
+   Other solutions are welcome
 
    PC 9 fev 06: Adapted to accept multi argument principle with no
    main arg hyp. hyp0 is now optional, meaning that it is possible
@@ -2846,21 +2849,17 @@ let find_atomic_param_of_ind nparams indtyp =
 
 exception Shunt of Id.t move_location
 
-let add_vars_of_defined_term env id vars =
-  match lookup_named id env with
-  | (_,Some c,_) -> Id.Set.union (collect_vars c) vars
-  | (_,None,_) -> vars 
-
 let cook_sign hyp0_opt indvars env =
-  let hyp0,inhyps,fixedvars =
+  let hyp0,inhyps =
   match hyp0_opt with
-  | None -> List.hd (List.rev indvars), [], Id.Set.empty
-  | Some (hyp0,at_least_in_hyps,fixedvars) -> hyp0, at_least_in_hyps, fixedvars in
-  let fixedvars = List.fold_right (add_vars_of_defined_term env) indvars fixedvars in
+  | None -> List.hd (List.rev indvars), []
+  | Some (hyp0,at_least_in_hyps) -> hyp0, at_least_in_hyps in
   (* First phase from L to R: get [indhyps], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
   let allindhyps = hyp0::indvars in
-  let indhyps = ref [] in
+  let beforetoclear = ref [] in
+  let aftertoclear = ref [] in
+  let avoid = ref [] in
   let decldeps = ref [] in
   let ldeps = ref [] in
   let rstatus = ref [] in
@@ -2869,26 +2868,31 @@ let cook_sign hyp0_opt indvars env =
   let seek_deps env (hyp,_,_ as decl) rhyp =
     if Id.equal hyp hyp0 then begin
       before:=false;
-      (* If there was no main induction hypotheses, then hyp is one of
-         indvars too, so add it to indhyps. *)
-      (if Option.is_empty hyp0_opt then indhyps := hyp::!indhyps);
+      (* Note that if there was no main induction hypotheses, then hyp
+         is one of indvars too *)
+      beforetoclear := hyp::!beforetoclear;
       MoveFirst (* fake value *)
     end else if Id.List.mem hyp indvars then begin
-      (* warning: hyp can still occur after induction *)
-      (* e.g. if the goal (t hyp hyp0) with other occs of hyp in t *)
-      indhyps := hyp::!indhyps;
+      (* The variables in indvars are such that they don't occur any
+         more after generalization, so add it to beforetoclear. *)
+      beforetoclear := hyp::!beforetoclear;
       rhyp
     end else
       if not (List.is_empty inhyps) && Id.List.mem hyp inhyps ||
-        List.is_empty inhyps && not (Id.Set.mem hyp fixedvars) &&
+        List.is_empty inhyps &&
 	(List.exists (fun id -> occur_var_in_decl env id decl) allindhyps ||
          List.exists (fun (id,_,_) -> occur_var_in_decl env id decl) !decldeps)
       then begin
 	decldeps := decl::!decldeps;
-	if !before then
+	avoid := hyp::!avoid;
+	if !before then begin
+          beforetoclear := hyp :: !beforetoclear;
 	  rstatus := (hyp,rhyp)::!rstatus
-	else
-	  ldeps := hyp::!ldeps; (* status computed in 2nd phase *)
+        end
+	else begin
+	  aftertoclear := hyp::!aftertoclear;
+	  ldeps := hyp::!ldeps (* status computed in 2nd phase *)
+        end;
 	MoveBefore hyp end
       else
 	MoveBefore hyp
@@ -2901,7 +2905,7 @@ let cook_sign hyp0_opt indvars env =
       lstatus := (hyp,lhyp)::!lstatus;
       lhyp
     end else
-      if Id.List.mem hyp !indhyps then lhyp else MoveAfter hyp
+      if Id.List.mem hyp !beforetoclear then lhyp else MoveAfter hyp
   in
   try
     let _ =
@@ -2915,8 +2919,7 @@ let cook_sign hyp0_opt indvars env =
     let statuslists = (!lstatus,List.rev !rstatus) in
     let recargdests = AfterFixedPosition (if Option.is_empty hyp0_opt then None else lhyp0) in
     (statuslists, (recargdests,None),
-     !indhyps, !decldeps)
-
+     !beforetoclear, !aftertoclear, !decldeps, !avoid)
 
 (*
    The general form of an induction principle is the following:
@@ -3671,7 +3674,7 @@ let induction_tac_felim with_evars indvars nparams elim gl =
 (* Apply induction "in place" replacing the hypothesis on which
    induction applies with the induction hypotheses *)
 
-let apply_induction_with_discharge induct_tac elim indhyps destopt avoid names tac =
+let apply_induction_with_discharge induct_tac elim toclear destopt avoid names tac =
   Proofview.Goal.enter begin fun gl ->
   let (sigma, isrec, elim, indsign) = get_eliminator elim (Proofview.Goal.assume gl) in
   let names = compute_induction_names (Array.length indsign) names in
@@ -3679,7 +3682,7 @@ let apply_induction_with_discharge induct_tac elim indhyps destopt avoid names t
   ((if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
     (Tacticals.New.tclTHEN
        (induct_tac elim)
-       (Proofview.V82.tactic (tclMAP (fun id -> tclTRY (expand_hyp id)) (List.rev indhyps))))
+       (Proofview.V82.tactic (tclMAP expand_hyp toclear)))
     (Array.map2 (induct_discharge destopt avoid tac) indsign names))
   end
 
@@ -3690,10 +3693,8 @@ let apply_induction_in_context hyp0 elim indvars names induct_tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let concl = Tacmach.New.pf_nf_concl gl in
-    let statuslists,lhyp0,indhyps,deps = cook_sign hyp0 indvars env in
-(*     let deps = List.map (on_pi3 refresh_universes_strict) deps in *)
+    let statuslists,lhyp0,beforetoclear,aftertoclear,deps,avoid = cook_sign hyp0 indvars env in
     let tmpcl = it_mkNamedProd_or_LetIn concl deps in
-    let dephyps = List.map (fun (id,_,_) -> id) deps in
     let deps_cstr =
       List.fold_left
         (fun a (id,b,_) -> if Option.is_empty b then (mkVar id)::a else a) [] deps in
@@ -3701,11 +3702,10 @@ let apply_induction_in_context hyp0 elim indvars names induct_tac =
       [
         (* Generalize dependent hyps (but not args) *)
         if deps = [] then Proofview.tclUNIT () else Proofview.V82.tactic (apply_type tmpcl deps_cstr);
-        (* clear dependent hyps *)
-        Proofview.V82.tactic (thin dephyps);
+        Proofview.V82.tactic (thin aftertoclear);
         (* side-conditions in elim (resp case) schemes come last (resp first) *)
         apply_induction_with_discharge
-	  induct_tac elim (List.rev indhyps) lhyp0 (List.rev dephyps) names
+	  induct_tac elim beforetoclear lhyp0 avoid names
           (re_intro_dependent_hypotheses statuslists)
       ]
   end
@@ -3767,7 +3767,7 @@ let induction_tac with_evars elim (varname,lbind) typ gl =
   Proofview.V82.of_tactic
     (elimination_clause_scheme with_evars ~with_classes:false rename i (elimc, elimt, lbindelimc) indclause) gl
 
-let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 fixedvars names inhyps =
+let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inhyps =
   Proofview.Goal.enter begin fun gl ->
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
   let reduce_to_quantified_ref =
@@ -3775,22 +3775,20 @@ let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 fixedvars
   in
   let typ0 = reduce_to_quantified_ref indref tmptyp0 in
   let indvars = find_atomic_param_of_ind nparams ((strip_prod typ0)) in
-  let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
-    induction_tac with_evars elim (hyp0,NoBindings) typ0;
-    tclTRY (unfold_body hyp0);
-    thin [hyp0]
-  ]) in
+  let induct_tac elim =
+    Proofview.V82.tactic (induction_tac with_evars elim (hyp0,NoBindings) typ0)
+  in
   apply_induction_in_context
-    (Some (hyp0,inhyps,fixedvars)) elim indvars names induct_tac
+    (Some (hyp0,inhyps)) elim indvars names induct_tac
   end
 
-let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps fixedvars =
+let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
   Proofview.Goal.enter begin fun gl ->
   let sigma, elim_info = find_induction_type isrec elim hyp0 (Proofview.Goal.assume gl) in
   Tacticals.New.tclTHENLIST
-    [Proofview.Unsafe.tclEVARS sigma; atomize_param_of_ind elim_info hyp0;
-    (induction_from_context isrec with_evars elim_info
-      hyp0 fixedvars names inhyps)]
+    [Proofview.Unsafe.tclEVARS sigma;
+     atomize_param_of_ind elim_info hyp0;
+     induction_from_context isrec with_evars elim_info hyp0 names inhyps]
   end
 
 (* Induction on a list of induction arguments. Analyse the elim
@@ -3901,7 +3899,6 @@ let pose_induction_arg_then clear_flag isrec with_evars
   match res with
   | None ->
       (* pattern not found *)
-      let fixedvars = (* heuristic *) match kind_of_term (fst (decompose_app c)) with Var id -> Id.Set.singleton id | _ -> Id.Set.empty in
       let with_eq = Option.map (fun eq -> (false,eq)) eqname in
       (* we restart using bindings after having tried type-class
          resolution etc. on the term given by the user *)
@@ -3925,11 +3922,10 @@ let pose_induction_arg_then clear_flag isrec with_evars
         else Proofview.tclUNIT ();
         if isrec then Proofview.cycle (-1) else Proofview.tclUNIT ()
       ])
-      (tac fixedvars)
+      tac
 
   | Some (sigma',c) ->
       (* pattern found *)
-      let fixedvars = collect_vars c in
       let with_eq = Option.map (fun eq -> (false,eq)) eqname in
       (* TODO: if ind has predicate parameters, use JMeq instead of eq *)
       let env = reset_with_named_context sign env in
@@ -3937,7 +3933,7 @@ let pose_induction_arg_then clear_flag isrec with_evars
         Proofview.Unsafe.tclEVARS sigma';
         Proofview.Refine.refine ~unsafe:true (fun sigma ->
           mkletin_goal env sigma with_eq true (id,lastlhyp,ccl,c) None);
-        tac fixedvars
+        tac
       ]
   end
 
@@ -3972,7 +3968,7 @@ let induction_gen clear_flag isrec with_evars elim
     Tacticals.New.tclTHEN
       (Proofview.V82.tactic (clear_unselected_context id inhyps cls))
       (induction_with_atomization_of_ind_arg
-         isrec with_evars elim names id inhyps Id.Set.empty)
+         isrec with_evars elim names id inhyps)
   else
   (* Otherwise, we look for the pattern, possibly adding missing arguments and
      declaring the induction argument as a new local variable *)

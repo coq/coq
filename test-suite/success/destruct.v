@@ -37,7 +37,6 @@ Goal True.
 case Refl || ecase Refl.
 Abort.
 
-
 (* Submitted by B. Baydemir (bug #1882) *)
 
 Require Import List.
@@ -278,8 +277,8 @@ Variables x y : Type.
 Variable H : x = y.
 Goal True.
 destruct H. (* Was not working in 8.4 *)
-(* Now check that H statement has not be itself subject of the rewriting *)
-change (x=y) in H.
+(* Now check that H statement has itself be subject of the rewriting *)
+change (x=x) in H.
 Abort.
 End S1.
 
@@ -348,7 +347,7 @@ Abort.
 Goal forall x y e (t:x=y) (z:x=y -> IND y x e), e = e /\ z t = z t.
 intros.
 destruct (z t).
-change (x=y) in t. (* Generalization not made *)
+change (0=0) in t. (* Generalization made *)
 Abort.
 
 (* Check that destruct on a scheme with a functional argument works *)
@@ -376,4 +375,30 @@ Abort.
 Goal forall A (a:A) (P Q:A->Prop), (forall a, P a -> Q a) -> True.
 intros.
 Fail destruct H.
+Abort.
+
+(* Check clearing of names *)
+
+Inductive IND2 : nat -> Prop := CONSTR2 : forall y, y = y -> IND2 y.
+Goal forall x y z:nat, y = z -> x = y -> y = x -> x = y.
+intros * Heq H Heq'.
+destruct H.
+Abort.
+
+(* Check clearing of names *)
+
+Inductive eqnat (x : nat) : nat -> Prop :=
+  reflnat : forall y, x = y -> eqnat x y.
+
+Goal forall x z:nat, x = z -> eqnat x z -> True.
+intros * H1 H.
+destruct H.
+Fail clear z. (* Should not be here *)
+Abort.
+
+(* Check ok in the presence of an equation *)
+
+Goal forall b:bool, b = b.
+intros.
+destruct b eqn:H.
 Abort.
