@@ -139,10 +139,13 @@ open Gramtypes
     In [single_extend_statement], first two parameters are name and
     assoc iff a level is created *)
 
+(** Type of reinitialization data *)
+type gram_reinit = gram_assoc * gram_position
+
 type ext_kind =
   | ByGrammar of
       grammar_object G.entry
-      * gram_assoc option (** for reinitialization if ever needed *)
+      * gram_reinit option (** for reinitialization if ever needed *)
       * G.extend_statment
   | ByEXTEND of (unit -> unit) * (unit -> unit)
 
@@ -150,28 +153,18 @@ type ext_kind =
 
 let camlp4_state = ref []
 
-(** Deletion
-
-   Caveat: deletion is not the converse of extension: when an
-   empty level is extended, deletion removes the level instead
-   of keeping it empty. This has an effect on the empty levels 8,
-   99 and 200. We didn't find a good solution to this problem
-   (e.g. using G.extend to know if the level exists results in a
-   printed error message as side effect). As a consequence an
-   extension at 99 or 8 (and for pattern 200 too) inside a section
-   corrupts the parser. *)
+(** Deletion *)
 
 let grammar_delete e reinit (pos,rls) =
   List.iter
     (fun (n,ass,lev) ->
       List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
     (List.rev rls);
-  if reinit <> None then
-    let lev = match pos with Some (Level n) -> n | _ -> assert false in
-    let pos =
-      if lev = "200" then First
-      else After (string_of_int (int_of_string lev + 1)) in
-    maybe_uncurry (G.extend e) (Some pos, [Some lev,reinit,[]])
+  match reinit with
+  | Some (a,ext) ->
+     let lev = match pos with Some (Level n) -> n | _ -> assert false in
+     maybe_uncurry (G.extend e) (Some ext, [Some lev,Some a,[]])
+  | None -> ()
 
 (** The apparent parser of Coq; encapsulate G to keep track
     of the extensions. *)
@@ -496,6 +489,10 @@ let error_level_assoc p current expected =
      pr_assoc current ++ str " associative while it is now expected to be " ++
      pr_assoc expected ++ str " associative.")
 
+let create_pos = function
+  | None -> First
+  | Some lev -> After (constr_level lev)
+
 let find_position_gen forpat ensure assoc lev =
   let ccurrent,pcurrent as current = List.hd !level_stack in
   match lev with
@@ -509,7 +506,8 @@ let find_position_gen forpat ensure assoc lev =
         | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
         | (p,a,reinit)::l when p = n ->
             if reinit then
-	      let a' = create_assoc assoc in (init := Some a'; (p,a',false)::l)
+	      let a' = create_assoc assoc in
+              (init := Some (a',create_pos q); (p,a',false)::l)
 	    else if admissible_assoc (a,assoc) then
 	      raise Exit
             else
@@ -524,9 +522,7 @@ let find_position_gen forpat ensure assoc lev =
 	let assoc = create_assoc assoc in
         if !init = None then
 	  (* Create the entry *)
-	  (if !after = None then Some First
-	   else Some (After (constr_level (Option.get !after)))),
-	   Some assoc, Some (constr_level n), None
+	   Some (create_pos !after), Some assoc, Some (constr_level n), None
         else
 	  (* The reinit flag has been updated *)
 	   Some (Level (constr_level n)), None, None, !init
