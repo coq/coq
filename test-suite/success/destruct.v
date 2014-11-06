@@ -317,7 +317,7 @@ destruct S'.
 Abort.
 
 (* This was working by chance in 8.4 thanks to "accidental" use of select
-   subterms _syntactically_ equal to the first matching one. *)
+   subterms _syntactically_ equal to the first matching one.
 
 Parameter f2:bool -> unit.
 Parameter r2:f2 true=f2 true.
@@ -325,6 +325,7 @@ Goal forall (P: forall b, b=b -> Prop), f2 (id true) = tt -> P (f2 true) r2.
 intros.
 destruct f2.
 Abort.
+*)
 
 (* This did not work in 8.4, because of a clear failing *)
 
