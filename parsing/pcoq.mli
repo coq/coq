@@ -103,10 +103,13 @@ val gram_token_of_string : string -> Gram.symbol
 (** The superclass of all grammar entries *)
 type grammar_object
 
+(** Type of reinitialization data *)
+type gram_reinit = gram_assoc * gram_position
+
 (** Add one extension at some camlp4 position of some camlp4 entry *)
 val grammar_extend :
   grammar_object Gram.entry ->
-  gram_assoc option (** for reinitialization if ever needed *) ->
+  gram_reinit option (** for reinitialization if ever needed *) ->
   Gram.extend_statment -> unit
 
 (** Remove the last n extensions *)
@@ -292,13 +295,13 @@ val find_position :
   bool (** true if for creation in pattern entry; false if in constr entry *) ->
   Extend.gram_assoc option -> int option ->
     Extend.gram_position option * Extend.gram_assoc option * string option *
-    (** for reinitialization: *) Extend.gram_assoc option
+    (** for reinitialization: *) gram_reinit option
 
 val synchronize_level_positions : unit -> unit
 
 val register_empty_levels : bool -> int list ->
     (Extend.gram_position option * Extend.gram_assoc option *
-     string option * Extend.gram_assoc option) list
+     string option * gram_reinit option) list
 
 val remove_levels : int -> unit
 
