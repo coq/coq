@@ -2308,7 +2308,7 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
       let sigma, refl = Evd.fresh_global env sigma eqdata.refl in
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
-      let newenv = insert_before [id,body,t;heq,None,eq] lastlhyp env in
+      let newenv = insert_before [heq,None,eq;id,body,t] lastlhyp env in
       let (sigma,x) = new_evar newenv sigma ~principal:true ccl in
       (sigma,mkNamedLetIn id c t (mkNamedLetIn heq refl eq x))
   | None ->
