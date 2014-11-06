@@ -1749,7 +1749,7 @@ Section ReDun.
      * now apply incl_Add_inv with a l'.
   Qed.
 
-  Local Notation "'pip' P"  := (forall (p1 p2 : P), p1 = p2)(at level 80).
+  Local Notation pip P := (forall p1 p2 : P, p1 = p2).
   Lemma NoDup_In_proof_irrelevant l :
     (forall a b : A, pip (a = b)) -> NoDup l -> (forall a, pip (In a l)).
   Proof.
