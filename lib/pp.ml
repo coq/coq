@@ -37,6 +37,37 @@ end = struct
   let map = List.map
 end
 
+module Tag :
+sig
+  type t 
+  type 'a key
+  val create : string -> 'a key
+  val inj : 'a -> 'a key -> t
+  val prj : t -> 'a key -> 'a option
+end =
+struct
+  (** See module {Dyn} for more details. *)
+
+  type t = int * Obj.t
+
+  type 'a key = int
+
+  let dyntab = ref (Int.Map.empty : string Int.Map.t)
+
+  let create (s : string) =
+    let hash = Hashtbl.hash s in
+    let () = assert (not (Int.Map.mem hash !dyntab)) in
+    let () = dyntab := Int.Map.add hash s !dyntab in
+    hash
+
+  let inj x h = (h, Obj.repr x)
+
+  let prj (nh, rv) h =
+    if Int.equal h nh then Some (Obj.magic rv)
+    else None
+
+end
+
 open Pp_control
 
 (* This should not be used outside of this file. Use

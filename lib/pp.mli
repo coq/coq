@@ -82,6 +82,25 @@ val tclose : unit -> std_ppcmds
 
 (** {6 Opening and closing of tags} *)
 
+module Tag :
+sig
+  type t
+  (** Type of tags. Tags are dynamic types comparable to {Dyn.t}. *)
+
+  type 'a key
+  (** Keys used to inject tags *)
+
+  val create : string -> 'a key
+  (** Create a key with the given name. Two keys cannot share the same name, if
+      ever this is the case this function raises an assertion failure. *)
+
+  val inj : 'a -> 'a key -> t
+  (** Inject an object into a tag. *)
+
+  val prj : t -> 'a key -> 'a option
+  (** Project an object from a tag. *)
+end
+
 val tag : string -> std_ppcmds -> std_ppcmds
 val open_tag : string -> std_ppcmds
 val close_tag : unit -> std_ppcmds
