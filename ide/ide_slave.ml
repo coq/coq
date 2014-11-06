@@ -124,7 +124,7 @@ let annotate phrase =
     Vernac.parse_sentence (pa,None)
   in
   let (_, _, xml) =
-    RichPrinter.richpp_vernac ast
+    Richprinter.richpp_vernac ast
   in
   xml
 
