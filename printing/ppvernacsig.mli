@@ -1,19 +1,17 @@
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2013     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2012     *)
 (*   \VV/  **************************************************************)
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** ['a gxml] is the type for semi-structured documents. They generalize
-    XML by allowing any kind of attributes. *)
-type 'a gxml =
-  | Element of (string * 'a * 'a gxml list)
-  | PCData of string
+module type Pp = sig
 
-(** [xml] is a semi-structured documents where attributes are association
-    lists from string to string. *)
-type xml = (string * string) list gxml
+  (** Prints a vernac expression *)
+  val pr_vernac_body : Vernacexpr.vernac_expr -> Pp.std_ppcmds
 
+  (** Prints a vernac expression and closes it with a dot. *)
+  val pr_vernac : Vernacexpr.vernac_expr -> Pp.std_ppcmds
 
+end

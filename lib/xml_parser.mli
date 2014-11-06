@@ -57,7 +57,7 @@ type error_msg =
         | AttributeValueExpected
         | EndOfTagExpected of string
         | EOFExpected
-	| Empty
+        | Empty
 
 type error = error_msg * error_pos
 
@@ -69,7 +69,7 @@ exception File_not_found of string
 val error : error -> string
 
 (** Get the Xml error message as a string. *)
-val error_msg : error_msg -> string 
+val error_msg : error_msg -> string
 
 (** Get the line the error occured at. *)
 val line : error_pos -> int
@@ -99,5 +99,8 @@ val make : source -> t
 val check_eof : t -> bool -> unit
 
 (** Once the parser is configurated, you can run the parser on a any kind
- of xml document source to parse its contents into an Xml data structure. *)
-val parse :  t -> xml
+    of xml document source to parse its contents into an Xml data structure.
+
+    When [do_not_canonicalize] is set, the XML document is given as
+    is, without trying to remove blank PCDATA elements. *)
+val parse : ?do_not_canonicalize:bool -> t -> xml

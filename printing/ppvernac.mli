@@ -6,8 +6,19 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Prints a vernac expression *)
-val pr_vernac_body : Vernacexpr.vernac_expr -> Pp.std_ppcmds
+(** This module implements pretty-printers for vernac_expr syntactic
+    objects and their subcomponents. *)
 
-(** Prints a vernac expression and closes it with a dot. *)
-val pr_vernac : Vernacexpr.vernac_expr -> Pp.std_ppcmds
+(** The default pretty-printers produce {!Pp.std_ppcmds} that are
+    interpreted as raw strings. *)
+include Ppvernacsig.Pp
+
+(** The rich pretty-printers produce {!Pp.std_ppcmds} that are
+    interpreted as annotated strings. The annotations can be
+    retrieved using {!RichPp.rich_pp}. Their definitions are
+    located in {!Ppannotation.t}.
+
+    Please refer to {!RichPp} to know what are the requirements over
+    [Indexer.index] behavior. *)
+module Richpp (Indexer : sig val index : Ppannotation.t -> string end)
+  : Ppvernacsig.Pp

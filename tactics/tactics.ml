@@ -132,7 +132,35 @@ let _ =
 (*           Primitive tactics            *)
 (******************************************)
 
-let introduction    = Tacmach.introduction
+(** This tactic creates a partial proof realizing the introduction rule, but
+    does not check anything. *)
+let unsafe_intro env (id, c, t) b =
+  Proofview.Refine.refine ~unsafe:true begin fun sigma ->
+    let ctx = named_context_val env in
+    let nctx = push_named_context_val (id, c, t) ctx in
+    let inst = List.map (fun (id, _, _) -> mkVar id) (named_context env) in
+    let ninst = mkRel 1 :: inst in
+    let nb = subst1 (mkVar id) b in
+    let sigma, ev = new_evar_instance nctx sigma nb ninst in
+    sigma, mkNamedLambda_or_LetIn (id, c, t) ev
+  end
+
+let introduction ?(check=true) id =
+  Proofview.Goal.enter begin fun gl ->
+    let gl = Proofview.Goal.assume gl in
+    let concl = Proofview.Goal.concl gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let hyps = Proofview.Goal.hyps gl in
+    let env = Proofview.Goal.env gl in
+    let () = if check && mem_named_context id hyps then
+      error ("Variable " ^ Id.to_string id ^ " is already declared.")
+    in
+    match kind_of_term (whd_evar sigma concl) with
+    | Prod (_, t, b) -> unsafe_intro env (id, None, t) b
+    | LetIn (_, c, t, b) -> unsafe_intro env (id, Some c, t) b
+    | _ -> raise (RefinerError IntroNeedsProduct)
+  end
+
 let refine          = Tacmach.refine
 
 let convert_concl ?(check=true) ty k =
@@ -699,9 +727,9 @@ let find_intro_names ctxt gl =
   List.rev res
 
 let build_intro_tac id dest tac = match dest with
-  | MoveLast -> Tacticals.New.tclTHEN (Proofview.V82.tactic (introduction id)) (tac id)
+  | MoveLast -> Tacticals.New.tclTHEN (introduction id) (tac id)
   | dest -> Tacticals.New.tclTHENLIST 
-    [Proofview.V82.tactic (introduction id); 
+    [introduction id; 
      Proofview.V82.tactic (move_hyp true id dest); tac id]
     
 let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
@@ -789,7 +817,7 @@ let rec get_next_hyp_position id = function
 let intro_replacing id gl =
   let next_hyp = get_next_hyp_position id (pf_hyps gl) in
   tclTHENLIST
-    [thin_for_replacing [id]; introduction id; move_hyp true id next_hyp] gl
+    [thin_for_replacing [id]; Proofview.V82.of_tactic (introduction id); move_hyp true id next_hyp] gl
 
 (* We have e.g. [x, y, y', x', y'' |- forall y y' y'', G] and want to
    reintroduce y, y,' y''. Note that we have to clear y, y' and y''

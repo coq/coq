@@ -118,6 +118,16 @@ let edit_at id =
 
 let query (s,id) = Stm.query ~at:id s; read_stdout ()
 
+let annotate phrase =
+  let (loc, ast) =
+    let pa = Pcoq.Gram.parsable (Stream.of_string phrase) in
+    Vernac.parse_sentence (pa,None)
+  in
+  let (_, _, xml) =
+    RichPrinter.richpp_vernac ast
+  in
+  xml
+
 (** Goal display *)
 
 let hyp_next_tac sigma env (id,_,ast) =
@@ -183,13 +193,21 @@ let process_goal sigma g =
       (Termops.compact_named_context_reverse (Environ.named_context env)) in
   { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 
+let export_pre_goals pgs =
+  {
+    Interface.fg_goals       = pgs.Proof.fg_goals;
+    Interface.bg_goals       = pgs.Proof.bg_goals;
+    Interface.shelved_goals  = pgs.Proof.shelved_goals;
+    Interface.given_up_goals = pgs.Proof.given_up_goals
+  }
+
 let goals () =
   Stm.finish ();
   let s = read_stdout () in
   if not (String.is_empty s) then msg_info (str s);
   try
     let pfts = Proof_global.give_me_the_proof () in
-    Some (Proof.map_structured_proof pfts process_goal)
+    Some (export_pre_goals (Proof.map_structured_proof pfts process_goal))
   with Proof_global.NoCurrentProof -> None
 
 let evars () =
@@ -249,15 +267,48 @@ let status force =
     Interface.status_proofnum = Stm.current_proof_depth ();
   }
 
-let search flags = Search.interface_search flags
+let export_coq_object t = {
+  Interface.coq_object_prefix = t.Search.coq_object_prefix;
+  Interface.coq_object_qualid = t.Search.coq_object_qualid;
+  Interface.coq_object_object = t.Search.coq_object_object
+}
+
+let import_search_constraint = function
+  | Interface.Name_Pattern s    -> Search.Name_Pattern s
+  | Interface.Type_Pattern s    -> Search.Type_Pattern s
+  | Interface.SubType_Pattern s -> Search.SubType_Pattern s
+  | Interface.In_Module ms      -> Search.In_Module ms
+  | Interface.Include_Blacklist -> Search.Include_Blacklist
+
+let search flags =
+  List.map export_coq_object (Search.interface_search (
+    List.map (fun (c, b) -> (import_search_constraint c, b)) flags)
+  )
+
+let export_option_value = function
+  | Goptions.BoolValue b   -> Interface.BoolValue b
+  | Goptions.IntValue x    -> Interface.IntValue x
+  | Goptions.StringValue s -> Interface.StringValue s
+
+let import_option_value = function
+  | Interface.BoolValue b   -> Goptions.BoolValue b
+  | Interface.IntValue x    -> Goptions.IntValue x
+  | Interface.StringValue s -> Goptions.StringValue s
+
+let export_option_state s = {
+  Interface.opt_sync  = s.Goptions.opt_sync;
+  Interface.opt_depr  = s.Goptions.opt_depr;
+  Interface.opt_name  = s.Goptions.opt_name;
+  Interface.opt_value = export_option_value s.Goptions.opt_value;
+}
 
 let get_options () =
   let table = Goptions.get_tables () in
-  let fold key state accu = (key, state) :: accu in
+  let fold key state accu = (key, export_option_state state) :: accu in
   Goptions.OptionMap.fold fold table []
 
 let set_options options =
-  let iter (name, value) = match value with
+  let iter (name, value) = match import_option_value value with
   | BoolValue b -> Goptions.set_bool_option_value name b
   | IntValue i -> Goptions.set_int_option_value name i
   | StringValue s -> Goptions.set_string_option_value name s
@@ -354,6 +405,7 @@ let eval_call xml_oc log c =
     Interface.handle_exn = handle_exn;
     Interface.stop_worker = Stm.stop_worker;
     Interface.print_ast = Stm.print_ast;
+    Interface.annotate = interruptible annotate;
   } in
   Xmlprotocol.abstract_eval_call handler c
 
@@ -368,7 +420,7 @@ let print_xml =
     Mutex.lock m;
     try Xml_printer.print oc xml; Mutex.unlock m
     with e -> let e = Errors.push e in Mutex.unlock m; raise e
-  
+
 
 let slave_logger xml_oc level message =
   (* convert the message into XML *)
@@ -420,17 +472,17 @@ let loop () =
       flush out_ch
     with
       | Xml_parser.Error (Xml_parser.Empty, _) ->
-	pr_debug "End of input, exiting gracefully.";
-	exit 0
+        pr_debug "End of input, exiting gracefully.";
+        exit 0
       | Xml_parser.Error (err, loc) ->
         pr_debug ("Syntax error in query: " ^ Xml_parser.error_msg err);
-	exit 1
+        exit 1
       | Serialize.Marshal_error ->
         pr_debug "Incorrect query.";
-	exit 1
+        exit 1
       | any ->
-	pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
-	exit 1
+        pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
+        exit 1
   done;
   pr_debug "Exiting gracefully.";
   exit 0

@@ -16,12 +16,13 @@ module Glue : sig
      I.e. if the short list is the second argument
   *)
   type 'a t
-  
+
   val atom : 'a -> 'a t
   val glue : 'a t -> 'a t -> 'a t
   val empty : 'a t
   val is_empty : 'a t -> bool
   val iter : ('a -> unit) -> 'a t -> unit
+  val map : ('a -> 'b) -> 'a t -> 'b t
 
 end = struct
 
@@ -33,7 +34,7 @@ end = struct
   let is_empty x = x = []
 
   let iter f g = List.iter f (List.rev g)
-
+  let map = List.map
 end
 
 open Pp_control
@@ -95,6 +96,8 @@ type 'a ppcmd_token =
   | Ppcmd_close_box
   | Ppcmd_close_tbox
   | Ppcmd_comment of int
+  | Ppcmd_open_tag of string
+  | Ppcmd_close_tag
 
 type 'a ppdir_token =
   | Ppdir_ppcmds of 'a ppcmd_token Glue.t
@@ -113,6 +116,20 @@ let app = Glue.glue
 
 let is_empty g = Glue.is_empty g
 
+let rewrite f p =
+  let strtoken = function
+    | Str_len (s, n) ->
+      let s' = f s in
+      Str_len (s', String.length s')
+    | Str_def s ->
+      Str_def (f s)
+  in
+  let rec ppcmd_token = function
+    | Ppcmd_print x -> Ppcmd_print (strtoken x)
+    | Ppcmd_box (bt, g) -> Ppcmd_box (bt, Glue.map ppcmd_token g)
+    | p -> p
+  in
+  Glue.map ppcmd_token p
 
 (* Compute length of an UTF-8 encoded string
    Rem 1 : utf8_length <= String.length (equal if pure ascii)
@@ -133,18 +150,18 @@ let utf8_length s =
       match s.[!p] with
       | '\000'..'\127' -> nc := 0 (* ascii char *)
       | '\128'..'\191' -> nc := 0 (* cannot start with a continuation byte *)
-      |	'\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
-      |	'\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
-      |	'\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
-      |	'\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
-      |	'\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
-      |	'\254'..'\255' -> nc := 0 (* invalid byte *)
+      | '\192'..'\223' -> nc := 1 (* expect 1 continuation byte *)
+      | '\224'..'\239' -> nc := 2 (* expect 2 continuation bytes *)
+      | '\240'..'\247' -> nc := 3 (* expect 3 continuation bytes *)
+      | '\248'..'\251' -> nc := 4 (* expect 4 continuation bytes *)
+      | '\252'..'\253' -> nc := 5 (* expect 5 continuation bytes *)
+      | '\254'..'\255' -> nc := 0 (* invalid byte *)
     end ;
     incr p ;
     while !p < len && !nc > 0 do
       match s.[!p] with
-      |	'\128'..'\191' (* next continuation byte *) -> incr p ; decr nc
-      |	_ (* not a continuation byte *) -> nc := 0
+      | '\128'..'\191' (* next continuation byte *) -> incr p ; decr nc
+      | _ (* not a continuation byte *) -> nc := 0
     done ;
     incr cnt
   done ;
@@ -173,8 +190,8 @@ let strbrk s =
   let rec aux p n =
     if n < String.length s then
       if s.[n] = ' ' then
-	if p = n then spc() :: aux (n+1) (n+1)
-	else str (String.sub s p (n-p)) :: spc () :: aux (n+1) (n+1)
+        if p = n then spc() :: aux (n+1) (n+1)
+        else str (String.sub s p (n-p)) :: spc () :: aux (n+1) (n+1)
       else aux p (n + 1)
     else if p = n then [] else [str (String.sub s p (n-p))]
   in List.fold_left (++) Glue.empty (aux 0 0)
@@ -197,6 +214,10 @@ let tb () = Glue.atom(Ppcmd_open_box Pp_tbox)
 let close () = Glue.atom(Ppcmd_close_box)
 let tclose () = Glue.atom(Ppcmd_close_tbox)
 
+(* Opening and closed of tags *)
+let open_tag t = Glue.atom(Ppcmd_open_tag t)
+let close_tag () = Glue.atom(Ppcmd_close_tag)
+let tag t s = open_tag t ++ s ++ close_tag ()
 let eval_ppcmds l = l
 
 (* In new syntax only double quote char is escaped by repeating it *)
@@ -283,6 +304,10 @@ let pp_dirs ft =
 (*        Format.pp_open_hvbox ft 0;*)
         List.iter (pr_com ft) coms(*;
         Format.pp_close_box ft ()*)
+    | Ppcmd_open_tag name ->
+      Format.pp_open_tag ft name
+    | Ppcmd_close_tag ->
+      Format.pp_close_tag ft ()
   in
   let pp_dir = function
     | Ppdir_ppcmds cmdstream -> Glue.iter pp_cmd cmdstream
@@ -297,6 +322,7 @@ let pp_dirs ft =
       let reraise = Backtrace.add_backtrace reraise in
       let () = Format.pp_print_flush ft () in
       raise reraise
+
 
 
 (* pretty print on stdout and stderr *)
@@ -452,16 +478,16 @@ let prlist_sep_lastsep no_empty sep lastsep elem =
     |[] -> mt ()
     |[e] -> elem e
     |h::t -> let e = elem h in
-	if no_empty && ismt e then start t else
-	  let rec aux = function
-	    |[] -> mt ()
-	    |h::t ->
-	       let e = elem h and r = aux t in
-		 if no_empty && ismt e then r else
-		   if ismt r
-		   then let s = lastsep () in s ++ e
-		   else let s = sep () in s ++ e ++ r
-	  in let r = aux t in e ++ r
+        if no_empty && ismt e then start t else
+          let rec aux = function
+            |[] -> mt ()
+            |h::t ->
+               let e = elem h and r = aux t in
+                 if no_empty && ismt e then r else
+                   if ismt r
+                   then let s = lastsep () in s ++ e
+                   else let s = sep () in s ++ e ++ r
+          in let r = aux t in e ++ r
   in start
 
 let prlist_strict pr l = prlist_sep_lastsep true mt mt pr l

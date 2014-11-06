@@ -46,6 +46,9 @@ val eval_ppcmds : std_ppcmds -> std_ppcmds
 val is_empty : std_ppcmds -> bool
 (** Test emptyness. *)
 
+val rewrite : (string -> string) -> std_ppcmds -> std_ppcmds
+(** [rewrite f pps] applies [f] to all strings that appear in [pps]. *)
+
 (** {6 Derived commands} *)
 
 val spc : unit -> std_ppcmds
@@ -77,6 +80,12 @@ val tb : unit -> std_ppcmds
 val close : unit -> std_ppcmds
 val tclose : unit -> std_ppcmds
 
+(** {6 Opening and closing of tags} *)
+
+val tag : string -> std_ppcmds -> std_ppcmds
+val open_tag : string -> std_ppcmds
+val close_tag : unit -> std_ppcmds
+
 (** {6 Sending messages to the user} *)
 type message_level = Feedback.message_level =
   | Debug of string
@@ -100,11 +109,11 @@ val msg_notice : std_ppcmds -> unit
 (** Message that should be displayed, such as [Print Foo] or [Show Bar]. *)
 
 val msg_warning : std_ppcmds -> unit
-(** Message indicating that something went wrong, but without serious 
+(** Message indicating that something went wrong, but without serious
     consequences. *)
 
 val msg_error : std_ppcmds -> unit
-(** Message indicating that something went really wrong, though still 
+(** Message indicating that something went really wrong, though still
     recoverable; otherwise an exception would have been raised. *)
 
 val msg_debug : std_ppcmds -> unit
@@ -171,7 +180,7 @@ val pr_nth : int -> std_ppcmds
 val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 (** Concatenation of the list contents, without any separator.
 
-    Unlike all other functions below, [prlist] works lazily. If a strict 
+    Unlike all other functions below, [prlist] works lazily. If a strict
     behavior is needed, use [prlist_strict] instead. *)
 
 val prlist_strict :  ('a -> std_ppcmds) -> 'a list -> std_ppcmds

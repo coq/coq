@@ -509,10 +509,10 @@ let isAllowedEvar flags c = match kind_of_term c with
   | _ -> false
 
 let check_compatibility env pbty flags (sigma,metasubst,evarsubst) tyM tyN =
-  match subst_defined_metas metasubst tyM with
+  match subst_defined_metas_evars (metasubst,evarsubst) tyM with
   | None -> sigma
   | Some m ->
-  match subst_defined_metas metasubst tyN with
+  match subst_defined_metas_evars (metasubst,evarsubst) tyN with
   | None -> sigma
   | Some n ->
     if is_ground_term sigma m && is_ground_term sigma n then
@@ -844,11 +844,11 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
       match flags.modulo_conv_on_closed_terms with
       | None -> None
       | Some convflags ->
-      let subst = if flags.use_metas_eagerly_in_conv_on_closed_terms then metasubst else ms in
-      match subst_defined_metas subst cM with
+      let subst = if flags.use_metas_eagerly_in_conv_on_closed_terms then (metasubst,evarsubst) else (ms,es) in
+      match subst_defined_metas_evars subst cM with
       | None -> (* some undefined Metas in cM *) None
       | Some m1 ->
-      match subst_defined_metas subst cN with
+      match subst_defined_metas_evars subst cN with
       | None -> (* some undefined Metas in cN *) None
       | Some n1 ->
           (* No subterm restriction there, too much incompatibilities *)

@@ -1403,7 +1403,7 @@ let micromega_order_change spec cert cert_typ env ff : Tacmach.tactic =
      ]
      (Tacmach.pf_concl gl)) gl);
   Tactics.generalize env ;
-  Tacticals.tclTHENSEQ (List.map Tactics.introduction ids) ; 
+  Tacticals.tclTHENSEQ (List.map (fun id -> Proofview.V82.of_tactic (Tactics.introduction id)) ids) ; 
  ] 
 
 

@@ -93,7 +93,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
         in
         proof#buffer#insert (goal_str 1 goals_cnt);
         proof#buffer#insert ~tags cur_goal;
-	proof#buffer#insert "\n"
+        proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
       let fold_goal i _ { Interface.goal_ccl = g } =
@@ -104,7 +104,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
 
       ignore(proof#buffer#place_cursor
                ~where:(proof#buffer#end_iter#backward_to_tag_toggle
-			 (Some Tags.Proof.goal)));
+                         (Some Tags.Proof.goal)));
       ignore(proof#scroll_to_mark ~use_align:true ~yalign:0.95 `INSERT)
 
 let mode_cesar (proof : #GText.view_skel) = function
@@ -129,7 +129,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
   match goals with
   | None -> ()
     (* No proof in progress *)
-  | Some { Proof.fg_goals = []; bg_goals = bg; shelved_goals; given_up_goals; } ->
+  | Some { Interface.fg_goals = []; bg_goals = bg; shelved_goals; given_up_goals; } ->
     let bg = flatten (List.rev bg) in
     let evars = match evars with None -> [] | Some evs -> evs in
     begin match (bg, shelved_goals,given_up_goals, evars) with
@@ -168,7 +168,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       in
       List.iter iter bg
     end
-  | Some { Proof.fg_goals = fg } ->
+  | Some { Interface.fg_goals = fg } ->
     mode view fg hints
 
 let proof_view () =

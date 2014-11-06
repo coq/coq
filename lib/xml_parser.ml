@@ -19,30 +19,29 @@
  *)
 
 open Printf
+open Xml_datatype
 
-type xml = Xml_datatype.xml =
-        | Element of (string * (string * string) list * xml list)
-        | PCData of string
+type xml = Xml_datatype.xml
 
 type error_pos = {
-        eline : int;
-        eline_start : int;
-        emin : int;
-        emax : int;
+  eline : int;
+  eline_start : int;
+  emin : int;
+  emax : int;
 }
 
 type error_msg =
-        | UnterminatedComment
-        | UnterminatedString
-        | UnterminatedEntity
-        | IdentExpected
-        | CloseExpected
-        | NodeExpected
-        | AttributeNameExpected
-        | AttributeValueExpected
-        | EndOfTagExpected of string
-        | EOFExpected
-        | Empty
+  | UnterminatedComment
+  | UnterminatedString
+  | UnterminatedEntity
+  | IdentExpected
+  | CloseExpected
+  | NodeExpected
+  | AttributeNameExpected
+  | AttributeValueExpected
+  | EndOfTagExpected of string
+  | EOFExpected
+  | Empty
 
 type error = error_msg * error_pos
 
@@ -58,9 +57,9 @@ type t = {
 }
 
 type source =
-| SChannel of in_channel
-| SString of string
-| SLexbuf of Lexing.lexbuf
+  | SChannel of in_channel
+  | SString of string
+  | SLexbuf of Lexing.lexbuf
 
 exception Internal_error of error_msg
 exception NoMoreData
@@ -81,14 +80,14 @@ let is_blank s =
   !i = len
 
 let _raises e f =
-	xml_error := e;
-	file_not_found := f
+  xml_error := e;
+  file_not_found := f
 
 let make source =
   let source = match source with
-  | SChannel chan -> Lexing.from_channel chan
-  | SString s -> Lexing.from_string s
-  | SLexbuf lexbuf -> lexbuf
+    | SChannel chan -> Lexing.from_channel chan
+    | SString s -> Lexing.from_string s
+    | SLexbuf lexbuf -> lexbuf
   in
   let () = Xml_lexer.init source in
   {
@@ -101,65 +100,70 @@ let make source =
 let check_eof p v = p.check_eof <- v
 
 let pop s =
-	try
-		Stack.pop s.stack
-	with
-		Stack.Empty ->
-			Xml_lexer.token s.source
+  try
+    Stack.pop s.stack
+  with
+      Stack.Empty ->
+        Xml_lexer.token s.source
 
 let push t s =
-	Stack.push t s.stack
+  Stack.push t s.stack
 
 let canonicalize l =
   let has_elt = List.exists (function Element _ -> true | _ -> false) l in
   if has_elt then List.filter (function PCData s -> not (is_blank s) | _ -> true) l
   else l
 
-let rec read_node s =
-	match pop s with
-	| Xml_lexer.PCData s -> PCData s
-	| Xml_lexer.Tag (tag, attr, true) -> Element (tag, attr, [])
-	| Xml_lexer.Tag (tag, attr, false) ->
-          let elements = read_elems tag s in
-          Element (tag, attr, canonicalize elements)
-	| t ->
-		push t s;
-		raise NoMoreData
-and
-	read_elems tag s =
-		let elems = ref [] in
-		(try
-                  while true do
-                    let node = read_node s in
-                    match node, !elems with
-                    | PCData c , (PCData c2) :: q ->
-                      elems := PCData (c2 ^ c) :: q
-                    | _, l ->
-                      elems := node :: l
-                  done
-		with
-			NoMoreData -> ());
-		match pop s with
-		| Xml_lexer.Endtag s when s = tag -> List.rev !elems
-		| t -> raise (Internal_error (EndOfTagExpected tag))
+let rec read_xml do_not_canonicalize s =
+  let rec read_node s =
+    match pop s with
+      | Xml_lexer.PCData s -> PCData s
+      | Xml_lexer.Tag (tag, attr, true) -> Element (tag, attr, [])
+      | Xml_lexer.Tag (tag, attr, false) ->
+        let elements = read_elems tag s in
+        let elements =
+          if do_not_canonicalize then elements else canonicalize elements
+        in
+        Element (tag, attr, elements)
+      | t ->
+        push t s;
+        raise NoMoreData
 
-let rec read_xml s =
-  let node = read_node s in
-  match node with
-  | Element _ -> node
-  | PCData c ->
-    if is_blank c then read_xml s
-    else raise (Xml_lexer.Error Xml_lexer.ENodeExpected)
+  and read_elems tag s =
+    let elems = ref [] in
+    (try
+       while true do
+         let node = read_node s in
+         match node, !elems with
+           | PCData c , (PCData c2) :: q ->
+             elems := PCData (c2 ^ c) :: q
+           | _, l ->
+             elems := node :: l
+       done
+     with
+         NoMoreData -> ());
+    match pop s with
+      | Xml_lexer.Endtag s when s = tag -> List.rev !elems
+      | t -> raise (Internal_error (EndOfTagExpected tag))
+  in
+  match read_node s with
+    | (Element _) as node ->
+      node
+    | PCData c ->
+      if is_blank c then
+        read_xml do_not_canonicalize s
+      else
+        raise (Xml_lexer.Error Xml_lexer.ENodeExpected)
 
 let convert = function
-	| Xml_lexer.EUnterminatedComment -> UnterminatedComment
-	| Xml_lexer.EUnterminatedString -> UnterminatedString
-	| Xml_lexer.EIdentExpected -> IdentExpected
-	| Xml_lexer.ECloseExpected -> CloseExpected
-	| Xml_lexer.ENodeExpected -> NodeExpected
-	| Xml_lexer.EAttributeNameExpected -> AttributeNameExpected
-	| Xml_lexer.EAttributeValueExpected -> AttributeValueExpected
-	| Xml_lexer.EUnterminatedEntity -> 	UnterminatedEntity
+  | Xml_lexer.EUnterminatedComment -> UnterminatedComment
+  | Xml_lexer.EUnterminatedString -> UnterminatedString
+  | Xml_lexer.EIdentExpected -> IdentExpected
+  | Xml_lexer.ECloseExpected -> CloseExpected
+  | Xml_lexer.ENodeExpected -> NodeExpected
+  | Xml_lexer.EAttributeNameExpected -> AttributeNameExpected
+  | Xml_lexer.EAttributeValueExpected -> AttributeValueExpected
+  | Xml_lexer.EUnterminatedEntity ->      UnterminatedEntity
 
 let error_of_exn xparser = function
   | NoMoreData when pop xparser = Xml_lexer.Eof -> Empty
@@ -170,56 +174,59 @@ let error_of_exn xparser = function
     (*let e = Errors.push e in: We do not record backtrace here. *)
     raise e
 
-let do_parse xparser =
-	try
-		Xml_lexer.init xparser.source;
-		let x = read_xml xparser in
-		if xparser.check_eof && pop xparser <> Xml_lexer.Eof then raise (Internal_error EOFExpected);
-		Xml_lexer.close ();
-		x
-	with any ->
-	  Xml_lexer.close ();
-	  raise (!xml_error (error_of_exn xparser any) xparser.source)
+let do_parse do_not_canonicalize xparser =
+  try
+    Xml_lexer.init xparser.source;
+    let x = read_xml do_not_canonicalize xparser in
+    if xparser.check_eof && pop xparser <> Xml_lexer.Eof then raise (Internal_error EOFExpected);
+    Xml_lexer.close ();
+    x
+  with any ->
+    Xml_lexer.close ();
+    raise (!xml_error (error_of_exn xparser any) xparser.source)
 
-let parse p = do_parse p
+let parse ?(do_not_canonicalize=false) p =
+  do_parse do_not_canonicalize p
 
 let error_msg = function
-        | UnterminatedComment -> "Unterminated comment"
-        | UnterminatedString -> "Unterminated string"
-        | UnterminatedEntity -> "Unterminated entity"
-        | IdentExpected -> "Ident expected"
-        | CloseExpected -> "Element close expected"
-        | NodeExpected -> "Xml node expected"
-        | AttributeNameExpected -> "Attribute name expected"
-        | AttributeValueExpected -> "Attribute value expected"
-        | EndOfTagExpected tag -> sprintf "End of tag expected : '%s'" tag
-        | EOFExpected -> "End of file expected"
-	| Empty -> "Empty"
+  | UnterminatedComment -> "Unterminated comment"
+  | UnterminatedString -> "Unterminated string"
+  | UnterminatedEntity -> "Unterminated entity"
+  | IdentExpected -> "Ident expected"
+  | CloseExpected -> "Element close expected"
+  | NodeExpected -> "Xml node expected"
+  | AttributeNameExpected -> "Attribute name expected"
+  | AttributeValueExpected -> "Attribute value expected"
+  | EndOfTagExpected tag -> sprintf "End of tag expected : '%s'" tag
+  | EOFExpected -> "End of file expected"
+  | Empty -> "Empty"
 
 let error (msg,pos) =
-        if pos.emin = pos.emax then
-                sprintf "%s line %d character %d" (error_msg msg) pos.eline (pos.emin - pos.eline_start)
-        else
-                sprintf "%s line %d characters %d-%d" (error_msg msg) pos.eline (pos.emin - pos.eline_start) (pos.emax - pos.eline_start)
-        
+  if pos.emin = pos.emax then
+    sprintf "%s line %d character %d" (error_msg msg) pos.eline
+      (pos.emin - pos.eline_start)
+  else
+    sprintf "%s line %d characters %d-%d" (error_msg msg) pos.eline
+      (pos.emin - pos.eline_start) (pos.emax - pos.eline_start)
+
 let line e = e.eline
 
-let range e = 
-        e.emin - e.eline_start , e.emax - e.eline_start
+let range e =
+  e.emin - e.eline_start , e.emax - e.eline_start
 
 let abs_range e =
-        e.emin , e.emax
+  e.emin , e.emax
 
 let pos source =
-        let line, lstart, min, max = Xml_lexer.pos source in
-        {
-                eline = line;
-                eline_start = lstart;
-                emin = min;
-                emax = max;
-        }
+  let line, lstart, min, max = Xml_lexer.pos source in
+  {
+    eline = line;
+    eline_start = lstart;
+    emin = min;
+    emax = max;
+  }
 
-let () = _raises (fun x p -> 
+let () = _raises (fun x p ->
         (* local cast : Xml.error_msg -> error_msg *)
-        Error (x, pos p))
-        (fun f -> File_not_found f)
+  Error (x, pos p))
+  (fun f -> File_not_found f)

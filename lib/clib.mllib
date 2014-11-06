@@ -29,6 +29,10 @@ Util
 Stateid
 Feedback
 Pp
+Xml_lexer
+Xml_parser
+Xml_printer
+Richpp
 CUnix
 Envars
 Aux_file

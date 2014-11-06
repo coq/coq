@@ -25,3 +25,5 @@ val to_string : xml -> string
  tabs and lines break between different nodes. *)
 val to_string_fmt : xml -> string
 
+(** Print PCDATA as a string by escaping XML entities. *)
+val pcdata_to_string : string -> string
