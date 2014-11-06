@@ -1756,12 +1756,7 @@ Section ReDun.
     induction l as [ | a l IHl ]; [ simpl; intros; contradiction | ].
     simpl. intros pieqA ndt a0 in1 in2. inversion ndt; subst.
     destruct in1, in2; subst;
-    try solve [
-          match goal with
-              H : ?x, HH : ~?x |- _
-              => elim HH; exact H
-          end
-        ];
+    try contradiction;
     apply f_equal; auto.
   Qed.
 
