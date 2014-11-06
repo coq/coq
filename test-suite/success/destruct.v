@@ -377,6 +377,14 @@ intros.
 Fail destruct H.
 Abort.
 
+(* Check keep option (bug #3791) *)
+
+Goal forall b:bool, True.
+intro b.
+destruct !b.
+clear b. (* b has to be here *)
+Abort.
+
 (* Check clearing of names *)
 
 Inductive IND2 : nat -> Prop := CONSTR2 : forall y, y = y -> IND2 y.

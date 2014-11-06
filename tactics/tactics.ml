@@ -3885,8 +3885,7 @@ let check_enough_applied env sigma elim =
           (* Last argument is supposed to be the induction argument *)
           check_expected_type env sigma elimc elimt
 
-let pose_induction_arg_then clear_flag isrec with_evars
-     (is_arg_pure_hyp,from_prefix) elim
+let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
      id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -3956,6 +3955,7 @@ let induction_gen clear_flag isrec with_evars elim
   let is_arg_pure_hyp =
     isVar c && not (mem_named_context (destVar c) (Global.named_context()))
     && lbind == NoBindings && not with_evars && Option.is_empty eqname
+    && clear_flag == None
     && has_generic_occurrences_but_goal cls (destVar c) env ccl in
   let enough_applied = check_enough_applied env sigma elim t in
   if is_arg_pure_hyp && enough_applied then
@@ -3978,7 +3978,7 @@ let induction_gen clear_flag isrec with_evars elim
       new_fresh_id [] x gl in
     let info_arg = (is_arg_pure_hyp, not enough_applied) in
     pose_induction_arg_then
-      clear_flag isrec with_evars info_arg elim id arg t inhyps cls
+      isrec with_evars info_arg elim id arg t inhyps cls
     (induction_with_atomization_of_ind_arg
        isrec with_evars elim names id inhyps)
   end
