@@ -1266,7 +1266,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
   let hook _ _ =
     let opacity =
       let na_ref = Libnames.Ident (Loc.ghost,na) in
-      let na_global = Nametab.global na_ref in
+      let na_global = Smartlocate.global_with_alias na_ref in
       match na_global with
 	  ConstRef c -> is_opaque_constant c
 	| _ -> anomaly ~label:"equation_lemma" (Pp.str "not a constant")

@@ -597,7 +597,7 @@ let build_scheme fas =
 	 (fun (_,f,sort) ->
 	    let f_as_constant =
 	      try
-		match Nametab.global f with
+		match Smartlocate.global_with_alias f with
 		  | Globnames.ConstRef c -> c
 		  | _ -> Errors.error "Functional Scheme can only be used with functions"
 	      with Not_found ->
@@ -629,7 +629,7 @@ let build_case_scheme fa =
 (*     Constrintern.global_reference  id *)
 (*   in  *)
   let funs =  (fun (_,f,_) ->
-		 try fst (Universes.unsafe_constr_of_global (Nametab.global f))
+		 try fst (Universes.unsafe_constr_of_global (Smartlocate.global_with_alias f))
 		 with Not_found ->
 		   Errors.error ("Cannot find "^ Libnames.string_of_reference f)) fa in
   let first_fun,u = destConst  funs in

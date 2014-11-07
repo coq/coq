@@ -215,7 +215,7 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
 	      | (_,fun_name,_)::_ ->
 		  begin
 		    begin
-		      make_graph (Nametab.global fun_name)
+		      make_graph (Smartlocate.global_with_alias fun_name)
 		    end
 		    ;
 		    try Functional_principles_types.build_scheme fas
@@ -245,7 +245,7 @@ END
 
 (***** debug only ***)
 VERNAC COMMAND EXTEND GenerateGraph CLASSIFIED AS QUERY
-["Generate" "graph" "for" reference(c)] -> [ make_graph (Nametab.global c) ]
+["Generate" "graph" "for" reference(c)] -> [ make_graph (Smartlocate.global_with_alias c) ]
 END
 
 
