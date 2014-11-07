@@ -124,6 +124,9 @@ let pr_glob_constr c =
 
 let pr_closed_glob_env env sigma c =
   pr_constr_expr (extern_closed_glob false env sigma c)
+let pr_closed_glob c =
+  let (sigma, env) = get_current_context () in
+  pr_closed_glob_env env sigma c
 
 let pr_lconstr_pattern_env env sigma c =
   pr_lconstr_pattern_expr (extern_constr_pattern (Termops.names_of_rel_context env) sigma c)

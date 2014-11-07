@@ -1426,6 +1426,12 @@ let () =
   ;
   Genprint.register_print0 Constrarg.wit_sort
     pr_glob_sort pr_glob_sort pr_sort;
+  Genprint.register_print0
+    Constrarg.wit_uconstr
+    Ppconstr.pr_constr_expr
+    (fun (c,_) -> Printer.pr_glob_constr c)
+    Printer.pr_closed_glob
+  ;
   Genprint.register_print0 Stdarg.wit_int int int int;
   Genprint.register_print0 Stdarg.wit_bool pr_bool pr_bool pr_bool;
   Genprint.register_print0 Stdarg.wit_unit pr_unit pr_unit pr_unit;

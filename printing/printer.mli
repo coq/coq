@@ -60,6 +60,7 @@ val pr_type_env            : env -> evar_map -> types -> std_ppcmds
 val pr_type                : types -> std_ppcmds
 
 val pr_closed_glob_env     : env -> evar_map -> closed_glob_constr -> std_ppcmds
+val pr_closed_glob         : closed_glob_constr -> std_ppcmds
 
 val pr_ljudge_env          : env -> evar_map -> unsafe_judgment -> std_ppcmds * std_ppcmds
 val pr_ljudge              : unsafe_judgment -> std_ppcmds * std_ppcmds
