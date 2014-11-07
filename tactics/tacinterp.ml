@@ -799,6 +799,12 @@ let rec message_of_value v =
   else if has_type v (topwit wit_constr_context) then
     let c = out_gen (topwit wit_constr_context) v in
     Ftactic.nf_enter begin fun gl -> Ftactic.return (pr_constr_env (pf_env gl) (Proofview.Goal.sigma gl) c) end
+  else if has_type v (topwit wit_uconstr) then
+    let c = out_gen (topwit wit_uconstr) v in
+    Ftactic.nf_enter begin fun gl ->
+      Ftactic.return (pr_closed_glob_env (pf_env gl)
+                        (Proofview.Goal.sigma gl) c)
+    end
   else match Value.to_list v with
   | Some l ->
     Ftactic.List.map message_of_value l >>= fun l ->
