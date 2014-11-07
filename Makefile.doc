@@ -118,7 +118,7 @@ doc/refman/Reference-Manual.html: doc/refman/styles.hva doc/refman/headers.hva d
 	(cd doc/refman; BIBINPUTS=.: $(HEVEA) $(HEVEAOPTS) ./styles.hva ./Reference-Manual.tex)
 
 doc/refman/cover.html: doc/common/styles/html/$(HTMLSTYLE)/cover.html
-	$(INSTALLLIB) $< doc/refman
+	sed -e "s/COQVERSION/$(VERSION)/g" $< > $@
 
 doc/refman/styles.hva: doc/common/styles/html/$(HTMLSTYLE)/styles.hva
 	$(INSTALLLIB) $< doc/refman
