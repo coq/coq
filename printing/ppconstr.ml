@@ -812,15 +812,13 @@ include Make (struct
     let tag_constr_expr = do_not_tag
 end)
 
-module Richpp (Indexer : sig
-  val index : Ppannotation.t -> string
-end) = struct
+module Richpp = struct
 
   include Make (struct
     open Ppannotation
-    let tag_keyword       = Pp.tag (Indexer.index AKeyword)
-    let tag_unparsing unp = Pp.tag (Indexer.index (AUnparsing unp))
-    let tag_constr_expr e = Pp.tag (Indexer.index (AConstrExpr e))
+    let tag_keyword       = Pp.tag (Pp.Tag.inj AKeyword tag)
+    let tag_unparsing unp = Pp.tag (Pp.Tag.inj (AUnparsing unp) tag)
+    let tag_constr_expr e = Pp.tag (Pp.Tag.inj (AConstrExpr e) tag)
   end)
 
 end

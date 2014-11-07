@@ -153,6 +153,7 @@ Tok
 Lexer
 Ppextend
 Pputils
+Ppannotation
 Stdarg
 Constrarg
 Constrexpr_ops

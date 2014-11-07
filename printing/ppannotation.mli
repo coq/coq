@@ -29,3 +29,5 @@ type t =
 val tag_of_annotation : t -> string
 
 val attributes_of_annotation : t -> (string * string) list
+
+val tag : t Pp.Tag.key

@@ -101,8 +101,10 @@ sig
   (** Project an object from a tag. *)
 end
 
-val tag : string -> std_ppcmds -> std_ppcmds
-val open_tag : string -> std_ppcmds
+type tag_handler = Tag.t -> Format.tag
+
+val tag : Tag.t -> std_ppcmds -> std_ppcmds
+val open_tag : Tag.t -> std_ppcmds
 val close_tag : unit -> std_ppcmds
 
 (** {6 Sending messages to the user} *)
@@ -238,9 +240,7 @@ val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
 (** {6 Low-level pretty-printing functions {% \emph{%}without flush{% }%}. } *)
 
-val pp_with : Format.formatter -> std_ppcmds -> unit
-val ppnl_with : Format.formatter -> std_ppcmds -> unit
-val pp_flush_with : Format.formatter -> unit -> unit
+val pp_with : ?pp_tag:tag_handler -> Format.formatter -> std_ppcmds -> unit
 
 (** {6 Pretty-printing functions {% \emph{%}without flush{% }%} on [stdout] and [stderr]. } *)
 

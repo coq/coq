@@ -8,24 +8,6 @@
 
 (** This module offers semi-structured pretty-printing. *)
 
-(** A pretty printer module must use an instance of the following
-    functor to index annotations. The index is to be used as a
-    [Format.tag] during the pretty-printing. *)
-
-(** The indices are Format.tags. *)
-type index = Format.tag (* = string *)
-
-module Indexer (Annotation : sig type t end) : sig
-
-  (** [index annotation] returns a fresh index for the [annotation]. *)
-  val index : Annotation.t -> index
-
-  (** [get_annotations ()] returns a function to retrieve annotations
-      from indices after pretty-printing. *)
-  val get_annotations : unit -> (index -> Annotation.t)
-
-end
-
 (** Each annotation of the semi-structured document refers to the
     substring it annotates. *)
 type 'annotation located = {
@@ -36,11 +18,12 @@ type 'annotation located = {
 
 (** [rich_pp get_annotations ppcmds] returns the interpretation
     of [ppcmds] as a string as well as a semi-structured document
-    that represents (located) annotations of this string. *)
+    that represents (located) annotations of this string.
+    The [get_annotations] function is used to convert tags into the desired
+    annotation. If this function returns [None], then no annotation is put. *)
 val rich_pp :
-  (unit -> (index -> 'annotation)) ->
-  (unit -> Pp.std_ppcmds) ->
-  string * ('annotation located) Xml_datatype.gxml
+  (Pp.Tag.t -> 'annotation option) -> Pp.std_ppcmds ->
+  string * 'annotation located Xml_datatype.gxml
 
 (** [annotations_positions ssdoc] returns a list associating each
     annotations with its position in the string from which [ssdoc] is
@@ -56,4 +39,3 @@ val xml_of_rich_pp :
   ('annotation -> (string * string) list) ->
   'annotation located Xml_datatype.gxml ->
   Xml_datatype.xml
-

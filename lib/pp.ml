@@ -127,7 +127,7 @@ type 'a ppcmd_token =
   | Ppcmd_close_box
   | Ppcmd_close_tbox
   | Ppcmd_comment of int
-  | Ppcmd_open_tag of string
+  | Ppcmd_open_tag of Tag.t
   | Ppcmd_close_tag
 
 type 'a ppdir_token =
@@ -293,8 +293,10 @@ let rec pr_com ft s =
           (Format.pp_force_newline ft (); pr_com ft s2)
     | None -> ()
 
+type tag_handler = Tag.t -> Format.tag
+
 (* pretty printing functions *)
-let pp_dirs ft =
+let pp_dirs ?pp_tag ft =
   let pp_open_box = function
     | Pp_hbox n   -> Format.pp_open_hbox ft ()
     | Pp_vbox n   -> Format.pp_open_vbox ft n
@@ -335,10 +337,16 @@ let pp_dirs ft =
 (*        Format.pp_open_hvbox ft 0;*)
         List.iter (pr_com ft) coms(*;
         Format.pp_close_box ft ()*)
-    | Ppcmd_open_tag name ->
-      Format.pp_open_tag ft name
+    | Ppcmd_open_tag tag ->
+      begin match pp_tag with
+      | None -> ()
+      | Some f -> Format.pp_open_tag ft (f tag)
+      end
     | Ppcmd_close_tag ->
-      Format.pp_close_tag ft ()
+      begin match pp_tag with
+      | None -> ()
+      | Some _ -> Format.pp_close_tag ft ()
+      end
   in
   let pp_dir = function
     | Ppdir_ppcmds cmdstream -> Glue.iter pp_cmd cmdstream
@@ -368,8 +376,8 @@ let emacs_quote g =
 
 
 (* pretty printing functions WITHOUT FLUSH *)
-let pp_with ft strm =
-  pp_dirs ft (Glue.atom (Ppdir_ppcmds strm))
+let pp_with ?pp_tag ft strm =
+  pp_dirs ?pp_tag ft (Glue.atom (Ppdir_ppcmds strm))
 
 let ppnl_with ft strm =
   pp_dirs ft (Glue.atom (Ppdir_ppcmds (strm ++ fnl ())))

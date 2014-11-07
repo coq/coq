@@ -8,37 +8,27 @@
 
 open Xml_datatype
 
-type index = Format.tag
-
 type 'annotation located = {
   annotation : 'annotation option;
   startpos   : int;
   endpos     : int
 }
 
-module Indexer (Annotation : sig type t end) = struct
-
-  let annotations : Annotation.t list ref = ref []
-
-  let index =
-    let count = ref (-1) in
-    fun annotation ->
-      incr count;
-      annotations := annotation :: !annotations;
-      string_of_int !count
-
-  let get_annotations () =
-    let annotations = Array.of_list (List.rev !annotations) in
-    fun index -> annotations.(int_of_string index)
-
-end
-
-let rich_pp get_annotations ppcmds =
+let rich_pp annotate ppcmds =
   (** First, we use Format to introduce tags inside
       the pretty-printed document.
 
-      Each inserted tag is an index to an annotation.
+      Each inserted tag is a fresh index that we keep in sync with the contents
+      of annotations.
   *)
+  let annotations = ref [] in
+  let index = ref (-1) in
+  let pp_tag obj =
+    let () = incr index in
+    let () = annotations := obj :: !annotations in
+    string_of_int !index
+  in
+
   let tagged_pp = Format.(
 
     (** Warning: The following instructions are valid only if
@@ -75,9 +65,9 @@ let rich_pp get_annotations ppcmds =
     (** Some characters must be escaped in XML. This is done by the
         following rewriting of the strings held by pretty-printing
         commands. *)
-    Pp.(pp_with ft (rewrite Xml_printer.pcdata_to_string (ppcmds ())));
+    Pp.(pp_with ~pp_tag ft (rewrite Xml_printer.pcdata_to_string ppcmds));
 
-    (** Insert </p>. *)
+    (** Insert </pp>. *)
     pp_close_tag ft ();
 
     (** Get the final string. *)
@@ -95,7 +85,8 @@ let rich_pp get_annotations ppcmds =
   in
   (** Second, we retrieve the final function that relates
       each tag to an annotation. *)
-  let get = get_annotations () in
+  let objs = CArray.rev_of_list !annotations in
+  let get index = annotate objs.(index) in
 
   (** Third, we parse the resulting string. It is a valid XML
       document (in the sense of Xml_parser). As blanks are
@@ -121,7 +112,7 @@ let rich_pp get_annotations ppcmds =
   let rec node buffer = function
     | Element (index, [], cs) ->
       let startpos, endpos, cs = children buffer cs in
-      let annotation = try Some (get index) with _ -> None in
+      let annotation = try get (int_of_string index) with _ -> None in
       (Element (index, { annotation; startpos; endpos }, cs), endpos)
 
     | PCData s ->

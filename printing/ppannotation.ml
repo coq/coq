@@ -37,3 +37,5 @@ let tag_of_annotation = function
 
 let attributes_of_annotation a =
   []
+
+let tag = Pp.Tag.create "ppannotation"

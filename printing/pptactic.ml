@@ -1337,20 +1337,18 @@ let _ = Hook.set Tactic_debug.match_rule_printer
     pr_match_rule false (pr_glob_tactic (Global.env()))
       (fun (_,p) -> pr_constr_pattern p) rl)
 
-module Richpp (Indexer : sig
-  val index : Ppannotation.t -> string
-end) = struct
+module Richpp = struct
 
-  include Make (Ppconstr.Richpp (Indexer)) (struct
+  include Make (Ppconstr.Richpp) (struct
     open Ppannotation
-    open Indexer
-    let tag_keyword                   = Pp.tag (Indexer.index AKeyword)
-    let tag_glob_tactic_expr        e = Pp.tag (index (AGlobTacticExpr e))
-    let tag_glob_atomic_tactic_expr a = Pp.tag (index (AGlobAtomicTacticExpr a))
-    let tag_raw_tactic_expr         e = Pp.tag (index (ARawTacticExpr e))
-    let tag_raw_atomic_tactic_expr  a = Pp.tag (index (ARawAtomicTacticExpr a))
-    let tag_tactic_expr             e = Pp.tag (index (ATacticExpr e))
-    let tag_atomic_tactic_expr      a = Pp.tag (index (AAtomicTacticExpr a))
+    let tag e s = Pp.tag (Pp.Tag.inj e tag) s
+    let tag_keyword                   = tag AKeyword
+    let tag_glob_tactic_expr        e = tag (AGlobTacticExpr e)
+    let tag_glob_atomic_tactic_expr a = tag (AGlobAtomicTacticExpr a)
+    let tag_raw_tactic_expr         e = tag (ARawTacticExpr e)
+    let tag_raw_atomic_tactic_expr  a = tag (ARawAtomicTacticExpr a)
+    let tag_tactic_expr             e = tag (ATacticExpr e)
+    let tag_atomic_tactic_expr      a = tag (AAtomicTacticExpr a)
   end)
 
 end

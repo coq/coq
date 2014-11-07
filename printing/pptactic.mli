@@ -60,10 +60,6 @@ include Pptacticsig.Pp
 (** The rich pretty-printers produce {!Pp.std_ppcmds} that are
     interpreted as annotated strings. The annotations can be
     retrieved using {!RichPp.rich_pp}. Their definitions are
-    located in {!Ppannotation.t}.
-
-    Please refer to {!RichPp} to know what are the requirements over
-    [Indexer.index] behavior. *)
-module Richpp (Indexer : sig val index : Ppannotation.t -> string end)
-  : Pptacticsig.Pp
+    located in {!Ppannotation.t}. *)
+module Richpp : Pptacticsig.Pp
 
