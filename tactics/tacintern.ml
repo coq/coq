@@ -268,9 +268,11 @@ and intern_intro_pattern_action lf ist = function
 and intern_or_and_intro_pattern lf ist =
   List.map (List.map (intern_intro_pattern lf ist))
 
-let intern_or_and_intro_pattern_loc lf ist l =
-  intern_or_var (fun (loc,l) -> (loc,intern_or_and_intro_pattern lf ist l))
-    ist l
+let intern_or_and_intro_pattern_loc lf ist = function
+  | ArgVar (_,id) as x ->
+      if find_var id ist then x
+      else error "Disjunctive/conjunctive introduction pattern expected."
+  | ArgArg (loc,l) -> ArgArg (loc,intern_or_and_intro_pattern lf ist l)
 
 let intern_intro_pattern_naming_loc lf ist (loc,pat) =
   (loc,intern_intro_pattern_naming lf ist pat)
