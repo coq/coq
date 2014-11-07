@@ -1347,7 +1347,7 @@ module Make
       let pr = {
         pr_tactic = pr_glob_tactic_level env;
         pr_constr = pr_constr_env env Evd.empty;
-        pr_uconstr = (fun _ -> mt ()); (* arnaud: todo *)
+        pr_uconstr = pr_closed_glob_env env Evd.empty;
         pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
         pr_lconstr = pr_lconstr_env env Evd.empty;
         pr_pattern = pr_pat_and_constr_expr (pr_glob_constr_env env);
