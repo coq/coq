@@ -3804,7 +3804,15 @@ let induction_without_atomization isrec with_evars elim names lid =
   in
   let nlid = List.length lid in
   if not (Int.equal nlid awaited_nargs)
-  then Tacticals.New.tclZEROMSG (str"Not the right number of induction arguments.")
+  then Tacticals.New.tclZEROMSG
+    (str"Not the right number of induction arguments (expected "
+     ++ pr_enum (fun x -> x)
+       [
+        if scheme.farg_in_concl then str "the function name" else mt();
+        if scheme.nparams != 0 then int scheme.nparams ++ str (String.plural scheme.nparams " parameter") else mt ();
+        if scheme.nargs != 0 then int scheme.nargs ++ str (String.plural scheme.nargs " argument") else mt ();
+        if Option.is_empty scheme.indarg then mt () else str "a dependent call"  (* ?? *)]
+         ++ str ").")
   else
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (induction_from_context_l with_evars elim_info lid names)
