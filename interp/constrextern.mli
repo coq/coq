@@ -28,6 +28,7 @@ val extern_glob_constr : Id.Set.t -> glob_constr -> constr_expr
 val extern_glob_type : Id.Set.t -> glob_constr -> constr_expr
 val extern_constr_pattern : names_context -> Evd.evar_map ->
   constr_pattern -> constr_expr
+val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob_constr -> constr_expr
 
 (** If [b=true] in [extern_constr b env c] then the variables in the first
    level of quantification clashing with the variables in [env] are renamed.

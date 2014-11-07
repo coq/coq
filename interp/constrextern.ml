@@ -959,6 +959,14 @@ let extern_type goal_concl_style env sigma t =
 
 let extern_sort s = extern_glob_sort (detype_sort s)
 
+let extern_closed_glob ?lax goal_concl_style env sigma t =
+  let avoid = if goal_concl_style then ids_of_context env else [] in
+  let r =
+    Detyping.detype_closed_glob ?lax goal_concl_style avoid env sigma t
+  in
+  let vars = vars_of_env env in
+  extern false (None,[]) vars r
+
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
 

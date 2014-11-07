@@ -374,6 +374,15 @@ let map_pattern_binders f tomatch branches =
 
 (** /mapping of names in binders *)
 
+let map_tomatch f (c,pp) : tomatch_tuple = f c , pp
+
+let map_cases_branch f (loc,il,cll,rhs) : cases_clause =
+  loc , il , cll , f rhs
+
+let map_pattern f tomatch branches =
+  List.map (fun tm -> map_tomatch f tm) tomatch,
+  List.map (fun br -> map_cases_branch f br) branches
+
 let loc_of_glob_constr = function
   | GRef (loc,_,_) -> loc
   | GVar (loc,_) -> loc

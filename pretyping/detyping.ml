@@ -687,6 +687,64 @@ let detype_names isgoal avoid nenv env sigma t =
 let detype ?(lax=false) isgoal avoid env sigma t =
   detype (lax,isgoal) avoid (names_of_rel_context env, env) sigma t
 
+let detype_closed_glob ?lax isgoal avoid env sigma t =
+  let convert_id cl id =
+    try Id.Map.find id cl.idents
+    with Not_found -> id
+  in
+  let convert_name cl = function
+    | Name id -> Name (convert_id cl id)
+    | Anonymous -> Anonymous
+  in
+  let rec detype_closed_glob cl = function
+    | GVar (loc,id) ->
+        (* if [id] is bound to a name. *)
+        begin try
+          GVar(loc,Id.Map.find id cl.idents)
+        (* if [id] is bound to a typed term *)
+        with Not_found -> try
+          (* assumes [detype] does not raise [Not_found] exceptions *)
+          let (b,c) = Id.Map.find id cl.typed in
+          (* spiwack: I'm not sure it is the right thing to do,
+             but I'm computing the detyping environment like
+             [Printer.pr_constr_under_binders_env] does. *)
+          let assums = List.map (fun id -> (Name id,(* dummy *) mkProp)) b in
+          let env = Termops.push_rels_assum assums env in
+          detype ?lax isgoal avoid env sigma c
+        (* if [id] is bound to a [closed_glob_constr]. *)
+        with Not_found -> try
+          let {closure;term} = Id.Map.find id cl.untyped in
+          detype_closed_glob closure term
+        (* Otherwise [id] stands for itself *)
+        with Not_found ->
+         GVar(loc,id)
+        end
+    | GLambda (loc,id,k,t,c) ->
+        let id = convert_name cl id in
+        GLambda(loc,id,k,detype_closed_glob cl t, detype_closed_glob cl c)
+    | GProd (loc,id,k,t,c) ->
+        let id = convert_name cl id in
+        GProd(loc,id,k,detype_closed_glob cl t, detype_closed_glob cl c)
+    | GLetIn (loc,id,b,e) ->
+        let id = convert_name cl id in
+        GLetIn(loc,id,detype_closed_glob cl b, detype_closed_glob cl e)
+    | GLetTuple (loc,ids,(n,r),b,e) ->
+        let ids = List.map (convert_name cl) ids in
+        let n = convert_name cl n in
+        GLetTuple (loc,ids,(n,r),detype_closed_glob cl b, detype_closed_glob cl e)
+    | GCases (loc,sty,po,tml,eqns) ->
+        let (tml,eqns) =
+          Glob_ops.map_pattern_binders (fun na -> convert_name cl na) tml eqns
+        in
+        let (tml,eqns) =
+          Glob_ops.map_pattern (fun c -> detype_closed_glob cl c) tml eqns
+        in
+        GCases(loc,sty,po,tml,eqns)
+    | c ->
+        Glob_ops.map_glob_constr (detype_closed_glob cl) c
+  in
+  detype_closed_glob t.closure t.term
+
 (**********************************************************************)
 (* Module substitution: relies on detyping                            *)
 

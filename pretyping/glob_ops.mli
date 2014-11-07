@@ -45,6 +45,13 @@ val loc_of_glob_constr : glob_constr -> Loc.t
 val map_pattern_binders : (name -> name) ->
   tomatch_tuples -> cases_clauses -> (tomatch_tuples*cases_clauses)
 
+(** [map_pattern f m c] applies [f] to the return predicate and the
+    right-hand side of a pattern-matching expression
+    ({!Glob_term.GCases}) represented here by its relevant components
+    [m] and [c]. *)
+val map_pattern : (glob_constr -> glob_constr) ->
+  tomatch_tuples -> cases_clauses -> (tomatch_tuples*cases_clauses)
+
 (** Conversion from glob_constr to cases pattern, if possible
 
     Take the current alias as parameter,
