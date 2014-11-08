@@ -1461,7 +1461,8 @@ let subst_defined_metas_evars (bl,el) c =
       substrec (pi2 (List.find select bl))
     | Evar (evk,args) ->
       let select (_,(evk',args'),_) = Evar.equal evk evk' && Array.equal Constr.equal args args' in
-      substrec (pi3 (List.find select el))
+      (try substrec (pi3 (List.find select el))
+       with Not_found -> map_constr substrec c)
     | _ -> map_constr substrec c
   in try Some (substrec c) with Not_found -> None
 
