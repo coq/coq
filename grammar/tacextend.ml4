@@ -204,7 +204,7 @@ let declare_tactic loc s c cl = match cl with
   let name = <:expr< Names.Id.of_string $name$ >> in
   declare_str_items loc
     [ <:str_item< do {
-      let obj () = Tacenv.register_ltac False $name$ $body$ in
+      let obj () = Tacenv.register_ltac ~{for_ml=True} False $name$ $body$ in
       try do {
         Tacenv.register_ml_tactic $se$ $tac$;
         Mltop.declare_cache_obj obj $plugin_name$; }

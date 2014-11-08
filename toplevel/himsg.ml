@@ -1196,8 +1196,10 @@ let explain_reduction_tactic_error = function
 
 let is_defined_ltac trace =
   let rec aux = function
-  | (_, Proof_type.LtacNameCall _) :: tail -> true
-  | (_, Proof_type.LtacAtomCall _) :: tail -> false
+  | (_, Proof_type.LtacNameCall f) :: tail ->
+      not (Tacenv.is_ltac_for_ml_tactic f)
+  | (_, Proof_type.LtacAtomCall _) :: tail ->
+      false
   | _ :: tail -> aux tail
   | [] -> false in
   aux (List.rev trace)
@@ -1246,6 +1248,7 @@ let skip_extensions trace =
   List.rev (aux (List.rev trace))
 
 let extract_ltac_trace trace eloc =
+  let trace = skip_extensions trace in
   let (loc,c),tail = List.sep_last trace in
   if is_defined_ltac trace then
     (* We entered a user-defined tactic,
@@ -1262,5 +1265,5 @@ let extract_ltac_trace trace eloc =
         | (loc,_)::tail when not (Loc.is_ghost loc) -> loc
         | _::tail -> aux tail
         | [] -> Loc.ghost in
-        aux (skip_extensions trace) in
+        aux trace in
     None, best_loc
