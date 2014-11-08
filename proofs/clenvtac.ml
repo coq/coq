@@ -96,6 +96,7 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
 let fail_quick_core_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly_in_conv_on_closed_terms = false;
+  use_evars_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = full_transparent_state;
   check_applied_meta_types = false;

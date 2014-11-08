@@ -43,6 +43,7 @@ open Unification
 let auto_core_unif_flags_of st1 st2 useeager = {
   modulo_conv_on_closed_terms = Some st1;
   use_metas_eagerly_in_conv_on_closed_terms = useeager;
+  use_evars_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = st2;
   modulo_delta_types = full_transparent_state;
   check_applied_meta_types = false;

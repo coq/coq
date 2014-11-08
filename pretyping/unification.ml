@@ -234,6 +234,8 @@ type core_unify_flags = {
     (* This refinement of the conversion on closed terms is activable *)
     (* (and activated for apply, rewrite but not auto since Feb 2008 for 8.2) *)
 
+  use_evars_eagerly_in_conv_on_closed_terms : bool;
+
   modulo_delta : Names.transparent_state;
     (* This controls which constants are unfoldable; this is on for apply *)
     (* (but not simple apply) since Feb 2008 for 8.2 *)
@@ -299,6 +301,7 @@ let default_core_unify_flags () =
   let ts = Names.full_transparent_state in {
   modulo_conv_on_closed_terms = Some ts;
   use_metas_eagerly_in_conv_on_closed_terms = true;
+  use_evars_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = ts;
   modulo_delta_types = ts;
   check_applied_meta_types = true;
@@ -509,10 +512,10 @@ let isAllowedEvar flags c = match kind_of_term c with
   | _ -> false
 
 let check_compatibility env pbty flags (sigma,metasubst,evarsubst) tyM tyN =
-  match subst_defined_metas_evars (metasubst,evarsubst) tyM with
+  match subst_defined_metas_evars (metasubst,[]) tyM with
   | None -> sigma
   | Some m ->
-  match subst_defined_metas_evars (metasubst,evarsubst) tyN with
+  match subst_defined_metas_evars (metasubst,[]) tyN with
   | None -> sigma
   | Some n ->
     if is_ground_term sigma m && is_ground_term sigma n then
@@ -844,7 +847,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
       match flags.modulo_conv_on_closed_terms with
       | None -> None
       | Some convflags ->
-      let subst = if flags.use_metas_eagerly_in_conv_on_closed_terms then (metasubst,evarsubst) else (ms,es) in
+      let subst = ((if flags.use_metas_eagerly_in_conv_on_closed_terms then metasubst else ms), (if flags.use_evars_eagerly_in_conv_on_closed_terms then evarsubst else es)) in
       match subst_defined_metas_evars subst cM with
       | None -> (* some undefined Metas in cM *) None
       | Some m1 ->
@@ -1371,6 +1374,7 @@ let default_matching_core_flags sigma =
   let ts = Names.full_transparent_state in {
   modulo_conv_on_closed_terms = Some empty_transparent_state;
   use_metas_eagerly_in_conv_on_closed_terms = false;
+  use_evars_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = ts;
   check_applied_meta_types = true;

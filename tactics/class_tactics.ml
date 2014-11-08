@@ -56,6 +56,7 @@ open Unification
 let auto_core_unif_flags st freeze = {
   modulo_conv_on_closed_terms = Some st;
   use_metas_eagerly_in_conv_on_closed_terms = true;
+  use_evars_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = st;
   modulo_delta_types = st;
   check_applied_meta_types = false;

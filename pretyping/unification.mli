@@ -13,6 +13,7 @@ open Evd
 type core_unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option;
   use_metas_eagerly_in_conv_on_closed_terms : bool;
+  use_evars_eagerly_in_conv_on_closed_terms : bool;
   modulo_delta : Names.transparent_state;
   modulo_delta_types : Names.transparent_state;
   check_applied_meta_types : bool;

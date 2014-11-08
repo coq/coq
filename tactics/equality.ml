@@ -103,6 +103,7 @@ type conditions =
 let rewrite_core_unif_flags = {
   modulo_conv_on_closed_terms = None;
   use_metas_eagerly_in_conv_on_closed_terms = true;
+  use_evars_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = empty_transparent_state;
   check_applied_meta_types = true;
@@ -175,6 +176,7 @@ let rewrite_conv_closed_core_unif_flags = {
     (* to rewrite "?x+2" in "y+(1+1)=0" or to rewrite "?x+?x" in "2+(1+1)=0" *)
 
   use_metas_eagerly_in_conv_on_closed_terms = true;
+  use_evars_eagerly_in_conv_on_closed_terms = false;
     (* Combined with modulo_conv_on_closed_terms, this flag allows since 8.2 *)
     (* to rewrite e.g. "?x+(2+?x)" in "1+(1+2)=0" *)
 
