@@ -13,7 +13,6 @@ Axiom refine : forall {A} (old : Comp A) (new : Comp A), Prop.
 
 Global Instance refine_PreOrder A : PreOrder (@refine A).
 Admitted.
-
 Add Parametric Morphism A
 : (@Pick A)
     with signature
@@ -32,4 +31,5 @@ Proof.
   intros.
   setoid_rewrite (@remove_forall_eq' _ _ _ _).
   Undo.
-  Fail setoid_rewrite (@remove_forall_eq' _ _ _).
+  (* This failed with NotConvertible at some time *)
+  setoid_rewrite (@remove_forall_eq' _ _ _).
