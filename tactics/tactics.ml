@@ -2742,7 +2742,7 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
   let hd,argl = decompose_app indtyp in
   let params = List.firstn nparams argl in
   (* le gl est important pour ne pas préévaluer *)
-  let rec atomize_one i args =
+  let rec atomize_one i params args =
     if Int.equal i nparams then
       let t = applist (hd, params @ List.map mkVar args) in
       Proofview.V82.tactic
@@ -2753,7 +2753,7 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
 	| Var id when not (List.mem id args) &&
                       not (List.exists (occur_var env id) params) ->
             (* We know that the name can be cleared after destruction *)
-	    atomize_one (i-1) (id::args)
+	    atomize_one (i-1) params (id::args)
 	| _ ->
             let id = match kind_of_term c with
             | Var id -> id
@@ -2763,9 +2763,9 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
             let x = fresh_id_in_env args id env in
 	    Tacticals.New.tclTHEN
 	      (letin_tac None (Name x) c None allHypsAndConcl)
-	      (atomize_one (i-1) (x::args))
+	      (atomize_one (i-1) (List.map (replace_term c (mkVar x)) params) (x::args))
   in
-  atomize_one (List.length argl) []
+  atomize_one (List.length argl) params []
   end
 
 let find_atomic_param_of_ind nparams indtyp =

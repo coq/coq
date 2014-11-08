@@ -113,3 +113,30 @@ induction x as [|n IHn].
 2:change (n = 0) in IHn. (* We don't want a generalization over cond *)
 Abort.
 End S3.
+
+(* These examples show somehow arbitrary choices of generalization wrt
+   to indices, when those indices are not linear. We check here 8.4
+   compatibility: when an index is a subterm of a parameter of the
+   inductive type, it is not generalized. *)
+
+Inductive repr (x:nat) : nat -> Prop := reprc z : repr x z -> repr x z.
+
+Goal forall x, 0 = x -> repr x x -> True.
+intros x H1 H.
+induction H.
+change True in IHrepr.
+Abort.
+
+Goal forall x, 0 = S x -> repr (S x) (S x) -> True.
+intros x H1 H.
+induction H.
+change True in IHrepr.
+Abort.
+
+Inductive repr' (x:nat) : nat -> Prop := reprc' z : repr' x (S z) -> repr' x z.
+
+Goal forall x, 0 = x -> repr' x x -> True.
+intros x H1 H.
+induction H.
+change True in IHrepr'.
+Abort.
