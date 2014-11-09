@@ -1021,6 +1021,13 @@ Proof.
   rewrite H; rewrite IHl; auto.
 Qed.
 
+Lemma map_ext_in :
+  forall (A B : Type)(f g:A->B) l, (forall a, In a l -> f a = g a) -> map f l = map g l.
+Proof.
+  induction l; simpl; auto.
+  intros; rewrite H by intuition; rewrite IHl; auto.
+Qed.
+
 
 (************************************)
 (** Left-to-right iterator on lists *)
