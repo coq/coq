@@ -152,7 +152,7 @@ type 'a gen_atomic_tactic_expr =
   (* Context management *)
   | TacClear of bool * 'nam list
   | TacClearBody of 'nam list
-  | TacMove of bool * 'nam * 'nam move_location
+  | TacMove of 'nam * 'nam move_location
   | TacRename of ('nam *'nam) list
 
   (* Trmuctors *)

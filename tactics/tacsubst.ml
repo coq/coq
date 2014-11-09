@@ -185,7 +185,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Context management *)
   | TacClear _ as x -> x
   | TacClearBody l as x -> x
-  | TacMove (dep,id1,id2) as x -> x
+  | TacMove (id1,id2) as x -> x
   | TacRename l as x -> x
 
   (* Constructors *)

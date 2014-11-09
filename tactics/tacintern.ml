@@ -513,8 +513,8 @@ let rec intern_atomic lf ist x =
   (* Context management *)
   | TacClear (b,l) -> TacClear (b,List.map (intern_hyp ist) l)
   | TacClearBody l -> TacClearBody (List.map (intern_hyp ist) l)
-  | TacMove (dep,id1,id2) ->
-    TacMove (dep,intern_hyp ist id1,intern_move_location ist id2)
+  | TacMove (id1,id2) ->
+    TacMove (intern_hyp ist id1,intern_move_location ist id2)
   | TacRename l ->
       TacRename (List.map (fun (id1,id2) ->
 			     intern_hyp ist id1,

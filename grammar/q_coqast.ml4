@@ -387,8 +387,8 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacClearBody l ->
       let l = mlexpr_of_list (mlexpr_of_hyp) l in
       <:expr< Tacexpr.TacClearBody $l$ >>
-  | Tacexpr.TacMove (dep,id1,id2) ->
-      <:expr< Tacexpr.TacMove $mlexpr_of_bool dep$
+  | Tacexpr.TacMove (id1,id2) ->
+      <:expr< Tacexpr.TacMove
               $mlexpr_of_hyp id1$
               $mlexpr_of_move_location mlexpr_of_hyp id2$ >>
 

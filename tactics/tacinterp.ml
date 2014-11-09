@@ -2025,9 +2025,9 @@ and interp_atomic ist tac : unit Proofview.tactic =
           (TacClearBody l)
           (Tactics.clear_body l)
       end
-  | TacMove (dep,id1,id2) ->
+  | TacMove (id1,id2) ->
       Proofview.V82.tactic begin fun gl -> 
-        Tactics.move_hyp dep (interp_hyp ist (pf_env gl) (project gl) id1)
+        Tactics.move_hyp true (interp_hyp ist (pf_env gl) (project gl) id1)
                    (interp_move_location ist (pf_env gl) (project gl) id2)
                    gl
       end

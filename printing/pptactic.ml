@@ -879,9 +879,7 @@ module Make
               keyword "clearbody" ++ spc ()
               ++ prlist_with_sep spc pr.pr_name l
             )
-          | TacMove (b,id1,id2) ->
-            (* Rem: only b = true is available for users *)
-            assert b;
+          | TacMove (id1,id2) ->
             hov 1 (
               keyword "move"
               ++ brk (1,1) ++ pr.pr_name id1
