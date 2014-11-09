@@ -312,6 +312,10 @@ let return p =
 
 let initial_goals p = Proofview.initial_goals p.entry
 
+let compact p =
+  let entry, proofview = Proofview.compact p.entry p.proofview in
+  { p with proofview; entry }
+
 (*** Function manipulation proof extra informations ***)
 
 (*** Tactics ***)

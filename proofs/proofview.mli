@@ -32,6 +32,9 @@ val proofview : proofview -> Goal.goal list * Evd.evar_map
 (** Abstract representation of the initial goals of a proof. *)
 type entry
 
+(** Optimize memory consumption *)
+val compact : entry -> proofview -> entry * proofview
+
 (** Initialises a proofview, the main argument is a list of
     environements (including a [named_context] which are used as
     hypotheses) pair with conclusion types, creating accordingly many

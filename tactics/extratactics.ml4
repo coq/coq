@@ -998,3 +998,11 @@ END
 VERNAC COMMAND EXTEND Print_keys CLASSIFIED AS QUERY
 | [ "Print" "Equivalent" "Keys" ] -> [ msg_info (Keys.pr_keys Printer.pr_global) ]
 END
+
+
+VERNAC COMMAND EXTEND OptimizeProof
+| [ "Optimize" "Proof" ] => [ Vernac_classifier.classify_as_proofstep ] ->
+  [ Proof_global.compact_the_proof () ]
+| [ "Optimize" "Heap" ] => [ Vernac_classifier.classify_as_proofstep ] ->
+  [ Gc.compact () ]
+END

@@ -223,3 +223,4 @@ let rec classify_vernac e =
 let classify_as_query =
   VtQuery (true,(Stateid.dummy,Feedback.default_route)), VtLater
 let classify_as_sideeff = VtSideff [], VtLater
+let classify_as_proofstep = VtProofStep false, VtLater

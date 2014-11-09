@@ -32,6 +32,20 @@ type entry = (Term.constr * Term.types) list
 let proofview p =
   p.comb , p.solution
 
+let compact el { comb; solution } =
+  let nf = Evarutil.nf_evar solution in
+  let size = Evd.fold (fun _ _ i -> i+1) solution 0 in
+  let new_el = List.map (fun (t,ty) -> nf t, nf ty) el in
+  let pruned_solution = Evd.drop_all_defined solution in
+  let apply_subst_einfo _ ei =
+    Evd.({ ei with
+       evar_concl =  nf ei.evar_concl;
+       evar_hyps = Environ.map_named_val nf ei.evar_hyps;
+       evar_candidates = Option.map (List.map nf) ei.evar_candidates }) in
+  let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
+  let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in
+  msg_info (Pp.str (Printf.sprintf "Evars: %d -> %d\n" size new_size));
+  new_el, { comb; solution = new_solution }
 
 
 (** {6 Starting and querying a proof view} *)

@@ -24,4 +24,5 @@ val set_undo_classifier : (vernac_expr -> vernac_classification) -> unit
 (** Standard constant classifiers *)
 val classify_as_query : vernac_classification
 val classify_as_sideeff : vernac_classification
+val classify_as_proofstep : vernac_classification
 

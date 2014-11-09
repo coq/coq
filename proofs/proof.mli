@@ -77,6 +77,8 @@ val is_done : proof -> bool
 (* Returns the list of partial proofs to initial goals. *)
 val partial_proof : proof -> Term.constr list
 
+val compact : proof -> proof
+
 (* Returns the proofs (with their type) of the initial goals.
     Raises [UnfinishedProof] is some goals remain to be considered.
     Raises [HasShelvedGoals] if some goals are left on the shelf.

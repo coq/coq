@@ -155,6 +155,9 @@ let with_current_proof f =
       ret
 let simple_with_current_proof f = with_current_proof (fun t p -> f t p , ())
 
+let compact_the_proof () = simple_with_current_proof (fun _ -> Proof.compact)
+
+
 (* Sets the tactic to be used when a tactic line is closed with [...] *)
 let set_endline_tactic tac =
   match !pstates with

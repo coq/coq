@@ -46,6 +46,8 @@ exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.proof
 (** @raise NoCurrentProof when outside proof mode. *)
 
+val compact_the_proof : unit -> unit
+
 (** When a proof is closed, it is reified into a [proof_object], where
     [id] is the name of the proof, [entries] the list of the proof terms
     (in a form suitable for definitions). Together with the [terminator]

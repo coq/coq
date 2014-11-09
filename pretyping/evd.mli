@@ -208,6 +208,8 @@ val undefined_map : evar_map -> evar_info Evar.Map.t
 val eq_evar_info : evar_map -> evar_info -> evar_info -> bool
 (** Compare the evar_info's up to the universe constraints of the evar map. *)
 
+val drop_all_defined : evar_map -> evar_map
+
 (** {6 Instantiating partial terms} *)
 
 exception NotInstantiatedEvar
