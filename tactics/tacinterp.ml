@@ -2051,12 +2051,11 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
-        Proofview.Unsafe.tclEVARS sigma <*>
-        name_atomic ~env
-          (TacSplit (ev,bll))
-          (Tacticals.New.tclWITHHOLES ev
-             (Tactics.split_with_bindings ev)
-             sigma bll)
+        let tac bll =
+          let tac = Tactics.split_with_bindings ev bll in
+          name_atomic ~env (TacSplit (ev, bll)) tac
+        in
+        Tacticals.New.tclWITHHOLES ev tac sigma bll
       end
   (* Conversion *)
   | TacReduce (r,cl) ->
