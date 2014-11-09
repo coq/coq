@@ -847,7 +847,8 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	  Typing.check_allowed_sort env !evdref ind cj.uj_val pred;
 	  mkCase (ci, pred, cj.uj_val, [|b1;b2|])
       in
-	{ uj_val = v; uj_type = p }
+      let cj = { uj_val = v; uj_type = p } in
+      inh_conv_coerce_to_tycon loc env evdref cj tycon
 
   | GCases (loc,sty,po,tml,eqns) ->
     Cases.compile_cases loc sty
