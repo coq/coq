@@ -2856,14 +2856,11 @@ let find_atomic_param_of_ind nparams indtyp =
 
 exception Shunt of Id.t move_location
 
-let cook_sign hyp0_opt indvars env =
-  let hyp0,inhyps =
-  match hyp0_opt with
-  | None -> List.hd (List.rev indvars), []
-  | Some (hyp0,at_least_in_hyps) -> hyp0, at_least_in_hyps in
+let cook_sign hyp0_opt inhyps indvars env =
   (* First phase from L to R: get [indhyps], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
-  let allindhyps = hyp0::indvars in
+  let allindhyps =
+    match hyp0_opt with Some hyp0 -> hyp0::indvars | _ -> indvars in
   let toclear = ref [] in
   let avoid = ref [] in
   let decldeps = ref [] in
@@ -2872,7 +2869,8 @@ let cook_sign hyp0_opt indvars env =
   let lstatus = ref [] in
   let before = ref true in
   let seek_deps env (hyp,_,_ as decl) rhyp =
-    if Id.equal hyp hyp0 then begin
+    if (match hyp0_opt with Some hyp0 -> Id.equal hyp hyp0 | _ -> false)
+    then begin
       before:=false;
       (* Note that if there was no main induction hypotheses, then hyp
          is one of indvars too *)
@@ -2906,7 +2904,8 @@ let cook_sign hyp0_opt indvars env =
   let _ = fold_named_context seek_deps env ~init:MoveFirst in
   (* 2nd phase from R to L: get left hyp of [hyp0] and [lhyps] *)
   let compute_lstatus lhyp (hyp,_,_) =
-    if Id.equal hyp hyp0 then raise (Shunt lhyp);
+    if (match hyp0_opt with Some hyp0 -> Id.equal hyp hyp0 | _ -> false) then
+      raise (Shunt lhyp);
     if Id.List.mem hyp !ldeps then begin
       lstatus := (hyp,lhyp)::!lstatus;
       lhyp
@@ -3694,11 +3693,11 @@ let apply_induction_with_discharge induct_tac elim toclear destopt avoid names t
 (* Apply induction "in place" taking into account dependent
    hypotheses from the context *)
 
-let apply_induction_in_context hyp0 elim indvars names induct_tac =
+let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let concl = Tacmach.New.pf_nf_concl gl in
-    let statuslists,lhyp0,toclear,deps,avoid = cook_sign hyp0 indvars env in
+    let statuslists,lhyp0,toclear,deps,avoid = cook_sign hyp0 inhyps indvars env in
     let tmpcl = it_mkNamedProd_or_LetIn concl deps in
     let deps_cstr =
       List.fold_left
@@ -3759,8 +3758,7 @@ let induction_from_context_l with_evars elim_info lid names =
     induction_tac_felim with_evars realindvars scheme.nparams elim
   ]) in
   let elim = ElimUsing (({elimindex = Some scheme.index; elimbody = Option.get scheme.elimc; elimrename = None}, scheme.elimt), indsign) in
-  apply_induction_in_context
-    None elim (hyp0::indvars) names induct_tac
+  apply_induction_in_context None [] elim (hyp0::indvars) names induct_tac
 
 (* Unification between ((elimc:elimt) ?i ?j ?k ?l ... ?m) and the
    hypothesis on which the induction is made *)
@@ -3783,8 +3781,7 @@ let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inh
   let induct_tac elim =
     Proofview.V82.tactic (induction_tac with_evars elim (hyp0,NoBindings) typ0)
   in
-  apply_induction_in_context
-    (Some (hyp0,inhyps)) elim indvars names induct_tac
+  apply_induction_in_context (Some hyp0) inhyps elim indvars names induct_tac
   end
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
