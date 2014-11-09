@@ -1014,18 +1014,17 @@ Proof.
   rewrite IHl; auto.
 Qed.
 
-Lemma map_ext :
-  forall (A B : Type)(f g:A->B), (forall a, f a = g a) -> forall l, map f l = map g l.
-Proof.
-  induction l; simpl; auto.
-  rewrite H; rewrite IHl; auto.
-Qed.
-
 Lemma map_ext_in :
   forall (A B : Type)(f g:A->B) l, (forall a, In a l -> f a = g a) -> map f l = map g l.
 Proof.
   induction l; simpl; auto.
   intros; rewrite H by intuition; rewrite IHl; auto.
+Qed.
+
+Lemma map_ext :
+  forall (A B : Type)(f g:A->B), (forall a, f a = g a) -> forall l, map f l = map g l.
+Proof.
+  intros; apply map_ext_in; auto.
 Qed.
 
 
