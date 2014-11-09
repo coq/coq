@@ -2864,8 +2864,7 @@ let cook_sign hyp0_opt indvars env =
   (* First phase from L to R: get [indhyps], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
   let allindhyps = hyp0::indvars in
-  let beforetoclear = ref [] in
-  let aftertoclear = ref [] in
+  let toclear = ref [] in
   let avoid = ref [] in
   let decldeps = ref [] in
   let ldeps = ref [] in
@@ -2877,12 +2876,12 @@ let cook_sign hyp0_opt indvars env =
       before:=false;
       (* Note that if there was no main induction hypotheses, then hyp
          is one of indvars too *)
-      beforetoclear := hyp::!beforetoclear;
+      toclear := hyp::!toclear;
       MoveFirst (* fake value *)
     end else if Id.List.mem hyp indvars then begin
       (* The variables in indvars are such that they don't occur any
-         more after generalization, so add it to beforetoclear. *)
-      beforetoclear := hyp::!beforetoclear;
+         more after generalization, so declare them to clear. *)
+      toclear := hyp::!toclear;
       rhyp
     end else
       if not (List.is_empty inhyps) && Id.List.mem hyp inhyps ||
@@ -2893,11 +2892,11 @@ let cook_sign hyp0_opt indvars env =
 	decldeps := decl::!decldeps;
 	avoid := hyp::!avoid;
 	if !before then begin
-          beforetoclear := hyp :: !beforetoclear;
+          toclear := hyp::!toclear;
 	  rstatus := (hyp,rhyp)::!rstatus
         end
 	else begin
-	  aftertoclear := hyp::!aftertoclear;
+	  toclear := hyp::!toclear;
 	  ldeps := hyp::!ldeps (* status computed in 2nd phase *)
         end;
 	MoveBefore hyp end
@@ -2912,7 +2911,7 @@ let cook_sign hyp0_opt indvars env =
       lstatus := (hyp,lhyp)::!lstatus;
       lhyp
     end else
-      if Id.List.mem hyp !beforetoclear then lhyp else MoveAfter hyp
+      if Id.List.mem hyp !toclear then lhyp else MoveAfter hyp
   in
   try
     let _ =
@@ -2925,8 +2924,7 @@ let cook_sign hyp0_opt indvars env =
       | _ -> assert false in
     let statuslists = (!lstatus,List.rev !rstatus) in
     let recargdests = AfterFixedPosition (if Option.is_empty hyp0_opt then None else lhyp0) in
-    (statuslists, (recargdests,None),
-     !beforetoclear, !aftertoclear, !decldeps, !avoid)
+    (statuslists, (recargdests,None), !toclear, !decldeps, !avoid)
 
 (*
    The general form of an induction principle is the following:
@@ -3700,7 +3698,7 @@ let apply_induction_in_context hyp0 elim indvars names induct_tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let concl = Tacmach.New.pf_nf_concl gl in
-    let statuslists,lhyp0,beforetoclear,aftertoclear,deps,avoid = cook_sign hyp0 indvars env in
+    let statuslists,lhyp0,toclear,deps,avoid = cook_sign hyp0 indvars env in
     let tmpcl = it_mkNamedProd_or_LetIn concl deps in
     let deps_cstr =
       List.fold_left
@@ -3709,10 +3707,10 @@ let apply_induction_in_context hyp0 elim indvars names induct_tac =
       [
         (* Generalize dependent hyps (but not args) *)
         if deps = [] then Proofview.tclUNIT () else Proofview.V82.tactic (apply_type tmpcl deps_cstr);
-        Proofview.V82.tactic (thin aftertoclear);
+(*        Proofview.V82.tactic (thin aftertoclear);*)
         (* side-conditions in elim (resp case) schemes come last (resp first) *)
         apply_induction_with_discharge
-	  induct_tac elim beforetoclear lhyp0 avoid names
+	  induct_tac elim toclear lhyp0 avoid names
           (re_intro_dependent_hypotheses statuslists)
       ]
   end
