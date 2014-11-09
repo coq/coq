@@ -254,7 +254,7 @@ let apply_clear_request clear_flag dft c =
   else Tacticals.New.tclIDTAC
 
 (* Moving hypotheses *)
-let move_hyp        = Tacmach.move_hyp
+let move_hyp id dest gl = Tacmach.move_hyp true id dest gl
 
 (* Renaming hypotheses *)
 let rename_hyp repl =
@@ -730,7 +730,7 @@ let build_intro_tac id dest tac = match dest with
   | MoveLast -> Tacticals.New.tclTHEN (introduction id) (tac id)
   | dest -> Tacticals.New.tclTHENLIST 
     [introduction id; 
-     Proofview.V82.tactic (move_hyp true id dest); tac id]
+     Proofview.V82.tactic (move_hyp id dest); tac id]
     
 let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
   Proofview.Goal.enter begin fun gl ->
@@ -817,7 +817,7 @@ let rec get_next_hyp_position id = function
 let intro_replacing id gl =
   let next_hyp = get_next_hyp_position id (pf_hyps gl) in
   tclTHENLIST
-    [thin_for_replacing [id]; Proofview.V82.of_tactic (introduction id); move_hyp true id next_hyp] gl
+    [thin_for_replacing [id]; Proofview.V82.of_tactic (introduction id); move_hyp id next_hyp] gl
 
 (* We have e.g. [x, y, y', x', y'' |- forall y y' y'', G] and want to
    reintroduce y, y,' y''. Note that we have to clear y, y' and y''
