@@ -107,8 +107,8 @@ let call_linker ?(fatal=true) prefix f upds =
           let msg = "Dynlink error, " ^ Dynlink.error_message e in
           if fatal then anomaly (Pp.str msg) else Pp.msg_warning (Pp.str msg)
         | e when Errors.noncritical e ->
-          let msg = "Dynlink error" in
-          if fatal then anomaly (Pp.str msg) else Pp.msg_warning (Pp.str msg));
+          if fatal then anomaly (Errors.print e)
+	  else Pp.msg_warning (Errors.print_no_report e));
   match upds with Some upds -> update_locations upds | _ -> ()
 
 let link_library ~prefix ~dirname ~basename =
