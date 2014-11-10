@@ -460,6 +460,7 @@ type hypinfo = {
   c1 : constr;
   c2 : constr;
   c  : (Tacinterp.interp_sign * Tacexpr.glob_constr_and_expr with_bindings) option;
+  holes : Clenv.hole list;
   to_refresh : bool;
 }
 
@@ -501,7 +502,7 @@ let decompose_applied_relation env sigma orig (c,l) =
       let value = mkApp (c, args) in
         Some (sigma, { env=env; prf=value;
                 car=ty1; rel = equiv; sort = Sorts.is_prop sort;
-                c1=c1; c2=c2; c=orig; to_refresh = false})
+                c1=c1; c2=c2; c=orig; to_refresh = false; holes })
   in
     match find_rel ctype with
     | Some c -> c
@@ -613,22 +614,37 @@ let refresh_hypinfo env sigma hypinfo =
     | _ ->
       sigma, hypinfo
 
-let solve_remaining_by by sigma prf =
+(** FIXME: write this in the new monad interface *)
+let solve_remaining_by env sigma holes by =
   match by with
-  | None -> sigma, prf
+  | None -> sigma
   | Some tac ->
-(*    let indep = clenv_independent env in
-    let tac = eval_tactic tac in
-    let evd' = 
-      List.fold_right (fun mv evd ->
-        let ty = Clenv.clenv_nf_meta env (meta_type evd mv) in
-	let c,_,ctx' = Pfedit.build_by_tactic env.env (Evd.evar_universe_context evd) ty (Tacticals.New.tclCOMPLETE tac) in
-	let evd = Evd.set_universe_context evd ctx' in
-	  meta_assign mv (c, (Conv,TypeNotProcessed)) evd)
-      indep env.evd*)
-(*     in *)
-    (* FIXME *)
-    sigma, prf
+    let map h =
+      if h.Clenv.hole_deps then None
+      else
+        let (evk, _) = destEvar (h.Clenv.hole_evar) in
+        Some evk
+    in
+    (** Only solve independent holes *)
+    let indep = List.map_filter map holes in
+    let solve_tac = Tacticals.New.tclCOMPLETE (Tacinterp.eval_tactic tac) in
+    let solve sigma evk =
+      let evi =
+        try Some (Evd.find_undefined sigma evk)
+        with Not_found -> None
+      in
+      match evi with
+      | None -> sigma
+        (** Evar should not be defined, but just in case *)
+      | Some evi ->
+        let ctx = Evd.evar_universe_context sigma in
+        let env = Environ.reset_with_named_context evi.evar_hyps env in
+        let ty = evi.evar_concl in
+        let c, _, ctx = Pfedit.build_by_tactic env ctx ty solve_tac in
+        let sigma = Evd.set_universe_context sigma ctx in
+        Evd.define evk c sigma
+    in
+    List.fold_left solve sigma indep
 
 let no_constraints cstrs = 
   fun ev _ -> not (Evar.Set.mem ev cstrs)
@@ -686,7 +702,7 @@ let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
     let sigma = Unification.w_unify ~flags env sigma CONV left t in
     let sigma = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
-    let evd, prf = solve_remaining_by by sigma prf in
+    let evd = solve_remaining_by env sigma hypinfo.holes by in
     let nf c = Evarutil.nf_evar evd (Reductionops.nf_meta evd c) in
     let c1 = nf c1 and c2 = nf c2
     and rew_car = nf car and rel = nf rel
@@ -1366,7 +1382,7 @@ end
 let init_hypinfo env sigma c = 
   { env = env;
     prf = mkProp; car = mkProp; rel = mkProp; sort = true; c1 = mkProp; c2 = mkProp; 
-    c = c; to_refresh = true }
+    c = c; holes = []; to_refresh = true }
       
 let rewrite_with l2r flags c occs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
