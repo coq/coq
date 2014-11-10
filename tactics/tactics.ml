@@ -2562,14 +2562,6 @@ let unfold_body x gl =
     [tclMAP (fun h -> reduct_in_hyp rfun h) hl;
      reduct_in_concl (rfun,DEFAULTcast)] gl
 
-(* Unfolds x by its definition everywhere and clear x. This may raise
-   an error if x is not defined. *)
-let unfold_all x gl =
-  let (_,xval,_) = pf_get_hyp gl x in
-  (* If x has a body, simply replace x with body and clear x *)
-  if not (Option.is_empty xval) then tclTHEN (unfold_body x) (clear [x]) gl
-  else tclIDTAC gl
-
 (* Either unfold and clear if defined or simply clear if not a definition *)
 let expand_hyp id = tclTHEN (tclTRY (unfold_body id)) (clear [id])
 
@@ -3699,56 +3691,6 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
       ]
   end
 
-(* Induction with several induction arguments, main differences with
-   induction_from_context is that there is no main induction argument,
-   so we choose one to be the positioning reference. On the other hand,
-   all args and params must be given, so we help a bit the unifier by
-   making the "pattern" by hand before calling induction_tac *)
-let induction_from_context_l with_evars elim_info lid names =
-  let indsign,scheme = elim_info in
-  (* number of all args, counting farg and indarg if present. *)
-  let nargs_indarg_farg = scheme.nargs
-    + (if scheme.farg_in_concl then 1 else 0)
-    + (if Option.is_empty scheme.indarg then 0 else 1) in
-  (* Number of given induction args must be exact. *)
-  if not (Int.equal (List.length lid) (nargs_indarg_farg + scheme.nparams)) then
-      error "Not the right number of arguments given to induction scheme.";
-  (* hyp0 is used for re-introducing hyps at the right place afterward.
-     We chose the first element of the list of variables on which to
-     induct. It is probably the first of them appearing in the
-     context. *)
-  let hyp0,indvars,lid_params =
-    match lid with
-      | []  -> anomaly (Pp.str "induction_from_context_l")
-      | e::l ->
-	  let nargs_without_first = nargs_indarg_farg - 1 in
-	  let ivs,lp =
-            if nargs_indarg_farg = 0 then [],l
-            else List.chop nargs_without_first l in
-	  e, ivs, lp in
-  (* terms to patternify we must patternify indarg or farg if present in concl *)
-  let lid_in_pattern =
-    if not (Option.is_empty scheme.indarg) && not scheme.indarg_in_concl then List.rev indvars
-    else List.rev (hyp0::indvars) in
-  let lidcstr = List.map (fun x -> mkVar x) lid_in_pattern in
-  let realindvars = (* hyp0 is a real induction arg if it is not the
-		       farg in the conclusion of the induction scheme *)
-    List.rev (if scheme.farg_in_concl then indvars else hyp0::indvars) in
-  let params = List.rev lid_params in
-  (* To deal with cases where args are detected in front of the scheme *)
-  let params,realindvars = List.chop scheme.nparams (params@realindvars) in
-  let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
-    (* pattern to make the predicate appear. *)
-    reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl;
-    (* Induction by "refine (indscheme ?i ?j ?k...)" + resolution of all
-       possible holes using arguments given by the user (but the
-       functional one). *)
-    (* FIXME: Tester ca avec un principe dependant et non-dependant *)
-    induction_tac with_evars params realindvars elim
-  ]) in
-  let elim = ElimUsing (({elimindex = Some (-1); elimbody = Option.get scheme.elimc; elimrename = None}, scheme.elimt), indsign) in
-  apply_induction_in_context None [] elim (hyp0::indvars) names induct_tac
-
 let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inhyps =
   Proofview.Goal.enter begin fun gl ->
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
@@ -3772,31 +3714,52 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyp
      induction_from_context isrec with_evars elim_info hyp0 names inhyps]
   end
 
-(* Induction on a list of induction arguments. Analyse the elim
+let msg_not_right_number_induction_arguments scheme =
+  str"Not the right number of induction arguments (expected " ++
+  pr_enum (fun x -> x) [
+    if scheme.farg_in_concl then str "the function name" else mt();
+    if scheme.nparams != 0 then int scheme.nparams ++ str (String.plural scheme.nparams " parameter") else mt ();
+    if scheme.nargs != 0 then int scheme.nargs ++ str (String.plural scheme.nargs " argument") else mt ()] ++ str ")."
+
+(* Induction on a list of induction arguments. Analyze the elim
    scheme (which is mandatory for multiple ind args), check that all
-   parameters and arguments are given (mandatory too). *)
+   parameters and arguments are given (mandatory too).
+   Main differences with induction_from_context is that there is no
+   main induction argument. On the other hand, all args and params
+   must be given, so we help a bit the unifier by making the "pattern"
+   by hand before calling induction_tac *)
 let induction_without_atomization isrec with_evars elim names lid =
   Proofview.Goal.nf_enter begin fun gl ->
-  let sigma, (indsign,scheme as elim_info) = find_elim_signature isrec elim (List.hd lid) gl in
-  let awaited_nargs =
-    scheme.nparams + scheme.nargs
-    + (if scheme.farg_in_concl then 1 else 0)
-    + (if Option.is_empty scheme.indarg then 0 else 1)
-  in
-  let nlid = List.length lid in
-  if not (Int.equal nlid awaited_nargs)
-  then Tacticals.New.tclZEROMSG
-    (str"Not the right number of induction arguments (expected "
-     ++ pr_enum (fun x -> x)
-       [
-        if scheme.farg_in_concl then str "the function name" else mt();
-        if scheme.nparams != 0 then int scheme.nparams ++ str (String.plural scheme.nparams " parameter") else mt ();
-        if scheme.nargs != 0 then int scheme.nargs ++ str (String.plural scheme.nargs " argument") else mt ();
-        if Option.is_empty scheme.indarg then mt () else str "a dependent call"  (* ?? *)]
-         ++ str ").")
+  let sigma, (indsign,scheme) = find_elim_signature isrec elim (List.hd lid) gl in
+  let nargs_indarg_farg =
+    scheme.nargs + (if scheme.farg_in_concl then 1 else 0) in
+  if not (Int.equal (List.length lid) (scheme.nparams + nargs_indarg_farg))
+  then
+    Tacticals.New.tclZEROMSG (msg_not_right_number_induction_arguments scheme)
   else
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-      (induction_from_context_l with_evars elim_info lid names)
+  let indvars,lid_params = List.chop nargs_indarg_farg lid in
+  (* terms to patternify we must patternify indarg or farg if present in concl *)
+  let realindvars = List.rev (if scheme.farg_in_concl then List.tl indvars else indvars) in
+  let lidcstr = List.map mkVar (List.rev indvars) in
+  let params = List.rev lid_params in
+  let indvars =
+    (* Temporary hack for compatibility, while waiting for better
+       analysis of the form of induction schemes: a scheme like
+       gt_wf_rec was taken as a functional scheme with no parameters,
+       but by chance, because of the addition of at least hyp0 for
+       cook_sign, it behaved as if there was a real induction arg. *)
+    if indvars = [] then [List.hd lid_params] else indvars in
+  let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
+    (* pattern to make the predicate appear. *)
+    reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl;
+    (* Induction by "refine (indscheme ?i ?j ?k...)" + resolution of all
+       possible holes using arguments given by the user (but the
+       functional one). *)
+    (* FIXME: Tester ca avec un principe dependant et non-dependant *)
+    induction_tac with_evars params realindvars elim
+  ]) in
+  let elim = ElimUsing (({elimindex = Some (-1); elimbody = Option.get scheme.elimc; elimrename = None}, scheme.elimt), indsign) in
+  apply_induction_in_context None [] elim indvars names induct_tac
   end
 
 (* assume that no occurrences are selected *)
@@ -3979,7 +3942,6 @@ let induction_gen clear_flag isrec with_evars elim
     parameters of the inductive type as in induction_gen. *)
 let induction_gen_l isrec with_evars elim names lc =
   let newlc = ref [] in
-  let letids = ref [] in
   let lc = List.map (function
     | (c,None) -> c
     | (c,Some(loc,eqname)) ->
@@ -4004,7 +3966,6 @@ let induction_gen_l isrec with_evars elim names lc =
                 let id = new_fresh_id [] x gl in
 		let newl' = List.map (replace_term c (mkVar id)) l' in
 		let _ = newlc:=id::!newlc in
-		let _ = letids:=id::!letids in
 		Tacticals.New.tclTHEN
 		  (letin_tac None (Name id) c None allHypsAndConcl)
 		  (atomize_list newl')
@@ -4012,12 +3973,8 @@ let induction_gen_l isrec with_evars elim names lc =
   Tacticals.New.tclTHENLIST
     [
       (atomize_list lc);
-      (Proofview.tclUNIT () >>= fun () -> (* recompute each time to have the new value of newlc *)
-	induction_without_atomization isrec with_evars elim names !newlc) ;
-      (* after induction, try to unfold all letins created by atomize_list
-         FIXME: unfold_all does not exist anywhere else? *)
-      (Proofview.V82.tactic( fun gl' -> (* recompute each time to have the new value of letids *)
-	tclMAP (fun x -> tclTRY (unfold_all x)) !letids gl'))
+      (Proofview.tclUNIT () >>= fun () -> (* ensure newlc has been computed *)
+	induction_without_atomization isrec with_evars elim names !newlc)
     ]
 
 (* Induction either over a term, over a quantified premisse, or over
