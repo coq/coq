@@ -1170,7 +1170,9 @@ let whd_zeta c = Stack.zip (local_whd_state_gen zeta Evd.empty (c,Stack.empty))
 let rec whd_evar sigma c =
   match kind_of_term c with
     | Evar ev ->
-        (match safe_evar_value sigma ev with
+        let (evk, args) = ev in
+        let args = Array.map (fun c -> whd_evar sigma c) args in
+        (match safe_evar_value sigma (evk, args) with
             Some c -> whd_evar sigma c
           | None -> c)
     | Sort (Type u) -> 
