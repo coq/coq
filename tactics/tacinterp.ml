@@ -1811,22 +1811,22 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = Proofview.Goal.sigma gl in 
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
         let sigma, cbo = Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
-        Proofview.Unsafe.tclEVARS sigma <*>
-          name_atomic ~env
-          (TacElim (ev,(keep,cb),cbo))
-          (Tacticals.New.tclWITHHOLES ev (Tactics.elim ev keep cb) sigma cbo)
+        let named_tac cbo =
+          let tac = Tactics.elim ev keep cb cbo in
+          name_atomic ~env (TacElim (ev,(keep,cb),cbo)) tac
+        in
+        Tacticals.New.tclWITHHOLES ev named_tac sigma cbo
       end
   | TacCase (ev,(keep,cb)) ->
       Proofview.Goal.enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
-        Proofview.Unsafe.tclEVARS sigma <*>
-          name_atomic ~env
-          (TacCase(ev,(keep,cb)))
-          (Tacticals.New.tclWITHHOLES ev
-             (Tactics.general_case_analysis ev keep)
-             sigma cb)
+        let named_tac cb =
+          let tac = Tactics.general_case_analysis ev keep cb in
+          name_atomic ~env (TacCase(ev,(keep,cb))) tac
+        in
+        Tacticals.New.tclWITHHOLES ev named_tac sigma cb
       end
   | TacFix (idopt,n) ->
       Proofview.Goal.enter begin fun gl ->
@@ -2051,11 +2051,11 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
-        let tac bll =
+        let named_tac bll =
           let tac = Tactics.split_with_bindings ev bll in
           name_atomic ~env (TacSplit (ev, bll)) tac
         in
-        Tacticals.New.tclWITHHOLES ev tac sigma bll
+        Tacticals.New.tclWITHHOLES ev named_tac sigma bll
       end
   (* Conversion *)
   | TacReduce (r,cl) ->
