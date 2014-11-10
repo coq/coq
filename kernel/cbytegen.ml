@@ -289,7 +289,7 @@ let add_grab arity lbl cont =
   else Krestart :: Klabel lbl :: Kgrab (arity - 1) :: cont
 
 let add_grabrec rec_arg arity lbl cont =
-  if Int.equal arity 1 then
+  if Int.equal arity 1 && rec_arg < arity then
     Klabel lbl :: Kgrabrec 0 :: Krestart :: cont
   else
     Krestart :: Klabel lbl :: Kgrabrec rec_arg ::
