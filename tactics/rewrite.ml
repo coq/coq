@@ -459,9 +459,7 @@ type hypinfo = {
   sort : bool; (* true = Prop; false = Type *)
   c1 : constr;
   c2 : constr;
-  c  : (Tacinterp.interp_sign * Tacexpr.glob_constr_and_expr with_bindings) option;
   holes : Clenv.hole list;
-  to_refresh : bool;
 }
 
 let get_symmetric_proof b = 
@@ -485,7 +483,7 @@ let rec decompose_app_rel env evd t =
     mkApp (f, fargs), args.(len - 2), args.(len - 1)
   | _ -> error "Cannot find a relation to rewrite."
 
-let decompose_applied_relation env sigma orig (c,l) =
+let decompose_applied_relation env sigma (c,l) =
   let ctype = Retyping.get_type_of env sigma c in
   let find_rel ty =
     let sigma, cl = Clenv.make_evar_clause env sigma ty in
@@ -502,7 +500,7 @@ let decompose_applied_relation env sigma orig (c,l) =
       let value = mkApp (c, args) in
         Some (sigma, { env=env; prf=value;
                 car=ty1; rel = equiv; sort = Sorts.is_prop sort;
-                c1=c1; c2=c2; c=orig; to_refresh = false; holes })
+                c1=c1; c2=c2; holes })
   in
     match find_rel ctype with
     | Some c -> c
@@ -514,7 +512,7 @@ let decompose_applied_relation env sigma orig (c,l) =
 
 let decompose_applied_relation_expr env sigma (is, (c,l)) =
   let sigma, cbl = Tacinterp.interp_open_constr_with_bindings is env sigma (c,l) in
-    decompose_applied_relation env sigma (Some (is, (c,l))) cbl
+  decompose_applied_relation env sigma cbl
 
 let rewrite_db = "rewrite"
 
@@ -590,21 +588,23 @@ let general_rewrite_unif_flags () =
     Unification.resolve_evars = true
   }
 
-let refresh_hypinfo env sigma hypinfo =
-    match hypinfo.c with
-    | Some c when hypinfo.to_refresh ->
-      (* Refresh the clausenv to not get the same meta twice in the goal
-	 and be able to capture binders under them *)
+let refresh_hypinfo env sigma hypinfo c =
+  let sigma, hypinfo = match hypinfo with
+  | None ->
+    decompose_applied_relation_expr env sigma c
+  | Some hypinfo ->
+    if hypinfo.env != env then
+      (* If the lemma actually generates existential variables, we cannot 
+          use it here as it will polute the evar map with existential variables
+          that might not ever get instantiated (e.g. if we rewrite under a
+          binder and need to refresh [c] again) *)
+      (* TODO: remove bindings in sigma corresponding to c *)
       decompose_applied_relation_expr env sigma c
-    | Some c when hypinfo.env != env ->
-      	(* If the lemma actually generates existential variables, we cannot 
-	   use it here as it will polute the evar map with existential variables
-	   that might not ever get instantiated (e.g. if we rewrite under a binder
-	   and need to refresh [c] again) *)
-       (* TODO: remove bindings in sigma corresponding to c *)
-      decompose_applied_relation_expr env sigma c
-    | _ ->
-      sigma, hypinfo
+    else sigma, hypinfo
+  in
+  let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
+  sigma, (car, rel, prf, c1, c2, holes, sort)
+
 
 (** FIXME: write this in the new monad interface *)
 let solve_remaining_by env sigma holes by =
@@ -686,16 +686,13 @@ let symmetry env sort rew =
   { rew with rew_from = rew.rew_to; rew_to = rew.rew_from; rew_prf; rew_evars; }
 
 (* Matching/unifying the rewriting rule against [t] *)
-let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
-  if isEvar t then None else 
+let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) by t =
   try
-    let sigma, hypinfo = refresh_hypinfo env sigma hypinfo in
-    let {prf=prf; car=car; rel=rel; c1=c1; c2=c2; } = hypinfo in
     let left = if l2r then c1 else c2 in
     let sigma = Unification.w_unify ~flags env sigma CONV left t in
     let sigma = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
-    let evd = solve_remaining_by env sigma hypinfo.holes by in
+    let evd = solve_remaining_by env sigma holes by in
     let nf c = Evarutil.nf_evar evd (Reductionops.nf_meta evd c) in
     let c1 = nf c1 and c2 = nf c2
     and rew_car = nf car and rel = nf rel
@@ -706,15 +703,14 @@ let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
     let rew_evars = evd, cstrs in
     let rew_prf = RewPrf (rel, prf) in
     let rew = { rew_evars; rew_prf; rew_car; rew_from = c1; rew_to = c2; } in
-    let rew = if l2r then rew else symmetry env hypinfo.sort rew in
-    Some ({ hypinfo with to_refresh = true}, rew)
+    let rew = if l2r then rew else symmetry env sort rew in
+    Some rew
   with 
   | e when Class_tactics.catchable e -> None
   | Reduction.NotConvertible -> None
 
 let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
-  if isEvar t then None else 
-    try
+  try
     let left = if l2r then c1 else c2 in
     (* The pattern is already instantiated, so the next w_unify is
        basically an eq_constr, except when preexisting evars occur in
@@ -843,7 +839,7 @@ let apply_rule unify loccs : ('a * int) pure_strategy =
     else not (List.mem occ occs) 
   in
     fun (hypinfo, occ) env avoid t ty cstr evars ->
-      let unif = unify hypinfo env evars t in
+      let unif = if isEvar t then None else unify hypinfo env evars t in
 	match unif with
 	| None -> ((hypinfo, occ), Fail)
         | Some (hypinfo', rew) ->
@@ -859,10 +855,17 @@ let apply_rule unify loccs : ('a * int) pure_strategy =
 let apply_lemma l2r flags oc by loccs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
     let sigma, c = oc sigma in
-    let sigma, hypinfo = decompose_applied_relation env sigma None c in
+    let sigma, hypinfo = decompose_applied_relation env sigma c in
+    let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
+    let rew = (car, rel, prf, c1, c2, holes, sort) in
     let evars = (sigma, cstrs) in
-    let unify hypinfo env evars t = unify_eqn l2r flags env evars hypinfo by t in
-    let _, res = apply_rule unify loccs (hypinfo,0) env avoid t ty cstr evars in
+    let unify () env evars t =
+      let rew = unify_eqn rew l2r flags env evars by t in
+      match rew with
+      | None -> None
+      | Some rew -> Some ((), rew)
+    in
+    let _, res = apply_rule unify loccs ((), 0) env avoid t ty cstr evars in
     (), res
 
 let e_app_poly env evars f args =
@@ -1376,15 +1379,23 @@ end
     even finding a first application of the rewriting lemma, in setoid_rewrite
     mode *)
 
-let init_hypinfo env sigma c = 
-  { env = env;
-    prf = mkProp; car = mkProp; rel = mkProp; sort = true; c1 = mkProp; c2 = mkProp; 
-    c = c; holes = []; to_refresh = true }
-      
 let rewrite_with l2r flags c occs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
-    let hypinfo = init_hypinfo env sigma (Some c) in
-    let unify hypinfo env evars t = unify_eqn l2r flags env evars hypinfo None t in
+    let hypinfo = None in
+    let unify hypinfo env evars t =
+      let (sigma, cstrs) = evars in
+      let ans =
+        try Some (refresh_hypinfo env sigma hypinfo c)
+        with e when Class_tactics.catchable e -> None
+      in
+      match ans with
+      | None -> None
+      | Some (sigma, rew) ->
+        let rew = unify_eqn rew l2r flags env (sigma, cstrs) None t in
+        match rew with
+        | None -> None
+        | Some rew -> Some (None, rew) (** reset the hypinfo cache *)
+    in
     let app = apply_rule unify occs in
     let strat = 
       Strategies.fix (fun aux -> 
@@ -1928,7 +1939,7 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
 let get_hyp gl (c,l) clause l2r =
   let evars = project gl in
   let env = pf_env gl in
-  let sigma, hi = decompose_applied_relation env evars None (c,l) in
+  let sigma, hi = decompose_applied_relation env evars (c,l) in
   let but = match clause with
     | Some id -> pf_get_hyp_typ gl id 
     | None -> Evarutil.nf_evar evars (pf_concl gl)
