@@ -547,8 +547,9 @@ let nf_evars_and_universes_opt_subst f subst =
   let lsubst = Univ.level_subst_of subst in
   let rec aux c =
     match kind_of_term c with
-    | Evar (evdk, _ as ev) ->
-      (match try f ev with Not_found -> None with
+    | Evar (evk, args) ->
+      let args = Array.map aux args in
+      (match try f (evk, args) with Not_found -> None with
       | None -> c
       | Some c -> aux c)
     | Const pu -> 
