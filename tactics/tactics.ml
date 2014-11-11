@@ -1597,9 +1597,10 @@ let apply_in_delayed_once sidecond_first with_delta with_destruct with_evars nam
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sigma, c = f env sigma in
-      Proofview.Unsafe.tclEVARS sigma <*>
-	(apply_in_once sidecond_first with_delta with_destruct with_evars naming id 
-	   (clear_flag,(loc,c)) tac)
+    Tacticals.New.tclWITHHOLES with_evars 
+      (apply_in_once sidecond_first with_delta with_destruct with_evars
+         naming id (clear_flag,(loc,c)))
+      sigma tac
   end
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
