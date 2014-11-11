@@ -351,12 +351,15 @@ let default_no_delta_unify_flags () =
 (* allow_K) because only closed terms are involved in *)
 (* induction/destruct/case/elim and w_unify_to_subterm_list does not *)
 (* call w_unify for induction/destruct/case/elim  (13/6/2011) *)
-let elim_core_flags () = { (default_core_unify_flags ()) with
+let elim_core_flags sigma = { (default_core_unify_flags ()) with
   modulo_betaiota = false;
+  frozen_evars =
+    fold_undefined (fun evk _ evars -> Evar.Set.add evk evars)
+      sigma Evar.Set.empty;
 }
 
-let elim_flags () =
-  let flags = elim_core_flags () in {
+let elim_flags_evars sigma =
+  let flags = elim_core_flags sigma in {
   core_unify_flags = flags;
   merge_unify_flags = flags;
   subterm_unify_flags = { flags with modulo_delta = empty_transparent_state };
@@ -364,7 +367,9 @@ let elim_flags () =
   resolve_evars = false
 }
 
-let elim_no_delta_core_flags () = { (elim_core_flags ()) with
+let elim_flags () = elim_flags_evars Evd.empty
+
+let elim_no_delta_core_flags () = { (elim_core_flags Evd.empty) with
   modulo_delta = empty_transparent_state;
   check_applied_meta_types = false;
   use_pattern_unification = false;
@@ -1415,7 +1420,13 @@ let default_matching_flags (sigma,_) =
 exception PatternNotFound
 
 let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
-  let flags = default_matching_flags pending in
+  let flags =
+    if from_prefix_of_ind then
+      let flags = default_matching_flags pending in
+      { flags with core_unify_flags = { flags.core_unify_flags with
+        modulo_conv_on_closed_terms = Some Names.full_transparent_state;
+        restrict_conv_on_strict_subterms = true } }
+    else default_matching_flags pending in
   let n = List.length (snd (decompose_app c)) in
   let matching_fun _ t =
     try
