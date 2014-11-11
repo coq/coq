@@ -77,6 +77,10 @@ Specification Language
 - Type inference algorithm now granting opacity of constants. This might also
   affects behavior of tactics (source of incompatibilities, solvable by
   re-declaring transparent constants which were set opaque).
+- Existential variables are now referred to by an identifier and the
+  relevant part of their instance is displayed by default. They can be
+  reparsed. The naming policy is yet unstable and subject to changes
+  in future releases.
 
 Tactics
 
