@@ -11,22 +11,22 @@ Logic
   defined with primitive projections instead of the usual encoding as
   a case expression. For compatibility, when p is a primitive
   projection, @p can be used to refer to the projection with explicit
-  parameters, i.e.  [@p] is definitionaly equal to [λ params
-  r. r.(p)]. Records with primitive projections have eta-conversion,
-  the canonical form being [mkR pars (p1 t) ... (pn t)].
+  parameters, i.e. [@p] is definitionally equal to [λ params r. r.(p)].
+  Records with primitive projections have eta-conversion, the
+  canonical form being [mkR pars (p1 t) ... (pn t)].
 
   With native projections, the parsing of projection applications changes:
 
   - r.(p) and (p r) elaborate to native projection application, and
-    the parameters cannot be mentionned. The following arguments are
-    parsed according to the remaining implicits declared for the
-    projection (i.e. the implicits after the record type argument). In
-    dot notation, the record type argument is considered explicit no
-    matter what its implicit status is.
+    the parameters cannot be mentioned. The following arguments are
+    parsed according to the remaining implicit arguments declared for the
+    projection (i.e. the implicit arguments after the record type
+    argument). In dot notation, the record type argument is considered
+    explicit no matter what its implicit status is.
   - r.(@p params) and @p args are parsed as regular applications of the
     projection with explicit parameters.
   - [simpl p] is forbidden, but [simpl @p] will simplify both the projection
-    and it's explicit [@p] version.
+    and its explicit [@p] version.
   - [unfold p] has no effect on projection applications unless it is applied
     to a constructor. If the explicit version appears it reduces to the
     projection application.
@@ -41,7 +41,7 @@ Vernacular commands
 - A command "Variant" allows to define non-recursive variant types.
 - The command "Record foo ..." does not generate induction principles
   (foo_rect, foo_rec, foo_ind) anymore by default (feature wish
-  #2693). The command "Variant foo ..." does not either.  A flag
+  #2693). The command "Variant foo ..." does not either. A flag
   "Set/Unset Nonrecursive Elimination Schemes" allows changing this.
   The tactic "induction" on a "Record" or a "Variant" is now actually
   doing "destruct".
@@ -59,7 +59,7 @@ Vernacular commands
 - A new Print Strategies command allows visualizing the opacity status
   of the whole engine.
 - The "Locate" command now searches through all sorts of qualified namespaces of
-  Coq: terms, modules, tactics, etc. The old behaviour of the command can be
+  Coq: terms, modules, tactics, etc. The old behavior of the command can be
   retrieved using the "Locate Term" command.
 - New "Derive" command to help writing program by derivation.
 - "Undo" undoes any command, not just tactics.
@@ -71,7 +71,7 @@ Specification Language
   break user notations using "$(", fixable by inserting a space or
   rewriting the notation).
 - Constants in pattern-matching branches now respect the same rules regarding
-  implicit arguments than in applicative position. The old behaviour can be
+  implicit arguments than in applicative position. The old behavior can be
   recovered by the command "Set Asymmetric Patterns". (possible source of
   incompatibilities)
 - Type inference algorithm now granting opacity of constants. This might also
@@ -86,12 +86,12 @@ Tactics
   information of existential variables is always propagated to
   tactics, removing the need to manually use the "instantiate" tactics
   to mark propagation points.
-  * New tactical (a+b) insert a bakctracking point. When (a+b);c fails
+  * New tactical (a+b) insert a backtracking point. When (a+b);c fails
     during the execution of c, it can backtrack and try b instead of a.
   * New tactical (once a) removes all the backtracking point from a
     (i.e. it selects the first success of a).
   * Tactic "constructor" is now fully backtracking, thus deprecating
-    the need of the undocumented "contructor <tac>" syntax which is
+    the need of the undocumented "constructor <tac>" syntax which is
     now equivalent to "once (constructor; tac)". (potential source of
     rare incompatibilities).
   * New selector all: to qualify a tactic allows applying a tactic to
@@ -106,28 +106,28 @@ Tactics
     it may be applied when no goal are left. This may cause tactics
     such as let rec t := constructor;t to loop indefinitely. The
     simple fix is to rewrite the recursive calls as follows: let rec t
-    := constructor;[t..] which recovers the earlier behaviour. (source
-    of rare incompatibilities)
+    := constructor;[t..] which recovers the earlier behavior (source
+    of rare incompatibilities).
   * New tactic language feature "numgoals" to count number of goals.
-    Accompanied by "guard" tactic which fails if a boolean test does
+    Accompanied by "guard" tactic which fails if a Boolean test does
     not pass.
   * New tactical "[> ... ]" to apply tactics to individual goals.
   * The refine tactic is changed not to use an ad hoc typing algorithm
     to generate subgoals. It also uses the dependent subgoal feature
-    to generate goals to materialise every existential variable which
-    is introduced by the refinement (source of incompatibilies).
-  * A tactic shelve is introduded to manage the subgoals which may be
+    to generate goals to materialize every existential variable which
+    is introduced by the refinement (source of incompatibilities).
+  * A tactic shelve is introduced to manage the subgoals which may be
     solved by unification: shelve removes every goal it is applied to
     from focus. These goals can later be called back into focus by the
     Unshelve command.
   * A variant shelve_unifiable only removes those goals which appear
     as existential variables in other goals. To emulate the old
     refine, use (refine c;shelve_unifiable). This can still cause
-    incompatiblities in rare occasions.
+    incompatibilities in rare occasions.
   * New "give_up" tactic to skip over a goal without admitting it.
 - New "cbn" tactic, a well-behaved simpl.
 - Repeated identical calls to omega should now produce identical proof terms.
-- Tactics btauto, a reflexive boolean tautology solver.
+- Tactics btauto, a reflexive Boolean tautology solver.
 - Tactic "tauto" was exceptionally able to destruct other connectives
   than the binary connectives "and", "or", "prod", "sum", "iff". This
   non-uniform behavior has been fixed (bug #2680) and tauto is
@@ -152,7 +152,7 @@ Tactics
 - "change ... in ..." and "simpl ... in ..." now consider nested
   occurrences (possible source of incompatibilities since this alters
   the numbering of occurrences).
-- The "change p with c" tactic semantics changed, now typechecking 
+- The "change p with c" tactic semantics changed, now type-checking 
   "c" at each matching occurrence "t" of the pattern "p", and 
   converting "t" with "c".
 - Now "appcontext" and "context" behave the same. The old buggy behavior of
@@ -161,7 +161,7 @@ Tactics
 - New introduction pattern p/c which applies lemma c on the fly on the
   hypothesis under consideration before continuing with introduction pattern p.
 - New introduction pattern [= x1 .. xn] applies "injection as [x1 .. xn]"
-  on the fly if next hypothesis to introduce is an injectible equality
+  on the fly if injection is applicable to the hypothesis under consideration
   (idea borrowed from Georges Gonthier). Introduction pattern [=] applies
   "discriminate" if a discriminable equality.
 - Tactic "injection c as ipats" now clears c if c refers to an
@@ -174,7 +174,7 @@ Tactics
   which a decidable equality scheme has been generated with "Scheme Equality"
   (possible source of incompatibilities).
 - New tactic "rewrite_strat" for generalized rewriting with user-defined
-  strategies, subsumming autorewrite.
+  strategies, subsuming autorewrite.
 - Injection can now also deduce equality of arguments of sort Prop, by using
   the option "Set Injection On Proofs" (disabled by default). Also improved the
   error messages.
@@ -207,14 +207,14 @@ Tactics
   module is imported (source of incompatibilities, solvable by adding
   an "Import", like e.g. "Import Omega").
 - Semantics of destruct/induction has been made more regular in some
-  edge cases, possibly leading to incompatibilies:
+  edge cases, possibly leading to incompatibilities:
   - new goals are now opened when the term does not match a subterm of
     the goal and has unresolved holes, while in 8.4 these holes were
     turned into existential variables
   - when no "at" option is given, the historical semantics which
     selects all subterms syntactically identical to the first subterm
     matching the given pattern is used
-  - non-dependent destruct/induction on an hypothesis with premisses in
+  - non-dependent destruct/induction on an hypothesis with premises in
     an inductive type with indices is fixed
   - residual local definitions are now correctly removed.
 - The rename tactic may now replace variables in parallel.
@@ -268,14 +268,14 @@ Interfaces
 
 Internal Infrastructure
 
-- Many reorganisations in the ocaml source files. For instance,
+- Many reorganizations in the ocaml source files. For instance,
   many internal a.s.t. of Coq are now placed in mli files in
   a new directory intf/, for instance constrexpr.mli or glob_term.mli.
   More details in dev/doc/changes.
 - The file states/initial.coq does not exist anymore. Instead, coqtop
   initially does a "Require" of Prelude.vo (or nothing when given
   the options -noinit or -nois).
-- The format of vo files has slightly changed : cf final comments in
+- The format of vo files has slightly changed: cf final comments in
   checker/cic.mli
 - The build system does not produce anymore programs named coqtop.opt
   and a symbolic link to coqtop. Instead, coqtop is now directly
