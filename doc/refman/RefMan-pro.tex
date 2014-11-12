@@ -148,6 +148,35 @@ type {\tt T}, the commands {\tt Proof using a} and
 \variant {\tt Proof using} {\ident$_1$} {\ldots} {\ident$_n$} {\tt with} {\tac}{\tt .} 
 in Section~\ref{ProofWith}.
 
+\variant {\tt Proof using All.} 
+
+  Use all section variables.
+
+\variant {\tt Proof using Type.} 
+  
+  Use only section variables occurring in the statement.
+
+\variant {\tt Proof using -(} {\ident$_1$} {\ldots} {\ident$_n$} {\tt ).}
+  
+  Use all section variables except {\ident$_1$} {\ldots} {\ident$_n$}.
+
+\subsubsection{{\tt Proof using} options}
+\comindex{Default Proof Using}
+\comindex{Suggest Proof Using}
+
+The following options modify the behavior of {\tt Proof using}.
+
+\variant {\tt Set Default Proof Using "expression".} 
+
+  Use {\tt expression} as the default {\tt Proof using} value.
+  E.g. {\tt Set Default Proof Using "a b".} will complete all {\tt Proof }
+  commands not followed by a {\tt using} part with {\tt using a b}.
+
+\variant {\tt Set Suggest Proof Using.}
+
+  When {\tt Qed} is performed, suggest a {\tt using} annotation if
+  the user did not provide one.
+
 \subsection[\tt Abort.]{\tt Abort.\comindex{Abort}}
 
 This command cancels the current proof development, switching back to
@@ -422,6 +451,23 @@ When the option is unset, {\binders} are discharged on the statement
 to be proved and a tactic such as {\tt intro} (see
 Section~\ref{intro}) has to be used to move the assumptions to the
 local context.
+
+\section{Controlling memory usage\comindex{Optimize Proof}\comindex{Optimize Heap}}
+
+When experiencing high memory usage the following commands can be
+used to force Coq to optimize some of its internal data structures.
+
+\subsection[\tt Optimize Proof.]{\tt Optimize Proof.}
+
+This command forces Coq to shrink the data structure used to represent
+the ongoing proof.
+
+\subsection[\tt Optimize Heap.]{\tt Optimize Heap.}
+
+This command forces the OCaml runtime to perform a heap compaction.
+This is in general an expensive operation.  See:
+  \url{http://caml.inria.fr/pub/docs/manual-ocaml/libref/Gc.html#VALcompact}
+
 
 %%% Local Variables: 
 %%% mode: latex
