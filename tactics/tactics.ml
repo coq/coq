@@ -2771,18 +2771,7 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
 
 let find_atomic_param_of_ind nparams indtyp =
   let argl = snd (decompose_app indtyp) in
-  let argv = Array.of_list argl in
-  let params = List.firstn nparams argl in
-  let indvars = ref Id.Set.empty in
-  for i = nparams to (Array.length argv)-1 do
-    match kind_of_term argv.(i) with
-      | Var id
-          when not (List.exists (occur_var (Global.env()) id) params) ->
-	  indvars := Id.Set.add id !indvars
-      | _ -> ()
-  done;
-  Id.Set.elements !indvars;
-
+  List.map destVar (snd (List.chop nparams argl))
 
 (* [cook_sign] builds the lists [beforetoclear] (preceding the
    ind. var.) and [aftertoclear] (coming after the ind. var.)  of hyps
