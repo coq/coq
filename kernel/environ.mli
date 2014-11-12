@@ -127,7 +127,7 @@ val pop_rel_context : int -> env -> env
   {6 Add entries to global environment } *)
 
 val add_constant : constant -> constant_body -> env -> env
-val add_constant_key : constant -> constant_body -> Pre_env.link_info ref ->
+val add_constant_key : constant -> constant_body -> Pre_env.link_info ->
   env -> env
 
 (** Looks up in the context of global constant names 
@@ -290,4 +290,4 @@ val registered : env -> field -> bool
 val register : env -> field -> Retroknowledge.entry -> env
 
 (** Native compiler *)
-val no_link_info : unit -> Pre_env.link_info ref
+val no_link_info : Pre_env.link_info

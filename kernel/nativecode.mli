@@ -67,7 +67,7 @@ val mk_library_header : dir_path -> global list
 
 val mod_uid_of_dirpath : dir_path -> string
 
-val link_info_of_dirpath : dir_path -> link_info ref
+val link_info_of_dirpath : dir_path -> link_info
 
 val update_locations : code_location_updates -> unit
 

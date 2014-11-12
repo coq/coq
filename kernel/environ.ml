@@ -207,18 +207,18 @@ let push_context_set ctx env = add_constraints (Univ.ContextSet.constraints ctx)
 
 let lookup_constant = lookup_constant
 
-let no_link_info () = ref NotLinked
+let no_link_info = NotLinked
 
 let add_constant_key kn cb linkinfo env =
   let new_constants =
-    Cmap_env.add kn (cb,(linkinfo, ref None)) env.env_globals.env_constants in
+    Cmap_env.add kn (cb,(ref linkinfo, ref None)) env.env_globals.env_constants in
   let new_globals =
     { env.env_globals with
 	env_constants = new_constants } in
   { env with env_globals = new_globals }
 
 let add_constant kn cb env =
-  add_constant_key kn cb (no_link_info ()) env
+  add_constant_key kn cb no_link_info env
 
 let constraints_of cb u =
   let univs = cb.const_universes in
@@ -366,7 +366,7 @@ let add_mind_key kn mind_key env =
   { env with env_globals = new_globals }
 
 let add_mind kn mib env =
-  let li = no_link_info () in add_mind_key kn (mib, li) env
+  let li = ref no_link_info in add_mind_key kn (mib, li) env
 
 (* Lookup of section variables *)
 

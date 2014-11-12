@@ -1430,7 +1430,7 @@ let string_of_dirpath s = "N"^string_of_dirpath s
 let mod_uid_of_dirpath dir = string_of_dirpath (repr_dirpath dir)
 
 let link_info_of_dirpath dir =
-  ref (Linked (mod_uid_of_dirpath dir ^ "."))
+  Linked (mod_uid_of_dirpath dir ^ ".")
 
 let string_of_name x =
   match x with
