@@ -1,5 +1,6 @@
 Coq_config
 
+Terminal
 Hook
 Canary
 Hashset
@@ -153,6 +154,7 @@ Tok
 Lexer
 Ppextend
 Pputils
+Ppstyle
 Ppannotation
 Stdarg
 Constrarg
