@@ -22,6 +22,7 @@ sig
   val string_index_from : string -> int -> string -> int
   val string_contains : where:string -> what:string -> bool
   val plural : int -> string -> string
+  val conjugate_verb_to_be : int -> string
   val ordinal : int -> string
   val split : char -> string -> string list
   val is_sub : string -> string -> int -> bool
@@ -130,6 +131,8 @@ let is_sub p s off =
     aux 0
 
 let plural n s = if n<>1 then s^"s" else s
+
+let conjugate_verb_to_be n = if n<>1 then "are" else "is"
 
 let ordinal n =
   let s = match n mod 10 with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th" in

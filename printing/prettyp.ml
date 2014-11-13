@@ -79,16 +79,15 @@ let print_ref reduce ref =
 (********************************)
 (** Printing implicit arguments *)
 
-let conjugate_verb_to_be = function [_] -> "is" | _ -> "are"
-
 let pr_impl_name imp = pr_id (name_of_implicit imp)
 
 let print_impargs_by_name max = function
   | []  -> []
   | impls ->
-     [hov 0 (str (String.plural (List.length impls) "Argument") ++ spc() ++
+     let n = List.length impls in
+     [hov 0 (str (String.plural n "Argument") ++ spc() ++
       prlist_with_sep pr_comma pr_impl_name impls ++ spc() ++
-      str (conjugate_verb_to_be impls) ++ str" implicit" ++
+      str (String.conjugate_verb_to_be n) ++ str" implicit" ++
       (if max then strbrk " and maximally inserted" else mt()))]
 
 let print_one_impargs_list l =
