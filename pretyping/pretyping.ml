@@ -711,6 +711,8 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     if not (Int.equal (List.length nal) cs.cs_nargs) then
       user_err_loc (loc,"", str "Destructing let on this type expects " ++ 
 	int cs.cs_nargs ++ str " variables.");
+    let nal = List.map (fun na -> ltac_interp_name lvar na) nal in
+    let na = ltac_interp_name lvar na in
     let fsign, record = 
       match get_projections env indf with
       | None -> List.map2 (fun na (_,c,t) -> (na,c,t))
@@ -851,6 +853,9 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
       inh_conv_coerce_to_tycon loc env evdref cj tycon
 
   | GCases (loc,sty,po,tml,eqns) ->
+    let (tml,eqns) =
+      Glob_ops.map_pattern_binders (fun na -> ltac_interp_name lvar na) tml eqns
+    in
     Cases.compile_cases loc sty
       ((fun vtyc env evdref -> pretype vtyc env evdref lvar),evdref)
       tycon env (* loc *) (po,tml,eqns)
