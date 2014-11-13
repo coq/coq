@@ -87,6 +87,12 @@ Section Facts.
     left; exists a, tail; reflexivity.
   Qed.
 
+  Theorem length_zero_iff_nil (l : list A):
+    length l = 0 <-> l=[].
+  Proof.
+    split; [now destruct l | now intros ->].
+  Qed.
+
   (** *** Head and tail *)
 
   Theorem hd_error_nil : hd_error (@nil A) = None.
@@ -115,6 +121,12 @@ Section Facts.
   Theorem in_cons : forall (a b:A) (l:list A), In b l -> In b (a :: l).
   Proof.
     simpl; auto.
+  Qed.
+
+  Theorem not_in_cons (x a : A) (l : list A):
+    ~ In x (a::l) <-> x<>a /\ ~ In x l.
+  Proof.
+    simpl. intuition.
   Qed.
 
   Theorem in_nil : forall a:A, ~ In a [].
@@ -618,6 +630,16 @@ Section Elts.
     - destruct eq_dec as [->|Hneq]; rewrite IHl; intuition.
   Qed.
 
+  Theorem count_occ_not_In x l:
+    ~ In x l <-> count_occ l x = 0.
+  Proof.
+    revert x. induction l as [| a l' Hrec]; intro x.
+    - simpl. tauto.
+    - simpl. destruct (eq_dec a x).
+      * now intuition.
+      * rewrite <- Hrec. intuition.
+  Qed.
+
   Theorem count_occ_inv_nil (l : list A) :
     (forall x:A, count_occ l x = 0) <-> l = [].
   Proof.
@@ -905,6 +927,30 @@ Section Map.
     destruct l; simpl; reflexivity || discriminate.
   Qed.
 
+  Hypothesis HdecA: forall x1 x2 : A, {x1 = x2} + {x1 <> x2}.
+  Hypothesis HdecB: forall y1 y2 : B, {y1 = y2} + {y1 <> y2}.
+  Hypothesis Hfinjective: forall x1 x2: A, (f x1) = (f x2) -> x1 = x2.
+
+  Lemma map_cons:
+    forall x:A, forall l:list A,
+    map (x::l) = (f x) :: (map l).
+  Proof.
+    now simpl.
+  Qed.
+
+  Theorem count_occ_map x l:
+    count_occ HdecA l x = count_occ HdecB (map l) (f x).
+  Proof.
+    revert x. induction l as [| a l' Hrec]; intro x; simpl.
+    - reflexivity.
+    - specialize (Hrec x).
+      destruct (HdecA a x) as [H1|H1], (HdecB (f a) (f x)) as [H2|H2].
+      * rewrite Hrec. reflexivity.
+      * contradiction H2. rewrite H1. reflexivity.
+      * specialize (Hfinjective H2). contradiction H1.
+      * assumption.
+  Qed.
+
   (** [flat_map] *)
 
   Definition flat_map (f:A -> list B) :=
@@ -1190,6 +1236,53 @@ End Fold_Right_Recursor.
 	  if f x then (x::g,d) else (g,x::d)
       end.
 
+  Theorem partition_eq1 a l l1 l2:
+    partition l = (l1, l2) ->
+    f a = true ->
+    partition (a::l) = (a::l1, l2).
+  Proof.
+    simpl. now intros -> ->.
+  Qed.
+
+  Theorem partition_eq2 a l l1 l2:
+    partition l = (l1, l2) ->
+    f a=false ->
+    partition (a::l) = (l1, a::l2).
+  Proof.
+    simpl. now intros -> ->.
+  Qed.
+
+  Theorem partition_length l l1 l2:
+    partition l = (l1, l2) ->
+    length l = length l1 + length l2.
+  Proof.
+    revert l1 l2. induction l as [ | a l' Hrec]; intros l1 l2.
+    - now intros [= <- <- ].
+    - simpl. destruct (f a), (partition l') as (left, right);
+      intros [= <- <- ]; simpl; rewrite (Hrec left right); auto.
+  Qed.
+
+  Theorem partition_inv_nil (l : list A):
+    partition l = ([], []) <-> l = [].
+  Proof.
+    split.
+    - destruct l as [|a l' _].
+      * intuition.
+      * simpl. destruct (f a), (partition l'); now intros [= -> ->].
+    - now intros ->.
+  Qed.
+
+  Theorem elements_in_partition l l1 l2:
+    partition l = (l1, l2) ->
+    forall x:A, In x l <-> In x l1 \/ In x l2.
+  Proof.
+    revert l1 l2. induction l as [| a l' Hrec]; simpl; intros l1 l2 Eq x.
+    - injection Eq as <- <-. tauto.
+    - destruct (partition l') as (left, right).
+      specialize (Hrec left right eq_refl x).
+      destruct (f a); injection Eq as <- <-; simpl; tauto.
+  Qed.
+
   End Bool.
 
 
@@ -1206,8 +1299,8 @@ End Fold_Right_Recursor.
 
     Fixpoint split (l:list (A*B)) : list A * list B :=
       match l with
-	| nil => (nil, nil)
-	| (x,y) :: tl => let (g,d) := split tl in (x::g, y::d)
+	| [] => ([], [])
+	| (x,y) :: tl => let (left,right) := split tl in (x::left, y::right)
       end.
 
     Lemma in_split_l : forall (l:list (A*B))(p:A*B),
@@ -1681,6 +1774,93 @@ Section ReDun.
   intros. now apply NoDup_remove.
   Qed.
 
+  Theorem NoDup_cons_inv a l:
+    NoDup (a::l) -> (~ In a l /\ NoDup l).
+  Proof.
+    inversion_clear 1. auto.
+  Qed.
+
+  Hypothesis HdecA: forall x y : A, {x = y} + {x <> y}.
+
+  Theorem NoDup_count_occ' l:
+    NoDup l -> forall x:A, In x l -> (count_occ HdecA l x) = 1.
+  Proof.
+    induction l as [|a l' Hrec].
+    - intros ? ? H. contradiction H.
+    - intro H. generalize (NoDup_cons_inv H). clear H. intros (Hal', Hl').
+      specialize (Hrec Hl').
+      intros x Hx. generalize (in_inv Hx); clear Hx; intro Hx.
+      simpl. destruct (HdecA a x); subst.
+      * f_equal. apply count_occ_not_In. assumption.
+      * apply Hrec. destruct Hx; [contradiction H | assumption].
+  Qed.
+
+  Theorem NoDup_count_occ'' l:
+    (forall x:A, In x l -> (count_occ HdecA l x) = 1) ->
+    NoDup l.
+  Proof.
+    induction l as [| a l' Hrec].
+    - intros. apply NoDup_nil.
+    - intro H. apply NoDup_cons.
+    * generalize (H a (in_eq a l')). intro H'.
+      rewrite (count_occ_cons_eq HdecA l' (eq_refl a)) in H'.
+      inversion H'. apply (count_occ_not_In HdecA). assumption.
+    * apply Hrec. intros x Hxl'. case_eq (HdecA a x); intros Hax Hdecax.
+    + assert (Hnotinxl': (~ In x l')).
+      generalize (H x). rewrite <- Hax. intro H'.
+      generalize (H' (in_eq a l')). clear H'. intro H'.
+      simpl in H'. rewrite <- Hax in Hdecax. rewrite Hdecax in H'.
+      inversion H'.
+      apply (count_occ_not_In HdecA). assumption.
+      (* End of assert *)
+      contradiction Hxl'.
+    + generalize (H x (in_cons a x l' Hxl')). intro H'. simpl in H'.
+      rewrite Hdecax in H'. assumption.
+  Qed.
+
+  Theorem NoDup_count_occ l:
+    NoDup l <-> forall x:A, In x l -> (count_occ HdecA l x) = 1.
+  Proof.
+    split. apply NoDup_count_occ'. apply NoDup_count_occ''.
+  Qed.
+
+  Theorem count_occ_NoDup_2 l:
+    (forall x:A, count_occ HdecA l x <= 1) <-> NoDup l.
+  Proof.
+    setoid_rewrite PeanoNat.Nat.le_1_r.
+    split.
+    (* 1. nboccs<=1 -> NoDup l *)
+    induction l as [|a l' Hrec]; intro H.
+    (* 1.1: l=[@ *)
+    apply NoDup_nil.
+    (* 1.2: l=a::l' *)
+    apply NoDup_cons.
+    (* 1.2.1: ~ In a l' *)
+    destruct (in_dec HdecA a l') as [Hal'|Hal'].
+    (* 1.2.1.1: a in L' ??? *)
+    specialize (H a). rewrite (count_occ_cons_eq HdecA l' eq_refl) in H.
+    destruct H.
+    discriminate.
+    inversion H.
+    apply count_occ_not_In in H1. assumption.
+    (* 1.2.1.2: a n'est pas dans l', cqfd *)
+    assumption.
+    (* 1.2.2: NoDup l' *)
+    apply Hrec.
+    intro x. generalize (H x). simpl.
+    destruct (HdecA a x), 1.
+    discriminate.
+    inversion H0. left. auto.
+    left. assumption.
+    right. assumption.
+    (* 2: NoDup l -> nboccs<=1 *)
+    intros Hl x. destruct (in_dec HdecA x l) as [Hx|Hx].
+    (* 2.1: In x l *)
+    right. apply NoDup_count_occ; assumption.
+    (* 2.2: ~ In x l *)
+    left. rewrite <- count_occ_not_In. assumption.
+  Qed.
+
   (** Alternative characterisations of being without duplicates,
       thanks to [nth_error] and [nth] *)
 
@@ -2028,5 +2208,28 @@ Notation AllS := Forall (only parsing). (* was formerly in TheoryList *)
 
 Hint Resolve app_nil_end : datatypes v62.
 (* end hide *)
+
+Section Repeat.
+
+  Variable A : Type.
+  Fixpoint repeat (x : A) (n: nat ) :=
+    match n with
+      | O => []
+      | S k => x::(repeat x k)
+    end.
+
+  Theorem repeat_length x n:
+    length (repeat x n) = n.
+  Proof.
+    induction n as [| k Hrec]; simpl; rewrite ?Hrec; reflexivity.
+  Qed.
+
+  Theorem repeat_spec n x y:
+    In y (repeat x n) -> y=x.
+  Proof.
+    induction n as [|k Hrec]; simpl; destruct 1; auto.
+  Qed.
+
+End Repeat.
 
 (* Unset Universe Polymorphism. *)
