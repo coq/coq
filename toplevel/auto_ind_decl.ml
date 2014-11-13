@@ -82,7 +82,10 @@ let induct_on c = induction false None c None None
 let destruct_on c = destruct false None c None None
 
 let destruct_on_using c id =
-  destruct false None c (Some (dl,[[dl,IntroNaming IntroAnonymous]])) None
+  destruct false None c
+    (Some (dl,[[dl,IntroNaming IntroAnonymous];
+               [dl,IntroNaming (IntroIdentifier id)]]))
+    None
 
 let destruct_on_as c l =
   destruct false None c (Some (dl,l)) None
