@@ -196,9 +196,13 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
     let mk_set l = List.fold_right Id.Set.add (List.map pi1 l) Id.Set.empty in
     let inferred_set, declared_set = mk_set inferred, mk_set declared in
     if not (Id.Set.subset inferred_set declared_set) then
-      error ("The following section variable are used but not declared:\n"^
-        (String.concat ", " (List.map Id.to_string
-          (Id.Set.elements (Idset.diff inferred_set declared_set))))) in
+      let l = Id.Set.elements (Idset.diff inferred_set declared_set) in
+      let n = List.length l in
+      errorlabstrm "" (Pp.(str "The following section " ++
+        str (String.plural n "variable") ++
+        str " " ++ str (String.conjugate_verb_to_be n) ++
+        str " used but not declared:" ++
+        fnl () ++ pr_sequence Id.print (List.rev l) ++ str ".")) in
   (* We try to postpone the computation of used section variables *)
   let hyps, def =
     let context_ids = List.map pi1 (named_context env) in
