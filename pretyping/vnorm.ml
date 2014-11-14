@@ -186,7 +186,7 @@ and nf_stk env c t stk  =
       nf_stk env (mkApp(c,args)) t stk
   | Zfix (f,vargs) :: stk ->
       let fa, typ = nf_fix_app env f vargs in
-      let _,_,codom = try decompose_prod env typ with DestKO -> exit 120 in
+      let _,_,codom = decompose_prod env typ in
       nf_stk env (mkApp(fa,[|c|])) (subst1 c codom) stk
   | Zswitch sw :: stk ->
       let ((mind,_ as ind), u), allargs = find_rectype_a env t in
@@ -216,7 +216,7 @@ and nf_predicate env ind mip params v pT =
   | Vfun f, Prod _ ->
       let k = nb_rel env in
       let vb = body_of_vfun k f in
-      let name,dom,codom = try decompose_prod env pT with DestKO -> exit 121 in
+      let name,dom,codom = decompose_prod env pT in
       let dep,body =
 	nf_predicate (push_rel (name,None,dom) env) ind mip params vb codom in
       dep, mkLambda(name,dom,body)
@@ -238,7 +238,7 @@ and nf_args env vargs t =
   let args =
     Array.init len
       (fun i ->
-	let _,dom,codom = try decompose_prod env !t with DestKO -> exit 123 in
+	let _,dom,codom = decompose_prod env !t in
 	let c = nf_val env (arg vargs i) dom in
 	t := subst1 c codom; c) in
   !t,args
@@ -249,7 +249,7 @@ and nf_bargs env b t =
   let args =
     Array.init len
       (fun i ->
-	let _,dom,codom = try decompose_prod env !t with DestKO -> exit 124 in
+	let _,dom,codom = decompose_prod env !t in
 	let c = nf_val env (bfield b i) dom in
 	t := subst1 c codom; c) in
   args
