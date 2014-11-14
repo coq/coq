@@ -140,3 +140,14 @@ intros x H1 H.
 induction H.
 change True in IHrepr'.
 Abort.
+
+(* In this case, generalization was done in 8.4 and we preserve it; this
+   is arbitrary choice  *)
+
+Inductive repr'' : nat -> nat -> Prop := reprc'' x z : repr'' x z -> repr'' x z.
+
+Goal forall x, 0 = x -> repr'' x x -> True.
+intros x H1 H.
+induction H.
+change (0 = z -> True) in IHrepr''.
+Abort.

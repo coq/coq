@@ -396,6 +396,7 @@ Abort.
 Goal 2=1 -> 1=0.
 intro H. destruct H.
 Fail (match goal with n:nat |- _ => unfold n end). (* Check that no let-in remains *)
+Abort.
 
 (* Check clearing of names *)
 

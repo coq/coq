@@ -2743,35 +2743,52 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
   let hd,argl = decompose_app indtyp in
   let params = List.firstn nparams argl in
   (* le gl est important pour ne pas préévaluer *)
-  let rec atomize_one i params args =
+  let rec atomize_one i args avoid =
     if Int.equal i nparams then
-      let t = applist (hd, params @ List.map mkVar args) in
+      let t = applist (hd, params@args) in
       Proofview.V82.tactic
         (change_in_hyp None (fun _ sigma -> sigma, t) (hyp0,InHypTypeOnly))
     else
       let c = List.nth argl (i-1) in
       match kind_of_term c with
-	| Var id when not (List.mem id args) &&
+	| Var id when not (List.exists (occur_var env id) args) &&
                       not (List.exists (occur_var env id) params) ->
-            (* We know that the name can be cleared after destruction *)
-	    atomize_one (i-1) params (id::args)
+            (* Based on the knowledge given by the user, all
+               constraints on the variable are generalizable in the
+               current environment so that it is clearable after destruction *)
+	    atomize_one (i-1) (c::args) (id::avoid)
 	| _ ->
+            if List.exists (dependent c) params ||
+               List.exists (dependent c) args
+            then
+              (* This is a case where the argument is constrained in a
+                 way which would require some kind of inversion; we
+                 follow the (old) discipline of not generalizing over
+                 this term, since we don't try to invert the
+                 constraint anyway. *)
+	      atomize_one (i-1) (c::args) avoid
+            else
+            (* We reason blindly on the term and do as if it were
+               generalizable, ignoring the constraints coming from
+               its structure *)
             let id = match kind_of_term c with
             | Var id -> id
             | _ ->
             let type_of = Tacmach.New.pf_type_of gl in
             id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
-            let x = fresh_id_in_env args id env in
+            let x = fresh_id_in_env avoid id env in
 	    Tacticals.New.tclTHEN
 	      (letin_tac None (Name x) c None allHypsAndConcl)
-	      (atomize_one (i-1) (List.map (replace_term c (mkVar x)) params) (x::args))
+	      (atomize_one (i-1) (mkVar x::args) (x::avoid))
   in
-  atomize_one (List.length argl) params []
+  atomize_one (List.length argl) [] []
   end
 
 let find_atomic_param_of_ind nparams indtyp =
   let argl = snd (decompose_app indtyp) in
-  List.map destVar (snd (List.chop nparams argl))
+  let params,args = List.chop nparams argl in
+  let test c = isVar c && not (List.exists (dependent c) params) in
+  List.map destVar (List.filter test args)
 
 (* [cook_sign] builds the lists [beforetoclear] (preceding the
    ind. var.) and [aftertoclear] (coming after the ind. var.)  of hyps
