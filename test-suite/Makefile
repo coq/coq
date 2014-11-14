@@ -64,6 +64,7 @@ endif
 
 log_success = "==========> SUCCESS <=========="
 log_segfault = "==========> FAILURE <=========="
+log_anomaly = "==========> FAILURE <=========="
 log_failure = "==========> FAILURE <=========="
 log_intro = "==========> TESTING $(1) <=========="
 
@@ -168,6 +169,9 @@ $(addsuffix .log,$(wildcard bugs/opened/*.v)): %.v.log: %.v
 	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
+	    echo "    $<...still active"; \
+	  elif [ $$R = 129 ]; then \
+	    echo $(log_anomaly); \
 	    echo "    $<...still active"; \
 	  elif [ $$R = 139 ]; then \
 	    echo $(log_segfault); \
