@@ -42,9 +42,33 @@ let print_header () =
 let warning s = msg_warning (strbrk s)
 
 let toploop = ref None
-let toploop_init = ref (fun x ->
-  CoqworkmgrApi.(init !Flags.async_proofs_worker_priority);
-  x)
+
+let toploop_init = ref begin fun x ->
+  let () =
+    if
+      Terminal.has_style Unix.stdout &&
+      Terminal.has_style Unix.stderr &&
+      not (!Flags.print_emacs)
+    then begin
+      let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
+      match colors with
+      | None ->
+        (** Default colors *)
+        Ppstyle.init_color_output ()
+      | Some "" ->
+        (** No color output *)
+        ()
+      | Some s ->
+        (** Overwrite all colors *)
+        Ppstyle.clear_styles ();
+        Ppstyle.parse_config s;
+        Ppstyle.init_color_output ()
+    end
+  in
+  let () = CoqworkmgrApi.(init !Flags.async_proofs_worker_priority) in
+  x
+  end
+
 let toploop_run = ref (fun () ->
   if Dumpglob.dump () then begin
     if_verbose warning "Dumpglob cannot be used in interactive mode.";
