@@ -37,6 +37,14 @@ val occur_glob_constr : Id.t -> glob_constr -> bool
 val free_glob_vars : glob_constr -> Id.t list
 val loc_of_glob_constr : glob_constr -> Loc.t
 
+(** [map_pattern_binders f m c] applies [f] to all the binding names
+    in a pattern-matching expression ({!Glob_term.GCases}) represented
+    here by its relevant components [m] and [c]. It is used to
+    interpret Ltac-bound names both in pretyping and printing of
+    terms. *)
+val map_pattern_binders : (name -> name) ->
+  tomatch_tuples -> cases_clauses -> (tomatch_tuples*cases_clauses)
+
 (** Conversion from glob_constr to cases pattern, if possible
 
     Take the current alias as parameter,

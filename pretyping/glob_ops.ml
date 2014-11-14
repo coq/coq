@@ -328,6 +328,51 @@ let free_glob_vars  =
     let vs = vars Id.Set.empty Id.Set.empty rt in
     Id.Set.elements vs
 
+(** Mapping of names in binders *)
+
+(* spiwack: I used a smartmap-style kind of mapping here, because the
+   operation will be the identity almost all of the time (with any
+   term outside of Ltac to begin with). But to be honest, there would
+   probably be no significant penalty in doing reallocation as
+   pattern-matching expressions are usually rather small. *)
+
+let map_inpattern_binders f ((loc,id,nal) as x) =
+  let r = CList.smartmap f nal in
+  if r == nal then x
+  else loc,id,r
+
+let map_tomatch_binders f ((c,(na,inp)) as x) : tomatch_tuple =
+  let r = Option.smartmap (fun p -> map_inpattern_binders f p) inp in
+  if r == inp then x
+  else c,(f na, r)
+
+let rec map_case_pattern_binders f = function
+  | PatVar (loc,na) as x ->
+      let r = f na in
+      if r == na then x
+      else PatVar (loc,r)
+  | PatCstr (loc,c,ps,na) as x ->
+      let rna = f na in
+      let rps =
+        CList.smartmap (fun p -> map_case_pattern_binders f p) ps
+      in
+      if rna == na && rps == ps then x
+      else PatCstr(loc,c,rps,rna)
+
+let map_cases_branch_binders f ((loc,il,cll,rhs) as x) : cases_clause =
+  (* spiwack: not sure if I must do something with the list of idents.
+     It is intended to be a superset of the free variable of the
+     right-hand side, if I understand correctly. But I'm not sure when
+     or how they are used. *)
+  let r = List.smartmap (fun cl -> map_case_pattern_binders f cl) cll in
+  if r == cll then x
+  else loc,il,r,rhs
+
+let map_pattern_binders f tomatch branches =
+  CList.smartmap (fun tm -> map_tomatch_binders f tm) tomatch,
+  CList.smartmap (fun br -> map_cases_branch_binders f br) branches
+
+(** /mapping of names in binders *)
 
 let loc_of_glob_constr = function
   | GRef (loc,_,_) -> loc
