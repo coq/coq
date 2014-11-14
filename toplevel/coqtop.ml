@@ -20,8 +20,9 @@ let () = at_exit flush_all
 
 let ( / ) = Filename.concat
 
-let fatal_error info =
-  pperrnl info; flush_all (); exit 1
+let fatal_error info anomaly =
+  pperrnl info; flush_all ();
+  exit (if anomaly then 129 else 1)
 
 let get_version_date () =
   try
@@ -476,8 +477,8 @@ let parse_args arglist =
   with
     | UserError(_, s) as e ->
       if is_empty s then exit 1
-      else fatal_error (Errors.print e)
-    | any -> fatal_error (Errors.print any)
+      else fatal_error (Errors.print e) false
+    | any -> fatal_error (Errors.print any) (Errors.is_anomaly any)
 
 let init arglist =
   init_gc ();
@@ -532,7 +533,7 @@ let init arglist =
         if !batch_mode then mt ()
         else str "Error during initialization:" ++ fnl ()
       in
-      fatal_error (msg ++ Coqloop.print_toplevel_error any)
+      fatal_error (msg ++ Coqloop.print_toplevel_error any) (Errors.is_anomaly any)
   end;
   if !batch_mode then begin
     flush_all();
