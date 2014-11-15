@@ -91,6 +91,10 @@ let make_style_stack style_tags =
   let clear () = style_stack := [] in
   push, pop, clear
 
+let error_tag = make ["message"; "error"]
+let warning_tag = make ["message"; "warning"]
+let debug_tag = make ["message"; "debug"]
+
 let init_color_output () =
   let push_tag, pop_tag, clear_tag = make_style_stack !tags in
   let tag_handler = {
@@ -108,11 +112,15 @@ let init_color_output () =
   let () = Format.pp_set_mark_tags !err_ft true in
   let () = Format.pp_set_formatter_tag_functions !std_ft tag_handler in
   let () = Format.pp_set_formatter_tag_functions !err_ft tag_handler in
+  let pptag = tag in
   let open Pp in
   let msg ?header ft strm =
     let strm = match header with
     | None -> hov 0 strm
-    | Some h -> hov 0 (str h ++ str ":" ++ spc () ++ strm)
+    | Some (h, t) ->
+      let tag = Pp.Tag.inj t pptag in
+      let h = Pp.tag tag (str h ++ str ":") in
+      hov 0 (h ++ spc () ++ strm)
     in
     pp_with ~pp_tag ft strm;
     Format.pp_print_newline ft ();
@@ -121,11 +129,13 @@ let init_color_output () =
     clear_tag ();
   in
   let logger level strm = match level with
-  | Debug _ -> msg ~header:"Debug" !std_ft strm
+  | Debug _ -> msg ~header:("Debug", debug_tag) !std_ft strm
   | Info -> msg !std_ft strm
   | Notice -> msg !std_ft strm
-  | Warning -> Flags.if_warn (fun () -> msg ~header:"Warning" !err_ft strm) ()
-  | Error -> msg ~header:"Error" !err_ft strm
+  | Warning ->
+    let header = ("Warning", warning_tag) in
+    Flags.if_warn (fun () -> msg ~header !err_ft strm) ()
+  | Error -> msg ~header:("Error", error_tag) !err_ft strm
   in
   let () = set_logger logger in
   ()
