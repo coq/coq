@@ -803,11 +803,17 @@ end) = struct
 
 end
 
-(** Preserve the initial behaviour of Ppconstr by instantiating Make
-    with tagging functions that do nothing. *)
+module Tag =
+struct
+  let keyword = Ppstyle.make ["constr"; "keyword"]
+end
+
+(** Instantiating Make with tagging functions that only add style
+    information. *)
 include Make (struct
     let do_not_tag _ x = x
-    let tag_keyword     = do_not_tag ()
+    let tag t s = Pp.tag (Pp.Tag.inj t Ppstyle.tag) s
+    let tag_keyword     = tag Tag.keyword
     let tag_unparsing   = do_not_tag
     let tag_constr_expr = do_not_tag
 end)
