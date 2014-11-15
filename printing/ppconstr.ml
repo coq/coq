@@ -25,6 +25,8 @@ open Genredexpr
 
 module Make (Taggers : sig
   val tag_keyword     : std_ppcmds -> std_ppcmds
+  val tag_evar     : std_ppcmds -> std_ppcmds
+  val tag_type     : std_ppcmds -> std_ppcmds
   val tag_constr_expr : constr_expr -> std_ppcmds -> std_ppcmds
   val tag_unparsing   : unparsing -> std_ppcmds -> std_ppcmds
 end) = struct
@@ -143,10 +145,10 @@ end) = struct
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
   let pr_glob_sort = function
-    | GProp -> keyword "Prop"
-    | GSet -> keyword "Set"
-    | GType [] -> keyword "Type"
-    | GType u -> hov 0 (keyword "Type" ++ pr_univ_annot pr_univ u)
+    | GProp -> tag_type (str "Prop")
+    | GSet -> tag_type (str "Set")
+    | GType [] -> tag_type (str "Type")
+    | GType u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
 
   let pr_id = pr_id
   let pr_name = pr_name
@@ -155,13 +157,13 @@ end) = struct
 
   let pr_glob_sort_instance = function
     | GProp ->
-      tag_keyword (str "Prop")
+      tag_type (str "Prop")
     | GSet ->
-      tag_keyword (str "Set")
+      tag_type (str "Set")
     | GType u ->
       (match u with
         | Some u -> str u
-        | None -> tag_keyword (str "Type"))
+        | None -> tag_type (str "Type"))
 
   let pr_universe_instance l =
     pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_glob_sort_instance)) l
@@ -206,7 +208,7 @@ end) = struct
 
   let pr_evar pr id l =
     hov 0 (
-      str "?" ++ pr_id id ++
+      tag_evar (str "?" ++ pr_id id) ++
         (match l with
           | [] -> mt()
           | l ->
@@ -454,7 +456,7 @@ end) = struct
     match po with
       | None | Some (CHole (_,_,Misctypes.IntroAnonymous,_)) -> mt()
       | Some p ->
-        spc() ++ hov 2 (str "return" ++ pr_sep_com spc (pr lsimpleconstr) p)
+        spc() ++ hov 2 (keyword "return" ++ pr_sep_com spc (pr lsimpleconstr) p)
 
   let pr_simple_return_type pr na po =
     (match na with
@@ -806,14 +808,19 @@ end
 module Tag =
 struct
   let keyword = Ppstyle.make ["constr"; "keyword"]
+  let evar = Ppstyle.make ["constr"; "evar"]
+  let univ = Ppstyle.make ["constr"; "type"]
 end
+
+let do_not_tag _ x = x
 
 (** Instantiating Make with tagging functions that only add style
     information. *)
 include Make (struct
-    let do_not_tag _ x = x
     let tag t s = Pp.tag (Pp.Tag.inj t Ppstyle.tag) s
     let tag_keyword     = tag Tag.keyword
+    let tag_evar        = tag Tag.evar
+    let tag_type        = tag Tag.univ
     let tag_unparsing   = do_not_tag
     let tag_constr_expr = do_not_tag
 end)
@@ -823,6 +830,8 @@ module Richpp = struct
   include Make (struct
     open Ppannotation
     let tag_keyword       = Pp.tag (Pp.Tag.inj AKeyword tag)
+    let tag_type          = Pp.tag (Pp.Tag.inj AKeyword tag)
+    let tag_evar          = do_not_tag ()
     let tag_unparsing unp = Pp.tag (Pp.Tag.inj (AUnparsing unp) tag)
     let tag_constr_expr e = Pp.tag (Pp.Tag.inj (AConstrExpr e) tag)
   end)
