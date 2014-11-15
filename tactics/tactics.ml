@@ -586,7 +586,7 @@ let e_change_in_hyp redfun (id,where) gl =
     (e_pf_change_decl redfun where (pf_get_hyp gl id))
     (fun s -> Proofview.V82.of_tactic (convert_hyp s)) gl
 
-type change_arg = env -> evar_map -> evar_map * constr
+type change_arg = evar_map -> evar_map * constr
 
 let check_types env sigma mayneedglobalcheck deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
@@ -608,15 +608,15 @@ let check_types env sigma mayneedglobalcheck deep newc origc =
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
-  let sigma, t' = t env sigma in
+  let sigma, t' = t sigma in
   check_types env sigma mayneedglobalcheck deep t' c;
   let sigma, b = infer_conv ~pb:cv_pb env sigma t' c in
   if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
   sigma, t'
 
 let change_and_check_subst cv_pb mayneedglobalcheck subst t env sigma c =
-  let t' env sigma = 
-    let sigma, t = t env sigma in
+  let t' sigma =
+    let sigma, t = t sigma in
       sigma, replace_vars (Id.Map.bindings subst) t 
   in change_and_check cv_pb mayneedglobalcheck true t' env sigma c
 
@@ -658,7 +658,7 @@ let change chg c cls gl =
     cls gl
 
 let change_concl t = 
-  change_in_concl None (fun env sigma -> sigma, t)
+  change_in_concl None (fun sigma -> sigma, t)
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
 let red_in_concl        = reduct_in_concl (red_product,REVERTcast)
@@ -2747,7 +2747,7 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
     if Int.equal i nparams then
       let t = applist (hd, params@args) in
       Proofview.V82.tactic
-        (change_in_hyp None (fun _ sigma -> sigma, t) (hyp0,InHypTypeOnly))
+        (change_in_hyp None (fun sigma -> sigma, t) (hyp0,InHypTypeOnly))
     else
       let c = List.nth argl (i-1) in
       match kind_of_term c with

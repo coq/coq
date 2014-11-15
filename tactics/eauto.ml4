@@ -562,7 +562,7 @@ let autounfold_one db cl gl =
   in
     if did then
       match cl with
-      | Some hyp -> change_in_hyp None (fun env sigma -> sigma, c') hyp gl
+      | Some hyp -> change_in_hyp None (fun sigma -> sigma, c') hyp gl
       | None -> Proofview.V82.of_tactic (convert_concl_no_check c' DEFAULTcast) gl
     else tclFAIL 0 (str "Nothing to unfold") gl
 

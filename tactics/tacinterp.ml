@@ -2082,10 +2082,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
           | AllOccurrences | NoOccurrences -> true
           | _ -> false
         in
-        let c_interp env sigma =
+        let c_interp sigma =
 	  if is_onhyps && is_onconcl
-	  then interp_type ist env sigma c
-	  else interp_constr ist env sigma c
+	  then interp_type ist (pf_env gl) sigma c
+	  else interp_constr ist (pf_env gl) sigma c
         in
 	  (Tactics.change None c_interp (interp_clause ist (pf_env gl) (project gl) cl))
           gl
@@ -2101,8 +2101,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
         Proofview.V82.tactic begin fun gl -> 
           let sign,op = interp_typed_pattern ist env sigma op in
           let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
-          let c_interp env sigma =
-	    let env' = Environ.push_named_context sign env in
+	  let env' = Environ.push_named_context sign env in
+          let c_interp sigma =
 	      try interp_constr ist env' sigma c
 	      with e when to_catch e (* Hack *) ->
 		errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")

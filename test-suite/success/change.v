@@ -50,3 +50,12 @@ Abort.
 Goal nat = nat :> Set.
 Fail change nat with (@id Type nat). (* would otherwise be ill-typed *)
 Abort.
+
+(* Check typing env for rhs is the correct one *)
+
+Goal forall n, let x := n in id (fun n => n + x) 0 = 0.
+intros.
+unfold x.
+(* check that n in 0+n is not interpreted as the n from "fun n" *)
+change n with (0+n).
+Abort.

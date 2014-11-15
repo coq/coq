@@ -1500,10 +1500,10 @@ let cutSubstInHyp l2r eqn id =
   tclTHENFIRST
     (tclTHENLIST [
        (Proofview.Unsafe.tclEVARS sigma);
-       (Proofview.V82.tactic (change_in_hyp None (fun _ s -> s,typ) (id,InHypTypeOnly)));
+       (Proofview.V82.tactic (change_in_hyp None (fun s -> s,typ) (id,InHypTypeOnly)));
        (replace_core (onHyp id) l2r eqn)
     ])
-    (Proofview.V82.tactic (change_in_hyp None (fun _ s -> s,expected) (id,InHypTypeOnly)))
+    (Proofview.V82.tactic (change_in_hyp None (fun s -> s,expected) (id,InHypTypeOnly)))
   end
 
 let try_rewrite tac =
