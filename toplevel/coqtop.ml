@@ -43,13 +43,23 @@ let warning s = msg_warning (strbrk s)
 
 let toploop = ref None
 
+let color : [`ON | `AUTO | `OFF] ref = ref `AUTO
+let set_color = function
+| "on" -> color := `ON
+| "off" -> color := `OFF
+| "auto" -> color := `AUTO
+| _ -> prerr_endline ("Error: on/off/auto expected after option color"); exit 1
+
 let toploop_init = ref begin fun x ->
   let () =
-    if
+    let has_color = match !color with
+    | `OFF -> false
+    | `ON -> true
+    | `AUTO ->
       Terminal.has_style Unix.stdout &&
-      Terminal.has_style Unix.stderr &&
-      not (!Flags.print_emacs)
-    then begin
+      Terminal.has_style Unix.stderr
+    in
+    if has_color then begin
       let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
       match colors with
       | None ->
@@ -210,7 +220,7 @@ let set_emacs () =
   Flags.print_emacs := true;
   Pp.make_pp_emacs ();
   Vernacentries.qed_display_script := false;
-  Flags.make_term_color false
+  color := `OFF
 
 (** GC tweaking *)
 
@@ -447,7 +457,7 @@ let parse_args arglist =
     |"-beautify" -> make_beautify true
     |"-boot" -> boot := true; no_load_rc ()
     |"-bt" -> Backtrace.record_backtrace true
-    |"-color" -> Flags.make_term_color true
+    |"-color" -> set_color (next ())
     |"-config"|"--config" -> print_config := true
     |"-debug" -> set_debug ()
     |"-emacs" -> set_emacs ()

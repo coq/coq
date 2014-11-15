@@ -141,11 +141,6 @@ let verbosely f x = without_option silent f x
 let if_silent f x = if !silent then f x
 let if_verbose f x = if not !silent then f x
 
-(* Use terminal color *)
-let term_color = ref false
-let make_term_color b = term_color := b
-let is_term_color () = !term_color
-
 let auto_intros = ref true
 let make_auto_intros flag = auto_intros := flag
 let is_auto_intros () = version_strictly_greater V8_2 && !auto_intros

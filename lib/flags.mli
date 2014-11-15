@@ -79,10 +79,6 @@ val if_verbose : ('a -> unit) -> 'a -> unit
 val make_auto_intros : bool -> unit
 val is_auto_intros : unit -> bool
 
-(** Terminal colouring *)
-val make_term_color : bool -> unit
-val is_term_color : unit -> bool
-
 val program_mode : bool ref
 val is_program_mode : unit -> bool
 

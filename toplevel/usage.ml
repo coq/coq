@@ -59,6 +59,7 @@ let print_usage_channel co command =
 \n  -bt                    print backtraces (requires configure debug flag)\
 \n  -debug                 debug mode (implies -bt)\
 \n  -emacs                 tells Coq it is executed under Emacs\
+\n  -color (on|off|auto)   configure color output (only active through coqtop)\
 \n  -noglob                do not dump globalizations\
 \n  -dump-glob f           dump globalizations in file f (to be used by coqdoc)\
 \n  -with-geoproof (yes|no) to (de)activate special functions for Geoproof within Coqide (default is yes)\
