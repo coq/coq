@@ -278,7 +278,7 @@ let print_style_tags () =
 
 let error_missing_arg s =
   prerr_endline ("Error: extra argument expected after option "^s);
-  prerr_endline "See --help for the syntax of supported options";
+  prerr_endline "See -help for the syntax of supported options";
   exit 1
 
 let filter_opts = ref false
@@ -554,7 +554,7 @@ let init arglist =
       let extras = !toploop_init extras in
       if not (List.is_empty extras) then begin
         prerr_endline ("Don't know what to do with "^String.concat " " extras);
-        prerr_endline "See --help for the list of supported options";
+        prerr_endline "See -help for the list of supported options";
         exit 1
       end;
       if_verbose print_header ();
