@@ -50,31 +50,32 @@ let set_color = function
 | "auto" -> color := `AUTO
 | _ -> prerr_endline ("Error: on/off/auto expected after option color"); exit 1
 
-let toploop_init = ref begin fun x ->
-  let () =
-    let has_color = match !color with
-    | `OFF -> false
-    | `ON -> true
-    | `AUTO ->
-      Terminal.has_style Unix.stdout &&
-      Terminal.has_style Unix.stderr
-    in
-    if has_color then begin
-      let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
-      match colors with
-      | None ->
-        (** Default colors *)
-        Ppstyle.init_color_output ()
-      | Some "" ->
-        (** No color output *)
-        ()
-      | Some s ->
-        (** Overwrite all colors *)
-        Ppstyle.clear_styles ();
-        Ppstyle.parse_config s;
-        Ppstyle.init_color_output ()
-    end
+let init_color () =
+  let has_color = match !color with
+  | `OFF -> false
+  | `ON -> true
+  | `AUTO ->
+    Terminal.has_style Unix.stdout &&
+    Terminal.has_style Unix.stderr
   in
+  if has_color then begin
+    let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
+    match colors with
+    | None ->
+      (** Default colors *)
+      Ppstyle.init_color_output ()
+    | Some "" ->
+      (** No color output *)
+      ()
+    | Some s ->
+      (** Overwrite all colors *)
+      Ppstyle.clear_styles ();
+      Ppstyle.parse_config s;
+      Ppstyle.init_color_output ()
+  end
+
+let toploop_init = ref begin fun x ->
+  let () = init_color () in
   let () = CoqworkmgrApi.(init !Flags.async_proofs_worker_priority) in
   x
   end
@@ -260,6 +261,21 @@ let usage () =
     Usage.print_usage_coqtop ()
   end
 
+let print_style_tags () =
+  let () = init_color () in
+  let tags = Ppstyle.dump () in
+  let iter (t, st) =
+    let st = match st with Some st -> st | None -> Terminal.make () in
+    let opt =
+      Terminal.eval st ^
+      String.concat "." (Ppstyle.repr t) ^
+      Terminal.reset ^ "\n"
+    in
+    print_string opt
+  in
+  List.iter iter tags;
+  flush_all ()
+
 let error_missing_arg s =
   prerr_endline ("Error: extra argument expected after option "^s);
   prerr_endline "See --help for the syntax of supported options";
@@ -273,6 +289,7 @@ let no_compat_ntn = ref false
 
 let print_where = ref false
 let print_config = ref false
+let print_tags = ref false
 
 let get_priority opt s =
   try Flags.priority_of_string s
@@ -477,6 +494,7 @@ let parse_args arglist =
     |"-q" -> no_load_rc ()
     |"-quiet"|"-silent" -> Flags.make_silent true
     |"-quick" -> Flags.compilation_mode := BuildVi
+    |"-list-tags" -> print_tags := true
     |"-time" -> Flags.time := true
     |"-type-in-type" -> set_type_in_type ()
     |"-unicode" -> add_require "Utf8_core"
@@ -529,6 +547,7 @@ let init arglist =
       Envars.set_coqlib Errors.error;
       if !print_where then (print_endline(Envars.coqlib ()); exit(exitcode ()));
       if !print_config then (Usage.print_config (); exit (exitcode ()));
+      if !print_tags then (print_style_tags (); exit (exitcode ()));
       if !filter_opts then (print_string (String.concat "\n" extras); exit 0);
       init_load_path ();
       Option.iter Mltop.load_ml_object_raw !toploop;

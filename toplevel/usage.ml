@@ -51,6 +51,7 @@ let print_usage_channel co command =
 \n  -where                 print Coq's standard library location and exit\
 \n  -config                print Coq's configuration information and exit\
 \n  -v                     print Coq version and exit\
+\n  -list-tags             print highlight color tags known by Coq and exit\
 \n\
 \n  -q                     skip loading of rcfile\
 \n  -init-file f           set the rcfile to f\
