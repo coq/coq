@@ -428,25 +428,19 @@ let is_message = Feedback.is_message
 
 type logger = message_level -> std_ppcmds -> unit
 
-let print_color s x = x
-(* FIXME *)
-(*   if Flags.is_term_color () then *)
-(*     (str ("\027[" ^ s ^ "m")) ++ x ++ (str "\027[0m") *)
-(*   else x *)
+let make_body info s =
+  emacs_quote (hov 0 (info ++ spc () ++ s))
 
-let make_body color info s =
-  emacs_quote (print_color color (print_color "1" (hov 0 (info ++ spc () ++ s))))
-
-let debugbody strm = print_color "36" (hov 0 (str "Debug:" ++ spc () ++ strm)) (* cyan *)
-let warnbody strm = make_body "93" (str "Warning:") strm (* bright yellow *)
-let errorbody strm = make_body "31" (str "Error:") strm (* bright red *)
+let debugbody strm = hov 0 (str "Debug:" ++ spc () ++ strm)
+let warnbody strm = make_body (str "Warning:") strm
+let errorbody strm = make_body (str "Error:") strm
 
 let std_logger ~id:_ level msg = match level with
-| Debug _ -> msgnl (debugbody msg) (* cyan *)
-| Info -> msgnl (print_color "37" (hov 0 msg)) (* gray *)
+| Debug _ -> msgnl (debugbody msg)
+| Info -> msgnl (hov 0 msg)
 | Notice -> msgnl msg
-| Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody msg)) () (* bright yellow *)
-| Error -> msgnl_with !err_ft (errorbody msg) (* bright red *)
+| Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody msg)) ()
+| Error -> msgnl_with !err_ft (errorbody msg)
 
 let logger = ref std_logger
 
