@@ -308,7 +308,7 @@ let compile verbosely f =
   let check_pending_proofs () =
     let pfs = Pfedit.get_all_proof_names () in
     if not (List.is_empty pfs) then
-      (pperrnl (str "Error: There are pending proofs"); flush_all (); exit 1) in
+      (msg_error (str "There are pending proofs"); flush_all (); exit 1) in
   match !Flags.compilation_mode with
   | BuildVo ->
       let ldir,long_f_dot_v = Flags.verbosely Library.start_library f in
