@@ -114,17 +114,11 @@ let subst_glob_constr_or_pattern subst (c,p) =
 let subst_pattern_with_occurrences subst (l,p) =
   (l,subst_glob_constr_or_pattern subst p)
 
-let subst_redexp subst = function
-  | Unfold l -> Unfold (List.map (subst_unfold subst) l)
-  | Fold l -> Fold (List.map (subst_glob_constr subst) l)
-  | Cbv f -> Cbv (subst_flag subst f)
-  | Cbn f -> Cbn (subst_flag subst f)
-  | Lazy f -> Lazy (subst_flag subst f)
-  | Pattern l -> Pattern (List.map (subst_constr_with_occurrences subst) l)
-  | Simpl o -> Simpl (Option.map (subst_pattern_with_occurrences subst) o)
-  | CbvVm o -> CbvVm (Option.map (subst_pattern_with_occurrences subst) o)
-  | CbvNative o -> CbvNative (Option.map (subst_pattern_with_occurrences subst) o)
-  | (Red _ | Hnf | ExtraRedExpr _ as r) -> r
+let subst_redexp subst =
+  Miscops.map_red_expr_gen
+    (subst_glob_constr subst)
+    (subst_evaluable subst)
+    (subst_glob_constr_or_pattern subst)
 
 let subst_raw_may_eval subst = function
   | ConstrEval (r,c) -> ConstrEval (subst_redexp subst r,subst_glob_constr subst c)

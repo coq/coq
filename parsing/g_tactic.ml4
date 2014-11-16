@@ -254,6 +254,12 @@ GEXTEND Gram
   pattern_occ:
     [ [ c = constr; nl = occs -> (nl,c) ] ]
   ;
+  ref_or_pattern_occ:
+    (* If a string, it is interpreted as a ref
+       (anyway a Coq string does not reduce) *)
+    [ [ c = smart_global; nl = occs -> nl,Inl c
+      | c = constr; nl = occs -> nl,Inr c ] ]
+  ;
   unfold_occ:
     [ [ c = smart_global; nl = occs -> (nl,c) ] ]
   ;
@@ -336,13 +342,13 @@ GEXTEND Gram
   red_tactic:
     [ [ IDENT "red" -> Red false
       | IDENT "hnf" -> Hnf
-      | IDENT "simpl"; po = OPT pattern_occ -> Simpl po
+      | IDENT "simpl"; po = OPT ref_or_pattern_occ -> Simpl po
       | IDENT "cbv"; s = strategy_flag -> Cbv s
       | IDENT "cbn"; s = strategy_flag -> Cbn s
       | IDENT "lazy"; s = strategy_flag -> Lazy s
       | IDENT "compute"; delta = delta_flag -> Cbv (all_with delta)
-      | IDENT "vm_compute"; po = OPT pattern_occ -> CbvVm po
-      | IDENT "native_compute"; po = OPT pattern_occ -> CbvNative po
+      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> CbvVm po
+      | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> CbvNative po
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
       | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> Pattern pl ] ]
@@ -351,13 +357,13 @@ GEXTEND Gram
   red_expr:
     [ [ IDENT "red" -> Red false
       | IDENT "hnf" -> Hnf
-      | IDENT "simpl"; po = OPT pattern_occ -> Simpl po
+      | IDENT "simpl"; po = OPT ref_or_pattern_occ -> Simpl po
       | IDENT "cbv"; s = strategy_flag -> Cbv s
       | IDENT "cbn"; s = strategy_flag -> Cbn s
       | IDENT "lazy"; s = strategy_flag -> Lazy s
       | IDENT "compute"; delta = delta_flag -> Cbv (all_with delta)
-      | IDENT "vm_compute"; po = OPT pattern_occ -> CbvVm po
-      | IDENT "native_compute"; po = OPT pattern_occ -> CbvNative po
+      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> CbvVm po
+      | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> CbvNative po
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
       | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> Pattern pl

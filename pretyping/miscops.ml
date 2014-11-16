@@ -6,7 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Misctypes
+open Genredexpr
 
 (** Mapping [cast_type] *)
 
@@ -36,3 +38,26 @@ let intro_pattern_naming_eq nam1 nam2 = match nam1, nam2 with
 | IntroIdentifier id1, IntroIdentifier id2 -> Names.Id.equal id1 id2
 | IntroFresh id1, IntroFresh id2 -> Names.Id.equal id1 id2
 | _ -> false
+
+(** Mapping [red_expr_gen] *)
+
+let map_flags f flags =
+  { flags with rConst = List.map f flags.rConst }
+
+let map_occs f (occ,e) = (occ,f e)
+
+let map_union f g = function
+  | Inl a -> Inl (f a)
+  | Inr b -> Inr (g b)
+
+let map_red_expr_gen f g h = function
+  | Fold l -> Fold (List.map f l)
+  | Pattern occs_l -> Pattern (List.map (map_occs f) occs_l)
+  | Simpl occs_o -> Simpl (Option.map (map_occs (map_union g h)) occs_o)
+  | Unfold occs_l -> Unfold (List.map (map_occs g) occs_l)
+  | Cbv flags -> Cbv (map_flags g flags)
+  | Lazy flags -> Lazy (map_flags g flags)
+  | CbvVm occs_o -> CbvVm (Option.map (map_occs (map_union g h)) occs_o)
+  | CbvNative occs_o -> CbvNative (Option.map (map_occs (map_union g h)) occs_o)
+  | Cbn flags -> Cbn (map_flags g flags)
+  | ExtraRedExpr _ | Red _ | Hnf _ as x -> x

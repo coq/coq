@@ -3080,16 +3080,17 @@ The term \verb+forall n:nat, (plus (S n) (S n))+ is not reduced by {\tt hnf}.
 
 These tactics apply to any goal. They try to reduce a term to
 something still readable instead of fully normalizing it. They perform
-a sort of strong normalisation with two key differences:
+a sort of strong normalization with two key differences:
 \begin{itemize}
-\item They unfold a constant if and only if it leads to an
-  $\iota$-reduction, i.e. reducing a match or unfold a fixpoint.
-\item While reducing (co)fixpoints, the tactics use the name of the
+\item They unfold a constant if and only if it leads to a
+  $\iota$-reduction, i.e. reducing a match or unfolding a fixpoint.
+\item While reducing a constant unfolding to (co)fixpoints, 
+  the tactics use the name of the
   constant the (co)fixpoint comes from instead of the (co)fixpoint
   definition in recursive calls.
 \end{itemize}
 
-The \texttt{cbn} tactic claims to be a more principled, faster and more
+The \texttt{cbn} tactic is claimed to be a more principled, faster and more
 predictable replacement for \texttt{simpl}.
 
 The \texttt{cbn} tactic accepts the same flags as \texttt{cbv} and
@@ -3169,27 +3170,32 @@ reduced to \texttt{S t}.
   [\qualid$_1$\ldots\qualid$_k$] iota zeta} and {\tt cbn beta delta
   -[\qualid$_1$\ldots\qualid$_k$] iota zeta} (see \ref{vmcompute}).
 
-\item {\tt simpl {\term}}
+\item {\tt simpl {\pattern}}
 
-  This applies {\tt simpl} only to the occurrences of {\term} in the
+  This applies {\tt simpl} only to the subterms matching {\pattern} in the
   current goal.
 
-\item {\tt simpl {\term} at \num$_1$ \dots\ \num$_i$}
+\item {\tt simpl {\pattern} at \num$_1$ \dots\ \num$_i$}
 
   This applies {\tt simpl} only to the \num$_1$, \dots, \num$_i$
-  occurrences of {\term} in the current goal.
+  occurrences of the subterms matching {\pattern} in the current goal.
 
   \ErrMsg {\tt Too few occurrences}
 
-\item {\tt simpl {\ident}}
+\item {\tt simpl {\qualid}}\\
+  {\tt simpl {\qstring}}
 
   This applies {\tt simpl} only to the applicative subterms whose head
-  occurrence is {\ident}.
+  occurrence is the unfoldable constant {\qualid} (the constant can be
+  referred to by its notation using {\qstring} if such a notation
+  exists).
 
-\item {\tt simpl {\ident} at \num$_1$ \dots\ \num$_i$}
+\item {\tt simpl {\qualid} at \num$_1$ \dots\ \num$_i$}\\
+  {\tt simpl {\qstring} at \num$_1$ \dots\ \num$_i$}\\
 
   This applies {\tt simpl} only to the \num$_1$, \dots, \num$_i$
-applicative subterms whose head occurrence is {\ident}.
+  applicative subterms whose head occurrence is {\qualid} (or
+  {\qstring}).
 
 \end{Variants}
 

@@ -753,10 +753,14 @@ end) = struct
 
   let pr_metaid id = str"?" ++ pr_id id
 
+  let pr_union pr1 pr2 = function
+    | Inl a -> pr1 a
+    | Inr b -> pr2 b
+
   let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
     | Red false -> keyword "red"
     | Hnf -> keyword "hnf"
-    | Simpl o -> keyword "simpl" ++ pr_opt (pr_with_occurrences pr_pattern) o
+    | Simpl o -> keyword "simpl" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
     | Cbv f ->
       if f.rBeta && f.rIota && f.rZeta && f.rDelta && List.is_empty f.rConst then
         keyword "compute"
@@ -779,9 +783,9 @@ end) = struct
     | ExtraRedExpr s ->
       str s
     | CbvVm o ->
-      keyword "vm_compute" ++ pr_opt (pr_with_occurrences pr_pattern) o
+      keyword "vm_compute" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
     | CbvNative o ->
-      keyword "native_compute" ++ pr_opt (pr_with_occurrences pr_pattern) o
+      keyword "native_compute" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
 
   let pr_may_eval test prc prlc pr2 pr3 = function
     | ConstrEval (r,c) ->

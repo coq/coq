@@ -75,3 +75,7 @@ let smart_global_inductive = function
   | ByNotation (loc,ntn,sc) ->
       destIndRef
         (Notation.interp_notation_as_global_reference loc isIndRef ntn sc)
+
+let loc_of_smart_reference = function
+  | AN r -> loc_of_reference r
+  | ByNotation (loc,_,_) -> loc

@@ -680,8 +680,10 @@ let interp_constr_with_occurrences ist env sigma (occs,c) =
   let (sigma,c_interp) = interp_constr ist env sigma c in
   sigma , (interp_occurrences ist occs, c_interp)
 
-let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, c) =
-  let _, p = interp_typed_pattern ist env sigma c in
+let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
+  let p = match a with
+  | Inl b -> Inl (interp_evaluable ist env sigma b)
+  | Inr c -> Inr (snd (interp_typed_pattern ist env sigma c)) in
   interp_occurrences ist occs, p
 
 let interp_constr_with_occurrences_and_name_as_list =

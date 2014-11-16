@@ -37,3 +37,5 @@ val smart_global : ?head:bool -> reference or_by_notation -> global_reference
 (** The same for inductive types *)
 val smart_global_inductive : reference or_by_notation -> inductive
 
+(** Return the loc of a smart reference *)
+val loc_of_smart_reference : reference or_by_notation -> Loc.t

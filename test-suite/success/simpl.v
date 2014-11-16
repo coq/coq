@@ -45,3 +45,37 @@ Goal forall A B (a:A) l f (i:B), fold_right f i ((a :: l))=i.
 simpl.
 admit.
 Qed. (* Qed will fail if simplification is incorrect (de Bruijn!) *)
+
+(* Check that maximally inserted arguments do not break interpretation
+   of references in simpl, vm_compute etc. *)
+
+Arguments fst {A} {B} p.
+
+Goal fst (0,0) = 0.
+simpl fst.
+Fail set (fst _).
+Abort.
+
+Goal fst (0,0) = 0.
+vm_compute fst.
+Fail set (fst _).
+Abort.
+
+Goal let f x := x + 0 in f 0 = 0.
+intro.
+vm_compute f.
+Fail set (f _).
+Abort.
+
+(* This is a compatibility test with a non evaluable reference, maybe
+   not to be kept for long *)
+Goal 0+0=0.
+simpl @eq.
+Abort.
+
+(* Check reference by notation in simpl *)
+
+Goal 0+0 = 0.
+simpl "+".
+Fail set (_ + _).
+Abort.

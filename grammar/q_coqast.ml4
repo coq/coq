@@ -46,6 +46,10 @@ let mlexpr_of_reference = function
   | Libnames.Ident (loc,id) ->
     let loc = of_coqloc loc in <:expr< Libnames.Ident $dloc$ $mlexpr_of_ident id$ >>
 
+let mlexpr_of_union f g = function
+  | Util.Inl a -> <:expr< Util.Inl $f a$ >>
+  | Util.Inr b -> <:expr< Util.Inr $g b$ >>
+
 let mlexpr_of_located f (loc,x) =
   let loc = of_coqloc loc in
   <:expr< ($dloc$, $f x$) >>
@@ -184,10 +188,15 @@ let rec mlexpr_of_constr = function
 let mlexpr_of_occ_constr =
   mlexpr_of_occurrences mlexpr_of_constr
 
+let mlexpr_of_occ_ref_or_constr =
+  mlexpr_of_occurrences
+    (mlexpr_of_union
+       (mlexpr_of_by_notation mlexpr_of_reference) mlexpr_of_constr)
+
 let mlexpr_of_red_expr = function
   | Genredexpr.Red b -> <:expr< Genredexpr.Red $mlexpr_of_bool b$ >>
   | Genredexpr.Hnf -> <:expr< Genredexpr.Hnf >>
-  | Genredexpr.Simpl o -> <:expr< Genredexpr.Simpl $mlexpr_of_option mlexpr_of_occ_constr o$ >>
+  | Genredexpr.Simpl o -> <:expr< Genredexpr.Simpl $mlexpr_of_option mlexpr_of_occ_ref_or_constr o$ >>
   | Genredexpr.Cbv f ->
       <:expr< Genredexpr.Cbv $mlexpr_of_red_flags f$ >>
   | Genredexpr.Cbn f ->
@@ -203,8 +212,8 @@ let mlexpr_of_red_expr = function
   | Genredexpr.Pattern l ->
       let f = mlexpr_of_list mlexpr_of_occ_constr in
       <:expr< Genredexpr.Pattern $f l$ >>
-  | Genredexpr.CbvVm o -> <:expr< Genredexpr.CbvVm $mlexpr_of_option mlexpr_of_occ_constr o$ >>
-  | Genredexpr.CbvNative o -> <:expr< Genredexpr.CbvNative $mlexpr_of_option mlexpr_of_occ_constr o$ >>
+  | Genredexpr.CbvVm o -> <:expr< Genredexpr.CbvVm $mlexpr_of_option mlexpr_of_occ_ref_or_constr o$ >>
+  | Genredexpr.CbvNative o -> <:expr< Genredexpr.CbvNative $mlexpr_of_option mlexpr_of_occ_ref_or_constr o$ >>
   | Genredexpr.ExtraRedExpr s ->
       <:expr< Genredexpr.ExtraRedExpr $mlexpr_of_string s$ >>
 

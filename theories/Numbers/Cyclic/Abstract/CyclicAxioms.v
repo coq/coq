@@ -290,7 +290,7 @@ Module ZnZ.
  intros p Hp.
  generalize (spec_of_pos p).
  case (of_pos p); intros n w1; simpl.
- case n; simpl Npos; auto with zarith.
+ case n; auto with zarith.
  intros p1 Hp1; contradict Hp; apply Z.le_ngt.
  replace (base digits) with (1 * base digits + 0) by ring.
  rewrite Hp1.
