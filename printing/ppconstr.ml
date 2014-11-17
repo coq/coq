@@ -734,12 +734,17 @@ struct
     Ppstyle.make ~style ["constr"; "keyword"]
 
   let evar =
-    let style = Terminal.make ~bold:true ~fg_color:`BLUE () in
+    let style = Terminal.make ~fg_color:`LIGHT_BLUE () in
     Ppstyle.make ~style ["constr"; "evar"]
 
   let univ =
     let style = Terminal.make ~bold:true ~fg_color:`YELLOW () in
     Ppstyle.make ~style ["constr"; "type"]
+
+  let notation =
+    let style = Terminal.make ~fg_color:`WHITE () in
+    Ppstyle.make ~style ["constr"; "notation"]
+
 end
 
 let do_not_tag _ x = x
@@ -751,7 +756,9 @@ include Make (struct
     let tag_keyword     = tag Tag.keyword
     let tag_evar        = tag Tag.evar
     let tag_type        = tag Tag.univ
-    let tag_unparsing   = do_not_tag
+    let tag_unparsing   = function
+    | UnpTerminal s -> tag Tag.notation
+    | _ -> do_not_tag ()
     let tag_constr_expr = do_not_tag
 end)
 
