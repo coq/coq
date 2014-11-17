@@ -19,8 +19,6 @@ open Constrexpr
 open Constrexpr_ops
 open Decl_kinds
 open Misctypes
-open Locus
-open Genredexpr
 (*i*)
 
 module Make (Taggers : sig
@@ -418,12 +416,12 @@ end) = struct
               | LocalRawDef (_,_) -> []
             in let ids = List.flatten (List.map names_of_binder bl) in
                if List.length ids > 1 then
-                 spc() ++ str "{struct " ++ pr_id id ++ str"}"
+                 spc() ++ str "{" ++ keyword "struct" ++ spc () ++ pr_id id ++ str"}"
                else mt()
           | CWfRec c ->
-            spc() ++ str "{wf " ++ pr_aux c ++ spc() ++ pr_id id ++ str"}"
+            spc() ++ str "{" ++ keyword "wf" ++ spc () ++ pr_aux c ++ spc() ++ pr_id id ++ str"}"
           | CMeasureRec (m,r) ->
-            spc() ++ str "{measure " ++ pr_aux m ++ spc() ++ pr_id id++
+            spc() ++ str "{" ++ keyword "measure" ++ spc () ++ pr_aux m ++ spc() ++ pr_id id++
               (match r with None -> mt() | Some r -> str" on " ++ pr_aux r) ++ str"}"
 
   let pr_fixdecl pr prd dangling_with_for ((_,id),ro,bl,t,c) =
@@ -437,17 +435,17 @@ end) = struct
     | [] -> anomaly (Pp.str "(co)fixpoint with no definition")
     | [d1] -> pr_decl false d1
     | dl ->
-      prlist_with_sep (fun () -> fnl() ++ str "with ")
+      prlist_with_sep (fun () -> fnl() ++ keyword "with" ++ spc ())
         (pr_decl true) dl ++
-        fnl() ++ str "for " ++ pr_id id
+        fnl() ++ keyword "for" ++ spc () ++ pr_id id
 
   let pr_asin pr (na,indnalopt) =
     (match na with (* Decision of printing "_" or not moved to constrextern.ml *)
-      | Some na -> spc () ++ str "as " ++  pr_lname na
+      | Some na -> spc () ++ keyword "as" ++ spc () ++  pr_lname na
       | None -> mt ()) ++
       (match indnalopt with
         | None -> mt ()
-        | Some t -> spc () ++ str "in " ++ pr_patt lsimplepatt t)
+        | Some t -> spc () ++ keyword "in" ++ spc () ++ pr_patt lsimplepatt t)
 
   let pr_case_item pr (tm,asin) =
     hov 0 (pr (lcast,E) tm ++ pr_asin pr asin)
@@ -461,7 +459,7 @@ end) = struct
   let pr_simple_return_type pr na po =
     (match na with
       | Some (_,Name id) ->
-        spc () ++ str "as " ++  pr_id id
+        spc () ++ keyword "as" ++ spc () ++ pr_id id
       | _ -> mt ()) ++
       pr_case_type pr po
 
