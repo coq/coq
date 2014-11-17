@@ -72,7 +72,7 @@ end) = struct
   let print_hunks n pr pr_binders (terms, termlists, binders) unps =
     let env = ref terms and envlist = ref termlists and bll = ref binders in
     let pop r = let a = List.hd !r in r := List.tl !r; a in
-    let return unp pp1 pp2 = tag_unparsing unp (pp1 ++ pp2) in
+    let return unp pp1 pp2 = (tag_unparsing unp pp1) ++ pp2 in
     (* Warning:
        The following function enforces a very precise order of
        evaluation of sub-components.
