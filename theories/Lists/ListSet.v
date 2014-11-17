@@ -6,11 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** A Library for finite sets, implemented as lists *)
+(** A library for finite sets, implemented as lists *)
 
-(** List is loaded, but not exported.
-    This allow to "hide" the definitions, functions and theorems of List
-    and to see only the ones of ListSet *)
+(** This is a light implementation of finite sets as lists; for a more
+    extensive library, you might rather consider MSetWeakList.v. In
+    addition, if your domain is totally ordered, you might also
+    consider implementations of finite sets with access in logarithmic
+    time (e.g. MSetRBT.v which is based on red-black trees). *)
 
 Require Import List.
 
