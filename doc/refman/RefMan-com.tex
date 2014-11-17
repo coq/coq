@@ -184,6 +184,12 @@ Add physical path {\em directory} to the {\ocaml} loadpath.
 
   Activate or not special functions for Geoproof within {\CoqIDE} (default is yes).
 
+\item[{\tt -color} (on|off|auto)]\
+
+  Activate or not the coloring of output of {\tt coqtop}. The default, auto,
+  means that {\tt coqtop} will dynamically decide whether to activate it
+  depending if the output channels of {\tt coqtop} can handle ANSI styles.
+
 \item[{\tt -beautify}]\ 
 
   While compiling {\em file}, pretty prints each command just after having parsing
