@@ -81,6 +81,10 @@ module Make
   (Taggers : sig
       val tag_keyword
         : std_ppcmds -> std_ppcmds
+      val tag_primitive
+        : std_ppcmds -> std_ppcmds
+      val tag_string
+        : std_ppcmds -> std_ppcmds
       val tag_glob_tactic_expr
         : glob_tactic_expr -> std_ppcmds -> std_ppcmds
       val tag_glob_atomic_tactic_expr
@@ -99,6 +103,7 @@ module Make
   open Taggers
 
   let keyword x = tag_keyword (str x)
+  let primitive x = tag_primitive (str x)
 
   let pr_with_occurrences pr (occs,c) =
     match occs with
@@ -237,11 +242,12 @@ module Make
     | Some c -> spc () ++ hov 1 (keyword "with" ++ spc () ++ prc c)
 
   let pr_message_token prid = function
-    | MsgString s -> qs s
+    | MsgString s -> tag_string (qs s)
     | MsgInt n -> int n
     | MsgIdent id -> prid id
 
-  let pr_fresh_ids = prlist (fun s -> spc() ++ pr_or_var qs s)
+  let pr_fresh_ids =
+    prlist (fun s -> spc() ++ pr_or_var (fun s -> tag_string (qs s)) s)
 
   let with_evars ev s = if ev then "e" ^ s else s
 
@@ -379,15 +385,22 @@ module Make
         with Not_found -> Genprint.generic_top_print x
 
   let rec tacarg_using_rule_token pr_gen = function
-    | Some s :: l, al -> str s :: tacarg_using_rule_token pr_gen (l,al)
+    | Some s :: l, al -> keyword s :: tacarg_using_rule_token pr_gen (l,al)
     | None :: l, a :: al ->
       let r = tacarg_using_rule_token pr_gen (l,al) in
       pr_gen a :: r
     | [], [] -> []
     | _ -> failwith "Inconsistent arguments of extended tactic"
 
-  let pr_tacarg_using_rule pr_gen l=
-    pr_sequence (fun x -> x) (tacarg_using_rule_token pr_gen l)
+  let pr_tacarg_using_rule pr_gen l =
+    let l = match l with
+    | (Some s :: l, al) ->
+      (** First terminal token should be considered as the name of the tactic,
+          so we tag it differently than the other terminal tokens. *)
+      primitive s :: (tacarg_using_rule_token pr_gen (l, al))
+    | _ -> tacarg_using_rule_token pr_gen l
+    in
+    pr_sequence (fun x -> x) l
 
   let pr_extend_gen pr_gen lev s l =
     try
@@ -592,9 +605,9 @@ module Make
     | ElimOnAnonHyp n -> int n
 
   let pr_induction_kind = function
-    | SimpleInversion -> keyword "simple inversion"
-    | FullInversion -> keyword "inversion"
-    | FullInversionClear -> keyword "inversion_clear"
+    | SimpleInversion -> primitive "simple inversion"
+    | FullInversion -> primitive "inversion"
+    | FullInversionClear -> primitive "inversion_clear"
 
   let pr_lazy lz = if lz then keyword "lazy" else mt ()
 
@@ -639,14 +652,14 @@ module Make
     | Some id -> spc () ++ pr_id id
 
   let pr_let_clause k pr (id,(bl,t)) =
-    hov 0 (str k ++ pr_lident id ++ prlist pr_funvar bl ++
+    hov 0 (keyword k ++ spc () ++ pr_lident id ++ prlist pr_funvar bl ++
              str " :=" ++ brk (1,1) ++ pr (TacArg (Loc.ghost,t)))
 
   let pr_let_clauses recflag pr = function
     | hd::tl ->
       hv 0
-        (pr_let_clause (if recflag then "let rec " else "let ") pr hd ++
-           prlist (fun t -> spc () ++ pr_let_clause "with " pr t) tl)
+        (pr_let_clause (if recflag then "let rec" else "let") pr hd ++
+           prlist (fun t -> spc () ++ pr_let_clause "with" pr t) tl)
     | [] -> anomaly (Pp.str "LetIn must declare at least one binding")
 
   let pr_seq_body pr tl =
@@ -814,11 +827,11 @@ module Make
 
         (* Printing tactics as arguments *)
         let rec pr_atom0 a = tag_atom a (match a with
-          | TacIntroPattern [] -> keyword "intros"
-          | TacIntroMove (None,MoveLast) -> keyword "intro"
-          | TacTrivial (d,[],Some []) -> str (string_of_debug d) ++ keyword "trivial"
-          | TacAuto (d,None,[],Some []) -> str (string_of_debug d) ++ keyword "auto"
-          | TacClear (true,[]) -> keyword "clear"
+          | TacIntroPattern [] -> primitive "intros"
+          | TacIntroMove (None,MoveLast) -> primitive "intro"
+          | TacTrivial (d,[],Some []) -> str (string_of_debug d) ++ primitive "trivial"
+          | TacAuto (d,None,[],Some []) -> str (string_of_debug d) ++ primitive "auto"
+          | TacClear (true,[]) -> primitive "clear"
           | t -> str "(" ++ pr_atom1 t ++ str ")"
         )
 
@@ -828,71 +841,71 @@ module Make
           | TacIntroPattern [] as t ->
             pr_atom0 t
           | TacIntroPattern (_::_ as p) ->
-            hov 1 (keyword "intros" ++ spc () ++
+            hov 1 (primitive "intros" ++ spc () ++
                      prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p)
           | TacIntroMove (None,MoveLast) as t ->
             pr_atom0 t
           | TacIntroMove (Some id,MoveLast) ->
-            keyword "intro" ++ spc () ++ pr_id id
+            primitive "intro" ++ spc () ++ pr_id id
           | TacIntroMove (ido,hto) ->
-            hov 1 (keyword "intro" ++ pr_opt pr_id ido ++
+            hov 1 (primitive "intro" ++ pr_opt pr_id ido ++
                      Miscprint.pr_move_location pr.pr_name hto)
           | TacExact c ->
-            hov 1 (keyword "exact" ++ pr_constrarg c)
+            hov 1 (primitive "exact" ++ pr_constrarg c)
           | TacApply (a,ev,cb,inhyp) ->
             hov 1 (
-              (if a then mt() else keyword "simple ") ++
-                keyword (with_evars ev "apply") ++ spc () ++
+              (if a then mt() else primitive "simple ") ++
+                primitive (with_evars ev "apply") ++ spc () ++
                 prlist_with_sep pr_comma pr_with_bindings_arg cb ++
                 pr_in_hyp_as pr.pr_dconstr pr.pr_name inhyp
             )
           | TacElim (ev,cb,cbo) ->
             hov 1 (
-              keyword (with_evars ev "elim")
+              primitive (with_evars ev "elim")
               ++ pr_arg pr_with_bindings_arg cb
               ++ pr_opt pr_eliminator cbo)
           | TacCase (ev,cb) ->
-            hov 1 (keyword (with_evars ev "case") ++ spc () ++ pr_with_bindings_arg cb)
-          | TacFix (ido,n) -> hov 1 (keyword "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
+            hov 1 (primitive (with_evars ev "case") ++ spc () ++ pr_with_bindings_arg cb)
+          | TacFix (ido,n) -> hov 1 (primitive "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
           | TacMutualFix (id,n,l) ->
             hov 1 (
-              keyword "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc()
+              primitive "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc()
               ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_fix_tac l)
           | TacCofix ido ->
-            hov 1 (keyword "cofix" ++ pr_opt pr_id ido)
+            hov 1 (primitive "cofix" ++ pr_opt pr_id ido)
           | TacMutualCofix (id,l) ->
             hov 1 (
-              keyword "cofix" ++ spc () ++ pr_id id ++ spc()
+              primitive "cofix" ++ spc () ++ pr_id id ++ spc()
               ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_cofix_tac l
             )
           | TacAssert (b,Some tac,ipat,c) ->
             hov 1 (
-              keyword (if b then "assert" else "enough") ++
+              primitive (if b then "assert" else "enough") ++
                 pr_assumption pr.pr_constr pr.pr_dconstr pr.pr_lconstr ipat c ++
                 pr_by_tactic (pr.pr_tactic ltop) tac
             )
           | TacAssert (_,None,ipat,c) ->
             hov 1 (
-              keyword "pose proof"
+              primitive "pose proof"
               ++ pr_assertion pr.pr_constr pr.pr_dconstr pr.pr_lconstr ipat c
             )
           | TacGeneralize l ->
             hov 1 (
-              keyword "generalize" ++ spc ()
+              primitive "generalize" ++ spc ()
               ++ prlist_with_sep pr_comma (fun (cl,na) ->
                 pr_with_occurrences pr.pr_constr cl ++ pr_as_name na)
                 l
             )
           | TacGeneralizeDep c ->
             hov 1 (
-              keyword "generalize" ++ spc () ++ str "dependent"
+              primitive "generalize" ++ spc () ++ str "dependent"
               ++ pr_constrarg c
             )
           | TacLetTac (na,c,cl,true,_) when Locusops.is_nowhere cl ->
-            hov 1 (keyword "pose" ++ pr_pose pr.pr_constr pr.pr_lconstr na c)
+            hov 1 (primitive "pose" ++ pr_pose pr.pr_constr pr.pr_lconstr na c)
           | TacLetTac (na,c,cl,b,e) ->
             hov 1 (
-              (if b then keyword "set" else keyword "remember") ++
+              (if b then primitive "set" else primitive "remember") ++
                 (if b then pr_pose pr.pr_constr pr.pr_lconstr na c
                  else pr_pose_as_style pr.pr_constr na c) ++
                 pr_opt (fun p -> pr_eqn_ipat p ++ spc ()) e ++
@@ -911,7 +924,7 @@ module Make
           (* Derived basic tactics *)
           | TacInductionDestruct (isrec,ev,(l,el)) ->
             hov 1 (
-              keyword (with_evars ev (if isrec then "induction" else "destruct"))
+              primitive (with_evars ev (if isrec then "induction" else "destruct"))
               ++ spc ()
               ++ prlist_with_sep pr_comma (fun ((clear_flag,h),ids,cl) ->
                 pr_clear_flag clear_flag (pr_induction_arg pr.pr_dconstr pr.pr_dconstr) h ++
@@ -921,7 +934,7 @@ module Make
             )
           | TacDoubleInduction (h1,h2) ->
             hov 1 (
-              keyword "double induction"
+              primitive "double induction"
               ++ pr_arg pr_quantified_hypothesis h1
               ++ pr_arg pr_quantified_hypothesis h2
             )
@@ -931,14 +944,14 @@ module Make
             pr_atom0 x
           | TacTrivial (d,lems,db) ->
             hov 0 (
-              str (string_of_debug d) ++ keyword "trivial"
+              str (string_of_debug d) ++ primitive "trivial"
               ++ pr_auto_using pr.pr_constr lems ++ pr_hintbases db
             )
           | TacAuto (_,None,[],Some []) as x ->
             pr_atom0 x
           | TacAuto (d,n,lems,db) ->
             hov 0 (
-              str (string_of_debug d) ++ keyword "auto"
+              str (string_of_debug d) ++ primitive "auto"
               ++ pr_opt (pr_or_var int) n
               ++ pr_auto_using pr.pr_constr lems ++ pr_hintbases db
             )
@@ -948,24 +961,24 @@ module Make
             pr_atom0 t
           | TacClear (keep,l) ->
             hov 1 (
-              keyword "clear" ++ spc ()
+              primitive "clear" ++ spc ()
               ++ (if keep then str "- " else mt ())
               ++ prlist_with_sep spc pr.pr_name l
             )
           | TacClearBody l ->
             hov 1 (
-              keyword "clearbody" ++ spc ()
+              primitive "clearbody" ++ spc ()
               ++ prlist_with_sep spc pr.pr_name l
             )
           | TacMove (id1,id2) ->
             hov 1 (
-              keyword "move"
+              primitive "move"
               ++ brk (1,1) ++ pr.pr_name id1
               ++ Miscprint.pr_move_location pr.pr_name id2
             )
           | TacRename l ->
             hov 1 (
-              keyword "rename" ++ brk (1,1)
+              primitive "rename" ++ brk (1,1)
               ++ prlist_with_sep
                 (fun () -> str "," ++ brk (1,1))
                 (fun (i1,i2) ->
@@ -976,7 +989,7 @@ module Make
           (* Constructors *)
           | TacSplit (ev,l) ->
             hov 1 (
-              keyword (with_evars ev "exists")
+              primitive (with_evars ev "exists")
               ++ prlist_with_sep (fun () -> str",") pr_ex_bindings l
             )
 
@@ -988,7 +1001,7 @@ module Make
             )
           | TacChange (op,c,h) ->
             hov 1 (
-              keyword "change" ++ brk (1,1)
+              primitive "change" ++ brk (1,1)
               ++ (
                 match op with
                     None ->
@@ -1001,12 +1014,12 @@ module Make
 
           (* Equivalence relations *)
           | TacSymmetry cls ->
-            keyword "symmetry" ++ pr_clauses (Some true) pr.pr_name cls
+            primitive "symmetry" ++ pr_clauses (Some true) pr.pr_name cls
 
           (* Equality and inversion *)
           | TacRewrite (ev,l,cl,by) ->
             hov 1 (
-              keyword (with_evars ev "rewrite") ++ spc ()
+              primitive (with_evars ev "rewrite") ++ spc ()
               ++ prlist_with_sep
                 (fun () -> str ","++spc())
                 (fun (b,m,c) ->
@@ -1022,7 +1035,7 @@ module Make
             )
           | TacInversion (DepInversion (k,c,ids),hyp) ->
             hov 1 (
-              keyword "dependent " ++ pr_induction_kind k ++ spc ()
+              primitive "dependent " ++ pr_induction_kind k ++ spc ()
               ++ pr_quantified_hypothesis hyp
               ++ pr_with_inversion_names pr.pr_dconstr ids
               ++ pr_with_constr pr.pr_constr c
@@ -1036,7 +1049,7 @@ module Make
             )
           | TacInversion (InversionUsing (c,cl),hyp) ->
             hov 1 (
-              keyword "inversion" ++ spc()
+              primitive "inversion" ++ spc()
               ++ pr_quantified_hypothesis hyp ++ spc ()
               ++ keyword "using" ++ spc () ++ pr.pr_constr c
               ++ pr_simple_hyp_clause pr.pr_name cl
@@ -1198,7 +1211,7 @@ module Make
             | TacArg(_,ConstrMayEval c) ->
               pr_may_eval pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c, leval
             | TacArg(_,TacFreshId l) ->
-              keyword "fresh" ++ pr_fresh_ids l, latom
+              primitive "fresh" ++ pr_fresh_ids l, latom
             | TacArg(_,TacGeneric arg) ->
               pr.pr_generic arg, latom
             | TacArg(_,TacCall(loc,f,[])) ->
@@ -1362,9 +1375,28 @@ module Make
 
 end
 
+module Tag =
+struct
+  let keyword =
+    let style = Terminal.make ~bold:true () in
+    Ppstyle.make ~style ["tactic"; "keyword"]
+
+  let primitive =
+    let style = Terminal.make ~fg_color:`LIGHT_GREEN () in
+    Ppstyle.make ~style ["tactic"; "primitive"]
+
+  let string =
+    let style = Terminal.make ~fg_color:`LIGHT_RED () in
+    Ppstyle.make ~style ["tactic"; "string"]
+
+end
+
 include Make (Ppconstr) (struct
+    let tag t s = Pp.tag (Pp.Tag.inj t Ppstyle.tag) s
     let do_not_tag _ x = x
-    let tag_keyword                 = do_not_tag ()
+    let tag_keyword                 = tag Tag.keyword
+    let tag_primitive               = tag Tag.primitive
+    let tag_string                  = tag Tag.string
     let tag_glob_tactic_expr        = do_not_tag
     let tag_glob_atomic_tactic_expr = do_not_tag
     let tag_raw_tactic_expr         = do_not_tag
@@ -1419,8 +1451,11 @@ module Richpp = struct
 
   include Make (Ppconstr.Richpp) (struct
     open Ppannotation
+    let do_not_tag _ x = x
     let tag e s = Pp.tag (Pp.Tag.inj e tag) s
     let tag_keyword                   = tag AKeyword
+    let tag_primitive                 = tag AKeyword
+    let tag_string                    = do_not_tag ()
     let tag_glob_tactic_expr        e = tag (AGlobTacticExpr e)
     let tag_glob_atomic_tactic_expr a = tag (AGlobAtomicTacticExpr a)
     let tag_raw_tactic_expr         e = tag (ARawTacticExpr e)
