@@ -30,7 +30,6 @@ module type Pp = sig
   val pr_tight_coma : unit -> std_ppcmds
 
   val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
-  val pr_metaid : Id.t -> std_ppcmds
 
   val pr_lident : Id.t located -> std_ppcmds
   val pr_lname : Name.t located -> std_ppcmds
@@ -46,15 +45,6 @@ module type Pp = sig
   val pr_name : Name.t -> std_ppcmds
   val pr_qualid : qualid -> std_ppcmds
   val pr_patvar : patvar -> std_ppcmds
-
-  val pr_with_occurrences :
-    ('a -> std_ppcmds) -> 'a with_occurrences -> std_ppcmds
-  val pr_red_expr :
-    ('a -> std_ppcmds) * ('a -> std_ppcmds) * ('b -> std_ppcmds) * ('c -> std_ppcmds) ->
-    ('a,'b,'c) red_expr_gen -> std_ppcmds
-  val pr_may_eval :
-    ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
-    ('c -> std_ppcmds) -> ('a,'b,'c) may_eval -> std_ppcmds
 
   val pr_glob_sort : glob_sort -> std_ppcmds
   val pr_guard_annot : (constr_expr -> std_ppcmds) ->

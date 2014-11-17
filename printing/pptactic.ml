@@ -100,6 +100,84 @@ module Make
 
   let keyword x = tag_keyword (str x)
 
+  let pr_with_occurrences pr (occs,c) =
+    match occs with
+      | AllOccurrences ->
+        pr c
+      | NoOccurrences ->
+        failwith "pr_with_occurrences: no occurrences"
+      | OnlyOccurrences nl ->
+        hov 1 (pr c ++ spc () ++ keyword "at" ++ spc () ++
+                 hov 0 (prlist_with_sep spc (pr_or_var int) nl))
+      | AllOccurrencesBut nl ->
+        hov 1 (pr c ++ spc () ++ keyword "at" ++ str" - " ++
+                 hov 0 (prlist_with_sep spc (pr_or_var int) nl))
+
+  let pr_red_flag pr r =
+    (if r.rBeta then pr_arg str "beta" else mt ()) ++
+      (if r.rIota then pr_arg str "iota" else mt ()) ++
+      (if r.rZeta then pr_arg str "zeta" else mt ()) ++
+      (if List.is_empty r.rConst then
+          if r.rDelta then pr_arg str "delta"
+          else mt ()
+       else
+          pr_arg str "delta " ++ (if r.rDelta then str "-" else mt ()) ++
+            hov 0 (str "[" ++ prlist_with_sep spc pr r.rConst ++ str "]"))
+
+  let pr_union pr1 pr2 = function
+    | Inl a -> pr1 a
+    | Inr b -> pr2 b
+
+  let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
+    | Red false -> keyword "red"
+    | Hnf -> keyword "hnf"
+    | Simpl o -> keyword "simpl" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
+    | Cbv f ->
+      if f.rBeta && f.rIota && f.rZeta && f.rDelta && List.is_empty f.rConst then
+        keyword "compute"
+      else
+        hov 1 (keyword "cbv" ++ pr_red_flag pr_ref f)
+    | Lazy f ->
+      hov 1 (keyword "lazy" ++ pr_red_flag pr_ref f)
+    | Cbn f ->
+      hov 1 (keyword "cbn" ++ pr_red_flag pr_ref f)
+    | Unfold l ->
+      hov 1 (keyword "unfold" ++ spc() ++
+               prlist_with_sep pr_comma (pr_with_occurrences pr_ref) l)
+    | Fold l -> hov 1 (keyword "fold" ++ prlist (pr_arg pr_constr) l)
+    | Pattern l ->
+      hov 1 (keyword "pattern" ++
+               pr_arg (prlist_with_sep pr_comma (pr_with_occurrences pr_constr)) l)
+
+    | Red true ->
+      error "Shouldn't be accessible from user."
+    | ExtraRedExpr s ->
+      str s
+    | CbvVm o ->
+      keyword "vm_compute" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
+    | CbvNative o ->
+      keyword "native_compute" ++ pr_opt (pr_with_occurrences (pr_union pr_ref pr_pattern)) o
+
+  let pr_may_eval test prc prlc pr2 pr3 = function
+    | ConstrEval (r,c) ->
+      hov 0
+        (keyword "eval" ++ brk (1,1) ++
+           pr_red_expr (prc,prlc,pr2,pr3) r ++ spc () ++
+           keyword "in" ++ spc() ++ prc c)
+    | ConstrContext ((_,id),c) ->
+      hov 0
+        (keyword "context" ++ spc () ++ pr_id id ++ spc () ++
+           str "[" ++ prlc c ++ str "]")
+    | ConstrTypeOf c ->
+      hov 1 (keyword "type of" ++ spc() ++ prc c)
+    | ConstrTerm c when test c ->
+      h 0 (str "(" ++ prc c ++ str ")")
+    | ConstrTerm c ->
+      prc c
+
+  let pr_may_eval a =
+    pr_may_eval (fun _ -> false) a
+
   let pr_arg pr x = spc () ++ pr x
 
   let pr_or_var pr = function

@@ -18,6 +18,15 @@ open Misctypes
 
 module type Pp = sig
 
+  val pr_with_occurrences :
+    ('a -> std_ppcmds) -> 'a Locus.with_occurrences -> std_ppcmds
+  val pr_red_expr :
+    ('a -> std_ppcmds) * ('a -> std_ppcmds) * ('b -> std_ppcmds) * ('c -> std_ppcmds) ->
+    ('a,'b,'c) Genredexpr.red_expr_gen -> std_ppcmds
+  val pr_may_eval :
+    ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
+    ('c -> std_ppcmds) -> ('a,'b,'c) Genredexpr.may_eval -> std_ppcmds
+
   val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
   val pr_and_short_name : ('a -> std_ppcmds) -> 'a and_short_name -> std_ppcmds
   val pr_or_by_notation : ('a -> std_ppcmds) -> 'a or_by_notation -> std_ppcmds
