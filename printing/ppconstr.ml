@@ -811,9 +811,17 @@ end
 
 module Tag =
 struct
-  let keyword = Ppstyle.make ["constr"; "keyword"]
-  let evar = Ppstyle.make ["constr"; "evar"]
-  let univ = Ppstyle.make ["constr"; "type"]
+  let keyword =
+    let style = Terminal.make ~bold:true () in
+    Ppstyle.make ~style ["constr"; "keyword"]
+
+  let evar =
+    let style = Terminal.make ~bold:true ~fg_color:`BLUE () in
+    Ppstyle.make ~style ["constr"; "evar"]
+
+  let univ =
+    let style = Terminal.make ~bold:true ~fg_color:`YELLOW () in
+    Ppstyle.make ~style ["constr"; "type"]
 end
 
 let do_not_tag _ x = x

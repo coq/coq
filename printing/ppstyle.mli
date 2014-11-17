@@ -14,8 +14,9 @@
 type t
 (** Style tags *)
 
-val make : string list -> t
-(** Create a new tag with the given name. Each name must be unique. *)
+val make : ?style:Terminal.style -> string list -> t
+(** Create a new tag with the given name. Each name must be unique. The optional
+    style is taken as the default one. *)
 
 val repr : t -> string list
 (** Gives back the original name of the style tag where each string has been

@@ -14,12 +14,12 @@ type t = string
 
 let tags : Terminal.style option String.Map.t ref = ref String.Map.empty
 
-let make tag =
+let make ?style tag =
   let check s = if String.contains s '.' then invalid_arg "Ppstyle.make" in
   let () = List.iter check tag in
   let name = String.concat "." tag in
   let () = assert (not (String.Map.mem name !tags)) in
-  let () = tags := String.Map.add name None !tags in
+  let () = tags := String.Map.add name style !tags in
   name
 
 let repr t = String.split '.' t
@@ -91,9 +91,17 @@ let make_style_stack style_tags =
   let clear () = style_stack := [] in
   push, pop, clear
 
-let error_tag = make ["message"; "error"]
-let warning_tag = make ["message"; "warning"]
-let debug_tag = make ["message"; "debug"]
+let error_tag =
+  let style = Terminal.make ~bold:true ~fg_color:`WHITE ~bg_color:`RED () in
+  make ~style ["message"; "error"]
+
+let warning_tag =
+  let style = Terminal.make ~bold:true ~fg_color:`WHITE ~bg_color:`YELLOW () in
+  make ~style ["message"; "warning"]
+
+let debug_tag =
+  let style = Terminal.make ~bold:true ~fg_color:`WHITE ~bg_color:`MAGENTA () in
+  make ~style ["message"; "debug"]
 
 let init_color_output () =
   let push_tag, pop_tag, clear_tag = make_style_stack !tags in
