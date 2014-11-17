@@ -271,6 +271,9 @@ Interfaces
 - CoqIDE uses the new STM machinery, allowing for asynchronous edition.
 - CoqIDE highlight in yellow "unsafe" commands such as axiom
   declarations, and tactics like "admit".
+- Coqtop outputs highlighted syntax. Colors can be configured thanks
+  to the COQ_COLORS environment variable, and their current state can
+  be displayed with the -list-tags command line option.
 
 Internal Infrastructure
 

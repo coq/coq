@@ -77,6 +77,14 @@ look for the commands in directory specified by \verb:$COQBIN:. If
 this variable is not set, they look for the command in the executable
 path.
 
+The \verb:$COQ_COLORS: environment variable can be used to specify the set of
+colors used by {\tt coqtop} to highlight its output. It uses the same syntax as
+the \verb:$LS_COLORS: variable from GNU's {\tt ls}, that is, a colon-separated
+list of assignments of the form \verb:name=attr1;...;attrn: where {\tt name} is
+the name of the corresponding highlight tag and {\tt attri} is an ANSI escape
+code. The list of highlight tags can be retrieved with the {\tt -list-tags}
+command-line option of {\tt coqtop}.
+
 \subsection{By command line options\index{Options of the command line}
 \label{vmoption}
 \label{coqoptions}}
@@ -234,6 +242,11 @@ Add physical path {\em directory} to the {\ocaml} loadpath.
 \item[{\tt -v}]\ 
 
   Print the \Coq's version and exit.
+
+\item[{\tt -list-tags}]\
+
+  Print the highlight tags known by \Coq as well as their currently associated
+  color.
 
 \item[{\tt -h}, {\tt --help}]\ 
 
