@@ -34,6 +34,22 @@ let _ =
       optread  = (fun () -> !short) ;
       optwrite = ((:=) short) }
 
+(** Each time we have to print a non-globally visible structure,
+    we place its elements in a fake fresh namespace. *)
+
+let mk_fake_top =
+  let r = ref 0 in
+  fun () -> incr r; Id.of_string ("FAKETOP"^(string_of_int !r))
+
+module Make (Taggers : sig
+  val tag_definition : std_ppcmds -> std_ppcmds
+  val tag_keyword : std_ppcmds -> std_ppcmds
+end) =
+struct
+
+let def s = Taggers.tag_definition (str s)
+let keyword s = Taggers.tag_keyword (str s)
+
 let get_new_id locals id =
   let rec get_id l id =
     let dir = DirPath.make [id] in
@@ -67,13 +83,6 @@ let print_kn locals kn =
 	  print_local_modpath locals kn
 	with
 	    Not_found -> print_modpath locals kn
-
-(** Each time we have to print a non-globally visible structure,
-    we place its elements in a fake fresh namespace. *)
-
-let mk_fake_top =
-  let r = ref 0 in
-  fun () -> incr r; Id.of_string ("FAKETOP"^(string_of_int !r))
 
 let nametab_register_dir mp =
   let id = mk_fake_top () in
@@ -135,13 +144,13 @@ let nametab_register_modparam mbid mtb =
 let print_body is_impl env mp (l,body) =
   let name = str (Label.to_string l) in
   hov 2 (match body with
-    | SFBmodule _ -> str "Module " ++ name
-    | SFBmodtype _ -> str "Module Type " ++ name
+    | SFBmodule _ -> keyword "Module" ++ spc () ++ name
+    | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name
     | SFBconst cb ->
       (match cb.const_body with
-	| Def _ -> str "Definition "
-	| OpaqueDef _ when is_impl -> str "Theorem "
-	| _ -> str "Parameter ") ++ name ++
+	| Def _ -> def "Definition" ++ spc ()
+	| OpaqueDef _ when is_impl -> def "Theorem" ++ spc ()
+	| _ -> def "Parameter" ++ spc ()) ++ name ++
       (match env with
 	  | None -> mt ()
 	  | Some env ->
@@ -163,11 +172,11 @@ let print_body is_impl env mp (l,body) =
         let keyword =
           let open Decl_kinds in
           match mib.mind_finite with
-          | Finite -> "Inductive "
-          | BiFinite -> "Variant "
-          | CoFinite -> "CoInductive "
+          | Finite -> def "Inductive"
+          | BiFinite -> def "Variant"
+          | CoFinite -> def "CoInductive"
         in
-	str keyword ++ name)
+	keyword ++ spc () ++ name)
 
 let print_struct is_impl env mp struc =
   prlist_with_sep spc (print_body is_impl env mp) struc
@@ -177,8 +186,8 @@ let print_structure is_type env mp locals struc =
     (Modops.add_structure mp struc Mod_subst.empty_delta_resolver) env in
   nametab_register_module_body mp struc;
   let kwd = if is_type then "Sig" else "Struct" in
-  hv 2 (str kwd ++ spc () ++ print_struct false env' mp struc ++
-	brk (1,-2) ++ str "End")
+  hv 2 (keyword kwd ++ spc () ++ print_struct false env' mp struc ++
+	brk (1,-2) ++ keyword "End")
 
 let rec flatten_app mexpr l = match mexpr with
   | MEapply (mexpr, arg) -> flatten_app mexpr (arg::l)
@@ -198,11 +207,11 @@ let rec print_typ_expr env mp locals mty =
       let env' = None in (* TODO: build a proper environment if env <> None *)
       let s = String.concat "." (List.map Id.to_string idl) in
       hov 2 (print_typ_expr env' mp locals me ++ spc() ++ str "with" ++ spc()
-             ++ str "Definition"++ spc() ++ str s ++ spc() ++  str ":="++ spc())
+             ++ def "Definition"++ spc() ++ str s ++ spc() ++  str ":="++ spc())
   | MEwith(me,WithMod(idl,mp))->
       let s = String.concat "." (List.map Id.to_string idl) in
       hov 2 (print_typ_expr env mp locals me ++ spc() ++ str "with" ++ spc() ++
-             str "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc())
+             keyword "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc())
 
 let print_mod_expr env mp locals = function
   | MEident mp -> print_modpath locals mp
@@ -222,7 +231,7 @@ let rec print_functor fty fatom is_type env mp locals = function
       let locals' = (mbid, get_new_id locals (MBId.to_id mbid))::locals in
       let kwd = if is_type then "Funsig" else "Functor" in
       hov 2
-        (str kwd ++ spc () ++
+        (keyword kwd ++ spc () ++
 	 str "(" ++ pr_id (MBId.to_id mbid) ++ str ":" ++ pr_mtb1 ++ str ")" ++
 	 spc() ++ print_functor fty fatom is_type env' mp locals' me2)
 
@@ -275,7 +284,7 @@ let unsafe_print_module env mp with_body mb =
     | _, Some ty -> brk (1,1) ++ str": " ++ print_expression' true env mp ty
     | _, _ -> brk (1,1) ++ str": " ++ print_signature' true env mp mb.mod_type
   in
-  hv 0 (str "Module " ++ name ++ modtype ++ body)
+  hv 0 (keyword "Module" ++ spc () ++ name ++ modtype ++ body)
 
 exception ShortPrinting
 
@@ -291,9 +300,27 @@ let print_modtype kn =
   let mtb = Global.lookup_modtype kn in
   let name = print_kn [] kn in
   hv 1
-    (str "Module Type " ++ name ++ str " =" ++ spc () ++
+    (keyword "Module Type" ++ spc () ++ name ++ str " =" ++ spc () ++
      (try
 	if !short then raise ShortPrinting;
 	print_signature' true (Some (Global.env ())) kn mtb.typ_expr
       with e when Errors.noncritical e ->
 	print_signature' true None kn mtb.typ_expr))
+
+end
+
+module Tag =
+struct
+  let definition =
+    let style = Terminal.make ~bold:true ~fg_color:`LIGHT_RED () in
+    Ppstyle.make ~style ["module"; "definition"]
+  let keyword =
+    let style = Terminal.make ~bold:true () in
+    Ppstyle.make ~style ["module"; "keyword"]
+end
+
+include Make(struct
+  let tag t s = Pp.tag (Pp.Tag.inj t Ppstyle.tag) s
+  let tag_definition s = tag Tag.definition s
+  let tag_keyword s = tag Tag.keyword s
+end)

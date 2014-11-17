@@ -8,7 +8,8 @@
 
 open Names
 
-(** false iff the module is an element of an open module type *)
-val printable_body : DirPath.t -> bool
-
-include Printmodsig.Pp
+module type Pp =
+sig
+  val print_module : bool -> module_path -> Pp.std_ppcmds
+  val print_modtype : module_path -> Pp.std_ppcmds
+end
