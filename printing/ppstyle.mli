@@ -51,3 +51,14 @@ val init_color_output : unit -> unit
     {!Pp_control.std_ft} and {!Pp_control.err_ft} to display those messages,
     with additional syle information provided by this module. Be careful this is
     not compatible with the Emacs mode! *)
+
+(** {5 Tags} *)
+
+val error_tag : t
+(** Tag used by the {!Pp.msg_error} function. *)
+
+val warning_tag : t
+(** Tag used by the {!Pp.msg_warning} function. *)
+
+val debug_tag : t
+(** Tag used by the {!Pp.msg_debug} function. *)

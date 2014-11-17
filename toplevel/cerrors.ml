@@ -54,7 +54,8 @@ let _ = Errors.register_handler explain_exn_default
 (** Pre-explain a vernac interpretation error *)
 
 let wrap_vernac_error exn strm =
-  let e = EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None) in
+  let header = Pp.tag (Pp.Tag.inj Ppstyle.error_tag Ppstyle.tag) (str "Error:") in
+  let e = EvaluatedError (hov 0 (header ++ spc () ++ strm), None) in
   Exninfo.copy exn e
 
 let process_vernac_interp_error exn = match exn with
