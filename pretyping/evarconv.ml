@@ -23,6 +23,9 @@ open Globnames
 open Evd
 open Pretype_errors
 
+type unify_fun = transparent_state ->
+  env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
+
 let debug_unification = ref (false)
 let _ = Goptions.declare_bool_option {
   Goptions.optsync = true; Goptions.optdepr = false;
@@ -844,6 +847,13 @@ let evar_conv_x =
     let evar_conv_xkey = Profile.declare_profile "evar_conv_x" in
       Profile.profile6 evar_conv_xkey evar_conv_x
   else evar_conv_x
+
+let evar_conv_hook_get, evar_conv_hook_set = Hook.make ~default:evar_conv_x ()
+
+let evar_conv_x ts = Hook.get evar_conv_hook_get ts
+
+let set_evar_conv f = Hook.set evar_conv_hook_set f
+
 
 (* We assume here |l1| <= |l2| *)
 

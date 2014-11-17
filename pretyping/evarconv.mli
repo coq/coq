@@ -59,12 +59,20 @@ val second_order_matching : transparent_state -> env -> evar_map ->
 
 val set_solve_evars : (env -> evar_map ref -> constr -> constr) -> unit
 
+type unify_fun = transparent_state ->
+  env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
+
+(** Override default [evar_conv_x] algorithm. *)
+val set_evar_conv : unify_fun -> unit
+
+(** The default unification algorithm with evars and universes. *)
+val evar_conv_x : unify_fun
+
 (**/**)
 (* For debugging *)
-val evar_conv_x : transparent_state ->
-  env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
 val evar_eqappr_x : ?rhs_is_already_stuck:bool -> transparent_state * bool ->
   env -> evar_map ->
     conv_pb -> state * Cst_stack.t -> state * Cst_stack.t ->
       Evarsolve.unification_result
 (**/**)
+
