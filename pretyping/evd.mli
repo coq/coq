@@ -504,7 +504,7 @@ val normalize_universe : evar_map -> Univ.universe -> Univ.universe
 val normalize_universe_instance : evar_map -> Univ.universe_instance -> Univ.universe_instance
 
 val set_leq_sort : env -> evar_map -> sorts -> sorts -> evar_map
-val set_eq_sort : evar_map -> sorts -> sorts -> evar_map
+val set_eq_sort : env -> evar_map -> sorts -> sorts -> evar_map
 val has_lub : evar_map -> Univ.universe -> Univ.universe -> evar_map
 val set_eq_level : evar_map -> Univ.universe_level -> Univ.universe_level -> evar_map
 val set_leq_level : evar_map -> Univ.universe_level -> Univ.universe_level -> evar_map

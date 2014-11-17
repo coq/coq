@@ -299,8 +299,8 @@ let typecheck_inductive env ctx mie =
       let full_polymorphic () = 
 	let defu = Term.univ_of_sort def_level in
 	let is_natural =
-	  check_leq (universes env') infu defu && 
-	    not (is_type0m_univ defu && not is_unit)
+	  type_in_type env || (check_leq (universes env') infu defu &&
+	    not (is_type0m_univ defu && not is_unit))
 	in
 	let _ =
 	  (** Impredicative sort, always allow *)
@@ -326,7 +326,7 @@ let typecheck_inductive env ctx mie =
 	    (* conclusions of the parameters *)
             (* We enforce [u >= lev] in case [lev] has a strict upper *)
             (* constraints over [u] *)
-	    let b = check_leq (universes env') infu u in
+	    let b = type_in_type env || check_leq (universes env') infu u in
 	      if not b then
 		anomaly ~label:"check_inductive" 
 		  (Pp.str"Incorrect universe " ++

@@ -1267,7 +1267,7 @@ let check_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y 
 
 let sigma_compare_sorts env pb s0 s1 sigma =
   match pb with
-  | Reduction.CONV -> Evd.set_eq_sort sigma s0 s1
+  | Reduction.CONV -> Evd.set_eq_sort env sigma s0 s1
   | Reduction.CUMUL -> Evd.set_leq_sort env sigma s0 s1
     
 let sigma_compare_instances flex i0 i1 sigma =

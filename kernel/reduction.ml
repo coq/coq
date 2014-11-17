@@ -573,13 +573,14 @@ let check_sort_cmp_universes env pb s0 s1 univs =
       end
     | (Prop c1, Prop c2) -> if c1 != c2 then raise NotConvertible
     | (Prop c1, Type u) ->
-      let u0 = univ_of_sort s0 in
+	if not (type_in_type env) then
+	let u0 = univ_of_sort s0 in
 	(match pb with
 	| CUMUL -> check_leq univs u0 u
 	| CONV -> check_eq univs u0 u)
     | (Type u, Prop c) -> raise NotConvertible
     | (Type u1, Type u2) ->
-        if not (type_in_type env) then 
+        if not (type_in_type env) then
 	(match pb with
 	| CUMUL -> check_leq univs u1 u2
 	| CONV -> check_eq univs u1 u2)

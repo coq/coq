@@ -1114,12 +1114,16 @@ let normalize_sort evars s =
     if u' == u then s else Type u'
 
 (* FIXME inefficient *)
-let set_eq_sort d s1 s2 =
+let set_eq_sort env d s1 s2 =
   let s1 = normalize_sort d s1 and s2 = normalize_sort d s2 in
   match is_eq_sort s1 s2 with
   | None -> d
-  | Some (u1, u2) -> add_universe_constraints d 
-    (Universes.Constraints.singleton (u1,Universes.UEq,u2))
+  | Some (u1, u2) ->
+    if not (type_in_type env) then
+      add_universe_constraints d
+        (Universes.Constraints.singleton (u1,Universes.UEq,u2))
+    else
+      d
 
 let has_lub evd u1 u2 =
   (* let normalize = Universes.normalize_universe_opt_subst (ref univs.uctx_univ_variables) in *)
