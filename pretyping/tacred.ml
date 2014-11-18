@@ -951,7 +951,7 @@ let is_pattern_meta = function Pattern.PMeta _ -> true | _ -> false
 
 (** FIXME: Specific function to handle projections: it ignores what happens on the
     parameters. This is a temporary fix while rewrite etc... are not up to equivalence
-    of the projection and it's eta expanded form.
+    of the projection and its eta expanded form.
 *)
 let change_map_constr_with_binders_left_to_right g f (env, l as acc) sigma c = 
   match kind_of_term c with
@@ -974,8 +974,8 @@ let e_contextually byhead (occs,c) f env sigma t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
   let evd = ref sigma in
-  let rec traverse (env,c as envc) t =
-    if nowhere_except_in && (!pos > maxocc) then t
+  let rec traverse nested (env,c as envc) t =
+    if nowhere_except_in && (!pos > maxocc) then (* Shortcut *) t
     else
     try
       let subst =
@@ -985,27 +985,31 @@ let e_contextually byhead (occs,c) f env sigma t =
 	if nowhere_except_in then Int.List.mem !pos locs
 	else not (Int.List.mem !pos locs) in
       incr pos;
-      if ok then
-        let subst' =
-          if is_pattern_meta c then subst
-          else (* progress is ensured *) Id.Map.map (traverse envc) subst in
-	let evm, t = f subst' env !evd t in
-	  (evd := evm; t)
-      else if byhead then
-	(* find other occurrences of c in t; TODO: ensure left-to-right *)
-	(match kind_of_term t with
-	| App (f,l) ->
-	  mkApp (f, Array.map_left (traverse envc) l)
-	| Proj (p,c) -> mkProj (p,traverse envc c)
-	| _ -> assert false)
+      if ok then begin
+        if Option.has_some nested then
+          errorlabstrm "" (str "The subterm at occurrence " ++ int (Option.get nested) ++ str " overlaps with the subterm at occurrence " ++ int (!pos-1) ++ str ".");
+        (* Skip inner occurrences for stable counting of occurrences *)
+        if locs != [] then
+          ignore (traverse_below (Some (!pos-1)) envc t);
+	let evm, t = f subst env !evd t in
+	(evd := evm; t)
+      end
       else
-	t
+	traverse_below nested envc t
     with ConstrMatching.PatternMatchingFailure ->
-      change_map_constr_with_binders_left_to_right 
-	(fun d (env,c) -> (push_rel d env,lift_pattern 1 c))
-        traverse envc sigma t
+      traverse_below nested envc t
+  and traverse_below nested envc t =
+    (* when byhead, find other occurrences without matching again partial
+       application with same head *)
+    match kind_of_term t with
+    | App (f,l) when byhead -> mkApp (f, Array.map_left (traverse nested envc) l)
+    | Proj (p,c) when byhead -> mkProj (p,traverse nested envc c)
+    | _ ->
+        change_map_constr_with_binders_left_to_right
+          (fun d (env,c) -> (push_rel d env,lift_pattern 1 c))
+          (traverse nested) envc sigma t
   in
-  let t' = traverse (env,c) t in
+  let t' = traverse None (env,c) t in
   if List.exists (fun o -> o >= !pos) locs then error_invalid_occurrence locs;
   !evd, t'
 

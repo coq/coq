@@ -69,6 +69,7 @@ Abort.
 
 (* This is a compatibility test with a non evaluable reference, maybe
    not to be kept for long *)
+
 Goal 0+0=0.
 simpl @eq.
 Abort.
@@ -78,4 +79,22 @@ Abort.
 Goal 0+0 = 0.
 simpl "+".
 Fail set (_ + _).
+Abort.
+
+(* Check occurrences *)
+
+Record box A := Box { unbox : A }.
+
+Goal unbox _ (unbox _ (unbox _ (Box _ (Box _ (Box _ True))))) =
+     unbox _ (unbox _ (unbox _ (Box _ (Box _ (Box _ True))))).
+simpl (unbox _ (unbox _ _)) at 1.
+match goal with |- True = unbox _ (unbox _ (unbox _ (Box _ (Box _ (Box _ True))))) => idtac end.
+Undo 2.
+Fail simpl (unbox _ (unbox _ _)) at 5.
+simpl (unbox _ (unbox _ _)) at 1 4.
+match goal with |- True = unbox _ (Box _ True) => idtac end.
+Undo 2.
+Fail simpl (unbox _ (unbox _ _)) at 3 4. (* Nested and even overlapping *)
+simpl (unbox _ (unbox _ _)) at 2 4.
+match goal with |- unbox _ (Box _ True) = unbox _ (Box _ True) => idtac end.
 Abort.
