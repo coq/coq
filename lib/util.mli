@@ -100,6 +100,8 @@ val delayed_force : 'a delayed -> 'a
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
 (** Union type *)
 
+val map_union : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) union -> ('c, 'd) union
+
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 (** Used for browsable-until structures. *)
 

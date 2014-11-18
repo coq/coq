@@ -46,10 +46,6 @@ let map_flags f flags =
 
 let map_occs f (occ,e) = (occ,f e)
 
-let map_union f g = function
-  | Inl a -> Inl (f a)
-  | Inr b -> Inr (g b)
-
 let map_red_expr_gen f g h = function
   | Fold l -> Fold (List.map f l)
   | Pattern occs_l -> Pattern (List.map (map_occs f) occs_l)
