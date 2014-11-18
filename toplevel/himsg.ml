@@ -680,15 +680,17 @@ let pr_position (cl,pos) =
   int pos ++ clpos
 
 let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1),t1) e =
-  let s = if nested then "Found nested occurrences of the pattern"
-    else "Found incompatible occurrences of the pattern" in
-  let ppreason = match e with None -> mt() | Some (c1,c2,e) -> explain_unification_error env sigma c1 c2 (Some e) in
-  str s ++ str ":" ++
-  spc () ++ str "Matched term " ++ pr_lconstr_env env sigma t2 ++
-  strbrk " at position " ++ pr_position (cl2,pos2) ++
-  strbrk " is not compatible with matched term " ++
-  pr_lconstr_env env sigma t1 ++ strbrk " at position " ++
-  pr_position (cl1,pos1) ++ ppreason ++ str "."
+  if nested then
+    str "Found nested occurrences of the pattern at positions " ++
+    int pos1 ++ strbrk " and " ++ pr_position (cl2,pos2) ++ str "."
+  else
+    let ppreason = match e with None -> mt() | Some (c1,c2,e) -> explain_unification_error env sigma c1 c2 (Some e) in
+    str "Found incompatible occurrences of the pattern" ++ str ":" ++
+    spc () ++ str "Matched term " ++ pr_lconstr_env env sigma t2 ++
+    strbrk " at position " ++ pr_position (cl2,pos2) ++
+    strbrk " is not compatible with matched term " ++
+    pr_lconstr_env env sigma t1 ++ strbrk " at position " ++
+    pr_position (cl1,pos1) ++ ppreason ++ str "."
 
 let pr_constraints printenv env sigma evars cstrs =
   let (ev, evi) = Evar.Map.choose evars in

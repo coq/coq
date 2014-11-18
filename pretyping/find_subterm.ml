@@ -110,7 +110,13 @@ let replace_term_occ_gen_modulo occs like_first test bywhat cl occ t =
     try
       let subst = test.match_fun test.testing_state t in
       if Locusops.is_selected !pos occs then
-        (add_subst t subst; incr pos;
+        (if !nested then begin
+          (* in case it is nested but not later detected as unconvertible,
+             as when matching "id _" in "id (id 0)" *)
+          let lastpos = Option.get test.last_found in
+          raise (SubtermUnificationError (!nested,((cl,!pos),t),lastpos,None))
+         end;
+         add_subst t subst; incr pos;
          (* Check nested matching subterms *)
          nested := true; ignore (subst_below k t); nested := false;
          (* Do the effective substitution *)

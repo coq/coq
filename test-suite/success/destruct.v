@@ -113,6 +113,12 @@ destruct (_, S _). (* Was unifying at some time in trunk, now takes the first oc
 change ((n, n0) = (S ?p, S ?p) /\ ?p = ?n0).
 Abort.
 
+(* An example with incompatible but convertible occurrences *)
+
+Goal id (id 0) = 0.
+Fail destruct (id _) at 1 2.
+Abort.
+
 (* Avoid unnatural selection of a subterm larger than expected *)
 
 Goal let g := fun x:nat => x in g (S 0) = 0.
