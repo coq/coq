@@ -346,18 +346,15 @@ let intern_typed_pattern ist p =
 
 let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
   match p with
-  | Inl r -> l,
-      (try Inl (intern_evaluable ist r)
-       with e when Logic.catchable_exception e ->
-         (* Compatibility. In practice, this means that the code above
-            is useless. Still the idea of having either an evaluable
-            ref or a pattern seems interesting, with "head" reduction
-            in case of an evaluable ref, and "strong" reduction in the
-            subterm matched when a pattern) *)
-         let r = match r with
-         | AN r -> r
-         | _ -> Qualid (loc_of_smart_reference r,qualid_of_path (path_of_global (smart_global r))) in
-         Inr (intern_typed_pattern ist (CRef(r,None))))
+  | Inl r ->
+      let loc = loc_of_smart_reference r in
+      let r = match r with
+      | AN r -> r
+      | _ -> Qualid (loc,qualid_of_path (path_of_global (smart_global r))) in
+      (* Ensure that no implicit arguments are added so that a qualid
+         is interpreted as the head of subterm starting with the
+         corresponding reference *)
+      l, Inr (intern_typed_pattern ist (CAppExpl(loc,(None,r,None),[])))
   | Inr c -> l, Inr (intern_typed_pattern ist c)
 
 (* This seems fairly hacky, but it's the first way I've found to get proper

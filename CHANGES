@@ -156,8 +156,11 @@ Tactics
 - "change ... in ..." and "simpl ... in ..." now properly consider nested
   occurrences (possible source of incompatibilities since this alters
   the numbering of occurrences), but do not support nested occurrences.
-- simpl, vm_compute and native_compute can be given a notation string to a
-  constant as argument.
+- Tactics simpl, vm_compute and native_compute can be given a notation string
+  to a constant as argument.
+- When given a reference as argument, simpl, vm_compute and
+  native_compute now strictly interpret it as the head of a pattern
+  starting with this reference.
 - The "change p with c" tactic semantics changed, now type-checking 
   "c" at each matching occurrence "t" of the pattern "p", and 
   converting "t" with "c".
