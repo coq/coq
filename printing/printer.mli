@@ -175,7 +175,3 @@ val set_printer_pr : printer_pr -> unit
 
 val default_printer_pr : printer_pr
 
-(** Inductive declarations *)
-
-val pr_mutual_inductive_body :
-  env -> mutual_inductive -> Declarations.mutual_inductive_body -> std_ppcmds
