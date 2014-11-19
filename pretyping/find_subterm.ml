@@ -118,7 +118,8 @@ let replace_term_occ_gen_modulo occs like_first test bywhat cl occ t =
          end;
          add_subst t subst; incr pos;
          (* Check nested matching subterms *)
-         nested := true; ignore (subst_below k t); nested := false;
+         if occs != Locus.AllOccurrences && occs != Locus.NoOccurrences then
+           begin nested := true; ignore (subst_below k t); nested := false end;
          (* Do the effective substitution *)
          Vars.lift k (bywhat ()))
       else
