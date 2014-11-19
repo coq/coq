@@ -105,12 +105,12 @@ let print_mutual_inductive env mind mib =
   let keyword =
     let open Decl_kinds in
     match mib.mind_finite with
-    | Finite -> "Inductive "
-    | BiFinite -> "Variant "
-    | CoFinite -> "CoInductive "
+    | Finite -> "Inductive"
+    | BiFinite -> "Variant"
+    | CoFinite -> "CoInductive"
   in
   hov 0 (Printer.pr_polymorphic mib.mind_polymorphic ++
-    str keyword ++
+    def keyword ++ spc () ++
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
       (print_one_inductive env mib) inds ++
       Printer.pr_universe_ctx (Univ.instantiate_univ_context mib.mind_universes))
@@ -145,14 +145,14 @@ let print_record env mind mib =
   let keyword =
     let open Decl_kinds in
     match mib.mind_finite with
-    | BiFinite -> "Record "
-    | Finite -> "Inductive "
-    | CoFinite -> "CoInductive "
+    | BiFinite -> "Record"
+    | Finite -> "Inductive"
+    | CoFinite -> "CoInductive"
   in
   hov 0 (
     hov 0 (
       Printer.pr_polymorphic mib.mind_polymorphic ++
-      str keyword ++ pr_id mip.mind_typename ++ brk(1,4) ++
+      def keyword ++ spc () ++ pr_id mip.mind_typename ++ brk(1,4) ++
       print_params env Evd.empty params ++
       str ": " ++ Printer.pr_lconstr_env envpar Evd.empty arity ++ brk(1,2) ++
       str ":= " ++ pr_id mip.mind_consnames.(0)) ++
