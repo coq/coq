@@ -178,13 +178,13 @@ let make_inv_predicate env evd indf realargs id status concl =
    and introduces generalized hypotheis.
    Precondition: t=(mkVar id) *)
 
-let dependent_hyps id idlist gl =
+let dependent_hyps env id idlist gl =
   let rec dep_rec =function
     | [] -> []
     | (id1,_,_)::l ->
 	(* Update the type of id1: it may have been subject to rewriting *)
 	let d = pf_get_hyp id1 gl in
-	if occur_var_in_decl (Global.env()) id d
+	if occur_var_in_decl env id d
         then d :: dep_rec l
         else dep_rec l
   in
@@ -268,8 +268,9 @@ Nota: with Inversion_clear, only four useless hypotheses
 *)
 
 let generalizeRewriteIntros as_mode tac depids id =
+  Proofview.tclENV >>= fun env ->
   Proofview.Goal.nf_enter begin fun gl ->
-  let dids = dependent_hyps id depids gl in
+  let dids = dependent_hyps env id depids gl in
   let reintros = if as_mode then intros_replacing else intros_possibly_replacing in
   (tclTHENLIST
     [bring_hyps dids; tac;
@@ -279,10 +280,11 @@ let generalizeRewriteIntros as_mode tac depids id =
 
 let error_too_many_names pats =
   let loc = Loc.join_loc (fst (List.hd pats)) (fst (List.last pats)) in
-  user_err_loc (loc,"",
+  Proofview.tclENV >>= fun env ->
+  tclZEROMSG ~loc (
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
-    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (snd (c (Global.env()) Evd.empty)))) pats ++
+    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (snd (c env Evd.empty)))) pats ++
     str ".")
 
 let rec get_names (allow_conj,issimple) (loc,pat as x) = match pat with
@@ -473,11 +475,12 @@ let raw_inversion inv_kind id status names =
 let wrap_inv_error id = function
   | Indrec.RecursionSchemeError
       (Indrec.NotAllowedCaseAnalysis (_,(Type _ | Prop Pos as k),i)) ->
-      Proofview.tclZERO (Errors.UserError ("",
+      Proofview.tclENV >>= fun env ->
+      tclZEROMSG (
 	(strbrk "Inversion would require case analysis on sort " ++
 	pr_sort k ++
 	strbrk " which is not allowed for inductive definition " ++
-	pr_inductive (Global.env()) (fst i) ++ str ".")))
+	pr_inductive env (fst i) ++ str "."))
   | e -> Proofview.tclZERO e
 
 (* The most general inversion tactic *)
