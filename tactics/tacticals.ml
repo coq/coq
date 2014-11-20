@@ -298,8 +298,13 @@ module New = struct
   let tclFAIL lvl msg =
     tclZERO (Refiner.FailError (lvl,lazy msg))
 
-  let tclZEROMSG msg =
-    tclZERO (UserError ("", msg))
+  let tclZEROMSG ?loc msg =
+    let err = UserError ("", msg) in
+    let err = match loc with
+    | None -> err
+    | Some loc -> Loc.add_loc err loc
+    in
+    tclZERO err
 
   let catch_failerror e =
     try
