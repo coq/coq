@@ -353,9 +353,14 @@ let strengthen_const mp_from l cb resolver =
   |_ ->
     let kn = KerName.make2 mp_from l in
     let con = constant_of_delta_kn resolver kn in
-    { cb with
-      const_body = Def (Mod_subst.from_val (mkConst con));
-      const_body_code = Cemitcodes.from_val (Cbytegen.compile_alias con) }
+    let u = 
+      if cb.const_polymorphic then 
+	Univ.UContext.instance cb.const_universes
+      else Univ.Instance.empty
+    in
+      { cb with
+	const_body = Def (Mod_subst.from_val (mkConstU (con,u)));
+	const_body_code = Cemitcodes.from_val (Cbytegen.compile_alias con) }
 
 let rec strengthen_mod mp_from mp_to mb =
   if mp_in_delta mb.mod_mp mb.mod_delta then mb
