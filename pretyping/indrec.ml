@@ -538,13 +538,13 @@ let weaken_sort_scheme env evd set sort npars term ty =
 (* Check inductive types only occurs once
 (otherwise we obtain a meaning less scheme) *)
 
-let check_arities listdepkind =
+let check_arities env listdepkind =
   let _ = List.fold_left
     (fun ln (((_,ni as mind),u),mibi,mipi,dep,kind) ->
        let kelim = elim_sorts (mibi,mipi) in
        if not (Sorts.List.mem kind kelim) then raise
 	 (RecursionSchemeError
-	  (NotAllowedCaseAnalysis (true, fst (Universes.fresh_sort_in_family (Global.env ())
+	  (NotAllowedCaseAnalysis (true, fst (Universes.fresh_sort_in_family env
 					      kind),(mind,u))))
        else if Int.List.mem ni ln then raise
 	 (RecursionSchemeError (NotMutualInScheme (mind,mind)))
@@ -554,7 +554,7 @@ let check_arities listdepkind =
 
 let build_mutual_induction_scheme env sigma = function
   | ((mind,u),dep,s)::lrecspec ->
-      let (mib,mip) = Global.lookup_inductive mind in
+      let (mib,mip) = lookup_mind_specif env mind in
       let (sp,tyi) = mind in
       let listdepkind =
 	((mind,u),mib,mip,dep,s)::
@@ -568,7 +568,7 @@ let build_mutual_induction_scheme env sigma = function
 		raise (RecursionSchemeError (NotMutualInScheme (mind,mind'))))
 	   lrecspec)
       in
-      let _ = check_arities listdepkind in
+      let _ = check_arities env listdepkind in
       mis_make_indrec env sigma listdepkind mib u
   | _ -> anomaly (Pp.str "build_induction_scheme expects a non empty list of inductive types")
 
