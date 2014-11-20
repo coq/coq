@@ -20,10 +20,14 @@ val translate_local_assum : env -> types -> types
 
 val mk_pure_proof : constr -> proof_output
 
-(* returns the same definition_entry but with side effects turned into
- * let-ins or beta redexes. it is meant to get a term out of a not yet
- * type checked proof *)
-val handle_side_effects : env -> definition_entry -> definition_entry
+val handle_side_effects : env -> constr -> Declareops.side_effects -> constr
+(** Returns the term where side effects have been turned into let-ins or beta
+    redexes. *)
+
+val handle_entry_side_effects : env -> definition_entry -> definition_entry
+(** Same as {!handle_side_effects} but applied to entries. Only modifies the
+    {!Entries.const_entry_body} field. It is meant to get a term out of a not
+    yet type checked proof. *)
 
 val translate_constant : env -> constant -> constant_entry -> constant_body
 

@@ -780,7 +780,7 @@ let solve_by_tac name evi t poly ctx =
   let (entry,_,ctx') = Pfedit.build_constant_by_tactic 
     id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps concl (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
-  let entry = Term_typing.handle_side_effects env entry in
+  let entry = Term_typing.handle_entry_side_effects env entry in
   let body, eff = Future.force entry.Entries.const_entry_body in
   assert(Declareops.side_effects_is_empty eff);
   assert(Univ.ContextSet.is_empty (snd body));

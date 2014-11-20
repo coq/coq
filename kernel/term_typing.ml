@@ -286,7 +286,7 @@ let translate_local_def env id centry =
 
 let translate_mind env kn mie = Indtypes.check_inductive env kn mie
 
-let handle_side_effects env ce = { ce with
+let handle_entry_side_effects env ce = { ce with
   const_entry_body = Future.chain ~greedy:true ~pure:true
     ce.const_entry_body (fun ((body, ctx), side_eff) ->
       (handle_side_effects env body side_eff, ctx), Declareops.no_seff);

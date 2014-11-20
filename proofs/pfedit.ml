@@ -149,7 +149,7 @@ let build_by_tactic env ctx ?(poly=false) typ tac =
   let sign = val_of_named_context (named_context env) in
   let gk = Global, poly, Proof Theorem in
   let ce, status, univs = build_constant_by_tactic id ctx sign ~goal_kind:gk typ tac in
-  let ce = Term_typing.handle_side_effects env ce in
+  let ce = Term_typing.handle_entry_side_effects env ce in
   let (cb, ctx), se = Future.force ce.const_entry_body in
   assert(Declareops.side_effects_is_empty se);
   assert(Univ.ContextSet.is_empty ctx);
