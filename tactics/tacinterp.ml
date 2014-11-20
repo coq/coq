@@ -2349,6 +2349,7 @@ let _ =
       | [c, _] -> c
       | _ -> assert false
       in
+      let ans = Reductionops.nf_evar sigma ans in
       (** [neff] contains the freshly generated side-effects *)
       let neff = Evd.eval_side_effects sigma in
       (** Reset the old side-effects *)
