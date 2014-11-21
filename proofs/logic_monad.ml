@@ -312,8 +312,13 @@ struct
   let run m r s =
     let s = { wstate = P.wunit; ustate = P.uunit; rstate = r; sstate = s } in
     let m = m s in
-    let nil e = NonLogical.raise (TacticFailure e) in
-    let cons (x, s) _ = NonLogical.return (x, s.sstate, s.wstate, s.ustate) in
-    m.iolist nil cons
+    let rnil e = NonLogical.return (Nil e) in
+    let rcons (x, s) l =
+      let p = (x, s.sstate, s.wstate, s.ustate) in
+      NonLogical.return (Cons (p, l))
+    in
+    m.iolist rnil rcons
+
+  let repr x = x
 
  end

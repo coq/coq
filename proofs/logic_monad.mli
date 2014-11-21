@@ -148,5 +148,10 @@ module Logical (P:Param) : sig
 
   val lift : 'a NonLogical.t -> 'a t
 
-  val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w * P.u) NonLogical.t
+  type 'a reified
+
+  val repr : 'a reified -> ('a, exn -> 'a reified) list_view NonLogical.t
+
+  val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w * P.u) reified
+
 end

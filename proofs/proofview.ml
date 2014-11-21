@@ -223,10 +223,13 @@ type +'a tactic = 'a Proof.t
 
 (** Applies a tactic to the current proofview. *)
 let apply env t sp =
-  let (next_r,(next_state,_),status,info) =
-    Logic_monad.NonLogical.run (Proof.run t false (sp,env))
-  in
-  next_r,next_state,status,Trace.to_tree info
+  let open Logic_monad in
+  let ans = Proof.repr (Proof.run t false (sp,env)) in
+  let ans = Logic_monad.NonLogical.run ans in
+  match ans with
+  | Nil e -> raise (TacticFailure e)
+  | Cons ((r, (state, _), status, info), _) ->
+    r, state, status, Trace.to_tree info
 
 
 
@@ -732,8 +735,10 @@ let tclTIMEOUT n t =
     Logic_monad.NonLogical.catch
       begin
         let open Logic_monad.NonLogical in
-        timeout n (Proof.run t envvar initial) >>= fun r ->
-        return (Util.Inl r)
+        timeout n (Proof.repr (Proof.run t envvar initial)) >>= fun r ->
+        match r with
+        | Logic_monad.Nil e -> return (Util.Inr e)
+        | Logic_monad.Cons (r, _) -> return (Util.Inl r)
       end
       begin let open Logic_monad.NonLogical in function
         | Logic_monad.Timeout -> return (Util.Inr Timeout)
