@@ -1435,7 +1435,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 	    (Proofview.V82.of_tactic (apply (mkVar hrec)))
 	    [ tclTHENSEQ
 		[
-		  keep (tcc_hyps@eqs);
+		  (Proofview.V82.of_tactic (keep (tcc_hyps@eqs)));
 		  (Proofview.V82.of_tactic (apply (Lazy.force acc_inv)));
 		  (fun g ->
 		     if is_mes

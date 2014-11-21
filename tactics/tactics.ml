@@ -1833,9 +1833,10 @@ let specialize (c,lbind) g =
 
 (* Keeping only a few hypotheses *)
 
-let keep hyps gl =
-  let env = Global.env() in
-  let ccl = pf_concl gl in
+let keep hyps =
+  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.tclENV >>= fun env ->
+  let ccl = Proofview.Goal.concl gl in
   let cl,_ =
     fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
       if Id.List.mem hyp hyps
@@ -1843,8 +1844,10 @@ let keep hyps gl =
 	|| occur_var env hyp ccl
       then (clear,decl::keep)
       else (hyp::clear,keep))
-      ~init:([],[]) (pf_env gl)
-  in thin cl gl
+      ~init:([],[]) (Proofview.Goal.env gl)
+  in
+  Proofview.V82.tactic (fun gl -> thin cl gl)
+  end
 
 (************************)
 (* Introduction tactics *)
