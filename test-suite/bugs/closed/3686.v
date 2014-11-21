@@ -53,9 +53,10 @@ Proof.
              (fun CD C'D' FG => pointwise (fst FG) (snd FG))
              (fun _ _ => Pidentity_of _ _)) || fail "early".
   Include PointwiseCore.
-  Fail pose (let object_of := (fun CD => (((fst CD) -> (snd CD))))
+  pose (let object_of := (fun CD => (((fst CD) -> (snd CD))))
         in Build_Functor
              ((@sub_pre_cat P)^op * (@sub_pre_cat P)) (@sub_pre_cat P)
              object_of
              (fun CD C'D' FG => pointwise (fst FG) (snd FG))
              (fun _ _ => Pidentity_of _ _)).
+Abort.
