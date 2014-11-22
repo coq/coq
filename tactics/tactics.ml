@@ -806,18 +806,21 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
   in
   aux n []
 
-let rec get_next_hyp_position id = function
+let get_next_hyp_position id gl =
+  let rec get_next_hyp_position id = function
   | [] -> raise (RefinerError (NoSuchHyp id))
   | (hyp,_,_) :: right ->
-      if Id.equal hyp id then
-	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveLast
-      else
-	get_next_hyp_position id right
+    if Id.equal hyp id then
+      match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveLast
+    else
+      get_next_hyp_position id right
+  in
+  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+  get_next_hyp_position id hyps
 
 let intro_replacing id =
   Proofview.Goal.enter begin fun gl ->
-  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-  let next_hyp = get_next_hyp_position id hyps in
+  let next_hyp = get_next_hyp_position id gl in
   Tacticals.New.tclTHENLIST [
     Proofview.V82.tactic (thin_for_replacing [id]);
     introduction id;
@@ -836,8 +839,7 @@ let intro_replacing id =
 let intros_possibly_replacing ids =
   let suboptimal = true in
   Proofview.Goal.enter begin fun gl ->
-    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-    let posl = List.map (fun id -> (id,get_next_hyp_position id hyps)) ids in
+    let posl = List.map (fun id -> (id, get_next_hyp_position id gl)) ids in
     Tacticals.New.tclTHEN
       (Tacticals.New.tclMAP (fun id -> 
 	Tacticals.New.tclTRY (Proofview.V82.tactic (thin_for_replacing [id])))
@@ -850,8 +852,7 @@ let intros_possibly_replacing ids =
 (* This version assumes that replacement is actually possible *)
 let intros_replacing ids =
   Proofview.Goal.enter begin fun gl ->
-    let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-    let posl = List.map (fun id -> (id,get_next_hyp_position id hyps)) ids in
+    let posl = List.map (fun id -> (id, get_next_hyp_position id gl)) ids in
     Tacticals.New.tclTHEN
       (Proofview.V82.tactic (thin_for_replacing ids))
       (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some id) pos) posl)
