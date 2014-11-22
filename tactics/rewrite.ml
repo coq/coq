@@ -819,14 +819,14 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
 	      sigargs, r.rew_to :: typeargs')
 	  | None ->
 	      if not (Option.is_empty y) then 
-		error "Cannot rewrite the argument of a dependent function";
+		error "Cannot rewrite inside dependent arguments of a function";
 	      x :: acc, x :: subst, evars, sigargs, x :: typeargs')
       ([], [], evars, sigargs, []) args args'
   in
   let proof = applistc proj (List.rev projargs) in
   let newt = applistc m' (List.rev typeargs) in
     match respars with
-	[ a, Some r ] -> evars, proof, a, r, oldt, fnewt newt
+	[ a, Some r ] -> evars, proof, substl subst a, substl subst r, oldt, fnewt newt
       | _ -> assert(false)
 
 let apply_constraint env avoid car rel prf cstr res =
