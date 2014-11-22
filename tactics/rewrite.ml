@@ -543,52 +543,45 @@ let rewrite_core_unif_flags = {
   Unification.modulo_eta = true;
 }
 
-let rewrite_unif_flags = {
-  Unification.core_unify_flags = rewrite_core_unif_flags;
-  Unification.merge_unify_flags = rewrite_core_unif_flags;
-  Unification.subterm_unify_flags = rewrite_core_unif_flags;
+(* Flags used for the setoid variant of "rewrite" and for the strategies
+   "hints"/"old_hints"/"terms" of "rewrite_strat", and for solving pre-existing
+   evars in "rewrite" (see unify_abs) *)
+let rewrite_unif_flags =
+  let flags = rewrite_core_unif_flags in {
+  Unification.core_unify_flags = flags;
+  Unification.merge_unify_flags = flags;
+  Unification.subterm_unify_flags = flags;
   Unification.allow_K_in_toplevel_higher_order_unification = true;
   Unification.resolve_evars = true
-}
-
-let rewrite2_unif_core_flags =
-  {  Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
-     Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
-     Unification.use_evars_eagerly_in_conv_on_closed_terms = true;
-     Unification.modulo_delta = empty_transparent_state;
-     Unification.modulo_delta_types = conv_transparent_state;
-     Unification.check_applied_meta_types = true;
-     Unification.use_pattern_unification = true;
-     Unification.use_meta_bound_pattern_unification = true;
-     Unification.frozen_evars = Evar.Set.empty;
-     Unification.restrict_conv_on_strict_subterms = false;
-     Unification.modulo_betaiota = true;
-     Unification.modulo_eta = true;
   }
 
-let rewrite2_unif_flags = {
-  Unification.core_unify_flags = rewrite2_unif_core_flags;
-  Unification.merge_unify_flags = rewrite2_unif_core_flags;
-  Unification.subterm_unify_flags = rewrite2_unif_core_flags;
-  Unification.allow_K_in_toplevel_higher_order_unification = true;
-  Unification.resolve_evars = true
+let rewrite_core_conv_unif_flags = {
+  rewrite_core_unif_flags with
+    Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
+    Unification.modulo_delta_types = conv_transparent_state;
+    Unification.modulo_betaiota = true
 }
 
+(* Fallback flags for the setoid variant of "rewrite" *)
+let rewrite_conv_unif_flags =
+  let flags = rewrite_core_conv_unif_flags in {
+  Unification.core_unify_flags = flags;
+  Unification.merge_unify_flags = flags;
+  Unification.subterm_unify_flags = flags;
+  Unification.allow_K_in_toplevel_higher_order_unification = true;
+  Unification.resolve_evars = true
+  }
+
+(* Flags for "setoid_rewrite c"/"rewrite_strat -> c" *)
 let general_rewrite_unif_flags () =
   let ts = rewrite_transparent_state () in
   let core_flags =
-    {  Unification.modulo_conv_on_closed_terms = Some ts;
-       Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
-       Unification.use_evars_eagerly_in_conv_on_closed_terms = false;
-       Unification.modulo_delta = ts;
-       Unification.modulo_delta_types = ts;
-       Unification.check_applied_meta_types = true;
-       Unification.use_pattern_unification = true;
-       Unification.use_meta_bound_pattern_unification = true;
-       Unification.frozen_evars = Evar.Set.empty;
-       Unification.restrict_conv_on_strict_subterms = false;
-       Unification.modulo_betaiota = true;
-       Unification.modulo_eta = true }
+    { rewrite_core_unif_flags with
+      Unification.modulo_conv_on_closed_terms = Some ts;
+      Unification.use_evars_eagerly_in_conv_on_closed_terms = false;
+      Unification.modulo_delta = ts;
+      Unification.modulo_delta_types = ts;
+      Unification.modulo_betaiota = true }
   in {
     Unification.core_unify_flags = core_flags;
     Unification.merge_unify_flags = core_flags;
@@ -596,7 +589,6 @@ let general_rewrite_unif_flags () =
     Unification.allow_K_in_toplevel_higher_order_unification = true;
     Unification.resolve_evars = true
   }
-
 
 let refresh_hypinfo env sigma hypinfo =
     match hypinfo.c with
@@ -693,6 +685,7 @@ let symmetry env sort rew =
   in
   { rew with rew_from = rew.rew_to; rew_to = rew.rew_from; rew_prf; rew_evars; }
 
+(* Matching/unifying the rewriting rule against [t] *)
 let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
   if isEvar t then None else 
   try
@@ -723,6 +716,10 @@ let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
   if isEvar t then None else 
     try
     let left = if l2r then c1 else c2 in
+    (* The pattern is already instantiated, so the next w_unify is
+       basically an eq_constr, except when preexisting evars occur in
+       either the lemma or the goal, in which case the eq_constr also
+       solved this evars *)
     let sigma = Unification.w_unify ~flags:rewrite_unif_flags env sigma CONV left t in
     let rew_evars = sigma, cstrs in
     let rew_prf = RewPrf (rel, prf) in
@@ -1318,9 +1315,9 @@ module Strategies =
     let outermost (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun out -> choice s (one_subterm out))
 
-    let lemmas flags cs : 'a pure_strategy =
+    let lemmas cs : 'a pure_strategy =
       List.fold_left (fun tac (l,l2r,by) ->
-	choice tac (apply_lemma l2r flags l by AllOccurrences))
+	choice tac (apply_lemma l2r rewrite_unif_flags l by AllOccurrences))
 	fail cs
 
     let inj_open hint = (); fun sigma ->
@@ -1330,7 +1327,7 @@ module Strategies =
 
     let old_hints (db : string) : 'a pure_strategy =
       let rules = Autorewrite.find_rewrites db in
-	lemmas rewrite_unif_flags
+	lemmas
 	  (List.map (fun hint -> (inj_open hint, hint.Autorewrite.rew_l2r,
 				  hint.Autorewrite.rew_tac)) rules)
 
@@ -1340,7 +1337,7 @@ module Strategies =
       let lemma hint = (inj_open hint, hint.Autorewrite.rew_l2r,
 			hint.Autorewrite.rew_tac) in
       let lems = List.map lemma rules in
-	lemmas rewrite_unif_flags lems state env avoid t ty cstr evars
+	lemmas lems state env avoid t ty cstr evars
 
     let reduce (r : Redexpr.red_expr) : 'a pure_strategy =
 	fun state env avoid t ty cstr evars ->
@@ -1637,7 +1634,7 @@ let rec strategy_of_ast = function
   | StratTerms l -> 
     (fun () env avoid t ty cstr evars ->
      let l' = interp_glob_constr_list env (List.map fst l) in
-       Strategies.lemmas rewrite_unif_flags l' () env avoid t ty cstr evars)
+       Strategies.lemmas l' () env avoid t ty cstr evars)
   | StratEval r -> 
     (fun () env avoid t ty cstr evars ->
      let (sigma,r_interp) = Tacinterp.interp_redexp env (goalevars evars) r in
@@ -1897,6 +1894,7 @@ let check_evar_map_of_evars_defs evd =
          check_freemetas_is_empty rebus2 freemetas2
    ) metas
 
+(* Find a subterm which matches the pattern to rewrite for "rewrite" *)
 let unification_rewrite l2r c1 c2 sigma prf car rel but env =
   let (sigma,c') =
     try
@@ -1904,14 +1902,14 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
          rewritten simply by replacing them with let-defined definitions
          in the context *)
       Unification.w_unify_to_subterm 
-       ~flags:{ rewrite_unif_flags with Unification.resolve_evars = true } env
-        sigma ((if l2r then c1 else c2),but)
+       ~flags:rewrite_unif_flags
+        env sigma ((if l2r then c1 else c2),but)
     with
     | ex when Pretype_errors.precatchable_exception ex ->
 	(* ~flags:(true,true) to make Ring work (since it really
            exploits conversion) *)
       Unification.w_unify_to_subterm 
-        ~flags:{ rewrite2_unif_flags with Unification.resolve_evars = true }
+        ~flags:rewrite_conv_unif_flags
         env sigma ((if l2r then c1 else c2),but)
   in
   let nf c = Evarutil.nf_evar sigma c in
@@ -1942,6 +1940,7 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 (* let rewriteclaustac_key = Profile.declare_profile "cl_rewrite_clause_tac";; *)
 (* let cl_rewrite_clause_tac = Profile.profile5 rewriteclaustac_key cl_rewrite_clause_tac *)
 
+(** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
   let unify () env evars t = unify_abs res l2r sort env evars t in

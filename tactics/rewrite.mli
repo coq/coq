@@ -65,8 +65,10 @@ val strategy_of_ast : (glob_constr_and_expr, raw_red_expr) strategy_ast -> strat
 val map_strategy : ('a -> 'b) -> ('c -> 'd) ->
   ('a, 'c) strategy_ast -> ('b, 'd) strategy_ast
 
+(** Entry point for user-level "rewrite_strat" *)
 val cl_rewrite_clause_strat : strategy -> Id.t option -> tactic
 
+(** Entry point for user-level "setoid_rewrite" *)
 val cl_rewrite_clause :
   interp_sign * (glob_constr_and_expr * glob_constr_and_expr bindings) ->
   bool -> Locus.occurrences -> Id.t option -> tactic
