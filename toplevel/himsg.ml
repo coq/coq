@@ -701,16 +701,15 @@ let pr_constraints printenv env sigma evars cstrs =
       let env' = reset_with_named_context evi.evar_hyps env in
       let pe =
         if printenv then
-          pr_ne_context_of (str "In environment:") (mt ())
-            env' sigma ++ fnl ()
+          pr_ne_context_of (str "In environment:") (mt ()) env' sigma
         else mt ()
       in
       let evs =
-        prlist_with_sep (fun () -> fnl ())
-        (fun (ev, evi) -> pr_existential_key sigma ev ++
+        prlist
+        (fun (ev, evi) -> fnl () ++ pr_existential_key sigma ev ++
             str " : " ++ pr_lconstr_env env' sigma evi.evar_concl) l
       in
-      pe ++ evs ++ fnl() ++ h 0 (pr_evar_constraints cstrs)
+      h 0 (pe ++ evs ++ pr_evar_constraints cstrs)
     else
       let filter evk _ = Evar.Map.mem evk evars in
       pr_evar_map_filter ~with_univs:false filter sigma
