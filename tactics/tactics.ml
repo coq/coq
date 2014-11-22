@@ -2645,18 +2645,8 @@ let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
     (intros_move rstatus)
     (intros_move newlstatus)
 
-let safe_dest_intro_patterns avoid thin dest pat tac =
-  Proofview.tclORELSE
-    (intro_patterns_core true avoid [] thin dest None 0 tac pat)
-    begin function
-      | UserError ("move_hyp",_) ->
-    (* May happen if the lemma has dependent arguments that are resolved
-       only after cook_sign is called, e.g. as in "destruct dec" in context
-       "dec:forall x, {x=0}+{x<>0};  a:A  |- if dec a then True else False"
-       where argument a of dec will be found only lately *)
-          intro_patterns_core true avoid [] [] MoveLast None 0 tac pat
-      | e -> Proofview.tclZERO e
-    end
+let dest_intro_patterns avoid thin dest pat tac =
+  intro_patterns_core true avoid [] thin dest None 0 tac pat
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
@@ -2699,12 +2689,12 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 	      (pat, [dloc, IntroNaming (IntroIdentifier id')])
           | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
         let dest = get_recarg_dest dests in
-        safe_dest_intro_patterns avoid thin dest [recpat] (fun ids thin ->
+        dest_intro_patterns avoid thin dest [recpat] (fun ids thin ->
         Proofview.Goal.enter begin fun gl ->
           let (hyprec,names) =
             consume_pattern avoid (Name hyprecname) depind gl names
           in
-	  safe_dest_intro_patterns avoid thin MoveLast [hyprec] (fun ids' thin ->
+	  dest_intro_patterns avoid thin MoveLast [hyprec] (fun ids' thin ->
 	    peel_tac ra' (update_dest dests ids') names thin)
         end)
         end
@@ -2713,7 +2703,7 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names =
           consume_pattern avoid (Name hyprecname) dep gl names in
-	safe_dest_intro_patterns avoid thin MoveLast [pat] (fun ids thin ->
+	dest_intro_patterns avoid thin MoveLast [pat] (fun ids thin ->
         peel_tac ra' (update_dest dests ids) names thin)
         end
     | (RecArg,dep,recvarname) :: ra' ->
@@ -2721,14 +2711,14 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
         let (pat,names) =
           consume_pattern avoid (Name recvarname) dep gl names in
         let dest = get_recarg_dest dests in
-	safe_dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
+	dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
     | (OtherArg,dep,_) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
         let (pat,names) = consume_pattern avoid Anonymous dep gl names in
         let dest = get_recarg_dest dests in
-	safe_dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
+	dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
     | [] ->
