@@ -102,7 +102,7 @@ let verify_metas_coherence env sigma (ln1,lcm) (ln,lm) =
   (merged, Id.Map.merge merge lcm lm)
 
 let matching_error =
-  Errors.UserError ("" , Pp.str "No matching clauses for match.")
+  Errors.UserError ("tactic matching" , Pp.str "No matching clauses for match.")
 
 (** A functor is introduced to share the environment and the
     evar_map. They do not change and it would be a pity to introduce

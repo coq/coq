@@ -9,6 +9,7 @@ install_printer Top_printers.ppidset
 install_printer Top_printers.ppevar
 install_printer Top_printers.ppevarsubst
 install_printer Top_printers.ppexistentialfilter
+install_printer Top_printers.ppexistentialset
 install_printer Top_printers.ppintset
 install_printer Top_printers.pplab
 install_printer Top_printers.ppdir
