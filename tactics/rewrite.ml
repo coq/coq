@@ -1540,23 +1540,24 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
       beta <*> Proofview.shelve_unifiable
     with
     | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
-      raise (RewriteFailure (str"Unable to satisfy the rewriting constraints."
-			     ++ fnl () ++ Himsg.explain_pretype_error env evd e))
+      raise (RewriteFailure (Himsg.explain_pretype_error env evd e))
   end
 
 let tactic_init_setoid () = 
   try init_setoid (); tclIDTAC
   with e when Errors.noncritical e -> tclFAIL 0 (str"Setoid library not loaded")
 
+(** Setoid rewriting when called with "rewrite_strat" *)
 let cl_rewrite_clause_strat strat clause =
   tclTHEN (tactic_init_setoid ())
   (fun gl -> 
      try Proofview.V82.of_tactic (cl_rewrite_clause_newtac strat clause) gl
      with RewriteFailure e ->
-       tclFAIL 0 (str"setoid rewrite failed: " ++ e) gl
+       errorlabstrm "" (str"setoid rewrite failed: " ++ e)
      | Refiner.FailError (n, pp) -> 
        tclFAIL n (str"setoid rewrite failed: " ++ Lazy.force pp) gl)
 
+(** Setoid rewriting when called with "setoid_rewrite" *)
 let cl_rewrite_clause l left2right occs clause gl =
   let strat = rewrite_with left2right (general_rewrite_unif_flags ()) l occs in
     cl_rewrite_clause_strat strat clause gl
