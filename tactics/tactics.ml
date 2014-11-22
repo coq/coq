@@ -814,10 +814,16 @@ let rec get_next_hyp_position id = function
       else
 	get_next_hyp_position id right
 
-let intro_replacing id gl =
-  let next_hyp = get_next_hyp_position id (pf_hyps gl) in
-  tclTHENLIST
-    [thin_for_replacing [id]; Proofview.V82.of_tactic (introduction id); move_hyp id next_hyp] gl
+let intro_replacing id =
+  Proofview.Goal.enter begin fun gl ->
+  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+  let next_hyp = get_next_hyp_position id hyps in
+  Tacticals.New.tclTHENLIST [
+    Proofview.V82.tactic (thin_for_replacing [id]);
+    introduction id;
+    Proofview.V82.tactic (move_hyp id next_hyp);
+  ]
+  end
 
 (* We have e.g. [x, y, y', x', y'' |- forall y y' y'', G] and want to
    reintroduce y, y,' y''. Note that we have to clear y, y' and y''
@@ -4303,7 +4309,7 @@ let symmetry_in id =
           | PolymorphicLeibnizEq (typ,c1,c2) -> mkApp (hdcncl, [| typ; c2; c1 |])
           | HeterogenousEq (t1,c1,t2,c2) -> mkApp (hdcncl, [| t2; c2; t1; c1 |]) in
         Tacticals.New.tclTHENS (cut (it_mkProd_or_LetIn symccl sign))
-          [ Proofview.V82.tactic (intro_replacing id);
+          [ intro_replacing id;
             Tacticals.New.tclTHENLIST [ intros; symmetry; apply (mkVar id); assumption ] ]
     end
     begin function

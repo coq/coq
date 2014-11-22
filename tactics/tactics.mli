@@ -61,7 +61,7 @@ val intro_move_avoid  : Id.t option -> Id.t list -> Id.t move_location -> unit P
      to belong to [idl] *)
 val intro_avoiding       : Id.t list -> unit Proofview.tactic
 
-val intro_replacing      : Id.t -> tactic
+val intro_replacing      : Id.t -> unit Proofview.tactic
 val intro_using          : Id.t -> unit Proofview.tactic
 val intro_mustbe_force   : Id.t -> unit Proofview.tactic
 val intro_then           : (Id.t -> unit Proofview.tactic) -> unit Proofview.tactic
