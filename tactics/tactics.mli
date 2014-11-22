@@ -235,7 +235,6 @@ type elim_scheme = {
   elimc: constr with_bindings option;
   elimt: types;
   indref: global_reference option;
-  index: int;              (** index of the elimination type in the scheme *)
   params: rel_context;     (** (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;            (** number of parameters *)
   predicates: rel_context; (** (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)

@@ -2953,7 +2953,6 @@ type elim_scheme = {
   elimc: constr with_bindings option;
   elimt: types;
   indref: global_reference option;
-  index: int;              (* index of the elimination type in the scheme *)
   params: rel_context;     (* (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
   nparams: int;            (* number of parameters *)
   predicates: rel_context; (* (Qq, (Tq_1 -> Tq_2 ->...-> Tq_nq)), (Q1,...) *)
@@ -2975,7 +2974,6 @@ let empty_scheme =
     elimc = None;
     elimt = mkProp;
     indref = None;
-    index = -1;
     params = [];
     nparams = 0;
     predicates = [];
@@ -3337,17 +3335,6 @@ let occur_rel n c =
   let res = not (noccurn n c) in
   res
 
-(* cuts a list in two parts, first of size n. Size must be greater than n *)
-let cut_list n l =
-  let rec cut_list_aux acc n l =
-    if n<=0 then acc,l
-    else match l with
-      | [] -> assert false
-      | e::l' -> cut_list_aux (acc@[e]) (n-1) l' in
-  let res = cut_list_aux [] n l in
-  res
-
-
 (* This function splits the products of the induction scheme [elimt] into four
    parts:
    - branches, easily detectable (they are not referred by rels in the subterm)
@@ -3384,7 +3371,7 @@ let decompose_paramspred_branch_args elimt =
     let hyps,ccl = decompose_prod_assum elimt in
     let hd_ccl_pred,_ = decompose_app ccl in
     begin match kind_of_term hd_ccl_pred with
-      | Rel i  -> let acc3,acc1 = cut_list (i-1) hyps in acc1 , [] , acc3 , ccl
+      | Rel i  -> let acc3,acc1 = List.chop (i-1) hyps in acc1 , [] , acc3 , ccl
       | _ -> error_ind_scheme ""
     end
   | _ -> acc1, acc2 , acc3, ccl
@@ -3416,7 +3403,7 @@ let compute_elim_sig ?elimc elimt =
   let ccl = exchange_hd_app (mkVar (Id.of_string "__QI_DUMMY__")) conclusion in
   let concl_with_args = it_mkProd_or_LetIn ccl args_indargs in
   let nparams = Int.Set.cardinal (free_rels concl_with_args) in
-  let preds,params = cut_list (List.length params_preds - nparams) params_preds in
+  let preds,params = List.chop (List.length params_preds - nparams) params_preds in
 
   (* A first approximation, further analysis will tweak it *)
   let res = ref { empty_scheme with
@@ -3624,7 +3611,7 @@ let get_eliminator elim gl = match elim with
 (* Instantiate all meta variables of elimclause using lid, some elts
    of lid are parameters (first ones), the other are
    arguments. Returns the clause obtained.  *)
-let recolle_clenv nparams lid elimclause gl =
+let recolle_clenv i params args elimclause gl =
   let _,arr = destApp elimclause.templval.rebus in
   let lindmv =
     Array.map
@@ -3634,18 +3621,14 @@ let recolle_clenv nparams lid elimclause gl =
 	  | _  -> errorlabstrm "elimination_clause"
               (str "The type of the elimination clause is not well-formed."))
       arr in
-  let nmv = Array.length lindmv in
-  let lidparams,lidargs = cut_list nparams lid in
-  let nidargs = List.length lidargs in
+  let k = match i with -1 -> Array.length lindmv - List.length args | _ -> i in
   (* parameters correspond to first elts of lid. *)
   let clauses_params =
     List.map_i (fun i id -> mkVar id , pf_get_hyp_typ gl id , lindmv.(i))
-      0 lidparams in
-  (* arguments correspond to last elts of lid. *)
+      0 params in
   let clauses_args =
-    List.map_i
-      (fun i id -> mkVar id , pf_get_hyp_typ gl id , lindmv.(nmv-nidargs+i))
-      0 lidargs in
+    List.map_i (fun i id -> mkVar id , pf_get_hyp_typ gl id , lindmv.(k+i))
+      0 args in
   let clauses = clauses_params@clauses_args in
   (* iteration of clenv_fchain with all infos we have. *)
   List.fold_right
@@ -3664,16 +3647,18 @@ let recolle_clenv nparams lid elimclause gl =
    (elimc ?i ?j ?k...?l). This solves partly meta variables (and may
     produce new ones). Then refine with the resulting term with holes.
 *)
-let induction_tac_felim with_evars indvars nparams elim gl =
-  let {elimbody=(elimc,lbindelimc)},elimt = elim in
+let induction_tac with_evars params indvars elim gl =
+  let ({elimindex=i;elimbody=(elimc,lbindelimc);elimrename=rename},elimt) = elim in
+  let i = match i with None -> index_of_ind_arg elimt | Some i -> i in
   (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
+  let elimc = mkCast (elimc, DEFAULTcast, elimt) in
   let elimclause =
-    pf_apply make_clenv_binding gl (mkCast (elimc,DEFAULTcast, elimt),elimt) lbindelimc in
+    pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
   (* elimclause' is built from elimclause by instanciating all args and params. *)
-  let elimclause' = recolle_clenv nparams indvars elimclause gl in
+  let elimclause' = recolle_clenv i params indvars elimclause gl in
   (* one last resolution (useless?) *)
   let resolved = clenv_unique_resolver ~flags:(elim_flags ()) elimclause' gl in
-  Proofview.V82.of_tactic (Clenvtac.clenv_refine with_evars resolved) gl
+  Proofview.V82.of_tactic (enforce_prop_bound_names rename (Clenvtac.clenv_refine with_evars resolved)) gl
 
 (* Apply induction "in place" replacing the hypothesis on which
    induction applies with the induction hypotheses *)
@@ -3718,8 +3703,7 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
    induction_from_context is that there is no main induction argument,
    so we choose one to be the positioning reference. On the other hand,
    all args and params must be given, so we help a bit the unifier by
-   making the "pattern" by hand before calling induction_tac_felim
-   FIXME: REUNIF AVEC induction_tac_felim? *)
+   making the "pattern" by hand before calling induction_tac *)
 let induction_from_context_l with_evars elim_info lid names =
   let indsign,scheme = elim_info in
   (* number of all args, counting farg and indarg if present. *)
@@ -3738,7 +3722,9 @@ let induction_from_context_l with_evars elim_info lid names =
       | []  -> anomaly (Pp.str "induction_from_context_l")
       | e::l ->
 	  let nargs_without_first = nargs_indarg_farg - 1 in
-	  let ivs,lp = cut_list nargs_without_first l in
+	  let ivs,lp =
+            if nargs_indarg_farg = 0 then [],l
+            else List.chop nargs_without_first l in
 	  e, ivs, lp in
   (* terms to patternify we must patternify indarg or farg if present in concl *)
   let lid_in_pattern =
@@ -3747,7 +3733,10 @@ let induction_from_context_l with_evars elim_info lid names =
   let lidcstr = List.map (fun x -> mkVar x) lid_in_pattern in
   let realindvars = (* hyp0 is a real induction arg if it is not the
 		       farg in the conclusion of the induction scheme *)
-    List.rev ((if scheme.farg_in_concl then indvars else hyp0::indvars) @ lid_params) in
+    List.rev (if scheme.farg_in_concl then indvars else hyp0::indvars) in
+  let params = List.rev lid_params in
+  (* To deal with cases where args are detected in front of the scheme *)
+  let params,realindvars = List.chop scheme.nparams (params@realindvars) in
   let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
     (* pattern to make the predicate appear. *)
     reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl;
@@ -3755,20 +3744,10 @@ let induction_from_context_l with_evars elim_info lid names =
        possible holes using arguments given by the user (but the
        functional one). *)
     (* FIXME: Tester ca avec un principe dependant et non-dependant *)
-    induction_tac_felim with_evars realindvars scheme.nparams elim
+    induction_tac with_evars params realindvars elim
   ]) in
-  let elim = ElimUsing (({elimindex = Some scheme.index; elimbody = Option.get scheme.elimc; elimrename = None}, scheme.elimt), indsign) in
+  let elim = ElimUsing (({elimindex = Some (-1); elimbody = Option.get scheme.elimc; elimrename = None}, scheme.elimt), indsign) in
   apply_induction_in_context None [] elim (hyp0::indvars) names induct_tac
-
-(* Unification between ((elimc:elimt) ?i ?j ?k ?l ... ?m) and the
-   hypothesis on which the induction is made *)
-let induction_tac with_evars elim (varname,lbind) typ gl =
-  let ({elimindex=i;elimbody=(elimc,lbindelimc);elimrename=rename},elimt) = elim in
-  let indclause = pf_apply make_clenv_binding gl (mkVar varname,typ) lbind  in
-  let i = match i with None -> index_of_ind_arg elimt | Some i -> i in
-  let elimc = mkCast (elimc, DEFAULTcast, elimt) in
-  Proofview.V82.of_tactic
-    (elimination_clause_scheme with_evars ~with_classes:false rename i (elimc, elimt, lbindelimc) indclause) gl
 
 let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inhyps =
   Proofview.Goal.enter begin fun gl ->
@@ -3777,9 +3756,9 @@ let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inh
     Tacmach.New.pf_apply reduce_to_quantified_ref gl
   in
   let typ0 = reduce_to_quantified_ref indref tmptyp0 in
-  let indvars = find_atomic_param_of_ind nparams ((strip_prod typ0)) in
+  let indvars = find_atomic_param_of_ind nparams (strip_prod typ0) in
   let induct_tac elim =
-    Proofview.V82.tactic (induction_tac with_evars elim (hyp0,NoBindings) typ0)
+    Proofview.V82.tactic (induction_tac with_evars [] [hyp0] elim)
   in
   apply_induction_in_context (Some hyp0) inhyps elim indvars names induct_tac
   end
