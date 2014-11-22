@@ -183,10 +183,8 @@ let contextualize f g = function
   | Some (occs,c) ->
       let l = Locusops.occurrences_map (List.map out_arg) occs in
       let b,c,h = match c with
-        | Inl r -> true, PRef (global_of_evaluable_reference r),f
-        | Inr c ->
-            let b = if head_style then false else (* compat *) is_reference c in
-            b,c,g in
+        | Inl r -> true,PRef (global_of_evaluable_reference r),f
+        | Inr c -> false,c,f in
       e_red (contextually b (l,c) (fun _ -> h))
   | None -> e_red g
 

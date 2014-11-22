@@ -296,7 +296,7 @@ let short_name = function
 
 let intern_evaluable_global_reference ist r =
   let lqid = qualid_of_reference r in
-  try evaluable_of_global_reference ist.genv (locate_global_with_alias lqid)
+  try evaluable_of_global_reference ist.genv (locate_global_with_alias ~head:true lqid)
   with Not_found ->
   match r with
   | Ident (loc,id) when not !strict_check -> EvalVarRef id
@@ -337,25 +337,44 @@ let intern_constr_pattern ist ~as_type ~ltacvars pc =
   let c = intern_constr_gen true false ist pc in
   metas,(c,pat)
 
+let dummy_pat = PRel 0
+
 let intern_typed_pattern ist p =
-  let dummy_pat = PRel 0 in
   (* we cannot ensure in non strict mode that the pattern is closed *)
   (* keeping a constr_expr copy is too complicated and we want anyway to *)
   (* type it, so we remember the pattern as a glob_constr only *)
   (intern_constr_gen true false ist p,dummy_pat)
 
-let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
-  match p with
-  | Inl r ->
+let rec intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
+  let interp_ref r =
+    try l, Inl (intern_evaluable ist r)
+    with e when Logic.catchable_exception e ->
+      (* Compatibility. In practice, this means that the code above
+         is useless. Still the idea of having either an evaluable
+         ref or a pattern seems interesting, with "head" reduction
+         in case of an evaluable ref, and "strong" reduction in the
+         subterm matched when a pattern *)
       let loc = loc_of_smart_reference r in
       let r = match r with
       | AN r -> r
       | _ -> Qualid (loc,qualid_of_path (path_of_global (smart_global r))) in
-      (* Ensure that no implicit arguments are added so that a qualid
-         is interpreted as the head of subterm starting with the
-         corresponding reference *)
-      l, Inr (intern_typed_pattern ist (CAppExpl(loc,(None,r,None),[])))
-  | Inr c -> l, Inr (intern_typed_pattern ist c)
+      let sign = { Constrintern.ltac_vars = ist.ltacvars; Constrintern.ltac_bound = Id.Set.empty } in
+      let c = Constrintern.interp_reference sign r in
+      match c with
+      | GRef (_,r,None) ->
+          l, Inl (ArgArg (evaluable_of_global_reference ist.genv r,None))
+      | GVar (_,id) ->
+          let r = evaluable_of_global_reference ist.genv (VarRef id) in
+          l, Inl (ArgArg (r,None))
+      | _ ->
+          l, Inr ((c,None),dummy_pat) in
+  match p with
+  | Inl r -> interp_ref r
+  | Inr (CAppExpl(_,(None,r,None),[])) ->
+      (* We interpret similarly @ref and ref *)
+      interp_ref (AN r)
+  | Inr c ->
+      l, Inr (intern_typed_pattern ist c)
 
 (* This seems fairly hacky, but it's the first way I've found to get proper
    globalization of [unfold].  --adamc *)
