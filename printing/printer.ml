@@ -696,9 +696,8 @@ let pr_prim_rule = function
   | Thin ids ->
       (str"clear "  ++ pr_sequence pr_id ids)
 
-  | Move (withdep,id1,id2) ->
-      (str (if withdep then "dependent " else "") ++
-	 str"move "  ++ pr_id id1 ++ Miscprint.pr_move_location pr_id id2)
+  | Move (id1,id2) ->
+      (str"move "  ++ pr_id id1 ++ Miscprint.pr_move_location pr_id id2)
 
 (* Backwards compatibility *)
 

@@ -254,7 +254,7 @@ let apply_clear_request clear_flag dft c =
   else Tacticals.New.tclIDTAC
 
 (* Moving hypotheses *)
-let move_hyp id dest gl = Tacmach.move_hyp true id dest gl
+let move_hyp id dest gl = Tacmach.move_hyp id dest gl
 
 (* Renaming hypotheses *)
 let rename_hyp repl =

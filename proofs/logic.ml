@@ -233,7 +233,7 @@ let hyp_of_move_location = function
   | MoveBefore id -> id
   | _ -> assert false
 
-let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
+let move_hyp toleft (left,(idfrom,_,_ as declfrom),right) hto =
   let env = Global.env() in
   let test_dep (hyp,c,typ as d) (hyp2,c,typ2 as d2) =
     if toleft
@@ -250,7 +250,7 @@ let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
     | (hyp,_,_) as d :: right ->
 	let (first',middle') =
       	  if List.exists (test_dep d) middle then
-	    if with_dep && not (move_location_eq hto (MoveAfter hyp)) then
+	    if not (move_location_eq hto (MoveAfter hyp)) then
 	      (first, d::middle)
             else
 	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id idfrom ++
@@ -529,7 +529,7 @@ let prim_refiner r sigma goal =
 	  if replace then
 	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
 	    let sign,t,cl,sigma = clear_hyps2 env sigma (Id.Set.singleton id) sign t cl in
-	    move_hyp true false ([],(id,None,t),named_context_of_val sign)
+	    move_hyp false ([],(id,None,t),named_context_of_val sign)
 	      nexthyp,
 	      t,cl,sigma
 	  else
@@ -645,11 +645,11 @@ let prim_refiner r sigma goal =
 	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
 	  ([gl], sigma)
 
-    | Move (withdep, hfrom, hto) ->
+    | Move (hfrom, hto) ->
   	let (left,right,declfrom,toleft) =
 	  split_sign hfrom hto (named_context_of_val sign) in
   	let hyps' =
-	  move_hyp withdep toleft (left,declfrom,right) hto in
+	  move_hyp toleft (left,declfrom,right) hto in
 	let (gl,ev,sigma) = mk_goal hyps' cl in
 	let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
   	  ([gl], sigma)

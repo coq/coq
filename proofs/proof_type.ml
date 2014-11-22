@@ -32,7 +32,7 @@ type prim_rule =
   | Cofix of Id.t * (Id.t * constr) list * int
   | Refine of constr
   | Thin of Id.t list
-  | Move of bool * Id.t * Id.t move_location
+  | Move of Id.t * Id.t move_location
 
 (** Nowadays, the only rules we'll consider are the primitive rules *)
 
