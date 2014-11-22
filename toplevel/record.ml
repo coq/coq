@@ -105,7 +105,7 @@ let typecheck_params_and_fields def id t ps nots fs =
 	   | LocalRawAssum (ls, bk, ce) -> List.iter (error bk) ls) ps
   in 
   let impls_env, ((env1,newps), imps) = interp_context_evars env0 evars ps in
-  let t' = match t with 
+  let t', template = match t with 
     | Some t -> 
        let env = push_rel_context newps env0 in
        let s = interp_type_evars env evars ~impls:empty_internalization_env t in
@@ -113,12 +113,13 @@ let typecheck_params_and_fields def id t ps nots fs =
 	 (match kind_of_term sred with
 	 | Sort s' -> 
 	   (match Evd.is_sort_variable !evars s' with
-	   | Some l -> evars := Evd.make_flexible_variable !evars true (* (not def) *) l; sred
-	   | None -> s)
+	   | Some l -> evars := Evd.make_flexible_variable !evars true (* (not def) *) l; 
+	     sred, true
+	   | None -> s, false)
 	 | _ -> user_err_loc (constr_loc t,"", str"Sort expected."))
     | None -> 
       let uvarkind = if (* not def *) true then Evd.univ_flexible_alg else Evd.univ_flexible in
-	mkSort (Evarutil.evd_comb0 (Evd.new_sort_variable uvarkind) evars)
+	mkSort (Evarutil.evd_comb0 (Evd.new_sort_variable uvarkind) evars), false
   in
   let fullarity = it_mkProd_or_LetIn t' newps in
   let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
@@ -144,7 +145,7 @@ let typecheck_params_and_fields def id t ps nots fs =
   let ce t = Evarutil.check_evars env0 Evd.empty evars t in
     List.iter (fun (n, b, t) -> Option.iter ce b; ce t) (List.rev newps);
     List.iter (fun (n, b, t) -> Option.iter ce b; ce t) (List.rev newfs);
-    Evd.universe_context evars, nf arity, imps, newps, impls, newfs
+    Evd.universe_context evars, nf arity, template, imps, newps, impls, newfs
 
 let degenerate_decl (na,b,t) =
   let id = match na with
@@ -339,8 +340,8 @@ let structure_signature ctx =
 
 open Typeclasses
 
-let declare_structure finite poly ctx id idbuild paramimpls params arity fieldimpls fields
-    ?(kind=StructureComponent) ?name is_coe coers sign =
+let declare_structure finite poly ctx id idbuild paramimpls params arity template 
+    fieldimpls fields ?(kind=StructureComponent) ?name is_coe coers sign =
   let nparams = List.length params and nfields = List.length fields in
   let args = Termops.extended_rel_list nfields params in
   let ind = applist (mkRel (1+nparams+nfields), args) in
@@ -353,6 +354,7 @@ let declare_structure finite poly ctx id idbuild paramimpls params arity fieldim
   let mie_ind =
     { mind_entry_typename = id;
       mind_entry_arity = arity;
+      mind_entry_template = not poly && template;
       mind_entry_consnames = [idbuild];
       mind_entry_lc = [type_constructor] }
   in
@@ -382,8 +384,8 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
 
-let declare_class finite def poly ctx id idbuild paramimpls params arity fieldimpls fields
-    ?(kind=StructureComponent) is_coe coers priorities sign =
+let declare_class finite def poly ctx id idbuild paramimpls params arity 
+    template fieldimpls fields ?(kind=StructureComponent) is_coe coers priorities sign =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
     let len = List.length params in
@@ -422,7 +424,7 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity fieldim
 	  cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
 	let ind = declare_structure BiFinite poly ctx (snd id) idbuild paramimpls
-	  params arity fieldimpls fields
+	  params arity template fieldimpls fields
 	  ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields) sign
 	in
 	let coers = List.map2 (fun coe pri -> 
@@ -510,20 +512,20 @@ let definition_structure (kind,poly,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild
   if isnot_class && List.exists (fun opt -> not (Option.is_empty opt)) priorities then
     error "Priorities only allowed for type class substructures";
   (* Now, younger decl in params and fields is on top *)
-  let ctx, arity, implpars, params, implfs, fields =
+  let ctx, arity, template, implpars, params, implfs, fields =
     States.with_state_protection (fun () ->
       typecheck_params_and_fields (kind = Class true) idstruc s ps notations fs) () in
   let sign = structure_signature (fields@params) in
     match kind with
     | Class def ->
 	let gr = declare_class finite def poly ctx (loc,idstruc) idbuild
-	  implpars params arity implfs fields is_coe coers priorities sign in
+	  implpars params arity template implfs fields is_coe coers priorities sign in
 	gr
     | _ ->
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits
 	    (succ (List.length params)) impls) implfs in
 	let ind = declare_structure finite poly ctx idstruc 
-	  idbuild implpars params arity implfs 
+	  idbuild implpars params arity template implfs 
 	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
 	IndRef ind

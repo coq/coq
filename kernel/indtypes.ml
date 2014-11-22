@@ -226,7 +226,8 @@ let typecheck_inductive env ctx mie =
     List.fold_left
       (fun (env_ar,l) ind ->
          (* Arities (without params) are typed-checked here *)
-         let arity, expltype = 
+	 let expltype = ind.mind_entry_template in
+         let arity =
 	   if isArity ind.mind_entry_arity then
 	     let (ctx,s) = dest_arity env_params ind.mind_entry_arity in
 	       match s with
@@ -237,12 +238,12 @@ let typecheck_inductive env ctx mie =
 	         let proparity = infer_type env_params (mkArity (ctx, prop_sort)) in
 		 let (cctx, _) = destArity proparity.utj_val in
 		   (* Any universe is well-formed, we don't need to check [s] here *)
-		   mkArity (cctx, s), not (Sorts.is_small s)
+		   mkArity (cctx, s)
 	       | _ -> 
 		 let arity = infer_type env_params ind.mind_entry_arity in
-		   arity.utj_val, not (Sorts.is_small s)
+		   arity.utj_val
 	   else let arity = infer_type env_params ind.mind_entry_arity in
-		  arity.utj_val, false
+		  arity.utj_val
 	 in
 	 let (sign, deflev) = dest_arity env_params arity in
 	 let inflev = 

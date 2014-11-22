@@ -529,12 +529,13 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
     constructors;
 
   (* Build the inductive entries *)
-  let entries = List.map3 (fun ind arity (cnames,ctypes,cimpls) -> {
+  let entries = List.map4 (fun ind arity template (cnames,ctypes,cimpls) -> {
     mind_entry_typename = ind.ind_name;
     mind_entry_arity = arity;
+    mind_entry_template = template;
     mind_entry_consnames = cnames;
     mind_entry_lc = ctypes
-  }) indl arities constructors in
+  }) indl arities aritypoly constructors in
   let impls =
     let len = rel_context_nhyps ctx_params in
       List.map2 (fun indimpls (_,_,cimpls) ->

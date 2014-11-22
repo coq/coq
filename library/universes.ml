@@ -957,10 +957,13 @@ let is_direct_sort_constraint s v = match s with
 let solve_constraints_system levels level_bounds level_min =
   let open Univ in
   let levels =
-    Array.map (Option.map
-		 (fun u -> match Universe.level u with 
-		 | Some u -> u 
-		 | _ -> Errors.anomaly (Pp.str"expects Atom")))
+    Array.mapi (fun i o ->
+      match o with
+      | Some u ->
+	(match Universe.level u with 
+	| Some u -> Some u 
+	| _ -> level_bounds.(i) <- Universe.sup level_bounds.(i) u; None)
+      | None -> None)
       levels in
   let v = Array.copy level_bounds in
   let nind = Array.length v in

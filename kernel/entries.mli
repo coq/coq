@@ -37,6 +37,7 @@ then, in i{^ th} block, [mind_entry_params] is [xn:Xn;...;x1:X1];
 type one_inductive_entry = {
   mind_entry_typename : Id.t;
   mind_entry_arity : constr;
+  mind_entry_template : bool; (* Use template polymorphism *)
   mind_entry_consnames : Id.t list;
   mind_entry_lc : constr list }
 
@@ -48,7 +49,7 @@ type mutual_inductive_entry = {
   mind_entry_finite : Decl_kinds.recursivity_kind;
   mind_entry_params : (Id.t * local_entry) list;
   mind_entry_inds : one_inductive_entry list;
-  mind_entry_polymorphic : bool;
+  mind_entry_polymorphic : bool; 
   mind_entry_universes : Univ.universe_context;
   mind_entry_private : bool option }
 

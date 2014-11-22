@@ -353,6 +353,7 @@ let discharge_inductive ((sp,kn),(dhyps,mie)) =
 let dummy_one_inductive_entry mie = {
   mind_entry_typename = mie.mind_entry_typename;
   mind_entry_arity = mkProp;
+  mind_entry_template = false;
   mind_entry_consnames = mie.mind_entry_consnames;
   mind_entry_lc = []
 }

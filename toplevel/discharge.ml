@@ -43,26 +43,27 @@ let abstract_inductive hyps nparams inds =
   let subs = List.init ntyp (fun k -> lift nhyp (mkApp(mkRel (k+1),args))) in
   let inds' =
     List.map
-      (function (tname,arity,cnames,lc) ->
+      (function (tname,arity,template,cnames,lc) ->
 	let lc' = List.map (substl subs) lc in
 	let lc'' = List.map (fun b -> Termops.it_mkNamedProd_wo_LetIn b hyps) lc' in
 	let arity' = Termops.it_mkNamedProd_wo_LetIn arity hyps in
-        (tname,arity',cnames,lc''))
+        (tname,arity',template,cnames,lc''))
       	inds in
   let nparams' = nparams + Array.length args in
 (* To be sure to be the same as before, should probably be moved to process_inductive *)
-  let params' = let (_,arity,_,_) = List.hd inds' in
+  let params' = let (_,arity,_,_,_) = List.hd inds' in
 		let (params,_) = decompose_prod_n_assum nparams' arity in
 		  List.map detype_param params
   in
   let ind'' =
   List.map
-    (fun (a,arity,c,lc) ->
+    (fun (a,arity,template,c,lc) ->
       let _, short_arity = decompose_prod_n_assum nparams' arity in
       let shortlc =
 	List.map (fun c -> snd (decompose_prod_n_assum nparams' c)) lc in
       { mind_entry_typename = a;
 	mind_entry_arity = short_arity;
+	mind_entry_template = template;
 	mind_entry_consnames = c;
 	mind_entry_lc = shortlc })
     inds'
@@ -70,10 +71,10 @@ let abstract_inductive hyps nparams inds =
 
 let refresh_polymorphic_type_of_inductive (_,mip) =
   match mip.mind_arity with
-  | RegularArity s -> s.mind_user_arity
+  | RegularArity s -> s.mind_user_arity, false
   | TemplateArity ar ->
     let ctx = List.rev mip.mind_arity_ctxt in
-      mkArity (List.rev ctx, Type ar.template_level)
+      mkArity (List.rev ctx, Type ar.template_level), true
 
 let process_inductive (sechyps,abs_ctx) modlist mib =
   let nparams = mib.mind_nparams in
@@ -87,7 +88,7 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
   let inds =
     Array.map_to_list
       (fun mip ->
-	let ty = refresh_polymorphic_type_of_inductive (mib,mip) in
+	let ty, template = refresh_polymorphic_type_of_inductive (mib,mip) in
 	let arity = expmod_constr modlist ty in
 	let arity = Vars.subst_instance_constr subst arity in
 	let lc = Array.map 
@@ -95,7 +96,7 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
 	  mip.mind_user_lc 
 	in
 	  (mip.mind_typename,
-	   arity,
+	   arity, template,
 	   Array.to_list mip.mind_consnames,
 	   Array.to_list lc))
       mib.mind_packets in
