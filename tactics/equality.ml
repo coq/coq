@@ -170,8 +170,9 @@ let instantiate_lemma gl c ty l l2r concl =
   let eqclause = pf_apply Clenv.make_clenv_binding gl (c,t) l in
    [eqclause]
 
-let rewrite_conv_closed_core_unif_flags = {
-  modulo_conv_on_closed_terms = Some full_transparent_state;
+let rewrite_conv_closed_core_unif_flags env =
+  let ts = Conv_oracle.get_transp_state (Environ.oracle env) in {
+  modulo_conv_on_closed_terms = Some ts;
     (* We have this flag for historical reasons, it has e.g. the consequence *)
     (* to rewrite "?x+2" in "y+(1+1)=0" or to rewrite "?x+?x" in "2+(1+1)=0" *)
 
@@ -197,17 +198,18 @@ let rewrite_conv_closed_core_unif_flags = {
   modulo_eta = true;
 }
 
-let rewrite_conv_closed_unif_flags = {
-  core_unify_flags = rewrite_conv_closed_core_unif_flags;
-  merge_unify_flags = rewrite_conv_closed_core_unif_flags;
-  subterm_unify_flags = rewrite_conv_closed_core_unif_flags;
+let rewrite_conv_closed_unif_flags env =
+  let flags = rewrite_conv_closed_core_unif_flags env in {
+  core_unify_flags = flags;
+  merge_unify_flags = flags;
+  subterm_unify_flags = flags;
   allow_K_in_toplevel_higher_order_unification = false;
   resolve_evars = false
 }
 
 let rewrite_elim with_evars frzevars cls c e =
   Proofview.Goal.enter begin fun gl ->
-  let flags = make_flags frzevars (Proofview.Goal.sigma gl) rewrite_conv_closed_unif_flags c in
+  let flags = make_flags frzevars (Proofview.Goal.sigma gl) (rewrite_conv_closed_unif_flags (Proofview.Goal.env gl)) c in
   general_elim_clause with_evars flags cls c e
   end
 

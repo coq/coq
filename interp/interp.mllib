@@ -10,7 +10,6 @@ Dumpglob
 Syntax_def
 Smartlocate
 Reserve
-Impargs
 Implicit_quantifiers
 Constrintern
 Modintern
