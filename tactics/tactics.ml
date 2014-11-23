@@ -2640,6 +2640,19 @@ let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
 let dest_intro_patterns avoid thin dest pat tac =
   intro_patterns_core true avoid [] thin dest None 0 tac pat
 
+let safe_dest_intro_patterns avoid thin dest pat tac =
+  Proofview.tclORELSE
+    (dest_intro_patterns avoid thin dest pat tac)
+    begin function
+      | UserError ("move_hyp",_) ->
+       (* May happen e.g. with "destruct x using s" with an hypothesis
+          which is morally an induction hypothesis to be "MoveLast" if
+          known as such but which is considered instead as a subterm of
+          a constructor to be move at the place of x. *)
+          dest_intro_patterns avoid thin MoveLast pat tac
+      | e -> Proofview.tclZERO e
+    end
+
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
 type recarg_position =
@@ -2710,7 +2723,7 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
         Proofview.Goal.enter begin fun gl ->
         let (pat,names) = consume_pattern avoid Anonymous dep gl names in
         let dest = get_recarg_dest dests in
-	dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
+	safe_dest_intro_patterns avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
     | [] ->
