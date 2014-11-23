@@ -22,6 +22,7 @@ install_printer Top_printers.ppsp
 install_printer Top_printers.ppqualid
 install_printer Top_printers.ppclindex
 install_printer Top_printers.ppbigint
+install_printer Top_printers.pp_transparent_state
 
 install_printer Top_printers.pppattern
 install_printer Top_printers.ppglob_constr
