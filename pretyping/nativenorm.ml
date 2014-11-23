@@ -312,12 +312,17 @@ and nf_atom_type env atom =
       let ci = ans.asw_ci in
       mkCase(ci, p, a, branchs), tcase 
   | Afix(tt,ft,rp,s) ->
-      let tt = Array.map (nf_type env) tt in
+      let tt = Array.map (fun t -> nf_type env t) tt in
       let name = Array.map (fun _ -> (Name (id_of_string "Ffix"))) tt in
       let lvl = nb_rel env in
+      let nbfix = Array.length ft in
       let fargs = mk_rels_accu lvl (Array.length ft) in
+      (* Third argument of the tuple is ignored by push_rec_types *)
       let env = push_rec_types (name,tt,[||]) env in
-      let ft = Array.mapi (fun i v -> nf_val env (napply v fargs) tt.(i)) ft in
+      (* We lift here because the types of arguments (in tt) will be evaluated
+         in an environment where the fixpoints have been pushed *)
+      let norm_body i v = nf_val env (napply v fargs) (lift nbfix tt.(i)) in
+      let ft = Array.mapi norm_body ft in
       mkFix((rp,s),(name,tt,ft)), tt.(s)
   | Acofix(tt,ft,s,_) | Acofixe(tt,ft,s,_) ->
       let tt = Array.map (nf_type env) tt in

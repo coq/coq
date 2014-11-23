@@ -54,7 +54,8 @@ type atom =
   | Asort of sorts
   | Avar of identifier
   | Acase of annot_sw * accumulator * t * (t -> t)
-  | Afix of  t array * t array * rec_pos * int
+  | Afix of t array * t array * rec_pos * int
+            (* types, bodies, rec_pos, pos *)
   | Acofix of t array * t array * int * t
   | Acofixe of t array * t array * int * t
   | Aprod of name * t * (t -> t)

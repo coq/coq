@@ -275,8 +275,12 @@ and nf_fix env f =
   let ndef = Array.length vt in
   let ft = Array.map (fun v -> nf_val env v crazy_type) vt in
   let name = Array.init ndef (fun _ -> (Name (Id.of_string "Ffix"))) in
+  (* Third argument of the tuple is ignored by push_rec_types *)
   let env = push_rec_types (name,ft,ft) env in
-  let fb = Util.Array.map2 (fun v t -> nf_fun env v t) vb ft in
+  (* We lift here because the types of arguments (in tt) will be evaluated
+     in an environment where the fixpoints have been pushed *)
+  let norm_vb v t = nf_fun env v (lift ndef t) in
+  let fb = Util.Array.map2 norm_vb vb ft in
   mkFix ((rec_args,init),(name,ft,fb))
 
 and nf_fix_app env f vargs =
