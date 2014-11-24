@@ -139,3 +139,12 @@ subst z.
 rewrite H0.
 auto with arith.
 Qed.
+
+(* Check that evars are instantiated when the term to rewrite is
+   closed, like in the case it is open *)
+
+Goal exists x, S 0 = 0 -> S x = 0.
+eexists. intro H.
+rewrite H.
+reflexivity.
+Abort.

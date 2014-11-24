@@ -325,6 +325,24 @@ let default_unify_flags () =
   resolve_evars = false
 }
 
+let set_no_delta_core_flags flags = { flags with
+  modulo_conv_on_closed_terms = None;
+  modulo_delta = empty_transparent_state;
+  check_applied_meta_types = false;
+  use_pattern_unification = false;
+  use_meta_bound_pattern_unification = true;
+  modulo_betaiota = false
+}
+
+let set_no_delta_flags flags = {
+  core_unify_flags = set_no_delta_core_flags flags.core_unify_flags;
+  merge_unify_flags = set_no_delta_core_flags flags.merge_unify_flags;
+  subterm_unify_flags = set_no_delta_core_flags flags.subterm_unify_flags;
+  allow_K_in_toplevel_higher_order_unification =
+      flags.allow_K_in_toplevel_higher_order_unification;
+  resolve_evars = flags.resolve_evars
+}
+
 (* Default flag for the "simple apply" version of unification of a *)
 (* type against a type (e.g. apply) *)
 (* We set only the flags available at the time the new "apply" extended *)
@@ -1714,26 +1732,28 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
       if isMeta op then
 	if flags.allow_K_in_toplevel_higher_order_unification then (evd,op::l)
 	else error_abstraction_over_meta env evd hdmeta (destMeta op)
-      else if occur_meta_or_existential op || !keyed_unification then
+      else
+        let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
+        let flags =
+          if occur_meta_or_existential op || !keyed_unification then
+            flags
+          else
+            (* up to Nov 2014, unification was bypassed on evar/meta-free terms;
+               now it is called in a minimalistic way, at least to possibly
+               unify pre-existing non frozen evars of the goal or of the
+               pattern *)
+            set_no_delta_flags flags in
         let (evd',cl) =
           try
 	    (* This is up to delta for subterms w/o metas ... *)
 	    w_unify_to_subterm env evd ~flags (strip_outer_cast op,t)
-	  with PretypeError (env,_,NoOccurrenceFound _) when
-              flags.allow_K_in_toplevel_higher_order_unification -> (evd,op)
+	  with PretypeError (env,_,NoOccurrenceFound _) when allow_K -> (evd,op)
         in
-	  if not flags.allow_K_in_toplevel_higher_order_unification &&
+	  if not allow_K &&
             (* ensure we found a different instance *)
 	    List.exists (fun op -> Term.eq_constr op cl) l
 	  then error_non_linear_unification env evd hdmeta cl
-	  else (evd',cl::l)
-      else if flags.allow_K_in_toplevel_higher_order_unification 
-	  || dependent_univs op t
-      then
-	(evd,op::l)
-      else
-	(* This is not up to delta ... *)
-	raise (PretypeError (env,evd,NoOccurrenceFound (op, None))))
+	  else (evd',cl::l))
     oplist
     (evd,[])
 
