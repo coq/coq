@@ -975,6 +975,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
   in
     
+  if !debug_unification then msg_debug (str "Starting unification");
   let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in
   let res = 
     if occur_meta_or_undefined_evar sigma m || occur_meta_or_undefined_evar sigma n
@@ -991,9 +992,16 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
           Id.Pred.is_empty dl_id && Cpred.is_empty dl_k)
 	then error_cannot_unify env sigma (m, n) else None
   in 
-    match res with 
+  try
+    let a = match res with 
     | Some sigma -> sigma, ms, es
-    | None -> unirec_rec (env,0) cv_pb opt subst m n
+    | None -> unirec_rec (env,0) cv_pb opt subst m n in
+    if !debug_unification then msg_debug (str "Leaving unification with success");
+    a
+  with e ->
+    if !debug_unification then msg_debug (str "Leaving unification with failure");
+    raise e
+
 
 let unify_0 env sigma = unify_0_with_initial_metas (sigma,[],[]) true env
 
