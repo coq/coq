@@ -6,30 +6,50 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module Make(Worker : sig
+type worker_id = string
+type 'a spawn =
+  args:string array -> env:string array -> unit -> in_channel * out_channel * 'a
+type active
+type parking
+
+(* this shall come from a Spawn.* model *)
+module type WorkerModel = sig
   type process
   val spawn :
-      ?prefer_sock:bool -> ?env:string array -> string -> string array ->
+    ?prefer_sock:bool -> ?env:string array -> string -> string array ->
       process * in_channel * out_channel
-end) : sig
+end
 
-type worker_id = string
-type spawn =
-  args:string array -> env:string array -> unit ->
-    in_channel * out_channel * Worker.process
+(* this defines the main loop of the manager *)
+module type ManagerModel = sig
+  type process
+  type extra (* extra stuff to pass to the manager *)
+  val manager :
+    extra -> cancel:bool ref -> die:bool ref -> worker_id -> process spawn ->
+      unit
+  val naming : int -> worker_id
+end
 
-val init :
-  size:int ->
-  manager:(cancel:bool ref -> die:bool ref -> worker_id -> spawn -> unit) ->
-  (int -> worker_id) -> unit
-val destroy : unit -> unit
+module Make(Worker : WorkerModel)
+           (Manager : ManagerModel with type process = Worker.process) : sig
 
-val is_empty : unit -> bool
-val n_workers : unit -> int
-val cancel : worker_id -> unit
-val cancel_all : unit -> unit
+  type 'a pool
+  
+  val create_active : Manager.extra -> int -> active pool
+  val create_parking :  unit -> parking pool
 
-(* The worker should call this function *)
-val worker_handshake : in_channel -> out_channel -> unit
+  val is_empty : 'a pool -> bool
+  val n_workers : 'a pool -> int
+
+  (* cancel signal *)
+  val cancel : 'a pool -> worker_id -> unit
+  val cancel_all : 'a pool -> unit
+  (* die signal + true removal, the pool is empty afterward *)
+  val destroy : 'a pool -> unit
+
+  val move : active pool -> parking pool -> worker_id -> unit
+  
+  (* The worker should call this function *)
+  val worker_handshake : in_channel -> out_channel -> unit
 
 end
