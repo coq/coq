@@ -53,6 +53,11 @@ val init_color_output : unit -> unit
     with additional syle information provided by this module. Be careful this is
     not compatible with the Emacs mode! *)
 
+val pp_tag : Pp.tag_handler
+(** Returns the name of a style tag that is understandable by the formatters
+    that have been inititialized through {!init_color_output}. To be used with
+    {!Pp.pp_with}. *)
+
 (** {5 Tags} *)
 
 val error_tag : t

@@ -323,7 +323,8 @@ let do_vernac () =
         else ppnl (str"Error: There is no ML toplevel." ++ fnl ())
     | any ->
         Format.set_formatter_out_channel stdout;
-        ppnl (print_toplevel_error any);
+        let msg = print_toplevel_error any ++ fnl () in
+        pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft msg;
         pp_flush ()
 
 (** Main coq loop : read vernacular expressions until Drop is entered.

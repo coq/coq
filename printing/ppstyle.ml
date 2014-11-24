@@ -103,6 +103,10 @@ let debug_tag =
   let style = Terminal.make ~bold:true ~fg_color:`WHITE ~bg_color:`MAGENTA () in
   make ~style ["message"; "debug"]
 
+let pp_tag t = match Pp.Tag.prj t tag with
+| None -> ""
+| Some key -> key
+
 let init_color_output () =
   let push_tag, pop_tag, clear_tag = make_style_stack !tags in
   let tag_handler = {
@@ -111,10 +115,6 @@ let init_color_output () =
     Format.print_open_tag = ignore;
     Format.print_close_tag = ignore;
   } in
-  let pp_tag t = match Pp.Tag.prj t tag with
-  | None -> ""
-  | Some key -> key
-  in
   let open Pp_control in
   let () = Format.pp_set_mark_tags !std_ft true in
   let () = Format.pp_set_mark_tags !err_ft true in
