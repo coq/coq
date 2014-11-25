@@ -25,7 +25,7 @@ Variable x : nat.
 Goal True.
 evar (e : Prop).
 assert e.
-let r := constr:(eq_refl x) in clear x; exact r.
+Fail let r := constr:(eq_refl x) in clear x; exact r.
 Abort.
 
 End F.

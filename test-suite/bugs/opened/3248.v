@@ -13,5 +13,5 @@ Proof.
   intros A B x y.
   pose (f := fun (x y : A) => conj x y).
   pose (a := $(ret_and_left f)$).
-  unify (a x y) (conj x y).
+  Fail unify (a x y) (conj x y).
 Abort.

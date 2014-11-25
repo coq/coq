@@ -9,4 +9,4 @@ End Foo.
 Module Bar.
   Include Foo.
 End Bar.
-Fail Definition foo := eq_refl : Foo.T = Bar.T.
+Definition foo := eq_refl : Foo.T = Bar.T.
