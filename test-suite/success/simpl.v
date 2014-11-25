@@ -67,11 +67,10 @@ vm_compute f.
 Fail set (f _).
 Abort.
 
-(* This is a compatibility test with a non evaluable reference, maybe
-   not to be kept for long *)
+(* This is a change wrt 8.4 (waiting to know if it breaks script a lot or not)*)
 
 Goal 0+0=0.
-simpl @eq.
+Fail simpl @eq.
 Abort.
 
 (* Check reference by notation in simpl *)
