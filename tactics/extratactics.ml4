@@ -428,6 +428,8 @@ open Evar_tactics
 (**********************************************************************)
 (* Evar creation                                                      *)
 
+(* TODO: add support for some test similar to g_constr.name_colon so that
+   expressions like "evar (list A)" do not raise a syntax error *)
 TACTIC EXTEND evar
   [ "evar" "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name id) typ ]
 | [ "evar" constr(typ) ] -> [ let_evar Anonymous typ ]
