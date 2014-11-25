@@ -25,6 +25,9 @@ module Make (Taggers : sig
   val tag_keyword     : std_ppcmds -> std_ppcmds
   val tag_evar     : std_ppcmds -> std_ppcmds
   val tag_type     : std_ppcmds -> std_ppcmds
+  val tag_path     : std_ppcmds -> std_ppcmds
+  val tag_ref     : std_ppcmds -> std_ppcmds
+  val tag_var     : std_ppcmds -> std_ppcmds
   val tag_constr_expr : constr_expr -> std_ppcmds -> std_ppcmds
   val tag_unparsing   : unparsing -> std_ppcmds -> std_ppcmds
 end) = struct
@@ -148,6 +151,17 @@ end) = struct
     | GType [] -> tag_type (str "Type")
     | GType u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
 
+  let pr_qualid sp =
+    let (sl, id) = repr_qualid sp in
+    let id = tag_ref (str (Id.to_string id)) in
+    let sl = match DirPath.repr sl with
+    | [] -> mt ()
+    | sl ->
+      let pr dir = tag_path (str (Id.to_string dir)) ++ str "." in
+      prlist pr sl
+    in
+    sl ++ id
+
   let pr_id = pr_id
   let pr_name = pr_name
   let pr_qualid = pr_qualid
@@ -165,6 +179,10 @@ end) = struct
 
   let pr_universe_instance l =
     pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_glob_sort_instance)) l
+
+  let pr_reference = function
+  | Qualid (_, qid) -> pr_qualid qid
+  | Ident (_, id) -> tag_var (str (Id.to_string id))
 
   let pr_cref ref us =
     pr_reference ref ++ pr_universe_instance us
@@ -745,6 +763,17 @@ struct
     let style = Terminal.make ~fg_color:`WHITE () in
     Ppstyle.make ~style ["constr"; "notation"]
 
+  let variable =
+    Ppstyle.make ["constr"; "variable"]
+
+  let reference =
+    let style = Terminal.make ~fg_color:`LIGHT_GREEN () in
+    Ppstyle.make ~style ["constr"; "reference"]
+
+  let path =
+    let style = Terminal.make ~fg_color:`LIGHT_MAGENTA () in
+    Ppstyle.make ~style ["constr"; "path"]
+
 end
 
 let do_not_tag _ x = x
@@ -760,6 +789,9 @@ include Make (struct
     | UnpTerminal s -> tag Tag.notation
     | _ -> do_not_tag ()
     let tag_constr_expr = do_not_tag
+    let tag_path = tag Tag.path
+    let tag_ref = tag Tag.reference
+    let tag_var = tag Tag.variable
 end)
 
 module Richpp = struct
@@ -771,6 +803,9 @@ module Richpp = struct
     let tag_evar          = do_not_tag ()
     let tag_unparsing unp = Pp.tag (Pp.Tag.inj (AUnparsing unp) tag)
     let tag_constr_expr e = Pp.tag (Pp.Tag.inj (AConstrExpr e) tag)
+    let tag_path = do_not_tag ()
+    let tag_ref = do_not_tag ()
+    let tag_var = do_not_tag ()
   end)
 
 end
