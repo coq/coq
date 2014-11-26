@@ -35,25 +35,30 @@ type route_id = int
 val default_route : route_id
 
 type feedback_content =
-  | AddedAxiom
+  (* STM mandatory data (must be displayed) *)
   | Processed
   | Incomplete
   | Complete
+  | ErrorMsg of Loc.t * string
+  (* STM optional data *)
+  | ProcessingIn of string
+  | InProgress of int
+  | WorkerStatus of string * string
+  (* Generally useful metadata *)
+  | Goals of Loc.t * string
+  | AddedAxiom
   | GlobRef of Loc.t * string * string * string * string
   | GlobDef of Loc.t * string * string * string
-  | ErrorMsg of Loc.t * string
-  | InProgress of int
-  | SlaveStatus of string * string
-  | ProcessingInMaster
-  | Goals of Loc.t * string
-  | StructuredGoals of Loc.t * xml
   | FileDependency of string option * string
   | FileLoaded of string * string
+  (* Extra metadata *)
+  | Custom of Loc.t * string * xml
+  (* Old generic messages *)
   | Message of message
 
 type feedback = {
   id : edit_or_state_id;       (* The document part concerned *)
-  content : feedback_content;  (* The payload *)
+  contents : feedback_content;  (* The payload *)
   route : route_id;            (* Extra routing info *)
 }
 

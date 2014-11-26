@@ -160,16 +160,17 @@ val is_message : Xml_datatype.xml -> bool
  * Morally the parser gets a string and an edit_id, and gives back an AST.
  * Feedbacks during the parsing phase are attached to this edit_id.
  * The interpreter assignes an exec_id to the ast, and feedbacks happening
- * during interpretation are attached to the exec_id (still unimplemented,
- * since the two phases are performed sequentially) *)
+ * during interpretation are attached to the exec_id.
+ * Only one among state_id and edit_id can be provided. *)
 
 val feedback :
-  ?state_id:Feedback.state_id ->
+  ?state_id:Feedback.state_id -> ?edit_id:Feedback.edit_id ->
   ?route:Feedback.route_id -> Feedback.feedback_content -> unit
 
 val set_id_for_feedback :
   ?route:Feedback.route_id -> Feedback.edit_or_state_id -> unit
 val set_feeder : (Feedback.feedback -> unit) -> unit
+val get_id_for_feedback : unit -> Feedback.edit_or_state_id * Feedback.route_id
 
 (** {6 Utilities} *)
 

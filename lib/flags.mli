@@ -46,9 +46,6 @@ val coqtop_ui : bool ref
 val ide_slave : bool ref
 val ideslave_coqtop_flags : string option ref
 
-val feedback_goals : bool ref
-
-
 val time : bool ref
 
 val we_are_parsing : bool ref

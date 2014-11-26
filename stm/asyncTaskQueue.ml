@@ -135,7 +135,7 @@ module Make(T : Task) = struct
   exception Expired
     
   let report_status ?(id = !Flags.async_proofs_worker_id) s =
-    Pp.feedback ~state_id:Stateid.initial (Feedback.SlaveStatus(id, s))
+    Pp.feedback ~state_id:Stateid.initial (Feedback.WorkerStatus(id, s))
 
   let rec manage_slave ~cancel:cancel_user_req ~die id respawn =
     let ic, oc, proc =
@@ -265,16 +265,8 @@ module Make(T : Task) = struct
   let slave_handshake () = WorkersPool.worker_handshake !slave_ic !slave_oc
 
   let main_loop () =
-    let feedback_queue = ref [] in
     let slave_feeder oc fb =
-      match fb.Feedback.content with
-      | Feedback.Goals _ -> feedback_queue := fb :: !feedback_queue
-      | _ -> Marshal.to_channel oc (RespFeedback fb) []; flush oc in
-    let flush_feeder oc =
-      List.iter (fun fb -> Marshal.to_channel oc (RespFeedback fb) [])
-        !feedback_queue;
-      feedback_queue := [];
-      flush oc in
+      Marshal.to_channel oc (RespFeedback fb) []; flush oc in
     Pp.set_feeder (slave_feeder !slave_oc);
     Pp.log_via_feedback ();
     Universes.set_remote_new_univ_level (bufferize (fun () ->
@@ -290,7 +282,6 @@ module Make(T : Task) = struct
         working := true;
         report_status (name_of_request request);
         let response = slave_respond request in
-        flush_feeder !slave_oc;
         report_status "Idle";
         marshal_response !slave_oc response;
         Ephemeron.clear ()

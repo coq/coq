@@ -58,8 +58,10 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
 let vernac_parse ?newtip ?route eid s =
-  if Option.is_empty newtip then set_id_for_feedback ?route (Feedback.Edit eid)
-  else set_id_for_feedback ?route (Feedback.State (Option.get newtip));
+  let feedback_id = 
+    if Option.is_empty newtip then Feedback.Edit eid
+    else Feedback.State (Option.get newtip) in
+  set_id_for_feedback ?route feedback_id;
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   Flags.with_option Flags.we_are_parsing (fun () ->
     try
@@ -604,6 +606,7 @@ end = struct (* {{{ *)
   let define ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
         f id
   =
+    feedback ~state_id:id Feedback.(ProcessingIn !Flags.async_proofs_worker_id);
     let str_id = Stateid.to_string id in
     if is_cached id && not redefine then
       anomaly (str"defining state "++str str_id++str" twice");
@@ -635,69 +638,6 @@ end (* }}} *)
 
 (****************************** CRUFT *****************************************)
 (******************************************************************************)
-
-(* TODO: Currently, this mimics the process_goal function of ide/ide_slave.ml, 
- * but we have the opportunity to provide more structure in the xml, here. *)
-let process_goal sigma g =
-  let env = Goal.V82.env sigma g in
-  let id = Goal.uid g in
-  let ccl =
-    let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
-    let ccl_string = string_of_ppcmds (Printer.pr_goal_concl_style_env env sigma norm_constr) in
-    Xml_datatype.Element ("conclusion", [], [Xml_datatype.PCData ccl_string]) in
-  let process_hyp env h_env acc =
-    let hyp_string = (string_of_ppcmds (Printer.pr_var_decl env sigma h_env)) in
-    (Xml_datatype.Element ("hypothesis", [], [Xml_datatype.PCData hyp_string])) :: acc in
-  let hyps = Xml_datatype.Element ("hypotheses", [], 
-    (List.rev (Environ.fold_named_context process_hyp env ~init:[]))) in
-  Xml_datatype.Element ("goal", [("id", id)], [hyps; ccl])
-
-let print_goals_of_state, forward_feedback =
-  let already_printed = ref Stateid.Set.empty in
-  let add_to_already_printed =
-    let m = Mutex.create () in
-    fun id ->
-      Mutex.lock m;
-      already_printed := Stateid.Set.add id !already_printed;
-      Mutex.unlock m in
-  (fun id ->
-    if Stateid.Set.mem id !already_printed then ()
-    else begin
-      add_to_already_printed id;
-      try
-        Option.iter (fun { proof = pstate } ->
-          let pfts = Proof_global.proof_of_state pstate in
-          let structured_goals = Proof.map_structured_proof pfts process_goal in
-          let xml_bg_goal = fun (l, r) -> Xml_datatype.Element("bg_goal", [], 
-              [Xml_datatype.Element("left_bg_goals", [], l); 
-               Xml_datatype.Element("right_bg_goals", [], r)]) in
-
-          let xml_structured_goals = Xml_datatype.Element("goals", [],
-            [ Xml_datatype.Element("focussed_goals", [], 
-                structured_goals.Proof.fg_goals);
-              Xml_datatype.Element("bg_goals", [], 
-                List.map xml_bg_goal structured_goals.Proof.bg_goals);
-              Xml_datatype.Element("shelved_goals", [], 
-                structured_goals.Proof.shelved_goals);
-              Xml_datatype.Element("given_up_goals", [], 
-                structured_goals.Proof.given_up_goals)
-            ]
-          ) in
-          Pp.feedback ~state_id:id
-           (Feedback.StructuredGoals (Loc.ghost, xml_structured_goals));
-          Pp.feedback ~state_id:id
-            (Feedback.Goals
-              (Loc.ghost, Pp.string_of_ppcmds
-                (Printer.pr_open_subgoals
-                  ~proof:(Proof_global.proof_of_state pstate) ()))))
-            (VCS.get_info id).state
-      with Proof_global.NoCurrentProof -> ()
-  end),
-  fun id -> function
-    | Feedback.Goals _ as msg ->
-        add_to_already_printed id;
-        Pp.feedback ~state_id:id msg
-    | msg -> Pp.feedback ~state_id:id msg
 
 (* The backtrack module simulates the classic behavior of a linear document *)
 module Backtrack : sig
@@ -1657,11 +1597,8 @@ let known_state ?(redefine_qed=false) ~cache id =
     let cache_step =
       if !Flags.async_proofs_cache = Some Flags.Force then `Yes
       else cache_step in
-    if Flags.async_proofs_is_master () then
-      Pp.feedback ~state_id:id Feedback.ProcessingInMaster;
     State.define
       ~cache:cache_step ~redefine:redefine_qed ~feedback_processed step id;
-    if !Flags.feedback_goals then print_goals_of_state id;
     prerr_endline ("reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
 
