@@ -10,11 +10,6 @@ let pr_err s = Printf.eprintf "%s] %s\n" (System.process_id ()) s; flush stderr
 
 let prerr_endline s = if !Flags.debug then begin pr_err s end else ()
 
-let (f_process_error, process_error_hook) = Hook.make ()
-let ((f_interp : (?verbosely:bool -> ?proof:Proof_global.closed_proof ->
-  Loc.t * Vernacexpr.vernac_expr -> unit) Hook.value), interp_hook) = Hook.make ()
-let with_fail, with_fail_hook = Hook.make ()
-
 open Vernacexpr
 open Errors
 open Pp
@@ -22,6 +17,37 @@ open Names
 open Util
 open Ppvernac
 open Vernac_classifier
+
+module Hooks = struct
+
+let process_error, process_error_hook = Hook.make ()
+let interp, interp_hook = Hook.make ()
+let with_fail, with_fail_hook = Hook.make ()
+
+let state_computed, state_computed_hook = Hook.make
+ ~default:(fun state_id ~in_cache ->
+    feedback ~state_id Feedback.Processed) ()
+
+let forward_feedback, forward_feedback_hook = Hook.make
+ ~default:(fun state_id route msg -> feedback ~state_id ~route msg) ()
+
+let parse_error, parse_error_hook = Hook.make
+ ~default:(function
+    | Feedback.Edit edit_id -> fun loc msg ->
+        feedback ~edit_id (Feedback.ErrorMsg (loc, string_of_ppcmds msg))
+    | Feedback.State state_id -> fun loc msg ->
+        feedback ~state_id (Feedback.ErrorMsg (loc, string_of_ppcmds msg))) ()
+
+let execution_error, execution_error_hook = Hook.make
+ ~default:(fun state_id loc msg ->
+    feedback ~state_id (Feedback.ErrorMsg (loc, string_of_ppcmds msg))) ()
+
+include Hook
+
+(* enables:  Hooks.(call foo args) *)
+let call = get
+
+end
 
 (* During interactive use we cache more states so that Undoing is fast *)
 let interactive () =
@@ -49,11 +75,10 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
     Pp.set_id_for_feedback ?route (Feedback.State id);
     Aux_file.record_in_aux_set_at loc;
     prerr_endline ("interpreting " ^ string_of_ppcmds(pr_vernac expr));
-    let interp = Hook.get f_interp in
-    try interp ~verbosely:verbose ?proof (loc, expr)
+    try Hooks.(call interp ?verbosely:(Some verbose) ?proof (loc, expr))
     with e ->
       let e = Errors.push e in
-      raise (Hook.get f_process_error e)
+      raise Hooks.(call process_error e)
   end
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
@@ -71,8 +96,7 @@ let vernac_parse ?newtip ?route eid s =
     with e when Errors.noncritical e ->
       let e = Errors.push e in
       let loc = Option.default Loc.ghost (Loc.get_loc e) in
-      let msg = string_of_ppcmds (print e) in
-      Pp.feedback (Feedback.ErrorMsg (loc, msg));
+      Hooks.(call parse_error feedback_id loc (print e));
       raise e)
   ()
 
@@ -516,6 +540,11 @@ end = struct (* {{{ *)
 
 end (* }}} *)
 
+let state_of_id id =
+  try (VCS.get_info id).state
+  with VCS.Expired -> None
+
+
 (****** A cache: fills in the nodes of the VCS document with their value ******)
 module State : sig
   
@@ -527,7 +556,7 @@ module State : sig
   val define :
     ?safe_id:Stateid.t ->
     ?redefine:bool -> ?cache:Summary.marshallable ->
-    ?feedback_processed: bool -> (unit -> unit) -> Stateid.t -> unit
+    ?feedback_processed:bool -> (unit -> unit) -> Stateid.t -> unit
 
   val install_cached : Stateid.t -> unit
   val is_cached : ?cache:Summary.marshallable -> Stateid.t -> bool
@@ -599,9 +628,8 @@ end = struct (* {{{ *)
     | Some _ -> e
     | None ->
         let loc = Option.default Loc.ghost (Loc.get_loc e) in
-        let msg = string_of_ppcmds (print e) in
-        Pp.feedback ~state_id:id (Feedback.ErrorMsg (loc, msg));
-        Stateid.add (Hook.get f_process_error e) ?valid id
+        Hooks.(call execution_error id loc (print e));
+        Stateid.add Hooks.(call process_error e) ?valid id
 
   let define ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
         f id
@@ -618,7 +646,8 @@ end = struct (* {{{ *)
       else if cache = `Shallow then freeze `Shallow id;
       prerr_endline ("setting cur id to "^str_id);
       cur_id := id;
-      if feedback_processed then feedback ~state_id:id Feedback.Processed;
+      if feedback_processed then
+        Hooks.(call state_computed id ~in_cache:false);
       VCS.reached id true;
       if Proof_global.there_are_pending_proofs () then
         VCS.goals id (Proof_global.get_open_goals ());
@@ -823,7 +852,7 @@ module rec ProofTask : sig
    
 end = struct (* {{{ *)
 
-  let forward_feedback = forward_feedback
+  let forward_feedback msg = Hooks.(call forward_feedback msg)
 
   type task = {
     t_exn_info : Stateid.t * Stateid.t;
@@ -886,7 +915,7 @@ end = struct (* {{{ *)
         let s = "Worker cancelled by the user" in
         let e = Stateid.add ~valid:start (RemoteException (strbrk s)) start in
         t_assign (`Exn e);
-        Pp.feedback ~state_id:start (Feedback.ErrorMsg (Loc.ghost, s));
+        Hooks.(call execution_error start Loc.ghost (strbrk s));
         Pp.feedback (Feedback.InProgress ~-1)
 
   let build_proof_here_core loc eop () =
@@ -1151,7 +1180,7 @@ end = struct (* {{{ *)
 
   type output = Constr.constr * Evd.evar_universe_context
   
-  let forward_feedback = forward_feedback
+  let forward_feedback msg = Hooks.(call forward_feedback msg)
 
   type task = {
     t_state    : Stateid.t;
@@ -1244,7 +1273,7 @@ end = struct (* {{{ *)
         | VernacTime [_,e] -> find true fail e
         | VernacFail e -> find time true e
         | _ -> errorlabstrm "Stm" (str"unsupported") in find false false e in
-    Hook.get with_fail fail (fun () ->
+    Hooks.call Hooks.with_fail fail (fun () ->
     (if time then System.with_time false else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun ~join ~cancel_all ->
     Proof_global.with_current_proof (fun _ p ->
@@ -1319,7 +1348,7 @@ end = struct (* {{{ *)
   let on_slave_death _ = `Stay
   let on_task_cancellation_or_expiration _ = ()
   
-  let forward_feedback = forward_feedback
+  let forward_feedback msg = Hooks.(call forward_feedback msg)
 
   let perform { r_where; r_doc; r_what; r_for } =
     VCS.restore r_doc;
@@ -1486,7 +1515,7 @@ let known_state ?(redefine_qed=false) ~cache id =
     prerr_endline ("reaching: " ^ Stateid.to_string id);
     if not redefine_qed && State.is_cached ~cache id then begin
       State.install_cached id;
-      feedback ~state_id:id Feedback.Processed;
+      Hooks.(call state_computed id ~in_cache:true);
       prerr_endline ("reached (cache)")
     end else
     let step, cache_step, feedback_processed =
@@ -2215,5 +2244,14 @@ let show_script ?proof () =
     let indented_cmds = List.rev (indented_cmds) in
     msg_notice (v 0 (Pp.prlist_with_sep Pp.fnl (fun x -> x) indented_cmds))
   with Vcs_aux.Expired -> ()
+
+(* Export hooks *)
+let state_computed_hook = Hooks.state_computed_hook
+let parse_error_hook = Hooks.parse_error_hook
+let execution_error_hook = Hooks.execution_error_hook
+let forward_feedback_hook = Hooks.forward_feedback_hook
+let process_error_hook = Hooks.process_error_hook
+let interp_hook = Hooks.interp_hook
+let with_fail_hook = Hooks.with_fail_hook
 
 (* vim:set foldmethod=marker: *)

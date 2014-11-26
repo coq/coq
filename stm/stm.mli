@@ -17,7 +17,8 @@ open Feedback
    The [ontop] parameter is just for asserting the GUI is on sync, but
    will eventually call edit_at on the fly if needed.
    The sentence [s] is parsed in the state [ontop].
-   If [newtip] is provided, then the returned state id is guaranteed to be [newtip] *)
+   If [newtip] is provided, then the returned state id is guaranteed to be
+   [newtip] *)
 val add : ontop:Stateid.t -> ?newtip:Stateid.t -> ?check:(located_vernac_expr -> unit) ->
   bool -> edit_id -> string ->
     Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
@@ -85,6 +86,29 @@ val set_perspective : Stateid.t list -> unit
 module ProofTask : AsyncTaskQueue.Task
 module TacTask   : AsyncTaskQueue.Task
 module QueryTask : AsyncTaskQueue.Task
+
+(** customization ********************************************************** **)
+
+(* From the master (or worker, but beware that to install the hook
+ * into a worker one has to build the wroker toplevel to do so and
+ * the alternative toploop for the worker can be selected by changing
+ * the name of the Task(s) above) *)
+
+val state_computed_hook : (Stateid.t -> in_cache:bool -> unit) Hook.t
+val parse_error_hook :
+  (Feedback.edit_or_state_id -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
+val execution_error_hook : (Stateid.t -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
+
+(* Messages from the workers to the master *)
+val forward_feedback_hook :
+  (Stateid.t -> Feedback.route_id -> Feedback.feedback_content -> unit) Hook.t
+
+type state = {
+  system : States.state;
+  proof : Proof_global.state;
+  shallow : bool
+}
+val state_of_id : Stateid.t -> state option
 
 (** read-eval-print loop compatible interface ****************************** **)
 
