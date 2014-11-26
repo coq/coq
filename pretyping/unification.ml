@@ -1008,6 +1008,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
     let a = match res with 
     | Some sigma -> sigma, ms, es
     | None -> unirec_rec (env,0) cv_pb opt flags subst m n
+    in
     if !debug_unification then msg_debug (str "Leaving unification with success");
     a
   with e ->
