@@ -28,6 +28,8 @@ val add : ontop:Stateid.t -> ?newtip:Stateid.t -> ?check:(located_vernac_expr ->
    state id)  *)
 val query :
   at:Stateid.t -> ?report_with:(Stateid.t * Feedback.route_id) -> string -> unit
+val async_query :
+  at:Stateid.t -> report_with:(Stateid.t * Feedback.route_id) -> string -> unit
 
 (* [edit_at id] is issued to change the editing zone.  [`NewTip] is returned if
    the requested id is the new document tip hence the document portion following
