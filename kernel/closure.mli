@@ -119,7 +119,8 @@ type fterm =
   | FProj of projection * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
-  | FCases of case_info * fconstr * fconstr * fconstr array
+  | FCase of case_info * fconstr * fconstr * fconstr array
+  | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
   | FLambda of int * (Name.t * constr) list * constr * fconstr subs
   | FProd of Name.t * fconstr * fconstr
   | FLetIn of Name.t * fconstr * fconstr * constr * fconstr subs
@@ -136,6 +137,7 @@ type fterm =
 type stack_member =
   | Zapp of fconstr array
   | Zcase of case_info * fconstr * fconstr array
+  | ZcaseT of case_info * constr * constr array * fconstr subs
   | Zproj of int * int * constant
   | Zfix of fconstr * stack
   | Zshift of int
@@ -228,6 +230,5 @@ val knr: clos_infos -> fconstr -> stack -> fconstr * stack
 val kl : clos_infos -> fconstr -> constr
 
 val to_constr : (lift -> fconstr -> constr) -> lift -> fconstr -> constr
-val optimise_closure : fconstr subs -> constr -> fconstr subs * constr
 
 (** End of cbn debug section i*)
