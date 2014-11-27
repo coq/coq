@@ -268,9 +268,6 @@ let compute_implicits_names env t =
   let _, impls = compute_implicits_gen false false false false true env t in
   List.map fst impls
 
-let compute_implicits_strict env t =
-  List.map snd (snd (compute_implicits_gen true true true true false env t))
-
 (* Extra information about implicit arguments *)
 
 type maximal_insertion = bool (* true = maximal contextual insertion *)
@@ -396,16 +393,14 @@ let set_manual_implicits env flags enriching autoimps l =
   merge 1 l autoimps
 
 let compute_semi_auto_implicits env f manual t =
-  let strictimpls = compute_implicits_strict env t in
-  let auto = match manual with
+  match manual with
   | [] ->
       if not f.auto then [DefaultImpArgs, []]
       else let _,l = compute_implicits_flags env f false t in
 	     [DefaultImpArgs, prepare_implicits f l]
   | _ ->
       let _,autoimpls = compute_auto_implicits env f f.auto t in
-      [DefaultImpArgs, set_manual_implicits env f f.auto autoimpls manual] in
-  strictimpls,auto
+      [DefaultImpArgs, set_manual_implicits env f f.auto autoimpls manual]
 
 (*s Constants. *)
 
@@ -488,21 +483,9 @@ type implicit_discharge_request =
 
 let implicits_table = Summary.ref Refmap.empty ~name:"implicits"
 
-let strict_implicits_of_global n ref =
-  try
-    let impls = fst (Refmap.find ref !implicits_table) in
-    let status = List.map (function
-    | Some (DepRigid (Hyp k) | DepFlexAndRigid (_,Hyp k)) -> k <= n
-    | _ -> false) impls in
-    let m = List.length status in
-    if m > n then fst (List.chop n status)
-    else if m < n then status @ List.make (n-m) false
-    else status
-  with Not_found -> anomaly (str "No strict implicit arguments." ++ Nametab.pr_global_env Idset.empty ref)
-
 let implicits_of_global ref =
   try
-    let l = snd (Refmap.find ref !implicits_table) in
+    let l = Refmap.find ref !implicits_table in
     try
       let rename_l = Arguments_renaming.arguments_names ref in
       let rename imp name = match imp, name with
@@ -530,14 +513,14 @@ let subst_implicits (subst,(req,l)) =
 
 let impls_of_context ctx =
   let map (id, impl, _, _) = match impl with
-  | Implicit -> Some (* dummy *) Manual, Some (id, Manual, (true, true))
-  | _ -> None, None
+  | Implicit -> Some (id, Manual, (true, true))
+  | _ -> None
   in
   let is_set (_, _, b, _) = match b with
   | None -> true
   | Some _ -> false
   in
-  List.split (List.rev_map map (List.filter is_set ctx))
+  List.rev_map map (List.filter is_set ctx)
 
 let section_segment_of_reference = function
   | ConstRef con -> pi1 (section_segment_of_constant con)
@@ -560,33 +543,26 @@ let discharge_implicits (_,(req,l)) =
     (try
       let vars = section_segment_of_reference ref in
       let ref' = if isVarRef ref then ref else pop_global_reference ref in
-      let extrastrict, extra_impls = impls_of_context vars in
-      let oldstrict,oldimpls = snd (List.hd l) in
-      let newstrict = extrastrict @ oldstrict in
-      let newimpls = List.map (add_section_impls vars extra_impls) oldimpls in
-      let l' = [ref',(newstrict,newimpls)] in
+      let extra_impls = impls_of_context vars in
+      let l' = [ref', List.map (add_section_impls vars extra_impls) (snd (List.hd l))] in
       Some (ImplInteractive (ref',flags,exp),l')
     with Not_found -> (* ref not defined in this section *) Some (req,l))
   | ImplConstant (con,flags) ->
     (try
       let con' = pop_con con in
       let vars,_,_ = section_segment_of_constant con in
-      let extrastrict, extra_impls = impls_of_context vars in
-      let oldstrict,oldimpls = snd (List.hd l) in
-      let newstrict = extrastrict @ oldstrict in
-      let newimpls = List.map (add_section_impls vars extra_impls) oldimpls in
-      let l' = [ConstRef con',(newstrict,newimpls)] in
+      let extra_impls = impls_of_context vars in
+      let newimpls = List.map (add_section_impls vars extra_impls) (snd (List.hd l)) in
+      let l' = [ConstRef con',newimpls] in
 	Some (ImplConstant (con',flags),l')
     with Not_found -> (* con not defined in this section *) Some (req,l))
   | ImplMutualInductive (kn,flags) ->
     (try
-      let l' = List.map (fun (gr, (newstrict,l)) ->
+      let l' = List.map (fun (gr, l) ->
 	let vars = section_segment_of_reference gr in
-        let extrastrict, extra_impls = impls_of_context vars in
-        let newstrict = extrastrict @ newstrict in
-        let newimpls = List.map (add_section_impls vars extra_impls) l in
+	let extra_impls = impls_of_context vars in
 	((if isVarRef gr then gr else pop_global_reference gr),
-	 (newstrict,newimpls))) l
+	 List.map (add_section_impls vars extra_impls) l)) l
       in
 	Some (ImplMutualInductive (pop_kn kn,flags),l')
     with Not_found -> (* ref not defined in this section *) Some (req,l))
@@ -595,16 +571,15 @@ let rebuild_implicits (req,l) =
   match req with
   | ImplLocal -> assert false
   | ImplConstant (con,flags) ->
-      let _,oldimpls = snd (List.hd l) in
-      let newstrict,newimpls = compute_constant_implicits flags [] con in
-      req, [ConstRef con, (newstrict,List.map2 merge_impls oldimpls newimpls)]
+      let oldimpls = snd (List.hd l) in
+      let newimpls = compute_constant_implicits flags [] con in
+      req, [ConstRef con, List.map2 merge_impls oldimpls newimpls]
   | ImplMutualInductive (kn,flags) ->
       let newimpls = compute_all_mib_implicits flags [] kn in
       let rec aux olds news =
 	match olds, news with
-	| (_, (_,oldimpls)) :: old, (gr, (newstrict,newimpls)) :: tl ->
-	    (gr, (newstrict,List.map2 merge_impls oldimpls newimpls))
-            :: aux old tl
+	| (_, oldimpls) :: old, (gr, newimpls) :: tl ->
+	    (gr, List.map2 merge_impls oldimpls newimpls) :: aux old tl
 	| [], [] -> []
 	| _, _ -> assert false
       in req, aux l newimpls
@@ -613,19 +588,18 @@ let rebuild_implicits (req,l) =
       (if isVarRef ref && is_in_section ref then ImplLocal else req),
       match o with
       | ImplAuto ->
-	  let _,oldimpls = snd (List.hd l) in
-	  let newstrict,newimpls = compute_global_implicits flags [] ref in
-	    [ref,(newstrict,List.map2 merge_impls oldimpls newimpls)]
+	  let oldimpls = snd (List.hd l) in
+	  let newimpls = compute_global_implicits flags [] ref in
+	    [ref,List.map2 merge_impls oldimpls newimpls]
       | ImplManual userimplsize ->
-	  let _,oldimpls = snd (List.hd l) in
-	  let newstrict,newimpls = compute_global_implicits flags [] ref in
-          let newimpls = List.hd newimpls in
+	  let oldimpls = snd (List.hd l) in
 	  if flags.auto then
+	    let newimpls = List.hd (compute_global_implicits flags [] ref) in
 	    let p = List.length (snd newimpls) - userimplsize in
 	    let newimpls = on_snd (List.firstn p) newimpls in
-	    [ref,(newstrict,List.map (fun o -> merge_impls o newimpls) oldimpls)]
+	    [ref,List.map (fun o -> merge_impls o newimpls) oldimpls]
 	  else
-	    [ref,(newstrict,oldimpls)]
+	    [ref,oldimpls]
 
 let classify_implicits (req,_ as obj) = match req with
 | ImplLocal -> Dispose
@@ -633,8 +607,7 @@ let classify_implicits (req,_ as obj) = match req with
 
 type implicits_obj =
     implicit_discharge_request *
-      (global_reference *
-         (implicit_explanation option list * implicits_list list)) list
+      (global_reference * implicits_list list) list
 
 let inImplicits : implicits_obj -> obj =
   declare_object {(default_object "IMPLICITS") with
@@ -719,12 +692,11 @@ let declare_manual_implicits local ref ?enriching l =
 	List.map (fun (imps,n) ->
 	  (LessArgsThan (nargs-n),
 	   set_manual_implicits env flags enriching autoimpls imps)) l in
-  let strictimpls = compute_implicits_strict env t in
   let req =
     if is_local local ref then ImplLocal
     else ImplInteractive(ref,flags,ImplManual (List.length autoimpls))
   in
-    add_anonymous_leaf (inImplicits (req,[ref,(strictimpls,l')]))
+    add_anonymous_leaf (inImplicits (req,[ref,l']))
 
 let maybe_declare_manual_implicits local ref ?enriching l =
   match l with

@@ -144,7 +144,6 @@ Program
 Coercion
 Cases
 Pretyping
-Impargs
 Unification
 Declaremods
 Library

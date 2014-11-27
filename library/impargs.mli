@@ -120,8 +120,6 @@ val maybe_declare_manual_implicits : bool -> global_reference -> ?enriching:bool
 
 val implicits_of_global : global_reference -> implicits_list list
 
-val strict_implicits_of_global : int -> global_reference -> bool list
-
 val extract_impargs_data :
   implicits_list list -> ((int * int) option * implicit_status list) list
 
