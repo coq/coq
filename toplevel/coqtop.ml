@@ -465,8 +465,7 @@ let parse_args arglist =
     |"-toploop" -> toploop := Some (next ())
 
     (* Options with zero arg *)
-    |"-async-queries-always-delegate" ->
-        Flags.async_queries_always_delegate := true;
+    |"-async-queries-always-delegate"
     |"-async-proofs-always-delegate" ->
         Flags.async_proofs_always_delegate := true;
     |"-async-proofs-never-reopen-branch" ->

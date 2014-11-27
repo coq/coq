@@ -1500,7 +1500,7 @@ end = struct (* {{{ *)
       QueryTask.({ QueryTask.t_where = prev; t_for = id; t_what = q }) switch
 
   let init () = queue := Some (TaskQueue.create
-    (if !Flags.async_queries_always_delegate then 1 else 0))
+    (if !Flags.async_proofs_always_delegate then 1 else 0))
 
 end (* }}} *)
 
@@ -1969,7 +1969,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           assert(Stateid.equal report_id Stateid.dummy);
           let id = VCS.new_node ~id:newtip () in
           let queue =
-            if !Flags.async_queries_always_delegate then `QueryQueue (ref false)
+            if !Flags.async_proofs_always_delegate then `QueryQueue (ref false)
             else `MainQueue in
           VCS.commit id (Cmd { cast = x; cids = []; cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
