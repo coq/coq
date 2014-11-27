@@ -252,28 +252,33 @@ let typecheck_inductive env mie =
 
   (* Compute/check the sorts of the inductive types *)
   let ind_min_levels = inductive_levels arities inds in
+  let is_poly = array_for_all
+    (function ((_,_,Some l),_,_,_,_) -> no_upper_constraints l cst
+    | _ -> false) inds in
   let inds, cst =
-    array_fold_map2' (fun ((id,full_arity,ar_level),cn,info,lc,_) lev cst ->
+    array_fold_map2' (fun ((id,full_arity,ar_level),cn,info,lc,mlev) lev cst ->
       let sign, s =
         try dest_arity env full_arity
         with NotArity -> raise (InductiveError (NotAnArity (env, full_arity)))
       in
       let status,cst = match s with
-      | Type u when ar_level <> None (* Explicitly polymorphic *)
-            && no_upper_constraints u cst ->
+      | Type u when is_poly -> (* Explicitly polymorphic *)
+	  assert (ar_level = Some u);
 	  (* The polymorphic level is a function of the level of the *)
 	  (* conclusions of the parameters *)
           (* We enforce [u >= lev] in case [lev] has a strict upper *)
           (* constraints over [u] *)
 	  Inr (param_ccls, lev), enforce_geq u lev cst
       | Type u (* Not an explicit occurrence of Type *) ->
-	  Inl (info,full_arity,s), enforce_geq u lev cst
+	  Inl (info,full_arity,s), enforce_geq u mlev cst
       | Prop Pos when engagement env <> Some ImpredicativeSet ->
+	  assert (ar_level=None);
 	  (* Predicative set: check that the content is indeed predicative *)
 	  if not (is_type0m_univ lev) & not (is_type0_univ lev) then
 	    raise (InductiveError LargeNonPropInductiveNotInType);
 	  Inl (info,full_arity,s), cst
       | Prop _ ->
+	  assert (ar_level=None);
 	  Inl (info,full_arity,s), cst in
       (id,cn,lc,(sign,status)),cst)
       inds ind_min_levels cst in
