@@ -102,8 +102,7 @@ val parse_error_hook :
 val execution_error_hook : (Stateid.t -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 
 (* Messages from the workers to the master *)
-val forward_feedback_hook :
-  (Stateid.t -> Feedback.route_id -> Feedback.feedback_content -> unit) Hook.t
+val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
 
 type state = {
   system : States.state;

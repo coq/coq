@@ -37,8 +37,7 @@ module type Task = sig
   val on_marshal_error : string -> task -> unit
   val on_slave_death : task option -> [ `Exit of int | `Stay ]
   val on_task_cancellation_or_expiration : task option -> unit
-  val forward_feedback :
-    Stateid.t -> Feedback.route_id -> Feedback.feedback_content -> unit
+  val forward_feedback : Feedback.feedback -> unit
  
   (* run by the worker *)
   val perform : request -> response
@@ -193,11 +192,7 @@ module Make(T : Task) = struct
                   (CList.init 10 (fun _ ->
                      Universes.new_univ_level (Global.current_dirpath ()))));
                 loop ()
-            | RespFeedback ({ Feedback.id = Feedback.State state_id;
-                              Feedback.route = rid } as fbk) ->
-                T.forward_feedback state_id rid fbk.Feedback.content;
-                loop ()
-            | RespFeedback _ -> Errors.anomaly (str"Parsing in master process")
+            | RespFeedback fbk -> T.forward_feedback fbk; loop ()
           in
             loop ()
         with

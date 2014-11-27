@@ -29,8 +29,7 @@ module type Task = sig
   val on_marshal_error : string -> task -> unit
   val on_slave_death : task option -> [ `Exit of int | `Stay ]
   val on_task_cancellation_or_expiration : task option -> unit
-  val forward_feedback :
-    Stateid.t -> Feedback.route_id -> Feedback.feedback_content -> unit
+  val forward_feedback : Feedback.feedback -> unit
  
   (* run by the worker *)
   val perform : request -> response

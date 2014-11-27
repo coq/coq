@@ -29,7 +29,11 @@ let state_computed, state_computed_hook = Hook.make
     feedback ~state_id Feedback.Processed) ()
 
 let forward_feedback, forward_feedback_hook = Hook.make
- ~default:(fun state_id route msg -> feedback ~state_id ~route msg) ()
+ ~default:(function
+    | { Feedback.id = Feedback.Edit edit_id; route; contents } ->
+          feedback ~edit_id ~route contents
+    | { Feedback.id = Feedback.State state_id; route; contents } ->
+          feedback ~state_id ~route contents) ()
 
 let parse_error, parse_error_hook = Hook.make
  ~default:(function
