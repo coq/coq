@@ -408,7 +408,8 @@ let iter_goal i =
         i goal >>
         Proof.map (fun comb -> comb :: subgoals) Comb.get
   end [] initial >>= fun subgoals ->
-  Comb.set (CList.flatten (CList.rev subgoals))
+  Solution.get >>= fun evd ->
+  Comb.set CList.(undefined evd (flatten (rev subgoals)))
 
 (** A variant of [Monad.List.fold_left2] where the first list is the
     list of focused goals. The argument tactic is executed in a focus
@@ -431,7 +432,8 @@ let fold_left2_goal i s l =
         i goal a r >>= fun r ->
         Proof.map (fun comb -> (r, comb :: subgoals)) Comb.get
   end (s,[]) initial.comb l >>= fun (r,subgoals) ->
-  Comb.set (CList.flatten (CList.rev subgoals)) >>
+  Solution.get >>= fun evd ->
+  Comb.set CList.(undefined evd (flatten (rev subgoals))) >>
   return r
 
 (** Dispatch tacticals are used to apply a different tactic to each
@@ -1060,6 +1062,7 @@ module V82 = struct
       in
       let (goalss,evd) = Evd.Monad.List.map tac initgoals initevd in
       let sgs = CList.flatten goalss in
+      let sgs = undefined evd sgs in
       InfoL.leaf (Info.Tactic (fun () -> Pp.str"<unknown>")) >>
       Pv.set { solution = evd; comb = sgs; }
     with e when catchable_exception e ->
