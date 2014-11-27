@@ -8,10 +8,10 @@ This chapter explains how proofs can be asynchronously processed by Coq.
 This feature improves the reactiveness of the system when used in interactive
 mode via CoqIDE.  In addition to that it allows Coq to take advantage of
 parallel hardware when used as a batch compiler by decoupling the checking
-of statements and definitions from the contruction and checking of proofs
+of statements and definitions from the construction and checking of proofs
 objects.
 
-This feature is desingned to help dealing with huge libraries of theorems
+This feature is designed to help dealing with huge libraries of theorems
 characterized by long proofs.  At the current state it may not be beneficial
 on small set of short files.
 
@@ -67,7 +67,7 @@ reported in red in the label of the very same button, that can also be used to
 see the list of errors and jump to the corresponding line.
 
 If a proof is processed asynchronously the corresponding $Qed$ command is
-is coloured using a color that is lighter than usual.  This signals that
+is colored using a color that is lighter than usual.  This signals that
 the proof has been delegated to a worker process (or will be processed
 lazily if the $-async-proofs lazy$ option is used).  Once finished the
 worker process will provide the proof object, but this will not be
@@ -152,9 +152,9 @@ Many Coq processes may run on the same computer, and each of them may start
 many additional worker processes. 
 The $coqworkmgr$ utility lets one limit the number of workers, globally.
 
-The utility acecpts the $-j$ argument to specify the maximum number of
-workers (defaults to 2).  $coqworkmgr$ autmatically starts in the
-background and prints an enviroment variable assignement like
+The utility accepts the $-j$ argument to specify the maximum number of
+workers (defaults to 2).  $coqworkmgr$ automatically starts in the
+background and prints an environment variable assignment like
 $COQWORKMGR\_SOCKET=localhost:45634$.  The user must set this variable in
 all the shells from which he will start Coq processes.  If one uses just
 one terminal running the bash shell, then $export `coqworkmgr -j 4`$ will
