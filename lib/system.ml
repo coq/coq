@@ -260,7 +260,5 @@ let with_time time f x =
 
 let process_id () =
   if Flags.async_proofs_is_worker () then !Flags.async_proofs_worker_id
-  else if Flags.async_proofs_is_master () then
-    Printf.sprintf "master:%d" (Thread.id (Thread.self ()))
-  else "master"
+  else Printf.sprintf "master:%d" (Thread.id (Thread.self ()))
     
