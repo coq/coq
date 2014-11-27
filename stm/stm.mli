@@ -92,7 +92,7 @@ module QueryTask : AsyncTaskQueue.Task
 (** customization ********************************************************** **)
 
 (* From the master (or worker, but beware that to install the hook
- * into a worker one has to build the wroker toplevel to do so and
+ * into a worker one has to build the worker toploop to do so and
  * the alternative toploop for the worker can be selected by changing
  * the name of the Task(s) above) *)
 
@@ -100,6 +100,7 @@ val state_computed_hook : (Stateid.t -> in_cache:bool -> unit) Hook.t
 val parse_error_hook :
   (Feedback.edit_or_state_id -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 val execution_error_hook : (Stateid.t -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
+val unreachable_state_hook : (Stateid.t -> unit) Hook.t
 
 (* Messages from the workers to the master *)
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t

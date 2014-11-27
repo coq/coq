@@ -46,6 +46,9 @@ let execution_error, execution_error_hook = Hook.make
  ~default:(fun state_id loc msg ->
     feedback ~state_id (Feedback.ErrorMsg (loc, string_of_ppcmds msg))) ()
 
+let unreachable_state, unreachable_state_hook = Hook.make
+ ~default:(fun _ -> ()) ()
+
 include Hook
 
 (* enables:  Hooks.(call foo args) *)
@@ -667,6 +670,7 @@ end = struct (* {{{ *)
       let good_id = !cur_id in
       cur_id := Stateid.dummy;
       VCS.reached id false;
+      Hooks.(call unreachable_state id);
       match Stateid.get e, safe_id with
       | None, None -> raise (exn_on id ~valid:good_id e)
       | None, Some good_id -> raise (exn_on id ~valid:good_id e)
@@ -2389,5 +2393,6 @@ let forward_feedback_hook = Hooks.forward_feedback_hook
 let process_error_hook = Hooks.process_error_hook
 let interp_hook = Hooks.interp_hook
 let with_fail_hook = Hooks.with_fail_hook
+let unreachable_state_hook = Hooks.unreachable_state_hook
 
 (* vim:set foldmethod=marker: *)
