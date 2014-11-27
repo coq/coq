@@ -368,7 +368,12 @@ module V82 = struct
 
   let instantiate_evar n com pr =
     let sp = pr.proofview in
-    let new_proofview = Proofview.V82.instantiate_evar n com sp in
-    { pr with proofview = new_proofview }
+    let proofview = Proofview.V82.instantiate_evar n com sp in
+    let shelf =
+      List.filter begin fun g ->
+        Evd.is_undefined (Proofview.return proofview) g
+      end pr.shelf
+    in
+    { pr with proofview ; shelf }
 
 end
