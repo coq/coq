@@ -864,8 +864,8 @@ module rec ProofTask : sig
     t_route    : Feedback.route_id;
     t_text     : string }
   type task_safesate = {
-    t_states : Stateid.t list;
-    t_assignstates :
+    t_safestates : Stateid.t list;
+    t_assignsafestates :
        (Stateid.t * State.frozen_state) list Future.assignement -> unit }
 
   type task =
@@ -908,8 +908,8 @@ end = struct (* {{{ *)
     t_route    : Feedback.route_id;
     t_text     : string }
   type task_safesate = {
-    t_states : Stateid.t list;
-    t_assignstates :
+    t_safestates : Stateid.t list;
+    t_assignsafestates :
        (Stateid.t * State.frozen_state) list Future.assignement -> unit }
 
   type task =
@@ -942,16 +942,16 @@ end = struct (* {{{ *)
     | `Fresh, BuildProof _ -> true
     | `Parked my_states, Querys qs ->
         List.for_all (fun { t_at } -> Stateid.Set.mem t_at my_states) qs
-    | `Parked my_states, States { t_states } ->
-        List.for_all (fun x -> Stateid.Set.mem x my_states) t_states
+    | `Parked my_states, States { t_safestates } ->
+        List.for_all (fun x -> Stateid.Set.mem x my_states) t_safestates
     | _ -> false
 
   let name_of_task = function
     | BuildProof t -> "proof: " ^ t.t_name
     | Querys l ->
         "querys: " ^ String.concat " " (List.map (fun { t_text } -> t_text ) l)
-    | States { t_states } ->
-        "states: " ^ String.concat "," (List.map Stateid.to_string t_states)
+    | States { t_safestates } ->
+        "states: " ^ String.concat "," (List.map Stateid.to_string t_safestates)
   let name_of_request = function
     | ReqBuildProof r -> "proof: " ^ r.Stateid.name
     | ReqQuerys l ->
@@ -960,7 +960,7 @@ end = struct (* {{{ *)
 
   let request_of_task age = function
     | Querys l -> Some (ReqQuerys l)
-    | States { t_states } -> Some (ReqStates t_states)
+    | States { t_safestates } -> Some (ReqStates t_safestates)
     | BuildProof { t_exn_info;t_start;t_stop;t_loc;t_uuid;t_name } ->
         assert(age = `Fresh);
         try Some (ReqBuildProof {
@@ -975,8 +975,8 @@ end = struct (* {{{ *)
   let use_response (s : competence AsyncTaskQueue.worker_status) t r =
     match s, t, r with
     | `Parked _, Querys _, _ -> `Stay
-    | `Parked _, States { t_assignstates }, RespStates l ->
-        t_assignstates (`Val l); `Stay
+    | `Parked _, States { t_assignsafestates }, RespStates l ->
+        t_assignsafestates (`Val l); `Stay
     | `Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
               RespBuiltProof (pl, time) ->
         Pp.feedback (Feedback.InProgress ~-1);
@@ -1310,10 +1310,11 @@ end = struct (* {{{ *)
     let task = ProofTask.(Querys [ { t_at; t_report_at; t_route; t_text } ]) in
     TaskQueue.enqueue_task (Option.get !queue) task cancel_switch
 
-  let fetch_states t_states =
+  let fetch_states t_safestates =
     let fl, assign = Future.create_delegate ~blocking:true (fun x -> x) in
     TaskQueue.enqueue_task (Option.get !queue)
-      ProofTask.(States { t_states; t_assignstates = assign }) (ref false);
+      ProofTask.(States { t_safestates; t_assignsafestates = assign })
+      (ref false);
     List.iter (fun (id,s) -> State.assign id s) (Future.join fl)
 
 end (* }}} *)
