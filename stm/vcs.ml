@@ -62,11 +62,11 @@ module type S = sig
   val reachable : ('k,'e,'info) t -> id -> NodeSet.t
 
   module Dag : Dag.S with type node = id
-  val dag : ('kind,'diff,'info) t -> ('diff,'info,id) Dag.t
+  val dag : ('kind,'diff,'info) t -> ('diff,'info,id*id) Dag.t
 
-  val create_cluster : ('k,'e,'i) t -> id list -> id -> ('k,'e,'i) t
-  val cluster_of : ('k,'e,'i) t -> id -> id Dag.Cluster.t option
-  val delete_cluster : ('k,'e,'i) t -> id Dag.Cluster.t -> ('k,'e,'i) t 
+  val create_cluster : ('k,'e,'i) t -> id list -> (id * id) -> ('k,'e,'i) t
+  val cluster_of : ('k,'e,'i) t -> id -> (id * id) Dag.Cluster.t option
+  val delete_cluster : ('k,'e,'i) t -> (id * id) Dag.Cluster.t -> ('k,'e,'i) t 
 
 end
 
@@ -102,7 +102,7 @@ type 'kind branch_info = {
 type ('kind,'edge,'info) t = {
   cur_branch   : Branch.t;
   heads        : 'kind branch_info BranchMap.t;
-  dag          : ('edge,'info,id) Dag.t;
+  dag          : ('edge,'info,id*id) Dag.t;
 }
 
 let empty root = {
