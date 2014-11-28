@@ -48,9 +48,7 @@ type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
 (* Val is not necessarily a final state, so the
    computation restarts from the state stocked into Val *)
 and 'a comp =
-  | Delegated of (unit -> 'a assignement)
-      (* TODO in some cases one would like to block, sock here
-         a mutex and a condition to make this possible *)
+  | Delegated of (unit -> unit)
   | Closure of (unit -> 'a)
   | Val of 'a * Dyn.t option
   | Exn of exn (* Invariant: this exception is always "fixed" as in fix_exn *)
@@ -95,17 +93,23 @@ let from_here ?(fix_exn=id) v = create fix_exn (Val (v, Some (!freeze ())))
 
 let fix_exn_of ck = let _, fix_exn, _ = get ck in fix_exn
 
-let default_force () = raise NotReady
-let assignement ck = fun v ->
-  let _, fix_exn, c = get ck in
-  assert (match !c with Delegated _ -> true | _ -> false);
-  match v with
-  | `Val v -> c := Val (v, None)
-  | `Exn e -> c := Exn (fix_exn e)
-  | `Comp f -> let _, _, comp = get f in c := !comp
-let create_delegate ?(force=default_force) fix_exn =
-  let ck = create fix_exn (Delegated force) in
-  ck, assignement ck
+let create_delegate ?(blocking=false) fix_exn =
+  let assignement signal ck = fun v ->
+    let _, fix_exn, c = get ck in
+    assert (match !c with Delegated _ -> true | _ -> false);
+    begin match v with
+    | `Val v -> c := Val (v, None)
+    | `Exn e -> c := Exn (fix_exn e)
+    | `Comp f -> let _, _, comp = get f in c := !comp end;
+    signal () in
+  let wait, signal =
+    if not blocking then (fun () -> raise NotReady), ignore else
+    let lock = Mutex.create () in
+    let cond = Condition.create () in
+    (fun () -> Mutex.lock lock; Condition.wait cond lock; Mutex.unlock lock),
+    (fun () -> Mutex.lock lock; Condition.broadcast cond; Mutex.unlock lock) in
+  let ck = create fix_exn (Delegated wait) in
+  ck, assignement signal ck
 
 (* TODO: get rid of try/catch to be stackless *)
 let rec compute ~pure ck : 'a value =
@@ -113,7 +117,7 @@ let rec compute ~pure ck : 'a value =
   match !c with
   | Val (x, _) -> `Val x
   | Exn e -> `Exn e
-  | Delegated f -> assignement ck (f ()); compute ~pure ck
+  | Delegated wait -> wait (); compute ~pure ck
   | Closure f ->
       try
         let data = f () in

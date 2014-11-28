@@ -95,13 +95,12 @@ val from_here : ?fix_exn:fix_exn -> 'a -> 'a computation
  * (the hook), both performing some computations for the same state id. *)
 val fix_exn_of : 'a computation -> fix_exn
 
-(* Run remotely, returns the function to assign.  Optionally tekes a function
-   that is called when forced.  The default one is to raise NotReady.
-   The assignement function does not change the uuid. *)
+(* Run remotely, returns the function to assign.
+   If not blocking (the default) it raises NotReady if forced before the
+   delage assigns it. *)
 type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
 val create_delegate :
-  ?force:(unit -> 'a assignement) ->
-  fix_exn -> 'a computation * ('a assignement -> unit)
+  ?blocking:bool -> fix_exn -> 'a computation * ('a assignement -> unit)
 
 (* Given a computation that is_exn, replace it by another one *)
 val replace : 'a computation -> 'a computation -> unit
