@@ -799,6 +799,16 @@ module Unsafe = struct
       { step with comb = step.comb @ gls }
     end
 
+  let tclGETGOALS =
+    let open Proof in
+    Pv.get >>= begin fun step -> tclUNIT step.comb end
+
+  let tclSETGOALS gls =
+    Pv.modify begin fun step ->
+      let gls = undefined step.solution gls in
+      { step with comb = gls }
+    end
+
   let tclEVARSADVANCE evd =
     Pv.modify (fun ps -> { solution = evd; comb = undefined evd ps.comb })
 

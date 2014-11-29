@@ -380,6 +380,13 @@ module Unsafe : sig
       goal is already solved, it is not added. *)
   val tclNEWGOALS : Goal.goal list -> unit tactic
 
+  (** [tclSETGOALS gls] sets goals [gls] as the goals being under focus. If a
+      goal is already solved, it is not set. *)
+  val tclSETGOALS : Goal.goal list -> unit tactic
+
+  (** [tclGETGOALS] returns the list of goals under focus. *)
+  val tclGETGOALS : Goal.goal list tactic
+
   (** Sets the evar universe context. *)
   val tclEVARUNIVCONTEXT : Evd.evar_universe_context -> unit tactic
 
