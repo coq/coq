@@ -25,6 +25,17 @@ open Constrexpr
 open Decl_kinds
 open Entries
 
+let refine_instance = ref true
+
+let _ = Goptions.declare_bool_option {
+  Goptions.optsync  = true;
+  Goptions.optdepr  = false;
+  Goptions.optname  = "definition of instances by refining";
+  Goptions.optkey   = ["Refine";"Instance";"Mode"];
+  Goptions.optread  = (fun () -> !refine_instance);
+  Goptions.optwrite = (fun b -> refine_instance := b)
+}
+
 let typeclasses_db = "typeclass_instances"
 
 let set_typeclass_transparency c local b = 
@@ -269,7 +280,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
           let ctx = Evd.universe_context evm in
 	  declare_instance_constant k pri global imps ?hook id 
             poly ctx (Option.get term) termtype
-	else begin
+	else if !refine_instance then begin
 	  let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	    if Flags.is_program_mode () then
 	      let hook vis gr =
@@ -316,7 +327,8 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 		  ignore (Pfedit.by (Tacticals.New.tclDO len Tactics.intro));
 		(match tac with Some tac -> ignore (Pfedit.by tac) | None -> ())) ();
 	       id)
-	end)
+	end
+      else Errors.error "Unsolved obligations remaining.")
 	
 let named_of_rel_context l =
   let acc, ctx =
