@@ -72,6 +72,7 @@ let let_evar name typ =
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let id = Namegen.id_of_name_using_hdchar env typ name in
+    let id = Namegen.next_ident_away_in_goal id (Termops.ids_of_named_context (Environ.named_context env)) in
     let sigma',evar = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
     Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS sigma'))
       (Tactics.letin_tac None (Names.Name id) evar None Locusops.nowhere)
