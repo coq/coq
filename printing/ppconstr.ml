@@ -154,7 +154,7 @@ end) = struct
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
     let id = tag_ref (str (Id.to_string id)) in
-    let sl = match DirPath.repr sl with
+    let sl = match List.rev (DirPath.repr sl) with
     | [] -> mt ()
     | sl ->
       let pr dir = tag_path (str (Id.to_string dir)) ++ str "." in
