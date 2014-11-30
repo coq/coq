@@ -68,7 +68,10 @@ let dependent_init =
   fun t ->
     let entry, v = aux t in
     (* Marks all the goal unresolvable for typeclasses. *)
-    let solution = Typeclasses.mark_unresolvables v.solution in
+    let fold accu ev = Evar.Set.add ev accu in
+    let gls = List.fold_left fold Evar.Set.empty v.comb in
+    let filter evk _ = Evar.Set.mem evk gls in
+    let solution = Typeclasses.mark_unresolvables ~filter v.solution in
     (* The created goal are not to be shelved. *)
     let solution = Evd.reset_future_goals solution in
     entry, { v with solution }
