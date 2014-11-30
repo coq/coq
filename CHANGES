@@ -63,6 +63,8 @@ Vernacular commands
   retrieved using the "Locate Term" command.
 - New "Derive" command to help writing program by derivation.
 - "Undo" undoes any command, not just tactics.
+- New "Refine Instance Mode" option that allows to deactivate the generation of
+  obligations in incomplete typeclass instances, raising an error instead.
 
 Specification Language
 

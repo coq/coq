@@ -413,6 +413,17 @@ based on a variant of eauto. The flags semantics are:
 \item {\emph{depth}} This sets the depth of the search (the default is 100).
 \end{itemize}
 
+\subsection{\tt Set Refine Instance Mode}
+\comindex{Set Refine Instance Mode}\comindex{Unset Refine Instance Mode}
+
+The option {\tt Refine Instance Mode} allows to switch the behaviour of instance
+declarations made through the {\tt Instance} command.
+\begin{itemize}
+\item When it is on (the default), instances that have unsolved holes in their
+proof-term silently open the proof mode with the remaining obligations to prove.
+\item When it is off, they fail with an error instead.
+\end{itemize}
+
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
