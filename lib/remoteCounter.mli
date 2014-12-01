@@ -10,7 +10,10 @@
  * scenario, the slave installs a getter that asks the master for a fresh
  * value.  In the scenario of a slave that runs after the death of the master
  * on some marshalled data, a backup of all counters status should be taken and
- * restored to avoid reusing ids. *)
+ * restored to avoid reusing ids.
+ * Counters cannot be created by threads, they must be created once and forall
+ * as toplevel module declarations. *)
+
 
 type 'a getter = unit -> 'a
 type 'a installer = ('a getter) -> unit
