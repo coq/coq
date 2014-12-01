@@ -23,6 +23,8 @@
 Require Import WeakFan List.
 Import ListNotations.
 
+Require Import Omega.
+
 (** [is_path_from P n l] means that there exists a path of length [n]
     from [l] on which [P] does not hold *)
 
@@ -30,6 +32,30 @@ Inductive is_path_from (P:list bool -> Prop) : nat -> list bool -> Prop :=
 | here l : ~ P l -> is_path_from P 0 l
 | next_left l n : ~ P l -> is_path_from P n (true::l) -> is_path_from P (S n) l
 | next_right l n : ~ P l -> is_path_from P n (false::l) -> is_path_from P (S n) l.
+
+(** We give the characterization of is_path_from in terms of a more common arithmetical formula *)
+
+Proposition is_path_from_characterization P n l :
+  is_path_from P n l <-> exists l', length l' = n /\ forall n', n'<=n -> ~ P (rev (firstn n' l') ++ l).
+Proof.
+intros. split.
+- induction 1 as [|* HP _ (l'&Hl'&HPl')|* HP _ (l'&Hl'&HPl')].
+  + exists []. split. reflexivity. intros n <-/le_n_0_eq. assumption.
+  + exists (true :: l'). split. apply eq_S, Hl'. intros [|] H.
+    * assumption.
+    * simpl. rewrite <- app_assoc. apply HPl', le_S_n, H.
+  + exists (false :: l'). split. apply eq_S, Hl'. intros [|] H.
+    * assumption.
+    * simpl. rewrite <- app_assoc. apply HPl', le_S_n, H.
+- intros (l'& <- &HPl'). induction l' as [|[|]] in l, HPl' |- *.
+  + constructor. apply (HPl' 0). apply le_0_n.
+  + eapply next_left.
+    * apply (HPl' 0), le_0_n.
+    * fold (length l'). apply IHl'. intros n' H/le_n_S. apply HPl' in H. simpl in H. rewrite <- app_assoc in H. assumption.
+  + apply next_right.
+    * apply (HPl' 0), le_0_n.
+    * fold (length l'). apply IHl'. intros n' H/le_n_S. apply HPl' in H. simpl in H. rewrite <- app_assoc in H. assumption.
+Qed.
 
 (** [infinite_from P l] means that we can find arbitrary long paths
     along which [P] does not hold above [l] *)
