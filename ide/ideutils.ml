@@ -61,9 +61,6 @@ let byte_offset_to_char_offset s byte_offset =
 
 let glib_utf8_pos_to_offset s ~off = byte_offset_to_char_offset s off
 
-let print_id id =
-  Minilib.log ("GOT sig id :"^(string_of_int (Obj.magic id)))
-
 let do_convert s =
   let from_loc () =
     let _,char_set = Glib.Convert.get_charset () in

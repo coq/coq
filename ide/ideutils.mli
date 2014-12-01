@@ -29,8 +29,6 @@ val find_tag_limits : GText.tag -> GText.iter -> GText.iter * GText.iter
 val find_tag_start : GText.tag -> GText.iter -> GText.iter
 val find_tag_stop : GText.tag -> GText.iter -> GText.iter
 
-val print_id : 'a -> unit
-
 val select_file_for_open : title:string -> unit -> string option
 val select_file_for_save :
   title:string -> ?filename:string -> unit -> string option
