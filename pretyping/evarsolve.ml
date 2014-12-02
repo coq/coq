@@ -1070,7 +1070,7 @@ exception EvarSolvedOnTheFly of evar_map * constr
 
 (* Try to project evk1[argsv1] on evk2[argsv2], if [ev1] is a pattern on
    the common domain of definition *)
-let project_evar_on_evar g env evd aliases k2 (evk1,argsv1 as ev1) (evk2,argsv2 as ev2) =
+let project_evar_on_evar g env evd aliases k2 pbty (evk1,argsv1 as ev1) (evk2,argsv2 as ev2) =
   (* Apply filtering on ev1 so that fvs(ev1) are in fvs(ev2). *)
   let fvs2 = free_vars_and_rels_up_alias_expansion aliases (mkEvar ev2) in
   let filter1 = restrict_upon_filter evd evk1
@@ -1078,7 +1078,8 @@ let project_evar_on_evar g env evd aliases k2 (evk1,argsv1 as ev1) (evk2,argsv2 
     argsv1 in
   (* Only try pruning on variable substitutions, postpone otherwise. *)
   (* Rules out non-linear instances. *)
-  if is_unification_pattern_pure_evar env evd ev2 (mkEvar ev1) then
+  if is_unification_pattern_pure_evar env evd ev2 (mkEvar ev1)
+     && Option.is_empty pbty then
     try
       let candidates1 = restrict_candidates g env evd filter1 ev1 ev2 in
       let evd,(evk1',args1) = do_restrict_hyps evd ev1 filter1 candidates1 in
@@ -1108,7 +1109,7 @@ let check_evar_instance evd evk1 body conv_algo =
 
 let solve_evar_evar_l2r f g env evd aliases pbty ev1 (evk2,_ as ev2) =
   try
-    let evd,body = project_evar_on_evar g env evd aliases 0 ev1 ev2 in
+    let evd,body = project_evar_on_evar g env evd aliases 0 pbty ev1 ev2 in
     let evd' = Evd.define evk2 body evd in
       check_evar_instance evd' evk2 body g
   with EvarSolvedOnTheFly (evd,c) ->
@@ -1318,7 +1319,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
         let aliases = lift_aliases k aliases in
         (try
           let ev = (evk,Array.map (lift k) argsv) in
-          let evd,body = project_evar_on_evar conv_algo env' !evdref aliases k ev'  ev in
+          let evd,body = project_evar_on_evar conv_algo env' !evdref aliases k None ev' ev in
           evdref := evd;
           body
         with
@@ -1335,7 +1336,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
           let evd =
              (* Try to project (a restriction of) the left evar ... *)
             try
-              let evd,body = project_evar_on_evar conv_algo env' evd aliases 0 ev'' ev' in
+              let evd,body = project_evar_on_evar conv_algo env' evd aliases 0 None ev'' ev' in
               let evd = Evd.define evk' body evd in
 		check_evar_instance evd evk' body conv_algo
             with
