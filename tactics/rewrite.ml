@@ -1529,6 +1529,10 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
   in
   let beta_red _ sigma c = Reductionops.nf_betaiota sigma c in
   let beta = Proofview.V82.tactic (Tactics.reduct_in_concl (beta_red, DEFAULTcast)) in
+  let opt_beta = match clause with
+  | None -> Proofview.tclUNIT ()
+  | Some id -> Proofview.V82.tactic (Tactics.reduct_in_hyp beta_red (id, InHyp))
+  in
   Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
@@ -1545,7 +1549,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
       let sigma = match origsigma with None -> sigma | Some sigma -> sigma in
       treat sigma (res, is_hyp) <*>
       (** For compatibility *)
-      beta <*> Proofview.shelve_unifiable
+      beta <*> opt_beta <*> Proofview.shelve_unifiable
     with
     | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
       raise (RewriteFailure (Himsg.explain_pretype_error env evd e))
