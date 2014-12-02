@@ -1114,19 +1114,22 @@ let solve_evar_evar_l2r f g env evd aliases pbty ev1 (evk2,_ as ev2) =
   with EvarSolvedOnTheFly (evd,c) ->
     f env evd pbty ev2 c
 
-let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
-  let evd,ev1,ev2 =
-    (* If an evar occurs in the instance of the other evar and the
-       use of an heuristic is forced, we restrict *)
-    if force then ensure_evar_independent g env evd ev1 ev2 else (evd,ev1,ev2) in
+let opp_problem = function None -> None | Some b -> Some (not b)
+
+let solve_evar_evar_aux f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env in
   try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
   with CannotProject filter1 ->
-  try solve_evar_evar_l2r f g env evd aliases pbty ev2 ev1
+  try solve_evar_evar_l2r f g env evd aliases (opp_problem pbty) ev2 ev1
   with CannotProject filter2 ->
   postpone_evar_evar f env evd pbty filter1 ev1 filter2 ev2
 
 let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
+  let (evd,ev1,ev2),pbty =
+    (* If an evar occurs in the instance of the other evar and the
+       use of an heuristic is forced, we restrict *)
+    if force then ensure_evar_independent g env evd ev1 ev2, None
+    else (evd,ev1,ev2),pbty in
   let evi = Evd.find evd evk1 in
     try 
       (* ?X : Π Δ. Type i = ?Y : Π Δ'. Type j.
@@ -1139,12 +1142,12 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
       let ui, uj = univ_of_sort i, univ_of_sort j in
 	if i == j || Evd.check_eq evd ui uj
 	then (* Shortcut, i = j *) 
-	  solve_evar_evar ~force f g env evd pbty ev1 ev2
+	  solve_evar_evar_aux f g env evd pbty ev1 ev2
 	  (* Avoid looping if postponing happened on previous evar/evar problem *) 
 	else if Evd.check_leq evd ui uj then
-	  solve_evar_evar ~force f g env evd None ev1 ev2
+	  solve_evar_evar_aux f g env evd pbty ev1 ev2
 	else if Evd.check_leq evd uj ui then
-	  solve_evar_evar ~force f g env evd None ev2 ev1
+	  solve_evar_evar_aux f g env evd (opp_problem pbty) ev2 ev1
 	else
 	  let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
 	  let evd, ev3 = 
@@ -1153,10 +1156,10 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
 	      ?candidates:evi.evar_candidates (it_mkProd_or_LetIn (mkSort k) ctx) 
 	  in
 	  let evd = Evd.set_leq_sort env (Evd.set_leq_sort env evd k i) k j in
-	  let evd = solve_evar_evar ~force f g env evd (Some false) (ev3,args1) ev1 in
-	    f env evd pbty ev2 (whd_evar evd (mkEvar (ev3,args1)))
+	  let evd = solve_evar_evar_aux f g env evd pbty ev1 (ev3,args1) in
+	    f env evd (opp_problem pbty) ev2 (whd_evar evd (mkEvar (ev3,args1)))
     with Reduction.NotArity -> 
-      solve_evar_evar ~force f g env evd None ev1 ev2
+      solve_evar_evar_aux f g env evd pbty ev1 ev2
 
 type conv_fun =
   env ->  evar_map -> conv_pb -> constr -> constr -> unification_result
