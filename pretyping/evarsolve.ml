@@ -1068,6 +1068,8 @@ let ensure_evar_independent g env evd (evk1,argsv1 as ev1) (evk2,argsv2 as ev2)=
 
 exception EvarSolvedOnTheFly of evar_map * constr
 
+(* Try to project evk1[argsv1] on evk2[argsv2], if [ev1] is a pattern on
+   the common domain of definition *)
 let project_evar_on_evar g env evd aliases k2 (evk1,argsv1 as ev1) (evk2,argsv2 as ev2) =
   (* Apply filtering on ev1 so that fvs(ev1) are in fvs(ev2). *)
   let fvs2 = free_vars_and_rels_up_alias_expansion aliases (mkEvar ev2) in
@@ -1113,24 +1115,16 @@ let solve_evar_evar_l2r f g env evd aliases pbty ev1 (evk2,_ as ev2) =
     f env evd pbty ev2 c
 
 let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
-  if are_canonical_instances args1 args2 env then
-    (* If instances are canonical, we solve the problem in linear time *)
-    let sign = evar_filtered_context (Evd.find evd evk2) in
-    let id_inst = inst_of_vars sign in
-    let body = mkEvar(evk1,id_inst) in
-    let evd' = Evd.define evk2 body evd in
-      check_evar_instance evd' evk2 body g
-  else
-    let evd,ev1,ev2 =
-      (* If an evar occurs in the instance of the other evar and the
-         use of an heuristic is forced, we restrict *)
-      if force then ensure_evar_independent g env evd ev1 ev2 else (evd,ev1,ev2) in
-    let aliases = make_alias_map env in
-    try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
-    with CannotProject filter1 ->
-    try solve_evar_evar_l2r f g env evd aliases pbty ev2 ev1
-    with CannotProject filter2 ->
-    postpone_evar_evar f env evd pbty filter1 ev1 filter2 ev2
+  let evd,ev1,ev2 =
+    (* If an evar occurs in the instance of the other evar and the
+       use of an heuristic is forced, we restrict *)
+    if force then ensure_evar_independent g env evd ev1 ev2 else (evd,ev1,ev2) in
+  let aliases = make_alias_map env in
+  try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
+  with CannotProject filter1 ->
+  try solve_evar_evar_l2r f g env evd aliases pbty ev2 ev1
+  with CannotProject filter2 ->
+  postpone_evar_evar f env evd pbty filter1 ev1 filter2 ev2
 
 let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let evi = Evd.find evd evk1 in
