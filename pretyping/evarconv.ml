@@ -1060,7 +1060,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
                  (position_problem true pbty) evk1 args1 args2)
   | Evar ev1, Evar ev2 ->
       Success (solve_evar_evar ~force:true
-        (evar_define (evar_conv_x ts)) (evar_conv_x ts) env evd
+        (evar_define (evar_conv_x ts) ~choose:true) (evar_conv_x ts) env evd
         (position_problem true pbty) ev1 ev2)
   | Evar ev1,_ when Array.length l1 <= Array.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
