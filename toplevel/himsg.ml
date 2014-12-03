@@ -293,8 +293,9 @@ let explain_unification_error env sigma p1 p2 = function
     | InstanceNotSameType (evk,env,t,u) ->
         let t, u = pr_explicit env sigma t u in
         spc () ++ str "(unable to find a well-typed instantiation for " ++
-        quote (pr_existential_key sigma evk) ++ strbrk ": cannot unify " ++
-        t ++ strbrk " and " ++ u ++ str ")"
+        quote (pr_existential_key sigma evk) ++
+        strbrk ": cannot ensure that " ++
+        t ++ strbrk " is a subtype of " ++ u ++ str ")"
     | UnifUnivInconsistency p ->
         if !Constrextern.print_universes then
 	  spc () ++ str "(Universe inconsistency: " ++ 
