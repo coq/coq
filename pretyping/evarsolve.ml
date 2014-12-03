@@ -1146,9 +1146,9 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
 	  solve_evar_evar_aux f g env evd pbty ev1 ev2
 	  (* Avoid looping if postponing happened on previous evar/evar problem *) 
 	else if Evd.check_leq evd ui uj then
-	  solve_evar_evar_aux f g env evd pbty ev1 ev2
-	else if Evd.check_leq evd uj ui then
 	  solve_evar_evar_aux f g env evd (opp_problem pbty) ev2 ev1
+	else if Evd.check_leq evd uj ui then
+	  solve_evar_evar_aux f g env evd pbty ev1 ev2
 	else
 	  let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
 	  let evd, ev3 = 
@@ -1157,8 +1157,8 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
 	      ?candidates:evi.evar_candidates (it_mkProd_or_LetIn (mkSort k) ctx) 
 	  in
 	  let evd = Evd.set_leq_sort env (Evd.set_leq_sort env evd k i) k j in
-	  let evd = solve_evar_evar_aux f g env evd pbty ev1 (ev3,args1) in
-	    f env evd (opp_problem pbty) ev2 (whd_evar evd (mkEvar (ev3,args1)))
+	  let evd = solve_evar_evar_aux f g env evd (opp_problem pbty) (ev3,args1) ev1 in
+          f env evd (opp_problem pbty) ev2 (whd_evar evd (mkEvar (ev3,args1)))
     with Reduction.NotArity -> 
       solve_evar_evar_aux f g env evd pbty ev1 ev2
 
