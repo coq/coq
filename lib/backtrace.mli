@@ -56,10 +56,10 @@ val record_backtrace : bool -> unit
 (** Whether to activate the backtrace recording mechanism. Note that it will
     only work whenever the program was compiled with the [debug] flag. *)
 
-val get_backtrace : exn -> t option
+val get_backtrace : Exninfo.info -> t option
 (** Retrieve the optional backtrace coming with the exception. *)
 
-val add_backtrace : exn -> exn
+val add_backtrace : exn -> Exninfo.iexn
 (** Add the current backtrace information to the given exception.
 
     The intended use case is of the form: {[
@@ -88,7 +88,7 @@ val add_backtrace : exn -> exn
 
 *)
 
-val app_backtrace : src:exn -> dst:exn -> exn
+val app_backtrace : src:Exninfo.info -> dst:Exninfo.info -> Exninfo.info
 (** Append the backtrace from [src] to [dst]. The returned exception is [dst]
     except for its backtrace information. This is targeted at container
     exceptions, that is, exceptions that contain exceptions. This way, one can

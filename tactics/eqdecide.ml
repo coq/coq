@@ -157,9 +157,9 @@ let solveEqBranch rectype =
             (tclTHEN (choose_eq eqonleft) intros_reflexivity)
       end
     end
-    begin function
+    begin function (e, info) -> match e with
       | PatternMatchingFailure -> Proofview.tclZERO (UserError ("",Pp.str"Unexpected conclusion!"))
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
     end
 
 (* The tactic Decide Equality *)
@@ -184,10 +184,10 @@ let decideGralEquality =
              (tclORELSE (solveNoteqBranch eqonleft) (solveEqBranch rectype)))
       end
     end
-    begin function
+    begin function (e, info) -> match e with
       | PatternMatchingFailure ->
           Proofview.tclZERO (UserError ("", Pp.str"The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}."))
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
     end
 
 let decideEqualityGoal = tclTHEN intros decideGralEquality

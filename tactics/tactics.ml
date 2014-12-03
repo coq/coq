@@ -763,11 +763,11 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
 	  Proofview.tclORELSE
 	  (Tacticals.New.tclTHEN (Proofview.V82.tactic hnf_in_concl)
 	     (intro_then_gen name_flag move_flag false dep_flag tac))
-          begin function
+          begin function (e, info) -> match e with
             | RefinerError IntroNeedsProduct ->
                 Proofview.tclZERO 
 		  (Errors.UserError("Intro",str "No product even after head-reduction."))
-            | e -> Proofview.tclZERO e
+            | e -> Proofview.tclZERO ~info e
           end
   end
 
@@ -805,10 +805,10 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
       intro_then_gen name_flag move_flag false dep_flag
          (fun id -> aux (n+1) (id::ids))
       end
-      begin function
+      begin function (e, info) -> match e with
       | RefinerError IntroNeedsProduct ->
           tac ids
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
       end
     else
       tac ids
@@ -1246,12 +1246,12 @@ let default_elim with_evars clear_flag (c,_ as cx) =
 	Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evd)
 	  (general_elim with_evars clear_flag cx elim)
     end)
-    begin function
+    begin function (e, info) -> match e with
       | IsNonrec ->
           (* For records, induction principles aren't there by default
              anymore.  Instead, we do a case analysis instead. *)
           general_case_analysis with_evars clear_flag cx
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
     end
 
 let elim_in_context with_evars clear_flag c = function
@@ -1452,16 +1452,18 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
     in
     Proofview.tclORELSE
       (try_apply thm_ty0 concl_nprod)
-      (function PretypeError _|RefinerError _|UserError _|Failure _ as exn0 ->
+      (function (e, info) -> match e with
+        | PretypeError _|RefinerError _|UserError _|Failure _ as exn0 ->
 	let rec try_red_apply thm_ty =
           try 
             (* Try to head-reduce the conclusion of the theorem *)
             let red_thm = try_red_product env sigma thm_ty in
             Proofview.tclORELSE
               (try_apply red_thm concl_nprod)
-              (function PretypeError _|RefinerError _|UserError _|Failure _ ->
+              (function (e, info) -> match e with
+              | PretypeError _|RefinerError _|UserError _|Failure _ ->
 		try_red_apply red_thm
-              | exn -> raise exn)
+              | exn -> iraise (exn, info))
           with Redelimination ->
             (* Last chance: if the head is a variable, apply may try
 	       second order unification *)
@@ -1472,22 +1474,26 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
                     Tacticals.New.tclTHEN
                       (try_main_apply b (mkVar id))
                       (Proofview.V82.tactic (thin [id])))
-                  (fun _ -> Proofview.tclZERO (Loc.add_loc exn0 loc)) c
+                  (fun _ ->
+                    let info = Loc.add_loc info loc in
+                    Proofview.tclZERO ~info exn0) c
 	      else
-		Proofview.tclZERO (Loc.add_loc exn0 loc) in
+                let info = Loc.add_loc info loc in
+		Proofview.tclZERO ~info exn0 in
             if not (Int.equal concl_nprod 0) then
               try
                 Proofview.tclORELSE
                   (try_apply thm_ty 0)
-                  (function PretypeError _|RefinerError _|UserError _|Failure _->
+                  (function (e, info) -> match e with
+                  | PretypeError _|RefinerError _|UserError _|Failure _->
                     tac
-                  | exn -> raise exn)
+                  | exn -> iraise (exn, info))
               with UserError _ | Exit ->
                 tac
             else
               tac
 	in try_red_apply thm_ty0
-      | exn -> raise exn)
+      | exn -> iraise (exn, info))
     end
   in
     Tacticals.New.tclTHENLIST [
@@ -1570,7 +1576,7 @@ let apply_in_once_main flags innerclause env sigma (d,lbind) =
     with e when Errors.noncritical e ->
     let e = Errors.push e in
     try aux (clenv_push_prod clause)
-    with NotExtensibleClause -> raise e
+    with NotExtensibleClause -> iraise e
   in
   aux (make_clenv_binding env sigma (d,thm) lbind)
 
@@ -1601,7 +1607,7 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
       let e = Errors.push e in
         (descend_in_conjunctions [targetid]
            (fun b id -> aux (id::idstoclear) b (mkVar id))
-           (fun _ -> raise e) c)
+           (fun _ -> iraise e) c)
     end
   in
   aux [] with_destruct d
@@ -2652,14 +2658,14 @@ let dest_intro_patterns avoid thin dest pat tac =
 let safe_dest_intro_patterns avoid thin dest pat tac =
   Proofview.tclORELSE
     (dest_intro_patterns avoid thin dest pat tac)
-    begin function
+    begin function (e, info) -> match e with
       | UserError ("move_hyp",_) ->
        (* May happen e.g. with "destruct x using s" with an hypothesis
           which is morally an induction hypothesis to be "MoveLast" if
           known as such but which is considered instead as a subterm of
           a constructor to be move at the place of x. *)
           dest_intro_patterns avoid thin MoveLast pat tac
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
     end
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
@@ -4155,9 +4161,9 @@ let reflexivity_red allowred =
 let reflexivity =
   Proofview.tclORELSE
     (reflexivity_red false)
-    begin function
+    begin function (e, info) -> match e with
       | NoEquationFound -> Hook.get forward_setoid_reflexivity
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
     end
 
 let intros_reflexivity  = (Tacticals.New.tclTHEN intros reflexivity)
@@ -4209,9 +4215,9 @@ let symmetry_red allowred =
 let symmetry =
   Proofview.tclORELSE
     (symmetry_red false)
-    begin function
+    begin function (e, info) -> match e with
       | NoEquationFound -> Hook.get forward_setoid_symmetry
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
     end
 
 let (forward_setoid_symmetry_in, setoid_symmetry_in) = Hook.make ()
@@ -4232,9 +4238,9 @@ let symmetry_in id =
           [ intro_replacing id;
             Tacticals.New.tclTHENLIST [ intros; symmetry; apply (mkVar id); assumption ] ]
     end
-    begin function
+    begin function (e, info) -> match e with
       | NoEquationFound -> Hook.get forward_setoid_symmetry_in id
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
     end
   end
 
@@ -4306,9 +4312,9 @@ let transitivity_red allowred t =
 let transitivity_gen t =
   Proofview.tclORELSE
     (transitivity_red false t)
-    begin function
+    begin function (e, info) -> match e with
       | NoEquationFound -> Hook.get forward_setoid_transitivity t
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
     end
 
 let etransitivity = transitivity_gen None
@@ -4365,9 +4371,8 @@ let abstract_subproof id gk tac =
        which is an error irrelevant to the proof system (in fact it
        means that [e] comes from [tac] failing to yield enough
        success). Hence it reraises [e]. *)
-    let src = Errors.push src in
-    let e = Backtrace.app_backtrace ~src ~dst:e in
-    raise e
+    let (_, info) = Errors.push src in
+    iraise (e, info)
   in
   let cd = Entries.DefinitionEntry const in
   let decl = (cd, IsProof Lemma) in

@@ -731,7 +731,7 @@ let save_library_to ?todo dir f otab =
     let () = msg_warning (str ("Removed file "^f')) in
     let () = close_out ch in
     let () = Sys.remove f' in
-    raise reraise
+    iraise reraise
 
 let save_library_raw f lib univs proofs =
   let (f',ch) = raw_extern_library (f^"o") in

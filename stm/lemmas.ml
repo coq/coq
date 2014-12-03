@@ -38,7 +38,7 @@ let call_hook fix_exn hook l c =
   try hook l c
   with e when Errors.noncritical e ->
     let e = Errors.push e in
-    raise (fix_exn e)
+    iraise (fix_exn e)
 
 (* Support for mutually proved theorems *)
 
@@ -206,7 +206,7 @@ let save id const cstrs do_guard (locality,poly,kind) hook =
     call_hook (fun exn -> exn) hook l r
   with e when Errors.noncritical e ->
     let e = Errors.push e in
-    raise (fix_exn e)
+    iraise (fix_exn e)
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 

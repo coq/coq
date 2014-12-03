@@ -104,6 +104,8 @@ let verify_metas_coherence env sigma (ln1,lcm) (ln,lm) =
 let matching_error =
   Errors.UserError ("tactic matching" , Pp.str "No matching clauses for match.")
 
+let imatching_error = (matching_error, Exninfo.null)
+
 (** A functor is introduced to share the environment and the
     evar_map. They do not change and it would be a pity to introduce
     closures everywhere just for the occasional calls to
@@ -191,12 +193,12 @@ module PatternMatching (E:StaticEnvironment) = struct
     m.stream eval ctx
 
   (** Chooses in a list, in the same order as the list *)
-  let rec pick (l:'a list) e : 'a m = match l with
-  | [] -> { stream = fun _ _ -> Proofview.tclZERO e }
+  let rec pick (l:'a list) (e, info) : 'a m = match l with
+  | [] -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
   | x :: l ->
     { stream = fun k ctx -> Proofview.tclOR (k x ctx) (fun e -> (pick l e).stream k ctx) }
 
-  let pick l = pick l matching_error
+  let pick l = pick l imatching_error
 
   (** Declares a subsitution, a context substitution and a term substitution. *)
   let put subst context terms : unit m =
@@ -234,20 +236,20 @@ module PatternMatching (E:StaticEnvironment) = struct
         end
     | Subterm (with_app_context,id_ctxt,p) ->
 
-      let rec map s e =
+      let rec map s (e, info) =
         { stream = fun k ctx -> match IStream.peek s with
-          | IStream.Nil -> Proofview.tclZERO e
+          | IStream.Nil -> Proofview.tclZERO ~info e
           | IStream.Cons ({ ConstrMatching.m_sub ; m_ctx }, s) ->
             let subst = adjust m_sub in
             let context = id_map_try_add id_ctxt m_ctx Id.Map.empty in
             let terms = empty_term_subst in
             let nctx = { subst ; context ; terms ; lhs = () } in
             match merge ctx nctx with
-            | None -> (map s e).stream k ctx
+            | None -> (map s (e, info)).stream k ctx
             | Some nctx -> Proofview.tclOR (k lhs nctx) (fun e -> (map s e).stream k ctx)
         }
       in
-      map (ConstrMatching.match_subterm_gen E.env E.sigma with_app_context p term) matching_error
+      map (ConstrMatching.match_subterm_gen E.env E.sigma with_app_context p term) imatching_error
 
 
   (** [rule_match_term term rule] matches the term [term] with the
@@ -261,8 +263,8 @@ module PatternMatching (E:StaticEnvironment) = struct
 
   (** [match_term term rules] matches the term [term] with the set of
       matching rules [rules].*)
-  let rec match_term e term rules = match rules with
-  | [] -> { stream = fun _ _ -> Proofview.tclZERO e }
+  let rec match_term (e, info) term rules = match rules with
+  | [] -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
   | r :: rules ->
     { stream = fun k ctx ->
       let head = rule_match_term term r in
@@ -333,8 +335,8 @@ module PatternMatching (E:StaticEnvironment) = struct
 
   (** [match_goal hyps concl rules] matches the goal [hyps|-concl]
       with the set of matching rules [rules]. *)
-  let rec match_goal e hyps concl rules = match rules with
-  | [] -> { stream = fun _ _ -> Proofview.tclZERO e }
+  let rec match_goal (e, info) hyps concl rules = match rules with
+  | [] -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
   | r :: rules ->
     { stream = fun k ctx ->
       let head = rule_match_goal hyps concl r in
@@ -354,7 +356,7 @@ let match_term env sigma term rules =
     let sigma = sigma
   end in
   let module M = PatternMatching(E) in
-  M.run (M.match_term matching_error term rules)
+  M.run (M.match_term imatching_error term rules)
 
 
 (** [match_goal env sigma hyps concl rules] matches the goal
@@ -368,4 +370,4 @@ let match_goal env sigma hyps concl rules =
     let sigma = sigma
   end in
   let module M = PatternMatching(E) in
-  M.run (M.match_goal matching_error hyps concl rules)
+  M.run (M.match_goal imatching_error hyps concl rules)

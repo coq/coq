@@ -80,22 +80,23 @@ struct
 
   (** [Pervasives.raise]. Except that exceptions are wrapped with
       {!Exception}. *)
-  let raise = fun e -> (); fun () -> raise (Exception e)
+  let raise ?info = fun e -> (); fun () -> Exninfo.raise ?info (Exception e)
 
   (** [try ... with ...] but restricted to {!Exception}. *)
   let catch = fun s h -> ();
     fun () -> try s ()
       with Exception e as src ->
-        let src = Errors.push src in
-        let e = Backtrace.app_backtrace ~src ~dst:e in
-        h e ()
+        let (src, info) = Errors.push src in
+        h (e, info) ()
 
-  let read_line = fun () -> try Pervasives.read_line () with e -> let e = Errors.push e in raise e ()
+  let read_line = fun () -> try Pervasives.read_line () with e ->
+    let (e, info) = Errors.push e in raise ~info e ()
 
   let print_char = fun c -> (); fun () -> print_char c
 
   (** {!Pp.pp}. The buffer is also flushed. *)
-  let print = fun s -> (); fun () -> try Pp.pp s; Pp.pp_flush () with e -> let e = Errors.push e in raise e ()
+  let print = fun s -> (); fun () -> try Pp.pp s; Pp.pp_flush () with e ->
+    let (e, info) = Errors.push e in raise ~info e ()
 
   let timeout = fun n t -> (); fun () ->
     Control.timeout n t (Exception Timeout)
@@ -103,14 +104,13 @@ struct
   let make f = (); fun () ->
     try f ()
     with e when Errors.noncritical e ->
-      let e = Errors.push e in
-      Pervasives.raise (Exception e)
+      let (e, info) = Errors.push e in
+      Util.iraise (Exception e, info)
 
   let run = fun x ->
     try x () with Exception e as src ->
-      let src = Errors.push src in
-      let e = Backtrace.app_backtrace ~src ~dst:e in
-      Pervasives.raise e
+      let (src, info) = Errors.push src in
+      Util.iraise (e, info)
 end
 
 (** {6 Logical layer} *)
@@ -136,7 +136,7 @@ end
 (** A view type for the logical monad, which is a form of list, hence
     we can decompose it with as a list. *)
 type ('a, 'b) list_view =
-  | Nil of exn
+  | Nil of Exninfo.iexn
   | Cons of 'a * 'b
 
 module type Param = sig
@@ -205,9 +205,11 @@ struct
       In that vision, [bind] is simply [concat_map] (though the cps
       version is significantly simpler), [plus] is concatenation, and
       [split] is pattern-matching. *)
+  type rich_exn = Exninfo.iexn
+
   type 'a iolist =
-      { iolist : 'r. (exn -> 'r NonLogical.t) ->
-                     ('a -> (exn -> 'r NonLogical.t) -> 'r NonLogical.t) ->
+      { iolist : 'r. (rich_exn -> 'r NonLogical.t) ->
+                     ('a -> (rich_exn -> 'r NonLogical.t) -> 'r NonLogical.t) ->
                      'r NonLogical.t }
 
   include Monad.Make(struct
@@ -277,7 +279,7 @@ struct
     let m = m s in
     { iolist = fun nil cons -> m.iolist nil (fun x _ -> cons x nil) }
 
-  let break (f : exn -> exn option) (m : 'a t) : 'a t = (); fun s ->
+  let break (f : rich_exn -> rich_exn option) (m : 'a t) : 'a t = (); fun s ->
     let m = m s in
     { iolist = fun nil cons ->
       m.iolist nil (fun x next -> cons x (fun e -> match f e with None -> next e | Some e -> nil e))
@@ -285,7 +287,7 @@ struct
 
   (** For [reflect] and [split] see the "Backtracking, Interleaving,
       and Terminating Monad Transformers" paper.  *)
-  type 'a reified = ('a, exn -> 'a reified) list_view NonLogical.t
+  type 'a reified = ('a, rich_exn -> 'a reified) list_view NonLogical.t
 
   let rec reflect (m : 'a reified) : 'a iolist =
     { iolist = fun nil cons ->
@@ -296,7 +298,7 @@ struct
       NonLogical.(m >>= next)
     }
 
-  let split (m : 'a t) : ('a, exn -> 'a t) list_view t = (); fun s ->
+  let split (m : 'a t) : ('a, rich_exn -> 'a t) list_view t = (); fun s ->
     let m = m s in
     let rnil e = NonLogical.return (Nil e) in
     let rcons p l = NonLogical.return (Cons (p, l)) in

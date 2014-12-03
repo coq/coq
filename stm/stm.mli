@@ -126,7 +126,7 @@ val get_current_proof_name : unit -> Id.t option
 val show_script : ?proof:Proof_global.closed_proof -> unit -> unit
 
 (** Reverse dependency hooks *)
-val process_error_hook : (exn -> exn) Hook.t
+val process_error_hook : Future.fix_exn Hook.t
 val interp_hook : (?verbosely:bool -> ?proof:Proof_global.closed_proof ->
   Loc.t * Vernacexpr.vernac_expr -> unit) Hook.t
 val with_fail_hook : (bool -> (unit -> unit) -> unit) Hook.t

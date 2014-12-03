@@ -578,6 +578,7 @@ let abstract_eval_call handler (c : 'a call) : 'a value =
     | PrintAst x   -> mkGood (handler.print_ast x)
     | Annotate x   -> mkGood (handler.annotate x)
   with any ->
+    let any = Errors.push any in
     Fail (handler.handle_exn any)
 
 (** brain dead code, edit if protocol messages are added/removed *)

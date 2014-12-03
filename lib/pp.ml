@@ -360,7 +360,7 @@ let pp_dirs ?pp_tag ft =
     with reraise ->
       let reraise = Backtrace.add_backtrace reraise in
       let () = Format.pp_print_flush ft () in
-      raise reraise
+      Exninfo.iraise reraise
 
 
 

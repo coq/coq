@@ -355,7 +355,7 @@ let dump_universes_gen g s =
   with reraise ->
     let reraise = Errors.push reraise in
     close ();
-    raise reraise
+    iraise reraise
 
 let dump_universes sorted s =
   let g = Global.universes () in
@@ -2037,10 +2037,10 @@ let vernac_timeout f =
 
 let restore_timeout () = current_timeout := None
 
-let locate_if_not_already loc exn =
-  match Loc.get_loc exn with
-  | None -> Loc.add_loc exn loc
-  | Some l -> if Loc.is_ghost l then Loc.add_loc exn loc else exn
+let locate_if_not_already loc (e, info) =
+  match Loc.get_loc info with
+  | None -> (e, Loc.add_loc info loc)
+  | Some l -> if Loc.is_ghost l then (e, Loc.add_loc info loc) else (e, info)
 
 exception HasNotFailed
 exception HasFailed of string
@@ -2056,11 +2056,13 @@ let with_fail b f =
            try f v; raise HasNotFailed
            with
            | HasNotFailed as e -> raise e
-           | e -> raise (HasFailed (Pp.string_of_ppcmds
-              (Errors.print (Cerrors.process_vernac_interp_error e)))))
+           | e ->
+              let e = Errors.push e in
+              raise (HasFailed (Pp.string_of_ppcmds
+              (Errors.iprint (Cerrors.process_vernac_interp_error e)))))
         ()
     with e when Errors.noncritical e -> 
-      let e = Errors.push e in
+      let (e, _) = Errors.push e in
       match e with
       | HasNotFailed ->
           errorlabstrm "Fail" (str "The command has not failed!")
@@ -2116,7 +2118,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             let e = locate_if_not_already loc e in
             let () = restore_timeout () in
             Flags.program_mode := orig_program_mode;
-            raise e
+            iraise e
   and aux_list ?locality ?polymorphism isprogcmd l =
     List.iter (aux false) (List.map snd l)
   in

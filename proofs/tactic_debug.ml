@@ -138,9 +138,9 @@ let rec prompt level =
     Proofview.NonLogical.print (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ") >>
     let exit = (skip:=0) >> (skipped:=0) >> raise Sys.Break in
     Proofview.NonLogical.catch Proofview.NonLogical.read_line
-      begin function
+      begin function (e, info) -> match e with
         | End_of_file -> exit
-        | e -> raise e
+        | e -> raise ~info e
       end
     >>= fun inst ->
     match inst with
@@ -154,9 +154,9 @@ let rec prompt level =
       end
     | _ ->
         Proofview.NonLogical.catch (run_com inst >> runtrue >> return (DebugOn (level+1)))
-          begin function
+          begin function (e, info) -> match e with
             | Failure _ | Invalid_argument _ -> prompt level
-            | e -> raise e
+            | e -> raise ~info e
           end
   end
 
@@ -189,7 +189,7 @@ let debug_prompt lev tac f =
   (* What to execute *)
   Proofview.tclOR
     (f newlevel)
-    begin fun reraise ->
+    begin fun (reraise, info) ->
       Proofview.tclTHEN
         (Proofview.tclLIFT begin
           (skip:=0) >> (skipped:=0) >>
@@ -197,7 +197,7 @@ let debug_prompt lev tac f =
               msg_tac_debug (str "Level " ++ int lev ++ str ": " ++ Pervasives.(!) explain_logic_error reraise)
             else return ()
         end)
-        (Proofview.tclZERO reraise)
+        (Proofview.tclZERO ~info reraise)
     end
 
 let is_debug db =

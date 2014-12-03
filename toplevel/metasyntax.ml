@@ -310,8 +310,9 @@ let parse_format ((loc, str) : lstring) =
     else
       error "Empty format."
   with reraise ->
-    let e = Errors.push reraise in
-    Loc.raise loc e
+    let (e, info) = Errors.push reraise in
+    let info = Loc.add_loc info loc in
+    iraise (e, info)
 
 (***********************)
 (* Analyzing notations *)
@@ -1136,7 +1137,7 @@ let with_lib_stk_protection f x =
   with reraise ->
     let reraise = Errors.push reraise in
     let () = Lib.unfreeze fs in
-    raise reraise
+    iraise reraise
 
 let with_syntax_protection f x =
   with_lib_stk_protection

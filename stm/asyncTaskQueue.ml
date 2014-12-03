@@ -359,7 +359,7 @@ module Make(T : Task) = struct
   let with_n_workers n f =
     let q = create n in 
     try let rc = f q in destroy q; rc
-    with e -> let e = Errors.push e in destroy q; raise e
+    with e -> let e = Errors.push e in destroy q; iraise e
 
   let n_workers { active; parking } =
     Pool.n_workers active, Pool.n_workers parking

@@ -223,10 +223,10 @@ let general_elim_clause with_evars frzevars cls rew elim =
       tclNOTSAMEGOAL (rewrite_elim with_evars frzevars cls rew elim)
     | Some _ -> rewrite_elim with_evars frzevars cls rew elim
     end
-    begin function
+    begin function (e, info) -> match e with
     | PretypeError (env, evd, NoOccurrenceFound (c', _)) ->
       Proofview.tclZERO (PretypeError (env, evd, NoOccurrenceFound (c', cls)))
-    | e -> Proofview.tclZERO e
+    | e -> Proofview.tclZERO ~info e
     end
 
 let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
@@ -394,7 +394,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
 				   lft2rgt occs (c,l) ~new_goals:[]) tac
             end
             begin function
-              | e ->
+              | (e, info) ->
 	          let env' = push_rel_context rels env in
 	          let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
 	          match match_with_equality_type t' with
@@ -402,7 +402,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
 		  let lft2rgt = adjust_rewriting_direction args lft2rgt in
 		  leibniz_rewrite_ebindings_clause cls lft2rgt tac c
 		    (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars frzevars dep_proof_ok hdcncl
-	            | None -> Proofview.tclZERO e
+	            | None -> Proofview.tclZERO ~info e
             (* error "The provided term does not end with an equality or a declared rewrite relation." *)  
             end
     end
@@ -1507,7 +1507,7 @@ let cutSubstInHyp l2r eqn id =
   end
 
 let try_rewrite tac =
-  Proofview.tclORELSE tac begin function
+  Proofview.tclORELSE tac begin function (e, info) -> match e with
     | ConstrMatching.PatternMatchingFailure ->
 	tclZEROMSG (str "Not a primitive equality here.")
     | e when catchable_exception e ->
@@ -1516,7 +1516,7 @@ let try_rewrite tac =
     | NothingToRewrite ->
 	tclZEROMSG
           (strbrk "Nothing to rewrite.")
-    | e -> Proofview.tclZERO e
+    | e -> Proofview.tclZERO ~info e
   end
 
 let cutSubstClause l2r eqn cls =

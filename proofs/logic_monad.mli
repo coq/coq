@@ -60,9 +60,9 @@ module NonLogical : sig
 
   (** [Pervasives.raise]. Except that exceptions are wrapped with
       {!Exception}. *)
-  val raise : exn -> 'a t
+  val raise : ?info:Exninfo.info -> exn -> 'a t
   (** [try ... with ...] but restricted to {!Exception}. *)
-  val catch : 'a t -> (exn -> 'a t) -> 'a t
+  val catch : 'a t -> (Exninfo.iexn -> 'a t) -> 'a t
   val timeout : int -> 'a t -> 'a t
 
   (** Construct a monadified side-effect. Exceptions raised by the argument are
@@ -98,7 +98,7 @@ end
 (** A view type for the logical monad, which is a form of list, hence
     we can decompose it with as a list. *)
 type ('a, 'b) list_view =
-| Nil of exn
+| Nil of Exninfo.iexn
 | Cons of 'a * 'b
 
 (** The monad is parametrised in the types of state, environment and
@@ -140,17 +140,17 @@ module Logical (P:Param) : sig
   val local : P.e -> 'a t -> 'a t
   val update : (P.u -> P.u) -> unit t
 
-  val zero : exn -> 'a t
-  val plus : 'a t -> (exn -> 'a t) -> 'a t
-  val split : 'a t -> (('a,(exn->'a t)) list_view) t
+  val zero : Exninfo.iexn -> 'a t
+  val plus : 'a t -> (Exninfo.iexn -> 'a t) -> 'a t
+  val split : 'a t -> (('a,(Exninfo.iexn->'a t)) list_view) t
   val once : 'a t -> 'a t
-  val break : (exn -> exn option) -> 'a t -> 'a t
+  val break : (Exninfo.iexn -> Exninfo.iexn option) -> 'a t -> 'a t
 
   val lift : 'a NonLogical.t -> 'a t
 
   type 'a reified
 
-  val repr : 'a reified -> ('a, exn -> 'a reified) list_view NonLogical.t
+  val repr : 'a reified -> ('a, Exninfo.iexn -> 'a reified) list_view NonLogical.t
 
   val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w * P.u) reified
 

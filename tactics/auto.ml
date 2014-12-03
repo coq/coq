@@ -205,7 +205,7 @@ let tclLOG (dbg,depth,trace) pp tac =
 	with reraise ->
           let reraise = Errors.push reraise in
 	  msg_debug (str s ++ spc () ++ pp () ++ str ". (*fail*)");
-	  raise reraise
+	  iraise reraise
       end
     | Info ->
       (* For "info (trivial/auto)", we store a log trace *)
@@ -217,7 +217,7 @@ let tclLOG (dbg,depth,trace) pp tac =
 	with reraise ->
           let reraise = Errors.push reraise in
 	  trace := (depth, None) :: !trace;
-	  raise reraise
+	  iraise reraise
       end
 
 (** For info, from the linear trace information, we reconstitute the part

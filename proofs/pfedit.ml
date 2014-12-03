@@ -142,7 +142,7 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
   with reraise ->
     let reraise = Errors.push reraise in
     delete_current_proof ();
-    raise reraise
+    iraise reraise
 
 let build_by_tactic env ctx ?(poly=false) typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in

@@ -26,7 +26,7 @@ let _ = Errors.register_handler (function
                 "asynchronous script processing.")
   | _ -> raise Errors.Unhandled)
 
-type fix_exn = exn -> exn
+type fix_exn = Exninfo.iexn -> Exninfo.iexn
 let id x = prerr_endline "Future: no fix_exn.\nYou have probably created a Future.computation from a value without passing the ~fix_exn argument.  You probably want to chain with an already existing future instead."; x
 
 module UUID = struct
@@ -43,7 +43,7 @@ end
 module UUIDMap = Map.Make(UUID)
 module UUIDSet = Set.Make(UUID)
 
-type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
+type 'a assignement = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computation]
 
 (* Val is not necessarily a final state, so the
    computation restarts from the state stocked into Val *)
@@ -51,7 +51,7 @@ and 'a comp =
   | Delegated of (unit -> unit)
   | Closure of (unit -> 'a)
   | Val of 'a * Dyn.t option
-  | Exn of exn (* Invariant: this exception is always "fixed" as in fix_exn *)
+  | Exn of Exninfo.iexn  (* Invariant: this exception is always "fixed" as in fix_exn *)
 
 and 'a comput =
   | Ongoing of (UUID.t * fix_exn * 'a comp ref) Ephemeron.key
@@ -66,9 +66,10 @@ let get x =
   | Finished v -> UUID.invalid, id, ref (Val (v,None))
   | Ongoing x ->
       try Ephemeron.get x
-      with Ephemeron.InvalidKey -> UUID.invalid, id, ref (Exn NotHere)
+      with Ephemeron.InvalidKey ->
+        UUID.invalid, id, ref (Exn (NotHere, Exninfo.null))
 
-type 'a value = [ `Val of 'a | `Exn of exn ]
+type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn  ]
 
 let is_over kx = let _, _, x = get kx in match !x with
   | Val _ | Exn _ -> true
@@ -116,7 +117,7 @@ let rec compute ~pure ck : 'a value =
   let _, fix_exn, c = get ck in
   match !c with
   | Val (x, _) -> `Val x
-  | Exn e -> `Exn e
+  | Exn (e, info) -> `Exn (e, info)
   | Delegated wait -> wait (); compute ~pure ck
   | Closure f ->
       try
@@ -127,12 +128,12 @@ let rec compute ~pure ck : 'a value =
         let e = Errors.push e in
         let e = fix_exn e in
         match e with
-        | NotReady -> `Exn e
+        | (NotReady, _) -> `Exn e
         | _ -> c := Exn e; `Exn e
 
 let force ~pure x = match compute ~pure x with
   | `Val v -> v
-  | `Exn e -> raise e
+  | `Exn e -> Exninfo.iraise e
 
 let chain ~pure ck f =
   let uuid, fix_exn, c = get ck in
@@ -167,12 +168,14 @@ let purify f x =
     let v = f x in
     !unfreeze state;
     v
-  with e -> let e = Errors.push e in !unfreeze state; raise e
+  with e ->
+    let e = Errors.push e in !unfreeze state; Exninfo.iraise e
 
 let transactify f x =
   let state = !freeze () in
   try f x
-  with e -> let e = Errors.push e in !unfreeze state; raise e
+  with e ->
+    let e = Errors.push e in !unfreeze state; Exninfo.iraise e
 
 let purify_future f x = if is_over x then f x else purify f x
 let compute x = purify_future (compute ~pure:false) x
@@ -214,4 +217,4 @@ let print f kx =
   | Closure _ -> str "Closure" ++ uid
   | Val (x, None) -> str "PureVal" ++ uid ++ spc () ++ hov 0 (f x)
   | Val (x, Some _) -> str "StateVal" ++ uid ++ spc () ++ hov 0 (f x)
-  | Exn e -> str "Exn"  ++ uid ++ spc () ++ hov 0 (str (Printexc.to_string e))
+  | Exn (e, _) -> str "Exn"  ++ uid ++ spc () ++ hov 0 (str (Printexc.to_string e))

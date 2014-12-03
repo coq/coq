@@ -39,4 +39,4 @@ val is_navigation_vernac : Vernacexpr.vernac_expr -> bool
 
 type location_files = { outer : string; inner : string }
 
-val get_exn_files : exn -> location_files option
+val get_exn_files : Exninfo.info -> location_files option

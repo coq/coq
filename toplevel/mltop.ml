@@ -120,8 +120,8 @@ let ml_load s =
        with
        | e when Errors.noncritical e ->
         let e = Errors.push e in
-        match e with
-        | (UserError _ | Failure _ | Not_found as u) -> raise u
+        match fst e with
+        | (UserError _ | Failure _ | Not_found as u) -> Exninfo.iraise (u, snd e)
         | exc ->
             let msg = report_on_load_obj_error exc in
             errorlabstrm "Mltop.load_object" (str"Cannot link ml-object " ++

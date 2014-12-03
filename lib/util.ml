@@ -128,3 +128,7 @@ type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 let map_union f g = function
   | Inl a -> Inl (f a)
   | Inr b -> Inr (g b)
+
+type iexn = Exninfo.iexn
+
+let iraise = Exninfo.iraise

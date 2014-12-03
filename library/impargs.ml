@@ -77,7 +77,7 @@ let with_implicits flags f x =
   with reraise ->
     let reraise = Errors.push reraise in
     let () = implicit_args := oflags in
-    raise reraise
+    iraise reraise
 
 let set_maximality imps b =
   (* Force maximal insertion on ending implicits (compatibility) *)

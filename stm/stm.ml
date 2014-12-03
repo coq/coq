@@ -85,7 +85,7 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
     try Hooks.(call interp ?verbosely:(Some verbose) ?proof (loc, expr))
     with e ->
       let e = Errors.push e in
-      raise Hooks.(call process_error e)
+      iraise Hooks.(call process_error e)
   end
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
@@ -101,10 +101,10 @@ let vernac_parse ?newtip ?route eid s =
       | None -> raise (Invalid_argument "vernac_parse")
       | Some ast -> ast
     with e when Errors.noncritical e ->
-      let e = Errors.push e in
-      let loc = Option.default Loc.ghost (Loc.get_loc e) in
-      Hooks.(call parse_error feedback_id loc (print e));
-      raise e)
+      let (e, info) = Errors.push e in
+      let loc = Option.default Loc.ghost (Loc.get_loc info) in
+      Hooks.(call parse_error feedback_id loc (iprint (e, info)));
+      iraise (e, info))
   ()
 
 let pr_open_cur_subgoals () =
@@ -576,7 +576,7 @@ module State : sig
   val is_cached : ?cache:Summary.marshallable -> Stateid.t -> bool
 
 
-  val exn_on : Stateid.t -> ?valid:Stateid.t -> exn -> exn
+  val exn_on : Stateid.t -> ?valid:Stateid.t -> iexn -> iexn
   (* to send states across worker/master *)
   type frozen_state
   val get_cached : Stateid.t -> frozen_state
@@ -637,13 +637,14 @@ end = struct (* {{{ *)
     try if VCS.get_state id = None then VCS.set_state id s
     with VCS.Expired -> ()
 
-  let exn_on id ?valid e =
-    match Stateid.get e with
-    | Some _ -> e
+  let exn_on id ?valid (e, info) =
+    match Stateid.get info with
+    | Some _ -> (e, info)
     | None ->
-        let loc = Option.default Loc.ghost (Loc.get_loc e) in
-        Hooks.(call execution_error id loc (print e));
-        Stateid.add Hooks.(call process_error e) ?valid id
+        let loc = Option.default Loc.ghost (Loc.get_loc info) in
+        Hooks.(call execution_error id loc (iprint (e, info)));
+        let (e, info) = Hooks.(call process_error (e, info)) in
+        (e, Stateid.add info ?valid id)
 
   let define ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
         f id
@@ -666,16 +667,16 @@ end = struct (* {{{ *)
       if Proof_global.there_are_pending_proofs () then
         VCS.goals id (Proof_global.get_open_goals ());
     with e ->
-      let e = Errors.push e in
+      let (e, info) = Errors.push e in
       let good_id = !cur_id in
       cur_id := Stateid.dummy;
       VCS.reached id false;
       Hooks.(call unreachable_state id);
-      match Stateid.get e, safe_id with
-      | None, None -> raise (exn_on id ~valid:good_id e)
-      | None, Some good_id -> raise (exn_on id ~valid:good_id e)
-      | Some _, None -> raise e
-      | Some (_,at), Some id -> raise (Stateid.add e ~valid:id at)
+      match Stateid.get info, safe_id with
+      | None, None -> iraise (exn_on id ~valid:good_id (e, info))
+      | None, Some good_id -> iraise (exn_on id ~valid:good_id (e, info))
+      | Some _, None -> iraise (e, info)
+      | Some (_,at), Some id -> iraise (e, Stateid.add info ~valid:id at)
 
 end (* }}} *)
 
@@ -986,7 +987,8 @@ end = struct (* {{{ *)
     | `Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
         Pp.feedback (Feedback.InProgress ~-1);
-        let e = Stateid.add ~valid (RemoteException e_msg) e_error_at in
+        let info = Stateid.add ~valid Exninfo.null e_error_at in
+        let e = (RemoteException e_msg, info) in
         t_assign (`Exn e);
         List.iter (fun (id,s) -> State.assign id s) e_safe_states;
         if !Flags.async_proofs_always_delegate then `Park t_states else `Reset
@@ -996,7 +998,8 @@ end = struct (* {{{ *)
     | None | Some (Querys _) | Some (States _) -> ()
     | Some (BuildProof { t_start = start; t_assign }) ->
         let s = "Worker cancelled by the user" in
-        let e = Stateid.add ~valid:start (RemoteException (strbrk s)) start in
+        let info = Stateid.add ~valid:start Exninfo.null start in
+        let e = (RemoteException (strbrk s), info) in
         t_assign (`Exn e);
         Hooks.(call execution_error start Loc.ghost (strbrk s));
         Pp.feedback (Feedback.InProgress ~-1)
@@ -1023,13 +1026,14 @@ end = struct (* {{{ *)
       RespBuiltProof(rc,time)
     with
     | e when Errors.noncritical e ->
+        let (e, info) = Errors.push e in
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
-        let e_error_at, e_safe_id = match Stateid.get e with
+        let e_error_at, e_safe_id = match Stateid.get info with
           | Some (safe, err) -> err, safe
           | None -> Stateid.dummy, Stateid.dummy in
         prerr_endline "failed with the following exception:";
-        prerr_endline (string_of_ppcmds (print e));
+        prerr_endline (string_of_ppcmds (iprint (e, info)));
         prerr_endline ("last safe id is: " ^ Stateid.to_string e_safe_id);
         prerr_endline ("cached? " ^ string_of_bool (State.is_cached e_safe_id));
         let prog old_v n =
@@ -1049,7 +1053,7 @@ end = struct (* {{{ *)
             | Some id -> aux (n+1) m id in
           (if is_cached e_safe_id then [e_safe_id,get_cached e_safe_id] else [])
           @ aux 1 (prog 1 1) e_safe_id in
-        RespError { e_error_at; e_safe_id; e_msg = print e; e_safe_states }
+        RespError { e_error_at; e_safe_id; e_msg = iprint (e, info); e_safe_states }
   
   let perform_query q =
     try Future.purify (fun { t_at; t_report_at; t_text; t_route = route } ->
@@ -1168,12 +1172,12 @@ end = struct (* {{{ *)
           expr = (VernacEndProof (Proved (true,None))) };
       Some proof
     with e ->
-      let e = Errors.push e in
-      (try match Stateid.get e with
+      let (e, info) = Errors.push e in
+      (try match Stateid.get info with
       | None ->
           Pp.pperrnl Pp.(
             str"File " ++ str name ++ str ": proof of " ++ str r_name ++
-            spc () ++ print e)
+            spc () ++ iprint (e, info))
       | Some (_, cur) ->
           match VCS.visit cur with
           | { step = `Cmd { cast = { loc } } }
@@ -1184,11 +1188,11 @@ end = struct (* {{{ *)
               Pp.pperrnl Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 str ": chars " ++ int start ++ str "-" ++ int stop ++
-                spc () ++ print e)
+                spc () ++ iprint (e, info))
           | _ ->
               Pp.pperrnl Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
-                spc () ++ print e)
+                spc () ++ iprint (e, info))
     with e ->
       Pp.msg_error (str"unable to print error message: " ++
                     str (Printexc.to_string e))); None
@@ -1381,7 +1385,8 @@ end = struct (* {{{ *)
   let use_response _ { t_assign; t_state; t_state_fb; t_kill } = function
     | RespBuiltSubProof o -> t_assign (`Val o); `Stay
     | RespError msg ->
-        let e = Stateid.add ~valid:t_state (RemoteException msg) t_state_fb in
+        let info = Stateid.add ~valid:t_state Exninfo.null t_state_fb in
+        let e = (RemoteException msg, info) in
         t_assign (`Exn e);
         t_kill ();
         `Stay
@@ -1710,8 +1715,9 @@ let known_state ?(redefine_qed=false) ~cache id =
             reach view.next;
             (try vernac_interp id x;
             with e when Errors.noncritical e ->
-              let e = Errors.push e in
-              raise (Stateid.add e ~valid:prev id));
+              let (e, info) = Errors.push e in
+              let info = Stateid.add info ~valid:prev id in
+              iraise (e, info));
             wall_clock_last_fork := Unix.gettimeofday ()
           ), `Yes, true
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
@@ -1832,7 +1838,7 @@ let observe id =
     let e = Errors.push e in
     VCS.print ();
     VCS.restore vcs;
-    raise e
+    iraise e
 
 let finish ?(print_goals=false) () =
   observe (VCS.get_branch_pos (VCS.current_branch ()));
@@ -1877,7 +1883,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     (u,a,true), p
   with e ->
     let e = Errors.push e in
-    Pp.pperrnl Pp.(str"File " ++ str name ++ str ":" ++ spc () ++ print e);
+    Pp.pperrnl Pp.(str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
     exit 1
 
 let merge_proof_branch ?id qast keep brname =
@@ -1903,13 +1909,13 @@ let merge_proof_branch ?id qast keep brname =
       VCS.checkout VCS.Branch.master;
       `Unfocus qed_id
   | { VCS.kind = `Master } ->
-       raise (State.exn_on Stateid.dummy Proof_global.NoCurrentProof)
+       iraise (State.exn_on Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null))
 
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
-let handle_failure e vcs tty =
-  if e = Errors.Drop then raise e else
-  match Stateid.get e with
+let handle_failure (e, info) vcs tty =
+  if e = Errors.Drop then iraise (e, info) else
+  match Stateid.get info with
   | None ->
       VCS.restore vcs;
       VCS.print ();
@@ -1931,7 +1937,7 @@ let handle_failure e vcs tty =
         Reach.known_state ~cache:(interactive ()) safe_id;
       end;
       VCS.print ();
-      raise e
+      iraise (e, info)
 
 let snapshot_vi ldir long_f_dot_v =
   finish ();
@@ -2003,12 +2009,12 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
                   { verbose = true; loc; expr }
            with e when Errors.noncritical e ->
              let e = Errors.push e in
-             raise(State.exn_on report_id e)); `Ok
+             iraise (State.exn_on report_id e)); `Ok
       | VtQuery (false,(report_id,route)), VtNow ->
           (try vernac_interp report_id ~route x
            with e when Errors.noncritical e ->
              let e = Errors.push e in
-             raise(State.exn_on report_id e)); `Ok
+             iraise (State.exn_on report_id e)); `Ok
       | VtQuery (true,(report_id,_)), w ->
           assert(Stateid.equal report_id Stateid.dummy);
           let id = VCS.new_node ~id:newtip () in
@@ -2298,8 +2304,8 @@ let edit_at id =
     VCS.print ();
     rc
   with e ->
-    let e = Errors.push e in
-    match Stateid.get e with
+    let (e, info) = Errors.push e in
+    match Stateid.get info with
     | None ->
         VCS.print ();
         anomaly (str ("edit_at "^Stateid.to_string id^": ") ++
@@ -2308,7 +2314,7 @@ let edit_at id =
         prerr_endline ("Failed at state " ^ Stateid.to_string id);
         VCS.restore vcs;
         VCS.print ();
-        raise e
+        iraise (e, info)
 
 (*********************** TTY API (PG, coqtop, coqc) ***************************)
 (******************************************************************************)

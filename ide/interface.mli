@@ -200,7 +200,7 @@ type init_rty = state_id
 type about_sty = unit
 type about_rty = coq_info
 
-type handle_exn_sty = exn
+type handle_exn_sty = Exninfo.iexn
 type handle_exn_rty = state_id * location * string
 
 (* Retrocompatibility stuff *)

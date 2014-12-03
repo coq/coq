@@ -355,7 +355,7 @@ let with_grammar_rule_protection f x =
   with reraise ->
     let reraise = Errors.push reraise in
     let () = unfreeze fs in
-    raise reraise
+    iraise reraise
 
 (**********************************************************************)
 (** Ltac quotations                                                   *)

@@ -95,6 +95,12 @@ type 'a delayed = unit -> 'a
 
 val delayed_force : 'a delayed -> 'a
 
+(** {6 Enriched exceptions} *)
+
+type iexn = Exninfo.iexn
+
+val iraise : iexn -> 'a
+
 (** {6 Misc. } *)
 
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
@@ -104,4 +110,3 @@ val map_union : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) union -> ('c, 'd) union
 
 type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 (** Used for browsable-until structures. *)
-

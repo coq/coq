@@ -71,9 +71,9 @@ let contradiction_context =
 	           filter_hyp (fun typ -> is_conv_leq typ t)
 		     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
                  end)
-                 begin function
+                 begin function (e, info) -> match e with
 	           | Not_found -> seek_neg rest
-                   | e -> Proofview.tclZERO e
+                   | e -> Proofview.tclZERO ~info e
                  end)
 	  | _ -> seek_neg rest
     in
@@ -108,9 +108,9 @@ let contradiction_term (c,lbind as cl) =
           else
             Proofview.tclZERO Not_found
         end
-        begin function
+        begin function (e, info) -> match e with
           | Not_found -> Proofview.tclZERO (Errors.UserError ("",Pp.str"Not a contradiction."))
-          | e -> Proofview.tclZERO e
+          | e -> Proofview.tclZERO ~info e
         end
   end
 

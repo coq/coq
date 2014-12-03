@@ -1001,4 +1001,4 @@ let with_notation_protection f x =
   with reraise ->
     let reraise = Errors.push reraise in
     let () = unfreeze fs in
-    raise reraise
+    iraise reraise

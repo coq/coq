@@ -300,11 +300,11 @@ module New = struct
 
   let tclZEROMSG ?loc msg =
     let err = UserError ("", msg) in
-    let err = match loc with
-    | None -> err
-    | Some loc -> Loc.add_loc err loc
+    let info = match loc with
+    | None -> Exninfo.null
+    | Some loc -> Loc.add_loc Exninfo.null loc
     in
-    tclZERO err
+    tclZERO ~info err
 
   let catch_failerror e =
     try
@@ -362,14 +362,14 @@ module New = struct
       t1 <*>
         Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
           begin tclEXTEND (Array.to_list l1) repeat (Array.to_list l2) end
-          begin function
+          begin function (e, info) -> match e with
             | SizeMismatch (i,_)->
                 let errmsg =
                   str"Incorrect number of goals" ++ spc() ++
                   str"(expected "++int i++str(String.plural i " tactic") ++ str")"
                 in
                 tclFAIL 0 errmsg
-            | reraise -> tclZERO reraise
+            | reraise -> tclZERO ~info reraise
           end
     end
   let tclTHENSFIRSTn t1 l repeat =
@@ -385,14 +385,14 @@ module New = struct
     tclINDEPENDENT begin
       t <*>Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
           begin tclDISPATCH l end
-          begin function
+          begin function (e, info) -> match e with
             | SizeMismatch (i,_)->
                 let errmsg =
                   str"Incorrect number of goals" ++ spc() ++
                   str"(expected "++int i++str(String.plural i " tactic") ++ str")"
                 in
                 tclFAIL 0 errmsg
-            | reraise -> tclZERO reraise
+            | reraise -> tclZERO ~info reraise
           end
     end
   let tclTHENLIST l =
@@ -410,7 +410,7 @@ module New = struct
     tclINDEPENDENT begin
       Proofview.tclIFCATCH t1
         (fun () -> t2)
-        (fun e -> Proofview.tclORELSE t3 (fun e' -> tclZERO e))
+        (fun (e, info) -> Proofview.tclORELSE t3 (fun e' -> tclZERO ~info e))
     end
   let tclIFTHENSVELSE t1 a t3 =
     Proofview.tclIFCATCH t1
@@ -519,9 +519,9 @@ module New = struct
   let tclTIMEOUT n t =
     Proofview.tclOR
       (Proofview.tclTIMEOUT n t)
-      begin function
+      begin function (e, info) -> match e with
         | Proofview.Timeout as e -> Proofview.tclZERO (Refiner.FailError (0,lazy (Errors.print e)))
-        | e -> Proofview.tclZERO e
+        | e -> Proofview.tclZERO ~info e
       end
 
   let tclTIME s t =
