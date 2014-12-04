@@ -978,6 +978,11 @@ struct
     let sigma = if unsafe then sigma else CList.fold_left fold sigma evs in
     (** Check that the refined term is typesafe *)
     let sigma = if unsafe then sigma else typecheck_proof c concl env sigma in
+    (** Check that the goal itself does not appear in the refined term *)
+    let _ =
+      if not (Evarutil.occur_evar_upto sigma gl.Goal.self c) then ()
+      else Pretype_errors.error_occur_check env sigma gl.Goal.self c
+    in
     (** Proceed to the refinement *)
     let sigma = match evkmain with
       | None -> Evd.define gl.Goal.self c sigma

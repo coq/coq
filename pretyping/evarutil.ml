@@ -656,6 +656,18 @@ let check_evars env initial_sigma sigma c =
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
+(* spiwack: this is a more complete version of
+   {!Termops.occur_evar}. The latter does not look recursively into an
+   [evar_map]. If unification only need to check superficially, tactics
+   do not have this luxury, and need the more complete version. *)
+let occur_evar_upto sigma n c =
+  let rec occur_rec c = match kind_of_term c with
+    | Evar (sp,_) when Evar.equal sp n -> raise Occur
+    | Evar e -> Option.iter occur_rec (existential_opt_value sigma e)
+    | _ -> iter_constr occur_rec c
+  in
+  try occur_rec c; false with Occur -> true
+
 
 (****************************************)
 (* Operations on value/type constraints *)

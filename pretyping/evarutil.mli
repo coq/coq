@@ -132,6 +132,11 @@ val undefined_evars_of_term : evar_map -> constr -> Evar.Set.t
 val undefined_evars_of_named_context : evar_map -> named_context -> Evar.Set.t
 val undefined_evars_of_evar_info : evar_map -> evar_info -> Evar.Set.t
 
+(** [occur_evar_upto sigma k c] returns [true] if [k] appears in
+    [c]. It looks up recursively in [sigma] for the value of existential
+    variables. *)
+val occur_evar_upto : evar_map -> Evar.t -> Constr.t -> bool
+
 (** {6 Value/Type constraints} *)
 
 val judge_of_new_Type : evar_map -> evar_map * unsafe_judgment
