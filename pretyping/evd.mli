@@ -243,6 +243,12 @@ val evar_declare :
 
 val restrict : evar -> evar -> Filter.t -> ?candidates:constr list ->
   evar_map -> evar_map
+(** Restrict an undefined evar into a new evar by filtering context and
+    possibly limiting the instances to a set of candidates *)
+
+val downcast : evar -> types -> evar_map -> evar_map
+(** Change the type of an undefined evar to a new type assumed to be a
+    subtype of its current type; subtyping must be ensured by caller *)
 
 val evar_source : existential_key -> evar_map -> Evar_kinds.t located
 (** Convenience function. Wrapper around {!find} to recover the source of an

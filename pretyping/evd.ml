@@ -853,6 +853,11 @@ let restrict evk evk' filter ?candidates evd =
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
     defn_evars; evar_names }
 
+let downcast evk ccl evd =
+  let evar_info = EvMap.find evk evd.undf_evars in
+  let evar_info' = { evar_info with evar_concl = ccl } in
+  { evd with undf_evars = EvMap.add evk evar_info' evd.undf_evars }
+
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)
 let extract_conv_pbs evd p =

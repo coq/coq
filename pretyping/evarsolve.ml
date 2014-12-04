@@ -1132,35 +1132,34 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
     if force then ensure_evar_independent g env evd ev1 ev2, None
     else (evd,ev1,ev2),pbty in
   let evi = Evd.find evd evk1 in
+  let evd =
     try 
       (* ?X : Π Δ. Type i = ?Y : Π Δ'. Type j.
 	 The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
       let evienv = Evd.evar_env evi in
-      let ctx, i = Reduction.dest_arity evienv evi.evar_concl in
+      let ctx1, i = Reduction.dest_arity evienv evi.evar_concl in
       let evi2 = Evd.find evd evk2 in
       let evi2env = Evd.evar_env evi2 in
-      let ctx', j = Reduction.dest_arity evi2env evi2.evar_concl in
+      let ctx2, j = Reduction.dest_arity evi2env evi2.evar_concl in
       let ui, uj = univ_of_sort i, univ_of_sort j in
 	if i == j || Evd.check_eq evd ui uj
 	then (* Shortcut, i = j *) 
-	  solve_evar_evar_aux f g env evd pbty ev1 ev2
-	  (* Avoid looping if postponing happened on previous evar/evar problem *) 
+	  evd
 	else if Evd.check_leq evd ui uj then
-	  solve_evar_evar_aux f g env evd (opp_problem pbty) ev2 ev1
+          let t2 = it_mkProd_or_LetIn (mkSort i) ctx2 in
+          downcast evk2 t2 evd
 	else if Evd.check_leq evd uj ui then
-	  solve_evar_evar_aux f g env evd pbty ev1 ev2
+          let t1 = it_mkProd_or_LetIn (mkSort j) ctx1 in
+          downcast evk1 t1 evd
 	else
 	  let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
-	  let evd, ev3 = 
-	    Evarutil.new_pure_evar (Evd.evar_hyps evi) evd
-	      ~src:evi.evar_source ~filter:evi.evar_filter 
-	      ?candidates:evi.evar_candidates (it_mkProd_or_LetIn (mkSort k) ctx) 
-	  in
+          let t1 = it_mkProd_or_LetIn (mkSort k) ctx1 in
+          let t2 = it_mkProd_or_LetIn (mkSort k) ctx2 in
 	  let evd = Evd.set_leq_sort env (Evd.set_leq_sort env evd k i) k j in
-	  let evd = solve_evar_evar_aux f g env evd (opp_problem pbty) (ev3,args1) ev1 in
-          f env evd (opp_problem pbty) ev2 (whd_evar evd (mkEvar (ev3,args1)))
+          downcast evk2 t2 (downcast evk1 t1 evd)
     with Reduction.NotArity -> 
-      solve_evar_evar_aux f g env evd pbty ev1 ev2
+      evd in
+  solve_evar_evar_aux f g env evd pbty ev1 ev2
 
 type conv_fun =
   env ->  evar_map -> conv_pb -> constr -> constr -> unification_result
