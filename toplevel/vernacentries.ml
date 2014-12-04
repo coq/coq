@@ -1235,8 +1235,8 @@ let _ =
       optdepr  = false;
       optname  = "printing of existential variable instances";
       optkey   = ["Printing";"Existential";"Instances"];
-      optread  = (fun () -> !Constrextern.print_evar_arguments);
-      optwrite = (:=) Constrextern.print_evar_arguments }
+      optread  = (fun () -> !Detyping.print_evar_arguments);
+      optwrite = (:=) Detyping.print_evar_arguments }
 
 let _ =
   declare_bool_option

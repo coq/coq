@@ -31,6 +31,9 @@ let dl = Loc.ghost
 (** Should we keep details of universes during detyping ? *)
 let print_universes = Flags.univ_print
 
+(** If true, prints local context of evars, whatever print_arguments *)
+let print_evar_arguments = ref false
+
 let add_name na b t (nenv, env) = add_name na nenv, push_rel (na, b, t) env
 let add_name_opt na b t (nenv, env) = 
   match t with
@@ -508,7 +511,7 @@ let rec detype flags avoid env sigma t =
           let id = Evd.evar_ident evk sigma in
           let l = Evd.evar_instance_array bound_to_itself (Evd.find sigma evk) cl in
           let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> (Id.Set.union fvs (collect_vars c), Int.Set.union rels (free_rels c))) (Id.Set.empty,Int.Set.empty) l in
-          let l = Evd.evar_instance_array (fun id c -> bound_to_itself id c && not (isRel c && Int.Set.mem (destRel c) rels || isVar c && (Id.Set.mem (destVar c) fvs))) (Evd.find sigma evk) cl in
+          let l = Evd.evar_instance_array (fun id c -> not !print_evar_arguments && (bound_to_itself id c && not (isRel c && Int.Set.mem (destRel c) rels || isVar c && (Id.Set.mem (destVar c) fvs)))) (Evd.find sigma evk) cl in
           id,l
         with Not_found ->
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)), 

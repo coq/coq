@@ -39,8 +39,8 @@ open Decl_kinds
 (* This governs printing of local context of references *)
 let print_arguments = ref false
 
-(* If true, prints local context of evars, whatever print_arguments *)
-let print_evar_arguments = ref false
+(* If true, prints local context of evars *)
+let print_evar_arguments = Detyping.print_evar_arguments
 
 (* This governs printing of implicit arguments.  When
    [print_implicits] is on then [print_implicits_explicit_args] tells
@@ -141,8 +141,7 @@ let insert_pat_alias loc p = function
 (**********************************************************************)
 (* conversion of references                                           *)
 
-let extern_evar loc n l =
-(*  if !print_evar_arguments then*) CEvar (loc,n,l) (*else CEvar (loc,n,None)*)
+let extern_evar loc n l = CEvar (loc,n,l)
 
 (** We allow customization of the global_reference printer.
     For instance, in the debugger the tables of global references
