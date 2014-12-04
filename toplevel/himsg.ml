@@ -495,11 +495,11 @@ let explain_occur_check env sigma ev rhs =
   str "Cannot define " ++ pr_existential_key sigma ev ++ str " with term" ++
   brk(1,1) ++ pt ++ spc () ++ str "that would depend on itself."
 
-let pr_ne_context_of header footer env sigma =
+let pr_trailing_ne_context_of env sigma =
   if List.is_empty (Environ.rel_context env) &&
     List.is_empty (Environ.named_context env)
-  then footer
-  else pr_ne_context_of header env sigma
+  then str "."
+  else (str " in environment:"++ fnl () ++ pr_context_unlimited env sigma)
 
 let explain_evar_kind env = function
   | Evar_kinds.QuestionMark _ -> strbrk "this placeholder"
@@ -514,8 +514,7 @@ let explain_evar_kind env = function
       strbrk "the implicit parameter " ++
       pr_id id ++ spc () ++ str "of" ++
       spc () ++ Nametab.pr_global_env Id.Set.empty c
-  | Evar_kinds.InternalHole ->
-      strbrk "an internal placeholder"
+  | Evar_kinds.InternalHole -> strbrk "an internal placeholder"
   | Evar_kinds.TomatchTypeParameter (tyi,n) ->
       strbrk "the " ++ pr_nth n ++
       strbrk " argument of the inductive type (" ++ pr_inductive env tyi ++
@@ -529,30 +528,31 @@ let explain_evar_kind env = function
   | Evar_kinds.VarInstance id ->
       strbrk "an instance for the variable " ++ pr_id id
 
-let explain_unsolvability = function
-  | None -> mt()
-  | Some (SeveralInstancesFound n) ->
-      strbrk " (several distinct possible instances found)"
-
 let explain_typeclass_resolution env sigma evi k =
   match Typeclasses.class_of_constr evi.evar_concl with
-  | Some c ->
+  | Some _ ->
     let env = Evd.evar_filtered_env evi in
       fnl () ++ str "Could not find an instance for " ++
       pr_lconstr_env env sigma evi.evar_concl ++
-      pr_ne_context_of (str " in environment:"++ fnl ()) (str ".") env sigma
+      pr_trailing_ne_context_of env sigma
   | _ -> mt()
 
+let explain_placeholder_kind env sigma c e =
+  match e with
+  | Some (SeveralInstancesFound n) ->
+      strbrk " (several distinct possible instances found)"
+  | None ->
+      match Typeclasses.class_of_constr c with
+      | Some _ -> strbrk " (no instance found)"
+      | _ -> mt ()
+
 let explain_unsolvable_implicit env sigma evi k explain =
-  let type_of_hole =
-    let env = Evd.evar_filtered_env evi in
-    strbrk " of type "  ++ pr_lconstr_env env sigma evi.evar_concl ++
-      pr_ne_context_of (str " in environment:"++ fnl ()) (mt ()) env sigma
-  in
+  let env = Evd.evar_filtered_env evi in
+  let type_of_hole = pr_lconstr_env env sigma evi.evar_concl in
+  let pe = pr_trailing_ne_context_of env sigma in
   strbrk "Cannot infer " ++ explain_evar_kind env k ++
-  type_of_hole ++
-  explain_unsolvability explain ++ str "." ++
-  explain_typeclass_resolution env sigma evi k
+  strbrk " of type "  ++ type_of_hole ++
+  explain_placeholder_kind env sigma evi.evar_concl explain ++ pe
 
 let explain_var_not_found env id =
   str "The variable" ++ spc () ++ pr_id id ++
@@ -576,7 +576,7 @@ let explain_cannot_unify env sigma m n e =
   let n = Evarutil.nf_evar sigma n in
   let pm, pn = pr_explicit env sigma m n in
   let ppreason = explain_unification_error env sigma m n e in
-  let pe = pr_ne_context_of (str "In environment") (mt ()) env sigma in
+  let pe = pr_ne_context_of (str "In environment") env sigma in
   pe ++ str "Unable to unify" ++ brk(1,1) ++ pm ++ spc () ++
   str "with" ++ brk(1,1) ++ pn ++ ppreason ++ str "."
 
@@ -702,7 +702,7 @@ let pr_constraints printenv env sigma evars cstrs =
       let env' = reset_with_named_context evi.evar_hyps env in
       let pe =
         if printenv then
-          pr_ne_context_of (str "In environment:") (mt ()) env' sigma
+          pr_ne_context_of (str "In environment:") env' sigma
         else mt ()
       in
       let evs =
