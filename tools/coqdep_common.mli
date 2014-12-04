@@ -23,13 +23,13 @@ val mliAccu : (string * dir) list ref
 val mllibAccu : (string * dir) list ref
 val vAccu : (string * string) list ref
 val addQueue : 'a list ref -> 'a -> unit
-val add_ml_known : string -> dir -> unit
+val add_ml_known : string -> dir -> string -> unit
 val iter_ml_known : (string -> dir -> unit) -> unit
 val search_ml_known : string -> dir option
-val add_mli_known : string -> dir -> unit
+val add_mli_known : string -> dir -> string -> unit
 val iter_mli_known : (string -> dir -> unit) -> unit
 val search_mli_known : string -> dir option
-val add_mllib_known : string -> dir -> unit
+val add_mllib_known : string -> dir -> string -> unit
 val search_mllib_known : string -> dir option
 val vKnown : (string list, string) Hashtbl.t
 val coqlibKnown : (string list, unit) Hashtbl.t

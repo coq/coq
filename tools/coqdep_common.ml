@@ -103,9 +103,17 @@ let safe_hash_add clq q (k,v) =
     For the ML files, the string is the basename without extension.
 *)
 
+let warning_ml_clash x s s' suff =
+  eprintf
+    "*** Warning: %s%s already found in %s (discarding %s%s)\n" x suff
+    (match s with None -> "." | Some d -> d)
+    ((match s' with None -> "." | Some d -> d) // x) suff
+
 let mkknown () =
   let h = (Hashtbl.create 19 : (string, dir) Hashtbl.t) in
-  let add x s = if Hashtbl.mem h x then () else Hashtbl.add h x s
+  let add x s suff =
+    try let s' = Hashtbl.find h x in warning_ml_clash x s' s suff
+    with Not_found -> Hashtbl.add h x s
   and iter f = Hashtbl.iter f h
   and search x =
     try Some (Hashtbl.find h x)
@@ -428,11 +436,13 @@ let rec suffixes = function
   | dir::suffix as l -> l::suffixes suffix
 
 let add_caml_known phys_dir _ f =
-  match get_extension f [".ml";".mli";".ml4";".mllib";".mlpack"] with
-    | (basename,(".ml"|".ml4")) -> add_ml_known basename (Some phys_dir)
-    | (basename,".mli") -> add_mli_known basename (Some phys_dir)
-    | (basename,".mllib") -> add_mllib_known basename (Some phys_dir)
-    | (basename,".mlpack") -> add_mlpack_known basename (Some phys_dir)
+  let basename,suff =
+    get_extension f [".ml";".mli";".ml4";".mllib";".mlpack"] in
+  match suff with
+    | ".ml"|".ml4" -> add_ml_known basename (Some phys_dir) suff
+    | ".mli" -> add_mli_known basename (Some phys_dir) suff
+    | ".mllib" -> add_mllib_known basename (Some phys_dir) suff
+    | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
     | _ -> ()
 
 let add_known recur phys_dir log_dir f =

@@ -495,9 +495,9 @@ let coqdep () =
       (Envars.xdg_dirs (fun x -> Pp.msg_warning (Pp.str x)));
     List.iter (fun s -> add_dir add_coqlib_known s []) Envars.coqpath;
   end;
-  List.iter (fun (f,d) -> add_mli_known f d) !mliAccu;
-  List.iter (fun (f,d) -> add_mllib_known f d) !mllibAccu;
-  List.iter (fun (f,_,d) -> add_ml_known f d) !mlAccu;
+  List.iter (fun (f,d) -> add_mli_known f d ".mli") !mliAccu;
+  List.iter (fun (f,d) -> add_mllib_known f d ".mllib") !mllibAccu;
+  List.iter (fun (f,suff,d) -> add_ml_known f d suff) !mlAccu;
   warning_mult ".mli" iter_mli_known;
   warning_mult ".ml" iter_ml_known;
   if !option_sort then begin sort (); exit 0 end;
