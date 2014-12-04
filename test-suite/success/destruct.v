@@ -110,7 +110,7 @@ Abort.
 Goal exists n p:nat, (S n,S n) = (S p,S p) /\ p = n.
 do 2 eexists.
 destruct (_, S _). (* Was unifying at some time in trunk, now takes the first occurrence *)
-change ((n, n0) = (S ?p, S ?p) /\ ?p = ?n0).
+change ((n, n0) = (S ?p, S ?p) /\ ?p = ?n).
 Abort.
 
 (* An example with incompatible but convertible occurrences *)
