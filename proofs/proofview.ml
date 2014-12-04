@@ -961,7 +961,7 @@ struct
   let (pr_constrv,pr_constr) =
     Hook.make ~default:(fun _env _sigma _c -> Pp.str"<constr>") ()
 
-  let refine ?(unsafe = false) f = Goal.enter begin fun gl ->
+  let refine ?(unsafe = true) f = Goal.enter begin fun gl ->
     let sigma = Goal.sigma gl in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
@@ -1005,11 +1005,11 @@ struct
     in
     evd , j'.Environ.uj_val
 
-  let refine_casted ?(unsafe = false) f = Goal.enter begin fun gl ->
+  let refine_casted ?unsafe f = Goal.enter begin fun gl ->
     let concl = Goal.concl gl in
     let env = Goal.env gl in
     let f h = let (h, c) = f h in with_type env h c concl in
-    refine ~unsafe f
+    refine ?unsafe f
   end
 end
 
