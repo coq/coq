@@ -58,10 +58,12 @@ let dependent_init =
   (* Goals are created with a store which marks them as unresolvable
      for type classes. *)
   let store = Typeclasses.set_resolvable Evd.Store.empty false in
+  (* Goals don't have a source location. *)
+  let src = (Loc.ghost,Evar_kinds.GoalEvar) in
+  (* Main routine *)
   let rec aux = function
   | TNil sigma -> [], { solution = sigma; comb = []; }
   | TCons (env, sigma, typ, t) ->
-    let src = (Loc.ghost,Evar_kinds.GoalEvar) in
     let (sigma, econstr ) = Evarutil.new_evar env sigma ~src ~store typ in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let (gl, _) = Term.destEvar econstr in
