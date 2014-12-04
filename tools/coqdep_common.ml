@@ -86,10 +86,10 @@ let vAccu   = ref ([] : (string * string) list)
 
 let addQueue q v = q := v :: !q
 
-let safe_hash_add clq q (k,v) =
+let safe_hash_add cmp clq q (k,v) =
   try
     let v2 = Hashtbl.find q k in
-    if v<>v2 then
+    if not (cmp v v2) then
       let rec add_clash = function
           (k1,l1)::cltl when k=k1 -> (k1,v::l1)::cltl
         | cl::cltl -> cl::add_clash cltl
@@ -297,6 +297,9 @@ let escape =
     done;
     Buffer.contents s'
 
+let compare_file f1 f2 =
+  absolute_dir (Filename.dirname f1) = absolute_dir (Filename.dirname f2)
+
 let canonize f =
   let f' = absolute_dir (Filename.dirname f) // Filename.basename f in
   match List.filter (fun (_,full) -> f' = full) !vAccu with
@@ -452,7 +455,7 @@ let add_known recur phys_dir log_dir f =
 	let file = phys_dir//basename in
 	let paths = if recur then suffixes name else [name] in
 	List.iter
-	  (fun n -> safe_hash_add clash_v vKnown (n,file)) paths
+	  (fun n -> safe_hash_add compare_file clash_v vKnown (n,file)) paths
     | (basename,".vo") when not(!option_boot) ->
         let name = log_dir@[basename] in
 	let paths = if recur then suffixes name else [name] in
