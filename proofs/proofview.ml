@@ -55,11 +55,14 @@ type telescope =
   | TCons of Environ.env * Evd.evar_map * Term.types * (Evd.evar_map -> Term.constr -> telescope)
 
 let dependent_init =
+  (* Goals are created with a store which marks them as unresolvable
+     for type classes. *)
+  let store = Typeclasses.set_resolvable Evd.Store.empty false in
   let rec aux = function
   | TNil sigma -> [], { solution = sigma; comb = []; }
   | TCons (env, sigma, typ, t) ->
     let src = (Loc.ghost,Evar_kinds.GoalEvar) in
-    let (sigma, econstr ) = Evarutil.new_evar env sigma ~src typ in
+    let (sigma, econstr ) = Evarutil.new_evar env sigma ~src ~store typ in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let (gl, _) = Term.destEvar econstr in
     let entry = (econstr, typ) :: ret in
@@ -67,13 +70,8 @@ let dependent_init =
   in
   fun t ->
     let entry, v = aux t in
-    (* Marks all the goal unresolvable for typeclasses. *)
-    let fold accu ev = Evar.Set.add ev accu in
-    let gls = List.fold_left fold Evar.Set.empty v.comb in
-    let filter evk _ = Evar.Set.mem evk gls in
-    let solution = Typeclasses.mark_unresolvables ~filter v.solution in
     (* The created goal are not to be shelved. *)
-    let solution = Evd.reset_future_goals solution in
+    let solution = Evd.reset_future_goals v.solution in
     entry, { v with solution }
 
 let init =
