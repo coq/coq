@@ -2322,10 +2322,10 @@ let interp verb (_,e as lexpr) =
       !Flags.compilation_mode = Flags.BuildVo) then
     let vcs = VCS.backup () in
     let print_goals =
-      (if !Flags.print_emacs then Flags.is_verbose () else !Flags.coqtop_ui) &&
-      match clas with
-      | VtQuery _, _ -> false
-      | _ -> true in
+      verb && match clas with
+       | VtQuery _, _ -> false
+       | VtProofStep _, _ -> true
+       | _ -> not !Flags.coqtop_ui || !Flags.print_emacs in
     try finish ~print_goals ()
     with e ->
       let e = Errors.push e in
