@@ -75,7 +75,7 @@ h4.section {
                    padding-top: 0px; 
                    padding-bottom: 0px; 
                    font-size : 100%;
-                   font-style : bold;
+                   font-weight : bold;
                    text-decoration : underline;
  }
 
@@ -86,8 +86,7 @@ h4.section {
              max-width: 40em;
              color: black;
 	     padding: 10px;
-             background-color: #90bdff;
-             border-style: plain}
+             background-color: #90bdff }
 
 .inlinecode { 
     display: inline;
@@ -318,7 +317,6 @@ tr.infrulemiddle hr {
 #index #footer {
     position: absolute;
     bottom: 0;
-    text-align: bottom;
 }
 
 .paragraph {
