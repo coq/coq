@@ -128,7 +128,7 @@ module Store = Store.Make(Dummy)
 
 type evar = Term.existential_key
 
-let string_of_existential evk = "?" ^ string_of_int (Evar.repr evk)
+let string_of_existential evk = "?X" ^ string_of_int (Evar.repr evk)
 
 type evar_body =
   | Evar_empty
@@ -1740,7 +1740,9 @@ let pr_evar_list sigma l =
   let pr (ev, evi) =
     h 0 (str (string_of_existential ev) ++
       str "==" ++ pr_evar_info evi ++
-      str " {" ++ pr_id (evar_ident ev sigma) ++ str "}")
+      (if evi.evar_body == Evar_empty
+       then str " {" ++ pr_id (evar_ident ev sigma) ++ str "}"
+       else mt ()))
   in
   h 0 (prlist_with_sep fnl pr l)
 
