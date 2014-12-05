@@ -535,8 +535,8 @@ module Html = struct
 	  printf "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n";
 	  printf "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
 	  printf "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n<head>\n";
-	  printf "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=%s\"/>\n" !charset;
-	  printf "<link href=\"coqdoc.css\" rel=\"stylesheet\" type=\"text/css\"/>\n";
+	  printf "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=%s\" />\n" !charset;
+	  printf "<link href=\"coqdoc.css\" rel=\"stylesheet\" type=\"text/css\" />\n";
 	  printf "<title>%s</title>\n</head>\n\n" !page_title;
 	  printf "<body>\n\n<div id=\"page\">\n\n<div id=\"header\">\n</div>\n\n";
 	  printf "<div id=\"main\">\n\n"
@@ -595,9 +595,23 @@ module Html = struct
 	| '<' -> Buffer.add_string buff "&lt;"
 	| '>' -> Buffer.add_string buff "&gt;"
 	| '&' -> Buffer.add_string buff "&amp;"
+        | '\'' -> Buffer.add_string buff "&acute;"
+        | '\"' -> Buffer.add_string buff "&quot;"
 	| c -> Buffer.add_char buff c
       done;
       Buffer.contents buff
+
+  let sanitize_name s =
+    let rec loop esc i =
+      if i < 0 then if esc then escaped s else s
+      else match s.[i] with
+      | 'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '_' -> loop esc (i-1)
+      | '<' | '>' | '&' | '\'' | '\"' -> loop true (i-1)
+      | _ ->
+        (* This name contains complex characters:
+           this is probably a notation string, we simply hash it. *)
+        Digest.to_hex (Digest.string s)
+    in loop false (String.length s - 1)
 
   let latex_char _ = ()
   let latex_string _ = ()
@@ -628,19 +642,19 @@ module Html = struct
   let ident_ref m fid typ s =
     match find_module m with
     | Local ->
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
-	printf "<span class=\"id\" type=\"%s\">%s</span></a>" typ s
+	printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
+	printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
     | External m when !externals ->
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
-	printf "<span class=\"id\" type=\"%s\">%s</span></a>" typ s
+	printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
+	printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
     | External _ | Unknown ->
-	printf "<span class=\"id\" type=\"%s\">%s</span>" typ s
+	printf "<span class=\"id\" title=\"%s\">%s</span>" typ s
 
   let reference s r =
     match r with
     | Def (fullid,ty) ->
-	printf "<a name=\"%s\">" fullid;
-	printf "<span class=\"id\" type=\"%s\">%s</span></a>" (type_name ty) s
+	printf "<a name=\"%s\">" (sanitize_name fullid);
+	printf "<span class=\"id\" title=\"%s\">%s</span></a>" (type_name ty) s
     | Ref (m,fullid,ty) ->
 	ident_ref m fullid (type_name ty) s
 
@@ -650,7 +664,7 @@ module Html = struct
     | Some ref -> reference s ref
     | None ->
 	if issymbchar then output_string s
-	else printf "<span class=\"id\" type=\"var\">%s</span>" s
+	else printf "<span class=\"id\" title=\"var\">%s</span>" s
 
   let sublexer c loc =
     let tag =
@@ -670,11 +684,11 @@ module Html = struct
     match Tokens.translate s with Some s -> s | None -> escaped s
 
   let keyword s loc = 
-    printf "<span class=\"id\" type=\"keyword\">%s</span>" (translate s)
+    printf "<span class=\"id\" title=\"keyword\">%s</span>" (translate s)
 
   let ident s loc =
     if is_keyword s then begin
-      printf "<span class=\"id\" type=\"keyword\">%s</span>" (translate s)
+      printf "<span class=\"id\" title=\"keyword\">%s</span>" (translate s)
     end else begin
       try
         match loc with
@@ -683,7 +697,7 @@ module Html = struct
             reference (translate s) (Index.find (get_module false) loc)
       with Not_found ->
 	if is_tactic s then
-	  printf "<span class=\"id\" type=\"tactic\">%s</span>" (translate s)
+	  printf "<span class=\"id\" title=\"tactic\">%s</span>" (translate s)
 	else
 	  if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
 	  then
@@ -835,7 +849,7 @@ module Html = struct
 	       "[library]", m ^ ".html", t
 	else
 	 sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
-	sprintf "%s.html#%s" m s, t)
+	sprintf "%s.html#%s" m (sanitize_name s), t)
 
   let format_bytype_index = function
     | Library, idx ->
@@ -844,7 +858,7 @@ module Html = struct
 	Index.map
 	  (fun s m ->
 	     let text = sprintf "[in <a href=\"%s.html\">%s</a>]" m m in
-	       (text, sprintf "%s.html#%s" m s, t)) idx
+	       (text, sprintf "%s.html#%s" m (sanitize_name s), t)) idx
 
   (* Impression de la table d'index *)
   let print_index_table_item i =
