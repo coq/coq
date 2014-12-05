@@ -203,18 +203,23 @@ let unify_r2l x = x
 let sort_eqns = unify_r2l
 *)
 
-(* Option introduced and activated in Coq 8.3 *)
-let global_evars_pattern_unification_flag = ref true
+let global_pattern_unification_flag = ref true
+
+(* Compatibility option introduced and activated in Coq 8.3 whose
+   syntax is now deprecated. *)
 
 open Goptions
 let _ =
   declare_bool_option
     { optsync  = true;
-      optdepr  = false;
+      optdepr  = true;
       optname  = "pattern-unification for existential variables in tactics";
       optkey   = ["Tactic";"Evars";"Pattern";"Unification"];
-      optread  = (fun () -> !global_evars_pattern_unification_flag);
-      optwrite = (:=) global_evars_pattern_unification_flag }
+      optread  = (fun () -> !global_pattern_unification_flag);
+      optwrite = (:=) global_pattern_unification_flag }
+
+(* Compatibility option superseding the previous one, introduced and
+   activated in Coq 8.4 *)
 
 let _ =
   declare_bool_option
@@ -222,8 +227,8 @@ let _ =
       optdepr  = false;
       optname  = "pattern-unification for existential variables in tactics";
       optkey   = ["Tactic";"Pattern";"Unification"];
-      optread  = (fun () -> !global_evars_pattern_unification_flag);
-      optwrite = (:=) global_evars_pattern_unification_flag }
+      optread  = (fun () -> !global_pattern_unification_flag);
+      optwrite = (:=) global_pattern_unification_flag }
 
 type core_unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option;
@@ -247,13 +252,18 @@ type core_unify_flags = {
     (* type unified with the type of their instance *)
 
   use_pattern_unification : bool;
-    (* This says if type classes instances resolution must be used to infer *)
-    (* the remaining evars *)
+    (* This solves pattern "?n x1 ... xn = t" when the xi are distinct rels *)
+    (* This says if pattern unification is tried; can be overwritten with *)
+    (* option "Set Tactic Pattern Unification" *)
 
   use_meta_bound_pattern_unification : bool;
-    (* This solves pattern "?n x1 ... xn = t" when the xi are distinct rels *)
-    (* This allows for instance to unify "forall x:A, B(x)" with "A' -> B'" *)
+    (* This is implied by use_pattern_unification (though deactivated *)
+    (* by unsetting Tactic Pattern Unification); has no particular *)
+    (* reasons to be set differently than use_pattern_unification *)
+    (* except for compatibility of "auto". *)
     (* This was on for all tactics, including auto, since Sep 2006 for 8.1 *)
+    (* This allowed for instance to unify "forall x:?A, ?B x" with "A' -> B'" *)
+    (* when ?B is a Meta. *)
 
   frozen_evars : Evar.Set.t;
     (* Evars of this set are considered axioms and never instantiated *)
@@ -403,12 +413,21 @@ let elim_no_delta_flags () =
   resolve_evars = false
 }
 
+(* On types, we don't restrict unification, but possibly for delta *)
+let set_flags_for_type flags = { flags with
+  modulo_delta = flags.modulo_delta_types;
+  modulo_conv_on_closed_terms = Some flags.modulo_delta_types;
+  use_pattern_unification = true;
+  modulo_betaiota = true;
+  modulo_eta = true;
+}
+
 let use_evars_pattern_unification flags =
-  !global_evars_pattern_unification_flag && flags.use_pattern_unification
+  !global_pattern_unification_flag && flags.use_pattern_unification
   && Flags.version_strictly_greater Flags.V8_2
 
 let use_metas_pattern_unification flags nb l =
-  !global_evars_pattern_unification_flag && flags.use_pattern_unification
+  !global_pattern_unification_flag && flags.use_pattern_unification
   || (Flags.version_less_or_equal Flags.V8_3 || 
       flags.use_meta_bound_pattern_unification) &&
      Array.for_all (fun c -> isRel c && destRel c <= nb) l
@@ -1166,9 +1185,7 @@ let unify_type env sigma flags mv status c =
   let mvty = Typing.meta_type sigma mv in
   let mvty = nf_meta sigma mvty in
     unify_to_type env sigma 
-      {flags with modulo_delta = flags.modulo_delta_types;
-	 modulo_conv_on_closed_terms = Some flags.modulo_delta_types;
-	 modulo_betaiota = true}
+      (set_flags_for_type flags)
       c status mvty
 
 (* Move metas that may need coercion at the end of the list of instances *)
@@ -1349,7 +1366,7 @@ let try_resolve_typeclasses env evd flag m n =
 
 let w_unify_core_0 env evd with_types cv_pb flags m n =
   let (mc1,evd') = retract_coercible_metas evd in
-  let (sigma,ms,es) = check_types env flags.core_unify_flags (evd,mc1,[]) m n in
+  let (sigma,ms,es) = check_types env (set_flags_for_type flags.core_unify_flags) (evd,mc1,[]) m n in
   let subst2 =
      unify_0_with_initial_metas (evd',ms,es) false env cv_pb
        flags.core_unify_flags m n
