@@ -1,5 +1,5 @@
 Module a.
-  Fail Check let x' := _ in
+  Check let x' := _ in
              $(exact x')$.
 
   Notation foo x := (let x' := x in $(exact x')$).
