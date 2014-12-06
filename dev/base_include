@@ -136,7 +136,6 @@ open Goal
 open Logic
 open Pfedit
 open Proof
-open Proofview
 open Proof_using
 open Proof_global
 open Proof_type
