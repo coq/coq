@@ -134,14 +134,14 @@ let _ =
 
 (** This tactic creates a partial proof realizing the introduction rule, but
     does not check anything. *)
-let unsafe_intro env (id, c, t) b =
+let unsafe_intro env store (id, c, t) b =
   Proofview.Refine.refine ~unsafe:true begin fun sigma ->
     let ctx = named_context_val env in
     let nctx = push_named_context_val (id, c, t) ctx in
     let inst = List.map (fun (id, _, _) -> mkVar id) (named_context env) in
     let ninst = mkRel 1 :: inst in
     let nb = subst1 (mkVar id) b in
-    let sigma, ev = new_evar_instance nctx sigma nb ninst in
+    let sigma, ev = new_evar_instance nctx sigma nb ~store ninst in
     sigma, mkNamedLambda_or_LetIn (id, c, t) ev
   end
 
@@ -151,13 +151,14 @@ let introduction ?(check=true) id =
     let concl = Proofview.Goal.concl gl in
     let sigma = Proofview.Goal.sigma gl in
     let hyps = Proofview.Goal.hyps gl in
+    let store = Proofview.Goal.extra gl in
     let env = Proofview.Goal.env gl in
     let () = if check && mem_named_context id hyps then
       error ("Variable " ^ Id.to_string id ^ " is already declared.")
     in
     match kind_of_term (whd_evar sigma concl) with
-    | Prod (_, t, b) -> unsafe_intro env (id, None, t) b
-    | LetIn (_, c, t, b) -> unsafe_intro env (id, Some c, t) b
+    | Prod (_, t, b) -> unsafe_intro env store (id, None, t) b
+    | LetIn (_, c, t, b) -> unsafe_intro env store (id, Some c, t) b
     | _ -> raise (RefinerError IntroNeedsProduct)
   end
 
@@ -166,6 +167,7 @@ let refine          = Tacmach.refine
 let convert_concl ?(check=true) ty k =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
+    let store = Proofview.Goal.extra gl in
     let conclty = Proofview.Goal.raw_concl gl in
     Proofview.Refine.refine ~unsafe:true begin fun sigma ->
       let sigma =
@@ -175,7 +177,7 @@ let convert_concl ?(check=true) ty k =
           if not b then error "Not convertible.";
           sigma
         end else sigma in
-      let (sigma,x) = Evarutil.new_evar env sigma ~principal:true ty in
+      let (sigma,x) = Evarutil.new_evar env sigma ~principal:true ~store ty in
       (sigma, if k == DEFAULTcast then x else mkCast(x,k,conclty))
     end
   end
@@ -185,9 +187,10 @@ let convert_hyp ?(check=true) d =
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let ty = Proofview.Goal.raw_concl gl in
+    let store = Proofview.Goal.extra gl in
     let sign = convert_hyp check (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
-    Proofview.Refine.refine ~unsafe:true (fun sigma -> Evarutil.new_evar env sigma ~principal:true ty)
+    Proofview.Refine.refine ~unsafe:true (fun sigma -> Evarutil.new_evar env sigma ~principal:true ~store ty)
   end
 
 let convert_concl_no_check = convert_concl ~check:false
@@ -277,6 +280,7 @@ let rename_hyp repl =
       let gl = Proofview.Goal.assume gl in
       let hyps = Proofview.Goal.hyps gl in
       let concl = Proofview.Goal.concl gl in
+      let store = Proofview.Goal.extra gl in
       (** Check that we do not mess variables *)
       let fold accu (id, _, _) = Id.Set.add id accu in
       let vars = List.fold_left fold Id.Set.empty hyps in
@@ -305,7 +309,7 @@ let rename_hyp repl =
       let nctx = Environ.val_of_named_context nhyps in
       let instance = List.map (fun (id, _, _) -> mkVar id) hyps in
       Proofview.Refine.refine ~unsafe:true begin fun sigma ->
-        Evarutil.new_evar_instance nctx sigma nconcl instance
+        Evarutil.new_evar_instance nctx sigma nconcl ~store instance
       end
     end
 
@@ -2304,7 +2308,7 @@ let insert_before decls lasthyp env =
 
 (* unsafe *)
 
-let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
+let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
   let body = if dep then Some c else None in
   let t = match ty with Some t -> t | _ -> typ_of env sigma c in
   match with_eq with
@@ -2320,11 +2324,11 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
       let newenv = insert_before [heq,None,eq;id,body,t] lastlhyp env in
-      let (sigma,x) = new_evar newenv sigma ~principal:true ccl in
+      let (sigma,x) = new_evar newenv sigma ~principal:true ~store ccl in
       (sigma,mkNamedLetIn id c t (mkNamedLetIn heq refl eq x))
   | None ->
       let newenv = insert_before [id,body,t] lastlhyp env in
-      let (sigma,x) = new_evar newenv sigma ~principal:true ccl in
+      let (sigma,x) = new_evar newenv sigma ~principal:true ~store ccl in
       (sigma,mkNamedLetIn id c t x)
 
 let letin_tac with_eq id c ty occs =
@@ -3856,6 +3860,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let ccl = Proofview.Goal.raw_concl gl in
+  let store = Proofview.Goal.extra gl in
   let check = check_enough_applied env sigma elim in
   let (sigma',c) = use_bindings env sigma elim (c0,lbind) t0 in
   let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
@@ -3879,7 +3884,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
         Proofview.Refine.refine ~unsafe:true (fun sigma ->
           let (sigma,c) = use_bindings env sigma elim (c0,lbind) t0 in
           let t = Retyping.get_type_of env sigma c in
-          mkletin_goal env sigma with_eq false (id,lastlhyp,ccl,c) (Some t));
+          mkletin_goal env sigma store with_eq false (id,lastlhyp,ccl,c) (Some t));
         Proofview.(if with_evars then shelve_unifiable else guard_no_unifiable);
         if is_arg_pure_hyp
         then Tacticals.New.tclTRY (Proofview.V82.tactic (thin [destVar c0]))
@@ -3896,7 +3901,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       Tacticals.New.tclTHENLIST [
         Proofview.Unsafe.tclEVARS sigma';
         Proofview.Refine.refine ~unsafe:true (fun sigma ->
-          mkletin_goal env sigma with_eq true (id,lastlhyp,ccl,c) None);
+          mkletin_goal env sigma store with_eq true (id,lastlhyp,ccl,c) None);
         tac
       ]
   end

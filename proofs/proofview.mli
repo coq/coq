@@ -433,6 +433,7 @@ module Goal : sig
   val hyps : [ `NF ] t -> Context.named_context
   val env : 'a t -> Environ.env
   val sigma : 'a t -> Evd.evar_map
+  val extra : 'a t -> Evd.Store.t
 
   (** Returns the goal's conclusion even if the goal is not
       normalised. *)

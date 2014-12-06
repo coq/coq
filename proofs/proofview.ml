@@ -856,6 +856,7 @@ module Goal = struct
   let sigma { sigma=sigma } = sigma
   let hyps { env=env } = Environ.named_context env
   let concl { concl=concl } = concl
+  let extra { sigma=sigma; self=self } = Goal.V82.extra sigma self
 
   let raw_concl { concl=concl } = concl
 
