@@ -565,7 +565,6 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       let evd,b_in_sign = match b with
       | None -> evd,None
       | Some b ->
-  Printf.printf "!!%!";
           let evd,b = define_evar_from_virtual_equation define_fun env evd b
             t_in_sign sign filter inst_in_env in
           evd,Some b in
