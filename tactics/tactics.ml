@@ -2872,8 +2872,6 @@ exception Shunt of Id.t move_location
 let cook_sign hyp0_opt inhyps indvars env =
   (* First phase from L to R: get [indhyps], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
-  let allindhyps =
-    match hyp0_opt with Some hyp0 -> hyp0::indvars | _ -> indvars in
   let toclear = ref [] in
   let avoid = ref [] in
   let decldeps = ref [] in
@@ -2881,6 +2879,7 @@ let cook_sign hyp0_opt inhyps indvars env =
   let rstatus = ref [] in
   let lstatus = ref [] in
   let before = ref true in
+  let maindep = ref false in
   let seek_deps env (hyp,_,_ as decl) rhyp =
     if (match hyp0_opt with Some hyp0 -> Id.equal hyp hyp0 | _ -> false)
     then begin
@@ -2895,13 +2894,19 @@ let cook_sign hyp0_opt inhyps indvars env =
       toclear := hyp::!toclear;
       rhyp
     end else
-      if not (List.is_empty inhyps) && Id.List.mem hyp inhyps ||
-        List.is_empty inhyps &&
-	(List.exists (fun id -> occur_var_in_decl env id decl) allindhyps ||
+      let dephyp0 = List.is_empty inhyps && 
+	(Option.cata (fun id -> occur_var_in_decl env id decl) false hyp0_opt)
+      in
+      let depother = List.is_empty inhyps &&
+	(List.exists (fun id -> occur_var_in_decl env id decl) indvars ||
          List.exists (fun (id,_,_) -> occur_var_in_decl env id decl) !decldeps)
+      in
+      if not (List.is_empty inhyps) && Id.List.mem hyp inhyps
+         || dephyp0 || depother
       then begin
 	decldeps := decl::!decldeps;
 	avoid := hyp::!avoid;
+        maindep := dephyp0 || !maindep;
 	if !before then begin
           toclear := hyp::!toclear;
 	  rstatus := (hyp,rhyp)::!rstatus
@@ -2936,7 +2941,7 @@ let cook_sign hyp0_opt inhyps indvars env =
       | _ -> assert false in
     let statuslists = (!lstatus,List.rev !rstatus) in
     let recargdests = AfterFixedPosition (if Option.is_empty hyp0_opt then None else lhyp0) in
-    (statuslists, (recargdests,None), !toclear, !decldeps, !avoid)
+    (statuslists, (recargdests,None), !toclear, !decldeps, !avoid, !maindep)
 
 (*
    The general form of an induction principle is the following:
@@ -3546,7 +3551,7 @@ let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
   let scheme = compute_elim_sig ~elimc:elimc elimt in
     evd, (compute_scheme_signature scheme names_info ind_type_guess, scheme)
 
-let guess_elim isrec hyp0 gl =
+let guess_elim isrec dep hyp0 gl =
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let mind,_ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
   let s = Tacticals.New.elimination_sort_of_goal gl in
@@ -3567,11 +3572,6 @@ let given_elim hyp0 (elimc,lbind as e) gl =
   let ind_type_guess,_ = decompose_app ((strip_prod tmptyp0)) in
   Proofview.Goal.sigma gl, (e, Tacmach.New.pf_type_of gl elimc), ind_type_guess
 
-let find_elim isrec elim hyp0 gl =
-  match elim with
-    | None -> guess_elim isrec hyp0 gl
-    | Some e -> given_elim hyp0 e gl
-
 type scheme_signature =
     (Id.t list * (elim_arg_kind * bool * Id.t) list) array
 
@@ -3583,7 +3583,7 @@ let find_induction_type isrec elim hyp0 gl =
   let evd,scheme,elim =
     match elim with
     | None ->
-	let evd, (elimc,elimt),_ = guess_elim isrec hyp0 gl in
+	let evd, (elimc,elimt),_ = guess_elim isrec (* dummy: *) true hyp0 gl in
 	let scheme = compute_elim_sig ~elimc elimt in
 	(* We drop the scheme waiting to know if it is dependent *)
 	evd, scheme, ElimOver (isrec,hyp0)
@@ -3596,27 +3596,23 @@ let find_induction_type isrec elim hyp0 gl =
 	evd, scheme, ElimUsing (elim,indsign) in
   evd,(Option.get scheme.indref,scheme.nparams, elim)
 
-let find_elim_signature isrec elim hyp0 gl =
-  compute_elim_signature (find_elim isrec elim hyp0 gl) hyp0
+let get_elim_signature elim hyp0 gl =
+  compute_elim_signature (given_elim hyp0 elim gl) hyp0
 
-let is_functional_induction elim gl =
-  match elim with
-  | Some elimc ->
-      let scheme = compute_elim_sig ~elimc (Tacmach.New.pf_type_of gl (fst elimc)) in
-      (* The test is not safe: with non-functional induction on non-standard
-         induction scheme, this may fail *)
-      Option.is_empty scheme.indarg
-  | None ->
-      false
+let is_functional_induction elimc gl =
+  let scheme = compute_elim_sig ~elimc (Tacmach.New.pf_type_of gl (fst elimc)) in
+  (* The test is not safe: with non-functional induction on non-standard
+     induction scheme, this may fail *)
+  Option.is_empty scheme.indarg
 
 (* Wait the last moment to guess the eliminator so as to know if we
    need a dependent one or not *)
 
-let get_eliminator elim gl = match elim with
+let get_eliminator elim dep gl = match elim with
   | ElimUsing (elim,indsign) ->
       Proofview.Goal.sigma gl, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc,elimt),_ as elims = guess_elim isrec id gl in
+      let evd, (elimc,elimt),_ as elims = guess_elim isrec dep id gl in
       let _, (l, s) = compute_elim_signature elims id in
       let branchlengthes = List.map (fun (_,b,c) -> assert (b=None); pi1 (decompose_prod_letin c)) (List.rev s.branches) in
       evd, isrec, ({elimindex = None; elimbody = elimc; elimrename = Some (isrec,Array.of_list branchlengthes)}, elimt), l
@@ -3676,9 +3672,9 @@ let induction_tac with_evars params indvars elim gl =
 (* Apply induction "in place" replacing the hypothesis on which
    induction applies with the induction hypotheses *)
 
-let apply_induction_with_discharge induct_tac elim toclear destopt avoid names tac =
+let apply_induction_with_discharge induct_tac elim dep toclear destopt avoid names tac =
   Proofview.Goal.enter begin fun gl ->
-  let (sigma, isrec, elim, indsign) = get_eliminator elim (Proofview.Goal.assume gl) in
+  let (sigma, isrec, elim, indsign) = get_eliminator elim dep (Proofview.Goal.assume gl) in
   let names = compute_induction_names (Array.length indsign) names in
   Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
   ((if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
@@ -3695,7 +3691,7 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let concl = Tacmach.New.pf_nf_concl gl in
-    let statuslists,lhyp0,toclear,deps,avoid = cook_sign hyp0 inhyps indvars env in
+    let statuslists,lhyp0,toclear,deps,avoid,dep = cook_sign hyp0 inhyps indvars env in
     let tmpcl = it_mkNamedProd_or_LetIn concl deps in
     let deps_cstr =
       List.fold_left
@@ -3707,7 +3703,7 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
 (*        Proofview.V82.tactic (thin aftertoclear);*)
         (* side-conditions in elim (resp case) schemes come last (resp first) *)
         apply_induction_with_discharge
-	  induct_tac elim toclear lhyp0 avoid names
+	  induct_tac elim dep toclear lhyp0 avoid names
           (re_intro_dependent_hypotheses statuslists)
       ]
   end
@@ -3751,7 +3747,7 @@ let msg_not_right_number_induction_arguments scheme =
    by hand before calling induction_tac *)
 let induction_without_atomization isrec with_evars elim names lid =
   Proofview.Goal.nf_enter begin fun gl ->
-  let sigma, (indsign,scheme) = find_elim_signature isrec elim (List.hd lid) gl in
+  let sigma, (indsign,scheme) = get_elim_signature elim (List.hd lid) gl in
   let nargs_indarg_farg =
     scheme.nargs + (if scheme.farg_in_concl then 1 else 0) in
   if not (Int.equal (List.length lid) (scheme.nparams + nargs_indarg_farg))
@@ -4010,13 +4006,9 @@ let induction_destruct isrec with_evars (lc,elim) =
   | [c,(eqname,names as allnames),cls] ->
     Proofview.Goal.nf_enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in      
-    let ifi = is_functional_induction elim gl in
-    if not ifi then
-      (* standard induction *)
-      onOpenInductionArg env sigma
-      (fun clear_flag c -> induction_gen clear_flag isrec with_evars elim (c,allnames) cls) c
-    else begin
+    let sigma = Proofview.Goal.sigma gl in
+    match elim with
+    | Some elim when is_functional_induction elim gl ->
       (* Standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
       if not (Option.is_empty cls) then error "'in' clause not supported here.";
@@ -4030,13 +4022,17 @@ let induction_destruct isrec with_evars (lc,elim) =
 	  if lbind != NoBindings then
 	    error "'with' clause not supported here.";
 	  induction_gen_l isrec with_evars elim names [c,eqname]) c
-    end
+    | _ ->
+      (* standard induction *)
+      onOpenInductionArg env sigma
+      (fun clear_flag c -> induction_gen clear_flag isrec with_evars elim (c,allnames) cls) c
     end
   | _ ->
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in      
-    if elim = None then
+    let sigma = Proofview.Goal.sigma gl in
+    match elim with
+    | None ->
       (* Several arguments, without "using" clause *)
       (* TODO: Do as if the arguments after the first one were called with *)
       (* "destruct", but selecting occurrences on the initial copy of *)
@@ -4054,7 +4050,7 @@ let induction_destruct isrec with_evars (lc,elim) =
           onOpenInductionArg env sigma (fun clear_flag a ->
             induction_gen clear_flag false with_evars None (a,b) cl) a
           end) l)
-    else
+    | Some elim ->
       (* Several induction hyps with induction scheme *)
       let finish_evar_resolution f =
         let (sigma',(c,lbind)) = f env sigma in
