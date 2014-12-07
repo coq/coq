@@ -2735,8 +2735,6 @@ let expand_hyp id = tclTHEN (tclTRY (unfold_body id)) (clear [id])
   - [hyp0] is the induction hypothesis
   - we extract from [args] the variables which are not rigid parameters
     of the inductive type, this is [indvars] (other terms are forgotten);
-    [indhyps] are the ones which actually are declared in context
-    (done in [find_atomic_param_of_ind])
   - we look for all hyps depending of [hyp0] or one of [indvars]:
     this is [dephyps] of types [deptyps] respectively
   - [statuslist] tells for each hyps in [dephyps] after which other hyp
@@ -2748,7 +2746,7 @@ let expand_hyp id = tclTHEN (tclTRY (unfold_body id)) (clear [id])
   Strategy: (cf in [induction_with_atomization_of_ind_arg])
   - requantify and clear all [dephyps]
   - apply induction on [hyp0]
-  - clear [indhyps] and [hyp0]
+  - clear those of [indvars] that are variables and [hyp0]
   - in the i-th subgoal, intro the arguments of the i-th constructor
     of the inductive type after [hyp0succ] (done in
     [induct_discharge]) let the induction hypotheses on top of the
@@ -2984,7 +2982,6 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
 
    Induction hypothesis is H4 ([hyp0])
    Variable parameters of (le O n) is the singleton list with "n" ([indvars])
-   Part of [indvars] really in context is the same ([indhyps])
    The dependent hyps are H3 and H6 ([dephyps])
    For H3 the memorized places are H5 ([lhyp]) and H2 ([rhyp])
     because these names are among the hyp which are fixed through the induction
@@ -3029,7 +3026,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
 exception Shunt of Id.t move_location
 
 let cook_sign hyp0_opt inhyps indvars env =
-  (* First phase from L to R: get [indhyps], [decldep] and [statuslist]
+  (* First phase from L to R: get [toclear], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
   let toclear = ref [] in
   let avoid = ref [] in
@@ -3859,8 +3856,9 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
     let env = Proofview.Goal.env gl in
     let sigma = Sigma.to_evar_map sigma in
     let concl = Tacmach.New.pf_nf_concl gl in
-    let statuslists,lhyp0,toclear,deps,avoid,dep = cook_sign hyp0 inhyps indvars env in
-    let dep = dep || Option.cata (fun id -> occur_var env id concl) false hyp0 in
+    let statuslists,lhyp0,toclear,deps,avoid,dep_in_hyps = cook_sign hyp0 inhyps indvars env in
+    let dep_in_concl = Option.cata (fun id -> occur_var env id concl) false hyp0 in
+    let dep = dep_in_hyps || dep_in_concl in
     let tmpcl = it_mkNamedProd_or_LetIn concl deps in
     let s = Retyping.get_sort_family_of env sigma tmpcl in
     let deps_cstr =
