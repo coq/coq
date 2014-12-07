@@ -501,7 +501,7 @@ let pr_trailing_ne_context_of env sigma =
   then str "."
   else (str " in environment:"++ fnl () ++ pr_context_unlimited env sigma)
 
-let explain_evar_kind env = function
+let rec explain_evar_kind env = function
   | Evar_kinds.QuestionMark _ -> strbrk "this placeholder"
   | Evar_kinds.CasesType ->
       strbrk "the type of this pattern-matching problem"
@@ -527,6 +527,8 @@ let explain_evar_kind env = function
       assert false
   | Evar_kinds.VarInstance id ->
       strbrk "an instance for the variable " ++ pr_id id
+  | Evar_kinds.SubEvar c ->
+      strbrk "a subterm of " ++ explain_evar_kind env c
 
 let explain_typeclass_resolution env sigma evi k =
   match Typeclasses.class_of_constr evi.evar_concl with

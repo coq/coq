@@ -521,8 +521,8 @@ let make_projectable_subst aliases sigma evi args =
  * declares x1:T1..xq:Tq |- ?e : s such that ?e[u1..uq] = t holds.
  *)
 
-let define_evar_from_virtual_equation define_fun env evd t_in_env ty_t_in_sign sign filter inst_in_env =
-  let evd,evar_in_env = new_evar_instance sign evd ty_t_in_sign ~filter inst_in_env in
+let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_sign sign filter inst_in_env =
+  let evd,evar_in_env = new_evar_instance sign evd ty_t_in_sign ~filter ~src inst_in_env in
   let t_in_env = whd_evar evd t_in_env in
   let evd = define_fun env evd None (destEvar evar_in_env) t_in_env in
   let ctxt = named_context_of_val sign in
@@ -552,6 +552,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let env1,rel_sign = env_rel_context_chop k env in
   let sign1 = evar_hyps evi1 in
   let filter1 = evar_filter evi1 in
+  let src = let (loc,k) = evi1.evar_source in (loc,Evar_kinds.SubEvar k) in
   let ids1 = List.map pi1 (named_context_of_val sign1) in
   let inst_in_sign = List.map mkVar (Filter.filter_list filter1 ids1) in
   let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =
@@ -560,12 +561,12 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       let evd,t_in_sign =
         let s = Retyping.get_sort_of env evd t_in_env in
         let evd,ty_t_in_sign = refresh_universes ~inferred:true (Some false) env evd (mkSort s) in
-        define_evar_from_virtual_equation define_fun env evd t_in_env 
+        define_evar_from_virtual_equation define_fun env evd src t_in_env
           ty_t_in_sign sign filter inst_in_env in
       let evd,b_in_sign = match b with
       | None -> evd,None
       | Some b ->
-          let evd,b = define_evar_from_virtual_equation define_fun env evd b
+          let evd,b = define_evar_from_virtual_equation define_fun env evd src b
             t_in_sign sign filter inst_in_env in
           evd,Some b in
       (push_named_context_val (id,b_in_sign,t_in_sign) sign, Filter.extend 1 filter,
@@ -578,10 +579,10 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let evd,ev2ty_in_sign =
     let s = Retyping.get_sort_of env evd ty_in_env in
     let evd,ty_t_in_sign = refresh_universes ~inferred:true (Some false) env evd (mkSort s) in
-    define_evar_from_virtual_equation define_fun env evd ty_in_env
+    define_evar_from_virtual_equation define_fun env evd src ty_in_env
       ty_t_in_sign sign2 filter2 inst2_in_env in
   let evd,ev2_in_sign =
-    new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 inst2_in_sign in
+    new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 ~src inst2_in_sign in
   let ev2_in_env = (fst (destEvar ev2_in_sign), Array.of_list inst2_in_env) in
   (evd, ev2_in_sign, ev2_in_env)
 

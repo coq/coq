@@ -1599,7 +1599,7 @@ let pr_decl ((id,b,_),ok) =
   | Some c -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
       print_constr c ++ str (if ok then ")" else "}")
 
-let pr_evar_source = function
+let rec pr_evar_source = function
   | Evar_kinds.QuestionMark _ -> str "underscore"
   | Evar_kinds.CasesType -> str "pattern-matching return predicate"
   | Evar_kinds.BinderType (Name id) -> str "type of " ++ Nameops.pr_id id
@@ -1615,6 +1615,7 @@ let pr_evar_source = function
   | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
   | Evar_kinds.MatchingVar _ -> str "matching variable"
   | Evar_kinds.VarInstance id -> str "instance of " ++ pr_id id
+  | Evar_kinds.SubEvar k -> str "subterm of " ++ pr_evar_source k
 
 let pr_evar_info evi =
   let phyps =

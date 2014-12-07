@@ -292,9 +292,9 @@ let try_find_ind env sigma typ realnames =
       | None -> List.make (List.length realargs) Anonymous in
   IsInd (typ,ind,names)
 
-let inh_coerce_to_ind evdref env ty tyi =
+let inh_coerce_to_ind evdref env loc ty tyi =
   let sigma = !evdref in
-  let expected_typ = inductive_template evdref env None tyi in
+  let expected_typ = inductive_template evdref env loc tyi in
   (* Try to refine the type with inductive information coming from the
      constructor and renounce if not able to give more information *)
   (* devrait être indifférent d'exiger leq ou pas puisque pour
@@ -320,7 +320,7 @@ let unify_tomatch_with_patterns evdref env loc typ pats realnames =
   match find_row_ind pats with
     | None -> NotInd (None,typ)
     | Some (_,(ind,_)) ->
-	inh_coerce_to_ind evdref env typ ind;
+	inh_coerce_to_ind evdref env loc typ ind;
 	try try_find_ind env !evdref typ realnames
 	with Not_found -> NotInd (None,typ)
 
