@@ -399,3 +399,8 @@ Goal forall x (x':=x) (f:forall y, y=y:>nat -> Prop), f _ (eq_refl x').
 intros.
 unfold x' at 2. (* A way to check that there are indeed 2 occurrences of x' *)
 Abort.
+
+(* A simple example we would like not to fail (it used to fail because of
+   not strict enough evar restriction) *)
+
+Check match Some _ with None => _ | _ => _ end.
