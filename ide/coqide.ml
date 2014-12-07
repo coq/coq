@@ -1328,10 +1328,7 @@ let build_ui () =
 (** {2 Coqide main function } *)
 
 let make_file_buffer f =
-  let f =
-    if Sys.file_exists f || Filename.check_suffix f ".v" then f
-    else f^".v"
-  in
+  let f = if Filename.check_suffix f ".v" then f else f^".v" in
   FileAux.load_file ~maycreate:true f
 
 let make_scratch_buffer () =

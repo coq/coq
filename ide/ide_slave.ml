@@ -345,6 +345,8 @@ let init =
      match file with
      | None -> Stm.get_current_state ()
      | Some file ->
+         if not (Filename.check_suffix file ".v") then
+           error "A file with suffix .v is expected.";
          let dir = Filename.dirname file in
          let open Loadpath in let open CUnix in
          let initial_id, _ =
