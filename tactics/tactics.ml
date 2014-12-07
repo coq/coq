@@ -2647,7 +2647,8 @@ let new_generalize_gen_let lconstr =
   end }
 
 let generalize_gen lconstr =
-  generalize_gen_let (List.map (fun ((occs,c),na) ->
+  generalize_gen_let (List.map (fun (occs_c,na) ->
+    let (occs,c) = Redexpr.out_with_occurrences occs_c in
     (occs,c,None),na) lconstr)
 
 let new_generalize_gen lconstr =
@@ -4651,12 +4652,6 @@ module Simple = struct
   (** Simplified version of some of the above tactics *)
 
   let intro x = intro_move (Some x) MoveLast
-
-  let generalize_gen cl =
-    generalize_gen (List.map (on_fst Redexpr.out_with_occurrences) cl)
-  let generalize cl =
-    generalize_gen (List.map (fun c -> ((AllOccurrences,c),Names.Anonymous))
-                        cl)
 
   let apply c =
     apply_with_bindings_gen false false [None,(Loc.ghost,(c,NoBindings))]

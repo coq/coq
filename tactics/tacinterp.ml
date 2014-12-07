@@ -1932,7 +1932,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         Tacticals.New.tclWITHHOLES false
         (name_atomic ~env
           (TacGeneralize cl)
-          (Proofview.V82.tactic (Tactics.Simple.generalize_gen cl))) sigma
+          (Proofview.V82.tactic (Tactics.generalize_gen cl))) sigma
       end }
   | TacGeneralizeDep c ->
       (new_interp_constr ist c) (fun c ->

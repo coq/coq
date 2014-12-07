@@ -385,7 +385,8 @@ val letin_pat_tac : (bool * intro_pattern_naming) option ->
 (** {6 Generalize tactics. } *)
 
 val generalize      : constr list -> tactic
-val generalize_gen  : ((occurrences * constr) * Name.t) list -> tactic
+val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> tactic
+
 val new_generalize  : constr list -> unit Proofview.tactic
 val new_generalize_gen  : ((occurrences * constr) * Name.t) list -> unit Proofview.tactic
 
@@ -417,9 +418,6 @@ module Simple : sig
   (** Simplified version of some of the above tactics *)
 
   val intro           : Id.t -> unit Proofview.tactic
-  val generalize      : constr list -> tactic
-  val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> tactic
-
   val apply  : constr -> unit Proofview.tactic
   val eapply : constr -> unit Proofview.tactic
   val elim   : constr -> unit Proofview.tactic
