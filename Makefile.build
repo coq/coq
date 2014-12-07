@@ -92,7 +92,7 @@ SHOW := $(if $(VERBOSE),@true "",@echo "")
 HIDE := $(if $(VERBOSE),,@)
 
 LOCALINCLUDES=$(addprefix -I , $(SRCDIRS) )
-MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
+MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB) -thread
 
 OCAMLC := $(OCAMLC) $(CAMLFLAGS)
 OCAMLOPT := $(OCAMLOPT) $(CAMLFLAGS)
@@ -124,11 +124,13 @@ else
 CAMLP4USE=-D$(CAMLVERSION)
 endif
 
+CAMLP4FLAGS=-I $(CAMLLIB) -I $(CAMLLIB)/threads -I $(MYCAMLP4LIB) unix.cma threads.cma
+
 PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo) # works also with new camlp4
 
-SYSMOD:=str unix dynlink
-SYSCMA:=$(addsuffix .cma,$(SYSMOD) threads)
-SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD) threads)
+SYSMOD:=str unix dynlink threads
+SYSCMA:=$(addsuffix .cma,$(SYSMOD))
+SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD))
 
 ifeq ($(CAMLP4),camlp5)
 P4CMA:=gramlib.cma
@@ -320,7 +322,7 @@ coqide-files: $(IDEFILES)
 ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa lablgtk.cmxa \
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa \
 		lablgtksourceview2.cmxa str.cmxa $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP) $@
 else
@@ -330,7 +332,7 @@ endif
 
 $(COQIDEBYTE): $(LINKIDE)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma lablgtk.cma \
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma \
 	        lablgtksourceview2.cma str.cma $(IDEFLAGS) $(IDECDEPSFLAGS) $^
 
 # install targets
@@ -619,7 +621,7 @@ $(GALLINA): $(addsuffix $(BESTOBJ), tools/gallina_lexer tools/gallina)
 
 $(COQMAKEFILE):  $(patsubst %.cma,%$(BESTLIB),$(COQMAKEFILECMO:.cmo=$(BESTOBJ)))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,str unix)
+	$(HIDE)$(call bestocaml,,str unix threads)
 
 $(COQTEX): tools/coq_tex$(BESTOBJ)
 	$(SHOW)'OCAMLBEST -o $@'
@@ -643,7 +645,7 @@ $(COQWORKMGR): $(addsuffix $(BESTOBJ), stm/coqworkmgrApi tools/coqworkmgr) \
 
 $(FAKEIDE): lib/clib$(BESTLIB) lib/xml_lexer$(BESTOBJ) lib/xml_parser$(BESTOBJ) lib/xml_printer$(BESTOBJ) lib/errors$(BESTOBJ) lib/spawn$(BESTOBJ) ide/document$(BESTOBJ) ide/xmlprotocol$(BESTOBJ) tools/fake_ide$(BESTOBJ) | $(IDETOPLOOPCMA:.cma=$(BESTDYN))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,-I ide,str unix)
+	$(HIDE)$(call bestocaml,-I ide,str unix threads)
 
 # votour: a small vo explorer (based on the checker)
 
@@ -655,9 +657,9 @@ bin/votour: lib/cObj$(BESTOBJ) checker/values$(BESTOBJ) checker/votour.ml
 
 ifeq ($(CAMLP4),camlp4)
 tools/compat5.cmo: tools/compat5.mlp
-	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) -I $(MYCAMLP4LIB) -impl' -impl $<
+	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) $(CAMLP4FLAGS) -impl' -impl $<
 tools/compat5b.cmo: tools/compat5b.mlp
-	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) -I $(MYCAMLP4LIB) -impl' -impl $<
+	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) $(CAMLP4FLAGS) -impl' -impl $<
 else
 tools/compat5.cmo: tools/compat5.ml
 	$(OCAMLC) -c $<
@@ -876,7 +878,7 @@ dev/printers.cma: | dev/printers.mllib.d
 grammar/grammar.cma: | grammar/grammar.mllib.d
 	$(SHOW)'Testing $@'
 	@touch test.ml4
-	$(HIDE)$(CAMLP4O) -I $(CAMLLIB) -I $(MYCAMLP4LIB) $^ -impl test.ml4 -o test.ml
+	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $^ -impl test.ml4 -o test.ml
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) test.ml -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
@@ -884,7 +886,7 @@ grammar/grammar.cma: | grammar/grammar.mllib.d
 
 ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
 
 # pretty printing of the revision number when compiling a checked out
 # source tree
@@ -1022,7 +1024,7 @@ plugins/%_mod.ml: plugins/%.mllib
 
 %.ml: %.ml4 | %.ml4.d tools/compat5.cmo tools/compat5b.cmo
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) -I $(MYCAMLP4LIB) $(PR_O) -I $(CAMLLIB) tools/compat5.cmo \
+	$(HIDE)$(CAMLP4O) $(CAMLP4FLAGS) $(PR_O) tools/compat5.cmo \
 	  $(call CAMLP4DEPS,$<) $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@
 
 %.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d

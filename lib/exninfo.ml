@@ -27,18 +27,65 @@ exception Unique
 
 let dummy = (Unique, Store.empty)
 
-let current = ref dummy
+let current : (int * iexn) list ref = ref []
+(** List associating to each thread id the latest exception raised by an
+    instrumented raise (i.e. {!raise} from this module). It is shared between
+    threads, so we must take care of this when modifying it.
+
+    Invariants: all index keys are unique in the list.
+*)
+
+let lock = Mutex.create ()
+
+let rec remove_assoc (i : int) = function
+| [] -> []
+| (j, v) :: rem as l ->
+  if i = j then rem
+  else
+    let ans = remove_assoc i rem in
+    if rem == ans then l
+    else (j, v) :: ans
+
+let rec find_and_remove_assoc (i : int) = function
+| [] -> dummy, []
+| (j, v) :: rem as l ->
+  if i = j then (v, rem)
+  else
+    let (r, ans) = find_and_remove_assoc i rem in
+    if rem == ans then (r, l)
+    else (r, (j, v) :: ans)
 
 let iraise e =
-  let () = current := e in
+  let () = Mutex.lock lock in
+  let id = Thread.id (Thread.self ()) in
+  let () = current := (id, e) :: remove_assoc id !current in
+  let () = Mutex.unlock lock in
   raise (fst e)
 
 let raise ?info e = match info with
-| None -> raise e
-| Some i -> current := (e, i); raise e
+| None ->
+  let () = Mutex.lock lock in
+  let id = Thread.id (Thread.self ()) in
+  let () = current := remove_assoc id !current in
+  let () = Mutex.unlock lock in
+  raise e
+| Some i ->
+  let () = Mutex.lock lock in
+  let id = Thread.id (Thread.self ()) in
+  let () = current := (id, (e, i)) :: remove_assoc id !current in
+  let () = Mutex.unlock lock in
+  raise e
+
+let find_and_remove () =
+  let () = Mutex.lock lock in
+  let id = Thread.id (Thread.self ()) in
+  let (v, l) = find_and_remove_assoc id !current in
+  let () = current := l in
+  let () = Mutex.unlock lock in
+  v
 
 let info e =
-  let (src, data) = !current in
+  let (src, data) = find_and_remove () in
   if src == e then
     (** Slightly unsound, some exceptions may not be unique up to pointer
         equality. Though, it should be quite exceptional to be in a situation
@@ -50,8 +97,8 @@ let info e =
         3. The same exception is raised through the standard raise, accessing
             the wrong data.
     . *)
-    let () = current := dummy in
     data
   else
-    let () = current := dummy in
+    (** Mismatch: the raised exception is not the one stored, either because the
+        previous raise was not instrumented, or because something went wrong. *)
     Store.empty
