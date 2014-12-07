@@ -3558,8 +3558,7 @@ let guess_elim isrec dep hyp0 gl =
   let evd, elimc =
     if isrec && not (is_nonrec (fst mind)) then find_ind_eliminator (fst mind) s gl
     else
-      if use_dependent_propositions_elimination () &&
-	dependent_no_evar (mkVar hyp0) (Tacmach.New.pf_concl gl)
+      if use_dependent_propositions_elimination () && dep
       then
 	Tacmach.New.pf_apply build_case_analysis_scheme gl mind true s
       else
@@ -3669,43 +3668,34 @@ let induction_tac with_evars params indvars elim gl =
   let resolved = clenv_unique_resolver ~flags:(elim_flags ()) elimclause' gl in
   Proofview.V82.of_tactic (enforce_prop_bound_names rename (Clenvtac.clenv_refine with_evars resolved)) gl
 
-(* Apply induction "in place" replacing the hypothesis on which
-   induction applies with the induction hypotheses *)
-
-let apply_induction_with_discharge induct_tac elim dep toclear destopt avoid names tac =
-  Proofview.Goal.enter begin fun gl ->
-  let (sigma, isrec, elim, indsign) = get_eliminator elim dep (Proofview.Goal.assume gl) in
-  let names = compute_induction_names (Array.length indsign) names in
-  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-  ((if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
-    (Tacticals.New.tclTHEN
-       (induct_tac elim)
-       (Proofview.V82.tactic (tclMAP expand_hyp toclear)))
-    (Array.map2 (induct_discharge destopt avoid tac) indsign names))
-  end
-
 (* Apply induction "in place" taking into account dependent
-   hypotheses from the context *)
+   hypotheses from the context, replacing the main hypothesis on which
+   induction applies with the induction hypotheses *)
 
 let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let concl = Tacmach.New.pf_nf_concl gl in
     let statuslists,lhyp0,toclear,deps,avoid,dep = cook_sign hyp0 inhyps indvars env in
+    let dep = dep || Option.cata (fun id -> occur_var env id concl) false hyp0 in
     let tmpcl = it_mkNamedProd_or_LetIn concl deps in
     let deps_cstr =
       List.fold_left
         (fun a (id,b,_) -> if Option.is_empty b then (mkVar id)::a else a) [] deps in
-    Tacticals.New.tclTHENLIST
-      [
+    let (sigma, isrec, elim, indsign) = get_eliminator elim dep (Proofview.Goal.assume gl) in
+    let names = compute_induction_names (Array.length indsign) names in
+    (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
+      (Tacticals.New.tclTHENLIST [
+        Proofview.Unsafe.tclEVARS sigma;
         (* Generalize dependent hyps (but not args) *)
         if deps = [] then Proofview.tclUNIT () else Proofview.V82.tactic (apply_type tmpcl deps_cstr);
-(*        Proofview.V82.tactic (thin aftertoclear);*)
         (* side-conditions in elim (resp case) schemes come last (resp first) *)
-        apply_induction_with_discharge
-	  induct_tac elim dep toclear lhyp0 avoid names
-          (re_intro_dependent_hypotheses statuslists)
-      ]
+        induct_tac elim;
+        Proofview.V82.tactic (tclMAP expand_hyp toclear)
+      ])
+      (Array.map2
+         (induct_discharge lhyp0 avoid (re_intro_dependent_hypotheses statuslists))
+         indsign names)
   end
 
 let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inhyps =
