@@ -1282,7 +1282,7 @@ let resolution env full_reified_goal systems_list =
 
   Tactics.generalize
     (l_generalize_arg @ List.map Term.mkVar (List.tl l_hyps)) >>
-  Tactics.change_concl reified >>
+  Proofview.V82.of_tactic (Tactics.change_concl reified) >>
   Proofview.V82.of_tactic (Tactics.apply (app coq_do_omega [|decompose_tactic; normalization_trace|])) >>
   show_goal >>
   Tactics.normalise_vm_in_concl >>

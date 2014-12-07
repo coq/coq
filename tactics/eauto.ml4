@@ -548,7 +548,10 @@ let unfold_head env (ids, csts) c =
 	in !done_, c'
   in aux c
 
-let autounfold_one db cl gl =
+let autounfold_one db cl =
+  Proofview.Goal.nf_enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let concl = Proofview.Goal.concl gl in
   let st =
     List.fold_left (fun (i,c) dbname -> 
       let db = try searchtable_map dbname 
@@ -557,14 +560,15 @@ let autounfold_one db cl gl =
       let (ids, csts) = Hint_db.unfolds db in
 	(Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db
   in
-  let did, c' = unfold_head (pf_env gl) st 
-    (match cl with Some (id, _) -> pf_get_hyp_typ gl id | None -> pf_concl gl) 
+  let did, c' = unfold_head env st 
+    (match cl with Some (id, _) -> Tacmach.New.pf_get_hyp_typ id gl | None -> concl) 
   in
     if did then
       match cl with
-      | Some hyp -> change_in_hyp None (fun sigma -> sigma, c') hyp gl
-      | None -> Proofview.V82.of_tactic (convert_concl_no_check c' DEFAULTcast) gl
-    else tclFAIL 0 (str "Nothing to unfold") gl
+      | Some hyp -> change_in_hyp None (fun sigma -> sigma, c') hyp
+      | None -> convert_concl_no_check c' DEFAULTcast
+    else Tacticals.New.tclFAIL 0 (str "Nothing to unfold")
+  end
 
 (* 	  Cset.fold (fun cst -> cons (all_occurrences, EvalConstRef cst)) csts *)
 (* 	    (Id.Set.fold (fun id -> cons (all_occurrences, EvalVarRef id)) ids [])) db) *)
@@ -580,9 +584,9 @@ let autounfold_one db cl gl =
       
 TACTIC EXTEND autounfold_one
 | [ "autounfold_one" hintbases(db) "in" hyp(id) ] ->
-    [ Proofview.V82.tactic (autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) (Some (id, InHyp))) ]
+    [ autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) (Some (id, InHyp)) ]
 | [ "autounfold_one" hintbases(db) ] ->
-    [ Proofview.V82.tactic (autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) None) ]
+    [ autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) None ]
       END
 
 TACTIC EXTEND autounfoldify

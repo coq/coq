@@ -564,14 +564,17 @@ let e_reduct_option ?(check=false) redfun = function
 (** Versions with evars to maintain the unification of universes resulting
     from conversions. *)
 
-let tclWITHEVARS f k gl =
-  let evm, c' = pf_apply f gl in
-    tclTHEN (tclEVARS evm) (k c') gl
+let tclWITHEVARS f k =
+  Proofview.Goal.enter begin fun gl ->
+  let evm, c' = f gl in
+  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evm) (k c')
+  end
 
-let e_change_in_concl (redfun,sty) gl =
+let e_change_in_concl (redfun,sty) =
   tclWITHEVARS
-    (fun env sigma -> redfun env sigma (pf_concl gl))
-    (fun c -> Proofview.V82.of_tactic (convert_concl_no_check c sty)) gl
+    (fun gl -> redfun (Proofview.Goal.env gl) (Proofview.Goal.sigma gl)
+        (Proofview.Goal.raw_concl gl))
+    (fun c -> convert_concl_no_check c sty)
 
 let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env sigma =
   match c with
@@ -585,10 +588,12 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env
       let sigma',ty' = if where != InHypValueOnly then redfun false env sigma ty else sigma', ty in
 	sigma', (id,Some b',ty')
 
-let e_change_in_hyp redfun (id,where) gl =
+let e_change_in_hyp redfun (id,where) =
   tclWITHEVARS
-    (e_pf_change_decl redfun where (pf_get_hyp gl id))
-    (fun s -> Proofview.V82.of_tactic (convert_hyp s)) gl
+    (fun gl -> e_pf_change_decl redfun where
+      (Tacmach.New.pf_get_hyp id (Proofview.Goal.assume gl))
+      (Proofview.Goal.env gl) (Proofview.Goal.sigma gl))
+    convert_hyp
 
 type change_arg = evar_map -> evar_map * constr
 
@@ -654,12 +659,12 @@ let change_option occl t = function
 
 let change chg c cls gl =
   let cls = concrete_clause_of (fun () -> pf_ids_of_hyps gl) cls in
-  tclMAP (function
+  Proofview.V82.of_tactic (Tacticals.New.tclMAP (function
     | OnHyp (id,occs,where) ->
        change_option (bind_change_occurrences occs chg) c (Some (id,where))
     | OnConcl occs ->
        change_option (bind_change_occurrences occs chg) c None)
-    cls gl
+    cls) gl
 
 let change_concl t = 
   change_in_concl None (fun sigma -> sigma, t)
@@ -1122,7 +1127,7 @@ let enforce_prop_bound_names rename tac =
           let env = Proofview.Goal.env gl in
           let sigma = Proofview.Goal.sigma gl in
           let t = Proofview.Goal.concl gl in
-          Proofview.V82.tactic (fun gl -> change_concl (aux env sigma i t) gl)
+          change_concl (aux env sigma i t)
         end in
       (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
         tac
@@ -2755,8 +2760,7 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
   let rec atomize_one i args avoid =
     if Int.equal i nparams then
       let t = applist (hd, params@args) in
-      Proofview.V82.tactic
-        (change_in_hyp None (fun sigma -> sigma, t) (hyp0,InHypTypeOnly))
+      change_in_hyp None (fun sigma -> sigma, t) (hyp0,InHypTypeOnly)
     else
       let c = List.nth argl (i-1) in
       match kind_of_term c with

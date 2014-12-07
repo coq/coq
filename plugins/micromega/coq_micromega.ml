@@ -1392,7 +1392,7 @@ let micromega_order_change spec cert cert_typ env ff : Tacmach.tactic =
  (* todo : directly generate the proof term - or generalize befor conversion? *)
  Tacticals.tclTHENSEQ [
   (fun gl -> 
-  Tactics.change_concl
+   Proofview.V82.of_tactic (Tactics.change_concl
    (set
      [
       ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
@@ -1401,7 +1401,7 @@ let micromega_order_change spec cert cert_typ env ff : Tacmach.tactic =
 	 [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|spec.typ|])); 
       ("__wit", cert, cert_typ)
      ]
-     (Tacmach.pf_concl gl)) gl);
+     (Tacmach.pf_concl gl))) gl);
   Tactics.generalize env ;
   Tacticals.tclTHENSEQ (List.map (fun id -> Proofview.V82.of_tactic (Tactics.introduction id)) ids) ; 
  ] 
@@ -1683,7 +1683,7 @@ let micromega_order_changer cert env ff gl =
  let formula_typ = (Term.mkApp (Lazy.force coq_Cstr,[| coeff|])) in
  let ff = dump_formula formula_typ (dump_cstr coeff dump_coeff) ff in
  let vm = dump_varmap (typ) env in
-  Tactics.change_concl
+  Proofview.V82.of_tactic (Tactics.change_concl
    (set
      [
       ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
@@ -1693,7 +1693,7 @@ let micromega_order_changer cert env ff gl =
       ("__wit", cert, cert_typ)
      ]
      (Tacmach.pf_concl gl)
-   )
+   ))
    gl
 
 

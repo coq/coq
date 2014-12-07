@@ -247,7 +247,7 @@ module Btauto = struct
           let fr = reify env fr in
           let changed_gl = Term.mkApp (c, [|typ; fl; fr|]) in
           Tacticals.New.tclTHENLIST [
-            Proofview.V82.tactic (Tactics.change_concl changed_gl);
+            Tactics.change_concl changed_gl;
             Tactics.apply (Lazy.force soundness);
             Proofview.V82.tactic (Tactics.normalise_vm_in_concl);
             try_unification env

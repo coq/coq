@@ -1485,10 +1485,10 @@ let cutSubstInConcl l2r eqn =
   tclTHENFIRST
     (tclTHENLIST [
        (Proofview.Unsafe.tclEVARS sigma);
-       (Proofview.V82.tactic (change_concl typ)); (* Put in pattern form *)
+       (change_concl typ); (* Put in pattern form *)
        (replace_core onConcl l2r eqn)
     ])
-    (Proofview.V82.tactic (change_concl expected)) (* Put in normalized form *)
+    (change_concl expected) (* Put in normalized form *)
    end
 
 let cutSubstInHyp l2r eqn id =
@@ -1500,10 +1500,10 @@ let cutSubstInHyp l2r eqn id =
   tclTHENFIRST
     (tclTHENLIST [
        (Proofview.Unsafe.tclEVARS sigma);
-       (Proofview.V82.tactic (change_in_hyp None (fun s -> s,typ) (id,InHypTypeOnly)));
+       (change_in_hyp None (fun s -> s,typ) (id,InHypTypeOnly));
        (replace_core (onHyp id) l2r eqn)
     ])
-    (Proofview.V82.tactic (change_in_hyp None (fun s -> s,expected) (id,InHypTypeOnly)))
+    (change_in_hyp None (fun s -> s,expected) (id,InHypTypeOnly))
   end
 
 let try_rewrite tac =

@@ -614,9 +614,11 @@ let out_arg = function
   | ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable")
   | ArgArg x -> x
 
-let hResolve id c occ t gl = 
-  let sigma = project gl in 
-  let env = Termops.clear_named_body id (pf_env gl) in
+let hResolve id c occ t =
+  Proofview.Goal.nf_enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
+  let concl = Proofview.Goal.concl gl in
   let env_ids = Termops.ids_of_context env in
   let c_raw = Detyping.detype true env_ids env sigma c in
   let t_raw = Detyping.detype true env_ids env sigma t in
@@ -631,13 +633,15 @@ let hResolve id c occ t gl =
   let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
   let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in
-    tclTHEN (Refiner.tclEVARS sigma)
-     (change_concl (mkLetIn (Anonymous,t_constr,t_constr_type,pf_concl gl))) gl
+  Tacticals.New.tclTHEN
+    (Proofview.Unsafe.tclEVARS sigma)
+    (change_concl (mkLetIn (Anonymous,t_constr,t_constr_type,concl)))
+  end
 
-let hResolve_auto id c t gl =
+let hResolve_auto id c t =
   let rec resolve_auto n = 
     try
-      hResolve id c n t gl
+      hResolve id c n t
     with
     | UserError _ as e -> raise e
     | e when Errors.noncritical e -> resolve_auto (n+1)
@@ -645,26 +649,29 @@ let hResolve_auto id c t gl =
   resolve_auto 1
 
 TACTIC EXTEND hresolve_core
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ Proofview.V82.tactic (hResolve id c (out_arg occ) t) ]
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ Proofview.V82.tactic (hResolve_auto id c t) ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ hResolve id c (out_arg occ) t ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ hResolve_auto id c t ]
 END
 
 (**
    hget_evar
 *)
 
-let hget_evar n gl =
-  let sigma = project gl in
-  let evl = evar_list (pf_concl gl) in
+let hget_evar n =
+  Proofview.Goal.nf_enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
+  let evl = evar_list concl in
   if List.length evl < n then
     error "Not enough uninstantiated existential variables.";
   if n <= 0 then error "Incorrect existential variable index.";
   let ev = List.nth evl (n-1) in
   let ev_type = existential_type sigma ev in
-  change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,pf_concl gl)) gl
+  change_concl (mkLetIn (Anonymous,mkEvar ev,ev_type,concl))
+  end
 
 TACTIC EXTEND hget_evar
-| [ "hget_evar" int_or_var(n) ] -> [ Proofview.V82.tactic (hget_evar (out_arg n)) ]
+| [ "hget_evar" int_or_var(n) ] -> [ hget_evar (out_arg n) ]
 END
 
 (**********************************************************************)
@@ -706,10 +713,8 @@ let  mkCaseEq a  : unit Proofview.tactic =
           Proofview.Goal.nf_enter begin fun gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
-            Proofview.V82.tactic begin
-	      change_concl
-	        (snd (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl))
-            end
+	    change_concl
+	      (snd (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl))
           end;
 	  simplest_case a]
   end

@@ -130,10 +130,10 @@ type change_arg = evar_map -> evar_map * constr
 val reduct_in_hyp     : ?check:bool -> tactic_reduction -> hyp_location -> tactic
 val reduct_option     : ?check:bool -> tactic_reduction * cast_kind -> goal_location -> tactic
 val reduct_in_concl   : tactic_reduction * cast_kind -> tactic
-val change_in_concl   : (occurrences * constr_pattern) option -> change_arg -> tactic
-val change_concl      : constr -> tactic
+val change_in_concl   : (occurrences * constr_pattern) option -> change_arg -> unit Proofview.tactic
+val change_concl      : constr -> unit Proofview.tactic
 val change_in_hyp     : (occurrences * constr_pattern) option -> change_arg ->
-                        hyp_location -> tactic
+                        hyp_location -> unit Proofview.tactic
 val red_in_concl      : tactic
 val red_in_hyp        : hyp_location -> tactic
 val red_option        : goal_location -> tactic

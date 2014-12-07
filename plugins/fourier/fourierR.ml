@@ -588,9 +588,9 @@ let rec fourier () =
                       else tac_zero_infeq_false gl (rational_to_fraction cres)
            in
            tac:=(Tacticals.New.tclTHENS (Proofview.V82.tactic (my_cut ineq))
-                     [Tacticals.New.tclTHEN (Proofview.V82.tactic (change_concl
+                     [Tacticals.New.tclTHEN (change_concl
 			       (mkAppL [| get coq_not; ineq|]
-				       )))
+				       ))
 		      (Tacticals.New.tclTHEN (apply (if sres then get coq_Rnot_lt_lt
 					       else get coq_Rnot_le_le))
 			    (Tacticals.New.tclTHENS (Equality.replace
