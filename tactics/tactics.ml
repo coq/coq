@@ -2595,7 +2595,7 @@ let expand_hyp id = tclTHEN (tclTRY (unfold_body id)) (clear [id])
     move the subterms of [hyp0succ] in the i-th branch where it is supposed
     to be the i-th constructor of the inductive type.
 
-  Strategy: (cf in [induction_from_context])
+  Strategy: (cf in [induction_with_atomization_of_ind_arg])
   - requantify and clear all [dephyps]
   - apply induction on [hyp0]
   - clear [indhyps] and [hyp0]
@@ -2747,7 +2747,7 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
-let atomize_param_of_ind (indref,nparams,_) hyp0 =
+let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
@@ -2760,7 +2760,9 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
   let rec atomize_one i args avoid =
     if Int.equal i nparams then
       let t = applist (hd, params@args) in
-      change_in_hyp None (fun sigma -> sigma, t) (hyp0,InHypTypeOnly)
+      Tacticals.New.tclTHEN
+        (change_in_hyp None (fun sigma -> sigma, t) (hyp0,InHypTypeOnly))
+        (tac avoid)
     else
       let c = List.nth argl (i-1) in
       match kind_of_term c with
@@ -3579,21 +3581,21 @@ type eliminator_source =
   | ElimOver of bool * Id.t
 
 let find_induction_type isrec elim hyp0 gl =
-  let evd,scheme,elim =
+  let scheme,elim =
     match elim with
     | None ->
-	let evd, (elimc,elimt),_ = guess_elim isrec (* dummy: *) true hyp0 gl in
+	let _, (elimc,elimt),_ = guess_elim isrec (* dummy: *) true hyp0 gl in
 	let scheme = compute_elim_sig ~elimc elimt in
 	(* We drop the scheme waiting to know if it is dependent *)
-	evd, scheme, ElimOver (isrec,hyp0)
+	scheme, ElimOver (isrec,hyp0)
     | Some e ->
 	let evd, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
 	let scheme = compute_elim_sig ~elimc elimt in
 	if Option.is_empty scheme.indarg then error "Cannot find induction type";
 	let indsign = compute_scheme_signature scheme hyp0 ind_guess in
 	let elim = ({elimindex = Some(-1); elimbody = elimc; elimrename = None},elimt) in
-	evd, scheme, ElimUsing (elim,indsign) in
-  evd,(Option.get scheme.indref,scheme.nparams, elim)
+	scheme, ElimUsing (elim,indsign) in
+  (Option.get scheme.indref,scheme.nparams, elim)
 
 let get_elim_signature elim hyp0 gl =
   compute_elim_signature (given_elim hyp0 elim gl) hyp0
@@ -3698,27 +3700,12 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
          indsign names)
   end
 
-let induction_from_context isrec with_evars (indref,nparams,elim) hyp0 names inhyps =
-  Proofview.Goal.enter begin fun gl ->
-  let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 (Proofview.Goal.assume gl) in
-  let reduce_to_quantified_ref =
-    Tacmach.New.pf_apply reduce_to_quantified_ref gl
-  in
-  let typ0 = reduce_to_quantified_ref indref tmptyp0 in
-  let indvars = find_atomic_param_of_ind nparams (strip_prod typ0) in
-  let induct_tac elim =
-    Proofview.V82.tactic (induction_tac with_evars [] [hyp0] elim)
-  in
-  apply_induction_in_context (Some hyp0) inhyps elim indvars names induct_tac
-  end
-
 let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
   Proofview.Goal.enter begin fun gl ->
-  let sigma, elim_info = find_induction_type isrec elim hyp0 (Proofview.Goal.assume gl) in
-  Tacticals.New.tclTHENLIST
-    [Proofview.Unsafe.tclEVARS sigma;
-     atomize_param_of_ind elim_info hyp0;
-     induction_from_context isrec with_evars elim_info hyp0 names inhyps]
+  let elim_info = find_induction_type isrec elim hyp0 (Proofview.Goal.assume gl) in
+  atomize_param_of_ind_then elim_info hyp0 (fun indvars ->
+    apply_induction_in_context (Some hyp0) inhyps (pi3 elim_info) indvars names
+      (fun elim -> Proofview.V82.tactic (induction_tac with_evars [] [hyp0] elim)))
   end
 
 let msg_not_right_number_induction_arguments scheme =
