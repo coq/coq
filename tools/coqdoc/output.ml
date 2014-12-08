@@ -640,10 +640,10 @@ module Html = struct
   let ident_ref m fid typ s =
     match find_module m with
     | Local ->
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
+	printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
 	printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
     | External m when !externals ->
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
+	printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
 	printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
     | External _ | Unknown ->
 	printf "<span class=\"id\" title=\"%s\">%s</span>" typ s
@@ -654,7 +654,7 @@ module Html = struct
 	printf "<a name=\"%s\">" (sanitize_name fullid);
 	printf "<span class=\"id\" title=\"%s\">%s</span></a>" (type_name ty) s
     | Ref (m,fullid,ty) ->
-	ident_ref m (sanitize_name fullid) (type_name ty) s
+	ident_ref m fullid (type_name ty) s
 
   let output_sublexer_string doescape issymbchar tag s =
     let s = if doescape then escaped s else s in
@@ -847,7 +847,7 @@ module Html = struct
 	       "[library]", m ^ ".html", t
 	else
 	 sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
-	sprintf "%s.html#%s" m s, t)
+	sprintf "%s.html#%s" m (sanitize_name s), t)
 
   let format_bytype_index = function
     | Library, idx ->
@@ -856,7 +856,7 @@ module Html = struct
 	Index.map
 	  (fun s m ->
 	     let text = sprintf "[in <a href=\"%s.html\">%s</a>]" m m in
-	       (text, sprintf "%s.html#%s" m s, t)) idx
+	       (text, sprintf "%s.html#%s" m (sanitize_name s), t)) idx
 
   (* Impression de la table d'index *)
   let print_index_table_item i =
