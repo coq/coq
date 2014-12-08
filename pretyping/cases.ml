@@ -1587,8 +1587,7 @@ let rec list_assoc_in_triple x = function
 *)
 
 let abstract_tycon loc env evdref subst _tycon extenv t =
-  let sigma = !evdref in
-  let t = nf_betaiota sigma t in (* it helps in some cases to remove K-redex *)
+  let t = nf_betaiota !evdref t in (* it helps in some cases to remove K-redex *)
   let subst0,t0 = adjust_to_extended_env_and_remove_deps env extenv subst t in
   (* We traverse the type T of the original problem Xi looking for subterms
      that match the non-constructor part of the constraints (this part
@@ -1600,7 +1599,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
     | Rel n when pi2 (lookup_rel n env) != None ->
         map_constr_with_full_binders push_binder aux x t
     | Evar ev ->
-        let ty = get_type_of env sigma t in
+        let ty = get_type_of env !evdref t in
 	let ty = Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref ty in
         let inst =
 	  List.map_i
@@ -1614,7 +1613,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
         end;
         ev'
     | _ ->
-    let good = List.filter (fun (_,u,_) -> is_conv_leq env sigma t u) subst in
+    let good = List.filter (fun (_,u,_) -> is_conv_leq env !evdref t u) subst in
     match good with
     | [] ->
       map_constr_with_full_binders push_binder aux x t
