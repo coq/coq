@@ -1029,7 +1029,7 @@ exception CannotProject of Filter.t option
   of subterms to eventually discard so as to be allowed to keep ti.
 *)
 
-let rec is_constrainable_in k (ev,(fv_rels,fv_ids) as g) t =
+let rec is_constrainable_in top k (ev,(fv_rels,fv_ids) as g) t =
   let f,args = decompose_app_vect t in
   match kind_of_term f with
   | Construct ((ind,_),u) ->
@@ -1037,10 +1037,10 @@ let rec is_constrainable_in k (ev,(fv_rels,fv_ids) as g) t =
     if n > Array.length args then true (* We don't try to be more clever *)
     else
       let params = fst (Array.chop n args) in
-      Array.for_all (is_constrainable_in k g) params
-  | Ind _ -> Array.for_all (is_constrainable_in k g) args
-  | Prod (_,t1,t2) -> is_constrainable_in k g t1 && is_constrainable_in k g t2
-  | Evar (ev',_) -> not (Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
+      Array.for_all (is_constrainable_in false k g) params
+  | Ind _ -> Array.for_all (is_constrainable_in false k g) args
+  | Prod (_,t1,t2) -> is_constrainable_in false k g t1 && is_constrainable_in false k g t2
+  | Evar (ev',_) -> top || not (Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
   | Var id -> Id.Set.mem id fv_ids
   | Rel n -> n <= k || Int.Set.mem n fv_rels
   | Sort _ -> true
@@ -1051,7 +1051,7 @@ let has_constrainable_free_vars evd aliases k ev (fv_rels,fv_ids as fvs) t =
   match kind_of_term t with
   | Var id -> Id.Set.mem id fv_ids
   | Rel n -> n <= k || Int.Set.mem n fv_rels
-  | _ -> is_constrainable_in k (ev,fvs) t
+  | _ -> is_constrainable_in true k (ev,fvs) t
 
 let ensure_evar_independent g env evd (evk1,argsv1 as ev1) (evk2,argsv2 as ev2)=
   let filter1 =
