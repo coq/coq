@@ -3553,10 +3553,9 @@ let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
   let scheme = compute_elim_sig ~elimc:elimc elimt in
     evd, (compute_scheme_signature scheme names_info ind_type_guess, scheme)
 
-let guess_elim isrec dep hyp0 gl =
+let guess_elim isrec dep s hyp0 gl =
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let mind,_ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
-  let s = Tacticals.New.elimination_sort_of_goal gl in
   let evd, elimc =
     if isrec && not (is_nonrec (fst mind)) then find_ind_eliminator (fst mind) s gl
     else
@@ -3584,7 +3583,7 @@ let find_induction_type isrec elim hyp0 gl =
   let scheme,elim =
     match elim with
     | None ->
-	let _, (elimc,elimt),_ = guess_elim isrec (* dummy: *) true hyp0 gl in
+	let _, (elimc,elimt),_ = guess_elim isrec (* dummy: *) true (* dummy: *) InProp hyp0 gl in
 	let scheme = compute_elim_sig ~elimc elimt in
 	(* We drop the scheme waiting to know if it is dependent *)
 	scheme, ElimOver (isrec,hyp0)
@@ -3609,11 +3608,11 @@ let is_functional_induction elimc gl =
 (* Wait the last moment to guess the eliminator so as to know if we
    need a dependent one or not *)
 
-let get_eliminator elim dep gl = match elim with
+let get_eliminator elim dep s gl = match elim with
   | ElimUsing (elim,indsign) ->
       Proofview.Goal.sigma gl, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc,elimt),_ as elims = guess_elim isrec dep id gl in
+      let evd, (elimc,elimt),_ as elims = guess_elim isrec dep s id gl in
       let _, (l, s) = compute_elim_signature elims id in
       let branchlengthes = List.map (fun (_,b,c) -> assert (b=None); pi1 (decompose_prod_letin c)) (List.rev s.branches) in
       evd, isrec, ({elimindex = None; elimbody = elimc; elimrename = Some (isrec,Array.of_list branchlengthes)}, elimt), l
@@ -3677,14 +3676,16 @@ let induction_tac with_evars params indvars elim gl =
 let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
     let concl = Tacmach.New.pf_nf_concl gl in
     let statuslists,lhyp0,toclear,deps,avoid,dep = cook_sign hyp0 inhyps indvars env in
     let dep = dep || Option.cata (fun id -> occur_var env id concl) false hyp0 in
     let tmpcl = it_mkNamedProd_or_LetIn concl deps in
+    let s = Retyping.get_sort_family_of env sigma tmpcl in
     let deps_cstr =
       List.fold_left
         (fun a (id,b,_) -> if Option.is_empty b then (mkVar id)::a else a) [] deps in
-    let (sigma, isrec, elim, indsign) = get_eliminator elim dep (Proofview.Goal.assume gl) in
+    let (sigma, isrec, elim, indsign) = get_eliminator elim dep s (Proofview.Goal.assume gl) in
     let names = compute_induction_names (Array.length indsign) names in
     (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
       (Tacticals.New.tclTHENLIST [
