@@ -1911,7 +1911,7 @@ let one_constructor i lbind = constructor_tac false None i lbind
 let rec tclANY tac = function
 | [] -> Tacticals.New.tclZEROMSG (str "No applicable tactic.")
 | arg :: l ->
-  Proofview.tclOR (tac arg) (fun _ -> tclANY tac l)
+  Tacticals.New.tclORD (tac arg) (fun () -> tclANY tac l)
 
 let any_constructor with_evars tacopt =
   let t = match tacopt with None -> Proofview.tclUNIT () | Some t -> t in

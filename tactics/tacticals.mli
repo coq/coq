@@ -169,6 +169,11 @@ module New : sig
   (** Fail with a [User_Error] containing the given message. *)
 
   val tclOR : unit tactic -> unit tactic -> unit tactic
+  val tclORD : unit tactic -> (unit -> unit tactic) -> unit tactic
+  (** Like {!tclOR} but accepts a delayed tactic as a second argument
+      in the form of a function which will be run only in case of
+      backtracking. *)
+
   val tclONCE : unit tactic -> unit tactic
   val tclEXACTLY_ONCE : unit tactic -> unit tactic
   val tclORELSE0 : unit tactic -> unit tactic -> unit tactic

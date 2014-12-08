@@ -326,6 +326,15 @@ module New = struct
         end
     end
 
+  let tclORD t1 t2 =
+    tclINDEPENDENT begin
+      Proofview.tclOR
+        t1
+        begin fun e ->
+          catch_failerror e <*> t2 ()
+        end
+    end
+
   let tclONCE = Proofview.tclONCE
 
   let tclEXACTLY_ONCE t = Proofview.tclEXACTLY_ONCE (Refiner.FailError(0,lazy (assert false))) t
