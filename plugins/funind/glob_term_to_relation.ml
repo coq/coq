@@ -1384,6 +1384,16 @@ let do_build_inductive
      Then save the graphs and reset Printing options to their primitive values
   *)
   let rel_arities = Array.mapi rel_arity funsargs in
+  let rel_params_ids =
+    List.fold_left
+      (fun  acc (na,_,_) ->
+       match na with
+	 Anonymous -> acc
+       | Name id -> id::acc
+      )
+      []
+      rels_params
+  in
   let rel_params =
     List.map
       (fun (n,t,is_defined) ->
@@ -1402,7 +1412,7 @@ let do_build_inductive
 	 false,((dummy_loc,id),
 		Flags.with_option
 		  Flags.raw_print
-		  (Constrextern.extern_glob_type Idset.empty) ((* zeta_normalize *) t)
+		  (Constrextern.extern_glob_type Idset.empty) ((* zeta_normalize *)(alpha_rt rel_params_ids t))
 	       )
       ))
       (rel_constructors)
