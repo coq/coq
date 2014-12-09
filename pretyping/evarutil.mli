@@ -233,3 +233,6 @@ val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 val evd_comb0 : (evar_map -> evar_map * 'a) -> evar_map ref -> 'a
 val evd_comb1 : (evar_map -> 'b -> evar_map * 'a) -> evar_map ref -> 'b -> 'a
 val evd_comb2 : (evar_map -> 'b -> 'c -> evar_map * 'a) -> evar_map ref -> 'b -> 'c -> 'a
+
+val subterm_source : existential_key -> Evar_kinds.t Loc.located ->
+  Evar_kinds.t Loc.located

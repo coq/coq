@@ -21,11 +21,11 @@ type t =
      * bool (** Force inference *)
   | BinderType of Name.t
   | QuestionMark of obligation_definition_status
-  | CasesType
+  | CasesType of bool (* true = a subterm of the type *)
   | InternalHole
   | TomatchTypeParameter of inductive * int
   | GoalEvar
   | ImpossibleCase
   | MatchingVar of bool * Id.t
   | VarInstance of Id.t
-  | SubEvar of t
+  | SubEvar of Constr.existential_key

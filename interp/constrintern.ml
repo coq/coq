@@ -1514,7 +1514,7 @@ let internalize globalenv env allow_patvar lvar c =
 		   GCases(Loc.ghost,Term.RegularStyle,(* Some (GSort (Loc.ghost,GType None)) *)None, (* "return Type" *)
 			  List.map (fun id -> GVar (Loc.ghost,id),(Name id,None)) thevars, (* "match v1,..,vn" *)
 			  [Loc.ghost,[],thepats, (* "|p1,..,pn" *)
-			   Option.cata (intern_type env') (GHole(Loc.ghost,Evar_kinds.CasesType,Misctypes.IntroAnonymous,None)) rtnpo; (* "=> P" is there were a P "=> _" else *)
+			   Option.cata (intern_type env') (GHole(Loc.ghost,Evar_kinds.CasesType false,Misctypes.IntroAnonymous,None)) rtnpo; (* "=> P" is there were a P "=> _" else *)
 			   Loc.ghost,[],List.make (List.length thepats) (PatVar(Loc.ghost,Anonymous)), (* "|_,..,_" *)
 			   GHole(Loc.ghost,Evar_kinds.ImpossibleCase,Misctypes.IntroAnonymous,None) (* "=> _" *)]))
 	in

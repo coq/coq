@@ -36,8 +36,7 @@ type pretype_error =
   | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
   (* Tactic unification *)
   | UnifOccurCheck of existential_key * constr
-  | UnsolvableImplicit of Evd.evar_info * Evar_kinds.t *
-      Evd.unsolvability_explanation option
+  | UnsolvableImplicit of existential_key * Evd.unsolvability_explanation option
   | CannotUnify of constr * constr * unification_error option
   | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
@@ -107,9 +106,9 @@ let error_not_a_type_loc loc env sigma j =
 let error_occur_check env sigma ev c =
   raise (PretypeError (env, sigma, UnifOccurCheck (ev,c)))
 
-let error_unsolvable_implicit loc env sigma evi e explain =
+let error_unsolvable_implicit loc env sigma evk explain =
   Loc.raise loc
-    (PretypeError (env, sigma, UnsolvableImplicit (evi, e, explain)))
+    (PretypeError (env, sigma, UnsolvableImplicit (evk, explain)))
 
 let error_cannot_unify_loc loc env sigma ?reason (m,n) =
   Loc.raise loc (PretypeError (env, sigma,CannotUnify (m,n,reason)))

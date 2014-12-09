@@ -37,8 +37,7 @@ type pretype_error =
   | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
   (** Tactic Unification *)
   | UnifOccurCheck of existential_key * constr
-  | UnsolvableImplicit of Evd.evar_info * Evar_kinds.t *
-      Evd.unsolvability_explanation option
+  | UnsolvableImplicit of existential_key * Evd.unsolvability_explanation option
   | CannotUnify of constr * constr * unification_error option
   | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
@@ -100,7 +99,7 @@ val error_cannot_coerce : env -> Evd.evar_map -> constr * constr -> 'b
 val error_occur_check : env -> Evd.evar_map -> existential_key -> constr -> 'b
 
 val error_unsolvable_implicit :
-  Loc.t -> env -> Evd.evar_map -> Evd.evar_info -> Evar_kinds.t ->
+  Loc.t -> env -> Evd.evar_map -> existential_key ->
       Evd.unsolvability_explanation option -> 'b
 
 val error_cannot_unify_loc : Loc.t -> env -> Evd.evar_map ->

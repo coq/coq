@@ -477,17 +477,16 @@ module New = struct
       Evd.fold_undefined (fun evk evi acc ->
         if is_undefined_up_to_restriction sigma evk && not (Evd.mem origsigma evk)
         then
-          evi::acc
+          (evk,evi)::acc
         else
           acc)
         extsigma []
     in
     match rest with
     | [] -> ()
-    | evi :: _ ->
-      let (loc,k) = evi.Evd.evar_source in
-      let evi = Evarutil.nf_evar_info sigma evi in
-      Pretype_errors.error_unsolvable_implicit loc env sigma evi k None
+    | (evk,evi) :: _ ->
+      let (loc,_) = evi.Evd.evar_source in
+      Pretype_errors.error_unsolvable_implicit loc env sigma evk None
 
   let tclWITHHOLES accept_unresolved_holes tac sigma x =
     tclEVARMAP >>= fun sigma_initial ->

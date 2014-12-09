@@ -39,8 +39,7 @@ let check_evars env evm =
      | Evar_kinds.QuestionMark _
      | Evar_kinds.ImplicitArg (_,_,false) -> ()
      | _ ->
-       Pretype_errors.error_unsolvable_implicit loc env
-         evm (Evarutil.nf_evar_info evm evi) k None)
+       Pretype_errors.error_unsolvable_implicit loc env evm key None)
   (Evd.undefined_map evm)
 
 type oblinfo =

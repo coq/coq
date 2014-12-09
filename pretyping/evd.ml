@@ -1601,7 +1601,9 @@ let pr_decl ((id,b,_),ok) =
 
 let rec pr_evar_source = function
   | Evar_kinds.QuestionMark _ -> str "underscore"
-  | Evar_kinds.CasesType -> str "pattern-matching return predicate"
+  | Evar_kinds.CasesType false -> str "pattern-matching return predicate"
+  | Evar_kinds.CasesType true ->
+      str "subterm of pattern-matching return predicate"
   | Evar_kinds.BinderType (Name id) -> str "type of " ++ Nameops.pr_id id
   | Evar_kinds.BinderType Anonymous -> str "type of anonymous binder"
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
@@ -1615,7 +1617,8 @@ let rec pr_evar_source = function
   | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
   | Evar_kinds.MatchingVar _ -> str "matching variable"
   | Evar_kinds.VarInstance id -> str "instance of " ++ pr_id id
-  | Evar_kinds.SubEvar k -> str "subterm of " ++ pr_evar_source k
+  | Evar_kinds.SubEvar evk ->
+      str "subterm of " ++ str (string_of_existential evk)
 
 let pr_evar_info evi =
   let phyps =

@@ -501,34 +501,47 @@ let pr_trailing_ne_context_of env sigma =
   then str "."
   else (str " in environment:"++ fnl () ++ pr_context_unlimited env sigma)
 
-let rec explain_evar_kind env = function
-  | Evar_kinds.QuestionMark _ -> strbrk "this placeholder"
-  | Evar_kinds.CasesType ->
+let rec explain_evar_kind env sigma evk ty = function
+  | Evar_kinds.QuestionMark _ ->
+      strbrk "this placeholder of type " ++ ty
+  | Evar_kinds.CasesType false ->
       strbrk "the type of this pattern-matching problem"
+  | Evar_kinds.CasesType true ->
+      strbrk "a subterm of type " ++ ty ++
+      strbrk " in the type of this pattern-matching problem"
   | Evar_kinds.BinderType (Name id) ->
       strbrk "the type of " ++ Nameops.pr_id id
   | Evar_kinds.BinderType Anonymous ->
       strbrk "the type of this anonymous binder"
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let id = Option.get ido in
-      strbrk "the implicit parameter " ++
-      pr_id id ++ spc () ++ str "of" ++
-      spc () ++ Nametab.pr_global_env Id.Set.empty c
-  | Evar_kinds.InternalHole -> strbrk "an internal placeholder"
+      strbrk "the implicit parameter " ++ pr_id id ++ spc () ++ str "of" ++
+      spc () ++ Nametab.pr_global_env Id.Set.empty c ++
+      strbrk " whose type is " ++ ty
+  | Evar_kinds.InternalHole -> strbrk "an internal placeholder of type " ++ ty
   | Evar_kinds.TomatchTypeParameter (tyi,n) ->
       strbrk "the " ++ pr_nth n ++
       strbrk " argument of the inductive type (" ++ pr_inductive env tyi ++
       strbrk ") of this term"
   | Evar_kinds.GoalEvar ->
-      strbrk "an existential variable"
+      strbrk "an existential variable of type " ++ ty
   | Evar_kinds.ImpossibleCase ->
       strbrk "the type of an impossible pattern-matching clause"
   | Evar_kinds.MatchingVar _ ->
       assert false
   | Evar_kinds.VarInstance id ->
-      strbrk "an instance for the variable " ++ pr_id id
-  | Evar_kinds.SubEvar c ->
-      strbrk "a subterm of " ++ explain_evar_kind env c
+      strbrk "an instance of type " ++ ty ++
+      str " for the variable " ++ pr_id id
+  | Evar_kinds.SubEvar evk' ->
+      let evi = Evd.find sigma evk' in
+      let pc = match evi.evar_body with
+      | Evar_defined c -> pr_lconstr_env env sigma (Evarutil.nf_evar sigma c)
+      | Evar_empty -> assert false in
+      let ty' = Evarutil.nf_evar sigma evi.evar_concl in
+      pr_existential_key sigma evk ++ str " of type " ++ ty ++
+      str " in the partial instance " ++ pc ++
+      str " found for " ++ explain_evar_kind env sigma evk'
+      (pr_lconstr_env env sigma ty') (snd evi.evar_source)
 
 let explain_typeclass_resolution env sigma evi k =
   match Typeclasses.class_of_constr evi.evar_concl with
@@ -542,18 +555,19 @@ let explain_typeclass_resolution env sigma evi k =
 let explain_placeholder_kind env sigma c e =
   match e with
   | Some (SeveralInstancesFound n) ->
-      strbrk " (several distinct possible instances found)"
+      strbrk " (several distinct possible type class instances found)"
   | None ->
       match Typeclasses.class_of_constr c with
-      | Some _ -> strbrk " (no instance found)"
+      | Some _ -> strbrk " (no type class instance found)"
       | _ -> mt ()
 
-let explain_unsolvable_implicit env sigma evi k explain =
+let explain_unsolvable_implicit env sigma evk explain =
+  let evi = Evarutil.nf_evar_info sigma (Evd.find_undefined sigma evk) in
   let env = Evd.evar_filtered_env evi in
   let type_of_hole = pr_lconstr_env env sigma evi.evar_concl in
   let pe = pr_trailing_ne_context_of env sigma in
-  strbrk "Cannot infer " ++ explain_evar_kind env k ++
-  strbrk " of type "  ++ type_of_hole ++
+  strbrk "Cannot infer " ++
+  explain_evar_kind env sigma evk type_of_hole (snd evi.evar_source) ++
   explain_placeholder_kind env sigma evi.evar_concl explain ++ pe
 
 let explain_var_not_found env id =
@@ -757,7 +771,7 @@ let explain_pretype_error env sigma err =
     let j = {uj_val = c; uj_type = actty} in
     explain_actual_type env sigma j t (Some e)
   | UnifOccurCheck (ev,rhs) -> explain_occur_check env sigma ev rhs
-  | UnsolvableImplicit (evi,k,exp) -> explain_unsolvable_implicit env sigma evi k exp
+  | UnsolvableImplicit (evk,exp) -> explain_unsolvable_implicit env sigma evk exp
   | VarNotFound id -> explain_var_not_found env id
   | UnexpectedType (actual,expect) ->
     let env, actual, expect = contract2 env actual expect in

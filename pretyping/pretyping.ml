@@ -190,8 +190,7 @@ let check_extra_evars_are_solved env current_sigma pending =
 	match k with
 	| Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
 	| _ ->
-	    let evi = nf_evar_info current_sigma (Evd.find_undefined current_sigma evk) in
-	    error_unsolvable_implicit loc env current_sigma evi k None) pending
+	    error_unsolvable_implicit loc env current_sigma evk None) pending
 
 let check_evars_are_solved env current_sigma pending =
   check_typeclasses_instances_are_solved env current_sigma pending;

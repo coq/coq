@@ -650,9 +650,7 @@ let check_evars env initial_sigma sigma c =
             let (loc,k) = evar_source evk sigma in
 	      match k with
 	      | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
-	      | _ ->
-		  let evi = nf_evar_info sigma (Evd.find_undefined sigma evk) in
-		    error_unsolvable_implicit loc env sigma evi k None)
+	      | _ -> error_unsolvable_implicit loc env sigma evk None)
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
@@ -834,3 +832,9 @@ let lift_tycon n = Option.map (lift n)
 let pr_tycon env = function
     None -> str "None"
   | Some t -> Termops.print_constr_env env t
+
+let subterm_source evk (loc,k) =
+  let evk = match k with
+    | Evar_kinds.SubEvar (evk) -> evk
+    | _ -> evk in
+  (loc,Evar_kinds.SubEvar evk)

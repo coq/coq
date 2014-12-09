@@ -552,7 +552,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let env1,rel_sign = env_rel_context_chop k env in
   let sign1 = evar_hyps evi1 in
   let filter1 = evar_filter evi1 in
-  let src = let (loc,k) = evi1.evar_source in (loc,Evar_kinds.SubEvar k) in
+  let src = subterm_source evk1 evi1.evar_source in
   let ids1 = List.map pi1 (named_context_of_val sign1) in
   let inst_in_sign = List.map mkVar (Filter.filter_list filter1 ids1) in
   let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =

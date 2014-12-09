@@ -1586,8 +1586,11 @@ let rec list_assoc_in_triple x = function
  * similarly for each ti.
 *)
 
-let abstract_tycon loc env evdref subst _tycon extenv t =
-  let t = nf_betaiota !evdref t in (* it helps in some cases to remove K-redex *)
+let abstract_tycon loc env evdref subst tycon extenv t =
+  let t = nf_betaiota !evdref t in (* it helps in some cases to remove K-redex*)
+  let src = match kind_of_term t with
+    | Evar (evk,_) -> (loc,Evar_kinds.SubEvar evk)
+    | _ -> (loc,Evar_kinds.CasesType true) in
   let subst0,t0 = adjust_to_extended_env_and_remove_deps env extenv subst t in
   (* We traverse the type T of the original problem Xi looking for subterms
      that match the non-constructor part of the constraints (this part
@@ -1596,8 +1599,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
      convertible subterms of the substitution *)
   let rec aux (k,env,subst as x) t =
     let t = whd_evar !evdref t in match kind_of_term t with
-    | Rel n when pi2 (lookup_rel n env) != None ->
-        map_constr_with_full_binders push_binder aux x t
+    | Rel n when pi2 (lookup_rel n env) != None -> t
     | Evar ev ->
         let ty = get_type_of env !evdref t in
 	let ty = Evarutil.evd_comb1 (refresh_universes (Some false) env) evdref ty in
@@ -1606,7 +1608,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
-        let ev' = e_new_evar env evdref ~src:(loc, Evar_kinds.CasesType) ty in
+        let ev' = e_new_evar env evdref ~src ty in
         begin match solve_simple_eqn (evar_conv_x full_transparent_state) env !evdref (None,ev,substl inst ev') with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
@@ -1637,9 +1639,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
 	  (named_context extenv) in
       let filter = Filter.make (rel_filter @ named_filter) in
       let candidates = u :: List.map mkRel vl in
-      let ev =
-	e_new_evar extenv evdref ~src:(loc, Evar_kinds.CasesType)
-	  ~filter ~candidates ty in
+      let ev = e_new_evar extenv evdref ~src ~filter ~candidates ty in
       lift k ev
   in
   aux (0,extenv,subst0) t0
@@ -1913,7 +1913,7 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
 	| Some t -> sigma,t
 	| None -> 
 	  let sigma, (t, _) = 
-	    new_type_evar env sigma univ_flexible_alg ~src:(loc, Evar_kinds.CasesType) in
+	    new_type_evar env sigma univ_flexible_alg ~src:(loc, Evar_kinds.CasesType false) in
 	    sigma, t
 	in
         (* First strategy: we build an "inversion" predicate *)
