@@ -459,21 +459,16 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
   in
   let flex_rigid on_left ev (termF, skF as apprF) (termR, skR as apprR) =
     let switch f a b = if on_left then f a b else f b a in
-    let eta = 
-      let did_eta = ref false in
-	fun evd ->
-	  if !did_eta then UnifFailure (evd,NotSameHead)
-	  else 
-	    (did_eta := true;
-	     match kind_of_term termR with
+    let eta evd =
+             match kind_of_term termR with
 	     | Lambda _ -> eta env evd false skR termR skF termF
 	     | Construct u -> eta_constructor ts env evd skR u skF termF
-	     | _ -> UnifFailure (evd,NotSameHead))
+	     | _ -> UnifFailure (evd,NotSameHead)
     in
-    let f evd =
-      match Stack.list_of_app_stack skF with
-      | None -> consume_stack on_left apprF apprR evd
-      | Some lF ->
+    match Stack.list_of_app_stack skF with
+    | None ->
+        ise_try evd [consume_stack on_left apprF apprR; eta]
+    | Some lF ->
         let tR = Stack.zip apprR in
 	  miller_pfenning on_left
 	    (fun () ->
@@ -483,9 +478,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 		   if not (occur_rigidly (fst ev) i tR) then
 		     switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i))
 	               (Stack.zip apprF) tR
-		   else quick_fail i)])
+		   else
+                     UnifFailure (evd,OccurCheck (fst ev,tR)))])
 	    ev lF tR evd
-    in ise_try evd [f; eta]
   in
   let app_empty = match sk1, sk2 with [], [] -> true | _ -> false in
   (* Evar must be undefined since we have flushed evars *)
