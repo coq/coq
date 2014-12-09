@@ -931,22 +931,6 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
   | UpdateWith c ->
     restrict_evar evd evk filter (UpdateWith c)
 
-(* [postpone_evar_evar] postpones an equation of the form ?e1[?1] = ?e2[?2] *)
-
-let postpone_evar_evar f env evd pbty filter1 ev1 filter2 ev2 =
-  (* Leave an equation between (restrictions of) ev1 andv ev2 *)
-  try
-    let evd,ev1' = do_restrict_hyps evd ev1 filter1 NoUpdate in
-    try
-      let evd,ev2' = do_restrict_hyps evd ev2 filter2 NoUpdate in
-      add_conv_oriented_pb (pbty,env,mkEvar ev1',mkEvar ev2') evd
-    with EvarSolvedWhileRestricting (evd,ev2) ->
-      (* ev2 solved on the fly *)
-      f env evd pbty ev1' ev2
-  with EvarSolvedWhileRestricting (evd,ev1) ->
-    (* ev1 solved on the fly *)
-    f env evd pbty ev2 ev1
-
 (* [solve_evar_evar f Γ Σ ?e1[u1..un] ?e2[v1..vp]] applies an heuristic
  * to solve the equation Σ; Γ ⊢ ?e1[u1..un] = ?e2[v1..vp]:
  * - if there are at most one φj for each vj s.t. vj = φj(u1..un),
@@ -1013,7 +997,7 @@ let restrict_candidates conv_algo env evd filter1 (evk1,argsv1) (evk2,argsv2) =
       if Int.equal (List.length l1) (List.length l1') then NoUpdate
       else UpdateWith l1'
 
-exception CannotProject of Filter.t option
+exception CannotProject of evar_map * existential
 
 (* Assume that FV(?n[x1:=t1..xn:=tn]) belongs to some set U.
    Can ?n be instantiated by a term u depending essentially on xi such that the
@@ -1076,21 +1060,24 @@ let project_evar_on_evar g env evd aliases k2 pbty (evk1,argsv1 as ev1) (evk2,ar
   let filter1 = restrict_upon_filter evd evk1
     (has_constrainable_free_vars evd aliases k2 evk2 fvs2)
     argsv1 in
+  let candidates1 =
+    try restrict_candidates g env evd filter1 ev1 ev2
+    with DoesNotPreserveCandidateRestriction ->
+      let evd,ev1' = do_restrict_hyps evd ev1 filter1 NoUpdate in
+      raise (CannotProject (evd,ev1')) in
+  let evd,(evk1',args1 as ev1') =
+    try do_restrict_hyps evd ev1 filter1 candidates1
+    with EvarSolvedWhileRestricting (evd,ev1) ->
+      raise (EvarSolvedOnTheFly (evd,ev1)) in
   (* Only try pruning on variable substitutions, postpone otherwise. *)
   (* Rules out non-linear instances. *)
-  if is_unification_pattern_pure_evar env evd ev2 (mkEvar ev1)
-     && Option.is_empty pbty then
+  if Option.is_empty pbty && is_unification_pattern_pure_evar env evd ev2 (mkEvar ev1) then
     try
-      let candidates1 = restrict_candidates g env evd filter1 ev1 ev2 in
-      let evd,(evk1',args1) = do_restrict_hyps evd ev1 filter1 candidates1 in
       evd,mkEvar (evk1',invert_invertible_arg env evd aliases k2 ev2 args1)
-    with
-    | EvarSolvedWhileRestricting (evd,ev1) ->
-        raise (EvarSolvedOnTheFly (evd,ev1))
-    | DoesNotPreserveCandidateRestriction | NotEnoughInformationToInvert ->
-        raise (CannotProject filter1)
+    with NotEnoughInformationToInvert ->
+      raise (CannotProject (evd,ev1'))
   else
-    raise (CannotProject filter1)
+    raise (CannotProject (evd,ev1'))
 
 exception IllTypedInstance of env * types * types
 
@@ -1120,10 +1107,10 @@ let opp_problem = function None -> None | Some b -> Some (not b)
 let solve_evar_evar_aux f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env in
   try solve_evar_evar_l2r f g env evd aliases (opp_problem pbty) ev2 ev1
-  with CannotProject filter2 ->
+  with CannotProject (evd,ev2) ->
   try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
-  with CannotProject filter1 ->
-  postpone_evar_evar f env evd pbty filter1 ev1 filter2 ev2
+  with CannotProject (evd,ev1) ->
+  add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd
 
 let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let (evd,ev1,ev2),pbty =
@@ -1323,13 +1310,13 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
           body
         with
         | EvarSolvedOnTheFly (evd,t) -> evdref:=evd; imitate envk t
-        | CannotProject filter' ->
+        | CannotProject (evd,ev') ->
           if not !progress then
             raise (NotEnoughInformationEvarEvar t);
           (* Make the virtual left evar real *)
-          let ty = get_type_of env' !evdref t in
+          let ty = get_type_of env' evd t in
           let (evd,evar'',ev'') =
-             materialize_evar (evar_define conv_algo ~choose) env' !evdref k ev ty in
+             materialize_evar (evar_define conv_algo ~choose) env' evd k ev ty in
           (* materialize_evar may instantiate ev' by another evar; adjust it *)
           let (evk',args' as ev') = normalize_evar evd ev' in
           let evd =
@@ -1340,9 +1327,9 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
 		check_evar_instance evd evk' body conv_algo
             with
             | EvarSolvedOnTheFly _ -> assert false (* ev has no candidates *)
-            | CannotProject filter'' ->
+            | CannotProject (evd,ev'') ->
               (* ... or postpone the problem *)
-              postpone_evar_evar (evar_define conv_algo ~choose) env' evd None filter'' ev'' filter' ev' in
+              add_conv_oriented_pb (None,env',mkEvar ev'',mkEvar ev') evd in
           evdref := evd;
           evar'')
     | _ ->
