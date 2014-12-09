@@ -1497,10 +1497,14 @@ let status_changed lev (pbty,_,t1,t2) =
 let reconsider_conv_pbs conv_algo evd =
   let (evd,pbs) = extract_changed_conv_pbs evd status_changed in
   List.fold_left
-    (fun p (pbty,env,t1,t2) ->
+    (fun p (pbty,env,t1,t2 as x) ->
        match p with
-       | Success evd -> conv_algo env evd pbty t1 t2
-       | UnifFailure _ as x -> x) (Success evd)
+       | Success evd ->
+           (match conv_algo env evd pbty t1 t2 with
+           | Success _ as x -> x
+           | UnifFailure (i,e) -> UnifFailure (i,CannotSolveConstraint (x,e)))
+       | UnifFailure _ as x -> x)
+    (Success evd)
     pbs
 
 (* Tries to solve problem t1 = t2.

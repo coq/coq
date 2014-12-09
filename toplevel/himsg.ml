@@ -56,7 +56,7 @@ let contract1_vect env a v =
   | env, a::l -> env,a,Array.of_list l
   | _ -> assert false
 
-let contract3' env a b c = function
+let rec contract3' env a b c = function
   | OccurCheck (evk,d) -> let x,d = contract4 env a b c d in x,OccurCheck(evk,d)
   | NotClean ((evk,args),env',d) ->
       let env',d,args = contract1_vect env' d args in
@@ -67,6 +67,10 @@ let contract3' env a b c = function
   | NotSameArgSize | NotSameHead | NoCanonicalStructure
   | MetaOccurInBody _ | InstanceNotSameType _
   | UnifUnivInconsistency _ as x -> contract3 env a b c, x
+  | CannotSolveConstraint ((pb,env,t,u),x) ->
+      let env,t,u = contract2 env t u in
+      let y,x = contract3' env a b c x in
+      y,CannotSolveConstraint ((pb,env,t,u),x)
 
 (** Printers *)
 
@@ -259,49 +263,58 @@ let explain_generalization env sigma (name,var) j =
 let explain_unification_error env sigma p1 p2 = function
   | None -> mt()
   | Some e ->
-    match e with
-    | OccurCheck (evk,rhs) ->
+     let rec aux = function
+     | OccurCheck (evk,rhs) ->
         let rhs = Evarutil.nf_evar sigma rhs in
-        spc () ++ str "(cannot define " ++ quote (pr_existential_key sigma evk) ++
+        [str "cannot define " ++ quote (pr_existential_key sigma evk) ++
 	strbrk " with term " ++ pr_lconstr_env env sigma rhs ++
-        strbrk " that would depend on itself)"
-    | NotClean ((evk,args),env,c) ->
+        strbrk " that would depend on itself"]
+     | NotClean ((evk,args),env,c) ->
         let c = Evarutil.nf_evar sigma c in
         let args = Array.map (Evarutil.nf_evar sigma) args in
-        spc () ++ str "(cannot instantiate " ++ quote (pr_existential_key sigma evk)
+        [str "cannot instantiate " ++ quote (pr_existential_key sigma evk)
         ++ strbrk " because " ++ pr_lconstr_env env sigma c ++
 	strbrk " is not in its scope" ++
         (if Array.is_empty args then mt() else
          strbrk ": available arguments are " ++
-         pr_sequence (pr_lconstr_env env sigma) (List.rev (Array.to_list args))) ++
-        str ")"
-    | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
-        (* Error speaks from itself *) mt ()
-    | ConversionFailed (env,t1,t2) ->
-        if Term.eq_constr t1 p1 && Term.eq_constr t2 p2 then mt () else
+         pr_sequence (pr_lconstr_env env sigma) (List.rev (Array.to_list args)))]
+     | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
+        (* Error speaks from itself *) []
+     | ConversionFailed (env,t1,t2) ->
+        if Term.eq_constr t1 p1 && Term.eq_constr t2 p2 then [] else
         let env = make_all_name_different env in
         let t1 = Evarutil.nf_evar sigma t1 in
         let t2 = Evarutil.nf_evar sigma t2 in
         if not (Term.eq_constr t1 p1) || not (Term.eq_constr t2 p2) then
           let t1, t2 = pr_explicit env sigma t1 t2 in
-          spc () ++ str "(cannot unify " ++ t1 ++ strbrk " and " ++
-            t2 ++ str ")"
-        else mt ()
-    | MetaOccurInBody evk ->
-        spc () ++ str "(instance for " ++ quote (pr_existential_key sigma evk) ++
-	strbrk " refers to a metavariable - please report your example)"
-    | InstanceNotSameType (evk,env,t,u) ->
+          [str "cannot unify " ++ t1 ++ strbrk " and " ++ t2]
+        else []
+     | MetaOccurInBody evk ->
+        [str "instance for " ++ quote (pr_existential_key sigma evk) ++
+	strbrk " refers to a metavariable - please report your example"]
+     | InstanceNotSameType (evk,env,t,u) ->
         let t, u = pr_explicit env sigma t u in
-        spc () ++ str "(unable to find a well-typed instantiation for " ++
+        [str "unable to find a well-typed instantiation for " ++
         quote (pr_existential_key sigma evk) ++
         strbrk ": cannot ensure that " ++
-        t ++ strbrk " is a subtype of " ++ u ++ str ")"
-    | UnifUnivInconsistency p ->
+        t ++ strbrk " is a subtype of " ++ u]
+     | UnifUnivInconsistency p ->
         if !Constrextern.print_universes then
-	  spc () ++ str "(Universe inconsistency: " ++ 
-	    Univ.explain_universe_inconsistency p ++ str")"
+	  [str "universe inconsistency: " ++
+          Univ.explain_universe_inconsistency p]
 	else
-          spc () ++ str "(Universe inconsistency)"
+          [str "universe inconsistency"]
+     | CannotSolveConstraint ((pb,env,t,u),e) ->
+        let t = Evarutil.nf_evar sigma t in
+        let u = Evarutil.nf_evar sigma u in
+        (strbrk "cannot satisfy constraint " ++ pr_lconstr_env env sigma t ++
+        str " == " ++ pr_lconstr_env env sigma u)
+        :: aux e
+     in
+     match aux e with
+     | [] -> mt ()
+     | l -> spc () ++ str "(" ++
+            prlist_with_sep pr_semicolon (fun x -> x) l ++ str ")"
 
 let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env in
@@ -499,7 +512,7 @@ let pr_trailing_ne_context_of env sigma =
   if List.is_empty (Environ.rel_context env) &&
     List.is_empty (Environ.named_context env)
   then str "."
-  else (str " in environment:"++ fnl () ++ pr_context_unlimited env sigma)
+  else (str " in environment:"++ pr_context_unlimited env sigma)
 
 let rec explain_evar_kind env sigma evk ty = function
   | Evar_kinds.QuestionMark _ ->
