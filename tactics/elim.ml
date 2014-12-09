@@ -77,10 +77,10 @@ and general_decompose_aux recognizer id =
                (ids_of_named_context bas.Tacticals.assums))))
     id
 
-(* Faudrait ajouter un COMPLETE pour que l'hypothèse créée ne reste
-   pas si aucune élimination n'est possible *)
+(* We should add a COMPLETE to be sure that the created hypothesis
+   doesn't stay if no elimination is possible *)
 
-(* Meilleures stratégies mais perte de compatibilité *)
+(* Best strategies but loss of compatibility *)
 let tmphyp_name = Id.of_string "_TmpHyp"
 let up_to_delta = ref false (* true *)
 

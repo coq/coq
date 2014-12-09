@@ -232,7 +232,7 @@ let rec norm_head info env t stack =
 	let env' = subs_cons ([|cbv_stack_term info TOP env b|],env) in
         norm_head info env' c stack
       else
-	(CBN(t,env), stack) (* Considérer une coupure commutative ? *)
+	(CBN(t,env), stack) (* Should we consider a commutative cut ? *)
 
   | Evar ev ->
       (match evar_value info.i_cache ev with

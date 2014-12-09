@@ -817,7 +817,7 @@ GEXTEND Gram
       | IDENT "Add"; IDENT "Rec"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
 	  VernacAddMLPath (true, dir)
 
-      (* Pour intervenir sur les tables de paramètres *)
+      (* For acting on parameter tables *)
       | "Set"; table = option_table; v = option_value ->
   	  VernacSetOption (table,v)
       | "Set"; table = option_table ->
@@ -830,10 +830,10 @@ GEXTEND Gram
 
       | IDENT "Add"; table = IDENT; field = IDENT; v = LIST1 option_ref_value
         -> VernacAddOption ([table;field], v)
-      (* Un value global ci-dessous va être caché par un field au dessus! *)
-      (* En fait, on donne priorité aux tables secondaires *)
-      (* Pas de syntaxe pour les tables tertiaires pour cause de conflit *)
-      (* (mais de toutes façons, pas utilisées) *)
+      (* A global value below will be hidden by a field above! *)
+      (* In fact, we give priority to secondary tables *)
+      (* No syntax for tertiary tables due to conflict *)
+      (* (but they are unused anyway) *)
       | IDENT "Add"; table = IDENT; v = LIST1 option_ref_value ->
           VernacAddOption ([table], v)
 

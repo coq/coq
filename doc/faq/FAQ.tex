@@ -14,7 +14,7 @@
 %\usepackage{multicol}
 \usepackage{hevea}
 \usepackage{fullpage}
-\usepackage[latin1]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 
 \ifpdf   % si on est en pdflatex
@@ -138,7 +138,7 @@
   \large(\protect\ref{lastquestion}
   \ Hints)
 }
-\author{Pierre Castéran \and Hugo Herbelin \and Florent Kirchner \and Benjamin Monate \and Julien Narboux}
+\author{Pierre CastÃ©ran \and Hugo Herbelin \and Florent Kirchner \and Benjamin Monate \and Julien Narboux}
 \maketitle
 
 %%%%%%%
@@ -254,7 +254,7 @@ notes~\cite{Types:Dowek}.
 \item[Inductive types]
 Christine Paulin-Mohring's habilitation thesis~\cite{Pau96b}.
 \item[Co-Inductive types]
-Eduardo Giménez' thesis~\cite{EGThese}.
+Eduardo GimÃ©nez' thesis~\cite{EGThese}.
 \item[Miscellaneous] A
 \ahref{http://coq.inria.fr/doc/biblio.html}{bibliography} about Coq
 \end{description}
@@ -397,7 +397,7 @@ New versions of {\Coq} are announced on the coq-club mailing list. If you only w
 
 \Question{Is there any book about {\Coq}?}
 
-The first book on \Coq, Yves Bertot and Pierre Castéran's Coq'Art has been published by Springer-Verlag in 2004:
+The first book on \Coq, Yves Bertot and Pierre CastÃ©ran's Coq'Art has been published by Springer-Verlag in 2004:
 \begin{quote}
 ``This book provides a pragmatic introduction to the development of
 proofs and certified programs using \Coq. With its large collection of
@@ -1124,7 +1124,7 @@ Qed.
 Just use the semi-decision tactic: \firstorder.
 
 \iffalse
-todo: demander un exemple à Pierre
+todo: demander un exemple Ã  Pierre
 \fi
 
 \Question{My goal is solvable by a sequence of rewrites, how can I prove it?}
@@ -1200,7 +1200,7 @@ Qed.
 
 \Question{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it?}
 
-You need the {\gb} tactic (see Loïc Pottier's homepage).
+You need the {\gb} tactic (see LoÃ¯c Pottier's homepage).
 
 \subsection{Tactics usage}
 
@@ -1265,7 +1265,7 @@ You can split your hint bases into smaller ones.
 
 \Question{What is the equivalent of {\tauto} for classical logic?}
 
-Currently there are no equivalent tactic for classical logic. You can use Gödel's ``not not'' translation.
+Currently there are no equivalent tactic for classical logic. You can use GÃ¶del's ``not not'' translation.
 
 
 \Question{I want to replace some term with another in the goal, how can I do it?}
@@ -1914,7 +1914,7 @@ Notation "x ^2" := (Rmult x x) (at level 20).
 \end{verbatim}
 Note that you can not use:
 \begin{tt}
-Notation "x $^²$" := (Rmult x x) (at level 20).
+Notation "x $^2$" := (Rmult x x) (at level 20).
 \end{tt}
 because ``$^2$'' is an iso-latin character. If you really want this kind of notation you should use UTF-8.
 

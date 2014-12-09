@@ -110,18 +110,18 @@ syntax colouring behaviour.")
 ;;A new face for tactics
 (defface coq-solve-tactics-face
   (proof-face-specs
-   (:foreground "forestgreen" t) ; pour les fonds clairs
-   (:foreground "forestgreen"  t) ; pour les fond foncés
-   ()) ; pour le noir et blanc
+   (:foreground "forestgreen" t) ; for bright backgrounds
+   (:foreground "forestgreen"  t) ; for dark backgrounds
+   ()) ; for black and white
   "Face for names of closing tactics in proof scripts."
   :group 'proof-faces)
 
 ;;A new face for tactics which fail when they don't kill the current goal
 (defface coq-solve-tactics-face
   (proof-face-specs
-   (:foreground "red" t) ; pour les fonds clairs
-   (:foreground "red"  t) ; pour les fond foncés
-   ()) ; pour le noir et blanc
+   (:foreground "red" t) ; for bright backgrounds
+   (:foreground "red"  t) ; for dark backgrounds
+   ()) ; for black and white
   "Face for names of closing tactics in proof scripts."
   :group 'proof-faces)
 

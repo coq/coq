@@ -615,14 +615,14 @@ Changements d'organisation / modules :
   Std, More_util		-> lib/util.ml
 
   Names				-> kernel/names.ml et kernel/sign.ml
-    (les parties noms et signatures ont été séparées)
+    (les parties noms et signatures ont Ã©tÃ© sÃ©parÃ©es)
 
-  Avm,Mavm,Fmavm,Mhm  ->  utiliser plutôt Map (et freeze alors gratuit)
+  Avm,Mavm,Fmavm,Mhm  ->  utiliser plutÃ´t Map (et freeze alors gratuit)
   Mhb                 ->  Bij
 
-  Generic est intégré à Term (et un petit peu à Closure)
+  Generic est intÃ©grÃ© Ã  Term (et un petit peu Ã  Closure)
 
-Changements dans les types de données :
+Changements dans les types de donnÃ©es :
 ---------------------------------------
   dans Generic: free_rels : constr -> int Listset.t
                   devient : constr -> Intset.t
@@ -642,7 +642,7 @@ ATTENTION:
   
 		try . .. with UserError _ -> ...
 
-  mais écrire à la place
+  mais Ã©crire Ã  la place
  
                 try ... with e when Logic.catchable_exception e -> ...
 
@@ -774,7 +774,7 @@ Changements dans les inductifs
 Nouveaux types "constructor" et "inductive" dans Term
 La plupart des fonctions de typage des inductives prennent maintenant
 un inductive au lieu d'un oonstr comme argument. Les seules fonctions
-à traduire un constr en inductive sont les find_rectype and co.
+Ã  traduire un constr en inductive sont les find_rectype and co.
 
 Changements dans les grammaires
 -------------------------------
@@ -782,9 +782,9 @@ Changements dans les grammaires
  . le lexer (parsing/lexer.mll) est maintenant un lexer ocamllex
 
  . attention : LIDENT -> IDENT  (les identificateurs n'ont pas de
-                                 casse particulière dans Coq)
+                                 casse particuliÃ¨re dans Coq)
 
- . Le mot "command" est remplacé par "constr" dans les noms de
+ . Le mot "command" est remplacÃ© par "constr" dans les noms de
  fichiers, noms de modules et non-terminaux relatifs au parsing des
  termes; aussi les changements suivants "COMMAND"/"CONSTR" dans
  g_vernac.ml4, VARG_COMMAND/VARG_CONSTR dans vernac*.ml*
@@ -792,22 +792,22 @@ Changements dans les grammaires
  . Les constructeurs d'arguments de tactiques IDENTIFIER, CONSTR, ...n
    passent en minuscule Identifier, Constr, ...
  
- . Plusieurs parsers ont changé de format (ex: sortarg)
+ . Plusieurs parsers ont changÃ© de format (ex: sortarg)
 
 Changements dans le pretty-printing
 -----------------------------------
 
- . Découplage de la traduction de constr -> rawconstr (dans detyping)
+ . DÃ©couplage de la traduction de constr -> rawconstr (dans detyping)
     et de rawconstr -> ast (dans termast)
- . Déplacement des options d'affichage de printer vers termast
- . Déplacement des réaiguillage d'univers du pp de printer vers esyntax
+ . DÃ©placement des options d'affichage de printer vers termast
+ . DÃ©placement des rÃ©aiguillage d'univers du pp de printer vers esyntax
 
 	
 Changements divers
 ------------------
 
  . il n'y a plus de script coqtop => coqtop et coqtop.byte sont
-   directement le résultat du link du code
+   directement le rÃ©sultat du link du code
    => debuggage et profiling directs
 
  . il n'y a plus d'installation locale dans bin/$ARCH

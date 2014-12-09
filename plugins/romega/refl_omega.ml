@@ -1,7 +1,7 @@
 (*************************************************************************
 
    PROJET RNRT Calife - 2001
-   Author: Pierre Crégut - France Télécom R&D
+   Author: Pierre CrÃ©gut - France TÃ©lÃ©com R&D
    Licence : LGPL version 2.1
 
  *************************************************************************)
@@ -42,8 +42,8 @@ let occ_step_eq s1 s2 = match s1, s2 with
 | O_left, O_left | O_right, O_right | O_mono, O_mono -> true
 | _ -> false
 
-(* chemin identifiant une proposition sous forme du nom de l'hypothèse et
-   d'une liste de pas à partir de la racine de l'hypothèse *)
+(* chemin identifiant une proposition sous forme du nom de l'hypothÃ¨se et
+   d'une liste de pas Ã  partir de la racine de l'hypothÃ¨se *)
 type occurence = {o_hyp : Names.Id.t; o_path : occ_path}
 
 (* \subsection{refiable formulas} *)
@@ -63,7 +63,7 @@ type oformula =
 (* Operators for comparison recognized by Omega *)
 type comparaison = Eq | Leq | Geq | Gt | Lt | Neq
 
-(* Type des prédicats réifiés (fragment de calcul propositionnel. Les
+(* Type des prÃ©dicats rÃ©ifiÃ©s (fragment de calcul propositionnel. Les
  * quantifications sont externes au langage) *)
 type oproposition =
     Pequa of Term.constr * oequation
@@ -75,19 +75,19 @@ type oproposition =
   | Pimp of int * oproposition * oproposition
   | Pprop of Term.constr
 
-(* Les équations ou proposiitions atomiques utiles du calcul *)
+(* Les Ã©quations ou proposiitions atomiques utiles du calcul *)
 and oequation = {
     e_comp: comparaison;		(* comparaison *)
     e_left: oformula;			(* formule brute gauche *)
     e_right: oformula;			(* formule brute droite *)
     e_trace: Term.constr;		(* tactique de normalisation *)
-    e_origin: occurence;		(* l'hypothèse dont vient le terme *)
-    e_negated: bool;			(* vrai si apparait en position nié
-					   après normalisation *)
+    e_origin: occurence;		(* l'hypothÃ¨se dont vient le terme *)
+    e_negated: bool;			(* vrai si apparait en position niÃ©
+					   aprÃ¨s normalisation *)
     e_depends: direction  list;		(* liste des points de disjonction dont
-					   dépend l'accès à l'équation avec la
-					   direction (branche) pour y accéder *)
-    e_omega: afine		(* la fonction normalisée *)
+					   dÃ©pend l'accÃ¨s Ã  l'Ã©quation avec la
+					   direction (branche) pour y accÃ©der *)
+    e_omega: afine		(* la fonction normalisÃ©e *)
   }
 
 (* \subsection{Proof context}
@@ -106,8 +106,8 @@ type environment = {
   mutable props : Term.constr list;
   (* Les variables introduites par omega *)
   mutable om_vars : (oformula * int) list;
-  (* Traduction des indices utilisés ici en les indices finaux utilisés par
-   * la tactique Omega après dénombrement des variables utiles *)
+  (* Traduction des indices utilisÃ©s ici en les indices finaux utilisÃ©s par
+   * la tactique Omega aprÃ¨s dÃ©nombrement des variables utiles *)
   real_indices : (int,int) Hashtbl.t;
   mutable cnt_connectors : int;
   equations : (int,oequation) Hashtbl.t;
@@ -115,35 +115,35 @@ type environment = {
 }
 
 (* \subsection{Solution tree}
-   Définition d'une solution trouvée par Omega sous la forme d'un identifiant,
-   d'un ensemble d'équation dont dépend la solution et d'une trace *)
-(* La liste des dépendances est triée et sans redondance *)
+   DÃ©finition d'une solution trouvÃ©e par Omega sous la forme d'un identifiant,
+   d'un ensemble d'Ã©quation dont dÃ©pend la solution et d'une trace *)
+(* La liste des dÃ©pendances est triÃ©e et sans redondance *)
 type solution = {
   s_index : int;
   s_equa_deps : int list;
   s_trace : action list }
 
-(* Arbre de solution résolvant complètement un ensemble de systèmes *)
+(* Arbre de solution rÃ©solvant complÃ¨tement un ensemble de systÃ¨mes *)
 type solution_tree =
     Leaf of solution
-    (* un noeud interne représente un point de branchement correspondant à
-       l'élimination d'un connecteur générant plusieurs buts
+    (* un noeud interne reprÃ©sente un point de branchement correspondant Ã 
+       l'Ã©limination d'un connecteur gÃ©nÃ©rant plusieurs buts
        (typ. disjonction). Le premier argument
        est l'identifiant du connecteur *)
   | Tree of int * solution_tree * solution_tree
 
-(* Représentation de l'environnement extrait du but initial sous forme de
-   chemins pour extraire des equations ou d'hypothèses *)
+(* ReprÃ©sentation de l'environnement extrait du but initial sous forme de
+   chemins pour extraire des equations ou d'hypothÃ¨ses *)
 
 type context_content =
     CCHyp of occurence
   | CCEqua of int
 
 (* \section{Specific utility functions to handle base types} *)
-(* Nom arbitraire de l'hypothèse codant la négation du but final *)
+(* Nom arbitraire de l'hypothÃ¨se codant la nÃ©gation du but final *)
 let id_concl = Names.Id.of_string "__goal__"
 
-(* Initialisation de l'environnement de réification de la tactique *)
+(* Initialisation de l'environnement de rÃ©ification de la tactique *)
 let new_environment () = {
   terms = []; props = []; om_vars = []; cnt_connectors = 0;
   real_indices = Hashtbl.create 7;
@@ -151,17 +151,17 @@ let new_environment () = {
   constructors = Hashtbl.create 7;
 }
 
-(* Génération d'un nom d'équation *)
+(* GÃ©nÃ©ration d'un nom d'Ã©quation *)
 let new_connector_id env =
    env.cnt_connectors <- succ env.cnt_connectors; env.cnt_connectors
 
-(* Calcul de la branche complémentaire *)
+(* Calcul de la branche complÃ©mentaire *)
 let barre = function Left x -> Right x | Right x -> Left x
 
-(* Identifiant associé à une branche *)
+(* Identifiant associÃ© Ã  une branche *)
 let indice = function Left x | Right x -> x
 
-(* Affichage de l'environnement de réification (termes et propositions) *)
+(* Affichage de l'environnement de rÃ©ification (termes et propositions) *)
 let print_env_reification env =
   let rec loop c i = function
       [] ->  str "  ===============================\n\n"
@@ -189,12 +189,12 @@ let new_omega_var, rst_omega_var =
   (function () -> incr cpt; !cpt),
   (function () -> cpt:=0)
 
-(* Affichage des variables d'un système *)
+(* Affichage des variables d'un systÃ¨me *)
 
 let display_omega_var i = Printf.sprintf "OV%d" i
 
-(* Recherche la variable codant un terme pour Omega et crée la variable dans
-   l'environnement si il n'existe pas. Cas ou la variable dans Omega représente
+(* Recherche la variable codant un terme pour Omega et crÃ©e la variable dans
+   l'environnement si il n'existe pas. Cas ou la variable dans Omega reprÃ©sente
    le terme d'un monome (le plus souvent un atome) *)
 
 let intern_omega env t =
@@ -204,22 +204,22 @@ let intern_omega env t =
     env.om_vars <- (t,v) :: env.om_vars; v
   end
 
-(* Ajout forcé d'un lien entre un terme et une variable  Cas où la
-   variable est créée par Omega et où il faut la lier après coup à un atome
-   réifié introduit de force *)
+(* Ajout forcÃ© d'un lien entre un terme et une variable  Cas oÃ¹ la
+   variable est crÃ©Ã©e par Omega et oÃ¹ il faut la lier aprÃ¨s coup Ã  un atome
+   rÃ©ifiÃ© introduit de force *)
 let intern_omega_force env t v = env.om_vars <- (t,v) :: env.om_vars
 
-(* Récupère le terme associé à une variable *)
+(* RÃ©cupÃ¨re le terme associÃ© Ã  une variable *)
 let unintern_omega env id =
   let rec loop = function
 	[] -> failwith "unintern"
       | ((t,j)::l) -> if Int.equal id j then t else loop l in
   loop env.om_vars
 
-(* \subsection{Gestion des environnements de variable pour la réflexion}
+(* \subsection{Gestion des environnements de variable pour la rÃ©flexion}
    Gestion des environnements de traduction entre termes des constructions
-   non réifiés et variables des termes reifies. Attention il s'agit de
-   l'environnement initial contenant tout. Il faudra le réduire après
+   non rÃ©ifiÃ©s et variables des termes reifies. Attention il s'agit de
+   l'environnement initial contenant tout. Il faudra le rÃ©duire aprÃ¨s
    calcul des variables utiles. *)
 
 let add_reified_atom t env =
@@ -238,24 +238,24 @@ let add_prop env t =
   with Not_found ->
     let i = List.length env.props in  env.props <- env.props @ [t]; i
 
-(* accès a une proposition *)
+(* accÃ¨s a une proposition *)
 let get_prop v env =
   try List.nth v env with Invalid_argument _ -> failwith "get_prop"
 
-(* \subsection{Gestion du nommage des équations} *)
+(* \subsection{Gestion du nommage des Ã©quations} *)
 (* Ajout d'une equation dans l'environnement de reification *)
 let add_equation env e =
   let id = e.e_omega.id in
   try let _ = Hashtbl.find env.equations id in ()
   with Not_found -> Hashtbl.add env.equations id e
 
-(* accès a une equation *)
+(* accÃ¨s a une equation *)
 let get_equation env id =
   try Hashtbl.find env.equations id
   with Not_found as e ->
-    Printf.printf "Omega Equation %d non trouvée\n" id; raise e
+    Printf.printf "Omega Equation %d non trouvÃ©e\n" id; raise e
 
-(* Affichage des termes réifiés *)
+(* Affichage des termes rÃ©ifiÃ©s *)
 let rec oprint ch = function
   | Oint n -> Printf.fprintf ch "%s" (Bigint.to_string n)
   | Oplus (t1,t2) -> Printf.fprintf ch "(%a + %a)" oprint t1 oprint t2
@@ -289,7 +289,7 @@ let rec weight env = function
   | Oufo _ -> -1
   | Oatom _ as c -> (intern_omega env c)
 
-(* \section{Passage entre oformules et représentation interne de Omega} *)
+(* \section{Passage entre oformules et reprÃ©sentation interne de Omega} *)
 
 (* \subsection{Oformula vers Omega} *)
 
@@ -332,12 +332,12 @@ let coq_of_formula env t =
   | Ominus(t1,t2) -> app Z.minus [| loop t1; loop t2 |] in
   loop t
 
-(* \subsection{Oformula vers COQ reifié} *)
+(* \subsection{Oformula vers COQ reifiÃ©} *)
 
 let reified_of_atom env i =
   try Hashtbl.find env.real_indices i
   with Not_found ->
-    Printf.printf "Atome %d non trouvé\n" i;
+    Printf.printf "Atome %d non trouvÃ©\n" i;
     Hashtbl.iter (fun k v -> Printf.printf "%d -> %d\n" k v) env.real_indices;
     raise Not_found
 
@@ -390,7 +390,7 @@ let reified_of_proposition env f =
   try reified_of_proposition env f
   with reraise -> pprint stderr f; raise reraise
 
-(* \subsection{Omega vers COQ réifié} *)
+(* \subsection{Omega vers COQ rÃ©ifiÃ©} *)
 
 let reified_of_omega env body constant =
   let coeff_constant =
@@ -407,13 +407,13 @@ let reified_of_omega env body c  =
   try reified_of_omega env body c
   with reraise -> display_eq display_omega_var (body,c); raise reraise
 
-(* \section{Opérations sur les équations}
-Ces fonctions préparent les traces utilisées par la tactique réfléchie
-pour faire des opérations de normalisation sur les équations.  *)
+(* \section{OpÃ©rations sur les Ã©quations}
+Ces fonctions prÃ©parent les traces utilisÃ©es par la tactique rÃ©flÃ©chie
+pour faire des opÃ©rations de normalisation sur les Ã©quations.  *)
 
-(* \subsection{Extractions des variables d'une équation} *)
-(* Extraction des variables d'une équation. *)
-(* Chaque fonction retourne une liste triée sans redondance *)
+(* \subsection{Extractions des variables d'une Ã©quation} *)
+(* Extraction des variables d'une Ã©quation. *)
+(* Chaque fonction retourne une liste triÃ©e sans redondance *)
 
 let (@@) = List.merge_uniq compare
 
@@ -482,7 +482,7 @@ let rec negate = function
 
 let norm l = (List.length l)
 
-(* \subsection{Mélange (fusion) de deux équations} *)
+(* \subsection{MÃ©lange (fusion) de deux Ã©quations} *)
 (* \subsubsection{Version avec coefficients} *)
 let shuffle_path k1 e1 k2 e2 =
   let rec loop = function
@@ -531,7 +531,7 @@ let rec shuffle env (t1,t2) =
 	do_list [Lazy.force coq_c_plus_comm], Oplus(t2,t1)
       else do_list [],Oplus(t1,t2)
 
-(* \subsection{Fusion avec réduction} *)
+(* \subsection{Fusion avec rÃ©duction} *)
 
 let shrink_pair f1 f2 =
   begin match f1,f2 with
@@ -563,7 +563,7 @@ let reduce_factor = function
 	[Lazy.force coq_c_reduce], Omult(Oatom v,Oint(compute c))
   | t -> Errors.error "reduce_factor.1"
 
-(* \subsection{Réordonnancement} *)
+(* \subsection{RÃ©ordonnancement} *)
 
 let rec condense env = function
     Oplus(f1,(Oplus(f2,r) as t)) ->
@@ -596,7 +596,7 @@ let rec condense env = function
       let final = Oplus(t',Oint zero) in
       tac @ [Lazy.force coq_c_red6], final
 
-(* \subsection{Elimination des zéros} *)
+(* \subsection{Elimination des zÃ©ros} *)
 
 let rec clear_zero = function
    Oplus(Omult(Oatom v,Oint n),r) when Bigint.equal n zero ->
@@ -607,7 +607,7 @@ let rec clear_zero = function
       (if List.is_empty tac then [] else [do_right (do_list tac)]),Oplus(f,t)
   | t -> [],t;;
 
-(* \subsection{Transformation des hypothèses} *)
+(* \subsection{Transformation des hypothÃ¨ses} *)
 
 let rec reduce env = function
     Oplus(t1,t2) ->
@@ -642,7 +642,7 @@ let normalize_linear_term env t =
   let trace3,t3 = clear_zero t2 in
   do_list [trace1; do_list trace2; do_list trace3], t3
 
-(* Cette fonction reproduit très exactement le comportement de [p_invert] *)
+(* Cette fonction reproduit trÃ¨s exactement le comportement de [p_invert] *)
 let negate_oper = function
     Eq -> Neq | Neq -> Eq | Leq -> Gt | Geq -> Lt | Lt -> Geq | Gt -> Leq
 
@@ -668,7 +668,7 @@ let normalize_equation env (negated,depends,origin,path) (oper,t1,t2) =
 	  INEQ
   with e when Logic.catchable_exception e -> raise e
 
-(* \section{Compilation des hypothèses} *)
+(* \section{Compilation des hypothÃ¨ses} *)
 
 let rec oformula_of_constr env t =
   match Z.parse_term t with
@@ -697,7 +697,7 @@ and binprop env (neg2,depends,origin,path)
     oproposition_of_constr env (neg1,depends1,origin,O_left::path) gl t1 in
   let t2' =
     oproposition_of_constr env (neg2,depends2,origin,O_right::path) gl t2 in
-  (* On numérote le connecteur dans l'environnement. *)
+  (* On numÃ©rote le connecteur dans l'environnement. *)
   c i t1' t2'
 
 and mk_equation env ctxt c connector t1 t2 =
@@ -736,7 +736,7 @@ and oproposition_of_constr env ((negated,depends,origin,path) as ctxt) gl c =
 	  (fun i x y -> Pand(i,x,y)) (Term.mkArrow t1 t2) (Term.mkArrow t2 t1)
     | _ -> Pprop c
 
-(* Destructuration des hypothèses et de la conclusion *)
+(* Destructuration des hypothÃ¨ses et de la conclusion *)
 
 let reify_gl env gl =
   let concl = Tacmach.pf_concl gl in
@@ -819,9 +819,9 @@ let destructurate_hyps syst =
     | [] -> [[]] in
   loop syst
 
-(* \subsection{Affichage d'un système d'équation} *)
+(* \subsection{Affichage d'un systÃ¨me d'Ã©quation} *)
 
-(* Affichage des dépendances de système *)
+(* Affichage des dÃ©pendances de systÃ¨me *)
 let display_depend = function
     Left i -> Printf.printf " L%d" i
   | Right i -> Printf.printf " R%d" i
@@ -852,8 +852,8 @@ let display_systems syst_list =
     List.iter display_equation syst in
   List.iter display_system syst_list
 
-(* Extraction des prédicats utilisées dans une trace. Permet ensuite le
-   calcul des hypothèses *)
+(* Extraction des prÃ©dicats utilisÃ©es dans une trace. Permet ensuite le
+   calcul des hypothÃ¨ses *)
 
 let rec hyps_used_in_trace = function
   | act :: l ->
@@ -865,9 +865,9 @@ let rec hyps_used_in_trace = function
       end
   | [] -> []
 
-(* Extraction des variables déclarées dans une équation. Permet ensuite
-   de les déclarer dans l'environnement de la procédure réflexive et
-   éviter les créations de variable au vol *)
+(* Extraction des variables dÃ©clarÃ©es dans une Ã©quation. Permet ensuite
+   de les dÃ©clarer dans l'environnement de la procÃ©dure rÃ©flexive et
+   Ã©viter les crÃ©ations de variable au vol *)
 
 let rec variable_stated_in_trace = function
   | act :: l ->
@@ -885,7 +885,7 @@ let rec variable_stated_in_trace = function
 
 let add_stated_equations env tree =
   (* Il faut trier les variables par ordre d'introduction pour ne pas risquer
-     de définir dans le mauvais ordre *)
+     de dÃ©finir dans le mauvais ordre *)
   let stated_equations =
     let cmpvar x y = Pervasives.(-) x.st_var y.st_var in
     let rec loop = function
@@ -894,15 +894,15 @@ let add_stated_equations env tree =
     in loop tree
   in
   let add_env st =
-    (* On retransforme la définition de v en formule reifiée *)
+    (* On retransforme la dÃ©finition de v en formule reifiÃ©e *)
     let v_def = oformula_of_omega env st.st_def in
-    (* Notez que si l'ordre de création des variables n'est pas respecté,
+    (* Notez que si l'ordre de crÃ©ation des variables n'est pas respectÃ©,
      * ca va planter *)
     let coq_v = coq_of_formula env v_def in
     let v = add_reified_atom coq_v env in
     (* Le terme qu'il va falloir introduire *)
     let term_to_generalize = app coq_refl_equal [|Lazy.force Z.typ; coq_v|] in
-    (* sa représentation sous forme d'équation mais non réifié car on n'a pas
+    (* sa reprÃ©sentation sous forme d'Ã©quation mais non rÃ©ifiÃ© car on n'a pas
      * l'environnement pour le faire correctement *)
     let term_to_reify = (v_def,Oatom v) in
     (* enregistre le lien entre la variable omega et la variable Coq *)
@@ -910,8 +910,8 @@ let add_stated_equations env tree =
     (v, term_to_generalize,term_to_reify,st.st_def.id) in
  List.map add_env stated_equations
 
-(* Calcule la liste des éclatements à réaliser sur les hypothèses
-   nécessaires pour extraire une liste d'équations donnée *)
+(* Calcule la liste des Ã©clatements Ã  rÃ©aliser sur les hypothÃ¨ses
+   nÃ©cessaires pour extraire une liste d'Ã©quations donnÃ©e *)
 
 (* PL: experimentally, the result order of the following function seems
    _very_ crucial for efficiency. No idea why. Do not remove the List.rev
@@ -958,7 +958,7 @@ let really_useful_prop l_equa c =
     | Pnot t1 -> app coq_not [|real_of t1|]
     | Por(_,t1,t2) -> app coq_or [|real_of t1; real_of t2|]
     | Pand(_,t1,t2) -> app coq_and [|real_of t1; real_of t2|]
-    (* Attention : implications sur le lifting des variables à comprendre ! *)
+    (* Attention : implications sur le lifting des variables Ã  comprendre ! *)
     | Pimp(_,t1,t2) -> Term.mkArrow (real_of t1) (real_of t2)
     | Pprop t -> t in
   let rec loop c =
@@ -1166,11 +1166,11 @@ and decompose_tree_hyps trace env ctxt = function
 
 (* \section{La fonction principale} *)
  (* Cette fonction construit la
-trace pour la procédure de décision réflexive.  A partir des résultats
-de l'extraction des systèmes, elle lance la résolution par Omega, puis
+trace pour la procÃ©dure de dÃ©cision rÃ©flexive.  A partir des rÃ©sultats
+de l'extraction des systÃ¨mes, elle lance la rÃ©solution par Omega, puis
 l'extraction d'un ensemble minimal de solutions permettant la
-résolution globale du système et enfin construit la trace qui permet
-de faire rejouer cette solution par la tactique réflexive. *)
+rÃ©solution globale du systÃ¨me et enfin construit la trace qui permet
+de faire rejouer cette solution par la tactique rÃ©flexive. *)
 
 let resolution env full_reified_goal systems_list =
   let num = ref 0 in
@@ -1181,7 +1181,7 @@ let resolution env full_reified_goal systems_list =
       simplify_strong
 	(new_omega_eq,new_omega_var,display_omega_var)
 	system in
-    (* calcule les hypotheses utilisées pour la solution *)
+    (* calcule les hypotheses utilisÃ©es pour la solution *)
     let vars = hyps_used_in_trace trace in
     let splits = get_eclatement env vars in
     if !debug then begin
@@ -1202,7 +1202,7 @@ let resolution env full_reified_goal systems_list =
     display_solution_tree stdout solution_tree;
     print_newline()
   end;
-  (* calcule la liste de toutes les hypothèses utilisées dans l'arbre de solution *)
+  (* calcule la liste de toutes les hypothÃ¨ses utilisÃ©es dans l'arbre de solution *)
   let useful_equa_id = equas_of_solution_tree solution_tree in
   (* recupere explicitement ces equations *)
   let equations = List.map (get_equation env) useful_equa_id in
@@ -1225,8 +1225,8 @@ let resolution env full_reified_goal systems_list =
   let l_generalize_arg = List.map (fun (_,t,_,_) -> t) to_introduce in
   let hyp_stated_vars = List.map (fun (_,_,_,id) -> CCEqua id) to_introduce in
   (* L'environnement de base se construit en deux morceaux :
-     - les variables des équations utiles (et de la conclusion)
-     - les nouvelles variables declarées durant les preuves *)
+     - les variables des Ã©quations utiles (et de la conclusion)
+     - les nouvelles variables declarÃ©es durant les preuves *)
   let all_vars_env = useful_vars @ stated_vars in
   let basic_env =
     let rec loop i = function
@@ -1236,7 +1236,7 @@ let resolution env full_reified_goal systems_list =
       |	[] -> [] in
     loop 0 all_vars_env in
   let env_terms_reified = mk_list (Lazy.force Z.typ) basic_env in
-  (* On peut maintenant généraliser le but : env est a jour *)
+  (* On peut maintenant gÃ©nÃ©raliser le but : env est a jour *)
   let l_reified_stated =
      List.map (fun (_,_,(l,r),_) ->
                  app coq_p_eq [| reified_of_formula env l;

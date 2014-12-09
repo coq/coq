@@ -2,9 +2,9 @@
 (* - This code originates from John Harrison's HOL LIGHT 2.30                *)
 (*   (see file LICENSE.sos for license, copyright and disclaimer)            *)
 (*   This code is the HOL LIGHT library code used by sos.ml                  *)
-(* - Laurent Théry (thery@sophia.inria.fr) has isolated the HOL              *)
+(* - Laurent ThÃ©ry (thery@sophia.inria.fr) has isolated the HOL              *)
 (*   independent bits                                                        *)
-(* - Frédéric Besson (fbesson@irisa.fr) is using it to feed  micromega       *)
+(* - FrÃ©dÃ©ric Besson (fbesson@irisa.fr) is using it to feed  micromega       *)
 (* ========================================================================= *)
 
 open Num

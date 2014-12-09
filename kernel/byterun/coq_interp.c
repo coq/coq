@@ -543,21 +543,21 @@ value coq_interprete
 	    coq_extra_args = Long_val(sp[2]);
 	    sp += 3;
 	  } else {
-	    /* L'argument recursif est un accumulateur */
+	    /* The recursif argument is an accumulator */
 	    mlsize_t num_args, i;
-	    /* Construction du PF partiellement appliqué */ 
+	    /* Construction of partially applied PF */
 	    Alloc_small(accu, rec_pos + 2, Closure_tag); 
 	    Field(accu, 1) = coq_env;
 	    for (i = 0; i < rec_pos; i++) Field(accu, i + 2) = sp[i];
 	    Code_val(accu) = pc;
 	    sp += rec_pos;
 	    *--sp = accu;
-	      /* Construction de l'atom */
+	      /* Construction of the atom */
 	    Alloc_small(accu, 2, ATOM_FIX_TAG);
 	    Field(accu,1) = sp[0];
 	    Field(accu,0)  = sp[1];
 	    sp++; sp[0] = accu;
-	      /* Construction de l'accumulateur */
+	      /* Construction of the accumulator */
 	    num_args = coq_extra_args - rec_pos;
 	    Alloc_small(accu, 2+num_args, Accu_tag);
 	    Code_val(accu) = accumulate;

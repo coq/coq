@@ -1,16 +1,16 @@
 
-<< L'uniformité du style est plus importante que le style lui-même. >>
+<< L'uniformitÃ© du style est plus importante que le style lui-mÃªme. >>
 (Kernigan & Pike, The Practice of Programming)
 
 Mode Emacs
 ==========
    Tuareg, que l'on trouve ici :  http://www.prism.uvsq.fr/~acohen/tuareg/
 
-   avec le réglage suivant :     (setq tuareg-in-indent 2)
+   avec le rÃ©glage suivant :     (setq tuareg-in-indent 2)
 
-Types récursifs et filtrages
+Types rÃ©cursifs et filtrages
 ============================
-   Une barre de séparation y compris sur le premier constructeur
+   Une barre de sÃ©paration y compris sur le premier constructeur
 
 type t =
   | A 
@@ -20,9 +20,9 @@ match expr with
   | A -> ...
   | B x -> ...
 
-Remarque : à partir de la 8.2 environ, la tendance est à utiliser le
+Remarque : Ã  partir de la 8.2 environ, la tendance est Ã  utiliser le
 format suivant qui permet de limiter l'escalade d'indentation tout en
-produisant un aspect visuel intéressant de bloc :
+produisant un aspect visuel intÃ©ressant de bloc :
 
 type t =
 | A 
@@ -40,11 +40,11 @@ let f expr = function
 | A -> ...
 | B x -> ...
 
-Le deuxième cas est obtenu sous tuareg avec les réglages
+Le deuxiÃ¨me cas est obtenu sous tuareg avec les rÃ©glages
 
   (setq tuareg-with-indent 0)
   (setq tuareg-function-indent 0)
-  (setq tuareg-let-always-indent nil) /// notons que cette dernière est bien 
+  (setq tuareg-let-always-indent nil) /// notons que cette derniÃ¨re est bien 
                                       /// pour les let mais pas pour les let-in
 
 Conditionnelles
@@ -55,7 +55,7 @@ Conditionnelles
     deuxieme-cas
 
   Si effets de bord dans les branches, utilisez begin ... end et non des
-  parenthèses i.e.
+  parenthÃ¨ses i.e.
 
   if condition then begin
     instr1;
@@ -65,7 +65,7 @@ Conditionnelles
     instr4
   end
     
-  Si la première branche lève une exception, évitez le else i.e.
+  Si la premiÃ¨re branche lÃ¨ve une exception, Ã©vitez le else i.e.
 
     if condition then                     if condition then error "machin";
       error "machin"          ----->      suite

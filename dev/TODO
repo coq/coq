@@ -3,16 +3,16 @@
      - reporter les options de l'ancien script coqtop sur le nouveau coqtop.ml
 
  o arguments implicites
-     - les calculer une fois pour toutes à la déclaration (dans Declare)
+     - les calculer une fois pour toutes Ã  la dÃ©claration (dans Declare)
        et stocker cette information dans le in_variable, in_constant, etc.
 
- o Environnements compilés (type Environ.compiled_env)
-     - pas de timestamp mais plutôt un checksum avec Digest (mais comment ?)
+ o Environnements compilÃ©s (type Environ.compiled_env)
+     - pas de timestamp mais plutÃ´t un checksum avec Digest (mais comment ?)
 
- o Efficacité
-     - utiliser DOPL plutôt que DOPN (sauf pour Case)
+ o EfficacitÃ©
+     - utiliser DOPL plutÃ´t que DOPN (sauf pour Case)
      - batch mode => pas de undo, ni de reset
-     - conversion : déplier la constante la plus récente
+     - conversion : dÃ©plier la constante la plus rÃ©cente
      - un cache pour type_of_const, type_of_inductive, type_of_constructor,
        lookup_mind_specif
 

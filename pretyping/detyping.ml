@@ -180,11 +180,11 @@ let computable p k =
        A solution could be to store, in the MutCase, the eta-expanded
        normal form of pred to decide if it depends on its variables
 
-       Lorsque le prédicat est dépendant de manière certaine, on
-       ne déclare pas le prédicat synthétisable (même si la
-       variable dépendante ne l'est pas effectivement) parce que
-       sinon on perd la réciprocité de la synthèse (qui, lui,
-       engendrera un prédicat non dépendant) *)
+       Lorsque le prÃ©dicat est dÃ©pendant de maniÃ¨re certaine, on
+       ne dÃ©clare pas le prÃ©dicat synthÃ©tisable (mÃªme si la
+       variable dÃ©pendante ne l'est pas effectivement) parce que
+       sinon on perd la rÃ©ciprocitÃ© de la synthÃ¨se (qui, lui,
+       engendrera un prÃ©dicat non dÃ©pendant) *)
 
   let sign,ccl = decompose_lam_assum p in
   Int.equal (rel_context_length sign) (k + 1)
@@ -644,7 +644,7 @@ and detype_eqn (lax,isgoal as flags) avoid env sigma constr construct_nargs bran
 
       | _, false::l ->
             (* eta-expansion : n'arrivera plus lorsque tous les
-               termes seront construits à partir de la syntaxe Cases *)
+               termes seront construits Ã  partir de la syntaxe Cases *)
             (* nommage de la nouvelle variable *)
 	    let new_b = applist (lift 1 b, [mkRel 1]) in
             let pat,new_avoid,new_env,new_ids =

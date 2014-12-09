@@ -8,8 +8,8 @@
 
 
 
-(* La tactique Fourier ne fonctionne de manière sûre que si les coefficients
-des inéquations et équations sont entiers. En attendant la tactique Field.
+(* La tactique Fourier ne fonctionne de maniÃ¨re sÃ»re que si les coefficients
+des inÃ©quations et Ã©quations sont entiers. En attendant la tactique Field.
 *)
 
 open Term
@@ -22,10 +22,10 @@ open Fourier
 open Contradiction
 
 (******************************************************************************
-Opérations sur les combinaisons linéaires affines.
-La partie homogène d'une combinaison linéaire est en fait une table de hash
+OpÃ©rations sur les combinaisons linÃ©aires affines.
+La partie homogÃ¨ne d'une combinaison linÃ©aire est en fait une table de hash
 qui donne le coefficient d'un terme du calcul des constructions,
-qui est zéro si le terme n'y est pas.
+qui est zÃ©ro si le terme n'y est pas.
 *)
 
 module Constrhash = Hashtbl.Make
@@ -175,9 +175,9 @@ let flin_to_alist f =
     !res
 ;;
 
-(* Représentation des hypothèses qui sont des inéquations ou des équations.
+(* ReprÃ©sentation des hypothÃ¨ses qui sont des inÃ©quations ou des Ã©quations.
 *)
-type hineq={hname:constr; (* le nom de l'hypothèse *)
+type hineq={hname:constr; (* le nom de l'hypothÃ¨se *)
             htype:string; (* Rlt, Rgt, Rle, Rge, eqTLR ou eqTRL *)
             hleft:constr;
             hright:constr;
@@ -185,7 +185,7 @@ type hineq={hname:constr; (* le nom de l'hypothèse *)
             hstrict:bool}
 ;;
 
-(* Transforme une hypothese h:t en inéquation flin<0 ou flin<=0
+(* Transforme une hypothese h:t en inÃ©quation flin<0 ou flin<=0
 *)
 
 exception NoIneq
@@ -256,12 +256,12 @@ let ineq1_of_constr (h,t) =
       |_-> raise NoIneq
 ;;
 
-(* Applique la méthode de Fourier à une liste d'hypothèses (type hineq)
+(* Applique la mÃ©thode de Fourier Ã  une liste d'hypothÃ¨ses (type hineq)
 *)
 
 let fourier_lineq lineq1 =
    let nvar=ref (-1) in
-   let hvar=Constrhash.create 50 in (* la table des variables des inéquations *)
+   let hvar=Constrhash.create 50 in (* la table des variables des inÃ©quations *)
    List.iter (fun f ->
 		Constrhash.iter (fun x _ -> if not (Constrhash.mem hvar x) then begin
 				nvar:=(!nvar)+1;
@@ -342,7 +342,7 @@ let coq_Rnot_le_le = lazy (constant_fourier "Rnot_le_le")
 let coq_Rlt_not_le_frac_opp = lazy (constant_fourier "Rlt_not_le_frac_opp")
 
 (******************************************************************************
-Construction de la preuve en cas de succès de la méthode de Fourier,
+Construction de la preuve en cas de succÃ¨s de la mÃ©thode de Fourier,
 i.e. on obtient une contradiction.
 *)
 let is_int x = (x.den)=1
@@ -461,15 +461,15 @@ let mkAppL a =
 
 exception GoalDone
 
-(* Résolution d'inéquations linéaires dans R *)
+(* RÃ©solution d'inÃ©quations linÃ©aires dans R *)
 let rec fourier () =
   Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     Coqlib.check_required_library ["Coq";"fourier";"Fourier"];
     let goal = strip_outer_cast concl in
     let fhyp=Id.of_string "new_hyp_for_fourier" in
-    (* si le but est une inéquation, on introduit son contraire,
-       et le but à prouver devient False *)
+    (* si le but est une inÃ©quation, on introduit son contraire,
+       et le but Ã  prouver devient False *)
     try 
       match (kind_of_term goal) with
       App (f,args) ->
@@ -497,23 +497,23 @@ let rec fourier () =
 	    |_-> raise GoalDone)
         |_-> raise GoalDone
      with GoalDone ->
-    (* les hypothèses *)
+    (* les hypothÃ¨ses *)
     let hyps = List.map (fun (h,t)-> (mkVar h,t))
                         (list_of_sign (Proofview.Goal.hyps gl)) in
     let lineq =ref [] in
     List.iter (fun h -> try (lineq:=(ineq1_of_constr h)@(!lineq))
 		        with NoIneq -> ())
               hyps;
-    (* lineq = les inéquations découlant des hypothèses *)
+    (* lineq = les inÃ©quations dÃ©coulant des hypothÃ¨ses *)
     if !lineq=[] then Errors.error "No inequalities";
     let res=fourier_lineq (!lineq) in
     let tac=ref (Proofview.tclUNIT ()) in
     if res=[]
     then Errors.error "fourier failed"
-    (* l'algorithme de Fourier a réussi: on va en tirer une preuve Coq *)
+    (* l'algorithme de Fourier a rÃ©ussi: on va en tirer une preuve Coq *)
     else (match res with
         [(cres,sres,lc)]->
-    (* lc=coefficients multiplicateurs des inéquations
+    (* lc=coefficients multiplicateurs des inÃ©quations
        qui donnent 0<cres ou 0<=cres selon sres *)
 	(*print_string "Fourier's method can prove the goal...";flush stdout;*)
           let lutil=ref [] in
@@ -523,7 +523,7 @@ let rec fourier () =
         		  then (lutil:=(h,c)::(!lutil)(*;
 				print_rational(c);print_string " "*)))
                     (List.combine (!lineq) lc);
-       (* on construit la combinaison linéaire des inéquation *)
+       (* on construit la combinaison linÃ©aire des inÃ©quation *)
              (match (!lutil) with
           (h1,c1)::lutil ->
 	  let s=ref (h1.hstrict) in
@@ -603,7 +603,7 @@ let rec fourier () =
 				    (mkApp (get coq_Rinv,
 				      [|get coq_R1|]))
 				    (get coq_R1))
-(* en attendant Field, ça peut aider Ring de remplacer 1/1 par 1 ... *)
+(* en attendant Field, Ã§a peut aider Ring de remplacer 1/1 par 1 ... *)
 
       			        [Tacticals.New.tclORELSE
                                    (* TODO : Ring.polynom []*) (Proofview.tclUNIT ())

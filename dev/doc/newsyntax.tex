@@ -5,7 +5,7 @@
 
 \usepackage{verbatim}
 \usepackage[T1]{fontenc}
-\usepackage[latin1]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage[french]{babel}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -15,7 +15,7 @@
 \author{B.~Barras}
 \title{Proposition de syntaxe pour Coq}
 
-%% Le _ est un caractère normal
+%% Le _ est un caractÃ¨re normal
 \catcode`\_=13
 \let\subscr=_
 \def_{\ifmmode\sb\else\subscr\fi}
@@ -47,21 +47,21 @@
 \section{Grammaire des tactiques}
 \label{tacticsyntax}
 
-La réflexion de la rénovation de la syntaxe des tactiques n'est pas
-encore aussi poussée que pour les termes (section~\ref{constrsyntax}),
-mais cette section vise à énoncer les quelques principes que l'on
+La rÃ©flexion de la rÃ©novation de la syntaxe des tactiques n'est pas
+encore aussi poussÃ©e que pour les termes (section~\ref{constrsyntax}),
+mais cette section vise Ã  Ã©noncer les quelques principes que l'on
 souhaite suivre. 
 
 \begin{itemize}
-\item Réutiliser les mots-clés de la syntaxe des termes (i.e. en
+\item RÃ©utiliser les mots-clÃ©s de la syntaxe des termes (i.e. en
   minuscules) pour les constructions similaires de tactiques (let_in,
-  match, and, etc.). Le connecteur logique \texttt{and} n'étant que
-  rarement utilisé autrement que sous la forme \texttt{$\wedge$} (sauf
-  dans le code ML), on pourrait dégager ce mot-clé.
-\item Les arguments passés aux tactiques sont principalement des
-  termes, on préconise l'utilisation d'un symbole spécial (par exemple
+  match, and, etc.). Le connecteur logique \texttt{and} n'Ã©tant que
+  rarement utilisÃ© autrement que sous la forme \texttt{$\wedge$} (sauf
+  dans le code ML), on pourrait dÃ©gager ce mot-clÃ©.
+\item Les arguments passÃ©s aux tactiques sont principalement des
+  termes, on prÃ©conise l'utilisation d'un symbole spÃ©cial (par exemple
   l'apostrophe) pour passer une tactique ou une expression
-  (AST). L'idée étant que l'on écrit plus souvent des tactiques
+  (AST). L'idÃ©e Ã©tant que l'on Ã©crit plus souvent des tactiques
   prenant des termes en argument que des tacticals.
 \end{itemize}
 
@@ -97,15 +97,15 @@ souhaite suivre.
 \subsection{Arguments de tactiques}
 
 La syntaxe actuelle des arguments de tactiques est que l'on parse par
-défaut une expression de tactique, ou bien l'on parse un terme si
-celui-ci est préfixé par \TERM{'} (sauf dans le cas des
-variables). Cela est gênant pour les utilisateurs qui doivent écrire
+dÃ©faut une expression de tactique, ou bien l'on parse un terme si
+celui-ci est prÃ©fixÃ© par \TERM{'} (sauf dans le cas des
+variables). Cela est gÃªnant pour les utilisateurs qui doivent Ã©crire
 des \TERM{'} pour leurs tactiques.
 
-À mon avis, il n'est pas souhaitable pour l'utilisateur de l'obliger à
-marquer une différence entre les tactiques ``primitives'' (en fait
-``système'') et les tactiques définies par Ltac. En effet, on se
-dirige inévitablement vers une situation où il existera des librairies
+Ã€ mon avis, il n'est pas souhaitable pour l'utilisateur de l'obliger Ã 
+marquer une diffÃ©rence entre les tactiques ``primitives'' (en fait
+``systÃ¨me'') et les tactiques dÃ©finies par Ltac. En effet, on se
+dirige inÃ©vitablement vers une situation oÃ¹ il existera des librairies
 de tactiques et il va devenir difficile de savoir facilement s'il faut
 ou non mettre des \TERM{'}.
 
@@ -113,33 +113,33 @@ ou non mettre des \TERM{'}.
 
 \subsection{Bindings}
 
-Dans un premier temps, les ``bindings'' sont toujours considérés comme
-une construction du langage des tactiques, mais il est intéressant de
-prévoir l'extension de ce procédé aux termes, puisqu'il s'agit
+Dans un premier temps, les ``bindings'' sont toujours considÃ©rÃ©s comme
+une construction du langage des tactiques, mais il est intÃ©ressant de
+prÃ©voir l'extension de ce procÃ©dÃ© aux termes, puisqu'il s'agit
 simplement de construire un n{\oe}ud d'application dans lequel on
-donne les arguments par nom ou par position, les autres restant à
-inférer. Le principal point est de trouver comment combiner de manière
-uniforme ce procédé avec les arguments implicites.
+donne les arguments par nom ou par position, les autres restant Ã 
+infÃ©rer. Le principal point est de trouver comment combiner de maniÃ¨re
+uniforme ce procÃ©dÃ© avec les arguments implicites.
 
-Il est toutefois important de réfléchir dès maintenant à une syntaxe
-pour éviter de rechanger encore la syntaxe.
+Il est toutefois important de rÃ©flÃ©chir dÃ¨s maintenant Ã  une syntaxe
+pour Ã©viter de rechanger encore la syntaxe.
 
-Intégrer la notation \TERM{with} aux termes peut poser des problèmes
-puisque ce mot-clé est utilisé pour le filtrage: comment parser (en
+IntÃ©grer la notation \TERM{with} aux termes peut poser des problÃ¨mes
+puisque ce mot-clÃ© est utilisÃ© pour le filtrage: comment parser (en
 LL(1)) l'expression:
 \begin{verbatim}
 Cases x with y ...
 \end{verbatim}
 
-Soit on trouve un autre mot-clé, soit on joue avec les niveaus de
-priorité en obligeant a parenthéser le \TERM{with} des ``bindings'':
+Soit on trouve un autre mot-clÃ©, soit on joue avec les niveaus de
+prioritÃ© en obligeant a parenthÃ©ser le \TERM{with} des ``bindings'':
 \begin{verbatim}
 Cases (x with y) with (C z) => ...
 \end{verbatim}
-ce qui introduit un constructeur moralement équivalent à une
-application situé à une priorité totalement différente (les
+ce qui introduit un constructeur moralement Ã©quivalent Ã  une
+application situÃ© Ã  une prioritÃ© totalement diffÃ©rente (les
 ``bindings'' seraient au plus haut niveau alors que l'application est
-à un niveau bas).
+Ã  un niveau bas).
 
 
 \begin{figure}
@@ -156,9 +156,9 @@ application situé à une priorité totalement différente (les
 
 \subsection{Enregistrements}
 
-Il faudrait aménager la syntaxe des enregistrements dans l'optique
-d'avoir des enregistrements anonymes (termes de première classe), même
-si pour l'instant, on ne dispose que d'enregistrements définis a
+Il faudrait amÃ©nager la syntaxe des enregistrements dans l'optique
+d'avoir des enregistrements anonymes (termes de premiÃ¨re classe), mÃªme
+si pour l'instant, on ne dispose que d'enregistrements dÃ©finis a
 toplevel.
 
 Exemple de syntaxe pour les types d'enregistrements:
@@ -179,22 +179,22 @@ Exemple de syntaxe pour le constructeur:
   ...
 }
 \end{verbatim}
-Quant aux dépendences, une convention pourrait être de considérer les
-champs non annotés par le type comme non dépendants.
+Quant aux dÃ©pendences, une convention pourrait Ãªtre de considÃ©rer les
+champs non annotÃ©s par le type comme non dÃ©pendants.
 
 Plusieurs interrogations:
 \begin{itemize}
-\item l'ordre des champs doit-il être respecté ?
+\item l'ordre des champs doit-il Ãªtre respectÃ© ?
   sinon, que faire pour les champs sans projection ?
 \item autorise-t-on \texttt{v1} a mentionner \texttt{x1} (comme dans
-  la définition d'un module), ce qui se comporterait comme si on avait
-  écrit \texttt{v1} à la place. Cela pourrait être une autre manière
-  de déclarer les dépendences
+  la dÃ©finition d'un module), ce qui se comporterait comme si on avait
+  Ã©crit \texttt{v1} Ã  la place. Cela pourrait Ãªtre une autre maniÃ¨re
+  de dÃ©clarer les dÃ©pendences
 \end{itemize}
 
-La notation pointée pour les projections pose un problème de parsing,
+La notation pointÃ©e pour les projections pose un problÃ¨me de parsing,
 sauf si l'on a une convention lexicale qui discrimine les noms de
-modules des projections et identificateurs: \texttt{x.y.z} peut être
+modules des projections et identificateurs: \texttt{x.y.z} peut Ãªtre
 compris comme \texttt{(x.y).z} ou texttt{x.(y.z)}.
 
 
@@ -204,17 +204,17 @@ compris comme \texttt{(x.y).z} ou texttt{x.(y.z)}.
 \subsection{Quelques principes}
 
 \begin{enumerate}
-\item Diminuer le nombre de niveaux de priorité en regroupant les
-  règles qui se ressemblent: infixes, préfixes, lieurs (constructions
-  ouvertes à droite), etc.
-\item Éviter de surcharger la signification d'un symbole (ex:
-  \verb+( )+ comme parenthésage et produit dans la V7).
+\item Diminuer le nombre de niveaux de prioritÃ© en regroupant les
+  rÃ¨gles qui se ressemblent: infixes, prÃ©fixes, lieurs (constructions
+  ouvertes Ã  droite), etc.
+\item Ã‰viter de surcharger la signification d'un symbole (ex:
+  \verb+( )+ comme parenthÃ©sage et produit dans la V7).
 \item Faire en sorte que les membres gauches (motifs de Cases, lieurs
   d'abstraction ou de produits) utilisent une syntaxe compatible avec
   celle des membres droits (branches de Cases et corps de fonction).
 \end{enumerate}
 
-\subsection{Présentation de la grammaire}
+\subsection{PrÃ©sentation de la grammaire}
 
 \begin{figure}
 \begin{rulebox}
@@ -286,15 +286,15 @@ compris comme \texttt{(x.y).z} ou texttt{x.(y.z)}.
 \label{gram-annexes}
 \end{figure}
 
-La grammaire des termes (correspondant à l'état \texttt{barestate})
-est décrite figures~\ref{constr} et~\ref{gram-annexes}. On constate
-par rapport aux précédentes versions de Coq d'importants changements
-de priorité, le plus marquant étant celui de l'application qui se
-trouve désormais juste au dessus\footnote{La convention est de
-considérer les opérateurs moins lieurs comme ``au dessus'',
-c'est-à-dire ayant un niveau de priorité plus élévé (comme c'est le
+La grammaire des termes (correspondant Ã  l'Ã©tat \texttt{barestate})
+est dÃ©crite figures~\ref{constr} et~\ref{gram-annexes}. On constate
+par rapport aux prÃ©cÃ©dentes versions de Coq d'importants changements
+de prioritÃ©, le plus marquant Ã©tant celui de l'application qui se
+trouve dÃ©sormais juste au dessus\footnote{La convention est de
+considÃ©rer les opÃ©rateurs moins lieurs comme ``au dessus'',
+c'est-Ã -dire ayant un niveau de prioritÃ© plus Ã©lÃ©vÃ© (comme c'est le
 cas avec le niveau de la grammaire actuelle des termes).} des
-constructions fermées à gauche et à droite.
+constructions fermÃ©es Ã  gauche et Ã  droite.
 
 La grammaire des noms globaux est la suivante:
 \begin{eqnarray*}
@@ -304,43 +304,43 @@ La grammaire des noms globaux est la suivante:
 \nlsep \NT{ident}\TERM{.}\NT{global}
 \end{eqnarray*}
 
-Le $\TERM{_}$ dénote les termes à synthétiser. Les métavariables sont
+Le $\TERM{_}$ dÃ©note les termes Ã  synthÃ©tiser. Les mÃ©tavariables sont
 reconnues au niveau du lexer pour ne pas entrer en conflit avec le
 $\TERM{?}$ de l'existentielle.
 
-Les opérateurs infixes ou préfixes sont tous au même niveau de
-priorité du point de vue de Camlp4. La solution envisagée est de les
-gérer à la manière de Yacc, avec une pile (voir discussions plus
+Les opÃ©rateurs infixes ou prÃ©fixes sont tous au mÃªme niveau de
+prioritÃ© du point de vue de Camlp4. La solution envisagÃ©e est de les
+gÃ©rer Ã  la maniÃ¨re de Yacc, avec une pile (voir discussions plus
 bas). Ainsi, l'implication est un infixe normal; la quantification
-universelle et le let sont vus comme des opérateurs préfixes avec un
-niveau de priorité plus haut (i.e. moins lieur). Il subsiste des
-problèmes si l'on ne veut pas écrire de parenthèses dans:
+universelle et le let sont vus comme des opÃ©rateurs prÃ©fixes avec un
+niveau de prioritÃ© plus haut (i.e. moins lieur). Il subsiste des
+problÃ¨mes si l'on ne veut pas Ã©crire de parenthÃ¨ses dans:
 \begin{verbatim}
  A -> (!x. B -> (let y = C in D))
 \end{verbatim}
 
-La solution proposée est d'analyser le membre droit d'un infixe de
-manière à autoriser les préfixes et les infixes de niveau inférieur,
-et d'exiger le parenthésage que pour les infixes de niveau supérieurs.
+La solution proposÃ©e est d'analyser le membre droit d'un infixe de
+maniÃ¨re Ã  autoriser les prÃ©fixes et les infixes de niveau infÃ©rieur,
+et d'exiger le parenthÃ©sage que pour les infixes de niveau supÃ©rieurs.
 
-En revanche, à l'affichage, certains membres droits seront plus
+En revanche, Ã  l'affichage, certains membres droits seront plus
 lisibles s'ils n'utilisent pas cette astuce:
 \begin{verbatim}
 (fun x => x) = fun x => x
 \end{verbatim}
 
-La proposition est d'autoriser ce type d'écritures au parsing, mais
-l'afficheur écrit de manière standardisée en mettant quelques
-parenthèses superflues: $\TERM{=}$ serait symétrique alors que
-$\rightarrow$ appellerait l'afficheur de priorité élevée pour son
+La proposition est d'autoriser ce type d'Ã©critures au parsing, mais
+l'afficheur Ã©crit de maniÃ¨re standardisÃ©e en mettant quelques
+parenthÃ¨ses superflues: $\TERM{=}$ serait symÃ©trique alors que
+$\rightarrow$ appellerait l'afficheur de prioritÃ© Ã©levÃ©e pour son
 sous-terme droit.
 
-Les priorités des opérateurs primitifs sont les suivantes (le signe
-$*$ signifie que pour le membre droit les opérateurs préfixes seront
-affichés sans parenthèses quel que soit leur priorité):
+Les prioritÃ©s des opÃ©rateurs primitifs sont les suivantes (le signe
+$*$ signifie que pour le membre droit les opÃ©rateurs prÃ©fixes seront
+affichÃ©s sans parenthÃ¨ses quel que soit leur prioritÃ©):
 $$
 \begin{array}{c|l}
-$symbole$ & $priorité$ \\
+$symbole$ & $prioritÃ©$ \\
 \hline
 \TERM{!}      & 200\,R* \\
 \TERM{fun}    & 200\,R* \\
@@ -351,39 +351,39 @@ $symbole$ & $priorité$ \\
 \end{array}
 $$
 
-Il y a deux points d'entrée pour les termes: $\NT{constr}$ et
-$\NT{simple-constr}$. Le premier peut être utilisé lorsqu'il est suivi
-d'un séparateur particulier. Dans le cas où l'on veut une liste de
-termes séparés par un espace, il faut lire des $\NT{simple-constr}$.
+Il y a deux points d'entrÃ©e pour les termes: $\NT{constr}$ et
+$\NT{simple-constr}$. Le premier peut Ãªtre utilisÃ© lorsqu'il est suivi
+d'un sÃ©parateur particulier. Dans le cas oÃ¹ l'on veut une liste de
+termes sÃ©parÃ©s par un espace, il faut lire des $\NT{simple-constr}$.
 
 
 
 Les constructions $\TERM{fix}$ et $\TERM{cofix}$ (voir aussi
-figure~\ref{gram-fix}) sont fermées par end pour simplifier
-l'analyse. Sinon, une expression de point fixe peut être suivie par un
-\TERM{in} ou un \TERM{and}, ce qui pose les mêmes problèmes que le
+figure~\ref{gram-fix}) sont fermÃ©es par end pour simplifier
+l'analyse. Sinon, une expression de point fixe peut Ãªtre suivie par un
+\TERM{in} ou un \TERM{and}, ce qui pose les mÃªmes problÃ¨mes que le
 ``dangling else'': dans
 \begin{verbatim}
 fix f1 x {x} = fix f2 y {y} = ... and ... in ...
 \end{verbatim}
-il faut définir une stratégie pour associer le \TERM{and} et le
+il faut dÃ©finir une stratÃ©gie pour associer le \TERM{and} et le
 \TERM{in} au bon point fixe.
 
 Un autre avantage est de faire apparaitre que le \TERM{fix} est un
-constructeur de terme de première classe et pas un lieur:
+constructeur de terme de premiÃ¨re classe et pas un lieur:
 \begin{verbatim}
 fix f1 ... and f2 ...
 in f1 end x
 \end{verbatim}
-Les propositions précédentes laissaient \texttt{f1} et \texttt{x}
-accolés, ce qui est source de confusion lorsque l'on fait par exemple
+Les propositions prÃ©cÃ©dentes laissaient \texttt{f1} et \texttt{x}
+accolÃ©s, ce qui est source de confusion lorsque l'on fait par exemple
 \texttt{Pattern (f1 x)}.
 
 Les corps de points fixes et co-points fixes sont identiques, bien que
-ces derniers n'aient pas d'information de décroissance. Cela
-fonctionne puisque l'annotation est optionnelle. Cela préfigure des
-cas où l'on arrive à inférer quel est l'argument qui décroit
-structurellement (en particulier dans le cas où il n'y a qu'un seul
+ces derniers n'aient pas d'information de dÃ©croissance. Cela
+fonctionne puisque l'annotation est optionnelle. Cela prÃ©figure des
+cas oÃ¹ l'on arrive Ã  infÃ©rer quel est l'argument qui dÃ©croit
+structurellement (en particulier dans le cas oÃ¹ il n'y a qu'un seul
 argument).
 
 \begin{figure}
@@ -412,8 +412,8 @@ argument).
 \label{gram-fix}
 \end{figure}
 
-La construction $\TERM{Case}$ peut-être considérée comme
-obsolète. Quant au $\TERM{Match}$ de la V6, il disparaît purement et
+La construction $\TERM{Case}$ peut-Ãªtre considÃ©rÃ©e comme
+obsolÃ¨te. Quant au $\TERM{Match}$ de la V6, il disparaÃ®t purement et
 simplement.
 
 \begin{figure}
@@ -456,15 +456,15 @@ simplement.
 \label{gram-match}
 \end{figure}
 
-De manière globale, l'introduction de définitions dans les termes se
-fait avec le symbole $=$, et le $\!:=$ est réservé aux définitions au
-niveau vernac. Il y avait un manque de cohérence dans la
+De maniÃ¨re globale, l'introduction de dÃ©finitions dans les termes se
+fait avec le symbole $=$, et le $\!:=$ est rÃ©servÃ© aux dÃ©finitions au
+niveau vernac. Il y avait un manque de cohÃ©rence dans la
 V6, puisque l'on utilisait $=$ pour le $\TERM{let}$ et $\!:=$ pour les
 points fixes et les commandes vernac.
 
 % OBSOLETE: lieurs multiples supprimes
 %On peut remarquer que $\NT{binder}$ est un sous-ensemble de
-%$\NT{simple-constr}$, à l'exception de $\texttt{(a,b\!\!:T)}$: en tant
+%$\NT{simple-constr}$, Ã  l'exception de $\texttt{(a,b\!\!:T)}$: en tant
 %que lieur, {\tt a} et {\tt b} sont tous deux contraints, alors qu'en
 %tant que terme, seul {\tt b} l'est. Cela qui signifie que l'objectif
 %de rendre compatibles les membres gauches et droits est {\it presque}
@@ -474,14 +474,14 @@ points fixes et les commandes vernac.
 
 \subsubsection{Infixes extensibles}
 
-Le problème de savoir si la liste des symboles pouvant apparaître en
-infixe est fixée ou extensible par l'utilisateur reste à voir.
+Le problÃ¨me de savoir si la liste des symboles pouvant apparaÃ®tre en
+infixe est fixÃ©e ou extensible par l'utilisateur reste Ã  voir.
 
-Notons que la solution où les symboles infixes sont des
-identificateurs que l'on peut définir paraît difficilement praticable:
-par exemple $\texttt{Logic.eq}$ n'est pas un opérateur binaire, mais
-ternaire. Il semble plus simple de garder des déclarations infixes qui
-relient un symbole infixe à un terme avec deux ``trous''. Par exemple:
+Notons que la solution oÃ¹ les symboles infixes sont des
+identificateurs que l'on peut dÃ©finir paraÃ®t difficilement praticable:
+par exemple $\texttt{Logic.eq}$ n'est pas un opÃ©rateur binaire, mais
+ternaire. Il semble plus simple de garder des dÃ©clarations infixes qui
+relient un symbole infixe Ã  un terme avec deux ``trous''. Par exemple:
 
 $$\begin{array}{c|l}
 $infixe$ &  $identificateur$ \\
@@ -490,33 +490,33 @@ $infixe$ &  $identificateur$ \\
 == & \texttt{JohnMajor.eq _ ?1 _ ?2}
 \end{array}$$
 
-La syntaxe d'une déclaration d'infixe serait par exemple:
+La syntaxe d'une dÃ©claration d'infixe serait par exemple:
 \begin{verbatim}
 Infix "=" 50 := Logic.eq _ ?1 ?2;
 \end{verbatim}
 
 
-\subsubsection{Gestion des précédences}
+\subsubsection{Gestion des prÃ©cÃ©dences}
 
-Les infixes peuvent être soit laissé à Camlp4, ou bien (comme ici)
-considérer que tous les opérateurs ont la même précédence et gérer
-soit même la recomposition des termes à l'aide d'une pile (comme
+Les infixes peuvent Ãªtre soit laissÃ© Ã  Camlp4, ou bien (comme ici)
+considÃ©rer que tous les opÃ©rateurs ont la mÃªme prÃ©cÃ©dence et gÃ©rer
+soit mÃªme la recomposition des termes Ã  l'aide d'une pile (comme
 Yacc).
 
 
 \subsection{Extensions de syntaxe}
 
-\subsubsection{Litéraux numériques}
+\subsubsection{LitÃ©raux numÃ©riques}
 
-La proposition est de considerer les litéraux numériques comme de
-simples identificateurs. Comme il en existe une infinité, il faut un
-nouveau mécanisme pour leur associer une définition. Par exemple, en
-ce qui concerne \texttt{Arith}, la définition de $5$ serait
+La proposition est de considerer les litÃ©raux numÃ©riques comme de
+simples identificateurs. Comme il en existe une infinitÃ©, il faut un
+nouveau mÃ©canisme pour leur associer une dÃ©finition. Par exemple, en
+ce qui concerne \texttt{Arith}, la dÃ©finition de $5$ serait
 $\texttt{S}~4$. Pour \texttt{ZArith}, $5$ serait $\texttt{xI}~2$.
 
-Comme les infixes, les constantes numériques peuvent être qualifiées
+Comme les infixes, les constantes numÃ©riques peuvent Ãªtre qualifiÃ©es
 pour indiquer dans quels module est le type que l'on veut
-référencer. Par exemple (si on renomme \texttt{Arith} en \texttt{N} et
+rÃ©fÃ©rencer. Par exemple (si on renomme \texttt{Arith} en \texttt{N} et
 \texttt{ZArith} en \texttt{Z}): \verb+N.5+, \verb+Z.5+.
 
 \begin{eqnarray*}
@@ -539,18 +539,18 @@ $$
 $$
 
 Pour l'instant l'existentielle n'admet qu'une seule variable, ce qui
-oblige à écrire des cascades de $\TERM{ex}$.
+oblige Ã  Ã©crire des cascades de $\TERM{ex}$.
 
-Pour parser les existentielles avec deux prédicats, on peut considérer
-\TERM{\&} comme un infixe intermédiaire et l'opérateur existentiel en
-présence de cet infixe se transforme en \texttt{ex2}.
+Pour parser les existentielles avec deux prÃ©dicats, on peut considÃ©rer
+\TERM{\&} comme un infixe intermÃ©diaire et l'opÃ©rateur existentiel en
+prÃ©sence de cet infixe se transforme en \texttt{ex2}.
 
 \subsubsection{Nouveaux infixes}
 
-Précédences des opérateurs infixes (les plus grands associent moins fort):
+PrÃ©cÃ©dences des opÃ©rateurs infixes (les plus grands associent moins fort):
 $$
 \begin{array}{l|l|c|l}
-$identificateur$      & $module$     & $infixe/préfixe$ & $précédence$ \\
+$identificateur$      & $module$     & $infixe/prÃ©fixe$ & $prÃ©cÃ©dence$ \\
 \hline
 \texttt{iff}          & $Logic$      & \longleftrightarrow & 100 \\
 \texttt{or}           & $Logic$      & \vee     & 80\, R \\
@@ -590,8 +590,8 @@ $identificateur$      & $module$     & $infixe/préfixe$ & $précédence$ \\
 \end{array}
 $$
 
-Notons qu'il faudrait découper {\tt Logic_Type} en deux car celui-ci
-définit deux égalités, ou alors les mettre dans des modules différents.
+Notons qu'il faudrait dÃ©couper {\tt Logic_Type} en deux car celui-ci
+dÃ©finit deux Ã©galitÃ©s, ou alors les mettre dans des modules diffÃ©rents.
 
 \subsection{Exemples}
 
@@ -611,20 +611,20 @@ Fixpoint plus n m : nat {struct n} :=
 
 \subsection{Questions ouvertes}
 
-Voici les points sur lesquels la discussion est particulièrement
+Voici les points sur lesquels la discussion est particuliÃ¨rement
 ouverte: 
 \begin{itemize}
 \item choix d'autres symboles pour les quantificateurs \TERM{!} et
-  \TERM{?}. En l'état actuel des discussions, on garderait le \TERM{!}
+  \TERM{?}. En l'Ã©tat actuel des discussions, on garderait le \TERM{!}
   pour la qunatification universelle, mais on choisirait quelquechose
-  comme \TERM{ex} pour l'existentielle, afin de ne pas suggérer trop
-  de symétrie entre ces quantificateurs (l'un est primitif, l'autre
+  comme \TERM{ex} pour l'existentielle, afin de ne pas suggÃ©rer trop
+  de symÃ©trie entre ces quantificateurs (l'un est primitif, l'autre
   pas).
-\item syntaxe particulière pour les \texttt{sig}, \texttt{sumor}, etc.
-\item la possibilité d'introduire plusieurs variables du même type est
-  pour l'instant supprimée au vu des problèmes de compatibilité de
-  syntaxe entre les membres gauches et membres droits. L'idée étant
-  que l'inference de type permet d'éviter le besoin de déclarer tous
+\item syntaxe particuliÃ¨re pour les \texttt{sig}, \texttt{sumor}, etc.
+\item la possibilitÃ© d'introduire plusieurs variables du mÃªme type est
+  pour l'instant supprimÃ©e au vu des problÃ¨mes de compatibilitÃ© de
+  syntaxe entre les membres gauches et membres droits. L'idÃ©e Ã©tant
+  que l'inference de type permet d'Ã©viter le besoin de dÃ©clarer tous
   les types.
 \end{itemize}
 
@@ -632,19 +632,19 @@ ouverte:
 
 \subsubsection{Lieur multiple}
 
-L'écriture de types en présence de polymorphisme est souvent assez
-pénible:
+L'Ã©criture de types en prÃ©sence de polymorphisme est souvent assez
+pÃ©nible:
 \begin{verbatim}
 Check !(A:Set) (x:A) (B:Set) (y:B). P A x B y;
 \end{verbatim}
 
-On pourrait avoir des déclarations introduisant à la fois un type
+On pourrait avoir des dÃ©clarations introduisant Ã  la fois un type
 d'une certaine sorte et une variable de ce type:
 \begin{verbatim}
 Check !(x:A:Set) (y:B:Set). P A x B y;
 \end{verbatim}
 
-Noter que l'on aurait pu écrire:
+Noter que l'on aurait pu Ã©crire:
 \begin{verbatim}
 Check !A x B y. P A (x:A:Set) B (y:B:Set);
 \end{verbatim}
@@ -654,19 +654,19 @@ Check !A x B y. P A (x:A:Set) B (y:B:Set);
 \subsection{Questions diverses}
 
 Changer ``Pattern nl c ... nl c'' en ``Pattern [ nl ] c ... [ nl ] c''
-pour permettre des chiffres seuls dans la catégorie syntaxique des
+pour permettre des chiffres seuls dans la catÃ©gorie syntaxique des
 termes.
 
-Par uniformité remplacer ``Unfold nl c'' par ``Unfold [ nl ] c'' ?
+Par uniformitÃ© remplacer ``Unfold nl c'' par ``Unfold [ nl ] c'' ?
 
-Même problème pour l'entier de Specialize (ou virer Specialize ?) ?
+MÃªme problÃ¨me pour l'entier de Specialize (ou virer Specialize ?) ?
 
 \subsection{Questions en suspens}
 
-\verb=EAuto= : deux syntaxes différentes pour la recherche en largeur
-et en profondeur ? Quelle recherche par défaut ?
+\verb=EAuto= : deux syntaxes diffÃ©rentes pour la recherche en largeur
+et en profondeur ? Quelle recherche par dÃ©faut ?
 
-\section*{Remarques pêle-mêle (HH)}
+\section*{Remarques pÃªle-mÃªle (HH)}
 
 Autoriser la syntaxe
 
@@ -685,16 +685,16 @@ Mettre des \verb=?x= plutot que des \verb=?1= dans les motifs de ltac ??
 
 \begin{itemize}
 
-\item Mettre \verb=/= et * au même niveau dans R.
+\item Mettre \verb=/= et * au mÃªme niveau dans R.
 
-\item Changer la précédence du - unaire dans R.
+\item Changer la prÃ©cÃ©dence du - unaire dans R.
 
 \item Ajouter Require Arith par necessite si Require ArithRing ou Require ZArithRing.
 
 \item Ajouter Require ZArith par necessite si Require ZArithRing ou Require Omega.
 
-\item Enlever le Export de Bool, Arith et ZARith de Ring quand inapproprié et
-l'ajouter à côté des Require Ring.
+\item Enlever le Export de Bool, Arith et ZARith de Ring quand inappropriÃ© et
+l'ajouter Ã  cÃ´tÃ© des Require Ring.
 
 \item Remplacer "Check n" par "n:Check ..."
 

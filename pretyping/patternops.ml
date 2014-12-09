@@ -325,7 +325,7 @@ let rec pat_of_raw metas vars = function
       metas := n::!metas; PMeta (Some n)
   | GRef (_,gr,_) ->
       PRef (canonical_gr gr)
-  (* Hack pour ne pas réécrire une interprétation complète des patterns*)
+  (* Hack to avoid rewriting a complete interpretation of patterns *)
   | GApp (_, GPatVar (_,(true,n)), cl) ->
       metas := n::!metas; PSoApp (n, List.map (pat_of_raw metas vars) cl)
   | GApp (_,c,cl) ->

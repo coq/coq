@@ -242,7 +242,7 @@ let add_inversion_lemma_exn na com comsort bool tac =
   try
     add_inversion_lemma na env sigma c sort bool tac
   with
-    |   UserError ("Case analysis",s) -> (* référence à Indrec *)
+    |   UserError ("Case analysis",s) -> (* Reference to Indrec *)
 	  errorlabstrm "Inv needs Nodep Prop Set" s
 
 (* ================================= *)

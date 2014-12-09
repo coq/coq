@@ -851,9 +851,9 @@ let align_prod_letin c a : rel_context * constr =
   let (l1,l2) = Util.List.chop lc l in
   l2,it_mkProd_or_LetIn a l1
 
-(* On reduit une serie d'eta-redex de tete ou rien du tout  *)
+(* We reduce a series of head eta-redex or nothing at all   *)
 (* [x1:c1;...;xn:cn]@(f;a1...an;x1;...;xn) --> @(f;a1...an) *)
-(* Remplace 2 versions précédentes buggées                  *)
+(* Remplace 2 earlier buggish versions                      *)
 
 let rec eta_reduce_head c =
   match kind_of_term c with

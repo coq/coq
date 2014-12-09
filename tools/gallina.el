@@ -1,7 +1,7 @@
 ;; gallina.el --- Coq mode editing commands for Emacs
 ;;
 ;; Jean-Christophe Filliatre, march 1995
-;; Honteusement pompé de caml.el, Xavier Leroy, july 1993.
+;; Shamelessly copied from caml.el, Xavier Leroy, july 1993.
 ;;
 ;; modified by Marco Maggesi <maggesi@math.unifi.it> for gallina-inferior
 

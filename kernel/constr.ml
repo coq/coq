@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* File initially created by GÈrard Huet and Thierry Coquand in 1984 *)
+(* File initially created by G√©rard Huet and Thierry Coquand in 1984 *)
 (* Extension to inductive constructions by Christine Paulin for Coq V5.6 *)
 (* Extension to mutual inductive constructions by Christine Paulin for
    Coq V5.10.2 *)
@@ -15,7 +15,7 @@
 (* Optimization of lifting functions by Bruno Barras, Mar 1997 *)
 (* Hash-consing by Bruno Barras in Feb 1998 *)
 (* Restructuration of Coq of the type-checking kernel by Jean-Christophe 
-   Filli‚tre, 1999 *)
+   Filli√¢tre, 1999 *)
 (* Abstraction of the syntax of terms and iterators by Hugo Herbelin, 2000 *)
 (* Cleaning and lightening of the kernel by Bruno Barras, Nov 2001 *)
 

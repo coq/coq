@@ -9,7 +9,7 @@
 (*                                                                        *)
 (* Omega: a solver of quantifier-free problems in Presburger Arithmetic   *)
 (*                                                                        *)
-(* Pierre Crégut (CNET, Lannion, France)                                  *)
+(* Pierre CrÃ©gut (CNET, Lannion, France)                                  *)
 (*                                                                        *)
 (**************************************************************************)
 

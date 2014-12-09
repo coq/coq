@@ -50,7 +50,7 @@ module Make = functor(S : SearchProblem) -> struct
     in
     explore [1] s
 
-  (*s Breadth first search. We use functional FIFOS à la Okasaki. *)
+  (*s Breadth first search. We use functional FIFOS Ã  la Okasaki. *)
 
   type 'a queue = 'a list * 'a list
 

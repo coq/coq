@@ -73,8 +73,8 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   in
   let ndepar = mip.mind_nrealdecls + 1 in
 
-  (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)
-  (* mais pas très joli ... (mais manque get_sort_of à ce niveau) *)
+  (* Pas gÃ©nant car env ne sert pas Ã  typer mais juste Ã  renommer les Anonym *)
+  (* mais pas trÃ¨s joli ... (mais manque get_sort_of Ã  ce niveau) *)
   let env' = push_rel_context lnamespar env in
 
 
@@ -241,7 +241,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
     in
     prec env 0 []
   in
-  (* ici, cstrprods est la liste des produits du constructeur instantié *)
+  (* ici, cstrprods est la liste des produits du constructeur instantiÃ© *)
   let rec process_constr env i f = function
     | (n,None,t as d)::cprest, recarg::rest ->
         let optionpos =

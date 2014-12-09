@@ -9,7 +9,7 @@
 (* Created by Hugo Herbelin for Coq V7 by isolating the coercion
    mechanism out of the type inference algorithm in file trad.ml from
    Coq V6.3, Nov 1999; The coercion mechanism was implemented in
-   trad.ml by Amokrane Saïbi, May 1996 *)
+   trad.ml by Amokrane SaÃ¯bi, May 1996 *)
 (* Addition of products and sorts in canonical structures by Pierre
    Corbineau, Feb 2008 *)
 (* Turned into an abstract compilation unit by Matthieu Sozeau, March 2006 *)
@@ -345,7 +345,7 @@ let saturate_evd env evd =
   Typeclasses.resolve_typeclasses
     ~filter:Typeclasses.no_goals ~split:false ~fail:false env evd
 
-(* appliquer le chemin de coercions p à hj *)
+(* appliquer le chemin de coercions p Ã  hj *)
 let apply_coercion env sigma p hj typ_cl =
   try
     let j,t,evd = 

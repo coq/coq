@@ -25,29 +25,29 @@ Theories:
 
 Doc:
 
-- Mettre à jour les messages d'erreurs de Discriminate/Simplify_eq/Injection
+- Mettre Ã  jour les messages d'erreurs de Discriminate/Simplify_eq/Injection
 - Documenter le filtrage sur les types inductifs avec let-ins (dont la
   compatibilite V6)
 
-- Ajouter let dans les règles du CIC
+- Ajouter let dans les rÃ¨gles du CIC
   -> FAIT, mais reste a documenter le let dans les inductifs
   et les champs manifestes dans les Record   
 - revoir le chapitre sur les tactiques utilisateur 
-- faut-il mieux spécifier la sémantique de Simpl (??)
+- faut-il mieux spÃ©cifier la sÃ©mantique de Simpl (??)
 
-- Préciser la clarification syntaxique de IntroPattern
+- PrÃ©ciser la clarification syntaxique de IntroPattern
 - preciser que Goal vient en dernier dans une clause pattern list et
   qu'il doit apparaitre si il y a un "in"
 
 - Omega Time debranche mais Omega System et Omega Action remarchent ?
 - Ajout "Replace in" (mais TODO)
-- Syntaxe Conditional tac Rewrite marche, à documenter
+- Syntaxe Conditional tac Rewrite marche, Ã  documenter
 - Documenter Dependent Rewrite et CutRewrite ?
 - Ajouter les motifs sous-termes de ltac
 
 - ajouter doc de GenFixpoint (mais avant: changer syntaxe) (J. Forest ou Pierre C.)
-- mettre à jour la doc de induction (arguments multiples) (Pierre C.)
-- mettre à jour la doc de functional induction/scheme (J. Forest ou Pierre C.)
---> mettre à jour le CHANGES (vers la ligne 72)
+- mettre Ã  jour la doc de induction (arguments multiples) (Pierre C.)
+- mettre Ã  jour la doc de functional induction/scheme (J. Forest ou Pierre C.)
+--> mettre Ã  jour le CHANGES (vers la ligne 72)
 
 

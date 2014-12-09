@@ -178,7 +178,7 @@ let ident_key_of_class = function
   | CL_IND (sp,_) -> Label.to_string (mind_label sp)
   | CL_SECVAR id -> Id.to_string id
 
-(* coercion identité *)
+(* Identity coercion *)
 
 let error_not_transparent source =
   errorlabstrm "build_id_coercion"

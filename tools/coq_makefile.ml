@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* créer un Makefile pour un développement Coq automatiquement *)
+(* Coq_makefile: automatically create a Makefile for a Coq development *)
 
 let output_channel = ref stdout
 let makefile_name = ref "Makefile"

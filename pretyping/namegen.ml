@@ -176,8 +176,8 @@ let next_ident_away_from id bad =
 
 let restart_subscript id =
   if not (has_subscript id) then id else
-    (* Ce serait sans doute mieux avec quelque chose inspiré de
-     *** make_ident id (Some 0) *** mais ça brise la compatibilité... *)
+    (* It would probably be better with something in the spirit of
+     *** make_ident id (Some 0) *** but compatibility would be lost... *)
     forget_subscript id
 
 let rec to_avoid id = function

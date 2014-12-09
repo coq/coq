@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Created by Amokrane Saïbi, Dec 1998 *)
+(* Created by Amokrane SaÃ¯bi, Dec 1998 *)
 (* Addition of products and sorts in canonical structures by Pierre
    Corbineau, Feb 2008 *)
 
@@ -28,10 +28,10 @@ open Reductionops
    constructor (the name of which defaults to Build_S) *)
 
 (* Table des structures: le nom de la structure (un [inductive]) donne
-   le nom du constructeur, le nombre de paramètres et pour chaque
-   argument réel du constructeur, le nom de la projection
-   correspondante, si valide, et un booléen disant si c'est une vraie
-   projection ou bien une fonction constante (associée à un LetIn) *)
+   le nom du constructeur, le nombre de paramÃ¨tres et pour chaque
+   argument rÃ©el du constructeur, le nom de la projection
+   correspondante, si valide, et un boolÃ©en disant si c'est une vraie
+   projection ou bien une fonction constante (associÃ©e Ã  un LetIn) *)
 
 type struc_typ = {
   s_CONST : constructor;

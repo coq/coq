@@ -167,7 +167,7 @@ let rewrite f p =
    Rem 2 : if used for an iso8859_1 encoded string, the result is
    wrong in very rare cases. Such a wrong case corresponds to any
    sequence of a character in range 192..253 immediately followed by a
-   character in range 128..191 (typical case in french is "déçu" which
+   character in range 128..191 (typical case in french is "dÃ©Ã§u" which
    is counted 3 instead of 4); then no real harm to use always
    utf8_length even if using an iso8859_1 encoding *)
 

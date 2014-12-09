@@ -399,7 +399,7 @@ type coercion = {
   coercion_params : int;
 }
 
-(* Calcul de l'arité d'une classe *)
+(* Computation of the class arity *)
 
 let reference_arity_length ref =
   let t = Universes.unsafe_type_of_global ref in

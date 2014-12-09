@@ -1,19 +1,19 @@
-Comment ajouter une nouvelle entrée primitive pour les TACTIC EXTEND ?
+Comment ajouter une nouvelle entrÃ©e primitive pour les TACTIC EXTEND ?
 ======================================================================
 
-Exemple de l'ajout de l'entrée "clause":
+Exemple de l'ajout de l'entrÃ©e "clause":
 
 - ajouter un type ClauseArgType dans interp/genarg.ml{,i}, avec les
   wit_, rawwit_, et globwit_ correspondants
 
-- ajouter partout où Genarg.argument_type est filtré le cas traitant de
+- ajouter partout oÃ¹ Genarg.argument_type est filtrÃ© le cas traitant de
   ce nouveau ClauseArgType
 
-- utiliser le rawwit_clause pour définir une entrée clause du bon
+- utiliser le rawwit_clause pour dÃ©finir une entrÃ©e clause du bon
   type et du bon nom dans le module Tactic de pcoq.ml4
 
-- il faut aussi exporter la règle hors de g_tactic.ml4. Pour cela, il
+- il faut aussi exporter la rÃ¨gle hors de g_tactic.ml4. Pour cela, il
   faut rejouter clause dans le GLOBAL du GEXTEND
 
-- seulement après, le nom clause sera accessible dans les TACTIC EXTEND !
+- seulement aprÃ¨s, le nom clause sera accessible dans les TACTIC EXTEND !
 

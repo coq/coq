@@ -9,7 +9,7 @@
 (*                                                                        *)
 (* Omega: a solver of quantifier-free problems in Presburger Arithmetic   *)
 (*                                                                        *)
-(* Pierre Crégut (CNET, Lannion, France)                                  *)
+(* Pierre CrÃ©gut (CNET, Lannion, France)                                  *)
 (*                                                                        *)
 (* 13/10/2002 : modified to cope with an external numbering of equations  *)
 (*   and hypothesis. Its use for Omega is not more complex and it makes   *)
@@ -584,15 +584,6 @@ let rec depend relie_on accu = function
 	| SPLIT_INEQ _ -> failwith "depend"
       end
   | [] -> relie_on, accu
-
-(*
-let depend relie_on accu trace =
-  Printf.printf "Longueur de la trace initiale : %d\n"
-    (trace_length trace + trace_length accu);
-  let rel',trace' = depend relie_on accu trace in
-  Printf.printf "Longueur de la trace simplifiée : %d\n" (trace_length trace');
-  rel',trace'
-*)
 
 let solve (new_eq_id,new_eq_var,print_var) system =
   try let _ = simplify new_eq_id false system in failwith "no contradiction"

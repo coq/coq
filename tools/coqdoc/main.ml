@@ -450,7 +450,7 @@ let gen_mult_files l =
       if (!header_trailer) then Output.trailer ();
       close_out_file()
     end
-      (* Rq: pour latex et texmacs, une toc ou un index séparé n'a pas de sens... *)
+    (* NB: for latex and texmacs, a separated toc or index is meaningless... *)
 
 let read_glob_file vfile f =
   try Index.read_glob vfile f

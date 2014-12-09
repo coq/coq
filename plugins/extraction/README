@@ -14,7 +14,7 @@ Who did it ?
 ------------
 
 The current implementation (from version 7.0 up to now) has been done
-by P. Letouzey during his PhD, helped by J.C. Filli‚tre and supervised
+by P. Letouzey during his PhD, helped by J.C. Filli√¢tre and supervised
 by C. Paulin. 
 
 An earlier implementation (versions 6.x) was due to B. Werner and
@@ -118,7 +118,7 @@ Axioms, and then "Extract Constant ..."
 
 
 [1]:
-ExÈcution de termes de preuves: une nouvelle mÈthode d'extraction 
+Ex√©cution de termes de preuves: une nouvelle m√©thode d'extraction 
 pour le Calcul des Constructions Inductives, Pierre Letouzey,
 DEA thesis, 2000, 
 http://www.pps.jussieu.fr/~letouzey/download/rapport_dea.ps.gz
@@ -129,7 +129,7 @@ Types 2002 Post-Workshop Proceedings.
 http://www.pps.jussieu.fr/~letouzey/download/extraction2002.ps.gz
 
 [3]: 
-Programmation fonctionnelle certifiÈe: l'extraction de programmes
+Programmation fonctionnelle certifi√©e: l'extraction de programmes
 dans l'assistant Coq. Pierre Letouzey, PhD thesis, 2004.
 http://www.pps.jussieu.fr/~letouzey/download/these_letouzey.ps.gz
 http://www.pps.jussieu.fr/~letouzey/download/these_letouzey_English.ps.gz

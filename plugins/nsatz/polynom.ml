@@ -602,7 +602,7 @@ and pgcd_pol_rec p q x =
 	    res
 	   )
 
-(* Sub-résultants:
+(* Sub-rÃ©sultants:
 
    ai*Ai = Qi*Ai+1 + bi*Ai+2
 

@@ -6,13 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Méthode d'élimination de Fourier *)
-(* Référence:
+(* MÃ©thode d'Ã©limination de Fourier *)
+(* RÃ©fÃ©rence:
 Auteur(s) : Fourier, Jean-Baptiste-Joseph
 
-Titre(s) : Oeuvres de Fourier [Document électronique]. Tome second. Mémoires publiés dans divers recueils / publ. par les soins de M. Gaston Darboux,...
+Titre(s) : Oeuvres de Fourier [Document Ã©lectronique]. Tome second. MÃ©moires publiÃ©s dans divers recueils / publ. par les soins de M. Gaston Darboux,...
 
-Publication : Numérisation BnF de l'édition de Paris : Gauthier-Villars, 1890
+Publication : NumÃ©risation BnF de l'Ã©dition de Paris : Gauthier-Villars, 1890
 
 Pages: 326-327
 
@@ -20,8 +20,8 @@ http://gallica.bnf.fr/
 *)
 
 (* Un peu de calcul sur les rationnels...
-Les opérations rendent des rationnels normalisés,
-i.e. le numérateur et le dénominateur sont premiers entre eux.
+Les opÃ©rations rendent des rationnels normalisÃ©s,
+i.e. le numÃ©rateur et le dÃ©nominateur sont premiers entre eux.
 *)
 type rational = {num:int;
                  den:int}
@@ -59,9 +59,9 @@ let rdiv x y = rnorm {num=x.num*y.den;den=x.den*y.num};;
 let rinf x y = x.num*y.den < y.num*x.den;;
 let rinfeq x y = x.num*y.den <= y.num*x.den;;
 
-(* {coef;hist;strict}, où coef=[c1; ...; cn; d], représente l'inéquation
+(* {coef;hist;strict}, oÃ¹ coef=[c1; ...; cn; d], reprÃ©sente l'inÃ©quation
 c1x1+...+cnxn < d si strict=true, <= sinon,
-hist donnant les coefficients (positifs) d'une combinaison linéaire qui permet d'obtenir l'inéquation à partir de celles du départ.
+hist donnant les coefficients (positifs) d'une combinaison linÃ©aire qui permet d'obtenir l'inÃ©quation Ã  partir de celles du dÃ©part.
 *)
 
 type ineq = {coef:rational list;
@@ -70,8 +70,8 @@ type ineq = {coef:rational list;
 
 let pop x l = l:=x::(!l);;
 
-(* sépare la liste d'inéquations s selon que leur premier coefficient est
-négatif, nul ou positif. *)
+(* sÃ©pare la liste d'inÃ©quations s selon que leur premier coefficient est
+nÃ©gatif, nul ou positif. *)
 let partitionne s =
    let lpos=ref [] in
    let lneg=ref [] in
@@ -85,13 +85,13 @@ let partitionne s =
              s;
    [!lneg;!lnul;!lpos]
 ;;
-(* initialise les histoires d'une liste d'inéquations données par leurs listes de coefficients et leurs strictitudes (!):
-(add_hist [(equation 1, s1);...;(équation n, sn)])
+(* initialise les histoires d'une liste d'inÃ©quations donnÃ©es par leurs listes de coefficients et leurs strictitudes (!):
+(add_hist [(equation 1, s1);...;(Ã©quation n, sn)])
 =
-[{équation 1, [1;0;...;0], s1};
- {équation 2, [0;1;...;0], s2};
+[{Ã©quation 1, [1;0;...;0], s1};
+ {Ã©quation 2, [0;1;...;0], s2};
  ...
- {équation n, [0;0;...;1], sn}]
+ {Ã©quation n, [0;0;...;1], sn}]
 *)
 let add_hist le =
    let n = List.length le in
@@ -105,24 +105,24 @@ let add_hist le =
               {coef=ie;hist=(!h);strict=s})
              le
 ;;
-(* additionne deux inéquations *)
+(* additionne deux inÃ©quations *)
 let ie_add ie1 ie2 = {coef=List.map2 rplus ie1.coef ie2.coef;
                       hist=List.map2 rplus ie1.hist ie2.hist;
 		      strict=ie1.strict || ie2.strict}
 ;;
-(* multiplication d'une inéquation par un rationnel (positif) *)
+(* multiplication d'une inÃ©quation par un rationnel (positif) *)
 let ie_emult a ie = {coef=List.map (fun x -> rmult a x) ie.coef;
                      hist=List.map (fun x -> rmult a x) ie.hist;
 		     strict= ie.strict}
 ;;
-(* on enlève le premier coefficient *)
+(* on enlÃ¨ve le premier coefficient *)
 let ie_tl ie = {coef=List.tl ie.coef;hist=ie.hist;strict=ie.strict}
 ;;
-(* le premier coefficient: "tête" de l'inéquation *)
+(* le premier coefficient: "tÃªte" de l'inÃ©quation *)
 let hd_coef ie = List.hd ie.coef
 ;;
 
-(* calcule toutes les combinaisons entre inéquations de tête négative et inéquations de tête positive qui annulent le premier coefficient.
+(* calcule toutes les combinaisons entre inÃ©quations de tÃªte nÃ©gative et inÃ©quations de tÃªte positive qui annulent le premier coefficient.
 *)
 let deduce_add lneg lpos =
    let res=ref [] in
@@ -136,8 +136,8 @@ let deduce_add lneg lpos =
              lneg;
    !res
 ;;
-(* élimination de la première variable à partir d'une liste d'inéquations:
-opération qu'on itère dans l'algorithme de Fourier.
+(* Ã©limination de la premiÃ¨re variable Ã  partir d'une liste d'inÃ©quations:
+opÃ©ration qu'on itÃ¨re dans l'algorithme de Fourier.
 *)
 let deduce1 s =
     match (partitionne s) with
@@ -146,7 +146,7 @@ let deduce1 s =
     (List.map ie_tl lnul)@lnew
      |_->assert false
 ;;
-(* algorithme de Fourier: on élimine successivement toutes les variables.
+(* algorithme de Fourier: on Ã©limine successivement toutes les variables.
 *)
 let deduce lie =
    let n = List.length (fst (List.hd lie)) in
@@ -157,12 +157,12 @@ let deduce lie =
    !lie
 ;;
 
-(* donne [] si le système a des solutions,
+(* donne [] si le systÃ¨me a des solutions,
 sinon donne [c,s,lc]
-où lc est la combinaison linéaire des inéquations de départ
+oÃ¹ lc est la combinaison linÃ©aire des inÃ©quations de dÃ©part
 qui donne 0 < c si s=true
        ou 0 <= c sinon
-cette inéquation étant absurde.
+cette inÃ©quation Ã©tant absurde.
 *)
 
 exception Contradiction of (rational * bool * rational list) list
