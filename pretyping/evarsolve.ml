@@ -120,9 +120,9 @@ let test_success conv_algo env evd c c' rhs =
 
 let add_conv_oriented_pb (pbty,env,t1,t2) evd =
   match pbty with
-  | Some true -> add_conv_pb (Reduction.CUMUL,env,t2,t1) evd
+  | Some true -> add_conv_pb (Reduction.CUMUL,env,t1,t2) evd
   | Some false -> add_conv_pb (Reduction.CUMUL,env,t2,t1) evd
-  | None -> add_conv_pb (Reduction.CONV,env,t2,t1) evd
+  | None -> add_conv_pb (Reduction.CONV,env,t1,t2) evd
 
 (*------------------------------------*
  * Restricting existing evars         *

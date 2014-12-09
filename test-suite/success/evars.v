@@ -404,3 +404,7 @@ Abort.
    not strict enough evar restriction) *)
 
 Check match Some _ with None => _ | _ => _ end.
+
+(* Used to fail for a couple of days in Nov 2014 *)
+
+Axiom test : forall P1 P2, P1 = P2 -> P1 -> P2.
