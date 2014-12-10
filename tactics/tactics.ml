@@ -3583,7 +3583,9 @@ let find_induction_type isrec elim hyp0 gl =
   let scheme,elim =
     match elim with
     | None ->
-	let _, (elimc,elimt),_ = guess_elim isrec (* dummy: *) true (* dummy: *) InProp hyp0 gl in
+       let sort = Tacticals.New.elimination_sort_of_goal gl in
+       let _, (elimc,elimt),_ = 
+	 guess_elim isrec (* dummy: *) true sort hyp0 gl in
 	let scheme = compute_elim_sig ~elimc elimt in
 	(* We drop the scheme waiting to know if it is dependent *)
 	scheme, ElimOver (isrec,hyp0)
