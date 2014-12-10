@@ -32,6 +32,7 @@ LIB := ..
 
 coqtop := $(BIN)coqtop -boot -q -batch -R prerequisite TestSuite
 bincoqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
+bincoqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
 
 command := $(coqtop) -top Top -async-proofs-cache force -load-vernac-source
 coqc := $(coqtop) -compile
@@ -81,7 +82,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   interactive micromega $(COMPLEXITY) modules stm
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide
+SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vi
 
 #######################################################################
 # Phony targets
@@ -100,7 +101,7 @@ clean:
 	rm -f trace lia.cache
 	$(SHOW) "RM        <**/*.stamp> <**/*.vo> <**/*.log>"
 	$(HIDE)find . \( \
-	  -name '*.stamp' -o -name '*.vo' -o -name '*.log' \
+	  -name '*.stamp' -o -name '*.vo' -o -name '*.vi' -o -name '*.log' \
 	\) -print0 | xargs -0 rm -f
 
 distclean: clean
@@ -139,6 +140,7 @@ summary:
 	  $(call summary_dir, "Module tests", modules); \
 	  $(call summary_dir, "STM tests", stm); \
 	  $(call summary_dir, "IDE tests", ide); \
+	  $(call summary_dir, "IDE tests", vi); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
@@ -416,6 +418,23 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(BIN)fake_ide $< "$(BIN)coqtop -boot -async-proofs on" 2>&1; \
+	  if [ $$? = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error!"; \
+	  fi; \
+	} > "$@"
+
+vi: $(patsubst %.v,%.vi.log,$(wildcard vi/*.v))
+
+%.vi.log:%.v
+	@echo "TEST      $<"
+	$(HIDE){ \
+	  $(bincoqc) -quick -R vi vi $* 2>&1 && \
+	  $(coqtop) -R vi vi -vi2vo $*.vi 2>&1 && \
+	  $(bincoqchk) -R vi vi $(subst /,.,$*) 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
