@@ -140,7 +140,7 @@ summary:
 	  $(call summary_dir, "Module tests", modules); \
 	  $(call summary_dir, "STM tests", stm); \
 	  $(call summary_dir, "IDE tests", ide); \
-	  $(call summary_dir, "IDE tests", vi); \
+	  $(call summary_dir, "VI tests", vi); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
 	  nb_tests=`expr $$nb_success + $$nb_failure`; \
