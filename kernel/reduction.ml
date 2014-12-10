@@ -30,12 +30,14 @@ let left2right = ref false
 
 let conv_key k =
   match k with
-  | VarKey id -> VarKey id
-  | ConstKey (cst,_) -> ConstKey cst
+    VarKey id -> 
+    VarKey id
+  | ConstKey (cst,_) -> 
+     ConstKey cst
   | RelKey n -> RelKey n
-
+		       
 let rec is_empty_stack = function
-    [] -> true
+  [] -> true
   | Zupdate _::s -> is_empty_stack s
   | Zshift _::s -> is_empty_stack s
   | _ -> false
@@ -370,12 +372,39 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 	| Some (def2,s2) ->
 	  eqappr cv_pb l2r infos appr1 (lft2, whd def2 (s2 :: v2)) cuniv
 	| None -> 
-          if Constant.equal (Projection.constant p1) (Projection.constant p2) 
-	    && compare_stack_shape v1 v2 then
+          if Constant.equal (Projection.constant p1) (Projection.constant p2)
+	     && compare_stack_shape v1 v2 then
 	    let u1 = ccnv CONV l2r infos el1 el2 c1 c2 cuniv in
 	      convert_stacks l2r infos lft1 lft2 v1 v2 u1
-	  else raise NotConvertible)
+	  else (* Two projections in WHNF: unfold *)
+	    raise NotConvertible)
 
+    | (FProj (p1,c1), t2) ->
+      (match unfold_projection infos p1 c1 with
+      | Some (def1,s1) ->
+         eqappr cv_pb l2r infos (lft1, whd def1 (s1 :: v1)) appr2 cuniv
+      | None -> 
+	 (match t2 with 
+	  | FFlex fl2 ->
+	     (match unfold_reference infos fl2 with
+              | Some def2 ->
+		 eqappr cv_pb l2r infos appr1 (lft2, whd def2 v2) cuniv
+              | None -> raise NotConvertible)
+	  | _ -> raise NotConvertible))
+      
+    | (t1, FProj (p2,c2)) ->
+      (match unfold_projection infos p2 c2 with
+      | Some (def2,s2) -> 
+         eqappr cv_pb l2r infos appr1 (lft2, whd def2 (s2 :: v2)) cuniv
+      | None -> 
+	 (match t1 with 
+	  | FFlex fl1 ->
+	     (match unfold_reference infos fl1 with
+              | Some def1 ->
+		 eqappr cv_pb l2r infos (lft1, whd def1 v1) appr2 cuniv
+              | None -> raise NotConvertible)
+	  | _ -> raise NotConvertible))
+      
     (* other constructors *)
     | (FLambda _, FLambda _) ->
         (* Inconsistency: we tolerate that v1, v2 contain shift and update but
@@ -413,57 +442,35 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
 	eqappr CONV l2r infos
 	  (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
-
+	
     (* only one constant, defined var or defined rel *)
     | (FFlex fl1, c2)      ->
-      (match unfold_reference infos fl1 with
-      | Some def1 ->
-	eqappr cv_pb l2r infos (lft1, whd def1 v1) appr2 cuniv
-      | None -> 
-	match c2 with
-	| FConstruct ((ind2,j2),u2) ->
-	  (try
- 	     let v2, v1 =
- 	       eta_expand_ind_stack (info_env infos) ind2 hd2 v2 (snd appr1)
- 	     in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
- 	   with Not_found -> raise NotConvertible)
-	| FProj (p2,c2) ->
-	  (match unfold_projection infos p2 c2 with
-	  | Some (def2,s2) -> 
-	    eqappr cv_pb l2r infos appr1 (lft2, whd def2 (s2 :: v2)) cuniv
-	  | None -> raise NotConvertible)
-	| _ -> raise NotConvertible)
-	
+       (match unfold_reference infos fl1 with
+	| Some def1 ->
+	   eqappr cv_pb l2r infos (lft1, whd def1 v1) appr2 cuniv
+	| None -> 
+	   match c2 with
+	   | FConstruct ((ind2,j2),u2) ->
+	      (try
+	      let v2, v1 =
+		eta_expand_ind_stack (info_env infos) ind2 hd2 v2 (snd appr1)
+	      in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+	      with Not_found -> raise NotConvertible)
+	   | _ -> raise NotConvertible)
+       
     | (c1, FFlex fl2)      ->
-      (match unfold_reference infos fl2 with
-      | Some def2 ->
-	eqappr cv_pb l2r infos appr1 (lft2, whd def2 v2) cuniv
-      | None -> 
-	match c1 with
-	| FConstruct ((ind1,j1),u1) ->
- 	  (try let v1, v2 =
-	     	 eta_expand_ind_stack (info_env infos) ind1 hd1 v1 (snd appr2)
-	       in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-	   with Not_found -> raise NotConvertible)
-	| FProj (p1,c1) ->
-	  (match unfold_projection infos p1 c1 with
-	  | Some (def1,s1) ->
-	    eqappr cv_pb l2r infos (lft1, whd def1 (s1 :: v1)) appr2 cuniv
-	  | None -> raise NotConvertible)
-	| _ -> raise NotConvertible)
-	
-    | (FProj (p1,c1), t2) ->
-      (match unfold_projection infos p1 c1 with
-      | Some (def1,s1) ->
-         eqappr cv_pb l2r infos (lft1, whd def1 (s1 :: v1)) appr2 cuniv
-      | None -> raise NotConvertible)
-	
-    | (t1, FProj (p2,c2)) ->
-      (match unfold_projection infos p2 c2 with
-      | Some (def2,s2) -> 
-	eqappr cv_pb l2r infos appr1 (lft2, whd def2 (s2 :: v2)) cuniv
-      | None -> raise NotConvertible)
-	  
+       (match unfold_reference infos fl2 with
+        | Some def2 ->
+	   eqappr cv_pb l2r infos appr1 (lft2, whd def2 v2) cuniv
+        | None -> 
+	   match c1 with
+	   | FConstruct ((ind1,j1),u1) ->
+ 	      (try let v1, v2 =
+	     	     eta_expand_ind_stack (info_env infos) ind1 hd1 v1 (snd appr2)
+	     	   in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+	       with Not_found -> raise NotConvertible)
+	   | _ -> raise NotConvertible)
+       
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
     | (FInd (ind1,u1), FInd (ind2,u2)) ->
