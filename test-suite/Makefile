@@ -99,7 +99,7 @@ bugs: $(BUGS)
 
 clean:
 	rm -f trace lia.cache
-	$(SHOW) "RM        <**/*.stamp> <**/*.vo> <**/*.log>"
+	$(SHOW) "RM        <**/*.stamp> <**/*.vo> <**/*.vi> <**/*.log>"
 	$(HIDE)find . \( \
 	  -name '*.stamp' -o -name '*.vo' -o -name '*.vi' -o -name '*.log' \
 	\) -print0 | xargs -0 rm -f
