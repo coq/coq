@@ -60,23 +60,29 @@ let create () = {
   release = false;
 }
 
-let pop ?(picky=(fun _ -> true))
+let pop ?(picky=(fun _ -> true)) ?(destroy=ref false)
   ({ queue = q; lock = m; cond = c; cond_waiting = cn } as tq)
 =
-  if tq.release then raise BeingDestroyed;
   Mutex.lock m;
-  while not (PriorityQueue.exists picky q) do
+  if tq.release then (Mutex.unlock m; raise BeingDestroyed);
+  while not (PriorityQueue.exists picky q || !destroy) do
     tq.nwaiting <- tq.nwaiting + 1;
     Condition.broadcast cn;
     Condition.wait c m;
     tq.nwaiting <- tq.nwaiting - 1;
-    if tq.release then (Mutex.unlock m; raise BeingDestroyed)
+    if tq.release || !destroy then (Mutex.unlock m; raise BeingDestroyed)
   done;
+  if !destroy then (Mutex.unlock m; raise BeingDestroyed);
   let x = PriorityQueue.pop ~picky q in
   Condition.signal c;
   Condition.signal cn;
   Mutex.unlock m;
   x
+
+let signal_destruction { lock = m; cond = c } =
+  Mutex.lock m;
+  Condition.broadcast c;
+  Mutex.unlock m
 
 let push { queue = q; lock = m; cond = c; release } x =
   if release then Errors.anomaly(Pp.str
