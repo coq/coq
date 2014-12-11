@@ -291,7 +291,7 @@ let error_error names e =
 	     e_explain e)
     | _ -> raise e
 
-let generate_principle  on_error
+let generate_principle  mp_dp on_error
     is_general do_built (fix_rec_l:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) recdefs  interactive_proof
     (continue_proof : int -> Names.constant array -> Term.constr array -> int ->
       Tacmach.tactic) : unit =
@@ -301,7 +301,7 @@ let generate_principle  on_error
   let funs_types =  List.map (function ((_,_,_,types,_),_) -> types) fix_rec_l in
   try
     (* We then register the Inductive graphs of the functions  *)
-    Glob_term_to_relation.build_inductive names funs_args funs_types recdefs;
+    Glob_term_to_relation.build_inductive mp_dp names funs_args funs_types recdefs;
     if do_built
     then
       begin
@@ -549,7 +549,7 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   fixpoint_exprl_with_new_bl
   
 
-let do_generate_principle on_error register_built interactive_proof
+let do_generate_principle mp_dp on_error register_built interactive_proof
     (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) :unit =
   List.iter (fun (_,l) -> if not (List.is_empty l) then error "Function does not support notations for now") fixpoint_exprl;
   let _is_struct =
@@ -566,6 +566,7 @@ let do_generate_principle on_error register_built interactive_proof
 	  let using_lemmas = [] in 
 	  let pre_hook =
 	    generate_principle
+	      mp_dp
 	      on_error
 	      true
 	      register_built
@@ -588,6 +589,7 @@ let do_generate_principle on_error register_built interactive_proof
 	  let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
 	  let pre_hook =
 	    generate_principle
+	      mp_dp
 	      on_error
 	      true
 	      register_built
@@ -616,6 +618,7 @@ let do_generate_principle on_error register_built interactive_proof
 	let is_rec = List.exists (is_rec fix_names) recdefs in
 	if register_built then register_struct is_rec fixpoint_exprl;
 	generate_principle
+	  mp_dp
 	  on_error
 	  false
 	  register_built
@@ -803,17 +806,17 @@ let make_graph (f_ref:global_reference) =
 		 in
 		 l
 	     | _ ->
-		 let id = Label.to_id (con_label c) in
+		let id = Label.to_id (con_label c) in
 		 [((Loc.ghost,id),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
-	 do_generate_principle error_error false false expr_list;
-	 (* We register the infos *)
 	 let mp,dp,_ = repr_con c in
+	 do_generate_principle (Some (mp,dp)) error_error  false false expr_list;
+	 (* We register the infos *)
 	 List.iter
 	   (fun (((_,id),_,_,_,_),_) -> add_Function false (make_con mp dp (Label.of_id id)))
 	   expr_list);
   Dumpglob.continue ()
 
-let do_generate_principle = do_generate_principle warning_error true
+let do_generate_principle = do_generate_principle None warning_error true
 
 

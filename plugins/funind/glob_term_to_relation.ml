@@ -1233,11 +1233,12 @@ let rec rebuild_return_type rt =
 
 
 let do_build_inductive
-    funnames (funsargs: (Name.t * glob_constr * bool) list list)
-    returned_types
-    (rtl:glob_constr list) =
+      mp_dp
+      funnames (funsargs: (Name.t * glob_constr * bool) list list)
+      returned_types
+      (rtl:glob_constr list) =
   let _time1 = System.get_time () in
-(*   Pp.msgnl (prlist_with_sep fnl Printer.pr_glob_constr rtl); *)
+  (*   Pp.msgnl (prlist_with_sep fnl Printer.pr_glob_constr rtl); *)
   let funnames_as_set = List.fold_right Id.Set.add funnames Id.Set.empty in
   let funnames = Array.of_list funnames in
   let funsargs = Array.of_list funsargs in
@@ -1254,7 +1255,17 @@ let do_build_inductive
   let env =
     Array.fold_right
       (fun id env ->
-	 Environ.push_named (id,None,Typing.type_of env Evd.empty (Constrintern.global_reference id))  env
+       let c =
+	 match mp_dp with
+	 | None -> (Constrintern.global_reference id)
+	 | Some(mp,dp) -> mkConst (make_con mp dp (Label.of_id id))
+       in
+       Environ.push_named (id,None,
+			   try
+			     Typing.type_of env Evd.empty c
+			   with Not_found ->
+			     raise (UserError("do_build_inductive", str "Cannot handle partial fixpoint"))
+			  )  env
       )
       funnames
       (Global.env ())
@@ -1450,9 +1461,9 @@ let do_build_inductive
 
 
 
-let build_inductive funnames funsargs returned_types rtl =
+let build_inductive mp_dp funnames funsargs returned_types rtl =
   try
-    do_build_inductive funnames funsargs returned_types rtl
+    do_build_inductive mp_dp funnames funsargs returned_types rtl
   with e when Errors.noncritical e -> raise (Building_graph e)
 
 
