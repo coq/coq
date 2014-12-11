@@ -1368,7 +1368,7 @@ let w_unify_core_0 env evd with_types cv_pb flags m n =
   let (mc1,evd') = retract_coercible_metas evd in
   let (sigma,ms,es) = check_types env (set_flags_for_type flags.core_unify_flags) (evd,mc1,[]) m n in
   let subst2 =
-     unify_0_with_initial_metas (evd',ms,es) false env cv_pb
+     unify_0_with_initial_metas (sigma,ms,es) false env cv_pb
        flags.core_unify_flags m n
   in
   let evd = w_merge env with_types flags.merge_unify_flags subst2 in
