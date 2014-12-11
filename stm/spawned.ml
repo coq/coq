@@ -44,7 +44,7 @@ let controller h p =
         | Hello _ -> prerr_endline "internal protocol error"; exit 1
         | ReqDie -> prerr_endline "death sentence received"; exit 0
         | ReqStats ->
-            output_value oc (RespStats (Gc.stat ())); flush oc; loop ()
+            output_value oc (RespStats (Gc.quick_stat ())); flush oc; loop ()
       with
       | e ->
         prerr_endline ("control channel broken: " ^ Printexc.to_string e);

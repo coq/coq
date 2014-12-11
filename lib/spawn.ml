@@ -261,7 +261,7 @@ let stats { oob_req; oob_resp; alive } =
   assert_ alive "This process is dead";
   output_value oob_req ReqStats;
   flush oob_req;
-  input_value oob_resp
+  let RespStats g = input_value oob_resp in g
 
 let kill_if p ~sec test =
   T.add_timeout ~sec (fun () ->
