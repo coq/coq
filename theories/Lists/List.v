@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Le Gt Minus Bool.
 Require Setoid.
+Require Import PeanoNat Le Gt Minus Bool.
 
 Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
@@ -618,29 +618,29 @@ Section Elts.
     match l with
       | [] => 0
       | y :: tl =>
-	let n := count_occ tl x in
-	  if eq_dec y x then S n else n
+        let n := count_occ tl x in
+        if eq_dec y x then S n else n
     end.
 
   (** Compatibility of count_occ with operations on list *)
-  Theorem count_occ_In (l : list A) (x : A) : In x l <-> count_occ l x > 0.
+  Theorem count_occ_In l x : In x l <-> count_occ l x > 0.
   Proof.
     induction l as [|y l]; simpl.
     - split; [destruct 1 | apply gt_irrefl].
     - destruct eq_dec as [->|Hneq]; rewrite IHl; intuition.
   Qed.
 
-  Theorem count_occ_not_In x l:
-    ~ In x l <-> count_occ l x = 0.
+  Theorem count_occ_not_In l x : ~ In x l <-> count_occ l x = 0.
   Proof.
-    revert x. induction l as [| a l' Hrec]; intro x.
-    - simpl. tauto.
-    - simpl. destruct (eq_dec a x).
-      * now intuition.
-      * rewrite <- Hrec. intuition.
+    rewrite count_occ_In. unfold gt. now rewrite Nat.nlt_ge, Nat.le_0_r.
   Qed.
 
-  Theorem count_occ_inv_nil (l : list A) :
+  Lemma count_occ_nil x : count_occ [] x = 0.
+  Proof.
+    reflexivity.
+  Qed.
+
+  Theorem count_occ_inv_nil l :
     (forall x:A, count_occ l x = 0) <-> l = [].
   Proof.
     split.
@@ -650,21 +650,16 @@ Section Elts.
     - now intros ->.
   Qed.
 
-  Lemma count_occ_nil : forall (x : A), count_occ [] x = 0.
+  Lemma count_occ_cons_eq l x y :
+    x = y -> count_occ (x::l) y = S (count_occ l y).
   Proof.
-    intro x; simpl; reflexivity.
+    intros H. simpl. now destruct (eq_dec x y).
   Qed.
 
-  Lemma count_occ_cons_eq : forall (l : list A) (x y : A), x = y -> count_occ (x::l) y = S (count_occ l y).
+  Lemma count_occ_cons_neq l x y :
+    x <> y -> count_occ (x::l) y = count_occ l y.
   Proof.
-    intros l x y H; simpl.
-    destruct (eq_dec x y); [reflexivity | contradiction].
-  Qed.
-
-  Lemma count_occ_cons_neq : forall (l : list A) (x y : A), x <> y -> count_occ (x::l) y = count_occ l y.
-  Proof.
-    intros l x y H; simpl.
-    destruct (eq_dec x y); [contradiction | reflexivity].
+    intros H. simpl. now destruct (eq_dec x y).
   Qed.
 
 End Elts.
@@ -876,9 +871,14 @@ Section Map.
 
   Fixpoint map (l:list A) : list B :=
     match l with
-      | nil => nil
-      | cons a t => cons (f a) (map t)
+      | [] => []
+      | a :: t => (f a) :: (map t)
     end.
+
+  Lemma map_cons (x:A)(l:list A) : map (x::l) = (f x) :: (map l).
+  Proof.
+    reflexivity.
+  Qed.
 
   Lemma in_map :
     forall (l:list A) (x:A), In x l -> In (f x) (map l).
@@ -927,24 +927,19 @@ Section Map.
     destruct l; simpl; reflexivity || discriminate.
   Qed.
 
-  Hypothesis HdecA: forall x1 x2 : A, {x1 = x2} + {x1 <> x2}.
-  Hypothesis HdecB: forall y1 y2 : B, {y1 = y2} + {y1 <> y2}.
+  (** [map] and count of occurrences *)
+
+  Hypothesis decA: forall x1 x2 : A, {x1 = x2} + {x1 <> x2}.
+  Hypothesis decB: forall y1 y2 : B, {y1 = y2} + {y1 <> y2}.
   Hypothesis Hfinjective: forall x1 x2: A, (f x1) = (f x2) -> x1 = x2.
 
-  Lemma map_cons:
-    forall x:A, forall l:list A,
-    map (x::l) = (f x) :: (map l).
-  Proof.
-    now simpl.
-  Qed.
-
   Theorem count_occ_map x l:
-    count_occ HdecA l x = count_occ HdecB (map l) (f x).
+    count_occ decA l x = count_occ decB (map l) (f x).
   Proof.
     revert x. induction l as [| a l' Hrec]; intro x; simpl.
     - reflexivity.
     - specialize (Hrec x).
-      destruct (HdecA a x) as [H1|H1], (HdecB (f a) (f x)) as [H2|H2].
+      destruct (decA a x) as [H1|H1], (decB (f a) (f x)) as [H2|H2].
       * rewrite Hrec. reflexivity.
       * contradiction H2. rewrite H1. reflexivity.
       * specialize (Hfinjective H2). contradiction H1.
@@ -1236,7 +1231,7 @@ End Fold_Right_Recursor.
 	  if f x then (x::g,d) else (g,x::d)
       end.
 
-  Theorem partition_eq1 a l l1 l2:
+  Theorem partition_cons1 a l l1 l2:
     partition l = (l1, l2) ->
     f a = true ->
     partition (a::l) = (a::l1, l2).
@@ -1244,7 +1239,7 @@ End Fold_Right_Recursor.
     simpl. now intros -> ->.
   Qed.
 
-  Theorem partition_eq2 a l l1 l2:
+  Theorem partition_cons2 a l l1 l2:
     partition l = (l1, l2) ->
     f a=false ->
     partition (a::l) = (l1, a::l2).
@@ -1774,91 +1769,43 @@ Section ReDun.
   intros. now apply NoDup_remove.
   Qed.
 
-  Theorem NoDup_cons_inv a l:
-    NoDup (a::l) -> (~ In a l /\ NoDup l).
+  Theorem NoDup_cons_iff a l:
+    NoDup (a::l) <-> ~ In a l /\ NoDup l.
   Proof.
-    inversion_clear 1. auto.
+    split.
+    + inversion_clear 1. now split.
+    + now constructor.
   Qed.
 
-  Hypothesis HdecA: forall x y : A, {x = y} + {x <> y}.
-
-  Theorem NoDup_count_occ' l:
-    NoDup l -> forall x:A, In x l -> (count_occ HdecA l x) = 1.
-  Proof.
-    induction l as [|a l' Hrec].
-    - intros ? ? H. contradiction H.
-    - intro H. generalize (NoDup_cons_inv H). clear H. intros (Hal', Hl').
-      specialize (Hrec Hl').
-      intros x Hx. generalize (in_inv Hx); clear Hx; intro Hx.
-      simpl. destruct (HdecA a x); subst.
-      * f_equal. apply count_occ_not_In. assumption.
-      * apply Hrec. destruct Hx; [contradiction H | assumption].
-  Qed.
-
-  Theorem NoDup_count_occ'' l:
-    (forall x:A, In x l -> (count_occ HdecA l x) = 1) ->
-    NoDup l.
-  Proof.
-    induction l as [| a l' Hrec].
-    - intros. apply NoDup_nil.
-    - intro H. apply NoDup_cons.
-    * generalize (H a (in_eq a l')). intro H'.
-      rewrite (count_occ_cons_eq HdecA l' (eq_refl a)) in H'.
-      inversion H'. apply (count_occ_not_In HdecA). assumption.
-    * apply Hrec. intros x Hxl'. case_eq (HdecA a x); intros Hax Hdecax.
-    + assert (Hnotinxl': (~ In x l')).
-      generalize (H x). rewrite <- Hax. intro H'.
-      generalize (H' (in_eq a l')). clear H'. intro H'.
-      simpl in H'. rewrite <- Hax in Hdecax. rewrite Hdecax in H'.
-      inversion H'.
-      apply (count_occ_not_In HdecA). assumption.
-      (* End of assert *)
-      contradiction Hxl'.
-    + generalize (H x (in_cons a x l' Hxl')). intro H'. simpl in H'.
-      rewrite Hdecax in H'. assumption.
-  Qed.
+  Hypothesis decA: forall x y : A, {x = y} + {x <> y}.
 
   Theorem NoDup_count_occ l:
-    NoDup l <-> forall x:A, In x l -> (count_occ HdecA l x) = 1.
+    NoDup l <-> (forall x:A, count_occ decA l x <= 1).
   Proof.
-    split. apply NoDup_count_occ'. apply NoDup_count_occ''.
+    induction l as [| a l' Hrec].
+    - simpl; split; auto. constructor.
+    - rewrite NoDup_cons_iff, Hrec, (count_occ_not_In decA). clear Hrec. split.
+      + intros (Ha, H) x. simpl. destruct (decA a x); auto.
+        subst; now rewrite Ha.
+      + split.
+        * specialize (H a). rewrite count_occ_cons_eq in H; trivial.
+          now inversion H.
+        * intros x. specialize (H x). simpl in *. destruct (decA a x); auto.
+          now apply Nat.lt_le_incl.
   Qed.
 
-  Theorem count_occ_NoDup_2 l:
-    (forall x:A, count_occ HdecA l x <= 1) <-> NoDup l.
+  Theorem NoDup_count_occ' l:
+    NoDup l <-> (forall x:A, In x l -> count_occ decA l x = 1).
   Proof.
-    setoid_rewrite PeanoNat.Nat.le_1_r.
-    split.
-    (* 1. nboccs<=1 -> NoDup l *)
-    induction l as [|a l' Hrec]; intro H.
-    (* 1.1: l=[@ *)
-    apply NoDup_nil.
-    (* 1.2: l=a::l' *)
-    apply NoDup_cons.
-    (* 1.2.1: ~ In a l' *)
-    destruct (in_dec HdecA a l') as [Hal'|Hal'].
-    (* 1.2.1.1: a in L' ??? *)
-    specialize (H a). rewrite (count_occ_cons_eq HdecA l' eq_refl) in H.
-    destruct H.
-    discriminate.
-    inversion H.
-    apply count_occ_not_In in H1. assumption.
-    (* 1.2.1.2: a n'est pas dans l', cqfd *)
-    assumption.
-    (* 1.2.2: NoDup l' *)
-    apply Hrec.
-    intro x. generalize (H x). simpl.
-    destruct (HdecA a x), 1.
-    discriminate.
-    inversion H0. left. auto.
-    left. assumption.
-    right. assumption.
-    (* 2: NoDup l -> nboccs<=1 *)
-    intros Hl x. destruct (in_dec HdecA x l) as [Hx|Hx].
-    (* 2.1: In x l *)
-    right. apply NoDup_count_occ; assumption.
-    (* 2.2: ~ In x l *)
-    left. rewrite <- count_occ_not_In. assumption.
+    rewrite NoDup_count_occ.
+    setoid_rewrite (count_occ_In decA). unfold gt, lt in *.
+    split; intros H x; specialize (H x);
+    set (n := count_occ decA l x) in *; clearbody n.
+    (* the rest would be solved by omega if we had it here... *)
+    - now apply Nat.le_antisymm.
+    - destruct (Nat.le_gt_cases 1 n); trivial.
+      + rewrite H; trivial.
+      + now apply Nat.lt_le_incl.
   Qed.
 
   (** Alternative characterisations of being without duplicates,
