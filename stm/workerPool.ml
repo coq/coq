@@ -65,7 +65,7 @@ let master_handshake worker_id ic oc =
 
 let worker_handshake slave_ic slave_oc =
   try
-    let v = (Marshal.from_channel slave_ic : int) in
+    let v = (CThread.thread_friendly_input_value slave_ic : int) in
     if v <> magic_no then begin
       prerr_endline "Handshake failed: protocol mismatch\n";
       exit 1;

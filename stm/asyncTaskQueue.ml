@@ -82,7 +82,7 @@ module Make(T : Task) = struct
       marshal_err ("marshal_request: "^s)
   
   let unmarshal_request ic =
-    try (Marshal.from_channel ic : request)
+    try (CThread.thread_friendly_input_value ic : request)
     with Failure s | Invalid_argument s | Sys_error s ->
       marshal_err ("unmarshal_request: "^s)
   
@@ -102,7 +102,7 @@ module Make(T : Task) = struct
       marshal_err ("marshal_more_data: "^s)
   
   let unmarshal_more_data ic =
-    try (Marshal.from_channel ic : more_data)
+    try (CThread.thread_friendly_input_value ic : more_data)
     with Failure s | Invalid_argument s | Sys_error s ->
       marshal_err ("unmarshal_more_data: "^s)
 
@@ -281,8 +281,8 @@ module Make(T : Task) = struct
     TQueue.push queue (t,c)
 
   let cancel_worker { active; parking } n =
-    Pool.cancel active n;
-    Pool.cancel parking n
+    Pool.cancel n active;
+    Pool.cancel n parking
 
   let name_of_request (Request r) = T.name_of_request r
 
@@ -300,12 +300,12 @@ module Make(T : Task) = struct
     Pool.cancel_all active;
     Pool.cancel_all parking
 
-  let slave_ic = ref stdin
-  let slave_oc = ref stdout
+  let slave_ic = ref None
+  let slave_oc = ref None
 
   let init_stdout () =
     let ic, oc = Spawned.get_channels () in
-    slave_oc := oc; slave_ic := ic
+    slave_oc := Some oc; slave_ic := Some ic
 
   let bufferize f =
     let l = ref [] in
@@ -314,28 +314,29 @@ module Make(T : Task) = struct
       | [] -> let data = f () in l := List.tl data; List.hd data
       | x::tl -> l := tl; x
 
-  let slave_handshake () = Pool.worker_handshake !slave_ic !slave_oc
+  let slave_handshake () =
+    Pool.worker_handshake (Option.get !slave_ic) (Option.get !slave_oc)
 
   let main_loop () =
     let slave_feeder oc fb =
       Marshal.to_channel oc (RespFeedback fb) []; flush oc in
-    Pp.set_feeder (slave_feeder !slave_oc);
+    Pp.set_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
     Pp.log_via_feedback ();
     Universes.set_remote_new_univ_level (bufferize (fun () ->
-      marshal_response !slave_oc RespGetCounterNewUnivLevel;
-      match unmarshal_more_data !slave_ic with
+      marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
+      match unmarshal_more_data (Option.get !slave_ic) with
       | MoreDataUnivLevel l -> l));
     let working = ref false in
     slave_handshake ();
     while true do
       try
         working := false;
-        let request = unmarshal_request !slave_ic in
+        let request = unmarshal_request (Option.get !slave_ic) in
         working := true;
         report_status (name_of_request request);
         let response = slave_respond request in
         report_status "Idle";
-        marshal_response !slave_oc response;
+        marshal_response (Option.get !slave_oc) response;
         Ephemeron.clear ()
       with
       | MarshalError s ->

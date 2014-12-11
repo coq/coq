@@ -6,8 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+type thread_ic = in_channel
+
 let prepare_in_channel_for_thread_friendly_io ic =
-  Unix.set_nonblock (Unix.descr_of_in_channel ic)
+  Unix.set_nonblock (Unix.descr_of_in_channel ic); ic
 
 let safe_wait_timed_read fd time =
   try Thread.wait_timed_read fd time

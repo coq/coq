@@ -450,7 +450,6 @@ let loop () =
   catch_break := false;
   let in_ch, out_ch = Spawned.get_channels () in
   let xml_oc = Xml_printer.make (Xml_printer.TChannel out_ch) in
-  CThread.prepare_in_channel_for_thread_friendly_io in_ch;
   let in_lb = Lexing.from_function (fun s len ->
     CThread.thread_friendly_read in_ch s ~off:0 ~len) in
   let xml_ic = Xml_parser.make (Xml_parser.SLexbuf in_lb) in

@@ -14,11 +14,13 @@
  * an unbounded wait has the same problem. *)
 
 (* Use only the following functions on the channel *)
-val prepare_in_channel_for_thread_friendly_io : in_channel -> unit
-val thread_friendly_input_value : in_channel -> 'a
+type thread_ic
+val prepare_in_channel_for_thread_friendly_io : in_channel -> thread_ic
+
+val thread_friendly_input_value : thread_ic -> 'a
 val thread_friendly_read :
-  in_channel -> string -> off:int -> len:int -> int
+  thread_ic -> string -> off:int -> len:int -> int
 val thread_friendly_really_read :
-  in_channel -> string -> off:int -> len:int -> unit
-val thread_friendly_really_read_line : in_channel -> string
+  thread_ic -> string -> off:int -> len:int -> unit
+val thread_friendly_really_read_line : thread_ic -> string
 
