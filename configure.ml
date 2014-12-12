@@ -12,7 +12,7 @@
 open Printf
 
 let coq_version = "trunk"
-let coq_macos_version = "8.4.99" (** "[...] should be a string comprised of
+let coq_macos_version = "8.4.90" (** "[...] should be a string comprised of
 three non-negative, period-separed integers [...]" *)
 let vo_magic = 8511
 let state_magic = 58511
@@ -154,6 +154,7 @@ let safe_remove f =
 (** The PATH list for searching programs *)
 
 let os_type_win32 = (Sys.os_type = "Win32")
+let os_type_cygwin = (Sys.os_type = "Cygwin")
 
 let global_path =
   try string_split (if os_type_win32 then ';' else ':') (Sys.getenv "PATH")
@@ -412,8 +413,6 @@ let rec try_archs = function
   | _ :: rest -> try_archs rest
   | [] -> query_arch ()
 
-let os_type_cygwin = (Sys.os_type = "Cygwin")
-
 let arch = match !Prefs.arch with
   | Some a -> a
   | None ->
@@ -427,7 +426,8 @@ let arch = match !Prefs.arch with
 
 let arch_win32 = (arch = "win32")
 
-let exe,dll = if arch_win32 then ".exe",".dll" else "", ".so"
+let exe = if arch_win32 then ".exe" else ""
+let dll = if os_type_win32 then ".dll" else ".so"
 
 (** * VCS
 
