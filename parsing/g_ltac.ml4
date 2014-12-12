@@ -84,6 +84,9 @@ GEXTEND Gram
     | "2" RIGHTA
       [ ta0 = tactic_expr; "+"; ta1 = binder_tactic -> TacOr (ta0,ta1)
       | ta0 = tactic_expr; "+"; ta1 = tactic_expr -> TacOr (ta0,ta1) 
+      | IDENT "tryif" ; ta = tactic_expr ;
+              "then" ; tat = tactic_expr ;
+              "else" ; tae = tactic_expr -> TacIfThenCatch(ta,tat,tae)
       | ta0 = tactic_expr; "||"; ta1 = binder_tactic -> TacOrelse (ta0,ta1)
       | ta0 = tactic_expr; "||"; ta1 = tactic_expr -> TacOrelse (ta0,ta1) ]
     | "1" RIGHTA

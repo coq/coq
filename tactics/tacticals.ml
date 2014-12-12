@@ -339,6 +339,13 @@ module New = struct
 
   let tclEXACTLY_ONCE t = Proofview.tclEXACTLY_ONCE (Refiner.FailError(0,lazy (assert false))) t
 
+  let tclIFCATCH t tt te =
+    tclINDEPENDENT begin
+      Proofview.tclIFCATCH t
+        tt
+        (fun e -> catch_failerror e <*> te ())
+    end
+
   let tclORELSE0 t1 t2 =
     tclINDEPENDENT begin
       tclORELSE
@@ -401,12 +408,12 @@ module New = struct
 
   let tclIFTHENELSE t1 t2 t3 =
     tclINDEPENDENT begin
-      tclIFCATCH t1
+      Proofview.tclIFCATCH t1
         (fun () -> t2)
         (fun e -> Proofview.tclORELSE t3 (fun e' -> tclZERO e))
     end
   let tclIFTHENSVELSE t1 a t3 =
-    tclIFCATCH t1
+    Proofview.tclIFCATCH t1
       (fun () -> tclDISPATCH (Array.to_list a))
       (fun _ -> t3)
   let tclIFTHENTRYELSEMUST t1 t2 =
@@ -434,14 +441,14 @@ module New = struct
 
   let rec tclREPEAT0 t =
     tclINDEPENDENT begin
-      tclIFCATCH t
+      Proofview.tclIFCATCH t
         (fun () -> tclCHECKINTERRUPT <*> tclREPEAT0 t)
         (fun e -> catch_failerror e <*> tclUNIT ())
     end
   let tclREPEAT t =
     tclREPEAT0 (tclPROGRESS t)
   let rec tclREPEAT_MAIN0 t =
-    tclIFCATCH t
+    Proofview.tclIFCATCH t
       (fun () -> tclTRYFOCUS 1 1 (tclREPEAT_MAIN0 t))
       (fun e -> catch_failerror e <*> tclUNIT ())
   let tclREPEAT_MAIN t =

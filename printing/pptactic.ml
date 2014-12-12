@@ -1190,6 +1190,12 @@ module Make
                 keyword "exactly_once" ++ spc ()
                 ++ pr_tac (ltactical,E) t),
               ltactical
+            | TacIfThenCatch (t,tt,te) ->
+                hov 1 (
+                 str"tryif" ++ spc() ++ pr_tac (ltactical,E) t ++ brk(1,1) ++
+                 str"then" ++ spc() ++ pr_tac (ltactical,E) tt ++ brk(1,1) ++
+                 str"else" ++ spc() ++ pr_tac (ltactical,E) te ++ brk(1,1)),
+                ltactical
             | TacOrelse (t1,t2) ->
               hov 1 (
                 pr_tac (lorelse,L) t1 ++ spc ()

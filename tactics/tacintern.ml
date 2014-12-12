@@ -654,6 +654,12 @@ and intern_tactic_seq onlytac ist = function
       ist.ltacvars, TacOnce (intern_pure_tactic ist tac)
   | TacExactlyOnce tac ->
       ist.ltacvars, TacExactlyOnce (intern_pure_tactic ist tac)
+  | TacIfThenCatch (tac,tact,tace) ->
+      ist.ltacvars,
+      TacIfThenCatch (
+        intern_pure_tactic ist tac,
+        intern_pure_tactic ist tact,
+        intern_pure_tactic ist tace)
   | TacOrelse (tac1,tac2) ->
       ist.ltacvars, TacOrelse (intern_pure_tactic ist tac1,intern_pure_tactic ist tac2)
   | TacFirst l -> ist.ltacvars, TacFirst (List.map (intern_pure_tactic ist) l)

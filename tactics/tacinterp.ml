@@ -1169,6 +1169,11 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       Tacticals.New.tclONCE (interp_tactic ist tac)
   | TacExactlyOnce tac ->
       Tacticals.New.tclEXACTLY_ONCE (interp_tactic ist tac)
+  | TacIfThenCatch (t,tt,te) ->
+      Tacticals.New.tclIFCATCH
+        (interp_tactic ist t)
+        (fun () -> interp_tactic ist tt)
+        (fun () -> interp_tactic ist te)
   | TacOrelse (tac1,tac2) ->
       Tacticals.New.tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
   | TacFirst l -> Tacticals.New.tclFIRST (List.map (interp_tactic ist) l)

@@ -176,6 +176,12 @@ module New : sig
 
   val tclONCE : unit tactic -> unit tactic
   val tclEXACTLY_ONCE : unit tactic -> unit tactic
+
+  val tclIFCATCH :
+             unit tactic  ->
+    (unit -> unit tactic) ->
+    (unit -> unit tactic) -> unit tactic
+
   val tclORELSE0 : unit tactic -> unit tactic -> unit tactic
   val tclORELSE  : unit tactic -> unit tactic -> unit tactic
 

@@ -244,6 +244,11 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
       TacOnce (subst_tactic subst tac)
   | TacExactlyOnce tac ->
       TacExactlyOnce (subst_tactic subst tac)
+  | TacIfThenCatch (tac,tact,tace) ->
+      TacIfThenCatch (
+        subst_tactic subst tac,
+        subst_tactic subst tact,
+        subst_tactic subst tace)
   | TacOrelse (tac1,tac2) ->
       TacOrelse (subst_tactic subst tac1,subst_tactic subst tac2)
   | TacFirst l -> TacFirst (List.map (subst_tactic subst) l)

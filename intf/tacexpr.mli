@@ -251,6 +251,10 @@ and 'a gen_tactic_expr =
       'a gen_tactic_expr
   | TacExactlyOnce of
       'a gen_tactic_expr
+  | TacIfThenCatch of
+      'a gen_tactic_expr *
+      'a gen_tactic_expr *
+      'a gen_tactic_expr
   | TacOrelse of
       'a gen_tactic_expr *
       'a gen_tactic_expr
