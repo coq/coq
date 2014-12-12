@@ -146,6 +146,13 @@ This is a synonymous of {\tt Print Options.}
 This command displays the type of {\term}. When called in proof mode, 
 the term is checked in the local context of the current subgoal.
 
+\begin{Variants}
+\item {\tt selector: Check {\term}}.\\
+specifies on which subgoal to perform typing (see
+  Section~\ref{tactic-syntax}).
+\end{Variants}
+
+
 \subsection[\tt Eval {\rm\sl convtactic} in {\term}.]{\tt Eval {\rm\sl convtactic} in {\term}.\comindex{Eval}}
 
 This command performs the specified reduction on {\term}, and displays
@@ -203,10 +210,10 @@ relies.
 \end{Variants}
 
 \subsection[\tt Search {\qualid}.]{\tt Search {\qualid}.\comindex{Search}}
-This command displays the name and type of all objects (theorems,
-axioms, etc) of the current context whose statement contains \qualid.
-This command is useful to remind the user of the name of library
-lemmas.
+This command displays the name and type of all objects (hypothesis of
+the current goal, theorems, axioms, etc) of the current context whose
+statement contains \qualid. This command is useful to remind the user
+of the name of library lemmas.
 
 \begin{ErrMsgs}
 \item \errindex{The reference \qualid\ was not found in the current
@@ -268,6 +275,11 @@ This restricts the search to constructions defined in modules
 This restricts the search to constructions not defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
 
+\item {\tt selector: Search \nelist{\zeroone{-}{\termpatternorstr}}{}.}
+
+  This specifies the goal on which to search hypothesis (see
+  Section~\ref{tactic-syntax}). By default the 1st goal is searched.
+  This variant can be combined with other variants presented here.
 \end{Variants}
 
 \examples
@@ -290,8 +302,9 @@ search when using {\tt SearchAbout} may also be enclosed by optional
 {\tt [ ]} delimiters.
 
 \subsection[\tt SearchHead {\term}.]{\tt SearchHead {\term}.\comindex{SearchHead}}
-This command displays the name and type of all theorems of the current
-context whose statement's conclusion has the form {\tt ({\term} t1 ..
+This command displays the name and type of all hypothesis of the
+current goal (if any) and theorems of the current context whose
+statement's conclusion has the form {\tt ({\term} t1 ..
   tn)}.  This command is useful to remind the user of the name of
 library lemmas.
 
@@ -321,16 +334,23 @@ This restricts the search to constructions not defined in modules
 No module \module{} has been required (see Section~\ref{Require}).
 \end{ErrMsgs}
 
+\item {\tt selector: SearchHead {\term}.}
+
+  This specifies the goal on which to search hypothesis (see
+  Section~\ref{tactic-syntax}). By default the 1st goal is searched.
+  This variant can be combined with other variants presented here.
+
 \end{Variants}
 
 \Warning Up to Coq version 8.4, {\tt SearchHead} was named {\tt Search}.
 
 \subsection[\tt SearchPattern {\termpattern}.]{\tt SearchPattern {\term}.\comindex{SearchPattern}}
 
-This command displays the name and type of all theorems of the current
-context whose statement's conclusion or last hypothesis and conclusion
-matches the expression {\term} where holes in the latter are denoted
-by ``{\texttt \_}''. It is a variant of {\tt Search
+This command displays the name and type of all hypothesis of the
+current goal (if any) and theorems of the current context whose statement's
+conclusion or last hypothesis and conclusion matches the expression
+{\term} where holes in the latter are denoted by ``{\texttt \_}''. It
+is a variant of {\tt Search
   {\termpattern}} that does not look for subterms but searches for
 statements whose conclusion has exactly the expected form, or whose
 statement finishes by the given series of hypothesis/conclusion.
@@ -363,13 +383,20 @@ This restricts the search to constructions defined in modules
 This restricts the search to constructions not defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
 
+\item {\tt selector: SearchPattern {\term}.}
+
+  This specifies the goal on which to search hypothesis (see
+  Section~\ref{tactic-syntax}). By default the 1st goal is searched.
+  This variant can be combined with other variants presented here.
+
 \end{Variants}
 
 \subsection[\tt SearchRewrite {\term}.]{\tt SearchRewrite {\term}.\comindex{SearchRewrite}}
 
-This command displays the name and type of all theorems of the current
-context whose statement's conclusion is an equality of which one side matches
-the expression {\term}. Holes in {\term} are denoted by ``{\texttt \_}''.
+This command displays the name and type of all hypothesis of the
+current goal (if any) and theorems of the current context whose
+statement's conclusion is an equality of which one side matches the
+expression {\term}. Holes in {\term} are denoted by ``{\texttt \_}''.
 
 \begin{coq_example}
 Require Import Arith.
@@ -387,6 +414,12 @@ This restricts the search to constructions defined in modules
 
 This restricts the search to constructions not defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
+
+\item {\tt selector: SearchRewrite {\term}.}
+
+  This specifies the goal on which to search hypothesis (see
+  Section~\ref{tactic-syntax}). By default the 1st goal is searched.
+  This variant can be combined with other variants presented here.
 
 \end{Variants}
 

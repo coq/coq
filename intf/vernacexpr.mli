@@ -402,7 +402,7 @@ type vernac_expr =
   | VernacGlobalCheck of constr_expr
   | VernacDeclareReduction of string * raw_red_expr
   | VernacPrint of printable
-  | VernacSearch of searchable * search_restriction
+  | VernacSearch of searchable * int option * search_restriction
   | VernacLocate of locatable
   | VernacRegister of lident * register_kind
   | VernacComments of comment list

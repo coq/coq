@@ -1610,19 +1610,20 @@ let interp_search_about_item = function
 	error ("Unable to interp \""^s^"\" either as a reference or \
           	as an identifier component")
 
-let vernac_search s r =
+let vernac_search s gopt r =
+  let g = un_opt gopt 1 in
   let r = interp_search_restriction r in
   let env = Global.env () in
   let get_pattern c = snd (Constrintern.intern_constr_pattern env c) in
   match s with
   | SearchPattern c ->
-      msg_notice (Search.search_pattern (get_pattern c) r)
+      msg_notice (Search.search_pattern g (get_pattern c) r)
   | SearchRewrite c ->
-      msg_notice (Search.search_rewrite (get_pattern c) r)
+      msg_notice (Search.search_rewrite g (get_pattern c) r)
   | SearchHead c ->
-      msg_notice (Search.search_by_head (get_pattern c) r)
+      msg_notice (Search.search_by_head g (get_pattern c) r)
   | SearchAbout sl ->
-      msg_notice (Search.search_about (List.map (on_snd interp_search_about_item) sl) r)
+     msg_notice (Search.search_about g (List.map (on_snd interp_search_about_item) sl) r)
 
 let vernac_locate = function
   | LocateAny (AN qid) -> msg_notice (print_located_qualid qid)
@@ -1886,7 +1887,7 @@ let interp ?proof locality poly c =
   | VernacDeclareReduction (s,r) -> vernac_declare_reduction locality s r
   | VernacGlobalCheck c -> vernac_global_check c
   | VernacPrint p -> vernac_print p
-  | VernacSearch (s,r) -> vernac_search s r
+  | VernacSearch (s,g,r) -> vernac_search s g r
   | VernacLocate l -> vernac_locate l
   | VernacRegister (id, r) -> vernac_register id r
   | VernacComments l -> if_verbose msg_info (str "Comments ok\n")

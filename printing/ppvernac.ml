@@ -127,11 +127,15 @@ module Make
         | SearchSubPattern p -> pr_constr_pattern_expr p
         | SearchString (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
-  let pr_search a b pr_p = match a with
-    | SearchHead c -> keyword "SearchHead" ++ spc() ++ pr_p c ++ pr_in_out_modules b
-    | SearchPattern c -> keyword "SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
-    | SearchRewrite c -> keyword "SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
-    | SearchAbout sl -> keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search_about sl ++ pr_in_out_modules b
+  let pr_search a gopt b pr_p =
+    pr_opt (fun g -> int g ++ str ":"++ spc()) gopt
+    ++
+      match a with
+      | SearchHead c -> keyword "SearchHead" ++ spc() ++ pr_p c ++ pr_in_out_modules b
+      | SearchPattern c -> keyword "SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
+      | SearchRewrite c -> keyword "SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
+      | SearchAbout sl ->
+	 keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search_about sl ++ pr_in_out_modules b
 
   let pr_locality local = if local then keyword "Local" else keyword "Global"
 
@@ -1167,8 +1171,8 @@ module Make
           )
         | VernacPrint p ->
           return (pr_printable p)
-        | VernacSearch (sea,sea_r) ->
-          return (pr_search sea sea_r pr_constr_pattern_expr)
+        | VernacSearch (sea,g,sea_r) ->
+          return (pr_search sea g sea_r pr_constr_pattern_expr)
         | VernacLocate loc ->
           let pr_locate =function
             | LocateAny qid -> pr_smart_global qid

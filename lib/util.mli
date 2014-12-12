@@ -89,6 +89,10 @@ val iterate : ('a -> 'a) -> int -> 'a -> 'a
 val repeat : int -> ('a -> unit) -> 'a -> unit
 val app_opt : ('a -> 'a) option -> 'a -> 'a
 
+(** [un_opt opt default] returns the content of [opt] if possible and
+    default otherwise. *)
+val un_opt : 'a option -> 'a -> 'a
+
 (** {6 Delayed computations. } *)
 
 type 'a delayed = unit -> 'a

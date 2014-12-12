@@ -33,13 +33,17 @@ val module_filter : DirPath.t list * bool -> filter_function
 val search_about_filter : glob_search_about_item -> filter_function
 (** Check whether a reference matches a SearchAbout query. *)
 
-(** {6 Specialized search functions} *)
+(** {6 Specialized search functions}
 
-val search_by_head : constr_pattern -> DirPath.t list * bool -> std_ppcmds
-val search_rewrite : constr_pattern -> DirPath.t list * bool -> std_ppcmds
-val search_pattern : constr_pattern -> DirPath.t list * bool -> std_ppcmds
-val search_about   : (bool * glob_search_about_item) list ->
-  DirPath.t list * bool -> std_ppcmds
+[search_xxx gl pattern modinout] searches the hypothesis of the [gl]th
+goal and the global environment for things matching [pattern] and
+satisfying module exclude/include clauses of [modinout]. *)
+
+val search_by_head : int -> constr_pattern -> DirPath.t list * bool -> std_ppcmds
+val search_rewrite : int -> constr_pattern -> DirPath.t list * bool -> std_ppcmds
+val search_pattern : int -> constr_pattern -> DirPath.t list * bool -> std_ppcmds
+val search_about   : int -> (bool * glob_search_about_item) list
+  -> DirPath.t list * bool -> std_ppcmds
 
 type search_constraint =
   (** Whether the name satisfies a regexp (uses Ocaml Str syntax) *)
@@ -64,5 +68,6 @@ val interface_search : (search_constraint * bool) list ->
 
 (** {6 Generic search function} *)
 
-val generic_search : display_function -> unit
-(** This function iterates over all known declarations *)
+val generic_search : int -> display_function -> unit
+(** This function iterates over all hypothesis of the goal numbered
+    [glnum] (if present) and all known declarations. *)

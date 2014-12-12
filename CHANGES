@@ -52,6 +52,11 @@ Vernacular commands
 - Command "Search" has been renamed into "SearchHead". The command
   name "Search" now behaves like former "SearchAbout". The latter name
   is deprecated.
+- "Search" "SearchHead" "SearchRewrite" and "SearchPattern" now search
+  for hypothesis (of the current goal) first. They now also support the
+  goal selector prefix to specify another goal to search: e.g.
+  "n:Search id". This is also true for SearchAbout although it is
+  deprecated.
 - The coq/user-contrib directory and the XDG directories are no longer
   recursively added to the load path, so files from installed libraries
   now need to be fully qualified for the "Require" command to find them.

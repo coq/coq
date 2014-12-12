@@ -32,7 +32,7 @@ let _ = List.iter Lexer.add_keyword vernac_kw
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
 
-let check_command = Gram.entry_create "vernac:check_command"
+let query_command = Gram.entry_create "vernac:query_command"
 
 let tactic_mode = Gram.entry_create "vernac:tactic_command"
 let noedit_mode = Gram.entry_create "vernac:noedit_command"
@@ -145,7 +145,7 @@ GEXTEND Gram
   ;
 
   subgoal_command: 
-    [ [ c = check_command; "." ->
+    [ [ c = query_command; "." ->
                   begin function
                     | Some (SelectNth g) -> c (Some g)
                     | None -> c None
@@ -733,7 +733,7 @@ GEXTEND Gram
 END
 
 GEXTEND Gram
-  GLOBAL: command check_command class_rawexpr;
+  GLOBAL: command query_command class_rawexpr;
 
   command:
     [ [ IDENT "Ltac";
@@ -796,22 +796,6 @@ GEXTEND Gram
       | IDENT "Inspect"; n = natural -> VernacPrint (PrintInspect n)
       | IDENT "About"; qid = smart_global -> VernacPrint (PrintAbout qid)
 
-      (* Searching the environment *)
-      | IDENT "SearchHead"; c = constr_pattern; l = in_or_out_modules ->
-	  VernacSearch (SearchHead c, l)
-      | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules ->
-	  VernacSearch (SearchPattern c, l)
-      | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules ->
-	  VernacSearch (SearchRewrite c, l)
-      | IDENT "Search"; s = searchabout_query; l = searchabout_queries ->
-	  let (sl,m) = l in VernacSearch (SearchAbout (s::sl), m)
-      (* compatibility: SearchAbout *)
-      | IDENT "SearchAbout"; s = searchabout_query; l = searchabout_queries ->
-	  let (sl,m) = l in VernacSearch (SearchAbout (s::sl), m)
-      (* compatibility: SearchAbout with "[ ... ]" *)
-      | IDENT "SearchAbout"; "["; sl = LIST1 searchabout_query; "]";
-	  l = in_or_out_modules -> VernacSearch (SearchAbout sl, l)
-
       | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
 	  VernacAddMLPath (false, dir)
       | IDENT "Add"; IDENT "Rec"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
@@ -847,13 +831,29 @@ GEXTEND Gram
       | IDENT "Remove"; table = IDENT; v = LIST1 option_ref_value ->
 	  VernacRemoveOption ([table], v) ]] 
   ;
-  check_command: (* TODO: rapprocher Eval et Check *)
+  query_command: (* TODO: rapprocher Eval et Check *)
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = lconstr ->
           fun g -> VernacCheckMayEval (Some r, g, c)
       | IDENT "Compute"; c = lconstr ->
 	  fun g -> VernacCheckMayEval (Some (Genredexpr.CbvVm None), g, c)
       | IDENT "Check"; c = lconstr ->
-	  fun g -> VernacCheckMayEval (None, g, c) ] ]
+	 fun g -> VernacCheckMayEval (None, g, c)
+      (* Searching the environment *)
+      | IDENT "SearchHead"; c = constr_pattern; l = in_or_out_modules ->
+	  fun g -> VernacSearch (SearchHead c,g, l)
+      | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules ->
+	  fun g -> VernacSearch (SearchPattern c,g, l)
+      | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules ->
+	  fun g -> VernacSearch (SearchRewrite c,g, l)
+      | IDENT "Search"; s = searchabout_query; l = searchabout_queries ->
+	  let (sl,m) = l in fun g -> VernacSearch (SearchAbout (s::sl),g, m)
+      (* compatibility: SearchAbout *)
+      | IDENT "SearchAbout"; s = searchabout_query; l = searchabout_queries ->
+	  fun g -> let (sl,m) = l in VernacSearch (SearchAbout (s::sl),g, m)
+      (* compatibility: SearchAbout with "[ ... ]" *)
+      | IDENT "SearchAbout"; "["; sl = LIST1 searchabout_query; "]";
+	  l = in_or_out_modules -> fun g -> VernacSearch (SearchAbout sl,g, l)
+      ] ]
   ;
   printable:
     [ [ IDENT "Term"; qid = smart_global -> PrintName qid

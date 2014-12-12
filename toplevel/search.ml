@@ -49,6 +49,18 @@ let iter_constructors indsp u fn env nconstr =
     fn (ConstructRef (indsp, i)) env typ
   done
 
+let iter_named_context_name_type f = List.iter (fun (nme,_,typ) -> f nme typ) 
+
+(* General search over hypothesis of a goal *)
+let iter_hypothesis glnum (fn : global_reference -> env -> constr -> unit) =
+  try
+    let env = Global.env () in
+    let iter_hyp idh typ = fn (VarRef idh) env typ in
+    let evmap,e = Pfedit.get_goal_context glnum in
+    let pfctxt = named_context e in
+    iter_named_context_name_type iter_hyp pfctxt
+  with _ -> ()
+
 (* General search over declarations *)
 let iter_declarations (fn : global_reference -> env -> constr -> unit) =
   let env = Global.env () in
@@ -81,7 +93,9 @@ let iter_declarations (fn : global_reference -> env -> constr -> unit) =
   try Declaremods.iter_all_segments iter_obj
   with Not_found -> ()
 
-let generic_search = iter_declarations
+let generic_search glnum fn =
+  iter_hypothesis glnum fn;
+  iter_declarations fn
 
 (** Standard display *)
 
@@ -118,8 +132,8 @@ let full_name_of_reference ref =
 
 (** Whether a reference is blacklisted *)
 let blacklist_filter ref env typ =
-  let name = full_name_of_reference ref in
   let l = SearchBlacklist.elements () in
+  let name = full_name_of_reference ref in
   let is_not_bl str = not (String.string_contains ~where:name ~what:str) in
   List.for_all is_not_bl l
 
@@ -142,7 +156,7 @@ let search_about_filter query gr env typ = match query with
 
 (** SearchPattern *)
 
-let search_pattern pat mods =
+let search_pattern g pat mods =
   let ans = ref [] in
   let filter ref env typ =
     let f_module = module_filter mods ref env typ in
@@ -153,7 +167,7 @@ let search_pattern pat mods =
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
   in
-  let () = generic_search iter in
+  let () = generic_search g iter in
   format_display !ans
 
 (** SearchRewrite *)
@@ -166,7 +180,7 @@ let rewrite_pat1 pat =
 let rewrite_pat2 pat =
   PApp (PRef eq, [| PMeta None; PMeta None; pat |])
 
-let search_rewrite pat mods =
+let search_rewrite g pat mods =
   let pat1 = rewrite_pat1 pat in
   let pat2 = rewrite_pat2 pat in
   let ans = ref [] in
@@ -182,12 +196,12 @@ let search_rewrite pat mods =
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
   in
-  let () = generic_search iter in
+  let () = generic_search g iter in
   format_display !ans
 
 (** Search *)
 
-let search_by_head pat mods =
+let search_by_head g pat mods =
   let ans = ref [] in
   let filter ref env typ =
     let f_module = module_filter mods ref env typ in
@@ -198,12 +212,12 @@ let search_by_head pat mods =
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
   in
-  let () = generic_search iter in
+  let () = generic_search g iter in
   format_display !ans
 
 (** SearchAbout *)
 
-let search_about items mods =
+let search_about g items mods =
   let ans = ref [] in
   let filter ref env typ =
     let eqb b1 b2 = if b1 then b2 else not b2 in
@@ -215,7 +229,7 @@ let search_about items mods =
   let iter ref env typ =
     if filter ref env typ then plain_display ans ref env typ
   in
-  let () = generic_search iter in
+  let () = generic_search g iter in
   format_display !ans
 
 type search_constraint =
@@ -319,5 +333,5 @@ let interface_search flags =
   let iter ref env typ =
     if filter_function ref env typ then print_function ref env typ
   in
-  let () = generic_search iter in
+  let () = generic_search 1 iter in (* TODO: chose a goal number? *)
   !ans

@@ -105,6 +105,11 @@ let app_opt f x =
   | Some f -> f x
   | None -> x
 
+let un_opt x default =
+  match x with
+  | None -> default
+  | Some y -> y
+
 (* Stream *)
 
 let stream_nth n st =
