@@ -1594,9 +1594,10 @@ let interp_search_restriction = function
 
 open Search
 
-let interp_search_about_item = function
+let interp_search_about_item env =
+  function
   | SearchSubPattern pat ->
-      let _,pat = intern_constr_pattern (Global.env()) pat in
+      let _,pat = intern_constr_pattern env pat in
       GlobSearchSubPattern pat
   | SearchString (s,None) when Id.is_valid s ->
       GlobSearchString s
@@ -1613,8 +1614,10 @@ let interp_search_about_item = function
 let vernac_search s gopt r =
   let g = un_opt gopt 1 in
   let r = interp_search_restriction r in
-  let env = Global.env () in
-  let get_pattern c = snd (Constrintern.intern_constr_pattern env c) in
+  let env =
+    try snd (Pfedit.get_goal_context g)
+    with _ -> Global.env () in
+  let get_pattern c = snd (intern_constr_pattern env c) in
   match s with
   | SearchPattern c ->
       msg_notice (Search.search_pattern g (get_pattern c) r)
@@ -1623,7 +1626,7 @@ let vernac_search s gopt r =
   | SearchHead c ->
       msg_notice (Search.search_by_head g (get_pattern c) r)
   | SearchAbout sl ->
-     msg_notice (Search.search_about g (List.map (on_snd interp_search_about_item) sl) r)
+     msg_notice (Search.search_about g (List.map (on_snd (interp_search_about_item env)) sl) r)
 
 let vernac_locate = function
   | LocateAny (AN qid) -> msg_notice (print_located_qualid qid)
