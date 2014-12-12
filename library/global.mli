@@ -139,3 +139,5 @@ val set_strategy : Names.constant Names.tableKey -> Conv_oracle.level -> unit
 val current_dirpath : unit -> Names.dir_path
 
 val with_global : (Environ.env -> Names.dir_path -> 'a Univ.in_universe_context_set) -> 'a
+
+val global_env_summary_name : string

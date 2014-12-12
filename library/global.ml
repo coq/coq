@@ -12,6 +12,8 @@ open Environ
 (** We introduce here the global environment of the system,
     and we declare it as a synchronized table. *)
 
+let global_env_summary_name = "Global environment"
+
 module GlobalSafeEnv : sig
 
   val safe_env : unit -> Safe_typing.safe_environment
@@ -26,7 +28,7 @@ let join_safe_environment ?except () =
   global_env := Safe_typing.join_safe_environment ?except !global_env
 
 let () =
-  Summary.declare_summary "Global environment"
+  Summary.declare_summary global_env_summary_name
     { Summary.freeze_function = (function
         | `Yes -> join_safe_environment (); !global_env
         | `No -> !global_env
