@@ -176,7 +176,7 @@ let vars_to_put_by_root var_x_files_l (inc_ml,inc_i,inc_r) =
 	  (pdir,pdir',vars_r)::out) 1 [] l
       )
 
-let install_include_by_root =
+let install_include_by_root perms =
   let install_dir for_i (pdir,pdir',vars) =
     let b = vars <> [] in
     if b then begin
@@ -184,7 +184,7 @@ let install_include_by_root =
       print_list " " (List.rev_map (Format.sprintf "$(%s)") vars);
       print "; do \\\n";
       printf "\t install -d \"`dirname \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/$$i`\"; \\\n" pdir';
-      printf "\t install -m 0644 $$i \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/$$i; \\\n" pdir';
+      printf "\t install -m %s $$i \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/$$i; \\\n" perms pdir';
       printf "\tdone\n";
     end;
     for_i b pdir' in
@@ -195,7 +195,7 @@ let install_include_by_root =
       print "\tfor i in ";
       print_list " " (List.rev_map (Format.sprintf "$(%sINC)") l);
       print "; do \\\n";
-      printf "\t install -m 0644 $$i \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
+      printf "\t install -m %s $$i \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" perms d;
       printf "\tdone\n"
   in function
   |None,l -> List.iter (install_dir (fun _ _ -> ())) l
@@ -266,7 +266,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
 	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n" in
     if (not_empty cmxsfiles) then begin
       print "install-natdynlink:\n";
-      install_include_by_root where_what_cmxs;
+      install_include_by_root "0755" where_what_cmxs;
       print "\n";
     end;
     if (not_empty cmxsfiles) then begin
@@ -278,7 +278,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     print "install:";
     if (not_empty cmxsfiles) then print "$(if $(HASNATDYNLINK_OR_EMPTY),install-natdynlink)";
     print "\n";
-    install_include_by_root where_what_oth;
+    install_include_by_root "0644" where_what_oth;
     List.iter
       (fun x ->
 	printf "\t+cd %s && $(MAKE) DSTROOT=\"$(DSTROOT)\" INSTALLDEFAULTROOT=\"$(INSTALLDEFAULTROOT)/%s\" install\n" x x)
