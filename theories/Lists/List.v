@@ -1968,8 +1968,8 @@ Section Exists_Forall.
       Exists l <-> (exists x, In x l /\ P x).
     Proof.
       split.
-      induction 1; firstorder.
-      induction l; firstorder; subst; auto.
+      - induction 1; firstorder.
+      - induction l; firstorder; subst; auto.
     Qed.
 
     Lemma Exists_nil : Exists nil <-> False.
@@ -1989,10 +1989,7 @@ Section Exists_Forall.
         * left. now apply Exists_cons_tl.
         * destruct (Pdec a) as [Ha|Ha].
           + left. now apply Exists_cons_hd.
-          + right. rewrite Exists_exists.  red. intro Habsurd. elim Habsurd.
-            intros x0 (H1, H2). generalize (in_inv H1). destruct 1.
-            subst. contradiction Ha.
-            rewrite Exists_exists in Hl'. red in Hl'. apply Hl'. exists x0. auto.
+          + right. now inversion_clear 1.
     Qed.
 
     Inductive Forall : list A -> Prop :=
@@ -2020,42 +2017,57 @@ Section Exists_Forall.
       intros Q H H'; induction l; intro; [|eapply H', Forall_inv]; eassumption.
     Qed.
 
+    Lemma Forall_dec :
+      (forall x:A, {P x} + { ~ P x }) ->
+      forall l:list A, {Forall l} + {~ Forall l}.
+    Proof.
+      intro Pdec. induction l as [|a l' Hrec].
+      - left. apply Forall_nil.
+      - destruct Hrec as [Hl'|Hl'].
+        + destruct (Pdec a) as [Ha|Ha].
+          * left. now apply Forall_cons.
+          * right. now inversion_clear 1.
+        + right. now inversion_clear 1.
+    Qed.
+
   End One_predicate.
 
-  Lemma Forall_Exists_dec :
-    forall P:A->Prop,
+  Lemma Forall_Exists_neg (P:A->Prop)(l:list A) :
+   Forall (fun x => ~ P x) l <-> ~(Exists P l).
+  Proof.
+   rewrite Forall_forall, Exists_exists. firstorder.
+  Qed.
+
+  Lemma Exists_Forall_neg (P:A->Prop)(l:list A) :
+    (forall x, P x \/ ~P x) ->
+    Exists (fun x => ~ P x) l <-> ~(Forall P l).
+  Proof.
+   intro Dec.
+   split.
+   - rewrite Forall_forall, Exists_exists; firstorder.
+   - intros NF.
+     induction l as [|a l IH].
+     + destruct NF. constructor.
+     + destruct (Dec a) as [Ha|Ha].
+       * apply Exists_cons_tl, IH. contradict NF. now constructor.
+       * now apply Exists_cons_hd.
+  Qed.
+
+  Lemma Forall_Exists_dec (P:A->Prop) :
     (forall x:A, {P x} + { ~ P x }) ->
     forall l:list A,
     {Forall P l} + {Exists (fun x => ~ P x) l}.
-  Proof. intros P Pdec. induction l as [| a l' Hrec].
-    - left. apply Forall_nil.
-    - destruct Hrec as [Hl'|Hl'], (Pdec a) as [Ha|Ha].
-      * left. apply Forall_cons; assumption.
-      * right. apply Exists_cons_hd. assumption.
-      * right. apply Exists_cons_tl. assumption.
-      * right. apply Exists_cons_hd. assumption.
-  Qed.
-
-  Lemma Forall_dec:
-    forall P:A->Prop,
-    (forall x:A, {P x} + { ~ P x }) ->
-    forall l:list A, {Forall P l} + {~ Forall P l}.
   Proof.
-    intros P Pdec l. induction l as [|a l' Hrec].
-    - left. apply Forall_nil.
-    - destruct Hrec as [Hl'|Hl'], (Pdec a) as [Ha|Ha].
-      * left. apply Forall_cons; assumption.
-      * right. red. intro H. inversion H. subst. absurd (P a); assumption.
-      * right. red. intro H. inversion H. subst. absurd (Forall P l'); assumption.
-      * right. red. intro H. inversion H. subst. absurd (Forall P l'); assumption.
+    intros Pdec l.
+    destruct (Forall_dec P Pdec l); [left|right]; trivial.
+    apply Exists_Forall_neg; trivial.
+    intro x. destruct (Pdec x); [now left|now right].
   Qed.
 
   Lemma Forall_impl : forall (P Q : A -> Prop), (forall a, P a -> Q a) ->
     forall l, Forall P l -> Forall Q l.
   Proof.
-    intros P Q Himp l H. induction H.
-    - apply Forall_nil.
-    - apply Forall_cons. apply Himp. assumption. assumption.
+    intros P Q H l. rewrite !Forall_forall. firstorder.
   Qed.
 
 End Exists_Forall.
