@@ -59,6 +59,58 @@ Section first_definitions.
         end
     end.
 
+  Lemma set_remove_eq1 (a b:A) (l:set):
+    a=b -> (set_remove b (a::l))=l.
+  Proof.
+    intro Heqab. simpl. destruct (Aeq_dec b a).
+    - reflexivity.
+    - subst. tauto.
+  Qed.
+
+  Lemma set_remove_eq2 (a b:A) (l:set):
+    a<>b -> (set_remove b (a::l))=a::(set_remove b l).
+  Proof.
+    intro Hneqab. simpl. destruct (Aeq_dec b a).
+    - contradiction Hneqab. now apply eq_sym.
+    - reflexivity.
+  Qed.
+
+  Lemma In_set_remove1 (a b : A) (l : set):
+    In a (set_remove b l) -> In a l.
+  Proof.
+    induction l as [|x xs Hrec].
+    - intros. auto.
+    - simpl. destruct (Aeq_dec b x).
+      * tauto.
+      * intro H. destruct H.
+        + rewrite H. apply in_eq.
+      + apply in_cons. apply Hrec. assumption.
+  Qed.
+
+(*
+  Lemma In_set_remove2 : forall (a b : A) (l : list A),
+    In a (set_remove b l) -> a<>b.
+  Proof. induction l as [|x xs Hrec]; simpl.
+    - auto.
+    - destruct (Aeq_dec b x).
+      *
+
+      intro H. generalize (In_set_remove1 _ _ _ H). intro H'. destruct (in_inv H').
+      * intro H. apply Hrec. eapply In_set_remove1.
+  Qed.
+ *)
+
+  Lemma In_set_remove3 : forall (a b : A) (l : list A),
+    In a l -> a <> b -> In a (set_remove b l).
+  Proof. induction l as [|x xs Hrec].
+    - now simpl.
+    - destruct 1 as [->|Ha]; intro Hab.
+      * rewrite (set_remove_eq2 _ Hab). apply in_eq.
+      * destruct (Aeq_dec a b).
+        + now contradiction Hab.
+        + simpl. destruct (Aeq_dec b x) as [->|_]; [trivial | now apply in_cons, Hrec].
+  Qed.
+  
   Fixpoint set_inter (x:set) : set -> set :=
     match x with
     | nil => fun y => nil
