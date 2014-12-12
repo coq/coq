@@ -769,7 +769,7 @@ ifndef CUSTOM
 endif
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(PLUGINSOPT)
+	$(INSTALLBIN) $(FULLCOQLIB) $(PLUGINSOPT)
 endif
 # csdpcert is not meant to be directly called by the user; we install
 # it with libraries
