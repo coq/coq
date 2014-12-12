@@ -112,7 +112,7 @@ let occur_rigidly ev evd t =
     | Case _ -> false
   in Array.exists (fun t -> try ignore(aux t); false with Occur -> true) app
 
-(* [check_conv_record (t1,l1) (t2,l2)] tries to decompose the problem
+(* [check_conv_record env sigma (t1,l1) (t2,l2)] tries to decompose the problem
    (t1 l1) = (t2 l2) into a problem
 
      l1 = params1@c1::extra_args1
@@ -132,7 +132,7 @@ let occur_rigidly ev evd t =
    object c in structure R (since, if c1 were not an evar, the
    projection would have been reduced) *)
 
-let check_conv_record (t1,sk1) (t2,sk2) =
+let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let (proji, u), arg = Universes.global_app_of_constr t1 in
   let canon_s,sk2_effective =
     try
@@ -156,7 +156,11 @@ let check_conv_record (t1,sk1) (t2,sk2) =
   let params1, c1, extra_args1 =
     match arg with
     | Some c -> (* A primitive projection applied to c *)
-      [], c, sk1
+      let ty = Retyping.get_type_of ~lax:true env sigma c in
+      let (i,u), ind_args = 
+	try Inductiveops.find_mrectype env sigma ty 
+	with _ -> raise Not_found
+      in Stack.append_app_list ind_args Stack.empty, c, sk1
     | None ->
       match Stack.strip_n_app nparams sk1 with
       | Some (params1, c1, extra_args1) -> params1, c1, extra_args1
@@ -612,8 +616,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  (try 
 	     if not (snd ts) then raise Not_found
 	     else conv_record ts env i
-               (try check_conv_record appr1 appr2
-		with Not_found -> check_conv_record appr2 appr1)
+               (try check_conv_record env i appr1 appr2
+		with Not_found -> check_conv_record env i appr2 appr1)
            with Not_found -> UnifFailure (i,NoCanonicalStructure))
 	and f3 i =
           (* heuristic: unfold second argument first, exception made
@@ -672,7 +676,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	let f3 i =
 	  (try 
 	     if not (snd ts) then raise Not_found
-	     else conv_record ts env i (check_conv_record appr1 appr2)
+	     else conv_record ts env i (check_conv_record env i appr1 appr2)
            with Not_found -> UnifFailure (i,NoCanonicalStructure))
 	and f4 i =
 	  evar_eqappr_x ts env i pbty
@@ -686,7 +690,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	let f3 i =
 	  (try
 	     if not (snd ts) then raise Not_found
-	     else conv_record ts env i (check_conv_record appr2 appr1)
+	     else conv_record ts env i (check_conv_record env i appr2 appr1)
            with Not_found -> UnifFailure (i,NoCanonicalStructure))
 	and f4 i =
 	  evar_eqappr_x ts env i pbty (appr1,csts1)

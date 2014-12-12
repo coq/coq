@@ -732,8 +732,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	       Array.fold_left2 (unirec_rec curenvnb CONV opt') substn l1' l2'
 	   with ex when precatchable_exception ex ->
 	     match kind_of_term cN with
-	     | App(f2,l2) when isMeta f2 || isEvar f2 ->
-	       unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
+	     | App(f2,l2) when
+		 (isMeta f2 && use_metas_pattern_unification flags nb l2
+		  || use_evars_pattern_unification flags && isAllowedEvar flags f2) ->
+	       unify_app_pattern false curenvnb pb opt substn cM f1 l1 cN f2 l2
 	     | _ -> raise ex)
 
 	| _, App (f2, l2) when flags.modulo_eta && 
@@ -744,8 +746,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	       Array.fold_left2 (unirec_rec curenvnb CONV opt') substn l1' l2'
 	   with ex when precatchable_exception ex ->
 	     match kind_of_term cM with
-	     | App(f1,l1) when isMeta f1 || isEvar f1 ->
-	       unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
+	     | App(f1,l1) when 
+		 (isMeta f1 && use_metas_pattern_unification flags nb l1
+		  || use_evars_pattern_unification flags && isAllowedEvar flags f1) ->
+	       unify_app_pattern true curenvnb pb opt substn cM f1 l1 cN f2 l2
 	     | _ -> raise ex)
 
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
@@ -761,30 +765,12 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	| App (f1,l1), _ when 
 	    (isMeta f1 && use_metas_pattern_unification flags nb l1
             || use_evars_pattern_unification flags && isAllowedEvar flags f1) ->
-            (match
-                is_unification_pattern curenvnb sigma f1 (Array.to_list l1) cN
-             with
-             | None ->
-                 (match kind_of_term cN with
-                 | App (f2,l2) -> unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
-                 | Proj _ -> unify_app curenvnb pb opt substn cM f1 l1 cN cN [||]
-                 | _ -> unify_not_same_head curenvnb pb opt substn cM cN)
-             | Some l ->
-                 solve_pattern_eqn_array curenvnb f1 l cN substn)
+	  unify_app_pattern true curenvnb pb opt substn cM f1 l1 cN cN [||]
 
 	| _, App (f2,l2) when
 	    (isMeta f2 && use_metas_pattern_unification flags nb l2
             || use_evars_pattern_unification flags && isAllowedEvar flags f2) ->
-            (match
-                is_unification_pattern curenvnb sigma f2 (Array.to_list l2) cM
-             with
-             | None ->
-                 (match kind_of_term cM with
-                 | App (f1,l1) -> unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
-                 | Proj _ -> unify_app curenvnb pb opt substn cM cM [||] cN f2 l2
-                 | _ -> unify_not_same_head curenvnb pb opt substn cM cN)
-             | Some l ->
-	         solve_pattern_eqn_array curenvnb f2 l cM substn)
+	  unify_app_pattern false curenvnb pb opt substn cM cM [||] cN f2 l2
 
 	| App (f1,l1), App (f2,l2) ->
 	  unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
@@ -797,6 +783,19 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 
 	| _ ->
           unify_not_same_head curenvnb pb opt substn cM cN
+
+  and unify_app_pattern dir curenvnb pb opt substn cM f1 l1 cN f2 l2 =
+    let f, l, t = if dir then f1, l1, cN else f2, l2, cM in
+      match is_unification_pattern curenvnb sigma f (Array.to_list l) t with
+      | None ->
+	(match kind_of_term t with
+	| App (f',l') -> 
+	  if dir then unify_app curenvnb pb opt substn cM f1 l1 t f' l'
+	  else unify_app curenvnb pb opt substn t f' l' cN f2 l2
+	| Proj _ -> unify_app curenvnb pb opt substn cM f1 l1 cN f2 l2
+	| _ -> unify_not_same_head curenvnb pb opt substn cM cN)
+      | Some l ->
+	solve_pattern_eqn_array curenvnb f l t substn
 
   and unify_app (curenv, nb as curenvnb) pb opt (sigma, metas, evars as substn) cM f1 l1 cN f2 l2 =
     try
@@ -963,7 +962,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 
   and solve_canonical_projection curenvnb pb opt cM f1l1 cN f2l2 (sigma,ms,es) =
     let (ctx,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
-      try Evarconv.check_conv_record f1l1 f2l2
+      try Evarconv.check_conv_record (fst curenvnb) sigma f1l1 f2l2
       with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
     if Reductionops.Stack.compare_shape ts ts1 then

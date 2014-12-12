@@ -42,7 +42,8 @@ val check_problems_are_solved : env -> evar_map -> unit
 
 (** Check if a canonical structure is applicable *)
 
-val check_conv_record : constr * types Stack.t -> constr * types Stack.t ->
+val check_conv_record : env -> evar_map -> 
+  constr * types Stack.t -> constr * types Stack.t ->
   Univ.universe_context_set * (constr * constr) 
   * constr * constr list * (constr Stack.t * constr Stack.t) *
     (constr Stack.t * types Stack.t) *
