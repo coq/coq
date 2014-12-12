@@ -45,3 +45,5 @@ let tag (s,_) =
   with Not_found ->
     let msg = Pp.str ("Unknown dynamic tag " ^ (string_of_int s)) in
     anomaly msg
+
+let pointer_equal (t1,o1) (t2,o2) = t1 = t2 && o1 == o2
