@@ -34,6 +34,24 @@ let cbv_native env sigma c =
   let evars = Nativenorm.evars_of_evar_map sigma in
   Nativenorm.native_norm env evars c ctyp
 
+let whd_cbn flags env sigma t =
+  let (state,_) =
+    (whd_state_gen true flags env sigma (t,Reductionops.Stack.empty))
+  in Reductionops.Stack.zip ~refold:true state
+
+let strong_cbn flags =
+  strong (whd_cbn flags)
+
+let simplIsCbn = ref (false)
+let _ = Goptions.declare_bool_option {
+  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optname =
+    "Plug the simpl tactic to the new cbn mechanism";
+  Goptions.optkey = ["SimplIsCbn"];
+  Goptions.optread = (fun () -> !simplIsCbn);
+  Goptions.optwrite = (fun a -> simplIsCbn:=a);
+}
+
 let set_strategy_one ref l  =
   let k =
     match ref with
@@ -195,13 +213,16 @@ let reduction_of_red_expr env =
       if internal then (e_red try_red_product,DEFAULTcast)
       else (e_red red_product,DEFAULTcast)
   | Hnf -> (e_red hnf_constr,DEFAULTcast)
-  | Simpl (_f,o) ->
-     (contextualize (if head_style then whd_simpl else simpl) simpl o,DEFAULTcast)
+  | Simpl (f,o) ->
+     let whd_am = if !simplIsCbn then whd_cbn (make_flag f) else whd_simpl in
+     let am = if !simplIsCbn then strong_cbn (make_flag f) else simpl in
+     let () =
+       if not (!simplIsCbn || List.is_empty f.rConst) then
+	 Pp.msg_warning (Pp.strbrk "The legacy simpl does not deal with delta flags.") in
+     (contextualize (if head_style then whd_am else am) am o,DEFAULTcast)
   | Cbv f -> (e_red (cbv_norm_flags (make_flag f)),DEFAULTcast)
   | Cbn f ->
-    let f = strong (fun env evd x -> Stack.zip ~refold:true
-      (fst (whd_state_gen true (make_flag f) env evd (x, Stack.empty)))) in
-      (e_red f, DEFAULTcast)
+     (e_red (strong_cbn (make_flag f)), DEFAULTcast)
   | Lazy f -> (e_red (clos_norm_flags (make_flag f)),DEFAULTcast)
   | Unfold ubinds -> (e_red (unfoldn (List.map out_with_occurrences ubinds)),DEFAULTcast)
   | Fold cl -> (e_red (fold_commands cl),DEFAULTcast)
