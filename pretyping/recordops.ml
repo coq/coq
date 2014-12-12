@@ -114,16 +114,18 @@ let find_projection = function
 
   c := [x1:B1]...[xk:Bk](Build_R a1...am t1...t_n)
 
-  If ti has the form (ci ui1...uir) where ci is a global reference and
-if the corresponding projection Li of the structure R is defined, one
-declare a "conversion" between ci and Li
+  If ti has the form (ci ui1...uir) where ci is a global reference (or
+  a sort, or a product or a reference to a parameter) and if the 
+  corresponding projection Li of the structure R is defined, one
+  declares a "conversion" between ci and Li.
 
     x1:B1..xk:Bk |- (Li a1..am (c x1..xk)) =_conv (ci ui1...uir)
 
-that maps the pair (Li,ci) to the following data
+  that maps the pair (Li,ci) to the following data
 
     o_DEF = c
     o_TABS = B1...Bk
+    o_INJ = Some n        (when ci is a reference to the parameter xi)
     o_PARAMS = a1...am
     o_NARAMS = m
     o_TCOMP = ui1...uir
@@ -133,7 +135,7 @@ that maps the pair (Li,ci) to the following data
 type obj_typ = {
   o_DEF : constr;
   o_CTX : Univ.ContextSet.t;
-  o_INJ : int;      (* position of trivial argument (negative= none) *)
+  o_INJ : int option;      (* position of trivial argument if any *)
   o_TABS : constr list;    (* ordered *)
   o_TPARAMS : constr list; (* ordered *)
   o_NPARAMS : int;
@@ -173,15 +175,15 @@ let cs_pattern_of_constr t =
   match kind_of_term t with
       App (f,vargs) ->
 	begin
-	  try Const_cs (global_of_constr f) , -1, Array.to_list vargs
+	  try Const_cs (global_of_constr f) , None, Array.to_list vargs
           with e when Errors.noncritical e -> raise Not_found
 	end
-    | Rel n -> Default_cs, pred n, []
-    | Prod (_,a,b) when not (Termops.dependent (mkRel 1) b) -> Prod_cs, -1, [a; Termops.pop b]
-    | Sort s -> Sort_cs (family_of_sort s), -1, []
+    | Rel n -> Default_cs, Some n, []
+    | Prod (_,a,b) when not (Termops.dependent (mkRel 1) b) -> Prod_cs, None, [a; Termops.pop b]
+    | Sort s -> Sort_cs (family_of_sort s), None, []
     | _ ->
 	begin
-	  try Const_cs (global_of_constr t) , -1, []
+	  try Const_cs (global_of_constr t) , None, []
           with e when Errors.noncritical e -> raise Not_found
 	end
 

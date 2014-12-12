@@ -970,11 +970,13 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
       let (evd,ks,_) =
 	List.fold_left
 	  (fun (evd,ks,m) b ->
-	    if Int.equal m n then (evd,t2::ks, m-1) else
+	    if match n with Some n -> Int.equal m n | None -> false then
+                (evd,t2::ks, m-1)
+            else
               let mv = new_meta () in
 	      let evd' = meta_declare mv (substl ks b) evd in
 	      (evd', mkMeta mv :: ks, m - 1))
-	  (sigma,[],List.length bs - 1) bs
+	  (sigma,[],List.length bs) bs
       in
       try
       let opt' = {opt with with_types = false} in

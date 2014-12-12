@@ -48,6 +48,7 @@ val find_projection : global_reference -> struc_typ
     the effective components of a structure and the projections of the  
     structure *)
 
+(** A cs_pattern characterizes the form of a component of canonical structure *)
 type cs_pattern =
     Const_cs of global_reference
   | Prod_cs
@@ -57,13 +58,15 @@ type cs_pattern =
 type obj_typ = {
   o_DEF : constr;
   o_CTX : Univ.ContextSet.t;
-  o_INJ : int;      (** position of trivial argument *)
+  o_INJ : int option;      (** position of trivial argument *)
   o_TABS : constr list;    (** ordered *)
   o_TPARAMS : constr list; (** ordered *)
   o_NPARAMS : int;
   o_TCOMPS : constr list } (** ordered *)
 
-val cs_pattern_of_constr : constr -> cs_pattern * int * constr list
+(** Return the form of the component of a canonical structure *)
+val cs_pattern_of_constr : constr -> cs_pattern * int option * constr list
+
 val pr_cs_pattern : cs_pattern -> Pp.std_ppcmds
 
 val lookup_canonical_conversion : (global_reference * cs_pattern) -> constr * obj_typ

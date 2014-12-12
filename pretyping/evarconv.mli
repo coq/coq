@@ -48,7 +48,7 @@ val check_conv_record : env -> evar_map ->
   * constr * constr list * (constr Stack.t * constr Stack.t) *
     (constr Stack.t * types Stack.t) *
     (constr Stack.t * types Stack.t) * constr *
-    (int * constr)
+    (int option * constr)
 
 (** Try to solve problems of the form ?x[args] = c by second-order
     matching, using typing to select occurrences *)

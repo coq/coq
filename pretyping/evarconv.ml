@@ -112,20 +112,20 @@ let occur_rigidly ev evd t =
     | Case _ -> false
   in Array.exists (fun t -> try ignore(aux t); false with Occur -> true) app
 
-(* [check_conv_record env sigma (t1,l1) (t2,l2)] tries to decompose the problem
-   (t1 l1) = (t2 l2) into a problem
+(* [check_conv_record env sigma (t1,stack1) (t2,stack2)] tries to decompose 
+   the problem (t1 stack1) = (t2 stack2) into a problem
 
-     l1 = params1@c1::extra_args1
-     l2 = us2@extra_args2
-     (t1 params1 c1) = (proji params (c xs))
-     (t2 us2) = (cstr us)
+     stack1 = params1@[c1]@extra_args1
+     stack2 = us2@extra_args2
+     t1 params1 c1 = proji params (c xs)
+     t2 us2 = head us
      extra_args1 = extra_args2
 
    by finding a record R and an object c := [xs:bs](Build_R params v1..vn)
-   with vi = (cstr us), for which we know that the i-th projection proji
+   with vi = (head us), for which we know that the i-th projection proji
    satisfies
 
-      (proji params (c xs)) = (cstr us)
+      proji params (c xs) = head us
 
    Rem: such objects, usable for conversion, are defined in the objdef
    table; practically, it amounts to "canonically" equip t2 into a
@@ -175,8 +175,8 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let c' = subst_univs_level_constr subst c in
   let t' = subst_univs_level_constr subst t' in
   let bs' = List.map (subst_univs_level_constr subst) bs in
-  let f, _ = decompose_app_vect t' in
-    ctx',(t2, f),c',bs',(Stack.append_app_list params Stack.empty,params1),
+  let h, _ = decompose_app_vect t' in
+    ctx',(h, t2),c',bs',(Stack.append_app_list params Stack.empty,params1),
     (Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
     (n,Stack.zip(t2,sk2))
 
@@ -786,13 +786,36 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 
       end
 
-and conv_record trs env evd (ctx,(h,h'),c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
+and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2),c1,(n,t2)) =
+  (* Tries to unify the states
+
+        (proji params1 c1 | sk1)   =   (proji params2 (c (?xs:bs)) | sk2)
+
+     and the terms
+
+        h us  =  h2 us2
+
+     where
+
+     c = the constant for the canonical structure (i.e. some term of the form
+         fun (xs:bs) => Build_R params v1 .. vi-1 (h us) vi+1 .. vn)
+     bs = the types of the parameters of the canonical structure
+     c1 = the main argument of the canonical projection
+     sk1, sk2 = the surrounding stacks of the conversion problem
+     params1, params2 = the params of the projection (empty if a primitive proj)
+
+     knowing that
+
+       (proji params1 c1 | sk1)   =   (h2 us2 | sk2)
+
+     had to be initially resolved
+  *)
   let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
-  if Reductionops.Stack.compare_shape ts ts1 then
+  if Reductionops.Stack.compare_shape sk1 sk2 then
     let (evd',ks,_,test) =
       List.fold_left
 	(fun (i,ks,m,test) b ->
-	  if Int.equal m n then 
+	  if match n with Some n -> Int.equal m n | None -> false then
 	    let ty = Retyping.get_type_of env i t2 in
 	    let test i = evar_conv_x trs env i CUMUL ty (substl ks b) in
 	      (i,t2::ks, m-1, test)
@@ -800,7 +823,7 @@ and conv_record trs env evd (ctx,(h,h'),c,bs,(params,params1),(us,us2),(ts,ts1),
 	    let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
             let (i',ev) = new_evar env i ~src:dloc (substl ks b) in
 	    (i', ev :: ks, m - 1,test))
-	(evd,[],List.length bs - 1,fun i -> Success i) bs
+	(evd,[],List.length bs,fun i -> Success i) bs
     in
     let app = mkApp (c, Array.rev_of_list ks) in
     ise_and evd'
@@ -813,10 +836,10 @@ and conv_record trs env evd (ctx,(h,h'),c,bs,(params,params1),(us,us2),(ts,ts1),
            (fun env' i' cpb u1 u -> evar_conv_x trs env' i' cpb u1 (substl ks u))
            us2 us);
        (fun i -> evar_conv_x trs env i CONV c1 app);
-       (fun i -> exact_ise_stack2 env i (evar_conv_x trs) ts ts1);
+       (fun i -> exact_ise_stack2 env i (evar_conv_x trs) sk1 sk2);
        test;
-       (fun i -> evar_conv_x trs env i CONV h 
-	 (fst (decompose_app_vect (substl ks h'))))]
+       (fun i -> evar_conv_x trs env i CONV h2
+	 (fst (decompose_app_vect (substl ks h))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
