@@ -7,49 +7,40 @@
 (************************************************************************)
 
 type worker_id = string
-type 'a spawn =
-  args:string array -> env:string array -> unit -> in_channel * out_channel * 'a
-type active
-type parking
 
-(* this shall come from a Spawn.* model *)
-module type WorkerModel = sig
-  type process
-  val spawn :
-    ?prefer_sock:bool -> ?env:string array -> string -> string array ->
-      process * in_channel * out_channel
-end
+type 'a cpanel = {
+  exit : unit -> unit; (* called by manager to exit instead of Thread.exit *)
+  cancelled : unit -> bool; (* manager checks for a request of termination *)
+  extra : 'a;                        (* extra stuff to pass to the manager *)
+}
 
-(* this defines the main loop of the manager *)
-module type ManagerModel = sig
+module type PoolModel = sig
+  (* this shall come from a Spawn.* model *)
   type process
-  type extra (* extra stuff to pass to the manager *)
+  val spawn : int -> worker_id * process * CThread.thread_ic * out_channel
+
+  (* this defines the main loop of the manager *)
+  type extra
   val manager :
-    extra -> cancel:bool ref -> die:bool ref -> worker_id -> process spawn ->
-      unit
-  val naming : int -> worker_id
+    extra cpanel -> worker_id * process * CThread.thread_ic * out_channel -> unit
 end
 
-module Make(Worker : WorkerModel)
-           (Manager : ManagerModel with type process = Worker.process) : sig
+module Make(Model : PoolModel) : sig
 
-  type 'a pool
+  type pool
   
-  val create_active : Manager.extra -> int -> active pool
-  val create_parking :  unit -> parking pool
+  val create : Model.extra -> size:int -> pool
 
-  val is_empty : 'a pool -> bool
-  val n_workers : 'a pool -> int
+  val is_empty : pool -> bool
+  val n_workers : pool -> int
 
   (* cancel signal *)
-  val cancel : 'a pool -> worker_id -> unit
-  val cancel_all : 'a pool -> unit
-  (* die signal + true removal, the pool is empty afterward *)
-  val destroy : 'a pool -> unit
+  val cancel : worker_id -> pool -> unit
+  val cancel_all : pool -> unit
+  (* camcel signal + true removal, the pool is empty afterward *)
+  val destroy : pool -> unit
 
-  val move : active pool -> parking pool -> worker_id -> unit
-  
   (* The worker should call this function *)
-  val worker_handshake : in_channel -> out_channel -> unit
+  val worker_handshake : CThread.thread_ic -> out_channel -> unit
 
 end
