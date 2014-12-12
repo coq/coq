@@ -20,6 +20,8 @@ type state
 val freeze : marshallable:Summary.marshallable -> state
 val unfreeze : state -> unit
 
+val summary_of_state : state -> Summary.frozen
+
 (** {6 Rollback } *)
 
 (** [with_state_protection f x] applies [f] to [x] and restores the
