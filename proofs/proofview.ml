@@ -815,6 +815,19 @@ module Unsafe = struct
   let reset_future_goals p =
     { p with solution = Evd.reset_future_goals p.solution }
 
+  let mark_as_goal_evm evd content =
+    let info = Evd.find evd content in
+    let info =
+      { info with Evd.evar_source = match info.Evd.evar_source with
+      | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
+      | loc,_ -> loc,Evar_kinds.GoalEvar }
+    in
+    let info = Typeclasses.mark_unresolvable info in
+    Evd.add evd content info
+
+  let mark_as_goal p gl =
+    { p with solution = mark_as_goal_evm p.solution gl }
+
 end
 
 
@@ -937,16 +950,6 @@ end
 module Refine =
 struct
 
-  let mark_as_goal evd content =
-    let info = Evd.find evd content in
-    let info =
-      { info with Evd.evar_source = match info.Evd.evar_source with
-      | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
-      | loc,_ -> loc,Evar_kinds.GoalEvar }
-    in
-    let info = Typeclasses.mark_unresolvable info in
-    Evd.add evd content info
-
   let typecheck_evar ev env sigma =
     let info = Evd.find sigma ev in
     let evdref = ref sigma in
@@ -995,7 +998,7 @@ struct
     let sigma = Evd.restore_future_goals sigma prev_future_goals prev_principal_goal in
     (** Select the goals *)
     let comb = undefined sigma (CList.rev evs) in
-    let sigma = CList.fold_left mark_as_goal sigma comb in
+    let sigma = CList.fold_left Unsafe.mark_as_goal_evm sigma comb in
     let open Proof in
     InfoL.leaf (Info.Tactic (fun () -> Pp.(str"refine"++spc()++ Hook.get pr_constrv env sigma c))) >>
     Pv.set { solution = sigma; comb; }

@@ -392,6 +392,10 @@ module Unsafe : sig
 
   (** Clears the future goals store in the proof view. *)
   val reset_future_goals : proofview -> proofview
+
+  (** Give an evar the status of a goal (changes its source location
+      and makes it unresolvable for type classes. *)
+  val mark_as_goal : proofview -> Evar.t -> proofview
 end
 
 (** {7 Notations} *)
