@@ -1777,7 +1777,41 @@ Section ReDun.
     + now constructor.
   Qed.
 
+  (** Effective computation of a list without duplicates *)
+
   Hypothesis decA: forall x y : A, {x = y} + {x <> y}.
+
+  Fixpoint nodup (l : list A) : list A :=
+    match l with
+      | [] => []
+      | x::xs => if in_dec decA x xs then nodup xs else x::(nodup xs)
+    end.
+
+  Lemma nodup_In l x : In x (nodup l) <-> In x l.
+  Proof.
+    induction l as [|a l' Hrec]; simpl.
+    - reflexivity.
+    - destruct (in_dec decA a l'); simpl; rewrite Hrec.
+      * intuition; now subst.
+      * reflexivity.
+  Qed.
+
+  Lemma NoDup_nodup l: NoDup (nodup l).
+  Proof.
+    induction l as [|a l' Hrec]; simpl.
+    - constructor.
+    - destruct (in_dec decA a l'); simpl.
+      * assumption.
+      * constructor; [ now rewrite nodup_In | assumption].
+  Qed.
+
+  Lemma nodup_inv k l a : nodup k = a :: l -> ~ In a l.
+  Proof.
+    intros H.
+    assert (H' : NoDup (a::l)).
+    { rewrite <- H. apply NoDup_nodup. }
+    now inversion_clear H'.
+  Qed.
 
   Theorem NoDup_count_occ l:
     NoDup l <-> (forall x:A, count_occ decA l x <= 1).
