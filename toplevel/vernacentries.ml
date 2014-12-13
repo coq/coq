@@ -1002,7 +1002,6 @@ let vernac_declare_implicits locality r l =
 	(List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps)
 
 let vernac_declare_arguments locality r l nargs flags =
-  let assert_specified = List.mem `Assert flags in
   let extra_scope_flag = List.mem `ExtraScopes flags in
   let names = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
   let names, rest = List.hd names, List.tl names in
@@ -1125,7 +1124,7 @@ let vernac_declare_arguments locality r l nargs flags =
           some_implicits_specified ||
           some_scopes_specified ||
           some_simpl_flags_specified) &&
-     not assert_specified then
+     List.length flags = 0 then
     msg_warning (strbrk "This command is just asserting the number and names of arguments of " ++ pr_global sr ++ strbrk". If this is what you want add ': assert' to silence the warning. If you want to clear implicit arguments add ': clear implicits'. If you want to clear notation scopes add ': clear scopes'")
 
 
