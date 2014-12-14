@@ -9,11 +9,18 @@
 let prepare_in_channel_for_thread_friendly_io ic =
   Unix.set_nonblock (Unix.descr_of_in_channel ic)
 
+let safe_wait_timed_read fd time =
+  try Thread.wait_timed_read fd time
+  with Unix.Unix_error (Unix.EINTR, _, _) ->
+    (** On Unix, the above function may raise this exception when it is
+        interrupted by a signal. (It uses Unix.select internally.) *)
+    false
+
 let thread_friendly_read_fd fd s ~off ~len =
   let rec loop () =
     try Unix.read fd s off len
-    with Unix.Unix_error((Unix.EWOULDBLOCK|Unix.EAGAIN),_,_) ->
-      while not (Thread.wait_timed_read fd 1.0) do Thread.yield () done;
+    with Unix.Unix_error((Unix.EWOULDBLOCK|Unix.EAGAIN|Unix.EINTR),_,_) ->
+      while not (safe_wait_timed_read fd 1.0) do Thread.yield () done;
       loop ()
   in 
     loop ()
