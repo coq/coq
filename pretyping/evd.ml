@@ -261,15 +261,16 @@ let instantiate_evar_array info c args =
 
 module StringOrd = struct type t = string let compare = String.compare end
 module UNameMap = struct
-
-    include Map.Make(StringOrd)
-
-    let union s t = 
+    
+  include Map.Make(StringOrd)
+    
+  let union s t = 
+    if s == t then s
+    else
       merge (fun k l r -> 
 	match l, r with
 	| Some _, _ -> l
 	| _, _ -> r) s t
-
 end
 
 (* 2nd part used to check consistency on the fly. *)
@@ -307,14 +308,8 @@ let union_evar_universe_context ctx ctx' =
   if ctx == ctx' then ctx
   else if is_empty_evar_universe_context ctx' then ctx
   else
-    let local = 
-      if ctx.uctx_local == ctx'.uctx_local then ctx.uctx_local 
-      else Univ.ContextSet.union ctx.uctx_local ctx'.uctx_local
-    in
-    let names =
-      if ctx.uctx_names = ctx.uctx_names then ctx.uctx_names
-      else UNameMap.union ctx.uctx_names ctx'.uctx_names
-    in
+    let local = Univ.ContextSet.union ctx.uctx_local ctx'.uctx_local in
+    let names = UNameMap.union ctx.uctx_names ctx'.uctx_names in
       { uctx_names = names;
 	uctx_local = local;
 	uctx_univ_variables = 

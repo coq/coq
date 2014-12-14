@@ -1882,8 +1882,9 @@ struct
   let singleton l = of_set (LSet.singleton l)
   let of_instance i = of_set (Instance.levels i)
 
-  let union (univs, cst) (univs', cst') =
-    LSet.union univs univs', Constraint.union cst cst'
+  let union (univs, cst as x) (univs', cst' as y) =
+    if x == y then x
+    else LSet.union univs univs', Constraint.union cst cst'
 
   let append (univs, cst) (univs', cst') =
     let univs = LSet.fold LSet.add univs univs' in
