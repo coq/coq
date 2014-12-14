@@ -1612,7 +1612,7 @@ let interp_search_about_item env =
           	as an identifier component")
 
 let vernac_search s gopt r =
-  let g = un_opt gopt 1 in
+  let g = Option.default 1 gopt in
   let r = interp_search_restriction r in
   let env =
     try snd (Pfedit.get_goal_context g)
