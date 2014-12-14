@@ -451,18 +451,8 @@ let loop () =
   let in_ch, out_ch = Spawned.get_channels () in
   let xml_oc = Xml_printer.make (Xml_printer.TChannel out_ch) in
   CThread.prepare_in_channel_for_thread_friendly_io in_ch;
-  let safe_read s len =
-    (** Ignore interrupt when reading a stanza *)
-    let _ = Unix.sigprocmask Unix.SIG_BLOCK [Sys.sigint] in
-    try
-      let ans = CThread.thread_friendly_read in_ch s ~off:0 ~len in
-      let _ = Unix.sigprocmask Unix.SIG_UNBLOCK [Sys.sigint] in
-      ans
-    with e ->
-      let _ = Unix.sigprocmask Unix.SIG_UNBLOCK [Sys.sigint] in
-      raise e
-  in
-  let in_lb = Lexing.from_function safe_read in
+  let in_lb = Lexing.from_function (fun s len ->
+    CThread.thread_friendly_read in_ch s ~off:0 ~len) in
   let xml_ic = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
   set_logger (slave_logger xml_oc);
