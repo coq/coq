@@ -150,17 +150,17 @@ Section DoubleAdd.
   Notation wwB := (base (ww_digits w_digits)).
   Notation "[| x |]" := (w_to_Z x)  (at level 0, x at level 99).
   Notation "[+| c |]" :=
-   (interp_carry 1 wB w_to_Z c) (at level 0, x at level 99).
+   (interp_carry 1 wB w_to_Z c) (at level 0, c at level 99).
   Notation "[-| c |]" :=
-   (interp_carry (-1) wB w_to_Z c) (at level 0, x at level 99).
+   (interp_carry (-1) wB w_to_Z c) (at level 0, c at level 99).
 
   Notation "[[ x ]]" := (ww_to_Z w_digits w_to_Z x)(at level 0, x at level 99).
   Notation "[+[ c ]]" :=
    (interp_carry 1 wwB (ww_to_Z w_digits w_to_Z) c)
-   (at level 0, x at level 99).
+   (at level 0, c at level 99).
   Notation "[-[ c ]]" :=
    (interp_carry (-1) wwB (ww_to_Z w_digits w_to_Z) c)
-   (at level 0, x at level 99).
+   (at level 0, c at level 99).
 
   Variable spec_w_0   : [|w_0|] = 0.
   Variable spec_w_1   : [|w_1|] = 1.

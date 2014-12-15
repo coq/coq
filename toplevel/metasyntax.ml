@@ -878,6 +878,12 @@ let check_infix_modifiers modifiers =
   if not (List.is_empty t) then
     error "Explicit entry level or type unexpected in infix notation."
 
+let check_useless_entry_types recvars mainvars etyps =
+  let vars = let (l1,l2) = List.split recvars in l1@l2@mainvars in
+  match List.filter (fun (x,etyp) -> not (List.mem x vars)) etyps with
+  | (x,_)::_ -> error (Id.to_string x ^ " is unbound in the notation.")
+  | _ -> ()
+
 let no_syntax_modifiers = function
   | [] | [SetOnlyParsing _] -> true
   | _ -> false
@@ -1043,6 +1049,7 @@ let compute_syntax_data df modifiers =
   let assoc = match assoc with None -> (* default *) Some NonA | a -> a in
   let toks = split_notation_string df in
   let (recvars,mainvars,symbols) = analyze_notation_tokens toks in
+  let _ = check_useless_entry_types recvars mainvars etyps in
   let ntn_for_interp = make_notation_key symbols in
   let symbols' = remove_curly_brackets symbols in
   let need_squash = not (List.equal Notation.symbol_eq symbols symbols') in

@@ -102,10 +102,10 @@ Module ZnZ.
  Let wB := base digits.
 
  Notation "[+| c |]" :=
-   (interp_carry 1 wB to_Z c)  (at level 0, x at level 99).
+   (interp_carry 1 wB to_Z c)  (at level 0, c at level 99).
 
  Notation "[-| c |]" :=
-   (interp_carry (-1) wB to_Z c)  (at level 0, x at level 99).
+   (interp_carry (-1) wB to_Z c)  (at level 0, c at level 99).
 
  Notation "[|| x ||]" :=
    (zn2z_to_Z wB to_Z x)  (at level 0, x at level 99).
