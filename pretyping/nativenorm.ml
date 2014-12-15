@@ -389,7 +389,7 @@ let native_norm env sigma c ty =
   let ml_filename, prefix = Nativelib.get_ml_filename () in
   let code, upd = mk_norm_code penv sigma prefix c in
   match Nativelib.compile ml_filename code with
-    | 0,fn ->
+    | true, fn ->
         if !Flags.debug then Pp.msg_debug (Pp.str "Running norm ...");
         let t0 = Sys.time () in
         Nativelib.call_linker ~fatal:true prefix fn (Some upd);

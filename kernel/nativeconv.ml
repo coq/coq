@@ -135,7 +135,7 @@ let native_conv pb sigma env t1 t2 =
   let ml_filename, prefix = get_ml_filename () in
   let code, upds = mk_conv_code penv sigma prefix t1 t2 in
   match compile ml_filename code with
-  | (0,fn) ->
+  | (true, fn) ->
       begin
         if !Flags.debug then Pp.msg_debug (Pp.str "Running test...");
         let t0 = Sys.time () in

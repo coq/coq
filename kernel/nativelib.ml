@@ -32,7 +32,7 @@ let source_ext = ".native"
 
 (* Global settings and utilies for interface with OCaml *)
 let compiler_name =
-  Filename.quote (if Dynlink.is_native then ocamlopt () else ocamlc ())
+  if Dynlink.is_native then ocamlopt () else ocamlc ()
 
 let ( / ) = Filename.concat
 
@@ -62,20 +62,22 @@ let write_ml_code fn ?(header=[]) code =
 let call_compiler ml_filename =
   let load_path = !get_load_paths () in
   let load_path = List.map (fun dn -> dn / output_dir) load_path in
-  let include_dirs = List.map Filename.quote (include_dirs () @ load_path) in
-  let include_dirs = String.concat " -I " include_dirs in
+  let include_dirs = List.flatten (List.map (fun x -> ["-I"; x]) (include_dirs () @ load_path)) in
   let f = Filename.chop_extension ml_filename in
   let link_filename = f ^ ".cmo" in
   let link_filename = Dynlink.adapt_filename link_filename in
   let remove f = if Sys.file_exists f then Sys.remove f in
   remove link_filename;
   remove (f ^ ".cmi");
-  let comp_cmd =
-    Format.sprintf "%s -%s -o %s -rectypes -w a -I %s -impl %s"
-      compiler_name (if Dynlink.is_native then "shared" else "c")
-      (Filename.quote link_filename) include_dirs (Filename.quote ml_filename)
-  in
-  Sys.command comp_cmd, link_filename
+  let args =
+    (if Dynlink.is_native then "-shared" else "-c")
+    ::"-o"::link_filename
+    ::"-rectypes"
+    ::"-w"::"a"
+    ::include_dirs
+    @ ["-impl"; ml_filename] in
+  if !Flags.debug then Pp.msg_debug (Pp.str (compiler_name ^ " " ^ (String.concat " " args)));
+  CUnix.sys_command compiler_name args = Unix.WEXITED 0, link_filename
 
 let compile fn code =
   write_ml_code fn code;
