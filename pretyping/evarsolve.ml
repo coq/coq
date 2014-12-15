@@ -1104,13 +1104,29 @@ let solve_evar_evar_l2r f g env evd aliases pbty ev1 (evk2,_ as ev2) =
 
 let opp_problem = function None -> None | Some b -> Some (not b)
 
+let preferred_orientation evd evk1 evk2 =
+  let _,src1 = (Evd.find_undefined evd evk1).evar_source in
+  let _,src2 = (Evd.find_undefined evd evk2).evar_source in
+  (* This is a heuristic useful for program to work *)
+  match src1,src2 with
+  | Evar_kinds.QuestionMark _, _ -> true
+  | _,Evar_kinds.QuestionMark _ -> false
+  | _ -> true
+
 let solve_evar_evar_aux f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env in
-  try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
-  with CannotProject (evd,ev1) ->
-  try solve_evar_evar_l2r f g env evd aliases (opp_problem pbty) ev2 ev1
-  with CannotProject (evd,ev2) ->
-  add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd
+  if preferred_orientation evd evk1 evk2 then
+    try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
+    with CannotProject (evd,ev1) ->
+    try solve_evar_evar_l2r f g env evd aliases (opp_problem pbty) ev2 ev1
+    with CannotProject (evd,ev2) ->
+    add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd
+  else
+    try solve_evar_evar_l2r f g env evd aliases (opp_problem pbty) ev2 ev1
+    with CannotProject (evd,ev2) ->
+    try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
+    with CannotProject (evd,ev1) ->
+    add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd
 
 let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let (evd,ev1,ev2),pbty =
