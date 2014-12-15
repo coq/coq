@@ -1,0 +1,39 @@
+le_n: forall n : nat, n <= n
+le_S: forall n m : nat, n <= m -> n <= S m
+le_pred: forall n m : nat, n <= m -> Nat.pred n <= Nat.pred m
+le_S_n: forall n m : nat, S n <= S m -> n <= m
+le_0_n: forall n : nat, 0 <= n
+le_n_S: forall n m : nat, n <= m -> S n <= S m
+true: bool
+false: bool
+andb: bool -> bool -> bool
+orb: bool -> bool -> bool
+implb: bool -> bool -> bool
+xorb: bool -> bool -> bool
+negb: bool -> bool
+Nat.eqb: nat -> nat -> bool
+Nat.leb: nat -> nat -> bool
+Nat.ltb: nat -> nat -> bool
+Nat.even: nat -> bool
+Nat.odd: nat -> bool
+Nat.testbit: nat -> nat -> bool
+eq_S: forall x y : nat, x = y -> S x = S y
+f_equal_pred: forall x y : nat, x = y -> Nat.pred x = Nat.pred y
+pred_Sn: forall n : nat, n = Nat.pred (S n)
+eq_add_S: forall n m : nat, S n = S m -> n = m
+f_equal2_plus:
+  forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 + x2 = y1 + y2
+plus_n_O: forall n : nat, n = n + 0
+plus_O_n: forall n : nat, 0 + n = n
+plus_n_Sm: forall n m : nat, S (n + m) = n + S m
+plus_Sn_m: forall n m : nat, S n + m = S (n + m)
+f_equal2_mult:
+  forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 * x2 = y1 * y2
+mult_n_O: forall n : nat, 0 = n * 0
+mult_n_Sm: forall n m : nat, n * m + n = n * S m
+max_l: forall n m : nat, m <= n -> Nat.max n m = n
+max_r: forall n m : nat, n <= m -> Nat.max n m = m
+min_l: forall n m : nat, n <= m -> Nat.min n m = n
+min_r: forall n m : nat, m <= n -> Nat.min n m = m
+h: newdef n
+h: P n

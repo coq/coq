@@ -1,2 +1,5 @@
 plus_n_O: forall n : nat, n = n + 0
 plus_O_n: forall n : nat, 0 + n = n
+h: n = newdef n
+h: n = newdef n
+h: n = newdef n
