@@ -39,3 +39,19 @@ Print eq_refl.
 
 Arguments eq_refl {A} {x}, {A} x. (* Test new syntax *)
 Print eq_refl.
+
+
+Definition newdef := fun x:nat => x.
+
+Goal forall n:nat, n <> newdef n -> newdef n <> n -> False.
+  intros n h h'.
+  About n.                              (* search hypothesis *)
+  About h.                              (* search hypothesis *)
+Abort.
+
+Goal forall n:nat, let g := newdef in n <> newdef n -> newdef n <> n -> False.
+  intros n g h h'.
+  About g.                              (* search hypothesis *)
+  About h.                              (* search hypothesis *)
+Abort.
+

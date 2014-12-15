@@ -500,8 +500,9 @@ module Make
         keyword "Print Scope" ++ spc() ++ str s
       | PrintVisibility s ->
         keyword "Print Visibility" ++ pr_opt str s
-      | PrintAbout qid ->
-        keyword "About" ++ spc()  ++ pr_smart_global qid
+      | PrintAbout (qid,gopt) ->
+         pr_opt (fun g -> int g ++ str ":"++ spc()) gopt
+	 ++ keyword "About" ++ spc()  ++ pr_smart_global qid
       | PrintImplicit qid ->
         keyword "Print Implicit" ++ spc()  ++ pr_smart_global qid
       (* spiwack: command printing all the axioms and section variables used in a

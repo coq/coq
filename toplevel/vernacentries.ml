@@ -1528,6 +1528,39 @@ let vernac_global_check c =
   let env = Safe_typing.env_of_safe_env senv in
     msg_notice (print_safe_judgment env sigma j)
 
+
+let get_nth_goal n =
+  let pf = get_pftreestate() in
+  let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
+  let gl = {Evd.it=List.nth gls (n-1) ; sigma = sigma; } in
+  gl
+  
+exception NoHyp
+(* Printing "About" information of a hypothesis of the current goal.
+   We only print the type and a small statement to this comes from the
+   goal. Precondition: there must be at least one current goal. *)
+let print_about_hyp_globs ref_or_by_not glnumopt =
+  try
+    let gl,id =
+      match glnumopt,ref_or_by_not with
+      | None,AN (Ident (_loc,id)) -> (* goal number not given, catch any failure *)
+	 (try get_nth_goal 1,id with _ -> raise NoHyp)
+      | Some n,AN (Ident (_loc,id)) ->  (* goal number given, catch if wong *)
+	 (try get_nth_goal n,id
+	  with
+	    Failure _ -> Errors.error ("No such goal: "^string_of_int n^"."))
+      | _ , _ -> raise NoHyp in
+    let hyps = pf_hyps gl in
+    let (id,bdyopt,typ) = Context.lookup_named id hyps in
+    let natureofid = match bdyopt with
+      | None -> "Hypothesis"
+      | Some bdy ->"Constant (let in)" in
+    v 0 (str (Id.to_string id) ++ str":" ++ pr_constr typ ++ fnl() ++ fnl()
+	 ++ str natureofid ++ str " of the goal context.")
+  with (* fallback to globals *)
+    | NoHyp | Not_found -> print_about ref_or_by_not
+
+	       
 let vernac_print = function
   | PrintTables -> msg_notice (print_tables ())
   | PrintFullContext-> msg_notice (print_full_context_typ ())
@@ -1568,8 +1601,8 @@ let vernac_print = function
       msg_notice (Notation.pr_scope (Constrextern.without_symbols pr_lglob_constr) s)
   | PrintVisibility s ->
       msg_notice (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
-  | PrintAbout qid ->
-    msg_notice (print_about qid)
+  | PrintAbout (ref_or_by_not,glnumopt) ->
+     msg_notice (print_about_hyp_globs ref_or_by_not glnumopt)
   | PrintImplicit qid ->
     dump_global qid; msg_notice (print_impargs qid)
   | PrintAssumptions (o,t,r) ->

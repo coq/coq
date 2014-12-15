@@ -794,7 +794,6 @@ GEXTEND Gram
       | IDENT "Print"; IDENT "Namespace" ; ns = dirpath ->
           VernacPrint (PrintNamespace ns)
       | IDENT "Inspect"; n = natural -> VernacPrint (PrintInspect n)
-      | IDENT "About"; qid = smart_global -> VernacPrint (PrintAbout qid)
 
       | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
 	  VernacAddMLPath (false, dir)
@@ -839,6 +838,8 @@ GEXTEND Gram
       | IDENT "Check"; c = lconstr ->
 	 fun g -> VernacCheckMayEval (None, g, c)
       (* Searching the environment *)
+      | IDENT "About"; qid = smart_global ->
+	 fun g -> VernacPrint (PrintAbout (qid,g))
       | IDENT "SearchHead"; c = constr_pattern; l = in_or_out_modules ->
 	  fun g -> VernacSearch (SearchHead c,g, l)
       | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules ->
