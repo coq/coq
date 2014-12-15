@@ -209,7 +209,7 @@ let param_ccls params =
 (* TODO check that we don't overgeneralize construcors/inductive arities with
    universes that are absent from them. Is it possible? 
 *)
-let typecheck_inductive env ctx mie =
+let typecheck_inductive env mie =
   let () = match mie.mind_entry_inds with
   | [] -> anomaly (Pp.str "empty inductive types declaration")
   | _ -> ()
@@ -217,7 +217,7 @@ let typecheck_inductive env ctx mie =
   (* Check unicity of names *)
   mind_check_names mie;
   (* Params are typed-checked here *)
-  let env' = push_context ctx env in
+  let env' = push_context mie.mind_entry_universes env in
   let (env_params, params) = infer_local_decls env' mie.mind_entry_params in
   (* We first type arity of each inductive definition *)
   (* This allows building the environment of arities and to share *)
@@ -820,10 +820,7 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
 
 let check_inductive env kn mie =
   (* First type-check the inductive definition *)
-  let env = push_context mie.mind_entry_universes env in
-  let (env_ar, params, inds) = 
-    typecheck_inductive env mie.mind_entry_universes mie 
-  in
+  let (env_ar, params, inds) = typecheck_inductive env mie in
   (* Then check positivity conditions *)
   let (nmr,recargs) = check_positivity kn env_ar params inds in
   (* Build the inductive packets *)
