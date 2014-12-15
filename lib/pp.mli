@@ -122,6 +122,16 @@ type message = Feedback.message = {
 
 type logger = message_level -> std_ppcmds -> unit
 
+(** {6 output functions}
+
+[msg_info] and [msg_notice] do not put any decoration on output by
+default. If possible don't mix them with goal output (prefer
+msg_warning) so that dispatching of outputs is easier. Once all
+interfaces use the xml-like protocol this constraint can be
+relaxed. *)
+(* Should we advertise these functions more? Should they be the ONLY
+   allowed way to output something? *)
+
 val msg_info : std_ppcmds -> unit
 (** Message that displays information, usually in verbose mode, such as [Foobar
     is defined] *)

@@ -618,22 +618,16 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
           begin match bgoals,shelf,given_up with
 	  | [] , [] , [] -> pr_subgoals None sigma seeds shelf stack goals
           | [] , [] , _ ->
-	    (* emacs mode: xml-like flag for detecting information message *)
-	    str (emacs_str "<infomsg>") ++
-	    str "No more goals, however there are goals you gave up. You need to go back and solve them."
-	    ++ str (emacs_str "</infomsg>")
-	    ++ fnl () ++ fnl ()
+	     msg_warning (str "No more goals, however there are goals you gave up. You need to go back and solve them.");
+	     fnl () ++ fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] given_up
           | [] , _ , _ ->
-	    (* emacs mode: xml-like flag for detecting information message *)
-	    str (emacs_str "<infomsg>") ++
-	    str "All the remaining goals are on the shelf."
-	    ++ str (emacs_str "</infomsg>")
-	    ++ fnl () ++ fnl ()
+	    msg_warning (str "All the remaining goals are on the shelf.");
+	    fnl () ++ fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] shelf
 	  | _ , _, _ ->
-	    str "This subproof is complete, but there are still unfocused goals."
-	    ++ fnl () ++ fnl ()
+	     msg_warning (str "This subproof is complete, but there are still unfocused goals.");
+	    fnl () ++ fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds shelf [] bgoals
 	  end
   | _ -> pr_subgoals None sigma seeds shelf stack goals

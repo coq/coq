@@ -447,6 +447,10 @@ let logger = ref std_logger
 let feedback_id = ref (Feedback.Edit 0)
 let feedback_route = ref Feedback.default_route
 
+(* If mixing some output and a goal display, please use msg_warning,
+   so that interfaces (proofgeneral for example) can easily dispatch
+   them to different windows. *)
+
 let msg_info x = !logger ~id:!feedback_id Info x
 let msg_notice x = !logger ~id:!feedback_id Notice x
 let msg_warning x = !logger ~id:!feedback_id Warning x
