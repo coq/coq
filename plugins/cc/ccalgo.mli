@@ -10,6 +10,19 @@ open Util
 open Term
 open Names
 
+type pa_constructor =
+    { cnode : int;
+      arity : int;
+      args  : int list}
+
+type pa_fun=
+    {fsym:int;
+     fnargs:int}
+
+
+module PafMap : Map.S with type key = pa_fun
+module PacMap : Map.S with type key = pa_constructor
+
 type cinfo =
     {ci_constr: pconstructor; (* inductive type *)
      ci_arity: int;     (* # args *)
@@ -22,27 +35,13 @@ type term =
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
 
-val term_equal : term -> term -> bool
+module Constrhash : Hashtbl.S with type key = constr
+module Termhash : Hashtbl.S with type key = term
 
-type patt_kind =
-    Normal
-  | Trivial of types
-  | Creates_variables
 
 type ccpattern =
     PApp of term * ccpattern list
   | PVar of int
-
-type pa_constructor =
-    { cnode : int;
-      arity : int;
-      args  : int list}
-
-module PacMap : Map.S with type key = pa_constructor
-
-type forest
-
-type state
 
 type rule=
     Congruence
@@ -61,13 +60,63 @@ type equality = rule eq
 
 type disequality = from eq
 
+type patt_kind =
+    Normal
+  | Trivial of types
+  | Creates_variables
+
+type quant_eq=
+    {qe_hyp_id: Id.t;
+     qe_pol: bool;
+     qe_nvars:int;
+     qe_lhs: ccpattern;
+     qe_lhs_valid:patt_kind;
+     qe_rhs: ccpattern;
+     qe_rhs_valid:patt_kind}
+
+type inductive_status =
+    Unknown
+  | Partial of pa_constructor
+  | Partial_applied
+  | Total of (int * pa_constructor)
+
+type representative=
+    {mutable weight:int;
+     mutable lfathers:Int.Set.t;
+     mutable fathers:Int.Set.t;
+     mutable inductive_status: inductive_status;
+     class_type : Term.types;
+     mutable functions: Int.Set.t PafMap.t} (*pac -> term = app(constr,t) *)
+
+type cl = Rep of representative| Eqto of int*equality
+
+type vertex = Leaf| Node of (int*int)
+
+type node =
+    {mutable clas:cl;
+     mutable cpath: int;
+     mutable constructors: int PacMap.t;
+     vertex:vertex;
+     term:term}
+
+type forest=
+    {mutable max_size:int;
+     mutable size:int;
+     mutable map: node array;
+     axioms: (term*term) Constrhash.t;
+     mutable epsilons: pa_constructor list;
+     syms: int Termhash.t}
+
+type state
+
 type explanation =
     Discrimination of (int*pa_constructor*int*pa_constructor)
   | Contradiction of disequality
   | Incomplete
 
-module Constrhash : Hashtbl.S with type key = constr
-module Termhash : Hashtbl.S with type key = term
+type matching_problem
+
+val term_equal : term -> term -> bool
 
 val constr_of_term : term -> constr
 
@@ -96,6 +145,8 @@ val find : forest -> int -> int
 
 val find_pac : forest -> int -> pa_constructor -> int
 
+val find_oldest_pac : forest -> int -> pa_constructor -> int
+
 val term : forest -> int -> term
 
 val get_constructor_info : forest -> int -> cinfo
@@ -104,24 +155,6 @@ val subterms : forest -> int -> int * int
 
 val join_path : forest -> int -> int ->
   ((int * int) * equality) list * ((int * int) * equality) list
-
-type quant_eq=
-    {qe_hyp_id: Id.t;
-     qe_pol: bool;
-     qe_nvars:int;
-     qe_lhs: ccpattern;
-     qe_lhs_valid:patt_kind;
-     qe_rhs: ccpattern;
-     qe_rhs_valid:patt_kind}
-
-
-type pa_fun=
-    {fsym:int;
-     fnargs:int}
-
-type matching_problem
-
-module PafMap: Map.S with type key = pa_fun
 
 val make_fun_table : state -> Int.Set.t PafMap.t
 
@@ -136,8 +169,9 @@ val find_instances : state -> (quant_eq * int array) list
 
 val execute : bool -> state -> explanation option
 
+val pr_idx_term : forest -> int -> Pp.std_ppcmds
 
-
+val empty_forest: unit -> forest
 
 
 

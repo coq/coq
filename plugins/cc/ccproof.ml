@@ -12,6 +12,7 @@
 open Errors
 open Term
 open Ccalgo
+open Pp
 
 type rule=
     Ax of constr
@@ -91,60 +92,65 @@ let pinject p c n a =
    p_rhs=nth_arg p.p_rhs (n-a);
    p_rule=Inject(p,c,n,a)}
 
+let rec equal_proof uf i j=
+  debug (str "equal_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
+  if i=j then prefl (term uf i) else
+    let (li,lj)=join_path uf i j in
+    ptrans (path_proof uf i li) (psym (path_proof uf j lj))
+      
+and edge_proof uf ((i,j),eq)=
+  debug (str "edge_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
+  let pi=equal_proof uf i eq.lhs in
+  let pj=psym (equal_proof uf j eq.rhs) in
+  let pij=
+    match eq.rule with
+      Axiom (s,reversed)->
+	if reversed then psymax (axioms uf) s
+	else pax (axioms uf) s
+    | Congruence ->congr_proof uf eq.lhs eq.rhs
+    | Injection (ti,ipac,tj,jpac,k) -> (* pi_k ipac = p_k jpac *) 
+      let p=ind_proof uf ti ipac tj jpac in
+      let cinfo= get_constructor_info uf ipac.cnode in
+      pinject p cinfo.ci_constr cinfo.ci_nhyps k in  
+  ptrans (ptrans pi pij) pj
+  
+and constr_proof uf i ipac=
+  debug (str "constr_proof " ++ pr_idx_term uf i ++ brk (1,20));
+  let t=find_oldest_pac uf i ipac in
+  let eq_it=equal_proof uf i t in
+  if ipac.args=[] then
+    eq_it
+  else
+    let fipac=tail_pac ipac in
+    let (fi,arg)=subterms uf t in
+    let targ=term uf arg in
+    let p=constr_proof uf fi fipac in
+    ptrans eq_it (pcongr p (prefl targ))
+      
+and path_proof uf i l=
+  debug (str "path_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ str "{" ++
+	   (prlist_with_sep (fun () -> str ",") (fun ((_,j),_) -> int j) l) ++ str "}");
+  match l with
+  | [] -> prefl (term uf i)
+  | x::q->ptrans (path_proof uf (snd (fst x)) q) (edge_proof uf x)
+    
+and congr_proof uf i j=
+  debug (str "congr_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
+  let (i1,i2) = subterms uf i
+  and (j1,j2) = subterms uf j in
+  pcongr (equal_proof uf i1 j1) (equal_proof uf i2 j2)
+    
+and ind_proof uf i ipac j jpac=
+   debug (str "ind_proof " ++ pr_idx_term uf i ++ brk (1,20) ++ pr_idx_term uf j);
+  let p=equal_proof uf i j
+  and p1=constr_proof uf i ipac
+  and p2=constr_proof uf j jpac in
+  ptrans (psym p1) (ptrans p p2)
+
 let build_proof uf=
-
-  let axioms = axioms uf in
-
-  let rec equal_proof i j=
-    if i=j then prefl (term uf i) else
-      let (li,lj)=join_path uf i j in
-	ptrans (path_proof i li) (psym (path_proof j lj))
-
-  and edge_proof ((i,j),eq)=
-    let pi=equal_proof i eq.lhs in
-    let pj=psym (equal_proof j eq.rhs) in
-    let pij=
-      match eq.rule with
-	  Axiom (s,reversed)->
-	    if reversed then psymax axioms s
-	    else pax axioms s
-	| Congruence ->congr_proof eq.lhs eq.rhs
-	| Injection (ti,ipac,tj,jpac,k) ->
-	    let p=ind_proof ti ipac tj jpac in
-	    let cinfo= get_constructor_info uf ipac.cnode in
-	      pinject p cinfo.ci_constr cinfo.ci_nhyps k
-    in  ptrans (ptrans pi pij) pj
-
-  and constr_proof i t ipac=
-    if ipac.args=[] then
-      equal_proof i t
-    else
-      let npac=tail_pac ipac in
-      let (j,arg)=subterms uf t in
-      let targ=term uf arg in
-      let rj=find uf j in
-      let u=find_pac uf rj npac in
-      let p=constr_proof j u npac in
-	ptrans (equal_proof i t) (pcongr p (prefl targ))
-
-  and path_proof i=function
-      [] -> prefl (term uf i)
-    | x::q->ptrans (path_proof (snd (fst x)) q) (edge_proof x)
-
-  and congr_proof i j=
-    let (i1,i2) = subterms uf i
-    and (j1,j2) = subterms uf j in
-      pcongr (equal_proof i1 j1) (equal_proof i2 j2)
-
-  and ind_proof i ipac j jpac=
-    let p=equal_proof i j
-    and p1=constr_proof i i ipac
-    and p2=constr_proof j j jpac in
-      ptrans (psym p1) (ptrans p p2)
-  in
-    function
-	`Prove (i,j) -> equal_proof i j
-      | `Discr (i,ci,j,cj)-> ind_proof i ci j cj
+  function
+  | `Prove (i,j) -> equal_proof uf i j
+  | `Discr (i,ci,j,cj)-> ind_proof uf i ci j cj
 
 
 
