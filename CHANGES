@@ -256,6 +256,8 @@ Notations
   or error when this notation is used.
 - More systematic insertion of spaces as a default for printing
   notations ("format" still available to override the default).
+- In notations, a level modifier referring to a non-existent variable is
+  now considered an error rather than silently ignored.
 
 Tools
 
