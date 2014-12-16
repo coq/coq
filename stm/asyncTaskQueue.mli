@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type 'a worker_status = [ `Fresh | `Old | `Parked of 'a ]
+type 'a worker_status = [ `Fresh | `Old of 'a ]
 
 module type Task = sig
 
@@ -25,10 +25,9 @@ module type Task = sig
   val task_match : competence worker_status -> task -> bool
   val use_response :
     competence worker_status -> task -> response ->
-      [ `Stay | `Park of competence | `Reset ]
+      [ `Stay of competence * task list | `End ]
   val on_marshal_error : string -> task -> unit
-  val on_slave_death : task option -> [ `Exit of int | `Stay ]
-  val on_task_cancellation_or_expiration : task option -> unit
+  val on_task_cancellation_or_expiration_or_slave_death : task option -> unit
   val forward_feedback : Feedback.feedback -> unit
  
   (* run by the worker *)
@@ -40,7 +39,7 @@ module type Task = sig
 
 end
 
-type cancel_switch = bool ref
+type expiration = bool ref
 
 module MakeQueue(T : Task) : sig
 
@@ -50,15 +49,15 @@ module MakeQueue(T : Task) : sig
   val create : int -> queue
   val destroy : queue -> unit
 
-  val n_workers : queue -> int * int  (* active, parked *)
+  val n_workers : queue -> int
 
-  val enqueue_task : queue -> T.task -> cancel_switch -> unit
+  val enqueue_task : queue -> T.task * expiration -> unit
 
   (* blocking function that waits for the task queue to be empty *)
   val join : queue -> unit
   val cancel_all : queue -> unit
 
-  val cancel_worker : queue -> string -> unit
+  val cancel_worker : queue -> WorkerPool.worker_id -> unit
 
   val set_order : queue -> (T.task -> T.task -> int) -> unit
 
