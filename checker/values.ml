@@ -119,9 +119,11 @@ let v_sortfam = v_enum "sorts_family" 3
 
 let v_puniverses v = v_tuple "punivs" [|v;v_instance|]
 
+let v_boollist = List v_bool  
+
 let v_caseinfo =
   let v_cstyle = v_enum "case_style" 5 in
-  let v_cprint = v_tuple "case_printing" [|Int;v_cstyle|] in
+  let v_cprint = v_tuple "case_printing" [|v_boollist;Array v_boollist;v_cstyle|] in
   v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_cprint|]
 
 let v_cast = v_enum "cast_kind" 4
@@ -251,7 +253,7 @@ let v_one_ind = v_tuple "one_inductive_body"
 
 let v_finite = v_enum "recursivity_kind" 3
 let v_mind_record = Annot ("mind_record", 
-			   Opt (v_tuple "record" [| Array v_cst; Array v_projbody |]))
+			   Opt (Opt (v_tuple "record" [| v_id; Array v_cst; Array v_projbody |])))
 
 let v_ind_pack = v_tuple "mutual_inductive_body"
   [|Array v_one_ind;

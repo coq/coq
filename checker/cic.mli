@@ -227,6 +227,10 @@ type recarg =
 
 type wf_paths = recarg Rtree.t
 
+type record_body = (Id.t * constant array * projection_body array) option
+    (* The body is empty for non-primitive records, otherwise we get its
+       binder name in projections and list of projections if it is primitive. *)
+
 type regular_inductive_arity = {
   mind_user_arity : constr;
   mind_sort : sorts;
@@ -288,9 +292,7 @@ type mutual_inductive_body = {
 
     mind_packets : one_inductive_body array;  (** The component of the mutual inductive block *)
 
-    mind_record : (constant array * projection_body array) option;  
-    (** Whether the inductive type has been declared as a record, 
-	In that case we get its canonical eta-expansion and list of projections. *)
+    mind_record : record_body option; (** Whether the inductive type has been declared as a record. *)
 
     mind_finite : recursivity_kind;  (** Whether the type is inductive or coinductive *)
 

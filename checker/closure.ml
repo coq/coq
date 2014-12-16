@@ -731,8 +731,7 @@ let rec get_parameters depth n argstk =
 let eta_expand_ind_stack env ind m s (f, s') =
   let mib = lookup_mind (fst ind) env in
     match mib.mind_record with
-    | Some (projs,pbs) when Array.length projs > 0 
-      && mib.mind_finite <> CoFinite -> 
+    | Some (Some (_,projs,pbs)) when mib.mind_finite <> CoFinite -> 
 	(* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
 	   arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
       let pars = mib.mind_nparams in
