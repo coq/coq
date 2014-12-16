@@ -1645,21 +1645,25 @@ let interp_search_about_item env =
           	as an identifier component")
 
 let vernac_search s gopt r =
-  let g = Option.default 1 gopt in
   let r = interp_search_restriction r in
-  let env =
-    try snd (Pfedit.get_goal_context g)
-    with _ -> Global.env () in
+  let env,gopt =
+    match gopt with | None ->
+      (* 1st goal by default if it exists, otherwise no goal at all *)
+      (try snd (Pfedit.get_goal_context 1) , Some 1
+       with _ -> Global.env (),None)
+    (* if goal selector is given and wrong, then let exceptions be raised. *)
+    | Some g -> snd (Pfedit.get_goal_context g) , Some g
+  in
   let get_pattern c = snd (intern_constr_pattern env c) in
   match s with
   | SearchPattern c ->
-      msg_notice (Search.search_pattern g (get_pattern c) r)
+      msg_notice (Search.search_pattern gopt (get_pattern c) r)
   | SearchRewrite c ->
-      msg_notice (Search.search_rewrite g (get_pattern c) r)
+      msg_notice (Search.search_rewrite gopt (get_pattern c) r)
   | SearchHead c ->
-      msg_notice (Search.search_by_head g (get_pattern c) r)
+      msg_notice (Search.search_by_head gopt (get_pattern c) r)
   | SearchAbout sl ->
-     msg_notice (Search.search_about g (List.map (on_snd (interp_search_about_item env)) sl) r)
+     msg_notice (Search.search_about gopt (List.map (on_snd (interp_search_about_item env)) sl) r)
 
 let vernac_locate = function
   | LocateAny (AN qid) -> msg_notice (print_located_qualid qid)
