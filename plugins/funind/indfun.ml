@@ -217,6 +217,8 @@ let prepare_body ((name,_,args,types,_),_) rt =
   let fun_args,rt' = chop_rlambda_n n rt in
   (fun_args,rt')
 
+let process_vernac_interp_error e =
+  fst (Cerrors.process_vernac_interp_error (e, Exninfo.null))
 
 let derive_inversion fix_names =
   try
@@ -243,23 +245,23 @@ let derive_inversion fix_names =
 	   fix_names
 	)
     with e when Errors.noncritical e ->
-      let e' = Cerrors.process_vernac_interp_error e in
+      let e' = process_vernac_interp_error e in
       msg_warning
 	(str "Cannot build inversion information" ++
 	   if do_observe () then (fnl() ++ Errors.print e') else mt ())
   with e when Errors.noncritical e -> ()
 
 let warning_error names e =
-  let e = Cerrors.process_vernac_interp_error e in
+  let e = process_vernac_interp_error e in
   let e_explain e =
     match e with
       | ToShow e -> 
-	let e = Cerrors.process_vernac_interp_error e in
+	let e = process_vernac_interp_error e in
 	spc () ++ Errors.print e
       | _ -> 
 	if do_observe () 
 	then 
-	  let e = Cerrors.process_vernac_interp_error e in 
+	  let e = process_vernac_interp_error e in 
 	  (spc () ++ Errors.print e) 
 	else mt ()
   in
@@ -277,7 +279,7 @@ let warning_error names e =
     | _ -> raise e
 
 let error_error names e =
-  let e = Cerrors.process_vernac_interp_error e in
+  let e = process_vernac_interp_error e in
   let e_explain e =
     match e with
       | ToShow e -> spc () ++ Errors.print e

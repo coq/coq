@@ -102,7 +102,7 @@ exception FailError of int * Pp.std_ppcmds Lazy.t
 
 (** Takes an exception and either raise it at the next
    level or do nothing. *)
-val catch_failerror  : exn -> unit
+val catch_failerror  : Exninfo.iexn -> unit
 
 val tclORELSE0       : tactic -> tactic -> tactic
 val tclORELSE        : tactic -> tactic -> tactic

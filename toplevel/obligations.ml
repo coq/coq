@@ -839,7 +839,8 @@ let rec solve_obligation prg num tac =
 			  
 			obls (pred rem)
 		  with e when Errors.noncritical e ->
-                    pperror (Errors.print (Cerrors.process_vernac_interp_error e))
+                    let e = Errors.push e in
+                    pperror (Errors.iprint (Cerrors.process_vernac_interp_error e))
 		in
 		  match res with
 		  | Remain n when n > 0 ->
@@ -892,7 +893,7 @@ and solve_obligation_by_tac prg obls i tac =
 	      true
 	  else false
 	with e when Errors.noncritical e ->
-          let e = Errors.push e in
+          let (e, _) = Errors.push e in
           match e with
 	  | Refiner.FailError (_, s) ->
 	      user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)

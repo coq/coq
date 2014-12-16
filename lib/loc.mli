@@ -40,10 +40,10 @@ val represent : t -> (string * int * int * int * int)
 
 (** {5 Located exceptions} *)
 
-val add_loc : exn -> t -> exn
+val add_loc : Exninfo.info -> t -> Exninfo.info
 (** Adding location to an exception *)
 
-val get_loc : exn -> t option
+val get_loc : Exninfo.info -> t option
 (** Retrieving the optional location of an exception *)
 
 val raise : t -> exn -> 'a

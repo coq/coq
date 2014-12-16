@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Pp
 open Errors
 
@@ -56,4 +57,4 @@ let call ?locality (opn,converted_args) =
         let reraise = Errors.push reraise in
         if !Flags.debug then
 	  msg_debug (str"Vernac Interpreter " ++ str !loc);
-        raise reraise
+        iraise reraise

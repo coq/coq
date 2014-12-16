@@ -91,8 +91,10 @@ let print_anomaly askreport e =
     hov 0 (raw_anomaly e)
 
 (** The standard exception printer *)
-let print e =
-  print_gen (print_anomaly true) !handle_stack e ++ print_backtrace e
+let print ?(info = Exninfo.null) e =
+  print_gen (print_anomaly true) !handle_stack e ++ print_backtrace info
+
+let iprint (e, info) = print ~info e
 
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)

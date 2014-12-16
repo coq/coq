@@ -13,7 +13,7 @@ open Pp
 
 (** {6 Error handling} *)
 
-val push : exn -> exn
+val push : exn -> Exninfo.iexn
 (** Alias for [Backtrace.add_backtrace]. *)
 
 (** {6 Generic errors.}
@@ -74,7 +74,8 @@ exception Unhandled
 val register_handler : (exn -> Pp.std_ppcmds) -> unit
 
 (** The standard exception printer *)
-val print : exn -> Pp.std_ppcmds
+val print : ?info:Exninfo.info -> exn -> Pp.std_ppcmds
+val iprint : Exninfo.iexn -> Pp.std_ppcmds
 
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)

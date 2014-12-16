@@ -84,18 +84,23 @@ let get_backtrace e =
 
 let add_backtrace e =
   if !is_recording then
+    (** This must be the first function call, otherwise the stack may be
+        destroyed *)
     let current = get_exception_backtrace () in
+    let info = Exninfo.info e in
     begin match current with
-    | None -> e
+    | None -> (e, info)
     | Some fragment ->
-      let bt = match get_backtrace e with
+      let bt = match get_backtrace info with
       | None -> []
       | Some bt -> bt
       in
       let bt = fragment :: bt in
-      Exninfo.add e backtrace bt
+      (e, Exninfo.add info backtrace bt)
     end
-  else e
+  else
+    let info = Exninfo.info e in
+    (e, info)
 
 let app_backtrace ~src ~dst =
   if !is_recording then

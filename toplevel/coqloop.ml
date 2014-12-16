@@ -260,16 +260,16 @@ let locate_exn = function
 
 (* Toplevel error explanation. *)
 
-let print_toplevel_error e =
-  let loc = Option.default Loc.ghost (Loc.get_loc e) in
-  let locmsg = match Vernac.get_exn_files e with
+let print_toplevel_error (e, info) =
+  let loc = Option.default Loc.ghost (Loc.get_loc info) in
+  let locmsg = match Vernac.get_exn_files info with
     | Some files -> print_location_in_file files loc
     | None ->
       if locate_exn e && valid_buffer_loc top_buffer loc then
         print_highlight_location top_buffer loc
       else mt ()
   in
-  locmsg ++ Errors.print e
+  locmsg ++ Errors.iprint (e, info)
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
@@ -297,7 +297,7 @@ let read_sentence () =
   with reraise ->
     let reraise = Errors.push reraise in
     discard_to_dot ();
-    raise reraise
+    iraise reraise
 
 (** [do_vernac] reads and executes a toplevel phrase, and print error
     messages when an exception is raised, except for the following:
@@ -322,6 +322,7 @@ let do_vernac () =
         if Mltop.is_ocaml_top() then raise Errors.Drop
         else ppnl (str"Error: There is no ML toplevel." ++ fnl ())
     | any ->
+        let any = Errors.push any in
         Format.set_formatter_out_channel stdout;
         let msg = print_toplevel_error any ++ fnl () in
         pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.std_ft msg;

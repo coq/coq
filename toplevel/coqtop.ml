@@ -581,12 +581,13 @@ let init arglist =
       check_vi_tasks ();
       outputstate ()
     with any ->
+      let any = Errors.push any in
       flush_all();
       let msg =
         if !batch_mode then mt ()
         else str "Error during initialization:" ++ fnl ()
       in
-      fatal_error (msg ++ Coqloop.print_toplevel_error any) (Errors.is_anomaly any)
+      fatal_error (msg ++ Coqloop.print_toplevel_error any) (Errors.is_anomaly (fst any))
   end;
   if !batch_mode then begin
     flush_all();

@@ -314,10 +314,10 @@ let intuition_gen ist flags tac =
 let tauto_intuitionistic flags =
   Proofview.tclORELSE
     (intuition_gen (default_ist ()) flags <:tactic<fail>>)
-    begin function
+    begin function (e, info) -> match e with
       | Refiner.FailError _ | UserError _ ->
           Proofview.tclZERO (UserError ("tauto" , str "tauto failed."))
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
     end
 
 let coq_nnpp_path =
@@ -327,9 +327,9 @@ let coq_nnpp_path =
 let tauto_classical flags nnpp =
   Proofview.tclORELSE
     (Tacticals.New.tclTHEN (apply nnpp) (tauto_intuitionistic flags))
-    begin function
+    begin function (e, info) -> match e with
       | UserError _ -> Proofview.tclZERO (UserError ("tauto" , str "Classical tauto failed."))
-      | e -> Proofview.tclZERO e
+      | e -> Proofview.tclZERO ~info e
     end
 
 let tauto_gen flags =

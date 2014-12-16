@@ -128,15 +128,15 @@ end
 
 let dloc = Loc.ghost
 
-let catching_error call_trace fail e =
+let catching_error call_trace fail (e, info) =
   let inner_trace =
-    Option.default [] (Exninfo.get e ltac_trace_info)
+    Option.default [] (Exninfo.get info ltac_trace_info)
   in
-  if List.is_empty call_trace && List.is_empty inner_trace then fail e
+  if List.is_empty call_trace && List.is_empty inner_trace then fail (e, info)
   else begin
     assert (Errors.noncritical e); (* preserved invariant *)
     let new_trace = inner_trace @ call_trace in
-    let located_exc = Exninfo.add e ltac_trace_info new_trace in
+    let located_exc = (e, Exninfo.add info ltac_trace_info new_trace) in
     fail located_exc
   end
 
@@ -144,12 +144,12 @@ let catch_error call_trace f x =
   try f x
   with e when Errors.noncritical e ->
     let e = Errors.push e in
-    catching_error call_trace raise e
+    catching_error call_trace iraise e
 
 let catch_error_tac call_trace tac =
   Proofview.tclORELSE
     tac
-    (catching_error call_trace Proofview.tclZERO)
+    (catching_error call_trace (fun (e, info) -> Proofview.tclZERO ~info e))
 
 let curr_debug ist = match TacStore.get ist.extra f_debug with
 | None -> DebugOff
@@ -747,9 +747,9 @@ let interp_may_eval f ist env sigma = function
        (* spiwack: to avoid unnecessary modifications of tacinterp, as this
           function already use effect, I call [run] hoping it doesn't mess
           up with any assumption. *)
-       Proofview.NonLogical.run (debugging_exception_step ist false reraise (fun () ->
+       Proofview.NonLogical.run (debugging_exception_step ist false (fst reraise) (fun () ->
          str"interpretation of term " ++ pr_glob_constr_env env (fst c)));
-       raise reraise
+       iraise reraise
 
 (* Interprets a constr expression possibly to first evaluate *)
 let interp_constr_may_eval ist env sigma c =
@@ -761,8 +761,8 @@ let interp_constr_may_eval ist env sigma c =
       (* spiwack: to avoid unnecessary modifications of tacinterp, as this
           function already use effect, I call [run] hoping it doesn't mess
           up with any assumption. *)
-       Proofview.NonLogical.run (debugging_exception_step ist false reraise (fun () -> str"evaluation of term"));
-      raise reraise
+       Proofview.NonLogical.run (debugging_exception_step ist false (fst reraise) (fun () -> str"evaluation of term"));
+      iraise reraise
   in
   begin
     (* spiwack: to avoid unnecessary modifications of tacinterp, as this
@@ -1462,9 +1462,9 @@ and interp_app loc ist fv largs : typed_generic_argument Ftactic.t =
               catch_error_tac trace (val_interp ist body) >>= fun v ->
               Ftactic.return (name_vfun (push_appl appl largs) v)
             end
-	    begin fun e ->
+	    begin fun (e, info) ->
               Proofview.tclLIFT (debugging_exception_step ist false e (fun () -> str "evaluation")) <*>
-	      Proofview.tclZERO e
+	      Proofview.tclZERO ~info e
             end
         end >>= fun v ->
         (* No errors happened, we propagate the trace *)
@@ -1553,9 +1553,9 @@ and interp_match_successes lz ist tac =
       let tac = Proofview.tclONCE tac in
       tac >>= fun ans -> interp_match_success ist ans
     else
-      let break e = match e with
+      let break (e, info) = match e with
       | FailError (0, _) -> None
-      | FailError (n, s) -> Some (FailError (pred n, s))
+      | FailError (n, s) -> Some (FailError (pred n, s), info)
       | _ -> None
       in
       let tac = Proofview.tclBREAK break tac >>= fun ans -> interp_match_success ist ans in
@@ -1568,10 +1568,10 @@ and interp_match ist lz constr lmr =
   begin Proofview.tclORELSE
     (interp_ltac_constr ist constr)
     begin function
-      | e ->
+      | (e, info) ->
           Proofview.tclLIFT (debugging_exception_step ist true e
           (fun () -> str "evaluation of the matched expression")) <*>
-          Proofview.tclZERO e
+          Proofview.tclZERO ~info e
     end
   end >>= fun constr ->
   Ftactic.enter begin fun gl ->
@@ -1715,7 +1715,7 @@ and interp_ltac_constr ist e : constr Ftactic.t =
   let (>>=) = Ftactic.bind in
   begin Proofview.tclORELSE
       (val_interp ist e)
-      begin function
+      begin function (err, info) -> match err with
         | Not_found ->
             Ftactic.enter begin fun gl ->
               let env = Proofview.Goal.env gl in
@@ -1726,7 +1726,7 @@ and interp_ltac_constr ist e : constr Ftactic.t =
               end
             <*> Proofview.tclZERO Not_found
             end
-        | e -> Proofview.tclZERO e
+        | err -> Proofview.tclZERO ~info err
       end
   end >>= fun result ->
   Ftactic.enter begin fun gl ->
@@ -2348,9 +2348,8 @@ let _ =
         try Proof.run_tactic env tac prf
         with Logic_monad.TacticFailure e as src ->
           (** Catch the inner error of the monad tactic *)
-          let src = Errors.push src in
-          let e = Backtrace.app_backtrace ~src ~dst:e in
-          raise e
+          let (_, info) = Errors.push src in
+          iraise (e, info)
       in
       (** Plug back the retrieved sigma *)
       let sigma = Proof.in_proof prf (fun sigma -> sigma) in

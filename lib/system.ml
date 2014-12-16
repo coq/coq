@@ -200,7 +200,7 @@ let extern_intern ?(warn=true) magic =
       with reraise ->
 	let reraise = Errors.push reraise in
         let () = try_remove filename in
-        raise reraise
+        iraise reraise
     with Sys_error s -> error ("System error: " ^ s)
   and intern_state paths name =
     try

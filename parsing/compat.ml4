@@ -193,7 +193,7 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   let entry_create = Entry.create
   let entry_parse e p =
     try Entry.parse e p
-    with Exc_located (loc,e) -> raise (Loc.add_loc e (to_coqloc loc))
+    with Exc_located (loc,e) -> Loc.raise (to_coqloc loc) e
 IFDEF CAMLP5_6_02_1 THEN
   let entry_print ft x = Entry.print ft x
 ELSE
@@ -221,7 +221,7 @@ end
 
 module GrammarMake (L:LexerSig) : GrammarSig = struct
   (* We need to refer to Coq's module Loc before it is hidden by include *)
-  let raise_coq_loc loc e = raise (Loc.add_loc e (to_coqloc loc))
+  let raise_coq_loc loc e = Loc.raise (to_coqloc loc) e
   include Camlp4.Struct.Grammar.Static.Make (L)
   type 'a entry = 'a Entry.t
   type action = Action.t

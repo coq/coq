@@ -472,7 +472,7 @@ let raw_inversion inv_kind id status names =
   end
 
 (* Error messages of the inversion tactics *)
-let wrap_inv_error id = function
+let wrap_inv_error id = function (e, info) -> match e with
   | Indrec.RecursionSchemeError
       (Indrec.NotAllowedCaseAnalysis (_,(Type _ | Prop Pos as k),i)) ->
       Proofview.tclENV >>= fun env ->
@@ -481,7 +481,7 @@ let wrap_inv_error id = function
 	pr_sort k ++
 	strbrk " which is not allowed for inductive definition " ++
 	pr_inductive env (fst i) ++ str "."))
-  | e -> Proofview.tclZERO e
+  | e -> Proofview.tclZERO ~info e
 
 (* The most general inversion tactic *)
 let inversion inv_kind status names id =

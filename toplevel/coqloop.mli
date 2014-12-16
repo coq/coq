@@ -30,7 +30,7 @@ val set_prompt : (unit -> string) -> unit
   May raise only the following exceptions: [Drop] and [End_of_input],
   meaning we get out of the Coq loop. *)
 
-val print_toplevel_error : exn -> std_ppcmds
+val print_toplevel_error : Exninfo.iexn -> std_ppcmds
 
 (** Parse and execute one vernac command. *)
 

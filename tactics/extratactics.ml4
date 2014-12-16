@@ -627,7 +627,8 @@ let hResolve id c occ t =
       Pretyping.understand env sigma t_hole
     with
       | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
-          let loc = match Loc.get_loc e with None -> Loc.ghost | Some loc -> loc in
+          let (e, info) = Errors.push e in
+          let loc = match Loc.get_loc info with None -> Loc.ghost | Some loc -> loc in
           resolve_hole (subst_hole_with_term (fst (Loc.unloc loc)) c_raw t_hole)
   in
   let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in

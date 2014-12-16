@@ -2011,15 +2011,15 @@ let setoid_proof ty fn fallback =
         | e ->
             Proofview.tclORELSE
               fallback
-              begin function
+              begin function (e', info) -> match e' with
                 | Hipattern.NoEquationFound ->
 	            begin match e with
-	            | Not_found ->
+	            | (Not_found, _) ->
 	                let rel, _, _ = decompose_app_rel env sigma concl in
 		        not_declared env ty rel
-	            | _ -> Proofview.tclZERO e
+	            | (e, info) -> Proofview.tclZERO ~info e
                     end
-                | e' -> Proofview.tclZERO e'
+                | e' -> Proofview.tclZERO ~info e'
               end
       end
   end

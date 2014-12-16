@@ -213,7 +213,7 @@ and val_of_constr env c =
       let reraise = Errors.push reraise in
       let () = print_string "can not compile \n" in
       let () = Format.print_flush () in
-      raise reraise
+      iraise reraise
   in
   eval_to_patch env (to_memory ccfv)
 

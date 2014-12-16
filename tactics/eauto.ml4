@@ -228,6 +228,7 @@ module SearchProblem = struct
 (* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
 	      (lgls,pptac) :: aux tacl
 	  with e when Errors.noncritical e ->
+            let e = Errors.push e in
             Refiner.catch_failerror e; aux tacl
     in aux l
 

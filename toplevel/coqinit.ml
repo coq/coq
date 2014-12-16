@@ -53,7 +53,7 @@ let load_rcfile() =
     with reraise ->
       let reraise = Errors.push reraise in
       let () = msg_info (str"Load of rcfile failed.") in
-      raise reraise
+      iraise reraise
   else
     Flags.if_verbose msg_info (str"Skipping rcfile loading.")
 

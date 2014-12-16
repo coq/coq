@@ -121,7 +121,7 @@ let inMD : bool * Nametab.ltac_constant option * bool * glob_tactic_expr -> obj 
      subst_function = subst_md;
      classify_function = classify_md}
 
-let register_ltac ?(for_ml=false) local id tac =
+let register_ltac for_ml local id tac =
   ignore (Lib.add_leaf id (inMD (local, None, for_ml, tac)))
 
 let redefine_ltac local kn tac =

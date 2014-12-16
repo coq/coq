@@ -504,8 +504,8 @@ let f_equal =
 	  end
       | _ -> Proofview.tclUNIT ()
       end
-      begin function
+      begin function (e, info) -> match e with
         | Type_errors.TypeError _ -> Proofview.tclUNIT ()
-        | e -> Proofview.tclZERO e
+        | e -> Proofview.tclZERO ~info e
       end
   end

@@ -105,8 +105,8 @@ let unfreeze_summaries fs =
     with e when Errors.noncritical e ->
       let e = Errors.push e in
       Printf.eprintf "Error unfrezing summay %s\n%s\n%!"
-        (name_of_summary id) (Pp.string_of_ppcmds (Errors.print e));
-      raise e
+        (name_of_summary id) (Pp.string_of_ppcmds (Errors.iprint e));
+      iraise e
   in
   (** We rely on the order of the frozen list, and the order of folding *)
   ignore (Int.Map.fold_left fold !summaries fs.summaries)
@@ -147,7 +147,7 @@ let unfreeze_summary datas =
       with e ->
         let e = Errors.push e in
         prerr_endline ("Exception unfreezing " ^ name);
-        raise e)
+        iraise e)
   datas
 
 (** All-in-one reference declaration + registration *)

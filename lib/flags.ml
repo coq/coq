@@ -12,7 +12,7 @@ let with_option o f x =
    with reraise ->
      let reraise = Backtrace.add_backtrace reraise in
      let () = o := old in
-     raise reraise
+     Exninfo.iraise reraise
 
 let with_options ol f x =
   let vl = List.map (!) ol in
@@ -23,7 +23,7 @@ let with_options ol f x =
   with reraise ->
     let reraise = Backtrace.add_backtrace reraise in
     let () = List.iter2 (:=) ol vl in
-    raise reraise
+    Exninfo.iraise reraise
 
 let without_option o f x =
   let old = !o in o:=false;
@@ -31,7 +31,7 @@ let without_option o f x =
   with reraise ->
     let reraise = Backtrace.add_backtrace reraise in
     let () = o := old in
-    raise reraise
+    Exninfo.iraise reraise
 
 let with_extra_values o l f x =
   let old = !o in o:=old@l;
@@ -39,7 +39,7 @@ let with_extra_values o l f x =
   with reraise ->
     let reraise = Backtrace.add_backtrace reraise in
     let () = o := old in
-    raise reraise
+    Exninfo.iraise reraise
 
 let boot = ref false
 let load_init = ref true

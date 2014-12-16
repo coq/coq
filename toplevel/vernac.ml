@@ -78,9 +78,9 @@ let get_exn_files e = Exninfo.get e files_of_exn
 
 let add_exn_files e f = Exninfo.add e files_of_exn f
 
-let raise_with_file f e =
-  let inner_f = match get_exn_files e with None -> f | Some ff -> ff.inner in
-  raise (add_exn_files e { outer = f; inner = inner_f })
+let raise_with_file f (e, info) =
+  let inner_f = match get_exn_files info with None -> f | Some ff -> ff.inner in
+  iraise (e, add_exn_files info { outer = f; inner = inner_f })
 
 let disable_drop = function
   | Drop -> Errors.error "Drop is forbidden."
@@ -232,7 +232,7 @@ let rec vernac_com verbosely checknav (loc,com) =
 	  with reraise ->
             let reraise = Errors.push reraise in
 	    restore_translator_coqdoc st;
-	    raise reraise
+	    iraise reraise
 	end
 
     | v when !just_parsing -> ()
@@ -246,11 +246,11 @@ let rec vernac_com verbosely checknav (loc,com) =
       let com = if !Flags.time then VernacTime [loc,com] else com in
       interp com
     with reraise ->
-      let reraise = Errors.push reraise in
+      let (reraise, info) = Errors.push reraise in
       Format.set_formatter_out_channel stdout;
-      let loc' = Option.default Loc.ghost (Loc.get_loc reraise) in
-      if Loc.is_ghost loc' then Loc.raise loc reraise
-      else raise reraise
+      let loc' = Option.default Loc.ghost (Loc.get_loc info) in
+      if Loc.is_ghost loc' then iraise (reraise, Loc.add_loc info loc)
+      else iraise (reraise, info)
 
 and read_vernac_file verbosely s =
   Flags.make_warn verbosely;
@@ -269,14 +269,14 @@ and read_vernac_file verbosely s =
       pp_flush ()
     done
   with any ->   (* whatever the exception *)
-    let e = Errors.push any in
+    let (e, info) = Errors.push any in
     Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
     match e with
       | End_of_input ->
           if do_beautify () then
             pr_new_syntax (Loc.make_loc (max_int,max_int)) None
-      | _ -> raise_with_file fname (disable_drop e)
+      | _ -> raise_with_file fname (disable_drop e, info)
 
 (** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
    It executes one vernacular command. By default the command is
@@ -299,9 +299,9 @@ let load_vernac verb file =
     read_vernac_file verb file;
     if !Flags.beautify_file then close_out !chan_beautify;
   with any ->
-    let e = Errors.push any in
+    let (e, info) = Errors.push any in
     if !Flags.beautify_file then close_out !chan_beautify;
-    raise_with_file file (disable_drop e)
+    raise_with_file file (disable_drop e, info)
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =

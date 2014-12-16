@@ -752,7 +752,7 @@ let export ?except senv dir =
     try join_safe_environment ?except senv
     with e ->
       let e = Errors.push e in
-      Errors.errorlabstrm "export" (Errors.print e)
+      Errors.errorlabstrm "export" (Errors.iprint e)
   in
   assert(senv.future_cst = []);
   let () = check_current_library dir senv in

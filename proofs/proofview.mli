@@ -12,6 +12,7 @@
     ['a tactic] is the (abstract) type of tactics modifying the proof
     state and returning a value of type ['a]. *)
 
+open Util
 open Term
 
 (** Main state of tactics *)
@@ -172,24 +173,24 @@ module Monad : Monad.S with type +'a t = 'a tactic
 (** {7 Failure and backtracking} *)
 
 (** [tclZERO e] fails with exception [e]. It has no success. *)
-val tclZERO : exn -> 'a tactic
+val tclZERO : ?info:Exninfo.info -> exn -> 'a tactic
 
 (** [tclOR t1 t2] behaves like [t1] as long as [t1] succeeds. Whenever
     the successes of [t1] have been depleted and it failed with [e],
     then it behaves as [t2 e]. In other words, [tclOR] inserts a
     backtracking point. *)
-val tclOR : 'a tactic -> (exn -> 'a tactic) -> 'a tactic
+val tclOR : 'a tactic -> (iexn -> 'a tactic) -> 'a tactic
 
 (** [tclORELSE t1 t2] is equal to [t1] if [t1] has at least one
     success or [t2 e] if [t1] fails with [e]. It is analogous to
     [try/with] handler of exception in that it is not a backtracking
     point. *)
-val tclORELSE : 'a tactic -> (exn -> 'a tactic) -> 'a tactic
+val tclORELSE : 'a tactic -> (iexn -> 'a tactic) -> 'a tactic
 
 (** [tclIFCATCH a s f] is a generalisation of {!tclORELSE}: if [a]
     succeeds at least once then it behaves as [tclBIND a s] otherwise,
     if [a] fails with [e], then it behaves as [f e]. *)
-val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (exn -> 'b tactic) -> 'b tactic
+val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (iexn -> 'b tactic) -> 'b tactic
 
 (** [tclONCE t] behave like [t] except it has at most one success:
     [tclONCE t] stops after the first success of [t]. If [t] fails
@@ -211,8 +212,8 @@ val tclEXACTLY_ONCE : exn -> 'a tactic -> 'a tactic
     continuation. It is the most general primitive to control
     backtracking. *)
 type 'a case =
-  | Fail of exn
-  | Next of 'a * (exn -> 'a tactic)
+  | Fail of iexn
+  | Next of 'a * (iexn -> 'a tactic)
 val tclCASE : 'a tactic -> 'a case tactic
 
 (** [tclBREAK p t] is a generalization of [tclONCE t]. Instead of
@@ -220,7 +221,7 @@ val tclCASE : 'a tactic -> 'a case tactic
     failure with an exception [e] such that [p e = Some e'] is raised. At
     which point it drops the remaining successes, failing with [e'].
     [tclONCE t] is equivalent to [tclBREAK (fun e -> Some e) t]. *)
-val tclBREAK : (exn -> exn option) -> 'a tactic -> 'a tactic
+val tclBREAK : (iexn -> iexn option) -> 'a tactic -> 'a tactic
 
 
 (** {7 Focusing tactics} *)

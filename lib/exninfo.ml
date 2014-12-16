@@ -14,89 +14,91 @@ module Store = Store.Make(struct end)
 
 type 'a t = 'a Store.field
 
-let token = Obj.repr "HACK"
-(** Unique token used to recognize enriched exceptions. *)
+type info = Store.t
+
+type iexn = exn * info
 
 let make = Store.field
+let add = Store.set
+let get = Store.get
+let null = Store.empty
 
-(** Discriminate normal data w.r.t enriched exceptions *)
-let is_data obj =
-  Obj.is_block obj && Obj.size obj = 2 && Obj.field obj 0 == token
+exception Unique
 
-(** As [Array.blit] *)
-let blit obj1 off1 obj2 off2 len =
-  for i = 0 to len - 1 do
-    let data = Obj.field obj1 (off1 + i) in
-    Obj.set_field obj2 (off2 + i) data
-  done
+let dummy = (Unique, Store.empty)
 
-(** Retrieve the optional backtrace set in an exception. *)
-let get (e : exn) i =
-  let obj = Obj.repr e in
-  let len = Obj.size obj in
-  let lst = Obj.field obj (len - 1) in
-  if is_data lst then
-    let data = Obj.obj (Obj.field lst 1) in
-    Store.get data i
-  else None
+let current : (int * iexn) list ref = ref []
+(** List associating to each thread id the latest exception raised by an
+    instrumented raise (i.e. {!raise} from this module). It is shared between
+    threads, so we must take care of this when modifying it.
 
-(** Add data to any exception *)
-let add e i v : exn =
-  let obj = Obj.repr e in
-  let len = Obj.size obj in
-  let lst = Obj.field obj (len - 1) in
-  if is_data lst then
-    (** The exception was already enriched *)
-    let data = Obj.obj (Obj.field lst 1) in
-    (** We retrieve the old information and update it *)
-    let data = Store.set data i v in
-    let ans = Obj.dup obj in
-    let data = Obj.repr (token, data) in
-    let () = Obj.set_field ans (len - 1) data in
-    Obj.obj ans
+    Invariants: all index keys are unique in the list.
+*)
+
+let lock = Mutex.create ()
+
+let rec remove_assoc (i : int) = function
+| [] -> []
+| (j, v) :: rem as l ->
+  if i = j then rem
   else
-    (** This was a plain exception *)
-    let ans = Obj.new_block 0 (succ len) in
-    (** We build the new enriched exception from scratch *)
-    let () = blit obj 0 ans 0 len in
-    let data = Store.set Store.empty i v in
-    let data = Obj.repr (token, data) in
-    let () = Obj.set_field ans len data in
-    Obj.obj ans
+    let ans = remove_assoc i rem in
+    if rem == ans then l
+    else (j, v) :: ans
 
-let clear e =
-  let obj = Obj.repr e in
-  let len = Obj.size obj in
-  let lst = Obj.field obj (len - 1) in
-  if is_data lst then
-    let ans = Obj.new_block 0 (pred len) in
-    let () = blit obj 0 ans 0 (pred len) in
-    Obj.obj ans
-  else e
+let rec find_and_remove_assoc (i : int) = function
+| [] -> dummy, []
+| (j, v) :: rem as l ->
+  if i = j then (v, rem)
+  else
+    let (r, ans) = find_and_remove_assoc i rem in
+    if rem == ans then (r, l)
+    else (r, (j, v) :: ans)
 
-let copy (src : exn) (dst : exn) =
-  let obj = Obj.repr src in
-  let len = Obj.size obj in
-  let lst = Obj.field obj (len - 1) in
-  if is_data lst then
-    (** First object has data *)
-    let src_data = Obj.obj (Obj.field lst 1) in
-    let obj = Obj.repr dst in
-    let len = Obj.size obj in
-    let lst = Obj.field obj (len - 1) in
-    if is_data lst then
-      (** second object has data *)
-      let dst_data = Obj.obj (Obj.field lst 1) in
-      let ans = Obj.dup obj in
-      let data = Obj.repr (token, Store.merge src_data dst_data) in
-      let () = Obj.set_field ans len data in
-      Obj.obj ans
-    else
-      (** second object has no data *)
-      let ans = Obj.new_block 0 (succ len) in
-      (** We build the new enriched exception from scratch *)
-      let () = blit obj 0 ans 0 len in
-      let data = Obj.repr (token, src_data) in
-      let () = Obj.set_field ans len data in
-      Obj.obj ans
-  else dst
+let iraise e =
+  let () = Mutex.lock lock in
+  let id = Thread.id (Thread.self ()) in
+  let () = current := (id, e) :: remove_assoc id !current in
+  let () = Mutex.unlock lock in
+  raise (fst e)
+
+let raise ?info e = match info with
+| None ->
+  let () = Mutex.lock lock in
+  let id = Thread.id (Thread.self ()) in
+  let () = current := remove_assoc id !current in
+  let () = Mutex.unlock lock in
+  raise e
+| Some i ->
+  let () = Mutex.lock lock in
+  let id = Thread.id (Thread.self ()) in
+  let () = current := (id, (e, i)) :: remove_assoc id !current in
+  let () = Mutex.unlock lock in
+  raise e
+
+let find_and_remove () =
+  let () = Mutex.lock lock in
+  let id = Thread.id (Thread.self ()) in
+  let (v, l) = find_and_remove_assoc id !current in
+  let () = current := l in
+  let () = Mutex.unlock lock in
+  v
+
+let info e =
+  let (src, data) = find_and_remove () in
+  if src == e then
+    (** Slightly unsound, some exceptions may not be unique up to pointer
+        equality. Though, it should be quite exceptional to be in a situation
+        where the following holds:
+
+        1. An argument-free exception is raised through the enriched {!raise};
+        2. It is not captured by any enriched with-clause (which would reset
+            the current data);
+        3. The same exception is raised through the standard raise, accessing
+            the wrong data.
+    . *)
+    data
+  else
+    (** Mismatch: the raised exception is not the one stored, either because the
+        previous raise was not instrumented, or because something went wrong. *)
+    Store.empty

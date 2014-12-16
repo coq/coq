@@ -11,20 +11,29 @@
 type 'a t
 (** Information containing a given type. *)
 
+type info
+(** All information *)
+
+type iexn = exn * info
+(** Information-wearing exceptions *)
+
 val make : unit -> 'a t
 (** Create a new piece of information. *)
 
-val add : exn -> 'a t -> 'a -> exn
+val null : info
+(** No information *)
+
+val add : info -> 'a t -> 'a -> info
 (** Add information to an exception. *)
 
-val get : exn -> 'a t -> 'a option
+val get : info -> 'a t -> 'a option
 (** Get information worn by an exception. Returns [None] if undefined. *)
 
-(* val remove : exn -> 'a t -> exn *)
-(** TODO: Remove a given piece of information. *)
+val info : exn -> info
+(** Retrieve the information of the last exception raised. *)
 
-val clear : exn -> exn
-(** Remove any information. *)
+val iraise : iexn -> 'a
+(** Raise the given enriched exception. *)
 
-val copy : exn -> exn -> exn
-(** [copy src dst] adds the additional info from [src] to [dst]. *)
+val raise : ?info:info -> exn -> 'a
+(** Raise the given exception with additional information. *)

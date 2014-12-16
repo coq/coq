@@ -230,7 +230,7 @@ let apply env t sp =
   let ans = Proof.repr (Proof.run t false (sp,env)) in
   let ans = Logic_monad.NonLogical.run ans in
   match ans with
-  | Nil e -> raise (TacticFailure e)
+  | Nil (e, info) -> iraise (TacticFailure e, info)
   | Cons ((r, (state, _), status, info), _) ->
     r, state, status, Trace.to_tree info
 
@@ -260,7 +260,12 @@ module Monad = Proof
 
 
 (** [tclZERO e] fails with exception [e]. It has no success. *)
-let tclZERO = Proof.zero
+let tclZERO ?info e =
+  let info = match info with
+  | None -> Exninfo.null
+  | Some info -> info
+  in
+  Proof.zero (e, info)
 
 (** [tclOR t1 t2] behaves like [t1] as long as [t1] succeeds. Whenever
     the successes of [t1] have been depleted and it failed with [e],
@@ -312,17 +317,17 @@ let tclEXACTLY_ONCE e t =
   let open Logic_monad in
   let open Proof in
   split t >>= function
-    | Nil e -> tclZERO e
+    | Nil (e, info) -> tclZERO ~info e
     | Cons (x,k) ->
-        Proof.split (k e) >>= function
+        Proof.split (k (e, Exninfo.null)) >>= function
           | Nil _ -> tclUNIT x
           | _ -> tclZERO MoreThanOneSuccess
 
 
 (** [tclCASE t] wraps the {!Proofview_monad.Logical.split} primitive. *)
 type 'a case =
-| Fail of exn
-| Next of 'a * (exn -> 'a tactic)
+| Fail of iexn
+| Next of 'a * (iexn -> 'a tactic)
 let tclCASE t =
   let open Logic_monad in
   let map = function
@@ -745,12 +750,12 @@ let tclTIMEOUT n t =
         | Logic_monad.Nil e -> return (Util.Inr e)
         | Logic_monad.Cons (r, _) -> return (Util.Inl r)
       end
-      begin let open Logic_monad.NonLogical in function
-        | Logic_monad.Timeout -> return (Util.Inr Timeout)
-        | Logic_monad.TacticFailure e as src ->
-          let e = Backtrace.app_backtrace ~src ~dst:e in
-          return (Util.Inr e)
-        | e -> Logic_monad.NonLogical.raise e
+      begin let open Logic_monad.NonLogical in function (e, info) ->
+        match e with
+        | Logic_monad.Timeout -> return (Util.Inr (Timeout, info))
+        | Logic_monad.TacticFailure e ->
+          return (Util.Inr (e, info))
+        | e -> Logic_monad.NonLogical.raise ~info e
       end
   end >>= function
     | Util.Inl (res,s,m,i) ->
@@ -758,7 +763,7 @@ let tclTIMEOUT n t =
         Proof.put m >>
         Proof.update (fun _ -> i) >>
         return res
-    | Util.Inr e -> tclZERO e
+    | Util.Inr (e, info) -> tclZERO ~info e
 
 let tclTIME s t =
   let pr_time t1 t2 n msg =
@@ -775,11 +780,11 @@ let tclTIME s t =
     tclUNIT () >>= fun () ->
     let tstart = System.get_time() in
     Proof.split t >>= let open Logic_monad in function
-    | Nil e ->
+    | Nil (e, info) ->
       begin
         let tend = System.get_time() in
         pr_time tstart tend n "failure";
-        tclZERO e
+        tclZERO ~info e
       end
     | Cons (x,k) ->
         let tend = System.get_time() in
@@ -894,8 +899,8 @@ module Goal = struct
         let (gl, sigma) = nf_gmake env sigma goal in
         tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f gl))
       with e when catchable_exception e ->
-        let e = Errors.push e in
-        tclZERO e
+        let (e, info) = Errors.push e in
+        tclZERO ~info e
     end
     end
 
@@ -917,8 +922,8 @@ module Goal = struct
       tclEVARMAP >>= fun sigma ->
       try f (gmake env sigma goal)
       with e when catchable_exception e ->
-        let e = Errors.push e in
-        tclZERO e
+        let (e, info) = Errors.push e in
+        tclZERO ~info e
     end
     end
 
@@ -1082,8 +1087,8 @@ module V82 = struct
       InfoL.leaf (Info.Tactic (fun () -> Pp.str"<unknown>")) >>
       Pv.set { solution = evd; comb = sgs; }
     with e when catchable_exception e ->
-      let e = Errors.push e in
-      tclZERO e
+      let (e, info) = Errors.push e in
+      tclZERO ~info e
 
 
   (* normalises the evars in the goals, and stores the result in
@@ -1141,9 +1146,8 @@ module V82 = struct
       let (_,final,_,_) = apply (GoalV82.env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = final.comb }
     with Logic_monad.TacticFailure e as src ->
-      let src = Errors.push src in
-      let e = Backtrace.app_backtrace ~src ~dst:e in
-      raise e
+      let (_, info) = Errors.push src in
+      iraise (e, info)
 
   let put_status = Status.put
 
@@ -1151,6 +1155,7 @@ module V82 = struct
 
   let wrap_exceptions f =
     try f ()
-    with e when catchable_exception e -> let e = Errors.push e in tclZERO e
+    with e when catchable_exception e ->
+      let (e, info) = Errors.push e in tclZERO ~info e
 
 end
