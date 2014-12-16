@@ -104,13 +104,32 @@ let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
    (if id = id0 then mt ()
     else spc () ++ str "<canonical: " ++ pr_id id ++ str ">"))))
 
-let ppconstrunderbindersidmap l = ppidmap (fun id (l,c) ->
-  Id.print id ++ str "->" ++ hov 1 (str"[" ++  prlist_with_sep spc Id.print l ++ str"]")
+let prididmap = pridmap (fun _ -> pr_id)
+let ppididmap = ppidmap (fun _ -> pr_id)
+
+let prconstrunderbindersidmap = pridmap (fun _ (l,c) ->
+  hov 1 (str"[" ++  prlist_with_sep spc Id.print l ++ str"]")
   ++ str "," ++ spc () ++ Termops.print_constr c)
 
-let ppunbound_ltac_var_map l = ppidmap (fun id arg ->
-  Id.print id ++ str "->" ++
+let ppconstrunderbindersidmap l = pp (prconstrunderbindersidmap l)
+
+let ppunbound_ltac_var_map l = ppidmap (fun _ arg ->
   str"<genarg:" ++ pr_argument_type(genarg_tag arg) ++ str">")
+
+open Glob_term
+
+let rec pr_closure {idents;typed;untyped} =
+  hov 1 (str"{idents=" ++ prididmap idents ++ str";" ++ spc() ++
+         str"typed=" ++ prconstrunderbindersidmap typed ++ str";" ++ spc() ++
+         str"untyped=" ++ pr_closed_glob_constr_idmap untyped ++ str"}")
+and pr_closed_glob_constr_idmap x =
+  pridmap (fun _ -> pr_closed_glob_constr) x
+and pr_closed_glob_constr {closure;term} =
+  pr_closure closure ++ pr_lglob_constr term
+
+let ppclosure x = pp (pr_closure x)
+let ppclosedglobconstr x = pp (pr_closed_glob_constr x)
+let ppclosedglobconstridmap x = pp (pr_closed_glob_constr_idmap x)
 
 let pP s = pp (hov 0 s)
 
