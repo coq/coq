@@ -370,8 +370,15 @@ let pp_dirs ?pp_tag ft =
 let emacs_quote_start = String.make 1 (Char.chr 254)
 let emacs_quote_end = String.make 1 (Char.chr 255)
 
+let emacs_quote_info_start = "<infomsg>"
+let emacs_quote_info_end = "</infomsg>"
+
 let emacs_quote g =
   if !print_emacs then str emacs_quote_start ++ hov 0 g ++ str emacs_quote_end
+  else hov 0 g
+
+let emacs_quote_info g =
+  if !print_emacs then str emacs_quote_info_start ++ hov 0 g ++ str emacs_quote_info_end
   else hov 0 g
 
 
@@ -434,10 +441,11 @@ let make_body info s =
 let debugbody strm = hov 0 (str "Debug:" ++ spc () ++ strm)
 let warnbody strm = make_body (str "Warning:") strm
 let errorbody strm = make_body (str "Error:") strm
+let infobody strm = emacs_quote_info strm
 
 let std_logger ~id:_ level msg = match level with
 | Debug _ -> msgnl (debugbody msg)
-| Info -> msgnl (hov 0 msg)
+| Info -> msgnl (infobody (hov 0 msg))
 | Notice -> msgnl msg
 | Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody msg)) ()
 | Error -> msgnl_with !err_ft (errorbody msg)

@@ -95,7 +95,7 @@ struct
   let print_char = fun c -> (); fun () -> print_char c
 
   (** {!Pp.pp}. The buffer is also flushed. *)
-  let print = fun s -> (); fun () -> try Pp.pp s; Pp.pp_flush () with e ->
+  let print = fun s -> (); fun () -> try Pp.msg_info s; Pp.pp_flush () with e ->
     let (e, info) = Errors.push e in raise ~info e ()
 
   let timeout = fun n t -> (); fun () ->
