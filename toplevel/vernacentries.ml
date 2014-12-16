@@ -962,7 +962,7 @@ let register_ltac local isrec tacl =
   let defs = List.map map rfun in
   let iter (def, tac) = match def with
   | NewTac id ->
-    Tacenv.register_ltac local id tac;
+    Tacenv.register_ltac false local id tac;
     Flags.if_verbose msg_info (Nameops.pr_id id ++ str " is defined")
   | UpdateTac kn ->
     Tacenv.redefine_ltac local kn tac;

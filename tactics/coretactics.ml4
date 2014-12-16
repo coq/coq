@@ -205,7 +205,7 @@ let initial_atomic () =
   let nocl = {onhyps=Some[];concl_occs=AllOccurrences} in
   let iter (s, t) =
     let body = TacAtom (dloc, t) in
-    Tacenv.register_ltac false (Id.of_string s) body
+    Tacenv.register_ltac false false (Id.of_string s) body
   in
   let () = List.iter iter
       [ "red", TacReduce(Red false,nocl);
@@ -219,7 +219,7 @@ let initial_atomic () =
         "auto", TacAuto(Off,None,[],None);
       ]
   in
-  let iter (s, t) = Tacenv.register_ltac false (Id.of_string s) t in
+  let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in
   List.iter iter
       [ "idtac",TacId [];
         "fail", TacFail(ArgArg 0,[]);

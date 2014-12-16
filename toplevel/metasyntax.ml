@@ -141,7 +141,7 @@ let extend_atomic_tactic name entries =
   | None -> ()
   | Some args ->
     let body = Tacexpr.TacML (Loc.ghost, name, args) in
-    Tacenv.register_ltac false (Names.Id.of_string id) body
+    Tacenv.register_ltac false false (Names.Id.of_string id) body
   in
   List.iter add_atomic entries
 
