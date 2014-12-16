@@ -102,5 +102,32 @@ Proof.
   auto.
 Qed.
 
+(* bug 2447 is now closed (PC, 2014) *)
+
+Section bug_2447.
+
+Variable T:Type.
+
+Record R := mkR {x:T;y:T;z:T}.
+
+Variables a a' b b' c c':T.
+
+
+
+Lemma bug_2447: mkR a b c = mkR a' b c -> a = a'.
+congruence.
+Qed.
+
+Lemma bug_2447_variant1: mkR a b c = mkR a b' c -> b = b'.
+congruence.
+Qed.
+
+Lemma bug_2447_variant2: mkR a b c = mkR a b c' -> c = c'.
+congruence.
+Qed.
+
+
+End bug_2447.
+
 
 

@@ -8,6 +8,7 @@
 
 (* This file implements the basic congruence-closure algorithm by *)
 (* Downey,Sethi and Tarjan. *)
+(* Plus some e-matching and constructor handling by P. Corbineau *)
 
 open Util
 open Pp
@@ -151,13 +152,15 @@ type patt_kind =
   | Creates_variables
 
 type quant_eq =
-    {qe_hyp_id: identifier;
-     qe_pol: bool;
-     qe_nvars:int;
-     qe_lhs: ccpattern;
-     qe_lhs_valid:patt_kind;
-     qe_rhs: ccpattern;
-     qe_rhs_valid:patt_kind}
+  {
+    qe_hyp_id: identifier;
+    qe_pol: bool;
+    qe_nvars:int;
+    qe_lhs: ccpattern;
+    qe_lhs_valid:patt_kind;
+    qe_rhs: ccpattern;
+    qe_rhs_valid:patt_kind
+  }
 
 let swap eq : equality =
   let swap_rule=match eq.rule with
@@ -178,8 +181,7 @@ type representative=
      mutable fathers:Intset.t;
      mutable inductive_status: inductive_status;
      class_type : Term.types;
-     mutable functions: Intset.t PafMap.t;
-     mutable constructors: int PacMap.t} (*pac -> term = app(constr,t) *)
+     mutable functions: Intset.t PafMap.t} (*pac -> term = app(constr,t) *)
 
 type cl = Rep of representative| Eqto of int*equality
 
@@ -188,6 +190,7 @@ type vertex = Leaf| Node of (int*int)
 type node =
     {mutable clas:cl;
      mutable cpath: int;
+     mutable constructors: int PacMap.t;
      vertex:vertex;
      term:term}
 
@@ -234,31 +237,41 @@ type state =
      mutable gls:Proof_type.goal Tacmach.sigma}
 
 let dummy_node =
-  {clas=Eqto(min_int,{lhs=min_int;rhs=min_int;rule=Congruence});
-   cpath=min_int;
-   vertex=Leaf;
-   term=Symb (mkRel min_int)}
+  {
+    clas=Eqto (min_int,{lhs=min_int;rhs=min_int;rule=Congruence});
+    cpath=min_int;
+    constructors=PacMap.empty;
+    vertex=Leaf;
+    term=Symb (mkRel min_int)
+  }
+
+let empty_forest() =
+  {
+    max_size=init_size;
+    size=0;
+    map=Array.make init_size dummy_node;
+    epsilons=[];
+    axioms=Constrhash.create init_size;
+    syms=Termhash.create init_size
+  }
 
 let empty depth gls:state =
-  {uf=
-     {max_size=init_size;
-      size=0;
-      map=Array.create init_size dummy_node;
-      epsilons=[];
-      axioms=Constrhash.create init_size;
-      syms=Termhash.create init_size};
-  terms=Intset.empty;
-  combine=Queue.create ();
-  marks=Queue.create ();
-  sigtable=ST.empty ();
-  diseq=[];
-  quant=[];
-  pa_classes=Intset.empty;
-  q_history=Identhash.create init_size;
-  rew_depth=depth;
-  by_type=Constrhash.create init_size;
-  changed=false;
-  gls=gls}
+  {
+    uf= empty_forest ();
+    terms=Intset.empty;
+    combine=Queue.create ();
+    marks=Queue.create ();
+    sigtable=ST.empty ();
+    diseq=[];
+    quant=[];
+    pa_classes=Intset.empty;
+    q_history=Identhash.create init_size;
+    rew_depth=depth;
+    by_type=Constrhash.create init_size;
+    changed=false;
+    gls=gls
+  }
+
 
 let forest state = state.uf
 
@@ -276,8 +289,18 @@ let get_representative uf i=
       Rep r -> r
     | _ -> anomaly "get_representative: not a representative"
 
+let get_constructors uf i= uf.map.(i).constructors
+
 let find_pac uf i pac =
-  PacMap.find pac (get_representative uf i).constructors
+  PacMap.find pac (get_constructors uf i)
+
+let rec find_oldest_pac uf i pac=
+  try PacMap.find pac (get_constructors uf i) with
+    Not_found -> 
+      match uf.map.(i).clas with 
+	Eqto (j,_) -> find_oldest_pac uf j pac
+      | Rep _ -> raise Not_found
+     
 
 let get_constructor_info uf i=
   match uf.map.(i).term with
@@ -313,9 +336,9 @@ let tail_pac p=
 let fsucc paf =
   {paf with fnargs=succ paf.fnargs}
 
-let add_pac rep pac t =
-  if not (PacMap.mem pac rep.constructors) then
-    rep.constructors<-PacMap.add pac t rep.constructors
+let add_pac node pac t =
+  if not (PacMap.mem pac node.constructors) then
+    node.constructors<-PacMap.add pac t node.constructors
 
 let add_paf rep paf t =
   let already =
@@ -353,8 +376,7 @@ let new_representative typ =
    fathers=Intset.empty;
    inductive_status=Unknown;
    class_type=typ;
-   functions=PafMap.empty;
-   constructors=PacMap.empty}
+   functions=PafMap.empty}
 
 (* rebuild a constr from an applicative term *)
 
@@ -415,8 +437,8 @@ let rec inst_pattern subst = function
 	(fun spat f -> Appli (f,inst_pattern subst spat))
 	   args t
 
-let pr_idx_term state i = str "[" ++ int i ++ str ":=" ++
-  Termops.print_constr (constr_of_term (term state.uf i)) ++ str "]"
+let pr_idx_term uf i = str "[" ++ int i ++ str ":=" ++
+  Termops.print_constr (constr_of_term (term uf i)) ++ str "]"
 
 let pr_term t = str "[" ++
   Termops.print_constr (constr_of_term t) ++ str "]"
@@ -437,11 +459,13 @@ let rec add_term state t=
 		    Queue.add (b,Fmark paf) state.marks;
 		    {clas= Rep (new_representative typ);
 		     cpath= -1;
+		     constructors=PacMap.empty;
 		     vertex= Leaf;
 		     term= t}
 	      | Eps id ->
 		  {clas= Rep (new_representative typ);
 		   cpath= -1;
+		   constructors=PacMap.empty;
 		   vertex= Leaf;
 		   term= t}
 	      | Appli (t1,t2) ->
@@ -451,6 +475,7 @@ let rec add_term state t=
 		    state.terms<-Intset.add b state.terms;
 		    {clas= Rep (new_representative typ);
 		     cpath= -1;
+		     constructors=PacMap.empty;
 		     vertex= Node(i1,i2);
 		     term= t}
 	      | Constructor cinfo ->
@@ -465,6 +490,7 @@ let rec add_term state t=
 		    Queue.add (b,Cmark pac) state.marks;
 		    {clas=Rep (new_representative typ);
 		     cpath= -1;
+		     constructors=PacMap.empty;
 		     vertex=Leaf;
 		     term=t}
 	  in
@@ -552,7 +578,7 @@ let link uf i j eq = (* links i -> j *)
 
 let rec down_path uf i l=
   match uf.map.(i).clas with
-      Eqto(j,t)->down_path uf j (((i,j),t)::l)
+      Eqto (j,eq) ->down_path uf j (((i,j),eq)::l)
     | Rep _ ->l
 
 let rec min_path=function
@@ -566,8 +592,8 @@ let join_path uf i j=
   min_path (down_path uf i [],down_path uf j [])
 
 let union state i1 i2 eq=
-  debug (fun () -> msgnl (str "Linking " ++ pr_idx_term state i1 ++
-		 str " and " ++ pr_idx_term state i2 ++ str ".")) ();
+  debug (fun () -> msgnl (str "Linking " ++ pr_idx_term state.uf i1 ++
+		 str " and " ++ pr_idx_term state.uf i2 ++ str ".")) ();
   let r1= get_representative state.uf i1
   and r2= get_representative state.uf i2 in
     link state.uf i1 i2 eq;
@@ -583,7 +609,7 @@ let union state i1 i2 eq=
       state.terms<-Intset.union state.terms r1.fathers;
       PacMap.iter
 	(fun pac b -> Queue.add (b,Cmark pac) state.marks)
-	r1.constructors;
+	state.uf.map.(i1).constructors;
       PafMap.iter
 	(fun paf -> Intset.iter
 	   (fun b -> Queue.add (b,Fmark paf) state.marks))
@@ -607,8 +633,8 @@ let union state i1 i2 eq=
 
 let merge eq state = (* merge and no-merge *)
   debug (fun () -> msgnl
-    (str "Merging " ++ pr_idx_term state eq.lhs ++
-       str " and " ++ pr_idx_term state eq.rhs ++ str ".")) ();
+    (str "Merging " ++ pr_idx_term state.uf eq.lhs ++
+       str " and " ++ pr_idx_term state.uf eq.rhs ++ str ".")) ();
   let uf=state.uf in
   let i=find uf eq.lhs
   and j=find uf eq.rhs in
@@ -620,7 +646,7 @@ let merge eq state = (* merge and no-merge *)
 
 let update t state = (* update 1 and 2 *)
   debug (fun () -> msgnl
-    (str "Updating term " ++ pr_idx_term state t ++ str ".")) ();
+    (str "Updating term " ++ pr_idx_term state.uf t ++ str ".")) ();
   let (i,j) as sign = signature state.uf t in
   let (u,v) = subterms state.uf t in
   let rep = get_representative state.uf i in
@@ -633,7 +659,7 @@ let update t state = (* update 1 and 2 *)
     end;
     PacMap.iter
       (fun pac _ -> Queue.add (t,Cmark (append_pac v pac)) state.marks)
-      rep.constructors;
+      (get_constructors state.uf i);
     PafMap.iter
       (fun paf _ -> Queue.add (t,Fmark (fsucc paf)) state.marks)
       rep.functions;
@@ -648,7 +674,8 @@ let process_function_mark t rep paf state  =
   state.terms<-Intset.union rep.lfathers state.terms
 
 let process_constructor_mark t i rep pac state =
-    match rep.inductive_status with
+     add_pac state.uf.map.(i) pac t;
+     match rep.inductive_status with
 	Total (s,opac) ->
 	  if pac.cnode <> opac.cnode then (* Conflict *)
 	    raise (Discriminable (s,opac,t,pac))
@@ -666,14 +693,14 @@ let process_constructor_mark t i rep pac state =
 		      "add_pacs : weird error in injection subterms merge"
 	    in f cinfo.ci_nhyps opac.args pac.args
       | Partial_applied | Partial _ ->
-	  add_pac rep pac t;
+(*	  add_pac state.uf.map.(i) pac t; *)
 	  state.terms<-Intset.union rep.lfathers state.terms
       | Unknown ->
 	  if pac.arity = 0 then
 	    rep.inductive_status <- Total (t,pac)
 	  else
 	    begin
-	      add_pac rep pac t;
+	     (* add_pac state.uf.map.(i) pac t; *)
 	      state.terms<-Intset.union rep.lfathers state.terms;
 	      rep.inductive_status <- Partial pac;
 	      state.pa_classes<- Intset.add i state.pa_classes
@@ -681,7 +708,7 @@ let process_constructor_mark t i rep pac state =
 
 let process_mark t m state =
   debug (fun () -> msgnl
-    (str "Processing mark for term " ++ pr_idx_term state t ++ str ".")) ();
+    (str "Processing mark for term " ++ pr_idx_term state.uf t ++ str ".")) ();
   let i=find state.uf t in
   let rep=get_representative state.uf i in
     match m with
@@ -698,8 +725,8 @@ let check_disequalities state =
   let rec check_aux = function
       dis::q ->
 	debug (fun () -> msg
-	(str "Checking if " ++ pr_idx_term state dis.lhs ++ str " = " ++
-	 pr_idx_term state dis.rhs ++ str " ... ")) ();
+	(str "Checking if " ++ pr_idx_term state.uf dis.lhs ++ str " = " ++
+	 pr_idx_term state.uf dis.rhs ++ str " ... ")) ();
 	if find uf dis.lhs=find uf dis.rhs then
 	  begin debug msgnl (str "Yes");Some dis end
 	else
