@@ -37,7 +37,7 @@ type worker = {
 type pre_pool = {
   workers : worker list ref;
   count : int ref;
-  extra : Model.extra;
+  extra_arg : Model.extra;
 }
 
 type pool = { lock : Mutex.t; pool : pre_pool }
@@ -87,10 +87,10 @@ let rec create_worker extra pool id =
   let manager = Thread.create (Model.manager cpanel) worker in
   { name; cancel; manager; process }
   
-and cleanup x = locking x begin fun { workers; count; extra } ->
+and cleanup x = locking x begin fun { workers; count; extra_arg } ->
   workers := List.map (function
     | { cancel } as w when !cancel = false -> w
-    | _ -> let n = !count in incr count; create_worker extra x n)
+    | _ -> let n = !count in incr count; create_worker extra_arg x n)
   !workers
 end
 
@@ -100,15 +100,15 @@ end
 
 let is_empty x = locking x begin fun { workers } -> !workers = [] end
 
-let create extra ~size = let x = {
+let create extra_arg ~size = let x = {
     lock = Mutex.create ();
     pool = {
-      extra;
+      extra_arg;
       workers = ref [];
       count = ref size;
   }} in
   locking x begin fun { workers } ->
-     workers := CList.init size (create_worker extra x)
+     workers := CList.init size (create_worker extra_arg x)
   end;
   x
 
