@@ -821,7 +821,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 	(Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
       | Proj (p,c) ->
         let c, hc = sh_rec c in
-	let p' = Projection.hashcons p in
+	let p' = Projection.hcons p in
 	  (Proj (p', c), combinesmall 17 (combine (Projection.hash p') hc))
       | Const (c,u) ->
 	let c' = sh_con c in

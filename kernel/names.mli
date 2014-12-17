@@ -645,7 +645,8 @@ module Projection : sig
 
   val equal : t -> t -> bool
   val hash : t -> int
-  val hashcons : t -> t
+  val hcons : t -> t
+  (** Hashconsing of projections. *)
 
   val compare : t -> t -> int
     

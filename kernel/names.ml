@@ -794,10 +794,23 @@ struct
   let unfolded = snd
   let unfold (c, b as p) = if b then p else (c, true)
   let equal (c, b) (c', b') = Constant.equal c c' && b == b'
+
   let hash (c, b) = (if b then 0 else 1) + Constant.hash c
-  let hashcons (c, b as x) = 
-    let c' = hcons_con c in 
-      if c' == c then x else (c', b)
+
+  module Self_Hashcons =
+    struct
+      type _t = t
+      type t = _t
+      type u = Constant.t -> Constant.t
+      let hashcons hc (c,b) = (hc c,b)
+      let equal ((c,b) as x) ((c',b') as y) =
+        x == y || (c == c' && b == b')
+      let hash = hash
+    end
+
+  module HashProjection = Hashcons.Make(Self_Hashcons)
+
+  let hcons = Hashcons.simple_hcons HashProjection.generate hcons_con
 
   let compare (c, b) (c', b') =
     if b == b' then Constant.CanOrd.compare c c'
