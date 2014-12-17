@@ -1507,14 +1507,16 @@ end = struct (* {{{ *)
 
 let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 
-let delegate_policy_check time =
+let async_policy () =
+  let open Flags in
   if interactive () = `Yes then
-    (Flags.async_proofs_is_master () ||
-    !Flags.async_proofs_mode = Flags.APonLazy) &&
-    (time >= 1.0 || !Flags.async_proofs_full)
-  else if !Flags.compilation_mode = Flags.BuildVi then true
-  else !Flags.async_proofs_mode <> Flags.APoff &&
-       (time >= 1.0 || !Flags.async_proofs_full)
+    (async_proofs_is_master () || !async_proofs_mode = Flags.APonLazy)
+  else
+    (!compilation_mode = Flags.BuildVi || !async_proofs_mode <> Flags.APoff)
+
+let delegate name =
+  let time = get_hint_bp_time name in
+  time >= 1.0 || !Flags.compilation_mode = Flags.BuildVi
 
 let collect_proof keep cur hd brkind id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id);
@@ -1544,41 +1546,33 @@ let collect_proof keep cur hd brkind id =
     (* An Alias could jump everywhere... we hope we can ignore it*)
     | `Alias _ -> `Sync (no_name,None,`Alias)
     | `Fork((_,_,_,_::_::_), _) ->
-         `Sync (no_name,proof_using_ast last,`MutualProofs)
+        `Sync (no_name,proof_using_ast last,`MutualProofs)
     | `Fork((_,_,Doesn'tGuaranteeOpacity,_), _) ->
         `Sync (no_name,proof_using_ast last,`Doesn'tGuaranteeOpacity)
     | `Fork((_,hd',GuaranteesOpacity,ids), _) when has_proof_using last ->
-        let name = name ids in
-        let time = get_hint_bp_time name in
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        if delegate_policy_check time
-        then `ASync (parent last,proof_using_ast last,accn,name)
-        else `Sync (name,proof_using_ast last,`Policy)
+        let name = name ids in
+        `ASync (parent last,proof_using_ast last,accn,name,delegate name)
     | `Fork((_, hd', GuaranteesOpacity, ids), _) when
        has_proof_no_using last && not (State.is_cached (parent last)) &&
        !Flags.compilation_mode = Flags.BuildVi ->
+        assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
         (try
-          let name = name ids in
-          let hint, time = get_hint_ctx loc, get_hint_bp_time name in
-          assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
+          let name, hint = name ids, get_hint_ctx loc  in
           let t, v = proof_no_using last in
           v.expr <- VernacProof(t, Some hint);
-          if delegate_policy_check time
-          then `ASync (parent last,proof_using_ast last,accn,name)
-          else `Sync (name,proof_using_ast last,`Policy)
+          `ASync (parent last,proof_using_ast last,accn,name,delegate name)
         with Not_found -> `Sync (no_name,None,`NoHint))
     | `Fork((_, hd', GuaranteesOpacity, ids), _) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
-        let time = get_hint_bp_time name in
-        if delegate_policy_check time
-        then `MaybeASync (parent last, None, accn, name)
-        else `Sync (name,None,`Policy)
+        `MaybeASync (parent last, None, accn, name, delegate name)
     | `Sideff _ -> `Sync (no_name,None,`NestedProof)
     | _ -> `Sync (no_name,None,`Unknown) in
  match cur, (VCS.visit id).step, brkind with
- |( parent, { expr = VernacExactProof _ }), `Fork _, _ ->
+ | (parent, { expr = VernacExactProof _ }), `Fork _, _ ->
      `Sync (no_name,None,`Immediate)
+ | _ when not (async_policy ()) -> `Sync (no_name,None,`Policy)
  | _, _, { VCS.kind = `Edit _ }  -> collect (Some cur) [] id
  | _ ->
      if is_defined cur then `Sync (no_name,None,`Transparent)
@@ -1591,8 +1585,8 @@ let collect_proof keep cur hd brkind id =
        else (* we already have the proof, no gain in delaying *)
          match rc with
          | `Sync(name,pua,_) -> `Sync (name,pua,`AlreadyEvaluated)
-         | `MaybeASync(_,pua,_,name) -> `Sync (name,pua,`AlreadyEvaluated)
-         | `ASync(_,pua,_,name) -> `Sync (name,pua,`AlreadyEvaluated)
+         | `MaybeASync(_,pua,_,name,_) -> `Sync (name,pua,`AlreadyEvaluated)
+         | `ASync(_,pua,_,name,_) -> `Sync (name,pua,`AlreadyEvaluated)
 
 let string_of_reason = function
   | `Transparent -> "Transparent"
@@ -1665,26 +1659,32 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), `Yes, true
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
-          | `ASync (start, pua, nodes, name) -> (fun () ->
+          | `ASync (start, pua, nodes, name, delegate) -> (fun () ->
                 assert(keep == VtKeep);
+                let stop, exn_info, loc = eop, (id, eop), x.loc in
                 prerr_endline ("Asynchronous " ^ Stateid.to_string id);
                 VCS.create_cluster nodes ~qed:id ~start;
                 begin match brinfo, qed.fproof with
                 | { VCS.kind = `Edit _ }, None -> assert false
                 | { VCS.kind = `Edit _ }, Some (ofp, cancel) ->
                     assert(redefine_qed = true);
-                    let fp, cancel = Slaves.build_proof
-                      ~loc:x.loc ~exn_info:(id,eop) ~start ~stop:eop ~name in
+                    let fp, cancel =
+                      Slaves.build_proof ~loc ~exn_info ~start ~stop ~name in
                     Future.replace ofp fp;
                     qed.fproof <- Some (fp, cancel)
                 | { VCS.kind = `Proof _ }, Some _ -> assert false
                 | { VCS.kind = `Proof _ }, None ->
                     reach ~cache:`Shallow start;
-                    let fp, cancel = Slaves.build_proof
-                      ~loc:x.loc ~exn_info:(id,eop) ~start ~stop:eop ~name in
+                    let fp, cancel =
+                      if delegate then
+                        Slaves.build_proof ~loc ~exn_info ~start ~stop ~name
+                      else
+                        ProofTask.build_proof_here exn_info loc stop, ref false
+                    in
                     qed.fproof <- Some (fp, cancel);
                     let proof =
                       Proof_global.close_future_proof ~feedback_id:id fp in
+                    if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     vernac_interp id ~proof x;
                     feedback ~state_id:id Feedback.Incomplete
@@ -1717,12 +1717,12 @@ let known_state ?(redefine_qed=false) ~cache id =
                   (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2));
                 Proof_global.discard_all ()
               ), `Yes, true
-          | `MaybeASync (start, pua, nodes, name) -> (fun () ->
+          | `MaybeASync (start, pua, nodes, name, delegate) -> (fun () ->
                 prerr_endline ("MaybeAsynchronous " ^ Stateid.to_string id);
                 reach ~cache:`Shallow start;
                 (* no sections *)
                 if List.is_empty (Environ.named_context (Global.env ()))
-                then pi1 (aux (`ASync (start, pua, nodes, name))) ()
+                then pi1 (aux (`ASync (start, pua, nodes, name, delegate))) ()
                 else pi1 (aux (`Sync (name, pua, `Unknown))) ()
               ), (if redefine_qed then `No else `Yes), true
           in
