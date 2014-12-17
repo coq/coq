@@ -433,7 +433,7 @@ type library_disk = {
 
 type opaque_table = constr Future.computation array
 type univ_table =
-  (Univ.constraints Future.computation array * Univ.constraints * bool) option
+  (Univ.universe_context_set Future.computation array * Univ.universe_context_set * bool) option
 
 (** A .vo file is currently made of :
 

@@ -111,6 +111,7 @@ let v_cstrs =
 
 let v_instance = Annot ("instance", Array v_level)
 let v_context = v_tuple "universe_context" [|v_instance;v_cstrs|]
+let v_context_set = v_tuple "universe_context_set" [|v_set v_level;v_cstrs|]
 
 (** kernel/term *)
 
@@ -328,7 +329,7 @@ let v_lib =
 
 let v_opaques = Array (v_computation v_constr)
 let v_univopaques =
-  Opt (Tuple ("univopaques",[|Array (v_computation v_cstrs);v_cstrs;v_bool|]))
+  Opt (Tuple ("univopaques",[|Array (v_computation v_context_set);v_context_set;v_bool|]))
 
 (** Registering dynamic values *)
 

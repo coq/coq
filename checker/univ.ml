@@ -379,7 +379,8 @@ module Level = struct
 
 end
 
-(** Level maps *)
+(** Level sets and maps *)
+module LSet = Set.Make (Level)
 module LMap = Map.Make (Level)
 
 type 'a universe_map = 'a LMap.t
@@ -1296,6 +1297,14 @@ struct
 end
 
 type universe_context = UContext.t
+
+module ContextSet =
+struct
+  type t = LSet.t constrained
+  let empty = LSet.empty, Constraint.empty
+  let constraints (_, cst) = cst
+end
+type universe_context_set = ContextSet.t
 
 (** Substitutions. *)
 

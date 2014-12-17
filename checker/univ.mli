@@ -188,7 +188,15 @@ sig
 
 end
 
+module ContextSet :
+  sig 
+    type t
+    val empty : t
+    val constraints : t -> constraints
+  end
+
 type universe_context = UContext.t
+type universe_context_set = ContextSet.t
 
 val empty_level_subst : universe_level_subst
 val is_empty_level_subst : universe_level_subst -> bool
