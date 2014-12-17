@@ -87,6 +87,18 @@ Section Facts.
     left; exists a, tail; reflexivity.
   Qed.
 
+  Lemma hd_error_tl_repr : forall l (a:A) r,
+    hd_error l = Some a /\ tl l = r <-> l = a :: r.
+  Proof. destruct l as [|x xs].
+    - unfold hd_error, tl; intros a r. split; firstorder discriminate.
+    - intros. simpl. split.
+      * intros (H1, H2). inversion H1. rewrite H2. reflexivity.
+      * inversion 1. subst. auto.
+  Qed.
+
+  Lemma hd_error_some_nil : forall l (a:A), hd_error l = Some a -> l <> nil.
+  Proof. unfold hd_error. destruct l; now discriminate. Qed.
+
   Theorem length_zero_iff_nil (l : list A):
     length l = 0 <-> l=[].
   Proof.
