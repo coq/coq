@@ -1106,7 +1106,7 @@ let build_ui () =
       ~tooltip:"Next occurence"
       ~accel:(prefs.modifier_for_navigation^"greater");
     item "Force" ~label:"_Force" ~stock:`EXECUTE ~callback:Nav.join_document
-      ~tooltip:"Force the processing of the whole document" 
+      ~tooltip:"Fully check the document" 
       ~accel:(current.modifier_for_navigation^"f"); 
   ];
 

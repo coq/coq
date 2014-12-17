@@ -539,7 +539,7 @@ object(self)
    let next = function
      | Good _ ->
          messages#clear;
-         messages#push Pp.Info "Doc checked";
+         messages#push Pp.Info "All proof terms checked by the kernel";
          Coq.return ()
      | Fail x -> self#handle_failure x in
    Coq.bind (Coq.status ~logger:messages#push true) next
