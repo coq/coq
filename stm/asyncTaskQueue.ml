@@ -146,6 +146,7 @@ module Make(T : Task) = struct
 
   let manager cpanel (id, proc, ic, oc) =
     let { WorkerPool.extra = queue; exit; cancelled } = cpanel in
+    let exit () =  report_status ~id "Dead"; exit () in
     let last_task = ref None in
     let worker_age = ref `Fresh in
     let got_token = ref false in

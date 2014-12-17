@@ -325,9 +325,15 @@ let create_jobpage coqtop coqops : jobpage =
 	access (fun _ store -> store#clear ());
         !callback jobs;
 	CString.Map.iter (fun id job -> access (fun columns store ->
-          let line = store#append () in
-          store#set line (find_string_col "Worker" columns) id;
-          store#set line (find_string_col "Job name" columns) job))
+          let column = find_string_col "Worker" columns in
+          if job = "Dead" then
+            store#foreach (fun _ row ->
+              if store#get ~row ~column = id then store#remove row || true
+              else false)
+          else
+            let line = store#append () in
+            store#set line column id;
+            store#set line (find_string_col "Job name" columns) job))
           jobs
       end
     method on_update ~callback:cb = callback := cb
