@@ -108,7 +108,7 @@ struct
 
   module Hname = Hashcons.Make(Self_Hashcons)
 
-  let hcons = Hashcons.simple_hcons Hname.generate Id.hcons
+  let hcons = Hashcons.simple_hcons Hname.generate Hname.hcons Id.hcons
 
 end
 
@@ -175,7 +175,7 @@ struct
 
   module Hdir = Hashcons.Hlist(Id)
 
-  let hcons = Hashcons.recursive_hcons Hdir.generate Id.hcons
+  let hcons = Hashcons.recursive_hcons Hdir.generate Hdir.hcons Id.hcons
 
 end
 
@@ -239,7 +239,7 @@ struct
 
   module HashMBId = Hashcons.Make(Self_Hashcons)
 
-  let hcons = Hashcons.simple_hcons HashMBId.generate (Id.hcons, DirPath.hcons)
+  let hcons = Hashcons.simple_hcons HashMBId.generate HashMBId.hcons (Id.hcons, DirPath.hcons)
 
 end
 
@@ -335,7 +335,7 @@ module ModPath = struct
   module HashMP = Hashcons.Make(Self_Hashcons)
 
   let hcons =
-    Hashcons.simple_hcons HashMP.generate
+    Hashcons.simple_hcons HashMP.generate HashMP.hcons
       (DirPath.hcons,MBId.hcons,String.hcons)
 
 end
@@ -427,7 +427,7 @@ module KerName = struct
   module HashKN = Hashcons.Make(Self_Hashcons)
 
   let hcons =
-    Hashcons.simple_hcons HashKN.generate
+    Hashcons.simple_hcons HashKN.generate HashKN.hcons
       (ModPath.hcons,DirPath.hcons,String.hcons)
 end
 
@@ -663,10 +663,10 @@ module Hconstruct = Hashcons.Make(
     let hash = constructor_hash
   end)
 
-let hcons_con = Hashcons.simple_hcons Constant.HashKP.generate KerName.hcons
-let hcons_mind = Hashcons.simple_hcons MutInd.HashKP.generate KerName.hcons
-let hcons_ind = Hashcons.simple_hcons Hind.generate hcons_mind
-let hcons_construct = Hashcons.simple_hcons Hconstruct.generate hcons_ind
+let hcons_con = Hashcons.simple_hcons Constant.HashKP.generate Constant.HashKP.hcons KerName.hcons
+let hcons_mind = Hashcons.simple_hcons MutInd.HashKP.generate MutInd.HashKP.hcons KerName.hcons
+let hcons_ind = Hashcons.simple_hcons Hind.generate Hind.hcons hcons_mind
+let hcons_construct = Hashcons.simple_hcons Hconstruct.generate Hconstruct.hcons hcons_ind
 
 (*****************)
 
@@ -810,7 +810,7 @@ struct
 
   module HashProjection = Hashcons.Make(Self_Hashcons)
 
-  let hcons = Hashcons.simple_hcons HashProjection.generate hcons_con
+  let hcons = Hashcons.simple_hcons HashProjection.generate HashProjection.hcons hcons_con
 
   let compare (c, b) (c', b') =
     if b == b' then Constant.CanOrd.compare c c'

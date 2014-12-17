@@ -31,24 +31,21 @@ module type HashconsedType =
     val hash : t -> int
   end
 
-(* The output is a function [generate] such that
- * [generate ()] has the side-effect of creating (internally) a hash-table of the
- *   hash-consed objects. The result is a function taking the sub-hashcons
- *   functions and an object, and hashcons it. It does not really make sense
- *   to call generate() with different sub-hcons functions. That's why we use the
- *   wrappers simple_hcons, recursive_hcons, ... The latter just take as
- *   argument the sub-hcons functions (the tables are created at that moment),
- *   and returns the hcons function for t.
- *)
+(** The output is a function [generate] such that [generate args] creates a
+    hash-table of the hash-consed objects, together with [hcons], a function
+    taking a table and an object, and hashcons it. For simplicity of use, we use
+    the wrapper functions defined below. *)
 
 module type S =
   sig
     type t
     type u
-    val generate : unit -> (u -> t -> t)
+    type table
+    val generate : u -> table
+    val hcons : table -> t -> t
   end
 
-module Make (X : HashconsedType) =
+module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u) =
   struct
     type t = X.t
     type u = X.u
@@ -60,16 +57,15 @@ module Make (X : HashconsedType) =
      *)
     module Htbl = Hashset.Make(X)
 
-    (* The table is created when () is applied.
-     * Hashconsing is then very simple:
-     *  1- hashcons the subterms using hashcons and u
-     *  2- look up in the table, if we do not get a hit, we add it
-     *)
-    let generate () =
+    type table = (Htbl.t * u)
+
+    let generate u =
       let tab = Htbl.create 97 in
-        (fun u x ->
-           let y = X.hashcons u x in
-            Htbl.repr (X.hash y) y tab)
+      (tab, u)
+
+    let hcons (tab, u) x =
+      let y = X.hashcons u x in
+      Htbl.repr (X.hash y) y tab
 
   end
 
@@ -79,9 +75,9 @@ module Make (X : HashconsedType) =
  * sub-hcons functions. *)
 
 (* For non-recursive types it is quite easy. *)
-let simple_hcons h u =
-  let h = h () in
-  fun x -> h u x
+let simple_hcons h f u =
+  let table = h u in
+  fun x -> f table x
 
 (* For a recursive type T, we write the module of sig Comp with u equals
  * to (T -> T) * u0
@@ -89,18 +85,13 @@ let simple_hcons h u =
  * The second one to hashcons the other sub-structures.
  * We just have to take the fixpoint of h
  *)
-let recursive_hcons h u =
-  let hc = h () in
-  let rec hrec x = hc (hrec,u) x in
+let recursive_hcons h f u =
+  let loop = ref (fun _ -> assert false) in
+  let self x = !loop x in
+  let table = h (self, u) in
+  let hrec x = f table x in
+  let () = loop := hrec in
   hrec
-
-(* For 2 mutually recursive types *)
-let recursive2_hcons h1 h2 u1 u2 =
-  let hc1 = h1 () in
-  let hc2 = h2 () in
-  let rec hrec1 x = hc1 (hrec1,hrec2,u1) x
-  and hrec2 x = hc2 (hrec1,hrec2,u2) x
-  in (hrec1,hrec2)
 
 (* A set of global hashcons functions *)
 let hashcons_resets = ref []
@@ -206,8 +197,8 @@ module Hobj = Make(
  *)
 (* string : string -> string *)
 (* obj : Obj.t -> Obj.t *)
-let string = register_hcons (simple_hcons Hstring.generate) ()
-let obj = register_hcons (recursive_hcons Hobj.generate) ()
+let string = register_hcons (simple_hcons Hstring.generate Hstring.hcons) ()
+let obj = register_hcons (recursive_hcons Hobj.generate Hobj.hcons) ()
 
 (* The unsafe polymorphic hashconsing function *)
 let magic_hash (c : 'a) =

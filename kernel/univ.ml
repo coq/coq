@@ -488,7 +488,7 @@ struct
       include Hashcons.Make(ExprHash)
 
       let make =
-	Hashcons.simple_hcons generate Level.hcons
+	Hashcons.simple_hcons generate hcons Level.hcons
       let hash = ExprHash.hash
       let equal x y = x == y ||
 	(let (u,n) = x and (v,n') = y in
@@ -1391,8 +1391,8 @@ module Hconstraints =
       let hash = Hashtbl.hash
     end)
 
-let hcons_constraint = Hashcons.simple_hcons Hconstraint.generate Level.hcons
-let hcons_constraints = Hashcons.simple_hcons Hconstraints.generate hcons_constraint
+let hcons_constraint = Hashcons.simple_hcons Hconstraint.generate Hconstraint.hcons Level.hcons
+let hcons_constraints = Hashcons.simple_hcons Hconstraints.generate Hconstraints.hcons hcons_constraint
 
 
 (** A value with universe constraints. *)
@@ -1775,7 +1775,7 @@ struct
 
   module HInstance = Hashcons.Make(HInstancestruct)
 
-  let hcons = Hashcons.simple_hcons HInstance.generate Level.hcons
+  let hcons = Hashcons.simple_hcons HInstance.generate HInstance.hcons Level.hcons
     
   let hash = HInstancestruct.hash
     
@@ -2125,7 +2125,7 @@ module Huniverse_set =
     end)
 
 let hcons_universe_set = 
-  Hashcons.simple_hcons Huniverse_set.generate Level.hcons
+  Hashcons.simple_hcons Huniverse_set.generate Huniverse_set.hcons Level.hcons
 
 let hcons_universe_context_set (v, c) = 
   (hcons_universe_set v, hcons_constraints c)

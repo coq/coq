@@ -991,7 +991,7 @@ module Hsorts =
     end)
 
 (* let hcons_sorts = Hashcons.simple_hcons Hsorts.generate hcons_univ *)
-let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate hcons_ind
+let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate Hcaseinfo.hcons hcons_ind
 
 let hcons =
   hashcons

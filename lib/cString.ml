@@ -171,4 +171,4 @@ module List = struct
   let equal l l' = CList.equal equal l l'
 end
 
-let hcons = Hashcons.simple_hcons Hashcons.Hstring.generate ()
+let hcons = Hashcons.simple_hcons Hashcons.Hstring.generate Hashcons.Hstring.hcons ()

@@ -104,4 +104,4 @@ module Hsorts =
       let hash = Hashtbl.hash (** FIXME *)
     end)
 
-let hcons = Hashcons.simple_hcons Hsorts.generate hcons_univ
+let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons hcons_univ

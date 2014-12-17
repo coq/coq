@@ -432,7 +432,7 @@ struct
       include Hashcons.Make(ExprHash)
 
       let make =
-	Hashcons.simple_hcons generate Level.hcons
+	Hashcons.simple_hcons generate hcons Level.hcons
       let hash = ExprHash.hash
       let uid = hash
       let equal x y = x == y ||
@@ -1242,7 +1242,7 @@ struct
 
   module HInstance = Hashcons.Make(HInstancestruct)
 
-  let hcons = Hashcons.simple_hcons HInstance.generate Level.hcons
+  let hcons = Hashcons.simple_hcons HInstance.generate HInstance.hcons Level.hcons
     
   let empty = hcons [||]
 
