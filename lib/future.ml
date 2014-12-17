@@ -94,7 +94,7 @@ let from_here ?(fix_exn=id) v = create fix_exn (Val (v, Some (!freeze ())))
 
 let fix_exn_of ck = let _, fix_exn, _ = get ck in fix_exn
 
-let create_delegate ?(blocking=false) fix_exn =
+let create_delegate ?(blocking=true) fix_exn =
   let assignement signal ck = fun v ->
     let _, fix_exn, c = get ck in
     assert (match !c with Delegated _ -> true | _ -> false);

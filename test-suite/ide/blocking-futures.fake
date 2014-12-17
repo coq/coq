@@ -1,0 +1,16 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# Extraction will force the future computation, assert it is blocking
+# Example courtesy of Jonathan (jonikelee)
+#
+ADD { Require Import List. }
+ADD { Import ListNotations. }
+ADD { Definition myrev{A}(l : list A) : {rl : list A | rl = rev l}. }
+ADD { Proof. }
+ADD {   induction l. }
+ADD {    eexists; reflexivity. }
+ADD {    cbn; destruct IHl as [rl' H]; rewrite <-H; eexists; reflexivity. }
+ADD { Qed. }
+ADD { Extraction myrev. }
+GOALS
