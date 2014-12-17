@@ -969,7 +969,7 @@ end = struct (* {{{ *)
         Pp.feedback (Feedback.InProgress ~-1);
         t_assign (`Val pl);
         record_pb_time t_name t_loc time;
-        if not !Flags.async_proofs_always_delegate then `End
+        if not !Flags.async_proofs_full then `End
         else `Stay(t_states,[States t_states])
     | `Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
@@ -1493,7 +1493,7 @@ end = struct (* {{{ *)
       QueryTask.({ QueryTask.t_where = prev; t_for = id; t_what = q }, switch)
 
   let init () = queue := Some (TaskQueue.create
-    (if !Flags.async_proofs_always_delegate then 1 else 0))
+    (if !Flags.async_proofs_full then 1 else 0))
 
 end (* }}} *)
 
@@ -1511,10 +1511,10 @@ let delegate_policy_check time =
   if interactive () = `Yes then
     (Flags.async_proofs_is_master () ||
     !Flags.async_proofs_mode = Flags.APonLazy) &&
-    (time >= 1.0 || !Flags.async_proofs_always_delegate)
+    (time >= 1.0 || !Flags.async_proofs_full)
   else if !Flags.compilation_mode = Flags.BuildVi then true
   else !Flags.async_proofs_mode <> Flags.APoff &&
-       (time >= 1.0 || !Flags.async_proofs_always_delegate)
+       (time >= 1.0 || !Flags.async_proofs_full)
 
 let collect_proof keep cur hd brkind id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id);
@@ -1586,7 +1586,7 @@ let collect_proof keep cur hd brkind id =
      else
        let rc = collect (Some cur) [] id in
        if keep == VtKeep &&
-          (not(State.is_cached id) || !Flags.async_proofs_always_delegate)
+          (not(State.is_cached id) || !Flags.async_proofs_full)
        then rc
        else (* we already have the proof, no gain in delaying *)
          match rc with
@@ -1958,7 +1958,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           assert(Stateid.equal report_id Stateid.dummy);
           let id = VCS.new_node ~id:newtip () in
           let queue =
-            if !Flags.async_proofs_always_delegate then `QueryQueue (ref false)
+            if !Flags.async_proofs_full then `QueryQueue (ref false)
             else `MainQueue in
           VCS.commit id (Cmd { cast = x; cids = []; cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok

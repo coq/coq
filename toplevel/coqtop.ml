@@ -466,8 +466,9 @@ let parse_args arglist =
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
-    |"-async-proofs-always-delegate" ->
-        Flags.async_proofs_always_delegate := true;
+    |"-async-proofs-always-delegate"
+    |"-async-proofs-full" ->
+        Flags.async_proofs_full := true;
     |"-async-proofs-never-reopen-branch" ->
         Flags.async_proofs_never_reopen_branch := true;
     |"-batch" -> set_batch_mode ()
