@@ -619,15 +619,15 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
 	  | [] , [] , [] -> pr_subgoals None sigma seeds shelf stack goals
           | [] , [] , _ ->
 	     msg_info (str "No more goals, however there are goals you gave up. You need to go back and solve them.");
-	     fnl () ++ fnl ()
+	     fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] given_up
           | [] , _ , _ ->
 	    msg_info (str "All the remaining goals are on the shelf.");
-	    fnl () ++ fnl ()
+	    fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] shelf
 	  | _ , _, _ ->
 	     msg_info (str "This subproof is complete, but there are still unfocused goals.");
-	    fnl () ++ fnl ()
+	    fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds shelf [] bgoals
 	  end
   | _ -> pr_subgoals None sigma seeds shelf stack goals

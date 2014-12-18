@@ -1125,7 +1125,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let msgnl =
         let open Ftactic in
         interp_message ist s >>= fun msg ->
-        return (hov 0 msg , hov 0 msg ++ fnl ())
+        return (hov 0 msg , hov 0 msg)
       in
       let print (_,msgnl) = Proofview.(tclLIFT (NonLogical.print msgnl)) in
       let log (msg,_) = Proofview.Trace.log (fun () -> msg) in

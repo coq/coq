@@ -76,8 +76,6 @@ open Pp_control
    an option without creating a circularity: [Flags] -> [Util] ->
    [Pp] -> [Flags] *)
 let print_emacs = ref false
-let make_pp_emacs() = print_emacs:=true
-let make_pp_nonemacs() = print_emacs:=false
 
 (* The different kinds of blocks are:
    \begin{description}
@@ -378,7 +376,7 @@ let emacs_quote g =
   else hov 0 g
 
 let emacs_quote_info g =
-  if !print_emacs then str emacs_quote_info_start ++ hov 0 g ++ str emacs_quote_info_end
+  if !print_emacs then str emacs_quote_info_start++fnl() ++ hov 0 g ++ str emacs_quote_info_end
   else hov 0 g
 
 
@@ -445,12 +443,23 @@ let infobody strm = emacs_quote_info strm
 
 let std_logger ~id:_ level msg = match level with
 | Debug _ -> msgnl (debugbody msg)
-| Info -> msgnl (infobody (hov 0 msg))
+| Info -> msgnl (hov 0 msg)
 | Notice -> msgnl msg
 | Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody msg)) ()
 | Error -> msgnl_with !err_ft (errorbody msg)
 
+let emacs_logger ~id:_ level mesg = match level with
+| Debug _ -> msgnl (debugbody mesg)
+| Info -> msgnl (infobody mesg)
+| Notice -> msgnl mesg
+| Warning -> Flags.if_warn (fun () -> msgnl_with !err_ft (warnbody mesg)) ()
+| Error -> msgnl_with !err_ft (errorbody mesg)
+
 let logger = ref std_logger
+
+let make_pp_emacs() = print_emacs:=true; logger:=emacs_logger
+let make_pp_nonemacs() = print_emacs:=false; logger := std_logger
+
 
 let feedback_id = ref (Feedback.Edit 0)
 let feedback_route = ref Feedback.default_route
