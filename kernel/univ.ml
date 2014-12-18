@@ -31,83 +31,59 @@ open Util
    union-find algorithm. The assertions $<$ and $\le$ are represented by
    adjacency lists *)
 
-module Uid = struct
-  type t = int
-
-  let make_maker () =
-    let _id = ref ~-1 in
-    fun () -> incr _id;!_id
-
-  let dummy = -1
-  let to_int id = id
+module type Hashconsed =
+sig
+  type t
+  val hash : t -> int
+  val equal : t -> t -> bool
+  val hcons : t -> t
 end
 
-module Hcons = struct
-
-  type 'a node = { id : Uid.t; key : int; node : 'a }
-
-  module type S =
-  sig
-    type data
-    type t = data node
-    val make : data -> t
-    val node : t -> data
-    val hash : t -> int
-    val stats : unit -> unit
-    val init : unit -> unit
-  end
-
-  module Make (H : Hashtbl.HashedType) : S with type data = H.t =
+module HashedList (M : Hashconsed) :
+sig
+  type t = private Nil | Cons of M.t * int * t
+  val nil : t
+  val cons : M.t -> t -> t
+end =
+struct
+  type t = Nil | Cons of M.t * int * t
+  module Self =
   struct
-    let uid_make = Uid.make_maker()
-    type data = H.t
-    type t = data node
-    let node t = t.node
-    let hash t = t.key
-    module WH = Weak.Make( struct
-      type _t = t
-      type t = _t
-      let hash = hash
-      let equal a b = a == b || H.equal a.node b.node
-    end)
-    let pool = WH.create 491
-
-    let total_count = ref 0
-    let miss_count = ref 0
-    let init () =
-      total_count := 0;
-      miss_count := 0
-
-    let make x =
-      incr total_count;
-      let cell = { id = Uid.dummy; key = H.hash x; node = x } in
-        try
-        WH.find pool cell
-        with
-        | Not_found ->
-        let cell = { cell with id = uid_make(); } in
-          incr miss_count;
-          WH.add pool cell;
-          cell
-
-    let stats () = ()
+    type _t = t
+    type t = _t
+    type u = (M.t -> M.t)
+    let hash = function Nil -> 0 | Cons (_, h, _) -> h
+    let equal l1 l2 = match l1, l2 with
+    | Nil, Nil -> true
+    | Cons (x1, _, l1), Cons (x2, _, l2) -> x1 == x2 && l1 == l2
+    | _ -> false
+    let hashcons hc = function
+    | Nil -> Nil
+    | Cons (x, h, l) -> Cons (hc x, h, l)
   end
+  module Hcons = Hashcons.Make(Self)
+  let hcons = Hashcons.simple_hcons Hcons.generate Hcons.hcons M.hcons
+  (** No recursive call: the interface guarantees that all HLists from this
+      program are already hashconsed. If we get some external HList, we can
+      still reconstruct it by traversing it entirely. *)
+  let nil = Nil
+  let cons x l =
+    let h = M.hash x in
+    let hl = match l with Nil -> 0 | Cons (_, h, _) -> h in
+    let h = Hashset.Combine.combine h hl in
+    hcons (Cons (x, h, l))
 end
 
 module HList = struct
 
   module type S = sig
     type elt
-    type 'a node = Nil | Cons of elt * 'a
-    type t
-    type data = t node
+    type t = private Nil | Cons of elt * int * t
     val hash : t -> int
-    val make : data -> t
     val nil : t
+    val cons : elt -> t -> t
     val is_nil : t -> bool
     val tip : elt -> t
-    val node : t -> t node
-    val cons : (* ?sorted:bool -> *) elt -> t -> t
     val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
     val map : (elt -> elt) -> t -> t
     val smartmap : (elt -> elt) -> t -> t
@@ -120,129 +96,68 @@ module HList = struct
     val compare : (elt -> elt -> int) -> t -> t -> int
   end
 
-  module Make (H : Hashtbl.HashedType) : S with type elt = H.t =
+  module Make (H : Hashconsed) : S with type elt = H.t =
   struct
-    type elt = H.t
-    type 'a node = Nil | Cons of elt * 'a
+  type elt = H.t
+  include HashedList(H)
 
-    module rec Node : Hcons.S with type data = Data.t = Hcons.Make(Data)
+  let hash = function Nil -> 0 | Cons (_, h, _) -> h
 
-    and Data : Hashtbl.HashedType  with type t = Node.t node =
-    struct
-      type t = Node.t node
-      let equal x y =
-        match x,y with
-        | _,_ when x==y -> true
-        | Cons (a,aa), Cons(b,bb) -> (aa==bb) && (H.equal a b)
-        | _ -> false
-      let hash = function
-        | Nil -> 0
-        | Cons(a,aa) -> 17 + 65599 * (H.hash a) + 491 * (Uid.to_int aa.Hcons.id)
-    end
-    
-  type data = Data.t
-  type t = Node.t
-  let make = Node.make
-  let node x = x.Hcons.node
-  let hash x = x.Hcons.key
-  let nil = Node.make Nil
+  let is_nil = function Nil -> true | Cons _ -> false
 
-  let is_nil =
-    function { Hcons.node = Nil } -> true | _ -> false
+  let tip e = cons e nil
 
-  let cons e l =
-    Node.make(Cons(e, l))
-    
-  let tip e = Node.make (Cons(e, nil))
+  let rec fold f l accu = match l with
+  | Nil -> accu
+  | Cons (x, _, l) -> fold f l (f x accu)
 
-  let fold f l acc =
-    let rec loop acc l = match l.Hcons.node with
-      | Nil -> acc
-      | Cons (a, aa) -> loop (f a acc) aa
-    in
-      loop acc l
+  let rec map f = function
+  | Nil -> nil
+  | Cons (x, _, l) -> cons (f x) (map f l)
 
-  let map f l  =
-    let rec loop l = match l.Hcons.node with
-      | Nil -> l
-      | Cons(a, aa) -> cons (f a) (loop aa)
-    in
-      loop l
+  let smartmap = map
+  (** Apriori hashconsing ensures that the map is equal to its argument *)
 
-  let smartmap f l =
-    let rec loop l = match l.Hcons.node with
-      | Nil -> l
-      | Cons (a, aa) -> 
-        let a' = f a in 
-          if a' == a then
-            let aa' = loop aa in
-              if aa' == aa then l
-              else cons a aa'
-          else cons a' (loop aa)
-    in loop l
+  let rec exists f = function
+  | Nil -> false
+  | Cons (x, _, l) -> f x || exists f l
 
-  let exists f l =
-    let rec loop l = match l.Hcons.node with
-      | Nil -> false
-      | Cons(a,aa) -> f a || loop aa
-    in
-      loop l
+  let rec for_all f = function
+  | Nil -> true
+  | Cons (x, _, l) -> f x && for_all f l
 
-  let for_all f l =
-    let rec loop l = match l.Hcons.node with
-      | Nil -> true
-      | Cons(a,aa) -> f a && loop aa
-    in
-      loop l
+  let rec for_all2 f l1 l2 = match l1, l2 with
+  | Nil, Nil -> true
+  | Cons (x1, _, l1), Cons (x2, _, l2) -> f x1 x2 && for_all2 f l1 l2
+  | _ -> false
 
-  let for_all2 f l l' =
-    let rec loop l l' = match l.Hcons.node, l'.Hcons.node with
-      | Nil, Nil -> true
-      | Cons(a,aa), Cons(b,bb) -> f a b && loop aa bb
-      | _, _ -> false
-    in
-      loop l l'
+  let rec to_list = function
+  | Nil -> []
+  | Cons (x, _, l) -> x :: to_list l
 
-  let to_list l =
-    let rec loop l = match l.Hcons.node with
-      | Nil -> []
-      | Cons(a,aa) -> a :: loop aa
-    in
-      loop l
-      
-  let remove x l =
-    let rec loop l = match l.Hcons.node with
-      | Nil -> l
-      | Cons(a,aa) -> 
-        if H.equal a x then aa
-        else cons a (loop aa)
-    in
-      loop l
+  let rec remove x = function
+  | Nil -> nil
+  | Cons (y, _, l) ->
+    if H.equal x y then l
+    else cons y (remove x l)
 
-  let rec mem e l =
-    match l.Hcons.node with
-    | Nil -> false
-    | Cons (x, ll) -> H.equal x e || mem e ll
+  let rec mem x = function
+  | Nil -> false
+  | Cons (y, _, l) -> H.equal x y || mem x l
 
-  let rec compare cmp l1 l2 =
-    if l1 == l2 then 0 
-    else
-      let hl1 = hash l1 and hl2 = hash l2 in
-      let c = Int.compare hl1 hl2 in
-        if c == 0 then 
-          let nl1 = node l1 in
-          let nl2 = node l2 in
-            if nl1 == nl2 then 0
-            else 
-              match nl1, nl2 with
-              | Nil, Nil -> assert false
-              | _, Nil -> 1
-              | Nil, _ -> -1
-              | Cons (x1,l1), Cons(x2,l2) ->
-                (match cmp x1 x2 with
-                | 0 -> compare cmp l1 l2
-                | c -> c)
-        else c
+  let rec compare cmp l1 l2 = match l1, l2 with
+  | Nil, Nil -> 0
+  | Cons (x1, h1, l1), Cons (x2, h2, l2) ->
+    let c = Int.compare h1 h2 in
+    if c == 0 then
+      let c = cmp x1 x2 in
+      if c == 0 then
+        compare cmp l1 l2
+      else c
+    else c
+  | Cons _, Nil -> 1
+  | Nil, Cons _ -> -1
+
   end
 end
 
@@ -485,10 +400,12 @@ struct
     module HExpr = 
     struct 
 
-      include Hashcons.Make(ExprHash)
+      module H = Hashcons.Make(ExprHash)
 
-      let make =
-	Hashcons.simple_hcons generate hcons Level.hcons
+      type t = ExprHash.t
+
+      let hcons =
+	Hashcons.simple_hcons H.generate H.hcons Level.hcons
       let hash = ExprHash.hash
       let equal x y = x == y ||
 	(let (u,n) = x and (v,n') = y in
@@ -496,7 +413,7 @@ struct
 
     end
 
-    let hcons = HExpr.make
+    let hcons = HExpr.hcons
 
     let make l = hcons (l, 0)
 
@@ -599,44 +516,45 @@ struct
 	  Huniv.compare (fun e1 e2 -> compare_expr e1 e2) x y
 	else c
 
-  let hcons_unique = Huniv.make
-  let hcons x = hcons_unique x
+  let rec hcons = function
+  | Nil -> Huniv.nil
+  | Cons (x, _, l) -> Huniv.cons x (hcons l)
 
   let make l = Huniv.tip (Expr.make l)
   let tip x = Huniv.tip x
-    
-  let pr l = match node l with
-    | Cons (u, n) when is_nil n -> Expr.pr u
+
+  let pr l = match l with
+    | Cons (u, _, Nil) -> Expr.pr u
     | _ -> 
       str "max(" ++ hov 0
 	(prlist_with_sep pr_comma Expr.pr (to_list l)) ++
         str ")"
 
-  let pr_with f l = match node l with
-    | Cons (u, n) when is_nil n -> Expr.pr_with f u
+  let pr_with f l = match l with
+    | Cons (u, _, Nil) -> Expr.pr_with f u
     | _ -> 
       str "max(" ++ hov 0
 	(prlist_with_sep pr_comma (Expr.pr_with f) (to_list l)) ++
         str ")"
       
-  let atom l = match node l with
-    | Cons (l, n) when is_nil n -> Some l
+  let atom l = match l with
+    | Cons (l, _, Nil) -> Some l
     | _ -> None
 
-  let is_level l = match node l with
-    | Cons (l, n) when is_nil n -> Expr.is_level l
+  let is_level l = match l with
+    | Cons (l, _, Nil) -> Expr.is_level l
     | _ -> false
 
-  let level l = match node l with
-    | Cons (l, n) when is_nil n -> Expr.level l
+  let level l = match l with
+    | Cons (l, _, Nil) -> Expr.level l
     | _ -> None
 
   let levels l = 
     fold (fun x acc -> LSet.add (Expr.get_level x) acc) l LSet.empty
 
   let is_small u = 
-    match node u with
-    | Cons (l, n) when is_nil n -> Expr.is_small l
+    match u with
+    | Cons (l, _, Nil) -> Expr.is_small l
     | _ -> false
 
   (* The lower predicative level of the hierarchy that contains (impredicative)
@@ -664,10 +582,10 @@ struct
     Huniv.map (fun x -> Expr.addn n x) l
 
   let rec merge_univs l1 l2 =
-    match node l1, node l2 with
+    match l1, l2 with
     | Nil, _ -> l2
     | _, Nil -> l1
-    | Cons (h1, t1), Cons (h2, t2) ->
+    | Cons (h1, _, t1), Cons (h2, _, t2) ->
       (match Expr.super h1 h2 with
       | Inl true (* h1 < h2 *) -> merge_univs t1 l2
       | Inl false -> merge_univs l1 t2
@@ -678,8 +596,8 @@ struct
 
   let sort u =
     let rec aux a l = 
-      match node l with
-      | Cons (b, l') -> 
+      match l with
+      | Cons (b, _, l') ->
         (match Expr.super a b with
 	| Inl false -> aux a l'
 	| Inl true -> l
@@ -695,7 +613,7 @@ struct
   let sup x y = merge_univs x y
 
   let empty = nil
-  let is_empty n = is_nil n
+  let is_empty = function Nil -> true | Cons _ -> false
 
   let exists = Huniv.exists
 
@@ -1448,9 +1366,10 @@ let check_univ_leq u v =
   Universe.for_all (fun u -> check_univ_leq_one u v) u
 
 let enforce_leq u v c =
-  match Huniv.node v with
-  | Universe.Huniv.Cons (v, n) when Universe.is_empty n -> 
-    Universe.Huniv.fold (fun u -> constraint_add_leq u v) u c
+  let open Universe.Huniv in
+  match v with
+  | Cons (v, _, Nil) ->
+    fold (fun u -> constraint_add_leq u v) u c
   | _ -> anomaly (Pp.str"A universe bound can only be a variable")
 
 let enforce_leq u v c =
@@ -2130,7 +2049,7 @@ let hcons_universe_set =
 let hcons_universe_context_set (v, c) = 
   (hcons_universe_set v, hcons_constraints c)
 
-let hcons_univ x = Universe.hcons (Huniv.node x)
+let hcons_univ x = Universe.hcons x
 
 let explain_universe_inconsistency (o,u,v,p) =
     let pr_rel = function
