@@ -617,6 +617,7 @@ let rec tmpp v loc =
   (* Gallina extensions *)
   | VernacBeginSection (_, id) -> xmlBeginSection loc (Id.to_string id)
   | VernacEndSegment (_, id) -> xmlEndSegment loc (Id.to_string id)
+  | VernacNameSectionHypSet _ as x -> xmlTODO loc x
   | VernacRequire (None,l) ->
       xmlRequire loc (List.map (fun ref ->
         xmlReference ref) l)

@@ -855,6 +855,9 @@ module Make
           return (hov 2 (keyword "Section" ++ spc () ++ pr_lident id))
         | VernacEndSegment id ->
           return (hov 2 (keyword "End" ++ spc() ++ pr_lident id))
+        | VernacNameSectionHypSet (id,set) ->
+          return (hov 2 (keyword "Package" ++ spc() ++ pr_lident id ++ spc()++
+          str ":="++spc()++pr_using set))
         | VernacRequire (exp, l) ->
           return (
             hov 2
@@ -1208,12 +1211,14 @@ module Make
         | VernacProof (None, None) ->
           return (keyword "Proof")
         | VernacProof (None, Some e) ->
-          return (keyword "Proof " ++ pr_using e)
+          return (keyword "Proof " ++ spc () ++
+              keyword "using" ++ spc() ++ pr_using e)
         | VernacProof (Some te, None) ->
           return (keyword "Proof with" ++ spc() ++ pr_raw_tactic te)
         | VernacProof (Some te, Some e) ->
           return (
-            keyword "Proof" ++ spc () ++ pr_using e ++ spc() ++
+            keyword "Proof" ++ spc () ++
+              keyword "using" ++ spc() ++ pr_using e ++ spc() ++
               keyword "with" ++ spc() ++pr_raw_tactic te
           )
         | VernacProofMode s ->

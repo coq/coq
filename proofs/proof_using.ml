@@ -26,25 +26,41 @@ let to_string = function
         | SsSubstr(e1,e2) -> "("^aux e1 ^" - "^ aux e2^")"
       in aux e
 
-let set_of_list l = List.fold_right Id.Set.add l Id.Set.empty
+let known_names = Summary.ref [] ~name:"proofusing-nameset"
 
-let full_set env = set_of_list (List.map pi1 (named_context env))
+let in_nameset =
+  let open Libobject in
+  declare_object { (default_object "proofusing-nameset") with
+    cache_function = (fun (_,x) -> known_names := x :: !known_names);
+    classify_function = (fun _ -> Dispose);
+    discharge_function = (fun _ -> None)
+  }
 
-let process_expr env e ty =
+let rec process_expr env e ty =
   match e with
-  | SsAll -> List.map pi1 (named_context env)
+  | SsAll ->
+      List.fold_right Id.Set.add (List.map pi1 (named_context env)) Id.Set.empty
   | SsExpr e ->
       let rec aux = function
-        | SsSet l -> set_of_list (List.map snd l)
+        | SsSet l -> set_of_list env (List.map snd l)
         | SsUnion(e1,e2) -> Id.Set.union (aux e1) (aux e2)
         | SsSubstr(e1,e2) -> Id.Set.diff (aux e1) (aux e2)
         | SsCompl e -> Id.Set.diff (full_set env) (aux e)
       in
-        Id.Set.elements (aux e)
+        aux e
   | SsType ->
       match ty with
-      | [ty] -> Id.Set.elements (global_vars_set env ty)
+      | [ty] -> global_vars_set env ty
       | _ -> Errors.error"Proof using on a multiple lemma is not supported"
+and set_of_list env = function
+  | [x] when CList.mem_assoc_f Id.equal x !known_names ->
+      process_expr env (CList.assoc_f Id.equal x !known_names) []
+  | l -> List.fold_right Id.Set.add l Id.Set.empty
+and full_set env = set_of_list env (List.map pi1 (named_context env))
+
+let process_expr env e ty = Id.Set.elements (process_expr env e ty)
+
+let name_set id expr = Lib.add_anonymous_leaf (in_nameset (id,expr))
 
 let minimize_hyps env ids =
   let rec aux ids =

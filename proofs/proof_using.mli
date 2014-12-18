@@ -19,6 +19,8 @@ val process_expr :
   Environ.env -> Vernacexpr.section_subset_descr -> Constr.types list ->
     Names.Id.t list
 
+val name_set : Names.Id.t -> Vernacexpr.section_subset_descr -> unit
+
 val to_string : Vernacexpr.section_subset_descr -> string
 
 val get_default_proof_using : unit -> string option

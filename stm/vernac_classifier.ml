@@ -169,6 +169,7 @@ let rec classify_vernac e =
     | VernacDeclareClass _ | VernacDeclareInstances _
     | VernacRegister _
     | VernacDeclareTacticDefinition _
+    | VernacNameSectionHypSet _
     | VernacComments _ -> VtSideff [], VtLater
     (* Who knows *)
     | VernacLoad _ -> VtSideff [], VtNow

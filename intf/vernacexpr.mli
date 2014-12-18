@@ -323,6 +323,7 @@ type vernac_expr =
       class_rawexpr * class_rawexpr
   | VernacIdentityCoercion of obsolete_locality * lident *
       class_rawexpr * class_rawexpr
+  | VernacNameSectionHypSet of lident * section_subset_descr 
 
   (* Type classes *)
   | VernacInstance of

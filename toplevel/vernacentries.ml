@@ -738,6 +738,8 @@ let vernac_end_section (loc,_) =
     (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
   Lib.close_section ()
 
+let vernac_name_sec_hyp (_,id) set = Proof_using.name_set id set
+
 (* Dispatcher of the "End" command *)
 
 let vernac_end_segment (_,id as lid) =
@@ -1863,6 +1865,8 @@ let interp ?proof locality poly c =
   | VernacBeginSection lid -> vernac_begin_section lid
 
   | VernacEndSegment lid -> vernac_end_segment lid
+
+  | VernacNameSectionHypSet (lid, set) -> vernac_name_sec_hyp lid set
 
   | VernacRequire (export, qidl) -> vernac_require export qidl
   | VernacImport (export,qidl) -> vernac_import export qidl

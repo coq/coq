@@ -65,3 +65,34 @@ End S1.
 Check (deep 3 4 : 3 = 4).
 Check (deep2 3 4 : 3 = 4).
 
+
+Section P1.
+
+Variable x : nat.
+Variable y : nat.
+Variable z : nat.
+
+
+Package TOTO := x y.
+
+Package TITI := TOTO - x.
+
+Lemma t1 : True. Proof using TOTO. trivial. Qed.
+Lemma t2 : True. Proof using TITI. trivial. Qed.
+
+ Section P2.
+ Package TOTO := x.
+ Lemma t3 : True. Proof using TOTO. trivial. Qed.
+ End P2.
+
+Lemma t4 : True. Proof using TOTO. trivial. Qed.
+
+End P1.
+
+Lemma t5 : True. Fail Proof using TOTO. trivial. Qed.
+
+Check (t1 1 2 : True).
+Check (t2 1 : True).
+Check (t3 1 : True).
+Check (t4 1 2 : True).
+

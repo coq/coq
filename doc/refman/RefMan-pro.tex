@@ -177,6 +177,25 @@ The following options modify the behavior of {\tt Proof using}.
   When {\tt Qed} is performed, suggest a {\tt using} annotation if
   the user did not provide one.
 
+\subsubsection[\tt Package]{Name a set of section hypotheses for {\tt Proof using}}
+\comindex{Package}
+
+The command {\tt Package} can be used to name a set of section hypotheses,
+with the purpose of making {\tt Proof using} annotations more compat.
+
+\variant {\tt Package Some := x y z.}
+
+  Define the package named "Some" containing {\tt x y} and {\tt z} 
+
+\variant {\tt Package Fewer := Some - x.} 
+  
+  Define the package named "Fewer" containing only {\tt x y} 
+
+\variant {\tt Package Many := Fewer + Some.} 
+  
+  Define the package named "Many" containing the union of the elements
+  of "Fewer" and "Some", namely {\tt x y z}. 
+
 \subsection[\tt Abort.]{\tt Abort.\comindex{Abort}}
 
 This command cancels the current proof development, switching back to
