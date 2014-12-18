@@ -97,10 +97,7 @@ let v_raw_level = v_sum "raw_level" 2 (* Prop, Set *)
   [|(*Level*)[|Int;v_dp|]; (*Var*)[|Int|]|]
 let v_level = v_tuple "level" [|Int;v_raw_level|] 
 let v_expr = v_tuple "levelexpr" [|v_level;Int|]
-let v_univ = 
-  let rec vuniv = 
-    Tuple("hconsnode", [|Int;Int; Sum ("univ", 1, [|(*Cons*)[|v_expr;vuniv|]|])|])
-  in vuniv
+let rec v_univ = Sum ("universe", 1, [| [|v_expr; Int; v_univ|] |])
 
 let v_cstrs =
   Annot
