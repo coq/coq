@@ -1116,16 +1116,16 @@ let preferred_orientation evd evk1 evk2 =
 let solve_evar_evar_aux f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env in
   if preferred_orientation evd evk1 evk2 then
-    try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
-    with CannotProject (evd,ev1) ->
     try solve_evar_evar_l2r f g env evd aliases (opp_problem pbty) ev2 ev1
     with CannotProject (evd,ev2) ->
+    try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
+    with CannotProject (evd,ev1) ->
     add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd
   else
-    try solve_evar_evar_l2r f g env evd aliases (opp_problem pbty) ev2 ev1
-    with CannotProject (evd,ev2) ->
     try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
     with CannotProject (evd,ev1) ->
+    try solve_evar_evar_l2r f g env evd aliases (opp_problem pbty) ev2 ev1
+    with CannotProject (evd,ev2) ->
     add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd
 
 let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
