@@ -20,7 +20,11 @@ open Misctypes
 open Locus
 
 type direction_flag = bool (* true = Left-to-right    false = right-to-right *)
-type lazy_flag = bool      (* true = lazy             false = eager *)
+type lazy_flag =
+  | General (* returns all possible successes *)
+  | Lazy    (* returns all successes of the first matching branch *)
+  | Once    (* returns the first success in a maching branch
+               (not necessarily the first) *)
 type evars_flag = bool     (* true = pose evars       false = fail on evars *)
 type rec_flag = bool       (* true = recursive        false = not recursive *)
 type advanced_flag = bool  (* true = advanced         false = basic *)

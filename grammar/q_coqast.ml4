@@ -289,6 +289,11 @@ let mlexpr_of_pattern_ast = mlexpr_of_constr
 let mlexpr_of_entry_type = function
     _ -> failwith "mlexpr_of_entry_type: TODO"
 
+let mlexpr_of_match_lazy_flag = function
+  | Tacexpr.General -> <:expr<Tacexpr.General>>
+  | Tacexpr.Lazy    -> <:expr<Tacexpr.Lazy>>
+  | Tacexpr.Once    -> <:expr<Tacexpr.Once>>
+
 let mlexpr_of_match_pattern = function
   | Tacexpr.Term t -> <:expr< Tacexpr.Term $mlexpr_of_pattern_ast t$ >>
   | Tacexpr.Subterm (b,ido,t) ->
@@ -479,12 +484,12 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
       <:expr< Tacexpr.TacLetIn $mlexpr_of_bool isrec$ $mlexpr_of_list f l$ $mlexpr_of_tactic t$ >>
   | Tacexpr.TacMatch (lz,t,l) ->
       <:expr< Tacexpr.TacMatch
-        $mlexpr_of_bool lz$
+        $mlexpr_of_match_lazy_flag lz$
         $mlexpr_of_tactic t$
         $mlexpr_of_list (mlexpr_of_match_rule mlexpr_of_tactic) l$>>
   | Tacexpr.TacMatchGoal (lz,lr,l) ->
       <:expr< Tacexpr.TacMatchGoal
-        $mlexpr_of_bool lz$
+        $mlexpr_of_match_lazy_flag lz$
         $mlexpr_of_bool lr$
         $mlexpr_of_list (mlexpr_of_match_rule mlexpr_of_tactic) l$>>
 

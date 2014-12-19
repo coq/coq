@@ -172,7 +172,9 @@ GEXTEND Gram
       | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
   match_key:
-    [ [ "match" -> false | "lazymatch" -> true ] ]
+    [ [ "match" -> Once
+      | "lazymatch" -> Lazy
+      | "multimatch" -> General ] ]
   ;
   input_fun:
     [ [ "_" -> None

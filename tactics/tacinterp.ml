@@ -1547,20 +1547,27 @@ and interp_match_success ist { TacticMatching.subst ; context ; terms ; lhs } =
     matching of successes [s]. If [lz] is set to true, then only the
     first success is considered, otherwise further successes are tried
     if the left-hand side fails. *)
-and interp_match_successes lz ist tac =
-    if lz then
-      (** Only keep the first matching result, we don't backtrack on it *)
-      let tac = Proofview.tclONCE tac in
-      tac >>= fun ans -> interp_match_success ist ans
-    else
-      let break (e, info) = match e with
-      | FailError (0, _) -> None
-      | FailError (n, s) -> Some (FailError (pred n, s), info)
-      | _ -> None
-      in
-      let tac = Proofview.tclBREAK break tac >>= fun ans -> interp_match_success ist ans in
-      (** Once a tactic has succeeded, do not backtrack anymore *)
-      Proofview.tclONCE tac
+and interp_match_successes lz ist s =
+   let general =
+     let break (e, info) = match e with
+       | FailError (0, _) -> None
+       | FailError (n, s) -> Some (FailError (pred n, s), info)
+       | _ -> None
+     in
+     Proofview.tclBREAK break s >>= fun ans -> interp_match_success ist ans
+   in
+    match lz with
+    | General ->
+        general
+    | Lazy ->
+      begin
+        (** Only keep the first matching result, we don't backtrack on it *)
+        let s = Proofview.tclONCE s in
+        s >>= fun ans -> interp_match_success ist ans
+      end
+    | Once ->
+        (** Once a tactic has succeeded, do not backtrack anymore *)
+        Proofview.tclONCE general
 
 (* Interprets the Match expressions *)
 and interp_match ist lz constr lmr =

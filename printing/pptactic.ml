@@ -621,7 +621,10 @@ module Make
     | FullInversion -> primitive "inversion"
     | FullInversionClear -> primitive "inversion_clear"
 
-  let pr_lazy lz = if lz then keyword "lazy" else mt ()
+  let pr_lazy = function
+    | General -> keyword "multi"
+    | Lazy -> keyword "lazy"
+    | Once -> mt ()
 
   let pr_match_pattern pr_pat = function
     | Term a -> pr_pat a
