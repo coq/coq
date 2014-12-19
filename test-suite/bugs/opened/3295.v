@@ -50,7 +50,7 @@ Infix "=="   := weq (at level 79).
 Infix "*" := (dot _ _ _)      (left associativity, at level 40).
 
 Notation "∑_ ( i ∈ l ) f" := (@sup (mor _ _) _ (fun i => f) l)
-  (at level 41, F at level 41, i, A at level 50).
+  (at level 41, f at level 41, i, l at level 50).
 
 Axiom dotxsum : forall `{X : ops} I J n m p (f: I -> X m n) (x: X p m) y,
   x * (∑_(i∈ J) f i) == y.
