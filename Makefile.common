@@ -339,7 +339,9 @@ ALLMODS:=$(call vo_to_mod,$(ALLVO))
 
 LIBFILES:=$(THEORIESVO) $(PLUGINSVO) $(call vo_to_cm,$(THEORIESVO)) \
 	    $(call vo_to_cm,$(PLUGINSVO)) $(call vo_to_obj,$(THEORIESVO)) \
-	    $(call vo_to_obj,$(PLUGINSVO)) 
+	    $(call vo_to_obj,$(PLUGINSVO)) \
+	    $(PLUGINSVO:.vo=.v) $(THEORIESVO:.vo=.v) \
+	    $(PLUGINSVO:.vo=.glob) $(THEORIESVO:.vo=.glob)
 
 LIBFILESLIGHT:=$(THEORIESLIGHTVO)
 
