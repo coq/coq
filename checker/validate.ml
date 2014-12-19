@@ -36,7 +36,13 @@ let pr_obj o = pr_obj_rec o; Format.print_newline()
 (**************************************************************************)
 (* Obj low-level validators *)
 
-type error_context = string list
+type error_frame =
+| CtxAnnot of string
+| CtxType of string
+| CtxField of int
+| CtxTag of int
+
+type error_context = error_frame list
 let mt_ec : error_context = []
 let (/) (ctx:error_context) s : error_context = s::ctx
 
@@ -77,7 +83,7 @@ let rec val_gen v ctx o = match v with
      with Failure _ -> fail ctx o "expected a string")
   | Any -> ()
   | Fail s -> fail ctx o ("unexpected object " ^ s)
-  | Annot (s,v) -> val_gen v (ctx/s) o
+  | Annot (s,v) -> val_gen v (ctx/CtxAnnot s) o
   | Dyn -> val_dyn ctx o
 
 (* Check that an object is a tuple (or a record). vs is an array of
@@ -85,12 +91,12 @@ let rec val_gen v ctx o = match v with
    expected size of the object. *)
 and val_tuple ?name vs ctx o =
   let ctx = match name with
-    | Some n -> ctx/n
+    | Some n -> ctx/CtxType n
     | _ -> ctx
   in
   let n = Array.length vs in
   let val_fld i v =
-    val_gen v (ctx/("fld="^string_of_int i)) (Obj.field o i) in
+    val_gen v (ctx/(CtxField i)) (Obj.field o i) in
   val_block ctx o;
   if Obj.size o = n then Array.iteri val_fld vs
   else
@@ -105,12 +111,12 @@ and val_tuple ?name vs ctx o =
    constructors, and the size of vv.(i) is the expected arity of the
    i-th non-constant constructor. *)
 and val_sum name cc vv ctx o =
-  let ctx = ctx/name in
+  let ctx = ctx/CtxType name in
   if Obj.is_block o then
-    (val_block (ctx/name) o;
+    (val_block ctx o;
     let n = Array.length vv in
     let i = Obj.tag o in
-    let ctx' = if n=1 then ctx else ctx/("tag="^string_of_int i) in
+    let ctx' = if n=1 then ctx else ctx/CtxTag i in
     if i < n then val_tuple vv.(i) ctx' o
     else fail ctx' o ("sum: unexpected tag"))
   else if Obj.is_int o then
@@ -121,18 +127,25 @@ and val_sum name cc vv ctx o =
 
 (* Check the o is an array of values satisfying f. *)
 and val_array v ctx o =
-  val_block (ctx/"array") o;
+  val_block (ctx/CtxType "array") o;
   for i = 0 to Obj.size o - 1 do
     val_gen v ctx (Obj.field o i)
   done
+
+let print_frame = function
+| CtxType t -> t
+| CtxAnnot t -> t
+| CtxField i -> Printf.sprintf "fld=%i" i
+| CtxTag i -> Printf.sprintf "tag=%i" i
 
 let validate debug v x =
   let o = Obj.repr x in
   try val_gen v mt_ec o
   with ValidObjError(msg,ctx,obj) ->
     if debug then begin
+      let ctx = List.rev_map print_frame ctx in
       print_endline ("Validation failed: "^msg);
-      print_endline ("Context: "^String.concat"/"(List.rev ctx));
+      print_endline ("Context: "^String.concat"/"ctx);
       pr_obj obj
     end;
     failwith "vo structure validation failed"
