@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 bed14962eac3aa2feba45a572f72b9531 checker/cic.mli
+MD5 ed14962eac3aa2feba45a572f72b9531 checker/cic.mli
 
 *)
 
@@ -52,6 +52,7 @@ let v_enum name n = Sum(name,n,[||])
 
 (** Ocaml standard library *)
 
+let v_pair v1 v2 = v_tuple "*" [|v1; v2|]
 let v_bool = v_enum "bool" 2
 let v_ref v = v_tuple "ref" [|v|]
 
@@ -197,7 +198,7 @@ let v_pol_arity =
   v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ|]
 
 let v_cst_type =
-  v_sum "constant_type" 0 [|[|v_constr|];[|v_rctxt;v_pol_arity|]|]
+  v_sum "constant_type" 0 [|[|v_constr|]; [|v_pair v_rctxt v_pol_arity|]|]
 
 let v_cst_def =
   v_sum "constant_def" 0
