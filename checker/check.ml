@@ -355,7 +355,9 @@ let intern_from_file (dir, f) =
       LibraryMap.add md.md_name opaque_csts !opaque_univ_tables)
     opaque_csts;
   let extra_cst =
-    Option.default Univ.empty_constraint (Option.map pi2 opaque_csts) in
+    Option.default Univ.empty_constraint
+      (Option.map (fun (_,cs,_) ->
+         Univ.ContextSet.constraints cs) opaque_csts) in
   mk_library md f table digest extra_cst
 
 let get_deps (dir, f) =
