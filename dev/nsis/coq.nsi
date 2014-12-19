@@ -93,8 +93,13 @@ Section "Coq" Sec1
 
   SetOutPath "$INSTDIR\lib\theories"
   File /r ${COQ_SRC_PATH}\theories\*.vo
+  File /r ${COQ_SRC_PATH}\theories\*.v
+  File /r ${COQ_SRC_PATH}\theories\*.glob
+  File /r ${COQ_SRC_PATH}\theories\*.cmxs
   SetOutPath "$INSTDIR\lib\plugins"
   File /r ${COQ_SRC_PATH}\plugins\*.vo
+  File /r ${COQ_SRC_PATH}\plugins\*.v
+  File /r ${COQ_SRC_PATH}\plugins\*.glob
   File /r ${COQ_SRC_PATH}\plugins\*.cmxs
   SetOutPath "$INSTDIR\lib\tools\coqdoc"
   File ${COQ_SRC_PATH}\tools\coqdoc\coqdoc.sty
@@ -104,7 +109,8 @@ Section "Coq" Sec1
   SetOutPath "$INSTDIR\man"
   File ${COQ_SRC_PATH}\man\*.1
   SetOutPath "$INSTDIR\lib\toploop"
-  File ${COQ_SRC_PATH}\stm\stmworkertop.cmxs
+  File ${COQ_SRC_PATH}\stm\queryworkertop.cmxs
+  File ${COQ_SRC_PATH}\stm\proofworkertop.cmxs
   File ${COQ_SRC_PATH}\stm\tacworkertop.cmxs
   File ${COQ_SRC_PATH}\ide\coqidetop.cmxs
 

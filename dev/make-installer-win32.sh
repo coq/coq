@@ -5,7 +5,7 @@ ZIP=_make.zip
 URL1=http://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download
 URL2=http://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download
 
-./configure -prefix ./ -with-doc no -no-native-compiler
+./configure -prefix ./ -with-doc no
 make 
 if [ ! -e bin/make.exe ]; then
   wget -O $ZIP $URL1 && 7z x $ZIP "bin/*"
