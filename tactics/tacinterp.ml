@@ -1135,7 +1135,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       end
   | TacFail (n,s) ->
       let msg = interp_message ist s in
-      let tac l = Proofview.V82.tactic (fun gl -> tclFAIL (interp_int_or_var ist n) l gl) in
+      let tac l = Proofview.tclINDEPENDENT (Tacticals.New.tclFAIL (interp_int_or_var ist n) l) in
       Ftactic.run msg tac
   | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
   | TacShowHyps tac ->
