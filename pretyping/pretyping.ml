@@ -304,10 +304,11 @@ let pretype_id pretype loc env evdref lvar id =
 	{ uj_val = c; uj_type = protected_get_type_of env sigma c }
     with Not_found -> try
        let {closure;term} = Id.Map.find id lvar.ltac_uconstrs in
-       let lvar = { lvar with
+       let lvar = {
          ltac_constrs = closure.typed;
          ltac_uconstrs = closure.untyped;
-         ltac_idents = closure.idents }
+         ltac_idents = closure.idents;
+         ltac_genargs = Id.Map.empty; }
        in
        (* spiwack: I'm catching [Not_found] potentially too eagerly
           here, as the call to the main pretyping function is caught
