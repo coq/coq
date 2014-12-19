@@ -460,7 +460,7 @@ GEXTEND Gram
       | IDENT "End"; id = identref -> VernacEndSegment id
 
       (* Naming a set of section hyps *)
-      | IDENT "Package"; id = identref; ":="; expr = section_subset_descr ->
+      | IDENT "Collection"; id = identref; ":="; expr = section_subset_descr ->
           VernacNameSectionHypSet (id, expr)
 
       (* Requiring an already compiled module *)

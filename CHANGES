@@ -70,6 +70,9 @@ Vernacular commands
 - "Undo" undoes any command, not just tactics.
 - New "Refine Instance Mode" option that allows to deactivate the generation of
   obligations in incomplete typeclass instances, raising an error instead.
+- "Collection" command to name sets of section hypotheses.  Named collections
+  can be used in the syntax of "Proof using" to assert with section variables
+  are used in a proof.
 
 Specification Language
 
@@ -280,7 +283,7 @@ Tools
 
 Interfaces
 
-- CoqIDE uses the new STM machinery, allowing for asynchronous edition.
+- CoqIDE supports asynchronous edition of the document.
 - CoqIDE highlight in yellow "unsafe" commands such as axiom
   declarations, and tactics like "admit".
 - Coqtop outputs highlighted syntax. Colors can be configured thanks

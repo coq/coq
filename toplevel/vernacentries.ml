@@ -848,7 +848,8 @@ let vernac_set_end_tac tac =
 
 let vernac_set_used_variables e =
   let tys =
-    List.map fst (Proof.initial_goals (Proof_global.give_me_the_proof ())) in
+    List.map snd (Proof.initial_goals (Proof_global.give_me_the_proof ())) in
+  Pp.(msg_warning (prlist_with_sep spc Printer.pr_constr tys));
   let l = Proof_using.process_expr (Global.env ()) e tys in
   let vars = Environ.named_context (Global.env ()) in
   List.iter (fun id -> 

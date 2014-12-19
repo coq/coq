@@ -14,7 +14,7 @@ open Vernacexpr
 let to_string = function
   | SsAll -> "All"
   | SsType -> "Type"
-  | SsExpr SsSet l -> String.concat " " (List.map Id.to_string (List.map snd l))
+  | SsExpr(SsSet l)-> String.concat " " (List.map Id.to_string (List.map snd l))
   | SsExpr e ->
       let rec aux = function
         | SsSet [] -> "( )"
@@ -49,16 +49,22 @@ let rec process_expr env e ty =
       in
         aux e
   | SsType ->
-      match ty with
-      | [ty] -> global_vars_set env ty
-      | _ -> Errors.error"Proof using on a multiple lemma is not supported"
+      List.fold_left (fun acc ty ->
+        Id.Set.union (global_vars_set env ty) acc)
+      Id.Set.empty ty
 and set_of_list env = function
   | [x] when CList.mem_assoc_f Id.equal x !known_names ->
       process_expr env (CList.assoc_f Id.equal x !known_names) []
   | l -> List.fold_right Id.Set.add l Id.Set.empty
 and full_set env = set_of_list env (List.map pi1 (named_context env))
 
-let process_expr env e ty = Id.Set.elements (process_expr env e ty)
+let process_expr env e ty =
+  let s = Id.Set.union (process_expr env SsType ty) (process_expr env e []) in
+  let l = Id.Set.elements s in
+  Pp.msg_warning Pp.(str(to_string e) ++ spc() ++ str "-> "++
+(*     prlist_with_sep spc Ppconstr.pr_constr ty ++ spc() ++ *)
+    prlist_with_sep spc Nameops.pr_id l);
+  l
 
 let name_set id expr = Lib.add_anonymous_leaf (in_nameset (id,expr))
 

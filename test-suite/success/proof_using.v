@@ -73,15 +73,15 @@ Variable y : nat.
 Variable z : nat.
 
 
-Package TOTO := x y.
+Collection TOTO := x y.
 
-Package TITI := TOTO - x.
+Collection TITI := TOTO - x.
 
 Lemma t1 : True. Proof using TOTO. trivial. Qed.
 Lemma t2 : True. Proof using TITI. trivial. Qed.
 
  Section P2.
- Package TOTO := x.
+ Collection TOTO := x.
  Lemma t3 : True. Proof using TOTO. trivial. Qed.
  End P2.
 
@@ -95,4 +95,26 @@ Check (t1 1 2 : True).
 Check (t2 1 : True).
 Check (t3 1 : True).
 Check (t4 1 2 : True).
+
+
+Section T1.
+
+Variable x : nat.
+Hypothesis px : 1 = x.
+Let w := x + 1.
+
+Set Suggest Proof Using.
+
+Set Default Proof Using "Type".
+
+Lemma bla : 2 = w.
+Proof.
+admit.
+Qed.
+
+End T1.
+
+Check (bla 7 : 2 = 8).
+
+
 
