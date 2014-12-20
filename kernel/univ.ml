@@ -82,7 +82,6 @@ module HList = struct
     val hash : t -> int
     val nil : t
     val cons : elt -> t -> t
-    val is_nil : t -> bool
     val tip : elt -> t
     val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
     val map : (elt -> elt) -> t -> t
@@ -102,8 +101,6 @@ module HList = struct
   include HashedList(H)
 
   let hash = function Nil -> 0 | Cons (_, h, _) -> h
-
-  let is_nil = function Nil -> true | Cons _ -> false
 
   let tip e = cons e nil
 
@@ -536,10 +533,6 @@ struct
       str "max(" ++ hov 0
 	(prlist_with_sep pr_comma (Expr.pr_with f) (to_list l)) ++
         str ")"
-      
-  let atom l = match l with
-    | Cons (l, _, Nil) -> Some l
-    | _ -> None
 
   let is_level l = match l with
     | Cons (l, _, Nil) -> Expr.is_level l
@@ -613,7 +606,6 @@ struct
   let sup x y = merge_univs x y
 
   let empty = nil
-  let is_empty = function Nil -> true | Cons _ -> false
 
   let exists = Huniv.exists
 
