@@ -268,7 +268,7 @@ let get_open_goals () =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
     List.length shelf
 
-let close_proof ?feedback_id ~now fpl =
+let close_proof ~keep_body_ucst_sepatate ?feedback_id ~now fpl =
   let { pid; section_vars; strength; proof; terminator } = cur_pstate () in
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
@@ -280,22 +280,34 @@ let close_proof ?feedback_id ~now fpl =
   (* Because of dependent subgoals at the begining of proofs, we could
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
-  let subst_evar k = Proof.in_proof proof (fun m -> Evd.existential_opt_value m k) in
+  let subst_evar k =
+    Proof.in_proof proof (fun m -> Evd.existential_opt_value m k) in
   let nf = Universes.nf_evars_and_universes_opt_subst subst_evar
     (Evd.evar_universe_context_subst universes) in
   let make_body =
     if poly || now then
       let make_body t (c, eff) =
+        let open Universes in
 	let body = c and typ = nf t in
-	let used_univs = 
-	  Univ.LSet.union (Universes.universes_of_constr body)
-	  (Universes.universes_of_constr typ)
-	in
+        let used_univs_body = Universes.universes_of_constr body in
+	let used_univs_typ = Universes.universes_of_constr typ in
 	let ctx = Evd.evar_universe_context_set universes in
-	let ctx = Universes.restrict_universe_context ctx used_univs in
-	let univs = Univ.ContextSet.to_context ctx in
-	let p = (body, Univ.ContextSet.empty), eff in
-	  (univs, typ), p
+        if keep_body_ucst_sepatate then
+          (* For vi2vo compilation proofs are computed now but we need to
+           * completent the univ constraints of the typ with the ones of
+           * the body.  So we keep the two sets distinct. *)
+          let ctx_body = restrict_universe_context ctx used_univs_body in
+          let ctx_typ = restrict_universe_context ctx used_univs_typ in
+          let univs_typ = Univ.ContextSet.to_context ctx_typ in
+          (univs_typ, typ), ((body, ctx_body), eff)
+        else
+          (* Since the proof is computed now, we can simply have 1 set of
+           * constraints in which we merge the ones for the body and the ones
+           * for the typ *)
+          let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+          let ctx = restrict_universe_context ctx used_univs in
+          let univs = Univ.ContextSet.to_context ctx in
+          (univs, typ), ((body, Univ.ContextSet.empty), eff)
       in 
 	fun t p ->
 	  Future.split2 (Future.chain ~pure:true p (make_body t))
@@ -350,9 +362,10 @@ let return_proof () =
     proofs, Evd.evar_universe_context evd
 
 let close_future_proof ~feedback_id proof =
-  close_proof ~feedback_id ~now:false proof
-let close_proof fix_exn =
-  close_proof ~now:true (Future.from_val ~fix_exn (return_proof ()))
+  close_proof ~keep_body_ucst_sepatate:true ~feedback_id ~now:false proof
+let close_proof ~keep_body_ucst_sepatate fix_exn =
+  close_proof ~keep_body_ucst_sepatate ~now:true
+    (Future.from_val ~fix_exn (return_proof ()))
 
 (** Gets the current terminator without checking that the proof has
     been completed. Useful for the likes of [Admitted]. *)

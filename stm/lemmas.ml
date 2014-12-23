@@ -462,7 +462,8 @@ let save_proof ?proof = function
   | Vernacexpr.Proved (is_opaque,idopt) ->
       let (proof_obj,terminator) =
         match proof with
-        | None -> Proof_global.close_proof (fun x -> x)
+        | None ->
+            Proof_global.close_proof ~keep_body_ucst_sepatate:false (fun x -> x)
         | Some proof -> proof
       in
       (* if the proof is given explicitly, nothing has to be deleted *)

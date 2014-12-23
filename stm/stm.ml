@@ -1126,7 +1126,8 @@ end = struct (* {{{ *)
       Proof_global.set_terminator
         (Lemmas.standard_proof_terminator []
           (Lemmas.mk_hook (fun _ _ -> ())));
-      let proof = Proof_global.close_proof (fun x -> x) in
+      let proof =
+        Proof_global.close_proof ~keep_body_ucst_sepatate:true (fun x -> x) in
       vernac_interp stop ~proof
         { verbose = false; loc;
           expr = (VernacEndProof (Proved (true,None))) };
@@ -1705,6 +1706,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 let proof =
                   if keep != VtKeep then None
                   else Some(Proof_global.close_proof
+                              ~keep_body_ucst_sepatate:false
                               (State.exn_on id ~valid:eop)) in
                 if proof = None then prerr_endline "NONE!!!!!";
                 reach view.next;

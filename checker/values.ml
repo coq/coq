@@ -109,7 +109,7 @@ let v_cstrs =
 
 let v_instance = Annot ("instance", Array v_level)
 let v_context = v_tuple "universe_context" [|v_instance;v_cstrs|]
-let v_context_set = v_tuple "universe_context_set" [|v_set v_level;v_cstrs|]
+let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 
 (** kernel/term *)
 

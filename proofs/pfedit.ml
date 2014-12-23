@@ -41,7 +41,8 @@ let cook_this_proof p =
   | _ -> Errors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
 let cook_proof () =
-  cook_this_proof (fst (Proof_global.close_proof (fun x -> x)))
+  cook_this_proof (fst
+    (Proof_global.close_proof ~keep_body_ucst_sepatate:false (fun x -> x)))
 let get_pftreestate () =
   Proof_global.give_me_the_proof ()
 
