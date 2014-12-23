@@ -1559,7 +1559,7 @@ and interp_match_successes lz ist s =
     match lz with
     | General ->
         general
-    | Lazy ->
+    | Select ->
       begin
         (** Only keep the first matching result, we don't backtrack on it *)
         let s = Proofview.tclONCE s in

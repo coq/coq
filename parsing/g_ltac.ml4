@@ -173,7 +173,7 @@ GEXTEND Gram
   ;
   match_key:
     [ [ "match" -> Once
-      | "lazymatch" -> Lazy
+      | "lazymatch" -> Select
       | "multimatch" -> General ] ]
   ;
   input_fun:

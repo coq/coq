@@ -22,7 +22,7 @@ open Locus
 type direction_flag = bool (* true = Left-to-right    false = right-to-right *)
 type lazy_flag =
   | General (* returns all possible successes *)
-  | Lazy    (* returns all successes of the first matching branch *)
+  | Select  (* returns all successes of the first matching branch *)
   | Once    (* returns the first success in a maching branch
                (not necessarily the first) *)
 type evars_flag = bool     (* true = pose evars       false = fail on evars *)

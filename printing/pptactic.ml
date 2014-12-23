@@ -623,7 +623,7 @@ module Make
 
   let pr_lazy = function
     | General -> keyword "multi"
-    | Lazy -> keyword "lazy"
+    | Select -> keyword "lazy"
     | Once -> mt ()
 
   let pr_match_pattern pr_pat = function

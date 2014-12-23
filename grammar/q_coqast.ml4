@@ -291,7 +291,7 @@ let mlexpr_of_entry_type = function
 
 let mlexpr_of_match_lazy_flag = function
   | Tacexpr.General -> <:expr<Tacexpr.General>>
-  | Tacexpr.Lazy    -> <:expr<Tacexpr.Lazy>>
+  | Tacexpr.Select    -> <:expr<Tacexpr.Select>>
   | Tacexpr.Once    -> <:expr<Tacexpr.Once>>
 
 let mlexpr_of_match_pattern = function
