@@ -102,8 +102,8 @@ GEXTEND Gram
       | IDENT "solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
 	  TacSolve l
       | IDENT "idtac"; l = LIST0 message_token -> TacId l
-      | IDENT "fail"; n = [ n = int_or_var -> n | -> fail_default_value ];
-	  l = LIST0 message_token -> TacFail (n,l)
+      | g=failkw; n = [ n = int_or_var -> n | -> fail_default_value ];
+	  l = LIST0 message_token -> TacFail (g,n,l)
       | st = simple_tactic -> st
       | IDENT "constr"; ":"; c = Constr.constr ->
           TacArg(!@loc,ConstrMayEval(ConstrTerm c))
@@ -118,6 +118,9 @@ GEXTEND Gram
           | None -> TacDispatch tf
           end
       | a = tactic_atom -> TacArg (!@loc,a) ] ]
+  ;
+  failkw:
+  [ [ IDENT "fail" -> TacLocal | IDENT "gfail" -> TacGlobal ] ]
   ;
   (* binder_tactic: level 5 of tactic_expr *)
   binder_tactic:

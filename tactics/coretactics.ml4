@@ -222,7 +222,7 @@ let initial_atomic () =
   let iter (s, t) = Tacenv.register_ltac false false (Id.of_string s) t in
   List.iter iter
       [ "idtac",TacId [];
-        "fail", TacFail(ArgArg 0,[]);
+        "fail", TacFail(TacLocal,ArgArg 0,[]);
         "fresh", TacArg(dloc,TacFreshId [])
       ]
 

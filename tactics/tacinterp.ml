@@ -1133,9 +1133,14 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       Ftactic.run msgnl begin fun msgnl ->
         print msgnl <*> log msgnl <*> break
       end
-  | TacFail (n,s) ->
+  | TacFail (g,n,s) ->
       let msg = interp_message ist s in
-      let tac l = Proofview.tclINDEPENDENT (Tacticals.New.tclFAIL (interp_int_or_var ist n) l) in
+      let tac l = Tacticals.New.tclFAIL (interp_int_or_var ist n) l in
+      let tac =
+        match g with
+        | TacLocal -> fun l -> Proofview.tclINDEPENDENT (tac l)
+        | TacGlobal -> tac
+      in
       Ftactic.run msg tac
   | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
   | TacShowHyps tac ->

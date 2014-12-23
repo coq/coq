@@ -62,6 +62,10 @@ let mlexpr_of_by_notation f = function
       let loc = of_coqloc loc in
       <:expr< Misctypes.ByNotation $dloc$ $str:s$ $mlexpr_of_option mlexpr_of_string sco$ >>
 
+let mlexpr_of_global_flag = function
+  | Tacexpr.TacGlobal -> <:expr<Tacexpr.TacGlobal>>
+  | Tacexpr.TacLocal  -> <:expr<Tacexpr.TacLocal>>
+
 let mlexpr_of_intro_pattern_disjunctive = function
   _ -> failwith "mlexpr_of_intro_pattern_disjunctive: TODO"
 
@@ -468,8 +472,8 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
       <:expr< Tacexpr.TacShowHyps $mlexpr_of_tactic t$ >>
   | Tacexpr.TacId l ->
       <:expr< Tacexpr.TacId $mlexpr_of_list mlexpr_of_message_token l$ >>
-  | Tacexpr.TacFail (n,l) ->
-      <:expr< Tacexpr.TacFail $mlexpr_of_or_var mlexpr_of_int n$ $mlexpr_of_list mlexpr_of_message_token l$ >>
+  | Tacexpr.TacFail (g,n,l) ->
+      <:expr< Tacexpr.TacFail $mlexpr_of_global_flag g$ $mlexpr_of_or_var mlexpr_of_int n$ $mlexpr_of_list mlexpr_of_message_token l$ >>
 (*
   | Tacexpr.TacInfo t -> TacInfo (loc,f t)
 

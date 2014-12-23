@@ -25,6 +25,9 @@ type lazy_flag =
   | Select  (* returns all successes of the first matching branch *)
   | Once    (* returns the first success in a maching branch
                (not necessarily the first) *)
+type global_flag = (* [gfail] or [fail] *)
+  | TacGlobal
+  | TacLocal
 type evars_flag = bool     (* true = pose evars       false = fail on evars *)
 type rec_flag = bool       (* true = recursive        false = not recursive *)
 type advanced_flag = bool  (* true = advanced         false = basic *)
@@ -271,7 +274,7 @@ and 'a gen_tactic_expr =
   | TacAbstract of
       'a gen_tactic_expr * Id.t option
   | TacId of 'n message_token list
-  | TacFail of int or_var * 'n message_token list
+  | TacFail of global_flag * int or_var * 'n message_token list
   | TacInfo of 'a gen_tactic_expr
   | TacLetIn of rec_flag *
       (Id.t located * 'a gen_tactic_arg) list *

@@ -611,8 +611,8 @@ and intern_tactic_seq onlytac ist = function
       ist.ltacvars,
       TacMatch (lz,intern_tactic_or_tacarg ist c,intern_match_rule onlytac ist lmr)
   | TacId l -> ist.ltacvars, TacId (intern_message ist l)
-  | TacFail (n,l) ->
-      ist.ltacvars, TacFail (intern_int_or_var ist n,intern_message ist l)
+  | TacFail (g,n,l) ->
+      ist.ltacvars, TacFail (g,intern_int_or_var ist n,intern_message ist l)
   | TacProgress tac -> ist.ltacvars, TacProgress (intern_pure_tactic ist tac)
   | TacShowHyps tac -> ist.ltacvars, TacShowHyps (intern_pure_tactic ist tac)
   | TacAbstract (tac,s) ->
