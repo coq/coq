@@ -12,10 +12,12 @@
 #directory "lib";;
 #directory "kernel";;
 #directory "checker";;
+#directory "+threads";;
 #directory "+camlp4";;
 #directory "+camlp5";;
 
 #load "unix.cma";;
+#load"threads.cma";;
 #load "str.cma";;
 #load "gramlib.cma";;
 (*#load "toplevellib.cma";;
@@ -29,12 +31,14 @@ open Typeops;;
 open Check;;
 
 open Pp;;
+open Errors;;
 open Util;;
 open Names;;
 open Term;;
 open Environ;;
 open Declarations;;
 open Mod_checking;;
+open Cic;;
 
 let pr_id id = str(string_of_id id)
 let pr_na = function Name id -> pr_id id | _ -> str"_";;
@@ -111,21 +115,31 @@ let prsub s =
 (*#install_printer prenvu;;
 #install_printer prsub;;*)
 
-Checker.init_with_argv [|""|];;
+Checker.init_with_argv [|"";"-coqlib";"."|];;
 Flags.make_silent false;;
 Flags.debug := true;;
 Sys.catch_break true;;
 
 let module_of_file f =
   let (_,mb,_,_) = Obj.magic ((intern_from_file f).library_compiled) in
-  (mb:module_body)
+  (mb:Cic.module_body)
 ;;
+let deref_mod md s =
+  let l = match md.mod_expr with
+      Struct(NoFunctor l) -> l 
+    | FullStruct ->
+      (match md.mod_type with
+	NoFunctor l -> l)
+ in
+  List.assoc (label_of_id(id_of_string s)) l
+;;
+(*
 let mod_access m fld =
   match m.mod_expr with
       Some(SEBstruct l) -> List.assoc fld l
     | _ -> failwith "bad structure type"
 ;;
-
+*)
 let parse_dp s =
   make_dirpath(List.rev_map id_of_string (Str.split(Str.regexp"\\.") s))
 ;;
@@ -160,10 +174,6 @@ let read_mod s f =
     (dir_path * Digest.t) list *
     engagement option);;
 
-let deref_mod md s =
-  let (Some (SEBstruct l)) = md.mod_expr in
-  List.assoc (label_of_id(id_of_string s)) l
-;;
 
 let expln f x =
   try f x
