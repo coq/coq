@@ -118,13 +118,13 @@ let ppunbound_ltac_var_map l = ppidmap (fun _ arg ->
 
 open Glob_term
 
-let rec pr_closure {idents;typed;untyped} =
+let rec pr_closure {idents=idents;typed=typed;untyped=untyped} =
   hov 1 (str"{idents=" ++ prididmap idents ++ str";" ++ spc() ++
          str"typed=" ++ prconstrunderbindersidmap typed ++ str";" ++ spc() ++
          str"untyped=" ++ pr_closed_glob_constr_idmap untyped ++ str"}")
 and pr_closed_glob_constr_idmap x =
   pridmap (fun _ -> pr_closed_glob_constr) x
-and pr_closed_glob_constr {closure;term} =
+and pr_closed_glob_constr {closure=closure;term=term} =
   pr_closure closure ++ pr_lglob_constr term
 
 let ppclosure x = pp (pr_closure x)
