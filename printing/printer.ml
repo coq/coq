@@ -67,6 +67,8 @@ let pr_constr t =
   let (sigma, env) = get_current_context () in
   pr_constr_env env sigma t
 
+let () = Hook.set Term.print_hook pr_constr
+
 let pr_open_lconstr (_,c) = pr_lconstr c
 let pr_open_constr (_,c) = pr_constr c
 
