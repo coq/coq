@@ -107,7 +107,8 @@ let set_occurrences_of_last_arg args =
 let abstract_list_all_with_dependencies env evd typ c l =
   let evd,ev = new_evar env evd typ in
   let evd,ev' = evar_absorb_arguments env evd (destEvar ev) l in
-  let argoccs = set_occurrences_of_last_arg (snd ev') in
+  let n = List.length l in
+  let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
   let evd,b =
     Evarconv.second_order_matching empty_transparent_state
       env evd ev' argoccs c in

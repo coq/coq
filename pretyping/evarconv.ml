@@ -985,8 +985,8 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       let filter' = filter_possible_projections c ty ctxt args in
       let filter = Filter.map_along (&&) filter filter' in
       (id,t,c,ty,evs,filter,occs) :: make_subst (ctxt',l,occsl)
-  | [], [], [] -> []
-  | _ -> anomaly (Pp.str "Signature, instance and occurrences list do not match") in
+  | _, _, [] -> []
+  | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list") in
 
   let rec set_holes evdref rhs = function
   | (id,_,c,cty,evsref,filter,occs)::subst ->
