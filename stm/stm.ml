@@ -892,8 +892,6 @@ module rec ProofTask : sig
   val build_proof_here :
     Stateid.t * Stateid.t -> Loc.t -> Stateid.t ->
       Proof_global.closed_proof_output Future.computation
-  val build_proof_here_core :
-    Loc.t -> Stateid.t -> unit -> Proof_global.closed_proof_output
    
 end = struct (* {{{ *)
 
@@ -991,16 +989,16 @@ end = struct (* {{{ *)
         Hooks.(call execution_error start Loc.ghost (strbrk s));
         Pp.feedback (Feedback.InProgress ~-1)
 
-  let build_proof_here_core loc eop () =
-    let wall_clock1 = Unix.gettimeofday () in
-    if !Flags.batch_mode then Reach.known_state ~cache:`No eop
-    else Reach.known_state ~cache:`Shallow eop;
-    let wall_clock2 = Unix.gettimeofday () in
-    Aux_file.record_in_aux_at loc "proof_build_time"
-      (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
-    Proof_global.return_proof ()
   let build_proof_here (id,valid) loc eop =
-    Future.create (State.exn_on id ~valid) (build_proof_here_core loc eop)
+    Future.create (State.exn_on id ~valid) (fun () ->
+      let wall_clock1 = Unix.gettimeofday () in
+      if !Flags.batch_mode then Reach.known_state ~cache:`No eop
+      else Reach.known_state ~cache:`Shallow eop;
+      let wall_clock2 = Unix.gettimeofday () in
+      Aux_file.record_in_aux_at loc "proof_build_time"
+        (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
+      Proof_global.return_proof ())
+
   let perform_buildp { Stateid.exn_info; stop; document; loc } my_states =
     try
       VCS.restore document;
