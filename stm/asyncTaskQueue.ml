@@ -108,15 +108,7 @@ module Make(T : Task) = struct
   let report_status ?(id = !Flags.async_proofs_worker_id) s =
     Pp.feedback ~state_id:Stateid.initial (Feedback.WorkerStatus(id, s))
 
-  module Worker = Spawn.Sync(struct 
-    let add_timeout ~sec f =
-      ignore(Thread.create (fun () ->
-        while true do
-          Unix.sleep sec;
-          if not (f ()) then Thread.exit ()
-        done)
-      ())
-    end)
+  module Worker = Spawn.Sync(struct end)
 
   module Model = struct
 
@@ -181,10 +173,17 @@ module Make(T : Task) = struct
       CList.init 10 (fun _ ->
         Universes.new_univ_level (Global.current_dirpath ())) in
 
-    Worker.kill_if proc ~sec:1 (fun () ->
-      let stop = cancelled () || !(!expiration_date) in
-      if stop then (stop_waiting := true; TQueue.signal_destruction queue);
-      stop);
+    let rec kill_if () =
+      if not (Worker.is_alive proc) then ()
+      else if cancelled () || !(!expiration_date) then
+        let () = stop_waiting := true in
+        let () = TQueue.signal_destruction queue in
+        Worker.kill proc
+      else
+        let () = Unix.sleep 1 in
+        kill_if ()
+    in
+    let _ = Thread.create kill_if () in
 
     try while true do
       report_status ~id "Idle";

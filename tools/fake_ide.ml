@@ -289,9 +289,7 @@ let usage () =
      (Filename.basename Sys.argv.(0))
      (Parser.print grammar))
 
-module Coqide = Spawn.Sync(struct
-  let add_timeout ~sec:_ _ = ()
-end)
+module Coqide = Spawn.Sync(struct end)
 
 let main =
   Sys.set_signal Sys.sigpipe

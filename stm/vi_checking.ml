@@ -14,15 +14,7 @@ let check_vi (ts,f) =
   Stm.set_compilation_hints long_f_dot_v;
   List.fold_left (fun acc ids -> Stm.check_task f tasks ids && acc) true ts
 
-module Worker = Spawn.Sync(struct 
-  let add_timeout ~sec f =
-    ignore(Thread.create (fun () ->
-      while true do
-        Unix.sleep sec;
-        if not (f ()) then Thread.exit ()
-      done)
-    ())
-end)
+module Worker = Spawn.Sync(struct end)
 
 module IntOT = struct
   type t = int

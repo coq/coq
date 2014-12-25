@@ -24,14 +24,11 @@ module type Control = sig
   val wait : handle -> Unix.process_status
   val unixpid : handle -> int
   val uid : handle -> string
+  val is_alive : handle -> bool
 
-  val kill_if : handle -> sec:int -> (unit -> bool) -> unit
 end
 
-module type Timer = sig
-
-  val add_timeout : sec:int -> (unit -> bool) -> unit
-end
+module type Empty = sig end
 
 module type MainLoopModel = sig
   type async_chan
@@ -43,8 +40,6 @@ module type MainLoopModel = sig
   val read_all : async_chan -> string
   val async_chan_of_file : Unix.file_descr -> async_chan
   val async_chan_of_socket : Unix.file_descr -> async_chan
-
-  include Timer
 end
 
 (* Common code *)
@@ -164,6 +159,7 @@ type process = {
 type callback = ML.condition list -> read_all:(unit -> string) -> bool
 type handle = process
 
+let is_alive p = p.alive
 let uid { pid; } = string_of_int pid
 let unixpid { pid; } = pid
 
@@ -209,15 +205,6 @@ let stats { oob_req; oob_resp; alive } =
   flush oob_req;
   input_value oob_resp
 
-let kill_if p ~sec test =
-  ML.add_timeout ~sec (fun () ->
-    if not p.alive then false
-    else if test () then begin
-      prerr_endline ("death condition for " ^ uid p ^ " is true");
-      kill p;
-      false
-    end else true)
-
 let rec wait p =
   try snd (Unix.waitpid [] p.pid)
   with
@@ -226,7 +213,7 @@ let rec wait p =
 
 end
 
-module Sync(T : Timer) = struct
+module Sync(T : Empty) = struct
 
 type process = {
   cin  : in_channel;
@@ -244,6 +231,7 @@ let spawn ?(prefer_sock=prefer_sock) ?(env=Unix.environment ()) prog args =
     spawn_with_control prefer_sock env prog args in
   { cin; cout; pid; oob_resp; oob_req; alive = true }, cin, cout
 
+let is_alive p = p.alive
 let uid { pid; } = string_of_int pid
 let unixpid { pid = pid; } = pid
 
@@ -262,15 +250,6 @@ let stats { oob_req; oob_resp; alive } =
   output_value oob_req ReqStats;
   flush oob_req;
   let RespStats g = input_value oob_resp in g
-
-let kill_if p ~sec test =
-  T.add_timeout ~sec (fun () ->
-    if not p.alive then false
-    else if test () then begin
-      prerr_endline ("death condition for " ^ uid p ^ " is true");
-      kill p;
-      false
-    end else true)
 
 let wait { pid = unixpid } =
   try snd (Unix.waitpid [] unixpid)

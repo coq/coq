@@ -30,16 +30,11 @@ module type Control = sig
   (* What is used in debug messages *)
   val uid : handle -> string
 
-  (* Installs a callback, called every [sec] seconds.  If the returned value
-   * is true the process is killed *)
-  val kill_if : handle -> sec:int -> (unit -> bool) -> unit
+  val is_alive : handle -> bool
 end
 
 (* Abstraction to work with both threads and main loop models *)
-module type Timer = sig
-
-  val add_timeout : sec:int -> (unit -> bool) -> unit
-end
+module type Empty = sig end
 
 module type MainLoopModel = sig
   type async_chan
@@ -51,8 +46,6 @@ module type MainLoopModel = sig
   val read_all : async_chan -> string
   val async_chan_of_file : Unix.file_descr -> async_chan
   val async_chan_of_socket : Unix.file_descr -> async_chan
-
-  include Timer
 end
 
 (* spawn a process and read its output asynchronously *)
@@ -71,7 +64,7 @@ module Async(ML : MainLoopModel) : sig
 end
 
 (* spawn a process and read its output synchronously *)
-module Sync(T : Timer) : sig
+module Sync(T : Empty) : sig
   type process
   
   val spawn :
