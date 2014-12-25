@@ -11,6 +11,7 @@
 Require Import Coq.Init.Wf.
 Require Import Coq.Program.Utils.
 Require Import ProofIrrelevance.
+Require Import FunctionalExtensionality.
 
 Local Open Scope program_scope.
 
@@ -220,8 +221,6 @@ Ltac fold_sub f :=
    functional extensionality. *)
 
 Module WfExtensionality.
-
-  Require Import FunctionalExtensionality.
 
   (** The two following lemmas allow to unfold a well-founded fixpoint definition without
      restriction using the functional extensionality axiom. *)

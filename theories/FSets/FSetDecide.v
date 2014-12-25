@@ -15,7 +15,7 @@
 (** This file implements a decision procedure for a certain
     class of propositions involving finite sets.  *)
 
-Require Import Decidable DecidableTypeEx FSetFacts.
+Require Import Decidable Setoid DecidableTypeEx FSetFacts.
 
 (** First, a version for Weak Sets in functorial presentation *)
 
@@ -115,8 +115,8 @@ the above form:
       not affect the namespace if you import the enclosing
       module [Decide]. *)
   Module FSetLogicalFacts.
-    Require Export Decidable.
-    Require Export Setoid.
+    Export Decidable.
+    Export Setoid.
 
     (** ** Lemmas and Tactics About Decidable Propositions *)
 
