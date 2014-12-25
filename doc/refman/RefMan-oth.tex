@@ -702,6 +702,13 @@ with the mapping used to compile the file.
   {\ident}.vo which was bound to a different library name {\dirpath}
   at the time it was compiled.
 
+\item \errindex{Require is not allowed inside a module or a module type}
+
+  This command is not allowed inside a module or a module type being defined.
+  It is meant to describe a dependency between compilation units. Note however
+  that the commands {\tt Import} and {\tt Export} alone can be used inside
+  modules (see Section~\ref{Import}).
+
 \end{ErrMsgs}
 
 \SeeAlso Chapter~\ref{Addoc-coqc}
