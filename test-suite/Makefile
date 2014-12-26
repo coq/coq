@@ -82,7 +82,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   interactive micromega $(COMPLEXITY) modules stm
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vi
+SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vi coqchk
 
 #######################################################################
 # Phony targets
@@ -443,3 +443,20 @@ vi: $(patsubst %.v,%.vi.log,$(wildcard vi/*.v))
 	    echo "    $<...Error!"; \
 	  fi; \
 	} > "$@"
+
+coqchk: $(patsubst %.v,%.chk.log,$(wildcard coqchk/*.v))
+
+%.chk.log:%.v
+	@echo "TEST      $<"
+	$(HIDE){ \
+	  $(bincoqc) -R coqchk coqchk $* 2>&1 && \
+	  $(bincoqchk) -R coqchk coqchk -norec $(subst /,.,$*) 2>&1; \
+	  if [ $$? = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error!"; \
+	  fi; \
+	} > "$@"
+
