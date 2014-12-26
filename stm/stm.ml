@@ -54,6 +54,16 @@ include Hook
 (* enables:  Hooks.(call foo args) *)
 let call = get
 
+let call_process_error_once =
+  let processed : unit Exninfo.t = Exninfo.make () in
+  fun (_, info as ei) ->
+    match Exninfo.get info processed with
+    | Some _ -> ei
+    | None ->
+        let e, info = call process_error ei in
+        let info = Exninfo.add info processed () in
+        e, info
+
 end
 
 (* During interactive use we cache more states so that Undoing is fast *)
@@ -83,7 +93,7 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
     try Hooks.(call interp ?verbosely:(Some verbose) ?proof (loc, expr))
     with e ->
       let e = Errors.push e in
-      iraise Hooks.(call process_error e)
+      iraise Hooks.(call_process_error_once e)
   end
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
@@ -652,7 +662,7 @@ end = struct (* {{{ *)
     | None ->
         let loc = Option.default Loc.ghost (Loc.get_loc info) in
         Hooks.(call execution_error id loc (iprint (e, info)));
-        let (e, info) = Hooks.(call process_error (e, info)) in
+        let (e, info) = Hooks.(call_process_error_once (e, info)) in
         (e, Stateid.add info ?valid id)
 
   let same_env { system = s1 } { system = s2 } =
