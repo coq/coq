@@ -338,7 +338,7 @@ let close_proof ~keep_body_ucst_sepatate ?feedback_id ~now fpl =
 type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context
 
 let return_proof () =
-  let { proof } = cur_pstate () in
+  let { proof; strength = (_,poly,_) } = cur_pstate () in
   let initial_goals = Proof.initial_goals proof in
   let evd =
     let error s = raise (Errors.UserError("last tactic before Qed",s)) in
@@ -353,7 +353,7 @@ let return_proof () =
         error(str"Attempt to save a proof with existential " ++
               str"variables still non-instantiated") in
   let eff = Evd.eval_side_effects evd in
-  let evd = Evd.nf_constraints evd in
+  let evd = if poly then Evd.nf_constraints evd else evd in
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
