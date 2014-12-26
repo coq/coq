@@ -24,7 +24,7 @@ let refresh_arity ar =
     | _ -> ar, Univ.empty_constraint
 
 let check_constant_declaration env kn cb =
-  Flags.if_verbose ppnl (str "  checking cst: " ++ prcon kn);
+  Flags.if_verbose ppnl (str "  checking cst: " ++ prcon kn); pp_flush ();
   let env' = add_constraints (Univ.UContext.constraints cb.const_universes) env in
   let envty, ty = 
     match cb.const_type with
