@@ -679,10 +679,3 @@ let kind_of_type t = match kind_of_term t with
   | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
     -> AtomicType (t,[||])
   | (Lambda _ | Construct _) -> failwith "Not a type"
-
-(* This is not dead code, it is there to have a constr printer available
- * everywhere *)
-let print_val, print_hook =
-  Hook.make ~default:(fun x -> Pp.str"constr printer not installed") ()
-let print t = Hook.get print_val t
-

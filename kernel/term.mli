@@ -480,9 +480,3 @@ val hcons_constr : constr -> constr
 
 val hcons_types : types -> types
 (** Alias for [Constr.hashcons] *)
-
-
-(********************** debugging ************************************)
-val print_hook : (constr -> Pp.std_ppcmds) Hook.t
-val print : constr -> Pp.std_ppcmds
-
