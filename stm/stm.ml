@@ -87,7 +87,7 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
   if internal_command expr then begin
     prerr_endline ("ignoring " ^ string_of_ppcmds(pr_vernac expr))
   end else begin
-    Pp.set_id_for_feedback ?route (Feedback.State id);
+    set_id_for_feedback ?route (Feedback.State id);
     Aux_file.record_in_aux_set_at loc;
     prerr_endline ("interpreting " ^ string_of_ppcmds(pr_vernac expr));
     try Hooks.(call interp ?verbosely:(Some verbose) ?proof (loc, expr))
@@ -117,7 +117,7 @@ let vernac_parse ?newtip ?route eid s =
 
 let pr_open_cur_subgoals () =
   try Printer.pr_open_subgoals ()
-  with Proof_global.NoCurrentProof -> Pp.str""
+  with Proof_global.NoCurrentProof -> str""
 
 module Vcs_ = Vcs.Make(Stateid)
 type future_proof = Proof_global.closed_proof_output Future.computation
@@ -974,14 +974,14 @@ end = struct (* {{{ *)
         List.iter (fun (id,s) -> State.assign id s) l; `End
     | `Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
               RespBuiltProof (pl, time) ->
-        Pp.feedback (Feedback.InProgress ~-1);
+        feedback (Feedback.InProgress ~-1);
         t_assign (`Val pl);
         record_pb_time t_name t_loc time;
         if not !Flags.async_proofs_full then `End
         else `Stay(t_states,[States t_states])
     | `Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
-        Pp.feedback (Feedback.InProgress ~-1);
+        feedback (Feedback.InProgress ~-1);
         let info = Stateid.add ~valid Exninfo.null e_error_at in
         let e = (RemoteException e_msg, info) in
         t_assign (`Exn e);
@@ -997,7 +997,7 @@ end = struct (* {{{ *)
         let e = (RemoteException (strbrk s), info) in
         t_assign (`Exn e);
         Hooks.(call execution_error start Loc.ghost (strbrk s));
-        Pp.feedback (Feedback.InProgress ~-1)
+        feedback (Feedback.InProgress ~-1)
 
   let build_proof_here (id,valid) loc eop =
     Future.create (State.exn_on id ~valid) (fun () ->
@@ -1078,7 +1078,7 @@ end = struct (* {{{ *)
         "The system state could not be sent to the worker process. "^
         "Falling back to local, lazy, evaluation."));
       t_assign(`Comp(build_proof_here t_exn_info t_loc t_stop));
-      Pp.feedback (Feedback.InProgress ~-1)
+      feedback (Feedback.InProgress ~-1)
 
 end (* }}} *)
 
@@ -1125,7 +1125,7 @@ end = struct (* {{{ *)
 
   let check_task_aux extra name l i =
     let { Stateid.stop; document; loc; name = r_name } = List.nth l i in
-    Pp.msg_info(
+    msg_info(
       str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
     VCS.restore document;
     try
@@ -1144,7 +1144,7 @@ end = struct (* {{{ *)
       let (e, info) = Errors.push e in
       (try match Stateid.get info with
       | None ->
-          Pp.pperrnl Pp.(
+          pperrnl (
             str"File " ++ str name ++ str ": proof of " ++ str r_name ++
             spc () ++ iprint (e, info))
       | Some (_, cur) ->
@@ -1154,16 +1154,16 @@ end = struct (* {{{ *)
           | { step = `Qed ( { qast = { loc } }, _) } 
           | { step = `Sideff (`Ast ( { loc }, _)) } ->
               let start, stop = Loc.unloc loc in
-              Pp.pperrnl Pp.(
+              pperrnl (
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 str ": chars " ++ int start ++ str "-" ++ int stop ++
                 spc () ++ iprint (e, info))
           | _ ->
-              Pp.pperrnl Pp.(
+              pperrnl (
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 spc () ++ iprint (e, info))
     with e ->
-      Pp.msg_error (str"unable to print error message: " ++
+      msg_error (str"unable to print error message: " ++
                     str (Printexc.to_string e))); None
 
   let finish_task name (u,cst,_) d p l i =
@@ -1245,7 +1245,7 @@ end = struct (* {{{ *)
     else 
       let f, t_assign = Future.create_delegate (State.exn_on id ~valid) in
       let t_uuid = Future.uuid f in
-      Pp.feedback (Feedback.InProgress 1);
+      feedback (Feedback.InProgress 1);
       let task = ProofTask.(BuildProof {
         t_exn_info; t_start = start; t_stop = stop; t_assign;
         t_loc = loc; t_uuid; t_name = pname;
@@ -1419,7 +1419,7 @@ end = struct (* {{{ *)
             with Not_found -> Errors.anomaly(str"Partac: wrong focus") in
           if Future.is_over f then
             let pt, uc = Future.join f in
-            prerr_endline Pp.(string_of_ppcmds(hov 0 (
+            prerr_endline (string_of_ppcmds(hov 0 (
               str"g=" ++ str gid ++ spc () ++
               str"t=" ++ (Printer.pr_constr pt) ++ spc () ++
               str"uc=" ++ Evd.pr_evar_universe_context uc)));
@@ -1475,10 +1475,10 @@ end = struct (* {{{ *)
     Reach.known_state ~cache:`No r_where;
     try
       vernac_interp r_for { r_what with verbose = true };
-      Pp.feedback ~state_id:r_for Feedback.Processed     
+      feedback ~state_id:r_for Feedback.Processed     
     with e when Errors.noncritical e ->
       let msg = string_of_ppcmds (print e) in
-      Pp.feedback ~state_id:r_for (Feedback.ErrorMsg (Loc.ghost, msg))
+      feedback ~state_id:r_for (Feedback.ErrorMsg (Loc.ghost, msg))
     
   let name_of_task { t_what } = string_of_ppcmds (pr_ast t_what)
   let name_of_request { r_what } = string_of_ppcmds (pr_ast r_what)
@@ -1791,7 +1791,7 @@ let observe id =
 
 let finish ?(print_goals=false) () =
   observe (VCS.get_branch_pos (VCS.current_branch ()));
-  if print_goals then Pp.msg_notice (pr_open_cur_subgoals ());
+  if print_goals then msg_notice (pr_open_cur_subgoals ());
   VCS.print ()
 
 let wait () =
@@ -1814,7 +1814,7 @@ let check_task name (tasks,rcbackup) i =
   let vcs = VCS.backup () in
   try
     let rc = Future.purify (Slaves.check_task name tasks) i in
-    Pp.pperr_flush ();
+    pperr_flush ();
     VCS.restore vcs;
     rc
   with e when Errors.noncritical e -> VCS.restore vcs; false
@@ -1824,7 +1824,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
   let finish_task u (_,_,i) =
     let vcs = VCS.backup () in
     let u = Future.purify (Slaves.finish_task name u d p t) i in
-    Pp.pperr_flush ();
+    pperr_flush ();
     VCS.restore vcs;
     u in
   try
@@ -1832,7 +1832,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     (u,a,true), p
   with e ->
     let e = Errors.push e in
-    Pp.pperrnl Pp.(str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
+    pperrnl (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
     exit 1
 
 let merge_proof_branch ?id qast keep brname =
@@ -2362,7 +2362,7 @@ let show_script ?proof () =
       List.fold_left indent_script_item ((1,[]),false,[],[]) cmds
     in
     let indented_cmds = List.rev (indented_cmds) in
-    msg_notice (v 0 (Pp.prlist_with_sep Pp.fnl (fun x -> x) indented_cmds))
+    msg_notice (v 0 (prlist_with_sep fnl (fun x -> x) indented_cmds))
   with Vcs_aux.Expired -> ()
 
 (* Export hooks *)
