@@ -66,8 +66,10 @@ let universes_of_constant otab cb =
   match cb.const_body with
   | Undef _ | Def _ -> cb.const_universes
   | OpaqueDef o -> 
-    Univ.UContext.union cb.const_universes 
-      (Univ.ContextSet.to_context (Opaqueproof.force_constraints otab o))
+      let body_uctxs = Opaqueproof.force_constraints otab o in
+      assert(not cb.const_polymorphic || Univ.ContextSet.is_empty body_uctxs);
+      let uctxs = Univ.ContextSet.of_context cb.const_universes in
+      Univ.ContextSet.to_context (Univ.ContextSet.union body_uctxs uctxs) 
 
 let universes_of_polymorphic_constant otab cb = 
   if cb.const_polymorphic then 
