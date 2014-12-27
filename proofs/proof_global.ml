@@ -333,7 +333,7 @@ let close_proof ~keep_body_ucst_sepatate ?feedback_id ~now fpl =
 	  const_entry_polymorphic = poly})
       fpl initial_goals in
   { id = pid; entries = entries; persistence = strength; universes = universes },
-  Ephemeron.get terminator
+  fun pr_ending -> Ephemeron.get terminator pr_ending
 
 type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context
 
