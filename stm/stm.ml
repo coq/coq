@@ -1013,12 +1013,26 @@ end = struct (* {{{ *)
     try
       VCS.restore document;
       VCS.print ();
-      let rc, time =
+      let proof, future_proof, time =
         let wall_clock = Unix.gettimeofday () in
-        let l = Future.force (build_proof_here exn_info loc stop) in
-        l, Unix.gettimeofday () -. wall_clock in
-      VCS.print ();
-      RespBuiltProof(rc,time)
+        let fp = build_proof_here exn_info loc stop in
+        let proof = Future.force fp in
+        proof, fp, Unix.gettimeofday () -. wall_clock in
+      (* We typecheck the proof with the kernel (in the worker) to spot
+       * the few errors tactics don't catch, like the "fix" tactic building
+       * a bad fixpoint *)
+      let fix_exn = Future.fix_exn_of future_proof in
+      let checked_proof = Future.chain ~pure:false future_proof (fun p ->
+        let pobject, _ =
+          Proof_global.close_future_proof stop (Future.from_val ~fix_exn p) in
+        let terminator = (* The one sent by master is an InvalidKey *)
+          Lemmas.(standard_proof_terminator [] (mk_hook (fun _ _ -> ()))) in
+        vernac_interp stop
+          ~proof:(pobject, terminator)
+          { verbose = false; loc;
+            expr = (VernacEndProof (Proved (true,None))) }) in
+      ignore(Future.join checked_proof);
+      RespBuiltProof(proof,time)
     with
     | e when Errors.noncritical e ->
         let (e, info) = Errors.push e in
@@ -1027,10 +1041,11 @@ end = struct (* {{{ *)
         let e_error_at, e_safe_id = match Stateid.get info with
           | Some (safe, err) -> err, safe
           | None -> Stateid.dummy, Stateid.dummy in
+        let e_msg = iprint (e, info) in
         prerr_endline "failed with the following exception:";
-        prerr_endline (string_of_ppcmds (print e));
+        prerr_endline (string_of_ppcmds e_msg);
         let e_safe_states = List.filter State.is_cached my_states in
-        RespError { e_error_at; e_safe_id; e_msg = iprint (e, info); e_safe_states }
+        RespError { e_error_at; e_safe_id; e_msg; e_safe_states }
   
   let perform_states query =
     assert(query <> []);
