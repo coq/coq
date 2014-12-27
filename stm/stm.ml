@@ -661,8 +661,8 @@ end = struct (* {{{ *)
     | Some _ -> (e, info)
     | None ->
         let loc = Option.default Loc.ghost (Loc.get_loc info) in
-        Hooks.(call execution_error id loc (iprint (e, info)));
         let (e, info) = Hooks.(call_process_error_once (e, info)) in
+        Hooks.(call execution_error id loc (iprint (e, info)));
         (e, Stateid.add info ?valid id)
 
   let same_env { system = s1 } { system = s2 } =
