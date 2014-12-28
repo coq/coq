@@ -60,11 +60,7 @@ and full_set env = set_of_list env (List.map pi1 (named_context env))
 
 let process_expr env e ty =
   let s = Id.Set.union (process_expr env SsType ty) (process_expr env e []) in
-  let l = Id.Set.elements s in
-  Pp.msg_warning Pp.(str(to_string e) ++ spc() ++ str "-> "++
-(*     prlist_with_sep spc Ppconstr.pr_constr ty ++ spc() ++ *)
-    prlist_with_sep spc Nameops.pr_id l);
-  l
+  Id.Set.elements s
 
 let name_set id expr = Lib.add_anonymous_leaf (in_nameset (id,expr))
 
