@@ -117,7 +117,7 @@ val set_end_tac : Tacexpr.raw_tactic_expr -> unit
 (** {6 ... } *)
 (** [set_used_variables l] declares that section variables [l] will be
     used in the proof *)
-val set_used_variables : Id.t list -> unit
+val set_used_variables : Id.t list -> Context.section_context
 val get_used_variables : unit -> Context.section_context option
 
 (** {6 ... } *)

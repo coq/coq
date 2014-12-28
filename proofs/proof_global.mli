@@ -126,8 +126,9 @@ val set_interp_tac :
   (Tacexpr.raw_tactic_expr -> unit Proofview.tactic)
     -> unit
 
-(** Sets the section variables assumed by the proof *)
-val set_used_variables : Names.Id.t list -> unit
+(** Sets the section variables assumed by the proof, returns its closure
+ * (w.r.t. type dependencies *)
+val set_used_variables : Names.Id.t list -> Context.section_context
 val get_used_variables : unit -> Context.section_context option
 
 (**********************************************************)

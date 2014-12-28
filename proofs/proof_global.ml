@@ -259,7 +259,8 @@ let set_used_variables l =
   | p :: rest ->
       if not (Option.is_empty p.section_vars) then
         Errors.error "Used section variables can be declared only once";
-      pstates := { p with section_vars = Some ctx} :: rest
+      pstates := { p with section_vars = Some ctx} :: rest;
+      ctx
 
 let get_open_goals () =
   let gl, gll, shelf , _ , _ = Proof.proof (cur_pstate ()).proof in

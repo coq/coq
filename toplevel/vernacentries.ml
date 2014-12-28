@@ -855,7 +855,12 @@ let vernac_set_used_variables e =
     if not (List.exists (fun (id',_,_) -> Id.equal id id') vars) then
       error ("Unknown variable: " ^ Id.to_string id))
     l;
-  set_used_variables l
+  let closure_l = List.map pi1 (set_used_variables l) in
+  let to_clear = CList.map_filter (fun (x,_,_) ->
+    if not(List.mem x closure_l) then Some(Loc.ghost,x) else None) vars in
+  vernac_solve
+    SelectAll None Tacexpr.(TacAtom (Loc.ghost,TacClear(false,to_clear))) false
+
 
 (*****************************)
 (* Auxiliary file management *)
