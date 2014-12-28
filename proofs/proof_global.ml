@@ -354,7 +354,10 @@ let return_proof () =
         error(str"Attempt to save a proof with existential " ++
               str"variables still non-instantiated") in
   let eff = Evd.eval_side_effects evd in
-  let evd = if poly then Evd.nf_constraints evd else evd in
+  let evd =
+    if poly || !Flags.compilation_mode = Flags.BuildVo
+    then Evd.nf_constraints evd
+    else evd in
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
