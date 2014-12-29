@@ -847,17 +847,27 @@ let vernac_set_end_tac tac =
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 
 let vernac_set_used_variables e =
+  let env = Global.env () in
   let tys =
     List.map snd (Proof.initial_goals (Proof_global.give_me_the_proof ())) in
-  let l = Proof_using.process_expr (Global.env ()) e tys in
-  let vars = Environ.named_context (Global.env ()) in
+  let l = Proof_using.process_expr env e tys in
+  let vars = Environ.named_context env in
   List.iter (fun id -> 
     if not (List.exists (fun (id',_,_) -> Id.equal id id') vars) then
       error ("Unknown variable: " ^ Id.to_string id))
     l;
   let closure_l = List.map pi1 (set_used_variables l) in
-  let to_clear = CList.map_filter (fun (x,_,_) ->
-    if not(List.mem x closure_l) then Some(Loc.ghost,x) else None) vars in
+  let closure_l = List.fold_right Id.Set.add closure_l Id.Set.empty in
+  let vars_of = Environ.global_vars_set in
+  let aux env entry (all_safe,rest as orig) =
+    match entry with
+    | (x,None,_) ->
+       if Id.Set.mem x all_safe then orig else (all_safe, (Loc.ghost,x)::rest) 
+    | (x,Some bo, ty) ->
+       let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
+       if Id.Set.subset vars all_safe then (Id.Set.add x all_safe, rest)
+       else (all_safe, (Loc.ghost,x) :: rest) in
+  let _,to_clear = Environ.fold_named_context aux env ~init:(closure_l,[]) in
   vernac_solve
     SelectAll None Tacexpr.(TacAtom (Loc.ghost,TacClear(false,to_clear))) false
 
