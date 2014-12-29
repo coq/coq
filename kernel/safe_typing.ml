@@ -83,7 +83,7 @@ open Declarations
  - [univ] and [future_cst] : current and future universe constraints
  - [engagement] : are we Set-impredicative?
  - [type_in_type] : does the universe hierarchy collapse?
- - [imports] : names and digests of Require'd libraries since big-bang.
+ - [required] : names and digests of Require'd libraries since big-bang.
       This field will only grow
  - [local_retroknowledge]
 
@@ -120,7 +120,7 @@ type safe_environment =
     future_cst : Univ.constraints Future.computation list;
     engagement : engagement option;
     type_in_type : bool;
-    imports : vodigest DPMap.t;
+    required : vodigest DPMap.t;
     local_retroknowledge : Retroknowledge.action list }
 
 and modvariant =
@@ -148,7 +148,7 @@ let empty_environment =
     univ = Univ.Constraint.empty;
     engagement = None;
     type_in_type = false;
-    imports = DPMap.empty;
+    required = DPMap.empty;
     local_retroknowledge = [] }
 
 let is_initial senv =
@@ -294,7 +294,7 @@ let check_initial senv = assert (is_initial senv)
 (** When loading a library, its dependencies should be already there,
     with the correct digests. *)
 
-let check_imports current_libs needed =
+let check_required current_libs needed =
   let check (id,required) =
     try
       let actual = DPMap.find id current_libs in
@@ -521,7 +521,7 @@ let start_module l senv =
     env = senv.env;
     modpath = mp;
     modvariant = STRUCT ([],senv);
-    imports = senv.imports }
+    required = senv.required }
 
 let start_modtype l senv =
   let () = check_modlabel l senv in
@@ -532,7 +532,7 @@ let start_modtype l senv =
     env = senv.env;
     modpath = mp;
     modvariant = SIG ([], senv);
-    imports = senv.imports }
+    required = senv.required }
 
 (** Adding parameters to the current module or module type.
     This module should have been freshly started. *)
@@ -581,7 +581,7 @@ let build_module_body params restype senv =
 
 (** Returning back to the old pre-interactive-module environment,
     with one extra component and some updated fields
-    (constraints, imports, etc) *)
+    (constraints, required, etc) *)
 
 let propagate_senv newdef newenv newresolver senv oldsenv =
   let now_cst, later_cst = List.partition Future.is_val senv.future_cst in
@@ -602,7 +602,7 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     future_cst = later_cst @ oldsenv.future_cst;
     (* engagement is propagated to the upper level *)
     engagement = senv.engagement;
-    imports = senv.imports;
+    required = senv.required;
     local_retroknowledge =
             senv.local_retroknowledge@oldsenv.local_retroknowledge }
 
@@ -732,7 +732,7 @@ let start_library dir senv =
     env = senv.env;
     modpath = mp;
     modvariant = LIBRARY;
-    imports = senv.imports }
+    required = senv.required }
 
 let export ?except senv dir =
   let senv =
@@ -763,7 +763,7 @@ let export ?except senv dir =
   let lib = {
     comp_name = dir;
     comp_mod = mb;
-    comp_deps = Array.of_list (DPMap.bindings senv.imports);
+    comp_deps = Array.of_list (DPMap.bindings senv.required);
     comp_enga = Environ.engagement senv.env;
     comp_natsymbs = values }
   in
@@ -772,7 +772,7 @@ let export ?except senv dir =
 (* cst are the constraints that were computed by the vi2vo step and hence are
  * not part of the mb.mod_constraints field (but morally should be) *)
 let import lib cst vodigest senv =
-  check_imports senv.imports lib.comp_deps;
+  check_required senv.required lib.comp_deps;
   check_engagement senv.env lib.comp_enga;
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
@@ -786,7 +786,7 @@ let import lib cst vodigest senv =
        in
        Modops.add_linked_module mb linkinfo env);
     modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;
-    imports = DPMap.add lib.comp_name vodigest senv.imports }
+    required = DPMap.add lib.comp_name vodigest senv.required }
 
 (** {6 Safe typing } *)
 
