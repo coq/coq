@@ -280,7 +280,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
           let ctx = Evd.universe_context evm in
 	  declare_instance_constant k pri global imps ?hook id 
             poly ctx (Option.get term) termtype
-	else if !refine_instance then begin
+	else if !refine_instance || Option.is_empty term then begin
 	  let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	    if Flags.is_program_mode () then
 	      let hook vis gr =
