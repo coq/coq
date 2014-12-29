@@ -2,7 +2,7 @@
 
 ;NSIS Modern User Interface
 ;Written by Joost Verburg
-;Modified by Julien Narboux and Pierre Letouzey
+;Modified by Julien Narboux and Pierre Letouzey and Enrico Tassi
 
 ;SetCompress off
 SetCompressor lzma
@@ -38,7 +38,7 @@ SetCompressor lzma
   !insertmacro MUI_PAGE_WELCOME
   !insertmacro MUI_PAGE_LICENSE "${COQ_SRC_PATH}/LICENSE"
   !insertmacro MUI_PAGE_COMPONENTS
-  !define MUI_DIRECTORYPAGE_TEXT_TOP "Select where to install Coq.  The path MUST not include spaces."
+  !define MUI_DIRECTORYPAGE_TEXT_TOP "Select where to install Coq.  The path MUST NOT include spaces."
   !insertmacro MUI_PAGE_DIRECTORY
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
@@ -58,7 +58,7 @@ SetCompressor lzma
 
   ;Description
   LangString DESC_1 ${LANG_ENGLISH} "This package contains Coq and CoqIDE."
-  LangString DESC_2 ${LANG_ENGLISH} "This package contains the development files (*.cmi, *.cmo, *.cmx, ...) needed in order to build a plugin for Coq."
+  LangString DESC_2 ${LANG_ENGLISH} "This package contains the development files needed in order to build a plugin for Coq."
 
 ;--------------------------------
 ; Check for white spaces
@@ -95,11 +95,13 @@ Section "Coq" Sec1
   File /r ${COQ_SRC_PATH}\theories\*.vo
   File /r ${COQ_SRC_PATH}\theories\*.v
   File /r ${COQ_SRC_PATH}\theories\*.glob
+  File /r ${COQ_SRC_PATH}\theories\*.cmi
   File /r ${COQ_SRC_PATH}\theories\*.cmxs
   SetOutPath "$INSTDIR\lib\plugins"
   File /r ${COQ_SRC_PATH}\plugins\*.vo
   File /r ${COQ_SRC_PATH}\plugins\*.v
   File /r ${COQ_SRC_PATH}\plugins\*.glob
+  File /r ${COQ_SRC_PATH}\plugins\*.cmi
   File /r ${COQ_SRC_PATH}\plugins\*.cmxs
   SetOutPath "$INSTDIR\lib\tools\coqdoc"
   File ${COQ_SRC_PATH}\tools\coqdoc\coqdoc.sty
@@ -109,10 +111,8 @@ Section "Coq" Sec1
   SetOutPath "$INSTDIR\man"
   File ${COQ_SRC_PATH}\man\*.1
   SetOutPath "$INSTDIR\lib\toploop"
-  File ${COQ_SRC_PATH}\stm\queryworkertop.cmxs
-  File ${COQ_SRC_PATH}\stm\proofworkertop.cmxs
-  File ${COQ_SRC_PATH}\stm\tacworkertop.cmxs
-  File ${COQ_SRC_PATH}\ide\coqidetop.cmxs
+  File ${COQ_SRC_PATH}\stm\*top.cmxs
+  File ${COQ_SRC_PATH}\ide\*top.cmxs
 
   ; CoqIDE
   SetOutPath "$INSTDIR\ide\"
