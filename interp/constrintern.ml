@@ -475,22 +475,20 @@ let option_mem_assoc id = function
   | Some (id',c) -> Id.equal id id'
   | None -> false
 
-let find_fresh_name renaming (terms,termlists,binders) id =
+let find_fresh_name renaming (terms,termlists,binders) avoid id =
   let fold1 _ (c, _) accu = Id.Set.union (free_vars_of_constr_expr c) accu in
   let fold2 _ (l, _) accu =
     let fold accu c = Id.Set.union (free_vars_of_constr_expr c) accu in
     List.fold_left fold accu l
   in
   let fold3 _ x accu = Id.Set.add x accu in
-  let fvs1 = Id.Map.fold fold1 terms Id.Set.empty in
+  let fvs1 = Id.Map.fold fold1 terms avoid in
   let fvs2 = Id.Map.fold fold2 termlists fvs1 in
   let fvs3 = Id.Map.fold fold3 renaming fvs2 in
   (* TODO binders *)
   next_ident_away_from id (fun id -> Id.Set.mem id fvs3)
 
-let traverse_binder (terms,_,_ as subst)
-    (renaming,env)=
- function
+let traverse_binder (terms,_,_ as subst) avoid (renaming,env) = function
  | Anonymous -> (renaming,env),Anonymous
  | Name id ->
   try
@@ -500,7 +498,7 @@ let traverse_binder (terms,_,_ as subst)
   with Not_found ->
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
-    let id' = find_fresh_name renaming subst id in
+    let id' = find_fresh_name renaming subst avoid id in
     let renaming' =
       if Id.equal id id' then renaming else Id.Map.add id id' renaming
     in
@@ -523,8 +521,11 @@ let rec subst_iterator y t = function
   | GVar (_,id) as x -> if Id.equal id y then t else x
   | x -> map_glob_constr (subst_iterator y t) x
 
-let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
+let subst_aconstr_in_glob_constr loc intern (_,ntnvars as lvar) subst infos c =
   let (terms,termlists,binders) = subst in
+  (* when called while defining a notation, avoid capturing the private binders
+     of the expression by variables bound by the notation (see #3892) *)
+  let avoid = Id.Map.domain ntnvars in
   let rec aux (terms,binderopt as subst') (renaming,env) c =
     let subinfos = renaming,{env with tmp_scope = None} in
     match c with
@@ -546,6 +547,8 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
       | Evar_kinds.BinderType (Name id as na) ->
         let na =
           try snd (coerce_to_name (fst (Id.Map.find id terms)))
+          with Not_found ->
+          try Name (Id.Map.find id renaming)
           with Not_found -> na
         in
         Evar_kinds.BinderType na
@@ -593,9 +596,20 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
     | NLambda (Name id,NHole _,c') when option_mem_assoc id binderopt ->
         let (loc,(na,bk,t)),letins = snd (Option.get binderopt) in
 	GLambda (loc,na,bk,t,make_letins letins (aux subst' infos c'))
+    (* Two special cases to keep binder name synchronous with BinderType *)
+    | NProd (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
+        when Name.equal na na' ->
+        let subinfos,na = traverse_binder subst avoid subinfos na in
+        let ty = GHole (loc,Evar_kinds.BinderType na,naming,arg) in
+	GProd (loc,na,Explicit,ty,aux subst' subinfos c')
+    | NLambda (na,NHole(Evar_kinds.BinderType na',naming,arg),c')
+        when Name.equal na na' ->
+        let subinfos,na = traverse_binder subst avoid subinfos na in
+        let ty = GHole (loc,Evar_kinds.BinderType na,naming,arg) in
+	GLambda (loc,na,Explicit,ty,aux subst' subinfos c')
     | t ->
       glob_constr_of_notation_constr_with_binders loc
-        (traverse_binder subst) (aux subst') subinfos t
+        (traverse_binder subst avoid) (aux subst') subinfos t
   and subst_var (terms, binderopt) (renaming, env) id =
     (* subst remembers the delimiters stack in the interpretation *)
     (* of the notations *)
