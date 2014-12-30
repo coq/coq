@@ -477,17 +477,15 @@ let option_mem_assoc id = function
   | Some (id',c) -> id = id'
   | None -> false
 
-let find_fresh_name renaming (terms,termlists,binders) id =
+let find_fresh_name renaming (terms,termlists,binders) avoid id =
   let fvs1 = List.map (fun (_,(c,_)) -> free_vars_of_constr_expr c) terms in
   let fvs2 = List.flatten (List.map (fun (_,(l,_)) -> List.map free_vars_of_constr_expr l) termlists) in
   let fvs3 = List.map snd renaming in
   (* TODO binders *)
-  let fvs = List.flatten (List.map Idset.elements (fvs1@fvs2)) @ fvs3 in
+  let fvs = List.flatten (List.map Idset.elements (fvs1@fvs2)) @ fvs3 @avoid in
   next_ident_away id fvs
 
-let traverse_binder (terms,_,_ as subst)
-    (renaming,env)=
- function
+let traverse_binder (terms,_,_ as subst) avoid (renaming,env) = function
  | Anonymous -> (renaming,env),Anonymous
  | Name id ->
   try
@@ -497,7 +495,7 @@ let traverse_binder (terms,_,_ as subst)
   with Not_found ->
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
-    let id' = find_fresh_name renaming subst id in
+    let id' = find_fresh_name renaming subst avoid id in
     let renaming' = if id=id' then renaming else (id,id')::renaming in
     (renaming',env), Name id'
 
@@ -518,8 +516,11 @@ let rec subst_iterator y t = function
   | GVar (_,id) as x -> if id = y then t else x
   | x -> map_glob_constr (subst_iterator y t) x
 
-let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
+let subst_aconstr_in_glob_constr loc intern (_,ntnvars as lvar) subst infos c =
   let (terms,termlists,binders) = subst in
+  (* when called while defining a notation, avoid capturing the private binders
+     of the expression by variables bound by the notation (see #3892) *)
+  let avoid = List.map fst ntnvars in
   let rec aux (terms,binderopt as subst') (renaming,env) c =
     let subinfos = renaming,{env with tmp_scope = None} in
     match c with
@@ -552,6 +553,8 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
     | AHole (Evd.BinderType (Name id as na)) ->
       let na =
         try snd (coerce_to_name (fst (List.assoc id terms)))
+        with Not_found ->
+        try Name (List.assoc id renaming)
         with Not_found -> na in
       GHole (loc,Evd.BinderType na)
     | ABinderList (x,_,iter,terminator) ->
@@ -574,8 +577,17 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
     | ALambda (Name id,AHole _,c') when option_mem_assoc id binderopt ->
         let (na,bk,t),letins = snd (Option.get binderopt) in
 	GLambda (loc,na,bk,t,make_letins loc letins (aux subst' infos c'))
+    (* Two special cases to keep binder name synchronous with BinderType *)
+    | AProd (na,AHole(Evd.BinderType na'),c') when na = na' ->
+        let subinfos,na = traverse_binder subst avoid subinfos na in
+        let ty = GHole (loc,Evd.BinderType na) in
+	GProd (loc,na,Explicit,ty,aux subst' subinfos c')
+    | ALambda (na,AHole(Evd.BinderType na'),c') when na = na' ->
+        let subinfos,na = traverse_binder subst avoid subinfos na in
+        let ty = GHole (loc,Evd.BinderType na) in
+	GLambda (loc,na,Explicit,ty,aux subst' subinfos c')
     | t ->
-      glob_constr_of_aconstr_with_binders loc (traverse_binder subst)
+      glob_constr_of_aconstr_with_binders loc (traverse_binder subst avoid)
 	(aux subst') subinfos t
   in aux (terms,None) infos c
 
