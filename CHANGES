@@ -113,6 +113,10 @@ Tactics
     default.
   * A corresponding new option Set Default Goal Selector "all" makes
     the tactics in scripts be applied to all the focused goal by default
+  * New selector par: to qualify a tactic allows applying a (terminating)
+    tactic to all the focused goal in parallel.  The number of worker can
+    be selected with -async-proofs-tac-j and also limited using the
+    coqworkmgr utility.
   * New tactics "revgoals", "cycle" and "swap" to reorder goals.
   * The semantics of recursive tactics (introduced with Ltac t :=
     ... or let rec t := ... in ...) changes slightly as t is now
@@ -280,15 +284,33 @@ Tools
   that the quickly generated proofs are correct and generating the object
   files from the quickly generated proofs.
 - The XML plugin was discontinued and removed from the source.
+- A new utility called coqworkmgr can be used to limit the number of
+  concurrent workers started by independent processes, like make and CoqIDE.
+  This is of interest for users of the par: goal selector.
 
 Interfaces
 
-- CoqIDE supports asynchronous edition of the document.
+- CoqIDE supports asynchronous edition of the document, ongoing tasks and
+  errors are reported in the bottom right window.  The number of workers
+  taking care of processing proofs can be selected with -async-proofs-j.
 - CoqIDE highlight in yellow "unsafe" commands such as axiom
   declarations, and tactics like "admit".
+- CoqIDE supports Proof General like key bindings;
+  to activate the PG mode go to Edit -> Preferences -> Editor.
+  For the documentation see Help -> Help for PG mode.
+- CoqIDE automatically retracts the locked area when one edits the
+  locked text.
+- CoqIDE search and replace got regular expressions power.  See the
+  documentation of OCaml's Str module for the supported syntax.
+- Many CoqIDE windows, including the query one, are now detachable to
+  improve usability on multi screen work stations.
+
 - Coqtop outputs highlighted syntax. Colors can be configured thanks
   to the COQ_COLORS environment variable, and their current state can
   be displayed with the -list-tags command line option.
+
+- Third party user interfaces can install their main loop in $COQLIB/toploop
+  and call coqtop with the -toploop flag to select it.
 
 Internal Infrastructure
 
