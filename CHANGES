@@ -143,6 +143,9 @@ Tactics
     refine, use (refine c;shelve_unifiable). This can still cause
     incompatibilities in rare occasions.
   * New "give_up" tactic to skip over a goal without admitting it.
+- Matching using "lazymatch" was fundamentally modified. It now behaves
+  like "match" (immediate execution of the matching branch) but without
+  the backtracking mechanism in case of failure.
 - New "cbn" tactic, a well-behaved simpl.
 - Repeated identical calls to omega should now produce identical proof terms.
 - Tactics btauto, a reflexive Boolean tautology solver.

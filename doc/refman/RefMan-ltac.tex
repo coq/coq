@@ -686,14 +686,8 @@ then a no-matching-clause error is raised.
 
 \item \index{lazymatch!in Ltac}
 \index{Ltac!lazymatch}
-Using {\tt lazymatch} instead of {\tt match} has an effect if the
-right-hand-side of a clause returns a tactic. With {\tt match}, the
-tactic is applied to the current goal (and the next clause is tried if
-it fails). With {\tt lazymatch}, the tactic is directly returned as
-the result of the whole {\tt lazymatch} block without being first
-tried to be applied to the goal. Typically, if the {\tt lazymatch}
-block is bound to some variable $x$ in a {\tt let in}, then tactic
-expression gets bound to the variable $x$.
+Using {\tt lazymatch} instead of {\tt match} disables the backtracking
+mechanism.
 
 \item \index{context!in pattern}
 There is a special form of patterns to match a subterm against the
@@ -799,30 +793,8 @@ the {\tt match reverse goal with} variant.
 \index{Ltac!lazymatch goal}
 \index{lazymatch reverse goal!in Ltac}
 \index{Ltac!lazymatch reverse goal}
-Using {\tt lazymatch} instead of {\tt match} has an effect if the
-right-hand-side of a clause returns a tactic. With {\tt match}, the
-tactic is applied to the current goal (and the next clause is tried if
-it fails). With {\tt lazymatch}, the tactic is directly returned as
-the result of the whole {\tt lazymatch} block without being first
-tried to be applied to the goal. Typically, if the {\tt lazymatch}
-block is bound to some variable $x$ in a {\tt let in}, then tactic
-expression gets bound to the variable $x$.
-
-\begin{coq_example}
-Ltac test_lazy :=
-  lazymatch goal with
-  | _ => idtac "here"; fail 
-  | _ => idtac "wasn't lazy"; trivial
-  end.
-Ltac test_eager :=
-  match goal with
-  | _ => idtac "here"; fail 
-  | _ => idtac "wasn't lazy"; trivial
-  end.
-Goal True.
-test_lazy || idtac "was lazy".
-test_eager || idtac "was lazy".
-\end{coq_example}
+Using {\tt lazymatch} instead of {\tt match} disables the backtracking
+mechanism.
 
 \subsubsection[Filling a term context]{Filling a term context\index{context!in expression}}
 
