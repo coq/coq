@@ -408,3 +408,10 @@ Check match Some _ with None => _ | _ => _ end.
 (* Used to fail for a couple of days in Nov 2014 *)
 
 Axiom test : forall P1 P2, P1 = P2 -> P1 -> P2.
+
+(* Check use of candidates *)
+
+Import EqNotations.
+Definition test2 {A B:Type} {H:A=B} (a:A) : B := rew H in a.
+
+

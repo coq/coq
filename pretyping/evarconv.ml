@@ -480,8 +480,15 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	        [eta;(* Postpone the use of an heuristic *)
 		 (fun i -> 
 		   if not (occur_rigidly (fst ev) i tR) then
+                     let i,tF =
+                       if isRel tR || isVar tR then
+                         (* Optimization so as to generate candidates *)
+                         let i,ev = evar_absorb_arguments env i ev lF in
+                         i,mkEvar ev
+                       else
+                         i,Stack.zip apprF in
 		     switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i))
-	               (Stack.zip apprF) tR
+	               tF tR
 		   else
                      UnifFailure (evd,OccurCheck (fst ev,tR)))])
 	    ev lF tR evd
