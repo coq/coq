@@ -870,7 +870,7 @@ let closure_of_filter evd evk = function
   | Some filter ->
   let evi = Evd.find_undefined evd evk in
   let vars = collect_vars (Evarutil.nf_evar evd (evar_concl evi)) in
-  let test b (id,c,_) = b || Idset.mem id vars || match c with None -> false | Some c -> isRel c in
+  let test b (id,c,_) = b || Idset.mem id vars || match c with None -> false | Some c -> not (isRel c || isVar c) in
   let newfilter = Filter.map_along test filter (evar_context evi) in
   if Filter.equal newfilter (evar_filter evi) then None else Some newfilter
 
