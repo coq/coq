@@ -33,6 +33,7 @@ type session = {
   script : Wg_ScriptView.script_view;
   proof : Wg_ProofView.proof_view;
   messages : Wg_MessageView.message_view;
+  segment : Wg_Segment.segment;
   fileops : FileOps.ops;
   coqops : CoqOps.ops;
   coqtop : Coq.coqtop;
@@ -368,12 +369,13 @@ let create file coqtop_args =
   let script = create_script coqtop buffer in
   let proof = create_proof () in
   let messages = create_messages () in
+  let segment = new Wg_Segment.segment () in
   let command = new Wg_Command.command_window basename coqtop in
   let finder = new Wg_Find.finder basename (script :> GText.view) in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
   let cops =
-    new CoqOps.coqops script proof messages coqtop (fun () -> fops#filename) in
+    new CoqOps.coqops script proof messages segment coqtop (fun () -> fops#filename) in
   let errpage = create_errpage script in
   let jobpage = create_jobpage coqtop cops in
   let _ = set_buffer_handlers (buffer :> GText.buffer) script cops coqtop in
@@ -384,6 +386,7 @@ let create file coqtop_args =
     script=script;
     proof=proof;
     messages=messages;
+    segment=segment;
     fileops=fops;
     coqops=cops;
     coqtop=coqtop;
@@ -489,6 +492,7 @@ let build_layout (sn:session) =
 	 end)
   in
   session_box#pack sn.finder#coerce;
+  session_box#pack sn.segment#coerce;
   sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
   script_scroll#add sn.script#coerce;
   proof_scroll#add sn.proof#coerce;

@@ -29,6 +29,7 @@ type session = {
   script : Wg_ScriptView.script_view;
   proof : Wg_ProofView.proof_view;
   messages : Wg_MessageView.message_view;
+  segment : Wg_Segment.segment;
   fileops : FileOps.ops;
   coqops : CoqOps.ops;
   coqtop : Coq.coqtop;

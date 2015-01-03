@@ -13,12 +13,31 @@ let invalid_arg s = raise (Invalid_argument ("Document."^s))
 type 'a sentence = { mutable state_id : Stateid.t option; data : 'a }
 
 type id = Stateid.t
+
+class ['a] signals
+  (pushed : 'a GUtil.signal)
+  (popped : 'a GUtil.signal) =
+object (self)
+  inherit GUtil.ml_signals [pushed#disconnect; popped#disconnect]
+  method pushed = pushed#connect ~after
+  method popped = popped#connect ~after
+end
+
 type 'a document = {
   mutable stack : 'a sentence list;
-  mutable context : ('a sentence list * 'a sentence list) option
+  mutable context : ('a sentence list * 'a sentence list) option;
+  pushed_sig : 'a GUtil.signal;
+  popped_sig : 'a GUtil.signal;
 }
-  
-let create () = { stack = []; context = None }
+
+let connect d = new signals d.pushed_sig d.popped_sig
+
+let create () = {
+  stack = [];
+  context = None;
+  pushed_sig = new GUtil.signal ();
+  popped_sig = new GUtil.signal ();
+}
 
 (* Invariant, only the tip is a allowed to have state_id = None *)
 let invariant l = l = [] || (List.hd l).state_id <> None
@@ -34,11 +53,12 @@ let tip_data = function
 
 let push d x =
   assert(invariant d.stack);
-  d.stack <- { data = x; state_id = None } :: d.stack
+  d.stack <- { data = x; state_id = None } :: d.stack;
+  d.pushed_sig#call x
 
 let pop = function
   | { stack = [] } -> raise Empty
-  | { stack = { data }::xs } as s -> s.stack <- xs; data
+  | { stack = { data }::xs } as s -> s.stack <- xs; s.popped_sig#call data; data
   
 let focus d ~cond_top:c_start ~cond_bot:c_stop =
   assert(invariant d.stack);
@@ -106,8 +126,6 @@ let is_in_focus d id =
   let _, focused, _ = to_lists d in
   List.exists (fun { state_id } -> stateid_opt_equal state_id (Some id)) focused
 
-let clear d = d.stack <- []; d.context <- None
-  
 let print d f =
   let top, mid, bot = to_lists d in
   let open Pp in

@@ -37,6 +37,7 @@ class coqops :
   Wg_ScriptView.script_view ->
   Wg_ProofView.proof_view ->
   Wg_MessageView.message_view ->
+  Wg_Segment.segment ->
   coqtop ->
   (unit -> string option) ->
   ops

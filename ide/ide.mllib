@@ -9,6 +9,7 @@ Configwin
 Editable_cells
 Config_parser
 Tags
+Wg_Segment
 Wg_Notebook
 Config_lexer
 Utf8_convert

@@ -104,3 +104,15 @@ val context : 'a document -> (id * 'a) list * (id * 'a) list
 val print :
   'a document -> (bool -> id option -> 'a ->  Pp.std_ppcmds) -> Pp.std_ppcmds
 
+(** Callbacks on documents *)
+
+class ['a] signals :
+  'a GUtil.signal ->
+  'a GUtil.signal ->
+  object
+    inherit GUtil.ml_signals
+    method popped : callback:('a -> unit) -> GtkSignal.id
+    method pushed : callback:('a -> unit) -> GtkSignal.id
+  end
+
+val connect : 'a document -> 'a signals

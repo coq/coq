@@ -23,6 +23,12 @@ let str_of_flag = function
   | `ERROR _ -> "E"
   | `INCOMPLETE -> "I"
 
+class type signals =
+object
+  inherit GUtil.ml_signals
+  method changed : callback:(int * mem_flag list -> unit) -> GtkSignal.id
+end
+
 module SentenceId : sig
 
   type sentence = private {
@@ -31,6 +37,8 @@ module SentenceId : sig
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
     edit_id : int;
+    mutable index : int;
+    changed_sig : (int * mem_flag list) GUtil.signal;
   }
 
   val mk_sentence :
@@ -44,6 +52,9 @@ module SentenceId : sig
   val hidden_edit_id : unit -> int
   val find_all_tooltips : sentence -> int -> string list
   val add_tooltip : sentence -> int -> int -> string -> unit
+  val set_index : sentence -> int -> unit
+
+  val connect : sentence -> signals
 
   val dbg_to_string :
     GText.buffer -> bool -> Stateid.t option -> sentence -> Pp.std_ppcmds
@@ -56,7 +67,15 @@ end = struct
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
     edit_id : int;
+    mutable index : int;
+    changed_sig : (int * mem_flag list) GUtil.signal;
   }
+
+  let connect s : signals =
+    object
+      inherit GUtil.ml_signals [s.changed_sig#disconnect]
+      method changed = s.changed_sig#connect ~after
+    end
 
   let id = ref 0
   let mk_sentence ~start ~stop flags = decr id; {
@@ -65,21 +84,28 @@ end = struct
     flags = flags;
     edit_id = !id;
     tooltips = [];
+    index = -1;
+    changed_sig = new GUtil.signal ();
   }
   let hidden_edit_id () = decr id; !id
 
-  let set_flags s f = s.flags <- f
-  let add_flag s f = s.flags <- CList.add_set (=) f s.flags
+  let changed s =
+    s.changed_sig#call (s.index, List.map mem_flag_of_flag s.flags)
+
+  let set_flags s f = s.flags <- f; changed s
+  let add_flag s f = s.flags <- CList.add_set (=) f s.flags; changed s
   let has_flag s mf =
     List.exists (fun f -> mem_flag_of_flag f = mf) s.flags
   let remove_flag s mf =
-    s.flags <- List.filter (fun f -> mem_flag_of_flag f <> mf) s.flags
+    s.flags <- List.filter (fun f -> mem_flag_of_flag f <> mf) s.flags; changed s
   let same_sentence s1 s2 = s1.edit_id = s2.edit_id
   let find_all_tooltips s off =
     CList.map_filter (fun (start,stop,t) ->
       if start <= off && off <= stop then Some t else None)
     s.tooltips
   let add_tooltip s a b t = s.tooltips <- (a,b,t) :: s.tooltips
+
+  let set_index s i = s.index <- i
 
   let dbg_to_string (b : GText.buffer) focused id s =
     let ellipsize s =
@@ -133,12 +159,21 @@ object
   method destroy : unit -> unit
 end
 
+let flags_to_color f =
+  let of_col c = `NAME (Tags.string_of_color c) in
+  if List.mem `PROCESSING f then `NAME "blue"
+  else if List.mem `ERROR f then `NAME "red"
+  else if List.mem `UNSAFE f then `NAME "orange"
+  else if List.mem `INCOMPLETE f then `NAME "gray"
+  else of_col (Tags.get_processed_color ())
+
 module Doc = Document
 
 class coqops
   (_script:Wg_ScriptView.script_view)
   (_pv:Wg_ProofView.proof_view)
   (_mv:Wg_MessageView.message_view)
+  (_sg:Wg_Segment.segment)
   (_ct:Coq.coqtop)
   get_filename =
 object(self)
@@ -146,8 +181,10 @@ object(self)
   val buffer = (_script#source_buffer :> GText.buffer)
   val proof = _pv
   val messages = _mv
+  val segment = _sg
 
   val document : sentence Doc.document = Doc.create ()
+  val mutable document_length = 0
 
   val mutable initial_state = Stateid.initial
 
@@ -163,7 +200,24 @@ object(self)
     Coq.set_feedback_handler _ct self#enqueue_feedback;
     script#misc#set_has_tooltip true;
     ignore(script#misc#connect#query_tooltip ~callback:self#tooltip_callback);
-    feedback_timer.Ideutils.run ~ms:300 ~callback:self#process_feedback
+    feedback_timer.Ideutils.run ~ms:300 ~callback:self#process_feedback;
+    let on_changed (i, f) = segment#add i (flags_to_color f) in
+    let on_push s =
+      set_index s document_length;
+      (SentenceId.connect s)#changed on_changed;
+      document_length <- succ document_length;
+      segment#set_length document_length;
+      let flags = List.map mem_flag_of_flag s.flags in
+      segment#add s.index (flags_to_color flags);
+    in
+    let on_pop s =
+      set_index s (-1);
+      document_length <- pred document_length;
+      segment#set_length document_length;
+    in
+    let _ = (Doc.connect document)#pushed on_push in
+    let _ = (Doc.connect document)#popped on_pop in
+    ()
 
   method private tooltip_callback ~x ~y ~kbd tooltip =
     let x, y = script#window_to_buffer_coords `WIDGET x y in
