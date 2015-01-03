@@ -1128,8 +1128,8 @@ let solve_evar_evar_aux f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2)
     with CannotProject (evd,ev2) ->
     add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd
 
-let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
-  let (evd,ev1,ev2),pbty =
+let solve_evar_evar ?(force=false) f g env evd pbty ev1 ev2 =
+  let (evd,(evk1,args1 as ev1),(evk2,args2 as ev2)),pbty =
     (* If an evar occurs in the instance of the other evar and the
        use of an heuristic is forced, we restrict *)
     if force then ensure_evar_independent g env evd ev1 ev2, None
