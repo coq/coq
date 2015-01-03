@@ -436,7 +436,7 @@ let keep_hyps env needed =
 (* Modules *)
 
 let add_modtype mtb env =
-  let mp = mtb.typ_mp in
+  let mp = mtb.mod_mp in
   let new_modtypes = MPmap.add mp mtb env.env_globals.env_modtypes in
   let new_globals = { env.env_globals with env_modtypes = new_modtypes } in
   { env with env_globals = new_globals }

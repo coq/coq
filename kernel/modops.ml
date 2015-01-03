@@ -145,20 +145,11 @@ let rec functor_iter fty f0 = function
 (** {6 Misc operations } *)
 
 let module_type_of_module mb =
-  { typ_mp = mb.mod_mp;
-    typ_expr = mb.mod_type;
-    typ_expr_alg = None;
-    typ_constraints = mb.mod_constraints;
-    typ_delta = mb.mod_delta }
+  { mb with mod_expr = Abstract; mod_type_alg = None }
 
 let module_body_of_type mp mtb =
-  { mod_mp = mp;
-    mod_type = mtb.typ_expr;
-    mod_type_alg = mtb.typ_expr_alg;
-    mod_expr = Abstract;
-    mod_constraints = mtb.typ_constraints;
-    mod_delta = mtb.typ_delta;
-    mod_retroknowledge = [] }
+  assert (mtb.mod_expr == Abstract);
+  { mtb with mod_mp = mp }
 
 let check_modpath_equiv env mp1 mp2 =
   if ModPath.equal mp1 mp2 then ()
@@ -182,7 +173,7 @@ let implem_iter fs fa impl = match impl with
 
 let id_delta x y = x
 
-let rec subst_with_body sub = function
+let subst_with_body sub = function
   |WithMod(id,mp) as orig ->
     let mp' = subst_mp sub mp in
     if mp==mp' then orig else WithMod(id,mp')
@@ -190,26 +181,7 @@ let rec subst_with_body sub = function
     let c' = subst_mps sub c in
     if c==c' then orig else WithDef(id,c')
 
-and subst_modtype sub do_delta mtb=
-  let { typ_mp = mp; typ_expr = ty; typ_expr_alg = aty } = mtb in
-  let mp' = subst_mp sub mp in
-  let sub =
-    if ModPath.equal mp mp' then sub
-    else add_mp mp mp' empty_delta_resolver sub
-  in
-  let ty' = subst_signature sub do_delta ty in
-  let aty' = Option.smartmap (subst_expression sub id_delta) aty in
-  let delta' = do_delta mtb.typ_delta sub in
-  if mp==mp' && ty==ty' && aty==aty' && delta'==mtb.typ_delta
-  then mtb
-  else
-    { mtb with
-      typ_mp = mp';
-      typ_expr = ty';
-      typ_expr_alg = aty';
-      typ_delta = delta' }
-
-and subst_structure sub do_delta sign =
+let rec subst_structure sub do_delta sign =
   let subst_body ((l,body) as orig) = match body with
     |SFBconst cb ->
       let cb' = subst_const_body sub cb in
@@ -226,11 +198,12 @@ and subst_structure sub do_delta sign =
   in
   List.smartmap subst_body sign
 
-and subst_module sub do_delta mb =
+and subst_body is_mod sub do_delta mb =
   let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty } = mb in
   let mp' = subst_mp sub mp in
   let sub =
-    if not (is_functor ty) || ModPath.equal mp mp' then sub
+    if ModPath.equal mp mp' then sub
+    else if is_mod && not (is_functor ty) then sub
     else add_mp mp mp' empty_delta_resolver sub
   in
   let ty' = subst_signature sub do_delta ty in
@@ -249,6 +222,10 @@ and subst_module sub do_delta mb =
       mod_type = ty';
       mod_type_alg = aty';
       mod_delta = delta' }
+
+and subst_module sub do_delta mb = subst_body true sub do_delta mb
+
+and subst_modtype sub do_delta mtb = subst_body false sub do_delta mtb
 
 and subst_expr sub do_delta seb = match seb with
   |MEident mp ->
@@ -397,19 +374,19 @@ and strengthen_sig mp_from struc mp_to reso = match struc with
 
 let strengthen mtb mp =
   (* Has mtb already been strengthened ? *)
-  if mp_in_delta mtb.typ_mp mtb.typ_delta then mtb
-  else match mtb.typ_expr with
+  if mp_in_delta mtb.mod_mp mtb.mod_delta then mtb
+  else match mtb.mod_type with
   |NoFunctor struc ->
-    let reso',struc' = strengthen_sig mtb.typ_mp struc mp mtb.typ_delta in
+    let reso',struc' = strengthen_sig mtb.mod_mp struc mp mtb.mod_delta in
     { mtb with
-      typ_expr = NoFunctor struc';
-      typ_delta =
-        add_delta_resolver mtb.typ_delta
-	  (add_mp_delta_resolver mtb.typ_mp mp reso') }
+      mod_type = NoFunctor struc';
+      mod_delta =
+        add_delta_resolver mtb.mod_delta
+	  (add_mp_delta_resolver mtb.mod_mp mp reso') }
   |MoreFunctor _ -> mtb
 
 let inline_delta_resolver env inl mp mbid mtb delta =
-  let constants = inline_of_delta inl mtb.typ_delta in
+  let constants = inline_of_delta inl mtb.mod_delta in
   let rec make_inline delta = function
     | [] -> delta
     | (lev,kn)::r ->
@@ -556,9 +533,9 @@ let strengthen_and_subst_mb mb mp include_b = match mb.mod_type with
     subst_module subst do_delta_dom_codom mb
 
 let subst_modtype_and_resolver mtb mp =
-  let subst = map_mp mtb.typ_mp mp empty_delta_resolver in
-  let new_delta = subst_dom_codom_delta_resolver subst mtb.typ_delta in
-  let full_subst = map_mp mtb.typ_mp mp new_delta in
+  let subst = map_mp mtb.mod_mp mp empty_delta_resolver in
+  let new_delta = subst_dom_codom_delta_resolver subst mtb.mod_delta in
+  let full_subst = map_mp mtb.mod_mp mp new_delta in
   subst_modtype full_subst do_delta_dom_codom mtb
 
 (** {6 Cleaning a module expression from bounded parts }
@@ -585,11 +562,6 @@ let rec clean_module l mb =
   if typ==typ' && impl==impl' then mb
   else { mb with mod_type=typ'; mod_expr=impl' }
 
-and clean_modtype l mt =
-  let ty = mt.typ_expr in
-  let ty' = clean_signature l ty in
-  if ty==ty' then mt else { mt with typ_expr=ty' }
-
 and clean_field l field = match field with
   |(lab,SFBmodule mb) ->
     let mb' = clean_module l mb in
@@ -599,10 +571,10 @@ and clean_field l field = match field with
 and clean_structure l = List.smartmap (clean_field l)
 
 and clean_signature l =
-  functor_smartmap (clean_modtype l) (clean_structure l)
+  functor_smartmap (clean_module l) (clean_structure l)
 
 and clean_expression l =
-  functor_smartmap (clean_modtype l) (fun me -> me)
+  functor_smartmap (clean_module l) (fun me -> me)
 
 let rec collect_mbid l sign =  match sign with
   |MoreFunctor (mbid,ty,m) ->
@@ -630,17 +602,13 @@ let join_structure except otab s =
     implem_iter join_signature join_expression mb.mod_expr;
     Option.iter join_expression mb.mod_type_alg;
     join_signature mb.mod_type
-  and join_modtype mt =
-    Option.iter join_expression mt.typ_expr_alg;
-    join_signature mt.typ_expr
   and join_field (l,body) = match body with
     |SFBconst sb -> join_constant_body except otab sb
     |SFBmind _ -> ()
-    |SFBmodule m -> join_module m
-    |SFBmodtype m -> join_modtype m
+    |SFBmodule m |SFBmodtype m -> join_module m
   and join_structure struc = List.iter join_field struc
   and join_signature sign =
-    functor_iter join_modtype join_structure sign
-  and join_expression me = functor_iter join_modtype (fun _ -> ()) me in
+    functor_iter join_module join_structure sign
+  and join_expression me = functor_iter join_module (fun _ -> ()) me in
   join_structure s
 

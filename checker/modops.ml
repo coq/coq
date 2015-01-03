@@ -49,13 +49,7 @@ let destr_functor = function
   | NoFunctor _ -> error_not_a_functor ()
 
 let module_body_of_type mp mtb =
-  { mod_mp = mp;
-    mod_type = mtb.typ_expr;
-    mod_type_alg = mtb.typ_expr_alg;
-    mod_expr = Abstract;
-    mod_constraints = mtb.typ_constraints;
-    mod_delta = mtb.typ_delta;
-    mod_retroknowledge = []}
+  { mtb with mod_mp = mp; mod_expr = Abstract }
 
 let rec add_structure mp sign resolver env =
   let add_one env (l,elem) =
@@ -71,7 +65,7 @@ let rec add_structure mp sign resolver env =
 	    Environ.add_mind mind mib env
 	| SFBmodule mb -> add_module mb env
 	      (* adds components as well *)
-	| SFBmodtype mtb -> Environ.add_modtype mtb.typ_mp mtb env
+	| SFBmodtype mtb -> Environ.add_modtype mtb.mod_mp mtb env
   in
   List.fold_left add_one env sign
 
@@ -97,23 +91,20 @@ let strengthen_const mp_from l cb resolver =
       { cb with const_body = Def (Declarations.from_val (Const (con,u))) }
 
 let rec strengthen_mod mp_from mp_to mb =
-  if Declarations.mp_in_delta mb.mod_mp mb.mod_delta then
-    mb
-  else
-    match mb.mod_type with
-     | NoFunctor (sign) ->
-	 let resolve_out,sign_out =
-	   strengthen_sig mp_from sign mp_to mb.mod_delta
-         in
-	 { mb with
-	   mod_expr = Algebraic (NoFunctor (MEident mp_to));
-	   mod_type = NoFunctor sign_out;
-	   mod_type_alg = mb.mod_type_alg;
-	   mod_constraints = mb.mod_constraints;
-	   mod_delta = resolve_out(*add_mp_delta_resolver mp_from mp_to
-	   (add_delta_resolver mb.mod_delta resolve_out)*);
-	   mod_retroknowledge = mb.mod_retroknowledge}
-     | MoreFunctor _ -> mb
+  if Declarations.mp_in_delta mb.mod_mp mb.mod_delta then mb
+  else strengthen_body true mp_from mp_to mb
+
+and strengthen_body is_mod mp_from mp_to mb =
+  match mb.mod_type with
+  | MoreFunctor _ -> mb
+  | NoFunctor sign ->
+    let resolve_out,sign_out = strengthen_sig mp_from sign mp_to mb.mod_delta
+    in
+    { mb with
+      mod_expr =
+        (if is_mod then Algebraic (NoFunctor (MEident mp_to)) else Abstract);
+      mod_type = NoFunctor sign_out;
+      mod_delta = resolve_out }
 
 and strengthen_sig mp_from sign mp_to resolver =
   match sign with
@@ -137,33 +128,19 @@ and strengthen_sig mp_from sign mp_to resolver =
 	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
 	resolve_out,item::rest'
 
-let strengthen mtb mp = match mtb.typ_expr with
-  | NoFunctor sign ->
-    let resolve_out,sign_out =
-      strengthen_sig mtb.typ_mp sign mp mtb.typ_delta
-    in
-    { mtb with
-      typ_expr = NoFunctor sign_out;
-      typ_delta = resolve_out(*add_delta_resolver mtb.typ_delta
-      (add_mp_delta_resolver mtb.typ_mp mp resolve_out)*)}
-  | MoreFunctor _ -> mtb
+let strengthen mtb mp =
+  strengthen_body false mtb.mod_mp mp mtb
 
 let subst_and_strengthen mb mp =
   strengthen_mod mb.mod_mp mp (subst_module (map_mp mb.mod_mp mp) mb)
 
-
 let module_type_of_module mp mb =
+  let mtb =
+    { mb with
+      mod_expr = Abstract;
+      mod_type_alg = None;
+      mod_retroknowledge = [] }
+  in
   match mp with
-  | Some mp ->
-    strengthen {
-      typ_mp = mp;
-      typ_expr = mb.mod_type;
-      typ_expr_alg = None;
-      typ_constraints = mb.mod_constraints;
-      typ_delta = mb.mod_delta} mp
-  | None ->
-    { typ_mp = mb.mod_mp;
-      typ_expr = mb.mod_type;
-      typ_expr_alg = None;
-      typ_constraints = mb.mod_constraints;
-      typ_delta = mb.mod_delta}
+  | Some mp -> strengthen {mtb with mod_mp = mp} mp
+  | None -> mtb

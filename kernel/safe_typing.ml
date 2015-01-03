@@ -386,7 +386,7 @@ let constraints_of_sfb env sfb =
   match sfb with
   | SFBconst cb -> globalize_constant_universes env cb
   | SFBmind mib -> globalize_mind_universes mib
-  | SFBmodtype mtb -> [Now mtb.typ_constraints]
+  | SFBmodtype mtb -> [Now mtb.mod_constraints]
   | SFBmodule mb -> [Now mb.mod_constraints]
 
 (** A generic function for adding a new field in a same environment.
@@ -396,7 +396,7 @@ type generic_name =
   | C of constant
   | I of mutual_inductive
   | M (** name already known, cf the mod_mp field *)
-  | MT (** name already known, cf the typ_mp field *)
+  | MT (** name already known, cf the mod_mp field *)
 
 let add_field ((l,sfb) as field) gn senv =
   let mlabs,olabs = match sfb with
@@ -494,7 +494,7 @@ let full_add_module mb senv =
   { senv with env = Modops.add_module mb senv.env }
 
 let full_add_module_type mp mt senv =
-  let senv = add_constraints (Now mt.typ_constraints) senv in
+  let senv = add_constraints (Now mt.mod_constraints) senv in
   { senv with env = Modops.add_module_type mp mt senv.env }
 
 (** Insertion of modules *)
@@ -548,10 +548,10 @@ let add_module_parameter mbid mte inl senv =
     | _ -> assert false
   in
   let new_paramresolver =
-    if Modops.is_functor mtb.typ_expr then senv.paramresolver
-    else Mod_subst.add_delta_resolver mtb.typ_delta senv.paramresolver
+    if Modops.is_functor mtb.mod_type then senv.paramresolver
+    else Mod_subst.add_delta_resolver mtb.mod_delta senv.paramresolver
   in
-  mtb.typ_delta,
+  mtb.mod_delta,
   { senv with
     modvariant = new_variant;
     paramresolver = new_paramresolver }
@@ -628,24 +628,27 @@ let end_module l restype senv =
   (mp,mbids,mb.mod_delta),
   propagate_senv (l,SFBmodule mb) newenv newresolver senv' oldsenv
 
+let build_mtb mp sign cst delta =
+  { mod_mp = mp;
+    mod_expr = Abstract;
+    mod_type = sign;
+    mod_type_alg = None;
+    mod_constraints = cst;
+    mod_delta = delta;
+    mod_retroknowledge = [] }
+
 let end_modtype l senv =
   let mp = senv.modpath in
   let params, oldsenv = check_sig senv.modvariant in
   let () = check_current_label l mp in
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
-  let auto_tb = NoFunctor (List.rev senv.revstruct) in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
   let newenv = Environ.add_constraints senv.univ newenv in
   let newenv = set_engagement_opt newenv senv.engagement in
   let senv' = {senv with env=newenv} in
-  let mtb =
-    { typ_mp = mp;
-      typ_expr = functorize params auto_tb;
-      typ_expr_alg = None;
-      typ_constraints = senv'.univ;
-      typ_delta = senv.modresolver }
-  in
+  let auto_tb = functorize params (NoFunctor (List.rev senv.revstruct)) in
+  let mtb = build_mtb mp auto_tb senv'.univ senv.modresolver in
   let newenv = Environ.add_modtype mtb senv'.env in
   let newresolver = oldsenv.modresolver in
   (mp,mbids),
@@ -662,7 +665,7 @@ let add_include me is_module inl senv =
       sign,cst,reso
     else
       let mtb = translate_modtype senv.env mp_sup inl ([],me) in
-      mtb.typ_expr,mtb.typ_constraints,mtb.typ_delta
+      mtb.mod_type,mtb.mod_constraints,mtb.mod_delta
   in
   let senv = add_constraints (Now cst) senv in
   (* Include Self support  *)
@@ -672,7 +675,7 @@ let add_include me is_module inl senv =
       let cst_sub = Subtyping.check_subtypes senv.env mb mtb in
       let senv = add_constraints (Now cst_sub) senv in
       let mpsup_delta =
-	Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb mb.typ_delta
+	Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb mb.mod_delta
       in
       let subst = Mod_subst.map_mbid mbid mp_sup mpsup_delta in
       let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
@@ -680,12 +683,8 @@ let add_include me is_module inl senv =
     | str -> resolver,str,senv
   in
   let resolver,sign,senv =
-    let mtb =
-      { typ_mp = mp_sup;
-	typ_expr = NoFunctor (List.rev senv.revstruct);
-	typ_expr_alg = None;
-	typ_constraints = Univ.Constraint.empty;
-	typ_delta = senv.modresolver } in
+    let struc = NoFunctor (List.rev senv.revstruct) in
+    let mtb = build_mtb mp_sup struc Univ.Constraint.empty senv.modresolver in
     compute_sign sign mtb resolver senv
   in
   let str = match sign with

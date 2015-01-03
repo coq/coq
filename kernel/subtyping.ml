@@ -401,61 +401,61 @@ and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2=
 	      | _ -> error_signature_mismatch l spec2 ModuleTypeFieldExpected
 	    in
 	    let env =
-              add_module_type mtb2.typ_mp mtb2
-	        (add_module_type mtb1.typ_mp mtb1 env)
+              add_module_type mtb2.mod_mp mtb2
+	        (add_module_type mtb1.mod_mp mtb1 env)
             in
 	    check_modtypes cst env mtb1 mtb2 subst1 subst2 true
   in
     List.fold_left check_one_body cst sig2
 
 and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
-  if mtb1==mtb2 || mtb1.typ_expr == mtb2.typ_expr then cst
+  if mtb1==mtb2 || mtb1.mod_type == mtb2.mod_type then cst
   else
     let rec check_structure cst env str1 str2 equiv subst1 subst2 =
       match str1,str2 with
       |NoFunctor list1,
        NoFunctor list2 ->
 	if equiv then
-	  let subst2 = add_mp mtb2.typ_mp mtb1.typ_mp mtb1.typ_delta subst2 in
+	  let subst2 = add_mp mtb2.mod_mp mtb1.mod_mp mtb1.mod_delta subst2 in
           let cst1 = check_signatures cst env
-	    mtb1.typ_mp list1 mtb2.typ_mp list2 subst1 subst2
-	    mtb1.typ_delta mtb2.typ_delta
+	    mtb1.mod_mp list1 mtb2.mod_mp list2 subst1 subst2
+	    mtb1.mod_delta mtb2.mod_delta
           in
           let cst2 = check_signatures cst env
-	    mtb2.typ_mp list2 mtb1.typ_mp list1 subst2 subst1
-	    mtb2.typ_delta  mtb1.typ_delta
+	    mtb2.mod_mp list2 mtb1.mod_mp list1 subst2 subst1
+	    mtb2.mod_delta  mtb1.mod_delta
 	  in
 	  Univ.Constraint.union cst1 cst2
 	else
 	  check_signatures cst env
-	    mtb1.typ_mp list1 mtb2.typ_mp list2 subst1 subst2
-	    mtb1.typ_delta  mtb2.typ_delta
+	    mtb1.mod_mp list1 mtb2.mod_mp list2 subst1 subst2
+	    mtb1.mod_delta  mtb2.mod_delta
       |MoreFunctor (arg_id1,arg_t1,body_t1),
        MoreFunctor (arg_id2,arg_t2,body_t2) ->
         let mp2 = MPbound arg_id2 in
-	let subst1 = join (map_mbid arg_id1 mp2 arg_t2.typ_delta) subst1 in
+	let subst1 = join (map_mbid arg_id1 mp2 arg_t2.mod_delta) subst1 in
 	let cst = check_modtypes cst env arg_t2 arg_t1 subst2 subst1 equiv in
         (* contravariant *)
 	let env = add_module_type mp2 arg_t2 env in
 	let env =
           if Modops.is_functor body_t1 then env
           else add_module
-            {mod_mp = mtb1.typ_mp;
+            {mod_mp = mtb1.mod_mp;
 	     mod_expr = Abstract;
 	     mod_type = subst_signature subst1 body_t1;
 	     mod_type_alg = None;
-	     mod_constraints = mtb1.typ_constraints;
+	     mod_constraints = mtb1.mod_constraints;
 	     mod_retroknowledge = [];
-	     mod_delta = mtb1.typ_delta} env
+	     mod_delta = mtb1.mod_delta} env
 	in
 	check_structure cst env body_t1 body_t2 equiv subst1 subst2
       | _ , _ -> error_incompatible_modtypes mtb1 mtb2
     in
-    check_structure cst env mtb1.typ_expr mtb2.typ_expr equiv subst1 subst2
+    check_structure cst env mtb1.mod_type mtb2.mod_type equiv subst1 subst2
 
 let check_subtypes env sup super =
-  let env = add_module_type sup.typ_mp sup env in
+  let env = add_module_type sup.mod_mp sup env in
   check_modtypes Univ.Constraint.empty env
-    (strengthen sup sup.typ_mp) super empty_subst
-    (map_mp super.typ_mp sup.typ_mp sup.typ_delta) false
+    (strengthen sup sup.mod_mp) super empty_subst
+    (map_mp super.mod_mp sup.mod_mp sup.mod_delta) false
 

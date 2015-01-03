@@ -591,23 +591,17 @@ let rec subst_expr sub = function
   | MEwith (me,wd)-> MEwith (subst_expr sub me, subst_with_body sub wd)
 
 let rec subst_expression sub me =
-  functor_map (subst_modtype sub) (subst_expr sub) me
+  functor_map (subst_module sub) (subst_expr sub) me
 
 and subst_signature sub sign =
-  functor_map (subst_modtype sub) (subst_structure sub) sign
-
-and subst_modtype sub mtb=
-  { mtb with
-    typ_mp = subst_mp sub mtb.typ_mp;
-    typ_expr = subst_signature sub mtb.typ_expr;
-    typ_expr_alg = Option.smartmap (subst_expression sub) mtb.typ_expr_alg }
+  functor_map (subst_module sub) (subst_structure sub) sign
 
 and subst_structure sub struc =
   let subst_body = function
     | SFBconst cb -> SFBconst (subst_const_body sub cb)
     | SFBmind mib -> SFBmind (subst_mind sub mib)
-    | SFBmodule mb -> SFBmodule (subst_module sub  mb)
-    | SFBmodtype mtb -> SFBmodtype (subst_modtype sub mtb)
+    | SFBmodule mb -> SFBmodule (subst_module sub mb)
+    | SFBmodtype mtb -> SFBmodtype (subst_module sub mtb)
   in
   List.map (fun (l,b) -> (l,subst_body b)) struc
 
@@ -617,5 +611,4 @@ and subst_module sub mb =
     mod_expr =
       implem_map (subst_signature sub) (subst_expression sub) mb.mod_expr;
     mod_type = subst_signature sub mb.mod_type;
-    mod_type_alg = Option.map (subst_expression sub) mb.mod_type_alg }
-
+    mod_type_alg = Option.smartmap (subst_expression sub) mb.mod_type_alg }

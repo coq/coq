@@ -43,8 +43,8 @@ let split_struc k m struc =
     | h::tail -> split (h::rev_before) tail
   in split [] struc
 
-let discr_resolver mtb = match mtb.typ_expr with
-  | NoFunctor _ -> mtb.typ_delta
+let discr_resolver mtb = match mtb.mod_type with
+  | NoFunctor _ -> mtb.mod_delta
   | MoreFunctor _ -> empty_delta_resolver
 
 let rec rebuild_mp mp l =
@@ -233,7 +233,7 @@ let rec translate_mse env mpo inl = function
         mb.mod_type, mb.mod_delta
       |None ->
         let mtb = lookup_modtype mp1 env in
-        mtb.typ_expr, mtb.typ_delta
+        mtb.mod_type, mtb.mod_delta
     in
     sign,Some (MEident mp1),reso,Univ.Constraint.empty
   |MEapply (fe,mp1) ->
@@ -259,6 +259,17 @@ let mk_alg_funct mpo mbid mtb alg = match mpo, alg with
   | Some _, Some alg -> Some (MoreFunctor (mbid,mtb,alg))
   | _ -> None
 
+let mk_mod mp e ty ty' cst reso =
+  { mod_mp = mp;
+    mod_expr = e;
+    mod_type = ty;
+    mod_type_alg = ty';
+    mod_constraints = cst;
+    mod_delta = reso;
+    mod_retroknowledge = [] }
+
+let mk_modtype mp ty cst reso = mk_mod mp Abstract ty None cst reso
+
 let rec translate_mse_funct env mpo inl mse = function
   |[] ->
     let sign,alg,reso,cst = translate_mse env mpo inl mse in
@@ -269,19 +280,13 @@ let rec translate_mse_funct env mpo inl mse = function
     let env' = add_module_type mp_id mtb env in
     let sign,alg,reso,cst = translate_mse_funct env' mpo inl mse params in
     let alg' = mk_alg_funct mpo mbid mtb alg in
-    MoreFunctor (mbid, mtb, sign), alg',reso, cst +++ mtb.typ_constraints
+    MoreFunctor (mbid, mtb, sign), alg',reso, cst +++ mtb.mod_constraints
 
 and translate_modtype env mp inl (params,mte) =
   let sign,alg,reso,cst = translate_mse_funct env None inl mte params in
-  let mtb =
-    { typ_mp = mp_from_mexpr mte;
-      typ_expr = sign;
-      typ_expr_alg = None;
-      typ_constraints = cst;
-      typ_delta = reso }
-  in
+  let mtb = mk_modtype (mp_from_mexpr mte) sign cst reso in
   let mtb' = subst_modtype_and_resolver mtb mp in
-  { mtb' with typ_expr_alg = alg }
+  { mtb' with mod_type_alg = alg }
 
 (** [finalize_module] :
     from an already-translated (or interactive) implementation
@@ -290,30 +295,16 @@ and translate_modtype env mp inl (params,mte) =
 let finalize_module env mp (sign,alg,reso,cst) restype = match restype with
   |None ->
     let impl = match alg with Some e -> Algebraic e | None -> FullStruct in
-    { mod_mp = mp;
-      mod_expr = impl;
-      mod_type = sign;
-      mod_type_alg = None;
-      mod_constraints = cst;
-      mod_delta = reso;
-      mod_retroknowledge = [] }
+    mk_mod mp impl sign None cst reso
   |Some (params_mte,inl) ->
     let res_mtb = translate_modtype env mp inl params_mte in
-    let auto_mtb = {
-      typ_mp = mp;
-      typ_expr = sign;
-      typ_expr_alg = None;
-      typ_constraints = Univ.Constraint.empty;
-      typ_delta = reso } in
+    let auto_mtb = mk_modtype mp sign Univ.Constraint.empty reso in
     let cst' = Subtyping.check_subtypes env auto_mtb res_mtb in
     let impl = match alg with Some e -> Algebraic e | None -> Struct sign in
-    { mod_mp = mp;
+    { res_mtb with
+      mod_mp = mp;
       mod_expr = impl;
-      mod_type = res_mtb.typ_expr;
-      mod_type_alg = res_mtb.typ_expr_alg;
-      mod_constraints = cst +++ cst';
-      mod_delta = res_mtb.typ_delta;
-      mod_retroknowledge = [] }
+      mod_constraints = cst +++ cst' }
 
 let translate_module env mp inl = function
   |MType (params,ty) ->

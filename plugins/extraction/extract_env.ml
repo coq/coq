@@ -213,11 +213,11 @@ let rec extract_structure_spec env mp = function
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
   | (l,SFBmodule mb) :: msig ->
       let specs = extract_structure_spec env mp msig in
-      let spec = extract_mb_spec env mb.mod_mp mb in
+      let spec = extract_mbody_spec env mb.mod_mp mb in
       (l,Smodule spec) :: specs
   | (l,SFBmodtype mtb) :: msig ->
       let specs = extract_structure_spec env mp msig in
-      let spec = extract_mtb_spec env mtb.typ_mp mtb in
+      let spec = extract_mbody_spec env mtb.mod_mp mtb in
       (l,Smodtype spec) :: specs
 
 (* From [module_expression] to specifications *)
@@ -248,7 +248,7 @@ and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
       in
       let mp = MPbound mbid in
       let env' = Modops.add_module_type mp mtb env in
-      MTfunsig (mbid, extract_mtb_spec env mp mtb,
+      MTfunsig (mbid, extract_mbody_spec env mp mtb,
 		extract_mexpression_spec env' mp1 (me_struct',me_alg'))
   | NoFunctor m -> extract_mexpr_spec env mp1 (me_struct,m)
 
@@ -259,14 +259,10 @@ and extract_msignature_spec env mp1 = function
   | MoreFunctor (mbid, mtb, me) ->
       let mp = MPbound mbid in
       let env' = Modops.add_module_type mp mtb env in
-      MTfunsig (mbid, extract_mtb_spec env mp mtb,
+      MTfunsig (mbid, extract_mbody_spec env mp mtb,
 		extract_msignature_spec env' mp1 me)
 
-and extract_mtb_spec env mp mtb = match mtb.typ_expr_alg with
-  | Some ty -> extract_mexpression_spec env mp (mtb.typ_expr,ty)
-  | None -> extract_msignature_spec env mp mtb.typ_expr
-
-and extract_mb_spec env mp mb = match mb.mod_type_alg with
+and extract_mbody_spec env mp mb = match mb.mod_type_alg with
   | Some ty -> extract_mexpression_spec env mp (mb.mod_type,ty)
   | None -> extract_msignature_spec env mp mb.mod_type
 
@@ -319,32 +315,32 @@ let rec extract_structure env mp ~all = function
       let ms = extract_structure env mp ~all struc in
       let mp = MPdot (mp,l) in
       if all || Visit.needed_mp mp then
-        (l,SEmodtype (extract_mtb_spec env mp mtb)) :: ms
+        (l,SEmodtype (extract_mbody_spec env mp mtb)) :: ms
       else ms
 
 (* From [module_expr] and [module_expression] to implementations *)
 
-and extract_mexpr env mp ~all = function
+and extract_mexpr env mp = function
   | MEwith _ -> assert false (* no 'with' syntax for modules *)
   | me when lang () != Ocaml ->
       (* in Haskell/Scheme, we expand everything *)
-      extract_msignature env mp ~all (expand_mexpr env mp me)
+      extract_msignature env mp ~all:true (expand_mexpr env mp me)
   | MEident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;
       Visit.add_mp_all mp; Miniml.MEident mp
   | MEapply (me, arg) ->
-      Miniml.MEapply (extract_mexpr env mp ~all:true me,
-	              extract_mexpr env mp ~all:true (MEident arg))
+      Miniml.MEapply (extract_mexpr env mp me,
+	              extract_mexpr env mp (MEident arg))
 
-and extract_mexpression env mp ~all = function
-  | NoFunctor me -> extract_mexpr env mp ~all me
+and extract_mexpression env mp = function
+  | NoFunctor me -> extract_mexpr env mp me
   | MoreFunctor (mbid, mtb, me) ->
       let mp1 = MPbound mbid in
       let env' = Modops.add_module_type mp1 mtb	env in
       Miniml.MEfunctor
         (mbid,
-         extract_mtb_spec env mp1 mtb,
-	 extract_mexpression env' mp ~all:true me)
+         extract_mbody_spec env mp1 mtb,
+	 extract_mexpression env' mp me)
 
 and extract_msignature env mp ~all = function
   | NoFunctor struc ->
@@ -355,7 +351,7 @@ and extract_msignature env mp ~all = function
       let env' = Modops.add_module_type mp1 mtb	env in
       Miniml.MEfunctor
         (mbid,
-         extract_mtb_spec env mp1 mtb,
+         extract_mbody_spec env mp1 mtb,
 	 extract_msignature env' mp ~all:true me)
 
 and extract_module env mp ~all mb =
@@ -367,15 +363,18 @@ and extract_module env mp ~all mb =
      moment we don't support this situation. *)
   let impl = match mb.mod_expr with
     | Abstract -> error_no_module_expr mp
-    | Algebraic me -> extract_mexpression env mp ~all:true me
+    | Algebraic me -> extract_mexpression env mp me
     | Struct sign -> extract_msignature env mp ~all:true sign
     | FullStruct -> extract_msignature env mp ~all mb.mod_type
   in
+  (* Slight optimization: for modules without explicit signatures
+     ([FullStruct] case), we build the type out of the extracted
+     implementation *)
   let typ = match mb.mod_expr with
     | FullStruct ->
       assert (Option.is_empty mb.mod_type_alg);
       mtyp_of_mexpr impl
-    | _ -> extract_mb_spec env mp mb
+    | _ -> extract_mbody_spec env mp mb
   in
   { ml_mod_expr = impl;
     ml_mod_type = typ }

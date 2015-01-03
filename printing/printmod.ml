@@ -234,12 +234,12 @@ let nametab_register_module_body mp struc =
     nametab_register_dir mp;
     List.iter (nametab_register_body mp DirPath.empty) struc
 
-let get_typ_expr_alg mtb = match mtb.typ_expr_alg with
+let get_typ_expr_alg mtb = match mtb.mod_type_alg with
   | Some (NoFunctor me) -> me
   | _ -> raise Not_found
 
 let nametab_register_modparam mbid mtb =
-  match mtb.typ_expr with
+  match mtb.mod_type with
   | MoreFunctor _ -> () (* functorial param : nothing to register *)
   | NoFunctor struc ->
     (* We first try to use the algebraic type expression if any,
@@ -355,9 +355,9 @@ let rec print_expression x =
 and print_signature x =
   print_functor print_modtype print_structure x
 
-and print_modtype env mp locals mtb = match mtb.typ_expr_alg with
+and print_modtype env mp locals mtb = match mtb.mod_type_alg with
   | Some me -> print_expression true env mp locals me
-  | None -> print_signature true env mp locals mtb.typ_expr
+  | None -> print_signature true env mp locals mtb.mod_type
 
 let rec printable_body dir =
   let dir = pop_dirpath dir in
@@ -415,9 +415,9 @@ let print_modtype kn =
     (keyword "Module Type" ++ spc () ++ name ++ str " =" ++ spc () ++
      (try
 	if !short then raise ShortPrinting;
-	print_signature' true (Some (Global.env ())) kn mtb.typ_expr
+	print_signature' true (Some (Global.env ())) kn mtb.mod_type
       with e when Errors.noncritical e ->
-	print_signature' true None kn mtb.typ_expr))
+	print_signature' true None kn mtb.mod_type))
 
 end
 

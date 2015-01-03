@@ -251,17 +251,11 @@ and module_body =
     mod_delta : Mod_subst.delta_resolver;
     mod_retroknowledge : Retroknowledge.action list }
 
-(** A [module_type_body] is similar to a [module_body], with
-    no implementation and retroknowledge fields *)
+(** A [module_type_body] is just a [module_body] with no
+    implementation ([mod_expr] always [Abstract]) and also
+    an empty [mod_retroknowledge] *)
 
-and module_type_body =
-  { typ_mp : module_path; (** path of the module type *)
-    typ_expr : module_signature; (** expanded type *)
-    (** algebraic expression, kept if it's relevant for extraction  *)
-    typ_expr_alg : module_expression option;
-    typ_constraints : Univ.constraints;
-    (** quotiented set of equivalent constants and inductive names *)
-    typ_delta : Mod_subst.delta_resolver}
+and module_type_body = module_body
 
 (** Extra invariants :
 

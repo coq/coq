@@ -64,6 +64,15 @@ let lookup_module mp env =
   with Not_found ->
     failwith ("Unknown module: "^string_of_mp mp)
 
+let mk_mtb mp sign delta =
+  { mod_mp = mp;
+    mod_expr = Abstract;
+    mod_type = sign;
+    mod_type_alg = None;
+    mod_constraints = Univ.Constraint.empty;
+    mod_delta = delta;
+    mod_retroknowledge = []; }
+
 let rec check_module env mp mb =
   let (_:module_signature) =
     check_signature env mb.mod_type mb.mod_mp mb.mod_delta
@@ -76,25 +85,14 @@ let rec check_module env mp mb =
   match optsign with
   |None -> ()
   |Some sign ->
-    let mtb1 =
-      {typ_mp=mp;
-       typ_expr=sign;
-       typ_expr_alg=None;
-       typ_constraints=Univ.Constraint.empty;
-       typ_delta = mb.mod_delta;}
-    and mtb2 =
-      {typ_mp=mp;
-       typ_expr=mb.mod_type;
-       typ_expr_alg=None;
-       typ_constraints=Univ.Constraint.empty;
-       typ_delta = mb.mod_delta;}
-    in
+    let mtb1 = mk_mtb mp sign mb.mod_delta
+    and mtb2 = mk_mtb mp mb.mod_type mb.mod_delta in
     let env = add_module_type mp mtb1 env in
     Subtyping.check_subtypes env mtb1 mtb2
 
 and check_module_type env mty =
   let (_:module_signature) =
-    check_signature env mty.typ_expr mty.typ_mp mty.typ_delta in
+    check_signature env mty.mod_type mty.mod_mp mty.mod_delta in
   ()
 
 and check_structure_field env mp lab res = function

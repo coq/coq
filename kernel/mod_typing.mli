@@ -12,11 +12,7 @@ open Entries
 open Mod_subst
 open Names
 
-(** Main functions for translating module entries
-
-    Note : [module_body] and [module_type_body] obtained this way
-    won't have any [MEstruct] in their algebraic fields.
-*)
+(** Main functions for translating module entries *)
 
 val translate_module :
   env -> module_path -> inline -> module_entry -> module_body
@@ -31,7 +27,6 @@ val translate_modtype :
     - The second output is the algebraic expression, kept for the extraction.
       It is never None when translating to a module, but for module type
       it could not be contain applications or functors.
-      Moreover algebraic expressions obtained here cannot contain [MEstruct].
 *)
 
 type 'alg translation =

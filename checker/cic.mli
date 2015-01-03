@@ -365,7 +365,7 @@ and module_signature = (module_type_body,structure_body) functorize
 and module_expression = (module_type_body,module_alg_expr) functorize
 
 and module_implementation =
-  | Abstract (** no accessible implementation *)
+  | Abstract (** no accessible implementation (keep this constructor first!) *)
   | Algebraic of module_expression (** non-interactive algebraic expression *)
   | Struct of module_signature (** interactive body *)
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
@@ -382,18 +382,11 @@ and module_body =
     mod_delta : delta_resolver;
     mod_retroknowledge : action list }
 
-(** A [module_type_body] is similar to a [module_body], with
-    no implementation and retroknowledge fields *)
+(** A [module_type_body] is just a [module_body] with no
+    implementation ([mod_expr] always [Abstract]) and also
+    an empty [mod_retroknowledge] *)
 
-and module_type_body =
-  { typ_mp : module_path; (** path of the module type *)
-    typ_expr : module_signature; (** expanded type *)
-    (** algebraic expression, kept if it's relevant for extraction  *)
-    typ_expr_alg : module_expression option;
-    typ_constraints : Univ.constraints;
-    (** quotiented set of equivalent constants and inductive names *)
-    typ_delta : delta_resolver}
-
+and module_type_body = module_body
 
 (*************************************************************************)
 (** {4 From safe_typing.ml} *)
