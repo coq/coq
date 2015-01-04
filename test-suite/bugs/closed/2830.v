@@ -39,9 +39,9 @@ End A.
 
 (* 2- This was submitted by Andrew Appel *)
 
-Module B.
-
 Require Import Program Relations.
+
+Module B.
 
 Record ageable_facts (A:Type) (level: A -> nat) (age1:A -> option A)  :=
 { af_unage : forall x x' y', level x' = level y' -> age1 x = Some x' -> exists y, age1 y = Some y'
