@@ -1048,7 +1048,7 @@ end = struct (* {{{ *)
         RespError { e_error_at; e_safe_id; e_msg; e_safe_states }
   
   let perform_states query =
-    assert(query <> []);
+    if query = [] then [] else
     let initial = 
       let rec aux id =
         try match VCS.visit id with { next } -> aux next
