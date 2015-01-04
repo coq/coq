@@ -975,7 +975,6 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   let env_evar = evar_filtered_env evi in
   let sign = named_context_val env_evar in
   let ctxt = evar_filtered_context evi in
-  let filter = evar_filter evi in
   let instance = List.map mkVar (List.map pi1 ctxt) in
 
   let rec make_subst = function
@@ -990,8 +989,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       let evs = ref [] in
       let ty = Retyping.get_type_of env_rhs evd c in
       let filter' = filter_possible_projections c ty ctxt args in
-      let filter = Filter.map_along (&&) filter filter' in
-      (id,t,c,ty,evs,filter,occs) :: make_subst (ctxt',l,occsl)
+      (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
   | _, _, [] -> []
   | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list") in
 
