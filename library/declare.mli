@@ -67,8 +67,8 @@ val set_declare_scheme :
 
 (** [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
-   the whole block (boolean must be true iff it is a record) *)
-val declare_mind : internal_flag -> mutual_inductive_entry -> object_name
+   the whole block and a boolean indicating if it is a primitive record. *)
+val declare_mind : mutual_inductive_entry -> object_name * bool
 
 (** Declaration messages *)
 

@@ -887,7 +887,7 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
   let mie,impls = Command.interp_mutual_inductive indl [] 
           false (*FIXMEnon-poly *) false (* means not private *) Decl_kinds.Finite (* means: not coinductive *) in
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (Command.declare_mutual_inductive_with_eliminations Declare.UserVerbose mie impls)
+  ignore (Command.declare_mutual_inductive_with_eliminations mie impls)
 
 
 (* Find infos on identifier id. *)

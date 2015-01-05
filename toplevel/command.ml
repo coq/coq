@@ -294,9 +294,10 @@ type structured_one_inductive_expr = {
 type structured_inductive_expr =
   local_binder list * structured_one_inductive_expr list
 
-let minductive_message = function
+let minductive_message warn = function
   | []  -> error "No inductive definition."
-  | [x] -> (pr_id x ++ str " is defined")
+  | [x] -> (pr_id x ++ str " is defined" ++ 
+	    if warn then str " as a non-primitive record" else mt())
   | l   -> hov 0  (prlist_with_sep pr_comma pr_id l ++
 		     spc () ++ str "are defined")
 
@@ -599,7 +600,7 @@ let is_recursive mie =
       List.exists (fun t -> is_recursive_constructor (nparams+1) t) ind.mind_entry_lc
   | _ -> false
 
-let declare_mutual_inductive_with_eliminations isrecord mie impls =
+let declare_mutual_inductive_with_eliminations mie impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
@@ -612,7 +613,7 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
   | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_,kn) = declare_mind isrecord mie in
+  let (_, kn), prim = declare_mind mie in
   let mind = Global.mind_of_delta_kn kn in
   List.iteri (fun i (indimpls, constrimpls) ->
 		   let ind = (mind,i) in
@@ -622,7 +623,8 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
 			  maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
 		       constrimpls)
       impls;
-  if_verbose msg_info (minductive_message names);
+  let warn_prim = match mie.mind_entry_record with Some (Some _) -> not prim | _ -> false in
+  if_verbose msg_info (minductive_message warn_prim names);
   if mie.mind_entry_private == None
   then declare_default_schemes mind;
   mind
@@ -636,7 +638,7 @@ let do_mutual_inductive indl poly prv finite =
   (* Interpret the types *)
   let mie,impls = interp_mutual_inductive indl ntns poly prv finite in
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (declare_mutual_inductive_with_eliminations UserVerbose mie impls);
+  ignore (declare_mutual_inductive_with_eliminations mie impls);
   (* Declare the possible notations of inductive types *)
   List.iter Metasyntax.add_notation_interpretation ntns;
   (* Declare the coercions *)

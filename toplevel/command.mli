@@ -97,7 +97,7 @@ val interp_mutual_inductive :
    associated schemes *)
 
 val declare_mutual_inductive_with_eliminations :
-  Declare.internal_flag -> mutual_inductive_entry -> one_inductive_impls list ->
+  mutual_inductive_entry -> one_inductive_impls list ->
   mutual_inductive
 
 (** Entry points for the vernacular commands Inductive and CoInductive *)

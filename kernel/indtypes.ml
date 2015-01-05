@@ -782,7 +782,8 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
   let pkt = packets.(0) in	  
   let isrecord = 
     match isrecord with
-    | Some (Some rid) when pkt.mind_kelim == all_sorts && Array.length pkt.mind_consnames == 1 ->
+    | Some (Some rid) when pkt.mind_kelim == all_sorts && Array.length pkt.mind_consnames == 1
+			   && pkt.mind_consnrealargs.(0) > 0 ->
       (** The elimination criterion ensures that all projections can be defined. *)
       let u = 
 	if p then 

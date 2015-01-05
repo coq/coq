@@ -389,20 +389,20 @@ let declare_projections mind =
 	let kn' = declare_constant id (ProjectionEntry entry,
 				       IsDefinition StructureComponent) 
 	in
-	  assert(eq_constant kn kn')) kns
-    | Some None | None -> ()
+	  assert(eq_constant kn kn')) kns; true
+    | Some None | None -> false
 
 (* for initial declaration *)
-let declare_mind isrecord mie =
+let declare_mind mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly (Pp.str "cannot declare an empty list of inductives") in
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   let mind = Global.mind_of_delta_kn kn in
-  declare_projections mind;
+  let isprim = declare_projections mind in
   declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
-  oname
+  oname, isprim
 
 (* Declaration messages *)
 
