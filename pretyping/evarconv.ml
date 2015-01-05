@@ -937,7 +937,7 @@ let filter_possible_projections c ty ctxt args =
   List.map_i (fun i (id,b,_) ->
     let () = assert (i < len) in
     let a = Array.unsafe_get args i in
-    not (Option.is_empty b) ||
+    (match b with None -> false | Some c -> not (isRel c || isVar c)) ||
     a == c ||
     (* Here we make an approximation, for instance, we could also be *)
     (* interested in finding a term u convertible to c such that a occurs *)
