@@ -150,6 +150,7 @@ type pref =
       mutable auto_indent : bool;
       mutable show_spaces : bool;
       mutable show_right_margin : bool;
+      mutable show_progress_bar : bool;
       mutable spaces_instead_of_tabs : bool;
       mutable tab_length : int;
       mutable highlight_current_line : bool;
@@ -229,6 +230,7 @@ let current = {
     auto_indent = false;
     show_spaces = true;
     show_right_margin = false;
+    show_progress_bar = true;
     spaces_instead_of_tabs = true;
     tab_length = 2;
     highlight_current_line = false;
@@ -299,6 +301,7 @@ let save_pref () =
     add "auto_indent" [string_of_bool p.auto_indent] ++
     add "show_spaces" [string_of_bool p.show_spaces] ++
     add "show_right_margin" [string_of_bool p.show_right_margin] ++
+    add "show_progress_bar" [string_of_bool p.show_progress_bar] ++
     add "spaces_instead_of_tabs" [string_of_bool p.spaces_instead_of_tabs] ++
     add "tab_length" [string_of_int p.tab_length] ++
     add "highlight_current_line" [string_of_bool p.highlight_current_line] ++
@@ -384,6 +387,7 @@ let load_pref () =
     set_bool "auto_indent" (fun v -> np.auto_indent <- v);
     set_bool "show_spaces" (fun v -> np.show_spaces <- v);
     set_bool "show_right_margin" (fun v -> np.show_right_margin <- v);
+    set_bool "show_progress_bar" (fun v -> np.show_progress_bar <- v);
     set_bool "spaces_instead_of_tabs" (fun v -> np.spaces_instead_of_tabs <- v);
     set_int "tab_length" (fun v -> np.tab_length <- v);
     set_bool "highlight_current_line" (fun v -> np.highlight_current_line <- v);
@@ -518,6 +522,7 @@ let configure ?(apply=(fun () -> ())) () =
     let auto_complete = gen_button "Auto completion" current.auto_complete in
     let show_spaces = gen_button "Show spaces" current.show_spaces in
     let show_right_margin = gen_button "Show right margin" current.show_right_margin in
+    let show_progress_bar = gen_button "Show progress bar" current.show_progress_bar in
     let spaces_instead_of_tabs =
       gen_button "Insert spaces instead of tabs"
       current.spaces_instead_of_tabs
@@ -541,6 +546,7 @@ let configure ?(apply=(fun () -> ())) () =
       current.auto_indent <- auto_indent#active;
       current.show_spaces <- show_spaces#active;
       current.show_right_margin <- show_right_margin#active;
+      current.show_progress_bar <- show_progress_bar#active;
       current.spaces_instead_of_tabs <- spaces_instead_of_tabs#active;
       current.highlight_current_line <- highlight_current_line#active;
       current.nanoPG <- nanoPG#active;

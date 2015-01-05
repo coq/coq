@@ -77,6 +77,7 @@ type pref =
       mutable auto_indent : bool;
       mutable show_spaces : bool;
       mutable show_right_margin : bool;
+      mutable show_progress_bar : bool;
       mutable spaces_instead_of_tabs : bool;
       mutable tab_length : int;
       mutable highlight_current_line : bool;

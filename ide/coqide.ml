@@ -825,6 +825,7 @@ let refresh_editor_prefs () =
     Gobject.set conv sn.script#as_widget show_spaces;
 
     sn.script#set_show_right_margin prefs.show_right_margin;
+    if prefs.show_progress_bar then sn.segment#misc#show () else sn.segment#misc#hide ();
     sn.script#set_insert_spaces_instead_of_tabs
       prefs.spaces_instead_of_tabs;
     sn.script#set_tab_width prefs.tab_length;
