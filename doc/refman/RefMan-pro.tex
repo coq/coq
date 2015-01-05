@@ -353,15 +353,19 @@ with this priority ordering to have a correct indentation: {\tt -},
 the inner one, like in the example above.
 
 \begin{ErrMsgs}
-\item \errindex{Error: No such unproven subgoal} there is no proof
-      under focus (because it has just been solved), so the command
-      you are trying to use cannot be applied. You need to first focus
-      the next proof by using the bullet corresponding to the right
-      level (using an incorrect bullet also generates this message).
+\item \errindex{Error: No such goal} there is no proof under focus
+  (because it has just been solved), so the command you are trying
+  to use cannot be applied. You need to first focus the next proof
+  by using the bullet corresponding to the right level (using an
+  incorrect bullet can also generates this message in some cases).
+\item \errindex{Error: No such goal (1)} Coq is expecting a given
+  bullet and you are trying to introduce a fresh one.
 \item \errindex{Error: This proof is focused, but cannot be unfocused
-      this way}
-  You are trying to use a bullet that is already in use or a {\tt \}} but the current
-  subproof has not been fully solved.
+  this way} You are trying to use a bullet that is already in use or a
+  {\tt \}} but the current subproof has not been fully solved.
+\item \errindex{Error: Wrong bullet: <bullet> seems not finished.}
+  You are trying to use a bullet already in use but at a wrong level,
+  try <bullet> instead.
 \end{ErrMsgs}
 
 
