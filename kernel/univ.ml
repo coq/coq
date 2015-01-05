@@ -1760,7 +1760,7 @@ struct
 
   let pr (univs, cst as ctx) =
     if is_empty ctx then mt() else
-      Instance.pr univs ++ str " |= " ++ v 1 (Constraint.pr cst)
+      Instance.pr univs ++ str " |= " ++ v 0 (Constraint.pr cst)
 
   let hcons (univs, cst) =
     (Instance.hcons univs, hcons_constraints cst)
@@ -1828,7 +1828,7 @@ struct
 
   let pr (univs, cst as ctx) =
     if is_empty ctx then mt() else
-      LSet.pr univs ++ str " |= " ++ v 1 (Constraint.pr cst)
+      LSet.pr univs ++ str " |= " ++ v 0 (Constraint.pr cst)
 
   let constraints (univs, cst) = cst
   let levels (univs, cst) = univs
