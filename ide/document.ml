@@ -14,29 +14,39 @@ type 'a sentence = { mutable state_id : Stateid.t option; data : 'a }
 
 type id = Stateid.t
 
-class ['a] signals
-  (pushed : 'a GUtil.signal)
-  (popped : 'a GUtil.signal) =
-object (self)
-  inherit GUtil.ml_signals [pushed#disconnect; popped#disconnect]
-  method pushed = pushed#connect ~after
-  method popped = popped#connect ~after
+class type ['a] signals =
+  object
+    method popped : callback:('a -> unit) -> unit
+    method pushed : callback:('a -> unit) -> unit
+  end
+
+class ['a] signal () =
+object
+  val mutable attached : ('a -> unit) list = []
+  method call (x : 'a) =
+    let iter f = try f x with _ -> () in
+    List.iter iter attached
+  method connect f = attached <- f :: attached
 end
 
 type 'a document = {
   mutable stack : 'a sentence list;
   mutable context : ('a sentence list * 'a sentence list) option;
-  pushed_sig : 'a GUtil.signal;
-  popped_sig : 'a GUtil.signal;
+  pushed_sig : 'a signal;
+  popped_sig : 'a signal;
 }
 
-let connect d = new signals d.pushed_sig d.popped_sig
+let connect d =
+  object
+    method pushed ~callback = d.pushed_sig#connect callback
+    method popped ~callback = d.popped_sig#connect callback
+  end
 
 let create () = {
   stack = [];
   context = None;
-  pushed_sig = new GUtil.signal ();
-  popped_sig = new GUtil.signal ();
+  pushed_sig = new signal ();
+  popped_sig = new signal ();
 }
 
 (* Invariant, only the tip is a allowed to have state_id = None *)

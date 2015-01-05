@@ -106,13 +106,10 @@ val print :
 
 (** Callbacks on documents *)
 
-class ['a] signals :
-  'a GUtil.signal ->
-  'a GUtil.signal ->
+class type ['a] signals =
   object
-    inherit GUtil.ml_signals
-    method popped : callback:('a -> unit) -> GtkSignal.id
-    method pushed : callback:('a -> unit) -> GtkSignal.id
+    method popped : callback:('a -> unit) -> unit
+    method pushed : callback:('a -> unit) -> unit
   end
 
 val connect : 'a document -> 'a signals
