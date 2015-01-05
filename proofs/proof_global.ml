@@ -394,14 +394,20 @@ module Bullet = struct
 
   (* There are two reasons why a bullet may be wrong: *)
 
-  (* Either because the previous same bullet is not finished.
-     t contains either the unfinished bullet or a deeper unfinished
-     one (better suggestion to the user). *)
-  exception FailedUnfocusBullet of t
+  (* 1) because the previous same bullet is not finished.
 
-  (* Or there is no more goal at this level of bullet. t is the wrong
-     bullet, looking which one is correct is not implemented yet. *)
-  exception FailedFocusBullet of t
+     t contains the unfinished bullet and optionally the deeper
+     unfinished one (better suggestion to the user). *)
+  exception FailedUnfocusBullet of t * t option
+
+  (* 2) there is no more goal at this level of bullet.
+
+     t is the wrong bullet, looking which one is correct is not
+     implemented yet. *)
+  exception FailedFocusUsedBullet of t
+
+  exception ExhaustedBulletStack
+  exception FailedFocusUnusedBullet of t
 
   let bullet_eq b1 b2 = match b1, b2 with
   | Vernacexpr.Dash n1, Vernacexpr.Dash n2 -> n1 = n2
@@ -415,16 +421,32 @@ module Bullet = struct
     | Vernacexpr.Star n -> str (String.make n '*')
     | Vernacexpr.Plus n -> str (String.make n '+')
 
-  let _ = Errors.register_handler
-    begin function
-    | FailedUnfocusBullet b ->
-      Errors.errorlabstrm "Focus" Pp.(str"Wrong bullet: " ++ pr_bullet b
-				      ++ str" seems not finished.")
-    | FailedFocusBullet b ->
-      Errors.errorlabstrm "Focus" Pp.(str"Wrong bullet: no more goals under "
-				      ++ pr_bullet b ++ str".")
-    | _ -> raise Errors.Unhandled
-    end
+  let _ =
+    Errors.register_handler
+      (function
+	| FailedUnfocusBullet (b,optb') ->
+	   (match optb' with
+	    | Some b' ->
+	       if b = b' then
+		 Errors.errorlabstrm
+		   "Focus" Pp.(str"Wrong bullet: The current bullet "
+			       ++ pr_bullet b' ++ str" seems not finished.")
+	       else Errors.errorlabstrm
+		      "Focus" Pp.(str"Wrong bullet: Finish bullet "
+				  ++ pr_bullet b'
+				  ++ str" before going back to " ++ pr_bullet b
+				  ++ str".")
+	    | None -> assert false)
+
+	| FailedFocusUsedBullet b ->
+	   Errors.errorlabstrm
+	     "Focus" Pp.(str"Wrong bullet: no more goals at this level. Try "
+			 ++ pr_bullet b ++ str" instead.")
+	| FailedFocusUnusedBullet b ->
+	   Errors.errorlabstrm
+	     "Focus" Pp.(str"No focussed goal. To focus next goal, use bullet "
+			 ++ pr_bullet b ++ str".")
+	| _ -> raise Errors.Unhandled)      
 
 
   type behavior = {
@@ -464,45 +486,77 @@ module Bullet = struct
       in
       has_bullet (get_bullets pr)
 
-    (* precondition: the stack is not empty
-       this function tries to raise a more precise exception than
-       [Proof.CannotUnfocusThisWay]. This exception is then catch and
-       made more precise in function [put] below. *)
+    (* pop a bullet from proof [pr]. If no more bullet in [pr] then
+       raise [Proof.CannotUnfocusThisWay]. Otherwise if pop impossible
+       (pending proofs on this level of bullet or higher) then raise
+       [FailedUnfocusBullet (b)] where [b] is the bullet that could
+       not be popped. Beware that [b] is not the good suggestion at
+       this point. *)
     let pop pr =
       match get_bullets pr with
       | b::_ ->
 	(try Proof.unfocus bullet_kind pr () , b
-	 with Proof.CannotUnfocusThisWay -> raise (FailedUnfocusBullet (b)))
-      | _ -> assert false
+	 with Proof.CannotUnfocusThisWay -> raise (FailedUnfocusBullet (b,None)))
+      | _ -> raise ExhaustedBulletStack
 
-    let push b pr =
+    let push (b:t) pr =
       Proof.focus bullet_cond (b::get_bullets pr) 1 pr
+
+    (* This function pops bullets one by one until [bul] or end
+       of stack. If [bul] is found and all pops were ok (no pending
+       subgoals in popped bullets) then return the new proof.
+       Otherwise raise an exception with a bullet suggestion *)
+    let rec pop_or_explain (untilbul:t option) (p:Proof.proof) (suggestbul:t option) =
+      try
+	let p, b = pop p in
+	(* pop went well, see if b is a good suggestion. *)
+	let newsuggestbul =
+	  (* if push does not fail then b is a good suggestion. *)
+	  try let _ = push b p in Some b (* push didn't fail so b is OK *)
+	  with _ -> suggestbul in
+	(* Check if we found untilbul (if applicable) and recursive
+	   call if not. *)
+	(match untilbul with
+	 | None -> pop_or_explain untilbul p newsuggestbul
+	 | Some bul' -> if bullet_eq bul' b
+			then p
+			else pop_or_explain untilbul p newsuggestbul)
+      with FailedUnfocusBullet (b,None) ->
+	   (* the current bullet is [b] and it cannot be popped. If we
+	   don't have a suggestion at this point, it means that the
+	   current bullet is not finished, otherwise suggest. *)	   
+	   (match suggestbul with
+	      None -> raise (FailedUnfocusBullet (b,Some b))
+	    | Some b' -> raise (FailedUnfocusBullet (b, Some b')))
+	   
+	 | ExhaustedBulletStack ->
+	    (* bullet stack is exhausted, suggest [suggestbul]. *)
+	    (match suggestbul with
+	       None -> raise Proof.CannotUnfocusThisWay
+	     | Some b' -> raise (FailedFocusUnusedBullet b'))
+
 
     let put p bul =
       if has_bullet bul p then
-	(* goodbullet is used to store a good bullet among the ones we
-	   pop, in case the given bullet fails. For better error message. *)
-        let rec pop_until p (goodbullet:t option) =
-          try
-	    let p, b = pop p in
-	    let newgoodbullet =
-	      (* FIXME: is push slow? probably not. And the number of
-	         bullet level is generally below 3 anyway. *)
-	      try let _ = push b p in Some b (* push didn't fail so b is OK *)
-	      with _ -> goodbullet in
-            if not (bullet_eq bul b) then pop_until p newgoodbullet else p,newgoodbullet
-	  with FailedUnfocusBullet (b) -> (* replace wrong bullet by valid one *)
-	    raise (FailedUnfocusBullet 
-		     (match goodbullet with
-		       None -> b
-		     | Some b' -> b'))
-	in
-        let p',_ = pop_until p None in
+        let p' = pop_or_explain (Some bul) p None in
 	try push bul p'
-	with Proof.NoSuchGoals(1,1) -> raise (FailedFocusBullet bul)
+	with Proof.NoSuchGoals(1,1) ->
+	  (* 	  raise (FailedFocusUsedBullet bul) *)
+	  try let _ = pop_or_explain None p None in
+	      raise Proof.CannotUnfocusThisWay
+	  with FailedUnfocusBullet (b,Some bsugg) -> raise (FailedFocusUsedBullet bsugg)
       else
-	push bul p
-
+	try push bul p
+	with 
+	| Proof.NoSuchGoals(1,1) ->
+	   (* pop_until should raise an exception with a bullet suggestion,
+	    but FailedUnfocusBullet should be transformed into
+	    FailedFocusUnusedBullet. *)
+	   (try let _ = pop_or_explain None p None in
+		raise (Proof.NoSuchGoals(1,1))
+	    with FailedUnfocusBullet (b,Some bsugg) ->
+	      raise (FailedFocusUnusedBullet bsugg))
+	   	
     let strict = {
       name = "Strict Subproofs";
       put = put
