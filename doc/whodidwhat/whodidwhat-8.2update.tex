@@ -1,0 +1,303 @@
+\documentclass{article}
+
+\usepackage{fullpage}
+\usepackage[utf8]{inputenc}
+\usepackage{t1enc}
+
+\begin{document}
+
+\title{Who did what in the Coq archive?}
+
+\author{The Coq development team}
+
+\maketitle
+
+\centerline{(updated for Coq 8.2)}
+
+\section{The Calculus of Inductive Constructions}
+
+\begin{itemize}
+\item The Calculus of Constructions
+  \begin{itemize}
+  \item Core type-checker: Gérard Huet and Thierry Coquand with
+    optimizations by Chet Murthy, Bruno Barras
+  \item Head reduction functions: Gérard Huet, Christine Paulin, Bruno Barras
+  \end{itemize}
+\item Conversion and reduction
+  \begin{itemize}
+  \item Lazy conversion machine: Bruno Barras
+  \item Transparency/opacity: Bruno Barras
+  \item Bytecode-based conversion: Benjamin Grégoire
+  \item Binary-words retroknowledge: Arnaud Spiwack 
+  \end{itemize}
+\item The universe hierarchy
+  \begin{itemize}
+  \item Floating universes: Gérard Huet, with contributions from Bruno Barras
+  \item Algebraic universes: Hugo Herbelin
+  \end{itemize}
+\item Mutual inductive types and recursive definitions
+  \begin{itemize}
+  \item Type-checking: Christine Paulin
+  \item Positivity condition: Christine Paulin
+  \item Guardness condition for fixpoints: Christine Paulin;
+    extensions by Eduardo Gimenez and Bruno Barras
+  \item Recursively non-uniform parameters: Christine Paulin
+  \item Sort-polymorphism of inductive types: Hugo Herbelin
+  \end{itemize}
+\item Local definitions: Hugo Herbelin
+\item Mutual coinductive types and corecursive definitions: Eduardo Gimenez
+\item Module system
+  \begin{itemize}
+  \item Core system: Jacek Chrz\k{a}szcz
+  \item Inlining: Claudio Sacerdoti Coen and Élie Soubiran
+  \item Module inclusion: Élie Soubiran
+  \item Functorial signature application: Élie Soubiran
+  \item Transparent name space: Élie Soubiran
+  \item Resolution of qualified names: Hugo Herbelin
+  \end{itemize}
+\item Minimalist stand-alone type-checker (\texttt{coqchk}): Bruno Barras
+\end{itemize}
+
+\section{Specification language}
+
+\begin{itemize}
+\item Sections: Gilles Dowek with extra contributions by Gérard
+  Huet, Chet Murthy, Hugo Herbelin
+\item The \texttt{Russell} specifications language, proof obligations (\texttt{Program}): Matthieu Sozeau
+\item Type inference: Chet Murthy, with extra contributions by Bruno
+  Barras, Hugo Herbelin and Matthieu Sozeau
+\item Pattern-matching: Hugo Herbelin on top of a first version by
+  Cristina Cornes
+\item Implicit arguments: Amokrane Saïbi, with extensions by Hugo
+  Herbelin and Matthieu Sozeau
+\item Coercions: Amokrane Saïbi
+\item Records: Amokrane Saïbi with extensions by Arnaud Spiwack and
+  Matthieu Sozeau
+\item Canonical structures: Amokrane Saïbi
+\item Type classes: Matthieu Sozeau
+\item Functional schemes (\texttt{Function}, \texttt{Functional Scheme}, ...): Julien Forest and Pierre Courtieu (preliminary version by Yves Bertot)
+\item Generation of induction schemes: Christine Paulin, Vincent
+  Siles, Matthieu Sozeau
+ \end{itemize}
+
+\section{Tactics}
+
+\subsection{General tactic support}
+
+\begin{itemize}
+\item Proof engine: Chet Murthy (first version by Thierry Coquand)
+\item Ltac: David Delahaye, with extensions by Hugo Herbelin, Bruno Barras, ...
+\item Tactic notations: Hugo Herbelin (first version by Chet Murthy)
+\item Main tactic unification procedure: Chet Murthy with
+  contributions from Hugo Herbelin and Matthieu Sozeau
+\item Mathematical-style language (C-Zar): Pierre Corbineau
+\item Communication with external tools (\texttt{external}): Hugo Herbelin
+
+\end{itemize}
+
+\subsection{Predefined tactics}
+
+\begin{itemize}
+\item Basic tactics (\texttt{intro}, \texttt{apply},
+  \texttt{assumption}, \texttt{exact}): Thierry Coquand, with further
+  collective extensions
+\item Reduction tactics: Christine Paulin (\texttt{simpl}), Bruno
+  Barras (\texttt{cbv}, \texttt{lazy}), ...
+\item Tacticals: Thierry Coquand, Chet Murthy, Eduardo Gimenez, ...
+\item Induction: Christine Paulin (\texttt{elim}, \texttt{case}), Hugo Herbelin (\texttt{induction}, \texttt{destruct}
+\item Refinement (\texttt{refine}): Jean-Christophe Filliâtre
+\item Introduction patterns: Eduardo Gimenez with collective extensions
+\item Forward reasoning: Hugo Herbelin (\texttt{assert}, \texttt{apply in}), Pierre Letouzey (\texttt{specialize}, initial version by Amy Felty)
+\item Rewriting tactics (\texttt{rewrite}): basic version by Christine Paulin,
+  extensions by Jean-Christophe Filliâtre and Pierre Letouzey
+\item Tactics about equivalence properties (\texttt{reflexivity},
+  \texttt{symmetry}, \texttt{transitivity}): Christine Paulin (?),
+\item Equality tactics (\texttt{injection}/\texttt{discriminate}):
+  Cristina Cornes
+\item Inversion tactics (\texttt{inversion}): Cristina Cornes, Chet Murthy
+\item Setoid rewriting: Matthieu Sozeau (first version by Clément
+  Renard, second version by Claudio Sacerdoti Coen), contributions
+  from Nicolas Tabareau
+\item Decision of equality: Eduardo Gimenez
+\item Basic Ltac-level tactics: Pierre Letouzey, Matthieu Sozeau,
+  Evgeny Makarov
+\end{itemize}
+
+\subsection{General automation tactics}
+
+\begin{itemize}
+\item Resolution (\texttt{auto}, \texttt{trivial}): Christine Paulin
+  with extensions from Chet Murthy, Eduardo Gimenez, Patrick
+  Loiseleur (hint bases), Matthieu Sozeau
+\item Resolution with existential variables (\texttt{eauto}): Chet Murthy, Jean-Christophe Filliâtre, with extensions from Matthieu Sozeau
+\item Automatic rewriting (\texttt{autorewrite}): David Delahaye
+\end{itemize}
+
+\subsection{Domain-specific decision tactics}
+
+\begin{itemize}
+\item Congruence closure (\texttt{cc}): Pierre Corbineau
+\item Decision of first-order logic (\texttt{firstorder}): Pierre Corbineau
+\item Simplification of polynomial fractions (\texttt{field}): Laurent
+  Théry and Benjamin Grégoire (first version by David Delahaye and
+  Micaela Mayero)
+\item Simplification of polynomial expressions (\texttt{ring}): Assia
+  Mahboubi, Bruno Barras and Benjamin Grégoire (first version by
+  Samuel Boutin, second version by Patrick Loiseleur)
+\item Decision of systems of linear inequations: Frédéric Besson
+  (\texttt{psatzl}); Loïc Pottier (\texttt{fourier})
+\item Decision of systems of linear inequations over integers:
+  Frédéric Besson (\texttt{lia}); Pierre Crégut (\texttt{omega} and
+  \texttt{romega})
+\item (Partial) decision of systems of polynomical inequations
+  (\texttt{sos}, \texttt{psatz}): Frédéric Besson, with generalization
+  over arbitrary rings by Evgeny Makarov; uses HOL-Light interface to
+  \texttt{csdp} by John Harrisson
+\item Decision/simplification of intuitionistic propositional logic:
+  David Delahaye (\texttt{tauto}, \texttt{intuition}, first version by
+  Cesar Mu\~noz, second version by Chet Murthy), with contributions
+  from Judicaël Courant; Pierre Corbineau (\texttt{rtauto})
+\item Decision/simplification of intuition first-order logic: Pierre
+  Corbineau (\texttt{firstorder})
+\end{itemize}
+
+\section{Extra tools}
+
+\begin{itemize}
+\item Program extraction: Pierre Letouzey (first implementation by
+  Benjamin Werner, second by Jean-Christophe Filliâtre)
+\item Export of context to external communication tools (\texttt{dp}):
+  Nicolas Ayache and Jean-Christophe Filliâtre, with contributions by
+  Claude Marché
+\item Export of terms and environments to XML format: Claudio
+  Sacerdoti Coen, with extensions from Cezary Kaliszyk
+\end{itemize}
+
+\section{Environment management}
+
+\begin{itemize}
+\item Separate compilation: initiated by Chet Murthy
+\item Import/Export: initiated by Chet Murthy
+\item Options management: Hugo Herbelin with contributions by Arnaud Spiwack
+\item Resetting and backtracking: Chet Murthy with contributions from Pierre Courtieu
+\item Searching: Hugo Herbelin, Yves Bertot
+\item Whelp suppport: Hugo Herbelin
+\end{itemize}
+
+\section{Parsing and printing}
+
+\begin{itemize}
+\item General parsing support: Chet Murthy, Bruno Barras, Daniel de Rauglaudre
+\item General printing support: Chet Murthy, Jean-Christophe Filliâtre
+\item Lexing: Daniel de Rauglaudre
+\item Support for UTF-8: Hugo Herbelin, with contributions from Alexandre Miquel
+\item Numerical notations: Hugo Herbelin, Patrick Loiseleur, Micaela Mayero
+\item String notations: Hugo Herbelin
+\item New ``V8'' syntax: Bruno Barras, Hugo Herbelin with contributions by Olivier Desmettre
+\item Abbreviations: Chet Murthy
+\item Notations: Chet Murthy, Hugo Herbelin
+\end{itemize}
+
+\section{Libraries}
+
+\begin{itemize}
+\item Init: collective (initiated by Christine Paulin and Gérard Huet)
+\item Arith: collective (initiated by Christine Paulin)
+\item ZArith: collective (initiated by Pierre Crégut)
+\item Bool: collective (initiated by Christine Paulin)
+\item NArith: Hugo Herbelin, Pierre Letouzey, Evgeny Makarov (out of
+  initial contibution by Pierre Crégut)
+\item Lists: Pierre Letouzey, Jean-Marc Notin (initiated by Christine Paulin)
+\item Reals: Micaela Mayero (axiomatization and main properties), Olivier Desmettre (convergence, derivability, integrals, trigonometric functions), contributions from Russell O'Connor and Cezary Kaliszyk
+\item Relations: Bruno Barras, Cristina Cornes with contributions from
+  Pierre Castéran
+\item Wellfounded: Bruno Barras, Cristina Cornes
+\item FSets: Pierre Letouzey, from initial work with Jean-Christophe Filliâtre, decision tactic for FSets by Aaron Bohannon
+\item Logic: Christine Paulin, Hugo Herbelin, Bruno Barras
+\item Numbers: Evgeny Makarov (abstractions), Laurent Théry and Benjamin Grégoire (big numbers), Arnaud Spiwack and Pierre Letouzey (word-based arithmetic)
+\item Classes: Matthieu Sozeau
+\item QArith: Pierre Letouzey, with contributions from Russell O'Connor
+\item Setoid: Matthieu Sozeau (first version by Clément Renard, second version by Claudio Sacerdoti Coen)
+\item Sets: Gilles Kahn and Gérard Huet
+\item Sorting: Gérard Huet
+\item Strings: Laurent Théry
+\item Program: Matthieu Sozeau
+\item Unicode: Claude Marché
+\end{itemize}
+
+\section{Commands}
+
+\begin{itemize}
+\item Batch compiler (\texttt{coqc}):  Chet Murthy (?)
+\item Compilation dependency calculator (\texttt{coqdep}):
+  Jean-Christophe Filliâtre
+\item Statistic tool (\texttt{coqwc}): Jean-Christophe Filliâtre
+\item Simple html presentation tool (\texttt{gallina}) (deprecated): Jean-Christophe Filliâtre
+\item Auto-maker (\texttt{coq\_makefile}): Jean-Christophe Filliâtre,
+  with contributions from Judicaël Courant
+\item LaTeX presentation tool (\texttt{coq-tex}): Jean-Christophe Filliâtre
+\item Multi-purpose presentation tool (\texttt{coqdoc}): Jean-Christophe Filliâtre with extensions from
+  Matthieu Sozeau, Jean-Marc Notin, Hugo Herbelin
+\item Interactive toplevel (\texttt{coqtop}): Jean-Christophe Filliâtre (?)
+\item Custom toplevel builder (\texttt{coqmktop}): Jean-Christophe Filliâtre (?)
+\end{itemize}
+
+\section{Graphical interfaces}
+
+\begin{itemize}
+\item Support for {\em PCoq}: Yves Bertot with contributions by
+  Laurence Rideau and Loïc Pottier; additional support for {\em TmEgg}
+  by Lionel Mamane
+\item Support for {\em Proof General}: Pierre Courtieu
+\item {\em CoqIDE}: Benjamin Monate with contributions from
+  Jean-Christophe Filliâtre, Claude Marché, Pierre Letouzey, Julien
+  Narboux, Hugo Herbelin, Pierre Corbineau; uses the Cameleon library
+  by Maxence Guesdon
+\end{itemize}
+
+\section{Architecture}
+
+\begin{itemize}
+\item Functional-kernel-based architecture: Jean-Christophe Filliâtre
+\item Extensible objects and summaries: Chet Murthy
+\item Hash-consing: Bruno Barras
+\item Error locations: Jean-Christophe Filliâtre, Bruno Barras, Hugo Herbelin
+\item Existential variables engine: Chet Murthy with a revision by
+  Bruno Barras and extensions by Clément Renard and Hugo Herbelin
+\end{itemize}
+
+\section{Development tools}
+
+\begin{itemize}
+\item Makefile's: Chet Murthy, Jean-Christophe Filliâtre, Judicaël
+  Courant, Lionel Mamane, Pierre Corbineau, Pierre Letouzey
+\item Debugging: Jean-Christophe Filliâtre with contributions from Jacek Chrz\k{a}szcz, Hugo Herbelin, Bruno Barras, ...
+\item ML quotations: David Delahaye and Daniel de Rauglaudre
+\item ML tactic and vernacular extensions: Hugo Herbelin (first version by Chet Murthy)
+\item Test suite: collective content, initiated by Jean-Christophe Filliâtre with further extensions by Hugo Herbelin, Jean-Marc Notin
+\end{itemize}
+
+\section{Documentation}
+
+\begin{itemize}
+
+\item Reference Manual: collective, layout by Patrick Loiseleur,
+  Claude Marché (former User's Guide in 1991 by Gilles Dowek, Amy
+  Felty, Hugo Herbelin, Gérard Huet, Christine Paulin, Benjamin
+  Werner; initial documentation in 1989 by Thierry Coquand, Gilles
+  Dowek, Gérard Huet, Christine Paulin),
+\item Basic tutorial: Gérard Huet, Gilles Kahn, Christine Paulin
+\item Tutorial on recursive types: Eduardo Gimenez with updates by Pierre Castéran
+\item FAQ: Hugo Herbelin, Julien Narboux, Florent Kirchner
+\end{itemize}
+
+\section{Features discontinued by lack of support}
+
+\begin{itemize}
+\item Searching modulo isomorphism: David Delahaye
+\item Explanation of proofs in pseudo-natural language: Yann Coscoy
+\end{itemize}
+
+Errors may have been inopportunely introduced, please report them to Hugo~\verb=.=~Herbelin~\verb=@=~inria~\verb=.=~fr
+
+\end{document}
