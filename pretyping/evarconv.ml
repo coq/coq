@@ -1060,11 +1060,15 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   with TypingFailed evd -> evd, false
 
 let second_order_matching_with_args ts env evd ev l t =
-  let evd,ev = evar_absorb_arguments env evd ev (Array.to_list l) in
+(*
+  let evd,ev = evar_absorb_arguments env evd ev l in
   let argoccs = Array.map_to_list (fun _ -> None) (snd ev) in
   let evd, b = second_order_matching ts env evd ev argoccs t in
   if b then Success evd
   else UnifFailure (evd, ConversionFailed (env,mkApp(mkEvar ev,l),t))
+  if b then Success evd else
+*)
+  UnifFailure (evd, ConversionFailed (env,mkApp(mkEvar ev,l),t))
 
 let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let t1 = apprec_nohdbeta ts env evd (whd_head_evar evd t1) in
