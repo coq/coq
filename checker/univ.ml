@@ -1016,25 +1016,6 @@ let check_constraints c g =
   Constraint.for_all (check_constraint g) c
 
 (**********************************************************************)
-(* Tools for sort-polymorphic inductive types                         *)
-
-(* Miscellaneous functions to remove or test local univ assumed to
-   occur only in the le constraints *)
-
-let remove_large_constraint u v min = 
-  match Universe.level v with
-  | Some u' -> if Level.equal u u' then min else v
-  | None -> Huniv.remove (Universe.Expr.make u) v
-
-let subst_large_constraint u u' v =
-  (* if is_direct_constraint u v then  *)
-  Universe.sup u' (remove_large_constraint u v type0m_univ)
-  (* else v *)
-
-let subst_large_constraints =
-  List.fold_right (fun (u,u') -> subst_large_constraint u u')
-
-(**********************************************************************)
 (** Universe polymorphism                                             *)
 (**********************************************************************)
 

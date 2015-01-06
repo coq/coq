@@ -120,11 +120,6 @@ val merge_constraints : constraints -> universes -> universes
 
 val check_constraints : constraints -> universes -> bool
 
-(** {6 Support for old-style sort-polymorphism } *)
-
-val subst_large_constraints :
-  (universe_level * universe) list -> universe -> universe
-
 (** {6 Support for universe polymorphism } *)
 
 (** Polymorphic maps from universe levels to 'a *)

@@ -143,10 +143,7 @@ let sort_as_univ = function
 | Prop Pos -> Univ.type0_univ
 
 let cons_subst u su subst =
-  try
-    (u, Univ.sup su (List.assoc_f Univ.Level.equal u subst)) ::
-      List.remove_assoc_f Univ.Level.equal u subst
-  with Not_found -> (u, su) :: subst
+  Univ.LMap.add u su subst
 
 let actualize_decl_level env lev t =
   let sign,s = dest_arity env t in
@@ -179,15 +176,10 @@ let rec make_subst env = function
       (* (actualize_decl_level), then to the conclusion of the arity (via *)
       (* the substitution) *)
       let ctx,subst = make_subst env (sign, exp, []) in
-      (* if polymorphism_on_non_applied_parameters then *)
-      (* 	let s = fresh_local_univ () in *)
-      (* 	let t = actualize_decl_level env (Type s) t in *)
-      (* 	(na,None,t)::ctx, cons_subst u s subst *)
-      (* else *)
 	d::ctx, subst
   | sign, [], _ ->
       (* Uniform parameters are exhausted *)
-      sign,[]
+      sign,Univ.LMap.empty
   | [], _, _ ->
       assert false
 
@@ -197,7 +189,7 @@ exception SingletonInductiveBecomesProp of Id.t
 let instantiate_universes env ctx ar argsorts =
   let args = Array.to_list argsorts in
   let ctx,subst = make_subst env (ctx,ar.template_param_levels,args) in
-  let level = Univ.subst_large_constraints subst ar.template_level in
+  let level = Univ.subst_univs_universe (Univ.make_subst subst) ar.template_level in
   let ty =
     (* Singleton type not containing types are interpretable in Prop *)
     if Univ.is_type0m_univ level then Prop Null
