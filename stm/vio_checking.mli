@@ -6,8 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* [check_vi tasks file] checks the [tasks] stored in [file] *)
-val check_vi : int list * string -> bool
-val schedule_vi_checking : int -> string list -> unit
+(* [check_vio tasks file] checks the [tasks] stored in [file] *)
+val check_vio : int list * string -> bool
+val schedule_vio_checking : int -> string list -> unit
 
-val schedule_vi_compilation : int -> string list -> unit
+val schedule_vio_compilation : int -> string list -> unit

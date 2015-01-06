@@ -98,14 +98,14 @@ Coq need to process all the proofs of the $.v$ file.
 The asynchronous processing of proofs can decouple the generation of a
 compiled file (like the $.vo$ one) that can be $Required$ from the generation
 and checking of the proof objects.  The $-quick$ flag can be passed to
-$coqc$ or $coqtop$ to produce, quickly, $.vi$ files.  Alternatively, if
+$coqc$ or $coqtop$ to produce, quickly, $.vio$ files.  Alternatively, if
 the $Makefile$ one uses was produced by $coq\_makefile$ the $quick$
 target can be used to compile all files using the $-quick$ flag.
 
-A $.vi$ file can be $Required$ exactly as a $.vo$ file but: 1) proofs are
+A $.vio$ file can be $Required$ exactly as a $.vo$ file but: 1) proofs are
 not available (the $Print$ command produces an error); 2) some universe
 constraints are missing, hence universes inconsistencies may not be
-discovered.  A $.vi$ file does not contain proof objects, but proof tasks,
+discovered.  A $.vio$ file does not contain proof objects, but proof tasks,
 i.e. what a worker process can transform into a proof object.
 
 Compiling a set of files with the $-quick$ flag allows one to work,
@@ -114,30 +114,30 @@ interactively, on any file without waiting for all proofs to be checked.
 While one works interactively, he can fully check all $.v$ files by
 running $coqc$ as usual.
 
-Alternatively one can turn each $.vi$ into the corresponding $.vo$.
-All $.vi$ files can be processed in parallel, hence this alternative
-may be faster.  The command $coqtop -schedule-vi2vo 2 a b c$
+Alternatively one can turn each $.vio$ into the corresponding $.vo$.
+All $.vio$ files can be processed in parallel, hence this alternative
+may be faster.  The command $coqtop -schedule-vio2vo 2 a b c$
 can be used to obtain a good scheduling for 2 workers to produce
 $a.vo$, $b.vo$ and $c.vo$.  If the $Makefile$ one uses was produced
-by $coq\_makefile$ the $vi2vo$ target can be used for that.
+by $coq\_makefile$ the $vio2vo$ target can be used for that.
 The variable $J$ should be set to the number of workers, like
-in $make vi2vo J=2$.  The only caveat is that, while the $.vo$ file
-obtained from $.vi$ files are complete (they contain all proof terms
+in $make vio2vo J=2$.  The only caveat is that, while the $.vo$ file
+obtained from $.vio$ files are complete (they contain all proof terms
 and universe constraints) the satisfiability of all universe constraints
 has not been checked globally (they are checked to be consistent for
 every single proof).  Constraints will be checked when these $.vo$ files
 are (recursively) loaded with $Require$.
 
 There is an extra, possibly even faster, alternative: just check
-the proof tasks store in $.vi$ files without producing the $.vo$ files.
+the proof tasks store in $.vio$ files without producing the $.vo$ files.
 This is possibly faster because all proof tasks are independent, hence
 one can further partition the job to be done between workers.
-The $coqtop -schedule-vi-checking 6 a b c$ command can be used to obtain
-a good scheduling for 6 workers to check all proof tasks of $a.vi$, $b.vi$ and
-$c.vi$.  Auxiliary files are used to predict how long a proof task will take,
+The $coqtop -schedule-vio-checking 6 a b c$ command can be used to obtain
+a good scheduling for 6 workers to check all proof tasks of $a.vio$, $b.vio$ and
+$c.vio$.  Auxiliary files are used to predict how long a proof task will take,
 assuming it will take the same amount of time it took last time.
 If the $Makefile$ one uses was produced by $coq\_makefile$ the $checkproofs$
-target can be used to check all $.vi$ files.  The variable $J$ should be
+target can be used to check all $.vio$ files.  The variable $J$ should be
 set to the number of workers, like in $make checkproofs J=6$.
 Checking all proof tasks does not guarantee the same degree of safety
 that producing a $.vo$ file gives.  In particular universe constraints

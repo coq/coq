@@ -8,7 +8,7 @@
 
 open Util
 
-let check_vi (ts,f) =
+let check_vio (ts,f) =
   Dumpglob.noglob ();
   let long_f_dot_v, _, _, _, tasks, _ = Library.load_library_todo f in
   Stm.set_compilation_hints long_f_dot_v;
@@ -23,12 +23,12 @@ end
 
 module Pool = Map.Make(IntOT)
 
-let schedule_vi_checking j fs =
+let schedule_vio_checking j fs =
   if j < 1 then Errors.error "The number of workers must be bigger than 0";
   let jobs = ref [] in
   List.iter (fun f ->
     let f =
-      if Filename.check_suffix f ".vi" then Filename.chop_extension f
+      if Filename.check_suffix f ".vio" then Filename.chop_extension f
       else f in
     let long_f_dot_v, _,_,_, tasks, _ = Library.load_library_todo f in
     Stm.set_compilation_hints long_f_dot_v;
@@ -42,7 +42,7 @@ let schedule_vi_checking j fs =
   let pool : Worker.process Pool.t ref = ref Pool.empty in
   let rec filter_argv b = function
     | [] -> []
-    | "-schedule-vi-checking" :: rest -> filter_argv true rest
+    | "-schedule-vio-checking" :: rest -> filter_argv true rest
     | s :: rest when s.[0] = '-' && b -> filter_argv false (s :: rest)
     | _ :: rest when b -> filter_argv b rest
     | s :: rest -> s :: filter_argv b rest in
@@ -81,7 +81,7 @@ let schedule_vi_checking j fs =
     let cmp_job (f1,_,_) (f2,_,_) = compare f1 f2 in
     List.flatten
       (List.map (fun (f, tl) ->
-        "-check-vi-tasks" :: 
+        "-check-vio-tasks" :: 
         String.concat "," (List.map string_of_int tl) :: [f])
       (pack (List.sort cmp_job !what))) in
   let rc = ref 0 in
@@ -97,12 +97,12 @@ let schedule_vi_checking j fs =
   done;
   exit !rc
 
-let schedule_vi_compilation j fs =
+let schedule_vio_compilation j fs =
   if j < 1 then Errors.error "The number of workers must be bigger than 0";
   let jobs = ref [] in
   List.iter (fun f ->
     let f =
-      if Filename.check_suffix f ".vi" then Filename.chop_extension f
+      if Filename.check_suffix f ".vio" then Filename.chop_extension f
       else f in
     let paths = Loadpath.get_paths () in
     let _, long_f_dot_v =
@@ -118,7 +118,7 @@ let schedule_vi_compilation j fs =
   let pool : Worker.process Pool.t ref = ref Pool.empty in
   let rec filter_argv b = function
     | [] -> []
-    | "-schedule-vi2vo" :: rest -> filter_argv true rest
+    | "-schedule-vio2vo" :: rest -> filter_argv true rest
     | s :: rest when s.[0] = '-' && b -> filter_argv false (s :: rest)
     | _ :: rest when b -> filter_argv b rest
     | s :: rest -> s :: filter_argv b rest in
@@ -127,7 +127,7 @@ let schedule_vi_compilation j fs =
   let make_job () =
     let f, t = List.hd !jobs in
     jobs := List.tl !jobs;
-    [ "-vi2vo"; f ] in
+    [ "-vio2vo"; f ] in
   let rc = ref 0 in
   while !jobs <> [] || Pool.cardinal !pool > 0 do
     while Pool.cardinal !pool < j && !jobs <> [] do

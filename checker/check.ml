@@ -332,10 +332,10 @@ let intern_from_file (dir, f) =
         errorlabstrm "intern_from_file"
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
-        pp (str " (was a vi file) ");
+        pp (str " (was a vio file) ");
       Option.iter (fun (_,_,b) -> if not b then
         errorlabstrm "intern_from_file"
-          (str "The file "++str f++str " is still a .vi"))
+          (str "The file "++str f++str " is still a .vio"))
         opaque_csts;
       Validate.validate !Flags.debug Values.v_univopaques opaque_csts;
       end;
@@ -344,7 +344,7 @@ let intern_from_file (dir, f) =
       Validate.validate !Flags.debug Values.v_opaques table;
       Flags.if_verbose ppnl (str" done]"); pp_flush ();
       let digest =
-        if opaque_csts <> None then Cic.Dvivo (digest,udg)
+        if opaque_csts <> None then Cic.Dviovo (digest,udg)
         else (Cic.Dvo digest) in
       md,table,opaque_csts,digest
     with e -> Flags.if_verbose ppnl (str" failed!]"); raise e in

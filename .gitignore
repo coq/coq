@@ -1,7 +1,7 @@
 *.glob
 *.d
 *.d.raw
-*.vi
+*.vio
 *.vo
 *.cm*
 *.annot

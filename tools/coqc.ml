@@ -144,8 +144,8 @@ let parse_args () =
     | "-R" :: s :: "-as" :: [] -> usage ()
     | "-R" :: s :: t :: rem -> parse (cfiles,t::s::"-R"::args) rem
     | "-Q" :: s :: t :: rem -> parse (cfiles,t::s::"-Q"::args) rem
-    | ("-schedule-vi-checking"
-      |"-check-vi-tasks" | "-schedule-vi2vo" as o) :: s :: rem ->
+    | ("-schedule-vio-checking"
+      |"-check-vio-tasks" | "-schedule-vio2vo" as o) :: s :: rem ->
         let nodash, rem =
           CList.split_when (fun x -> String.length x > 1 && x.[0] = '-') rem in
         extra_arg_needed := false;

@@ -49,18 +49,18 @@ val stop_worker : string -> unit
 (* Joins the entire document.  Implies finish, but also checks proofs *)
 val join : unit -> unit
 
-(* Saves on the dist a .vi corresponding to the current status:
+(* Saves on the dist a .vio corresponding to the current status:
    - if the worker prool is empty, all tasks are saved
    - if the worker proof is not empty, then it waits until all workers
      are done with their current jobs and then dumps (or fails if one
      of the completed tasks is a failuere) *)
-val snapshot_vi : DirPath.t -> string -> unit
+val snapshot_vio : DirPath.t -> string -> unit
 
 (* Empties the task queue, can be used only if the worker pool is empty (E.g.
- * after having built a .vi in batch mode *)
+ * after having built a .vio in batch mode *)
 val reset_task_queue : unit -> unit
 
-(* A .vi contains tasks to be completed *)
+(* A .vio contains tasks to be completed *)
 type tasks
 val check_task : string -> tasks -> int -> bool
 val info_tasks : tasks -> (string * float * int) list

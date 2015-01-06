@@ -12,7 +12,7 @@ val boot : bool ref
 val load_init : bool ref
 
 val batch_mode : bool ref
-type compilation_mode = BuildVo | BuildVi | Vi2Vo
+type compilation_mode = BuildVo | BuildVio | Vio2Vo
 val compilation_mode : compilation_mode ref
 
 type async_proofs = APoff | APonLazy | APon

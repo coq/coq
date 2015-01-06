@@ -1145,7 +1145,7 @@ end = struct (* {{{ *)
     VCS.restore document;
     try
       Reach.known_state ~cache:`No stop;
-      (* The original terminator, a hook, has not been saved in the .vi*)
+      (* The original terminator, a hook, has not been saved in the .vio*)
       Proof_global.set_terminator
         (Lemmas.standard_proof_terminator []
           (Lemmas.mk_hook (fun _ _ -> ())));
@@ -1245,7 +1245,7 @@ end = struct (* {{{ *)
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
-      if !Flags.compilation_mode = Flags.BuildVi then begin
+      if !Flags.compilation_mode = Flags.BuildVio then begin
         let f,assign =
           Future.create_delegate ~blocking:true (State.exn_on id ~valid) in
         let t_uuid = Future.uuid f in
@@ -1536,11 +1536,11 @@ let async_policy () =
   if interactive () = `Yes then
     (async_proofs_is_master () || !async_proofs_mode = Flags.APonLazy)
   else
-    (!compilation_mode = Flags.BuildVi || !async_proofs_mode <> Flags.APoff)
+    (!compilation_mode = Flags.BuildVio || !async_proofs_mode <> Flags.APoff)
 
 let delegate name =
   let time = get_hint_bp_time name in
-  time >= 1.0 || !Flags.compilation_mode = Flags.BuildVi
+  time >= 1.0 || !Flags.compilation_mode = Flags.BuildVio
 
 let collect_proof keep cur hd brkind id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id);
@@ -1579,7 +1579,7 @@ let collect_proof keep cur hd brkind id =
         `ASync (parent last,proof_using_ast last,accn,name,delegate name)
     | `Fork((_, hd', GuaranteesOpacity, ids), _) when
        has_proof_no_using last && not (State.is_cached (parent last)) &&
-       !Flags.compilation_mode = Flags.BuildVi ->
+       !Flags.compilation_mode = Flags.BuildVio ->
         assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
         (try
           let name, hint = name ids, get_hint_ctx loc  in
@@ -1903,10 +1903,10 @@ let handle_failure (e, info) vcs tty =
       VCS.print ();
       iraise (e, info)
 
-let snapshot_vi ldir long_f_dot_v =
+let snapshot_vio ldir long_f_dot_v =
   finish ();
   if List.length (VCS.branches ()) > 1 then
-    Errors.errorlabstrm "stm" (str"Cannot dump a vi with open proofs");
+    Errors.errorlabstrm "stm" (str"Cannot dump a vio with open proofs");
   Library.save_library_to ~todo:(dump_snapshot ()) ldir long_f_dot_v
     (Global.opaque_tables ())
 

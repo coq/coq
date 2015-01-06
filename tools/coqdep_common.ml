@@ -427,8 +427,8 @@ let coq_dependencies () =
        printf "%s%s%s %s.v.beautified: %s.v" ename !suffixe glob ename ename;
        traite_fichier_Coq !suffixe true (name ^ ".v");
        printf "\n";
-       printf "%s.vi: %s.v" ename ename;
-       traite_fichier_Coq ".vi" true (name ^ ".v");
+       printf "%s.vio: %s.v" ename ename;
+       traite_fichier_Coq ".vio" true (name ^ ".v");
        printf "\n";
        flush stdout)
     (List.rev !vAccu)

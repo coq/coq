@@ -82,7 +82,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   interactive micromega $(COMPLEXITY) modules stm
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vi coqchk
+SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk
 
 #######################################################################
 # Phony targets
@@ -99,9 +99,9 @@ bugs: $(BUGS)
 
 clean:
 	rm -f trace lia.cache
-	$(SHOW) "RM        <**/*.stamp> <**/*.vo> <**/*.vi> <**/*.log>"
+	$(SHOW) "RM        <**/*.stamp> <**/*.vo> <**/*.vio> <**/*.log>"
 	$(HIDE)find . \( \
-	  -name '*.stamp' -o -name '*.vo' -o -name '*.vi' -o -name '*.log' \
+	  -name '*.stamp' -o -name '*.vo' -o -name '*.vio' -o -name '*.log' \
 	\) -print0 | xargs -0 rm -f
 
 distclean: clean
@@ -140,7 +140,7 @@ summary:
 	  $(call summary_dir, "Module tests", modules); \
 	  $(call summary_dir, "STM tests", stm); \
 	  $(call summary_dir, "IDE tests", ide); \
-	  $(call summary_dir, "VI tests", vi); \
+	  $(call summary_dir, "VI tests", vio); \
 	  $(call summary_dir, "Coqchk tests", coqchk); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
@@ -428,14 +428,14 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	  fi; \
 	} > "$@"
 
-vi: $(patsubst %.v,%.vi.log,$(wildcard vi/*.v))
+vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 
-%.vi.log:%.v
+%.vio.log:%.v
 	@echo "TEST      $<"
 	$(HIDE){ \
-	  $(bincoqc) -quick -R vi vi $* 2>&1 && \
-	  $(coqtop) -R vi vi -vi2vo $*.vi 2>&1 && \
-	  $(bincoqchk) -R vi vi $(subst /,.,$*) 2>&1; \
+	  $(bincoqc) -quick -R vio vio $* 2>&1 && \
+	  $(coqtop) -R vio vio -vio2vo $*.vio 2>&1 && \
+	  $(bincoqchk) -R vio vio $(subst /,.,$*) 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

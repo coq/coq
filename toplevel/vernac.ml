@@ -326,20 +326,20 @@ let compile verbosely f =
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
       Dumpglob.end_dump_glob ()
-  | BuildVi ->
+  | BuildVio ->
       let ldir, long_f_dot_v = Flags.verbosely Library.start_library f in
       Dumpglob.noglob ();
       Stm.set_compilation_hints long_f_dot_v;
       let _ = load_vernac verbosely long_f_dot_v in
       Stm.finish ();
       check_pending_proofs ();
-      Stm.snapshot_vi ldir long_f_dot_v;
+      Stm.snapshot_vio ldir long_f_dot_v;
       Stm.reset_task_queue ()
-  | Vi2Vo ->
+  | Vio2Vo ->
       let open Filename in
       let open Library in
       Dumpglob.noglob ();
-      let f = if check_suffix f ".vi" then chop_extension f else f in
+      let f = if check_suffix f ".vio" then chop_extension f else f in
       let lfdv, lib, univs, disch, tasks, proofs = load_library_todo f in
       Stm.set_compilation_hints lfdv;
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in

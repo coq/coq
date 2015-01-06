@@ -282,7 +282,7 @@ Tools
   added to the load path. (Same behavior as with coq/user-contrib.)
 - coqdep accepts a -dumpgraph option generating a dot file.
 - Makefiles generated through coq_makefile have three new targets "quick"
-  "checkproof" and "vi2vo", allowing respectively to asynchronously compile
+  "checkproof" and "vio2vo", allowing respectively to asynchronously compile
   the files without playing the proof scripts, asynchronously checking
   that the quickly generated proofs are correct and generating the object
   files from the quickly generated proofs.

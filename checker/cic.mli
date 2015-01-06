@@ -404,7 +404,7 @@ type compilation_unit_name = DirPath.t
 
 type vodigest =
   | Dvo of Digest.t              (* The digest of the seg_lib part *)
-  | Dvivo of Digest.t * Digest.t (* The digest of the seg_lib + seg_univ part *)
+  | Dviovo of Digest.t * Digest.t (* The digest of the seg_lib+seg_univ part *)
 
 type library_info = compilation_unit_name * vodigest
 
