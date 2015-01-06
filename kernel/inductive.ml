@@ -394,7 +394,7 @@ let type_case_branches env (pind,largs) pj c =
 
 
 (************************************************************************)
-(* Checking the case annotation is relevent *)
+(* Checking the case annotation is relevant *)
 
 let check_case_info env (indsp,u) ci =
   let (mib,mip as spec) = lookup_mind_specif env indsp in
@@ -637,7 +637,7 @@ let abstract_mind_lc ntyps npars lc =
 (* [get_recargs_approx env tree ind args] builds an approximation of the recargs
 tree for ind, knowing args. The argument tree is used to know when candidate
 nested types should be traversed, pruning the tree otherwise. This code is very
-close to check_positive in indtypes.ml, but does no positivy check and does not
+close to check_positive in indtypes.ml, but does no positivity check and does not
 compute the number of recursive arguments. *)
 let get_recargs_approx env tree ind args =
   let rec build_recargs (env, ra_env as ienv) tree c =
@@ -662,7 +662,7 @@ let get_recargs_approx env tree ind args =
        mk_norec
 
   and build_recargs_nested (env,ra_env as ienv) tree (((mind,i),u), largs) =
-    (* If the infered tree already disallows recursion, no need to go further *)
+    (* If the inferred tree already disallows recursion, no need to go further *)
     if eq_wf_paths tree mk_norec then tree
     else
     let mib = Environ.lookup_mind mind env in

@@ -78,12 +78,12 @@ SRCDIRS:=\
 
 IDESRCDIRS:= $(CORESRCDIRS) ide ide/utils
 
-# Order is relevent here because kernel and checker contain files
+# Order is relevant here because kernel and checker contain files
 # with the same name
 CHKSRCDIRS:= checker lib config kernel parsing
 
 ###########################################################################
-# tools
+# Tools
 ###########################################################################
 
 COQDEP:=bin/coqdep$(EXE)

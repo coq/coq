@@ -288,7 +288,7 @@ the following property:
 
 
 The syntax for adding a new ring is {\tt Add Ring $name$ : $ring$
-($mod_1$,\dots,$mod_2$)}.  The name is not relevent. It is just used
+($mod_1$,\dots,$mod_2$)}.  The name is not relevant. It is just used
 for error messages. The term $ring$ is a proof that the ring signature
 satisfies the (semi-)ring axioms. The optional list of modifiers is
 used to tailor the behavior of the tactic. The following list
@@ -314,7 +314,7 @@ describes their syntax and effects:
 \item[constants [\ltac]] specifies a tactic expression that, given a term,
   returns either an object of the coefficient set that is mapped to
   the expression via the morphism, or returns {\tt
-  InitialRing.NotConstant}. The default behaviour is to map only 0 and
+  InitialRing.NotConstant}. The default behavior is to map only 0 and
   1 to their counterpart in the coefficient set. This is generally not
   desirable for non trivial computational rings.
 \item[preprocess [\ltac]]
@@ -470,7 +470,8 @@ correctness theorem to well-chosen arguments.
 
 
 The {\tt field} tactic is  an extension of the {\tt ring} to deal with
-rational expresision. Given a rational expression $F=0$. It first reduces the expression $F$ to a common denominator $N/D= 0$ where $N$ and $D$ are two ring
+rational expression. Given a rational expression $F=0$. It first reduces the
+expression $F$ to a common denominator $N/D= 0$ where $N$ and $D$ are two ring
 expressions.
 For example, if we take $F = (1 - 1/x) x - x + 1$, this gives 
 $ N= (x -1)  x - x^2 + x$ and $D= x$. It then calls {\tt ring} 
@@ -539,7 +540,7 @@ Reset Initial.
      $D_2$. This way, polynomials remain in factorized form during the
      fraction simplifications. This yields smaller expressions when
      reducing to the same denominator since common factors can be
-     cancelled.
+     canceled.
 
   \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$]}
      performs the simplification in the conclusion of the goal using
@@ -627,11 +628,11 @@ denominator during the normalization process. These expressions must
 be proven different from zero for the correctness of the algorithm.
 
 The syntax for adding a new field is {\tt Add Field $name$ : $field$
-($mod_1$,\dots,$mod_2$)}.  The name is not relevent. It is just used
+($mod_1$,\dots,$mod_2$)}.  The name is not relevant. It is just used
 for error messages. $field$ is a proof that the field signature
 satisfies the (semi-)field axioms. The optional list of modifiers is
-used to tailor the behaviour of the tactic. Since field tactics are
-built upon ring tactics, all mofifiers of the {\tt Add Ring}
+used to tailor the behavior of the tactic. Since field tactics are
+built upon ring tactics, all modifiers of the {\tt Add Ring}
 apply. There is only one specific modifier:
 \begin{description}
 \item[completeness \term] allows the field tactic to prove
