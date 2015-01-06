@@ -40,39 +40,22 @@ struct
       n
 
   type t = Obj.t option array
-(** Objects are accessed through an array access. *)
+  (** Store are represented as arrays. For small values, which is typicial,
+      is slightly quicker than other implementations. *)
 
 type 'a field = int
 
-let max_length = 128
-(** Ought to be enough for anybody. It has to be smaller that [Max_young_wosize]
-    in order to fit into the minor heap, the latter being defined to 256 in
-    OCaml. *)
-
-let uset (obj : t) (i : 'a field) (v : 'a option) =
-  (** We cast to integers in order not to use the costly [caml_modify]. This
-      assumes that [obj] lives in the minor heap. *)
-  let v : int = Obj.magic v in
-  let obj : int array = Obj.magic obj in
-  Array.unsafe_set obj i v
-
-let allocate len : t =
-  (** Returns an array filled with [None]. *)
-  Obj.magic (Obj.new_block 0 len)
+let allocate len : t = Array.make len None
 
 let empty : t = [||]
 
 let set (s : t) (i : 'a field) (v : 'a) : t =
-  let v = Some v in
   let len = Array.length s in
   let nlen = if i < len then len else succ i in
-  let () = assert (0 < nlen && nlen <= max_length) in
+  let () = assert (0 <= i) in
   let ans = allocate nlen in
-  (** Important: No more allocation from here. *)
-  for i = 0 to pred len do
-    uset ans i (Array.unsafe_get s i)
-  done;
-  uset ans i v;
+  Array.blit s 0 ans 0 len;
+  Array.unsafe_set ans i (Some (Obj.repr v));
   ans
 
 let get (s : t) (i : 'a field) : 'a option =
@@ -84,11 +67,8 @@ let remove (s : t) (i : 'a field) =
   let len = Array.length s in
   let () = assert (0 <= i) in
   let ans = allocate len in
-  (** Important: No more allocation from here. *)
-  for i = 0 to pred len do
-    uset ans i (Array.unsafe_get s i)
-  done;
-  if i < len then uset ans i None;
+  Array.blit s 0 ans 0 len;
+  if i < len then Array.unsafe_set ans i None;
   ans
 
 let merge (s1 : t) (s2 : t) : t =
@@ -97,14 +77,12 @@ let merge (s1 : t) (s2 : t) : t =
   let nlen = if len1 < len2 then len2 else len1 in
   let ans = allocate nlen in
   (** Important: No more allocation from here. *)
-  for i = 0 to pred len2 do
-    uset ans i (Array.unsafe_get s2 i)
-  done;
+  Array.blit s2 0 ans 0 len2;
   for i = 0 to pred len1 do
     let v = Array.unsafe_get s1 i in
     match v with
     | None -> ()
-    | Some _ -> uset ans i v
+    | Some _ -> Array.unsafe_set ans i v
   done;
   ans
 
