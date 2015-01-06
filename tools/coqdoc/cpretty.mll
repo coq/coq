@@ -893,11 +893,15 @@ and doc indents = parse
 and escaped_math_latex = parse
   | "$" { Output.stop_latex_math () }
   | eof { Output.stop_latex_math () }
+  | "*)"
+        { Output.stop_latex_math (); backtrack lexbuf }
   | _   { Output.latex_char (lexeme_char lexbuf 0); escaped_math_latex lexbuf }
 
 and escaped_latex = parse
   | "%" { () }
   | eof { () }
+  | "*)"
+        { backtrack lexbuf }
   | _   { Output.latex_char (lexeme_char lexbuf 0); escaped_latex lexbuf }
 
 and escaped_html = parse
@@ -907,6 +911,8 @@ and escaped_html = parse
   | "##"
         { Output.html_char '#'; escaped_html lexbuf }
   | eof { () }
+  | "*)"
+        { backtrack lexbuf }
   | _   { Output.html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
 
 and verbatim inline = parse
