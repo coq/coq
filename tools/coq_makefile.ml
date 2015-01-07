@@ -32,17 +32,15 @@ let list_iter_i f =
 
 let section s =
   let l = String.length s in
-  let sep = String.make (l+5) '#'
-  and sep2 = String.make (l+5) ' ' in
-  String.set sep (l+4) '\n';
-  String.set sep2 0 '#';
-  String.set sep2 (l+3) '#';
-  String.set sep2 (l+4) '\n';
-  print sep;
-  print sep2;
+  let print_com s =
+    print "#";
+    print s;
+    print "#\n" in
+  print_com (String.make (l+2) '#');
+  print_com (String.make (l+2) ' ');
   print "# "; print s; print " #\n";
-  print sep2;
-  print sep;
+  print_com (String.make (l+2) ' ');
+  print_com (String.make (l+2) '#');
   print "\n"
 
 let usage () =
@@ -329,7 +327,12 @@ let clean sds sps =
     print "\trm -f $(addsuffix .d,$(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(MLPACKFILES))\n";
   end;
   if !some_vfile then
-    print "\trm -f $(VOFILES) $(VOFILES:.vo=.vio) $(GFILES) $(VFILES:.v=.v.d) $(VFILES:=.beautified) $(VFILES:=.old)\n";
+    begin
+      print "\trm -f $(OBJFILES) $(OBJFILES:.o=.native)\n";
+      print "\trm -f $(OBJFILES:.o=.cmi) $(OBJFILES:.o=.cmo)\n";
+      print "\trm -f $(OBJFILES:.o=.cmx) $(OBJFILES:.o=.cmxs)\n";
+      print "\trm -f $(VOFILES) $(VOFILES:.vo=.vio) $(GFILES) $(VFILES:.v=.v.d) $(VFILES:=.beautified) $(VFILES:=.old)\n"
+    end;
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) all-mli.tex\n";
   print "\t- rm -rf html mlihtml uninstall_me.sh\n";
   List.iter
@@ -501,7 +504,10 @@ let parameters () =
   print "includecmdwithout@ = $(eval $(subst @,$(donewline),$(shell { $(1) | tr -d '\\r' | tr '\\n' '@'; })))\n";
   print "$(call includecmdwithout@,$(COQBIN)coqtop -config)\n\n";
   print "TIMED=\nTIMECMD=\nSTDTIME?=/usr/bin/time -f \"$* (user: %U mem: %M ko)\"\n";
-  print "TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))\n\n"
+  print "TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))\n\n";
+  print "vo_to_obj = $(addsuffix .o,$(foreach vo,$(1),\\\n";
+  print "  $(addprefix $(dir $(vo)),.coq-native/$(filter-out Warning: Error:,$(firstword \\\n";
+  print "    $(shell $(COQBIN)coqtop -batch -quiet -print-mod-uid $(vo:.vo=)))))))\n\n"
 
 let include_dirs (inc_ml,inc_i,inc_r) =
   let parse_ml_includes l = List.map (fun (x,_) -> "-I \"" ^ x ^ "\"") l in
@@ -570,7 +576,9 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "GLOBFILES:=$(VFILES:.v=.glob)\n";
       print "GFILES:=$(VFILES:.v=.g)\n";
       print "HTMLFILES:=$(VFILES:.v=.html)\n";
-      print "GHTMLFILES:=$(VFILES:.v=.g.html)\n"
+      print "GHTMLFILES:=$(VFILES:.v=.g.html)\n";
+      print "OBJFILES:=$(call vo_to_obj,$(VOFILES))\n";
+      classify_files_by_root "OBJFILES" l inc
   end;
   decl_var "ML4FILES" ml4files;
   decl_var "MLFILES" mlfiles;
