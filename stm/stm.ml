@@ -28,6 +28,9 @@ let state_computed, state_computed_hook = Hook.make
  ~default:(fun state_id ~in_cache ->
     feedback ~state_id Feedback.Processed) ()
 
+let state_ready, state_ready_hook = Hook.make
+ ~default:(fun state_id -> ()) ()
+
 let forward_feedback, forward_feedback_hook = Hook.make
  ~default:(function
     | { Feedback.id = Feedback.Edit edit_id; route; contents } ->
@@ -422,7 +425,9 @@ end = struct (* {{{ *)
     match get_info !vcs id with
     | Some x -> x
     | None -> raise Vcs_aux.Expired
-  let set_state id s = (get_info id).state <- Some s
+  let set_state id s =
+    (get_info id).state <- Some s;
+    if Flags.async_proofs_is_master () then Hooks.(call state_ready id)
   let get_state id = (get_info id).state
   let reached id b =
     let info = get_info id in
@@ -562,8 +567,8 @@ end = struct (* {{{ *)
 end (* }}} *)
 
 let state_of_id id =
-  try (VCS.get_info id).state
-  with VCS.Expired -> None
+  try `Valid (VCS.get_info id).state
+  with VCS.Expired -> `Expired
 
 
 (****** A cache: fills in the nodes of the VCS document with their value ******)
@@ -2382,6 +2387,7 @@ let show_script ?proof () =
 
 (* Export hooks *)
 let state_computed_hook = Hooks.state_computed_hook
+let state_ready_hook = Hooks.state_ready_hook
 let parse_error_hook = Hooks.parse_error_hook
 let execution_error_hook = Hooks.execution_error_hook
 let forward_feedback_hook = Hooks.forward_feedback_hook

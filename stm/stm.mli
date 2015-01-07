@@ -99,6 +99,8 @@ val parse_error_hook :
   (Feedback.edit_or_state_id -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 val execution_error_hook : (Stateid.t -> Loc.t -> Pp.std_ppcmds -> unit) Hook.t
 val unreachable_state_hook : (Stateid.t -> unit) Hook.t
+(* ready means that master has it at hand *)
+val state_ready_hook : (Stateid.t -> unit) Hook.t
 
 (* Messages from the workers to the master *)
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
@@ -108,7 +110,7 @@ type state = {
   proof : Proof_global.state;
   shallow : bool
 }
-val state_of_id : Stateid.t -> state option
+val state_of_id : Stateid.t -> [ `Valid of state option | `Expired ]
 
 (** read-eval-print loop compatible interface ****************************** **)
 
