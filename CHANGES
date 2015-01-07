@@ -85,7 +85,7 @@ Specification Language
   recovered by the command "Set Asymmetric Patterns". (possible source of
   incompatibilities)
 - Type inference algorithm now granting opacity of constants. This might also
-  affects behavior of tactics (source of incompatibilities, solvable by
+  affect behavior of tactics (source of incompatibilities, solvable by
   re-declaring transparent constants which were set opaque).
 - Existential variables are now referred to by an identifier and the
   relevant part of their instance is displayed by default. They can be
@@ -95,11 +95,11 @@ Specification Language
 Tactics
 
 - New tactic engine allowing dependent subgoals, fully backtracking
-  (aka multiple success) tactics, as well tactics which can consider
-  multiple goals together. In the new tactic engine, instantiation
-  information of existential variables is always propagated to
-  tactics, removing the need to manually use the "instantiate" tactics
-  to mark propagation points.
+  (also known as multiple success) tactics, as well as tactics which
+  can consider multiple goals together. In the new tactic engine,
+  instantiation information of existential variables is always
+  propagated to tactics, removing the need to manually use the
+  "instantiate" tactics to mark propagation points.
   * New tactical (a+b) insert a backtracking point. When (a+b);c fails
     during the execution of c, it can backtrack and try b instead of a.
   * New tactical (once a) removes all the backtracking point from a
@@ -382,6 +382,7 @@ Libraries
 - Reals: changed definition of PI, no more axiom about sin(PI/2).
 - SetoidPermutation: a notion of permutation for lists modulo a setoid equality.
 - BigN: fixed the ocaml code doing the parsing/printing of big numbers.
+- List: a couple of lemmas added especially about no-duplication, partitions.
 
 Changes from V8.4beta to V8.4beta2
 ==================================
