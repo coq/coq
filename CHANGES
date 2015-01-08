@@ -199,7 +199,7 @@ Tactics
   than the number of new hypotheses (possible source of incompatibilities;
   former behavior obtainable by "Unset Injection L2R Pattern Order").
 - Tactic "injection" now automatically simplifies subgoals
-  "existT n p = exists n p'" into "p = p'" when "n" is in an inductive type for
+  "existT n p = existT n p'" into "p = p'" when "n" is in an inductive type for
   which a decidable equality scheme has been generated with "Scheme Equality"
   (possible source of incompatibilities).
 - New tactic "rewrite_strat" for generalized rewriting with user-defined

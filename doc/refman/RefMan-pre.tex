@@ -931,6 +931,78 @@ Paris, December 2011\\
 Hugo Herbelin\\
 \end{flushright}
 
+
+\section*{Credits: version 8.5}
+
+{\Coq} version 8.5 contains the result of five specific long-term
+projects:
+\begin{itemize}
+\item A new asynchronous evaluation and compilation mode by Enrico
+  Tassi.
+\item The full integration of the new proof engine by Arnaud Spiwack
+  helped by Pierre-Marie Pédrot,
+\item The addition of conversion and reduction based on native compilation
+  by Maxime Dénès and Benjamin Grégoire.
+\item Full universe polymorphism for definitions and inductive types by
+  Matthieu Sozeau.
+\item An implementation of primitive projections with $\eta$-conversion
+  bringing significant performance improvements when using records by
+  Matthieu Sozeau.
+\end{itemize}
+
+The full integration of the proof engine brings to primitive tactics and
+the user level Ltac language deep tactic backtracking and multi-goal
+handling. This allows 
+...
+
+STM: Enrico
+
+The universe polymorphism extension is based on a change of the kernel
+architecture to handle constraint checking only, leaving the generation
+of constraints outside it.
+
+The underlying logic has been extended with $\eta$-conversion for
+primitive records thanks to Matthieu Sozeau. This additional form of
+$\eta$-conversion is justified using the same principle than the
+previously added $\eta$-conversion for function types, based on
+formulations of the Calculus of Inductive Constructions with typed
+equality.
+
+The guard condition has been made compliant with extensional equality
+principles such as propositional equality and univalence, thanks to
+Maxime Dénès and Bruno Barras. To ensure compatibility with the
+univalence axiom, a new flag ``-indices-matter'' has been implemented, 
+taking into account the universe levels of indices when computing the
+levels of inductive types. This supports using Coq as a tool to explore
+the relations between homotopy theory and type theory.
+
+{\Coq} 8.5 also comes with a bunch of many various smaller-scale changes
+and improvements regarding the different components of the system.
+
+High-Level Specification Language: 
+- tactics in terms
+- Universe inconsistency and unification error messages
+- Named existentials
+
+Opam Coq Guillaume Claret and Thomas Braibant 
+
+
+Maxime Dénès and Benjamin Grégoire developed an implementation of the
+conversion test using the OCaml native compiler.
+Bruno Barras and Maxime Dénès fixed a problem in the guard condition
+leading to a refutation of standard axioms like propositional
+extensionality or univalence.
+Maxime Dénès maintained the bytecode-based reduction machine.
+
+Pierre Courtieu contributed new features for using {\Coq} through Proof
+General and for better interactive experience (bullets, Search etc).
+
+\begin{flushright}
+Paris, Janvier 2015\\
+Hugo Herbelin \& Matthieu Sozeau\\
+\end{flushright}
+
+
 %new Makefile
 
 %\newpage
