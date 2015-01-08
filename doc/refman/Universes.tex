@@ -10,8 +10,8 @@ This section describes the universe polymorphic extension of Coq.
 Universe polymorphism allows writing generic definitions making use of
 universes and reuse them at different and sometimes incompatible levels.
 
-A standard example of the difference between universe \emph{polymorphic} and 
-\emph{monormorphic} definitions is given by the identity function:
+A standard example of the difference between universe \emph{polymorphic} and
+\emph{monomorphic} definitions is given by the identity function:
 
 \begin{coq_example*}
 Definition identity {A : Type} (a : A) := a.
@@ -30,7 +30,7 @@ Fail Definition selfid := identity (@identity).
 \end{coq_example}
 
 Indeed, the global level \texttt{Top.1} would have to be strictly smaller than itself
-for this self-application to typecheck, as the type of (@identity) is
+for this self-application to typecheck, as the type of \texttt{(@identity)} is
 \texttt{forall (A : Type@{Top.1}), A -> A} whose type is itself \texttt{Type@{Top.1+1}}.
 
 A universe polymorphic identity function binds its domain universe level
@@ -85,33 +85,36 @@ From this we can build a definition for the monoid of
 \texttt{Set}-monoids (where multiplication would be given by the product
 of monoids).
 
-\begin{coq_example}
+\begin{coq_example*}
 Polymorphic Definition monoid_monoid : Monoid.
   refine (@Build_Monoid Monoid unit_monoid _) ; admit.
 Defined.
+\end{coq_example*}
+\begin{coq_example}
 Print monoid_monoid.
 \end{coq_example} 
 
 As one can see from the constraints, this monoid is ``large'', it lives
 in a universe strictly higher than \texttt{Set}.
 
-\asubsection{\tt Polymorphic, Monomorphic}
+\asection{\tt Polymorphic, Monomorphic}
 \comindex{Polymorphic}
 \comindex{Monomorphic}
 \comindex{Set Universe Polymorphism}
 
 As shown in the examples, polymorphic definitions and inductives can be
 declared using the \texttt{Polymorphic} prefix. There also exists an
-option \texttt{Set Universe Polymorphism} which will implicitely prepend
+option \texttt{Set Universe Polymorphism} which will implicitly prepend
 it to any definition of the user. In that case, to make a definition
 producing global universe constraints, one can use the
 \texttt{Monomorphic} prefix. Many other commands support the
 \texttt{Polymorphic} flag, including:
 
 \begin{itemize}
-\item \texttt{Lemma}, \texttt{Axiom}, \ldots. All ``definition''
+\item \texttt{Lemma}, \texttt{Axiom}, and all the other ``definition''
   keywords support polymorphism.
-\item \texttt{Variables, Context} in a section, this means that the
+\item \texttt{Variables}, \texttt{Context} in a section support polymorphism.
+  This means that the
   variables are discharged polymorphically over definitions that use
   them. In other words, two definitions in the section sharing a common
   variable will both get parameterized by the universes produced by the 
@@ -122,24 +125,24 @@ producing global universe constraints, one can use the
   polymorphically, not at a single instance.
 \end{itemize}
 
-\asubsection{Conversion and unification}
+\asection{Conversion and unification}
 
 The semantics of conversion and unification have to be modified a little
-bit to account for the new universe instance arguments to polymorphic
+to account for the new universe instance arguments to polymorphic
 references. The semantics respect the fact that definitions are
-transparent, so undistinguishable from their bodies during conversion.
+transparent, so indistinguishable from their bodies during conversion.
 
 This is accomplished by changing one rule of unification, the
 first-order approximation rule:
 
 
+TODO
 
 
 
+\asection{Explicit Universes}
 
-\asubsection{Explicit Universes}
-
-
+TODO
 
 
 %%% Local Variables: 

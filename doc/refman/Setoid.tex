@@ -14,8 +14,8 @@ custom strategies for rewriting.
 
 This documentation is adapted from the previous setoid documentation by
 Claudio Sacerdoti Coen (based on previous work by Cl\'ement Renard).
-The new implementation is a drop-in replacement for the old one \footnote{Nicolas
-Tabareau helped with the gluing}, hence most of the documentation still applies.
+The new implementation is a drop-in replacement for the old one,\footnote{Nicolas
+Tabareau helped with the gluing.} hence most of the documentation still applies.
 
 The work is a complete rewrite of the previous implementation, based on
 the type class infrastructure. It also improves on and generalizes
@@ -41,7 +41,7 @@ the previous implementation in several ways:
   solution to a set of constraints which can be as fast as linear in the
   size of the term, and the size of the proof term is linear
   in the size of the original term. Besides, the extensibility allows the
-  user to customize the proof-search if necessary.
+  user to customize the proof search if necessary.
 \end{itemize}
 
 \asection{Introduction to generalized rewriting}
@@ -274,7 +274,7 @@ Proof. exact (@union_compat A). Qed.
 
 \end{cscexample}
 
-Is is possible to reduce the burden of specifying parameters using
+It is possible to reduce the burden of specifying parameters using
 (maximally inserted) implicit arguments. If \texttt{A} is always set as
 maximally implicit in the previous example, one can write:
 
@@ -516,7 +516,8 @@ Proof. intros. rewrite H. reflexivity. Qed.
 The following tactics, all prefixed by \texttt{setoid\_}, 
 deal with arbitrary
 registered relations and morphisms. Moreover, all the corresponding unprefixed
-tactics (i.e. \texttt{reflexivity, symmetry, transitivity, replace, rewrite})
+tactics (i.e. \texttt{reflexivity}, \texttt{symmetry}, \texttt{transitivity},
+\texttt{replace}, \texttt{rewrite})
 have been extended to fall back to their prefixed counterparts when
 the relation involved is not Leibniz equality. Notice, however, that using
 the prefixed tactics it is possible to pass additional arguments such as
@@ -720,7 +721,7 @@ The generalized rewriting tactic is based on a set of strategies that
 can be combined to obtain custom rewriting procedures. Its set of
 strategies is based on Elan's rewriting strategies
 \cite{Luttik97specificationof}. Rewriting strategies are applied using
-the tactic $\texttt{rewrite\_strat}~s$ where $s$ is a strategy
+the tactic \texttt{rewrite\_strat $s$} where $s$ is a strategy
 expression. Strategies are defined inductively as described by the
 following grammar:
 

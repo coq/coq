@@ -10,14 +10,14 @@ functional languages available as output are currently \ocaml{},
 \textsc{Haskell} and \textsc{Scheme}.  In the following, ``ML'' will
 be used (abusively) to refer to any of the three.
 
-\paragraph{Differences with old versions.}
-The current extraction mechanism is new for version 7.0 of {\Coq}.
-In particular, the \FW\ toplevel used as an intermediate step between 
-\Coq\ and ML has been withdrawn.  It is also not possible 
-any more to import ML objects in this \FW\ toplevel.
-The current mechanism also differs from
-the one in previous versions of \Coq: there is no more
-an explicit toplevel for the language (formerly called \textsc{Fml}). 
+%% \paragraph{Differences with old versions.}
+%% The current extraction mechanism is new for version 7.0 of {\Coq}.
+%% In particular, the \FW\ toplevel used as an intermediate step between 
+%% \Coq\ and ML has been withdrawn.  It is also not possible 
+%% any more to import ML objects in this \FW\ toplevel.
+%% The current mechanism also differs from
+%% the one in previous versions of \Coq: there is no more
+%% an explicit toplevel for the language (formerly called \textsc{Fml}). 
 
 \asection{Generating ML code}
 \comindex{Extraction}
@@ -31,9 +31,9 @@ extraction. They both display extracted term(s) inside \Coq.
 
 \begin{description}
 \item {\tt Extraction \qualid.} ~\par
-  Extracts one constant or module in the \Coq\ toplevel.
+  Extraction of a constant or module in the \Coq\ toplevel.
 
-\item {\tt Recursive Extraction  \qualid$_1$ \dots\ \qualid$_n$.} ~\par
+\item {\tt Recursive Extraction} \qualid$_1$ \dots\ \qualid$_n$. ~\par
   Recursive extraction of all the globals (or modules) \qualid$_1$ \dots\
   \qualid$_n$ and all their dependencies in the \Coq\ toplevel.
 \end{description}
@@ -72,7 +72,7 @@ one monolithic file or one file per \Coq\ library.
   to {\tt Recursive Extraction Library}, except that only the needed
   parts of Coq libraries are extracted instead of the whole. The
   naming convention in case of name clash is the same one as
-  {\tt Extraction Library} : identifiers are here renamed
+  {\tt Extraction Library}: identifiers are here renamed
   using prefixes \verb!coq_!  or \verb!Coq_!.
 \end{description}
 
@@ -101,19 +101,19 @@ induction principles we do not want to compute all the recursive calls
 but only the needed ones). So the extraction mechanism provides an
 automatic optimization routine that will be called each time the user
 want to generate Ocaml programs. The optimizations can be split in two
-groups: the type preserving ones -- essentially constant inlining and
-reductions -- and the non type perserving ones -- some function
-abstractions of dummy types are removed when it's deemed safe in order
-to have more elegant types. Therefore some constants may not appear in
+groups: the type-preserving ones -- essentially constant inlining and
+reductions -- and the non type-preserving ones -- some function
+abstractions of dummy types are removed when it is deemed safe in order
+to have more elegant types. Therefore some constants may not appear in the
 resulting monolithic Ocaml program. In the case of modular extraction,
 even if some inlining is done, the inlined constant are nevertheless
 printed, to ensure session-independent programs.
 
-Concerning Haskell, type preserving optimizations are less useful
+Concerning Haskell, type-preserving optimizations are less useful
 because of lazyness. We still make some optimizations, for example in
 order to produce more readable code.
 
-The type preserving optimizations are controled by the following \Coq\ options: 
+The type-preserving optimizations are controlled by the following \Coq\ options:
 
 \begin{description}
 
@@ -123,7 +123,7 @@ The type preserving optimizations are controled by the following \Coq\ options:
 \item \comindex{Unset Extraction Optimize}
 {\tt Unset Extraction Optimize.}
 
-Default is Set. This control all type preserving optimizations made on
+Default is Set. This controls all type-preserving optimizations made on
 the ML terms (mostly reduction of dummy beta/iota redexes, but also
 simplifications on Cases, etc). Put this option to Unset if you want a
 ML term as close as possible to the Coq term.
@@ -134,9 +134,9 @@ ML term as close as possible to the Coq term.
 \item \comindex{Unset Extraction Conservative Types}
 {\tt Unset Extraction Conservative Types.}
 
-Default is Unset. This control the non type preserving optimizations
+Default is Unset. This controls the non type-preserving optimizations
 made on ML terms (which try to avoid function abstraction of dummy
-types).  If you turn this option to Set to make sure that {\tt e:t}
+types). Turn this option to Set to make sure that {\tt e:t}
 implies that {\tt e':t'} where {\tt e'} and {\tt t'} are the extracted
 code of {\tt e} and {\tt t} respectively.
 
@@ -146,7 +146,7 @@ code of {\tt e} and {\tt t} respectively.
 \item \comindex{Unset Extraction KeepSingleton}
 {\tt Unset Extraction KeepSingleton.}
 
-Default is Unset. Normaly, when the extraction of an inductive type
+Default is Unset. Normally, when the extraction of an inductive type
 produces a singleton type (i.e. a type with only one constructor, and
 only one argument to this constructor), the inductive structure is
 removed and this type is seen as an alias to the inner type.
@@ -159,10 +159,10 @@ optimization when one wishes to preserve the inductive structure of types.
 \item \comindex{Unset Extraction AutoInline}
 {\tt Unset Extraction AutoInline.} 
 
-Default is Set, so by default, the extraction mechanism feels free to 
-inline the bodies of some defined constants, according to some heuristics 
-like size of bodies, useness of some arguments, etc. Those heuristics are 
-not always perfect, you may want to disable this feature, do it by Unset. 
+Default is Set, so by default, the extraction mechanism is free to
+inline the bodies of some defined constants, according to some heuristics
+like size of bodies, uselessness of some arguments, etc. Those heuristics are
+not always perfect; if you want to disable this feature, do it by Unset.
 
 \item \comindex{Extraction Inline}
 {\tt Extraction Inline} \qualid$_1$ \dots\ \qualid$_n$. 
@@ -170,7 +170,7 @@ not always perfect, you may want to disable this feature, do it by Unset.
 \item \comindex{Extraction NoInline}
 {\tt Extraction NoInline} \qualid$_1$ \dots\ \qualid$_n$. 
 
-In addition to the automatic inline feature, you can now tell precisely to 
+In addition to the automatic inline feature, you can tell to
 inline some more constants by the {\tt Extraction Inline} command. Conversely, 
 you can forbid the automatic inlining of some specific constants by
 the {\tt Extraction NoInline} command.
@@ -236,7 +236,7 @@ principles of extraction (logical parts and types).
 
 Extraction will fail if it encounters an informative
 axiom not realized (see Section~\ref{extraction:axioms}). 
-A warning will be issued if it encounters an logical axiom, to remind 
+A warning will be issued if it encounters a logical axiom, to remind the
 user that inconsistent logical axioms may lead to incorrect or
 non-terminating extracted terms. 
 
@@ -264,7 +264,7 @@ realized and inlined axiom.
 
 Of course, it is the responsibility of the user to ensure that the ML
 terms given to realize the axioms do have the expected types.  In
-fact, the strings containing realizing code are just copied in the
+fact, the strings containing realizing code are just copied to the
 extracted files. The extraction recognizes whether the realized axiom
 should become a ML type constant or a ML object declaration.
 
@@ -281,7 +281,7 @@ arity, that is a sequence of product finished by a sort), then some type
 variables has to be given. The syntax is then: 
 
 \begin{description}
-\item{\tt Extract Constant \qualid\ \str$_1$ \ldots \str$_n$ => \str.} ~\par
+\item{\tt Extract Constant} \qualid\ \str$_1$ \dots\ \str$_n$ {\tt =>} \str.
 \end{description}
 
 The number of type variables is checked by the system. 
@@ -312,8 +312,7 @@ types and constructors.  For instance, the user may want to use the ML
 native boolean type instead of \Coq\ one.  The syntax is the following:
 
 \begin{description}
-\item{\tt Extract Inductive \qualid\ => \str\ [ \str\ \dots \str\ ]\
-{\it optstring}.} ~\par
+\item{\tt Extract Inductive} \qualid\ {\tt =>} \str\ {\tt [} \str\ \dots\ \str\ {\tt ]}\ {\it optstring}.\par
   Give an ML extraction for the given inductive type. You must specify
   extractions for the type itself (first \str) and all its
   constructors (between square brackets). If given, the final optional
@@ -344,7 +343,7 @@ is quite sound. But extracting to a general type (by providing an
 ad-hoc pattern-matching) will often \emph{not} be fully rigorously
 correct.  For instance, when extracting {\tt nat} to Ocaml's {\tt
 int}, it is theoretically possible to build {\tt nat} values that are
-larger than Ocaml's {\tt max\_int}. It is the user's responsability to
+larger than Ocaml's {\tt max\_int}. It is the user's responsibility to
 be sure that no overflow or other bad events occur in practice.
 
 \item Translating an inductive type to an ML type does \emph{not}
@@ -391,7 +390,7 @@ For instance the module {\tt List} exists both in \Coq\ and in Ocaml.
 It is possible to instruct the extraction not to use particular filenames.
 
 \begin{description}
-\item{\tt Extraction Blacklist \ident \ldots \ident.} ~\par
+\item{\tt Extraction Blacklist} \ident\ \dots\ \ident. ~\par
   Instruct the extraction to avoid using these names as filenames
   for extracted code. 
 \item{\tt Print Extraction Blacklist.} ~\par
@@ -425,13 +424,12 @@ Definition dp :=
  fun (A B:Set)(x:A)(y:B)(f:forall C:Set, C->C) => (f A x, f B y).
 \end{verbatim}
 
-In Ocaml, for instance, the direct extracted term would be:
-
+In Ocaml, for instance, the direct extracted term would be
 \begin{verbatim}
 let dp x y f = Pair((f () x),(f () y))
 \end{verbatim}
 
-and would have type:
+and would have type
 \begin{verbatim}
 dp : 'a -> 'a -> (unit -> 'a -> 'b) -> ('b,'b) prod
 \end{verbatim}
@@ -488,7 +486,7 @@ Inductive nat : Set :=
   | S : nat -> nat.
 \end{coq_example*}
 
-This module contains a theorem {\tt eucl\_dev}, whose type is:
+This module contains a theorem {\tt eucl\_dev}, whose type is
 \begin{verbatim}
 forall b:nat, b > 0 -> forall a:nat, diveucl a b
 \end{verbatim}
@@ -531,9 +529,9 @@ val eucl_dev : nat -> nat -> diveucl = <fun>
 It is easier to test on \ocaml\ integers:
 \begin{verbatim}
 # let rec nat_of_int = function 0 -> O | n -> S (nat_of_int (n-1));;
-val i2n : int -> nat = <fun>
+val nat_of_int : int -> nat = <fun>
 # let rec int_of_nat = function O -> 0 | S p -> 1+(int_of_nat p);;
-val n2i : nat -> int = <fun>
+val int_of_nat : nat -> int = <fun>
 # let div a b = 
      let Divex (q,r) = eucl_dev (nat_of_int b) (nat_of_int a)
      in (int_of_nat q, int_of_nat r);;
