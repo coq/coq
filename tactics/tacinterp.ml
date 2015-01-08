@@ -729,7 +729,7 @@ let interp_may_eval f ist env sigma = function
 	let (sigma,ic) = f ist env sigma c in
 	let ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
 	let evdref = ref sigma in
-	let c = subst_meta [ConstrMatching.special_meta,ic] ctxt in
+	let c = subst_meta [Constr_matching.special_meta,ic] ctxt in
 	let c = Typing.solve_evars env evdref c in
 	!evdref , c
       with
@@ -1528,8 +1528,8 @@ and interp_letin ist llc u =
   fold ist.lfun llc
 
 (** [interp_match_success lz ist succ] interprets a single matching success
-    (of type {!TacticMatching.t}). *)
-and interp_match_success ist { TacticMatching.subst ; context ; terms ; lhs } =
+    (of type {!Tactic_matching.t}). *)
+and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
   let (>>=) = Ftactic.bind in
   let lctxt = Id.Map.map interp_context context in
   let hyp_subst = Id.Map.map Value.of_constr terms in
@@ -1590,7 +1590,7 @@ and interp_match ist lz constr lmr =
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
-    interp_match_successes lz ist (TacticMatching.match_term env sigma constr ilr)
+    interp_match_successes lz ist (Tactic_matching.match_term env sigma constr ilr)
   end
 
 (* Interprets the Match Context expressions *)
@@ -1602,7 +1602,7 @@ and interp_match_goal ist lz lr lmr =
       let hyps = if lr then List.rev hyps else hyps in
       let concl = Proofview.Goal.concl gl in
       let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
-      interp_match_successes lz ist (TacticMatching.match_goal env sigma hyps concl ilr)
+      interp_match_successes lz ist (Tactic_matching.match_goal env sigma hyps concl ilr)
     end
 
 (* Interprets extended tactic generic arguments *)

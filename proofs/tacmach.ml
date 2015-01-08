@@ -96,8 +96,8 @@ let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
 let pf_hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_get_type_of gls)
 
-let pf_is_matching              = pf_apply ConstrMatching.is_matching_conv
-let pf_matches                  = pf_apply ConstrMatching.matches_conv
+let pf_is_matching              = pf_apply Constr_matching.is_matching_conv
+let pf_matches                  = pf_apply Constr_matching.matches_conv
 
 (********************************************)
 (* Definition of the most primitive tactics *)
@@ -226,7 +226,7 @@ module New = struct
   let pf_hnf_type_of gl t =
     pf_whd_betadeltaiota gl (pf_get_type_of gl t)
 
-  let pf_matches gl pat t = pf_apply ConstrMatching.matches_conv gl pat t
+  let pf_matches gl pat t = pf_apply Constr_matching.matches_conv gl pat t
 
   let pf_whd_betadeltaiota gl t = pf_apply whd_betadeltaiota gl t
   let pf_compute gl t = pf_apply compute gl t

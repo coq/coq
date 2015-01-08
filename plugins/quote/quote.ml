@@ -107,7 +107,7 @@ open Names
 open Term
 open Pattern
 open Patternops
-open ConstrMatching
+open Constr_matching
 open Tacmach
 (*i*)
 

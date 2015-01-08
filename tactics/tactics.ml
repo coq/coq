@@ -1979,7 +1979,7 @@ let my_find_eq_data_decompose gl t =
   with e when is_anomaly e
     (* Hack in case equality is not yet defined... one day, maybe,
        known equalities will be dynamically registered *)
-      -> raise ConstrMatching.PatternMatchingFailure
+      -> raise Constr_matching.PatternMatchingFailure
 
 let intro_decomp_eq loc l thin tac id =
   Proofview.Goal.nf_enter begin fun gl ->

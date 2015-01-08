@@ -112,7 +112,7 @@ let format_display l = prlist_with_sep fnl (fun x -> x) (List.rev l)
 (** FIXME: this is quite dummy, we may find a more efficient algorithm. *)
 let rec pattern_filter pat ref env typ =
   let typ = strip_outer_cast typ in
-  if ConstrMatching.is_matching env Evd.empty pat typ then true
+  if Constr_matching.is_matching env Evd.empty pat typ then true
   else match kind_of_term typ with
   | Prod (_, _, typ)
   | LetIn (_, _, _, typ) -> pattern_filter pat ref env typ
@@ -120,7 +120,7 @@ let rec pattern_filter pat ref env typ =
 
 let rec head_filter pat ref env typ =
   let typ = strip_outer_cast typ in
-  if ConstrMatching.is_matching_head env Evd.empty pat typ then true
+  if Constr_matching.is_matching_head env Evd.empty pat typ then true
   else match kind_of_term typ with
   | Prod (_, _, typ)
   | LetIn (_, _, _, typ) -> head_filter pat ref env typ
@@ -149,7 +149,7 @@ let name_of_reference ref = Id.to_string (basename_of_global ref)
 
 let search_about_filter query gr env typ = match query with
 | GlobSearchSubPattern pat ->
-  ConstrMatching.is_matching_appsubterm ~closed:false env Evd.empty pat typ
+  Constr_matching.is_matching_appsubterm ~closed:false env Evd.empty pat typ
 | GlobSearchString s ->
   String.string_contains ~where:(name_of_reference gr) ~what:s
 
@@ -288,11 +288,11 @@ let interface_search flags =
       toggle (Str.string_match regexp id 0) flag
     in
     let match_type (pat, flag) =
-      toggle (ConstrMatching.is_matching env Evd.empty pat constr) flag
+      toggle (Constr_matching.is_matching env Evd.empty pat constr) flag
     in
     let match_subtype (pat, flag) =
       toggle
-        (ConstrMatching.is_matching_appsubterm ~closed:false 
+        (Constr_matching.is_matching_appsubterm ~closed:false 
 	   env Evd.empty pat constr) flag
     in
     let match_module (mdl, flag) =

@@ -20,7 +20,7 @@ Miscops
 Glob_ops
 Redops
 Patternops
-ConstrMatching
+Constr_matching
 Tacred
 Typeclasses_errors
 Typeclasses

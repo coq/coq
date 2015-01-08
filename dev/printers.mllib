@@ -132,7 +132,7 @@ Recordops
 Evarconv
 Typing
 Patternops
-ConstrMatching
+Constr_matching
 Find_subterm
 Tacred
 Classops

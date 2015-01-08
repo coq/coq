@@ -20,7 +20,7 @@ Tacenv
 Hints
 Auto
 Tacintern
-TacticMatching
+Tactic_matching
 Tacinterp
 Evar_tactics
 Term_dnet

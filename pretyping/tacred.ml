@@ -943,9 +943,9 @@ let simpl env sigma c = strong whd_simpl env sigma c
 
 let matches_head env sigma c t =
   match kind_of_term t with
-    | App (f,_) -> ConstrMatching.matches env sigma c f
-    | Proj (p, _) -> ConstrMatching.matches env sigma c (mkConst (Projection.constant p))
-    | _ -> raise ConstrMatching.PatternMatchingFailure
+    | App (f,_) -> Constr_matching.matches env sigma c f
+    | Proj (p, _) -> Constr_matching.matches env sigma c (mkConst (Projection.constant p))
+    | _ -> raise Constr_matching.PatternMatchingFailure
 
 let is_pattern_meta = function Pattern.PMeta _ -> true | _ -> false
 
@@ -980,7 +980,7 @@ let e_contextually byhead (occs,c) f env sigma t =
     try
       let subst =
         if byhead then matches_head env sigma c t 
-	else ConstrMatching.matches env sigma c t in
+	else Constr_matching.matches env sigma c t in
       let ok =
 	if nowhere_except_in then Int.List.mem !pos locs
 	else not (Int.List.mem !pos locs) in
@@ -996,7 +996,7 @@ let e_contextually byhead (occs,c) f env sigma t =
       end
       else
 	traverse_below nested envc t
-    with ConstrMatching.PatternMatchingFailure ->
+    with Constr_matching.PatternMatchingFailure ->
       traverse_below nested envc t
   and traverse_below nested envc t =
     (* when byhead, find other occurrences without matching again partial

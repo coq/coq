@@ -1437,7 +1437,7 @@ let decomp_tuple_term env c t =
       and cdr_code = applist (mkConstU (destConstRef p2,i),[a;p;inner_code]) in
       let cdrtyp = beta_applist (p,[car]) in
       List.map (fun l -> ((car,a),car_code)::l) (decomprec cdr_code cdr cdrtyp)
-    with ConstrMatching.PatternMatchingFailure ->
+    with Constr_matching.PatternMatchingFailure ->
       []
     in [((ex,exty),inner_code)]::iterated_decomp
   in decomprec (mkRel 1) c t
@@ -1508,7 +1508,7 @@ let cutSubstInHyp l2r eqn id =
 
 let try_rewrite tac =
   Proofview.tclORELSE tac begin function (e, info) -> match e with
-    | ConstrMatching.PatternMatchingFailure ->
+    | Constr_matching.PatternMatchingFailure ->
 	tclZEROMSG (str "Not a primitive equality here.")
     | e when catchable_exception e ->
 	tclZEROMSG
@@ -1581,7 +1581,7 @@ let unfold_body x =
 let restrict_to_eq_and_identity eq = (* compatibility *)
   if not (is_global glob_eq eq) &&
     not (is_global glob_identity eq) 
-  then raise ConstrMatching.PatternMatchingFailure
+  then raise Constr_matching.PatternMatchingFailure
 
 exception FoundHyp of (Id.t * constr * bool)
 
@@ -1592,7 +1592,7 @@ let is_eq_x gl x (id,_,c) =
     let (_,lhs,rhs) = pi3 (find_eq_data_decompose gl c) in
     if (Term.eq_constr x lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
     if (Term.eq_constr x rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
-  with ConstrMatching.PatternMatchingFailure ->
+  with Constr_matching.PatternMatchingFailure ->
     ()
 
 (* Rewrite "hyp:x=rhs" or "hyp:rhs=x" (if dir=false) everywhere and
@@ -1684,7 +1684,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
       if Term.eq_constr x y then failwith "caught";
       match kind_of_term x with Var x -> x | _ ->
       match kind_of_term y with Var y -> y | _ -> failwith "caught"
-    with ConstrMatching.PatternMatchingFailure -> failwith "caught"
+    with Constr_matching.PatternMatchingFailure -> failwith "caught"
   in
   let test p = try Some (test p) with Failure _ -> None in
   let hyps = pf_hyps_types gl in
@@ -1700,13 +1700,13 @@ let cond_eq_term_left c t gl =
   try
     let (_,x,_) = pi3 (find_eq_data_decompose gl t) in
     if pf_conv_x gl c x then true else failwith "not convertible"
-  with ConstrMatching.PatternMatchingFailure -> failwith "not an equality"
+  with Constr_matching.PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term_right c t gl =
   try
     let (_,_,x) = pi3 (find_eq_data_decompose gl t) in
     if pf_conv_x gl c x then false else failwith "not convertible"
-  with ConstrMatching.PatternMatchingFailure -> failwith "not an equality"
+  with Constr_matching.PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term c t gl =
   try
@@ -1714,7 +1714,7 @@ let cond_eq_term c t gl =
     if pf_conv_x gl c x then true
     else if pf_conv_x gl c y then false
     else failwith "not convertible"
-  with ConstrMatching.PatternMatchingFailure -> failwith "not an equality"
+  with Constr_matching.PatternMatchingFailure -> failwith "not an equality"
 
 let rewrite_assumption_cond cond_eq_term cl =
   let rec arec hyps gl = match hyps with

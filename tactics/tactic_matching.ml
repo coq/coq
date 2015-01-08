@@ -19,7 +19,7 @@ open Tacexpr
     those of {!Matching.matching_result}), and a {!Term.constr}
     substitution mapping corresponding to matched hypotheses. *)
 type 'a t = {
-  subst : ConstrMatching.bound_ident_map * Pattern.extended_patvar_map ;
+  subst : Constr_matching.bound_ident_map * Pattern.extended_patvar_map ;
   context : Term.constr Id.Map.t;
   terms : Term.constr Id.Map.t;
   lhs : 'a;
@@ -33,8 +33,8 @@ type 'a t = {
 (** Some of the functions of {!Matching} return the substitution with a
     [patvar_map] instead of an [extended_patvar_map]. [adjust] coerces
     substitution of the former type to the latter. *)
-let adjust : ConstrMatching.bound_ident_map * Pattern.patvar_map ->
-             ConstrMatching.bound_ident_map * Pattern.extended_patvar_map =
+let adjust : Constr_matching.bound_ident_map * Pattern.patvar_map ->
+             Constr_matching.bound_ident_map * Pattern.extended_patvar_map =
   fun (l, lc) -> (l, Id.Map.map (fun c -> [], c) lc)
 
 
@@ -230,16 +230,16 @@ module PatternMatching (E:StaticEnvironment) = struct
     | Term p ->
         begin 
           try
-            put_subst (ConstrMatching.extended_matches E.env E.sigma p term) <*>
+            put_subst (Constr_matching.extended_matches E.env E.sigma p term) <*>
             return lhs
-          with ConstrMatching.PatternMatchingFailure -> fail
+          with Constr_matching.PatternMatchingFailure -> fail
         end
     | Subterm (with_app_context,id_ctxt,p) ->
 
       let rec map s (e, info) =
         { stream = fun k ctx -> match IStream.peek s with
           | IStream.Nil -> Proofview.tclZERO ~info e
-          | IStream.Cons ({ ConstrMatching.m_sub ; m_ctx }, s) ->
+          | IStream.Cons ({ Constr_matching.m_sub ; m_ctx }, s) ->
             let subst = adjust m_sub in
             let context = id_map_try_add id_ctxt m_ctx Id.Map.empty in
             let terms = empty_term_subst in
@@ -249,7 +249,7 @@ module PatternMatching (E:StaticEnvironment) = struct
             | Some nctx -> Proofview.tclOR (k lhs nctx) (fun e -> (map s e).stream k ctx)
         }
       in
-      map (ConstrMatching.match_subterm_gen E.env E.sigma with_app_context p term) imatching_error
+      map (Constr_matching.match_subterm_gen E.env E.sigma with_app_context p term) imatching_error
 
 
   (** [rule_match_term term rule] matches the term [term] with the

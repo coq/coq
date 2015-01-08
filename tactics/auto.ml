@@ -129,8 +129,8 @@ let conclPattern concl pat tac =
     | None -> Proofview.tclUNIT Id.Map.empty
     | Some pat ->
 	try
-	  Proofview.tclUNIT (ConstrMatching.matches env sigma pat concl)
-	with ConstrMatching.PatternMatchingFailure ->
+	  Proofview.tclUNIT (Constr_matching.matches env sigma pat concl)
+	with Constr_matching.PatternMatchingFailure ->
           Proofview.tclZERO (UserError ("conclPattern",str"conclPattern"))
   in
    Proofview.Goal.enter (fun gl ->
