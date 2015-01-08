@@ -224,6 +224,7 @@ Tactics
   so that terms with holes can be constructed piecewise in Ltac.
 - New bullets --, ++, **, ---, +++, ***, ... made available.
 - More informative messages when wrong bullet is used.
+- bullet suggestion when a subgoal is solved.
 - New tactic "enough", symmetric to "assert", but with subgoals
   swapped, as a more friendly replacement of "cut".
 - In destruct/induction, experimental modifier "!" prefixing the

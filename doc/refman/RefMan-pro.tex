@@ -307,14 +307,19 @@ only be unfocused when it has been fully solved (\emph{i.e.} when
 there is no focused goal left). Unfocusing is then handled by {\tt \}}
 (again, without a terminating period). See also example in next section.
 
+Note that when a focused goal is proved a message is displayed
+together with a suggestion about the right bullet or {\tt \}} to
+unfocus it or focus the next one.
+
 \begin{ErrMsgs}
 \item \errindex{Error: This proof is focused, but cannot be unfocused
-      this way}
-  You are trying to use a bullet that is already in use or a {\tt \}} but the current
-  subproof has not been fully solved.
+    this way} You are trying to use {\tt \}} but the current subproof
+  has not been fully solved.
+\item see also error message about bullets below.
 \end{ErrMsgs}
 
-\subsection[Bullets]{Bullets\comindex{+ (command)}\comindex{- (command)}\comindex{* (command)}\index{Bullets}}
+\subsection[Bullets]{Bullets\comindex{+ (command)}
+  \comindex{- (command)}\comindex{* (command)}\index{Bullets}}
 Alternatively to {\tt \{} and {\tt \}}, proofs can be structured with
 bullets. The use of a bullet $b$ for the first time focuses on the
 first goal $g$, the same bullet cannot be used again until the proof
@@ -329,6 +334,15 @@ Available bullets are {\tt -}, {\tt +}, {\tt *}, {\tt --}, {\tt ++}, {\tt **},
 {\tt ---}, {\tt +++}, {\tt ***}, ... (without a
 terminating period).
 
+Note again that when a focused goal is proved a message is displayed
+together with a suggestion about the right bullet or {\tt \}} to
+unfocus it or focus the next one.
+
+Remark: In {\ProofGeneral} (Emacs interface to {\Coq}), you must use
+bullets with the priority ordering shown above to have a correct
+indentation. For example {\tt -} must be the outer bullet and {\tt **}
+the inner one in the example below.
+
 The following example script illustrates all these features:
 \begin{coq_example*}
 Goal (((True/\True)/\True)/\True)/\True.
@@ -336,46 +350,39 @@ Proof.
   split.
   - split.
     + split.
-      * { split.
+      ** { split.
           - trivial.
           - trivial.
         }
-      * trivial.
+      ** trivial.
     + trivial.
   - assert True.
     { trivial. }
     assumption.
 \end{coq_example*}
 
-Remark: In {\ProofGeneral} (Emacs interface to {\Coq}), you must use bullets
-with this priority ordering to have a correct indentation: {\tt -},
-{\tt +}, {\tt *}. That is {\tt -} must be the outer bullet and {\tt *}
-the inner one, like in the example above.
 
 \begin{ErrMsgs}
-\item \errindex{Error: Wrong bullet: The current bullet {\abullet}
-  seems not finished.} You are trying to use a bullet already in use
-  but the current bullet {\abullet} is not finished.
+\item \errindex{Error: Wrong bullet {\abullet}1 : Current bullet
+    {\abullet}2 is not finished.}
 
-\item \errindex{Error: Wrong bullet: Finish bullet {\abullet}1 before
-  going back to {\abullet}2.} You need a bullet here but {\abullet}2,
-  despite already in use, is the wrong one. Use bullet {\abullet}1
-  instead.
+  Before using bullet {\abullet}1 again, you should first finish
+  proving the current focused goal. Note that {\abullet}1 and
+  {\abullet}2 may be the same.
 
-\item \errindex{Error: No focussed goal. To focus next goal, use
-  bullet {\abullet}.} You need a bullet here but you are trying to
-  introduce a fresh one. Use {\abullet} instead.
+\item \errindex{Error: Wrong bullet {\abullet}1 : Bullet {\abullet}2
+    is mandatory here.} You must put {\abullet}2 to focus next goal.
+  No other bullet is allowed here.
 
-\item \errindex{Error: Wrong bullet: no more goals at this level. Try
-  {\abullet} instead.} You need a bullet here but the one you just
-  tried is exhausted. Use {\abullet} instead.
 
-\item \errindex{Error: No such goal} there is no proof under focus
-  (because it has just been solved), so the command you are trying
-  to use cannot be applied. You need to first focus the next proof
-  by using the bullet corresponding to the right level (using an
-  incorrect bullet can also generates this message in some cases).
+\item \errindex{Error: No such goal. Focus next goal with bullet
+    {\abullet}.}
 
+  You tried to applied a tactic but no goal where under focus. Using
+  {\abullet} is mandatory here.
+
+\item \errindex{Error: No such goal. Try unfocusing with "{\tt \}}".} You
+  just finished a goal focused by {\tt \{}, you must unfocus it with "{\tt \}}".
 
 \end{ErrMsgs}
 

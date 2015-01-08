@@ -151,11 +151,13 @@ module Bullet : sig
   type t = Vernacexpr.bullet
 
   (** A [behavior] is the data of a put function which
-      is called when a bullet prefixes a tactic, together
-      with a name to identify it. *)
+      is called when a bullet prefixes a tactic, a suggest function
+      suggesting the right bullet to use on a given proof, together
+      with a name to identify the behavior. *)
   type behavior = {
     name : string;
-    put : Proof.proof -> t -> Proof.proof
+    put : Proof.proof -> t -> Proof.proof;
+    suggest: Proof.proof -> string option
   }
 
   (** A registered behavior can then be accessed in Coq
@@ -172,6 +174,7 @@ module Bullet : sig
   (** Handles focusing/defocusing with bullets:
        *)
   val put : Proof.proof -> t -> Proof.proof
+  val suggest : Proof.proof -> string option
 end
 
 

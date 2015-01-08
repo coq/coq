@@ -392,23 +392,6 @@ module Bullet = struct
 
   type t = Vernacexpr.bullet
 
-  (* There are two reasons why a bullet may be wrong: *)
-
-  (* 1) because the previous same bullet is not finished.
-
-     t contains the unfinished bullet and optionally the deeper
-     unfinished one (better suggestion to the user). *)
-  exception FailedUnfocusBullet of t * t option
-
-  (* 2) there is no more goal at this level of bullet.
-
-     t is the wrong bullet, looking which one is correct is not
-     implemented yet. *)
-  exception FailedFocusUsedBullet of t
-
-  exception ExhaustedBulletStack
-  exception FailedFocusUnusedBullet of t
-
   let bullet_eq b1 b2 = match b1, b2 with
   | Vernacexpr.Dash n1, Vernacexpr.Dash n2 -> n1 = n2
   | Vernacexpr.Star n1, Vernacexpr.Star n2 -> n1 = n2
@@ -421,37 +404,11 @@ module Bullet = struct
     | Vernacexpr.Star n -> str (String.make n '*')
     | Vernacexpr.Plus n -> str (String.make n '+')
 
-  let _ =
-    Errors.register_handler
-      (function
-	| FailedUnfocusBullet (b,optb') ->
-	   (match optb' with
-	    | Some b' ->
-	       if b = b' then
-		 Errors.errorlabstrm
-		   "Focus" Pp.(str"Wrong bullet: The current bullet "
-			       ++ pr_bullet b' ++ str" seems not finished.")
-	       else Errors.errorlabstrm
-		      "Focus" Pp.(str"Wrong bullet: Finish bullet "
-				  ++ pr_bullet b'
-				  ++ str" before going back to " ++ pr_bullet b
-				  ++ str".")
-	    | None -> assert false)
-
-	| FailedFocusUsedBullet b ->
-	   Errors.errorlabstrm
-	     "Focus" Pp.(str"Wrong bullet: no more goals at this level. Try "
-			 ++ pr_bullet b ++ str" instead.")
-	| FailedFocusUnusedBullet b ->
-	   Errors.errorlabstrm
-	     "Focus" Pp.(str"No focussed goal. To focus next goal, use bullet "
-			 ++ pr_bullet b ++ str".")
-	| _ -> raise Errors.Unhandled)      
-
 
   type behavior = {
     name : string;
-    put : Proof.proof -> t -> Proof.proof
+    put : Proof.proof -> t -> Proof.proof;
+    suggest: Proof.proof -> string option
   }
 
   let behaviors = Hashtbl.create 4
@@ -460,11 +417,55 @@ module Bullet = struct
   (*** initial modes ***)
   let none = {
     name = "None";
-    put = fun x _ -> x
+    put = (fun x _ -> x);
+    suggest = (fun _ -> None)
   }
   let _ = register_behavior none
 
   module Strict = struct
+    type suggestion =
+    | Suggest of t (* this bullet is mandatory here *)
+    | Unfinished of t (* no mandatory bullet here, but this bullet is unfinished *)
+    | NoBulletInUse (* No mandatory bullet (or brace) here, no bullet pending,
+		       some focused goals exists. *)
+    | NeedClosingBrace (* Some unfocussed goal exists "{" needed to focus them *)
+    | ProofFinished (* No more goal anywhere *)
+
+    (* give a message only if more informative than the standard coq message *)
+    let suggest_on_solved_goal sugg =
+      match sugg with
+      | NeedClosingBrace -> Some "Try unfocusing with \"}\"."
+      | NoBulletInUse -> None
+      | ProofFinished -> None
+      | Suggest b -> Some ("Focus next goal with bullet "
+			   ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
+			   ^".")
+      | Unfinished b -> Some ("The current bullet "
+			      ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
+			      ^ " is unfinished.")
+
+    (* give always a message. *)
+    let suggest_on_error sugg =
+      match sugg with
+      | NeedClosingBrace -> "Try unfocusing with \"}\"."
+      | NoBulletInUse -> assert false (* This should never raise an error. *)
+      | ProofFinished -> "No more subgoals."
+      | Suggest b -> ("Bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
+		      ^ " is mandatory here.")
+      | Unfinished b -> ("Current bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b))
+			 ^ " is not finished.")
+
+    exception FailedBullet of t * suggestion
+
+    let _ =
+      Errors.register_handler
+	(function
+	| FailedBullet (b,sugg) ->
+	  let prefix = "Wrong bullet " ^ Pp.string_of_ppcmds (Pp.(pr_bullet b)) ^ " : " in
+	  Errors.errorlabstrm "Focus" (str prefix ++ str (suggest_on_error sugg))
+	| _ -> raise Errors.Unhandled)
+
+
     (* spiwack: we need only one focus kind as we keep a stack of (distinct!) bullets *)
     let bullet_kind = (Proof.new_focus_kind () : t list Proof.focus_kind)
     let bullet_cond = Proof.done_cond ~loose_end:true bullet_kind
@@ -486,80 +487,75 @@ module Bullet = struct
       in
       has_bullet (get_bullets pr)
 
-    (* pop a bullet from proof [pr]. If no more bullet in [pr] then
-       raise [Proof.CannotUnfocusThisWay]. Otherwise if pop impossible
-       (pending proofs on this level of bullet or higher) then raise
-       [FailedUnfocusBullet (b)] where [b] is the bullet that could
-       not be popped. Beware that [b] is not the good suggestion at
-       this point. *)
+    (* pop a bullet from proof [pr]. There should be at least one
+       bullet in use. If pop impossible (pending proofs on this level
+       of bullet or higher) then raise [Proof.CannotUnfocusThisWay]. *)
     let pop pr =
       match get_bullets pr with
-      | b::_ ->
-	(try Proof.unfocus bullet_kind pr () , b
-	 with Proof.CannotUnfocusThisWay -> raise (FailedUnfocusBullet (b,None)))
-      | _ -> raise ExhaustedBulletStack
+      | b::_ -> Proof.unfocus bullet_kind pr () , b
+      | _ -> assert false
 
     let push (b:t) pr =
       Proof.focus bullet_cond (b::get_bullets pr) 1 pr
 
-    (* This function pops bullets one by one until [bul] or end
-       of stack. If [bul] is found and all pops were ok (no pending
-       subgoals in popped bullets) then return the new proof.
-       Otherwise raise an exception with a bullet suggestion *)
-    let rec pop_or_explain (untilbul:t option) (p:Proof.proof) (suggestbul:t option) =
-      try
-	let p, b = pop p in
-	(* pop went well, see if b is a good suggestion. *)
-	let newsuggestbul =
-	  (* if push does not fail then b is a good suggestion. *)
-	  try let _ = push b p in Some b (* push didn't fail so b is OK *)
-	  with _ -> suggestbul in
-	(* Check if we found untilbul (if applicable) and recursive
-	   call if not. *)
-	(match untilbul with
-	 | None -> pop_or_explain untilbul p newsuggestbul
-	 | Some bul' -> if bullet_eq bul' b
-			then p
-			else pop_or_explain untilbul p newsuggestbul)
-      with FailedUnfocusBullet (b,None) ->
-	   (* the current bullet is [b] and it cannot be popped. If we
-	   don't have a suggestion at this point, it means that the
-	   current bullet is not finished, otherwise suggest. *)	   
-	   (match suggestbul with
-	      None -> raise (FailedUnfocusBullet (b,Some b))
-	    | Some b' -> raise (FailedUnfocusBullet (b, Some b')))
-	   
-	 | ExhaustedBulletStack ->
-	    (* bullet stack is exhausted, suggest [suggestbul]. *)
-	    (match suggestbul with
-	       None -> raise Proof.CannotUnfocusThisWay
-	     | Some b' -> raise (FailedFocusUnusedBullet b'))
+    (* Used only in the next function.
+       TODO: use a recursive function instead? *)
+    exception SuggestFound of t
 
+    let suggest_bullet (prf:Proof.proof): suggestion =
+      if Proof.is_done prf then ProofFinished
+      else if not (Proof.no_focused_goal prf)
+      then (* No suggestion if a bullet is not mandatory, look for an unfinished bullet *)
+	match get_bullets prf with
+	| b::_ -> Unfinished b
+	| _ -> NoBulletInUse
+      else (* There is no goal under focus but some are unfocussed,
+	      let us look at the bullet needed. If no  *)
+	let pcobaye = ref prf in
+	try
+	  while true do
+	    let pcobaye', b = pop !pcobaye in
+	   (* pop went well, this means that there are no more goals
+	    *under this* bullet b, see if a new b can be pushed. *)
+	    (try let _ = push b pcobaye' in (* push didn't fail so a new b can be pushed. *)
+		 raise (SuggestFound b)
+	     with SuggestFound _ as e -> raise e
+	     | _ -> ()); (* b could not be pushed, so we must look for a outer bullet *)
+	    pcobaye := pcobaye'
+	  done;
+	  assert false
+	with SuggestFound b -> Suggest b
+	| _ -> NeedClosingBrace (* No push was possible, but there are still
+				   subgoals somewhere: there must be a "}" to use. *)
+
+
+    let rec pop_until (prf:Proof.proof) bul: Proof.proof =
+      let prf', b = pop prf in
+      if bullet_eq bul b then prf'
+      else pop_until prf' bul
 
     let put p bul =
-      if has_bullet bul p then
-        let p' = pop_or_explain (Some bul) p None in
-	try push bul p'
-	with Proof.NoSuchGoals(1,1) ->
-	  (* 	  raise (FailedFocusUsedBullet bul) *)
-	  try let _ = pop_or_explain None p None in
-	      raise Proof.CannotUnfocusThisWay
-	  with FailedUnfocusBullet (b,Some bsugg) -> raise (FailedFocusUsedBullet bsugg)
-      else
-	try push bul p
-	with 
-	| Proof.NoSuchGoals(1,1) ->
-	   (* pop_until should raise an exception with a bullet suggestion,
-	    but FailedUnfocusBullet should be transformed into
-	    FailedFocusUnusedBullet. *)
-	   (try let _ = pop_or_explain None p None in
-		raise (Proof.NoSuchGoals(1,1))
-	    with FailedUnfocusBullet (b,Some bsugg) ->
-	      raise (FailedFocusUnusedBullet bsugg))
-	   	
+      try
+	if not (has_bullet bul p) then
+	  (* bullet is not in use, so pushing it is always ok unless
+	     no goal under focus. *)
+	  push bul p
+	else
+	  match suggest_bullet p with
+	  | Suggest suggested_bullet when bullet_eq bul suggested_bullet
+	      -> (* suggested_bullet is mandatory and you gave the right one *)
+	    let p' = pop_until p bul in
+	    push bul p'
+	(* the bullet you gave is in use but not the right one *)
+	  | sugg -> raise (FailedBullet (bul,sugg))
+      with Proof.NoSuchGoals _ -> (* push went bad *)
+	raise (FailedBullet (bul,suggest_bullet p))
+
     let strict = {
       name = "Strict Subproofs";
-      put = put
+      put = put;
+      suggest = (fun prf -> suggest_on_solved_goal (suggest_bullet prf))
+
     }
     let _ = register_behavior strict
   end
@@ -583,7 +579,17 @@ module Bullet = struct
 
   let put p b =
     (!current_behavior).put p b
+
+  let suggest p =
+    (!current_behavior).suggest p
 end
+
+
+let _ =
+  let hook n =
+    let prf = give_me_the_proof () in
+    (Bullet.suggest prf) in
+  Proofview.set_nosuchgoals_hook hook
 
 
 (**********************************************************)

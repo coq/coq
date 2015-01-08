@@ -626,9 +626,10 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
 	    fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] shelf
 	  | _ , _, _ ->
-	     msg_info (str "This subproof is complete, but there are still unfocused goals.");
-	    fnl ()
-            ++ pr_subgoals ~pr_first:false None bsigma seeds shelf [] bgoals
+	    msg_info (str "This subproof is complete, but there are still unfocused goals." ++
+			(match Proof_global.Bullet.suggest p
+			 with None  -> str"" | Some s -> fnl () ++ str s));
+	    fnl () ++ pr_subgoals ~pr_first:false None bsigma seeds shelf [] bgoals
 	  end
   | _ -> pr_subgoals None sigma seeds shelf stack goals
   end

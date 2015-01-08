@@ -229,8 +229,14 @@ val tclBREAK : (iexn -> iexn option) -> 'a tactic -> 'a tactic
 (** [tclFOCUS i j t] applies [t] after focusing on the goals number
     [i] to [j] (see {!focus}). The rest of the goals is restored after
     the tactic action. If the specified range doesn't correspond to
-    existing goals, fails with [NoSuchGoals] (a user error). *)
+    existing goals, fails with [NoSuchGoals] (a user error). this
+    exception is catched at toplevel with a default message + a hook
+    message that can be customized by [set_nosuchgoals_hook] below.
+    This hook is used to add a suggestion about bullets when
+    applicable. *)
 exception NoSuchGoals of int
+val set_nosuchgoals_hook: (int -> string option) -> unit
+
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
 
 (** [tclFOCUSID x t] applies [t] on a (single) focused goal like
