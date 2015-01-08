@@ -15,7 +15,7 @@ open Names
 open Term
 open Termops
 open Inductiveops
-open ConstrMatching
+open Constr_matching
 open Coqlib
 open Declarations
 open Tacmach.New
