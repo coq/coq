@@ -2960,6 +2960,7 @@ performs the conversion in hypotheses {\ident}$_1$\ldots {\ident}$_n$.
 \tacindex{lazy}
 \tacindex{compute}
 \tacindex{vm\_compute}\label{vmcompute}
+\tacindex{native\_compute}\label{nativecompute}
 
 These parameterized reduction tactics apply to any goal and perform
 the normalization of the goal according to the specified flags. In
@@ -3028,12 +3029,20 @@ computational expressions (i.e. with few dead code).
 
 \item {\tt vm\_compute} \tacindex{vm\_compute}
 
-  This tactic evaluates the goal using the optimized call-by-value
-  evaluation bytecode-based virtual machine. This algorithm is
-  dramatically more efficient than the algorithm used for the {\tt
-  cbv} tactic, but it cannot be fine-tuned. It is specially
-  interesting for full evaluation of algebraic objects. This includes
-  the case of reflexion-based tactics.
+  This tactic evaluates the goal using the optimized call-by-value evaluation
+  bytecode-based virtual machine described in
+  \cite{CompiledStrongReduction}. This algorithm is dramatically more efficient
+  than the algorithm used for the {\tt cbv} tactic, but it cannot be
+  fine-tuned. It is specially interesting for full evaluation of algebraic
+  objects. This includes the case of reflexion-based tactics.
+
+\item {\tt native\_compute} \tacindex{native\_compute}
+
+  This tactic evaluates the goal by compilation to \ocaml{} as described in
+  \cite{FullReduction}. If \Coq{} is running in native code, it can be typically
+  two to five times faster than {\tt vm\_compute}. Note however that the
+  compilation cost is higher, so it is worth using only for intensive
+  computations.
 
 \end{Variants}
 

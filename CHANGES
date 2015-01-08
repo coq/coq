@@ -146,6 +146,9 @@ Tactics
 - Matching using "lazymatch" was fundamentally modified. It now behaves
   like "match" (immediate execution of the matching branch) but without
   the backtracking mechanism in case of failure.
+- New conversion tactic "native_compute": evaluates the goal (or an hypothesis)
+  with a call-by-value strategy, using the OCaml native compiler. Useful on
+  very intensive computations.
 - New "cbn" tactic, a well-behaved simpl.
 - Repeated identical calls to omega should now produce identical proof terms.
 - Tactics btauto, a reflexive Boolean tautology solver.
