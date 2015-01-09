@@ -435,7 +435,7 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 	$(HIDE){ \
 	  $(bincoqc) -quick -R vio vio $* 2>&1 && \
 	  $(coqtop) -R vio vio -vio2vo $*.vio 2>&1 && \
-	  $(bincoqchk) -R vio vio $(subst /,.,$*) 2>&1; \
+	  $(bincoqchk) -R vio vio -norec $(subst /,.,$*) 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

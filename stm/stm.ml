@@ -1148,6 +1148,11 @@ end = struct (* {{{ *)
     msg_info(
       str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
     VCS.restore document;
+    let start =
+      let rec aux cur =
+        try aux (VCS.visit cur).next
+        with VCS.Expired -> cur in
+      aux stop in
     try
       Reach.known_state ~cache:`No stop;
       (* The original terminator, a hook, has not been saved in the .vio*)
@@ -1156,6 +1161,9 @@ end = struct (* {{{ *)
           (Lemmas.mk_hook (fun _ _ -> ())));
       let proof =
         Proof_global.close_proof ~keep_body_ucst_sepatate:true (fun x -> x) in
+      (* We jump at the beginning since the kernel handles side effects by also
+       * looking at the ones that happen to be present in the current env *)
+      Reach.known_state ~cache:`No start;
       vernac_interp stop ~proof
         { verbose = false; loc;
           expr = (VernacEndProof (Proved (true,None))) };
@@ -1190,7 +1198,7 @@ end = struct (* {{{ *)
     let bucket = (List.nth l i).Stateid.uuid in
     match check_task_aux (Printf.sprintf ", bucket %d" bucket) name l i with
     | None -> exit 1
-    | Some (po,pt) ->
+    | Some (po,_) ->
         let discharge c = List.fold_right Cooking.cook_constr d.(bucket) c in
         let con =
           Nametab.locate_constant
