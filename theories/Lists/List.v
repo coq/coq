@@ -1655,6 +1655,15 @@ Section Cutting.
     - apply Peano.le_n_S, iHk.
   Qed.
 
+  Lemma firstn_length_le: forall l:list A, forall n:nat,
+    n <= length l -> length (firstn n l) = n.
+  Proof. induction l as [|x xs Hrec].
+    - simpl. intros n H. apply le_n_0_eq in H. rewrite <- H. now simpl.
+    - destruct n.
+      * now simpl.
+      * simpl. intro H. apply le_S_n in H. now rewrite (Hrec n H).
+  Qed.
+
   Lemma firstn_app n:
     forall l1 l2,
     firstn n (l1 ++ l2) = (firstn n l1) ++ (firstn (n - length l1) l2).
@@ -1677,6 +1686,19 @@ Section Cutting.
       * rewrite firstn_app. assert (H0 : (length l1 + S k - length l1) = S k).
         auto with arith.
         rewrite H0, firstn_all2; [reflexivity | auto with arith].
+  Qed.
+
+  Lemma firstn_firstn:
+    forall l:list A,
+    forall i j : nat,
+    firstn i (firstn j l) = firstn (min i j) l.
+  Proof. induction l as [|x xs Hl].
+    - intros. simpl. now rewrite ?firstn_nil.
+    - destruct i.
+      * intro. now simpl.
+      * destruct j.
+        + now simpl.
+        + simpl. f_equal. apply Hl.
   Qed.
 
   Fixpoint skipn (n:nat)(l:list A) : list A :=
