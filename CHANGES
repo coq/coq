@@ -73,6 +73,12 @@ Vernacular commands
 - "Collection" command to name sets of section hypotheses.  Named collections
   can be used in the syntax of "Proof using" to assert with section variables
   are used in a proof.
+- The "Optimize Proof" command can be placed in the middle of a proof to
+  force the compaction the data structure used to represent the ongoing
+  proof (evar map).  This may result in a lower memory footprint and speed up
+  the execution of the following tactics.
+- "Optimize Heap" command to tell the OCaml runtime to performa a major
+  garbage collection step and heap compaction.
 
 Specification Language
 
