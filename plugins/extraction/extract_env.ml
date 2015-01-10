@@ -90,9 +90,6 @@ module type VISIT = sig
 end
 
 module Visit : VISIT = struct
-  (* What used to be in a single KNset should now be split into a KNset
-     (for inductives and modules names) and a Cset_env for constants
-     (and still the remaining MPset) *)
   type must_visit =
       { mutable ind : KNset.t; mutable con : KNset.t;
 	mutable mp : MPset.t; mutable mp_all : MPset.t }
@@ -127,6 +124,15 @@ module Visit : VISIT = struct
   let add_decl_deps = decl_iter_references add_ref add_ref add_ref
   let add_spec_deps = spec_iter_references add_ref add_ref add_ref
 end
+
+let add_field_label mp = function
+  | (lab, SFBconst _) -> Visit.add_ref (ConstRef (Constant.make2 mp lab))
+  | (lab, SFBmind _) -> Visit.add_ref (IndRef (MutInd.make2 mp lab, 0))
+  | (lab, (SFBmodule _|SFBmodtype _)) -> Visit.add_mp_all (MPdot (mp,lab))
+
+let rec add_labels mp = function
+  | MoreFunctor (_,_,m) -> add_labels mp m
+  | NoFunctor sign -> List.iter (add_field_label mp) sign
 
 exception Impossible
 
@@ -323,7 +329,9 @@ let rec extract_structure env mp ~all = function
 and extract_mexpr env mp = function
   | MEwith _ -> assert false (* no 'with' syntax for modules *)
   | me when lang () != Ocaml ->
-      (* in Haskell/Scheme, we expand everything *)
+      (* In Haskell/Scheme, we expand everything.
+         For now, we also extract everything, dead code will be removed later
+         (see [Modutil.optimize_struct]. *)
       extract_msignature env mp ~all:true (expand_mexpr env mp me)
   | MEident mp ->
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false;
@@ -352,7 +360,7 @@ and extract_msignature env mp ~all = function
       Miniml.MEfunctor
         (mbid,
          extract_mbody_spec env mp1 mtb,
-	 extract_msignature env' mp ~all:true me)
+	 extract_msignature env' mp ~all me)
 
 and extract_module env mp ~all mb =
   (* A module has an empty [mod_expr] when :
@@ -364,7 +372,11 @@ and extract_module env mp ~all mb =
   let impl = match mb.mod_expr with
     | Abstract -> error_no_module_expr mp
     | Algebraic me -> extract_mexpression env mp me
-    | Struct sign -> extract_msignature env mp ~all:true sign
+    | Struct sign ->
+      (* This module has a signature, otherwise it would be FullStruct.
+         We extract just the elements required by this signature. *)
+      let () = add_labels mp mb.mod_type in
+      extract_msignature env mp ~all:false sign
     | FullStruct -> extract_msignature env mp ~all mb.mod_type
   in
   (* Slight optimization: for modules without explicit signatures
