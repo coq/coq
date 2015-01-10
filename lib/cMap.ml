@@ -76,22 +76,33 @@ struct
   | MNode (l, k', v', r, h) ->
     let c = M.compare k k' in
     if c < 0 then
-      map_inj (MNode (update k v l, k', v', r, h))
+      let l' = update k v l in
+      if l == l' then s
+      else map_inj (MNode (l', k', v', r, h))
     else if c = 0 then
-      map_inj (MNode (l, k', v, r, h))
+      if v' == v then s
+      else map_inj (MNode (l, k', v, r, h))
     else
-      map_inj (MNode (l, k', v', update k v r, h))
+      let r' = update k v r in
+      if r == r' then s
+      else map_inj (MNode (l, k', v', r', h))
 
   let rec modify k f (s : 'a map) : 'a map = match map_prj s with
   | MEmpty -> raise Not_found
   | MNode (l, k', v, r, h) ->
     let c = M.compare k k' in
     if c < 0 then
-      map_inj (MNode (modify k f l, k', v, r, h))
+      let l' = modify k f l in
+      if l == l' then s
+      else map_inj (MNode (l', k', v, r, h))
     else if c = 0 then
-      map_inj (MNode (l, k', f k' v, r, h))
+      let v' = f k' v in
+      if v' == v then s
+      else map_inj (MNode (l, k', v', r, h))
     else
-      map_inj (MNode (l, k', v, modify k f r, h))
+      let r' = modify k f r in
+      if r == r' then s
+      else map_inj (MNode (l, k', v, r', h))
 
   let rec domain (s : 'a map) : set = match map_prj s with
   | MEmpty -> set_inj SEmpty
