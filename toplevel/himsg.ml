@@ -260,10 +260,10 @@ let explain_generalization env sigma (name,var) j =
   str "it has type" ++ spc () ++ pt ++
   spc () ++ str "which should be Set, Prop or Type."
 
-let explain_unification_error env sigma p1 p2 = function
+let rec explain_unification_error env sigma p1 p2 = function
   | None -> mt()
   | Some e ->
-     let rec aux = function
+     let rec aux p1 p2 = function
      | OccurCheck (evk,rhs) ->
         let rhs = Evarutil.nf_evar sigma rhs in
         [str "cannot define " ++ quote (pr_existential_key sigma evk) ++
@@ -309,9 +309,9 @@ let explain_unification_error env sigma p1 p2 = function
         let u = Evarutil.nf_evar sigma u in
         (strbrk "cannot satisfy constraint " ++ pr_lconstr_env env sigma t ++
         str " == " ++ pr_lconstr_env env sigma u)
-        :: aux e
+        :: aux t u e
      in
-     match aux e with
+     match aux p1 p2 e with
      | [] -> mt ()
      | l -> spc () ++ str "(" ++
             prlist_with_sep pr_semicolon (fun x -> x) l ++ str ")"
