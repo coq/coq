@@ -18,4 +18,4 @@ syntax/r_syntax_plugin.cmxa
 syntax/string_syntax_plugin.cmxa
 syntax/z_syntax_plugin.cmxa
 quote/quote_plugin.cmxa
-Derive/derive_plugin.cmxa
+derive/derive_plugin.cmxa

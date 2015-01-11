@@ -21,4 +21,4 @@ syntax/r_syntax_plugin.cmxs
 syntax/string_syntax_plugin.cmxs
 syntax/z_syntax_plugin.cmxs
 quote/quote_plugin.cmxs
-Derive/derive_plugin.cmxs
+derive/derive_plugin.cmxs
