@@ -103,20 +103,21 @@ let safe_hash_add cmp clq q (k,v) =
     For the ML files, the string is the basename without extension.
 *)
 
-let warning_ml_clash x s s' suff =
+let warning_ml_clash x s suff s' suff' =
+  if suff = suff' then
   eprintf
     "*** Warning: %s%s already found in %s (discarding %s%s)\n" x suff
     (match s with None -> "." | Some d -> d)
     ((match s' with None -> "." | Some d -> d) // x) suff
 
 let mkknown () =
-  let h = (Hashtbl.create 19 : (string, dir) Hashtbl.t) in
+  let h = (Hashtbl.create 19 : (string, dir * string) Hashtbl.t) in
   let add x s suff =
-    try let s' = Hashtbl.find h x in warning_ml_clash x s' s suff
-    with Not_found -> Hashtbl.add h x s
-  and iter f = Hashtbl.iter f h
+    try let s',suff' = Hashtbl.find h x in warning_ml_clash x s' suff' s suff
+    with Not_found -> Hashtbl.add h x (s,suff)
+  and iter f = Hashtbl.iter (fun x (s,_) -> f x s) h
   and search x =
-    try Some (Hashtbl.find h x)
+    try Some (fst (Hashtbl.find h x))
     with Not_found -> None
   in add, iter, search
 
@@ -442,7 +443,7 @@ let add_caml_known phys_dir _ f =
   let basename,suff =
     get_extension f [".ml";".mli";".ml4";".mllib";".mlpack"] in
   match suff with
-    | ".ml"|".ml4" -> add_ml_known basename (Some phys_dir) suff
+    | ".ml"|".ml4" -> add_ml_known f (Some phys_dir) suff
     | ".mli" -> add_mli_known basename (Some phys_dir) suff
     | ".mllib" -> add_mllib_known basename (Some phys_dir) suff
     | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
