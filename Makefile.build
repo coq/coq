@@ -307,7 +307,7 @@ plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO:.cmo=$(BESTOBJ))
 # target to build CoqIde
 coqide: coqide-files coqide-binaries theories/Init/Prelude.vo
 
-COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES) -thread
+COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
 
 .SUFFIXES:.vo
 
@@ -390,7 +390,7 @@ $(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
 		unix.cmxa lablgtk.cmxa lablgtksourceview2.cmxa str.cmxa \
-		$(IDEFLAGS:.cma=.cmxa) $^
+		threads.cmxa $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP) $@
 
 $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
