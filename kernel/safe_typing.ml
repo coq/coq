@@ -190,7 +190,7 @@ let set_type_in_type senv =
 
 (** {6 Stm machinery } *)
 
-let get_opauqe_body env cbo =
+let get_opaque_body env cbo =
   match cbo.const_body with
   | Undef _ -> assert false
   | Def _ -> `Nothing
@@ -201,12 +201,12 @@ let get_opauqe_body env cbo =
 
 let sideff_of_con env c =
   let cbo = Environ.lookup_constant c env.env in
-  SEsubproof (c, cbo, get_opauqe_body env.env cbo)
+  SEsubproof (c, cbo, get_opaque_body env.env cbo)
 let sideff_of_scheme kind env cl =
   SEscheme(
     List.map (fun (i,c) ->
       let cbo = Environ.lookup_constant c env.env in
-      i, c, cbo, get_opauqe_body env.env cbo) cl,
+      i, c, cbo, get_opaque_body env.env cbo) cl,
     kind)
 
 let env_of_safe_env senv = senv.env

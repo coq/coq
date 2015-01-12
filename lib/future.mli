@@ -37,7 +37,7 @@
  * If you compare this with lazy_t, you see that the value returned is *false*,
  * that is counter intuitive and error prone.
  *
- * Still not all computations are impure and acess/alter the system state.
+ * Still not all computations are impure and access/alter the system state.
  * This class can be optimized by using ~pure:true, but there is no way to
  * statically check if this flag is misused, hence use it with care.
  *
