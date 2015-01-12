@@ -443,7 +443,7 @@ let add_caml_known phys_dir _ f =
   let basename,suff =
     get_extension f [".ml";".mli";".ml4";".mllib";".mlpack"] in
   match suff with
-    | ".ml"|".ml4" -> add_ml_known f (Some phys_dir) suff
+    | ".ml"|".ml4" -> add_ml_known basename (Some phys_dir) suff
     | ".mli" -> add_mli_known basename (Some phys_dir) suff
     | ".mllib" -> add_mllib_known basename (Some phys_dir) suff
     | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
