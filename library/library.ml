@@ -222,7 +222,7 @@ let locate_absolute_library dir =
       let _, file = System.where_in_path ~warn:false loadpath name in
       [file]
     with Not_found -> [] in
-  match find ".vo" @ find ".vi" with
+  match find ".vo" @ find ".vio" with
   | [] -> raise LibNotFound
   | [file] -> dir, file
   | [vo;vi] when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
@@ -245,7 +245,7 @@ let locate_qualified_library warn qid =
       [lpath, file]
     with Not_found -> [] in
   let lpath, file =
-    match find ".vo" @ find ".vi" with
+    match find ".vo" @ find ".vio" with
     | [] -> raise LibNotFound
     | [lpath, file] -> lpath, file
     | [lpath_vo, vo; lpath_vi, vi]
@@ -623,7 +623,7 @@ let load_library_todo f =
   let paths = Loadpath.get_paths () in
   let _, longf =
     System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
-  let f = longf^"i" in
+  let f = longf^"io" in
   let ch = System.with_magic_number_check raw_intern_library f in
   let (s1 : seg_lib), _, _ = System.marshal_in_segment f ch in
   let (s2 : seg_univ option), _, _ = System.marshal_in_segment f ch in
@@ -631,10 +631,10 @@ let load_library_todo f =
   let tasks, _, _ = System.marshal_in_segment f ch in
   let (s5 : seg_proofs), _, _ = System.marshal_in_segment f ch in
   close_in ch;
-  if tasks = None then errorlabstrm "restart" (str"not a .vi file");
-  if s2 = None then errorlabstrm "restart" (str"not a .vi file");
-  if s3 = None then errorlabstrm "restart" (str"not a .vi file");
-  if pi3 (Option.get s2) then errorlabstrm "restart" (str"not a .vi file");
+  if tasks = None then errorlabstrm "restart" (str"not a .vio file");
+  if s2 = None then errorlabstrm "restart" (str"not a .vio file");
+  if s3 = None then errorlabstrm "restart" (str"not a .vio file");
+  if pi3 (Option.get s2) then errorlabstrm "restart" (str"not a .vio file");
   longf, s1, Option.get s2, Option.get s3, Option.get tasks, s5
 
 (************************************************************************)
@@ -669,7 +669,7 @@ let save_library_to ?todo dir f otab =
         assert(!Flags.compilation_mode = Flags.BuildVo);
         f ^ "o", Future.UUIDSet.empty
     | Some (l,_) ->
-        f ^ "i",
+        f ^ "io",
         List.fold_left (fun e r -> Future.UUIDSet.add r.Stateid.uuid e)
           Future.UUIDSet.empty l in
   let cenv, seg, ast = Declaremods.end_library ~except dir in
