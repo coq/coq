@@ -472,7 +472,9 @@ let print_constant with_values sep sp =
   let val_0 = Global.body_of_constant_body cb in
   let typ = Declareops.type_of_constant cb in
   let typ = ungeneralized_type_of_constant_type typ in
-  let univs = Univ.instantiate_univ_context (Global.universes_of_constant_body cb) in
+  let univs = Univ.instantiate_univ_context 
+    (Global.universes_of_constant_body cb)
+  in
   hov 0 (pr_polymorphic cb.const_polymorphic ++
     match val_0 with
     | None ->
@@ -720,8 +722,8 @@ let print_opaque_name qid =
 	  error "Not a defined constant."
     | IndRef (sp,_) ->
         print_inductive sp
-    | ConstructRef cstr ->
-	let ty = Inductiveops.type_of_constructor env (cstr,Univ.Instance.empty) in
+    | ConstructRef cstr as gr ->
+	let ty = Universes.unsafe_type_of_global gr in
 	print_typed_value (mkConstruct cstr, ty)
     | VarRef id ->
         let (_,c,ty) = lookup_named id env in

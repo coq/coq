@@ -36,12 +36,12 @@ val detype_names : bool -> Id.t list -> names_context -> env -> evar_map -> cons
 val detype : ?lax:bool -> bool -> Id.t list -> env -> evar_map -> constr -> glob_constr
 
 val detype_case :
-  bool -> ('a -> glob_constr) ->
-  (constructor array -> bool list array -> 'a array ->
+  bool -> (constr -> glob_constr) ->
+  (constructor array -> bool list array -> constr array ->
     (Loc.t * Id.t list * cases_pattern list * glob_constr) list) ->
-  ('a -> bool list -> bool) ->
+  (constr -> bool list -> bool) ->
   Id.t list -> inductive * case_style * bool list array * bool list ->
-    'a option -> 'a -> 'a array -> glob_constr
+    constr option -> constr -> constr array -> glob_constr
 
 val detype_sort : sorts -> glob_sort
 
