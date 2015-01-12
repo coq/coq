@@ -67,6 +67,7 @@ let print_usage_channel co command =
 \n  -impredicative-set     set sort Set impredicative\
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -time                  display the time taken by each command\
+\n  -no-native-compiler    disable the native_compute reduction machinery\
 \n  -h, -help              print this list of options\
 \n";
   List.iter (fun (name, text) ->
