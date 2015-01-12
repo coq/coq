@@ -1,8 +1,8 @@
-The "Coq proof assistant" was jointly developed by 
-	
+The "Coq proof assistant" was jointly developed by
+
 - INRIA Formel, Coq, LogiCal, ProVal, TypiCal, Marelle, pi.r2 projects
   (starting 1985),
-- Laboratoire de l'Informatique du Parallelisme (LIP) 
+- Laboratoire de l'Informatique du Parallelisme (LIP)
   associated to CNRS and ENS Lyon (Sep. 1989 to Aug. 1997),
 - Laboratoire de Recherche en Informatique (LRI)
   associated to CNRS and university Paris Sud (since Sep. 1997),
@@ -15,13 +15,13 @@ All files of the "Coq proof assistant" in directories or sub-directories of
   config dev ide interp intf kernel lib library parsing pretyping proofs
   scripts states tactics test-suite theories tools toplevel
 
-are distributed under the terms of the GNU Lesser General Public License 
+are distributed under the terms of the GNU Lesser General Public License
 Version 2.1 (see file LICENSE). These files are COPYRIGHT 1999-2010,
 The Coq development team, CNRS, INRIA and Université Paris Sud.
 
 Files from the directory doc are distributed as indicated in file doc/LICENCE.
 
-The following directories contain independent contributions supported 
+The following directories contain independent contributions supported
 by the Coq development team. All of them are released under the terms of
 the GNU Lesser General Public License Version 2.1.
 
@@ -37,38 +37,38 @@ plugins/extraction
   developed by Pierre Letouzey (LRI, 2000-2004, PPS, 2005-now)
 plugins/field
   developed by David Delahaye and Micaela Mayero (INRIA-LogiCal, 2001)
-plugins/firstorder 
+plugins/firstorder
   developed by Pierre Corbineau (LRI, 2003-2008)
 plugins/fourier
   developed by Loïc Pottier (INRIA-Lemme, 2001)
 plugins/funind
   developed by Pierre Courtieu (INRIA-Lemme, 2003-2004, CNAM, 2004-2008),
-  Julien Forest (INRIA-Everest, 2006, CNAM, 2007-2008) 
+  Julien Forest (INRIA-Everest, 2006, CNAM, 2007-2008)
   and Yves Bertot (INRIA-Marelle, 2005-2006)
 plugins/omega
   developed by Pierre Crégut (France Telecom R&D, 1996)
 plugins/nsatz
   developed by Loïc Pottier (INRIA-Marelle, 2009)
 plugins/ring
-  developed by Samuel Boutin (INRIA-Coq, 1996) and Patrick 
+  developed by Samuel Boutin (INRIA-Coq, 1996) and Patrick
   Loiseleur (LRI, 1997-1999)
 plugins/romega
   developed by Pierre Crégut (France Telecom R&D, 2001-2004)
 plugins/rtauto
   developed by Pierre Corbineau (LRI, 2005)
 plugins/setoid_ring
-  developed by Benjamin Grégoire (INRIA-Everest, 2005-2006), 
-  Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2006) 
+  developed by Benjamin Grégoire (INRIA-Everest, 2005-2006),
+  Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2006)
   and Bruno Barras (INRIA LogiCal, 2005-2006),
 plugins/subtac
   developed by Matthieu Sozeau (LRI, 2005-2008)
 plugins/xml
-  developed by Claudio Sacerdoti (Univ. Bologna, 2000-2005) 
+  developed by Claudio Sacerdoti (Univ. Bologna, 2000-2005)
   as part of the HELM and MoWGLI projects; extension by Cezary Kaliszyk as
   part of the ProofWeb project (Radboud University at Nijmegen, 2008)
 plugins/micromega
-  developed by Frédéric Besson (IRISA/INRIA, 2006-2008), with some 
-  extensions by Evgeny Makarov (INRIA, 2007); sum-of-squares solver and 
+  developed by Frédéric Besson (IRISA/INRIA, 2006-2008), with some
+  extensions by Evgeny Makarov (INRIA, 2007); sum-of-squares solver and
   interface to the csdp solver uses code from John Harrison (University
   of Cambridge, 1998)
 parsing/search.ml
@@ -80,7 +80,7 @@ theories/Strings
 theories/Numbers/Cyclic
   developed by Benjamin Grégoire (INRIA-Everest, 2007), Laurent Théry (INRIA-Marelle, 2007-2008), Arnaud Spiwack (INRIA-LogiCal, 2007) and Pierre Letouzey (PPS, 2008)
 ide/utils
-  some files come from Maxence Guesdon's Cameleon tool 
+  some files come from Maxence Guesdon's Cameleon tool
 
 Many discussions within the INRIA teams and labs taking part to the
 development influenced the design of Coq especially with
@@ -98,18 +98,18 @@ suggestions or short contributions from:
   the Foundations Group (Radboud University, Nijmegen, The Netherlands),
   Laboratoire J.-A. Dieudonné (University of Nice-Sophia Antipolis),
   F. Garillot, G. Gonthier (INRIA-MSR joint lab),
-  INRIA-Gallium project, 
-  the CS dept at Yale, the CIS dept at U. Penn, 
+  INRIA-Gallium project,
+  the CS dept at Yale, the CIS dept at U. Penn,
   the CSE dept at Harvard, the CS dept at Princeton
 
-The following people have contributed to the development of different versions 
+The following people have contributed to the development of different versions
 of the Coq Proof assistant during the indicated time:
 
   Bruno Barras (INRIA, 1995-now)
   Pierre Boutillier (INRIA-PPS, 2010-now)
   Jacek Chrzaszcz (LRI, 1998-2003)
   Thierry Coquand (INRIA, 1985-1989)
-  Pierre Corbineau (LRI, 2003-2005, Nijmegen, 2005-2008, Grenoble 1, 2008-now)
+  Pierre Corbineau (LRI, 2003-2005, Nijmegen, 2005-2008, Grenoble 1, 2008-2011)
   Cristina Cornes (INRIA, 1993-1996)
   Yann Coscoy (INRIA Sophia-Antipolis, 1995-1996)
   David Delahaye (INRIA, 1997-2002)
@@ -117,10 +117,10 @@ of the Coq Proof assistant during the indicated time:
   Olivier Desmettre (INRIA, 2001-2003)
   Gilles Dowek (INRIA, 1991-1994)
   Amy Felty (INRIA, 1993)
-  Jean-Christophe Filliâtre (ENS Lyon, 1994-1997, LRI, 1997-now)
+  Jean-Christophe Filliâtre (ENS Lyon, 1994-1997, LRI, 1997-2008)
   Eduardo Giménez (ENS Lyon, 1993-1996, INRIA, 1997-1998)
   Stéphane Glondu (INRIA-PPS, 2007-now)
-  Benjamin Grégoire (INRIA, 2003-now)
+  Benjamin Grégoire (INRIA, 2003-2011)
   Hugo Herbelin (INRIA, 1996-now)
   Gérard Huet (INRIA, 1985-1997)
   Pierre Letouzey (LRI, 2000-2004, PPS, 2005-2008, INRIA-PPS, 2009-now)
@@ -128,23 +128,24 @@ of the Coq Proof assistant during the indicated time:
   Evgeny Makarov (INRIA, 2007)
   Pascal Manoury (INRIA, 1993)
   Micaela Mayero (INRIA, 1997-2002)
-  Claude Marché (INRIA 2003-2004 & LRI, 2004)
+  Claude Marché (INRIA, 2003-2004 & LRI, 2004)
+  Guillaume Melquiond (INRIA, 2009-now)
   Benjamin Monate (LRI, 2003)
   César Muñoz (INRIA, 1994-1995)
   Chetan Murthy (INRIA, 1992-1994)
-  Julien Narboux (INRIA, 2005-2006, Strasbourg, 2007-now)
+  Julien Narboux (INRIA, 2005-2006, Strasbourg, 2007-2011)
   Jean-Marc Notin (CNRS, 2006-now)
   Catherine Parent-Vigouroux (ENS Lyon, 1992-1995)
-  Christine Paulin-Mohring (INRIA, 1985-1989, ENS Lyon, 1989-1997, 
-                            LRI, 1997-now)
+  Christine Paulin-Mohring (INRIA, 1985-1989, ENS Lyon, 1989-1997,
+                            LRI, 1997-2006)
   Pierre-Marie Pédrot (INRIA-PPS, 2011-now)
-  Matthias Puech (INRIA-Bologna, 2008-now)
+  Matthias Puech (INRIA-Bologna, 2008-2011)
   Yann Régis-Gianas (INRIA-PPS, 2009-now)
   Clément Renard (INRIA, 2001-2004)
   Claudio Sacerdoti Coen (INRIA, 2004-2005)
   Amokrane Saïbi (INRIA, 1993-1998)
   Vincent Siles (INRIA, 2007)
-  Élie Soubiran (INRIA, 2007-now)
+  Élie Soubiran (INRIA, 2007-2010)
   Matthieu Sozeau (INRIA, 2005-now)
   Arnaud Spiwack (INRIA, 2006-now)
   Enrico Tassi (INRIA, 2011-now)
