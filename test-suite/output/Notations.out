@@ -111,13 +111,14 @@ fun x : option Z => match x with
                     | NONE2 => 0
                     end
      : option Z -> Z
-fun x : list ?T0 => match x with
+fun x : list ?T1 => match x with
                     | NIL => NONE2
                     | (_ :') t => SOME2 t
                     end
-     : list ?T0 -> option (list ?T0)
+     : list ?T1 -> option (list ?T1)
 where
-?T0 : [x : list ?T0 |- Type] (x cannot be used)
+?T1 : [x : list ?T1  x1 : list ?T1  x0 := x1 : list ?T1 |- Type] (x, x1,
+      x0 cannot be used)
 s
      : s
 10
