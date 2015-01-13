@@ -782,6 +782,12 @@ a postulate.
 {\term$_n$} {\tt )}.}\\ 
   Adds $n$ blocks of parameters with different specifications.
 
+\item {\tt Local Axiom {\ident} : {\term}.}\\
+\comindex{Local Axiom}
+  Such axioms are never made accessible through their unqualified name by
+  {\tt Import} and its variants (see \ref{Import}). You have to explicitly
+  give their fully qualified name to refer to them.
+
 \item \comindex{Conjecture}
   {\tt Conjecture {\ident} :{\term}.}\\
   Is equivalent to {\tt Axiom {\ident} : {\term}}.
@@ -801,7 +807,8 @@ current section (see Section~\ref{Section} for a description of the section
 mechanism). When the current section is closed, name {\ident} will be
 unknown and every object using this variable will be explicitly
 parametrized (the variable is {\em discharged}). Using the {\tt
-Variable} command out of any section is equivalent to using {\tt Parameter}.
+Variable} command out of any section is equivalent to using {\tt
+Local Parameter}.
 
 \begin{ErrMsgs}
 \item \errindex{{\ident} already exists}
@@ -879,7 +886,7 @@ environment, provided that {\term} is well-typed.
        {\tt fun}\,{\binder$_1$} {\ldots} {\binder$_n$}\,{\tt =>}\,{\term$_2$}\,%
        {\tt .}
 
-\item {\tt Local Definition} {\ident} := {\term}\\
+\item {\tt Local Definition {\ident} := {\term}.}\\
 \comindex{Local Definition}
   Such definitions are never made accessible through their unqualified name by
   {\tt Import} and its variants (see \ref{Import}). You have to explicitly
@@ -906,7 +913,9 @@ environment of the current section. The name {\ident} disappears
 when the current section is eventually closed, and, all
 persistent objects (such as theorems) defined within the
 section and depending on {\ident} are prefixed by the let-in definition
-{\tt let {\ident} := {\term} in}.
+{\tt let {\ident} := {\term} in}. Using the {\tt
+Let} command out of any section is equivalent to using {\tt
+Local Definition}.
 
 \begin{ErrMsgs}
 \item \errindex{{\ident} already exists}
