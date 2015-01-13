@@ -236,7 +236,13 @@ let cook_constant env { from = cb; info } =
 	proj_eta = etab, etat;
 	proj_type = ty'; proj_body = c' }
   in
-  let univs = UContext.union abs_ctx univs in
+  let univs = 
+    let abs' = 
+      if cb.const_polymorphic then abs_ctx
+      else instantiate_univ_context abs_ctx
+    in
+      UContext.union abs' univs
+  in
     (body, typ, Option.map projection cb.const_proj, 
      cb.const_polymorphic, univs, cb.const_inline_code, 
      Some const_hyps)

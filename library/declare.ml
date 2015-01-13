@@ -146,7 +146,6 @@ let discharged_hyps kn sechyps =
 
 let discharge_constant ((sp, kn), obj) =
   let con = constant_of_kn kn in
-
   let from = Global.lookup_constant con in
   let modlist = replacement_context () in
   let hyps,subst,uctx = section_segment_of_constant con in
