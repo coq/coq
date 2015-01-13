@@ -313,11 +313,16 @@ COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
 
 IDEFILES=$(wildcard ide/coq*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_accel_map
 
-coqide-binaries: coqide-$(HASCOQIDE)
+coqide-binaries: coqide-$(HASCOQIDE) ide-toploop
 coqide-no:
-coqide-byte: $(COQIDEBYTE) $(COQIDE) $(IDETOPLOOPCMA)
-coqide-opt:  $(COQIDEBYTE) $(COQIDE) $(IDETOPLOOPCMA) $(IDETOPLOOPCMA:.cma=.cmxs)
+coqide-byte: $(COQIDEBYTE) $(COQIDE)
+coqide-opt:  $(COQIDEBYTE) $(COQIDE)
 coqide-files: $(IDEFILES)
+ifeq ($(BEST),opt)
+ide-toploop: $(IDETOPLOOPCMA) $(IDETOPLOOPCMA:.cma=.cmxs)
+else
+ide-toploop: $(IDETOPLOOPCMA)
+endif
 
 ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT)
@@ -340,7 +345,7 @@ $(COQIDEBYTE): $(LINKIDE)
 .PHONY: install-coqide install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles
 
 ifeq ($(HASCOQIDE),no)
-install-coqide:
+install-coqide: install-ide-toploop
 else
 install-coqide: install-ide-bin install-ide-toploop install-ide-files install-ide-info install-ide-devfiles
 endif
