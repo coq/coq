@@ -257,7 +257,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     let cmxsfiles = List.rev_append cmofiles mllibfiles in
     let where_what_cmxs = vars_to_put_by_root [("CMXSFILES",cmxsfiles)] inc in
     let where_what_oth = vars_to_put_by_root
-      [("VOFILES",vfiles);("CMOFILES",cmofiles);("CMIFILES",cmifiles);("CMAFILES",mllibfiles)]
+      [("VOFILES",vfiles);("NATIVEFILES",vfiles);("CMOFILES",cmofiles);("CMIFILES",cmifiles);("CMAFILES",mllibfiles)]
       inc in
     let doc_dir = where_put_doc inc in
     let () = if is_install = Project_file.UnspecInstall then
@@ -328,9 +328,7 @@ let clean sds sps =
   end;
   if !some_vfile then
     begin
-      print "\trm -f $(OBJFILES) $(OBJFILES:.o=.native)\n";
-      print "\trm -f $(OBJFILES:.o=.cmi) $(OBJFILES:.o=.cmo)\n";
-      print "\trm -f $(OBJFILES:.o=.cmx) $(OBJFILES:.o=.cmxs)\n";
+      print "\trm -f $(OBJFILES) $(OBJFILES:.o=.native) $(NATIVEFILES)\n";
       print "\trm -f $(VOFILES) $(VOFILES:.vo=.vio) $(GFILES) $(VFILES:.v=.v.d) $(VFILES:=.beautified) $(VFILES:=.old)\n"
     end;
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) all-mli.tex\n";
@@ -577,8 +575,9 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "GFILES:=$(VFILES:.v=.g)\n";
       print "HTMLFILES:=$(VFILES:.v=.html)\n";
       print "GHTMLFILES:=$(VFILES:.v=.g.html)\n";
-      print "OBJFILES:=$(call vo_to_obj,$(VOFILES))\n";
-      classify_files_by_root "OBJFILES" l inc
+      print "OBJFILES=$(call vo_to_obj,$(VOFILES))\n";
+      print "NATIVEFILES=$(OBJFILES:.o=.cmi) $(OBJFILES:.o=.cmo) $(OBJFILES:.o=.cmx) $(OBJFILES:.o=.cmxs)\n";
+      classify_files_by_root "NATIVEFILES" l inc
   end;
   decl_var "ML4FILES" ml4files;
   decl_var "MLFILES" mlfiles;
