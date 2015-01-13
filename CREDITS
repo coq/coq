@@ -1,5 +1,4 @@
 The "Coq proof assistant" was jointly developed by
-
 - INRIA Formel, Coq, LogiCal, ProVal, TypiCal, Marelle, pi.r2 projects
   (starting 1985),
 - Laboratoire de l'Informatique du Parallelisme (LIP)
@@ -27,16 +26,12 @@ the GNU Lesser General Public License Version 2.1.
 
 plugins/cc
   developed by Pierre Corbineau (ENS Cachan, 2001, LRI, 2001-2005, Radboud
-  University at Nijmegen, 2005-2008)
-plugins/correctness
-  developed by Jean-Christophe Filliâtre (LRI, 1999-2001)
-plugins/dp
-  developed by Nicolas Ayache (LRI, 2005-2006) and Jean-Christophe Filliâtre
-  (LRI, 2005-2008)
+  University at Nijmegen, 2005-2008, Grenoble 1, 2010-2014)
+plugins/decl_mode
+  developed by Pierre Corbineau (Radboud University at Nijmegen, 2005-2008,
+  Grenoble 1, 2009-2011)
 plugins/extraction
   developed by Pierre Letouzey (LRI, 2000-2004, PPS, 2005-now)
-plugins/field
-  developed by David Delahaye and Micaela Mayero (INRIA-LogiCal, 2001)
 plugins/firstorder
   developed by Pierre Corbineau (LRI, 2003-2008)
 plugins/fourier
@@ -48,10 +43,9 @@ plugins/funind
 plugins/omega
   developed by Pierre Crégut (France Telecom R&D, 1996)
 plugins/nsatz
-  developed by Loïc Pottier (INRIA-Marelle, 2009)
-plugins/ring
-  developed by Samuel Boutin (INRIA-Coq, 1996) and Patrick
-  Loiseleur (LRI, 1997-1999)
+  developed by Loïc Pottier (INRIA-Marelle, 2009-2011)
+plugins/quote
+  developed by Patrick Loiseleur (LRI, 1997-1999)
 plugins/romega
   developed by Pierre Crégut (France Telecom R&D, 2001-2004)
 plugins/rtauto
@@ -62,51 +56,43 @@ plugins/setoid_ring
   and Bruno Barras (INRIA LogiCal, 2005-2006),
 plugins/subtac
   developed by Matthieu Sozeau (LRI, 2005-2008)
-plugins/xml
-  developed by Claudio Sacerdoti (Univ. Bologna, 2000-2005)
-  as part of the HELM and MoWGLI projects; extension by Cezary Kaliszyk as
-  part of the ProofWeb project (Radboud University at Nijmegen, 2008)
 plugins/micromega
   developed by Frédéric Besson (IRISA/INRIA, 2006-2008), with some
   extensions by Evgeny Makarov (INRIA, 2007); sum-of-squares solver and
   interface to the csdp solver uses code from John Harrison (University
   of Cambridge, 1998)
-parsing/search.ml
-  mainly developed by Yves Bertot (INRIA-Lemme, 2000-2004)
 theories/ZArith
   started by Pierre Crégut (France Telecom R&D, 1996)
 theories/Strings
   developed by Laurent Théry (INRIA-Lemme, 2003)
 theories/Numbers/Cyclic
-  developed by Benjamin Grégoire (INRIA-Everest, 2007), Laurent Théry (INRIA-Marelle, 2007-2008), Arnaud Spiwack (INRIA-LogiCal, 2007) and Pierre Letouzey (PPS, 2008)
+  developed by Benjamin Grégoire (INRIA-Everest, 2007),
+  Laurent Théry (INRIA-Marelle, 2007-2008),
+  Arnaud Spiwack (INRIA-LogiCal, 2007) and Pierre Letouzey (PPS, 2008)
 ide/utils
   some files come from Maxence Guesdon's Cameleon tool
 
-Many discussions within the INRIA teams and labs taking part to the
-development influenced the design of Coq especially with
+The development of Coq significantly benefited from feedback,
+suggestions or short contributions from the following non exhaustive
+list of persons and groups:
 
-  C. Auger, Y. Bertot, F. Blanqui, J. Courant, P. Courtieu, J. Duprat,
-  S. Glondu, J. Goubault, J.-P. Jouannaud, S. Lescuyer, A. Mahboubi,
-  C. Marché, A. Miquel, B. Monate, L. Pottier, Y. Régis-Gianas,
-  P.-Y. Strub, L. Théry, B. Werner
-
-The development of Coq also significantly benefited from feedback,
-suggestions or short contributions from:
-
-  C. Alvarado, P. Crégut, J.-F. Monin (France Telecom R&D),
-  P. Castéran (University Bordeaux 1),
+  C. Alvarado, C. Auger, F. Blanqui, P. Castéran, C. Cohen,
+  J. Courant, J. Duprat, F. Garillot, G. Gonthier, J. Goubault,
+  J.-P. Jouannaud, S. Lescuyer, A. Miquel, J.-F. Monin, P.-Y. Strub
   the Foundations Group (Radboud University, Nijmegen, The Netherlands),
   Laboratoire J.-A. Dieudonné (University of Nice-Sophia Antipolis),
-  F. Garillot, G. Gonthier (INRIA-MSR joint lab),
   INRIA-Gallium project,
   the CS dept at Yale, the CIS dept at U. Penn,
-  the CSE dept at Harvard, the CS dept at Princeton
+  the CSE dept at Harvard, the CS dept at Princeton, the CS dept at MIT
+  as well as a lot of users on coq-club, coqdev, coq-bugs
 
 The following people have contributed to the development of different versions
 of the Coq Proof assistant during the indicated time:
 
   Bruno Barras (INRIA, 1995-now)
+  Yves Bertot (INRIA, 2000-now)
   Pierre Boutillier (INRIA-PPS, 2010-now)
+  Xavier Clerc (INRIA, 2012-2014)
   Jacek Chrzaszcz (LRI, 1998-2003)
   Thierry Coquand (INRIA, 1985-1989)
   Pierre Corbineau (LRI, 2003-2005, Nijmegen, 2005-2008, Grenoble 1, 2008-2011)
@@ -115,14 +101,16 @@ of the Coq Proof assistant during the indicated time:
   David Delahaye (INRIA, 1997-2002)
   Maxime Dénès (INRIA, 2013-now)
   Daniel de Rauglaudre (INRIA, 1996-1998)
+  Maxime Dénès (INRIA, 2013-now)
   Olivier Desmettre (INRIA, 2001-2003)
   Gilles Dowek (INRIA, 1991-1994)
   Amy Felty (INRIA, 1993)
   Jean-Christophe Filliâtre (ENS Lyon, 1994-1997, LRI, 1997-2008)
   Eduardo Giménez (ENS Lyon, 1993-1996, INRIA, 1997-1998)
-  Stéphane Glondu (INRIA-PPS, 2007-now)
+  Stéphane Glondu (INRIA-PPS, 2007-2013)
   Benjamin Grégoire (INRIA, 2003-2011)
   Hugo Herbelin (INRIA, 1996-now)
+  Sébastien Hinderer (INRIA, 2014)
   Gérard Huet (INRIA, 1985-1997)
   Pierre Letouzey (LRI, 2000-2004, PPS, 2005-2008, INRIA-PPS, 2009-now)
   Patrick Loiseleur (Paris Sud, 1997-1999)

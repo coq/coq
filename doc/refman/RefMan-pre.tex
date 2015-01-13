@@ -959,7 +959,7 @@ The way Coq processes a document in batch and interactive mode has
 been redesigned by Enrico Tassi with help from Bruno Barras.  Opaque
 proofs, the text between Proof and Qed, can be processed
 asynchronously, decoupling the checking of definitions and statements
-from the checking of proofs.  In interactively this improves the
+from the checking of proofs.  In interactive use, this improves the
 reactiveness of the system, since proofs can be processed in the
 background.  Similarly the compilation of a file can be split into two
 phases:  the first one checking only definitions and statements and
@@ -967,15 +967,18 @@ the second one checking proofs.  A file resulting from the first
 phase, .vio extension, can be already Required.  All .vio files can be
 turned into complete .vo files in parallel.  The same infrastructure
 also allows terminating tactics to be run in parallel on a set of
-goals via the par: goal selector.
-CoqIDE was patched to cope with asynchronous checking of the document.
+goals via the \verb=par:= goal selector.
+
+CoqIDE was modified to cope with asynchronous checking of the document.
 Its source code was also made separate from the one of Coq making it no
 more a special user interface and allowing its release cycle to be
 decoupled with the one of Coq.
-Carst Tankink developed a Coq back end for PIDE enabled user interfaces,
-like PIDE/jEdit (with help from Makarius Wenzel) or PIDE/Coqoon (with
-help from Alexander Faithfull and Jesper Bengtson).
-The development of such features was funded by the Paral-ITP ANR project.
+
+Carst Tankink developed a Coq back end for user interfaces built on
+Makarius Wenzel's Prover IDE framework (PIDE), like PIDE/jEdit (with
+help from Makarius Wenzel) or PIDE/Coqoon (with help from Alexander
+Faithfull and Jesper Bengtson).  The development of such features was
+funded by the Paral-ITP French ANR project.
 
 The universe polymorphism extension is based on a change of the kernel
 architecture to handle constraint checking only, leaving the generation
@@ -999,7 +1002,7 @@ the relations between homotopy theory and type theory.
 {\Coq} 8.5 also comes with a bunch of many various smaller-scale changes
 and improvements regarding the different components of the system.
 
-High-Level Specification Language: 
+High-Level Specification Language:
 - tactics in terms
 - Universe inconsistency and unification error messages
 - Named existentials
