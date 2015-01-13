@@ -81,7 +81,9 @@ let call_compiler ml_filename =
 
 let compile fn code =
   write_ml_code fn code;
-  call_compiler fn
+  let r = call_compiler fn in
+  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;
+  r
 
 let compile_library dir code fn =
   let header = mk_library_header dir in
@@ -92,7 +94,9 @@ let compile_library dir code fn =
   if not (Sys.file_exists dirname) then Unix.mkdir dirname 0o755;
   let fn = dirname / basename in
   write_ml_code fn ~header code;
-  fst (call_compiler fn)
+  let r = fst (call_compiler fn) in
+  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;
+  r
 
 (* call_linker links dynamically the code for constants in environment or a  *)
 (* conversion test. Silently fails if the file does not exist in bytecode    *)
