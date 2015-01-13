@@ -375,6 +375,10 @@ let schedule_vio_compilation () =
   if !vio_files <> [] && not !vio_checking then
     Vio_checking.schedule_vio_compilation !vio_files_j !vio_files
 
+let print_native_name s =
+  (* We ignore even critical errors because this mode has to be super silent *)
+  try print_endline (Library.native_name_from_filename s) with _ -> ()
+
 let parse_args arglist =
   let args = ref arglist in
   let extras = ref [] in
@@ -457,7 +461,7 @@ let parse_args arglist =
     |"-load-vernac-source"|"-l" -> add_load_vernacular false (next ())
     |"-load-vernac-source-verbose"|"-lv" -> add_load_vernacular true (next ())
     |"-outputstate" -> set_outputstate (next ())
-    |"-print-mod-uid" -> Flags.print_mod_uid := true; add_require (next ())
+    |"-print-mod-uid" -> print_native_name (next ()); exit 0
     |"-require" -> add_require (next ())
     |"-top" -> set_toplevel_name (dirpath_of_string (next ()))
     |"-with-geoproof" -> Coq_config.with_geoproof := get_bool opt (next ())

@@ -506,8 +506,8 @@ let parameters () =
   print "TIMED=\nTIMECMD=\nSTDTIME?=/usr/bin/time -f \"$* (user: %U mem: %M ko)\"\n";
   print "TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))\n\n";
   print "vo_to_obj = $(addsuffix .o,$(foreach vo,$(1),\\\n";
-  print "  $(addprefix $(dir $(vo)),.coq-native/$(filter-out Warning: Error:,$(firstword \\\n";
-  print "    $(shell $(COQBIN)coqtop -batch -quiet -print-mod-uid $(vo:.vo=)))))))\n\n"
+  print "  $(addprefix $(dir $(vo)),$(addprefix .coq-native/,$(filter-out Warning: Error:,$(firstword \\\n";
+  print "    $(shell $(COQBIN)coqtop -batch -quiet -print-mod-uid $(vo))))))))\n\n"
 
 let include_dirs (inc_ml,inc_i,inc_r) =
   let parse_ml_includes l = List.map (fun (x,_) -> "-I \"" ^ x ^ "\"") l in

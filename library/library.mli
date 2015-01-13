@@ -78,3 +78,6 @@ val try_locate_qualified_library : qualid located -> DirPath.t * string
 
 (** {6 Statistics: display the memory use of a library. } *)
 val mem : DirPath.t -> Pp.std_ppcmds
+
+(** {6 Native compiler. } *)
+val native_name_from_filename : string -> string
