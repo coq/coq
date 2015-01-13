@@ -47,7 +47,11 @@ Vernacular commands
   doing "destruct".
 - The "Open Scope" command can now be given also a delimiter (e.g. Z).
 - The "Definition" command now allows the "Local" modifier, allowing
-  for non-importable definitions.
+  for non-importable definitions. The same goes for "Axiom" and "Parameter".
+- Section-specific commands such as "Let" (resp. "Variable", "Hypothesis") used
+  out of a section now behave like the corresponding "Local" command, i.e.
+  "Local Definition" (resp. "Local Parameter", "Local Axiom"). (potential source
+  of rare incompatibilities).
 - The "Let" command can now define local (co)fixpoints.
 - Command "Search" has been renamed into "SearchHead". The command
   name "Search" now behaves like former "SearchAbout". The latter name
