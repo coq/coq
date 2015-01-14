@@ -6,6 +6,12 @@
 
 \asection{General Presentation}
 
+\begin{flushleft}
+  \em The status of Universe Polymorphism is experimental. Some features
+  are not compatible with it (yet): native compilation and bytecode
+  compilation do not handle polymorphic definitions.
+\end{flushleft}
+
 This section describes the universe polymorphic extension of Coq.
 Universe polymorphism allows writing generic definitions making use of
 universes and reuse them at different and sometimes incompatible levels.
@@ -119,7 +125,7 @@ producing global universe constraints, one can use the
   them. In other words, two definitions in the section sharing a common
   variable will both get parameterized by the universes produced by the 
   variable declaration. This is in contrast to a ``mononorphic'' variable
-  which introduce global universes, making the two definitions depend on
+  which introduces global universes, making the two definitions depend on
   the \emph{same} universes associated to the variable.
 \item \texttt{Hint \{Resolve, Rewrite\}} will use the auto/rewrite hint
   polymorphically, not at a single instance.
@@ -133,17 +139,41 @@ references. The semantics respect the fact that definitions are
 transparent, so indistinguishable from their bodies during conversion.
 
 This is accomplished by changing one rule of unification, the
-first-order approximation rule:
-
-
-TODO
-
-
+first-order approximation rule, which applies when two applicative terms
+with the same head are compared. It tries to short-cut unfolding by
+comparing the arguments directly. In case the constant is universe
+polymorphic, we allow this rule to fire only when unifying the universes
+results in instantiating a so-called flexible universe variables (not
+given by the user). Similarly for conversion, if such an equation of
+applicative terms fail due to a universe comparison not being satisfied,
+the terms are unfolded. This change implies that conversion and
+unification can have different unfolding behaviors on the same
+development with universe polymorphism switched on or off.
 
 \asection{Explicit Universes}
 
-TODO
+\begin{flushleft}
+  \em The design and implementation of explicit universes is very
+  experimental and is likely to change in future versions.
+\end{flushleft}
 
+The syntax has been extended to allow users to explicitely bind names to
+universes and explicitely instantantiate polymorphic
+definitions. Currently, binding is implicit at the first occurrence of a 
+universe name. For example below, i and j are introduced by the
+annotations attached to Types. 
+
+\begin{coq_example*}
+Polymorphic Definition le (A : Type@{i}) : Type@{j} := A.
+\end{coq_example*}
+
+Definitions can also be instantiated explicitely:
+\begin{coq_example}
+Check (pidentity@{Set}).
+Check (le@{Type Set}).
+\end{coq_example}
+
+User-named universes are considered rigid for unification.
 
 %%% Local Variables: 
 %%% mode: latex
