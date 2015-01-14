@@ -980,16 +980,28 @@ help from Makarius Wenzel) or PIDE/Coqoon (with help from Alexander
 Faithfull and Jesper Bengtson).  The development of such features was
 funded by the Paral-ITP French ANR project.
 
-The universe polymorphism extension is based on a change of the kernel
-architecture to handle constraint checking only, leaving the generation
-of constraints outside it.
+The full universe polymorphism extension was designed by Matthieu
+Sozeau. It conservatively extends the universes system and core calculus
+with definitions and inductive declarations parameterized by universes
+and constraints. It is based on a change of the kernel architecture to
+handle constraint checking only, leaving the generation of constraints
+to the refinement/type inference engine. Accordingly, tactics are now
+fully universe aware, resulting in more localized error messages in case
+of inconsistencies and allowing higher-level algorithms like unification
+to be entirely type safe. The internal representation of universes has
+been modified but this invisible to the user. 
 
 The underlying logic has been extended with $\eta$-conversion for
-primitive records thanks to Matthieu Sozeau. This additional form of
-$\eta$-conversion is justified using the same principle than the
-previously added $\eta$-conversion for function types, based on
-formulations of the Calculus of Inductive Constructions with typed
-equality.
+records defined with primitive projections by Matthieu Sozeau. This
+additional form of $\eta$-conversion is justified using the same
+principle than the previously added $\eta$-conversion for function
+types, based on formulations of the Calculus of Inductive Constructions
+with typed equality. Primitive projections, which do not carry the
+parameters of the record and are rigid names (not defined as a
+pattern-matching construct), make working with nested records more
+manageable in terms of time and space consumption. This extension and
+universe polymorphism were carried partly while the author was working
+at the IAS in Princeton.
 
 The guard condition has been made compliant with extensional equality
 principles such as propositional equality and univalence, thanks to
@@ -1021,7 +1033,7 @@ Pierre Courtieu contributed new features for using {\Coq} through Proof
 General and for better interactive experience (bullets, Search etc).
 
 \begin{flushright}
-Paris, Janvier 2015\\
+Paris, January 2015\\
 Hugo Herbelin \& Matthieu Sozeau\\
 \end{flushright}
 
