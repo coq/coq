@@ -108,6 +108,7 @@ is understood as
 {\tacexprinf} & ::= &
            {\tacexprlow} {\tt ||} {\tacexprpref}\\
 & | &      {\tacexprlow} {\tt +} {\tacexprpref}\\
+& | &      {\tt tryif} {\tacexprlow} {\tt then} {\tacexprlow} {\tt else} {\tacexprlow}\\
 & | & {\tacexprlow}\\
 \\
 {\tacexprlow} & ::= &
@@ -466,6 +467,24 @@ applied. {\tacexpr}$_1$ {\tt ||} {\tacexpr}$_2$ is equivalent to {\tt
   first [} {\tt progress} {\tacexpr}$_1$ {\tt |} {\tt progress}
   {\tacexpr}$_2$ {\tt ]} (except that if it fails, it fails like
 $v_2$). Branching is left-associative.
+
+\subsubsection[Generalized biased branching]{Generalized biased branching\tacindex{tryif}
+\index{Tacticals!tryif@{\tt tryif}}}
+
+The tactic
+\begin{quote}
+{\tt if {\tacexpr}$_1$ then {\tacexpr}$_2$ else {\tacexpr}$_3$}
+\end{quote}
+is a generalization of the biased-branching tactics above. The
+expression {\tacexpr}$_1$ is evaluated to $v_1$, which is then applied
+to each subgoal independently. For each goal where $v_1$ succeeds at
+least once, {tacexpr}$_2$ is evaluated to $v_2$ which is then applied
+collectively to the generated subgoals. The $v_2$ tactic can trigger
+backtracking points in $v_1$: where $v_1$ succeeds at least once, {\tt
+  if {\tacexpr}$_1$ then {\tacexpr}$_2$ else {\tacexpr}$_3$} is
+equivalent to $v_1;v_2$. In each of the goals where $v_1$ does not
+succeed at least once, {\tacexpr}$_3$ is evaluated in $v_3$ which is
+is then applied to the goal.
 
 \subsubsection[Soft cut]{Soft cut\tacindex{once}\index{Tacticals!once@{\tt once}}}
 
