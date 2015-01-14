@@ -270,7 +270,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     if (not_empty cmxsfiles) then begin
       print "install-toploop: $(MLLIBFILES:.mllib=.cmxs)\n";
       printf "\t install -d \"$(DSTROOT)\"$(COQTOPINSTALL)/\n";
-      printf "\t install -m 0644 $?  \"$(DSTROOT)\"$(COQTOPINSTALL)/\n";
+      printf "\t install -m 0755 $?  \"$(DSTROOT)\"$(COQTOPINSTALL)/\n";
       print "\n";
     end;
     print "install:";
