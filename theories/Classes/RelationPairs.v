@@ -42,6 +42,7 @@ Generalizable Variables A B RA RB Ri Ro f.
 
 Definition RelCompFun {A} {B : Type}(R:relation B)(f:A->B) : relation A :=
  fun a a' => R (f a) (f a').
+Typeclasses Opaque RelCompFun.
 
 Infix "@@" := RelCompFun (at level 30, right associativity) : signature_scope.
 
