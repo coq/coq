@@ -701,8 +701,12 @@ then a no-matching-clause error is raised.
 
 \item \index{lazymatch!in Ltac}
 \index{Ltac!lazymatch}
-Using {\tt lazymatch} instead of {\tt match} disables the backtracking
-mechanism.
+Using {\tt lazymatch} instead of {\tt match} will perform the same
+pattern matching procedure but will commit to the first matching
+branch rather than trying a new matching if the right-hand side
+fails. If the right-hand side of the selected branch is a tactic with
+backtracking points, then subsequent failures cause this tactic to
+backtrack.
 
 \item \index{context!in pattern}
 There is a special form of patterns to match a subterm against the
@@ -808,8 +812,12 @@ the {\tt match reverse goal with} variant.
 \index{Ltac!lazymatch goal}
 \index{lazymatch reverse goal!in Ltac}
 \index{Ltac!lazymatch reverse goal}
-Using {\tt lazymatch} instead of {\tt match} disables the backtracking
-mechanism.
+Using {\tt lazymatch} instead of {\tt match} will perform the same
+pattern matching procedure but will commit to the first matching
+branch with the first matching combination of hypotheses rather than
+trying a new matching if the right-hand side fails. If the right-hand
+side of the selected branch is a tactic with backtracking points, then
+subsequent failures cause this tactic to backtrack.
 
 \subsubsection[Filling a term context]{Filling a term context\index{context!in expression}}
 
