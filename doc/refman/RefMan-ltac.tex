@@ -133,6 +133,7 @@ is understood as
 & | & {\tt solve [} \nelist{\tacexpr}{\tt |} {\tt ]}\\
 & | & {\tt idtac} \sequence{\messagetoken}{}\\
 & | & {\tt fail} \zeroone{\naturalnumber} \sequence{\messagetoken}{}\\
+& | & {\tt gfail} \zeroone{\naturalnumber} \sequence{\messagetoken}{}\\
 & | & {\tt fresh} ~|~ {\tt fresh} {\qstring}\\
 & | & {\tt context} {\ident} {\tt [} {\term} {\tt ]}\\
 & | & {\tt eval} {\nterm{redexpr}} {\tt in} {\term}\\
@@ -516,12 +517,14 @@ literally. If a (term) variable is given, its contents are printed.
 
 
 \subsubsection[Failing]{Failing\tacindex{fail}
-\index{Tacticals!fail@{\tt fail}}}
+\index{Tacticals!fail@{\tt fail}}
+\tacindex{gfail}\index{Tacticals!gfail@{\tt gfail}}}
 
 The tactic {\tt fail} is the always-failing tactic: it does not solve
 any goal. It is useful for defining other tacticals since it can be
 caught by {\tt try}, {\tt repeat}, {\tt match goal}, or the branching
-tacticals.
+tacticals. The {\tt fail} tactic will, however, succeed if all the
+goals have already been solved.
 
 \begin{Variants}
 \item {\tt fail $n$}\\ The number $n$ is the failure level. If no
@@ -539,6 +542,18 @@ The given tokens are used for printing the failure message.
 
 \item {\tt fail $n$ \nelist{\messagetoken}{}}\\
 This is a combination of the previous variants.
+
+\item {\tt gfail}\\
+This variant fails even if there are no goals left.
+
+\item {\tt gfail \nelist{\messagetoken}{}}\\
+{\tt gfail $n$ \nelist{\messagetoken}{}}\\
+These variants fail with an error message or an error level even if
+there are no goals left. Be careful however if Coq terms have to be
+printed as part of the failure: term construction always forces the
+tactic into the goals, meaning that if there are no goals when it is
+evaluated, a tactic call like {\tt let x:=H in fail 0 x} will succeed.
+
 \end{Variants}
 
 \ErrMsg \errindex{Tactic Failure {\it message} (level $n$)}.
