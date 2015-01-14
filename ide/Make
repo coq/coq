@@ -1,0 +1,6 @@
+interface.mli
+xmlprotocol.mli
+xmlprotocol.ml
+ide_slave.ml
+
+coqidetop.mllib
