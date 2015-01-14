@@ -127,6 +127,12 @@ is understood as
 {\tt lazymatch reverse goal with} \nelist{\contextrule}{\tt |} {\tt end}\\
 & | &
 {\tt lazymatch} {\tacexpr} {\tt with} \nelist{\matchrule}{\tt |} {\tt end}\\
+& | &
+{\tt multimatch goal with} \nelist{\contextrule}{\tt |} {\tt end}\\
+& | &
+{\tt multimatch reverse goal with} \nelist{\contextrule}{\tt |} {\tt end}\\
+& | &
+{\tt multimatch} {\tacexpr} {\tt with} \nelist{\matchrule}{\tt |} {\tt end}\\
 & | & {\tt abstract} {\atom}\\
 & | & {\tt abstract} {\atom} {\tt using} {\ident} \\
 & | & {\tt first [} \nelist{\tacexpr}{\tt |} {\tt ]}\\
@@ -703,6 +709,17 @@ it has backtracking points.
 
 \begin{Variants}
 
+\item \index{multimatch!in Ltac}
+\index{Ltac!multimatch}
+Using {\tt multimatch} instead of {\tt match} will allow subsequent
+tactics to backtrack into a right-hand side tactic which has
+backtracking points left and trigger the selection of a new matching
+branch when all the backtracking points of the right-hand side have
+been consumed.
+
+The syntax {\tt match \ldots} is, in fact, a shorthand for
+{\tt once multimatch \ldots}.
+
 \item \index{lazymatch!in Ltac}
 \index{Ltac!lazymatch}
 Using {\tt lazymatch} instead of {\tt match} will perform the same
@@ -816,6 +833,21 @@ first), but it possible to reverse this order (older first) with
 the {\tt match reverse goal with} variant.
 
 \variant
+
+\index{multimatch goal!in Ltac}
+\index{Ltac!multimatch goal}
+\index{multimatch reverse goal!in Ltac}
+\index{Ltac!multimatch reverse goal}
+
+Using {\tt multimatch} instead of {\tt match} will allow subsequent
+tactics to backtrack into a right-hand side tactic which has
+backtracking points left and trigger the selection of a new matching
+branch or combination of hypotheses when all the backtracking points
+of the right-hand side have been consumed.
+
+The syntax {\tt match [reverse] goal \ldots} is, in fact, a shorthand for
+{\tt once multimatch [reverse] goal \ldots}.
+
 \index{lazymatch goal!in Ltac}
 \index{Ltac!lazymatch goal}
 \index{lazymatch reverse goal!in Ltac}
