@@ -118,6 +118,9 @@ Tactics
     the need of the undocumented "constructor <tac>" syntax which is
     now equivalent to "once (constructor; tac)". (potential source of
     rare incompatibilities).
+  * New "multimatch" variant of "match" tactic which backtracks to
+    new branches in case of a later failure. The "match" tactic is
+    equivalent to "once multimatch".
   * New selector all: to qualify a tactic allows applying a tactic to
     all the focused goal, instead of just the first one as is the
     default.
@@ -140,6 +143,8 @@ Tactics
     Accompanied by "guard" tactic which fails if a Boolean test does
     not pass.
   * New tactical "[> ... ]" to apply tactics to individual goals.
+  * New tactic "gfail" which works like "fail" except it will also
+    fail if every goal has been solved.
   * The refine tactic is changed not to use an ad hoc typing algorithm
     to generate subgoals. It also uses the dependent subgoal feature
     to generate goals to materialize every existential variable which
@@ -156,6 +161,8 @@ Tactics
 - Matching using "lazymatch" was fundamentally modified. It now behaves
   like "match" (immediate execution of the matching branch) but without
   the backtracking mechanism in case of failure.
+- New "tryif t then u else v" tactical which executes "u" in case of success
+  of "t" and "v" in case of failure.
 - New conversion tactic "native_compute": evaluates the goal (or an hypothesis)
   with a call-by-value strategy, using the OCaml native compiler. Useful on
   very intensive computations.
