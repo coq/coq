@@ -32,6 +32,21 @@ open Hints
 let typeclasses_debug = ref false
 let typeclasses_depth = ref None
 
+let typeclasses_modulo_eta = ref false
+let set_typeclasses_modulo_eta d = (:=) typeclasses_modulo_eta d
+let get_typeclasses_modulo_eta () = !typeclasses_modulo_eta
+
+open Goptions
+
+let set_typeclasses_modulo_eta =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "do typeclass search modulo eta conversion";
+      optkey   = ["Typeclasses";"Modulo";"Eta"];
+      optread  = get_typeclasses_modulo_eta;
+      optwrite = set_typeclasses_modulo_eta; }
+
 (** We transform the evars that are concerned by this resolution
     (according to predicate p) into goals.
     Invariant: function p only manipulates and returns undefined evars *)
@@ -65,7 +80,7 @@ let auto_core_unif_flags st freeze = {
   frozen_evars = freeze;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = true;
-  modulo_eta = false;
+  modulo_eta = !typeclasses_modulo_eta;
 }
 
 let auto_unif_flags freeze st = 
