@@ -685,6 +685,10 @@ pattern {\_} matches any term and shunts all remaining patterns if
 any. If all clauses fail (in particular, there is no pattern {\_})
 then a no-matching-clause error is raised.
 
+Failures in subsequent tactics do not cause backtracking to select new
+branches or inside the right-hand side of the selected branch even if
+it has backtracking points.
+
 \begin{ErrMsgs}
 
 \item \errindex{No matching clauses for match}
@@ -789,8 +793,12 @@ no other combination of hypotheses then the second proof context
 pattern is tried and so on. If the next to last proof context pattern
 fails then {\tacexpr}$_{n+1}$ is evaluated to $v_{n+1}$ and $v_{n+1}$
 is applied. Note also that matching against subterms (using the {\tt
-context} {\ident} {\tt [} {\cpattern} {\tt ]}) is available and may
-itself induce extra backtrackings.
+context} {\ident} {\tt [} {\cpattern} {\tt ]}) is available and is
+also subject to yielding several matchings.
+
+Failures in subsequent tactics do not cause backtracking to select new
+branches or combinations of hypotheses, or inside the right-hand side
+of the selected branch even if it has backtracking points.
 
 \ErrMsg \errindex{No matching clauses for match goal}
 
