@@ -350,7 +350,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
            (* else the oracle tells which constant is to be expanded *)
 	 let oracle = Closure.oracle_of_infos infos in
          let (app1,app2) =
-           if Conv_oracle.oracle_order oracle l2r (conv_key fl1) (conv_key fl2) then
+           if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
 	     match unfold_reference infos fl1 with
              | Some def1 -> ((lft1, whd def1 v1), appr2)
              | None ->

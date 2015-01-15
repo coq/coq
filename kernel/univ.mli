@@ -306,6 +306,8 @@ type 'a puniverses = 'a * universe_instance
 val out_punivs : 'a puniverses -> 'a
 val in_punivs : 'a -> 'a puniverses
 
+val eq_puniverses : ('a -> 'a -> bool) -> 'a puniverses -> 'a puniverses -> bool
+
 (** A vector of universe levels with universe constraints,
     representiong local universe variables and associated constraints *)
 

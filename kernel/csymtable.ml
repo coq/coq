@@ -57,7 +57,7 @@ let set_global v =
 
 let rec eq_structured_constant c1 c2 = match c1, c2 with
 | Const_sorts s1, Const_sorts s2 -> Sorts.equal s1 s2
-| Const_ind i1, Const_ind i2 -> eq_ind i1 i2
+| Const_ind i1, Const_ind i2 -> Univ.eq_puniverses eq_ind i1 i2
 | Const_b0 t1, Const_b0 t2 -> Int.equal t1 t2
 | Const_bn (t1, a1), Const_bn (t2, a2) ->
   Int.equal t1 t2 && Array.equal eq_structured_constant a1 a2
@@ -67,7 +67,7 @@ let rec hash_structured_constant c =
   let open Hashset.Combine in
   match c with
   | Const_sorts s -> combinesmall 1 (Sorts.hash s)
-  | Const_ind i -> combinesmall 2 (ind_hash i)
+  | Const_ind (i,u) -> combinesmall 2 (combine (ind_hash i) (Univ.Instance.hash u))
   | Const_b0 t -> combinesmall 3 (Int.hash t)
   | Const_bn (t, a) ->
     let fold h c = combine h (hash_structured_constant c) in
@@ -142,7 +142,7 @@ let slot_for_annot key =
     AnnotTable.add annot_tbl key n;
     n
 
-let rec slot_for_getglobal env kn =
+let rec slot_for_getglobal env (kn,u) =
   let (cb,(_,rk)) = lookup_constant_key kn env in
   try key rk
   with NotEvaluated ->
@@ -150,10 +150,12 @@ let rec slot_for_getglobal env kn =
     let pos =
       match Cemitcodes.force cb.const_body_code with
       | BCdefined(code,pl,fv) ->
-	let v = eval_to_patch env (code,pl,fv) in
-	set_global v
+	if Univ.Instance.is_empty u then
+	  let v = eval_to_patch env (code,pl,fv) in
+	    set_global v
+	else set_global (val_of_constant (kn,u))
     | BCallias kn' -> slot_for_getglobal env kn'
-    | BCconstant -> set_global (val_of_constant kn) in
+    | BCconstant -> set_global (val_of_constant (kn,u)) in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (Ephemeron.create pos);
     pos

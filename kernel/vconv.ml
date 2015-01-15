@@ -86,23 +86,24 @@ and conv_whd env pb k whd1 whd2 cu =
 
 and conv_atom env pb k a1 stk1 a2 stk2 cu =
   match a1, a2 with
-  | Aind (kn1,i1), Aind(kn2,i2) ->
-      if eq_ind (kn1,i1) (kn2,i2) && compare_stack stk1 stk2
+  | Aind ind1, Aind ind2 ->
+      if eq_puniverses eq_ind ind1 ind2 && compare_stack stk1 stk2
       then
 	conv_stack env k stk1 stk2 cu
       else raise NotConvertible
   | Aid ik1, Aid ik2 ->
-      if eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
+      if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
 	conv_stack env k stk1 stk2 cu
       else raise NotConvertible
   | Aiddef(ik1,v1), Aiddef(ik2,v2) ->
       begin
 	try
-	  if eq_table_key ik1 ik2 && compare_stack stk1 stk2 then
+	  if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
 	    conv_stack env k stk1 stk2 cu
 	  else raise NotConvertible
 	with NotConvertible ->
-	  if oracle_order (oracle_of_infos !infos) false ik1 ik2 then
+	  if oracle_order Univ.out_punivs (oracle_of_infos !infos) 
+	    false ik1 ik2 then
             conv_whd env pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
           else conv_whd env pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
       end

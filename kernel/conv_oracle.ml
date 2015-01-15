@@ -40,12 +40,12 @@ let empty = {
   cst_trstate = Cpred.full;
 }
 
-let get_strategy { var_opacity; cst_opacity } = function
+let get_strategy { var_opacity; cst_opacity } f = function
   | VarKey id ->
       (try Id.Map.find id var_opacity
       with Not_found -> default)
   | ConstKey c ->
-      (try Cmap.find c cst_opacity
+      (try Cmap.find (f c) cst_opacity
       with Not_found -> default)
   | RelKey _ -> Expand
 
@@ -83,9 +83,11 @@ let get_transp_state { var_trstate; cst_trstate } = (var_trstate, cst_trstate)
 
 (* Unfold the first constant only if it is "more transparent" than the
    second one. In case of tie, expand the second one. *)
-let oracle_order o l2r k1 k2 =
-  match get_strategy o k1, get_strategy o k2 with
+let oracle_order f o l2r k1 k2 =
+  match get_strategy o f k1, get_strategy o f k2 with
     | Expand, _ -> true
     | Level n1, Opaque -> true
     | Level n1, Level n2 -> n1 < n2
     | _ -> l2r (* use recommended default *)
+
+let get_strategy o = get_strategy o (fun x -> x)

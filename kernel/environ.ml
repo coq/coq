@@ -594,7 +594,7 @@ let dispatch =
   let int31_op n op prim kn =
     { empty_reactive_info with
       vm_compiling = Some (Cbytegen.op_compilation n op kn);
-      native_compiling = Some (Nativelambda.compile_prim prim kn);
+      native_compiling = Some (Nativelambda.compile_prim prim (Univ.out_punivs kn));
     }
   in
 
@@ -602,7 +602,7 @@ fun rk value field ->
   (* subfunction which shortens the (very common) dispatch of operations *)
   let int31_op_from_const n op prim =
     match kind_of_term value with
-      | Const (kn,_) ->  int31_op n op prim kn
+      | Const kn ->  int31_op n op prim kn
       | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant")
   in
   let int31_binop_from_const op prim = int31_op_from_const 2 op prim in

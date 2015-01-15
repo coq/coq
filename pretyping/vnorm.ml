@@ -93,12 +93,11 @@ let construct_of_constr_const env tag typ =
 
 let construct_of_constr_block = construct_of_constr false
 
-(* FIXME: treatment of universes *)
 let constr_type_of_idkey env idkey =
   match idkey with
   | ConstKey cst ->
-    let const_type = (Environ.lookup_constant cst env).const_type in
-      mkConst cst, Typeops.type_of_constant_type env const_type
+    let const_type = Typeops.type_of_constant_in env cst in
+      mkConstU cst, const_type
   | VarKey id ->
       let (_,_,ty) = lookup_named id env in
       mkVar id, ty
@@ -107,7 +106,7 @@ let constr_type_of_idkey env idkey =
       let (_,_,ty) = lookup_rel n env in
       mkRel n, lift n ty
 
-let type_of_ind env ind u =
+let type_of_ind env (ind, u) =
   type_of_inductive env (Inductive.lookup_mind_specif env ind, u)
 
 let build_branches_type env (mind,_ as _ind) mib mip u params dep p =
@@ -176,7 +175,7 @@ and nf_whd env whd typ =
   | Vatom_stk(Aiddef(idkey,v), stk) ->
       nf_whd env (whd_stack v stk) typ
   | Vatom_stk(Aind ind, stk) ->
-      nf_stk env (mkInd ind) (type_of_ind env ind Univ.Instance.empty (*FIXME*)) stk
+      nf_stk env (mkIndU ind) (type_of_ind env ind) stk
 
 and nf_stk env c t stk  =
   match stk with
@@ -194,7 +193,7 @@ and nf_stk env c t stk  =
       let nparams = mib.mind_nparams in
       let params,realargs = Util.Array.chop nparams allargs in
       let pT =
-	hnf_prod_applist env (type_of_ind env ind u) (Array.to_list params) in
+	hnf_prod_applist env (type_of_ind env (ind,u)) (Array.to_list params) in
       let pT = whd_betadeltaiota env pT in
       let dep, p = nf_predicate env ind mip params (type_of_switch sw) pT in
       (* Calcul du type des branches *)

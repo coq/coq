@@ -27,7 +27,7 @@ let cofix_evaluated_tag = 6
 
 type structured_constant =
   | Const_sorts of sorts
-  | Const_ind of inductive
+  | Const_ind of pinductive
   | Const_b0 of tag
   | Const_bn of tag * structured_constant array
 
@@ -67,7 +67,7 @@ type instruction =
                    (* nb fv, init, lbl types, lbl bodies *)
   | Kclosurecofix of int * int * Label.t array * Label.t array
                    (* nb fv, init, lbl types, lbl bodies *)
-  | Kgetglobal of constant
+  | Kgetglobal of pconstant
   | Kconst of structured_constant
   | Kmakeblock of int * tag             (* size, tag *)
   | Kmakeprod
@@ -185,7 +185,7 @@ let rec instruction ppf = function
       Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblt;
       print_string " bodies = ";
       Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
-  | Kgetglobal id -> fprintf ppf "\tgetglobal %s" (Names.string_of_con id)
+  | Kgetglobal (id,u) -> fprintf ppf "\tgetglobal %s" (Names.string_of_con id)
   | Kconst cst ->
       fprintf ppf "\tconst"
   | Kmakeblock(n, m) ->
