@@ -13,7 +13,7 @@ let ppripos (ri,pos) =
 	("annot : MutInd("^(string_of_mind sp)^","^(string_of_int i)^")\n")
   | Reloc_const _ ->
       print_string "structured constant\n"
-  | Reloc_getglobal kn ->
+  | Reloc_getglobal (kn,_) ->
       print_string ("getglob "^(string_of_con kn)^"\n"));
    print_flush ()
 
@@ -30,7 +30,7 @@ let ppsort = function
 
 let print_idkey idk =
   match idk with
-  | ConstKey sp ->
+  | ConstKey (sp,_) ->
       print_string "Cons(";
       print_string (string_of_con sp);
       print_string ")"
@@ -61,7 +61,7 @@ and ppatom a =
   match a with
   | Aid idk -> print_idkey idk
   | Aiddef(idk,_) -> print_string "&";print_idkey idk
-  | Aind(sp,i) ->  print_string "Ind(";
+  | Aind((sp,i),_) ->  print_string "Ind(";
       print_string (string_of_mind sp);
       print_string ","; print_int i;
       print_string ")"
