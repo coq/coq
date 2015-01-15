@@ -15,24 +15,7 @@ Logic
   Records with primitive projections have eta-conversion, the
   canonical form being [mkR pars (p1 t) ... (pn t)].
 
-  With native projections, the parsing of projection applications changes:
-
-  - r.(p) and (p r) elaborate to native projection application, and
-    the parameters cannot be mentioned. The following arguments are
-    parsed according to the remaining implicit arguments declared for the
-    projection (i.e. the implicit arguments after the record type
-    argument). In dot notation, the record type argument is considered
-    explicit no matter what its implicit status is.
-  - r.(@p params) and @p args are parsed as regular applications of the
-    projection with explicit parameters.
-  - [simpl p] is forbidden, but [simpl @p] will simplify both the projection
-    and its explicit [@p] version.
-  - [unfold p] has no effect on projection applications unless it is applied
-    to a constructor. If the explicit version appears it reduces to the
-    projection application.
-  - [pattern x at n], [rewrite x at n] and in general abstraction and selection
-    of occurrences may fail due to the disappearance of parameters.
-- New universe polymorphism.
+- New universe polymorphism (see reference manual)
 - New option -type-in-type to collapse the universe hierarchy (this makes the
   logic inconsistent).
 - The guard condition for fixpoints is now a bit stricter. Propagation of

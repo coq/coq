@@ -282,6 +282,37 @@ the inductive type.
 To deactivate the printing of projections, use 
 {\tt Unset Printing Projections}.
 
+\subsection{Primitive Projections}
+\index{Primitive projections}
+\label{prim-proj}
+
+The option {\tt Set Primitive Projections} turns on the use of primitive
+projections when defining subsequent records. Primitive projections
+extended the calculus of inductive constructions with a new binary term
+constructor {\tt r.(p)} representing a primitive projection p applied to
+a record object {\tt r} (i.e., primitive projections are always
+applied). Even if the record type has parameters, these do not appear at
+applications of the projection, considerably reducing the sizes of terms
+when manipulating parameterized records and typechecking time. On the
+user level, primitive projections are a transparent replacement
+for the usual defined ones.
+
+  % - r.(p) and (p r) elaborate to native projection application, and
+  %   the parameters cannot be mentioned. The following arguments are
+  %   parsed according to the remaining implicit arguments declared for the
+  %   projection (i.e. the implicit arguments after the record type
+  %   argument). In dot notation, the record type argument is considered
+  %   explicit no matter what its implicit status is.
+  % - r.(@p params) and @p args are parsed as regular applications of the
+  %   projection with explicit parameters.
+  % - [simpl p] is forbidden, but [simpl @p] will simplify both the projection
+  %   and its explicit [@p] version.
+  % - [unfold p] has no effect on projection applications unless it is applied
+  %   to a constructor. If the explicit version appears it reduces to the
+  %   projection application.
+  % - [pattern x at n], [rewrite x at n] and in general abstraction and selection
+  %   of occurrences may fail due to the disappearance of parameters.
+
 
 \section{Variants and extensions of {\mbox{\tt match}}
 \label{Extensions-of-match}
