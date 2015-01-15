@@ -505,7 +505,7 @@ let parameters () =
   print "TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))\n\n";
   print "vo_to_obj = $(addsuffix .o,$(foreach vo,$(1),\\\n";
   print "  $(addprefix $(dir $(vo)),$(addprefix .coq-native/,$(filter-out Warning: Error:,$(firstword \\\n";
-  print "    $(shell $(COQBIN)coqtop -batch -quiet -print-mod-uid $(vo))))))))\n\n"
+  print "    $(shell $(COQBIN)coqtop -q -noinit -batch -quiet -print-mod-uid $(vo))))))))\n\n"
 
 let include_dirs (inc_ml,inc_i,inc_r) =
   let parse_ml_includes l = List.map (fun (x,_) -> "-I \"" ^ x ^ "\"") l in
@@ -576,7 +576,8 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "HTMLFILES:=$(VFILES:.v=.html)\n";
       print "GHTMLFILES:=$(VFILES:.v=.g.html)\n";
       print "OBJFILES=$(call vo_to_obj,$(VOFILES))\n";
-      print "NATIVEFILES=$(OBJFILES:.o=.cmi) $(OBJFILES:.o=.cmo) $(OBJFILES:.o=.cmx) $(OBJFILES:.o=.cmxs)\n";
+      print "ALLNATIVEFILES=$(OBJFILES:.o=.cmi) $(OBJFILES:.o=.cmo) $(OBJFILES:.o=.cmx) $(OBJFILES:.o=.cmxs)\n";
+      print "NATIVEFILES=$(foreach f, $(ALLNATIVEFILES), $(wildcard $f))\n";
       classify_files_by_root "NATIVEFILES" l inc
   end;
   decl_var "ML4FILES" ml4files;
