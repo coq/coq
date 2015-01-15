@@ -1744,6 +1744,8 @@ type universe_instance = Instance.t
 type 'a puniverses = 'a * Instance.t
 let out_punivs (x, y) = x
 let in_punivs x = (x, Instance.empty)
+let eq_puniverses f (x, u) (y, u') =
+  f x y && Instance.equal u u'
 
 (** A context of universe levels with universe constraints,
     representiong local universe variables and constraints *)

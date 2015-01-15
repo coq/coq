@@ -137,10 +137,11 @@ type vswitch = {
 (* Generally the first field is a code pointer.                           *)
 
 (* Do not edit this type without editing C code, especially "coq_values.h" *)
+
 type atom =
-  | Aid of id_key
-  | Aiddef of id_key * values
-  | Aind of inductive
+  | Aid of Vars.id_key
+  | Aiddef of Vars.id_key * values
+  | Aind of pinductive
 
 (* Zippers *)
 
@@ -306,11 +307,11 @@ let val_of_atom a = val_of_obj (obj_of_atom a)
 
 module IdKeyHash =
 struct
-  type t = id_key
-  let equal = Names.eq_id_key
+  type t = pconstant tableKey
+  let equal = Names.eq_table_key (Univ.eq_puniverses Constant.equal)
   open Hashset.Combine
   let hash = function
-  | ConstKey c -> combinesmall 1 (Constant.hash c)
+  | ConstKey (c,u) -> combinesmall 1 (Constant.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
   | RelKey i -> combinesmall 3 (Int.hash i)
 end

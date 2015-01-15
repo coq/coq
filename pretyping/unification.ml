@@ -511,8 +511,8 @@ let oracle_order env cf1 cf2 =
 	  when eq_constant p (Projection.constant p') -> 
 	  Some (Projection.unfolded p')
 	| _ ->
-          Some (Conv_oracle.oracle_order (Environ.oracle env) false
-		  (translate_key k1) (translate_key k2))
+          Some (Conv_oracle.oracle_order (fun x -> x)
+		  (Environ.oracle env) false (translate_key k1) (translate_key k2))
 
 let is_rigid_head flags t =
   match kind_of_term t with

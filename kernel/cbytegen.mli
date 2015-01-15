@@ -13,7 +13,7 @@ val compile_constant_body : env -> constant_def -> body_code
 
 (** Shortcut of the previous function used during module strengthening *)
 
-val compile_alias : constant -> body_code
+val compile_alias : pconstant -> body_code
 
 (** spiwack: this function contains the information needed to perform
             the static compilation of int31 (trying and obtaining
@@ -33,7 +33,7 @@ val dynamic_int31_compilation : bool -> comp_env ->
            works as follow: checks if all the arguments are non-pointers
            if they are applies the operation (second argument) if not
            all of them are, returns to a coq definition (third argument) *)
-val op_compilation : int -> instruction -> constant -> bool -> comp_env ->
+val op_compilation : int -> instruction -> pconstant -> bool -> comp_env ->
                              constr array -> int -> bytecodes-> bytecodes
 
 (*spiwack: compiling function to insert dynamic decompilation before

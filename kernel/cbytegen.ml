@@ -422,7 +422,7 @@ let rec str_const c =
               end
 	| _ -> Bconstr c
       end
-  | Ind (ind,u) -> Bstrconst (Const_ind ind)
+  | Ind ind -> Bstrconst (Const_ind ind)
   | Construct (((kn,j),i),u) ->  
       begin
       (* spiwack: tries first to apply the run-time compilation
@@ -486,12 +486,12 @@ let rec compile_fv reloc l sz cont =
 
 (* Compiling constants *)
 
-let rec get_allias env kn =
+let rec get_allias env (kn,u as p) =
   let cb = lookup_constant kn env in
   let tps = cb.const_body_code in
     (match Cemitcodes.force tps with
     | BCallias kn' -> get_allias env kn'
-    | _ -> kn)
+    | _ -> p)
 
 (* Compiling expressions *)
 
@@ -700,10 +700,10 @@ and compile_const =
                   (mkConstU (kn,u)) reloc args sz cont
   with Not_found ->
     if Int.equal nargs 0 then
-      Kgetglobal (get_allias !global_env kn) :: cont
+      Kgetglobal (get_allias !global_env (kn, u)) :: cont
     else
       comp_app (fun _ _ _ cont ->
-                   Kgetglobal (get_allias !global_env kn) :: cont)
+                   Kgetglobal (get_allias !global_env (kn,u)) :: cont)
         compile_constr reloc () args sz cont
 
 let compile env c =
@@ -729,10 +729,10 @@ let compile_constant_body env = function
   | Def sb ->
       let body = Mod_subst.force_constr sb in
       match kind_of_term body with
-	| Const kn' ->
+	| Const (kn',u) ->
 	    (* we use the canonical name of the constant*)
-	    let con= constant_of_kn (canonical_con (Univ.out_punivs kn')) in
-	      BCallias (get_allias env con)
+	    let con= constant_of_kn (canonical_con kn') in
+	      BCallias (get_allias env (con,u))
 	| _ ->
 	    let res = compile env body in
 	    let to_patch = to_memory res in
@@ -740,7 +740,7 @@ let compile_constant_body env = function
 
 (* Shortcut of the previous function used during module strengthening *)
 
-let compile_alias kn = BCallias (constant_of_kn (canonical_con kn))
+let compile_alias (kn,u) = BCallias (constant_of_kn (canonical_con kn), u)
 
 (* spiwack: additional function which allow different part of compilation of the
       31-bit integers *)

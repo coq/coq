@@ -20,7 +20,7 @@ open Mod_subst
 type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
-  | Reloc_getglobal of constant
+  | Reloc_getglobal of pconstant
 
 type patch = reloc_info * int
 
@@ -147,8 +147,8 @@ and slot_for_annot a =
   enter (Reloc_annot a);
   out_int 0
 
-and slot_for_getglobal id =
-  enter (Reloc_getglobal id);
+and slot_for_getglobal p =
+  enter (Reloc_getglobal p);
   out_int 0
 
 
@@ -320,7 +320,7 @@ let rec subst_strcst s sc =
   match sc with
   | Const_sorts _ | Const_b0 _ -> sc
   | Const_bn(tag,args) -> Const_bn(tag,Array.map (subst_strcst s) args)
-  | Const_ind(ind) -> let kn,i = ind in Const_ind((subst_mind s kn, i))
+  | Const_ind(ind,u) -> let kn,i = ind in Const_ind((subst_mind s kn, i), u)
 
 let subst_patch s (ri,pos) =
   match ri with
@@ -329,19 +329,19 @@ let subst_patch s (ri,pos) =
       let ci = {a.ci with ci_ind = (subst_mind s kn,i)} in
       (Reloc_annot {a with ci = ci},pos)
   | Reloc_const sc -> (Reloc_const (subst_strcst s sc), pos)
-  | Reloc_getglobal kn -> (Reloc_getglobal (fst (subst_con_kn s kn)), pos)
+  | Reloc_getglobal kn -> (Reloc_getglobal (subst_pcon s kn), pos)
 
 let subst_to_patch s (code,pl,fv) =
   code,List.rev_map (subst_patch s) pl,fv
 
 type body_code =
   | BCdefined of to_patch
-  | BCallias of constant
+  | BCallias of pconstant
   | BCconstant
 
 let subst_body_code s = function
   | BCdefined tp -> BCdefined (subst_to_patch s tp)
-  | BCallias kn -> BCallias (fst (subst_con_kn s kn))
+  | BCallias (kn,u) -> BCallias (fst (subst_con_kn s kn), u)
   | BCconstant -> BCconstant
 
 type to_patch_substituted = body_code substituted

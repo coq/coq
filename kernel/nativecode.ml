@@ -1772,7 +1772,7 @@ let compile_constant env sigma prefix ~interactive con cb =
   match cb.const_proj with
   | None ->
     begin match cb.const_body with
-    | Def t ->
+    | Def t when not cb.const_polymorphic ->
       let t = Mod_subst.force_constr t in
       let code = lambda_of_constr env sigma t in
       if !Flags.debug then Pp.msg_debug (Pp.str "Generated lambda code");
@@ -1902,8 +1902,8 @@ let compile_mind_deps env prefix ~interactive
 let rec compile_deps env sigma prefix ~interactive init t =
   match kind_of_term t with
   | Ind ((mind,_),u) -> compile_mind_deps env prefix ~interactive init mind
-  | Const (c,u) ->
-      let c = get_allias env c in
+  | Const c ->
+      let c,u = get_allias env c in
       let cb,(nameref,_) = lookup_constant_key c env in
       let (_, (_, const_updates)) = init in
       if is_code_loaded ~interactive nameref
