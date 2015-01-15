@@ -3,7 +3,36 @@ Potential sources of incompatibilities between Coq V8.4 and V8.5
 
 (see also file CHANGES)
 
-Universe Polymorphism.
+- options for *coq* compilation (see below for ocaml).
+
+** [-I foo] is now deprecated and will not add directory foo to the
+   coq load path (only for ocaml, see below). Just replace [-I foo] by
+   [-Q foo ""] in your project file and re-generate makefile. Or
+   perform the same operation directly in your makefile if you edit it
+   by hand.
+
+** Option -R Foo bar is the same in v8.5 than in v8.4 concerning coq
+   load path.
+
+** Option [-I foo -as bar] is unchanged but discouraged unless you
+   compile ocaml code. Use -Q foo bar instead.
+
+  for more details: file CHANGES or section "Customization at launch
+  time" of the reference manual.
+
+- Command line options for ocaml  Compilation of ocaml code (plugins) 
+
+** [-I foo] is *not* deprecated to add foo to the ocaml load path.
+
+** [-I foo -as bar] adds foo to the ocaml load path *and* adds foo to
+   the coq load path with logical name bar (shortcut for -I foo -Q foo
+   bar).
+
+  for more details: file CHANGES or section "Customization at launch
+  time" of the reference manual.
+  
+
+- Universe Polymorphism.
 
 - Refinement, unification and tactics are now aware of universes,
   resulting in more localized errors. Universe inconsistencies 
