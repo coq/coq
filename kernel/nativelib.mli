@@ -10,6 +10,9 @@ open Nativecode
 (** This file provides facilities to access OCaml compiler and dynamic linker,
 used by the native compiler. *)
 
+(* Directory where compiled files are stored *)
+val output_dir : string
+
 val get_load_paths : (unit -> string list) ref
 
 val load_obj : (string -> unit) ref
