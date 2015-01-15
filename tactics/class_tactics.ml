@@ -36,6 +36,10 @@ let typeclasses_modulo_eta = ref false
 let set_typeclasses_modulo_eta d = (:=) typeclasses_modulo_eta d
 let get_typeclasses_modulo_eta () = !typeclasses_modulo_eta
 
+let typeclasses_dependency_order = ref false
+let set_typeclasses_dependency_order d = (:=) typeclasses_dependency_order d
+let get_typeclasses_dependency_order () = !typeclasses_dependency_order
+
 open Goptions
 
 let set_typeclasses_modulo_eta =
@@ -47,20 +51,46 @@ let set_typeclasses_modulo_eta =
       optread  = get_typeclasses_modulo_eta;
       optwrite = set_typeclasses_modulo_eta; }
 
+let set_typeclasses_dependency_order =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "during typeclass resolution, solve instances according to their dependency order";
+      optkey   = ["Typeclasses";"Dependency";"Order"];
+      optread  = get_typeclasses_dependency_order;
+      optwrite = set_typeclasses_dependency_order; }
+
 (** We transform the evars that are concerned by this resolution
     (according to predicate p) into goals.
     Invariant: function p only manipulates and returns undefined evars *)
+
+let top_sort evm undefs =
+  let l' = ref [] in
+  let tosee = ref undefs in
+  let rec visit ev evi = 
+    let evs = Evarutil.undefined_evars_of_evar_info evm evi in
+      Evar.Set.iter (fun ev -> 
+	if Evar.Map.mem ev !tosee then 
+	  visit ev (Evar.Map.find ev !tosee)) evs;
+      tosee := Evar.Map.remove ev !tosee;
+      l' := ev :: !l';
+  in
+    while not (Evar.Map.is_empty !tosee) do
+      let ev, evi = Evar.Map.min_binding !tosee in
+	visit ev evi
+    done;
+    List.rev !l'
 
 let evars_to_goals p evm =
   let goals = ref Evar.Map.empty in
   let map ev evi =
     let evi, goal = p evm ev evi in
-    let () = if goal then goals := Evar.Map.add ev ev !goals in
+    let () = if goal then goals := Evar.Map.add ev evi !goals in
     evi
   in
   let evm = Evd.raw_map_undefined map evm in
   if Evar.Map.is_empty !goals then None
-  else Some (Evar.Map.bindings !goals, evm)
+  else Some (!goals, evm)
 
 (** Typeclasses instance search tactic / eauto *)
 
@@ -408,8 +438,14 @@ let hints_tac hints =
 		match sgls with
 		| None -> gls', s'
 		| Some (evgls, s') ->
-		  (* Reorder with dependent subgoals. *)
-		  (gls' @ List.map (fun (ev, x) -> Some ev, x) evgls, s')
+		  if not !typeclasses_dependency_order then
+		    (gls' @ List.map (fun (ev,_) -> (Some ev, ev)) (Evar.Map.bindings evgls), s')
+		  else 
+ 		    (* Reorder with dependent subgoals. *)
+		    let evm = List.fold_left 
+		      (fun acc g -> Evar.Map.add g (Evd.find_undefined s' g) acc) evgls gls in
+		    let gls = top_sort s' evm in
+		      (List.map (fun ev -> Some ev, ev) gls, s')
 	    in
 	    let gls' = List.map_i
 	      (fun j (evar, g) ->
@@ -515,7 +551,7 @@ let make_autogoals ?(only_classes=true) ?(unique=false)
   let cut = cut_of_hints hints in
   { it = List.map_i (fun i g ->
     let (gl, auto) = make_autogoal ~only_classes ~unique 
-      ~st cut (Some (fst g)) {it = snd g; sigma = evm'; } in
+      ~st cut (Some g) {it = g; sigma = evm'; } in
       (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm'; }
 
 let get_result r =
@@ -527,12 +563,17 @@ let run_on_evars ?(only_classes=true) ?(unique=false) ?(st=full_transparent_stat
   match evars_to_goals p evm with
   | None -> None (* This happens only because there's no evar having p *)
   | Some (goals, evm') ->
-      let res = run_list_tac tac p goals 
-	(make_autogoals ~only_classes ~unique ~st hints goals evm') in
-	match get_result res with
-	| None -> raise Not_found
-	| Some (evm', fk) -> 
-	  Some (evars_reset_evd ~with_conv_pbs:true ~with_univs:false evm' evm, fk)
+    let goals = 
+      if !typeclasses_dependency_order then
+	top_sort evm' goals
+      else List.map (fun (ev, _) -> ev) (Evar.Map.bindings goals)
+    in
+    let res = run_list_tac tac p goals 
+      (make_autogoals ~only_classes ~unique ~st hints goals evm') in
+      match get_result res with
+      | None -> raise Not_found
+      | Some (evm', fk) -> 
+	Some (evars_reset_evd ~with_conv_pbs:true ~with_univs:false evm' evm, fk)
 
 let eauto_tac hints =
   then_tac normevars_tac (or_tac (hints_tac hints) intro_tac)
