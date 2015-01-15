@@ -506,11 +506,6 @@ let parameters () =
   print "vo_to_obj = $(addsuffix .o,\\\n";
   print "  $(filter-out Warning: Error:,\\\n";
   print "  $(shell $(COQBIN)coqtop -q -noinit -batch -quiet -print-mod-uid $(1))))\n\n"
-(*
-  print "vo_to_obj = $(addsuffix .o,$(foreach vo,$(1),\\\n";
-  print "  $(addprefix $(dir $(vo)),$(addprefix .coq-native/,$(filter-out Warning: Error:,$(firstword \\\n";
-  print "    $(shell $(COQBIN)coqtop -q -noinit -batch -quiet -print-mod-uid $(vo))))))))\n\n"
- *)
 
 let include_dirs (inc_ml,inc_i,inc_r) =
   let parse_ml_includes l = List.map (fun (x,_) -> "-I \"" ^ x ^ "\"") l in
