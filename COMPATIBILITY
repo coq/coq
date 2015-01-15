@@ -1,6 +1,8 @@
 Potential sources of incompatibilities between Coq V8.4 and V8.5
 ----------------------------------------------------------------
 
+(see also file CHANGES)
+
 Universe Polymorphism.
 
 - Refinement, unification and tactics are now aware of universes,
