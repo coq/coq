@@ -35,6 +35,11 @@ Logic
 - New universe polymorphism.
 - New option -type-in-type to collapse the universe hierarchy (this makes the
   logic inconsistent).
+- The guard condition for fixpoints is now a bit stricter. Propagation of
+subterm value through pattern matching is restricted according to the return
+predicate. Restores compatibility of Coq's logic with the propositional
+extensionality axiom. May create incompatibilities in recursive programs heavily
+using dependent types.
 
 Vernacular commands
 
