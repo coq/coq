@@ -257,7 +257,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     let cmxsfiles = List.rev_append cmofiles mllibfiles in
     let where_what_cmxs = vars_to_put_by_root [("CMXSFILES",cmxsfiles)] inc in
     let where_what_oth = vars_to_put_by_root
-      [("VOFILES",vfiles);("NATIVEFILES",vfiles);("CMOFILES",cmofiles);("CMIFILES",cmifiles);("CMAFILES",mllibfiles)]
+      [("VOFILES",vfiles);("VFILES",vfiles);("GLOBFILES",vfiles);("NATIVEFILES",vfiles);("CMOFILES",cmofiles);("CMIFILES",cmifiles);("CMAFILES",mllibfiles)]
       inc in
     let doc_dir = where_put_doc inc in
     let () = if is_install = Project_file.UnspecInstall then
