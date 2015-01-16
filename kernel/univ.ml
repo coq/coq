@@ -303,6 +303,10 @@ module Level = struct
   let var n = 
     if n < 20 then vars.(n) else make (Var n)
 
+  let var_index u =
+    match data u with
+    | Var n -> Some n | _ -> None
+
   let make m n = make (Level (n, Names.DirPath.hcons m))
 
 end

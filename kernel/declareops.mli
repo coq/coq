@@ -8,6 +8,8 @@
 
 open Declarations
 open Mod_subst
+open Univ
+open Context
 
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
@@ -74,6 +76,9 @@ val recarg_length : wf_paths -> int -> int
 val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 val subst_mind_body : substitution -> mutual_inductive_body -> mutual_inductive_body
+
+val inductive_instance : mutual_inductive_body -> universe_instance
+val inductive_context : mutual_inductive_body -> universe_context
 
 (** {6 Hash-consing} *)
 

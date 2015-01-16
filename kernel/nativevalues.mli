@@ -41,8 +41,8 @@ val eq_rec_pos : rec_pos -> rec_pos -> bool
 
 type atom =
   | Arel of int
-  | Aconstant of constant
-  | Aind of inductive
+  | Aconstant of pconstant
+  | Aind of pinductive
   | Asort of sorts
   | Avar of identifier
   | Acase of annot_sw * accumulator * t * (t -> t) 
@@ -59,9 +59,9 @@ type atom =
 val mk_accu : atom -> t
 val mk_rel_accu : int -> t
 val mk_rels_accu : int -> int -> t array
-val mk_constant_accu : constant -> t
-val mk_ind_accu : inductive -> t
-val mk_sort_accu : sorts -> t
+val mk_constant_accu : constant -> Univ.Level.t array -> t
+val mk_ind_accu : inductive -> Univ.Level.t array -> t
+val mk_sort_accu : sorts -> Univ.Level.t array -> t
 val mk_var_accu : identifier -> t
 val mk_sw_accu : annot_sw -> accumulator -> t -> (t -> t)
 val mk_prod_accu : name -> t -> t -> t

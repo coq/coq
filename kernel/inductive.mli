@@ -35,8 +35,6 @@ val lookup_mind_specif : env -> inductive -> mind_specif
 (** {6 Functions to build standard types related to inductive } *)
 val ind_subst : mutual_inductive -> mutual_inductive_body -> universe_instance -> constr list
 
-val inductive_instance : mutual_inductive_body -> universe_instance
-val inductive_context : mutual_inductive_body -> universe_context
 val inductive_paramdecls : mutual_inductive_body puniverses -> rel_context
 
 val instantiate_inductive_constraints : 

@@ -230,7 +230,7 @@ let instantiate_possibly_recursive_type indu paramdecls fields =
 let declare_projections indsp ?(kind=StructureComponent) binder_name coers fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
-  let u = Inductive.inductive_instance mib in
+  let u = Declareops.inductive_instance mib in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let poly = mib.mind_polymorphic and ctx = Univ.instantiate_univ_context mib.mind_universes in
   let indu = indsp, u in
