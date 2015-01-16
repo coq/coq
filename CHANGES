@@ -388,6 +388,8 @@ Libraries
 - SetoidPermutation: a notion of permutation for lists modulo a setoid equality.
 - BigN: fixed the ocaml code doing the parsing/printing of big numbers.
 - List: a couple of lemmas added especially about no-duplication, partitions.
+- Init: Removal of the coercions between variants of sigma-types and
+  subset types (possible source of incompatibility).
 
 Changes from V8.4beta to V8.4beta2
 ==================================
