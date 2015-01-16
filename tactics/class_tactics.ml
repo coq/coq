@@ -197,8 +197,8 @@ let rec e_trivial_fail_db db_list local_db goal =
   in
   tclFIRST (List.map tclCOMPLETE tacl) goal
 
-and e_my_find_search db_list local_db hdc complete sigma oconcl =
-  let prods, concl = decompose_prod_assum oconcl in
+and e_my_find_search db_list local_db hdc complete sigma concl =
+  let prods, concl = decompose_prod_assum concl in
   let nprods = List.length prods in
   let freeze = 
     try
@@ -213,8 +213,8 @@ and e_my_find_search db_list local_db hdc complete sigma oconcl =
       (fun db ->
 	let tacs = 
 	  if Hint_db.use_dn db then (* Using dnet *)
-	    Hint_db.map_eauto hdc oconcl db
-	  else Hint_db.map_existential hdc oconcl db
+	    Hint_db.map_eauto hdc concl db
+	  else Hint_db.map_existential hdc concl db
 	in
 	let flags = auto_unif_flags freeze (Hint_db.transparent_state db) in
 	  List.map (fun x -> (flags, x)) tacs)
@@ -232,7 +232,7 @@ and e_my_find_search db_list local_db hdc complete sigma oconcl =
 	        (if complete then tclIDTAC else e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c])
 	  | Extern tacast ->
-	    Proofview.V82.of_tactic (conclPattern oconcl p tacast)
+	    Proofview.V82.of_tactic (conclPattern concl p tacast)
       in
       let tac = if complete then tclCOMPLETE tac else tac in
 	match t with
