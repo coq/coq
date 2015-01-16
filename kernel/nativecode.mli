@@ -42,6 +42,8 @@ val get_meta : symbol array -> int -> metavariable
 
 val get_evar : symbol array -> int -> existential
 
+val get_level : symbol array -> int -> Univ.Level.t
+
 val get_symbols_tbl : unit -> symbol array
 
 type code_location_update

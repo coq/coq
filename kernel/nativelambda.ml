@@ -363,13 +363,13 @@ let make_args start _end =
     
 (* Translation of constructors *)	
 
-let makeblock env cn tag args =
+let makeblock env cn u tag args =
   if Array.for_all is_value args && Array.length args > 0 then
     let args = Array.map get_value args in
     Lval (Nativevalues.mk_block tag args)
   else
     let prefix = get_mind_prefix env (fst (fst cn)) in
-    Lmakeblock(prefix, cn, tag, args)
+    Lmakeblock(prefix, (cn,u), tag, args)
 
 (* Translation of constants *)
 
@@ -553,9 +553,9 @@ let rec lambda_of_constr env sigma c =
 
   | Sort s -> Lsort s
 
-  | Ind (ind,u) ->
+  | Ind (ind,u as pind) ->
       let prefix = get_mind_prefix !global_env (fst ind) in
-      Lind (prefix, ind)
+      Lind (prefix, pind)
 
   | Prod(id, dom, codom) ->
       let ld = lambda_of_constr env sigma dom in
@@ -666,13 +666,13 @@ and lambda_of_app env sigma f args =
           let prefix = get_const_prefix !global_env kn in
           let t =
             if is_lazy prefix (Mod_subst.force_constr csubst) then
-              mkLapp Lforce [|Lconst (prefix, kn)|]
-            else Lconst (prefix, kn)
+              mkLapp Lforce [|Lconst (prefix, (kn,u))|]
+            else Lconst (prefix, (kn,u))
           in
         mkLapp t (lambda_of_args env sigma 0 args)
       | OpaqueDef _ | Undef _ ->
           let prefix = get_const_prefix !global_env kn in
-          mkLapp (Lconst (prefix, kn)) (lambda_of_args env sigma 0 args)
+          mkLapp (Lconst (prefix, (kn,u))) (lambda_of_args env sigma 0 args)
       end)
   | Construct (c,u) ->
       let tag, nparams, arity = Renv.get_construct_info env c in
@@ -692,14 +692,14 @@ and lambda_of_app env sigma f args =
                            (!global_env).retroknowledge f prefix c args
         with Not_found ->
 	  let args = lambda_of_args env sigma nparams args in
-	  makeblock !global_env c tag args
+	  makeblock !global_env c u tag args
       else
 	let args = lambda_of_args env sigma 0 args in
 	(try
 	    Retroknowledge.get_native_constant_dynamic_info
               (!global_env).retroknowledge f prefix c args
 	  with Not_found ->
-            mkLapp (Lconstruct (prefix, c)) args)
+            mkLapp (Lconstruct (prefix, (c,u))) args)
   | _ -> 
       let f = lambda_of_constr env sigma f in
       let args = lambda_of_args env sigma 0 args in
@@ -752,8 +752,8 @@ let compile_dynamic_int31 fc prefix c args =
 
 (* We are relying here on the order of digits constructors *)
 let digits_from_uint digits_ind prefix i =
-  let d0 = Lconstruct (prefix, (digits_ind, 1)) in
-  let d1 = Lconstruct (prefix, (digits_ind, 2)) in
+  let d0 = Lconstruct (prefix, ((digits_ind, 1), Univ.Instance.empty)) in
+  let d1 = Lconstruct (prefix, ((digits_ind, 2), Univ.Instance.empty)) in
   let digits = Array.make 31 d0 in
   for k = 0 to 30 do
     if Int.equal ((Uint31.to_int i lsr k) land 1) 1 then
@@ -768,9 +768,9 @@ let before_match_int31 digits_ind fc prefix c t =
   match t with
   | Luint (UintVal i) ->
      let digits = digits_from_uint digits_ind prefix i in
-     mkLapp (Lconstruct (prefix,c)) digits
+     mkLapp (Lconstruct (prefix,(c, Univ.Instance.empty))) digits
   | Luint (UintDigits (prefix,c,args)) ->
-     mkLapp (Lconstruct (prefix,c)) args
+     mkLapp (Lconstruct (prefix,(c, Univ.Instance.empty))) args
   | _ -> Luint (UintDecomp (prefix,c,t))
 
 let compile_prim prim kn fc prefix args =

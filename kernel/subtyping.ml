@@ -17,6 +17,7 @@ open Names
 open Univ
 open Term
 open Declarations
+open Declareops
 open Reduction
 open Inductive
 open Modops

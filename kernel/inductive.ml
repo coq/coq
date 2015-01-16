@@ -53,20 +53,11 @@ let inductive_params (mib,_) = mib.mind_nparams
 let inductive_paramdecls (mib,u) = 
   Vars.subst_instance_context u mib.mind_params_ctxt
 
-let inductive_instance mib =
-  if mib.mind_polymorphic then
-    UContext.instance mib.mind_universes
-  else Instance.empty
-
-let inductive_context mib =
-  if mib.mind_polymorphic then 
-    instantiate_univ_context mib.mind_universes 
-  else UContext.empty
-
 let instantiate_inductive_constraints mib u =
   if mib.mind_polymorphic then
-    subst_instance_constraints u (UContext.constraints mib.mind_universes)
-  else Constraint.empty
+    Univ.subst_instance_constraints u (Univ.UContext.constraints mib.mind_universes)
+  else Univ.Constraint.empty
+
 
 (************************************************************************)
 

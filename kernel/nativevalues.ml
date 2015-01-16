@@ -49,8 +49,8 @@ let eq_rec_pos = Array.equal Int.equal
 
 type atom = 
   | Arel of int
-  | Aconstant of constant
-  | Aind of inductive
+  | Aconstant of pconstant
+  | Aind of pinductive
   | Asort of sorts
   | Avar of identifier
   | Acase of annot_sw * accumulator * t * (t -> t)
@@ -106,14 +106,19 @@ let mk_rels_accu lvl len =
 let napply (f:t) (args: t array) =
   Array.fold_left (fun f a -> f a) f args
 
-let mk_constant_accu kn = 
-  mk_accu (Aconstant kn)
+let mk_constant_accu kn u = 
+  mk_accu (Aconstant (kn,Univ.Instance.of_array u))
 
-let mk_ind_accu s = 
-  mk_accu (Aind s)
+let mk_ind_accu ind u = 
+  mk_accu (Aind (ind,Univ.Instance.of_array u))
 
-let mk_sort_accu s =
-  mk_accu (Asort s)
+let mk_sort_accu s u =
+  match s with
+  | Prop _ -> mk_accu (Asort s)
+  | Type s ->
+     let u = Univ.Instance.of_array u in
+     let s = Univ.subst_instance_universe u s in
+     mk_accu (Asort (Type s))
 
 let mk_var_accu id = 
   mk_accu (Avar id)

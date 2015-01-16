@@ -257,8 +257,8 @@ and nf_bargs env b t =
 and nf_atom env atom =
   match atom with
   | Arel i -> mkRel (nb_rel env - i)
-  | Aconstant cst -> mkConst cst
-  | Aind ind -> mkInd ind
+  | Aconstant cst -> mkConstU cst
+  | Aind ind -> mkIndU ind
   | Asort s -> mkSort s
   | Avar id -> mkVar id
   | Aprod(n,dom,codom) ->
@@ -280,9 +280,9 @@ and nf_atom_type env atom =
       let n = (nb_rel env - i) in
       mkRel n, type_of_rel env n
   | Aconstant cst ->
-      mkConst cst, fst (Typeops.type_of_constant env (cst,Univ.Instance.empty)) (* FIXME *)
+      mkConstU cst, Typeops.type_of_constant_in env cst
   | Aind ind ->
-      mkInd ind, Inductiveops.type_of_inductive env (ind,Univ.Instance.empty)
+      mkIndU ind, Inductiveops.type_of_inductive env ind
   | Asort s ->
       mkSort s, type_of_sort s
   | Avar id ->

@@ -260,6 +260,16 @@ let subst_mind_body sub mib =
     mind_universes = mib.mind_universes;
     mind_private = mib.mind_private }
 
+let inductive_instance mib =
+  if mib.mind_polymorphic then
+    Univ.UContext.instance mib.mind_universes
+  else Univ.Instance.empty
+
+let inductive_context mib =
+  if mib.mind_polymorphic then 
+    Univ.instantiate_univ_context mib.mind_universes 
+  else Univ.UContext.empty
+
 (** {6 Hash-consing of inductive declarations } *)
 
 let hcons_regular_ind_arity a =

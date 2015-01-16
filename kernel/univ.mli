@@ -27,6 +27,8 @@ sig
   val equal : t -> t -> bool
   (** Equality function *)
 
+  val hash : t -> int
+
   val make : Names.DirPath.t -> int -> t
   (** Create a new universe level from a unique identifier and an associated
       module path. *)
@@ -35,6 +37,8 @@ sig
   (** Pretty-printing *)
 
   val var : int -> t
+
+  val var_index : t -> int option
 end
 
 type universe_level = Level.t
