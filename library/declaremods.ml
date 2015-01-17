@@ -850,7 +850,6 @@ let library_values =
   Summary.ref (Dirmap.empty : library_values Dirmap.t) ~name:"LIBVALUES"
 
 let register_library dir cenv (objs:library_objects) digest univ =
-  assert (not (Lib.is_module_or_modtype ()));
   let mp = MPfile dir in
   let () =
     try

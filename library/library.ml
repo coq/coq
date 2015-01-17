@@ -537,12 +537,18 @@ let in_require : require_obj -> obj =
    if [export = Some true] *)
 
 let require_library_from_dirpath modrefl export =
-  if Lib.is_module_or_modtype () then
-    error "Require is not allowed inside a module or a module type";
   let needed, contents = List.fold_left rec_intern_library ([], DPMap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPMap.find dir contents) needed in
   let modrefl = List.map fst modrefl in
-  add_anonymous_leaf (in_require (needed,modrefl,export));
+    if Lib.is_module_or_modtype () then
+      begin
+	add_anonymous_leaf (in_require (needed,modrefl,None));
+	Option.iter (fun exp ->
+	  List.iter (fun dir -> add_anonymous_leaf (in_import(dir,exp))) modrefl)
+	  export
+      end
+    else
+      add_anonymous_leaf (in_require (needed,modrefl,export));
   add_frozen_state ()
 
 let require_library qidl export =
@@ -550,11 +556,15 @@ let require_library qidl export =
     require_library_from_dirpath modrefl export
 
 let require_library_from_file idopt file export =
-  if Lib.is_module_or_modtype () then
-    error "Require is not allowed inside a module or a module type";
   let modref,needed = rec_intern_library_from_file idopt file in
   let needed = List.rev_map snd needed in
-  add_anonymous_leaf (in_require (needed,[modref],export));
+  if Lib.is_module_or_modtype () then begin
+    add_anonymous_leaf (in_require (needed,[modref],None));
+    Option.iter (fun exp -> add_anonymous_leaf (in_import (modref,exp)))
+      export
+  end
+  else
+    add_anonymous_leaf (in_require (needed,[modref],export));
   add_frozen_state ()
 
 (* the function called by Vernacentries.vernac_import *)

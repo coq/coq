@@ -85,6 +85,9 @@ open Declarations
  - [type_in_type] : does the universe hierarchy collapse?
  - [required] : names and digests of Require'd libraries since big-bang.
       This field will only grow
+ - [loads] : list of libraries Require'd inside the current module.
+      They will be propagated to the upper module level when
+      the current module ends.
  - [local_retroknowledge]
 
 *)
@@ -121,6 +124,7 @@ type safe_environment =
     engagement : engagement option;
     type_in_type : bool;
     required : vodigest DPMap.t;
+    loads : (module_path * module_body) list;
     local_retroknowledge : Retroknowledge.action list }
 
 and modvariant =
@@ -149,6 +153,7 @@ let empty_environment =
     engagement = None;
     type_in_type = false;
     required = DPMap.empty;
+    loads = [];
     local_retroknowledge = [] }
 
 let is_initial senv =
@@ -284,7 +289,8 @@ let check_empty_context senv =
     it must have been freshly started *)
 
 let check_empty_struct senv =
-  assert (List.is_empty senv.revstruct)
+  assert (List.is_empty senv.revstruct
+          && List.is_empty senv.loads)
 
 (** When starting a library, the current environment should be initial
     i.e. only composed of Require's *)
@@ -559,6 +565,12 @@ let add_module_parameter mbid mte inl senv =
 let functorize params init =
   List.fold_left (fun e (mbid,mt) -> MoreFunctor(mbid,mt,e)) init params
 
+let propagate_loads senv =
+  List.fold_left
+    (fun env (_,mb) -> full_add_module mb env)
+    senv
+    (List.rev senv.loads)
+
 (** Build the module body of the current module, taking in account
     a possible return type (_:T) *)
 
@@ -603,6 +615,7 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     (* engagement is propagated to the upper level *)
     engagement = senv.engagement;
     required = senv.required;
+    loads = senv.loads@oldsenv.loads;
     local_retroknowledge =
             senv.local_retroknowledge@oldsenv.local_retroknowledge }
 
@@ -616,7 +629,7 @@ let end_module l restype senv =
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
   let newenv = set_engagement_opt newenv senv.engagement in
   let senv'=
-    { senv with
+    propagate_loads { senv with
       env = newenv;
       univ = Univ.Constraint.union senv.univ mb.mod_constraints} in
   let newenv = Environ.add_constraints mb.mod_constraints senv'.env in
@@ -646,7 +659,7 @@ let end_modtype l senv =
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
   let newenv = Environ.add_constraints senv.univ newenv in
   let newenv = set_engagement_opt newenv senv.engagement in
-  let senv' = {senv with env=newenv} in
+  let senv' = propagate_loads {senv with env=newenv} in
   let auto_tb = functorize params (NoFunctor (List.rev senv.revstruct)) in
   let mtb = build_mtb mp auto_tb senv'.univ senv.modresolver in
   let newenv = Environ.add_modtype mtb senv'.env in
@@ -785,7 +798,8 @@ let import lib cst vodigest senv =
        in
        Modops.add_linked_module mb linkinfo env);
     modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;
-    required = DPMap.add lib.comp_name vodigest senv.required }
+    required = DPMap.add lib.comp_name vodigest senv.required;
+    loads = (mp,mb)::senv.loads }
 
 (** {6 Safe typing } *)
 
@@ -828,6 +842,27 @@ let register_inline kn senv =
   { senv with env = env_of_pre_env env }
 
 let add_constraints c = add_constraints (Now c)
+
+
+(* NB: The next old comment probably refers to [propagate_loads] above.
+   When a Require is done inside a module, we'll redo this require
+   at the upper level after the module is ended, and so on.
+   This is probably not a big deal anyway, since these Require's
+   inside modules should be pretty rare. Maybe someday we could
+   brutally forbid this tricky "feature"... *)
+
+(* we have an inefficiency: Since loaded files are added to the
+environment every time a module is closed, their components are
+calculated many times. This could be avoided in several ways:
+
+1 - for each file create a dummy environment containing only this
+file's components, merge this environment with the global
+environment, and store for the future (instead of just its type)
+
+2 - create "persistent modules" environment table in Environ add put
+loaded by side-effect once and for all (like it is done in OCaml).
+Would this be correct with respect to undo's and stuff ?
+*)
 
 let set_strategy e k l = { e with env =
    (Environ.set_oracle e.env
