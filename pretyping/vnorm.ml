@@ -195,7 +195,7 @@ and nf_stk env c t stk  =
       let pT =
 	hnf_prod_applist env (type_of_ind env (ind,u)) (Array.to_list params) in
       let pT = whd_betadeltaiota env pT in
-      let dep, p = nf_predicate env ind mip params (type_of_switch sw) pT in
+      let dep, p = nf_predicate env (ind,u) mip params (type_of_switch sw) pT in
       (* Calcul du type des branches *)
       let btypes = build_branches_type env ind mib mip u params dep p in
       (* calcul des branches *)
@@ -226,7 +226,7 @@ and nf_predicate env ind mip params v pT =
       let n = mip.mind_nrealargs in
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
       let params = if Int.equal n 0 then params else Array.map (lift n) params in
-      let dom = mkApp(mkInd ind,Array.append params rargs) in
+      let dom = mkApp(mkIndU ind,Array.append params rargs) in
       let body = nf_vtype (push_rel (name,None,dom) env) vb in
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_val env v crazy_type
