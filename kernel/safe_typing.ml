@@ -497,7 +497,9 @@ let add_modtype l params_mte inl senv =
 
 let full_add_module mb senv =
   let senv = add_constraints (Now mb.mod_constraints) senv in
-  { senv with env = Modops.add_module mb senv.env }
+  let dp = ModPath.dp mb.mod_mp in
+  let linkinfo = Nativecode.link_info_of_dirpath dp in
+  { senv with env = Modops.add_linked_module mb linkinfo senv.env }
 
 let full_add_module_type mp mt senv =
   let senv = add_constraints (Now mt.mod_constraints) senv in
