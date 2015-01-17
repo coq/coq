@@ -465,7 +465,7 @@ let rec_intern_by_filename_only id f =
     m.library_name, needed
 
 let native_name_from_filename f =
-  let paths = Loadpath.get_paths () in
+  let _paths = Loadpath.get_paths () in
   let ch = System.with_magic_number_check raw_intern_library f in
   let (lmd : seg_lib), pos, digest_lmd = System.marshal_in_segment f ch in
   Nativecode.mod_uid_of_dirpath lmd.md_name
