@@ -8,8 +8,8 @@
 
 \begin{flushleft}
   \em The status of Universe Polymorphism is experimental. Some features
-  are not compatible with it (yet): native compilation and bytecode
-  compilation do not handle polymorphic definitions.
+  are not compatible with it (yet): bytecode compilation does not handle
+  polymorphic definitions, it treats them as opaque constants.
 \end{flushleft}
 
 This section describes the universe polymorphic extension of Coq.
@@ -126,7 +126,7 @@ producing global universe constraints, one can use the
   variable will both get parameterized by the universes produced by the 
   variable declaration. This is in contrast to a ``mononorphic'' variable
   which introduces global universes, making the two definitions depend on
-  the \emph{same} universes associated to the variable.
+  the \emph{same} global universes associated to the variable.
 \item \texttt{Hint \{Resolve, Rewrite\}} will use the auto/rewrite hint
   polymorphically, not at a single instance.
 \end{itemize}
@@ -150,6 +150,31 @@ the terms are unfolded. This change implies that conversion and
 unification can have different unfolding behaviors on the same
 development with universe polymorphism switched on or off.
 
+\asection{Minimization}
+
+Universe polymorphism with cumulativity tends to generate many useless
+inclusion constraints in general. Typically at each application of a
+polymorphic constant $f$, if an argument has expected type
+\verb|Type@{i}| and is given a term of type \verb|Type@{j}|, a $j \le i$
+constraint will be generated. It is however often the case that an
+equation $j = i$ would be more appropriate, when $f$'s
+universes are fresh for example. Consider the following example:
+
+\begin{coq_eval}
+Set Printing Universes.
+\end{coq_eval}
+\begin{coq_example}
+Definition id0 := @pidentity nat 0.
+Print id0.
+\end{coq_example}
+
+This definition is elaborated by minimizing the universe of id to level
+\Set~while the more general definition would keep the fresh level i
+generated at the application of id and a constraint that $\Set \le i$.
+This minimization process is applied only to fresh universe
+variables. It simply adds an equation between the variable and its lower
+bound if it is an atomic universe (i.e. not an algebraic max()).
+
 \asection{Explicit Universes}
 
 \begin{flushleft}
@@ -160,20 +185,52 @@ development with universe polymorphism switched on or off.
 The syntax has been extended to allow users to explicitely bind names to
 universes and explicitely instantantiate polymorphic
 definitions. Currently, binding is implicit at the first occurrence of a 
-universe name. For example below, i and j are introduced by the
+universe name. For example, i and j below are introduced by the
 annotations attached to Types. 
 
 \begin{coq_example*}
 Polymorphic Definition le (A : Type@{i}) : Type@{j} := A.
 \end{coq_example*}
-
-Definitions can also be instantiated explicitely:
 \begin{coq_example}
-Check (pidentity@{Set}).
-Check (le@{Type Set}).
+Print le.
 \end{coq_example}
 
-User-named universes are considered rigid for unification.
+During refinement we find that $j$ must be larger or equal than $i$, as
+we are using $A : Type@{i} <= Type@{j}$, hence the generated
+constraint. Note that the names here are not bound in the final
+definition, they just allow to specify locally what relations should
+hold. In the term and in general in proof mode, universe names
+introduced in the types can be refered to in terms.
+
+Definitions can also be instantiated explicitely, giving their full instance:
+\begin{coq_example}
+Check (pidentity@{Set}).
+Check (le@{i j}).
+\end{coq_example}
+
+User-named universes are considered rigid for unification and are never
+miminimized.
+
+Finally, two commands allow to name \emph{global} universes and constraints.
+
+\subsection{\tt Universe {\ident}.
+  \comindex{Universe}
+  \label{UniverseCmd}}
+
+This command declare a new global universe named {\ident}.
+
+\subsection{\tt Constraint {\ident} {\textit{ord}} {\ident}.
+  \comindex{Constraint}
+  \label{ConstraintCmd}}
+
+This command declare a new constraint between named universes. 
+The order relation can be one of $<$, $<=$ or $=$. If consistent, 
+the constraint is then enforced in the global environment.
+
+\begin{ErrMsgs}
+\item \errindex{Undeclared universe {\ident}}.
+\item \errindex{Universe inconsistency}
+\end{ErrMsgs}
 
 %%% Local Variables: 
 %%% mode: latex
