@@ -343,8 +343,8 @@ end
 module LSet = struct
   include LMap.Set
 
-  let pr s =
-    str"{" ++ prlist_with_sep spc Level.pr (elements s) ++ str"}"
+  let pr prl s =
+    str"{" ++ prlist_with_sep spc prl (elements s) ++ str"}"
 
   let of_array l =
     Array.fold_left (fun acc x -> add x acc) empty l
@@ -1265,10 +1265,10 @@ struct
   module S = Set.Make(UConstraintOrd)
   include S
 
-  let pr c =
+  let pr prl c =
     fold (fun (u1,op,u2) pp_std ->
-      pp_std ++  Level.pr u1 ++ pr_constraint_type op ++
-	Level.pr u2 ++ fnl () )  c (str "")
+      pp_std ++ prl u1 ++ pr_constraint_type op ++
+	prl u2 ++ fnl () )  c (str "")
 
 end
 
@@ -1641,7 +1641,7 @@ module Instance : sig
 
     val subst_fn : universe_level_subst_fn -> t -> t
     
-    val pr : t -> Pp.std_ppcmds
+    val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
     val levels : t -> LSet.t
     val check_eq : t check_function 
 end = 
@@ -1718,7 +1718,7 @@ struct
   let levels x = LSet.of_array x
 
   let pr =
-    prvect_with_sep spc Level.pr
+    prvect_with_sep spc
 
   let equal t u = 
     t == u ||
@@ -1764,9 +1764,9 @@ struct
   let empty = (Instance.empty, Constraint.empty)
   let is_empty (univs, cst) = Instance.is_empty univs && Constraint.is_empty cst
 
-  let pr (univs, cst as ctx) =
+  let pr prl (univs, cst as ctx) =
     if is_empty ctx then mt() else
-      Instance.pr univs ++ str " |= " ++ v 0 (Constraint.pr cst)
+      Instance.pr prl univs ++ str " |= " ++ v 0 (Constraint.pr prl cst)
 
   let hcons (univs, cst) =
     (Instance.hcons univs, hcons_constraints cst)
@@ -1832,9 +1832,9 @@ struct
   let of_context (ctx, cst) =
     (Instance.levels ctx, cst)
 
-  let pr (univs, cst as ctx) =
+  let pr prl (univs, cst as ctx) =
     if is_empty ctx then mt() else
-      LSet.pr univs ++ str " |= " ++ v 0 (Constraint.pr cst)
+      LSet.pr prl univs ++ str " |= " ++ v 0 (Constraint.pr prl cst)
 
   let constraints (univs, cst) = cst
   let levels (univs, cst) = univs
@@ -1983,7 +1983,7 @@ let abstract_universes poly ctx =
 
 (** Pretty-printing *)
 
-let pr_arc = function
+let pr_arc prl = function
   | _, Canonical {univ=u; lt=[]; le=[]} ->
       mt ()
   | _, Canonical {univ=u; lt=lt; le=le} ->
@@ -1991,20 +1991,20 @@ let pr_arc = function
       | [], _ | _, [] -> mt ()
       | _ -> spc ()
       in
-      Level.pr u ++ str " " ++
+      prl u ++ str " " ++
       v 0
-        (pr_sequence (fun v -> str "< " ++ Level.pr v) lt ++
+        (pr_sequence (fun v -> str "< " ++ prl v) lt ++
 	 opt_sep ++
-         pr_sequence (fun v -> str "<= " ++ Level.pr v) le) ++
+         pr_sequence (fun v -> str "<= " ++ prl v) le) ++
       fnl ()
   | u, Equiv v ->
-      Level.pr u  ++ str " = " ++ Level.pr v ++ fnl ()
+      prl u  ++ str " = " ++ prl v ++ fnl ()
 
-let pr_universes g =
+let pr_universes prl g =
   let graph = UMap.fold (fun u a l -> (u,a)::l) g [] in
-  prlist pr_arc graph
+  prlist (pr_arc prl) graph
 
-let pr_constraints = Constraint.pr
+let pr_constraints prl = Constraint.pr prl
 
 let pr_universe_context = UContext.pr
 
@@ -2049,21 +2049,22 @@ let hcons_universe_context_set (v, c) =
 
 let hcons_univ x = Universe.hcons x
 
-let explain_universe_inconsistency (o,u,v,p) =
-    let pr_rel = function
-      | Eq -> str"=" | Lt -> str"<" | Le -> str"<=" 
-    in
-    let reason = match p with
-      | None | Some [] -> mt()
-      | Some p ->
-	str " because" ++ spc() ++ pr_uni v ++
-	  prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ pr_uni v)
-	  p ++
-	  (if Universe.equal (snd (List.last p)) u then mt() else
-	      (spc() ++ str "= " ++ pr_uni u)) 
-    in
-      str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
-        pr_rel o ++ spc() ++ pr_uni v ++ reason ++ str")"
+let explain_universe_inconsistency prl (o,u,v,p) =
+  let pr_uni = Universe.pr_with prl in
+  let pr_rel = function
+    | Eq -> str"=" | Lt -> str"<" | Le -> str"<=" 
+  in
+  let reason = match p with
+    | None | Some [] -> mt()
+    | Some p ->
+      str " because" ++ spc() ++ pr_uni v ++
+	prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ pr_uni v)
+	p ++
+	(if Universe.equal (snd (List.last p)) u then mt() else
+	    (spc() ++ str "= " ++ pr_uni u)) 
+  in
+    str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
+      pr_rel o ++ spc() ++ pr_uni v ++ reason ++ str")"
 
 let compare_levels = Level.compare
 let eq_levels = Level.equal

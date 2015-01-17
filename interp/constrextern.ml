@@ -956,7 +956,7 @@ let extern_type goal_concl_style env sigma t =
   let r = Detyping.detype goal_concl_style avoid env sigma t in
   extern_glob_type (vars_of_env env) r
 
-let extern_sort s = extern_glob_sort (detype_sort s)
+let extern_sort sigma s = extern_glob_sort (detype_sort sigma s)
 
 let extern_closed_glob ?lax goal_concl_style env sigma t =
   let avoid = if goal_concl_style then ids_of_context env else [] in

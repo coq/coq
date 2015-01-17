@@ -49,7 +49,7 @@ module LSet :
 sig 
   include CSig.SetS with type elt = universe_level
 	      
-  val pr : t -> Pp.std_ppcmds
+  val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
   (** Pretty-printing *)
 end
 
@@ -292,7 +292,7 @@ sig
   val subst_fn : universe_level_subst_fn -> t -> t
   (** Substitution by a level-to-level function. *)
 
-  val pr : t -> Pp.std_ppcmds
+  val pr : (Level.t -> Pp.std_ppcmds) -> t -> Pp.std_ppcmds
   (** Pretty-printing, no comments *)
 
   val levels : t -> LSet.t
@@ -413,14 +413,16 @@ val instantiate_univ_constraints : universe_instance -> universe_context -> cons
 
 (** {6 Pretty-printing of universes. } *)
 
-val pr_universes : universes -> Pp.std_ppcmds
+val pr_universes : (Level.t -> Pp.std_ppcmds) -> universes -> Pp.std_ppcmds
 val pr_constraint_type : constraint_type -> Pp.std_ppcmds
-val pr_constraints : constraints -> Pp.std_ppcmds
-val pr_universe_context : universe_context -> Pp.std_ppcmds
-val pr_universe_context_set : universe_context_set -> Pp.std_ppcmds
+val pr_constraints : (Level.t -> Pp.std_ppcmds) -> constraints -> Pp.std_ppcmds
+val pr_universe_context : (Level.t -> Pp.std_ppcmds) -> universe_context -> Pp.std_ppcmds
+val pr_universe_context_set : (Level.t -> Pp.std_ppcmds) -> universe_context_set -> Pp.std_ppcmds
+val explain_universe_inconsistency : (Level.t -> Pp.std_ppcmds) -> 
+  univ_inconsistency -> Pp.std_ppcmds
+
 val pr_universe_level_subst : universe_level_subst -> Pp.std_ppcmds
 val pr_universe_subst : universe_subst -> Pp.std_ppcmds
-val explain_universe_inconsistency : univ_inconsistency -> Pp.std_ppcmds
 
 (** {6 Dumping to a file } *)
 

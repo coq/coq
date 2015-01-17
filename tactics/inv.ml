@@ -478,7 +478,7 @@ let wrap_inv_error id = function (e, info) -> match e with
       Proofview.tclENV >>= fun env ->
       tclZEROMSG (
 	(strbrk "Inversion would require case analysis on sort " ++
-	pr_sort k ++
+	pr_sort Evd.empty k ++
 	strbrk " which is not allowed for inductive definition " ++
 	pr_inductive env (fst i) ++ str "."))
   | e -> Proofview.tclZERO ~info e

@@ -22,6 +22,9 @@ let global_universes = Summary.ref ~name:"Global universe names"
 let global_universe_names () = !global_universes
 let set_global_universe_names s = global_universes := s
 
+let pr_with_global_universes l = 
+  try Nameops.pr_id (LMap.find l (snd !global_universes))
+  with Not_found -> Level.pr l
 
 type universe_constraint_type = ULe | UEq | ULub
 

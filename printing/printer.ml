@@ -143,17 +143,12 @@ let pr_constr_pattern t =
   let (sigma, env) = get_current_context () in
   pr_constr_pattern_env env sigma t
 
-let pr_sort s = pr_glob_sort (extern_sort s)
+let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
 let _ = Termops.set_print_constr 
   (fun env t -> pr_lconstr_expr (extern_constr ~lax:true false env Evd.empty t))
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
-let pr_univ_cstr (c:Univ.constraints) =
-  if !Detyping.print_universes && not (Univ.Constraint.is_empty c) then
-    fnl()++pr_in_comment (fun c -> v 0 (Univ.pr_constraints c)) c
-  else
-    mt()
 
 (** Term printers resilient to [Nametab] errors *)
 
@@ -216,7 +211,8 @@ let safe_pr_constr t =
 
 let pr_universe_ctx c =
   if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
-    fnl()++pr_in_comment (fun c -> v 0 (Univ.pr_universe_context c)) c
+    fnl()++pr_in_comment (fun c -> v 0 
+      (Univ.pr_universe_context Universes.pr_with_global_universes c)) c
   else
     mt()
 
@@ -229,7 +225,7 @@ let pr_global = pr_global_env Id.Set.empty
 let pr_puniverses f env (c,u) =
   f env c ++ 
   (if !Constrextern.print_universes then
-    str"(*" ++ Univ.Instance.pr u ++ str"*)"
+    str"(*" ++ Univ.Instance.pr Universes.pr_with_global_universes u ++ str"*)"
    else mt ())
 
 let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)

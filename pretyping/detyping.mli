@@ -43,7 +43,7 @@ val detype_case :
   Id.t list -> inductive * case_style * bool list array * bool list ->
     constr option -> constr -> constr array -> glob_constr
 
-val detype_sort : sorts -> glob_sort
+val detype_sort : evar_map -> sorts -> glob_sort
 
 val detype_rel_context : ?lax:bool -> constr option -> Id.t list -> (names_context * env) -> 
   evar_map -> rel_context -> glob_decl list

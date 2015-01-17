@@ -46,7 +46,7 @@ let pr_fix pr_constr ((t,i),(lna,tl,bl)) =
 
 let pr_puniverses p u = 
   if Univ.Instance.is_empty u then p 
-  else p ++ str"(*" ++ Univ.Instance.pr u ++ str"*)"
+  else p ++ str"(*" ++ Univ.Instance.pr Universes.pr_with_global_universes u ++ str"*)"
 
 let rec pr_constr c = match kind_of_term c with
   | Rel n -> str "#"++int n
