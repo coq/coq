@@ -248,10 +248,14 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
               let inferred = keep_hyps env (Idset.union ids_typ ids_def) in
               check declared inferred) lc) in
   let tps = 
-    match proj with
-    | None -> Cemitcodes.from_val (compile_constant_body env def)
-    | Some pb ->
-      Cemitcodes.from_val (compile_constant_body env (Def (Mod_subst.from_val pb.proj_body)))
+    (* FIXME: incompleteness of the bytecode vm: we compile polymorphic 
+       constants like opaque definitions. *)
+    if poly then Cemitcodes.from_val Cemitcodes.BCconstant
+    else
+      match proj with
+      | None -> Cemitcodes.from_val (compile_constant_body env def)
+      | Some pb ->
+	Cemitcodes.from_val (compile_constant_body env (Def (Mod_subst.from_val pb.proj_body)))
   in
   { const_hyps = hyps;
     const_body = def;

@@ -490,7 +490,7 @@ let rec get_allias env (kn,u as p) =
   let cb = lookup_constant kn env in
   let tps = cb.const_body_code in
     (match Cemitcodes.force tps with
-    | BCallias kn' -> get_allias env kn'
+    | BCallias (kn',u') -> get_allias env (kn', Univ.subst_instance_instance u u')
     | _ -> p)
 
 (* Compiling expressions *)
