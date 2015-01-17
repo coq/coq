@@ -394,18 +394,13 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
       let eqnl = detype_eqns constructs constagsl bl in
       GCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
-let detype_sort = function
+let detype_sort sigma = function
   | Prop Null -> GProp
   | Prop Pos -> GSet
   | Type u ->
     GType
       (if !print_universes
-       then 
-	  let _, map = Universes.global_universe_names () in
-	  let pr_level u = 
-	    try Nameops.pr_id (Univ.LMap.find u map) with Not_found -> Univ.Level.pr u
-	  in 
-	    [Pp.string_of_ppcmds (Univ.Universe.pr_with pr_level u)]
+       then [Pp.string_of_ppcmds (Univ.Universe.pr_with (Evd.pr_evd_level sigma) u)]
        else [])
 
 type binder_kind = BProd | BLambda | BLetIn
@@ -416,12 +411,12 @@ type binder_kind = BProd | BLambda | BLetIn
 let detype_anonymous = ref (fun loc n -> anomaly ~label:"detype" (Pp.str "index to an anonymous variable"))
 let set_detype_anonymous f = detype_anonymous := f
 
-let detype_level l =
-  GType (Some (Pp.string_of_ppcmds (Univ.Level.pr l)))
+let detype_level sigma l =
+  GType (Some (Pp.string_of_ppcmds (Evd.pr_evd_level sigma l)))
 
-let detype_instance l = 
+let detype_instance sigma l = 
   if Univ.Instance.is_empty l then None
-  else Some (List.map detype_level (Array.to_list (Univ.Instance.to_array l)))
+  else Some (List.map (detype_level sigma) (Array.to_list (Univ.Instance.to_array l)))
 
 let rec detype flags avoid env sigma t =
   match kind_of_term (collapse_appl t) with
@@ -439,7 +434,7 @@ let rec detype flags avoid env sigma t =
     | Var id ->
 	(try let _ = Global.lookup_named id in GRef (dl, VarRef id, None)
 	 with Not_found -> GVar (dl, id))
-    | Sort s -> GSort (dl,detype_sort s)
+    | Sort s -> GSort (dl,detype_sort sigma s)
     | Cast (c1,REVERTcast,c2) when not !Flags.raw_print ->
         detype flags avoid env sigma c1
     | Cast (c1,k,c2) ->
@@ -463,7 +458,7 @@ let rec detype flags avoid env sigma t =
       in
 	mkapp (detype flags avoid env sigma f)
 	  (Array.map_to_list (detype flags avoid env sigma) args)
-    | Const (sp,u) -> GRef (dl, ConstRef sp, detype_instance u)
+    | Const (sp,u) -> GRef (dl, ConstRef sp, detype_instance sigma u)
     | Proj (p,c) ->
       let noparams () = 
 	let pb = Environ.lookup_projection p (snd env) in
@@ -521,9 +516,9 @@ let rec detype flags avoid env sigma t =
         GEvar (dl,id,
                List.map (on_snd (detype flags avoid env sigma)) l)
     | Ind (ind_sp,u) ->
-	GRef (dl, IndRef ind_sp, detype_instance u)
+	GRef (dl, IndRef ind_sp, detype_instance sigma u)
     | Construct (cstr_sp,u) ->
-	GRef (dl, ConstructRef cstr_sp, detype_instance u)
+	GRef (dl, ConstructRef cstr_sp, detype_instance sigma u)
     | Case (ci,p,c,bl) ->
 	let comp = computable p (List.length (ci.ci_pp_info.ind_tags)) in
 	detype_case comp (detype flags avoid env sigma)

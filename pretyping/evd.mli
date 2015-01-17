@@ -598,6 +598,7 @@ val pr_evar_map_filter : ?with_univs:bool -> (Evar.t -> evar_info -> bool) ->
   evar_map -> Pp.std_ppcmds
 val pr_metaset : Metaset.t -> Pp.std_ppcmds
 val pr_evar_universe_context : evar_universe_context -> Pp.std_ppcmds
+val pr_evd_level : evar_map -> Univ.Level.t -> Pp.std_ppcmds
 
 (** {5 Deprecated functions} *)
 

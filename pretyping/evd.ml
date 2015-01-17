@@ -275,7 +275,7 @@ end
 
 (* 2nd part used to check consistency on the fly. *)
 type evar_universe_context = 
- { uctx_names : Univ.Level.t UNameMap.t;
+ { uctx_names : Univ.Level.t UNameMap.t * string Univ.LMap.t;
    uctx_local : Univ.universe_context_set; (** The local context of variables *)
     uctx_univ_variables : Universes.universe_opt_subst;
       (** The local universes that are unification variables *)
@@ -288,7 +288,7 @@ type evar_universe_context =
   }
   
 let empty_evar_universe_context = 
-  { uctx_names = UNameMap.empty;
+  { uctx_names = UNameMap.empty, Univ.LMap.empty;
     uctx_local = Univ.ContextSet.empty;
     uctx_univ_variables = Univ.LMap.empty;
     uctx_univ_algebraic = Univ.LSet.empty;
@@ -309,8 +309,9 @@ let union_evar_universe_context ctx ctx' =
   else if is_empty_evar_universe_context ctx' then ctx
   else
     let local = Univ.ContextSet.union ctx.uctx_local ctx'.uctx_local in
-    let names = UNameMap.union ctx.uctx_names ctx'.uctx_names in
-      { uctx_names = names;
+    let names = UNameMap.union (fst ctx.uctx_names) (fst ctx'.uctx_names) in
+    let names_rev = Univ.LMap.union (snd ctx.uctx_names) (snd ctx'.uctx_names) in
+      { uctx_names = (names, names_rev);
 	uctx_local = local;
 	uctx_univ_variables = 
 	  Univ.LMap.subst_union ctx.uctx_univ_variables ctx'.uctx_univ_variables;
@@ -1004,6 +1005,9 @@ let merge_universe_subst evd subst =
 let with_context_set rigid d (a, ctx) = 
   (merge_context_set rigid d ctx, a)
 
+let add_uctx_names s l (names, names_rev) =
+    (UNameMap.add s l names, Univ.LMap.add l s names_rev)
+
 let uctx_new_univ_variable rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
   let u = Universes.new_univ_level (Global.current_dirpath ()) in
@@ -1018,7 +1022,7 @@ let uctx_new_univ_variable rigid name
 	else {uctx with uctx_univ_variables = Univ.LMap.add u None uvars} in
   let names = 
     match name with
-    | Some n -> UNameMap.add n u uctx.uctx_names
+    | Some n -> add_uctx_names n u uctx.uctx_names
     | None -> uctx.uctx_names
   in
     {uctx' with uctx_names = names; uctx_local = ctx';
@@ -1253,11 +1257,10 @@ let nf_constraints =
   else nf_constraints
 
 let universe_of_name evd s = 
-  UNameMap.find s evd.universes.uctx_names
+  UNameMap.find s (fst evd.universes.uctx_names)
 
 let add_universe_name evd s l =
-  let names = evd.universes.uctx_names in
-  let names' = UNameMap.add s l names in
+  let names' = add_uctx_names s l evd.universes.uctx_names in
     {evd with universes = {evd.universes with uctx_names = names'}}
 
 let universes evd = evd.universes.uctx_universes
@@ -1689,11 +1692,23 @@ let evar_dependency_closure n sigma =
 let has_no_evar sigma =
   EvMap.is_empty sigma.defn_evars && EvMap.is_empty sigma.undf_evars
 
+let pr_uctx_level uctx = 
+  let map, map_rev = uctx.uctx_names in 
+    fun l ->
+      try str(Univ.LMap.find l map_rev)
+      with Not_found -> 
+	Universes.pr_with_global_universes l
+
+let pr_evd_level evd = pr_uctx_level evd.universes
+
 let pr_evar_universe_context ctx =
+  let prl = pr_uctx_level ctx in
   if is_empty_evar_universe_context ctx then mt ()
   else
-    (str"UNIVERSES:"++brk(0,1)++ h 0 (Univ.pr_universe_context_set ctx.uctx_local) ++ fnl () ++
-     str"ALGEBRAIC UNIVERSES:"++brk(0,1)++h 0 (Univ.LSet.pr ctx.uctx_univ_algebraic) ++ fnl() ++
+    (str"UNIVERSES:"++brk(0,1)++ 
+       h 0 (Univ.pr_universe_context_set prl ctx.uctx_local) ++ fnl () ++
+     str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
+     h 0 (Univ.LSet.pr prl ctx.uctx_univ_algebraic) ++ fnl() ++
      str"UNDEFINED UNIVERSES:"++brk(0,1)++
        h 0 (Universes.pr_universe_opt_subst ctx.uctx_univ_variables) ++ fnl())
 

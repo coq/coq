@@ -78,7 +78,7 @@ let show_universes () =
   let ctx = Evd.universe_context_set (Evd.nf_constraints sigma) in
   let cstrs = Univ.merge_constraints (Univ.ContextSet.constraints ctx) Univ.empty_universes in
     msg_notice (Evd.pr_evar_universe_context (Evd.evar_universe_context sigma));
-    msg_notice (str"Normalized constraints: " ++ Univ.pr_universes cstrs)
+    msg_notice (str"Normalized constraints: " ++ Univ.pr_universes (Evd.pr_evd_level sigma) cstrs)
 
 let show_prooftree () =
   (* Spiwack: proof tree is currently not working *)
@@ -1604,7 +1604,7 @@ let vernac_print = function
   | PrintUniverses (b, None) ->
     let univ = Global.universes () in
     let univ = if b then Univ.sort_universes univ else univ in
-    msg_notice (Univ.pr_universes univ)
+    msg_notice (Univ.pr_universes Universes.pr_with_global_universes univ)
   | PrintUniverses (b, Some s) -> dump_universes b s
   | PrintHint r -> msg_notice (Hints.pr_hint_ref (smart_global r))
   | PrintHintGoal -> msg_notice (Hints.pr_applicable_hint ())

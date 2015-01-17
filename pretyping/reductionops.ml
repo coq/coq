@@ -306,7 +306,8 @@ struct
       match c with
       | Cst_const (c, u) ->
 	if Univ.Instance.is_empty u then Constant.print c
-	else str"(" ++ Constant.print c ++ str ", " ++ Univ.Instance.pr u ++ str")"
+	else str"(" ++ Constant.print c ++ str ", " ++ 
+	  Univ.Instance.pr Univ.Level.pr u ++ str")"
       | Cst_proj p ->
 	str".(" ++ Constant.print (Projection.constant p) ++ str")"
 

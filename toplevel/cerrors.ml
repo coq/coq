@@ -62,7 +62,8 @@ let process_vernac_interp_error exn = match fst exn with
   | Univ.UniverseInconsistency i ->
     let msg =
       if !Constrextern.print_universes then
-	str "." ++ spc() ++ Univ.explain_universe_inconsistency i
+	str "." ++ spc() ++ 
+	  Univ.explain_universe_inconsistency Universes.pr_with_global_universes i
       else
 	mt() in
     wrap_vernac_error exn (str "Universe inconsistency" ++ msg ++ str ".")
