@@ -234,7 +234,7 @@ let reduction_of_red_expr env =
 	 with Not_found ->
 	   error("unknown user-defined reduction \""^s^"\"")))
   | CbvVm o -> (contextualize cbv_vm cbv_vm o, VMcast)
-  | CbvNative o -> (contextualize cbv_native cbv_native o, VMcast)
+  | CbvNative o -> (contextualize cbv_native cbv_native o, NATIVEcast)
   in
     reduction_of_red_expr
 
