@@ -555,8 +555,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
         | LetIn (na,b1,t1,c'1), LetIn (_,b2,t2,c'2) ->
         let f1 i =
           ise_and i
-	    [(fun i -> evar_conv_x ts env i CONV t1 t2);
-	     (fun i -> evar_conv_x ts env i CONV b1 b2);
+	    [(fun i -> evar_conv_x ts env i CONV b1 b2);
 	     (fun i ->
 	       let b = nf_evar i b1 in
 	       let t = nf_evar i t1 in
