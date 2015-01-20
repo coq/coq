@@ -370,6 +370,11 @@ type coq_pair =
   | Paccu of t
   | PPair of t * t
 
+type coq_zn2z =
+  | Zaccu of t
+  | ZW0
+  | ZWW of t * t
+
 let mkCarry b i =
   if b then (Obj.magic (C1(of_uint i)):t)
   else (Obj.magic (C0(of_uint i)):t)
@@ -413,8 +418,13 @@ let subcarryc accu x y =
 let of_pair (x, y) =
   (Obj.magic (PPair(of_uint x, of_uint y)):t)
 
+let zn2z_of_pair (x,y) =
+  if Uint31.equal x (Uint31.of_uint 0) &&
+    Uint31.equal y (Uint31.of_uint 0) then Obj.magic ZW0
+  else (Obj.magic (ZWW(of_uint x, of_uint y)) : t)
+
 let no_check_mulc x y =
-    of_pair(Uint31.mulc (to_uint x) (to_uint y))
+  zn2z_of_pair(Uint31.mulc (to_uint x) (to_uint y))
 
 let mulc accu x y =
   if is_int x && is_int y then no_check_mulc x y
