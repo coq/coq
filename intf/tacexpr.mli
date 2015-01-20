@@ -101,6 +101,11 @@ type ml_tactic_name = {
   mltac_tactic : string;
 }
 
+type ml_tactic_entry = {
+  mltac_name : ml_tactic_name;
+  mltac_index : int;
+}
+
 (** Composite types *)
 
 (** In globalize tactics, we need to keep the initial [constr_expr] to recompute
@@ -287,7 +292,7 @@ and 'a gen_tactic_expr =
   | TacFun of 'a gen_tactic_fun_ast
   | TacArg of 'a gen_tactic_arg located
   (* For ML extensions *)
-  | TacML of Loc.t * ml_tactic_name * 'l generic_argument list
+  | TacML of Loc.t * ml_tactic_entry * 'l generic_argument list
   (* For syntax extensions *)
   | TacAlias of Loc.t * KerName.t * (Id.t * 'l generic_argument) list
 

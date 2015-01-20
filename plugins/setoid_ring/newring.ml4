@@ -143,6 +143,10 @@ let closed_term_ast l =
     mltac_plugin = "newring_plugin";
     mltac_tactic = "closed_term";
   } in
+  let tacname = {
+    mltac_name = tacname;
+    mltac_index = 0;
+  } in
   let l = List.map (fun gr -> ArgArg(Loc.ghost,gr)) l in
   TacFun([Some(Id.of_string"t")],
   TacML(Loc.ghost,tacname,

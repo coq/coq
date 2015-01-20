@@ -186,6 +186,7 @@ let declare_tactic loc s c cl = match cl with
   let vars = mlexpr_of_list (mlexpr_of_option mlexpr_of_ident) vars in
   let entry = mlexpr_of_string s in
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
+  let ml = <:expr< { Tacexpr.mltac_name = $se$; Tacexpr.mltac_index = 0 } >> in
   let name = mlexpr_of_string name in
   let tac =
     (** Special handling of tactics without arguments: such tactics do not do
@@ -200,7 +201,7 @@ let declare_tactic loc s c cl = match cl with
   (** Arguments are not passed directly to the ML tactic in the TacML node,
       the ML tactic retrieves its arguments in the [ist] environment instead.
       This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
-  let body = <:expr< Tacexpr.TacFun ($vars$, Tacexpr.TacML ($dloc$, $se$, [])) >> in
+  let body = <:expr< Tacexpr.TacFun ($vars$, Tacexpr.TacML ($dloc$, $ml$, [])) >> in
   let name = <:expr< Names.Id.of_string $name$ >> in
   declare_str_items loc
     [ <:str_item< do {

@@ -137,13 +137,15 @@ type ml_tactic_grammar_obj = {
 (** ML tactic notations whose use can be restricted to an identifier are added
     as true Ltac entries. *)
 let extend_atomic_tactic name entries =
-  let add_atomic (id, args) = match args with
+  let add_atomic i (id, args) = match args with
   | None -> ()
   | Some args ->
-    let body = Tacexpr.TacML (Loc.ghost, name, args) in
+    let open Tacexpr in
+    let entry = { mltac_name = name; mltac_index = i } in
+    let body = TacML (Loc.ghost, entry, args) in
     Tacenv.register_ltac false false (Names.Id.of_string id) body
   in
-  List.iter add_atomic entries
+  List.iteri add_atomic entries
 
 let cache_ml_tactic_notation (_, obj) =
   extend_ml_tactic_grammar obj.mltacobj_name obj.mltacobj_prod

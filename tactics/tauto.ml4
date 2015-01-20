@@ -159,6 +159,7 @@ let flatten_contravariant_conj flags ist =
 
 let constructor i =
   let name = { Tacexpr.mltac_plugin = "coretactics"; mltac_tactic = "constructor" } in
+  let name = { Tacexpr.mltac_name = name; mltac_index = 0 } in
   let i = in_gen (rawwit Constrarg.wit_int_or_var) (Misctypes.ArgArg i) in
   Tacexpr.TacML (Loc.ghost, name, [i])
 

@@ -1250,7 +1250,7 @@ module Make
             | TacArg (_,a) ->
               pr_tacarg a, latom
             | TacML (loc,s,l) ->
-              pr_with_comments loc (pr.pr_extend 1 s l), lcall
+              pr_with_comments loc (pr.pr_extend 1 s.mltac_name l), lcall
             | TacAlias (loc,kn,l) ->
               pr_with_comments loc (pr.pr_alias (level_of inherited) kn (List.map snd l)), latom
           )

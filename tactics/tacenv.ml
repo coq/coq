@@ -58,7 +58,7 @@ let register_ml_tactic ?(overwrite = false) s (t : ml_tactic) =
   in
   tac_tab := MLTacMap.add s t !tac_tab
 
-let interp_ml_tactic s =
+let interp_ml_tactic { mltac_name = s } =
   try
     MLTacMap.find s !tac_tab
   with Not_found ->
