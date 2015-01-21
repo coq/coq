@@ -1014,20 +1014,28 @@ the relations between homotopy theory and type theory.
 {\Coq} 8.5 also comes with a bunch of many various smaller-scale changes
 and improvements regarding the different components of the system.
 
-% High-Level Specification Language: 
-% - tactics in terms
-% - Universe inconsistency and unification error messages
-% - Named existentials
-
-% Opam Coq Guillaume Claret and Thomas Braibant 
-
 Maxime Dénès and Benjamin Grégoire developed an implementation of the
 conversion test using the OCaml native compiler.
 
 Maxime Dénès maintained the bytecode-based reduction machine.
 
+Pierre-Marie Pédrot has extended the syntax of terms to,
+experimentally, allow holes in terms to be solved by a locally
+specified tactic.
+
+Existential variables are referred to by identifiers rather than mere
+numbers, thanks to Hugo Herbelin.
+
+Error messages for universe inconsistencies have been improved by
+Matthieu Sozeau. Error messages for unification and type inference
+failures have been improved by Hugo Herbelin, Pierre-Marie Pédrot and
+Arnaud Spiwack.
+
 Pierre Courtieu contributed new features for using {\Coq} through Proof
 General and for better interactive experience (bullets, Search etc).
+
+A distribution channel for Coq packages using the Opam tool has been
+developed by Thomas Braibant and Guillaume Claret.
 
 \begin{flushright}
 Paris, January 2015\\
