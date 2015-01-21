@@ -950,9 +950,18 @@ projects:
   Matthieu Sozeau.
 \end{itemize}
 
-The full integration of the proof engine brings to primitive tactics and
-the user level Ltac language deep tactic backtracking and multi-goal
-handling.
+The full integration of the proof engine, by Arnaud Spiwack and
+Pierre-Marie Pédrot, brings to primitive tactics and the user level
+Ltac language dependent subgoals, deep backtracking and multiple goal
+handling, along with miscellaneous features and an improved potential
+for future modifications. Dependent subgoals allow statements in a
+goal to mention the proof of another. Proofs of unsolved subgoals
+appear as existential variables. Primitive backtracking make it
+possible to write a tactic with several possible outcomes which are
+tried successively when subsequent tactics fail. Primitives are also
+available to control the backtracking behavior of tactics. Multiple
+goal handling paves the way for smarter automation tactics. It is
+currently used for simple goal manipulation such as goal reordering.
 
 The way Coq processes a document in batch and interactive mode has
 been redesigned by Enrico Tassi with help from Bruno Barras.  Opaque
