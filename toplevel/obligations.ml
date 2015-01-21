@@ -21,7 +21,7 @@ open Pp
 open Errors
 open Util
 
-let declare_fix_ref = ref (fun _ _ _ _ _ _ -> assert false)
+let declare_fix_ref = ref (fun ?opaque _ _ _ _ _ _ -> assert false)
 let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
 
 let trace s =
@@ -319,6 +319,7 @@ type program_info = {
   prg_kind : definition_kind;
   prg_reduce : constr -> constr;
   prg_hook : unit Lemmas.declaration_hook;
+  prg_opaque : bool;
 }
 
 let assumption_message = Declare.assumption_message
@@ -512,8 +513,9 @@ let declare_definition prg =
   let body, typ = subst_body true prg in
   let nf = Universes.nf_evars_and_universes_opt_subst (fun x -> None)
     (Evd.evar_universe_context_subst prg.prg_ctx) in
+  let opaque = prg.prg_opaque in
   let ce =
-    definition_entry ~types:(nf typ) ~poly:(pi2 prg.prg_kind) 
+    definition_entry ~opaque ~types:(nf typ) ~poly:(pi2 prg.prg_kind)
       ~univs:(Evd.evar_context_universe_context prg.prg_ctx) (nf body)
   in
     progmap_remove prg;
@@ -564,6 +566,7 @@ let declare_mutual_definition l =
   let fixdecls = (Array.of_list (List.map (fun x -> Name x.prg_name) l), arrrec, recvec) in
   let (local,poly,kind) = first.prg_kind in
   let fixnames = first.prg_deps in
+  let opaque = first.prg_opaque in
   let kind = if fixkind != IsCoFixpoint then Fixpoint else CoFixpoint in
   let indexes, fixdecls =
     match fixkind with
@@ -584,7 +587,7 @@ let declare_mutual_definition l =
   in
   (* Declare the recursive definitions *)
   let ctx = Evd.evar_context_universe_context first.prg_ctx in
-  let kns = List.map4 (!declare_fix_ref (local, poly, kind) ctx) 
+  let kns = List.map4 (!declare_fix_ref ~opaque (local, poly, kind) ctx)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter Metasyntax.add_notation_interpretation first.prg_notations;
@@ -640,7 +643,7 @@ let declare_obligation prg obl body ty uctx =
 	    else
 	      Some (TermObl (it_mkLambda_or_LetIn (mkApp (mkConst constant, args)) ctx)) }
 
-let init_prog_info n b t ctx deps fixkind notations obls impls kind reduce hook =
+let init_prog_info ?(opaque = false) n b t ctx deps fixkind notations obls impls kind reduce hook =
   let obls', b = 
     match b with
     | None ->
@@ -664,7 +667,8 @@ let init_prog_info n b t ctx deps fixkind notations obls impls kind reduce hook 
       prg_obligations = (obls', Array.length obls');
       prg_deps = deps; prg_fixkind = fixkind ; prg_notations = notations ;
       prg_implicits = impls; prg_kind = kind; prg_reduce = reduce; 
-      prg_hook = hook; }
+      prg_hook = hook;
+      prg_opaque = opaque; }
 
 let get_prog name =
   let prg_infos = !from_prg in
@@ -976,9 +980,9 @@ let show_term n =
 	    ++ Printer.pr_constr_env (Global.env ()) Evd.empty prg.prg_body)
 
 let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
-    ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ -> ())) obls =
+    ?(reduce=reduce) ?(hook=Lemmas.mk_hook (fun _ _ -> ())) ?(opaque = false) obls =
   let info = str (Id.to_string n) ++ str " has type-checked" in
-  let prg = init_prog_info n term t ctx [] None [] obls implicits kind reduce hook in
+  let prg = init_prog_info ~opaque n term t ctx [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose msg_info (info ++ str ".");
@@ -994,11 +998,11 @@ let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition)
 	| _ -> res)
 
 let add_mutual_definitions l ctx ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
-    ?(hook=Lemmas.mk_hook (fun _ _ -> ())) notations fixkind =
+    ?(hook=Lemmas.mk_hook (fun _ _ -> ())) ?(opaque = false) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
-     let prg = init_prog_info n (Some b) t ctx deps (Some fixkind) 
+     let prg = init_prog_info ~opaque n (Some b) t ctx deps (Some fixkind)
        notations obls imps kind reduce hook 
      in progmap_add n prg) l;
     let _defined =
