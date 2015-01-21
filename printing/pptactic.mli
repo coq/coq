@@ -50,7 +50,7 @@ type pp_tactic = {
   pptac_prods : int * grammar_terminals;
 }
 
-val declare_ml_tactic_pprule : ml_tactic_name -> pp_tactic -> unit
+val declare_ml_tactic_pprule : ml_tactic_name -> pp_tactic array -> unit
 val declare_notation_tactic_pprule : KerName.t -> pp_tactic -> unit
 
 (** The default pretty-printers produce {!Pp.std_ppcmds} that are

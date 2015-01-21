@@ -60,19 +60,19 @@ module type Pp = sig
     (constr_expr -> std_ppcmds) -> (constr_expr -> std_ppcmds) ->
     (tolerability -> raw_tactic_expr -> std_ppcmds) ->
     (constr_expr -> std_ppcmds) -> int ->
-    ml_tactic_name -> raw_generic_argument list -> std_ppcmds
+    ml_tactic_entry -> raw_generic_argument list -> std_ppcmds
 
   val pr_glob_extend:
     (glob_constr_and_expr -> std_ppcmds) -> (glob_constr_and_expr -> std_ppcmds) ->
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
     (glob_constr_pattern_and_expr -> std_ppcmds) -> int ->
-    ml_tactic_name -> glob_generic_argument list -> std_ppcmds
+    ml_tactic_entry -> glob_generic_argument list -> std_ppcmds
 
   val pr_extend :
     (Term.constr -> std_ppcmds) -> (Term.constr -> std_ppcmds) ->
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
     (constr_pattern -> std_ppcmds) -> int ->
-    ml_tactic_name -> typed_generic_argument list -> std_ppcmds
+    ml_tactic_entry -> typed_generic_argument list -> std_ppcmds
 
   val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds
 

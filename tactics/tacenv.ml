@@ -47,7 +47,7 @@ let pr_tacname t =
 
 let tac_tab = ref MLTacMap.empty
 
-let register_ml_tactic ?(overwrite = false) s (t : ml_tactic) =
+let register_ml_tactic ?(overwrite = false) s (t : ml_tactic array) =
   let () =
     if MLTacMap.mem s !tac_tab then
       if overwrite then
@@ -58,9 +58,11 @@ let register_ml_tactic ?(overwrite = false) s (t : ml_tactic) =
   in
   tac_tab := MLTacMap.add s t !tac_tab
 
-let interp_ml_tactic { mltac_name = s } =
+let interp_ml_tactic { mltac_name = s; mltac_index = i } =
   try
-    MLTacMap.find s !tac_tab
+    let tacs = MLTacMap.find s !tac_tab in
+    let () = if Array.length tacs <= i then raise Not_found in
+    tacs.(i)
   with Not_found ->
     Errors.errorlabstrm ""
       (str "The tactic " ++ str (pr_tacname s) ++ str " is not installed.")

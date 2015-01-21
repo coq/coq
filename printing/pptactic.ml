@@ -34,13 +34,14 @@ type pp_tactic = {
 }
 
 (* ML Extensions *)
-let prtac_tab = Hashtbl.create 17
+let prtac_tab : (ml_tactic_name, pp_tactic array) Hashtbl.t =
+  Hashtbl.create 17
 
 (* Tactic notations *)
 let prnotation_tab = Summary.ref ~name:"pptactic-notation" KNmap.empty
 
 let declare_ml_tactic_pprule key pt =
-  Hashtbl.add prtac_tab (key, pt.pptac_args) pt.pptac_prods
+  Hashtbl.add prtac_tab key pt
 
 let declare_notation_tactic_pprule kn pt =
   prnotation_tab := KNmap.add kn pt !prnotation_tab
@@ -414,14 +415,18 @@ module Make
     in
     pr_sequence (fun x -> x) l
 
-  let pr_extend_gen pr_gen lev s l =
+  let pr_extend_gen pr_gen lev { mltac_name = s; mltac_index = i } l =
     try
-      let tags = List.map genarg_tag l in
-      let (lev',pl) = Hashtbl.find prtac_tab (s,tags) in
+      let pp_rules = Hashtbl.find prtac_tab s in
+      let pp = pp_rules.(i) in
+      let (lev', pl) = pp.pptac_prods in
       let p = pr_tacarg_using_rule pr_gen (pl,l) in
       if lev' > lev then surround p else p
     with Not_found ->
-      let name = str s.mltac_plugin ++ str "::" ++ str s.mltac_tactic in
+      let name =
+        str s.mltac_plugin ++ str "::" ++ str s.mltac_tactic ++
+        str "@" ++ int i
+      in
       let args = match l with
         | [] -> mt ()
         | _ -> spc() ++ pr_sequence pr_gen l
@@ -756,7 +761,7 @@ module Make
     pr_reference : 'ref -> std_ppcmds;
     pr_name      : 'nam -> std_ppcmds;
     pr_generic   : 'lev generic_argument -> std_ppcmds;
-    pr_extend    : int -> ml_tactic_name -> 'lev generic_argument list -> std_ppcmds;
+    pr_extend    : int -> ml_tactic_entry -> 'lev generic_argument list -> std_ppcmds;
     pr_alias     : int -> KerName.t -> 'lev generic_argument list -> std_ppcmds;
   }
 
@@ -1250,7 +1255,7 @@ module Make
             | TacArg (_,a) ->
               pr_tacarg a, latom
             | TacML (loc,s,l) ->
-              pr_with_comments loc (pr.pr_extend 1 s.mltac_name l), lcall
+              pr_with_comments loc (pr.pr_extend 1 s l), lcall
             | TacAlias (loc,kn,l) ->
               pr_with_comments loc (pr.pr_alias (level_of inherited) kn (List.map snd l)), latom
           )
