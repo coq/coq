@@ -167,5 +167,5 @@ val do_cofixpoint :
 
 val check_mutuality : Environ.env -> bool -> (Id.t * types) list -> unit
 
-val declare_fix : definition_kind -> Univ.universe_context -> Id.t ->
+val declare_fix : ?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->
   Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference
