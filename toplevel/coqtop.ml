@@ -378,7 +378,7 @@ let schedule_vio_compilation () =
 let get_native_name s =
   (* We ignore even critical errors because this mode has to be super silent *)
   try
-    String.concat Filename.dir_sep [Filename.dirname s;
+    String.concat "/" [Filename.dirname s;
       Nativelib.output_dir; Library.native_name_from_filename s]
   with _ -> ""
 
