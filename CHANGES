@@ -14,15 +14,14 @@ Logic
   parameters, i.e. [@p] is definitionally equal to [λ params r. r.(p)].
   Records with primitive projections have eta-conversion, the
   canonical form being [mkR pars (p1 t) ... (pn t)].
-
 - New universe polymorphism (see reference manual)
 - New option -type-in-type to collapse the universe hierarchy (this makes the
   logic inconsistent).
-- The guard condition for fixpoints is now a bit stricter. Propagation of
-subterm value through pattern matching is restricted according to the return
-predicate. Restores compatibility of Coq's logic with the propositional
-extensionality axiom. May create incompatibilities in recursive programs heavily
-using dependent types.
+- The guard condition for fixpoints is now a bit stricter. Propagation
+  of subterm value through pattern matching is restricted according to
+  the return predicate. Restores compatibility of Coq's logic with the
+  propositional extensionality axiom. May create incompatibilities in
+  recursive programs heavily using dependent types.
 
 Vernacular commands
 
@@ -44,7 +43,7 @@ Vernacular commands
 - Command "Search" has been renamed into "SearchHead". The command
   name "Search" now behaves like former "SearchAbout". The latter name
   is deprecated.
-- "Search" "About" "SearchHead" "SearchRewrite" and "SearchPattern"
+- "Search", "About", "SearchHead", "SearchRewrite" and "SearchPattern"
   now search for hypothesis (of the current goal by default) first.
   They now also support the goal selector prefix to specify another
   goal to search: e.g. "n:Search id". This is also true for
@@ -63,13 +62,13 @@ Vernacular commands
 - New "Refine Instance Mode" option that allows to deactivate the generation of
   obligations in incomplete typeclass instances, raising an error instead.
 - "Collection" command to name sets of section hypotheses.  Named collections
-  can be used in the syntax of "Proof using" to assert with section variables
+  can be used in the syntax of "Proof using" to assert which section variables
   are used in a proof.
 - The "Optimize Proof" command can be placed in the middle of a proof to
-  force the compaction the data structure used to represent the ongoing
-  proof (evar map).  This may result in a lower memory footprint and speed up
+  force the compaction of the data structure used to represent the ongoing
+  proof (evar map). This may result in a lower memory footprint and speed up
   the execution of the following tactics.
-- "Optimize Heap" command to tell the OCaml runtime to performa a major
+- "Optimize Heap" command to tell the OCaml runtime to perform a major
   garbage collection step and heap compaction.
 
 Specification Language
@@ -98,9 +97,9 @@ Tactics
   instantiation information of existential variables is always
   propagated to tactics, removing the need to manually use the
   "instantiate" tactics to mark propagation points.
-  * New tactical (a+b) insert a backtracking point. When (a+b);c fails
+  * New tactical (a+b) inserts a backtracking point. When (a+b);c fails
     during the execution of c, it can backtrack and try b instead of a.
-  * New tactical (once a) removes all the backtracking point from a
+  * New tactical (once a) removes all the backtracking points from a
     (i.e. it selects the first success of a).
   * Tactic "constructor" is now fully backtracking, thus deprecating
     the need of the undocumented "constructor <tac>" syntax which is
