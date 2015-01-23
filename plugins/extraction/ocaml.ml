@@ -634,7 +634,10 @@ and pp_module_type params = function
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
   | MTsig (mp, sign) ->
       push_visible mp params;
-      let l = List.map pp_specif sign in
+      let try_pp_specif x l =
+	try pp_specif x :: l with Failure "empty phrase" -> l
+      in
+      let l = List.fold_right try_pp_specif sign [] in
       pop_visible ();
       str "sig " ++ fnl () ++
       v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++
@@ -707,7 +710,10 @@ and pp_module_expr params = function
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
   | MEstruct (mp, sel) ->
       push_visible mp params;
-      let l = List.map pp_structure_elem sel in
+      let try_pp_structure_elem x l =
+	try pp_structure_elem x :: l with Failure "empty phrase" -> l
+      in
+      let l = List.fold_right try_pp_structure_elem sel [] in
       pop_visible ();
       str "struct " ++ fnl () ++
       v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++

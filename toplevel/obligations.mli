@@ -17,7 +17,7 @@ open Decl_kinds
 open Tacexpr
 
 (** Forward declaration. *)
-val declare_fix_ref : (definition_kind -> Univ.universe_context -> Id.t ->
+val declare_fix_ref : (?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->
   Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference) ref
 
 val declare_definition_ref :
@@ -69,7 +69,7 @@ val add_definition : Names.Id.t -> ?term:Term.constr -> Term.types ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:unit Proofview.tactic ->
   ?reduce:(Term.constr -> Term.constr) ->
-  ?hook:unit Lemmas.declaration_hook -> obligation_info -> progress
+  ?hook:unit Lemmas.declaration_hook -> ?opaque:bool -> obligation_info -> progress
 
 type notations =
     (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
@@ -85,7 +85,7 @@ val add_mutual_definitions :
   ?tactic:unit Proofview.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   ?reduce:(Term.constr -> Term.constr) ->
-  ?hook:unit Lemmas.declaration_hook ->
+  ?hook:unit Lemmas.declaration_hook -> ?opaque:bool ->
   notations ->
   fixpoint_kind -> unit
 

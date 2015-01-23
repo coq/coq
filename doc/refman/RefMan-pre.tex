@@ -939,9 +939,9 @@ projects:
 \begin{itemize}
 \item A new asynchronous evaluation and compilation mode by Enrico
   Tassi with help from Bruno Barras and Carst Tankink.
-\item The full integration of the new proof engine by Arnaud Spiwack
+\item Full integration of the new proof engine by Arnaud Spiwack
   helped by Pierre-Marie Pédrot,
-\item The addition of conversion and reduction based on native compilation
+\item Addition of conversion and reduction based on native compilation
   by Maxime Dénès and Benjamin Grégoire.
 \item Full universe polymorphism for definitions and inductive types by
   Matthieu Sozeau.
@@ -950,28 +950,38 @@ projects:
   Matthieu Sozeau.
 \end{itemize}
 
-The full integration of the proof engine brings to primitive tactics and
-the user level Ltac language deep tactic backtracking and multi-goal
-handling.
+The full integration of the proof engine, by Arnaud Spiwack and
+Pierre-Marie Pédrot, brings to primitive tactics and the user level
+Ltac language dependent subgoals, deep backtracking and multiple goal
+handling, along with miscellaneous features and an improved potential
+for future modifications. Dependent subgoals allow statements in a
+goal to mention the proof of another. Proofs of unsolved subgoals
+appear as existential variables. Primitive backtracking make it
+possible to write a tactic with several possible outcomes which are
+tried successively when subsequent tactics fail. Primitives are also
+available to control the backtracking behavior of tactics. Multiple
+goal handling paves the way for smarter automation tactics. It is
+currently used for simple goal manipulation such as goal reordering.
 
 The way Coq processes a document in batch and interactive mode has
 been redesigned by Enrico Tassi with help from Bruno Barras.  Opaque
 proofs, the text between Proof and Qed, can be processed
 asynchronously, decoupling the checking of definitions and statements
-from the checking of proofs.  In interactive use, this improves the
-reactiveness of the system, since proofs can be processed in the
-background.  Similarly the compilation of a file can be split into two
-phases:  the first one checking only definitions and statements and
-the second one checking proofs.  A file resulting from the first
-phase, .vio extension, can be already Required.  All .vio files can be
-turned into complete .vo files in parallel.  The same infrastructure
-also allows terminating tactics to be run in parallel on a set of
-goals via the \verb=par:= goal selector.
+from the checking of proofs.  It improves the responsiveness of
+interactive development, since proofs can be processed in the
+background.  Similarly compilation of a file can be split into two
+phases: the first one checking only definitions and statements and the
+second one checking proofs.  A file resulting from the first
+phase~--~with the .vio extension~--~can be already Required.  All .vio
+files can be turned into complete .vo files in parallel.  The same
+infrastructure also allows terminating tactics to be run in parallel
+on a set of goals via the \verb=par:= goal selector.
 
-CoqIDE was modified to cope with asynchronous checking of the document.
-Its source code was also made separate from the one of Coq making it no
-more a special user interface and allowing its release cycle to be
-decoupled with the one of Coq.
+CoqIDE was modified to cope with asynchronous checking of the
+document.  Its source code was also made separate from that of Coq, so
+that CoqIDE no longer has a special status among user interfaces,
+paving the way for decoupling its release cycle from that of Coq in
+the future.
 
 Carst Tankink developed a Coq back end for user interfaces built on
 Makarius Wenzel's Prover IDE framework (PIDE), like PIDE/jEdit (with
@@ -982,13 +992,13 @@ funded by the Paral-ITP French ANR project.
 The full universe polymorphism extension was designed by Matthieu
 Sozeau. It conservatively extends the universes system and core calculus
 with definitions and inductive declarations parameterized by universes
-and constraints. It is based on a change of the kernel architecture to
+and constraints. It is based on a modification of the kernel architecture to
 handle constraint checking only, leaving the generation of constraints
 to the refinement/type inference engine. Accordingly, tactics are now
 fully universe aware, resulting in more localized error messages in case
 of inconsistencies and allowing higher-level algorithms like unification
 to be entirely type safe. The internal representation of universes has
-been modified but this invisible to the user. 
+been modified but this is invisible to the user. 
 
 The underlying logic has been extended with $\eta$-conversion for
 records defined with primitive projections by Matthieu Sozeau. This
@@ -999,36 +1009,44 @@ with typed equality. Primitive projections, which do not carry the
 parameters of the record and are rigid names (not defined as a
 pattern-matching construct), make working with nested records more
 manageable in terms of time and space consumption. This extension and
-universe polymorphism were carried partly while the author was working
+universe polymorphism were carried out partly while Matthieu Sozeau was working
 at the IAS in Princeton.
 
 The guard condition has been made compliant with extensional equality
-principles such as propositional equality and univalence, thanks to
+principles such as propositional extensionality and univalence, thanks to
 Maxime Dénès and Bruno Barras. To ensure compatibility with the
 univalence axiom, a new flag ``-indices-matter'' has been implemented, 
 taking into account the universe levels of indices when computing the
 levels of inductive types. This supports using Coq as a tool to explore
 the relations between homotopy theory and type theory.
 
+Maxime Dénès and Benjamin Grégoire developed an implementation of
+conversion test and normal form computation using the OCaml native
+compiler. It complements the virtual machine conversion offering much
+faster computation for expensive functions.
+
 {\Coq} 8.5 also comes with a bunch of many various smaller-scale changes
 and improvements regarding the different components of the system.
 
-% High-Level Specification Language: 
-% - tactics in terms
-% - Universe inconsistency and unification error messages
-% - Named existentials
-
-% Opam Coq Guillaume Claret and Thomas Braibant 
-
-Maxime Dénès and Benjamin Grégoire developed an implementation of the
-conversion test using the OCaml native compiler.
-Bruno Barras and Maxime Dénès fixed a problem in the guard condition
-leading to a refutation of standard axioms like propositional
-extensionality or univalence.
 Maxime Dénès maintained the bytecode-based reduction machine.
+
+Pierre-Marie Pédrot has extended the syntax of terms to,
+experimentally, allow holes in terms to be solved by a locally
+specified tactic.
+
+Existential variables are referred to by identifiers rather than mere
+numbers, thanks to Hugo Herbelin.
+
+Error messages for universe inconsistencies have been improved by
+Matthieu Sozeau. Error messages for unification and type inference
+failures have been improved by Hugo Herbelin, Pierre-Marie Pédrot and
+Arnaud Spiwack.
 
 Pierre Courtieu contributed new features for using {\Coq} through Proof
 General and for better interactive experience (bullets, Search etc).
+
+A distribution channel for Coq packages using the Opam tool has been
+developed by Thomas Braibant and Guillaume Claret.
 
 \begin{flushright}
 Paris, January 2015\\
