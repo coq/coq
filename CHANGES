@@ -109,27 +109,27 @@ Tactics
   * New "multimatch" variant of "match" tactic which backtracks to
     new branches in case of a later failure. The "match" tactic is
     equivalent to "once multimatch".
-  * New selector all: to qualify a tactic allows applying a tactic to
-    all the focused goal, instead of just the first one as is the
+  * New selector "all:" such that "all:tac" applies tactic "tac" to
+    all the focused goals, instead of just the first one as is the
     default.
   * A corresponding new option Set Default Goal Selector "all" makes
     the tactics in scripts be applied to all the focused goal by default
-  * New selector par: to qualify a tactic allows applying a (terminating)
-    tactic to all the focused goal in parallel.  The number of worker can
-    be selected with -async-proofs-tac-j and also limited using the
+  * New selector "par:" such that "par:tac" applies the (terminating)
+    tactic "tac" to all the focused goal in parallel. The number of worker
+    can be selected with -async-proofs-tac-j and also limited using the
     coqworkmgr utility.
   * New tactics "revgoals", "cycle" and "swap" to reorder goals.
-  * The semantics of recursive tactics (introduced with Ltac t :=
-    ... or let rec t := ... in ...) changes slightly as t is now
-    applied to every goal not each goal independently, in particular
-    it may be applied when no goal are left. This may cause tactics
-    such as let rec t := constructor;t to loop indefinitely. The
-    simple fix is to rewrite the recursive calls as follows: let rec t
-    := constructor;[t..] which recovers the earlier behavior (source
-    of rare incompatibilities).
-  * New tactic language feature "numgoals" to count number of goals.
-    Accompanied by "guard" tactic which fails if a Boolean test does
-    not pass.
+  * The semantics of recursive tactics (introduced with "Ltac t := ..."
+    or "let rec t := ... in ...") changed slightly as t is now
+    applied to every goals, not each goal independently. In particular
+    it may be applied when no goals are left. This may cause tactics
+    such as "let rec t := constructor;t" to loop indefinitely. The
+    simple fix is to rewrite the recursive calls as follows:
+    "let rec t := constructor;[t..]" which recovers the earlier behavior
+    (source of rare incompatibilities).
+  * New tactic language feature "numgoals" to count number of goals. It is
+    accompanied by a "guard" tactic which fails if a Boolean test over
+    integers does not pass.
   * New tactical "[> ... ]" to apply tactics to individual goals.
   * New tactic "gfail" which works like "fail" except it will also
     fail if every goal has been solved.
@@ -143,7 +143,7 @@ Tactics
     Unshelve command.
   * A variant shelve_unifiable only removes those goals which appear
     as existential variables in other goals. To emulate the old
-    refine, use (refine c;shelve_unifiable). This can still cause
+    refine, use "refine c;shelve_unifiable". This can still cause
     incompatibilities in rare occasions.
   * New "give_up" tactic to skip over a goal without admitting it.
 - Matching using "lazymatch" was fundamentally modified. It now behaves
@@ -221,15 +221,15 @@ Tactics
   the relevant hypotheses).
 - New construct "uconstr:c" and "type_term c" to build untyped terms.
 - Binders in terms defined in Ltac (either "constr" or "uconstr") can
-  now take their names from identifier defined in Ltac. As a
-  consequence, a name cannot be used in a binder (constr:(fun x =>
-  ...)) if an Ltac variable of that name already exists and does not
+  now take their names from identifiers defined in Ltac. As a
+  consequence, a name cannot be used in a binder "constr:(fun x =>
+  ...)" if an Ltac variable of that name already exists and does not
   contain an identifier. Source of occasional incompatibilities.
 - The "refine" tactic now accepts untyped terms built with "uconstr"
   so that terms with holes can be constructed piecewise in Ltac.
 - New bullets --, ++, **, ---, +++, ***, ... made available.
 - More informative messages when wrong bullet is used.
-- bullet suggestion when a subgoal is solved.
+- Bullet suggestion when a subgoal is solved.
 - New tactic "enough", symmetric to "assert", but with subgoals
   swapped, as a more friendly replacement of "cut".
 - In destruct/induction, experimental modifier "!" prefixing the
@@ -270,9 +270,9 @@ Notations
   (possible source of incompatibilities)
 - Notations accept term-providing tactics using the $(...)$ syntax.
 - "Bind Scope" can no longer bind "Funclass" and "Sortclass".
-- A notation can be given a (compat "8.x") annotation, making
-  it behave like a (only parsing), but flags may active warning
-  or error when this notation is used.
+- A notation can be given a (compat "8.x") annotation, making it behave
+  like a "only parsing" notation, but the annotation may lead to eventually
+  issue warnings or errors in further versions when this notation is used.
 - More systematic insertion of spaces as a default for printing
   notations ("format" still available to override the default).
 - In notations, a level modifier referring to a non-existent variable is
@@ -305,14 +305,14 @@ Interfaces
 - CoqIDE supports asynchronous edition of the document, ongoing tasks and
   errors are reported in the bottom right window.  The number of workers
   taking care of processing proofs can be selected with -async-proofs-j.
-- CoqIDE highlight in yellow "unsafe" commands such as axiom
+- CoqIDE highlights in yellow "unsafe" commands such as axiom
   declarations, and tactics like "admit".
 - CoqIDE supports Proof General like key bindings;
   to activate the PG mode go to Edit -> Preferences -> Editor.
   For the documentation see Help -> Help for PG mode.
 - CoqIDE automatically retracts the locked area when one edits the
   locked text.
-- CoqIDE search and replace got regular expressions power.  See the
+- CoqIDE search and replace got regular expressions power. See the
   documentation of OCaml's Str module for the supported syntax.
 - Many CoqIDE windows, including the query one, are now detachable to
   improve usability on multi screen work stations.
@@ -334,7 +334,7 @@ Internal Infrastructure
   initially does a "Require" of Prelude.vo (or nothing when given
   the options -noinit or -nois).
 - The format of vo files has slightly changed: cf final comments in
-  checker/cic.mli
+  checker/cic.mli.
 - The build system does not produce anymore programs named coqtop.opt
   and a symbolic link to coqtop. Instead, coqtop is now directly
   an executable compiled with the best OCaml compiler available.
