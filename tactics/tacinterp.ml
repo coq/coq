@@ -2349,39 +2349,7 @@ let _ =
     if has_type arg (glbwit wit_tactic) then
       let tac = out_gen (glbwit wit_tactic) arg in
       let tac = interp_tactic ist tac in
-      (** Save the initial side-effects to restore them afterwards. We set the
-          current set of side-effects to be empty so that we can retrieve the
-          ones created during the tactic invocation easily. *)
-      let eff = Evd.eval_side_effects sigma in
-      let sigma = Evd.drop_side_effects sigma in
-      (** Start a proof *)
-      let prf = Proof.start sigma [env, ty] in
-      let (prf, _) =
-        try Proof.run_tactic env tac prf
-        with Logic_monad.TacticFailure e as src ->
-          (** Catch the inner error of the monad tactic *)
-          let (_, info) = Errors.push src in
-          iraise (e, info)
-      in
-      (** Plug back the retrieved sigma *)
-      let sigma = Proof.in_proof prf (fun sigma -> sigma) in
-      let ans = match Proof.initial_goals prf with
-      | [c, _] -> c
-      | _ -> assert false
-      in
-      let ans = Reductionops.nf_evar sigma ans in
-      (** [neff] contains the freshly generated side-effects *)
-      let neff = Evd.eval_side_effects sigma in
-      (** Reset the old side-effects *)
-      let sigma = Evd.drop_side_effects sigma in
-      let sigma = Evd.emit_side_effects eff sigma in
-      (** Get rid of the fresh side-effects by internalizing them in the term
-          itself. Note that this is unsound, because the tactic may have solved
-          other goals that were already present during its invocation, so that
-          those goals rely on effects that are not present anymore. Hopefully,
-          this hack will work in most cases. *)
-      let ans = Term_typing.handle_side_effects env ans neff in
-      ans, sigma
+      Pfedit.refine_by_tactic env sigma ty tac
     else
       failwith "not a tactic"
   in
