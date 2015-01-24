@@ -120,7 +120,7 @@ Tactics
   * New tactics "revgoals", "cycle" and "swap" to reorder goals.
   * The semantics of recursive tactics (introduced with "Ltac t := ..."
     or "let rec t := ... in ...") changed slightly as t is now
-    applied to every goals, not each goal independently. In particular
+    applied to every goal, not each goal independently. In particular
     it may be applied when no goals are left. This may cause tactics
     such as "let rec t := constructor;t" to loop indefinitely. The
     simple fix is to rewrite the recursive calls as follows:
@@ -163,7 +163,9 @@ Tactics
   opposite side, new tactic "dtauto" is able to destruct any
   record-like inductive types, superseding the old version of "tauto".
 - Similarly, "intuition" has been made more uniform and, where it now
-  fails, "dintuition" can be used. (possible source of incompatibilities)
+  fails, "dintuition" can be used (possible source of incompatibilities).
+- New option "Unset Intuition Negation Unfolding" for deactivating automatic
+  unfolding of "not" in intuition.
 - Tactic notations can now be defined locally to a module (use "Local" prefix).
 - Tactic "red" now reduces head beta-iota redexes (potential source of
   rare incompatibilities).
