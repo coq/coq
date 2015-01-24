@@ -137,6 +137,8 @@ val pr_nth_open_subgoal    : int -> std_ppcmds
 val pr_evar                : evar_map -> (evar * evar_info) -> std_ppcmds
 val pr_evars_int           : evar_map -> int -> evar_info Evar.Map.t -> std_ppcmds
 val pr_evars               : evar_map -> evar_info Evar.Map.t -> std_ppcmds
+val pr_ne_evar_set         : std_ppcmds -> std_ppcmds -> evar_map ->
+  Evar.Set.t -> std_ppcmds
 
 val pr_prim_rule           : prim_rule -> std_ppcmds
 

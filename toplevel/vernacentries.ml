@@ -1516,12 +1516,8 @@ let vernac_check_may_eval redexp glopt rc =
         let l = Evar.Set.union (Evd.evars_of_term j.Environ.uj_val) (Evd.evars_of_term j.Environ.uj_type) in
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota sigma' j.Environ.uj_type } in
 	msg_notice (print_judgment env sigma' j ++
-                    (if l != Evar.Set.empty then
-                        let l = Evar.Set.fold (fun ev -> Evar.Map.add ev (Evarutil.nf_evar_info sigma' (Evd.find sigma' ev))) l Evar.Map.empty in
-                        (fnl () ++ str "where" ++ fnl () ++ pr_evars sigma' l)
-                     else
-                        mt ()) ++
-                     Printer.pr_universe_ctx uctx)
+                    pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma' l ++
+                    Printer.pr_universe_ctx uctx)
     | Some r ->
         Tacintern.dump_glob_red_expr r;
         let (sigma',r_interp) = interp_redexp env sigma' r in

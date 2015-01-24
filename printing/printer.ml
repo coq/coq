@@ -446,6 +446,16 @@ let pr_evars_int sigma i evs = pr_evars_int_hd (fun i -> str "Existential " ++ i
 
 let pr_evars sigma evs = pr_evars_int_hd (fun i -> mt ()) sigma 1 (Evar.Map.bindings evs)
 
+(* Display a list of evars given by their name, with a prefix *)
+let pr_ne_evar_set hd tl sigma l =
+  if l != Evar.Set.empty then
+    let l = Evar.Set.fold (fun ev ->
+      Evar.Map.add ev (Evarutil.nf_evar_info sigma (Evd.find sigma ev)))
+      l Evar.Map.empty in
+    hd ++ pr_evars sigma l ++ tl
+  else
+    mt ()
+
 let default_pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> error "No such goal."
