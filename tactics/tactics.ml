@@ -59,22 +59,7 @@ let dloc = Loc.ghost
 
 let typ_of = Retyping.get_type_of
 
-(* Option for 8.4 compatibility *)
 open Goptions
-let legacy_elim_if_not_fully_applied_argument = ref false
-
-let use_legacy_elim_if_not_fully_applied_argument () =
-  !legacy_elim_if_not_fully_applied_argument
-  || Flags.version_less_or_equal Flags.V8_4
-
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "partially applied elimination argument legacy";
-      optkey   = ["Legacy";"Partially";"Applied";"Elimination";"Argument"];
-      optread  = (fun () -> !legacy_elim_if_not_fully_applied_argument) ;
-      optwrite = (fun b -> legacy_elim_if_not_fully_applied_argument := b) }
 
 (* Option for 8.2 compatibility *)
 let dependent_propositions_elimination = ref true
