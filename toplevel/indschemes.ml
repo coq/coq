@@ -85,7 +85,7 @@ let _ =
     { optsync  = true;
       optdepr  = false;
       optname  = "automatic declaration of boolean equality";
-      optkey   = ["Equality";"Schemes"];
+      optkey   = ["Boolean";"Equality";"Schemes"];
       optread  = (fun () -> !eq_flag) ;
       optwrite = (fun b -> eq_flag := b) }
 let _ = (* compatibility *)
