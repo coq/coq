@@ -1929,30 +1929,60 @@ tools. The format is unspecified if {\str} doesn't end in
 \texttt{.dot} or \texttt{.gv}.
 
 \section[Existential variables]{Existential variables\label{ExistentialVariables}}
+\label{evars}
 
-Coq terms can include existential variables. An existential variable
-is a placeholder intended to eventually be replaced by an actual
-subterm though which subterm it will be replaced by is still unknown.
+Coq terms can include existential variables which
+represents unknown subterms to eventually be replaced by actual
+subterms.
 
 Existential variables are generated in place of unsolvable implicit
-arguments when using commands such as \texttt{Check} (see
-Section~\ref{Check}) or in place of unsolvable instances when using
-tactics such as \texttt{eapply} (see Section~\ref{eapply}). They can
-only appear as the result of a command displaying a term and they are
-represented by ``?'' followed by a number. They cannot be entered by
-the user (though they can be generated from ``\_'' when the
-corresponding implicit argument is unsolvable).
+arguments or ``{\tt \_}'' placeholders when using commands such as
+\texttt{Check} (see Section~\ref{Check}) or when using tactics such as
+\texttt{refine}~(see Section~\ref{refine}), as well as in place of unsolvable
+instances when using tactics such that \texttt{eapply} (see
+Section~\ref{eapply}). An existential variable is defined in a
+context, which is the context of variables of the placeholder which
+generated the existential variable, and a type, which is the expected
+type of the placeholder. 
 
-A given existential variable name can occur several times in a term
-meaning the corresponding expected instance is shared. Each
-existential variable is relative to a context, as shown by {\tt Show
-  Existential} when in the process of proving a goal (see
-Section~\ref{ShowExistentials}). Henceforth, each occurrence of an
-existential variable in a term is subject to an instance of the
-variables of its context of definition which is specific to this
-occurrence.
+As a consequence of typing constraints, existential variables can be
+duplicated in such a way that they possibly appear in different
+contexts than their defining context. Thus, any occurrence of a given
+existential variable comes with an instance of its original context. In the
+simple case, when an existential variable denotes the placeholder
+which generated it, or is used in the same context as the one in which
+it was generated, the context is not displayed and the existential
+variable is represented by ``?'' followed by an identifier.
+
+\begin{coq_example}
+Parameter identity : forall (X:Set), X -> X.
+Check identity _ _.
+Check identity _ (fun x => _).
+\end{coq_example}
+
+In the general case, when an existential variable ?{\ident}
+appears outside of its context of definition, its instance, written under
+the form \verb!@{id1:=term1; ...; idn:=termn}!, is appending to its
+name, indicating how the variables of its defining context are
+instantiated.  The variables of the context of the existential
+variables which are instantiated by themselves are not written, unless
+the flag {\tt Printing Existential Instances} is on (see
+Section~\ref{SetPrintingExistentialInstances}), and this is why an
+existential variable used in the same context as its context of
+definition is written with no instance.
+
+\begin{coq_example}
+Check (fun x y => _) 0 1.
+Set Printing Existential Instances.
+Check (fun x y => _) 0 1.
+\end{coq_example}
+
+\begin{coq_eval}
+Unset Printing Existential Instances.
+\end{coq_eval}
 
 \subsection{Explicit displaying of existential instances for pretty-printing
+\label{SetPrintingExistentialInstances}
 \comindex{Set Printing Existential Instances}
 \comindex{Unset Printing Existential Instances}}
 
@@ -1960,10 +1990,11 @@ The command:
 \begin{quote}
 {\tt Set Printing Existential Instances}
 \end{quote}
-activates the display of how the context of an existential variable is
-instantiated on each of its occurrences.
+activates the full display of how the context of an existential variable is
+instantiated at each of the occurrences of the existential variable.
 
-To deactivate the display of the instances of existential variables, use
+To deactivate the full display of the instances of existential
+variables, use
 \begin{quote}
 {\tt Unset Printing Existential Instances.}
 \end{quote}
