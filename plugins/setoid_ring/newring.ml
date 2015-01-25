@@ -30,8 +30,7 @@ open Declare
 open Decl_kinds
 open Entries
 open Misctypes
-
-DECLARE PLUGIN "newring_plugin"
+open Newring_ast
 
 (****************************************************************************)
 (* controlled reduction *)
@@ -105,25 +104,12 @@ let protect_tac_in map id =
   Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id, Locus.InHyp));;
 
 
-TACTIC EXTEND protect_fv
-  [ "protect_fv" string(map) "in" ident(id) ] ->
-    [ Proofview.V82.tactic (protect_tac_in map id) ]
-| [ "protect_fv" string(map) ] ->
-    [ Proofview.V82.tactic (protect_tac map) ]
-END;;
-
 (****************************************************************************)
 
 let closed_term t l =
   let l = List.map Universes.constr_of_global l in
   let cs = List.fold_right Quote.ConstrSet.add l Quote.ConstrSet.empty in
   if Quote.closed_under cs t then tclIDTAC else tclFAIL 0 (mt())
-;;
-
-TACTIC EXTEND closed_term
-  [ "closed_term" constr(t) "[" ne_reference_list(l) "]" ] ->
-    [ Proofview.V82.tactic (closed_term t l) ]
-END
 ;;
 
 (* TACTIC EXTEND echo
@@ -353,20 +339,6 @@ let _ = add_map "ring"
 
 (****************************************************************************)
 (* Ring database *)
-
-type ring_info =
-    { ring_carrier : types;
-      ring_req : constr;
-      ring_setoid : constr;
-      ring_ext : constr;
-      ring_morph : constr;
-      ring_th : constr;
-      ring_cst_tac : glob_tactic_expr;
-      ring_pow_tac : glob_tactic_expr;
-      ring_lemma1 : constr;
-      ring_lemma2 : constr;
-      ring_pre_tac : glob_tactic_expr;
-      ring_post_tac : glob_tactic_expr }
 
 module Cmap = Map.Make(Constr)
 
@@ -599,23 +571,12 @@ let dest_morph env sigma m_spec =
         (c,czero,cone,cadd,cmul,None,None,ceqb,phi)
     | _ -> error "bad morphism structure"
 
-
-type 'constr coeff_spec =
-    Computational of 'constr (* equality test *)
-  | Abstract (* coeffs = Z *)
-  | Morphism of 'constr (* general morphism *)
-
-
 let reflect_coeff rkind =
   (* We build an ill-typed terms on purpose... *)
   match rkind with
       Abstract -> Lazy.force coq_abstract
     | Computational c -> lapp coq_comp [|c|]
     | Morphism m -> lapp coq_morph [|m|]
-
-type cst_tac_spec =
-    CstTac of raw_tactic_expr
-  | Closed of reference list
 
 let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
   match cst_tac with
@@ -720,40 +681,11 @@ let add_theory name (sigma,rth) eqth morphth cst_tac (pre,post) power sign div =
           ring_post_tac = posttac }) in
   ()
 
-type 'constr ring_mod =
-    Ring_kind of 'constr coeff_spec
-  | Const_tac of cst_tac_spec
-  | Pre_tac of raw_tactic_expr
-  | Post_tac of raw_tactic_expr
-  | Setoid of Constrexpr.constr_expr * Constrexpr.constr_expr
-  | Pow_spec of cst_tac_spec * Constrexpr.constr_expr
-           (* Syntaxification tactic , correctness lemma *)
-  | Sign_spec of Constrexpr.constr_expr
-  | Div_spec of Constrexpr.constr_expr
-
-
 let ic_coeff_spec = function
   | Computational t -> Computational (ic_unsafe t)
   | Morphism t -> Morphism (ic_unsafe t)
   | Abstract -> Abstract
 
-
-VERNAC ARGUMENT EXTEND ring_mod
-  | [ "decidable" constr(eq_test) ] -> [ Ring_kind(Computational eq_test) ]
-  | [ "abstract" ] -> [ Ring_kind Abstract ]
-  | [ "morphism" constr(morph) ] -> [ Ring_kind(Morphism morph) ]
-  | [ "constants" "[" tactic(cst_tac) "]" ] -> [ Const_tac(CstTac cst_tac) ]
-  | [ "closed" "[" ne_global_list(l) "]" ] -> [ Const_tac(Closed l) ]
-  | [ "preprocess" "[" tactic(pre) "]" ] -> [ Pre_tac pre ]
-  | [ "postprocess" "[" tactic(post) "]" ] -> [ Post_tac post ]
-  | [ "setoid" constr(sth) constr(ext) ] -> [ Setoid(sth,ext) ]
-  | [ "sign" constr(sign_spec) ] -> [ Sign_spec sign_spec ]
-  | [ "power" constr(pow_spec) "[" ne_global_list(l) "]" ] ->
-           [ Pow_spec (Closed l, pow_spec) ]
-  | [ "power_tac" constr(pow_spec) "[" tactic(cst_tac) "]" ] ->
-           [ Pow_spec (CstTac cst_tac, pow_spec) ]
-  | [ "div" constr(div_spec) ] -> [ Div_spec div_spec ]
-END
 
 let set_once s r v =
   if Option.is_empty !r then r := Some v else error (s^" cannot be set twice")
@@ -778,20 +710,6 @@ let process_ring_mods l =
     | Div_spec t -> set_once "div" div t) l;
   let k = match !kind with Some k -> k | None -> Abstract in
   (k, !set, !cst_tac, !pre, !post, !power, !sign, !div)
-
-VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
-  | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods(l) ] ->
-    [ let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
-      add_theory id (ic t) set k cst (pre,post) power sign div]
-  | [ "Print" "Rings" ] => [Vernac_classifier.classify_as_query] -> [
-    msg_notice (strbrk "The following ring structures have been declared:");
-    Spmap.iter (fun fn fi ->
-      msg_notice (hov 2
-        (Ppconstr.pr_id (Libnames.basename fn)++spc()++
-          str"with carrier "++ pr_constr fi.ring_carrier++spc()++
-          str"and equivalence relation "++ pr_constr fi.ring_req))
-    ) !from_name ]
-END
 
 (*****************************************************************************)
 (* The tactics consist then only in a lookup in the ring database and
@@ -837,13 +755,6 @@ let ring_lookup (f:glob_tactic_expr) lH rl t =
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (ring@[lH;rl]))
     with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
-
-TACTIC EXTEND ring_lookup
-| [ "ring_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lrt) ] ->
-    [ let (t,lr) = List.sep_last lrt in ring_lookup f lH lr t]
-END
-
-
 
 (***********************************************************************)
 
@@ -917,19 +828,6 @@ let dest_field env evd th_spec =
           [|r;zero;one;add;mul;div;inv;req;th_spec|] in
         (Some true,r,zero,one,add,mul,None,None,div,inv,req,rth)
     | _ -> error "bad field structure"
-
-type field_info =
-    { field_carrier : types;
-      field_req : constr;
-      field_cst_tac : glob_tactic_expr;
-      field_pow_tac : glob_tactic_expr;
-      field_ok : constr;
-      field_simpl_eq_ok : constr;
-      field_simpl_ok : constr;
-      field_simpl_eq_in_ok : constr;
-      field_cond : constr;
-      field_pre_tac : glob_tactic_expr;
-      field_post_tac : glob_tactic_expr }
 
 let field_from_carrier = Summary.ref Cmap.empty ~name:"field-tac-carrier-table"
 let field_from_name = Summary.ref Spmap.empty ~name:"field-tac-name-table"
@@ -1077,15 +975,6 @@ let add_field_theory name (sigma,fth) eqth morphth cst_tac inj (pre,post) power 
           field_pre_tac = pretac;
           field_post_tac = posttac }) in  ()
 
-type 'constr field_mod =
-    Ring_mod of 'constr ring_mod
-  | Inject of Constrexpr.constr_expr
-
-VERNAC ARGUMENT EXTEND field_mod
-  | [ ring_mod(m) ] -> [ Ring_mod m ]
-  | [ "completeness" constr(inj) ] -> [ Inject inj ]
-END
-
 let process_field_mods l =
   let kind = ref None in
   let set = ref None in
@@ -1109,21 +998,6 @@ let process_field_mods l =
     | Inject i -> set_once "infinite property" inj (ic_unsafe i)) l;
   let k = match !kind with Some k -> k | None -> Abstract in
   (k, !set, !inj, !cst_tac, !pre, !post, !power, !sign, !div)
-
-VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
-| [ "Add" "Field" ident(id) ":" constr(t) field_mods(l) ] ->
-  [ let (k,set,inj,cst_tac,pre,post,power,sign,div) = process_field_mods l in
-    add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign div]
-| [ "Print" "Fields" ] => [Vernac_classifier.classify_as_query] -> [
-    msg_notice (strbrk "The following field structures have been declared:");
-    Spmap.iter (fun fn fi ->
-      msg_notice (hov 2
-        (Ppconstr.pr_id (Libnames.basename fn)++spc()++
-          str"with carrier "++ pr_constr fi.field_carrier++spc()++
-          str"and equivalence relation "++ pr_constr fi.field_req))
-    ) !field_from_name ]
-END
-
 
 let ltac_field_structure e =
   let req = carg e.field_req in
@@ -1153,9 +1027,3 @@ let field_lookup (f:glob_tactic_expr) lH rl t =
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref) (ltac_apply f (field@[lH;rl]))
     with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
-
-
-TACTIC EXTEND field_lookup
-| [ "field_lookup" tactic(f) "[" constr_list(lH) "]" ne_constr_list(lt) ] ->
-      [ let (t,l) = List.sep_last lt in field_lookup f lH l t ]
-END
