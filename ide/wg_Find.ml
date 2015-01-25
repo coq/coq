@@ -8,6 +8,8 @@
 
 type mode = [ `FIND | `REPLACE ]
 
+let b2c = Ideutils.byte_offset_to_char_offset
+
 class finder name (view : GText.view) =
   
   let widget = Wg_Detachable.detachable
@@ -85,8 +87,8 @@ class finder name (view : GText.view) =
       try
         let i = Str.search_backward regexp text (String.length text - 1) in
         let j = Str.match_end () in
-        Some(view#buffer#start_iter#forward_chars i,
-             view#buffer#start_iter#forward_chars j)
+        Some(view#buffer#start_iter#forward_chars (b2c text i),
+             view#buffer#start_iter#forward_chars (b2c text j))
       with Not_found -> None
     
     method private forward_search starti =
@@ -95,7 +97,7 @@ class finder name (view : GText.view) =
       try
         let i = Str.search_forward regexp text 0 in
         let j = Str.match_end () in
-        Some(starti#forward_chars i, starti#forward_chars j)
+        Some(starti#forward_chars (b2c text i), starti#forward_chars (b2c text j))
       with Not_found -> None
 
     method replace_all () =
