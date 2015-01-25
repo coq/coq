@@ -157,6 +157,14 @@ val build_by_tactic : env -> Evd.evar_universe_context -> ?poly:polymorphic ->
   types -> unit Proofview.tactic -> 
   constr * bool * Evd.evar_universe_context
 
+val refine_by_tactic : env -> Evd.evar_map -> types -> unit Proofview.tactic ->
+  constr * Evd.evar_map
+(** A variant of the above function that handles open terms as well.
+    Caveat: all effects are purged in the returned term at the end, but other
+    evars solved by side-effects are NOT purged, so that unexpected failures may
+    occur. Ideally all code using this function should be rewritten in the
+    monad. *)
+
 (** Declare the default tactic to fill implicit arguments *)
 
 val declare_implicit_tactic : unit Proofview.tactic -> unit

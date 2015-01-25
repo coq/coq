@@ -306,8 +306,8 @@ canonical structures.
 We need some infrastructure for that.
 
 \begin{coq_example}
+Require Import Strings.String.
 Module infrastructure.
-  Require Import Strings.String.
   Inductive phantom {T : Type} (t : T) : Type := Phantom.
   Definition unify {T1 T2} (t1 : T1) (t2 : T2) (s : option string) := phantom t1 -> phantom t2.
   Definition id {T} {t : T} (x : phantom t) := x.
@@ -318,8 +318,8 @@ Module infrastructure.
 End infrastructure.
 \end{coq_example}
 
-To explain the notation $[find v | t1 \textasciitilde t2]$ lets pick one
-of its instances: $[find e  | EQ.obj e \textasciitilde T | "is not an EQ.type" ]$.
+To explain the notation \texttt{[find v | t1 \textasciitilde t2]} let us pick one
+of its instances: \texttt{[find e | EQ.obj e \textasciitilde T | "is not an EQ.type" ]}.
 It should be read as: ``find a class e such that its objects have type T
 or fail with message "T is not an EQ.type"''.
 

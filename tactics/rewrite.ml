@@ -629,11 +629,9 @@ let solve_remaining_by env sigma holes by =
       | None -> sigma
         (** Evar should not be defined, but just in case *)
       | Some evi ->
-        let ctx = Evd.evar_universe_context sigma in
         let env = Environ.reset_with_named_context evi.evar_hyps env in
         let ty = evi.evar_concl in
-        let c, _, ctx = Pfedit.build_by_tactic env ctx ty solve_tac in
-        let sigma = Evd.set_universe_context sigma ctx in
+        let c, sigma = Pfedit.refine_by_tactic env sigma ty solve_tac in
         Evd.define evk c sigma
     in
     List.fold_left solve sigma indep
