@@ -63,8 +63,10 @@ class finder name (view : GText.view) =
     method replace () =
       if self#may_replace () then
         let txt = self#get_selected_word () in
+        let () = view#buffer#begin_user_action () in
         let _ = view#buffer#delete_selection () in
         let _ = view#buffer#insert_interactive (self#replacement txt) in
+        let () = view#buffer#end_user_action () in
         self#find_forward ()
       else self#find_forward ()
 
@@ -117,7 +119,9 @@ class finder name (view : GText.view) =
           let () = view#buffer#delete_mark (`MARK stop_mark) in
           replace_at next
       in
-      replace_at view#buffer#start_iter
+      let () = view#buffer#begin_user_action () in
+      let () = replace_at view#buffer#start_iter in
+      view#buffer#end_user_action ()
 
     method private set_not_found () =
       find_entry#misc#modify_base [`NORMAL, `NAME "#F7E6E6"];
