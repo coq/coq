@@ -750,7 +750,7 @@ let ensure_root_dir (v,(mli,ml4,ml,mllib,mlpack),_,_) ((ml_inc,i_inc,r_inc) as l
 
 let warn_install_at_root_directory
     (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,_) (inc_ml,inc_i,inc_r) =
-  let inc_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r@inc_i in
+  let inc_top = List.filter (fun (_,ldir,_) -> ldir = "") (inc_r@inc_i) in
   let inc_top_p = List.map (fun (p,_,_) -> p) inc_top in
   let files = vfiles @ mlifiles @ ml4files @ mlfiles @ mllibfiles @ mlpackfiles in
   if List.exists (fun f -> List.mem (Filename.dirname f) inc_top_p) files
