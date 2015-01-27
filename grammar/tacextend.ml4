@@ -140,30 +140,20 @@ let make_empty_check = function
   (* Idem *)
   raise Exit
 
-let rec possibly_empty_subentries loc = function
-  | [] -> []
-  | (s,prodsl) :: l ->
-    let rec aux = function
-    | [] -> (false,<:expr< None >>)
-    | prods :: rest ->
-      try
-        let l = List.map make_empty_check prods in
-        if has_extraarg prods then
-          (true,<:expr< try Some $mlexpr_of_list (fun x -> x) l$
-                        with [ Exit -> $snd (aux rest)$ ] >>)
-        else
-          (true, <:expr< Some $mlexpr_of_list (fun x -> x) l$ >>)
-      with Exit -> aux rest in
-    let (nonempty,v) = aux prodsl in
-    if nonempty then (s,v) :: possibly_empty_subentries loc l
-    else possibly_empty_subentries loc l
-
-let possibly_atomic loc prods =
-  let l = List.map_filter (function
-    | GramTerminal s :: l, _, _ -> Some (s,l)
-    | _ -> None) prods
+let rec possibly_atomic loc = function
+| [] -> []
+| ((GramNonTerminal _ :: _ | []), _, _) :: rem ->
+  (** This is not parsed by the TACTIC EXTEND rules *)
+  assert false
+| (GramTerminal s :: prods, _, _) :: rem ->
+  let entry =
+    try
+      let l = List.map make_empty_check prods in
+      let l = mlexpr_of_list (fun x -> x) l in
+      (s, <:expr< try Some $l$ with [ Exit -> None ] >>)
+    with Exit -> (s, <:expr< None >>)
   in
-  possibly_empty_subentries loc (List.factorize_left String.equal l)
+  entry :: possibly_atomic loc rem
 
 (** Special treatment of constr entries *)
 let is_constr_gram = function
