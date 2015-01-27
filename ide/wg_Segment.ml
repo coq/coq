@@ -70,9 +70,25 @@ let color_eq (c1 : GDraw.color) (c2 : GDraw.color) = match c1, c2 with
 | `WHITE, `WHITE -> true
 | _ -> false
 
+class type segment_signals =
+object
+  inherit GObj.misc_signals
+  inherit GUtil.add_ml_signals
+  method clicked : callback:(int -> unit) -> GtkSignal.id
+end
+
+class segment_signals_impl obj (clicked : 'a GUtil.signal) : segment_signals =
+object
+  val after = false
+  inherit GObj.misc_signals obj
+  inherit GUtil.add_ml_signals obj [clicked#disconnect]
+  method clicked = clicked#connect ~after
+end
+
 class segment () =
 let box = GBin.frame () in
-let draw = GMisc.image ~packing:box#add () in
+let eventbox = GBin.event_box ~packing:box#add () in
+let draw = GMisc.image ~packing:eventbox#add () in
 object (self)
 
   inherit GObj.widget box#as_widget
@@ -82,6 +98,7 @@ object (self)
   val mutable data = Segment.empty
   val mutable default : color = `WHITE
   val mutable pixmap : GDraw.pixmap = GDraw.pixmap ~width:1 ~height:1 ()
+  val clicked = new GUtil.signal ()
 
   initializer
     box#misc#set_size_request ~height ();
@@ -96,6 +113,15 @@ object (self)
       end
     in
     let _ = box#misc#connect#size_allocate cb in
+    let clicked_cb ev =
+      let x = GdkEvent.Button.x ev in
+      let (width, _) = pixmap#size in
+      let len = Segment.length data in
+      let idx = f2i ((x *. i2f len) /. i2f width) in
+      let () = clicked#call idx in
+      true
+    in
+    let _ = eventbox#event#connect#button_press clicked_cb in
     (** Initial pixmap *)
     draw#set_pixmap pixmap
 
@@ -139,5 +165,8 @@ object (self)
     let fold i j v () = self#fill_range v i (j + 1) in
     Segment.fold color_eq fold data ();
     draw#set_mask None;
+
+  method connect =
+    new segment_signals_impl box#as_widget clicked
 
 end
