@@ -892,8 +892,10 @@ Figure~\ref{zarith-syntax} shows the notations provided by {\tt
 Z\_scope}. It specifies how notations are interpreted and, when not
 already reserved, the precedence and associativity.
 
-\begin{coq_example}
+\begin{coq_example*}
 Require Import ZArith.
+\end{coq_example*}
+\begin{coq_example}
 Check  (2 + 3)%Z.
 Open Scope Z_scope.
 Check 2 + 3.
@@ -968,8 +970,10 @@ Notation & Interpretation \\
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
-\begin{coq_example}
+\begin{coq_example*}
 Require Import Reals.
+\end{coq_example*}
+\begin{coq_example}
 Check  (2 + 3)%R.
 Open Scope R_scope.
 Check 2 + 3.

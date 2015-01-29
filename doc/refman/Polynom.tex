@@ -122,8 +122,10 @@ for \texttt{N}, do \texttt{Require Import NArithRing} or
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
-\begin{coq_example}
+\begin{coq_example*}
 Require Import ZArith.
+\end{coq_example*}
+\begin{coq_example}
 Open Scope Z_scope.
 Goal forall a b c:Z,
   (a + b + c)^2  =
@@ -193,28 +195,28 @@ also supported. The equality can be either Leibniz equality, or any
 relation declared as a setoid (see~\ref{setoidtactics}). The definition
 of ring and semi-rings (see module {\tt Ring\_theory}) is:
 \begin{verbatim}
- Record ring_theory : Prop := mk_rt {
-    Radd_0_l    : forall x, 0 + x == x;
-    Radd_sym    : forall x y, x + y == y + x;
-    Radd_assoc  : forall x y z, x + (y + z) == (x + y) + z;
-    Rmul_1_l    : forall x, 1 * x == x;
-    Rmul_sym    : forall x y, x * y == y * x;
-    Rmul_assoc  : forall x y z, x * (y * z) == (x * y) * z;
-    Rdistr_l    : forall x y z, (x + y) * z == (x * z) + (y * z);
-    Rsub_def    : forall x y, x - y == x + -y;
-    Ropp_def    : forall x, x + (- x) == 0
- }.
+Record ring_theory : Prop := mk_rt {
+  Radd_0_l    : forall x, 0 + x == x;
+  Radd_sym    : forall x y, x + y == y + x;
+  Radd_assoc  : forall x y z, x + (y + z) == (x + y) + z;
+  Rmul_1_l    : forall x, 1 * x == x;
+  Rmul_sym    : forall x y, x * y == y * x;
+  Rmul_assoc  : forall x y z, x * (y * z) == (x * y) * z;
+  Rdistr_l    : forall x y z, (x + y) * z == (x * z) + (y * z);
+  Rsub_def    : forall x y, x - y == x + -y;
+  Ropp_def    : forall x, x + (- x) == 0
+}.
 
 Record semi_ring_theory : Prop := mk_srt {
-    SRadd_0_l   : forall n, 0 + n == n;
-    SRadd_sym   : forall n m, n + m == m + n ;
-    SRadd_assoc : forall n m p, n + (m + p) == (n + m) + p;
-    SRmul_1_l   : forall n, 1*n == n;
-    SRmul_0_l   : forall n, 0*n == 0; 
-    SRmul_sym   : forall n m, n*m == m*n;
-    SRmul_assoc : forall n m p, n*(m*p) == (n*m)*p;
-    SRdistr_l   : forall n m p, (n + m)*p == n*p + m*p
-  }.
+  SRadd_0_l   : forall n, 0 + n == n;
+  SRadd_sym   : forall n m, n + m == m + n ;
+  SRadd_assoc : forall n m p, n + (m + p) == (n + m) + p;
+  SRmul_1_l   : forall n, 1*n == n;
+  SRmul_0_l   : forall n, 0*n == 0;
+  SRmul_sym   : forall n m, n*m == m*n;
+  SRmul_assoc : forall n m p, n*(m*p) == (n*m)*p;
+  SRdistr_l   : forall n m p, (n + m)*p == n*p + m*p
+}.
 \end{verbatim}
 
 This implementation of {\tt ring} also features a notion of constant
@@ -230,23 +232,23 @@ could be the rational numbers, upon which the ring operations can be
 implemented. The fact that there exists a morphism is defined by the
 following properties:
 \begin{verbatim}
- Record ring_morph : Prop := mkmorph {
-    morph0    : [cO] == 0;
-    morph1    : [cI] == 1;
-    morph_add : forall x y, [x +! y] == [x]+[y];
-    morph_sub : forall x y, [x -! y] == [x]-[y];
-    morph_mul : forall x y, [x *! y] == [x]*[y];
-    morph_opp : forall x, [-!x] == -[x];
-    morph_eq  : forall x y, x?=!y = true -> [x] == [y] 
-  }.
+Record ring_morph : Prop := mkmorph {
+  morph0    : [cO] == 0;
+  morph1    : [cI] == 1;
+  morph_add : forall x y, [x +! y] == [x]+[y];
+  morph_sub : forall x y, [x -! y] == [x]-[y];
+  morph_mul : forall x y, [x *! y] == [x]*[y];
+  morph_opp : forall x, [-!x] == -[x];
+  morph_eq  : forall x y, x?=!y = true -> [x] == [y]
+}.
 
- Record semi_morph : Prop := mkRmorph {
-    Smorph0 : [cO] == 0;
-    Smorph1 : [cI] == 1;
-    Smorph_add : forall x y, [x +! y] == [x]+[y];
-    Smorph_mul : forall x y, [x *! y] == [x]*[y];
-    Smorph_eq  : forall x y, x?=!y = true -> [x] == [y] 
-  }.
+Record semi_morph : Prop := mkRmorph {
+  Smorph0 : [cO] == 0;
+  Smorph1 : [cI] == 1;
+  Smorph_add : forall x y, [x +! y] == [x]+[y];
+  Smorph_mul : forall x y, [x *! y] == [x]*[y];
+  Smorph_eq  : forall x y, x?=!y = true -> [x] == [y]
+}.
 \end{verbatim}
 where {\tt c0} and {\tt cI} denote the 0 and 1 of the coefficient set,
 {\tt +!}, {\tt *!}, {\tt -!} are the implementations of the ring
@@ -274,16 +276,16 @@ This implementation of ring can also recognize simple
 power expressions as ring expressions. A power function is specified by 
 the following property:
 \begin{verbatim}
- Section POWER.
+Section POWER.
   Variable Cpow : Set.
   Variable Cp_phi : N -> Cpow.
-  Variable rpow : R -> Cpow -> R. 
-  
+  Variable rpow : R -> Cpow -> R.
+
   Record power_theory : Prop := mkpow_th {
     rpow_pow_N : forall r n, req (rpow r (Cp_phi n)) (pow_N rI rmul r n)
   }.
 
- End POWER.
+End POWER.
 \end{verbatim}
 
 
@@ -398,7 +400,7 @@ Polynomials in normal form are defined as:
 \begin{small}
 \begin{flushleft}
 \begin{verbatim}
- Inductive Pol : Type :=
+Inductive Pol : Type :=
   | Pc : C -> Pol 
   | Pinj : positive -> Pol -> Pol                   
   | PX : Pol -> positive -> Pol -> Pol.
@@ -501,8 +503,10 @@ field in module \texttt{Qcanon}.
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
-\begin{coq_example}
+\begin{coq_example*}
 Require Import Reals.
+\end{coq_example*}
+\begin{coq_example}
 Open Scope R_scope.
 Goal forall x,  x <> 0 ->
    (1 - 1/x) * x - x + 1 = 0.
@@ -600,17 +604,17 @@ relation declared as a setoid (see~\ref{setoidtactics}). The definition
 of fields and semi-fields is:
 \begin{verbatim}
 Record field_theory : Prop := mk_field {
-    F_R : ring_theory rO rI radd rmul rsub ropp req;
-    F_1_neq_0 : ~ 1 == 0;
-    Fdiv_def : forall p q, p / q == p * / q;
-    Finv_l : forall p, ~ p == 0 ->  / p * p == 1
+  F_R : ring_theory rO rI radd rmul rsub ropp req;
+  F_1_neq_0 : ~ 1 == 0;
+  Fdiv_def : forall p q, p / q == p * / q;
+  Finv_l : forall p, ~ p == 0 ->  / p * p == 1
 }.
 
 Record semi_field_theory : Prop := mk_sfield {
-    SF_SR : semi_ring_theory rO rI radd rmul req;
-    SF_1_neq_0 : ~ 1 == 0;
-    SFdiv_def : forall p q, p / q == p * / q;
-    SFinv_l : forall p, ~ p == 0 ->  / p * p == 1
+  SF_SR : semi_ring_theory rO rI radd rmul req;
+  SF_1_neq_0 : ~ 1 == 0;
+  SFdiv_def : forall p q, p / q == p * / q;
+  SFinv_l : forall p, ~ p == 0 ->  / p * p == 1
 }.
 \end{verbatim}
 
@@ -618,9 +622,10 @@ The result of the normalization process is a fraction represented by
 the following type:
 \begin{verbatim}
 Record linear : Type := mk_linear {
-   num : PExpr C;
-   denum : PExpr C;
-   condition : list (PExpr C) }.
+  num : PExpr C;
+  denum : PExpr C;
+  condition : list (PExpr C)
+}.
 \end{verbatim}
 where {\tt num} and {\tt denum} are the numerator and denominator;
 {\tt condition} is a list of expressions that have appeared as a
@@ -661,7 +666,7 @@ intros; rewrite (Z.mul_comm y z); reflexivity.
 Save toto.
 \end{coq_example*}
 \begin{coq_example}
-Print  toto.
+Print toto.
 \end{coq_example}
 
 At each step of rewriting, the whole context is duplicated in the proof

@@ -305,8 +305,10 @@ canonical structures.
 
 We need some infrastructure for that.
 
-\begin{coq_example}
+\begin{coq_example*}
 Require Import Strings.String.
+\end{coq_example*}
+\begin{coq_example}
 Module infrastructure.
   Inductive phantom {T : Type} (t : T) : Type := Phantom.
   Definition unify {T1 T2} (t1 : T1) (t2 : T2) (s : option string) :=

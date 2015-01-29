@@ -355,8 +355,10 @@ is a variant of {\tt Search
 statements whose conclusion has exactly the expected form, or whose
 statement finishes by the given series of hypothesis/conclusion.
 
-\begin{coq_example}
+\begin{coq_example*}
 Require Import Arith.
+\end{coq_example*}
+\begin{coq_example}
 SearchPattern (_ + _ = _ + _).
 SearchPattern (nat -> bool).
 SearchPattern (forall l : list _, _ l l).
@@ -367,7 +369,6 @@ must occur in two places by using pattern variables `{\texttt
 ?{\ident}}''.
 
 \begin{coq_example}
-Require Import Arith.
 SearchPattern (?X1 + _ = _ + ?X1).
 \end{coq_example}
 
