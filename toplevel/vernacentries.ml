@@ -1124,6 +1124,7 @@ let vernac_declare_arguments locality r l nargs flags =
     vernac_declare_implicits locality r implicits;
   if nargs >= 0 && nargs < List.fold_left max 0 rargs then
     error "The \"/\" option must be placed after the last \"!\".";
+  let no_flags = List.is_empty flags in
   let rec narrow = function
     | #Reductionops.ReductionBehaviour.flag as x :: tl -> x :: narrow tl
     | [] -> [] | _ :: tl -> narrow tl in
@@ -1141,7 +1142,7 @@ let vernac_declare_arguments locality r l nargs flags =
           some_implicits_specified ||
           some_scopes_specified ||
           some_simpl_flags_specified) &&
-     List.length flags = 0 then
+     no_flags then
     msg_warning (strbrk "This command is just asserting the number and names of arguments of " ++ pr_global sr ++ strbrk". If this is what you want add ': assert' to silence the warning. If you want to clear implicit arguments add ': clear implicits'. If you want to clear notation scopes add ': clear scopes'")
 
 
