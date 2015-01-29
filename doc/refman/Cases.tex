@@ -77,8 +77,10 @@ Fixpoint max (n m:nat) {struct m} : nat :=
 
 Using multiple patterns in the definition of {\tt max} lets us write:
 
-\begin{coq_example}
+\begin{coq_eval}
 Reset max.
+\end{coq_eval}
+\begin{coq_example}
 Fixpoint max (n m:nat) {struct m} : nat :=
   match n, m with
   | O, _ => m
@@ -105,8 +107,10 @@ Check (fun x:nat => match x return nat with
 We can also use ``\texttt{as} {\ident}'' to associate a name to a
 sub-pattern:
 
-\begin{coq_example}
+\begin{coq_eval}
 Reset max.
+\end{coq_eval}
+\begin{coq_example}
 Fixpoint max (n m:nat) {struct n} : nat :=
   match n, m with
   | O, _ => m
@@ -133,8 +137,10 @@ This is compiled into:
 \begin{coq_example}
 Unset Printing Matching.
 Print even.
-Set Printing Matching.
 \end{coq_example}
+\begin{coq_eval}
+Set Printing Matching.
+\end{coq_eval}
 
 In the previous examples patterns do not conflict with, but
 sometimes it is comfortable to write patterns that admit a non
@@ -164,8 +170,10 @@ yields \texttt{true}.
 
 Another way to write  this function is:
 
-\begin{coq_example}
+\begin{coq_eval}
 Reset lef.
+\end{coq_eval}
+\begin{coq_example}
 Fixpoint lef (n m:nat) {struct m} : bool :=
   match n, m with
   | O, x => true
@@ -181,11 +189,9 @@ the second one.
 
 Terms with useless patterns are not accepted by the
 system. Here is an example:
-% Test failure
+% Test failure: "This clause is redundant."
 \begin{coq_eval}
 Set Printing Depth 50.
-  (********** The following is not correct and should produce **********)
-  (**************** Error: This clause is redundant ********************)
 \end{coq_eval}
 \begin{coq_example}
 Check (fun x:nat =>
@@ -260,11 +266,9 @@ Check
 
 
 When we use parameters in patterns there is an error message:
-% Test failure
+% Test failure: "The parameters do not bind in patterns."
 \begin{coq_eval}
 Set Printing Depth 50.
-(********** The following is not correct and should produce **********)
-(******** Error: Parameters do not bind ... ************)
 \end{coq_eval}
 \begin{coq_example}
 Check
@@ -324,8 +328,10 @@ Definition length (n:nat) (l:listn n) := n.
 Just for illustrating pattern matching,
 we can define it by case analysis:
 
-\begin{coq_example}
+\begin{coq_eval}
 Reset length.
+\end{coq_eval}
+\begin{coq_example}
 Definition length (n:nat) (l:listn n) :=
   match l with
   | niln => 0
@@ -454,8 +460,10 @@ introduce a dependent product.
 For example, an equivalent definition for \texttt{concat} (even though the
 matching on the second term is trivial) would have been:
 
-\begin{coq_example}
+\begin{coq_eval}
 Reset concat.
+\end{coq_eval}
+\begin{coq_example}
 Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
  listn (n + m) :=
   match l in listn n, l' return listn (n + m) with
@@ -517,17 +525,18 @@ If the type of the matched term is more precise than an inductive applied to
 variables, arguments of the inductive in the {\tt in} branch can be more
 complicated patterns than a variable.
 
-Moreover, constructors whose type do not follow the same pattern will become
-impossible branch. In impossible branch, you can answer anything but {\tt
-  False\_rect unit} has the advantage to be subterm of anything.
+Moreover, constructors whose type do not follow the same pattern will
+become impossible branches. In an impossible branch, you can answer
+anything but {\tt False\_rect unit} has the advantage to be subterm of
+anything. % ???
 
 To be concrete: the tail function can be written:
 \begin{coq_example}
-  Definition tail n (v: listn (S n)) :=
-    match v in listn (S m) return listn m with
-      | niln => False_rect unit
-      | consn n' a y => y
-    end.
+Definition tail n (v: listn (S n)) :=
+  match v in listn (S m) return listn m with
+  | niln => False_rect unit
+  | consn n' a y => y
+  end.
 \end{coq_example}
 and {\tt tail n v} will be subterm of {\tt v}.
 

@@ -620,10 +620,10 @@ runs is displayed. Time is in seconds and is machine-dependent. The
 {\qstring} argument is optional. When provided, it is used to identify
 this particular occurrence of {\tt time}.
 
-\subsubsection[Local definitions]{Local definitions\index{Ltac!let}
-\index{Ltac!let rec}
-\index{let!in Ltac}
-\index{let rec!in Ltac}}
+\subsubsection[Local definitions]{Local definitions\index{Ltac!let@\texttt{let}}
+\index{Ltac!let rec@\texttt{let rec}}
+\index{let@\texttt{let}!in Ltac}
+\index{let rec@\texttt{let rec}!in Ltac}}
 
 Local definitions can be done as follows:
 \begin{quote}
@@ -659,8 +659,8 @@ definition expecting at least $n$ arguments.  The expressions
 
 %\subsection{Application of tactic values}
 
-\subsubsection[Function construction]{Function construction\index{fun!in Ltac}
-\index{Ltac!fun}}
+\subsubsection[Function construction]{Function construction\index{fun@\texttt{fun}!in Ltac}
+\index{Ltac!fun@\texttt{fun}}}
 
 A parameterized tactic can be built anonymously (without resorting to
 local definitions) with:
@@ -670,8 +670,8 @@ local definitions) with:
 Indeed, local definitions of functions are a syntactic sugar for
 binding a {\tt fun} tactic to an identifier.
 
-\subsubsection[Pattern matching on terms]{Pattern matching on terms\index{Ltac!match}
-\index{match!in Ltac}}
+\subsubsection[Pattern matching on terms]{Pattern matching on terms\index{Ltac!match@\texttt{match}}
+\index{match@\texttt{match}!in Ltac}}
 
 We can carry out pattern matching on terms with:
 \begin{quote}
@@ -729,8 +729,8 @@ it has backtracking points.
 
 \begin{Variants}
 
-\item \index{multimatch!in Ltac}
-\index{Ltac!multimatch}
+\item \index{multimatch@\texttt{multimatch}!in Ltac}
+\index{Ltac!multimatch@\texttt{multimatch}}
 Using {\tt multimatch} instead of {\tt match} will allow subsequent
 tactics to backtrack into a right-hand side tactic which has
 backtracking points left and trigger the selection of a new matching
@@ -740,8 +740,8 @@ been consumed.
 The syntax {\tt match \ldots} is, in fact, a shorthand for
 {\tt once multimatch \ldots}.
 
-\item \index{lazymatch!in Ltac}
-\index{Ltac!lazymatch}
+\item \index{lazymatch@\texttt{lazymatch}!in Ltac}
+\index{Ltac!lazymatch@\texttt{lazymatch}}
 Using {\tt lazymatch} instead of {\tt match} will perform the same
 pattern matching procedure but will commit to the first matching
 branch rather than trying a new matching if the right-hand side
@@ -749,7 +749,7 @@ fails. If the right-hand side of the selected branch is a tactic with
 backtracking points, then subsequent failures cause this tactic to
 backtrack.
 
-\item \index{context!in pattern}
+\item \index{context@\texttt{context}!in pattern}
 There is a special form of patterns to match a subterm against the
 pattern:
 \begin{quote}
@@ -778,7 +778,7 @@ Goal True.
 f (3+4).
 \end{coq_example}
 
-\item \index{appcontext!in pattern}
+\item \index{appcontext@\texttt{appcontext}!in pattern}
   \comindex{Set Tactic Compat Context}
   \comindex{Unset Tactic Compat Context}
 For historical reasons, {\tt context} used to consider $n$-ary applications
@@ -796,10 +796,10 @@ behavior can be retrieved with the {\tt Tactic Compat Context} flag.
 
 \end{Variants}
 
-\subsubsection[Pattern matching on goals]{Pattern matching on goals\index{Ltac!match goal}
-\index{Ltac!match reverse goal}
-\index{match goal!in Ltac}
-\index{match reverse goal!in Ltac}}
+\subsubsection[Pattern matching on goals]{Pattern matching on goals\index{Ltac!match goal@\texttt{match goal}}
+\index{Ltac!match reverse goal@\texttt{match reverse goal}}
+\index{match goal@\texttt{match goal}!in Ltac}
+\index{match reverse goal@\texttt{match reverse goal}!in Ltac}}
 
 We can make pattern matching on goals using the following expression:
 \begin{quote}
@@ -854,10 +854,10 @@ the {\tt match reverse goal with} variant.
 
 \variant
 
-\index{multimatch goal!in Ltac}
-\index{Ltac!multimatch goal}
-\index{multimatch reverse goal!in Ltac}
-\index{Ltac!multimatch reverse goal}
+\index{multimatch goal@\texttt{multimatch goal}!in Ltac}
+\index{Ltac!multimatch goal@\texttt{multimatch goal}}
+\index{multimatch reverse goal@\texttt{multimatch reverse goal}!in Ltac}
+\index{Ltac!multimatch reverse goal@\texttt{multimatch reverse goal}}
 
 Using {\tt multimatch} instead of {\tt match} will allow subsequent
 tactics to backtrack into a right-hand side tactic which has
@@ -868,10 +868,10 @@ of the right-hand side have been consumed.
 The syntax {\tt match [reverse] goal \ldots} is, in fact, a shorthand for
 {\tt once multimatch [reverse] goal \ldots}.
 
-\index{lazymatch goal!in Ltac}
-\index{Ltac!lazymatch goal}
-\index{lazymatch reverse goal!in Ltac}
-\index{Ltac!lazymatch reverse goal}
+\index{lazymatch goal@\texttt{lazymatch goal}!in Ltac}
+\index{Ltac!lazymatch goal@\texttt{lazymatch goal}}
+\index{lazymatch reverse goal@\texttt{lazymatch reverse goal}!in Ltac}
+\index{Ltac!lazymatch reverse goal@\texttt{lazymatch reverse goal}}
 Using {\tt lazymatch} instead of {\tt match} will perform the same
 pattern matching procedure but will commit to the first matching
 branch with the first matching combination of hypotheses rather than
@@ -879,7 +879,7 @@ trying a new matching if the right-hand side fails. If the right-hand
 side of the selected branch is a tactic with backtracking points, then
 subsequent failures cause this tactic to backtrack.
 
-\subsubsection[Filling a term context]{Filling a term context\index{context!in expression}}
+\subsubsection[Filling a term context]{Filling a term context\index{context@\texttt{context}!in expression}}
 
 The following expression is not a tactic in the sense that it does not
 produce subgoals but generates a term to be used in tactic
@@ -895,8 +895,8 @@ replaces the hole of the value of {\ident} by the value of
 \ErrMsg \errindex{not a context variable}
 
 
-\subsubsection[Generating fresh hypothesis names]{Generating fresh hypothesis names\index{Ltac!fresh}
-\index{fresh!in Ltac}}
+\subsubsection[Generating fresh hypothesis names]{Generating fresh hypothesis names\index{Ltac!fresh@\texttt{fresh}}
+\index{fresh@\texttt{fresh}!in Ltac}}
 
 Tactics sometimes have to generate new names for hypothesis. Letting
 the system decide a name with the {\tt intro} tactic is not so good
@@ -913,8 +913,8 @@ has to refer to a name, or directly a name denoted by a
 with a number so that it becomes fresh. If no component is
 given, the name is a fresh derivative of the name {\tt H}.
 
-\subsubsection[Computing in a constr]{Computing in a constr\index{Ltac!eval}
-\index{eval!in Ltac}}
+\subsubsection[Computing in a constr]{Computing in a constr\index{Ltac!eval@\texttt{eval}}
+\index{eval@\texttt{eval}!in Ltac}}
 
 Evaluation of a term can be performed with:
 \begin{quote}
@@ -926,8 +926,8 @@ hnf}, {\tt compute}, {\tt simpl}, {\tt cbv}, {\tt lazy}, {\tt unfold},
 
 \subsubsection{Recovering the type of a term}
 %\tacindex{type of}
-\index{Ltac!type of}
-\index{type of!in Ltac}
+\index{Ltac!type of@\texttt{type of}}
+\index{type of@\texttt{type of}!in Ltac}
 
 The following returns the type of {\term}:
 
@@ -935,7 +935,10 @@ The following returns the type of {\term}:
 {\tt type of} {\term}
 \end{quote}
 
-\subsubsection[Manipulating untyped terms]{Manipulating untyped terms\index{Ltac!uconstr}\index{uconstr!in Ltac}\index{Ltac!type\_term}\index{type\_term!in Ltac}}
+\subsubsection[Manipulating untyped terms]{Manipulating untyped terms\index{Ltac!uconstr@\texttt{uconstr}}
+\index{uconstr@\texttt{uconstr}!in Ltac}
+\index{Ltac!type\_term@\texttt{type\_term}}
+\index{type\_term@\texttt{type\_term}!in Ltac}}
 
 The terms built in Ltac are well-typed by default. It may not be
 appropriate for building large terms using a recursive Ltac function:
@@ -963,7 +966,7 @@ untyped term is type checked against the conclusion of the goal, and
 the holes which are not solved by the typing procedure are turned into
 new subgoals.
 
-\subsubsection[Counting the goals]{Counting the goals\index{Ltac!numgoals}\index{numgoals!in Ltac}}
+\subsubsection[Counting the goals]{Counting the goals\index{Ltac!numgoals@\texttt{numgoals}}\index{numgoals@\texttt{numgoals}!in Ltac}}
 
 The number of goals under focus can be recovered using the {\tt
   numgoals} function. Combined with the {\tt guard} command below, it
@@ -979,7 +982,7 @@ split;[|split].
 all:pr_numgoals.
 \end{coq_example}
 
-\subsubsection[Testing boolean expressions]{Testing boolean expressions\index{Ltac!guard}\index{guard!in Ltac}}
+\subsubsection[Testing boolean expressions]{Testing boolean expressions\index{Ltac!guard@\texttt{guard}}\index{guard@\texttt{guard}!in Ltac}}
 
 The {\tt guard} tactic tests a boolean expression, and fails if the expression evaluates to false. If the expression evaluates to true, it succeeds without affecting the proof.
 

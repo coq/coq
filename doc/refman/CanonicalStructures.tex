@@ -305,15 +305,21 @@ canonical structures.
 
 We need some infrastructure for that.
 
-\begin{coq_example}
+\begin{coq_example*}
 Require Import Strings.String.
+\end{coq_example*}
+\begin{coq_example}
 Module infrastructure.
   Inductive phantom {T : Type} (t : T) : Type := Phantom.
-  Definition unify {T1 T2} (t1 : T1) (t2 : T2) (s : option string) := phantom t1 -> phantom t2.
+  Definition unify {T1 T2} (t1 : T1) (t2 : T2) (s : option string) :=
+    phantom t1 -> phantom t2.
   Definition id {T} {t : T} (x : phantom t) := x.
-  Notation "[find v | t1 ~ t2 ] p" := (fun v (_ : unify t1 t2 None) => p) (at level 50, v ident, only parsing).
-  Notation "[find v | t1 ~ t2 | s ] p" := (fun v (_ : unify t1 t2 (Some s)) => p) (at level 50, v ident, only parsing).
-  Notation "'Error : t : s" := (unify _ t (Some s)) (at level 50, format "''Error'  :  t  :  s").
+  Notation "[find v | t1 ~ t2 ] p" := (fun v (_ : unify t1 t2 None) => p)
+    (at level 50, v ident, only parsing).
+  Notation "[find v | t1 ~ t2 | s ] p" := (fun v (_ : unify t1 t2 (Some s)) => p)
+    (at level 50, v ident, only parsing).
+  Notation "'Error : t : s" := (unify _ t (Some s))
+    (at level 50, format "''Error'  :  t  :  s").
   Open Scope string_scope.
 End infrastructure.
 \end{coq_example}

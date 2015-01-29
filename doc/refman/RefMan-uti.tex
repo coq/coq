@@ -3,7 +3,7 @@
 The distribution provides utilities to simplify some tedious works
 beside proof development, tactics writing or documentation.
 
-\section[Building a toplevel extended with user tactics]{Building a toplevel extended with user tactics\label{Coqmktop}\index{Coqmktop@{\tt coqmktop}}}
+\section[Building a toplevel extended with user tactics]{Building a toplevel extended with user tactics\label{Coqmktop}\ttindex{coqmktop}}
 
 The native-code version of \Coq\ cannot dynamically load user tactics
 using {\ocaml} code. It is possible to build a toplevel of \Coq,
@@ -52,7 +52,7 @@ arguments. Such a wrapper can be found in the \texttt{dev/}
 subdirectory of the sources. 
 
 \section[Modules dependencies]{Modules dependencies\label{Dependencies}\index{Dependencies}
-  \index{Coqdep@{\tt coqdep}}}
+  \ttindex{coqdep}}
 
 In order to compute modules dependencies (so to use {\tt make}),
 \Coq\ comes with an appropriate tool, {\tt coqdep}.
@@ -75,8 +75,8 @@ See the man page of {\tt coqdep} for more details and options.
 
 
 \section[Creating a {\tt Makefile} for \Coq\ modules]{Creating a {\tt Makefile} for \Coq\ modules\label{Makefile}
-\index{Makefile@{\tt Makefile}}
-\index{CoqMakefile@{\tt coq\_Makefile}}}
+\ttindex{Makefile}
+\ttindex{coq\_Makefile}}
 
 \paragraph{\_CoqProject}
 When a proof development becomes a larger project, split into several
@@ -128,8 +128,8 @@ will recursively call this target in all the subdirectories.
   dependencies on already defined rules. For example the following
   skeleton appends something to the \texttt{install} rule:
 \begin{quotation}
-\texttt{-extra-phony ``install'' ``install-my-stuff'' ``''
-  -extra-phony ``install-my-stuff'' ``'' ``something''}
+\texttt{-extra-phony "install" "install-my-stuff" ""
+  -extra-phony "install-my-stuff" "" "something"}
 \end{quotation}
 \end{itemize}
 
@@ -146,12 +146,12 @@ to generate a \texttt{Makefile} the first time. \texttt{Makefile} will be
 automatically regenerated when \texttt{\_CoqProject} is updated afterward.
 
 \section[Documenting \Coq\ files with coqdoc]{Documenting \Coq\ files with coqdoc\label{coqdoc}
-\index{Coqdoc@{\sf coqdoc}}}
+\ttindex{coqdoc}}
 
 \input{./coqdoc}
 
 \section[Embedded \Coq\ phrases inside \LaTeX\ documents]{Embedded \Coq\ phrases inside \LaTeX\ documents\label{Latex}
-  \index{Coqtex@{\tt coq-tex}}\index{Latex@{\LaTeX}}}
+  \ttindex{coq-tex}\index{Latex@{\LaTeX}}}
 
 When writing a documentation about a proof development, one may want
 to insert \Coq\ phrases inside a \LaTeX\ document, possibly together with
@@ -207,7 +207,7 @@ An inferior mode to run \Coq\ under Emacs, by Marco Maggesi, is also
 included in the distribution, in file \texttt{coq-inferior.el}.
 Instructions to use it are contained in this file.
 
-\subsection[{\ProofGeneral}]{{\ProofGeneral}\index{\ProofGeneral}}
+\subsection[{\ProofGeneral}]{{\ProofGeneral}\index{Proof General@{\ProofGeneral}}}
 
 {\ProofGeneral} is a generic interface for proof assistants based on
 Emacs. The main idea is that the \Coq\ commands you are
@@ -221,7 +221,7 @@ files.
 system \Coq. It is freely available at \verb!proofgeneral.inf.ed.ac.uk!.
 
 
-\section[Module specification]{Module specification\label{gallina}\index{Gallina@{\tt gallina}}}
+\section[Module specification]{Module specification\label{gallina}\ttindex{gallina}}
 
 Given a \Coq\ vernacular file, the {\tt gallina} filter extracts its
 specification (inductive types declarations, definitions, type of

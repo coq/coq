@@ -8,10 +8,18 @@
 
 type color = GDraw.color
 
+class type segment_signals =
+object
+  inherit GObj.misc_signals
+  inherit GUtil.add_ml_signals
+  method clicked : callback:(int -> unit) -> GtkSignal.id
+end
+
 class segment : unit ->
   object
     inherit GObj.widget
     val obj : Gtk.widget Gtk.obj
+    method connect : segment_signals
     method length : int
     method set_length : int -> unit
     method default_color : color

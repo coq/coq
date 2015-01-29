@@ -111,7 +111,7 @@ let parse_args () =
       |"-dont-load-proofs"|"-load-proofs"|"-force-load-proofs"
       |"-impredicative-set"|"-vm"|"-no-native-compiler"
       |"-verbose-compat-notations"|"-no-compat-notations"
-      |"-indices-matter"|"-quick"|"-color"
+      |"-indices-matter"|"-quick"|"-color"|"-type-in-type"
       |"-async-proofs-always-delegate"|"-async-proofs-never-reopen-branch"
       as o) :: rem ->
 	parse (cfiles,o::args) rem

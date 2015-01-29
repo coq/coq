@@ -164,7 +164,7 @@ Notation " t --> t' " := (arrow t t') (at level 20, t' at next level).
 Inductive ctx : Type :=
 | empty : ctx
 | snoc : ctx -> type -> ctx.
-Notation " G , tau " := (snoc G tau) (at level 20, t at next level).
+Notation " G , tau " := (snoc G tau) (at level 20, tau at next level).
 Fixpoint conc (G D : ctx) : ctx :=
   match D with
     | empty => G

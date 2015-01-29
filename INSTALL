@@ -6,19 +6,6 @@
 WHAT DO YOU NEED ?
 ==================
 
-   Coq is designed to work on computers equipped with a POSIX (Unix or a
-   clone) operating system. It also works under Microsoft Windows (see
-   INSTALL.win); for a MacOS X bundle application, see INSTALL.macosx.
-
-   Coq is known to be actively used under GNU/Linux (i386 and amd64) and
-   FreeBSD. Automated tests are run under many, many different architectures
-   under GNU/Linux.
-
-   Naturally, Coq will run faster on an architecture where OCaml can compile
-   to native code, rather than only bytecode.  See
-   http://caml.inria.fr/ocaml/portability.en.html for details.
-
-
    Your OS may already contain Coq under the form of a precompiled
    package or ready-to-compile port. In this case, and if the supplied
    version suits you, follow the usual procedure for your OS to
@@ -36,34 +23,31 @@ WHAT DO YOU NEED ?
 
      urpmi coq
 
-   - MacOS:
+   - MacPorts for MacOS X
 
      port install coq
 
-   Should you need or prefer to compile Coq V8.5 yourself, you need:
+   To compile Coq V8.5 yourself, you need:
 
-     - Objective Caml version 3.12.1 or later
-       (available at http://caml.inria.fr/)
+   - Objective Caml version 3.12.1 or later
+     (available at http://caml.inria.fr/)
 
-     - Camlp5 (version >= 6.06) (Coq compiles with Camlp4 but might be less
-       well supported)
+   - Camlp5 (version >= 6.02) (Coq compiles with Camlp4 but might be less
+     well supported)
 
-     - GNU Make version 3.81 or later
+   - GNU Make version 3.81 or later
 
-     - a C compiler
+   - a C compiler
 
-     - for Coqide, the Lablgtk development files, and the GTK libraries
-       incuding gtksourceview, see INSTALL.ide for more details
-
-   By FTP, Coq comes as a single compressed tar-file. You have
-   probably already decompressed it if you are reading this document.
+   - for Coqide, the Lablgtk development files, and the GTK libraries
+     incuding gtksourceview, see INSTALL.ide for more details
 
 
 QUICK INSTALLATION PROCEDURE.
 =============================
 
 1. ./configure
-2. make world
+2. make
 3. make install (you may need superuser rights)
 4. make clean
 
@@ -132,17 +116,13 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
         Compile Coq to run in its source directory. The installation (step 6)
         is not necessary in that case.
 
--opt
-        Use the ocamlc.opt compiler instead of ocamlc (and ocamlopt.opt
-        compiler instead of ocamlopt). Makes compilation faster (recommended).
-
 -browser <command>
 	Use <command> to open an URL in a browser. %s must appear in <command>,
 	and will be replaced by the URL.
 
 5- Still in the root directory, do
 
-	make world
+	make
 
    to compile Coq in Objective Caml bytecode (and native-code if supported).
 
@@ -219,7 +199,7 @@ THE AVAILABLE COMMANDS.
       command "Require".
 
    A detailed description of these commands and of their options is given
-   in the Reference Manual (which you can get by FTP, in the doc/
+   in the Reference Manual (which you can get in the doc/
    directory, or read online on http://coq.inria.fr/doc/)
    and in the corresponding manual pages.
 
@@ -291,7 +271,7 @@ DYNAMICALLY LOADED LIBRARIES FOR BYTECODE EXECUTABLES.
        during compilation of binary packages);
      - install dllcoqrun.so in a location listed in the file ld.conf that is in
        the directory of the standard library of OCaml;
-     - recompile your bytecode executables after reconfiguring the location of
+     - recompile your bytecode executables after reconfiguring the location
        of the shared library:
          ./configure -vmbyteflags "-dllib,-lcoqrun,-dllpath,<path>" ...
        where <path> is the directory where the dllcoqrun.so is installed;

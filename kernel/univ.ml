@@ -2064,7 +2064,7 @@ let explain_universe_inconsistency prl (o,u,v,p) =
 	    (spc() ++ str "= " ++ pr_uni u)) 
   in
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
-      pr_rel o ++ spc() ++ pr_uni v ++ reason ++ str")"
+      pr_rel o ++ spc() ++ pr_uni v ++ reason
 
 let compare_levels = Level.compare
 let eq_levels = Level.equal

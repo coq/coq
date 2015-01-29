@@ -1,12 +1,9 @@
-			CoqIde Installation procedure.
+                CoqIde Installation procedure
 
 CoqIde is a graphical interface to perform interactive proofs.
 You should be able to do everything you do in coqtop inside CoqIde
 excepted dropping to the ML toplevel.
 
-DISCLAIMER: CoqIde is ongoing work. Although it should never let you
-	    loose a proof, you may encounter unexpected bugs.
- 	    Do not hesitate to send suggestions/bug reports.
 
 DISTRIBUTION PACKAGES
 
@@ -22,92 +19,87 @@ On Gentoo GNU/Linux, do:
 
 Else, read the rest of this document to compile your own CoqIde.
 
-REQUIREMENT:
-	- OCaml >= 3.12.1 with native threads support.
-	- make world must succeed.
-	- The graphical toolkit GTK+ 2.x. See http://www.gtk.org.
-	  The official supported version is at least 2.24.x.
-	  You may still compile CoqIde with older versions and 
-          use all features.
-	  Run 
-		"pkg-config --modversion gtk+-2.0"
-	  to check your version.
-	  All recent distributions have precompiled packages.
-	  Do not forget to install the developement headers packages.
 
-	  On Debian, installing lablgtk2 (see below) will automatically
-          install GTK+. (But "aptitude install libgtk2.0-dev" will
-          install GTK+ 2.x should you need to force it for one reason
-          or another.)
+COMPILATION REQUIREMENTS
 
-        - The OCaml bindings for GTK+ 2.x, lablgtk2 with support for gtksourceview2.
+- OCaml >= 3.12.1 with native threads support.
+- make world must succeed.
+- The graphical toolkit GTK+ 2.x. See http://www.gtk.org.
+  The official supported version is at least 2.24.x.
+  You may still compile CoqIde with older versions and use all features.
+  Run
 
-	  You need at least version 2.14.2.
+	pkg-config --modversion gtk+-2.0
 
-	  Your distribution may contain precompiled packages. For
-          example, for Debian, run
-                aptitude install liblablgtksourceview2-ocaml-dev
-		   for Mandriva, run
-		urpmi ocaml-lablgtk-devel
+  to check your version.
+  Do not forget to install the development headers packages.
 
-          If it does not, see
-	  http://lablgtk.forge.ocamlcore.org/
+  On Debian, installing lablgtk2 (see below) will automatically
+  install GTK+. (But "aptitude install libgtk2.0-dev" will
+  install GTK+ 2.x, should you need to force it for one reason
+  or another.)
+- The OCaml bindings for GTK+ 2.x, lablgtk2 with support for gtksourceview2.
+  You need at least version 2.14.2.
 
-          One official releases of lablgtk2 is here:
-          https://forge.ocamlcore.org/frs/download.php/561/lablgtk-2.14.2.tar.gz
+  Your distribution may contain precompiled packages. For example, for
+  Debian, run
 
-          If you are in a hurry just run :
+        aptitude install liblablgtksourceview2-ocaml-dev
 
-              cd /tmp && \
-              wget \
-               https://forge.ocamlcore.org/frs/download.php/561/lablgtk-2.14.2.tar.gz && \
-              tar zxvf lablgtk-2.14.2.tar.gz && \
-              cd lablgtk-2.14.2 && \
-              ./configure && \
-              make world && \
-              make install
+  for Mandriva, run
 
-   	  You must have write access to the OCaml standard library path.
+	urpmi ocaml-lablgtk-devel
 
-          If this fails, read lablgtk-2.14.2/README.
+  If it does not, see http://lablgtk.forge.ocamlcore.org/
+
+  The basic command installing lablgtk2 from the source package is:
+
+        ./configure && make world && make install
+
+   You must have write access to the OCaml standard library path.
+   If this fails, read lablgtk-2.14.2/README.
 
 
 INSTALLATION
- 0) For optimal performance, OCaml must support native threads (aka pthreads). 
-    If this not the case, this means that Coq computations will be slow and 
-    "make ide" will fail. Use "make bin/coqide.byte" instead. To fix this 
-    problem, just recompile OCaml from source and configure OCaml with : 
-	"./configure --with-pthreads". 
-    In case you install over an existing copy of OCaml, you should better 
-    empty the OCaml installation directory.
 
- 1) Go into your Coq source directory and, as usual, configure with:
+0) For optimal performance, OCaml must support native threads (aka pthreads).
+   If this not the case, this means that Coq computations will be slow and
+   "make ide" will fail. Use "make bin/coqide.byte" instead. To fix this
+   problem, just recompile OCaml from source and configure OCaml with:
+
+	"./configure --with-pthreads". 
+
+   In case you install over an existing copy of OCaml, you should better
+   empty the OCaml installation directory.
+
+1) Go into your Coq source directory and, as usual, configure with:
 
 	./configure
 
-    This should detect the ability of making CoqIde; check that is
-    says it has detected this ability and activated the building of
-    CoqIde.
+   This should detect the ability of making CoqIde; check in the
+   report printed by configure that ability to build CoqIde is detected.
 
-    Then compile with
+   Then compile with
 
 	make world
 
-    and install with
+   and install with
 
 	make install
 
-    In case you are upgrading from an old version you may need to run
+   In case you are upgrading from an old version you may need to run
+
 	make clean-ide
 
-3) You may now run bin/coqide
+2) You may now run bin/coqide
 
 
 NOTES
-There are three configuration files located in your $(XDG_CONFIG_HOME)/coq dir.
- You may need to set HOME to some sensible value under Windows.
 
-- coqiderc is generated by coqide itself. It may be edited by hand or 
+There are three configuration files located in your $(XDG_CONFIG_HOME)/coq
+dir (defaulting to $HOME/.config/coq).
+
+- coqiderc is generated by coqide itself. It may be edited by hand or
   by using the Preference menu from coqide. It will be generated the first time
   you save your the preferences in Coqide.
 
@@ -119,13 +111,13 @@ Read ide/FAQ for more informations.
 
 TROUBLESHOOTING
 
-  - Problem with automatic templates
+- Problem with automatic templates
 
-    Some users may experiment problems with unwanted automatic
-    templates while using Coqide. This is due to a change in the
-    modifiers keys available through GTK. The straightest way to get
-    rid of the problem is to edit by hand your coqiderc (either
-    /home/<user>/.config/coq/coqiderc under Linux, or 
-    C:\Documents and Settings\<user>\.config\coq\coqiderc under Windows) 
-    and replace any occurence of MOD4 by MOD1.
+  Some users may experiment problems with unwanted automatic
+  templates while using Coqide. This is due to a change in the
+  modifiers keys available through GTK. The straightest way to get
+  rid of the problem is to edit by hand your coqiderc (either
+  /home/<user>/.config/coq/coqiderc under Linux, or
+  C:\Documents and Settings\<user>\.config\coq\coqiderc under Windows)
+  and replace any occurence of MOD4 by MOD1.
 

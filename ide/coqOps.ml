@@ -215,8 +215,17 @@ object(self)
       document_length <- pred document_length;
       segment#set_length document_length;
     in
+    let on_click id =
+      let find _ _ s = Int.equal s.index id in
+      let sentence = Doc.find document find in
+      let mark = sentence.stop in
+      let iter = script#buffer#get_iter_at_mark mark in
+      script#buffer#place_cursor iter;
+      ignore (script#scroll_to_iter ~use_align:true ~yalign:0. iter)
+    in
     let _ = (Doc.connect document)#pushed on_push in
     let _ = (Doc.connect document)#popped on_pop in
+    let _ = segment#connect#clicked on_click in
     ()
 
   method private tooltip_callback ~x ~y ~kbd tooltip =
