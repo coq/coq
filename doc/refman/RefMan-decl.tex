@@ -381,7 +381,7 @@ thus B by HB.
 Abort.
 \end{coq_eval}
 
-The command fails the refinement process cannot find a place to fit
+The command fails if the refinement process cannot find a place to fit
 the object in a proof of the conclusion.
 
 
@@ -494,7 +494,7 @@ suffices to have x such that HP':(P x) to show B by HP,HP'.
 Abort.
 \end{coq_eval}
 
-Finally, an example where {\tt focus} is handy : local assumptions.  
+Finally, an example where {\tt focus} is handy: local assumptions.
 
 \begin{coq_eval}
 Theorem T: forall (A:Prop) (P:nat -> Prop), P 2 -> A -> A /\ (forall x, x = 2 -> P x).

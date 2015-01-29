@@ -65,8 +65,8 @@ make is so that tactics are, by default, applied to every goal
 simultaneously. Then, to apply a tactic {\tt tac} to the first goal
 only, you can write {\tt 1:tac}.
 
-\subsection[\tt Test Default Goal Selector ``\selector''.]
-           {\tt Test Default Goal Selector ``\selector''.
+\subsection[\tt Test Default Goal Selector.]
+           {\tt Test Default Goal Selector.
             \comindex{Test Default Goal Selector}}
 This command displays the current default selector.
 
@@ -2029,7 +2029,7 @@ Import Nat.
 Functional Scheme minus_ind := Induction for minus Sort Prop.
 Check minus_ind.
 Lemma le_minus (n m:nat) : n - m <= n.
-functional induction (minus n m); simpl; auto.
+functional induction (minus n m) using minus_ind; simpl; auto.
 \end{coq_example}
 \begin{coq_example*}
 Qed.
