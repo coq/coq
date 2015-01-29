@@ -298,8 +298,11 @@ esac
 
 # executable extension
 
-case $ARCH in
-    win32) 
+case "$ARCH,$CYGWIN" in
+    win32,yes)
+      EXE=".exe"
+      DLLEXT=".so";;
+    win32,*)
       EXE=".exe"
       DLLEXT=".dll";;
     *) EXE=""
