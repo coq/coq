@@ -455,7 +455,7 @@ let parse_args arglist =
     |"-compile-verbose" -> add_compile true (next ())
     |"-dump-glob" -> Dumpglob.dump_into_file (next ()); glob_opt := true
     |"-feedback-glob" -> Dumpglob.feedback_glob ()
-    |"-exclude-dir" -> exclude_search_in_dirname (next ())
+    |"-exclude-dir" -> Systemdirs.exclude_directory (next ())
     |"-init-file" -> set_rcfile (next ())
     |"-inputstate"|"-is" -> set_inputstate (next ())
     |"-load-ml-object" -> Mltop.dir_ml_load (next ())

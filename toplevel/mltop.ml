@@ -11,6 +11,7 @@ open Util
 open Pp
 open Flags
 open Libobject
+open Systemdirs
 open System
 
 (* Code to hook Coq into the ML toplevel -- depends on having the
@@ -155,7 +156,7 @@ let add_ml_dir s =
     | WithoutTop when has_dynlink -> keep_copy_mlpath s
     | _ -> ()
 
-(* For Rec Add ML Path *)
+(* For Rec Add ML Path (-R) *)
 let add_rec_ml_dir unix_path =
   List.iter (fun (lp,_) -> add_ml_dir lp) (all_subdirs ~unix_path)
 

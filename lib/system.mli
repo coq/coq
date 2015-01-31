@@ -14,8 +14,6 @@
     given by the user. For efficiency, we keep the full path (field
     [directory]), the root path and the path relative to the root. *)
 
-val exclude_search_in_dirname : string -> unit
-
 val all_subdirs : unix_path:string -> (CUnix.physical_path * string list) list
 val is_in_path : CUnix.load_path -> string -> bool
 val is_in_system_path : string -> bool
@@ -23,8 +21,6 @@ val where_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
 val where_in_path_rex :
   CUnix.load_path -> Str.regexp -> (CUnix.physical_path * string) list
-
-val exists_dir : string -> bool
 
 val find_file_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string

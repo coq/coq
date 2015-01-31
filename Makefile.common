@@ -232,7 +232,7 @@ IDEMOD:=$(shell cat ide/ide.mllib)
 
 # coqmktop, coqc
 
-COQENVCMO:=lib/clib.cma lib/errors.cmo
+COQENVCMO:=lib/clib.cma lib/errors.cmo lib/systemdirs.cmo
 
 COQMKTOPCMO:=$(COQENVCMO) tools/tolink.cmo tools/coqmktop.cmo
 

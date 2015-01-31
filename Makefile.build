@@ -606,6 +606,7 @@ tools: $(TOOLS) $(DEBUGPRINTERS) $(COQDEPBOOT)
 # coqdep_boot.
 
 COQDEPBOOTSRC:= \
+  lib/systemdirs.mli lib/systemdirs.ml \
   tools/coqdep_lexer.mli tools/coqdep_lexer.ml \
   tools/coqdep_common.mli tools/coqdep_common.ml \
   tools/coqdep_boot.ml
