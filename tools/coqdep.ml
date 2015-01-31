@@ -9,6 +9,7 @@
 open Printf
 open Coqdep_lexer
 open Coqdep_common
+open System
 
 (** The basic parts of coqdep (i.e. the parts used by [coqdep -boot])
     are now in [Coqdep_common]. The code that remains here concerns
@@ -461,7 +462,7 @@ let rec parse = function
   | "-R" :: ([] | [_]) -> usage ()
   | "-dumpgraph" :: f :: ll -> option_dump := Some (false, f); parse ll
   | "-dumpgraphbox" :: f :: ll -> option_dump := Some (true, f); parse ll
-  | "-exclude-dir" :: r :: ll -> norec_dirnames := r::!norec_dirnames; parse ll
+  | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse ll
   | "-exclude-dir" :: [] -> usage ()
   | "-coqlib" :: r :: ll -> Flags.coqlib_spec := true; Flags.coqlib := r; parse ll
   | "-coqlib" :: [] -> usage ()

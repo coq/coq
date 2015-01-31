@@ -13,44 +13,85 @@ open Errors
 open Util
 open Unix
 
-(* All subdirectories, recursively *)
+(** Dealing with directories *)
+
+type unix_path = string (* path in unix-style, with '/' separator *)
+
+type file_kind =
+  | FileDir of unix_path * (* basename of path: *) string
+  | FileRegular of string (* basename of file *)
+
+(* Copy of Filename.concat but assuming paths to always be POSIX *)
+
+let (//) dirname filename =
+  let l = String.length dirname in
+  if l = 0 || dirname.[l-1] = '/'
+  then dirname ^ filename
+  else dirname ^ "/" ^ filename
+
+(* Excluding directories; We avoid directories starting with . as well
+   as CVS and _darcs and any subdirs given via -exclude-dir *)
+
+let skipped_dirnames = ref ["CVS"; "_darcs"]
+
+let exclude_directory f = skipped_dirnames := f :: !skipped_dirnames
+
+let ok_dirname f =
+  not (f = "") && f.[0] != '.' &&
+  not (List.mem f !skipped_dirnames) (*&&
+  (match Unicode.ident_refutation f with None -> true | _ -> false)*)
+
+(* Check directory can be opened *)
 
 let exists_dir dir =
   try let _ = closedir (opendir dir) in true with Unix_error _ -> false
 
-let skipped_dirnames = ref ["CVS"; "_darcs"]
+let check_unix_dir warn dir =
+  if (Sys.os_type = "Win32" || Sys.os_type = "Cygwin") &&
+    (String.length dir > 2 && dir.[1] = ':' ||
+     String.contains dir '\\' ||
+     String.contains dir ';')
+  then warn ("assuming " ^ dir ^
+             " to be a Unix path even if looking like a Win32 path.")
 
-let exclude_search_in_dirname f = skipped_dirnames := f :: !skipped_dirnames
+let apply_subdir f path name =
+  (* we avoid all files and subdirs starting by '.' (e.g. .svn) *)
+  (* as well as skipped files like CVS, ... *)
+  if name.[0] <> '.' && ok_dirname name then
+    let path = if path = "." then name else path//name in
+    match try (stat path).st_kind with Unix_error _ -> S_BLK with
+    | S_DIR -> f (FileDir (path,name))
+    | S_REG -> f (FileRegular name)
+    | _ -> ()
 
-let ok_dirname f =
-  not (String.is_empty f) && f.[0] != '.' &&
-  not (String.List.mem f !skipped_dirnames) &&
-  (match Unicode.ident_refutation f with None -> true | _ -> false)
+let process_directory f path =
+  let dirh = opendir path in
+  try while true do apply_subdir f path (readdir dirh) done
+  with End_of_file -> closedir dirh
+
+let process_subdirectories f path =
+  let f = function FileDir (path,base) -> f path base | FileRegular _ -> () in
+  process_directory f path
+
+(** Returns the list of all recursive subdirectories of [root] in
+    depth-first search, with sons ordered as on the file system;
+    warns if [root] does not exist *)
 
 let all_subdirs ~unix_path:root =
   let l = ref [] in
   let add f rel = l := (f, rel) :: !l in
-  let rec traverse dir rel =
-    let dirh = opendir dir in
-    try
-      while true do
-	let f = readdir dirh in
-	if ok_dirname f then
-	  let file = Filename.concat dir f in
-	  try
-            begin match (stat file).st_kind with
-	    | S_DIR ->
-	      let newrel = rel @ [f] in
-	      add file newrel;
-	      traverse file newrel
-            | _ -> ()
-            end
-	  with Unix_error (e,s1,s2) -> ()
-      done
-    with End_of_file ->
-      closedir dirh
+  let rec traverse path rel =
+    let f = function
+      | FileDir (path,f) ->
+	  let newrel = rel @ [f] in
+	  add path newrel;
+	  traverse path newrel
+      | _ -> ()
+    in process_directory f path
   in
-  if exists_dir root then traverse root [];
+  check_unix_dir (fun s -> msg_warning (str s)) root;
+  if exists_dir root then traverse root []
+  else msg_warning (str ("Cannot open " ^ root));
   List.rev !l
 
 let rec search paths test =
