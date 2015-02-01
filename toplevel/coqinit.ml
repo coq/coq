@@ -71,6 +71,12 @@ let add_stdlib_path ~unix_path ~coq_root ~with_ml =
   if with_ml then
     Mltop.add_rec_ml_dir unix_path
 
+let add_stdlib_uppercase_subpaths ~unix_path ~coq_root ~with_ml =
+  Systemdirs.process_subdirectories (fun unix_path f ->
+    let id = Names.Id.of_string (String.capitalize f) in
+    let coq_root = Libnames.add_dirpath_suffix coq_root id in
+    add_stdlib_path ~unix_path ~coq_root ~with_ml) unix_path
+
 let add_userlib_path ~unix_path =
   Mltop.add_path ~unix_path ~coq_root:Nameops.default_root_prefix ~implicit:false;
   Mltop.add_rec_ml_dir unix_path
@@ -101,7 +107,7 @@ let init_load_path () =
     (* then standard library *)
     add_stdlib_path ~unix_path:(coqlib/"theories") ~coq_root ~with_ml:false;
     (* then plugins *)
-    add_stdlib_path ~unix_path:(coqlib/"plugins") ~coq_root ~with_ml:true;
+    add_stdlib_uppercase_subpaths ~unix_path:(coqlib/"plugins") ~coq_root ~with_ml:false;
     (* then user-contrib *)
     if Sys.file_exists user_contrib then
       add_userlib_path ~unix_path:user_contrib;
