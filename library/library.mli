@@ -37,7 +37,7 @@ type seg_proofs = Term.constr Future.computation array
 
 (** Open a module (or a library); if the boolean is true then it's also
    an export otherwise just a simple import *)
-val import_module : bool -> qualid located -> unit
+val import_module : bool -> qualid located list -> unit
 
 (** {6 Start the compilation of a library } *)
 val start_library : string -> DirPath.t * string
