@@ -654,7 +654,6 @@ let used_section_variables env inds =
   keep_hyps env ids
 
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
-let rel_appvect n m = rel_vect n (List.length m)
 
 exception UndefinableExpansion
 

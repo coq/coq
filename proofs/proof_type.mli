@@ -9,7 +9,6 @@
 open Evd
 open Names
 open Term
-open Context
 open Tacexpr
 open Glob_term
 open Nametab

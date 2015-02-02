@@ -571,7 +571,6 @@ let constr_modpath (ind,_) = ind_modpath ind
 
 let ith_mutual_inductive (mind, _) i = (mind, i)
 let ith_constructor_of_inductive ind i = (ind, i)
-let ith_constructor_of_pinductive (ind,u) i = ((ind,i),u)
 let inductive_of_constructor (ind, i) = ind
 let index_of_constructor (ind, i) = i
 

@@ -8,7 +8,6 @@
 
 open Pp
 open Genarg
-open Names
 open Constrexpr
 open Tacexpr
 open Ppextend

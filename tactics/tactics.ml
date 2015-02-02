@@ -765,8 +765,6 @@ let intro = intro_gen (NamingAvoid []) MoveLast false false
 let introf = intro_gen (NamingAvoid []) MoveLast true false
 let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast false false
 
-let intro_then_force = intro_then_gen (NamingAvoid []) MoveLast true false
-
 let intro_move_avoid idopt avoid hto = match idopt with
   | None -> intro_gen (NamingAvoid avoid) hto true false
   | Some id -> intro_gen (NamingMustBe (dloc,id)) hto true false
@@ -2789,12 +2787,6 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   in
   atomize_one (List.length argl) [] []
   end
-
-let find_atomic_param_of_ind nparams indtyp =
-  let argl = snd (decompose_app indtyp) in
-  let params,args = List.chop nparams argl in
-  let test c = isVar c && not (List.exists (dependent c) params) in
-  List.map destVar (List.filter test args)
 
 (* [cook_sign] builds the lists [beforetoclear] (preceding the
    ind. var.) and [aftertoclear] (coming after the ind. var.)  of hyps

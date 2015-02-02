@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Univ
 open Environ
 open Declarations
 open Entries

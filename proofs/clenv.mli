@@ -10,7 +10,6 @@ open Names
 open Term
 open Environ
 open Evd
-open Mod_subst
 open Unification
 open Misctypes
 

@@ -6,7 +6,6 @@ open Vars
 open Context
 open Namegen
 open Names
-open Declareops
 open Pp
 open Entries
 open Tactics

@@ -8,7 +8,6 @@
 open Names
 open Term
 open Pre_env
-open Nativevalues
 open Nativeinstr
 
 (** This file defines the lambda code generation phase of the native compiler *)

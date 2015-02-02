@@ -10,7 +10,6 @@
    machine, Oct 2004 *)
 (* Extension: Arnaud Spiwack (support for native arithmetic), May 2005 *)
 
-open Names
 open Term
 open Cbytecodes
 open Copcodes

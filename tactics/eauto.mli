@@ -8,7 +8,6 @@
 
 open Term
 open Proof_type
-open Auto
 open Evd
 open Hints
 

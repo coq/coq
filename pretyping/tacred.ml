@@ -23,7 +23,6 @@ open Reductionops
 open Cbv
 open Patternops
 open Locus
-open Pretype_errors
 
 (* Errors *)
 

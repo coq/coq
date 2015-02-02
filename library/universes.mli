@@ -7,12 +7,9 @@
 (************************************************************************)
 
 open Util
-open Pp
 open Names
 open Term
-open Context
 open Environ
-open Locus
 open Univ
 
 (** Universes *)

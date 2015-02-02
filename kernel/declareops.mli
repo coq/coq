@@ -9,7 +9,6 @@
 open Declarations
 open Mod_subst
 open Univ
-open Context
 
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)

@@ -18,7 +18,6 @@ open Declarations
 open Declareops
 open Environ
 open Reductionops
-open Inductive
 
 (* The following three functions are similar to the ones defined in
    Inductive, but they expect an env *)

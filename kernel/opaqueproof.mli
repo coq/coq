@@ -9,7 +9,6 @@
 open Names
 open Term
 open Mod_subst
-open Int
 
 (** This module implements the handling of opaque proof terms.
     Opauqe proof terms are special since:

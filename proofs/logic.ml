@@ -13,7 +13,6 @@ open Names
 open Nameops
 open Term
 open Vars
-open Context
 open Termops
 open Environ
 open Reductionops
@@ -79,12 +78,6 @@ let with_check = Flags.with_option check
    returns [tail::(f head (id,_,_) (rev tail))] *)
 let apply_to_hyp sign id f =
   try apply_to_hyp sign id f
-  with Hyp_not_found ->
-    if !check then error_no_such_hypothesis id
-    else sign
-
-let apply_to_hyp_and_dependent_on sign id f g =
-  try apply_to_hyp_and_dependent_on sign id f g
   with Hyp_not_found ->
     if !check then error_no_such_hypothesis id
     else sign
@@ -276,11 +269,6 @@ let move_hyp toleft (left,(idfrom,_,_ as declfrom),right) hto =
 	(moverec [] [declfrom] right) empty_named_context_val in
     List.fold_left (fun sign d -> push_named_context_val d sign)
       right left
-
-let rename_hyp id1 id2 sign =
-  apply_to_hyp_and_dependent_on sign id1
-    (fun (_,b,t) _ -> (id2,b,t))
-    (fun d _ -> map_named_declaration (replace_vars [id1,mkVar id2]) d)
 
 (**********************************************************************)
 

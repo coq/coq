@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Evd
 open Coqlib
 
 (** High-order patterns *)
@@ -145,8 +144,6 @@ val is_matching_sigma : constr -> bool
 val match_eqdec : constr -> bool * constr * constr * constr * constr
 
 (** Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
-open Proof_type
-open Tacmach
 val dest_nf_eq : [ `NF ] Proofview.Goal.t -> constr -> (constr * constr * constr)
 
 (** Match a negation *)

@@ -12,7 +12,6 @@ open Names
 open Term
 open Context
 open Environ
-open Mod_subst
 
 (** {5 Existential variables and unification states}
 

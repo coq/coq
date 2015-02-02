@@ -8,7 +8,6 @@
 
 open Names
 open Context
-open Evd
 open Environ
 open Constrexpr
 open Typeclasses

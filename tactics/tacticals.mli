@@ -6,14 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
 open Pp
 open Names
 open Term
 open Context
 open Tacmach
 open Proof_type
-open Clenv
 open Tacexpr
 open Locus
 open Misctypes

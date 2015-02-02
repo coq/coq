@@ -9,8 +9,6 @@
 open Errors
 open Term
 open Hipattern
-open Tacmach
-open Tacticals
 open Tactics
 open Coqlib
 open Reductionops

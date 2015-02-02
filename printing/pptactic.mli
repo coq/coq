@@ -15,9 +15,6 @@ open Names
 open Constrexpr
 open Tacexpr
 open Ppextend
-open Environ
-open Pattern
-open Misctypes
 
 type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) ->

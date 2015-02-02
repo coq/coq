@@ -10,7 +10,6 @@ open Names
 open Term
 open Decl_kinds
 open Constrexpr
-open Tacexpr
 open Vernacexpr
 open Pfedit
 

@@ -16,7 +16,6 @@ open Term
 open Tactics
 open Names
 open Globnames
-open Tacticals
 open Tacmach
 open Fourier
 open Contradiction

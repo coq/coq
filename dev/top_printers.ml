@@ -22,7 +22,6 @@ open Evd
 open Goptions
 open Genarg
 open Clenv
-open Universes
 
 let _ = Detyping.print_evar_arguments := true
 let _ = Detyping.print_universes := true

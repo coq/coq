@@ -16,7 +16,6 @@ open Context
 open Declarations
 open Tacmach
 open Clenv
-open Misctypes
 
 (************************************************************************)
 (* Tacticals re-exported from the Refiner module                        *)

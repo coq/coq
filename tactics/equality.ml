@@ -487,9 +487,6 @@ let apply_special_clear_request clear_flag f =
       e when catchable_exception e -> tclIDTAC
   end
 
-type delayed_open_constr_with_bindings =
-    env -> evar_map -> evar_map * constr with_bindings
-
 let general_multi_rewrite with_evars l cl tac =
   let do1 l2r f =
     Proofview.Goal.enter begin fun gl ->
@@ -1474,8 +1471,6 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
 (* then it uses the predicate "\x.phi(proj1_sig x,proj2_sig x)", and so   *)
 (* on for further iterated sigma-tuples                                   *)
 
-exception NothingToRewrite
-
 let cutSubstInConcl l2r eqn =
   Proofview.Goal.nf_enter begin fun gl ->
   let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
@@ -1513,9 +1508,6 @@ let try_rewrite tac =
     | e when catchable_exception e ->
 	tclZEROMSG
           (strbrk "Cannot find a well-typed generalization of the goal that makes the proof progress.")
-    | NothingToRewrite ->
-	tclZEROMSG
-          (strbrk "Nothing to rewrite.")
     | e -> Proofview.tclZERO ~info e
   end
 

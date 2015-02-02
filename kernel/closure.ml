@@ -771,24 +771,6 @@ let drop_parameters depth n argstk =
   (* we know that n < stack_args_size(argstk) (if well-typed term) *) 
   anomaly (Pp.str "ill-typed term: found a match on a partially applied constructor")
 
-
-let rec get_parameters depth n argstk =
-  match argstk with
-      Zapp args::s ->
-        let q = Array.length args in
-        if n > q then Array.append args (get_parameters depth (n-q) s)
-        else if Int.equal n q then [||]
-        else Array.sub args 0 n
-    | Zshift(k)::s -> 
-      get_parameters (depth-k) n s
-    | [] -> (* we know that n < stack_args_size(argstk) (if well-typed term) *)
-	if Int.equal n 0 then [||]
-	else raise Not_found (* Trying to eta-expand a partial application..., should do 
-				eta expansion first? *)
-    | _ -> assert false
-	(* strip_update_shift_app only produces Zapp and Zshift items *)
-
-
 (** [eta_expand_ind_stack env ind c s t] computes stacks correspoding 
     to the conversion of the eta expansion of t, considered as an inhabitant 
     of ind, and the Constructor c of this inductive type applied to arguments

@@ -402,9 +402,6 @@ let intern_from_file f =
 
 module DPMap = Map.Make(DirPath)
 
-let deps_to_string deps =
-  Array.fold_left (fun s (n, _) -> s^"\n  - "^(DirPath.to_string n)) "" deps
-
 let rec intern_library (needed, contents) (dir, f) from =
   Pp.feedback(Feedback.FileDependency (from, f));
   (* Look if in the current logical environment *)

@@ -447,13 +447,6 @@ type subterm_spec =
 
 let eq_wf_paths = Rtree.equal Declareops.eq_recarg
 
-let pp_recarg = function
-  | Norec -> Pp.str "Norec"
-  | Mrec i -> Pp.str ("Mrec "^MutInd.to_string (fst i))
-  | Imbr i -> Pp.str ("Imbr "^MutInd.to_string (fst i))
-
-let pp_wf_paths = Rtree.pp_tree pp_recarg
-
 let inter_recarg r1 r2 = match r1, r2 with
 | Norec, Norec -> Some r1
 | Mrec i1, Mrec i2
