@@ -61,23 +61,34 @@ let rec make_tags = function
   | GramNonTerminal (loc, etyp, _, po) :: l -> etyp :: make_tags l
   | [] -> []
 
+let make_fresh_key =
+  let id = Summary.ref ~name:"Tactic Notation counter" 0 in
+  fun () -> KerName.make
+    (Safe_typing.current_modpath (Global.safe_env ()))
+    (Global.current_dirpath ())
+    (incr id; Label.make ("_" ^ string_of_int !id))
+
 type tactic_grammar_obj = {
+  tacobj_key : KerName.t; 
   tacobj_local : locality_flag;
   tacobj_tacgram : tactic_grammar;
   tacobj_tacpp : Pptactic.pp_tactic;
   tacobj_body : Tacexpr.glob_tactic_expr
 }
 
-let cache_tactic_notation ((_, key), tobj) =
+let cache_tactic_notation (_, tobj) =
+  let key = tobj.tacobj_key in
   Tacenv.register_alias key tobj.tacobj_body;
   Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp
 
-let open_tactic_notation i ((_, key), tobj) =
+let open_tactic_notation i (_, tobj) =
+  let key = tobj.tacobj_key in
   if Int.equal i 1 && not tobj.tacobj_local then
     Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
 
-let load_tactic_notation i ((_, key), tobj) =
+let load_tactic_notation i (_, tobj) =
+  let key = tobj.tacobj_key in
   (** Only add the printing and interpretation rules. *)
   Tacenv.register_alias key tobj.tacobj_body;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp;
@@ -115,6 +126,7 @@ let add_tactic_notation (local,n,prods,e) =
     tacgram_prods = prods;
   } in
   let tacobj = {
+    tacobj_key = make_fresh_key ();
     tacobj_local = local;
     tacobj_tacgram = parule;
     tacobj_tacpp = pprule;
