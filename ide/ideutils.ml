@@ -175,10 +175,7 @@ let select_file_for_save ~title ?filename () =
   file_chooser#add_select_button_stock `SAVE `SAVE ;
   file_chooser#add_filter (filter_coq_files ());
   file_chooser#add_filter (filter_all_files ());
-  (* this line will be used when a lablgtk >= 2.10.0 is the default
-     on most distributions:
-     file_chooser#set_do_overwrite_confirmation true;
-  *)
+  file_chooser#set_do_overwrite_confirmation true;
   file_chooser#set_default_response `SAVE;
   let dir,filename = match filename with
     |None -> !last_dir, ""
