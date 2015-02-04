@@ -22,7 +22,7 @@ let thread_friendly_read_fd fd s ~off ~len =
   let rec loop () =
     try Unix.read fd s off len
     with Unix.Unix_error((Unix.EWOULDBLOCK|Unix.EAGAIN|Unix.EINTR),_,_) ->
-      while not (safe_wait_timed_read fd 1.0) do Thread.yield () done;
+      while not (safe_wait_timed_read fd 0.05) do Thread.yield () done;
       loop ()
   in 
     loop ()
