@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Xml_datatype
 
 type 'annotation located = {
@@ -14,12 +15,18 @@ type 'annotation located = {
   endpos     : int
 }
 
-let rich_pp annotate ppcmds =
-  (** First, we use Format to introduce tags inside
-      the pretty-printed document.
+type context =
+| Leaf
+| Node of string * xml list * context
 
+let rich_pp annotate ppcmds =
+  (** First, we use Format to introduce tags inside the pretty-printed document.
       Each inserted tag is a fresh index that we keep in sync with the contents
       of annotations.
+
+      We build an XML tree on the fly, by plugging ourselves in Format tag
+      marking functions. As those functions are called when actually writing to
+      the device, the resulting tree is correct.
   *)
   let annotations = ref [] in
   let index = ref (-1) in
@@ -29,58 +36,67 @@ let rich_pp annotate ppcmds =
     string_of_int !index
   in
 
-  let tagged_pp = Format.(
+  let pp_buffer = Buffer.create 13 in
 
-    (** Warning: The following instructions are valid only if
-        [str_formatter] is not used for another purpose in
-        Pp.pp_with. *)
+  let push_pcdata context =
+    (** Push the optional PCData on the above node *)
+    if (Buffer.length pp_buffer = 0) then ()
+    else match !context with
+    | Leaf -> assert false
+    | Node (node, child, ctx) ->
+      let data = Buffer.contents pp_buffer in
+      let () = Buffer.clear pp_buffer in
+      context := Node (node, PCData data :: child, ctx)
+  in
 
-    let ft = str_formatter in
+  let open_xml_tag context tag =
+    let () = push_pcdata context in
+    context := Node (tag, [], !context)
+  in
 
-    (** We reuse {!Format} standard way of producing tags
-        inside pretty-printing. *)
-    pp_set_tags ft true;
+  let close_xml_tag context tag =
+    let () = push_pcdata context in
+    match !context with
+    | Leaf -> assert false
+    | Node (node, child, ctx) ->
+      let () = assert (String.equal tag node) in
+      let xml = Element (node, [], List.rev child) in
+      match ctx with
+      | Leaf ->
+        (** Final node: we keep the result in a dummy context *)
+        context := Node ("", [xml], Leaf)
+      | Node (node, child, ctx) ->
+        context := Node (node, xml :: child, ctx)
+  in
+
+  let xml_pp = Format.(
+
+    let ft = formatter_of_buffer pp_buffer in
+
+    let context = ref Leaf in
+
+    let tag_functions = {
+      mark_open_tag = (fun tag -> let () = open_xml_tag context tag in "");
+      mark_close_tag = (fun tag -> let () = close_xml_tag context tag in "");
+      print_open_tag = ignore;
+      print_close_tag = ignore;
+    } in
+
+    pp_set_formatter_tag_functions ft tag_functions;
+    pp_set_mark_tags ft true;
 
     (** The whole output must be a valid document. To that
-        end, we nest the document inside a tag named <pp>. *)
+        end, we nest the document inside <pp> tags. *)
     pp_open_tag ft "pp";
-
-    (** XML ignores spaces. The problem is that our pretty-printings
-        are based on spaces to indent. To solve that problem, we
-        systematically output non-breakable spaces, which are properly
-        honored by XML.
-
-        To do so, we reconfigure the [str_formatter] temporarily by
-        hijacking the function that output spaces. *)
-    let out, flush, newline, std_spaces =
-      pp_get_all_formatter_output_functions ft ()
-    in
-    let set = pp_set_all_formatter_output_functions ft ~out ~flush ~newline in
-    set ~spaces:(fun k ->
-      for i = 0 to k - 1 do
-        Buffer.add_string stdbuf "&nbsp;"
-      done
-    );
-
-    (** Some characters must be escaped in XML. This is done by the
-        following rewriting of the strings held by pretty-printing
-        commands. *)
-    Pp.(pp_with ~pp_tag ft (rewrite Xml_printer.pcdata_to_string ppcmds));
-
-    (** Insert </pp>. *)
+    Pp.(pp_with ~pp_tag ft ppcmds);
     pp_close_tag ft ();
 
-    (** Get the final string. *)
-    let output = flush_str_formatter () in
-
-    (** Finalize by restoring the state of the [str_formatter] and the
-        default behavior of Format. By the way, there may be a bug here:
-        there is no {!Format.pp_get_tags} and therefore if the tags flags
-        was already set to true before executing this piece of code, the
-        state of Format is not restored. *)
-    set ~spaces:std_spaces;
-    pp_set_tags ft false;
-    output
+    (** Get the resulting XML tree. *)
+    let () = pp_print_flush ft () in
+    let () = assert (Buffer.length pp_buffer = 0) in
+    match !context with
+    | Node ("", [xml], Leaf) -> xml
+    | _ -> assert false
   )
   in
   (** Second, we retrieve the final function that relates
@@ -88,24 +104,7 @@ let rich_pp annotate ppcmds =
   let objs = CArray.rev_of_list !annotations in
   let get index = annotate objs.(index) in
 
-  (** Third, we parse the resulting string. It is a valid XML
-      document (in the sense of Xml_parser). As blanks are
-      meaningful we deactivate canonicalization in the XML
-      parser. *)
-  let xml_pp =
-    try
-      Xml_parser.(parse ~do_not_canonicalize:true (make (SString tagged_pp)))
-    with Xml_parser.Error e ->
-      Printf.eprintf
-        "Broken invariant (RichPp): \n\
-         The output semi-structured pretty-printing is ill-formed.\n\
-         Please report.\n\
-         %s"
-        (Xml_parser.error e);
-      exit 1
-  in
-
-  (** Fourth, the low-level XML is turned into a high-level
+  (** Third, the low-level XML is turned into a high-level
       semi-structured document that contains a located annotation in
       every node. During the traversal of the low-level XML document,
       we build a raw string representation of the pretty-print. *)
@@ -132,7 +131,6 @@ let rich_pp annotate ppcmds =
     in
     (startpos, endpos, List.rev cs)
   in
-  let pp_buffer = Buffer.create 13 in
   let xml, _ = node pp_buffer xml_pp in
 
   (** We return the raw pretty-printing and its annotations tree. *)
