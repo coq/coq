@@ -1863,7 +1863,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     pperrnl (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
     exit 1
 
-let merge_proof_branch ?id qast keep brname =
+let merge_proof_branch ?valid ?id qast keep brname =
   let brinfo = VCS.get_branch brname in
   let qed fproof = { qast; keep; brname; brinfo; fproof } in
   match brinfo with
@@ -1886,7 +1886,7 @@ let merge_proof_branch ?id qast keep brname =
       VCS.checkout VCS.Branch.master;
       `Unfocus qed_id
   | { VCS.kind = `Master } ->
-       iraise (State.exn_on Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null))
+       iraise (State.exn_on ?valid Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null))
 
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
@@ -2044,7 +2044,8 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           VCS.commit id (Cmd {cast = x; cids = []; cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
-          let rc = merge_proof_branch ~id:newtip x keep head in
+          let valid = if tty then Some(VCS.get_branch_pos head) else None in
+          let rc = merge_proof_branch ?valid ~id:newtip x keep head in
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish ();
           rc
