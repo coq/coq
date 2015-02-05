@@ -321,7 +321,7 @@ let intern_from_file (dir, f) =
         System.marshal_in_segment f ch in
       (* Verification of the final checksum *)
       let () = close_in ch in
-      let ch = open_in f in
+      let ch = open_in_bin f in
       if not (String.equal (Digest.channel ch pos) checksum) then
         errorlabstrm "intern_from_file" (str "Checksum mismatch");
       let () = close_in ch in

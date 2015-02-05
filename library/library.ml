@@ -314,7 +314,7 @@ let fetch_table what dp (f,pos,digest) =
     if not (String.equal (System.digest_in f ch) digest) then raise Faulty;
     let table, pos', digest' = System.marshal_in_segment f ch in
     let () = close_in ch in
-    let ch' = open_in f in
+    let ch' = open_in_bin f in
     if not (String.equal (Digest.channel ch' pos') digest') then raise Faulty;
     let () = close_in ch' in
     table
