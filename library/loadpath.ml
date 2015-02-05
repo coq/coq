@@ -12,14 +12,13 @@ open Errors
 open Names
 open Libnames
 
-type path_type = ImplicitPath | ImplicitRootPath | RootPath
-
 (** Load paths. Mapping from physical to logical paths. *)
 
 type t = {
   path_physical : CUnix.physical_path;
   path_logical : DirPath.t;
-  path_type : path_type;
+  path_root : bool;
+  path_implicit : bool;
 }
 
 let load_paths = Summary.ref ([] : t list) ~name:"LOADPATHS"
@@ -54,13 +53,14 @@ let remove_load_path dir =
   let filter p = not (String.equal p.path_physical dir) in
   load_paths := List.filter filter !load_paths
 
-let add_load_path phys_path path_type coq_path =
+let add_load_path phys_path coq_path ~root ~implicit =
   let phys_path = CUnix.canonical_path_name phys_path in
   let filter p = String.equal p.path_physical phys_path in
   let binding = {
     path_logical = coq_path;
     path_physical = phys_path;
-    path_type = path_type;
+    path_root = root;
+    path_implicit = implicit;
   } in
   match List.filter filter !load_paths with
   | [] ->
@@ -93,7 +93,7 @@ let expand_root_path dir =
   let rec aux = function
   | [] -> []
   | p :: l ->
-    if p.path_type <> ImplicitPath && is_dirpath_prefix_of p.path_logical dir then
+    if p.path_root && is_dirpath_prefix_of p.path_logical dir then
       let suffix = drop_dirpath_prefix p.path_logical dir in
       extend_path_with_dirpath p.path_physical suffix :: aux l
     else aux l
@@ -123,13 +123,17 @@ let expand_path dir =
   let rec aux = function
   | [] -> []
   | p :: l ->
-    match p.path_type with
-    | ImplicitPath -> expand p dir :: aux l
-    | ImplicitRootPath ->
+    match p.path_implicit, p.path_root with
+    | true, false -> expand p dir :: aux l
+    | true, true ->
       let inters = intersections p.path_logical dir in
       List.map (expand p) inters @ aux l
-    | RootPath ->
+    | false, true ->
       if is_dirpath_prefix_of p.path_logical dir then
 	expand p (drop_dirpath_prefix p.path_logical dir) :: aux l
-      else aux l in
+      else aux l
+    | false, false ->
+      (* nothing to do, an explicit root path should also match above
+         if [is_dirpath_prefix_of p.path_logical dir] were true here *)
+      aux l in
   aux !load_paths
