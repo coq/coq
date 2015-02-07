@@ -1580,6 +1580,7 @@ let collect_proof keep cur hd brkind id =
     let view = VCS.visit id in
     match view.step with
     | `Cmd { cast = x } -> collect (Some (id,x)) (id::accn) view.next
+    | `Sideff (`Ast (x,_)) -> collect (Some (id,x)) (id::accn) view.next
     (* An Alias could jump everywhere... we hope we can ignore it*)
     | `Alias _ -> `Sync (no_name,None,`Alias)
     | `Fork((_,_,_,_::_::_), _) ->
