@@ -2278,7 +2278,7 @@ let interp verb (_,e as lexpr) =
     let print_goals =
       verb && match clas with
        | VtQuery _, _ -> false
-       | (VtProofStep _ | VtStm (VtBack _, _)), _ -> true
+       | (VtProofStep _ | VtStm (VtBack _, _) | VtStartProof _), _ -> true
        | _ -> not !Flags.coqtop_ui || !Flags.print_emacs in
     try finish ~print_goals ()
     with e ->
