@@ -71,7 +71,7 @@ END
 TACTIC EXTEND left_with
   [ "left" "with" bindings(bl) ] -> [
     let { Evd.sigma = sigma ; it = bl } = bl in
-    Proofview.Unsafe.tclEVARS sigma <*> Tactics.left_with_bindings false bl
+    Tacticals.New.tclWITHHOLES false (Tactics.left_with_bindings false) sigma bl
   ]
 END
 
@@ -95,7 +95,7 @@ END
 TACTIC EXTEND right_with
   [ "right" "with" bindings(bl) ] -> [
     let { Evd.sigma = sigma ; it = bl } = bl in
-    Proofview.Unsafe.tclEVARS sigma <*> Tactics.right_with_bindings false bl
+    Tacticals.New.tclWITHHOLES false (Tactics.right_with_bindings false) sigma bl
   ]
 END
 
@@ -118,7 +118,7 @@ TACTIC EXTEND constructor
     let { Evd.sigma = sigma; it = bl } = bl in
     let i = Tacinterp.interp_int_or_var ist i in
     let tac c = Tactics.constructor_tac false None i c in
-    Proofview.Unsafe.tclEVARS sigma <*> tac bl
+    Tacticals.New.tclWITHHOLES false tac sigma bl
   ]
 END
 
@@ -142,7 +142,7 @@ TACTIC EXTEND specialize
   [ "specialize" constr_with_bindings(c) ] -> [
     let { Evd.sigma = sigma; it = c } = c in
     let specialize c = Proofview.V82.tactic (Tactics.specialize c) in
-    Proofview.Unsafe.tclEVARS sigma <*> specialize c
+    Tacticals.New.tclWITHHOLES false specialize sigma c
   ]
 END
 
@@ -163,7 +163,7 @@ END
 TACTIC EXTEND split_with
   [ "split" "with" bindings(bl) ] -> [
     let { Evd.sigma = sigma ; it = bl } = bl in
-    Proofview.Unsafe.tclEVARS sigma <*> Tactics.split_with_bindings false [bl]
+    Tacticals.New.tclWITHHOLES false (Tactics.split_with_bindings false) sigma [bl]
   ]
 END
 

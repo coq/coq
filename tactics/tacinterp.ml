@@ -497,8 +497,6 @@ let interp_fresh_id ist env sigma l =
       Id.of_string s in
   Tactics.fresh_id_in_env avoid id env
 
-
-
 (* Extract the uconstr list from lfun *)
 let extract_ltac_constr_context ist env =
   let open Glob_term in
@@ -1785,12 +1783,12 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma,l' = interp_intro_pattern_list_as_list ist env sigma l in
-        Proofview.Unsafe.tclEVARS sigma <*>
-        name_atomic ~env
+        Tacticals.New.tclWITHHOLES false 
+        (fun l' -> name_atomic ~env
           (TacIntroPattern l)
           (* spiwack: print uninterpreted, not sure if it is the
              expected behaviour. *)
-          (Tactics.intros_patterns l')
+          (Tactics.intros_patterns l')) sigma l'
       end
   | TacIntroMove (ido,hto) ->
       Proofview.Goal.enter begin fun gl ->
@@ -1915,20 +1913,20 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let sigma, ipat' = interp_intro_pattern_option ist env sigma ipat in
         let tac = Option.map (interp_tactic ist) t in
-        Proofview.Unsafe.tclEVARS sigma <*>
-        name_atomic ~env
+        Tacticals.New.tclWITHHOLES false
+        (fun c -> name_atomic ~env
           (TacAssert(b,t,ipat,c))
-          (Tactics.forward b tac ipat' c)
+          (Tactics.forward b tac ipat' c)) sigma c
       end
   | TacGeneralize cl ->
       Proofview.Goal.enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
-        Proofview.Unsafe.tclEVARS sigma <*>
-        name_atomic ~env
+        Tacticals.New.tclWITHHOLES false
+        (fun cl -> name_atomic ~env
           (TacGeneralize cl)
-          (Proofview.V82.tactic (Tactics.Simple.generalize_gen cl))
+          (Proofview.V82.tactic (Tactics.Simple.generalize_gen cl))) sigma cl
       end
   | TacGeneralizeDep c ->
       (new_interp_constr ist c) (fun c ->
@@ -1953,11 +1951,11 @@ and interp_atomic ist tac : unit Proofview.tactic =
             let with_eq = if b then None else Some (true,id) in
             Tactics.letin_tac with_eq na c None cl
           in
-	  Proofview.Unsafe.tclEVARS sigma <*>
           let na = interp_fresh_name ist env sigma na in
-          name_atomic ~env
+          Tacticals.New.tclWITHHOLES false
+          (fun na -> name_atomic ~env
             (TacLetTac(na,c_interp,clp,b,eqpat))
-            (let_tac b na c_interp clp eqpat)
+            (let_tac b na c_interp clp eqpat)) sigma na
         else
         (* We try to keep the pattern structure as much as possible *)
           let let_pat_tac b na c cl eqpat =
@@ -2184,10 +2182,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
         let sigma,ids_interp = interp_or_and_intro_pattern_option ist env sigma ids in
-        Proofview.Unsafe.tclEVARS sigma <*>
-        name_atomic ~env
+        Tacticals.New.tclWITHHOLES false
+        (fun dqhyps -> name_atomic ~env
           (TacInversion(DepInversion(k,c_interp,ids),dqhyps))
-          (Inv.dinv k c_interp ids_interp dqhyps)
+          (Inv.dinv k c_interp ids_interp dqhyps)) sigma dqhyps
       end
   | TacInversion (NonDepInversion (k,idl,ids),hyp) ->
       Proofview.Goal.enter begin fun gl ->
@@ -2196,10 +2194,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let hyps = interp_hyp_list ist env sigma idl in
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
         let sigma, ids_interp = interp_or_and_intro_pattern_option ist env sigma ids in
-        Proofview.Unsafe.tclEVARS sigma <*>
-        name_atomic ~env
+        Tacticals.New.tclWITHHOLES false
+        (fun dqhyps -> name_atomic ~env
           (TacInversion (NonDepInversion (k,hyps,ids),dqhyps))
-          (Inv.inv_clause k ids_interp hyps dqhyps)
+          (Inv.inv_clause k ids_interp hyps dqhyps)) sigma dqhyps
       end
   | TacInversion (InversionUsing (c,idl),hyp) ->
       Proofview.Goal.enter begin fun gl ->

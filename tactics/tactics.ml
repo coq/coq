@@ -2134,11 +2134,12 @@ and intro_pattern_action loc b style pat thin tac id = match pat with
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma,c = f env sigma in
-        Proofview.Unsafe.tclEVARS sigma <*>
+        Tacticals.New.tclWITHHOLES false
           (Tacticals.New.tclTHENFIRST
              (* Skip the side conditions of the apply *)
              (apply_in_once false true true true naming id
                 (None,(sigma,(c,NoBindings))) tac_ipat))
+          sigma
 	  (tac thin None [])
       end
 
