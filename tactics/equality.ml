@@ -494,7 +494,7 @@ let general_multi_rewrite with_evars l cl tac =
       let env = Proofview.Goal.env gl in
       let sigma,c = f env sigma in
       tclWITHHOLES with_evars
-        (general_rewrite_clause l2r with_evars ?tac c) sigma cl
+        (general_rewrite_clause l2r with_evars ?tac c cl) sigma
     end
   in
   let rec doN l2r c = function

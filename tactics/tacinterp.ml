@@ -1784,11 +1784,11 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = Proofview.Goal.sigma gl in
         let sigma,l' = interp_intro_pattern_list_as_list ist env sigma l in
         Tacticals.New.tclWITHHOLES false 
-        (fun l' -> name_atomic ~env
+        (name_atomic ~env
           (TacIntroPattern l)
           (* spiwack: print uninterpreted, not sure if it is the
              expected behaviour. *)
-          (Tactics.intros_patterns l')) sigma l'
+          (Tactics.intros_patterns l')) sigma
       end
   | TacIntroMove (ido,hto) ->
       Proofview.Goal.enter begin fun gl ->
@@ -1822,11 +1822,11 @@ and interp_atomic ist tac : unit Proofview.tactic =
 	    (k,(loc,f))) cb 
 	in
         let sigma,tac = match cl with
-          | None -> sigma, fun l -> Tactics.apply_with_delayed_bindings_gen a ev l
+          | None -> sigma, Tactics.apply_with_delayed_bindings_gen a ev l
           | Some cl ->
               let sigma,(clear,id,cl) = interp_in_hyp_as ist env sigma cl in
-              sigma, fun l -> Tactics.apply_delayed_in a ev clear id l cl in
-        Tacticals.New.tclWITHHOLES ev tac sigma l
+              sigma, Tactics.apply_delayed_in a ev clear id l cl in
+        Tacticals.New.tclWITHHOLES ev tac sigma
       end
       end
   | TacElim (ev,(keep,cb),cbo) ->
@@ -1835,22 +1835,22 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = Proofview.Goal.sigma gl in 
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
         let sigma, cbo = Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
-        let named_tac cbo =
+        let named_tac =
           let tac = Tactics.elim ev keep cb cbo in
           name_atomic ~env (TacElim (ev,(keep,cb),cbo)) tac
         in
-        Tacticals.New.tclWITHHOLES ev named_tac sigma cbo
+        Tacticals.New.tclWITHHOLES ev named_tac sigma
       end
   | TacCase (ev,(keep,cb)) ->
       Proofview.Goal.enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
-        let named_tac cb =
+        let named_tac =
           let tac = Tactics.general_case_analysis ev keep cb in
           name_atomic ~env (TacCase(ev,(keep,cb))) tac
         in
-        Tacticals.New.tclWITHHOLES ev named_tac sigma cb
+        Tacticals.New.tclWITHHOLES ev named_tac sigma
       end
   | TacFix (idopt,n) ->
       Proofview.Goal.enter begin fun gl ->
@@ -1914,9 +1914,9 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma, ipat' = interp_intro_pattern_option ist env sigma ipat in
         let tac = Option.map (interp_tactic ist) t in
         Tacticals.New.tclWITHHOLES false
-        (fun c -> name_atomic ~env
+        (name_atomic ~env
           (TacAssert(b,t,ipat,c))
-          (Tactics.forward b tac ipat' c)) sigma c
+          (Tactics.forward b tac ipat' c)) sigma
       end
   | TacGeneralize cl ->
       Proofview.Goal.enter begin fun gl ->
@@ -1924,9 +1924,9 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
         Tacticals.New.tclWITHHOLES false
-        (fun cl -> name_atomic ~env
+        (name_atomic ~env
           (TacGeneralize cl)
-          (Proofview.V82.tactic (Tactics.Simple.generalize_gen cl))) sigma cl
+          (Proofview.V82.tactic (Tactics.Simple.generalize_gen cl))) sigma
       end
   | TacGeneralizeDep c ->
       (new_interp_constr ist c) (fun c ->
@@ -1953,9 +1953,9 @@ and interp_atomic ist tac : unit Proofview.tactic =
           in
           let na = interp_fresh_name ist env sigma na in
           Tacticals.New.tclWITHHOLES false
-          (fun na -> name_atomic ~env
+          (name_atomic ~env
             (TacLetTac(na,c_interp,clp,b,eqpat))
-            (let_tac b na c_interp clp eqpat)) sigma na
+            (let_tac b na c_interp clp eqpat)) sigma
         else
         (* We try to keep the pattern structure as much as possible *)
           let let_pat_tac b na c cl eqpat =
@@ -1968,7 +1968,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (TacLetTac(na,c,clp,b,eqpat))
 	    (Tacticals.New.tclWITHHOLES false (*in hope of a future "eset/epose"*)
                (let_pat_tac b (interp_fresh_name ist env sigma na)
-                  ((sigma,sigma'),c) clp) sigma' eqpat)
+                  ((sigma,sigma'),c) clp eqpat) sigma')
       end
 
   (* Automation tactics *)
@@ -2078,11 +2078,11 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
-        let named_tac bll =
+        let named_tac =
           let tac = Tactics.split_with_bindings ev bll in
           name_atomic ~env (TacSplit (ev, bll)) tac
         in
-        Tacticals.New.tclWITHHOLES ev named_tac sigma bll
+        Tacticals.New.tclWITHHOLES ev named_tac sigma
       end
   (* Conversion *)
   | TacReduce (r,cl) ->
@@ -2183,9 +2183,9 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
         let sigma,ids_interp = interp_or_and_intro_pattern_option ist env sigma ids in
         Tacticals.New.tclWITHHOLES false
-        (fun dqhyps -> name_atomic ~env
+        (name_atomic ~env
           (TacInversion(DepInversion(k,c_interp,ids),dqhyps))
-          (Inv.dinv k c_interp ids_interp dqhyps)) sigma dqhyps
+          (Inv.dinv k c_interp ids_interp dqhyps)) sigma
       end
   | TacInversion (NonDepInversion (k,idl,ids),hyp) ->
       Proofview.Goal.enter begin fun gl ->
@@ -2195,9 +2195,9 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let dqhyps = interp_declared_or_quantified_hypothesis ist env sigma hyp in
         let sigma, ids_interp = interp_or_and_intro_pattern_option ist env sigma ids in
         Tacticals.New.tclWITHHOLES false
-        (fun dqhyps -> name_atomic ~env
+        (name_atomic ~env
           (TacInversion (NonDepInversion (k,hyps,ids),dqhyps))
-          (Inv.inv_clause k ids_interp hyps dqhyps)) sigma dqhyps
+          (Inv.inv_clause k ids_interp hyps dqhyps)) sigma
       end
   | TacInversion (InversionUsing (c,idl),hyp) ->
       Proofview.Goal.enter begin fun gl ->
