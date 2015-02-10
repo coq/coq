@@ -441,7 +441,7 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
 	try 
 	  let term = Retyping.expand_projection env sigma p c' [] in
 	    aux env term mk_ctx next
-	with Retyping.RetypeError _ -> raise PatternMatchingFailure
+	with Retyping.RetypeError _ -> next ()
       else
 	try_aux [env] [c'] next_mk_ctx next in
       authorized_occ env sigma partial_app closed pat c mk_ctx next
