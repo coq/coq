@@ -153,13 +153,13 @@ let type_of_constant_type_knowing_parameters env t paramtyps =
 
 let type_of_constant_knowing_parameters env cst paramtyps =
   let cb = lookup_constant (fst cst) env in
-  let _ = check_hyps_inclusion env (mkConstU cst) cb.const_hyps in
+  let () = check_hyps_inclusion env (mkConstU cst) cb.const_hyps in
   let ty, cu = constant_type env cst in
     type_of_constant_type_knowing_parameters env ty paramtyps, cu
 
 let type_of_constant_knowing_parameters_in env cst paramtyps =
   let cb = lookup_constant (fst cst) env in
-  let _ = check_hyps_inclusion env (mkConstU cst) cb.const_hyps in
+  let () = check_hyps_inclusion env (mkConstU cst) cb.const_hyps in
   let ty = constant_type_in env cst in
     type_of_constant_type_knowing_parameters env ty paramtyps
 
@@ -171,14 +171,14 @@ let type_of_constant env cst =
 
 let type_of_constant_in env cst =
   let cb = lookup_constant (fst cst) env in
-  let _ = check_hyps_inclusion env (mkConstU cst) cb.const_hyps in
+  let () = check_hyps_inclusion env (mkConstU cst) cb.const_hyps in
   let ar = constant_type_in env cst in
     type_of_constant_type_knowing_parameters env ar [||]
 
 let judge_of_constant_knowing_parameters env (kn,u as cst) args =
   let c = mkConstU cst in
   let ty, cu = type_of_constant_knowing_parameters env cst args in
-  let _ = Environ.check_constraints cu env in
+  let () = check_constraints cu env in
     make_judge c ty
 
 let judge_of_constant env cst =
@@ -372,7 +372,7 @@ let judge_of_case env ci pj cj lfj =
   let (pind, _ as indspec) =
     try find_rectype env cj.uj_type
     with Not_found -> error_case_not_inductive env cj in
-  let _ = check_case_info env pind ci in
+  let () = check_case_info env pind ci in
   let (bty,rslty) =
     type_case_branches env indspec pj cj.uj_val in
   let () = check_branch_types env pind cj (lfj,bty) in
