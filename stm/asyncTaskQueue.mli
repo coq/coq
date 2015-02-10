@@ -61,6 +61,8 @@ module MakeQueue(T : Task) : sig
 
   val set_order : queue -> (T.task -> T.task -> int) -> unit
 
+  val broadcast : queue -> unit
+
   (* Take a snapshot (non destructive but waits until all workers are
    * enqueued) *)
   val snapshot : queue -> T.task list

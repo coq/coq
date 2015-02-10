@@ -177,7 +177,7 @@ module Make(T : Task) = struct
       if not (Worker.is_alive proc) then ()
       else if cancelled () || !(!expiration_date) then
         let () = stop_waiting := true in
-        let () = TQueue.signal_destruction queue in
+        let () = TQueue.broadcast queue in
         Worker.kill proc
       else
         let () = Unix.sleep 1 in
@@ -252,6 +252,8 @@ module Make(T : Task) = struct
   let destroy { active; queue } =
     Pool.destroy active;
     TQueue.destroy queue
+
+  let broadcast { queue } = TQueue.broadcast queue
 
   let enqueue_task { queue; active } (t, _ as item) =
     prerr_endline ("Enqueue task "^T.name_of_task t);

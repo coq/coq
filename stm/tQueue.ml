@@ -79,7 +79,7 @@ let pop ?(picky=(fun _ -> true)) ?(destroy=ref false)
   Mutex.unlock m;
   x
 
-let signal_destruction { lock = m; cond = c } =
+let broadcast { lock = m; cond = c } =
   Mutex.lock m;
   Condition.broadcast c;
   Mutex.unlock m
