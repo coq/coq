@@ -79,7 +79,7 @@ let expos   = Str.regexp "^"
 
 let tex_escaped s =
   let dollar = "\\$" and  backslash = "\\\\" and expon = "\\^" in
-  let delims = Str.regexp ("[_{}&%#" ^ dollar ^ backslash ^ expon ^"~ <>']") in
+  let delims = Str.regexp ("[_{}&%#" ^ dollar ^ backslash ^ expon ^"~ <>'`]") in
   let adapt_delim = function
     | "_" | "{" | "}" | "&" | "%" | "#" | "$" as c -> "\\"^c
     | "\\" -> "{\\char'134}"
@@ -89,6 +89,7 @@ let tex_escaped s =
     | "<" -> "{<}"
     | ">" -> "{>}"
     | "'" -> "{\\textquotesingle}"
+    | "`" -> "\\`{}"
     | _ -> assert false
   in
   let adapt = function

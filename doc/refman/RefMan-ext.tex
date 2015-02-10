@@ -1782,14 +1782,14 @@ This is useful for declaring the implicit type of a single variable.
 Implicit generalization is an automatic elaboration of a statement with
 free variables into a closed statement where these variables are
 quantified explicitly. Implicit generalization is done inside binders
-starting with a \verb|`| and terms delimited by \verb|`{ }| and
-\verb|`( )|, always introducing maximally inserted implicit arguments for
+starting with a \texttt{\`{}} and terms delimited by \texttt{\`{}\{ \}} and
+\texttt{\`{}( )}, always introducing maximally inserted implicit arguments for
 the generalized variables. Inside implicit generalization
 delimiters, free variables in the current context are automatically
 quantified using a product or a lambda abstraction to generate a closed
 term. In the following statement for example, the variables \texttt{n}
 and \texttt{m} are automatically generalized and become explicit
-arguments of the lemma as we are using \verb|`( )|:
+arguments of the lemma as we are using \texttt{\`{}( )}:
 
 \begin{coq_example}
 Generalizable All Variables.
@@ -1834,7 +1834,7 @@ Definition id `(x : A) : A := x.
 Print id.
 \end{coq_example}
 
-The generalizing binders \verb|`{ }| and \verb|`( )| work similarly to
+The generalizing binders \texttt{\`{}\{ \}} and \texttt{\`{}( )} work similarly to
 their explicit counterparts, only binding the generalized variables
 implicitly, as maximally-inserted arguments. In these binders, the
 binding name for the bound object is optional, whereas the type is
