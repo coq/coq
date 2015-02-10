@@ -11,7 +11,6 @@ open Names
 open Term
 open Evd
 open Environ
-open Tacmach
 open Tacexpr
 open Ind_tables
 open Locus

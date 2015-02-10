@@ -22,7 +22,7 @@ let thread_friendly_read_fd fd s ~off ~len =
   let rec loop () =
     try Unix.read fd s off len
     with Unix.Unix_error((Unix.EWOULDBLOCK|Unix.EAGAIN|Unix.EINTR),_,_) ->
-      while not (safe_wait_timed_read fd 1.0) do Thread.yield () done;
+      while not (safe_wait_timed_read fd 0.05) do Thread.yield () done;
       loop ()
   in 
     loop ()
@@ -41,6 +41,18 @@ let really_read_fd fd s off len =
     let r = thread_friendly_read_fd fd s ~off ~len in
     if r = 0 then raise End_of_file;
     i := !i + r
+  done
+
+let really_read_fd_2_oc fd oc len =
+  let i = ref 0 in
+  let size = 4096 in
+  let s = String.create size in
+  while !i < len do
+    let len = len - !i in
+    let r = thread_friendly_read_fd fd s ~off:0 ~len:(min len size) in
+    if r = 0 then raise End_of_file;
+    i := !i + r;
+    output oc s 0 r;
   done
 
 let thread_friendly_really_read ic s ~off ~len =
@@ -68,9 +80,26 @@ let thread_friendly_input_value ic =
     let header = String.create Marshal.header_size in
     really_read_fd fd header 0 Marshal.header_size;
     let body_size = Marshal.data_size header 0 in
-    let msg = String.create (body_size + Marshal.header_size) in
-    String.blit header 0 msg 0 Marshal.header_size;
-    really_read_fd fd msg Marshal.header_size body_size;
-    Marshal.from_string msg 0
-  with Unix.Unix_error _ -> raise End_of_file
+    let desired_size = body_size + Marshal.header_size in
+    if desired_size <= Sys.max_string_length then begin
+      let msg = String.create desired_size in
+      String.blit header 0 msg 0 Marshal.header_size;
+      really_read_fd fd msg Marshal.header_size body_size;
+      Marshal.from_string msg 0
+    end else begin
+      (* Workaround for 32 bit systems and data > 16M *)
+      let name, oc =
+        Filename.open_temp_file ~mode:[Open_binary] "coq" "marshal" in
+      try
+        output oc header 0 Marshal.header_size;
+        really_read_fd_2_oc fd oc body_size;
+        close_out oc;
+        let ic = open_in_bin name in
+        let data = Marshal.from_channel ic in
+        close_in ic;
+        Sys.remove name;
+        data
+      with e -> Sys.remove name; raise e
+    end
+  with Unix.Unix_error _ | Sys_error _ -> raise End_of_file
 

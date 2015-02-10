@@ -28,14 +28,6 @@ open Esubst
 
 let left2right = ref false
 
-let conv_key k =
-  match k with
-    VarKey id -> 
-    VarKey id
-  | ConstKey (cst,_) -> 
-     ConstKey cst
-  | RelKey n -> RelKey n
-		       
 let rec is_empty_stack = function
   [] -> true
   | Zupdate _::s -> is_empty_stack s

@@ -15,7 +15,6 @@ open Hipattern
 open Tacmach.New
 open Tacticals.New
 open Tactics
-open Misctypes
 open Proofview.Notations
 
 let introElimAssumsThen tac ba =

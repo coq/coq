@@ -6,13 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
-open Univ
 open Term
-open Context
 open Environ
-open Entries
-open Declarations
 
 (** {6 Typing functions (not yet tagged as safe) }
     

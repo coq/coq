@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Xml_datatype
 
 type 'annotation located = {
@@ -14,129 +15,117 @@ type 'annotation located = {
   endpos     : int
 }
 
+type 'a stack =
+| Leaf
+| Node of string * 'a located gxml list * int * 'a stack
+
+type 'a context = {
+  mutable stack : 'a stack;
+  (** Pending opened nodes *)
+  mutable offset : int;
+  (** Quantity of characters printed so far *)
+  mutable annotations : 'a option Int.Map.t;
+  (** Map associating annotations to indexes *)
+  mutable index : int;
+  (** Current index of annotations *)
+}
+
+(** We use Format to introduce tags inside the pretty-printed document.
+    Each inserted tag is a fresh index that we keep in sync with the contents
+    of annotations.
+
+    We build an XML tree on the fly, by plugging ourselves in Format tag
+    marking functions. As those functions are called when actually writing to
+    the device, the resulting tree is correct.
+*)
 let rich_pp annotate ppcmds =
-  (** First, we use Format to introduce tags inside
-      the pretty-printed document.
 
-      Each inserted tag is a fresh index that we keep in sync with the contents
-      of annotations.
-  *)
-  let annotations = ref [] in
-  let index = ref (-1) in
+  let context = {
+    stack = Leaf;
+    offset = 0;
+    annotations = Int.Map.empty;
+    index = (-1);
+  } in
+
   let pp_tag obj =
-    let () = incr index in
-    let () = annotations := obj :: !annotations in
-    string_of_int !index
+    let index = context.index + 1 in
+    let () = context.index <- index in
+    let obj = annotate obj in
+    let () = context.annotations <- Int.Map.add index obj context.annotations in
+    string_of_int index
   in
 
-  let tagged_pp = Format.(
-
-    (** Warning: The following instructions are valid only if
-        [str_formatter] is not used for another purpose in
-        Pp.pp_with. *)
-
-    let ft = str_formatter in
-
-    (** We reuse {!Format} standard way of producing tags
-        inside pretty-printing. *)
-    pp_set_tags ft true;
-
-    (** The whole output must be a valid document. To that
-        end, we nest the document inside a tag named <pp>. *)
-    pp_open_tag ft "pp";
-
-    (** XML ignores spaces. The problem is that our pretty-printings
-        are based on spaces to indent. To solve that problem, we
-        systematically output non-breakable spaces, which are properly
-        honored by XML.
-
-        To do so, we reconfigure the [str_formatter] temporarily by
-        hijacking the function that output spaces. *)
-    let out, flush, newline, std_spaces =
-      pp_get_all_formatter_output_functions ft ()
-    in
-    let set = pp_set_all_formatter_output_functions ft ~out ~flush ~newline in
-    set ~spaces:(fun k ->
-      for i = 0 to k - 1 do
-        Buffer.add_string stdbuf "&nbsp;"
-      done
-    );
-
-    (** Some characters must be escaped in XML. This is done by the
-        following rewriting of the strings held by pretty-printing
-        commands. *)
-    Pp.(pp_with ~pp_tag ft (rewrite Xml_printer.pcdata_to_string ppcmds));
-
-    (** Insert </pp>. *)
-    pp_close_tag ft ();
-
-    (** Get the final string. *)
-    let output = flush_str_formatter () in
-
-    (** Finalize by restoring the state of the [str_formatter] and the
-        default behavior of Format. By the way, there may be a bug here:
-        there is no {!Format.pp_get_tags} and therefore if the tags flags
-        was already set to true before executing this piece of code, the
-        state of Format is not restored. *)
-    set ~spaces:std_spaces;
-    pp_set_tags ft false;
-    output
-  )
-  in
-  (** Second, we retrieve the final function that relates
-      each tag to an annotation. *)
-  let objs = CArray.rev_of_list !annotations in
-  let get index = annotate objs.(index) in
-
-  (** Third, we parse the resulting string. It is a valid XML
-      document (in the sense of Xml_parser). As blanks are
-      meaningful we deactivate canonicalization in the XML
-      parser. *)
-  let xml_pp =
-    try
-      Xml_parser.(parse ~do_not_canonicalize:true (make (SString tagged_pp)))
-    with Xml_parser.Error e ->
-      Printf.eprintf
-        "Broken invariant (RichPp): \n\
-         The output semi-structured pretty-printing is ill-formed.\n\
-         Please report.\n\
-         %s"
-        (Xml_parser.error e);
-      exit 1
-  in
-
-  (** Fourth, the low-level XML is turned into a high-level
-      semi-structured document that contains a located annotation in
-      every node. During the traversal of the low-level XML document,
-      we build a raw string representation of the pretty-print. *)
-  let rec node buffer = function
-    | Element (index, [], cs) ->
-      let startpos, endpos, cs = children buffer cs in
-      let annotation = try get (int_of_string index) with _ -> None in
-      (Element (index, { annotation; startpos; endpos }, cs), endpos)
-
-    | PCData s ->
-      Buffer.add_string buffer s;
-      (PCData s, Buffer.length buffer)
-
-    | _ ->
-      assert false (* Because of the form of XML produced by Format. *)
-
-  and children buffer cs =
-    let startpos   = Buffer.length buffer in
-    let cs, endpos =
-      List.fold_left (fun (cs, endpos) c ->
-        let c, endpos = node buffer c in
-        (c :: cs, endpos)
-      ) ([], startpos) cs
-    in
-    (startpos, endpos, List.rev cs)
-  in
   let pp_buffer = Buffer.create 13 in
-  let xml, _ = node pp_buffer xml_pp in
 
-  (** We return the raw pretty-printing and its annotations tree. *)
-  (Buffer.contents pp_buffer, xml)
+  let push_pcdata () =
+    (** Push the optional PCData on the above node *)
+    let len = Buffer.length pp_buffer in
+    if len = 0 then ()
+    else match context.stack with
+    | Leaf -> assert false
+    | Node (node, child, pos, ctx) ->
+      let data = Buffer.contents pp_buffer in
+      let () = Buffer.clear pp_buffer in
+      let () = context.stack <- Node (node, PCData data :: child, pos, ctx) in
+      context.offset <- context.offset + len
+  in
+
+  let open_xml_tag tag =
+    let () = push_pcdata () in
+    context.stack <- Node (tag, [], context.offset, context.stack)
+  in
+
+  let close_xml_tag tag =
+    let () = push_pcdata () in
+    match context.stack with
+    | Leaf -> assert false
+    | Node (node, child, pos, ctx) ->
+      let () = assert (String.equal tag node) in
+      let annotation =
+        try Int.Map.find (int_of_string node) context.annotations
+        with _ -> None
+      in
+      let annotation = {
+        annotation = annotation;
+        startpos = pos;
+        endpos = context.offset;
+      } in
+      let xml = Element (node, annotation, List.rev child) in
+      match ctx with
+      | Leaf ->
+        (** Final node: we keep the result in a dummy context *)
+        context.stack <- Node ("", [xml], 0, Leaf)
+      | Node (node, child, pos, ctx) ->
+        context.stack <- Node (node, xml :: child, pos, ctx)
+  in
+
+  let open Format in
+
+  let ft = formatter_of_buffer pp_buffer in
+
+  let tag_functions = {
+    mark_open_tag = (fun tag -> let () = open_xml_tag tag in "");
+    mark_close_tag = (fun tag -> let () = close_xml_tag tag in "");
+    print_open_tag = ignore;
+    print_close_tag = ignore;
+  } in
+
+  pp_set_formatter_tag_functions ft tag_functions;
+  pp_set_mark_tags ft true;
+
+  (** The whole output must be a valid document. To that
+      end, we nest the document inside <pp> tags. *)
+  pp_open_tag ft "pp";
+  Pp.(pp_with ~pp_tag ft ppcmds);
+  pp_close_tag ft ();
+
+  (** Get the resulting XML tree. *)
+  let () = pp_print_flush ft () in
+  let () = assert (Buffer.length pp_buffer = 0) in
+  match context.stack with
+  | Node ("", [xml], 0, Leaf) -> xml
+  | _ -> assert false
+
 
 let annotations_positions xml =
   let rec node accu = function

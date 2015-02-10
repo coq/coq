@@ -14,7 +14,6 @@ open Term
 open Vars
 open Context
 open Evd
-open Environ
 open Util
 open Typeclasses_errors
 open Libobject
@@ -427,7 +426,6 @@ let add_class cl =
   cl.cl_projs
 
 
-open Declarations
       
 (*
  * interface functions

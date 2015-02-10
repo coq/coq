@@ -339,10 +339,13 @@ let close_proof ~keep_body_ucst_sepatate ?feedback_id ~now fpl =
 type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context
 
 let return_proof () =
-  let { proof; strength = (_,poly,_) } = cur_pstate () in
+  let { pid; proof; strength = (_,poly,_) } = cur_pstate () in
   let initial_goals = Proof.initial_goals proof in
   let evd =
-    let error s = raise (Errors.UserError("last tactic before Qed",s)) in
+    let error s =
+      let prf = str " (in proof " ++ Id.print pid ++ str ")" in
+      raise (Errors.UserError("last tactic before Qed",s ++ prf))
+    in
     try Proof.return proof with
     | Proof.UnfinishedProof ->
         error(str"Attempt to save an incomplete proof")

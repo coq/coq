@@ -100,19 +100,10 @@ let subst_evaluable subst =
   let subst_eval_ref = subst_evaluable_reference subst in
     subst_or_var (subst_and_short_name subst_eval_ref)
 
-let subst_unfold subst (l,e) =
-  (l,subst_evaluable subst e)
-
-let subst_flag subst red =
-  { red with rConst = List.map (subst_evaluable subst) red.rConst }
-
 let subst_constr_with_occurrences subst (l,c) = (l,subst_glob_constr subst c)
 
 let subst_glob_constr_or_pattern subst (c,p) =
   (subst_glob_constr subst c,subst_pattern subst p)
-
-let subst_pattern_with_occurrences subst (l,p) =
-  (l,subst_glob_constr_or_pattern subst p)
 
 let subst_redexp subst =
   Miscops.map_red_expr_gen

@@ -68,16 +68,24 @@ type tactic_grammar_obj = {
   tacobj_body : Tacexpr.glob_tactic_expr
 }
 
-let cache_tactic_notation ((_, key), tobj) =
+let key k tobj =
+  let mp,dp,_ = KerName.repr k in
+  KerName.make mp dp
+    (Label.make ("_" ^ string_of_int (Hashtbl.hash tobj.tacobj_tacgram)))
+
+let cache_tactic_notation ((_,k), tobj) =
+  let key = key k tobj in
   Tacenv.register_alias key tobj.tacobj_body;
   Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp
 
-let open_tactic_notation i ((_, key), tobj) =
+let open_tactic_notation i ((_,k), tobj) =
+  let key = key k tobj in
   if Int.equal i 1 && not tobj.tacobj_local then
     Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
 
-let load_tactic_notation i ((_, key), tobj) =
+let load_tactic_notation i ((_,k), tobj) =
+  let key = key k tobj in
   (** Only add the printing and interpretation rules. *)
   Tacenv.register_alias key tobj.tacobj_body;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp;

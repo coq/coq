@@ -10,12 +10,10 @@ open Loc
 open Names
 open Constrexpr
 open Libnames
-open Globnames
 open Nametab
 open Genredexpr
 open Genarg
 open Pattern
-open Decl_kinds
 open Misctypes
 open Locus
 

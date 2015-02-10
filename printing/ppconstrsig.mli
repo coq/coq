@@ -12,8 +12,6 @@ open Libnames
 open Constrexpr
 open Names
 open Misctypes
-open Locus
-open Genredexpr
 
 module type Pp = sig
 

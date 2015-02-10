@@ -17,7 +17,6 @@ open Proof_type
 open Tacticals
 open Tacmach
 open Tactics
-open Patternops
 open Clenv
 open Typeclasses
 open Globnames
@@ -42,7 +41,7 @@ let get_typeclasses_dependency_order () = !typeclasses_dependency_order
 
 open Goptions
 
-let set_typeclasses_modulo_eta =
+let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
@@ -51,7 +50,7 @@ let set_typeclasses_modulo_eta =
       optread  = get_typeclasses_modulo_eta;
       optwrite = set_typeclasses_modulo_eta; }
 
-let set_typeclasses_dependency_order =
+let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;

@@ -196,14 +196,12 @@ SectionEnd
 
 Section "Uninstall"
 
-;; We keep the settings 
-;; Delete "$INSTDIR\config\coqide-gtk2rc"
- 
   RMDir /r "$INSTDIR\bin"
   RMDir /r "$INSTDIR\dev"
   RMDir /r "$INSTDIR\etc"
   RMDir /r "$INSTDIR\lib"
   RMDir /r "$INSTDIR\share"
+  RMDir /r "$INSTDIR\ide"
 
   Delete "$INSTDIR\man\*.1"
   RMDir "$INSTDIR\man"

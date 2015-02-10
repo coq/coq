@@ -186,11 +186,19 @@ object(self)
 
   method undo () =
     Minilib.log "UNDO";
-    self#with_lock_undo self#perform_undo ();
+    self#with_lock_undo begin fun () ->
+      buffer#begin_user_action ();
+      self#perform_undo ();
+      buffer#end_user_action ()
+    end ()
 
   method redo () =
     Minilib.log "REDO";
-    self#with_lock_undo self#perform_redo ();
+    self#with_lock_undo begin fun () ->
+      buffer#begin_user_action ();
+      self#perform_redo ();
+      buffer#end_user_action ()
+    end ()
 
   method process_begin_user_action () =
     (* Push a new level of event on history stack *)

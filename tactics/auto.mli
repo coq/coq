@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Proof_type
 open Clenv
 open Pattern
 open Evd

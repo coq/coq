@@ -6,14 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
 open Pp
 open Names
 open Term
 open Context
 open Tacmach
 open Proof_type
-open Clenv
 open Tacexpr
 open Locus
 open Misctypes
@@ -220,7 +218,7 @@ module New : sig
   val tclCOMPLETE : 'a tactic -> 'a tactic
   val tclSOLVE : unit tactic list -> unit tactic
   val tclPROGRESS : unit tactic -> unit tactic
-  val tclWITHHOLES : bool -> ('a -> unit tactic) -> Evd.evar_map -> 'a -> unit tactic
+  val tclWITHHOLES : bool -> 'a tactic -> Evd.evar_map -> 'a tactic
 
   val tclTIMEOUT : int -> unit tactic -> unit tactic
   val tclTIME : string option -> 'a tactic -> 'a tactic

@@ -765,8 +765,6 @@ let intro = intro_gen (NamingAvoid []) MoveLast false false
 let introf = intro_gen (NamingAvoid []) MoveLast true false
 let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast false false
 
-let intro_then_force = intro_then_gen (NamingAvoid []) MoveLast true false
-
 let intro_move_avoid idopt avoid hto = match idopt with
   | None -> intro_gen (NamingAvoid avoid) hto true false
   | Some id -> intro_gen (NamingMustBe (dloc,id)) hto true false
@@ -1503,7 +1501,7 @@ let apply_with_delayed_bindings_gen b e l =
       let env = Proofview.Goal.env gl in
       let sigma, cb = f env sigma in
 	Tacticals.New.tclWITHHOLES e
-          (general_apply b b e k) sigma (loc,cb)
+          (general_apply b b e k (loc,cb)) sigma
     end
   in
   let rec aux = function
@@ -1606,8 +1604,8 @@ let apply_in_delayed_once sidecond_first with_delta with_destruct with_evars nam
     let sigma, c = f env sigma in
     Tacticals.New.tclWITHHOLES with_evars 
       (apply_in_once sidecond_first with_delta with_destruct with_evars
-         naming id (clear_flag,(loc,c)))
-      sigma tac
+         naming id (clear_flag,(loc,c)) tac)
+      sigma
   end
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
@@ -2136,12 +2134,12 @@ and intro_pattern_action loc b style pat thin tac id = match pat with
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma,c = f env sigma in
-        Proofview.Unsafe.tclEVARS sigma <*>
+        Tacticals.New.tclWITHHOLES false
           (Tacticals.New.tclTHENFIRST
              (* Skip the side conditions of the apply *)
              (apply_in_once false true true true naming id
-                (None,(sigma,(c,NoBindings))) tac_ipat))
-	  (tac thin None [])
+                (None,(sigma,(c,NoBindings))) tac_ipat) (tac thin None []))
+          sigma
       end
 
 and prepare_intros_loc loc dft = function
@@ -2789,12 +2787,6 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   in
   atomize_one (List.length argl) [] []
   end
-
-let find_atomic_param_of_ind nparams indtyp =
-  let argl = snd (decompose_app indtyp) in
-  let params,args = List.chop nparams argl in
-  let test c = isVar c && not (List.exists (dependent c) params) in
-  List.map destVar (List.filter test args)
 
 (* [cook_sign] builds the lists [beforetoclear] (preceding the
    ind. var.) and [aftertoclear] (coming after the ind. var.)  of hyps

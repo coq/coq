@@ -172,28 +172,32 @@ let open_libraries export modl =
 
 
 (**********************************************************************)
-(* import and export  -  synchronous operations*)
+(* import and export of libraries - synchronous operations            *)
+(* at the end similar to import and export of modules except that it  *)
+(* is optimized: when importing several libraries at the same time    *)
+(* which themselves indirectly imports the very same modules, these   *)
+(* ones are imported only ones *)
 
-let open_import i (_,(dir,export)) =
+let open_import_library i (_,(modl,export)) =
   if Int.equal i 1 then
     (* even if the library is already imported, we re-import it *)
     (* if not (library_is_opened dir) then *)
-      open_libraries export [try_find_library dir]
+      open_libraries export (List.map try_find_library modl)
 
-let cache_import obj =
-  open_import 1 obj
+let cache_import_library obj =
+  open_import_library 1 obj
 
-let subst_import (_,o) = o
+let subst_import_library (_,o) = o
 
-let classify_import (_,export as obj) =
+let classify_import_library (_,export as obj) =
   if export then Substitute obj else Dispose
 
-let in_import : DirPath.t * bool -> obj =
+let in_import_library : DirPath.t list * bool -> obj =
   declare_object {(default_object "IMPORT LIBRARY") with
-       cache_function = cache_import;
-       open_function = open_import;
-       subst_function = subst_import;
-       classify_function = classify_import }
+       cache_function = cache_import_library;
+       open_function = open_import_library;
+       subst_function = subst_import_library;
+       classify_function = classify_import_library }
 
 
 (************************************************************************)
@@ -310,7 +314,7 @@ let fetch_table what dp (f,pos,digest) =
     if not (String.equal (System.digest_in f ch) digest) then raise Faulty;
     let table, pos', digest' = System.marshal_in_segment f ch in
     let () = close_in ch in
-    let ch' = open_in f in
+    let ch' = open_in_bin f in
     if not (String.equal (Digest.channel ch' pos') digest') then raise Faulty;
     let () = close_in ch' in
     table
@@ -401,9 +405,6 @@ let intern_from_file f =
       mk_library lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
 
 module DPMap = Map.Make(DirPath)
-
-let deps_to_string deps =
-  Array.fold_left (fun s (n, _) -> s^"\n  - "^(DirPath.to_string n)) "" deps
 
 let rec intern_library (needed, contents) (dir, f) from =
   Pp.feedback(Feedback.FileDependency (from, f));
@@ -543,7 +544,7 @@ let require_library_from_dirpath modrefl export =
       begin
 	add_anonymous_leaf (in_require (needed,modrefl,None));
 	Option.iter (fun exp ->
-	  List.iter (fun dir -> add_anonymous_leaf (in_import(dir,exp))) modrefl)
+	  add_anonymous_leaf (in_import_library (modrefl,exp)))
 	  export
       end
     else
@@ -559,7 +560,7 @@ let require_library_from_file idopt file export =
   let needed = List.rev_map snd needed in
   if Lib.is_module_or_modtype () then begin
     add_anonymous_leaf (in_require (needed,[modref],None));
-    Option.iter (fun exp -> add_anonymous_leaf (in_import (modref,exp)))
+    Option.iter (fun exp -> add_anonymous_leaf (in_import_library ([modref],exp)))
       export
   end
   else
@@ -568,21 +569,30 @@ let require_library_from_file idopt file export =
 
 (* the function called by Vernacentries.vernac_import *)
 
-let import_module export (loc,qid) =
-  try
-    match Nametab.locate_module qid with
-      | MPfile dir ->
-	  if Lib.is_module_or_modtype () || not export then
-	    add_anonymous_leaf (in_import (dir, export))
-	  else
-	    add_anonymous_leaf (in_import (dir, export))
-      | mp ->
-	  Declaremods.import_module export mp
-  with
-      Not_found ->
-	user_err_loc
-          (loc,"import_library",
-	  str ((string_of_qualid qid)^" is not a module"))
+let safe_locate_module (loc,qid) =
+  try Nametab.locate_module qid
+  with Not_found ->
+    user_err_loc
+      (loc,"import_library", str (string_of_qualid qid ^ " is not a module"))
+
+let import_module export modl =
+  (* Optimization: libraries in a raw in the list are imported
+     "globally".  If there is non-library in the list; it breaks the
+     optimization For instance: "Import Arith MyModule Zarith" will
+     not be optimized (possibly resulting in redefinitions, but
+     "Import MyModule Arith Zarith" and "Import Arith Zarith MyModule"
+     will have the submodules imported by both Arith and ZArith
+     imported only once *)
+  let flush = function
+    | [] -> ()
+    | modl -> add_anonymous_leaf (in_import_library (List.rev modl, export)) in
+  let rec aux acc = function
+    | m :: l ->
+        (match safe_locate_module m with
+        | MPfile dir -> aux (dir::acc) l
+        | mp -> flush acc; Declaremods.import_module export mp; aux [] l)
+    | [] -> flush acc
+  in aux [] modl
 
 (************************************************************************)
 (*s Initializing the compilation of a library. *)

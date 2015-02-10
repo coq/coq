@@ -77,7 +77,10 @@ let call_compiler ml_filename =
     ::include_dirs
     @ ["-impl"; ml_filename] in
   if !Flags.debug then Pp.msg_debug (Pp.str (compiler_name ^ " " ^ (String.concat " " args)));
-  CUnix.sys_command compiler_name args = Unix.WEXITED 0, link_filename
+  try CUnix.sys_command compiler_name args = Unix.WEXITED 0, link_filename
+  with Unix.Unix_error (e,_,_) ->
+    Pp.(msg_warning (str (Unix.error_message e)));
+    false, link_filename
 
 let compile fn code =
   write_ml_code fn code;

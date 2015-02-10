@@ -11,7 +11,6 @@ open Names
 open Term
 open Context
 open Environ
-open Locus
 
 (** printers *)
 val print_sort : sorts -> std_ppcmds

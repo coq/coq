@@ -9,8 +9,6 @@
 open Util
 open Pp
 open Term
-open Vars
-open Context
 
 (* This module implements the abstract interface to goals *)
 (* A general invariant of the module, is that a goal whose associated

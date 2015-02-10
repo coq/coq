@@ -42,8 +42,6 @@ let conv_vect fconv vect1 vect2 cu =
 
 let infos = ref (create_clos_infos betaiotazeta Environ.empty_env)
 
-let eq_table_key = Names.eq_table_key eq_constant
-
 let rec conv_val env pb k v1 v2 cu =
   if v1 == v2 then cu
   else conv_whd env pb k (whd_val v1) (whd_val v2) cu

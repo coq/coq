@@ -111,7 +111,7 @@ module Make (M:Def) : S with type +'a t = 'a M.t = struct
       | [a] ->
           M.map (fun a' -> [a']) (f a)
       | a::b::l ->
-          map f l >>= fun l' ->
+          map_right f l >>= fun l' ->
           f b >>= fun b' ->
           M.map (fun a' -> a'::b'::l') (f a)
 

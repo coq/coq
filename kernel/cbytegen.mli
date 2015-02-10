@@ -1,4 +1,3 @@
-open Names
 open Cbytecodes
 open Cemitcodes
 open Term

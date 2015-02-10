@@ -12,7 +12,6 @@ open Environ
 open Mod_subst
 open Modops
 open Nativecode
-open Nativelib
 
 (** This file implements separate compilation for libraries in the native
 compiler *)

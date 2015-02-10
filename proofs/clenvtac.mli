@@ -8,7 +8,6 @@
 
 open Term
 open Clenv
-open Proof_type
 open Tacexpr
 open Unification
 

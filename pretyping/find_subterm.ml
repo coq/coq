@@ -11,7 +11,6 @@ open Util
 open Errors
 open Names
 open Locus
-open Context
 open Term
 open Nameops
 open Termops

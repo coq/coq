@@ -15,7 +15,6 @@
 open Errors
 open Util
 open Names
-open Univ
 open Term
 open Context
 open Declarations
@@ -101,10 +100,6 @@ let hcons_j j =
 
 let feedback_completion_typecheck =
   Option.iter (fun state_id -> Pp.feedback ~state_id Feedback.Complete)
-  
-let subst_instance_j s j =
-  { uj_val = Vars.subst_univs_level_constr s j.uj_val;
-    uj_type = Vars.subst_univs_level_constr s j.uj_type }
 
 let infer_declaration env kn dcl =
   match dcl with

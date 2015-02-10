@@ -123,7 +123,7 @@ let annotate phrase =
     let pa = Pcoq.Gram.parsable (Stream.of_string phrase) in
     Vernac.parse_sentence (pa,None)
   in
-  let (_, _, xml) =
+  let (_, xml) =
     Richprinter.richpp_vernac ast
   in
   xml

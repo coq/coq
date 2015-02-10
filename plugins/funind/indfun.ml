@@ -8,7 +8,6 @@ open Libnames
 open Globnames
 open Glob_term
 open Declarations
-open Declareops
 open Misctypes
 open Decl_kinds
 

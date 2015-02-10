@@ -15,7 +15,6 @@ open Bigint
 open Decl_kinds
 open Extend
 open Libnames
-open Flags
 
 let unlock loc =
   let start, stop = Loc.unloc loc in

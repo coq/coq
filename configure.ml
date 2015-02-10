@@ -236,7 +236,6 @@ module Prefs = struct
   let usecamlp5 = ref true
   let camlp5dir = ref (None : string option)
   let arch = ref (None : string option)
-  let opt = ref false
   let natdynlink = ref true
   let coqide = ref (None : ide option)
   let macintegration = ref true
@@ -283,7 +282,7 @@ let args_options = Arg.align [
   "-emacs", Arg.String (fun s ->
       printf "Warning: obsolete -emacs option\n";
       Prefs.emacslib := Some s),
-    "<dir> (Obsolete) same as -emacslib";
+    "<dir> Obsolete: same as -emacslib";
   "-coqdocdir", arg_string_option Prefs.coqdocdir,
     "<dir> Where to install Coqdoc style files";
   "-camldir", arg_string_option Prefs.camldir,
@@ -299,8 +298,8 @@ let args_options = Arg.align [
     "<dir> Specifies where is the Camlp5 library and tells to use it";
   "-arch", arg_string_option Prefs.arch,
     "<arch> Specifies the architecture";
-  "-opt", Arg.Set Prefs.opt,
-    " Use OCaml *.opt optimized compilers";
+  "-opt", Arg.Unit (fun () -> printf "Warning: obsolete -opt option\n"),
+    " Obsolete: native OCaml executables detected automatically";
   "-natdynlink", arg_bool Prefs.natdynlink,
     "(yes|no) Use dynamic loading of native code or not";
   "-coqide", Arg.String (fun s -> Prefs.coqide := Some (get_ide s)),
@@ -361,8 +360,8 @@ type camlexec =
 (* TODO: autodetect .opt binaries ? *)
 
 let camlexec =
-  { byte = if !Prefs.opt then "ocamlc.opt" else "ocamlc";
-    opt = if !Prefs.opt then "ocamlopt.opt" else "ocamlopt";
+  { byte = "ocamlc";
+    opt = "ocamlopt";
     top = "ocaml";
     mklib = "ocamlmklib";
     dep = "ocamldep";
@@ -370,6 +369,12 @@ let camlexec =
     lex = "ocamllex";
     yacc = "ocamlyacc";
     p4 = "camlp4o" }
+
+let reset_caml_byte c o = c.byte <- o
+let reset_caml_opt c o = c.opt <- o
+let reset_caml_doc c o = c.doc <- o
+let reset_caml_lex c o = c.lex <- o
+let reset_caml_dep c o = c.dep <- o
 
 let rebase_camlexec dir c =
   c.byte <- Filename.concat dir c.byte;
@@ -464,7 +469,8 @@ let browser =
 
 (** * OCaml programs *)
 
-let camlbin, camlc = match !Prefs.camldir with
+let camlbin, caml_version, camllib =
+  let camlbin, camlc = match !Prefs.camldir with
   | Some dir ->
     rebase_camlexec dir camlexec;
     Filename.dirname camlexec.byte, camlexec.byte
@@ -473,13 +479,21 @@ let camlbin, camlc = match !Prefs.camldir with
     with Not_found ->
       die (sprintf "Error: cannot find '%s' in your path!\n" camlexec.byte ^
            "Please adjust your path or use the -camldir option of ./configure")
+  in
+  let camlcopt = camlc ^ ".opt" in
+  let camlc =
+    if is_executable camlcopt then begin
+      reset_caml_byte camlexec (camlexec.byte ^ ".opt");
+      camlcopt
+    end
+    else if is_executable camlc then
+      camlc
+    else
+      die ("Error: cannot find the executable '"^camlc^"'.") in
+  let caml_version, _ = run camlc ["-version"] in
+  let camllib, _ = run camlc ["-where"] in
+  camlbin, caml_version, camllib
 
-let _ =
-  if not (is_executable camlc) then
-    die ("Error: cannot find the executable '"^camlc^"'.")
-
-let caml_version, _ = run camlc ["-version"]
-let camllib, _ = run camlc ["-where"]
 let camlp4compat = "-loc loc"
 
 (** Caml version as a list of string, e.g. ["4";"00";"1"] *)
@@ -619,7 +633,10 @@ let msg_no_dynlink_cmxa () =
 
 let check_native () =
   if !Prefs.byteonly then raise Not_found;
-  if not (is_executable camlexec.opt || program_in_path camlexec.opt) then
+  let camloptopt = camlexec.opt ^ ".opt" in
+  if (is_executable camloptopt || program_in_path camloptopt) then
+    reset_caml_opt camlexec camloptopt
+  else if not (is_executable camlexec.opt || program_in_path camlexec.opt) then
     (msg_no_ocamlopt (); raise Not_found);
   if not (Sys.file_exists (fullcamlp4lib/camlp4mod^".cmxa")) then
     (msg_no_camlp4_cmxa (); raise Not_found);
@@ -634,6 +651,20 @@ let check_native () =
 let best_compiler =
   try check_native (); "opt" with Not_found -> "byte"
 
+let _ =
+  let camllexopt = camlexec.lex ^ ".opt" in
+  if is_executable camllexopt || program_in_path camllexopt then
+    reset_caml_lex camlexec camllexopt
+
+let _ =
+  let camldepopt = camlexec.dep ^ ".opt" in
+  if is_executable camldepopt || program_in_path camldepopt then
+    reset_caml_dep camlexec camldepopt
+
+let _ =
+  let camldocopt = camlexec.doc ^ ".opt" in
+  if is_executable camldocopt || program_in_path camldocopt then
+    reset_caml_doc camlexec camldocopt
 
 (** * Native dynlink *)
 

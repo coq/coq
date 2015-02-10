@@ -387,8 +387,6 @@ let pp_with ?pp_tag ft strm =
 let ppnl_with ft strm =
   pp_dirs ft (Glue.atom (Ppdir_ppcmds (strm ++ fnl ())))
 
-let pp_flush_with ft = Format.pp_print_flush ft
-
 (* pretty printing functions WITH FLUSH *)
 let msg_with ft strm =
   pp_dirs ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_flush))

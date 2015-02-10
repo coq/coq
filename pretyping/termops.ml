@@ -15,7 +15,6 @@ open Term
 open Vars
 open Context
 open Environ
-open Locus
 
 (* Sorts and sort family *)
 

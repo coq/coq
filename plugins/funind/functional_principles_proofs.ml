@@ -7,7 +7,6 @@ open Context
 open Namegen
 open Names
 open Declarations
-open Declareops
 open Pp
 open Tacmach
 open Proof_type
@@ -16,7 +15,6 @@ open Tactics
 open Indfun_common
 open Libnames
 open Globnames
-open Misctypes
 
 (* let msgnl = Pp.msgnl *)
 

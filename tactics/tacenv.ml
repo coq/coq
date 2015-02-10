@@ -73,7 +73,6 @@ let interp_ml_tactic { mltac_name = s; mltac_index = i } =
 (* Summary and Object declaration *)
 
 open Nametab
-open Libnames
 open Libobject
 
 let mactab =
@@ -86,7 +85,6 @@ let is_ltac_for_ml_tactic r = fst (KNmap.find r !mactab)
 
 (* Declaration of the TAC-DEFINITION object *)
 let add (kn,td) = mactab := KNmap.add kn td !mactab
-let replace (kn,td) = mactab := KNmap.add kn td !mactab
 
 let load_md i ((sp, kn), (local, id, b, t)) = match id with
 | None ->

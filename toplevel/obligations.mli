@@ -14,7 +14,6 @@ open Pp
 open Globnames
 open Vernacexpr
 open Decl_kinds
-open Tacexpr
 
 (** Forward declaration. *)
 val declare_fix_ref : (?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->

@@ -10,7 +10,6 @@ open Loc
 open Names
 open Term
 open Context
-open Evd
 open Environ
 open Constrexpr
 open Globnames
