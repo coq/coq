@@ -1958,21 +1958,25 @@ let intro_decomp_eq_function = ref (fun _ -> failwith "Not implemented")
 let declare_intro_decomp_eq f = intro_decomp_eq_function := f
 
 let my_find_eq_data_decompose gl t =
-  try find_eq_data_decompose gl t
+  try Some (find_eq_data_decompose gl t)
   with e when is_anomaly e
     (* Hack in case equality is not yet defined... one day, maybe,
        known equalities will be dynamically registered *)
-      -> raise Constr_matching.PatternMatchingFailure
+      -> None
+  | Constr_matching.PatternMatchingFailure -> None
 
 let intro_decomp_eq loc l thin tac id =
   Proofview.Goal.nf_enter begin fun gl ->
   let c = mkVar id in
   let t = Tacmach.New.pf_type_of gl c in
   let _,t = Tacmach.New.pf_reduce_to_quantified_ind gl t in
-  let eq,u,eq_args = my_find_eq_data_decompose gl t in
-  !intro_decomp_eq_function
+  match my_find_eq_data_decompose gl t with
+  | Some (eq,u,eq_args) ->
+    !intro_decomp_eq_function
     (fun n -> tac ((dloc,id)::thin) (Some (true,n)) l)
     (eq,t,eq_args) (c, t)
+  | None ->
+    Tacticals.New.tclZEROMSG (str "Not a primitive equality here.")
   end
 
 let intro_or_and_pattern loc bracketed ll thin tac id =
