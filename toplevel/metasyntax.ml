@@ -61,31 +61,34 @@ let rec make_tags = function
   | GramNonTerminal (loc, etyp, _, po) :: l -> etyp :: make_tags l
   | [] -> []
 
+let make_fresh_key =
+  let id = Summary.ref ~name:"Tactic Notation counter" 0 in
+  fun () -> KerName.make
+    (Safe_typing.current_modpath (Global.safe_env ()))
+    (Global.current_dirpath ())
+    (incr id; Label.make ("_" ^ string_of_int !id))
+
 type tactic_grammar_obj = {
+  tacobj_key : KerName.t;
   tacobj_local : locality_flag;
   tacobj_tacgram : tactic_grammar;
   tacobj_tacpp : Pptactic.pp_tactic;
   tacobj_body : Tacexpr.glob_tactic_expr
 }
 
-let key k tobj =
-  let mp,dp,_ = KerName.repr k in
-  KerName.make mp dp
-    (Label.make ("_" ^ string_of_int (Hashtbl.hash tobj.tacobj_tacgram)))
-
-let cache_tactic_notation ((_,k), tobj) =
-  let key = key k tobj in
+let cache_tactic_notation (_, tobj) =
+  let key = tobj.tacobj_key in
   Tacenv.register_alias key tobj.tacobj_body;
   Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp
 
-let open_tactic_notation i ((_,k), tobj) =
-  let key = key k tobj in
+let open_tactic_notation i (_, tobj) =
+  let key = tobj.tacobj_key in
   if Int.equal i 1 && not tobj.tacobj_local then
     Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
 
-let load_tactic_notation i ((_,k), tobj) =
-  let key = key k tobj in
+let load_tactic_notation i (_, tobj) =
+  let key = tobj.tacobj_key in
   (** Only add the printing and interpretation rules. *)
   Tacenv.register_alias key tobj.tacobj_body;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp;
@@ -93,7 +96,10 @@ let load_tactic_notation i ((_,k), tobj) =
     Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
 
 let subst_tactic_notation (subst, tobj) =
-  { tobj with tacobj_body = Tacsubst.subst_tactic subst tobj.tacobj_body; }
+  { tobj with
+    tacobj_key = Mod_subst.subst_kn subst tobj.tacobj_key;
+    tacobj_body = Tacsubst.subst_tactic subst tobj.tacobj_body;
+  }
 
 let classify_tactic_notation tacobj = Substitute tacobj
 
@@ -123,6 +129,7 @@ let add_tactic_notation (local,n,prods,e) =
     tacgram_prods = prods;
   } in
   let tacobj = {
+    tacobj_key = make_fresh_key ();
     tacobj_local = local;
     tacobj_tacgram = parule;
     tacobj_tacpp = pprule;

@@ -1644,7 +1644,7 @@ let abstract_tycon loc env evdref subst tycon extenv t =
   in
   aux (0,extenv,subst0) t0
 
-let build_tycon loc env tycon_env subst tycon extenv evdref t =
+let build_tycon loc env tycon_env s subst tycon extenv evdref t =
   let t,tt = match t with
     | None ->
 	(* This is the situation we are building a return predicate and
@@ -1659,6 +1659,8 @@ let build_tycon loc env tycon_env subst tycon extenv evdref t =
         let evd,tt = Typing.e_type_of extenv !evdref t in
         evdref := evd;
         (t,tt) in
+  let b = e_cumul env evdref tt (mkSort s) (* side effect *) in
+  if not b then anomaly (Pp.str "Build_tycon: should be a type");
   { uj_val = t; uj_type = tt }
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
@@ -1780,7 +1782,7 @@ let build_inversion_problem loc env sigma tms t =
       mat       = [eqn1;eqn2];
       caseloc   = loc;
       casestyle = RegularStyle;
-      typing_function = build_tycon loc env pb_env subst} in
+      typing_function = build_tycon loc env pb_env s subst} in
   let pred = (compile pb).uj_val in
   (!evdref,pred)
 
