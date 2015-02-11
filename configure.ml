@@ -77,7 +77,12 @@ let read_lines_and_close fd =
 
 type err = StdErr | StdOut | DevNull
 
+let exe = ref ""  (* Will be set later on, when the suffix is known *)
+
 let run ?(fatal=true) ?(err=StdErr) prog args =
+  let prog = (* Ensure prog ends with exe *)
+    if Str.string_match (Str.regexp ("^.*" ^ !exe ^ "$")) prog 0
+    then prog else (prog ^ !exe) in
   let argv = Array.of_list (prog::args) in
   try
     let out_r,out_w = Unix.pipe () in
@@ -431,7 +436,7 @@ let arch = match !Prefs.arch with
 
 let arch_win32 = (arch = "win32")
 
-let exe = if arch_win32 then ".exe" else ""
+let exe = exe := if arch_win32 then ".exe" else ""; !exe
 let dll = if os_type_win32 then ".dll" else ".so"
 
 (** * VCS
