@@ -19,12 +19,20 @@ module type EqType = sig
   val equal : t -> t -> bool
 end
 
+type statistics = {
+  num_bindings: int;
+  num_buckets: int;
+  max_bucket_length: int;
+  bucket_histogram: int array
+}
+
 module type S = sig
   type elt
   type t
   val create : int -> t
   val clear : t -> unit
   val repr : int -> elt -> t -> elt
+  val stats : t -> statistics
 end
 
 module Make (E : EqType) =
@@ -184,6 +192,24 @@ module Make (E : EqType) =
   let repr h d t =
     let ifnotfound index = add_aux t Weak.set (Some d) h index; d in
     find_or h t d ifnotfound
+
+  let stats t =
+    let fold accu bucket = max (count_bucket 0 bucket 0) accu in
+    let max_length = Array.fold_left fold 0 t.table in
+    let histogram = Array.make (max_length + 1) 0 in
+    let iter bucket =
+      let len = count_bucket 0 bucket 0 in
+      histogram.(len) <- succ histogram.(len)
+    in
+    let () = Array.iter iter t.table in
+    let fold (num, len, i) k = (num + k * i, len + k, succ i) in
+    let (num, len, _) = Array.fold_left fold (0, 0, 0) histogram in
+    {
+      num_bindings = num;
+      num_buckets = len;
+      max_bucket_length = Array.length histogram;
+      bucket_histogram = histogram;
+    }
 
 end
 
