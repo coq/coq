@@ -425,7 +425,7 @@ let pf_reduce_decl redfun where (id,c,ty) gl =
   match c with
   | None ->
       if where == InHypValueOnly then
-	errorlabstrm "" (pr_id id ++ str "has no value.");
+	errorlabstrm "" (pr_id id ++ str " has no value.");
       (id,None,redfun' ty)
   | Some b ->
       let b' = if where != InHypTypeOnly then redfun' b else b in
@@ -522,7 +522,7 @@ let pf_e_reduce_decl redfun where (id,c,ty) gl =
   match c with
   | None ->
       if where == InHypValueOnly then
-	errorlabstrm "" (pr_id id ++ str "has no value.");
+	errorlabstrm "" (pr_id id ++ str " has no value.");
     let sigma, ty' = redfun sigma ty in
       sigma, (id,None,ty')
   | Some b ->
@@ -565,7 +565,7 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env
   match c with
   | None ->
       if where == InHypValueOnly then
-	errorlabstrm "" (pr_id id ++ str "has no value.");
+	errorlabstrm "" (pr_id id ++ str " has no value.");
     let sigma',ty' = redfun false env sigma ty in
       sigma', (id,None,ty')
   | Some b ->
