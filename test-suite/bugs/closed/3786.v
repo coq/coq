@@ -26,15 +26,7 @@ Definition sumUniqueImpl (ls : list nat)
 Proof.
   eexists.
   match goal with
-    | [ |- refine ?a ?b ] => let a' := eval hnf in a in refine (_ : refine a' b)
-  end;
-  try setoid_rewrite (@finite_set_handle_cardinal).
-  Undo.
-  match goal with
     | [ |- refine ?a ?b ] => let a' := eval hnf in a in change (refine a' b)
   end.
-  try setoid_rewrite (@finite_set_handle_cardinal). (* Anomaly: Uncaught exception Invalid_argument("decomp_pointwise").
-Please report. *)
-  instantiate (1 := admit).
-  admit.
-Defined.
+  try setoid_rewrite (@finite_set_handle_cardinal).
+Abort.
