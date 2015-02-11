@@ -194,7 +194,17 @@ struct
     | Level _, _ -> -1
     | _, Level _ -> 1
     | Var n, Var m -> Int.compare n m
-      
+
+  let hequal x y =
+    x == y ||
+      match x, y with
+      | Prop, Prop -> true
+      | Set, Set -> true
+      | Level (n,d), Level (n',d') ->
+        n == n' && d == d'
+      | Var n, Var n' -> n == n'
+      | _ -> false
+
   let hcons = function
     | Prop as x -> x
     | Set as x -> x
@@ -240,17 +250,17 @@ module Level = struct
   module Self = struct
     type _t = t
     type t = _t
-    type u = raw_level -> raw_level
-    let equal x y = x.hash == y.hash && x.data == y.data
+    type u = unit
+    let equal x y = x.hash == y.hash && RawLevel.hequal x.data y.data
     let hash x = x.hash
-    let hashcons hraw x =
-      let data' = hraw x.data in
+    let hashcons () x =
+      let data' = RawLevel.hcons x.data in
       if x.data == data' then x else { x with data = data' }
   end
 
   let hcons =
     let module H = Hashcons.Make(Self) in
-    Hashcons.simple_hcons H.generate H.hcons RawLevel.hcons
+    Hashcons.simple_hcons H.generate H.hcons ()
 
   let make l = hcons { hash = RawLevel.hash l; data = l }
 
