@@ -210,6 +210,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   end in
   let avoid = ref [] in
   let { sigma=sigma } = Proof.V82.subgoals pf in
+  let sigma = Evd.nf_constraints sigma in
   let rec fill_holes c =
     match kind_of_term c with
     | Evar (e,args) ->
@@ -222,13 +223,13 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   in
   let c = fill_holes pfterm in
   (* warning: side-effect on ownSign *)
-  let invProof = it_mkNamedLambda_or_LetIn c !ownSign
-  in
-  invProof
+  let invProof = it_mkNamedLambda_or_LetIn c !ownSign in
+  let p = Evarutil.nf_evars_universes sigma invProof in
+    p, Evd.universe_context sigma
 
 let add_inversion_lemma name env sigma t sort dep inv_op =
-  let invProof = inversion_scheme env sigma t sort dep inv_op in
-  let entry = definition_entry ~poly:true (*FIXME*) invProof in
+  let invProof, ctx = inversion_scheme env sigma t sort dep inv_op in
+  let entry = definition_entry ~poly:(Flags.use_polymorphic_flag ()) ~univs:ctx invProof in
   let _ = declare_constant name (DefinitionEntry entry, IsProof Lemma) in
   ()
 
@@ -236,7 +237,8 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
  * inv_op = InvNoThining (derives de semi inversion lemma) *)
 
 let add_inversion_lemma_exn na com comsort bool tac =
-  let env = Global.env () and evd = ref Evd.empty in
+  let env = Global.env () in
+  let evd = ref (Evd.from_env env) in
   let c = Constrintern.interp_type_evars env evd com in
   let sigma, sort = Pretyping.interp_sort !evd comsort in
   try
