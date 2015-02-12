@@ -186,6 +186,7 @@ let noccur_evar env evd evk c =
       (match pi2 (Environ.lookup_rel (i-k) env) with
        | None -> ()
        | Some b -> occur_rec k (lift i b))
+  | Proj (p,c) -> occur_rec k (Retyping.expand_projection env evd p c [])
   | _ -> iter_constr_with_binders succ occur_rec k c
   in
   try occur_rec 0 c; true with Occur -> false
