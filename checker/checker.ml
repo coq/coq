@@ -93,12 +93,6 @@ let add_rec_path ~unix_path ~coq_root =
   else
     msg_warning (str ("Cannot open " ^ unix_path))
 
-let add_rec_uppercase_subpaths ~unix_path ~coq_root =
-  Systemdirs.process_subdirectories (fun unix_path f ->
-    let id = Names.Id.of_string (String.capitalize f) in
-    let coq_root = DirPath.make (id :: DirPath.repr coq_root) in
-    add_rec_path ~unix_path ~coq_root) unix_path
-
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
 let push_include (s, alias) = includes := (s,alias,false) :: !includes
@@ -124,7 +118,7 @@ let init_load_path () =
   (* first standard library *)
   add_rec_path ~unix_path:(coqlib/"theories") ~coq_root:(Names.DirPath.make[coq_root]);
   (* then plugins *)
-  add_rec_uppercase_subpaths ~unix_path:plugins ~coq_root:(Names.DirPath.make[coq_root]);
+  add_rec_path ~unix_path:plugins ~coq_root:(Names.DirPath.make [coq_root]);
   (* then user-contrib *)
   if Sys.file_exists user_contrib then
     add_rec_path ~unix_path:user_contrib ~coq_root:Check.default_root_prefix;

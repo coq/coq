@@ -482,14 +482,14 @@ let coqdep () =
   (* NOTE: These directories are searched from last to first *)
   if !option_boot then begin
     add_rec_dir add_known "theories" ["Coq"];
-    add_rec_uppercase_subdirs add_known "plugins" ["Coq"];
+    add_rec_dir add_known "plugins" ["Coq"];
     add_rec_dir (fun _ -> add_caml_known) "theories" ["Coq"];
-    add_rec_uppercase_subdirs (fun _ -> add_caml_known) "plugins" ["Coq"];
+    add_rec_dir (fun _ -> add_caml_known) "plugins" ["Coq"];
   end else begin
     Envars.set_coqlib ~fail:Errors.error;
     let coqlib = Envars.coqlib () in
     add_rec_dir add_coqlib_known (coqlib//"theories") ["Coq"];
-    add_rec_uppercase_subdirs add_coqlib_known (coqlib//"plugins") ["Coq"];
+    add_rec_dir add_coqlib_known (coqlib//"plugins") ["Coq"];
     let user = coqlib//"user-contrib" in
     if Sys.file_exists user then add_dir add_coqlib_known user [];
     List.iter (fun s -> add_dir add_coqlib_known s [])

@@ -260,7 +260,7 @@ let rec dest_rel t =
 (****************************************************************************)
 (* Library linking *)
 
-let plugin_dir = "Setoid_ring"
+let plugin_dir = "setoid_ring"
 
 let cdir = ["Coq";plugin_dir]
 let plugin_modules =
