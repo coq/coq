@@ -465,7 +465,7 @@ let build_layout (sn:session) =
       message_frame#misc#show ();
       detachable#show);
     detachable#button#misc#hide ();
-    lbl in
+    detachable, lbl in
   let session_tab = GPack.hbox ~homogeneous:false () in
   let img = GMisc.image ~icon_size:`SMALL_TOOLBAR
     ~packing:session_tab#pack () in
@@ -496,9 +496,17 @@ let build_layout (sn:session) =
   sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
   script_scroll#add sn.script#coerce;
   proof_scroll#add sn.proof#coerce;
-  ignore(add_msg_page 0 sn.tab_label#text "Messages" sn.messages#coerce);
-  let label = add_msg_page 1 sn.tab_label#text "Errors" sn.errpage#coerce in
-  ignore(add_msg_page 2 sn.tab_label#text "Jobs" sn.jobpage#coerce);
+  let detach, _ = add_msg_page 0 sn.tab_label#text "Messages" sn.messages#coerce in
+  let _, label = add_msg_page 1 sn.tab_label#text "Errors" sn.errpage#coerce in
+  let _, _ = add_msg_page 2 sn.tab_label#text "Jobs" sn.jobpage#coerce in
+  (** When a message is received, focus on the message pane *)
+  let _ =
+    sn.messages#connect#pushed ~callback:(fun _ _ ->
+      let num = message_frame#page_num detach#coerce in
+      if 0 <= num then message_frame#goto_page num
+    )
+  in
+  (** When an error occurs, paint the error label in red *)
   let txt = label#text in
   let red s = "<span foreground=\"#FF0000\">" ^ s ^ "</span>" in
   sn.errpage#on_update ~callback:(fun l ->
