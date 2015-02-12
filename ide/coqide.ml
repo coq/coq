@@ -591,10 +591,12 @@ let get_current_word term =
   if term.script#buffer#has_selection then
     let (start, stop) = term.script#buffer#selection_bounds in
     term.script#buffer#get_text ~slice:true ~start ~stop ()
-  (** Otherwise try to recover the clipboard *)
-  else match Ideutils.cb#text with
-  | Some t -> t
-  | None -> ""
+  (** Otherwise try to find the word around the cursor *)
+  else
+    let it = term.script#buffer#get_iter_at_mark `INSERT in
+    let start = find_word_start it in
+    let stop = find_word_end start in
+    term.script#buffer#get_text ~slice:true ~start ~stop ()
 
 let print_branch c l =
   Format.fprintf c " | @[<hov 1>%a@]=> _@\n"
