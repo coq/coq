@@ -176,6 +176,12 @@ let coerce_to_evaluable_ref env v =
     let id = out_gen (topwit wit_var) v in
     if Id.List.mem id (Termops.ids_of_context env) then EvalVarRef id
     else fail ()
+  else if has_type v (topwit wit_ref) then
+    let r = out_gen (topwit wit_ref) v in
+    match r with
+    | VarRef var -> EvalVarRef var
+    | ConstRef c -> EvalConstRef c
+    | IndRef _ | ConstructRef _ -> fail ()
   else
     let ev = match Value.to_constr v with
     | Some c when isConst c -> EvalConstRef (Univ.out_punivs (destConst c))
