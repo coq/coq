@@ -77,8 +77,6 @@ val instance_priority : instance -> int option
 val is_class : global_reference -> bool
 val is_instance : global_reference -> bool
 
-val is_implicit_arg : Evar_kinds.t -> bool
-
 (** Returns the term and type for the given instance of the parameters and fields
    of the type class. *)
 

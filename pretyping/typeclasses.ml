@@ -483,15 +483,6 @@ let is_instance = function
       is_class (IndRef ind)
   | _ -> false
 
-let is_implicit_arg = function
-| Evar_kinds.GoalEvar -> false
-| _ -> true
-  (* match k with *)
-  (*     ImplicitArg (ref, (n, id), b) -> true *)
-  (*   | InternalHole -> true *)
-  (*   | _ -> false *)
-
-
 (* To embed a boolean for resolvability status.
    This is essentially a hack to mark which evars correspond to
    goals and do not need to be resolved when we have nested [resolve_all_evars]
