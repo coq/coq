@@ -26,6 +26,13 @@ Universe Polymorphism.
   (e.g. induction). Extra "Transparent" might have to be added to
   revert opacity of constants.
 
+Type classes.
+
+- When writing an Instance foo : Class A := {| proj := t |} (note the
+  vertical bars), support for typechecking the projections using the
+  type information and switching to proof mode is no longer available.
+  Use { } (without the vertical bars) instead.
+
 Potential sources of incompatibilities between Coq V8.3 and V8.4
 ----------------------------------------------------------------
 
