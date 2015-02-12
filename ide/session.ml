@@ -160,7 +160,6 @@ let set_buffer_handlers
     end end in
   let delete_cb ~start ~stop =
     Minilib.log (Printf.sprintf "delete_cb %d %d" start#offset stop#offset);
-    cur_action := new_action_id ();
     let min_iter, max_iter =
       if start#compare stop < 0 then start, stop else stop, start in
     let text_mark = add_mark min_iter in
