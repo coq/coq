@@ -47,6 +47,7 @@ let print_usage_channel co command =
 \n  -require f             load Coq object file f.vo and import it (Require f.)\
 \n  -compile f             compile Coq file f.v (implies -batch)\
 \n  -compile-verbose f     verbosely compile Coq file f.v (implies -batch)\
+\n  -quick                 quickly compile .v files to .vio files (skip proofs)\
 \n\
 \n  -where                 print Coq's standard library location and exit\
 \n  -config                print Coq's configuration information and exit\
