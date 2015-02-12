@@ -133,6 +133,11 @@ let set_buffer_handlers
     try ignore(buffer#get_mark (`NAME "stop_of_input"))
     with GText.No_such_mark _ -> assert false in
   let get_insert () = buffer#get_iter_at_mark `INSERT in
+  let update_prev it =
+    let prev = buffer#get_iter_at_mark (`NAME "prev_insert") in
+    if it#offset < prev#offset then
+      buffer#move_mark (`NAME "prev_insert") ~where:it
+  in
   let debug_edit_zone () = if false (*!Minilib.debug*) then begin
     buffer#remove_tag Tags.Script.edit_zone
       ~start:buffer#start_iter ~stop:buffer#end_iter;
@@ -147,6 +152,7 @@ let set_buffer_handlers
   let insert_cb it s = if String.length s = 0 then () else begin
     Minilib.log ("insert_cb " ^ string_of_int it#offset);
     let text_mark = add_mark it in
+    let () = update_prev it in
     if it#has_tag Tags.Script.to_process then
       cancel_signal "Altering the script being processed in not implemented"
     else if it#has_tag Tags.Script.read_only then
@@ -162,6 +168,7 @@ let set_buffer_handlers
     Minilib.log (Printf.sprintf "delete_cb %d %d" start#offset stop#offset);
     let min_iter, max_iter =
       if start#compare stop < 0 then start, stop else stop, start in
+    let () = update_prev min_iter in
     let text_mark = add_mark min_iter in
     let rec aux min_iter =
       if min_iter#equal max_iter then ()
