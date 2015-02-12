@@ -37,7 +37,6 @@ Util
 Bigint
 Dyn
 CUnix
-Systemdirs
 System
 Envars
 Aux_file

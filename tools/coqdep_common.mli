@@ -6,16 +6,16 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Systemdirs
-
 val option_c : bool ref
 val option_noglob : bool ref
 val option_boot : bool ref
 val option_natdynlk : bool ref
 val option_mldep : string option ref
 val norec_dirs : string list ref
+val norec_dirnames : string list ref
 val suffixe : string ref
 type dir = string option
+val ( // ) : string -> string -> string
 val get_extension : string -> string list -> string * string
 val basename_noext : string -> string
 val mlAccu : (string * string * dir) list ref
@@ -41,12 +41,13 @@ val coq_dependencies : unit -> unit
 val suffixes : 'a list -> 'a list list
 val add_known : bool -> string -> string list -> string -> unit
 val add_caml_known : string -> string list -> string -> unit
+val add_directory :
+  bool ->
+  (string -> string list -> string -> unit) -> string -> string list -> unit
 val add_caml_dir : string -> unit
 val add_dir :
   (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
 val add_rec_dir :
-  (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
-val add_rec_uppercase_subdirs :
   (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
 val treat_file : dir -> string -> unit
 val error_cannot_parse : string -> int * int -> 'a

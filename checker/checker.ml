@@ -10,7 +10,6 @@ open Pp
 open Errors
 open Util
 open System
-open Systemdirs
 open Flags
 open Names
 open Check
