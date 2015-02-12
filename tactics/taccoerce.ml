@@ -177,6 +177,7 @@ let coerce_to_evaluable_ref env v =
     if Id.List.mem id (Termops.ids_of_context env) then EvalVarRef id
     else fail ()
   else if has_type v (topwit wit_ref) then
+    let open Globnames in
     let r = out_gen (topwit wit_ref) v in
     match r with
     | VarRef var -> EvalVarRef var
