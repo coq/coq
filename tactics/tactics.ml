@@ -569,8 +569,12 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env
     let sigma',ty' = redfun false env sigma ty in
       sigma', (id,None,ty')
   | Some b ->
-      let sigma',b' = if where != InHypTypeOnly then redfun true env sigma b else sigma, b in
-      let sigma',ty' = if where != InHypValueOnly then redfun false env sigma ty else sigma', ty in
+      let sigma',b' = 
+	if where != InHypTypeOnly then redfun true env sigma b else sigma, b 
+      in
+      let sigma',ty' = 
+	if where != InHypValueOnly then redfun false env sigma' ty else sigma', ty 
+      in
 	sigma', (id,Some b',ty')
 
 let e_change_in_hyp redfun (id,where) =
