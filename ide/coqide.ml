@@ -838,6 +838,9 @@ let refresh_editor_prefs () =
     sn.command#refresh_font ();
 
     (* Colors *)
+    Tags.set_processing_color (Tags.color_of_string current.processing_color);
+    Tags.set_processed_color (Tags.color_of_string current.processed_color);
+    Tags.set_error_color (Tags.color_of_string current.error_color);
     sn.script#misc#modify_base [`NORMAL, `COLOR clr];
     sn.proof#misc#modify_base [`NORMAL, `COLOR clr];
     sn.messages#misc#modify_base [`NORMAL, `COLOR clr];
@@ -1314,8 +1317,6 @@ let build_ui () =
   refresh_tabs_hook := refresh_notebook_pos;
 
   (* Color configuration *)
-  Tags.set_processing_color (Tags.color_of_string prefs.processing_color);
-  Tags.set_processed_color (Tags.color_of_string prefs.processed_color);
   Tags.Script.incomplete#set_property
     (`BACKGROUND_STIPPLE
       (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));

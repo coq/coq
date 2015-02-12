@@ -503,10 +503,7 @@ let configure ?(apply=(fun () -> ())) () =
       current.processing_color <- Tags.string_of_color processing_button#color;
       current.processed_color <- Tags.string_of_color processed_button#color;
       current.error_color <- Tags.string_of_color error_button#color;
-      !refresh_editor_hook ();
-      Tags.set_processing_color processing_button#color;
-      Tags.set_processed_color processed_button#color;
-      Tags.set_error_color error_button#color
+      !refresh_editor_hook ()
     in
     custom ~label box callback true
   in
