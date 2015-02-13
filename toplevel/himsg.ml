@@ -879,7 +879,9 @@ let explain_label_already_declared l =
   str ("The label "^Label.to_string l^" is already declared.")
 
 let explain_application_to_not_path _ =
-  str "Application of modules is restricted to paths."
+  strbrk "A module cannot be applied to another module application or " ++
+  strbrk "with-expression; you must give a name to the intermediate result " ++
+  strbrk "module first."
 
 let explain_not_a_functor () =
   str "Application of a non-functor."

@@ -235,7 +235,7 @@ let rec extract_structure_spec env mp = function
 
 and extract_mexpr_spec env mp1 (me_struct,me_alg) = match me_alg with
   | MEident mp -> Visit.add_mp_all mp; MTident mp
-  | MEwith(me',WithDef(idl,c))->
+  | MEwith(me',WithDef(idl,(c,ctx)))->
       let env' = env_for_mtb_with_def env (mp_of_mexpr me') me_struct idl in
       let mt = extract_mexpr_spec env mp1 (me_struct,me') in
       (match extract_with_type env' c with (* cb may contain some kn *)

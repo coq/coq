@@ -54,7 +54,7 @@ let rec rebuild_mp mp l =
 
 let (+++) = Univ.Constraint.union
 
-let rec check_with_def env struc (idl,c) mp equiv =
+let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
   let lab,idl = match idl with
     | [] -> assert false
     | id::idl -> Label.of_id id, idl
@@ -74,30 +74,33 @@ let rec check_with_def env struc (idl,c) mp equiv =
 	 as long as they have the right type *)
       let ccst = Declareops.constraints_of_constant (opaque_tables env) cb in
       let env' = Environ.add_constraints ccst env' in
+      let newus, cst = Univ.UContext.dest ctx in
+      let env' = Environ.add_constraints cst env' in
       let c',cst = match cb.const_body with
 	| Undef _ | OpaqueDef _ ->
 	  let j = Typeops.infer env' c in
 	  let typ = Typeops.type_of_constant_type env' cb.const_type in
-	  let cst = Reduction.infer_conv_leq env' (Environ.universes env')
+	  let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
 	    j.uj_type typ in
-	  j.uj_val,cst
+	  j.uj_val,cst' +++ cst
 	| Def cs ->
-	  let cst = Reduction.infer_conv env' (Environ.universes env') c
+	  let cst' = Reduction.infer_conv env' (Environ.universes env') c
 	    (Mod_subst.force_constr cs) in
 	  let cst = (*FIXME MS: what to check here? subtyping of polymorphic constants... *)
-	    if cb.const_polymorphic then cst
-	    else ccst +++ cst 
+	    if cb.const_polymorphic then cst' +++ cst
+	    else cst' +++ cst
 	  in
             c, cst
       in
       let def = Def (Mod_subst.from_val c') in
+      let ctx' = Univ.UContext.make (newus, cst) in
       let cb' =
 	{ cb with
 	  const_body = def;
-	  const_body_code = Cemitcodes.from_val (compile_constant_body env' def) }
-	  (* const_universes = Future.from_val cst } *)
+	  const_body_code = Cemitcodes.from_val (compile_constant_body env' def);
+	  const_universes = ctx' }
       in
-      before@(lab,SFBconst(cb'))::after, c', cst
+      before@(lab,SFBconst(cb'))::after, c', ctx'
     else
       (* Definition inside a sub-module *)
       let mb = match spec with
@@ -108,7 +111,7 @@ let rec check_with_def env struc (idl,c) mp equiv =
       | Abstract ->
         let struc = Modops.destr_nofunctor mb.mod_type in
         let struc',c',cst =
-          check_with_def env' struc (idl,c) (MPdot(mp,lab)) mb.mod_delta
+          check_with_def env' struc (idl,(c,ctx)) (MPdot(mp,lab)) mb.mod_delta
         in
         let mb' = { mb with
           mod_type = NoFunctor struc';
@@ -204,8 +207,8 @@ let check_with env mp (sign,alg,reso,cst) = function
   |WithDef(idl,c) ->
     let struc = destr_nofunctor sign in
     let struc',c',cst' = check_with_def env struc (idl,c) mp reso in
-    let alg' = mk_alg_with alg (WithDef (idl,c')) in
-    (NoFunctor struc'),alg',reso, cst+++cst'
+    let alg' = mk_alg_with alg (WithDef (idl,(c',cst'))) in
+    (NoFunctor struc'),alg',reso, cst+++(Univ.UContext.constraints cst')
   |WithMod(idl,mp1) as wd ->
     let struc = destr_nofunctor sign in
     let struc',reso',cst' = check_with_mod env struc (idl,mp1) mp reso in

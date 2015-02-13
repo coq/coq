@@ -157,7 +157,7 @@ GEXTEND Gram
       ] ]
   ;
   universe:
-    [ [ "max("; ids = LIST1 ident SEP ","; ")" -> ids
+    [ [ IDENT "max"; "("; ids = LIST1 ident SEP ","; ")" -> ids
       | id = ident -> [id]
       ] ]
   ;

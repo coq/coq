@@ -177,9 +177,9 @@ let subst_with_body sub = function
   |WithMod(id,mp) as orig ->
     let mp' = subst_mp sub mp in
     if mp==mp' then orig else WithMod(id,mp')
-  |WithDef(id,c) as orig ->
+  |WithDef(id,(c,ctx)) as orig ->
     let c' = subst_mps sub c in
-    if c==c' then orig else WithDef(id,c')
+    if c==c' then orig else WithDef(id,(c',ctx))
 
 let rec subst_structure sub do_delta sign =
   let subst_body ((l,body) as orig) = match body with

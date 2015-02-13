@@ -560,8 +560,7 @@ The default is to not print synthesizable types.
 \comindex{Print Table Printing Let}}
 
 If an inductive type has just one constructor,
-pattern-matching can be written using {\tt let} ... {\tt :=}
-... {\tt in}~...
+pattern-matching can be written using the first destructuring let syntax.
 
 \begin{quote}
 {\tt Add Printing Let {\ident}.}
@@ -572,7 +571,10 @@ pattern-matching is written using a {\tt let} expression.
 \begin{quote}
 {\tt Remove Printing Let {\ident}.}
 \end{quote}
-This removes {\ident} from this list.
+This removes {\ident} from this list. Note that removing an inductive
+type from this list has an impact only for pattern-matching written using
+\texttt{match}. Pattern-matching explicitly written using a destructuring
+let are not impacted.
 
 \begin{quote}
 {\tt Test Printing Let for {\ident}.}
@@ -630,13 +632,19 @@ it is sensible to the command {\tt Reset}.
 This example emphasizes what the printing options offer.
 
 \begin{coq_example}
+Definition snd (A B:Set) (H:A * B) := match H with
+                                      | pair x y => y
+                                      end.
 Test Printing Let for prod.
-Print fst.
+Print snd.
 Remove Printing Let prod.
 Unset Printing Synth.
 Unset Printing Wildcard.
-Print fst.
+Print snd.
 \end{coq_example}
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 
 % \subsection{Still not dead old notations}
 
@@ -1051,7 +1059,7 @@ Please note that the questions described here have been subject to
 redesign in Coq v8.5. Former versions of Coq use the same terminology
 to describe slightly different things.
 
-Compiled files (\texttt{.vo} and \texttt{.vi}) store sub-libraries. In
+Compiled files (\texttt{.vo} and \texttt{.vio}) store sub-libraries. In
 order to refer to them inside {\Coq}, a translation from file-system
 names to {\Coq} names is needed. In this translation, names in the
 file system are called {\em physical} paths while {\Coq} names are

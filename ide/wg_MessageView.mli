@@ -6,9 +6,17 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+class type message_view_signals =
+object
+  inherit GObj.misc_signals
+  inherit GUtil.add_ml_signals
+  method pushed : callback:(Pp.message_level -> string -> unit) -> GtkSignal.id
+end
+
 class type message_view =
   object
     inherit GObj.widget
+    method connect : message_view_signals
     method clear : unit
     method add : string -> unit
     method set : string -> unit

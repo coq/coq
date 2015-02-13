@@ -588,13 +588,24 @@ let get_current_word term =
   | Some p -> p
   | None ->
   (** Then look at the current selected word *)
-  if term.script#buffer#has_selection then
-    let (start, stop) = term.script#buffer#selection_bounds in
+  let buf1 = term.script#buffer in
+  let buf2 = term.proof#buffer in
+  let buf3 = term.messages#buffer in
+  if buf1#has_selection then
+    let (start, stop) = buf1#selection_bounds in
+    buf1#get_text ~slice:true ~start ~stop ()
+  else if buf2#has_selection then
+    let (start, stop) = buf2#selection_bounds in
+    buf2#get_text ~slice:true ~start ~stop ()
+  else if buf3#has_selection then
+    let (start, stop) = buf3#selection_bounds in
+    buf3#get_text ~slice:true ~start ~stop ()
+  (** Otherwise try to find the word around the cursor *)
+  else
+    let it = term.script#buffer#get_iter_at_mark `INSERT in
+    let start = find_word_start it in
+    let stop = find_word_end start in
     term.script#buffer#get_text ~slice:true ~start ~stop ()
-  (** Otherwise try to recover the clipboard *)
-  else match Ideutils.cb#text with
-  | Some t -> t
-  | None -> ""
 
 let print_branch c l =
   Format.fprintf c " | @[<hov 1>%a@]=> _@\n"
@@ -838,6 +849,9 @@ let refresh_editor_prefs () =
     sn.command#refresh_font ();
 
     (* Colors *)
+    Tags.set_processing_color (Tags.color_of_string current.processing_color);
+    Tags.set_processed_color (Tags.color_of_string current.processed_color);
+    Tags.set_error_color (Tags.color_of_string current.error_color);
     sn.script#misc#modify_base [`NORMAL, `COLOR clr];
     sn.proof#misc#modify_base [`NORMAL, `COLOR clr];
     sn.messages#misc#modify_base [`NORMAL, `COLOR clr];
@@ -1314,8 +1328,6 @@ let build_ui () =
   refresh_tabs_hook := refresh_notebook_pos;
 
   (* Color configuration *)
-  Tags.set_processing_color (Tags.color_of_string prefs.processing_color);
-  Tags.set_processed_color (Tags.color_of_string prefs.processed_color);
   Tags.Script.incomplete#set_property
     (`BACKGROUND_STIPPLE
       (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));
