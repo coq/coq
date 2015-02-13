@@ -9,6 +9,7 @@
 class type proof_view =
   object
     inherit GObj.widget
+    method buffer : GText.buffer
     method refresh : unit -> unit
     method clear : unit -> unit
     method set_goals : Interface.goals option -> unit
@@ -176,6 +177,7 @@ let proof_view () =
     ~highlight_matching_brackets:true
     ~tag_table:Tags.Proof.table ()
   in
+  let text_buffer = new GText.buffer buffer#as_buffer in
   let view = GSourceView2.source_view
     ~source_buffer:buffer ~editable:false ~wrap_mode:`WORD ()
   in
@@ -185,6 +187,8 @@ let proof_view () =
     inherit GObj.widget view#as_widget
     val mutable goals = None
     val mutable evars = None
+
+    method buffer = text_buffer
 
     method clear () = buffer#set_text ""
 

@@ -9,6 +9,7 @@
 class type proof_view =
   object
     inherit GObj.widget
+    method buffer : GText.buffer
     method refresh : unit -> unit
     method clear : unit -> unit
     method set_goals : Interface.goals option -> unit

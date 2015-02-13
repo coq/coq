@@ -588,9 +588,18 @@ let get_current_word term =
   | Some p -> p
   | None ->
   (** Then look at the current selected word *)
-  if term.script#buffer#has_selection then
-    let (start, stop) = term.script#buffer#selection_bounds in
-    term.script#buffer#get_text ~slice:true ~start ~stop ()
+  let buf1 = term.script#buffer in
+  let buf2 = term.proof#buffer in
+  let buf3 = term.messages#buffer in
+  if buf1#has_selection then
+    let (start, stop) = buf1#selection_bounds in
+    buf1#get_text ~slice:true ~start ~stop ()
+  else if buf2#has_selection then
+    let (start, stop) = buf2#selection_bounds in
+    buf2#get_text ~slice:true ~start ~stop ()
+  else if buf3#has_selection then
+    let (start, stop) = buf3#selection_bounds in
+    buf3#get_text ~slice:true ~start ~stop ()
   (** Otherwise try to find the word around the cursor *)
   else
     let it = term.script#buffer#get_iter_at_mark `INSERT in
