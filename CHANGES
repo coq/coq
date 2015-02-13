@@ -22,6 +22,10 @@ Logic
   the return predicate. Restores compatibility of Coq's logic with the
   propositional extensionality axiom. May create incompatibilities in
   recursive programs heavily using dependent types.
+- Trivial inductive types are no longer defined in Type but in Prop, which
+  leads to a non-dependent induction principle being generated in place of
+  the dependent one. To recover the old behavior, explicitly define your
+  inductive types in Set.
 
 Vernacular commands
 
