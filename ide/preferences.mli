@@ -71,6 +71,7 @@ type pref =
       mutable processing_color : string;
       mutable processed_color : string;
       mutable error_color : string;
+      mutable error_fg_color : string;
 
       mutable dynamic_word_wrap : bool;
       mutable show_line_number : bool;

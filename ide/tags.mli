@@ -53,3 +53,13 @@ val set_processing_color : Gdk.color -> unit
 
 val get_error_color : unit -> Gdk.color
 val set_error_color : Gdk.color -> unit
+
+val get_error_fg_color : unit -> Gdk.color
+val set_error_fg_color : Gdk.color -> unit
+
+val default_processed_color : string
+val default_processing_color : string
+val default_error_color : string
+val default_error_fg_color : string
+val default_color : string
+
