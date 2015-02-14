@@ -597,13 +597,6 @@ let reduce_proj env sigma whfun whfun' c =
     | _ -> raise Redelimination
   in redrec c
 
-
-let dont_expose_case = function
-  | EvalVar _ | EvalRel _ | EvalEvar _ -> false
-  | EvalConst c ->
-     Option.cata (fun (_,_,z) -> List.mem `ReductionDontExposeCase z)
-		 false (ReductionBehaviour.get (ConstRef c))
-
 let whd_nothing_for_iota env sigma s =
   let rec whrec (x, stack as s) =
     match kind_of_term x with

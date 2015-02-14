@@ -842,7 +842,14 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		    let (tm',sk'),cst_l' =
 		      whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, app_sk)
 		    in
-		      if equal_stacks (x, app_sk) (tm', sk') || Stack.will_expose_iota sk'
+		    let rec is_case x = match kind_of_term x with
+		      | Lambda (_,_, x) | LetIn (_,_,_, x) | Cast (x, _,_) -> is_case x
+		      | App (hd, _) -> is_case hd
+		      | Case _ -> true
+		      | _ -> false in
+		    if equal_stacks (x, app_sk) (tm', sk')
+		       || Stack.will_expose_iota sk'
+		       || is_case tm'
 		      then fold ()
 		      else whrec cst_l' (tm', sk' @ sk)
 		  else match recargs with
