@@ -164,10 +164,12 @@ let infer_constructor_packet env_ar_par ctx params lc =
 (* If indices matter *)
 let cumulate_arity_large_levels env sign =
   fst (List.fold_right
-    (fun (_,_,t as d) (lev,env) ->
-      let tj = infer_type env t in
-      let u = univ_of_sort tj.utj_type in
-	(Universe.sup u lev, push_rel d env))
+    (fun (_,b,t as d) (lev,env) ->
+      if Option.is_empty b then
+	let tj = infer_type env t in
+	let u = univ_of_sort tj.utj_type in
+	  (Universe.sup u lev, push_rel d env)
+      else lev, push_rel d env)
     sign (Universe.type0m,env))
 
 let is_impredicative env u =
