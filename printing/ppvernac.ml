@@ -740,9 +740,14 @@ module Make
 
         | VernacEndProof (Proved (opac,o)) -> return (
           match o with
-            | None -> if opac then keyword "Qed" else keyword "Defined"
+            | None -> (match opac with
+                | Transparent -> keyword "Defined"
+                | Opaque None -> keyword "Qed"
+                | Opaque (Some l) ->
+                    keyword "Qed" ++ spc() ++ str"export" ++
+                      prlist_with_sep (fun () -> str", ") pr_lident l)
             | Some (id,th) -> (match th with
-                | None -> (if opac then keyword "Save" else keyword "Defined") ++ spc() ++ pr_lident id
+                | None -> (if opac <> Transparent then keyword "Save" else keyword "Defined") ++ spc() ++ pr_lident id
                 | Some tok -> keyword "Save" ++ spc() ++ pr_thm_token tok ++ spc() ++ pr_lident id)
         )
         | VernacExactProof c ->

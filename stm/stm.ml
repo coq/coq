@@ -1035,7 +1035,7 @@ end = struct (* {{{ *)
         vernac_interp stop
           ~proof:(pobject, terminator)
           { verbose = false; loc;
-            expr = (VernacEndProof (Proved (true,None))) }) in
+            expr = (VernacEndProof (Proved (Opaque None,None))) }) in
       ignore(Future.join checked_proof);
       RespBuiltProof(proof,time)
     with
@@ -1166,7 +1166,7 @@ end = struct (* {{{ *)
       Reach.known_state ~cache:`No start;
       vernac_interp stop ~proof
         { verbose = false; loc;
-          expr = (VernacEndProof (Proved (true,None))) };
+          expr = (VernacEndProof (Proved (Opaque None,None))) };
       Some proof
     with e ->
       let (e, info) = Errors.push e in
@@ -1564,7 +1564,8 @@ let collect_proof keep cur hd brkind id =
    | id :: _ -> Id.to_string id in
  let loc = (snd cur).loc in
  let is_defined = function
-   | _, { expr = VernacEndProof (Proved (false,_)) } -> true
+   | _, { expr = VernacEndProof (Proved ((Transparent|Opaque (Some _)),_)) } ->
+      true
    | _ -> false in
  let proof_using_ast = function
    | Some (_, ({ expr = VernacProof(_,Some _) } as v)) -> Some v
