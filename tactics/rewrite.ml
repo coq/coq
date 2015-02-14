@@ -1464,28 +1464,32 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
           in Some proof
       in Some (Some (evars, res, newt))
 
+(** Insert a declaration after the last declaration it depends on *)
+let rec insert_dependent env decl accu hyps = match hyps with
+| [] -> List.rev_append accu [decl]
+| (id, _, _  as ndecl) :: rem ->
+  if occur_var_in_decl env id decl then
+    List.rev_append accu (decl :: hyps)
+  else
+    insert_dependent env decl (ndecl :: accu) rem
+
 let assert_replacing id newt tac = 
   let prf = Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let nc' =
-      Environ.fold_named_context
-        (fun _ (n, b, t as decl) nc' ->
-          if Id.equal n id then (n, b, newt) :: nc'
-          else decl :: nc')
-        env ~init:[]
+    let ctx = Environ.named_context env in
+    let after, before = List.split_when (fun (n, b, t) -> Id.equal n id) ctx in
+    let nc = match before with
+    | [] -> assert false
+    | (id, b, _) :: rem -> insert_dependent env (id, b, newt) [] after @ rem
     in
+    let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
     Proofview.Refine.refine ~unsafe:false begin fun sigma ->
-      let env' = Environ.reset_with_named_context (val_of_named_context nc') env in
       let sigma, ev = Evarutil.new_evar env' sigma concl in
       let sigma, ev' = Evarutil.new_evar env sigma newt in
-      let fold _ (n, b, t) inst =
-        if Id.equal n id then ev' :: inst
-        else mkVar n :: inst
-      in
-      let inst = fold_named_context fold env ~init:[] in
-      let (e, args) = destEvar ev in
-      sigma, mkEvar (e, Array.of_list inst)
+      let map (n, _, _) = if Id.equal n id then ev' else mkVar n in
+      let (e, _) = destEvar ev in
+      sigma, mkEvar (e, Array.map_of_list map nc)
     end
   end in
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
