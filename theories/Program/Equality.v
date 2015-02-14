@@ -426,8 +426,9 @@ Ltac depind id := do_depind ltac:(fun hyp => do_ind hyp) id.
 (** A variant where generalized variables should be given by the user. *)
 
 Ltac do_depelim' rev tac H :=
-  (try intros until H) ; block_goal ; rev H ;
-  (try revert_until H ; block_goal) ; generalize_eqs H ; tac H ; simpl_dep_elim.
+  (try intros until H) ; block_goal ; 
+  (try revert_until H ; block_goal) ; 
+  generalize_eqs H ; rev H ; tac H ; simpl_dep_elim.
 
 (** Calls [destruct] on the generalized hypothesis, results should be similar to inversion.
    By default, we don't try to generalize the hyp by its variable indices.  *)
@@ -463,3 +464,9 @@ Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) :
 
 Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
   do_depelim' ltac:(fun hyp => revert l) ltac:(fun hyp => induction hyp using c) H.
+
+Tactic Notation "dependent" "induction" ident(H) "in" ne_hyp_list(l) :=
+  do_depelim' ltac:(fun hyp => idtac) ltac:(fun hyp => induction hyp in l) H.
+
+Tactic Notation "dependent" "induction" ident(H) "in" ne_hyp_list(l) "using" constr(c) := 
+  do_depelim' ltac:(fun hyp => idtac) ltac:(fun hyp => induction hyp in l using c) H.

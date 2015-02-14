@@ -247,7 +247,7 @@ to simplify equalities appearing at the beginning of induction
 hypotheses, generally using trivial applications of
 reflexivity. In cases where the equality is not between constructor
 forms though, one must help the automation by giving
-some arguments, using the {\tt specialize} tactic.
+some arguments, using the {\tt specialize} tactic for example.
 
 \begin{coq_example*}
 destruct D... apply weak ; apply ax. apply ax.
@@ -257,16 +257,24 @@ destruct D...
 Show.
 \end{coq_example}
 \begin{coq_example}
-  specialize (IHterm G empty).
+  specialize (IHterm G0 empty eq_refl).
 \end{coq_example}
 
-Then the automation can find the needed equality {\tt G = G} to narrow
-the induction hypothesis further. This concludes our example.
+Once the induction hypothesis has been narrowed to the right equality,
+it can be used directly. 
 
 \begin{coq_example}
-  simpl_depind.
+  apply weak, IHterm.
 \end{coq_example}
 
+If there is an easy first-order solution to these equations as in this subgoal, the
+{\tt specialize\_eqs} tactic can be used instead of giving explicit proof
+terms:
+
+\begin{coq_example}
+  specialize_eqs IHterm.
+\end{coq_example}
+This concludes our example.
 \SeeAlso The induction \ref{elim}, case \ref{case} and inversion \ref{inversion} tactics.
 
 \section[\tt autorewrite]{\tt autorewrite\label{autorewrite-example}}
