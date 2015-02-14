@@ -16,8 +16,8 @@ let make_tag (tt:GText.tag_table) ~name prop =
 (* These work fine for colorblind people too *)
 let default_processed_color = "light green"
 let default_processing_color = "light blue"
-let default_error_color = "#FF3333"
-let default_error_fg_color = "#FF5555"
+let default_error_color = "#FFCCCC"
+let default_error_fg_color = "red"
 let default_color = "cornsilk"
 
 let processed_color = ref default_processed_color
