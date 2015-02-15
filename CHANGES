@@ -74,6 +74,9 @@ Vernacular commands
   the execution of the following tactics.
 - "Optimize Heap" command to tell the OCaml runtime to perform a major
   garbage collection step and heap compaction.
+- "Instance" no longer treats the {|...|} syntax specially; it handles it
+  in the same way as other commands, e.g. "Definition". Use the {...}
+  syntax (no pipe symbols) to recover the old behavior.
 
 Specification Language
 
