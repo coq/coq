@@ -132,6 +132,7 @@ type branch_type =
   | `Proof of proof_mode * depth
   | `Edit of proof_mode * Stateid.t * Stateid.t ]
 type cmd_t = {
+  ctac : bool; (* is a tactic, needed by the 8.4 semantics of Undo *)
   cast : ast;
   cids : Id.t list;
   cqueue : [ `MainQueue | `TacQueue of cancel_switch | `QueryQueue of cancel_switch ] }
@@ -144,7 +145,7 @@ type qed_t = {
   brinfo : branch_type Vcs_.branch_info
 }
 type seff_t = ast option
-type alias_t = Stateid.t
+type alias_t = Stateid.t * ast
 type transaction =
   | Cmd    of cmd_t
   | Fork   of fork_t
@@ -315,7 +316,7 @@ end = struct (* {{{ *)
             (try string_of_ppcmds (pr_ast t) with _ -> "ERR")
       | Sideff None -> "EnvChange"
       | Noop -> " "
-      | Alias id -> sprintf "Alias(%s)" (Stateid.to_string id)
+      | Alias (id,_) -> sprintf "Alias(%s)" (Stateid.to_string id)
       | Qed { qast } -> string_of_ppcmds (pr_ast qast) in
     let is_green id = 
       match get_info vcs id with
@@ -769,19 +770,20 @@ end = struct (* {{{ *)
     match info.vcs_backup with
     | None, _ -> next acc
     | Some vcs, _ ->
-        let ids =
-          if id = Stateid.initial || id = Stateid.dummy then [] else
+        let ids, tactic, undo =
+          if id = Stateid.initial || id = Stateid.dummy then [],false,0 else
           match VCS.visit id with
-          | { step = `Fork ((_,_,_,l),_) } -> l
-          | { step = `Cmd { cids = l } } -> l
-          | _ -> [] in
-        match f acc (id, vcs, ids) with
+          | { step = `Fork ((_,_,_,l),_) } -> l, false,0
+          | { step = `Cmd { cids = l; ctac } } -> l, ctac,0
+          | { step = `Alias (_,{ expr = VernacUndo n}) } -> [], false, n
+          | _ -> [],false,0 in
+        match f acc (id, vcs, ids, tactic, undo) with
         | `Stop x -> x
         | `Cont acc -> next acc
  
   let back_safe () =
     let id =
-      fold_until (fun n (id,_,_) ->
+      fold_until (fun n (id,_,_,_,_) ->
         if n >= 0 && State.is_cached id then `Stop id else `Cont (succ n))
         0 (VCS.get_branch_pos (VCS.current_branch ())) in
     backto id
@@ -797,7 +799,7 @@ end = struct (* {{{ *)
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           (try
             let oid =
-              fold_until (fun b (id,_,label) ->
+              fold_until (fun b (id,_,label,_,_) ->
                 if b then `Stop id else `Cont (List.mem name label))
               false id in
             VtStm (VtBack oid, true), VtNow
@@ -805,17 +807,15 @@ end = struct (* {{{ *)
             VtStm (VtBack id, true), VtNow)
       | VernacBack n ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
-          let oid = fold_until (fun n (id,_,_) ->
+          let oid = fold_until (fun n (id,_,_,_,_) ->
             if Int.equal n 0 then `Stop id else `Cont (n-1)) n id in
           VtStm (VtBack oid, true), VtNow
       | VernacUndo n ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
-          let oid = fold_until (fun n (id,_,_) ->
-            if Int.equal n 0 then `Stop id else `Cont (n-1)) n id in
-          if n = 1 && !Flags.coqtop_ui && not !Flags.batch_mode &&
-             not !Flags.print_emacs then
-           VtStm (VtBack oid, false), VtNow
-          else VtStm (VtBack oid, true), VtLater
+          let oid = fold_until (fun n (id,_,_,tactic,undo) ->
+            let value = (if tactic then 1 else 0) - undo in
+            if Int.equal n 0 then `Stop id else `Cont (n-value)) n id in
+          VtStm (VtBack oid, true), VtLater
       | VernacUndoTo _
       | VernacRestart as e ->
           let m = match e with VernacUndoTo m -> m | _ -> 0 in
@@ -826,15 +826,15 @@ end = struct (* {{{ *)
             | Some vcs, _ -> vcs in
           let cb, _ =
             Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs) in
-          let n = fold_until (fun n (_,vcs,_) ->
+          let n = fold_until (fun n (_,vcs,_,_,_) ->
             if List.mem cb (Vcs_.branches vcs) then `Cont (n+1) else `Stop n)
             0 id in
-          let oid = fold_until (fun n (id,_,_) ->
+          let oid = fold_until (fun n (id,_,_,_,_) ->
             if Int.equal n 0 then `Stop id else `Cont (n-1)) (n-m-1) id in
           VtStm (VtBack oid, true), VtLater
       | VernacAbortAll ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
-          let oid = fold_until (fun () (id,vcs,_) ->
+          let oid = fold_until (fun () (id,vcs,_,_,_) ->
             match Vcs_.branches vcs with [_] -> `Stop id | _ -> `Cont ())
             () id in
           VtStm (VtBack oid, true), VtLater
@@ -1667,7 +1667,7 @@ let known_state ?(redefine_qed=false) ~cache id =
     let step, cache_step, feedback_processed =
       let view = VCS.visit id in
       match view.step with
-      | `Alias id -> (fun () ->
+      | `Alias (id,_) -> (fun () ->
             reach view.next; reach id
           ), cache, true
       | `Cmd { cast = x; cqueue = `TacQueue cancel } -> (fun () ->
@@ -1968,11 +1968,11 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           List.iter (fun b ->
             if not(VCS.Branch.equal b head) then begin
               VCS.checkout b;
-              VCS.commit (VCS.new_node ()) (Alias oid);
+              VCS.commit (VCS.new_node ()) (Alias (oid,x));
             end)
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
-          VCS.commit id (Alias oid);
+          VCS.commit id (Alias (oid,x));
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtStm (VtBack id, false), VtNow ->
           prerr_endline ("undo to state " ^ Stateid.to_string id);
@@ -2001,7 +2001,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           let queue =
             if !Flags.async_proofs_full then `QueryQueue (ref false)
             else `MainQueue in
-          VCS.commit id (Cmd { cast = x; cids = []; cqueue = queue });
+          VCS.commit id (Cmd {ctac=false;cast = x; cids = []; cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQuery (false,_), VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
@@ -2025,7 +2025,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       | VtProofMode mode, VtNow ->
           let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
-          VCS.commit id (Cmd {cast = x; cids=[]; cqueue = `MainQueue});
+          VCS.commit id (Cmd {ctac=false;cast = x;cids=[];cqueue = `MainQueue});
           VCS.propagate_sideff (Some x);
           List.iter
             (fun bn -> match VCS.get_branch bn with
@@ -2044,7 +2044,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       | VtProofStep paral, w ->
           let id = VCS.new_node ~id:newtip () in
           let queue = if paral then `TacQueue (ref false) else `MainQueue in
-          VCS.commit id (Cmd {cast = x; cids = []; cqueue = queue });
+          VCS.commit id (Cmd {ctac = true;cast = x;cids = [];cqueue = queue });
           Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
           let valid = if tty then Some(VCS.get_branch_pos head) else None in
@@ -2060,7 +2060,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
       | VtSideff l, w ->
           let id = VCS.new_node ~id:newtip () in
           VCS.checkout VCS.Branch.master;
-          VCS.commit id (Cmd { cast = x; cids = l; cqueue = `MainQueue});
+          VCS.commit id (Cmd {ctac=false;cast=x;cids=l;cqueue=`MainQueue});
           VCS.propagate_sideff (Some x);
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w == VtNow then finish (); `Ok
@@ -2084,7 +2084,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
               VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode "Classic";
             end else begin
-              VCS.commit id (Cmd { cast = x; cids = []; cqueue = `MainQueue});
+              VCS.commit id (Cmd {ctac=false; cast = x; cids = []; cqueue = `MainQueue});
               VCS.propagate_sideff (Some x);
               VCS.checkout_shallowest_proof_branch ();
             end in
@@ -2332,7 +2332,7 @@ let get_script prf =
          find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
     | `Sideff (`Id id)  -> find acc id
     | `Cmd {cast = x} -> find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
-    | `Alias id -> find acc id
+    | `Alias (id,_) -> find acc id
     | `Fork _ -> find acc view.next
     in
   find [] (VCS.get_branch_pos branch)
