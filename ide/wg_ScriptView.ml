@@ -418,6 +418,7 @@ object (self)
       self#buffer#end_user_action ()
 
   initializer
+    let () = Gtk_parsing.fix_double_click self in
     let supersed cb _ =
       let _ = cb () in
       GtkSignal.stop_emit()
