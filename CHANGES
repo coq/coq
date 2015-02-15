@@ -63,6 +63,8 @@ Vernacular commands
   retrieved using the "Locate Term" command.
 - New "Derive" command to help writing program by derivation.
 - "Undo" undoes any command, not just tactics.
+- "Undo. Undo." does not work in CoqIDE or Proof General, it works only
+  in coqtop.  "Undo 2" should be used intead.
 - New "Refine Instance Mode" option that allows to deactivate the generation of
   obligations in incomplete typeclass instances, raising an error instead.
 - "Collection" command to name sets of section hypotheses.  Named collections
