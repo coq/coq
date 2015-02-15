@@ -496,7 +496,7 @@ let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
   let status = by (Tactics.New.exact_proof c) in
-  save_proof (Vernacexpr.Proved(true,None));
+  save_proof (Vernacexpr.(Proved(Opaque None,None)));
   if not status then Pp.feedback Feedback.AddedAxiom
 
 let vernac_assumption locality poly (local, kind) l nl =

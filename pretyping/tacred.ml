@@ -189,6 +189,7 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
              if
 	       Array.for_all (noccurn k) tys
 	       && Array.for_all (noccurn (k+nbfix)) bds
+	       && k <= n
 	     then
 	       (k, List.nth labs (k-1))
 	     else
@@ -595,13 +596,6 @@ let reduce_proj env sigma whfun whfun' c =
 	 with Redelimination -> mkCase p)
     | _ -> raise Redelimination
   in redrec c
-
-
-let dont_expose_case = function
-  | EvalVar _ | EvalRel _ | EvalEvar _ -> false
-  | EvalConst c ->
-     Option.cata (fun (_,_,z) -> List.mem `ReductionDontExposeCase z)
-		 false (ReductionBehaviour.get (ConstRef c))
 
 let whd_nothing_for_iota env sigma s =
   let rec whrec (x, stack as s) =
@@ -1211,9 +1205,10 @@ let one_step_reduce env sigma c =
 	       (ci,p,c,lf), stack)
            with Redelimination -> raise NotStepReducible)
       | Fix fix ->
-	  (match reduce_fix (whd_construct_stack env) sigma fix stack with
+	  (try match reduce_fix (whd_construct_stack env) sigma fix stack with
              | Reduced s' -> s'
-	     | NotReducible -> raise NotStepReducible)
+	     | NotReducible -> raise NotStepReducible
+           with Redelimination -> raise NotStepReducible)
       | _ when isEvalRef env x ->
 	  let ref,u = destEvalRefU x in
           (try

@@ -53,7 +53,7 @@ val definition_entry : ?opaque:bool -> ?inline:bool -> ?types:types ->
   constr -> definition_entry
 
 val declare_constant :
- ?internal:internal_flag -> ?local:bool -> Id.t -> constant_declaration -> constant
+ ?internal:internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> constant_declaration -> constant
 
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->

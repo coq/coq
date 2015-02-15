@@ -243,7 +243,14 @@ let coqtop_path () =
 	    let i = Str.search_backward (Str.regexp_string "coqide") prog pos
             in
 	    String.blit "coqtop" 0 prog i 6;
-	    if Sys.file_exists prog then prog else "coqtop"
+	    if Sys.file_exists prog then prog
+	    else
+	      let in_macos_bundle =
+		Filename.concat
+		  (Filename.dirname prog)
+		  (Filename.concat "../Resources/bin" (Filename.basename prog))
+	      in if Sys.file_exists in_macos_bundle then in_macos_bundle
+		 else "coqtop"
 	  with Not_found -> "coqtop"
   in file
 

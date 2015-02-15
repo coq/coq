@@ -64,30 +64,33 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
     in
       modified := true; evdref := evd; mkSort s'
     | Prod (na,u,v) -> 
-    mkProd (na,u,refresh dir v)
+      mkProd (na,u,refresh dir v)
     | _ -> t
   (** Refresh the types of evars under template polymorphic references *)
-  and refresh_term_evars onevars t =
+  and refresh_term_evars onevars top t =
     match kind_of_term t with
     | App (f, args) when is_template_polymorphic env f ->
       let pos = get_polymorphic_positions f in
 	refresh_polymorphic_positions args pos
+    | App (f, args) when top && isEvar f -> 
+      refresh_term_evars true false f; 
+      Array.iter (refresh_term_evars onevars false) args
     | Evar (ev, a) when onevars ->
       let evi = Evd.find !evdref ev in
       let ty' = refresh true evi.evar_concl in
 	if !modified then 
 	  evdref := Evd.add !evdref ev {evi with evar_concl = ty'}
 	else ()
-    | _ -> iter_constr (refresh_term_evars onevars) t
+    | _ -> iter_constr (refresh_term_evars onevars false) t
   and refresh_polymorphic_positions args pos =
     let rec aux i = function
       | Some l :: ls -> 
         if i < Array.length args then 
-	  ignore(refresh_term_evars true args.(i));
+	  ignore(refresh_term_evars true false args.(i));
         aux (succ i) ls
       | None :: ls -> 
         if i < Array.length args then 
-          ignore(refresh_term_evars false args.(i));
+          ignore(refresh_term_evars false false args.(i));
 	aux (succ i) ls
       | [] -> ()
     in aux 0 pos
@@ -97,7 +100,7 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
       (match pbty with
       | None -> t
       | Some dir -> refresh dir t)
-    else (refresh_term_evars false t; t)
+    else (refresh_term_evars false true t; t)
   in
     if !modified then !evdref, t' else !evdref, t
 
@@ -1385,19 +1388,6 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
             map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
               imitate envk t in
 
-  let _fast rhs = 
-    let filter_ctxt = evar_filtered_context evi in
-    let names = ref Idset.empty in
-    let rec is_id_subst ctxt s =
-       match ctxt, s with
-         | ((id, _, _) :: ctxt'), (c :: s') ->
-           names := Idset.add id !names;
-           isVarId id c && is_id_subst ctxt' s'
-         | [], [] -> true
-         | _ -> false in
-    is_id_subst filter_ctxt (Array.to_list argsv) &&
-    closed0 rhs &&
-    Idset.subset (collect_vars rhs) !names in
   let rhs = whd_beta evd rhs (* heuristic *) in
   let fast rhs = 
     let filter_ctxt = evar_filtered_context evi in

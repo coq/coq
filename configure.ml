@@ -1124,7 +1124,8 @@ let write_makefile f =
   List.iter (fun (v,msg,_,_) -> pr "# %s: path for %s\n" v msg) install_dirs;
   List.iter (fun (v,_,dir,_) -> pr "%s=%S\n" v dir) install_dirs;
   pr "\n# Coq version\n";
-  pr "VERSION=%s\n\n" coq_version;
+  pr "VERSION=%s\n" coq_version;
+  pr "VERSION4MACOS=%s\n\n" coq_macos_version;
   pr "# Objective-Caml compile command\n";
   pr "OCAML=%S\n" camlexec.top;
   pr "OCAMLC=%S\n" camlexec.byte;

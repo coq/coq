@@ -22,6 +22,10 @@ Logic
   the return predicate. Restores compatibility of Coq's logic with the
   propositional extensionality axiom. May create incompatibilities in
   recursive programs heavily using dependent types.
+- Trivial inductive types are no longer defined in Type but in Prop, which
+  leads to a non-dependent induction principle being generated in place of
+  the dependent one. To recover the old behavior, explicitly define your
+  inductive types in Set.
 
 Vernacular commands
 
@@ -59,6 +63,8 @@ Vernacular commands
   retrieved using the "Locate Term" command.
 - New "Derive" command to help writing program by derivation.
 - "Undo" undoes any command, not just tactics.
+- "Undo. Undo." does not work in CoqIDE or Proof General, it works only
+  in coqtop.  "Undo 2" should be used intead.
 - New "Refine Instance Mode" option that allows to deactivate the generation of
   obligations in incomplete typeclass instances, raising an error instead.
 - "Collection" command to name sets of section hypotheses.  Named collections
@@ -70,6 +76,9 @@ Vernacular commands
   the execution of the following tactics.
 - "Optimize Heap" command to tell the OCaml runtime to perform a major
   garbage collection step and heap compaction.
+- "Instance" no longer treats the {|...|} syntax specially; it handles it
+  in the same way as other commands, e.g. "Definition". Use the {...}
+  syntax (no pipe symbols) to recover the old behavior.
 
 Specification Language
 

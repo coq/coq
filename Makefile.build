@@ -388,7 +388,7 @@ install-ide-info:
 $(COQIDEAPP)/Contents:
 	rm -rdf $@
 	$(MKDIR) $@
-	sed -e "s/VERSION/$(VERSION)/g" ide/MacOS/Info.plist.template > $@/Info.plist
+	sed -e "s/VERSION/$(VERSION4MACOS)/g" ide/MacOS/Info.plist.template > $@/Info.plist
 	$(MKDIR) "$@/MacOS"
 
 $(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents

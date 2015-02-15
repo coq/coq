@@ -8,10 +8,10 @@ INSTALLATION.
 
     The Coq package for Windows comes with an auto-installer. It will
 install Coq binaries and libraries under any directory you specify
-(C:\Program Files\Coq is the default path). It also creates shortcuts
-in the Windows menus. Alternatively, you can launch Coq using coqide.exe
-or coqtop.exe in the bin sub-directory of the installation
-(C:\Program Files\Coq\bin by default).
+(C:\Coq is the default path). It also creates shortcuts
+in the Windows menus.  Binaries, like coqc.exe,
+are in the bin sub-directory of the installation
+(C:\Coq\bin by default).
 
 COMPILATION.
 ============
@@ -20,40 +20,25 @@ COMPILATION.
     distribution. If you really need to recompile under Windows, here
     are some indications:
 
-    1- Install ocaml for Windows (MinGW port).
-       See: http://caml.inria.fr
+    1- Install cygwin and the wget package
+       See: http://cygwin.com
 
-    2- Install a shell environment with at least:
-         - a C compiler (gcc),
-         - the GNU make utility
+    2- Download and unzip in C:\ the SDK for windows
+       See: https://coq.inria.fr/distrib/current/files/
 
-       The Cygwin environment is well suited for compiling Coq
-       (official packages are made using Cygwin) See:
-       http://www.cygwin.com
+    3- From the cygwin prompt type
 
-    3- In order to compile Coqide, you will need the LablGTK library
-       See: http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
+        . /cygdrive/c/CoqSDK-85-1/environ
 
-       You also need to install the GTK libraries for Windows (see the
-       installation instruction for LablGTK)
+       The first time the script installs the C toolchain.
 
-    4- In a shell window, type successively
+    4- Then Coq can be compiled as follows:
+ 
+        ./configure -local
+        make
 
-        ./configure
-        make world
-        make install
+    5- To build the installer, type:
 
-    5- Though not nescessary, you can find useful:
-         - Windows version of (X)Emacs: it is a powerful environment for
-           developpers with coloured syntax, modes for compilation and debug,
-           and many more. It is free. See: http://www.gnu.org/software.
-         - Windows subversion client (very useful if you have access to the Coq
-           archive).
-
-    Good luck :-)
-
-    Alternatively, it is now possible (and even recommended ...) to build
-    Windows executables of coq from Linux thanks to a mingw cross-compiler.
-    If interested, please contact us for more details.
+        dev/make-installer-win32.sh
 
     The Coq Team.
