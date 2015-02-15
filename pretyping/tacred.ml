@@ -189,6 +189,7 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
              if
 	       Array.for_all (noccurn k) tys
 	       && Array.for_all (noccurn (k+nbfix)) bds
+	       && k <= n
 	     then
 	       (k, List.nth labs (k-1))
 	     else
