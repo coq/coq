@@ -1,3 +1,5 @@
+Set Implicit Arguments.
+
 (* Use of implicit arguments was lost in multiple variable declarations *)
 Variables 
   (A1 : Type)
