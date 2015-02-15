@@ -482,6 +482,7 @@ let coqdep () =
   if !option_boot then begin
     add_rec_dir add_known "theories" ["Coq"];
     add_rec_dir add_known "plugins" ["Coq"];
+    add_caml_dir "tactics";
     add_rec_dir (fun _ -> add_caml_known) "theories" ["Coq"];
     add_rec_dir (fun _ -> add_caml_known) "plugins" ["Coq"];
   end else begin

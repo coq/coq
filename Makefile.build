@@ -1058,19 +1058,19 @@ endif
 
 OCAMLDEP_NG = $(OCAMLDEP) -slash -ml-synonym .ml4
 
-checker/%.ml.d: $(D_DEPEND_BEFORE_SRC) checker/%.ml $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
+checker/%.ml.d: $(D_DEPEND_BEFORE_SRC) checker/%.ml $(D_DEPEND_AFTER_SRC) $(GENFILES)
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP_NG) $(LOCALCHKLIBS) "$<" $(TOTARGET)
 
-checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
+checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC) $(GENFILES)
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP_NG) $(LOCALCHKLIBS) "$<" $(TOTARGET)
 
-%.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
+%.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml $(D_DEPEND_AFTER_SRC) $(GENFILES)
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP_NG) $(DEPFLAGS) "$<" $(TOTARGET)
 
-%.mli.d: $(D_DEPEND_BEFORE_SRC) %.mli $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
+%.mli.d: $(D_DEPEND_BEFORE_SRC) %.mli $(D_DEPEND_AFTER_SRC) $(GENFILES)
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP_NG) $(DEPFLAGS) "$<" $(TOTARGET)
 
@@ -1082,9 +1082,9 @@ checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) 
 	$(SHOW)'COQDEP  $<'
 	$(HIDE)$(COQDEPBOOT) -I kernel -I tools/coqdoc -c "$<" $(TOTARGET)
 
-%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENVFILES)
+%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEP) $(GENVFILES)
 	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEPBOOT) $(DEPNATDYN) "$<" $(TOTARGET)
+	$(HIDE)$(COQDEP) -boot $(DEPNATDYN) "$<" $(TOTARGET)
 
 %_stubs.c.d: $(D_DEPEND_BEFORE_SRC) %_stubs.c $(D_DEPEND_AFTER_SRC)
 	$(SHOW)'CCDEP	$<'
