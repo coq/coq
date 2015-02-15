@@ -105,6 +105,7 @@ type pref =
 
       mutable read_project : project_behavior;
       mutable project_file_name : string;
+      mutable project_path : string option;
 
       mutable encoding : inputenc;
 
@@ -182,6 +183,7 @@ let current = {
 
     read_project = Ignore_args;
     project_file_name = "_CoqProject";
+    project_path = None;
 
     encoding = if Sys.os_type = "Win32" then Eutf8 else Elocale;
 
@@ -265,6 +267,7 @@ let save_pref () =
 
     add "project_options" [string_of_project_behavior p.read_project] ++
     add "project_file_name" [p.project_file_name] ++
+    add "project_path" (match p.project_path with None -> [] | Some s -> [s]) ++
 
     add "encoding" [string_of_inputenc p.encoding] ++
 
@@ -342,6 +345,7 @@ let load_pref () =
     set_hd "project_options"
       (fun v -> np.read_project <- (project_behavior_of_string v));
     set_hd "project_file_name" (fun v -> np.project_file_name <- v);
+    set_option "project_path" (fun v -> np.project_path <- v);
     set "automatic_tactics"
       (fun v -> np.automatic_tactics <- v);
     set_hd "cmd_print" (fun v -> np.cmd_print <- v);

@@ -132,8 +132,6 @@ let mktimer () =
              with Glib.GError _ -> ());
              timer := None) }
 
-let last_dir = ref ""
-
 let filter_all_files () = GFile.filter
   ~name:"All"
   ~patterns:["*"] ()
@@ -141,6 +139,10 @@ let filter_all_files () = GFile.filter
 let filter_coq_files () =  GFile.filter
   ~name:"Coq source code"
   ~patterns:[ "*.v"] ()
+
+let current_dir () = match current.project_path with
+| None -> ""
+| Some dir -> dir
 
 let select_file_for_open ~title () =
   let file = ref None in
@@ -152,14 +154,14 @@ let select_file_for_open ~title () =
   file_chooser#add_filter (filter_coq_files ());
   file_chooser#add_filter (filter_all_files ());
   file_chooser#set_default_response `OPEN;
-  ignore (file_chooser#set_current_folder !last_dir);
+  ignore (file_chooser#set_current_folder (current_dir ()));
   begin match file_chooser#run () with
     | `OPEN ->
       begin
 	file := file_chooser#filename;
 	match !file with
 	  | None -> ()
-	  | Some s -> last_dir := Filename.dirname s;
+	  | Some s -> current.project_path <- file_chooser#current_folder
       end
     | `DELETE_EVENT | `CANCEL -> ()
   end ;
@@ -178,7 +180,7 @@ let select_file_for_save ~title ?filename () =
   file_chooser#set_do_overwrite_confirmation true;
   file_chooser#set_default_response `SAVE;
   let dir,filename = match filename with
-    |None -> !last_dir, ""
+    |None -> current_dir (), ""
     |Some f -> Filename.dirname f, Filename.basename f
   in
   ignore (file_chooser#set_current_folder dir);
@@ -189,7 +191,7 @@ let select_file_for_save ~title ?filename () =
         file := file_chooser#filename;
         match !file with
             None -> ()
-          | Some s -> last_dir := Filename.dirname s;
+          | Some s -> current.project_path <- file_chooser#current_folder
       end
     | `DELETE_EVENT | `CANCEL -> ()
   end ;

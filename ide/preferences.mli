@@ -32,6 +32,7 @@ type pref =
 
       mutable read_project : project_behavior;
       mutable project_file_name : string;
+      mutable project_path : string option;
 
       mutable encoding : inputenc;
 
