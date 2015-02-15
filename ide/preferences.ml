@@ -181,7 +181,7 @@ let current = {
     source_language = "coq";
     source_style = "coq_style";
 
-    read_project = Ignore_args;
+    read_project = Append_args;
     project_file_name = "_CoqProject";
     project_path = None;
 
