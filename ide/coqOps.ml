@@ -218,8 +218,15 @@ object(self)
     let on_click id =
       let find _ _ s = Int.equal s.index id in
       let sentence = Doc.find document find in
-      let mark = sentence.stop in
+      let mark = sentence.start in
       let iter = script#buffer#get_iter_at_mark mark in
+      (** Sentence starts tend to be at the end of a line, so we rather choose
+          the first non-line-ending position. *)
+      let rec sentence_start iter =
+        if iter#ends_line then sentence_start iter#forward_line
+        else iter
+      in
+      let iter = sentence_start iter in
       script#buffer#place_cursor iter;
       ignore (script#scroll_to_iter ~use_align:true ~yalign:0. iter)
     in
