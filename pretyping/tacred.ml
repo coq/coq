@@ -1211,9 +1211,10 @@ let one_step_reduce env sigma c =
 	       (ci,p,c,lf), stack)
            with Redelimination -> raise NotStepReducible)
       | Fix fix ->
-	  (match reduce_fix (whd_construct_stack env) sigma fix stack with
+	  (try match reduce_fix (whd_construct_stack env) sigma fix stack with
              | Reduced s' -> s'
-	     | NotReducible -> raise NotStepReducible)
+	     | NotReducible -> raise NotStepReducible
+           with Redelimination -> raise NotStepReducible)
       | _ when isEvalRef env x ->
 	  let ref,u = destEvalRefU x in
           (try
