@@ -315,8 +315,6 @@ Definition abmonoidfracrel ( X : abmonoid ) ( A : @submonoids X ) :  hrel (@setq
 intros; exact (@quotrel _ _).
 Defined.
 
-(* Unset Kernel Term Sharing. *)
-
 Fail Timeout 1 Axiom ispartlbinopabmonoidfracrel : forall ( X : abmonoid ) ( A : @subabmonoids X ) { L : hrel X } ( z : abmonoidfrac X A ) , @abmonoidfracrel X A ( ( admit + z ) )admit.
 
 Definition ispartlbinopabmonoidfracrel_type : Type :=
@@ -324,5 +322,12 @@ Definition ispartlbinopabmonoidfracrel_type : Type :=
     @abmonoidfracrel X A ( ( admit + z ) )admit.
 
 Fail Timeout 1 Axiom ispartlbinopabmonoidfracrel' : $(let t:= eval unfold ispartlbinopabmonoidfracrel_type in
+                                      ispartlbinopabmonoidfracrel_type in exact t)$.
+
+Unset Kernel Term Sharing.
+
+Axiom ispartlbinopabmonoidfracrel : forall ( X : abmonoid ) ( A : @subabmonoids X ) { L : hrel X } ( z : abmonoidfrac X A ) , @abmonoidfracrel X A ( ( admit + z ) )admit.
+
+Axiom ispartlbinopabmonoidfracrel' : $(let t:= eval unfold ispartlbinopabmonoidfracrel_type in
                                       ispartlbinopabmonoidfracrel_type in exact t)$.
 
