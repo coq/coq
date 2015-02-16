@@ -907,7 +907,10 @@ module rec ProofTask : sig
   val build_proof_here :
     Stateid.t * Stateid.t -> Loc.t -> Stateid.t ->
       Proof_global.closed_proof_output Future.computation
-   
+
+  (* If set, only tasks overlapping with this list are processed *)
+  val set_perspective : Stateid.t list -> unit  
+
 end = struct (* {{{ *)
 
   let forward_feedback msg = Hooks.(call forward_feedback msg)
@@ -946,9 +949,14 @@ end = struct (* {{{ *)
   let name = ref "proofworker"
   let extra_env () = !async_proofs_workers_extra_env
 
+  let perspective = ref []
+  let set_perspective l = perspective := l
+
   let task_match age t =
     match age, t with
-    | `Fresh, BuildProof _ -> true
+    | `Fresh, BuildProof { t_states } ->
+        not !Flags.async_proofs_full ||
+        List.exists (fun x -> CList.mem_f Stateid.equal x !perspective) t_states
     | `Old my_states, States l ->
         List.for_all (fun x -> CList.mem_f Stateid.equal x my_states) l
     | _ -> false
@@ -1239,6 +1247,8 @@ end = struct (* {{{ *)
       name, max (time1 +. time2) 0.0001,i) 0 l
 
   let set_perspective idl =
+    ProofTask.set_perspective idl;
+    TaskQueue.broadcast (Option.get !queue);
     let open Stateid in
     let open ProofTask in
     let overlap s1 s2 =
