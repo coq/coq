@@ -283,7 +283,7 @@ end) = struct
 	(app_poly env evd arrow [| a; b |]), unfold_impl
 	(* (evd, mkProd (Anonymous, a, b)), (fun x -> x) *)
       else if bp then (* Dummy forall *)
-	(app_poly env evd coq_all [| a; mkLambda (Anonymous, a, b) |]), unfold_forall
+	(app_poly env evd coq_all [| a; mkLambda (Anonymous, a, lift 1 b) |]), unfold_forall
       else (* None in Prop, use arrow *)
 	(app_poly env evd arrow [| a; b |]), unfold_impl
 
