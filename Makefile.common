@@ -87,7 +87,7 @@ CHKSRCDIRS:= checker lib config kernel parsing
 ###########################################################################
 
 COQDEP:=bin/coqdep$(EXE)
-COQDEPBOOT:=bin/coqdep_boot$(EXE)
+OCAMLLIBDEP:=bin/ocamllibdep$(EXE)
 COQMAKEFILE:=bin/coq_makefile$(EXE)
 GALLINA:=bin/gallina$(EXE)
 COQTEX:=bin/coq-tex$(EXE)
@@ -99,7 +99,7 @@ COQWORKMGR:=bin/coqworkmgr$(EXE)
 TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)\
 	$(COQWORKMGR)
 
-PRIVATEBINARIES:=$(FAKEIDE) $(COQDEPBOOT)
+PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP)
 
 ###########################################################################
 # Documentation

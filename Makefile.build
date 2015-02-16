@@ -597,7 +597,7 @@ theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_g
 
 printers: $(DEBUGPRINTERS)
 
-tools: $(TOOLS) $(DEBUGPRINTERS) $(COQDEPBOOT)
+tools: $(TOOLS) $(DEBUGPRINTERS) $(OCAMLLIBDEP)
 
 # coqdep_boot : a basic version of coqdep, with almost no dependencies.
 
@@ -605,12 +605,9 @@ tools: $(TOOLS) $(DEBUGPRINTERS) $(COQDEPBOOT)
 # to avoid using implicit rules and hence .ml.d files that would need
 # coqdep_boot.
 
-COQDEPBOOTSRC:= \
-  tools/coqdep_lexer.mli tools/coqdep_lexer.ml \
-  tools/coqdep_common.mli tools/coqdep_common.ml \
-  tools/coqdep_boot.ml
+OCAMLLIBDEPSRC:= tools/ocamllibdep.ml
 
-$(COQDEPBOOT): $(COQDEPBOOTSRC)
+$(OCAMLLIBDEP): $(OCAMLLIBDEPSRC)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I tools, unix)
 
@@ -1074,13 +1071,13 @@ checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC) $(GE
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP_NG) $(DEPFLAGS) "$<" $(TOTARGET)
 
-checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
-	$(SHOW)'COQDEP  $<'
-	$(HIDE)$(COQDEPBOOT) -I checker -c "$<" $(TOTARGET)
+checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
+	$(SHOW)'OCAMLLIBDEP  $<'
+	$(HIDE)$(OCAMLLIBDEP) $(LOCALCHKLIBS) "$<" $(TOTARGET)
 
-%.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
-	$(SHOW)'COQDEP  $<'
-	$(HIDE)$(COQDEPBOOT) -I kernel -I tools/coqdoc -c "$<" $(TOTARGET)
+%.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
+	$(SHOW)'OCAMLLIBDEP  $<'
+	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) "$<" $(TOTARGET)
 
 %.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEP) $(GENVFILES)
 	$(SHOW)'COQDEP    $<'
