@@ -18,9 +18,27 @@ open Printer
 open Libnames
 open Globnames
 open Nametab
+open Goptions
 
 type filter_function = global_reference -> env -> constr -> bool
 type display_function = global_reference -> env -> constr -> unit
+
+(* This option restricts the output of [SearchPattern ...],
+[SearchAbout ...], etc. to the names of the symbols matching the
+query, separated by a newline. This type of output is useful for
+editors (like emacs), to generate a list of completion candidates
+without having to parse thorugh the types of all symbols. *)
+
+let search_output_name_only = ref false
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "output-name-only search";
+      optkey   = ["Search";"Output";"Name";"Only"];
+      optread  = (fun () -> !search_output_name_only);
+      optwrite = (:=) search_output_name_only }
 
 type glob_search_about_item =
   | GlobSearchSubPattern of constr_pattern
@@ -98,11 +116,14 @@ let generic_search glnumopt fn =
   iter_declarations fn
 
 (** Standard display *)
-
 let plain_display accu ref env c =
-  let pc = pr_lconstr_env env Evd.empty c in
   let pr = pr_global ref in
-  accu := hov 2 (pr ++ str":" ++ spc () ++ pc) :: !accu
+  if !search_output_name_only then
+    accu := pr :: !accu
+  else begin
+    let pc = pr_lconstr_env env Evd.empty c in
+    accu := hov 2 (pr ++ str":" ++ spc () ++ pc) :: !accu
+  end
 
 let format_display l = prlist_with_sep fnl (fun x -> x) (List.rev l)
 
