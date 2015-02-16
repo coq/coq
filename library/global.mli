@@ -116,21 +116,23 @@ val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
 val is_polymorphic : Globnames.global_reference -> bool
 val is_template_polymorphic : Globnames.global_reference -> bool
 
-(** Returns the type of the constant in its global or local universe context.
-    The type should not be used without pushing it's universe context in
-    the environmnent of usage. For non-universe-polymorphic constants, it
-    does not matter. *)
-
 val type_of_global_in_context : Environ.env -> 
   Globnames.global_reference -> Constr.types Univ.in_universe_context
-
-(** Returns the type of the constant, forgetting its universe context if
-    it is polymorphic, use with care: for polymorphic constants, the type
-    cannot be used to produce a term used by the kernel.
-    For safe handling of polymorphic global references, one needs an 
-    accompanying [evar_map], see [Evd.fresh_global] and [Evarutil.new_global]. *)
+(** Returns the type of the constant in its global or local universe
+    context. The type should not be used without pushing it's universe
+    context in the environmnent of usage. For non-universe-polymorphic
+    constants, it does not matter. *)
 
 val type_of_global_unsafe : Globnames.global_reference -> Constr.types 
+(** Returns the type of the constant, forgetting its universe context if
+    it is polymorphic, use with care: for polymorphic constants, the
+    type cannot be used to produce a term used by the kernel.  For safe
+    handling of polymorphic global references, one should look at a
+    particular instantiation of the reference, in some particular
+    universe context (part of an [env] or [evar_map]), see
+    e.g. [type_of_constant_in]. If you want to create a fresh instance
+    of the reference and get its type look at [Evd.fresh_global] or
+    [Evarutil.new_global] and [Retyping.get_type_of]. *)
 
 (** Returns the universe context of the global reference (whatever its polymorphic status is). *)
 val universes_of_global : Globnames.global_reference -> Univ.universe_context
