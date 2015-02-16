@@ -1789,9 +1789,19 @@ induction n.
 \item \texttt{induction {\term} in {\occgoalset}}
 
   This syntax is used for selecting which occurrences of {\term} the
-  induction has to be carried on. The {\tt in \occgoalset} clause is an
-  occurrence clause whose syntax and behavior is described in
-  Section~\ref{Occurrences_clauses}.
+  induction has to be carried on. The {\tt in \occgoalset} clause is
+  an occurrence clause whose syntax and behavior is described in
+  Section~\ref{Occurrences_clauses}. If variables or hypotheses not
+  mentioning {\term} in their type are listed in {\occgoalset}, those
+  are generalized as well in the statement to prove.
+
+\Example
+
+\begin{coq_example}
+Lemma comm x y : x + y = y + x.
+induction y in x |- *.
+Show 2.
+\end{coq_example}
 
 \item {\tt induction {\term$_1$} with {\bindinglist$_1$}
        as {\disjconjintropattern} %% eqn:{\namingintropattern}
