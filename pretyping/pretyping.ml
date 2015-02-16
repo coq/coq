@@ -324,12 +324,6 @@ let pretype_id pretype loc env evdref lvar id =
       (* Check if [id] is a section or goal variable *)
       try
 	let (_,_,typ) = lookup_named id env in
-	(* let _ =  *)
-	(*   try  *)
-   	(*     let ctx = Decls.variable_context id in *)
-	(*       evdref := Evd.merge_context_set univ_rigid !evdref ctx; *)
-	(*   with Not_found -> () *)
-	(* in *)
 	  { uj_val  = mkVar id; uj_type = typ }
       with Not_found ->
 	  (* [id] not found, standard error message *)
