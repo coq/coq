@@ -470,9 +470,7 @@ The following commands give some control over the pretty-printing of
 
 \subsubsection{Printing nested patterns
 \label{SetPrintingMatching}
-\comindex{Set Printing Matching}
-\comindex{Unset Printing Matching}
-\comindex{Test Printing Matching}}
+\optindex{Printing Matching}}
 
 The Calculus of Inductive Constructions knows pattern-matching only
 over simple patterns. It is however convenient to re-factorize nested
@@ -498,9 +496,7 @@ This tells if the printing matching mode is on or off. The default is
 on.
 
 \subsubsection{Printing of wildcard pattern
-\comindex{Set Printing Wildcard}
-\comindex{Unset Printing Wildcard}
-\comindex{Test Printing Wildcard}}
+\optindex{Printing Wildcard}}
 
 Some variables in a pattern may not occur in the right-hand side of
 the pattern-matching clause.  There are options to control the
@@ -527,9 +523,7 @@ This tells if the wildcard printing mode is on or off. The default is
 to print wildcard for useless variables.
 
 \subsubsection{Printing of the elimination predicate
-\comindex{Set Printing Synth}
-\comindex{Unset Printing Synth}
-\comindex{Test Printing Synth}}
+\optindex{Printing Synth}}
 
 In most of the cases, the type of the result of a matched term is
 mechanically synthesizable. Especially, if the result type does not
@@ -1451,8 +1445,7 @@ Check (p r1 r2).
 
 \subsection{Mode for automatic declaration of implicit arguments
 \label{Auto-implicit}
-\comindex{Set Implicit Arguments}
-\comindex{Unset Implicit Arguments}}
+\optindex{Implicit Arguments}}
 
 In case one wants to systematically declare implicit the arguments
 detectable as such, one may switch to the automatic declaration of
@@ -1466,8 +1459,7 @@ arguments is governed by options controlling whether strict and
 contextual implicit arguments have to be considered or not.
 
 \subsection{Controlling strict implicit arguments
-\comindex{Set Strict Implicit}
-\comindex{Unset Strict Implicit}
+\optindex{Strict Implicit}
 \label{SetStrictImplicit}}
 
 When the mode for automatic declaration of implicit arguments is on,
@@ -1482,8 +1474,7 @@ Conversely, use the command {\tt Set Strict Implicit} to
 restore the original mode that declares implicit only the strict implicit arguments plus a small subset of the non strict implicit arguments.
 
 In the other way round, to capture exactly the strict implicit arguments and no more than the strict implicit arguments, use the command:
-\comindex{Set Strongly Strict Implicit}
-\comindex{Unset Strongly Strict Implicit}
+\optindex{Strongly Strict Implicit}
 \begin{quote}
 \tt Set Strongly Strict Implicit.
 \end{quote}
@@ -1494,8 +1485,7 @@ let the option ``{\tt Strict Implicit}'' decide what to do.
 declare the strict implicit arguments as implicit.
 
 \subsection{Controlling contextual implicit arguments
-\comindex{Set Contextual Implicit}
-\comindex{Unset Contextual Implicit}
+\optindex{Contextual Implicit}
 \label{SetContextualImplicit}}
 
 By default, {\Coq} does not automatically set implicit the contextual
@@ -1508,8 +1498,7 @@ Conversely, use command {\tt Unset Contextual Implicit} to
 unset the contextual implicit mode.
 
 \subsection{Controlling reversible-pattern implicit arguments
-\comindex{Set Reversible Pattern Implicit}
-\comindex{Unset Reversible Pattern Implicit}
+\optindex{Reversible Pattern Implicit}
 \label{SetReversiblePatternImplicit}}
 
 By default, {\Coq} does not automatically set implicit the reversible-pattern
@@ -1522,8 +1511,7 @@ Conversely, use command {\tt Unset Reversible Pattern Implicit} to
 unset the reversible-pattern implicit mode.
 
 \subsection{Controlling the insertion of implicit arguments not followed by explicit arguments
-\comindex{Set Maximal Implicit Insertion}
-\comindex{Unset Maximal Implicit Insertion}
+\optindex{Maximal Implicit Insertion}
 \label{SetMaximalImplicitInsertion}}
 
 Implicit arguments can be declared to be automatically inserted when a
@@ -1607,10 +1595,8 @@ if each of them is to be used maximally or not, use the command
 \end{quote}
 
 \subsection{Explicit displaying of implicit arguments for pretty-printing
-\comindex{Set Printing Implicit}
-\comindex{Unset Printing Implicit}
-\comindex{Set Printing Implicit Defensive}
-\comindex{Unset Printing Implicit Defensive}}
+\optindex{Printing Implicit}
+\optindex{Printing Implicit Defensive}}
 
 By default the basic pretty-printing rules hide the inferable implicit
 arguments of an application. To force printing all implicit arguments,
@@ -1653,8 +1639,7 @@ Check Prop = nat.
 \end{coq_example*}
 
 \subsection{Deactivation of implicit arguments for parsing}
-\comindex{Set Parsing Explicit}
-\comindex{Unset Parsing Explicit}
+\optindex{Parsing Explicit}
 
 Use of implicit arguments can be deactivated by issuing the command:
 \begin{quote}
@@ -1874,8 +1859,7 @@ More details and examples, and a description of the commands related
 to coercions are provided in Chapter~\ref{Coercions-full}.
 
 \section[Printing constructions in full]{Printing constructions in full\label{SetPrintingAll}
-\comindex{Set Printing All}
-\comindex{Unset Printing All}}
+\optindex{Printing All}}
 
 Coercions, implicit arguments, the type of pattern-matching, but also
 notations (see Chapter~\ref{Addoc-syntax}) can obfuscate the behavior
@@ -1897,8 +1881,7 @@ printing features, use the command
 \end{quote}
 
 \section[Printing universes]{Printing universes\label{PrintingUniverses}
-\comindex{Set Printing Universes}
-\comindex{Unset Printing Universes}}
+\optindex{Printing Universes}}
 
 The following command:
 \begin{quote}
@@ -1991,8 +1974,7 @@ Unset Printing Existential Instances.
 
 \subsection{Explicit displaying of existential instances for pretty-printing
 \label{SetPrintingExistentialInstances}
-\comindex{Set Printing Existential Instances}
-\comindex{Unset Printing Existential Instances}}
+\optindex{Printing Existential Instances}}
 
 The command:
 \begin{quote}

@@ -779,8 +779,7 @@ f (3+4).
 \end{coq_example}
 
 \item \index{appcontext@\texttt{appcontext}!in pattern}
-  \comindex{Set Tactic Compat Context}
-  \comindex{Unset Tactic Compat Context}
+  \optindex{Tactic Compat Context}
 For historical reasons, {\tt context} used to consider $n$-ary applications
 such as {\tt (f 1 2)} as a whole, and not as a sequence of unary
 applications {\tt ((f 1) 2)}. Hence {\tt context [f ?x]} would fail
@@ -1094,9 +1093,7 @@ Defined {\ltac} functions can be displayed using the command
 
 \section{Debugging {\ltac} tactics}
 
-\subsection[Info trace]{Info trace\comindex{Info}\comindex{Set Info Level}
-\comindex{Unset Info Level}
-\comindex{Test Info Level}}
+\subsection[Info trace]{Info trace\comindex{Info}\optindex{Info Level}}
 
 It is possible to print the trace of the path eventually taken by an {\ltac} script. That is, the list of executed tactics, discarding all the branches which have failed. To that end the {\tt Info} command can be used with the following syntax.
 
@@ -1142,9 +1139,7 @@ This will automatically print the same trace as {\tt Info \num} at each tactic c
 
 The current value for the {\tt Info Level} option can be checked using the {\tt Test Info Level} command.
 
-\subsection[Interactive debugger]{Interactive debugger\comindex{Set Ltac Debug}
-\comindex{Unset Ltac Debug}
-\comindex{Test Ltac Debug}}
+\subsection[Interactive debugger]{Interactive debugger\optindex{Ltac Debug}}
 
 The {\ltac} interpreter comes with a step-by-step debugger. The
 debugger can be activated using the command

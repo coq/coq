@@ -493,31 +493,28 @@ Locate I.Dont.Exist.
 \subsection{The {\sc Whelp} searching tool
 \label{Whelp}}
 
-{\sc Whelp} is an experimental searching and browsing tool for the
-whole {\Coq} library and the whole set of {\Coq} user contributions.
-{\sc Whelp} requires a browser to work. {\sc Whelp} has been developed
-at the University of Bologna as part of the HELM\footnote{Hypertextual
-Electronic Library of Mathematics} and MoWGLI\footnote{Mathematics on
-the Web, Get it by Logics and Interfaces} projects.  It can be invoked
-directly from the {\Coq} toplevel or from {\CoqIDE}, assuming a
-graphical environment is also running. The browser to use can be
-selected by setting the environment variable {\tt
-COQREMOTEBROWSER}. If not explicitly set, it defaults to
+{\sc Whelp} is an experimental searching and browsing tool for the whole {\Coq}
+library and the whole set of {\Coq} user contributions.  {\sc Whelp} requires a
+browser to work. {\sc Whelp} has been developed at the University of Bologna as
+part of the HELM\footnote{Hypertextual Electronic Library of Mathematics} and
+MoWGLI\footnote{Mathematics on the Web, Get it by Logics and Interfaces}
+projects.  It can be invoked directly from the {\Coq} toplevel or from
+{\CoqIDE}, assuming a graphical environment is also running. The browser to use
+can be selected by setting the environment variable {\tt COQREMOTEBROWSER}. If
+not explicitly set, it defaults to
 \verb!firefox -remote \"OpenURL(%s,new-tab)\" || firefox %s &"!  or
-\verb!C:\\PROGRA~1\\INTERN~1\\IEXPLORE %s!, depending on the
-underlying operating system (in the command, the string \verb!%s!
-serves as metavariable for the url to open).
-The Whelp tool relies on a dedicated Whelp server and on another server
-called Getter that retrieves formal documents. The default Whelp server name
-can be obtained using the command {\tt Test Whelp Server}
-\comindex{Test Whelp Server} and the default Getter can be obtained
-using the command: {\tt Test Whelp Getter} \comindex{Test Whelp
-Getter}. The Whelp server name can be changed using the command:
+\verb!C:\\PROGRA~1\\INTERN~1\\IEXPLORE %s!, depending on the underlying
+operating system (in the command, the string \verb!%s!  serves as metavariable
+for the url to open).  The Whelp tool relies on a dedicated Whelp server and on
+another server called Getter that retrieves formal documents. The default Whelp
+server name can be obtained using the command {\tt Test Whelp Server} and the
+default Getter can be obtained using the command: {\tt Test Whelp Getter}. The
+Whelp server name can be changed using the command:
 
 \smallskip
 \noindent {\tt Set Whelp Server {\str}}.\\
 where {\str} is a URL (e.g. {\tt http://mowgli.cs.unibo.it:58080}).
-\comindex{Set Whelp Server}
+\optindex{Whelp Server}
 \smallskip
 
 \noindent The Getter can be changed using the command:
@@ -525,7 +522,7 @@ where {\str} is a URL (e.g. {\tt http://mowgli.cs.unibo.it:58080}).
 
 \noindent {\tt Set Whelp Getter {\str}}.\\
 where {\str} is a URL (e.g. {\tt http://mowgli.cs.unibo.it:58081}).  
-\comindex{Set Whelp Getter}
+\optindex{Whelp Getter}
 
 \bigskip
 
@@ -960,53 +957,53 @@ the command has not terminated after the time specified by the integer
 is displayed.
 
 \subsection[\tt Set Default Timeout \textrm{\textsl{int}}.]{\tt Set
-  Default Timeout \textrm{\textsl{int}}.\comindex{Set Default Timeout}}
+  Default Timeout \textrm{\textsl{int}}.\optindex{Default Timeout}}
 
 After using this command, all subsequent commands behave as if they
 were passed to a {\tt Timeout} command. Commands already starting by
 a {\tt Timeout} are unaffected.
 
-\subsection[\tt Unset Default Timeout.]{\tt Unset Default Timeout.\comindex{Unset Default Timeout}}
+\subsection[\tt Unset Default Timeout.]{\tt Unset Default Timeout.\optindex{Default Timeout}}
 
 This command turns off the use of a default timeout.
 
-\subsection[\tt Test Default Timeout.]{\tt Test Default Timeout.\comindex{Test Default Timeout}}
+\subsection[\tt Test Default Timeout.]{\tt Test Default Timeout.\optindex{Default Timeout}}
 
 This command displays whether some default timeout has be set or not.
 
 \section{Controlling display}
 
-\subsection[\tt Set Silent.]{\tt Set Silent.\comindex{Set Silent}
+\subsection[\tt Set Silent.]{\tt Set Silent.\optindex{Silent}
 \label{Begin-Silent}
 \index{Silent mode}}
 This command turns off the normal displaying.
 
-\subsection[\tt Unset Silent.]{\tt Unset Silent.\comindex{Unset Silent}}
+\subsection[\tt Unset Silent.]{\tt Unset Silent.\optindex{Silent}}
 This command turns the normal display on.
 
-\subsection[\tt Set Printing Width {\integer}.]{\tt Set Printing Width {\integer}.\comindex{Set Printing Width}}
+\subsection[\tt Set Printing Width {\integer}.]{\tt Set Printing Width {\integer}.\optindex{Printing Width}}
 \label{SetPrintingWidth}
 This command sets which left-aligned part of the width of the screen
 is used for display. 
 
-\subsection[\tt Unset Printing Width.]{\tt Unset Printing Width.\comindex{Unset Printing Width}}
+\subsection[\tt Unset Printing Width.]{\tt Unset Printing Width.\optindex{Printing Width}}
 This command resets the width of the screen used for display to its
 default value (which is 78 at the time of writing this documentation).
 
-\subsection[\tt Test Printing Width.]{\tt Test Printing Width.\comindex{Test Printing Width}}
+\subsection[\tt Test Printing Width.]{\tt Test Printing Width.\optindex{Printing Width}}
 This command displays the current screen width used for display.
 
-\subsection[\tt Set Printing Depth {\integer}.]{\tt Set Printing Depth {\integer}.\comindex{Set Printing Depth}}
+\subsection[\tt Set Printing Depth {\integer}.]{\tt Set Printing Depth {\integer}.\optindex{Printing Depth}}
 This command sets the nesting depth of the formatter used for
 pretty-printing. Beyond this depth, display of subterms is replaced by
 dots. 
 
-\subsection[\tt Unset Printing Depth.]{\tt Unset Printing Depth.\comindex{Unset Printing Depth}}
+\subsection[\tt Unset Printing Depth.]{\tt Unset Printing Depth.\optindex{Printing Depth}}
 This command resets the nesting depth of the formatter used for
 pretty-printing to its default value (at the
 time of writing this documentation, the default value is 50).
 
-\subsection[\tt Test Printing Depth.]{\tt Test Printing Depth.\comindex{Test Printing Depth}}
+\subsection[\tt Test Printing Depth.]{\tt Test Printing Depth.\optindex{Printing Depth}}
 This command displays the current nesting depth used for display.
 
 %\subsection{\tt Abstraction ...}
@@ -1147,17 +1144,17 @@ perform a {\tt Ltac \ident\ := {\rm\sl convtactic}}.
 
 \subsection{\tt Set Virtual Machine
 \label{SetVirtualMachine}
-\comindex{Set Virtual Machine}}
+\optindex{Virtual Machine}}
 
 This activates the bytecode-based conversion algorithm.
 
 \subsection{\tt Unset Virtual Machine
-\comindex{Unset Virtual Machine}}
+\optindex{Virtual Machine}}
 
 This deactivates the bytecode-based conversion algorithm.
 
 \subsection{\tt Test Virtual Machine
-\comindex{Test Virtual Machine}}
+\optindex{Virtual Machine}}
 
 This tells if the bytecode-based conversion algorithm is
 activated. The default behavior is to have the bytecode-based

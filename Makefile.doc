@@ -99,6 +99,8 @@ doc/refman/Reference-Manual.dvi: $(REFMANFILES) doc/refman/Reference-Manual.tex
 	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
 	$(MAKEINDEX) -q Reference-Manual.comidx -o Reference-Manual.comind;\
 	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
+	$(MAKEINDEX) -q Reference-Manual.optidx -o Reference-Manual.optind;\
+	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
 	$(MAKEINDEX) -q Reference-Manual.erridx -o Reference-Manual.errind;\
 	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
 	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\

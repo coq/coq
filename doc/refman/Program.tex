@@ -253,14 +253,14 @@ tactic is replaced by the default one if not specified.
 \item {\tt Preterm [of \ident]}\comindex{Preterm} 
   Shows the term that will be fed to
   the kernel once the obligations are solved. Useful for debugging.
-\item {\tt Set Transparent Obligations}\comindex{Set Transparent Obligations}
+\item {\tt Set Transparent Obligations}\optindex{Transparent Obligations}
   Control whether all obligations should be declared as transparent (the
   default), or if the system should infer which obligations can be declared opaque. 
-\item {\tt Set Hide Obligations}\comindex{Set Hide Obligations}
+\item {\tt Set Hide Obligations}\optindex{Hide Obligations}
   Control whether obligations appearing in the term should be hidden
   as implicit arguments of the special constant
   \texttt{Program.Tactics.obligation}.
-\item {\tt Set Shrink Obligations}\comindex{Set Shrink Obligations}
+\item {\tt Set Shrink Obligations}\optindex{Shrink Obligations}
   Control whether obligations defined by tactics should have their
   context minimized to the set of variables used in the proof of the
   obligation, to avoid unnecessary dependencies.

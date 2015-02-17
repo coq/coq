@@ -53,6 +53,7 @@
             <ul class="menu">
               <li><a href="general-index.html">General</a></li>
               <li><a href="command-index.html">Commands</a></li>
+              <li><a href="option-index.html">Options</a></li>
               <li><a href="tactic-index.html">Tactics</a></li>
               <li><a href="error-index.html">Errors</a></li>
             </ul>

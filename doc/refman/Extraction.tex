@@ -117,22 +117,20 @@ The type-preserving optimizations are controlled by the following \Coq\ options:
 
 \begin{description}
 
-\item \comindex{Set Extraction Optimize}
+\item \optindex{Extraction Optimize}
 {\tt Set Extraction Optimize.}
 
-\item \comindex{Unset Extraction Optimize}
-{\tt Unset Extraction Optimize.}
+\item {\tt Unset Extraction Optimize.}
 
 Default is Set. This controls all type-preserving optimizations made on
 the ML terms (mostly reduction of dummy beta/iota redexes, but also
 simplifications on Cases, etc). Put this option to Unset if you want a
 ML term as close as possible to the Coq term.
 
-\item \comindex{Set Extraction Conservative Types}
+\item \optindex{Extraction Conservative Types}
 {\tt Set Extraction Conservative Types.}
 
-\item \comindex{Unset Extraction Conservative Types}
-{\tt Unset Extraction Conservative Types.}
+\item {\tt Unset Extraction Conservative Types.}
 
 Default is Unset. This controls the non type-preserving optimizations
 made on ML terms (which try to avoid function abstraction of dummy
@@ -140,11 +138,10 @@ types). Turn this option to Set to make sure that {\tt e:t}
 implies that {\tt e':t'} where {\tt e'} and {\tt t'} are the extracted
 code of {\tt e} and {\tt t} respectively.
 
-\item \comindex{Set Extraction KeepSingleton}
+\item \optindex{Extraction KeepSingleton}
 {\tt Set Extraction KeepSingleton.}
 
-\item \comindex{Unset Extraction KeepSingleton}
-{\tt Unset Extraction KeepSingleton.}
+\item {\tt Unset Extraction KeepSingleton.}
 
 Default is Unset. Normally, when the extraction of an inductive type
 produces a singleton type (i.e. a type with only one constructor, and
@@ -153,11 +150,10 @@ removed and this type is seen as an alias to the inner type.
 The typical example is {\tt sig}. This option allows disabling this
 optimization when one wishes to preserve the inductive structure of types.
 
-\item \comindex{Set Extraction AutoInline}
+\item \optindex{Extraction AutoInline}
 {\tt Set Extraction AutoInline.} 
 
-\item \comindex{Unset Extraction AutoInline}
-{\tt Unset Extraction AutoInline.} 
+\item {\tt Unset Extraction AutoInline.} 
 
 Default is Set, so by default, the extraction mechanism is free to
 inline the bodies of some defined constants, according to some heuristics
