@@ -1149,14 +1149,14 @@ let build_ui () =
 
   menu templates_menu [
     item "Templates" ~label:"Te_mplates";
-    template_item ("Lemma new_lemma : .\nProof.\n\nSave.\n", 6,9, "L");
+    template_item ("Lemma new_lemma : .\nProof.\n\nSave.\n", 6,9, "J");
     template_item ("Theorem new_theorem : .\nProof.\n\nSave.\n", 8,11, "T");
     template_item ("Definition ident := .\n", 11,5, "E");
     template_item ("Inductive ident : :=\n  | : .\n", 10,5, "I");
     template_item ("Fixpoint ident (_ : _) {struct _} : _ :=\n.\n", 9,5, "F");
     template_item ("Scheme new_scheme := Induction for _ Sort _\n" ^
                    "with _ := Induction for _ Sort _.\n", 7,10, "S");
-    item "match" ~label:"match ..." ~accel:(prefs.modifier_for_templates^"C")
+    item "match" ~label:"match ..." ~accel:(prefs.modifier_for_templates^"M")
       ~callback:match_callback
   ];
   alpha_items templates_menu "Template" Coq_commands.commands;
@@ -1164,12 +1164,12 @@ let build_ui () =
   let qitem s accel = item s ~label:("_"^s) ?accel ~callback:(Query.query s) in
   menu queries_menu [
     item "Queries" ~label:"_Queries";
-    qitem "Search" (Some "F2");
-    qitem "Check" (Some "F3");
-    qitem "Print" (Some "F4");
-    qitem "About" (Some "F5");
-    qitem "Locate" None;
-    qitem "Print Assumptions" None;
+    qitem "Search" (Some "<Ctrl><Shift>K");
+    qitem "Check" (Some "<Ctrl><Shift>C");
+    qitem "Print" (Some "<Ctrl><Shift>P");
+    qitem "About" (Some "<Ctrl><Shift>A");
+    qitem "Locate" (Some "<Ctrl><Shift>L");
+    qitem "Print Assumptions" (Some "<Ctrl><Shift>N");
     qitem "Whelp Locate" None;
   ];
 
