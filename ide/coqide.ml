@@ -852,6 +852,7 @@ let refresh_editor_prefs () =
     Tags.set_processing_color (Tags.color_of_string current.processing_color);
     Tags.set_processed_color (Tags.color_of_string current.processed_color);
     Tags.set_error_color (Tags.color_of_string current.error_color);
+    Tags.set_error_fg_color (Tags.color_of_string current.error_fg_color);
     sn.script#misc#modify_base [`NORMAL, `COLOR clr];
     sn.proof#misc#modify_base [`NORMAL, `COLOR clr];
     sn.messages#misc#modify_base [`NORMAL, `COLOR clr];
