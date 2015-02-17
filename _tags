@@ -24,8 +24,6 @@
 
 ## tags for camlp4 files 
 
-"toplevel/whelp.ml4": use_grammar
-
 "parsing/g_constr.ml4": use_compat5
 "parsing/g_ltac.ml4": use_compat5
 "parsing/g_prim.ml4": use_compat5

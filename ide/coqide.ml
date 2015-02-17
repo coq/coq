@@ -1171,7 +1171,6 @@ let build_ui () =
     qitem "About" (Some "<Ctrl><Shift>A");
     qitem "Locate" (Some "<Ctrl><Shift>L");
     qitem "Print Assumptions" (Some "<Ctrl><Shift>N");
-    qitem "Whelp Locate" None;
   ];
 
   menu tools_menu [
