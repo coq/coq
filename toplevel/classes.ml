@@ -208,7 +208,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	    let get_id =
 	      function
 		| Ident id' -> id'
-		| _ -> errorlabstrm "new_instance" (Pp.str "Only local structures are handled")
+		| Qualid (loc,id') -> (loc, snd (repr_qualid id'))
 	    in
 	    let props, rest =
 	      List.fold_left
