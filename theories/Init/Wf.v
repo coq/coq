@@ -127,6 +127,31 @@ Section Well_founded.
     := @Fix_rel (fun _ => @eq _).
  End FixPoint.
 
+ Section FixPoint_ext.
+   Variable P : A -> Type.
+
+   Section rel.
+     Context (FR : forall {x}, P x -> P x -> Prop)
+             (FR_trans : forall x (a b c : P x), FR a b -> FR b c -> FR a c).
+
+     Lemma Fix_ext_rel (F G : forall x : A, (forall y : A, R y x -> P y) -> P x)
+           (F_ext : forall x f g, (forall y (r : R y x), FR (f y r) (g y r)) -> FR (F x f) (F x g))
+           (G_ext : forall x f g, (forall y (r : R y x), FR (f y r) (g y r)) -> FR (G x f) (G x g))
+           (ext : forall x f g, (forall y r, FR (f y r) (g y r)) -> FR (F x f) (G x g)) (x : A)
+     : FR (Fix P F x) (Fix P G x).
+     Proof.
+       induction (Rwf x) as [? ? IHr].
+       eapply FR_trans; [ apply (Fix_rel P F FR); assumption | ].
+       eapply FR_trans; [ | apply (Fix_rel' P G FR); assumption ].
+       apply ext; intro.
+       apply IHr.
+     Qed.
+   End rel.
+
+   Definition Fix_ext
+     := @Fix_ext_rel (fun _ => @eq _) (fun _ => @eq_trans _).
+ End FixPoint_ext.
+
 End Well_founded.
 
 (** Well-founded fixpoints over pairs *)
