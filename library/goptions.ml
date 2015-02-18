@@ -268,10 +268,14 @@ let declare_option cast uncast
     begin fun v -> add_anonymous_leaf (gdecl_obj v) end
   else write,write,write
   in
+  let warn () =
+    if depr then
+      msg_warning (str "Option " ++ str (nickname key) ++ str " is deprecated")
+  in
   let cread () = cast (read ()) in
-  let cwrite v = write (uncast v) in
-  let clwrite v = lwrite (uncast v) in
-  let cgwrite v = gwrite (uncast v) in
+  let cwrite v = warn (); write (uncast v) in
+  let clwrite v = warn (); lwrite (uncast v) in
+  let cgwrite v = warn (); gwrite (uncast v) in
   value_tab := OptionMap.add key (name, depr, (sync,cread,cwrite,clwrite,cgwrite)) !value_tab;
   write
 

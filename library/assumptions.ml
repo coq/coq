@@ -205,7 +205,8 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
 	| Fix (_,(_, e1_array, e2_array)) | CoFix (_,(_,e1_array, e2_array)) ->
           (iter_array e1_array) ** (iter_array e2_array)
 	| Const (kn,_) -> do_memoize_kn kn
-	| _ -> identity2 (* closed atomic types + rel *)
+	| Proj (_, e) -> iter e
+	| Rel _ | Sort _ | Ind _ | Construct _ -> identity2
     and iter_array a = Array.fold_right (fun e f -> (iter e)**f) a identity2
     in iter t s acc
 

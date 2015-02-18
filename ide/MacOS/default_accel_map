@@ -247,7 +247,6 @@
 ; (gtk_accel_path "<Actions>/Tactics/Tactic constructor" "")
 ; (gtk_accel_path "<Actions>/Tactics/Tactic elim -- with" "")
 ; (gtk_accel_path "<Actions>/Templates/Template Identity Coercion" "")
-; (gtk_accel_path "<Actions>/Queries/Whelp Locate" "")
 (gtk_accel_path "<Actions>/View/Display all low-level contents" "<Shift><Control>l")
 ; (gtk_accel_path "<Actions>/Tactics/Tactic right" "")
 ; (gtk_accel_path "<Actions>/Edit/Find Previous" "<Shift>F3")

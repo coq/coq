@@ -283,7 +283,7 @@ end) = struct
 	(app_poly env evd arrow [| a; b |]), unfold_impl
 	(* (evd, mkProd (Anonymous, a, b)), (fun x -> x) *)
       else if bp then (* Dummy forall *)
-	(app_poly env evd coq_all [| a; mkLambda (Anonymous, a, b) |]), unfold_forall
+	(app_poly env evd coq_all [| a; mkLambda (Anonymous, a, lift 1 b) |]), unfold_forall
       else (* None in Prop, use arrow *)
 	(app_poly env evd arrow [| a; b |]), unfold_impl
 
@@ -1444,7 +1444,14 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
       let newt = Evarutil.nf_evar evars' res.rew_to in
       let evars = (* Keep only original evars (potentially instantiated) and goal evars,
 		     the rest has been defined and substituted already. *)
-	Evar.Set.fold (fun ev acc -> Evd.remove acc ev) cstrs evars'
+	Evar.Set.fold 
+	  (fun ev acc -> 
+	   if not (Evd.is_defined acc ev) then 
+	     errorlabstrm "rewrite"
+			  (str "Unsolved constraint remaining: " ++ spc () ++
+			   Evd.pr_evar_info (Evd.find acc ev))
+	   else Evd.remove acc ev) 
+	  cstrs evars'
       in
       let res = match res.rew_prf with
 	| RewCast c -> None

@@ -181,6 +181,7 @@ let proof_view () =
   let view = GSourceView2.source_view
     ~source_buffer:buffer ~editable:false ~wrap_mode:`WORD ()
   in
+  let () = Gtk_parsing.fix_double_click view in
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
   let _ = buffer#add_selection_clipboard default_clipboard in
   object

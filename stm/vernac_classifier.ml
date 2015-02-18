@@ -151,8 +151,8 @@ let rec classify_vernac e =
         let ids = List.map snd (CList.map_filter (fun (x,_) -> x) l) in
         VtSideff ids, VtLater
     | VernacCombinedScheme ((_,id),_) -> VtSideff [id], VtLater
+    | VernacBeginSection (_,id) -> VtSideff [id], VtLater
     | VernacUniverse _ | VernacConstraint _
-    | VernacBeginSection _
     | VernacCanonical _ | VernacCoercion _ | VernacIdentityCoercion _
     | VernacAddLoadPath _ | VernacRemoveLoadPath _ | VernacAddMLPath _
     | VernacChdir _ 

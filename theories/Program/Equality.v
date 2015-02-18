@@ -433,40 +433,40 @@ Ltac do_depelim' rev tac H :=
 (** Calls [destruct] on the generalized hypothesis, results should be similar to inversion.
    By default, we don't try to generalize the hyp by its variable indices.  *)
 
-Tactic Notation "dependent" "destruction" ident(H) := 
+Tactic Notation "dependent" "destruction" hyp(H) := 
   do_depelim' ltac:(fun hyp => idtac) ltac:(fun hyp => do_case hyp) H.
 
-Tactic Notation "dependent" "destruction" ident(H) "using" constr(c) := 
+Tactic Notation "dependent" "destruction" hyp(H) "using" constr(c) := 
   do_depelim' ltac:(fun hyp => idtac) ltac:(fun hyp => destruct hyp using c) H.
 
 (** This tactic also generalizes the goal by the given variables before the elimination. *)
 
-Tactic Notation "dependent" "destruction" ident(H) "generalizing" ne_hyp_list(l) := 
+Tactic Notation "dependent" "destruction" hyp(H) "generalizing" ne_hyp_list(l) := 
   do_depelim' ltac:(fun hyp => revert l) ltac:(fun hyp => do_case hyp) H.
 
-Tactic Notation "dependent" "destruction" ident(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
+Tactic Notation "dependent" "destruction" hyp(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
   do_depelim' ltac:(fun hyp => revert l) ltac:(fun hyp => destruct hyp using c) H.
 
 (** Then we have wrappers for usual calls to induction. One can customize the induction tactic by 
    writting another wrapper calling do_depelim. We suppose the hyp has to be generalized before
    calling [induction]. *)
 
-Tactic Notation "dependent" "induction" ident(H) :=
+Tactic Notation "dependent" "induction" hyp(H) :=
   do_depind ltac:(fun hyp => do_ind hyp) H.
 
-Tactic Notation "dependent" "induction" ident(H) "using" constr(c) :=
+Tactic Notation "dependent" "induction" hyp(H) "using" constr(c) :=
   do_depind ltac:(fun hyp => induction hyp using c) H.
 
 (** This tactic also generalizes the goal by the given variables before the induction. *)
 
-Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) := 
+Tactic Notation "dependent" "induction" hyp(H) "generalizing" ne_hyp_list(l) := 
   do_depelim' ltac:(fun hyp => revert l) ltac:(fun hyp => do_ind hyp) H.
 
-Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
+Tactic Notation "dependent" "induction" hyp(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
   do_depelim' ltac:(fun hyp => revert l) ltac:(fun hyp => induction hyp using c) H.
 
-Tactic Notation "dependent" "induction" ident(H) "in" ne_hyp_list(l) :=
+Tactic Notation "dependent" "induction" hyp(H) "in" ne_hyp_list(l) :=
   do_depelim' ltac:(fun hyp => idtac) ltac:(fun hyp => induction hyp in l) H.
 
-Tactic Notation "dependent" "induction" ident(H) "in" ne_hyp_list(l) "using" constr(c) := 
+Tactic Notation "dependent" "induction" hyp(H) "in" ne_hyp_list(l) "using" constr(c) := 
   do_depelim' ltac:(fun hyp => idtac) ltac:(fun hyp => induction hyp in l using c) H.

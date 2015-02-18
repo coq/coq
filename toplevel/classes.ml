@@ -165,7 +165,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
   in
   let env' = push_rel_context ctx env in
   evars := Evarutil.nf_evar_map !evars;
-  evars := resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env !evars;
+  evars := resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env !evars;
   let subst = List.map (Evarutil.nf_evar !evars) subst in
     if abstract then
       begin
@@ -208,7 +208,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	    let get_id =
 	      function
 		| Ident id' -> id'
-		| _ -> errorlabstrm "new_instance" (Pp.str "Only local structures are handled")
+		| Qualid (loc,id') -> (loc, snd (repr_qualid id'))
 	    in
 	    let props, rest =
 	      List.fold_left
@@ -232,7 +232,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 			   k.cl_projs;
 			 c :: props, rest'
 		     with Not_found ->
-		       (CHole (Loc.ghost, Some Evar_kinds.GoalEvar, Misctypes.IntroAnonymous, None) :: props), rest
+		       (CHole (Loc.ghost, None(* Some Evar_kinds.GoalEvar *), Misctypes.IntroAnonymous, None) :: props), rest
 		   else props, rest)
 		([], props) k.cl_props
 	    in

@@ -14,7 +14,9 @@ val pop : ?picky:('a -> bool) -> ?destroy:bool ref -> 'a t -> 'a
 val push : 'a t -> 'a -> unit
 val set_order : 'a t -> ('a -> 'a -> int) -> unit
 val wait_until_n_are_waiting_and_queue_empty : int -> 'a t -> unit
-val signal_destruction : 'a t -> unit
+
+(* Wake up all waiting threads *)
+val broadcast : 'a t -> unit
 
 (* Non destructive *)
 val wait_until_n_are_waiting_then_snapshot : int -> 'a t -> 'a list
