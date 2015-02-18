@@ -88,27 +88,43 @@ Section Well_founded.
 
   (** Proof that [well_founded_induction] satisfies the fixpoint equation.
       It requires an extra property of the functional *)
+  Section rel.
+    Hypothesis FR : forall {x}, P x -> P x -> Prop.
 
-  Hypothesis
-    F_ext :
-      forall (x:A) (f g:forall y:A, R y x -> P y),
-        (forall (y:A) (p:R y x), f y p = g y p) -> F f = F g.
+    Hypothesis
+      F_ext :
+        forall (x:A) (f g:forall y:A, R y x -> P y),
+          (forall (y:A) (p:R y x), FR (f y p) (g y p)) -> FR (F f) (F g).
 
-  Lemma Fix_F_inv : forall (x:A) (r s:Acc x), Fix_F r = Fix_F s.
-  Proof.
-   intro x; induction (Rwf x); intros.
-   rewrite <- (Fix_F_eq r); rewrite <- (Fix_F_eq s); intros.
-   apply F_ext; auto.
-  Qed.
+    Lemma Fix_F_inv_rel : forall (x:A) (r s:Acc x), FR (Fix_F r) (Fix_F s).
+    Proof.
+      intro x; induction (Rwf x); intros.
+      rewrite <- (Fix_F_eq r); rewrite <- (Fix_F_eq s); intros.
+      apply F_ext; auto.
+    Qed.
 
-  Lemma Fix_eq : forall x:A, Fix x = F (fun (y:A) (p:R y x) => Fix y).
-  Proof.
-   intro x; unfold Fix.
-   rewrite <- Fix_F_eq.
-   apply F_ext; intros.
-   apply Fix_F_inv.
-  Qed.
+    Lemma Fix_rel : forall x:A, FR (Fix x) (F (fun (y:A) (p:R y x) => Fix y)).
+    Proof.
+      intro x; unfold Fix.
+      rewrite <- Fix_F_eq.
+      apply F_ext; intros.
+      apply Fix_F_inv_rel.
+    Qed.
 
+    Lemma Fix_rel' : forall x:A, FR (F (fun (y:A) (p:R y x) => Fix y)) (Fix x).
+    Proof.
+      intro x; unfold Fix.
+      rewrite <- Fix_F_eq.
+      apply F_ext; intros.
+      apply Fix_F_inv_rel.
+    Qed.
+  End rel.
+
+  Definition Fix_F_inv : forall F_ext (x:A) (r s:Acc x), Fix_F r = Fix_F s
+    := @Fix_F_inv_rel (fun _ => @eq _).
+
+  Definition Fix_eq : forall F_ext (x:A), Fix x = F (fun (y:A) (p:R y x) => Fix y)
+    := @Fix_rel (fun _ => @eq _).
  End FixPoint.
 
 End Well_founded.
@@ -158,12 +174,12 @@ Section Acc_generator.
   Variable A : Type.
   Variable R : A -> A -> Prop.
 
-  (* *Lazily* add 2^n - 1 Acc_intro on top of wf. 
-     Needed for fast reductions using Function and Program Fixpoint 
-     and probably using Fix and Fix_F_2 
-   *)    
-  Fixpoint Acc_intro_generator n (wf : well_founded R)  := 
-    match n with 
+  (* *Lazily* add 2^n - 1 Acc_intro on top of wf.
+     Needed for fast reductions using Function and Program Fixpoint
+     and probably using Fix and Fix_F_2
+   *)
+  Fixpoint Acc_intro_generator n (wf : well_founded R)  :=
+    match n with
         | O => wf
         | S n => fun x => Acc_intro x (fun y _ => Acc_intro_generator n (Acc_intro_generator n wf) y)
     end.
