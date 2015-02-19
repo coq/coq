@@ -10,14 +10,17 @@ open Util
 open Pp
 open Errors
 
+type deprecation = bool
+type vernac_command = Genarg.raw_generic_argument list -> unit -> unit
+
 (* Table of vernac entries *)
 let vernac_tab =
   (Hashtbl.create 51 :
-    (Vernacexpr.extend_name, (Genarg.raw_generic_argument list -> unit -> unit)) Hashtbl.t)
+    (Vernacexpr.extend_name, deprecation * vernac_command) Hashtbl.t)
 
-let vinterp_add s f =
+let vinterp_add depr s f =
   try
-    Hashtbl.add vernac_tab s f
+    Hashtbl.add vernac_tab s (depr, f)
   with Failure _ ->
     errorlabstrm "vinterp_add"
       (str"Cannot add the vernac command " ++ str (fst s) ++ str" twice.")
@@ -28,7 +31,7 @@ let overwriting_vinterp_add s f =
       let _ = Hashtbl.find vernac_tab s in Hashtbl.remove vernac_tab s
     with Not_found -> ()
   end;
-  Hashtbl.add vernac_tab s f
+  Hashtbl.add vernac_tab s (false, f)
 
 let vinterp_map s =
   try
@@ -44,7 +47,16 @@ let vinterp_init () = Hashtbl.clear vernac_tab
 let call ?locality (opn,converted_args) =
   let loc = ref "Looking up command" in
   try
-    let callback = vinterp_map opn in
+    let depr, callback = vinterp_map opn in
+    let () = if depr then
+      let rules = Egramml.get_extend_vernac_rule opn in
+      let pr_gram = function
+      | Egramml.GramTerminal s -> str s
+      | Egramml.GramNonTerminal _ -> str "_"
+      in
+      let pr = pr_sequence pr_gram rules in
+      msg_warning (str "Deprecated vernacular command: " ++ pr)
+    in
     loc:= "Checking arguments";
     let hunk = callback converted_args in
     loc:= "Executing command";

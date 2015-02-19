@@ -26,6 +26,8 @@ type rule = {
   (** An optional classifier for the STM *)
   r_branch : MLast.expr;
   (** The action performed by this rule. *)
+  r_depr : unit option;
+  (** Whether this entry is deprecated *)
 }
 
 let rec make_let e = function
@@ -87,8 +89,15 @@ let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
       <:expr< fun () -> (Vernacexpr.VtUnknown, Vernacexpr.VtNow) >>)
 
 let make_fun_clauses loc s l =
-  let cl = List.map (fun c -> Compat.make_fun loc [make_clause c]) l in
-  mlexpr_of_list (fun x -> x) cl
+  let map c =
+    let depr = match c.r_depr with
+    | None -> false
+    | Some () -> true
+    in
+    let cl = Compat.make_fun loc [make_clause c] in
+    <:expr< ($mlexpr_of_bool depr$, $cl$)>>
+  in
+  mlexpr_of_list map l
 
 let make_fun_classifiers loc s c l =
   let cl = List.map (fun x -> Compat.make_fun loc [make_clause_classifier c s x]) l in
@@ -107,7 +116,7 @@ let declare_command loc s c nt cl =
   declare_str_items loc
     [ <:str_item< do {
 	try do {
-          CList.iteri (fun i f -> Vernacinterp.vinterp_add ($se$, i) f) $funcl$;
+          CList.iteri (fun i (depr, f) -> Vernacinterp.vinterp_add depr ($se$, i) f) $funcl$;
           CList.iteri (fun i f -> Vernac_classifier.declare_vernac_classifier ($se$, i) f) $classl$ }
 	with [ e when Errors.noncritical e ->
 	  Pp.msg_warning
@@ -146,18 +155,23 @@ EXTEND
           <:expr< fun _ -> Vernac_classifier.classify_as_query >>
     ] ]
   ;
+  deprecation:
+    [ [ "DEPRECATED" -> () ] ]
+  ;
   (* spiwack: comment-by-guessing: it seems that the isolated string (which
       otherwise could have been another argument) is not passed to the
       VernacExtend interpreter function to discriminate between the clauses. *)
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]";
-        c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
+        d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
       if String.is_empty s then
         Errors.user_err_loc (!@loc,"",Pp.str"Command name is empty.");
-      { r_head = Some s; r_patt = l; r_class = c; r_branch = <:expr< fun () -> $e$ >>; }
+      let b = <:expr< fun () -> $e$ >> in
+      { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
       | "[" ; "-" ; l = LIST1 args ; "]" ;
-        c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
-      { r_head = None; r_patt = l; r_class = c; r_branch = <:expr< fun () -> $e$ >>; }
+        d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
+      let b = <:expr< fun () -> $e$ >> in
+      { r_head = None; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
     ] ]
   ;
   classifier:

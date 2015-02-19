@@ -502,7 +502,7 @@ open Egramml
 
 let _ =
   try
-    Vernacinterp.vinterp_add ("PrintConstr", 0)
+    Vernacinterp.vinterp_add false ("PrintConstr", 0)
       (function
          [c] when genarg_tag c = ConstrArgType && true ->
            let c = out_gen (rawwit wit_constr) c in
@@ -519,7 +519,7 @@ let _ =
 
 let _ =
   try
-    Vernacinterp.vinterp_add ("PrintPureConstr", 0)
+    Vernacinterp.vinterp_add false ("PrintPureConstr", 0)
       (function
          [c] when genarg_tag c = ConstrArgType && true ->
            let c = out_gen (rawwit wit_constr) c in
