@@ -217,7 +217,7 @@ let compute_var_aliases sign =
     sign Id.Map.empty
 
 let compute_rel_aliases var_aliases rels =
-  snd (List.fold_right (fun (_,b,t) (n,aliases) ->
+  snd (List.fold_right (fun (_,b,u) (n,aliases) ->
     (n-1,
      match b with
      | Some t ->
@@ -231,7 +231,7 @@ let compute_rel_aliases var_aliases rels =
                try Int.Map.find (p+n) aliases with Not_found -> [] in
              Int.Map.add n (aliases_of_n@[mkRel (p+n)]) aliases
          | _ ->
-             Int.Map.add n [lift n t] aliases)
+             Int.Map.add n [lift n (mkCast(t,DEFAULTcast,u))] aliases)
      | None -> aliases))
          rels (List.length rels,Int.Map.empty))
 
