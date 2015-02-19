@@ -464,55 +464,18 @@ let map_with_binders g f l c0 = match kind c0 with
     let bl' = CArray.Fun1.smartmap f l' bl in
     mkCoFix (ln,(lna,tl',bl'))
 
-(* [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to compare
-   the immediate subterms of [c1] of [c2] if needed, [u] to compare universe
-   instances and [s] to compare sorts; Cast's,
-   application associativity, binders name and Cases annotations are
-   not taken into account *)
 
-let compare_head_gen eq_universes eq_sorts f t1 t2 =
-  match kind t1, kind t2 with
-  | Rel n1, Rel n2 -> Int.equal n1 n2
-  | Meta m1, Meta m2 -> Int.equal m1 m2
-  | Var id1, Var id2 -> Id.equal id1 id2
-  | Sort s1, Sort s2 -> eq_sorts s1 s2
-  | Cast (c1,_,_), _ -> f c1 t2
-  | _, Cast (c2,_,_) -> f t1 c2
-  | Prod (_,t1,c1), Prod (_,t2,c2) -> f t1 t2 && f c1 c2
-  | Lambda (_,t1,c1), Lambda (_,t2,c2) -> f t1 t2 && f c1 c2
-  | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> f b1 b2 && f t1 t2 && f c1 c2
-  | App (Cast(c1, _, _),l1), _ -> f (mkApp (c1,l1)) t2
-  | _, App (Cast (c2, _, _),l2) -> f t1 (mkApp (c2,l2))
-  | App (c1,l1), App (c2,l2) ->
-    Int.equal (Array.length l1) (Array.length l2) &&
-      f c1 c2 && Array.equal f l1 l2
-  | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal f l1 l2
-  | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && f c1 c2
-  | Const (c1,u1), Const (c2,u2) -> eq_constant c1 c2 && eq_universes true u1 u2
-  | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && eq_universes false u1 u2
-  | Construct (c1,u1), Construct (c2,u2) -> eq_constructor c1 c2 && eq_universes false u1 u2
-  | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-      f p1 p2 && f c1 c2 && Array.equal f bl1 bl2
-  | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
-      Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
-      && Array.equal f tl1 tl2 && Array.equal f bl1 bl2
-  | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-      Int.equal ln1 ln2 && Array.equal f tl1 tl2 && Array.equal f bl1 bl2
-  | _ -> false
-
-let compare_head = compare_head_gen (fun _ -> Univ.Instance.equal) Sorts.equal
-
-(* [compare_head_gen_leq u s sl eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
+(* [compare_head_gen_leq u s eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
    the immediate subterms of [c1] of [c2] for conversion if needed, [leq] for cumulativity,
    [u] to compare universe instances and [s] to compare sorts; Cast's,
    application associativity, binders name and Cases annotations are
    not taken into account *)
 
-let compare_head_gen_leq eq_universes eq_sorts leq_sorts eq leq t1 t2 =
+let compare_head_gen_leq eq_universes leq_sorts eq leq t1 t2 =
   match kind t1, kind t2 with
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
-  | Var id1, Var id2 -> Int.equal (id_ord id1 id2) 0
+  | Var id1, Var id2 -> Id.equal id1 id2
   | Sort s1, Sort s2 -> leq_sorts s1 s2
   | Cast (c1,_,_), _ -> leq c1 t2
   | _, Cast (c2,_,_) -> leq t1 c2
@@ -537,6 +500,17 @@ let compare_head_gen_leq eq_universes eq_sorts leq_sorts eq leq t1 t2 =
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
       Int.equal ln1 ln2 && Array.equal eq tl1 tl2 && Array.equal eq bl1 bl2
   | _ -> false
+
+(* [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to compare
+   the immediate subterms of [c1] of [c2] if needed, [u] to compare universe
+   instances and [s] to compare sorts; Cast's,
+   application associativity, binders name and Cases annotations are
+   not taken into account *)
+
+let compare_head_gen eq_universes eq_sorts eq t1 t2 =
+  compare_head_gen_leq eq_universes eq_sorts eq eq t1 t2
+
+let compare_head = compare_head_gen (fun _ -> Univ.Instance.equal) Sorts.equal
 
 (*******************************)
 (*  alpha conversion functions *)
@@ -570,7 +544,7 @@ let leq_constr_univs univs m n =
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
     let rec compare_leq m n =
-      compare_head_gen_leq eq_universes eq_sorts leq_sorts eq_constr' leq_constr' m n
+      compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' m n
     and leq_constr' m n = m == n || compare_leq m n in
       compare_leq m n
 
@@ -620,7 +594,7 @@ let leq_constr_univs_infer univs m n =
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
     let rec compare_leq m n =
-      compare_head_gen_leq eq_universes eq_sorts leq_sorts eq_constr' leq_constr' m n
+      compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' m n
     and leq_constr' m n = m == n || compare_leq m n in
     let res = compare_leq m n in
       res, !cstrs
