@@ -203,6 +203,14 @@ val kind : constr -> (constr, types) kind_of_term
    and application grouping *)
 val equal : constr -> constr -> bool
 
+(** [equal_with_evars k1 k2 a b] is true when [a] equals [b] modulo
+    alpha, casts, application grouping, and using [k1] to expose the
+    head of [a] and [k2] to expose the head of [b]. *)
+val equal_with :
+  (constr -> (constr,types) kind_of_term) ->
+  (constr -> (constr,types) kind_of_term) ->
+  constr -> constr -> bool
+
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
 val eq_constr_univs : constr Univ.check_function

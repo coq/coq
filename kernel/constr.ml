@@ -464,15 +464,19 @@ let map_with_binders g f l c0 = match kind c0 with
     let bl' = CArray.Fun1.smartmap f l' bl in
     mkCoFix (ln,(lna,tl',bl'))
 
-
-(* [compare_head_gen_leq u s eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
-   the immediate subterms of [c1] of [c2] for conversion if needed, [leq] for cumulativity,
-   [u] to compare universe instances and [s] to compare sorts; Cast's,
+(* [compare_head_gen_evar k1 k2 u s e eq leq c1 c2] compare [c1] and
+   [c2] (using [k1] to expose the structure of [c1] and [k2] to expose
+   the structure [c2]) using [eq] to compare the immediate subterms of
+   [c1] of [c2] for conversion if needed, [leq] for cumulativity, [u]
+   to compare universe instances, and [s] to compare sorts; Cast's,
    application associativity, binders name and Cases annotations are
-   not taken into account *)
+   not taken into account. Note that as [kind1] and [kind2] are
+   potentially different, we cannot use, in recursive case, the
+   optimisation that physically equal arrays are equals (hence the
+   calls to {!Array.equal_norefl}). *)
 
-let compare_head_gen_leq eq_universes leq_sorts eq leq t1 t2 =
-  match kind t1, kind t2 with
+let compare_head_gen_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
+  match kind1 t1, kind2 t2 with
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
@@ -485,8 +489,8 @@ let compare_head_gen_leq eq_universes leq_sorts eq leq t1 t2 =
   | App (Cast(c1, _, _),l1), _ -> leq (mkApp (c1,l1)) t2
   | _, App (Cast (c2, _, _),l2) -> leq t1 (mkApp (c2,l2))
   | App (c1,l1), App (c2,l2) ->
-    Int.equal (Array.length l1) (Array.length l2) &&
-      eq c1 c2 && Array.equal eq l1 l2
+      Int.equal (Array.length l1) (Array.length l2) &&
+        eq c1 c2 && Array.equal_norefl eq l1 l2
   | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal eq l1 l2
   | Const (c1,u1), Const (c2,u2) -> eq_constant c1 c2 && eq_universes true u1 u2
@@ -496,10 +500,19 @@ let compare_head_gen_leq eq_universes leq_sorts eq leq t1 t2 =
       eq p1 p2 && eq c1 c2 && Array.equal eq bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
       Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
-      && Array.equal eq tl1 tl2 && Array.equal eq bl1 bl2
+      && Array.equal_norefl eq tl1 tl2 && Array.equal_norefl eq bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-      Int.equal ln1 ln2 && Array.equal eq tl1 tl2 && Array.equal eq bl1 bl2
+      Int.equal ln1 ln2 && Array.equal_norefl eq tl1 tl2 && Array.equal_norefl eq bl1 bl2
   | _ -> false
+
+(* [compare_head_gen_leq u s eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
+   the immediate subterms of [c1] of [c2] for conversion if needed, [leq] for cumulativity,
+   [u] to compare universe instances and [s] to compare sorts; Cast's,
+   application associativity, binders name and Cases annotations are
+   not taken into account *)
+
+let compare_head_gen_leq eq_universes leq_sorts eq leq t1 t2 =
+  compare_head_gen_with kind kind  eq_universes leq_sorts eq leq t1 t2
 
 (* [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed, [u] to compare universe
@@ -522,6 +535,14 @@ let rec eq_constr m n =
   (m == n) || compare_head_gen (fun _ -> Instance.equal) Sorts.equal eq_constr m n
 
 let equal m n = eq_constr m n (* to avoid tracing a recursive fun *)
+
+let rec equal_with kind1 kind2 m n =
+  (* note that pointer equality is not sufficient to ensure equality
+     up to [eq_evars], because we may evaluates evars of [m] and [n]
+     in different evar contexts. *)
+  let req_constr m n = equal_with kind1 kind2 m n in
+  compare_head_gen_with kind1 kind2
+    (fun _ -> Instance.equal) Sorts.equal req_constr req_constr m n
 
 let eq_constr_univs univs m n =
   if m == n then true
