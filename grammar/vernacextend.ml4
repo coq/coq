@@ -17,6 +17,17 @@ open Pcoq
 open Egramml
 open Compat
 
+type rule = {
+  r_head : string option;
+  (** The first terminal grammar token *)
+  r_patt : grammar_prod_item list;
+  (** The remaining tokens of the parsing rule *)
+  r_class : MLast.expr option;
+  (** An optional classifier for the STM *)
+  r_branch : MLast.expr;
+  (** The action performed by this rule. *)
+}
+
 let rec make_let e = function
   | [] -> e
   | GramNonTerminal(loc,t,_,Some p)::l ->
@@ -27,7 +38,7 @@ let rec make_let e = function
       <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
   | _::l -> make_let e l
 
-let make_clause (_,pt,_,e) =
+let make_clause { r_patt = pt; r_branch = e; } =
   (make_patt pt,
    vala (Some (make_when (MLast.loc_of_expr e) pt)),
    make_let e pt)
@@ -41,7 +52,7 @@ let mk_ignore c pt =
   let names = List.fold_left fold <:expr< () >> names in
   <:expr< do { let _ = $names$ in $c$ } >>
 
-let make_clause_classifier cg s (_,pt,c,_) =
+let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
   match c ,cg with
   | Some c, _ ->
      (make_patt pt,
@@ -85,7 +96,7 @@ let make_fun_classifiers loc s c l =
 
 let mlexpr_of_clause =
   mlexpr_of_list
-    (fun (a,b,_,_) -> mlexpr_of_list make_prod_item
+    (fun { r_head = a; r_patt = b; } -> mlexpr_of_list make_prod_item
        (Option.List.cons (Option.map (fun a -> GramTerminal a) a) b))
 
 let declare_command loc s c nt cl =
@@ -140,16 +151,17 @@ EXTEND
       VernacExtend interpreter function to discriminate between the clauses. *)
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]";
-        c = OPT [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun () -> $c$>> ];
-                  "->"; "["; e = Pcaml.expr; "]" ->
+        c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
       if String.is_empty s then
         Errors.user_err_loc (!@loc,"",Pp.str"Command name is empty.");
-      (Some s,l,c,<:expr< fun () -> $e$ >>)
+      { r_head = Some s; r_patt = l; r_class = c; r_branch = <:expr< fun () -> $e$ >>; }
       | "[" ; "-" ; l = LIST1 args ; "]" ;
-        c = OPT [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun () -> $c$>> ];
-                  "->"; "["; e = Pcaml.expr; "]" ->
-      (None,l,c,<:expr< fun () -> $e$ >>)
+        c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
+      { r_head = None; r_patt = l; r_class = c; r_branch = <:expr< fun () -> $e$ >>; }
     ] ]
+  ;
+  classifier:
+    [ [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun () -> $c$>> ] ]
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
