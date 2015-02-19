@@ -126,10 +126,6 @@ type evar_map
 (** Type of unification state. Essentially a bunch of state-passing data needed
     to handle incremental term construction. *)
 
-val progress_evar_map : evar_map -> evar_map -> bool
-(** Assuming that the second map extends the first one, this says if
-   some existing evar has been refined *)
-
 val empty : evar_map
 (** The empty evar map. *)
 
@@ -203,9 +199,6 @@ val add_constraints : evar_map -> Univ.constraints -> evar_map
 
 val undefined_map : evar_map -> evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
-
-val eq_evar_info : evar_map -> evar_info -> evar_info -> bool
-(** Compare the evar_info's up to the universe constraints of the evar map. *)
 
 val drop_all_defined : evar_map -> evar_map
 

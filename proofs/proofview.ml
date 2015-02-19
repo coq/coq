@@ -719,22 +719,72 @@ let give_up =
 
 (** {7 Control primitives} *)
 
-(** Equality function on goals *)
-let goal_equal evars1 gl1 evars2 gl2 =
-  let evi1 = Evd.find evars1 gl1 in
-  let evi2 = Evd.find evars2 gl2 in
-  Evd.eq_evar_info evars2 evi1 evi2
+
+module Progress = struct
+
+  (** equality function up to evar instantiation in heterogeneous
+      contexts. *)
+  (* spiwack (2015-02-19): In the previous version of progress an
+     equality which considers two universes equal when it is consistent
+     tu unify them ([Evd.eq_constr_univs_test]) was used. Maybe this
+     behaviour has to be restored as well. This has to be established by
+     practice. *)
+    
+  let rec eq_constr sigma1 sigma2 t1 t2 =
+    Constr.equal_with
+      (fun t -> Evarutil.kind_of_term_upto sigma1 t)
+      (fun t -> Evarutil.kind_of_term_upto sigma2 t)
+      t1 t2
+
+  (** equality function on hypothesis contexts *)
+  let eq_named_context_val sigma1 sigma2 ctx1 ctx2 =
+    let open Environ in
+    let c1 = named_context_of_val ctx1 and c2 = named_context_of_val ctx2 in
+    let eq_named_declaration (i1, c1, t1) (i2, c2, t2) =
+      Names.Id.equal i1 i2 && Option.equal (eq_constr sigma1 sigma2) c1 c2 
+      && (eq_constr sigma1 sigma2) t1 t2
+    in List.equal eq_named_declaration c1 c2
+
+  let eq_evar_body sigma1 sigma2 b1 b2 =
+    let open Evd in
+    match b1, b2 with
+    | Evar_empty, Evar_empty -> true
+    | Evar_defined t1, Evar_defined t2 -> eq_constr sigma1 sigma2 t1 t2
+    | _ -> false
+
+  let eq_evar_info sigma1 sigma2 ei1 ei2 =
+    let open Evd in
+    eq_constr sigma1 sigma2 ei1.evar_concl ei2.evar_concl &&
+    eq_named_context_val sigma1 sigma2 (ei1.evar_hyps) (ei2.evar_hyps) &&
+    eq_evar_body sigma1 sigma2 ei1.evar_body ei2.evar_body
+
+  (** Equality function on goals *)
+  let goal_equal evars1 gl1 evars2 gl2 =
+    let evi1 = Evd.find evars1 gl1 in
+    let evi2 = Evd.find evars2 gl2 in
+    eq_evar_info evars1 evars2 evi1 evi2
+
+end
 
 let tclPROGRESS t =
   let open Proof in
   Pv.get >>= fun initial ->
   t >>= fun res ->
   Pv.get >>= fun final ->
-  let test =
-    Evd.progress_evar_map initial.solution final.solution &&
-    not (Util.List.for_all2eq (fun i f -> goal_equal initial.solution i final.solution f) initial.comb final.comb)
+  (* [*_test] test absence of progress. [quick_test] is approximate
+     whereas [exhaustive_test] is complete. *)
+  let quick_test =
+    initial.solution == final.solution && initial.comb == final.comb
   in
-  if test then
+  let exhaustive_test =
+    Util.List.for_all2eq begin fun i f ->
+      Progress.goal_equal initial.solution i final.solution f
+    end initial.comb final.comb
+  in
+  let test =
+    quick_test || exhaustive_test
+  in
+  if not test then
     tclUNIT res
   else
     tclZERO (Errors.UserError ("Proofview.tclPROGRESS" , Pp.str"Failed to progress."))

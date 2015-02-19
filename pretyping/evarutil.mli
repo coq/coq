@@ -199,6 +199,13 @@ val nf_evar_map_universes : evar_map -> evar_map * (constr -> constr)
 exception Uninstantiated_evar of existential_key
 val flush_and_check_evars :  evar_map -> constr -> constr
 
+(** {6 Term manipulation up to instantiation} *)
+
+(** Like {!Constr.kind} except that [kind_of_term sigma t] exposes [t]
+    as an evar [e] only if [e] is uninstantiated in [sigma]. Otherwise the
+    value of [e] in [sigma] is (recursively) used. *)
+val kind_of_term_upto : evar_map -> constr -> (constr,types) kind_of_term
+
 (** {6 debug pretty-printer:} *)
 
 val pr_tycon : env -> type_constraint -> Pp.std_ppcmds

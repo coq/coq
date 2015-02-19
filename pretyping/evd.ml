@@ -568,14 +568,6 @@ type evar_map = {
 
 (*** Lifting primitive from Evar.Map. ***)
 
-(* HH: The progress tactical now uses this function. *)
-let progress_evar_map d1 d2 =
-  let is_new k v =
-    assert (v.evar_body == Evar_empty);
-    EvMap.mem k d2.defn_evars
-  in
-  not (d1 == d2) && EvMap.exists is_new d1.undf_evars
-
 let add_name_newly_undefined naming evk evi (evtoid,idtoev) =
   let id = match naming with
   | Misctypes.IntroAnonymous ->
@@ -1302,27 +1294,6 @@ let e_eq_constr_univs evdref t u =
 
 let eq_constr_univs_test evd t u =
   snd (eq_constr_univs evd t u)
-
-let eq_named_context_val d ctx1 ctx2 = 
-  ctx1 == ctx2 ||
-    let c1 = named_context_of_val ctx1 and c2 = named_context_of_val ctx2 in
-    let eq_named_declaration (i1, c1, t1) (i2, c2, t2) =
-      Id.equal i1 i2 && Option.equal (eq_constr_univs_test d) c1 c2 
-      && (eq_constr_univs_test d) t1 t2
-    in List.equal eq_named_declaration c1 c2
-
-let eq_evar_body d b1 b2 = match b1, b2 with
-| Evar_empty, Evar_empty -> true
-| Evar_defined t1, Evar_defined t2 -> eq_constr_univs_test d t1 t2
-| _ -> false
-
-let eq_evar_info d ei1 ei2 =
-  ei1 == ei2 ||
-    eq_constr_univs_test d ei1.evar_concl ei2.evar_concl &&
-    eq_named_context_val d (ei1.evar_hyps) (ei2.evar_hyps) &&
-    eq_evar_body d ei1.evar_body ei2.evar_body
-    (** ppedrot: [eq_constr] may be a bit too permissive here *)
-
 
 (**********************************************************)
 (* Accessing metas *)

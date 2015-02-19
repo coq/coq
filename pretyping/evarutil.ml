@@ -838,3 +838,8 @@ let subterm_source evk (loc,k) =
     | Evar_kinds.SubEvar (evk) -> evk
     | _ -> evk in
   (loc,Evar_kinds.SubEvar evk)
+
+
+(** Term exploration up to isntantiation. *)
+let kind_of_term_upto sigma t =
+  Constr.kind (Reductionops.whd_evar sigma t)
