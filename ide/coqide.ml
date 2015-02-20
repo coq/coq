@@ -855,8 +855,10 @@ let refresh_editor_prefs () =
     Tags.set_error_fg_color (Tags.color_of_string current.error_fg_color);
     sn.script#misc#modify_base [`NORMAL, `COLOR clr];
     sn.proof#misc#modify_base [`NORMAL, `COLOR clr];
-    sn.messages#misc#modify_base [`NORMAL, `COLOR clr];
-    sn.command#refresh_color ()
+    sn.messages#refresh_color ();
+    sn.command#refresh_color ();
+    sn.errpage#refresh_color ();
+    sn.jobpage#refresh_color ();
 
   in
   List.iter iter_session notebook#pages

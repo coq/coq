@@ -33,6 +33,7 @@ class type message_view =
     method buffer : GText.buffer
       (** for more advanced text edition *)
     method modify_font : Pango.font_description -> unit
+    method refresh_color : unit -> unit
   end
 
 let message_view () : message_view =
@@ -82,5 +83,10 @@ let message_view () : message_view =
     method buffer = text_buffer
 
     method modify_font fd = view#misc#modify_font fd
+
+    method refresh_color () =
+      let open Preferences in
+      let clr = Tags.color_of_string current.background_color in
+      view#misc#modify_base [`NORMAL, `COLOR clr]
 
   end
