@@ -2318,7 +2318,10 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       let heq = match ido with
       | IntroAnonymous -> fresh_id_in_env [id] (add_prefix "Heq" id) env
       | IntroFresh heq_base -> fresh_id_in_env [id] heq_base env
-      | IntroIdentifier id -> id in
+      | IntroIdentifier id ->
+          if List.mem id (ids_of_named_context (named_context env)) then
+            user_err_loc (loc,"",pr_id id ++ str" is already used.");
+          id in
       let eqdata = build_coq_eq_data () in
       let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
       let sigma, eq = Evd.fresh_global env sigma eqdata.eq in
