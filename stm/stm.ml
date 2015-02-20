@@ -1270,7 +1270,7 @@ end = struct (* {{{ *)
     if TaskQueue.n_workers (Option.get !queue) = 0 then
       if !Flags.compilation_mode = Flags.BuildVio then begin
         let f,assign =
-          Future.create_delegate ~blocking:true (State.exn_on id ~valid) in
+         Future.create_delegate ~blocking:true ~name:pname (State.exn_on id ~valid) in
         let t_uuid = Future.uuid f in
         let task = ProofTask.(BuildProof {
           t_exn_info; t_start = start; t_stop = stop;
@@ -1281,7 +1281,7 @@ end = struct (* {{{ *)
       end else
         ProofTask.build_proof_here t_exn_info loc stop, cancel_switch
     else 
-      let f, t_assign = Future.create_delegate (State.exn_on id ~valid) in
+      let f, t_assign = Future.create_delegate ~name:pname (State.exn_on id ~valid) in
       let t_uuid = Future.uuid f in
       feedback (Feedback.InProgress 1);
       let task = ProofTask.(BuildProof {
@@ -1436,7 +1436,10 @@ end = struct (* {{{ *)
       let goals, _, _, _, _ = Proof.proof p in
       let open TacTask in
       let res = CList.map_i (fun i g ->
-        let f,assign= Future.create_delegate (State.exn_on id ~valid:safe_id) in
+        let f, assign =
+          Future.create_delegate
+            ~name:(Printf.sprintf "subgoal %d" i)
+            (State.exn_on id ~valid:safe_id) in
         let t_ast =
           { verbose;loc;expr = VernacSolve(SelectNth i,None,e,etac) } in
         let t_name = Goal.uid g in
