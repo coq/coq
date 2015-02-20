@@ -3769,7 +3769,7 @@ let clear_unselected_context id inhyps cls gl =
       thin ids gl
   | None -> tclIDTAC gl
 
-let use_bindings env sigma elim (c,lbind) typ =
+let use_bindings env sigma elim must_be_closed (c,lbind) typ =
   let typ =
     if elim == None then
       (* w/o an scheme, the term has to be applied at least until
@@ -3788,6 +3788,8 @@ let use_bindings env sigma elim (c,lbind) typ =
   let rec find_clause typ =
     try
       let indclause = make_clenv_binding env sigma (c,typ) lbind in
+      if must_be_closed && occur_meta (clenv_value indclause) then
+        error "Need a fully applied argument.";
       (* We lose the possibility of coercions in with-bindings *)
       pose_all_metas_as_evars env indclause.evd (clenv_value indclause)
     with e when catchable_exception e ->
@@ -3833,7 +3835,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   let ccl = Proofview.Goal.raw_concl gl in
   let store = Proofview.Goal.extra gl in
   let check = check_enough_applied env sigma elim in
-  let (sigma',c) = use_bindings env sigma elim (c0,lbind) t0 in
+  let (sigma',c) = use_bindings env sigma elim false (c0,lbind) t0 in
   let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
   let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
@@ -3853,7 +3855,8 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       (Tacticals.New.tclTHENLIST [
         Proofview.Unsafe.tclEVARS sigma;
         Proofview.Refine.refine ~unsafe:true (fun sigma ->
-          let (sigma,c) = use_bindings env sigma elim (c0,lbind) t0 in
+          let b = not with_evars && with_eq != None in
+          let (sigma,c) = use_bindings env sigma elim b (c0,lbind) t0 in
           let t = Retyping.get_type_of env sigma c in
           mkletin_goal env sigma store with_eq false (id,lastlhyp,ccl,c) (Some t));
         Proofview.(if with_evars then shelve_unifiable else guard_no_unifiable);
