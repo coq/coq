@@ -190,6 +190,14 @@ let traverse t =
   let () = modcache := MPmap.empty in
   traverse (Refset.empty, Refmap.empty) t
 
+(** Hopefully bullet-proof function to recover the type of a constant. It just
+    ignores all the universe stuff. There are many issues that can arise when
+    considering terms out of any valid environment, so use with caution. *)
+let type_of_constant cb = match cb.Declarations.const_type with
+| Declarations.RegularArity ty -> ty
+| Declarations.TemplateArity (ctx, arity) ->
+  Term.mkArity (ctx, Sorts.sort_of_univ arity.Declarations.template_level)
+
 let assumptions ?(add_opaque=false) ?(add_transparent=false) st t =
   let (idts, knst) = st in
   (** Only keep the transitive dependencies *)
@@ -202,13 +210,13 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st t =
   | ConstRef kn ->
     let cb = lookup_constant kn in
     if not (Declareops.constant_has_body cb) then
-      let t = Global.type_of_global_unsafe obj in
+      let t = type_of_constant cb in
       ContextObjectMap.add (Axiom kn) t accu
     else if add_opaque && (Declareops.is_opaque cb || not (Cpred.mem kn knst)) then
-      let t = Global.type_of_global_unsafe obj in
+      let t = type_of_constant cb in
       ContextObjectMap.add (Opaque kn) t accu
     else if add_transparent then
-      let t = Global.type_of_global_unsafe obj in
+      let t = type_of_constant cb in
       ContextObjectMap.add (Transparent kn) t accu
     else
       accu
