@@ -230,20 +230,20 @@ let evar_instance_array test_id info args =
     else instance_mismatch ()
   | false :: filter, _ :: ctxt ->
     instrec filter ctxt i
-  | true :: filter, (id, _, _) :: ctxt ->
+  | true :: filter, (id,_,_ as d) :: ctxt ->
     if i < len then
       let c = Array.unsafe_get args i in
-      if test_id id c then instrec filter ctxt (succ i)
+      if test_id d c then instrec filter ctxt (succ i)
       else (id, c) :: instrec filter ctxt (succ i)
     else instance_mismatch ()
   | _ -> instance_mismatch ()
   in
   match Filter.repr (evar_filter info) with
   | None ->
-    let map i (id, _, _) =
+    let map i (id,_,_ as d) =
       if (i < len) then
         let c = Array.unsafe_get args i in
-        if test_id id c then None else Some (id,c)
+        if test_id d c then None else Some (id,c)
       else instance_mismatch ()
     in
     List.map_filter_i map (evar_context info)
@@ -251,7 +251,7 @@ let evar_instance_array test_id info args =
     instrec filter (evar_context info) 0
 
 let make_evar_instance_array info args =
-  evar_instance_array isVarId info args
+  evar_instance_array (fun (id,_,_) -> isVarId id) info args
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in

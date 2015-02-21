@@ -977,7 +977,7 @@ let rec glob_of_pat env sigma = function
   | PRef ref -> GRef (loc,ref,None)
   | PVar id -> GVar (loc,id)
   | PEvar (evk,l) ->
-      let test id = function PVar id' -> Id.equal id id' | _ -> false in
+      let test (id,_,_) = function PVar id' -> Id.equal id id' | _ -> false in
       let l = Evd.evar_instance_array test (Evd.find sigma evk) l in
       let id = Evd.evar_ident evk sigma in
       GEvar (loc,id,List.map (on_snd (glob_of_pat env sigma)) l)
