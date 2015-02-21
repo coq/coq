@@ -109,7 +109,7 @@ let print_impargs_list prefix l =
 	 [(if ismt prefix then str "When" else prefix ++ str ", when") ++
 	   str " applied to " ++
 	   (if Int.equal n1 n2 then int_or_no n2 else
-	    if Int.equal n1 0 then str "less than or to " ++ int n2
+	    if Int.equal n1 0 then str "no more than " ++ int n2
 	    else int n1 ++ str " to " ++ int_or_no n2) ++
 	    str (String.plural n2 " argument") ++ str ":";
           v 0 (prlist_with_sep cut (fun x -> x)
