@@ -9,6 +9,7 @@
 open Util
 open Names
 open Term
+open Globnames
 
 (** A few declarations for the "Print Assumption" command
     @author spiwack *)
@@ -22,6 +23,10 @@ type context_object =
 module ContextObjectSet : Set.S with type elt = context_object
 module ContextObjectMap : Map.ExtS
   with type key = context_object and module Set := ContextObjectSet
+
+(** collects all the objects on which a term directly relies, bypassing kernel
+    opacity, together with the recursive dependence DAG of objects *)
+val traverse : constr -> (Refset.t * Refset.t Refmap.t)
 
 (** collects all the assumptions (optionally including opaque definitions)
    on which a term relies (together with their type) *)
