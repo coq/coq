@@ -121,7 +121,7 @@ struct
 	     Idset.union acc s2
 	 ) t Idset.empty)
 
-(*   (\* optimization hack: Not_found is catched in fold_pattern *\) *)
+(*   (\* optimization hack: Not_found is caught in fold_pattern *\) *)
 (*   let fast_inter s1 s2 = *)
 (*     if Idset.is_empty s1 || Idset.is_empty s2 then raise Not_found *)
 (*     else Idset.inter s1 s2 *)
@@ -176,7 +176,7 @@ struct
     let is_empty : t -> bool = function 
       | None -> false
       | Some s -> S.is_empty s
-    (* optimization hack: Not_found is catched in fold_pattern *)
+    (* optimization hack: Not_found is caught in fold_pattern *)
     let fast_inter s1 s2 =
       if is_empty s1 || is_empty s2 then raise Not_found
       else let r = inter s1 s2 in 

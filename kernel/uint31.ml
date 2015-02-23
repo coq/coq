@@ -1,7 +1,7 @@
   (* Invariant: For arch64 all extra bytes are set to 0 *)
 type t = int 
     
-  (* to be used only on 32 bits achitectures *)
+  (* to be used only on 32 bits architectures *)
 let maxuint31 = Int32.of_string "0x7FFFFFFF"
 let uint_32 i =  Int32.logand (Int32.of_int i) maxuint31
     
@@ -16,7 +16,7 @@ let of_int_64 i = i land 0x7FFFFFFF
 let of_int = select of_int_32 of_int_64
 let of_uint i = i
  	
-    (* convertion of an uint31 to a string *)
+    (* conversion of an uint31 to a string *)
 let to_string_32 i = Int32.to_string (uint_32 i)
 let to_string_64 = string_of_int 
 

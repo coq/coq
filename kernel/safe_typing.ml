@@ -823,7 +823,7 @@ let retroknowledge f senv =
 let register field value by_clause senv =
   (* todo : value closed, by_clause safe, by_clause of the proper type*)
   (* spiwack : updates the safe_env with the information that the register
-     action has to be performed (again) when the environement is imported *)
+     action has to be performed (again) when the environment is imported *)
   { senv with
     env = Environ.register senv.env field value;
     local_retroknowledge =

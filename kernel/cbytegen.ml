@@ -38,7 +38,7 @@ open Pre_env
 (* In the function body [arg1] is represented by de Bruijn [n], and       *)
 (* [argn] by de Bruijn [1]                                                *)
 
-(* Representation of environements of mutual fixpoints :                  *)
+(* Representation of environments of mutual fixpoints :                  *)
 (* [t1|C1| ... |tc|Cc| ... |t(nbr)|C(nbr)| fv1 | fv2 | .... | fvn | type] *)
 (*                ^<----------offset--------->                            *)
 (* type = [Ct1 | .... | Ctn]                                              *)
