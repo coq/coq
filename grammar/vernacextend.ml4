@@ -17,6 +17,19 @@ open Pcoq
 open Egramml
 open Compat
 
+type rule = {
+  r_head : string option;
+  (** The first terminal grammar token *)
+  r_patt : grammar_prod_item list;
+  (** The remaining tokens of the parsing rule *)
+  r_class : MLast.expr option;
+  (** An optional classifier for the STM *)
+  r_branch : MLast.expr;
+  (** The action performed by this rule. *)
+  r_depr : unit option;
+  (** Whether this entry is deprecated *)
+}
+
 let rec make_let e = function
   | [] -> e
   | GramNonTerminal(loc,t,_,Some p)::l ->
@@ -27,7 +40,7 @@ let rec make_let e = function
       <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
   | _::l -> make_let e l
 
-let make_clause (_,pt,_,e) =
+let make_clause { r_patt = pt; r_branch = e; } =
   (make_patt pt,
    vala (Some (make_when (MLast.loc_of_expr e) pt)),
    make_let e pt)
@@ -41,7 +54,7 @@ let mk_ignore c pt =
   let names = List.fold_left fold <:expr< () >> names in
   <:expr< do { let _ = $names$ in $c$ } >>
 
-let make_clause_classifier cg s (_,pt,c,_) =
+let make_clause_classifier cg s { r_patt = pt; r_class = c; } =
   match c ,cg with
   | Some c, _ ->
      (make_patt pt,
@@ -76,8 +89,15 @@ let make_clause_classifier cg s (_,pt,c,_) =
       <:expr< fun () -> (Vernacexpr.VtUnknown, Vernacexpr.VtNow) >>)
 
 let make_fun_clauses loc s l =
-  let cl = List.map (fun c -> Compat.make_fun loc [make_clause c]) l in
-  mlexpr_of_list (fun x -> x) cl
+  let map c =
+    let depr = match c.r_depr with
+    | None -> false
+    | Some () -> true
+    in
+    let cl = Compat.make_fun loc [make_clause c] in
+    <:expr< ($mlexpr_of_bool depr$, $cl$)>>
+  in
+  mlexpr_of_list map l
 
 let make_fun_classifiers loc s c l =
   let cl = List.map (fun x -> Compat.make_fun loc [make_clause_classifier c s x]) l in
@@ -85,7 +105,7 @@ let make_fun_classifiers loc s c l =
 
 let mlexpr_of_clause =
   mlexpr_of_list
-    (fun (a,b,_,_) -> mlexpr_of_list make_prod_item
+    (fun { r_head = a; r_patt = b; } -> mlexpr_of_list make_prod_item
        (Option.List.cons (Option.map (fun a -> GramTerminal a) a) b))
 
 let declare_command loc s c nt cl =
@@ -96,7 +116,7 @@ let declare_command loc s c nt cl =
   declare_str_items loc
     [ <:str_item< do {
 	try do {
-          CList.iteri (fun i f -> Vernacinterp.vinterp_add ($se$, i) f) $funcl$;
+          CList.iteri (fun i (depr, f) -> Vernacinterp.vinterp_add depr ($se$, i) f) $funcl$;
           CList.iteri (fun i f -> Vernac_classifier.declare_vernac_classifier ($se$, i) f) $classl$ }
 	with [ e when Errors.noncritical e ->
 	  Pp.msg_warning
@@ -135,21 +155,27 @@ EXTEND
           <:expr< fun _ -> Vernac_classifier.classify_as_query >>
     ] ]
   ;
+  deprecation:
+    [ [ "DEPRECATED" -> () ] ]
+  ;
   (* spiwack: comment-by-guessing: it seems that the isolated string (which
       otherwise could have been another argument) is not passed to the
       VernacExtend interpreter function to discriminate between the clauses. *)
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]";
-        c = OPT [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun () -> $c$>> ];
-                  "->"; "["; e = Pcaml.expr; "]" ->
+        d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
       if String.is_empty s then
         Errors.user_err_loc (!@loc,"",Pp.str"Command name is empty.");
-      (Some s,l,c,<:expr< fun () -> $e$ >>)
+      let b = <:expr< fun () -> $e$ >> in
+      { r_head = Some s; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
       | "[" ; "-" ; l = LIST1 args ; "]" ;
-        c = OPT [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun () -> $c$>> ];
-                  "->"; "["; e = Pcaml.expr; "]" ->
-      (None,l,c,<:expr< fun () -> $e$ >>)
+        d = OPT deprecation; c = OPT classifier; "->"; "["; e = Pcaml.expr; "]" ->
+      let b = <:expr< fun () -> $e$ >> in
+      { r_head = None; r_patt = l; r_class = c; r_branch = b; r_depr = d; }
     ] ]
+  ;
+  classifier:
+    [ [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun () -> $c$>> ] ]
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->

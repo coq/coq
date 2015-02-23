@@ -498,16 +498,17 @@ let rec detype flags avoid env sigma t =
 	  else noparams ()
 
     | Evar (evk,cl) ->
-        let bound_to_itself id c =
+        let bound_to_itself_or_letin (id,b,_) c =
+          b != None ||
 	  try let n = List.index Name.equal (Name id) (fst env) in 
-	      isRelN n c 
+	      isRelN n c
 	  with Not_found -> isVarId id c in
       let id,l =
         try
           let id = Evd.evar_ident evk sigma in
-          let l = Evd.evar_instance_array bound_to_itself (Evd.find sigma evk) cl in
-          let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> (Id.Set.union fvs (collect_vars c), Int.Set.union rels (free_rels c))) (Id.Set.empty,Int.Set.empty) l in
-          let l = Evd.evar_instance_array (fun id c -> not !print_evar_arguments && (bound_to_itself id c && not (isRel c && Int.Set.mem (destRel c) rels || isVar c && (Id.Set.mem (destVar c) fvs)))) (Evd.find sigma evk) cl in
+          let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
+          let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match kind_of_term c with Rel n -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
+          let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel c && Int.Set.mem (destRel c) rels || isVar c && (Id.Set.mem (destVar c) fvs)))) (Evd.find sigma evk) cl in
           id,l
         with Not_found ->
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)), 

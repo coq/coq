@@ -379,7 +379,9 @@ let globalize_constant_universes env cb =
 	  | None -> []
 	  | Some fc ->
             match Future.peek_val fc with
-            | None -> [Later (Future.chain ~pure:true fc Univ.ContextSet.constraints)]
+            | None -> [Later (Future.chain
+                 ~greedy:(not (Future.is_exn fc))
+                 ~pure:true fc Univ.ContextSet.constraints)]
             | Some c -> [Now (Univ.ContextSet.constraints c)])
       
 let globalize_mind_universes mb =

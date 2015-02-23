@@ -21,6 +21,7 @@ open Names
 open Term
 open Declarations
 open Mod_subst
+open Globnames
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
@@ -158,94 +159,67 @@ let lookup_constant cst =
     else lookup_constant_in_impl cst (Some cb)
   with Not_found -> lookup_constant_in_impl cst None
 
-let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
-  modcache := MPmap.empty;
-  let (idts,knst) = st in
-  (* Infix definition for chaining function that accumulate
-     on a and a ContextObjectSet, ContextObjectMap.  *)
-  let ( ** ) f1 f2 s m = let (s',m') = f1 s m in f2 s' m' in
-  (* This function eases memoization, by checking if an object is already
-     stored before trying and applying a function.
-     If the object is there, the function is not fired (we are in a
-     particular case where memoized object don't need a treatment at all).
-     If the object isn't there, it is stored and the function is fired*)
-  let try_and_go o f s m =
-    if ContextObjectSet.mem o s then
-      (s,m)
-    else
-      f (ContextObjectSet.add o s) m
+(** Graph traversal of an object, collecting on the way the dependencies of
+    traversed objects *)
+let rec traverse accu t = match kind_of_term t with
+| Var id ->
+  let body () = match Global.lookup_named id with (_, body, _) -> body in
+  traverse_object accu body (VarRef id)
+| Const (kn, _) ->
+  let body () = Global.body_of_constant_body (lookup_constant kn) in
+  traverse_object accu body (ConstRef kn)
+| Ind (ind, _) ->
+  traverse_object accu (fun () -> None) (IndRef ind)
+| Construct (cst, _) ->
+  traverse_object accu (fun () -> None) (ConstructRef cst)
+| Meta _ | Evar _ -> assert false
+| _ -> Constr.fold traverse accu t
+
+and traverse_object (curr, data) body obj =
+  let data =
+    if Refmap.mem obj data then data
+    else match body () with
+    | None -> Refmap.add obj Refset.empty data
+    | Some body ->
+      let (contents, data) = traverse (Refset.empty, data) body in
+      Refmap.add obj contents data
   in
-  let identity2 s m = (s,m)
-  in
-  (* Goes recursively into the term to see if it depends on assumptions.
-    The 3 important cases are :
-     - Const _ where we need to first unfold the constant and return
-       the needed assumptions of its body in the environment,
-     - Rel _ which means the term is a variable which has been bound
-       earlier by a Lambda or a Prod (returns [] ),
-     - Var _ which means that the term refers to a section variable or
-       a "Let" definition, in the former it is an assumption of [t],
-       in the latter is must be unfolded like a Const.
-    The other cases are straightforward recursion.
-    Calls to the environment are memoized, thus avoiding exploration of
-    the DAG of the environment as if it was a tree (can cause
-    exponential behavior and prevent the algorithm from terminating
-    in reasonable time). [s] is a set of [context_object], representing
-    the object already visited.*)
-  let rec do_constr t s acc =
-    let rec iter t =
-      match kind_of_term t with
-	| Var id -> do_memoize_id id
-	| Meta _ | Evar _ -> assert false
-	| Cast (e1,_,e2) | Prod (_,e1,e2) | Lambda (_,e1,e2) ->
-	  (iter e1)**(iter e2)
-	| LetIn (_,e1,e2,e3) -> (iter e1)**(iter e2)**(iter e3)
-	| App (e1, e_array) -> (iter e1)**(iter_array e_array)
-	| Case (_,e1,e2,e_array) -> (iter e1)**(iter e2)**(iter_array e_array)
-	| Fix (_,(_, e1_array, e2_array)) | CoFix (_,(_,e1_array, e2_array)) ->
-          (iter_array e1_array) ** (iter_array e2_array)
-	| Const (kn,_) -> do_memoize_kn kn
-	| Proj (_, e) -> iter e
-	| Rel _ | Sort _ | Ind _ | Construct _ -> identity2
-    and iter_array a = Array.fold_right (fun e f -> (iter e)**f) a identity2
-    in iter t s acc
+  (Refset.add obj curr, data)
 
-  and add_id id s acc =
-    (* a Var can be either a variable, or a "Let" definition.*)
-    match Global.lookup_named id with
-    | (_,None,t) ->
-        (s,ContextObjectMap.add (Variable id) t acc)
-    | (_,Some bdy,_) -> do_constr bdy s acc
+let traverse t =
+  let () = modcache := MPmap.empty in
+  traverse (Refset.empty, Refmap.empty) t
 
-  and do_memoize_id id =
-    try_and_go (Variable id) (add_id id)
+(** Hopefully bullet-proof function to recover the type of a constant. It just
+    ignores all the universe stuff. There are many issues that can arise when
+    considering terms out of any valid environment, so use with caution. *)
+let type_of_constant cb = match cb.Declarations.const_type with
+| Declarations.RegularArity ty -> ty
+| Declarations.TemplateArity (ctx, arity) ->
+  Term.mkArity (ctx, Sorts.sort_of_univ arity.Declarations.template_level)
 
-  and add_kn kn s acc =
+let assumptions ?(add_opaque=false) ?(add_transparent=false) st t =
+  let (idts, knst) = st in
+  (** Only keep the transitive dependencies *)
+  let (_, graph) = traverse t in
+  let fold obj _ accu = match obj with
+  | VarRef id ->
+    let (_, body, t) = Global.lookup_named id in
+    if Option.is_empty body then ContextObjectMap.add (Variable id) t accu
+    else accu
+  | ConstRef kn ->
     let cb = lookup_constant kn in
-    let do_type cst =
-      let ctype = Global.type_of_global_unsafe (Globnames.ConstRef kn) in
-	(s,ContextObjectMap.add cst ctype acc)
-    in
-    let (s,acc) =
-      if Declareops.constant_has_body cb then
-        if Declareops.is_opaque cb || not (Cpred.mem kn knst) then
-          (** it is opaque *)
-          if add_opaque then do_type (Opaque kn)
-          else (s, acc)
-        else
-          if add_transparent then do_type (Transparent kn)
-          else (s, acc)
-      else (s, acc)
-    in
-      match Global.body_of_constant_body cb with
-      | None -> do_type (Axiom kn)
-      | Some body -> do_constr body s acc
-
-  and do_memoize_kn kn =
-    try_and_go (Axiom kn) (add_kn kn)
-
- in
- fun t ->
-   snd (do_constr t
-	  (ContextObjectSet.empty)
-	  (ContextObjectMap.empty))
+    if not (Declareops.constant_has_body cb) then
+      let t = type_of_constant cb in
+      ContextObjectMap.add (Axiom kn) t accu
+    else if add_opaque && (Declareops.is_opaque cb || not (Cpred.mem kn knst)) then
+      let t = type_of_constant cb in
+      ContextObjectMap.add (Opaque kn) t accu
+    else if add_transparent then
+      let t = type_of_constant cb in
+      ContextObjectMap.add (Transparent kn) t accu
+    else
+      accu
+  | IndRef _ | ConstructRef _ -> accu
+  in
+  Refmap.fold fold graph ContextObjectMap.empty

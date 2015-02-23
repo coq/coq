@@ -11,19 +11,21 @@ let freeze = ref (fun () -> assert false : unit -> Dyn.t)
 let unfreeze = ref (fun _ -> () : Dyn.t -> unit)
 let set_freeze f g = freeze := f; unfreeze := g
 
-exception NotReady
-exception NotHere
+exception NotReady of string
+exception NotHere of string
 let _ = Errors.register_handler (function
-  | NotReady ->
-      Pp.strbrk("The value you are asking for is not ready yet. " ^
+  | NotReady name ->
+      Pp.strbrk("The value you are asking for ("^name^") is not ready yet. "^
                 "Please wait or pass "^
                 "the \"-async-proofs off\" option to CoqIDE to disable "^
-                "asynchronous script processing.")
-  | NotHere ->
-      Pp.strbrk("The value you are asking for is not available "^
+                "asynchronous script processing and don't pass \"-quick\" to "^
+                "coqc.")
+  | NotHere name ->
+      Pp.strbrk("The value you are asking for ("^name^") is not available "^
                 "in this process. If you really need this, pass "^
                 "the \"-async-proofs off\" option to CoqIDE to disable "^
-                "asynchronous script processing.")
+                "asynchronous script processing and don't pass \"-quick\" to "^
+                "coqc.")
   | _ -> raise Errors.Unhandled)
 
 type fix_exn = Exninfo.iexn -> Exninfo.iexn
@@ -54,67 +56,69 @@ and 'a comp =
   | Exn of Exninfo.iexn  (* Invariant: this exception is always "fixed" as in fix_exn *)
 
 and 'a comput =
-  | Ongoing of (UUID.t * fix_exn * 'a comp ref) Ephemeron.key
+  | Ongoing of string * (UUID.t * fix_exn * 'a comp ref) Ephemeron.key
   | Finished of 'a
 
 and 'a computation = 'a comput ref
 
-let create ?(uuid=UUID.fresh ()) f x =
-  ref (Ongoing (Ephemeron.create (uuid, f, Pervasives.ref x)))
+let unnamed = "unnamed"
+
+let create ?(name=unnamed) ?(uuid=UUID.fresh ()) f x =
+  ref (Ongoing (name, Ephemeron.create (uuid, f, Pervasives.ref x)))
 let get x =
   match !x with
-  | Finished v -> UUID.invalid, id, ref (Val (v,None))
-  | Ongoing x ->
-      try Ephemeron.get x
+  | Finished v -> unnamed, UUID.invalid, id, ref (Val (v,None))
+  | Ongoing (name, x) ->
+      try let uuid, fix, c = Ephemeron.get x in name, uuid, fix, c
       with Ephemeron.InvalidKey ->
-        UUID.invalid, id, ref (Exn (NotHere, Exninfo.null))
+        name, UUID.invalid, id, ref (Exn (NotHere name, Exninfo.null))
 
 type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn  ]
 
-let is_over kx = let _, _, x = get kx in match !x with
+let is_over kx = let _, _, _, x = get kx in match !x with
   | Val _ | Exn _ -> true
   | Closure _ | Delegated _ -> false
 
-let is_val kx = let _, _, x = get kx in match !x with
+let is_val kx = let _, _, _, x = get kx in match !x with
   | Val _ -> true
   | Exn _ | Closure _ | Delegated _ -> false
 
-let is_exn kx = let _, _, x = get kx in match !x with
+let is_exn kx = let _, _, _, x = get kx in match !x with
   | Exn _ -> true
   | Val _ | Closure _ | Delegated _ -> false
 
-let peek_val kx = let _, _, x = get kx in match !x with
+let peek_val kx = let _, _, _, x = get kx in match !x with
   | Val (v, _) -> Some v
   | Exn _ | Closure _ | Delegated _ -> None
 
-let uuid kx = let id, _, _ = get kx in id
+let uuid kx = let _, id, _, _ = get kx in id
 
 let from_val ?(fix_exn=id) v = create fix_exn (Val (v, None))
 let from_here ?(fix_exn=id) v = create fix_exn (Val (v, Some (!freeze ())))
 
-let fix_exn_of ck = let _, fix_exn, _ = get ck in fix_exn
+let fix_exn_of ck = let _, _, fix_exn, _ = get ck in fix_exn
 
-let create_delegate ?(blocking=true) fix_exn =
+let create_delegate ?(blocking=true) ~name fix_exn =
   let assignement signal ck = fun v ->
-    let _, fix_exn, c = get ck in
+    let _, _, fix_exn, c = get ck in
     assert (match !c with Delegated _ -> true | _ -> false);
     begin match v with
     | `Val v -> c := Val (v, None)
     | `Exn e -> c := Exn (fix_exn e)
-    | `Comp f -> let _, _, comp = get f in c := !comp end;
+    | `Comp f -> let _, _, _, comp = get f in c := !comp end;
     signal () in
   let wait, signal =
-    if not blocking then (fun () -> raise NotReady), ignore else
+    if not blocking then (fun () -> raise (NotReady name)), ignore else
     let lock = Mutex.create () in
     let cond = Condition.create () in
     (fun () -> Mutex.lock lock; Condition.wait cond lock; Mutex.unlock lock),
     (fun () -> Mutex.lock lock; Condition.broadcast cond; Mutex.unlock lock) in
-  let ck = create fix_exn (Delegated wait) in
+  let ck = create ~name fix_exn (Delegated wait) in
   ck, assignement signal ck
 
 (* TODO: get rid of try/catch to be stackless *)
 let rec compute ~pure ck : 'a value =
-  let _, fix_exn, c = get ck in
+  let _, _, fix_exn, c = get ck in
   match !c with
   | Val (x, _) -> `Val x
   | Exn (e, info) -> `Exn (e, info)
@@ -128,7 +132,7 @@ let rec compute ~pure ck : 'a value =
         let e = Errors.push e in
         let e = fix_exn e in
         match e with
-        | (NotReady, _) -> `Exn e
+        | (NotReady _, _) -> `Exn e
         | _ -> c := Exn e; `Exn e
 
 let force ~pure x = match compute ~pure x with
@@ -136,8 +140,8 @@ let force ~pure x = match compute ~pure x with
   | `Exn e -> Exninfo.iraise e
 
 let chain ~pure ck f =
-  let uuid, fix_exn, c = get ck in
-  create ~uuid fix_exn (match !c with
+  let name, uuid, fix_exn, c = get ck in
+  create ~uuid ~name fix_exn (match !c with
   | Closure _ | Delegated _ -> Closure (fun () -> f (force ~pure ck))
   | Exn _ as x -> x
   | Val (v, None) when pure -> Closure (fun () -> f v)
@@ -156,7 +160,7 @@ let chain ~pure ck f =
 let create fix_exn f = create fix_exn (Closure f)
 
 let replace kx y =
-  let _, _, x = get kx in
+  let _, _, _, x = get kx in
   match !x with
   | Exn _ -> x := Closure (fun () -> force ~pure:false y)
   | _ -> Errors.anomaly
@@ -207,10 +211,10 @@ let map2 ?greedy f x l =
 
 let print f kx =
   let open Pp in
-  let (uid, _, x) = get kx in
+  let name, uid, _, x = get kx in
   let uid =
-    if UUID.equal uid UUID.invalid then str "[#]"
-    else str "[" ++ int uid ++ str "]"
+    if UUID.equal uid UUID.invalid then str "[#:" ++ str name ++ str "]"
+    else str "[" ++ int uid ++ str":" ++ str name ++ str "]"
   in
   match !x with
   | Delegated _ -> str "Delegated" ++ uid

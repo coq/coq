@@ -8,9 +8,13 @@
 
 (** Interpretation of extended vernac phrases. *)
 
-val vinterp_add : Vernacexpr.extend_name -> (Genarg.raw_generic_argument list -> unit -> unit) -> unit
+type deprecation = bool
+type vernac_command = Genarg.raw_generic_argument list -> unit -> unit
+
+val vinterp_add : deprecation -> Vernacexpr.extend_name ->
+  vernac_command -> unit
 val overwriting_vinterp_add :
-  Vernacexpr.extend_name -> (Genarg.raw_generic_argument list -> unit -> unit) -> unit
+  Vernacexpr.extend_name -> vernac_command -> unit
 
 val vinterp_init : unit -> unit
 val call : ?locality:bool -> Vernacexpr.extend_name * Genarg.raw_generic_argument list -> unit

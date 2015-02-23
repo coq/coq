@@ -18,6 +18,7 @@ class type ['a] page =
     inherit GObj.widget
     method update : 'a -> unit
     method on_update : callback:('a -> unit) -> unit
+    method refresh_color : unit -> unit
   end
 
 class type control =
@@ -256,6 +257,10 @@ let make_table_widget cd cb =
       ~rules_hint:true ~headers_visible:false
       ~model:store ~packing:frame#add () in
   let () = data#set_headers_visible true in
+  let refresh () =
+    let clr = Tags.color_of_string current.background_color in
+    data#misc#modify_base [`NORMAL, `COLOR clr]
+  in
   let mk_rend c = GTree.cell_renderer_text [], ["text",c] in
   let cols =
     List.map2 (fun (_,c) (_,n,v) ->
@@ -271,10 +276,10 @@ let make_table_widget cd cb =
   ignore(
     data#connect#row_activated ~callback:(fun tp vc -> cb columns store tp vc)
   );
-  frame, (fun f -> f columns store)
+  frame, (fun f -> f columns store), refresh
 
 let create_errpage (script : Wg_ScriptView.script_view) : errpage =
-  let table, access =
+  let table, access, refresh =
     make_table_widget
       [`Int,"Line",true; `String,"Error message",true]
       (fun columns store tp vc ->
@@ -305,10 +310,11 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
           errs
       end
     method on_update ~callback:cb = callback := cb
+    method refresh_color () = refresh ()
   end
 
 let create_jobpage coqtop coqops : jobpage =
-  let table, access =
+  let table, access, refresh =
     make_table_widget
       [`String,"Worker",true; `String,"Job name",true]
       (fun columns store tp vc ->
@@ -344,6 +350,7 @@ let create_jobpage coqtop coqops : jobpage =
           jobs
       end
     method on_update ~callback:cb = callback := cb
+    method refresh_color () = refresh ()
   end
 
 let create_proof () =

@@ -60,13 +60,17 @@ module ReductionBehaviour = struct
 
   let discharge = function
     | _,(ReqGlobal (ConstRef c, req), (_, b)) ->
-       let c' = pop_con c in
-       let vars, _subst, _ctx = Lib.section_segment_of_constant c in
-       let extra = List.length vars in
-       let nargs' = if b.b_nargs < 0 then b.b_nargs else b.b_nargs + extra in
-       let recargs' = List.map ((+) extra) b.b_recargs in
-       let b' = { b with b_nargs = nargs'; b_recargs = recargs' } in
-       Some (ReqGlobal (ConstRef c', req), (ConstRef c', b'))
+      let b =
+        if Lib.is_in_section (ConstRef c) then
+          let vars, _, _ = Lib.section_segment_of_constant c in
+          let extra = List.length vars in
+          let nargs' = if b.b_nargs < 0 then b.b_nargs else b.b_nargs + extra in
+          let recargs' = List.map ((+) extra) b.b_recargs in
+          { b with b_nargs = nargs'; b_recargs = recargs' }
+        else b
+      in
+      let c = Lib.discharge_con c in
+      Some (ReqGlobal (ConstRef c, req), (ConstRef c, b))
     | _ -> None
 
   let rebuild = function

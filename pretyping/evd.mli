@@ -223,7 +223,7 @@ val existential_opt_value : evar_map -> existential -> constr option
 (** Same as {!existential_value} but returns an option instead of raising an
     exception. *)
 
-val evar_instance_array : (Id.t -> 'a -> bool) -> evar_info ->
+val evar_instance_array : (named_declaration -> 'a -> bool) -> evar_info ->
   'a array -> (Id.t * 'a) list
 
 val instantiate_evar_array : evar_info -> constr -> constr array -> constr

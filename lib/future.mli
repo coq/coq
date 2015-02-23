@@ -63,7 +63,7 @@ end
 module UUIDMap : Map.S with type key = UUID.t
 module UUIDSet : Set.S with type elt = UUID.t
 
-exception NotReady
+exception NotReady of string
 
 type 'a computation
 type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn ]
@@ -100,7 +100,8 @@ val fix_exn_of : 'a computation -> fix_exn
    delage assigns it. *)
 type 'a assignement = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computation]
 val create_delegate :
-  ?blocking:bool -> fix_exn -> 'a computation * ('a assignement -> unit)
+  ?blocking:bool -> name:string ->
+  fix_exn -> 'a computation * ('a assignement -> unit)
 
 (* Given a computation that is_exn, replace it by another one *)
 val replace : 'a computation -> 'a computation -> unit
