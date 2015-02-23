@@ -142,7 +142,7 @@ is understood as
 & | & {\tt idtac} \sequence{\messagetoken}{}\\
 & | & {\tt fail} \zeroone{\naturalnumber} \sequence{\messagetoken}{}\\
 & | & {\tt gfail} \zeroone{\naturalnumber} \sequence{\messagetoken}{}\\
-& | & {\tt fresh} ~|~ {\tt fresh} {\qstring}\\
+& | & {\tt fresh} ~|~ {\tt fresh} {\qstring}|~ {\tt fresh} {\qualid}\\
 & | & {\tt context} {\ident} {\tt [} {\term} {\tt ]}\\
 & | & {\tt eval} {\nterm{redexpr}} {\tt in} {\term}\\
 & | & {\tt type of} {\term}\\
@@ -906,8 +906,8 @@ The following expression returns an identifier:
 \end{quote}
 It evaluates to an identifier unbound in the goal. This fresh
 identifier is obtained by concatenating the value of the
-\textrm{\textsl{component}}'s (each of them is, either an {\ident} which
-has to refer to a name, or directly a name denoted by a
+\textrm{\textsl{component}}'s (each of them is, either an {\qualid} which
+has to refer to a (unqualified) name, or directly a name denoted by a
 {\qstring}). If the resulting name is already used, it is padded
 with a number so that it becomes fresh. If no component is
 given, the name is a fresh derivative of the name {\tt H}.
