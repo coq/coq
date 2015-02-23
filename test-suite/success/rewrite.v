@@ -148,3 +148,13 @@ eexists. intro H.
 rewrite H.
 reflexivity.
 Abort.
+
+(* Check that rewriting within evars still work (was broken in 8.5beta1) *)
+
+
+Goal forall (a: unit) (H: a = tt), exists x y:nat, x = y.
+intros; eexists; eexists.
+rewrite H.
+Undo.
+subst.
+Abort.
