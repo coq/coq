@@ -779,7 +779,9 @@ let merge_universe_context evd uctx' =
 let set_universe_context evd uctx' =
   { evd with universes = uctx' }
 
-let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
+let add_conv_pb ?(tail=false) pb d =
+  if tail then {d with conv_pbs = d.conv_pbs @ [pb]}
+  else {d with conv_pbs = pb::d.conv_pbs}
 
 let evar_source evk d = (find d evk).evar_source
 

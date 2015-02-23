@@ -121,11 +121,11 @@ let is_success = function Success _ -> true | UnifFailure _ -> false
 let test_success conv_algo env evd c c' rhs =
   is_success (conv_algo env evd c c' rhs)
 
-let add_conv_oriented_pb (pbty,env,t1,t2) evd =
+let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
   match pbty with
-  | Some true -> add_conv_pb (Reduction.CUMUL,env,t1,t2) evd
-  | Some false -> add_conv_pb (Reduction.CUMUL,env,t2,t1) evd
-  | None -> add_conv_pb (Reduction.CONV,env,t1,t2) evd
+  | Some true -> add_conv_pb ~tail (Reduction.CUMUL,env,t1,t2) evd
+  | Some false -> add_conv_pb ~tail (Reduction.CUMUL,env,t2,t1) evd
+  | None -> add_conv_pb ~tail (Reduction.CONV,env,t1,t2) evd
 
 (*------------------------------------*
  * Restricting existing evars         *
@@ -1111,13 +1111,13 @@ let solve_evar_evar_aux force f g env evd pbty (evk1,args1 as ev1) (evk2,args2 a
     with CannotProject (evd,ev2) ->
     try solve_evar_evar_l2r force f g env evd aliases pbty ev1 ev2
     with CannotProject (evd,ev1) ->
-    add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd
+    add_conv_oriented_pb ~tail:true (pbty,env,mkEvar ev1,mkEvar ev2) evd
   else
     try solve_evar_evar_l2r force f g env evd aliases pbty ev1 ev2
     with CannotProject (evd,ev1) ->
     try solve_evar_evar_l2r force f g env evd aliases (opp_problem pbty) ev2 ev1
     with CannotProject (evd,ev2) ->
-    add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd
+    add_conv_oriented_pb ~tail:true (pbty,env,mkEvar ev1,mkEvar ev2) evd
 
 let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let pbty = if force then None else pbty in
