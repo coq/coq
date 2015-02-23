@@ -1017,7 +1017,7 @@ exception CannotProject of evar_map * existential
   of subterms to eventually discard so as to be allowed to keep ti.
 *)
 
-let rec is_constrainable_in top force k (ev,(fv_rels,fv_ids) as g) t =
+let rec is_constrainable_in top force env evd k (ev,(fv_rels,fv_ids) as g) t =
   let f,args = decompose_app_vect t in
   match kind_of_term f with
   | Construct ((ind,_),u) ->
@@ -1025,21 +1025,21 @@ let rec is_constrainable_in top force k (ev,(fv_rels,fv_ids) as g) t =
     if n > Array.length args then true (* We don't try to be more clever *)
     else
       let params = fst (Array.chop n args) in
-      Array.for_all (is_constrainable_in false force k g) params
-  | Ind _ -> Array.for_all (is_constrainable_in false force k g) args
-  | Prod (_,t1,t2) -> is_constrainable_in false force k g t1 && is_constrainable_in false force k g t2
+      Array.for_all (is_constrainable_in false force env evd k g) params
+  | Ind _ -> Array.for_all (is_constrainable_in false force env evd k g) args
+  | Prod (_,t1,t2) -> is_constrainable_in false force env evd k g t1 && is_constrainable_in false force env evd k g t2
   | Evar (ev',_) -> top || not (force || Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
   | Var id -> Id.Set.mem id fv_ids
   | Rel n -> n <= k || Int.Set.mem n fv_rels
   | Sort _ -> true
-  | _ -> (* We don't try to be more clever *) true
+  | _ -> (* We don't try to be more clever *) not force || noccur_evar env evd ev t
 
-let has_constrainable_free_vars evd aliases force k ev (fv_rels,fv_ids as fvs) t =
+let has_constrainable_free_vars env evd aliases force k ev (fv_rels,fv_ids as fvs) t =
   let t = expansion_of_var aliases t in
   match kind_of_term t with
   | Var id -> Id.Set.mem id fv_ids
   | Rel n -> n <= k || Int.Set.mem n fv_rels
-  | _ -> is_constrainable_in true force k (ev,fvs) t
+  | _ -> is_constrainable_in true force env evd k (ev,fvs) t
 
 exception EvarSolvedOnTheFly of evar_map * constr
 
@@ -1049,7 +1049,7 @@ let project_evar_on_evar force g env evd aliases k2 pbty (evk1,argsv1 as ev1) (e
   (* Apply filtering on ev1 so that fvs(ev1) are in fvs(ev2). *)
   let fvs2 = free_vars_and_rels_up_alias_expansion aliases (mkEvar ev2) in
   let filter1 = restrict_upon_filter evd evk1
-    (has_constrainable_free_vars evd aliases force k2 evk2 fvs2)
+    (has_constrainable_free_vars env evd aliases force k2 evk2 fvs2)
     argsv1 in
   let candidates1 =
     try restrict_candidates g env evd filter1 ev1 ev2
