@@ -81,7 +81,7 @@ val iprint : Exninfo.iexn -> Pp.std_ppcmds
     isn't printed (used in Ltac debugging). *)
 val print_no_report : exn -> Pp.std_ppcmds
 
-(** Critical exceptions shouldn't be catched and ignored by mistake
+(** Critical exceptions should not be caught and ignored by mistake
     by inner functions during a [vernacinterp]. They should be handled
     only in [Toplevel.do_vernac] (or Ideslave), to be displayed to the user.
     Typical example: [Sys.Break], [Assert_failure], [Anomaly] ...

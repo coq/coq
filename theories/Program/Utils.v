@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Various syntaxic shortands that are useful with [Program]. *)
+(** Various syntactic shorthands that are useful with [Program]. *)
 
 Require Export Coq.Program.Tactics.
 

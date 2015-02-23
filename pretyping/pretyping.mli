@@ -63,7 +63,7 @@ val all_no_fail_flags : inference_flags
 
 val all_and_fail_flags : inference_flags
 
-(** Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
+(** Allow references to syntactically nonexistent variables (i.e., if applied on an inductive) *)
 val allow_anonymous_refs : bool ref
   
 (** Generic call to the interpreter from glob_constr to open_constr, leaving

@@ -134,7 +134,7 @@ exception FullyUnfocused
 exception CannotUnfocusThisWay
 
 (* This is raised when trying to focus on non-existing subgoals. It is
-   handled by an error message but one may need to catched it and
+   handled by an error message but one may need to catch it and
    settle a better error message in some case (suggesting a better
    bullet for example), see proof_global.ml function Bullet.pop and
    Bullet.push. *)

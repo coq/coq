@@ -192,8 +192,8 @@ let unfocus c sp =
     succeed).  Another benefit is that it is possible to write tactics
     that can be executed even if there are no focused goals.
     - Tactics form a monad ['a tactic], in a sense a tactic can be
-    seens as a function (without argument) which returns a value of
-    type 'a and modifies the environement (in our case: the view).
+    seen as a function (without argument) which returns a value of
+    type 'a and modifies the environment (in our case: the view).
     Tactics of course have arguments, but these are given at the
     meta-level as OCaml functions.  Most tactics in the sense we are
     used to return [()], that is no really interesting values. But
@@ -1126,7 +1126,7 @@ module V82 = struct
     
 
   (* Returns the open goals of the proofview together with the evar_map to 
-     interprete them. *)
+     interpret them. *)
   let goals { comb = comb ; solution = solution; } =
    { Evd.it = comb ; sigma = solution }
 

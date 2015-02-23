@@ -45,7 +45,7 @@ let pr_with_bindings prc prlc (c,bl) =
 let pr_constr_with_binding prc (c,bl) :  Pp.std_ppcmds =
   pr_with_bindings prc prc  (c,bl)
 
-(* The local debuging mechanism *)
+(* The local debugging mechanism *)
 (* let msgnl = Pp.msgnl *)
 
 let observe strm =
@@ -255,12 +255,12 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
     let f_principle,princ_type = schemes.(i) in
     let princ_type =  nf_zeta princ_type in
     let princ_infos = Tactics.compute_elim_sig princ_type in
-    (* The number of args of the function is then easilly computable *)
+    (* The number of args of the function is then easily computable *)
     let nb_fun_args = nb_prod (pf_concl g)  - 2  in
     let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
-    (* Since we cannot ensure that the funcitonnal principle is defined in the
-       environement and due to the bug #1174, we will need to pose the principle
+    (* Since we cannot ensure that the functional principle is defined in the
+       environment and due to the bug #1174, we will need to pose the principle
        using a name
     *)
     let principle_id = Namegen.next_ident_away_in_goal (Id.of_string "princ") ids in
@@ -522,12 +522,12 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
     let f_principle,princ_type = schemes.(i) in
     let princ_type =  nf_zeta princ_type in
     let princ_infos = Tactics.compute_elim_sig princ_type in
-    (* The number of args of the function is then easilly computable *)
+    (* The number of args of the function is then easily computable *)
     let nb_fun_args = nb_prod (pf_concl g)  - 2  in
     let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
-    (* Since we cannot ensure that the funcitonnal principle is defined in the
-       environement and due to the bug #1174, we will need to pose the principle
+    (* Since we cannot ensure that the functional principle is defined in the
+       environment and due to the bug #1174, we will need to pose the principle
        using a name
     *)
     let principle_id = Namegen.next_ident_away_in_goal (Id.of_string "princ") ids in

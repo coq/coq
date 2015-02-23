@@ -82,7 +82,7 @@ let search_guard loc env possible_indexes fixdefs =
        iraise (e, info));
     indexes
   else
-    (* we now search recursively amoungst all combinations *)
+    (* we now search recursively among all combinations *)
     (try
        List.iter
 	 (fun l ->
@@ -220,7 +220,7 @@ let process_inference_flags flags env initial_sigma (sigma,c) =
   let c = if flags.expand_evars then nf_evar sigma c else c in
   sigma,c
 
-(* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
+(* Allow references to syntactically nonexistent variables (i.e., if applied on an inductive) *)
 let allow_anonymous_refs = ref false
 
 (* Utilisé pour inférer le prédicat des Cases *)

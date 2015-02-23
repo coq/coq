@@ -587,8 +587,11 @@ let import_module export modl =
     | [] -> ()
     | modl -> add_anonymous_leaf (in_import_library (List.rev modl, export)) in
   let rec aux acc = function
-    | m :: l ->
-        (match safe_locate_module m with
+    | (loc,dir as m) :: l ->
+        let m,acc =
+          try Nametab.locate_module dir, acc
+          with Not_found-> flush acc; safe_locate_module m, [] in
+        (match m with
         | MPfile dir -> aux (dir::acc) l
         | mp -> flush acc; Declaremods.import_module export mp; aux [] l)
     | [] -> flush acc

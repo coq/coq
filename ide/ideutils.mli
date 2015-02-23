@@ -71,7 +71,7 @@ val default_logger : Pp.message_level -> string -> unit
 
 (** {6 I/O operations} *)
 
-(** A customized [stat] function. Exceptions are catched. *)
+(** A customized [stat] function. Exceptions are caught. *)
 
 type stats = MTime of float | NoSuchFile | OtherError
 val stat : string -> stats

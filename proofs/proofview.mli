@@ -37,7 +37,7 @@ type entry
 val compact : entry -> proofview -> entry * proofview
 
 (** Initialises a proofview, the main argument is a list of
-    environements (including a [named_context] which are used as
+    environments (including a [named_context] which are used as
     hypotheses) pair with conclusion types, creating accordingly many
     initial goals. Because a proof does not necessarily starts in an
     empty [evar_map] (indeed a proof can be triggered by an incomplete
@@ -114,8 +114,8 @@ val unfocus : focus_context -> proofview -> proofview
     succeed).  Another benefit is that it is possible to write tactics
     that can be executed even if there are no focused goals.
     - Tactics form a monad ['a tactic], in a sense a tactic can be
-    seens as a function (without argument) which returns a value of
-    type 'a and modifies the environement (in our case: the view).
+    seen as a function (without argument) which returns a value of
+    type 'a and modifies the environment (in our case: the view).
     Tactics of course have arguments, but these are given at the
     meta-level as OCaml functions.  Most tactics in the sense we are
     used to return [()], that is no really interesting values. But
@@ -230,7 +230,7 @@ val tclBREAK : (iexn -> iexn option) -> 'a tactic -> 'a tactic
     [i] to [j] (see {!focus}). The rest of the goals is restored after
     the tactic action. If the specified range doesn't correspond to
     existing goals, fails with [NoSuchGoals] (a user error). this
-    exception is catched at toplevel with a default message + a hook
+    exception is caught at toplevel with a default message + a hook
     message that can be customized by [set_nosuchgoals_hook] below.
     This hook is used to add a suggestion about bullets when
     applicable. *)
@@ -547,7 +547,7 @@ module V82 : sig
   val grab : proofview -> proofview
 
   (* Returns the open goals of the proofview together with the evar_map to 
-     interprete them. *)
+     interpret them. *)
   val goals : proofview -> Evar.t list Evd.sigma
 
   val top_goals : entry -> proofview -> Evar.t list Evd.sigma

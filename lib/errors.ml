@@ -108,7 +108,7 @@ let _ = register_handler begin function
   | _ -> raise Unhandled
 end
 
-(** Critical exceptions shouldn't be catched and ignored by mistake
+(** Critical exceptions should not be caught and ignored by mistake
     by inner functions during a [vernacinterp]. They should be handled
     only at the very end of interp, to be displayed to the user. *)
 

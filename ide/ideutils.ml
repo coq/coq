@@ -285,7 +285,7 @@ let default_logger level message =
 
 (** {6 File operations} *)
 
-(** A customized [stat] function. Exceptions are catched. *)
+(** A customized [stat] function. Exceptions are caught. *)
 
 type stats = MTime of float | NoSuchFile | OtherError
 

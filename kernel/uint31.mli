@@ -5,7 +5,7 @@ val to_int : t -> int
 val of_int : int -> t
 val of_uint : int -> t
 
-     (* convertion to a string *)
+     (* conversion to a string *)
 val to_string : t -> string
 val of_string : string -> t
 
