@@ -138,19 +138,21 @@ let e_exact poly flags (c,clenv) =
     if poly then Clenv.refresh_undefined_univs clenv 
     else clenv, Univ.empty_level_subst
   in e_give_exact (* ~flags *) (Vars.subst_univs_level_constr subst c)
-    
-let rec e_trivial_fail_db db_list local_db goal =
+
+let rec e_trivial_fail_db db_list local_db =
+  let next = Proofview.Goal.nf_enter begin fun gl ->
+    let d = Tacmach.New.pf_last_hyp gl in
+    let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) d in
+    e_trivial_fail_db db_list (Hint_db.add_list hintl local_db)
+  end in
+  Proofview.Goal.enter begin fun gl ->
   let tacl =
-    Proofview.V82.of_tactic registered_e_assumption ::
-    (tclTHEN (Proofview.V82.of_tactic Tactics.intro)
-       (function g'->
-	  let d = pf_last_hyp g' in
-	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
-          (e_trivial_fail_db db_list
-	      (Hint_db.add_list hintl local_db) g'))) ::
-    (List.map fst (e_trivial_resolve db_list local_db (pf_concl goal)) )
+    registered_e_assumption ::
+    (Tacticals.New.tclTHEN Tactics.intro next) ::
+    (List.map fst (e_trivial_resolve db_list local_db (Tacmach.New.pf_nf_concl gl)))
   in
-    tclFIRST (List.map tclCOMPLETE tacl) goal
+  Tacticals.New.tclFIRST (List.map Tacticals.New.tclCOMPLETE tacl)
+  end
 
 and e_my_find_search db_list local_db hdc concl =
   let hintl =
@@ -169,14 +171,14 @@ and e_my_find_search db_list local_db hdc concl =
       (b,
        let tac =
 	 match t with
-	   | Res_pf (term,cl) -> Proofview.V82.of_tactic (unify_resolve poly st (term,cl))
-	   | ERes_pf (term,cl) -> unify_e_resolve poly st (term,cl)
-	   | Give_exact (c,cl) -> Proofview.V82.of_tactic (e_exact poly st (c,cl))
+	   | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
+	   | ERes_pf (term,cl) -> Proofview.V82.tactic (unify_e_resolve poly st (term,cl))
+	   | Give_exact (c,cl) -> e_exact poly st (c,cl)
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
-               tclTHEN (unify_e_resolve poly st (term,cl))
-		 (e_trivial_fail_db db_list local_db)
-	   | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
-	   | Extern tacast -> Proofview.V82.of_tactic (conclPattern concl p tacast)
+               (Tacticals.New.tclTHEN (Proofview.V82.tactic (unify_e_resolve poly st (term,cl)))
+		 (e_trivial_fail_db db_list local_db))
+	   | Unfold_nth c -> Proofview.V82.tactic (reduce (Unfold [AllOccurrences,c]) onConcl)
+	   | Extern tacast -> conclPattern concl p tacast
        in
        (tac,lazy (pr_autotactic t)))
   in
@@ -231,7 +233,7 @@ module SearchProblem = struct
       | [] -> []
       | (tac,pptac) :: tacl ->
 	  try
-	    let lgls = apply_tac_list tac glls in
+	    let lgls = apply_tac_list (Proofview.V82.of_tactic tac) glls in
 (* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
 	      (lgls,pptac) :: aux tacl
@@ -260,7 +262,7 @@ module SearchProblem = struct
 	let l =
 	  filter_tactics s.tacres
 	    (List.map
-	       (fun id -> (Proofview.V82.of_tactic (e_give_exact (mkVar id)),
+	       (fun id -> (e_give_exact (mkVar id),
 			   lazy (str "exact" ++ spc () ++ pr_id id)))
 	       (pf_ids_of_hyps g))
 	in
@@ -280,7 +282,7 @@ module SearchProblem = struct
 	     { depth = s.depth; tacres = res;
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb; prev = ps })
-	  (filter_tactics s.tacres [Proofview.V82.of_tactic Tactics.intro,lazy (str "intro")])
+	  (filter_tactics s.tacres [Tactics.intro,lazy (str "intro")])
       in
       let rec_tacs =
 	let l =
