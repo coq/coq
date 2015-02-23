@@ -123,6 +123,7 @@ Module C.
 
 Reserved Notation "a ~> b" (at level 70, right associativity).
 Reserved Notation "a ≈ b" (at level 54).
+Reserved Notation "a ∘ b" (at level 50, left associativity).
 Generalizable All Variables.
 
 Class Category (Object:Type) (Hom:Object -> Object -> Type) := {
