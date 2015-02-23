@@ -536,3 +536,13 @@ Goal forall f:nat->nat, (forall P x, P (f x)) -> let x:=f 0 in x = 0.
 intros f H x.
 apply H.
 Qed.
+
+(* Test that occur-check is not too restrictive (see comments of #3141) *)
+Lemma bar (X: nat -> nat -> Prop) (foo:forall x, X x x) (a: unit) (H: tt = a):
+  exists x, exists y, X x y.
+Proof.
+intros; eexists; eexists; case H.
+apply (foo ?y).
+Grab Existential Variables.
+exact 0.
+Qed.

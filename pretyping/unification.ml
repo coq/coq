@@ -673,6 +673,10 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
               (sigma,(k,lift (-nb) cM,fst (extract_instance_status pb))::metasubst,
               evarsubst)
 	    else error_cannot_unify_local curenv sigma (m,n,cM)
+	| Evar (evk,_ as ev), Evar (evk',_)
+            when not (Evar.Set.mem evk flags.frozen_evars)
+              && Evar.equal evk evk' ->
+	    sigma,metasubst,((curenv,ev,cN)::evarsubst)
 	| Evar (evk,_ as ev), _
             when not (Evar.Set.mem evk flags.frozen_evars) 
 	      && not (occur_evar evk cN) ->
@@ -1673,11 +1677,13 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
 		 matchrec t
 	       with ex when precatchable_exception ex ->
 		 matchrec c)
+
           | Lambda (_,t,c) ->
 	      (try
 		 matchrec t
 	       with ex when precatchable_exception ex ->
 		 matchrec c)
+
           | _ -> error "Match_subterm"))
   in
   try matchrec cl
