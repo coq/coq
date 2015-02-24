@@ -1027,7 +1027,7 @@ let rec is_constrainable_in top force env evd k (ev,(fv_rels,fv_ids) as g) t =
       let params = fst (Array.chop n args) in
       Array.for_all (is_constrainable_in false force env evd k g) params
   | Ind _ -> Array.for_all (is_constrainable_in false force env evd k g) args
-  | Prod (_,t1,t2) -> is_constrainable_in false force env evd k g t1 && is_constrainable_in false force env evd k g t2
+  | Prod (na,t1,t2) -> is_constrainable_in false force env evd k g t1 && is_constrainable_in false force (push_rel (na,None,t1) env) evd k g t2
   | Evar (ev',_) -> top || not (force || Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
   | Var id -> Id.Set.mem id fv_ids
   | Rel n -> n <= k || Int.Set.mem n fv_rels
