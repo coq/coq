@@ -1501,7 +1501,7 @@ let vernac_check_may_eval redexp glopt rc =
   Evarconv.check_problems_are_solved env sigma';
   let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
   let uctx = Evd.universe_context sigma' in
-  let env = Environ.push_context uctx env in
+  let env = Environ.push_context uctx (Evarutil.nf_env_evar sigma' env) in
   let c = nf c in
   let j =
     if Evarutil.has_undefined_evars sigma' c then
