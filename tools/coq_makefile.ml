@@ -297,7 +297,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
       print "\tprintf 'cd \"$${DSTROOT}\"$(COQDOCINSTALL) && ";
       printf "find %s/%s -maxdepth 0 -and -empty -exec rmdir -p \\{\\} \\;\\n' >> \"$@\"\n" dir kind
     in
-    print "uninstall_me.sh:\n";
+    printf "uninstall_me.sh: %s\n" !makefile_name;
     print "\techo '#!/bin/sh' > $@ \n";
     if (not_empty cmxsfiles) then uninstall_by_root where_what_cmxs;
     uninstall_by_root where_what_oth;
@@ -701,9 +701,12 @@ let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
   main_targets vfiles mlfiles other_targets inc;
     print ".PHONY: ";
     print_list " "
-      ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install" ::
-	  "uninstall_me.sh" :: "uninstall" :: "userinstall" :: "depend" ::
-	  "html" :: "validate" ::
+      ("all" :: "archclean" :: "beautify" :: "byte" :: "clean" ::
+	  "gallina" :: "gallinahtml" :: "html" ::
+	  "install" :: "install-doc" :: "install-natdynlink" :: "install-toploop" ::
+	  "opt" :: "printenv" :: "quick" ::
+	  "uninstall" :: "userinstall" ::
+	  "validate" :: "vio2vo" ::
 	    (sds@(CList.map_filter
 		    (fun (n,_,is_phony,_) ->
 		     if is_phony then Some n else None) sps)));
