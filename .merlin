@@ -12,6 +12,8 @@ S kernel/byterun
 B kernel/byterun
 S library
 B library
+S engine
+B engine
 S pretyping
 B pretyping
 S interp

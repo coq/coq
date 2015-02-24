@@ -63,7 +63,7 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 CORESRCDIRS:=\
   config 	lib		kernel		kernel/byterun	library \
   proofs 	tactics 	pretyping	interp		stm \
-  toplevel	parsing	printing	grammar	        intf
+  toplevel	parsing	printing	grammar	        intf	engine
 
 PLUGINS:=\
   omega		romega 		micromega 	quote \
@@ -161,7 +161,7 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 # the libraries directly
 
 CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
-        pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
+        engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma \
 	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma tactics/hightactics.cma
 
@@ -370,7 +370,7 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 OCAMLDOCDIR=dev/ocamldoc
 
 DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
-	./pretyping/*.mli ./interp/*.mli printing/*.mli \
+	./engine/*.mli ./pretyping/*.mli ./interp/*.mli printing/*.mli \
 	./parsing/*.mli ./proofs/*.mli \
 	./tactics/*.mli ./stm/*.mli ./toplevel/*.mli)
 
