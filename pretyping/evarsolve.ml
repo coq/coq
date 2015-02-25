@@ -315,6 +315,7 @@ let expand_vars_in_term env = expand_vars_in_term_using (make_alias_map env)
 
 let free_vars_and_rels_up_alias_expansion aliases c =
   let acc1 = ref Int.Set.empty and acc2 = ref Id.Set.empty in
+  let acc3 = ref Int.Set.empty and acc4 = ref Id.Set.empty in
   let cache_rel = ref Int.Set.empty and cache_var = ref Id.Set.empty in
   let is_in_cache depth = function
     | Rel n -> Int.Set.mem (n-depth) !cache_rel
@@ -329,8 +330,13 @@ let free_vars_and_rels_up_alias_expansion aliases c =
     | Rel _ | Var _ as ck ->
       if is_in_cache depth ck then () else begin
       put_in_cache depth ck;
-      let c = expansion_of_var aliases c in
+      let c' = expansion_of_var aliases c in
+      (if c != c' then (* expansion, hence a let-in *)
         match kind_of_term c with
+        | Var id -> acc4 := Id.Set.add id !acc4
+        | Rel n -> if n >= depth+1 then acc3 := Int.Set.add (n-depth) !acc3
+        | _ -> ());
+      match kind_of_term c' with
         | Var id -> acc2 := Id.Set.add id !acc2
         | Rel n -> if n >= depth+1 then acc1 := Int.Set.add (n-depth) !acc1
         | _ -> frec (aliases,depth) c end
@@ -342,7 +348,7 @@ let free_vars_and_rels_up_alias_expansion aliases c =
           frec (aliases,depth) c
   in
   frec (aliases,0) c;
-  (!acc1,!acc2)
+  (!acc1,!acc2,!acc3,!acc4)
 
 (********************************)
 (* Managing pattern-unification *)
@@ -378,7 +384,7 @@ let get_actual_deps aliases l t =
     l
   else
     (* Probably strong restrictions coming from t being evar-closed *)
-    let (fv_rels,fv_ids) = free_vars_and_rels_up_alias_expansion aliases t in
+    let (fv_rels,fv_ids,_,_) = free_vars_and_rels_up_alias_expansion aliases t in
     List.filter (fun c ->
       match kind_of_term c with
       | Var id -> Id.Set.mem id fv_ids
@@ -1034,12 +1040,23 @@ let rec is_constrainable_in top force env evd k (ev,(fv_rels,fv_ids) as g) t =
   | Sort _ -> true
   | _ -> (* We don't try to be more clever *) not force || noccur_evar env evd ev t
 
-let has_constrainable_free_vars env evd aliases force k ev (fv_rels,fv_ids as fvs) t =
-  let t = expansion_of_var aliases t in
-  match kind_of_term t with
-  | Var id -> Id.Set.mem id fv_ids
-  | Rel n -> n <= k || Int.Set.mem n fv_rels
-  | _ -> is_constrainable_in true force env evd k (ev,fvs) t
+let has_constrainable_free_vars env evd aliases force k ev (fv_rels,fv_ids,let_rels,let_ids) t =
+  let t' = expansion_of_var aliases t in
+  if t' != t then
+    (* t is a local definition, we keep it only if appears in the list *)
+    (* of let-in variables effectively occurring on the right-hand side, *)
+    (* which is the only reason to keep it when inverting arguments *)
+    match kind_of_term t with
+    | Var id -> Id.Set.mem id let_ids
+    | Rel n -> Int.Set.mem n let_rels
+    | _ -> assert false
+  else
+    (* t is an instance for a proper variable; we filter it along *)
+    (* the free variables allowed to occur *)
+    match kind_of_term t with
+    | Var id -> Id.Set.mem id fv_ids
+    | Rel n -> n <= k || Int.Set.mem n fv_rels
+    | _ -> is_constrainable_in true force env evd k (ev,(fv_rels,fv_ids)) t
 
 exception EvarSolvedOnTheFly of evar_map * constr
 
