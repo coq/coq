@@ -178,7 +178,9 @@ let restrict_instance evd evk filter argsv =
   Filter.filter_array (Filter.compose (evar_filter evi) filter) argsv
 
 let noccur_evar env evd evk c =
-  let rec occur_rec k c = match kind_of_term c with
+  let cache = ref Int.Set.empty (* cache for let-ins *) in
+  let rec occur_rec k c =
+  match kind_of_term c with
   | Evar (evk',args' as ev') ->
       (match safe_evar_value evd ev' with
        | Some c -> occur_rec k c
@@ -186,9 +188,10 @@ let noccur_evar env evd evk c =
            if Evar.equal evk evk' then raise Occur
            else Array.iter (occur_rec k) args')
   | Rel i when i > k ->
+      if not (Int.Set.mem (i-k) !cache) then
       (match pi2 (Environ.lookup_rel (i-k) env) with
        | None -> ()
-       | Some b -> occur_rec k (lift i b))
+       | Some b -> cache := Int.Set.add (i-k) !cache; occur_rec k (lift i b))
   | Proj (p,c) -> occur_rec k (Retyping.expand_projection env evd p c [])
   | _ -> iter_constr_with_binders succ occur_rec k c
   in
