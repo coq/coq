@@ -1026,22 +1026,24 @@ exception CannotProject of evar_map * existential
   of subterms to eventually discard so as to be allowed to keep ti.
 *)
 
-let rec is_constrainable_in top force env evd k (ev,(fv_rels,fv_ids) as g) t =
-  let f,args = decompose_app_vect t in
+let rec is_constrainable_in top evd k (ev,(fv_rels,fv_ids) as g) t =
+  let f,args2 = decompose_app_vect t in
+  let f,args1 = decompose_app_vect (whd_evar evd f) in
+  let args = Array.append args1 args2 in
   match kind_of_term f with
   | Construct ((ind,_),u) ->
     let n = Inductiveops.inductive_nparams ind in
     if n > Array.length args then true (* We don't try to be more clever *)
     else
       let params = fst (Array.chop n args) in
-      Array.for_all (is_constrainable_in false force env evd k g) params
-  | Ind _ -> Array.for_all (is_constrainable_in false force env evd k g) args
-  | Prod (na,t1,t2) -> is_constrainable_in false force env evd k g t1 && is_constrainable_in false force (push_rel (na,None,t1) env) evd k g t2
-  | Evar (ev',_) -> top || not (force || Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
+      Array.for_all (is_constrainable_in false evd k g) params
+  | Ind _ -> Array.for_all (is_constrainable_in false evd k g) args
+  | Prod (na,t1,t2) -> is_constrainable_in false evd k g t1 && is_constrainable_in false evd k g t2
+  | Evar (ev',_) -> top || not (Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
   | Var id -> Id.Set.mem id fv_ids
   | Rel n -> n <= k || Int.Set.mem n fv_rels
   | Sort _ -> true
-  | _ -> (* We don't try to be more clever *) not force || noccur_evar env evd ev t
+  | _ -> (* We don't try to be more clever *) true
 
 let has_constrainable_free_vars env evd aliases force k ev (fv_rels,fv_ids,let_rels,let_ids) t =
   let t' = expansion_of_var aliases t in
@@ -1059,7 +1061,7 @@ let has_constrainable_free_vars env evd aliases force k ev (fv_rels,fv_ids,let_r
     match kind_of_term t with
     | Var id -> Id.Set.mem id fv_ids
     | Rel n -> n <= k || Int.Set.mem n fv_rels
-    | _ -> is_constrainable_in true force env evd k (ev,(fv_rels,fv_ids)) t
+    | _ -> (not force || noccur_evar env evd ev t) && is_constrainable_in true evd k (ev,(fv_rels,fv_ids)) t
 
 exception EvarSolvedOnTheFly of evar_map * constr
 
