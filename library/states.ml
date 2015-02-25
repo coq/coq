@@ -12,6 +12,7 @@ open System
 type state = Lib.frozen * Summary.frozen
 
 let summary_of_state = snd
+let replace_summary (lib,_) s = lib, s
 
 let freeze ~marshallable =
   (Lib.freeze ~marshallable, Summary.freeze_summaries ~marshallable)

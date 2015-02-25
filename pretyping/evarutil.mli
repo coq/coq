@@ -243,3 +243,6 @@ val evd_comb2 : (evar_map -> 'b -> 'c -> evar_map * 'a) -> evar_map ref -> 'b ->
 
 val subterm_source : existential_key -> Evar_kinds.t Loc.located ->
   Evar_kinds.t Loc.located
+
+val meta_counter_summary_name : string
+val evar_counter_summary_name : string

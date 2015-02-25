@@ -212,9 +212,11 @@ let whd_head_evar sigma c =
 (* Creating new metas *)
 (**********************)
 
+let meta_counter_summary_name = "meta counter"
+
 (* Generator of metavariables *)
 let new_meta =
-  let meta_ctr = Summary.ref 0 ~name:"meta counter" in
+  let meta_ctr = Summary.ref 0 ~name:meta_counter_summary_name in
   fun () -> incr meta_ctr; !meta_ctr
 
 let mk_new_meta () = mkMeta(new_meta())
@@ -241,9 +243,11 @@ let make_pure_subst evi args =
 (* Creating new evars *)
 (**********************)
 
+let evar_counter_summary_name = "evar counter"
+
 (* Generator of existential names *)
 let new_untyped_evar =
-  let evar_ctr = Summary.ref 0 ~name:"evar counter" in
+  let evar_ctr = Summary.ref 0 ~name:evar_counter_summary_name in
   fun () -> incr evar_ctr; Evar.unsafe_of_int !evar_ctr
 
 (*------------------------------------*
