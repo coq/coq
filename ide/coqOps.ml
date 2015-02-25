@@ -662,10 +662,14 @@ object(self)
       buffer#remove_tag Tags.Script.unjustified ~start ~stop;
       buffer#remove_tag Tags.Script.tooltip ~start ~stop;
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
+      buffer#remove_tag Tags.Script.read_only ~start ~stop;
+      buffer#remove_tag Tags.Script.error ~start ~stop;
+      buffer#remove_tag Tags.Script.error_bg ~start ~stop;
       buffer#move_mark ~where:start (`NAME "start_of_input")
     end;
     List.iter (fun { start } -> buffer#delete_mark start) seg;
-    List.iter (fun { stop } -> buffer#delete_mark stop) seg
+    List.iter (fun { stop } -> buffer#delete_mark stop) seg;
+    self#print_stack
 
   (** Wrapper around the raw undo command *)
   method private backtrack_to_id ?(move_insert=true) (to_id, unfocus_needed) =
