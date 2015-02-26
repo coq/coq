@@ -48,7 +48,8 @@ let usage () =
 
 coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ...
   [file.ml{lib,pack}] ... [-extra[-phony] result dependencies command]
-  ... [-I dir] ... [-R physicalpath logicalpath] ... [VARIABLE = value]
+  ... [-I dir] ... [-R physicalpath logicalpath]
+  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]
   ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]
   [-h] [--help]
 
@@ -767,10 +768,10 @@ let check_overlapping_include (_,inc_i,inc_r) =
     | [] -> ()
     | (pdir,_,abspdir)::l ->
 	if not (is_prefix pwd abspdir) then
-	  Printf.eprintf "Warning: in option -R, %s is not a subdirectory of the current directory\n" pdir;
+	  Printf.eprintf "Warning: in option -R/-Q, %s is not a subdirectory of the current directory\n" pdir;
 	List.iter (fun (pdir',_,abspdir') ->
 	  if is_prefix abspdir abspdir' || is_prefix abspdir' abspdir then
-	    Printf.eprintf "Warning: in options -R, %s and %s overlap\n" pdir pdir') l;
+	    Printf.eprintf "Warning: in options -R/-Q, %s and %s overlap\n" pdir pdir') l;
   in aux (inc_i@inc_r)
 
 let do_makefile args =
