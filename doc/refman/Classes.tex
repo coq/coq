@@ -326,7 +326,8 @@ An arbitrary context of the form {\tt \binder$_1$ \ldots \binder$_n$}
 can be put after the name of the instance and before the colon to
 declare a parameterized instance.
 An optional \textit{priority} can be declared, 0 being the highest
-priority as for auto hints.
+priority as for auto hints. If the priority is not specified, it defaults to
+$n$, the number of binders of the instance.
 
 \begin{Variants}
 \item {\tt Instance {\ident} {\binder$_1$ \ldots \binder$_n$} :
