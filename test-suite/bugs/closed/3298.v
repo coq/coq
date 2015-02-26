@@ -4,8 +4,7 @@ Module JGross.
   Goal forall H : False, match H return Set with end.
   Proof.
     intros.
-    Fail solve [ eauto ]. (* No applicable tactic *)
-    admit.
+    solve [ eauto ].
   Qed.
 End JGross.
 
@@ -17,7 +16,6 @@ Section BenDelaware.
   Qed.
   Goal forall (H : False), match H return Set with end.
   Proof.
-    Fail solve [ eauto ] .
-    admit.
+    solve [ eauto ] .
   Qed.
 End BenDelaware.
