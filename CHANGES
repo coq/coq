@@ -260,6 +260,12 @@ Tactics
     an inductive type with indices is fixed
   - residual local definitions are now correctly removed.
 - The rename tactic may now replace variables in parallel.
+- A new "Info" command replaces the "info" tactical discontinued in
+  v8.4. It still gives informative results in many cases.
+- The "info_auto" tactic is known to be broken and does not print a
+  trace anymore. Use "Info 1 auto" instead. The same goes for
+  "info_trivial". On the other hand "info_eauto" still works fine,
+  while "Info 1 eauto" prints a trivial trace.
 
 Program
 

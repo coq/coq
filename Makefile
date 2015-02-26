@@ -169,7 +169,7 @@ Makefile Makefile.build Makefile.common config/Makefile : ;
 # Cleaning
 ###########################################################################
 
-.PHONY: clean cleankeepvo objclean cruftclean indepclean doclean archclean optclean clean-ide ml4clean ml4depclean depclean cleanconfig distclean voclean devdocclean
+.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean ml4depclean depclean cleanconfig distclean voclean devdocclean
 
 clean: objclean cruftclean depclean docclean devdocclean
 

@@ -48,7 +48,8 @@ let usage () =
 
 coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ...
   [file.ml{lib,pack}] ... [-extra[-phony] result dependencies command]
-  ... [-I dir] ... [-R physicalpath logicalpath] ... [VARIABLE = value]
+  ... [-I dir] ... [-R physicalpath logicalpath]
+  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]
   ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]
   [-h] [--help]
 
@@ -157,7 +158,7 @@ let vars_to_put_by_root var_x_files_l (inc_ml,inc_i,inc_r) =
   |l ->
     try
       let out = List.assoc "." (List.rev_map (fun (p,l,_) -> (p,l)) l) in
-      let () = prerr_string "Warning: install rule assumes that -R/-Q . _ is the only -R/-Q option" in
+      let () = prerr_string "Warning: install rule assumes that -R/-Q . _ is the only -R/-Q option\n" in
       (None,[".",physical_dir_of_logical_dir out,List.rev_map fst var_x_files_l])
     with Not_found ->
       (
@@ -297,7 +298,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
       print "\tprintf 'cd \"$${DSTROOT}\"$(COQDOCINSTALL) && ";
       printf "find %s/%s -maxdepth 0 -and -empty -exec rmdir -p \\{\\} \\;\\n' >> \"$@\"\n" dir kind
     in
-    print "uninstall_me.sh:\n";
+    printf "uninstall_me.sh: %s\n" !makefile_name;
     print "\techo '#!/bin/sh' > $@ \n";
     if (not_empty cmxsfiles) then uninstall_by_root where_what_cmxs;
     uninstall_by_root where_what_oth;
@@ -701,9 +702,12 @@ let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
   main_targets vfiles mlfiles other_targets inc;
     print ".PHONY: ";
     print_list " "
-      ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install" ::
-	  "uninstall_me.sh" :: "uninstall" :: "userinstall" :: "depend" ::
-	  "html" :: "validate" ::
+      ("all" :: "archclean" :: "beautify" :: "byte" :: "clean" ::
+	  "gallina" :: "gallinahtml" :: "html" ::
+	  "install" :: "install-doc" :: "install-natdynlink" :: "install-toploop" ::
+	  "opt" :: "printenv" :: "quick" ::
+	  "uninstall" :: "userinstall" ::
+	  "validate" :: "vio2vo" ::
 	    (sds@(CList.map_filter
 		    (fun (n,_,is_phony,_) ->
 		     if is_phony then Some n else None) sps)));
@@ -764,10 +768,10 @@ let check_overlapping_include (_,inc_i,inc_r) =
     | [] -> ()
     | (pdir,_,abspdir)::l ->
 	if not (is_prefix pwd abspdir) then
-	  Printf.eprintf "Warning: in option -R, %s is not a subdirectory of the current directory\n" pdir;
+	  Printf.eprintf "Warning: in option -R/-Q, %s is not a subdirectory of the current directory\n" pdir;
 	List.iter (fun (pdir',_,abspdir') ->
 	  if is_prefix abspdir abspdir' || is_prefix abspdir' abspdir then
-	    Printf.eprintf "Warning: in options -R, %s and %s overlap\n" pdir pdir') l;
+	    Printf.eprintf "Warning: in options -R/-Q, %s and %s overlap\n" pdir pdir') l;
   in aux (inc_i@inc_r)
 
 let do_makefile args =

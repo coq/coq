@@ -17,6 +17,11 @@ sig
   val equal : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
   (** Lift equality to array type. *)
 
+  val equal_norefl : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
+  (** Like {!equal} but does not assume that equality is reflexive: no
+      optimisation is performed if both arrays are physically the
+      same. *)
+
   val is_empty : 'a array -> bool
   (** True whenever the array is empty. *)
 

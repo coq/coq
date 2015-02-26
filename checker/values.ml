@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 0fbea8efeae581d87d977faa9eb2f421 checker/cic.mli
+MD5 0a174243f8b06535c9eecbbe8d339fe1 checker/cic.mli
 
 *)
 
@@ -270,7 +270,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
 let v_with =
   Sum ("with_declaration_body",0,
        [|[|List v_id;v_mp|];
-         [|List v_id;v_constr|]|])
+         [|List v_id;v_tuple "with_def" [|v_constr;v_context|]|]|])
 
 let rec v_mae =
   Sum ("module_alg_expr",0,

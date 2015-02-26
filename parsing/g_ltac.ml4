@@ -153,8 +153,12 @@ GEXTEND Gram
       | IDENT "type_term"; c=uconstr -> TacPretype c
       | IDENT "numgoals" -> TacNumgoals ] ]
   ;
+  (* If a qualid is given, use its short name. TODO: have the shortest
+     non ambiguous name where dots are replaced by "_"? Probably too
+     verbose most of the time. *)
   fresh_id:
-    [ [ s = STRING -> ArgArg s | id = ident -> ArgVar (!@loc,id) ] ]
+    [ [ s = STRING -> ArgArg s (*| id = ident -> ArgVar (!@loc,id)*)
+	| qid = qualid -> let (_pth,id) = Libnames.repr_qualid (snd qid) in ArgVar (!@loc,id) ] ]
   ;
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->

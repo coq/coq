@@ -21,6 +21,7 @@ val freeze : marshallable:Summary.marshallable -> state
 val unfreeze : state -> unit
 
 val summary_of_state : state -> Summary.frozen
+val replace_summary : state -> Summary.frozen -> state
 
 (** {6 Rollback } *)
 

@@ -23,7 +23,7 @@ open Pp
 open Errors
 open Util
 
-let reference dir s = Coqlib.gen_reference "CC" dir s
+let reference dir s = lazy (Coqlib.gen_reference "CC" dir s)
 
 let _f_equal = reference ["Init";"Logic"] "f_equal"
 let _eq_rect = reference ["Init";"Logic"] "eq_rect"
@@ -91,7 +91,7 @@ let atom_of_constr env sigma term =
   let kot = kind_of_term wh in
     match kot with
       App (f,args)->
-	if is_global _eq f && Int.equal (Array.length args) 3
+	if is_global (Lazy.force _eq) f && Int.equal (Array.length args) 3
 	  then `Eq (args.(0),
 		   decompose_term env sigma args.(1),
 		   decompose_term env sigma args.(2))
@@ -126,7 +126,7 @@ let non_trivial = function
 let patterns_of_constr env sigma nrels term=
   let f,args=
     try destApp (whd_delta env term) with DestKO -> raise Not_found in
-	if is_global _eq f && Int.equal (Array.length args) 3
+	if is_global (Lazy.force _eq) f && Int.equal (Array.length args) 3
 	then
 	  let patt1,rels1 = pattern_of_constr env sigma args.(1)
 	  and patt2,rels2 = pattern_of_constr env sigma args.(2) in
@@ -147,7 +147,7 @@ let patterns_of_constr env sigma nrels term=
 let rec quantified_atom_of_constr env sigma nrels term =
   match kind_of_term (whd_delta env term) with
       Prod (id,atom,ff) -> 
-	if is_global _False ff then
+	if is_global (Lazy.force _False) ff then
 	  let patts=patterns_of_constr env sigma nrels atom in
 	      `Nrule patts
 	else 
@@ -159,7 +159,7 @@ let rec quantified_atom_of_constr env sigma nrels term =
 let litteral_of_constr env sigma term=
   match kind_of_term (whd_delta env term) with
     | Prod (id,atom,ff) -> 
-	if is_global _False ff then
+	if is_global (Lazy.force _False) ff then
 	  match (atom_of_constr env sigma atom) with
 	      `Eq(t,a,b) -> `Neq(t,a,b)
 	    | `Other(p) -> `Nother(p)
@@ -246,10 +246,10 @@ let build_projection intype outtype (cstr:pconstructor) special default gls=
 let _M =mkMeta
 
 let app_global f args k = 
-  Tacticals.pf_constr_of_global f (fun fc -> k (mkApp (fc, args)))
+  Tacticals.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (fc, args)))
 
 let new_app_global f args k = 
-  Tacticals.New.pf_constr_of_global f (fun fc -> k (mkApp (fc, args)))
+  Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc -> k (mkApp (fc, args)))
 
 let new_refine c = Proofview.V82.tactic (refine c)
 
@@ -375,9 +375,9 @@ let discriminate_tac (cstr,u as cstru) p =
     let xid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) gl in
     (* let tid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "t")) gl in *)
     (* let identity=mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in *)
-    let identity = Universes.constr_of_global _I in
+    let identity = Universes.constr_of_global (Lazy.force _I) in
     (* let trivial=pf_type_of gls identity in *)
-    let trivial = Universes.constr_of_global _True in
+    let trivial = Universes.constr_of_global (Lazy.force _True) in
     let evm, outtype = Evd.new_sort_variable Evd.univ_flexible (Proofview.Goal.sigma gl) in 
     let outtype = mkSort outtype in
     let pred=mkLambda(Name xid,outtype,mkRel 1) in
@@ -493,7 +493,7 @@ let f_equal =
     in
     Proofview.tclORELSE
       begin match kind_of_term concl with
-      | App (r,[|_;t;t'|]) when Globnames.is_global _eq r ->
+      | App (r,[|_;t;t'|]) when Globnames.is_global (Lazy.force _eq) r ->
 	  begin match kind_of_term t, kind_of_term t' with
 	  | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
 	      let rec cuts i =

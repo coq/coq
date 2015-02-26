@@ -882,7 +882,7 @@ let msg_quantified_hypothesis = function
   | NamedHyp id ->
       str "quantified hypothesis named " ++ pr_id id
   | AnonHyp n ->
-      int n ++ str (match n with 1 -> "st" | 2 -> "nd" | _ -> "th") ++
+      pr_nth n ++
       str " non dependent hypothesis"
 
 let depth_of_quantified_hypothesis red h gl =

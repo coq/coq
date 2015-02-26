@@ -203,6 +203,14 @@ val kind : constr -> (constr, types) kind_of_term
    and application grouping *)
 val equal : constr -> constr -> bool
 
+(** [equal_with_evars k1 k2 a b] is true when [a] equals [b] modulo
+    alpha, casts, application grouping, and using [k1] to expose the
+    head of [a] and [k2] to expose the head of [b]. *)
+val equal_with :
+  (constr -> (constr,types) kind_of_term) ->
+  (constr -> (constr,types) kind_of_term) ->
+  constr -> constr -> bool
+
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
 val eq_constr_univs : constr Univ.check_function
@@ -285,15 +293,14 @@ val compare_head_gen : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
   (constr -> constr -> bool) ->
   constr -> constr -> bool
 
-(** [compare_head_gen_leq u s sle f fle c1 c2] compare [c1] and [c2]
-    using [f] to compare the immediate subterms of [c1] of [c2] for
+(** [compare_head_gen_leq u s f fle c1 c2] compare [c1] and [c2] using
+    [f] to compare the immediate subterms of [c1] of [c2] for
     conversion, [fle] for cumulativity, [u] to compare universe
     instances (the first boolean tells if they belong to a constant),
-    [s] to compare sorts for equality and [sle] for subtyping; Cast's,
-    binders name and Cases annotations are not taken into account *)
+    [s] to compare sorts for for subtyping; Cast's, binders name and
+    Cases annotations are not taken into account *)
 
 val compare_head_gen_leq : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
-  (Sorts.t -> Sorts.t -> bool) ->
   (Sorts.t -> Sorts.t -> bool) ->
   (constr -> constr -> bool) ->
   (constr -> constr -> bool) ->

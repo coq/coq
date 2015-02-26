@@ -165,7 +165,7 @@ let leq_constr_univs_infer univs m n =
       m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
     let rec compare_leq m n =
-      Constr.compare_head_gen_leq eq_universes eq_sorts leq_sorts 
+      Constr.compare_head_gen_leq eq_universes leq_sorts 
 	eq_constr' leq_constr' m n
     and leq_constr' m n = m == n || compare_leq m n in
     let res = compare_leq m n in
@@ -213,7 +213,7 @@ let leq_constr_universes m n =
       m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
     let rec compare_leq m n =
-      Constr.compare_head_gen_leq eq_universes eq_sorts leq_sorts eq_constr' leq_constr' m n
+      Constr.compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' m n
     and leq_constr' m n = m == n || compare_leq m n in
     let res = compare_leq m n in
       res, !cstrs

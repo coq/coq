@@ -13,6 +13,7 @@ sig
   include S
   val compare : ('a -> 'a -> int) -> 'a array -> 'a array -> int
   val equal : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
+  val equal_norefl : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
   val is_empty : 'a array -> bool
   val exists : ('a -> bool) -> 'a array -> bool
   val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
@@ -85,19 +86,22 @@ let compare cmp v1 v2 =
       in
       loop (len - 1)
 
+let equal_norefl cmp t1 t2 =
+  let len = Array.length t1 in
+  if not (Int.equal len (Array.length t2)) then false
+  else
+    let rec aux i =
+      if i < 0 then true
+      else
+        let x = uget t1 i in
+        let y = uget t2 i in
+        cmp x y && aux (pred i)
+    in
+    aux (len - 1)
+
 let equal cmp t1 t2 =
-  if t1 == t2 then true else
-    let len = Array.length t1 in
-    if not (Int.equal len (Array.length t2)) then false
-    else
-      let rec aux i =
-        if i < 0 then true
-        else
-          let x = uget t1 i in
-          let y = uget t2 i in
-          cmp x y && aux (pred i)
-      in
-      aux (len - 1)
+  if t1 == t2 then true else equal_norefl cmp t1 t2
+    
 
 let is_empty array = Int.equal (Array.length array) 0
 

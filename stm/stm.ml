@@ -161,6 +161,11 @@ type step =
   | `Alias  of alias_t ]
 type visit = { step : step; next : Stateid.t }
 
+
+(* Parts of the system state that are morally part of the proof state *)
+let summary_pstate = [ Evarutil.meta_counter_summary_name;
+                       Evarutil.evar_counter_summary_name;
+                       "program-tcc-table" ]
 type state = {
   system : States.state;
   proof : Proof_global.state;
@@ -594,9 +599,12 @@ module State : sig
   type frozen_state
   val get_cached : Stateid.t -> frozen_state
   val same_env : frozen_state -> frozen_state -> bool
+
+  type proof_part
   type partial_state =
-    [ `Full of frozen_state | `Proof of Stateid.t * Proof_global.state ]
-  val proof_part_of_frozen : frozen_state -> Proof_global.state
+    [ `Full of frozen_state
+    | `Proof of Stateid.t * proof_part ]
+  val proof_part_of_frozen : frozen_state -> proof_part
   val assign : Stateid.t -> partial_state -> unit
 
 end = struct (* {{{ *)
@@ -620,9 +628,14 @@ end = struct (* {{{ *)
     (fun t -> let s,i = out_t t in unfreeze_global_state s; cur_id := i)
   
   type frozen_state = state
+  type proof_part =
+    Proof_global.state * Summary.frozen_bits (* only meta counters *)
   type partial_state =
-    [ `Full of frozen_state | `Proof of Stateid.t * Proof_global.state ]
-  let proof_part_of_frozen { proof } = proof
+    [ `Full of frozen_state
+    | `Proof of Stateid.t * proof_part ]
+  let proof_part_of_frozen { proof; system } =
+    proof,
+    Summary.project_summary (States.summary_of_state system) summary_pstate
 
   let freeze marhallable id = VCS.set_state id (freeze_global_state marhallable)
 
@@ -657,9 +670,16 @@ end = struct (* {{{ *)
     if VCS.get_state id <> None then () else
     try match what with
     | `Full s -> VCS.set_state id s
-    | `Proof(ontop,p) ->
-         if is_cached ontop then (
-           VCS.set_state id { (get_cached ontop) with proof = p })
+    | `Proof(ontop,(pstate,counters)) ->
+         if is_cached ontop then
+           let s = get_cached ontop in
+           let s = { s with proof = pstate } in
+           let s = { s with system =
+             States.replace_summary s.system
+               (Summary.surgery_summary
+                 (States.summary_of_state s.system)
+               counters) } in
+           VCS.set_state id s
     with VCS.Expired -> ()
 
   let exn_on id ?valid (e, info) =
@@ -1555,7 +1575,7 @@ and Reach : sig
 
 end = struct (* {{{ *)
 
-let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
+let pstate = summary_pstate
 
 let async_policy () =
   let open Flags in
