@@ -125,6 +125,14 @@ let unify_e_resolve poly flags (c,clenv) gls =
     tclTHEN (Refiner.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
       (Proofview.V82.of_tactic (Tactics.Simple.eapply (Vars.subst_univs_level_constr subst c))) gls
 
+let hintmap_of hdc concl =
+  match hdc with
+  | None -> fun db -> Hint_db.map_none db
+  | Some hdc ->
+    if occur_existential concl then (fun db -> Hint_db.map_existential hdc concl db)
+    else (fun db -> Hint_db.map_auto hdc concl db)
+   (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
+
 let e_exact poly flags (c,clenv) =
   let clenv', subst = 
     if poly then Clenv.refresh_undefined_univs clenv 
@@ -145,16 +153,11 @@ let rec e_trivial_fail_db db_list local_db goal =
     tclFIRST (List.map tclCOMPLETE tacl) goal
 
 and e_my_find_search db_list local_db hdc concl =
+  let hint_of_db = hintmap_of hdc concl in
   let hintl =
-    if occur_existential concl then
       List.map_append (fun db ->
 	let flags = auto_flags_of_state (Hint_db.transparent_state db) in
-	  List.map (fun x -> flags, x) (Hint_db.map_existential hdc concl db)
-   (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)) (local_db::db_list)
-    else
-      List.map_append (fun db ->
-	let flags = auto_flags_of_state (Hint_db.transparent_state db) in
-	  List.map (fun x -> flags, x) (Hint_db.map_auto hdc concl db)) (local_db::db_list)
+	  List.map (fun x -> flags, x) (hint_of_db db)) (local_db::db_list)
   in
   let tac_of_hint =
     fun (st, {pri = b; pat = p; code = t; poly = poly}) ->
@@ -175,17 +178,14 @@ and e_my_find_search db_list local_db hdc concl =
   List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db gl =
-  try
-    priority
-      (e_my_find_search db_list local_db
-	 (decompose_app_bound gl) gl)
-  with Bound | Not_found -> []
+  let hd = try Some (decompose_app_bound gl) with Bound -> None in
+  try priority (e_my_find_search db_list local_db hd gl)
+  with Not_found -> []
 
 let e_possible_resolve db_list local_db gl =
-  try List.map snd
-    (e_my_find_search db_list local_db
-	(decompose_app_bound gl) gl)
-  with Bound | Not_found -> []
+  let hd = try Some (decompose_app_bound gl) with Bound -> None in
+  try List.map snd (e_my_find_search db_list local_db hd gl)
+  with Not_found -> []
 
 let find_first_goal gls =
   try first_goal gls with UserError _ -> assert false
