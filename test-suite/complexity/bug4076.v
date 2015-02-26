@@ -8,7 +8,7 @@ Unset Strict Implicit.
 Parameter f : forall P, forall (i : nat), P i -> P i.
 Parameter P : nat -> Type.
 
-Definition g (n : nat) (a0 : P n) : P n :=
+Time Definition g (n : nat) (a0 : P n) : P n :=
   let a1  := f a0 in
   let a2  := f a1 in
   let a3  := f a2 in
