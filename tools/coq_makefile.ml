@@ -158,7 +158,7 @@ let vars_to_put_by_root var_x_files_l (inc_ml,inc_i,inc_r) =
   |l ->
     try
       let out = List.assoc "." (List.rev_map (fun (p,l,_) -> (p,l)) l) in
-      let () = prerr_string "Warning: install rule assumes that -R/-Q . _ is the only -R/-Q option" in
+      let () = prerr_string "Warning: install rule assumes that -R/-Q . _ is the only -R/-Q option\n" in
       (None,[".",physical_dir_of_logical_dir out,List.rev_map fst var_x_files_l])
     with Not_found ->
       (
