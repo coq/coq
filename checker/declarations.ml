@@ -583,7 +583,7 @@ let implem_map fs fa = function
 
 let subst_with_body sub = function
   | WithMod(id,mp) -> WithMod(id,subst_mp sub mp)
-  | WithDef(id,c) -> WithDef(id,subst_mps sub c)
+  | WithDef(id,(c,ctx)) -> WithDef(id,(subst_mps sub c,ctx))
 
 let rec subst_expr sub = function
   | MEident mp -> MEident (subst_mp sub mp)
