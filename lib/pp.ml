@@ -517,8 +517,17 @@ let pr_arg pr x = spc () ++ pr x
 let pr_opt pr = function None -> mt () | Some x -> pr_arg pr x
 let pr_opt_no_spc pr = function None -> mt () | Some x -> pr x
 
+(** TODO: merge with CString.ordinal *)
 let pr_nth n =
-  int n ++ str (match n mod 10 with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th")
+  let s =
+    if (n / 10) mod 10 = 1 then "th"
+    else match n mod 10 with
+    | 1 -> "st"
+    | 2 -> "nd"
+    | 3 -> "rd"
+    | _ -> "th"
+  in
+  int n ++ str s
 
 (* [prlist pr [a ; ... ; c]] outputs [pr a ++ ... ++ pr c] *)
 
