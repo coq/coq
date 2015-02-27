@@ -1122,11 +1122,18 @@ let enforce_prop_bound_names rename tac =
   | _ ->
       tac
 
+let rec contract_letin_in_lam_header c =
+  match kind_of_term c with
+  | Lambda (x,t,c)  -> mkLambda (x,t,contract_letin_in_lam_header c)
+  | LetIn (x,b,t,c) -> contract_letin_in_lam_header (subst1 b c)
+  | _ -> c
+
 let elimination_clause_scheme with_evars ?(with_classes=true) ?(flags=elim_flags ()) 
     rename i (elim, elimty, bindings) indclause =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
+  let elim = contract_letin_in_lam_header elim in
   let elimclause = make_clenv_binding env sigma (elim, elimty) bindings in
   let indmv =
     (match kind_of_term (nth_arg i elimclause.templval.rebus) with
@@ -1280,6 +1287,7 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags ())
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
+  let elim = contract_letin_in_lam_header elim in
   let elimclause = make_clenv_binding env sigma (elim, elimty) bindings in
   let indmv = destMeta (nth_arg i elimclause.templval.rebus) in
   let hypmv =
@@ -3656,6 +3664,7 @@ let induction_tac with_evars params indvars elim gl =
   let ({elimindex=i;elimbody=(elimc,lbindelimc);elimrename=rename},elimt) = elim in
   let i = match i with None -> index_of_ind_arg elimt | Some i -> i in
   (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
+  let elimc = contract_letin_in_lam_header elimc in
   let elimc = mkCast (elimc, DEFAULTcast, elimt) in
   let elimclause =
     pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
