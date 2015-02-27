@@ -64,7 +64,10 @@ module ReductionBehaviour = struct
         if Lib.is_in_section (ConstRef c) then
           let vars, _, _ = Lib.section_segment_of_constant c in
           let extra = List.length vars in
-          let nargs' = if b.b_nargs < 0 then b.b_nargs else b.b_nargs + extra in
+          let nargs' =
+             if b.b_nargs = max_int then max_int
+             else if b.b_nargs < 0 then b.b_nargs
+             else b.b_nargs + extra in
           let recargs' = List.map ((+) extra) b.b_recargs in
           { b with b_nargs = nargs'; b_recargs = recargs' }
         else b
