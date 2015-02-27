@@ -18,4 +18,4 @@ Proof.
   refine (functor_forall
             (f^-1)
             (fun (x:A) (y:Q (f^-1 x)) => eisretr f x # (g (f^-1 x))^-1 y)).
-Defined. (* Error: Attempt to save an incomplete proof *)
+Fail Defined. (* Error: Attempt to save an incomplete proof *)
