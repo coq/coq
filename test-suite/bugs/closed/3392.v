@@ -24,9 +24,8 @@ Proof.
   intros.
   refine (isequiv_adjointify (functor_forall f g)
                              (functor_forall (f^-1)
-                                             (fun (x:A) (y:Q (f^-1 x)) => @eisretr _ _ f _ x # (g (f^-1 x))^-1 y
-                             )) _ _); 
-  intros h.
+                                             (fun (x:A) (y:Q (f^-1 x)) => @eisretr _ _ f H x # (g (f^-1 x))^-1 y
+                             )) _ _); intros h.
   - abstract (
         apply path_forall; intros b; unfold functor_forall;
         rewrite eisadj;

@@ -273,7 +273,7 @@ let projection_nparams p = projection_nparams_env (Global.env ()) p
 let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let ind_tags =
-    rel_context_tags (List.firstn mip.mind_nrealargs mip.mind_arity_ctxt) in
+    rel_context_tags (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) in
   let cstr_tags =
     Array.map2 (fun c n ->
       let d,_ = decompose_prod_assum c in
@@ -526,7 +526,7 @@ let type_case_branches_with_names env indspec p c =
   let (params,realargs) = List.chop nparams args in
   let lbrty = Inductive.build_branches_type ind specif params p in
   (* Build case type *)
-  let conclty = Reduction.beta_appvect p (Array.of_list (realargs@[c])) in
+  let conclty = Reduction.betazeta_appvect (mip.mind_nrealdecls+1) p (Array.of_list (realargs@[c])) in
   (* Adjust names *)
   if is_elim_predicate_explicitly_dependent env p (ind,params) then
     (set_pattern_names env (fst ind) lbrty, conclty)

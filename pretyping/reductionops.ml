@@ -64,7 +64,10 @@ module ReductionBehaviour = struct
         if Lib.is_in_section (ConstRef c) then
           let vars, _, _ = Lib.section_segment_of_constant c in
           let extra = List.length vars in
-          let nargs' = if b.b_nargs < 0 then b.b_nargs else b.b_nargs + extra in
+          let nargs' =
+             if b.b_nargs = max_int then max_int
+             else if b.b_nargs < 0 then b.b_nargs
+             else b.b_nargs + extra in
           let recargs' = List.map ((+) extra) b.b_recargs in
           { b with b_nargs = nargs'; b_recargs = recargs' }
         else b
@@ -1628,3 +1631,16 @@ let head_unfold_under_prod ts env _ c =
 	    | Const cst -> beta_applist (unfold cst,l)
 	    | _ -> c in
   aux c
+
+let betazetaevar_applist sigma n c l =
+  let rec stacklam n env t stack =
+    if Int.equal n 0 then applist (substl env t, stack) else
+    match kind_of_term t, stack with
+    | Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
+    | LetIn(_,b,_,c), _ -> stacklam (n-1) (b::env) c stack
+    | Evar ev, _ ->
+      (match safe_evar_value sigma ev with
+      | Some body -> stacklam n env body stack
+      | None -> applist (substl env t, stack))
+    | _ -> anomaly (Pp.str "Not enough lambda/let's") in
+  stacklam n [] c l

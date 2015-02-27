@@ -48,12 +48,10 @@ let error_tactic_expected loc =
 type glob_sign = Genintern.glob_sign = {
   ltacvars : Id.Set.t;
      (* ltac variables and the subset of vars introduced by Intro/Let/... *)
-  ltacrecvars : ltac_constant Id.Map.t;
-     (* ltac recursive names *)
   genv : Environ.env }
 
 let fully_empty_glob_sign =
-  { ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty; genv = Environ.empty_env }
+  { ltacvars = Id.Set.empty; genv = Environ.empty_env }
 
 let make_empty_glob_sign () =
   { fully_empty_glob_sign with genv = Global.env () }
@@ -63,8 +61,6 @@ let make_empty_glob_sign () =
 let find_ident id ist =
   Id.Set.mem id ist.ltacvars ||
   Id.List.mem id (ids_of_named_context (Environ.named_context ist.genv))
-
-let find_recvar qid ist = Id.Map.find qid ist.ltacrecvars
 
 (* a "var" is a ltac var or a var introduced by an intro tactic *)
 let find_var id ist = Id.Set.mem id ist.ltacvars
@@ -116,9 +112,7 @@ let intern_ltac_variable ist = function
       if find_var id ist then
 	(* A local variable of any type *)
 	ArgVar (loc,id)
-      else
-      (* A recursive variable *)
-      ArgArg (loc,find_recvar id ist)
+      else raise Not_found
   | _ ->
       raise Not_found
 
@@ -801,7 +795,7 @@ let glob_tactic_env l env x =
     List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
   Flags.with_option strict_check
   (intern_pure_tactic
-    { ltacvars; ltacrecvars = Id.Map.empty; genv = env })
+    { ltacvars; genv = env })
     x
 
 let split_ltac_fun = function

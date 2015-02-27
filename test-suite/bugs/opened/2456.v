@@ -46,7 +46,7 @@ Lemma CatchCommuteUnique2 :
 Proof with auto.
 intros.
 set (X := commute2).
-dependent destruction commute1;
+Fail dependent destruction commute1;
 dependent destruction catchCommuteDetails;
 dependent destruction commute2;
 dependent destruction catchCommuteDetails generalizing X.

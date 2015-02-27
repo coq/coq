@@ -1454,7 +1454,7 @@ let do_instr raw_instr pts =
             let { it=gls ; sigma=sigma; } = Proof.V82.subgoals pts in
       let gl = { it=List.hd gls ; sigma=sigma; } in
       let env=  pf_env gl in
-      let ist = {ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty; genv = env} in
+      let ist = {ltacvars = Id.Set.empty; genv = env} in
       let glob_instr = intern_proof_instr ist raw_instr in
       let instr =
 	interp_proof_instr (get_its_info gl) env sigma glob_instr in
