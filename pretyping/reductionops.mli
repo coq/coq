@@ -278,6 +278,7 @@ val whd_meta : evar_map -> constr -> constr
 val plain_instance : constr Metamap.t -> constr -> constr
 val instance : evar_map -> constr Metamap.t -> constr -> constr
 val head_unfold_under_prod : transparent_state -> reduction_function
+val betazetaevar_applist : evar_map -> int -> constr -> constr list -> constr
 
 (** {6 Heuristic for Conversion with Evar } *)
 

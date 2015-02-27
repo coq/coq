@@ -364,7 +364,7 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
       let cstr = ith_constructor_of_inductive ind (i+1) in
       let dep_cstr = applist (mkConstructU (cstr,u),lparams@(local_rels args)) in
       vargs @ [dep_cstr] in
-    let base = beta_appvect (lift nargs p) (Array.of_list cargs) in
+    let base = betazeta_appvect mip.mind_nrealdecls (lift nargs p) (Array.of_list cargs) in
     it_mkProd_or_LetIn base args in
   Array.mapi build_one_branch mip.mind_nf_lc
 
