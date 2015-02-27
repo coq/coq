@@ -321,7 +321,7 @@ let make_makefile sds =
   end
 
 let clean sds sps =
-  print "clean:\n";
+  print "clean::\n";
   if !some_mlfile || !some_mlifile || !some_ml4file || !some_mllibfile || !some_mlpackfile then begin
     print "\trm -f $(ALLCMOFILES) $(CMIFILES) $(CMAFILES)\n";
     print "\trm -f $(ALLCMOFILES:.cmo=.cmx) $(CMXAFILES) $(CMXSFILES) $(ALLCMOFILES:.cmo=.o) $(CMXAFILES:.cmxa=.a)\n";
@@ -343,7 +343,7 @@ let clean sds sps =
     (fun x -> print "\t+cd "; print x; print " && $(MAKE) clean\n")
     sds;
   print "\n";
-  print "archclean:\n";
+  print "archclean::\n";
   print "\trm -f *.cmx *.o\n";
   List.iter
     (fun x -> print "\t+cd "; print x; print " && $(MAKE) archclean\n")
