@@ -1067,7 +1067,7 @@ end = struct (* {{{ *)
       ignore(Future.join checked_proof);
       RespBuiltProof(proof,time)
     with
-    | e when Errors.noncritical e ->
+    | e when Errors.noncritical e || e = Stack_overflow ->
         let (e, info) = Errors.push e in
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
