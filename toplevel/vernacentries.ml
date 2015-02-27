@@ -976,7 +976,7 @@ let register_ltac local isrec tacl =
   let defs () =
     (** Register locally the tactic to handle recursivity. This function affects
         the whole environment, so that we transactify it afterwards. *)
-    let iter_rec (sp, kn) = Nametab.push_tactic (Until 1) sp kn in
+    let iter_rec (sp, kn) = Nametab.push_tactic (Nametab.Until 1) sp kn in
     let () = List.iter iter_rec recvars in
     List.map map rfun
   in
