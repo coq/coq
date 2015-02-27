@@ -960,20 +960,27 @@ let register_ltac local isrec tacl =
     (name, body)
   in
   let rfun = List.map map tacl in
-  let ltacrecvars =
+  let recvars =
     let fold accu (op, _) = match op with
     | UpdateTac _ -> accu
-    | NewTac id -> Id.Map.add id (Lib.make_kn id) accu
+    | NewTac id -> (Lib.make_path id, Lib.make_kn id) :: accu
     in
-    if isrec then List.fold_left fold Id.Map.empty rfun
-    else Id.Map.empty
+    if isrec then List.fold_left fold [] rfun
+    else []
   in
-  let ist = { (Tacintern.make_empty_glob_sign ()) with Genintern.ltacrecvars; } in
+  let ist = Tacintern.make_empty_glob_sign () in
   let map (name, body) =
     let body = Flags.with_option Tacintern.strict_check (Tacintern.intern_tactic_or_tacarg ist) body in
     (name, body)
   in
-  let defs = List.map map rfun in
+  let defs () =
+    (** Register locally the tactic to handle recursivity. This function affects
+        the whole environment, so that we transactify it afterwards. *)
+    let iter_rec (sp, kn) = Nametab.push_tactic (Until 1) sp kn in
+    let () = List.iter iter_rec recvars in
+    List.map map rfun
+  in
+  let defs = Future.transactify defs () in
   let iter (def, tac) = match def with
   | NewTac id ->
     Tacenv.register_ltac false local id tac;
