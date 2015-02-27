@@ -273,7 +273,7 @@ let projection_nparams p = projection_nparams_env (Global.env ()) p
 let make_case_info env ind style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let ind_tags =
-    rel_context_tags (List.firstn mip.mind_nrealargs mip.mind_arity_ctxt) in
+    rel_context_tags (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) in
   let cstr_tags =
     Array.map2 (fun c n ->
       let d,_ = decompose_prod_assum c in
