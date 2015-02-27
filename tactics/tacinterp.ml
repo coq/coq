@@ -2251,8 +2251,7 @@ let interp_tac_gen lfun avoid_ids debug t =
   let ltacvars = Id.Map.domain lfun in
   interp_tactic ist
     (intern_pure_tactic {
-      ltacvars; ltacrecvars = Id.Map.empty;
-      genv = env } t)
+      ltacvars; genv = env } t)
   end
 
 let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
@@ -2262,8 +2261,7 @@ let _ = Proof_global.set_interp_tac interp
 (* [global] means that [t] should be internalized outside of goals. *)
 let hide_interp global t ot =
   let hide_interp env =
-    let ist = { ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty;
-                genv = env } in
+    let ist = { ltacvars = Id.Set.empty; genv = env } in
     let te = intern_pure_tactic ist t in
     let t = eval_tactic te in
     match ot with

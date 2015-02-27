@@ -12,7 +12,6 @@ open Genarg
 
 type glob_sign = {
   ltacvars : Id.Set.t;
-  ltacrecvars : Nametab.ltac_constant Id.Map.t;
   genv : Environ.env }
 
 type ('raw, 'glb) intern_fun = glob_sign -> 'raw -> glob_sign * 'glb
