@@ -83,10 +83,13 @@ Specification Language
 - Added a syntax $(...)$ that allows putting tactics in terms (may
   break user notations using "$(", fixable by inserting a space or
   rewriting the notation).
-- Constants in pattern-matching branches now respect the same rules regarding
-  implicit arguments than in applicative position. The old behavior can be
-  recovered by the command "Set Asymmetric Patterns". (possible source of
-  incompatibilities)
+- Constructors in pattern-matching patterns now respect the same rules
+  regarding implicit arguments than in applicative position. The old
+  behavior can be recovered by the command "Set Asymmetric
+  Patterns". As a side effect, Much more notations can be used in
+  patterns. Considering that the pattern language is rich enough like
+  that, definitions are now always forbidden in patterns. (source of
+  incompatibilities for definitions that delta-reduce to a constructor)
 - Type inference algorithm now granting opacity of constants. This might also
   affect behavior of tactics (source of incompatibilities, solvable by
   re-declaring transparent constants which were set opaque).
