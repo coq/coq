@@ -189,7 +189,7 @@ let noccur_evar env evd evk c =
            else Array.iter (occur_rec acc) args')
   | Rel i when i > k ->
       if not (Int.Set.mem (i-k) !cache) then
-      (match pi2 (Environ.lookup_rel (i-k) env) with
+      (match pi2 (Environ.lookup_rel i env) with
        | None -> ()
        | Some b -> cache := Int.Set.add (i-k) !cache; occur_rec acc (lift i b))
   | Proj (p,c) -> occur_rec acc (Retyping.expand_projection env evd p c [])
