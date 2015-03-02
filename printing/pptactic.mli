@@ -16,6 +16,7 @@ open Constrexpr
 open Tacexpr
 open Ppextend
 
+
 type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) ->
     (constr_expr -> std_ppcmds) ->
@@ -60,3 +61,4 @@ include Pptacticsig.Pp
     located in {!Ppannotation.t}. *)
 module Richpp : Pptacticsig.Pp
 
+val ltop : tolerability

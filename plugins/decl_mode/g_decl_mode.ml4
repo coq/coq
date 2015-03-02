@@ -19,6 +19,7 @@ open Tok (* necessary for camlp4 *)
 
 open Pcoq.Constr
 open Pcoq.Tactic
+open Ppdecl_proof
 
 let pr_goal gs =
   let (g,sigma) = Goal.V82.nf_evar (Tacmach.project gs) (Evd.sig_it gs) in
@@ -42,15 +43,6 @@ let pr_open_subgoals () =
   let close_cmd = Decl_mode.get_end_command p in
   pr_subgoals close_cmd sigma goals
 *)
-
-let pr_raw_proof_instr _ _ _ instr =
-  Errors.anomaly (Pp.str "Cannot print a proof_instr")
-    (* arnaud: Il nous faut quelque chose de type extr_genarg_printer si on veut aller
-                     dans cette direction
-       Ppdecl_proof.pr_proof_instr (Global.env()) instr
-    *)
-let pr_proof_instr _ _ _ instr = Empty.abort instr
-let pr_glob_proof_instr _ _ _ instr = Empty.abort instr
 
 let interp_proof_instr _ { Evd.it = gl ; sigma = sigma }=
   Decl_interp.interp_proof_instr 
@@ -87,7 +79,7 @@ let vernac_proof_instr instr =
 (* spiwack: proposal: doing that directly from argextend.ml4, maybe ? *)
 
 (* Only declared at raw level, because only used in vernac commands. *)
-let wit_proof_instr : (raw_proof_instr, Empty.t, Empty.t) Genarg.genarg_type =
+let wit_proof_instr : (raw_proof_instr, glob_proof_instr, proof_instr) Genarg.genarg_type =
   Genarg.make0 None "proof_instr"
 
 (* We create a new parser entry [proof_mode]. The Declarative proof mode
