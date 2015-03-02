@@ -46,23 +46,23 @@ type ('constr,'tac) casee =
     Real of 'constr
   | Virtual of ('constr statement,'constr,'tac) cut
 
-type ('hyp,'constr,'pat,'tac) bare_proof_instr =
-  | Pthen of ('hyp,'constr,'pat,'tac) bare_proof_instr
-  | Pthus of ('hyp,'constr,'pat,'tac) bare_proof_instr
-  | Phence of ('hyp,'constr,'pat,'tac) bare_proof_instr
+type ('var,'constr,'pat,'tac) bare_proof_instr =
+  | Pthen of ('var,'constr,'pat,'tac) bare_proof_instr
+  | Pthus of ('var,'constr,'pat,'tac) bare_proof_instr
+  | Phence of ('var,'constr,'pat,'tac) bare_proof_instr
   | Pcut of ('constr or_thesis statement,'constr,'tac) cut
   | Prew of side * ('constr statement,'constr,'tac) cut
-  | Psuffices of ((('hyp,'constr) hyp list * 'constr or_thesis),'constr,'tac) cut
-  | Passume of ('hyp,'constr) hyp list
-  | Plet of ('hyp,'constr) hyp list
-  | Pgiven of ('hyp,'constr) hyp list
-  | Pconsider of 'constr*('hyp,'constr) hyp list
+  | Psuffices of ((('var,'constr) hyp list * 'constr or_thesis),'constr,'tac) cut
+  | Passume of ('var,'constr) hyp list
+  | Plet of ('var,'constr) hyp list
+  | Pgiven of ('var,'constr) hyp list
+  | Pconsider of 'constr*('var,'constr) hyp list
   | Pclaim of 'constr statement
   | Pfocus of 'constr statement
-  | Pdefine of Id.t * 'hyp list * 'constr
+  | Pdefine of Id.t * 'var list * 'constr
   | Pcast of Id.t or_thesis * 'constr
-  | Psuppose of ('hyp,'constr) hyp list
-  | Pcase of 'hyp list*'pat*(('hyp,'constr or_thesis) hyp list)
+  | Psuppose of ('var,'constr) hyp list
+  | Pcase of 'var list*'pat*(('var,'constr or_thesis) hyp list)
   | Ptake of 'constr list
   | Pper of elim_type * ('constr,'tac) casee
   | Pend of block_type
@@ -70,19 +70,19 @@ type ('hyp,'constr,'pat,'tac) bare_proof_instr =
 
 type emphasis = int
 
-type ('hyp,'constr,'pat,'tac) gen_proof_instr=
+type ('var,'constr,'pat,'tac) gen_proof_instr=
     {emph: emphasis;
-     instr: ('hyp,'constr,'pat,'tac) bare_proof_instr }
+     instr: ('var,'constr,'pat,'tac) bare_proof_instr }
 
 
 type raw_proof_instr =
-    ((Id.t*(Constrexpr.constr_expr option)) Loc.located,
+    ((Id.t * (Constrexpr.constr_expr option)) Loc.located,
      Constrexpr.constr_expr,
      Constrexpr.cases_pattern_expr,
      raw_tactic_expr) gen_proof_instr
 
 type glob_proof_instr =
-    ((Id.t*(Tacexpr.glob_constr_and_expr option)) Loc.located,
+    ((Id.t * (Tacexpr.glob_constr_and_expr option)) Loc.located,
      Tacexpr.glob_constr_and_expr,
      Constrexpr.cases_pattern_expr,
      Tacexpr.glob_tactic_expr) gen_proof_instr
