@@ -230,7 +230,6 @@ let compute_elim_sorts env_ar params mib arity lc =
   let infos = Array.map (sorts_of_constr_args env_params) lc in
   let (small,unit) = small_unit infos in
   (* We accept recursive unit types... *)
-  let unit = unit && mib.mind_ntypes = 1 in
   (* compute the max of the sorts of the products of the constructor type *)
   let level = max_inductive_sort
     (Array.concat (Array.to_list (Array.map Array.of_list infos))) in
