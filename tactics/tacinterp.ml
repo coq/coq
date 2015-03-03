@@ -681,7 +681,7 @@ let interp_constr_with_occurrences ist env sigma (occs,c) =
 let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
   let p = match a with
   | Inl b -> Inl (interp_evaluable ist env sigma b)
-  | Inr c -> Inr (snd (interp_typed_pattern ist env sigma c)) in
+  | Inr c -> Inr (pi3 (interp_typed_pattern ist env sigma c)) in
   interp_occurrences ist occs, p
 
 let interp_constr_with_occurrences_and_name_as_list =
@@ -1030,7 +1030,7 @@ let use_types = false
 
 let eval_pattern lfun ist env sigma (_,pat as c) =
   if use_types then
-    snd (interp_typed_pattern ist env sigma c)
+    pi3 (interp_typed_pattern ist env sigma c)
   else
     instantiate_pattern env sigma lfun pat
 
@@ -2138,7 +2138,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         Proofview.V82.tactic begin fun gl -> 
-          let sign,op = interp_typed_pattern ist env sigma op in
+          let (sigma,sign,op) = interp_typed_pattern ist env sigma op in
           let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
 	  let env' = Environ.push_named_context sign env in
           let c_interp sigma =
@@ -2146,8 +2146,8 @@ and interp_atomic ist tac : unit Proofview.tactic =
 	      with e when to_catch e (* Hack *) ->
 		errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
           in
-	      (Tactics.change (Some op) c_interp (interp_clause ist env sigma cl))
-		gl
+	    (Tactics.change (Some op) c_interp (interp_clause ist env sigma cl))
+	      { gl with sigma = sigma }
         end
       end
       end
