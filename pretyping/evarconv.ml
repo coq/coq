@@ -324,18 +324,25 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
      Note: incomplete heuristic... *)
   let ground_test =
     if is_ground_term evd term1 && is_ground_term evd term2 then (
-      let evd, b = 
-	try infer_conv ~pb:pbty ~ts:(fst ts) env evd term1 term2 
-	with Univ.UniverseInconsistency _ -> evd, false
+      let evd, e = 
+	try
+	  let evd, b = infer_conv ~catch_incon:false ~pb:pbty ~ts:(fst ts)
+	    env evd term1 term2 
+	  in
+	    if b then evd, None
+	    else evd, Some (ConversionFailed (env,term1,term2))
+	with Univ.UniverseInconsistency e -> evd, Some (UnifUnivInconsistency e)
       in
-	if b then Some (evd, true)
-	else if is_ground_env evd env then Some (evd, false)
-	else None)
+	match e with
+	| None -> Some (evd, e)
+	| Some e -> 
+	  if is_ground_env evd env then Some (evd, Some e)
+	  else None)
     else None
   in
   match ground_test with
-    | Some (evd, true) -> Success evd
-    | Some (evd, false) -> UnifFailure (evd,ConversionFailed (env,term1,term2))
+    | Some (evd, None) -> Success evd
+    | Some (evd, Some e) -> UnifFailure (evd,e)
     | None ->
 	(* Until pattern-unification is used consistently, use nohdbeta to not
 	   destroy beta-redexes that can be used for 1st-order unification *)

@@ -1293,7 +1293,8 @@ let sigma_univ_state =
   { Reduction.compare = sigma_compare_sorts;
     Reduction.compare_instances = sigma_compare_instances }
 
-let infer_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y = 
+let infer_conv ?(catch_incon=true) ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) 
+    env sigma x y = 
   try 
     let b, sigma = 
       let b, cstrs = 
@@ -1315,7 +1316,7 @@ let infer_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y 
 	  sigma', true
   with
   | Reduction.NotConvertible -> sigma, false
-  | Univ.UniverseInconsistency _ -> sigma, false
+  | Univ.UniverseInconsistency _ when catch_incon -> sigma, false
   | e when is_anomaly e -> error "Conversion test raised an anomaly"
     
 (********************************************************************)
