@@ -113,24 +113,14 @@ let mk_open_instance id idc gl m t=
 	    Name id -> id
 	  | Anonymous ->  dummy_bvid in
   let revt=substl (List.init m (fun i->mkRel (m-i))) t in
-  let rec aux n avoid=
-    if Int.equal n 0 then [] else
+  let rec aux n avoid env evmap decls =
+    if Int.equal n 0 then evmap, decls else
       let nid=(fresh_id avoid var_id gl) in
-	(Name nid,None,dummy_constr)::(aux (n-1) (nid::avoid)) in
-  let nt=it_mkLambda_or_LetIn revt (aux m []) in
-  let rawt=Detyping.detype false [] env evmap nt in
-  let rec raux n t=
-    if Int.equal n 0 then t else
-      match t with
-	  GLambda(loc,name,k,_,t0)->
-	    let t1=raux (n-1) t0 in
-	      GLambda(loc,name,k,GHole (Loc.ghost,Evar_kinds.BinderType name,Misctypes.IntroAnonymous,None),t1)
-	| _-> anomaly (Pp.str "can't happen") in
-  let ntt=try
-    fst (Pretyping.understand env evmap (raux m rawt))(*FIXME*)
-  with e when Errors.noncritical e ->
-    error "Untypable instance, maybe higher-order non-prenex quantification" in
-    decompose_lam_n_assum m ntt
+      let evmap, (c, _) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
+      let decl = (Name nid,None,c) in
+	aux (n-1) (nid::avoid) (Environ.push_rel decl env) evmap (decl::decls) in
+  let evmap, decls = aux m [] env evmap [] in
+    evmap, decls, revt
 
 (* tactics   *)
 
@@ -159,11 +149,15 @@ let left_instance_tac (inst,id) continue seq=
 	    if m>0 then
 	      pf_constr_of_global id (fun idc ->
 		fun gl->
-		  let (rc,ot) = mk_open_instance id idc gl m t in
+		  let evmap,rc,ot = mk_open_instance id idc gl m t in
 		  let gt=
 		    it_mkLambda_or_LetIn
 		      (mkApp(idc,[|ot|])) rc in
-		    generalize [gt] gl)
+		  let evmap, _ =
+		    try Typing.e_type_of (pf_env gl) evmap gt
+		    with e when Errors.noncritical e ->
+		      error "Untypable instance, maybe higher-order non-prenex quantification" in
+		    tclTHEN (Refiner.tclEVARS evmap) (generalize [gt]) gl)
 	    else
 	      pf_constr_of_global id (fun idc ->
 		generalize [mkApp(idc,[|t|])])
