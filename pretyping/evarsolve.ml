@@ -192,7 +192,13 @@ let noccur_evar env evd evk c =
       (match pi2 (Environ.lookup_rel i env) with
        | None -> ()
        | Some b -> cache := Int.Set.add (i-k) !cache; occur_rec acc (lift i b))
-  | Proj (p,c) -> occur_rec acc (Retyping.expand_projection env evd p c [])
+  | Proj (p,c) -> 
+    let c = 
+      try Retyping.expand_projection env evd p c []
+      with Retyping.RetypeError _ -> 
+	(* Can happen when called from w_unify which doesn't assign evars/metas 
+	   eagerly enough *) c
+    in occur_rec acc c
   | _ -> iter_constr_with_full_binders (fun rd (k,env) -> (succ k, push_rel rd env))
     occur_rec acc c
   in
