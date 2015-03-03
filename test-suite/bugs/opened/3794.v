@@ -3,5 +3,5 @@ Hint Unfold not : core.
 
 Goal true<>false.
 Set Typeclasses Debug.
-typeclasses eauto with core.
-Qed.
+Fail typeclasses eauto with core.
+Abort.
