@@ -89,7 +89,7 @@ let get_info sigma gl=
 let try_get_info sigma gl =
   Store.get (Goal.V82.extra sigma gl) info
 
-let get_stack pts =
+let get_goal_stack pts =
   let { it = goals ; sigma = sigma } = Proof.V82.subgoals pts in
   let info = get_info sigma (List.hd goals) in
   info.pm_stack
@@ -99,7 +99,7 @@ let proof_focus = Proof.new_focus_kind ()
 let proof_cond = Proof.no_cond proof_focus
 
 let focus p =
-  let inf = get_stack p in
+  let inf = get_goal_stack p in
   Proof_global.simple_with_current_proof (fun _ -> Proof.focus proof_cond inf 1)
 
 let unfocus () =
@@ -115,6 +115,8 @@ let get_top_stack pts =
     let { it = gl ; sigma = sigma } = Proof.V82.top_goal pts in
     let info = get_info sigma gl in
     info.pm_stack
+
+let get_stack pts = Proof.get_at_focus proof_focus pts
 
 let get_last env = match Environ.named_context env with
   | (id,_,_)::_ -> id

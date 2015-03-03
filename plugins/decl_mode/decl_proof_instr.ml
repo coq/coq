@@ -131,12 +131,13 @@ let daimon_tac gls =
 
 (* post-instruction focus management *)
 
-(* spiwack: This used to fail if there was no focusing command
-   above, but I don't think it ever happened. I hope it doesn't mess
-   things up*)
 let goto_current_focus () = 
-  Decl_mode.maximal_unfocus ()
+  Decl_mode.unfocus ()
 
+(* spiwack: used to catch errors indicating lack of "focusing command"
+   in the proof tree. In the current implementation, however, entering
+   the declarative mode puts a focus first, there should, therefore,
+   never be exception raised here. *)
 let goto_current_focus_or_top () =
   goto_current_focus ()
 
@@ -1444,12 +1445,19 @@ let rec postprocess pts instr =
 				      Type_errors.IllFormedRecBody(_,_,_,_,_)) ->
 		  anomaly (Pp.str "\"end induction\" generated an ill-formed fixpoint")
 	end
-    | Pend _ ->
-	goto_current_focus_or_top ()
+    | Pend (B_elim ET_Case_analysis) -> goto_current_focus ()
+    | Pend _ -> ()
 
 let do_instr raw_instr pts =
   let has_tactic = preprocess pts raw_instr.instr in
-  begin
+  (* spiwack: hack! [preprocess] assumes that the [pts] is indeed the
+     current proof (and, actually so does [do_instr] later one, so
+     it's ok to do the same here. Ideally the proof should be properly
+     threaded through the commands here, but since the are interleaved
+     with actions on the proof mode, which is attached to the global
+     proof environment, it is not possible without heavy lifting. *)
+  let pts = Proof_global.give_me_the_proof () in
+  let pts =
     if has_tactic then
             let { it=gls ; sigma=sigma; } = Proof.V82.subgoals pts in
       let gl = { it=List.hd gls ; sigma=sigma; } in
@@ -1458,13 +1466,14 @@ let do_instr raw_instr pts =
       let glob_instr = intern_proof_instr ist raw_instr in
       let instr =
 	interp_proof_instr (get_its_info gl) env sigma glob_instr in
-      ignore (Pfedit.by (Proofview.V82.tactic (tclTHEN (eval_instr instr) clean_tmp)))
-    else () end;
+      let (pts',_) = Proof.run_tactic (Global.env())
+        (Proofview.V82.tactic (tclTHEN (eval_instr instr) clean_tmp)) pts in
+      pts'
+    else pts
+  in
+  Proof_global.simple_with_current_proof (fun _ _ -> pts);
   postprocess pts raw_instr.instr;
-  (* spiwack: this should restore a compatible semantics with
-     v8.3 where we never stayed focused on 0 goal. *)
-  Proof_global.set_proof_mode "Declarative" ;
-  Decl_mode.maximal_unfocus ()
+  Proof_global.set_proof_mode "Declarative"
 
 let proof_instr raw_instr =
   let p = Proof_global.give_me_the_proof () in
