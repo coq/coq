@@ -534,6 +534,16 @@ let camltag = match caml_version_list with
 
 (** * CamlpX configuration *)
 
+(* Convention: we use camldir as a prioritary location for camlpX, if given *)
+
+let which_camlpX base =
+  match !Prefs.camldir with
+  | Some dir ->
+    let file = Filename.concat dir base in
+    if is_executable file then file else which base
+  | None ->
+    which base
+
 (* TODO: camlp5dir should rather be the *binary* location, just as camldir *)
 (* TODO: remove the late attempts at finding gramlib.cma *)
 
@@ -569,7 +579,7 @@ let check_camlp5 testcma = match !Prefs.camlp5dir with
 
 let check_camlp5_version () =
   try
-    let camlp5o = which "camlp5o" in
+    let camlp5o = which_camlpX "camlp5o" in
     let version_line, _ = run ~err:StdOut camlp5o ["-v"] in
     let version = List.nth (string_split ' ' version_line) 2 in
     match string_split '.' version with
@@ -586,7 +596,7 @@ let config_camlpX () =
     let camlp5mod = "gramlib" in
     let camlp5libdir = check_camlp5 (camlp5mod^".cma") in
     let camlp5o = check_camlp5_version () in
-    "camlp5", camlp5o, Filename.basename camlp5o, camlp5libdir, camlp5mod
+    "camlp5", camlp5o, Filename.dirname camlp5o, camlp5libdir, camlp5mod
   with NoCamlp5 ->
     (* We now try to use Camlp4, either by explicit choice or
        by lack of proper Camlp5 installation *)
@@ -595,9 +605,9 @@ let config_camlpX () =
     if not (Sys.file_exists (camlp4libdir/camlp4mod^".cma")) then
       die "No Camlp4 installation found.\n";
     try
-      let camlp4orf = which "camlp4orf" in
+      let camlp4orf = which_camlpX "camlp4orf" in
       ignore (run camlp4orf []);
-      "camlp4", camlp4orf, Filename.basename camlp4orf, camlp4libdir, camlp4mod
+      "camlp4", camlp4orf, Filename.dirname camlp4orf, camlp4libdir, camlp4mod
     with _ -> die "No Camlp4 installation found.\n"
 
 let camlpX, camlpXo, camlpXbindir, fullcamlpXlibdir, camlpXmod = config_camlpX ()
