@@ -584,7 +584,7 @@ let check_camlp5_version () =
     let version = List.nth (string_split ' ' version_line) 2 in
     match string_split '.' version with
     | major::minor::_ when s2i major > 5 || (s2i major, s2i minor) >= (5,1) ->
-      printf "You have Camlp5 %s. Good!\n" version; camlp5o
+      printf "You have Camlp5 %s. Good!\n" version; camlp5o, version
     | _ -> failwith "bad version"
   with
   | Not_found -> die "Error: cannot find Camlp5 binaries in path.\n"
@@ -595,8 +595,8 @@ let config_camlpX () =
     if not !Prefs.usecamlp5 then raise NoCamlp5;
     let camlp5mod = "gramlib" in
     let camlp5libdir = check_camlp5 (camlp5mod^".cma") in
-    let camlp5o = check_camlp5_version () in
-    "camlp5", camlp5o, Filename.dirname camlp5o, camlp5libdir, camlp5mod
+    let camlp5o, camlp5_version = check_camlp5_version () in
+    "camlp5", camlp5o, Filename.dirname camlp5o, camlp5libdir, camlp5mod, camlp5_version
   with NoCamlp5 ->
     (* We now try to use Camlp4, either by explicit choice or
        by lack of proper Camlp5 installation *)
@@ -606,11 +606,12 @@ let config_camlpX () =
       die "No Camlp4 installation found.\n";
     try
       let camlp4orf = which_camlpX "camlp4orf" in
-      ignore (run camlp4orf []);
-      "camlp4", camlp4orf, Filename.dirname camlp4orf, camlp4libdir, camlp4mod
+      let version_line, _ = run ~err:StdOut camlp4orf ["-v"] in
+      let camlp4_version = List.nth (string_split ' ' version_line) 2 in
+      "camlp4", camlp4orf, Filename.dirname camlp4orf, camlp4libdir, camlp4mod, camlp4_version
     with _ -> die "No Camlp4 installation found.\n"
 
-let camlpX, camlpXo, camlpXbindir, fullcamlpXlibdir, camlpXmod = config_camlpX ()
+let camlpX, camlpXo, camlpXbindir, fullcamlpXlibdir, camlpXmod, camlpX_version = config_camlpX ()
 
 let shorten_camllib s =
   if starts_with s (camllib^"/") then
@@ -967,9 +968,11 @@ let print_summary () =
   pr "  Coq VM bytecode link flags  : %s\n" (String.concat " " vmbyteflags);
   pr "  Other bytecode link flags   : %s\n" custom_flag;
   pr "  OS dependent libraries      : %s\n" osdeplibs;
-  pr "  OCaml/Camlp4 version        : %s\n" caml_version;
-  pr "  OCaml/Camlp4 binaries in    : %s\n" camlbin;
+  pr "  OCaml version               : %s\n" caml_version;
+  pr "  OCaml binaries in           : %s\n" camlbin;
   pr "  OCaml library in            : %s\n" camllib;
+  pr "  %s version              : %s\n"     (String.capitalize camlpX) camlpX_version;
+  pr "  %s binaries in          : %s\n"     (String.capitalize camlpX) camlpXbindir;
   pr "  %s library in           : %s\n"     (String.capitalize camlpX) camlpXlibdir;
   if best_compiler = "opt" then
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
