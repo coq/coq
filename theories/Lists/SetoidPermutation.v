@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Require Import SetoidList.
+Require Import Permutation SetoidList.
 (* Set Universe Polymorphism. *)
 
 Set Implicit Arguments.
@@ -121,6 +121,78 @@ Proof.
     apply PermutationA_cons_app, IHPl₁.
     now apply NoDupA_split with y.
     apply equivlistA_NoDupA_split with x y; intuition.
+Qed.
+
+Lemma Permutation_eqlistA_commute l₁ l₂ l₃ :
+ eqlistA eqA l₁ l₂ -> Permutation l₂ l₃ ->
+ exists l₂', Permutation l₁ l₂' /\ eqlistA eqA l₂' l₃.
+Proof.
+ intros E P. revert l₁ E.
+ induction P; intros.
+ - inversion_clear E. now exists nil.
+ - inversion_clear E.
+   destruct (IHP l0) as (l0',(P',E')); trivial. clear IHP.
+   exists (x0::l0'). split; auto.
+ - inversion_clear E. inversion_clear H0.
+   exists (x1::x0::l1). now repeat constructor.
+ - clear P1 P2.
+   destruct (IHP1 _ E) as (l₁',(P₁,E₁)).
+   destruct (IHP2 _ E₁) as (l₂',(P₂,E₂)).
+   exists l₂'. split; trivial. econstructor; eauto.
+Qed.
+
+Lemma PermutationA_decompose l₁ l₂ :
+ PermutationA l₁ l₂ ->
+ exists l, Permutation l₁ l /\ eqlistA eqA l l₂.
+Proof.
+ induction 1.
+ - now exists nil.
+ - destruct IHPermutationA as (l,(P,E)). exists (x₁::l); auto.
+ - exists (x::y::l). split. constructor. reflexivity.
+ - destruct IHPermutationA1 as (l₁',(P,E)).
+   destruct IHPermutationA2 as (l₂',(P',E')).
+   destruct (@Permutation_eqlistA_commute l₁' l₂ l₂') as (l₁'',(P'',E''));
+    trivial.
+   exists l₁''. split. now transitivity l₁'. now transitivity l₂'.
+Qed.
+
+Lemma Permutation_PermutationA l₁ l₂ :
+ Permutation l₁ l₂ -> PermutationA l₁ l₂.
+Proof.
+ induction 1.
+ - constructor.
+ - now constructor.
+ - apply permA_swap.
+ - econstructor; eauto.
+Qed.
+
+Lemma eqlistA_PermutationA l₁ l₂ :
+ eqlistA eqA l₁ l₂ -> PermutationA l₁ l₂.
+Proof.
+ induction 1; now constructor.
+Qed.
+
+Lemma NoDupA_equivlistA_decompose l1 l2 :
+  NoDupA eqA l1 -> NoDupA eqA l2 -> equivlistA eqA l1 l2 ->
+  exists l, Permutation l1 l /\ eqlistA eqA l l2.
+Proof.
+ intros. apply PermutationA_decompose.
+ now apply NoDupA_equivlistA_PermutationA.
+Qed.
+
+Lemma PermutationA_preserves_NoDupA l₁ l₂ :
+ PermutationA l₁ l₂ -> NoDupA eqA l₁ -> NoDupA eqA l₂.
+Proof.
+ induction 1; trivial.
+ - inversion_clear 1; constructor; auto.
+   apply PermutationA_equivlistA in H0. contradict H2.
+   now rewrite H, H0.
+ - inversion_clear 1. inversion_clear H1. constructor.
+   + contradict H. inversion_clear H; trivial.
+     elim H0. now constructor.
+   + constructor; trivial.
+     contradict H0. now apply InA_cons_tl.
+ - eauto.
 Qed.
 
 End Permutation.
