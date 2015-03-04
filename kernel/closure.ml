@@ -924,7 +924,7 @@ let rec knr info m stk =
         | (_,args,s) -> (m,args@s))
   | FCoFix _ when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
-          (_, args, (((Zcase _|ZcaseT _)::_) as stk')) ->
+          (_, args, (((Zcase _|ZcaseT _|Zproj _)::_) as stk')) ->
             let (fxe,fxbd) = contract_fix_vect m.term in
             knit info fxe fxbd (args@stk')
         | (_,args,s) -> (m,args@s))

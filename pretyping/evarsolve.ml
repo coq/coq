@@ -179,23 +179,30 @@ let restrict_instance evd evk filter argsv =
 
 let noccur_evar env evd evk c =
   let cache = ref Int.Set.empty (* cache for let-ins *) in
-  let rec occur_rec k c =
+  let rec occur_rec (k, env as acc) c =
   match kind_of_term c with
   | Evar (evk',args' as ev') ->
       (match safe_evar_value evd ev' with
-       | Some c -> occur_rec k c
+       | Some c -> occur_rec acc c
        | None ->
            if Evar.equal evk evk' then raise Occur
-           else Array.iter (occur_rec k) args')
+           else Array.iter (occur_rec acc) args')
   | Rel i when i > k ->
       if not (Int.Set.mem (i-k) !cache) then
-      (match pi2 (Environ.lookup_rel (i-k) env) with
+      (match pi2 (Environ.lookup_rel i env) with
        | None -> ()
-       | Some b -> cache := Int.Set.add (i-k) !cache; occur_rec k (lift i b))
-  | Proj (p,c) -> occur_rec k (Retyping.expand_projection env evd p c [])
-  | _ -> iter_constr_with_binders succ occur_rec k c
+       | Some b -> cache := Int.Set.add (i-k) !cache; occur_rec acc (lift i b))
+  | Proj (p,c) -> 
+    let c = 
+      try Retyping.expand_projection env evd p c []
+      with Retyping.RetypeError _ -> 
+	(* Can happen when called from w_unify which doesn't assign evars/metas 
+	   eagerly enough *) c
+    in occur_rec acc c
+  | _ -> iter_constr_with_full_binders (fun rd (k,env) -> (succ k, push_rel rd env))
+    occur_rec acc c
   in
-  try occur_rec 0 c; true with Occur -> false
+  try occur_rec (0,env) c; true with Occur -> false
 
 (***************************************)
 (* Managing chains of local definitons *)

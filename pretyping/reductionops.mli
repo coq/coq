@@ -268,9 +268,11 @@ val check_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> con
 
 (** [infer_fconv] Adds necessary universe constraints to the evar map.
     pb defaults to CUMUL and ts to a full transparent state.
+    @raises UniverseInconsistency iff catch_incon is set to false, 
+    otherwise returns false in that case.
  *)
-val infer_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> constr -> constr -> 
-  evar_map * bool
+val infer_conv : ?catch_incon:bool -> ?pb:conv_pb -> ?ts:transparent_state -> 
+  env -> evar_map -> constr -> constr -> evar_map * bool
 
 (** {6 Special-Purpose Reduction Functions } *)
 
