@@ -613,18 +613,18 @@ induction s1; simpl; auto; intros.
 Qed.
 
 Lemma fold_right_equivlistA_restr2 :
-  forall s s' (i j:B) (heqij: eqB i j),
+  forall s s' i j,
     NoDupA s -> NoDupA s' -> ForallOrdPairs R s ->
-               eqB i j -> 
-  equivlistA s s' -> eqB (fold_right f i s) (fold_right f j s').
+    equivlistA s s' -> eqB i j ->
+    eqB (fold_right f i s) (fold_right f j s').
 Proof.
  simple induction s.
  destruct s'; simpl.
  intros. assumption.
  unfold equivlistA; intros.
- destruct (H3 a).
+ destruct (H2 a).
  assert (InA a nil) by auto; inv.
- intros x l Hrec s' i j heqij N N' F eqij E; simpl in *.
+ intros x l Hrec s' i j N N' F E eqij; simpl in *.
  assert (InA x s') by (rewrite <- (E x); auto).
  destruct (InA_split H) as (s1,(y,(s2,(H1,H2)))).
  subst s'.
@@ -648,7 +648,6 @@ Proof.
      apply ForallOrdPairs_inclA with (x::l); auto.
      red; intros; rewrite E; auto.
 Qed.
-
 
 Lemma fold_right_add_restr2 :
   forall s' s i j x, NoDupA s -> NoDupA s' -> eqB i j -> ForallOrdPairs R s' -> ~ InA x s ->

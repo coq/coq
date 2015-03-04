@@ -8,132 +8,170 @@
 
 Require Import Equalities Bool SetoidList RelationPairs.
 
-(** * Keys and datas used in FMap *)
+(** * Keys and datas used in MMap *)
 
-Module KeyDecidableType(Import D:DecidableType).
+Module KeyDecidableType(D:DecidableType).
 
- Section Elt.
- Variable elt : Type.
- Notation key:=t.
+ Local Open Scope signature_scope.
+ Local Notation key := D.t.
 
-  Local Open Scope signature_scope.
+ Definition eqk {elt} : relation (key*elt) := D.eq @@1.
+ Definition eqke {elt} : relation (key*elt) := D.eq * Logic.eq.
 
-  Definition eqk : relation (key*elt) := eq @@1.
-  Definition eqke : relation (key*elt) := eq * Logic.eq.
-  Hint Unfold eqk eqke.
+ Hint Unfold eqk eqke.
 
-  (* eqke is stricter than eqk *)
+ (** eqk, eqke are equalities *)
 
-  Global Instance eqke_eqk : subrelation eqke eqk.
-  Proof. firstorder. Qed.
+ Instance eqk_equiv {elt} : Equivalence (@eqk elt) := _.
 
-  (* eqk, eqke are equalities, ltk is a strict order *)
+ Instance eqke_equiv {elt} : Equivalence (@eqke elt) := _.
 
-  Global Instance eqk_equiv : Equivalence eqk := _.
+ (** eqke is stricter than eqk *)
 
-  Global Instance eqke_equiv : Equivalence eqke := _.
+ Instance eqke_eqk {elt} : subrelation (@eqke elt) (@eqk elt).
+ Proof. firstorder. Qed.
 
-  (* Additionnal facts *)
+ (** Alternative definitions of eqke and eqk *)
 
-  Lemma InA_eqke_eqk :
-     forall x m, InA eqke x m -> InA eqk x m.
-  Proof.
-    unfold eqke, RelProd; induction 1; firstorder.
-  Qed.
-  Hint Resolve InA_eqke_eqk.
+ Lemma eqke_def {elt} k k' (e e':elt) :
+  eqke (k,e) (k',e') = (D.eq k k' /\ e = e').
+ Proof. reflexivity. Defined.
 
-  Lemma InA_eqk : forall p q m, eqk p q -> InA eqk p m -> InA eqk q m.
-  Proof.
-   intros. rewrite <- H; auto.
-  Qed.
+ Lemma eqke_def' {elt} (p q:key*elt) :
+  eqke p q = (D.eq (fst p) (fst q) /\ snd p = snd q).
+ Proof. reflexivity. Defined.
 
-  Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
-  Definition In k m := exists e:elt, MapsTo k e m.
+ Lemma eqke_1 {elt} k k' (e e':elt) : eqke (k,e) (k',e') -> D.eq k k'.
+ Proof. now destruct 1. Qed.
 
-  Hint Unfold MapsTo In.
+ Lemma eqke_2 {elt} k k' (e e':elt) : eqke (k,e) (k',e') -> e=e'.
+ Proof. now destruct 1. Qed.
 
-  (* An alternative formulation for [In k l] is [exists e, InA eqk (k,e) l] *)
+ Lemma eqk_def {elt} k k' (e e':elt) : eqk (k,e) (k',e') = D.eq k k'.
+ Proof. reflexivity. Defined.
 
-  Lemma In_alt : forall k l, In k l <-> exists e, InA eqk (k,e) l.
-  Proof.
-  firstorder.
-  exists x; auto.
-  induction H.
-  destruct y; compute in H.
-  exists e; left; auto.
-  destruct IHInA as [e H0].
-  exists e; auto.
-  Qed.
+ Lemma eqk_def' {elt} (p q:key*elt) : eqk p q = D.eq (fst p) (fst q).
+ Proof. reflexivity. Qed.
 
-  Lemma In_alt2 : forall k l, In k l <-> Exists (fun p => eq k (fst p)) l.
-  Proof.
+ Lemma eqk_1 {elt} k k' (e e':elt) : eqk (k,e) (k',e') -> D.eq k k'.
+ Proof. trivial. Qed.
+
+ Hint Resolve eqke_1 eqke_2 eqk_1.
+
+ (* Additionnal facts *)
+
+ Lemma InA_eqke_eqk {elt} p (m:list (key*elt)) :
+   InA eqke p m -> InA eqk p m.
+ Proof.
+  induction 1; firstorder.
+ Qed.
+ Hint Resolve InA_eqke_eqk.
+
+ Lemma InA_eqk_eqke {elt} p (m:list (key*elt)) :
+  InA eqk p m -> exists q, eqk p q /\ InA eqke q m.
+ Proof.
+  induction 1; firstorder.
+ Qed.
+
+ Lemma InA_eqk {elt} p q (m:list (key*elt)) :
+   eqk p q -> InA eqk p m -> InA eqk q m.
+ Proof.
+  now intros <-.
+ Qed.
+
+ Definition MapsTo {elt} (k:key)(e:elt):= InA eqke (k,e).
+ Definition In {elt} k m := exists e:elt, MapsTo k e m.
+
+ Hint Unfold MapsTo In.
+
+ (* Alternative formulations for [In k l] *)
+
+ Lemma In_alt {elt} k (l:list (key*elt)) :
+   In k l <-> exists e, InA eqk (k,e) l.
+ Proof.
+  unfold In, MapsTo.
+  split; intros (e,H).
+  - exists e; auto.
+  - apply InA_eqk_eqke in H. destruct H as ((k',e'),(E,H)).
+    compute in E. exists e'. now rewrite E.
+ Qed.
+
+ Lemma In_alt' {elt} (l:list (key*elt)) k e :
+   In k l <-> InA eqk (k,e) l.
+ Proof.
+  rewrite In_alt. firstorder. eapply InA_eqk; eauto. now compute.
+ Qed.
+
+ Lemma In_alt2 {elt} k (l:list (key*elt)) :
+   In k l <-> Exists (fun p => D.eq k (fst p)) l.
+ Proof.
   unfold In, MapsTo.
   setoid_rewrite Exists_exists; setoid_rewrite InA_alt.
   firstorder.
   exists (snd x), x; auto.
-  Qed.
+ Qed.
 
-  Lemma In_nil : forall k, In k nil <-> False.
-  Proof.
-  intros; rewrite In_alt2; apply Exists_nil.
-  Qed.
+ Lemma In_nil {elt} k : In k (@nil (key*elt)) <-> False.
+ Proof.
+  rewrite In_alt2; apply Exists_nil.
+ Qed.
 
-  Lemma In_cons : forall k p l,
-   In k (p::l) <-> eq k (fst p) \/ In k l.
-  Proof.
-  intros; rewrite !In_alt2, Exists_cons; intuition.
-  Qed.
+ Lemma In_cons {elt} k p (l:list (key*elt)) :
+   In k (p::l) <-> D.eq k (fst p) \/ In k l.
+ Proof.
+  rewrite !In_alt2, Exists_cons; intuition.
+ Qed.
 
-  Global Instance MapsTo_compat :
-   Proper (eq==>Logic.eq==>equivlistA eqke==>iff) MapsTo.
-  Proof.
+ Instance MapsTo_compat {elt} :
+   Proper (D.eq==>Logic.eq==>equivlistA eqke==>iff) (@MapsTo elt).
+ Proof.
   intros x x' Hx e e' He l l' Hl. unfold MapsTo.
   rewrite Hx, He, Hl; intuition.
-  Qed.
+ Qed.
 
-  Global Instance In_compat : Proper (eq==>equivlistA eqk==>iff) In.
-  Proof.
+ Instance In_compat {elt} : Proper (D.eq==>equivlistA eqk==>iff) (@In elt).
+ Proof.
   intros x x' Hx l l' Hl. rewrite !In_alt.
   setoid_rewrite Hl. setoid_rewrite Hx. intuition.
-  Qed.
+ Qed.
 
-  Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
-  Proof. intros l x y e EQ. rewrite <- EQ; auto. Qed.
+ Lemma MapsTo_eq {elt} (l:list (key*elt)) x y e :
+   D.eq x y -> MapsTo x e l -> MapsTo y e l.
+ Proof. now intros <-. Qed.
 
-  Lemma In_eq : forall l x y, eq x y -> In x l -> In y l.
-  Proof. intros l x y EQ. rewrite <- EQ; auto. Qed.
+ Lemma In_eq {elt} (l:list (key*elt)) x y :
+   D.eq x y -> In x l -> In y l.
+ Proof. now intros <-. Qed.
 
-  Lemma In_inv : forall k k' e l, In k ((k',e) :: l) -> eq k k' \/ In k l.
-  Proof.
-    intros; invlist In; invlist MapsTo. compute in * |- ; intuition.
-    right; exists x; auto.
-  Qed.
+ Lemma In_inv {elt} k k' e (l:list (key*elt)) :
+   In k ((k',e) :: l) -> D.eq k k' \/ In k l.
+ Proof.
+  intros (e',H). red in H. rewrite InA_cons, eqke_def in H.
+  intuition. right. now exists e'.
+ Qed.
 
-  Lemma In_inv_2 : forall k k' e e' l,
-      InA eqk (k, e) ((k', e') :: l) -> ~ eq k k' -> InA eqk (k, e) l.
-  Proof.
-   intros; invlist InA; intuition.
-  Qed.
+ Lemma In_inv_2 {elt} k k' e e' (l:list (key*elt)) :
+   InA eqk (k, e) ((k', e') :: l) -> ~ D.eq k k' -> InA eqk (k, e) l.
+ Proof.
+  rewrite InA_cons, eqk_def. intuition.
+ Qed.
 
-  Lemma In_inv_3 : forall x x' l,
-      InA eqke x (x' :: l) -> ~ eqk x x' -> InA eqke x l.
-  Proof.
-   intros; invlist InA; compute in * |- ; intuition.
-  Qed.
+ Lemma In_inv_3 {elt} x x' (l:list (key*elt)) :
+   InA eqke x (x' :: l) -> ~ eqk x x' -> InA eqke x l.
+ Proof.
+  rewrite InA_cons. destruct 1 as [H|H]; trivial. destruct 1.
+  eauto with *.
+ Qed.
 
- End Elt.
-
- Hint Unfold eqk eqke.
  Hint Extern 2 (eqke ?a ?b) => split.
  Hint Resolve InA_eqke_eqk.
- Hint Unfold MapsTo In.
  Hint Resolve In_inv_2 In_inv_3.
 
 End KeyDecidableType.
 
 
-(** * PairDecidableType 
-   
+(** * PairDecidableType
+
    From two decidable types, we can build a new DecidableType
    over their cartesian product. *)
 
