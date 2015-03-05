@@ -343,7 +343,7 @@ Section~\ref{pattern} to transform the goal so that it gets the form
   This behaves like {\tt apply} but it reasons modulo conversion only
   on subterms that contain no variables to instantiate. For instance,
   the following example does not succeed because it would require the
-  conversion of {\tt id ?1234} and {\tt O}.
+  conversion of {\tt id ?foo} and {\tt O}.
 
 \begin{coq_eval}
 Reset Initial.
@@ -354,7 +354,7 @@ Hypothesis H : forall y, id y = y.
 Goal O = O.
 \end{coq_example*}
 \begin{coq_example}
-simple apply H.
+Fail simple apply H.
 \end{coq_example}
 
   Because it reasons modulo a limited amount of conversion, {\tt
@@ -419,7 +419,7 @@ no value for {\tt y} in {\tt Rtrans} is found by {\tt apply}:
 %(**** Error: generated subgoal (R n ?17) has metavariables in it *****)
 %\end{coq_eval}
 \begin{coq_example}
-apply Rtrans.
+Fail apply Rtrans.
 \end{coq_example}
 
 A solution is to apply {\tt (Rtrans n m p)} or {\tt (Rtrans n m)}.
@@ -914,10 +914,10 @@ containing {\tt *} or {\tt **}, {\tt intros $p_1$ ... $p_n$}
 \begin{coq_example}
 Goal forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
 intros * [a | (_,c)] f.
-apply (f a).
-exact c.
-Qed.
 \end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
 
 \Rem {\tt intros $p_1~\ldots~p_n$} is not fully equivalent to
 \texttt{intros $p_1$;\ldots; intros $p_n$} for the following reasons:
@@ -935,7 +935,7 @@ Qed.
 Goal forall n:nat, n = 0 -> n = 0.
 intros [ | ] H.
 Show 2.
-Undo 2.
+Undo.
 intros [ | ]; intros H.
 Show 2.
 \end{coq_example}

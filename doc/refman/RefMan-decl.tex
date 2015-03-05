@@ -192,7 +192,7 @@ later.
 Theorem this_is_not_so_trivial: False.
 proof.
 end proof. (* here a warning is issued *)
-Qed. (* fails: the proof in incomplete *)
+Fail Qed. (* fails: the proof in incomplete *)
 Admitted. (* Oops! *)
 \end{coq_example}
 \begin{coq_eval}
@@ -404,7 +404,7 @@ proof.
 \end{coq_eval} 
 \begin{coq_example}
 Show.
-hence C. (* fails *)
+Fail hence C. (* fails *)
 \end{coq_example}
 \begin{coq_eval}
 Abort.
@@ -578,7 +578,7 @@ let P:(nat -> Prop).
 \end{coq_eval} 
 \begin{coq_example}
 Show.
-let x. (* fails because x's type is not clear *) 
+Fail let x. (* fails because x's type is not clear *)
 let x be such that HP:(P x). (* here x's type is inferred from (P x) *)
 \end{coq_example}
 \begin{coq_eval}

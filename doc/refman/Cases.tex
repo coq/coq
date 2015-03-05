@@ -194,7 +194,7 @@ system. Here is an example:
 Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example}
-Check (fun x:nat =>
+Fail Check (fun x:nat =>
          match x with
          | O => true
          | S _ => false
@@ -271,7 +271,7 @@ When we use parameters in patterns there is an error message:
 Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example}
-Check
+Fail Check
   (fun l:List nat =>
      match l with
      | nil A => nil nat
