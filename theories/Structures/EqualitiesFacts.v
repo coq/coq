@@ -8,6 +8,8 @@
 
 Require Import Equalities Bool SetoidList RelationPairs.
 
+Set Implicit Arguments.
+
 (** * Keys and datas used in MMap *)
 
 Module KeyDecidableType(D:DecidableType).
