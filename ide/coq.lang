@@ -205,7 +205,7 @@
 	</context>
 	<context id="command-for-qualit-list">
 	  <suffix>(?'qua_list'(\%{space}+\%{qualit})+)</suffix>
-	  <keyword>Typeclasses (Transparent)|(Opaque)</keyword>
+	  <keyword>Typeclasses (Transparent|Opaque)</keyword>
 	  <keyword>Require(\%{space}+((Import)|(Export)))?</keyword>
 	  <keyword>Import</keyword>
 	  <keyword>Export</keyword>
