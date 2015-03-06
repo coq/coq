@@ -195,7 +195,6 @@
 	  <keyword>Import</keyword>
 	  <keyword>Include</keyword>
 	  <keyword>Export</keyword>
-	  <keyword>Require(\%{space}+((Import)|(Export)))?</keyword>
 	  <keyword>(Recursive\%{space}+)?Extraction(\%{space}+(Language\%{space}+(Ocaml)|(Haskell)|(Scheme)|(Toplevel))|(Library)|((No)?Inline)|(Blacklist))?</keyword>
 	  <keyword>Extract\%{space}+(Inlined\%{space}+)?(Constant)|(Inductive)</keyword>
 	  <include>
@@ -206,6 +205,7 @@
 	<context id="command-for-qualit-list" style-ref="vernac-keyword">
 	  <suffix>(?'qua_list'(\%{space}+\%{qualit})+)</suffix>
 	  <keyword>Typeclasses (Transparent)|(Opaque)</keyword>
+	  <keyword>Require(\%{space}+((Import)|(Export)))?</keyword>
 	  <include>
 	    <context sub-pattern="qua_list" style-ref="identifier"/>
 	  </include>
