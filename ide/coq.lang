@@ -189,6 +189,7 @@
 	  <keyword>Combined\%{space}+Scheme</keyword>
 	  <keyword>End</keyword>
 	  <keyword>Section</keyword>
+	  <keyword>About</keyword>
 	  <keyword>Arguments</keyword>
 	  <keyword>Implicit\%{space}+Arguments</keyword>
 	  <keyword>Import</keyword>
