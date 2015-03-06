@@ -197,7 +197,6 @@
 	  <keyword>Arguments</keyword>
 	  <keyword>Implicit\%{space}+Arguments</keyword>
 	  <keyword>Include</keyword>
-	  <keyword>(Recursive\%{space}+)?Extraction(\%{space}+((Library)|((No)?Inline)|(Blacklist)))?</keyword>
 	  <keyword>Extract\%{space}+((Inlined\%{space}+)?(Constant)|(Inductive))</keyword>
 	  <include>
 	    <context sub-pattern="1" style-ref="vernac-keyword"/>
@@ -210,6 +209,7 @@
 	  <keyword>Require(\%{space}+((Import)|(Export)))?</keyword>
 	  <keyword>Import</keyword>
 	  <keyword>Export</keyword>
+	  <keyword>((Recursive|Separate)\%{space}+)?Extraction(\%{space}+(Library|(No)?Inline|Blacklist))?</keyword>
 	  <include>
 	    <context sub-pattern="1" style-ref="vernac-keyword"/>
 	    <context sub-pattern="qua_list" style-ref="identifier"/>
