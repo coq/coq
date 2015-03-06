@@ -97,7 +97,6 @@
 	      <keyword>then</keyword>
 	      <keyword>else</keyword>
 	      <keyword>return</keyword>
-	      <keyword>using</keyword>
 	    </context>
 	    <context id="constr-sort" style-ref="constr-sort">
 	      <keyword>Prop</keyword>
