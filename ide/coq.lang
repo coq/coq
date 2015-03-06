@@ -193,9 +193,7 @@
 	  <keyword>About</keyword>
 	  <keyword>Arguments</keyword>
 	  <keyword>Implicit\%{space}+Arguments</keyword>
-	  <keyword>Import</keyword>
 	  <keyword>Include</keyword>
-	  <keyword>Export</keyword>
 	  <keyword>(Recursive\%{space}+)?Extraction(\%{space}+(Language\%{space}+(Ocaml)|(Haskell)|(Scheme)|(Toplevel))|(Library)|((No)?Inline)|(Blacklist))?</keyword>
 	  <keyword>Extract\%{space}+(Inlined\%{space}+)?(Constant)|(Inductive)</keyword>
 	  <include>
@@ -207,6 +205,8 @@
 	  <suffix>(?'qua_list'(\%{space}+\%{qualit})+)</suffix>
 	  <keyword>Typeclasses (Transparent)|(Opaque)</keyword>
 	  <keyword>Require(\%{space}+((Import)|(Export)))?</keyword>
+	  <keyword>Import</keyword>
+	  <keyword>Export</keyword>
 	  <include>
 	    <context sub-pattern="1" style-ref="vernac-keyword"/>
 	    <context sub-pattern="qua_list" style-ref="identifier"/>
