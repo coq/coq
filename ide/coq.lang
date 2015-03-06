@@ -164,6 +164,7 @@
 	  <keyword>\%{locality}Infix</keyword>
 	  <keyword>(Print)|(Reset)\%{space}+Extraction\%{space}+(Inline)|(Blacklist)</keyword>
 	  <keyword>Declare\%{space}+ML\%{space}+Module</keyword>
+	  <keyword>Extraction\%{space}+Language\%{space}+(Ocaml|Haskell|Scheme)</keyword>
 	</context>
 	<context id="hint-command" style-ref="vernac-keyword">
 	  <prefix>\%{locality}Hint\%{space}+</prefix>
@@ -196,7 +197,7 @@
 	  <keyword>Arguments</keyword>
 	  <keyword>Implicit\%{space}+Arguments</keyword>
 	  <keyword>Include</keyword>
-	  <keyword>(Recursive\%{space}+)?Extraction(\%{space}+(Language\%{space}+(Ocaml)|(Haskell)|(Scheme)|(Toplevel))|(Library)|((No)?Inline)|(Blacklist))?</keyword>
+	  <keyword>(Recursive\%{space}+)?Extraction(\%{space}+((Library)|((No)?Inline)|(Blacklist)))?</keyword>
 	  <keyword>Extract\%{space}+((Inlined\%{space}+)?(Constant)|(Inductive))</keyword>
 	  <include>
 	    <context sub-pattern="1" style-ref="vernac-keyword"/>
