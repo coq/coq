@@ -33,7 +33,7 @@
     <define-regex id="mult_decl">(Hypothes[ie]s)|(Axiom(s)?)|(Variable(s)?)|(Parameter(s)?)|(Context)|(Implicit\%{space}+Type(s)?)</define-regex>
     <define-regex id="locality">(((Local)|(Global))\%{space}+)?</define-regex>
     <define-regex id="begin_proof">(Theorem)|(Lemma)|(Fact)|(Remark)|(Corollary)|(Proposition)|(Property)</define-regex>
-    <define-regex id="end_proof">(Qed)|(Defined)|(Admitted)|(Abort)</define-regex>
+    <define-regex id="end_proof">(Qed)|(Defined)|(Admitted)|(Abort)|(Save)</define-regex>
     <define-regex id="decl_head">((?'gal'\%{locality}(Program\%{space}+)?(\%{single_decl}|\%{begin_proof}))\%{space}+(?'id'\%{ident}))|((?'gal4list'\%{mult_decl})(?'id_list'(\%{space}+\%{ident})*))|(?'gal2'Goal)</define-regex>
 
     <context id="escape-seq" style-ref="escape">
@@ -158,7 +158,6 @@
 	  <keyword>Load</keyword>
 	  <keyword>Undo</keyword>
 	  <keyword>Print</keyword>
-	  <keyword>Save</keyword>
 	  <keyword>Comments</keyword>
 	  <keyword>Solve\%{space}+Obligation</keyword>
 	  <keyword>((Uns)|(S))et(\%{space}+\%{ident})+</keyword>
