@@ -2062,7 +2062,7 @@ let locate_if_not_already loc (e, info) =
   | Some l -> if Loc.is_ghost l then (e, Loc.add_loc info loc) else (e, info)
 
 exception HasNotFailed
-exception HasFailed of string
+exception HasFailed of std_ppcmds
 
 let with_fail b f =
   if not b then f ()
@@ -2077,8 +2077,8 @@ let with_fail b f =
            | HasNotFailed as e -> raise e
            | e ->
               let e = Errors.push e in
-              raise (HasFailed (Pp.string_of_ppcmds
-              (Errors.iprint (Cerrors.process_vernac_interp_error e)))))
+              raise (HasFailed (Errors.iprint
+                (Cerrors.process_vernac_interp_error ~with_header:false e))))
         ()
     with e when Errors.noncritical e -> 
       let (e, _) = Errors.push e in
@@ -2087,8 +2087,7 @@ let with_fail b f =
           errorlabstrm "Fail" (str "The command has not failed!")
       | HasFailed msg ->
           if is_verbose () || !Flags.ide_slave then msg_info
-    	(str "The command has indeed failed with message:" ++
-    	 fnl () ++ str "=> " ++ hov 0 (str msg))
+            (str "The command has indeed failed with message:" ++ fnl () ++ msg)
       | _ -> assert false
   end
 

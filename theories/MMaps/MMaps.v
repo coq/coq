@@ -13,6 +13,4 @@ Require Export MMapInterface.
 Require Export MMapFacts.
 Require Export MMapWeakList.
 Require Export MMapList.
-(*
 Require Export MMapPositive.
-*)

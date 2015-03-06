@@ -16,78 +16,12 @@
    Sandrine Blazy (used for building certified compilers).
 *)
 
-Require Import Bool BinPos Orders MSetInterface.
+Require Import Bool BinPos Orders OrdersEx MSetInterface.
 
 Set Implicit Arguments.
 Local Open Scope lazy_bool_scope.
 Local Open Scope positive_scope.
 Local Unset Elimination Schemes.
-
-(** Even if [positive] can be seen as an ordered type with respect to the
-  usual order (see above), we can also use a lexicographic order over bits
-  (lower bits are considered first). This is more natural when using
-  [positive] as indexes for sets or maps (see FSetPositive and FMapPositive. *)
-
-Module PositiveOrderedTypeBits <: UsualOrderedType.
-  Definition t:=positive.
-  Include HasUsualEq <+ UsualIsEq.
-  Definition eqb := Pos.eqb.
-  Definition eqb_eq := Pos.eqb_eq.
-  Include HasEqBool2Dec.
-
-  Fixpoint bits_lt (p q:positive) : Prop :=
-   match p, q with
-   | xH, xI _ => True
-   | xH, _ => False
-   | xO p, xO q => bits_lt p q
-   | xO _, _ => True
-   | xI p, xI q => bits_lt p q
-   | xI _, _ => False
-   end.
-
-  Definition lt:=bits_lt.
-
-  Lemma bits_lt_antirefl : forall x : positive, ~ bits_lt x x.
-  Proof.
-   induction x; simpl; auto.
-  Qed.
-
-  Lemma bits_lt_trans :
-    forall x y z : positive, bits_lt x y -> bits_lt y z -> bits_lt x z.
-  Proof.
-   induction x; destruct y,z; simpl; eauto; intuition.
-  Qed.
-
-  Instance lt_compat : Proper (eq==>eq==>iff) lt.
-  Proof.
-   intros x x' Hx y y' Hy. rewrite Hx, Hy; intuition.
-  Qed.
-
-  Instance lt_strorder : StrictOrder lt.
-  Proof.
-   split; [ exact bits_lt_antirefl | exact bits_lt_trans ].
-  Qed.
-
-  Fixpoint compare x y :=
-    match x, y with
-      | x~1, y~1 => compare x y
-      | x~1, _ => Gt
-      | x~0, y~0 => compare x y
-      | x~0, _ => Lt
-      | 1, y~1 => Lt
-      | 1, 1 => Eq
-      | 1, y~0 => Gt
-    end.
-
-  Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
-  Proof.
-   unfold eq, lt.
-   induction x; destruct y; try constructor; simpl; auto.
-    destruct (IHx y); subst; auto.
-    destruct (IHx y); subst; auto.
-  Qed.
-
-End PositiveOrderedTypeBits.
 
 Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
 
@@ -303,12 +237,6 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
       | Node l true r => S (cardinal l + cardinal r)
     end.
 
-  Definition omap (f: elt -> elt) x :=
-    match x with
-      | None => None
-      | Some i => Some (f i)
-    end.
-
   (** would it be more efficient to use a path like in the above functions ? *)
 
   Fixpoint choose (m: t) : option elt :=
@@ -316,7 +244,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
       | Leaf => None
       | Node l o r => if o then Some 1 else
         match choose l with
-          | None => omap xI (choose r)
+          | None => option_map xI (choose r)
           | Some i => Some i~0
         end
     end.
@@ -326,7 +254,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
       | Leaf => None
       | Node l o r =>
         match min_elt l with
-          | None => if o then Some 1 else omap xI (min_elt r)
+          | None => if o then Some 1 else option_map xI (min_elt r)
           | Some i => Some i~0
         end
     end.
@@ -336,7 +264,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
       | Leaf => None
       | Node l o r =>
         match max_elt r with
-          | None => if o then Some 1 else omap xO (max_elt l)
+          | None => if o then Some 1 else option_map xO (max_elt l)
           | Some i => Some i~1
         end
     end.
@@ -967,7 +895,6 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma elements_spec2w: forall s, NoDupA E.eq (elements s).
   Proof.
     intro. apply SortA_NoDupA with E.lt; auto with *.
-    apply E.eq_equiv.
     apply elements_spec2.
   Qed.
 

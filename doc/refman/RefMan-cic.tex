@@ -742,11 +742,11 @@ there is an occurrence of \List\ which is not applied to the parameter
 variable in the conclusion of the type of {\tt cons'}:
 \begin{coq_eval}
 Set Printing Depth 50.
-(********** The following is not correct and should produce **********)
-(********* Error: The 1st argument of list' must be A in ... *********)
 \end{coq_eval}
+% (********** The following is not correct and should produce **********)
+% (********* Error: The 1st argument of list' must be A in ... *********)
 \begin{coq_example}
-Inductive list' (A:Set) : Set :=
+Fail Inductive list' (A:Set) : Set :=
   | nil' : list' A
   | cons' : A -> list' A -> list' (A*A).
 \end{coq_example}
@@ -919,12 +919,10 @@ Inductive exProp (P:Prop->Prop) : Prop
   := exP_intro : forall X:Prop, P X -> exProp P.
 \end{coq_example*}
 The same definition on \Set{} is not allowed and fails:
-\begin{coq_eval}
-(********** The following is not correct and should produce **********)
-(*** Error: Large non-propositional inductive types must be in Type***)
-\end{coq_eval}
+% (********** The following is not correct and should produce **********)
+% (*** Error: Large non-propositional inductive types must be in Type***)
 \begin{coq_example}
-Inductive exSet (P:Set->Prop) : Set 
+Fail Inductive exSet (P:Set->Prop) : Set
   := exS_intro : forall X:Set, P X -> exSet P.
 \end{coq_example}
 It is possible to declare the same inductive definition in the
@@ -1282,14 +1280,11 @@ Inductive or (A B:Prop) : Prop :=
 \end{coq_example*}
 The following definition which computes a boolean value by case over
 the proof of \texttt{or A B} is not accepted:
-\begin{coq_eval}
-(***************************************************************)
-(*** This example should fail with ``Incorrect elimination'' ***)
-\end{coq_eval}
+% (***************************************************************)
+% (*** This example should fail with ``Incorrect elimination'' ***)
 \begin{coq_example}
-Set Asymmetric Patterns.
-Definition choice (A B: Prop) (x:or A B) := 
-   match x with or_introl a => true | or_intror b => false end.
+Fail Definition choice (A B: Prop) (x:or A B) :=
+  match x with or_introl _ _ a => true | or_intror _ _ b => false end.
 \end{coq_example}
 From the computational point of view, the structure of the proof of
 \texttt{(or A B)} in this term is needed for computing the boolean
@@ -1592,8 +1587,8 @@ Fixpoint plus (n m:nat) {struct n} : nat :=
 Print plus.
 Fixpoint lgth (A:Set) (l:list A) {struct l} : nat :=
   match l with
-  | nil => O
-  | cons a l' => S (lgth A l')
+  | nil _ => O
+  | cons _ a l' => S (lgth A l')
   end.
 Print lgth.
 Fixpoint sizet (t:tree) : nat := let (f) := t in S (sizef f)
@@ -1632,13 +1627,11 @@ Definition sont (t:tree) : forest
    := let (f) := t in f.
 \end{coq_example}
 The following is not a conversion but can be proved after a case analysis.
-\begin{coq_eval}
-(******************************************************************)
-(** Error: Impossible to unify ....                              **)
-\end{coq_eval}
+% (******************************************************************)
+% (** Error: Impossible to unify ....                              **)
 \begin{coq_example}
 Goal forall t:tree, sizet t = S (sizef (sont t)).
-reflexivity. (** this one fails **)
+Fail reflexivity.
 destruct t.
 reflexivity.
 \end{coq_example}
@@ -1701,16 +1694,13 @@ by using the compiler option \texttt{-impredicative-set}.
 
 For example, using the ordinary \texttt{coqtop} command, the following
 is rejected.
-\begin{coq_eval}
-(** This example should fail *******************************
-    Error: The term forall X:Set, X -> X has type Type
-    while it is expected to have type Set
-***)
-\end{coq_eval}
+% (** This example should fail *******************************
+%     Error: The term forall X:Set, X -> X has type Type
+%     while it is expected to have type Set ***)
 \begin{coq_example}
-Definition id: Set := forall X:Set,X->X.
+Fail Definition id: Set := forall X:Set,X->X.
 \end{coq_example}
-while it will type-check, if one use instead the \texttt{coqtop
+while it will type-check, if one uses instead the \texttt{coqtop
   -impredicative-set} command.
 
 The major change in the theory concerns the rule for product formation

@@ -1155,7 +1155,7 @@ Inductive list2 (A:Set) : Set := nil2 | cons2 (_:A) (_:list2 (A*A)).
 \end{coq_example*}
 But the following definition will give an error:
 \begin{coq_example}
-Inductive listw (A:Set) : Set :=
+Fail Inductive listw (A:Set) : Set :=
   | nilw : listw (A*A)
   | consw : A -> listw (A*A) -> listw (A*A).
 \end{coq_example}
@@ -1401,11 +1401,11 @@ error message:
 
 \begin{coq_eval}
 Set Printing Depth 50.
-(********** The following is not correct and should produce **********)
-(*********      Error: Recursive call to wrongplus ...      **********)
 \end{coq_eval}
+% (********** The following is not correct and should produce **********)
+% (*********      Error: Recursive call to wrongplus ...      **********)
 \begin{coq_example}
-Fixpoint wrongplus (n m:nat) {struct n} : nat :=
+Fail Fixpoint wrongplus (n m:nat) {struct n} : nat :=
   match m with
   | O => n
   | S p => S (wrongplus n p)
@@ -1530,11 +1530,11 @@ function does not satisfy the guard condition:
 
 \begin{coq_eval}
 Set Printing Depth 50.
-(********** The following is not correct and should produce **********)
-(***************** Error: Unguarded recursive call *******************)
 \end{coq_eval}
+% (********** The following is not correct and should produce **********)
+% (***************** Error: Unguarded recursive call *******************)
 \begin{coq_example}
-CoFixpoint filter (p:nat -> bool) (s:Stream) : Stream :=
+Fail CoFixpoint filter (p:nat -> bool) (s:Stream) : Stream :=
   if p (hd s) then Seq (hd s) (filter p (tl s)) else filter p (tl s).
 \end{coq_example}
 

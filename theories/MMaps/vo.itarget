@@ -2,4 +2,5 @@ MMapInterface.vo
 MMapFacts.vo
 MMapWeakList.vo
 MMapList.vo
+MMapPositive.vo
 MMaps.vo

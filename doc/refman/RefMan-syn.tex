@@ -434,7 +434,7 @@ notation are replaced by ``\_''.
 \Example
 \begin{coq_example}
 Locate "exists".
-Locate "'exists' _ , _".
+Locate "exists _ .. _ , _".
 \end{coq_example}
 
 \SeeAlso Section \ref{Locate}.
@@ -516,11 +516,11 @@ the next command fails because {\tt p} does not bind in
 the instance of {\tt n}.
 \begin{coq_eval}
 Set Printing Depth 50.
-(********** The following produces **********)
-(**** The reference p was not found in the current environment ********)
 \end{coq_eval}
+% (********** The following produces **********)
+% (**** The reference p was not found in the current environment ********)
 \begin{coq_example}
-Check (exists_different p).
+Fail Check (exists_different p).
 \end{coq_example}
 
 \Rem Binding variables must not necessarily be parsed using the

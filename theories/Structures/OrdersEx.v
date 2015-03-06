@@ -84,3 +84,70 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
 
 End PairOrderedType.
 
+(** Even if [positive] can be seen as an ordered type with respect to the
+  usual order (see above), we can also use a lexicographic order over bits
+  (lower bits are considered first). This is more natural when using
+  [positive] as indexes for sets or maps (see MSetPositive and MMapPositive. *)
+
+Local Open Scope positive.
+
+Module PositiveOrderedTypeBits <: UsualOrderedType.
+  Definition t:=positive.
+  Include HasUsualEq <+ UsualIsEq.
+  Definition eqb := Pos.eqb.
+  Definition eqb_eq := Pos.eqb_eq.
+  Include HasEqBool2Dec.
+
+  Fixpoint bits_lt (p q:positive) : Prop :=
+   match p, q with
+   | xH, xI _ => True
+   | xH, _ => False
+   | xO p, xO q => bits_lt p q
+   | xO _, _ => True
+   | xI p, xI q => bits_lt p q
+   | xI _, _ => False
+   end.
+
+  Definition lt:=bits_lt.
+
+  Lemma bits_lt_antirefl : forall x : positive, ~ bits_lt x x.
+  Proof.
+   induction x; simpl; auto.
+  Qed.
+
+  Lemma bits_lt_trans :
+    forall x y z : positive, bits_lt x y -> bits_lt y z -> bits_lt x z.
+  Proof.
+   induction x; destruct y,z; simpl; eauto; intuition.
+  Qed.
+
+  Instance lt_compat : Proper (eq==>eq==>iff) lt.
+  Proof.
+   intros x x' Hx y y' Hy. rewrite Hx, Hy; intuition.
+  Qed.
+
+  Instance lt_strorder : StrictOrder lt.
+  Proof.
+   split; [ exact bits_lt_antirefl | exact bits_lt_trans ].
+  Qed.
+
+  Fixpoint compare x y :=
+    match x, y with
+      | x~1, y~1 => compare x y
+      | x~1, _ => Gt
+      | x~0, y~0 => compare x y
+      | x~0, _ => Lt
+      | 1, y~1 => Lt
+      | 1, 1 => Eq
+      | 1, y~0 => Gt
+    end.
+
+  Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
+  Proof.
+   unfold eq, lt.
+   induction x; destruct y; try constructor; simpl; auto.
+    destruct (IHx y); subst; auto.
+    destruct (IHx y); subst; auto.
+  Qed.
+
+End PositiveOrderedTypeBits.

@@ -107,7 +107,7 @@ satisfied by \texttt{{eqa : EqDec A}}. In case no satisfying constraint can be
 found, an error is raised:
 
 \begin{coq_example}
-Definition neqb' (A : Type) (x y : A) := negb (eqb x y).
+Fail Definition neqb' (A : Type) (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 The algorithm used to solve constraints is a variant of the eauto tactic

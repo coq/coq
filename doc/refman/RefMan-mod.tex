@@ -238,14 +238,14 @@ as the body of \texttt{x}.
 
 \begin{coq_eval}
 Set Printing Depth 50.
-(********** The following is not correct and should produce **********)
-(***************** Error: N.y not a defined object *******************)
 \end{coq_eval}
+% (********** The following is not correct and should produce **********)
+% (***************** Error: N.y not a defined object *******************)
 \begin{coq_example}
 Module N  :  SIG with Definition T := nat  :=  M.
 Print N.T.
 Print N.x.
-Print N.y.
+Fail Print N.y.
 \end{coq_example}
 \begin{coq_eval}
 Reset N.
@@ -353,15 +353,11 @@ Example:
 
 \begin{coq_example}
 Module Mod.
-\end{coq_example}
-\begin{coq_example}
   Definition T:=nat.
   Check T.
-\end{coq_example}
-\begin{coq_example}
 End Mod.
 Check Mod.T.
-Check T. (* Incorrect ! *)
+Fail Check T. (* Incorrect! *)
 Import Mod.
 Check T. (* Now correct *)
 \end{coq_example}
@@ -386,7 +382,7 @@ Local Definition T := nat.
 End B.
 End A.
 Import A.
-Check B.T.
+Fail Check B.T.
 \end{coq_example}
 
 \begin{Variants}

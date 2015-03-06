@@ -1,5 +1,4 @@
 The command has indeed failed with message:
-=> Error:
 In environment
 y : nat
 The term "a y" has type "{y0 : nat | y = y0}"

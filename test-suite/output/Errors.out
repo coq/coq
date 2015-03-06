@@ -1,7 +1,7 @@
 The command has indeed failed with message:
-=> Error: The field t is missing in Top.M.
+The field t is missing in Top.M.
 The command has indeed failed with message:
-=> Error: Unable to unify "nat" with "True".
+Unable to unify "nat" with "True".
 The command has indeed failed with message:
-=> In nested Ltac calls to "f" and "apply x", last call failed.
-Error: Unable to unify "nat" with "True".
+In nested Ltac calls to "f" and "apply x", last call failed.
+Unable to unify "nat" with "True".
