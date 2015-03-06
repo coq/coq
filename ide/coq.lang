@@ -190,6 +190,7 @@
 	  <keyword>Scheme\%{space}((Induction)|(Minimality)|(Elimination)|(Case)|(Equality))\%{space}for</keyword>
 	  <keyword>End</keyword>
 	  <keyword>Section</keyword>
+	  <keyword>Declare\%{space}+Module(\%{space}+((Import)|(Export)))?</keyword>
 	  <keyword>About</keyword>
 	  <keyword>Arguments</keyword>
 	  <keyword>Implicit\%{space}+Arguments</keyword>
