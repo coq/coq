@@ -202,11 +202,12 @@
 	    <context sub-pattern="qua" style-ref="identifier"/>
 	  </include>
 	</context>
-	<context id="command-for-qualit-list" style-ref="vernac-keyword">
+	<context id="command-for-qualit-list">
 	  <suffix>(?'qua_list'(\%{space}+\%{qualit})+)</suffix>
 	  <keyword>Typeclasses (Transparent)|(Opaque)</keyword>
 	  <keyword>Require(\%{space}+((Import)|(Export)))?</keyword>
 	  <include>
+	    <context sub-pattern="1" style-ref="vernac-keyword"/>
 	    <context sub-pattern="qua_list" style-ref="identifier"/>
 	  </include>
 	</context>
