@@ -163,6 +163,7 @@
 	  <keyword>(\%{locality}|((Reserved)|(Tactic))\%{space}+)?Notation</keyword>
 	  <keyword>\%{locality}Infix</keyword>
 	  <keyword>(Print)|(Reset)\%{space}+Extraction\%{space}+(Inline)|(Blacklist)</keyword>
+	  <keyword>Declare\%{space}+ML\%{space}+Module</keyword>
 	</context>
 	<context id="hint-command" style-ref="vernac-keyword">
 	  <prefix>\%{locality}Hint\%{space}+</prefix>
