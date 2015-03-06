@@ -156,13 +156,13 @@
 	  <keyword>Eval</keyword>
 	  <keyword>Load</keyword>
 	  <keyword>Undo</keyword>
+	  <keyword>(Print|Reset)\%{space}+Extraction\%{space}+(Inline|Blacklist)</keyword>
 	  <keyword>Print</keyword>
 	  <keyword>Comments</keyword>
 	  <keyword>Solve\%{space}+Obligation</keyword>
 	  <keyword>((Uns)|(S))et(\%{space}+\%{ident})+</keyword>
 	  <keyword>(\%{locality}|((Reserved)|(Tactic))\%{space}+)?Notation</keyword>
 	  <keyword>\%{locality}Infix</keyword>
-	  <keyword>(Print)|(Reset)\%{space}+Extraction\%{space}+(Inline)|(Blacklist)</keyword>
 	  <keyword>Declare\%{space}+ML\%{space}+Module</keyword>
 	  <keyword>Extraction\%{space}+Language\%{space}+(Ocaml|Haskell|Scheme)</keyword>
 	</context>
