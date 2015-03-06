@@ -450,6 +450,7 @@ fourier.
 Qed.
 
 Definition frame_tan y : {x | 0 < x < PI/2 /\ Rabs y < tan x}.
+Proof.
 destruct (total_order_T (Rabs y) 1) as [Hs|Hgt].
  assert (yle1 : Rabs y <= 1) by (destruct Hs; fourier).
  clear Hs; exists 1; split;[split; [exact Rlt_0_1 | exact PI2_1] | ].
@@ -567,10 +568,12 @@ Lemma pos_opp_lt : forall x, 0 < x -> -x < x.
 Proof. intros; fourier. Qed.
 
 Lemma tech_opp_tan : forall x y, -tan x < y -> tan (-x) < y.
+Proof.
 intros; rewrite tan_neg; assumption.
 Qed.
 
 Definition pre_atan (y : R) : {x : R | -PI/2 < x < PI/2 /\ tan x = y}.
+Proof.
 destruct (frame_tan y) as [ub [[ub0 ubpi2] Ptan_ub]].
 set (pr := (conj (tech_opp_tan _ _ (proj2 (Rabs_def2 _ _ Ptan_ub)))
      (proj1 (Rabs_def2 _ _ Ptan_ub)))).
@@ -649,6 +652,7 @@ exact df_neq.
 Qed.
 
 Lemma atan_increasing : forall x y, x < y -> atan x < atan y.
+Proof.
 intros x y d.
 assert (t1 := atan_bound x).
 assert (t2 := atan_bound y).
@@ -663,6 +667,7 @@ solve[rewrite yx; apply Rle_refl].
 Qed.
 
 Lemma atan_0 : atan 0 = 0.
+Proof.
 apply tan_is_inj; try (apply atan_bound).
  assert (t := PI_RGT_0); rewrite Ropp_div; split; fourier.
 rewrite atan_right_inv, tan_0.
@@ -670,6 +675,7 @@ reflexivity.
 Qed.
 
 Lemma atan_1 : atan 1 = PI/4.
+Proof.
 assert (ut := PI_RGT_0).
 assert (-PI/2 < PI/4 < PI/2) by (rewrite Ropp_div; split; fourier).
 assert (t := atan_bound 1).
@@ -865,6 +871,7 @@ Qed.
 
 Definition ps_atan_exists_01 (x : R) (Hx:0 <= x <= 1) :
    {l : R | Un_cv (fun N : nat => sum_f_R0 (tg_alt (Ratan_seq x)) N) l}.
+Proof.
 exact (alternated_series (Ratan_seq x)
   (Ratan_seq_decreasing _ Hx) (Ratan_seq_converging _ Hx)).
 Defined.
@@ -888,6 +895,7 @@ Qed.
 
 Definition ps_atan_exists_1 (x : R) (Hx : -1 <= x <= 1) :
    {l : R | Un_cv (fun N : nat => sum_f_R0 (tg_alt (Ratan_seq x)) N) l}.
+Proof.
 destruct (Rle_lt_dec 0 x).
  assert (pr : 0 <= x <= 1) by tauto.
  exact (ps_atan_exists_01 x pr).
@@ -902,6 +910,7 @@ solve[intros; exists 0%nat; intros; rewrite R_dist_eq; auto].
 Qed.
 
 Definition in_int (x : R) : {-1 <= x <= 1}+{~ -1 <= x <= 1}.
+Proof.
 destruct (Rle_lt_dec x 1).
  destruct (Rle_lt_dec (-1) x).
   left;split; auto.
@@ -1563,6 +1572,7 @@ Qed.
 
 
 Theorem Alt_PI_eq : Alt_PI = PI.
+Proof.
 apply Rmult_eq_reg_r with (/4); fold (Alt_PI/4); fold (PI/4);
   [ | apply Rgt_not_eq; fourier].
 assert (0 < PI/6) by (apply PI6_RGT_0).
