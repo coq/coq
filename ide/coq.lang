@@ -29,7 +29,7 @@
     <define-regex id="qualit">(\%{ident}\.)*\%{ident}</define-regex>
     <define-regex id="undotted_sep">[-+*{}]</define-regex>
     <define-regex id="dot_sep">\.(\s|\z)</define-regex>
-    <define-regex id="single_decl">(Definition)|(Let)|(Example)|(SubClass)|(Fixpoint)|(CoFixpoint)|(Function)|(Conjecture)|(Inductive)|(CoInductive)|(Record)|(Structure)|(Ltac)|(Instance)|(Class)|(Module(\%{space}+Type)?)|(Existing\%{space}+Instance)|(Canonical\%{space}+Structure)|(Coercion)</define-regex>
+    <define-regex id="single_decl">(Definition)|(Let)|(Example)|(SubClass)|(Fixpoint)|(CoFixpoint)|(Function)|(Conjecture)|(Inductive)|(CoInductive)|(Record)|(Structure)|(Ltac)|(Instance)|(Class)|(Existing\%{space}+Instance)|(Canonical\%{space}+Structure)|(Coercion)</define-regex>
     <define-regex id="mult_decl">(Hypothes[ie]s)|(Axiom(s)?)|(Variable(s)?)|(Parameter(s)?)|(Context)|(Implicit\%{space}+Type(s)?)</define-regex>
     <define-regex id="locality">(((Local)|(Global))\%{space}+)?</define-regex>
     <define-regex id="begin_proof">(Theorem)|(Lemma)|(Fact)|(Remark)|(Corollary)|(Proposition)|(Property)</define-regex>
@@ -190,6 +190,7 @@
 	  <keyword>Scheme\%{space}((Induction)|(Minimality)|(Elimination)|(Case)|(Equality))\%{space}for</keyword>
 	  <keyword>End</keyword>
 	  <keyword>Section</keyword>
+	  <keyword>Module(\%{space}+Type)?</keyword>
 	  <keyword>Declare\%{space}+Module(\%{space}+((Import)|(Export)))?</keyword>
 	  <keyword>About</keyword>
 	  <keyword>Arguments</keyword>
