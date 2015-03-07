@@ -318,18 +318,16 @@ let interp_ltac_var coerce ist env locid =
   try try_interp_ltac_var coerce ist env locid
   with Not_found -> anomaly (str "Detected '" ++ Id.print (snd locid) ++ str "' as ltac var at interning time")
 
-let interp_ident_gen fresh ist env sigma id =
-  try try_interp_ltac_var (coerce_to_ident fresh env) ist (Some (env,sigma)) (dloc,id)
+let interp_ident ist env sigma id =
+  try try_interp_ltac_var (coerce_to_ident false env) ist (Some (env,sigma)) (dloc,id)
   with Not_found -> id
 
-let interp_ident = interp_ident_gen false
-let interp_fresh_ident = interp_ident_gen true
-let pf_interp_ident id gl = interp_ident_gen false id (pf_env gl) (project gl)
+let pf_interp_ident id gl = interp_ident id (pf_env gl) (project gl)
 
-(* Interprets an optional identifier which must be fresh *)
-let interp_fresh_name ist env sigma = function
+(* Interprets an optional identifier, bound or fresh *)
+let interp_name ist env sigma = function
   | Anonymous -> Anonymous
-  | Name id -> Name (interp_fresh_ident ist env sigma id)
+  | Name id -> Name (interp_ident ist env sigma id)
 
 let interp_intro_pattern_var loc ist env sigma id =
   try try_interp_ltac_var (coerce_to_intro_pattern env) ist (Some (env,sigma)) (loc,id)
@@ -692,7 +690,7 @@ let interp_constr_with_occurrences_and_name_as_list =
     (fun ist env sigma (occ_c,na) ->
       let (sigma,c_interp) = interp_constr_with_occurrences ist env sigma occ_c in
       sigma, (c_interp,
-       interp_fresh_name ist env sigma na))
+       interp_name ist env sigma na))
 
 let interp_red_expr ist env sigma = function
   | Unfold l -> sigma , Unfold (List.map (interp_unfold ist env sigma) l)
@@ -842,7 +840,7 @@ let rec interp_intro_pattern ist env sigma = function
   | loc, IntroForthcoming _  as x -> sigma, x
 
 and interp_intro_pattern_naming loc ist env sigma = function
-  | IntroFresh id -> IntroFresh (interp_fresh_ident ist env sigma id)
+  | IntroFresh id -> IntroFresh (interp_ident ist env sigma id)
   | IntroIdentifier id -> interp_intro_pattern_naming_var loc ist env sigma id
   | IntroAnonymous as x -> x
 
@@ -1213,7 +1211,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
           | IntOrVarArgType ->
               Ftactic.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x))
           | IdentArgType ->
-              Ftactic.return (value_of_ident (interp_fresh_ident ist env sigma
+              Ftactic.return (value_of_ident (interp_ident ist env sigma
                                                (out_gen (glbwit wit_ident) x)))
           | VarArgType ->
               Ftactic.return (mk_hyp_value ist env sigma (out_gen (glbwit wit_var) x))
@@ -1254,7 +1252,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
               Ftactic.return (in_gen (topwit (wit_list wit_genarg)) ans)
           | ListArgType IdentArgType ->
               let wit = glbwit (wit_list wit_ident) in
-              let mk_ident x = value_of_ident (interp_fresh_ident ist env sigma x) in
+              let mk_ident x = value_of_ident (interp_ident ist env sigma x) in
               let ans = List.map mk_ident (out_gen wit x) in
               Ftactic.return (in_gen (topwit (wit_list wit_genarg)) ans)
           | ListArgType t  ->
@@ -1622,7 +1620,7 @@ and interp_genarg ist env sigma concl gl x =
         (ArgArg (interp_int_or_var ist (out_gen (glbwit wit_int_or_var) x)))
     | IdentArgType ->
       in_gen (topwit wit_ident)
-        (interp_fresh_ident ist env sigma (out_gen (glbwit wit_ident) x))
+        (interp_ident ist env sigma (out_gen (glbwit wit_ident) x))
     | VarArgType ->
       in_gen (topwit wit_var) (interp_hyp ist env sigma (out_gen (glbwit wit_var) x))
     | GenArgType ->
@@ -1795,7 +1793,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let mloc = interp_move_location ist env sigma hto in
-        let ido = Option.map (interp_fresh_ident ist env sigma) ido in
+        let ido = Option.map (interp_ident ist env sigma) ido in
         name_atomic ~env
           (TacIntroMove(ido,mloc))
           (Tactics.intro_move ido mloc)
@@ -1856,7 +1854,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
-        let idopt = Option.map (interp_fresh_ident ist env sigma) idopt in
+        let idopt = Option.map (interp_ident ist env sigma) idopt in
         name_atomic ~env
           (TacFix(idopt,n))
           (Proofview.V82.tactic (Tactics.fix idopt n))
@@ -1868,13 +1866,13 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = pf_env gl in
         let f sigma (id,n,c) =
 	  let (sigma,c_interp) = pf_interp_type ist { gl with sigma=sigma } c in
-	  sigma , (interp_fresh_ident ist env sigma id,n,c_interp) in
+	  sigma , (interp_ident ist env sigma id,n,c_interp) in
         let (sigma,l_interp) =
           Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
         in
         tclTHEN
 	  (tclEVARS sigma)
-	  (Tactics.mutual_fix (interp_fresh_ident ist env sigma id) n l_interp 0)
+	  (Tactics.mutual_fix (interp_ident ist env sigma id) n l_interp 0)
           gl
       end
       end
@@ -1882,7 +1880,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
-        let idopt = Option.map (interp_fresh_ident ist env sigma) idopt in
+        let idopt = Option.map (interp_ident ist env sigma) idopt in
         name_atomic ~env
           (TacCofix (idopt))
           (Proofview.V82.tactic (Tactics.cofix idopt))
@@ -1894,13 +1892,13 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = pf_env gl in
         let f sigma (id,c) =
 	  let (sigma,c_interp) = pf_interp_type ist { gl with sigma=sigma } c in
-	  sigma , (interp_fresh_ident ist env sigma id,c_interp) in
+	  sigma , (interp_ident ist env sigma id,c_interp) in
         let (sigma,l_interp) =
           Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
         in
         tclTHEN
 	  (tclEVARS sigma)
-	  (Tactics.mutual_cofix (interp_fresh_ident ist env sigma id) l_interp 0)
+	  (Tactics.mutual_cofix (interp_ident ist env sigma id) l_interp 0)
           gl
       end
       end
@@ -1951,7 +1949,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
             let with_eq = if b then None else Some (true,id) in
             Tactics.letin_tac with_eq na c None cl
           in
-          let na = interp_fresh_name ist env sigma na in
+          let na = interp_name ist env sigma na in
           Tacticals.New.tclWITHHOLES false
           (name_atomic ~env
             (TacLetTac(na,c_interp,clp,b,eqpat))
@@ -1967,7 +1965,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           name_atomic ~env
             (TacLetTac(na,c,clp,b,eqpat))
 	    (Tacticals.New.tclWITHHOLES false (*in hope of a future "eset/epose"*)
-               (let_pat_tac b (interp_fresh_name ist env sigma na)
+               (let_pat_tac b (interp_name ist env sigma na)
                   ((sigma,sigma'),c) clp eqpat) sigma')
       end
 
@@ -2077,7 +2075,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let l =
           List.map (fun (id1,id2) ->
 	    interp_hyp ist env sigma id1,
-	    interp_fresh_ident ist env sigma (snd id2)) l
+	    interp_ident ist env sigma (snd id2)) l
         in
         name_atomic ~env
           (TacRename l)
