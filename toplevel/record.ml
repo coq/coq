@@ -472,10 +472,15 @@ let add_inductive_class ind =
   let k =
     let ctx = oneind.mind_arity_ctxt in
     let inst = Univ.UContext.instance mind.mind_universes in
+    let map = function
+    | (_, Some _, _) -> None
+    | (_, None, t) -> Some (lazy t)
+    in
+    let args = List.map_filter map ctx in
     let ty = Inductive.type_of_inductive_knowing_parameters
       (push_rel_context ctx (Global.env ()))
       ((mind,oneind),inst)
-      (Array.map (fun x -> lazy x) (Termops.extended_rel_vect 0 ctx))
+      (Array.of_list args)
     in
       { cl_impl = IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;
