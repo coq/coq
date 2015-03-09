@@ -20,7 +20,6 @@ For eq: Argument scopes are [type_scope _ _]
 For eq_refl: Argument scopes are [type_scope _]
 eq_refl : forall (A : Type) (x : A), x = x
 
-eq_refl is not universe polymorphic
 Arguments are renamed to B, y
 When applied to no arguments:
   Arguments B, y are implicit and maximally inserted
@@ -36,7 +35,6 @@ For myEq: Argument scopes are [type_scope _ _]
 For myrefl: Argument scopes are [type_scope _ _]
 myrefl : forall (B : Type) (x : A), B -> myEq B x x
 
-myrefl is not universe polymorphic
 Arguments are renamed to C, x, _
 Argument C is implicit and maximally inserted
 Argument scopes are [type_scope _ _]
@@ -49,13 +47,11 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   end
      : forall T : Type, T -> nat -> nat -> nat
 
-myplus is not universe polymorphic
 Arguments are renamed to Z, t, n, m
 Argument Z is implicit and maximally inserted
 Argument scopes are [type_scope _ nat_scope nat_scope]
 myplus : forall T : Type, T -> nat -> nat -> nat
 
-myplus is not universe polymorphic
 Arguments are renamed to Z, t, n, m
 Argument Z is implicit and maximally inserted
 Argument scopes are [type_scope _ nat_scope nat_scope]
@@ -74,7 +70,6 @@ For myEq: Argument scopes are [type_scope type_scope _ _]
 For myrefl: Argument scopes are [type_scope type_scope _ _]
 myrefl : forall (A B : Type) (x : A), B -> myEq A B x x
 
-myrefl is not universe polymorphic
 Arguments are renamed to A, C, x, _
 Argument C is implicit and maximally inserted
 Argument scopes are [type_scope type_scope _ _]
@@ -89,13 +84,11 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   end
      : forall T : Type, T -> nat -> nat -> nat
 
-myplus is not universe polymorphic
 Arguments are renamed to Z, t, n, m
 Argument Z is implicit and maximally inserted
 Argument scopes are [type_scope _ nat_scope nat_scope]
 myplus : forall T : Type, T -> nat -> nat -> nat
 
-myplus is not universe polymorphic
 Arguments are renamed to Z, t, n, m
 Argument Z is implicit and maximally inserted
 Argument scopes are [type_scope _ nat_scope nat_scope]

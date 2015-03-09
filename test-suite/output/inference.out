@@ -4,8 +4,6 @@ fun e : option L => match e with
                     | None => None
                     end
      : option L -> option L
-
-P is not universe polymorphic
 fun (m n p : nat) (H : S m <= S n + p) => le_S_n m (n + p) H
      : forall m n p : nat, S m <= S n + p -> m <= n + p
 fun n : nat => let x := A n in ?y ?y0:T n
