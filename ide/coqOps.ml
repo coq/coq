@@ -363,7 +363,7 @@ object(self)
        else if has_flag sentence `ERROR then [error_bg]
        else if has_flag sentence `INCOMPLETE then [incomplete]
        else [processed]) @
-      (if [ `UNSAFE ] = sentence.flags then [unjustified] else [])
+      (if has_flag sentence `UNSAFE then [unjustified] else [])
     in
     List.iter (fun t -> buffer#remove_tag t ~start ~stop) all_tags;
     List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags
