@@ -1010,13 +1010,14 @@ end = struct (* {{{ *)
     match s, t, r with
     | `Old c, States _, RespStates l ->
         List.iter (fun (id,s) -> State.assign id s) l; `End
-    | `Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
+    | `Fresh, BuildProof { t_assign; t_loc; t_name; t_states; t_drop },
               RespBuiltProof (pl, time) ->
         feedback (Feedback.InProgress ~-1);
         t_assign (`Val pl);
         record_pb_time t_name t_loc time;
-        if not !Flags.async_proofs_full then `End
-        else `Stay(t_states,[States t_states])
+        if !Flags.async_proofs_full || t_drop
+        then `Stay(t_states,[States t_states])
+        else `End
     | `Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
         feedback (Feedback.InProgress ~-1);
