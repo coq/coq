@@ -49,7 +49,7 @@ let start_deriving f suchthat lemma =
           [suchthat], respectively. *)
       let (opaque,f_def,lemma_def) =
         match com with
-        | Admitted -> Errors.error"Admitted isn't supported in Derive."
+        | Admitted _ -> Errors.error"Admitted isn't supported in Derive."
         | Proved (_,Some _,_) ->
             Errors.error"Cannot save a proof of Derive with an explicit name."
         | Proved (opaque, None, obj) ->

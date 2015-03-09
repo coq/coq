@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Fail Check Prop : Prop. (* Prop:Prop
      : Prop *)
 Fail Check Set : Prop. (* Set:Prop

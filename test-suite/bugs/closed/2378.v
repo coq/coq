@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* test with Coq 8.3rc1 *)
 
 Require Import Program.

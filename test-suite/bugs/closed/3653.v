@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Require Setoid.
 
 Variables P Q : forall {T : Set}, T -> Prop.

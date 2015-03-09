@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Set Primitive Projections.
 Axiom admit : forall {T}, T.
 Notation "( x ; y )" := (existT _ x y) : fibration_scope.

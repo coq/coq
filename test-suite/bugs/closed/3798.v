@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Require Setoid.
 
 Parameter f : nat -> nat.

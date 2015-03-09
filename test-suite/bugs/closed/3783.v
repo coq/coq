@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Fixpoint exp (n : nat) (T : Set)
   := match n with
        | 0 => T

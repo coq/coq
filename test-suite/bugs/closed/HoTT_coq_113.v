@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 3329 lines to 153 lines, then from 118 lines to 49 lines, then from 55 lines to 38 lines, then from 46 lines to 16 lines *)
 
 Generalizable All Variables.

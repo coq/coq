@@ -154,6 +154,13 @@ Tactics
     refine, use "refine c;shelve_unifiable". This can still cause
     incompatibilities in rare occasions.
   * New "give_up" tactic to skip over a goal without admitting it.
+- The admit tactic has been removed, "give_up" should be used instead.
+  To compile code containing "admit" the following solutions can be adopted:
+  * Add Ltac definition "Ltac admit := give_up." and terminate each
+    incomplete proof with "Admitted".
+  * Add an "Axiom" for each admitted subproof.
+  * Add a single "Axiom proof_admitted : False." and the Ltac definition
+    "Ltac admit := case proof_admitted.".
 - Matching using "lazymatch" was fundamentally modified. It now behaves
   like "match" (immediate execution of the matching branch) but without
   the backtracking mechanism in case of failure.
@@ -322,7 +329,7 @@ Interfaces
   errors are reported in the bottom right window.  The number of workers
   taking care of processing proofs can be selected with -async-proofs-j.
 - CoqIDE highlights in yellow "unsafe" commands such as axiom
-  declarations, and tactics like "admit".
+  declarations, and tactics like "give_up".
 - CoqIDE supports Proof General like key bindings;
   to activate the PG mode go to Edit -> Preferences -> Editor.
   For the documentation see Help -> Help for PG mode.
@@ -541,7 +548,7 @@ Vernacular commands
 - New command "Add/Remove Search Blacklist <substring> ...":
   a Search or SearchAbout or similar query will never mention lemmas
   whose qualified names contain any of the declared substrings.
-  The default blacklisted substrings are "_admitted" "_subproof" "Private_".
+  The default blacklisted substrings are "_subproof" "Private_".
 - When the output file of "Print Universes" ends in ".dot" or ".gv",
   the universe graph is printed in the DOT language, and can be
   processed by Graphviz tools.

@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Module JGross.
   Hint Extern 1 => match goal with |- match ?E with end => case E end.
 

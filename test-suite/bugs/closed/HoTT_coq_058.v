@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from 10044 lines to 493 lines, then from 425 lines to 160 lines. *)
 Set Universe Polymorphism.
 Notation idmap := (fun x => x).

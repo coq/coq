@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 5479 lines to 4682 lines, then from 4214 lines to 86 lines, then from 60 lines to 25 lines *)
 (* coqc version trunk (October 2014) compiled on Oct 1 2014 18:13:54 with OCaml 4.01.0
    coqtop version cagnode16:/afs/csail.mit.edu/u/j/jgross/coq-trunk,trunk (68846802a7be637ec805a5e374655a426b5723a5) *)

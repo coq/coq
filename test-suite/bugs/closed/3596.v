@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Set Implicit Arguments.
 Record foo := { fx : nat }.
 Set Primitive Projections.

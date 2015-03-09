@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* Check that Goal.V82.byps and Goal.V82.env are consistent *)
 
 (* This is a shorten variant of the initial bug which raised anomaly *)

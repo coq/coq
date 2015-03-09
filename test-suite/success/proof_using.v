@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Section Foo.
 
 Variable a : nat.

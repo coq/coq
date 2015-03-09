@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Require Import Relation_Definitions RelationClasses Setoid SetoidClass.
 
 Section Bug.

@@ -4411,11 +4411,6 @@ let tclABSTRACT name_op tac =
   in
   abstract_subproof s gk tac
 
-let admit_as_an_axiom =
-  Proofview.tclUNIT () >>= fun () -> (* delay for Coqlib.build_coq_proof_admitted *)
-  simplest_case (Coqlib.build_coq_proof_admitted ()) <*>
-  Proofview.mark_as_unsafe
-
 let unify ?(state=full_transparent_state) x y =
   Proofview.Goal.nf_enter begin fun gl ->
   try

@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* There are some problems in materialize_evar with local definitions,
    as CO below; this is not completely sorted out yet, but at least
    it fails in a smooth way at the time of today [HH] *)

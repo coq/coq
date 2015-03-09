@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Module Comment1.
   Set Implicit Arguments.
 

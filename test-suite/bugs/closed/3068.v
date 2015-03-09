@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Section Counted_list.
 
   Variable A : Type.

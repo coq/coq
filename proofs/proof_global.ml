@@ -74,7 +74,7 @@ type proof_object = {
 }
 
 type proof_ending =
-  | Admitted
+  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry
   | Proved of Vernacexpr.opacity_flag *
              (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
               proof_object
@@ -338,8 +338,22 @@ let close_proof ~keep_body_ucst_sepatate ?feedback_id ~now fpl =
 
 type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context
 
-let return_proof () =
-  let { pid; proof; strength = (_,poly,_) } = cur_pstate () in
+let return_proof ?(allow_partial=false) () =
+ let { pid; proof; strength = (_,poly,_) } = cur_pstate () in
+ if allow_partial then begin
+  if Proof.is_done proof then begin
+    msg_warning (str"The proof of " ++ str (Names.Id.to_string pid) ++
+     str" is complete, no need to end it with Admitted");
+  end;
+  let proofs = Proof.partial_proof proof in
+  let _,_,_,_, evd = Proof.proof proof in
+  let eff = Evd.eval_side_effects evd in
+  (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
+      side-effects... This may explain why one need to uniquize side-effects
+      thereafter... *)
+  let proofs = List.map (fun c -> c, eff) proofs in
+    proofs, Evd.evar_universe_context evd
+ end else
   let initial_goals = Proof.initial_goals proof in
   let evd =
     let error s =
@@ -352,10 +366,9 @@ let return_proof () =
     | Proof.HasShelvedGoals ->
         error(str"Attempt to save a proof with shelved goals")
     | Proof.HasGivenUpGoals ->
-        error(str"Attempt to save a proof with given up goals")
+        error(strbrk"Attempt to save a proof with given up goals. If this is really what you want to do, use Admitted in place of Qed.")
     | Proof.HasUnresolvedEvar->
-        error(str"Attempt to save a proof with existential " ++
-              str"variables still non-instantiated") in
+        error(strbrk"Attempt to save a proof with existential variables still non-instantiated") in
   let eff = Evd.eval_side_effects evd in
   let evd =
     if poly || !Flags.compilation_mode = Flags.BuildVo

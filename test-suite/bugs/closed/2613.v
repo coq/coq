@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* Check that eq_sym is still pointing to Logic.eq_sym after use of Function *)
 
 Require Import ZArith.

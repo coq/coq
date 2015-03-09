@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from 279 lines to 219 lines. *)
 
 Set Implicit Arguments.

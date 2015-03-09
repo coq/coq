@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Require Import Coq.Arith.PeanoNat.
 Hint Extern 1 => admit : typeclass_instances.
 Require Import Setoid.

@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* This failed with an anomaly in pre-8.4 because of let-in not
    properly taken into account in the test for unification pattern *)
 

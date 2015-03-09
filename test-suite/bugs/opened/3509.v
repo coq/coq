@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Lemma match_bool_fn b A B xT xF
 : match b as b return forall x : A, B b x with
     | true => xT

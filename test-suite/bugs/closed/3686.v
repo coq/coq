@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Set Universe Polymorphism.
 Set Implicit Arguments.
 Record PreCategory := { object :> Type ; morphism : object -> object -> Type }.

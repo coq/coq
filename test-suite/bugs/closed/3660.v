@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Generalizable All Variables.
 Definition compose {A B C : Type} (g : B -> C) (f : A -> B) := fun x => g (f x).
 Notation "g 'o' f" := (compose g f) (at level 40, left associativity) : function_scope.

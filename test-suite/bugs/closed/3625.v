@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Set Implicit Arguments.
 Set Primitive Projections.
 Record prod A B := pair { fst : A ; snd : B }.

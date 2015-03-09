@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 5631 lines to 557 lines, then from 526 lines to 181 lines, then from 189 lines to 154 lines, then from 153 lines to 107 lines, then from 97 lines to 56 lines, then from 50 lines to 37 lines *)
 Generalizable All Variables.
 Set Universe Polymorphism.

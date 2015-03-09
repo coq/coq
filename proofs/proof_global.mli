@@ -66,7 +66,7 @@ type proof_object = {
 }
 
 type proof_ending =
-  | Admitted
+  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry
   | Proved of Vernacexpr.opacity_flag *
              (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
               proof_object
@@ -99,7 +99,9 @@ val close_proof : keep_body_ucst_sepatate:bool -> Future.fix_exn -> closed_proof
 
 type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context
 
-val return_proof : unit -> closed_proof_output
+(* If allow_partial is set (default no) then an incomplete proof
+ * is allowed (no error), and a warn is given if the proof is complete. *)
+val return_proof : ?allow_partial:bool -> unit -> closed_proof_output
 val close_future_proof : feedback_id:Stateid.t ->
   closed_proof_output Future.computation -> closed_proof
 

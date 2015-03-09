@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Module NonPrim.
   Unset Primitive Projections.
   Record c := { d : Set }.

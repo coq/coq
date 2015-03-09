@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from 4464 lines to 4137 lines, then from 3683 lines to 118 lines, then from 124 lines to 75 lines. *)
 Set Universe Polymorphism.
 Definition admit {T} : T.

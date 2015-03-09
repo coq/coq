@@ -905,6 +905,7 @@ module rec ProofTask : sig
     t_exn_info : Stateid.t * Stateid.t;
     t_start    : Stateid.t;
     t_stop     : Stateid.t;
+    t_drop     : bool;
     t_states   : competence;
     t_assign   : Proof_global.closed_proof_output Future.assignement -> unit;
     t_loc      : Loc.t;
@@ -916,8 +917,8 @@ module rec ProofTask : sig
     | States of Stateid.t list
 
   type request =
-    | ReqBuildProof of (Future.UUID.t,VCS.vcs) Stateid.request * competence
-    | ReqStates of Stateid.t list
+  | ReqBuildProof of (Future.UUID.t,VCS.vcs) Stateid.request * bool * competence
+  | ReqStates of Stateid.t list
 
   include AsyncTaskQueue.Task
   with type task := task
@@ -925,6 +926,7 @@ module rec ProofTask : sig
   and  type request := request
 
   val build_proof_here :
+    drop_pt:bool ->
     Stateid.t * Stateid.t -> Loc.t -> Stateid.t ->
       Proof_global.closed_proof_output Future.computation
 
@@ -940,6 +942,7 @@ end = struct (* {{{ *)
     t_exn_info : Stateid.t * Stateid.t;
     t_start    : Stateid.t;
     t_stop     : Stateid.t;
+    t_drop     : bool;
     t_states   : competence;
     t_assign   : Proof_global.closed_proof_output Future.assignement -> unit;
     t_loc      : Loc.t;
@@ -951,8 +954,8 @@ end = struct (* {{{ *)
     | States of Stateid.t list
 
   type request =
-    | ReqBuildProof of (Future.UUID.t,VCS.vcs) Stateid.request * competence
-    | ReqStates of Stateid.t list
+  | ReqBuildProof of (Future.UUID.t,VCS.vcs) Stateid.request * bool * competence
+  | ReqStates of Stateid.t list
   
   type error = {
     e_error_at    : Stateid.t;
@@ -985,12 +988,14 @@ end = struct (* {{{ *)
     | BuildProof t -> "proof: " ^ t.t_name
     | States l -> "states: " ^ String.concat "," (List.map Stateid.to_string l)
   let name_of_request = function
-    | ReqBuildProof(r,_) -> "proof: " ^ r.Stateid.name
+    | ReqBuildProof(r,_,_) -> "proof: " ^ r.Stateid.name
     | ReqStates l -> "states: "^String.concat "," (List.map Stateid.to_string l)
 
   let request_of_task age = function
     | States l -> Some (ReqStates l)
-    | BuildProof { t_exn_info;t_start;t_stop;t_loc;t_uuid;t_name;t_states } ->
+    | BuildProof {
+        t_exn_info;t_start;t_stop;t_loc;t_uuid;t_name;t_states;t_drop
+      } ->
         assert(age = `Fresh);
         try Some (ReqBuildProof ({
           Stateid.exn_info = t_exn_info;
@@ -998,7 +1003,7 @@ end = struct (* {{{ *)
           document = VCS.slice ~start:t_start ~stop:t_stop;
           loc = t_loc;
           uuid = t_uuid;
-          name = t_name }, t_states))
+          name = t_name }, t_drop, t_states))
         with VCS.Expired -> None
 
   let use_response (s : competence AsyncTaskQueue.worker_status) t r =
@@ -1032,7 +1037,7 @@ end = struct (* {{{ *)
         Hooks.(call execution_error start Loc.ghost (strbrk s));
         feedback (Feedback.InProgress ~-1)
 
-  let build_proof_here (id,valid) loc eop =
+  let build_proof_here ~drop_pt (id,valid) loc eop =
     Future.create (State.exn_on id ~valid) (fun () ->
       let wall_clock1 = Unix.gettimeofday () in
       if !Flags.batch_mode then Reach.known_state ~cache:`No eop
@@ -1040,31 +1045,35 @@ end = struct (* {{{ *)
       let wall_clock2 = Unix.gettimeofday () in
       Aux_file.record_in_aux_at loc "proof_build_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
-      Proof_global.return_proof ())
+      let p = Proof_global.return_proof ~allow_partial:drop_pt () in
+      if drop_pt then Pp.feedback ~state_id:id Feedback.Complete;
+      p)
 
-  let perform_buildp { Stateid.exn_info; stop; document; loc } my_states =
+  let perform_buildp { Stateid.exn_info; stop; document; loc } drop my_states =
     try
       VCS.restore document;
       VCS.print ();
       let proof, future_proof, time =
         let wall_clock = Unix.gettimeofday () in
-        let fp = build_proof_here exn_info loc stop in
+        let fp = build_proof_here ~drop_pt:drop exn_info loc stop in
         let proof = Future.force fp in
         proof, fp, Unix.gettimeofday () -. wall_clock in
       (* We typecheck the proof with the kernel (in the worker) to spot
        * the few errors tactics don't catch, like the "fix" tactic building
        * a bad fixpoint *)
       let fix_exn = Future.fix_exn_of future_proof in
-      let checked_proof = Future.chain ~pure:false future_proof (fun p ->
-        let pobject, _ =
-          Proof_global.close_future_proof stop (Future.from_val ~fix_exn p) in
-        let terminator = (* The one sent by master is an InvalidKey *)
-          Lemmas.(standard_proof_terminator [] (mk_hook (fun _ _ -> ()))) in
-        vernac_interp stop
-          ~proof:(pobject, terminator)
-          { verbose = false; loc;
-            expr = (VernacEndProof (Proved (Opaque None,None))) }) in
-      ignore(Future.join checked_proof);
+      if not drop then begin
+        let checked_proof = Future.chain ~pure:false future_proof (fun p ->
+          let pobject, _ =
+            Proof_global.close_future_proof stop (Future.from_val ~fix_exn p) in
+          let terminator = (* The one sent by master is an InvalidKey *)
+            Lemmas.(standard_proof_terminator [] (mk_hook (fun _ _ -> ()))) in
+          vernac_interp stop
+            ~proof:(pobject, terminator)
+            { verbose = false; loc;
+              expr = (VernacEndProof (Proved (Opaque None,None))) }) in
+        ignore(Future.join checked_proof);
+      end;
       RespBuiltProof(proof,time)
     with
     | e when Errors.noncritical e || e = Stack_overflow ->
@@ -1115,17 +1124,17 @@ end = struct (* {{{ *)
     aux [initial] query
 
   let perform = function
-    | ReqBuildProof (bp,states) -> perform_buildp bp states
+    | ReqBuildProof (bp,drop,states) -> perform_buildp bp drop states
     | ReqStates sl -> RespStates (perform_states sl)
 
   let on_marshal_error s = function
     | States _ -> msg_error(strbrk("Marshalling error: "^s^". "^
         "The system state could not be sent to the master process."))
-    | BuildProof { t_exn_info; t_stop; t_assign; t_loc } ->
+    | BuildProof { t_exn_info; t_stop; t_assign; t_loc; t_drop = drop_pt } ->
       msg_error(strbrk("Marshalling error: "^s^". "^
         "The system state could not be sent to the worker process. "^
         "Falling back to local, lazy, evaluation."));
-      t_assign(`Comp(build_proof_here t_exn_info t_loc t_stop));
+      t_assign(`Comp(build_proof_here ~drop_pt t_exn_info t_loc t_stop));
       feedback (Feedback.InProgress ~-1)
 
 end (* }}} *)
@@ -1134,7 +1143,8 @@ end (* }}} *)
 and Slaves : sig
 
   (* (eventually) remote calls *)
-  val build_proof : loc:Loc.t ->
+  val build_proof :
+    loc:Loc.t -> drop_pt:bool ->
     exn_info:(Stateid.t * Stateid.t) -> start:Stateid.t -> stop:Stateid.t ->
       name:string -> future_proof * cancel_switch
 
@@ -1144,7 +1154,7 @@ and Slaves : sig
   (* initialize the whole machinery (optional) *)
   val init : unit -> unit
 
-  type 'a tasks = ('a,VCS.vcs) Stateid.request list
+  type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
   val dump_snapshot : unit -> Future.UUID.t tasks
   val check_task : string -> int tasks -> int -> bool
   val info_tasks : 'a tasks -> (string * float * int) list
@@ -1172,7 +1182,7 @@ end = struct (* {{{ *)
       queue := Some (TaskQueue.create 0)
 
   let check_task_aux extra name l i =
-    let { Stateid.stop; document; loc; name = r_name } = List.nth l i in
+    let { Stateid.stop; document; loc; name = r_name }, drop = List.nth l i in
     msg_info(
       str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
     VCS.restore document;
@@ -1183,6 +1193,10 @@ end = struct (* {{{ *)
       aux stop in
     try
       Reach.known_state ~cache:`No stop;
+      if drop then
+        let _proof = Proof_global.return_proof ~allow_partial:true () in
+        `OK_ADMITTED
+      else begin
       (* The original terminator, a hook, has not been saved in the .vio*)
       Proof_global.set_terminator
         (Lemmas.standard_proof_terminator []
@@ -1195,7 +1209,8 @@ end = struct (* {{{ *)
       vernac_interp stop ~proof
         { verbose = false; loc;
           expr = (VernacEndProof (Proved (Opaque None,None))) };
-      Some proof
+      `OK proof
+      end
     with e ->
       let (e, info) = Errors.push e in
       (try match Stateid.get info with
@@ -1220,13 +1235,19 @@ end = struct (* {{{ *)
                 spc () ++ iprint (e, info))
     with e ->
       msg_error (str"unable to print error message: " ++
-                    str (Printexc.to_string e))); None
+                    str (Printexc.to_string e)));
+      if drop then `ERROR_ADMITTED else `ERROR
 
   let finish_task name (u,cst,_) d p l i =
-    let bucket = (List.nth l i).Stateid.uuid in
-    match check_task_aux (Printf.sprintf ", bucket %d" bucket) name l i with
-    | None -> exit 1
-    | Some (po,_) ->
+    let { Stateid.uuid = bucket }, drop = List.nth l i in
+    let bucket_name =
+      if bucket < 0 then (assert drop; ", no bucket")
+      else Printf.sprintf ", bucket %d" bucket in
+    match check_task_aux bucket_name name l i with
+    | `ERROR -> exit 1
+    | `ERROR_ADMITTED -> u, cst, false
+    | `OK_ADMITTED -> u, cst, false
+    | `OK (po,_) ->
         let discharge c = List.fold_right Cooking.cook_constr d.(bucket) c in
         let con =
           Nametab.locate_constant
@@ -1253,11 +1274,11 @@ end = struct (* {{{ *)
   
   let check_task name l i =
     match check_task_aux "" name l i with
-    | Some _ -> true
-    | None -> false
+    | `OK _ | `OK_ADMITTED -> true
+    | `ERROR | `ERROR_ADMITTED -> false
 
   let info_tasks l =
-    CList.map_i (fun i { Stateid.loc; name } ->
+    CList.map_i (fun i ({ Stateid.loc; name }, _) ->
       let time1 =
         try float_of_string (Aux_file.get !hints loc "proof_build_time")
         with Not_found -> 0.0 in
@@ -1284,7 +1305,7 @@ end = struct (* {{{ *)
        BuildProof { t_states = s2 } -> overlap_rel s1 s2
      | _ -> 0)
 
-  let build_proof ~loc ~exn_info ~start ~stop ~name:pname =
+  let build_proof ~loc ~drop_pt ~exn_info ~start ~stop ~name:pname =
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
@@ -1293,19 +1314,19 @@ end = struct (* {{{ *)
          Future.create_delegate ~blocking:true ~name:pname (State.exn_on id ~valid) in
         let t_uuid = Future.uuid f in
         let task = ProofTask.(BuildProof {
-          t_exn_info; t_start = start; t_stop = stop;
+          t_exn_info; t_start = start; t_stop = stop; t_drop = drop_pt;
           t_assign = assign; t_loc = loc; t_uuid; t_name = pname;
           t_states = VCS.nodes_in_slice ~start ~stop }) in
         TaskQueue.enqueue_task (Option.get !queue) (task,cancel_switch);
         f, cancel_switch
       end else
-        ProofTask.build_proof_here t_exn_info loc stop, cancel_switch
+        ProofTask.build_proof_here ~drop_pt t_exn_info loc stop, cancel_switch
     else 
       let f, t_assign = Future.create_delegate ~name:pname (State.exn_on id ~valid) in
       let t_uuid = Future.uuid f in
       feedback (Feedback.InProgress 1);
       let task = ProofTask.(BuildProof {
-        t_exn_info; t_start = start; t_stop = stop; t_assign;
+        t_exn_info; t_start = start; t_stop = stop; t_assign; t_drop = drop_pt;
         t_loc = loc; t_uuid; t_name = pname;
         t_states = VCS.nodes_in_slice ~start ~stop }) in
       TaskQueue.enqueue_task (Option.get !queue) (task,cancel_switch);
@@ -1316,14 +1337,14 @@ end = struct (* {{{ *)
   let cancel_worker n = TaskQueue.cancel_worker (Option.get !queue) n
 
   (* For external users this name is nicer than request *)
-  type 'a tasks = ('a,VCS.vcs) Stateid.request list
+  type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
   let dump_snapshot () =
     let tasks = TaskQueue.snapshot (Option.get !queue) in
     let reqs =
       CList.map_filter
         ProofTask.(fun x ->
              match request_of_task `Fresh x with
-             | Some (ReqBuildProof (r, _)) -> Some r
+             | Some (ReqBuildProof (r, b, _)) -> Some(r, b)
              | _ -> None)
         tasks in
     prerr_endline (Printf.sprintf "dumping %d tasks\n" (List.length reqs));
@@ -1656,7 +1677,7 @@ let collect_proof keep cur hd brkind id =
      else if keep == VtDrop then `Sync (no_name,None,`Aborted)
      else
        let rc = collect (Some cur) [] id in
-       if keep == VtKeep &&
+       if (keep == VtKeep || keep == VtKeepAsAxiom) &&
           (not(State.is_cached id) || !Flags.async_proofs_full)
        then check_policy rc
        else make_sync `AlreadyEvaluated rc
@@ -1733,7 +1754,8 @@ let known_state ?(redefine_qed=false) ~cache id =
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
           | `ASync (start, pua, nodes, name, delegate) -> (fun () ->
-                assert(keep == VtKeep);
+                assert(keep == VtKeep || keep == VtKeepAsAxiom);
+                let drop_pt = keep == VtKeepAsAxiom in
                 let stop, exn_info, loc = eop, (id, eop), x.loc in
                 prerr_endline ("Asynchronous " ^ Stateid.to_string id);
                 VCS.create_cluster nodes ~qed:id ~start;
@@ -1742,7 +1764,8 @@ let known_state ?(redefine_qed=false) ~cache id =
                 | { VCS.kind = `Edit _ }, Some (ofp, cancel) ->
                     assert(redefine_qed = true);
                     let fp, cancel =
-                      Slaves.build_proof ~loc ~exn_info ~start ~stop ~name in
+                      Slaves.build_proof
+                        ~loc ~drop_pt ~exn_info ~start ~stop ~name in
                     Future.replace ofp fp;
                     qed.fproof <- Some (fp, cancel)
                 | { VCS.kind = `Proof _ }, Some _ -> assert false
@@ -1750,9 +1773,11 @@ let known_state ?(redefine_qed=false) ~cache id =
                     reach ~cache:`Shallow start;
                     let fp, cancel =
                       if delegate then
-                        Slaves.build_proof ~loc ~exn_info ~start ~stop ~name
+                        Slaves.build_proof
+                          ~loc ~drop_pt ~exn_info ~start ~stop ~name
                       else
-                        ProofTask.build_proof_here exn_info loc stop, ref false
+                        ProofTask.build_proof_here
+                          ~drop_pt exn_info loc stop, ref false
                     in
                     qed.fproof <- Some (fp, cancel);
                     let proof =
@@ -1776,11 +1801,16 @@ let known_state ?(redefine_qed=false) ~cache id =
                 let wall_clock = Unix.gettimeofday () in
                 record_pb_time name x.loc (wall_clock -. !wall_clock_last_fork);
                 let proof =
-                  if keep != VtKeep then None
-                  else Some(Proof_global.close_proof
-                              ~keep_body_ucst_sepatate:false
-                              (State.exn_on id ~valid:eop)) in
-                if proof = None then prerr_endline "NONE!!!!!";
+                  match keep with
+                  | VtDrop -> None
+                  | VtKeepAsAxiom ->
+                      let ctx = Evd.empty_evar_universe_context in
+                      let fp = Future.from_val ([],ctx) in
+                      qed.fproof <- Some (fp, ref false); None
+                  | VtKeep ->
+                      Some(Proof_global.close_proof
+                                ~keep_body_ucst_sepatate:false
+                                (State.exn_on id ~valid:eop)) in
                 reach view.next;
                 if keep == VtKeepAsAxiom then
                   Option.iter (vernac_interp id) pua;
@@ -1862,11 +1892,22 @@ let wait () =
   Slaves.wait_all_done ();
   VCS.print ()
 
+let rec join_admitted_proofs id =
+  if Stateid.equal id Stateid.initial then () else
+  let view = VCS.visit id in
+  match view.step with
+  | `Qed ({ keep = VtKeepAsAxiom; fproof = Some (fp,_) },_) ->
+       ignore(Future.force fp);
+       join_admitted_proofs view.next
+  | _ -> join_admitted_proofs view.next
+
 let join () =
   finish ();
   wait ();
   prerr_endline "Joining the environment";
   Global.join_safe_environment ();
+  prerr_endline "Joining Admitted proofs";
+  join_admitted_proofs (VCS.get_branch_pos (VCS.current_branch ()));
   VCS.print ();
   VCS.print ()
 

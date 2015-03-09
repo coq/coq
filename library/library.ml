@@ -696,7 +696,7 @@ let save_library_to ?todo dir f otab =
         f ^ "o", Future.UUIDSet.empty
     | Some (l,_) ->
         f ^ "io",
-        List.fold_left (fun e r -> Future.UUIDSet.add r.Stateid.uuid e)
+        List.fold_left (fun e (r,_) -> Future.UUIDSet.add r.Stateid.uuid e)
           Future.UUIDSet.empty l in
   let cenv, seg, ast = Declaremods.end_library ~except dir in
   let opaque_table, univ_table, disch_table, f2t_map = Opaqueproof.dump otab in
@@ -705,14 +705,17 @@ let save_library_to ?todo dir f otab =
     | None -> None, None, None
     | Some (tasks, rcbackup) ->
         let tasks =
-          List.map Stateid.(fun r ->
-            { r with uuid = Future.UUIDMap.find r.uuid f2t_map }) tasks in
+          List.map Stateid.(fun (r,b) ->
+            try { r with uuid = Future.UUIDMap.find r.uuid f2t_map }, b
+            with Not_found -> assert b; { r with uuid = -1 }, b)
+          tasks in
         Some (tasks,rcbackup),
         Some (univ_table,Univ.ContextSet.empty,false),
         Some disch_table in
   let except =
     Future.UUIDSet.fold (fun uuid acc ->
-      Int.Set.add (Future.UUIDMap.find uuid f2t_map) acc)
+      try Int.Set.add (Future.UUIDMap.find uuid f2t_map) acc
+      with Not_found -> acc)
       except Int.Set.empty in
   let is_done_or_todo i x = Future.is_val x || Int.Set.mem i except in
   Array.iteri (fun i x ->

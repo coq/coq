@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Set Universe Polymorphism.
 Inductive paths {A : Type} (a : A) : A -> Type :=
   idpath : paths a a.
