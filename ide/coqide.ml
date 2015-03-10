@@ -84,14 +84,15 @@ let pr_exit_status = function
   | _ -> " failed"
 
 let make_coqtop_args = function
-  |None -> !sup_args
+  |None -> "", !sup_args
   |Some the_file ->
     let get_args f = Project_file.args_from_project f
       !custom_project_files prefs.project_file_name
     in
     match prefs.read_project with
-      |Ignore_args -> !sup_args
-      |Append_args -> get_args the_file @ !sup_args
+      |Ignore_args -> "", !sup_args
+      |Append_args ->
+         let fname, args = get_args the_file in fname, args @ !sup_args
       |Subst_args -> get_args the_file
 
 (** Setting drag & drop on widgets *)
@@ -120,7 +121,10 @@ let set_drag (w : GObj.drag_ops) =
 (** Session management *)
 
 let create_session f =
-  let ans = Session.create f (make_coqtop_args f) in
+  let project_file, args = make_coqtop_args f in
+  if project_file <> "" then
+    flash_info (Printf.sprintf "Reading options from %s" project_file);
+  let ans = Session.create f args in
   let _ = set_drag ans.script#drag in
   ans
 
