@@ -134,7 +134,7 @@ val pop : constr -> constr
 (** Substitution of an arbitrary large term. Uses equality modulo
    reduction of let *)
 
-(** [subst_term_gen eq d c] replaces [Rel 1] by [d] in [c] using [eq]
+(** [subst_term_gen eq d c] replaces [d] by [Rel 1] in [c] using [eq]
    as equality *)
 val subst_term_gen :
   (constr -> constr -> bool) -> constr -> constr -> constr
@@ -145,7 +145,7 @@ val replace_term_gen :
   (constr -> constr -> bool) ->
     constr -> constr -> constr -> constr
 
-(** [subst_term d c] replaces [Rel 1] by [d] in [c] *)
+(** [subst_term d c] replaces [d] by [Rel 1] in [c] *)
 val subst_term : constr -> constr -> constr
 
 (** [replace_term d e c] replaces [d] by [e] in [c] *)
