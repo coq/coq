@@ -39,6 +39,10 @@ let typeclasses_dependency_order = ref false
 let set_typeclasses_dependency_order d = (:=) typeclasses_dependency_order d
 let get_typeclasses_dependency_order () = !typeclasses_dependency_order
 
+let typeclasses_iterative_deepening = ref false
+let set_typeclasses_iterative_deepening d = (:=) typeclasses_iterative_deepening d
+let get_typeclasses_iterative_deepening () = !typeclasses_iterative_deepening
+
 open Goptions
 
 let _ =
@@ -58,6 +62,15 @@ let _ =
       optkey   = ["Typeclasses";"Dependency";"Order"];
       optread  = get_typeclasses_dependency_order;
       optwrite = set_typeclasses_dependency_order; }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "use iterative deepening strategy";
+      optkey   = ["Typeclasses";"Iterative";"Deepening"];
+      optread  = get_typeclasses_iterative_deepening;
+      optwrite = set_typeclasses_iterative_deepening; }
 
 (** We transform the evars that are concerned by this resolution
     (according to predicate p) into goals.
@@ -266,7 +279,8 @@ type autoinfo = { hints : hint_db; is_evar: existential_key option;
 		  auto_path : global_reference option list;
 		  auto_cut : hints_path }
 type autogoal = goal * autoinfo
-type 'ans fk = unit -> 'ans
+type failure = NotApplicable | ReachedLimit
+type 'ans fk = failure -> 'ans
 type ('a,'ans) sk = 'a -> 'ans fk -> 'ans
 type 'a tac = { skft : 'ans. ('a,'ans) sk -> 'ans fk -> autogoal sigma -> 'ans }
 
@@ -281,7 +295,7 @@ type 'a optionk =
   | Somek of 'a * 'a optionk fk
 
 type ('a,'b) optionk2 =
-  | Nonek2
+  | Nonek2 of failure
   | Somek2 of 'a * 'b * ('a,'b) optionk2 fk
 
 let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
@@ -363,7 +377,7 @@ let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : '
               with e when catchable e -> None in
       match res with
       | Some gls -> sk (f gls hints) fk
-      | None -> fk () }
+      | None -> fk NotApplicable }
 
 let intro_tac : atac =
   lift_tactic (Proofview.V82.of_tactic Tactics.intro)
@@ -384,8 +398,19 @@ let normevars_tac : atac =
     let info' = { info with auto_last_tac = lazy (str"normevars") } in
       sk {it = [gl', info']; sigma = sigma';} fk }
 
+let merge_failures x y =
+  match x, y with
+  | _, ReachedLimit
+  | ReachedLimit, _ -> ReachedLimit
+  | NotApplicable, NotApplicable -> NotApplicable
+
 let or_tac (x : 'a tac) (y : 'a tac) : 'a tac =
-  { skft = fun sk fk gls -> x.skft sk (fun () -> y.skft sk fk gls) gls }
+  { skft = fun sk fk gls -> x.skft sk
+    (fun f -> y.skft sk (fun f' -> fk (merge_failures f f')) gls) gls }
+
+let or_else_tac (x : 'a tac) (y : failure -> 'a tac) : 'a tac =
+  { skft = fun sk fk gls -> x.skft sk
+    (fun f -> (y f).skft sk fk gls) gls }
 
 let is_Prop env sigma concl =
   let ty = Retyping.get_type_of env sigma concl in
@@ -462,7 +487,7 @@ let hints_tac hints =
 		in g, info) 1 newgls in
 	    let glsv = {it = gls'; sigma = s';} in
 	    let fk' =
-	      (fun () ->
+	      (fun e ->
 		let do_backtrack =
 		  if unique then occur_existential concl
 		  else if info.unique then true
@@ -470,22 +495,25 @@ let hints_tac hints =
 		    needs_backtrack env s' info.is_evar concl
 		  else true
 		in
+		let e' = match foundone with None -> e | Some e' -> merge_failures e e' in
 		  if !typeclasses_debug then
 		    msg_debug 
 		      ((if do_backtrack then str"Backtracking after "
 			else str "Not backtracking after ")
 		       ++ Lazy.force pp);
-		  if do_backtrack then aux (succ i) true tl
-		  else fk ())
+		  if do_backtrack then aux (succ i) (Some e') tl
+		  else fk e')
 	    in
 	      sk glsv fk')
       | [] ->
-	if not foundone && !typeclasses_debug then
+	if foundone == None && !typeclasses_debug then
 	  msg_debug (pr_depth info.auto_depth ++ str": no match for " ++
 		       Printer.pr_constr_env (Goal.V82.env s gl) s concl ++
 		       spc () ++ str ", " ++ int (List.length poss) ++ str" possibilities");
-	fk ()
-      in aux 1 false poss }
+	match foundone with
+	| Some e -> fk e
+	| None -> fk NotApplicable
+      in aux 1 None poss }
 
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
   let rec aux s (acc : autogoal list list) fk = function
@@ -508,11 +536,11 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
     | [] -> Somek2 (List.rev acc, s, fk)
   in fun {it = gls; sigma = s; } fk ->
     let rec aux' = function
-      | Nonek2 -> fk ()
+      | Nonek2 e -> fk e
       | Somek2 (res, s', fk') ->
 	  let goals' = List.concat res in
-	    sk {it = goals'; sigma = s'; } (fun () -> aux' (fk' ()))
-    in aux' (aux s [] (fun () -> Nonek2) gls)
+	    sk {it = goals'; sigma = s'; } (fun e -> aux' (fk' e))
+    in aux' (aux s [] (fun e -> Nonek2 e) gls)
 
 let then_tac (first : atac) (second : atac) : atac =
   { skft = fun sk fk -> first.skft (then_list second sk) fk }
@@ -527,15 +555,37 @@ let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : run_list_res 
     gl
     (fun _ -> Nonek)
 
-let fail_tac : atac =
-  { skft = fun sk fk _ -> fk () }
+let fail_tac reason : atac =
+  { skft = fun sk fk _ -> fk reason }
 
 let rec fix (t : 'a tac) : 'a tac =
   then_tac t { skft = fun sk fk -> (fix t).skft sk fk }
 
 let rec fix_limit limit (t : 'a tac) : 'a tac =
-  if Int.equal limit 0 then fail_tac
+  if Int.equal limit 0 then fail_tac ReachedLimit
   else then_tac t { skft = fun sk fk -> (fix_limit (pred limit) t).skft sk fk }
+
+let fix_iterative' t =
+  let rec aux depth =
+    { skft = fun sk fk gls -> 
+      (fix_limit depth t).skft sk
+	(function NotApplicable as e -> fk e
+	  | ReachedLimit -> (aux (succ depth)).skft sk fk gls) gls }
+  in aux 1
+
+let fix_iterative t =
+  let rec aux depth =
+    or_else_tac (fix_limit depth t)
+      (function 
+	| NotApplicable as e -> fail_tac e
+	| ReachedLimit -> aux (succ depth))
+  in aux 1
+
+let fix_iterative_limit limit (t : 'a tac) : 'a tac =
+  let rec aux depth =
+    if Int.equal depth limit then fail_tac ReachedLimit
+    else or_tac (fix_limit depth t) { skft = fun sk fk -> (aux (succ depth)).skft sk fk }
+  in aux 1
 
 let make_autogoal ?(only_classes=true) ?(unique=false) ?(st=full_transparent_state) cut ev g =
   let hints = make_autogoal_hints only_classes ~st g in
@@ -580,16 +630,14 @@ let eauto_tac hints =
   then_tac normevars_tac (or_tac (hints_tac hints) intro_tac)
 
 let eauto_tac ?limit hints =
-  match limit with
-  | None -> fix (eauto_tac hints)
-  | Some limit -> fix_limit limit (eauto_tac hints)
-
-let eauto ?(only_classes=true) ?st ?limit hints g =
-  let gl = { it = make_autogoal ~only_classes ?st (cut_of_hints hints) None g; sigma = project g; } in
-    match run_tac (eauto_tac ?limit hints) gl with
-    | None -> raise Not_found
-    | Some {it = goals; sigma = s; } ->
-	{it = List.map fst goals; sigma = s;}
+  if get_typeclasses_iterative_deepening () then
+    match limit with
+    | None -> fix_iterative (eauto_tac hints)
+    | Some limit -> fix_iterative_limit limit (eauto_tac hints)
+  else
+    match limit with
+    | None -> fix (eauto_tac hints)
+    | Some limit -> fix_limit limit (eauto_tac hints)
 
 let real_eauto ?limit unique st hints p evd =
   let res =
@@ -599,7 +647,7 @@ let real_eauto ?limit unique st hints p evd =
     | None -> evd
     | Some (evd', fk) -> 
       if unique then
-	(match get_result (fk ()) with
+	(match get_result (fk NotApplicable) with
 	| Some (evd'', fk') -> error "Typeclass resolution gives multiple solutions"
 	| None -> evd')
       else evd'
@@ -607,6 +655,13 @@ let real_eauto ?limit unique st hints p evd =
 let resolve_all_evars_once debug limit unique p evd =
   let db = searchtable_map typeclasses_db in
     real_eauto ?limit unique (Hint_db.transparent_state db) [db] p evd
+
+let eauto ?(only_classes=true) ?st ?limit hints g =
+  let gl = { it = make_autogoal ~only_classes ?st (cut_of_hints hints) None g; sigma = project g; } in
+    match run_tac (eauto_tac ?limit hints) gl with
+    | None -> raise Not_found
+    | Some {it = goals; sigma = s; } ->
+	{it = List.map fst goals; sigma = s;}
 
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,

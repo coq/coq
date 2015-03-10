@@ -58,3 +58,24 @@ Section sec.
  Surely we can just expand it inline, right? Wrong!: *)
  Check U (fun x => e x) _.
 End sec.
+
+Module IterativeDeepening.
+
+  Class A.
+  Class B.
+  Class C.
+
+  Instance: B -> A | 0.
+  Instance: C -> A | 0.
+  Instance: C -> B -> A | 0.
+  Instance: A -> A | 0.
+  
+  Goal C -> A.
+    intros.
+    Set Typeclasses Debug.
+    Fail Timeout 1 typeclasses eauto.
+    Set Typeclasses Iterative Deepening.
+    typeclasses eauto.
+  Qed.
+
+End IterativeDeepening.
