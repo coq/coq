@@ -530,7 +530,7 @@ let update_status sn =
       | None -> ""
       | Some n -> ", proving " ^ n
     in
-    display ("Ready"^ if current.nanoPG then ", [μPG]" else "" ^ path ^ name);
+    display ("Ready"^ (if current.nanoPG then ", [μPG]" else "") ^ path ^ name);
     Coq.return ()
   in
   Coq.bind (Coq.status ~logger:sn.messages#push false) next
