@@ -122,6 +122,7 @@ Section GraphObj.
 
   Definition GraphIndex_Compose s d d' (m1 : GraphIndex_Morphism d d') (m2 : GraphIndex_Morphism s d) :
     GraphIndex_Morphism s d'.
+  Proof using.  (* This makes no sense, but it makes this test behave as before the no admit commit *)
   Admitted.
 
    Definition GraphIndexingCategory : @SpecializedCategory GraphIndex.
