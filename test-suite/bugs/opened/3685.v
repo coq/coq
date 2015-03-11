@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Set Universe Polymorphism.
 Class Funext := { }.
 Delimit Scope category_scope with category.

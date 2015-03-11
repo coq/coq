@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Set Implicit Arguments.
 Set Universe Polymorphism.
 Generalizable All Variables.

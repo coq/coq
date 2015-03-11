@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 
 Require Import Relations Program Setoid Morphisms.
 

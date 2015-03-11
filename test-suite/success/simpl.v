@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* Check that inversion of names of mutual inductive fixpoints works *)
 (* (cf bug #1031) *)
 

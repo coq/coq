@@ -572,6 +572,7 @@ Lemma Alembert_C6 :
     (forall n:nat, An n <> 0) ->
     Un_cv (fun n:nat => Rabs (An (S n) / An n)) k ->
     Rabs x < / k -> { l:R | Pser An x l }.
+Proof.
   intros.
   cut { l:R | Un_cv (fun N:nat => sum_f_R0 (fun i:nat => An i * x ^ i) N) l }.
   intro X.

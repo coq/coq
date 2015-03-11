@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Module ETassi.
   Axiom admit : forall {T}, T.
   Class IsHProp (A : Type) : Type := {}.

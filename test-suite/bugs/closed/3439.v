@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 3154 lines to 149 lines, then from 89 lines to 55 lines, then from 44 lines to 20 lines *)
 Set Primitive Projections.
 Generalizable All Variables.

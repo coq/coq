@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Class Foo.
 Definition bar `{Foo} (x : Set) := Set.
 Instance: Foo.

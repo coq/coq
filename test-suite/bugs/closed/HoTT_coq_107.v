@@ -59,7 +59,7 @@ Instance trunc_sigma `{P : A -> Type}
 
 Proof.
   generalize dependent A.
-  induction n; [ | admit ]; simpl; intros A P ac Pc.
+  induction n; [ | apply admit ]; simpl; intros A P ac Pc.
   (exists (existT _ (center A) (center (P (center A))))).
   intros [a ?].
   refine (path_sigma' P (contr a) (path_contr _ _)).
@@ -102,5 +102,5 @@ The term
         | false => B
         end))" (Universe inconsistency: Cannot enforce Top.197 = Set)).
  *)
-  admit.
+  apply admit.
 Defined.

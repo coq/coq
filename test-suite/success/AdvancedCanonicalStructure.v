@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Section group_morphism.
 
 (* An example with default canonical structures *)

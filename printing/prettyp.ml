@@ -197,11 +197,13 @@ let print_opacity ref =
 let print_polymorphism ref =
   let poly = Global.is_polymorphic ref in
   let template_poly = Global.is_template_polymorphic ref in
-    pr_global ref ++ str " is " ++ str 
+  if Flags.is_universe_polymorphism () || poly || template_poly then
+    [ pr_global ref ++ str " is " ++ str
       (if poly then "universe polymorphic"
        else if template_poly then
 	 "template universe polymorphic"
-       else "not universe polymorphic")
+       else "not universe polymorphic") ]
+  else []
 
 let print_primitive_record mipv = function
   | Some (Some (_, ps,_)) ->
@@ -214,9 +216,8 @@ let print_primitive ref =
     let mib,_ = Global.lookup_inductive ind in
       print_primitive_record mib.mind_packets mib.mind_record
   | _ -> []
-    
+
 let print_name_infos ref =
-  let poly = print_polymorphism ref in
   let impls = implicits_of_global ref in
   let scopes = Notation.find_arguments_scope ref in
   let renames =
@@ -228,7 +229,8 @@ let print_name_infos ref =
        print_ref true ref; blankline]
     else
       [] in
-  poly :: print_primitive ref @
+  print_polymorphism ref @
+  print_primitive ref @
   type_info_for_implicit @
   print_renames_list (mt()) renames @
   print_impargs_list (mt()) impls @

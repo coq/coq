@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 1972 lines to 136 lines, then from 119 lines to 105 lines *)
 Global Set Implicit Arguments.
 Require Import Coq.Lists.List Program.

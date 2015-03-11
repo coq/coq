@@ -296,13 +296,7 @@ let save_anonymous_with_strength ?export_seff proof kind save_ident =
 
 (* Admitted *)
 
-let admit hook () =
-  let (id,k,typ) = Pfedit.current_proof_statement () in
-  let ctx =
-    let evd = fst (Pfedit.get_current_goal_context ()) in
-      Evd.universe_context evd
-  in
-  let e = Pfedit.get_used_variables(), pi2 k, (typ, ctx), None in
+let admit (id,k,e) hook () =
   let kn = declare_constant id (ParameterEntry e, IsAssumption Conjectural) in
   let () = match k with
   | Global, _, _ -> ()
@@ -334,8 +328,8 @@ let check_exist =
 
 let standard_proof_terminator compute_guard hook =
   let open Proof_global in function
-  | Admitted ->
-      admit hook ();
+  | Admitted (id,k,pe) ->
+      admit (id,k,pe) hook ();
       Pp.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt,proof) ->
       let is_opaque, export_seff, exports = match opaque with
@@ -353,8 +347,8 @@ let standard_proof_terminator compute_guard hook =
 
 let universe_proof_terminator compute_guard hook =
   let open Proof_global in function
-  | Admitted ->
-      admit (hook None) ();
+  | Admitted (id,k,pe) ->
+      admit (id,k,pe) (hook None) ();
       Pp.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt,proof) ->
       let is_opaque, export_seff, exports = match opaque with
@@ -475,7 +469,37 @@ let start_proof_com kind thms hook =
 
 let save_proof ?proof = function
   | Vernacexpr.Admitted ->
-      Proof_global.get_terminator() Proof_global.Admitted
+      let pe =
+        let open Proof_global in
+        match proof with
+        | Some ({ id; entries; persistence = k; universes }, _) ->
+            if List.length entries <> 1 then
+              error "Admitted does not support multiple statements";
+            let { const_entry_secctx; const_entry_type } = List.hd entries in
+            if const_entry_type = None then
+              error "Admitted requires an explicit statement";
+            let typ = Option.get const_entry_type in
+            let ctx = Evd.evar_context_universe_context universes in
+            Admitted(id, k, (const_entry_secctx, pi2 k, (typ, ctx), None))
+        | None ->
+            let id, k, typ = Pfedit.current_proof_statement () in
+            let ctx =
+              let evd, _ = Pfedit.get_current_goal_context () in
+              Evd.universe_context evd in
+            (* This will warn if the proof is complete *)
+            let pproofs,_ = Proof_global.return_proof ~allow_partial:true () in
+            let sec_vars =
+              match  Pfedit.get_used_variables(), pproofs with
+              | Some _ as x, _ -> x
+              | None, (pproof, _) :: _ -> 
+                  let env = Global.env () in
+                  let ids_typ = Environ.global_vars_set env typ in
+                  let ids_def = Environ.global_vars_set env pproof in
+                  Some (Environ.keep_hyps env (Idset.union ids_typ ids_def))
+              | _ -> None in
+            Admitted(id,k,(sec_vars, pi2 k, (typ, ctx), None))
+      in
+      Proof_global.get_terminator() pe
   | Vernacexpr.Proved (is_opaque,idopt) ->
       let (proof_obj,terminator) =
         match proof with

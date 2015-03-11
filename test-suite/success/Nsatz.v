@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* compile en user    3m39.915s sur cachalot *)
 Require Import Nsatz.
 

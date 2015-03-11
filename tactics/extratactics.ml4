@@ -25,12 +25,8 @@ open Misctypes
 DECLARE PLUGIN "extratactics"
 
 (**********************************************************************)
-(* admit, replace, discriminate, injection, simplify_eq               *)
+(* replace, discriminate, injection, simplify_eq                      *)
 (* cutrewrite, dependent rewrite                                      *)
-
-TACTIC EXTEND admit
-  [ "admit" ] -> [ admit_as_an_axiom ]
-END
 
 let replace_in_clause_maybe_by (sigma1,c1) c2 cl  tac =
   Tacticals.New.tclWITHHOLES false

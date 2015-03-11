@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Goal forall m n, n+n = m+m -> m+m = m+m.
 Proof.
 intros.

@@ -24,6 +24,7 @@ Definition Boule (x:R) (r:posreal) (y:R) : Prop := Rabs (y - x) < r.
 
 Lemma Boule_convex : forall c d x y z,
   Boule c d x -> Boule c d y -> x <= z <= y -> Boule c d z.
+Proof.
 intros c d x y z bx b_y intz.
 unfold Boule in bx, b_y; apply Rabs_def2 in bx;
 apply Rabs_def2 in b_y; apply Rabs_def1;
@@ -33,6 +34,7 @@ Qed.
 
 Definition boule_of_interval x y (h : x < y) :
   {c :R & {r : posreal | c - r = x /\ c + r = y}}.
+Proof.
 exists ((x + y)/2).
 assert (radius : 0 < (y - x)/2).
  unfold Rdiv; apply Rmult_lt_0_compat.
@@ -71,6 +73,7 @@ Qed.
 Lemma Ball_in_inter : forall c1 c2 r1 r2 x,
   Boule c1 r1 x -> Boule c2 r2 x ->
   {r3 : posreal | forall y, Boule x r3 y -> Boule c1 r1 y /\ Boule c2 r2 y}.
+Proof.
 intros c1 c2 [r1 r1p] [r2 r2p] x; unfold Boule; simpl; intros in1 in2.
 assert (Rmax (c1 - r1)(c2 - r2) < x).
  apply Rmax_lub_lt;[revert in1 | revert in2]; intros h;
@@ -366,6 +369,7 @@ Qed.
 (* Uniform convergence implies pointwise simple convergence *)
 Lemma CVU_cv : forall f g c d, CVU f g c d ->
    forall x, Boule c d x -> Un_cv (fun n => f n x) (g x).
+Proof.
 intros f g c d cvu x bx eps ep; destruct (cvu eps ep) as [N Pn].
  exists N; intros n nN; rewrite R_dist_sym; apply Pn; assumption.
 Qed.
@@ -374,6 +378,7 @@ Qed.
 Lemma CVU_ext_lim :
   forall f g1 g2 c d, CVU f g1 c d -> (forall x, Boule c d x -> g1 x = g2 x) ->
     CVU f g2 c d.
+Proof.
 intros f g1 g2 c d cvu q eps ep; destruct (cvu _ ep) as [N Pn].
 exists N; intros; rewrite <- q; auto.
 Qed.
@@ -388,6 +393,7 @@ Lemma CVU_derivable :
    (forall x, Boule c d x -> Un_cv (fun n => f n x) (g x)) ->
    (forall n x, Boule c d x -> derivable_pt_lim (f n) x (f' n x)) ->
    forall x, Boule c d x -> derivable_pt_lim g x (g' x).
+Proof.
 intros f f' g g' c d cvu cvp dff' x bx.
 set (rho_ :=
        fun n y =>

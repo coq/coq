@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 716 lines to 197 lines, then from 206 lines to 162 lines, then from 163 lines to 73 lines *)
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Strings.String.

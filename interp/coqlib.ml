@@ -349,7 +349,6 @@ let build_coq_inversion_eq_true_data () =
 
 (* The False proposition *)
 let coq_False  = lazy_init_constant ["Logic"] "False"
-let coq_proof_admitted = lazy_init_constant ["Logic"] "proof_admitted"
 
 (* The True proposition and its unique proof *)
 let coq_True   = lazy_init_constant ["Logic"] "True"
@@ -371,7 +370,6 @@ let build_coq_True ()  = Lazy.force coq_True
 let build_coq_I ()     = Lazy.force coq_I
 
 let build_coq_False () = Lazy.force coq_False
-let build_coq_proof_admitted () = Lazy.force coq_proof_admitted
 let build_coq_not ()   = Lazy.force coq_not
 let build_coq_and ()   = Lazy.force coq_and
 let build_coq_conj ()  = Lazy.force coq_conj

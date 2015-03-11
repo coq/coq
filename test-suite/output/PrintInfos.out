@@ -25,7 +25,6 @@ For eq: Argument scopes are [type_scope _ _]
 For eq_refl: Argument scopes are [type_scope _]
 eq_refl : forall (A : Type) (x : A), x = x
 
-eq_refl is not universe polymorphic
 When applied to no arguments:
   Arguments A, x are implicit and maximally inserted
 When applied to 1 argument:
@@ -46,11 +45,9 @@ fix add (n m : nat) {struct n} : nat :=
   end
      : nat -> nat -> nat
 
-Nat.add is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 Nat.add : nat -> nat -> nat
 
-Nat.add is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 Nat.add is transparent
 Expands to: Constant Coq.Init.Nat.add
@@ -58,7 +55,6 @@ Nat.add : nat -> nat -> nat
 
 plus_n_O : forall n : nat, n = n + 0
 
-plus_n_O is not universe polymorphic
 Argument scope is [nat_scope]
 plus_n_O is opaque
 Expands to: Constant Coq.Init.Peano.plus_n_O
@@ -80,13 +76,11 @@ For le_n: Argument scope is [nat_scope]
 For le_S: Argument scopes are [nat_scope nat_scope _]
 comparison : Set
 
-comparison is not universe polymorphic
 Expands to: Inductive Coq.Init.Datatypes.comparison
 Inductive comparison : Set :=
     Eq : comparison | Lt : comparison | Gt : comparison
 bar : foo
 
-bar is not universe polymorphic
 Expanded type for implicit arguments
 bar : forall x : nat, x = 0
 
@@ -94,14 +88,12 @@ Argument x is implicit and maximally inserted
 Expands to: Constant Top.bar
 *** [ bar : foo ]
 
-bar is not universe polymorphic
 Expanded type for implicit arguments
 bar : forall x : nat, x = 0
 
 Argument x is implicit and maximally inserted
 bar : foo
 
-bar is not universe polymorphic
 Expanded type for implicit arguments
 bar : forall x : nat, x = 0
 
@@ -109,7 +101,6 @@ Argument x is implicit and maximally inserted
 Expands to: Constant Top.bar
 *** [ bar : foo ]
 
-bar is not universe polymorphic
 Expanded type for implicit arguments
 bar : forall x : nat, x = 0
 

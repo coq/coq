@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 14259 lines to 305 lines, then from 237 lines to 120 lines, then from 100 lines to 30 lines *)
 Set Primitive Projections.
 Set Implicit Arguments.

@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (** I'm not sure if this tests what I want it to test... *)
 Set Implicit Arguments.
 Set Universe Polymorphism.

@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Axiom transport : forall {A : Type} (P : A -> Type) {x y : A} (p : x = y) (u : P x), P y.
 Notation "p # x" := (transport _ p x) (right associativity, at level 65, only parsing).
 Definition Sect {A B : Type} (s : A -> B) (r : B -> A) := forall x : A, r (s x) = x.

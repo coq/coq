@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* Test on definitions referring to section variables that are not any
    longer in the current context *)
 

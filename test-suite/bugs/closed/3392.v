@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 12105 lines to 142 lines, then from 83 lines to 57 lines *)
 Generalizable All Variables.
 Axiom admit : forall {T}, T.

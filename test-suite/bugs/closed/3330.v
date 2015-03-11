@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 12106 lines to 1070 lines *)
 Set Universe Polymorphism.
 Definition setleq (A : Type@{i}) (B : Type@{j}) := A : Type@{j}.

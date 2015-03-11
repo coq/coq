@@ -182,29 +182,21 @@ let read_project_file f =
     (snd (process_cmd_line (Filename.dirname f) (Some f, None, NoInstall, true) [] (parse f)))
 
 let args_from_project file project_files default_name =
-  let is_f = CUnix.same_file file in
-  let contains_file dir =
-      List.exists (fun x -> is_f (CUnix.correct_path x dir))
-  in
   let build_cmd_line ml_inc i_inc r_inc args =
     List.fold_right (fun (_,i) o -> "-I" :: i :: o) ml_inc
       (List.fold_right (fun (_,l,i) o -> "-Q" :: i :: l :: o) i_inc
         (List.fold_right (fun (_,l,p) o -> "-R" :: p :: l :: o) r_inc
 	  (List.fold_right (fun a o -> parse_args (Stream.of_string a) @ o) args [])))
   in try
-      let (_,(_,(ml_inc,i_inc,r_inc),(args,_))) =
-	List.find (fun (dir,((v_files,_,_,_),_,_)) ->
-		     contains_file dir v_files) project_files in
-	build_cmd_line ml_inc i_inc r_inc args
-    with Not_found ->
+      let (fname,(_,(ml_inc,i_inc,r_inc),(args,_))) = List.hd project_files in
+	fname, build_cmd_line ml_inc i_inc r_inc args
+    with Failure _ ->
       let rec find_project_file dir = try
+	let fname = Filename.concat dir default_name in
 	let ((v_files,_,_,_),(ml_inc,i_inc,r_inc),(args,_)) =
-	  read_project_file (Filename.concat dir default_name) in
-	  if contains_file dir v_files
-	  then build_cmd_line ml_inc i_inc r_inc args
-	  else let newdir = Filename.dirname dir in
-	    if dir = newdir then [] else find_project_file newdir
+          read_project_file fname in
+	fname, build_cmd_line ml_inc i_inc r_inc args
       with Sys_error s ->
 	let newdir = Filename.dirname dir in
-	  if dir = newdir then [] else find_project_file newdir
+	  if dir = newdir then "",[] else find_project_file newdir
       in find_project_file (Filename.dirname file)

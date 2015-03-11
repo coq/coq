@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Set Universe Polymorphism.
 Definition Lift
 : $(let U1 := constr:(Type) in

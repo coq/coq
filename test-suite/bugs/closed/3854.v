@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Definition relation (A : Type) := A -> A -> Type.
 Class Reflexive {A} (R : relation A) := reflexivity : forall x : A, R x x.
 Axiom IsHProp : Type -> Type.

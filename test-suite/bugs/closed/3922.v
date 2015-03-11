@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Set Universe Polymorphism.
 Notation Type0 := Set.
 

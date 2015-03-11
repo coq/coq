@@ -1,15 +1,7 @@
 TrM.A = M.A
      : Set
-
-TrM.A is not universe polymorphic
 OpM.A = M.A
      : Set
-
-OpM.A is not universe polymorphic
 TrM.B = M.B
      : Set
-
-TrM.B is not universe polymorphic
 *** [ OpM.B : Set ]
-
-OpM.B is not universe polymorphic

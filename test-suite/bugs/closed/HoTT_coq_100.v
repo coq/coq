@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from 335 lines to 115 lines. *)
 Set Implicit Arguments.
 Set Universe Polymorphism.

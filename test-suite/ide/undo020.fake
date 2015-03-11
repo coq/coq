@@ -12,8 +12,8 @@ ADD { Qed. }
 # second proof
 ADD { Lemma b : False. }
 ADD { Proof using. }
-ADD { admit. }
-ADD last { Qed. }
+ADD { give_up. }
+ADD last { Admitted. }
 # We join and expect some proof to fail
 WAIT
 # Going back to the error

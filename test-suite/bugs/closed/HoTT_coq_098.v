@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Set Implicit Arguments.
 Generalizable All Variables.
 

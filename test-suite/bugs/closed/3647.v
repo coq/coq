@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Require Coq.Setoids.Setoid.
 
 Axiom BITS : nat -> Set.

@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter") -*- *)
 Set Universe Polymorphism.
 

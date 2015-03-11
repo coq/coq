@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 Lemma match_option_fn T (b : option T) A B s n
 : match b as b return forall x : A, B b x with
     | Some k => s k

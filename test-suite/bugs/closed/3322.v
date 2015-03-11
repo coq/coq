@@ -1,3 +1,4 @@
+Require Import TestSuite.admit.
 (* File reduced by coq-bug-finder from original input, then from 11971 lines to 11753 lines, then from 7702 lines to 564 lines, then from 571 lines to 61 lines *)
 Set Asymmetric Patterns.
 Axiom admit : forall {T}, T.
