@@ -1472,8 +1472,7 @@ let do_instr raw_instr pts =
     else pts
   in
   Proof_global.simple_with_current_proof (fun _ _ -> pts);
-  postprocess pts raw_instr.instr;
-  Proof_global.set_proof_mode "Declarative"
+  postprocess pts raw_instr.instr
 
 let proof_instr raw_instr =
   let p = Proof_global.give_me_the_proof () in
