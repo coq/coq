@@ -96,7 +96,7 @@ let get_goal_stack pts =
 
 
 let proof_focus = Proof.new_focus_kind ()
-let proof_cond = Proof.no_cond proof_focus
+let proof_cond = Proof.done_cond proof_focus
 
 let focus p =
   let inf = get_goal_stack p in
