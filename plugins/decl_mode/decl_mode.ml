@@ -105,9 +105,6 @@ let focus p =
 let unfocus () =
   Proof_global.simple_with_current_proof (fun _ p -> Proof.unfocus proof_focus p ())
 
-let maximal_unfocus () = 
-  Proof_global.simple_with_current_proof (fun _ -> Proof.maximal_unfocus proof_focus)
-
 let get_top_stack pts =
   try
     Proof.get_at_focus proof_focus pts
