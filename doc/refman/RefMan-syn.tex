@@ -428,14 +428,16 @@ To know to which notations a given symbol belongs to, use the command
 \begin{quote}
 \tt Locate {\symbolentry}
 \end{quote}
-where symbol is any (composite) symbol surrounded by quotes. To locate
+where symbol is any (composite) symbol surrounded by double quotes. To locate
 a particular notation, use a string where the variables of the
-notation are replaced by ``\_''.
+notation are replaced by ``\_'' and where possible single quotes
+inserted around identifiers or tokens starting with a single quote are
+dropped.
 
 \Example
 \begin{coq_example}
 Locate "exists".
-Locate "'exists' _ , _".
+Locate "exists _ .. _ , _".
 \end{coq_example}
 
 \SeeAlso Section \ref{Locate}.
