@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <stdlib.h> 
+#include <stdint.h>
 #include <caml/config.h>
 #include <caml/misc.h>
 #include <caml/mlvalues.h>
@@ -154,7 +155,7 @@ value coq_tcode_of_code (value code, value size) {
     };
     *q++ = VALINSTR(instr);
     if (instr == SWITCH) {
-      uint32 i, sizes, const_size, block_size;
+      uint32_t i, sizes, const_size, block_size;
       COPY32(q,p); p++;
       sizes=*q++;
       const_size = sizes & 0xFFFFFF;
@@ -162,13 +163,13 @@ value coq_tcode_of_code (value code, value size) {
       sizes = const_size + block_size;
       for(i=0; i<sizes; i++) { COPY32(q,p); p++; q++; };
     } else if (instr == CLOSUREREC || instr==CLOSURECOFIX) {
-      uint32 i, n;
+      uint32_t i, n;
       COPY32(q,p); p++; /* ndefs */
       n = 3 + 2*(*q);  /* ndefs, nvars, start, typlbls,lbls*/
       q++;
       for(i=1; i<n; i++) { COPY32(q,p); p++; q++; };
     } else {
-      uint32 i, ar;
+      uint32_t i, ar;
       ar = arity[instr]; 
       for(i=0; i<ar; i++) { COPY32(q,p); p++; q++; };
     }
