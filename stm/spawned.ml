@@ -81,6 +81,7 @@ let init_channels () =
 
 let get_channels () =
   match !channels with
-  | None -> Errors.anomaly(Pp.str "init_channels not called")
+  | None ->
+    Printf.eprintf "Fatal error: ideslave communication channels not set.\n";
+    exit 1
   | Some(ic, oc) -> ic, oc
-

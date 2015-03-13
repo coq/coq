@@ -57,23 +57,18 @@ let vernac_decl_proof () =
   else
     begin
       Decl_proof_instr.go_to_proof_mode () ;
-      Proof_global.set_proof_mode "Declarative" ;
-      Vernacentries.print_subgoals ()
+      Proof_global.set_proof_mode "Declarative"
     end
 
 (* spiwack: some bureaucracy is not performed here *)
 let vernac_return () =
   begin
     Decl_proof_instr.return_from_tactic_mode () ;
-    Proof_global.set_proof_mode "Declarative" ;
-    Vernacentries.print_subgoals ()
+    Proof_global.set_proof_mode "Declarative"
   end
 
 let vernac_proof_instr instr =
-  begin
-    Decl_proof_instr.proof_instr instr;
-    Vernacentries.print_subgoals ()
-  end
+  Decl_proof_instr.proof_instr instr
 
 (* Before we can write an new toplevel command (see below) 
     which takes a [proof_instr] as argument, we need to declare

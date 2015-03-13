@@ -112,8 +112,8 @@ Tactics
     (i.e. it selects the first success of a).
   * Tactic "constructor" is now fully backtracking, thus deprecating
     the need of the undocumented "constructor <tac>" syntax which is
-    now equivalent to "once (constructor; tac)". (potential source of
-    rare incompatibilities).
+    now equivalent to "[> once (constructor; tac) ..]". (potential
+    source of rare incompatibilities).
   * New "multimatch" variant of "match" tactic which backtracks to
     new branches in case of a later failure. The "match" tactic is
     equivalent to "once multimatch".
