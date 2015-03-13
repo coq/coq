@@ -683,12 +683,12 @@ let admit_obligations n =
       obls;
     ignore(update_obls prg obls 0)
 
-exception Found of int
+exception Found' of int
 
 let array_find f arr =
-  try Array.iteri (fun i x -> if f x then raise (Found i)) arr;
+  try Array.iteri (fun i x -> if f x then raise (Found' i)) arr;
     raise Not_found
-  with Found i -> i
+  with Found' i -> i
 
 let next_obligation n tac =
   let prg = get_prog_err n in
