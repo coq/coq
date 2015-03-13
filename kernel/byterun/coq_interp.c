@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <signal.h>
+#include <stdint.h>
 #include "coq_gc.h"
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
@@ -30,9 +31,9 @@
 #endif
 
 /* spiwack: I append here a few macros for value/number manipulation */
-#define uint32_of_value(val) (((uint32)val >> 1))
-#define value_of_uint32(i)   ((value)(((uint32)(i) << 1) | 1))
-#define UI64_of_uint32(lo)  ((uint64)(I64_literal(0,(uint32)(lo))))
+#define uint32_of_value(val) (((uint32_t)val >> 1))
+#define value_of_uint32(i)   ((value)(((uint32_t)(i) << 1) | 1))
+#define UI64_of_uint32(lo)  ((uint64_t)(I64_literal(0,(uint32_t)(lo))))
 #define UI64_of_value(val) (UI64_of_uint32(uint32_of_value(val)))
 /* /spiwack */
 
@@ -795,7 +796,7 @@ value coq_interprete
 /* Access to components of blocks */
         
       Instruct(SWITCH) {
-	uint32 sizes = *pc++;
+	uint32_t sizes = *pc++;
 	print_instr("SWITCH");
 	print_int(sizes & 0xFFFF);
 	if (Is_block(accu)) {
@@ -1081,7 +1082,7 @@ value coq_interprete
            the one ontop of the stack (which is poped)*/
         print_instr("ADDINT31");
         accu = 
-           (value)((uint32) accu + (uint32) *sp++ - 1); 
+           (value)((uint32_t) accu + (uint32_t) *sp++ - 1); 
         /* nota,unlike CaML we don't want
            to have a different behavior depending on the 
            architecture. Thus we cast the operand to uint32 */
@@ -1091,9 +1092,9 @@ value coq_interprete
       Instruct (ADDCINT31) {
 	print_instr("ADDCINT31");
 	/* returns the sum with a carry */
-	uint32 s;
-	s = (uint32)accu + (uint32)*sp++ - 1;
-        if( (uint32)s < (uint32)accu ) {
+	uint32_t s;
+	s = (uint32_t)accu + (uint32_t)*sp++ - 1;
+        if( (uint32_t)s < (uint32_t)accu ) {
           /* carry */
 	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
 	}
@@ -1108,10 +1109,10 @@ value coq_interprete
       Instruct (ADDCARRYCINT31) {
 	print_instr("ADDCARRYCINT31");
 	/* returns the sum plus one with a carry */
-	uint32 s;
-	s = (uint32)accu + (uint32)*sp++ + 1;
+	uint32_t s;
+	s = (uint32_t)accu + (uint32_t)*sp++ + 1;
 	value block;
-        if( (uint32)s <= (uint32)accu ) {
+        if( (uint32_t)s <= (uint32_t)accu ) {
           /* carry */
 	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
 	}
@@ -1127,18 +1128,18 @@ value coq_interprete
 	print_instr("SUBINT31");
 	/* returns the subtraction */
 	accu = 
-	  (value)((uint32) accu - (uint32) *sp++ + 1); 
+	  (value)((uint32_t) accu - (uint32_t) *sp++ + 1); 
         Next;
       }
 
       Instruct (SUBCINT31) {
 	print_instr("SUBCINT31");
 	/* returns the subtraction with a carry */
-	uint32 b;
-	uint32 s;
-	b = (uint32)*sp++;
-	s = (uint32)accu - b + 1;
-        if( (uint32)accu < b ) {
+	uint32_t b;
+	uint32_t s;
+	b = (uint32_t)*sp++;
+	s = (uint32_t)accu - b + 1;
+        if( (uint32_t)accu < b ) {
           /* carry */
 	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
 	}
@@ -1153,11 +1154,11 @@ value coq_interprete
       Instruct (SUBCARRYCINT31) {
 	print_instr("SUBCARRYCINT31");
 	/* returns the subtraction minus one with a carry */
-	uint32 b;
-	uint32 s;
-	b = (uint32)*sp++;
-	s = (value)((uint32)accu - b - 1);
-        if( (uint32)accu <= b ) {
+	uint32_t b;
+	uint32_t s;
+	b = (uint32_t)*sp++;
+	s = (value)((uint32_t)accu - b - 1);
+        if( (uint32_t)accu <= b ) {
           /* carry */
 	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
 	}
@@ -1181,7 +1182,7 @@ value coq_interprete
         /*returns the multiplication on a double size word
           (special case for 0) */
         print_instr("MULCINT31");
-	uint64 p;
+	uint64_t p;
         /*accu = 2v+1, *sp=2w+1 ==> p = 2v*w */
         p = I64_mul (UI64_of_value (accu), UI64_of_uint32 ((*sp++)^1));
 	if ( I64_is_zero(p) ) {
@@ -1204,10 +1205,10 @@ value coq_interprete
 	/* spiwack: takes three int31 (the two first ones represent an
                     int62) and performs the euclidian division of the
                     int62 by the int31 */
-        uint64 bigint;
+        uint64_t bigint;
         bigint = UI64_of_value(accu);
         bigint = I64_or(I64_lsl(bigint, 31),UI64_of_value(*sp++));
-        uint64 divisor;
+        uint64_t divisor;
         divisor = UI64_of_value(*sp++);
         Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
         if (I64_is_zero (divisor)) {
@@ -1215,7 +1216,7 @@ value coq_interprete
           Field(accu, 1) = 1; /* 2*0+1 */
 	}
 	else {
-	  uint64 quo, mod;
+	  uint64_t quo, mod;
           I64_udivmod(bigint, divisor, &quo, &mod);
           Field(accu, 0) = value_of_uint32(I64_to_int32(quo));
 	  Field(accu, 1) = value_of_uint32(I64_to_int32(mod));
@@ -1228,7 +1229,7 @@ value coq_interprete
         /* spiwack: a priori no need of the NON_STANDARD_DIV_MOD flag
                     since it probably only concerns negative number.
                     needs to be checked at this point */
-        uint32 divisor;
+        uint32_t divisor;
         divisor = uint32_of_value(*sp++);
         if (divisor == 0) { 
           Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
@@ -1236,7 +1237,7 @@ value coq_interprete
           Field(accu, 1) = 1; /* 2*0+1 */
         }
         else {
-          uint32 modulus;
+          uint32_t modulus;
           modulus = uint32_of_value(accu);
           Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
 	  Field(accu, 0) = value_of_uint32(modulus/divisor);
@@ -1248,7 +1249,7 @@ value coq_interprete
       Instruct (ADDMULDIVINT31) {
         print_instr("ADDMULDIVINT31");
         /* higher level shift (does shifts and cycles and such) */
-        uint32 shiftby;
+        uint32_t shiftby;
         shiftby = uint32_of_value(accu);
         if (shiftby > 31) {
           if (shiftby < 62) {
@@ -1263,7 +1264,7 @@ value coq_interprete
         /* *sp = 2*x+1 --> accu = 2^(shiftby+1)*x */
         accu = (value)(((*sp++)^1) << shiftby);
         /* accu = 2^(shiftby+1)*x --> 2^(shifby+1)*x+2*y/2^(31-shiftby)+1 */
-        accu = (value)((accu | (((uint32)(*sp++)) >> (31-shiftby)))|1);
+        accu = (value)((accu | (((uint32_t)(*sp++)) >> (31-shiftby)))|1);
 	}
         Next;
       }
@@ -1272,11 +1273,11 @@ value coq_interprete
 	/* returns Eq if equal, Lt if accu is less than *sp, Gt otherwise */
 	/* assumes Inudctive _ : _ := Eq | Lt | Gt */
 	print_instr("COMPAREINT31");
-	if ((uint32)accu == (uint32)*sp) {
+	if ((uint32_t)accu == (uint32_t)*sp) {
 	  accu = 1;  /* 2*0+1 */
 	  sp++;
 	}
-	else{if ((uint32)accu < (uint32)(*sp++)) {
+	else{if ((uint32_t)accu < (uint32_t)(*sp++)) {
 	  accu = 3;  /* 2*1+1 */
 	}
 	else{
@@ -1287,9 +1288,9 @@ value coq_interprete
  
       Instruct (HEAD0INT31) {
 	int r = 0;
-        uint32 x;
+        uint32_t x;
         print_instr("HEAD0INT31");
-	x = (uint32) accu;
+	x = (uint32_t) accu;
         if (!(x & 0xFFFF0000)) { x <<= 16; r += 16; }
         if (!(x & 0xFF000000)) { x <<= 8;  r += 8; }
         if (!(x & 0xF0000000)) { x <<= 4;  r += 4; }
@@ -1302,9 +1303,9 @@ value coq_interprete
         
       Instruct (TAIL0INT31) {
 	int r = 0;
-        uint32 x;
+        uint32_t x;
         print_instr("TAIL0INT31");
-	x = (((uint32) accu >> 1) | 0x80000000);
+	x = (((uint32_t) accu >> 1) | 0x80000000);
         if (!(x & 0xFFFF)) { x >>= 16; r += 16; }
         if (!(x & 0x00FF)) { x >>= 8;  r += 8; }
         if (!(x & 0x000F)) { x >>= 4;  r += 4; }
@@ -1354,7 +1355,7 @@ value coq_interprete
         /*accu=accu or accu = (value)((unsigned long)1-accu) if bool
 	               is used for the bits */
         for(i=0; i < 30; i++) {
-	  accu = (value) ((((uint32)accu-1) << 1) | *sp++);
+	  accu = (value) ((((uint32_t)accu-1) << 1) | *sp++);
           /* -1 removes the tag bit, << 1 multiplies the value by 2, 
               | *sp++ pops the last value and add it (no carry involved)
 	      not that it reintroduces a tag bit */
@@ -1374,7 +1375,7 @@ value coq_interprete
         for(i = 30; i >= 0; i--) {
           Field(block, i) = (value)(accu & 3); /* two last bits of the accumulator */
           //Field(block, i) = 3;
-          accu = (value) ((uint32)accu >> 1) | 1;  /* last bit must be a one */
+          accu = (value) ((uint32_t)accu >> 1) | 1;  /* last bit must be a one */
         };
 	accu = block;
         Next;
