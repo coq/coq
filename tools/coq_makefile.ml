@@ -344,6 +344,10 @@ let clean sds sps =
     (fun x -> print "\t+cd "; print x; print " && $(MAKE) clean\n")
     sds;
   print "\n";
+  let () =
+    if !some_vfile then
+      let () = print "cleanall:: clean\n" in
+      print "\trm -f $(patsubst %.v,.%.aux,$(VFILES))\n\n" in
   print "archclean::\n";
   print "\trm -f *.cmx *.o\n";
   List.iter
@@ -702,25 +706,25 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
     end
 
 let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
-  let other_targets = CList.map_filter
-    (fun (n,_,is_phony,_) -> if not (is_phony || is_genrule n) then Some n else None)
-    sps @ sds in
+  let other_targets =
+    CList.map_filter
+      (fun (n,_,is_phony,_) -> if not (is_phony || is_genrule n) then Some n else None)
+      sps @ sds in
   main_targets vfiles mlfiles other_targets inc;
-    print ".PHONY: ";
-    print_list " "
-      ("all" :: "archclean" :: "beautify" :: "byte" :: "clean" ::
-	  "gallina" :: "gallinahtml" :: "html" ::
-	  "install" :: "install-doc" :: "install-natdynlink" :: "install-toploop" ::
-	  "opt" :: "printenv" :: "quick" ::
-	  "uninstall" :: "userinstall" ::
-	  "validate" :: "vio2vo" ::
-	    (sds@(CList.map_filter
-		    (fun (n,_,is_phony,_) ->
-		     if is_phony then Some n else None) sps)));
-    print "\n\n";
-    custom sps;
-    subdirs sds;
-    forpacks mlpackfiles
+  print ".PHONY: ";
+  print_list
+    " "
+    ("all" :: "archclean" :: "beautify" :: "byte" :: "clean" :: "cleanall"
+     :: "gallina" :: "gallinahtml" :: "html" :: "install" :: "install-doc"
+     :: "install-natdynlink" :: "install-toploop" :: "opt" :: "printenv"
+     :: "quick" :: "uninstall" :: "userinstall" :: "validate" :: "vio2vo"
+     :: (sds@(CList.map_filter
+		(fun (n,_,is_phony,_) ->
+		 if is_phony then Some n else None) sps)));
+  print "\n\n";
+  custom sps;
+  subdirs sds;
+  forpacks mlpackfiles
 
 let banner () =
   print (Printf.sprintf
