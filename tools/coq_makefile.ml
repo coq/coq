@@ -46,8 +46,8 @@ let section s =
 let usage () =
   output_string stderr "Usage summary:
 
-coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ...
-  [file.ml{lib,pack}] ... [-extra[-phony] result dependencies command]
+coq_makefile .... [file.v] ... [file.ml[i4]?] ... [file.ml{lib,pack}]
+  ... [any] ... [-extra[-phony] result dependencies command]
   ... [-I dir] ... [-R physicalpath logicalpath]
   ... [-Q physicalpath logicalpath] ... [VARIABLE = value]
   ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]
@@ -57,8 +57,8 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ...
 [file.ml[i4]?]: Objective Caml file to be compiled
 [file.ml{lib,pack}]: ocamlbuild file that describes a Objective Caml
   library/module
-[subdirectory] : subdirectory that should be \"made\" and has a
-  Makefile itself to do so.
+[any] : subdirectory that should be \"made\" and has a Makefile itself
+  to do so. Very fragile and discouraged.
 [-extra result dependencies command]: add target \"result\" with command
   \"command\" and dependencies \"dependencies\". If \"result\" is not
   generic (do not contains a %), \"result\" is built by _make all_ and
@@ -545,7 +545,12 @@ let subdirs sds =
   let pr_subdir s =
     print s; print ":\n\t+cd \""; print s; print "\" && $(MAKE) all\n\n"
   in
-    if sds <> [] then section "Subdirectories.";
+  if sds <> [] then
+    let () =
+      Format.eprintf "@[Warning: Targets for subdirectories are very fragile.@ " in
+    let () =
+      Format.eprintf "For example,@ nothing is done to handle dependencies@ with them.@]@." in
+      section "Subdirectories.";
     List.iter pr_subdir sds
 
 let forpacks l =
