@@ -101,12 +101,12 @@ BYTEFLAGS=-thread $(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=-thread $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 DEPFLAGS= $(LOCALINCLUDES) -I ide -I ide/utils
 
-ifeq ($(ARCH),Darwin)
+ifeq ($(shell which codesign > /dev/null && echo $(ARCH)),Darwin)
 LINKMETADATA=-ccopt "-sectcreate __TEXT __info_plist config/Info-$(notdir $@).plist"
-CODESIGN=codesign -s -
+CODESIGN:=codesign -s -
 else
 LINKMETADATA=
-CODESIGN=true
+CODESIGN:=true
 endif
 
 define bestocaml
