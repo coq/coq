@@ -1657,7 +1657,9 @@ let collect_proof keep cur hd brkind id =
           let t, v = proof_no_using last in
           v.expr <- VernacProof(t, Some hint);
           `ASync (parent last,proof_using_ast last,accn,name,delegate name)
-        with Not_found -> `Sync (no_name,None,`NoHint))
+        with Not_found ->
+          let name = name ids in
+          `MaybeASync (parent last, None, accn, name, delegate name))
     | `Fork((_, hd', GuaranteesOpacity, ids), _) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
