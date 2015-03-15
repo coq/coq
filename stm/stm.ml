@@ -8,7 +8,8 @@
 
 let pr_err s = Printf.eprintf "%s] %s\n" (System.process_id ()) s; flush stderr
 
-let prerr_endline s = if !Flags.debug then begin pr_err s end else ()
+let prerr_endline s = if false then begin pr_err s end else ()
+let prerr_debug s = if !Flags.debug then begin pr_err s end else ()
 
 open Vernacexpr
 open Errors
@@ -1686,16 +1687,26 @@ let collect_proof keep cur hd brkind id =
        else make_sync `AlreadyEvaluated rc
 
 let string_of_reason = function
-  | `Transparent -> "Transparent"
-  | `AlreadyEvaluated -> "AlreadyEvaluated"
-  | `Policy -> "Policy"
-  | `NestedProof -> "NestedProof"
-  | `Immediate -> "Immediate"
-  | `Alias -> "Alias"
-  | `NoHint -> "NoHint"
-  | `Doesn'tGuaranteeOpacity -> "Doesn'tGuaranteeOpacity"
-  | `Aborted -> "Aborted"
-  | _ -> "Unknown Reason"
+  | `Transparent -> "non opaque"
+  | `AlreadyEvaluated -> "proof already evaluated"
+  | `Policy -> "policy"
+  | `NestedProof -> "contains nested proof"
+  | `Immediate -> "proof term given explicitly"
+  | `Aborted -> "aborted proof"
+  | `Doesn'tGuaranteeOpacity -> "not a simple opaque lemma"
+  | `MutualProofs -> "block of mutually recursive proofs"
+  | `Alias -> "contains Undo-like command"
+  | `NoPU_NoHint_NoES -> "no 'Proof using..', no .aux file, inside a section"
+  | `Unknown -> "unsupported case"
+
+let log_string s = prerr_debug ("STM: " ^ s)
+let log_processing_async id name = log_string Printf.(sprintf
+  "%s: proof %s: asynch" (Stateid.to_string id) name
+)
+let log_processing_sync id name reason = log_string Printf.(sprintf
+  "%s: proof %s: synch (cause: %s)"
+  (Stateid.to_string id) name (string_of_reason reason)
+)
 
 let wall_clock_last_fork = ref 0.0
 
@@ -1760,7 +1771,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 assert(keep == VtKeep || keep == VtKeepAsAxiom);
                 let drop_pt = keep == VtKeepAsAxiom in
                 let stop, exn_info, loc = eop, (id, eop), x.loc in
-                prerr_endline ("Asynchronous " ^ Stateid.to_string id);
+                log_processing_async id name;
                 VCS.create_cluster nodes ~qed:id ~start;
                 begin match brinfo, qed.fproof with
                 | { VCS.kind = `Edit _ }, None -> assert false
@@ -1798,8 +1809,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 reach eop; vernac_interp id x; Proof_global.discard_all ()
               ), `Yes, true
           | `Sync (name, pua, reason) -> (fun () ->
-                prerr_endline ("Synchronous " ^ Stateid.to_string id ^ " " ^
-                  string_of_reason reason);
+                log_processing_sync id name reason;
                 reach eop;
                 let wall_clock = Unix.gettimeofday () in
                 record_pb_time name x.loc (wall_clock -. !wall_clock_last_fork);
@@ -1825,12 +1835,11 @@ let known_state ?(redefine_qed=false) ~cache id =
                 Proof_global.discard_all ()
               ), `Yes, true
           | `MaybeASync (start, pua, nodes, name, delegate) -> (fun () ->
-                prerr_endline ("MaybeAsynchronous " ^ Stateid.to_string id);
                 reach ~cache:`Shallow start;
                 (* no sections *)
                 if List.is_empty (Environ.named_context (Global.env ()))
                 then pi1 (aux (`ASync (start, pua, nodes, name, delegate))) ()
-                else pi1 (aux (`Sync (name, pua, `Unknown))) ()
+                else pi1 (aux (`Sync (name, pua, `NoPU_NoHint_NoES))) ()
               ), (if redefine_qed then `No else `Yes), true
           in
           aux (collect_proof keep (view.next, x) brname brinfo eop)
