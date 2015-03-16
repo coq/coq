@@ -72,6 +72,8 @@ val get_last:  Environ.env -> Id.t
 (** [get_last] raises a [UserError] when it cannot find a previous
     statement in the environment. *)
 
+val get_end_command : Proof.proof -> string
+
 val focus : Proof.proof -> unit
 
 val unfocus : unit -> unit

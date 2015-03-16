@@ -544,22 +544,25 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
     else 
       pr_rec 1 (g::l)
   in
+  (* Side effect! This has to be made more robust *)
+  let () =
+    match close_cmd with
+    | Some cmd -> msg_info cmd
+    | None -> ()
+  in
   match goals with
   | [] ->
       begin
-	match close_cmd with
-	  Some cmd -> cmd
-	| None ->
-	    let exl = Evarutil.non_instantiated sigma in
-	    if Evar.Map.is_empty exl then
-	      (str"No more subgoals."
-	       ++ emacs_print_dependent_evars sigma seeds)
-	    else
-	      let pei = pr_evars_int sigma 1 exl in
-	      (str "No more subgoals but non-instantiated existential " ++
-		 str "variables:" ++ fnl () ++ (hov 0 pei)
-	       ++ emacs_print_dependent_evars sigma seeds ++ fnl () ++
-                 str "You can use Grab Existential Variables.")
+	let exl = Evarutil.non_instantiated sigma in
+	if Evar.Map.is_empty exl then
+	  (str"No more subgoals."
+	   ++ emacs_print_dependent_evars sigma seeds)
+	else
+	  let pei = pr_evars_int sigma 1 exl in
+	  (str "No more subgoals but non-instantiated existential " ++
+	   str "variables:" ++ fnl () ++ (hov 0 pei)
+	   ++ emacs_print_dependent_evars sigma seeds ++ fnl () ++
+           str "You can use Grab Existential Variables.")
       end
   | [g] when not !Flags.print_emacs && pr_first ->
       let pg = default_pr_goal { it = g ; sigma = sigma; } in
@@ -637,8 +640,7 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
               with None  -> str"" | Some s -> fnl () ++ str s) ++
               fnl ()
             in
-	    msg_info end_cmd;
-	    pr_subgoals ~pr_first:false None bsigma seeds shelf [] bgoals
+	    pr_subgoals ~pr_first:false (Some end_cmd) bsigma seeds shelf [] bgoals
 	  end
   | _ -> pr_subgoals None sigma seeds shelf stack goals
   end
