@@ -47,3 +47,5 @@ let tag (s,_) =
     anomaly msg
 
 let pointer_equal (t1,o1) (t2,o2) = t1 = t2 && o1 == o2
+
+let dump () = Int.Map.bindings !dyntab
