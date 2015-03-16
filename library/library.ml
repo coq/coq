@@ -42,12 +42,19 @@ type library_t = {
   library_extra_univs : Univ.universe_context_set;
 }
 
+type library_summary = {
+  libsum_name : compilation_unit_name;
+  libsum_digests : Safe_typing.vodigest;
+  libsum_imports : compilation_unit_name array;
+}
+
 module LibraryOrdered = DirPath
 module LibraryMap = Map.Make(LibraryOrdered)
 module LibraryFilenameMap = Map.Make(LibraryOrdered)
 
 (* This is a map from names to loaded libraries *)
-let libraries_table = Summary.ref LibraryMap.empty ~name:"LIBRARY"
+let libraries_table : library_summary LibraryMap.t ref =
+  Summary.ref LibraryMap.empty ~name:"LIBRARY"
 
 (* This is the map of loaded libraries filename *)
 (* (not synchronized so as not to be caught in the states on disk) *)
@@ -99,20 +106,21 @@ let opened_libraries () = !libraries_imports_list
      be performed first, thus the libraries_loaded_list ... *)
 
 let register_loaded_library m =
+  let libname = m.libsum_name in
   let link m =
-    let dirname = Filename.dirname (library_full_filename m.library_name) in
-    let prefix = Nativecode.mod_uid_of_dirpath m.library_name ^ "." in
+    let dirname = Filename.dirname (library_full_filename libname) in
+    let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
     let f = prefix ^ "cmo" in
     let f = Dynlink.adapt_filename f in
     if not !Flags.no_native_compiler then
       Nativelib.link_library ~prefix ~dirname ~basename:f
   in
   let rec aux = function
-    | [] -> link m; [m.library_name]
-    | m'::_ as l when DirPath.equal m' m.library_name -> l
+    | [] -> link m; [libname]
+    | m'::_ as l when DirPath.equal m' libname -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
-  libraries_table := LibraryMap.add m.library_name m !libraries_table
+  libraries_table := LibraryMap.add libname m !libraries_table
 
   (* ... while if a library is imported/exported several time, then
      only the last occurrence is really needed - though the imported
@@ -141,7 +149,7 @@ let open_library export explicit_libs m =
   if
     (* Only libraries indirectly to open are not reopen *)
     (* Libraries explicitly mentionned by the user are always reopen *)
-    List.exists (fun m' -> DirPath.equal m m'.library_name) explicit_libs
+    List.exists (fun m' -> DirPath.equal m m') explicit_libs
     || not (library_is_opened m)
   then begin
     register_open_library export m;
@@ -161,10 +169,11 @@ let open_libraries export modl =
          let subimport =
            Array.fold_left
              (fun l m -> remember_last_of_each l m)
-             l m.library_imports
-         in remember_last_of_each subimport m.library_name)
+             l m.libsum_imports
+         in remember_last_of_each subimport m.libsum_name)
       [] modl in
-  List.iter (open_library export modl) to_open_list
+  let explicit = List.map (fun m -> m.libsum_name) modl in
+  List.iter (open_library export explicit) to_open_list
 
 
 (**********************************************************************)
@@ -381,6 +390,12 @@ let mk_library md digests univs =
     library_extra_univs = univs;
   }
 
+let mk_summary m = {
+  libsum_name = m.library_name;
+  libsum_imports = m.library_imports;
+  libsum_digests = m.library_digests;
+}
+
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in
   let (lmd : seg_lib), pos, digest_lmd = System.marshal_in_segment f ch in
@@ -405,10 +420,10 @@ module DPMap = Map.Make(DirPath)
 let rec intern_library (needed, contents) (dir, f) from =
   Pp.feedback(Feedback.FileDependency (from, f));
   (* Look if in the current logical environment *)
-  try find_library dir, (needed, contents)
+  try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
-  try DPMap.find dir contents, (needed, contents)
+  try (DPMap.find dir contents).library_digests, (needed, contents)
   with Not_found ->
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
   let m = intern_from_file f in
@@ -418,15 +433,15 @@ let rec intern_library (needed, contents) (dir, f) from =
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
   Pp.feedback(Feedback.FileLoaded(DirPath.to_string dir, f));
-  m, intern_library_deps (needed, contents) dir m (Some f)
+  m.library_digests, intern_library_deps (needed, contents) dir m (Some f)
 
 and intern_library_deps libs dir m from =
   let needed, contents = Array.fold_left (intern_mandatory_library dir from) libs m.library_deps in
   (dir :: needed, DPMap.add dir m contents )
 
 and intern_mandatory_library caller from libs (dir,d) =
-  let m, libs = intern_library libs (try_locate_absolute_library dir) from in
-  if not (Safe_typing.digest_match ~actual:m.library_digests ~required:d) then
+  let digest, libs = intern_library libs (try_locate_absolute_library dir) from in
+  if not (Safe_typing.digest_match ~actual:digest ~required:d) then
     errorlabstrm "" (strbrk ("Compiled library "^ DirPath.to_string caller ^
       ".vo makes inconsistent assumptions over library " ^
       DirPath.to_string dir));
@@ -497,7 +512,7 @@ let register_library m =
     m.library_objects
     m.library_digests
     m.library_extra_univs;
-  register_loaded_library m
+  register_loaded_library (mk_summary m)
 
 (* Follow the semantics of Anticipate object:
    - called at module or module type closing when a Require occurs in
@@ -665,7 +680,7 @@ let load_library_todo f =
 let current_deps () =
   let map name =
     let m = try_find_library name in
-    (name, m.library_digests)
+    (name, m.libsum_digests)
   in
   List.map map !libraries_loaded_list
 
@@ -765,11 +780,7 @@ let save_library_raw f lib univs proofs =
 
 open Printf
 
-let mem s =
-  let m = try_find_library s in
-  h 0 (str (sprintf "%dk (cenv = %dk / seg = %dk)"
-		 (CObj.size_kb m) (CObj.size_kb m.library_compiled)
-		 (CObj.size_kb m.library_objects)))
+let mem s = Pp.mt ()
 
 module StringOrd = struct type t = string let compare = String.compare end
 module StringSet = Set.Make(StringOrd)
