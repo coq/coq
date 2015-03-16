@@ -219,7 +219,7 @@ let visit_vo f =
     {name="library"; pos=0; typ=Values.v_lib};
     {name="univ constraints of opaque proofs"; pos=0;typ=Values.v_univopaques}; 
     {name="discharging info"; pos=0; typ=Opt Any};
-    {name="STM tasks"; pos=0; typ=Opt Any};
+    {name="STM tasks"; pos=0; typ=Opt Values.v_stm_seg};
     {name="opaque proofs"; pos=0; typ=Values.v_opaques}; 
   |] in
   while true do

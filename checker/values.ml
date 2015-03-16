@@ -321,6 +321,33 @@ let v_libobj = Tuple ("libobj", [|v_id;v_obj|])
 let v_libobjs = List v_libobj
 let v_libraryobjs = Tuple ("library_objects",[|v_libobjs;v_libobjs|])
 
+(** STM objects *)
+
+let v_frozen = Tuple ("frozen", [|List (v_pair Int Dyn); Opt Dyn|])
+let v_states = v_pair Any v_frozen
+let v_state = Tuple ("state", [|v_states; Any; v_bool|])
+
+let v_vcs =
+  let data = Opt Any in
+  let vcs =
+    Tuple ("vcs",
+      [|Any; Any;
+        Tuple ("dag",
+          [|Any; Any; v_map Any (Tuple ("state_info",
+            [|Any; Any; Opt v_state; v_pair data Any|]))
+          |])
+      |])
+  in
+  let () = Obj.set_field (Obj.magic data) 0 (Obj.magic vcs) in
+  vcs
+
+let v_uuid = Any
+let v_request id doc =
+  Tuple ("request", [|Any; Any; doc; Any; id; String|])
+let v_tasks = List (v_pair (v_request v_uuid v_vcs) v_bool)
+let v_counters = Any
+let v_stm_seg = v_pair v_tasks v_counters
+
 (** Toplevel structures in a vo (see Cic.mli) *)
 
 let v_lib =
