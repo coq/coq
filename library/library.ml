@@ -89,13 +89,11 @@ let library_is_loaded dir =
   with Not_found -> false
 
 let library_is_opened dir =
-  List.exists (fun m -> DirPath.equal m.library_name dir) !libraries_imports_list
+  List.exists (fun name -> DirPath.equal name dir) !libraries_imports_list
 
-let loaded_libraries () =
-  List.map (fun m -> m.library_name) !libraries_loaded_list
+let loaded_libraries () = !libraries_loaded_list
 
-let opened_libraries () =
-  List.map (fun m -> m.library_name) !libraries_imports_list
+let opened_libraries () = !libraries_imports_list
 
   (* If a library is loaded several time, then the first occurrence must
      be performed first, thus the libraries_loaded_list ... *)
@@ -110,8 +108,8 @@ let register_loaded_library m =
       Nativelib.link_library ~prefix ~dirname ~basename:f
   in
   let rec aux = function
-    | [] -> link m; [m]
-    | m'::_ as l when DirPath.equal m'.library_name m.library_name -> l
+    | [] -> link m; [m.library_name]
+    | m'::_ as l when DirPath.equal m' m.library_name -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
   libraries_table := LibraryMap.add m.library_name m !libraries_table
@@ -125,7 +123,7 @@ let register_loaded_library m =
 let rec remember_last_of_each l m =
   match l with
   | [] -> [m]
-  | m'::l' when DirPath.equal m'.library_name m.library_name -> remember_last_of_each l' m
+  | m'::l' when DirPath.equal m' m -> remember_last_of_each l' m
   | m'::l' -> m' :: remember_last_of_each l' m
 
 let register_open_library export m =
@@ -139,17 +137,15 @@ let register_open_library export m =
 (* [open_library export explicit m] opens library [m] if not already
    opened _or_ if explicitly asked to be (re)opened *)
 
-let eq_lib_name m1 m2 = DirPath.equal m1.library_name m2.library_name
-
 let open_library export explicit_libs m =
   if
     (* Only libraries indirectly to open are not reopen *)
     (* Libraries explicitly mentionned by the user are always reopen *)
-    List.exists (eq_lib_name m) explicit_libs
-    || not (library_is_opened m.library_name)
+    List.exists (fun m' -> DirPath.equal m m'.library_name) explicit_libs
+    || not (library_is_opened m)
   then begin
     register_open_library export m;
-    Declaremods.really_import_module (MPfile m.library_name)
+    Declaremods.really_import_module (MPfile m)
   end
   else
     if export then
@@ -164,9 +160,9 @@ let open_libraries export modl =
       (fun l m ->
          let subimport =
            Array.fold_left
-             (fun l m -> remember_last_of_each l (try_find_library m))
+             (fun l m -> remember_last_of_each l m)
              l m.library_imports
-         in remember_last_of_each subimport m)
+         in remember_last_of_each subimport m.library_name)
       [] modl in
   List.iter (open_library export modl) to_open_list
 
@@ -667,10 +663,13 @@ let load_library_todo f =
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
 
 let current_deps () =
-  List.map (fun m -> m.library_name, m.library_digests) !libraries_loaded_list
+  let map name =
+    let m = try_find_library name in
+    (name, m.library_digests)
+  in
+  List.map map !libraries_loaded_list
 
-let current_reexports () =
-  List.map (fun m -> m.library_name) !libraries_exports_list
+let current_reexports () = !libraries_exports_list
 
 let error_recursively_dependent_library dir =
   errorlabstrm ""
@@ -778,7 +777,7 @@ module StringSet = Set.Make(StringOrd)
 let get_used_load_paths () =
   StringSet.elements
     (List.fold_left (fun acc m -> StringSet.add
-      (Filename.dirname (library_full_filename m.library_name)) acc)
+      (Filename.dirname (library_full_filename m)) acc)
        StringSet.empty !libraries_loaded_list)
 
 let _ = Nativelib.get_load_paths := get_used_load_paths
