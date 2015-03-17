@@ -314,7 +314,7 @@ let intern_from_file (dir, f) =
     try
       let ch = with_magic_number_check raw_intern_library f in
       let (sd:Cic.summary_disk), _, digest = System.marshal_in_segment f ch in
-      let (md:Cic.library_disk), _, digest = System.marshal_in_segment f ch in
+      let (md:Cic.library_disk), _, _ = System.marshal_in_segment f ch in
       let (opaque_csts:'a option), _, udg = System.marshal_in_segment f ch in
       let (discharging:'a option), _, _ = System.marshal_in_segment f ch in
       let (tasks:'a option), _, _ = System.marshal_in_segment f ch in

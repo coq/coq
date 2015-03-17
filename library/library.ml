@@ -91,8 +91,7 @@ type summary_disk = {
 
 type library_t = {
   library_name : compilation_unit_name;
-  library_compiled : Safe_typing.compiled_library;
-  library_objects : Declaremods.library_objects;
+  library_data : library_disk delayed;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_imports : compilation_unit_name array;
   library_digests : Safe_typing.vodigest;
@@ -420,8 +419,7 @@ type seg_proofs = Term.constr Future.computation array
 let mk_library sd md digests univs =
   {
     library_name     = sd.md_name;
-    library_compiled = md.md_compiled;
-    library_objects  = md.md_objects;
+    library_data     = md;
     library_deps     = sd.md_deps;
     library_imports  = sd.md_imports;
     library_digests  = digests;
@@ -437,7 +435,7 @@ let mk_summary m = {
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in
   let (lsd : seg_sum), _, digest_lsd = System.marshal_in_segment f ch in
-  let (lmd : seg_lib), _, digest_lmd = System.marshal_in_segment f ch in
+  let (lmd : seg_lib delayed) = in_delayed f ch in
   let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
   let _ = System.skip_in_segment f ch in
   let _ = System.skip_in_segment f ch in
@@ -447,13 +445,13 @@ let intern_from_file f =
   add_opaque_table lsd.md_name (ToFetch del_opaque);
   let open Safe_typing in
   match univs with
-  | None -> mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
+  | None -> mk_library lsd lmd (Dvo_or_vi digest_lsd) Univ.ContextSet.empty
   | Some (utab,uall,true) ->
       add_univ_table lsd.md_name (Fetched utab);
-      mk_library lsd lmd (Dvivo (digest_lmd,digest_u)) uall
+      mk_library lsd lmd (Dvivo (digest_lsd,digest_u)) uall
   | Some (utab,_,false) ->
       add_univ_table lsd.md_name (Fetched utab);
-      mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
+      mk_library lsd lmd (Dvo_or_vi digest_lsd) Univ.ContextSet.empty
 
 module DPMap = Map.Make(DirPath)
 
@@ -544,10 +542,11 @@ let rec_intern_library_from_file idopt f =
 *)
 
 let register_library m =
+  let l = fetch_delayed m.library_data in
   Declaremods.register_library
     m.library_name
-    m.library_compiled
-    m.library_objects
+    l.md_compiled
+    l.md_objects
     m.library_digests
     m.library_extra_univs;
   register_loaded_library (mk_summary m)
