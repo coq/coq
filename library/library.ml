@@ -17,6 +17,59 @@ open Libobject
 open Lib
 
 (************************************************************************)
+(*s Low-level interning/externing of libraries to files *)
+
+(*s Loading from disk to cache (preparation phase) *)
+
+let (raw_extern_library, raw_intern_library) =
+  System.raw_extern_intern Coq_config.vo_magic_number
+
+(************************************************************************)
+(** Serialized objects loaded on-the-fly *)
+
+exception Faulty of string
+
+module Delayed :
+sig
+
+type 'a delayed
+val in_delayed : string -> in_channel -> 'a delayed
+val fetch_delayed : 'a delayed -> 'a
+
+end =
+struct
+
+type 'a delayed = {
+  del_file : string;
+  del_off : int;
+  del_digest : Digest.t;
+}
+
+let in_delayed f ch =
+  let pos = pos_in ch in
+  let _, digest = System.skip_in_segment f ch in
+  { del_file = f; del_digest = digest; del_off = pos; }
+
+(** Fetching a table of opaque terms at position [pos] in file [f],
+    expecting to find first a copy of [digest]. *)
+
+let fetch_delayed del =
+  let { del_digest = digest; del_file = f; del_off = pos; } = del in
+  try
+    let ch = System.with_magic_number_check raw_intern_library f in
+    let () = seek_in ch pos in
+    let obj, _, digest' = System.marshal_in_segment f ch in
+    let () = close_in ch in
+    if not (String.equal digest digest') then raise (Faulty f);
+    obj
+  with e when Errors.noncritical e -> raise (Faulty f)
+
+end
+
+open Delayed
+
+
+(************************************************************************)
 (*s Modules on disk contain the following informations (after the magic
     number, and before the digest). *)
 
@@ -206,14 +259,6 @@ let in_import_library : DirPath.t list * bool -> obj =
 
 
 (************************************************************************)
-(*s Low-level interning/externing of libraries to files *)
-
-(*s Loading from disk to cache (preparation phase) *)
-
-let (raw_extern_library, raw_intern_library) =
-  System.raw_extern_intern Coq_config.vo_magic_number
-
-(************************************************************************)
 (*s Locate absolute or partially qualified library names in the path *)
 
 exception LibUnmappedDir
@@ -305,34 +350,10 @@ let try_locate_qualified_library (loc,qid) =
     terms, and access them only when a specific command (e.g. Print or
     Print Assumptions) needs it. *)
 
-exception Faulty
-
-(** Fetching a table of opaque terms at position [pos] in file [f],
-    expecting to find first a copy of [digest]. *)
-
-let fetch_table what dp (f,pos,digest) =
-  let dir_path = Names.DirPath.to_string dp in
-  try
-    msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
-    let ch = System.with_magic_number_check raw_intern_library f in
-    let () = seek_in ch pos in
-    if not (String.equal (System.digest_in f ch) digest) then raise Faulty;
-    let table, pos', digest' = System.marshal_in_segment f ch in
-    let () = close_in ch in
-    let ch' = open_in_bin f in
-    if not (String.equal (Digest.channel ch' pos') digest') then raise Faulty;
-    let () = close_in ch' in
-    table
-  with e when Errors.noncritical e ->
-    error
-      ("The file "^f^" (bound to " ^ dir_path ^
-      ") is inaccessible or corrupted,\n" ^
-      "cannot load some "^what^" in it.\n")
-
 (** Delayed / available tables of opaque terms *)
 
 type 'a table_status =
-  | ToFetch of string * int * Digest.t
+  | ToFetch of 'a Future.computation array delayed
   | Fetched of 'a Future.computation array
 
 let opaque_tables =
@@ -345,25 +366,33 @@ let add_opaque_table dp st =
 let add_univ_table dp st =
   univ_tables := LibraryMap.add dp st !univ_tables
 
-let access_table fetch_table add_table tables dp i =
-  let t = match LibraryMap.find dp tables with
+let access_table what tables dp i =
+  let t = match LibraryMap.find dp !tables with
     | Fetched t -> t
-    | ToFetch (f,pos,digest) ->
-      let t = fetch_table dp (f,pos,digest) in
-      add_table dp (Fetched t);
+    | ToFetch f ->
+      let dir_path = Names.DirPath.to_string dp in
+      msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
+      let t =
+        try fetch_delayed f
+        with Faulty f ->
+          error
+            ("The file "^f^" (bound to " ^ dir_path ^
+            ") is inaccessible or corrupted,\n" ^
+            "cannot load some "^what^" in it.\n")
+      in
+      tables := LibraryMap.add dp (Fetched t) !tables;
       t
   in
   assert (i < Array.length t); t.(i)
 
 let access_opaque_table dp i =
-  access_table
-    (fetch_table "opaque proofs")
-    add_opaque_table !opaque_tables dp i
+  let what = "opaque proofs" in
+  access_table what opaque_tables dp i
+
 let access_univ_table dp i =
   try
-    Some (access_table 
-            (fetch_table "universe contexts of opaque proofs")
-            add_univ_table !univ_tables dp i)
+    let what = "universe contexts of opaque proofs" in
+    Some (access_table what univ_tables dp i)
   with Not_found -> None
 
 let () =
@@ -401,10 +430,11 @@ let intern_from_file f =
   let (lmd : seg_lib), pos, digest_lmd = System.marshal_in_segment f ch in
   let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
   let _ = System.skip_in_segment f ch in
-  let pos, digest = System.skip_in_segment f ch in
+  let _ = System.skip_in_segment f ch in
+  let (del_opaque : seg_proofs delayed) = in_delayed f ch in
   close_in ch;
   register_library_filename lmd.md_name f;
-  add_opaque_table lmd.md_name (ToFetch (f,pos,digest));
+  add_opaque_table lmd.md_name (ToFetch del_opaque);
   let open Safe_typing in
   match univs with
   | None -> mk_library lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
