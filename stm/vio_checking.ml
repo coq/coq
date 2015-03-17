@@ -10,7 +10,7 @@ open Util
 
 let check_vio (ts,f) =
   Dumpglob.noglob ();
-  let long_f_dot_v, _, _, _, tasks, _ = Library.load_library_todo f in
+  let long_f_dot_v, _, _, _, _, tasks, _ = Library.load_library_todo f in
   Stm.set_compilation_hints long_f_dot_v;
   List.fold_left (fun acc ids -> Stm.check_task f tasks ids && acc) true ts
 
@@ -30,7 +30,7 @@ let schedule_vio_checking j fs =
     let f =
       if Filename.check_suffix f ".vio" then Filename.chop_extension f
       else f in
-    let long_f_dot_v, _,_,_, tasks, _ = Library.load_library_todo f in
+    let long_f_dot_v, _,_,_,_, tasks, _ = Library.load_library_todo f in
     Stm.set_compilation_hints long_f_dot_v;
     let infos = Stm.info_tasks tasks in
     let eta = List.fold_left (fun a (_,t,_) -> a +. t) 0.0 infos in

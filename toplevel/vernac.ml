@@ -344,10 +344,10 @@ let compile verbosely f =
       let open Library in
       Dumpglob.noglob ();
       let f = if check_suffix f ".vio" then chop_extension f else f in
-      let lfdv, lib, univs, disch, tasks, proofs = load_library_todo f in
+      let lfdv, sum, lib, univs, disch, tasks, proofs = load_library_todo f in
       Stm.set_compilation_hints lfdv;
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
-      Library.save_library_raw lfdv lib univs proofs
+      Library.save_library_raw lfdv sum lib univs proofs
 
 let compile v f = 
   ignore(CoqworkmgrApi.get 1);

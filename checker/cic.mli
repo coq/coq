@@ -417,12 +417,16 @@ type compiled_library = {
 
 type library_objects
 
-type library_disk = {
+type summary_disk = {
   md_name : compilation_unit_name;
+  md_imports : compilation_unit_name array;
+  md_deps : library_deps;
+}
+
+type library_disk = {
   md_compiled : compiled_library;
   md_objects : library_objects;
-  md_deps : library_deps;
-  md_imports : compilation_unit_name array }
+}
 
 type opaque_table = constr Future.computation array
 type univ_table =

@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 0a174243f8b06535c9eecbbe8d339fe1 checker/cic.mli
+MD5 f5fd749af797e08efee22122742bc740 checker/cic.mli
 
 *)
 
@@ -350,8 +350,11 @@ let v_stm_seg = v_pair v_tasks v_counters
 
 (** Toplevel structures in a vo (see Cic.mli) *)
 
+let v_libsum =
+  Tuple ("summary", [|v_dp;Array v_dp;v_deps|])
+
 let v_lib =
-  Tuple ("library",[|v_dp;v_compiled_lib;v_libraryobjs;v_deps;Array v_dp|])
+  Tuple ("library",[|v_compiled_lib;v_libraryobjs|])
 
 let v_opaques = Array (v_computation v_constr)
 let v_univopaques =

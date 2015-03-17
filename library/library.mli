@@ -28,6 +28,7 @@ val require_library_from_file :
 (** {6 ... } *)
 
 (** Segments of a library *)
+type seg_sum
 type seg_lib
 type seg_univ = (* cst, all_cst, finished? *)
   Univ.universe_context_set Future.computation array * Univ.universe_context_set * bool
@@ -47,8 +48,8 @@ val save_library_to :
   DirPath.t -> string -> Opaqueproof.opaquetab -> unit
 
 val load_library_todo :
-  string -> string * seg_lib * seg_univ * seg_discharge * 'tasks * seg_proofs
-val save_library_raw : string -> seg_lib -> seg_univ -> seg_proofs -> unit
+  string -> string * seg_sum * seg_lib * seg_univ * seg_discharge * 'tasks * seg_proofs
+val save_library_raw : string -> seg_sum -> seg_lib -> seg_univ -> seg_proofs -> unit
 
 (** {6 Interrogate the status of libraries } *)
 
