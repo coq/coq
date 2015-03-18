@@ -782,10 +782,15 @@ let add_mode dbname l m =
   let db' = Hint_db.add_mode l m db in
     searchtable_add (dbname, db')
 
-type hint_obj = bool * string * hint_action  (* locality, name, action *)
+type hint_obj = {
+  hint_local : bool;
+  hint_name : string;
+  hint_action : hint_action;
+}
 
-let cache_autohint (_,(local,name,hints)) =
-  match hints with
+let cache_autohint (_, h) =
+  let name = h.hint_name in
+  match h.hint_action with
   | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty st b)
   | AddTransparency (grs, b) -> add_transparency name grs b
   | AddHints hints -> add_hint name hints
@@ -793,7 +798,7 @@ let cache_autohint (_,(local,name,hints)) =
   | AddCut path -> add_cut name path
   | AddMode (l, m) -> add_mode name l m
 
-let subst_autohint (subst,(local,name,hintlist as obj)) =
+let subst_autohint (subst, obj) =
   let subst_key gr =
     let (lab'', elab') = subst_global subst gr in
     let gr' =
@@ -835,29 +840,30 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
     in
     if k' == k && data' == data then hint else (k',data')
   in
-    match hintlist with
-    | CreateDB _ -> obj
+  let action = match obj.hint_action with
+    | CreateDB _ -> obj.hint_action
     | AddTransparency (grs, b) ->
-	let grs' = List.smartmap (subst_evaluable_reference subst) grs in
-	  if grs==grs' then obj else (local, name, AddTransparency (grs', b))
+      let grs' = List.smartmap (subst_evaluable_reference subst) grs in
+      if grs == grs' then obj.hint_action else AddTransparency (grs', b)
     | AddHints hintlist ->
-	let hintlist' = List.smartmap subst_hint hintlist in
-	  if hintlist' == hintlist then obj else
-	    (local,name,AddHints hintlist')
+      let hintlist' = List.smartmap subst_hint hintlist in
+      if hintlist' == hintlist then obj.hint_action else AddHints hintlist'
     | RemoveHints grs ->
-	let grs' = List.smartmap (subst_global_reference subst) grs in
-	  if grs==grs' then obj else (local, name, RemoveHints grs')
+      let grs' = List.smartmap (subst_global_reference subst) grs in
+      if grs == grs' then obj.hint_action else RemoveHints grs'
     | AddCut path ->
       let path' = subst_hints_path subst path in
-	if path' == path then obj else (local, name, AddCut path')
+      if path' == path then obj.hint_action else AddCut path'
     | AddMode (l,m) ->
       let l' = subst_global_reference subst l in
-	(local, name, AddMode (l', m))
+      if l' == l then obj.hint_action else AddMode (l', m)
+  in
+  if action == obj.hint_action then obj else { obj with hint_action = action }
 
-let classify_autohint ((local,name,hintlist) as obj) =
-  match hintlist with
+let classify_autohint obj =
+  match obj.hint_action with
   | AddHints [] -> Dispose
-  | _ -> if local then Dispose else Substitute obj
+  | _ -> if obj.hint_local then Dispose else Substitute obj
 
 let inAutoHint : hint_obj -> obj =
   declare_object {(default_object "AUTOHINT") with
@@ -866,14 +872,22 @@ let inAutoHint : hint_obj -> obj =
 		    subst_function = subst_autohint;
 		    classify_function = classify_autohint; }
 
+let make_hint ?(local = false) name action = {
+  hint_local = local;
+  hint_name = name;
+  hint_action = action;
+}
+
 let create_hint_db l n st b =
-  Lib.add_anonymous_leaf (inAutoHint (l,n,CreateDB (b, st)))
+  let hint = make_hint ~local:l n (CreateDB (b, st)) in
+  Lib.add_anonymous_leaf (inAutoHint hint)
 
 let remove_hints local dbnames grs =
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
       (fun dbname ->
-	 Lib.add_anonymous_leaf (inAutoHint(local, dbname, RemoveHints grs)))
+        let hint = make_hint ~local dbname (RemoveHints grs) in
+        Lib.add_anonymous_leaf (inAutoHint hint))
       dbnames
 
 (**************************************************************************)
@@ -882,37 +896,42 @@ let remove_hints local dbnames grs =
 let add_resolves env sigma clist local dbnames =
   List.iter
     (fun dbname ->
-       Lib.add_anonymous_leaf
-	 (inAutoHint
-	    (local,dbname, AddHints
-     	      (List.flatten (List.map (fun (pri, poly, hnf, path, gr) ->
-	        make_resolves env sigma (true,hnf,Flags.is_verbose()) 
-		  pri poly ~name:path gr) clist)))))
+      let r =
+        List.flatten (List.map (fun (pri, poly, hnf, path, gr) ->
+          make_resolves env sigma (true,hnf,Flags.is_verbose()) 
+            pri poly ~name:path gr) clist)
+      in
+      let hint = make_hint ~local dbname (AddHints r) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let add_unfolds l local dbnames =
   List.iter
-    (fun dbname -> Lib.add_anonymous_leaf
-       (inAutoHint (local,dbname, AddHints (List.map make_unfold l))))
+    (fun dbname ->
+      let hint = make_hint ~local dbname (AddHints (List.map make_unfold l)) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let add_cuts l local dbnames =
   List.iter
-    (fun dbname -> Lib.add_anonymous_leaf
-       (inAutoHint (local,dbname, AddCut l)))
+    (fun dbname ->
+      let hint = make_hint ~local dbname (AddCut l) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let add_mode l m local dbnames =
   List.iter
-    (fun dbname -> Lib.add_anonymous_leaf
-      (let m' = make_mode l m in
-	 (inAutoHint (local,dbname, AddMode (l,m')))))
+    (fun dbname ->
+      let m' = make_mode l m in
+      let hint = make_hint ~local dbname (AddMode (l, m')) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let add_transparency l b local dbnames =
   List.iter
-    (fun dbname -> Lib.add_anonymous_leaf
-       (inAutoHint (local,dbname, AddTransparency (l, b))))
+    (fun dbname ->
+      let hint = make_hint ~local dbname (AddTransparency (l, b)) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let add_extern pri pat tacast local dbname =
@@ -920,7 +939,7 @@ let add_extern pri pat tacast local dbname =
   | None -> None
   | Some (_, pat) -> Some pat
   in
-  let hint = local, dbname, AddHints [make_extern pri pat tacast] in
+  let hint = make_hint ~local dbname (AddHints [make_extern pri pat tacast]) in
   Lib.add_anonymous_leaf (inAutoHint hint)
 
 let add_externs pri pat tacast local dbnames =
@@ -929,9 +948,9 @@ let add_externs pri pat tacast local dbnames =
 let add_trivials env sigma l local dbnames =
   List.iter
     (fun dbname ->
-       Lib.add_anonymous_leaf (
-	 inAutoHint(local,dbname, 
-		    AddHints (List.map (fun (name, poly, c) -> make_trivial env sigma poly ~name c) l))))
+      let l = List.map (fun (name, poly, c) -> make_trivial env sigma poly ~name c) l in
+      let hint = make_hint ~local dbname (AddHints l) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let (forward_intern_tac, extern_intern_tac) = Hook.make ()
