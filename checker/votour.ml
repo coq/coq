@@ -88,7 +88,7 @@ let rec get_children v o pos = match v with
   |Dyn ->
     let t = to_dyn o in
     let tpe = find_dyn t.dyn_tag in
-    [|(String, Obj.repr t.dyn_tag, 0 :: pos); (tpe, t.dyn_obj, 1 :: pos)|]
+    [|(Int, Obj.repr t.dyn_tag, 0 :: pos); (tpe, t.dyn_obj, 1 :: pos)|]
   |Fail s -> failwith "forbidden"
 
 type info = {
