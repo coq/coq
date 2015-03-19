@@ -100,14 +100,16 @@ let proof_instr : raw_proof_instr Gram.entry =
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr
 
-let classify_proof_instr _ = VtProofStep false, VtLater
+let classify_proof_instr = function
+  | { instr = Pescape |Pend B_proof } -> VtProofMode "Classic", VtNow
+  | _ -> VtProofStep false, VtLater
 
 (* We use the VERNAC EXTEND facility with a custom non-terminal
     to populate [proof_mode] with a new toplevel interpreter.
     The "-" indicates that the rule does not start with a distinguished
     string. *)
-VERNAC proof_mode EXTEND ProofInstr CLASSIFIED BY classify_proof_instr
-  [ - proof_instr(instr) ] -> [ vernac_proof_instr instr ]
+VERNAC proof_mode EXTEND ProofInstr
+  [ - proof_instr(instr) ] => [classify_proof_instr instr] -> [ vernac_proof_instr instr ]
 END
 
 (* It is useful to use GEXTEND directly to call grammar entries that have been
@@ -155,7 +157,7 @@ VERNAC COMMAND EXTEND DeclProof
 [ "proof" ] => [ VtProofMode "Declarative", VtNow ] -> [ vernac_decl_proof () ]
 END
 VERNAC COMMAND EXTEND  DeclReturn
-[ "return" ] => [ VtProofMode "Classic", VtNow ] -> [ vernac_return () ]
+[ "return" ] => [ VtProofMode "Declarative", VtNow ] -> [ vernac_return () ]
 END
 
 let none_is_empty = function
