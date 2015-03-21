@@ -409,7 +409,8 @@ let mono_filename f =
 let module_filename mp =
   let f = file_of_modfile mp in
   let d = descr () in
-  Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id_of_string f
+  let p = d.file_naming mp ^ d.file_suffix in
+  Some p, Option.map ((^) f) d.sig_suffix, id_of_string f
 
 (*s Extraction of one decl to stdout. *)
 

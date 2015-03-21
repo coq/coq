@@ -219,6 +219,7 @@ let pp_struct =
 let scheme_descr = {
   keywords = keywords;
   file_suffix = ".scm";
+  file_naming = file_of_modfile;
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;

@@ -196,6 +196,7 @@ type language_descr = {
 
   (* Concerning the source file *)
   file_suffix : string;
+  file_naming : module_path -> string;
   preamble : identifier -> module_path list -> unsafe_needs -> std_ppcmds;
   pp_struct : ml_structure -> std_ppcmds;
 
