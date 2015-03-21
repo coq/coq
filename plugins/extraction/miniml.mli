@@ -197,6 +197,7 @@ type language_descr = {
 
   (* Concerning the source file *)
   file_suffix : string;
+  file_naming : module_path -> string;
   (* the second argument is a comment to add to the preamble *)
   preamble :
     Id.t -> std_ppcmds option -> module_path list -> unsafe_needs ->

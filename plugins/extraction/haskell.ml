@@ -360,6 +360,7 @@ let pp_struct =
 let haskell_descr = {
   keywords = keywords;
   file_suffix = ".hs";
+  file_naming = string_of_modfile;
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;
