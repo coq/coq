@@ -240,12 +240,12 @@ let pp_logical_ind packet =
 	      prvect_with_sep spc pr_id packet.ip_consnames)
 
 let pp_singleton kn packet =
+  let name = pp_global Type (IndRef (kn,0)) in
   let l = rename_tvars keywords packet.ip_vars in
-  let l' = List.rev l in
-  hov 2 (str "type " ++ pp_global Type (IndRef (kn,0)) ++ spc () ++
+  hov 2 (str "type " ++ name ++ spc () ++
 	 prlist_with_sep spc pr_id l ++
 	 (if l <> [] then str " " else mt ()) ++ str "=" ++ spc () ++
-	 pp_type false l' (List.hd packet.ip_types.(0)) ++ fnl () ++
+	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
 	 pp_comment (str "singleton inductive, whose constructor was " ++
 		     pr_id packet.ip_consnames.(0)))
 
