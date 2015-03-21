@@ -26,7 +26,7 @@ let pr_upper_id id = str (String.capitalize (Id.to_string id))
 
 let keywords =
   List.fold_right (fun s -> Id.Set.add (Id.of_string s))
-  [ "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
+  [ "Any"; "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
     "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance";
     "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_"; "__";
     "as"; "qualified"; "hiding" ; "unit" ; "unsafeCoerce" ]
@@ -56,11 +56,14 @@ let preamble mod_name comment used_modules usf =
    else str "\
 \n#ifdef __GLASGOW_HASKELL__\
 \nimport qualified GHC.Base\
+\nimport qualified GHC.Prim\
+\ntype Any = GHC.Prim.Any\
 \nunsafeCoerce :: a -> b\
 \nunsafeCoerce = GHC.Base.unsafeCoerce#\
 \n#else\
 \n-- HUGS\
 \nimport qualified IOExts\
+\ntype Any = ()\
 \nunsafeCoerce :: a -> b\
 \nunsafeCoerce = IOExts.unsafeCoerce\
 \n#endif" ++ fnl2 ())
@@ -102,7 +105,7 @@ let rec pp_type par vl t =
 	pp_par par
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
     | Tdummy _ -> str "()"
-    | Tunknown -> str "()"
+    | Tunknown -> str "Any"
     | Taxiom -> str "() -- AXIOM TO BE REALIZED\n"
  in
   hov 0 (pp_rec par t)
