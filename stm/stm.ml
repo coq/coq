@@ -1896,9 +1896,16 @@ let observe id =
     iraise e
 
 let finish ?(print_goals=false) () =
-  observe (VCS.get_branch_pos (VCS.current_branch ()));
+  let head = VCS.current_branch () in
+  observe (VCS.get_branch_pos head);
   if print_goals then msg_notice (pr_open_cur_subgoals ());
-  VCS.print ()
+  VCS.print ();
+  (* Some commands may by side effect change the proof mode *)
+  match VCS.get_branch head with
+  | { VCS.kind = `Edit (mode, _, _) } -> Proof_global.activate_proof_mode mode
+  | { VCS.kind = `Proof (mode, _) } -> Proof_global.activate_proof_mode mode
+  | _ -> ()
+
 
 let wait () =
   Slaves.wait_all_done ();
