@@ -1602,10 +1602,11 @@ let pstate = summary_pstate
 
 let async_policy () =
   let open Flags in
-  if interactive () = `Yes then
-    (async_proofs_is_master () || !async_proofs_mode = Flags.APonLazy)
+  if is_universe_polymorphism () then false
+  else if interactive () = `Yes then
+    (async_proofs_is_master () || !async_proofs_mode = APonLazy)
   else
-    (!compilation_mode = Flags.BuildVio || !async_proofs_mode <> Flags.APoff)
+    (!compilation_mode = BuildVio || !async_proofs_mode <> APoff)
 
 let delegate name =
   let time = get_hint_bp_time name in
