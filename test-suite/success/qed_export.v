@@ -3,8 +3,8 @@ Proof.
 assert True as H.
   abstract (trivial) using exported_seff.
 exact H.
-Fail Qed export a_subproof.
-Qed export exported_seff.
+Fail Qed exporting a_subproof.
+Qed exporting exported_seff.
 Check ( exported_seff : True ).
 
 Lemma b : True.
