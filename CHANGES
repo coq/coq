@@ -153,13 +153,14 @@ Tactics
     as existential variables in other goals. To emulate the old
     refine, use "refine c;shelve_unifiable". This can still cause
     incompatibilities in rare occasions.
-  * New "give_up" tactic to skip over a goal without admitting it.
-- The admit tactic has been removed, "give_up" should be used instead.
-  To compile code containing "admit" the following solutions can be adopted:
-  * Add Ltac definition "Ltac admit := give_up." and terminate each
-    incomplete proof with "Admitted".
-  * Add an "Axiom" for each admitted subproof.
-  * Add a single "Axiom proof_admitted : False." and the Ltac definition
+  * New "give_up" tactic to skip over a goal.  A proof containing
+    given up goals cannot be closed with "Qed", but only with "Admitted".
+- The implementation of the admit tactic has changed: no axiom is
+  generated for the admitted sub proof. "admit" is now an alias for
+  "give_up".  Code relying on this specific behavior of "admit"
+  can be made to work by:
+  * Adding an "Axiom" for each admitted subproof.
+  * Adding a single "Axiom proof_admitted : False." and the Ltac definition
     "Ltac admit := case proof_admitted.".
 - Matching using "lazymatch" was fundamentally modified. It now behaves
   like "match" (immediate execution of the matching branch) but without

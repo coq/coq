@@ -196,6 +196,12 @@ TACTIC EXTEND simple_destruct
   [ "simple" "destruct" quantified_hypothesis(h) ] -> [ Tactics.simple_destruct h ]
 END
 
+(* Admit *)
+
+TACTIC EXTEND admit
+ [ "admit" ] -> [ Proofview.give_up ]
+END
+
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 
 open Tacexpr
