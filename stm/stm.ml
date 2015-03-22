@@ -1633,12 +1633,17 @@ let collect_proof keep cur hd brkind id =
  let has_proof_no_using = function
    | Some (_, { expr = VernacProof(_,None) }) -> true
    | _ -> false in
+ let may_pierce_opaque = function
+   | { expr = VernacPrint (PrintName _) } -> true
+   | _ -> false in
  let parent = function Some (p, _) -> p | None -> assert false in
  let rec collect last accn id =
     let view = VCS.visit id in
     match view.step with
+    | (`Sideff (`Ast(x,_)) | `Cmd { cast = x })
+      when may_pierce_opaque x -> `Sync(no_name,None,`Print)
     | `Cmd { cast = x } -> collect (Some (id,x)) (id::accn) view.next
-    | `Sideff (`Ast (x,_)) -> collect (Some (id,x)) (id::accn) view.next
+    | `Sideff (`Ast(x,_)) -> collect (Some (id,x)) (id::accn) view.next
     (* An Alias could jump everywhere... we hope we can ignore it*)
     | `Alias _ -> `Sync (no_name,None,`Alias)
     | `Fork((_,_,_,_::_::_), _) ->
@@ -1696,6 +1701,7 @@ let string_of_reason = function
   | `Doesn'tGuaranteeOpacity -> "not a simple opaque lemma"
   | `MutualProofs -> "block of mutually recursive proofs"
   | `Alias -> "contains Undo-like command"
+  | `Print -> "contains Print-like command"
   | `NoPU_NoHint_NoES -> "no 'Proof using..', no .aux file, inside a section"
   | `Unknown -> "unsupported case"
 
