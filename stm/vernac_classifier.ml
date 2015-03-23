@@ -65,6 +65,11 @@ let rec classify_vernac e =
     | VernacUnsetOption (["Silent"]|["Undo"]|["Printing";"Depth"])
     | VernacSetOption   ((["Silent"]|["Undo"]|["Printing";"Depth"]),_)
       when !Flags.print_emacs -> VtStm(VtPG,false), VtNow
+    (* Univ poly compatibility: we run it now, so that we can just
+     * look at Flags in stm.ml.  Would be nicer to have the stm
+     * look at the entire dag to detect this option. *)
+    | VernacSetOption (["Universe"; "Polymorphism"],_)
+    | VernacUnsetOption (["Universe"; "Polymorphism"]) -> VtSideff [], VtNow
     (* Stm *)
     | VernacStm Finish -> VtStm (VtFinish, true), VtNow
     | VernacStm Wait -> VtStm (VtWait, true), VtNow

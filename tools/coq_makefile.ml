@@ -46,8 +46,8 @@ let section s =
 let usage () =
   output_string stderr "Usage summary:
 
-coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ...
-  [file.ml{lib,pack}] ... [-extra[-phony] result dependencies command]
+coq_makefile .... [file.v] ... [file.ml[i4]?] ... [file.ml{lib,pack}]
+  ... [any] ... [-extra[-phony] result dependencies command]
   ... [-I dir] ... [-R physicalpath logicalpath]
   ... [-Q physicalpath logicalpath] ... [VARIABLE = value]
   ...  [-arg opt] ... [-opt|-byte] [-no-install] [-f file] [-o file]
@@ -57,8 +57,8 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ...
 [file.ml[i4]?]: Objective Caml file to be compiled
 [file.ml{lib,pack}]: ocamlbuild file that describes a Objective Caml
   library/module
-[subdirectory] : subdirectory that should be \"made\" and has a
-  Makefile itself to do so.
+[any] : subdirectory that should be \"made\" and has a Makefile itself
+  to do so. Very fragile and discouraged.
 [-extra result dependencies command]: add target \"result\" with command
   \"command\" and dependencies \"dependencies\". If \"result\" is not
   generic (do not contains a %), \"result\" is built by _make all_ and
@@ -344,6 +344,10 @@ let clean sds sps =
     (fun x -> print "\t+cd "; print x; print " && $(MAKE) clean\n")
     sds;
   print "\n";
+  let () =
+    if !some_vfile then
+      let () = print "cleanall:: clean\n" in
+      print "\trm -f $(patsubst %.v,.%.aux,$(VFILES))\n\n" in
   print "archclean::\n";
   print "\trm -f *.cmx *.o\n";
   List.iter
@@ -545,7 +549,12 @@ let subdirs sds =
   let pr_subdir s =
     print s; print ":\n\t+cd \""; print s; print "\" && $(MAKE) all\n\n"
   in
-    if sds <> [] then section "Subdirectories.";
+  if sds <> [] then
+    let () =
+      Format.eprintf "@[Warning: Targets for subdirectories are very fragile.@ " in
+    let () =
+      Format.eprintf "For example,@ nothing is done to handle dependencies@ with them.@]@." in
+      section "Subdirectories.";
     List.iter pr_subdir sds
 
 let forpacks l =
@@ -697,25 +706,25 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
     end
 
 let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
-  let other_targets = CList.map_filter
-    (fun (n,_,is_phony,_) -> if not (is_phony || is_genrule n) then Some n else None)
-    sps @ sds in
+  let other_targets =
+    CList.map_filter
+      (fun (n,_,is_phony,_) -> if not (is_phony || is_genrule n) then Some n else None)
+      sps @ sds in
   main_targets vfiles mlfiles other_targets inc;
-    print ".PHONY: ";
-    print_list " "
-      ("all" :: "archclean" :: "beautify" :: "byte" :: "clean" ::
-	  "gallina" :: "gallinahtml" :: "html" ::
-	  "install" :: "install-doc" :: "install-natdynlink" :: "install-toploop" ::
-	  "opt" :: "printenv" :: "quick" ::
-	  "uninstall" :: "userinstall" ::
-	  "validate" :: "vio2vo" ::
-	    (sds@(CList.map_filter
-		    (fun (n,_,is_phony,_) ->
-		     if is_phony then Some n else None) sps)));
-    print "\n\n";
-    custom sps;
-    subdirs sds;
-    forpacks mlpackfiles
+  print ".PHONY: ";
+  print_list
+    " "
+    ("all" :: "archclean" :: "beautify" :: "byte" :: "clean" :: "cleanall"
+     :: "gallina" :: "gallinahtml" :: "html" :: "install" :: "install-doc"
+     :: "install-natdynlink" :: "install-toploop" :: "opt" :: "printenv"
+     :: "quick" :: "uninstall" :: "userinstall" :: "validate" :: "vio2vo"
+     :: (sds@(CList.map_filter
+		(fun (n,_,is_phony,_) ->
+		 if is_phony then Some n else None) sps)));
+  print "\n\n";
+  custom sps;
+  subdirs sds;
+  forpacks mlpackfiles
 
 let banner () =
   print (Printf.sprintf

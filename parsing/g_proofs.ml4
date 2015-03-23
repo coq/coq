@@ -53,7 +53,7 @@ GEXTEND Gram
 	  VernacSolveExistential (n,c)
       | IDENT "Admitted" -> VernacEndProof Admitted
       | IDENT "Qed" -> VernacEndProof (Proved (Opaque None,None))
-      | IDENT "Qed"; IDENT "export"; l = LIST0 identref SEP "," ->
+      | IDENT "Qed"; IDENT "exporting"; l = LIST0 identref SEP "," ->
           VernacEndProof (Proved (Opaque (Some l),None))
       | IDENT "Save" -> VernacEndProof (Proved (Opaque None,None))
       | IDENT "Save"; tok = thm_token; id = identref ->

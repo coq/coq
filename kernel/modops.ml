@@ -428,15 +428,19 @@ let rec strengthen_and_subst_mod mb subst mp_from mp_to =
 and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
   match str with
     | [] -> empty_delta_resolver,[]
-    | (l,SFBconst cb) :: rest ->
+    | (l,SFBconst cb) as item :: rest ->
         let cb' = subst_const_body subst cb in
-        let cb'' =
+        let cb' =
           if alias then cb'
           else strengthen_const mp_from l cb' reso
         in
-        let item' = l, SFBconst cb'' in
+        let item' = if cb' == cb then item else (l, SFBconst cb') in
 	let reso',rest' =
 	  strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
+        in
+        let str' =
+          if rest' == rest && item' == item then str
+          else item' :: rest'
         in
 	if incl then
           (* If we are performing an inclusion we need to add
@@ -445,26 +449,31 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
           let kn_from = KerName.make2 mp_from l in
           let kn_to = KerName.make2 mp_to l in
           let old_name = kn_of_delta reso kn_from in
-	  add_kn_delta_resolver kn_to old_name reso', item'::rest'
+	  add_kn_delta_resolver kn_to old_name reso', str'
 	else
 	  (* In this case the fact that the constant mp_to.l is
 	     \Delta-equivalent to resolver(mp_from.l) is already known
 	     because reso' contains mp_to maps to reso(mp_from) *)
-	  reso', item'::rest'
-    | (l,SFBmind mib) :: rest ->
-	let item' = l,SFBmind (subst_mind_body subst mib) in
+	  reso', str'
+    | (l,SFBmind mib) as item :: rest ->
+        let mib' = subst_mind_body subst mib in
+        let item' = if mib' == mib then item else (l, SFBmind mib') in
 	let reso',rest' =
 	  strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
+        in
+        let str' =
+          if rest' == rest && item' == item then str
+          else item' :: rest'
         in
 	(* Same as constant *)
 	if incl then
 	  let kn_from = KerName.make2 mp_from l in
 	  let kn_to = KerName.make2 mp_to l in
 	  let old_name = kn_of_delta reso kn_from in
-	  add_kn_delta_resolver kn_to old_name reso', item'::rest'
+          add_kn_delta_resolver kn_to old_name reso', str'
 	else
-	  reso', item'::rest'
-    | (l,SFBmodule mb) :: rest ->
+          reso', str'
+    | (l,SFBmodule mb) as item :: rest ->
 	let mp_from' = MPdot (mp_from,l) in
 	let mp_to' = MPdot (mp_to,l) in
 	let mb' = if alias then
@@ -472,31 +481,39 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
 	else
 	  strengthen_and_subst_mod mb subst mp_from' mp_to'
 	in
-	let item' = l,SFBmodule mb' in
+        let item' = if mb' == mb then item else (l, SFBmodule mb') in
 	let reso',rest' =
 	  strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
+        in
+        let str' =
+          if rest' == rest && item' == item then str
+          else item' :: rest'
         in
         (* if mb is a functor we should not derive new equivalences
            on names, hence we add the fact that the functor can only
            be equivalent to itself. If we adopt an applicative
            semantic for functor this should be changed.*)
 	if is_functor mb'.mod_type then
-	  add_mp_delta_resolver mp_to' mp_to' reso', item':: rest'
+          add_mp_delta_resolver mp_to' mp_to' reso', str'
 	else
-	  add_delta_resolver reso' mb'.mod_delta, item':: rest'
-    | (l,SFBmodtype mty) :: rest ->
+          add_delta_resolver reso' mb'.mod_delta, str'
+    | (l,SFBmodtype mty) as item :: rest ->
 	let mp_from' = MPdot (mp_from,l) in
 	let mp_to' = MPdot(mp_to,l) in
 	let subst' = add_mp mp_from' mp_to' empty_delta_resolver subst in
-	let mty = subst_modtype subst'
+	let mty' = subst_modtype subst'
 	  (fun resolver _ -> subst_dom_codom_delta_resolver subst' resolver)
           mty
         in
-        let item' = l,SFBmodtype mty in
+        let item' = if mty' == mty then item else (l, SFBmodtype mty') in
 	let reso',rest' =
           strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
         in
-	add_mp_delta_resolver mp_to' mp_to' reso', item'::rest'
+        let str' =
+          if rest' == rest && item' == item then str
+          else item' :: rest'
+        in
+	add_mp_delta_resolver mp_to' mp_to' reso', str'
 
 
 (** Let P be a module path when we write:

@@ -295,7 +295,7 @@ let close_proof ~keep_body_ucst_sepatate ?feedback_id ~now fpl =
 	let ctx = Evd.evar_universe_context_set universes in
         if keep_body_ucst_sepatate then
           (* For vi2vo compilation proofs are computed now but we need to
-           * completent the univ constraints of the typ with the ones of
+           * complement the univ constraints of the typ with the ones of
            * the body.  So we keep the two sets distinct. *)
           let ctx_body = restrict_universe_context ctx used_univs_body in
           let ctx_typ = restrict_universe_context ctx used_univs_typ in

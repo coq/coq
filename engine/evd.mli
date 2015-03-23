@@ -530,6 +530,8 @@ val with_context_set : rigid -> evar_map -> 'a Univ.in_universe_context_set -> e
 val nf_univ_variables : evar_map -> evar_map * Univ.universe_subst
 val abstract_undefined_variables : evar_universe_context -> evar_universe_context
 
+val fix_undefined_variables : evar_map -> evar_map
+
 val refresh_undefined_universes : evar_map -> evar_map * Univ.universe_level_subst
 
 val nf_constraints : evar_map -> evar_map

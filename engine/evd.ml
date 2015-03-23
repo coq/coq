@@ -1189,6 +1189,18 @@ let abstract_undefined_variables uctx =
   in { uctx with uctx_local = Univ.ContextSet.empty;
       uctx_univ_algebraic = vars' }
 
+let fix_undefined_variables ({ universes = uctx } as evm) =
+  let algs', vars' = 
+    Univ.LMap.fold (fun u v (algs, vars as acc) ->
+      if v == None then (Univ.LSet.remove u algs, Univ.LMap.remove u vars)
+      else acc)
+      uctx.uctx_univ_variables 
+      (uctx.uctx_univ_algebraic, uctx.uctx_univ_variables)
+  in
+    {evm with universes = 
+	{ uctx with uctx_univ_variables = vars';
+	  uctx_univ_algebraic = algs' } }
+
 
 let refresh_undefined_univ_variables uctx =
   let subst, ctx' = Universes.fresh_universe_context_set_instance uctx.uctx_local in

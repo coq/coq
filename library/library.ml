@@ -17,6 +17,59 @@ open Libobject
 open Lib
 
 (************************************************************************)
+(*s Low-level interning/externing of libraries to files *)
+
+(*s Loading from disk to cache (preparation phase) *)
+
+let (raw_extern_library, raw_intern_library) =
+  System.raw_extern_intern Coq_config.vo_magic_number
+
+(************************************************************************)
+(** Serialized objects loaded on-the-fly *)
+
+exception Faulty of string
+
+module Delayed :
+sig
+
+type 'a delayed
+val in_delayed : string -> in_channel -> 'a delayed
+val fetch_delayed : 'a delayed -> 'a
+
+end =
+struct
+
+type 'a delayed = {
+  del_file : string;
+  del_off : int;
+  del_digest : Digest.t;
+}
+
+let in_delayed f ch =
+  let pos = pos_in ch in
+  let _, digest = System.skip_in_segment f ch in
+  { del_file = f; del_digest = digest; del_off = pos; }
+
+(** Fetching a table of opaque terms at position [pos] in file [f],
+    expecting to find first a copy of [digest]. *)
+
+let fetch_delayed del =
+  let { del_digest = digest; del_file = f; del_off = pos; } = del in
+  try
+    let ch = System.with_magic_number_check raw_intern_library f in
+    let () = seek_in ch pos in
+    let obj, _, digest' = System.marshal_in_segment f ch in
+    let () = close_in ch in
+    if not (String.equal digest digest') then raise (Faulty f);
+    obj
+  with e when Errors.noncritical e -> raise (Faulty f)
+
+end
+
+open Delayed
+
+
+(************************************************************************)
 (*s Modules on disk contain the following informations (after the magic
     number, and before the digest). *)
 
@@ -42,12 +95,19 @@ type library_t = {
   library_extra_univs : Univ.universe_context_set;
 }
 
+type library_summary = {
+  libsum_name : compilation_unit_name;
+  libsum_digests : Safe_typing.vodigest;
+  libsum_imports : compilation_unit_name array;
+}
+
 module LibraryOrdered = DirPath
 module LibraryMap = Map.Make(LibraryOrdered)
 module LibraryFilenameMap = Map.Make(LibraryOrdered)
 
 (* This is a map from names to loaded libraries *)
-let libraries_table = Summary.ref LibraryMap.empty ~name:"LIBRARY"
+let libraries_table : library_summary LibraryMap.t ref =
+  Summary.ref LibraryMap.empty ~name:"LIBRARY"
 
 (* This is the map of loaded libraries filename *)
 (* (not synchronized so as not to be caught in the states on disk) *)
@@ -89,32 +149,31 @@ let library_is_loaded dir =
   with Not_found -> false
 
 let library_is_opened dir =
-  List.exists (fun m -> DirPath.equal m.library_name dir) !libraries_imports_list
+  List.exists (fun name -> DirPath.equal name dir) !libraries_imports_list
 
-let loaded_libraries () =
-  List.map (fun m -> m.library_name) !libraries_loaded_list
+let loaded_libraries () = !libraries_loaded_list
 
-let opened_libraries () =
-  List.map (fun m -> m.library_name) !libraries_imports_list
+let opened_libraries () = !libraries_imports_list
 
   (* If a library is loaded several time, then the first occurrence must
      be performed first, thus the libraries_loaded_list ... *)
 
 let register_loaded_library m =
+  let libname = m.libsum_name in
   let link m =
-    let dirname = Filename.dirname (library_full_filename m.library_name) in
-    let prefix = Nativecode.mod_uid_of_dirpath m.library_name ^ "." in
+    let dirname = Filename.dirname (library_full_filename libname) in
+    let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
     let f = prefix ^ "cmo" in
     let f = Dynlink.adapt_filename f in
     if not !Flags.no_native_compiler then
       Nativelib.link_library ~prefix ~dirname ~basename:f
   in
   let rec aux = function
-    | [] -> link m; [m]
-    | m'::_ as l when DirPath.equal m'.library_name m.library_name -> l
+    | [] -> link m; [libname]
+    | m'::_ as l when DirPath.equal m' libname -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
-  libraries_table := LibraryMap.add m.library_name m !libraries_table
+  libraries_table := LibraryMap.add libname m !libraries_table
 
   (* ... while if a library is imported/exported several time, then
      only the last occurrence is really needed - though the imported
@@ -125,7 +184,7 @@ let register_loaded_library m =
 let rec remember_last_of_each l m =
   match l with
   | [] -> [m]
-  | m'::l' when DirPath.equal m'.library_name m.library_name -> remember_last_of_each l' m
+  | m'::l' when DirPath.equal m' m -> remember_last_of_each l' m
   | m'::l' -> m' :: remember_last_of_each l' m
 
 let register_open_library export m =
@@ -139,17 +198,15 @@ let register_open_library export m =
 (* [open_library export explicit m] opens library [m] if not already
    opened _or_ if explicitly asked to be (re)opened *)
 
-let eq_lib_name m1 m2 = DirPath.equal m1.library_name m2.library_name
-
 let open_library export explicit_libs m =
   if
     (* Only libraries indirectly to open are not reopen *)
     (* Libraries explicitly mentionned by the user are always reopen *)
-    List.exists (eq_lib_name m) explicit_libs
-    || not (library_is_opened m.library_name)
+    List.exists (fun m' -> DirPath.equal m m') explicit_libs
+    || not (library_is_opened m)
   then begin
     register_open_library export m;
-    Declaremods.really_import_module (MPfile m.library_name)
+    Declaremods.really_import_module (MPfile m)
   end
   else
     if export then
@@ -164,11 +221,12 @@ let open_libraries export modl =
       (fun l m ->
          let subimport =
            Array.fold_left
-             (fun l m -> remember_last_of_each l (try_find_library m))
-             l m.library_imports
-         in remember_last_of_each subimport m)
+             (fun l m -> remember_last_of_each l m)
+             l m.libsum_imports
+         in remember_last_of_each subimport m.libsum_name)
       [] modl in
-  List.iter (open_library export modl) to_open_list
+  let explicit = List.map (fun m -> m.libsum_name) modl in
+  List.iter (open_library export explicit) to_open_list
 
 
 (**********************************************************************)
@@ -199,14 +257,6 @@ let in_import_library : DirPath.t list * bool -> obj =
        subst_function = subst_import_library;
        classify_function = classify_import_library }
 
-
-(************************************************************************)
-(*s Low-level interning/externing of libraries to files *)
-
-(*s Loading from disk to cache (preparation phase) *)
-
-let (raw_extern_library, raw_intern_library) =
-  System.raw_extern_intern Coq_config.vo_magic_number
 
 (************************************************************************)
 (*s Locate absolute or partially qualified library names in the path *)
@@ -300,34 +350,10 @@ let try_locate_qualified_library (loc,qid) =
     terms, and access them only when a specific command (e.g. Print or
     Print Assumptions) needs it. *)
 
-exception Faulty
-
-(** Fetching a table of opaque terms at position [pos] in file [f],
-    expecting to find first a copy of [digest]. *)
-
-let fetch_table what dp (f,pos,digest) =
-  let dir_path = Names.DirPath.to_string dp in
-  try
-    msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
-    let ch = System.with_magic_number_check raw_intern_library f in
-    let () = seek_in ch pos in
-    if not (String.equal (System.digest_in f ch) digest) then raise Faulty;
-    let table, pos', digest' = System.marshal_in_segment f ch in
-    let () = close_in ch in
-    let ch' = open_in_bin f in
-    if not (String.equal (Digest.channel ch' pos') digest') then raise Faulty;
-    let () = close_in ch' in
-    table
-  with e when Errors.noncritical e ->
-    error
-      ("The file "^f^" (bound to " ^ dir_path ^
-      ") is inaccessible or corrupted,\n" ^
-      "cannot load some "^what^" in it.\n")
-
 (** Delayed / available tables of opaque terms *)
 
 type 'a table_status =
-  | ToFetch of string * int * Digest.t
+  | ToFetch of 'a Future.computation array delayed
   | Fetched of 'a Future.computation array
 
 let opaque_tables =
@@ -340,25 +366,33 @@ let add_opaque_table dp st =
 let add_univ_table dp st =
   univ_tables := LibraryMap.add dp st !univ_tables
 
-let access_table fetch_table add_table tables dp i =
-  let t = match LibraryMap.find dp tables with
+let access_table what tables dp i =
+  let t = match LibraryMap.find dp !tables with
     | Fetched t -> t
-    | ToFetch (f,pos,digest) ->
-      let t = fetch_table dp (f,pos,digest) in
-      add_table dp (Fetched t);
+    | ToFetch f ->
+      let dir_path = Names.DirPath.to_string dp in
+      msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
+      let t =
+        try fetch_delayed f
+        with Faulty f ->
+          error
+            ("The file "^f^" (bound to " ^ dir_path ^
+            ") is inaccessible or corrupted,\n" ^
+            "cannot load some "^what^" in it.\n")
+      in
+      tables := LibraryMap.add dp (Fetched t) !tables;
       t
   in
   assert (i < Array.length t); t.(i)
 
 let access_opaque_table dp i =
-  access_table
-    (fetch_table "opaque proofs")
-    add_opaque_table !opaque_tables dp i
+  let what = "opaque proofs" in
+  access_table what opaque_tables dp i
+
 let access_univ_table dp i =
   try
-    Some (access_table 
-            (fetch_table "universe contexts of opaque proofs")
-            add_univ_table !univ_tables dp i)
+    let what = "universe contexts of opaque proofs" in
+    Some (access_table what univ_tables dp i)
   with Not_found -> None
 
 let () =
@@ -385,15 +419,22 @@ let mk_library md digests univs =
     library_extra_univs = univs;
   }
 
+let mk_summary m = {
+  libsum_name = m.library_name;
+  libsum_imports = m.library_imports;
+  libsum_digests = m.library_digests;
+}
+
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in
   let (lmd : seg_lib), pos, digest_lmd = System.marshal_in_segment f ch in
   let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
   let _ = System.skip_in_segment f ch in
-  let pos, digest = System.skip_in_segment f ch in
+  let _ = System.skip_in_segment f ch in
+  let (del_opaque : seg_proofs delayed) = in_delayed f ch in
   close_in ch;
   register_library_filename lmd.md_name f;
-  add_opaque_table lmd.md_name (ToFetch (f,pos,digest));
+  add_opaque_table lmd.md_name (ToFetch del_opaque);
   let open Safe_typing in
   match univs with
   | None -> mk_library lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
@@ -409,10 +450,10 @@ module DPMap = Map.Make(DirPath)
 let rec intern_library (needed, contents) (dir, f) from =
   Pp.feedback(Feedback.FileDependency (from, f));
   (* Look if in the current logical environment *)
-  try find_library dir, (needed, contents)
+  try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
-  try DPMap.find dir contents, (needed, contents)
+  try (DPMap.find dir contents).library_digests, (needed, contents)
   with Not_found ->
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
   let m = intern_from_file f in
@@ -422,15 +463,15 @@ let rec intern_library (needed, contents) (dir, f) from =
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
   Pp.feedback(Feedback.FileLoaded(DirPath.to_string dir, f));
-  m, intern_library_deps (needed, contents) dir m (Some f)
+  m.library_digests, intern_library_deps (needed, contents) dir m (Some f)
 
 and intern_library_deps libs dir m from =
   let needed, contents = Array.fold_left (intern_mandatory_library dir from) libs m.library_deps in
   (dir :: needed, DPMap.add dir m contents )
 
 and intern_mandatory_library caller from libs (dir,d) =
-  let m, libs = intern_library libs (try_locate_absolute_library dir) from in
-  if not (Safe_typing.digest_match ~actual:m.library_digests ~required:d) then
+  let digest, libs = intern_library libs (try_locate_absolute_library dir) from in
+  if not (Safe_typing.digest_match ~actual:digest ~required:d) then
     errorlabstrm "" (strbrk ("Compiled library "^ DirPath.to_string caller ^
       ".vo makes inconsistent assumptions over library " ^
       DirPath.to_string dir));
@@ -501,7 +542,7 @@ let register_library m =
     m.library_objects
     m.library_digests
     m.library_extra_univs;
-  register_loaded_library m
+  register_loaded_library (mk_summary m)
 
 (* Follow the semantics of Anticipate object:
    - called at module or module type closing when a Require occurs in
@@ -667,10 +708,13 @@ let load_library_todo f =
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
 
 let current_deps () =
-  List.map (fun m -> m.library_name, m.library_digests) !libraries_loaded_list
+  let map name =
+    let m = try_find_library name in
+    (name, m.libsum_digests)
+  in
+  List.map map !libraries_loaded_list
 
-let current_reexports () =
-  List.map (fun m -> m.library_name) !libraries_exports_list
+let current_reexports () = !libraries_exports_list
 
 let error_recursively_dependent_library dir =
   errorlabstrm ""
@@ -766,11 +810,7 @@ let save_library_raw f lib univs proofs =
 
 open Printf
 
-let mem s =
-  let m = try_find_library s in
-  h 0 (str (sprintf "%dk (cenv = %dk / seg = %dk)"
-		 (CObj.size_kb m) (CObj.size_kb m.library_compiled)
-		 (CObj.size_kb m.library_objects)))
+let mem s = Pp.mt ()
 
 module StringOrd = struct type t = string let compare = String.compare end
 module StringSet = Set.Make(StringOrd)
@@ -778,7 +818,7 @@ module StringSet = Set.Make(StringOrd)
 let get_used_load_paths () =
   StringSet.elements
     (List.fold_left (fun acc m -> StringSet.add
-      (Filename.dirname (library_full_filename m.library_name)) acc)
+      (Filename.dirname (library_full_filename m)) acc)
        StringSet.empty !libraries_loaded_list)
 
 let _ = Nativelib.get_load_paths := get_used_load_paths

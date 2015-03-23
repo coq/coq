@@ -1952,14 +1952,16 @@ let interp ?proof locality poly c =
   | VernacComments l -> if_verbose msg_info (str "Comments ok\n")
   | VernacNop -> ()
 
+  (* The STM should handle that, but LOAD bypasses the STM... *)
+  | VernacAbort id -> msg_warning (str "VernacAbort not handled by Stm")
+  | VernacAbortAll -> msg_warning (str "VernacAbortAll not handled by Stm")
+  | VernacRestart -> msg_warning (str "VernacRestart not handled by Stm")
+  | VernacUndo _ -> msg_warning (str "VernacUndo not handled by Stm")
+  | VernacUndoTo _ -> msg_warning (str "VernacUndoTo not handled by Stm")
+  | VernacBacktrack _ -> msg_warning (str "VernacBacktrack not handled by Stm")
+  
   (* Proof management *)
   | VernacGoal t -> vernac_start_proof poly Theorem [None,([],t,None)] false
-  | VernacAbort id -> anomaly (str "VernacAbort not handled by Stm")
-  | VernacAbortAll -> anomaly (str "VernacAbortAll not handled by Stm")
-  | VernacRestart -> anomaly (str "VernacRestart not handled by Stm")
-  | VernacUndo _ -> anomaly (str "VernacUndo not handled by Stm")
-  | VernacUndoTo _ -> anomaly (str "VernacUndoTo not handled by Stm")
-  | VernacBacktrack _ -> anomaly (str "VernacBacktrack not handled by Stm")
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
   | VernacUnfocused -> vernac_unfocused ()
