@@ -169,7 +169,15 @@ let sort_cmp univ pb s0 s1 =
 	  (match pb with
             | CONV -> Univ.check_eq univ u1 u2
 	    | CUMUL -> Univ.check_leq univ u1 u2)
-        then raise NotConvertible
+        then begin
+          if !Flags.debug then begin
+            let op = match pb with CONV -> "=" | CUMUL -> "<=" in
+            Printf.eprintf "cort_cmp: %s\n%!" Pp.(string_of_ppcmds
+              (str"Error: " ++ Univ.pr_uni u1 ++ str op ++ Univ.pr_uni u2 ++ str ":" ++ cut()
+               ++ Univ.pr_universes univ))
+          end;
+          raise NotConvertible
+        end
     | (_, _) -> raise NotConvertible
 
 let rec no_arg_available = function
