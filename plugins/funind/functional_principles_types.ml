@@ -447,7 +447,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
   let first_fun = List.hd funs in
 
 
-  let funs_mp,funs_dp,_ = Names.repr_con first_fun in
+  let funs_mp,funs_dp,_ = KerName.repr (Constant.canonical first_fun) in
   let first_fun_kn =
     try
       fst (find_Function_infos  first_fun).graph_ind
@@ -498,27 +498,27 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
 	0
 	(prove_princ_for_struct false 0 (Array.of_list funs))
 	(fun _ _ _ -> ())
-  with e when Errors.noncritical e ->
-    begin
-      begin
-	try
-	  let id = Pfedit.get_current_proof_name () in
-	  let s = Id.to_string id in
-	  let n = String.length "___________princ_________" in
-	  if String.length s >= n
-	  then if String.equal (String.sub s 0 n) "___________princ_________"
-	  then Pfedit.delete_current_proof ()
-	  else ()
-	  else ()
-	with e when Errors.noncritical e -> ()
-      end;
-      raise (Defining_principle e)
-    end
+    with e when Errors.noncritical e ->
+       begin
+	 begin
+	   try
+	     let id = Pfedit.get_current_proof_name () in
+	     let s = Id.to_string id in
+	     let n = String.length "___________princ_________" in
+	     if String.length s >= n
+	     then if String.equal (String.sub s 0 n) "___________princ_________"
+		  then Pfedit.delete_current_proof ()
+		  else ()
+	     else ()
+	   with e when Errors.noncritical e -> ()
+	 end;
+	 raise (Defining_principle e)
+       end
 
   in
   incr i;
   let opacity =
-    let finfos = find_Function_infos this_block_funs.(0) in
+    let finfos = find_Function_infos first_fun in
     try
       let equation =  Option.get finfos.equation_lemma in
       Declareops.is_opaque (Global.lookup_constant equation)
