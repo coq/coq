@@ -332,19 +332,19 @@ let v_univopaques =
 
 (** Registering dynamic values *)
 
-module StringOrd =
+module IntOrd =
 struct
-  type t = string
+  type t = int
   let compare (x : t) (y : t) = compare x y
 end
 
-module StringMap = Map.Make(StringOrd)
+module IntMap = Map.Make(IntOrd)
 
-let dyn_table : value StringMap.t ref = ref StringMap.empty
+let dyn_table : value IntMap.t ref = ref IntMap.empty
 
 let register_dyn name t =
-  dyn_table := StringMap.add name t !dyn_table
+  dyn_table := IntMap.add name t !dyn_table
 
 let find_dyn name =
-  try StringMap.find name !dyn_table
+  try IntMap.find name !dyn_table
   with Not_found -> Any

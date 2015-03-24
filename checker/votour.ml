@@ -12,7 +12,7 @@ open Values
 
 (** Name of a value *)
 
-type dyn = { dyn_tag : string; dyn_obj : Obj.t; }
+type dyn = { dyn_tag : int; dyn_obj : Obj.t; }
 
 let to_dyn obj = (Obj.magic obj : dyn)
 
