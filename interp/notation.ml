@@ -516,6 +516,14 @@ let availability_of_prim_token n printer_scope local_scopes =
 
 (* Miscellaneous *)
 
+let exists_notation_in_scope scopt ntn r =
+  let scope = match scopt with Some s -> s | None -> default_scope in
+  try
+    let sc = String.Map.find scope !scope_map in
+    let (r',_) = String.Map.find ntn sc.notations in
+    Pervasives.(=) r' r (** FIXME *)
+  with Not_found -> false
+
 let isNVar_or_NHole = function NVar _ | NHole _ -> true | _ -> false
 
 (**********************************************************************)
