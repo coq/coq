@@ -516,12 +516,30 @@ let availability_of_prim_token n printer_scope local_scopes =
 
 (* Miscellaneous *)
 
+let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
+
+let ntpe_eq t1 t2 = match t1, t2 with
+| NtnTypeConstr, NtnTypeConstr -> true
+| NtnTypeConstrList, NtnTypeConstrList -> true
+| NtnTypeBinderList, NtnTypeBinderList -> true
+| (NtnTypeConstr | NtnTypeConstrList | NtnTypeBinderList), _ -> false
+
+
+let vars_eq (id1, (sc1, tp1)) (id2, (sc2, tp2)) =
+  Id.equal id1 id2 &&
+  pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
+  ntpe_eq tp1 tp2
+
+let interpretation_eq (vars1, t1) (vars2, t2) =
+  List.equal vars_eq vars1 vars2 &&
+  Notation_ops.eq_notation_constr t1 t2
+
 let exists_notation_in_scope scopt ntn r =
   let scope = match scopt with Some s -> s | None -> default_scope in
   try
     let sc = String.Map.find scope !scope_map in
     let (r',_) = String.Map.find ntn sc.notations in
-    Pervasives.(=) r' r (** FIXME *)
+    interpretation_eq r' r
   with Not_found -> false
 
 let isNVar_or_NHole = function NVar _ | NHole _ -> true | _ -> false
