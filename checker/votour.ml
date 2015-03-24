@@ -21,31 +21,90 @@ sig
   type obj
   val input : in_channel -> obj
   val repr : obj -> obj repr
-  val size : int list -> int
+  val size : obj -> int
 end
 
-module Repr : S =
+module ReprObj : S =
 struct
-  type obj = Obj.t
+  type obj = Obj.t * int list
 
   let input chan =
     let obj = input_value chan in
     let () = CObj.register_shared_size obj in
-    obj
+    (obj, [])
 
-  let repr obj =
+  let repr (obj, pos) =
     if Obj.is_block obj then
       let tag = Obj.tag obj in
       if tag = Obj.string_tag then STRING (Obj.magic obj)
       else if tag < Obj.no_scan_tag then
-        let data = Obj.dup obj in
-        let () = Obj.set_tag data 0 in
+        let init i = (Obj.field obj i, i :: pos) in
+        let data = Array.init (Obj.size obj) init in
         BLOCK (tag, Obj.magic data)
       else OTHER
     else INT (Obj.magic obj)
 
-  let size p = CObj.shared_size_of_pos p
+  let size (_, p) = CObj.shared_size_of_pos p
 end
+
+module ReprMem : S =
+struct
+  open Analyze
+
+  type obj = data
+
+  let memory = ref [||]
+  let sizes = ref [||]
+  (** size, in words *)
+
+  let ws = Sys.word_size / 8
+
+  let rec init_size seen = function
+  | Int _ | Atm _ | Fun _ -> 0
+  | Ptr p ->
+    if seen.(p) then 0
+    else
+      let () = seen.(p) <- true in
+      match (!memory).(p) with
+      | Struct (tag, os) ->
+        let fold accu o = accu + 1 + init_size seen o in
+        let size = Array.fold_left fold 1 os in
+        let () = (!sizes).(p) <- size in
+        size
+      | String s ->
+        let size = 2 + (String.length s / ws) in
+        let () = (!sizes).(p) <- size in
+        size
+
+  let size = function
+  | Int _ | Atm _ | Fun _ -> 0
+  | Ptr p -> (!sizes).(p)
+
+  let repr = function
+  | Int i -> INT i
+  | Atm t -> BLOCK (t, [||])
+  | Fun _ -> OTHER
+  | Ptr p ->
+    match (!memory).(p) with
+    | Struct (tag, os) -> BLOCK (tag, os)
+    | String s -> STRING s
+
+  let input ch =
+    let obj, mem = parse_channel ch in
+    let () = memory := mem in
+    let () = sizes := Array.make (Array.length mem) (-1) in
+    let seen = Array.make (Array.length mem) false in
+    let _ = init_size seen obj in
+    obj
+
+end
+
+module Visit (Repr : S) :
+sig
+  val init : unit -> unit
+  val visit : Values.value -> Repr.obj -> int list -> unit
+end =
+struct
 
 (** Name of a value *)
 
@@ -92,7 +151,7 @@ let rec get_details v o = match v, Repr.repr o with
 
 let node_info (v,o,p) =
   get_name ~extra:true v ^ get_details v o ^
-    " (size "^ string_of_int (Repr.size p)^"w)"
+    " (size "^ string_of_int (Repr.size o)^"w)"
 
 (** Children of a block : type, object, position.
     For lists, we collect all elements of the list at once *)
@@ -201,6 +260,8 @@ let rec visit v o pos =
   | Failure "forbidden" -> let info = pop () in visit info.typ info.obj info.pos
   | Failure _ | Invalid_argument _ -> visit v o pos
 
+end
+
 (** Loading the vo *)
 
 type header = {
@@ -256,6 +317,12 @@ let visit_vo f =
     make_seg "STM tasks" (Opt Values.v_stm_seg);
     make_seg "opaque proofs" Values.v_opaques;
   |] in
+  let repr =
+    if Sys.word_size = 64 then (module ReprMem : S) else (module ReprObj : S)
+    (** On 32-bit machines, representation may exceed the max size of arrays *)
+  in
+  let module Repr = (val repr : S) in
+  let module Visit = Visit(Repr) in
   while true do
     let ch = open_in_bin f in
     let magic = input_binary_int ch in
@@ -279,8 +346,8 @@ let visit_vo f =
     let seg = int_of_string l in
     seek_in ch segments.(seg).pos;
     let o = Repr.input ch in
-    let () = init () in
-    visit segments.(seg).typ o []
+    let () = Visit.init () in
+    Visit.visit segments.(seg).typ o []
   done
 
 let main =

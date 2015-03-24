@@ -654,7 +654,7 @@ $(FAKEIDE): lib/clib$(BESTLIB) lib/xml_lexer$(BESTOBJ) lib/xml_parser$(BESTOBJ) 
 
 # votour: a small vo explorer (based on the checker)
 
-bin/votour: lib/cObj$(BESTOBJ) checker/values$(BESTOBJ) checker/votour.ml
+bin/votour: lib/cObj$(BESTOBJ) checker/analyze$(BESTOBJ) checker/values$(BESTOBJ) checker/votour.ml
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I checker,)
 
