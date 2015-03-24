@@ -121,3 +121,12 @@ Inductive foo1 : forall p, Prop := cc1 : foo1 0.
 (* Check cross inference of evars from constructors *)
 
 Inductive foo2 : forall p, Prop := cc2 : forall q, foo2 q | cc3 : foo2 0.
+
+(* An example with reduction removing an occurrence of the inductive type in one of its argument *)
+
+Inductive IND1 (A:Type) := CONS1 : IND1 ((fun x => A) IND1).
+
+(* This type was considered as ill-formed before March 2015, while it
+   could be accepted considering that the type IND1 above was accepted *)
+
+Inductive IND2 (A:Type) (T:=fun _ : Type->Type => A) := CONS2 : IND2 A -> IND2 (T IND2).

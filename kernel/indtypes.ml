@@ -346,7 +346,7 @@ let typecheck_inductive env mie =
       in
 	(id,cn,lc,(sign,arity)))
     inds
-  in (env_arities, params, inds)
+  in (env_arities, env_ar_par, params, inds)
 
 (************************************************************************)
 (************************************************************************)
@@ -366,9 +366,8 @@ exception IllFormedInd of ill_formed_ind
 
 let mind_extract_params = decompose_prod_n_assum
 
-let explain_ind_err id ntyp env0 nbpar c nargs err =
+let explain_ind_err id ntyp env nbpar c nargs err =
   let (lpar,c') = mind_extract_params nbpar c in
-  let env = push_rel_context lpar env0 in
   match err with
     | LocalNonPos kt ->
 	raise (InductiveError (NonPos (env,c',mkRel (kt+nbpar))))
@@ -822,9 +821,9 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
 
 let check_inductive env kn mie =
   (* First type-check the inductive definition *)
-  let (env_ar, params, inds) = typecheck_inductive env mie in
+  let (env_ar, env_ar_par, params, inds) = typecheck_inductive env mie in
   (* Then check positivity conditions *)
-  let (nmr,recargs) = check_positivity kn env_ar params inds in
+  let (nmr,recargs) = check_positivity kn env_ar_par params inds in
   (* Build the inductive packets *)
     build_inductive env mie.mind_entry_polymorphic mie.mind_entry_private
       mie.mind_entry_universes
