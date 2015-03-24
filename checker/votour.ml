@@ -10,11 +10,44 @@ open Values
 
 (** {6 Interactive visit of a vo} *)
 
+type 'a repr =
+| INT of int
+| STRING of string
+| BLOCK of int * 'a array
+| OTHER
+
+module type S =
+sig
+  type obj
+  val input : in_channel -> obj
+  val repr : obj -> obj repr
+  val size : int list -> int
+end
+
+module Repr : S =
+struct
+  type obj = Obj.t
+
+  let input chan =
+    let obj = input_value chan in
+    let () = CObj.register_shared_size obj in
+    obj
+
+  let repr obj =
+    if Obj.is_block obj then
+      let tag = Obj.tag obj in
+      if tag = Obj.string_tag then STRING (Obj.magic obj)
+      else if tag < Obj.no_scan_tag then
+        let data = Obj.dup obj in
+        let () = Obj.set_tag data 0 in
+        BLOCK (tag, Obj.magic data)
+      else OTHER
+    else INT (Obj.magic obj)
+
+  let size p = CObj.shared_size_of_pos p
+end
+
 (** Name of a value *)
-
-type dyn = { dyn_tag : int; dyn_obj : Obj.t; }
-
-let to_dyn obj = (Obj.magic obj : dyn)
 
 let rec get_name ?(extra=false) = function
   |Any -> "?"
@@ -32,69 +65,101 @@ let rec get_name ?(extra=false) = function
 (** For tuples, its quite handy to display the inner 1st string (if any).
     Cf. [structure_body] for instance *)
 
-let get_string_in_tuple v o =
+let get_string_in_tuple o =
   try
-    for i = 0 to Array.length v - 1 do
-      if v.(i) = String then
-        failwith (" [.."^(Obj.magic (Obj.field o i) : string)^"..]");
+    for i = 0 to Array.length o - 1 do
+      match Repr.repr o.(i) with
+      | STRING s ->
+        failwith (Printf.sprintf " [..%s..]" s)
+      | _ -> ()
     done;
     ""
   with Failure s -> s
 
 (** Some details : tags, integer value for non-block, etc etc *)
 
-let rec get_details v o = match v with
-  |String | Any when (Obj.is_block o && Obj.tag o = Obj.string_tag) ->
-    " [" ^ String.escaped (Obj.magic o : string) ^"]"
-  |Tuple (_,v) -> get_string_in_tuple v o
-  |(Sum _|Any) when Obj.is_block o ->
-    " [tag=" ^ string_of_int (Obj.tag o) ^"]"
-  |(Sum _|Any) ->
-    " [imm=" ^ string_of_int (Obj.magic o : int) ^"]"
-  |Int -> " [" ^ string_of_int (Obj.magic o : int) ^"]"
-  |Annot (s,v) -> get_details v o
+let rec get_details v o = match v, Repr.repr o with
+  | (String | Any), STRING s ->
+    Printf.sprintf " [%s]" (String.escaped s)
+  |Tuple (_,v), BLOCK (_, o) -> get_string_in_tuple o
+  |(Sum _|Any), BLOCK (tag, _) ->
+    Printf.sprintf " [tag=%i]" tag
+  |(Sum _|Any), INT i ->
+    Printf.sprintf " [imm=%i]" i
+  |Int, INT i -> Printf.sprintf " [imm=%i]" i
+  |Annot (s,v), _ -> get_details v o
   |_ -> ""
 
 let node_info (v,o,p) =
   get_name ~extra:true v ^ get_details v o ^
-    " (size "^ string_of_int (CObj.shared_size_of_pos p)^"w)"
+    " (size "^ string_of_int (Repr.size p)^"w)"
 
 (** Children of a block : type, object, position.
     For lists, we collect all elements of the list at once *)
 
-let access_children vs o pos =
-  Array.mapi (fun i v -> v, Obj.field o i, i::pos) vs
+let access_children vs os pos =
+  if Array.length os = Array.length vs then
+    Array.mapi (fun i v -> v, os.(i), i::pos) vs
+  else raise Exit
 
+let access_list v o pos =
+  let rec loop o pos = match Repr.repr o with
+  | INT 0 -> []
+  | BLOCK (0, [|hd; tl|]) ->
+    (v, hd, 0 :: pos) :: loop tl (1 :: pos)
+  | _ -> raise Exit
+  in
+  Array.of_list (loop o pos)
+
+let access_block o = match Repr.repr o with
+| BLOCK (tag, os) -> (tag, os)
+| _ -> raise Exit
+let access_int o = match Repr.repr o with INT i -> i | _ -> raise Exit
+
+(** raises Exit if the object has not the expected structure *)
 let rec get_children v o pos = match v with
-  |Tuple (_,v) -> access_children v o pos
-  |Sum (_,_,vv) ->
-    if Obj.is_block o then access_children vv.(Obj.tag o) o pos
-    else [||]
-  |Array v -> access_children (Array.make (Obj.size o) v) o pos
-  |List v ->
-    let rec loop pos = function
-      | [] -> []
-      | o :: ol -> (v,o,0::pos) :: loop (1::pos) ol
-    in
-    Array.of_list (loop pos (Obj.magic o : Obj.t list))
+  |Tuple (_, v) ->
+    let (_, os) = access_block o in
+    access_children v os pos
+  |Sum (_, _, vv) ->
+    begin match Repr.repr o with
+    | BLOCK (tag, os) -> access_children vv.(tag) os pos
+    | INT _ -> [||]
+    | _ -> raise Exit
+    end
+  |Array v ->
+    let (_, os) = access_block o in
+    access_children (Array.make (Array.length os) v) os pos
+  |List v -> access_list v o pos
   |Opt v ->
-    if Obj.is_block o then [|v,Obj.field o 0,0::pos|] else [||]
+    begin match Repr.repr o with
+    | INT 0 -> [||]
+    | BLOCK (0, [|x|]) -> [|(v, x, 0 :: pos)|]
+    | _ -> raise Exit
+    end
   |String | Int -> [||]
   |Annot (s,v) -> get_children v o pos
-  |Any ->
-    if Obj.is_block o && Obj.tag o < Obj.no_scan_tag then
-      Array.init (Obj.size o) (fun i -> (Any,Obj.field o i,i::pos))
-    else [||]
+  |Any -> raise Exit
   |Dyn ->
-    let t = to_dyn o in
-    let tpe = find_dyn t.dyn_tag in
-    [|(Int, Obj.repr t.dyn_tag, 0 :: pos); (tpe, t.dyn_obj, 1 :: pos)|]
+    begin match Repr.repr o with
+    | BLOCK (0, [|id; o|]) ->
+      let n = access_int id in
+      let tpe = find_dyn n in
+      [|(Int, id, 0 :: pos); (tpe, o, 1 :: pos)|]
+    | _ -> raise Exit
+    end
   |Fail s -> failwith "forbidden"
+
+let get_children v o pos =
+  try get_children v o pos
+  with Exit -> match Repr.repr o with
+  | BLOCK (_, os) -> Array.mapi (fun i o -> Any, o, i :: pos) os
+  | _ -> [||]
 
 type info = {
   nam : string;
   typ : value;
-  obj : Obj.t;
+  obj : Repr.obj;
   pos : int list
 }
 
@@ -176,8 +241,7 @@ let visit_vo f =
     let l = read_line () in
     let seg = int_of_string l in
     seek_in ch segments.(seg).pos;
-    let o = (input_value ch : Obj.t) in
-    let () = CObj.register_shared_size o in
+    let o = Repr.input ch in
     let () = init () in
     visit segments.(seg).typ o []
   done
