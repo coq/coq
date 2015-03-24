@@ -485,6 +485,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 	          check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d)
 	| Rel k ->
             (try let (ra,rarg) = List.nth ra_env (k-1) in
+            let largs = List.map (whd_betadeltaiota env) largs in
 	    let nmr1 =
 	      (match ra with
                   Mrec _ -> compute_rec_par ienv hyps nmr largs

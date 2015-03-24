@@ -126,7 +126,21 @@ Inductive foo2 : forall p, Prop := cc2 : forall q, foo2 q | cc3 : foo2 0.
 
 Inductive IND1 (A:Type) := CONS1 : IND1 ((fun x => A) IND1).
 
-(* This type was considered as ill-formed before March 2015, while it
+(* These types were considered as ill-formed before March 2015, while they
    could be accepted considering that the type IND1 above was accepted *)
 
 Inductive IND2 (A:Type) (T:=fun _ : Type->Type => A) := CONS2 : IND2 A -> IND2 (T IND2).
+
+Inductive IND3 (A:Type) (T:=fun _ : Type->Type => A) := CONS3 : IND3 (T IND3) -> IND3 A.
+
+Inductive IND4 (A:Type) := CONS4 : IND4 ((fun x => A) IND4) -> IND4 A.
+
+(* This type was ok before March 2015 *)
+
+Inductive IND5 (A : Type) (T := A) : Type := CONS5 : IND5 ((fun _ => A) 0) -> IND5 A.
+
+(* This type was raising an anomaly when building the _rect scheme,
+   because of a wrong computation of the number of non-recursively
+   uniform parameters in the presence of let-ins (see #3491) *)
+
+Inductive IND6 (A:Type) (T:=A) := CONS6 : IND6 T -> IND6 A.
