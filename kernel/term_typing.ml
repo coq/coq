@@ -116,7 +116,7 @@ let build_constant_declaration env kn (body,typ,cst,op,boxed) =
 	  (global_vars_set env (Declarations.force b)) 
 	  (global_vars_set_constant_type env typ)
   in
-  let tps = Cemitcodes.from_val (compile_constant_body env body op boxed) in
+  let tps = option_map Cemitcodes.from_val (compile_constant_body env body op boxed) in
   let hyps = keep_hyps env ids in
     { const_hyps = hyps;
       const_body = body;
@@ -125,6 +125,7 @@ let build_constant_declaration env kn (body,typ,cst,op,boxed) =
      (* const_type_code = to_patch env typ;*)
       const_constraints = cst;
       const_opaque = op }
+
 
 (*s Global and local constant declaration. *)
 

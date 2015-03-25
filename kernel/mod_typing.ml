@@ -96,7 +96,7 @@ and merge_with env mtb with_decl =
                       let body = Some (Declarations.from_val j.uj_val) in
 			SPBconst {cb with 
 				    const_body = body;
-			            const_body_code = Cemitcodes.from_val
+			            const_body_code = option_map Cemitcodes.from_val
                         (compile_constant_body env' body false false);
                                     const_constraints = cst}
 		  | Some b -> 
@@ -105,7 +105,7 @@ and merge_with env mtb with_decl =
                       let body = Some (Declarations.from_val c) in
 			SPBconst {cb with 
 				    const_body = body;
-				    const_body_code = Cemitcodes.from_val
+				    const_body_code = option_map Cemitcodes.from_val
                         (compile_constant_body env' body false false);
                                     const_constraints = cst}
 	      end	

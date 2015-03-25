@@ -204,8 +204,8 @@ let reprleq g arcu =
 (* between is the most costly operation *)
 
 let between g u arcv = 
-  (* good are all w | u <= w <= v  *)
-  (* bad are all w | u <= w ~<= v *)
+  (* good are all w : u <= w <= v  *)
+  (* bad are all w : u <= w ~<= v *)
     (* find good and bad nodes in {w | u <= w} *)
     (* explore b u = (b or "u is good") *)
   let rec explore ((good, bad, b) as input) arcu =

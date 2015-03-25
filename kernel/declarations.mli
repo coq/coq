@@ -44,12 +44,12 @@ type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
     const_body : constr_substituted option;
     const_type : constant_type;
-    const_body_code : to_patch_substituted;
-   (*i const_type_code : to_patch;i*)
+    const_body_code : to_patch_substituted option;
     const_constraints : constraints;
     const_opaque : bool }
 
 val subst_const_body : substitution -> constant_body -> constant_body
+
 
 (**********************************************************************)
 (*s Representation of mutual inductive types in the kernel            *)
