@@ -144,3 +144,14 @@ Inductive IND5 (A : Type) (T := A) : Type := CONS5 : IND5 ((fun _ => A) 0) -> IN
    uniform parameters in the presence of let-ins (see #3491) *)
 
 Inductive IND6 (A:Type) (T:=A) := CONS6 : IND6 T -> IND6 A.
+
+(* An example of nested positivity which was rejected by the kernel
+   before 24 March 2015 (even with Unset Elimination Schemes to avoid
+   the _rect bug) due to the wrong computation of non-recursively
+   uniform parameters in list' *)
+
+Inductive list' (A:Type) (B:=A) :=
+| nil' : list' A
+| cons' : A -> list' B -> list' A.
+
+Inductive tree := node : list' tree -> tree.
