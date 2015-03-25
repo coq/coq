@@ -66,6 +66,7 @@ let freeze_summaries ~marshallable : frozen =
   let fold id (_, decl) accu =
     (* to debug missing Lazy.force
     if marshallable <> `No then begin
+      let id, _ = Int.Map.find id !summaries in
       prerr_endline ("begin marshalling " ^ id);
       ignore(Marshal.to_string (decl.freeze_function marshallable) []);
       prerr_endline ("end marshalling " ^ id);
