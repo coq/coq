@@ -1638,6 +1638,7 @@ let collect_proof keep cur hd brkind id =
    | { expr = VernacPrint (PrintName _) } -> true
    | _ -> false in
  let parent = function Some (p, _) -> p | None -> assert false in
+ let is_empty = function `Async(_,_,[],_,_) | `MaybeASync(_,_,[],_,_) -> true | _ -> false in
  let rec collect last accn id =
     let view = VCS.visit id in
     match view.step with
@@ -1687,7 +1688,8 @@ let collect_proof keep cur hd brkind id =
      else if keep == VtDrop then `Sync (no_name,None,`Aborted)
      else
        let rc = collect (Some cur) [] id in
-       if (keep == VtKeep || keep == VtKeepAsAxiom) &&
+       if is_empty rc then make_sync `AlreadyEvaluated rc
+       else if (keep == VtKeep || keep == VtKeepAsAxiom) &&
           (not(State.is_cached id) || !Flags.async_proofs_full)
        then check_policy rc
        else make_sync `AlreadyEvaluated rc
