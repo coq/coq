@@ -66,7 +66,7 @@ type constant_body = {
     const_hyps : section_context; (** New: younger hyp at top *)
     const_body : constant_def;
     const_type : constant_type;
-    const_body_code : to_patch_substituted;
+    const_body_code : Cemitcodes.to_patch_substituted option;
     const_constraints : constraints }
 
 val subst_const_def : substitution -> constant_def -> constant_def
@@ -81,6 +81,7 @@ val constant_has_body : constant_body -> bool
 val body_of_constant : constant_body -> constr_substituted option
 
 val is_opaque : constant_body -> bool
+
 
 (** {6 Representation of mutual inductive types in the kernel } *)
 

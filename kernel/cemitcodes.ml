@@ -24,33 +24,21 @@ type reloc_info =
 
 type patch = reloc_info * int
 
+let patch_char4 buff pos c1 c2 c3 c4 = 
+  String.unsafe_set buff pos       c1;
+  String.unsafe_set buff (pos + 1) c2;
+  String.unsafe_set buff (pos + 2) c3;
+  String.unsafe_set buff (pos + 3) c4 
+  
 let patch_int buff pos n =
-  String.unsafe_set buff pos (Char.unsafe_chr n);
-  String.unsafe_set buff (pos + 1) (Char.unsafe_chr (n asr 8));
-  String.unsafe_set buff (pos + 2) (Char.unsafe_chr (n asr 16));
-  String.unsafe_set buff (pos + 3) (Char.unsafe_chr (n asr 24))
-
+  patch_char4 buff pos 
+    (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
+    (Char.unsafe_chr (n asr 24))
 
 (* Buffering of bytecode *)
 
 let out_buffer = ref(String.create 1024)
 and out_position = ref 0
-
-(*
-let out_word b1 b2 b3 b4 =
-  let p = !out_position in
-  if p >= String.length !out_buffer then begin
-    let len = String.length !out_buffer in
-    let new_buffer = String.create (2 * len) in
-    String.blit !out_buffer 0 new_buffer 0 len;
-    out_buffer := new_buffer
-  end;
-  String.unsafe_set !out_buffer p (Char.unsafe_chr b1);
-  String.unsafe_set !out_buffer (p+1) (Char.unsafe_chr b2);
-  String.unsafe_set !out_buffer (p+2) (Char.unsafe_chr b3);
-  String.unsafe_set !out_buffer (p+3) (Char.unsafe_chr b4);
-  out_position := p + 4
-*)
 
 let out_word b1 b2 b3 b4 =
   let p = !out_position in
@@ -68,12 +56,9 @@ let out_word b1 b2 b3 b4 =
     String.blit !out_buffer 0 new_buffer 0 len;
     out_buffer := new_buffer
   end;
-  String.unsafe_set !out_buffer p (Char.unsafe_chr b1);
-  String.unsafe_set !out_buffer (p+1) (Char.unsafe_chr b2);
-  String.unsafe_set !out_buffer (p+2) (Char.unsafe_chr b3);
-  String.unsafe_set !out_buffer (p+3) (Char.unsafe_chr b4);
+  patch_char4 !out_buffer p (Char.unsafe_chr b1)
+   (Char.unsafe_chr b2) (Char.unsafe_chr b3) (Char.unsafe_chr b4);
   out_position := p + 4
-
 
 let out opcode =
   out_word opcode 0 0 0
@@ -103,7 +88,7 @@ let extend_label_table needed =
 
 let backpatch (pos, orig) =
   let displ = (!out_position - orig) asr 2 in
-  !out_buffer.[pos] <- Char.unsafe_chr displ;
+  !out_buffer.[pos]   <- Char.unsafe_chr displ;
   !out_buffer.[pos+1] <- Char.unsafe_chr (displ asr 8);
   !out_buffer.[pos+2] <- Char.unsafe_chr (displ asr 16);
   !out_buffer.[pos+3] <- Char.unsafe_chr (displ asr 24)
@@ -224,8 +209,12 @@ let emit_instr = function
       out_label typlbl; out_label swlbl;
       slot_for_annot annot;out_int sz
   | Kswitch (tbl_const, tbl_block) ->
+      let lenb = Array.length tbl_block in
+      let lenc = Array.length tbl_const in
+      assert (lenb < 0x100 && lenc < 0x1000000);
       out opSWITCH;
-      out_int (Array.length tbl_const + (Array.length tbl_block lsl 16));
+      out_word lenc (lenc asr 8) (lenc asr 16) (lenb);
+(*      out_int (Array.length tbl_const + (Array.length tbl_block lsl 23)); *)
       let org = !out_position in
       Array.iter (out_label_with_orig org) tbl_const;
       Array.iter (out_label_with_orig org) tbl_block

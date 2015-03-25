@@ -327,13 +327,50 @@ let init_fun_code () = fun_code := []
 
 (* Compilation of constructors and inductive types *)
 
+
+(* Limitation due to OCaml's representation of non-constant
+  constructors: limited to 245 + 1 (0 tag) cases. *)
+
+exception TooLargeInductive of identifier
+
+let max_nb_const = 0x1000000 
+let max_nb_block = 0x1000000 + last_variant_tag - 1
+
+let str_max_constructors = 
+  Format.sprintf 
+    " which has more than %i constant constructors or more than %i non-constant constructors" max_nb_const max_nb_block
+
+let check_compilable ib = 
+  
+  if not (ib.mind_nb_args <= max_nb_block && ib.mind_nb_constant <= max_nb_const) then 
+    raise (TooLargeInductive ib.mind_typename)
+
+(* Inv: arity > 0 *)
+
+let const_bn tag args = 
+  if tag < last_variant_tag then Const_bn(tag, args)
+  else
+    Const_bn(last_variant_tag, Array.append [|Const_b0 (tag - last_variant_tag) |] args)
+
+  
+let code_makeblock arity tag cont = 
+  if tag < last_variant_tag then
+    Kmakeblock(arity, tag) :: cont
+  else
+    Kpush :: Kconst (Const_b0 (tag - last_variant_tag)) ::
+    Kmakeblock(arity+1, last_variant_tag) :: cont
+
 (* Inv : nparam + arity > 0 *)
 let code_construct tag nparams arity cont =
   let f_cont =
       add_pop nparams
       (if arity = 0 then
 	[Kconst (Const_b0 tag); Kreturn 0]
-       else [Kacc 0; Kpop 1; Kmakeblock(arity, tag); Kreturn 0])
+       else if tag < last_variant_tag then
+         [Kacc 0; Kpop 1; Kmakeblock(arity, tag); Kreturn 0]
+       else 
+         [Kconst (Const_b0 (tag - last_variant_tag)); 
+          Kmakeblock(arity+1, last_variant_tag); Kreturn 0])
     in
     let lbl = Label.create() in
     fun_code := [Ksequence (add_grab (nparams+arity) lbl f_cont,!fun_code)];
@@ -342,7 +379,6 @@ let code_construct tag nparams arity cont =
 let get_strcst = function
   | Bstrconst sc -> sc
   | _ -> raise Not_found
-
 
 let rec str_const c =
   match kind_of_term c with
@@ -355,7 +391,8 @@ let rec str_const c =
             begin
 	    let oib = lookup_mind kn !global_env in
 	    let oip = oib.mind_packets.(j) in
-	    let num,arity = oip.mind_reloc_tbl.(i-1) in
+	    let () = check_compilable oip in
+	    let tag,arity = oip.mind_reloc_tbl.(i-1) in
 	    let nparams = oib.mind_nparams in
 	    if nparams + arity = Array.length args then
               (* spiwack: *)
@@ -397,15 +434,15 @@ let rec str_const c =
               with Not_found ->
 		(* 3/ if no special behavior is available, then the compiler
 		      falls back to the normal behavior *)
-		if arity = 0 then Bstrconst(Const_b0 num)
+		if arity = 0 then Bstrconst(Const_b0 tag)
 		else
 		  let rargs = Array.sub args nparams arity in
 		  let b_args = Array.map str_const rargs in
 		  try
 		    let sc_args = Array.map get_strcst b_args in
-		    Bstrconst(Const_bn(num, sc_args))
+		    Bstrconst(const_bn tag sc_args)
 		  with Not_found ->
-		    Bmakeblock(num,b_args)
+		    Bmakeblock(tag,b_args)
 	    else
               let b_args = Array.map str_const args in
 	     (* spiwack: tries first to apply the run-time compilation
@@ -416,7 +453,7 @@ let rec str_const c =
                                            (kind_of_term f)),
                          b_args)
 	      with Not_found ->
-	        Bconstruct_app(num, nparams, arity, b_args)
+	        Bconstruct_app(tag, nparams, arity, b_args)
               end
 	| _ -> Bconstr c
       end
@@ -433,6 +470,7 @@ let rec str_const c =
       with Not_found ->
 	let oib = lookup_mind kn !global_env in
 	let oip = oib.mind_packets.(j) in
+	let () = check_compilable oip in
 	let num,arity = oip.mind_reloc_tbl.(i-1) in
 	let nparams = oib.mind_nparams in
 	if nparams + arity = 0 then Bstrconst(Const_b0 num)
@@ -485,11 +523,14 @@ let rec compile_fv reloc l sz cont =
 (* Compiling constants *)
 
 let rec get_allias env kn =
-  let tps = (lookup_constant kn env).const_body_code in
-  match Cemitcodes.force tps with
-  | BCallias kn' -> get_allias env kn'
-  | _ -> kn
-
+  let cb = lookup_constant kn env in
+  let tps = cb.const_body_code in
+    match tps with
+    | None -> kn
+    | Some tps ->
+       (match Cemitcodes.force tps with
+	| BCallias kn' -> get_allias env kn'
+	| _ -> kn)
 
 (* Compiling expressions *)
 
@@ -597,9 +638,14 @@ let rec compile_constr reloc c sz cont =
       let ind = ci.ci_ind in
       let mib = lookup_mind (fst ind) !global_env in
       let oib = mib.mind_packets.(snd ind) in
+      let () = check_compilable oib in
       let tbl = oib.mind_reloc_tbl in
-      let lbl_consts = Array.create oib.mind_nb_constant Label.no in
-      let lbl_blocks = Array.create (oib.mind_nb_args+1) Label.no in
+      let lbl_consts = Array.make oib.mind_nb_constant Label.no in
+      let nallblock = oib.mind_nb_args + 1 in (* +1 : accumulate *)
+      let nblock = min nallblock (last_variant_tag + 1) in
+      let lbl_blocks = Array.make nblock Label.no in
+      let neblock = max 0 (nallblock - last_variant_tag) in
+      let lbl_eblocks = Array.make neblock Label.no in 
       let branch1,cont = make_branch cont in
       (* Compiling return type *)
       let lbl_typ,fcode =
@@ -619,6 +665,15 @@ let rec compile_constr reloc c sz cont =
       in
       lbl_blocks.(0) <- lbl_accu;
       let c = ref code_accu in
+      (* perform the extra match if needed (to many block constructors) *)
+      if neblock <> 0 then begin
+        let lbl_b, code_b = 
+          label_code (
+            Kpush :: Kfield 0 :: Kswitch(lbl_eblocks, [||]) :: !c) in
+        lbl_blocks.(last_variant_tag) <- lbl_b;
+        c := code_b
+      end;  
+      
       (* Compiling regular constructor branches *)
       for i = 0 to Array.length tbl - 1 do
 	let tag, arity = tbl.(i) in
@@ -630,22 +685,23 @@ let rec compile_constr reloc c sz cont =
 	else
 	  let args, body = decompose_lam branchs.(i) in
 	  let nargs = List.length args in
-	  let lbl_b,code_b =
-	    label_code(
-	    if nargs = arity then
-	      Kpushfields arity ::
+          let code_b =  
+            if nargs = arity then
 	      compile_constr (push_param arity sz_b reloc)
 		body (sz_b+arity) (add_pop arity (branch :: !c))
 	    else
 	      let sz_appterm = if is_tailcall then sz_b + arity else arity in
-	      Kpushfields arity ::
 	      compile_constr reloc branchs.(i) (sz_b+arity)
-		(Kappterm(arity,sz_appterm) :: !c))
-	  in
-	  lbl_blocks.(tag) <- lbl_b;
+		(Kappterm(arity,sz_appterm) :: !c) in
+          let code_b = 
+            if tag < last_variant_tag then Kpushfields arity :: code_b
+            else Kacc 0::Kpop 1::Kpushfields(arity+1)::Kpop 1::code_b in
+          let lbl_b,code_b = label_code code_b in
+          if tag < last_variant_tag then lbl_blocks.(tag) <- lbl_b
+          else lbl_eblocks.(tag - last_variant_tag) <- lbl_b;
 	  c := code_b
       done;
-      c :=  Klabel lbl_sw :: Kswitch(lbl_consts,lbl_blocks) :: !c;
+      c := Klabel lbl_sw :: Kswitch(lbl_consts,lbl_blocks) :: !c;
       let code_sw =
  	match branch1 with
         (* spiwack : branch1 can't be a lbl anymore it's a Branch instead
@@ -667,7 +723,7 @@ and compile_str_cst reloc sc sz cont =
   | Bstrconst sc -> Kconst sc :: cont
   | Bmakeblock(tag,args) ->
       let nargs = Array.length args in
-      comp_args compile_str_cst reloc args sz (Kmakeblock(nargs,tag) :: cont)
+      comp_args compile_str_cst reloc args sz (code_makeblock nargs tag cont)
   | Bconstruct_app(tag,nparams,arity,args) ->
       if Array.length args = 0 then code_construct tag nparams arity cont
       else
@@ -696,13 +752,14 @@ and compile_const =
                    Kgetglobal (get_allias !global_env kn) :: cont)
         compile_constr reloc () args sz cont
 
-let compile env c =
+let compile fail_on_error env c =
   set_global_env env;
   init_fun_code ();
   Label.reset_label_counter ();
   let reloc = empty_comp_env () in
-  let init_code = compile_constr reloc c 0 [Kstop] in
-  let fv = List.rev (!(reloc.in_env).fv_rev) in
+  try 
+    let init_code = compile_constr reloc c 0 [Kstop] in
+    let fv = List.rev (!(reloc.in_env).fv_rev) in
 (*  draw_instr init_code;
   draw_instr !fun_code;
   Format.print_string "fv = ";
@@ -712,21 +769,28 @@ let compile env c =
     | FVrel i -> Format.print_string ((string_of_int i)^"; ")) fv;  Format
     .print_string "\n";
   Format.print_flush();  *)
-  init_code,!fun_code, Array.of_list fv
+      Some (init_code,!fun_code, Array.of_list fv)
+  with TooLargeInductive tname ->
+    let fn = 
+      (* if fail_on_error then Errors.errorlabstrm "compile" else *) 
+      Pp.msg_warning in
+    (Pp.(fn
+	   (str "Cannot compile code for virtual machine as it uses inductive " ++
+	      (str (Names.string_of_id tname) ++ str str_max_constructors)));
+       None)
 
-let compile_constant_body env = function
-  | Undef _ | OpaqueDef _ -> BCconstant
+let compile_constant_body fail_on_error env = function
+  | Undef _ | OpaqueDef _ -> Some BCconstant
   | Def sb ->
       let body = Declarations.force sb in
       match kind_of_term body with
 	| Const kn' ->
 	    (* we use the canonical name of the constant*)
 	    let con= constant_of_kn (canonical_con kn') in
-	      BCallias (get_allias env con)
+	    Some (BCallias (get_allias env con))
 	| _ ->
-	    let res = compile env body in
-	    let to_patch = to_memory res in
-	    BCdefined to_patch
+	    let res = compile fail_on_error env body in
+	    Option.map (fun x -> BCdefined (to_memory x)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 

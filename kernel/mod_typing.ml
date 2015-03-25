@@ -115,7 +115,7 @@ and check_with_def env sign (idl,c) mp equiv =
 		{ cb with
 		  const_body = def;
 		  const_body_code =
-		    Cemitcodes.from_val (compile_constant_body env' def);
+		    Option.map Cemitcodes.from_val (compile_constant_body env' def);
 		  const_constraints = cst }
 	      in
 	      SEBstruct(before@(l,SFBconst(cb'))::after),cb',cst

@@ -101,7 +101,7 @@ val reduce_cofix : int -> vcofix -> values array * values array
 
 (** Block *)
 
-val btag : vblock -> int
+val btag  : vblock -> int
 val bsize : vblock -> int
 val bfield : vblock -> int -> values
 

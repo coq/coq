@@ -191,7 +191,7 @@ type unsafe_type_judgment = {
 
 (** {6 Compilation of global declaration } *)
 
-val compile_constant_body : env -> constant_def -> Cemitcodes.body_code
+val compile_constant_body : env -> constant_def -> Cemitcodes.body_code option
 
 exception Hyp_not_found
 

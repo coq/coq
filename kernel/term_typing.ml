@@ -136,7 +136,7 @@ let build_constant_declaration env kn (def,typ,cst,ctx) =
         (String.concat ", " (List.map string_of_id
           (Idset.elements (Idset.diff inferred_set declared_set)))));
     declared in
-  let tps = Cemitcodes.from_val (compile_constant_body env def) in
+  let tps = Option.map Cemitcodes.from_val (compile_constant_body env def) in
   { const_hyps = hyps;
     const_body = def;
     const_type = typ;

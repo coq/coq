@@ -292,8 +292,7 @@ let strengthen_const mp_from l cb resolver =
       let con = constant_of_delta_kn resolver kn in
       { cb with
 	const_body = Def (Declarations.from_val (mkConst con));
-	const_body_code = Cemitcodes.from_val (Cbytegen.compile_alias con)
-      }
+	const_body_code = Some (Cemitcodes.from_val (Cbytegen.compile_alias (con))) }
 
 let rec strengthen_mod mp_from mp_to mb =
   if mp_in_delta mb.mod_mp mb.mod_delta then
