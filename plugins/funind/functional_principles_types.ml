@@ -274,10 +274,11 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
   in
   let hook = Lemmas.mk_hook (hook new_principle_type) in
   begin
+    let evd,_ = Typing.e_type_of ~refresh:true (Global.env ()) Evd.empty new_principle_type in
     Lemmas.start_proof
       new_princ_name
       (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem))
-      (*FIXME*) Evd.empty
+      evd
     new_principle_type
       hook
     ;
@@ -323,7 +324,7 @@ let generate_functional_principle
 	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
 	let value = change_property_sort s new_principle_type new_princ_name in
 	(*       Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-	let ce = Declare.definition_entry value in (*FIXME, no poly, nothing *)
+	let ce = Declare.definition_entry value in 
 	ignore(
 	  Declare.declare_constant
 	    name
