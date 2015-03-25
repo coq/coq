@@ -84,6 +84,7 @@ and check_with_aux_def env sign with_decl mp equiv =
 		  SFBconst cb -> cb
 		| _ -> error_not_a_constant l
 	      in
+
 		begin
 		  match cb.const_body with
 		    | None ->
@@ -97,7 +98,7 @@ and check_with_aux_def env sign with_decl mp equiv =
 			let body = Some (Declarations.from_val j.uj_val) in
 			let cb' = {cb with
 				     const_body = body;
-				     const_body_code = Cemitcodes.from_val
+				     const_body_code = Option.map Cemitcodes.from_val
                             (compile_constant_body env' body false false);
                                      const_constraints = cst} in
 			  SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst
@@ -107,7 +108,7 @@ and check_with_aux_def env sign with_decl mp equiv =
 			let body = Some (Declarations.from_val c) in
 			let cb' = {cb with
 				     const_body = body;
-				     const_body_code = Cemitcodes.from_val
+				     const_body_code = Option.map Cemitcodes.from_val
                             (compile_constant_body env' body false false);
                                      const_constraints = cst} in
 			  SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst

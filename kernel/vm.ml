@@ -83,7 +83,7 @@ type vprod
 type vfun
 type vfix
 type vcofix
-type vblock
+type vblock 
 type arguments
 
 type vm_env
@@ -230,9 +230,8 @@ let whd_val : values -> whd =
 	else Vconstr_block(Obj.obj o)
 
 
-
 (************************************************)
-(* Abstrct machine ******************************)
+(* Abstract machine *****************************)
 (************************************************)
 
 (* gestion de la pile *)
@@ -515,8 +514,13 @@ let type_of_switch sw =
 let branch_arg k (tag,arity) =
   if arity = 0 then  ((Obj.magic tag):values)
   else
-    let b = Obj.new_block tag arity in
-    for i = 0 to arity - 1 do
+    let b, ofs = 
+      if tag < last_variant_tag then Obj.new_block tag arity, 0
+      else
+        let b = Obj.new_block last_variant_tag (arity+1) in
+        Obj.set_field b 0 (Obj.repr (tag-last_variant_tag));
+        b,1 in
+    for i = ofs to ofs + arity - 1 do
       Obj.set_field b i (Obj.repr (val_of_rel (k+i)))
     done;
     val_of_obj b

@@ -46,8 +46,7 @@ type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
     const_body : constr_substituted option;
     const_type : constant_type;
-    const_body_code : Cemitcodes.to_patch_substituted;
-   (* const_type_code : Cemitcodes.to_patch; *)
+    const_body_code : Cemitcodes.to_patch_substituted option;
     const_constraints : constraints;
     const_opaque : bool;
     const_inline : bool}
@@ -203,7 +202,7 @@ let subst_const_body sub cb = {
   const_hyps = (assert (cb.const_hyps=[]); []);
   const_body = Option.map (subst_constr_subst sub) cb.const_body;
   const_type = subst_arity sub cb.const_type;
-  const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
+  const_body_code = Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
   (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
   const_constraints = cb.const_constraints;
   const_opaque = cb.const_opaque;

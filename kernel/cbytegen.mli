@@ -6,13 +6,15 @@ open Declarations
 open Pre_env
 
 
-val compile : env -> constr -> bytecodes * bytecodes * fv
+val compile : bool ->
+ env -> constr -> (bytecodes * bytecodes * fv) option
                               (* init, fun, fv *)
 
 val compile_constant_body :
-    env -> constr_substituted option -> bool -> bool -> body_code
+    bool -> 
+    env -> constr_substituted option -> bool -> bool -> body_code option
                                  (* opaque *) (* boxed *)
-
+			   
 
 (* spiwack: this function contains the information needed to perform
             the static compilation of int31 (trying and obtaining
