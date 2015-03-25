@@ -111,13 +111,16 @@ let rec slot_for_getglobal env kn =
   try key rk
   with NotEvaluated ->
     let pos =
-      match Cemitcodes.force cb.const_body_code with
-      | BCdefined(boxed,(code,pl,fv)) -> 
-	let v = eval_to_patch env (code,pl,fv) in
-  	if boxed then set_global_boxed kn v 
-	else set_global v 
-    | BCallias kn' -> slot_for_getglobal env kn' 
-    | BCconstant -> set_global (val_of_constant kn) in
+      match cb.const_body_code with
+      | None -> set_global (val_of_constant kn)
+      | Some code ->
+        match Cemitcodes.force code with
+        | BCdefined(boxed,(code,pl,fv)) ->
+	  let v = eval_to_patch env (code,pl,fv) in
+  	  if boxed then set_global_boxed kn v
+	  else set_global v
+        | BCallias kn' -> slot_for_getglobal env kn'
+        | BCconstant -> set_global (val_of_constant kn) in
     rk := Some pos;
     pos
 
@@ -165,10 +168,14 @@ and eval_to_patch env (buff,pl,fv) =
   let tc = tcode_of_code buff (length buff) in
   eval_tcode tc vm_env
 
-and val_of_constr env c = 
-  let (_,fun_code,_ as ccfv) = 
-    try compile env c 
-    with e -> print_string "can not compile \n";Format.print_flush();raise e in
+and val_of_constr env c =
+  let (_,fun_code,_ as ccfv) =
+    try match compile true env c with
+    | Some v -> v
+    | None -> assert false
+    with reraise ->
+      print_string "can not compile \n";Format.print_flush();raise reraise
+  in
   eval_to_patch env (to_memory ccfv)
  
 let set_transparent_const kn =

@@ -331,7 +331,8 @@ type unsafe_type_judgment = {
 
 (*s Compilation of global declaration *)
 
-let compile_constant_body = Cbytegen.compile_constant_body  
+
+let compile_constant_body = Cbytegen.compile_constant_body false
 
 exception Hyp_not_found
 

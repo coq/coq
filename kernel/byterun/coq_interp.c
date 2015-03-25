@@ -785,12 +785,12 @@ value coq_interprete
       Instruct(SWITCH) {
 	uint32 sizes = *pc++;
 	print_instr("SWITCH");
-	print_int(sizes & 0xFFFF);
+	print_int(sizes & 0xFFFFFF);
 	if (Is_block(accu)) {
 	  long index = Tag_val(accu);
 	  print_instr("block");
 	  print_int(index);
-	  pc += pc[(sizes & 0xFFFF) + index];
+	  pc += pc[(sizes & 0xFFFFFF) + index];
 	} else {
 	  long index = Long_val(accu);
 	  print_instr("constant");

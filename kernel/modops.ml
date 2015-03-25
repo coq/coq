@@ -245,8 +245,8 @@ let strengthen_const env mp l cb =
 	{cb with 
       	   const_body = const_subs;
 	   const_opaque = false;
-           const_body_code = Cemitcodes.from_val
-             (compile_constant_body env const_subs false false)
+	   const_body_code = Option.map Cemitcodes.from_val
+            (compile_constant_body env const_subs false false)
 	}
 
 let strengthen_mind env mp l mib = match mib.mind_equiv with

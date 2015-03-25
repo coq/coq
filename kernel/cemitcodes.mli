@@ -32,7 +32,7 @@ val from_val : body_code -> to_patch_substituted
 
 val force : to_patch_substituted -> body_code
 
-val is_boxed : to_patch_substituted -> bool
+val is_boxed : to_patch_substituted option -> bool
 
 val subst_to_patch_subst : Mod_subst.substitution -> to_patch_substituted -> to_patch_substituted
 

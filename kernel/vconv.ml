@@ -64,8 +64,9 @@ and conv_whd pb k whd1 whd2 cu =
   | Vconstr_const i1, Vconstr_const i2 -> 
       if i1 = i2 then cu else raise NotConvertible 
   | Vconstr_block b1, Vconstr_block b2 ->
+      let tag1 = btag b1 and tag2 = btag b2 in
       let sz = bsize b1 in
-      if btag b1 = btag b2 && sz = bsize b2 then
+      if tag1 = tag2 && sz = (bsize b2) then
 	let rcu = ref cu in
 	for i = 0 to sz - 1 do
 	  rcu := conv_val CONV k (bfield b1 i) (bfield b2 i) !rcu

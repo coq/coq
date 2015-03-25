@@ -113,7 +113,7 @@ and check_with_aux_def env mtb with_decl =
 			let body = Some (Declarations.from_val j.uj_val) in
 			let cb' = {cb with 
 				     const_body = body;
-				     const_body_code = Cemitcodes.from_val
+				     const_body_code = Option.map Cemitcodes.from_val
                             (compile_constant_body env' body false false);
                                      const_constraints = cst} in
 			  cb'
@@ -123,7 +123,7 @@ and check_with_aux_def env mtb with_decl =
 			let body = Some (Declarations.from_val c) in
 			let cb' = {cb with 
 				     const_body = body;
-				     const_body_code = Cemitcodes.from_val
+				     const_body_code = Option.map Cemitcodes.from_val
                             (compile_constant_body env' body false false);
                                      const_constraints = cst} in
 			  cb'
