@@ -329,6 +329,15 @@ let init_fun_code () = fun_code := []
 
 (* Compilation of constructors and inductive types *)
 
+(* Limitation due to OCaml's representation of non-constant
+  constructors: limited to 245 cases. *)
+
+exception TooLargeInductive of Id.t
+
+let check_compilable ib = 
+  if ib.mind_nb_args < 245 then ()
+  else raise (TooLargeInductive ib.mind_typename)
+
 (* Inv : nparam + arity > 0 *)
 let code_construct tag nparams arity cont =
   let f_cont =
@@ -357,6 +366,7 @@ let rec str_const c =
             begin
 	    let oib = lookup_mind kn !global_env in
 	    let oip = oib.mind_packets.(j) in
+	    let () = check_compilable oip in
 	    let num,arity = oip.mind_reloc_tbl.(i-1) in
 	    let nparams = oib.mind_nparams in
 	    if Int.equal (nparams + arity) (Array.length args) then
@@ -435,6 +445,7 @@ let rec str_const c =
       with Not_found ->
 	let oib = lookup_mind kn !global_env in
 	let oip = oib.mind_packets.(j) in
+	let () = check_compilable oip in
 	let num,arity = oip.mind_reloc_tbl.(i-1) in
 	let nparams = oib.mind_nparams in
 	if Int.equal (nparams + arity) 0 then Bstrconst(Const_b0 num)
@@ -489,9 +500,12 @@ let rec compile_fv reloc l sz cont =
 let rec get_allias env (kn,u as p) =
   let cb = lookup_constant kn env in
   let tps = cb.const_body_code in
-    (match Cemitcodes.force tps with
-    | BCallias (kn',u') -> get_allias env (kn', Univ.subst_instance_instance u u')
-    | _ -> p)
+    match tps with
+    | None -> p
+    | Some tps ->
+       (match Cemitcodes.force tps with
+	| BCallias (kn',u') -> get_allias env (kn', Univ.subst_instance_instance u u')
+	| _ -> p)
 
 (* Compiling expressions *)
 
@@ -607,6 +621,7 @@ let rec compile_constr reloc c sz cont =
       let ind = ci.ci_ind in
       let mib = lookup_mind (fst ind) !global_env in
       let oib = mib.mind_packets.(snd ind) in
+      let () = check_compilable oib in
       let tbl = oib.mind_reloc_tbl in
       let lbl_consts = Array.make oib.mind_nb_constant Label.no in
       let lbl_blocks = Array.make (oib.mind_nb_args+1) Label.no in
@@ -706,13 +721,14 @@ and compile_const =
                    Kgetglobal (get_allias !global_env (kn,u)) :: cont)
         compile_constr reloc () args sz cont
 
-let compile env c =
+let compile fail_on_error env c =
   set_global_env env;
   init_fun_code ();
   Label.reset_label_counter ();
   let reloc = empty_comp_env () in
-  let init_code = compile_constr reloc c 0 [Kstop] in
-  let fv = List.rev (!(reloc.in_env).fv_rev) in
+  try 
+    let init_code = compile_constr reloc c 0 [Kstop] in
+    let fv = List.rev (!(reloc.in_env).fv_rev) in
 (*  draw_instr init_code;
   draw_instr !fun_code;
   Format.print_string "fv = ";
@@ -722,21 +738,26 @@ let compile env c =
     | FVrel i -> Format.print_string ((string_of_int i)^"; ")) fv;  Format
     .print_string "\n";
   Format.print_flush();  *)
-  init_code,!fun_code, Array.of_list fv
+      Some (init_code,!fun_code, Array.of_list fv)
+  with TooLargeInductive tname ->
+    let fn = if fail_on_error then Errors.errorlabstrm "compile" else Pp.msg_warning in
+      (Pp.(fn
+	   (str "Cannot compile code for virtual machine as it uses inductive " ++
+	    Id.print tname ++ str " which has more than 245 constructors"));
+       None)
 
-let compile_constant_body env = function
-  | Undef _ | OpaqueDef _ -> BCconstant
+let compile_constant_body fail_on_error env = function
+  | Undef _ | OpaqueDef _ -> Some BCconstant
   | Def sb ->
       let body = Mod_subst.force_constr sb in
       match kind_of_term body with
 	| Const (kn',u) ->
 	    (* we use the canonical name of the constant*)
 	    let con= constant_of_kn (canonical_con kn') in
-	      BCallias (get_allias env (con,u))
+	      Some (BCallias (get_allias env (con,u)))
 	| _ ->
-	    let res = compile env body in
-	    let to_patch = to_memory res in
-	    BCdefined to_patch
+	    let res = compile fail_on_error env body in
+	      Option.map (fun x -> BCdefined (to_memory x)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 

@@ -375,9 +375,12 @@ let makeblock env cn u tag args =
 
 let rec get_allias env (kn, u as p) =
   let tps = (lookup_constant kn env).const_body_code in
-  match Cemitcodes.force tps with
-  |  Cemitcodes.BCallias kn' -> get_allias env kn'
-  | _ -> p
+    match tps with
+    | None -> p
+    | Some tps ->
+       match Cemitcodes.force tps with
+       | Cemitcodes.BCallias kn' -> get_allias env kn'
+       | _ -> p
 
 (*i Global environment *)
 

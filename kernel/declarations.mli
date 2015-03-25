@@ -70,7 +70,7 @@ type constant_body = {
     const_hyps : Context.section_context; (** New: younger hyp at top *)
     const_body : constant_def;
     const_type : constant_type;
-    const_body_code : Cemitcodes.to_patch_substituted;
+    const_body_code : Cemitcodes.to_patch_substituted option;
     const_polymorphic : bool; (** Is it polymorphic or not *)
     const_universes : constant_universes;
     const_proj : projection_body option;
