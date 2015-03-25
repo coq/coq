@@ -139,12 +139,6 @@ Inductive IND4 (A:Type) := CONS4 : IND4 ((fun x => A) IND4) -> IND4 A.
 
 Inductive IND5 (A : Type) (T := A) : Type := CONS5 : IND5 ((fun _ => A) 0) -> IND5 A.
 
-(* This type was raising an anomaly when building the _rect scheme,
-   because of a wrong computation of the number of non-recursively
-   uniform parameters in the presence of let-ins (see #3491) *)
-
-Inductive IND6 (A:Type) (T:=A) := CONS6 : IND6 T -> IND6 A.
-
 (* An example of nested positivity which was rejected by the kernel
    before 24 March 2015 (even with Unset Elimination Schemes to avoid
    the _rect bug) due to the wrong computation of non-recursively
@@ -155,3 +149,16 @@ Inductive list' (A:Type) (B:=A) :=
 | cons' : A -> list' B -> list' A.
 
 Inductive tree := node : list' tree -> tree.
+
+(* This type was raising an anomaly when building the _rect scheme,
+   because of a bug in Inductiveops.get_arity in the presence of
+   let-ins and recursively non-uniform parameters. *)
+
+Inductive L (A:Type) (T:=A) : Type := C : L nat -> L A.
+
+(* This type was raising an anomaly when building the _rect scheme,
+   because of a wrong computation of the number of non-recursively
+   uniform parameters when conversion is needed, leading the example to
+   hit the Inductiveops.get_arity bug mentioned above (see #3491) *)
+
+Inductive IND6 (A:Type) (T:=A) := CONS6 : IND6 T -> IND6 A.

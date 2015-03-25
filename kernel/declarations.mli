@@ -139,7 +139,7 @@ type one_inductive_body = {
 
     mind_kelim : sorts_family list; (** List of allowed elimination sorts *)
 
-    mind_nf_lc : types array; (** Head normalized constructor types so that their conclusion is atomic *)
+    mind_nf_lc : types array; (** Head normalized constructor types so that their conclusion exposes the inductive type *)
 
     mind_consnrealargs : int array;
  (** Number of expected proper arguments of the constructors (w/o params)
@@ -172,7 +172,7 @@ type mutual_inductive_body = {
 
     mind_hyps : Context.section_context;  (** Section hypotheses on which the block depends *)
 
-    mind_nparams : int;  (** Number of expected parameters *)
+    mind_nparams : int;  (** Number of expected parameters including non-uniform ones (i.e. length of mind_params_ctxt w/o let-in) *)
 
     mind_nparams_rec : int;  (** Number of recursively uniform (i.e. ordinary) parameters *)
 
