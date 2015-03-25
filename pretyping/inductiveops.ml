@@ -221,12 +221,14 @@ let get_arity env (ind,params) =
     (* Dynamically detect if called with an instance of recursively
        uniform parameter only or also of non recursively uniform
        parameters *)
-    let parsign = mib.mind_params_ctxt in
-    let nnonrecparams = mib.mind_nparams - mib.mind_nparams_rec in
-    if List.length params = rel_context_nhyps parsign - nnonrecparams then
-      snd (list_chop nnonrecparams mib.mind_params_ctxt)
-    else
-      parsign in
+    let nparams = List.length params in
+    if nparams = mib.mind_nparams then
+      mib.mind_params_ctxt
+    else begin
+      assert (nparams = mib.mind_nparams_rec);
+      let nnonrecparamdecls = List.length mib.mind_params_ctxt - mib.mind_nparams_rec in
+      snd (list_chop nnonrecparamdecls mib.mind_params_ctxt)
+    end in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
   let arsign,_ = list_chop arproperlength mip.mind_arity_ctxt in
   let subst = instantiate_context parsign params in
