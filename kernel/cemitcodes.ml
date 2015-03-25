@@ -333,25 +333,41 @@ let subst_patch s (ri,pos) =
 let subst_to_patch s (code,pl,fv) =
   code,List.rev_map (subst_patch s) pl,fv
 
+let subst_pconstant s (kn, u) = (fst (subst_con_kn s kn), u)
+
 type body_code =
   | BCdefined of to_patch
   | BCallias of pconstant
   | BCconstant
 
-let subst_body_code s = function
-  | BCdefined tp -> BCdefined (subst_to_patch s tp)
-  | BCallias (kn,u) -> BCallias (fst (subst_con_kn s kn), u)
-  | BCconstant -> BCconstant
+type to_patch_substituted =
+| PBCdefined of to_patch substituted
+| PBCallias of pconstant substituted
+| PBCconstant
 
-type to_patch_substituted = body_code substituted
+let from_val = function
+| BCdefined tp -> PBCdefined (from_val tp)
+| BCallias cu -> PBCallias (from_val cu)
+| BCconstant -> PBCconstant
 
-let from_val = from_val
+let force = function
+| PBCdefined tp -> BCdefined (force subst_to_patch tp)
+| PBCallias cu -> BCallias (force subst_pconstant cu)
+| PBCconstant -> BCconstant
 
-let force = force subst_body_code
+let subst_to_patch_subst s = function
+| PBCdefined tp -> PBCdefined (subst_substituted s tp)
+| PBCallias cu -> PBCallias (subst_substituted s cu)
+| PBCconstant -> PBCconstant
 
-let subst_to_patch_subst = subst_substituted
-
-let repr_body_code = repr_substituted
+let repr_body_code = function
+| PBCdefined tp ->
+  let (s, tp) = repr_substituted tp in
+  (s, BCdefined tp)
+| PBCallias cu ->
+  let (s, cu) = repr_substituted cu in
+  (s, BCallias cu)
+| PBCconstant -> (None, BCconstant)
 
 let to_memory (init_code, fun_code, fv) =
   init();
