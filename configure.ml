@@ -17,7 +17,7 @@ three non-negative, period-separed integers [...]" *)
 let vo_magic = 8591
 let state_magic = 58501
 let distributed_exec = ["coqtop";"coqc";"coqchk";"coqdoc";"coqmktop";"coqworkmgr";
-"coqdoc";"coq_makefile";"coq-tex";"gallina";"coqwc";"csdpcert"]
+"coqdoc";"coq_makefile";"coq-tex";"gallina";"coqwc";"csdpcert";"coqdep"]
 
 let verbose = ref false (* for debugging this script *)
 
