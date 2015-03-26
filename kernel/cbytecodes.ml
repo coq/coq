@@ -24,6 +24,7 @@ let fix_tag = 3
 let switch_tag = 4
 let cofix_tag = 5
 let cofix_evaluated_tag = 6
+let max_tag = Obj.lazy_tag - 1
 
 type structured_constant =
   | Const_sorts of sorts

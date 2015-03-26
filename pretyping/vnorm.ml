@@ -165,8 +165,8 @@ and nf_whd env whd typ =
       let _, args = nf_args env vargs t in
       mkApp(cfd,args)
   | Vconstr_const n -> construct_of_constr_const env n typ
-  | Vconstr_block b ->
-      let capp,ctyp = construct_of_constr_block env (btag b) typ in
+  | Vconstr_block (tag,b) ->
+      let capp,ctyp = construct_of_constr_block env tag typ in
       let args = nf_bargs env b ctyp in
       mkApp(capp,args)
   | Vatom_stk(Aid idkey, stk) ->

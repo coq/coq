@@ -329,14 +329,32 @@ let init_fun_code () = fun_code := []
 
 (* Compilation of constructors and inductive types *)
 
+
 (* Limitation due to OCaml's representation of non-constant
   constructors: limited to 245 cases. *)
 
 exception TooLargeInductive of Id.t
 
 let check_compilable ib = 
-  if ib.mind_nb_args < 245 then ()
-  else raise (TooLargeInductive ib.mind_typename)
+  if not (ib.mind_nb_args <= 0xFFFF && ib.mind_nb_constant <= 0xFFFF) then 
+    raise (TooLargeInductive ib.mind_typename)
+
+(* Inv: arity > 0 *)
+
+let const_bn tag args = 
+  if tag < max_tag then Const_bn(tag, args)
+  else
+    Const_bn(max_tag,
+             [|Const_b0 (tag - max_tag);
+               Const_bn (0, args) |])
+  
+let code_makeblock arity tag cont = 
+  if tag < max_tag then
+    Kmakeblock(arity, tag) :: cont
+  else
+    Kmakeblock(arity, 0) :: Kpush ::     (* Const_bn (0, args) *)
+    Kconst (Const_b0 (tag - max_tag)) :: (* Const_b0  (tag - max_tag)) *)
+    Kmakeblock(2, max_tag) :: cont 
 
 (* Inv : nparam + arity > 0 *)
 let code_construct tag nparams arity cont =
@@ -344,7 +362,8 @@ let code_construct tag nparams arity cont =
       add_pop nparams
       (if Int.equal arity 0 then
 	[Kconst (Const_b0 tag); Kreturn 0]
-       else [Kacc 0; Kpop 1; Kmakeblock(arity, tag); Kreturn 0])
+       else 
+          Kacc 0:: Kpop 1 :: code_makeblock arity tag [Kreturn 0])
     in
     let lbl = Label.create() in
     fun_code := [Ksequence (add_grab (nparams+arity) lbl f_cont,!fun_code)];
@@ -353,7 +372,6 @@ let code_construct tag nparams arity cont =
 let get_strcst = function
   | Bstrconst sc -> sc
   | _ -> raise Not_found
-
 
 let rec str_const c =
   match kind_of_term c with
@@ -367,7 +385,7 @@ let rec str_const c =
 	    let oib = lookup_mind kn !global_env in
 	    let oip = oib.mind_packets.(j) in
 	    let () = check_compilable oip in
-	    let num,arity = oip.mind_reloc_tbl.(i-1) in
+	    let tag,arity = oip.mind_reloc_tbl.(i-1) in
 	    let nparams = oib.mind_nparams in
 	    if Int.equal (nparams + arity) (Array.length args) then
               (* spiwack: *)
@@ -409,15 +427,15 @@ let rec str_const c =
               with Not_found ->
 		(* 3/ if no special behavior is available, then the compiler
 		      falls back to the normal behavior *)
-		if Int.equal arity 0 then Bstrconst(Const_b0 num)
+		if Int.equal arity 0 then Bstrconst(Const_b0 tag)
 		else
 		  let rargs = Array.sub args nparams arity in
 		  let b_args = Array.map str_const rargs in
 		  try
 		    let sc_args = Array.map get_strcst b_args in
-		    Bstrconst(Const_bn(num, sc_args))
+		    Bstrconst(const_bn tag sc_args)
 		  with Not_found ->
-		    Bmakeblock(num,b_args)
+		    Bmakeblock(tag,b_args)
 	    else
               let b_args = Array.map str_const args in
 	     (* spiwack: tries first to apply the run-time compilation
@@ -428,7 +446,7 @@ let rec str_const c =
                                            f),
                          b_args)
 	      with Not_found ->
-	        Bconstruct_app(num, nparams, arity, b_args)
+	        Bconstruct_app(tag, nparams, arity, b_args)
               end
 	| _ -> Bconstr c
       end
@@ -624,7 +642,11 @@ let rec compile_constr reloc c sz cont =
       let () = check_compilable oib in
       let tbl = oib.mind_reloc_tbl in
       let lbl_consts = Array.make oib.mind_nb_constant Label.no in
-      let lbl_blocks = Array.make (oib.mind_nb_args+1) Label.no in
+      let nallblock = oib.mind_nb_args + 1 in (* +1 : accumulate *)
+      let nblock = min nallblock (max_tag + 1) in
+      let lbl_blocks = Array.make nblock Label.no in
+      let neblock = max 0 (nallblock - max_tag) in
+      let lbl_eblocks = Array.make neblock Label.no in 
       let branch1,cont = make_branch cont in
       (* Compiling return type *)
       let lbl_typ,fcode =
@@ -644,6 +666,15 @@ let rec compile_constr reloc c sz cont =
       in
       lbl_blocks.(0) <- lbl_accu;
       let c = ref code_accu in
+      (* perform the extra match if needed (to many block constructor) *)
+      if neblock <> 0 then begin
+        let lbl_b, code_b = 
+          label_code (
+            Kpushfields 2 :: Kacc 0 :: Kswitch(lbl_eblocks, [||]) :: !c) in
+        lbl_blocks.(max_tag) <- lbl_b;
+        c := code_b
+      end;  
+      
       (* Compiling regular constructor branches *)
       for i = 0 to Array.length tbl - 1 do
 	let tag, arity = tbl.(i) in
@@ -655,19 +686,22 @@ let rec compile_constr reloc c sz cont =
 	else
 	  let args, body = decompose_lam branchs.(i) in
 	  let nargs = List.length args in
-	  let lbl_b,code_b =
-	    label_code(
-	    if Int.equal nargs arity then
+          let code_b =  
+            if Int.equal nargs arity then
 	      Kpushfields arity ::
-	      compile_constr (push_param arity sz_b reloc)
+	        compile_constr (push_param arity sz_b reloc)
 		body (sz_b+arity) (add_pop arity (branch :: !c))
 	    else
 	      let sz_appterm = if is_tailcall then sz_b + arity else arity in
 	      Kpushfields arity ::
-	      compile_constr reloc branchs.(i) (sz_b+arity)
-		(Kappterm(arity,sz_appterm) :: !c))
-	  in
-	  lbl_blocks.(tag) <- lbl_b;
+	        compile_constr reloc branchs.(i) (sz_b+arity)
+		(Kappterm(arity,sz_appterm) :: !c) in
+          let code_b = 
+            if tag < max_tag then code_b
+            else Kacc 1::Kpop 2::code_b in
+	  let lbl_b,code_b = label_code code_b in
+          if tag < max_tag then lbl_blocks.(tag) <- lbl_b
+          else lbl_eblocks.(tag - max_tag) <- lbl_b;
 	  c := code_b
       done;
       c :=  Klabel lbl_sw :: Kswitch(lbl_consts,lbl_blocks) :: !c;
@@ -692,9 +726,10 @@ and compile_str_cst reloc sc sz cont =
   | Bstrconst sc -> Kconst sc :: cont
   | Bmakeblock(tag,args) ->
       let nargs = Array.length args in
-      comp_args compile_str_cst reloc args sz (Kmakeblock(nargs,tag) :: cont)
+      comp_args compile_str_cst reloc args sz (code_makeblock nargs tag cont)
   | Bconstruct_app(tag,nparams,arity,args) ->
-      if Int.equal (Array.length args) 0 then code_construct tag nparams arity cont
+      if Int.equal (Array.length args) 0 then
+        code_construct tag nparams arity cont
       else
 	comp_app
 	  (fun _ _ _ cont -> code_construct tag nparams arity cont)
@@ -743,7 +778,8 @@ let compile fail_on_error env c =
     let fn = if fail_on_error then Errors.errorlabstrm "compile" else Pp.msg_warning in
       (Pp.(fn
 	   (str "Cannot compile code for virtual machine as it uses inductive " ++
-	    Id.print tname ++ str " which has more than 245 constructors"));
+	    Id.print tname ++ str 
+          " which has more than 65535 constant constructors or more than 65535 non-constant constructors"));
        None)
 
 let compile_constant_body fail_on_error env = function
