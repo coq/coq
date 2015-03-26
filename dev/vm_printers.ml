@@ -74,14 +74,14 @@ and ppwhd whd =
   | Vfix _ -> print_vfix()
   | Vcofix _ -> print_string "cofix"
   | Vconstr_const i -> print_string "C(";print_int i;print_string")"
-  | Vconstr_block b -> ppvblock b
+  | Vconstr_block (tag,b) -> ppvblock tag b
   | Vatom_stk(a,s) ->
       open_hbox();ppatom a;close_box();
       print_string"@";ppstack s
 
-and ppvblock b =
+and ppvblock tag b =
   open_hbox();
-  print_string "Cb(";print_int (btag b);
+  print_string "Cb(";print_int tag;
   let n = bsize b in
   for i = 0 to n -1 do
     print_string ",";ppvalues (bfield b i)
