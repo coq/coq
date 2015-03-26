@@ -2126,9 +2126,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           anomaly(str"VtProofMode must be executed VtNow")
       | VtProofMode mode, VtNow ->
           let id = VCS.new_node ~id:newtip () in
-          VCS.checkout VCS.Branch.master;
           VCS.commit id (Cmd {ctac=false;cast = x;cids=[];cqueue = `MainQueue});
-          VCS.propagate_sideff (Some x);
           List.iter
             (fun bn -> match VCS.get_branch bn with
             | { VCS.root; kind = `Master; pos } -> ()
