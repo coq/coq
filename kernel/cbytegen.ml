@@ -335,8 +335,16 @@ let init_fun_code () = fun_code := []
 
 exception TooLargeInductive of Id.t
 
+let max_nb_const = 0x7FFFFF 
+let max_nb_block = 0x7FFFFF + max_tag - 1
+
+let str_max_constructors = 
+  Format.sprintf 
+    " which has more than %i constant constructors or more than %i non-constant constructors" max_nb_const max_nb_block
+
 let check_compilable ib = 
-  if not (ib.mind_nb_args <= 0xFFFF && ib.mind_nb_constant <= 0xFFFF) then 
+  
+  if not (ib.mind_nb_args <= max_nb_block && ib.mind_nb_constant <= max_nb_const) then 
     raise (TooLargeInductive ib.mind_typename)
 
 (* Inv: arity > 0 *)
@@ -778,8 +786,7 @@ let compile fail_on_error env c =
     let fn = if fail_on_error then Errors.errorlabstrm "compile" else Pp.msg_warning in
       (Pp.(fn
 	   (str "Cannot compile code for virtual machine as it uses inductive " ++
-	    Id.print tname ++ str 
-          " which has more than 65535 constant constructors or more than 65535 non-constant constructors"));
+	    Id.print tname ++ str str_max_constructors));
        None)
 
 let compile_constant_body fail_on_error env = function

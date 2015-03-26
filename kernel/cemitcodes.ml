@@ -223,7 +223,7 @@ let emit_instr = function
       slot_for_annot annot;out_int sz
   | Kswitch (tbl_const, tbl_block) ->
       out opSWITCH;
-      out_int (Array.length tbl_const + (Array.length tbl_block lsl 16));
+      out_int (Array.length tbl_const + (Array.length tbl_block lsl 23));
       let org = !out_position in
       Array.iter (out_label_with_orig org) tbl_const;
       Array.iter (out_label_with_orig org) tbl_block
