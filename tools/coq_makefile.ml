@@ -536,9 +536,13 @@ let include_dirs (inc_ml,inc_i,inc_r) =
       List.iter (fun x -> print "\\\n  "; print x) str_r; print "\n\n";
     end
 
+let double_colon = ["clean"; "cleanall"; "archclean"]
+
 let custom sps =
   let pr_path (file,dependencies,is_phony,com) =
-    print file; print ": "; print dependencies; print "\n";
+    print file;
+    print (if List.mem file double_colon then ":: " else ": ");
+    print dependencies; print "\n";
     if com <> "" then (print "\t"; print com; print "\n");
     print "\n"
   in
