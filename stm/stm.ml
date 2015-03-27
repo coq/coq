@@ -1093,6 +1093,9 @@ end = struct (* {{{ *)
   
   let perform_states query =
     if query = [] then [] else
+    let is_tac = function
+      | VernacSolve _ | VernacFocus _ | VernacUnfocus | VernacBullet _ -> true
+      | _ -> false in
     let initial = 
       let rec aux id =
         try match VCS.visit id with { next } -> aux next
@@ -1110,8 +1113,8 @@ end = struct (* {{{ *)
         if State.is_cached id then Some (State.get_cached id) else None in
       match prev, this with
       | _, None -> None
-      | Some (prev, o, `Cmd { cast = { expr = VernacSolve _ }}), Some n
-        when State.same_env o n -> (* A pure tactic *)
+      | Some (prev, o, `Cmd { cast = { expr }}), Some n
+        when is_tac expr && State.same_env o n -> (* A pure tactic *)
           Some (id, `Proof (prev, State.proof_part_of_frozen n))
       | Some _, Some s ->
           msg_warning (str "Sending back a fat state");
