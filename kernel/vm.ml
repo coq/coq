@@ -161,7 +161,7 @@ type whd =
   | Vfix of vfix * arguments option
   | Vcofix of vcofix * to_up * arguments option
   | Vconstr_const of int
-  | Vconstr_block of int * vblock
+  | Vconstr_block of vblock
   | Vatom_stk of atom * stack
 
 (*************************************************)
@@ -225,15 +225,8 @@ let whd_val : values -> whd =
 	   | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
 	   | _ -> Errors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work"))
 	else 
-          if tag = max_tag then
-            let tag = Obj.obj (Obj.field o 0) + max_tag in
-            let block = Obj.obj (Obj.field o 1) in
-             Vconstr_block(tag, block)
-          else
-            Vconstr_block(tag, Obj.obj o)
-
-
-
+          Vconstr_block(Obj.obj o)
+         
 (************************************************)
 (* Abstrct machine ******************************)
 (************************************************)
@@ -524,22 +517,15 @@ let type_of_switch sw =
 let branch_arg k (tag,arity) =
   if Int.equal arity 0 then  ((Obj.magic tag):values)
   else
-    let init b = 
-      for i = 0 to arity - 1 do
-        Obj.set_field b i (Obj.repr (val_of_rel (k+i)))
-      done in
-    let b =
-      if tag < max_tag then
-        let b = Obj.new_block tag arity in
-        init b;
-        b
+    let b, ofs = 
+      if tag < last_variant_tag then Obj.new_block tag arity, 0
       else
-        let b0 = Obj.new_block 0 arity in
-        init b0;
-        let b = Obj.new_block max_tag 2 in
-        Obj.set_field b 0 (Obj.repr (tag - max_tag));
-        Obj.set_field b 1 (Obj.repr b0);
-        b in
+        let b = Obj.new_block last_variant_tag (arity+1) in
+        Obj.set_field b 0 (Obj.repr (tag-last_variant_tag));
+        b,1 in
+    for i = ofs to ofs + arity - 1 do
+      Obj.set_field b i (Obj.repr (val_of_rel (k+i)))
+    done;
     val_of_obj b
 
 let apply_switch sw arg =

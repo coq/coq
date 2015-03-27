@@ -63,7 +63,8 @@ and conv_whd env pb k whd1 whd2 cu =
       else conv_arguments env k args1 args2 (conv_cofix env k cf1 cf2 cu)
   | Vconstr_const i1, Vconstr_const i2 ->
       if Int.equal i1 i2 then cu else raise NotConvertible
-  | Vconstr_block (tag1, b1), Vconstr_block (tag2, b2) ->
+  | Vconstr_block b1, Vconstr_block b2 ->
+      let tag1 = btag b1 and tag2 = btag b2 in
       let sz = bsize b1 in
       if Int.equal tag1 tag2 && Int.equal sz (bsize b2) then
 	let rcu = ref cu in

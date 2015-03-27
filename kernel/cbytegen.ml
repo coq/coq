@@ -331,12 +331,12 @@ let init_fun_code () = fun_code := []
 
 
 (* Limitation due to OCaml's representation of non-constant
-  constructors: limited to 245 cases. *)
+  constructors: limited to 245 + 1 (0 tag) cases. *)
 
 exception TooLargeInductive of Id.t
 
 let max_nb_const = 0x7FFFFF 
-let max_nb_block = 0x7FFFFF + max_tag - 1
+let max_nb_block = 0x7FFFFF + last_variant_tag - 1
 
 let str_max_constructors = 
   Format.sprintf 
@@ -350,19 +350,17 @@ let check_compilable ib =
 (* Inv: arity > 0 *)
 
 let const_bn tag args = 
-  if tag < max_tag then Const_bn(tag, args)
+  if tag < last_variant_tag then Const_bn(tag, args)
   else
-    Const_bn(max_tag,
-             [|Const_b0 (tag - max_tag);
-               Const_bn (0, args) |])
+    Const_bn(last_variant_tag, Array.append [|Const_b0 (tag - last_variant_tag) |] args)
+
   
 let code_makeblock arity tag cont = 
-  if tag < max_tag then
+  if tag < last_variant_tag then
     Kmakeblock(arity, tag) :: cont
   else
-    Kmakeblock(arity, 0) :: Kpush ::     (* Const_bn (0, args) *)
-    Kconst (Const_b0 (tag - max_tag)) :: (* Const_b0  (tag - max_tag)) *)
-    Kmakeblock(2, max_tag) :: cont 
+    Kpush :: Kconst (Const_b0 (tag - last_variant_tag)) ::
+    Kmakeblock(arity+1, last_variant_tag) :: cont
 
 (* Inv : nparam + arity > 0 *)
 let code_construct tag nparams arity cont =
@@ -370,8 +368,11 @@ let code_construct tag nparams arity cont =
       add_pop nparams
       (if Int.equal arity 0 then
 	[Kconst (Const_b0 tag); Kreturn 0]
+       else if tag < last_variant_tag then
+         [Kacc 0; Kpop 1; Kmakeblock(arity, tag); Kreturn 0]
        else 
-          Kacc 0:: Kpop 1 :: code_makeblock arity tag [Kreturn 0])
+         [Kconst (Const_b0 (tag - last_variant_tag)); 
+          Kmakeblock(arity+1, last_variant_tag); Kreturn 0])
     in
     let lbl = Label.create() in
     fun_code := [Ksequence (add_grab (nparams+arity) lbl f_cont,!fun_code)];
@@ -651,9 +652,9 @@ let rec compile_constr reloc c sz cont =
       let tbl = oib.mind_reloc_tbl in
       let lbl_consts = Array.make oib.mind_nb_constant Label.no in
       let nallblock = oib.mind_nb_args + 1 in (* +1 : accumulate *)
-      let nblock = min nallblock (max_tag + 1) in
+      let nblock = min nallblock (last_variant_tag + 1) in
       let lbl_blocks = Array.make nblock Label.no in
-      let neblock = max 0 (nallblock - max_tag) in
+      let neblock = max 0 (nallblock - last_variant_tag) in
       let lbl_eblocks = Array.make neblock Label.no in 
       let branch1,cont = make_branch cont in
       (* Compiling return type *)
@@ -674,12 +675,12 @@ let rec compile_constr reloc c sz cont =
       in
       lbl_blocks.(0) <- lbl_accu;
       let c = ref code_accu in
-      (* perform the extra match if needed (to many block constructor) *)
+      (* perform the extra match if needed (to many block constructors) *)
       if neblock <> 0 then begin
         let lbl_b, code_b = 
           label_code (
-            Kpushfields 2 :: Kacc 0 :: Kswitch(lbl_eblocks, [||]) :: !c) in
-        lbl_blocks.(max_tag) <- lbl_b;
+            Kpush :: Kfield 0 :: Kswitch(lbl_eblocks, [||]) :: !c) in
+        lbl_blocks.(last_variant_tag) <- lbl_b;
         c := code_b
       end;  
       
@@ -694,25 +695,24 @@ let rec compile_constr reloc c sz cont =
 	else
 	  let args, body = decompose_lam branchs.(i) in
 	  let nargs = List.length args in
+         
           let code_b =  
             if Int.equal nargs arity then
-	      Kpushfields arity ::
-	        compile_constr (push_param arity sz_b reloc)
+	      compile_constr (push_param arity sz_b reloc)
 		body (sz_b+arity) (add_pop arity (branch :: !c))
 	    else
 	      let sz_appterm = if is_tailcall then sz_b + arity else arity in
-	      Kpushfields arity ::
-	        compile_constr reloc branchs.(i) (sz_b+arity)
+	      compile_constr reloc branchs.(i) (sz_b+arity)
 		(Kappterm(arity,sz_appterm) :: !c) in
           let code_b = 
-            if tag < max_tag then code_b
-            else Kacc 1::Kpop 2::code_b in
-	  let lbl_b,code_b = label_code code_b in
-          if tag < max_tag then lbl_blocks.(tag) <- lbl_b
-          else lbl_eblocks.(tag - max_tag) <- lbl_b;
+            if tag < last_variant_tag then Kpushfields arity :: code_b
+            else Kacc 0::Kpop 1::Kpushfields(arity+1)::Kpop 1::code_b in
+          let lbl_b,code_b = label_code code_b in
+          if tag < last_variant_tag then lbl_blocks.(tag) <- lbl_b
+          else lbl_eblocks.(tag - last_variant_tag) <- lbl_b;
 	  c := code_b
       done;
-      c :=  Klabel lbl_sw :: Kswitch(lbl_consts,lbl_blocks) :: !c;
+      c := Klabel lbl_sw :: Kswitch(lbl_consts,lbl_blocks) :: !c;
       let code_sw =
  	match branch1 with
         (* spiwack : branch1 can't be a lbl anymore it's a Branch instead

@@ -46,7 +46,7 @@ type whd =
   | Vfix of vfix * arguments option
   | Vcofix of vcofix * to_up * arguments option
   | Vconstr_const of int
-  | Vconstr_block of int * vblock
+  | Vconstr_block of vblock
   | Vatom_stk of atom * stack
 
 (** Constructors *)
@@ -94,6 +94,7 @@ val reduce_cofix : int -> vcofix -> values array * values array
 
 (** Block *)
 
+val btag  : vblock -> int
 val bsize : vblock -> int
 val bfield : vblock -> int -> values
 

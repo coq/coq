@@ -165,9 +165,16 @@ and nf_whd env whd typ =
       let _, args = nf_args env vargs t in
       mkApp(cfd,args)
   | Vconstr_const n -> construct_of_constr_const env n typ
-  | Vconstr_block (tag,b) ->
+  | Vconstr_block b ->
+      let tag = btag b in
+      let (tag,ofs) =
+        if tag = Cbytecodes.last_variant_tag then
+	  match whd_val (bfield b 0) with
+	  | Vconstr_const tag -> (tag+Cbytecodes.last_variant_tag, 1)
+	  | _ -> assert false
+        else (tag, 0) in
       let capp,ctyp = construct_of_constr_block env tag typ in
-      let args = nf_bargs env b ctyp in
+      let args = nf_bargs env b ofs ctyp in
       mkApp(capp,args)
   | Vatom_stk(Aid idkey, stk) ->
       let c,typ = constr_type_of_idkey env idkey in
@@ -242,14 +249,14 @@ and nf_args env vargs t =
 	t := subst1 c codom; c) in
   !t,args
 
-and nf_bargs env b t =
+and nf_bargs env b ofs t =
   let t = ref t in
-  let len = bsize b in
+  let len = bsize b - ofs in
   let args =
     Array.init len
       (fun i ->
 	let _,dom,codom = decompose_prod env !t in
-	let c = nf_val env (bfield b i) dom in
+	let c = nf_val env (bfield b (i+ofs)) dom in
 	t := subst1 c codom; c) in
   args
 

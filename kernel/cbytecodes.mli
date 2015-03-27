@@ -20,7 +20,7 @@ val fix_tag : tag
 val switch_tag : tag
 val cofix_tag : tag
 val cofix_evaluated_tag : tag
-val max_tag : tag 
+val last_variant_tag : tag 
 
 type structured_constant =
   | Const_sorts of sorts
