@@ -465,11 +465,10 @@ GEXTEND Gram
 
       (* Requiring an already compiled module *)
       | IDENT "Require"; export = export_token; qidl = LIST1 global ->
-          VernacRequire (export, qidl)
+          VernacRequire (None, export, qidl)
       | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
 	; qidl = LIST1 global ->
-	let qidl = List.map (Libnames.join_reference ns) qidl in
-	VernacRequire (export, qidl)
+	VernacRequire (Some ns, export, qidl)
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl)
       | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
