@@ -136,10 +136,6 @@ let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 (* Exportation of scopes *)
 let open_scope i (_,(local,op,sc)) =
   if Int.equal i 1 then
-    let sc = match sc with
-      | Scope sc -> Scope (normalize_scope sc)
-      | _ -> sc
-    in
     scope_stack :=
       if op then sc :: !scope_stack
       else List.except scope_eq sc !scope_stack
@@ -166,7 +162,7 @@ let inScope : bool * bool * scope_elem -> obj =
       classify_function = classify_scope }
 
 let open_close_scope (local,opening,sc) =
-  Lib.add_anonymous_leaf (inScope (local,opening,Scope sc))
+  Lib.add_anonymous_leaf (inScope (local,opening,Scope (normalize_scope sc)))
 
 let empty_scope_stack = []
 
