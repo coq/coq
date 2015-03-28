@@ -105,6 +105,7 @@ plugins/dp/dp_zenon.ml
 tools/gallina_lexer.ml
 tools/coqwc.ml
 tools/coqdep_lexer.ml
+tools/ocamllibdep.ml
 tools/coqdoc/cpretty.ml
 lib/xml_lexer.ml
 
