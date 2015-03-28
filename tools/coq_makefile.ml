@@ -355,7 +355,7 @@ let clean sds sps =
     sds;
   print "\n";
   print "printenv:\n\t@\"$(COQBIN)coqtop\" -config\n";
-  print "\t@echo 'CAMLC =\t$(CAMLC)'\n\t@echo 'CAMLOPTC =\t$(CAMLOPTC)'\n\t@echo 'PP =\t$(PP)'\n\t@echo 'COQFLAGS =\t$(COQFLAGS)'\n";
+  print "\t@echo 'OCAMLFIND =\t$(OCAMLFIND)'\n\t@echo 'PP =\t$(PP)'\n\t@echo 'COQFLAGS =\t$(COQFLAGS)'\n";
   print "\t@echo 'COQLIBINSTALL =\t$(COQLIBINSTALL)'\n\t@echo 'COQDOCINSTALL =\t$(COQDOCINSTALL)'\n\n"
 
 let header_includes () = ()
@@ -365,19 +365,19 @@ let implicit () =
   let mli_rules () =
     print "$(MLIFILES:.mli=.cmi): %.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(addsuffix .d,$(MLIFILES)): %.mli.d: %.mli\n";
-    print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(OCAMLFIND) ocamldep -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml4_rules () =
     print "$(ML4FILES:.ml4=.cmo): %.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "$(filter-out $(addsuffix .cmx,$(foreach lib,$(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(ML4FILES:.ml4=.cmx)): %.cmx: %.ml4\n";
     print "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "$(addsuffix .d,$(ML4FILES)): %.ml4.d: %.ml4\n";
-    print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(OCAMLFIND) ocamldep -slash $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml_rules () =
     print "$(MLFILES:.ml=.cmo): %.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(filter-out $(addsuffix .cmx,$(foreach lib,$(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(MLFILES:.ml=.cmx)): %.cmx: %.ml\n";
     print "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "$(addsuffix .d,$(MLFILES)): %.ml.d: %.ml\n";
-    print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(OCAMLFIND) ocamldep -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let cmxs_rules () = (* order is important here when there is foo.ml and foo.mllib *)
     print "$(filter-out $(MLLIBFILES:.mllib=.cmxs),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs) $(MLPACKFILES:.mlpack=.cmxs)): %.cmxs: %.cmx
 \t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n";
@@ -455,17 +455,18 @@ let variables is_install opt (args,defs) =
     List.iter (fun c -> print " \\
   -I \"$(COQLIB)/"; print c; print "\"") Coq_config.plugins_dirs; print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
-    print "CAMLC?=$(OCAMLC) -c -rectypes -thread\n";
-    print "CAMLOPTC?=$(OCAMLOPT) -c -rectypes -thread\n";
-    print "CAMLLINK?=$(OCAMLC) -rectypes -thread\n";
-    print "CAMLOPTLINK?=$(OCAMLOPT) -rectypes -thread\n";
+    print "CAMLC?=$(OCAMLFIND) ocamlc -c -rectypes -thread\n";
+    print "CAMLOPTC?=$(OCAMLFIND) opt -c -rectypes -thread\n";
+    print "CAMLLINK?=$(OCAMLFIND) ocamlc -rectypes -thread\n";
+    print "CAMLOPTLINK?=$(OCAMLFIND) opt -rectypes -thread\n";
+    print "CAMLLIB?=$(shell $(OCAMLFIND) printconf stdlib)\n";
     print "GRAMMARS?=grammar.cma\n";
     print "ifeq ($(CAMLP4),camlp5)
 CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo unix.cma threads.cma
 else
 CAMLP4EXTEND=threads.cma
 endif\n";
-    print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) -I $(CAMLLIB)threads/ $(COQSRCLIBS) compat5.cmo \\
+    print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) -I $(CAMLLIB)/threads/ $(COQSRCLIBS) compat5.cmo \\
   $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n\n";
     end;
     match is_install with
@@ -682,9 +683,9 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
     begin
       print "mlihtml: $(MLIFILES:.mli=.cmi)\n";
       print "\t mkdir $@ || rm -rf $@/*\n";
-      print "\t$(OCAMLDOC) -html -rectypes -d $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
+      print "\t$(OCAMLFIND) ocamldoc -html -rectypes -d $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
       print "all-mli.tex: $(MLIFILES:.mli=.cmi)\n";
-      print "\t$(OCAMLDOC) -latex -rectypes -o $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
+      print "\t$(OCAMLFIND) ocamldoc -latex -rectypes -o $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
     end;
   if !some_vfile then
     begin

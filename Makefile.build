@@ -94,8 +94,8 @@ HIDE := $(if $(VERBOSE),,@)
 LOCALINCLUDES=$(addprefix -I , $(SRCDIRS) )
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
-OCAMLC := $(OCAMLC) $(CAMLFLAGS)
-OCAMLOPT := $(OCAMLOPT) $(CAMLFLAGS)
+OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
+OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
 BYTEFLAGS=-thread $(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=-thread $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
@@ -179,7 +179,7 @@ endif
 TOTARGET = > "$@" || (RV=$$?; rm -f "$@"; exit $${RV})
 
 ###########################################################################
-# Compilation option for .c files 
+# Compilation option for .c files
 ###########################################################################
 
 CINCLUDES= -I $(CAMLHLIB)
@@ -189,9 +189,9 @@ CINCLUDES= -I $(CAMLHLIB)
 # NB: We used to do a ranlib after ocamlmklib, but it seems that
 # ocamlmklib is already doing it
 
-$(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN) 
+$(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN)
 	cd $(dir $(LIBCOQRUN)) && \
-	$(OCAMLMKLIB) -oc $(COQRUN) $(foreach u,$(BYTERUN),$(notdir $(u)))
+	$(OCAMLFIND) ocamlmklib -oc $(COQRUN) $(foreach u,$(BYTERUN),$(notdir $(u)))
 
 #coq_jumptbl.h is required only if you have GCC 2.0 or later
 kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h
@@ -823,34 +823,34 @@ install-latex:
 source-doc: mli-doc $(OCAMLDOCDIR)/coq.pdf
 
 $(OCAMLDOCDIR)/coq.tex: $(DOCMLIS:.mli=.cmi)
-	$(OCAMLDOC) -latex -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
+	$(OCAMLFIND) ocamldoc -latex -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
 	$(DOCMLIS) -t "Coq mlis documentation" \
 	-intro $(OCAMLDOCDIR)/docintro -o $@
 
 mli-doc: $(DOCMLIS:.mli=.cmi)
-	$(OCAMLDOC) -html -rectypes -I +threads -I $(MYCAMLP4LIB) $(MLINCLUDES) \
+	$(OCAMLFIND) ocamldoc -html -rectypes -I +threads -I $(MYCAMLP4LIB) $(MLINCLUDES) \
 	$(DOCMLIS) -d $(OCAMLDOCDIR)/html -colorize-code \
 	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
 	-css-style style.css
 
 ml-dot: $(MLFILES)
-	$(OCAMLDOC) -dot -dot-reduce -rectypes -I +threads -I $(CAMLLIB) -I $(MYCAMLP4LIB) $(MLINCLUDES) \
+	$(OCAMLFIND) ocamldoc -dot -dot-reduce -rectypes -I +threads -I $(CAMLLIB) -I $(MYCAMLP4LIB) $(MLINCLUDES) \
 	$(filter $(addsuffix /%.ml,$(CORESRCDIRS)),$(MLFILES)) -o $(OCAMLDOCDIR)/coq.dot
 
 %_dep.png: %.dot
 	$(DOT) -Tpng $< -o $@
 
 %_types.dot: %.mli
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $< 
+	$(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $<
 
-OCAMLDOC_MLLIBD = $(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ \
+OCAMLDOC_MLLIBD = $(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ \
   $(foreach lib,$(|:.mllib.d=_MLLIB_DEPENDENCIES),$(addsuffix .ml,$($(lib))))
 
 %.dot: | %.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
 ml-doc:
-	$(OCAMLDOC) -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) -d $(OCAMLDOCDIR) $(MLSTATICFILES)
+	$(OCAMLFIND) ocamldoc -html -rectypes -I +threads $(MLINCLUDES) $(COQIDEFLAGS) -d $(OCAMLDOCDIR) $(MLSTATICFILES)
 
 parsing/parsing.dot : | parsing/parsing.mllib.d parsing/highparsing.mllib.d
 	$(OCAMLDOC_MLLIBD)
@@ -862,7 +862,7 @@ tactics/tactics.dot: | tactics/tactics.mllib.d tactics/hightactics.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
 %.dot: %.mli
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $< 
+	$(OCAMLFIND) ocamldoc -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $<
 
 $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 	(cd $(OCAMLDOCDIR) ; pdflatex $*.tex && pdflatex $*.tex)
@@ -1011,10 +1011,6 @@ endif
 	$(SHOW)'OCAMLLEX  $<'
 	$(HIDE)$(OCAMLLEX) -o $@ "$*.mll"
 
-%.ml %.mli: %.mly
-	$(SHOW)'OCAMLYACC $<'
-	$(HIDE)$(OCAMLYACC) $<
-
 plugins/%_mod.ml: plugins/%.mllib
 	$(SHOW)'ECHO... > $@'
 	$(HIDE)sed -e "s/\([^ ]\{1,\}\)/let _=Mltop.add_known_module\"\1\" /g" $< > $@
@@ -1054,7 +1050,7 @@ endif
 # Since OCaml 3.12.1, we could use again ocamldep directly, thanks to
 # the option -ml-synonym
 
-OCAMLDEP_NG = $(OCAMLDEP) -slash -ml-synonym .ml4
+OCAMLDEP_NG = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4
 
 checker/%.ml.d: $(D_DEPEND_BEFORE_SRC) checker/%.ml $(D_DEPEND_AFTER_SRC) $(GENFILES)
 	$(SHOW)'OCAMLDEP  $<'

@@ -120,8 +120,8 @@ val coqlib_spec : bool ref
 val coqlib : string ref
 
 (** Options for specifying where OCaml binaries reside *)
-val camlbin_spec : bool ref
-val camlbin : string ref
+val ocamlfind_spec : bool ref
+val ocamlfind : string ref
 val camlp4bin_spec : bool ref
 val camlp4bin : string ref
 

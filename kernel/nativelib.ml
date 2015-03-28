@@ -30,10 +30,6 @@ let output_dir = ".coq-native"
 (* Extension of genereted ml files, stored for debugging purposes *)
 let source_ext = ".native"
 
-(* Global settings and utilies for interface with OCaml *)
-let compiler_name =
-  if Dynlink.is_native then ocamlopt () else ocamlc ()
-
 let ( / ) = Filename.concat
 
 (* We have to delay evaluation of include_dirs because coqlib cannot be guessed
@@ -70,14 +66,15 @@ let call_compiler ml_filename =
   remove link_filename;
   remove (f ^ ".cmi");
   let args =
-    (if Dynlink.is_native then "-shared" else "-c")
+    (if Dynlink.is_native then "opt" else "ocamlc")
+    ::(if Dynlink.is_native then "-shared" else "-c")
     ::"-o"::link_filename
     ::"-rectypes"
     ::"-w"::"a"
     ::include_dirs
     @ ["-impl"; ml_filename] in
-  if !Flags.debug then Pp.msg_debug (Pp.str (compiler_name ^ " " ^ (String.concat " " args)));
-  try CUnix.sys_command compiler_name args = Unix.WEXITED 0, link_filename
+  if !Flags.debug then Pp.msg_debug (Pp.str (ocamlfind () ^ " " ^ (String.concat " " args)));
+  try CUnix.sys_command (ocamlfind ()) args = Unix.WEXITED 0, link_filename
   with Unix.Unix_error (e,_,_) ->
     Pp.(msg_warning (str (Unix.error_message e)));
     false, link_filename

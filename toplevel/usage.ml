@@ -110,12 +110,7 @@ let print_config () =
   if Coq_config.local then Printf.printf "LOCAL=1\n" else Printf.printf "LOCAL=0\n";
   Printf.printf "COQLIB=%s/\n" (Envars.coqlib ());
   Printf.printf "DOCDIR=%s/\n" (Envars.docdir ());
-  Printf.printf "OCAMLDEP=%s\n" Coq_config.ocamldep;
-  Printf.printf "OCAMLC=%s\n" Coq_config.ocamlc;
-  Printf.printf "OCAMLOPT=%s\n" Coq_config.ocamlopt;
-  Printf.printf "OCAMLDOC=%s\n" Coq_config.ocamldoc;
-  Printf.printf "CAMLBIN=%s/\n" (Envars.camlbin ());
-  Printf.printf "CAMLLIB=%s/\n" (Envars.camllib ());
+  Printf.printf "OCAMLFIND=%s\n" (Envars.ocamlfind ());
   Printf.printf "CAMLP4=%s\n" Coq_config.camlp4;
   Printf.printf "CAMLP4O=%s\n" Coq_config.camlp4o;
   Printf.printf "CAMLP4BIN=%s/\n" (Envars.camlp4bin ());

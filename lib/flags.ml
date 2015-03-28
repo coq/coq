@@ -193,9 +193,9 @@ let is_standard_doc_url url =
 let coqlib_spec = ref false
 let coqlib = ref "(not initialized yet)"
 
-(* Options for changing camlbin (used by coqmktop) *)
-let camlbin_spec = ref false
-let camlbin = ref Coq_config.camlbin
+(* Options for changing ocamlfind (used by coqmktop) *)
+let ocamlfind_spec = ref false
+let ocamlfind = ref Coq_config.camlbin
 
 (* Options for changing camlp4bin (used by coqmktop) *)
 let camlp4bin_spec = ref false

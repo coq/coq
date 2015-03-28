@@ -156,36 +156,23 @@ let coqpath =
 
 let exe s = s ^ Coq_config.exec_extension
 
-let guess_camlbin () = which (user_path ()) (exe "ocamlc")
+let guess_ocamlfind () = fst (which (user_path ()) (exe "ocamlfind"))
 
-let camlbin () =
-  if !Flags.camlbin_spec then !Flags.camlbin else
-    if !Flags.boot then Coq_config.camlbin else
-      try guess_camlbin () with Not_found -> Coq_config.camlbin
-
-let ocamlc () = camlbin () / Coq_config.ocamlc
-
-let ocamlopt () = camlbin () / Coq_config.ocamlopt
-
-let camllib () =
-  if !Flags.boot then
-    Coq_config.camllib
-  else
-    let _, res = CUnix.run_command (ocamlc () ^ " -where") in
-    String.strip res
+let ocamlfind () =
+  if !Flags.ocamlfind_spec then !Flags.ocamlfind else
+    if !Flags.boot then Coq_config.ocamlfind else
+      try guess_ocamlfind () with Not_found -> Coq_config.ocamlfind
 
 (** {2 Camlp4 paths} *)
 
-let guess_camlp4bin () = which (user_path ()) (exe Coq_config.camlp4)
+let guess_camlp4bin () = snd (which (user_path ()) (exe Coq_config.camlp4))
 
 let camlp4bin () =
   if !Flags.camlp4bin_spec then !Flags.camlp4bin else
     if !Flags.boot then Coq_config.camlp4bin else
       try guess_camlp4bin ()
       with Not_found ->
-        let cb = camlbin () in
-        if Sys.file_exists (cb / exe Coq_config.camlp4) then cb
-        else Coq_config.camlp4bin
+        Coq_config.camlp4bin
 
 let camlp4 () = camlp4bin () / exe Coq_config.camlp4
 
@@ -193,7 +180,7 @@ let camlp4lib () =
   if !Flags.boot then
     Coq_config.camlp4lib
   else
-    let ex, res = CUnix.run_command (camlp4 () ^ " -where") in
+    let ex, res = CUnix.run_command (ocamlfind () ^ " query " ^ Coq_config.camlp4) in
     match ex with
       | Unix.WEXITED 0 -> String.strip res
       | _ -> "/dev/null"
