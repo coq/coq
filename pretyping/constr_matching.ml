@@ -373,7 +373,7 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
       authorized_occ env sigma partial_app closed pat c mk_ctx next
   | LetIn (x,c1,t,c2) ->
       let next_mk_ctx = function
-      | [c1;c2] -> mkLetIn (x,c1,t,c2)
+      | [c1; c2] -> mk_ctx (mkLetIn (x, c1, t, c2))
       | _ -> assert false
       in
       let next () = 
