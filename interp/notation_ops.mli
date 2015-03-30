@@ -25,6 +25,8 @@ val ldots_var : Id.t
 (** FIXME: nothing to do here *)
 val eq_glob_constr : glob_constr -> glob_constr -> bool
 
+val eq_notation_constr : notation_constr -> notation_constr -> bool
+
 (** Re-interpret a notation as a [glob_constr], taking care of binders     *)
 
 val glob_constr_of_notation_constr_with_binders : Loc.t ->

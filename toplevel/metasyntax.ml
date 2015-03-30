@@ -1120,7 +1120,7 @@ let open_notation i (_, nobj) =
   let scope = nobj.notobj_scope in
   let (ntn, df) = nobj.notobj_notation in
   let pat = nobj.notobj_interp in
-  if Int.equal i 1 then begin
+  if Int.equal i 1 && not (Notation.exists_notation_in_scope scope ntn pat) then begin
     (* Declare the interpretation *)
     Notation.declare_notation_interpretation ntn scope pat df;
     (* Declare the uninterpretation *)

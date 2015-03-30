@@ -863,10 +863,14 @@ module Make
         | VernacNameSectionHypSet (id,set) ->
           return (hov 2 (keyword "Package" ++ spc() ++ pr_lident id ++ spc()++
           str ":="++spc()++pr_using set))
-        | VernacRequire (exp, l) ->
+        | VernacRequire (from, exp, l) ->
+          let from = match from with
+          | None -> mt ()
+          | Some r -> keyword "From" ++ spc () ++ pr_module r ++ spc ()
+          in
           return (
             hov 2
-              (keyword "Require" ++ spc() ++ pr_require_token exp ++
+              (from ++ keyword "Require" ++ spc() ++ pr_require_token exp ++
                  prlist_with_sep sep pr_module l)
           )
         | VernacImport (f,l) ->

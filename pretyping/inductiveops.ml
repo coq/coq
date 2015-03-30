@@ -365,14 +365,16 @@ let get_arity env ((ind,u),params) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let parsign =
     (* Dynamically detect if called with an instance of recursively
-       uniform parameter only or also of non recursively uniform
+       uniform parameter only or also of recursively non-uniform
        parameters *)
-    let parsign = mib.mind_params_ctxt in
-    let nnonrecparams = mib.mind_nparams - mib.mind_nparams_rec in
-    if Int.equal (List.length params) (rel_context_nhyps parsign - nnonrecparams) then
-      snd (List.chop nnonrecparams mib.mind_params_ctxt)
-    else
-      parsign in
+    let nparams = List.length params in
+    if Int.equal nparams mib.mind_nparams then
+      mib.mind_params_ctxt
+    else begin
+      assert (Int.equal nparams mib.mind_nparams_rec);
+      let nnonrecparamdecls = List.length mib.mind_params_ctxt - mib.mind_nparams_rec in
+      snd (List.chop nnonrecparamdecls mib.mind_params_ctxt)
+    end in
   let parsign = Vars.subst_instance_context u parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
   let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in

@@ -148,14 +148,17 @@ let rec slot_for_getglobal env (kn,u) =
   with NotEvaluated ->
 (*    Pp.msgnl(str"not yet evaluated");*)
     let pos =
-      match Cemitcodes.force cb.const_body_code with
-      | BCdefined(code,pl,fv) ->
-	if Univ.Instance.is_empty u then
-	  let v = eval_to_patch env (code,pl,fv) in
-	    set_global v
-	else set_global (val_of_constant (kn,u))
-    | BCallias kn' -> slot_for_getglobal env kn'
-    | BCconstant -> set_global (val_of_constant (kn,u)) in
+      match cb.const_body_code with
+      | None -> set_global (val_of_constant (kn,u))
+      | Some code ->
+	 match Cemitcodes.force code with
+	 | BCdefined(code,pl,fv) ->
+	    if Univ.Instance.is_empty u then
+	    let v = eval_to_patch env (code,pl,fv) in
+	      set_global v
+	    else set_global (val_of_constant (kn,u))
+	 | BCallias kn' -> slot_for_getglobal env kn'
+	 | BCconstant -> set_global (val_of_constant (kn,u)) in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (Ephemeron.create pos);
     pos
@@ -210,7 +213,9 @@ and eval_to_patch env (buff,pl,fv) =
 
 and val_of_constr env c =
   let (_,fun_code,_ as ccfv) =
-    try compile env c
+    try match compile true env c with
+	| Some v -> v
+	| None -> assert false
     with reraise ->
       let reraise = Errors.push reraise in
       let () = print_string "can not compile \n" in

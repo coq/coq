@@ -121,3 +121,44 @@ Inductive foo1 : forall p, Prop := cc1 : foo1 0.
 (* Check cross inference of evars from constructors *)
 
 Inductive foo2 : forall p, Prop := cc2 : forall q, foo2 q | cc3 : foo2 0.
+
+(* An example with reduction removing an occurrence of the inductive type in one of its argument *)
+
+Inductive IND1 (A:Type) := CONS1 : IND1 ((fun x => A) IND1).
+
+(* These types were considered as ill-formed before March 2015, while they
+   could be accepted considering that the type IND1 above was accepted *)
+
+Inductive IND2 (A:Type) (T:=fun _ : Type->Type => A) := CONS2 : IND2 A -> IND2 (T IND2).
+
+Inductive IND3 (A:Type) (T:=fun _ : Type->Type => A) := CONS3 : IND3 (T IND3) -> IND3 A.
+
+Inductive IND4 (A:Type) := CONS4 : IND4 ((fun x => A) IND4) -> IND4 A.
+
+(* This type was ok before March 2015 *)
+
+Inductive IND5 (A : Type) (T := A) : Type := CONS5 : IND5 ((fun _ => A) 0) -> IND5 A.
+
+(* An example of nested positivity which was rejected by the kernel
+   before 24 March 2015 (even with Unset Elimination Schemes to avoid
+   the _rect bug) due to the wrong computation of non-recursively
+   uniform parameters in list' *)
+
+Inductive list' (A:Type) (B:=A) :=
+| nil' : list' A
+| cons' : A -> list' B -> list' A.
+
+Inductive tree := node : list' tree -> tree.
+
+(* This type was raising an anomaly when building the _rect scheme,
+   because of a bug in Inductiveops.get_arity in the presence of
+   let-ins and recursively non-uniform parameters. *)
+
+Inductive L (A:Type) (T:=A) : Type := C : L nat -> L A.
+
+(* This type was raising an anomaly when building the _rect scheme,
+   because of a wrong computation of the number of non-recursively
+   uniform parameters when conversion is needed, leading the example to
+   hit the Inductiveops.get_arity bug mentioned above (see #3491) *)
+
+Inductive IND6 (A:Type) (T:=A) := CONS6 : IND6 T -> IND6 A.

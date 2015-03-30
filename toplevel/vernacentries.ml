@@ -749,7 +749,11 @@ let vernac_end_segment (_,id as lid) =
 
 (* Libraries *)
 
-let vernac_require import qidl =
+let vernac_require from import qidl =
+  let qidl = match from with
+  | None -> qidl
+  | Some ns -> List.map (Libnames.join_reference ns) qidl
+  in
   let qidl = List.map qualid_of_reference qidl in
   let modrefl = List.map Library.try_locate_qualified_library qidl in
   if Dumpglob.dump () then
@@ -1884,7 +1888,7 @@ let interp ?proof locality poly c =
 
   | VernacNameSectionHypSet (lid, set) -> vernac_name_sec_hyp lid set
 
-  | VernacRequire (export, qidl) -> vernac_require export qidl
+  | VernacRequire (from, export, qidl) -> vernac_require from export qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
   | VernacCoercion (local,r,s,t) -> vernac_coercion locality poly local r s t

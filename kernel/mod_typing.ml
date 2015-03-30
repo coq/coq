@@ -97,7 +97,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
       let cb' =
 	{ cb with
 	  const_body = def;
-	  const_body_code = Cemitcodes.from_val (compile_constant_body env' def);
+	  const_body_code = Option.map Cemitcodes.from_val (compile_constant_body env' def);
 	  const_universes = ctx' }
       in
       before@(lab,SFBconst(cb'))::after, c', ctx'

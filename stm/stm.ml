@@ -1093,6 +1093,9 @@ end = struct (* {{{ *)
   
   let perform_states query =
     if query = [] then [] else
+    let is_tac = function
+      | VernacSolve _ | VernacFocus _ | VernacUnfocus | VernacBullet _ -> true
+      | _ -> false in
     let initial = 
       let rec aux id =
         try match VCS.visit id with { next } -> aux next
@@ -1110,8 +1113,8 @@ end = struct (* {{{ *)
         if State.is_cached id then Some (State.get_cached id) else None in
       match prev, this with
       | _, None -> None
-      | Some (prev, o, `Cmd { cast = { expr = VernacSolve _ }}), Some n
-        when State.same_env o n -> (* A pure tactic *)
+      | Some (prev, o, `Cmd { cast = { expr }}), Some n
+        when is_tac expr && State.same_env o n -> (* A pure tactic *)
           Some (id, `Proof (prev, State.proof_part_of_frozen n))
       | Some _, Some s ->
           msg_warning (str "Sending back a fat state");
@@ -1638,6 +1641,7 @@ let collect_proof keep cur hd brkind id =
    | { expr = VernacPrint (PrintName _) } -> true
    | _ -> false in
  let parent = function Some (p, _) -> p | None -> assert false in
+ let is_empty = function `Async(_,_,[],_,_) | `MaybeASync(_,_,[],_,_) -> true | _ -> false in
  let rec collect last accn id =
     let view = VCS.visit id in
     match view.step with
@@ -1687,7 +1691,8 @@ let collect_proof keep cur hd brkind id =
      else if keep == VtDrop then `Sync (no_name,None,`Aborted)
      else
        let rc = collect (Some cur) [] id in
-       if (keep == VtKeep || keep == VtKeepAsAxiom) &&
+       if is_empty rc then make_sync `AlreadyEvaluated rc
+       else if (keep == VtKeep || keep == VtKeepAsAxiom) &&
           (not(State.is_cached id) || !Flags.async_proofs_full)
        then check_policy rc
        else make_sync `AlreadyEvaluated rc
@@ -2124,9 +2129,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
           anomaly(str"VtProofMode must be executed VtNow")
       | VtProofMode mode, VtNow ->
           let id = VCS.new_node ~id:newtip () in
-          VCS.checkout VCS.Branch.master;
           VCS.commit id (Cmd {ctac=false;cast = x;cids=[];cqueue = `MainQueue});
-          VCS.propagate_sideff (Some x);
           List.iter
             (fun bn -> match VCS.get_branch bn with
             | { VCS.root; kind = `Master; pos } -> ()

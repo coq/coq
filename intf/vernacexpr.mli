@@ -316,7 +316,7 @@ type vernac_expr =
   | VernacBeginSection of lident
   | VernacEndSegment of lident
   | VernacRequire of
-      export_flag option * lreference list
+      lreference option * export_flag option * lreference list
   | VernacImport of export_flag * lreference list
   | VernacCanonical of reference or_by_notation
   | VernacCoercion of obsolete_locality * reference or_by_notation *

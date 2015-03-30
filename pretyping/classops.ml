@@ -60,9 +60,9 @@ let coe_info_typ_equal c1 c2 =
 
 let cl_typ_ord t1 t2 = match t1, t2 with
   | CL_SECVAR v1, CL_SECVAR v2 -> Id.compare v1 v2
-  | CL_CONST c1, CL_CONST c2 -> con_user_ord c1 c2
-  | CL_PROJ c1, CL_PROJ c2 -> con_user_ord c1 c2
-  | CL_IND i1, CL_IND i2 -> ind_user_ord i1 i2
+  | CL_CONST c1, CL_CONST c2 -> con_ord c1 c2
+  | CL_PROJ c1, CL_PROJ c2 -> con_ord c1 c2
+  | CL_IND i1, CL_IND i2 -> ind_ord i1 i2
   | _ -> Pervasives.compare t1 t2 (** OK *)
 
 module ClTyp = struct

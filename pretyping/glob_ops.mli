@@ -13,6 +13,9 @@ open Glob_term
 
 val cases_pattern_eq : cases_pattern -> cases_pattern -> bool
 
+val cast_type_eq : ('a -> 'a -> bool) ->
+  'a Misctypes.cast_type -> 'a Misctypes.cast_type -> bool
+
 val glob_constr_eq : glob_constr -> glob_constr -> bool
 
 (** Operations on [glob_constr] *)

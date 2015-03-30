@@ -79,7 +79,7 @@ type vprod
 type vfun
 type vfix
 type vcofix
-type vblock
+type vblock 
 type arguments
 
 type vm_env
@@ -224,10 +224,9 @@ let whd_val : values -> whd =
 	   | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
 	   | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
 	   | _ -> Errors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work"))
-	else Vconstr_block(Obj.obj o)
-
-
-
+	else 
+          Vconstr_block(Obj.obj o)
+         
 (************************************************)
 (* Abstrct machine ******************************)
 (************************************************)
@@ -518,8 +517,13 @@ let type_of_switch sw =
 let branch_arg k (tag,arity) =
   if Int.equal arity 0 then  ((Obj.magic tag):values)
   else
-    let b = Obj.new_block tag arity in
-    for i = 0 to arity - 1 do
+    let b, ofs = 
+      if tag < last_variant_tag then Obj.new_block tag arity, 0
+      else
+        let b = Obj.new_block last_variant_tag (arity+1) in
+        Obj.set_field b 0 (Obj.repr (tag-last_variant_tag));
+        b,1 in
+    for i = ofs to ofs + arity - 1 do
       Obj.set_field b i (Obj.repr (val_of_rel (k+i)))
     done;
     val_of_obj b

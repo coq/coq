@@ -617,14 +617,17 @@ let rec tmpp v loc =
   | VernacBeginSection (_, id) -> xmlBeginSection loc (Id.to_string id)
   | VernacEndSegment (_, id) -> xmlEndSegment loc (Id.to_string id)
   | VernacNameSectionHypSet _ as x -> xmlTODO loc x
-  | VernacRequire (None,l) ->
-      xmlRequire loc (List.map (fun ref ->
-        xmlReference ref) l)
-  | VernacRequire (Some true,l) ->
-      xmlRequire loc ~attr:["export","true"] (List.map (fun ref ->
-        xmlReference ref) l)
-  | VernacRequire (Some false,l) ->
-      xmlRequire loc ~attr:["import","true"] (List.map (fun ref ->
+  | VernacRequire (from, import, l) ->
+      let import = match import with
+      | None -> []
+      | Some true -> ["export","true"]
+      | Some false -> ["import","true"]
+      in
+      let from = match from with
+      | None -> []
+      | Some r -> ["from", Libnames.string_of_reference r]
+      in
+      xmlRequire loc ~attr:(from @ import) (List.map (fun ref ->
         xmlReference ref) l)
   | VernacImport (true,l) ->
       xmlImport loc ~attr:["export","true"] (List.map (fun ref ->
