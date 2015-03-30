@@ -437,7 +437,7 @@ let match_eq_nf gls eqn eq_pat =
   match Id.Map.bindings (pf_matches gls (Lazy.force eq_pat) eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
-	(t,pf_whd_betadeltaiota gls x,pf_whd_betadeltaiota gls y)
+	(t,pf_whd_all gls x,pf_whd_all gls y)
     | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 terms")
 
 let dest_nf_eq gls eqn =

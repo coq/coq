@@ -208,7 +208,7 @@ let prove_trivial_eq h_id context (constructor,type_of_term,term) =
 
 
 let find_rectype env c =
-  let (t, l) = decompose_app (Reduction.whd_betaiotazeta env c) in
+  let (t, l) = decompose_app (Reduction.whd_all_nodelta env c) in
   match kind_of_term t with
   | Ind ind -> (t, l)
   | Construct _ -> (t,l)
@@ -222,10 +222,10 @@ let isAppConstruct ?(env=Global.env ()) t =
     true
   with Not_found -> false
 
-let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
+let nf_all_nodelta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
   let clos_norm_flags flgs env sigma t =
     Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
-  clos_norm_flags Closure.betaiotazeta  Environ.empty_env Evd.empty
+  clos_norm_flags Closure.all_nodelta  Environ.empty_env Evd.empty
 
 
 
@@ -282,7 +282,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	  List.fold_left2 compute_substitution sub args1 args2
 	end
       else
-	if (eq_constr t1 t2) then sub else nochange ~t':(make_refl_eq constructor (Reduction.whd_betadeltaiota env t1) t2)  "cannot solve (diff)"
+	if (eq_constr t1 t2) then sub else nochange ~t':(make_refl_eq constructor (Reduction.whd_all env t1) t2)  "cannot solve (diff)"
     in
     let sub = compute_substitution Int.Map.empty (snd t1) (snd t2) in
     let sub = compute_substitution sub (fst t1) (fst t2) in
@@ -317,7 +317,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	context
     in
     let new_type_of_hyp =
-      Reductionops.nf_betaiota Evd.empty new_type_of_hyp in
+      Reductionops.nf_betaiotarec Evd.empty new_type_of_hyp in
     let new_ctxt,new_end_of_type =
       decompose_prod_n_assum ctxt_size new_type_of_hyp
     in
@@ -412,7 +412,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
   let rec scan_type  context type_of_hyp : tactic =
     if isLetIn type_of_hyp then
       let real_type_of_hyp = it_mkProd_or_LetIn type_of_hyp context in
-      let reduced_type_of_hyp = nf_betaiotazeta real_type_of_hyp in
+      let reduced_type_of_hyp = nf_all_nodelta real_type_of_hyp in
       (* length of context didn't change ? *)
       let new_context,new_typ_of_hyp =
 	 decompose_prod_n_assum (List.length context) reduced_type_of_hyp
@@ -610,7 +610,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 		    Termops.replace_term term (mkRel 1) dyn_infos.info
 		   )
 	 in
-	 let new_body = pf_nf_betaiota g' (mkApp(fun_body,[| new_term_value |])) in
+	 let new_body = pf_nf_betaiotarec g' (mkApp(fun_body,[| new_term_value |])) in
 	 let new_infos =
 	   {dyn_infos with
 	      info = new_body;
@@ -738,7 +738,7 @@ let build_proof
 			(fun g' ->
 			   let (id,_,_) = pf_last_hyp g' in
 			   let new_term =
-			     pf_nf_betaiota g'
+			     pf_nf_betaiotarec g'
 			       (mkApp(dyn_infos.info,[|mkVar id|]))
 			   in
 			   let new_infos = {dyn_infos with info = new_term} in
@@ -789,7 +789,7 @@ let build_proof
 			g
 		  | LetIn _ ->
 		      let new_infos =
-			{ dyn_infos with info = nf_betaiotazeta dyn_infos.info }
+			{ dyn_infos with info = nf_all_nodelta dyn_infos.info }
 		      in
 
 		      tclTHENLIST
@@ -822,7 +822,7 @@ let build_proof
 	  | LetIn _ ->
 	      let new_infos =
 		{ dyn_infos with
-		    info = nf_betaiotazeta dyn_infos.info
+		    info = nf_all_nodelta dyn_infos.info
 		}
 	      in
 
@@ -961,7 +961,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
 (*   observe (str "body " ++ pr_lconstr bodies.(num)); *)
   let f_body_with_params_and_other_fun  = substl fnames_with_params bodies.(num) in
 (*   observe (str "f_body_with_params_and_other_fun " ++  pr_lconstr f_body_with_params_and_other_fun); *)
-  let eq_rhs = nf_betaiotazeta (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
+  let eq_rhs = nf_all_nodelta (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
   (*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
   let (type_ctxt,type_of_f),evd =
     let evd,t = Typing.type_of ~refresh:true (Global.env ()) evd f
@@ -1140,7 +1140,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 	    let bodies_with_all_params =
 	      Array.map
 		(fun body ->
-		   Reductionops.nf_betaiota Evd.empty
+		   Reductionops.nf_betaiotarec Evd.empty
 		     (applist(substl (List.rev (Array.to_list all_funs_with_full_params)) body,
 			      List.rev_map var_of_decl princ_params))
 		)
@@ -1177,12 +1177,12 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		   let body_with_param,num =
 		     let body = get_body fnames.(i) in
 		     let body_with_full_params =
-		       Reductionops.nf_betaiota Evd.empty (
+		       Reductionops.nf_betaiotarec Evd.empty (
 			 applist(body,List.rev_map var_of_decl full_params))
 		     in
 		     match kind_of_term body_with_full_params with
 		       | Fix((_,num),(_,_,bs)) ->
-			       Reductionops.nf_betaiota Evd.empty
+			       Reductionops.nf_betaiotarec Evd.empty
 				 (
 				   (applist
 				      (substl
@@ -1265,7 +1265,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		     nb_rec_hyps = -100;
 		     rec_hyps = [];
 		     info =
-		       Reductionops.nf_betaiota Evd.empty
+		       Reductionops.nf_betaiotarec Evd.empty
 			 (applist(fix_body,List.rev_map mkVar args_id));
 		     eq_hyps = []
 		   }
@@ -1324,7 +1324,7 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
 		     nb_rec_hyps = -100;
 		     rec_hyps = [];
 		     info =
-		       Reductionops.nf_betaiota Evd.empty
+		       Reductionops.nf_betaiotarec Evd.empty
 			 (applist(fbody_with_full_params,
 				  (List.rev_map var_of_decl princ_params)@
 				    (List.rev_map mkVar args_id)

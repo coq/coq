@@ -40,7 +40,7 @@ let is_indices_matter () = !indices_matter
 let weaker_noccur_between env x nvars t =
   if noccur_between x nvars t then Some t
   else
-   let t' = whd_betadeltaiota env t in
+   let t' = whd_all env t in
    if noccur_between x nvars t' then Some t'
    else None
 
@@ -119,7 +119,7 @@ let is_unit constrsinfos =
 
 let infos_and_sort env t =
   let rec aux env t max =
-    let t = whd_betadeltaiota env t in
+    let t = whd_all env t in
       match kind_of_term t with
       | Prod (name,c1,c2) ->
         let varj = infer_type env c1 in
@@ -394,7 +394,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
     | [] -> ()
     | (_,Some _,_)::hyps -> check k (index+1) hyps
     | _::hyps ->
-        match kind_of_term (whd_betadeltaiota env lpar.(k)) with
+        match kind_of_term (whd_all env lpar.(k)) with
 	  | Rel w when Int.equal w index -> check (k-1) (index+1) hyps
 	  | _ -> raise (IllFormedInd (LocalNonPar (k+1, index-n+nhyps+1, l)))
   in check (nparams-1) (n-nhyps) hyps;
@@ -416,7 +416,7 @@ if Int.equal nmr 0 then 0 else
 	| (_,[]) -> assert false (* |hyps|>=nmr *)
 	| (lp,(_,Some _,_)::hyps) -> find k (index-1) (lp,hyps)
 	| (p::lp,_::hyps) ->
-       ( match kind_of_term (whd_betadeltaiota env p) with
+       ( match kind_of_term (whd_all env p) with
 	  | Rel w when Int.equal w index -> find (k+1) (index-1) (lp,hyps)
           | _ -> k)
   in find 0 (n-1) (lpar,List.rev hyps)
@@ -446,7 +446,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lpar) =
 
 let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
   if Int.equal n 0 then (ienv,c) else
-    let c' = whd_betadeltaiota env c in
+    let c' = whd_all env c in
     match kind_of_term c' with
 	Prod(na,a,b) ->
 	  let ienv' = ienv_push_var ienv (na,a,mk_norec) in
@@ -471,7 +471,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
       constructor [cn] has a type of the shape [… -> c … -> P], where,
       more generally, the arrows may be dependent). *)
   let rec check_pos (env, n, ntypes, ra_env as ienv) nmr c =
-    let x,largs = decompose_app (whd_betadeltaiota env c) in
+    let x,largs = decompose_app (whd_all env c) in
       match kind_of_term x with
 	| Prod (na,b,d) ->
 	    let () = assert (List.is_empty largs) in
@@ -486,7 +486,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 	          check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d)
 	| Rel k ->
             (try let (ra,rarg) = List.nth ra_env (k-1) in
-            let largs = List.map (whd_betadeltaiota env) largs in
+            let largs = List.map (whd_all env) largs in
 	    let nmr1 =
 	      (match ra with
                   Mrec _ -> compute_rec_par ienv hyps nmr largs
@@ -574,7 +574,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
       inductive type. *)
   and check_constructors ienv check_head nmr c =
     let rec check_constr_rec (env,n,ntypes,ra_env as ienv) nmr lrec c =
-      let x,largs = decompose_app (whd_betadeltaiota env c) in
+      let x,largs = decompose_app (whd_all env c) in
 	match kind_of_term x with
 
           | Prod (na,b,d) ->

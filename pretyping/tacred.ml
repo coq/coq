@@ -239,7 +239,7 @@ let invert_name labs l na0 env sigma ref = function
 		| None -> None
 		| Some c ->
 		    let labs',ccl = decompose_lam c in
-		    let _, l' = whd_betalet_stack sigma ccl in
+		    let _, l' = whd_betazeta_stack sigma ccl in
 		    let labs' = List.map snd labs' in
 		    (** ppedrot: there used to be generic equality on terms here *)
 		    if List.equal eq_constr labs' labs &&
@@ -255,7 +255,7 @@ let invert_name labs l na0 env sigma ref = function
 
 let compute_consteval_direct env sigma ref =
   let rec srec env n labs onlyproj c =
-    let c',l = whd_betadelta_stack env sigma c in
+    let c',l = whd_betadeltazeta_stack env sigma c in
     match kind_of_term c' with
       | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
 	  srec (push_rel (id,None,t) env) (n+1) (t::labs) onlyproj g
@@ -273,7 +273,7 @@ let compute_consteval_direct env sigma ref =
 
 let compute_consteval_mutual_fix env sigma ref =
   let rec srec env minarg labs ref c =
-    let c',l = whd_betalet_stack sigma c in
+    let c',l = whd_betazeta_stack sigma c in
     let nargs = List.length l in
     match kind_of_term c' with
       | Lambda (na,t,g) when List.is_empty l ->
@@ -404,7 +404,7 @@ let solve_arity_problem env sigma fxminargs c =
   let evm = ref sigma in
   let set_fix i = evm := Evd.define i (mkVar vfx) !evm in
   let rec check strict c =
-    let c' = whd_betaiotazeta sigma c in
+    let c' = whd_all_nodelta sigma c in
     let (h,rcargs) = decompose_app c' in
     match kind_of_term h with
         Evar(i,_) when Evar.Map.mem i fxminargs && not (Evd.is_defined !evm i) ->
@@ -674,7 +674,7 @@ let rec red_elim_const env sigma ref u largs =
 	  if evaluable_reference_eq ref refgoal then
 	    (c,args)
 	  else
-	    let c', lrest = whd_betalet_stack sigma (applist(c,args)) in
+	    let c', lrest = whd_betazeta_stack sigma (applist(c,args)) in
 	    descend (destEvalRefU c') lrest in
 	let (_, midargs as s) = descend (ref,u) largs in
 	let d, lrest = whd_nothing_for_iota env sigma (applist s) in
@@ -685,11 +685,11 @@ let rec red_elim_const env sigma ref u largs =
 	   | Reduced (c,rest) -> (nf_beta sigma c, rest), nocase)
     | NotAnElimination when unfold_nonelim ->
          let c = reference_value env sigma ref u in
-           (whd_betaiotazeta sigma (applist (c, largs)), []), nocase
+           (whd_all_nodelta sigma (applist (c, largs)), []), nocase
     | _ -> raise Redelimination
     with Redelimination when unfold_anyway ->
        let c = reference_value env sigma ref u in
-	 (whd_betaiotazeta sigma (applist (c, largs)), []), nocase
+	 (whd_all_nodelta sigma (applist (c, largs)), []), nocase
 
 and reduce_params env sigma stack l =
   let len = List.length stack in
@@ -793,9 +793,9 @@ and whd_construct_stack env sigma s =
 *)
 
 let try_red_product env sigma c =
-  let simpfun = clos_norm_flags betaiotazeta env sigma in
+  let simpfun = clos_norm_flags all_nodelta env sigma in
   let rec redrec env x =
-    let x = whd_betaiota sigma x in
+    let x = whd_betaiotarec sigma x in
     match kind_of_term x with
       | App (f,l) ->
           (match kind_of_term f with
@@ -819,7 +819,7 @@ let try_red_product env sigma c =
 	  | _ -> redrec env c
 	in
 	let pb = lookup_projection p env in
-          (match reduce_projection env sigma pb (whd_betaiotazeta_stack sigma c') [] with
+          (match reduce_projection env sigma pb (whd_all_nodelta_stack sigma c') [] with
 	  | Reduced s -> simpfun (applist s)
 	  | NotReducible -> raise Redelimination)
       | _ -> 
@@ -920,7 +920,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
       | _ -> redrec (applist(c, stack)))
     | None -> s'
   in
-  let simpfun = clos_norm_flags betaiota env sigma in
+  let simpfun = clos_norm_flags betaiotarec env sigma in
   simpfun (applist (redrec c))
 
 let hnf_constr = whd_simpl_orelse_delta_but_fix
@@ -1073,7 +1073,7 @@ let unfoldoccs env sigma (occs,name) c =
     | [] -> ()
     | _ -> error_invalid_occurrence rest
     in
-    nf_betaiotazeta sigma uc
+    nf_all_nodelta sigma uc
   in
   match occs with
     | NoOccurrences -> c
@@ -1111,10 +1111,10 @@ let cbv_norm_flags flags env sigma t =
   cbv_norm (create_cbv_infos flags env sigma) t
 
 let cbv_beta = cbv_norm_flags beta empty_env
-let cbv_betaiota = cbv_norm_flags betaiota empty_env
-let cbv_betadeltaiota env sigma =  cbv_norm_flags betadeltaiota env sigma
+let cbv_betaiota = cbv_norm_flags betaiotarec empty_env
+let cbv_all env sigma =  cbv_norm_flags all env sigma
 
-let compute = cbv_betadeltaiota
+let compute = cbv_all
 
 (* Pattern *)
 
@@ -1170,7 +1170,7 @@ let reduce_to_ind_gen allow_product env sigma t =
       | _ ->
 	  (* Last chance: we allow to bypass the Opaque flag (as it
 	     was partially the case between V5.10 and V8.1 *)
-	  let t' = whd_betadeltaiota env sigma t in
+	  let t' = whd_all env sigma t in
 	  match kind_of_term (fst (decompose_app t')) with
 	    | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t' l)
 	    | _ -> errorlabstrm "" (str"Not an inductive product.")
@@ -1251,7 +1251,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
 	    else raise Not_found
 	  with Not_found ->
           try
-	    let t' = nf_betaiota sigma (one_step_reduce env sigma t) in
+	    let t' = nf_betaiotarec sigma (one_step_reduce env sigma t) in
             elimrec env t' l
           with NotStepReducible -> error_cannot_recognize ref
   in

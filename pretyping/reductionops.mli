@@ -147,9 +147,9 @@ val clos_norm_flags : Closure.RedFlags.reds -> reduction_function
 
 (** Same as [(strong whd_beta[delta][iota])], but much faster on big terms *)
 val nf_beta : local_reduction_function
-val nf_betaiota : local_reduction_function
-val nf_betaiotazeta : local_reduction_function
-val nf_betadeltaiota : reduction_function
+val nf_betaiotarec : local_reduction_function
+val nf_all_nodelta : local_reduction_function
+val nf_all : reduction_function
 val nf_evar : evar_map -> constr -> constr
 
 (** Lazy strategy, weak head reduction *)
@@ -157,46 +157,47 @@ val nf_evar : evar_map -> constr -> constr
 val whd_evar :  evar_map -> constr -> constr
 val whd_nored : local_reduction_function
 val whd_beta : local_reduction_function
-val whd_betaiota : local_reduction_function
-val whd_betaiotazeta : local_reduction_function
-val whd_betadeltaiota :  contextual_reduction_function
-val whd_betadeltaiota_nolet :  contextual_reduction_function
-val whd_betaetalet : local_reduction_function
-val whd_betalet : local_reduction_function
+val whd_betaiotarec : local_reduction_function
+val whd_all_nodelta : local_reduction_function
+val whd_all :  contextual_reduction_function
+val whd_all_nolet :  contextual_reduction_function
+val whd_betaetazeta : local_reduction_function
+val whd_betazeta : local_reduction_function
 
 (** Removes cast and put into applicative form *)
 val whd_nored_stack : local_stack_reduction_function
 val whd_beta_stack : local_stack_reduction_function
-val whd_betaiota_stack : local_stack_reduction_function
-val whd_betaiotazeta_stack : local_stack_reduction_function
-val whd_betadeltaiota_stack : contextual_stack_reduction_function
-val whd_betadeltaiota_nolet_stack : contextual_stack_reduction_function
-val whd_betaetalet_stack : local_stack_reduction_function
-val whd_betalet_stack : local_stack_reduction_function
+val whd_betaiotarec_stack : local_stack_reduction_function
+val whd_all_nodelta_stack : local_stack_reduction_function
+val whd_all_stack : contextual_stack_reduction_function
+val whd_all_nolet_stack : contextual_stack_reduction_function
+val whd_betaetazeta_stack : local_stack_reduction_function
+val whd_betazeta_stack : local_stack_reduction_function
 
 val whd_nored_state : local_state_reduction_function
 val whd_beta_state : local_state_reduction_function
-val whd_betaiota_state : local_state_reduction_function
-val whd_betaiotazeta_state : local_state_reduction_function
-val whd_betadeltaiota_state : contextual_state_reduction_function
-val whd_betadeltaiota_nolet_state : contextual_state_reduction_function
-val whd_betaetalet_state : local_state_reduction_function
-val whd_betalet_state : local_state_reduction_function
+val whd_betaiotarec_state : local_state_reduction_function
+val whd_all_nodelta_state : local_state_reduction_function
+val whd_all_state : contextual_state_reduction_function
+val whd_all_nolet_state : contextual_state_reduction_function
+val whd_betaetazeta_state : local_state_reduction_function
+val whd_betazeta_state : local_state_reduction_function
 
 (** {6 Head normal forms } *)
 
 val whd_delta_stack :  stack_reduction_function
 val whd_delta_state :  state_reduction_function
 val whd_delta :  reduction_function
-val whd_betadelta_stack :  stack_reduction_function
-val whd_betadelta_state :  state_reduction_function
-val whd_betadelta :  reduction_function
-val whd_betadeltaeta_stack :  stack_reduction_function
-val whd_betadeltaeta_state :  state_reduction_function
-val whd_betadeltaeta :  reduction_function
-val whd_betadeltaiotaeta_stack :  stack_reduction_function
-val whd_betadeltaiotaeta_state :  state_reduction_function
-val whd_betadeltaiotaeta :  reduction_function
+val whd_betadeltazeta_stack :  stack_reduction_function
+val whd_betadeltazeta_state :  state_reduction_function
+val whd_betadeltazeta :  reduction_function
+val whd_betadeltazetaeta_stack :  stack_reduction_function
+val whd_betadeltazetaeta_state :  state_reduction_function
+val whd_betadeltazetaeta :  reduction_function
+
+val whd_all_and_eta_stack :  stack_reduction_function
+val whd_all_and_eta_state :  state_reduction_function
+val whd_all_and_eta :  reduction_function
 
 val whd_eta : constr -> constr
 val whd_zeta : constr -> constr

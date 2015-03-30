@@ -104,7 +104,7 @@ let find_mutually_recursive_statements thms =
       (* Cofixpoint or fixpoint w/o explicit decreasing argument *)
       | None | Some (None, CStructRec) ->
       let whnf_hyp_hds = map_rel_context_in_env
-        (fun env c -> fst (whd_betadeltaiota_stack env Evd.empty c))
+        (fun env c -> fst (whd_all_stack env Evd.empty c))
         (Global.env()) hyps in
       let ind_hyps =
         List.flatten (List.map_i (fun i (_,b,t) ->
@@ -117,7 +117,7 @@ let find_mutually_recursive_statements thms =
               []) 0 (List.rev whnf_hyp_hds)) in
       let ind_ccl =
         let cclenv = push_rel_context hyps (Global.env()) in
-        let whnf_ccl,_ = whd_betadeltaiota_stack cclenv Evd.empty ccl in
+        let whnf_ccl,_ = whd_all_stack cclenv Evd.empty ccl in
         match kind_of_term whnf_ccl with
         | Ind ((kn,_ as ind),u) when
               let mind = Global.lookup_mind kn in

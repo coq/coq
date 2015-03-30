@@ -95,7 +95,7 @@ let lookup_map map =
     errorlabstrm"lookup_map"(str"map "++qs map++str"not found")
 
 let protect_red map env sigma c =
-  kl (create_clos_infos betadeltaiota env)
+  kl (create_clos_infos all env)
     (mk_clos_but (lookup_map map c) (Esubst.subs_id 0) c);;
 
 let protect_tac map =

@@ -43,6 +43,8 @@ module type RedFlagsSig = sig
   val fETA : red_kind
   (** This flag is never used by the kernel reduction but pretyping does *)
   val fIOTA : red_kind
+  val fPHI : red_kind
+  val fPSI : red_kind
   val fZETA : red_kind
   val fCONST : constant -> red_kind
   val fVAR : Id.t -> red_kind
@@ -74,10 +76,14 @@ module RedFlags : RedFlagsSig
 open RedFlags
 
 val beta               : reds
-val betaiota           : reds
-val betadeltaiota      : reds
-val betaiotazeta       : reds
-val betadeltaiotanolet : reds
+val betaiotarec        : reds
+val betaiotanorec      : reds
+val betadeltaiotanorec : reds
+val betaiotazetanorec  : reds
+val all_nodelta    : reds
+val betadeltaiotanoletnorec : reds
+val all : reds
+val allnolet : reds
 
 val unfold_side_red : reds
 val unfold_red : evaluable_global_reference -> reds

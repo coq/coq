@@ -152,7 +152,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
   let nparams = List.length vargs in
   let process_pos env depK pk =
     let rec prec env i sign p =
-      let p',largs = whd_betadeltaiota_nolet_stack env sigma p in
+      let p',largs = whd_all_nolet_stack env sigma p in
       match kind_of_term p' with
 	| Prod (n,t,c) ->
 	    let d = (n,None,t) in
@@ -227,7 +227,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
   let process_pos env fk  =
     let rec prec env i hyps p =
-      let p',largs = whd_betadeltaiota_nolet_stack env sigma p in
+      let p',largs = whd_all_nolet_stack env sigma p in
       match kind_of_term p' with
 	| Prod (n,t,c) ->
 	    let d = (n,None,t) in

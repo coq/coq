@@ -66,12 +66,12 @@ let nf_evar = Reductionops.nf_evar
 let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;
     uj_type = nf_evar sigma j.uj_type }
-let j_nf_betaiotaevar sigma j =
+let j_nf_betaiotarecevar sigma j =
   { uj_val = nf_evar sigma j.uj_val;
-    uj_type = Reductionops.nf_betaiota sigma j.uj_type }
+    uj_type = Reductionops.nf_betaiotarec sigma j.uj_type }
 let jl_nf_evar sigma jl = List.map (j_nf_evar sigma) jl
-let jv_nf_betaiotaevar sigma jl =
-  Array.map (j_nf_betaiotaevar sigma) jl
+let jv_nf_betaiotarecevar sigma jl =
+  Array.map (j_nf_betaiotarecevar sigma) jl
 let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
 let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
@@ -80,10 +80,10 @@ let env_nf_evar sigma env =
   process_rel_context
     (fun d e -> push_rel (map_rel_declaration (nf_evar sigma) d) e) env
 
-let env_nf_betaiotaevar sigma env =
+let env_nf_betaiotarecevar sigma env =
   process_rel_context
     (fun d e ->
-      push_rel (map_rel_declaration (Reductionops.nf_betaiota sigma) d) e) env
+      push_rel (map_rel_declaration (Reductionops.nf_betaiotarec sigma) d) e) env
 
 let nf_evars_universes evm =
   Universes.nf_evars_and_universes_opt_subst (Reductionops.safe_evar_value evm) 
@@ -713,7 +713,7 @@ let define_pure_evar_as_product evd evk =
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
   let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
-  let concl = whd_betadeltaiota evenv evd evi.evar_concl in
+  let concl = whd_all evenv evd evi.evar_concl in
   let s = destSort concl in
   let evd1,(dom,u1) =
     new_type_evar evenv evd univ_flexible_alg ~filter:(evar_filter evi) in
@@ -759,7 +759,7 @@ let define_evar_as_product evd (evk,args) =
 let define_pure_evar_as_lambda env evd evk =
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
-  let typ = whd_betadeltaiota evenv evd (evar_concl evi) in
+  let typ = whd_all evenv evd (evar_concl evi) in
   let evd1,(na,dom,rng) = match kind_of_term typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
   | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd typ
@@ -797,7 +797,7 @@ let define_evar_as_sort env evd (ev,args) =
   let evd, u = new_univ_variable univ_rigid evd in
   let evi = Evd.find_undefined evd ev in 
   let s = Type u in
-  let concl = whd_betadeltaiota (evar_env evi) evd evi.evar_concl in
+  let concl = whd_all (evar_env evi) evd evi.evar_concl in
   let sort = destSort concl in
   let evd' = Evd.define ev (mkSort s) evd in
   Evd.set_leq_sort env evd' (Type (Univ.super u)) sort, s
@@ -816,10 +816,10 @@ let judge_of_new_Type evd =
 
 let split_tycon loc env evd tycon =
   let rec real_split evd c =
-    let t = whd_betadeltaiota env evd c in
+    let t = whd_all env evd c in
       match kind_of_term t with
 	| Prod (na,dom,rng) -> evd, (na, dom, rng)
-	| Evar ev (* ev is undefined because of whd_betadeltaiota *) ->
+	| Evar ev (* ev is undefined because of whd_all *) ->
 	    let (evd',prod) = define_evar_as_product evd ev in
 	    let (_,dom,rng) = destProd prod in
 	      evd',(Anonymous, dom, rng)
