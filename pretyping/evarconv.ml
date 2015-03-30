@@ -391,15 +391,15 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       |None, Success i' -> switch (evar_conv_x ts env i' pbty) termF termO
       |_, (UnifFailure _ as x) -> x
       |Some _, _ -> UnifFailure (evd,NotSameArgSize) in
-  let eta env evd onleft sk term sk' term' =
-    assert (match sk with [] -> true | _ -> false);
-    let (na,c1,c'1) = destLambda term in
+  let eta env evd onleft (termR,skR) (termO,skO) =
+    assert (match skR with [] -> true | _ -> false);
+    let (na,c1,c'1) = destLambda termR in
     let c = nf_evar evd c1 in
     let env' = push_rel (na,None,c) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
       (fst ts) env' evd Cst_stack.empty (c'1, Stack.empty) in
     let out2 = whd_nored_state evd
-      (Stack.zip (term', sk' @ [Stack.Shift 1]), Stack.append_app [|mkRel 1|] Stack.empty), 
+      (Stack.zip (termO, skO @ [Stack.Shift 1]), Stack.append_app [|mkRel 1|] Stack.empty),
       Cst_stack.empty in
     if onleft then evar_eqappr_x ts env' evd CONV out1 out2
     else evar_eqappr_x ts env' evd CONV out2 out1
@@ -468,7 +468,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let switch f a b = if on_left then f a b else f b a in
     let eta evd =
              match kind_of_term termR with
-	     | Lambda _ -> eta env evd false skR termR skF termF
+	     | Lambda _ -> eta env evd false apprR apprF
 	     | Construct u -> eta_constructor ts env evd skR u skF termF
 	     | _ -> UnifFailure (evd,NotSameHead)
     in
@@ -712,10 +712,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 
     (* Eta-expansion *)
     | Rigid, _ when isLambda term1 ->
-        eta env evd true sk1 term1 sk2 term2
+        eta env evd true appr1 appr2
 
     | _, Rigid when isLambda term2 ->
-        eta env evd false sk2 term2 sk1 term1
+        eta env evd false appr2 appr1
 
     | Rigid, Rigid -> begin
         match kind_of_term term1, kind_of_term term2 with
