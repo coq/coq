@@ -469,7 +469,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let eta evd =
              match kind_of_term termR with
 	     | Lambda _ -> eta env evd false apprR apprF
-	     | Construct u -> eta_constructor ts env evd skR u skF termF
+	     | Construct u -> eta_constructor ts env evd (u,skR) apprF
 	     | _ -> UnifFailure (evd,NotSameHead)
     in
     let postpone tR lF evd =
@@ -755,10 +755,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  rigids env evd sk1 term1 sk2 term2
 
 	| Construct u, _ ->
-	  eta_constructor ts env evd sk1 u sk2 term2
+	  eta_constructor ts env evd (u,sk1) appr2
 	    
 	| _, Construct u ->
-	  eta_constructor ts env evd sk2 u sk1 term1
+	  eta_constructor ts env evd (u,sk2) appr1
 
 	| Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
 	  if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
@@ -854,7 +854,7 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
 	 (fst (decompose_app_vect (substl ks h))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
-and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
+and eta_constructor ts env evd (((ind, i), u),sk1) (term2,sk2) =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
     | Some (Some (id, projs, pbs)) when mib.Declarations.mind_finite <> Decl_kinds.CoFinite -> 
