@@ -78,10 +78,10 @@ let pf_eapply f gls x =
 let pf_reduce = pf_apply
 let pf_e_reduce = pf_apply
 
-let pf_whd_betadeltaiota         = pf_reduce whd_betadeltaiota
+let pf_whd_all                   = pf_reduce whd_all
 let pf_hnf_constr                = pf_reduce hnf_constr
 let pf_nf                        = pf_reduce simpl
-let pf_nf_betaiota               = pf_reduce (fun _ -> nf_betaiota)
+let pf_nf_betaiotarec            = pf_reduce (fun _ -> nf_betaiotarec)
 let pf_compute                   = pf_reduce compute
 let pf_unfoldn ubinds            = pf_reduce (unfoldn ubinds)
 let pf_unsafe_type_of            = pf_reduce unsafe_type_of
@@ -95,7 +95,7 @@ let pf_const_value              = pf_reduce (fun env _ -> constant_value_in env)
 let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
-let pf_hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_get_type_of gls)
+let pf_hnf_type_of gls = compose (pf_whd_all gls) (pf_get_type_of gls)
 
 let pf_is_matching              = pf_apply Constr_matching.is_matching_conv
 let pf_matches                  = pf_apply Constr_matching.matches_conv
@@ -223,7 +223,7 @@ module New = struct
     let sigma = project gl in
     nf_evar sigma concl
 
-  let pf_whd_betadeltaiota gl t = pf_apply whd_betadeltaiota gl t
+  let pf_whd_all gl t = pf_apply whd_all gl t
 
   let pf_get_type_of gl t = pf_apply Retyping.get_type_of gl t
 
@@ -232,11 +232,10 @@ module New = struct
 
   let pf_hnf_constr gl t = pf_apply hnf_constr gl t
   let pf_hnf_type_of gl t =
-    pf_whd_betadeltaiota gl (pf_get_type_of gl t)
+    pf_whd_all gl (pf_get_type_of gl t)
 
   let pf_matches gl pat t = pf_apply Constr_matching.matches_conv gl pat t
 
-  let pf_whd_betadeltaiota gl t = pf_apply whd_betadeltaiota gl t
   let pf_compute gl t = pf_apply compute gl t
 
   let pf_nf_evar gl t = nf_evar (project gl) t

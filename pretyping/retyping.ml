@@ -61,7 +61,7 @@ let get_type_from_constraints env sigma t =
 let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
-      match kind_of_term (whd_betadeltaiota env sigma typ) with
+      match kind_of_term (whd_all env sigma typ) with
         | Prod (na,c1,c2) -> subst_type env sigma (subst1 h c2) rest
         | _ -> retype_error NonFunctionalConstruction
 
@@ -70,7 +70,7 @@ let rec subst_type env sigma typ = function
 
 let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity env n ar args =
-    match kind_of_term (whd_betadeltaiota env sigma ar), args with
+    match kind_of_term (whd_all env sigma ar), args with
     | Prod (na, t, b), h::l -> concl_of_arity (push_rel (na,Some (lift n h),t) env) (n + 1) b l
     | Sort s, [] -> s
     | _ -> retype_error NotASort
@@ -81,7 +81,7 @@ let type_of_var env id =
   with Not_found -> retype_error (BadVariable id)
 
 let decomp_sort env sigma t =
-  match kind_of_term (whd_betadeltaiota env sigma t) with
+  match kind_of_term (whd_all env sigma t) with
   | Sort s -> s
   | _ -> retype_error NotASort
 
@@ -111,7 +111,7 @@ let retype ?(polyprop=true) sigma =
         in
         let n = inductive_nrealdecls_env env (fst (fst (dest_ind_family indf))) in
         let t = betazetaevar_applist sigma n p realargs in
-        (match kind_of_term (whd_betadeltaiota env sigma (type_of env t)) with
+        (match kind_of_term (whd_all env sigma (type_of env t)) with
           | Prod _ -> whd_beta sigma (applist (t, [c]))
           | _ -> t)
     | Lambda (name,c1,c2) ->

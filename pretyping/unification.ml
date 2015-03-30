@@ -938,24 +938,24 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	    (match expand_key flags.modulo_delta curenv sigma cf1 with
 	    | Some c ->
 		unirec_rec curenvnb pb opt substn
-                  (whd_betaiotazeta sigma (mkApp(c,l1))) cN
+                  (whd_all_nodelta sigma (mkApp(c,l1))) cN
 	    | None ->
 		(match expand_key flags.modulo_delta curenv sigma cf2 with
 		| Some c ->
 		    unirec_rec curenvnb pb opt substn cM
-                      (whd_betaiotazeta sigma (mkApp(c,l2)))
+                      (whd_all_nodelta sigma (mkApp(c,l2)))
 		| None ->
 		    error_cannot_unify curenv sigma (cM,cN)))
 	| Some false ->
 	    (match expand_key flags.modulo_delta curenv sigma cf2 with
 	    | Some c ->
 		unirec_rec curenvnb pb opt substn cM
-                  (whd_betaiotazeta sigma (mkApp(c,l2)))
+                  (whd_all_nodelta sigma (mkApp(c,l2)))
 	    | None ->
 		(match expand_key flags.modulo_delta curenv sigma cf1 with
 		| Some c ->
 		    unirec_rec curenvnb pb opt substn
-                      (whd_betaiotazeta sigma (mkApp(c,l1))) cN
+                      (whd_all_nodelta sigma (mkApp(c,l1))) cN
 		| None ->
 		    error_cannot_unify curenv sigma (cM,cN)))
 
@@ -1164,7 +1164,7 @@ let applyHead env (type r) (evd : r Sigma.t) n c =
     if Int.equal n 0 then
       Sigma (c, evd, p)
     else
-      match kind_of_term (whd_betadeltaiota env (Sigma.to_evar_map evd) cty) with
+      match kind_of_term (whd_all env (Sigma.to_evar_map evd) cty) with
       | Prod (_,c1,c2) ->
         let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.ghost,Evar_kinds.GoalEvar) c1 in
 	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
@@ -1204,7 +1204,7 @@ let w_coerce env evd mv c =
 let unify_to_type env sigma flags c status u =
   let sigma, c = refresh_universes (Some false) env sigma c in
   let t = get_type_of env sigma (nf_meta sigma c) in
-  let t = nf_betaiota sigma (nf_meta sigma t) in
+  let t = nf_betaiotarec sigma (nf_meta sigma t) in
     unify_0 env sigma CUMUL flags t u
 
 let unify_type env sigma flags mv status c =
@@ -1307,7 +1307,7 @@ let w_merge env with_types flags (evd,metas,evars) =
     	  else
             let evd' =
               if occur_meta_evd evd mv c then
-                if isMetaOf mv (whd_betadeltaiota env evd c) then evd
+                if isMetaOf mv (whd_all env evd c) then evd
                 else error_cannot_unify env evd (mkMeta mv,c)
               else
 	        meta_assign mv (c,(status,TypeProcessed)) evd in

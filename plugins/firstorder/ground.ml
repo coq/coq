@@ -25,7 +25,7 @@ let update_flags ()=
     List.iter f (Classops.coercions ());
     red_flags:=
     Closure.RedFlags.red_add_transparent
-      Closure.betaiotazeta
+      Closure.all_nodelta
       (Names.Id.Pred.full,Names.Cpred.complement !predref)
 
 let ground_tac solver startseq gl=

@@ -38,6 +38,8 @@ let eta = ref 0
 let zeta = ref 0
 let evar = ref 0
 let iota = ref 0
+let phi = ref 0
+let psi = ref 0
 let prune = ref 0
 
 let reset () =
@@ -79,6 +81,8 @@ module type RedFlagsSig = sig
   val fDELTA : red_kind
   val fETA : red_kind
   val fIOTA : red_kind
+  val fPHI : red_kind
+  val fPSI : red_kind
   val fZETA : red_kind
   val fCONST : constant -> red_kind
   val fVAR : Id.t -> red_kind
@@ -103,14 +107,18 @@ module RedFlags = (struct
     r_eta : bool;
     r_const : transparent_state;
     r_zeta : bool;
-    r_iota : bool }
+    r_iota : bool;
+    r_phi : bool;
+    r_psi : bool }
 
-  type red_kind = BETA | DELTA | ETA | IOTA | ZETA
+  type red_kind = BETA | DELTA | ETA | IOTA | PHI | PSI | ZETA
 	      | CONST of constant | VAR of Id.t
   let fBETA = BETA
   let fDELTA = DELTA
   let fETA = ETA
   let fIOTA = IOTA
+  let fPHI = PHI
+  let fPSI = PSI
   let fZETA = ZETA
   let fCONST kn  = CONST kn
   let fVAR id  = VAR id
@@ -120,7 +128,9 @@ module RedFlags = (struct
     r_eta = false;
     r_const = all_opaque;
     r_zeta = false;
-    r_iota = false }
+    r_iota = false;
+    r_phi = false;
+    r_psi = false }
 
   let red_add red = function
     | BETA -> { red with r_beta = true }
@@ -130,6 +140,8 @@ module RedFlags = (struct
 	let (l1,l2) = red.r_const in
 	{ red with r_const = l1, Cpred.add kn l2 }
     | IOTA -> { red with r_iota = true }
+    | PHI -> { red with r_phi = true }
+    | PSI -> { red with r_psi = true }
     | ZETA -> { red with r_zeta = true }
     | VAR id ->
 	let (l1,l2) = red.r_const in
@@ -143,6 +155,8 @@ module RedFlags = (struct
  	let (l1,l2) = red.r_const in
 	{ red with r_const = l1, Cpred.remove kn l2 }
     | IOTA -> { red with r_iota = false }
+    | PHI -> { red with r_phi = false }
+    | PSI -> { red with r_psi = false }
     | ZETA -> { red with r_zeta = false }
     | VAR id ->
 	let (l1,l2) = red.r_const in
@@ -166,6 +180,8 @@ module RedFlags = (struct
 	incr_cnt c delta
     | ZETA -> incr_cnt red.r_zeta zeta
     | IOTA -> incr_cnt red.r_iota iota
+    | PHI -> incr_cnt red.r_phi phi
+    | PSI -> incr_cnt red.r_psi psi
     | DELTA -> (* Used for Rel/Var defined in context *)
 	incr_cnt red.r_delta delta
 
@@ -177,15 +193,19 @@ end : RedFlagsSig)
 
 open RedFlags
 
-let betadeltaiota = mkflags [fBETA;fDELTA;fZETA;fIOTA]
-let betadeltaiotanolet = mkflags [fBETA;fDELTA;fIOTA]
-let betaiota = mkflags [fBETA;fIOTA]
+let betadeltaiotanorec = mkflags [fBETA;fDELTA;fZETA;fIOTA]
+let all = mkflags [fBETA;fDELTA;fZETA;fIOTA;fPHI;fPSI]
+let betadeltaiotanoletnorec = mkflags [fBETA;fDELTA;fIOTA]
+let allnolet = mkflags [fBETA;fDELTA;fIOTA;fPHI;fPSI]
+let betaiotanorec = mkflags [fBETA;fIOTA]
+let betaiotarec = mkflags [fBETA;fIOTA;fPHI;fPSI]
 let beta = mkflags [fBETA]
-let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
+let betaiotazetanorec = mkflags [fBETA;fIOTA;fZETA]
+let all_nodelta = mkflags [fBETA;fIOTA;fPHI;fPSI;fZETA]
 
 (* Removing fZETA for finer behaviour would break many developments *)
-let unfold_side_flags = [fBETA;fIOTA;fZETA]
-let unfold_side_red = mkflags [fBETA;fIOTA;fZETA]
+let unfold_side_flags = [fBETA;fIOTA;fPHI;fPSI;fZETA]
+let unfold_side_red = mkflags [fBETA;fIOTA;fPHI;fPSI;fZETA]
 let unfold_red kn =
   let flag = match kn with
     | EvalVarRef id -> fVAR id
@@ -892,23 +912,27 @@ let rec knr info m stk =
       (match ref_value_cache info (RelKey k) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FConstruct((ind,c),u) when red_set info.i_flags fIOTA ->
+  | FConstruct((ind,c),u) ->
+      let use_iota = red_set info.i_flags fIOTA in
+      let use_phi = red_set info.i_flags fPHI in
+      if use_iota || use_phi then
       (match strip_update_shift_app m stk with
-        | (depth, args, ZcaseT(ci,_,br,e)::s) ->
+        | (depth, args, ZcaseT(ci,_,br,e)::s) when use_iota ->
             assert (ci.ci_npar>=0);
             let rargs = drop_parameters depth ci.ci_npar args in
             knit info e br.(c-1) (rargs@s)
-        | (_, cargs, Zfix(fx,par)::s) ->
+        | (_, cargs, Zfix(fx,par)::s) when use_phi ->
             let rarg = fapp_stack(m,cargs) in
             let stk' = par @ append_stack [|rarg|] s in
             let (fxe,fxbd) = contract_fix_vect fx.term in
             knit info fxe fxbd stk'
-	| (depth, args, Zproj (n, m, cst)::s) ->
+	| (depth, args, Zproj (n, m, cst)::s) when use_iota ->
 	    let rargs = drop_parameters depth n args in
 	    let rarg = project_nth_arg m rargs in
 	      kni info rarg s
         | (_,args,s) -> (m,args@s))
-  | FCoFix _ when red_set info.i_flags fIOTA ->
+      else (m,stk)
+  | FCoFix _ when red_set info.i_flags fPSI ->
       (match strip_update_shift_app m stk with
           (_, args, (((ZcaseT _|Zproj _)::_) as stk')) ->
             let (fxe,fxbd) = contract_fix_vect m.term in

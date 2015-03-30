@@ -62,7 +62,7 @@ type type_error =
 exception TypeError of env * type_error
 
 let nfj env {uj_val=c;uj_type=ct} =
-  {uj_val=c;uj_type=nf_betaiota env ct}
+  {uj_val=c;uj_type=nf_betaiotarec env ct}
 
 let error_unbound_rel env n =
   raise (TypeError (env, UnboundRel n))
@@ -90,7 +90,7 @@ let error_number_branches env cj expn =
 
 let error_ill_formed_branch env c i actty expty =
   raise (TypeError (env,
-    IllFormedBranch (c,i,nf_betaiota env actty, nf_betaiota env expty)))
+    IllFormedBranch (c,i,nf_betaiotarec env actty, nf_betaiotarec env expty)))
 
 let error_generalization env nvar c =
   raise (TypeError (env, Generalization (nvar,c)))

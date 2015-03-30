@@ -108,7 +108,7 @@ let mk_open_instance id idc gl m t=
       let typ=pf_unsafe_type_of gl idc in
 	(* since we know we will get a product,
 	   reduction is not too expensive *)
-      let (nam,_,_)=destProd (whd_betadeltaiota env evmap typ) in
+      let (nam,_,_)=destProd (whd_all env evmap typ) in
 	match nam with
 	    Name id -> id
 	  | Anonymous ->  dummy_bvid in

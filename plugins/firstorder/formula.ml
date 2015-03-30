@@ -18,7 +18,7 @@ open Globnames
 
 let qflag=ref true
 
-let red_flags=ref Closure.betaiotazeta
+let red_flags=ref Closure.all_nodelta
 
 let (=?) f g i1 i2 j1 j2=
   let c=f i1 i2 in

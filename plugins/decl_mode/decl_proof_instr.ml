@@ -67,11 +67,11 @@ let tcl_erase_info gls =
   tcl_change_info_gen info_gen gls
 
 let special_whd gl=
-  let infos=Closure.create_clos_infos Closure.betadeltaiota (pf_env gl) in
+  let infos=Closure.create_clos_infos Closure.all (pf_env gl) in
     (fun t -> Closure.whd_val infos (Closure.inject t))
 
 let special_nf gl=
-  let infos=Closure.create_clos_infos Closure.betaiotazeta (pf_env gl) in
+  let infos=Closure.create_clos_infos Closure.all_nodelta (pf_env gl) in
     (fun t -> Closure.norm_val infos (Closure.inject t))
 
 let is_good_inductive env ind =

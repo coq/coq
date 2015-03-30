@@ -70,7 +70,7 @@ val pattern_occs : (occurrences * constr) list -> env -> evar_map -> constr ->
 val cbv_norm_flags : Closure.RedFlags.reds ->  reduction_function
   val cbv_beta : local_reduction_function
   val cbv_betaiota : local_reduction_function
-  val cbv_betadeltaiota :  reduction_function
+  val cbv_all :  reduction_function
   val compute :  reduction_function  (** = [cbv_betadeltaiota] *)
 
 (** [reduce_to_atomic_ind env sigma t] puts [t] in the form [t'=(I args)]

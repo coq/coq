@@ -1029,7 +1029,7 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
   (* We need _parallel_ bindings to get gamma, x1...xn |- PI tms. ccl'' *)
   (* Note: applying the substitution in tms is not important (is it sure?) *)
   let ccl'' =
-    whd_betaiota Evd.empty (subst_predicate (realargsi, copti) ccl' tms) in
+    whd_betaiotarec Evd.empty (subst_predicate (realargsi, copti) ccl' tms) in
   (* We adjust ccl st: gamma, x'1..x'n, x1..xn, tms |- ccl'' *)
   let ccl''' = liftn_predicate n (n+1) ccl'' tms in
   (* We finally get gamma,x'1..x'n,x |- [X1;x1:I(X1)]..[Xn;xn:I(Xn)]pred'''*)
@@ -1037,7 +1037,7 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
 
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
   let pred = abstract_predicate env !evdref indf current realargs dep tms p in
-  (pred, whd_betaiota !evdref
+  (pred, whd_betaiotarec !evdref
            (applist (pred, realargs@[current])))
 
 (* Take into account that a type has been discovered to be inductive, leading
@@ -1192,7 +1192,7 @@ let rec generalize_problem names pb = function
       begin match (na, b) with
       | Anonymous, Some _ -> pb', deps
       | _ ->
-        let d = on_pi3 (whd_betaiota !(pb.evdref)) d in (* for better rendering *)
+        let d = on_pi3 (whd_betaiotarec !(pb.evdref)) d in (* for better rendering *)
         let tomatch = lift_tomatch_stack 1 pb'.tomatch in
         let tomatch = relocate_index_tomatch (i+1) 1 tomatch in
         { pb' with
@@ -1377,7 +1377,7 @@ and match_current pb (initial,tomatch) =
 	    find_predicate pb.caseloc pb.env pb.evdref
 	      pred current indt (names,dep) tomatch in
 	  let ci = make_case_info pb.env (fst mind) pb.casestyle in
-	  let pred = nf_betaiota !(pb.evdref) pred in
+	  let pred = nf_betaiotarec !(pb.evdref) pred in
 	  let case = mk_case pb (ci,pred,current,brvals) in
 	  Typing.check_allowed_sort pb.env !(pb.evdref) mind current pred;
 	  { uj_val = applist (case, inst);
@@ -1611,7 +1611,7 @@ let rec list_assoc_in_triple x = function
 *)
 
 let abstract_tycon loc env evdref subst tycon extenv t =
-  let t = nf_betaiota !evdref t in (* it helps in some cases to remove K-redex*)
+  let t = nf_betaiotarec !evdref t in (* it helps in some cases to remove K-redex*)
   let src = match kind_of_term t with
     | Evar (evk,_) -> (loc,Evar_kinds.SubEvar evk)
     | _ -> (loc,Evar_kinds.CasesType true) in
@@ -1702,7 +1702,7 @@ let build_inversion_problem loc env sigma tms t =
     let id = next_name_away (named_hd env t Anonymous) avoid in
     PatVar (Loc.ghost,Name id), ((id,t)::subst, id::avoid) in
   let rec reveal_pattern t (subst,avoid as acc) =
-    match kind_of_term (whd_betadeltaiota env sigma t) with
+    match kind_of_term (whd_all env sigma t) with
     | Construct (cstr,u) -> PatCstr (Loc.ghost,cstr,[],Anonymous), acc
     | App (f,v) when isConstruct f ->
 	let cstr,u = destConstruct f in
