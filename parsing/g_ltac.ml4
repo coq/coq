@@ -33,7 +33,7 @@ let genarg_of_ipattern pat = in_gen (rawwit Constrarg.wit_intro_pattern) pat
 
 GEXTEND Gram
   GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
-          constr_may_eval;
+          constr_may_eval constr_eval;
 
   tactic_then_last:
     [ [ "|"; lta = LIST0 OPT tactic_expr SEP "|" ->
