@@ -215,6 +215,7 @@ module Tactic :
     val open_constr : open_constr_expr Gram.entry
     val constr_with_bindings : constr_expr with_bindings Gram.entry
     val bindings : constr_expr bindings Gram.entry
+    val hypident : (Id.t located * Locus.hyp_location_flag) Gram.entry
     val constr_may_eval : (constr_expr,reference or_by_notation,constr_expr) may_eval Gram.entry
     val uconstr : constr_expr Gram.entry
     val quantified_hypothesis : quantified_hypothesis Gram.entry

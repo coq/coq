@@ -375,6 +375,7 @@ module Tactic =
       make_gen_entry utactic (rawwit wit_constr_with_bindings) "constr_with_bindings"
     let bindings =
       make_gen_entry utactic (rawwit wit_bindings) "bindings"
+    let hypident = Gram.entry_create "hypident"
     let constr_may_eval = make_gen_entry utactic (rawwit wit_constr_may_eval) "constr_may_eval"
     let uconstr =
       make_gen_entry utactic (rawwit wit_uconstr) "uconstr"

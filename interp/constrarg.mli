@@ -64,6 +64,8 @@ val wit_bindings :
   glob_constr_and_expr bindings,
   constr bindings Evd.sigma) genarg_type
 
+val wit_hyp_location_flag : Locus.hyp_location_flag uniform_genarg_type
+
 val wit_red_expr :
   ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,

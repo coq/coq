@@ -55,6 +55,9 @@ let wit_constr_with_bindings = unsafe_of_type ConstrWithBindingsArgType
 
 let wit_bindings = unsafe_of_type BindingsArgType
 
+let wit_hyp_location_flag : 'a Genarg.uniform_genarg_type =
+  Genarg.make0 None "hyp_location_flag"
+
 let wit_red_expr = unsafe_of_type RedExprArgType
 
 let wit_clause_dft_concl  =
