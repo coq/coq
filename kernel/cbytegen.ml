@@ -335,8 +335,8 @@ let init_fun_code () = fun_code := []
 
 exception TooLargeInductive of Id.t
 
-let max_nb_const = 0x7FFFFF 
-let max_nb_block = 0x7FFFFF + last_variant_tag - 1
+let max_nb_const = 0x1000000 
+let max_nb_block = 0x1000000 + last_variant_tag - 1
 
 let str_max_constructors = 
   Format.sprintf 
