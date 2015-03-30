@@ -380,12 +380,14 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
   in
   let consume_stack on_left (termF,skF) (termO,skO) evd =
     let switch f a b = if on_left then f a b else f b a in
-    let not_only_app = Stack.not_purely_applicative skO in
-    match switch (ise_stack2 not_only_app env evd (evar_conv_x ts)) skF skO with
-      |Some (l,r), Success i' when on_left && (not_only_app || List.is_empty l) ->
-	switch (evar_conv_x ts env i' pbty) (Stack.zip(termF,l)) (Stack.zip(termO,r))
-      |Some (r,l), Success i' when not on_left && (not_only_app || List.is_empty l) ->
-	switch (evar_conv_x ts env i' pbty) (Stack.zip(termF,l)) (Stack.zip(termO,r))
+    let not_only_appO = Stack.not_purely_applicative skO in
+    match switch (ise_stack2 not_only_appO env evd (evar_conv_x ts)) skF skO with
+      |Some (lF,rO), Success i' when on_left && (not_only_appO || List.is_empty lF) ->
+        (* Case (?termF,stk) = (termO,u1..un::stk') with stk,stk' w/o app *)
+        (* or (?termF,stk) = (termO,u1..un::stk') with stk,stk' w/o app *)
+	switch (evar_conv_x ts env i' pbty) (Stack.zip(termF,lF)) (Stack.zip(termO,rO))
+      |Some (rO,lF), Success i' when not on_left && (not_only_appO || List.is_empty lF) ->
+	switch (evar_conv_x ts env i' pbty) (Stack.zip(termF,lF)) (Stack.zip(termO,rO))
       |None, Success i' -> switch (evar_conv_x ts env i' pbty) termF termO
       |_, (UnifFailure _ as x) -> x
       |Some _, _ -> UnifFailure (evd,NotSameArgSize) in
