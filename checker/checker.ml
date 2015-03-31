@@ -181,8 +181,7 @@ let print_usage_channel co command =
 "  -I dir -as coqdir      map physical dir to logical coqdir\
 \n  -I dir                 map directory dir to the empty logical path\
 \n  -include dir           (idem)\
-\n  -R dir -as coqdir      recursively map physical dir to logical coqdir\
-\n  -R dir coqdir          (idem)\
+\n  -R dir coqdir          recursively map physical dir to logical coqdir\
 \n\
 \n  -admit module          load module and dependencies without checking\
 \n  -norec module          check module but admit dependencies without checking\
