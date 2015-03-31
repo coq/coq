@@ -17,7 +17,6 @@ open Libnames
 type t = {
   path_physical : CUnix.physical_path;
   path_logical : DirPath.t;
-  path_root : bool;
   path_implicit : bool;
 }
 
@@ -53,13 +52,12 @@ let remove_load_path dir =
   let filter p = not (String.equal p.path_physical dir) in
   load_paths := List.filter filter !load_paths
 
-let add_load_path phys_path coq_path ~root ~implicit =
+let add_load_path phys_path coq_path ~implicit =
   let phys_path = CUnix.canonical_path_name phys_path in
   let filter p = String.equal p.path_physical phys_path in
   let binding = {
     path_logical = coq_path;
     path_physical = phys_path;
-    path_root = root;
     path_implicit = implicit;
   } in
   match List.filter filter !load_paths with
