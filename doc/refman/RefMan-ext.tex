@@ -1059,7 +1059,7 @@ names to {\Coq} names is needed. In this translation, names in the
 file system are called {\em physical} paths while {\Coq} names are
 contrastingly called {\em logical} names.
 
-A logical name {\tt Lib} can associated to a physical path
+A logical prefix {\tt Lib} can associated to a physical path
 \textrm{\textsl{path}} using the command line option {\tt -Q}
 \textrm{\textsl{path}} {\tt Lib}. All subfolders of {\textsl{path}} are
 recursively associated to the logical path {\tt Lib} extended with the
@@ -1073,6 +1073,8 @@ Thanks to this mechanism, {\texttt{.vo}} files are made available through the
 logical name of the folder they are in, extended with their own basename. For
 example, the name associated to the file {\tt path/fOO/Bar/File.vo} is
 {\tt Lib.fOO.Bar.File}. The same caveat applies for invalid identifiers.
+When compiling a source file, the {\texttt{.vo}} file stores its logical name,
+so that an error is issued if it is loaded with the wrong loadpath afterwards.
 
 Some folders have a special status and are automatically put in the path.
 {\Coq} commands associate automatically a logical path to files
@@ -1086,7 +1088,7 @@ with the same physical-to-logical translation and with an empty logical prefix.
 The command line option \texttt{-R} is a variant of \texttt{-Q} which has the
 strictly same behavior regarding loadpaths, but which also makes the
 corresponding \texttt{.vo} files available through their short names in a
-way not unlike the {\tt Import} command~(see {\ref{Import}}). For instance,
+way not unlike the {\tt Import} command (see~{\ref{Import}}). For instance,
 \texttt{-R} \textrm{\textsl{path}} \texttt{Lib} associates to the file
 \texttt{path/fOO/Bar/File.vo} the logical name \texttt{Lib.fOO.Bar.File}, but
 allows this file to be accessed through the short names \texttt{fOO.Bar.File},
@@ -1095,7 +1097,7 @@ are present in different subdirectories of a recursive loadpath, which of
 these files is found first may be system-dependent and explicit
 qualification is recommended. The {\tt From} argument of the {\tt Require}
 command can be used to bypass the implicit shortening by providing an absolute
-root to the required file.
+root to the required file (see~\ref{Require}).
 
 There also exists another independent loadpath mechanism attached to {\ocaml}
 object files (\texttt{.cmo} or \texttt{.cmxs}) rather than {\Coq} object files
