@@ -52,7 +52,6 @@ type cbv_value =
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
   | CONSTR of constructor * cbv_value array
-  | EVAR of existential_key * cbv_value array
 
 (* type of terms with a hole. This hole can appear only under App or Case.
  *   TOP means the term is considered without context
@@ -92,8 +91,6 @@ let rec shift_value n = function
       COFIXP (cofix,subs_shft (n,s), Array.map (shift_value n) args)
   | CONSTR (c,args) ->
       CONSTR (c, Array.map (shift_value n) args)
-  | EVAR (evk,args) ->
-      EVAR (evk, Array.map (shift_value n) args)
 let shift_value n v =
   if n = 0 then v else shift_value n v
 
@@ -236,12 +233,10 @@ let rec norm_head info env t stack =
       else
 	(CBN(t,env), stack) (* Considérer une coupure commutative ? *)
 
-  | Evar (evk,args as ev) ->
+  | Evar ev ->
       (match evar_value info ev with
           Some c -> norm_head info env c stack
-        | None ->
-            let args = Array.map (cbv_stack_term info TOP env) args in
-            (EVAR(evk,args), stack))
+        | None -> (VAL(0, t), stack))
 
   (* non-neutral cases *)
   | Lambda _ ->
@@ -367,8 +362,6 @@ and cbv_norm_value info = function (* reduction under binders *)
          Array.map (cbv_norm_value info) args)
   | CONSTR (c,args) ->
       mkApp(mkConstruct c, Array.map (cbv_norm_value info) args)
-  | EVAR (evk,args) ->
-      mkEvar(evk, Array.map (cbv_norm_value info) args)
 
 (* with profiling *)
 let cbv_norm infos constr =
