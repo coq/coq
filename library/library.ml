@@ -592,10 +592,6 @@ let require_library_from_dirpath modrefl export =
       add_anonymous_leaf (in_require (needed,modrefl,export));
   add_frozen_state ()
 
-let require_library qidl export =
-  let modrefl = List.map try_locate_qualified_library qidl in
-    require_library_from_dirpath modrefl export
-
 let require_library_from_file idopt file export =
   let modref,needed = rec_intern_library_from_file idopt file in
   let needed = List.rev_map snd needed in

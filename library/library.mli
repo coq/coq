@@ -21,7 +21,6 @@ open Libnames
 (** {6 ... } *)
 (** Require = load in the environment + open (if the optional boolean
     is not [None]); mark also for export if the boolean is [Some true] *)
-val require_library : qualid located list -> bool option -> unit
 val require_library_from_dirpath : (DirPath.t * string) list -> bool option -> unit
 val require_library_from_file :
   Id.t option -> CUnix.physical_path -> bool option -> unit
