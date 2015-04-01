@@ -29,9 +29,9 @@ for your platform, which is supposed in the following). By default,
 \verb!coqc! executes the native-code version; this can be overridden
 using the \verb!-byte! option.
 
-The byte-code toplevel is based on a Caml
+The byte-code toplevel is based on an {\ocaml}
 toplevel (to allow the dynamic link of tactics).  You can switch to
-the Caml toplevel with the command \verb!Drop.!, and come back to the
+the {\ocaml} toplevel with the command \verb!Drop.!, and come back to the
 \Coq~toplevel with the command \verb!Toplevel.loop();;!.
 
 \section{Batch compilation ({\tt coqc})}
@@ -69,13 +69,13 @@ option \verb:-q:.
 
 Load path can be specified to the \Coq\ system by setting up
 \verb:$COQPATH: environment variable. It is a list of directories
-separated by \verb|:| (\verb|;| on windows). {\Coq} will also honour
-\verb:$XDG_DATA_HOME: and \verb:$XDG_DATA_DIRS: (see section
+separated by \verb|:| (\verb|;| on windows). {\Coq} will also honor
+\verb:$XDG_DATA_HOME: and \verb:$XDG_DATA_DIRS: (see Section
 \ref{loadpath}).
 
 Some {\Coq} commands call other {\Coq} commands. In this case, they
 look for the commands in directory specified by \verb:$COQBIN:. If
-this variable is not set, they look for the command in the executable
+this variable is not set, they look for the commands in the executable
 path.
 
 The \verb:$COQ_COLORS: environment variable can be used to specify the set of
@@ -104,16 +104,16 @@ Add physical path {\em directory} to the {\ocaml} loadpath.
 
   Add physical path \emph{directory} to the list of directories where
   {\Coq} looks for a file and bind it to the the logical directory
-  \emph{dirpath}. The sub-directory structure of \emph{directory} is
+  \emph{dirpath}. The subdirectory structure of \emph{directory} is
   recursively available from {\Coq} using absolute names (extending
   the {\dirpath} prefix) (see Section~\ref{LongNames}).
-  
+
   \SeeAlso Section~\ref{Libraries}.
 
 \item[{\tt -R} {\em directory} {\dirpath}, {\tt -R} {\em directory} [{\tt -as} {\dirpath}]]\
 
   Do as \texttt{-Q} \emph{directory} {\dirpath} but make the
-  sub-directory structure of \emph{directory} recursively visible so
+  subdirectory structure of \emph{directory} recursively visible so
   that the recursive contents of physical \emph{directory} is available
   from {\Coq} using short or partially qualified names.
   
@@ -126,9 +126,9 @@ Add physical path {\em directory} to the {\ocaml} loadpath.
 
 \item[{\tt -exclude-dir} {\em subdirectory}]\ 
 
-  This tells to exclude any sub-directory named {\em subdirectory}
+  This tells to exclude any subdirectory named {\em subdirectory}
   while processing option {\tt -R}. Without this option only the
-  conventional version control management sub-directories named {\tt
+  conventional version control management subdirectories named {\tt
   CVS} and {\tt \_darcs} are excluded.
 
 \item[{\tt -nois}]\ 
@@ -142,11 +142,11 @@ Add physical path {\em directory} to the {\ocaml} loadpath.
 
 \item[{\tt -load-ml-source} {\em file}]\ 
 
-  Load the Caml source file {\em file}.
+  Load the {\ocaml} source file {\em file}.
 
 \item[{\tt -load-ml-object} {\em file}]\ 
 
-  Load the Caml object file {\em file}.
+  Load the {\ocaml} object file {\em file}.
 
 \item[{\tt -l[v]} {\em file}, {\tt -load-vernac-source[-verbose]} {\em file}]\ 
 

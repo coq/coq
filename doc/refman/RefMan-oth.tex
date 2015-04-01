@@ -4,7 +4,7 @@
 \section{Displaying}
 
 \subsection[\tt Print {\qualid}.]{\tt Print {\qualid}.\comindex{Print}}
-This command displays on the screen informations about the declared or
+This command displays on the screen information about the declared or
 defined object referred by {\qualid}.
 
 \begin{ErrMsgs}
@@ -20,7 +20,7 @@ global constant.
 \item {\tt About {\qualid}.}
 \label{About}
 \comindex{About}\\ 
-This displays various informations about the object denoted by {\qualid}:
+This displays various information about the object denoted by {\qualid}:
 its kind (module, constant, assumption, inductive,
 constructor, abbreviation, \ldots), long name, type, implicit
 arguments and argument scopes. It does not print the body of
@@ -34,7 +34,7 @@ definitions or proofs.
 \end{Variants}
 
 \subsection[\tt Print All.]{\tt Print All.\comindex{Print All}}
-This command displays informations about the current state of the
+This command displays information about the current state of the
 environment, including sections and modules.
 
 \begin{Variants}
@@ -183,7 +183,7 @@ displayed as in \Coq\ terms.
 \begin{Variants}
 \item \texttt{Recursive Extraction} {\qualid$_1$} \ldots{} {\qualid$_n$}{\tt .}\\
   Recursively extracts all the material needed for the extraction of 
-  globals {\qualid$_1$}, \ldots, {\qualid$_n$}.
+  global {\qualid$_1$}, \ldots, {\qualid$_n$}.
 \end{Variants}
 
 \SeeAlso Chapter~\ref{Extraction}.
@@ -294,7 +294,7 @@ Search "+"%Z "*"%Z "distr" -positive -Prop.
 Search (?x * _ + ?x * _)%Z outside OmegaLemmas.
 \end{coq_example}
 
-\Warning \comindex{SearchAbout} Up to Coq version 8.4, {\tt Search}
+\Warning \comindex{SearchAbout} Up to {\Coq} version 8.4, {\tt Search}
 had the behavior of current {\tt SearchHead} and the behavior of
 current {\tt Search} was obtained with command {\tt SearchAbout}. For
 compatibility, the deprecated name {\tt SearchAbout} can still be used
@@ -343,7 +343,7 @@ No module \module{} has been required (see Section~\ref{Require}).
 
 \end{Variants}
 
-\Warning Up to Coq version 8.4, {\tt SearchHead} was named {\tt Search}.
+\Warning Up to {\Coq} version 8.4, {\tt SearchHead} was named {\tt Search}.
 
 \subsection[\tt SearchPattern {\termpattern}.]{\tt SearchPattern {\term}.\comindex{SearchPattern}}
 
@@ -458,8 +458,8 @@ The default blacklisted substrings are {\tt
 \label{Locate}}
 This command displays the full name of objects whose name is a prefix of the
 qualified identifier {\qualid}, and consequently the \Coq\ module in which they
-are defined. It searches for objects from the different qualified namespaces of
-Coq: terms, modules, Ltac, etc.
+are defined. It searches for objects from the different qualified name spaces of
+{\Coq}: terms, modules, Ltac, etc.
 
 \begin{coq_eval}
 (*************** The last line should produce **************************)
@@ -593,7 +593,7 @@ is picked in an unspecified fashion.
   This command acts as {\tt Require}, but picks any library whose absolute name
   is of the form {\tt{\dirpath}.{\dirpath'}.{\qualid}} for some {\dirpath'}.
   This is useful to ensure that the {\qualid} library comes from a given
-  package by expliciting its absolute root.
+  package by making explicit its absolute root.
 
 \end{Variants}
 
@@ -620,7 +620,7 @@ is picked in an unspecified fashion.
   \index{Bad-magic-number@{\tt Bad Magic Number}}
   The file {\tt{\ident}.vo} was found but either it is not a \Coq\
   compiled module, or it was compiled with an older and incompatible
-  version of \Coq.
+  version of {\Coq}.
 
 \item \errindex{The file {\ident}.vo contains library {\dirpath} and not
   library {\dirpath'}}
@@ -657,7 +657,7 @@ searched into the current {\ocaml} loadpath (see the command {\tt
 Add ML Path} in the Section~\ref{loadpath}).  Loading of {\ocaml}
 files is only possible under the bytecode version of {\tt coqtop}
 (i.e. {\tt coqtop} called with options {\tt -byte}, see chapter 
-\ref{Addoc-coqc}), or when Coq has been compiled with a version of
+\ref{Addoc-coqc}), or when {\Coq} has been compiled with a version of
 {\ocaml} that supports native {\tt Dynlink} ($\ge$ 3.11).
 
 \begin{Variants}
@@ -668,7 +668,7 @@ files is only possible under the bytecode version of {\tt coqtop}
 
 \begin{ErrMsgs}
 \item \errindex{File not found on loadpath : \str}
-\item \errindex{Loading of ML object file forbidden in a native Coq}
+\item \errindex{Loading of ML object file forbidden in a native {\Coq}}
 \end{ErrMsgs}
 
 \subsection[\tt Print ML Modules.]{\tt Print ML Modules.\comindex{Print ML Modules}}
@@ -679,7 +679,7 @@ should use the command \texttt{Locate File} (see Section~\ref{Locate File})
 \section[Loadpath]{Loadpath}
 
 Loadpaths are preferably managed using {\Coq} command line options
-(see Section~\ref{loadpath}) but there remains vernacular commands to
+(see Section~\ref{loadpath}) but there remain vernacular commands to
 manage them.
 
 \subsection[\tt Pwd.]{\tt Pwd.\comindex{Pwd}\label{Pwd}}
@@ -696,7 +696,7 @@ which can be any valid path.
 
 \subsection[\tt Add LoadPath {\str} as {\dirpath}.]{\tt Add LoadPath {\str} as {\dirpath}.\comindex{Add LoadPath}\label{AddLoadPath}}
 
-This command is equivament to the command line option {\tt -Q {\dirpath}
+This command is equivalent to the command line option {\tt -Q {\dirpath}
   {\str}}. It adds the physical directory {\str} to the current {\Coq}
 loadpath and maps it to the logical directory {\dirpath}.
 
@@ -778,11 +778,11 @@ over the name of a module or of an object inside a module.
 
 This commands undoes all the effects of the last vernacular
 command. Commands read from a vernacular file via a {\tt Load} are
-considered as a single command. Proof managment commands
+considered as a single command. Proof management commands
 are also handled by this command (see Chapter~\ref{Proof-handling}).
 For that, {\tt Back} may have to undo more than one command in order
-to reach a state where the proof managment information is available.
-For instance, when the last command is a {\tt Qed}, the managment
+to reach a state where the proof management information is available.
+For instance, when the last command is a {\tt Qed}, the management
 information about the closed proof has been discarded. In this case,
 {\tt Back} will then undo all the proof steps up to the statement of
 this proof.
@@ -803,7 +803,7 @@ this proof.
 \subsection[\tt BackTo $\num$.]{\tt BackTo $\num$.\comindex{BackTo}}
 \label{sec:statenums}
 
-This command brings back the system to the state labelled $\num$,
+This command brings back the system to the state labeled $\num$,
 forgetting the effect of all commands executed after this state.
 The state label is an integer which grows after each successful command.
 It is displayed in the prompt when in \texttt{-emacs} mode.
@@ -814,14 +814,14 @@ extra commands and end on a state $\num' \leq \num$ if necessary.
 \begin{Variants}
 \item {\tt Backtrack $\num_1$ $\num_2$ $\num_3$}.\comindex{Backtrack}\\
   {\tt Backtrack} is a \emph{deprecated} form of {\tt BackTo} which
-  allows explicitely manipulating the proof environment. The three
+  allows explicitly manipulating the proof environment. The three
   numbers $\num_1$, $\num_2$ and $\num_3$ represent the following:
 \begin{itemize}
 \item $\num_3$: Number of \texttt{Abort} to perform, i.e. the number
   of currently opened nested proofs that must be canceled (see
   Chapter~\ref{Proof-handling}).
 \item $\num_2$: \emph{Proof state number} to unbury once aborts have
-  been done. Coq will compute the number of \texttt{Undo} to perform
+  been done. {\Coq} will compute the number of \texttt{Undo} to perform
   (see Chapter~\ref{Proof-handling}).
 \item $\num_1$: State label to reach, as for {\tt BackTo}.
 \end{itemize}
@@ -949,7 +949,7 @@ algorithm that first normalizes the terms before comparing them.  The
 second algorithm is based on a bytecode representation of terms
 similar to the bytecode representation used in the ZINC virtual
 machine~\cite{Leroy90}. It is especially useful for intensive
-computation of algebraic values, such as numbers, and for reflexion-based
+computation of algebraic values, such as numbers, and for reflection-based
 tactics. The commands to fine-tune the reduction strategies and the
 lazy conversion algorithm are described first.
 

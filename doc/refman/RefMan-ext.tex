@@ -1059,7 +1059,7 @@ names to {\Coq} names is needed. In this translation, names in the
 file system are called {\em physical} paths while {\Coq} names are
 contrastingly called {\em logical} names.
 
-A logical prefix {\tt Lib} can associated to a physical path
+A logical prefix {\tt Lib} can be associated to a physical path
 \textrm{\textsl{path}} using the command line option {\tt -Q}
 \textrm{\textsl{path}} {\tt Lib}. All subfolders of {\textsl{path}} are
 recursively associated to the logical path {\tt Lib} extended with the
@@ -1102,8 +1102,8 @@ root to the required file (see~\ref{Require}).
 There also exists another independent loadpath mechanism attached to {\ocaml}
 object files (\texttt{.cmo} or \texttt{.cmxs}) rather than {\Coq} object files
 as described above. The {\ocaml} loadpath is managed using the option
-\texttt{-I path}. As in the {\ocaml} world, there is neither a notion of logical
-name prefix nor a way to access files in subdirectories of \texttt{path}.
+\texttt{-I path} (in the {\ocaml} world, there is neither a notion of logical
+name prefix nor a way to access files in subdirectories of \texttt{path}).
 See the command \texttt{Declare ML Module} in Section~\ref{compiled} to
 understand the need of the {\ocaml} loadpath.
 
