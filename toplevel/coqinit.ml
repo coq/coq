@@ -72,7 +72,7 @@ let add_stdlib_path ~unix_path ~coq_root ~with_ml =
     Mltop.add_rec_ml_dir unix_path
 
 let add_userlib_path ~unix_path =
-  Mltop.add_path ~unix_path ~coq_root:Nameops.default_root_prefix ~implicit:false;
+  Mltop.add_rec_path ~unix_path ~coq_root:Nameops.default_root_prefix ~implicit:false;
   Mltop.add_rec_ml_dir unix_path
 
 (* Options -I, -I-as, and -R of the command line *)
