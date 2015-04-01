@@ -87,19 +87,14 @@ let extend_path_with_dirpath p dir =
   List.fold_left Filename.concat p
     (List.rev_map Id.to_string (DirPath.repr dir))
 
-let expand_root_path dir =
+let filter_path f =
   let rec aux = function
   | [] -> []
   | p :: l ->
-    if DirPath.equal p.path_logical dir then p.path_physical :: aux l
+    if f p.path_logical then (p.path_physical, p.path_logical) :: aux l
     else aux l
   in
   aux !load_paths
-
-let is_suffix dir1 dir2 =
-  let dir1 = DirPath.repr dir1 in
-  let dir2 = DirPath.repr dir2 in
-  List.prefix_of Id.equal dir1 dir2
 
 let expand_path dir =
   let rec aux = function
@@ -109,7 +104,7 @@ let expand_path dir =
     match p.path_implicit with
     | true ->
       (** The path is implicit, so that we only want match the logical suffix *)
-      if is_suffix dir lg then (ph, lg) :: aux l else aux l
+      if is_dirpath_suffix_of dir lg then (ph, lg) :: aux l else aux l
     | false ->
       (** Otherwise we must match exactly *)
       if DirPath.equal dir lg then (ph, lg) :: aux l else aux l

@@ -72,8 +72,14 @@ exception LibNotFound
 type library_location = LibLoaded | LibInPath
 
 val locate_qualified_library :
-  bool -> qualid -> library_location * DirPath.t * CUnix.physical_path
-val try_locate_qualified_library : qualid located -> DirPath.t * string
+  ?root:DirPath.t -> ?warn:bool -> qualid ->
+  library_location * DirPath.t * CUnix.physical_path
+(** Locates a library by implicit name.
+
+  @raise LibUnmappedDir if the library is not in the path
+  @raise LibNotFound if there is no corresponding file in the path
+
+*)
 
 (** {6 Statistics: display the memory use of a library. } *)
 val mem : DirPath.t -> Pp.std_ppcmds

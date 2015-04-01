@@ -49,5 +49,6 @@ val expand_path : DirPath.t -> (CUnix.physical_path * DirPath.t) list
 (** Given a relative logical path, associate the list of absolute physical and
     logical paths which are possible matches of it. *)
 
-val expand_root_path : DirPath.t -> CUnix.physical_path list
-(** As [expand_path] but ignores the implicit status. *)
+val filter_path : (DirPath.t -> bool) -> (CUnix.physical_path * DirPath.t) list
+(** As {!expand_path} but uses a filter function instead, and ignores the
+    implicit status of loadpaths. *)

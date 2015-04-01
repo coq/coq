@@ -268,8 +268,9 @@ type library_location = LibLoaded | LibInPath
 let locate_absolute_library dir =
   (* Search in loadpath *)
   let pref, base = split_dirpath dir in
-  let loadpath = Loadpath.expand_root_path pref in
+  let loadpath = Loadpath.filter_path (fun dir -> DirPath.equal dir pref) in
   let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
+  let loadpath = List.map fst loadpath in
   let find ext =
     try
       let name = Id.to_string base ^ ext in
@@ -286,10 +287,20 @@ let locate_absolute_library dir =
   | [vo;vi] -> dir, vo
   | _ -> assert false
 
-let locate_qualified_library warn qid =
+let locate_qualified_library ?root ?(warn = true) qid =
   (* Search library in loadpath *)
   let dir, base = repr_qualid qid in
-  let loadpath = Loadpath.expand_path dir in
+  let loadpath = match root with
+  | None -> Loadpath.expand_path dir
+  | Some root ->
+    let filter path =
+      if is_dirpath_prefix_of root path then
+        let path = drop_dirpath_prefix root path in
+        is_dirpath_suffix_of dir path
+      else false
+    in
+    Loadpath.filter_path filter
+  in
   let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
   let find ext =
     try
@@ -332,14 +343,6 @@ let try_locate_absolute_library dir =
   with
     | LibUnmappedDir -> error_unmapped_dir (qualid_of_dirpath dir)
     | LibNotFound -> error_lib_not_found (qualid_of_dirpath dir)
-
-let try_locate_qualified_library (loc,qid) =
-  try
-    let (_,dir,f) = locate_qualified_library (Flags.is_verbose()) qid in
-    dir,f
-  with
-    | LibUnmappedDir -> error_unmapped_dir qid
-    | LibNotFound -> error_lib_not_found qid
 
 (************************************************************************)
 (** {6 Tables of opaque proof terms} *)
