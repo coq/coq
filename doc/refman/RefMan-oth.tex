@@ -553,10 +553,11 @@ the form {\dirpath}{\tt .}{\textsl{ident}} and the file {\ident}{\tt
 mapped in {\Coq} loadpath to the logical path {\dirpath} (see
 Section~\ref{loadpath}). The mapping between physical directories and
 logical names at the time of requiring the file must be consistent
-with the mapping used to compile the file.
+with the mapping used to compile the file. If several files match, one of them
+is picked in an unspecified fashion.
 
 \begin{Variants}
-\item {\tt Require Import {\qualid}.} \comindex{Require} 
+\item {\tt Require Import {\qualid}.} \comindex{Require Import}
 
   This loads and declares the module {\qualid} and its dependencies
   then imports the contents of {\qualid} as described in
@@ -585,6 +586,15 @@ with the mapping used to compile the file.
   given, it also imports {\qualid}$_1$, \ldots, {\qualid}$_n$ and all
   the recursive dependencies that were marked or transitively marked
   as {\tt Export}.
+
+\item {\tt From {\dirpath} Require {\qualid}.}
+  \comindex{From Require}
+
+  This command acts as {\tt Require}, but picks any library whose absolute name
+  is of the form {\tt{\dirpath}.{\dirpath'}.{\qualid}} for some {\dirpath'}.
+  This is useful to ensure that the {\qualid} library comes from a given
+  package by expliciting its absolute root.
+
 \end{Variants}
 
 \begin{ErrMsgs}
