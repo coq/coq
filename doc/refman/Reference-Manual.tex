@@ -134,24 +134,17 @@ Options A and B of the licence are {\em not} elected.}
 \bibliography{biblio}
 \cutname{biblio.html}
 
-\printindex
-\cutname{general-index.html}
-
-\printindex[tactic]
-\cutname{tactic-index.html}
-
-\printindex[command]
-\cutname{command-index.html}
-
-\printindex[option]
-\cutname{option-index.html}
-
-\printindex[error]
-\cutname{error-index.html}
+\printrefmanindex{default}{Global Index}{general-index.html}
+\printrefmanindex{tactic}{Tactics Index}{tactic-index.html}
+\printrefmanindex{command}{Vernacular Commands Index}{command-index.html}
+\printrefmanindex{option}{Vernacular Options Index}{option-index.html}
+\printrefmanindex{error}{Index of Error Messages}{error-index.html}
 
 %BEGIN LATEX
-\listoffigures
+\cleardoublepage
+\phantomsection
 \addcontentsline{toc}{chapter}{\listfigurename}
+\listoffigures
 %END LATEX
 
 \end{document}

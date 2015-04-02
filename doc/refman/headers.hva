@@ -8,23 +8,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{index}
 \makeindex
-\newindex{tactic}{tacidx}{tacind}{%
-\protect\addcontentsline{toc}{chapter}{Tactics Index}Tactics Index}
 
-\newindex{command}{comidx}{comind}{%
-\protect\addcontentsline{toc}{chapter}{Vernacular Commands Index}%
-Vernacular Commands Index}
 
-\newindex{option}{optidx}{optind}{%
-\protect\addcontentsline{toc}{chapter}{Vernacular Options Index}%
-Vernacular Options Index}
+\newindex{tactic}{tacidx}{tacind}{Tactics Index}
+\newindex{command}{comidx}{comind}{Vernacular Commands Index}
+\newindex{option}{optidx}{optind}{Vernacular Options Index}
+\newindex{error}{erridx}{errind}{Index of Error Messages}
+\renewindex{default}{idx}{ind}{Global Index}
 
-\newindex{error}{erridx}{errind}{%
-\protect\addcontentsline{toc}{chapter}{Index of Error Messages}Index of Error Messages}
-
-\renewindex{default}{idx}{ind}{%
-\protect\addcontentsline{toc}{chapter}{Global Index}%
-Global Index}
+\newcommand{\printrefmanindex}[3]{%
+\addcontentsline{toc}{chapter}{#2}%
+\printindex[#1]%
+\cutname{#3}%
+}
 
 \newcommand{\tacindex}[1]{%
 \index{#1@\texttt{#1}}\index[tactic]{#1@\texttt{#1}}}
