@@ -161,15 +161,6 @@ let add_rec_ml_dir unix_path =
 
 (* Adding files to Coq and ML loadpath *)
 
-let add_path ~unix_path:dir ~coq_root:coq_dirpath ~implicit =
-  if exists_dir dir then
-    begin
-      add_ml_dir dir;
-      Loadpath.add_load_path dir ~implicit coq_dirpath
-    end
-  else
-    msg_warning (str ("Cannot open " ^ dir))
-
 let convert_string d =
   try Names.Id.of_string d
   with UserError _ ->
