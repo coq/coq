@@ -43,15 +43,23 @@ let preamble mod_name used_modules usf =
   str "import qualified Prelude" ++ fnl () ++
   prlist pp_import used_modules ++ fnl () ++
   (if used_modules = [] then mt () else fnl ()) ++
-  (if not usf.magic then mt ()
+  (if not (usf.magic || usf.tunknown) then mt ()
    else str "\
 \n#ifdef __GLASGOW_HASKELL__\
 \nimport qualified GHC.Base\
+\nimport qualified GHC.Prim\
+\n#else\
+\n-- HUGS\
+\nimport qualified IOExts\
+\n#endif" ++ fnl2 ())
+  ++
+  (if not usf.magic then mt ()
+   else str "\
+\n#ifdef __GLASGOW_HASKELL__\
 \nunsafeCoerce :: a -> b\
 \nunsafeCoerce = GHC.Base.unsafeCoerce#\
 \n#else\
 \n-- HUGS\
-\nimport qualified IOExts\
 \nunsafeCoerce :: a -> b\
 \nunsafeCoerce = IOExts.unsafeCoerce\
 \n#endif" ++ fnl2 ())
@@ -59,7 +67,6 @@ let preamble mod_name used_modules usf =
   (if not usf.tunknown then mt ()
    else str "\
 \n#ifdef __GLASGOW_HASKELL__\
-\nimport qualified GHC.Prim\
 \ntype Any = GHC.Prim.Any\
 \n#else\
 \n-- HUGS\
