@@ -156,8 +156,6 @@ let set_buffer_handlers
     let () = update_prev it in
     if it#has_tag Tags.Script.to_process then
       cancel_signal "Altering the script being processed in not implemented"
-    else if it#has_tag Tags.Script.read_only then
-      cancel_signal "Altering read_only text not allowed"
     else if it#has_tag Tags.Script.processed then
       call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
     else if it#has_tag Tags.Script.error_bg then begin
@@ -175,8 +173,6 @@ let set_buffer_handlers
       if min_iter#equal max_iter then ()
       else if min_iter#has_tag Tags.Script.to_process then
         cancel_signal "Altering the script being processed in not implemented"
-      else if min_iter#has_tag Tags.Script.read_only then
-        cancel_signal "Altering read_only text not allowed"
       else if min_iter#has_tag Tags.Script.processed then
         call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
       else if min_iter#has_tag Tags.Script.error_bg then

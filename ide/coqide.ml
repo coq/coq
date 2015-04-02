@@ -1339,11 +1339,6 @@ let build_ui () =
       (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));
   Tags.Script.incomplete#set_property
     (`BACKGROUND_GDK (Tags.get_processed_color ())); 
-  Tags.Script.read_only#set_property
-    (`BACKGROUND_STIPPLE
-      (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));
-  Tags.Script.read_only#set_property
-    (`BACKGROUND_GDK (Tags.get_processed_color ())); 
 
   (* Showtime ! *)
   w#show ()

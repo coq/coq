@@ -52,10 +52,6 @@ struct
     t
   let all = edit_zone :: all
   
-  let read_only = make_tag table ~name:"read_only" [`EDITABLE false;
-          `BACKGROUND !processing_color;
-          `BACKGROUND_STIPPLE_SET true ]
-
 end
 module Proof =
 struct
@@ -96,7 +92,6 @@ let set_processing_color clr =
   let s = string_of_color clr in
   processing_color := s;
   Script.incomplete#set_property (`BACKGROUND s);
-  Script.read_only#set_property (`BACKGROUND s);
   Script.to_process#set_property (`BACKGROUND s)
 
 let get_error_color () = color_of_string !error_color
