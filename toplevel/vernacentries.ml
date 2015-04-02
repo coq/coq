@@ -892,11 +892,10 @@ let vernac_set_used_variables e =
 let expand filename =
   Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) filename
 
-let vernac_add_loadpath isrec pdir ldiropt =
+let vernac_add_loadpath implicit pdir ldiropt =
   let pdir = expand pdir in
   let alias = Option.default Nameops.default_root_prefix ldiropt in
-  (if isrec then Mltop.add_rec_path else Mltop.add_path)
-    ~unix_path:pdir ~coq_root:alias ~implicit:true
+  Mltop.add_rec_path ~unix_path:pdir ~coq_root:alias ~implicit
 
 let vernac_remove_loadpath path =
   Loadpath.remove_load_path (expand path)
