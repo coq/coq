@@ -387,8 +387,9 @@ let err_unmapped_library loc qid =
        pr_dirpath dir ++ str".")
 
 let err_notfound_library loc qid =
-  msg_error
-    (hov 0 (strbrk "Unable to locate library " ++ pr_qualid qid ++ str"."))
+  user_err_loc
+    (loc,"locate_library",
+     strbrk "Unable to locate library " ++ pr_qualid qid ++ str".")
 
 let print_located_library r =
   let (loc,qid) = qualid_of_reference r in
@@ -765,7 +766,7 @@ let vernac_require from import qidl =
       (dir, f)
     with
       | Library.LibUnmappedDir -> err_unmapped_library loc qid
-      | Library.LibNotFound -> err_unmapped_library loc qid
+      | Library.LibNotFound -> err_notfound_library loc qid
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
