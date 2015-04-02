@@ -201,13 +201,6 @@ let ise_and evd l =
 	| UnifFailure _ as x -> x in
   ise_and evd l
 
-(* This function requires to get the outermost arguments first.  It is
-   a fold_right for backward compatibility.
-
-   It tries to unify the suffix of 2 lists element by element and if
-   it reaches the end of a list, it returns the remaining elements in
-   the other list if there are some.
-*)
 let ise_exact ise x1 x2 =
   match ise x1 x2 with
   | None, out -> out
