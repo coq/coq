@@ -362,14 +362,14 @@ Fixpoint mapi (elt elt' : Type)(f : key -> elt -> elt')(m : t elt) : t elt' :=
 
 (** * Map with removal *)
 
-Fixpoint map_option (elt elt' : Type)(f : key -> elt -> option elt')(m : t elt)
+Fixpoint mapo (elt elt' : Type)(f : key -> elt -> option elt')(m : t elt)
   : t elt' :=
   match m with
    | Leaf _ => Leaf _
    | Node l x d r h =>
       match f x d with
-       | Some d' => join (map_option f l) x d' (map_option f r)
-       | None => concat (map_option f l) (map_option f r)
+       | Some d' => join (mapo f l) x d' (mapo f r)
+       | None => concat (mapo f l) (mapo f r)
       end
   end.
 
@@ -407,10 +407,10 @@ Fixpoint gmerge m1 m2 :=
 
 End GMerge.
 
-(** * Map2
+(** * Merge
 
-    The [map2] function of the Map interface can be implemented
-    via [map2_opt] and [map_option].
+    The [merge] function of the Map interface can be implemented
+    via [gmerge] and [mapo].
 *)
 
 Section Merge.
@@ -420,8 +420,8 @@ Variable f : key -> option elt -> option elt' -> option elt''.
 Definition merge : t elt -> t elt' -> t elt'' :=
  gmerge
    (fun k d o => f k (Some d) o)
-   (map_option (fun k d => f k (Some d) None))
-   (map_option (fun k d' => f k None (Some d'))).
+   (mapo (fun k d => f k (Some d) None))
+   (mapo (fun k d' => f k None (Some d'))).
 
 End Merge.
 
@@ -515,7 +515,7 @@ Functional Scheme merge0_ind := Induction for merge0 Sort Prop.
 Functional Scheme remove_ind := Induction for remove Sort Prop.
 Functional Scheme concat_ind := Induction for concat Sort Prop.
 Functional Scheme split_ind := Induction for split Sort Prop.
-Functional Scheme map_option_ind := Induction for map_option Sort Prop.
+Functional Scheme mapo_ind := Induction for mapo Sort Prop.
 Functional Scheme gmerge_ind := Induction for gmerge Sort Prop.
 
 (** * Automation and dedicated tactics. *)
@@ -718,6 +718,12 @@ Ltac order := match goal with
    generalize (BelowGt U (MapsTo_In V)); clear U; order
  | _ => MX.order
 end.
+
+Lemma between {elt} (m m':t elt) x :
+  x >> m -> x << m' -> m <<< m'.
+Proof.
+ intros H H' y y' Hy Hy'. order.
+Qed.
 
 Section Elt.
 Variable elt:Type.
@@ -1118,7 +1124,7 @@ Proof.
    + intros. rewrite merge0_mapsto; intuition; order.
    + apply merge0_bst; auto. red; intros; transitivity y0; order.
    + intros. rewrite merge0_mapsto; intuition; order.
-   + apply merge0_bst; auto. red; intros; transitivity y0; order.
+   + apply merge0_bst; auto. now apply between with y0.
  - rewrite bal_find by auto. simpl. case X.compare_spec; auto.
  - rewrite bal_find by auto. simpl. case X.compare_spec; auto.
 Qed.
@@ -1150,17 +1156,16 @@ Qed.
 Hint Resolve join_bst.
 
 Lemma join_find l x d r y :
- Bst (join l x d r) ->
+ Bst (create l x d r) ->
  find y (join l x d r) = find y (create l x d r).
 Proof.
-Admitted.
-(*
-join_tac l x d r.
- - simpl in *.
-   rewrite add_find.
+ unfold create at 1.
+ join_tac l x d r; trivial.
+ - simpl in *. inv Bst.
+   rewrite add_find; trivial.
    case X.compare_spec; intros; trivial.
    apply not_find_iff; auto. intro. order.
- - clear Hlr. factornode l. simpl.
+ - clear Hlr. factornode l. simpl. inv Bst.
    rewrite add_find by auto.
    case X.compare_spec; intros; trivial.
    apply not_find_iff; auto. intro. order.
@@ -1175,7 +1180,6 @@ join_tac l x d r.
      repeat (case X.compare_spec; trivial; try order).
    + apply above. intro. rewrite join_in. intuition_in; order.
 Qed.
- *)
 
 (** * split *)
 
@@ -1229,13 +1233,20 @@ Lemma split_gt_l m x y : y << m -> y << (split x m)#l.
 Proof.
   intro. apply below. intros z Hz. apply split_in_l0 in Hz. order.
 Qed.
+Hint Resolve split_lt_l split_lt_r split_gt_l split_gt_r.
 
-Lemma split_bst m x : Bst m ->
- Bst (split x m)#l /\ Bst (split x m)#r.
+Lemma split_bst_l m x : Bst m -> Bst (split x m)#l.
 Proof.
   functional induction (split x m); intros; cleansplit; intuition;
-  auto using join_bst, split_lt_r, split_gt_l.
+  auto using join_bst.
 Qed.
+
+Lemma split_bst_r m x : Bst m -> Bst (split x m)#r.
+Proof.
+  functional induction (split x m); intros; cleansplit; intuition;
+  auto using join_bst.
+Qed.
+Hint Resolve split_bst_l split_bst_r.
 
 Lemma split_find m x y : Bst m ->
  find y m = match X.compare y x with
@@ -1247,16 +1258,10 @@ Proof.
  functional induction (split x m); intros; cleansplit.
  - now case X.compare.
  - repeat case X.compare_spec; trivial; order.
- - simpl in *. rewrite join_find, IHt; trivial.
-   + simpl. repeat case X.compare_spec; trivial; order.
-   + apply join_bst, create_bst; auto.
-     * now apply split_bst.
-     * now apply split_lt_r.
+ - simpl in *. rewrite join_find, IHt; auto.
+   simpl. repeat case X.compare_spec; trivial; order.
  - rewrite join_find, IHt; auto.
-   + simpl; repeat case X.compare_spec; trivial; order.
-   + apply join_bst, create_bst; auto.
-     * now apply split_bst.
-     * now apply split_gt_l.
+   simpl; repeat case X.compare_spec; trivial; order.
 Qed.
 
 (** * Concatenation *)
@@ -1305,7 +1310,7 @@ Proof.
      case X.compare_spec; intros; auto.
      destruct (find y m2'); trivial.
      simpl. symmetry. apply not_find_iff; eauto.
-   + apply join_bst, create_bst; auto.
+   + apply create_bst; auto.
      * now apply (remove_min_bst R).
      * now apply (remove_min_gt R).
 Qed.
@@ -1593,15 +1598,15 @@ Qed.
 
 End Mapi.
 
-Section Map_option.
+Section Mapo.
 Variable elt elt' : Type.
 Variable f : key -> elt -> option elt'.
 
-Lemma map_option_in m x :
- x ∈ (map_option f m) ->
+Lemma mapo_in m x :
+ x ∈ (mapo f m) ->
  exists y d, X.eq y x /\ MapsTo x d m /\ f y d <> None.
 Proof.
-functional induction (map_option f m); simpl; auto; intro H.
+functional induction (mapo f m); simpl; auto; intro H.
 - inv In.
 - rewrite join_in in H; destruct H as [H|[H|H]].
   + exists x0, d. do 2 (split; auto). congruence.
@@ -1612,27 +1617,26 @@ functional induction (map_option f m); simpl; auto; intro H.
   + destruct (IHt0 H) as (y & e & ? & ? & ?). exists y, e. auto.
 Qed.
 
-Lemma map_option_apart m m' x :
-  x >> m -> x << m' -> (map_option f m) <<< (map_option f m').
+Lemma mapo_lt m x : x >> m -> x >> mapo f m.
 Proof.
-  intros H H' y1 y2 Hy1 Hy2.
-  destruct (map_option_in Hy1) as (y1' & e1 & ? & ? & ?).
-  destruct (map_option_in Hy2) as (y2' & e2 & ? & ? & ?).
-  order.
+  intros H. apply above. intros y Hy.
+  destruct (mapo_in Hy) as (y' & e & ? & ? & ?). order.
 Qed.
 
-Lemma map_option_bst m : Bst m -> Bst (map_option f m).
+Lemma mapo_gt m x : x << m -> x << mapo f m.
 Proof.
-functional induction (map_option f m); simpl; auto; intro H;
- inv Bst.
-- apply join_bst, create_bst; auto.
-  + apply above. intros y Hy.
-    destruct (map_option_in Hy) as (y' & e & ? & ? & ?). order.
-  + apply below. intros y Hy.
-    destruct (map_option_in Hy) as (y' & e & ? & ? & ?). order.
-- apply concat_bst; auto. eapply map_option_apart; eauto.
+  intros H. apply below. intros y Hy.
+  destruct (mapo_in Hy) as (y' & e & ? & ? & ?). order.
 Qed.
-Hint Resolve map_option_bst.
+Hint Resolve mapo_lt mapo_gt.
+
+Lemma mapo_bst m : Bst m -> Bst (mapo f m).
+Proof.
+functional induction (mapo f m); simpl; auto; intro H; inv Bst.
+- apply join_bst, create_bst; auto.
+- apply concat_bst; auto. apply between with x; auto.
+Qed.
+Hint Resolve mapo_bst.
 
 Ltac nonify e :=
  replace e with (@None elt) by
@@ -1641,13 +1645,12 @@ Ltac nonify e :=
 Definition obind {A B} (o:option A) (f:A->option B) :=
   match o with Some a => f a | None => None end.
 
-Lemma map_option_find m x :
+Lemma mapo_find m x :
   Bst m ->
   exists y, X.eq y x /\
-            find x (map_option f m) = obind (find x m) (f y).
+            find x (mapo f m) = obind (find x m) (f y).
 Proof.
-intros B. generalize (map_option_bst B). revert B.
-functional induction (map_option f m); simpl; auto; intros B B';
+functional induction (mapo f m); simpl; auto; intros B;
  inv Bst.
 - now exists x.
 - rewrite join_find; auto.
@@ -1657,6 +1660,7 @@ functional induction (map_option f m); simpl; auto; intros B B';
       exists y'; split; trivial.
     * destruct IHt0 as (y' & ? & ?); auto.
       exists y'; split; trivial.
+  + constructor; auto using mapo_lt, mapo_gt.
 - rewrite concat_find; auto.
   + destruct IHt0 as (y' & ? & ->); auto.
     destruct IHt as (y'' & ? & ->); auto.
@@ -1666,10 +1670,10 @@ functional induction (map_option f m); simpl; auto; intros B B';
     * nonify (find x l). exists y'. split; trivial.
       destruct (find x r); simpl; trivial.
       now destruct (f y' e).
-  + eapply map_option_apart; eauto.
+  + apply between with x0; auto.
 Qed.
 
-End Map_option.
+End Mapo.
 
 Section Gmerge.
 Variable elt elt' elt'' : Type.
@@ -1703,33 +1707,36 @@ Proof.
     destruct (@mapl_f0 y m2) as (y' & ? & ->); trivial.
     intros A B. rewrite B in A. now elim A.
   - rewrite join_in in *. revert IHt1 IHt0 H. cleansplit.
-    destruct (split_bst x1 B2).
+    generalize (split_bst_l x1 B2) (split_bst_r x1 B2).
     rewrite split_in_r, split_in_l; intuition_in.
   - rewrite concat_in in *. revert IHt1 IHt0 H; cleansplit.
-    destruct (split_bst x1 B2).
+    generalize (split_bst_l x1 B2) (split_bst_r x1 B2).
     rewrite split_in_r, split_in_l; intuition_in.
 Qed.
+
+Lemma gmerge_lt m m' x : Bst m -> Bst m' ->
+  x >> m -> x >> m' -> x >> gmerge m m'.
+Proof.
+  intros. apply above. intros y Hy.
+  apply gmerge_in in Hy; intuition_in; order.
+Qed.
+
+Lemma gmerge_gt m m' x : Bst m -> Bst m' ->
+  x << m -> x << m' -> x << gmerge m m'.
+Proof.
+  intros. apply below. intros y Hy.
+  apply gmerge_in in Hy; intuition_in; order.
+Qed.
+Hint Resolve gmerge_lt gmerge_gt.
+Hint Resolve split_bst_l split_bst_r split_lt_l split_gt_r.
 
 Lemma gmerge_bst m m' : Bst m -> Bst m' -> Bst (gmerge m m').
 Proof.
   functional induction (gmerge m m'); intros B1 B2; auto;
-  factornode m2; inv Bst; destruct (split_bst x1 B2);
+  factornode m2; inv Bst;
   (apply join_bst, create_bst || apply concat_bst);
   revert IHt1 IHt0; cleansplit; intuition.
-  - apply above. intros y Hy.
-    apply gmerge_in in Hy; trivial.
-    rewrite split_in_l in Hy; trivial.
-    intuition_in. order.
-  - apply below. intros y Hy; trivial.
-    apply gmerge_in in Hy; trivial.
-    rewrite split_in_r in Hy; trivial.
-    intuition_in. order.
-  - intros y y' Hy Hy'.
-    apply gmerge_in in Hy; trivial.
-    apply gmerge_in in Hy'; trivial.
-    rewrite split_in_l in Hy; trivial.
-    rewrite split_in_r in Hy'; trivial.
-    intuition_in; order.
+  apply between with x1; auto.
 Qed.
 Hint Resolve gmerge_bst.
 
@@ -1748,8 +1755,7 @@ Lemma gmerge_find m m' x : Bst m -> Bst m' ->
  exists y, X.eq y x /\
            find x (gmerge m m') = f0 y (find x m) (find x m').
 Proof.
-  intros B B'. generalize (gmerge_bst B B'). revert B B'.
-  functional induction (gmerge m m'); intros B1 B2 B H;
+  functional induction (gmerge m m'); intros B1 B2 H;
   try factornode m2; inv Bst.
   - destruct H; [ intuition_in | ].
     destruct (@mapr_f0 x m2) as (y,(Hy,E)); trivial.
@@ -1761,10 +1767,10 @@ Proof.
     exists y; split; trivial.
     rewrite E. simpl. apply in_find in H; trivial.
     destruct (find x m2); simpl; intuition.
-  - destruct (split_bst x1 B2).
+  - generalize (split_bst_l x1 B2) (split_bst_r x1 B2).
     rewrite (split_find x1 x B2).
-    rewrite e1 in *; simpl in *.
-    rewrite join_find; auto.
+    rewrite e1 in *; simpl in *. intros.
+    rewrite join_find by (cleansplit; constructor; auto).
     simpl. case X.compare_spec; intros.
     + exists x1. split; auto. now rewrite <- e3, f0_f.
     + apply IHt1; auto. clear IHt1 IHt0.
@@ -1773,33 +1779,26 @@ Proof.
     + apply IHt0; auto. clear IHt1 IHt0.
       cleansplit; rewrite split_in_r; trivial.
       intuition_in; order.
-  - destruct (split_bst x1 B2).
+  - generalize (split_bst_l x1 B2) (split_bst_r x1 B2).
     rewrite (split_find x1 x B2).
     pose proof (split_lt_l x1 B2).
     pose proof (split_gt_r x1 B2).
-    rewrite e1 in *; simpl in *.
-    rewrite concat_find; auto.
-    + case X.compare_spec; intros.
-      * clear IHt0 IHt1.
-        exists x1. split; auto. rewrite <- f0_f, e2.
-        nonify (find x (gmerge r1 r2')).
-        nonify (find x (gmerge l1 l2')). trivial.
-      * nonify (find x (gmerge r1 r2')).
-        simpl. apply IHt1; auto. clear IHt1 IHt0.
-        intuition_in; try order.
-        right. cleansplit. now apply split_in_l.
-      * nonify (find x (gmerge l1 l2')). simpl.
-        rewrite oelse_none_r.
-        apply IHt0; auto. clear IHt1 IHt0.
-        intuition_in; try order.
-        right. cleansplit. now apply split_in_r.
-    + cleansplit. intros y y' Hy Hy'.
-      destruct (split_bst x1 B2).
-      apply gmerge_in in Hy; auto.
-      apply gmerge_in in Hy'; auto.
-      rewrite split_in_l in Hy; auto.
-      rewrite split_in_r in Hy'; auto.
-      intuition_in; order.
+    rewrite e1 in *; simpl in *. intros.
+    rewrite concat_find by (try apply between with x1; auto).
+    case X.compare_spec; intros.
+    + clear IHt0 IHt1.
+      exists x1. split; auto. rewrite <- f0_f, e2.
+      nonify (find x (gmerge r1 r2')).
+      nonify (find x (gmerge l1 l2')). trivial.
+    + nonify (find x (gmerge r1 r2')).
+      simpl. apply IHt1; auto. clear IHt1 IHt0.
+      intuition_in; try order.
+      right. cleansplit. now apply split_in_l.
+    + nonify (find x (gmerge l1 l2')). simpl.
+      rewrite oelse_none_r.
+      apply IHt0; auto. clear IHt1 IHt0.
+      intuition_in; try order.
+      right. cleansplit. now apply split_in_r.
 Qed.
 
 End Gmerge.
@@ -1812,7 +1811,7 @@ Lemma merge_bst m m' : Bst m -> Bst m' -> Bst (merge f m m').
 Proof.
 unfold merge; intros.
 apply gmerge_bst with f;
- auto using map_option_bst, map_option_find.
+ auto using mapo_bst, mapo_find.
 Qed.
 
 Lemma merge_spec1 m m' x : Bst m -> Bst m' ->
@@ -1822,10 +1821,10 @@ Lemma merge_spec1 m m' x : Bst m -> Bst m' ->
 Proof.
   unfold merge; intros.
   edestruct (gmerge_find (f0:=f)) as (y,(Hy,E));
-    eauto using map_option_bst.
+    eauto using mapo_bst.
   - reflexivity.
-  - intros. now apply map_option_find.
-  - intros. now apply map_option_find.
+  - intros. now apply mapo_find.
+  - intros. now apply mapo_find.
 Qed.
 
 Lemma merge_spec2 m m' x : Bst m -> Bst m' ->
@@ -1833,7 +1832,7 @@ Lemma merge_spec2 m m' x : Bst m -> Bst m' ->
 Proof.
 unfold merge; intros.
 eapply gmerge_in with (f0:=f); try eassumption;
- auto using map_option_bst, map_option_find.
+ auto using mapo_bst, mapo_find.
 Qed.
 
 End Merge.
