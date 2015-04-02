@@ -34,7 +34,7 @@ Extract Inductive sumor => option [ Some None ].
    -  rightmost choice (Inright) is (None) *)
 
 
-(** To preserve its laziness, andb is normally expansed.
+(** To preserve its laziness, andb is normally expanded.
     Let's rather use the ocaml && *)
 Extract Inlined Constant andb => "(&&)".
 

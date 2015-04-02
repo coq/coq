@@ -212,7 +212,7 @@ and pp_module_expr = function
   | MEfunctor _ -> mt ()
       (* for the moment we simply discard unapplied functors *)
   | MEident _ | MEapply _ -> assert false
-      (* should be expansed in extract_env *)
+      (* should be expanded in extract_env *)
 
 let pp_struct =
   let pp_sel (mp,sel) =

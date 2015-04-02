@@ -117,8 +117,8 @@ let xmlReference ref =
 let xmlRequire loc ?(attr=[]) xml = xmlWithLoc loc "require" attr xml
 let xmlImport loc ?(attr=[]) xml = xmlWithLoc loc "import" attr xml
 
-let xmlAddLoaPath loc ?(attr=[]) xml = xmlWithLoc loc "addloadpath" attr xml
-let xmlRemoveLoaPath loc ?(attr=[]) = xmlWithLoc loc "removeloadpath" attr
+let xmlAddLoadPath loc ?(attr=[]) xml = xmlWithLoc loc "addloadpath" attr xml
+let xmlRemoveLoadPath loc ?(attr=[]) = xmlWithLoc loc "removeloadpath" attr
 let xmlAddMLPath loc ?(attr=[]) = xmlWithLoc loc "addmlpath" attr
 
 let xmlExtend loc xml = xmlWithLoc loc "extend" [] xml
@@ -667,12 +667,11 @@ let rec tmpp v loc =
 
   (* Auxiliary file and library management *)
   | VernacAddLoadPath (recf,name,None) ->
-      xmlAddLoaPath loc ~attr:["rec",string_of_bool recf;"path",name] []
+      xmlAddLoadPath loc ~attr:["rec",string_of_bool recf;"path",name] []
   | VernacAddLoadPath (recf,name,Some dp) ->
-      xmlAddLoaPath loc ~attr:["rec",string_of_bool recf;"path",name]
+      xmlAddLoadPath loc ~attr:["rec",string_of_bool recf;"path",name]
         [PCData (Names.DirPath.to_string dp)]
-                 
-  | VernacRemoveLoadPath name -> xmlRemoveLoaPath loc ~attr:["path",name] []
+  | VernacRemoveLoadPath name -> xmlRemoveLoadPath loc ~attr:["path",name] []
   | VernacAddMLPath (recf,name) ->
       xmlAddMLPath loc ~attr:["rec",string_of_bool recf;"path",name] []
   | VernacDeclareMLModule sl -> xmlDeclareMLModule loc sl
