@@ -63,21 +63,24 @@ let add_load_path phys_path coq_path ~implicit =
   match List.filter filter !load_paths with
   | [] ->
     load_paths := binding :: !load_paths
-  | [p] ->
-    let dir = p.path_logical in
-    if not (DirPath.equal coq_path dir)
-      (* If this is not the default -I . to coqtop *)
-      && not
-      (String.equal phys_path (CUnix.canonical_path_name Filename.current_dir_name)
-          && DirPath.equal coq_path (Nameops.default_root_prefix))
-    then
+  | [{ path_logical = old_path; path_implicit = old_implicit }] ->
+    let replace =
+      if DirPath.equal coq_path old_path then
+        implicit <> old_implicit
+      else if DirPath.equal coq_path (Nameops.default_root_prefix)
+              && String.equal phys_path (CUnix.canonical_path_name Filename.current_dir_name) then
+        false (* This is the default "-I ." path, don't override the old path *)
+      else
+        let () =
+          (* Do not warn when overriding the default "-I ." path *)
+          if not (DirPath.equal old_path Nameops.default_root_prefix) then
+            msg_warning
+              (str phys_path ++ strbrk " was previously bound to " ++
+                 pr_dirpath old_path ++ strbrk "; it is remapped to " ++
+                 pr_dirpath coq_path) in
+        true in
+    if replace then
       begin
-        (* Assume the user is concerned by library naming *)
-        if not (DirPath.equal dir Nameops.default_root_prefix) then
-          msg_warning
-            (str phys_path ++ strbrk " was previously bound to " ++
-              pr_dirpath dir ++ strbrk "; it is remapped to " ++
-              pr_dirpath coq_path);
         remove_load_path phys_path;
         load_paths := binding :: !load_paths;
       end
@@ -99,9 +102,8 @@ let filter_path f =
 let expand_path dir =
   let rec aux = function
   | [] -> []
-  | p :: l ->
-    let { path_physical = ph; path_logical = lg } = p in
-    match p.path_implicit with
+  | { path_physical = ph; path_logical = lg; path_implicit = implicit }  :: l ->
+    match implicit with
     | true ->
       (** The path is implicit, so that we only want match the logical suffix *)
       if is_dirpath_suffix_of dir lg then (ph, lg) :: aux l else aux l
