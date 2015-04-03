@@ -253,10 +253,13 @@ let newfile _ =
   !refresh_editor_hook ();
   notebook#goto_page index
 
-let load _ =
-  match select_file_for_open ~title:"Load file" () with
+let load sn =
+  let filename = sn.fileops#filename in
+  match select_file_for_open ~title:"Load file" ?filename () with
     | None -> ()
     | Some f -> FileAux.load_file f
+
+let load = cb_on_current_term load
 
 let save _ = on_current_term (FileAux.check_save ~saveas:false)
 
