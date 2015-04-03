@@ -80,6 +80,8 @@ sig
   val find_all : t -> ident list
 
   val map : (ident -> ident) -> t -> t
+
+  val refresh_metas : t -> t
 end
 
 module Make :
