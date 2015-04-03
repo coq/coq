@@ -371,6 +371,19 @@ struct
   let find_all dn = Idset.elements (TDnet.find_all dn)
 
   let map f dn = TDnet.map f (fun x -> x) dn
+
+  module IntMap = Map.Make(Int)
+
+  let refresh_metas dn =
+    let new_metas = ref IntMap.empty in
+    let refresh_one_meta i =
+      try IntMap.find i !new_metas
+      with Not_found ->
+        let new_meta = fresh_meta () in
+        let () = new_metas := IntMap.add i new_meta !new_metas in
+        new_meta
+    in
+    TDnet.map_metas refresh_one_meta dn
 end
 
 module type S =
@@ -385,4 +398,5 @@ sig
   val search_pattern : t -> constr -> ident list
   val find_all : t -> ident list
   val map : (ident -> ident) -> t -> t
+  val refresh_metas : t -> t
 end

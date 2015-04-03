@@ -113,6 +113,8 @@ sig
 
   (** apply a function on each identifier and node of terms in a dnet *)
   val map : (ident -> ident) -> (unit structure -> unit structure) -> t -> t
+
+  val map_metas : (meta -> meta) -> t -> t
 end
 
 module Make :
