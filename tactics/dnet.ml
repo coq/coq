@@ -39,6 +39,7 @@ sig
   val inter : t -> t -> t
   val union : t -> t -> t
   val map : (ident -> ident) -> (unit structure -> unit structure) -> t -> t
+  val map_metas : (meta -> meta) -> t -> t
 end
 
 module Make =
@@ -287,5 +288,14 @@ struct
       | Terminal (e,is) -> Terminal (e,idset_map sidset is)
       | Node e -> Node (T.map (map sidset sterm) e) in
     Nodes (tmap_map sterm snode t, Mmap.map (idset_map sidset) m)
+
+  let rec map_metas f (Nodes (t, m)) : t =
+    let f_node = function
+      | Terminal (e, is) -> Terminal (T.map (map_metas f) e, is)
+      | Node e -> Node (T.map (map_metas f) e)
+    in
+    let m' = Mmap.fold (fun m s acc -> Mmap.add (f m) s acc) m Mmap.empty in
+    let t' = Tmap.fold (fun k n acc -> Tmap.add k (f_node n) acc) t Tmap.empty in
+    Nodes (t', m')
 
 end
