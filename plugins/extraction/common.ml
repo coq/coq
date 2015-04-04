@@ -628,7 +628,7 @@ let check_extract_ascii () =
   try
     let char_type = match lang () with
       | Ocaml -> "char"
-      | Haskell -> "Char"
+      | Haskell -> "Prelude.Char"
       | _ -> raise Not_found
     in
     String.equal (find_custom (IndRef (ind_ascii, 0))) (char_type)
