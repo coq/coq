@@ -600,6 +600,7 @@ let pp_global k r =
     let rls = List.rev ls in (* for what come next it's easier this way *)
     match lang () with
       | Scheme -> unquote s (* no modular Scheme extraction... *)
+      | JSON -> dottify (List.map unquote rls)
       | Haskell -> if modular () then pp_haskell_gen k mp rls else s
       | Ocaml -> pp_ocaml_gen k mp rls (Some l)
 

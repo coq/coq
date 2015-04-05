@@ -164,7 +164,7 @@
 	  <keyword>(\%{locality}|(Reserved|Tactic)\%{space})?Notation</keyword>
 	  <keyword>\%{locality}Infix</keyword>
 	  <keyword>Declare\%{space}ML\%{space}Module</keyword>
-	  <keyword>Extraction\%{space}Language\%{space}(Ocaml|Haskell|Scheme)</keyword>
+	  <keyword>Extraction\%{space}Language\%{space}(Ocaml|Haskell|Scheme|JSON)</keyword>
 	</context>
 	<context id="hint-command" style-ref="vernac-keyword">
 	  <prefix>\%{locality}Hint\%{space}</prefix>
