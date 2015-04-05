@@ -221,13 +221,16 @@ let pp_decl = function
       ("argnames", json_list (List.map json_id l));
       ("value", json_type l t)
     ]
-  | Dfix (rv, defs, typs) -> prvecti_with_sep pr_comma (fun i r ->
-      json_dict [
-        ("what", json_str "decl:fix");
-        ("name", json_global Term rv.(i));
-        ("type", json_type [] typs.(i));
-        ("value", json_function (empty_env ()) defs.(i))
-      ]) rv
+  | Dfix (rv, defs, typs) -> json_dict [
+      ("what", json_str "decl:fixgroup");
+      ("fixlist", json_listarr (Array.mapi (fun i r ->
+        json_dict [
+          ("what", json_str "fixgroup:item");
+          ("name", json_global Term rv.(i));
+          ("type", json_type [] typs.(i));
+          ("value", json_function (empty_env ()) defs.(i))
+        ]) rv))
+    ]
   | Dterm (r, a, t) -> json_dict [
       ("what", json_str "decl:term");
       ("name", json_global Term r);
