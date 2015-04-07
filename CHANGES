@@ -306,10 +306,9 @@ Notations
 
 Tools
 
-- Option -I now only adds directories to the ml path. To add to both
-  the load path and the ml path, use -I -as.
-- Option -Q behaves as -I -as and -R, except that the logical path of
-  any loaded file has to be fully qualified.
+- Option -I now only adds directories to the ml path.
+- Option -Q behaves as -R, except that the logical path of any loaded file has
+  to be fully qualified.
 - Option -R no longer adds recursively to the ml path; only the root
   directory is added. (Behavior with respect to the load path is
   unchanged.)
