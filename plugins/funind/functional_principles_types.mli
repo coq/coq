@@ -3,6 +3,7 @@ open Term
 open Misctypes
 
 val generate_functional_principle :
+  Evd.evar_map ref -> 
   (* do we accept interactive proving *)
   bool ->
   (* induction principle on rel *)
@@ -12,7 +13,7 @@ val generate_functional_principle :
   (* Name of the new principle *)
   (Id.t) option ->
   (* the compute functions to use   *)
-  constant array ->
+  pconstant array ->
   (* We prove the nth- principle *)
   int  ->
   (* The tactic to use to make the proof w.r
@@ -27,7 +28,8 @@ val compute_new_princ_type_from_rel : constr array -> sorts array ->
 
 exception No_graph_found
 
-val make_scheme : (constant*glob_sort) list -> Entries.definition_entry list
+val make_scheme :   Evd.evar_map ref ->
+ (pconstant*glob_sort) list -> Entries.definition_entry list
 
 val build_scheme : (Id.t*Libnames.reference*glob_sort) list ->  unit
 val build_case_scheme : (Id.t*Libnames.reference*glob_sort)  ->  unit

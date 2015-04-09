@@ -70,7 +70,7 @@ let do_observe_tac s tac g =
   with reraise ->
     let reraise = Errors.push reraise in
     let e = Cerrors.process_vernac_interp_error reraise in
-    msgnl (str "observation "++ s++str " raised exception " ++
+    observe (str "observation "++ s++str " raised exception " ++
 	     Errors.iprint e ++ str " on goal " ++ goal );
     iraise reraise;;
 
@@ -92,13 +92,24 @@ let nf_zeta =
     Evd.empty
 
 
-(* [id_to_constr id] finds the term associated to [id] in the global environment *)
-let id_to_constr id =
-  try
-    Constrintern.global_reference id
-  with Not_found ->
-    raise (UserError ("",str "Cannot find " ++ Ppconstr.pr_id id))
+(* (\* [id_to_constr id] finds the term associated to [id] in the global environment *\) *)
+(* let id_to_constr id = *)
+(*   try *)
+(*     Constrintern.global_reference id *)
+(*   with Not_found -> *)
+(*     raise (UserError ("",str "Cannot find " ++ Ppconstr.pr_id id)) *)
 
+
+let make_eq () =
+  try
+    Universes.constr_of_global (Coqlib.build_coq_eq ())
+  with _ -> assert false 
+let make_eq_refl () =
+  try
+    Universes.constr_of_global (Coqlib.build_coq_eq_refl ())
+  with _ -> assert false
+
+	  
 (* [generate_type g_to_f f graph i] build the completeness (resp. correctness) lemma type if [g_to_f = true]
    (resp. g_to_f = false) where [graph]  is the graph of [f] and is the [i]th function in the block.
 
@@ -111,11 +122,13 @@ let id_to_constr id =
    res = fv \rightarrow graph\ x_1\ldots x_n\ res\] decomposed as the context and the conclusion
  *)
 
-let generate_type g_to_f f graph i =
+let generate_type evd g_to_f f graph i =
   (*i we deduce the number of arguments of the function and its returned type from the graph i*)
-  let gr,u = destInd graph in
-  let graph_arity = Inductive.type_of_inductive (Global.env()) 
-    (Global.lookup_inductive gr, u) in
+  let evd',graph =
+    Evd.fresh_global  (Global.env ()) !evd  (Globnames.IndRef (fst (destInd graph)))
+  in
+  let evd',graph_arity = Typing.e_type_of (Global.env ()) evd' graph in
+  evd:=evd';
   let ctxt,_ = decompose_prod_assum graph_arity in
   let fun_ctxt,res_type =
     match ctxt with
@@ -141,11 +154,10 @@ let generate_type g_to_f f graph i =
     the hypothesis [res = fv] can then be computed
     We will need to lift it by one in order to use it as a conclusion
     i*)
-  let make_eq () =
-(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq ())
+  let make_eq = make_eq ()
   in
   let res_eq_f_of_args =
-    mkApp(make_eq (),[|lift 2 res_type;mkRel 1;mkRel 2|])
+    mkApp(make_eq ,[|lift 2 res_type;mkRel 1;mkRel 2|])
   in
   (*i
     The hypothesis [graph\ x_1\ldots x_n\ res] can then be computed
@@ -158,12 +170,12 @@ let generate_type g_to_f f graph i =
     \[\forall (x_1:t_1)\ldots(x_n:t_n), let fv := f x_1\ldots x_n in, forall res,  \]
     i*)
   let pre_ctxt =
-    (Name res_id,None,lift 1 res_type)::(Name fv_id,Some (mkApp(mkConst f,args_as_rels)),res_type)::fun_ctxt
+    (Name res_id,None,lift 1 res_type)::(Name fv_id,Some (mkApp(f,args_as_rels)),res_type)::fun_ctxt
   in
   (*i and we can return the solution depending on which lemma type we are defining i*)
   if g_to_f
-  then (Anonymous,None,graph_applied)::pre_ctxt,(lift 1 res_eq_f_of_args)
-  else (Anonymous,None,res_eq_f_of_args)::pre_ctxt,(lift 1 graph_applied)
+  then (Anonymous,None,graph_applied)::pre_ctxt,(lift 1 res_eq_f_of_args),graph
+  else (Anonymous,None,res_eq_f_of_args)::pre_ctxt,(lift 1 graph_applied),graph
 
 
 (*
@@ -171,7 +183,7 @@ let generate_type g_to_f f graph i =
 
    WARNING: while convertible, [type_of body] and [type] can be non equal
 *)
-let find_induction_principle f =
+let find_induction_principle evd f =
   let f_as_constant,u =  match kind_of_term f with
     | Const c' -> c'
     | _ -> error "Must be used with a function"
@@ -180,28 +192,10 @@ let find_induction_principle f =
   match infos.rect_lemma with
     | None -> raise Not_found
     | Some rect_lemma ->
-	let rect_lemma = mkConst rect_lemma in
-	let typ = Typing.type_of (Global.env ()) Evd.empty rect_lemma in
-	rect_lemma,typ
-
-
-
-(*     let fname =  *)
-(*       match kind_of_term f with  *)
-(* 	| Const c' ->  *)
-(* 	    Label.to_id (con_label c')  *)
-(* 	| _ -> error "Must be used with a function"  *)
-(*     in *)
-
-(*     let princ_name =  *)
-(*       ( *)
-(* 	Indrec.make_elimination_ident *)
-(* 	  fname *)
-(* 	  InType *)
-(*       ) *)
-(*     in *)
-(*     let c = (\* mkConst(mk_from_const (destConst f) princ_name ) in  *\) failwith "" in  *)
-(*     c,Typing.type_of (Global.env ()) Evd.empty c *)
+       let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (Globnames.ConstRef rect_lemma) in
+       let evd',typ = Typing.e_type_of ~refresh:true (Global.env ()) evd' rect_lemma in
+       evd:=evd';
+       rect_lemma,typ
 
 
 let rec generate_fresh_id x avoid i =
@@ -210,11 +204,6 @@ let rec generate_fresh_id x avoid i =
   else
     let id = Namegen.next_ident_away_in_goal x avoid in
     id::(generate_fresh_id x (id::avoid) (pred i))
-
-let make_eq () =
-(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq ())
-let make_eq_refl () =
-(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq_refl ())
 
 
 (* [prove_fun_correct functional_induction funs_constr graphs_constr schemes lemmas_types_infos i ]
@@ -241,7 +230,7 @@ let make_eq_refl () =
    \end{enumerate}
 
 *)
-let prove_fun_correct functional_induction funs_constr graphs_constr schemes lemmas_types_infos i : tactic =
+let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes lemmas_types_infos i : tactic =
   fun g ->
     (* first of all we recreate the lemmas types to be used as predicates of the induction principle
        that is~:
@@ -286,46 +275,6 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
     (* The tactic to prove the ith branch of the principle *)
     let prove_branche i g =
       (* We get the identifiers of this branch *)
-      (*
-	let this_branche_ids =
-	List.fold_right
-	(fun (_,pat) acc ->
-	     match pat with
-	       | Genarg.IntroIdentifier id -> Id.Set.add id acc
-	| _ -> anomaly (Pp.str "Not an identifier")
-	)
-	(List.nth intro_pats (pred i))
-	Id.Set.empty
-      in
-	let pre_args g =
-	List.fold_right
-	  (fun (id,b,t) pre_args ->
-	    if Id.Set.mem id this_branche_ids
-	    then
-	      match b with
-		| None -> id::pre_args
-		| Some b -> pre_args
-	    else pre_args
-	  )
-	  (pf_hyps g)
-	  ([])
-      in
-      let pre_args g = List.rev (pre_args g) in 
-      let pre_tac g =
-	List.fold_right
-	  (fun (id,b,t) pre_tac ->
-	     if Id.Set.mem id this_branche_ids
-	     then
-	       match b with
-		 | None -> pre_tac
-		 | Some b ->
-		   tclTHEN (h_reduce (Glob_term.Unfold([Glob_term.AllOccurrences,EvalVarRef id])) allHyps) pre_tac
-	     else pre_tac
-	  )
-	  (pf_hyps g)
-	  tclIDTAC
-      in
-*)     
       let pre_args =
       	List.fold_right
       	  (fun (_,pat) acc ->
@@ -345,7 +294,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	 If [hid] has another type the corresponding argument of the constructor is [hid]
       *)
       let constructor_args g =
-	List.fold_right
+	List.fold_right 
 	  (fun hid acc ->
 	     let type_of_hid = pf_type_of g (mkVar hid) in
 	     match kind_of_term type_of_hid with
@@ -358,7 +307,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 			       | App(eq,args), App(graph',_)
 				   when
 				     (eq_constr eq eq_ind) &&
-				       Array.exists  (eq_constr graph') graphs_constr ->
+				       Array.exists  (Constr.eq_constr_nounivs graph') graphs_constr ->
 				   (args.(2)::(mkApp(mkVar hid,[|args.(2);(mkApp(eq_construct,[|args.(0);args.(2)|]))|]))
 				    ::acc)
 			       | _ -> mkVar hid ::  acc
@@ -395,7 +344,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	  end
       in
       (* we can then build the final proof term *)
-      let app_constructor g = applist((mkConstruct(constructor)),constructor_args g) in
+      let app_constructor g = applist((mkConstructU(constructor,u)),constructor_args g) in
       (* an apply the tactic *)
       let res,hres =
 	match generate_fresh_id (Id.of_string "z") (ids(* @this_branche_ids *)) 2 with
@@ -428,7 +377,9 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	    (* replacing [res] with its value *)
 	    observe_tac "rewriting res value" (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar hres)));
 	    (* Conclusion *)
-	    observe_tac "exact" (fun g -> Proofview.V82.of_tactic (exact_check (app_constructor g)) g)  
+	    observe_tac "exact" (fun g ->
+				 Pp.msgnl (str "TITI " ++ pf_apply Printer.pr_lconstr_env g (app_constructor g));
+				 Proofview.V82.of_tactic (exact_check (app_constructor g)) g)  
 	  ]
       )
 	g
@@ -436,13 +387,15 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
     (* end of branche proof *)
     let lemmas =
       Array.map
-	(fun (_,(ctxt,concl)) ->
+	(fun ((_,(ctxt,concl))) ->
 	   match ctxt with
 	     | [] | [_] | [_;_] -> anomaly (Pp.str "bad context")
 	     | hres::res::(x,_,t)::ctxt ->
-		 Termops.it_mkLambda_or_LetIn
-		   (Termops.it_mkProd_or_LetIn concl [hres;res])
-		   ((x,None,t)::ctxt)
+		let res = Termops.it_mkLambda_or_LetIn
+			    (Termops.it_mkProd_or_LetIn concl [hres;res])
+			    ((x,None,t)::ctxt)
+		in
+		res
 	)
 	lemmas_types_infos
     in
@@ -457,7 +410,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (*(Loc.ghost,Glob_term.NamedHyp id,p)*)p::bindings,id::avoid
+	     p::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
 	  princ_infos.params
@@ -467,13 +420,14 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (*(Loc.ghost,Glob_term.NamedHyp id,(nf_zeta p))*) (nf_zeta p)::bindings,id::avoid)
+	     (nf_zeta p)::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
 	  (lemmas)))
       in
-      (* Glob_term.ExplicitBindings *) (params_bindings@lemmas_bindings)
+      (params_bindings@lemmas_bindings)
     in
+    Pp.msgnl (str "princ_type := " ++ pf_apply Printer.pr_lconstr_env g princ_type);
     tclTHENSEQ
       [ 
 	observe_tac "principle" (Proofview.V82.of_tactic (assert_by
@@ -484,10 +438,11 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	(* observe_tac "titi" (pose_proof (Name (Id.of_string "__")) (Reductionops.nf_beta Evd.empty  ((mkApp (mkVar principle_id,Array.of_list bindings))))); *)
 	observe_tac "idtac" tclIDTAC;
 	tclTHEN_i
-	  (observe_tac "functional_induction" (
-	    (fun gl -> 
-	      let term = mkApp (mkVar principle_id,Array.of_list bindings) in
-	      let gl', _ty = pf_eapply Typing.e_type_of gl term in
+	  (observe_tac
+	     "functional_induction" (
+	       (fun gl ->
+		let term = mkApp (mkVar principle_id,Array.of_list bindings) in
+		let gl', _ty = pf_eapply (Typing.e_type_of ~refresh:true)  gl term in
 		Proofview.V82.of_tactic (apply term) gl')
 	   ))
 	  (fun i g -> observe_tac ("proving branche "^string_of_int i) (prove_branche i) g )
@@ -495,230 +450,6 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       g
 
 
-(*
-let prove_fun_correct functional_induction funs_constr graphs_constr schemes lemmas_types_infos i : tactic =
-  fun g ->
-    (* first of all we recreate the lemmas types to be used as predicates of the induction principle
-       that is~:
-       \[fun (x_1:t_1)\ldots(x_n:t_n)=> fun  fv => fun res => res = fv \rightarrow graph\ x_1\ldots x_n\ res\]
-    *)
-    let lemmas =
-      Array.map
-	(fun (_,(ctxt,concl)) ->
-	   match ctxt with
-	     | [] | [_] | [_;_] -> anomaly (Pp.str "bad context")
-	     | hres::res::(x,_,t)::ctxt ->
-		 Termops.it_mkLambda_or_LetIn
-		   (Termops.it_mkProd_or_LetIn concl [hres;res])
-		   ((x,None,t)::ctxt)
-	)
-	lemmas_types_infos
-    in
-    (* we the get the definition of the graphs block *)
-    let graph_ind = destInd graphs_constr.(i) in
-    let kn = fst graph_ind in
-    let mib,_ = Global.lookup_inductive graph_ind in
-    (* and the principle to use in this lemma in $\zeta$ normal form *)
-    let f_principle,princ_type = schemes.(i) in
-    let princ_type =  nf_zeta princ_type in
-    let princ_infos = Tactics.compute_elim_sig princ_type in
-    (* The number of args of the function is then easily computable *)
-    let nb_fun_args = nb_prod (pf_concl g)  - 2  in
-    let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
-    let ids = args_names@(pf_ids_of_hyps g) in
-    (* Since we cannot ensure that the functional principle is defined in the
-       environment and due to the bug #1174, we will need to pose the principle
-       using a name
-    *)
-    let principle_id = Namegen.next_ident_away_in_goal (Id.of_string "princ") ids in
-    let ids = principle_id :: ids in
-    (* We get the branches of the principle *)
-    let branches = List.rev princ_infos.branches in
-    (* and built the intro pattern for each of them *)
-    let intro_pats =
-      List.map
-	(fun (_,_,br_type) ->
-	   List.map
-	     (fun id -> Loc.ghost, Genarg.IntroIdentifier id)
-	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
-	)
-	branches
-    in
-    (* before building the full intro pattern for the principle *)
-    let pat = Some (Loc.ghost,Genarg.IntroOrAndPattern intro_pats) in
-    let eq_ind = Coqlib.build_coq_eq () in
-    let eq_construct = mkConstruct((destInd eq_ind),1) in
-    (* The next to referencies will be used to find out which constructor to apply in each branch *)
-    let ind_number = ref 0
-    and min_constr_number = ref 0 in
-    (* The tactic to prove the ith branch of the principle *)
-    let prove_branche i g =
-      (* We get the identifiers of this branch *)
-      let this_branche_ids =
-	List.fold_right
-	  (fun (_,pat) acc ->
-	     match pat with
-	       | Genarg.IntroIdentifier id -> Id.Set.add id acc
-	       | _ -> anomaly (Pp.str "Not an identifier")
-	  )
-	  (List.nth intro_pats (pred i))
-	  Id.Set.empty
-      in
-      (* and get the real args of the branch by unfolding the defined constant *)
-      let pre_args,pre_tac =
-	List.fold_right
-	  (fun (id,b,t) (pre_args,pre_tac) ->
-	     if Id.Set.mem id this_branche_ids
-	     then
-	       match b with
-		 | None -> (id::pre_args,pre_tac)
-		 | Some b ->
-		     (pre_args,
-		      tclTHEN (h_reduce (Glob_term.Unfold([Glob_term.AllOccurrences,EvalVarRef id])) allHyps) pre_tac
-		     )
-	     else (pre_args,pre_tac)
-	  )
-	  (pf_hyps g)
-	  ([],tclIDTAC)
-      in
-      (*
-	 We can then recompute the arguments of the constructor.
-	 For each [hid] introduced by this branch, if [hid] has type
-	 $forall res, res=fv -> graph.(j)\ x_1\ x_n res$ the corresponding arguments of the constructor are
-	 [ fv (hid fv (refl_equal fv)) ].
-	 If [hid] has another type the corresponding argument of the constructor is [hid]
-      *)
-      let constructor_args =
-	List.fold_right
-	  (fun hid acc ->
-	     let type_of_hid = pf_type_of g (mkVar hid) in
-	     match kind_of_term type_of_hid with
-	       | Prod(_,_,t') ->
-		   begin
-		     match kind_of_term t' with
-		       | Prod(_,t'',t''') ->
-			   begin
-			     match kind_of_term t'',kind_of_term t''' with
-			       | App(eq,args), App(graph',_)
-				   when
-				     (eq_constr eq eq_ind) &&
-				       Array.exists  (eq_constr graph') graphs_constr ->
-				   ((mkApp(mkVar hid,[|args.(2);(mkApp(eq_construct,[|args.(0);args.(2)|]))|]))
-				    ::args.(2)::acc)
-			       | _ -> mkVar hid ::  acc
-			   end
-		       | _ -> mkVar hid :: acc
-		   end
-	       | _ -> mkVar hid :: acc
-	  ) pre_args []
-      in
-      (* in fact we must also add the parameters to the constructor args *)
-      let constructor_args =
-	let params_id = fst (List.chop princ_infos.nparams args_names) in
-	(List.map mkVar params_id)@(List.rev constructor_args)
-      in
-      (* We then get the constructor corresponding to this branch and
-	 modifies the references has needed i.e.
-	 if the constructor is the last one of the current inductive then
-	 add one the number of the inductive to take and add the number of constructor of the previous
-	 graph to the minimal constructor number
-      *)
-      let constructor =
-	let constructor_num = i - !min_constr_number in
-	let length = Array.length (mib.Declarations.mind_packets.(!ind_number).Declarations.mind_consnames) in
-	if constructor_num <= length
-	then
-	  begin
-	    (kn,!ind_number),constructor_num
-	  end
-	else
-	  begin
-	    incr ind_number;
-	    min_constr_number := !min_constr_number + length ;
-	    (kn,!ind_number),1
-	  end
-      in
-      (* we can then build the final proof term *)
-      let app_constructor = applist((mkConstruct(constructor)),constructor_args) in
-      (* an apply the tactic *)
-      let res,hres =
-	match generate_fresh_id (Id.of_string "z") (ids(* @this_branche_ids *)) 2 with
-	  | [res;hres] -> res,hres
-	  | _ -> assert false
-      in
-      observe (str "constructor := " ++ Printer.pr_lconstr_env (pf_env g) app_constructor);
-      (
-	tclTHENSEQ
-	  [
-	    (* unfolding of all the defined variables introduced by this branch *)
-	    observe_tac "unfolding" pre_tac;
-	    (* $zeta$ normalizing of the conclusion *)
-	    h_reduce
-	      (Glob_term.Cbv
-		 { Glob_term.all_flags with
-		     Glob_term.rDelta = false ;
-		     Glob_term.rConst = []
-		 }
-	      )
-	      onConcl;
-	    (* introducing the the result of the graph and the equality hypothesis *)
-	    observe_tac "introducing" (tclMAP h_intro [res;hres]);
-	    (* replacing [res] with its value *)
-	    observe_tac "rewriting res value" (Equality.rewriteLR (mkVar hres));
-	    (* Conclusion *)
-	    observe_tac "exact" (exact_check app_constructor)
-	  ]
-      )
-	g
-    in
-    (* end of branche proof *)
-    let param_names = fst (List.chop princ_infos.nparams args_names) in
-    let params = List.map mkVar param_names in
-    let lemmas = Array.to_list (Array.map (fun c -> applist(c,params)) lemmas) in
-    (* The bindings of the principle
-       that is the params of the principle and the different lemma types
-    *)
-    let bindings =
-      let params_bindings,avoid =
-	List.fold_left2
-	  (fun (bindings,avoid) (x,_,_) p ->
-	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (Loc.ghost,Glob_term.NamedHyp id,p)::bindings,id::avoid
-	  )
-	  ([],pf_ids_of_hyps g)
-	  princ_infos.params
-	  (List.rev params)
-      in
-      let lemmas_bindings =
-	List.rev (fst  (List.fold_left2
-	  (fun (bindings,avoid) (x,_,_) p ->
-	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (Loc.ghost,Glob_term.NamedHyp id,(nf_zeta p))::bindings,id::avoid)
-	  ([],avoid)
-	  princ_infos.predicates
-	  (lemmas)))
-      in
-      Glob_term.ExplicitBindings (params_bindings@lemmas_bindings)
-    in
-    tclTHENSEQ
-      [ observe_tac "intro args_names" (tclMAP h_intro args_names);
-	observe_tac "principle" (assert_by
-	  (Name principle_id)
-	  princ_type
-	  (exact_check f_principle));
-	tclTHEN_i
-	  (observe_tac "functional_induction" (
-	     fun g ->
-	       observe
-		 (pr_constr_with_binding (Printer.pr_lconstr_env (pf_env g))  (mkVar principle_id,bindings));
-	       functional_induction  false (applist(funs_constr.(i),List.map mkVar args_names))
-		 (Some (mkVar principle_id,bindings))
-		 pat g
-	   ))
-	  (fun i g -> observe_tac ("proving branche "^string_of_int i) (prove_branche i) g )
-      ]
-      g
-*)
 
 
 (* [generalize_dependent_of x hyp g]
@@ -735,12 +466,9 @@ let generalize_dependent_of x hyp g =
     g
 
 
-
-
-
-    (* [intros_with_rewrite] do the intros in each branch and treat each new hypothesis
+(* [intros_with_rewrite] do the intros in each branch and treat each new hypothesis
        (unfolding, substituting, destructing cases \ldots)
-    *)
+ *)
 let  rec intros_with_rewrite g =
   observe_tac "intros_with_rewrite" intros_with_rewrite_aux g
 and intros_with_rewrite_aux : tactic =
@@ -1020,11 +748,6 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
       g
 
 
-
-
-let do_save () = Lemmas.save_proof (Vernacexpr.(Proved(Transparent,None)))
-
-
 (* [derive_correctness make_scheme functional_induction funs graphs] create correctness and completeness
    lemmas for each function in [funs] w.r.t. [graphs]
 
@@ -1032,21 +755,28 @@ let do_save () = Lemmas.save_proof (Vernacexpr.(Proved(Transparent,None)))
    [functional_induction] is Indfun.functional_induction (same pb)
 *)
 
-let derive_correctness make_scheme functional_induction (funs: constant list) (graphs:inductive list) =
+let derive_correctness make_scheme functional_induction (funs: pconstant list) (graphs:inductive list) =
+  assert (funs <> []);
+  assert (graphs <> []);
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
-  let funs_constr = Array.map mkConst funs  in
-  States.with_state_protection_on_exception (fun () ->
-    let graphs_constr = Array.map mkInd graphs in
-    let lemmas_types_infos =
-      Util.Array.map2_i
-	(fun i f_constr graph ->
-	   let const_of_f,u = destConst f_constr in
-	   let (type_of_lemma_ctxt,type_of_lemma_concl) as type_info =
-	     generate_type false const_of_f graph i
-	   in
-	   let type_of_lemma = Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
+  let funs_constr = Array.map mkConstU funs  in
+  States.with_state_protection_on_exception
+    (fun () ->
+     let evd = ref Evd.empty in 
+     let graphs_constr = Array.map mkInd graphs in
+     let lemmas_types_infos =
+       Util.Array.map2_i
+	 (fun i f_constr graph ->
+	 (* let const_of_f,u = destConst f_constr in *)
+	 let (type_of_lemma_ctxt,type_of_lemma_concl,graph) =
+	   generate_type evd false f_constr graph i
+	 in
+	 let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
+	 graphs_constr.(i) <- graph;
+	 let type_of_lemma = Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
+	 let _ = evd := fst (Typing.e_type_of (Global.env ()) !evd type_of_lemma) in 
 	   let type_of_lemma = nf_zeta type_of_lemma in
-	   observe (str "type_of_lemma := " ++ Printer.pr_lconstr type_of_lemma);
+	   observe (str "type_of_lemma := " ++ Printer.pr_lconstr_env (Global.env ()) !evd type_of_lemma);
 	   type_of_lemma,type_info
 	)
 	funs_constr
@@ -1055,65 +785,79 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
     let schemes =
       (* The functional induction schemes are computed and not saved if there is more that one function
 	 if the block contains only one function we can safely reuse [f_rect]
-      *)
+       *)
       try
 	if not (Int.equal (Array.length funs_constr) 1) then raise Not_found;
-	[| find_induction_principle funs_constr.(0) |]
+	[| find_induction_principle evd funs_constr.(0) |]
       with Not_found ->
+	(
+	
 	  Array.of_list
 	    (List.map
 	       (fun entry ->
 		  (fst (fst(Future.force entry.Entries.const_entry_body)), Option.get entry.Entries.const_entry_type )
 	       )
-	       (make_scheme (Array.map_to_list (fun const -> const,GType []) funs))
+	       (make_scheme evd (Array.map_to_list (fun const -> const,GType []) funs))
 	    )
+	)
     in
     let proving_tac =
-      prove_fun_correct functional_induction funs_constr graphs_constr schemes lemmas_types_infos
+      prove_fun_correct !evd functional_induction funs_constr graphs_constr schemes lemmas_types_infos
     in
     Array.iteri
       (fun i f_as_constant ->
-	 let f_id = Label.to_id (con_label f_as_constant) in
+	 let f_id = Label.to_id (con_label (fst f_as_constant)) in
 	 (*i The next call to mk_correct_id is valid since we are constructing the lemma
 	     Ensures by: obvious
 	 i*)
 	 let lem_id = mk_correct_id f_id in
-	 Lemmas.start_proof lem_id
-	   (Decl_kinds.Global,false(*FIXME*),(Decl_kinds.Proof Decl_kinds.Theorem))
-                 (*FIXME*) Evd.empty
-	 (fst lemmas_types_infos.(i))
+	 let (typ,_) = lemmas_types_infos.(i) in 
+	 Lemmas.start_proof
+	   lem_id
+	   (Decl_kinds.Global,Flags.is_universe_polymorphism (),((Decl_kinds.Proof Decl_kinds.Theorem)))
+           !evd
+	   typ
            (Lemmas.mk_hook (fun _ _ -> ()));
 	 ignore (Pfedit.by
-	   (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
-	      (proving_tac i))));
-	 do_save ();
-	 let finfo = find_Function_infos f_as_constant in
-	 let lem_cst = fst (destConst (Constrintern.global_reference lem_id)) in
-	 update_Function {finfo with correctness_lemma = Some lem_cst}
+		   (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
+						      (proving_tac i))));
+	 (Lemmas.save_proof (Vernacexpr.(Proved(Transparent,None))));
+	 let finfo = find_Function_infos (fst f_as_constant) in
+	 (* let lem_cst = fst (destConst (Constrintern.global_reference lem_id)) in *)
+	 let _,lem_cst_constr = Evd.fresh_global
+				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
+	 let (lem_cst,_) = destConst lem_cst_constr in
+	 update_Function {finfo with correctness_lemma = Some lem_cst};
+
       )
       funs;
+    (* let evd = ref Evd.empty in  *)
     let lemmas_types_infos =
       Util.Array.map2_i
 	(fun i f_constr graph ->
-	   let const_of_f = fst (destConst f_constr) in
-	   let (type_of_lemma_ctxt,type_of_lemma_concl) as type_info =
-	     generate_type true  const_of_f graph i
-	   in
-	   let type_of_lemma = Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
-	   let type_of_lemma = nf_zeta type_of_lemma in
-	   observe (str "type_of_lemma := " ++ Printer.pr_lconstr type_of_lemma);
-	   type_of_lemma,type_info
+	 let (type_of_lemma_ctxt,type_of_lemma_concl,graph)   =
+	   generate_type evd true f_constr graph i
+	 in
+	 let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
+	 graphs_constr.(i) <- graph;
+	 let type_of_lemma =
+	   Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt
+	 in
+	 let type_of_lemma = nf_zeta type_of_lemma in
+	 observe (str "type_of_lemma := " ++ Printer.pr_lconstr type_of_lemma);
+	 type_of_lemma,type_info
 	)
 	funs_constr
 	graphs_constr
     in
-    let kn,_ as graph_ind  = fst (destInd graphs_constr.(0)) in
-    let  mib,mip = Global.lookup_inductive graph_ind in
+
+    let (kn,_) as graph_ind,u  = (destInd graphs_constr.(0)) in
+    let mib,mip = Global.lookup_inductive graph_ind in
     let sigma, scheme = 
-	(Indrec.build_mutual_induction_scheme (Global.env ()) Evd.empty
+	(Indrec.build_mutual_induction_scheme (Global.env ()) !evd
 	   (Array.to_list
 	      (Array.mapi
-		 (fun i _ -> ((kn,i),Univ.Instance.empty)(*FIXME*),true,InType)
+		 (fun i _ -> ((kn,i),u(* Univ.Instance.empty *)),true,InType)
 		 mib.Declarations.mind_packets
 	      )
 	   )
@@ -1127,26 +871,27 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
     in
     Array.iteri
       (fun i f_as_constant ->
-	 let f_id = Label.to_id (con_label f_as_constant) in
+	 let f_id = Label.to_id (con_label (fst f_as_constant)) in
 	 (*i The next call to mk_complete_id is valid since we are constructing the lemma
 	     Ensures by: obvious
 	   i*)
 	 let lem_id = mk_complete_id f_id in
 	 Lemmas.start_proof lem_id
-	   (Decl_kinds.Global,false(*FIXME*),(Decl_kinds.Proof Decl_kinds.Theorem))
-                            (*FIXME*) Evd.empty
+	   (Decl_kinds.Global,Flags.is_universe_polymorphism (),(Decl_kinds.Proof Decl_kinds.Theorem))  !evd
 	 (fst lemmas_types_infos.(i))
            (Lemmas.mk_hook (fun _ _ -> ()));
 	 ignore (Pfedit.by
 	   (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
-	      (proving_tac i))));
-	 do_save ();
-	 let finfo = find_Function_infos f_as_constant in
-	 let lem_cst,u = destConst (Constrintern.global_reference lem_id) in
+	      (proving_tac i)))) ;
+	 (Lemmas.save_proof (Vernacexpr.(Proved(Transparent,None))));
+	 let finfo = find_Function_infos (fst f_as_constant) in
+	 let _,lem_cst_constr = Evd.fresh_global
+				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
+	 let (lem_cst,_) = destConst lem_cst_constr in
 	 update_Function {finfo with completeness_lemma = Some lem_cst}
       )
       funs)
-  ()
+    ()
 
 (***********************************************)
 
@@ -1257,7 +1002,7 @@ let invfun qhyp f g =
   match f with
     | Some f -> invfun qhyp f g
     | None ->
-        Proofview.V82.of_tactic begin
+       Proofview.V82.of_tactic begin
 	Tactics.try_intros_until
 	  (fun hid -> Proofview.V82.tactic begin fun g ->
 	     let hyp_typ = pf_type_of g (mkVar hid)  in

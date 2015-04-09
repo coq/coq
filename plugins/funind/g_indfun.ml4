@@ -217,7 +217,7 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
 		    begin
 		      make_graph (Smartlocate.global_with_alias fun_name)
 		    end
-		    ;
+		  ;
 		    try Functional_principles_types.build_scheme fas
 		    with Functional_principles_types.No_graph_found ->
 		      Errors.error ("Cannot generate induction principle(s)")
@@ -386,7 +386,9 @@ let finduction (oid:Id.t option) (heuristic: fapp_info list -> fapp_info list)
     (nexttac:Proof_type.tactic) g =
   let test = match oid with
     | Some id ->
-	let idconstr = mkConst (const_of_id id) in
+       let idref = const_of_id id in
+       (* JF : FIXME : we probably need to keep trace of evd in presence of universe polymorphism *)
+       let idconstr = snd (Evd.fresh_global (Global.env ()) Evd.empty idref) in
 	(fun u -> constr_head_match u idconstr) (* select only id *)
     | None -> (fun u -> isApp u) in (* select calls to any function *)
   let info_list = find_fapp test g in

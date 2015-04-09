@@ -42,7 +42,7 @@ val chop_rprod_n : int -> Glob_term.glob_constr ->
 val def_of_const : Term.constr -> Term.constr
 val eq : Term.constr Lazy.t
 val refl_equal : Term.constr Lazy.t
-val const_of_id: Id.t -> constant
+val const_of_id: Id.t ->  Globnames.global_reference(* constantyes *)
 val jmeq : unit -> Term.constr
 val jmeq_refl : unit -> Term.constr
 

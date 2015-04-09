@@ -108,7 +108,7 @@ let const_of_id id =
   let _,princ_ref =
     qualid_of_reference (Libnames.Ident (Loc.ghost,id))
   in
-  try Nametab.locate_constant princ_ref
+  try Constrintern.locate_reference princ_ref
   with Not_found -> Errors.error ("cannot find "^ Id.to_string id)
 
 let def_of_const t =
@@ -380,9 +380,9 @@ let find_Function_of_graph ind =
   Indmap.find ind !from_graph
 
 let update_Function finfo =
-(*   Pp.msgnl (pr_info finfo); *)
+  (* Pp.msgnl (pr_info finfo); *)
   Lib.add_anonymous_leaf (in_Function finfo)
-
+			 
 
 let add_Function is_general f =
   let f_id = Label.to_id (con_label f) in
