@@ -1,3 +1,67 @@
+Changes since V8.3pl5
+=====================
+
+Compilation:
+
+- Coq compilation made possible with forthcoming ocaml 4.03.
+
+Bug fixes
+
+- Bug #4157: proof of False via vm compute on inductive with many constructors.
+- Bug #3088: return clause in patterns was wrongly built.
+- Bug #3843: cmxs installation on cygwin.
+- Bug #2729 (part 2): fix missing lift in VM.
+- Bug #3390: mismatch simple_tactic/tactic0 leading to segfault.
+- Bug #3282: two bugs in the presence of let-in's in "fix".
+- Bug #3284: fixing wrong environment for Meta's in pose_all_metas_as_evars.
+- Bug #3228: fixing precedence of ltac variables over variables in env.
+- Bug #2885 and #3169: vm_compute not supporting metas/evars.
+- Bug #3243: univ constraints of module subtyping were not propagated.
+- Fix guard condition for nested cofixpoints.
+- Fix for critical bug in arity check.
+- Typo resulting in bad eta-expansion of destructing let's body.
+- Bug #3025: coqc accept -exclude-dir option.
+- Bug #2734: avoid using Pervasives.compare for Globrevtab.
+- Bug #2750: Avoid Pervasives.(=) on some global_reference.
+- Bug #2629: Firstorder: record with defined field aren't conjonctions.
+- Bugs #2839 and #2981: anomaly NotASort in retyping.
+- Bug #2955: anomaly when calling simpl on constants from aliased modules.
+- Bug #2966: de Bruijn error in computation of heads for coercions.
+- Bug #2967: missing check on ill-formed recursive notation strings.
+- Bug #2941: extraction of projections: restrict a hack to ocaml only.
+- Bug #2851: coqmktop: a missing -I
+
+Documentation
+
+- Bug #4127: command for locating exists notation in refman changed.
+- Bug #2962: Typo in refman
+
+
+Changes from V8.3pl4 to V8.3pl5
+===============================
+
+Compilation:
+
+- Compatibility with OCaml 4.
+
+Bug fixes:
+
+- Bug #1206: anomaly raised in pretyping instead of error when called on ill-typed term.
+- Bug #2824: extraction: Hashtbl.replace uses less ressources than Hashtbl.add.
+- Bug #2526: configure: add support of MinGW Win32 environment.
+- Bug #2757: Supporting optional byte-mark order in utf-8 files.
+- Bug #2571: Fixing a few bugs related to the interpretation of multiple binders.
+- Correct error message for an unknown field in a record definition.
+- Fixed deactivation of scope at printing time in the body of a lam or prod.
+- Bigint.ml: fixed unchecked overflow in sub_mult used for euclidian division.
+- A few fixes in configure file.
+
+Documentation
+
+- Makefile.doc: attempt to solve race condition for creating doc/refman/html.
+- Restores pdf bookmarks in the reference manual.
+
+
 Changes from V8.3pl3 to V8.3pl4
 ===============================
 
