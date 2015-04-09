@@ -31,7 +31,7 @@ Set Universe Polymorphism.
    The relation [R] will be instantiated by [respectful] and [A] by an arrow
    type for usual morphisms. *)
 Section Proper.
-  Context {A B : Type}.
+  Context {A : Type}.
 
   Class Proper (R : crelation A) (m : A) :=
     proper_prf : R m m.
@@ -71,7 +71,7 @@ Section Proper.
 
   (** The non-dependent version is an instance where we forget dependencies. *)
   
-  Definition respectful (R : crelation A) (R' : crelation B) : crelation (A -> B) :=
+  Definition respectful {B} (R : crelation A) (R' : crelation B) : crelation (A -> B) :=
     Eval compute in @respectful_hetero A A (fun _ => B) (fun _ => B) R (fun _ _ => R').
 End Proper.
 
@@ -143,7 +143,7 @@ Ltac f_equiv :=
  end.
 
 Section Relations.
-  Context {A B : Type}. 
+  Context {A : Type}. 
 
   (** [forall_def] reifies the dependent product as a definition. *)
   
@@ -156,10 +156,10 @@ Section Relations.
     fun f g => forall a, sig a (f a) (g a).
 
   (** Non-dependent pointwise lifting *)
-  Definition pointwise_relation (R : crelation B) : crelation (A -> B) :=
+  Definition pointwise_relation {B} (R : crelation B) : crelation (A -> B) :=
     fun f g => forall a, R (f a) (g a).
 
-  Lemma pointwise_pointwise (R : crelation B) :
+  Lemma pointwise_pointwise {B} (R : crelation B) :
     relation_equivalence (pointwise_relation R) (@eq A ==> R).
   Proof. intros. split. simpl_crelation. firstorder. Qed.
   
@@ -252,7 +252,7 @@ Hint Extern 4 (subrelation (@forall_relation ?A ?B ?R) (@forall_relation _ _ ?S)
 
 Section GenericInstances.
   (* Share universes *)
-  Context {A B C : Type}.
+  Implicit Types A B C : Type.
 
   (** We can build a PER on the Coq function space if we have PERs on the domain and
    codomain. *)
@@ -379,7 +379,7 @@ Section GenericInstances.
   Lemma symmetric_equiv_flip `(Symmetric A R) : relation_equivalence R (flip R).
   Proof. firstorder. Qed.
 
-  Global Program Instance compose_proper RA RB RC :
+  Global Program Instance compose_proper A B C RA RB RC :
     Proper ((RB ==> RC) ==> (RA ==> RB) ==> (RA ==> RC)) (@compose A B C).
 
   Next Obligation.
@@ -396,12 +396,12 @@ Section GenericInstances.
   Proof. simpl_crelation. Qed.
 
   (** [respectful] is a morphism for crelation equivalence . *)
-  Set Printing All. Set Printing Universes.
+
   Global Instance respectful_morphism :
     Proper (relation_equivalence ++> relation_equivalence ++> relation_equivalence) 
            (@respectful A B).
   Proof. 
-    intros R R' HRR' S S' HSS' f g. 
+    intros A B R R' HRR' S S' HSS' f g. 
     unfold respectful , relation_equivalence in *; simpl in *.
     split ; intros H x y Hxy.
     apply (fst (HSS' _ _)). apply H. now apply (snd (HRR' _ _)). 
@@ -414,9 +414,9 @@ Section GenericInstances.
     Proper R' (m x).
   Proof. simpl_crelation. Qed.
   
-  Class Params (of : A) (arity : nat).
+  Class Params {A} (of : A) (arity : nat).
     
-  Lemma flip_respectful (R : crelation A) (R' : crelation B) :
+  Lemma flip_respectful {A B} (R : crelation A) (R' : crelation B) :
     relation_equivalence (flip (R ==> R')) (flip R ==> flip R').
   Proof.
     intros.
@@ -449,7 +449,7 @@ Section GenericInstances.
   Lemma reflexive_proper `{Reflexive A R} (x : A) : Proper R x.
   Proof. firstorder. Qed.
   
-  Lemma proper_eq (x : A) : Proper (@eq A) x.
+  Lemma proper_eq {A} (x : A) : Proper (@eq A) x.
   Proof. intros. apply reflexive_proper. Qed.
   
 End GenericInstances.
