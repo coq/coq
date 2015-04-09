@@ -167,13 +167,13 @@ let pattern_of_constr env sigma t =
       | Evar_kinds.MatchingVar (b,id) ->
 	let ty = Evarutil.nf_evar sigma (existential_type sigma ev) in
           ctx := (id,None,ty)::!ctx;
-	  keep := Evar.Set.union (evars_of_term ty) !keep;
+	  let () = ignore (pattern_of_constr env ty) in
           assert (not b); PMeta (Some id)
       | Evar_kinds.GoalEvar -> 
 	PEvar (evk,Array.map (pattern_of_constr env) ctxt)
       | _ -> 
 	let ty = Evarutil.nf_evar sigma (existential_type sigma ev) in
-	 remove := Evar.Set.union (evars_of_term ty) !remove;
+	let () = ignore (pattern_of_constr env ty) in
 	 PMeta None)
     | Case (ci,p,a,br) ->
         let cip =
