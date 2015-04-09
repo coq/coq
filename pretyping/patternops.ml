@@ -171,7 +171,10 @@ let pattern_of_constr env sigma t =
           assert (not b); PMeta (Some id)
       | Evar_kinds.GoalEvar -> 
 	PEvar (evk,Array.map (pattern_of_constr env) ctxt)
-      | _ -> PMeta None)
+      | _ -> 
+	let ty = Evarutil.nf_evar sigma (existential_type sigma ev) in
+	 remove := Evar.Set.union (evars_of_term ty) !remove;
+	 PMeta None)
     | Case (ci,p,a,br) ->
         let cip =
 	  { cip_style = ci.ci_pp_info.style;
