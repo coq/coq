@@ -752,6 +752,8 @@ and compile_const =
                    Kgetglobal (get_allias !global_env kn) :: cont)
         compile_constr reloc () args sz cont
 
+open Pp
+
 let compile fail_on_error env c =
   set_global_env env;
   init_fun_code ();
@@ -771,13 +773,14 @@ let compile fail_on_error env c =
   Format.print_flush();  *)
       Some (init_code,!fun_code, Array.of_list fv)
   with TooLargeInductive tname ->
-    let fn = 
-      (* if fail_on_error then Errors.errorlabstrm "compile" else *) 
-      Pp.msg_warning in
-    (Pp.(fn
-	   (str "Cannot compile code for virtual machine as it uses inductive " ++
-	      (str (Names.string_of_id tname) ++ str str_max_constructors)));
-       None)
+    let fn =
+      (* if fail_on_error then Errors.errorlabstrm "compile" else *)
+      Pp.msg_warning
+    in
+    fn
+      (Pp.str "Cannot compile code for virtual machine as it uses inductive " ++
+	 (Pp.str (Names.string_of_id tname) ++ Pp.str str_max_constructors));
+    None
 
 let compile_constant_body fail_on_error env = function
   | Undef _ | OpaqueDef _ -> Some BCconstant
