@@ -1,3 +1,30 @@
+Changes from V8.4pl5 to V8.4pl6
+===============================
+
+Compilation
+
+- Coq compilation made possible with forthcoming ocaml 4.03.
+
+Bug fixes
+
+- Bug #4157: proof of False via vm compute on inductive with many constructors.
+- Bug #3491: anomaly when building _rect scheme in the presence of let-ins
+  and recursively non-uniform parameters.
+- Bug #2447: stack Overflow in congruence.
+- Bug #3892: ensure that notation variables do not capture names hidden
+  behind another notation.
+- Bug #3843: cmxs installation on cygwin.
+- Bug #3837: Function graph interacts poorly with existential types.
+- Bug #3824: Eval vm_compute fails whereas Eval compute succeeds.
+- Bug #3723 and #3787: reinitialization of camlp5 empty levels.
+- Fix depelim tactic.
+
+Documentation
+
+- Bug #4127: command for locating exists notation in refman changed.
+- Various improvements of the Reference Manual (especially its html version)
+
+
 Changes from V8.4pl4 to V8.4pl5
 ===============================
 
