@@ -350,7 +350,9 @@ let make_autogoal_hints =
       let sign = pf_filtered_hyps g in
       let (onlyc, sign', cached_hints) = !cache in
 	if onlyc == only_classes && 
-	  (sign == sign' || Environ.eq_named_context_val sign sign') then
+	  (sign == sign' || Environ.eq_named_context_val sign sign') 
+	  && Hint_db.transparent_state cached_hints == st
+	then
 	  cached_hints
 	else
 	  let hints = make_hints g st only_classes (Environ.named_context_of_val sign) in

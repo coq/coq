@@ -21,9 +21,6 @@ sig
   val tooltip : GText.tag
   val edit_zone : GText.tag (* for debugging *)
   val all : GText.tag list
-
-  (* Not part of the all list. Special tags! *)
-  val read_only : GText.tag
 end
 
 module Proof :

@@ -32,6 +32,11 @@ let is_dirpath_prefix_of d1 d2 =
   List.prefix_of Id.equal
     (List.rev (DirPath.repr d1)) (List.rev (DirPath.repr d2))
 
+let is_dirpath_suffix_of dir1 dir2 =
+  let dir1 = DirPath.repr dir1 in
+  let dir2 = DirPath.repr dir2 in
+  List.prefix_of Id.equal dir1 dir2
+
 let chop_dirpath n d =
   let d1,d2 = List.chop n (List.rev (DirPath.repr d)) in
   DirPath.make (List.rev d1), DirPath.make (List.rev d2)

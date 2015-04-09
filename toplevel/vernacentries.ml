@@ -387,12 +387,13 @@ let err_unmapped_library loc qid =
        pr_dirpath dir ++ str".")
 
 let err_notfound_library loc qid =
-  msg_error
-    (hov 0 (strbrk "Unable to locate library " ++ pr_qualid qid ++ str"."))
+  user_err_loc
+    (loc,"locate_library",
+     strbrk "Unable to locate library " ++ pr_qualid qid ++ str".")
 
 let print_located_library r =
   let (loc,qid) = qualid_of_reference r in
-  try msg_found_library (Library.locate_qualified_library false qid)
+  try msg_found_library (Library.locate_qualified_library ~warn:false qid)
   with
     | Library.LibUnmappedDir -> err_unmapped_library loc qid
     | Library.LibNotFound -> err_notfound_library loc qid
@@ -750,12 +751,24 @@ let vernac_end_segment (_,id as lid) =
 (* Libraries *)
 
 let vernac_require from import qidl =
-  let qidl = match from with
-  | None -> qidl
-  | Some ns -> List.map (Libnames.join_reference ns) qidl
-  in
   let qidl = List.map qualid_of_reference qidl in
-  let modrefl = List.map Library.try_locate_qualified_library qidl in
+  let root = match from with
+  | None -> None
+  | Some from ->
+    let (_, qid) = Libnames.qualid_of_reference from in
+    let (hd, tl) = Libnames.repr_qualid qid in
+    Some (Libnames.add_dirpath_suffix hd tl)
+  in
+  let locate (loc, qid) =
+    try
+      let warn = Flags.is_verbose () in
+      let (_, dir, f) = Library.locate_qualified_library ?root ~warn qid in
+      (dir, f)
+    with
+      | Library.LibUnmappedDir -> err_unmapped_library loc qid
+      | Library.LibNotFound -> err_notfound_library loc qid
+  in
+  let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
     List.iter2 (fun (loc, _) dp -> Dumpglob.dump_libref loc dp "lib") qidl (List.map fst modrefl);
   Library.require_library_from_dirpath modrefl import
@@ -879,11 +892,10 @@ let vernac_set_used_variables e =
 let expand filename =
   Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) filename
 
-let vernac_add_loadpath isrec pdir ldiropt =
+let vernac_add_loadpath implicit pdir ldiropt =
   let pdir = expand pdir in
   let alias = Option.default Nameops.default_root_prefix ldiropt in
-  (if isrec then Mltop.add_rec_path else Mltop.add_path)
-    ~unix_path:pdir ~coq_root:alias ~implicit:true
+  Mltop.add_rec_path ~unix_path:pdir ~coq_root:alias ~implicit
 
 let vernac_remove_loadpath path =
   Loadpath.remove_load_path (expand path)

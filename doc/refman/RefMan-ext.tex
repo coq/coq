@@ -1059,44 +1059,53 @@ names to {\Coq} names is needed. In this translation, names in the
 file system are called {\em physical} paths while {\Coq} names are
 contrastingly called {\em logical} names.
 
-A logical name {\tt Lib} can associated to a physical path
+A logical prefix {\tt Lib} can be associated to a physical path
 \textrm{\textsl{path}} using the command line option {\tt -Q}
-\textrm{\textsl{path}} {\tt Lib}. This associates a logical name to
-all the compiled files in the directory tree rooted at
-\textrm{\textsl{path}}. The name associated to the file {\tt
-  path/fOO/Bar/File.vo} is {\tt Lib.fOO.Bar.File}. Subdirectories
+\textrm{\textsl{path}} {\tt Lib}. All subfolders of {\textsl{path}} are
+recursively associated to the logical path {\tt Lib} extended with the
+corresponding suffix coming from the physical path. For instance, the
+folder {\tt path/fOO/Bar} maps to {\tt Lib.fOO.Bar}. Subdirectories
 corresponding to invalid {\Coq} identifiers are skipped, and, by
 convention, subdirectories named {\tt CVS} or {\tt \_darcs} are
 skipped too.
 
-{\Coq} commands also associate automatically a logical path to files
+Thanks to this mechanism, {\texttt{.vo}} files are made available through the
+logical name of the folder they are in, extended with their own basename. For
+example, the name associated to the file {\tt path/fOO/Bar/File.vo} is
+{\tt Lib.fOO.Bar.File}. The same caveat applies for invalid identifiers.
+When compiling a source file, the {\texttt{.vo}} file stores its logical name,
+so that an error is issued if it is loaded with the wrong loadpath afterwards.
+
+Some folders have a special status and are automatically put in the path.
+{\Coq} commands associate automatically a logical path to files
 in the repository trees rooted at the directory from where the command
 is launched, \textit{coqlib}\texttt{/user-contrib/}, the directories
 listed in the \verb:$COQPATH:, \verb:${XDG_DATA_HOME}/coq/: and
 \verb:${XDG_DATA_DIRS}/coq/: environment variables (see
 \url{http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html})
-with the same $/ \to .$ convention but no prefix.
+with the same physical-to-logical translation and with an empty logical prefix.
 
-The command line option \texttt{-R} is a variant of \texttt{-Q} that
-associates to a physical path the same logical path as \texttt{-Q}, as
-well as all suffixes of that logical path. The option \texttt{-R}
-\textrm{\textsl{path}} \texttt{Lib} associates to
-\texttt{path/fOO/Bar/File.vo} the logical names
-\texttt{Lib.fOO.Bar.File}, \texttt{fOO.Bar.File}, \texttt{Bar.File}
-and \texttt{File}. If several files with identical base name are
-present in different subdirectories of a recursive loadpath, which of
+The command line option \texttt{-R} is a variant of \texttt{-Q} which has the
+strictly same behavior regarding loadpaths, but which also makes the
+corresponding \texttt{.vo} files available through their short names in a
+way not unlike the {\tt Import} command (see~{\ref{Import}}). For instance,
+\texttt{-R} \textrm{\textsl{path}} \texttt{Lib} associates to the file
+\texttt{path/fOO/Bar/File.vo} the logical name \texttt{Lib.fOO.Bar.File}, but
+allows this file to be accessed through the short names \texttt{fOO.Bar.File},
+\texttt{Bar.File} and \texttt{File}. If several files with identical base name
+are present in different subdirectories of a recursive loadpath, which of
 these files is found first may be system-dependent and explicit
-qualification is recommended.
+qualification is recommended. The {\tt From} argument of the {\tt Require}
+command can be used to bypass the implicit shortening by providing an absolute
+root to the required file (see~\ref{Require}).
 
-There are currently two loadpaths in {\Coq}. There is one loadpath
-where seeking {\Coq} files (extensions \texttt{.v} or \texttt{.vo} or
-\texttt{.vi}) whose management has been explained just above, and one
-where seeking {\ocaml} files. The {\ocaml} loadpath is
-managed using the option \texttt{-I path}. As in {\ocaml} world, there
-is nether a notion of logical name prefix nor a way to access files in
-subdirectories of \texttt{path}. See the command \texttt{Declare ML
-  Module} in Section~\ref{compiled} to understand the need of the
-{\ocaml} loadpath.
+There also exists another independent loadpath mechanism attached to {\ocaml}
+object files (\texttt{.cmo} or \texttt{.cmxs}) rather than {\Coq} object files
+as described above. The {\ocaml} loadpath is managed using the option
+\texttt{-I path} (in the {\ocaml} world, there is neither a notion of logical
+name prefix nor a way to access files in subdirectories of \texttt{path}).
+See the command \texttt{Declare ML Module} in Section~\ref{compiled} to
+understand the need of the {\ocaml} loadpath.
 
 See Section~\ref{coqoptions} for a more general view over the {\Coq}
 command line options.

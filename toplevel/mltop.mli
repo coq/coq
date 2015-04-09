@@ -47,7 +47,6 @@ val add_ml_dir : string -> unit
 val add_rec_ml_dir : string -> unit
 
 (** Adds a path to the Coq and ML paths *)
-val add_path : unix_path:string -> coq_root:Names.DirPath.t -> implicit:bool -> unit
 val add_rec_path : unix_path:string -> coq_root:Names.DirPath.t -> implicit:bool -> unit
 
 (** List of modules linked to the toplevel *)

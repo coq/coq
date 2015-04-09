@@ -253,10 +253,13 @@ let newfile _ =
   !refresh_editor_hook ();
   notebook#goto_page index
 
-let load _ =
-  match select_file_for_open ~title:"Load file" () with
+let load sn =
+  let filename = sn.fileops#filename in
+  match select_file_for_open ~title:"Load file" ?filename () with
     | None -> ()
     | Some f -> FileAux.load_file f
+
+let load = cb_on_current_term load
 
 let save _ = on_current_term (FileAux.check_save ~saveas:false)
 
@@ -1338,11 +1341,6 @@ let build_ui () =
     (`BACKGROUND_STIPPLE
       (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));
   Tags.Script.incomplete#set_property
-    (`BACKGROUND_GDK (Tags.get_processed_color ())); 
-  Tags.Script.read_only#set_property
-    (`BACKGROUND_STIPPLE
-      (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));
-  Tags.Script.read_only#set_property
     (`BACKGROUND_GDK (Tags.get_processed_color ())); 
 
   (* Showtime ! *)

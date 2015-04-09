@@ -10,7 +10,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Rtrigo_def.
-Require Import Omega.
+Require Import OmegaTactic.
 Local Open Scope R_scope.
 
 Definition A1 (x:R) (N:nat) : R :=

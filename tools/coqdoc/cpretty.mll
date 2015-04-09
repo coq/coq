@@ -456,13 +456,7 @@ rule coq_bol = parse
       { begin_show (); coq_bol lexbuf }
   | space* end_show
       { end_show (); coq_bol lexbuf }
-  | space* ("Local"|"Global")
-      {
-	in_proof := None;
-	let s = lexeme lexbuf in
-	output_indented_keyword s lexbuf;
-	coq_bol lexbuf }
-  | space* gallina_kw_to_hide
+  | space* (("Local"|"Global") space+)? gallina_kw_to_hide
       { let s = lexeme lexbuf in
 	  if !Cdglobals.light && section_or_end s then
 	    let eol = skip_to_dot lexbuf in
@@ -596,7 +590,7 @@ and coq = parse
 	end }
   | eof
       { () }
-  | gallina_kw_to_hide
+  | (("Local"|"Global") space+)? gallina_kw_to_hide
       { let s = lexeme lexbuf in
 	  if !Cdglobals.light && section_or_end s then
 	    begin

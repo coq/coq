@@ -258,9 +258,9 @@ Tactics
 - Behavior of introduction patterns -> and <- made more uniform
   (hypothesis is cleared, rewrite in hypotheses and conclusion and
   erasing the variable when rewriting a variable).
-- Tactics from plugins are now active only when the corresponding
-  module is imported (source of incompatibilities, solvable by adding
-  an "Import", like e.g. "Import Omega").
+- Tactics from plugins are now active only when the corresponding module
+  is imported (source of incompatibilities, solvable by adding an "Import";
+  in the particular case of Omega, use "Require Import OmegaTactic").
 - Semantics of destruct/induction has been made more regular in some
   edge cases, possibly leading to incompatibilities:
   - new goals are now opened when the term does not match a subterm of
@@ -306,10 +306,9 @@ Notations
 
 Tools
 
-- Option -I now only adds directories to the ml path. To add to both
-  the load path and the ml path, use -I -as.
-- Option -Q behaves as -I -as and -R, except that the logical path of
-  any loaded file has to be fully qualified.
+- Option -I now only adds directories to the ml path.
+- Option -Q behaves as -R, except that the logical path of any loaded file has
+  to be fully qualified.
 - Option -R no longer adds recursively to the ml path; only the root
   directory is added. (Behavior with respect to the load path is
   unchanged.)

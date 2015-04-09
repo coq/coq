@@ -8,7 +8,7 @@
 
 (** * MMapPositive : an implementation of MMapInterface for [positive] keys. *)
 
-Require Import Bool BinPos Orders OrdersEx OrdersLists MMapInterface.
+Require Import Bool PeanoNat BinPos Orders OrdersEx OrdersLists MMapInterface.
 
 Set Implicit Arguments.
 Local Open Scope lazy_bool_scope.
@@ -23,44 +23,16 @@ Local Unset Elimination Schemes.
   compression is implemented, and that the current file is simple enough to be
   self-contained. *)
 
-(** First, some stuff about [positive] *)
+(** Reverses the positive [y] and concatenate it with [x] *)
 
-Fixpoint append (i j : positive) : positive :=
-    match i with
-      | xH => j
-      | xI ii => xI (append ii j)
-      | xO ii => xO (append ii j)
-    end.
-
-Lemma append_assoc_0 :
-  forall (i j : positive), append i (xO j) = append (append i (xO xH)) j.
-Proof.
- induction i; intros; destruct j; simpl;
- try rewrite (IHi (xI j));
- try rewrite (IHi (xO j));
- try rewrite <- (IHi xH);
- auto.
-Qed.
-
-Lemma append_assoc_1 :
-  forall (i j : positive), append i (xI j) = append (append i (xI xH)) j.
-Proof.
- induction i; intros; destruct j; simpl;
- try rewrite (IHi (xI j));
- try rewrite (IHi (xO j));
- try rewrite <- (IHi xH);
- auto.
-Qed.
-
-Lemma append_neutral_r : forall (i : positive), append i xH = i.
-Proof.
- induction i; simpl; congruence.
-Qed.
-
-Lemma append_neutral_l : forall (i : positive), append xH i = i.
-Proof.
- simpl; auto.
-Qed.
+Fixpoint rev_append (y x : positive) : positive :=
+  match y with
+    | 1 => x
+    | y~1 => rev_append y x~1
+    | y~0 => rev_append y x~0
+  end.
+Local Infix "@" := rev_append (at level 60).
+Definition rev x := x@1.
 
 (** The module of maps over positive keys *)
 
@@ -70,6 +42,17 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Module ME:=KeyOrderedType E.
 
   Definition key := positive : Type.
+
+  Definition eq_key {A} (p p':key*A) := E.eq (fst p) (fst p').
+
+  Definition eq_key_elt {A} (p p':key*A) :=
+    E.eq (fst p) (fst p') /\ (snd p) = (snd p').
+
+  Definition lt_key {A} (p p':key*A) := E.lt (fst p) (fst p').
+
+  Instance eqk_equiv {A} : Equivalence (@eq_key A) := _.
+  Instance eqke_equiv {A} : Equivalence (@eq_key_elt A) := _.
+  Instance ltk_strorder {A} : StrictOrder (@lt_key A) := _.
 
   Inductive tree (A : Type) :=
     | Leaf : tree A
@@ -152,20 +135,14 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   (** [bindings] *)
 
-  Fixpoint xbindings (m : t A) (i : key) : list (key * A) :=
+  Fixpoint xbindings (m : t A) (i : positive) (a: list (key*A)) :=
     match m with
-      | Leaf => nil
-      | Node l None r =>
-          (xbindings l (append i (xO xH))) ++ (xbindings r (append i (xI xH)))
-      | Node l (Some x) r =>
-          (xbindings l (append i (xO xH)))
-          ++ ((i, x) :: xbindings r (append i (xI xH)))
+      | Leaf => a
+      | Node l None r => xbindings l i~0 (xbindings r i~1 a)
+      | Node l (Some e) r => xbindings l i~0 ((rev i,e) :: xbindings r i~1 a)
     end.
 
-  (* Note: function [xbindings] above is inefficient.  We should apply
-     deforestation to it, but that makes the proofs even harder. *)
-
-  Definition bindings (m : t A) := xbindings m xH.
+  Definition bindings (m : t A) := xbindings m 1 nil.
 
   (** [cardinal] *)
 
@@ -178,12 +155,53 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   (** Specification proofs *)
 
+  Definition MapsTo (i:key)(v:A)(m:t A) := find i m = Some v.
+  Definition In (i:key)(m:t A) := exists e:A, MapsTo i e m.
+
+  Lemma MapsTo_compat : Proper (E.eq==>eq==>eq==>iff) MapsTo.
+  Proof.
+   intros k k' Hk e e' He m m' Hm. red in Hk. now subst.
+  Qed.
+
+  Lemma find_spec m x e : find x m = Some e <-> MapsTo x e m.
+  Proof. reflexivity. Qed.
+
+  Lemma mem_find :
+    forall m x, mem x m = match find x m with None => false | _ => true end.
+  Proof.
+  induction m; destruct x; simpl; auto.
+  Qed.
+
+  Lemma mem_spec : forall m x, mem x m = true <-> In x m.
+  Proof.
+  unfold In, MapsTo; intros m x; rewrite mem_find.
+  split.
+  - destruct (find x m).
+    exists a; auto.
+    intros; discriminate.
+  - destruct 1 as (e0,H0); rewrite H0; auto.
+  Qed.
+
   Lemma gleaf : forall (i : key), find i Leaf = None.
   Proof. destruct i; simpl; auto. Qed.
 
   Theorem empty_spec:
     forall (i: key), find i empty = None.
   Proof. exact gleaf. Qed.
+
+  Lemma is_empty_spec m :
+   is_empty m = true <-> forall k, find k m = None.
+  Proof.
+  induction m; simpl.
+  - intuition. apply empty_spec.
+  - destruct o. split; try discriminate.
+    intros H. now specialize (H xH).
+    rewrite <- andb_lazy_alt, andb_true_iff, IHm1, IHm2.
+    clear IHm1 IHm2.
+    split.
+    + intros (H1,H2) k. destruct k; simpl; auto.
+    + intros H; split; intros k. apply (H (xO k)). apply (H (xI k)).
+  Qed.
 
   Theorem add_spec1:
     forall (m: t A) (i: key) (x: A), find i (add i x m) = Some x.
@@ -230,354 +248,114 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       try apply IHm1; try apply IHm2; congruence.
   Qed.
 
-  Lemma xbindings_correct:
-      forall (m: t A) (i j : key) (v: A),
-      find i m = Some v -> List.In (append j i, v) (xbindings m j).
+  Local Notation InL := (InA eq_key_elt).
+
+  Lemma xbindings_spec: forall m j acc k e,
+    InL (k,e) (xbindings m j acc) <->
+    InL (k,e) acc \/ exists x, k=(j@x) /\ find x m = Some e.
   Proof.
-    induction m; intros.
-    - rewrite (gleaf i) in H; discriminate.
-    - destruct o, i; simpl in *; apply in_or_app.
-      + rewrite append_assoc_1. right; now apply in_cons, IHm2.
-      + rewrite append_assoc_0. left; now apply IHm1.
-      + rewrite append_neutral_r. injection H as ->.
-        right; apply in_eq.
-      + rewrite append_assoc_1. right; now apply IHm2.
-      + rewrite append_assoc_0. left; now apply IHm1.
-      + discriminate.
+    induction m as [|l IHl o r IHr]; simpl.
+    - intros. split; intro H.
+      + now left.
+      + destruct H as [H|[x [_ H]]]. assumption.
+        now rewrite gleaf in H.
+    - intros j acc k e. case o as [e'|];
+      rewrite IHl, ?InA_cons, IHr; clear IHl IHr; split.
+      + intros [[H|[H|H]]|H]; auto.
+        * unfold eq_key_elt, E.eq, fst, snd in H. destruct H as (->,<-).
+          right. now exists 1.
+        * destruct H as (x,(->,H)). right. now exists x~1.
+        * destruct H as (x,(->,H)). right. now exists x~0.
+      + intros [H|H]; auto.
+        destruct H as (x,(->,H)).
+        destruct x; simpl in *.
+        * left. right. right. now exists x.
+        * right. now exists x.
+        * left. left. injection H as ->. reflexivity.
+      + intros [[H|H]|H]; auto.
+        * destruct H as (x,(->,H)). right. now exists x~1.
+        * destruct H as (x,(->,H)). right. now exists x~0.
+      + intros [H|H]; auto.
+        destruct H as (x,(->,H)).
+        destruct x; simpl in *.
+        * left. right. now exists x.
+        * right. now exists x.
+        * discriminate.
   Qed.
 
-  Theorem bindings_correct:
-    forall (m: t A) (i: key) (v: A),
-    find i m = Some v -> List.In (i, v) (bindings m).
+  Lemma lt_rev_append: forall j x y, E.lt x y -> E.lt (j@x) (j@y).
+  Proof. induction j; intros; simpl; auto. Qed.
+
+  Lemma xbindings_sort m j acc :
+    sort lt_key acc ->
+    (forall x p, In x m -> InL p acc -> E.lt (j@x) (fst p)) ->
+    sort lt_key (xbindings m j acc).
   Proof.
-    intros m i v H.
-    exact (xbindings_correct m i xH H).
+    revert j acc.
+    induction m as [|l IHl o r IHr]; simpl; trivial.
+    intros j acc Hacc Hsacc. destruct o as [e|].
+    - apply IHl;[constructor;[apply IHr; [apply Hacc|]|]|].
+      + intros. now apply Hsacc.
+      + case_eq (xbindings r j~1 acc); [constructor|].
+        intros (z,e') q H. constructor.
+        assert (H': InL (z,e') (xbindings r j~1 acc)).
+        { rewrite H. now constructor. }
+        clear H q. rewrite xbindings_spec in H'.
+        destruct H' as [H'|H'].
+        * apply (Hsacc 1 (z,e')); trivial. now exists e.
+        * destruct H' as (x,(->,H)).
+          red. simpl. now apply lt_rev_append.
+      + intros x (y,e') Hx Hy. inversion_clear Hy.
+        rewrite H. simpl. now apply lt_rev_append.
+        rewrite xbindings_spec in H.
+        destruct H as [H|H].
+        * now apply Hsacc.
+        * destruct H as (z,(->,H)). simpl.
+          now apply lt_rev_append.
+    - apply IHl; [apply IHr; [apply Hacc|]|].
+      + intros. now apply Hsacc.
+      + intros x (y,e') Hx H. rewrite xbindings_spec in H.
+        destruct H as [H|H].
+        * now apply Hsacc.
+        * destruct H as (z,(->,H)). simpl.
+          now apply lt_rev_append.
   Qed.
 
-  Fixpoint xfind (i j : key) (m : t A) : option A :=
-      match i, j with
-      | _, xH => find i m
-      | xO ii, xO jj => xfind ii jj m
-      | xI ii, xI jj => xfind ii jj m
-      | _, _ => None
-      end.
-
-  Lemma xfind_left :
-      forall (j i : key) (m1 m2 : t A) (o : option A) (v : A),
-      xfind i (append j (xO xH)) m1 = Some v ->
-      xfind i j (Node m1 o m2) = Some v.
+  Lemma bindings_spec1 m k e :
+    InA eq_key_elt (k,e) (bindings m) <-> MapsTo k e m.
   Proof.
-    induction j; intros; destruct i; simpl; simpl in H; auto; try congruence.
-    destruct i; simpl in *; auto.
+   unfold bindings, MapsTo. rewrite xbindings_spec.
+   split; [ intros [H|(y & H & H')] | intros IN ].
+   - inversion H.
+   - simpl in *. now subst.
+   - right. now exists k.
   Qed.
 
-  Lemma xbindings_ii :
-    forall (m: t A) (i j : key) (v: A),
-      List.In (xI i, v) (xbindings m (xI j)) ->
-      List.In (i, v) (xbindings m j).
+  Lemma bindings_spec2 m : sort lt_key (bindings m).
   Proof.
-    induction m.
-    - simpl; auto.
-    - intros; destruct o; simpl in *; rewrite in_app_iff in *;
-      destruct H.
-      + left; now apply IHm1.
-      + right; destruct (in_inv H).
-        * injection H0 as -> ->. apply in_eq.
-        * apply in_cons; now apply IHm2.
-      + left; now apply IHm1.
-      + right; now apply IHm2.
+    unfold bindings.
+    apply xbindings_sort. constructor. inversion 2.
   Qed.
 
-  Lemma xbindings_io :
-    forall (m: t A) (i j : key) (v: A),
-      ~List.In (xI i, v) (xbindings m (xO j)).
-  Proof.
-    induction m.
-    - simpl; auto.
-    - intros; destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
-      + apply (IHm1 _ _ _ H0).
-      + destruct (in_inv H0). congruence. apply (IHm2 _ _ _ H1).
-      + apply (IHm1 _ _ _ H0).
-      + apply (IHm2 _ _ _ H0).
-  Qed.
-
-  Lemma xbindings_oo :
-      forall (m: t A) (i j : key) (v: A),
-      List.In (xO i, v) (xbindings m (xO j)) ->
-      List.In (i, v) (xbindings m j).
-  Proof.
-    induction m.
-    - simpl; auto.
-    - intros; destruct o; simpl; simpl in H; destruct (in_app_or _ _ _ H);
-      apply in_or_app.
-      + left; now apply IHm1.
-      + right; destruct (in_inv H0).
-        injection H1 as -> ->; apply in_eq.
-        apply in_cons; now apply IHm2.
-      + left; now apply IHm1.
-      + right; now apply IHm2.
-  Qed.
-
-  Lemma xbindings_oi :
-    forall (m: t A) (i j : key) (v: A),
-      ~List.In (xO i, v) (xbindings m (xI j)).
-  Proof.
-    induction m.
-    - simpl; auto.
-    - intros; destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
-      + apply (IHm1 _ _ _ H0).
-      + destruct (in_inv H0). congruence. apply (IHm2 _ _ _ H1).
-      + apply (IHm1 _ _ _ H0).
-      + apply (IHm2 _ _ _ H0).
-  Qed.
-
-  Lemma xbindings_ih :
-      forall (m1 m2: t A) (o: option A) (i : key) (v: A),
-      List.In (xI i, v) (xbindings (Node m1 o m2) xH) ->
-      List.In (i, v) (xbindings m2 xH).
-  Proof.
-    destruct o; simpl; intros; destruct (in_app_or _ _ _ H).
-    absurd (List.In (xI i, v) (xbindings m1 2)); auto; apply xbindings_io; auto.
-    destruct (in_inv H0).
-    congruence.
-    apply xbindings_ii; auto.
-    absurd (List.In (xI i, v) (xbindings m1 2)); auto; apply xbindings_io; auto.
-    apply xbindings_ii; auto.
-  Qed.
-
-  Lemma xbindings_oh :
-    forall (m1 m2: t A) (o: option A) (i : key) (v: A),
-      List.In (xO i, v) (xbindings (Node m1 o m2) xH) ->
-      List.In (i, v) (xbindings m1 xH).
-  Proof.
-    destruct o; simpl; intros; destruct (in_app_or _ _ _ H).
-    apply xbindings_oo; auto.
-    destruct (in_inv H0).
-    congruence.
-    absurd (List.In (xO i, v) (xbindings m2 3)); auto; apply xbindings_oi; auto.
-    apply xbindings_oo; auto.
-    absurd (List.In (xO i, v) (xbindings m2 3)); auto; apply xbindings_oi; auto.
-  Qed.
-
-  Lemma xbindings_hi :
-      forall (m: t A) (i : key) (v: A),
-      ~List.In (xH, v) (xbindings m (xI i)).
-  Proof.
-    induction m; intros.
-    - simpl; auto.
-    - destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
-      + generalize H0; apply IHm1; auto.
-      + destruct (in_inv H0). congruence.
-        generalize H1; apply IHm2; auto.
-      + generalize H0; apply IHm1; auto.
-      + generalize H0; apply IHm2; auto.
-  Qed.
-
-  Lemma xbindings_ho :
-    forall (m: t A) (i : key) (v: A),
-      ~List.In (xH, v) (xbindings m (xO i)).
-  Proof.
-    induction m; intros.
-    - simpl; auto.
-    - destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
-      + generalize H0; apply IHm1; auto.
-      + destruct (in_inv H0). congruence.
-        generalize H1; apply IHm2; auto.
-      + generalize H0; apply IHm1; auto.
-      + generalize H0; apply IHm2; auto.
-  Qed.
-
-  Lemma find_xfind_h :
-    forall (m: t A) (i: key), find i m = xfind i xH m.
-  Proof.
-    destruct i; simpl; auto.
-  Qed.
-
-  Lemma xbindings_complete:
-    forall (i j : key) (m: t A) (v: A),
-      List.In (i, v) (xbindings m j) -> xfind i j m = Some v.
-  Proof.
-      induction i; simpl; intros; destruct j; simpl.
-       apply IHi; apply xbindings_ii; auto.
-       absurd (List.In (xI i, v) (xbindings m (xO j))); auto; apply xbindings_io.
-       destruct m.
-        simpl in H; tauto.
-        rewrite find_xfind_h. apply IHi. apply (xbindings_ih _ _ _ _ _ H).
-       absurd (List.In (xO i, v) (xbindings m (xI j))); auto; apply xbindings_oi.
-       apply IHi; apply xbindings_oo; auto.
-       destruct m.
-        simpl in H; tauto.
-        rewrite find_xfind_h. apply IHi. apply (xbindings_oh _ _ _ _ _ H).
-       absurd (List.In (xH, v) (xbindings m (xI j))); auto; apply xbindings_hi.
-       absurd (List.In (xH, v) (xbindings m (xO j))); auto; apply xbindings_ho.
-       destruct m.
-        simpl in H; tauto.
-        destruct o; simpl in H; destruct (in_app_or _ _ _ H).
-         absurd (List.In (xH, v) (xbindings m1 (xO xH))); auto; apply xbindings_ho.
-         destruct (in_inv H0).
-          congruence.
-          absurd (List.In (xH, v) (xbindings m2 (xI xH))); auto; apply xbindings_hi.
-         absurd (List.In (xH, v) (xbindings m1 (xO xH))); auto; apply xbindings_ho.
-         absurd (List.In (xH, v) (xbindings m2 (xI xH))); auto; apply xbindings_hi.
-  Qed.
-
-  Theorem bindings_complete:
-    forall (m: t A) (i: key) (v: A),
-    List.In (i, v) (bindings m) -> find i m = Some v.
-  Proof.
-    intros m i v H.
-    unfold bindings in H.
-    rewrite find_xfind_h.
-    exact (xbindings_complete i xH m v H).
-  Qed.
-
-  Lemma cardinal_spec :
-   forall (m: t A), cardinal m = length (bindings m).
-  Proof.
-   unfold bindings.
-   intros m; set (p:=1); clearbody p; revert m p.
-   induction m; simpl; auto; intros.
-   rewrite (IHm1 (append p 2)), (IHm2 (append p 3)); auto.
-   destruct o; rewrite app_length; simpl; auto.
-  Qed.
-
-  Definition MapsTo (i:key)(v:A)(m:t A) := find i m = Some v.
-
-  Definition In (i:key)(m:t A) := exists e:A, MapsTo i e m.
-
-  Definition eq_key (p p':key*A) := E.eq (fst p) (fst p').
-
-  Definition eq_key_elt (p p':key*A) :=
-          E.eq (fst p) (fst p') /\ (snd p) = (snd p').
-
-  Definition lt_key (p p':key*A) := E.lt (fst p) (fst p').
-
-  Global Instance eqk_equiv : Equivalence eq_key := _.
-  Global Instance eqke_equiv : Equivalence eq_key_elt := _.
-  Global Instance ltk_strorder : StrictOrder lt_key := _.
-
-  Lemma mem_find :
-    forall m x, mem x m = match find x m with None => false | _ => true end.
-  Proof.
-  induction m; destruct x; simpl; auto.
-  Qed.
-
-  Lemma mem_spec : forall m x, mem x m = true <-> In x m.
-  Proof.
-  unfold In, MapsTo; intros m x; rewrite mem_find.
-  split.
-  - destruct (find x m).
-    exists a; auto.
-    intros; discriminate.
-  - destruct 1 as (e0,H0); rewrite H0; auto.
-  Qed.
-
-  Variable  m m' m'' : t A.
-  Variable x y z : key.
-  Variable e e' : A.
-
-  Lemma MapsTo_compat : Proper (E.eq==>eq==>eq==>iff) MapsTo.
-  Proof.
-   intros k1 k2 Hk e1 e2 He m1 m2 Hm. red in Hk. now subst.
-  Qed.
-
-  Lemma find_spec : find x m = Some e <-> MapsTo x e m.
-  Proof. reflexivity. Qed.
-
-  Lemma is_empty_spec : is_empty m = true <-> forall k, find k m = None.
-  Proof.
-  induction m; simpl.
-  - intuition. apply empty_spec.
-  - destruct o. split; try discriminate.
-    intros H. now specialize (H xH).
-    rewrite <- andb_lazy_alt, andb_true_iff, IHt0_1, IHt0_2.
-    clear IHt0_1 IHt0_2.
-    split.
-    + intros (H1,H2) k. destruct k; simpl; auto.
-    + intros H; split; intros k. apply (H (xO k)). apply (H (xI k)).
-  Qed.
-
-  Lemma bindings_spec1 :
-     InA eq_key_elt (x,e) (bindings m) <-> MapsTo x e m.
-  Proof.
-  unfold MapsTo.
-  rewrite InA_alt.
-  split.
-  - intros ((e0,a),(H,H0)).
-    red in H; simpl in H; unfold E.eq in H; destruct H; subst.
-    apply bindings_complete; auto.
-  - intro H.
-    exists (x,e).
-    split.
-    red; simpl; unfold E.eq; auto.
-    apply bindings_correct; auto.
-  Qed.
-
-  Lemma xbindings_bits_lt_1 : forall p p0 q m v,
-     List.In (p0,v) (xbindings m (append p (xO q))) -> E.bits_lt p0 p.
-  Proof.
-  intros.
-  generalize (xbindings_complete _ _ _ _ H); clear H; intros.
-  revert p0 q m v H.
-  induction p; destruct p0; simpl; intros; eauto; try discriminate.
-  Qed.
-
-  Lemma xbindings_bits_lt_2 : forall p p0 q m v,
-     List.In (p0,v) (xbindings m (append p (xI q))) -> E.bits_lt p p0.
-  Proof.
-  intros.
-  generalize (xbindings_complete _ _ _ _ H); clear H; intros.
-  revert p0 q m v H.
-  induction p; destruct p0; simpl; intros; eauto; try discriminate.
-  Qed.
-
-  Lemma xbindings_sort : forall p, sort lt_key (xbindings m p).
-  Proof.
-  induction m.
-  simpl; auto.
-  destruct o; simpl; intros.
-  (* Some *)
-  apply (SortA_app (eqA:=eq_key_elt)); auto with *.
-  constructor; auto.
-  apply In_InfA; intros.
-  destruct y0.
-  red; red; simpl.
-  eapply xbindings_bits_lt_2; eauto.
-  intros x0 y0.
-  do 2 rewrite InA_alt.
-  intros (y1,(Hy1,H)) (y2,(Hy2,H0)).
-  destruct y1; destruct x0; compute in Hy1; destruct Hy1; subst.
-  destruct y2; destruct y0; compute in Hy2; destruct Hy2; subst.
-  red; red; simpl.
-  destruct H0.
-  injection H0; clear H0; intros _ H0; subst.
-  eapply xbindings_bits_lt_1; eauto.
-  apply E.bits_lt_trans with p.
-  eapply xbindings_bits_lt_1; eauto.
-  eapply xbindings_bits_lt_2; eauto.
-  (* None *)
-  apply (SortA_app (eqA:=eq_key_elt)); auto with *.
-  intros x0 y0.
-  do 2 rewrite InA_alt.
-  intros (y1,(Hy1,H)) (y2,(Hy2,H0)).
-  destruct y1; destruct x0; compute in Hy1; destruct Hy1; subst.
-  destruct y2; destruct y0; compute in Hy2; destruct Hy2; subst.
-  red; red; simpl.
-  apply E.bits_lt_trans with p.
-  eapply xbindings_bits_lt_1; eauto.
-  eapply xbindings_bits_lt_2; eauto.
-  Qed.
-
-  Lemma bindings_spec2 : sort lt_key (bindings m).
-  Proof.
-  unfold bindings.
-  apply xbindings_sort; auto.
-  Qed.
-
-  Lemma bindings_spec2w : NoDupA eq_key (bindings m).
+  Lemma bindings_spec2w m : NoDupA eq_key (bindings m).
   Proof.
     apply ME.Sort_NoDupA.
     apply bindings_spec2.
+  Qed.
+
+  Lemma xbindings_length m j acc :
+    length (xbindings m j acc) = (cardinal m + length acc)%nat.
+  Proof.
+   revert j acc.
+   induction m; simpl; trivial; intros.
+   destruct o; simpl; rewrite IHm1; simpl; rewrite IHm2;
+    now rewrite ?Nat.add_succ_r, Nat.add_assoc.
+  Qed.
+
+  Lemma cardinal_spec m : cardinal m = length (bindings m).
+  Proof.
+   unfold bindings. rewrite xbindings_length. simpl.
+   symmetry. apply Nat.add_0_r.
   Qed.
 
   (** [map] and [mapi] *)
@@ -591,40 +369,33 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
     Fixpoint xmapi (m : t A) (i : key) : t B :=
        match m with
         | Leaf => Leaf
-        | Node l o r => Node (xmapi l (append i (xO xH)))
-                             (f i o)
-                             (xmapi r (append i (xI xH)))
+        | Node l o r => Node (xmapi l (i~0))
+                             (f (rev i) o)
+                             (xmapi r (i~1))
        end.
 
   End Mapi.
 
   Definition mapi (f : key -> A -> B) m :=
-    xmapi (fun k => option_map (f k)) m xH.
+    xmapi (fun k => option_map (f k)) m 1.
 
   Definition map (f : A -> B) m := mapi (fun _ => f) m.
 
   End A.
 
   Lemma xgmapi:
-      forall (A B: Type) (f: key -> option A -> option B) (i j : key) (m: t A),
-        (forall k, f k None = None) ->
-        find i (xmapi f m j) = f (append j i) (find i m).
+    forall (A B: Type) (f: key -> option A -> option B) (i j : key) (m: t A),
+      (forall k, f k None = None) ->
+      find i (xmapi f m j) = f (j@i) (find i m).
   Proof.
-  induction i; intros; destruct m; simpl; auto.
-  rewrite (append_assoc_1 j i); apply IHi; auto.
-  rewrite (append_assoc_0 j i); apply IHi; auto.
-  rewrite append_neutral_r; auto.
+  induction i; intros; destruct m; simpl; rewrite ?IHi; auto.
   Qed.
 
   Theorem mapi_spec0 :
     forall (A B: Type) (f: key -> A -> B) (i: key) (m: t A),
     find i (mapi f m) = option_map (f i) (find i m).
   Proof.
-  intros.
-  unfold mapi.
-  replace (f i) with (f (append xH i)).
-  apply xgmapi; auto.
-  rewrite append_neutral_l; auto.
+  intros. unfold mapi. rewrite xgmapi; simpl; auto.
   Qed.
 
   Lemma mapi_spec :
@@ -654,20 +425,18 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
         match m2 with
         | Leaf => xmapi (fun k o => f k o None) m1 i
         | Node l2 o2 r2 =>
-          Node (xmerge l1 l2 (append i (xO xH)))
-               (f i o1 o2)
-               (xmerge r1 r2 (append i (xI xH)))
+          Node (xmerge l1 l2 (i~0))
+               (f (rev i) o1 o2)
+               (xmerge r1 r2 (i~1))
         end
     end.
 
   Lemma xgmerge: forall (i j: key)(m1:t A)(m2: t B),
       (forall i, f i None None = None) ->
-      find i (xmerge m1 m2 j) = f (append j i) (find i m1) (find i m2).
+      find i (xmerge m1 m2 j) = f (j@i) (find i m1) (find i m2).
   Proof.
     induction i; intros; destruct m1; destruct m2; simpl; auto;
-    rewrite ?xgmapi, ?IHi,
-    <- ?append_assoc_1, <- ?append_assoc_0,
-    ?append_neutral_l, ?append_neutral_r; auto.
+    rewrite ?xgmapi, ?IHi; simpl; auto.
   Qed.
 
   End merge.
@@ -688,8 +457,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
   intros. exists x. split. reflexivity.
   unfold merge.
-  rewrite xgmerge; auto.
-  rewrite append_neutral_l.
+  rewrite xgmerge; simpl; auto.
   rewrite <- 2 mem_spec, 2 mem_find in H.
   destruct (find x m); simpl; auto.
   destruct (find x m'); simpl; auto. intuition discriminate.
@@ -701,8 +469,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   intros.
   rewrite <-mem_spec, mem_find in H.
   unfold merge in H.
-  rewrite xgmerge in H; auto.
-  rewrite append_neutral_l in H.
+  rewrite xgmerge in H; simpl; auto.
   rewrite <- 2 mem_spec, 2 mem_find.
   destruct (find x m); simpl in *; auto.
   destruct (find x m'); simpl in *; auto.
@@ -713,42 +480,36 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
     Variables A B : Type.
     Variable f : key -> A -> B -> B.
 
-    Fixpoint xfoldi (m : t A) (v : B) (i : key) :=
+    (** the additional argument, [i], records the current path, in
+       reverse order (this should be more efficient: we reverse this argument
+       only at present nodes only, rather than at each node of the tree).
+       we also use this convention in all functions below
+     *)
+
+    Fixpoint xfold (m : t A) (v : B) (i : key) :=
       match m with
         | Leaf => v
         | Node l (Some x) r =>
-          xfoldi r (f i x (xfoldi l v (append i 2))) (append i 3)
+          xfold r (f (rev i) x (xfold l v i~0)) i~1
         | Node l None r =>
-          xfoldi r (xfoldi l v (append i 2)) (append i 3)
+          xfold r (xfold l v i~0) i~1
       end.
-
-    Lemma xfoldi_1 :
-      forall m v i,
-      xfoldi m v i = fold_left (fun a p => f (fst p) (snd p) a) (xbindings m i) v.
-    Proof.
-      set (F := fun a p => f (fst p) (snd p) a).
-      induction m; intros; simpl; auto.
-      destruct o.
-      rewrite fold_left_app; simpl.
-      rewrite <- IHm1.
-      rewrite <- IHm2.
-      unfold F; simpl; reflexivity.
-      rewrite fold_left_app; simpl.
-      rewrite <- IHm1.
-      rewrite <- IHm2.
-      reflexivity.
-    Qed.
-
-    Definition fold m i := xfoldi m i 1.
+    Definition fold m i := xfold m i 1.
 
   End Fold.
 
   Lemma fold_spec :
-    forall (A:Type)(m:t A)(B:Type)(i : B) (f : key -> A -> B -> B),
+    forall {A}(m:t A){B}(i : B) (f : key -> A -> B -> B),
     fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (bindings m) i.
   Proof.
-    intros; unfold fold, bindings.
-    rewrite xfoldi_1; reflexivity.
+    unfold fold, bindings. intros A m B i f. revert m i.
+    set (f' := fun a p => f (fst p) (snd p) a).
+    assert (H: forall m i j acc,
+      fold_left f' acc (xfold f m i j) =
+      fold_left f' (xbindings m j acc) i).
+    { induction m as [|l IHl o r IHr]; intros; trivial.
+      destruct o; simpl; now rewrite IHr, <- IHl. }
+    intros. exact (H m i 1 nil).
   Qed.
 
   Fixpoint equal (A:Type)(cmp : A -> A -> bool)(m1 m2 : t A) : bool :=
@@ -872,11 +633,11 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   try discriminate.
   Qed.
 
-Lemma equal_spec : forall (A:Type)(m m':t A)(cmp:A->A->bool),
+  Lemma equal_spec : forall (A:Type)(m m':t A)(cmp:A->A->bool),
     equal cmp m m' = true <-> Equivb cmp m m'.
-Proof.
- split. apply equal_2. apply equal_1.
-Qed.
+  Proof.
+    split. apply equal_2. apply equal_1.
+  Qed.
 
 End PositiveMap.
 

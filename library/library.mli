@@ -21,7 +21,6 @@ open Libnames
 (** {6 ... } *)
 (** Require = load in the environment + open (if the optional boolean
     is not [None]); mark also for export if the boolean is [Some true] *)
-val require_library : qualid located list -> bool option -> unit
 val require_library_from_dirpath : (DirPath.t * string) list -> bool option -> unit
 val require_library_from_file :
   Id.t option -> CUnix.physical_path -> bool option -> unit
@@ -73,8 +72,14 @@ exception LibNotFound
 type library_location = LibLoaded | LibInPath
 
 val locate_qualified_library :
-  bool -> qualid -> library_location * DirPath.t * CUnix.physical_path
-val try_locate_qualified_library : qualid located -> DirPath.t * string
+  ?root:DirPath.t -> ?warn:bool -> qualid ->
+  library_location * DirPath.t * CUnix.physical_path
+(** Locates a library by implicit name.
+
+  @raise LibUnmappedDir if the library is not in the path
+  @raise LibNotFound if there is no corresponding file in the path
+
+*)
 
 (** {6 Statistics: display the memory use of a library. } *)
 val mem : DirPath.t -> Pp.std_ppcmds

@@ -1,3 +1,5 @@
+Require Eqdep_dec.
+
 (* Check the behaviour of Injection *)
 
 (* Check that Injection tries Intro until *)

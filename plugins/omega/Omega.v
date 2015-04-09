@@ -13,10 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* We do not require [ZArith] anymore, but only what's necessary for Omega *)
+(* We import what is necessary for Omega *)
 Require Export ZArith_base.
 Require Export OmegaLemmas.
 Require Export PreOmega.
+
 Declare ML Module "omega_plugin".
 
 Hint Resolve Z.le_refl Z.add_comm Z.add_assoc Z.mul_comm Z.mul_assoc Z.add_0_l
@@ -24,11 +25,6 @@ Hint Resolve Z.le_refl Z.add_comm Z.add_assoc Z.mul_comm Z.mul_assoc Z.add_0_l
   Z.mul_add_distr_l: zarith.
 
 Require Export Zhints.
-
-(*
-(* The constant minus is required in coq_omega.ml *)
-Require Minus.
-*)
 
 Hint Extern 10 (_ = _ :>nat) => abstract omega: zarith.
 Hint Extern 10 (_ <= _) => abstract omega: zarith.

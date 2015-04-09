@@ -131,7 +131,7 @@ type cancel_switch = bool ref
 type branch_type =
   [ `Master
   | `Proof of proof_mode * depth
-  | `Edit of proof_mode * Stateid.t * Stateid.t ]
+  | `Edit of proof_mode * Stateid.t * Stateid.t  * vernac_qed_type ]
 type cmd_t = {
   ctac : bool; (* is a tactic, needed by the 8.4 semantics of Undo *)
   cast : ast;
@@ -449,7 +449,7 @@ end = struct (* {{{ *)
     if List.mem edit_branch (Vcs_.branches !vcs) then begin
       checkout edit_branch;
       match get_branch edit_branch with
-      | { kind = `Edit (mode, _, _) } -> Proof_global.activate_proof_mode mode
+      | { kind = `Edit (mode, _,_,_) } -> Proof_global.activate_proof_mode mode
       | _ -> assert false
     end else
       let pl = proof_nesting () in
@@ -1787,8 +1787,15 @@ let known_state ?(redefine_qed=false) ~cache id =
                 VCS.create_cluster nodes ~qed:id ~start;
                 begin match brinfo, qed.fproof with
                 | { VCS.kind = `Edit _ }, None -> assert false
-                | { VCS.kind = `Edit _ }, Some (ofp, cancel) ->
+                | { VCS.kind = `Edit (_,_,_, okeep) }, Some (ofp, cancel) ->
                     assert(redefine_qed = true);
+                    if okeep != keep then
+                      msg_error(strbrk("The command closing the proof changed. "
+                        ^"The kernel cannot take this into account and will "
+                        ^(if keep == VtKeep then "not check " else "reject ")
+                        ^"the "^(if keep == VtKeep then "new" else "incomplete")
+                        ^" proof. Reprocess the command declaring "
+                        ^"the proof's statement to avoid that."));
                     let fp, cancel =
                       Slaves.build_proof
                         ~loc ~drop_pt ~exn_info ~start ~stop ~name in
@@ -1914,7 +1921,7 @@ let finish ?(print_goals=false) () =
   VCS.print ();
   (* Some commands may by side effect change the proof mode *)
   match VCS.get_branch head with
-  | { VCS.kind = `Edit (mode, _, _) } -> Proof_global.activate_proof_mode mode
+  | { VCS.kind = `Edit (mode, _,_,_) } -> Proof_global.activate_proof_mode mode
   | { VCS.kind = `Proof (mode, _) } -> Proof_global.activate_proof_mode mode
   | _ -> ()
 
@@ -1982,7 +1989,7 @@ let merge_proof_branch ?valid ?id qast keep brname =
       VCS.delete_branch brname;
       if keep <> VtDrop then VCS.propagate_sideff None;
       `Ok
-  | { VCS.kind = `Edit (mode, qed_id, master_id) } ->
+  | { VCS.kind = `Edit (mode, qed_id, master_id, _) } ->
       let ofp =
         match VCS.visit qed_id with
         | { step = `Qed ({ fproof }, _) } -> fproof
@@ -2136,9 +2143,9 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
             | { VCS.root; kind = `Proof(_,d); pos } ->
                 VCS.delete_branch bn;
                 VCS.branch ~root ~pos bn (`Proof(mode,d))
-            | { VCS.root; kind = `Edit(_,f,q); pos } ->
+            | { VCS.root; kind = `Edit(_,f,q,k); pos } ->
                 VCS.delete_branch bn;
-                VCS.branch ~root ~pos bn (`Edit(mode,f,q)))
+                VCS.branch ~root ~pos bn (`Edit(mode,f,q,k)))
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record ();
@@ -2291,13 +2298,13 @@ let edit_at id =
       | { step = `Sideff (`Ast(_,id)|`Id id) } -> id
       | { next } -> master_for_br root next in
   let reopen_branch start at_id mode qed_id tip =
-    let master_id, cancel_switch =
+    let master_id, cancel_switch, keep =
       (* Hum, this should be the real start_id in the clusted and not next *)
       match VCS.visit qed_id with
-      | { step = `Qed ({ fproof = Some (_,cs)},_) } -> start, cs
+      | { step = `Qed ({ fproof = Some (_,cs); keep },_) } -> start, cs, keep
       | _ -> anomaly (str "Cluster not ending with Qed") in
     VCS.branch ~root:master_id ~pos:id
-      VCS.edit_branch (`Edit (mode, qed_id, master_id));
+      VCS.edit_branch (`Edit (mode, qed_id, master_id, keep));
     VCS.delete_cluster_of id;
     cancel_switch := true;
     Reach.known_state ~cache:(interactive ()) id;
@@ -2324,7 +2331,7 @@ let edit_at id =
       let focused = List.exists ((=) VCS.edit_branch) (VCS.branches ()) in
       let branch_info =
         match snd (VCS.get_info id).vcs_backup with
-        | Some{ mine = _, { VCS.kind = (`Proof(m,_)|`Edit(m,_,_)) }} -> Some m
+        | Some{ mine = _, { VCS.kind = (`Proof(m,_)|`Edit(m,_,_,_)) }} -> Some m
         | _ -> None in
       match focused, VCS.cluster_of id, branch_info with
       | _, Some _, None -> assert false

@@ -119,3 +119,18 @@ let get_last env = match Environ.named_context env with
   | (id,_,_)::_ -> id
   | [] -> error "no previous statement to use"
 
+
+let get_end_command pts =
+  match get_top_stack pts with
+  | [] -> "\"end proof\""
+  | Claim::_ -> "\"end claim\""
+  | Focus_claim::_-> "\"end focus\""
+  | Suppose_case :: Per (et,_,_,_) :: _ | Per (et,_,_,_) :: _  ->
+      begin
+	match et with
+	  Decl_expr.ET_Case_analysis ->
+	    "\"end cases\" or start a new case"
+	| Decl_expr.ET_Induction ->
+	    "\"end induction\" or start a new case"
+      end
+  | _ -> anomaly (Pp.str"lonely suppose")

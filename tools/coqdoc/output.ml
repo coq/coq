@@ -595,7 +595,6 @@ module Html = struct
 	| '<' -> Buffer.add_string buff "&lt;"
 	| '>' -> Buffer.add_string buff "&gt;"
 	| '&' -> Buffer.add_string buff "&amp;"
-        | '\'' -> Buffer.add_string buff "&acute;"
         | '\"' -> Buffer.add_string buff "&quot;"
 	| c -> Buffer.add_char buff c
       done;

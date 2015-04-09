@@ -144,8 +144,7 @@ let current_dir () = match current.project_path with
 | None -> ""
 | Some dir -> dir
 
-let select_file_for_open ~title () =
-  let file = ref None in
+let select_file_for_open ~title ?filename () =
   let file_chooser =
     GWindow.file_chooser_dialog ~action:`OPEN ~modal:true ~title ()
   in
@@ -154,19 +153,22 @@ let select_file_for_open ~title () =
   file_chooser#add_filter (filter_coq_files ());
   file_chooser#add_filter (filter_all_files ());
   file_chooser#set_default_response `OPEN;
-  ignore (file_chooser#set_current_folder (current_dir ()));
-  begin match file_chooser#run () with
+  let dir = match filename with
+    | None -> current_dir ()
+    | Some f -> Filename.dirname f in
+  ignore (file_chooser#set_current_folder dir);
+  let file =
+    match file_chooser#run () with
     | `OPEN ->
       begin
-	file := file_chooser#filename;
-	match !file with
-	  | None -> ()
-	  | Some s -> current.project_path <- file_chooser#current_folder
+	match file_chooser#filename with
+	  | None -> None
+	  | Some _ as f ->
+            current.project_path <- file_chooser#current_folder; f
       end
-    | `DELETE_EVENT | `CANCEL -> ()
-  end ;
+    | `DELETE_EVENT | `CANCEL -> None in
   file_chooser#destroy ();
-  !file
+  file
 
 let select_file_for_save ~title ?filename () =
   let file = ref None in

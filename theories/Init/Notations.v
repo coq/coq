@@ -59,7 +59,7 @@ Reserved Notation "( x , y , .. , z )" (at level 0).
 
 (** Notation "{ x }" is reserved and has a special status as component
     of other notations such as "{ A } + { B }" and "A + { B }" (which
-    are at the same level than "x + y");
+    are at the same level as "x + y");
     "{ x }" is at level 0 to factor with "{ x : A | P }" *)
 
 Reserved Notation "{ x }" (at level 0, x at level 99).

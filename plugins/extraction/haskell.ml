@@ -38,7 +38,7 @@ let pp_bracket_comment s = str"{- " ++ hov 0 s ++ str" -}"
 let preamble mod_name comment used_modules usf =
   let pp_import mp = str ("import qualified "^ string_of_modfile mp ^"\n")
   in
-  (if not usf.magic then mt ()
+  (if not (usf.magic || usf.tunknown) then mt ()
    else
      str "{-# OPTIONS_GHC -cpp -XMagicHash #-}" ++ fnl () ++
      str "{- For Hugs, use the option -F\"cpp -P -traditional\" -}")
@@ -52,20 +52,34 @@ let preamble mod_name comment used_modules usf =
   str "import qualified Prelude" ++ fnl () ++
   prlist pp_import used_modules ++ fnl () ++
   (if List.is_empty used_modules then mt () else fnl ()) ++
-  (if not usf.magic then mt ()
+  (if not (usf.magic || usf.tunknown) then mt ()
    else str "\
 \n#ifdef __GLASGOW_HASKELL__\
 \nimport qualified GHC.Base\
 \nimport qualified GHC.Prim\
-\ntype Any = GHC.Prim.Any\
+\n#else\
+\n-- HUGS\
+\nimport qualified IOExts\
+\n#endif" ++ fnl2 ())
+  ++
+  (if not usf.magic then mt ()
+   else str "\
+\n#ifdef __GLASGOW_HASKELL__\
 \nunsafeCoerce :: a -> b\
 \nunsafeCoerce = GHC.Base.unsafeCoerce#\
 \n#else\
 \n-- HUGS\
-\nimport qualified IOExts\
-\ntype Any = ()\
 \nunsafeCoerce :: a -> b\
 \nunsafeCoerce = IOExts.unsafeCoerce\
+\n#endif" ++ fnl2 ())
+  ++
+  (if not usf.tunknown then mt ()
+   else str "\
+\n#ifdef __GLASGOW_HASKELL__\
+\ntype Any = GHC.Prim.Any\
+\n#else\
+\n-- HUGS\
+\ntype Any = ()\
 \n#endif" ++ fnl2 ())
   ++
   (if not usf.mldummy then mt ()
@@ -349,7 +363,7 @@ and pp_module_expr = function
   | MEfunctor _ -> mt ()
       (* for the moment we simply discard unapplied functors *)
   | MEident _ | MEapply _ -> assert false
-      (* should be expansed in extract_env *)
+      (* should be expanded in extract_env *)
 
 let pp_struct =
   let pp_sel (mp,sel) =

@@ -1446,6 +1446,7 @@ let rec postprocess pts instr =
 		  anomaly (Pp.str "\"end induction\" generated an ill-formed fixpoint")
 	end
     | Pend (B_elim ET_Case_analysis) -> goto_current_focus ()
+    | Pend B_proof -> Proof_global.set_proof_mode "Classic"
     | Pend _ -> ()
 
 let do_instr raw_instr pts =

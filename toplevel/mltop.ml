@@ -161,15 +161,6 @@ let add_rec_ml_dir unix_path =
 
 (* Adding files to Coq and ML loadpath *)
 
-let add_path ~unix_path:dir ~coq_root:coq_dirpath ~implicit =
-  if exists_dir dir then
-    begin
-      add_ml_dir dir;
-      Loadpath.add_load_path dir ~root:true ~implicit coq_dirpath
-    end
-  else
-    msg_warning (str ("Cannot open " ^ dir))
-
 let convert_string d =
   try Names.Id.of_string d
   with UserError _ ->
@@ -189,9 +180,9 @@ let add_rec_path ~unix_path ~coq_root ~implicit =
     let dirs = List.map_filter convert_dirs dirs in
     let () = add_ml_dir unix_path in
     let add (path, dir) =
-      Loadpath.add_load_path path ~root:false ~implicit dir in
+      Loadpath.add_load_path path ~implicit dir in
     let () = List.iter add dirs in
-    Loadpath.add_load_path unix_path ~root:true ~implicit coq_root
+    Loadpath.add_load_path unix_path ~implicit coq_root
   else
     msg_warning (str ("Cannot open " ^ unix_path))
 

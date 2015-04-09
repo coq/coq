@@ -276,21 +276,11 @@ object(self)
     Doc.focus document ~cond_top:(at start) ~cond_bot:(at stop);
     self#print_stack;
     let qed_s = Doc.tip_data document in
-    buffer#apply_tag Tags.Script.read_only
-      ~start:((buffer#get_iter_at_mark qed_s.start)#forward_find_char
-        (fun c -> not(Glib.Unichar.isspace c)))
-      ~stop:(buffer#get_iter_at_mark qed_s.stop);
     buffer#move_mark ~where:(buffer#get_iter_at_mark qed_s.stop)
       (`NAME "stop_of_input")
 
   method private exit_focus =
     Minilib.log "Unfocusing";
-    begin try
-      let { start; stop } = Doc.tip_data document in
-      buffer#remove_tag Tags.Script.read_only
-        ~start:(buffer#get_iter_at_mark start)
-        ~stop:(buffer#get_iter_at_mark stop)
-    with Doc.Empty -> () end;
     Doc.unfocus document;
     self#print_stack;
     begin try
@@ -515,7 +505,7 @@ object(self)
       | Some (start, stop) ->
         if until n start stop then begin
           ()
-        end else if start#has_tag Tags.Script.processed then begin
+        end else if stop#backward_char#has_tag Tags.Script.processed then begin
           Queue.push (`Skip (start, stop)) queue;
           loop n stop
         end else begin
@@ -563,12 +553,15 @@ object(self)
       script#recenter_insert;
       match topstack with
       | [] -> self#show_goals_aux ?move_insert ()
-      | (_,s) :: _ -> self#backtrack_to_iter (buffer#get_iter_at_mark s.start) in
+      | (_,s)::_ -> self#backtrack_to_iter (buffer#get_iter_at_mark s.start) in
     let process_queue queue =
       let rec loop tip topstack =
         if Queue.is_empty queue then conclude topstack else
         match Queue.pop queue, topstack with
-        | `Skip(start,stop), [] -> assert false
+        | `Skip(start,stop), [] ->
+            logger Pp.Error "You muse close the proof with Qed or Admitted";
+            self#discard_command_queue queue;
+            conclude [] 
         | `Skip(start,stop), (_,s) :: topstack ->
             assert(start#equal (buffer#get_iter_at_mark s.start));
             assert(stop#equal (buffer#get_iter_at_mark s.stop));
@@ -589,7 +582,7 @@ object(self)
                   Doc.assign_tip_id document id;
                   let topstack, _ = Doc.context document in
                   self#exit_focus;
-                  self#cleanup ~all:true (Doc.cut_at document tip);
+                  self#cleanup (Doc.cut_at document tip);
                   logger Pp.Notice msg;
                   self#mark_as_needed sentence;
                   if Queue.is_empty queue then loop tip []
@@ -651,7 +644,7 @@ object(self)
       Doc.find_id document (fun id { start;stop } -> until (Some id) start stop)
     with Not_found -> initial_state, Doc.focused document 
 
-  method private cleanup ~all seg =
+  method private cleanup seg =
     if seg <> [] then begin
       let start = buffer#get_iter_at_mark (CList.last seg).start in
       let stop = buffer#get_iter_at_mark (CList.hd seg).stop in
@@ -662,7 +655,6 @@ object(self)
       buffer#remove_tag Tags.Script.unjustified ~start ~stop;
       buffer#remove_tag Tags.Script.tooltip ~start ~stop;
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
-      if all then buffer#remove_tag Tags.Script.read_only ~start ~stop;
       buffer#remove_tag Tags.Script.error ~start ~stop;
       buffer#remove_tag Tags.Script.error_bg ~start ~stop;
       buffer#move_mark ~where:start (`NAME "start_of_input")
@@ -694,13 +686,13 @@ object(self)
       Coq.bind (Coq.edit_at to_id) (function
       | Good (CSig.Inl (* NewTip *) ()) ->
           if unfocus_needed then self#exit_focus;
-          self#cleanup ~all:true (Doc.cut_at document to_id);
+          self#cleanup (Doc.cut_at document to_id);
           conclusion ()
       | Good (CSig.Inr (* Focus  *) (stop_id,(start_id,tip))) ->
           if unfocus_needed then self#exit_focus;
-          self#cleanup ~all:true (Doc.cut_at document tip);
+          self#cleanup (Doc.cut_at document tip);
           self#enter_focus start_id stop_id;
-          self#cleanup ~all:false (Doc.cut_at document to_id);
+          self#cleanup (Doc.cut_at document to_id);
           conclusion ()
       | Fail (safe_id, loc, msg) ->
           if loc <> None then messages#push Pp.Error "Fixme LOC";

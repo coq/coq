@@ -23,9 +23,7 @@ let print_usage_channel co command =
   output_string co
 "  -I dir                 look for ML files in dir\
 \n  -include dir           (idem)\
-\n  -I dir -as coqdir      implicitly map physical dir to logical coqdir\
-\n  -R dir -as coqdir      recursively map physical dir to logical coqdir\
-\n  -R dir coqdir          (idem)\
+\n  -R dir coqdir          recursively map physical dir to logical coqdir\
 \n  -Q dir coqdir          map physical dir to logical coqdir\
 \n  -top coqdir            set the toplevel name to be coqdir instead of Top\
 \n  -notop                 set the toplevel name to be the empty logical path\

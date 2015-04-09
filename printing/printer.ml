@@ -544,26 +544,27 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
     else 
       pr_rec 1 (g::l)
   in
+  (* Side effect! This has to be made more robust *)
+  let () =
+    match close_cmd with
+    | Some cmd -> msg_info cmd
+    | None -> ()
+  in
   match goals with
   | [] ->
       begin
-	match close_cmd with
-	  Some cmd ->
-	    (str "Subproof completed, now type " ++ str cmd ++
-	       str ".")
-	| None ->
-	    let exl = Evarutil.non_instantiated sigma in
-	    if Evar.Map.is_empty exl then
-	      (str"No more subgoals."
-	       ++ emacs_print_dependent_evars sigma seeds)
-	    else
-	      let pei = pr_evars_int sigma 1 exl in
-	      (str "No more subgoals but non-instantiated existential " ++
-		 str "variables:" ++ fnl () ++ (hov 0 pei)
-	       ++ emacs_print_dependent_evars sigma seeds ++ fnl () ++
-                 str "You can use Grab Existential Variables.")
+	let exl = Evarutil.non_instantiated sigma in
+	if Evar.Map.is_empty exl then
+	  (str"No more subgoals."
+	   ++ emacs_print_dependent_evars sigma seeds)
+	else
+	  let pei = pr_evars_int sigma 1 exl in
+	  (str "No more subgoals but non-instantiated existential " ++
+	   str "variables:" ++ fnl () ++ (hov 0 pei)
+	   ++ emacs_print_dependent_evars sigma seeds ++ fnl () ++
+           str "You can use Grab Existential Variables.")
       end
-  | [g] when not !Flags.print_emacs ->
+  | [g] when not !Flags.print_emacs && pr_first ->
       let pg = default_pr_goal { it = g ; sigma = sigma; } in
       v 0 (
 	str "1" ++ focused_if_needed ++ str"subgoal" ++ print_extra
@@ -572,8 +573,9 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
       )
   | g1::rest ->
       let goals = print_multiple_goals g1 rest in
+      let ngoals = List.length rest+1 in
       v 0 (
-	int(List.length rest+1) ++ focused_if_needed ++ str"subgoals" ++
+	int ngoals ++ focused_if_needed ++ str(String.plural ngoals "subgoal") ++
           print_extra ++
           str ((if display_name then (fun x -> x) else emacs_str) ", subgoal 1")
         ++ pr_goal_tag g1
@@ -587,7 +589,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
 
 
 type printer_pr = {
- pr_subgoals            : ?pr_first:bool -> string option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> std_ppcmds;
+ pr_subgoals            : ?pr_first:bool -> std_ppcmds option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> std_ppcmds;
  pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds;
  pr_goal                : goal sigma -> std_ppcmds;
 }
@@ -631,10 +633,14 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
 	    fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] shelf
 	  | _ , _, _ ->
-	    msg_info (str "This subproof is complete, but there are still unfocused goals." ++
-			(match Proof_global.Bullet.suggest p
-			 with None  -> str"" | Some s -> fnl () ++ str s));
-	    fnl () ++ pr_subgoals ~pr_first:false None bsigma seeds shelf [] bgoals
+            let end_cmd =
+              strbrk "This subproof is complete, but there are still \
+              unfocused goals." ++
+	      (match Proof_global.Bullet.suggest p
+              with None  -> str"" | Some s -> fnl () ++ str s) ++
+              fnl ()
+            in
+	    pr_subgoals ~pr_first:false (Some end_cmd) bsigma seeds shelf [] bgoals
 	  end
   | _ -> pr_subgoals None sigma seeds shelf stack goals
   end

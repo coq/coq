@@ -36,13 +36,20 @@ let pr_goal gs =
 		       str "============================" ++ fnl ()  ++
 		       thesis ++ str " " ++  pc) ++ fnl ()
 
-(* arnaud: rebrancher ça ?
-let pr_open_subgoals () =
-  let p = Proof_global.give_me_the_proof () in
-  let { Evd.it = goals ; sigma = sigma } = Proof.V82.subgoals p in
-  let close_cmd = Decl_mode.get_end_command p in
-  pr_subgoals close_cmd sigma goals
-*)
+let pr_subgoals ?(pr_first=true) _ sigma _ _ _ gll =
+  match gll with
+  | [goal] when pr_first ->
+      pr_goal { Evd.it = goal ; sigma = sigma }
+  | _ ->
+      (* spiwack: it's not very nice to have to call proof global
+         here, a more robust solution would be to add a hook for
+         [Printer.pr_open_subgoals] in proof modes, in order to
+         compute the end command. Yet a more robust solution would be
+         to have focuses give explanations of their unfocusing
+         behaviour. *)
+      let p = Proof_global.give_me_the_proof () in
+      let close_cmd = Decl_mode.get_end_command p in
+      str "Subproof completed, now type " ++ str close_cmd ++ str "."
 
 let interp_proof_instr _ { Evd.it = gl ; sigma = sigma }=
   Decl_interp.interp_proof_instr 
@@ -93,14 +100,16 @@ let proof_instr : raw_proof_instr Gram.entry =
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr
 
-let classify_proof_instr _ = VtProofStep false, VtLater
+let classify_proof_instr = function
+  | { instr = Pescape |Pend B_proof } -> VtProofMode "Classic", VtNow
+  | _ -> VtProofStep false, VtLater
 
 (* We use the VERNAC EXTEND facility with a custom non-terminal
     to populate [proof_mode] with a new toplevel interpreter.
     The "-" indicates that the rule does not start with a distinguished
     string. *)
-VERNAC proof_mode EXTEND ProofInstr CLASSIFIED BY classify_proof_instr
-  [ - proof_instr(instr) ] -> [ vernac_proof_instr instr ]
+VERNAC proof_mode EXTEND ProofInstr
+  [ - proof_instr(instr) ] => [classify_proof_instr instr] -> [ vernac_proof_instr instr ]
 END
 
 (* It is useful to use GEXTEND directly to call grammar entries that have been
@@ -130,7 +139,8 @@ let _ =
 					 (* We substitute the goal printer, by the one we built
 					     for the proof mode. *)
 					 Printer.set_printer_pr { Printer.default_printer_pr with
-								                Printer.pr_goal = pr_goal }
+								                Printer.pr_goal = pr_goal;
+                                                                                pr_subgoals = pr_subgoals; }
 				       end ;
                                        (* function [reset] goes back to No Proof Mode from
 					   Declarative Proof Mode *)
@@ -147,7 +157,7 @@ VERNAC COMMAND EXTEND DeclProof
 [ "proof" ] => [ VtProofMode "Declarative", VtNow ] -> [ vernac_decl_proof () ]
 END
 VERNAC COMMAND EXTEND  DeclReturn
-[ "return" ] => [ VtProofMode "Classic", VtNow ] -> [ vernac_return () ]
+[ "return" ] => [ VtProofMode "Declarative", VtNow ] -> [ vernac_return () ]
 END
 
 let none_is_empty = function

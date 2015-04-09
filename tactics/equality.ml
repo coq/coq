@@ -1230,8 +1230,6 @@ let try_delta_expand env sigma t =
 let eq_dec_scheme_kind_name = ref (fun _ -> failwith "eq_dec_scheme undefined")
 let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 
-let eqdep_dec = qualid_of_string "Coq.Logic.Eqdep_dec"
-
 let inject_if_homogenous_dependent_pair ty =
   Proofview.Goal.nf_enter begin fun gl ->
   try
@@ -1254,7 +1252,7 @@ let inject_if_homogenous_dependent_pair ty =
     (* knows inductive types *)
     if not (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) (fst ind) &&
       pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
-    Library.require_library [Loc.ghost,eqdep_dec] (Some false);
+    Coqlib.check_required_library ["Coq";"Logic";"Eqdep_dec"];
     let new_eq_args = [|pf_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
     let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
       ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
