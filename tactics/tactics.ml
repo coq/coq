@@ -584,7 +584,10 @@ let e_change_in_hyp redfun (id,where) =
       (Proofview.Goal.env gl) (Proofview.Goal.sigma gl))
     convert_hyp
 
-type change_arg = evar_map -> evar_map * constr
+type change_arg = Pattern.patvar_map -> evar_map -> evar_map * constr
+
+let make_change_arg c =
+  fun pats sigma -> (sigma, replace_vars (Id.Map.bindings pats) c)
 
 let check_types env sigma mayneedglobalcheck deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
@@ -612,21 +615,15 @@ let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
   if not b then errorlabstrm "convert-check-hyp" (str "Not convertible.");
   sigma, t'
 
-let change_and_check_subst cv_pb mayneedglobalcheck subst t env sigma c =
-  let t' sigma =
-    let sigma, t = t sigma in
-      sigma, replace_vars (Id.Map.bindings subst) t 
-  in change_and_check cv_pb mayneedglobalcheck true t' env sigma c
-
 (* Use cumulativity only if changing the conclusion not a subterm *)
 let change_on_subterm cv_pb deep t where env sigma c =
   let mayneedglobalcheck = ref false in
   let sigma,c = match where with
-  | None -> change_and_check cv_pb mayneedglobalcheck deep t env sigma c
+  | None -> change_and_check cv_pb mayneedglobalcheck deep (t Id.Map.empty) env sigma c
   | Some occl ->
       e_contextually false occl
         (fun subst ->
-          change_and_check_subst Reduction.CONV mayneedglobalcheck subst t)
+          change_and_check Reduction.CONV mayneedglobalcheck true (t subst))
         env sigma c in
   if !mayneedglobalcheck then
     begin
@@ -656,7 +653,7 @@ let change chg c cls gl =
     cls) gl
 
 let change_concl t = 
-  change_in_concl None (fun sigma -> sigma, t)
+  change_in_concl None (make_change_arg t)
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
 let red_in_concl        = reduct_in_concl (red_product,REVERTcast)
@@ -2769,7 +2766,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
     if Int.equal i nparams then
       let t = applist (hd, params@args) in
       Tacticals.New.tclTHEN
-        (change_in_hyp None (fun sigma -> sigma, t) (hyp0,InHypTypeOnly))
+        (change_in_hyp None (make_change_arg t) (hyp0,InHypTypeOnly))
         (tac avoid)
     else
       let c = List.nth argl (i-1) in

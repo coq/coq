@@ -675,7 +675,7 @@ let mkDestructEq :
      [Simple.generalize new_hyps;
       (fun g2 ->
 	Proofview.V82.of_tactic (change_in_concl None
-	  (fun sigma ->
+	  (fun patvars sigma ->
 	    pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) sigma (pf_concl g2))) g2);
       Proofview.V82.of_tactic (simplest_case expr)]), to_revert
 
