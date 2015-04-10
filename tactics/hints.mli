@@ -40,7 +40,7 @@ type hints_path_atom =
   | PathHints of global_reference list
   | PathAny
 
-type 'a gen_auto_tactic = {
+type 'a gen_auto_tactic = private {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
