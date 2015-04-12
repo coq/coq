@@ -54,8 +54,7 @@ type search_entry
 
 (** The head may not be bound. *)
 
-type hint_entry = global_reference option * 
-  (constr * types * Univ.universe_context_set) gen_auto_tactic
+type hint_entry
 
 type hints_path =
   | PathAtom of hints_path_atom
