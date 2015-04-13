@@ -44,18 +44,20 @@ let observe_tac s tac g = observe_tac_stream (str s) tac g
 
 let debug_queue = Stack.create ()
 
-let rec print_debug_queue b e = 
+let rec print_debug_queue e = 
   if  not (Stack.is_empty debug_queue) 
   then
     begin
       let lmsg,goal = Stack.pop debug_queue in 
-      if b then 
-	Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
-      else
-	begin
-	  Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
-	end;
-      print_debug_queue false e;
+      let _ =
+	match e with
+	| Some e ->
+	   Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
+	| None ->
+	   begin
+	     Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
+	   end in
+      print_debug_queue None ;
     end
 
 let observe strm =
@@ -68,13 +70,13 @@ let do_observe_tac s tac g =
   let lmsg = (str "observation : ") ++ s in 
   Stack.push (lmsg,goal) debug_queue;
   try 
-    let v = tac g in 
+    let v = tac g in
     ignore(Stack.pop debug_queue);
     v
   with reraise ->
     let reraise = Errors.push reraise in
     if not (Stack.is_empty debug_queue)
-    then print_debug_queue true (fst (Cerrors.process_vernac_interp_error reraise));
+    then print_debug_queue (Some (fst (Cerrors.process_vernac_interp_error reraise)));
     iraise reraise
 
 let observe_tac_stream s tac g =
@@ -1099,17 +1101,17 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	   f_body
 	)
     in
-(*     observe (str "full_params := " ++  *)
-(* 	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na)) *)
-(* 	       full_params *)
-(* 	    );  *)
-(*     observe (str "princ_params := " ++  *)
-(* 	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na)) *)
-(* 	       princ_params *)
-(* 	    );  *)
-(*     observe (str "fbody_with_full_params := " ++  *)
-(* 	       pr_lconstr fbody_with_full_params *)
-(* 	    );  *)
+    observe (str "full_params := " ++
+	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na))
+	       full_params
+	    );
+    observe (str "princ_params := " ++
+	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na))
+	       princ_params
+	    );
+    observe (str "fbody_with_full_params := " ++
+	       pr_lconstr fbody_with_full_params
+	    );
     let all_funs_with_full_params =
       Array.map (fun f -> applist(f, List.rev_map var_of_decl full_params)) all_funs
     in
@@ -1189,7 +1191,8 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		(List.rev princ_info.predicates)
 	    in
 	    pte_to_fix,List.rev rev_info
-	| _ -> Id.Map.empty,[]
+	| _ ->
+	   Id.Map.empty,[]
     in
     let mk_fixes : tactic =
       let pre_info,infos = list_chop fun_num infos in
@@ -1203,7 +1206,10 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	    in
 	    if List.is_empty other_fix_infos
 	    then
-	      (* observe_tac ("h_fix") *) (fix (Some this_fix_info.name) (this_fix_info.idx +1))
+	      if this_fix_info.idx + 1 = 0
+	      then tclIDTAC (* Someone  tries to defined a principle on a fully parametric definition declared as a fixpoint (strange but ....) *)
+	      else
+		observe_tac_stream (str "h_fix " ++ int (this_fix_info.idx +1) ) (fix (Some this_fix_info.name) (this_fix_info.idx +1))
 	    else
 	      Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
 		other_fix_infos 0
@@ -1211,10 +1217,10 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
     in
     let first_tac : tactic = (* every operations until fix creations *)
       tclTHENSEQ
-	[ (* observe_tac "introducing params" *) Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.params));
-	  (* observe_tac "introducing predictes" *) Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.predicates));
-	  (* observe_tac "introducing branches" *) Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.branches));
-	  (* observe_tac "building fixes" *) mk_fixes;
+	[ observe_tac "introducing params" (Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.params)));
+	  observe_tac "introducing predictes" (Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.predicates)));
+	  observe_tac "introducing branches" (Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.branches)));
+	  observe_tac "building fixes" mk_fixes;
 	]
     in
     let intros_after_fixes : tactic =
