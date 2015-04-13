@@ -2143,14 +2143,13 @@ and interp_atomic ist tac : unit Proofview.tactic =
         Proofview.V82.tactic begin fun gl -> 
           let (sigma,sign,op) = interp_typed_pattern ist env sigma op in
           let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
-	  let env' = Environ.push_named_context sign env in
           let c_interp patvars sigma =
 	    let lfun' = Id.Map.fold (fun id c lfun ->
 	      Id.Map.add id (Value.of_constr c) lfun) 
 	      patvars ist.lfun
 	    in
 	    let ist = { ist with lfun = lfun' } in
-	      try interp_constr ist env' sigma c
+	      try interp_constr ist env sigma c
 	      with e when to_catch e (* Hack *) ->
 		errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
           in
