@@ -68,7 +68,7 @@ let decompose_app_bound t =
 (*           The Type of Constructions Autotactic Hints                 *)
 (************************************************************************)
 
-type 'a auto_tactic =
+type 'a auto_tactic_ast =
   | Res_pf     of 'a (* Hint Apply *)
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
@@ -92,18 +92,23 @@ type hint_term =
   | IsGlobRef of global_reference
   | IsConstr of constr * Univ.universe_context_set
 
+type 'a auto_tactic = 'a auto_tactic_ast
+
 type 'a gen_auto_tactic = {
   pri  : int;            (* A number lower is higher priority *)
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat  : constr_pattern option; (* A pattern for the concl of the Goal *)
   name  : hints_path_atom; (* A potential name to refer to the hint *) 
-  code : 'a auto_tactic     (* the tactic to apply when the concl matches pat *)
+  code : 'a     (* the tactic to apply when the concl matches pat *)
 }
 
-type pri_auto_tactic = (constr * clausenv) gen_auto_tactic
+type pri_auto_tactic = (constr * clausenv) auto_tactic gen_auto_tactic
 
 type hint_entry = global_reference option * 
-  (constr * types * Univ.universe_context_set) gen_auto_tactic
+  (constr * types * Univ.universe_context_set) auto_tactic_ast gen_auto_tactic
+
+let run_auto_tactic tac k = k tac
+let repr_auto_tactic tac = tac
 
 let eq_hints_path_atom p1 p2 = match p1, p2 with
 | PathHints gr1, PathHints gr2 -> List.equal eq_gr gr1 gr2

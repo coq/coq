@@ -359,8 +359,7 @@ and my_find_search_delta db_list local_db hdc concl =
       	(local_db::db_list)
 
 and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) =
-  let tactic = 
-    match t with
+  let tactic = function
     | Res_pf (c,cl) -> unify_resolve_gen poly flags (c,cl)
     | ERes_pf _ -> Proofview.V82.tactic (fun gl -> error "eres_pf")
     | Give_exact (c, cl)  -> exact poly (c, cl)
@@ -378,7 +377,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) 
     | Extern tacast -> 
       conclPattern concl p tacast
   in
-  tclLOG dbg (fun () -> pr_autotactic t) tactic
+  tclLOG dbg (fun () -> pr_autotactic t) (run_auto_tactic t tactic)
 
 and trivial_resolve dbg mod_delta db_list local_db cl =
   try

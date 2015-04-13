@@ -221,20 +221,19 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
   in
   let tac_of_hint =
     fun (flags, {pri = b; pat = p; poly = poly; code = t; name = name}) ->
-      let tac =
-	match t with
-	  | Res_pf (term,cl) -> with_prods nprods poly (term,cl) (unify_resolve poly flags)
-	  | ERes_pf (term,cl) -> with_prods nprods poly (term,cl) (unify_e_resolve poly flags)
-	  | Give_exact c -> e_give_exact flags poly c
-	  | Res_pf_THEN_trivial_fail (term,cl) ->
-              tclTHEN (with_prods nprods poly (term,cl) (unify_e_resolve poly flags))
-	        (if complete then tclIDTAC else e_trivial_fail_db db_list local_db)
-	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c])
-	  | Extern tacast ->
-	    Proofview.V82.of_tactic (conclPattern concl p tacast)
+      let tac = function
+      | Res_pf (term,cl) -> Proofview.V82.tactic (with_prods nprods poly (term,cl) (unify_resolve poly flags))
+      | ERes_pf (term,cl) -> Proofview.V82.tactic (with_prods nprods poly (term,cl) (unify_e_resolve poly flags))
+      | Give_exact c -> Proofview.V82.tactic (e_give_exact flags poly c)
+      | Res_pf_THEN_trivial_fail (term,cl) ->
+          Proofview.V82.tactic (tclTHEN (with_prods nprods poly (term,cl) (unify_e_resolve poly flags))
+            (if complete then tclIDTAC else e_trivial_fail_db db_list local_db))
+      | Unfold_nth c -> Proofview.V82.tactic (tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c]))
+      | Extern tacast -> conclPattern concl p tacast
       in
+      let tac = Proofview.V82.of_tactic (run_auto_tactic t tac) in
       let tac = if complete then tclCOMPLETE tac else tac in
-	match t with
+	match repr_auto_tactic t with
 	| Extern _ -> (tac,b,true, name, lazy (pr_autotactic t))
 	| _ ->
 (* 	  let tac gl = with_pattern (pf_env gl) (project gl) flags p concl tac gl in *)

@@ -162,18 +162,18 @@ and e_my_find_search db_list local_db hdc concl =
   let tac_of_hint =
     fun (st, {pri = b; pat = p; code = t; poly = poly}) ->
       (b,
-       let tac =
-	 match t with
-	   | Res_pf (term,cl) -> Proofview.V82.of_tactic (unify_resolve poly st (term,cl))
-	   | ERes_pf (term,cl) -> unify_e_resolve poly st (term,cl)
-	   | Give_exact (c,cl) -> e_exact poly st (c,cl)
-	   | Res_pf_THEN_trivial_fail (term,cl) ->
-               tclTHEN (unify_e_resolve poly st (term,cl))
-		 (e_trivial_fail_db db_list local_db)
-	   | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
-	   | Extern tacast -> Proofview.V82.of_tactic (conclPattern concl p tacast)
+        let tac = function
+        | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
+        | ERes_pf (term,cl) -> Proofview.V82.tactic (unify_e_resolve poly st (term,cl))
+        | Give_exact (c,cl) -> Proofview.V82.tactic (e_exact poly st (c,cl))
+        | Res_pf_THEN_trivial_fail (term,cl) ->
+          Proofview.V82.tactic (tclTHEN (unify_e_resolve poly st (term,cl))
+            (e_trivial_fail_db db_list local_db))
+        | Unfold_nth c -> Proofview.V82.tactic (reduce (Unfold [AllOccurrences,c]) onConcl)
+        | Extern tacast -> conclPattern concl p tacast
        in
-       (tac,lazy (pr_autotactic t)))
+       let tac = Proofview.V82.of_tactic (run_auto_tactic t tac) in
+       (tac, lazy (pr_autotactic t)))
   in
   List.map tac_of_hint hintl
 
