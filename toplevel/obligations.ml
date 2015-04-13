@@ -658,7 +658,7 @@ let init_prog_info ?(opaque = false) n b t ctx deps fixkind notations obls impls
 	Array.mapi
 	  (fun i (n, t, l, o, d, tac) ->
             { obl_name = n ; obl_body = None; 
-	      obl_location = l; obl_type = reduce t; obl_status = o;
+	      obl_location = l; obl_type = t; obl_status = o;
 	      obl_deps = d; obl_tac = tac })
 	  obls, b
   in
