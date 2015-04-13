@@ -59,6 +59,7 @@ Extract Constant Compare_dec.nat_compare =>
  "fun n m -> if n=m then Eq else if n<m then Lt else Gt".
 Extract Inlined Constant Compare_dec.leb => "(<=)".
 Extract Inlined Constant Compare_dec.le_lt_dec => "(<=)".
+Extract Inlined Constant Compare_dec.lt_dec => "(<)".
 Extract Constant Compare_dec.lt_eq_lt_dec =>
  "fun n m -> if n>m then None else Some (n<m)".
 
