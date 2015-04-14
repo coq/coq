@@ -161,10 +161,19 @@ module Bounded_net = Btermdn.Make(struct
 				    let compare = pri_order_int
 				  end)
 
-type search_entry = stored_data list * stored_data list * Bounded_net.t * bool array list
+type search_entry = {
+  sentry_nopat : stored_data list;
+  sentry_pat : stored_data list;
+  sentry_bnet : Bounded_net.t;
+  sentry_mode : bool array list;
+}
 
-
-let empty_se = ([],[],Bounded_net.create (),[])
+let empty_se = {
+  sentry_nopat = [];
+  sentry_pat = [];
+  sentry_bnet = Bounded_net.create ();
+  sentry_mode = [];
+}
 
 let eq_pri_auto_tactic (_, x) (_, y) =
   if Int.equal x.pri y.pri && Option.equal constr_pattern_eq x.pat y.pat then
@@ -182,27 +191,29 @@ let eq_pri_auto_tactic (_, x) (_, y) =
   else
     false
 
-let add_tac pat t st (l,l',dn,m) =
+let add_tac pat t st se =
   match pat with
   | None -> 
-    if not (List.exists (eq_pri_auto_tactic t) l) then (List.insert pri_order t l, l', dn, m) 
-    else (l, l', dn, m)
+    if List.exists (eq_pri_auto_tactic t) se.sentry_nopat then se
+    else { se with sentry_nopat = List.insert pri_order t se.sentry_nopat }
   | Some pat -> 
-    if not (List.exists (eq_pri_auto_tactic t) l')
-    then (l, List.insert pri_order t l', Bounded_net.add st dn (pat,t), m) else (l, l', dn, m)
+    if List.exists (eq_pri_auto_tactic t) se.sentry_pat then se
+    else { se with
+        sentry_pat = List.insert pri_order t se.sentry_pat;
+        sentry_bnet = Bounded_net.add st se.sentry_bnet (pat, t); }
 
-let rebuild_dn st ((l,l',dn,m) : search_entry) =
+let rebuild_dn st se =
   let dn' = 
     List.fold_left 
       (fun dn (id, t) -> Bounded_net.add (Some st) dn (Option.get t.pat, (id, t)))
-      (Bounded_net.create ()) l'
+      (Bounded_net.create ()) se.sentry_pat
   in
-    (l, l', dn', m)
+  { se with sentry_bnet = dn' }
 
-let lookup_tacs concl st (l,l',dn) =
-  let l'  = Bounded_net.lookup st dn concl in
+let lookup_tacs concl st se =
+  let l'  = Bounded_net.lookup st se.sentry_bnet concl in
   let sl' = List.stable_sort pri_order_int l' in
-    List.merge pri_order_int l sl'
+  List.merge pri_order_int se.sentry_nopat sl'
 
 module Constr_map = Map.Make(RefOrdered)
 
@@ -416,34 +427,38 @@ module Hint_db = struct
     if List.is_empty modes then true
     else List.exists (matches_mode args) modes
 
+  let merge_entry db nopat pat =
+    let h = Sort.merge pri_order (List.map snd db.hintdb_nopat @ nopat) pat in
+    List.map realize_tac h
+
   let map_none db =
-    List.map realize_tac (Sort.merge pri_order (List.map snd db.hintdb_nopat) [])
-    
+    merge_entry db [] []
+
   let map_all k db =
-    let (l,l',_,_) = find k db in
-      List.map realize_tac (Sort.merge pri_order (List.map snd db.hintdb_nopat @ l) l')
+    let se = find k db in
+    merge_entry db se.sentry_nopat se.sentry_pat
 	
   (** Precondition: concl has no existentials *)
   let map_auto (k,args) concl db =
-    let (l,l',dn,m) = find k db in
+    let se = find k db in
     let st = if db.use_dn then  (Some db.hintdb_state) else None in
-    let l' = lookup_tacs concl st (l,l',dn) in
-      List.map realize_tac (Sort.merge pri_order (List.map snd db.hintdb_nopat) l')
+    let pat = lookup_tacs concl st se in
+    merge_entry db [] pat
 
   let map_existential (k,args) concl db =
-    let (l,l',_,m) = find k db in
-      if matches_modes args m then
-	List.map realize_tac (Sort.merge pri_order (List.map snd db.hintdb_nopat @ l) l')
-      else List.map realize_tac (List.map snd db.hintdb_nopat)
+    let se = find k db in
+      if matches_modes args se.sentry_mode then
+        merge_entry db se.sentry_nopat se.sentry_pat
+      else merge_entry db [] []
 
   (* [c] contains an existential *)
   let map_eauto (k,args) concl db =
-    let (l,l',dn,m) = find k db in
-      if matches_modes args m then
-	let st = if db.use_dn then Some db.hintdb_state else None in
-	let l' = lookup_tacs concl st (l,l',dn) in
-	  List.map realize_tac (Sort.merge pri_order (List.map snd db.hintdb_nopat) l')
-      else List.map realize_tac (List.map snd db.hintdb_nopat)
+    let se = find k db in
+      if matches_modes args se.sentry_mode then
+        let st = if db.use_dn then Some db.hintdb_state else None in
+        let pat = lookup_tacs concl st se in
+        merge_entry db [] pat
+      else merge_entry db [] []
 
   let is_exact = function
     | Give_exact _ -> true
@@ -501,10 +516,12 @@ module Hint_db = struct
   let add_list l db = List.fold_left (fun db k -> add_one k db) db l
 
   let remove_sdl p sdl = List.smartfilter p sdl 
-  let remove_he st p (sl1, sl2, dn, m as he) =
-    let sl1' = remove_sdl p sl1 and sl2' = remove_sdl p sl2 in
-      if sl1' == sl1 && sl2' == sl2 then he
-      else rebuild_dn st (sl1', sl2', dn, m)
+
+  let remove_he st p se =
+    let sl1' = remove_sdl p se.sentry_nopat in
+    let sl2' = remove_sdl p se.sentry_pat in
+    if sl1' == se.sentry_nopat && sl2' == se.sentry_pat then se
+    else rebuild_dn st { se with sentry_nopat = sl1'; sentry_pat = sl2' }
 
   let remove_list grs db =
     let filter (_, h) =
@@ -515,13 +532,16 @@ module Hint_db = struct
 
   let remove_one gr db = remove_list [gr] db
 
+  let get_entry se = List.map realize_tac (se.sentry_nopat @ se.sentry_pat)
+
   let iter f db =
+    let iter_se k se = f (Some k) se.sentry_mode (get_entry se) in
     f None [] (List.map (fun x -> realize_tac (snd x)) db.hintdb_nopat);
-    Constr_map.iter (fun k (l,l',_,m) -> f (Some k) m (List.map realize_tac (l@l'))) db.hintdb_map
+    Constr_map.iter iter_se db.hintdb_map
 
   let fold f db accu =
     let accu = f None [] (List.map (fun x -> snd (snd x)) db.hintdb_nopat) accu in
-    Constr_map.fold (fun k (l,l',_,m) -> f (Some k) m (List.map snd (l@l'))) db.hintdb_map accu
+    Constr_map.fold (fun k se -> f (Some k) se.sentry_mode (get_entry se)) db.hintdb_map accu
 
   let transparent_state db = db.hintdb_state
 
@@ -533,8 +553,9 @@ module Hint_db = struct
     { db with hintdb_cut = normalize_path (PathOr (db.hintdb_cut, path)) }
 
   let add_mode gr m db =
-    let (l,l',dn,ms) = find gr db in
-      { db with hintdb_map = Constr_map.add gr (l,l',dn,m :: ms) db.hintdb_map }
+    let se = find gr db in
+    let se = { se with sentry_mode = m :: se.sentry_mode } in
+    { db with hintdb_map = Constr_map.add gr se db.hintdb_map }
 
   let cut db = db.hintdb_cut
 
