@@ -28,48 +28,55 @@ let choose_dest_or_ind scheme_info =
 
 let functional_induction with_clean c princl pat =
   Dumpglob.pause ();
-  let res = let f,args = decompose_app c in
-	      fun g ->
-		let princ,bindings, princ_type =
-		  match princl with
-	| None -> (* No principle is given let's find the good one *)
-	    begin
-	      match kind_of_term f with
-		| Const (c',u) ->
-		    let princ_option =
-		      let finfo = (* we first try to find out a graph on f *)
-			try find_Function_infos c'
-			with Not_found ->
-			  errorlabstrm "" (str "Cannot find induction information on "++
-					     Printer.pr_lconstr (mkConst c') )
-		      in
-		      match Tacticals.elimination_sort_of_goal g with
-			| InProp -> finfo.prop_lemma
-			| InSet -> finfo.rec_lemma
-			| InType -> finfo.rect_lemma
-		    in
-		    let princ =  (* then we get the principle *)
-		      try mkConst (Option.get princ_option )
-		      with Option.IsNone ->
-			(*i If there is not default lemma defined then,
+  let res =
+    let f,args = decompose_app c in
+    fun g ->
+    let princ,bindings, princ_type,g' =
+      match princl with
+      | None -> (* No principle is given let's find the good one *)
+	 begin
+	   match kind_of_term f with
+	   | Const (c',u) ->
+	      let princ_option =
+		let finfo = (* we first try to find out a graph on f *)
+		  try find_Function_infos c'
+		  with Not_found ->
+		    errorlabstrm "" (str "Cannot find induction information on "++
+				       Printer.pr_lconstr (mkConst c') )
+		in
+		match Tacticals.elimination_sort_of_goal g with
+		| InProp -> finfo.prop_lemma
+		| InSet -> finfo.rec_lemma
+		| InType -> finfo.rect_lemma
+	      in
+	      let princ,g' =  (* then we get the principle *)
+		try
+		  let g',princ =
+		    Tacmach.pf_eapply (Evd.fresh_global) g  (Globnames.ConstRef (Option.get princ_option )) in
+		  princ,g'
+		with Option.IsNone ->
+		  (*i If there is not default lemma defined then,
 			  we cross our finger and try to find a lemma named f_ind
 			  (or f_rec, f_rect) i*)
-			let princ_name =
-			  Indrec.make_elimination_ident
-			    (Label.to_id (con_label c'))
-			    (Tacticals.elimination_sort_of_goal g)
-			in
-			try
-			  mkConst(const_of_id princ_name )
-			with Not_found -> (* This one is neither defined ! *)
-			  errorlabstrm "" (str "Cannot find induction principle for "
-					   ++Printer.pr_lconstr (mkConst c') )
-		    in
-		    (princ,NoBindings, Tacmach.pf_type_of g princ)
-		| _ -> raise (UserError("",str "functional induction must be used with a function" ))
-	    end
-	| Some ((princ,binding)) ->
-	    princ,binding,Tacmach.pf_type_of g princ
+		  let princ_name =
+		    Indrec.make_elimination_ident
+		      (Label.to_id (con_label c'))
+		      (Tacticals.elimination_sort_of_goal g)
+		  in
+		  try
+		    let princ_ref = const_of_id princ_name in
+		    let (a,b) = Tacmach.pf_eapply (Evd.fresh_global) g princ_ref in
+		    (b,a)
+		    (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
+		  with Not_found -> (* This one is neither defined ! *)
+		    errorlabstrm "" (str "Cannot find induction principle for "
+				     ++Printer.pr_lconstr (mkConst c') )
+	      in
+	      (princ,NoBindings, Tacmach.pf_type_of g' princ,g')
+	   | _ -> raise (UserError("",str "functional induction must be used with a function" ))
+	 end
+      | Some ((princ,binding)) ->
+	 princ,binding,Tacmach.pf_type_of g princ,g
     in
     let princ_infos = Tactics.compute_elim_sig princ_type in
     let args_as_induction_constr =
@@ -115,7 +122,7 @@ let functional_induction with_clean c princl pat =
 	 princ_infos
 	 (args_as_induction_constr,princ')))
       subst_and_reduce
-      g
+      g'
   in
     Dumpglob.continue ();
     res
@@ -221,34 +228,54 @@ let process_vernac_interp_error e =
 
 let derive_inversion fix_names =
   try
+    let evd' = Evd.empty in 
     (* we first transform the fix_names identifier into their corresponding constant *)
-    let fix_names_as_constant =
-      List.map (fun id -> fst (destConst (Constrintern.global_reference id))) fix_names
+    let evd',fix_names_as_constant =
+      List.fold_right
+	(fun id (evd,l) ->
+	 let evd,c =
+	   Evd.fresh_global
+	     (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident id)) in 
+	 evd, destConst c::l
+	)
+	fix_names
+	(evd',[])
     in
     (*
        Then we check that the graphs have been defined
        If one of the graphs haven't been defined
        we do nothing
     *)
-    List.iter (fun c -> ignore (find_Function_infos c)) fix_names_as_constant ;
+    List.iter (fun c -> ignore (find_Function_infos (fst c))) fix_names_as_constant ;
     try
+      let evd', lind =
+	List.fold_right
+	  (fun id (evd,l) ->
+	   let evd,id = 
+	     Evd.fresh_global
+	       (Global.env ()) evd
+	       (Constrintern.locate_reference (Libnames.qualid_of_ident (mk_rel_id id)))
+	   in 
+	   evd,(fst (destInd id))::l
+	  )
+	  fix_names
+	  (evd',[])
+      in
       Invfun.derive_correctness
 	Functional_principles_types.make_scheme
 	functional_induction
 	fix_names_as_constant
-	(*i The next call to mk_rel_id is valid since we have just construct the graph
-	  Ensures by : register_built
-	  i*)
-	(List.map
-	   (fun id -> fst (destInd (Constrintern.global_reference (mk_rel_id id))))
-	   fix_names
-	)
-    with e when Errors.noncritical e ->
+	lind;
+      with e when Errors.noncritical e ->
       let e' = process_vernac_interp_error e in
       msg_warning
 	(str "Cannot build inversion information" ++
 	   if do_observe () then (fnl() ++ Errors.print e') else mt ())
-  with e when Errors.noncritical e -> ()
+  with e when Errors.noncritical e ->
+      let e' = process_vernac_interp_error e in
+      msg_warning
+	(str "Cannot build inversion information (early)" ++
+	   if do_observe () then (fnl() ++ Errors.print e') else mt ())       
 
 let warning_error names e =
   let e = process_vernac_interp_error e in
@@ -292,7 +319,7 @@ let error_error names e =
 	     e_explain e)
     | _ -> raise e
 
-let generate_principle  mp_dp on_error
+let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     is_general do_built (fix_rec_l:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) recdefs  interactive_proof
     (continue_proof : int -> Names.constant array -> Term.constr array -> int ->
       Tacmach.tactic) : unit =
@@ -302,7 +329,7 @@ let generate_principle  mp_dp on_error
   let funs_types =  List.map (function ((_,_,_,types,_),_) -> types) fix_rec_l in
   try
     (* We then register the Inductive graphs of the functions  *)
-    Glob_term_to_relation.build_inductive mp_dp names funs_args funs_types recdefs;
+    Glob_term_to_relation.build_inductive !evd pconstants funs_args funs_types recdefs;
     if do_built
     then
       begin
@@ -327,14 +354,18 @@ let generate_principle  mp_dp on_error
 	let _ =
 	  List.map_i
 	    (fun i x ->
-	       let princ = Indrec.lookup_eliminator (ind_kn,i) (InProp) in
-	       let princ_type = Global.type_of_global_unsafe princ in
-	       Functional_principles_types.generate_functional_principle
+	     let princ = Indrec.lookup_eliminator (ind_kn,i) (InProp) in
+	     let evd',uprinc = Evd.fresh_global (Global.env ()) !evd princ in
+	     let evd',princ_type = Typing.e_type_of ~refresh:true (Global.env ()) evd' uprinc in
+	     let _ = evd := evd' in 
+    	     Functional_principles_types.generate_functional_principle
+	       evd
 		 interactive_proof
 		 princ_type
 		 None
 		 None
-		 funs_kn
+		 (Array.of_list pconstants)
+		 (* funs_kn *)
 		 i
 		 (continue_proof  0 [|funs_kn.(i)|])
 	    )
@@ -351,10 +382,37 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
   match fixpoint_exprl with
     | [((_,fname),_,bl,ret_type,body),_] when not is_rec ->
       let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
-	Command.do_definition fname (Decl_kinds.Global,(*FIXME*)false,Decl_kinds.Definition)
-	  bl None body (Some ret_type) (Lemmas.mk_hook (fun _ _ -> ()))
+      Command.do_definition
+	fname
+	(Decl_kinds.Global,(Flags.is_universe_polymorphism ()),Decl_kinds.Definition)
+	bl None body (Some ret_type) (Lemmas.mk_hook (fun _ _ -> ()));
+       let evd,rev_pconstants =
+	 List.fold_left
+	   (fun (evd,l) (((_,fname),_,_,_,_),_) ->
+	    let evd,c =
+	      Evd.fresh_global
+		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
+	    evd,((destConst c)::l)
+	   )
+	   (Evd.empty,[])
+	   fixpoint_exprl
+       in
+       evd,List.rev rev_pconstants
     | _ ->
-	Command.do_fixpoint Global false(*FIXME*) fixpoint_exprl
+       Command.do_fixpoint Global (Flags.is_universe_polymorphism ()) fixpoint_exprl;
+       let evd,rev_pconstants =
+	 List.fold_left
+	   (fun (evd,l) (((_,fname),_,_,_,_),_) ->
+	    let evd,c =
+	      Evd.fresh_global
+		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
+	    evd,((destConst c)::l)
+	   )
+	   (Evd.empty,[])
+	   fixpoint_exprl
+       in
+       evd,List.rev rev_pconstants
+	   
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
@@ -399,10 +457,10 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Constrexpr_ops.prod_constr_expr unbounded_eq args in
-  let hook (f_ref,_) tcc_lemma_ref (functional_ref,_) (eq_ref,_) rec_arg_num rec_arg_type
+  let hook ((f_ref,_) as fconst) tcc_lemma_ref (functional_ref,_) (eq_ref,_) rec_arg_num rec_arg_type
       nb_args relation =
     try
-      pre_hook
+      pre_hook [fconst]
 	(generate_correction_proof_wf f_ref tcc_lemma_ref is_mes
 	   functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
 	);
@@ -550,7 +608,7 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   fixpoint_exprl_with_new_bl
   
 
-let do_generate_principle mp_dp on_error register_built interactive_proof
+let do_generate_principle pconstants on_error register_built interactive_proof
     (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) :unit =
   List.iter (fun (_,l) -> if not (List.is_empty l) then error "Function does not support notations for now") fixpoint_exprl;
   let _is_struct =
@@ -565,9 +623,10 @@ let do_generate_principle mp_dp on_error register_built interactive_proof
 	  let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
 	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	  let using_lemmas = [] in 
-	  let pre_hook =
+	  let pre_hook pconstants =
 	    generate_principle
-	      mp_dp
+	      (ref (Evd.empty))
+	      pconstants
 	      on_error
 	      true
 	      register_built
@@ -588,9 +647,10 @@ let do_generate_principle mp_dp on_error register_built interactive_proof
 	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	  let using_lemmas = [] in
 	  let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
-	  let pre_hook =
+	  let pre_hook pconstants =
 	    generate_principle
-	      mp_dp
+	      (ref Evd.empty)
+	      pconstants
 	      on_error
 	      true
 	      register_built
@@ -614,20 +674,26 @@ let do_generate_principle mp_dp on_error register_built interactive_proof
 	let fix_names =
 	  List.map (function (((_,name),_,_,_,_),_) -> name) fixpoint_exprl
 	in
-	  (* ok all the expressions are structural *)
+	(* ok all the expressions are structural *)
   	let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	let is_rec = List.exists (is_rec fix_names) recdefs in
-	if register_built then register_struct is_rec fixpoint_exprl;
+	let evd,pconstants =
+	  if register_built
+	  then register_struct is_rec fixpoint_exprl
+	  else (Evd.empty,pconstants)
+	in
+	let evd = ref evd in 
 	generate_principle
-	  mp_dp
+	  (ref !evd)
+	  pconstants
 	  on_error
 	  false
 	  register_built
 	  fixpoint_exprl
 	  recdefs
 	  interactive_proof
-	  (Functional_principles_proofs.prove_princ_for_struct interactive_proof);
-	if register_built then derive_inversion fix_names;
+	  (Functional_principles_proofs.prove_princ_for_struct evd interactive_proof);
+	if register_built then begin derive_inversion fix_names; end;
 	true; 
   in
   ()
@@ -773,7 +839,7 @@ let make_graph (f_ref:global_reference) =
 	   with_full_print (fun () ->
 		(Constrextern.extern_constr false env Evd.empty body,
 		 Constrextern.extern_type false env Evd.empty
-                   ((*FIXNE*) Typeops.type_of_constant_type env c_body.const_type)
+                   ((*FIXME*) Typeops.type_of_constant_type env c_body.const_type)
 		)
 	     )
 	     ()
@@ -811,13 +877,13 @@ let make_graph (f_ref:global_reference) =
 		 [((Loc.ghost,id),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
 	 let mp,dp,_ = repr_con c in
-	 do_generate_principle (Some (mp,dp)) error_error  false false expr_list;
+	 do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list;
 	 (* We register the infos *)
 	 List.iter
 	   (fun (((_,id),_,_,_,_),_) -> add_Function false (make_con mp dp (Label.of_id id)))
 	   expr_list);
   Dumpglob.continue ()
 
-let do_generate_principle = do_generate_principle None warning_error true
+let do_generate_principle = do_generate_principle [] warning_error true
 
 

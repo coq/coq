@@ -1233,11 +1233,11 @@ let rec rebuild_return_type rt =
 
 
 let do_build_inductive
-      mp_dp
-      funnames (funsargs: (Name.t * glob_constr * bool) list list)
+      evd (funconstants: Term.pconstant list) (funsargs: (Name.t * glob_constr * bool) list list)
       returned_types
       (rtl:glob_constr list) =
   let _time1 = System.get_time () in
+  let funnames = List.map (fun c -> Label.to_id (KerName.label (Constant.canonical (fst c)))) funconstants in
   (*   Pp.msgnl (prlist_with_sep fnl Printer.pr_glob_constr rtl); *)
   let funnames_as_set = List.fold_right Id.Set.add funnames Id.Set.empty in
   let funnames = Array.of_list funnames in
@@ -1252,23 +1252,21 @@ let do_build_inductive
   let relnames = Array.map mk_rel_id funnames in
   let relnames_as_set = Array.fold_right Id.Set.add relnames Id.Set.empty in
   (* Construction of the pseudo constructors *)
-  let env =
-    Array.fold_right
-      (fun id env ->
-       let c =
-	 match mp_dp with
-	 | None -> (Constrintern.global_reference id)
-	 | Some(mp,dp) -> mkConst (make_con mp dp (Label.of_id id))
-       in
-       Environ.push_named (id,None,
-			   try
-			     Typing.type_of env Evd.empty c
-			   with Not_found ->
-			     raise (UserError("do_build_inductive", str "Cannot handle partial fixpoint"))
-			  )  env
+  let evd,env =
+    Array.fold_right2
+      (fun id c (evd,env) ->
+       let evd,t = Typing.e_type_of env evd (mkConstU c) in
+       evd,
+       Environ.push_named (id,None,t)
+			   (* try *)
+			   (*   Typing.e_type_of env evd (mkConstU c) *)
+			   (* with Not_found -> *)
+			   (*   raise (UserError("do_build_inductive", str "Cannot handle partial fixpoint")) *)
+			 env
       )
       funnames
-      (Global.env ())
+      (Array.of_list funconstants)
+      (evd,Global.env ())
   in
   let resa = Array.map (build_entry_lc env  funnames_as_set []) rta in
   let env_with_graphs =
@@ -1426,7 +1424,7 @@ let do_build_inductive
 (*   in *)
   let _time2 = System.get_time () in
   try
-    with_full_print (Flags.silently (Command.do_mutual_inductive rel_inds false false)) Decl_kinds.Finite
+    with_full_print (Flags.silently (Command.do_mutual_inductive rel_inds (Flags.is_universe_polymorphism ()) false)) Decl_kinds.Finite
   with
     | UserError(s,msg) as e ->
 	let _time3 = System.get_time () in
@@ -1461,9 +1459,9 @@ let do_build_inductive
 
 
 
-let build_inductive mp_dp funnames funsargs returned_types rtl =
+let build_inductive evd funconstants funsargs returned_types rtl =
   try
-    do_build_inductive mp_dp funnames funsargs returned_types rtl
+    do_build_inductive evd funconstants funsargs returned_types rtl
   with e when Errors.noncritical e -> raise (Building_graph e)
 
 

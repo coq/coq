@@ -103,8 +103,13 @@ let instance_hook k pri global imps ?hook cst =
 
 let declare_instance_constant k pri global imps ?hook id poly uctx term termtype =
   let kind = IsDefinition Instance in
+  let uctx = 
+    let levels = Univ.LSet.union (Universes.universes_of_constr termtype) 
+				 (Universes.universes_of_constr term) in
+      Universes.restrict_universe_context uctx levels 
+  in
   let entry = 
-    Declare.definition_entry ~types:termtype ~poly ~univs:uctx term
+    Declare.definition_entry ~types:termtype ~poly ~univs:(Univ.ContextSet.to_context uctx) term
   in
   let cdecl = (DefinitionEntry entry, kind) in
   let kn = Declare.declare_constant id cdecl in
@@ -277,7 +282,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
       in
       let term = Option.map nf term in
 	if not (Evd.has_undefined evm) && not (Option.is_empty term) then
-          let ctx = Evd.universe_context evm in
+          let ctx = Evd.universe_context_set evm in
 	  declare_instance_constant k pri global imps ?hook id 
             poly ctx (Option.get term) termtype
 	else if !refine_instance || Option.is_empty term then begin

@@ -68,7 +68,7 @@ let decompose_app_bound t =
 (*           The Type of Constructions Autotactic Hints                 *)
 (************************************************************************)
 
-type 'a auto_tactic =
+type 'a auto_tactic_ast =
   | Res_pf     of 'a (* Hint Apply *)
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
@@ -92,18 +92,23 @@ type hint_term =
   | IsGlobRef of global_reference
   | IsConstr of constr * Univ.universe_context_set
 
+type 'a auto_tactic = 'a auto_tactic_ast
+
 type 'a gen_auto_tactic = {
   pri  : int;            (* A number lower is higher priority *)
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat  : constr_pattern option; (* A pattern for the concl of the Goal *)
   name  : hints_path_atom; (* A potential name to refer to the hint *) 
-  code : 'a auto_tactic     (* the tactic to apply when the concl matches pat *)
+  code : 'a     (* the tactic to apply when the concl matches pat *)
 }
 
-type pri_auto_tactic = (constr * clausenv) gen_auto_tactic
+type pri_auto_tactic = (constr * clausenv) auto_tactic gen_auto_tactic
 
 type hint_entry = global_reference option * 
-  (constr * types * Univ.universe_context_set) gen_auto_tactic
+  (constr * types * Univ.universe_context_set) auto_tactic_ast gen_auto_tactic
+
+let run_auto_tactic tac k = k tac
+let repr_auto_tactic tac = tac
 
 let eq_hints_path_atom p1 p2 = match p1, p2 with
 | PathHints gr1, PathHints gr2 -> List.equal eq_gr gr1 gr2
@@ -156,10 +161,19 @@ module Bounded_net = Btermdn.Make(struct
 				    let compare = pri_order_int
 				  end)
 
-type search_entry = stored_data list * stored_data list * Bounded_net.t * bool array list
+type search_entry = {
+  sentry_nopat : stored_data list;
+  sentry_pat : stored_data list;
+  sentry_bnet : Bounded_net.t;
+  sentry_mode : bool array list;
+}
 
-
-let empty_se = ([],[],Bounded_net.create (),[])
+let empty_se = {
+  sentry_nopat = [];
+  sentry_pat = [];
+  sentry_bnet = Bounded_net.create ();
+  sentry_mode = [];
+}
 
 let eq_pri_auto_tactic (_, x) (_, y) =
   if Int.equal x.pri y.pri && Option.equal constr_pattern_eq x.pat y.pat then
@@ -177,27 +191,29 @@ let eq_pri_auto_tactic (_, x) (_, y) =
   else
     false
 
-let add_tac pat t st (l,l',dn,m) =
+let add_tac pat t st se =
   match pat with
   | None -> 
-    if not (List.exists (eq_pri_auto_tactic t) l) then (List.insert pri_order t l, l', dn, m) 
-    else (l, l', dn, m)
+    if List.exists (eq_pri_auto_tactic t) se.sentry_nopat then se
+    else { se with sentry_nopat = List.insert pri_order t se.sentry_nopat }
   | Some pat -> 
-    if not (List.exists (eq_pri_auto_tactic t) l')
-    then (l, List.insert pri_order t l', Bounded_net.add st dn (pat,t), m) else (l, l', dn, m)
+    if List.exists (eq_pri_auto_tactic t) se.sentry_pat then se
+    else { se with
+        sentry_pat = List.insert pri_order t se.sentry_pat;
+        sentry_bnet = Bounded_net.add st se.sentry_bnet (pat, t); }
 
-let rebuild_dn st ((l,l',dn,m) : search_entry) =
+let rebuild_dn st se =
   let dn' = 
     List.fold_left 
       (fun dn (id, t) -> Bounded_net.add (Some st) dn (Option.get t.pat, (id, t)))
-      (Bounded_net.create ()) l'
+      (Bounded_net.create ()) se.sentry_pat
   in
-    (l, l', dn', m)
+  { se with sentry_bnet = dn' }
 
-let lookup_tacs concl st (l,l',dn) =
-  let l'  = Bounded_net.lookup st dn concl in
+let lookup_tacs concl st se =
+  let l'  = Bounded_net.lookup st se.sentry_bnet concl in
   let sl' = List.stable_sort pri_order_int l' in
-    List.merge pri_order_int l sl'
+  List.merge pri_order_int se.sentry_nopat sl'
 
 module Constr_map = Map.Make(RefOrdered)
 
@@ -411,34 +427,38 @@ module Hint_db = struct
     if List.is_empty modes then true
     else List.exists (matches_mode args) modes
 
+  let merge_entry db nopat pat =
+    let h = Sort.merge pri_order (List.map snd db.hintdb_nopat @ nopat) pat in
+    List.map realize_tac h
+
   let map_none db =
-    List.map realize_tac (Sort.merge pri_order (List.map snd db.hintdb_nopat) [])
-    
+    merge_entry db [] []
+
   let map_all k db =
-    let (l,l',_,_) = find k db in
-      List.map realize_tac (Sort.merge pri_order (List.map snd db.hintdb_nopat @ l) l')
+    let se = find k db in
+    merge_entry db se.sentry_nopat se.sentry_pat
 	
   (** Precondition: concl has no existentials *)
   let map_auto (k,args) concl db =
-    let (l,l',dn,m) = find k db in
+    let se = find k db in
     let st = if db.use_dn then  (Some db.hintdb_state) else None in
-    let l' = lookup_tacs concl st (l,l',dn) in
-      List.map realize_tac (Sort.merge pri_order (List.map snd db.hintdb_nopat) l')
+    let pat = lookup_tacs concl st se in
+    merge_entry db [] pat
 
   let map_existential (k,args) concl db =
-    let (l,l',_,m) = find k db in
-      if matches_modes args m then
-	List.map realize_tac (Sort.merge pri_order (List.map snd db.hintdb_nopat @ l) l')
-      else List.map realize_tac (List.map snd db.hintdb_nopat)
+    let se = find k db in
+      if matches_modes args se.sentry_mode then
+        merge_entry db se.sentry_nopat se.sentry_pat
+      else merge_entry db [] []
 
   (* [c] contains an existential *)
   let map_eauto (k,args) concl db =
-    let (l,l',dn,m) = find k db in
-      if matches_modes args m then
-	let st = if db.use_dn then Some db.hintdb_state else None in
-	let l' = lookup_tacs concl st (l,l',dn) in
-	  List.map realize_tac (Sort.merge pri_order (List.map snd db.hintdb_nopat) l')
-      else List.map realize_tac (List.map snd db.hintdb_nopat)
+    let se = find k db in
+      if matches_modes args se.sentry_mode then
+        let st = if db.use_dn then Some db.hintdb_state else None in
+        let pat = lookup_tacs concl st se in
+        merge_entry db [] pat
+      else merge_entry db [] []
 
   let is_exact = function
     | Give_exact _ -> true
@@ -496,10 +516,12 @@ module Hint_db = struct
   let add_list l db = List.fold_left (fun db k -> add_one k db) db l
 
   let remove_sdl p sdl = List.smartfilter p sdl 
-  let remove_he st p (sl1, sl2, dn, m as he) =
-    let sl1' = remove_sdl p sl1 and sl2' = remove_sdl p sl2 in
-      if sl1' == sl1 && sl2' == sl2 then he
-      else rebuild_dn st (sl1', sl2', dn, m)
+
+  let remove_he st p se =
+    let sl1' = remove_sdl p se.sentry_nopat in
+    let sl2' = remove_sdl p se.sentry_pat in
+    if sl1' == se.sentry_nopat && sl2' == se.sentry_pat then se
+    else rebuild_dn st { se with sentry_nopat = sl1'; sentry_pat = sl2' }
 
   let remove_list grs db =
     let filter (_, h) =
@@ -510,13 +532,16 @@ module Hint_db = struct
 
   let remove_one gr db = remove_list [gr] db
 
+  let get_entry se = List.map realize_tac (se.sentry_nopat @ se.sentry_pat)
+
   let iter f db =
+    let iter_se k se = f (Some k) se.sentry_mode (get_entry se) in
     f None [] (List.map (fun x -> realize_tac (snd x)) db.hintdb_nopat);
-    Constr_map.iter (fun k (l,l',_,m) -> f (Some k) m (List.map realize_tac (l@l'))) db.hintdb_map
+    Constr_map.iter iter_se db.hintdb_map
 
   let fold f db accu =
     let accu = f None [] (List.map (fun x -> snd (snd x)) db.hintdb_nopat) accu in
-    Constr_map.fold (fun k (l,l',_,m) -> f (Some k) m (List.map snd (l@l'))) db.hintdb_map accu
+    Constr_map.fold (fun k se -> f (Some k) se.sentry_mode (get_entry se)) db.hintdb_map accu
 
   let transparent_state db = db.hintdb_state
 
@@ -528,8 +553,9 @@ module Hint_db = struct
     { db with hintdb_cut = normalize_path (PathOr (db.hintdb_cut, path)) }
 
   let add_mode gr m db =
-    let (l,l',dn,ms) = find gr db in
-      { db with hintdb_map = Constr_map.add gr (l,l',dn,m :: ms) db.hintdb_map }
+    let se = find gr db in
+    let se = { se with sentry_mode = m :: se.sentry_mode } in
+    { db with hintdb_map = Constr_map.add gr se db.hintdb_map }
 
   let cut db = db.hintdb_cut
 
@@ -782,10 +808,15 @@ let add_mode dbname l m =
   let db' = Hint_db.add_mode l m db in
     searchtable_add (dbname, db')
 
-type hint_obj = bool * string * hint_action  (* locality, name, action *)
+type hint_obj = {
+  hint_local : bool;
+  hint_name : string;
+  hint_action : hint_action;
+}
 
-let cache_autohint (_,(local,name,hints)) =
-  match hints with
+let cache_autohint (_, h) =
+  let name = h.hint_name in
+  match h.hint_action with
   | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty st b)
   | AddTransparency (grs, b) -> add_transparency name grs b
   | AddHints hints -> add_hint name hints
@@ -793,7 +824,7 @@ let cache_autohint (_,(local,name,hints)) =
   | AddCut path -> add_cut name path
   | AddMode (l, m) -> add_mode name l m
 
-let subst_autohint (subst,(local,name,hintlist as obj)) =
+let subst_autohint (subst, obj) =
   let subst_key gr =
     let (lab'', elab') = subst_global subst gr in
     let gr' =
@@ -835,29 +866,30 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
     in
     if k' == k && data' == data then hint else (k',data')
   in
-    match hintlist with
-    | CreateDB _ -> obj
+  let action = match obj.hint_action with
+    | CreateDB _ -> obj.hint_action
     | AddTransparency (grs, b) ->
-	let grs' = List.smartmap (subst_evaluable_reference subst) grs in
-	  if grs==grs' then obj else (local, name, AddTransparency (grs', b))
+      let grs' = List.smartmap (subst_evaluable_reference subst) grs in
+      if grs == grs' then obj.hint_action else AddTransparency (grs', b)
     | AddHints hintlist ->
-	let hintlist' = List.smartmap subst_hint hintlist in
-	  if hintlist' == hintlist then obj else
-	    (local,name,AddHints hintlist')
+      let hintlist' = List.smartmap subst_hint hintlist in
+      if hintlist' == hintlist then obj.hint_action else AddHints hintlist'
     | RemoveHints grs ->
-	let grs' = List.smartmap (subst_global_reference subst) grs in
-	  if grs==grs' then obj else (local, name, RemoveHints grs')
+      let grs' = List.smartmap (subst_global_reference subst) grs in
+      if grs == grs' then obj.hint_action else RemoveHints grs'
     | AddCut path ->
       let path' = subst_hints_path subst path in
-	if path' == path then obj else (local, name, AddCut path')
+      if path' == path then obj.hint_action else AddCut path'
     | AddMode (l,m) ->
       let l' = subst_global_reference subst l in
-	(local, name, AddMode (l', m))
+      if l' == l then obj.hint_action else AddMode (l', m)
+  in
+  if action == obj.hint_action then obj else { obj with hint_action = action }
 
-let classify_autohint ((local,name,hintlist) as obj) =
-  match hintlist with
+let classify_autohint obj =
+  match obj.hint_action with
   | AddHints [] -> Dispose
-  | _ -> if local then Dispose else Substitute obj
+  | _ -> if obj.hint_local then Dispose else Substitute obj
 
 let inAutoHint : hint_obj -> obj =
   declare_object {(default_object "AUTOHINT") with
@@ -866,14 +898,22 @@ let inAutoHint : hint_obj -> obj =
 		    subst_function = subst_autohint;
 		    classify_function = classify_autohint; }
 
+let make_hint ?(local = false) name action = {
+  hint_local = local;
+  hint_name = name;
+  hint_action = action;
+}
+
 let create_hint_db l n st b =
-  Lib.add_anonymous_leaf (inAutoHint (l,n,CreateDB (b, st)))
+  let hint = make_hint ~local:l n (CreateDB (b, st)) in
+  Lib.add_anonymous_leaf (inAutoHint hint)
 
 let remove_hints local dbnames grs =
   let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
       (fun dbname ->
-	 Lib.add_anonymous_leaf (inAutoHint(local, dbname, RemoveHints grs)))
+        let hint = make_hint ~local dbname (RemoveHints grs) in
+        Lib.add_anonymous_leaf (inAutoHint hint))
       dbnames
 
 (**************************************************************************)
@@ -882,37 +922,42 @@ let remove_hints local dbnames grs =
 let add_resolves env sigma clist local dbnames =
   List.iter
     (fun dbname ->
-       Lib.add_anonymous_leaf
-	 (inAutoHint
-	    (local,dbname, AddHints
-     	      (List.flatten (List.map (fun (pri, poly, hnf, path, gr) ->
-	        make_resolves env sigma (true,hnf,Flags.is_verbose()) 
-		  pri poly ~name:path gr) clist)))))
+      let r =
+        List.flatten (List.map (fun (pri, poly, hnf, path, gr) ->
+          make_resolves env sigma (true,hnf,Flags.is_verbose()) 
+            pri poly ~name:path gr) clist)
+      in
+      let hint = make_hint ~local dbname (AddHints r) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let add_unfolds l local dbnames =
   List.iter
-    (fun dbname -> Lib.add_anonymous_leaf
-       (inAutoHint (local,dbname, AddHints (List.map make_unfold l))))
+    (fun dbname ->
+      let hint = make_hint ~local dbname (AddHints (List.map make_unfold l)) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let add_cuts l local dbnames =
   List.iter
-    (fun dbname -> Lib.add_anonymous_leaf
-       (inAutoHint (local,dbname, AddCut l)))
+    (fun dbname ->
+      let hint = make_hint ~local dbname (AddCut l) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let add_mode l m local dbnames =
   List.iter
-    (fun dbname -> Lib.add_anonymous_leaf
-      (let m' = make_mode l m in
-	 (inAutoHint (local,dbname, AddMode (l,m')))))
+    (fun dbname ->
+      let m' = make_mode l m in
+      let hint = make_hint ~local dbname (AddMode (l, m')) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let add_transparency l b local dbnames =
   List.iter
-    (fun dbname -> Lib.add_anonymous_leaf
-       (inAutoHint (local,dbname, AddTransparency (l, b))))
+    (fun dbname ->
+      let hint = make_hint ~local dbname (AddTransparency (l, b)) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let add_extern pri pat tacast local dbname =
@@ -920,7 +965,7 @@ let add_extern pri pat tacast local dbname =
   | None -> None
   | Some (_, pat) -> Some pat
   in
-  let hint = local, dbname, AddHints [make_extern pri pat tacast] in
+  let hint = make_hint ~local dbname (AddHints [make_extern pri pat tacast]) in
   Lib.add_anonymous_leaf (inAutoHint hint)
 
 let add_externs pri pat tacast local dbnames =
@@ -929,9 +974,9 @@ let add_externs pri pat tacast local dbnames =
 let add_trivials env sigma l local dbnames =
   List.iter
     (fun dbname ->
-       Lib.add_anonymous_leaf (
-	 inAutoHint(local,dbname, 
-		    AddHints (List.map (fun (name, poly, c) -> make_trivial env sigma poly ~name c) l))))
+      let l = List.map (fun (name, poly, c) -> make_trivial env sigma poly ~name c) l in
+      let hint = make_hint ~local dbname (AddHints l) in
+      Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
 let (forward_intern_tac, extern_intern_tac) = Hook.make ()

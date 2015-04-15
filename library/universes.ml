@@ -772,7 +772,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	      else 
 		try let lev = Option.get (Universe.level inst) in
 		      Constraint.add (lev, d, r) cstrs
-		with Option.IsNone -> assert false)
+		with Option.IsNone -> failwith "")
 	      cstrs dangling
 	    in
 	      (ctx', us, algs, insts, cstrs'), b
@@ -784,7 +784,8 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	  | None -> (* Nothing to do *)
 	    acc' (acc, (true, false, Universe.make u))
 	  | Some lbound ->
-	    acc' (instantiate_lbound lbound)
+	     try acc' (instantiate_lbound lbound) 
+	     with Failure _ -> acc' (acc, (true, false, Universe.make u))
   and aux (ctx', us, algs, seen, cstrs as acc) u =
     try acc, LMap.find u seen 
     with Not_found -> instance acc u

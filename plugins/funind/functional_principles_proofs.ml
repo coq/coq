@@ -44,18 +44,20 @@ let observe_tac s tac g = observe_tac_stream (str s) tac g
 
 let debug_queue = Stack.create ()
 
-let rec print_debug_queue b e = 
+let rec print_debug_queue e = 
   if  not (Stack.is_empty debug_queue) 
   then
     begin
       let lmsg,goal = Stack.pop debug_queue in 
-      if b then 
-	Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
-      else
-	begin
-	  Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
-	end;
-      print_debug_queue false e;
+      let _ =
+	match e with
+	| Some e ->
+	   Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
+	| None ->
+	   begin
+	     Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
+	   end in
+      print_debug_queue None ;
     end
 
 let observe strm =
@@ -68,13 +70,13 @@ let do_observe_tac s tac g =
   let lmsg = (str "observation : ") ++ s in 
   Stack.push (lmsg,goal) debug_queue;
   try 
-    let v = tac g in 
+    let v = tac g in
     ignore(Stack.pop debug_queue);
     v
   with reraise ->
     let reraise = Errors.push reraise in
     if not (Stack.is_empty debug_queue)
-    then print_debug_queue true (fst (Cerrors.process_vernac_interp_error reraise));
+    then print_debug_queue (Some (fst (Cerrors.process_vernac_interp_error reraise)));
     iraise reraise
 
 let observe_tac_stream s tac g =
@@ -941,13 +943,13 @@ let revert idl =
     (generalize (List.map mkVar idl))
     (thin idl)
 
-let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
+let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num =
 (*   observe (str "nb_args := " ++ str (string_of_int nb_args)); *)
 (*   observe (str "nb_params := " ++ str (string_of_int nb_params)); *)
 (*   observe (str "rec_args_num := " ++ str (string_of_int (rec_args_num + 1) )); *)
   let f_def = Global.lookup_constant (fst (destConst f)) in
   let eq_lhs = mkApp(f,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i))) in
-  let f_body = Option.get (Global.body_of_constant_body f_def)in
+  let f_body = Option.get (Global.body_of_constant_body f_def) in
   let params,f_body_with_params = decompose_lam_n nb_params f_body in
   let (_,num),(_,_,bodies) = destFix f_body_with_params in
   let fnames_with_params =
@@ -960,41 +962,48 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
   let f_body_with_params_and_other_fun  = substl fnames_with_params bodies.(num) in
 (*   observe (str "f_body_with_params_and_other_fun " ++  pr_lconstr f_body_with_params_and_other_fun); *)
   let eq_rhs = nf_betaiotazeta (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
-(*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
-  let type_ctxt,type_of_f = decompose_prod_n_assum (nb_params + nb_args)
-    (Typeops.type_of_constant_type (Global.env ()) (*FIXME*)f_def.const_type) in
+  (*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
+  let (type_ctxt,type_of_f),evd =
+    let evd,t = Typing.e_type_of ~refresh:true (Global.env ()) evd f
+    in 
+    decompose_prod_n_assum
+      (nb_params + nb_args) t,evd
+  in
   let eqn = mkApp(Lazy.force eq,[|type_of_f;eq_lhs;eq_rhs|]) in
   let lemma_type = it_mkProd_or_LetIn eqn type_ctxt in
+  (* Pp.msgnl (str "lemma type " ++ Printer.pr_lconstr lemma_type ++ fnl () ++ str "f_body " ++ Printer.pr_lconstr f_body); *)
   let f_id = Label.to_id (con_label (fst (destConst f))) in
   let prove_replacement =
     tclTHENSEQ
       [
 	tclDO (nb_params + rec_args_num + 1) (Proofview.V82.of_tactic intro);
-	(* observe_tac "" *) (fun g ->
+	observe_tac "" (fun g ->
 	   let rec_id = pf_nth_hyp_id g 1 in
 	   tclTHENSEQ
-	     [(* observe_tac "generalize_non_dep in generate_equation_lemma" *) (generalize_non_dep rec_id);
-	      (* observe_tac "h_case" *) (Proofview.V82.of_tactic (simplest_case (mkVar rec_id)));
+	     [observe_tac "generalize_non_dep in generate_equation_lemma" (generalize_non_dep rec_id);
+	      observe_tac "h_case" (Proofview.V82.of_tactic (simplest_case (mkVar rec_id)));
 	      (Proofview.V82.of_tactic intros_reflexivity)] g
 	)
       ]
   in
+  (* Pp.msgnl (str "lemma type (2) " ++ Printer.pr_lconstr_env (Global.env ()) evd lemma_type); *)
   Lemmas.start_proof
     (*i The next call to mk_equation_id is valid since we are constructing the lemma
       Ensures by: obvious
       i*)
     (mk_equation_id f_id)
-    (Decl_kinds.Global, false, (Decl_kinds.Proof Decl_kinds.Theorem))
-  Evd.empty
+    (Decl_kinds.Global, Flags.is_universe_polymorphism (), (Decl_kinds.Proof Decl_kinds.Theorem))
+    evd
   lemma_type
   (Lemmas.mk_hook (fun _ _ -> ()));
   ignore (Pfedit.by (Proofview.V82.tactic prove_replacement));
-  Lemmas.save_proof (Vernacexpr.(Proved(Transparent,None)))
+  Lemmas.save_proof (Vernacexpr.(Proved(Transparent,None))); 
+  evd
 
 
 
 
-let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
+let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num all_funs g =
   let equation_lemma =
     try
       let finfos = find_Function_infos (fst (destConst f)) (*FIXME*) in
@@ -1005,7 +1014,7 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
 	Ensures by: obvious
 	i*)
       let equation_lemma_id = (mk_equation_id f_id) in
-      generate_equation_lemma all_funs f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
+      evd := generate_equation_lemma !evd all_funs  f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
       let _ =
 	match e with
 	  | Option.IsNone ->
@@ -1018,9 +1027,16 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
 					 )
 		}
 	  | _ -> ()
-
       in
-      Constrintern.construct_reference (pf_hyps g) equation_lemma_id
+      (* let res = Constrintern.construct_reference (pf_hyps g) equation_lemma_id in *)
+      let evd',res =
+	Evd.fresh_global
+	  (Global.env ()) !evd
+	  (Constrintern.locate_reference (qualid_of_ident equation_lemma_id))
+      in
+      let evd',_ = Typing.e_type_of ~refresh:true (Global.env ()) evd' res in 
+      evd:=evd';		       
+      res
   in
   let nb_intro_to_do = nb_prod (pf_concl g) in
     tclTHEN
@@ -1029,13 +1045,17 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
 	fun g' ->
 	  let just_introduced = nLastDecls nb_intro_to_do g' in
 	  let just_introduced_id = List.map (fun (id,_,_) -> id) just_introduced in
-	  tclTHEN (Proofview.V82.of_tactic (Equality.rewriteLR equation_lemma)) (revert just_introduced_id) g'
+	  tclTHEN (Proofview.V82.of_tactic (Equality.rewriteLR equation_lemma))
+		  (revert just_introduced_id) g'
       )
       g
 
-let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : tactic =
+let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnames all_funs _nparams : tactic =
   fun g ->
-    let princ_type = pf_concl g in
+  let princ_type = pf_concl g in
+  (* Pp.msgnl (str "princ_type " ++ Printer.pr_lconstr princ_type); *)
+  (* Pp.msgnl (str "all_funs "); *)
+  (* Array.iter (fun c -> Pp.msgnl (Printer.pr_lconstr c)) all_funs; *)
     let princ_info = compute_elim_sig princ_type in
     let fresh_id =
       let avoid = ref (pf_ids_of_hyps g) in
@@ -1099,17 +1119,17 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	   f_body
 	)
     in
-(*     observe (str "full_params := " ++  *)
-(* 	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na)) *)
-(* 	       full_params *)
-(* 	    );  *)
-(*     observe (str "princ_params := " ++  *)
-(* 	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na)) *)
-(* 	       princ_params *)
-(* 	    );  *)
-(*     observe (str "fbody_with_full_params := " ++  *)
-(* 	       pr_lconstr fbody_with_full_params *)
-(* 	    );  *)
+    observe (str "full_params := " ++
+	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na))
+	       full_params
+	    );
+    observe (str "princ_params := " ++
+	       prlist_with_sep spc (fun (na,_,_) -> Ppconstr.pr_id (Nameops.out_name na))
+	       princ_params
+	    );
+    observe (str "fbody_with_full_params := " ++
+	       pr_lconstr fbody_with_full_params
+	    );
     let all_funs_with_full_params =
       Array.map (fun f -> applist(f, List.rev_map var_of_decl full_params)) all_funs
     in
@@ -1189,7 +1209,8 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		(List.rev princ_info.predicates)
 	    in
 	    pte_to_fix,List.rev rev_info
-	| _ -> Id.Map.empty,[]
+	| _ ->
+	   Id.Map.empty,[]
     in
     let mk_fixes : tactic =
       let pre_info,infos = list_chop fun_num infos in
@@ -1203,7 +1224,10 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	    in
 	    if List.is_empty other_fix_infos
 	    then
-	      (* observe_tac ("h_fix") *) (fix (Some this_fix_info.name) (this_fix_info.idx +1))
+	      if this_fix_info.idx + 1 = 0
+	      then tclIDTAC (* Someone  tries to defined a principle on a fully parametric definition declared as a fixpoint (strange but ....) *)
+	      else
+		observe_tac_stream (str "h_fix " ++ int (this_fix_info.idx +1) ) (fix (Some this_fix_info.name) (this_fix_info.idx +1))
 	    else
 	      Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
 		other_fix_infos 0
@@ -1211,10 +1235,10 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
     in
     let first_tac : tactic = (* every operations until fix creations *)
       tclTHENSEQ
-	[ (* observe_tac "introducing params" *) Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.params));
-	  (* observe_tac "introducing predictes" *) Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.predicates));
-	  (* observe_tac "introducing branches" *) Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.branches));
-	  (* observe_tac "building fixes" *) mk_fixes;
+	[ observe_tac "introducing params" (Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.params)));
+	  observe_tac "introducing predictes" (Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.predicates)));
+	  observe_tac "introducing branches" (Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.branches)));
+	  observe_tac "building fixes" mk_fixes;
 	]
     in
     let intros_after_fixes : tactic =
@@ -1248,8 +1272,8 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		 in
 		 tclTHENSEQ
 		   [
-(* 		     observe_tac "do_replace"  *)
-		       (do_replace
+		     observe_tac "do_replace"
+		       (do_replace evd
 			  full_params
 			  (fix_info.idx + List.length princ_params)
 			  (args_id@(List.map (fun (id,_,_) -> Nameops.out_name id ) princ_params))
@@ -1257,9 +1281,6 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 			  fix_info.num_in_block
 			  all_funs
 		       );
-(* 		     observe_tac "do_replace"  *)
-(* 		       (do_replace princ_info.params fix_info.idx args_id *)
-(* 			  (List.hd (List.rev pte_args)) fix_body); *)
 		     let do_prove =
 		       build_proof
 			 interactive_proof

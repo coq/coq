@@ -172,18 +172,18 @@ and e_my_find_search db_list local_db hdc concl =
   let tac_of_hint =
     fun (st, {pri = b; pat = p; code = t; poly = poly}) ->
       (b,
-       let tac =
-	 match t with
-	   | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
-	   | ERes_pf (term,cl) -> Proofview.V82.tactic (unify_e_resolve poly st (term,cl))
-	   | Give_exact (c,cl) -> e_exact poly st (c,cl)
-	   | Res_pf_THEN_trivial_fail (term,cl) ->
-               (Tacticals.New.tclTHEN (Proofview.V82.tactic (unify_e_resolve poly st (term,cl)))
-		 (e_trivial_fail_db db_list local_db))
-	   | Unfold_nth c -> Proofview.V82.tactic (reduce (Unfold [AllOccurrences,c]) onConcl)
-	   | Extern tacast -> conclPattern concl p tacast
+        let tac = function
+        | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
+        | ERes_pf (term,cl) -> Proofview.V82.tactic (unify_e_resolve poly st (term,cl))
+        | Give_exact (c,cl) -> e_exact poly st (c,cl)
+        | Res_pf_THEN_trivial_fail (term,cl) ->
+          Tacticals.New.tclTHEN (Proofview.V82.tactic (unify_e_resolve poly st (term,cl)))
+            (e_trivial_fail_db db_list local_db)
+        | Unfold_nth c -> Proofview.V82.tactic (reduce (Unfold [AllOccurrences,c]) onConcl)
+        | Extern tacast -> conclPattern concl p tacast
        in
-       (tac,lazy (pr_autotactic t)))
+       let tac = run_auto_tactic t tac in
+       (tac, lazy (pr_autotactic t)))
   in
   List.map tac_of_hint hintl
 
@@ -194,7 +194,7 @@ and e_trivial_resolve db_list local_db gl =
 
 let e_possible_resolve db_list local_db gl =
   let hd = try Some (decompose_app_bound gl) with Bound -> None in
-  try List.map snd (e_my_find_search db_list local_db hd gl)
+  try List.map (fun (b, (tac, pp)) -> (tac, b, pp)) (e_my_find_search db_list local_db hd gl)
   with Not_found -> []
 
 let find_first_goal gls =
@@ -204,6 +204,7 @@ let find_first_goal gls =
     exploration functor [Explore.Make]. *)
 
 type search_state = {
+  priority : int;
   depth : int; (*r depth of search before failing *)
   tacres : goal list sigma;
   last_tactic : std_ppcmds Lazy.t;
@@ -231,12 +232,12 @@ module SearchProblem = struct
 (*     msg (str"Goal:" ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
     let rec aux = function
       | [] -> []
-      | (tac,pptac) :: tacl ->
+      | (tac, cost, pptac) :: tacl ->
 	  try
 	    let lgls = apply_tac_list (Proofview.V82.of_tactic tac) glls in
 (* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
-	      (lgls,pptac) :: aux tacl
+	      (lgls, cost, pptac) :: aux tacl
 	  with e when Errors.noncritical e ->
             let e = Errors.push e in
             Refiner.catch_failerror e; aux tacl
@@ -246,8 +247,11 @@ module SearchProblem = struct
      number of remaining goals. *)
   let compare s s' =
     let d = s'.depth - s.depth in
+    let d' = Int.compare s.priority s'.priority in
     let nbgoals s = List.length (sig_it s.tacres) in
-    if not (Int.equal d 0) then d else nbgoals s - nbgoals s'
+    if not (Int.equal d' 0) then d'
+    else if not (Int.equal d 0) then d
+    else Int.compare (nbgoals s) (nbgoals s')
 
   let branching s =
     if Int.equal s.depth 0 then
@@ -258,42 +262,39 @@ module SearchProblem = struct
       let nbgl = List.length (sig_it lg) in
       assert (nbgl > 0);
       let g = find_first_goal lg in
+      let map_assum id = (e_give_exact (mkVar id), (-1), lazy (str "exact" ++ spc () ++ pr_id id)) in
       let assumption_tacs =
-	let l =
-	  filter_tactics s.tacres
-	    (List.map
-	       (fun id -> (e_give_exact (mkVar id),
-			   lazy (str "exact" ++ spc () ++ pr_id id)))
-	       (pf_ids_of_hyps g))
-	in
-	List.map (fun (res,pp) -> { depth = s.depth; tacres = res;
+        let tacs = List.map map_assum (pf_ids_of_hyps g) in
+        let l = filter_tactics s.tacres tacs in
+	List.map (fun (res, cost, pp) -> { depth = s.depth; priority = cost; tacres = res;
 				    last_tactic = pp; dblist = s.dblist;
 				    localdb = List.tl s.localdb;
 				    prev = ps}) l
       in
       let intro_tac =
+        let l = filter_tactics s.tacres [Tactics.intro, (-1), lazy (str "intro")] in
 	List.map
-	  (fun (lgls as res,pp) ->
+	  (fun (lgls, cost, pp) ->
 	     let g' = first_goal lgls in
 	     let hintl =
 	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
 	     in
              let ldb = Hint_db.add_list hintl (List.hd s.localdb) in
-	     { depth = s.depth; tacres = res;
+	     { depth = s.depth; priority = cost; tacres = lgls;
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb; prev = ps })
-	  (filter_tactics s.tacres [Tactics.intro,lazy (str "intro")])
+	  l
       in
       let rec_tacs =
 	let l =
 	  filter_tactics s.tacres (e_possible_resolve s.dblist (List.hd s.localdb) (pf_concl g))
 	in
 	List.map
-	  (fun (lgls as res, pp) ->
+	  (fun (lgls, cost, pp) ->
 	     let nbgl' = List.length (sig_it lgls) in
 	     if nbgl' < nbgl then
-	       { depth = s.depth; tacres = res; last_tactic = pp; prev = ps;
-		 dblist = s.dblist; localdb = List.tl s.localdb }
+	       { depth = s.depth; priority = cost; tacres = lgls; last_tactic = pp;
+                  prev = ps; dblist = s.dblist; localdb = List.tl s.localdb }
 	     else
 	       let newlocal = 
 		 let hyps = pf_hyps g in
@@ -304,7 +305,7 @@ module SearchProblem = struct
 		       else make_local_hint_db (pf_env gls) (project gls) ~ts:full_transparent_state true [])
 		     (List.firstn ((nbgl'-nbgl) + 1) (sig_it lgls))
 	       in
-		 { depth = pred s.depth; tacres = res;
+		 { depth = pred s.depth; priority = cost; tacres = lgls;
 		   dblist = s.dblist; last_tactic = pp; prev = ps;
 		   localdb = newlocal @ List.tl s.localdb })
 	  l
@@ -373,6 +374,7 @@ let pr_info dbg s =
 
 let make_initial_state dbg n gl dblist localdb =
   { depth = n;
+    priority = 0;
     tacres = tclIDTAC gl;
     last_tactic = lazy (mt());
     dblist = dblist;
@@ -576,7 +578,7 @@ let autounfold_one db cl =
   in
     if did then
       match cl with
-      | Some hyp -> change_in_hyp None (fun sigma -> sigma, c') hyp
+      | Some hyp -> change_in_hyp None (make_change_arg c') hyp
       | None -> convert_concl_no_check c' DEFAULTcast
     else Tacticals.New.tclFAIL 0 (str "Nothing to unfold")
   end

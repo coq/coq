@@ -28,7 +28,7 @@ val decompose_app_bound : constr -> global_reference * constr array
 
 (** Pre-created hint databases *)
 
-type 'a auto_tactic =
+type 'a auto_tactic_ast =
   | Res_pf     of 'a (* Hint Apply *)
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
@@ -36,26 +36,27 @@ type 'a auto_tactic =
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
   | Extern     of Tacexpr.glob_tactic_expr       (* Hint Extern *)
 
+type 'a auto_tactic
+
 type hints_path_atom = 
   | PathHints of global_reference list
   | PathAny
 
-type 'a gen_auto_tactic = {
+type 'a gen_auto_tactic = private {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
   name  : hints_path_atom; (** A potential name to refer to the hint *) 
-  code  : 'a auto_tactic; (** the tactic to apply when the concl matches pat *)
+  code  : 'a; (** the tactic to apply when the concl matches pat *)
 }
 
-type pri_auto_tactic = (constr * clausenv) gen_auto_tactic
+type pri_auto_tactic = (constr * clausenv) auto_tactic gen_auto_tactic
 
 type search_entry
 
 (** The head may not be bound. *)
 
-type hint_entry = global_reference option * 
-  (constr * types * Univ.universe_context_set) gen_auto_tactic
+type hint_entry
 
 type hints_path =
   | PathAtom of hints_path_atom
@@ -195,6 +196,13 @@ val make_resolve_hyp :
 val make_extern :
   int -> constr_pattern option -> Tacexpr.glob_tactic_expr
       -> hint_entry
+
+val run_auto_tactic : 'a auto_tactic ->
+  ('a auto_tactic_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
+
+(** This function is for backward compatibility only, not to use in newly
+    written code. *)
+val repr_auto_tactic : 'a auto_tactic -> 'a auto_tactic_ast
 
 val extern_intern_tac :
   (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr) Hook.t
