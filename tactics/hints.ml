@@ -92,23 +92,43 @@ type hint_term =
   | IsGlobRef of global_reference
   | IsConstr of constr * Univ.universe_context_set
 
-type hint = (constr * clausenv) hint_ast
+type 'a with_uid = {
+  obj : 'a;
+  uid : KerName.t;
+}
+
+type hint = (constr * clausenv) hint_ast with_uid
 
 type 'a with_metadata = {
   pri  : int;            (* A number lower is higher priority *)
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat  : constr_pattern option; (* A pattern for the concl of the Goal *)
   name  : hints_path_atom; (* A potential name to refer to the hint *) 
-  code : 'a     (* the tactic to apply when the concl matches pat *)
+  code : 'a;     (* the tactic to apply when the concl matches pat *)
 }
 
 type full_hint = hint with_metadata
 
 type hint_entry = global_reference option * 
-  (constr * types * Univ.universe_context_set) hint_ast with_metadata
+  (constr * types * Univ.universe_context_set) hint_ast with_uid with_metadata
 
-let run_hint tac k = k tac
-let repr_hint h = h
+let run_hint tac k = k tac.obj
+let repr_hint h = h.obj
+
+let fresh_key =
+  let id = Summary.ref ~name:"HINT-COUNTER" 0 in
+  fun () ->
+    let cur = incr id; !id in
+    let lbl = Id.of_string ("_" ^ string_of_int cur) in
+    let kn = Lib.make_kn lbl in
+    let (mp, dir, _) = KerName.repr kn in
+    (** We embed the full path of the kernel name in the label so that the
+        identifier should be unique. This ensures that including two modules
+        together won't confuse the corresponding labels. *)
+    let lbl = Id.of_string_soft (Printf.sprintf "%s#%s#%i"
+      (ModPath.to_string mp) (DirPath.to_string dir) cur)
+    in
+    KerName.make mp dir (Label.of_id lbl)
 
 let eq_hints_path_atom p1 p2 = match p1, p2 with
 | PathHints gr1, PathHints gr2 -> List.equal eq_gr gr1 gr2
@@ -175,21 +195,7 @@ let empty_se = {
   sentry_mode = [];
 }
 
-let eq_pri_auto_tactic (_, x) (_, y) =
-  if Int.equal x.pri y.pri && Option.equal constr_pattern_eq x.pat y.pat then
-    match x.code,y.code with
-      | Res_pf (cstr,_),Res_pf (cstr1,_) -> 
-	  Term.eq_constr cstr cstr1
-      | ERes_pf (cstr,_),ERes_pf (cstr1,_) -> 
-	  Term.eq_constr cstr cstr1
-      | Give_exact (cstr,_),Give_exact (cstr1,_)  -> 
-	  Term.eq_constr cstr cstr1
-      | Res_pf_THEN_trivial_fail (cstr,_)
-	  ,Res_pf_THEN_trivial_fail (cstr1,_) -> 
-	  Term.eq_constr cstr cstr1
-      | _,_ -> false
-  else
-    false
+let eq_pri_auto_tactic (_, x) (_, y) = KerName.equal x.code.uid y.code.uid
 
 let add_tac pat t st se =
   match pat with
@@ -248,7 +254,7 @@ let instantiate_hint p =
 	  { cl.templval with rebus = strip_params env cl.templval.rebus };
 	env = empty_env}
   in
-  let code = match p.code with
+  let code = match p.code.obj with
     | Res_pf (c, cty, ctx) -> Res_pf (c, mk_clenv c cty ctx)
     | ERes_pf (c, cty, ctx) -> ERes_pf (c, mk_clenv c cty ctx)
     | Res_pf_THEN_trivial_fail (c, cty, ctx) ->
@@ -256,7 +262,8 @@ let instantiate_hint p =
     | Give_exact (c, cty, ctx) -> Give_exact (c, mk_clenv c cty ctx)
     | Unfold_nth e -> Unfold_nth e
     | Extern t -> Extern t
-  in { pri = p.pri; poly = p.poly; name = p.name; pat = p.pat; code = code }
+  in
+  { p with code = { p.code with obj = code } }
 
 let hints_path_atom_eq h1 h2 = match h1, h2 with
 | PathHints l1, PathHints l2 -> List.equal eq_gr l1 l2
@@ -473,15 +480,14 @@ module Hint_db = struct
     let idv = id, v in
     let k = match gr with
       | Some gr -> if db.use_dn && is_transparent_gr db.hintdb_state gr &&
-	  is_unfold v.code then None else Some gr
+	  is_unfold v.code.obj then None else Some gr
       | None -> None
     in
     let dnst = if db.use_dn then Some db.hintdb_state else None in
-    let pat = if not db.use_dn && is_exact v.code then None else v.pat in
+    let pat = if not db.use_dn && is_exact v.code.obj then None else v.pat in
       match k with
       | None ->
-          (** ppedrot: this equality here is dubious. Maybe we can remove it? *)
-          let is_present (_, (_, v')) = eq_hint_metadata v v' in
+          let is_present (_, (_, v')) = KerName.equal v.code.uid v'.code.uid in
 	  if not (List.exists is_present db.hintdb_nopat) then
 	    (** FIXME *)
 	    { db with hintdb_nopat = (gr,idv) :: db.hintdb_nopat }
@@ -500,7 +506,7 @@ module Hint_db = struct
   let add_one (k, v) db =
     let v = instantiate_hint v in
     let st',db,rebuild =
-      match v.code with
+      match v.code.obj with
       | Unfold_nth egr ->
 	  let addunf (ids,csts) (ids',csts') =
 	    match egr with
@@ -632,6 +638,8 @@ let try_head_pattern c =
   try head_pattern_bound c
   with BoundPattern -> error "Bound head variable."
 
+let with_uid c = { obj = c; uid = fresh_key () }
+
 let make_exact_entry env sigma pri poly ?(name=PathAny) (c, cty, ctx) =
   let cty = strip_outer_cast cty in
     match kind_of_term cty with
@@ -647,7 +655,7 @@ let make_exact_entry env sigma pri poly ?(name=PathAny) (c, cty, ctx) =
 	    poly = poly;
 	    pat = Some pat;
 	    name = name;
-	    code = Give_exact (c, cty, ctx) })
+	    code = with_uid (Give_exact (c, cty, ctx)); })
 
 let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c, cty, ctx) =
   let cty = if hnf then hnf_constr env sigma cty else cty in
@@ -667,7 +675,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
 	    poly = poly;
             pat = Some pat;
 	    name = name;
-            code = Res_pf(c,cty,ctx) })
+            code = with_uid (Res_pf(c,cty,ctx)); })
 	else begin
 	  if not eapply then failwith "make_apply_entry";
           if verbose then
@@ -678,7 +686,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri poly ?(name=PathAny) (c,
 	     poly = poly;
              pat = Some pat;
 	     name = name;
-             code = ERes_pf(c,cty,ctx) })
+             code = with_uid (ERes_pf(c,cty,ctx)); })
         end
     | _ -> failwith "make_apply_entry"
 
@@ -724,7 +732,7 @@ let make_unfold eref =
      poly = false;
      pat = None;
      name = PathHints [g];
-     code = Unfold_nth eref })
+     code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
   let hdconstr = Option.map try_head_pattern pat in
@@ -733,7 +741,7 @@ let make_extern pri pat tacast =
      poly = false;
      pat = pat;
      name = PathAny;
-     code = Extern tacast })  
+     code = with_uid (Extern tacast) })  
 
 let make_mode ref m = 
   let ty = Global.type_of_global_unsafe ref in
@@ -756,7 +764,7 @@ let make_trivial env sigma poly ?(name=PathAny) r =
 	      poly = poly;
               pat = Some (pi3 (Patternops.pattern_of_constr env ce.evd (clenv_type ce)));
 	      name = name;
-              code=Res_pf_THEN_trivial_fail(c,t,ctx) })
+              code= with_uid (Res_pf_THEN_trivial_fail(c,t,ctx)) })
 
 
 
@@ -771,7 +779,7 @@ let get_db dbname =
   try searchtable_map dbname
   with Not_found -> Hint_db.empty empty_transparent_state false
 
-let add_hint dbname hintlist = 
+let add_hint dbname hintlist =
   let db = get_db dbname in
   let db' = Hint_db.add_list hintlist db in
     searchtable_add (dbname,db')
@@ -837,34 +845,36 @@ let subst_autohint (subst, obj) =
   let subst_hint (k,data as hint) =
     let k' = Option.smartmap subst_key k in
     let pat' = Option.smartmap (subst_pattern subst) data.pat in
-    let code' = match data.code with
+    let code' = match data.code.obj with
       | Res_pf (c,t,ctx) ->
           let c' = subst_mps subst c in
           let t' = subst_mps subst t in
-          if c==c' && t'==t then data.code else Res_pf (c', t',ctx)
+          if c==c' && t'==t then data.code.obj else Res_pf (c', t',ctx)
       | ERes_pf (c,t,ctx) ->
           let c' = subst_mps subst c in
           let t' = subst_mps subst t in
-          if c==c' && t'==t then data.code else ERes_pf (c',t',ctx)
+          if c==c' && t'==t then data.code.obj else ERes_pf (c',t',ctx)
       | Give_exact (c,t,ctx) ->
           let c' = subst_mps subst c in
 	  let t' = subst_mps subst t in
-          if c==c' && t'== t then data.code else Give_exact (c',t',ctx)
+          if c==c' && t'== t then data.code.obj else Give_exact (c',t',ctx)
       | Res_pf_THEN_trivial_fail (c,t,ctx) ->
           let c' = subst_mps subst c in
           let t' = subst_mps subst t in
-          if c==c' && t==t' then data.code else Res_pf_THEN_trivial_fail (c',t',ctx)
+          if c==c' && t==t' then data.code.obj else Res_pf_THEN_trivial_fail (c',t',ctx)
       | Unfold_nth ref ->
           let ref' = subst_evaluable_reference subst ref in
-          if ref==ref' then data.code else Unfold_nth ref'
+          if ref==ref' then data.code.obj else Unfold_nth ref'
       | Extern tac ->
 	  let tac' = Tacsubst.subst_tactic subst tac in
-	  if tac==tac' then data.code else Extern tac'
+	  if tac==tac' then data.code.obj else Extern tac'
     in
     let name' = subst_path_atom subst data.name in
+    let uid' = subst_kn subst data.code.uid in
     let data' =
-      if data.pat==pat' && data.name == name' && data.code==code' then data
-      else { data with pat = pat'; name = name'; code = code' }
+      if data.code.uid == uid' && data.pat == pat' &&
+        data.name == name' && data.code.obj == code' then data
+      else { data with pat = pat'; name = name'; code = { obj = code'; uid = uid' } }
     in
     if k' == k && data' == data then hint else (k',data')
   in
@@ -1146,8 +1156,7 @@ let make_db_list dbnames =
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
 
-let pr_hint =
-  function
+let pr_hint h = match h.obj with
   | Res_pf (c,clenv) -> (str"apply " ++ pr_constr c)
   | ERes_pf (c,clenv) -> (str"eapply " ++ pr_constr c)
   | Give_exact (c,clenv) -> (str"exact " ++ pr_constr c)
