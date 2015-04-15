@@ -378,7 +378,6 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	    observe_tac "rewriting res value" (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar hres)));
 	    (* Conclusion *)
 	    observe_tac "exact" (fun g ->
-				 Pp.msgnl (str "TITI " ++ pf_apply Printer.pr_lconstr_env g (app_constructor g));
 				 Proofview.V82.of_tactic (exact_check (app_constructor g)) g)  
 	  ]
       )
@@ -427,7 +426,6 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       in
       (params_bindings@lemmas_bindings)
     in
-    Pp.msgnl (str "princ_type := " ++ pf_apply Printer.pr_lconstr_env g princ_type);
     tclTHENSEQ
       [ 
 	observe_tac "principle" (Proofview.V82.of_tactic (assert_by
