@@ -114,6 +114,11 @@ let set_hierarchy () = if !type_in_type then Global.set_type_in_type ()
 
 let set_batch_mode () = batch_mode := true
 
+let set_warning = function
+| "all" -> make_warn true
+| "none" -> make_warn false
+| _ -> prerr_endline ("Error: all/none expected after option w"); exit 1
+
 let toplevel_default_name = DirPath.make [Id.of_string "Top"]
 let toplevel_name = ref (Some toplevel_default_name)
 let set_toplevel_name dir =
@@ -472,6 +477,7 @@ let parse_args arglist =
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
     |"-vio2vo" -> add_compile false (next ()); Flags.compilation_mode := Vio2Vo
     |"-toploop" -> toploop := Some (next ())
+    |"-w" -> set_warning (next ())
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
@@ -505,7 +511,7 @@ let parse_args arglist =
     |"-notop" -> unset_toplevel_name ()
     |"-output-context" -> output_context := true
     |"-q" -> no_load_rc ()
-    |"-quiet"|"-silent" -> Flags.make_silent true
+    |"-quiet"|"-silent" -> Flags.make_silent true; Flags.make_warn false
     |"-quick" -> Flags.compilation_mode := BuildVio
     |"-list-tags" -> print_tags := true
     |"-time" -> Flags.time := true

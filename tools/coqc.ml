@@ -122,7 +122,7 @@ let parse_args () =
       |"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"
-      |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs"
+      |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs"|"-w"
       as o) :: rem ->
 	begin
 	  match rem with

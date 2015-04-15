@@ -257,7 +257,6 @@ let rec vernac_com verbosely checknav (loc,com) =
       else iraise (reraise, info)
 
 and read_vernac_file verbosely s =
-  Flags.make_warn verbosely;
   let checknav loc cmd =
     if is_navigation_vernac cmd && not (is_reset cmd) then
 	user_error loc "Navigation commands forbidden in files"

@@ -35,6 +35,10 @@ API
   All uses of unsafe_* functions should be eventually eliminated.
 
 
+Tools
+
+- Added an option -w to control the output of coqtop warnings.
+
 Changes from V8.5beta1 to V8.5beta2
 ===================================
 
