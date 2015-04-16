@@ -29,7 +29,11 @@ sig
 
   val of_string : string -> t
   (** Converts a string into an identifier. May raise [UserError _] if the
-      string is not valid. *)
+      string is not valid, or echo a warning if it contains invalid identifier
+      characters. *)
+
+  val of_string_soft : string -> t
+  (** Same as {!of_string} except that no warning is ever issued. *)
 
   val to_string : t -> string
   (** Converts a identifier into an string. *)

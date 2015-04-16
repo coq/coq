@@ -33,9 +33,9 @@ struct
 
   let hash = String.hash
 
-  let check_soft x =
+  let check_soft ?(warn = true) x =
     let iter (fatal, x) =
-      if fatal then Errors.error x else Pp.msg_warning (str x)
+      if fatal then Errors.error x else if warn then Pp.msg_warning (str x)
     in
     Option.iter iter (Unicode.ident_refutation x)
 
@@ -45,6 +45,11 @@ struct
 
   let of_string s =
     let () = check_soft s in
+    let s = String.copy s in
+    String.hcons s
+
+  let of_string_soft s =
+    let () = check_soft ~warn:false s in
     let s = String.copy s in
     String.hcons s
 

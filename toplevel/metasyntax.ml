@@ -62,11 +62,19 @@ let rec make_tags = function
   | [] -> []
 
 let make_fresh_key =
-  let id = Summary.ref ~name:"Tactic Notation counter" 0 in
-  fun () -> KerName.make
-    (Safe_typing.current_modpath (Global.safe_env ()))
-    (Global.current_dirpath ())
-    (incr id; Label.make ("_" ^ string_of_int !id))
+  let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
+  fun () ->
+    let cur = incr id; !id in
+    let lbl = Id.of_string ("_" ^ string_of_int cur) in
+    let kn = Lib.make_kn lbl in
+    let (mp, dir, _) = KerName.repr kn in
+    (** We embed the full path of the kernel name in the label so that the
+        identifier should be unique. This ensures that including two modules
+        together won't confuse the corresponding labels. *)
+    let lbl = Id.of_string_soft (Printf.sprintf "%s#%s#%i"
+      (ModPath.to_string mp) (DirPath.to_string dir) cur)
+    in
+    KerName.make mp dir (Label.of_id lbl)
 
 type tactic_grammar_obj = {
   tacobj_key : KerName.t;
