@@ -144,7 +144,7 @@ struct
 
  type t = Dn.t
 
-  let create = Dn.create
+  let empty = Dn.empty
 
   let add = function
     | None ->

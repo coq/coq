@@ -38,7 +38,7 @@ struct
 
   type  t = Trie.t
 
-  let create () = Trie.empty
+  let empty = Trie.empty
 
 (* [path_of dna pat] returns the list of nodes of the pattern [pat] read in
 prefix ordering, [dna] is the function returning the main node of a pattern *)
