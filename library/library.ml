@@ -633,7 +633,12 @@ let import_module export modl =
           with Not_found-> flush acc; safe_locate_module m, [] in
         (match m with
         | MPfile dir -> aux (dir::acc) l
-        | mp -> flush acc; Declaremods.import_module export mp; aux [] l)
+        | mp ->
+            flush acc;
+            try Declaremods.import_module export mp; aux [] l
+            with Not_found ->
+              user_err_loc (loc,"import_library",
+                str ((string_of_qualid dir)^" is not a module")))
     | [] -> flush acc
   in aux [] modl
 
