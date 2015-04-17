@@ -57,11 +57,6 @@ let load_rcfile() =
   else
     Flags.if_verbose msg_info (str"Skipping rcfile loading.")
 
-(* Puts dir in the path of ML and in the LoadPath *)
-let coq_add_path unix_path s =
-  Mltop.add_rec_path ~unix_path ~coq_root:(Names.DirPath.make [Nameops.coq_root;Names.Id.of_string s]) ~implicit:true;
-  Mltop.add_ml_dir unix_path
-
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
 let add_stdlib_path ~unix_path ~coq_root ~with_ml =
   Mltop.add_rec_path ~unix_path ~coq_root ~implicit:(!Flags.load_init);
@@ -88,10 +83,11 @@ let init_load_path () =
   let coq_root = Names.DirPath.make [Nameops.coq_root] in
     (* NOTE: These directories are searched from last to first *)
     (* first, developer specific directory to open *)
-    if Coq_config.local then coq_add_path (coqlib/"dev") "dev";
+    if Coq_config.local then
+      Mltop.add_ml_dir (coqlib/"dev");
     (* main loops *)
     if Coq_config.local || !Flags.boot then begin
-      let () = Mltop.add_ml_dir (coqlib/"stm") in
+      Mltop.add_ml_dir (coqlib/"stm");
       Mltop.add_ml_dir (coqlib/"ide")
     end;
     Mltop.add_ml_dir (coqlib/"toploop");
