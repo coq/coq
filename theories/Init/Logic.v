@@ -206,47 +206,52 @@ Proof.
   intros; split; intros [Hl Hr]; (split; intros; [ apply Hl | apply Hr]); assumption.
 Qed.
 
-Definition xor (A B:Prop) := (A /\ ~ B) \/ (~ A /\ B).
+Inductive xor (A B:Prop) : Prop :=
+| xor_introl : A -> ~B -> xor A B
+| xor_intror : ~A -> B -> xor A B.
 
 Notation "A (+) B" := (xor A B) : type_scope.
 
 Section Exclusive_Or.
   Theorem or_of_xor : forall A B:Prop, A (+) B -> A \/ B.
   Proof.
-    intros. destruct H; [ left | right ]; apply H.
+    intros A B [ a nb | na b ]; auto.
   Qed.
 
   Theorem xor_comm : forall A B:Prop, A (+) B <-> B (+) A.
   Proof.
     intros.
-    split; intros [ [ a nb ] | [ na b ] ];
-    try solve [ left; split; assumption ];
-    try solve [ right; split; assumption ].
+    split; intros [ a nb | na b ];
+    try solve [ left; assumption ];
+    try solve [ right; assumption ].
   Qed.
 
-  Theorem xor_proj2 : forall A B:Prop, A (+) B -> ~ A -> B.
+  Theorem proj2_xor : forall A B:Prop, A (+) B -> ~ A -> B.
   Proof.
-    intros A B [ [ a nb ] | [ na b ] ] na'; auto; tauto.
+    intros A B [ a nb | na b ] na'; [ contradiction | assumption ].
   Qed.
 
-  Theorem xor_proj2neg : forall A B:Prop, A (+) B -> A -> ~ B.
+  Theorem proj2_xor_neg : forall A B:Prop, A (+) B -> A -> ~ B.
   Proof.
-    intros A B [ [ a nb ] | [ na b ] ] na'; auto; tauto.
+    intros A B [ a nb | na b ] na'; [ assumption | contradiction ].
   Qed.
 
-  Theorem xor_proj1 : forall A B:Prop, A (+) B -> ~ B -> A.
+  Theorem proj1_xor : forall A B:Prop, A (+) B -> ~ B -> A.
   Proof.
-    intros A B [ [ a nb ] | [ na b ] ] na'; auto; tauto.
+    intros A B [ a nb | na b ] na'; [ assumption | contradiction ].
   Qed.
 
-  Theorem xor_proj1neg : forall A B:Prop, A (+) B -> B -> ~ A.
+  Theorem proj1_xor_neg : forall A B:Prop, A (+) B -> B -> ~ A.
   Proof.
-    intros A B [ [ a nb ] | [ na b ] ] na'; auto; tauto.
+    intros A B [ a nb | na b ] na'; [ contradiction | assumption ].
   Qed.
 
-  Theorem xor_of_or : forall A B:Prop, (A -> ~ B) -> (B -> ~ A) -> A \/ B -> A (+) B.
+  Theorem xor_of_or : forall A B:Prop, (A -> ~ B) -> A \/ B -> A (+) B.
   Proof.
-    intros A B atnb btna [ a | b ]; [ left | right ]; split; auto.
+    intros A B atnb [ a | b ].
+    - apply xor_introl; auto.
+    - apply xor_intror; auto.
+      intro. elim atnb; assumption.
   Qed.
 End Exclusive_Or.
 
