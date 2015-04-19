@@ -135,45 +135,12 @@ end
 
 (** A view type for the logical monad, which is a form of list, hence
     we can decompose it with as a list. *)
-type ('a, 'b) list_view =
-  | Nil of Exninfo.iexn
-  | Cons of 'a * 'b
+type ('a, 'b, 'e) list_view =
+  | Nil of 'e
+  | Cons of 'a * ('e -> 'b)
 
-module type Param = sig
-
-  (** Read only *)
-  type e
-
-  (** Write only *)
-  type w
-
-  (** [w] must be a monoid *)
-  val wunit : w
-  val wprod : w -> w -> w
-
-  (** Read-write *)
-  type s
-
-  (** Update-only. Essentially a writer on [u->u]. *)
-  type u
-
-  (** [u] must be pointed. *)
-  val uunit : u
-
-end
-
-
-module Logical (P:Param) =
+module BackState =
 struct
-
-  (** All three of environment, writer and state are coded as a single
-      state-passing-style monad.*)
-  type state = {
-    rstate : P.e;
-    ustate : P.u;
-    wstate : P.w;
-    sstate : P.s;
-  }
 
   (** Double-continuation backtracking monads are reasonable folklore
       for "search" implementations (including the Tac interactive
@@ -205,32 +172,25 @@ struct
       In that vision, [bind] is simply [concat_map] (though the cps
       version is significantly simpler), [plus] is concatenation, and
       [split] is pattern-matching. *)
-  type rich_exn = Exninfo.iexn
 
-  type 'a iolist =
-    { iolist : 'r. state -> (rich_exn -> 'r NonLogical.t) ->
-      ('a -> state -> (rich_exn -> 'r NonLogical.t) -> 'r NonLogical.t) ->
-      'r NonLogical.t }
+  type ('a, 'i, 'o, 'e) t =
+      { iolist : 'r. 'i -> ('e -> 'r NonLogical.t) ->
+                     ('a -> 'o -> ('e -> 'r NonLogical.t) -> 'r NonLogical.t) ->
+                     'r NonLogical.t }
 
-  include Monad.Make(struct
+  let return x =
+    { iolist = fun s nil cons -> cons x s nil }
 
-    type 'a t = 'a iolist
+  let (>>=) m f =
+    { iolist = fun s nil cons ->
+      m.iolist s nil (fun x s next -> (f x).iolist s next cons) }
 
-    let return x =
-      { iolist = fun s nil cons -> cons x s nil }
+  let (>>) m f =
+    { iolist = fun s nil cons ->
+      m.iolist s nil (fun () s next -> f.iolist s next cons) }
 
-    let (>>=) m f =
-      { iolist = fun s nil cons ->
-        m.iolist s nil (fun x s next -> (f x).iolist s next cons) }
-
-    let (>>) m f =
-      { iolist = fun s nil cons ->
-        m.iolist s nil (fun () s next -> f.iolist s next cons) }
-
-    let map f m =
-      { iolist = fun s nil cons -> m.iolist s nil (fun x s next -> cons (f x) s next) }
-
-  end)
+  let map f m =
+    { iolist = fun s nil cons -> m.iolist s nil (fun x s next -> cons (f x) s next) }
 
   let zero e =
     { iolist = fun _ nil cons -> nil e }
@@ -245,6 +205,136 @@ struct
     { iolist = fun s nil cons -> NonLogical.(m >>= fun x -> cons x s nil) }
 
   (** State related *)
+
+  let get =
+    { iolist = fun s nil cons -> cons s s nil }
+
+  let set s =
+    { iolist = fun _ nil cons -> cons () s nil }
+
+  let modify f =
+    { iolist = fun s nil cons -> cons () (f s) nil }
+
+  (** List observation *)
+
+  let once m =
+    { iolist = fun s nil cons -> m.iolist s nil (fun x s _ -> cons x s nil) }
+
+  let break f m =
+    { iolist = fun s nil cons ->
+      m.iolist s nil (fun x s next -> cons x s (fun e -> match f e with None -> next e | Some e -> nil e))
+    }
+
+  (** For [reflect] and [split] see the "Backtracking, Interleaving,
+      and Terminating Monad Transformers" paper.  *)
+  type ('a, 'e) reified = ('a, ('a, 'e) reified, 'e) list_view NonLogical.t
+
+  let rec reflect (m : ('a * 'o, 'e) reified) =
+    { iolist = fun s0 nil cons ->
+      let next = function
+      | Nil e -> nil e
+      | Cons ((x, s), l) -> cons x s (fun e -> (reflect (l e)).iolist s0 nil cons)
+      in
+      NonLogical.(m >>= next)
+    }
+
+  let split m : ((_, _, _) list_view, _, _, _) t =
+    let rnil e = NonLogical.return (Nil e) in
+    let rcons p s l = NonLogical.return (Cons ((p, s), l)) in
+    { iolist = fun s nil cons ->
+      let open NonLogical in
+      m.iolist s rnil rcons >>= begin function
+      | Nil e -> cons (Nil e) s nil
+      | Cons ((x, s), l) ->
+        let l e = reflect (l e) in
+        cons (Cons (x, l)) s nil
+      end }
+
+  let run m s =
+    let rnil e = NonLogical.return (Nil e) in
+    let rcons x s l =
+      let p = (x, s) in
+      NonLogical.return (Cons (p, l))
+    in
+    m.iolist s rnil rcons
+
+  let repr x = x
+end
+
+module type Param = sig
+
+  (** Read only *)
+  type e
+
+  (** Write only *)
+  type w
+
+  (** [w] must be a monoid *)
+  val wunit : w
+  val wprod : w -> w -> w
+
+  (** Read-write *)
+  type s
+
+  (** Update-only. Essentially a writer on [u->u]. *)
+  type u
+
+  (** [u] must be pointed. *)
+  val uunit : u
+
+end
+
+
+module Logical (P:Param) =
+struct
+
+  module Unsafe =
+  struct
+    (** All three of environment, writer and state are coded as a single
+        state-passing-style monad.*)
+    type state = {
+      rstate : P.e;
+      ustate : P.u;
+      wstate : P.w;
+      sstate : P.s;
+    }
+
+    let make m = m
+    let repr m = m
+  end
+
+  open Unsafe
+
+  type state = Unsafe.state
+
+  type iexn = Exninfo.iexn
+
+  type 'a reified = ('a, iexn) BackState.reified
+
+  (** Inherited from Backstate *)
+
+  open BackState
+
+  include Monad.Make(struct
+    type 'a t = ('a, state, state, iexn) BackState.t
+    let return = BackState.return
+    let (>>=) = BackState.(>>=)
+    let (>>) = BackState.(>>)
+    let map = BackState.map
+  end)
+
+  let zero = BackState.zero
+  let plus = BackState.plus
+  let ignore = BackState.ignore
+  let lift = BackState.lift
+  let once = BackState.once
+  let break = BackState.break
+  let reflect = BackState.reflect
+  let split = BackState.split
+  let repr = BackState.repr
+
+  (** State related. We specialize them here to ensure soundness (for reader and
+      writer) and efficiency. *)
 
   let get =
     { iolist = fun s nil cons -> cons s.sstate s nil }
@@ -269,40 +359,7 @@ struct
   let update (f : P.u -> P.u) =
     { iolist = fun s nil cons -> cons () { s with ustate = f s.ustate } nil }
 
-  (** List observation *)
-
-  let once m =
-    { iolist = fun s nil cons -> m.iolist s nil (fun x s _ -> cons x s nil) }
-
-  let break f m =
-    { iolist = fun s nil cons ->
-      m.iolist s nil (fun x s next -> cons x s (fun e -> match f e with None -> next e | Some e -> nil e))
-    }
-
-  (** For [reflect] and [split] see the "Backtracking, Interleaving,
-      and Terminating Monad Transformers" paper.  *)
-  type 'a reified = ('a, rich_exn -> 'a reified) list_view NonLogical.t
-
-  let rec reflect (m : ('a * state) reified) : 'a iolist =
-    { iolist = fun s0 nil cons ->
-      let next = function
-      | Nil e -> nil e
-      | Cons ((x, s), l) -> cons x s (fun e -> (reflect (l e)).iolist s0 nil cons)
-      in
-      NonLogical.(m >>= next)
-    }
-
-  let split m : ('a, rich_exn -> 'a t) list_view t =
-    let rnil e = NonLogical.return (Nil e) in
-    let rcons p s l = NonLogical.return (Cons ((p, s), l)) in
-    { iolist = fun s nil cons ->
-      let open NonLogical in
-      m.iolist s rnil rcons >>= begin function
-      | Nil e -> cons (Nil e) s nil
-      | Cons ((x, s), l) ->
-        let l e = reflect (l e) in
-        cons (Cons (x, l)) s nil
-      end }
+  (** Monadic run is specialized to handle reader / writer *)
 
   let run m r s =
     let s = { wstate = P.wunit; ustate = P.uunit; rstate = r; sstate = s } in
@@ -312,7 +369,5 @@ struct
       NonLogical.return (Cons (p, l))
     in
     m.iolist s rnil rcons
-
-  let repr x = x
 
  end

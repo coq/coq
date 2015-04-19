@@ -405,6 +405,15 @@ module Unsafe : sig
   val mark_as_goal : proofview -> Evar.t -> proofview
 end
 
+(** This module gives access to the innards of the monad. Its use is
+    restricted to very specific cases. *)
+module UnsafeRepr :
+sig
+  type state = Proofview_monad.Logical.Unsafe.state
+  val repr : 'a tactic -> ('a, state, state, iexn) Logic_monad.BackState.t
+  val make : ('a, state, state, iexn) Logic_monad.BackState.t -> 'a tactic
+end
+
 (** {7 Notations} *)
 
 module Notations : sig

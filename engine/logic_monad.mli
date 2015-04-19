@@ -97,9 +97,41 @@ end
 
 (** A view type for the logical monad, which is a form of list, hence
     we can decompose it with as a list. *)
-type ('a, 'b) list_view =
-| Nil of Exninfo.iexn
-| Cons of 'a * 'b
+type ('a, 'b, 'e) list_view =
+| Nil of 'e
+| Cons of 'a * ('e -> 'b)
+
+module BackState : sig
+
+  type (+'a, -'i, +'o, 'e) t
+  val return : 'a -> ('a, 's, 's, 'e) t
+  val (>>=) : ('a, 'i, 'm, 'e) t -> ('a -> ('b, 'm, 'o, 'e) t) -> ('b, 'i, 'o, 'e) t
+  val (>>) : (unit, 'i, 'm, 'e) t -> ('b, 'm, 'o, 'e) t -> ('b, 'i, 'o, 'e) t
+  val map : ('a -> 'b) -> ('a, 'i, 'o, 'e) t -> ('b, 'i, 'o, 'e) t
+
+  val ignore : ('a, 'i, 'o, 'e) t -> (unit, 'i, 'o, 'e) t
+
+  val set : 'o -> (unit, 'i, 'o, 'e) t
+  val get : ('s, 's, 's, 'e) t
+  val modify : ('i -> 'o) -> (unit, 'i, 'o, 'e) t
+
+  val zero : 'e -> ('a, 'i, 'o, 'e) t
+  val plus : ('a, 'i, 'o, 'e) t -> ('e -> ('a, 'i, 'o, 'e) t) -> ('a, 'i, 'o, 'e) t
+
+  val split : ('a, 's, 's, 'e) t ->
+    (('a, ('a, 'i, 's, 'e) t, 'e) list_view, 's, 's, 'e) t
+
+  val once : ('a, 'i, 'o, 'e) t -> ('a, 'i, 'o, 'e) t
+  val break : ('e -> 'e option) -> ('a, 'i, 'o, 'e) t -> ('a, 'i, 'o, 'e) t
+  val lift : 'a NonLogical.t -> ('a, 's, 's, 'e) t
+
+  type ('a, 'e) reified
+
+  val repr : ('a, 'e) reified -> ('a, ('a, 'e) reified, 'e) list_view NonLogical.t
+
+  val run : ('a, 'i, 'o, 'e) t -> 'i -> ('a * 'o, 'e) reified
+
+end
 
 (** The monad is parametrised in the types of state, environment and
     writer. *)
@@ -142,16 +174,30 @@ module Logical (P:Param) : sig
 
   val zero : Exninfo.iexn -> 'a t
   val plus : 'a t -> (Exninfo.iexn -> 'a t) -> 'a t
-  val split : 'a t -> (('a,(Exninfo.iexn->'a t)) list_view) t
+  val split : 'a t -> ('a, 'a t, Exninfo.iexn) list_view t
   val once : 'a t -> 'a t
   val break : (Exninfo.iexn -> Exninfo.iexn option) -> 'a t -> 'a t
 
   val lift : 'a NonLogical.t -> 'a t
 
-  type 'a reified
+  type 'a reified = ('a, Exninfo.iexn) BackState.reified
 
-  val repr : 'a reified -> ('a, Exninfo.iexn -> 'a reified) list_view NonLogical.t
+  val repr : 'a reified -> ('a, 'a reified, Exninfo.iexn) list_view NonLogical.t
 
   val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w * P.u) reified
+
+  module Unsafe :
+  sig
+    type state = {
+      rstate : P.e;
+      ustate : P.u;
+      wstate : P.w;
+      sstate : P.s;
+    }
+
+    val make : ('a, state, state, Exninfo.iexn) BackState.t -> 'a t
+    val repr : 'a t -> ('a, state, state, Exninfo.iexn) BackState.t
+
+  end
 
 end
