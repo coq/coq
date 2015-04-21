@@ -1913,7 +1913,7 @@ let interp_rawcontext_evars env evdref bl =
 	  | Some b ->
 	      let c = understand_judgment_tcc env evdref b in
 	      let d = (na, Some c.uj_val, c.uj_type) in
-		(push_rel d env, d::params, succ n, impls))
+		(push_rel d env, d::params, n, impls))
       (env,[],1,[]) (List.rev bl)
   in (env, par), impls
 
