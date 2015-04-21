@@ -1697,7 +1697,7 @@ let interp_rawcontext_gen understand_type understand_judgment env bl =
 	  | Some b ->
 	      let c = understand_judgment env b in
 	      let d = (na, Some c.uj_val, Termops.refresh_universes c.uj_type) in
-		(push_rel d env, d::params, succ n, impls))
+		(push_rel d env, d::params, n, impls))
       (env,[],1,[]) (List.rev bl)
   in (env, par), impls
 
