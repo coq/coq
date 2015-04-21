@@ -80,6 +80,7 @@ val iprint : Exninfo.iexn -> Pp.std_ppcmds
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)
 val print_no_report : exn -> Pp.std_ppcmds
+val iprint_no_report : Exninfo.iexn -> Pp.std_ppcmds
 
 (** Critical exceptions should not be caught and ignored by mistake
     by inner functions during a [vernacinterp]. They should be handled

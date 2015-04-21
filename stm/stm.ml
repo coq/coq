@@ -2018,7 +2018,7 @@ let handle_failure (e, info) vcs tty =
       end;
       VCS.print ();
       anomaly(str"error with no safe_id attached:" ++ spc() ++
-        Errors.print_no_report e)
+        Errors.iprint_no_report (e, info))
   | Some (safe_id, id) ->
       prerr_endline ("Failed at state " ^ Stateid.to_string id);
       VCS.restore vcs;

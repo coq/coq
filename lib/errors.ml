@@ -99,6 +99,8 @@ let iprint (e, info) = print ~info e
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)
 let print_no_report e = print_gen (print_anomaly false) !handle_stack e
+let iprint_no_report (e, info) =
+  print_gen (print_anomaly false) !handle_stack e ++ print_backtrace info
 
 (** Predefined handlers **)
 
