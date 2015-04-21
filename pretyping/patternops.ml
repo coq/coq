@@ -395,7 +395,9 @@ let rec pat_of_raw metas vars = function
 	| Some p, Some (_,_,nal) ->
           let nvars = na :: List.rev nal @ vars in
           rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas nvars p))
-	| _ -> PMeta None
+        | (None | Some (GHole _)), None -> PMeta None
+	| Some p, None ->
+            user_err_loc (loc,"",strbrk "Clause \"in\" expected in patterns over \"match\" expressions with an explicit \"return\" clause.")
       in
       let info =
 	{ cip_style = sty;
