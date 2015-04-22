@@ -299,7 +299,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
       printf "find %s/%s -maxdepth 0 -and -empty -exec rmdir -p \\{\\} \\;\\n' >> \"$@\"\n" dir kind
     in
     printf "uninstall_me.sh: %s\n" !makefile_name;
-    print "\techo '#!/bin/sh' > $@ \n";
+    print "\techo '#!/bin/sh' > $@\n";
     if (not_empty cmxsfiles) then uninstall_by_root where_what_cmxs;
     uninstall_by_root where_what_oth;
     if not_empty vfiles then uninstall_one_kind "html" doc_dir;
@@ -496,7 +496,7 @@ endif\n";
           print "\n"
 
 let parameters () =
-  print ".DEFAULT_GOAL := all\n\n# \n";
+  print ".DEFAULT_GOAL := all\n\n";
   print "# This Makefile may take arguments passed as environment variables:\n";
   print "# COQBIN to specify the directory where Coq binaries resides;\n";
   print "# TIMECMD set a command to log .v compilation time;\n";
