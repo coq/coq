@@ -26,15 +26,30 @@ module Glue : sig
 
 end = struct
 
-  type 'a t = 'a list
+  type 'a t = GEmpty | GLeaf of 'a | GNode of 'a t * 'a t
 
-  let atom x = [x]
-  let glue x y = y @ x
-  let empty = []
-  let is_empty x = x = []
+  let atom x = GLeaf x
 
-  let iter f g = List.iter f (List.rev g)
-  let map = List.map
+  let glue x y =
+    match x, y with
+    | GEmpty, _ -> y
+    | _, GEmpty -> x
+    | _, _ -> GNode (x,y)
+
+  let empty = GEmpty
+
+  let is_empty x = x = GEmpty
+
+  let rec iter f = function
+    | GEmpty -> ()
+    | GLeaf x -> f x
+    | GNode (x,y) -> iter f x; iter f y
+
+  let rec map f = function
+    | GEmpty -> GEmpty
+    | GLeaf x -> GLeaf (f x)
+    | GNode (x,y) -> GNode (map f x, map f y)
+
 end
 
 module Tag :
