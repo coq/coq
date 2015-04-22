@@ -8,13 +8,9 @@
 
 module Glue : sig
 
-  (* A left associative glue implements efficient glue operator
-     when used as left associative.  If glue is denoted ++ then
+  (** The [Glue] module implements a container data structure with
+      efficient concatenation. *)
 
-        a ++ b ++ c ++ d = ((a ++ b) ++ c) ++ d = [d] @ ([c] @ ([b] @  [a]))
-
-     I.e. if the short list is the second argument
-  *)
   type 'a t
 
   val atom : 'a -> 'a t
