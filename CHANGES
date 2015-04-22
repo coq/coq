@@ -3,8 +3,8 @@ Changes from V8.5beta1 to V8.5beta2
 
 Logic
 
-- The VM now supports inductive types with more than 200 non-constant
-  constructors.
+- The VM now supports inductive types with up to 8388851 non-constant
+  constructors and up to 8388607 constant ones.
 
 Tactics
 
