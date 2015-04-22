@@ -206,6 +206,13 @@ val flush_and_check_evars :  evar_map -> constr -> constr
     value of [e] in [sigma] is (recursively) used. *)
 val kind_of_term_upto : evar_map -> constr -> (constr,types) kind_of_term
 
+(** [eq_constr_univs_test sigma1 sigma2 t u] tests equality of [t] and
+    [u] up to existential variable instantiation and equalisable
+    universes. The term [t] is interpreted in [sigma1] while [u] is
+    interpreted in [sigma2]. The universe constraints in [sigma2] are
+    assumed to be an extention of those in [sigma1]. *)
+val eq_constr_univs_test : evar_map -> evar_map -> constr -> constr -> bool
+
 (** {6 debug pretty-printer:} *)
 
 val pr_tycon : env -> type_constraint -> Pp.std_ppcmds

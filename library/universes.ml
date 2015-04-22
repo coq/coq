@@ -139,6 +139,32 @@ let eq_constr_univs_infer univs m n =
     let res = Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n in
       res, !cstrs
 
+(** Variant of [eq_constr_univs_infer] taking kind-of-term functions,
+    to expose subterms of [m] and [n], arguments. *)
+let eq_constr_univs_infer_with kind1 kind2 univs m n =
+  (* spiwack: duplicates the code of [eq_constr_univs_infer] because I
+     haven't find a way to factor the code without destroying
+     pointer-equality optimisations in [eq_constr_univs_infer].
+     Pointer equality is not sufficient to ensure equality up to
+     [kind1,kind2], because [kind1] and [kind2] may be different,
+     typically evaluating [m] and [n] in different evar maps. *)
+  let cstrs = ref Constraints.empty in
+  let eq_universes strict = Univ.Instance.check_eq univs in
+  let eq_sorts s1 s2 = 
+    if Sorts.equal s1 s2 then true
+    else
+      let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
+      if Univ.check_eq univs u1 u2 then true
+      else
+	(cstrs := Constraints.add (u1, UEq, u2) !cstrs;
+	 true)
+  in
+  let rec eq_constr' m n = 
+    Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' m n
+  in
+  let res = Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' m n in
+  res, !cstrs
+
 let leq_constr_univs_infer univs m n =
   if m == n then true, Constraints.empty
   else 
@@ -148,18 +174,18 @@ let leq_constr_univs_infer univs m n =
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	  if Univ.check_eq univs u1 u2 then true
-	  else (cstrs := Constraints.add (u1, UEq, u2) !cstrs;
-		true)
+	if Univ.check_eq univs u1 u2 then true
+	else (cstrs := Constraints.add (u1, UEq, u2) !cstrs;
+	      true)
     in
     let leq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else 
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	  if Univ.check_leq univs u1 u2 then true
-	  else
-	    (cstrs := Constraints.add (u1, ULe, u2) !cstrs; 
-	     true)
+	if Univ.check_leq univs u1 u2 then true
+	else
+	  (cstrs := Constraints.add (u1, ULe, u2) !cstrs; 
+	   true)
     in
     let rec eq_constr' m n = 
       m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
@@ -169,7 +195,7 @@ let leq_constr_univs_infer univs m n =
 	eq_constr' leq_constr' m n
     and leq_constr' m n = m == n || compare_leq m n in
     let res = compare_leq m n in
-      res, !cstrs
+    res, !cstrs
 
 let eq_constr_universes m n =
   if m == n then true, Constraints.empty
@@ -188,7 +214,7 @@ let eq_constr_universes m n =
       m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
     let res = Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n in
-      res, !cstrs
+    res, !cstrs
 
 let leq_constr_universes m n =
   if m == n then true, Constraints.empty
@@ -216,22 +242,22 @@ let leq_constr_universes m n =
       Constr.compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' m n
     and leq_constr' m n = m == n || compare_leq m n in
     let res = compare_leq m n in
-      res, !cstrs
+    res, !cstrs
 
 let compare_head_gen_proj env equ eqs eqc' m n =
   match kind_of_term m, kind_of_term n with
   | Proj (p, c), App (f, args)
   | App (f, args), Proj (p, c) -> 
-    (match kind_of_term f with
-    | Const (p', u) when eq_constant (Projection.constant p) p' -> 
-      let pb = Environ.lookup_projection p env in
-      let npars = pb.Declarations.proj_npars in
-	if Array.length args == npars + 1 then
-	  eqc' c args.(npars)
-	else false
-    | _ -> false)
+      (match kind_of_term f with
+      | Const (p', u) when eq_constant (Projection.constant p) p' -> 
+          let pb = Environ.lookup_projection p env in
+          let npars = pb.Declarations.proj_npars in
+	  if Array.length args == npars + 1 then
+	    eqc' c args.(npars)
+	  else false
+      | _ -> false)
   | _ -> Constr.compare_head_gen equ eqs eqc' m n
-    
+      
 let eq_constr_universes_proj env m n =
   if m == n then true, Constraints.empty
   else 
@@ -249,7 +275,7 @@ let eq_constr_universes_proj env m n =
       m == n ||	compare_head_gen_proj env eq_universes eq_sorts eq_constr' m n
     in
     let res = eq_constr' m n in
-      res, !cstrs
+    res, !cstrs
 
 (* Generator of levels *)
 let new_univ_level, set_remote_new_univ_level =

@@ -772,7 +772,7 @@ END
 let eq_constr x y = 
   Proofview.Goal.enter (fun gl ->
     let evd = Proofview.Goal.sigma gl in
-      if Evd.eq_constr_univs_test evd x y then Proofview.tclUNIT () 
+      if Evarutil.eq_constr_univs_test evd evd x y then Proofview.tclUNIT () 
       else Tacticals.New.tclFAIL 0 (str "Not equal"))
 
 TACTIC EXTEND constr_eq

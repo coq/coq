@@ -203,14 +203,6 @@ val kind : constr -> (constr, types) kind_of_term
    and application grouping *)
 val equal : constr -> constr -> bool
 
-(** [equal_with_evars k1 k2 a b] is true when [a] equals [b] modulo
-    alpha, casts, application grouping, and using [k1] to expose the
-    head of [a] and [k2] to expose the head of [b]. *)
-val equal_with :
-  (constr -> (constr,types) kind_of_term) ->
-  (constr -> (constr,types) kind_of_term) ->
-  constr -> constr -> bool
-
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
 val eq_constr_univs : constr Univ.check_function
@@ -289,6 +281,18 @@ val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
     into account *)
 
 val compare_head_gen : (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
+  (Sorts.t -> Sorts.t -> bool) ->
+  (constr -> constr -> bool) ->
+  constr -> constr -> bool
+
+(** [compare_head_gen_with k1 k2 u s f c1 c2] compares [c1] and [c2]
+    like [compare_head_gen u s f c1 c2], except that [k1] (resp. [k2])
+    is used,rather than {!kind}, to expose the immediate subterms of
+    [c1] (resp. [c2]). *)
+val compare_head_gen_with :
+  (constr -> (constr,types) kind_of_term) ->
+  (constr -> (constr,types) kind_of_term) ->
+  (bool -> Univ.Instance.t -> Univ.Instance.t -> bool) ->
   (Sorts.t -> Sorts.t -> bool) ->
   (constr -> constr -> bool) ->
   constr -> constr -> bool
