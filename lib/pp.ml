@@ -18,7 +18,6 @@ module Glue : sig
   val empty : 'a t
   val is_empty : 'a t -> bool
   val iter : ('a -> unit) -> 'a t -> unit
-  val map : ('a -> 'b) -> 'a t -> 'b t
 
 end = struct
 
@@ -40,11 +39,6 @@ end = struct
     | GEmpty -> ()
     | GLeaf x -> f x
     | GNode (x,y) -> iter f x; iter f y
-
-  let rec map f = function
-    | GEmpty -> GEmpty
-    | GLeaf x -> GLeaf (f x)
-    | GNode (x,y) -> GNode (map f x, map f y)
 
 end
 
@@ -155,21 +149,6 @@ let (++) = Glue.glue
 let app = Glue.glue
 
 let is_empty g = Glue.is_empty g
-
-let rewrite f p =
-  let strtoken = function
-    | Str_len (s, n) ->
-      let s' = f s in
-      Str_len (s', String.length s')
-    | Str_def s ->
-      Str_def (f s)
-  in
-  let rec ppcmd_token = function
-    | Ppcmd_print x -> Ppcmd_print (strtoken x)
-    | Ppcmd_box (bt, g) -> Ppcmd_box (bt, Glue.map ppcmd_token g)
-    | p -> p
-  in
-  Glue.map ppcmd_token p
 
 (* Compute length of an UTF-8 encoded string
    Rem 1 : utf8_length <= String.length (equal if pure ascii)

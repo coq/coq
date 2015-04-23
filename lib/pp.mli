@@ -46,9 +46,6 @@ val eval_ppcmds : std_ppcmds -> std_ppcmds
 val is_empty : std_ppcmds -> bool
 (** Test emptyness. *)
 
-val rewrite : (string -> string) -> std_ppcmds -> std_ppcmds
-(** [rewrite f pps] applies [f] to all strings that appear in [pps]. *)
-
 (** {6 Derived commands} *)
 
 val spc : unit -> std_ppcmds
