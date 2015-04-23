@@ -67,13 +67,13 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
       Check.add_load_path (dir,coq_dirpath)
     end
   else
-    msg_warning (str ("Cannot open " ^ dir))
+    msg_warning (str "Cannot open " ++ str dir)
 
 let convert_string d =
   try Id.of_string d
   with Errors.UserError _ ->
     if_verbose msg_warning
-      (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
+      (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
     raise Exit
 
 let add_rec_path ~unix_path ~coq_root =
@@ -90,7 +90,7 @@ let add_rec_path ~unix_path ~coq_root =
     List.iter Check.add_load_path dirs;
     Check.add_load_path (unix_path, coq_root)
   else
-    msg_warning (str ("Cannot open " ^ unix_path))
+    msg_warning (str "Cannot open " ++ str unix_path)
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
@@ -221,7 +221,7 @@ let print_loc loc =
   else
     let loc = Loc.unloc loc in
     (int (fst loc) ++ str"-" ++ int (snd loc))
-let guill s = "\""^s^"\""
+let guill s = str "\"" ++ str s ++ str "\""
 
 let where s =
   if !Flags.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
@@ -232,7 +232,7 @@ let rec explain_exn = function
   | Stream.Error txt ->
       hov 0 (str "Syntax error: " ++ str txt)
   | Sys_error msg ->
-      hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ str (guill msg) ++ report() )
+      hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ guill msg ++ report() )
   | UserError(s,pps) ->
       hov 1 (str "User error: " ++ where s ++ pps)
   | Out_of_memory ->
@@ -241,14 +241,14 @@ let rec explain_exn = function
       hov 0 (str "Stack overflow")
   | Match_failure(filename,pos1,pos2) ->
       hov 1 (anomaly_string () ++ str "Match failure in file " ++
-	     str (guill filename) ++ str " at line " ++ int pos1 ++
+	     guill filename ++ str " at line " ++ int pos1 ++
 	     str " character " ++ int pos2 ++ report ())
   | Not_found ->
       hov 0 (anomaly_string () ++ str "uncaught exception Not_found" ++ report ())
   | Failure s ->
       hov 0 (str "Failure: " ++ str s ++ report ())
   | Invalid_argument s ->
-      hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ str (guill s) ++ report ())
+      hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ guill s ++ report ())
   | Sys.Break ->
       hov 0 (fnl () ++ str "User interrupt.")
   | Univ.UniverseInconsistency (o,u,v) ->
@@ -294,7 +294,7 @@ let rec explain_exn = function
           Format.printf "@\n====== universes ====@\n";
           Pp.pp (Univ.pr_universes
             (ctx.Environ.env_stratification.Environ.env_universes));
-          str("\nCantApplyBadType at argument " ^ string_of_int n)
+          str "\nCantApplyBadType at argument " ++ int n
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
       | IllFormedRecBody _ -> str"IllFormedRecBody"
       | IllTypedRecBody _ -> str"IllTypedRecBody"
@@ -309,7 +309,7 @@ let rec explain_exn = function
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
 	       (if s = "" then mt ()
 		else
-		  (str ("(file \"" ^ s ^ "\", line ") ++ int b ++
+		  (str "(file \"" ++ str s ++ str "\", line " ++ int b ++
 		   str ", characters " ++ int e ++ str "-" ++
 		   int (e+6) ++ str ")")) ++
 	       report ())
@@ -323,7 +323,7 @@ let parse_args argv =
 
     | "-coqlib" :: s :: rem ->
       if not (exists_dir s) then 
-	fatal_error (str ("Directory '"^s^"' does not exist")) false;
+	fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
       Flags.coqlib := s;
       Flags.coqlib_spec := true;
       parse rem

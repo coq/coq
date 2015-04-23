@@ -208,7 +208,7 @@ let display_cmd_header loc com =
   let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
   in
   Pp.pp (str "Chars " ++ int start ++ str " - " ++ int stop ++
-	 str (" ["^cmd^"] "));
+	 str " [" ++ str cmd ++ str "] ");
   Pp.flush_all ()
 
 let rec vernac_com verbosely checknav (loc,com) =

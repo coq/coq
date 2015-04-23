@@ -109,7 +109,9 @@ let const_of_id id =
     qualid_of_reference (Libnames.Ident (Loc.ghost,id))
   in
   try Constrintern.locate_reference princ_ref
-  with Not_found -> Errors.error ("cannot find "^ Id.to_string id)
+  with Not_found ->
+    Errors.errorlabstrm "IndFun.const_of_id"
+      (str "cannot find " ++ Nameops.pr_id id)
 
 let def_of_const t =
    match (Term.kind_of_term t) with

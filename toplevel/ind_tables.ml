@@ -23,6 +23,7 @@ open Util
 open Declare
 open Entries
 open Decl_kinds
+open Pp
 
 (**********************************************************************)
 (* Registering schemes in the environment *)
@@ -87,7 +88,8 @@ let declare_scheme_object s aux f =
   try
     let _ = Hashtbl.find scheme_object_table key in
 (*    let aux_msg = if aux="" then "" else " (with key "^aux^")" in*)
-    error ("Scheme object "^key^" already declared.")
+    errorlabstrm "IndTables.declare_scheme_object"
+      (str "Scheme object " ++ str key ++ str " already declared.")
   with Not_found ->
     Hashtbl.add scheme_object_table key (s,f);
     key

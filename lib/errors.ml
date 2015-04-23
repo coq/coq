@@ -69,12 +69,12 @@ let rec print_gen bottom stk e =
 let where = function
 | None -> mt ()
 | Some s ->
-  if !Flags.debug then str ("in "^s^":") ++ spc () else mt ()
+  if !Flags.debug then str "in " ++ str s ++ str ":" ++ spc () else mt ()
 
 let raw_anomaly e = match e with
   | Anomaly (s, pps) -> where s ++ pps ++ str "."
-  | Assert_failure _ | Match_failure _ -> str (Printexc.to_string e ^ ".")
-  | _ -> str ("Uncaught exception " ^ Printexc.to_string e ^ ".")
+  | Assert_failure _ | Match_failure _ -> str (Printexc.to_string e) ++ str "."
+  | _ -> str "Uncaught exception " ++ str (Printexc.to_string e) ++ str "."
 
 let print_backtrace e = match Backtrace.get_backtrace e with
 | None -> mt ()

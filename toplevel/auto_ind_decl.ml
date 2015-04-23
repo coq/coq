@@ -19,6 +19,7 @@ open Termops
 open Declarations
 open Names
 open Globnames
+open Nameops
 open Inductiveops
 open Tactics
 open Ind_tables
@@ -338,7 +339,8 @@ let do_replace_lb lb_scheme_key aavoid narg p q =
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
-            else error ("Var "^(Id.to_string s)^" seems unknown.")
+            else errorlabstrm "AutoIndDecl.do_replace_lb"
+                   (str "Var " ++ pr_id s ++ str " seems unknown.")
       )
     in mkVar (find 1)
   with e when Errors.noncritical e ->
@@ -395,7 +397,8 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
-            else error ("Var "^(Id.to_string s)^" seems unknown.")
+            else errorlabstrm "AutoIndDecl.do_replace_bl"
+                   (str "Var " ++ pr_id s ++ str " seems unknown.")
       )
     in mkVar (find 1)
   with e when Errors.noncritical e ->
@@ -502,8 +505,8 @@ let eqI ind l =
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
   and e, eff = 
     try let c, eff = find_scheme beq_scheme_kind ind in mkConst c, eff 
-    with Not_found -> error
-        ("The boolean equality on "^(string_of_mind (fst ind))^" is needed.");
+    with Not_found -> errorlabstrm "AutoIndDecl.eqI"
+      (str "The boolean equality on " ++ pr_mind (fst ind) ++ str " is needed.");
   in (if Array.equal eq_constr eA [||] then e else mkApp(e,eA)), eff
 
 (**********************************************************************)

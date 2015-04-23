@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Errors
+open Pp
 
 (* Dynamics, programmed with DANGER !!! *)
 
@@ -23,7 +24,7 @@ let create (s : string) =
   let () =
     if Int.Map.mem hash !dyntab then
       let old = Int.Map.find hash !dyntab in
-      let msg = Pp.str ("Dynamic tag collision: " ^ s ^ " vs. " ^ old) in
+      let msg = str "Dynamic tag collision: " ++ str s ++ str " vs. " ++ str old in
       anomaly ~label:"Dyn.create" msg
   in
   let () = dyntab := Int.Map.add hash s !dyntab in
@@ -31,8 +32,7 @@ let create (s : string) =
   let outfun (nh, rv) =
     if Int.equal hash nh then Obj.magic rv
     else
-      let msg = (Pp.str ("dyn_out: expected " ^ s)) in
-      anomaly msg
+      anomaly (str "dyn_out: expected " ++ str s)
   in
   (infun, outfun)
 
@@ -43,8 +43,7 @@ let has_tag (s, _) tag =
 let tag (s,_) =
   try Int.Map.find s !dyntab
   with Not_found ->
-    let msg = Pp.str ("Unknown dynamic tag " ^ (string_of_int s)) in
-    anomaly msg
+    anomaly (str "Unknown dynamic tag " ++ int s)
 
 let pointer_equal (t1,o1) (t2,o2) = t1 = t2 && o1 == o2
 

@@ -872,11 +872,11 @@ let explain_not_match_error = function
       quote (Univ.pr_constraints (Evd.pr_evd_level Evd.empty) cst)
 
 let explain_signature_mismatch l spec why =
-  str "Signature components for label " ++ str (Label.to_string l) ++
+  str "Signature components for label " ++ pr_label l ++
   str " do not match:" ++ spc () ++ explain_not_match_error why ++ str "."
 
 let explain_label_already_declared l =
-  str ("The label "^Label.to_string l^" is already declared.")
+  str "The label " ++ pr_label l ++ str " is already declared."
 
 let explain_application_to_not_path _ =
   strbrk "A module cannot be applied to another module application or " ++
@@ -1170,18 +1170,18 @@ let explain_bad_constructor env cstr ind =
   str "is expected."
 
 let decline_string n s =
-  if Int.equal n 0 then "no "^s^"s"
-  else if Int.equal n 1 then "1 "^s
-  else (string_of_int n^" "^s^"s")
+  if Int.equal n 0 then str "no " ++ str s ++ str "s"
+  else if Int.equal n 1 then str "1 " ++ str s
+  else (int n ++ str " " ++ str s ++ str "s")
 
 let explain_wrong_numarg_constructor env cstr n =
   str "The constructor " ++ pr_constructor env cstr ++
   str " (in type " ++ pr_inductive env (inductive_of_constructor cstr) ++
-  str ") expects " ++ str (decline_string n "argument") ++ str "."
+  str ") expects " ++ decline_string n "argument" ++ str "."
 
 let explain_wrong_numarg_inductive env ind n =
   str "The inductive type " ++ pr_inductive env ind ++
-  str " expects " ++ str (decline_string n "argument") ++ str "."
+  str " expects " ++ decline_string n "argument" ++ str "."
 
 let explain_unused_clause env pats =
 (* Without localisation

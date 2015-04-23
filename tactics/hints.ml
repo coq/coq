@@ -598,7 +598,7 @@ let current_pure_db () =
   List.map snd (Hintdbmap.bindings (Hintdbmap.remove "v62" !searchtable))
 
 let error_no_such_hint_database x =
-  error ("No such Hint database: "^x^".")
+  errorlabstrm "Hints" (str "No such Hint database: " ++ str x ++ str ".")
 
 (**************************************************************************)
 (*                       Definition of the summary                        *)

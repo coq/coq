@@ -54,15 +54,15 @@ let gen_reference_in_modules locstr dirs s =
   match these with
     | [x] -> x
     | [] ->
-	anomaly ~label:locstr (str ("cannot find "^s^
-	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
+	anomaly ~label:locstr (str "cannot find " ++ str s ++
+	str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
 	prlist_with_sep pr_comma pr_dirpath dirs)
     | l ->
       anomaly ~label:locstr
-	(str ("ambiguous name "^s^" can represent ") ++
+	(str "ambiguous name " ++ str s ++ str " can represent " ++
 	   prlist_with_sep pr_comma
 	   (fun x -> Libnames.pr_path (Nametab.path_of_global x)) l ++
-	   str (" in module"^(if List.length dirs > 1 then "s " else " ")) ++
+	   str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
 	   prlist_with_sep pr_comma pr_dirpath dirs)
 
 let gen_constant_in_modules locstr dirs s =
@@ -86,7 +86,8 @@ let check_required_library d =
      (Loc.ghost,make_qualid (DirPath.make (List.rev prefix)) m)
 *)
 (* or failing ...*)
-      error ("Library "^(DirPath.to_string dir)^" has to be required first.")
+      errorlabstrm "Coqlib.check_required_library"
+        (str "Library " ++ str (DirPath.to_string dir) ++ str " has to be required first.")
 
 (************************************************************************)
 (* Specific Coq objects *)

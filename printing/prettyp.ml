@@ -180,16 +180,16 @@ let print_opacity ref =
     | None -> []
     | Some s ->
        [pr_global ref ++ str " is " ++
-        str (match s with
-          | FullyOpaque -> "opaque"
+        match s with
+          | FullyOpaque -> str "opaque"
           | TransparentMaybeOpacified Conv_oracle.Opaque ->
-              "basically transparent but considered opaque for reduction"
+              str "basically transparent but considered opaque for reduction"
           | TransparentMaybeOpacified lev when Conv_oracle.is_transparent lev ->
-              "transparent"
+              str "transparent"
           | TransparentMaybeOpacified (Conv_oracle.Level n) ->
-              "transparent (with expansion weight "^string_of_int n^")"
+              str "transparent (with expansion weight " ++ int n ++ str ")"
           | TransparentMaybeOpacified Conv_oracle.Expand ->
-              "transparent (with minimal expansion weight)")]
+              str "transparent (with minimal expansion weight)"]
 
 (*******************)
 (* *)
@@ -386,9 +386,9 @@ let print_located_qualid name flags ref =
     | [] ->
 	let (dir,id) = repr_qualid qid in
 	if DirPath.is_empty dir then
-	  str ("No " ^ name ^ " of basename") ++ spc () ++ pr_id id
+	  str "No " ++ str name ++ str " of basename" ++ spc () ++ pr_id id
 	else
-	  str ("No " ^ name ^ " of suffix") ++ spc () ++ pr_qualid qid
+	  str "No " ++ str name ++ str " of suffix" ++ spc () ++ pr_qualid qid
     | l ->
 	prlist_with_sep fnl
 	(fun (o,oqid) ->

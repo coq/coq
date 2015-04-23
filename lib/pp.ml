@@ -249,7 +249,7 @@ let escape_string s =
     else escape_at s (i-1) in
   escape_at s (String.length s - 1)
 
-let qstring s = str ("\""^escape_string s^"\"")
+let qstring s = str "\"" ++ str (escape_string s) ++ str "\""
 let qs = qstring
 let quote s = h 0 (str "\"" ++ s ++ str "\"")
 

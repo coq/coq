@@ -306,8 +306,8 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
 	      let _ = Global.lookup_constant c1' in
 		c1'
 	    with Not_found -> 
-	      let rwr_thm = Label.to_string l' in 
-	      error ("Cannot find rewrite principle "^rwr_thm^".")
+	      errorlabstrm "Equality.find_elim"
+                (str "Cannot find rewrite principle " ++ pr_label l' ++ str ".")
 	  end
 	| _ -> destConstRef pr1
         end

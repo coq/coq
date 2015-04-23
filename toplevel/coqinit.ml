@@ -134,6 +134,6 @@ let get_compat_version = function
   | "8.3" -> Flags.V8_3
   | "8.2" -> Flags.V8_2
   | ("8.1" | "8.0") as s ->
-    msg_warning (strbrk ("Compatibility with version "^s^" not supported."));
+    msg_warning (str "Compatibility with version " ++ str s ++ str " not supported.");
     Flags.V8_2
-  | s -> Errors.error ("Unknown compatibility version \""^s^"\".")
+  | s -> Errors.errorlabstrm "get_compat_version" (str "Unknown compatibility version \"" ++ str s ++ str "\".")

@@ -75,7 +75,8 @@ let classify_segment seg =
     | (_,ClosedModule _) :: stk -> clean acc stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
-      error ("there are still opened " ^ module_kind ty ^"s")
+      errorlabstrm "Lib.classify_segment"
+        (str "there are still opened " ++ str (module_kind ty) ++ str "s")
     | (_,FrozenState _) :: stk -> clean acc stk
   in
     clean ([],[],[]) (List.rev seg)
@@ -274,7 +275,7 @@ let start_modtype = start_mod true None
 let error_still_opened string oname =
   let id = basename (fst oname) in
   errorlabstrm ""
-    (str ("The "^string^" ") ++ pr_id id ++ str " is still opened.")
+    (str "The " ++ str string ++ str " " ++ pr_id id ++ str " is still opened.")
 
 let end_mod is_type =
   let oname,fs =
@@ -318,7 +319,8 @@ let end_compilation_checks dir =
     try match snd (find_entry_p is_opening_node) with
       | OpenedSection _ -> error "There are some open sections."
       | OpenedModule (ty,_,_,_) ->
-	error ("There are some open "^module_kind ty^"s.")
+	errorlabstrm "Lib.end_compilation_checks"
+          (str "There are some open " ++ str (module_kind ty) ++ str "s.")
       | _ -> assert false
     with Not_found -> ()
   in
@@ -369,7 +371,8 @@ let find_opening_node id =
     let oname,entry = find_entry_p is_opening_node in
     let id' = basename (fst oname) in
     if not (Names.Id.equal id id') then
-      error ("Last block to end has name "^(Names.Id.to_string id')^".");
+      errorlabstrm "Lib.find_opening_node"
+        (str "Last block to end has name " ++ pr_id id' ++ str ".");
     entry
   with Not_found -> error "There is nothing to end."
 

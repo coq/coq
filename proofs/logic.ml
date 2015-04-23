@@ -179,7 +179,8 @@ let check_decl_position env sign (x,_,_ as d) =
   let needed = global_vars_set_of_decl env d in
   let deps = dependency_closure env (named_context_of_val sign) needed in
   if Id.List.mem x deps then
-    error ("Cannot create self-referring hypothesis "^Id.to_string x);
+    errorlabstrm "Logic.check_decl_position"
+      (str "Cannot create self-referring hypothesis " ++ pr_id x);
   x::deps
 
 (* Auxiliary functions for primitive MOVE tactic
@@ -488,9 +489,11 @@ let convert_hyp check sign sigma (id,b,bt as d) =
       (fun _ (_,c,ct) _ ->
         let env = Global.env_of_context sign in
         if check && not (is_conv env sigma bt ct) then
-	  error ("Incorrect change of the type of "^(Id.to_string id)^".");
+	  errorlabstrm "Logic.convert_hyp"
+            (str "Incorrect change of the type of " ++ pr_id id ++ str ".");
         if check && not (Option.equal (is_conv env sigma) b c) then
-	  error ("Incorrect change of the body of "^(Id.to_string id)^".");
+	  errorlabstrm "Logic.convert_hyp"
+            (str "Incorrect change of the body of "++ pr_id id ++ str ".");
        if check then reorder := check_decl_position env sign d;
        d) in
   reorder_val_context env sign' !reorder
@@ -522,7 +525,8 @@ let prim_refiner r sigma goal =
 	      t,cl,sigma
 	  else
             (if !check && mem_named_context id (named_context_of_val sign) then
-	      error ("Variable " ^ Id.to_string id ^ " is already declared.");
+	      errorlabstrm "Logic.prim_refiner"
+                (str "Variable " ++ pr_id id ++ str " is already declared.");
 	     push_named_context_val (id,None,t) sign,t,cl,sigma) in
         let (sg2,ev2,sigma) = 
 	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
@@ -550,11 +554,10 @@ let prim_refiner r sigma goal =
 	  | (f,n,ar)::oth ->
 	      let ((sp',_),u')  = check_ind env n ar in
 	      if not (eq_mind sp sp') then
-		error ("Fixpoints should be on the same " ^
-		       "mutual inductive declaration.");
+		error "Fixpoints should be on the same mutual inductive declaration.";
 	      if !check && mem_named_context f (named_context_of_val sign) then
-		error
-		  ("Name "^Id.to_string f^" already used in the environment");
+		errorlabstrm "Logic.prim_refiner"
+		  (str "Name " ++ pr_id f ++ str " already used in the environment");
 	      mk_sign (push_named_context_val (f,None,ar) sign) oth
 	  | [] ->
 	      Evd.Monad.List.map (fun (_,_,c) sigma ->
@@ -584,8 +587,7 @@ let prim_refiner r sigma goal =
 		try
 		  let _ = find_coinductive env sigma b in ()
                 with Not_found ->
-		  error ("All methods must construct elements " ^
-			  "in coinductive types.")
+		  error "All methods must construct elements in coinductive types."
 	in
 	let firsts,lasts = List.chop j others in
 	let all = firsts@(f,cl)::lasts in

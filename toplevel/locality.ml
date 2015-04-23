@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
+
 (** * Managing locality *)
 
 let local_of_bool = function
@@ -16,7 +18,8 @@ let check_locality locality_flag =
   match locality_flag with
   | Some b ->
     let s = if b then "Local" else "Global" in
-    Errors.error ("This command does not support the \""^s^"\" prefix.")
+    Errors.errorlabstrm "Locality.check_locality"
+      (str "This command does not support the \"" ++ str s ++ str "\" prefix.")
   | None -> ()
 
 (** Extracting the locality flag *)

@@ -1253,7 +1253,7 @@ module Make
     and pr_extend s cl =
       let pr_arg a =
         try pr_gen a
-        with Failure _ -> str ("<error in "^fst s^">") in
+        with Failure _ -> str "<error in " ++ str (fst s) ++ str ">" in
       try
         let rl = Egramml.get_extend_vernac_rule s in
         let start,rl,cl =
@@ -1271,7 +1271,7 @@ module Make
             (start,cl) rl in
         hov 1 pp
       with Not_found ->
-        hov 1 (str ("TODO("^fst s) ++ prlist_with_sep sep pr_arg cl ++ str ")")
+        hov 1 (str "TODO(" ++ str (fst s) ++ prlist_with_sep sep pr_arg cl ++ str ")")
 
     in pr_vernac
 

@@ -1040,8 +1040,8 @@ let read_pattern lfun ist env sigma = function
 let cons_and_check_name id l =
   if Id.List.mem id l then
     user_err_loc (dloc,"read_match_goal_hyps",
-      strbrk ("Hypothesis pattern-matching variable "^(Id.to_string id)^
-      " used twice in the same pattern."))
+      str "Hypothesis pattern-matching variable " ++ pr_id id ++
+      str " used twice in the same pattern.")
   else id::l
 
 let rec read_match_goal_hyps lfun ist env sigma lidh = function

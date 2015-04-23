@@ -11,6 +11,7 @@ open Names
 open Pp
 open Tacexpr
 open Termops
+open Nameops
 
 let (prtac, tactic_printer) = Hook.make ()
 let (prmatchpatt, match_pattern_printer) = Hook.make ()
@@ -231,17 +232,16 @@ let db_pattern_rule debug num r =
 
 (* Prints the hypothesis pattern identifier if it exists *)
 let hyp_bound = function
-  | Anonymous -> " (unbound)"
-  | Name id -> " (bound to "^(Names.Id.to_string id)^")"
+  | Anonymous -> str " (unbound)"
+  | Name id -> str " (bound to " ++ pr_id id ++ str ")"
 
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env (id,_,c) ido =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str "Hypothesis " ++
-           str ((Names.Id.to_string id)^(hyp_bound ido)^
-                " has been matched: ") ++ print_constr_env env c)
+    msg_tac_debug (str "Hypothesis " ++ pr_id id ++ hyp_bound ido ++
+                str " has been matched: " ++ print_constr_env env c)
   else return ()
 
 (* Prints the matched conclusion *)
@@ -266,8 +266,8 @@ let db_hyp_pattern_failure debug env sigma (na,hyp) =
   let open Proofview.NonLogical in
   is_debug debug >>= fun db ->
   if db then
-    msg_tac_debug (str ("The pattern hypothesis"^(hyp_bound na)^
-                " cannot match: ") ++
+    msg_tac_debug (str "The pattern hypothesis" ++ hyp_bound na ++
+                str " cannot match: " ++
            Hook.get prmatchpatt env sigma hyp)
   else return ()
 

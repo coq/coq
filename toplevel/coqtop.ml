@@ -38,7 +38,7 @@ let get_version_date () =
 
 let print_header () =
   let (ver,rev) = get_version_date () in
-  ppnl (str ("Welcome to Coq "^ver^" ("^rev^")"));
+  ppnl (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   pp_flush ()
 
 let warning s = msg_warning (strbrk s)

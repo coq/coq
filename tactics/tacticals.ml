@@ -615,7 +615,8 @@ module New = struct
 	    | Var id -> string_of_id id
 	    | _ -> "\b"
 	  in
-	  error ("The elimination combinator " ^ name_elim ^ " is unknown.")
+	  errorlabstrm "Tacticals.general_elim_then_using"
+            (str "The elimination combinator " ++ str name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_fchain indmv elimclause indclause in
     let branchsigns = compute_construtor_signatures isrec ind in

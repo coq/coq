@@ -66,7 +66,7 @@ let find_base bas =
   try raw_find_base bas
   with Not_found ->
     errorlabstrm "AutoRewrite"
-      (str ("Rewriting base "^(bas)^" does not exist."))
+      (str "Rewriting base " ++ str bas ++ str " does not exist.")
 
 let find_rewrites bas =
   List.rev_map snd (HintDN.find_all (find_base bas))

@@ -305,7 +305,8 @@ let check_not_nested forbidden e =
       | Rel _ -> ()
       | Var x ->
         if Id.List.mem x forbidden
-        then error ("check_not_nested : failure "^Id.to_string x)
+        then errorlabstrm "Recdef.check_not_nested"
+               (str "check_not_nested: failure " ++ pr_id x)
       | Meta _ | Evar _ | Sort _ -> ()
       | Cast(e,_,t) -> check_not_nested e;check_not_nested t
       | Prod(_,t,b) -> check_not_nested t;check_not_nested b

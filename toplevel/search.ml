@@ -32,7 +32,7 @@ module SearchBlacklist =
       let key = ["Search";"Blacklist"]
       let title = "Current search blacklist : "
       let member_message s b =
-	str ("Search blacklist does "^(if b then "" else "not ")^"include "^s)
+	str "Search blacklist does " ++ (if b then mt () else str "not ") ++ str "include " ++ str s
       let synchronous = true
      end)
 
@@ -253,7 +253,8 @@ let interface_search flags =
     let regexp =
       try Str.regexp s
       with e when Errors.noncritical e ->
-        Errors.error ("Invalid regexp: " ^ s)
+        Errors.errorlabstrm "Search.interface_search"
+          (str "Invalid regexp: " ++ str s)
     in
     extract_flags ((regexp, b) :: name) tpe subtpe mods blacklist l
   | (Type_Pattern s, b) :: l ->
@@ -271,7 +272,8 @@ let interface_search flags =
     let id =
       try Nametab.full_name_module qid
       with Not_found ->
-        Errors.error ("Module " ^ path ^ " not found.")
+        Errors.errorlabstrm "Search.interface_search"
+          (str "Module " ++ str path ++ str " not found.")
     in
     extract_flags name tpe subtpe ((id, b) :: mods) blacklist l
   | (Include_Blacklist, b) :: l ->

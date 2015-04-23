@@ -167,18 +167,20 @@ let red_expr_tab = Summary.ref String.Map.empty ~name:"Declare Reduction"
 
 let declare_reduction s f =
   if String.Map.mem s !reduction_tab || String.Map.mem s !red_expr_tab
-  then error ("There is already a reduction expression of name "^s)
+  then errorlabstrm "Redexpr.declare_reduction"
+    (str "There is already a reduction expression of name " ++ str s)
   else reduction_tab := String.Map.add s f !reduction_tab
 
 let check_custom = function
   | ExtraRedExpr s ->
       if not (String.Map.mem s !reduction_tab || String.Map.mem s !red_expr_tab)
-      then error ("Reference to undefined reduction expression "^s)
+      then errorlabstrm "Redexpr.check_custom" (str "Reference to undefined reduction expression " ++ str s)
   |_ -> ()
 
 let decl_red_expr s e =
   if String.Map.mem s !reduction_tab || String.Map.mem s !red_expr_tab
-  then error ("There is already a reduction expression of name "^s)
+  then errorlabstrm "Redexpr.decl_red_expr"
+    (str "There is already a reduction expression of name " ++ str s)
   else begin
     check_custom e;
     red_expr_tab := String.Map.add s e !red_expr_tab
@@ -232,7 +234,8 @@ let reduction_of_red_expr env =
       with Not_found ->
 	(try reduction_of_red_expr (String.Map.find s !red_expr_tab)
 	 with Not_found ->
-	   error("unknown user-defined reduction \""^s^"\"")))
+	   errorlabstrm "Redexpr.reduction_of_red_expr"
+             (str "unknown user-defined reduction \"" ++ str s ++ str "\"")))
   | CbvVm o -> (contextualize cbv_vm cbv_vm o, VMcast)
   | CbvNative o -> (contextualize cbv_native cbv_native o, NATIVEcast)
   in

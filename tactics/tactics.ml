@@ -139,7 +139,8 @@ let introduction ?(check=true) id =
     let store = Proofview.Goal.extra gl in
     let env = Proofview.Goal.env gl in
     let () = if check && mem_named_context id hyps then
-      error ("Variable " ^ Id.to_string id ^ " is already declared.")
+      errorlabstrm "Tactics.introduction"
+        (str "Variable " ++ pr_id id ++ str " is already declared.")
     in
     match kind_of_term (whd_evar sigma concl) with
     | Prod (_, t, b) -> unsafe_intro env store (id, None, t) b
@@ -1870,8 +1871,8 @@ let check_number_of_constructors expctdnumopt i nconstr =
   if Int.equal i 0 then error "The constructors are numbered starting from 1.";
   begin match expctdnumopt with
     | Some n when not (Int.equal n nconstr) ->
-	error ("Not an inductive goal with "^
-	       string_of_int n ^ String.plural n " constructor"^".")
+	errorlabstrm "Tactics.check_number_of_constructors"
+          (str "Not an inductive goal with " ++ int n ++ str (String.plural n " constructor") ++ str ".")
     | _ -> ()
   end;
   if i > nconstr then error "Not enough constructors."
@@ -3042,7 +3043,7 @@ let make_up_names n ind_opt cname =
 
 let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
-  error ("Cannot recognize "^s^"an induction scheme.")
+  errorlabstrm "Tactics" (str "Cannot recognize " ++ str s ++ str "an induction scheme.")
 
 let glob = Universes.constr_of_global
 

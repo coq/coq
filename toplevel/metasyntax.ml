@@ -387,7 +387,8 @@ let rec find_pattern nt xl = function
   | _, Break s :: _ | Break s :: _, _ ->
       error ("A break occurs on one side of \"..\" but not on the other side.")
   | _, Terminal s :: _ | Terminal s :: _, _ ->
-      error ("The token \""^s^"\" occurs on one side of \"..\" but not on the other side.")
+      errorlabstrm "Metasyntax.find_pattern"
+        (str "The token \"" ++ str s ++ str "\" occurs on one side of \"..\" but not on the other side.")
   | _, [] ->
       error msg_expected_form_of_recursive_notation
   | ((SProdList _ | NonTerminal _) :: _), _ | _, (SProdList _ :: _) ->
@@ -448,7 +449,8 @@ let rec get_notation_vars = function
       let vars = get_notation_vars sl in
       if Id.equal id ldots_var then vars else
 	if Id.List.mem id vars then
-	  error ("Variable "^Id.to_string id^" occurs more than once.")
+	  errorlabstrm "Metasyntax.get_notation_vars"
+            (str "Variable " ++ pr_id id ++ str " occurs more than once.")
 	else
           id::vars
   | (Terminal _ | Break _) :: sl -> get_notation_vars sl
@@ -461,8 +463,8 @@ let analyze_notation_tokens l =
   recvars, List.subtract Id.equal vars (List.map snd recvars), l
 
 let error_not_same_scope x y =
-  error ("Variables "^Id.to_string x^" and "^Id.to_string y^
-    " must be in the same scope.")
+  errorlabstrm "Metasyntax.error_not_name_scope"
+    (str "Variables " ++ pr_id x ++ str " and " ++ pr_id y ++ str " must be in the same scope.")
 
 (**********************************************************************)
 (* Build pretty-printing rules                                        *)
@@ -710,7 +712,7 @@ let is_not_small_constr = function
 let rec define_keywords_aux = function
   | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(IDENT k) :: l
       when is_not_small_constr e ->
-      Flags.if_verbose msg_info (strbrk ("Identifier '"^k^"' now a keyword"));
+      Flags.if_verbose msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
       Lexer.add_keyword k;
       n1 :: GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | n :: l -> n :: define_keywords_aux l
@@ -719,7 +721,7 @@ let rec define_keywords_aux = function
   (* Ensure that IDENT articulation terminal symbols are keywords *)
 let define_keywords = function
   | GramConstrTerminal(IDENT k)::l ->
-      Flags.if_verbose msg_info (strbrk ("Identifier '"^k^"' now a keyword"));
+      Flags.if_verbose msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
       Lexer.add_keyword k;
       GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | l -> define_keywords_aux l
@@ -804,7 +806,7 @@ let pr_level ntn (from,args) =
 
 let error_incompatible_level ntn oldprec prec =
   errorlabstrm ""
-    (str ("Notation "^ntn^" is already defined") ++ spc() ++
+    (str "Notation " ++ str ntn ++ str " is already defined" ++ spc() ++
     pr_level ntn oldprec ++
     spc() ++ str "while it is now required to be" ++ spc() ++
     pr_level ntn prec ++ str ".")
@@ -871,14 +873,16 @@ let interp_modifiers modl =
     | SetEntryType (s,typ) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
-	  error (s^" is already assigned to an entry or constr level.");
+	  errorlabstrm "Metasyntax.interp_modifiers"
+            (str s ++ str " is already assigned to an entry or constr level.");
 	interp assoc level ((id,typ)::etyps) format extra l
     | SetItemLevel ([],n) :: l ->
 	interp assoc level etyps format extra l
     | SetItemLevel (s::idl,n) :: l ->
 	let id = Id.of_string s in
 	if Id.List.mem_assoc id etyps then
-	  error (s^" is already assigned to an entry or constr level.");
+	  errorlabstrm "Metasyntax.interp_modifiers"
+            (str s ++ str " is already assigned to an entry or constr level.");
 	let typ = ETConstr (n,()) in
 	interp assoc level ((id,typ)::etyps) format extra (SetItemLevel (idl,n)::l)
     | SetLevel n :: l ->
@@ -905,7 +909,8 @@ let check_infix_modifiers modifiers =
 let check_useless_entry_types recvars mainvars etyps =
   let vars = let (l1,l2) = List.split recvars in l1@l2@mainvars in
   match List.filter (fun (x,etyp) -> not (List.mem x vars)) etyps with
-  | (x,_)::_ -> error (Id.to_string x ^ " is unbound in the notation.")
+  | (x,_)::_ -> errorlabstrm "Metasyntax.check_useless_entry_types"
+                  (pr_id x ++ str " is unbound in the notation.")
   | _ -> ()
 
 let no_syntax_modifiers = function
