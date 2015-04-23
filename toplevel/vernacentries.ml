@@ -1849,6 +1849,7 @@ let interp ?proof locality poly c =
   | VernacLoad _ -> assert false
   | VernacFail _ -> assert false
   | VernacTime _ -> assert false
+  | VernacRedirect _ -> assert false
   | VernacTimeout _ -> assert false
   | VernacStm _ -> assert false
 
@@ -2127,6 +2128,8 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     | VernacTimeout (n,v) ->
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
+    | VernacRedirect (s, v) ->
+         Pp.with_output_to_file s (aux_list ?locality ?polymorphism isprogcmd) v;
     | VernacTime v ->
         System.with_time !Flags.time
           (aux_list ?locality ?polymorphism isprogcmd) v;

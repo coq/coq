@@ -448,6 +448,27 @@ let logger = ref std_logger
 let make_pp_emacs() = print_emacs:=true; logger:=emacs_logger
 let make_pp_nonemacs() = print_emacs:=false; logger := std_logger
 
+let ft_logger old_logger ft ~id level mesg = match level with
+  | Debug _ -> msgnl_with ft (debugbody mesg)
+  | Info -> msgnl_with ft (infobody mesg)
+  | Notice -> msgnl_with ft mesg
+  | Warning -> old_logger ~id:id level mesg
+  | Error -> old_logger ~id:id level mesg
+
+let with_output_to_file fname func input =
+  let old_logger = !logger in
+  let channel = open_out (String.concat "." [fname; "out"]) in
+  logger := ft_logger old_logger (Format.formatter_of_out_channel channel);
+  try
+    let output = func input in
+    logger := old_logger;
+    close_out channel;
+    output
+  with reraise ->
+    let reraise = Backtrace.add_backtrace reraise in
+    logger := old_logger;
+    close_out channel;
+    Exninfo.iraise reraise
 
 let feedback_id = ref (Feedback.Edit 0)
 let feedback_route = ref Feedback.default_route

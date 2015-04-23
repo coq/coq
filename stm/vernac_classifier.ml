@@ -86,7 +86,7 @@ let rec classify_vernac e =
 	make_polymorphic (classify_vernac e)
       else classify_vernac e
     | VernacTimeout (_,e) -> classify_vernac e
-    | VernacTime e -> classify_vernac_list e
+    | VernacTime e | VernacRedirect (_, e) -> classify_vernac_list e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep _ | VtSideff _
