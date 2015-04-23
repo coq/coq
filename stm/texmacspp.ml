@@ -490,6 +490,9 @@ let rec tmpp v loc =
   | VernacTime l ->
       xmlApply loc (Element("time",[],[]) ::
                     List.map (fun(loc,e) ->tmpp e loc) l)
+  | VernacRedirect (s, l) ->
+      xmlApply loc (Element("redirect",["path", s],[]) ::
+                      List.map (fun(loc,e) ->tmpp e loc) l)
   | VernacTimeout (s,e) ->
       xmlApply loc (Element("timeout",["val",string_of_int s],[]) ::
                     [tmpp e loc])
