@@ -454,7 +454,7 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
 	(* Otherwise, if we are told to rewrite in all hypothesis via the
            syntax "* |-", we fail iff all the different rewrites fail *)
 	let rec do_hyps_atleastonce = function
-	  | [] -> Proofview.tclZERO (Errors.UserError ("",Pp.str"Nothing to rewrite."))
+	  | [] -> tclZEROMSG (Pp.str"Nothing to rewrite.")
 	  | id :: l ->
 	    tclIFTHENTRYELSEMUST
 	     (general_rewrite_ebindings_in l2r AllOccurrences false true ?tac id c with_evars)
@@ -874,7 +874,7 @@ let gen_absurdity id =
   then
     simplest_elim (mkVar id)
   else
-    Proofview.tclZERO (Errors.UserError ("Equality.gen_absurdity" , str "Not the negation of an equality."))
+    tclZEROMSG (str "Not the negation of an equality.")
   end
 
 (* Precondition: eq is leibniz equality
@@ -936,7 +936,7 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
     let concl = Proofview.Goal.concl gl in
     match find_positions env sigma t1 t2 with
     | Inr _ ->
-	Proofview.tclZERO (Errors.UserError ("discr" , str"Not a discriminable equality."))
+	tclZEROMSG (str"Not a discriminable equality.")
     | Inl (cpath, (_,dirn), _) ->
 	let sort = pf_apply get_type_of gl concl in
 	discr_positions env sigma u eq_clause cpath dirn sort
@@ -968,7 +968,7 @@ let onNegatedEquality with_evars tac =
           (onLastHypId (fun id ->
             onEquality with_evars tac (mkVar id,NoBindings)))
     | _ ->
-        Proofview.tclZERO (Errors.UserError ("" , str "Not a negated primitive equality."))
+        tclZEROMSG (str "Not a negated primitive equality.")
   end
 
 let discrSimpleClause with_evars = function
@@ -1303,7 +1303,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
   in
   let injectors = List.map_filter filter posns in
   if List.is_empty injectors then
-    Proofview.tclZERO (Errors.UserError ("Equality.inj" , str "Failed to decompose the equality."))
+    tclZEROMSG (str "Failed to decompose the equality.")
   else
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
     (Proofview.tclBIND
@@ -1319,12 +1319,12 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   let env = eq_clause.env in
   match find_positions env sigma t1 t2 with
   | Inl _ ->
-     Proofview.tclZERO (Errors.UserError ("Inj",strbrk"This equality is discriminable. You should use the discriminate tactic to solve the goal."))
+     tclZEROMSG (strbrk"This equality is discriminable. You should use the discriminate tactic to solve the goal.")
   | Inr [] ->
      let suggestion = if !injection_on_proofs then "" else " You can try to use option Set Injection On Proofs." in
-     Proofview.tclZERO (Errors.UserError ("Equality.inj",strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion)))
+     tclZEROMSG (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
   | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
-     Proofview.tclZERO (Errors.UserError ("Equality.inj" , str"Nothing to inject."))
+     tclZEROMSG (str"Nothing to inject.")
   | Inr posns ->
       inject_at_positions env sigma l2r u eq_clause posns
 	(tac (clenv_value eq_clause))

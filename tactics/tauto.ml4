@@ -316,7 +316,7 @@ let tauto_intuitionistic flags =
     (intuition_gen (default_ist ()) flags <:tactic<fail>>)
     begin function (e, info) -> match e with
       | Refiner.FailError _ | UserError _ ->
-          Proofview.tclZERO (UserError ("tauto" , str "tauto failed."))
+          Tacticals.New.tclZEROMSG (str "tauto failed.")
       | e -> Proofview.tclZERO ~info e
     end
 
@@ -328,7 +328,7 @@ let tauto_classical flags nnpp =
   Proofview.tclORELSE
     (Tacticals.New.tclTHEN (apply nnpp) (tauto_intuitionistic flags))
     begin function (e, info) -> match e with
-      | UserError _ -> Proofview.tclZERO (UserError ("tauto" , str "Classical tauto failed."))
+      | UserError _ -> Tacticals.New.tclZEROMSG (str "Classical tauto failed.")
       | e -> Proofview.tclZERO ~info e
     end
 

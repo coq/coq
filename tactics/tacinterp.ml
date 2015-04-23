@@ -1492,11 +1492,11 @@ and tactic_of_value ist vle =
         extra = TacStore.set ist.extra f_trace []; } in
       let tac = name_if_glob appl (eval_tactic ist t) in
       catch_error_tac trace tac
-  | (VFun _|VRec _) -> Proofview.tclZERO (UserError ("" , str "A fully applied tactic is expected."))
+  | (VFun _|VRec _) -> Tacticals.New.tclZEROMSG (str "A fully applied tactic is expected.")
   else if has_type vle (topwit wit_tactic) then
     let tac = out_gen (topwit wit_tactic) vle in
     eval_tactic ist tac
-  else Proofview.tclZERO (UserError ("" , str"Expression does not evaluate to a tactic."))
+  else Tacticals.New.tclZEROMSG (str "Expression does not evaluate to a tactic.")
 
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist llc u =
@@ -1752,10 +1752,8 @@ and interp_ltac_constr ist e : constr Ftactic.t =
     Ftactic.return cresult
   with CannotCoerceTo _ ->
     let env = Proofview.Goal.env gl in
-    Proofview.tclZERO (UserError ( "",
-      errorlabstrm ""
-      (str "Must evaluate to a closed term" ++ fnl() ++
-      str "offending expression: " ++ fnl() ++ pr_inspect env e result)))
+    Tacticals.New.tclZEROMSG (str "Must evaluate to a closed term" ++ fnl() ++
+      str "offending expression: " ++ fnl() ++ pr_inspect env e result)
   end
 
 

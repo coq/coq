@@ -420,7 +420,7 @@ module New = struct
 
   (* Try the first tactic that does not fail in a list of tactics *)
   let rec tclFIRST = function
-    | [] -> tclZERO (Errors.UserError ("Tacticals.New.tclFIRST",str"No applicable tactic."))
+    | [] -> tclZEROMSG (str"No applicable tactic.")
     |  t::rest -> tclORELSE0 t (tclFIRST rest)
 
   let rec tclFIRST_PROGRESS_ON tac = function
@@ -430,10 +430,7 @@ module New = struct
 
   let rec tclDO n t =
     if n < 0 then
-      tclZERO (Errors.UserError (
-        "Refiner.tclDO",
-        str"Wrong argument : Do needs a positive integer.")
-      )
+      tclZEROMSG (str"Wrong argument : Do needs a positive integer.")
     else if n = 0 then tclUNIT ()
     else if n = 1 then t
     else tclTHEN t (tclDO (n-1) t)
@@ -456,7 +453,7 @@ module New = struct
   let tclCOMPLETE t =
     t >>= fun res ->
       (tclINDEPENDENT
-         (tclZERO (Errors.UserError ("",str"Proof is not complete.")))
+         (tclZEROMSG (str"Proof is not complete."))
       ) <*>
         tclUNIT res
 

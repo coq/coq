@@ -174,7 +174,7 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
   if cl.concl_occs != AllOccurrences &&
      cl.concl_occs != NoOccurrences
   then
-    Proofview.tclZERO (UserError("" , str"The \"at\" syntax isn't available yet for the autorewrite tactic."))
+    Tacticals.New.tclZEROMSG (str"The \"at\" syntax isn't available yet for the autorewrite tactic.")
   else
     let compose_tac t1 t2 =
       match cl.onhyps with
@@ -204,7 +204,7 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
 	*)
 	gen_auto_multi_rewrite conds tac_main lbas cl
     | _ ->
-        Proofview.tclZERO (UserError ("autorewrite",strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion."))
+        Tacticals.New.tclZEROMSG (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =

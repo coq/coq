@@ -55,7 +55,7 @@ let contradiction_context =
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let rec seek_neg l = match l with
-      | [] ->  Proofview.tclZERO (UserError ("" , Pp.str"No such contradiction"))
+      | [] ->  Tacticals.New.tclZEROMSG (Pp.str"No such contradiction")
       | (id,_,typ)::rest ->
           let typ = nf_evar sigma typ in
 	  let typ = whd_betadeltaiota env sigma typ in
@@ -107,7 +107,7 @@ let contradiction_term (c,lbind as cl) =
             Proofview.tclZERO Not_found
         end
         begin function (e, info) -> match e with
-          | Not_found -> Proofview.tclZERO (Errors.UserError ("",Pp.str"Not a contradiction."))
+          | Not_found -> Tacticals.New.tclZEROMSG (Pp.str"Not a contradiction.")
           | e -> Proofview.tclZERO ~info e
         end
   end

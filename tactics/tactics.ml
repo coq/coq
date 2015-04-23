@@ -751,8 +751,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
 	     (intro_then_gen name_flag move_flag false dep_flag tac))
           begin function (e, info) -> match e with
             | RefinerError IntroNeedsProduct ->
-                Proofview.tclZERO 
-		  (Errors.UserError("Intro",str "No product even after head-reduction."))
+                Tacticals.New.tclZEROMSG (str "No product even after head-reduction.")
             | e -> Proofview.tclZERO ~info e
           end
   end

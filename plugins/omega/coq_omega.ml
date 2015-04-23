@@ -1462,7 +1462,7 @@ let coq_omega =
       let path = simplify_strong (new_id,new_var_num,display_var) system in
       if !display_action_flag then display_action display_var path;
       Tacticals.New.tclTHEN prelude (replay_history tactic_normalisation path)
-    with NO_CONTRADICTION -> Proofview.tclZERO (UserError ("" , Pp.str"Omega can't solve this system"))
+    with NO_CONTRADICTION -> Tacticals.New.tclZEROMSG (Pp.str"Omega can't solve this system")
   end
   end
 
