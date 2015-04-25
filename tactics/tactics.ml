@@ -1392,9 +1392,8 @@ let descend_in_conjunctions avoid tac exit c =
 		 (* Might be ill-typed due to forbidden elimination. *)
 		 Tacticals.New.onLastHypId (tac (not isrec))]
            end))
-    | None ->
-	raise Exit
-  with RefinerError _|UserError _|Exit -> exit ()
+    | None -> exit ()
+  with RefinerError _|UserError _ -> exit ()
   end
 
 (****************************************************)
@@ -1473,15 +1472,12 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
                 let info = Loc.add_loc info loc in
 		Proofview.tclZERO ~info exn0 in
             if not (Int.equal concl_nprod 0) then
-              try
                 Proofview.tclORELSE
                   (try_apply thm_ty 0)
                   (function (e, info) -> match e with
                   | PretypeError _|RefinerError _|UserError _|Failure _->
                     tac
                   | exn -> iraise (exn, info))
-              with UserError _ | Exit ->
-                tac
             else
               tac
 	in try_red_apply thm_ty0
@@ -1596,10 +1592,10 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
             tac id
           ])
     with e when with_destruct && Errors.noncritical e ->
-      let e = Errors.push e in
+      let (e, info) = Errors.push e in
         (descend_in_conjunctions [targetid]
            (fun b id -> aux (id::idstoclear) b (mkVar id))
-           (fun _ -> iraise e) c)
+           (fun _ -> Proofview.tclZERO ~info e) c)
     end
   in
   aux [] with_destruct d
