@@ -77,9 +77,11 @@ sp is a local copy of the global variable extern_sp. */
 #ifdef _COQ_DEBUG_ 
 #   define print_instr(s) /*if (drawinstr)*/ printf("%s\n",s)
 #   define print_int(i)   /*if (drawinstr)*/ printf("%d\n",i)
+#   define print_lint(i)  /*if (drawinstr)*/ printf("%ld\n",i)
 # else 
 #   define print_instr(s) 
 #   define print_int(i) 
+#   define print_lint(i)
 #endif
 
 /* GC interface */
@@ -795,12 +797,12 @@ value coq_interprete
 	if (Is_block(accu)) {
 	  long index = Tag_val(accu);
 	  print_instr("block");
-	  print_int(index);
+	  print_lint(index);
 	  pc += pc[(sizes & 0xFFFFFF) + index];
 	} else {
 	  long index = Long_val(accu);
 	  print_instr("constant");
-	  print_int(index);
+	  print_lint(index);
 	  pc += pc[index];
 	}
 	  Next;
@@ -957,7 +959,7 @@ value coq_interprete
 	    sp -= nargs;
 	    for (i = 0; i < nargs; i++) sp[i] = Field(accu, i + 2);
 	    *--sp = accu;
-	    print_int(nargs);
+	    print_lint(nargs);
 	    coq_extra_args = nargs;
 	    pc = Code_val(coq_env);
 	    goto check_stacks;
