@@ -386,6 +386,66 @@ let linear_prover_with_cert spec l =
     | None -> None
     | Some cert -> Some (make_certificate spec cert)
 
+let nlinear_prover (sys: (Mc.q Mc.pExpr * Mc.op1) list) = 
+ LinPoly.MonT.clear ();
+ (* Assign a proof to the initial hypotheses *)
+ let sys  = mapi (fun c i -> (c,Mc.PsatzIn (Ml2C.nat i))) sys in
+
+
+ (* Add all the product of hypotheses *)
+ let prod = all_pairs (fun ((c,o),p) ((c',o'),p') -> 
+  ((Mc.PEmul(c,c') , Mc.opMult o o') , Mc.PsatzMulE(p,p'))) sys in
+
+ (* Only filter those have a meaning *)
+ let prod = List.fold_left (fun l ((c,o),p) -> 
+  match o with
+  | None -> l
+  | Some o -> ((c,o),p) :: l) [] prod in
+
+ let sys = sys @ prod in
+
+ let square = 
+  (* Collect the squares and state that they are positive *)
+  let pols = List.map (fun ((p,_),_) -> dev_form q_spec p) sys in
+  let square = 
+   List.fold_left (fun acc p -> 
+    Poly.fold 
+     (fun m _ acc -> 
+      match Monomial.sqrt m with
+      | None -> acc
+      | Some s -> MonMap.add  s m acc)  p acc) MonMap.empty pols in
+
+  let pol_of_mon m =
+   Monomial.fold (fun x v p -> Mc.PEmul(Mc.PEpow(Mc.PEX(Ml2C.positive x),Ml2C.n v),p)) m (Mc.PEc q_spec.unit) in
+
+  let norm0 =
+   Mc.norm q_spec.zero q_spec.unit Mc.qplus Mc.qmult Mc.qminus Mc.qopp Mc.qeq_bool in
+  
+  
+  MonMap.fold (fun s m acc -> ((pol_of_mon m , Mc.NonStrict), Mc.PsatzSquare(norm0 (pol_of_mon s)))::acc) square [] in
+
+ Printf.printf "#square %i\n" (List.length square) ;
+ flush stdout ;
+
+ let sys = sys @ square in
+
+
+ (* Call the linear prover without the proofs *)
+ let sys_no_prf = List.map fst sys in
+
+ match linear_prover q_spec sys_no_prf with
+ | None -> None
+ | Some cert -> 
+  let cert = make_certificate q_spec cert in
+  let rec map_psatz = function
+   | Mc.PsatzIn n        -> snd (List.nth sys (C2Ml.nat n))
+   | Mc.PsatzSquare c    -> Mc.PsatzSquare c
+   | Mc.PsatzMulC(c,p)   -> Mc.PsatzMulC(c, map_psatz p)
+   | Mc.PsatzMulE(p1,p2) -> Mc.PsatzMulE(map_psatz p1,map_psatz p2)
+   | Mc.PsatzAdd(p1,p2)  -> Mc.PsatzAdd(map_psatz p1,map_psatz p2)
+   | Mc.PsatzC c         -> Mc.PsatzC c
+   | Mc.PsatzZ           -> Mc.PsatzZ in
+  Some (map_psatz cert)
 
 
 
@@ -611,13 +671,6 @@ open Mfourier
 open Num
 open Big_int
 open Polynomial
-
-(*module Mc = Micromega*)
-(*module Ml2C = Mutils.CamlToCoq
-module C2Ml = Mutils.CoqToCaml
-*)
-let debug = false
-
 
 
 module Env = 

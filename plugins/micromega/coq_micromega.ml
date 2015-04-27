@@ -18,6 +18,7 @@
 
 open Pp
 open Mutils
+open Proofview
 
 (**
   * Debug flag 
@@ -359,6 +360,7 @@ struct
   let coq_Qmake = lazy (constant "Qmake")
 
   let coq_Rcst = lazy (constant "Rcst")
+
   let coq_C0   = lazy (m_constant "C0")
   let coq_C1   = lazy (m_constant "C1")
   let coq_CQ   = lazy (m_constant "CQ")
@@ -837,7 +839,7 @@ struct
 
 
   let is_convertible gl t1 t2 = 
-   Reductionops.is_conv (Tacmach.pf_env gl) (Tacmach.project gl) t1 t2
+   Reductionops.is_conv (Tacmach.New.pf_env gl) (Goal.sigma gl) t1 t2
 
   let parse_zop gl (op,args) =
    match kind_of_term op with
@@ -1094,10 +1096,6 @@ struct
    | N (a) -> Mc.N(f2f a)
    | I(a,_,b)  -> Mc.I(f2f a,f2f b)
 
-  let is_prop t =
-   match t with
-    | Names.Anonymous -> true (* Not quite right *)
-    | Names.Name x    -> false
 
   let mkC f1 f2 = C(f1,f2)
   let mkD f1 f2 = D(f1,f2)
@@ -1121,6 +1119,11 @@ struct
         (A(at,tg,t), env,Tag.next tg)
       with e when Errors.noncritical e -> (X(t),env,tg) in
 
+    let is_prop term =
+     let ty   = Typing.type_of (Goal.env gl) (Goal.sigma gl) term in
+     let sort = Typing.sort_of (Goal.env gl) (ref (Goal.sigma gl)) ty in
+     Term.is_prop_sort sort in
+     
     let rec xparse_formula env tg term =
      match kind_of_term term with
       | App(l,rst) ->
@@ -1140,13 +1143,15 @@ struct
                let g,env,tg = xparse_formula env tg b in
                mkformula_binary mkIff term f g,env,tg
            | _ -> parse_atom env tg term)
-      | Prod(typ,a,b) when not (Termops.dependent (mkRel 1) b) ->
+      | Prod(typ,a,b) when not (Termops.dependent (mkRel 1) b)->
           let f,env,tg = xparse_formula env tg a in
           let g,env,tg = xparse_formula env tg b in
           mkformula_binary mkI term f g,env,tg
       | _ when eq_constr term (Lazy.force coq_True) -> (TT,env,tg)
       | _ when eq_constr term (Lazy.force coq_False) -> (FF,env,tg)
-      | _  -> X(term),env,tg in
+      | _ when is_prop term -> X(term),env,tg
+      | _ -> raise ParseError
+    in
     xparse_formula env tg  ((*Reductionops.whd_zeta*) term)
 
   let dump_formula typ dump_atom f =
@@ -1377,35 +1382,39 @@ let rcst_domain_spec  = lazy {
  dump_proof = dump_psatz coq_Q dump_q
 }
 
+open Proofview.Notations
+
+ 
 (**
   * Instanciate the current Coq goal with a Micromega formula, a varmap, and a
   * witness.
   *)
 
-
-
-let micromega_order_change spec cert cert_typ env ff : Tacmach.tactic = 
+let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*) = 
  let ids = Util.List.map_i (fun i _ -> (Names.Id.of_string ("__z"^(string_of_int i)))) 0 env in 
  let formula_typ = (Term.mkApp (Lazy.force coq_Cstr,[|spec.coeff|])) in
  let ff  = dump_formula formula_typ (dump_cstr spec.coeff spec.dump_coeff) ff in
  let vm = dump_varmap (spec.typ) env in
- (* todo : directly generate the proof term - or generalize befor conversion? *)
- Tacticals.tclTHENSEQ [
-  (fun gl -> 
-   Proofview.V82.of_tactic (Tactics.change_concl
-   (set
-     [
-      ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
-      ("__varmap", vm, Term.mkApp
-       (Coqlib.gen_constant_in_modules "VarMap"
-	 [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|spec.typ|])); 
-      ("__wit", cert, cert_typ)
-     ]
-     (Tacmach.pf_concl gl))) gl);
-  Tactics.generalize env ;
-  Tacticals.tclTHENSEQ (List.map (fun id -> Proofview.V82.of_tactic (Tactics.introduction id)) ids) ; 
- ] 
-
+ (* todo : directly generate the proof term - or generalize before conversion? *)
+  Proofview.Goal.nf_enter
+  begin fun gl -> 
+   Tacticals.New.tclTHENLIST
+    [
+     Tactics.change_concl
+    (set
+      [
+       ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
+       ("__varmap", vm, Term.mkApp
+        (Coqlib.gen_constant_in_modules "VarMap"
+	[["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|spec.typ|])); 
+       ("__wit", cert, cert_typ)
+      ]
+      (Tacmach.New.pf_concl gl))
+   ;
+   Tactics.new_generalize env ;
+   Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)
+  ] 
+  end
 
 
 (**
@@ -1646,58 +1655,77 @@ let micromega_gen
     (negate:'cst atom -> 'cst mc_cnf)
     (normalise:'cst atom -> 'cst mc_cnf)
     unsat deduce 
-    spec prover gl =
-  let concl = Tacmach.pf_concl gl in
-  let hyps  = Tacmach.pf_hyps_types gl in
-  try
-   let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
-   let env = Env.elements env in
-   let spec = Lazy.force spec in
-
+    spec prover =
+ Proofview.Goal.nf_enter
+  begin 
+   fun gl -> 
+    let concl = Tacmach.New.pf_concl gl in
+    let hyps  = Tacmach.New.pf_hyps_types gl in
+    try
+     let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
+     let env = Env.elements env in
+     let spec = Lazy.force spec in
+     
      match micromega_tauto  negate normalise unsat deduce spec prover env hyps concl gl with
-       | None -> Tacticals.tclFAIL 0 (Pp.str " Cannot find witness") gl
-       | Some (ids,ff',res') -> 
-	   (Tacticals.tclTHENSEQ
-	      [
-		Tactics.generalize (List.map Term.mkVar ids) ;
-		micromega_order_change  spec res' 
-		  (Term.mkApp(Lazy.force coq_list, [|spec.proof_typ|])) env ff'
-	      ]) gl
-  with
-   | ParseError  -> Tacticals.tclFAIL 0 (Pp.str "Bad logical fragment") gl
-   | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
-      Tacticals.tclFAIL 0 (Pp.str 
-      (" Skipping what remains of this tactic: the complexity of the goal requires "
-      ^ "the use of a specialized external tool called csdp. \n\n" 
-      ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" executable in the path. \n\n"
-      ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp")) gl
+     | None -> Tacticals.New.tclFAIL 0 (Pp.str " Cannot find witness")
+     | Some (ids,ff',res') -> 
+      (Tacticals.New.tclTHENLIST
+	[
+	 Tactics.new_generalize (List.map Term.mkVar ids) ;
+	 micromega_order_change  spec res' 
+	  (Term.mkApp(Lazy.force coq_list, [|spec.proof_typ|])) env ff'
+	])
+    with
+    | ParseError  -> Tacticals.New.tclFAIL 0 (Pp.str "Bad logical fragment")
+    | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
+     Tacticals.New.tclFAIL 0 (Pp.str 
+                           (" Skipping what remains of this tactic: the complexity of the goal requires "
+                            ^ "the use of a specialized external tool called csdp. \n\n" 
+                            ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" executable in the path. \n\n"
+                            ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp"))
+  end
 
+let micromega_gen parse_arith 
+    (negate:'cst atom -> 'cst mc_cnf)
+    (normalise:'cst atom -> 'cst mc_cnf)
+    unsat deduce 
+    spec prover  =
+ (micromega_gen parse_arith negate normalise unsat deduce spec prover)
+ 
+       
 
-
-let micromega_order_changer cert env ff gl =
-  let coeff = Lazy.force coq_Rcst in
-  let dump_coeff = dump_Rcst in
-  let typ  = Lazy.force coq_R in
-  let cert_typ = (Term.mkApp(Lazy.force coq_list, [|Lazy.force coq_QWitness |])) in
-
+let micromega_order_changer cert env ff  = 
+ let ids = Util.List.map_i (fun i _ -> (Names.Id.of_string ("__z"^(string_of_int i)))) 0 env in 
+ let coeff = Lazy.force coq_Rcst in
+ let dump_coeff = dump_Rcst in
+ let typ  = Lazy.force coq_R in
+ let cert_typ = (Term.mkApp(Lazy.force coq_list, [|Lazy.force coq_QWitness |])) in
+ 
  let formula_typ = (Term.mkApp (Lazy.force coq_Cstr,[| coeff|])) in
  let ff = dump_formula formula_typ (dump_cstr coeff dump_coeff) ff in
  let vm = dump_varmap (typ) env in
-  Proofview.V82.of_tactic (Tactics.change_concl
-   (set
+ Proofview.Goal.nf_enter
+  begin 
+   fun gl -> 
+    Tacticals.New.tclTHENLIST
      [
-      ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
-      ("__varmap", vm, Term.mkApp
-       (Coqlib.gen_constant_in_modules "VarMap"
-	 [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|typ|]));
-      ("__wit", cert, cert_typ)
+     (Tactics.change_concl
+      (set
+        [
+         ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
+         ("__varmap", vm, Term.mkApp
+          (Coqlib.gen_constant_in_modules "VarMap"
+	    [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|typ|]));
+         ("__wit", cert, cert_typ)
+        ]
+        (Tacmach.New.pf_concl gl)));
+      Tactics.new_generalize env ;
+      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)
      ]
-     (Tacmach.pf_concl gl)
-   ))
-   gl
+  end
 
 
-let micromega_genr prover gl =
+let micromega_genr prover =
   let parse_arith = parse_rarith in
   let negate = Mc.rnegate in
   let normalise = Mc.rnormalise in
@@ -1710,39 +1738,41 @@ let micromega_genr prover gl =
     proof_typ = Lazy.force coq_QWitness ;
     dump_proof = dump_psatz coq_Q dump_q
   } in
-    
-  let concl = Tacmach.pf_concl gl in
-  let hyps  = Tacmach.pf_hyps_types gl in
-  try
-   let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
-   let env = Env.elements env in
-   let spec = Lazy.force spec in
-
-   let hyps' = List.map (fun (n,f) -> (n, map_atoms (Micromega.map_Formula Micromega.q_of_Rcst) f)) hyps in
-   let concl' = map_atoms (Micromega.map_Formula Micromega.q_of_Rcst) concl in
-
-     match micromega_tauto  negate normalise unsat deduce spec prover env hyps' concl' gl with
-       | None -> Tacticals.tclFAIL 0 (Pp.str " Cannot find witness") gl
+  Proofview.Goal.nf_enter
+   begin 
+    fun gl -> 
+     let concl = Tacmach.New.pf_concl gl in
+     let hyps  = Tacmach.New.pf_hyps_types gl in
+     try
+      let (hyps,concl,env) = parse_goal gl parse_arith Env.empty hyps concl in
+       let env = Env.elements env in
+       let spec = Lazy.force spec in
+       
+       let hyps' = List.map (fun (n,f) -> (n, map_atoms (Micromega.map_Formula Micromega.q_of_Rcst) f)) hyps in
+       let concl' = map_atoms (Micromega.map_Formula Micromega.q_of_Rcst) concl in
+       
+       match micromega_tauto  negate normalise unsat deduce spec prover env hyps' concl' gl with
+       | None -> Tacticals.New.tclFAIL 0 (Pp.str " Cannot find witness") 
        | Some (ids,ff',res') -> 
            let (ff,ids') = formula_hyps_concl 
 	     (List.filter (fun (n,_) -> List.mem n ids) hyps) concl in
-
-           (Tacticals.tclTHENSEQ
+           (Tacticals.New.tclTHENLIST
               [
-                Tactics.generalize (List.map Term.mkVar ids) ;
+                Tactics.new_generalize (List.map Term.mkVar ids) ;
                 micromega_order_changer res' env (abstract_wrt_formula ff' ff)
-              ]) gl
+              ])
   with
-   | ParseError  -> Tacticals.tclFAIL 0 (Pp.str "Bad logical fragment") gl
+   | ParseError  -> Tacticals.New.tclFAIL 0 (Pp.str "Bad logical fragment")
    | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
-      Tacticals.tclFAIL 0 (Pp.str 
+      Tacticals.New.tclFAIL 0 (Pp.str 
       (" Skipping what remains of this tactic: the complexity of the goal requires "
       ^ "the use of a specialized external tool called csdp. \n\n" 
       ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" executable in the path. \n\n"
-      ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp")) gl
+       ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp"))
+    end
 
 
-
+let micromega_genr prover  = (micromega_genr prover)
 
 
 let lift_ratproof  prover l =
@@ -1898,14 +1928,21 @@ let compact_pt pt f =
 
 let lift_pexpr_prover p l =  p (List.map (fun (e,o) -> Mc.denorm e , o) l)
 
-let linear_prover_Z = {
-  name    = "linear prover" ;
-  prover  = lift_ratproof (lift_pexpr_prover (Certificate.linear_prover_with_cert Certificate.z_spec)) ;
-  hyps    = hyps_of_pt ;
-  compact = compact_pt ;
-  pp_prf  = pp_proof_term;
-  pp_f    = fun o x -> pp_pol pp_z o (fst x)
-}
+module CacheZ = PHashtable(struct
+  type t = (Mc.z Mc.pol * Mc.op1) list
+  let equal = (=)
+  let hash  = Hashtbl.hash
+end)
+
+module CacheQ = PHashtable(struct
+  type t = (Mc.q Mc.pol * Mc.op1) list
+  let equal = (=)
+  let hash  = Hashtbl.hash
+end)
+
+let memo_zlinear_prover = CacheZ.memo "lia.cache" (lift_pexpr_prover Certificate.lia)
+let memo_nlia = CacheZ.memo "nlia.cache" (lift_pexpr_prover Certificate.nlia)
+let memo_nra = CacheQ.memo "nra.cache" (lift_pexpr_prover (Certificate.nlinear_prover))
 
 let linear_prover_Q = {
   name    = "linear prover";
@@ -1926,6 +1963,14 @@ let linear_prover_R = {
   pp_f    =  fun o x -> pp_pol pp_q o (fst x)
 }
 
+let nlinear_prover_R = {
+  name    = "nra";
+  prover  = memo_nra ;
+  hyps    = hyps_of_cone ;
+  compact = compact_cone ;
+  pp_prf  = pp_psatz pp_q ;
+  pp_f    =  fun o x -> pp_pol pp_q o (fst x)
+}
 
 let non_linear_prover_Q str o = {
   name    = "real nonlinear prover";
@@ -1953,19 +1998,6 @@ let non_linear_prover_Z str o  = {
   pp_prf  = pp_proof_term;
   pp_f    =  fun o x -> pp_pol pp_z o (fst x)
 }
-
-module CacheZ = PHashtable(struct
-  type t = (Mc.z Mc.pol * Mc.op1) list
-  let equal = Pervasives.(=)
-  let hash  = Hashtbl.hash
-end)
-
-let memo_zlinear_prover = CacheZ.memo "lia.cache" (lift_pexpr_prover Certificate.lia)
-let memo_nlia = CacheZ.memo "nlia.cache" (lift_pexpr_prover Certificate.nlia)
-
-(*let memo_zlinear_prover = (lift_pexpr_prover Lia.lia)*)
-(*let memo_zlinear_prover = CacheZ.memo "lia.cache" (lift_pexpr_prover Certificate.zlinear_prover)*)
-
 
 
 let linear_Z =   {
@@ -2001,56 +2033,56 @@ let tauto_lia ff =
   * solvers
   *)
 
-let psatzl_Z gl =
+let psatzl_Z =
  micromega_gen parse_zarith  Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
-  [ linear_prover_Z ] gl
+  [ linear_Z ] 
 
-let psatzl_Q gl =
+let psatzl_Q =
  micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
-  [ linear_prover_Q ] gl
+  [ linear_prover_Q ] 
 
-let psatz_Q i gl =
+let psatz_Q i  =
  micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
-  [ non_linear_prover_Q "real_nonlinear_prover" (Some i) ] gl
+  [ non_linear_prover_Q "real_nonlinear_prover" (Some i) ]
+
+let psatzl_R  =
+ micromega_genr [ linear_prover_R ]
+
+let psatz_R i  =
+ micromega_genr  [ non_linear_prover_R "real_nonlinear_prover" (Some i) ] 
 
 
-let psatzl_R gl =
- micromega_genr [ linear_prover_R ] gl
-
-
-let psatz_R i gl =
- micromega_genr  [ non_linear_prover_R "real_nonlinear_prover" (Some i) ] gl
-
-
-let psatz_Z i gl =
+let psatz_Z i  =
     micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
-      [ non_linear_prover_Z "real_nonlinear_prover" (Some i) ] gl
+      [ non_linear_prover_Z "real_nonlinear_prover" (Some i) ] 
 
-let sos_Z gl =
+let sos_Z  =
  micromega_gen parse_zarith Mc.negate Mc.normalise  Mc.zunsat Mc.zdeduce zz_domain_spec
-  [ non_linear_prover_Z "pure_sos" None ] gl
+  [ non_linear_prover_Z "pure_sos" None ] 
 
-let sos_Q gl =
+let sos_Q  =
  micromega_gen parse_qarith Mc.qnegate Mc.qnormalise  Mc.qunsat Mc.qdeduce qq_domain_spec
-  [ non_linear_prover_Q "pure_sos" None ] gl
+  [ non_linear_prover_Q "pure_sos" None ] 
 
 
-let sos_R gl =
- micromega_genr  [ non_linear_prover_R "pure_sos" None ] gl
+let sos_R  =
+ micromega_genr  [ non_linear_prover_R "pure_sos" None ] 
 
 
-let xlia gl =
+let xlia  =
   try 
     micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
-      [ linear_Z ] gl
+      [ linear_Z ] 
   with reraise -> (*Printexc.print_backtrace stdout ;*) raise reraise
 
-let xnlia gl =
+let xnlia  =
   try 
     micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
-      [ nlinear_Z ] gl
+      [ nlinear_Z ] 
   with reraise -> (*Printexc.print_backtrace stdout ;*) raise reraise
 
+let nra  = 
+ micromega_genr  [ nlinear_prover_R ] 
 
 
 (* Local Variables: *)
