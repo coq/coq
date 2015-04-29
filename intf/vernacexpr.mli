@@ -273,6 +273,7 @@ type vernac_expr =
   (* Control *)
   | VernacLoad of verbose_flag * string
   | VernacTime of vernac_list
+  | VernacRedirect of string * vernac_list
   | VernacTimeout of int * vernac_expr
   | VernacFail of vernac_expr
   | VernacError of exn (* always fails *)

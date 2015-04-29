@@ -12,6 +12,8 @@
 val make_pp_emacs:unit -> unit
 val make_pp_nonemacs:unit -> unit
 
+val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
+
 (** Pretty-printers. *)
 
 type std_ppcmds

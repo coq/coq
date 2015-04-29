@@ -627,6 +627,8 @@ module Make
           )
         | VernacTime v ->
           return (keyword "Time" ++ spc() ++ pr_vernac_list v)
+        | VernacRedirect (s, v) ->
+          return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_list v)
         | VernacTimeout(n,v) ->
           return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac v)
         | VernacFail v ->
