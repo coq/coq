@@ -733,7 +733,7 @@ type structured_fixpoint_expr = {
 let interp_fix_context env evdref isfix fix =
   let before, after = if isfix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
   let impl_env, ((env', ctx), imps) = interp_context_evars env evdref before in
-  let impl_env', ((env'', ctx'), imps') = interp_context_evars ~impl_env env' evdref after in
+  let impl_env', ((env'', ctx'), imps') = interp_context_evars ~impl_env ~shift:(List.length before) env' evdref after in
   let annot = Option.map (fun _ -> List.length (assums_of_rel_context ctx)) fix.fix_annot in
     ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
 
