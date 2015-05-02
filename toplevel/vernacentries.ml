@@ -105,16 +105,13 @@ let show_intro all =
   if gls <> [] then begin
     let gl = {Evd.it=List.hd gls ; sigma = sigma; } in
     let l,_= decompose_prod_assum (strip_outer_cast (pf_concl gl)) in
-    if all
-    then
+    if all then
       let lid = Tactics.find_intro_names l gl in
       msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))
-    else
-      try
-        let n = List.last l in
-        msg_notice (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
-      with Failure "List.last" -> ()
-    end
+    else if l <> [] then
+      let n = List.last l in
+      msg_notice (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
+  end
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name
