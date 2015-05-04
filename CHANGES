@@ -1,3 +1,11 @@
+Changes from V8.5beta2 to ...
+===================================
+
+Vernacular commands
+
+- New command "Redirect" to redirect the output of a command to a file.
+
+
 Changes from V8.5beta1 to V8.5beta2
 ===================================
 
