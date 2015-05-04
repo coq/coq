@@ -680,7 +680,8 @@ should use the command \texttt{Locate File} (see Section~\ref{Locate File})
 
 Loadpaths are preferably managed using {\Coq} command line options
 (see Section~\ref{loadpath}) but there remain vernacular commands to
-manage them.
+manage them for practical purposes. Such commands are only meant to be issued in
+the toplevel, and using them in source files is discouraged.
 
 \subsection[\tt Pwd.]{\tt Pwd.\comindex{Pwd}\label{Pwd}}
 This command displays the current working directory.
@@ -876,6 +877,9 @@ go();;
 This command executes the vernacular command \textrm{\textsl{command}}
 and display the time needed to execute it.
 
+\subsection[\tt Redirect "\textrm{\textsl{file}}" \textrm{\textsl{command}}.]{\tt Redirect "\textrm{\textsl{file}}" \textrm{\textsl{command}}.\comindex{Redirect}
+\label{redirect}}
+This command executes the vernacular command \textrm{\textsl{command}}, redirecting its output to ``\textrm{\textsl{file}}.out''.
 
 \subsection[\tt Timeout \textrm{\textsl{int}} \textrm{\textsl{command}}.]{\tt Timeout \textrm{\textsl{int}} \textrm{\textsl{command}}.\comindex{Timeout}
 \label{timeout}}

@@ -604,7 +604,8 @@ let build_scheme fas =
 	      try
 		Smartlocate.global_with_alias f
 	      with Not_found ->
-	      	Errors.error ("Cannot find "^ Libnames.string_of_reference f)
+                errorlabstrm "FunInd.build_scheme"
+                  (str "Cannot find " ++ Libnames.pr_reference f)
 	    in
 	    let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
 	    let evd',_ = Typing.e_type_of ~refresh:true (Global.env ()) evd' f in 
@@ -636,10 +637,12 @@ let build_case_scheme fa =
 (*   let id_to_constr id =  *)
 (*     Constrintern.global_reference  id *)
 (*   in  *)
-  let funs =  (fun (_,f,_) ->
-		 try fst (Universes.unsafe_constr_of_global (Smartlocate.global_with_alias f))
-		 with Not_found ->
-		   Errors.error ("Cannot find "^ Libnames.string_of_reference f)) fa in
+  let funs =
+    let (_,f,_) = fa in
+    try fst (Universes.unsafe_constr_of_global (Smartlocate.global_with_alias f))
+    with Not_found ->
+      errorlabstrm "FunInd.build_case_scheme"
+        (str "Cannot find " ++ Libnames.pr_reference f) in
   let first_fun,u = destConst  funs in
   let funs_mp,funs_dp,_ = Names.repr_con first_fun in
   let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in

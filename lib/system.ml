@@ -159,7 +159,8 @@ let is_in_system_path filename =
 
 let open_trapping_failure name =
   try open_out_bin name
-  with e when Errors.noncritical e -> error ("Can't open " ^ name)
+  with e when Errors.noncritical e ->
+    errorlabstrm "System.open" (str "Can't open " ++ str name)
 
 let try_remove filename =
   try Sys.remove filename
@@ -167,7 +168,8 @@ let try_remove filename =
     msg_warning
       (str"Could not remove file " ++ str filename ++ str" which is corrupted!")
 
-let error_corrupted file s = error (file ^": " ^ s ^ ". Try to rebuild it.")
+let error_corrupted file s =
+  errorlabstrm "System" (str file ++ str ": " ++ str s ++ str ". Try to rebuild it.")
 
 let input_binary_int f ch =
   try input_binary_int ch
@@ -242,7 +244,8 @@ let extern_intern ?(warn=true) magic =
 	let reraise = Errors.push reraise in
         let () = try_remove filename in
         iraise reraise
-    with Sys_error s -> error ("System error: " ^ s)
+    with Sys_error s ->
+      errorlabstrm "System.extern_state" (str "System error: " ++ str s)
   and intern_state paths name =
     try
       let _,filename = find_file_in_path ~warn paths name in
@@ -251,7 +254,7 @@ let extern_intern ?(warn=true) magic =
       close_in channel;
       v
     with Sys_error s ->
-      error("System error: " ^ s)
+      errorlabstrm "System.intern_state" (str "System error: " ++ str s)
   in
   (extern_state,intern_state)
 

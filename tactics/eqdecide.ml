@@ -158,7 +158,7 @@ let solveEqBranch rectype =
       end
     end
     begin function (e, info) -> match e with
-      | PatternMatchingFailure -> Proofview.tclZERO (UserError ("",Pp.str"Unexpected conclusion!"))
+      | PatternMatchingFailure -> Tacticals.New.tclZEROMSG (Pp.str"Unexpected conclusion!")
       | e -> Proofview.tclZERO ~info e
     end
 
@@ -186,7 +186,7 @@ let decideGralEquality =
     end
     begin function (e, info) -> match e with
       | PatternMatchingFailure ->
-          Proofview.tclZERO (UserError ("", Pp.str"The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}."))
+          Tacticals.New.tclZEROMSG (Pp.str"The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}.")
       | e -> Proofview.tclZERO ~info e
     end
 

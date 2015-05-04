@@ -722,19 +722,7 @@ let give_up =
 
 module Progress = struct
 
-  (** equality function up to evar instantiation in heterogeneous
-      contexts. *)
-  (* spiwack (2015-02-19): In the previous version of progress an
-     equality which considers two universes equal when it is consistent
-     tu unify them ([Evd.eq_constr_univs_test]) was used. Maybe this
-     behaviour has to be restored as well. This has to be established by
-     practice. *)
-    
-  let rec eq_constr sigma1 sigma2 t1 t2 =
-    Constr.equal_with
-      (fun t -> Evarutil.kind_of_term_upto sigma1 t)
-      (fun t -> Evarutil.kind_of_term_upto sigma2 t)
-      t1 t2
+  let eq_constr = Evarutil.eq_constr_univs_test
 
   (** equality function on hypothesis contexts *)
   let eq_named_context_val sigma1 sigma2 ctx1 ctx2 =

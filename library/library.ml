@@ -126,7 +126,8 @@ let find_library dir =
 let try_find_library dir =
   try find_library dir
   with Not_found ->
-    error ("Unknown library " ^ (DirPath.to_string dir))
+    errorlabstrm "Library.find_library"
+      (str "Unknown library " ++ str (DirPath.to_string dir))
 
 let register_library_filename dir f =
   (* Not synchronized: overwrite the previous binding if one existed *)
@@ -378,10 +379,10 @@ let access_table what tables dp i =
       let t =
         try fetch_delayed f
         with Faulty f ->
-          error
-            ("The file "^f^" (bound to " ^ dir_path ^
-            ") is inaccessible or corrupted,\n" ^
-            "cannot load some "^what^" in it.\n")
+          errorlabstrm "Library.access_table"
+            (str "The file " ++ str f ++ str " (bound to " ++ str dir_path ++
+             str ") is inaccessible or corrupted,\ncannot load some " ++
+             str what ++ str " in it.\n")
       in
       tables := LibraryMap.add dp (Fetched t) !tables;
       t
@@ -462,7 +463,7 @@ let rec intern_library (needed, contents) (dir, f) from =
   let m = intern_from_file f in
   if not (DirPath.equal dir m.library_name) then
     errorlabstrm "load_physical_library"
-      (str ("The file " ^ f ^ " contains library") ++ spc () ++
+      (str "The file " ++ str f ++ str " contains library" ++ spc () ++
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ pr_dirpath dir);
   Pp.feedback(Feedback.FileLoaded(DirPath.to_string dir, f));
@@ -475,9 +476,7 @@ and intern_library_deps libs dir m from =
 and intern_mandatory_library caller from libs (dir,d) =
   let digest, libs = intern_library libs (try_locate_absolute_library dir) from in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    errorlabstrm "" (strbrk ("Compiled library "^ DirPath.to_string caller ^
-      ".vo makes inconsistent assumptions over library " ^
-      DirPath.to_string dir));
+    errorlabstrm "" (str "Compiled library " ++ str (DirPath.to_string caller) ++ str ".vo makes inconsistent assumptions over library " ++ str (DirPath.to_string dir));
   libs
 
 let rec_intern_library libs mref =
@@ -487,7 +486,7 @@ let rec_intern_library libs mref =
 let check_library_short_name f dir = function
   | Some id when not (Id.equal id (snd (split_dirpath dir))) ->
       errorlabstrm "check_library_short_name"
-      (str ("The file " ^ f ^ " contains library") ++ spc () ++
+      (str "The file " ++ str f ++ str " contains library" ++ spc () ++
       pr_dirpath dir ++ spc () ++ str "and not library" ++ spc () ++
       pr_id id)
   | _ -> ()
@@ -613,7 +612,7 @@ let safe_locate_module (loc,qid) =
   try Nametab.locate_module qid
   with Not_found ->
     user_err_loc
-      (loc,"import_library", str (string_of_qualid qid ^ " is not a module"))
+      (loc,"import_library", str (string_of_qualid qid) ++ str " is not a module")
 
 let import_module export modl =
   (* Optimization: libraries in a raw in the list are imported
@@ -633,7 +632,12 @@ let import_module export modl =
           with Not_found-> flush acc; safe_locate_module m, [] in
         (match m with
         | MPfile dir -> aux (dir::acc) l
-        | mp -> flush acc; Declaremods.import_module export mp; aux [] l)
+        | mp ->
+            flush acc;
+            try Declaremods.import_module export mp; aux [] l
+            with Not_found ->
+              user_err_loc (loc,"import_library",
+                str (string_of_qualid dir) ++ str " is not a module"))
     | [] -> flush acc
   in aux [] modl
 
@@ -645,8 +649,8 @@ let check_coq_overwriting p id =
   let is_empty = match l with [] -> true | _ -> false in
   if not !Flags.boot && not is_empty && String.equal (Id.to_string (List.last l)) "Coq" then
     errorlabstrm ""
-      (strbrk ("Cannot build module "^DirPath.to_string p^"."^Id.to_string id^
-      ": it starts with prefix \"Coq\" which is reserved for the Coq library."))
+      (str "Cannot build module " ++ str (DirPath.to_string p) ++ str "." ++ pr_id id ++ str "." ++ spc () ++
+      str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
 
 (* Verifies that a string starts by a letter and do not contain
    others caracters than letters, digits, or `_` *)
@@ -790,7 +794,7 @@ let save_library_to ?todo dir f otab =
         msg_error (str"Could not compile the library to native code. Skipping.")
    with reraise ->
     let reraise = Errors.push reraise in
-    let () = msg_warning (str ("Removed file "^f')) in
+    let () = msg_warning (str "Removed file " ++ str f') in
     let () = close_out ch in
     let () = Sys.remove f' in
     iraise reraise

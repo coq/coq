@@ -950,7 +950,7 @@ type 'modast module_params =
 let debug_print_modtab _ =
   let pr_seg = function
     | [] -> str "[]"
-    | l -> str ("[." ^ string_of_int (List.length l) ^ ".]")
+    | l -> str "[." ++ int (List.length l) ++ str ".]"
   in
   let pr_modinfo mp (prefix,substobjs,keepobjs) s =
     s ++ str (string_of_mp mp) ++ (spc ())

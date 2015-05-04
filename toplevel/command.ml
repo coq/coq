@@ -609,8 +609,7 @@ let declare_mutual_inductive_with_eliminations mie impls =
   begin match mie.mind_entry_finite with
   | BiFinite when is_recursive mie ->
       if Option.has_some mie.mind_entry_record then
-        error ("Records declared with the keywords Record or Structure cannot be recursive." ^
-                  "You can, however, define recursive records using the Inductive or CoInductive command.")
+        error "Records declared with the keywords Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command."
       else
         error ("Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command.")
   | _ -> ()
@@ -697,19 +696,19 @@ let rec partial_order cmp = function
 let non_full_mutual_message x xge y yge isfix rest =
   let reason =
     if Id.List.mem x yge then
-      Id.to_string y^" depends on "^Id.to_string x^" but not conversely"
+      pr_id y ++ str " depends on " ++ pr_id x ++ str " but not conversely"
     else if Id.List.mem y xge then
-      Id.to_string x^" depends on "^Id.to_string y^" but not conversely"
+      pr_id x ++ str " depends on " ++ pr_id y ++ str " but not conversely"
     else
-      Id.to_string y^" and "^Id.to_string x^" are not mutually dependent" in
-  let e = if List.is_empty rest then reason else "e.g.: "^reason in
+      pr_id y ++ str " and " ++ pr_id x ++ str " are not mutually dependent" in
+  let e = if List.is_empty rest then reason else str "e.g., " ++ reason in
   let k = if isfix then "fixpoint" else "cofixpoint" in
   let w =
     if isfix
-    then strbrk "Well-foundedness check may fail unexpectedly." ++ fnl()
+    then str "Well-foundedness check may fail unexpectedly." ++ fnl()
     else mt () in
-  strbrk ("Not a fully mutually defined "^k) ++ fnl () ++
-  strbrk ("("^e^").") ++ fnl () ++ w
+  str "Not a fully mutually defined " ++ str k ++ fnl () ++
+  str "(" ++ e ++ str ")." ++ fnl () ++ w
 
 let check_mutuality env isfix fixl =
   let names = List.map fst fixl in
@@ -734,7 +733,7 @@ type structured_fixpoint_expr = {
 let interp_fix_context env evdref isfix fix =
   let before, after = if isfix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
   let impl_env, ((env', ctx), imps) = interp_context_evars env evdref before in
-  let impl_env', ((env'', ctx'), imps') = interp_context_evars ~impl_env env' evdref after in
+  let impl_env', ((env'', ctx'), imps') = interp_context_evars ~impl_env ~shift:(List.length before) env' evdref after in
   let annot = Option.map (fun _ -> List.length (assums_of_rel_context ctx)) fix.fix_annot in
     ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
 

@@ -125,9 +125,33 @@ let go_to_proof_mode () =
 
 (* closing gaps *)
 
+(* spiwack: should use [Proofview.give_up] but that would require
+   moving the whole declarative mode into the new proof engine.  It
+   will eventually have to be done.
+
+   As far as I can tell, [daimon_tac] is used after a [thus thesis],
+   it will leave uninstantiated variables instead of giving a relevant
+   message at [Qed]. *)
 let daimon_tac gls =
   set_daimon_flag ();
   {it=[];sigma=sig_sig gls;}
+
+let daimon_instr env p =
+  let (p,(status,_)) =
+    Proof.run_tactic env begin
+      Proofview.tclINDEPENDENT Proofview.give_up
+    end p
+  in
+  p,status
+
+let do_daimon () =
+  let env = Global.env () in
+  let status =
+    Proof_global.with_current_proof begin fun _ p ->
+      daimon_instr env p
+    end
+  in
+  if not status then Pp.feedback Feedback.AddedAxiom else ()
 
 (* post-instruction focus management *)
 
@@ -144,7 +168,7 @@ let goto_current_focus_or_top () =
 (* return *)
 
 let close_tactic_mode () =
-  try goto_current_focus ()
+  try do_daimon ();goto_current_focus ()
   with Not_found ->
     error "\"return\" cannot be used outside of Declarative Proof Mode."
 
@@ -165,7 +189,7 @@ let close_block bt pts =
       in
       match bt,stack with
 	B_claim, Claim::_ | B_focus, Focus_claim::_ | B_proof, [] ->
-	  (goto_current_focus ())
+	  do_daimon ();goto_current_focus ()
       | _, Claim::_ ->
 	  error "\"end claim\" expected."
       | _, Focus_claim::_ ->
@@ -196,7 +220,7 @@ let close_previous_case pts =
     match get_stack pts with
 	Per (et,_,_,_) :: _ -> ()
       | Suppose_case :: Per (et,_,_,_) :: _ ->
-	  goto_current_focus ()
+	  do_daimon ();goto_current_focus ()
       | _ -> error "Not inside a proof per cases or induction."
 
 (* Proof instructions *)

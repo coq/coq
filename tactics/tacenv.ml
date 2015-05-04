@@ -43,7 +43,7 @@ end
 module MLTacMap = Map.Make(MLName)
 
 let pr_tacname t =
-  t.mltac_plugin ^ "::" ^ t.mltac_tactic
+  str t.mltac_plugin ++ str "::" ++ str t.mltac_tactic
 
 let tac_tab = ref MLTacMap.empty
 
@@ -52,9 +52,9 @@ let register_ml_tactic ?(overwrite = false) s (t : ml_tactic array) =
     if MLTacMap.mem s !tac_tab then
       if overwrite then
         let () = tac_tab := MLTacMap.remove s !tac_tab in
-        msg_warning (str ("Overwriting definition of tactic " ^ pr_tacname s))
+        msg_warning (str "Overwriting definition of tactic " ++ pr_tacname s)
       else
-        Errors.anomaly (str ("Cannot redeclare tactic " ^ pr_tacname s ^ "."))
+        Errors.anomaly (str "Cannot redeclare tactic " ++ pr_tacname s ++ str ".")
   in
   tac_tab := MLTacMap.add s t !tac_tab
 
@@ -65,7 +65,7 @@ let interp_ml_tactic { mltac_name = s; mltac_index = i } =
     tacs.(i)
   with Not_found ->
     Errors.errorlabstrm ""
-      (str "The tactic " ++ str (pr_tacname s) ++ str " is not installed.")
+      (str "The tactic " ++ pr_tacname s ++ str " is not installed.")
 
 (***************************************************************************)
 (* Tactic registration *)

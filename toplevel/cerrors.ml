@@ -20,7 +20,7 @@ let print_loc loc =
     let loc = Loc.unloc loc in
     (int (fst loc) ++ str"-" ++ int (snd loc))
 
-let guill s = "\""^s^"\""
+let guill s = str "\"" ++ str s ++ str "\""
 
 (** Invariant : exceptions embedded in EvaluatedError satisfy
     Errors.noncritical *)
@@ -33,10 +33,10 @@ exception EvaluatedError of std_ppcmds * exn option
 
 let explain_exn_default = function
   (* Basic interaction exceptions *)
-  | Stream.Error txt -> hov 0 (str ("Syntax error: " ^ txt ^ "."))
-  | Compat.Token.Error txt ->  hov 0 (str ("Syntax error: " ^ txt ^ "."))
+  | Stream.Error txt -> hov 0 (str "Syntax error: " ++ str txt ++ str ".")
+  | Compat.Token.Error txt -> hov 0 (str "Syntax error: " ++ str txt ++ str ".")
   | Lexer.Error.E err -> hov 0 (str (Lexer.Error.to_string err))
-  | Sys_error msg -> hov 0 (str ("System error: " ^ guill msg))
+  | Sys_error msg -> hov 0 (str "System error: " ++ guill msg)
   | Out_of_memory -> hov 0 (str "Out of memory.")
   | Stack_overflow -> hov 0 (str "Stack overflow.")
   | Timeout -> hov 0 (str "Timeout!")

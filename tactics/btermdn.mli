@@ -28,7 +28,7 @@ module Make :
 sig
   type t
 
-  val create : unit ->  t
+  val empty : t
 
   val add : transparent_state option -> t -> (constr_pattern * Z.t) -> t
   val rmv : transparent_state option -> t -> (constr_pattern * Z.t) -> t

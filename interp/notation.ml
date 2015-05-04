@@ -91,7 +91,9 @@ let declare_scope scope =
 (*    Flags.if_warn message ("Creating scope "^scope);*)
     scope_map := String.Map.add scope empty_scope !scope_map
 
-let error_unknown_scope sc = error ("Scope "^sc^" is not declared.")
+let error_unknown_scope sc =
+  errorlabstrm "Notation"
+    (str "Scope " ++ str sc ++ str " is not declared.")
 
 let find_scope scope =
   try String.Map.find scope !scope_map
@@ -186,14 +188,14 @@ let declare_delimiters scope key =
     | Some oldkey when String.equal oldkey key -> ()
     | Some oldkey ->
 	msg_warning
-	  (strbrk ("Overwriting previous delimiting key "^oldkey^" in scope "^scope));
+	  (str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope);
 	scope_map := String.Map.add scope newsc !scope_map
   end;
   try
     let oldscope = String.Map.find key !delimiters_map in
     if String.equal oldscope scope then ()
     else begin
-      msg_warning (strbrk ("Hiding binding of key "^key^" to "^oldscope));
+      msg_warning (str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope);
       delimiters_map := String.Map.add key scope !delimiters_map
     end
   with Not_found -> delimiters_map := String.Map.add key scope !delimiters_map
@@ -202,7 +204,7 @@ let find_delimiters_scope loc key =
   try String.Map.find key !delimiters_map
   with Not_found ->
     user_err_loc
-    (loc, "find_delimiters", str ("Unknown scope delimiting key "^key^"."))
+    (loc, "find_delimiters", str "Unknown scope delimiting key " ++ str key ++ str ".")
 
 (* Uninterpretation tables *)
 
@@ -317,8 +319,7 @@ let check_required_module loc sc (sp,d) =
   try let _ = Nametab.global_of_path sp in ()
   with Not_found ->
     user_err_loc (loc,"prim_token_interpreter",
-    str ("Cannot interpret in "^sc^" without requiring first module "
-    ^(List.last d)^"."))
+    str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++ str (List.last d) ++ str ".")
 
 (* Look if some notation or numeral printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
@@ -373,10 +374,9 @@ let declare_notation_interpretation ntn scopt pat df =
   let () =
     if String.Map.mem ntn sc.notations then
     let which_scope = match scopt with
-    | None -> ""
-    | Some _ -> " in scope " ^ scope in
-    let message = "Notation " ^ ntn ^ " was already used" ^ which_scope in
-    msg_warning (strbrk message)
+    | None -> mt ()
+    | Some _ -> str " in scope " ++ str scope in
+    msg_warning (str "Notation " ++ str ntn ++ str " was already used" ++ which_scope)
   in
   let sc = { sc with notations = String.Map.add ntn (pat,df) sc.notations } in
   let () = scope_map := String.Map.add scope sc !scope_map in
@@ -452,7 +452,7 @@ let interp_notation loc ntn local_scopes =
   try find_interpretation ntn (find_notation ntn) scopes
   with Not_found ->
     user_err_loc
-    (loc,"",str ("Unknown interpretation for notation \""^ntn^"\"."))
+    (loc,"",str "Unknown interpretation for notation \"" ++ str ntn ++ str "\".")
 
 let uninterp_notations c =
   List.map_append (fun key -> keymap_find key !notations_key_table)
@@ -784,8 +784,8 @@ let pr_scope_classes sc =
   match l with
   | [] -> mt ()
   | _ :: l ->
-    let opt_s = match l with [] -> "" | _ -> "es" in
-    hov 0 (str ("Bound to class" ^ opt_s) ++
+    let opt_s = match l with [] -> mt () | _ -> str "es" in
+    hov 0 (str "Bound to class" ++ opt_s ++
       spc() ++ prlist_with_sep spc pr_scope_class l) ++ fnl()
 
 let pr_notation_info prglob ntn c =

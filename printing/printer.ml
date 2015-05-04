@@ -654,7 +654,7 @@ let pr_goal_by_id id =
   let p = Proof_global.give_me_the_proof () in
   let g = Goal.get_by_uid id in
   let pr gs =
-    v 0 (str ("goal / evar " ^ id ^ " is:") ++ cut ()
+    v 0 (str "goal / evar " ++ str id ++ str " is:" ++ cut ()
 	 ++ pr_goal gs)
   in
   try
@@ -723,7 +723,7 @@ let pr_assumptionset env s =
       try pr_constant env kn
       with Not_found ->
 	let mp,_,lab = repr_con kn in
-	str (string_of_mp mp ^ "." ^ Label.to_string lab)
+        str (string_of_mp mp) ++ str "." ++ pr_label lab
     in
     let safe_pr_ltype typ =
       try str " : " ++ pr_ltype typ

@@ -428,7 +428,7 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
       | [] -> assert false
       | c1 :: lc -> mk_ctx (mkCase (ci,hd,c1,Array.of_list lc))
       in
-      let sub = (env, c1) :: subargs env lc in
+      let sub = (env, hd) :: (env, c1) :: subargs env lc in
       let next () = try_aux sub next_mk_ctx next in
       authorized_occ env sigma partial_app closed pat c mk_ctx next
   | Fix (indx,(names,types,bodies)) ->

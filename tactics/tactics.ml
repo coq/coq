@@ -139,7 +139,8 @@ let introduction ?(check=true) id =
     let store = Proofview.Goal.extra gl in
     let env = Proofview.Goal.env gl in
     let () = if check && mem_named_context id hyps then
-      error ("Variable " ^ Id.to_string id ^ " is already declared.")
+      errorlabstrm "Tactics.introduction"
+        (str "Variable " ++ pr_id id ++ str " is already declared.")
     in
     match kind_of_term (whd_evar sigma concl) with
     | Prod (_, t, b) -> unsafe_intro env store (id, None, t) b
@@ -751,8 +752,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
 	     (intro_then_gen name_flag move_flag false dep_flag tac))
           begin function (e, info) -> match e with
             | RefinerError IntroNeedsProduct ->
-                Proofview.tclZERO 
-		  (Errors.UserError("Intro",str "No product even after head-reduction."))
+                Tacticals.New.tclZEROMSG (str "No product even after head-reduction.")
             | e -> Proofview.tclZERO ~info e
           end
   end
@@ -1358,7 +1358,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       | None -> None
   in elim
 
-let descend_in_conjunctions avoid tac exit c =
+let descend_in_conjunctions avoid tac (err, info) c =
   Proofview.Goal.nf_enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
@@ -1392,9 +1392,8 @@ let descend_in_conjunctions avoid tac exit c =
 		 (* Might be ill-typed due to forbidden elimination. *)
 		 Tacticals.New.onLastHypId (tac (not isrec))]
            end))
-    | None ->
-	raise Exit
-  with RefinerError _|UserError _|Exit -> exit ()
+    | None -> Proofview.tclZERO ~info err
+  with RefinerError _|UserError _ -> Proofview.tclZERO ~info err
   end
 
 (****************************************************)
@@ -1417,7 +1416,15 @@ let solve_remaining_apply_goals =
     with Not_found -> Proofview.tclUNIT ()
   else Proofview.tclUNIT ()
   end
-  
+
+let tclORELSEOPT t k =
+  Proofview.tclORELSE t
+    (fun e -> match k e with
+    | None ->
+      let (e, info) = e in
+      Proofview.tclZERO ~info e
+    | Some tac -> tac)
+
 let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind)) =
   Proofview.Goal.nf_enter begin fun gl ->
   let concl = Proofview.Goal.concl gl in
@@ -1442,50 +1449,46 @@ let general_apply with_delta with_destruct with_evars clear_flag (loc,(c,lbind))
       with UserError _ as exn ->
         Proofview.tclZERO exn
     in
-    Proofview.tclORELSE
+    let rec try_red_apply thm_ty (exn0, info) =
+      try
+        (* Try to head-reduce the conclusion of the theorem *)
+        let red_thm = try_red_product env sigma thm_ty in
+        tclORELSEOPT
+          (try_apply red_thm concl_nprod)
+          (function (e, info) -> match e with
+          | PretypeError _|RefinerError _|UserError _|Failure _ ->
+            Some (try_red_apply red_thm (exn0, info))
+          | _ -> None)
+      with Redelimination ->
+        (* Last chance: if the head is a variable, apply may try
+            second order unification *)
+        let info = Loc.add_loc info loc in
+        let tac =
+          if with_destruct then
+            descend_in_conjunctions []
+              (fun b id ->
+                Tacticals.New.tclTHEN
+                  (try_main_apply b (mkVar id))
+                  (Proofview.V82.tactic (thin [id])))
+              (exn0, info) c
+          else
+            Proofview.tclZERO ~info exn0 in
+        if not (Int.equal concl_nprod 0) then
+          tclORELSEOPT
+            (try_apply thm_ty 0)
+            (function (e, info) -> match e with
+            | PretypeError _|RefinerError _|UserError _|Failure _->
+              Some tac
+            | _ -> None)
+        else
+          tac
+    in
+    tclORELSEOPT
       (try_apply thm_ty0 concl_nprod)
       (function (e, info) -> match e with
-        | PretypeError _|RefinerError _|UserError _|Failure _ as exn0 ->
-	let rec try_red_apply thm_ty =
-          try 
-            (* Try to head-reduce the conclusion of the theorem *)
-            let red_thm = try_red_product env sigma thm_ty in
-            Proofview.tclORELSE
-              (try_apply red_thm concl_nprod)
-              (function (e, info) -> match e with
-              | PretypeError _|RefinerError _|UserError _|Failure _ ->
-		try_red_apply red_thm
-              | exn -> iraise (exn, info))
-          with Redelimination ->
-            (* Last chance: if the head is a variable, apply may try
-	       second order unification *)
-            let tac =
-	      if with_destruct then
-                descend_in_conjunctions []
-                  (fun b id ->
-                    Tacticals.New.tclTHEN
-                      (try_main_apply b (mkVar id))
-                      (Proofview.V82.tactic (thin [id])))
-                  (fun _ ->
-                    let info = Loc.add_loc info loc in
-                    Proofview.tclZERO ~info exn0) c
-	      else
-                let info = Loc.add_loc info loc in
-		Proofview.tclZERO ~info exn0 in
-            if not (Int.equal concl_nprod 0) then
-              try
-                Proofview.tclORELSE
-                  (try_apply thm_ty 0)
-                  (function (e, info) -> match e with
-                  | PretypeError _|RefinerError _|UserError _|Failure _->
-                    tac
-                  | exn -> iraise (exn, info))
-              with UserError _ | Exit ->
-                tac
-            else
-              tac
-	in try_red_apply thm_ty0
-      | exn -> iraise (exn, info))
+      | PretypeError _|RefinerError _|UserError _|Failure _ ->
+        Some (try_red_apply thm_ty0 (e, info))
+      | _ -> None)
     end
   in
     Tacticals.New.tclTHENLIST [
@@ -1596,10 +1599,10 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars naming
             tac id
           ])
     with e when with_destruct && Errors.noncritical e ->
-      let e = Errors.push e in
+      let (e, info) = Errors.push e in
         (descend_in_conjunctions [targetid]
            (fun b id -> aux (id::idstoclear) b (mkVar id))
-           (fun _ -> iraise e) c)
+           (e, info) c)
     end
   in
   aux [] with_destruct d
@@ -1871,8 +1874,8 @@ let check_number_of_constructors expctdnumopt i nconstr =
   if Int.equal i 0 then error "The constructors are numbered starting from 1.";
   begin match expctdnumopt with
     | Some n when not (Int.equal n nconstr) ->
-	error ("Not an inductive goal with "^
-	       string_of_int n ^ String.plural n " constructor"^".")
+	errorlabstrm "Tactics.check_number_of_constructors"
+          (str "Not an inductive goal with " ++ int n ++ str (String.plural n " constructor") ++ str ".")
     | _ -> ()
   end;
   if i > nconstr then error "Not enough constructors."
@@ -3043,7 +3046,7 @@ let make_up_names n ind_opt cname =
 
 let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
-  error ("Cannot recognize "^s^"an induction scheme.")
+  errorlabstrm "Tactics" (str "Cannot recognize " ++ str s ++ str "an induction scheme.")
 
 let glob = Universes.constr_of_global
 

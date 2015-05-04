@@ -306,8 +306,8 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
 	      let _ = Global.lookup_constant c1' in
 		c1'
 	    with Not_found -> 
-	      let rwr_thm = Label.to_string l' in 
-	      error ("Cannot find rewrite principle "^rwr_thm^".")
+	      errorlabstrm "Equality.find_elim"
+                (str "Cannot find rewrite principle " ++ pr_label l' ++ str ".")
 	  end
 	| _ -> destConstRef pr1
         end
@@ -454,7 +454,7 @@ let general_rewrite_clause l2r with_evars ?tac c cl =
 	(* Otherwise, if we are told to rewrite in all hypothesis via the
            syntax "* |-", we fail iff all the different rewrites fail *)
 	let rec do_hyps_atleastonce = function
-	  | [] -> Proofview.tclZERO (Errors.UserError ("",Pp.str"Nothing to rewrite."))
+	  | [] -> tclZEROMSG (Pp.str"Nothing to rewrite.")
 	  | id :: l ->
 	    tclIFTHENTRYELSEMUST
 	     (general_rewrite_ebindings_in l2r AllOccurrences false true ?tac id c with_evars)
@@ -874,7 +874,7 @@ let gen_absurdity id =
   then
     simplest_elim (mkVar id)
   else
-    Proofview.tclZERO (Errors.UserError ("Equality.gen_absurdity" , str "Not the negation of an equality."))
+    tclZEROMSG (str "Not the negation of an equality.")
   end
 
 (* Precondition: eq is leibniz equality
@@ -936,7 +936,7 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
     let concl = Proofview.Goal.concl gl in
     match find_positions env sigma t1 t2 with
     | Inr _ ->
-	Proofview.tclZERO (Errors.UserError ("discr" , str"Not a discriminable equality."))
+	tclZEROMSG (str"Not a discriminable equality.")
     | Inl (cpath, (_,dirn), _) ->
 	let sort = pf_apply get_type_of gl concl in
 	discr_positions env sigma u eq_clause cpath dirn sort
@@ -968,7 +968,7 @@ let onNegatedEquality with_evars tac =
           (onLastHypId (fun id ->
             onEquality with_evars tac (mkVar id,NoBindings)))
     | _ ->
-        Proofview.tclZERO (Errors.UserError ("" , str "Not a negated primitive equality."))
+        tclZEROMSG (str "Not a negated primitive equality.")
   end
 
 let discrSimpleClause with_evars = function
@@ -1303,7 +1303,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
   in
   let injectors = List.map_filter filter posns in
   if List.is_empty injectors then
-    Proofview.tclZERO (Errors.UserError ("Equality.inj" , str "Failed to decompose the equality."))
+    tclZEROMSG (str "Failed to decompose the equality.")
   else
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
     (Proofview.tclBIND
@@ -1319,12 +1319,12 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   let env = eq_clause.env in
   match find_positions env sigma t1 t2 with
   | Inl _ ->
-     Proofview.tclZERO (Errors.UserError ("Inj",strbrk"This equality is discriminable. You should use the discriminate tactic to solve the goal."))
+     tclZEROMSG (strbrk"This equality is discriminable. You should use the discriminate tactic to solve the goal.")
   | Inr [] ->
      let suggestion = if !injection_on_proofs then "" else " You can try to use option Set Injection On Proofs." in
-     Proofview.tclZERO (Errors.UserError ("Equality.inj",strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion)))
+     tclZEROMSG (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
   | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
-     Proofview.tclZERO (Errors.UserError ("Equality.inj" , str"Nothing to inject."))
+     tclZEROMSG (str"Nothing to inject.")
   | Inr posns ->
       inject_at_positions env sigma l2r u eq_clause posns
 	(tac (clenv_value eq_clause))
@@ -1589,10 +1589,10 @@ let is_eq_x gl x (id,_,c) =
    erase hyp and x; proceed by generalizing all dep hyps *)
 
 let subst_one dep_proof_ok x (hyp,rhs,dir) =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
-  let hyps = Proofview.Goal.hyps gl in
-  let concl = Proofview.Goal.concl gl in
+  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
+  let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
   (* The set of hypotheses using x *)
   let dephyps =
     List.rev (snd (List.fold_right (fun (id,b,_ as dcl) (deps,allhyps) ->
@@ -1663,24 +1663,45 @@ let default_subst_tactic_flags () =
     { only_leibniz = true; rewrite_dependent_proof = false }
 
 let subst_all ?(flags=default_subst_tactic_flags ()) () =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let find_eq_data_decompose = find_eq_data_decompose gl in
-  let test (_,c) =
-    try
-      let lbeq,u,(_,x,y) = find_eq_data_decompose c in
-      let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
-      if flags.only_leibniz then restrict_to_eq_and_identity eq;
-      (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
-      if Term.eq_constr x y then failwith "caught";
-      match kind_of_term x with Var x -> x | _ ->
-      match kind_of_term y with Var y -> y | _ -> failwith "caught"
-    with Constr_matching.PatternMatchingFailure -> failwith "caught"
+
+  (* First step: find hypotheses to treat in linear time *)
+  let find_equations gl =
+    let gl = Proofview.Goal.assume gl in
+    let find_eq_data_decompose = find_eq_data_decompose gl in
+    let test (hyp,_,c) =
+      try
+        let lbeq,u,(_,x,y) = find_eq_data_decompose c in
+        let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
+        if flags.only_leibniz then restrict_to_eq_and_identity eq;
+        (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
+        if Term.eq_constr x y then None else
+        match kind_of_term x, kind_of_term y with
+        | Var _, _ | _, Var _ -> Some hyp
+        | _ -> None
+      with Constr_matching.PatternMatchingFailure -> None
+    in
+    let hyps = Proofview.Goal.hyps gl in
+    List.map_filter test hyps
   in
-  let test p = try Some (test p) with Failure _ -> None in
-  let hyps = pf_hyps_types gl in
-  let ids = List.map_filter test hyps in
-  let ids = List.uniquize ids in
-  subst_gen flags.rewrite_dependent_proof ids
+
+  (* Second step: treat equations *)
+  let process hyp =
+    Proofview.Goal.enter begin fun gl ->
+    let gl = Proofview.Goal.assume gl in
+    let find_eq_data_decompose = find_eq_data_decompose gl in
+    let (_,_,c) = pf_get_hyp hyp gl in
+    let _,_,(_,x,y) = find_eq_data_decompose c in
+    (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
+    if Term.eq_constr x y then Proofview.tclUNIT () else
+      match kind_of_term x, kind_of_term y with
+      | Var x, _ -> subst_one flags.rewrite_dependent_proof x (hyp,y,true)
+      | _, Var y -> subst_one flags.rewrite_dependent_proof y (hyp,x,false)
+      | _ -> Proofview.tclUNIT ()
+    end
+  in
+  Proofview.Goal.nf_enter begin fun gl ->
+    let ids = find_equations gl in
+    tclMAP process ids
   end
 
 (* Rewrite the first assumption for which a condition holds

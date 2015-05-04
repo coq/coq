@@ -164,7 +164,7 @@ let add_rec_ml_dir unix_path =
 let convert_string d =
   try Names.Id.of_string d
   with UserError _ ->
-    msg_warning (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
+    msg_warning (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
     raise Exit
 
 let add_rec_path ~unix_path ~coq_root ~implicit =
@@ -184,7 +184,7 @@ let add_rec_path ~unix_path ~coq_root ~implicit =
     let () = List.iter add dirs in
     Loadpath.add_load_path unix_path ~implicit coq_root
   else
-    msg_warning (str ("Cannot open " ^ unix_path))
+    msg_warning (str "Cannot open " ++ str unix_path)
 
 (* convertit un nom quelconque en nom de fichier ou de module *)
 let mod_of_name name =
@@ -321,13 +321,13 @@ let reset_loaded_modules () = loaded_modules := []
 let if_verbose_load verb f name ?path fname =
   if not verb then f name ?path fname
   else
-    let info = "[Loading ML file "^fname^" ..." in
+    let info = str "[Loading ML file " ++ str fname ++ str " ..." in
     try
       let path = f name ?path fname in
-      msg_info (str (info^" done]"));
+      msg_info (info ++ str " done]");
       path
     with reraise ->
-      msg_info (str (info^" failed]"));
+      msg_info (info ++ str " failed]");
       raise reraise
 
 (** Load a module for the first time (i.e. dynlink it)
@@ -340,7 +340,8 @@ let trigger_ml_object verb cache reinit ?path name =
     add_loaded_module name (known_module_path name);
     if cache then perform_cache_obj name
   end else if not has_dynlink then
-    error ("Dynamic link not supported (module "^name^")")
+    errorlabstrm "Mltop.trigger_ml_object"
+      (str "Dynamic link not supported (module " ++ str name ++ str ")")
   else begin
     let file = file_of_name (Option.default name path) in
     let path =

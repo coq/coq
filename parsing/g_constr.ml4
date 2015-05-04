@@ -223,12 +223,6 @@ GEXTEND Gram
           CHole (!@loc, None, IntroAnonymous, Some arg)
       ] ]
   ;
-  forall:
-    [ [ "forall" -> () ] ]
-  ;
-  lambda:
-    [ [ "fun" -> () ] ]
-  ;
   record_declaration:
     [ [ fs = LIST0 record_field_declaration SEP ";" -> CRecord (!@loc, None, fs)
 (*       | c = lconstr; "with"; fs = LIST1 record_field_declaration SEP ";" -> *)
@@ -240,9 +234,9 @@ GEXTEND Gram
       (id, abstract_constr_expr c (binders_of_lidents params)) ] ]
   ;
   binder_constr:
-    [ [ forall; bl = open_binders; ","; c = operconstr LEVEL "200" ->
+    [ [ "forall"; bl = open_binders; ","; c = operconstr LEVEL "200" ->
           mkCProdN (!@loc) bl c
-      | lambda; bl = open_binders; "=>"; c = operconstr LEVEL "200" ->
+      | "fun"; bl = open_binders; "=>"; c = operconstr LEVEL "200" ->
           mkCLambdaN (!@loc) bl c
       | "let"; id=name; bl = binders; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->

@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Libnames
+open Pp
 
 (* The relax flag is used to make it possible to load files while ignoring
    failures to incorporate some objects.  This can be useful when one
@@ -33,15 +34,13 @@ type 'a object_declaration = {
   discharge_function : object_name * 'a -> 'a option;
   rebuild_function : 'a -> 'a }
 
-let yell s = Errors.anomaly (Pp.str s)
-
 let default_object s = {
   object_name = s;
   cache_function = (fun _ -> ());
   load_function = (fun _ _ -> ());
   open_function = (fun _ _ -> ());
   subst_function = (fun _ ->
-    yell ("The object "^s^" does not know how to substitute!"));
+    Errors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
   classify_function = (fun obj -> Keep obj);
   discharge_function = (fun _ -> None);
   rebuild_function = (fun x -> x)}

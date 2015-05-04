@@ -351,7 +351,7 @@ let dump_universes_gen g s =
   try
     Univ.dump_universes output_constraint g;
     close ();
-    msg_info (str ("Universes written to file \""^s^"\"."))
+    msg_info (str "Universes written to file \"" ++ str s ++ str "\".")
   with reraise ->
     let reraise = Errors.push reraise in
     close ();
@@ -610,16 +610,14 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
   let binders_ast = List.map
    (fun (export,idl,ty) ->
      if not (Option.is_empty export) then
-      error ("Arguments of a functor declaration cannot be exported. " ^
-       "Remove the \"Export\" and \"Import\" keywords from every functor " ^
-       "argument.")
+      error "Arguments of a functor declaration cannot be exported. Remove the \"Export\" and \"Import\" keywords from every functor argument."
      else (idl,ty)) binders_ast in
   let mp =
     Declaremods.declare_module Modintern.interp_module_ast
       id binders_ast (Enforce mty_ast) []
   in
   Dumpglob.dump_moddef loc mp "mod";
-  if_verbose msg_info (str ("Module "^ Id.to_string id ^" is declared"));
+  if_verbose msg_info (str "Module " ++ pr_id id ++ str " is declared");
   Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
 
 let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
@@ -641,7 +639,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
        in
        Dumpglob.dump_moddef loc mp "mod";
        if_verbose msg_info
-         (str ("Interactive Module "^ Id.to_string id ^" started"));
+         (str "Interactive Module " ++ pr_id id ++ str " started");
        List.iter
          (fun (export,id) ->
            Option.iter
@@ -651,9 +649,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
        let binders_ast = List.map
         (fun (export,idl,ty) ->
           if not (Option.is_empty export) then
-           error ("Arguments of a functor definition can be imported only if" ^
-                  " the definition is interactive. Remove the \"Export\" and " ^
-                  "\"Import\" keywords from every functor argument.")
+           error "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument."
           else (idl,ty)) binders_ast in
        let mp =
          Declaremods.declare_module Modintern.interp_module_ast
@@ -661,14 +657,14 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
        in
        Dumpglob.dump_moddef loc mp "mod";
        if_verbose msg_info
-	 (str ("Module "^ Id.to_string id ^" is defined"));
+	 (str "Module " ++ pr_id id ++ str " is defined");
        Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)])
          export
 
 let vernac_end_module export (loc,id as lid) =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref loc mp "mod";
-  if_verbose msg_info (str ("Module "^ Id.to_string id ^" is defined"));
+  if_verbose msg_info (str "Module " ++ pr_id id ++ str " is defined");
   Option.iter (fun export -> vernac_import export [Ident lid]) export
 
 let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
@@ -690,7 +686,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
        in
        Dumpglob.dump_moddef loc mp "modtype";
        if_verbose msg_info
-	 (str ("Interactive Module Type "^ Id.to_string id ^" started"));
+	 (str "Interactive Module Type " ++ pr_id id ++ str " started");
        List.iter
          (fun (export,id) ->
            Option.iter
@@ -701,9 +697,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
 	let binders_ast = List.map
           (fun (export,idl,ty) ->
             if not (Option.is_empty export) then
-              error ("Arguments of a functor definition can be imported only if" ^
-			" the definition is interactive. Remove the \"Export\" " ^
-			"and \"Import\" keywords from every functor argument.")
+              error "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument."
             else (idl,ty)) binders_ast in
 	let mp =
           Declaremods.declare_modtype Modintern.interp_module_ast
@@ -711,12 +705,12 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
         in
         Dumpglob.dump_moddef loc mp "modtype";
 	if_verbose msg_info
-	  (str ("Module Type "^ Id.to_string id ^" is defined"))
+	  (str "Module Type " ++ pr_id id ++ str " is defined")
 
 let vernac_end_modtype (loc,id) =
   let mp = Declaremods.end_modtype () in
   Dumpglob.dump_modref loc mp "modtype";
-  if_verbose msg_info (str ("Module Type "^ Id.to_string id ^" is defined"))
+  if_verbose msg_info (str "Module Type " ++ pr_id id ++ str " is defined")
 
 let vernac_include l =
   Declaremods.declare_include Modintern.interp_module_ast l
@@ -868,7 +862,8 @@ let vernac_set_used_variables e =
   let vars = Environ.named_context env in
   List.iter (fun id -> 
     if not (List.exists (fun (id',_,_) -> Id.equal id id') vars) then
-      error ("Unknown variable: " ^ Id.to_string id))
+      errorlabstrm "vernac_set_used_variables"
+        (str "Unknown variable: " ++ pr_id id))
     l;
   let closure_l = List.map pi1 (set_used_variables l) in
   let closure_l = List.fold_right Id.Set.add closure_l Id.Set.empty in
@@ -914,7 +909,7 @@ let vernac_chdir = function
   | Some path ->
       begin
 	try Sys.chdir (expand path)
-	with Sys_error err -> msg_warning (str ("Cd failed: " ^ err))
+	with Sys_error err -> msg_warning (str "Cd failed: " ++ str err)
       end;
       if_verbose msg_info (str (Sys.getcwd()))
 
@@ -1051,15 +1046,16 @@ let vernac_declare_arguments locality r l nargs flags =
   let inf_names =
     let ty = Global.type_of_global_unsafe sr in
       Impargs.compute_implicits_names (Global.env ()) ty in
-  let string_of_name = function Anonymous -> "_" | Name id -> Id.to_string id in
   let rec check li ld ls = match li, ld, ls with
     | [], [], [] -> ()
     | [], Anonymous::ld, (Some _)::ls when extra_scope_flag -> check li ld ls
     | [], _::_, (Some _)::ls when extra_scope_flag ->
        error "Extra notation scopes can be set on anonymous arguments only"
-    | [], x::_, _ -> error ("Extra argument " ^ string_of_name x ^ ".")
-    | l, [], _ -> error ("The following arguments are not declared: " ^
-       (String.concat ", " (List.map string_of_name l)) ^ ".")
+    | [], x::_, _ -> errorlabstrm "vernac_declare_arguments"
+                       (str "Extra argument " ++ pr_name x ++ str ".")
+    | l, [], _ -> errorlabstrm "vernac_declare_arguments"
+                    (str "The following arguments are not declared: " ++
+                       prlist_with_sep pr_comma pr_name l ++ str ".")
     | _::li, _::ld, _::ls -> check li ld ls 
     | _ -> assert false in
   let () = match l with
@@ -1087,9 +1083,6 @@ let vernac_declare_arguments locality r l nargs flags =
   let renamed_arg = ref None in
   let set_renamed a b =
     if Option.is_empty !renamed_arg && not (Id.equal a b) then renamed_arg := Some(b,a) in
-  let pr_renamed_arg () = match !renamed_arg with None -> ""
-    | Some (o,n) ->
-       "\nArgument "^string_of_id o ^" renamed to "^string_of_id n^"." in
   let some_renaming_specified =
     try
       let names = Arguments_renaming.arguments_names sr in
@@ -1103,7 +1096,8 @@ let vernac_declare_arguments locality r l nargs flags =
       let sr', impl = List.fold_map (fun b -> function
         | (Anonymous, _,_, true, max), Name id -> assert false
         | (Name x, _,_, true, _), Anonymous ->
-            error ("Argument "^Id.to_string x^" cannot be declared implicit.")
+            errorlabstrm "vernac_declare_arguments"
+              (str "Argument " ++ pr_id x ++ str " cannot be declared implicit.")
         | (Name iid, _,_, true, max), Name id ->
            set_renamed iid id;
            b || not (Id.equal iid id), Some (ExplByName id, max, false)
@@ -1116,8 +1110,12 @@ let vernac_declare_arguments locality r l nargs flags =
       some_renaming_specified l in
   if some_renaming_specified then
     if not (List.mem `Rename flags) then
-      error ("To rename arguments the \"rename\" flag must be specified."
-        ^ pr_renamed_arg ())
+      errorlabstrm "vernac_declare_arguments"
+        (str "To rename arguments the \"rename\" flag must be specified." ++
+           match !renamed_arg with
+           | None -> mt ()
+           | Some (o,n) ->
+              str "\nArgument " ++ pr_id o ++ str " renamed to " ++ pr_id n ++ str ".")
     else
       Arguments_renaming.rename_arguments
         (make_section_locality locality) sr names_decl;
@@ -1581,7 +1579,8 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
       | Some n,AN (Ident (_loc,id)) ->  (* goal number given, catch if wong *)
 	 (try get_nth_goal n,id
 	  with
-	    Failure _ -> Errors.error ("No such goal: "^string_of_int n^"."))
+	    Failure _ -> errorlabstrm "print_about_hyp_globs"
+                           (str "No such goal: " ++ int n ++ str "."))
       | _ , _ -> raise NoHyp in
     let hyps = pf_hyps gl in
     let (id,bdyopt,typ) = Context.lookup_named id hyps in
@@ -1674,8 +1673,8 @@ let interp_search_about_item env =
 	    (fun _ -> true) s sc in
 	GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ ->
-	error ("Unable to interp \""^s^"\" either as a reference or \
-          	as an identifier component")
+	errorlabstrm "interp_search_about_item"
+          (str "Unable to interp \"" ++ str s ++ str "\" either as a reference or as an identifier component")
 
 let vernac_search s gopt r =
   let r = interp_search_restriction r in
@@ -1850,6 +1849,7 @@ let interp ?proof locality poly c =
   | VernacLoad _ -> assert false
   | VernacFail _ -> assert false
   | VernacTime _ -> assert false
+  | VernacRedirect _ -> assert false
   | VernacTimeout _ -> assert false
   | VernacStm _ -> assert false
 
@@ -2128,6 +2128,8 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     | VernacTimeout (n,v) ->
         current_timeout := Some n;
         aux ?locality ?polymorphism isprogcmd v
+    | VernacRedirect (s, v) ->
+         Pp.with_output_to_file s (aux_list ?locality ?polymorphism isprogcmd) v;
     | VernacTime v ->
         System.with_time !Flags.time
           (aux_list ?locality ?polymorphism isprogcmd) v;

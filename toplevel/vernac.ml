@@ -27,7 +27,7 @@ let rec is_navigation_vernac = function
   | VernacBacktrack _
   | VernacBackTo _
   | VernacBack _ -> true
-  | VernacTime l ->
+  | VernacRedirect (_, l) | VernacTime l ->
     List.exists
       (fun (_,c) -> is_navigation_vernac c) l (* Time Back* is harmless *)
   | c -> is_deep_navigation_vernac c
@@ -208,7 +208,7 @@ let display_cmd_header loc com =
   let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
   in
   Pp.pp (str "Chars " ++ int start ++ str " - " ++ int stop ++
-	 str (" ["^cmd^"] "));
+	 str " [" ++ str cmd ++ str "] ");
   Pp.flush_all ()
 
 let rec vernac_com verbosely checknav (loc,com) =

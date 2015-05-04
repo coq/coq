@@ -844,6 +844,25 @@ let subterm_source evk (loc,k) =
   (loc,Evar_kinds.SubEvar evk)
 
 
-(** Term exploration up to isntantiation. *)
+(** Term exploration up to instantiation. *)
 let kind_of_term_upto sigma t =
   Constr.kind (Reductionops.whd_evar sigma t)
+
+(** [eq_constr_univs_test sigma1 sigma2 t u] tests equality of [t] and
+    [u] up to existential variable instantiation and equalisable
+    universes. The term [t] is interpreted in [sigma1] while [u] is
+    interpreted in [sigma2]. The universe constraints in [sigma2] are
+    assumed to be an extention of those in [sigma1]. *)
+let eq_constr_univs_test sigma1 sigma2 t u =
+  (* spiwack: mild code duplication with {!Evd.eq_constr_univs}. *)
+  let open Evd in
+  let b, c =
+    Universes.eq_constr_univs_infer_with
+      (fun t -> kind_of_term_upto sigma1 t)
+      (fun u -> kind_of_term_upto sigma2 u)
+      (universes sigma2) t u
+  in
+  if b then
+    try let _ = add_universe_constraints sigma2 c in true
+    with Univ.UniverseInconsistency _ | UniversesDiffer -> false
+  else false

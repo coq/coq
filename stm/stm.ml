@@ -86,7 +86,7 @@ let vernac_interp ?proof id ?route { verbose; loc; expr } =
     | VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
     | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true
-    | VernacTime el -> List.for_all (fun (_,e) -> internal_command e) el
+    | VernacTime el | VernacRedirect (_,el) -> List.for_all (fun (_,e) -> internal_command e) el
     | _ -> false in
   if internal_command expr then begin
     prerr_endline ("ignoring " ^ string_of_ppcmds(pr_vernac expr))
@@ -1472,7 +1472,7 @@ end = struct (* {{{ *)
     let e, etac, time, fail =
       let rec find time fail = function
         | VernacSolve(_,_,re,b) -> re, b, time, fail
-        | VernacTime [_,e] -> find true fail e
+        | VernacTime [_,e] | VernacRedirect (_,[_,e]) -> find true fail e
         | VernacFail e -> find time true e
         | _ -> errorlabstrm "Stm" (str"unsupported") in find false false e in
     Hooks.call Hooks.with_fail fail (fun () ->
@@ -2018,7 +2018,7 @@ let handle_failure (e, info) vcs tty =
       end;
       VCS.print ();
       anomaly(str"error with no safe_id attached:" ++ spc() ++
-        Errors.print_no_report e)
+        Errors.iprint_no_report (e, info))
   | Some (safe_id, id) ->
       prerr_endline ("Failed at state " ^ Stateid.to_string id);
       VCS.restore vcs;

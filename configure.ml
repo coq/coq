@@ -27,7 +27,7 @@ let die msg = eprintf "%s\nConfiguration script failed!\n" msg; exit 1
 
 let s2i = int_of_string
 let i2s = string_of_int
-let (/) = Filename.concat
+let (/) x y = x ^ "/" ^ y
 
 (** Remove the final '\r' that may exists on Win32 *)
 
@@ -396,8 +396,7 @@ let coq_annotate_flag =
   then if program_in_path "ocamlmerlin" then "-bin-annot" else "-dtypes"
   else ""
 
-let cflags = "-Wall -Wno-unused"
-
+let cflags = "-Wall -Wno-unused -g " ^ (if !Prefs.debug then "-O1" else "-O2")
 
 (** * Architecture *)
 

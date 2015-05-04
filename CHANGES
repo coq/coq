@@ -1,3 +1,51 @@
+Changes from V8.5beta2 to ...
+===================================
+
+Vernacular commands
+
+- New command "Redirect" to redirect the output of a command to a file.
+
+
+Changes from V8.5beta1 to V8.5beta2
+===================================
+
+Logic
+
+- The VM now supports inductive types with up to 8388851 non-constant
+  constructors and up to 8388607 constant ones.
+
+Tactics
+
+- A script using the admit tactic can no longer be concluded by either
+  Qed or Defined. In the first case, Admitted can be used instead. In
+  the second case, a subproof should be used.
+
+- The easy tactic and the now tactical now have a more predictable
+  behavior, but they might now discharge some previously unsolved goals.
+
+Extraction
+
+- Definitions extracted to Haskell GHC should no longer randomly
+  segfault when some Coq types cannot be represented by Haskell types.
+
+- Definitions can now be extracted to Json for post-processing.
+
+Tools
+
+- Option -I -as has been removed, and option -R -as has been
+  deprecated. In both cases, option -R can be used instead.
+
+- coq_makefile now generates double-colon rules for rules such as clean.
+
+API
+
+- The interface of [change] has changed to take a [change_arg], which
+  can be built from a [constr] using [make_change_arg].
+
+- [pattern_of_constr] now returns a triplet including the cleaned-up
+  [evar_map], removing the evars that were turned into metas.
+
+
 Changes from V8.4 to V8.5beta1
 ==============================
 

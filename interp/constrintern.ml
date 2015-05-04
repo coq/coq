@@ -1893,7 +1893,7 @@ let intern_context global_level env impl_env binders =
   with InternalizationError (loc,e) ->
     user_err_loc (loc,"internalize", explain_internalization_error e)
 
-let interp_rawcontext_evars env evdref bl =
+let interp_rawcontext_evars env evdref k bl =
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->
@@ -1913,12 +1913,12 @@ let interp_rawcontext_evars env evdref bl =
 	  | Some b ->
 	      let c = understand_judgment_tcc env evdref b in
 	      let d = (na, Some c.uj_val, c.uj_type) in
-		(push_rel d env, d::params, succ n, impls))
-      (env,[],1,[]) (List.rev bl)
+		(push_rel d env, d::params, n, impls))
+      (env,[],k+1,[]) (List.rev bl)
   in (env, par), impls
 
-let interp_context_evars ?(global_level=false) ?(impl_env=empty_internalization_env) env evdref params =
+let interp_context_evars ?(global_level=false) ?(impl_env=empty_internalization_env) ?(shift=0) env evdref params =
   let int_env,bl = intern_context global_level env impl_env params in
-  let x = interp_rawcontext_evars env evdref bl in
+  let x = interp_rawcontext_evars env evdref shift bl in
   int_env, x
 

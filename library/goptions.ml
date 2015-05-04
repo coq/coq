@@ -35,7 +35,7 @@ type option_state = {
 let nickname table = String.concat " " table
 
 let error_undeclared_key key =
-  error ((nickname key)^": no table or option of this type")
+  errorlabstrm "Goptions" (str (nickname key) ++ str ": no table or option of this type")
 
 (****************************************************************************)
 (* 1- Tables                                                                *)
@@ -301,7 +301,9 @@ let declare_string_option =
 let set_option_value locality check_and_cast key v =
   let (name, depr, (_,read,write,lwrite,gwrite)) =
     try get_option key
-    with Not_found -> error ("There is no option "^(nickname key)^".")
+    with Not_found ->
+      errorlabstrm "Goptions.set_option_value"
+        (str "There is no option " ++ str (nickname key) ++ str ".")
   in
   let write = match locality with
     | None -> write
@@ -364,9 +366,9 @@ let print_option_value key =
   let s = read () in
   match s with
     | BoolValue b ->
-	msg_info (str ("The "^name^" mode is "^(if b then "on" else "off")))
+	msg_info (str "The " ++ str name ++ str " mode is " ++ str (if b then "on" else "off"))
     | _ ->
-	msg_info (str ("Current value of "^name^" is ") ++ msg_option_value (name, s))
+	msg_info (str "Current value of " ++ str name ++ str " is " ++ msg_option_value (name, s))
 
 let get_tables () =
   let tables = !value_tab in
@@ -383,7 +385,7 @@ let get_tables () =
 
 let print_tables () =
   let print_option key name value depr =
-    let msg = str ("  "^(nickname key)^": ") ++ msg_option_value (name, value) in
+    let msg = str "  " ++ str (nickname key) ++ str ": " ++ msg_option_value (name, value) in
     if depr then msg ++ str " [DEPRECATED]" ++ fnl ()
     else msg ++ fnl ()
   in
@@ -401,10 +403,10 @@ let print_tables () =
       !value_tab (mt ()) ++
   str "Tables:" ++ fnl () ++
     List.fold_right
-      (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl ())
+      (fun (nickkey,_) p -> p ++ str "  " ++ str nickkey ++ fnl ())
       !string_table (mt ()) ++
     List.fold_right
-      (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl ())
+      (fun (nickkey,_) p -> p ++ str "  " ++ str nickkey ++ fnl ())
       !ref_table (mt ()) ++
     fnl ()
 

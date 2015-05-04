@@ -208,118 +208,110 @@ struct
   type rich_exn = Exninfo.iexn
 
   type 'a iolist =
-      { iolist : 'r. (rich_exn -> 'r NonLogical.t) ->
-                     ('a -> (rich_exn -> 'r NonLogical.t) -> 'r NonLogical.t) ->
-                     'r NonLogical.t }
+    { iolist : 'r. state -> (rich_exn -> 'r NonLogical.t) ->
+      ('a -> state -> (rich_exn -> 'r NonLogical.t) -> 'r NonLogical.t) ->
+      'r NonLogical.t }
 
   include Monad.Make(struct
-    type 'a t = state -> ('a * state) iolist
 
-    let return x : 'a t = (); fun s ->
-      { iolist = fun nil cons -> cons (x, s) nil }
+    type 'a t = 'a iolist
 
-    let (>>=) (m : 'a t) (f : 'a -> 'b t) : 'b t = (); fun s ->
-      let m = m s in
-      { iolist = fun nil cons ->
-        m.iolist nil (fun (x, s) next -> (f x s).iolist next cons) }
+    let return x =
+      { iolist = fun s nil cons -> cons x s nil }
 
-    let (>>) (m : unit t) (f : 'a t) : 'a t = (); fun s ->
-      let m = m s in
-      { iolist = fun nil cons ->
-        m.iolist nil (fun ((), s) next -> (f s).iolist next cons) }
+    let (>>=) m f =
+      { iolist = fun s nil cons ->
+        m.iolist s nil (fun x s next -> (f x).iolist s next cons) }
 
-    let map (f : 'a -> 'b) (m : 'a t) : 'b t = (); fun s ->
-      let m = m s in
-      { iolist = fun nil cons -> m.iolist nil (fun (x, s) next -> cons (f x, s) next) }
+    let (>>) m f =
+      { iolist = fun s nil cons ->
+        m.iolist s nil (fun () s next -> f.iolist s next cons) }
+
+    let map f m =
+      { iolist = fun s nil cons -> m.iolist s nil (fun x s next -> cons (f x) s next) }
 
   end)
 
-  let zero e : 'a t = (); fun s ->
-    { iolist = fun nil cons -> nil e }
+  let zero e =
+    { iolist = fun _ nil cons -> nil e }
 
-  let plus m1 m2 : 'a t = (); fun s ->
-    let m1 = m1 s in
-    { iolist = fun nil cons -> m1.iolist (fun e -> (m2 e s).iolist nil cons) cons }
+  let plus m1 m2 =
+    { iolist = fun s nil cons -> m1.iolist s (fun e -> (m2 e).iolist s nil cons) cons }
 
-  let ignore (m : 'a t) : unit t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons -> m.iolist nil (fun (_, s) next -> cons ((), s) next) }
+  let ignore m =
+    { iolist = fun s nil cons -> m.iolist s nil (fun _ s next -> cons () s next) }
 
-  let lift (m : 'a NonLogical.t) : 'a t = (); fun s ->
-    { iolist = fun nil cons -> NonLogical.(m >>= fun x -> cons (x, s) nil) }
+  let lift m =
+    { iolist = fun s nil cons -> NonLogical.(m >>= fun x -> cons x s nil) }
 
   (** State related *)
 
-  let get : P.s t = (); fun s ->
-    { iolist = fun nil cons -> cons (s.sstate, s) nil }
+  let get =
+    { iolist = fun s nil cons -> cons s.sstate s nil }
 
-  let set (sstate : P.s) : unit t = (); fun s ->
-    { iolist = fun nil cons -> cons ((), { s with sstate }) nil }
+  let set (sstate : P.s) =
+    { iolist = fun s nil cons -> cons () { s with sstate } nil }
 
-  let modify (f : P.s -> P.s) : unit t = (); fun s ->
-    { iolist = fun nil cons -> cons ((), { s with sstate = f s.sstate }) nil }
+  let modify (f : P.s -> P.s) =
+    { iolist = fun s nil cons -> cons () { s with sstate = f s.sstate } nil }
 
-  let current : P.e t = (); fun s ->
-    { iolist = fun nil cons -> cons (s.rstate, s) nil }
+  let current =
+    { iolist = fun s nil cons -> cons s.rstate s nil }
 
-  let local (type a) (e:P.e) (m:a t) : a t = (); fun s ->
-    let m = m { s with rstate = e } in
-    { iolist = fun nil cons ->
-      m.iolist nil (fun (x,s') next -> cons (x,{s' with rstate=s.rstate}) next) }
+  let local e m =
+    { iolist = fun s nil cons ->
+      m.iolist { s with rstate = e } nil
+        (fun x s' next -> cons x {s' with rstate = s.rstate} next) }
 
-  let put (w : P.w) : unit t = (); fun s ->
-    { iolist = fun nil cons -> cons ((), { s with wstate = P.wprod s.wstate w }) nil }
+  let put w =
+    { iolist = fun s nil cons -> cons () { s with wstate = P.wprod s.wstate w } nil }
 
-  let update (f : P.u -> P.u) : unit t = (); fun s ->
-    { iolist = fun nil cons -> cons ((), { s with ustate = f s.ustate }) nil }
+  let update (f : P.u -> P.u) =
+    { iolist = fun s nil cons -> cons () { s with ustate = f s.ustate } nil }
 
   (** List observation *)
 
-  let once (m : 'a t) : 'a t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons -> m.iolist nil (fun x _ -> cons x nil) }
+  let once m =
+    { iolist = fun s nil cons -> m.iolist s nil (fun x s _ -> cons x s nil) }
 
-  let break (f : rich_exn -> rich_exn option) (m : 'a t) : 'a t = (); fun s ->
-    let m = m s in
-    { iolist = fun nil cons ->
-      m.iolist nil (fun x next -> cons x (fun e -> match f e with None -> next e | Some e -> nil e))
+  let break f m =
+    { iolist = fun s nil cons ->
+      m.iolist s nil (fun x s next -> cons x s (fun e -> match f e with None -> next e | Some e -> nil e))
     }
 
   (** For [reflect] and [split] see the "Backtracking, Interleaving,
       and Terminating Monad Transformers" paper.  *)
   type 'a reified = ('a, rich_exn -> 'a reified) list_view NonLogical.t
 
-  let rec reflect (m : 'a reified) : 'a iolist =
-    { iolist = fun nil cons ->
+  let rec reflect (m : ('a * state) reified) : 'a iolist =
+    { iolist = fun s0 nil cons ->
       let next = function
       | Nil e -> nil e
-      | Cons (x, l) -> cons x (fun e -> (reflect (l e)).iolist nil cons)
+      | Cons ((x, s), l) -> cons x s (fun e -> (reflect (l e)).iolist s0 nil cons)
       in
       NonLogical.(m >>= next)
     }
 
-  let split (m : 'a t) : ('a, rich_exn -> 'a t) list_view t = (); fun s ->
-    let m = m s in
+  let split m : ('a, rich_exn -> 'a t) list_view t =
     let rnil e = NonLogical.return (Nil e) in
-    let rcons p l = NonLogical.return (Cons (p, l)) in
-    { iolist = fun nil cons ->
+    let rcons p s l = NonLogical.return (Cons ((p, s), l)) in
+    { iolist = fun s nil cons ->
       let open NonLogical in
-      m.iolist rnil rcons >>= begin function
-      | Nil e -> cons (Nil e, s) nil
+      m.iolist s rnil rcons >>= begin function
+      | Nil e -> cons (Nil e) s nil
       | Cons ((x, s), l) ->
-        let l e = (); fun _ -> reflect (l e) in
-        cons (Cons (x, l), s) nil
+        let l e = reflect (l e) in
+        cons (Cons (x, l)) s nil
       end }
 
   let run m r s =
     let s = { wstate = P.wunit; ustate = P.uunit; rstate = r; sstate = s } in
-    let m = m s in
     let rnil e = NonLogical.return (Nil e) in
-    let rcons (x, s) l =
+    let rcons x s l =
       let p = (x, s.sstate, s.wstate, s.ustate) in
       NonLogical.return (Cons (p, l))
     in
-    m.iolist rnil rcons
+    m.iolist s rnil rcons
 
   let repr x = x
 

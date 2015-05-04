@@ -1304,9 +1304,6 @@ let e_eq_constr_univs evdref t u =
   let evd, b = eq_constr_univs !evdref t u in
     evdref := evd; b
 
-let eq_constr_univs_test evd t u =
-  snd (eq_constr_univs evd t u)
-
 (**********************************************************)
 (* Accessing metas *)
 

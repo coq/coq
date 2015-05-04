@@ -562,10 +562,6 @@ val eq_constr_univs : evar_map -> constr -> constr -> evar_map * bool
 val e_eq_constr_univs : evar_map ref -> constr -> constr -> bool
 (** Syntactic equality up to universes. *)
 
-val eq_constr_univs_test : evar_map -> constr -> constr -> bool
-(** Syntactic equality up to universes, throwing away the (consistent) constraints
-    in case of success. *)
-
 (********************************************************************)
 (* constr with holes and pending resolution of classes, conversion  *)
 (* problems, candidates, etc.                                       *)

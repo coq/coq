@@ -1528,7 +1528,8 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     let ids = ids_of_named_context (named_context env) in
     if name == Anonymous then next_ident_away_in_goal x ids else
     if mem_named_context x (named_context env) then
-      error ("The variable "^(Id.to_string x)^" is already declared.")
+      errorlabstrm "Unification.make_abstraction_core"
+        (str "The variable " ++ Nameops.pr_id x ++ str " is already declared.")
     else
       x
   in

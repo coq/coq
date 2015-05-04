@@ -171,7 +171,7 @@ type search_entry = {
 let empty_se = {
   sentry_nopat = [];
   sentry_pat = [];
-  sentry_bnet = Bounded_net.create ();
+  sentry_bnet = Bounded_net.empty;
   sentry_mode = [];
 }
 
@@ -206,7 +206,7 @@ let rebuild_dn st se =
   let dn' = 
     List.fold_left 
       (fun dn (id, t) -> Bounded_net.add (Some st) dn (Option.get t.pat, (id, t)))
-      (Bounded_net.create ()) se.sentry_pat
+      Bounded_net.empty se.sentry_pat
   in
   { se with sentry_bnet = dn' }
 
@@ -394,7 +394,7 @@ module Hint_db = struct
     hintdb_state : Names.transparent_state;
     hintdb_cut : hints_path;
     hintdb_unfolds : Id.Set.t * Cset.t;
-    mutable hintdb_max_id : int;
+    hintdb_max_id : int;
     use_dn : bool;
     hintdb_map : search_entry Constr_map.t;
     (* A list of unindexed entries starting with an unfoldable constant
@@ -402,8 +402,9 @@ module Hint_db = struct
     hintdb_nopat : (global_reference option * stored_data) list
   }
 
-  let next_hint_id t = 
-    let h = t.hintdb_max_id in t.hintdb_max_id <- succ t.hintdb_max_id; h
+  let next_hint_id db =
+    let h = db.hintdb_max_id in
+    { db with hintdb_max_id = succ db.hintdb_max_id }, h
 
   let empty st use_dn = { hintdb_state = st;
 			  hintdb_cut = PathEmpty;
@@ -510,8 +511,9 @@ module Hint_db = struct
 	    state, { db with hintdb_unfolds = unfs }, true
       | _ -> db.hintdb_state, db, false
     in
-    let db = if db.use_dn && rebuild then rebuild_db st' db else db
-    in addkv k (next_hint_id db) v db
+    let db = if db.use_dn && rebuild then rebuild_db st' db else db in
+    let db, id = next_hint_id db in
+    addkv k id v db
 
   let add_list l db = List.fold_left (fun db k -> add_one k db) db l
 
@@ -596,7 +598,7 @@ let current_pure_db () =
   List.map snd (Hintdbmap.bindings (Hintdbmap.remove "v62" !searchtable))
 
 let error_no_such_hint_database x =
-  error ("No such Hint database: "^x^".")
+  errorlabstrm "Hints" (str "No such Hint database: " ++ str x ++ str ".")
 
 (**************************************************************************)
 (*                       Definition of the summary                        *)

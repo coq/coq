@@ -750,7 +750,7 @@ let rec find_a_destructable_match t =
 
 let destauto t =
   try find_a_destructable_match t;
-    Proofview.tclZERO (UserError ("",  str"No destructable match found"))
+    Tacticals.New.tclZEROMSG (str "No destructable match found")
   with Found tac -> tac
 
 let destauto_in id = 
@@ -772,7 +772,7 @@ END
 let eq_constr x y = 
   Proofview.Goal.enter (fun gl ->
     let evd = Proofview.Goal.sigma gl in
-      if Evd.eq_constr_univs_test evd x y then Proofview.tclUNIT () 
+      if Evarutil.eq_constr_univs_test evd evd x y then Proofview.tclUNIT () 
       else Tacticals.New.tclFAIL 0 (str "Not equal"))
 
 TACTIC EXTEND constr_eq
@@ -966,7 +966,7 @@ let guard tst =
     Proofview.tclUNIT ()
   else
     let msg = Pp.(str"Condition not satisfied:"++ws 1++(pr_itest tst)) in
-    Proofview.tclZERO (Errors.UserError("guard",msg))
+    Tacticals.New.tclZEROMSG msg
 
 
 TACTIC EXTEND guard

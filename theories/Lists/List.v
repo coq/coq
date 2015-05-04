@@ -2276,7 +2276,7 @@ Section ForallPairs.
   Proof.
     induction 1.
     inversion 1.
-    simpl; destruct 1; destruct 1; repeat subst; auto.
+    simpl; destruct 1; destruct 1; subst; auto.
     right; left. apply -> Forall_forall; eauto.
     right; right. apply -> Forall_forall; eauto.
   Qed.

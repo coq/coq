@@ -12,6 +12,8 @@
 val make_pp_emacs:unit -> unit
 val make_pp_nonemacs:unit -> unit
 
+val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
+
 (** Pretty-printers. *)
 
 type std_ppcmds
@@ -45,9 +47,6 @@ val eval_ppcmds : std_ppcmds -> std_ppcmds
 
 val is_empty : std_ppcmds -> bool
 (** Test emptyness. *)
-
-val rewrite : (string -> string) -> std_ppcmds -> std_ppcmds
-(** [rewrite f pps] applies [f] to all strings that appear in [pps]. *)
 
 (** {6 Derived commands} *)
 

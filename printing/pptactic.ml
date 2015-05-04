@@ -1265,13 +1265,12 @@ module Make
 
         and pr_tacarg = function
           | TacDynamic (loc,t) ->
-            pr_with_comments loc (
-              str "<" ++ keyword "dynamic" ++ str (" [" ^ (Dyn.tag t)^"]>")
-            )
+            pr_with_comments loc
+              (str "<" ++ keyword "dynamic" ++ str " [" ++ str (Dyn.tag t) ++ str "]>")
           | MetaIdArg (loc,true,s) ->
-            pr_with_comments loc (str ("$" ^ s))
+            pr_with_comments loc (str "$" ++ str s)
           | MetaIdArg (loc,false,s) ->
-            pr_with_comments loc (keyword "constr:" ++ str(" $" ^ s))
+            pr_with_comments loc (keyword "constr:" ++ str " $" ++ str s)
           | Reference r ->
             pr.pr_reference r
           | ConstrMayEval c ->

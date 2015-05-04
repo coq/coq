@@ -10,7 +10,7 @@ sig
 
   type t
 
-  val create : unit -> t
+  val empty : t
 
   (** [add t f (tree,inf)] adds a structured object [tree] together with
      the associated information [inf] to the table [t]; the function

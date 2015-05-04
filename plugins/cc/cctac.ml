@@ -302,9 +302,9 @@ let rec proof_tac p : unit Proofview.tactic =
   	     Tacticals.New.tclFIRST
 	       [Tacticals.New.tclTHEN (Proofview.V82.tactic (lemma2 refine)) (proof_tac p2);
 		reflexivity;
-                Proofview.tclZERO (UserError ("Congruence" ,
+                Tacticals.New.tclZEROMSG
 		    (Pp.str
-		       "I don't know how to handle dependent equality")))]]
+		       "I don't know how to handle dependent equality")]]
   | Inject (prf,cstr,nargs,argind) ->
 	 let ti=constr_of_term prf.p_lhs in
 	 let tj=constr_of_term prf.p_rhs in

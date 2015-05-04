@@ -8,13 +8,9 @@
 
 module Glue : sig
 
-  (* A left associative glue implements efficient glue operator
-     when used as left associative.  If glue is denoted ++ then
+  (** The [Glue] module implements a container data structure with
+      efficient concatenation. *)
 
-        a ++ b ++ c ++ d = ((a ++ b) ++ c) ++ d = [d] @ ([c] @ ([b] @  [a]))
-
-     I.e. if the short list is the second argument
-  *)
   type 'a t
 
   val atom : 'a -> 'a t
@@ -22,19 +18,28 @@ module Glue : sig
   val empty : 'a t
   val is_empty : 'a t -> bool
   val iter : ('a -> unit) -> 'a t -> unit
-  val map : ('a -> 'b) -> 'a t -> 'b t
 
 end = struct
 
-  type 'a t = 'a list
+  type 'a t = GEmpty | GLeaf of 'a | GNode of 'a t * 'a t
 
-  let atom x = [x]
-  let glue x y = y @ x
-  let empty = []
-  let is_empty x = x = []
+  let atom x = GLeaf x
 
-  let iter f g = List.iter f (List.rev g)
-  let map = List.map
+  let glue x y =
+    match x, y with
+    | GEmpty, _ -> y
+    | _, GEmpty -> x
+    | _, _ -> GNode (x,y)
+
+  let empty = GEmpty
+
+  let is_empty x = x = GEmpty
+
+  let rec iter f = function
+    | GEmpty -> ()
+    | GLeaf x -> f x
+    | GNode (x,y) -> iter f x; iter f y
+
 end
 
 module Tag :
@@ -145,21 +150,6 @@ let app = Glue.glue
 
 let is_empty g = Glue.is_empty g
 
-let rewrite f p =
-  let strtoken = function
-    | Str_len (s, n) ->
-      let s' = f s in
-      Str_len (s', String.length s')
-    | Str_def s ->
-      Str_def (f s)
-  in
-  let rec ppcmd_token = function
-    | Ppcmd_print x -> Ppcmd_print (strtoken x)
-    | Ppcmd_box (bt, g) -> Ppcmd_box (bt, Glue.map ppcmd_token g)
-    | p -> p
-  in
-  Glue.map ppcmd_token p
-
 (* Compute length of an UTF-8 encoded string
    Rem 1 : utf8_length <= String.length (equal if pure ascii)
    Rem 2 : if used for an iso8859_1 encoded string, the result is
@@ -259,7 +249,7 @@ let escape_string s =
     else escape_at s (i-1) in
   escape_at s (String.length s - 1)
 
-let qstring s = str ("\""^escape_string s^"\"")
+let qstring s = str "\"" ++ str (escape_string s) ++ str "\""
 let qs = qstring
 let quote s = h 0 (str "\"" ++ s ++ str "\"")
 
@@ -458,6 +448,27 @@ let logger = ref std_logger
 let make_pp_emacs() = print_emacs:=true; logger:=emacs_logger
 let make_pp_nonemacs() = print_emacs:=false; logger := std_logger
 
+let ft_logger old_logger ft ~id level mesg = match level with
+  | Debug _ -> msgnl_with ft (debugbody mesg)
+  | Info -> msgnl_with ft (infobody mesg)
+  | Notice -> msgnl_with ft mesg
+  | Warning -> old_logger ~id:id level mesg
+  | Error -> old_logger ~id:id level mesg
+
+let with_output_to_file fname func input =
+  let old_logger = !logger in
+  let channel = open_out (String.concat "." [fname; "out"]) in
+  logger := ft_logger old_logger (Format.formatter_of_out_channel channel);
+  try
+    let output = func input in
+    logger := old_logger;
+    close_out channel;
+    output
+  with reraise ->
+    let reraise = Backtrace.add_backtrace reraise in
+    logger := old_logger;
+    close_out channel;
+    Exninfo.iraise reraise
 
 let feedback_id = ref (Feedback.Edit 0)
 let feedback_route = ref Feedback.default_route

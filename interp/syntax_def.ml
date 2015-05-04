@@ -99,7 +99,7 @@ let verbose_compat kn def = function
       | [], NRef r -> str " is " ++ pr_global_env Id.Set.empty r
       | _ -> str " is a compatibility notation"
     in
-    let since = str (" since Coq > " ^ Flags.pr_version v ^ ".") in
+    let since = str " since Coq > " ++ str (Flags.pr_version v) ++ str "." in
     act (pr_syndef kn ++ pp_def ++ since)
   | _ -> ()
 

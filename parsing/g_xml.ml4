@@ -58,7 +58,7 @@ END
 
 let error_bad_arity loc n =
   let s = match n with 0 -> "none" | 1 -> "one" | 2 -> "two" | _ -> "many" in
-  user_err_loc (loc,"",str ("wrong number of arguments (expect "^s^")."))
+  user_err_loc (loc,"",str "wrong number of arguments (expect " ++ str s ++ str ").")
 
 (* Interpreting attributes *)
 

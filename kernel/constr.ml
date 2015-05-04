@@ -475,7 +475,7 @@ let map_with_binders g f l c0 = match kind c0 with
    optimisation that physically equal arrays are equals (hence the
    calls to {!Array.equal_norefl}). *)
 
-let compare_head_gen_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
+let compare_head_gen_leq_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
   match kind1 t1, kind2 t2 with
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
@@ -512,13 +512,19 @@ let compare_head_gen_with kind1 kind2 eq_universes leq_sorts eq leq t1 t2 =
    not taken into account *)
 
 let compare_head_gen_leq eq_universes leq_sorts eq leq t1 t2 =
-  compare_head_gen_with kind kind  eq_universes leq_sorts eq leq t1 t2
+  compare_head_gen_leq_with kind kind  eq_universes leq_sorts eq leq t1 t2
 
-(* [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to compare
-   the immediate subterms of [c1] of [c2] if needed, [u] to compare universe
-   instances and [s] to compare sorts; Cast's,
+(* [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to
+   compare the immediate subterms of [c1] of [c2] if needed, [u] to
+   compare universe instances and [s] to compare sorts; Cast's,
    application associativity, binders name and Cases annotations are
-   not taken into account *)
+   not taken into account.
+
+   [compare_head_gen_with] is a variant taking kind-of-term functions,
+   to expose subterms of [c1] and [c2], as arguments. *)
+
+let compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq t1 t2 =
+  compare_head_gen_leq_with kind1 kind2 eq_universes eq_sorts eq eq t1 t2
 
 let compare_head_gen eq_universes eq_sorts eq t1 t2 =
   compare_head_gen_leq eq_universes eq_sorts eq eq t1 t2
@@ -535,14 +541,6 @@ let rec eq_constr m n =
   (m == n) || compare_head_gen (fun _ -> Instance.equal) Sorts.equal eq_constr m n
 
 let equal m n = eq_constr m n (* to avoid tracing a recursive fun *)
-
-let rec equal_with kind1 kind2 m n =
-  (* note that pointer equality is not sufficient to ensure equality
-     up to [eq_evars], because we may evaluates evars of [m] and [n]
-     in different evar contexts. *)
-  let req_constr m n = equal_with kind1 kind2 m n in
-  compare_head_gen_with kind1 kind2
-    (fun _ -> Instance.equal) Sorts.equal req_constr req_constr m n
 
 let eq_constr_univs univs m n =
   if m == n then true
@@ -567,7 +565,7 @@ let leq_constr_univs univs m n =
     let rec compare_leq m n =
       compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' m n
     and leq_constr' m n = m == n || compare_leq m n in
-      compare_leq m n
+    compare_leq m n
 
 let eq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
@@ -578,16 +576,16 @@ let eq_constr_univs_infer univs m n =
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	  if Univ.check_eq univs u1 u2 then true
-	  else
-	    (cstrs := Univ.enforce_eq u1 u2 !cstrs;
-	     true)
+	if Univ.check_eq univs u1 u2 then true
+	else
+	  (cstrs := Univ.enforce_eq u1 u2 !cstrs;
+	   true)
     in
     let rec eq_constr' m n = 
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
     in
     let res = compare_head_gen eq_universes eq_sorts eq_constr' m n in
-      res, !cstrs
+    res, !cstrs
 
 let leq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
@@ -598,18 +596,18 @@ let leq_constr_univs_infer univs m n =
       if Sorts.equal s1 s2 then true
       else
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	  if Univ.check_eq univs u1 u2 then true
-	  else (cstrs := Univ.enforce_eq u1 u2 !cstrs;
-		true)
+	if Univ.check_eq univs u1 u2 then true
+	else (cstrs := Univ.enforce_eq u1 u2 !cstrs;
+	      true)
     in
     let leq_sorts s1 s2 = 
       if Sorts.equal s1 s2 then true
       else 
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	  if Univ.check_leq univs u1 u2 then true
-	  else
-	    (cstrs := Univ.enforce_leq u1 u2 !cstrs; 
-	     true)
+	if Univ.check_leq univs u1 u2 then true
+	else
+	  (cstrs := Univ.enforce_leq u1 u2 !cstrs; 
+	   true)
     in
     let rec eq_constr' m n = 
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' m n
@@ -618,7 +616,7 @@ let leq_constr_univs_infer univs m n =
       compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' m n
     and leq_constr' m n = m == n || compare_leq m n in
     let res = compare_leq m n in
-      res, !cstrs
+    res, !cstrs
 
 let always_true _ _ = true
 

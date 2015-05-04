@@ -10,6 +10,7 @@ open Errors
 open Util
 open Names
 open Globnames
+open Nameops
 open Term
 open Reduction
 open Declarations
@@ -337,10 +338,12 @@ let check_correct_manual_implicits autoimps l =
   List.iter (function
     | ExplByName id,(b,fi,forced) ->
 	if not forced then
-	  error ("Wrong or non-dependent implicit argument name: "^(Id.to_string id)^".")
+	  errorlabstrm ""
+            (str "Wrong or non-dependent implicit argument name: " ++ pr_id id ++ str ".")
     | ExplByPos (i,_id),_t ->
 	if i<1 || i>List.length autoimps then
-	  error ("Bad implicit argument number: "^(string_of_int i)^".")
+	  errorlabstrm ""
+            (str "Bad implicit argument number: " ++ int i ++ str ".")
 	else
 	  errorlabstrm ""
 	    (str "Cannot set implicit argument number " ++ int i ++

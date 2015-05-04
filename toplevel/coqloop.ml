@@ -176,7 +176,7 @@ let print_location_in_file {outer=s;inner=fname} loc =
     try
       let (line, bol) = line_of_pos 1 0 0 in
       hov 0 (* No line break so as to follow emacs error message format *)
-        (errstrm ++ str"File " ++ str ("\""^fname^"\"") ++
+        (errstrm ++ str"File " ++ str "\"" ++ str fname ++ str "\"" ++
            str", line " ++ int line ++ str", characters " ++
            Cerrors.print_loc (Loc.make_loc (bp-bol,ep-bol))) ++ str":" ++
         fnl ()
