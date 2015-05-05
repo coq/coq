@@ -1662,7 +1662,20 @@ let default_subst_tactic_flags () =
   else
     { only_leibniz = true; rewrite_dependent_proof = false }
 
+let regular_subst_tactic = ref false
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "more regular behavior of tactic subst";
+      optkey   = ["Regular";"Subst";"Tactic"];
+      optread  = (fun () -> !regular_subst_tactic);
+      optwrite = (:=) regular_subst_tactic }
+
 let subst_all ?(flags=default_subst_tactic_flags ()) () =
+
+  if !regular_subst_tactic then
 
   (* First step: find hypotheses to treat in linear time *)
   let find_equations gl =
@@ -1706,6 +1719,30 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
   Proofview.Goal.nf_enter begin fun gl ->
     let ids = find_equations gl in
     tclMAP process ids
+  end
+
+  else
+
+(* Old implementation, not able to manage configurations like a=b, a=t,
+   or situations like "a = S b, b = S a", or also accidentally unfolding
+   let-ins *)
+  Proofview.Goal.nf_enter begin fun gl ->
+  let find_eq_data_decompose = find_eq_data_decompose gl in
+  let test (_,c) =
+    try
+      let lbeq,u,(_,x,y) = find_eq_data_decompose c in
+      let eq = Universes.constr_of_global_univ (lbeq.eq,u) in
+      if flags.only_leibniz then restrict_to_eq_and_identity eq;
+      (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
+      if Term.eq_constr x y then failwith "caught";
+      match kind_of_term x with Var x -> x | _ ->
+      match kind_of_term y with Var y -> y | _ -> failwith "caught"
+    with Constr_matching.PatternMatchingFailure -> failwith "caught" in
+  let test p = try Some (test p) with Failure _ -> None in
+  let hyps = pf_hyps_types gl in
+  let ids = List.map_filter test hyps in
+  let ids = List.uniquize ids in
+  subst_gen flags.rewrite_dependent_proof ids
   end
 
 (* Rewrite the first assumption for which a condition holds
