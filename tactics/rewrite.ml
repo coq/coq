@@ -452,7 +452,6 @@ let convertible env evd x y =
   Reductionops.is_conv_leq env evd x y
 
 type hypinfo = {
-  env : env;
   prf : constr;
   car : constr;
   rel : constr;
@@ -498,7 +497,7 @@ let decompose_applied_relation env sigma (c,l) =
       let sort = sort_of_rel env sigma equiv in
       let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
       let value = mkApp (c, args) in
-        Some (sigma, { env=env; prf=value;
+        Some (sigma, { prf=value;
                 car=ty1; rel = equiv; sort = Sorts.is_prop sort;
                 c1=c1; c2=c2; holes })
   in
@@ -509,10 +508,6 @@ let decompose_applied_relation env sigma (c,l) =
 	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> n, None, t) ctx)) with
 	| Some c -> c
 	| None -> error "Cannot find an homogeneous relation to rewrite."
-
-let decompose_applied_relation_expr env sigma (is, (c,l)) =
-  let sigma, cbl = Tacinterp.interp_open_constr_with_bindings is env sigma (c,l) in
-  decompose_applied_relation env sigma cbl
 
 let rewrite_db = "rewrite"
 
@@ -588,23 +583,11 @@ let general_rewrite_unif_flags () =
     Unification.resolve_evars = true
   }
 
-let refresh_hypinfo env sigma hypinfo c =
-  let sigma, hypinfo = match hypinfo with
-  | None ->
-    decompose_applied_relation_expr env sigma c
-  | Some hypinfo ->
-    if hypinfo.env != env then
-      (* If the lemma actually generates existential variables, we cannot 
-          use it here as it will polute the evar map with existential variables
-          that might not ever get instantiated (e.g. if we rewrite under a
-          binder and need to refresh [c] again) *)
-      (* TODO: remove bindings in sigma corresponding to c *)
-      decompose_applied_relation_expr env sigma c
-    else sigma, hypinfo
-  in
+let refresh_hypinfo env sigma (is, cb) =
+  let sigma, cbl = Tacinterp.interp_open_constr_with_bindings is env sigma cb in
+  let sigma, hypinfo = decompose_applied_relation env sigma cbl in
   let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
   sigma, (car, rel, prf, c1, c2, holes, sort)
-
 
 (** FIXME: write this in the new monad interface *)
 let solve_remaining_by env sigma holes by =
@@ -719,7 +702,7 @@ let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
     let rew_prf = RewPrf (rel, prf) in
     let rew = { rew_car = car; rew_from = c1; rew_to = c2; rew_prf; rew_evars; } in
     let rew = if l2r then rew else symmetry env sort rew in
-    Some ((), rew)
+    Some rew
   with 
   | e when Class_tactics.catchable e -> None
   | Reduction.NotConvertible -> None
@@ -829,27 +812,27 @@ let coerce env avoid cstr res =
   let rel, prf = get_rew_prf res in
     apply_constraint env avoid res.rew_car rel prf cstr res
 
-let apply_rule unify loccs : ('a * int) pure_strategy =
+let apply_rule unify loccs : int pure_strategy =
   let (nowhere_except_in,occs) = convert_occs loccs in
   let is_occ occ =
     if nowhere_except_in 
     then List.mem occ occs 
     else not (List.mem occ occs) 
   in
-    fun (hypinfo, occ) env avoid t ty cstr evars ->
-      let unif = if isEvar t then None else unify hypinfo env evars t in
+    fun occ env avoid t ty cstr evars ->
+      let unif = if isEvar t then None else unify env evars t in
 	match unif with
-	| None -> ((hypinfo, occ), Fail)
-        | Some (hypinfo', rew) ->
+	| None -> (occ, Fail)
+        | Some rew ->
 	  let occ = succ occ in
-	    if not (is_occ occ) then ((hypinfo, occ), Fail)
-	    else if eq_constr t rew.rew_to then ((hypinfo, occ), Identity)
+	    if not (is_occ occ) then (occ, Fail)
+	    else if eq_constr t rew.rew_to then (occ, Identity)
 	    else
 	      let res = { rew with rew_car = ty } in
               let rel, prf = get_rew_prf res in
 	      let res = Success (apply_constraint env avoid rew.rew_car rel prf cstr res) in
-		((hypinfo', occ), res)
-		  
+              (occ, res)
+
 let apply_lemma l2r flags oc by loccs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
     let sigma, c = oc sigma in
@@ -857,13 +840,13 @@ let apply_lemma l2r flags oc by loccs : strategy =
     let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
     let rew = (car, rel, prf, c1, c2, holes, sort) in
     let evars = (sigma, cstrs) in
-    let unify () env evars t =
+    let unify env evars t =
       let rew = unify_eqn rew l2r flags env evars by t in
       match rew with
       | None -> None
-      | Some rew -> Some ((), rew)
+      | Some rew -> Some rew
     in
-    let _, res = apply_rule unify loccs ((), 0) env avoid t ty cstr evars in
+    let _, res = apply_rule unify loccs 0 env avoid t ty cstr evars in
     (), res
 
 let e_app_poly env evars f args =
@@ -1379,11 +1362,10 @@ end
 
 let rewrite_with l2r flags c occs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
-    let hypinfo = None in
-    let unify hypinfo env evars t =
+    let unify env evars t =
       let (sigma, cstrs) = evars in
       let ans =
-        try Some (refresh_hypinfo env sigma hypinfo c)
+        try Some (refresh_hypinfo env sigma c)
         with e when Class_tactics.catchable e -> None
       in
       match ans with
@@ -1392,14 +1374,14 @@ let rewrite_with l2r flags c occs : strategy =
         let rew = unify_eqn rew l2r flags env (sigma, cstrs) None t in
         match rew with
         | None -> None
-        | Some rew -> Some (None, rew) (** reset the hypinfo cache *)
+        | Some rew -> Some rew
     in
     let app = apply_rule unify occs in
     let strat = 
       Strategies.fix (fun aux -> 
 	Strategies.choice app (subterm true default_flags aux))
     in
-    let _, res = strat (hypinfo, 0) env avoid t ty cstr (sigma, cstrs) in
+    let _, res = strat 0 env avoid t ty cstr (sigma, cstrs) in
       ((), res)
 
 let apply_strategy (s : strategy) env avoid concl (prop, cstr) evars =
@@ -1967,12 +1949,12 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 (** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
-  let unify () env evars t = unify_abs res l2r sort env evars t in
+  let unify env evars t = unify_abs res l2r sort env evars t in
   let app = apply_rule unify occs in
   let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
   let substrat = Strategies.fix recstrat in
   let strat () env avoid t ty cstr evars =
-    let _, res = substrat ((), 0) env avoid t ty cstr evars in
+    let _, res = substrat 0 env avoid t ty cstr evars in
     (), res
   in
   let origsigma = project gl in
