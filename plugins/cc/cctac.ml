@@ -253,6 +253,12 @@ let new_app_global f args k =
 
 let new_refine c = Proofview.V82.tactic (refine c)
 
+let assert_before n c =
+  Proofview.Goal.enter begin fun gl ->
+    let evm, _ = Tacmach.New.pf_apply e_type_of gl c in
+      Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm)) (assert_before n c)
+  end
+    
 let rec proof_tac p : unit Proofview.tactic =
   Proofview.Goal.nf_enter begin fun gl ->
   let type_of t = Tacmach.New.pf_type_of gl t in
