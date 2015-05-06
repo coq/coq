@@ -1681,7 +1681,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
       with Constr_matching.PatternMatchingFailure -> None
     in
     let hyps = Proofview.Goal.hyps gl in
-    List.map_filter test hyps
+    List.rev (List.map_filter test hyps)
   in
 
   (* Second step: treat equations *)
