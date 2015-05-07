@@ -832,6 +832,13 @@ let print_ltac id =
    errorlabstrm "print_ltac"
     (pr_qualid id ++ spc() ++ str "is not a user defined tactic.")
 
+let print_ltac_signatures () =
+  let tacs = Nametab.all_tactics () in
+  let print_one tac =
+    let l,t = split_ltac_fun (Tacenv.interp_ltac tac) in
+    hov 2 (pr_qualid (Nametab.shortest_qualid_of_tactic tac) ++ prlist pr_ltac_fun_arg l) in
+  prlist_with_sep fnl print_one tacs
+
 (** Registering *)
 
 let lift intern = (); fun ist x -> (ist, intern ist x)
