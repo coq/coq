@@ -215,6 +215,14 @@ struct
   let modify f =
     { iolist = fun s nil cons -> cons () (f s) nil }
 
+  (** Exception manipulation *)
+
+  let interleave src dst m =
+    { iolist = fun s nil cons ->
+      m.iolist s (fun e1 -> nil (src e1))
+        (fun x s next -> cons x s (fun e2 -> next (dst e2)))
+    }
+
   (** List observation *)
 
   let once m =

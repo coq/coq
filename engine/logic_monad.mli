@@ -115,6 +115,13 @@ module BackState : sig
   val get : ('s, 's, 's, 'e) t
   val modify : ('i -> 'o) -> (unit, 'i, 'o, 'e) t
 
+  val interleave : ('e1 -> 'e2) -> ('e2 -> 'e1) -> ('a, 'i, 'o, 'e1) t ->
+    ('a, 'i, 'o, 'e2) t
+  (** [interleave src dst m] adapts the exceptional content of the monad
+      according to the functions [src] and [dst]. To ensure a meaningful result,
+      those functions must form a retraction, i.e. [dst (src e1) = e1] for all
+      [e1]. This is typically the case when the type ['e1] is [unit]. *)
+
   val zero : 'e -> ('a, 'i, 'o, 'e) t
   val plus : ('a, 'i, 'o, 'e) t -> ('e -> ('a, 'i, 'o, 'e) t) -> ('a, 'i, 'o, 'e) t
 
