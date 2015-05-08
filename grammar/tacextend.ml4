@@ -172,17 +172,17 @@ let is_constr_gram = function
   | Aentry ("constr", "constr") -> true
   | _ -> false
 
-let make_vars len =
-  (** We choose names unlikely to be written by a human, even though that
-      does not matter at all. *)
-  List.init len (fun i -> Some (Id.of_string (Printf.sprintf "_%i" i)))
+let make_var = function
+  | GramNonTerminal(loc',_,_,Some p) -> Some p
+  | GramNonTerminal(loc',_,_,None) -> Some (Id.of_string "_")
+  | _ -> assert false
 
 let declare_tactic loc s c cl = match cl with
 | [(GramTerminal name) :: rem, _, tac] when List.for_all is_constr_gram rem ->
   (** The extension is only made of a name followed by constr entries: we do not
       add any grammar nor printing rule and add it as a true Ltac definition. *)
   let patt = make_patt rem in
-  let vars = make_vars (List.length rem) in
+  let vars = List.map make_var rem in
   let vars = mlexpr_of_list (mlexpr_of_option mlexpr_of_ident) vars in
   let entry = mlexpr_of_string s in
   let se = <:expr< { Tacexpr.mltac_tactic = $entry$; Tacexpr.mltac_plugin = $plugin_name$ } >> in
