@@ -28,7 +28,7 @@ val decompose_app_bound : constr -> global_reference * constr array
 
 (** Pre-created hint databases *)
 
-type 'a auto_tactic_ast =
+type 'a hint_ast =
   | Res_pf     of 'a (* Hint Apply *)
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
@@ -36,13 +36,13 @@ type 'a auto_tactic_ast =
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
   | Extern     of Tacexpr.glob_tactic_expr       (* Hint Extern *)
 
-type 'a auto_tactic
+type hint
 
 type hints_path_atom = 
   | PathHints of global_reference list
   | PathAny
 
-type 'a gen_auto_tactic = private {
+type 'a with_metadata = private {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
@@ -50,7 +50,7 @@ type 'a gen_auto_tactic = private {
   code  : 'a; (** the tactic to apply when the concl matches pat *)
 }
 
-type pri_auto_tactic = (constr * clausenv) auto_tactic gen_auto_tactic
+type full_hint = hint with_metadata
 
 type search_entry
 
@@ -76,28 +76,28 @@ module Hint_db :
     type t
     val empty : transparent_state -> bool -> t
     val find : global_reference -> t -> search_entry
-    val map_none : t -> pri_auto_tactic list
+    val map_none : t -> full_hint list
 
     (** All hints associated to the reference *)
-    val map_all : global_reference -> t -> pri_auto_tactic list
+    val map_all : global_reference -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments, _not_ using the discrimination net. *)
-    val map_existential : (global_reference * constr array) -> constr -> t -> pri_auto_tactic list
+    val map_existential : (global_reference * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments and using the discrimination net. *)
-    val map_eauto : (global_reference * constr array) -> constr -> t -> pri_auto_tactic list
+    val map_eauto : (global_reference * constr array) -> constr -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the 
 	arguments. *)
-    val map_auto : (global_reference * constr array) -> constr -> t -> pri_auto_tactic list
+    val map_auto : (global_reference * constr array) -> constr -> t -> full_hint list
 
     val add_one : hint_entry -> t -> t
     val add_list : (hint_entry) list -> t -> t
     val remove_one : global_reference -> t -> t
     val remove_list : global_reference list -> t -> t
-    val iter : (global_reference option -> bool array list -> pri_auto_tactic list -> unit) -> t -> unit
+    val iter : (global_reference option -> bool array list -> full_hint list -> unit) -> t -> unit
 
     val use_dn : t -> bool
     val transparent_state : t -> transparent_state
@@ -197,12 +197,12 @@ val make_extern :
   int -> constr_pattern option -> Tacexpr.glob_tactic_expr
       -> hint_entry
 
-val run_auto_tactic : 'a auto_tactic ->
-  ('a auto_tactic_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
+val run_hint : hint ->
+  ((constr * clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
 
 (** This function is for backward compatibility only, not to use in newly
     written code. *)
-val repr_auto_tactic : 'a auto_tactic -> 'a auto_tactic_ast
+val repr_hint : hint -> (constr * clausenv) hint_ast
 
 val extern_intern_tac :
   (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr) Hook.t
@@ -227,7 +227,7 @@ val pr_applicable_hint : unit -> std_ppcmds
 val pr_hint_ref : global_reference -> std_ppcmds
 val pr_hint_db_by_name : hint_db_name -> std_ppcmds
 val pr_hint_db : Hint_db.t -> std_ppcmds
-val pr_autotactic : (constr * 'a) auto_tactic -> Pp.std_ppcmds
+val pr_hint : hint -> Pp.std_ppcmds
 
 (** Hook for changing the initialization of auto *)
 

@@ -231,13 +231,13 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
       | Unfold_nth c -> Proofview.V82.tactic (tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c]))
       | Extern tacast -> conclPattern concl p tacast
       in
-      let tac = Proofview.V82.of_tactic (run_auto_tactic t tac) in
+      let tac = Proofview.V82.of_tactic (run_hint t tac) in
       let tac = if complete then tclCOMPLETE tac else tac in
-	match repr_auto_tactic t with
-	| Extern _ -> (tac,b,true, name, lazy (pr_autotactic t))
+	match repr_hint t with
+	| Extern _ -> (tac,b,true, name, lazy (pr_hint t))
 	| _ ->
 (* 	  let tac gl = with_pattern (pf_env gl) (project gl) flags p concl tac gl in *)
-	    (tac,b,false, name, lazy (pr_autotactic t))
+	    (tac,b,false, name, lazy (pr_hint t))
   in List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db sigma concl =

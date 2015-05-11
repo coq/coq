@@ -209,7 +209,7 @@ open Hints
 let extend_with_auto_hints l seq gl=
   let seqref=ref seq in
   let f p_a_t =
-    match repr_auto_tactic p_a_t.code with
+    match repr_hint p_a_t.code with
 	Res_pf (c,_) | Give_exact (c,_)
       | Res_pf_THEN_trivial_fail (c,_) ->
 	  (try

@@ -19,7 +19,7 @@ val extern_interp :
 
 (** Auto and related automation tactics *)
 
-val priority : ('a * pri_auto_tactic) list -> ('a * pri_auto_tactic) list
+val priority : ('a * full_hint) list -> ('a * full_hint) list
 
 val default_search_depth : int ref
 

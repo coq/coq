@@ -172,8 +172,8 @@ and e_my_find_search db_list local_db hdc concl =
         | Unfold_nth c -> Proofview.V82.tactic (reduce (Unfold [AllOccurrences,c]) onConcl)
         | Extern tacast -> conclPattern concl p tacast
        in
-       let tac = Proofview.V82.of_tactic (run_auto_tactic t tac) in
-       (tac, lazy (pr_autotactic t)))
+       let tac = Proofview.V82.of_tactic (run_hint t tac) in
+       (tac, lazy (pr_hint t)))
   in
   List.map tac_of_hint hintl
 

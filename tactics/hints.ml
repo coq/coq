@@ -68,7 +68,7 @@ let decompose_app_bound t =
 (*           The Type of Constructions Autotactic Hints                 *)
 (************************************************************************)
 
-type 'a auto_tactic_ast =
+type 'a hint_ast =
   | Res_pf     of 'a (* Hint Apply *)
   | ERes_pf    of 'a (* Hint EApply *)
   | Give_exact of 'a
@@ -92,9 +92,9 @@ type hint_term =
   | IsGlobRef of global_reference
   | IsConstr of constr * Univ.universe_context_set
 
-type 'a auto_tactic = 'a auto_tactic_ast
+type hint = (constr * clausenv) hint_ast
 
-type 'a gen_auto_tactic = {
+type 'a with_metadata = {
   pri  : int;            (* A number lower is higher priority *)
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat  : constr_pattern option; (* A pattern for the concl of the Goal *)
@@ -102,13 +102,13 @@ type 'a gen_auto_tactic = {
   code : 'a     (* the tactic to apply when the concl matches pat *)
 }
 
-type pri_auto_tactic = (constr * clausenv) auto_tactic gen_auto_tactic
+type full_hint = hint with_metadata
 
 type hint_entry = global_reference option * 
-  (constr * types * Univ.universe_context_set) auto_tactic_ast gen_auto_tactic
+  (constr * types * Univ.universe_context_set) hint_ast with_metadata
 
-let run_auto_tactic tac k = k tac
-let repr_auto_tactic tac = tac
+let run_hint tac k = k tac
+let repr_hint h = h
 
 let eq_hints_path_atom p1 p2 = match p1, p2 with
 | PathHints gr1, PathHints gr2 -> List.equal eq_gr gr1 gr2
@@ -125,7 +125,7 @@ let eq_auto_tactic t1 t2 = match t1, t2 with
 | (Res_pf _ | ERes_pf _ | Give_exact _ | Res_pf_THEN_trivial_fail _
   | Unfold_nth _ | Extern _), _ -> false
 
-let eq_gen_auto_tactic t1 t2 =
+let eq_hint_metadata t1 t2 =
   Int.equal t1.pri t2.pri &&
   Option.equal constr_pattern_eq t1.pat t2.pat &&
   eq_hints_path_atom t1.name t2.name &&
@@ -153,7 +153,7 @@ let pri_order t1 t2 = pri_order_int t1 t2 <= 0
      - un discrimination net borné (Btermdn.t) constitué de tous les
        patterns de la seconde liste de tactiques *)
 
-type stored_data = int * pri_auto_tactic
+type stored_data = int * full_hint
     (* First component is the index of insertion in the table, to keep most recent first semantics. *)
 
 module Bounded_net = Btermdn.Make(struct
@@ -481,7 +481,7 @@ module Hint_db = struct
       match k with
       | None ->
           (** ppedrot: this equality here is dubious. Maybe we can remove it? *)
-          let is_present (_, (_, v')) = eq_gen_auto_tactic v v' in
+          let is_present (_, (_, v')) = eq_hint_metadata v v' in
 	  if not (List.exists is_present db.hintdb_nopat) then
 	    (** FIXME *)
 	    { db with hintdb_nopat = (gr,idv) :: db.hintdb_nopat }
@@ -1146,7 +1146,7 @@ let make_db_list dbnames =
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
 
-let pr_autotactic =
+let pr_hint =
   function
   | Res_pf (c,clenv) -> (str"apply " ++ pr_constr c)
   | ERes_pf (c,clenv) -> (str"eapply " ++ pr_constr c)
@@ -1163,11 +1163,11 @@ let pr_autotactic =
       in
       (str "(*external*) " ++ Pptactic.pr_glob_tactic env tac)
 
-let pr_hint (id, v) =
-  (pr_autotactic v.code ++ str"(level " ++ int v.pri ++ str", id " ++ int id ++ str ")" ++ spc ())
+let pr_id_hint (id, v) =
+  (pr_hint v.code ++ str"(level " ++ int v.pri ++ str", id " ++ int id ++ str ")" ++ spc ())
 
 let pr_hint_list hintlist =
-  (str "  " ++ hov 0 (prlist pr_hint hintlist) ++ fnl ())
+  (str "  " ++ hov 0 (prlist pr_id_hint hintlist) ++ fnl ())
 
 let pr_hints_db (name,db,hintlist) =
   (str "In the database " ++ str name ++ str ":" ++
