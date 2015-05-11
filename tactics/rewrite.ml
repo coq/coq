@@ -226,6 +226,7 @@ end) = struct
       let t = Reductionops.whd_betadeltaiota env (goalevars evars) ty in
 	match kind_of_term t, l with
 	| Prod (na, ty, b), obj :: cstrs ->
+          let b = Reductionops.nf_betaiota (goalevars evars) b in
 	  if noccurn 1 b (* non-dependent product *) then
 	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
