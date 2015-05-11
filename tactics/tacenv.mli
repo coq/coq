@@ -23,6 +23,9 @@ val register_alias : alias -> glob_tactic_expr -> unit
 val interp_alias : alias -> glob_tactic_expr
 (** Recover the the body of an alias. Raises an anomaly if it does not exist. *)
 
+val check_alias : alias -> bool
+(** Returns [true] if an alias is defined, false otherwise. *)
+
 (** {5 Coq tactic definitions} *)
 
 val register_ltac : bool -> bool -> Id.t -> glob_tactic_expr -> unit

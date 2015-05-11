@@ -84,8 +84,14 @@ type tactic_grammar_obj = {
   tacobj_body : Tacexpr.glob_tactic_expr
 }
 
+let check_key key =
+  if Tacenv.check_alias key then
+    error "Conflicting tactic notations keys. This can happen when including \
+    twice the same module."
+
 let cache_tactic_notation (_, tobj) =
   let key = tobj.tacobj_key in
+  let () = check_key key in
   Tacenv.register_alias key tobj.tacobj_body;
   Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp
@@ -97,6 +103,7 @@ let open_tactic_notation i (_, tobj) =
 
 let load_tactic_notation i (_, tobj) =
   let key = tobj.tacobj_key in
+  let () = check_key key in
   (** Only add the printing and interpretation rules. *)
   Tacenv.register_alias key tobj.tacobj_body;
   Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp;
