@@ -112,8 +112,29 @@ type full_hint = hint with_metadata
 type hint_entry = global_reference option * 
   (constr * types * Univ.universe_context_set) hint_ast with_uid with_metadata
 
-let run_hint tac k = k tac.obj
-let repr_hint h = h.obj
+type import_level = [ `LAX | `WARN | `STRICT ]
+
+let warn_hint : import_level ref = ref `LAX
+let read_warn_hint () = match !warn_hint with
+| `LAX -> "Lax"
+| `WARN -> "Warn"
+| `STRICT -> "Strict"
+
+let write_warn_hint = function
+| "Lax" -> warn_hint := `LAX
+| "Warn" -> warn_hint := `WARN
+| "Strict" -> warn_hint := `STRICT
+| _ -> error "Only the following flags are accepted: Lax, Warn, Strict."
+
+let _ =
+  Goptions.declare_string_option
+    { Goptions.optsync  = true;
+      Goptions.optdepr  = false;
+      Goptions.optname  = "behavior of non-imported hints";
+      Goptions.optkey   = ["Loose"; "Hint"; "Behavior"];
+      Goptions.optread  = read_warn_hint;
+      Goptions.optwrite = write_warn_hint;
+    }
 
 let fresh_key =
   let id = Summary.ref ~name:"HINT-COUNTER" 0 in
@@ -592,6 +613,7 @@ let auto_init_db =
        Hintdbmap.empty)
 
 let searchtable : hint_db_table = ref auto_init_db
+let statustable = ref KNmap.empty
 
 let searchtable_map name =
   Hintdbmap.find name !searchtable
@@ -615,9 +637,10 @@ let add_hints_init f =
   let init = !hints_init in
   hints_init := (fun () -> init (); f ())
 
-let init     () = searchtable := auto_init_db; !hints_init ()
-let freeze   _ = !searchtable
-let unfreeze fs = searchtable := fs
+let init     () =
+  searchtable := auto_init_db; statustable := KNmap.empty; !hints_init ()
+let freeze   _ = (!searchtable, !statustable)
+let unfreeze (fs, st) = searchtable := fs; statustable := st
 
 let _ = Summary.declare_summary "search"
 	  { Summary.freeze_function   = freeze;
@@ -780,6 +803,14 @@ let get_db dbname =
   with Not_found -> Hint_db.empty empty_transparent_state false
 
 let add_hint dbname hintlist =
+  let check (_, h) =
+    let () = if KNmap.mem h.code.uid !statustable then
+      error "Conflicting hint keys. This can happen when including \
+      twice the same module."
+    in
+    statustable := KNmap.add h.code.uid false !statustable
+  in
+  let () = List.iter check hintlist in
   let db = get_db dbname in
   let db' = Hint_db.add_list hintlist db in
     searchtable_add (dbname,db')
@@ -824,7 +855,7 @@ type hint_obj = {
   hint_action : hint_action;
 }
 
-let cache_autohint (_, h) =
+let load_autohint _ (kn, h) =
   let name = h.hint_name in
   match h.hint_action with
   | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty st b)
@@ -833,6 +864,16 @@ let cache_autohint (_, h) =
   | RemoveHints grs -> remove_hint name grs
   | AddCut path -> add_cut name path
   | AddMode (l, m) -> add_mode name l m
+
+let open_autohint i (kn, h) =
+  if Int.equal i 1 then match h.hint_action with
+  | AddHints hints ->
+    let add (_, hint) = statustable := KNmap.add hint.code.uid true !statustable in
+    List.iter add hints
+  | _ -> ()
+
+let cache_autohint (kn, obj) =
+  load_autohint 1 (kn, obj); open_autohint 1 (kn, obj)
 
 let subst_autohint (subst, obj) =
   let subst_key gr =
@@ -906,7 +947,8 @@ let classify_autohint obj =
 let inAutoHint : hint_obj -> obj =
   declare_object {(default_object "AUTOHINT") with
                     cache_function = cache_autohint;
-		    load_function = (fun _ -> cache_autohint);
+		    load_function = load_autohint;
+		    open_function = open_autohint;
 		    subst_function = subst_autohint;
 		    classify_function = classify_autohint; }
 
@@ -1275,3 +1317,27 @@ let pr_searchtable () =
   in
   Hintdbmap.fold fold !searchtable (mt ())
 
+let print_mp mp =
+  try
+    let qid = Nametab.shortest_qualid_of_module mp in
+    str " from "  ++ pr_qualid qid
+  with Not_found -> mt ()
+
+let is_imported h = try KNmap.find h.uid !statustable with Not_found -> true
+
+let warn h x =
+  let hint = pr_hint h in
+  let (mp, _, _) = KerName.repr h.uid in
+  let () = msg_warning (str "Hint used but not imported: " ++ hint ++ print_mp mp) in
+  Proofview.tclUNIT x
+
+let run_hint tac k = match !warn_hint with
+| `LAX -> k tac.obj
+| `WARN ->
+  if is_imported tac then k tac.obj
+  else Proofview.tclBIND (k tac.obj) (fun x -> warn tac x)
+| `STRICT ->
+  if is_imported tac then k tac.obj
+  else Proofview.tclZERO (UserError ("", (str "Tactic failure.")))
+
+let repr_hint h = h.obj
