@@ -214,7 +214,7 @@ let constrained_type_of_inductive_knowing_parameters env ((mib,mip),u as pind) a
     (ty, cst)
 
 let type_of_inductive_knowing_parameters env ?(polyprop=false) mip args = 
-  type_of_inductive_gen env mip args
+  type_of_inductive_gen ~polyprop env mip args
 
 (* The max of an array of universes *)
 
