@@ -7,9 +7,18 @@ Vernacular commands
 
 Tactics
 
-- New flag "Set Regular Subst Tactic" which fixes "subst" in situations where
+- New flag "Regular Subst Tactic" which fixes "subst" in situations where
   it failed to substitute all substitutable equations or failed to simplify
   cycles, or accidentally unfolded local definitions (flag is off by default).
+- New flag "Loose Hint Behavior" to handle hints loaded but not imported in a
+  special way. It accepts three distinct flags:
+  * "Lax", which is the default one, sets the old behavior, i.e. a non-imported
+  hint behaves the same as an imported one.
+  * "Warn" outputs a warning when a non-imported hint is used. Note that this is
+  an over-approximation, because a hint may be triggered by an eauto run that
+  will eventually fail and backtrack.
+  * "Strict" changes the behavior of an unloaded hint to the one of the fail
+  tactic, allowing to emulate the hopefully future import-scoped hint mechanism.
 
 Changes from V8.5beta1 to V8.5beta2
 ===================================

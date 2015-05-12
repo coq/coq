@@ -3853,6 +3853,7 @@ development.
 
 \subsection{\tt Remove Hints \term$_1$ \mbox{\dots} \term$_n$ :~ \ident$_1$
   \mbox{\dots} \ident$_m$}
+\label{RemoveHints}
 \comindex{Remove Hints}
 
 This command removes the hints associated to terms \term$_1$ \mbox{\dots}
@@ -3931,14 +3932,52 @@ main subgoal excluded.
 
 \end{Variants}
 
-\subsection{Hints and sections
-\label{Hint-and-Section}}
+\subsection{Hint locality
+\label{Hint-Locality}}
+\optindex{Loose Hint Behavior}
 
 Hints provided by the \texttt{Hint} commands are erased when closing a
 section. Conversely, all hints of a module \texttt{A} that are not
 defined inside a section (and not defined with option {\tt Local}) become
 available when the module {\tt A} is imported (using
 e.g. \texttt{Require Import A.}).
+
+As of today, hints only have a binary behavior regarding locality, as described
+above: either they disappear at the end of a section scope, or they remain
+global forever. This causes a scalability issue, because hints coming from an
+unrelated part of the code may badly influence another development. It can be
+mitigated to some extent thanks to the {\tt Remove Hints} command
+(see ~\ref{RemoveHints}), but this is a mere workaround and has some
+limitations (for instance, external hints cannot be removed).
+
+A proper way to fix this issue is to bind the hints to their module scope, as
+for most of the other objects Coq uses. Hints should only made available when
+the module they are defined in is imported, not just required. It is very
+difficult to change the historical behavior, as it would break a lot of scripts.
+We propose a smooth transitional path by providing the {\tt Loose Hint Behavior}
+option which accepts three flags allowing for a fine-grained handling of
+non-imported hints.
+
+\begin{Variants}
+
+\item {\tt Set Loose Hint Behavior "Lax"}
+
+  This is the default, and corresponds to the historical behavior, that is,
+  hints defined outside of a section have a global scope.
+
+\item {\tt Set Loose Hint Behavior "Warn"}
+
+  When set, it outputs a warning when a non-imported hint is used. Note that
+  this is an over-approximation, because a hint may be triggered by a run that
+  will eventually fail and backtrack, resulting in the hint not being actually
+  useful for the proof.
+
+\item {\tt Set Loose Hint Behavior "Strict"}
+
+  When set, it changes the behavior of an unloaded hint to a immediate fail
+  tactic, allowing to emulate an import-scoped hint mechanism.
+
+\end{Variants}
 
 \subsection{Setting implicit automation tactics}
 
