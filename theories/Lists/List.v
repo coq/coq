@@ -45,8 +45,8 @@ Section Lists.
 
   Definition hd_error (l:list A) :=
     match l with
-      | [] => error
-      | x :: _ => value x
+      | [] => None
+      | x :: _ => Some x
     end.
 
   Definition tl (l:list A) :=
@@ -393,11 +393,11 @@ Section Elts.
     simpl; auto.
   Qed.
 
-  Fixpoint nth_error (l:list A) (n:nat) {struct n} : Exc A :=
+  Fixpoint nth_error (l:list A) (n:nat) {struct n} : option A :=
     match n, l with
-      | O, x :: _ => value x
+      | O, x :: _ => Some x
       | S n, _ :: l => nth_error l n
-      | _, _ => error
+      | _, _ => None
     end.
 
   Definition nth_default (default:A) (l:list A) (n:nat) : A :=
