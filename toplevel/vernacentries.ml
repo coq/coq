@@ -2164,5 +2164,4 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     else aux false c
 
 let () = Hook.set Stm.interp_hook interp
-let () = Hook.set Stm.process_error_hook Cerrors.process_vernac_interp_error
 let () = Hook.set Stm.with_fail_hook with_fail
