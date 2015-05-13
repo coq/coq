@@ -165,7 +165,7 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   in List.map try_occ occs
 
 let instantiate_lemma gl c ty l l2r concl =
-  let ct = pf_type_of gl c in
+  let ct = pf_unsafe_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let eqclause = pf_apply Clenv.make_clenv_binding gl (c,t) l in
    [eqclause]
@@ -944,7 +944,7 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
 
 let onEquality with_evars tac (c,lbindc) =
   Proofview.Goal.nf_enter begin fun gl ->
-  let type_of = pf_type_of gl in
+  let type_of = pf_unsafe_type_of gl in
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
   let t = type_of c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
@@ -1019,7 +1019,7 @@ let find_sigma_data env s = build_sigma_type ()
 let make_tuple env sigma (rterm,rty) lind =
   assert (dependent (mkRel lind) rty);
   let sigdata = find_sigma_data env (get_sort_of env sigma rty) in
-  let sigma, a = e_type_of ~refresh:true env sigma (mkRel lind) in
+  let sigma, a = type_of ~refresh:true env sigma (mkRel lind) in
   let (na,_,_) = lookup_rel lind env in
   (* We move [lind] to [1] and lift other rels > [lind] by 1 *)
   let rty = lift (1-lind) (liftn lind (lind+1) rty) in
@@ -1053,7 +1053,7 @@ let minimal_free_rels_rec env sigma =
   let rec minimalrec_free_rels_rec prev_rels (c,cty) =
     let (cty,direct_rels) = minimal_free_rels env sigma (c,cty) in
     let combined_rels = Int.Set.union prev_rels direct_rels in
-    let folder rels i = snd (minimalrec_free_rels_rec rels (c, type_of env sigma (mkRel i)))
+    let folder rels i = snd (minimalrec_free_rels_rec rels (c, unsafe_type_of env sigma (mkRel i)))
     in (cty, List.fold_left folder combined_rels (Int.Set.elements (Int.Set.diff direct_rels prev_rels)))
   in minimalrec_free_rels_rec Int.Set.empty
 
@@ -1099,7 +1099,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
   let rec sigrec_clausal_form siglen p_i =
     if Int.equal siglen 0 then
       (* is the default value typable with the expected type *)
-      let dflt_typ = type_of env sigma dflt in
+      let dflt_typ = unsafe_type_of env sigma dflt in
       try
 	let () = evdref := Evarconv.the_conv_x_leq env dflt_typ p_i !evdref in
 	let () = evdref := Evarconv.consider_remaining_unif_problems env !evdref in
@@ -1118,7 +1118,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
           (destEvar ev)
       with
 	| Some w ->
-            let w_type = type_of env sigma w in
+            let w_type = unsafe_type_of env sigma w in
             if Evarconv.e_cumul env evdref w_type a then
 	      let exist_term = Evarutil.evd_comb1 (Evd.fresh_global env) evdref sigdata.intro in
               applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
@@ -1200,7 +1200,7 @@ let make_iterated_tuple env sigma dflt (z,zty) =
     sigma, (tuple,tuplety,dfltval)
 
 let rec build_injrec env sigma dflt c = function
-  | [] -> make_iterated_tuple env sigma dflt (c,type_of env sigma c)
+  | [] -> make_iterated_tuple env sigma dflt (c,unsafe_type_of env sigma c)
   | ((sp,cnum),argnum)::l ->
     try
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
@@ -1253,7 +1253,7 @@ let inject_if_homogenous_dependent_pair ty =
     if not (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) (fst ind) &&
       pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
     Coqlib.check_required_library ["Coq";"Logic";"Eqdep_dec"];
-    let new_eq_args = [|pf_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
+    let new_eq_args = [|pf_unsafe_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
     let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
       ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
     let c, eff = find_scheme (!eq_dec_scheme_kind_name()) (Univ.out_punivs ind) in
@@ -1293,7 +1293,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
       let injfun = mkNamedLambda e t injbody in
       let sigma,congr = Evd.fresh_global env sigma eq.congr in
       let pf = applist(congr,[t;resty;injfun;t1;t2]) in
-      let sigma, pf_typ = Typing.e_type_of env sigma pf in
+      let sigma, pf_typ = Typing.type_of env sigma pf in
       let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in
       let pf = Clenvtac.clenv_value_cast_meta inj_clause in
       let ty = simplify_args env sigma (clenv_type inj_clause) in
@@ -1460,8 +1460,8 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
   let expected_goal = nf_betaiota sigma expected_goal in
   (* Retype to get universes right *)
-  let sigma, expected_goal_ty = Typing.e_type_of env sigma expected_goal in
-  let sigma, _ = Typing.e_type_of env sigma body in
+  let sigma, expected_goal_ty = Typing.type_of env sigma expected_goal in
+  let sigma, _ = Typing.type_of env sigma body in
     sigma,body,expected_goal
 
 (* Like "replace" but decompose dependent equalities                      *)

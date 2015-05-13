@@ -355,7 +355,7 @@ let do_replace_lb lb_scheme_key aavoid narg p q =
       )
   in
   Proofview.Goal.nf_enter begin fun gl ->
-    let type_of_pq = Tacmach.New.of_old (fun gl -> pf_type_of gl p) gl in
+    let type_of_pq = Tacmach.New.of_old (fun gl -> pf_unsafe_type_of gl p) gl in
     let u,v = destruct_ind type_of_pq
     in let lb_type_of_p =
         try
@@ -417,7 +417,7 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
     match (l1,l2) with
     | (t1::q1,t2::q2) ->
         Proofview.Goal.enter begin fun gl ->
-        let tt1 = Tacmach.New.pf_type_of gl t1 in
+        let tt1 = Tacmach.New.pf_unsafe_type_of gl t1 in
         if eq_constr t1 t2 then aux q1 q2
         else (
           let u,v = try  destruct_ind tt1

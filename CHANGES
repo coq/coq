@@ -20,6 +20,21 @@ Tactics
   * "Strict" changes the behavior of an unloaded hint to the one of the fail
   tactic, allowing to emulate the hopefully future import-scoped hint mechanism.
 
+API
+
+- Some functions from pretyping/typing.ml and their derivatives were potential
+  source of evarmap leaks, as they dropped their resulting evarmap. The
+  situation was clarified by renaming them according to a unsafe_* scheme. Their
+  sound variant is likewise renamed to their old name. The following renamings
+  were made.
+  * Typing.type_of -> unsafe_type_of
+  * Typing.e_type_of -> type_of
+  * A new e_type_of function that matches the e_ prefix policy
+  * Tacmach.pf_type_of -> pf_unsafe_type_of
+  * A new safe pf_type_of function.
+  All uses of unsafe_* functions should be eventually eliminated.
+
+
 Changes from V8.5beta1 to V8.5beta2
 ===================================
 

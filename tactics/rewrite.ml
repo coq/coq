@@ -381,7 +381,7 @@ end
 
 let type_app_poly env env evd f args =
   let evars, c = app_poly_nocheck env evd f args in
-  let evd', t = Typing.e_type_of env (goalevars evars) c in
+  let evd', t = Typing.type_of env (goalevars evars) c in
     (evd', cstrevars evars), c
 
 module PropGlobal = struct
@@ -472,7 +472,7 @@ let rec decompose_app_rel env evd t =
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
     let (f', argl, argr) = decompose_app_rel env evd arg in
-    let ty = Typing.type_of env evd argl in
+    let ty = Typing.unsafe_type_of env evd argl in
     let f'' = mkLambda (Name default_dependent_ident, ty,
       mkLambda (Name (Id.of_string "y"), lift 1 ty,
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
@@ -747,7 +747,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
     let morphargs, morphobjs = Array.chop first args in
     let morphargs', morphobjs' = Array.chop first args' in
     let appm = mkApp(m, morphargs) in
-    let appmtype = Typing.type_of env (goalevars evars) appm in
+    let appmtype = Typing.unsafe_type_of env (goalevars evars) appm in
     let cstrs = List.map 
       (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf)) 
       (Array.to_list morphobjs') 
@@ -1738,7 +1738,7 @@ let declare_projection n instance_id r =
   let poly = Global.is_polymorphic r in
   let ty = Retyping.get_type_of (Global.env ()) Evd.empty c in
   let term = proper_projection c ty in
-  let typ = Typing.type_of (Global.env ()) Evd.empty term in
+  let typ = Typing.unsafe_type_of (Global.env ()) Evd.empty term in
   let ctx, typ = decompose_prod_assum typ in
   let typ =
     let n =
@@ -1771,7 +1771,7 @@ let build_morphism_signature m =
   let env = Global.env () in
   let m,ctx = Constrintern.interp_constr env Evd.empty m in
   let sigma = Evd.from_env ~ctx env in
-  let t = Typing.type_of env sigma m in
+  let t = Typing.unsafe_type_of env sigma m in
   let cstrs =
     let rec aux t =
       match kind_of_term t with
@@ -1798,7 +1798,7 @@ let build_morphism_signature m =
 
 let default_morphism sign m =
   let env = Global.env () in
-  let t = Typing.type_of env Evd.empty m in
+  let t = Typing.unsafe_type_of env Evd.empty m in
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (Evd.empty, Evar.Set.empty) env t (fst sign) (snd sign)
   in
@@ -1994,7 +1994,7 @@ let setoid_proof ty fn fallback =
         try
           let rel, _, _ = decompose_app_rel env sigma concl in
           let evm = sigma in
-          let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
+          let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.unsafe_type_of env evm rel)))) in
 	    (try init_setoid () with _ -> raise Not_found);
             fn env sigma car rel
         with e -> Proofview.tclZERO e
@@ -2053,7 +2053,7 @@ let setoid_transitivity c =
     
 let setoid_symmetry_in id =
   Proofview.V82.tactic (fun gl ->
-  let ctype = pf_type_of gl (mkVar id) in
+  let ctype = pf_unsafe_type_of gl (mkVar id) in
   let binders,concl = decompose_prod_assum ctype in
   let (equiv, args) = decompose_app concl in
   let rec split_last_two = function

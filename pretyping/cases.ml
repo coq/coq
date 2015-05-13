@@ -1668,7 +1668,7 @@ let build_tycon loc env tycon_env s subst tycon extenv evdref t =
 	(lift (n'-n) impossible_case_type, mkSort u)
     | Some t ->
         let t = abstract_tycon loc tycon_env evdref subst tycon extenv t in
-        let evd,tt = Typing.e_type_of extenv !evdref t in
+        let evd,tt = Typing.type_of extenv !evdref t in
         evdref := evd;
         (t,tt) in
   let b = e_cumul env evdref tt (mkSort s) (* side effect *) in
@@ -2014,7 +2014,7 @@ let constr_of_pat env evdref arsign pat avoid =
 	let IndType (indf, _) = 
 	  try find_rectype env ( !evdref) (lift (-(List.length realargs)) ty)
 	  with Not_found -> error_case_not_inductive env 
-	    {uj_val = ty; uj_type = Typing.type_of env !evdref ty}
+	    {uj_val = ty; uj_type = Typing.unsafe_type_of env !evdref ty}
 	in
 	let (ind,u), params = dest_ind_family indf in
 	if not (eq_ind ind cind) then error_bad_constructor_loc l env cstr ind;
@@ -2214,7 +2214,7 @@ let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
 	 let j = typing_fun (mk_tycon tycon) rhs_env eqn.rhs.it in
 	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
-	 let _btype = evd_comb1 (Typing.e_type_of env) evdref bbody in
+	 let _btype = evd_comb1 (Typing.type_of env) evdref bbody in
 	 let branch_name = Id.of_string ("program_branch_" ^ (string_of_int !i)) in
 	 let branch_decl = (Name branch_name, Some (lift !i bbody), (lift !i btype)) in
 	 let branch =

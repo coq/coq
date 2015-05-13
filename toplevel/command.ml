@@ -847,7 +847,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   let binders_env = push_rel_context binders_rel env in
   let rel, _ = interp_constr_evars_impls env evdref r in
   let () = check_evars_are_solved env !evdref (Evd.empty,!evdref)  in
-  let relty = Typing.type_of env !evdref rel in
+  let relty = Typing.unsafe_type_of env !evdref rel in
   let relargty =
     let error () =
       user_err_loc (constr_loc r,
@@ -988,7 +988,7 @@ let interp_recursive isfix fixl notations =
     List.fold_left2
       (fun env' id t ->
 	 if Flags.is_program_mode () then
-	   let sort = Evarutil.evd_comb1 (Typing.e_type_of ~refresh:true env) evdref t in
+	   let sort = Evarutil.evd_comb1 (Typing.type_of ~refresh:true env) evdref t in
 	   let fixprot =
 	     try 
 	       let app = mkApp (delayed_force fix_proto, [|sort; t|]) in

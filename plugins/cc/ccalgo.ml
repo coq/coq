@@ -513,7 +513,7 @@ let rec add_term state t=
 	Not_found ->
 	  let b=next uf in
           let trm = constr_of_term t in
-	  let typ = pf_type_of state.gls trm in
+	  let typ = pf_unsafe_type_of state.gls trm in
 	  let typ = canonize_name typ in
 	  let new_node=
 	    match t with
@@ -836,7 +836,7 @@ let complete_one_class state i=
 	    let _,etyp,rest= destProd typ in
 	    let id = new_state_var etyp state in
 		app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
-	let _c = pf_type_of state.gls
+	let _c = pf_unsafe_type_of state.gls
 	  (constr_of_term (term state.uf pac.cnode)) in
 	let _args =
 	  List.map (fun i -> constr_of_term (term state.uf  i))

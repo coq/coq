@@ -274,7 +274,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   let new_princ_name =
     next_ident_away_in_goal (Id.of_string "___________princ_________") []
   in
-  let _ = evd := fst(Typing.e_type_of ~refresh:true (Global.env ()) !evd new_principle_type ) in
+  let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd new_principle_type in
   let hook = Lemmas.mk_hook (hook new_principle_type) in
   begin
     Lemmas.start_proof
@@ -327,7 +327,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 	let s = Universes.new_sort_in_family fam_sort in
 	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
 	let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
-	let evd' = fst (Typing.e_type_of ~refresh:true (Global.env ()) evd' value) in
+	let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' value) in
 	(* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
 	let ce = Declare.definition_entry ~poly:(Flags.is_universe_polymorphism ()) ~univs:(Evd.universe_context evd') value in
 	ignore(
@@ -478,7 +478,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Entries.definition_entr
   in
   let _ = evd := sigma in 
   let l_schemes =
-    List.map (Typing.type_of env sigma) schemes
+    List.map (Typing.unsafe_type_of env sigma) schemes
   in
   let i = ref (-1) in
   let sorts =
@@ -608,8 +608,8 @@ let build_scheme fas =
                   (str "Cannot find " ++ Libnames.pr_reference f)
 	    in
 	    let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
-	    let evd',_ = Typing.e_type_of ~refresh:true (Global.env ()) evd' f in 
-	    let _ = evd := evd' in 
+            let _ = evd := evd' in 
+	    let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd f in 
 	    (destConst f,sort)
 	 )
 	 fas
@@ -659,7 +659,7 @@ let build_case_scheme fa =
   in
   let sigma, scheme = 
     (fun (ind,sf) -> Indrec.build_case_analysis_scheme_default env sigma ind sf)  ind_fun in
-  let scheme_type =  (Typing.type_of env sigma ) scheme in
+  let scheme_type =  (Typing.unsafe_type_of env sigma ) scheme in
   let sorts =
     (fun (_,_,x) ->
        Universes.new_sort_in_family (Pretyping.interp_elimination_sort x)

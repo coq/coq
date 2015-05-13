@@ -127,8 +127,8 @@ let generate_type evd g_to_f f graph i =
   let evd',graph =
     Evd.fresh_global  (Global.env ()) !evd  (Globnames.IndRef (fst (destInd graph)))
   in
-  let evd',graph_arity = Typing.e_type_of (Global.env ()) evd' graph in
   evd:=evd';
+  let graph_arity = Typing.e_type_of (Global.env ()) evd graph in
   let ctxt,_ = decompose_prod_assum graph_arity in
   let fun_ctxt,res_type =
     match ctxt with
@@ -193,7 +193,7 @@ let find_induction_principle evd f =
     | None -> raise Not_found
     | Some rect_lemma ->
        let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (Globnames.ConstRef rect_lemma) in
-       let evd',typ = Typing.e_type_of ~refresh:true (Global.env ()) evd' rect_lemma in
+       let evd',typ = Typing.type_of ~refresh:true (Global.env ()) evd' rect_lemma in
        evd:=evd';
        rect_lemma,typ
 
@@ -296,7 +296,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
       let constructor_args g =
 	List.fold_right 
 	  (fun hid acc ->
-	     let type_of_hid = pf_type_of g (mkVar hid) in
+	     let type_of_hid = pf_unsafe_type_of g (mkVar hid) in
 	     match kind_of_term type_of_hid with
 	       | Prod(_,_,t') ->
 		   begin
@@ -440,7 +440,7 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	     "functional_induction" (
 	       (fun gl ->
 		let term = mkApp (mkVar principle_id,Array.of_list bindings) in
-		let gl', _ty = pf_eapply (Typing.e_type_of ~refresh:true)  gl term in
+		let gl', _ty = pf_eapply (Typing.type_of ~refresh:true)  gl term in
 		Proofview.V82.of_tactic (apply term) gl')
 	   ))
 	  (fun i g -> observe_tac ("proving branche "^string_of_int i) (prove_branche i) g )
@@ -577,7 +577,7 @@ let rec reflexivity_with_destruct_cases g =
 	 match sc with
 	     None -> tclIDTAC g
 	   | Some id ->
-	       match kind_of_term  (pf_type_of g (mkVar id)) with
+	       match kind_of_term  (pf_unsafe_type_of g (mkVar id)) with
 		 | App(eq,[|_;t1;t2|]) when eq_constr eq eq_ind ->
 		     if Equality.discriminable (pf_env g) (project g) t1 t2
 		     then Proofview.V82.of_tactic (Equality.discrHyp id) g
@@ -642,7 +642,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     (* We get the constant and the principle corresponding to this lemma *)
     let f = funcs.(i) in
     let graph_principle = nf_zeta schemes.(i)  in
-    let princ_type = pf_type_of g graph_principle in
+    let princ_type = pf_unsafe_type_of g graph_principle in
     let princ_infos = Tactics.compute_elim_sig princ_type in
     (* Then we get the number of argument of the function
        and compute a fresh name for each of them
@@ -772,7 +772,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	 let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
 	 graphs_constr.(i) <- graph;
 	 let type_of_lemma = Termops.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
-	 let _ = evd := fst (Typing.e_type_of (Global.env ()) !evd type_of_lemma) in 
+	 let _ = Typing.e_type_of (Global.env ()) evd type_of_lemma in 
 	   let type_of_lemma = nf_zeta type_of_lemma in
 	   observe (str "type_of_lemma := " ++ Printer.pr_lconstr_env (Global.env ()) !evd type_of_lemma);
 	   type_of_lemma,type_info
@@ -900,7 +900,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
    if the type of hypothesis has not this form or if we cannot find the completeness lemma then we do nothing
 *)
 let revert_graph kn post_tac hid g =
-    let typ = pf_type_of g (mkVar hid) in
+    let typ = pf_unsafe_type_of g (mkVar hid) in
     match kind_of_term typ with
       | App(i,args) when isInd i ->
 	  let ((kn',num) as ind'),u = destInd i in
@@ -951,7 +951,7 @@ let revert_graph kn post_tac hid g =
 let functional_inversion kn hid fconst f_correct : tactic =
   fun g ->
     let old_ids = List.fold_right Id.Set.add  (pf_ids_of_hyps g) Id.Set.empty in
-    let type_of_h = pf_type_of g (mkVar hid) in
+    let type_of_h = pf_unsafe_type_of g (mkVar hid) in
     match kind_of_term type_of_h with
       | App(eq,args) when eq_constr eq (make_eq ())  ->
 	  let pre_tac,f_args,res =
@@ -1003,7 +1003,7 @@ let invfun qhyp f g =
        Proofview.V82.of_tactic begin
 	Tactics.try_intros_until
 	  (fun hid -> Proofview.V82.tactic begin fun g ->
-	     let hyp_typ = pf_type_of g (mkVar hid)  in
+	     let hyp_typ = pf_unsafe_type_of g (mkVar hid)  in
 	     match kind_of_term hyp_typ with
 	       | App(eq,args) when eq_constr eq (make_eq ()) ->
 		   begin

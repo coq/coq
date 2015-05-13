@@ -133,7 +133,7 @@ let match_eqdec c =
 
 let solveArg eqonleft op a1 a2 tac =
   Proofview.Goal.enter begin fun gl ->
-  let rectype = pf_type_of gl a1 in
+  let rectype = pf_unsafe_type_of gl a1 in
   let decide = mkDecideEqGoal eqonleft op rectype a1 a2 in
   let subtacs =
     if eqonleft then [eqCase tac;diseqCase eqonleft;default_auto]
@@ -203,7 +203,7 @@ let decideEquality rectype =
 
 let compare c1 c2 =
   Proofview.Goal.enter begin fun gl ->
-  let rectype = pf_type_of gl c1 in
+  let rectype = pf_unsafe_type_of gl c1 in
   let decide = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 in
   (tclTHENS (cut decide)
             [(tclTHEN  intro

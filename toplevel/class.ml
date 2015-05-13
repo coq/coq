@@ -209,7 +209,7 @@ let build_id_coercion idf_opt source poly =
   let _ =
     if not
       (Reductionops.is_conv_leq env Evd.empty
-	(Typing.type_of env Evd.empty val_f) typ_f)
+	(Typing.unsafe_type_of env Evd.empty val_f) typ_f)
     then
       errorlabstrm "" (strbrk
 	"Cannot be defined as coercion (maybe a bad number of arguments).")

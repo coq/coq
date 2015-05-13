@@ -28,7 +28,7 @@ open Misctypes
 (* Abbreviations *)
 
 let pf_env = Refiner.pf_env
-let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
+let pf_type_of gls c  = Typing.unsafe_type_of (pf_env gls) gls.sigma c
 
 (******************************************************************)
 (* Clausal environments *)

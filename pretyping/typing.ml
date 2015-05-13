@@ -270,7 +270,7 @@ let check env evdref c t =
 
 (* Type of a constr *)
 
-let type_of env evd c =
+let unsafe_type_of env evd c =
   let j = execute env (ref evd) c in
     j.uj_type
 
@@ -283,13 +283,22 @@ let sort_of env evdref c =
 
 (* Try to solve the existential variables by typing *)
 
-let e_type_of ?(refresh=false) env evd c =
+let type_of ?(refresh=false) env evd c =
   let evdref = ref evd in
   let j = execute env evdref c in
   (* side-effect on evdref *)
     if refresh then
       Evarsolve.refresh_universes ~onlyalg:true (Some false) env !evdref j.uj_type
     else !evdref, j.uj_type
+
+let e_type_of ?(refresh=false) env evdref c =
+  let j = execute env evdref c in
+  (* side-effect on evdref *)
+    if refresh then
+      let evd, c = Evarsolve.refresh_universes ~onlyalg:true (Some false) env !evdref j.uj_type in
+      let () = evdref := evd in
+      c
+    else j.uj_type
 
 let solve_evars env evdref c =
   let c = (execute env evdref c).uj_val in

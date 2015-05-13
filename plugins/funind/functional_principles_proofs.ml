@@ -328,7 +328,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	   let all_ids = pf_ids_of_hyps g in
 	   let new_ids,_  = list_chop ctxt_size all_ids in
 	   let to_refine = applist(witness_fun,List.rev_map mkVar new_ids) in
-	   let evm, _ = pf_apply Typing.e_type_of g to_refine in
+	   let evm, _ = pf_apply Typing.type_of g to_refine in
 	     tclTHEN (Refiner.tclEVARS evm) (refine to_refine) g
 	)
     in
@@ -543,7 +543,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
       tclIDTAC
   in
   try
-    scan_type [] (Typing.type_of env sigma (mkVar hyp_id)), [hyp_id]
+    scan_type [] (Typing.unsafe_type_of env sigma (mkVar hyp_id)), [hyp_id]
   with TOREMOVE ->
     thin [hyp_id],[]
 
@@ -593,7 +593,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	tclMAP (fun id -> Proofview.V82.of_tactic (introduction ~check:false id)) dyn_infos.rec_hyps;
 	observe_tac "after_introduction" (fun g' ->
 	   (* We get infos on the equations introduced*)
-	   let new_term_value_eq = pf_type_of g' (mkVar heq_id) in
+	   let new_term_value_eq = pf_unsafe_type_of g' (mkVar heq_id) in
 	   (* compute the new value of the body *)
 	   let new_term_value =
 	     match kind_of_term new_term_value_eq with
@@ -606,7 +606,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	   in
 	 let fun_body =
 	   mkLambda(Anonymous,
-		    pf_type_of g' term,
+		    pf_unsafe_type_of g' term,
 		    Termops.replace_term term (mkRel 1) dyn_infos.info
 		   )
 	 in
@@ -638,7 +638,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 	fun g ->
 	  let prov_hid = pf_get_new_id hid g in
 	  let c = mkApp(mkVar hid,args) in
-	  let evm, _ = pf_apply Typing.e_type_of g c in
+	  let evm, _ = pf_apply Typing.type_of g c in
 	  tclTHENLIST[
             Refiner.tclEVARS evm;
 	    Proofview.V82.of_tactic (pose_proof (Name prov_hid) c);
@@ -699,7 +699,7 @@ let build_proof
 		  let dyn_infos = {dyn_info' with info =
 		      mkCase(ci,ct,t,cb)} in
 		  let g_nb_prod = nb_prod (pf_concl g) in
-		  let type_of_term = pf_type_of g t in
+		  let type_of_term = pf_unsafe_type_of g t in
 		  let term_eq =
 		    make_refl_eq (Lazy.force refl_equal) type_of_term t
 		  in
@@ -919,7 +919,7 @@ let generalize_non_dep hyp g =
 (*   observe (str "rec id := " ++ Ppconstr.pr_id hyp); *)
   let hyps = [hyp] in
   let env = Global.env () in
-  let hyp_typ = pf_type_of g (mkVar hyp) in
+  let hyp_typ = pf_unsafe_type_of g (mkVar hyp) in
   let to_revert,_ =
     Environ.fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
       if Id.List.mem hyp hyps
@@ -964,7 +964,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
   let eq_rhs = nf_betaiotazeta (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
   (*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
   let (type_ctxt,type_of_f),evd =
-    let evd,t = Typing.e_type_of ~refresh:true (Global.env ()) evd f
+    let evd,t = Typing.type_of ~refresh:true (Global.env ()) evd f
     in 
     decompose_prod_n_assum
       (nb_params + nb_args) t,evd
@@ -1034,8 +1034,8 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 	  (Global.env ()) !evd
 	  (Constrintern.locate_reference (qualid_of_ident equation_lemma_id))
       in
-      let evd',_ = Typing.e_type_of ~refresh:true (Global.env ()) evd' res in 
-      evd:=evd';		       
+      evd:=evd';                       
+      let _ = Typing.e_type_of ~refresh:true (Global.env ()) evd res in 
       res
   in
   let nb_intro_to_do = nb_prod (pf_concl g) in
@@ -1414,7 +1414,7 @@ let backtrack_eqs_until_hrec hrec eqs : tactic =
     let rewrite =
       tclFIRST (List.map (fun x -> Proofview.V82.of_tactic (Equality.rewriteRL x)) eqs )
     in
-    let _,hrec_concl  = decompose_prod (pf_type_of gls (mkVar hrec)) in
+    let _,hrec_concl  = decompose_prod (pf_unsafe_type_of gls (mkVar hrec)) in
     let f_app = Array.last (snd (destApp hrec_concl)) in
     let f =  (fst (destApp f_app)) in
     let rec backtrack : tactic =
@@ -1641,7 +1641,7 @@ let prove_principle_for_gen
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)
 (* 			   str "fix arg num" ++ int (List.length args_ids + 1) ); tclIDTAC g); *)
       (* observe_tac "h_fix " *) (fix (Some fix_id) (List.length args_ids + 1));
-(*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_type_of g (mkVar fix_id) )); tclIDTAC g); *)
+(*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_unsafe_type_of g (mkVar fix_id) )); tclIDTAC g); *)
       h_intros (List.rev (acc_rec_arg_id::args_ids));
       Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_ref));
       (* observe_tac "finish" *) (fun gl' ->

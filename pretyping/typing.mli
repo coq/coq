@@ -13,12 +13,15 @@ open Evd
 (** This module provides the typing machine with existential variables
     and universes. *)
 
-(** Typecheck a term and return its type *)
-val type_of : env -> evar_map -> constr -> types
+(** Typecheck a term and return its type. May trigger an evarmap leak. *)
+val unsafe_type_of : env -> evar_map -> constr -> types
 
 (** Typecheck a term and return its type + updated evars, optionally refreshing
     universes *)
-val e_type_of : ?refresh:bool -> env -> evar_map -> constr -> evar_map * types
+val type_of : ?refresh:bool -> env -> evar_map -> constr -> evar_map * types
+
+(** Variant of [type_of] using references instead of state-passing. *)
+val e_type_of : ?refresh:bool -> env -> evar_map ref -> constr -> types
 
 (** Typecheck a type and return its sort *)
 val sort_of : env -> evar_map ref -> types -> sorts

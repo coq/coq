@@ -598,7 +598,7 @@ module New = struct
     (** FIXME: evar leak. *)
     let sigma, elim = Tacmach.New.of_old (mk_elim ind) gl in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_type_of gl elim)) gl in
+    let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_unsafe_type_of gl elim)) gl in
     let indmv =
       match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
@@ -651,7 +651,7 @@ module New = struct
 
   let elimination_then tac c =
     Proofview.Goal.nf_enter begin fun gl ->
-    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_unsafe_type_of gl c) in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
       | None -> true,gl_make_elim
