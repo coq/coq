@@ -419,7 +419,7 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
       | [] -> assert false
       | c1 :: lc -> mk_ctx (mkCase (ci,hd,c1,Array.of_list lc))
       in
-      let sub = (env, hd) :: (env, c1) :: subargs env lc in
+      let sub = (env, c1) :: (env, hd) :: subargs env lc in
       try_aux sub next_mk_ctx next
   | Fix (indx,(names,types,bodies)) ->
     let nb_fix = Array.length types in
