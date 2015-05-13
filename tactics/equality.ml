@@ -165,10 +165,10 @@ let instantiate_lemma_all frzevars gl c ty l l2r concl =
   in List.map try_occ occs
 
 let instantiate_lemma gl c ty l l2r concl =
-  let ct = pf_unsafe_type_of gl c in
-  let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
-  let eqclause = pf_apply Clenv.make_clenv_binding gl (c,t) l in
-   [eqclause]
+  let sigma, ct = pf_type_of gl c in
+  let t = try snd (reduce_to_quantified_ind (pf_env gl) sigma ct) with UserError _ -> ct in
+  let eqclause = Clenv.make_clenv_binding (pf_env gl) sigma (c,t) l in
+  [eqclause]
 
 let rewrite_conv_closed_core_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
