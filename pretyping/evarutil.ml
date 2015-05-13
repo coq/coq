@@ -795,8 +795,10 @@ let define_evar_as_sort env evd (ev,args) =
   let evd, u = new_univ_variable univ_rigid evd in
   let evi = Evd.find_undefined evd ev in 
   let s = Type u in
+  let concl = whd_betadeltaiota (evar_env evi) evd evi.evar_concl in
+  let sort = destSort concl in
   let evd' = Evd.define ev (mkSort s) evd in
-    Evd.set_leq_sort env evd' (Type (Univ.super u)) (destSort evi.evar_concl), s
+  Evd.set_leq_sort env evd' (Type (Univ.super u)) sort, s
 
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)
