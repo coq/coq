@@ -2803,6 +2803,7 @@ This tactic is deprecated. It can be replaced by {\tt enough}
 
 \subsection{\tt subst \ident}
 \tacindex{subst}
+\optindex{Regular Subst Tactic}
 
 This tactic applies to a goal that has \ident\ in its context and
 (at least) one hypothesis, say {\tt H}, of type {\tt
@@ -2822,6 +2823,26 @@ When several hypotheses have the form {\tt \ident=t} or {\tt
 
     Applies {\tt subst} repeatedly to all identifiers from the context
     for which an equality exists.
+
+\noindent {\bf Remark: } The behavior of {\tt subst} can be controlled using option {\tt Set
+    Regular Subst Tactic}. When this option is activated, {\tt subst}
+  manages the following corner cases which otherwise it
+  does not:
+\begin{itemize}
+\item A context with ordered hypotheses {\tt \ident$_1$ = \ident$_2$}
+  and {\tt \ident$_1$ = $t$}, or {$t'$ = \ident$_1$} with $t'$ not a
+  variable, and no other hypotheses of the form {\tt \ident$_2$ = $u$}
+  or {\tt $u$ = \ident$_2$}
+\item A context with cyclic dependencies as with hypotheses {\tt
+  \ident$_1$ = f~\ident$_2$} and {\tt \ident$_2$ = g~\ident$_1$}
+\end{itemize}
+Additionally, it prevents a local definition such as {\tt \ident :=
+  $t$} to be unfolded which otherwise it would exceptionally unfold in
+configurations containing hypotheses of the form {\tt {\ident} = $u$},
+or {\tt $u'$ = \ident} with $u'$ not a variable.
+
+The option is off by default.
+
 \end{Variants}
 
 \subsection{\tt stepl \term}
