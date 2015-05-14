@@ -575,8 +575,13 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
   let decl_var var = function
     |[] -> ()
     |l ->
-      printf "%s:=" var; print_list "\\\n  " l; print "\n";
-      printf "\n-include $(addsuffix .d,$(%s))\n.SECONDARY: $(addsuffix .d,$(%s))\n\n" var var
+      printf "%s:=" var; print_list "\\\n  " l; print "\n\n";
+      print "ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)\n";
+      printf "-include $(addsuffix .d,$(%s))\n" var;
+      print "else\nifeq ($(MAKECMDGOALS),)\n";
+      printf "-include $(addsuffix .d,$(%s))\n" var;
+      print "endif\nendif\n\n";
+      printf ".SECONDARY: $(addsuffix .d,$(%s))\n\n" var
   in
   section "Files dispatching.";
   decl_var "VFILES" vfiles;
