@@ -166,7 +166,7 @@ let register_loaded_library m =
     let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
     let f = prefix ^ "cmo" in
     let f = Dynlink.adapt_filename f in
-    if not !Flags.no_native_compiler then
+    if !Flags.native_compiler then
       Nativelib.link_library ~prefix ~dirname ~basename:f
   in
   let rec aux = function
@@ -788,10 +788,10 @@ let save_library_to ?todo dir f otab =
     System.marshal_out_segment f' ch (opaque_table : seg_proofs);
     close_out ch;
     (* Writing native code files *)
-    if not !Flags.no_native_compiler then
+    if !Flags.native_compiler then
       let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
       if not (Nativelib.compile_library dir ast fn) then
-        msg_error (str"Could not compile the library to native code. Skipping.")
+	error "Could not compile the library to native code."
    with reraise ->
     let reraise = Errors.push reraise in
     let () = msg_warning (str "Removed file " ++ str f') in

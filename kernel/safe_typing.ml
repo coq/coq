@@ -772,9 +772,9 @@ let export ?except senv dir =
     }
   in
   let ast, values =
-    if !Flags.no_native_compiler then [], [||]
-    else
+    if !Flags.native_compiler then
       Nativelibrary.dump_library mp dir senv.env str
+    else [], [||]
   in
   let lib = {
     comp_name = dir;

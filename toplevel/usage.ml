@@ -71,7 +71,7 @@ let print_usage_channel co command =
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
 \n  -time                  display the time taken by each command\
-\n  -no-native-compiler    disable the native_compute reduction machinery\
+\n  -native-compiler       precompile files for the native_compute machinery\
 \n  -h, -help              print this list of options\
 \n";
   List.iter (fun (name, text) ->
