@@ -281,7 +281,16 @@ let print_style_tags () =
     in
     print_string opt
   in
-  List.iter iter tags;
+  let make (t, st) = match st with
+  | None -> None
+  | Some st ->
+    let tags = List.map string_of_int (Terminal.repr st) in
+    let t = String.concat "." (Ppstyle.repr t) in
+    Some (t ^ "=" ^ String.concat ";" tags)
+  in
+  let repr = List.map_filter make tags in
+  let () = Printf.printf "COQ_COLORS=\"%s\"\n" (String.concat ":" repr) in
+  let () = List.iter iter tags in
   flush_all ()
 
 let error_missing_arg s =

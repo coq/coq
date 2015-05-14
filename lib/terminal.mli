@@ -46,6 +46,9 @@ val make : ?fg_color:color -> ?bg_color:color ->
 val merge : style -> style -> style
 (** [merge s1 s2] returns [s1] with all defined values of [s2] overwritten. *)
 
+val repr : style -> int list
+(** Generate the ANSI code representing the given style. *)
+
 val eval : style -> string
 (** Generate an escape sequence from a style. *)
 
