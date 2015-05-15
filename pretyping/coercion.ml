@@ -378,7 +378,8 @@ let inh_app_fun env evd j =
       	try let t,p =
 	  lookup_path_to_fun_from env evd j.uj_type in
 	    apply_coercion env evd p j t
-	with Not_found | NoCoercion when Flags.is_program_mode () ->
+	with Not_found | NoCoercion ->
+          if Flags.is_program_mode () then
 	  try
 	    let evdref = ref evd in
 	    let coercef, t = mu env evdref t in
@@ -386,6 +387,7 @@ let inh_app_fun env evd j =
 	      (!evdref, res)
 	  with NoSubtacCoercion | NoCoercion ->
 	    (evd,j)
+          else (evd, j)
 
 let inh_app_fun resolve_tc env evd j =
   try inh_app_fun env evd j
