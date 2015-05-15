@@ -53,6 +53,19 @@ let all_subdirs ~unix_path:root =
   if exists_dir root then traverse root [];
   List.rev !l
 
+let file_really_exists f =
+  if Coq_config.arch = "Darwin" then
+    (* ensure that the file exists with expected case on the
+       case-insensitive but case-preserving default MacOS file system *)
+    let rec aux f =
+      Printf.eprintf ".%!";
+      let bf = Filename.basename f in
+      let df = Filename.dirname f in
+      String.equal df "." || String.equal df "/" ||
+      aux df && Array.exists (String.equal bf) (Sys.readdir df)
+    in aux f
+  else Sys.file_exists f
+
 let rec search paths test =
   match paths with
   | [] -> []
