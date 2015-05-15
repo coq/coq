@@ -75,34 +75,48 @@ let interp_ml_tactic s =
 open Nametab
 open Libobject
 
+type ltac_entry = {
+  tac_for_ml : bool;
+  tac_body : glob_tactic_expr;
+  tac_redef : ModPath.t list;
+}
+
 let mactab =
-  Summary.ref (KNmap.empty : (bool * glob_tactic_expr) KNmap.t)
+  Summary.ref (KNmap.empty : ltac_entry KNmap.t)
     ~name:"tactic-definition"
 
-let interp_ltac r = snd (KNmap.find r !mactab)
+let ltac_entries () = !mactab
 
-let is_ltac_for_ml_tactic r = fst (KNmap.find r !mactab)
+let interp_ltac r = (KNmap.find r !mactab).tac_body
 
-(* Declaration of the TAC-DEFINITION object *)
-let add (kn,td) = mactab := KNmap.add kn td !mactab
+let is_ltac_for_ml_tactic r = (KNmap.find r !mactab).tac_for_ml
+
+let add kn b t =
+  let entry = { tac_for_ml = b; tac_body = t; tac_redef = [] } in
+  mactab := KNmap.add kn entry !mactab
+
+let replace kn path t =
+  let (path, _, _) = KerName.repr path in
+  let entry _ e = { e with tac_body = t; tac_redef = path :: e.tac_redef } in
+  mactab := KNmap.modify kn entry !mactab
 
 let load_md i ((sp, kn), (local, id, b, t)) = match id with
 | None ->
   let () = if not local then Nametab.push_tactic (Until i) sp kn in
-  add (kn, (b,t))
-| Some kn -> add (kn, (b,t))
+  add kn b t
+| Some kn0 -> replace kn0 kn t
 
 let open_md i ((sp, kn), (local, id, b, t)) = match id with
 | None ->
   let () = if not local then Nametab.push_tactic (Exactly i) sp kn in
-  add (kn, (b,t))
-| Some kn -> add (kn, (b,t))
+  add kn b t
+| Some kn0 -> replace kn0 kn t
 
 let cache_md ((sp, kn), (local, id ,b, t)) = match id with
 | None ->
   let () = Nametab.push_tactic (Until 1) sp kn in
-  add (kn, (b,t))
-| Some kn -> add (kn, (b,t))
+  add kn b t
+| Some kn0 -> replace kn0 kn t
 
 let subst_kind subst id = match id with
 | None -> None

@@ -44,6 +44,19 @@ val interp_ltac : KerName.t -> glob_tactic_expr
 (** Find a user-defined tactic by name. Raise [Not_found] if it is absent. *)
 
 val is_ltac_for_ml_tactic : KerName.t -> bool
+(** Whether the tactic is defined from ML-side *)
+
+type ltac_entry = {
+  tac_for_ml : bool;
+  (** Whether the tactic is defined from ML-side *)
+  tac_body : glob_tactic_expr;
+  (** The current body of the tactic *)
+  tac_redef : ModPath.t list;
+  (** List of modules redefining the tactic in reverse chronological order *)
+}
+
+val ltac_entries : unit -> ltac_entry KNmap.t
+(** Low-level access to all Ltac entries currently defined. *)
 
 (** {5 ML tactic extensions} *)
 
