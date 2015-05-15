@@ -1662,7 +1662,7 @@ let default_subst_tactic_flags () =
   else
     { only_leibniz = true; rewrite_dependent_proof = false }
 
-let regular_subst_tactic = ref false
+let regular_subst_tactic = ref true
 
 let _ =
   declare_bool_option
