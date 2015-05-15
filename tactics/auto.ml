@@ -377,7 +377,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) 
     | Extern tacast -> 
       conclPattern concl p tacast
   in
-  tclLOG dbg (fun () -> pr_autotactic t) (run_auto_tactic t tactic)
+  tclLOG dbg (fun () -> pr_hint t) (run_hint t tactic)
 
 and trivial_resolve dbg mod_delta db_list local_db cl =
   try

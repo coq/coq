@@ -200,7 +200,7 @@ let extend_with_ref_list l seq gl =
   let l = expand_constructor_hints l in
   let f gr (seq,gl) =
     let gl, c = pf_eapply Evd.fresh_global gl gr in
-    let typ=(pf_type_of gl c) in
+    let typ=(pf_unsafe_type_of gl c) in
       (add_formula Hyp gr typ seq gl,gl) in
     List.fold_right f l (seq,gl)
 
@@ -209,12 +209,12 @@ open Hints
 let extend_with_auto_hints l seq gl=
   let seqref=ref seq in
   let f p_a_t =
-    match repr_auto_tactic p_a_t.code with
+    match repr_hint p_a_t.code with
 	Res_pf (c,_) | Give_exact (c,_)
       | Res_pf_THEN_trivial_fail (c,_) ->
 	  (try
 	     let gr = global_of_constr c in
-	     let typ=(pf_type_of gl c) in
+	     let typ=(pf_unsafe_type_of gl c) in
 	       seqref:=add_formula Hint gr typ !seqref gl
 	   with Not_found->())
       | _-> () in

@@ -123,13 +123,13 @@ let make_inv_predicate env evd indf realargs id status concl =
         let refl_term = eqdata.Coqlib.refl in
 	let refl_term = Evarutil.evd_comb1 (Evd.fresh_global env) evd refl_term in
         let refl = mkApp (refl_term, [|eqnty; rhs|]) in
-	let _ = Evarutil.evd_comb1 (Typing.e_type_of env) evd refl in
+	let _ = Evarutil.evd_comb1 (Typing.type_of env) evd refl in
         let args = refl :: args in
         build_concl eqns args (succ n) restlist
   in
   let (newconcl, args) = build_concl [] [] 0 realargs in
   let predicate = it_mkLambda_or_LetIn_name env newconcl hyps in
-  let _ = Evarutil.evd_comb1 (Typing.e_type_of env) evd predicate in
+  let _ = Evarutil.evd_comb1 (Typing.type_of env) evd predicate in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)
   predicate, args
@@ -437,7 +437,7 @@ let raw_inversion inv_kind id status names =
     let concl = Proofview.Goal.concl gl in
     let c = mkVar id in
     let (ind, t) =
-      try pf_apply Tacred.reduce_to_atomic_ind gl (pf_type_of gl c)
+      try pf_apply Tacred.reduce_to_atomic_ind gl (pf_unsafe_type_of gl c)
       with UserError _ ->
         let msg = str "The type of " ++ pr_id id ++ str " is not inductive." in
         Errors.errorlabstrm "" msg

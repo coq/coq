@@ -379,17 +379,27 @@ let msg_found_library = function
       msg_info (hov 0
 	(pr_dirpath fulldir ++ strbrk " is bound to file " ++ str file))
 
-let err_unmapped_library loc qid =
+let err_unmapped_library loc ?from qid =
   let dir = fst (repr_qualid qid) in
+  let prefix = match from with
+  | None -> str "."
+  | Some from ->
+    str " and prefix " ++ pr_dirpath from ++ str "."
+  in
   user_err_loc
     (loc,"locate_library",
-     strbrk "Cannot find a physical path bound to logical path " ++
-       pr_dirpath dir ++ str".")
+     strbrk "Cannot find a physical path bound to logical path matching suffix " ++
+       pr_dirpath dir ++ prefix)
 
-let err_notfound_library loc qid =
+let err_notfound_library loc ?from qid =
+  let prefix = match from with
+  | None -> str "."
+  | Some from ->
+    str " with prefix " ++ pr_dirpath from ++ str "."
+  in
   user_err_loc
     (loc,"locate_library",
-     strbrk "Unable to locate library " ++ pr_qualid qid ++ str".")
+     strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix)
 
 let print_located_library r =
   let (loc,qid) = qualid_of_reference r in
@@ -759,8 +769,8 @@ let vernac_require from import qidl =
       let (_, dir, f) = Library.locate_qualified_library ?root ~warn qid in
       (dir, f)
     with
-      | Library.LibUnmappedDir -> err_unmapped_library loc qid
-      | Library.LibNotFound -> err_notfound_library loc qid
+      | Library.LibUnmappedDir -> err_unmapped_library loc ?from:root qid
+      | Library.LibNotFound -> err_notfound_library loc ?from:root qid
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
@@ -2164,5 +2174,4 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     else aux false c
 
 let () = Hook.set Stm.interp_hook interp
-let () = Hook.set Stm.process_error_hook Cerrors.process_vernac_interp_error
 let () = Hook.set Stm.with_fail_hook with_fail

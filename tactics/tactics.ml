@@ -158,7 +158,7 @@ let convert_concl ?(check=true) ty k =
     Proofview.Refine.refine ~unsafe:true begin fun sigma ->
       let sigma =
         if check then begin
-          ignore (Typing.type_of env sigma ty);
+          ignore (Typing.unsafe_type_of env sigma ty);
           let sigma,b = Reductionops.infer_conv env sigma ty conclty in
           if not b then error "Not convertible.";
           sigma
@@ -628,7 +628,7 @@ let change_on_subterm cv_pb deep t where env sigma c =
         env sigma c in
   if !mayneedglobalcheck then
     begin
-      try ignore (Typing.type_of env sigma c)
+      try ignore (Typing.unsafe_type_of env sigma c)
       with e when catchable_exception e ->
         error "Replacement would lead to an ill-typed term."
     end;
@@ -979,7 +979,7 @@ let cut c =
     let is_sort =
       try
         (** Backward compat: ensure that [c] is well-typed. *)
-        let typ = Typing.type_of env sigma c in
+        let typ = Typing.unsafe_type_of env sigma c in
         let typ = whd_betadeltaiota env sigma typ in
         match kind_of_term typ with
         | Sort _ -> true
@@ -1224,7 +1224,7 @@ let find_ind_eliminator ind s gl =
     evd, c
 
 let find_eliminator c gl =
-  let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_type_of gl c) in
+  let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_unsafe_type_of gl c) in
   if is_nonrec ind then raise IsNonrec;
   let evd, c = find_ind_eliminator ind (Tacticals.New.elimination_sort_of_goal gl) gl in
     evd, {elimindex = None; elimbody = (c,NoBindings);
@@ -1639,7 +1639,7 @@ let apply_in_delayed_once sidecond_first with_delta with_destruct with_evars nam
 
 let cut_and_apply c =
   Proofview.Goal.nf_enter begin fun gl ->
-    match kind_of_term (Tacmach.New.pf_hnf_constr gl (Tacmach.New.pf_type_of gl c)) with
+    match kind_of_term (Tacmach.New.pf_hnf_constr gl (Tacmach.New.pf_unsafe_type_of gl c)) with
       | Prod (_,c1,c2) when not (dependent (mkRel 1) c2) ->
         let concl = Proofview.Goal.concl gl in
         let env = Tacmach.New.pf_env gl in
@@ -1672,7 +1672,7 @@ let exact_check c =
   let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let sigma, ct = Typing.e_type_of env sigma c in
+  let sigma, ct = Typing.type_of env sigma c in
     Proofview.Unsafe.tclEVARS sigma <*>
       Tacticals.New.tclTHEN (convert_leq ct concl) (new_exact_no_check c)
   end
@@ -1821,7 +1821,7 @@ let specialize (c,lbind) g =
       let evd = Typeclasses.resolve_typeclasses (pf_env g) (project g) in
 	tclEVARS evd, nf_evar evd c
     else
-      let clause = pf_apply make_clenv_binding g (c,pf_type_of g c) lbind in
+      let clause = pf_apply make_clenv_binding g (c,pf_unsafe_type_of g c) lbind in
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
       let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
@@ -1841,11 +1841,11 @@ let specialize (c,lbind) g =
        | Var id when Id.List.mem id (pf_ids_of_hyps g) ->
 	   tclTHEN tac
 	     (tclTHENFIRST
-	       (fun g -> Proofview.V82.of_tactic (assert_before_replacing id (pf_type_of g term)) g)
+	       (fun g -> Proofview.V82.of_tactic (assert_before_replacing id (pf_unsafe_type_of g term)) g)
 	       (exact_no_check term)) g
        | _ -> tclTHEN tac
 	   (tclTHENLAST
-              (fun g -> Proofview.V82.of_tactic (cut (pf_type_of g term)) g)
+              (fun g -> Proofview.V82.of_tactic (cut (pf_unsafe_type_of g term)) g)
               (exact_no_check term)) g
 
 (* Keeping only a few hypotheses *)
@@ -1980,7 +1980,7 @@ let my_find_eq_data_decompose gl t =
 let intro_decomp_eq loc l thin tac id =
   Proofview.Goal.nf_enter begin fun gl ->
   let c = mkVar id in
-  let t = Tacmach.New.pf_type_of gl c in
+  let t = Tacmach.New.pf_unsafe_type_of gl c in
   let _,t = Tacmach.New.pf_reduce_to_quantified_ind gl t in
   match my_find_eq_data_decompose gl t with
   | Some (eq,u,eq_args) ->
@@ -1994,7 +1994,7 @@ let intro_decomp_eq loc l thin tac id =
 let intro_or_and_pattern loc bracketed ll thin tac id =
   Proofview.Goal.enter begin fun gl ->
   let c = mkVar id in
-  let t = Tacmach.New.pf_type_of gl c in
+  let t = Tacmach.New.pf_unsafe_type_of gl c in
   let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl t in
   let nv = constructors_nrealargs ind in
   let ll = fix_empty_or_and_pattern (Array.length nv) ll in
@@ -2013,7 +2013,7 @@ let rewrite_hyp assert_style l2r id =
   let clear_var_and_eq c = tclTHEN (clear [id]) (clear [destVar c]) in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let type_of = Tacmach.New.pf_type_of gl in
+    let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let whd_betadeltaiota = Tacmach.New.pf_apply whd_betadeltaiota gl in
     let t = whd_betadeltaiota (type_of (mkVar id)) in
     match match_with_equality_type t with
@@ -2290,7 +2290,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let eq = applist (eq,args) in
           let refl = applist (refl, [t;mkVar id]) in
 	  let term = mkNamedLetIn id c t (mkLetIn (Name heq, refl, eq, ccl)) in
-	  let sigma, _ = Typing.e_type_of env sigma term in
+	  let sigma, _ = Typing.type_of env sigma term in
             sigma, term,
             Tacticals.New.tclTHEN
 	      (intro_gen (NamingMustBe (loc,heq)) (decode_hyp lastlhyp) true false)
@@ -2376,7 +2376,7 @@ let forward b usetac ipat c =
   match usetac with
   | None ->
       Proofview.Goal.enter begin fun gl ->
-      let t = Tacmach.New.pf_type_of gl  c in
+      let t = Tacmach.New.pf_unsafe_type_of gl  c in
       Tacticals.New.tclTHENFIRST (assert_as true ipat t)
 	(Proofview.V82.tactic (exact_no_check c))
       end
@@ -2459,7 +2459,7 @@ let generalize_goal_gen env ids i ((occs,c,b),na) t (cl,evd) =
     mkProd_or_LetIn (na,b,t) cl', evd'
 
 let generalize_goal gl i ((occs,c,b),na as o) cl =
-  let t = pf_type_of gl c in
+  let t = pf_unsafe_type_of gl c in
   let env = pf_env gl in
     generalize_goal_gen env (pf_ids_of_hyps gl) i o t cl
 
@@ -2520,7 +2520,7 @@ let new_generalize_gen_let lconstr =
     let (newcl, sigma), args =
       List.fold_right_i 
 	(fun i ((_,c,b),_ as o) (cl, args) ->
-	  let t = Tacmach.New.pf_type_of gl c in
+	  let t = Tacmach.New.pf_unsafe_type_of gl c in
 	  let args = if Option.is_empty b then c :: args else args in
 	    generalize_goal_gen env ids i o t cl, args)
 	0 lconstr ((concl, sigma), [])
@@ -2797,7 +2797,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             let id = match kind_of_term c with
             | Var id -> id
             | _ ->
-            let type_of = Tacmach.New.pf_type_of gl in
+            let type_of = Tacmach.New.pf_unsafe_type_of gl in
             id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
             let x = fresh_id_in_env avoid id env in
 	    Tacticals.New.tclTHEN
@@ -3201,7 +3201,7 @@ let abstract_args gl generalize_vars dep id defined f args =
       let rel, c = Reductionops.splay_prod_n env sigma 1 prod in
 	List.hd rel, c
     in
-    let argty = pf_type_of gl arg in
+    let argty = pf_unsafe_type_of gl arg in
     let ty = (* refresh_universes_strict *) ty in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
@@ -3242,7 +3242,7 @@ let abstract_args gl generalize_vars dep id defined f args =
   in
     if dogen then
       let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env =
-	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty,env) args'
+	Array.fold_left aux (pf_unsafe_type_of gl f',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty,env) args'
       in
       let args, refls = List.rev args, List.rev refls in
       let vars =
@@ -3566,13 +3566,13 @@ let guess_elim isrec dep s hyp0 gl =
 	Tacmach.New.pf_apply build_case_analysis_scheme gl mind true s
       else
 	Tacmach.New.pf_apply build_case_analysis_scheme_default gl mind s in
-  let elimt = Tacmach.New.pf_type_of gl elimc in
+  let elimt = Tacmach.New.pf_unsafe_type_of gl elimc in
     evd, ((elimc, NoBindings), elimt), mkIndU mind
 
 let given_elim hyp0 (elimc,lbind as e) gl =
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let ind_type_guess,_ = decompose_app ((strip_prod tmptyp0)) in
-  Proofview.Goal.sigma gl, (e, Tacmach.New.pf_type_of gl elimc), ind_type_guess
+  Proofview.Goal.sigma gl, (e, Tacmach.New.pf_unsafe_type_of gl elimc), ind_type_guess
 
 type scheme_signature =
     (Id.t list * (elim_arg_kind * bool * Id.t) list) array
@@ -3604,7 +3604,7 @@ let get_elim_signature elim hyp0 gl =
   compute_elim_signature (given_elim hyp0 elim gl) hyp0
 
 let is_functional_induction elimc gl =
-  let scheme = compute_elim_sig ~elimc (Tacmach.New.pf_type_of gl (fst elimc)) in
+  let scheme = compute_elim_sig ~elimc (Tacmach.New.pf_unsafe_type_of gl (fst elimc)) in
   (* The test is not safe: with non-functional induction on non-standard
      induction scheme, this may fail *)
   Option.is_empty scheme.indarg
@@ -3963,7 +3963,7 @@ let induction_gen_l isrec with_evars elim names lc =
 
 	    | _ ->
                 Proofview.Goal.enter begin fun gl ->
-                let type_of = Tacmach.New.pf_type_of gl in
+                let type_of = Tacmach.New.pf_unsafe_type_of gl in
                 let x =
 		  id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
 
@@ -4225,7 +4225,7 @@ let (forward_setoid_symmetry_in, setoid_symmetry_in) = Hook.make ()
 
 let symmetry_in id =
   Proofview.Goal.enter begin fun gl ->
-  let ctype = Tacmach.New.pf_type_of gl (mkVar id) in
+  let ctype = Tacmach.New.pf_unsafe_type_of gl (mkVar id) in
   let sign,t = decompose_prod_assum ctype in
   Proofview.tclORELSE
     begin
@@ -4276,7 +4276,7 @@ let prove_transitivity hdcncl eq_kind t =
   | HeterogenousEq (typ1,c1,typ2,c2) ->
       let env = Proofview.Goal.env gl in
       let sigma = Proofview.Goal.sigma gl in
-      let type_of = Typing.type_of env sigma in
+      let type_of = Typing.unsafe_type_of env sigma in
       let typt = type_of t in
         (mkApp(hdcncl, [| typ1; c1; typt ;t |]),
          mkApp(hdcncl, [| typt; t; typ2; c2 |]))

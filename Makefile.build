@@ -81,7 +81,7 @@ TIMECMD=	# if you prefer a specific time command instead of $(STDTIME)
 STDTIME=/usr/bin/time -f "$* (user: %U mem: %M ko)"
 TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 
-COQOPTS=$(COQ_XML) $(VM)
+COQOPTS=$(COQ_XML) $(VM) $(NATIVECOMPUTE)
 BOOTCOQC=$(TIMER) $(COQTOPEXE) -boot $(COQOPTS) -compile
 
 # The SHOW and HIDE variables control whether make will echo complete commands 

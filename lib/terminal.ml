@@ -117,7 +117,7 @@ let is_extended = function
 | `INDEX _ | `RGB _ -> true
 | _ -> false
 
-let eval st =
+let repr st =
   let fg = match st.fg_color with
   | None -> []
   | Some c ->
@@ -152,7 +152,10 @@ let eval st =
   | Some true -> [7]
   | Some false -> [27]
   in
-  let tags = fg @ bg @ bold @ italic @ underline @ negative in
+  fg @ bg @ bold @ italic @ underline @ negative
+
+let eval st =
+  let tags = repr st in
   let tags = List.map string_of_int tags in
   Printf.sprintf "\027[%sm" (String.concat ";" tags)
 

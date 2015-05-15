@@ -1199,7 +1199,9 @@ let write_makefile f =
   pr "# Defining REVISION\n";
   pr "CHECKEDOUT=%s\n\n" vcs;
   pr "# Option to control compilation and installation of the documentation\n";
-  pr "WITHDOC=%s\n" (if withdoc then "all" else "no");
+  pr "WITHDOC=%s\n\n" (if withdoc then "all" else "no");
+  pr "# Option to produce precompiled files for native_compute\n";
+  pr "NATIVECOMPUTE=%s\n" (if !Prefs.nativecompiler then "-native-compiler" else "");
   close_out o;
   Unix.chmod f 0o444
 

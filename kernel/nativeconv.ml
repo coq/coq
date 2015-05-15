@@ -121,9 +121,8 @@ and conv_fix env lvl t1 f1 t2 f2 cu =
   aux 0
 
 let native_conv pb sigma env t1 t2 =
-  if !Flags.no_native_compiler then begin
-    let msg = "Native compiler is disabled, "^
-    "falling back to VM conversion test." in
+  if Coq_config.no_native_compiler then begin
+    let msg = "Native compiler is disabled, falling back to VM conversion test." in
     Pp.msg_warning (Pp.str msg);
     vm_conv pb env t1 t2
   end

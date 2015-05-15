@@ -704,7 +704,7 @@ let refl_equal =
   call it before it is defined. *)
 let  mkCaseEq a  : unit Proofview.tactic =
   Proofview.Goal.nf_enter begin fun gl ->
-    let type_of_a = Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g a) gl in
+    let type_of_a = Tacmach.New.of_old (fun g -> Tacmach.pf_unsafe_type_of g a) gl in
        Tacticals.New.tclTHENLIST
          [Proofview.V82.tactic (Tactics.Simple.generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
           Proofview.Goal.nf_enter begin fun gl ->
@@ -755,7 +755,7 @@ let destauto t =
 
 let destauto_in id = 
   Proofview.Goal.nf_enter begin fun gl ->
-  let ctype = Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g (mkVar id)) gl in
+  let ctype = Tacmach.New.of_old (fun g -> Tacmach.pf_unsafe_type_of g (mkVar id)) gl in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype

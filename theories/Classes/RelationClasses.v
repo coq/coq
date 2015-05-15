@@ -89,6 +89,11 @@ Section Defs.
   Global Instance Equivalence_PER {R} `(E:Equivalence R) : PER R | 10 :=
     { }. 
 
+  (** An Equivalence is a PreOrder plus symmetry. *)
+
+  Global Instance Equivalence_PreOrder {R} `(E:Equivalence R) : PreOrder R | 10 :=
+    { }.
+
   (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
   
   Class Antisymmetric eqA `{equ : Equivalence eqA} (R : relation A) :=

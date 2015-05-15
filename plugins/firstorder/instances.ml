@@ -105,7 +105,7 @@ let mk_open_instance id idc gl m t=
   let evmap=Refiner.project gl in
   let var_id=
     if id==dummy_id then dummy_bvid else
-      let typ=pf_type_of gl idc in
+      let typ=pf_unsafe_type_of gl idc in
 	(* since we know we will get a product,
 	   reduction is not too expensive *)
       let (nam,_,_)=destProd (whd_betadeltaiota env evmap typ) in
@@ -154,7 +154,7 @@ let left_instance_tac (inst,id) continue seq=
 		    it_mkLambda_or_LetIn
 		      (mkApp(idc,[|ot|])) rc in
 		  let evmap, _ =
-		    try Typing.e_type_of (pf_env gl) evmap gt
+		    try Typing.type_of (pf_env gl) evmap gt
 		    with e when Errors.noncritical e ->
 		      error "Untypable instance, maybe higher-order non-prenex quantification" in
 		    tclTHEN (Refiner.tclEVARS evmap) (generalize [gt]) gl)

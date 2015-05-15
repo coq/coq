@@ -56,6 +56,10 @@ let print_usage_channel co command =
 \n  -v                     print Coq version and exit\
 \n  -list-tags             print highlight color tags known by Coq and exit\
 \n\
+\n  -quiet                 unset display of extra information (implies -w none)\
+\n  -w (all|none)          configure display of warnings\
+\n  -color (on|off|auto)   configure color output (only active through coqtop)\
+\n\
 \n  -q                     skip loading of rcfile\
 \n  -init-file f           set the rcfile to f\
 \n  -batch                 batch mode (exits just after arguments parsing)\
@@ -63,7 +67,6 @@ let print_usage_channel co command =
 \n  -bt                    print backtraces (requires configure debug flag)\
 \n  -debug                 debug mode (implies -bt)\
 \n  -emacs                 tells Coq it is executed under Emacs\
-\n  -color (on|off|auto)   configure color output (only active through coqtop)\
 \n  -noglob                do not dump globalizations\
 \n  -dump-glob f           dump globalizations in file f (to be used by coqdoc)\
 \n  -with-geoproof (yes|no) to (de)activate special functions for Geoproof within Coqide (default is yes)\
@@ -71,7 +74,7 @@ let print_usage_channel co command =
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
 \n  -time                  display the time taken by each command\
-\n  -no-native-compiler    disable the native_compute reduction machinery\
+\n  -native-compiler       precompile files for the native_compute machinery\
 \n  -h, -help              print this list of options\
 \n";
   List.iter (fun (name, text) ->

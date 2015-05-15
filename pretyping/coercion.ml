@@ -295,8 +295,8 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		   let evm = !evdref in
 		     (try subco ()
 		      with NoSubtacCoercion ->
-			let typ = Typing.type_of env evm c in
-			let typ' = Typing.type_of env evm c' in
+			let typ = Typing.unsafe_type_of env evm c in
+			let typ' = Typing.unsafe_type_of env evm c' in
 			  (* 			     if not (is_arity env evm typ) then *)
 			  coerce_application typ typ' c c' l l')
 		       (* 			     else subco () *)
@@ -305,8 +305,8 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 	   | x, y when Constr.equal c c' ->
 	       if Int.equal (Array.length l) (Array.length l') then
 		 let evm =  !evdref in
-		 let lam_type = Typing.type_of env evm c in
-		 let lam_type' = Typing.type_of env evm c' in
+		 let lam_type = Typing.unsafe_type_of env evm c in
+		 let lam_type' = Typing.unsafe_type_of env evm c' in
 		   (* 			 if not (is_arity env evm lam_type) then ( *)
 		   coerce_application lam_type lam_type' c c' l l'
 		     (* 			 ) else subco () *)

@@ -378,8 +378,8 @@ and  nf_predicate env ind mip params v pT =
   | _, _ -> false, nf_type env v
 
 let native_norm env sigma c ty =  
-  if !Flags.no_native_compiler then
-    error "Native_compute reduction has been disabled"
+  if Coq_config.no_native_compiler then
+    error "Native_compute reduction has been disabled at configure time."
   else
   let penv = Environ.pre_env env in 
   (*

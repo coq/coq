@@ -55,10 +55,7 @@ type rewrite_result =
 | Identity
 | Success of rewrite_result_info
 
-type 'a pure_strategy = 'a -> Environ.env -> Id.t list -> constr -> types ->
-  (bool (* prop *) * constr option) -> evars -> 'a * rewrite_result
-
-type strategy = unit pure_strategy
+type strategy
 
 val strategy_of_ast : (glob_constr_and_expr, raw_red_expr) strategy_ast -> strategy
 

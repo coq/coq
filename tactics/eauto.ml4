@@ -35,7 +35,7 @@ let eauto_unif_flags = auto_flags_of_state full_transparent_state
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
   Proofview.Goal.nf_enter begin fun gl ->
-  let t1 = Tacmach.New.pf_type_of gl c in
+  let t1 = Tacmach.New.pf_unsafe_type_of gl c in
   let t2 = Tacmach.New.pf_concl gl in
   if occur_existential t1 || occur_existential t2 then
      Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (Proofview.V82.tactic (exact_no_check c))
@@ -182,8 +182,8 @@ and e_my_find_search db_list local_db hdc concl =
         | Unfold_nth c -> Proofview.V82.tactic (reduce (Unfold [AllOccurrences,c]) onConcl)
         | Extern tacast -> conclPattern concl p tacast
        in
-       let tac = run_auto_tactic t tac in
-       (tac, lazy (pr_autotactic t)))
+       let tac = run_hint t tac in
+       (tac, lazy (pr_hint t)))
   in
   List.map tac_of_hint hintl
 

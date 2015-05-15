@@ -226,6 +226,7 @@ end) = struct
       let t = Reductionops.whd_betadeltaiota env (goalevars evars) ty in
 	match kind_of_term t, l with
 	| Prod (na, ty, b), obj :: cstrs ->
+          let b = Reductionops.nf_betaiota (goalevars evars) b in
 	  if noccurn 1 b (* non-dependent product *) then
 	    let ty = Reductionops.nf_betaiota (goalevars evars) ty in
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
@@ -380,7 +381,7 @@ end
 
 let type_app_poly env env evd f args =
   let evars, c = app_poly_nocheck env evd f args in
-  let evd', t = Typing.e_type_of env (goalevars evars) c in
+  let evd', t = Typing.type_of env (goalevars evars) c in
     (evd', cstrevars evars), c
 
 module PropGlobal = struct
@@ -452,7 +453,6 @@ let convertible env evd x y =
   Reductionops.is_conv_leq env evd x y
 
 type hypinfo = {
-  env : env;
   prf : constr;
   car : constr;
   rel : constr;
@@ -472,7 +472,7 @@ let rec decompose_app_rel env evd t =
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
     let (f', argl, argr) = decompose_app_rel env evd arg in
-    let ty = Typing.type_of env evd argl in
+    let ty = Typing.unsafe_type_of env evd argl in
     let f'' = mkLambda (Name default_dependent_ident, ty,
       mkLambda (Name (Id.of_string "y"), lift 1 ty,
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
@@ -498,7 +498,7 @@ let decompose_applied_relation env sigma (c,l) =
       let sort = sort_of_rel env sigma equiv in
       let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
       let value = mkApp (c, args) in
-        Some (sigma, { env=env; prf=value;
+        Some (sigma, { prf=value;
                 car=ty1; rel = equiv; sort = Sorts.is_prop sort;
                 c1=c1; c2=c2; holes })
   in
@@ -509,10 +509,6 @@ let decompose_applied_relation env sigma (c,l) =
 	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> n, None, t) ctx)) with
 	| Some c -> c
 	| None -> error "Cannot find an homogeneous relation to rewrite."
-
-let decompose_applied_relation_expr env sigma (is, (c,l)) =
-  let sigma, cbl = Tacinterp.interp_open_constr_with_bindings is env sigma (c,l) in
-  decompose_applied_relation env sigma cbl
 
 let rewrite_db = "rewrite"
 
@@ -588,23 +584,11 @@ let general_rewrite_unif_flags () =
     Unification.resolve_evars = true
   }
 
-let refresh_hypinfo env sigma hypinfo c =
-  let sigma, hypinfo = match hypinfo with
-  | None ->
-    decompose_applied_relation_expr env sigma c
-  | Some hypinfo ->
-    if hypinfo.env != env then
-      (* If the lemma actually generates existential variables, we cannot 
-          use it here as it will polute the evar map with existential variables
-          that might not ever get instantiated (e.g. if we rewrite under a
-          binder and need to refresh [c] again) *)
-      (* TODO: remove bindings in sigma corresponding to c *)
-      decompose_applied_relation_expr env sigma c
-    else sigma, hypinfo
-  in
+let refresh_hypinfo env sigma (is, cb) =
+  let sigma, cbl = Tacinterp.interp_open_constr_with_bindings is env sigma cb in
+  let sigma, hypinfo = decompose_applied_relation env sigma cbl in
   let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
   sigma, (car, rel, prf, c1, c2, holes, sort)
-
 
 (** FIXME: write this in the new monad interface *)
 let solve_remaining_by env sigma holes by =
@@ -719,7 +703,7 @@ let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
     let rew_prf = RewPrf (rel, prf) in
     let rew = { rew_car = car; rew_from = c1; rew_to = c2; rew_prf; rew_evars; } in
     let rew = if l2r then rew else symmetry env sort rew in
-    Some ((), rew)
+    Some rew
   with 
   | e when Class_tactics.catchable e -> None
   | Reduction.NotConvertible -> None
@@ -763,7 +747,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
     let morphargs, morphobjs = Array.chop first args in
     let morphargs', morphobjs' = Array.chop first args' in
     let appm = mkApp(m, morphargs) in
-    let appmtype = Typing.type_of env (goalevars evars) appm in
+    let appmtype = Typing.unsafe_type_of env (goalevars evars) appm in
     let cstrs = List.map 
       (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf)) 
       (Array.to_list morphobjs') 
@@ -829,27 +813,27 @@ let coerce env avoid cstr res =
   let rel, prf = get_rew_prf res in
     apply_constraint env avoid res.rew_car rel prf cstr res
 
-let apply_rule unify loccs : ('a * int) pure_strategy =
+let apply_rule unify loccs : int pure_strategy =
   let (nowhere_except_in,occs) = convert_occs loccs in
   let is_occ occ =
     if nowhere_except_in 
     then List.mem occ occs 
     else not (List.mem occ occs) 
   in
-    fun (hypinfo, occ) env avoid t ty cstr evars ->
-      let unif = if isEvar t then None else unify hypinfo env evars t in
+    fun occ env avoid t ty cstr evars ->
+      let unif = if isEvar t then None else unify env evars t in
 	match unif with
-	| None -> ((hypinfo, occ), Fail)
-        | Some (hypinfo', rew) ->
+	| None -> (occ, Fail)
+        | Some rew ->
 	  let occ = succ occ in
-	    if not (is_occ occ) then ((hypinfo, occ), Fail)
-	    else if eq_constr t rew.rew_to then ((hypinfo, occ), Identity)
+	    if not (is_occ occ) then (occ, Fail)
+	    else if eq_constr t rew.rew_to then (occ, Identity)
 	    else
 	      let res = { rew with rew_car = ty } in
               let rel, prf = get_rew_prf res in
 	      let res = Success (apply_constraint env avoid rew.rew_car rel prf cstr res) in
-		((hypinfo', occ), res)
-		  
+              (occ, res)
+
 let apply_lemma l2r flags oc by loccs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
     let sigma, c = oc sigma in
@@ -857,13 +841,13 @@ let apply_lemma l2r flags oc by loccs : strategy =
     let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
     let rew = (car, rel, prf, c1, c2, holes, sort) in
     let evars = (sigma, cstrs) in
-    let unify () env evars t =
+    let unify env evars t =
       let rew = unify_eqn rew l2r flags env evars by t in
       match rew with
       | None -> None
-      | Some rew -> Some ((), rew)
+      | Some rew -> Some rew
     in
-    let _, res = apply_rule unify loccs ((), 0) env avoid t ty cstr evars in
+    let _, res = apply_rule unify loccs 0 env avoid t ty cstr evars in
     (), res
 
 let e_app_poly env evars f args =
@@ -1379,11 +1363,10 @@ end
 
 let rewrite_with l2r flags c occs : strategy =
   fun () env avoid t ty cstr (sigma, cstrs) ->
-    let hypinfo = None in
-    let unify hypinfo env evars t =
+    let unify env evars t =
       let (sigma, cstrs) = evars in
       let ans =
-        try Some (refresh_hypinfo env sigma hypinfo c)
+        try Some (refresh_hypinfo env sigma c)
         with e when Class_tactics.catchable e -> None
       in
       match ans with
@@ -1392,14 +1375,14 @@ let rewrite_with l2r flags c occs : strategy =
         let rew = unify_eqn rew l2r flags env (sigma, cstrs) None t in
         match rew with
         | None -> None
-        | Some rew -> Some (None, rew) (** reset the hypinfo cache *)
+        | Some rew -> Some rew
     in
     let app = apply_rule unify occs in
     let strat = 
       Strategies.fix (fun aux -> 
 	Strategies.choice app (subterm true default_flags aux))
     in
-    let _, res = strat (hypinfo, 0) env avoid t ty cstr (sigma, cstrs) in
+    let _, res = strat 0 env avoid t ty cstr (sigma, cstrs) in
       ((), res)
 
 let apply_strategy (s : strategy) env avoid concl (prop, cstr) evars =
@@ -1755,7 +1738,7 @@ let declare_projection n instance_id r =
   let poly = Global.is_polymorphic r in
   let ty = Retyping.get_type_of (Global.env ()) Evd.empty c in
   let term = proper_projection c ty in
-  let typ = Typing.type_of (Global.env ()) Evd.empty term in
+  let typ = Typing.unsafe_type_of (Global.env ()) Evd.empty term in
   let ctx, typ = decompose_prod_assum typ in
   let typ =
     let n =
@@ -1788,7 +1771,7 @@ let build_morphism_signature m =
   let env = Global.env () in
   let m,ctx = Constrintern.interp_constr env Evd.empty m in
   let sigma = Evd.from_env ~ctx env in
-  let t = Typing.type_of env sigma m in
+  let t = Typing.unsafe_type_of env sigma m in
   let cstrs =
     let rec aux t =
       match kind_of_term t with
@@ -1815,7 +1798,7 @@ let build_morphism_signature m =
 
 let default_morphism sign m =
   let env = Global.env () in
-  let t = Typing.type_of env Evd.empty m in
+  let t = Typing.unsafe_type_of env Evd.empty m in
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (Evd.empty, Evar.Set.empty) env t (fst sign) (snd sign)
   in
@@ -1967,12 +1950,12 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 (** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
-  let unify () env evars t = unify_abs res l2r sort env evars t in
+  let unify env evars t = unify_abs res l2r sort env evars t in
   let app = apply_rule unify occs in
   let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
   let substrat = Strategies.fix recstrat in
   let strat () env avoid t ty cstr evars =
-    let _, res = substrat ((), 0) env avoid t ty cstr evars in
+    let _, res = substrat 0 env avoid t ty cstr evars in
     (), res
   in
   let origsigma = project gl in
@@ -2011,7 +1994,7 @@ let setoid_proof ty fn fallback =
         try
           let rel, _, _ = decompose_app_rel env sigma concl in
           let evm = sigma in
-          let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
+          let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.unsafe_type_of env evm rel)))) in
 	    (try init_setoid () with _ -> raise Not_found);
             fn env sigma car rel
         with e -> Proofview.tclZERO e
@@ -2070,7 +2053,7 @@ let setoid_transitivity c =
     
 let setoid_symmetry_in id =
   Proofview.V82.tactic (fun gl ->
-  let ctype = pf_type_of gl (mkVar id) in
+  let ctype = pf_unsafe_type_of gl (mkVar id) in
   let binders,concl = decompose_prod_assum ctype in
   let (equiv, args) = decompose_app concl in
   let rec split_last_two = function

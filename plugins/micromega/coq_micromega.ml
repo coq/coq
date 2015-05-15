@@ -1120,7 +1120,7 @@ struct
       with e when Errors.noncritical e -> (X(t),env,tg) in
 
     let is_prop term =
-     let ty   = Typing.type_of (Goal.env gl) (Goal.sigma gl) term in
+     let ty   = Typing.unsafe_type_of (Goal.env gl) (Goal.sigma gl) term in
      let sort = Typing.sort_of (Goal.env gl) (ref (Goal.sigma gl)) ty in
      Term.is_prop_sort sort in
      

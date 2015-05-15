@@ -78,9 +78,13 @@ let get_exn_files e = Exninfo.get e files_of_exn
 
 let add_exn_files e f = Exninfo.add e files_of_exn f
 
-let raise_with_file f (e, info) =
-  let inner_f = match get_exn_files info with None -> f | Some ff -> ff.inner in
-  iraise (e, add_exn_files info { outer = f; inner = inner_f })
+let enrich_with_file f (e, info) =
+  let inner = match get_exn_files info with None -> f | Some x -> x.inner in
+  (e, add_exn_files info { outer = f; inner })
+
+let raise_with_file f e = iraise (enrich_with_file f e)
+
+let cur_file = ref None
 
 let disable_drop = function
   | Drop -> Errors.error "Drop is forbidden."
@@ -253,13 +257,12 @@ let rec vernac_com verbosely checknav (loc,com) =
       else iraise (reraise, info)
 
 and read_vernac_file verbosely s =
-  Flags.make_warn verbosely;
   let checknav loc cmd =
     if is_navigation_vernac cmd && not (is_reset cmd) then
 	user_error loc "Navigation commands forbidden in files"
   in
-  let (in_chan, fname, input) =
-    open_file_twice_if verbosely s in
+  let (in_chan, fname, input) = open_file_twice_if verbosely s in
+  cur_file := Some fname;
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
@@ -350,3 +353,8 @@ let compile v f =
   compile v f;
   CoqworkmgrApi.giveback 1
 
+let () = Hook.set Stm.process_error_hook (fun e ->
+  match !cur_file with
+  | None -> Cerrors.process_vernac_interp_error e
+  | Some f -> enrich_with_file f (Cerrors.process_vernac_interp_error e)
+)

@@ -321,7 +321,7 @@ let mkEq typ c1 c2 =
 
 
 let poseq_unsafe idunsafe cstr gl =
-  let typ = Tacmach.pf_type_of gl cstr in
+  let typ = Tacmach.pf_unsafe_type_of gl cstr in
   tclTHEN
     (Proofview.V82.of_tactic (Tactics.letin_tac None (Name idunsafe) cstr None Locusops.allHypsAndConcl))
     (tclTHENFIRST
@@ -349,7 +349,7 @@ let rec poseq_list_ids_rec lcstr gl =
 	      let _ = prstr "c = " in
 	      let _ = prconstr c in
 	      let _ = prstr "\n" in
-	      let typ = Tacmach.pf_type_of gl c in
+	      let typ = Tacmach.pf_unsafe_type_of gl c in
 	      let cname = Namegen.id_of_name_using_hdchar (Global.env()) typ Anonymous in
 	      let x = Tactics.fresh_id [] cname gl in
 	      let _ = list_constr_largs:=mkVar x :: !list_constr_largs in
@@ -478,8 +478,8 @@ VERNAC COMMAND EXTEND MergeFunind CLASSIFIED AS SIDEFF
 	 (CRef (Libnames.Ident (Loc.ghost,id1),None)) in
        let f2,ctx' = Constrintern.interp_constr (Global.env()) Evd.empty
 	 (CRef (Libnames.Ident (Loc.ghost,id2),None)) in
-       let f1type = Typing.type_of (Global.env()) Evd.empty f1 in
-       let f2type = Typing.type_of (Global.env()) Evd.empty f2 in
+       let f1type = Typing.unsafe_type_of (Global.env()) Evd.empty f1 in
+       let f2type = Typing.unsafe_type_of (Global.env()) Evd.empty f2 in
        let ar1 = List.length (fst (decompose_prod f1type)) in
        let ar2 = List.length (fst (decompose_prod f2type)) in
        let _ =

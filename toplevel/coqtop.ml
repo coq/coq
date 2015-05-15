@@ -114,6 +114,11 @@ let set_hierarchy () = if !type_in_type then Global.set_type_in_type ()
 
 let set_batch_mode () = batch_mode := true
 
+let set_warning = function
+| "all" -> make_warn true
+| "none" -> make_warn false
+| _ -> prerr_endline ("Error: all/none expected after option w"); exit 1
+
 let toplevel_default_name = DirPath.make [Id.of_string "Top"]
 let toplevel_name = ref (Some toplevel_default_name)
 let set_toplevel_name dir =
@@ -276,7 +281,16 @@ let print_style_tags () =
     in
     print_string opt
   in
-  List.iter iter tags;
+  let make (t, st) = match st with
+  | None -> None
+  | Some st ->
+    let tags = List.map string_of_int (Terminal.repr st) in
+    let t = String.concat "." (Ppstyle.repr t) in
+    Some (t ^ "=" ^ String.concat ";" tags)
+  in
+  let repr = List.map_filter make tags in
+  let () = Printf.printf "COQ_COLORS=\"%s\"\n" (String.concat ":" repr) in
+  let () = List.iter iter tags in
   flush_all ()
 
 let error_missing_arg s =
@@ -472,6 +486,7 @@ let parse_args arglist =
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
     |"-vio2vo" -> add_compile false (next ()); Flags.compilation_mode := Vio2Vo
     |"-toploop" -> toploop := Some (next ())
+    |"-w" -> set_warning (next ())
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
@@ -498,11 +513,14 @@ let parse_args arglist =
     |"-noinit"|"-nois" -> load_init := false
     |"-no-compat-notations" -> no_compat_ntn := true
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); glob_opt := true
-    |"-no-native-compiler" -> no_native_compiler := true
+    |"-native-compiler" ->
+      if Coq_config.no_native_compiler then
+	warning "Native compilation was disabled at configure time."
+      else native_compiler := true
     |"-notop" -> unset_toplevel_name ()
     |"-output-context" -> output_context := true
     |"-q" -> no_load_rc ()
-    |"-quiet"|"-silent" -> Flags.make_silent true
+    |"-quiet"|"-silent" -> Flags.make_silent true; Flags.make_warn false
     |"-quick" -> Flags.compilation_mode := BuildVio
     |"-list-tags" -> print_tags := true
     |"-time" -> Flags.time := true

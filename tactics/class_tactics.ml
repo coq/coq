@@ -149,7 +149,7 @@ let e_give_exact flags poly (c,clenv) gl =
 	c, {gl with sigma = clenv'.evd}
     else c, gl
   in
-  let t1 = pf_type_of gl c in
+  let t1 = pf_unsafe_type_of gl c in
     tclTHEN (Proofview.V82.of_tactic (Clenvtac.unify ~flags t1)) (exact_no_check c) gl
 
 let unify_e_resolve poly flags (c,clenv) gls =
@@ -168,7 +168,7 @@ let unify_resolve poly flags (c,clenv) gls =
 let clenv_of_prods poly nprods (c, clenv) gls =
   if poly || Int.equal nprods 0 then Some clenv
   else
-    let ty = pf_type_of gls c in
+    let ty = pf_unsafe_type_of gls c in
     let diff = nb_prod ty - nprods in
       if Pervasives.(>=) diff 0 then
         (* Was Some clenv... *)
@@ -231,13 +231,13 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
       | Unfold_nth c -> Proofview.V82.tactic (tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c]))
       | Extern tacast -> conclPattern concl p tacast
       in
-      let tac = Proofview.V82.of_tactic (run_auto_tactic t tac) in
+      let tac = Proofview.V82.of_tactic (run_hint t tac) in
       let tac = if complete then tclCOMPLETE tac else tac in
-	match repr_auto_tactic t with
-	| Extern _ -> (tac,b,true, name, lazy (pr_autotactic t))
+	match repr_hint t with
+	| Extern _ -> (tac,b,true, name, lazy (pr_hint t))
 	| _ ->
 (* 	  let tac gl = with_pattern (pf_env gl) (project gl) flags p concl tac gl in *)
-	    (tac,b,false, name, lazy (pr_autotactic t))
+	    (tac,b,false, name, lazy (pr_hint t))
   in List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db sigma concl =
@@ -842,6 +842,6 @@ let is_ground c gl =
 let autoapply c i gl =
   let flags = auto_unif_flags Evar.Set.empty 
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
-  let cty = pf_type_of gl c in
+  let cty = pf_unsafe_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
   unify_e_resolve false flags (c,ce) gl

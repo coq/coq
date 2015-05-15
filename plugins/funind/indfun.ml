@@ -72,11 +72,11 @@ let functional_induction with_clean c princl pat =
 		    errorlabstrm "" (str "Cannot find induction principle for "
 				     ++Printer.pr_lconstr (mkConst c') )
 	      in
-	      (princ,NoBindings, Tacmach.pf_type_of g' princ,g')
+	      (princ,NoBindings, Tacmach.pf_unsafe_type_of g' princ,g')
 	   | _ -> raise (UserError("",str "functional induction must be used with a function" ))
 	 end
       | Some ((princ,binding)) ->
-	 princ,binding,Tacmach.pf_type_of g princ,g
+	 princ,binding,Tacmach.pf_unsafe_type_of g princ,g
     in
     let princ_infos = Tactics.compute_elim_sig princ_type in
     let args_as_induction_constr =
@@ -356,8 +356,8 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 	    (fun i x ->
 	     let princ = Indrec.lookup_eliminator (ind_kn,i) (InProp) in
 	     let evd',uprinc = Evd.fresh_global (Global.env ()) !evd princ in
-	     let evd',princ_type = Typing.e_type_of ~refresh:true (Global.env ()) evd' uprinc in
-	     let _ = evd := evd' in 
+             let _ = evd := evd' in 
+	     let princ_type = Typing.e_type_of ~refresh:true (Global.env ()) evd uprinc in
     	     Functional_principles_types.generate_functional_principle
 	       evd
 		 interactive_proof

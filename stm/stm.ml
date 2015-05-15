@@ -846,7 +846,8 @@ end = struct (* {{{ *)
             | None, _ -> anomaly(str"Backtrack: tip with no vcs_backup")
             | Some vcs, _ -> vcs in
           let cb, _ =
-            Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs) in
+            try Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs)
+            with Failure _ -> raise Proof_global.NoCurrentProof in
           let n = fold_until (fun n (_,vcs,_,_,_) ->
             if List.mem cb (Vcs_.branches vcs) then `Cont (n+1) else `Stop n)
             0 id in

@@ -713,7 +713,7 @@ let define_pure_evar_as_product evd evk =
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
   let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
-  let concl = whd_evar evd evi.evar_concl in
+  let concl = whd_betadeltaiota evenv evd evi.evar_concl in
   let s = destSort concl in
   let evd1,(dom,u1) = new_type_evar evenv evd univ_flexible_alg ~filter:(evar_filter evi) in
   let evd2,rng =
@@ -795,8 +795,10 @@ let define_evar_as_sort env evd (ev,args) =
   let evd, u = new_univ_variable univ_rigid evd in
   let evi = Evd.find_undefined evd ev in 
   let s = Type u in
+  let concl = whd_betadeltaiota (evar_env evi) evd evi.evar_concl in
+  let sort = destSort concl in
   let evd' = Evd.define ev (mkSort s) evd in
-    Evd.set_leq_sort env evd' (Type (Univ.super u)) (destSort evi.evar_concl), s
+  Evd.set_leq_sort env evd' (Type (Univ.super u)) sort, s
 
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)

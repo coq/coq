@@ -263,7 +263,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
       try
 	let others,(c1,c2) = split_last_two args in
 	let ty1, ty2 =
-	  Typing.type_of env eqclause.evd c1, Typing.type_of env eqclause.evd c2
+	  Typing.unsafe_type_of env eqclause.evd c1, Typing.unsafe_type_of env eqclause.evd c2
 	in
 (* 	  if not (evd_convertible env eqclause.evd ty1 ty2) then None *)
 (* 	  else *)
@@ -281,7 +281,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
 	| None -> None
 
 let find_applied_relation metas loc env sigma c left2right =
-  let ctype = Typing.type_of env sigma c in
+  let ctype = Typing.unsafe_type_of env sigma c in
     match decompose_applied_relation metas env sigma c ctype left2right with
     | Some c -> c
     | None ->

@@ -1134,7 +1134,7 @@ let abstract_scheme env (locc,a) (c, sigma) =
 let pattern_occs loccs_trm env sigma c =
   let abstr_trm, sigma = List.fold_right (abstract_scheme env) loccs_trm (c,sigma) in
   try
-    let _ = Typing.type_of env sigma abstr_trm in
+    let _ = Typing.unsafe_type_of env sigma abstr_trm in
       sigma, applist(abstr_trm, List.map snd loccs_trm)
   with Type_errors.TypeError (env',t) ->
     raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))

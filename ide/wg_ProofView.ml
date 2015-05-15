@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
+
 class type proof_view =
   object
     inherit GObj.widget
@@ -162,12 +164,21 @@ let display mode (view : #GText.view_skel) goals hints evars =
       List.iter iter shelved_goals
     | _, _, _, _ ->
       (* No foreground proofs, but still unfocused ones *)
-      view#buffer#insert "This subproof is complete, but there are still unfocused goals:\n\n";
-      let iter goal =
+      let total = List.length bg in
+      let goal_str index = Printf.sprintf
+        "______________________________________(%d/%d)\n" index total
+      in
+      let vb, pl = if total = 1 then "is", "" else "are", "s" in
+      let msg = Printf.sprintf "This subproof is complete, but there %s still %d \
+        unfocused goal%s:\n\n" vb total pl
+      in
+      let () = view#buffer#insert msg in
+      let iter i goal =
+        let () = view#buffer#insert (goal_str (succ i)) in
         let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
         view#buffer#insert msg
       in
-      List.iter iter bg
+      List.iteri iter bg
     end
   | Some { Interface.fg_goals = fg } ->
     mode view fg hints

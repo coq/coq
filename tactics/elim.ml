@@ -85,7 +85,7 @@ let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
   Proofview.Goal.enter begin fun gl ->
-  let type_of = pf_type_of gl in
+  let type_of = pf_unsafe_type_of gl in
   let typc = type_of c in
   tclTHENS (cut typc)
     [ tclTHEN (intro_using tmphyp_name)
@@ -139,7 +139,7 @@ let induction_trailer abs_i abs_j bargs =
     (onLastHypId
        (fun id ->
           Proofview.Goal.nf_enter begin fun gl ->
-	  let idty = pf_type_of gl (mkVar id) in
+	  let idty = pf_unsafe_type_of gl (mkVar id) in
 	  let fvty = global_vars (pf_env gl) idty in
 	  let possible_bring_hyps =
 	    (List.tl (nLastDecls gl (abs_j - abs_i))) @ bargs.Tacticals.assums

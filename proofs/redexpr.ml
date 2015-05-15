@@ -30,9 +30,13 @@ let cbv_vm env sigma c =
   Vnorm.cbv_vm env c ctyp
 
 let cbv_native env sigma c =
-  let ctyp = Retyping.get_type_of env sigma c in
-  let evars = Nativenorm.evars_of_evar_map sigma in
-  Nativenorm.native_norm env evars c ctyp
+  if Coq_config.no_native_compiler then
+    let () = msg_warning (str "native_compute disabled at configure time; falling back to vm_compute.") in
+    cbv_vm env sigma c
+  else
+    let ctyp = Retyping.get_type_of env sigma c in
+    let evars = Nativenorm.evars_of_evar_map sigma in
+    Nativenorm.native_norm env evars c ctyp
 
 let whd_cbn flags env sigma t =
   let (state,_) =
