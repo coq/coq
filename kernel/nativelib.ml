@@ -94,7 +94,10 @@ let compile_library dir code fn =
   let basename = Filename.basename fn in
   let dirname = Filename.dirname fn in
   let dirname = dirname / output_dir in
-  if not (Sys.file_exists dirname) then Unix.mkdir dirname 0o755;
+  let () =
+    try Unix.mkdir dirname 0o755
+    with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
+  in
   let fn = dirname / basename in
   write_ml_code fn ~header code;
   let r = fst (call_compiler fn) in
