@@ -618,7 +618,8 @@ let init arglist =
         if !batch_mode then mt ()
         else str "Error during initialization:" ++ fnl ()
       in
-      fatal_error (msg ++ Coqloop.print_toplevel_error any) (Errors.is_anomaly (fst any))
+      let is_anomaly e = Errors.is_anomaly e || not (Errors.handled e) in
+      fatal_error (msg ++ Coqloop.print_toplevel_error any) (is_anomaly (fst any))
   end;
   if !batch_mode then begin
     flush_all();
