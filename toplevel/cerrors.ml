@@ -110,9 +110,16 @@ let rec strip_wrapping_exceptions = function
     strip_wrapping_exceptions e
   | exc -> exc
 
-let process_vernac_interp_error ?(with_header=true) (exc, info) =
+let process_vernac_interp_error ?(allow_uncaught=true) ?(with_header=true) (exc, info) =
   let exc = strip_wrapping_exceptions exc in
   let e = process_vernac_interp_error with_header (exc, info) in
+  let () =
+    if not allow_uncaught && not (Errors.handled (fst e)) then
+      let (e, info) = e in
+      let msg = str "Uncaught exception " ++ str (Printexc.to_string e) in
+      let err = Errors.make_anomaly msg in
+      Util.iraise (err, info)
+  in
   let ltac_trace = Exninfo.get info Proof_type.ltac_trace_info in
   let loc = Option.default Loc.ghost (Loc.get_loc info) in
   match ltac_trace with

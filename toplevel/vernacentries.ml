@@ -2106,7 +2106,7 @@ let with_fail b f =
            | e ->
               let e = Errors.push e in
               raise (HasFailed (Errors.iprint
-                (Cerrors.process_vernac_interp_error ~with_header:false e))))
+                (Cerrors.process_vernac_interp_error ~allow_uncaught:false ~with_header:false e))))
         ()
     with e when Errors.noncritical e -> 
       let (e, _) = Errors.push e in
