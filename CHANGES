@@ -418,7 +418,7 @@ Interfaces
 - Many CoqIDE windows, including the query one, are now detachable to
   improve usability on multi screen work stations.
 
-- Coqtop outputs highlighted syntax. Colors can be configured thanks
+- Coqtop/coqc outputs highlighted syntax. Colors can be configured thanks
   to the COQ_COLORS environment variable, and their current state can
   be displayed with the -list-tags command line option.
 
