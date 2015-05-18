@@ -111,18 +111,18 @@ let parse_args () =
       |"-dont-load-proofs"|"-load-proofs"|"-force-load-proofs"
       |"-impredicative-set"|"-vm"|"-native-compiler"
       |"-verbose-compat-notations"|"-no-compat-notations"
-      |"-indices-matter"|"-quick"|"-color"|"-type-in-type"
+      |"-indices-matter"|"-quick"|"-type-in-type"
       |"-async-proofs-always-delegate"|"-async-proofs-never-reopen-branch"
       as o) :: rem ->
 	parse (cfiles,o::args) rem
 
 (* Options for coqtop : b) options with 1 argument *)
 
-    | ("-outputstate"|"-inputstate"|"-is"|"-exclude-dir"
+    | ("-outputstate"|"-inputstate"|"-is"|"-exclude-dir"|"-color"
       |"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"
-      |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs"|"-w"
+      |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs" |"-w"
       as o) :: rem ->
 	begin
 	  match rem with
