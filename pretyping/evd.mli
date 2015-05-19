@@ -310,6 +310,19 @@ val add_universe_constraints : evar_map -> Universes.universe_constraints -> eva
     @raises UniversesDiffer in case a first-order unification fails.
     @raises UniverseInconsistency
 *)
+
+(** {5 Extra data}
+
+  Evar maps can contain arbitrary data, allowing to use an extensible state.
+  As evar maps are theoretically used in a strict state-passing style, such
+  additional data should be passed along transparently. Some old and bug-prone
+  code tends to drop them nonetheless, so you should keep cautious.
+
+*)
+
+val get_extra_data : evar_map -> Store.t
+val set_extra_data : Store.t -> evar_map -> evar_map
+
 (** {5 Enriching with evar maps} *)
 
 type 'a sigma = {
