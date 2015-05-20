@@ -20,7 +20,7 @@ let dflt_gp = {
   margin     = 78;
   max_indent = 50;
   max_depth  = 50;
-  ellipsis   = ".." }
+  ellipsis   = "..." }
 
 (* A deeper pretty-printer to print proof scripts *)
 
@@ -84,5 +84,8 @@ let set_margin v =
   let v = match v with None -> default_margin | Some v -> v in
   Format.pp_set_margin Format.str_formatter v;
   Format.pp_set_margin !std_ft v;
-  Format.pp_set_margin !deep_ft v
-
+  Format.pp_set_margin !deep_ft v;
+  let m = 64 * v / 100 in (* Heuristic, based on usage *)
+  Format.pp_set_max_indent Format.str_formatter m;
+  Format.pp_set_max_indent !std_ft m;
+  Format.pp_set_max_indent !deep_ft m
