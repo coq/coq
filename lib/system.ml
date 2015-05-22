@@ -60,8 +60,8 @@ let file_exists_respecting_case f =
     let rec aux f =
       let bf = Filename.basename f in
       let df = Filename.dirname f in
-      String.equal df "." || String.equal df "/" ||
-      aux df && Array.exists (String.equal bf) (Sys.readdir df)
+      (String.equal df "." || String.equal df "/" || aux df)
+      && Array.exists (String.equal bf) (Sys.readdir df)
     in aux f
   else Sys.file_exists f
 
