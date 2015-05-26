@@ -381,13 +381,15 @@ let linear_prover n_spec l  =
  with x when Errors.noncritical x ->
    (print_string (Printexc.to_string x); None)
 
-let linear_prover_with_cert spec l = 
-  match linear_prover spec l with
+let linear_prover_with_cert prfdepth spec  l = 
+ max_nb_cstr := (let len = List.length l in max len (len * prfdepth)) ;
+ match linear_prover spec l with
     | None -> None
     | Some cert -> Some (make_certificate spec cert)
 
-let nlinear_prover (sys: (Mc.q Mc.pExpr * Mc.op1) list) = 
+let nlinear_prover prfdepth (sys: (Mc.q Mc.pExpr * Mc.op1) list) = 
  LinPoly.MonT.clear ();
+ max_nb_cstr := (let len = List.length sys in max len (len * prfdepth)) ;
  (* Assign a proof to the initial hypotheses *)
  let sys  = mapi (fun c i -> (c,Mc.PsatzIn (Ml2C.nat i))) sys in
 
@@ -1164,8 +1166,9 @@ let reduce_var_change psys =
     List.for_all (fun (c,p) -> List.for_all (fun (_,n) -> sign_num n <> 0) c.coeffs) sys
 
 
-  let xlia reduction_equations  sys = 
+  let xlia (can_enum:bool)  reduction_equations  sys = 
 
+   
   let rec enum_proof (id:int) (sys:prf_sys) : proof option = 
     if debug then (Printf.printf "enum_proof\n" ; flush stdout) ;
     assert (check_sys sys) ; 
@@ -1203,7 +1206,7 @@ let reduce_var_change psys =
     Printf.printf "after reduction:  %a \n" (pp_list (fun o (c,_) -> output_cstr o c)) sys ; 	    	    
 	match linear_prover sys with
 	 | Some prf -> Some (Step(id,prf,Done))
-	 | None ->  enum_proof id sys
+	 | None ->  if can_enum then enum_proof id sys else None
     with FoundProof prf -> 
       (* [reduction_equations] can find a proof *)
       Some(Step(id,prf,Done)) in
@@ -1233,16 +1236,18 @@ let reduce_var_change psys =
       {coeffs = v ; op = o ; cst = minus_num c }
 
 
-  let lia sys = 
-    LinPoly.MonT.clear ();
+  let lia (can_enum:bool) (prfdepth:int) sys = 
+   LinPoly.MonT.clear ();
+   max_nb_cstr := (let len = List.length sys in max len (len * prfdepth)) ;
     let sys = List.map (develop_constraint z_spec) sys in
     let (sys:cstr_compat list) = List.map cstr_compat_of_poly sys in
     let sys = mapi (fun c i -> (c,Hyp i)) sys in
-      xlia reduction_equations sys
+      xlia can_enum reduction_equations sys
 
 
-  let nlia sys = 
-    LinPoly.MonT.clear ();
+  let nlia enum prfdepth sys = 
+   LinPoly.MonT.clear ();
+   max_nb_cstr := (let len = List.length sys in max len (len * prfdepth)) ;
     let sys = List.map (develop_constraint z_spec) sys in
     let sys = mapi (fun c i -> (c,Hyp i)) sys in
 
@@ -1268,7 +1273,7 @@ let reduce_var_change psys =
 
     let sys = List.map (fun (c,p) -> cstr_compat_of_poly c,p) sys in
     assert (check_sys sys) ; 
-    xlia (if is_linear then reduction_equations else reduction_non_lin_equations) sys
+    xlia enum (if is_linear then reduction_equations else reduction_non_lin_equations) sys
 
 
 

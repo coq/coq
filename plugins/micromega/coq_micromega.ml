@@ -19,6 +19,7 @@
 open Pp
 open Mutils
 open Proofview
+open Goptions
 
 (**
   * Debug flag 
@@ -38,6 +39,53 @@ let time str f x =
 		     flush stdout);
   res
 
+
+(* Limit the proof search *)
+
+let max_depth = max_int
+
+(* Search limit for provers over Q R *)
+let lra_proof_depth = ref max_depth
+
+ 
+(* Search limit for provers over Z *)
+let lia_enum  = ref true
+let lia_proof_depth = ref max_depth
+
+let get_lia_option () =
+ (!lia_enum,!lia_proof_depth)
+
+let get_lra_option () =
+ !lra_proof_depth
+
+
+ 
+let _ =
+ 
+ let int_opt l vref =
+  {
+   optsync = true;
+   optdepr = false;
+   optname = List.fold_right (^) l "";
+   optkey  = l ;
+   optread = (fun () -> Some !vref);
+   optwrite = (fun x -> vref := (match x with None -> max_depth | Some v -> v))
+  } in
+
+ let lia_enum_opt = 
+  {
+   optsync = true;
+   optdepr = false;
+   optname = "Lia Enum";
+   optkey  = ["Lia";"Enum"];
+   optread = (fun () -> !lia_enum);
+   optwrite = (fun x -> lia_enum := x)
+  } in
+ ignore (declare_int_option (int_opt ["Lra"; "Depth"] lra_proof_depth)) ;
+ ignore (declare_int_option (int_opt ["Lia"; "Depth"] lia_proof_depth)) ;
+ ignore (declare_bool_option lia_enum_opt)
+
+ 
 (**
   * Initialize a tag type to the Tag module declaration (see Mutils).
   *)
@@ -1421,15 +1469,18 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
   * The datastructures that aggregate prover attributes.
   *)
 
-type ('a,'prf) prover = {
+type ('option,'a,'prf) prover = {
   name : string ; (* name of the prover *)
-  prover : 'a list -> 'prf option ; (* the prover itself *)
+ get_option : unit ->'option ; (* find the options of the prover *)              
+ prover : 'option * 'a list -> 'prf option ; (* the prover itself *)
   hyps : 'prf -> ISet.t ; (* extract the indexes of the hypotheses really used in the proof *)
   compact : 'prf -> (int -> int) -> 'prf ; (* remap the hyp indexes according to function *)
   pp_prf : out_channel -> 'prf -> unit ;(* pretting printing of proof *)
   pp_f   : out_channel -> 'a   -> unit (* pretty printing of the formulas (polynomials)*)
 }
 
+
+ 
 (**
   * Given a list of provers and a disjunction of atoms, find a proof of any of
   * the atoms.  Returns an (optional) pair of a proof and a prover
@@ -1439,7 +1490,7 @@ type ('a,'prf) prover = {
 let find_witness provers polys1 =
   let provers = List.map (fun p ->
     (fun l ->
-      match p.prover l with
+      match p.prover (p.get_option (),l) with
         | None -> None
         | Some prf -> Some(prf,p)) , p.name) provers in
   try_any provers (List.map fst polys1)
@@ -1494,7 +1545,7 @@ let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
     let res = try prover.compact prf remap with x when Errors.noncritical x ->
       if debug then Printf.fprintf stdout "Proof compaction %s" (Printexc.to_string x) ;
       (* This should not happen -- this is the recovery plan... *)
-      match prover.prover (List.map fst new_cl) with
+      match prover.prover (prover.get_option () ,List.map fst new_cl) with
         | None -> failwith "proof compaction error"
         | Some p ->  p
     in
@@ -1677,6 +1728,7 @@ let micromega_gen
 	])
     with
     | ParseError  -> Tacticals.New.tclFAIL 0 (Pp.str "Bad logical fragment")
+    | Mfourier.TimeOut  -> Tacticals.New.tclFAIL 0 (Pp.str "Timeout")
     | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
      Tacticals.New.tclFAIL 0 (Pp.str 
                            (" Skipping what remains of this tactic: the complexity of the goal requires "
@@ -1762,8 +1814,9 @@ let micromega_genr prover =
                 micromega_order_changer res' env (abstract_wrt_formula ff' ff)
               ])
   with
-   | ParseError  -> Tacticals.New.tclFAIL 0 (Pp.str "Bad logical fragment")
-   | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
+  | Mfourier.TimeOut     -> Tacticals.New.tclFAIL 0 (Pp.str "TimeOut")
+  | ParseError  -> Tacticals.New.tclFAIL 0 (Pp.str "Bad logical fragment")
+  | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
       Tacticals.New.tclFAIL 0 (Pp.str 
       (" Skipping what remains of this tactic: the complexity of the goal requires "
       ^ "the use of a specialized external tool called csdp. \n\n" 
@@ -1929,34 +1982,40 @@ let compact_pt pt f =
 let lift_pexpr_prover p l =  p (List.map (fun (e,o) -> Mc.denorm e , o) l)
 
 module CacheZ = PHashtable(struct
-  type t = (Mc.z Mc.pol * Mc.op1) list
+ type prover_option = bool * int
+
+ type t = prover_option * ((Mc.z Mc.pol * Mc.op1) list)
   let equal = (=)
   let hash  = Hashtbl.hash
 end)
 
 module CacheQ = PHashtable(struct
-  type t = (Mc.q Mc.pol * Mc.op1) list
+  type t = int * ((Mc.q Mc.pol * Mc.op1) list)
   let equal = (=)
   let hash  = Hashtbl.hash
 end)
 
-let memo_zlinear_prover = CacheZ.memo "lia.cache" (lift_pexpr_prover Certificate.lia)
-let memo_nlia = CacheZ.memo "nlia.cache" (lift_pexpr_prover Certificate.nlia)
-let memo_nra = CacheQ.memo "nra.cache" (lift_pexpr_prover (Certificate.nlinear_prover))
+let memo_zlinear_prover = CacheZ.memo "lia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.lia ce b) s)
+let memo_nlia = CacheZ.memo "nlia.cache" (fun ((ce,b),s) -> lift_pexpr_prover (Certificate.nlia ce b) s)
+let memo_nra = CacheQ.memo "nra.cache" (fun (o,s) -> lift_pexpr_prover (Certificate.nlinear_prover o) s)
 
+
+ 
 let linear_prover_Q = {
-  name    = "linear prover";
-  prover  = lift_pexpr_prover (Certificate.linear_prover_with_cert Certificate.q_spec) ;
-  hyps    = hyps_of_cone ;
-  compact = compact_cone ;
-  pp_prf  = pp_psatz pp_q ;
-  pp_f   = fun o x -> pp_pol pp_q o  (fst x)
+ name    = "linear prover";
+ get_option = get_lra_option ; 
+ prover  = (fun (o,l) -> lift_pexpr_prover (Certificate.linear_prover_with_cert o Certificate.q_spec) l) ;
+ hyps    = hyps_of_cone ;
+ compact = compact_cone ;
+ pp_prf  = pp_psatz pp_q ;
+ pp_f   = fun o x -> pp_pol pp_q o  (fst x)
 }
 
 
 let linear_prover_R = {
   name    = "linear prover";
-  prover  = lift_pexpr_prover (Certificate.linear_prover_with_cert Certificate.q_spec) ;
+ get_option = get_lra_option ; 
+ prover  = (fun (o,l) -> lift_pexpr_prover (Certificate.linear_prover_with_cert o Certificate.q_spec) l) ;
   hyps    = hyps_of_cone ;
   compact = compact_cone ;
   pp_prf  = pp_psatz pp_q ;
@@ -1965,7 +2024,8 @@ let linear_prover_R = {
 
 let nlinear_prover_R = {
   name    = "nra";
-  prover  = memo_nra ;
+ get_option = get_lra_option;
+ prover  = memo_nra ;
   hyps    = hyps_of_cone ;
   compact = compact_cone ;
   pp_prf  = pp_psatz pp_q ;
@@ -1974,7 +2034,8 @@ let nlinear_prover_R = {
 
 let non_linear_prover_Q str o = {
   name    = "real nonlinear prover";
-  prover  = call_csdpcert_q (str, o);
+ get_option = (fun () -> (str,o));
+ prover  = (fun (o,l) -> call_csdpcert_q o l);
   hyps    = hyps_of_cone;
   compact = compact_cone ;
   pp_prf  = pp_psatz pp_q ;
@@ -1983,7 +2044,8 @@ let non_linear_prover_Q str o = {
 
 let non_linear_prover_R str o = {
   name    = "real nonlinear prover";
-  prover  = call_csdpcert_q (str, o);
+ get_option = (fun () -> (str,o));
+ prover  = (fun (o,l) -> call_csdpcert_q o l);
   hyps    = hyps_of_cone;
   compact = compact_cone;
   pp_prf  = pp_psatz pp_q;
@@ -1992,7 +2054,8 @@ let non_linear_prover_R str o = {
 
 let non_linear_prover_Z str o  = {
   name    = "real nonlinear prover";
-  prover  = lift_ratproof (call_csdpcert_z (str, o));
+ get_option = (fun () -> (str,o));
+ prover  = (fun (o,l) -> lift_ratproof (call_csdpcert_z o) l);
   hyps    = hyps_of_pt;
   compact = compact_pt;
   pp_prf  = pp_proof_term;
@@ -2002,7 +2065,8 @@ let non_linear_prover_Z str o  = {
 
 let linear_Z =   {
   name    = "lia";
-  prover  = memo_zlinear_prover ;
+ get_option = get_lia_option;
+ prover  = memo_zlinear_prover ;
   hyps    = hyps_of_pt;
   compact = compact_pt;
   pp_prf  = pp_proof_term;
@@ -2011,7 +2075,8 @@ let linear_Z =   {
 
 let nlinear_Z =   {
   name    = "nlia";
-  prover  = memo_nlia ;
+ get_option = get_lia_option;
+ prover  = memo_nlia ;
   hyps    = hyps_of_pt;
   compact = compact_pt;
   pp_prf  = pp_proof_term;

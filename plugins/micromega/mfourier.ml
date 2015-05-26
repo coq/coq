@@ -98,12 +98,12 @@ module PSet = ISet
 
 module System = Hashtbl.Make(Vect)
 
-  type proof =
-      | Hyp of int
-      | Elim of  var * proof * proof
-      | And of proof * proof
+type proof =
+| Hyp of int
+| Elim of  var * proof * proof
+| And of proof * proof
 
-
+let max_nb_cstr = ref max_int
 
 type system = {
   sys : cstr_info ref System.t ;
@@ -208,8 +208,7 @@ let merge_cstr_info i1 i2 =
 *)
 
 let xadd_cstr vect cstr_info sys =
-  if debug && Int.equal (System.length sys mod 1000) 0 then (print_string "*" ; flush stdout) ;
-  try
+ try
     let info = System.find sys vect in
       match merge_cstr_info cstr_info !info with
 	  | None       -> raise (SystemContradiction  (And(cstr_info.prf, (!info).prf)))
@@ -217,6 +216,13 @@ let xadd_cstr vect cstr_info sys =
       with
 	| Not_found -> System.replace  sys vect (ref cstr_info)
 
+exception TimeOut
+         
+let xadd_cstr vect cstr_info sys = 
+  if debug && Int.equal (System.length sys mod 1000) 0 then (print_string "*" ; flush stdout) ;
+ if System.length sys < !max_nb_cstr
+ then xadd_cstr vect cstr_info sys
+ else raise TimeOut
 
 type cstr_ext =
     | Contradiction (** The constraint is contradictory.
