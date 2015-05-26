@@ -296,6 +296,7 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
         let lno = store#get ~row ~column:(find_int_col "Line" columns) in
         let where = script#buffer#get_iter (`LINE (lno-1)) in
         script#buffer#place_cursor ~where;
+        script#misc#grab_focus ();
         ignore (script#scroll_to_iter
 		  ~use_align:false ~yalign:0.75 ~within_margin:0.25 where)) in
   let tip = GMisc.label ~text:"Double click to jump to error line" () in
