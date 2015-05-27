@@ -131,7 +131,8 @@ type cancel_switch = bool ref
 type branch_type =
   [ `Master
   | `Proof of proof_mode * depth
-  | `Edit of proof_mode * Stateid.t * Stateid.t  * vernac_qed_type ]
+  | `Edit of
+      proof_mode * Stateid.t * Stateid.t  * vernac_qed_type * Vcs_.Branch.t ]
 type cmd_t = {
   ctac : bool; (* is a tactic, needed by the 8.4 semantics of Undo *)
   cast : ast;
@@ -449,7 +450,7 @@ end = struct (* {{{ *)
     if List.mem edit_branch (Vcs_.branches !vcs) then begin
       checkout edit_branch;
       match get_branch edit_branch with
-      | { kind = `Edit (mode, _,_,_) } -> Proof_global.activate_proof_mode mode
+      | { kind = `Edit (mode, _,_,_,_) } -> Proof_global.activate_proof_mode mode
       | _ -> assert false
     end else
       let pl = proof_nesting () in
@@ -1788,7 +1789,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                 VCS.create_cluster nodes ~qed:id ~start;
                 begin match brinfo, qed.fproof with
                 | { VCS.kind = `Edit _ }, None -> assert false
-                | { VCS.kind = `Edit (_,_,_, okeep) }, Some (ofp, cancel) ->
+                | { VCS.kind = `Edit (_,_,_, okeep, _) }, Some (ofp, cancel) ->
                     assert(redefine_qed = true);
                     if okeep != keep then
                       msg_error(strbrk("The command closing the proof changed. "
@@ -1922,7 +1923,7 @@ let finish ?(print_goals=false) () =
   VCS.print ();
   (* Some commands may by side effect change the proof mode *)
   match VCS.get_branch head with
-  | { VCS.kind = `Edit (mode, _,_,_) } -> Proof_global.activate_proof_mode mode
+  | { VCS.kind = `Edit (mode, _,_,_,_) } -> Proof_global.activate_proof_mode mode
   | { VCS.kind = `Proof (mode, _) } -> Proof_global.activate_proof_mode mode
   | _ -> ()
 
@@ -1990,7 +1991,7 @@ let merge_proof_branch ?valid ?id qast keep brname =
       VCS.delete_branch brname;
       if keep <> VtDrop then VCS.propagate_sideff None;
       `Ok
-  | { VCS.kind = `Edit (mode, qed_id, master_id, _) } ->
+  | { VCS.kind = `Edit (mode, qed_id, master_id, _,_) } ->
       let ofp =
         match VCS.visit qed_id with
         | { step = `Qed ({ fproof }, _) } -> fproof
@@ -2144,9 +2145,9 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
             | { VCS.root; kind = `Proof(_,d); pos } ->
                 VCS.delete_branch bn;
                 VCS.branch ~root ~pos bn (`Proof(mode,d))
-            | { VCS.root; kind = `Edit(_,f,q,k); pos } ->
+            | { VCS.root; kind = `Edit(_,f,q,k,ob); pos } ->
                 VCS.delete_branch bn;
-                VCS.branch ~root ~pos bn (`Edit(mode,f,q,k)))
+                VCS.branch ~root ~pos bn (`Edit(mode,f,q,k,ob)))
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record ();
@@ -2298,20 +2299,23 @@ let edit_at id =
       | { step = `Fork _ } -> tip
       | { step = `Sideff (`Ast(_,id)|`Id id) } -> id
       | { next } -> master_for_br root next in
-  let reopen_branch start at_id mode qed_id tip =
+  let reopen_branch start at_id mode qed_id tip old_branch =
     let master_id, cancel_switch, keep =
       (* Hum, this should be the real start_id in the clusted and not next *)
       match VCS.visit qed_id with
       | { step = `Qed ({ fproof = Some (_,cs); keep },_) } -> start, cs, keep
       | _ -> anomaly (str "Cluster not ending with Qed") in
     VCS.branch ~root:master_id ~pos:id
-      VCS.edit_branch (`Edit (mode, qed_id, master_id, keep));
+      VCS.edit_branch (`Edit (mode, qed_id, master_id, keep, old_branch));
     VCS.delete_cluster_of id;
     cancel_switch := true;
     Reach.known_state ~cache:(interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `Focus { stop = qed_id; start = master_id; tip } in
-  let backto id =
+  let no_edit = function
+   | `Edit (pm, _,_,_,_) -> `Proof(pm,1)
+   | x -> x in
+  let backto id bn =
     List.iter VCS.delete_branch (VCS.branches ());
     let ancestors = VCS.reachable id in
     let { mine = brname, brinfo; others } = Backtrack.branches_of id in
@@ -2321,7 +2325,10 @@ let edit_at id =
         VCS.branch ~root ~pos name k)
       others;
     VCS.reset_branch VCS.Branch.master (master_for_br brinfo.VCS.root id);
-    VCS.branch ~root:brinfo.VCS.root ~pos:brinfo.VCS.pos brname brinfo.VCS.kind;
+    VCS.branch ~root:brinfo.VCS.root ~pos:brinfo.VCS.pos
+      (Option.default brname bn)
+      (no_edit brinfo.VCS.kind);
+      VCS.print ();
     VCS.delete_cluster_of id;
     VCS.gc ();
     Reach.known_state ~cache:(interactive ()) id;
@@ -2332,20 +2339,21 @@ let edit_at id =
       let focused = List.exists ((=) VCS.edit_branch) (VCS.branches ()) in
       let branch_info =
         match snd (VCS.get_info id).vcs_backup with
-        | Some{ mine = _, { VCS.kind = (`Proof(m,_)|`Edit(m,_,_,_)) }} -> Some m
+        | Some{ mine = bn, { VCS.kind = `Proof(m,_) }} -> Some(m,bn)
+        | Some{ mine = _, { VCS.kind = `Edit(m,_,_,_,bn) }} -> Some (m,bn)
         | _ -> None in
       match focused, VCS.cluster_of id, branch_info with
       | _, Some _, None -> assert false
-      | false, Some (qed_id,start), Some mode ->
+      | false, Some (qed_id,start), Some(mode,bn) ->
           let tip = VCS.cur_tip () in
           if has_failed qed_id && not !Flags.async_proofs_never_reopen_branch
-          then reopen_branch start id mode qed_id tip
-          else backto id
-      | true, Some (qed_id,_), Some mode ->
+          then reopen_branch start id mode qed_id tip bn
+          else backto id (Some bn)
+      | true, Some (qed_id,_), Some(mode,bn) ->
           if on_cur_branch id then begin
             assert false
           end else if is_ancestor_of_cur_branch id then begin
-            backto id
+            backto id (Some bn)
           end else begin
             anomaly(str"Cannot leave an `Edit branch open")
           end
@@ -2356,11 +2364,11 @@ let edit_at id =
             VCS.checkout_shallowest_proof_branch ();
             `NewTip
           end else if is_ancestor_of_cur_branch id then begin
-            backto id
+            backto id None
           end else begin
             anomaly(str"Cannot leave an `Edit branch open")
           end
-      | false, None, _ -> backto id
+      | false, None, _ -> backto id None
     in
     VCS.print ();
     rc
