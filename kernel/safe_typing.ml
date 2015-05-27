@@ -246,6 +246,8 @@ let join_safe_environment ?(except=Future.UUIDSet.empty) e =
        else add_constraints (Now (Future.join fc)) e)
     {e with future_cst = []} e.future_cst
 
+let is_joined_environment e = List.is_empty e.future_cst 
+
 (** {6 Various checks } *)
 
 let exists_modlabel l senv = Label.Set.mem l senv.modlabels

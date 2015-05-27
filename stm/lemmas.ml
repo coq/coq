@@ -436,7 +436,7 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
             let body,opaq = retrieve_first_recthm ref in
             let subst = Evd.evar_universe_context_subst ctx in
             let norm c = Universes.subst_opt_univs_constr subst c in
-	    let ctx = Evd.evar_universe_context_set ctx in
+	    let ctx = Evd.evar_universe_context_set (*FIXME*) Univ.UContext.empty ctx in
 	    let body = Option.map norm body in
             List.map_i (save_remaining_recthms kind norm ctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in

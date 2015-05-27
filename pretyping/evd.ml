@@ -330,9 +330,23 @@ let union_evar_universe_context ctx ctx' =
 
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
-let evar_universe_context_set ctx = ctx.uctx_local
+let evar_universe_context_set diff ctx =
+  let initctx = ctx.uctx_local in
+  let cstrs =
+    Univ.LSet.fold
+      (fun l cstrs ->
+       try
+	 match Univ.LMap.find l ctx.uctx_univ_variables with
+	 | Some u -> Univ.Constraint.add (l, Univ.Eq, Option.get (Univ.Universe.level u)) cstrs
+	 | None -> cstrs
+       with Not_found -> cstrs)
+      (Univ.Instance.levels (Univ.UContext.instance diff)) Univ.Constraint.empty
+  in
+    Univ.ContextSet.add_constraints cstrs initctx 
+		      
 let evar_universe_context_constraints ctx = snd ctx.uctx_local
 let evar_context_universe_context ctx = Univ.ContextSet.to_context ctx.uctx_local
+    
 let evar_universe_context_of ctx = { empty_evar_universe_context with uctx_local = ctx }
 let evar_universe_context_subst ctx = ctx.uctx_univ_variables
 

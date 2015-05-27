@@ -112,6 +112,7 @@ val import :
 val env_of_context : Environ.named_context_val -> Environ.env
 
 val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
+val is_joined_environment : unit -> bool
 
 val is_polymorphic : Globnames.global_reference -> bool
 val is_template_polymorphic : Globnames.global_reference -> bool

@@ -292,7 +292,7 @@ let close_proof ~keep_body_ucst_sepatate ?feedback_id ~now fpl =
 	let body = c and typ = nf t in
         let used_univs_body = Universes.universes_of_constr body in
 	let used_univs_typ = Universes.universes_of_constr typ in
-	let ctx = Evd.evar_universe_context_set universes in
+	let ctx = Evd.evar_universe_context_set Univ.UContext.empty universes in
         if keep_body_ucst_sepatate then
           (* For vi2vo compilation proofs are computed now but we need to
            * complement the univ constraints of the typ with the ones of
@@ -317,7 +317,7 @@ let close_proof ~keep_body_ucst_sepatate ?feedback_id ~now fpl =
         let initunivs = Evd.evar_context_universe_context universes in
 	  Future.from_val (initunivs, nf t), 
 	  Future.chain ~pure:true p (fun (pt,eff) ->
-	    (pt, Evd.evar_universe_context_set (Future.force univs)), eff)
+	    (pt, Evd.evar_universe_context_set initunivs (Future.force univs)), eff)
   in
   let entries =
     Future.map2 (fun p (_, t) ->

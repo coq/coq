@@ -1064,7 +1064,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexe
     let vars = Universes.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
-    let ctx = Evd.evar_universe_context_set ctx in
+    let ctx = Evd.evar_universe_context_set Univ.UContext.empty ctx in
     let ctx = Universes.restrict_universe_context ctx vars in
     let fixdecls = List.map Term_typing.mk_pure_proof fixdecls in
     let ctx = Univ.ContextSet.to_context ctx in
@@ -1097,7 +1097,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns
     let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
     let fixdecls = List.map Term_typing.mk_pure_proof fixdecls in
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
-    let ctx = Evd.evar_universe_context_set ctx in
+    let ctx = Evd.evar_universe_context_set Univ.UContext.empty ctx in
     let ctx = Univ.ContextSet.to_context ctx in
     ignore (List.map4 (declare_fix (local, poly, CoFixpoint) ctx) 
 	      fixnames fixdecls fixtypes fiximps);

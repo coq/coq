@@ -19,6 +19,7 @@ module GlobalSafeEnv : sig
   val safe_env : unit -> Safe_typing.safe_environment
   val set_safe_env : Safe_typing.safe_environment -> unit
   val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
+  val is_joined_environment : unit -> bool
 
 end = struct
 
@@ -27,6 +28,9 @@ let global_env = ref Safe_typing.empty_environment
 let join_safe_environment ?except () =
   global_env := Safe_typing.join_safe_environment ?except !global_env
 
+let is_joined_environment () =
+  Safe_typing.is_joined_environment !global_env
+  
 let () =
   Summary.declare_summary global_env_summary_name
     { Summary.freeze_function = (function
@@ -50,6 +54,7 @@ end
 let safe_env = GlobalSafeEnv.safe_env
 let join_safe_environment ?except () =
   GlobalSafeEnv.join_safe_environment ?except ()
+let is_joined_environment = GlobalSafeEnv.is_joined_environment
 
 let env () = Safe_typing.env_of_safe_env (safe_env ())
 

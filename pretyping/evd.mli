@@ -475,7 +475,7 @@ val univ_flexible_alg : rigid
 
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
-val evar_universe_context_set : evar_universe_context -> Univ.universe_context_set
+val evar_universe_context_set : Univ.universe_context -> evar_universe_context -> Univ.universe_context_set
 val evar_universe_context_constraints : evar_universe_context -> Univ.constraints
 val evar_context_universe_context : evar_universe_context -> Univ.universe_context
 val evar_universe_context_of : Univ.universe_context_set -> evar_universe_context
