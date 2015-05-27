@@ -257,6 +257,9 @@ let eval_print l coq =
   | [ Tok(_,"WAIT") ] ->
       let phrase = "Stm Wait." in
       eval_call (query (phrase,tip_id())) coq
+  | [ Tok(_,"JOIN") ] ->
+      let phrase = "Stm JoinDocument." in
+      eval_call (query (phrase,tip_id())) coq
   | [ Tok(_,"ASSERT"); Tok(_,"TIP"); Tok(_,id) ] ->
       let to_id, _ = get_id id in
       if not(Stateid.equal (Document.tip doc) to_id) then error "Wrong tip"
@@ -273,6 +276,7 @@ let grammar =
     ; Seq [Item (eat_rex "EDIT_AT"); Item eat_id]
     ; Seq [Item (eat_rex "QUERY"); Opt (Item eat_id); Item eat_phrase]
     ; Seq [Item (eat_rex "WAIT")]
+    ; Seq [Item (eat_rex "JOIN")]
     ; Seq [Item (eat_rex "GOALS")]
     ; Seq [Item (eat_rex "FAILGOALS")]
     ; Seq [Item (eat_rex "ASSERT"); Item (eat_rex "TIP"); Item eat_id ]
