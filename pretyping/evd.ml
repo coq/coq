@@ -339,7 +339,7 @@ let evar_universe_context_set diff ctx =
 	 match Univ.LMap.find l ctx.uctx_univ_variables with
 	 | Some u -> Univ.Constraint.add (l, Univ.Eq, Option.get (Univ.Universe.level u)) cstrs
 	 | None -> cstrs
-       with Not_found -> cstrs)
+       with Not_found | Option.IsNone -> cstrs)
       (Univ.Instance.levels (Univ.UContext.instance diff)) Univ.Constraint.empty
   in
     Univ.ContextSet.add_constraints cstrs initctx 
