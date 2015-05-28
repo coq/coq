@@ -278,8 +278,8 @@ let make_table_widget ?sort cd cb =
     in
     store#set_sort_func i sort
   in
-  List.iteri make_sorting columns;
-  List.iteri (fun i c -> c#set_sort_column_id i) cols;
+  CList.iteri make_sorting columns;
+  CList.iteri (fun i c -> c#set_sort_column_id i) cols;
   List.iter (fun c -> ignore(data#append_column c)) cols;
   ignore(
     data#connect#row_activated ~callback:(fun tp vc -> cb columns store tp vc)
