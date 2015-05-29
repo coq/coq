@@ -111,6 +111,8 @@ type proof = {
   shelf : Goal.goal list;
   (* List of goals that have been given up *)
   given_up : Goal.goal list;
+  (* The initial universe context (for the statement) *)
+  initial_euctx : Evd.evar_universe_context
 }
 
 (*** General proof functions ***)
@@ -271,7 +273,9 @@ let start sigma goals =
     entry;
     focus_stack = [] ;
     shelf = [] ;
-    given_up = [] } in
+    given_up = [];
+    initial_euctx =
+      Evd.evar_universe_context (snd (Proofview.proofview proofview)) } in
   _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
 let dependent_start goals =
   let entry, proofview = Proofview.dependent_init goals in
@@ -280,7 +284,9 @@ let dependent_start goals =
     entry;
     focus_stack = [] ;
     shelf = [] ;
-    given_up = [] } in
+    given_up = [];
+    initial_euctx =
+      Evd.evar_universe_context (snd (Proofview.proofview proofview)) } in
   let number_of_goals = List.length (Proofview.initial_goals pr.entry) in
   _focus end_of_stack (Obj.repr ()) 1 number_of_goals pr
 
@@ -311,6 +317,7 @@ let return p =
     Proofview.return p.proofview
 
 let initial_goals p = Proofview.initial_goals p.entry
+let initial_euctx p = p.initial_euctx
 
 let compact p =
   let entry, proofview = Proofview.compact p.entry p.proofview in
