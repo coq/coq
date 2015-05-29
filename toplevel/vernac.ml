@@ -277,6 +277,7 @@ and read_vernac_file verbosely s =
     close_input in_chan input;    (* we must close the file first *)
     match e with
       | End_of_input ->
+          cur_file := None;
           if do_beautify () then
             pr_new_syntax (Loc.make_loc (max_int,max_int)) None
       | _ -> raise_with_file fname (disable_drop e, info)
