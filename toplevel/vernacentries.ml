@@ -2118,7 +2118,7 @@ let with_fail b f =
       | HasNotFailed ->
           errorlabstrm "Fail" (str "The command has not failed!")
       | HasFailed msg ->
-          if is_verbose () || !Flags.ide_slave then msg_info
+          if is_verbose () || !test_mode || !ide_slave then msg_info
             (str "The command has indeed failed with message:" ++ fnl () ++ msg)
       | _ -> assert false
   end

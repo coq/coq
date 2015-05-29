@@ -30,7 +30,7 @@
 BIN := ../bin/
 LIB := ..
 
-coqtop := $(BIN)coqtop -boot -q -batch -R prerequisite TestSuite
+coqtop := $(BIN)coqtop -boot -q -batch -test-mode -R prerequisite TestSuite
 bincoqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
 bincoqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
 

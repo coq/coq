@@ -15,6 +15,8 @@ val batch_mode : bool ref
 type compilation_mode = BuildVo | BuildVio | Vio2Vo
 val compilation_mode : compilation_mode ref
 
+val test_mode : bool ref
+
 type async_proofs = APoff | APonLazy | APon
 val async_proofs_mode : async_proofs ref
 type cache = Force

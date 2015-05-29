@@ -48,6 +48,8 @@ let batch_mode = ref false
 type compilation_mode = BuildVo | BuildVio | Vio2Vo
 let compilation_mode = ref BuildVo
 
+let test_mode = ref false
+
 type async_proofs = APoff | APonLazy | APon
 let async_proofs_mode = ref APoff
 type cache = Force
