@@ -215,7 +215,7 @@ let display_cmd_header loc com =
 	 str " [" ++ str cmd ++ str "] ");
   Pp.flush_all ()
 
-let rec vernac_com verbosely checknav (loc,com) =
+let rec vernac_com checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
@@ -241,7 +241,7 @@ let rec vernac_com verbosely checknav (loc,com) =
 
     | v when !just_parsing -> ()
 
-    | v -> Stm.interp verbosely (loc,v)
+    | v -> Stm.interp (Flags.is_verbose()) (loc,v)
   in
     try
       checknav loc com;
@@ -268,7 +268,7 @@ and read_vernac_file verbosely s =
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       let loc_ast = parse_sentence input in
-      vernac_com verbosely checknav loc_ast;
+      vernac_com checknav loc_ast;
       pp_flush ()
     done
   with any ->   (* whatever the exception *)
@@ -277,6 +277,7 @@ and read_vernac_file verbosely s =
     close_input in_chan input;    (* we must close the file first *)
     match e with
       | End_of_input ->
+          cur_file := None;
           if do_beautify () then
             pr_new_syntax (Loc.make_loc (max_int,max_int)) None
       | _ -> raise_with_file fname (disable_drop e, info)
@@ -292,14 +293,14 @@ let checknav loc ast =
   if is_deep_navigation_vernac ast then
     user_error loc "Navigation commands forbidden in nested commands"
 
-let eval_expr loc_ast = vernac_com (Flags.is_verbose()) checknav loc_ast
+let eval_expr loc_ast = vernac_com checknav loc_ast
 
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =
   chan_beautify :=
     if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
   try
-    read_vernac_file verb file;
+    Flags.silently (read_vernac_file verb) file;
     if !Flags.beautify_file then close_out !chan_beautify;
   with any ->
     let (e, info) = Errors.push any in

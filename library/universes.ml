@@ -845,7 +845,7 @@ let normalize_context_set ctx us algs =
       Constraint.add (canon, Univ.Eq, g) cst) global
       cstrs 
     in
-    let subst = LSet.fold (fun f -> LMap.add f canon) rigid subst in 
+    let subst = LSet.fold (fun f -> LMap.add f canon) rigid subst in
     let subst = LSet.fold (fun f -> LMap.add f canon) flexible subst in 
       (LSet.diff (LSet.diff ctx rigid) flexible, subst, cstrs))
     (ctx, LMap.empty, Constraint.empty) partition

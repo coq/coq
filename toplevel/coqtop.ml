@@ -58,7 +58,10 @@ let init_color () =
   | `ON -> true
   | `AUTO ->
     Terminal.has_style Unix.stdout &&
-    Terminal.has_style Unix.stderr
+    Terminal.has_style Unix.stderr &&
+    (* emacs compilation buffer does not support colors by default,
+       its TERM variable is set to "dumb". *)
+    Unix.getenv "TERM" <> "dumb"
   in
   if has_color then begin
     let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
@@ -496,6 +499,7 @@ let parse_args arglist =
     |"-async-proofs-never-reopen-branch" ->
         Flags.async_proofs_never_reopen_branch := true;
     |"-batch" -> set_batch_mode ()
+    |"-test-mode" -> test_mode := true
     |"-beautify" -> make_beautify true
     |"-boot" -> boot := true; no_load_rc ()
     |"-bt" -> Backtrace.record_backtrace true
@@ -615,7 +619,8 @@ let init arglist =
         if !batch_mode then mt ()
         else str "Error during initialization:" ++ fnl ()
       in
-      fatal_error (msg ++ Coqloop.print_toplevel_error any) (Errors.is_anomaly (fst any))
+      let is_anomaly e = Errors.is_anomaly e || not (Errors.handled e) in
+      fatal_error (msg ++ Coqloop.print_toplevel_error any) (is_anomaly (fst any))
   end;
   if !batch_mode then begin
     flush_all();

@@ -120,3 +120,12 @@ let noncritical = function
   | Timeout | Drop | Quit -> false
   | Invalid_argument "equal: functional value" -> false
   | _ -> true
+
+(** Check whether an exception is handled *)
+
+exception Bottom
+
+let handled e =
+  let bottom _ = raise Bottom in
+  try let _ = print_gen bottom !handle_stack e in true
+  with Bottom -> false

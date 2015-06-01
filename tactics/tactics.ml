@@ -3597,8 +3597,11 @@ let find_induction_type isrec elim hyp0 gl =
 	if Option.is_empty scheme.indarg then error "Cannot find induction type";
 	let indsign = compute_scheme_signature scheme hyp0 ind_guess in
 	let elim = ({elimindex = Some(-1); elimbody = elimc; elimrename = None},elimt) in
-	scheme, ElimUsing (elim,indsign) in
-  (Option.get scheme.indref,scheme.nparams, elim)
+	scheme, ElimUsing (elim,indsign)
+  in
+  match scheme.indref with
+  | None -> error_ind_scheme ""
+  | Some ref -> ref, scheme.nparams, elim
 
 let get_elim_signature elim hyp0 gl =
   compute_elim_signature (given_elim hyp0 elim gl) hyp0

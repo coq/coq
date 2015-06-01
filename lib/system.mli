@@ -59,6 +59,8 @@ val where_in_path_rex :
 val find_file_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
 
+val file_exists_respecting_case : string -> bool
+
 (** {6 I/O functions } *)
 (** Generic input and output functions, parameterized by a magic number
   and a suffix. The intern functions raise the exception [Bad_magic_number]

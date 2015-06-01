@@ -809,11 +809,24 @@ let pr_ltac_fun_arg = function
 let print_ltac id =
  try
   let kn = Nametab.locate_tactic id in
-  let l,t = split_ltac_fun (Tacenv.interp_ltac kn) in
+  let entries = Tacenv.ltac_entries () in
+  let tac = KNmap.find kn entries in
+  let filter mp =
+    try Some (Nametab.shortest_qualid_of_module mp)
+    with Not_found -> None
+  in
+  let mods = List.map_filter filter tac.Tacenv.tac_redef in
+  let redefined = match mods with
+  | [] -> mt ()
+  | mods ->
+    let redef = prlist_with_sep fnl pr_qualid mods in
+    fnl () ++ str "Redefined by:" ++ fnl () ++ redef
+  in
+  let l,t = split_ltac_fun tac.Tacenv.tac_body in
   hv 2 (
     hov 2 (str "Ltac" ++ spc() ++ pr_qualid id ++
            prlist pr_ltac_fun_arg l ++ spc () ++ str ":=")
-    ++ spc() ++ Pptactic.pr_glob_tactic (Global.env ()) t)
+    ++ spc() ++ Pptactic.pr_glob_tactic (Global.env ()) t) ++ redefined
  with
   Not_found ->
    errorlabstrm "print_ltac"

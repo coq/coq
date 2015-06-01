@@ -239,7 +239,7 @@ let find_int_col s l =
 let find_string_col s l =
   match List.assoc s l with `StringC c -> c | _ -> assert false
 
-let make_table_widget cd cb =
+let make_table_widget ?sort cd cb =
   let frame = GBin.scrolled_window ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC () in
   let columns, store =
     let cols = new GTree.column_list in
@@ -253,6 +253,7 @@ let make_table_widget cd cb =
       ~rules_hint:true ~headers_visible:false
       ~model:store ~packing:frame#add () in
   let () = data#set_headers_visible true in
+  let () = data#set_headers_clickable true in
   let refresh () =
     let clr = Tags.color_of_string current.background_color in
     data#misc#modify_base [`NORMAL, `COLOR clr]
@@ -268,21 +269,34 @@ let make_table_widget cd cb =
       c#set_sizing `AUTOSIZE;
       c)
     columns cd in
+  let make_sorting i (_, c) =
+    let sort (store : GTree.model) it1 it2 = match c with
+    | `IntC c ->
+      Pervasives.compare (store#get ~row:it1 ~column:c) (store#get ~row:it2 ~column:c)
+    | `StringC c ->
+      Pervasives.compare (store#get ~row:it1 ~column:c) (store#get ~row:it2 ~column:c)
+    in
+    store#set_sort_func i sort
+  in
+  CList.iteri make_sorting columns;
+  CList.iteri (fun i c -> c#set_sort_column_id i) cols;
   List.iter (fun c -> ignore(data#append_column c)) cols;
   ignore(
     data#connect#row_activated ~callback:(fun tp vc -> cb columns store tp vc)
   );
+  let () = match sort with None -> () | Some (i, t) -> store#set_sort_column_id i t in
   frame, (fun f -> f columns store), refresh
 
 let create_errpage (script : Wg_ScriptView.script_view) : errpage =
   let table, access, refresh =
-    make_table_widget
+    make_table_widget ~sort:(0, `ASCENDING)
       [`Int,"Line",true; `String,"Error message",true]
       (fun columns store tp vc ->
         let row = store#get_iter tp in
         let lno = store#get ~row ~column:(find_int_col "Line" columns) in
         let where = script#buffer#get_iter (`LINE (lno-1)) in
         script#buffer#place_cursor ~where;
+        script#misc#grab_focus ();
         ignore (script#scroll_to_iter
 		  ~use_align:false ~yalign:0.75 ~within_margin:0.25 where)) in
   let tip = GMisc.label ~text:"Double click to jump to error line" () in
@@ -311,7 +325,7 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
 
 let create_jobpage coqtop coqops : jobpage =
   let table, access, refresh =
-    make_table_widget
+    make_table_widget ~sort:(0, `ASCENDING)
       [`String,"Worker",true; `String,"Job name",true]
       (fun columns store tp vc ->
         let row = store#get_iter tp in

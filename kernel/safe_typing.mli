@@ -51,6 +51,7 @@ val is_curmod_library : safe_environment -> bool
 val join_safe_environment :
   ?except:Future.UUIDSet.t -> safe_environment -> safe_environment
 
+val is_joined_environment : safe_environment -> bool
 (** {6 Enriching a safe environment } *)
 
 (** Insertion of local declarations (Local or Variables) *)

@@ -1,0 +1,21 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# jumping between broken proofs + interp error while fixing.
+# the error should note make the GUI unfocus the currently focused proof.
+ 
+# first proof
+ADD { Lemma a : True. }
+ADD here { Proof using. }
+ADD { fail. }
+ADD { trivial. } # first error
+ADD { Qed. }
+WAIT
+EDIT_AT here
+# Fixing the proof
+ADD fix { trivial. }
+ADD { Qed. }
+WAIT
+EDIT_AT fix
+ADD { Qed. }
+JOIN

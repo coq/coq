@@ -1563,7 +1563,7 @@ let vernac_global_check c =
   let sigma = Evd.from_env env in
   let c,ctx = interp_constr env sigma c in
   let senv = Global.safe_env() in
-  let cstrs = snd (Evd.evar_universe_context_set ctx) in
+  let cstrs = snd (Evd.evar_universe_context_set Univ.UContext.empty ctx) in
   let senv = Safe_typing.add_constraints cstrs senv in
   let j = Safe_typing.typing senv c in
   let env = Safe_typing.env_of_safe_env senv in
@@ -1628,9 +1628,13 @@ let vernac_print = function
       msg_notice (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
   | PrintCanonicalConversions -> msg_notice (Prettyp.print_canonical_projections ())
   | PrintUniverses (b, None) ->
-    let univ = Global.universes () in
-    let univ = if b then Univ.sort_universes univ else univ in
-    msg_notice (Univ.pr_universes Universes.pr_with_global_universes univ)
+     let univ = Global.universes () in
+     let univ = if b then Univ.sort_universes univ else univ in
+     let pr_remaining =
+       if Global.is_joined_environment () then mt ()
+       else str"There may remain asynchronous universe constraints"
+     in
+     msg_notice (Univ.pr_universes Universes.pr_with_global_universes univ ++ pr_remaining)
   | PrintUniverses (b, Some s) -> dump_universes b s
   | PrintHint r -> msg_notice (Hints.pr_hint_ref (smart_global r))
   | PrintHintGoal -> msg_notice (Hints.pr_applicable_hint ())
@@ -2106,7 +2110,7 @@ let with_fail b f =
            | e ->
               let e = Errors.push e in
               raise (HasFailed (Errors.iprint
-                (Cerrors.process_vernac_interp_error ~with_header:false e))))
+                (Cerrors.process_vernac_interp_error ~allow_uncaught:false ~with_header:false e))))
         ()
     with e when Errors.noncritical e -> 
       let (e, _) = Errors.push e in
@@ -2114,7 +2118,7 @@ let with_fail b f =
       | HasNotFailed ->
           errorlabstrm "Fail" (str "The command has not failed!")
       | HasFailed msg ->
-          if is_verbose () || !Flags.ide_slave then msg_info
+          if is_verbose () || !test_mode || !ide_slave then msg_info
             (str "The command has indeed failed with message:" ++ fnl () ++ msg)
       | _ -> assert false
   end

@@ -1,0 +1,14 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# jumping between broken proofs + interp error while fixing.
+# the error should note make the GUI unfocus the currently focused proof.
+ 
+# first proof
+ADD { Set Implicit Arguments. }
+ADD { Record dynamic := dyn { dyn_type : Type; dyn_value : dyn_type }. }
+ADD { Lemma dyn_inj_type : forall A1 A2 (x1:A1) (x2:A2), dyn x1 = dyn x2 -> A1 = A2. }
+ADD { Proof. }
+ADD { now intros A1 A2 x1 x2 [= e1 e2]. }
+ADD { Qed. }
+JOIN

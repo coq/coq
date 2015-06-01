@@ -330,9 +330,23 @@ let union_evar_universe_context ctx ctx' =
 
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
-let evar_universe_context_set ctx = ctx.uctx_local
+let evar_universe_context_set diff ctx =
+  let initctx = ctx.uctx_local in
+  let cstrs =
+    Univ.LSet.fold
+      (fun l cstrs ->
+       try
+	 match Univ.LMap.find l ctx.uctx_univ_variables with
+	 | Some u -> Univ.Constraint.add (l, Univ.Eq, Option.get (Univ.Universe.level u)) cstrs
+	 | None -> cstrs
+       with Not_found | Option.IsNone -> cstrs)
+      (Univ.Instance.levels (Univ.UContext.instance diff)) Univ.Constraint.empty
+  in
+    Univ.ContextSet.add_constraints cstrs initctx 
+		      
 let evar_universe_context_constraints ctx = snd ctx.uctx_local
 let evar_context_universe_context ctx = Univ.ContextSet.to_context ctx.uctx_local
+    
 let evar_universe_context_of ctx = { empty_evar_universe_context with uctx_local = ctx }
 let evar_universe_context_subst ctx = ctx.uctx_univ_variables
 
@@ -564,6 +578,7 @@ type evar_map = {
                                              name) of the evar which
                                              will be instantiated with
                                              a term containing [e]. *)
+  extras : Store.t;
 }
 
 (*** Lifting primitive from Evar.Map. ***)
@@ -745,6 +760,7 @@ let empty = {
   evar_names = (EvMap.empty,Idmap.empty); (* id<->key for undefined evars *)
   future_goals = [];
   principal_future_goal = None;
+  extras = Store.empty;
 }
 
 let from_env ?ctx e = 
@@ -1320,6 +1336,7 @@ let set_metas evd metas = {
   evar_names = evd.evar_names;
   future_goals = evd.future_goals;
   principal_future_goal = evd.principal_future_goal;
+  extras = Store.empty;
 }
 
 let meta_list evd = metamap_to_list evd.metas
@@ -1467,6 +1484,12 @@ let dependent_evar_ident ev evd =
   match evi.evar_source with
   | (_,Evar_kinds.VarInstance id) -> id
   | _ -> anomaly (str "Not an evar resulting of a dependent binding")
+
+(**********************************************************)
+(* Extra data *)
+
+let get_extra_data evd = evd.extras
+let set_extra_data extras evd = { evd with extras }
 
 (*******************************************************************)
 

@@ -94,6 +94,18 @@ let all_subdirs ~unix_path:root =
   else msg_warning (str ("Cannot open " ^ root));
   List.rev !l
 
+let file_exists_respecting_case f =
+  if Coq_config.arch = "Darwin" then
+    (* ensure that the file exists with expected case on the
+       case-insensitive but case-preserving default MacOS file system *)
+    let rec aux f =
+      let bf = Filename.basename f in
+      let df = Filename.dirname f in
+      (String.equal df "." || String.equal df "/" || aux df)
+      && Array.exists (String.equal bf) (Sys.readdir df)
+    in aux f
+  else Sys.file_exists f
+
 let rec search paths test =
   match paths with
   | [] -> []
@@ -118,7 +130,7 @@ let where_in_path ?(warn=true) path filename =
   in
   check_and_warn (search path (fun lpe ->
     let f = Filename.concat lpe filename in
-    if Sys.file_exists f then [lpe,f] else []))
+    if file_exists_respecting_case f then [lpe,f] else []))
 
 let where_in_path_rex path rex =
   search path (fun lpe ->
@@ -134,7 +146,7 @@ let where_in_path_rex path rex =
 
 let find_file_in_path ?(warn=true) paths filename =
   if not (Filename.is_implicit filename) then
-    if Sys.file_exists filename then
+    if file_exists_respecting_case filename then
       let root = Filename.dirname filename in
       root, filename
     else
