@@ -328,7 +328,7 @@ let check_exist =
 
 let standard_proof_terminator compute_guard hook =
   let open Proof_global in function
-  | Admitted (id,k,pe) ->
+  | Admitted (id,k,pe,_) ->
       admit (id,k,pe) hook ();
       Pp.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt,proof) ->
@@ -347,8 +347,8 @@ let standard_proof_terminator compute_guard hook =
 
 let universe_proof_terminator compute_guard hook =
   let open Proof_global in function
-  | Admitted (id,k,pe) ->
-      admit (id,k,pe) (hook None) ();
+  | Admitted (id,k,pe,ctx) ->
+      admit (id,k,pe) (hook (Some ctx)) ();
       Pp.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt,proof) ->
       let is_opaque, export_seff, exports = match opaque with
@@ -480,14 +480,13 @@ let save_proof ?proof = function
               error "Admitted requires an explicit statement";
             let typ = Option.get const_entry_type in
             let ctx = Evd.evar_context_universe_context universes in
-            Admitted(id, k, (const_entry_secctx, pi2 k, (typ, ctx), None))
+            Admitted(id, k, (const_entry_secctx, pi2 k, (typ, ctx), None), universes)
         | None ->
             let id, k, typ = Pfedit.current_proof_statement () in
-            let ctx =
-              let evd, _ = Pfedit.get_current_goal_context () in
-              Evd.universe_context evd in
             (* This will warn if the proof is complete *)
-            let pproofs,_ = Proof_global.return_proof ~allow_partial:true () in
+            let pproofs, universes =
+              Proof_global.return_proof ~allow_partial:true () in
+            let ctx = Evd.evar_context_universe_context universes in
             let sec_vars =
               match  Pfedit.get_used_variables(), pproofs with
               | Some _ as x, _ -> x
@@ -497,7 +496,7 @@ let save_proof ?proof = function
                   let ids_def = Environ.global_vars_set env pproof in
                   Some (Environ.keep_hyps env (Idset.union ids_typ ids_def))
               | _ -> None in
-            Admitted(id,k,(sec_vars, pi2 k, (typ, ctx), None))
+            Admitted(id,k,(sec_vars, pi2 k, (typ, ctx), None),universes)
       in
       Proof_global.get_terminator() pe
   | Vernacexpr.Proved (is_opaque,idopt) ->
