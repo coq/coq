@@ -41,7 +41,7 @@ Ltac do_nat n tac :=
 (** Do something on the last hypothesis, or fail *)
 
 Ltac on_last_hyp tac :=
-  match goal with [ H : _ |- _ ] => first [ tac H | fail 1 ] end.
+  lazymatch goal with [ H : _ |- _ ] => tac H end.
 
 (** Destructs one pair, without care regarding naming. *)
 
