@@ -161,6 +161,7 @@
           <keyword>Print</keyword>
           <keyword>Eval</keyword>
           <keyword>Undo</keyword>
+          <keyword>Restart</keyword>
           <keyword>Opaque</keyword>
           <keyword>Transparent</keyword>
         </context>

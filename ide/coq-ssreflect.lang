@@ -190,6 +190,7 @@
 	  <keyword>Eval</keyword>
 	  <keyword>Load</keyword>
 	  <keyword>Undo</keyword>
+          <keyword>Restart</keyword>
 	  <keyword>Goal</keyword>
 	  <keyword>Print</keyword>
 	  <keyword>Save</keyword>
