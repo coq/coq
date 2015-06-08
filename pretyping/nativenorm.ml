@@ -271,7 +271,7 @@ and nf_atom env atom =
   | Aevar (ev,_) -> mkEvar ev
   | Aproj(p,c) ->
       let c = nf_accu env c in
-	mkProj(Projection.make p false,c)
+	mkProj(Projection.make p true,c)
   | _ -> fst (nf_atom_type env atom)
 
 and nf_atom_type env atom =
