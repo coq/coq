@@ -2328,9 +2328,9 @@ let edit_at id =
     VCS.branch ~root:brinfo.VCS.root ~pos:brinfo.VCS.pos
       (Option.default brname bn)
       (no_edit brinfo.VCS.kind);
-      VCS.print ();
     VCS.delete_cluster_of id;
     VCS.gc ();
+    VCS.print ();
     Reach.known_state ~cache:(interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `NewTip in
@@ -2368,7 +2368,8 @@ let edit_at id =
           end else begin
             anomaly(str"Cannot leave an `Edit branch open")
           end
-      | false, None, _ -> backto id None
+      | false, None, Some(_,bn) -> backto id (Some bn)
+      | false, None, None -> backto id None
     in
     VCS.print ();
     rc
