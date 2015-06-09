@@ -90,7 +90,7 @@ module Parser = struct (* {{{ *)
       in find ~-1 0
     else raise (Err ("Balanced "^String.make 1 c^" not found in: "^s))
 
-  let eat_blanks s = snd (eat_rex "[ \n\t]*") s
+  let eat_blanks s = snd (eat_rex "[ \r\n\t]*") s
 
   let s = ref ""
 
