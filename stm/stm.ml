@@ -671,11 +671,22 @@ end = struct (* {{{ *)
   let assign id what =
     if VCS.get_state id <> None then () else
     try match what with
-    | `Full s -> VCS.set_state id s
+    | `Full s ->
+         let s =
+           try
+            let prev = (VCS.visit id).next in
+            if is_cached prev
+            then { s with proof = 
+              Proof_global.copy_terminators
+                ~src:(get_cached prev).proof ~tgt:s.proof }
+            else s
+           with VCS.Expired -> s in
+         VCS.set_state id s
     | `Proof(ontop,(pstate,counters)) ->
          if is_cached ontop then
            let s = get_cached ontop in
-           let s = { s with proof = pstate } in
+           let s = { s with proof =
+             Proof_global.copy_terminators ~src:s.proof ~tgt:pstate } in
            let s = { s with system =
              States.replace_summary s.system
                (Summary.surgery_summary
@@ -1119,7 +1130,7 @@ end = struct (* {{{ *)
         when is_tac expr && State.same_env o n -> (* A pure tactic *)
           Some (id, `Proof (prev, State.proof_part_of_frozen n))
       | Some _, Some s ->
-          msg_warning (str "Sending back a fat state");
+          msg_warning (str "STM: sending back a fat state");
           Some (id, `Full s)
       | _, Some s -> Some (id, `Full s) in
     let rec aux seen = function

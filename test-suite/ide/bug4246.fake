@@ -1,0 +1,14 @@
+# first proof
+ADD { Lemma a : True. }
+ADD { Proof using. }
+ADD here { trivial. } # first error
+ADD { fail. }
+ADD { Qed. }
+WAIT
+EDIT_AT here
+# Fixing the proof
+ADD { Qed. }
+WAIT
+EDIT_AT here
+ADD { Qed. }
+JOIN

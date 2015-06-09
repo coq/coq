@@ -665,4 +665,7 @@ let freeze ~marshallable =
   | `No -> !pstates
 let unfreeze s = pstates := s; update_proof_mode ()
 let proof_of_state = function { proof }::_ -> proof | _ -> raise NoCurrentProof
+let copy_terminators ~src ~tgt =
+  assert(List.length src = List.length tgt);
+  List.map2 (fun op p -> { p with terminator = op.terminator }) src tgt
 

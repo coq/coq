@@ -197,3 +197,4 @@ type state
 val freeze : marshallable:[`Yes | `No | `Shallow] -> state
 val unfreeze : state -> unit
 val proof_of_state : state -> Proof.proof
+val copy_terminators : src:state -> tgt:state -> state
