@@ -631,13 +631,19 @@ let poly_inverse sort =
 
 type rewrite_proof = 
   | RewPrf of constr * constr
+  (** A Relation (R : rew_car -> rew_car -> Prop) and a proof of R rew_from rew_to *)
   | RewCast of cast_kind
+  (** A proof of convertibility (with casts) *)
 
 type rewrite_result_info = {
   rew_car : constr;
+  (** A type *)
   rew_from : constr;
+  (** A term of type rew_car *)
   rew_to : constr;
+  (** A term of type rew_car *)
   rew_prf : rewrite_proof;
+  (** A proof of rew_from == rew_to *)
   rew_evars : evars;
 }
 
@@ -646,9 +652,14 @@ type rewrite_result =
 | Identity
 | Success of rewrite_result_info
 
-type 'a pure_strategy = 'a -> Environ.env -> Id.t list -> constr -> types ->
-  (bool (* prop *) * constr option) -> evars -> 
-    'a * rewrite_result
+type 'a pure_strategy =
+  'a -> (* a parameter: for instance, a state *)
+  Environ.env ->
+  Id.t list -> (* Unfresh names *)
+  constr -> types -> (* first term and its type (convertible to rew_from) *)
+  (bool (* prop *) * constr option) ->
+  evars -> 
+  'a * rewrite_result (* the updated state for instance and the "result" *)
 
 type strategy = unit pure_strategy
 
