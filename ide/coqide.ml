@@ -677,18 +677,27 @@ let searchabout sn =
 
 let searchabout () = on_current_term searchabout
 
+let doquery query sn =
+  sn.messages#clear;
+  Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
+
+let showproof () =
+  let query = "Show Proof." in
+  on_current_term (doquery query)
+
 let otherquery command sn =
   let word = get_current_word sn in
   if word <> "" then
     let query = command ^ " " ^ word ^ "." in
-    sn.messages#clear;
-    Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
+    doquery query sn
 
 let otherquery command = cb_on_current_term (otherquery command)
 
 let query command _ =
   if command = "Search" || command = "SearchAbout"
   then searchabout ()
+  else if command = "Show Proof"
+  then showproof ()
   else otherquery command ()
 
 end
@@ -1109,6 +1118,7 @@ let build_ui () =
     qitem "About" (Some "<Ctrl><Shift>A");
     qitem "Locate" (Some "<Ctrl><Shift>L");
     qitem "Print Assumptions" (Some "<Ctrl><Shift>N");
+    qitem "Show Proof" (Some "<Ctrl><Shift>R");
   ];
 
   menu tools_menu [

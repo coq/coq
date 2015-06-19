@@ -119,6 +119,7 @@ let init () =
     <menuitem action='About' />
     <menuitem action='Locate' />
     <menuitem action='Print Assumptions' />
+    <menuitem action='Show Proof' />
   </menu>
   <menu name='Tools' action='Tools'>
     <menuitem action='Comment' />
