@@ -559,8 +559,8 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals
 	   ++ emacs_print_dependent_evars sigma seeds)
 	else
 	  let pei = pr_evars_int sigma 1 exl in
-	  (str "No more subgoals but non-instantiated existential " ++
-	   str "variables:" ++ fnl () ++ (hov 0 pei)
+	  (str "No more subgoals, but there are non-instantiated existential variables:"
+	   ++ fnl () ++ (hov 0 pei)
 	   ++ emacs_print_dependent_evars sigma seeds ++ fnl () ++
            str "You can use Grab Existential Variables.")
       end
@@ -625,17 +625,17 @@ let pr_open_subgoals ?(proof=Proof_global.give_me_the_proof ()) () =
           begin match bgoals,shelf,given_up with
 	  | [] , [] , [] -> pr_subgoals None sigma seeds shelf stack goals
           | [] , [] , _ ->
-	     msg_info (str "No more goals, however there are goals you gave up. You need to go back and solve them.");
+	     msg_info (str "No more subgoals, but there are some goals you gave up:");
 	     fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] given_up
+            ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
 	    msg_info (str "All the remaining goals are on the shelf.");
 	    fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] shelf
 	  | _ , _, _ ->
             let end_cmd =
-              strbrk "This subproof is complete, but there are still \
-              unfocused goals." ++
+              str "This subproof is complete, but there are some unfocused goals." ++
 	      (match Proof_global.Bullet.suggest p
               with None  -> str"" | Some s -> fnl () ++ str s) ++
               fnl ()
