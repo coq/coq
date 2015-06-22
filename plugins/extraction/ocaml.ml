@@ -23,11 +23,7 @@ open Declarations
 
 (*s Some utility functions. *)
 
-let pp_tvar id =
-  let s = string_of_id id in
-  if String.length s < 2 || s.[1]<>'\''
-  then str ("'"^s)
-  else str ("' "^s)
+let pp_tvar id = str ("'" ^ string_of_id id)
 
 let pp_abst = function
   | [] -> mt ()

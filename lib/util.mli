@@ -112,6 +112,7 @@ val classify_unicode : int -> utf8_status
 val check_ident : string -> unit
 val check_ident_soft : string -> unit
 val lowercase_first_char_utf8 : string -> string
+val is_basic_ascii : string -> bool
 val ascii_of_ident : string -> string
 
 (** {6 Lists. } *)
