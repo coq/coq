@@ -258,7 +258,9 @@ let subst_mind_body sub mib =
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_polymorphic = mib.mind_polymorphic;
     mind_universes = mib.mind_universes;
-    mind_private = mib.mind_private }
+    mind_private = mib.mind_private;
+    mind_checked_positive = mib.mind_checked_positive;
+  }
 
 let inductive_instance mib =
   if mib.mind_polymorphic then

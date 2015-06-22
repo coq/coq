@@ -857,6 +857,7 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
       mind_polymorphic = p;
       mind_universes = ctx;
       mind_private = prv;
+      mind_checked_positive = true;
     }
 
 (************************************************************************)
