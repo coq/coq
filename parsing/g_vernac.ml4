@@ -249,7 +249,8 @@ GEXTEND Gram
     [ [ IDENT "Hypotheses" -> (Some Discharge, Logical)
       | IDENT "Variables" -> (Some Discharge, Definitional)
       | IDENT "Axioms" -> (None, Logical)
-      | IDENT "Parameters" -> (None, Definitional) ] ]
+      | IDENT "Parameters" -> (None, Definitional)
+      | IDENT "Conjectures" -> (None, Conjectural) ] ]
   ;
   inline:
     [ [ IDENT "Inline"; "("; i = INT; ")" -> InlineAt (int_of_string i)

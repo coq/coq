@@ -739,15 +739,14 @@ let minimize_univ_variables ctx us algs left right cstrs =
   let rec instance (ctx', us, algs, insts, cstrs as acc) u =
     let acc, left = 
       try let l = LMap.find u left in
-	    List.fold_left (fun (acc, left') (d, l) -> 
-	      let acc', (enf,alg,l') = aux acc l in
-		(* if alg then assert(not alg); *)
-		let l' = 
-		  if enf then Universe.make l 
-		  else l' 
-		(* match Universe.level l' with Some _ -> l' | None -> Universe.make l  *)
-		in
-		  acc', (d, l') :: left') (acc, []) l
+	    List.fold_left
+	      (fun (acc, left') (d, l) -> 
+	       let acc', (enf,alg,l') = aux acc l in
+	       let l' = 
+		 if enf then Universe.make l 
+		 else l' 
+	       in acc', (d, l') :: left')
+	      (acc, []) l
       with Not_found -> acc, []
     and right =
       try Some (LMap.find u right)
@@ -755,24 +754,21 @@ let minimize_univ_variables ctx us algs left right cstrs =
     in
     let instantiate_lbound lbound =
       let alg = LSet.mem u algs in
-      if alg then
-	 (* u is algebraic and has no upper bound constraints: we
-	    instantiate it with it's lower bound, if any *)
-	 instantiate_with_lbound u lbound true false acc
-      else (* u is non algebraic *)
-	match Universe.level lbound with
-	| Some l -> (* The lowerbound is directly a level *) 
-	  (* u is not algebraic but has no upper bounds,
-	     we instantiate it with its lower bound if it is a 
-	     different level, otherwise we keep it. *)
-	  if not (Level.equal l u) && not (LSet.mem l algs) then
-	    (* if right = None then. Should check that u does not 
-	       have upper constraints that are not already in right *)
-	      instantiate_with_lbound u lbound false false acc
-	    (* else instantiate_with_lbound u lbound false true acc *)
-	  else
-	    (* assert false: l can't be alg *)
-	    acc, (true, false, lbound)
+	if alg then
+	  (* u is algebraic: we instantiate it with it's lower bound, if any, 
+              or enforce the constraints if it is bounded from the top. *)
+	  instantiate_with_lbound u lbound true (not (Option.is_empty right)) acc
+	else (* u is non algebraic *)
+	  match Universe.level lbound with
+	  | Some l -> (* The lowerbound is directly a level *) 
+	     (* u is not algebraic but has no upper bounds,
+  	        we instantiate it with its lower bound if it is a 
+	        different level, otherwise we keep it. *)
+	     if not (Level.equal l u) then
+	       (* Should check that u does not 
+  	          have upper constraints that are not already in right *)
+	       instantiate_with_lbound u lbound false (LSet.mem l algs) acc
+	     else acc, (true, false, lbound)
 	| None -> 
 	  try 
 	    (* if right <> None then raise Not_found; *)

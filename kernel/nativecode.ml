@@ -2015,9 +2015,13 @@ let rec compile_deps env sigma prefix ~interactive init t =
         || (Cmap_env.mem c const_updates)
       then init
       else
-      let comp_stack, (mind_updates, const_updates) = match cb.const_body with
-        | Def t ->
+      let comp_stack, (mind_updates, const_updates) =
+	match cb.const_proj, cb.const_body with
+        | None, Def t ->
 	   compile_deps env sigma prefix ~interactive init (Mod_subst.force_constr t)
+	| Some pb, _ ->
+	   let mind = pb.proj_ind in
+	   compile_mind_deps env prefix ~interactive init mind
         | _ -> init
       in
       let code, name =

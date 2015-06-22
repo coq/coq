@@ -66,7 +66,7 @@ type proof_object = {
 }
 
 type proof_ending =
-  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry
+  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * proof_universes
   | Proved of Vernacexpr.opacity_flag *
              (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
               proof_object
@@ -197,3 +197,4 @@ type state
 val freeze : marshallable:[`Yes | `No | `Shallow] -> state
 val unfreeze : state -> unit
 val proof_of_state : state -> Proof.proof
+val copy_terminators : src:state -> tgt:state -> state

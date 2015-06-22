@@ -140,20 +140,22 @@ let display mode (view : #GText.view_skel) goals hints evars =
       view#buffer#insert "No more subgoals."
     | [], [], [], _ :: _ ->
       (* A proof has been finished, but not concluded *)
-      view#buffer#insert "No more subgoals but non-instantiated existential variables:\n\n";
+      view#buffer#insert "No more subgoals, but there are non-instantiated existential variables:\n\n";
       let iter evar =
         let msg = Printf.sprintf "%s\n" evar.Interface.evar_info in
         view#buffer#insert msg
       in
-      List.iter iter evars
+      List.iter iter evars;
+      view#buffer#insert "\nYou can use Grab Existential Variables."
     | [], [], _, _ ->
       (* The proof is finished, with the exception of given up goals. *)
-      view#buffer#insert "No more, however there are goals you gave up. You need to go back and solve them:\n\n";
+      view#buffer#insert "No more subgoals, but there are some goals you gave up:\n\n";
       let iter goal =
         let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
         view#buffer#insert msg
       in
-      List.iter iter given_up_goals
+      List.iter iter given_up_goals;
+      view#buffer#insert "\nYou need to go back and solve them."
     | [], _, _, _ ->
       (* All the goals have been resolved but those on the shelf. *)
       view#buffer#insert "All the remaining goals are on the shelf:\n\n";
@@ -168,11 +170,7 @@ let display mode (view : #GText.view_skel) goals hints evars =
       let goal_str index = Printf.sprintf
         "______________________________________(%d/%d)\n" index total
       in
-      let vb, pl = if total = 1 then "is", "" else "are", "s" in
-      let msg = Printf.sprintf "This subproof is complete, but there %s still %d \
-        unfocused goal%s:\n\n" vb total pl
-      in
-      let () = view#buffer#insert msg in
+      view#buffer#insert "This subproof is complete, but there are some unfocused goals:\n\n";
       let iter i goal =
         let () = view#buffer#insert (goal_str (succ i)) in
         let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in

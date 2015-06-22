@@ -655,8 +655,6 @@ object(self)
       buffer#remove_tag Tags.Script.unjustified ~start ~stop;
       buffer#remove_tag Tags.Script.tooltip ~start ~stop;
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
-      buffer#remove_tag Tags.Script.error ~start ~stop;
-      buffer#remove_tag Tags.Script.error_bg ~start ~stop;
       buffer#move_mark ~where:start (`NAME "start_of_input")
     end;
     List.iter (fun { start } -> buffer#delete_mark start) seg;

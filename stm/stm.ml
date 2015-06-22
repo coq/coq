@@ -671,11 +671,22 @@ end = struct (* {{{ *)
   let assign id what =
     if VCS.get_state id <> None then () else
     try match what with
-    | `Full s -> VCS.set_state id s
+    | `Full s ->
+         let s =
+           try
+            let prev = (VCS.visit id).next in
+            if is_cached prev
+            then { s with proof = 
+              Proof_global.copy_terminators
+                ~src:(get_cached prev).proof ~tgt:s.proof }
+            else s
+           with VCS.Expired -> s in
+         VCS.set_state id s
     | `Proof(ontop,(pstate,counters)) ->
          if is_cached ontop then
            let s = get_cached ontop in
-           let s = { s with proof = pstate } in
+           let s = { s with proof =
+             Proof_global.copy_terminators ~src:s.proof ~tgt:pstate } in
            let s = { s with system =
              States.replace_summary s.system
                (Summary.surgery_summary
@@ -1119,7 +1130,7 @@ end = struct (* {{{ *)
         when is_tac expr && State.same_env o n -> (* A pure tactic *)
           Some (id, `Proof (prev, State.proof_part_of_frozen n))
       | Some _, Some s ->
-          msg_warning (str "Sending back a fat state");
+          msg_warning (str "STM: sending back a fat state");
           Some (id, `Full s)
       | _, Some s -> Some (id, `Full s) in
     let rec aux seen = function
@@ -2328,9 +2339,9 @@ let edit_at id =
     VCS.branch ~root:brinfo.VCS.root ~pos:brinfo.VCS.pos
       (Option.default brname bn)
       (no_edit brinfo.VCS.kind);
-      VCS.print ();
     VCS.delete_cluster_of id;
     VCS.gc ();
+    VCS.print ();
     Reach.known_state ~cache:(interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `NewTip in
@@ -2368,7 +2379,8 @@ let edit_at id =
           end else begin
             anomaly(str"Cannot leave an `Edit branch open")
           end
-      | false, None, _ -> backto id None
+      | false, None, Some(_,bn) -> backto id (Some bn)
+      | false, None, None -> backto id None
     in
     VCS.print ();
     rc

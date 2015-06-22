@@ -102,22 +102,23 @@ let compile_library dir code fn =
   r
 
 (* call_linker links dynamically the code for constants in environment or a  *)
-(* conversion test. Silently fails if the file does not exist in bytecode    *)
-(* mode, since the standard library is not compiled to bytecode with default *)
-(* settings.                                                                 *)
+(* conversion test. *)
 let call_linker ?(fatal=true) prefix f upds =
   rt1 := dummy_value ();
   rt2 := dummy_value ();
-  if Dynlink.is_native || Sys.file_exists f then
+  if not (Sys.file_exists f) then
+    let msg = "Cannot find native compiler file " ^ f in
+    if fatal then Errors.error msg
+    else Pp.msg_warning (Pp.str msg)
+  else
   (try
     if Dynlink.is_native then Dynlink.loadfile f else !load_obj f;
     register_native_file prefix
-   with | Dynlink.Error e ->
-          let msg = "Dynlink error, " ^ Dynlink.error_message e in
-          if fatal then anomaly (Pp.str msg) else Pp.msg_warning (Pp.str msg)
-        | e when Errors.noncritical e ->
-          if fatal then anomaly (Errors.print e)
-	  else Pp.msg_warning (Errors.print_no_report e));
+   with Dynlink.Error e as exn ->
+     let exn = Errors.push exn in
+     let msg = "Dynlink error, " ^ Dynlink.error_message e in
+     if fatal then (Pp.msg_error (Pp.str msg); iraise exn)
+     else Pp.msg_warning (Pp.str msg));
   match upds with Some upds -> update_locations upds | _ -> ()
 
 let link_library ~prefix ~dirname ~basename =

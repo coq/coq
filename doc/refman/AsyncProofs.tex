@@ -18,13 +18,11 @@ on small sets of short files.
 This feature has some technical limitations that may make it unsuitable for
 some use cases.
 
-For example, in interactive mode, errors coming from the kernel of Coq are
-signaled late.  The most notable type of errors belonging to this category are
-universe inconsistencies or unsatisfied guardedness conditions for fixpoints
-built using tactics.
+For example, in interactive mode, some errors coming from the kernel of Coq
+are signaled late.  The type of errors belonging to this category
+are universe inconsistencies.
 
-Last, at the time of writing, only opaque proofs (ending with \texttt{Qed}) can be
-processed asynchronously.
+Last, at the time of writing, only opaque proofs (ending with \texttt{Qed} or \texttt{Admitted}) can be processed asynchronously.
 
 \subsection{Proof annotations}
 

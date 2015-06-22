@@ -203,11 +203,44 @@ let rec visit v o pos =
 
 (** Loading the vo *)
 
+type header = {
+  magic : string;
+  (** Magic number of the marshaller *)
+  length : int;
+  (** Size on disk in bytes *)
+  size32 : int;
+  (** Size in words when loaded on 32-bit systems *)
+  size64 : int;
+  (** Size in words when loaded on 64-bit systems *)
+  objects : int;
+  (** Number of blocks defined in the marshalled structure *)
+}
+
+let dummy_header = {
+  magic = "\000\000\000\000";
+  length = 0;
+  size32 = 0;
+  size64 = 0;
+  objects = 0;
+}
+
+let parse_header chan =
+  let magic = String.create 4 in
+  let () = for i = 0 to 3 do magic.[i] <- input_char chan done in
+  let length = input_binary_int chan in
+  let objects = input_binary_int chan in
+  let size32 = input_binary_int chan in
+  let size64 = input_binary_int chan in
+  { magic; length; size32; size64; objects }
+
 type segment = {
   name : string;
   mutable pos : int;
   typ : Values.value;
+  mutable header : header;
 }
+
+let make_seg name typ = { name; typ; pos = 0; header = dummy_header }
 
 let visit_vo f =
   Printf.printf "\nWelcome to votour !\n";
@@ -216,11 +249,11 @@ let visit_vo f =
   Printf.printf
     "At prompt, <n> enters the <n>-th child, u goes up 1 level, x exits\n\n%!";
   let segments = [|
-    {name="library"; pos=0; typ=Values.v_lib};
-    {name="univ constraints of opaque proofs"; pos=0;typ=Values.v_univopaques}; 
-    {name="discharging info"; pos=0; typ=Opt Any};
-    {name="STM tasks"; pos=0; typ=Opt Values.v_stm_seg};
-    {name="opaque proofs"; pos=0; typ=Values.v_opaques}; 
+    make_seg "library" Values.v_lib;
+    make_seg "univ constraints of opaque proofs" Values.v_univopaques;
+    make_seg "discharging info" (Opt Any);
+    make_seg "STM tasks" (Opt Values.v_stm_seg);
+    make_seg "opaque proofs" Values.v_opaques;
   |] in
   while true do
     let ch = open_in_bin f in
@@ -229,13 +262,16 @@ let visit_vo f =
     for i=0 to Array.length segments - 1 do
       let pos = input_binary_int ch in
       segments.(i).pos <- pos_in ch;
+      let header = parse_header ch in
+      segments.(i).header <- header;
       seek_in ch pos;
       ignore(Digest.input ch);
     done;
     Printf.printf "The file has %d segments, choose the one to visit:\n"
       (Array.length segments);
-    Array.iteri (fun i { name; pos } ->
-      Printf.printf "  %d: %s, starting at byte %d\n" i name pos)
+    Array.iteri (fun i { name; pos; header } ->
+      let size = if Sys.word_size = 64 then header.size64 else header.size32 in
+      Printf.printf "  %d: %s, starting at byte %d (size %iw)\n" i name pos size)
       segments;
     Printf.printf "# %!";
     let l = read_line () in
