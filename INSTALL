@@ -32,8 +32,8 @@ WHAT DO YOU NEED ?
    - Objective Caml version 3.12.1 or later
      (available at http://caml.inria.fr/)
 
-   - Findlib (included in OCaml binary distribution under windows and
-     probably available in your distribution and at
+   - Findlib (included in OCaml binary distribution under windows,
+     probably available in your distribution and for sure at
      http://projects.camlcity.org/projects/findlib.html)
 
 
