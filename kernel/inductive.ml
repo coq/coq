@@ -134,46 +134,60 @@ let sort_as_univ = function
 
 (* Template polymorphism *)
 
+(* cons_subst add the mapping [u |-> su] in subst if [u] is not *)
+(* in the domain or add [u |-> sup x su] if [u] is already mapped *)
+(* to [x]. *)
 let cons_subst u su subst =
-  Univ.LMap.add u su subst
+  try
+    Univ.LMap.add u (Univ.sup (Univ.LMap.find u subst) su) subst
+  with Not_found -> Univ.LMap.add u su subst
+
+(* remember_subst updates the mapping [u |-> x] by [u |-> sup x u] *)
+(* if it is presents and returns the substitution unchanged if not.*)
+let remember_subst u subst =
+  try
+    let su = Universe.make u in
+    Univ.LMap.add u (Univ.sup (Univ.LMap.find u subst) su) subst
+  with Not_found -> subst
 
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)
-let rec make_subst env = function
-  | (_,Some _,_ as t)::sign, exp, args ->
-      let ctx,subst = make_subst env (sign, exp, args) in
-      t::ctx, subst
-  | d::sign, None::exp, args ->
-      let args = match args with _::args -> args | [] -> [] in
-      let ctx,subst = make_subst env (sign, exp, args) in
-      d::ctx, subst
-  | d::sign, Some u::exp, a::args ->
-      (* We recover the level of the argument, but we don't change the *)
-      (* level in the corresponding type in the arity; this level in the *)
-      (* arity is a global level which, at typing time, will be enforce *)
-      (* to be greater than the level of the argument; this is probably *)
-      (* a useless extra constraint *)
-      let s = sort_as_univ (snd (dest_arity env (Lazy.force a))) in
-      let ctx,subst = make_subst env (sign, exp, args) in
-      d::ctx, cons_subst u s subst
-  | (na,None,t as d)::sign, Some u::exp, [] ->
-      (* No more argument here: we instantiate the type with a fresh level *)
-      (* which is first propagated to the corresponding premise in the arity *)
-      (* (actualize_decl_level), then to the conclusion of the arity (via *)
-      (* the substitution) *)
-      let ctx,subst = make_subst env (sign, exp, []) in
-	d::ctx, subst
-  | sign, [], _ ->
-      (* Uniform parameters are exhausted *)
-      sign, Univ.LMap.empty
-  | [], _, _ ->
-      assert false
+let rec make_subst env =
+  let rec make subst = function
+    | (_,Some _,_ as t)::sign, exp, args ->
+        make subst (sign, exp, args)
+    | d::sign, None::exp, args ->
+        let args = match args with _::args -> args | [] -> [] in
+        make subst (sign, exp, args)
+    | d::sign, Some u::exp, a::args ->
+        (* We recover the level of the argument, but we don't change the *)
+        (* level in the corresponding type in the arity; this level in the *)
+        (* arity is a global level which, at typing time, will be enforce *)
+        (* to be greater than the level of the argument; this is probably *)
+        (* a useless extra constraint *)
+        let s = sort_as_univ (snd (dest_arity env (Lazy.force a))) in
+        make (cons_subst u s subst) (sign, exp, args)
+    | (na,None,t as d)::sign, Some u::exp, [] ->
+        (* No more argument here: we add the remaining universes to the *)
+        (* substitution (when [u] is distinct from all other universes in the *)
+        (* template, it is identity substitution  otherwise (ie. when u is *)
+        (* already in the domain of the substitution) [remember_subst] will *)
+        (* update its image [x] by [sup x u] in order not to forget the *)
+        (* dependency in [u] that remains to be fullfilled. *)
+        make (remember_subst u subst) (sign, exp, [])
+    | sign, [], _ ->
+        (* Uniform parameters are exhausted *)
+        subst
+    | [], _, _ ->
+        assert false
+  in
+  make Univ.LMap.empty
 
 exception SingletonInductiveBecomesProp of Id.t
 
 let instantiate_universes env ctx ar argsorts =
   let args = Array.to_list argsorts in
-  let ctx,subst = make_subst env (ctx,ar.template_param_levels,args) in
+  let subst = make_subst env (ctx,ar.template_param_levels,args) in
   let level = Univ.subst_univs_universe (Univ.make_subst subst) ar.template_level in
   let ty =
     (* Singleton type not containing types are interpretable in Prop *)
