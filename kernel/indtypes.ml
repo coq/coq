@@ -175,36 +175,19 @@ let cumulate_arity_large_levels env sign =
 let is_impredicative env u =
   is_type0m_univ u || (is_type0_univ u && engagement env = Some ImpredicativeSet)
 
+(* Returns the list [x_1, ..., x_n] of levels contributing to template
+   polymorphism. The elements x_k is None if the k-th parameter (starting
+   from the most recent and ignoring let-definitions) is not contributing 
+   or is Some u_k if its level is u_k and is contributing. *)
 let param_ccls params =
-  let has_some_univ u = function
-    | Some v when Univ.Level.equal u v -> true
-    | _ -> false
+  let fold acc = function (_, None, p) -> 
+      (let c = strip_prod_assum p in
+      match kind_of_term c with
+        | Sort (Type u) -> Univ.Universe.level u
+        | _ -> None) :: acc
+    | _ -> acc 
   in
-  let remove_some_univ u = function
-    | Some v when Univ.Level.equal u v -> None
-    | x -> x
-  in
-  let fold l (_, b, p) = match b with
-  | None ->
-    (* Parameter contributes to polymorphism only if explicit Type *)
-    let c = strip_prod_assum p in
-    (* Add Type levels to the ordered list of parameters contributing to *)
-    (* polymorphism unless there is aliasing (i.e. non distinct levels) *)
-    begin match kind_of_term c with
-    | Sort (Type u) ->
-      (match Univ.Universe.level u with
-      | Some u ->
-	if List.exists (has_some_univ u) l then
-          None :: List.map (remove_some_univ u) l
-	else
-          Some u :: l
-      | None -> None :: l)
-    | _ ->
-      None :: l
-    end
-  | _ -> l
-  in
-    List.fold_left fold [] params
+  List.fold_left fold [] params
 
 (* Type-check an inductive definition. Does not check positivity
    conditions. *)
