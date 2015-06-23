@@ -1,6 +1,7 @@
 Coq_config
 
 Hook
+Terminal
 Canary
 Hashset
 Hashcons
@@ -23,13 +24,14 @@ Pp
 Segmenttree
 Unicodetable
 Unicode
-Errors
 CObj
 CList
 CString
 CArray
 CStack
 Util
+Ppstyle
+Errors
 Ephemeron
 Future
 CUnix

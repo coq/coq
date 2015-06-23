@@ -27,13 +27,14 @@ Pp
 Segmenttree
 Unicodetable
 Unicode
-Errors
 CObj
 CList
 CString
 CArray
 CStack
 Util
+Ppstyle
+Errors
 Bigint
 Dyn
 CUnix
@@ -154,7 +155,6 @@ Tok
 Lexer
 Ppextend
 Pputils
-Ppstyle
 Ppannotation
 Stdarg
 Constrarg
