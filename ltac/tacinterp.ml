@@ -988,7 +988,7 @@ let interp_bindings ist env sigma = function
 | NoBindings ->
     sigma, NoBindings
 | ImplicitBindings l ->
-    let sigma, l = interp_open_constr_list ist env sigma l in   
+    let sigma, l = interp_open_constr_list ist env sigma l in
     sigma, ImplicitBindings l
 | ExplicitBindings l ->
     let sigma, l = List.fold_map (interp_binding ist env) sigma l in
@@ -1164,7 +1164,7 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
         in
 	Tactic_debug.debug_prompt lev tac eval
   | _ -> value_interp ist >>= fun v -> return (name_vfun appl v)
-      
+
 
 and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacAtom (loc,t) ->
@@ -1309,7 +1309,7 @@ and interp_ltac_reference loc' mustbetac ist r : Val.t Ftactic.t =
   | ArgArg (loc,r) ->
       let ids = extract_ids [] ist.lfun in
       let loc_info = ((if Loc.is_ghost loc' then loc else loc'),LtacNameCall r) in
-      let extra = TacStore.set ist.extra f_avoid_ids ids in 
+      let extra = TacStore.set ist.extra f_avoid_ids ids in
       let extra = TacStore.set extra f_trace (push_trace loc_info ist) in
       let ist = { lfun = Id.Map.empty; extra = extra; } in
       let appl = GlbAppl[r,[]] in
@@ -1633,7 +1633,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let sigma,l' = interp_intro_pattern_list_as_list ist env sigma l in
-        Tacticals.New.tclWITHHOLES false 
+        Tacticals.New.tclWITHHOLES false
         (name_atomic ~env
           (TacIntroPattern l)
           (* spiwack: print uninterpreted, not sure if it is the
@@ -1648,7 +1648,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = project gl in
 	let l = List.map (fun (k,c) ->
           let loc, f = interp_open_constr_with_bindings_loc ist c in
-	    (k,(loc,f))) cb 
+	    (k,(loc,f))) cb
 	in
         let sigma,tac = match cl with
           | None -> sigma, Tactics.apply_with_delayed_bindings_gen a ev l
@@ -1661,7 +1661,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacElim (ev,(keep,cb),cbo) ->
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
-        let sigma = project gl in 
+        let sigma = project gl in
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
         let sigma, cbo = Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
         let named_tac =
@@ -1715,7 +1715,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter { enter = begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        let (sigma,c) = 
+        let (sigma,c) =
           (if Option.is_empty t then interp_constr else interp_type) ist env sigma c
         in
         let sigma, ipat' = interp_intro_pattern_option ist env sigma ipat in
@@ -1825,7 +1825,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         in
         let c_interp patvars = { Sigma.run = begin fun sigma ->
 	  let lfun' = Id.Map.fold (fun id c lfun ->
-	    Id.Map.add id (Value.of_constr c) lfun) 
+	    Id.Map.add id (Value.of_constr c) lfun)
 	    patvars ist.lfun
 	  in
 	  let sigma = Sigma.to_evar_map sigma in
@@ -1851,7 +1851,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
         let c_interp patvars = { Sigma.run = begin fun sigma ->
           let lfun' = Id.Map.fold (fun id c lfun ->
-            Id.Map.add id (Value.of_constr c) lfun) 
+            Id.Map.add id (Value.of_constr c) lfun)
             patvars ist.lfun
           in
           let ist = { ist with lfun = lfun' } in
