@@ -324,6 +324,11 @@ type program_info_aux = {
 
 type program_info = program_info_aux Ephemeron.key
 
+let get_info x =
+  try Ephemeron.get x
+  with Ephemeron.InvalidKey ->
+    Errors.anomaly Pp.(str "Program obligation can't be accessed by a worker")
+
 let assumption_message = Declare.assumption_message
 
 let (set_default_tactic, get_default_tactic, print_default_tactic) = 
@@ -673,26 +678,26 @@ let init_prog_info ?(opaque = false) n b t ctx deps fixkind notations obls impls
       prg_opaque = opaque; }
 
 let get_prog name =
-  let prg_infos = !from_prg in Ephemeron.get (
+  let prg_infos = !from_prg in
     match name with
 	Some n ->
-	  (try ProgMap.find n prg_infos
+	  (try get_info (ProgMap.find n prg_infos)
 	   with Not_found -> raise (NoObligations (Some n)))
       | None ->
 	  (let n = map_cardinal prg_infos in
 	     match n with
 		 0 -> raise (NoObligations None)
-	       | 1 -> map_first prg_infos
+	       | 1 -> get_info (map_first prg_infos)
 	       | _ -> 
                    error ("More than one program with unsolved obligations: "^
                     String.concat ", " 
                      (List.map string_of_id
-                      (ProgMap.fold (fun k _ s -> k::s) prg_infos [])))))
+                      (ProgMap.fold (fun k _ s -> k::s) prg_infos []))))
 
 let get_any_prog () =
   let prg_infos = !from_prg in
   let n = map_cardinal prg_infos in
-  if n > 0 then Ephemeron.get (map_first prg_infos)
+  if n > 0 then get_info (map_first prg_infos)
   else raise (NoObligations None)
 
 let get_prog_err n =
@@ -732,7 +737,7 @@ let update_obls prg obls rem =
 	    progmap_remove prg';
 	    Defined kn
       | l ->
-	  let progs = List.map (fun x -> Ephemeron.get (ProgMap.find x !from_prg)) prg'.prg_deps in
+	  let progs = List.map (fun x -> get_info (ProgMap.find x !from_prg)) prg'.prg_deps in
 	    if List.for_all (fun x -> obligations_solved x) progs then
 	      let kn = declare_mutual_definition progs in
 		Defined (ConstRef kn)
@@ -931,7 +936,7 @@ and solve_obligations n tac =
     solve_prg_obligations prg tac
 
 and solve_all_obligations tac =
-  ProgMap.iter (fun k v -> ignore(solve_prg_obligations (Ephemeron.get v) tac)) !from_prg
+  ProgMap.iter (fun k v -> ignore(solve_prg_obligations (get_info v) tac)) !from_prg
 
 and try_solve_obligation n prg tac =
   let prg = get_prog prg in
@@ -972,7 +977,7 @@ let show_obligations ?(msg=true) n =
     | Some n ->
 	try [ProgMap.find n !from_prg]
 	with Not_found -> raise (NoObligations (Some n))
-  in List.iter (fun x -> show_obligations_of_prg ~msg (Ephemeron.get x)) progs
+  in List.iter (fun x -> show_obligations_of_prg ~msg (get_info x)) progs
 
 let show_term n =
   let prg = get_prog_err n in
