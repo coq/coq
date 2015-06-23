@@ -26,8 +26,8 @@ let univ_of_sort = function
   | Prop Null -> Universe.type0m
 
 let sort_of_univ u =
-  if is_type0m_univ u then Prop Null
-  else if is_type0_univ u then Prop Pos
+  if is_type0m_univ u then prop
+  else if is_type0_univ u then set
   else Type u
 
 let compare s1 s2 =
