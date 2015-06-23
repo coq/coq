@@ -143,9 +143,7 @@ type comp_env = {
     in_env : vm_env ref
   }
 
-val draw_instr : bytecodes -> unit
-
-
+val dump_bytecode : bytecodes -> unit
 
 (*spiwack: moved this here because I needed it for retroknowledge *)
 type block =

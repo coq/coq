@@ -155,91 +155,116 @@ type comp_env = {
 
 
 (* --- Pretty print *)
-open Format
-let rec instruction ppf = function
-  | Klabel lbl -> fprintf ppf "L%i:" lbl
-  | Kacc n -> fprintf ppf "\tacc %i" n
-  | Kenvacc n -> fprintf ppf "\tenvacc %i" n
-  | Koffsetclosure n -> fprintf ppf "\toffsetclosure %i" n
-  | Kpush -> fprintf ppf "\tpush"
-  | Kpop n -> fprintf ppf "\tpop %i" n
-  | Kpush_retaddr lbl -> fprintf ppf "\tpush_retaddr L%i" lbl
-  | Kapply n -> fprintf ppf "\tapply %i" n
+open Pp
+open Util
+
+let pp_sort s =
+  match family_of_sort s with
+  | InSet -> str "Set"
+  | InProp -> str "Prop"
+  | InType -> str "Type"
+
+let rec pp_struct_const = function
+  | Const_sorts s -> pp_sort s
+  | Const_ind ((mind, i), u) -> pr_mind mind ++ str"#" ++ int i
+  | Const_b0 i -> int i
+  | Const_bn (i,t) ->
+     int i ++ surround (prvect_with_sep pr_comma pp_struct_const t)
+
+let pp_lbl lbl = str "L" ++ int lbl
+
+let rec pp_instr i =
+  match i with
+  | Klabel _   | Ksequence _ -> assert false
+  | Kacc n -> str "acc " ++ int n
+  | Kenvacc n -> str "envacc " ++ int n
+  | Koffsetclosure n -> str "offsetclosure " ++ int n
+  | Kpush -> str "push"
+  | Kpop n -> str "pop " ++ int n
+  | Kpush_retaddr lbl -> str "push_retaddr " ++ pp_lbl lbl
+  | Kapply n -> str "apply " ++ int n
   | Kappterm(n, m) ->
-      fprintf ppf "\tappterm %i, %i" n m
-  | Kreturn n -> fprintf ppf "\treturn %i" n
-  | Kjump -> fprintf ppf "\tjump"
-  | Krestart -> fprintf ppf "\trestart"
-  | Kgrab n -> fprintf ppf "\tgrab %i" n
-  | Kgrabrec n -> fprintf ppf "\tgrabrec %i" n
+      str "appterm " ++ int n ++ str ", " ++ int m
+  | Kreturn n -> str "return " ++ int n
+  | Kjump -> str "jump"
+  | Krestart -> str "restart"
+  | Kgrab n -> str "grab " ++ int n
+  | Kgrabrec n -> str "grabrec " ++ int n
   | Kclosure(lbl, n) ->
-      fprintf ppf "\tclosure L%i, %i" lbl n
+      str "closure " ++ pp_lbl lbl ++ str ", " ++ int n
   | Kclosurerec(fv,init,lblt,lblb) ->
-      fprintf ppf "\tclosurerec";
-      fprintf ppf "%i , %i, " fv init;
-      print_string "types = ";
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblt;
-      print_string " bodies = ";
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
+      h 1 (str "closurerec " ++
+	     int fv ++ str ", " ++ int init ++
+	     str " types = " ++
+	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
+	     str " bodies = " ++
+	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kclosurecofix (fv,init,lblt,lblb) ->
-      fprintf ppf "\tclosurecofix";
-      fprintf ppf " %i , %i, " fv init;
-      print_string "types = ";
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblt;
-      print_string " bodies = ";
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
-  | Kgetglobal (id,u) -> fprintf ppf "\tgetglobal %s" (Names.string_of_con id)
-  | Kconst cst ->
-      fprintf ppf "\tconst"
+      h 1 (str "closurecofix " ++
+	     int fv ++ str ", " ++ int init ++
+	     str " types = " ++
+	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
+	     str " bodies = " ++
+	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+  | Kgetglobal (id,u) -> str "getglobal " ++ pr_con id
+  | Kconst sc ->
+      str "const " ++ pp_struct_const sc
   | Kmakeblock(n, m) ->
-      fprintf ppf "\tmakeblock %i, %i" n m
-  | Kmakeprod -> fprintf ppf "\tmakeprod"
+      str "makeblock " ++ int n ++ str ", " ++ int m
+  | Kmakeprod -> str "makeprod"
   | Kmakeswitchblock(lblt,lbls,_,sz) ->
-      fprintf ppf "\tmakeswitchblock %i, %i, %i" lblt lbls sz
+      str "makeswitchblock " ++ pp_lbl lblt ++ str ", " ++
+	pp_lbl lbls ++ str ", " ++ int sz
   | Kswitch(lblc,lblb) ->
-      fprintf ppf "\tswitch";
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblc;
-      Array.iter (fun lbl -> fprintf ppf " %i" lbl) lblb;
-  | Kpushfields n -> fprintf ppf "\tpushfields %i" n
-  | Ksetfield n -> fprintf ppf "\tsetfield %i" n
-  | Kfield  n -> fprintf ppf "\tgetfield %i" n
-  | Kstop -> fprintf ppf "\tstop"
-  | Ksequence (c1,c2) ->
-      fprintf ppf "%a@ %a" instruction_list c1 instruction_list c2
-(* spiwack *)
-  | Kbranch lbl -> fprintf ppf "\tbranch %i" lbl
-  | Kaddint31 -> fprintf ppf "\taddint31"
-  | Kaddcint31 -> fprintf ppf "\taddcint31"
-  | Kaddcarrycint31 -> fprintf ppf "\taddcarrycint31"
-  | Ksubint31 -> fprintf ppf "\tsubint31"
-  | Ksubcint31 -> fprintf ppf "\tsubcint31"
-  | Ksubcarrycint31 -> fprintf ppf "\tsubcarrycint31"
-  | Kmulint31 -> fprintf ppf "\tmulint31"
-  | Kmulcint31 -> fprintf ppf "\tmulcint31"
-  | Kdiv21int31 -> fprintf ppf "\tdiv21int31"
-  | Kdivint31 -> fprintf ppf "\tdivint31"
-  | Kcompareint31 -> fprintf ppf "\tcompareint31"
-  | Khead0int31 -> fprintf ppf "\thead0int31"
-  | Ktail0int31 -> fprintf ppf "\ttail0int31"
-  | Kaddmuldivint31 -> fprintf ppf "\taddmuldivint31"
-  | Kisconst lbl -> fprintf ppf "\tisconst %i" lbl
-  | Kareconst(n,lbl) -> fprintf ppf "\tareconst %i %i" n lbl
-  | Kcompint31 -> fprintf ppf "\tcompint31"
-  | Kdecompint31 -> fprintf ppf "\tdecompint"
-  | Klorint31 -> fprintf ppf "\tlorint31"
-  | Klandint31 -> fprintf ppf "\tlandint31"
-  | Klxorint31 -> fprintf ppf "\tlxorint31"
+      h 1 (str "switch " ++
+	     prlist_with_sep spc pp_lbl (Array.to_list lblc) ++
+	     str " | " ++
+	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+  | Kpushfields n -> str "pushfields " ++ int n
+  | Kfield n -> str "field " ++ int n
+  | Ksetfield n -> str "set field" ++ int n
 
-(* /spiwack *)
+  | Kstop -> str "stop"
+
+  | Kbranch lbl -> str "branch " ++ pp_lbl lbl
+
+  | Kaddint31 -> str "addint31"
+  | Kaddcint31 -> str "addcint31"
+  | Kaddcarrycint31 -> str "addcarrycint31"
+  | Ksubint31 -> str "subint31"
+  | Ksubcint31 -> str "subcint31"
+  | Ksubcarrycint31 -> str "subcarrycint31"
+  | Kmulint31 -> str "mulint31"
+  | Kmulcint31 -> str "mulcint31"
+  | Kdiv21int31 -> str "div21int31"
+  | Kdivint31 -> str "divint31"
+  | Kcompareint31 -> str "compareint31"
+  | Khead0int31 -> str "head0int31"
+  | Ktail0int31 -> str "tail0int31"
+  | Kaddmuldivint31 -> str "addmuldivint31"
+  | Kisconst lbl -> str "isconst " ++ int lbl
+  | Kareconst(n,lbl) -> str "areconst " ++ int n ++ spc () ++ int lbl
+  | Kcompint31 -> str "compint31"
+  | Kdecompint31 -> str "decompint"
+  | Klorint31 -> str "lorint31"
+  | Klandint31 -> str "landint31"
+  | Klxorint31 -> str "lxorint31"
 
 
-and instruction_list ppf = function
-    [] -> ()
-  | Klabel lbl :: il ->
-      fprintf ppf "L%i:%a" lbl instruction_list il
-  | instr :: il ->
-      fprintf ppf "%a@ %a" instruction instr instruction_list il
+and pp_bytecodes c =
+  match c with
+  | [] -> str ""
+  | Klabel lbl :: c ->
+	str "L" ++ int lbl ++ str ":" ++ str "\n" ++
+	pp_bytecodes c
+  | Ksequence (l1, l2) :: c ->
+      pp_bytecodes l1 ++ pp_bytecodes l2 ++  pp_bytecodes c
+  | i :: c ->
+      str "\t" ++ pp_instr i ++ str "\n" ++ pp_bytecodes c
 
+let dump_bytecode c =
+  pperrnl (pp_bytecodes c);
+  flush_all()
 
 (*spiwack: moved this type in this file  because I needed it for
   retroknowledge which can't depend from cbytegen *)
@@ -253,8 +278,3 @@ type block =
                 (* spiwack: compilation given by a function *)
                 (* compilation function (see get_vm_constant_dynamic_info in
                    retroknowledge.mli for more info) , argument array  *)
-
-
-
-let draw_instr c =
-  fprintf std_formatter "@[<v 0>%a@]" instruction_list c

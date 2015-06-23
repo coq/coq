@@ -1435,10 +1435,10 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
-      optname  = "printing of universes";
-      optkey   = ["Printing";"Universes"];
-      optread  = (fun () -> !Constrextern.print_universes);
-      optwrite = (fun b -> Constrextern.print_universes:=b) }
+      optname  = "dumping bytecode after compilation";
+      optkey   = ["Dump";"Bytecode"];
+      optread  = Flags.get_dump_bytecode;
+      optwrite = Flags.set_dump_bytecode }
 
 let vernac_debug b =
   set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)

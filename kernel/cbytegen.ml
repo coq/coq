@@ -772,16 +772,18 @@ let compile fail_on_error env c =
   try 
     let init_code = compile_constr reloc c 0 [Kstop] in
     let fv = List.rev (!(reloc.in_env).fv_rev) in
-(*  draw_instr init_code;
-  draw_instr !fun_code;
-  Format.print_string "fv = ";
-  List.iter (fun v ->
-    match v with
-    | FVnamed id -> Format.print_string ((Id.to_string id)^"; ")
-    | FVrel i -> Format.print_string ((string_of_int i)^"; ")) fv;  Format
-    .print_string "\n";
-  Format.print_flush();  *)
-      Some (init_code,!fun_code, Array.of_list fv)
+    let pp_v v =
+      match v with
+      | FVnamed id -> Pp.str (Id.to_string id)
+      | FVrel i -> Pp.str (string_of_int i)
+    in
+    let open Pp in
+    if !Flags.dump_bytecode then
+      (dump_bytecode init_code;
+       dump_bytecode !fun_code;
+       Pp.msg_debug (Pp.str "fv = " ++
+	 Pp.prlist_with_sep (fun () -> Pp.str "; ") pp_v fv ++ Pp.fnl ()));
+    Some (init_code,!fun_code, Array.of_list fv)
   with TooLargeInductive tname ->
     let fn = if fail_on_error then Errors.errorlabstrm "compile" else Pp.msg_warning in
       (Pp.(fn
