@@ -757,7 +757,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	if alg then
 	  (* u is algebraic: we instantiate it with it's lower bound, if any, 
               or enforce the constraints if it is bounded from the top. *)
-	  instantiate_with_lbound u lbound true (not (Option.is_empty right)) acc
+	  instantiate_with_lbound u lbound true false acc
 	else (* u is non algebraic *)
 	  match Universe.level lbound with
 	  | Some l -> (* The lowerbound is directly a level *) 
@@ -767,7 +767,8 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	     if not (Level.equal l u) then
 	       (* Should check that u does not 
   	          have upper constraints that are not already in right *)
-	       instantiate_with_lbound u lbound false (LSet.mem l algs) acc
+	       let acc' = (ctx', us, LSet.remove l algs, insts, cstrs) in
+		 instantiate_with_lbound u lbound false false acc
 	     else acc, (true, false, lbound)
 	| None -> 
 	  try 
@@ -1017,13 +1018,14 @@ let solve_constraints_system levels level_bounds level_min =
   for i=0 to nind-1 do
     for j=0 to nind-1 do
       if not (Int.equal i j) && Int.Set.mem j clos.(i) then
-	(v.(i) <- Universe.sup v.(i) level_bounds.(j);
-	 level_min.(i) <- Universe.sup level_min.(i) level_min.(j))
+	(v.(i) <- Universe.sup v.(i) level_bounds.(j));
+	 (* level_min.(i) <- Universe.sup level_min.(i) level_min.(j)) *)
     done;
-    for j=0 to nind-1 do
-      match levels.(j) with
-      | Some u -> v.(i) <- univ_level_rem u v.(i) level_min.(i)
-      | None -> ()
-    done
+    (* for j=0 to nind-1 do *)
+    (*   match levels.(j) with *)
+    (*   | Some u when not (Univ.Level.is_small u) -> *)
+    (* 	 v.(i) <- univ_level_rem u v.(i) level_min.(i) *)
+    (*   | _ -> () *)
+    (* done *)
   done;
   v

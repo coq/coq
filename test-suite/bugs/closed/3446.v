@@ -1,28 +1,32 @@
 (* File reduced by coq-bug-finder from original input, then from 7372 lines to 539 lines, then from 531 lines to 107 lines, then from 76 lines to 46 lines *)
-(* Set Asymmetric Patterns. *)
-(* Reserved Notation "x -> y" (at level 99, right associativity, y at level 200). *)
-(* Notation "A -> B" := (forall (_ : A), B). *)
-
-(* Notation "x → y" := (x -> y) *)
-(*   (at level 99, y at level 200, right associativity): type_scope. *)
-(* Record sigT A (P : A -> Type) := *)
-(*   { projT1 : A ; projT2 : P projT1 }. *)
-(* Arguments projT1 {A P} s. *)
-(* Arguments projT2 {A P} s. *)
-(* Set Universe Polymorphism. *)
-(* Definition compose {A B C : Type} (g : B -> C) (f : A -> B) := fun x => g (f x). *)
-(* Reserved Notation "x = y" (at level 70, no associativity). *)
-(* Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a where "x = y" := (@paths _ x y). *)
-(* Definition transport {A : Type} (P : A -> Type) {x y : A} (p : x = y) (u : P x) : P y := match p with idpath => u end. *)
-(* Reserved Notation "{ x : A  & P }" (at level 0, x at level 99). *)
-(* Notation "{ x : A  & P }" := (sigT A (fun x => P)) : type_scope. *)
+Module First.
+Set Asymmetric Patterns.
+Reserved Notation "x -> y" (at level 99, right associativity, y at level 200).
+Notation "A -> B" := (forall (_ : A), B).
+Set Universe Polymorphism.
 
 
-(* Axiom path_sigma_uncurried : forall {A : Type} (P : A -> Type) (u v : sigT A P) (pq : {p : projT1 u = projT1 v &  transport _ p (projT2 u) = projT2 v}), u = v. *)
-(* Axiom isequiv_pr1_contr : forall {A} {P : A -> Type}, (A -> {x : A & P x}). *)
+Notation "x → y" := (x -> y)
+  (at level 99, y at level 200, right associativity): type_scope.
+Record sigT A (P : A -> Type) :=
+  { projT1 : A ; projT2 : P projT1 }.
+Arguments projT1 {A P} s.
+Arguments projT2 {A P} s.
+Definition compose {A B C : Type} (g : B -> C) (f : A -> B) := fun x => g (f x).
+Reserved Notation "x = y" (at level 70, no associativity).
+Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a where "x = y" := (@paths _ x y).
+Notation " x = y " := (paths x y) : type_scope.
+Definition transport {A : Type} (P : A -> Type) {x y : A} (p : x = y) (u : P x) : P y := match p with idpath => u end.
+Reserved Notation "{ x : A  & P }" (at level 0, x at level 99).
+Notation "{ x : A  & P }" := (sigT A (fun x => P)) : type_scope.
 
-(* Definition path_sigma_hprop {A : Type} {P : A -> Type} (u v : sigT _ P) := *)
-(*   @compose _ _ _ (path_sigma_uncurried P u v) (@isequiv_pr1_contr _ _). *)
+
+Axiom path_sigma_uncurried : forall {A : Type} (P : A -> Type) (u v : sigT A P) (pq : {p : projT1 u = projT1 v &  transport _ p (projT2 u) = projT2 v}), u = v.
+Axiom isequiv_pr1_contr : forall {A} {P : A -> Type}, (A -> {x : A & P x}).
+
+Definition path_sigma_hprop {A : Type} {P : A -> Type} (u v : sigT _ P) :=
+  @compose _ _ _ (path_sigma_uncurried P u v) (@isequiv_pr1_contr _ _).
+End First.
 
 Set Asymmetric Patterns.
 Set Universe Polymorphism.

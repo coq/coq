@@ -163,7 +163,7 @@ Notation "A <~> B" := (Equiv A B) (at level 85) : type_scope.
 
 Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3, format "f '^-1'") : function_scope.
 
-Inductive Unit : Type1 :=
+Inductive Unit : Set :=
     tt : Unit.
 
 Ltac done :=
