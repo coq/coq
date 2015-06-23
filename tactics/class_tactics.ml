@@ -850,9 +850,18 @@ open Goptions
 let set_typeclasses_debug =
   declare_bool_option
     { optsync  = true;
-      optdepr  = false;
+      optdepr  = true;
       optname  = "debug output for typeclasses proof search";
       optkey   = ["Typeclasses";"Debug"];
+      optread  = get_typeclasses_debug;
+      optwrite = set_typeclasses_debug; }
+
+let set_typeclasses_debug =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "debug output for typeclasses proof search";
+      optkey   = ["Debug";"Typeclasses"];
       optread  = get_typeclasses_debug;
       optwrite = set_typeclasses_debug; }
 
