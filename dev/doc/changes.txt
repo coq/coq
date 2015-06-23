@@ -10,6 +10,16 @@ will fail to compile now. They should switch to `Bytes.t`
 
 * ML API *
 
+Added two functions for declaring hooks to be executed in reduction
+functions when some given constants are traversed:
+
+  declare_reduction_effect: to declare a hook to be applied when some
+  constant are visited during the execution of some reduction functions
+  (primarily cbv).
+
+  set_reduction_effect: to declare a constant on which a given effect
+  hook should be called.
+
 We renamed the following functions:
 
   Context.Rel.Declaration.fold   -> Context.Rel.Declaration.fold_constr

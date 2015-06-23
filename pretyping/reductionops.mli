@@ -34,6 +34,22 @@ end
 val get_refolding_in_reduction : unit -> bool
 val set_refolding_in_reduction : bool -> unit
 
+(** {6 Support for reduction effects } *)
+
+type effect_name = string
+
+(* [declare_reduction_effect name f] declares [f] under key [name];
+   [name] must be a unique in "world". *)
+val declare_reduction_effect : effect_name ->
+  (Environ.env -> Evd.evar_map -> Constr.constr -> unit) -> unit
+
+(* [set_reduction_effect cst name] declares effect [name] to be called when [cst] is found *)
+val set_reduction_effect : Globnames.global_reference -> effect_name -> unit
+
+(* [effect_hook env sigma key term] apply effect associated to [key] on [term] *)
+val reduction_effect_hook : Environ.env -> Evd.evar_map -> Constr.constr ->
+  Constr.constr Lazy.t -> unit
+
 (** {6 Machinery about a stack of unfolded constant }
 
     cst applied to params must convertible to term of the state applied to args

@@ -40,6 +40,54 @@ let _ = Goptions.declare_bool_option {
 let get_refolding_in_reduction () = !refolding_in_reduction
 let set_refolding_in_reduction = (:=) refolding_in_reduction
 
+(** Support for reduction effects *)
+
+open Mod_subst
+open Libobject
+
+type effect_name = string
+
+(** create a persistent set to store effect functions *)
+module ConstrMap = Map.Make (Constr)
+
+(* Table bindings a constant to an effect *)
+let constant_effect_table = Summary.ref ~name:"reduction-side-effect" ConstrMap.empty
+
+(* Table bindings function key to effective functions *)
+let effect_table = Summary.ref ~name:"reduction-function-effect" String.Map.empty
+
+(** a test to know whether a constant is actually the effect function *)
+let reduction_effect_hook env sigma termkey c =
+  try
+    let funkey = ConstrMap.find termkey !constant_effect_table in
+    let effect = String.Map.find funkey !effect_table in
+    effect env sigma (Lazy.force c)
+  with Not_found -> ()
+
+let cache_reduction_effect (_,(termkey,funkey)) =
+  constant_effect_table := ConstrMap.add termkey funkey !constant_effect_table
+
+let subst_reduction_effect (subst,(termkey,funkey)) =
+  (subst_mps subst termkey,funkey)
+
+let inReductionEffect : Constr.constr * string -> obj =
+  declare_object {(default_object "REDUCTION-EFFECT") with
+    cache_function = cache_reduction_effect;
+    open_function = (fun i o -> if Int.equal i 1 then cache_reduction_effect o);
+    subst_function = subst_reduction_effect;
+    classify_function = (fun o -> Substitute o) }
+
+let declare_reduction_effect funkey f =
+  if String.Map.mem funkey !effect_table then
+    CErrors.anomaly Pp.(str "Cannot redeclare effect function " ++ qstring funkey ++ str ".");
+  effect_table := String.Map.add funkey f !effect_table
+
+(** A function to set the value of the print function *)
+let set_reduction_effect x funkey =
+  let termkey = Universes.constr_of_global x in
+  Lib.add_anonymous_leaf (inReductionEffect (termkey,funkey))
+
+
 (** Machinery to custom the behavior of the reduction *)
 module ReductionBehaviour = struct
   open Globnames
@@ -859,9 +907,12 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       (match safe_meta_value sigma ev with
       | Some body -> whrec cst_l (EConstr.of_constr body, stack)
       | None -> fold ())
-    | Const (c,u as const) when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) ->
-        let u' = EInstance.kind sigma u in
-       (match constant_opt_value_in env (fst const, u') with
+    | Const (c,u as const) ->
+      reduction_effect_hook env sigma (EConstr.to_constr sigma x)
+         (lazy (EConstr.to_constr sigma (Stack.zip sigma (x,stack))));
+      if CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) then
+       let u' = EInstance.kind sigma u in
+       (match constant_opt_value_in env (c, u') with
 	| None -> fold ()
 	| Some body ->
           let body = EConstr.of_constr body in
@@ -901,7 +952,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 		    | Some (bef,arg,s') ->
 		      whrec Cst_stack.empty 
 			(arg,Stack.Cst(Stack.Cst_const (fst const, u'),curr,remains,bef,cst_l)::s')
-       )
+       ) else fold ()
     | Proj (p, c) when CClosure.RedFlags.red_projection flags p ->
       (let pb = lookup_projection p env in
        let kn = Projection.constant p in
@@ -1035,7 +1086,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 	|_ -> fold ()
       else fold ()
 
-    | Rel _ | Var _ | Const _ | LetIn _ | Proj _ -> fold ()
+    | Rel _ | Var _ | LetIn _ | Proj _ -> fold ()
     | Sort _ | Ind _ | Prod _ -> fold ()
   in
   fun xs ->
