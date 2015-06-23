@@ -42,6 +42,32 @@ let time() =
   let times = Unix.times() in
   times.Unix.tms_utime +. times.Unix.tms_stime
 
+let rec print_treenode indent (tn : treenode) =
+  msgnl(str(indent^"{ entry = {"));
+  msg(str(indent^"total = "));
+  msgnl(str (indent^(string_of_float (tn.entry.total))));
+  msg(str(indent^"local = "));
+  msgnl(str (indent^(string_of_float tn.entry.local)));
+  msg(str(indent^"ncalls = "));
+  msgnl(str (indent^(string_of_int tn.entry.ncalls)));
+  msg(str(indent^"max_total = "));
+  msgnl(str (indent^(string_of_float tn.entry.max_total)));
+  msgnl(str(indent^"}"));
+  msgnl(str(indent^"children = {"));
+  Hashtbl.iter
+    (fun s node ->
+      msgnl(str(indent^" "^s^" |-> "));
+      print_treenode (indent^"  ") node
+    )
+    tn.children;
+  msgnl(str(indent^"} }"))
+
+let rec print_stack (st : treenode list) =
+  (match st with
+    | [] -> msgnl(str "[]")
+    | x::xs -> print_treenode "" x; msgnl(str("::")); print_stack xs)
+
+
 let exit_tactic option_start_time_add_total c =
   (match option_start_time_add_total with
     | Some (start_time, add_total) ->
@@ -51,8 +77,11 @@ let exit_tactic option_start_time_add_total c =
         if add_total then Hashtbl.remove on_stack c;
         let diff = time() -. start_time in
         parent.entry.local <- parent.entry.local -. diff;
-        add_entry node.entry add_total {total = diff; local = diff; ncalls = 1; max_total = diff}
-    | None -> ()
+        msgnl(str("leaving saving"^(string_of_float diff)));
+        add_entry node.entry add_total {total = diff; local = diff; ncalls = 1; max_total = diff};
+(*        print_stack(!stack)*)
+    | None ->
+        msgnl(str("leaving without saving")); ()
   )
 
 let string_of_call ck =
@@ -89,6 +118,7 @@ let do_profile s call_trace tac =
     match call_trace with
       | (_, c) :: _ ->
 	let s = string_of_call c in
+        msgnl(str("starting "^s));
 	let parent = List.hd !stack in
 	let node, add_total = try Hashtbl.find on_stack s, false
 			      with Not_found ->
@@ -105,7 +135,12 @@ let do_profile s call_trace tac =
   else None)) >>= fun option_start_time_add_total ->
   tclFINALLY
     tac
-    (Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> exit_tactic option_start_time_add_total s)))
+    (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->     (match call_trace with
+      | (_, c) :: _ ->
+let s = string_of_call c in
+        msgnl(str("leaving "^s));
+| [] -> ());
+	exit_tactic option_start_time_add_total s)))
 
 
 let format_sec x = (Printf.sprintf "%.3fs" x)
@@ -181,7 +216,9 @@ let print_results() =
   print_table all_total "" true global;
   msgnl(str"");
   header();
-  print_table all_total "" true tree
+  print_table all_total "" true tree;
+  msgnl(str"");
+  print_stack(!stack)
 
 let print_results_tactic tactic =
   let tree = (List.hd !stack).children in
