@@ -21,9 +21,9 @@ Hints
 Auto
 Tacintern
 Tactic_matching
+Profile_ltac
 Tacinterp
 Evar_tactics
 Term_dnet
 Autorewrite
 Tactic_option
-Profile_ltac
