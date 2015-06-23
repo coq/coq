@@ -631,13 +631,19 @@ let poly_inverse sort =
 
 type rewrite_proof = 
   | RewPrf of constr * constr
+  (** A Relation (R : rew_car -> rew_car -> Prop) and a proof of R rew_from rew_to *)
   | RewCast of cast_kind
+  (** A proof of convertibility (with casts) *)
 
 type rewrite_result_info = {
-  rew_car : constr;
-  rew_from : constr;
-  rew_to : constr;
-  rew_prf : rewrite_proof;
+  rew_car : constr ;
+  (** A type *)
+  rew_from : constr ;
+  (** A term of type rew_car *)
+  rew_to : constr ;
+  (** A term of type rew_car *)
+  rew_prf : rewrite_proof ;
+  (** A proof of rew_from == rew_to *)
   rew_evars : evars;
 }
 
@@ -646,9 +652,17 @@ type rewrite_result =
 | Identity
 | Success of rewrite_result_info
 
-type 'a pure_strategy = 'a -> Environ.env -> Id.t list -> constr -> types ->
-  (bool (* prop *) * constr option) -> evars -> 
-    'a * rewrite_result
+type 'a strategy_input = { state : 'a ; (* a parameter: for instance, a state *)
+			   env : Environ.env ;
+			   unfresh : Id.t list ; (* Unfresh names *)
+			   term1 : constr ;
+			   ty1 : types ; (* first term and its type (convertible to rew_from) *)
+			   cstr : (bool (* prop *) * constr option) ;
+			   evars : evars }
+	       
+type 'a pure_strategy = { strategy :
+  'a strategy_input ->
+  'a * rewrite_result (* the updated state and the "result" *) }
 
 type strategy = unit pure_strategy
 
@@ -820,7 +834,8 @@ let apply_rule unify loccs : int pure_strategy =
     then List.mem occ occs 
     else not (List.mem occ occs) 
   in
-    fun occ env avoid t ty cstr evars ->
+  { strategy = fun { state = occ ; env ; unfresh ;
+		     term1 = t ; ty1 = ty ; cstr ; evars } ->
       let unif = if isEvar t then None else unify env evars t in
 	match unif with
 	| None -> (occ, Fail)
@@ -831,11 +846,12 @@ let apply_rule unify loccs : int pure_strategy =
 	    else
 	      let res = { rew with rew_car = ty } in
               let rel, prf = get_rew_prf res in
-	      let res = Success (apply_constraint env avoid rew.rew_car rel prf cstr res) in
+	      let res = Success (apply_constraint env unfresh rew.rew_car rel prf cstr res) in
               (occ, res)
+    }
 
-let apply_lemma l2r flags oc by loccs : strategy =
-  fun () env avoid t ty cstr (sigma, cstrs) ->
+let apply_lemma l2r flags oc by loccs : strategy = { strategy =
+  fun ({ state = () ; env ; term1 = t ; evars = (sigma, cstrs) } as input) ->
     let sigma, c = oc sigma in
     let sigma, hypinfo = decompose_applied_relation env sigma c in
     let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
@@ -847,8 +863,11 @@ let apply_lemma l2r flags oc by loccs : strategy =
       | None -> None
       | Some rew -> Some rew
     in
-    let _, res = apply_rule unify loccs 0 env avoid t ty cstr evars in
+    let _, res = (apply_rule unify loccs).strategy { input with
+						     state = 0 ;
+						     evars } in
     (), res
+						   }
 
 let e_app_poly env evars f args =
   let evars', c = app_poly_nocheck env !evars f args in
@@ -928,7 +947,8 @@ let unfold_match env sigma sk app =
 let is_rew_cast = function RewCast _ -> true | _ -> false
 
 let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
-  let rec aux state env avoid t ty (prop, cstr) evars =
+  let rec aux { state ; env ; unfresh ;
+		term1 = t ; ty1 = ty ; cstr = (prop, cstr) ; evars } =
     let cstr' = Option.map (fun c -> (ty, Some c)) cstr in
       match kind_of_term t with
       | App (m, args) ->
@@ -940,7 +960,11 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		    state, (None :: acc, evars, progress)
 		  else
 		    let argty = Retyping.get_type_of env (goalevars evars) arg in
-		    let state, res = s state env avoid arg argty (prop,None) evars in
+		    let state, res = s.strategy { state ; env ;
+						  unfresh ;
+						  term1 = arg ;	ty1 = argty ;
+						  cstr = (prop,None) ;
+						  evars } in
 		    let res' = 
 		      match res with
 		      | Identity ->
@@ -964,7 +988,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		      | Some r -> not (is_rew_cast r.rew_prf)) args'
 		  then
 		    let evars', prf, car, rel, c1, c2 = 
-		      resolve_morphism env avoid t m args args' (prop, cstr') evars' 
+		      resolve_morphism env unfresh t m args args' (prop, cstr') evars' 
 		    in
 		    let res = { rew_car = ty; rew_from = c1;
 				rew_to = c2; rew_prf = RewPrf (rel, prf);
@@ -992,7 +1016,9 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		    evars, Some cstr', m, mty, args, Array.of_list args
 		  | None -> evars, None, m, mty, argsl, args
 	      in
-	      let state, m' = s state env avoid m mty (prop, cstr') evars in
+	      let state, m' = s.strategy { state ; env ; unfresh ;
+					   term1 = m ; ty1 = mty ;
+					   cstr = (prop, cstr') ; evars } in
 		match m' with
 		| Fail -> rewrite_args state None (* Standard path, try rewrite on arguments *)
 		| Identity -> rewrite_args state (Some false)
@@ -1015,7 +1041,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		    let res = 
 		      match prf with
 		      | RewPrf (rel, prf) ->
-			Success (apply_constraint env avoid res.rew_car
+			Success (apply_constraint env unfresh res.rew_car
 				      rel prf (prop,cstr) res)
 		      | _ -> Success res
 		    in state, res
@@ -1029,7 +1055,9 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	    else TypeGlobal.arrow_morphism 
 	  in
 	  let (evars', mor), unfold = arr env evars tx tb x b in
-	  let state, res = aux state env avoid mor ty (prop,cstr) evars' in
+	  let state, res = aux { state ; env ; unfresh ;
+				 term1 = mor ; ty1 = ty ;
+				 cstr = (prop,cstr) ; evars = evars' } in
 	  let res = 
 	    match res with
 	    | Success r -> Success { r with rew_to = unfold r.rew_to }
@@ -1059,7 +1087,9 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	      let forall = if prop then PropGlobal.coq_forall else TypeGlobal.coq_forall in
 		(app_poly_sort prop env evars forall [| dom; lam |]), TypeGlobal.unfold_forall
 	  in
-	  let state, res = aux state env avoid app ty (prop,cstr) evars' in
+	  let state, res = aux { state ; env ; unfresh ;
+				 term1 = app ; ty1 = ty ;
+				 cstr = (prop,cstr) ; evars = evars' } in
 	  let res = 
 	    match res with
 	    | Success r -> Success { r with rew_to = unfold r.rew_to }
@@ -1095,11 +1125,14 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       (* 	    | _ -> b') *)
 
       | Lambda (n, t, b) when flags.under_lambdas ->
-	let n' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n in
+	let n' = name_app (fun id -> Tactics.fresh_id_in_env unfresh id env) n in
 	let env' = Environ.push_rel (n', None, t) env in
 	let bty = Retyping.get_type_of env' (goalevars evars) b in
 	let unlift = if prop then PropGlobal.unlift_cstr else TypeGlobal.unlift_cstr in
-	let state, b' = s state env' avoid b bty (prop, unlift env evars cstr) evars in
+	let state, b' = s.strategy { state ; env = env' ; unfresh ;
+				     term1 = b ; ty1 = bty ;
+				     cstr = (prop, unlift env evars cstr) ;
+				     evars } in
 	let res = 
 	  match b' with
 	  | Success r ->
@@ -1124,13 +1157,15 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	let cty = Retyping.get_type_of env (goalevars evars) c in
 	let evars', eqty = app_poly_sort prop env evars coq_eq [| cty |] in
 	let cstr' = Some eqty in
-	let state, c' = s state env avoid c cty (prop, cstr') evars' in
+	let state, c' = s.strategy { state ; env ; unfresh ;
+				     term1 = c ; ty1 = cty ;
+				     cstr = (prop, cstr') ; evars = evars' } in
 	let state, res = 
 	  match c' with
 	  | Success r ->
 	    let case = mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs) in
 	    let res = make_leibniz_proof env case ty r in
-	      state, Success (coerce env avoid (prop,cstr) res)
+	      state, Success (coerce env unfresh (prop,cstr) res)
 	  | Fail | Identity ->
 	    if Array.for_all (Int.equal 0) ci.ci_cstr_ndecls then
 	      let evars', eqty = app_poly_sort prop env evars coq_eq [| ty |] in
@@ -1140,7 +1175,9 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		  if not (Option.is_empty found) then 
 		    (state, found, fun x -> lift 1 br :: acc x)
 		  else
-		    let state, res = s state env avoid br ty (prop,cstr) evars in
+		    let state, res = s.strategy { state ; env ; unfresh ;
+						  term1 = br ; ty1 = ty ;
+						  cstr = (prop,cstr) ; evars } in
 		      match res with
 		      | Success r -> (state, Some r, fun x -> mkRel 1 :: acc x)
 		      | Fail | Identity -> (state, None, fun x -> lift 1 br :: acc x))
@@ -1155,7 +1192,9 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	      match try Some (fold_match env (goalevars evars) t) with Not_found -> None with
 	      | None -> state, c'
 	      | Some (cst, _, t', eff (*FIXME*)) ->
-		let state, res = aux state env avoid t' ty (prop,cstr) evars in
+		 let state, res = aux { state ; env ; unfresh ;
+					term1 = t' ; ty1 = ty ;
+					cstr = (prop,cstr) ; evars } in
 		let res = 
 		  match res with
 		  | Success prf -> 
@@ -1169,11 +1208,11 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	  match res with
 	  | Success r ->  
 	    let rel, prf = get_rew_prf r in
-	      Success (apply_constraint env avoid r.rew_car rel prf (prop,cstr) r)
+	      Success (apply_constraint env unfresh r.rew_car rel prf (prop,cstr) r)
 	  | Fail | Identity -> res
 	in state, res
       | _ -> state, Fail
-  in aux
+  in { strategy = aux }
 
 let all_subterms = subterm true default_flags
 let one_subterm = subterm false default_flags
@@ -1181,11 +1220,13 @@ let one_subterm = subterm false default_flags
 (** Requires transitivity of the rewrite step, if not a reduction.
     Not tail-recursive. *)
 
-let transitivity state env avoid prop (res : rewrite_result_info) (next : 'a pure_strategy) : 
+let transitivity state env unfresh prop (res : rewrite_result_info) (next : 'a pure_strategy) : 
     'a * rewrite_result =
   let state, nextres =
-    next state env avoid res.rew_to res.rew_car
-      (prop, get_opt_rew_rel res.rew_prf) res.rew_evars 
+    next.strategy { state ; env ; unfresh ;
+		    term1 = res.rew_to ; ty1 = res.rew_car ;
+		    cstr = (prop, get_opt_rew_rel res.rew_prf) ;
+		    evars = res.rew_evars }
   in 
   let res = 
     match nextres with
@@ -1222,15 +1263,16 @@ module Strategies =
   struct
 
     let fail : 'a pure_strategy =
-      fun state env avoid t ty cstr evars ->
-	state, Fail
+      { strategy = fun { state } -> state, Fail }
 
     let id : 'a pure_strategy =
-      fun state env avoid t ty cstr evars -> 
-	state, Identity
+      { strategy = fun { state } -> state, Identity }
 
     let refl : 'a pure_strategy =
-      fun state env avoid t ty (prop,cstr) evars ->
+      { strategy =
+	fun { state ; env ;
+	      term1 = t ; ty1 = ty ;
+	      cstr = (prop,cstr) ; evars } ->
 	let evars, rel = match cstr with
 	  | None -> 
 	    let mkr = if prop then PropGlobal.mk_relation else TypeGlobal.mk_relation in
@@ -1249,38 +1291,43 @@ module Strategies =
 	let res = Success { rew_car = ty; rew_from = t; rew_to = t;
 			       rew_prf = RewPrf (rel, proof); rew_evars = evars }
 	in state, res
+      }
 
-    let progress (s : 'a pure_strategy) : 'a pure_strategy =
-      fun state env avoid t ty cstr evars ->
-	let state, res = s state env avoid t ty cstr evars in
+    let progress (s : 'a pure_strategy) : 'a pure_strategy = { strategy =
+      fun input ->
+	let state, res = s.strategy input in
 	  match res with
 	  | Fail -> state, Fail
 	  | Identity -> state, Fail
 	  | Success r -> state, Success r
+							     }
 	    
-    let seq first snd : 'a pure_strategy =
-      fun state env avoid t ty cstr evars ->
-	let state, res = first state env avoid t ty cstr evars in
+    let seq first snd : 'a pure_strategy = { strategy =
+      fun ({ env ; unfresh ; cstr } as input) ->
+	let state, res = first.strategy input in
 	  match res with
 	  | Fail -> state, Fail
-	  | Identity -> snd state env avoid t ty cstr evars
-	  | Success res -> transitivity state env avoid (fst cstr) res snd
+	  | Identity -> snd.strategy { input with state }
+	  | Success res -> transitivity state env unfresh (fst cstr) res snd
+					   }
 	    
-    let choice fst snd : 'a pure_strategy =
-      fun state env avoid t ty cstr evars ->
-	let state, res = fst state env avoid t ty cstr evars in
+    let choice fst snd : 'a pure_strategy = { strategy =
+      fun input ->
+	let state, res = fst.strategy input in
 	  match res with
-	  | Fail -> snd state env avoid t ty cstr evars
+	  | Fail -> snd.strategy { input with state }
 	  | Identity | Success _ -> state, res
+					    }
 
     let try_ str : 'a pure_strategy = choice str id
 
-    let check_interrupt str s e l c t r ev =
+    let check_interrupt str input =
       Control.check_for_interrupt ();
-      str s e l c t r ev
-    
+      str input
+
     let fix (f : 'a pure_strategy -> 'a pure_strategy) : 'a pure_strategy =
-      let rec aux state = f (fun state -> check_interrupt aux state) state in aux
+      let rec aux input = (f { strategy = fun input -> check_interrupt aux input }).strategy input in
+      { strategy = aux }
     
     let any (s : 'a pure_strategy) : 'a pure_strategy =
       fix (fun any -> try_ (seq s any))
@@ -1316,16 +1363,17 @@ module Strategies =
 	  (List.map (fun hint -> (inj_open hint, hint.Autorewrite.rew_l2r,
 				  hint.Autorewrite.rew_tac)) rules)
 
-    let hints (db : string) : 'a pure_strategy =
-      fun state env avoid t ty cstr evars ->
+    let hints (db : string) : 'a pure_strategy = { strategy =
+      fun ({ term1 = t } as input) ->
       let rules = Autorewrite.find_matches db t in
       let lemma hint = (inj_open hint, hint.Autorewrite.rew_l2r,
 			hint.Autorewrite.rew_tac) in
       let lems = List.map lemma rules in
-	lemmas lems state env avoid t ty cstr evars
+      (lemmas lems).strategy input
+						 }
 
-    let reduce (r : Redexpr.red_expr) : 'a pure_strategy =
-	fun state env avoid t ty cstr evars ->
+    let reduce (r : Redexpr.red_expr) : 'a pure_strategy = { strategy =
+	fun { state = state ; env = env ; term1 = t ; ty1 = ty ; cstr = cstr ; evars = evars } ->
           let rfn, ckind = Redexpr.reduction_of_red_expr env r in
 	  let evars', t' = rfn env (goalevars evars) t in
 	    if eq_constr t' t then
@@ -1334,9 +1382,10 @@ module Strategies =
 	      state, Success { rew_car = ty; rew_from = t; rew_to = t';
 			       rew_prf = RewCast ckind; 
 			       rew_evars = evars', cstrevars evars }
+							   }
 	
-    let fold_glob c : 'a pure_strategy =
-      fun state env avoid t ty cstr evars ->
+    let fold_glob c : 'a pure_strategy = { strategy =
+      fun { state ; env ; term1 = t ; ty1 = ty ; cstr ; evars } ->
 (* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
 	let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
 	let unfolded =
@@ -1351,6 +1400,7 @@ module Strategies =
 				  rew_prf = RewCast DEFAULTcast;
 				  rew_evars = (sigma, snd evars) }
 	  with e when Errors.noncritical e -> state, Fail
+					 }
   
 
 end
@@ -1361,8 +1411,8 @@ end
     even finding a first application of the rewriting lemma, in setoid_rewrite
     mode *)
 
-let rewrite_with l2r flags c occs : strategy =
-  fun () env avoid t ty cstr (sigma, cstrs) ->
+let rewrite_with l2r flags c occs : strategy = { strategy =
+  fun ({ state = () } as input) ->
     let unify env evars t =
       let (sigma, cstrs) = evars in
       let ans =
@@ -1382,12 +1432,15 @@ let rewrite_with l2r flags c occs : strategy =
       Strategies.fix (fun aux -> 
 	Strategies.choice app (subterm true default_flags aux))
     in
-    let _, res = strat 0 env avoid t ty cstr (sigma, cstrs) in
-      ((), res)
+    let _, res = strat.strategy { input with state = 0 } in
+    ((), res)
+					       }
 
-let apply_strategy (s : strategy) env avoid concl (prop, cstr) evars =
+let apply_strategy (s : strategy) env unfresh concl (prop, cstr) evars =
   let ty = Retyping.get_type_of env (goalevars evars) concl in
-  let _, res = s () env avoid concl ty (prop, Some cstr) evars in
+  let _, res = s.strategy { state = () ; env ; unfresh ;
+			    term1 = concl ; ty1 = ty ;
+			    cstr = (prop, Some cstr) ; evars } in
   res
 
 let solve_constraints env (evars,cstrs) =
@@ -1566,13 +1619,13 @@ let cl_rewrite_clause l left2right occs clause gl =
   let strat = rewrite_with left2right (general_rewrite_unif_flags ()) l occs in
     cl_rewrite_clause_strat strat clause gl
 
-let apply_glob_constr c l2r occs = (); fun () env avoid t ty cstr evars ->
+let apply_glob_constr c l2r occs = (); fun ({ state = () ; env = env } as input) ->
   let c sigma =
     let (sigma, c) = Pretyping.understand_tcc env sigma c in
     (sigma, (c, NoBindings))
   in
   let flags = general_rewrite_unif_flags () in
-  apply_lemma l2r flags c None occs () env avoid t ty cstr evars
+  (apply_lemma l2r flags c None occs).strategy input
 
 let interp_glob_constr_list env =
   let make c = (); fun sigma ->
@@ -1636,16 +1689,18 @@ let rec strategy_of_ast = function
       | Compose -> Strategies.seq
       | Choice -> Strategies.choice
     in f' s' t'
-  | StratConstr (c, b) -> apply_glob_constr (fst c) b AllOccurrences
+  | StratConstr (c, b) -> { strategy = apply_glob_constr (fst c) b AllOccurrences }
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id
-  | StratTerms l -> 
-    (fun () env avoid t ty cstr evars ->
+  | StratTerms l -> { strategy =
+    (fun ({ state = () ; env } as input) ->
      let l' = interp_glob_constr_list env (List.map fst l) in
-       Strategies.lemmas l' () env avoid t ty cstr evars)
-  | StratEval r -> 
-    (fun () env avoid t ty cstr evars ->
+     (Strategies.lemmas l').strategy input)
+		    }
+  | StratEval r -> { strategy =
+    (fun ({ state = () ; env ; evars } as input) ->
      let (sigma,r_interp) = Tacinterp.interp_redexp env (goalevars evars) r in
-       Strategies.reduce r_interp () env avoid t ty cstr (sigma,cstrevars evars))
+     (Strategies.reduce r_interp).strategy { input with
+					     evars = (sigma,cstrevars evars) }) }
   | StratFold c -> Strategies.fold_glob (fst c)
 
 
@@ -1954,9 +2009,10 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let app = apply_rule unify occs in
   let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
   let substrat = Strategies.fix recstrat in
-  let strat () env avoid t ty cstr evars =
-    let _, res = substrat 0 env avoid t ty cstr evars in
+  let strat = { strategy = fun ({ state = () } as input) ->
+    let _, res = substrat.strategy { input with state = 0 } in
     (), res
+	      }
   in
   let origsigma = project gl in
   init_setoid ();
