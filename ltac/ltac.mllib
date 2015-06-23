@@ -10,6 +10,7 @@ Extraargs
 G_obligations
 Coretactics
 Extratactics
+Profile_ltac_tactics
 G_auto
 G_class
 Rewrite
