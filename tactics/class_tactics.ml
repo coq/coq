@@ -851,6 +851,15 @@ let set_typeclasses_debug =
       optread  = get_typeclasses_debug;
       optwrite = set_typeclasses_debug; }
 
+let set_typeclasses_debug =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "debug output for typeclasses proof search";
+      optkey   = ["Debug";"Typeclasses"];
+      optread  = get_typeclasses_debug;
+      optwrite = set_typeclasses_debug; }
+
 let set_typeclasses_depth =
   declare_int_option
     { optsync  = true;
