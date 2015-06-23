@@ -442,7 +442,7 @@ let is_projection nargs = function
 	 else Some n
      with Not_found -> None)
   | _ -> None
-	
+
 let is_hole = function CHole _ | CEvar _ -> true | _ -> false
 
 let is_significant_implicit a =
@@ -453,7 +453,7 @@ let is_needed_for_correct_partial_application tail imp =
 
 exception Expl
 
-let params_implicit n impl = 
+let params_implicit n impl =
   let rec aux n impl =
     if n == 0 then true
     else match impl with
@@ -484,13 +484,13 @@ let explicitize loc inctx impl (cf,f) args =
 	  tail
     | a::args, _::impl -> (a,None) :: exprec (q+1) (args,impl)
     | args, [] -> List.map (fun a -> (a,None)) args (*In case of polymorphism*)
-    | [], (imp :: _) when is_status_implicit imp && maximal_insertion_of imp -> 
+    | [], (imp :: _) when is_status_implicit imp && maximal_insertion_of imp ->
       (* The non-explicit application cannot be parsed back with the same type *)
       raise Expl
     | [], _ -> []
   in
   let ip = is_projection (List.length args) cf in
-  let expl () = 
+  let expl () =
     match ip with
     | Some i ->
       if not (List.is_empty impl) && is_status_implicit (List.nth impl (i-1)) then
@@ -507,7 +507,7 @@ let explicitize loc inctx impl (cf,f) args =
 	if List.is_empty args then f else CApp (loc, (None, f), args)
   in
     try expl ()
-    with Expl -> 
+    with Expl ->
       let f',us = match f with CRef (f,us) -> f,us | _ -> assert false in
       let ip = if !print_projections then ip else None in
 	CAppExpl (loc, (ip, f', us), args)
@@ -546,18 +546,15 @@ let rec extern_args extern scopes env args subscopes =
 	extern argscopes env a :: extern_args extern scopes env args subscopes
 
 
-let match_coercion_app = function
-  | GApp (loc,GRef (_,r,_),args) -> Some (loc, r, 0, args)
-  | _ -> None
-
 let rec remove_coercions inctx c =
-  match match_coercion_app c with
-  | Some (loc,r,pars,args) when not (!Flags.raw_print || !print_coercions) ->
+  match c with
+  | GApp (loc,GRef (_,r,_),args)
+    when not (!Flags.raw_print || !print_coercions) ->
       let nargs = List.length args in
       (try match Classops.hide_coercion r with
-	  | Some n when (n - pars) < nargs && (inctx || (n - pars)+1 < nargs) ->
+	  | Some n when n < nargs && (inctx || n + 1 < nargs) ->
 	      (* We skip a coercion *)
-	      let l = List.skipn (n - pars) args in
+	      let l = List.skipn n args in
 	      let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
               (* Recursively remove the head coercions *)
 	      let a' = remove_coercions true a in
@@ -610,7 +607,7 @@ let extern_glob_sort = function
 let extern_universes = function
   | Some _ as l when !print_universes -> l
   | _ -> None
-  
+
 let rec extern inctx scopes vars r =
   let r' = remove_coercions inctx r in
   try
@@ -687,7 +684,7 @@ let rec extern inctx scopes vars r =
 		       (select_stronger_impargs (implicits_of_global ref))
 		       (Some ref,extern_reference rloc vars ref) (extern_universes us) args
 	     end
-	       
+
 	 | _       ->
 	   explicitize loc inctx [] (None,sub_extern false scopes vars f)
              (List.map (sub_extern true scopes vars) args))
