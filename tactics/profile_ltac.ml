@@ -42,11 +42,6 @@ let time() =
   let times = Unix.times() in
   times.Unix.tms_utime +. times.Unix.tms_stime
 
-let try_finalize f (finally : unit -> unit) =
-  let res = try f() with exn -> finally(); raise exn in
-  finally();
-  res
-
 let exit_tactic option_start_time_add_total c =
   (match option_start_time_add_total with
     | Some (start_time, add_total) ->
@@ -80,11 +75,12 @@ let string_of_call ck =
   let s = try String.sub s 0 (CString.string_index_from s 0 "(*") with Not_found -> s in
   CString.strip s
 
-let tclFINALLY tac (finally : unit -> unit) =
+let tclFINALLY tac (finally : unit Proofview.tactic) =
+  let open Proofview.Notations in
   Proofview.tclIFCATCH
     tac
-    (fun v -> finally (); Proofview.tclUNIT v)
-    (fun (exn,info) -> finally (); Proofview.tclZERO ~info exn)
+    (fun v -> finally <*> Proofview.tclUNIT v)
+    (fun (exn,info) -> finally <*> Proofview.tclZERO ~info exn)
 
 let do_profile s call_trace tac =
   let open Proofview.Notations in
@@ -109,7 +105,7 @@ let do_profile s call_trace tac =
   else None)) >>= fun option_start_time_add_total ->
   tclFINALLY
     tac
-    (fun () -> exit_tactic option_start_time_add_total s)
+    (Proofview.tclLIFT (Proofview.NonLogical.make (fun () -> exit_tactic option_start_time_add_total s)))
 
 
 let format_sec x = (Printf.sprintf "%.3fs" x)
