@@ -1,6 +1,7 @@
 Coq_config
 
 Hook
+Terminal
 Canary
 Hashset
 Hashcons
@@ -19,12 +20,14 @@ Serialize
 Stateid
 Feedback
 Pp
-Errors
+
 CList
 CString
 CArray
 CStack
 Util
+Ppstyle
+Errors
 Bigint
 Predicate
 Segmenttree
