@@ -690,13 +690,13 @@ ifeq ($(LOCAL),true)
 install:
 	@echo "Nothing to install in a local build!"
 else
-install: install-coq install-coqide install-doc-$(WITHDOC)
+install: install-coq install-coqide install-doc-$(WITHDOC) install-dev
 endif
 
 install-doc-all: install-doc
 install-doc-no:
 
-.PHONY: install install-doc-all install-doc-no
+.PHONY: install install-doc-all install-doc-no install-dev
 
 #These variables are intended to be set by the caller to make
 #COQINSTALLPREFIX=
@@ -749,6 +749,10 @@ install-tools:
 	touch $(FULLCOQLIB)/tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc/coqdoc.css # to have the mode according to umask (bug #1715)
 	$(INSTALLLIB) tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
 	$(INSTALLBIN) $(TOOLS) $(FULLBINDIR)
+
+install-dev: $(DEVFILES) $(DEVPRINTERS)
+	$(foreach devf, $(DEVFILES), sed -i -e /\".\"/\"$(FULLCOQLIB)\"/g $(devf))
+	$(INSTALLLIB) $(DEVFILES) $(DEVPRINTERS) $(FULLCOQLIB)/dev
 
 # The list of .cmi to install, including the ones obtained
 # from .mli without .ml, and the ones obtained from .ml without .mli
