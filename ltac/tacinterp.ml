@@ -2172,4 +2172,14 @@ let _ =
       optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
       optwrite = vernac_debug }
 
+let _ =
+  let open Goptions in
+  declare_bool_option
+    { optsync  = false;
+      optdepr  = false;
+      optname  = "Ltac debug";
+      optkey   = ["Debug";"Ltac"];
+      optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
+      optwrite = vernac_debug }
+
 let () = Hook.set Vernacentries.interp_redexp_hook interp_redexp
