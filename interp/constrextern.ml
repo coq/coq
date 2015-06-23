@@ -546,6 +546,19 @@ let rec extern_args extern scopes env args subscopes =
 	extern argscopes env a :: extern_args extern scopes env args subscopes
 
 
+let fake_coercion =
+  let r =
+    IndRef
+      (Names.MutInd.make1
+         (Names.KerName.make2
+            (Names.MPfile
+               (Names.DirPath.make
+                  (List.map Names.Id.of_string
+                     ["Logic"; "Init"; "Coq"])))
+            (Names.Label.of_id (Names.Id.of_string "QuotedCoercion"))),
+       0) in
+  GRef (Loc.ghost, r, None)
+
 let rec remove_coercions inctx c =
   match c with
   | GApp (loc,GRef (_,r,_),args)
@@ -555,6 +568,7 @@ let rec remove_coercions inctx c =
 	  | Some n when n < nargs && (inctx || n + 1 < nargs) ->
 	      (* We skip a coercion *)
 	      let l = List.skipn n args in
+(*
 	      let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
               (* Recursively remove the head coercions *)
 	      let a' = remove_coercions true a in
@@ -567,6 +581,11 @@ let rec remove_coercions inctx c =
                  a surrounding context and the coercion to funclass would
                  have been made explicit to match *)
 	      if List.is_empty l then a' else GApp (loc,a',l)
+*)
+	      if List.is_empty l then
+                fake_coercion
+              else
+                GApp (loc, fake_coercion, l)
 	  | _ -> c
       with Not_found -> c)
   | _ -> c
