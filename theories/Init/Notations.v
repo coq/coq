@@ -69,6 +69,9 @@ Reserved Notation "{ x }" (at level 0, x at level 99).
 Reserved Notation "{ x  |  P }" (at level 0, x at level 99).
 Reserved Notation "{ x  |  P  & Q }" (at level 0, x at level 99).
 
+Reserved Notation "{ x  & P }" (at level 0, x at level 99).
+Reserved Notation "{ x  & P  & Q }" (at level 0, x at level 99).
+
 Reserved Notation "{ x : A  |  P }" (at level 0, x at level 99).
 Reserved Notation "{ x : A  |  P  & Q }" (at level 0, x at level 99).
 
