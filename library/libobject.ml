@@ -101,7 +101,13 @@ let declare_object_full odecl =
 			     dyn_rebuild_function = rebuild };
   (infun,outfun)
 
-let declare_object odecl = fst (declare_object_full odecl)
+(* The "try .. with .. " allows for correct printing when calling
+   declare_object a loading time.
+*)
+
+let declare_object odecl =
+  try fst (declare_object_full odecl)
+  with e -> Errors.fatal_error (Errors.print e) (Errors.is_anomaly e)
 
 let missing_tab = (Hashtbl.create 17 : (string, unit) Hashtbl.t)
 
