@@ -129,3 +129,13 @@ let handled e =
   let bottom _ = raise Bottom in
   try let _ = print_gen bottom !handle_stack e in true
   with Bottom -> false
+
+(** Prints info which is either an error or
+   an anomaly and then exits with the appropriate
+   error code *)
+
+let fatal_error info anomaly =
+  let msg = info ++ fnl () in
+  pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.err_ft msg;
+  flush_all ();
+  exit (if anomaly then 129 else 1)

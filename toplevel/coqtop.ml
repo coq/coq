@@ -20,12 +20,6 @@ let () = at_exit flush_all
 
 let ( / ) = Filename.concat
 
-let fatal_error info anomaly =
-  let msg = info ++ fnl () in
-  pp_with ~pp_tag:Ppstyle.pp_tag !Pp_control.err_ft msg;
-  flush_all ();
-  exit (if anomaly then 129 else 1)
-
 let get_version_date () =
   try
     let ch = open_in (Envars.coqlib () / "revision") in
