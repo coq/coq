@@ -37,15 +37,37 @@ Axiom id : C -> C.
 Coercion f : A >-> B.
 Coercion g : B >-> C.
 
-Notation "“ x ”" := (QuotedCoercion x) (at level 0,
-  format "“ x ”").
+Definition x := a : C.
+Definition x' := id a.
 
 Check a : C.
-Definition x := a : C.
+Print x.
+Print x'.
+
+Set Printing Coercions Quoted.
+
+Check a : C.
 Print x.  (* This seems to be a bug, but this more of a misfeature: the would-be
   rationale is that the external coercion cannot be inferred with no context. *)
-Definition x' := id a.  (* This shows that within the context of id, both levels
-  of coercion are printing as quotes. *)
+Print x'.  (* This shows that within the context of id, both levels of coercion
+  are printing as quotes. *)
+
+Set Printing Coercions.
+
+Check a : C.
+Print x.
+Print x'.
+
+Unset Printing Coercions Quoted.
+
+Check a : C.
+Print x.
+Print x'.
+
+Unset Printing Coercions.
+
+Check a : C.
+Print x.
 Print x'.
 
 End testQuotedCoercions.

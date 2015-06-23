@@ -609,3 +609,5 @@ Declare Right Step iff_trans.
 
 (* Inductive QuotedCoercion (T : Type) (t : T) := . *)
 Inductive QuotedCoercion := .
+Notation "“ x ”" := (QuotedCoercion x) (at level 0,
+  format "“ x ”").

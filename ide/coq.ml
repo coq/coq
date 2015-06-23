@@ -300,7 +300,7 @@ let handle_intermediate_message handle xml =
   let level = message.Pp.message_level in
   let content = message.Pp.message_content in
   let logger = match handle.waiting_for with
-    | Some (_, l) -> l 
+    | Some (_, l) -> l
     | None -> function
         | Pp.Error -> Minilib.log ~level:`ERROR
         | Pp.Info -> Minilib.log ~level:`INFO
@@ -526,6 +526,7 @@ struct
 
   let implicit = ["Printing"; "Implicit"]
   let coercions = ["Printing"; "Coercions"]
+  let coercions_quoted = ["Printing"; "Coercions"; "Quoted"]
   let raw_matching = ["Printing"; "Matching"]
   let notations = ["Printing"; "Notations"]
   let all_basic = ["Printing"; "All"]
@@ -537,6 +538,8 @@ struct
   let bool_items = [
     { opts = [implicit]; init = false; label = "Display _implicit arguments" };
     { opts = [coercions]; init = false; label = "Display _coercions" };
+    { opts = [coercions_quoted]; init = false;
+      label = "Display coercions _quoted" };
     { opts = [raw_matching]; init = true;
       label = "Display raw _matching expressions" };
     { opts = [notations]; init = true; label = "Display _notations" };

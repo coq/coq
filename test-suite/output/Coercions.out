@@ -1,14 +1,38 @@
-QuotedCoercion P x
+P x
      : Prop
-QuotedCoercion R x x
+R x x
      : Prop
-fun (x : foo) (n : nat) => QuotedCoercion x n
+fun (x : foo) (n : nat) => x n
      : foo -> nat -> nat
-QuotedCoercion "1" 0
+"1" 0
      : PAIR
+a:C
+     : C
+x = g a
+     : C
+x' = id a
+     : C
 ““a””:C
      : C
 x = g “a”
      : C
 x' = id ““a””
+     : C
+““a””:C
+     : C
+x = g “a”
+     : C
+x' = id ““a””
+     : C
+g (f a):C
+     : C
+x = g (f a)
+     : C
+x' = id (g (f a))
+     : C
+a:C
+     : C
+x = g a
+     : C
+x' = id a
      : C

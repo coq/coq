@@ -57,6 +57,9 @@ let print_implicits_defensive = ref true
 (* This forces printing of coercions *)
 let print_coercions = ref false
 
+(* This marks coercions by quotes *)
+let print_coercions_quoted = ref false
+
 (* This forces printing universe names of Type{.} *)
 let print_universes = Detyping.print_universes
 
@@ -562,30 +565,31 @@ let fake_coercion =
 let rec remove_coercions inctx c =
   match c with
   | GApp (loc,GRef (_,r,_),args)
-    when not (!Flags.raw_print || !print_coercions) ->
+    when not (!Flags.raw_print || !print_coercions) ||
+    !print_coercions_quoted ->
       let nargs = List.length args in
       (try match Classops.hide_coercion r with
 	  | Some n when n < nargs && (inctx || n + 1 < nargs) ->
 	      (* We skip a coercion *)
 	      let l = List.skipn n args in
-(*
-	      let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
-              (* Recursively remove the head coercions *)
-	      let a' = remove_coercions true a in
-	      (* Don't flatten App's in case of funclass so that
-		 (atomic) notations on [a] work; should be compatible
-		 since printer does not care whether App's are
-		 collapsed or not and notations with an implicit
-		 coercion using funclass either would have already
-		 been confused with ordinary application or would have need
-                 a surrounding context and the coercion to funclass would
-                 have been made explicit to match *)
-	      if List.is_empty l then a' else GApp (loc,a',l)
-*)
-	      if List.is_empty l then
-                fake_coercion
+              if not !print_coercions_quoted then
+                let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
+                (* Recursively remove the head coercions *)
+                let a' = remove_coercions true a in
+                (* Don't flatten App's in case of funclass so that
+                   (atomic) notations on [a] work; should be compatible
+                   since printer does not care whether App's are
+                   collapsed or not and notations with an implicit
+                   coercion using funclass either would have already
+                   been confused with ordinary application or would have need
+                   a surrounding context and the coercion to funclass would
+                   have been made explicit to match *)
+                if List.is_empty l then a' else GApp (loc,a',l)
               else
-                GApp (loc, fake_coercion, l)
+	        if List.is_empty l then
+                  fake_coercion
+                else
+                  GApp (loc, fake_coercion, l)
 	  | _ -> c
       with Not_found -> c)
   | _ -> c

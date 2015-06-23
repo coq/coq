@@ -116,7 +116,7 @@ type comment =
   | CommentString of string
   | CommentInt of int
 
-type reference_or_constr = 
+type reference_or_constr =
   | HintsReference of reference
   | HintsConstr of constr_expr
 
@@ -229,7 +229,7 @@ type extend_name = string * int
 
 (* This type allows registering the inlining of constants in native compiler.
    It will be extended with primitive inductive types and operators *)
-type register_kind = 
+type register_kind =
   | RegisterInline
 
 type bullet =
@@ -296,7 +296,7 @@ type vernac_expr =
   (* Gallina *)
   | VernacDefinition of
       (locality option * definition_object_kind) * lident * definition_expr
-  | VernacStartTheoremProof of theorem_kind * 
+  | VernacStartTheoremProof of theorem_kind *
       (lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)) list *
         bool
   | VernacEndProof of proof_end
@@ -324,7 +324,7 @@ type vernac_expr =
       class_rawexpr * class_rawexpr
   | VernacIdentityCoercion of obsolete_locality * lident *
       class_rawexpr * class_rawexpr
-  | VernacNameSectionHypSet of lident * section_subset_descr 
+  | VernacNameSectionHypSet of lident * section_subset_descr
 
   (* Type classes *)
   | VernacInstance of
