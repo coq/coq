@@ -480,8 +480,12 @@ let array_min nmr a = if Int.equal nmr 0 then 0 else
     for use by the guard condition (terms at these positions are
     considered sub-terms) as well as the number of of non-uniform
     arguments (used to generate induction schemes, so a priori less
-    relevant to the kernel). *)
-let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcnames indlc =
+    relevant to the kernel).
+
+    If [chkpos] is [false] then positivity is assumed, and
+    [check_positivity_one] computes the subterms occurrences in a
+    best-effort fashion. *)
+let check_positivity_one ~chkpos (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcnames indlc =
   let lparams = rel_context_length hyps in
   let nmr = rel_context_nhyps hyps in
   (** Positivity of one argument [c] of a constructor (i.e. the
@@ -498,9 +502,12 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
                 recursive call. Occurrences in the right-hand side of
                 the product must be strictly positive.*)
             (match weaker_noccur_between env n ntypes b with
-		None -> failwith_non_pos_list n ntypes [b]
+	      | None when chkpos ->
+                  failwith_non_pos_list n ntypes [b]
+              | None ->
+                  check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d
               | Some b ->
-	          check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d)
+                  check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d)
 	| Rel k ->
             (try let (ra,rarg) = List.nth ra_env (k-1) in
             let largs = List.map (whd_betadeltaiota env) largs in
@@ -512,7 +519,8 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
               (** The case where one of the inductives of the mutually
                   inductive block occurs as an argument of another is not
                   known to be safe. So Coq rejects it. *)
-	      if not (List.for_all (noccur_between n ntypes) largs)
+	      if chkpos &&
+                 not (List.for_all (noccur_between n ntypes) largs)
 	      then failwith_non_pos_list n ntypes largs
 	      else (nmr1,rarg)
               with Failure _ | Invalid_argument _ -> (nmr,mk_norec))
@@ -527,8 +535,9 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
             (** If an inductive of the mutually inductive block
                 appears in any other way, then the positivy check gives
                 up. *)
-	    if noccur_between n ntypes x &&
-              List.for_all (noccur_between n ntypes) largs
+	    if not chkpos ||
+              (noccur_between n ntypes x &&
+               List.for_all (noccur_between n ntypes) largs)
 	    then (nmr,mk_norec)
 	    else failwith_non_pos_list n ntypes (x::largs)
 
@@ -550,7 +559,8 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
       (** Inductives of the inductive block being defined are only
           allowed to appear nested in the parameters of another inductive
           type. Not in the proper indices. *)
-      if not (List.for_all (noccur_between n ntypes) auxlargs) then
+      if chkpos &&
+         not (List.for_all (noccur_between n ntypes) auxlargs) then
 	failwith_non_pos_list n ntypes auxlargs;
       (* Nested mutual inductive types are not supported *)
       let auxntyp = mib.mind_ntypes in
@@ -608,7 +618,8 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
                 | _ -> raise (IllFormedInd LocalNotConstructor)
                 end
               else
-                if not (List.for_all (noccur_between n ntypes) largs)
+                if chkpos &&
+                   not (List.for_all (noccur_between n ntypes) largs)
                 then failwith_non_pos_list n ntypes largs
             in
             (nmr, List.rev lrec)
@@ -628,9 +639,13 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
   and nmr' = array_min nmr irecargs_nmr
   in (nmr', mk_paths (Mrec ind) irecargs)
 
-(** [check_positivity kn env_ar params] checks that the mutually
-    inductive block [inds] is strictly positive. *)
-let check_positivity kn env_ar params inds =
+(** [check_positivity ~chkpos kn env_ar params] checks that the mutually
+    inductive block [inds] is strictly positive.
+
+    If [chkpos] is [false] then positivity is assumed, and
+    [check_positivity_one] computes the subterms occurrences in a
+    best-effort fashion. *)
+let check_positivity ~chkpos kn env_ar params inds =
   let ntypes = Array.length inds in
   let rc = Array.mapi (fun j t -> (Mrec (kn,j),t)) (Rtree.mk_rec_calls ntypes) in
   let lra_ind = Array.rev_to_list rc in
@@ -641,7 +656,7 @@ let check_positivity kn env_ar params inds =
       List.init lparams (fun _ -> (Norec,mk_norec)) @ lra_ind in
     let ienv = (env_ar, 1+lparams, ntypes, ra_env) in
     let nargs = rel_context_nhyps sign - nmr in
-    check_positivity_one ienv params (kn,i) nargs lcnames lc
+    check_positivity_one ~chkpos ienv params (kn,i) nargs lcnames lc
   in
   let irecargs_nmr = Array.mapi check_one inds in
   let irecargs = Array.map snd irecargs_nmr
@@ -866,10 +881,11 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
 let check_inductive env kn mie =
   (* First type-check the inductive definition *)
   let (env_ar, env_ar_par, params, inds) = typecheck_inductive env mie in
+  let chkpos = mie.mind_entry_check_positivity in
   (* Then check positivity conditions *)
-  let (nmr,recargs) = check_positivity kn env_ar_par params inds in
+  let (nmr,recargs) = check_positivity ~chkpos kn env_ar_par params inds in
   (* Build the inductive packets *)
     build_inductive env mie.mind_entry_polymorphic mie.mind_entry_private
       mie.mind_entry_universes
       env_ar params kn mie.mind_entry_record mie.mind_entry_finite
-      inds nmr recargs mie.mind_entry_check_positivity
+      inds nmr recargs chkpos
