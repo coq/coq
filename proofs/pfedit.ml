@@ -108,7 +108,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     let () =
       match info_lvl with
       | None -> ()
-      | Some i -> Pp.ppnl (hov 0 (Proofview.Trace.pr_info ~lvl:i info))
+      | Some i -> Pp.msg_notice (hov 0 (Proofview.Trace.pr_info ~lvl:i info))
     in
     (p,status)
   with
