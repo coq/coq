@@ -752,7 +752,7 @@ let compute_projections ((kn, _ as ind), u as indsp) n x nparamargs params
     Array.of_list (List.rev kns),
     Array.of_list (List.rev pbs)
 
-let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr recargs =
+let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr recargs is_checked =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
   let hyps = used_section_variables env inds in
@@ -857,7 +857,7 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
       mind_polymorphic = p;
       mind_universes = ctx;
       mind_private = prv;
-      mind_checked_positive = true;
+      mind_checked_positive = is_checked;
     }
 
 (************************************************************************)
@@ -872,4 +872,4 @@ let check_inductive env kn mie =
     build_inductive env mie.mind_entry_polymorphic mie.mind_entry_private
       mie.mind_entry_universes
       env_ar params kn mie.mind_entry_record mie.mind_entry_finite
-      inds nmr recargs
+      inds nmr recargs mie.mind_entry_check_positivity

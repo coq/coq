@@ -51,7 +51,10 @@ type mutual_inductive_entry = {
   mind_entry_inds : one_inductive_entry list;
   mind_entry_polymorphic : bool; 
   mind_entry_universes : Univ.universe_context;
-  mind_entry_private : bool option }
+  mind_entry_private : bool option;
+  mind_entry_check_positivity : bool;
+  (** [false] if positivity is to be assumed. *)
+}
 
 (** {6 Constants (Definition/Axiom) } *)
 type proof_output = constr Univ.in_universe_context_set * Declareops.side_effects
