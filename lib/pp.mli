@@ -185,6 +185,9 @@ val get_id_for_feedback : unit -> Feedback.edit_or_state_id * Feedback.route_id
 
 val string_of_ppcmds : std_ppcmds -> string
 
+val utf8_length : string -> int
+val utf8_sub : string -> int -> int -> string
+
 (** {6 Printing combinators} *)
 
 val pr_comma : unit -> std_ppcmds

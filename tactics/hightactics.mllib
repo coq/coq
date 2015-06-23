@@ -9,3 +9,4 @@ G_rewrite
 Tauto
 Eqdecide
 G_eqdecide
+Profile_ltac_tactics
