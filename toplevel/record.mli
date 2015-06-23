@@ -25,7 +25,9 @@ val declare_projections :
   coercion_flag list -> manual_explicitation list list -> rel_context ->
   (Name.t * bool) list * constant option list
 
-val declare_structure : Decl_kinds.recursivity_kind ->
+val declare_structure :
+  bool -> (** check positivity? *)
+  Decl_kinds.recursivity_kind ->
   bool (** polymorphic?*) -> Univ.universe_context ->
   Id.t -> Id.t ->
   manual_explicitation list -> rel_context -> (** params *) constr -> (** arity *)
@@ -38,6 +40,7 @@ val declare_structure : Decl_kinds.recursivity_kind ->
   inductive
 
 val definition_structure :
+  bool -> (** check positivity? *)
   inductive_kind * Decl_kinds.polymorphic * Decl_kinds.recursivity_kind * lident with_coercion * local_binder list *
   (local_decl_expr with_instance with_priority with_notation) list *
   Id.t * constr_expr option -> global_reference

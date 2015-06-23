@@ -475,7 +475,7 @@ let check_param = function
 | LocalRawAssum (nas, Default _, _) -> List.iter check_named nas
 | LocalRawAssum (nas, Generalized _, _) -> ()
 
-let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
+let interp_mutual_inductive chk (paramsl,indl) notations poly prv finite =
   check_all_names_different indl;
   List.iter check_param paramsl;
   let env0 = Global.env() in
@@ -554,7 +554,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
     mind_entry_polymorphic = poly;
     mind_entry_private = if prv then Some false else None;
     mind_entry_universes = Evd.universe_context evd;
-    mind_entry_check_positivity = true; },
+    mind_entry_check_positivity = chk; },
     impls
 
 (* Very syntactical equality *)
@@ -636,10 +636,10 @@ type one_inductive_impls =
   Impargs.manual_explicitation list (* for inds *)*
   Impargs.manual_explicitation list list (* for constrs *)
 
-let do_mutual_inductive indl poly prv finite =
+let do_mutual_inductive chk indl poly prv finite =
   let indl,coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
-  let mie,impls = interp_mutual_inductive indl ntns poly prv finite in
+  let mie,impls = interp_mutual_inductive chk indl ntns poly prv finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (declare_mutual_inductive_with_eliminations mie impls);
   (* Declare the possible notations of inductive types *)

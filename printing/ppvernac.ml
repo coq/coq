@@ -761,7 +761,7 @@ module Make
               (pr_assumption_token (n > 1) stre ++ spc() ++
                  pr_ne_params_list pr_lconstr_expr l)
           )
-        | VernacInductive (p,f,l) ->
+        | VernacInductive (chk,p,f,l) ->
           let pr_constructor (coe,(id,c)) =
             hov 2 (pr_lident id ++ str" " ++
                      (if coe then str":>" else str":") ++

@@ -88,6 +88,7 @@ type one_inductive_impls =
   Impargs.manual_implicits list (** for constrs *)
 
 val interp_mutual_inductive :
+  bool -> (* if [false], then positivity is assumed *)
   structured_inductive_expr -> decl_notation list -> polymorphic ->
     private_flag -> Decl_kinds.recursivity_kind ->
     mutual_inductive_entry * one_inductive_impls list
@@ -102,6 +103,7 @@ val declare_mutual_inductive_with_eliminations :
 (** Entry points for the vernacular commands Inductive and CoInductive *)
 
 val do_mutual_inductive :
+  bool -> (* if [false], then positivity is assumed *)
   (one_inductive_expr * decl_notation list) list -> polymorphic -> 
   private_flag -> Decl_kinds.recursivity_kind -> unit
 

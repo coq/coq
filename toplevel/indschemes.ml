@@ -478,7 +478,7 @@ let map_inductive_block f kn n = for i=0 to n-1 do f (kn,i) done
 let declare_default_schemes kn =
   let mib = Global.lookup_mind kn in
   let n = Array.length mib.mind_packets in
-  if !elim_flag && (mib.mind_finite <> BiFinite || !bifinite_elim_flag) then
+  if !elim_flag && (mib.mind_finite <> BiFinite || !bifinite_elim_flag) && mib.mind_checked_positive then
     declare_induction_schemes kn;
   if !case_flag then map_inductive_block declare_one_case_analysis_scheme kn n;
   if is_eq_flag() then try_declare_beq_scheme kn;

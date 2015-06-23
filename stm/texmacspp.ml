@@ -580,7 +580,7 @@ let rec tmpp v loc =
       let l = match l with Some x -> x | None -> Decl_kinds.Global in
       let kind = string_of_assumption_kind l a many in
       xmlAssumption kind loc exprs
-  | VernacInductive (_, _, iednll) ->
+  | VernacInductive (_,_, _, iednll) ->
       let kind =
         let (_, _, _, k, _),_ = List.hd iednll in
 	  begin
