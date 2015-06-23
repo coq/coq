@@ -306,7 +306,7 @@ type fixpoint_kind =
 
 type notations = (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
 
-type program_info = {
+type program_info_aux = {
   prg_name: Id.t;
   prg_body: constr;
   prg_type: constr;
@@ -321,6 +321,8 @@ type program_info = {
   prg_hook : unit Lemmas.declaration_hook;
   prg_opaque : bool;
 }
+
+type program_info = program_info_aux Ephemeron.key
 
 let assumption_message = Declare.assumption_message
 
@@ -452,7 +454,7 @@ let subst_deps_obl obls obl =
 
 module ProgMap = Map.Make(Id)
 
-let map_replace k v m = ProgMap.add k v (ProgMap.remove k m)
+let map_replace k v m = ProgMap.add k (Ephemeron.create v) (ProgMap.remove k m)
 
 let map_keys m = ProgMap.fold (fun k _ l -> k :: l) m []
 
@@ -671,7 +673,7 @@ let init_prog_info ?(opaque = false) n b t ctx deps fixkind notations obls impls
       prg_opaque = opaque; }
 
 let get_prog name =
-  let prg_infos = !from_prg in
+  let prg_infos = !from_prg in Ephemeron.get (
     match name with
 	Some n ->
 	  (try ProgMap.find n prg_infos
@@ -685,12 +687,12 @@ let get_prog name =
                    error ("More than one program with unsolved obligations: "^
                     String.concat ", " 
                      (List.map string_of_id
-                      (ProgMap.fold (fun k _ s -> k::s) prg_infos []))))
+                      (ProgMap.fold (fun k _ s -> k::s) prg_infos [])))))
 
 let get_any_prog () =
   let prg_infos = !from_prg in
   let n = map_cardinal prg_infos in
-  if n > 0 then map_first prg_infos
+  if n > 0 then Ephemeron.get (map_first prg_infos)
   else raise (NoObligations None)
 
 let get_prog_err n =
@@ -730,7 +732,7 @@ let update_obls prg obls rem =
 	    progmap_remove prg';
 	    Defined kn
       | l ->
-	  let progs = List.map (fun x -> ProgMap.find x !from_prg) prg'.prg_deps in
+	  let progs = List.map (fun x -> Ephemeron.get (ProgMap.find x !from_prg)) prg'.prg_deps in
 	    if List.for_all (fun x -> obligations_solved x) progs then
 	      let kn = declare_mutual_definition progs in
 		Defined (ConstRef kn)
@@ -929,7 +931,7 @@ and solve_obligations n tac =
     solve_prg_obligations prg tac
 
 and solve_all_obligations tac =
-  ProgMap.iter (fun k v -> ignore(solve_prg_obligations v tac)) !from_prg
+  ProgMap.iter (fun k v -> ignore(solve_prg_obligations (Ephemeron.get v) tac)) !from_prg
 
 and try_solve_obligation n prg tac =
   let prg = get_prog prg in
@@ -970,7 +972,7 @@ let show_obligations ?(msg=true) n =
     | Some n ->
 	try [ProgMap.find n !from_prg]
 	with Not_found -> raise (NoObligations (Some n))
-  in List.iter (show_obligations_of_prg ~msg) progs
+  in List.iter (fun x -> show_obligations_of_prg ~msg (Ephemeron.get x)) progs
 
 let show_term n =
   let prg = get_prog_err n in
@@ -991,7 +993,7 @@ let add_definition n ?term t ctx ?(implicits=[]) ?(kind=Global,false,Definition)
   else (
     let len = Array.length obls in
     let _ = Flags.if_verbose msg_info (info ++ str ", generating " ++ int len ++ str " obligation(s)") in
-      progmap_add n prg;
+      progmap_add n (Ephemeron.create prg);
       let res = auto_solve_obligations (Some n) tactic in
 	match res with
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
@@ -1004,7 +1006,7 @@ let add_mutual_definitions l ctx ?tactic ?(kind=Global,false,Definition) ?(reduc
     (fun  (n, b, t, imps, obls) ->
      let prg = init_prog_info ~opaque n (Some b) t ctx deps (Some fixkind)
        notations obls imps kind reduce hook 
-     in progmap_add n prg) l;
+     in progmap_add n (Ephemeron.create prg)) l;
     let _defined =
       List.fold_left (fun finished x ->
 	if finished then finished
