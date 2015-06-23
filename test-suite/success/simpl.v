@@ -98,3 +98,10 @@ Fail simpl (unbox _ (unbox _ _)) at 3 4. (* Nested and even overlapping *)
 simpl (unbox _ (unbox _ _)) at 2 4.
 match goal with |- unbox _ (Box _ True) = unbox _ (Box _ True) => idtac end.
 Abort.
+
+(* Check interpretation of ltac variables (was broken in 8.5 beta 1 and 2 *)
+
+Goal 2=1+1.
+match goal with |- (_ = ?c) => simpl c end.
+match goal with |- 2 = 2 => idtac end. (* Check that it reduced *)
+Abort.
