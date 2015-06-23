@@ -798,6 +798,11 @@ let equal_stacks (x, l) (y, l') =
     | None -> false
     | Some (lft1,lft2) -> f_equal (x, lft1) (y, lft2) 
 
+let printing_hook t stack =
+  if Print_hook.is_print_ref t then
+    try Pp.ppnl (Termops.print_constr (Stack.nth stack 1))
+    with Not_found -> ()
+
 let rec whd_state_gen ?csts tactic_mode flags env sigma =
   let rec whrec cst_l (x, stack as s) =
     let () = if !debug_RAKAM then
@@ -829,7 +834,9 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
       (match safe_meta_value sigma ev with
       | Some body -> whrec cst_l (body, stack)
       | None -> fold ())
-    | Const (c,u as const) when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST c) ->
+    | Const (c,u as const) ->
+      printing_hook x stack;
+      if Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST c) then
        (match constant_opt_value_in env const with
 	| None -> fold ()
 	| Some body ->
@@ -868,7 +875,7 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		    | Some (bef,arg,s') ->
 		      whrec Cst_stack.empty 
 			(arg,Stack.Cst(Stack.Cst_const const,curr,remains,bef,cst_l)::s')
-       )
+       ) else fold ()
     | Proj (p, c) when Closure.RedFlags.red_projection flags p ->
       (let pb = lookup_projection p env in
        let kn = Projection.constant p in
