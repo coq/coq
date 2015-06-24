@@ -70,7 +70,7 @@ FST (0; 1)
      : Z
 Nil
      : forall A : Type, list A
-NIL:list nat
+NIL : list nat
      : list nat
 (false && I 3)%bool /\ I 6
      : Prop
@@ -78,7 +78,7 @@ NIL:list nat
      : Z * Z * Z * (Z * Z * Z)
 [|0 * (1, 2, 3); (4, 5, 6) * false|]
      : Z * Z * (Z * Z) * (Z * Z) * (Z * bool * (Z * bool) * (Z * bool))
-fun f : Z -> Z -> Z -> Z => {|f; 0; 1; 2|}:Z
+fun f : Z -> Z -> Z -> Z => {|f; 0; 1; 2|} : Z
      : (Z -> Z -> Z -> Z) -> Z
 Init.Nat.add
      : nat -> nat -> nat
