@@ -79,6 +79,7 @@ Delimit Scope type_scope with type.
 Delimit Scope function_scope with function.
 Delimit Scope core_scope with core.
 
+Bind Scope type_scope with Sortclass.
 Bind Scope function_scope with Funclass.
 
 Open Scope core_scope.

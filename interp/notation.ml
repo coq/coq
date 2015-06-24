@@ -65,11 +65,9 @@ let empty_scope = {
 }
 
 let default_scope = "" (* empty name, not available from outside *)
-let type_scope = "type_scope" (* special scope used for interpreting types *)
 
 let init_scope_map () =
-  scope_map := String.Map.add default_scope empty_scope !scope_map;
-  scope_map := String.Map.add type_scope empty_scope !scope_map
+  scope_map := String.Map.add default_scope empty_scope !scope_map
 
 (**********************************************************************)
 (* Operations on scopes *)
@@ -576,7 +574,7 @@ end
 module ScopeClassMap = Map.Make(ScopeClassOrd)
 
 let initial_scope_class_map : scope_name ScopeClassMap.t =
-  ScopeClassMap.add CL_SORT type_scope ScopeClassMap.empty
+  ScopeClassMap.empty
 
 let scope_class_map = ref initial_scope_class_map
 
@@ -609,6 +607,9 @@ let compute_arguments_scope t = fst (compute_arguments_scope_full t)
 
 let compute_type_scope t =
   find_scope_class_opt (try Some (compute_scope_class t) with Not_found -> None)
+
+let current_type_scope_name () =
+   find_scope_class_opt (Some CL_SORT)
 
 let scope_class_of_class (x : cl_typ) : scope_class =
   x
