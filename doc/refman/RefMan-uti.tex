@@ -11,7 +11,7 @@ with {\ocaml} code statically linked, with the tool {\tt
   coqmktop}.
 
 For example, one can build a native-code \Coq\ toplevel extended with a tactic
-which source is in {\tt tactic.ml} with the command 
+which source is in {\tt tactic.ml} with the command
 \begin{verbatim}
      % coqmktop -opt -o mytop.out tactic.cmx
 \end{verbatim}
@@ -49,7 +49,7 @@ which detects the executables containing the word \texttt{coq}. In
 this case, the debugger is called with the required additional
 arguments. In other cases, the debugger is simply called without additional
 arguments. Such a wrapper can be found in the \texttt{dev/}
-subdirectory of the sources. 
+subdirectory of the sources.
 
 \section[Modules dependencies]{Modules dependencies\label{Dependencies}\index{Dependencies}
   \ttindex{coqdep}}
@@ -76,7 +76,8 @@ See the man page of {\tt coqdep} for more details and options.
 
 \section[Creating a {\tt Makefile} for \Coq\ modules]{Creating a {\tt Makefile} for \Coq\ modules\label{Makefile}
 \ttindex{Makefile}
-\ttindex{coq\_Makefile}}
+\ttindex{coq\_Makefile}
+\ttindex{\_CoqProject}}
 
 \paragraph{\_CoqProject}
 When a proof development becomes a larger project, split into several
@@ -212,10 +213,10 @@ Instructions to use it are contained in this file.
 {\ProofGeneral} is a generic interface for proof assistants based on
 Emacs. The main idea is that the \Coq\ commands you are
 editing are sent to a \Coq\ toplevel running behind Emacs and the
-answers of the system automatically inserted into other Emacs buffers. 
+answers of the system automatically inserted into other Emacs buffers.
 Thus you don't need to copy-paste the \Coq\ material from your files
 to the \Coq\ toplevel or conversely from the \Coq\ toplevel to some
-files. 
+files.
 
 {\ProofGeneral} is developed and distributed independently of the
 system \Coq. It is freely available at \verb!proofgeneral.inf.ed.ac.uk!.
@@ -242,7 +243,7 @@ There are man pages for the commands {\tt coqdep}, {\tt gallina} and
 \RefManCutCommand{ENDREFMAN=\thepage}
 %END LATEX
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
-%%% End: 
+%%% End:
