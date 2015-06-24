@@ -995,7 +995,9 @@ module Make
         in
         let pr_goal_selector = function
           | SelectNth i -> int i ++ str":"
-          | SelectList l -> prlist_with_sep (fun () -> str ", ") pr_range_selector l
+          | SelectList l ->
+              str"[" ++ prlist_with_sep (fun () -> str ", ") pr_range_selector l ++
+              str"]" ++ str":"
           | SelectId id -> pr_id id ++ str":"
           | SelectAll -> str"all" ++ str":"
           | SelectAllParallel -> str"par"
