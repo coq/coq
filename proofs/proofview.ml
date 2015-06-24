@@ -403,6 +403,8 @@ let tclFOCUSLIST l t =
     match l with
       | [] -> tclZERO (NoSuchGoals 0)
       | (mi, _) :: _ ->
+          (* [CList.goto] returns a zipper, so that
+             [(rev left) @ sub_right = comb]. *)
           let left, sub_right = CList.goto (mi-1) comb in
           let p x _ = CList.exists (fun (i, j) -> i <= x +mi && x + mi <= j) l in
           let sub, right = CList.partitioni p sub_right in
