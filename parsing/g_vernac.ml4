@@ -71,6 +71,14 @@ let make_bullet s =
   | '*' -> Star n
   | _ -> assert false
 
+type nl_assumption =
+  | Positive
+let eq_nl_assumption x y =
+  match x,y with
+  | Positive,Positive -> true
+let check_positivity l =
+  not (List.mem_f eq_nl_assumption Positive l)
+
 let default_command_entry =
   Gram.Entry.of_parser "command_entry"
     (fun strm -> Gram.parse_tokens_after_filter (get_command_entry ()) strm)
@@ -200,11 +208,11 @@ GEXTEND Gram
       | IDENT "Let"; id = identref; b = def_body ->
           VernacDefinition ((Some Discharge, Definition), id, b)
       (* Gallina inductive declarations *)
-      | priv = private_token; f = finite_token;
+      | priv = private_token; a = assume_token; f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
 	  let (k,f) = f in
 	  let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
-          VernacInductive (true,priv,f,indl)
+          VernacInductive (check_positivity a,priv,f,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (None, recs)
       | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
@@ -268,6 +276,12 @@ GEXTEND Gram
       | IDENT "Record" -> (Record,BiFinite)
       | IDENT "Structure" -> (Structure,BiFinite)
       | IDENT "Class" -> (Class true,BiFinite) ] ]
+  ;
+  assume_token:
+    [ [ IDENT "Assume"; "[" ; l=LIST1 nl_assumption ; "]" -> l | -> [] ] ]
+  ;
+  nl_assumption:
+    [ [ IDENT "Positive" -> Positive ] ]
   ;
   private_token:
     [ [ IDENT "Private" -> true | -> false ] ]
