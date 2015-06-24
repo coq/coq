@@ -645,7 +645,10 @@ let do_mutual_inductive chk indl poly prv finite =
   (* Declare the possible notations of inductive types *)
   List.iter Metasyntax.add_notation_interpretation ntns;
   (* Declare the coercions *)
-  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) false poly) coes
+  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) false poly) coes;
+  (* If [chk] is [false] (i.e. positivity is assumed) declares itself
+     as unsafe. *)
+  if not chk then Pp.feedback Feedback.AddedAxiom else ()
 
 (* 3c| Fixpoints and co-fixpoints *)
 
