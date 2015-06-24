@@ -13,9 +13,12 @@ open Globnames
 
 (** A few declarations for the "Print Assumption" command
     @author spiwack *)
+type axiom =
+  | Constant of constant (** An axiom or a constant. *)
+  | Positive of MutInd.t (** A mutually inductive definition which has been assumed positive. *)
 type context_object =
-  | Variable of Id.t  (** A section variable or a Let definition *)
-  | Axiom of constant       (** An axiom or a constant. *)
+  | Variable of Id.t  (** A section variable or a Let definition. *)
+  | Axiom of axiom       (** An assumed fact. *)
   | Opaque of constant      (** An opaque constant. *)
   | Transparent of constant (** A transparent constant *)
 

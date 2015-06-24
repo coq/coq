@@ -23,9 +23,12 @@ open Declarations
 open Mod_subst
 open Globnames
 
+type axiom =
+  | Constant of constant (* An axiom or a constant. *)
+  | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
-  | Axiom of constant      (* An axiom or a constant. *)
+  | Axiom of axiom      (* An assumed fact. *)
   | Opaque of constant     (* An opaque constant. *)
   | Transparent of constant
 
@@ -33,10 +36,20 @@ type context_object =
 module OrderedContextObject =
 struct
   type t = context_object
+
+  let compare_axiom x y =
+    match x,y with
+    | Constant k1 , Constant k2 ->
+        con_ord k1 k2
+    | Positive m1 , Positive m2 ->
+        MutInd.CanOrd.compare m1 m2
+    | Positive _ , Constant _ -> 1
+    | _ -> -1
+
   let compare x y =
       match x , y with
       | Variable i1 , Variable i2 -> Id.compare i1 i2
-      | Axiom k1 , Axiom k2 -> con_ord k1 k2
+      | Axiom a1 , Axiom a2 -> compare_axiom a1 a2
       | Opaque k1 , Opaque k2 -> con_ord k1 k2
       | Transparent k1 , Transparent k2 -> con_ord k1 k2
       | Axiom _ , Variable _ -> 1
@@ -211,7 +224,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st t =
     let cb = lookup_constant kn in
     if not (Declareops.constant_has_body cb) then
       let t = type_of_constant cb in
-      ContextObjectMap.add (Axiom kn) t accu
+      ContextObjectMap.add (Axiom (Constant kn)) t accu
     else if add_opaque && (Declareops.is_opaque cb || not (Cpred.mem kn knst)) then
       let t = type_of_constant cb in
       ContextObjectMap.add (Opaque kn) t accu
@@ -220,6 +233,11 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st t =
       ContextObjectMap.add (Transparent kn) t accu
     else
       accu
-  | IndRef _ | ConstructRef _ -> accu
+  | IndRef (m,_) | ConstructRef ((m,_),_) ->
+      let mind = Global.lookup_mind m in
+      if mind.mind_checked_positive then
+        accu
+      else
+        ContextObjectMap.add (Axiom (Positive m)) Constr.mkProp accu
   in
   Refmap.fold fold graph ContextObjectMap.empty

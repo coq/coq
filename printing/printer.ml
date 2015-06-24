@@ -729,14 +729,21 @@ let pr_assumptionset env s =
       try str " : " ++ pr_ltype typ
       with e when Errors.noncritical e -> mt ()
     in
+    let pr_axiom env ax typ =
+      match ax with
+      | Constant kn ->
+          safe_pr_constant env kn ++ safe_pr_ltype typ
+      | Positive m ->
+          hov 2 (MutInd.print m ++ spc () ++ strbrk"is positive.")
+    in
     let fold t typ accu =
       let (v, a, o, tr) = accu in
       match t with
       | Variable id ->
         let var = str (Id.to_string id) ++ str " : " ++ pr_ltype typ in
         (var :: v, a, o, tr)
-      | Axiom kn ->
-        let ax = safe_pr_constant env kn ++ safe_pr_ltype typ in
+      | Axiom axiom ->
+        let ax = pr_axiom env axiom typ in
         (v, ax :: a, o, tr)
       | Opaque kn ->
         let opq = safe_pr_constant env kn ++ safe_pr_ltype typ in
