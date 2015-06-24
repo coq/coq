@@ -29,7 +29,6 @@ type scopes (** = [scope_name list] *)
 
 type local_scopes = tmp_scope_name option * scope_name list
 
-val type_scope : scope_name
 val declare_scope : scope_name -> unit
 
 val current_scopes : unit -> scopes
@@ -164,6 +163,9 @@ val declare_ref_arguments_scope : global_reference -> unit
 
 val compute_arguments_scope : Term.types -> scope_name option list
 val compute_type_scope : Term.types -> scope_name option
+
+(** Get the current scope bound to Sortclass, if it exists *)
+val current_type_scope_name : unit -> scope_name option
 
 val scope_class_of_class : Classops.cl_typ -> scope_class
 
