@@ -6,43 +6,75 @@ fun (x : foo) (n : nat) => x n
      : foo -> nat -> nat
 "1" 0
      : PAIR
+"No Printing option"
+     : string
 a:C
      : C
 x = g a
      : C
 x' = id a
      : C
+"Printing Coercions Quoted"
+     : string
 ““a””:C
      : C
 x = g “a”
      : C
 x' = id ““a””
      : C
+a
+     : A
+““a””:C
+     : C
+““a”:B”:C
+     : C
+“Some a” ++ nil
+     : list A
+"Printing Coercions Quoted + Printing Coercions"
+     : string
 ““a””:C
      : C
 x = g “a”
      : C
 x' = id ““a””
      : C
+"Printing Coercions"
+     : string
 g (f a):C
      : C
 x = g (f a)
      : C
 x' = id (g (f a))
      : C
+"No Printing option again"
+     : string
 a:C
      : C
 x = g a
      : C
 x' = id a
      : C
+"Printing All"
+     : string
 @QuotedCoercion B C g (@QuotedCoercion A B f a)
      : C
+"Printing Coercions Quoted + uparrow"
+     : string
 ““a ↑ _” ↑ _”:C
      : C
 x = g “a ↑ _”
      : C
 x' = id ““a ↑ _” ↑ _”
+     : C
+““a ↑ B” ↑ C”
+     : C
+"Printing Coercions Quoted + notations for specific coercions"
+     : string
+“g “f a””:C
+     : C
+x = g “f a”
+     : C
+x' = id “g “f a””
      : C
 ““a ↑ B” ↑ C”
      : C
