@@ -404,10 +404,8 @@ let tclFOCUSLIST l t =
       | [] -> tclZERO (NoSuchGoals 0)
       | (mi, _) :: _ ->
           let left, sub_right = CList.goto (mi-1) comb in
-          let p x = CList.exists (fun (i, j) -> i <= x && x <= j) l in
-          (* Since there is no [CList.partitioni], we do it manually. *)
-          let sub = CList.filteri (fun x _ -> p (x + mi)) sub_right in
-          let right = CList.filteri (fun x _ -> not (p (x + mi))) sub_right in
+          let p x _ = CList.exists (fun (i, j) -> i <= x +mi && x + mi <= j) l in
+          let sub, right = CList.partitioni p sub_right in
           let mj = mi - 1 + CList.length sub in
             Comb.set (CList.rev_append left (sub @ right)) >>
             tclFOCUS mi mj t
