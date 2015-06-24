@@ -24,6 +24,9 @@ Tactics
   let tactics working under conjunctions apply sublemmas of the form
   "forall A, ... -> A".
 
+Notations
+- "Bind Scope" can once again bind "Funclass" and "Sortclass".
+
 API
 
 - Some functions from pretyping/typing.ml and their derivatives were potential
