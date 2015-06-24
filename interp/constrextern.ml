@@ -549,30 +549,33 @@ let rec extern_args extern scopes env args subscopes =
 	extern argscopes env a :: extern_args extern scopes env args subscopes
 
 
-let fake_coercion =
+let quoted_coercion =
   let r =
-    IndRef
-      (Names.MutInd.make1
+    ConstRef
+      (Names.Constant.make1
          (Names.KerName.make2
             (Names.MPfile
                (Names.DirPath.make
                   (List.map Names.Id.of_string
-                     ["Logic"; "Init"; "Coq"])))
-            (Names.Label.of_id (Names.Id.of_string "QuotedCoercion"))),
-       0) in
-  GRef (Loc.ghost, r, None)
+                     ["Notations"; "Init"; "Coq"])))
+            (Names.Label.of_id (Names.Id.of_string "QuotedCoercion"))))
+  in GRef (Loc.ghost, r, None)
+
+let ghole =
+  GHole
+    (Loc.ghost, Evar_kinds.BinderType Anonymous, Misctypes.IntroAnonymous, None)
 
 let rec remove_coercions inctx c =
   match c with
-  | GApp (loc,GRef (_,r,_),args)
+  | GApp (loc, GRef (loc', r, opts), args)
     when not (!Flags.raw_print || !print_coercions) ||
     !print_coercions_quoted ->
       let nargs = List.length args in
       (try match Classops.hide_coercion r with
 	  | Some n when n < nargs && (inctx || n + 1 < nargs) ->
-	      (* We skip a coercion *)
 	      let l = List.skipn n args in
               if not !print_coercions_quoted then
+	        (* We skip a coercion *)
                 let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
                 (* Recursively remove the head coercions *)
                 let a' = remove_coercions true a in
@@ -586,10 +589,9 @@ let rec remove_coercions inctx c =
                    have been made explicit to match *)
                 if List.is_empty l then a' else GApp (loc,a',l)
               else
-	        if List.is_empty l then
-                  fake_coercion
-                else
-                  GApp (loc, fake_coercion, l)
+	        (* We mark a coercion *)
+                let f = GApp (loc, GRef (loc', r, opts), List.firstn n args) in
+                GApp (loc, quoted_coercion, ghole :: ghole :: f :: l)
 	  | _ -> c
       with Not_found -> c)
   | _ -> c

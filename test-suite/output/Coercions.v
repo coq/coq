@@ -70,4 +70,21 @@ Check a : C.
 Print x.
 Print x'.
 
+Set Printing All.
+
+Check QuotedCoercion g (QuotedCoercion f a).
+
+Unset Printing All.
+
+Notation "“ x ↑ T ”" := (@QuotedCoercion _ T _ x) (at level 0,
+  format "“ x  ↑  T ”").
+
+Set Printing Coercions Quoted.
+
+Check a : C.
+Print x.
+Print x'.
+
+Check QuotedCoercion g (QuotedCoercion f a).
+
 End testQuotedCoercions.

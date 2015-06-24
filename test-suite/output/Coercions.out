@@ -36,3 +36,13 @@ x = g a
      : C
 x' = id a
      : C
+@QuotedCoercion B C g (@QuotedCoercion A B f a)
+     : C
+““a ↑ _” ↑ _”:C
+     : C
+x = g “a ↑ _”
+     : C
+x' = id ““a ↑ _” ↑ _”
+     : C
+““a ↑ B” ↑ C”
+     : C
