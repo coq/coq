@@ -990,7 +990,7 @@ module Make
         (* Solving *)
       | VernacSolve (i,info,tac,deftac) ->
         let pr_range_selector (i, j) =
-          if i = j then int i
+          if Int.equal i j then int i
           else int i ++ str"-" ++ int j
         in
         let pr_goal_selector = function
