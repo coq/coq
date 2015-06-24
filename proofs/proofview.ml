@@ -383,6 +383,37 @@ let tclFOCUS_gen nosuchgoal i j t =
 let tclFOCUS i j t = tclFOCUS_gen (tclZERO (NoSuchGoals (j+1-i))) i j t
 let tclTRYFOCUS i j t = tclFOCUS_gen (tclUNIT ()) i j t
 
+let tclFOCUSLIST l t =
+  let open Proof in
+  Comb.get >>= fun comb ->
+    let n = CList.length comb in
+    (* First, remove empty intervals, and bound the intervals to the number
+       of goals. *)
+    let sanitize (i, j) =
+      if i > j then None
+      else if i > n then None
+      else if j < 1 then None
+      else Some ((max i 1), (min j n))
+    in
+    let l = CList.map_filter sanitize l in
+    (* Sort the list to get the left-most goal to focus. This goal won't
+       move, and we will then place all the other goals to focus to the
+       right. *)
+    let l = CList.sort compare l in
+    match l with
+      | [] -> tclZERO (NoSuchGoals 0)
+      | (mi, _) :: _ ->
+          let left, sub_right = CList.goto (mi-1) comb in
+          let p x = CList.exists (fun (i, j) -> i <= x && x <= j) l in
+          (* Since there is no [CList.partitioni], we do it manually. *)
+          let sub = CList.filteri (fun x _ -> p (x + mi)) sub_right in
+          let right = CList.filteri (fun x _ -> not (p (x + mi))) sub_right in
+          let mj = mi - 1 + CList.length sub in
+            Comb.set (CList.rev_append left (sub @ right)) >>
+            tclFOCUS mi mj t
+
+
+
 (** Like {!tclFOCUS} but selects a single goal by name. *)
 let tclFOCUSID id t =
   let open Proof in

@@ -30,6 +30,7 @@ type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
    similar, they do not seem to mean the same thing. *)
 type goal_selector =
   | SelectNth of int
+  | SelectList of (int * int) list
   | SelectId of Id.t
   | SelectAll
   | SelectAllParallel

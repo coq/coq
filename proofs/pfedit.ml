@@ -115,6 +115,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     in
     let tac = match gi with
       | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
+      | Vernacexpr.SelectList l -> Proofview.tclFOCUSLIST l tac
       | Vernacexpr.SelectId id -> Proofview.tclFOCUSID id tac
       | Vernacexpr.SelectAll -> tac
       | Vernacexpr.SelectAllParallel ->

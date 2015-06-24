@@ -657,9 +657,15 @@ let _ =
 let default_goal_selector = ref (Vernacexpr.SelectNth 1)
 let get_default_goal_selector () = !default_goal_selector
 
+let print_range_selector (i, j) =
+  if i = j then string_of_int i
+  else string_of_int i ^ "-" ^ string_of_int j
+
 let print_goal_selector = function
   | Vernacexpr.SelectAll -> "all"
   | Vernacexpr.SelectNth i -> string_of_int i
+  | Vernacexpr.SelectList l -> "[" ^
+      String.concat ", " (List.map print_range_selector l) ^ "]"
   | Vernacexpr.SelectId id -> Id.to_string id
   | Vernacexpr.SelectAllParallel -> "par"
 

@@ -138,9 +138,15 @@ GEXTEND Gram
     [ [ c = subgoal_command -> c None] ]
   ;
 
+  range_selector:
+    [ [ n = natural ; "-" ; m = natural -> (n, m)
+      | n = natural -> (n, n) ] ]
+  ;
+
   selector:
     [ [ n=natural; ":" -> SelectNth n
       | test_bracket_ident; "["; id = ident; "]"; ":" -> SelectId id
+      | "[" ; l = LIST1 range_selector SEP "," ; "]" ; ":" -> SelectList l
       | IDENT "all" ; ":" -> SelectAll
       | IDENT "par" ; ":" -> SelectAllParallel ] ]
   ;
