@@ -676,11 +676,11 @@ end) = struct
         return (pr_glob_sort s, latom)
       | CCast (_,a,b) ->
         return (
-          hv 0 (pr mt (lcast,L) a ++ cut () ++
+          hv 0 (pr mt (lcast,L) a ++ spc () ++
                   match b with
-                    | CastConv b -> str ":" ++ pr mt (-lcast,E) b
-                    | CastVM b -> str "<:" ++ pr mt (-lcast,E) b
-                    | CastNative b -> str "<<:" ++ pr mt (-lcast,E) b
+                    | CastConv b -> str ":" ++ ws 1 ++ pr mt (-lcast,E) b
+                    | CastVM b -> str "<:" ++ ws 1 ++ pr mt (-lcast,E) b
+                    | CastNative b -> str "<<:" ++ ws 1 ++ pr mt (-lcast,E) b
                     | CastCoerce -> str ":>"),
           lcast
         )
