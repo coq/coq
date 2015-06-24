@@ -925,25 +925,7 @@ let fast_compare_neq strict g arcu arcv =
     if arc_is_lt arc then
       cmp c to_revert lt_todo le_todo
     else
-      let rec find lt_todo lt le = match le with
-      | [] ->
-        begin match lt with
-        | [] ->
-          let () = arc.status <- SetLt in
-          cmp c (arc :: to_revert) lt_todo le_todo
-        | u :: lt ->
-          let arc = repr g u in
-          if arc == arcv then
-            if strict then (to_revert, FastLT) else (to_revert, FastLE)
-          else find (arc :: lt_todo) lt le
-        end
-      | u :: le ->
-        let arc = repr g u in
-        if arc == arcv then
-          if strict then (to_revert, FastLT) else (to_revert, FastLE)
-        else find (arc :: lt_todo) lt le
-      in
-      find lt_todo arc.lt arc.le
+      process_lt c to_revert lt_todo le_todo arc arc.lt arc.le
   | [], arc::le_todo ->
     if arc == arcv then
       (* No need to continue inspecting universes above arc:
@@ -955,23 +937,43 @@ let fast_compare_neq strict g arcu arcv =
       if arc_is_le arc then
         cmp c to_revert [] le_todo
       else
-        let rec find lt_todo lt = match lt with
-        | [] ->
-          let fold accu u =
-            let node = repr g u in
-            node :: accu
-          in
-          let le_new = List.fold_left fold le_todo arc.le in
-          let () = arc.status <- SetLe in
-          cmp c (arc :: to_revert) lt_todo le_new
-        | u :: lt ->
-          let arc = repr g u in
-          if arc == arcv then
-            if strict then (to_revert, FastLT) else (to_revert, FastLE)
-          else find (arc :: lt_todo) lt
-        in
-        find [] arc.lt
+        process_le c to_revert [] le_todo arc arc.lt
+
+  and process_lt c to_revert lt_todo le_todo arc0 lt le = match le with
+  | [] ->
+    begin match lt with
+    | [] ->
+      let () = arc0.status <- SetLt in
+      cmp c (arc0 :: to_revert) lt_todo le_todo
+    | u :: lt ->
+      let arc = repr g u in
+      if arc == arcv then
+        if strict then (to_revert, FastLT) else (to_revert, FastLE)
+      else process_lt c to_revert (arc :: lt_todo) le_todo arc0 lt le
+    end
+  | u :: le ->
+    let arc = repr g u in
+    if arc == arcv then
+      if strict then (to_revert, FastLT) else (to_revert, FastLE)
+    else process_lt c to_revert (arc :: lt_todo) le_todo arc0 lt le
+
+  and process_le c to_revert lt_todo le_todo arc0 lt = match lt with
+  | [] ->
+    let fold accu u =
+      let node = repr g u in
+      node :: accu
+    in
+    let le_new = List.fold_left fold le_todo arc0.le in
+    let () = arc0.status <- SetLe in
+    cmp c (arc0 :: to_revert) lt_todo le_new
+  | u :: lt ->
+    let arc = repr g u in
+    if arc == arcv then
+      if strict then (to_revert, FastLT) else (to_revert, FastLE)
+    else process_le c to_revert (arc :: lt_todo) le_todo arc0 lt
+
   in
+
   try
     let (to_revert, c) = cmp FastNLE [] [] [arcu] in
     (** Reset all the touched arcs. *)
