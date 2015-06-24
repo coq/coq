@@ -100,9 +100,21 @@ let output_context = ref false
 let memory_stat = ref false
 
 let print_memory_stat () =
-  if !memory_stat then
+  begin (* -m|--memory from the command-line *)
+    if !memory_stat then
     ppnl
-      (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes")
+      (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes");
+  end;
+  begin
+    (* operf-macro interface:
+       https://github.com/OCamlPro/operf-macro *)
+    try
+      let fn = Sys.getenv "OCAML_GC_STATS" in
+      let oc = open_out fn in
+      Gc.print_stat oc;
+      close_out oc
+    with _ -> ()
+  end
 
 let _ = at_exit print_memory_stat
 
