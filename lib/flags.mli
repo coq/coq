@@ -130,12 +130,17 @@ val set_inline_level : int -> unit
 val get_inline_level : unit -> int
 val default_inline_level : int
 
-(* Native code compilation for conversion and normalization *)
+(** Native code compilation for conversion and normalization *)
 val native_compiler : bool ref
 
-(* Print the mod uid associated to a vo file by the native compiler *)
+(** Print the mod uid associated to a vo file by the native compiler *)
 val print_mod_uid : bool ref
 
 val tactic_context_compat : bool ref
 (** Set to [true] to trigger the compatibility bugged context matching (old
     context vs. appcontext) is set. *)
+
+(** Dump the bytecode after compilation (for debugging purposes) *)
+val dump_bytecode : bool ref
+val set_dump_bytecode : bool -> unit
+val get_dump_bytecode : unit -> bool

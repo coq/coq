@@ -249,6 +249,7 @@ let visit_vo f =
   Printf.printf
     "At prompt, <n> enters the <n>-th child, u goes up 1 level, x exits\n\n%!";
   let segments = [|
+    make_seg "summary" Values.v_libsum;
     make_seg "library" Values.v_lib;
     make_seg "univ constraints of opaque proofs" Values.v_univopaques;
     make_seg "discharging info" (Opt Any);

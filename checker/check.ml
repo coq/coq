@@ -291,12 +291,12 @@ let with_magic_number_check f a =
 
 open Cic
 
-let mk_library md f table digest cst = {
-  library_name = md.md_name;
+let mk_library sd md f table digest cst = {
+  library_name = sd.md_name;
   library_filename = f;
   library_compiled = md.md_compiled;
   library_opaques = table;
-  library_deps = md.md_deps;
+  library_deps = sd.md_deps;
   library_digest = digest;
   library_extra_univs = cst }
 
@@ -310,10 +310,11 @@ let depgraph = ref LibraryMap.empty
 
 let intern_from_file (dir, f) =
   Flags.if_verbose pp (str"[intern "++str f++str" ..."); pp_flush ();
-  let (md,table,opaque_csts,digest) =
+  let (sd,md,table,opaque_csts,digest) =
     try
       let ch = with_magic_number_check raw_intern_library f in
-      let (md:Cic.library_disk), _, digest = System.marshal_in_segment f ch in
+      let (sd:Cic.summary_disk), _, digest = System.marshal_in_segment f ch in
+      let (md:Cic.library_disk), _, _ = System.marshal_in_segment f ch in
       let (opaque_csts:'a option), _, udg = System.marshal_in_segment f ch in
       let (discharging:'a option), _, _ = System.marshal_in_segment f ch in
       let (tasks:'a option), _, _ = System.marshal_in_segment f ch in
@@ -325,9 +326,9 @@ let intern_from_file (dir, f) =
       if not (String.equal (Digest.channel ch pos) checksum) then
         errorlabstrm "intern_from_file" (str "Checksum mismatch");
       let () = close_in ch in
-      if dir <> md.md_name then
+      if dir <> sd.md_name then
         errorlabstrm "intern_from_file"
-          (name_clash_message dir md.md_name f);
+          (name_clash_message dir sd.md_name f);
       if tasks <> None || discharging <> None then
         errorlabstrm "intern_from_file"
           (str "The file "++str f++str " contains unfinished tasks");
@@ -340,25 +341,26 @@ let intern_from_file (dir, f) =
       Validate.validate !Flags.debug Values.v_univopaques opaque_csts;
       end;
       (* Verification of the unmarshalled values *)
+      Validate.validate !Flags.debug Values.v_libsum sd;
       Validate.validate !Flags.debug Values.v_lib md;
       Validate.validate !Flags.debug Values.v_opaques table;
       Flags.if_verbose ppnl (str" done]"); pp_flush ();
       let digest =
         if opaque_csts <> None then Cic.Dviovo (digest,udg)
         else (Cic.Dvo digest) in
-      md,table,opaque_csts,digest
+      sd,md,table,opaque_csts,digest
     with e -> Flags.if_verbose ppnl (str" failed!]"); raise e in
-  depgraph := LibraryMap.add md.md_name md.md_deps !depgraph;
-  opaque_tables := LibraryMap.add md.md_name table !opaque_tables;
+  depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
+  opaque_tables := LibraryMap.add sd.md_name table !opaque_tables;
   Option.iter (fun (opaque_csts,_,_) ->
     opaque_univ_tables :=
-      LibraryMap.add md.md_name opaque_csts !opaque_univ_tables)
+      LibraryMap.add sd.md_name opaque_csts !opaque_univ_tables)
     opaque_csts;
   let extra_cst =
     Option.default Univ.empty_constraint
       (Option.map (fun (_,cs,_) ->
          Univ.ContextSet.constraints cs) opaque_csts) in
-  mk_library md f table digest extra_cst
+  mk_library sd md f table digest extra_cst
 
 let get_deps (dir, f) =
   try LibraryMap.find dir !depgraph

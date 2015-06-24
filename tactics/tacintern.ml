@@ -341,7 +341,7 @@ let intern_typed_pattern ist p =
 
 let rec intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
   let interp_ref r =
-    try l, Inl (intern_evaluable ist r)
+    try Inl (intern_evaluable ist r)
     with e when Logic.catchable_exception e ->
       (* Compatibility. In practice, this means that the code above
          is useless. Still the idea of having either an evaluable
@@ -356,19 +356,19 @@ let rec intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
       let c = Constrintern.interp_reference sign r in
       match c with
       | GRef (_,r,None) ->
-          l, Inl (ArgArg (evaluable_of_global_reference ist.genv r,None))
+          Inl (ArgArg (evaluable_of_global_reference ist.genv r,None))
       | GVar (_,id) ->
           let r = evaluable_of_global_reference ist.genv (VarRef id) in
-          l, Inl (ArgArg (r,None))
+          Inl (ArgArg (r,None))
       | _ ->
-          l, Inr ((c,None),dummy_pat) in
-  match p with
+          Inr ((c,None),dummy_pat) in
+  (l, match p with
   | Inl r -> interp_ref r
   | Inr (CAppExpl(_,(None,r,None),[])) ->
       (* We interpret similarly @ref and ref *)
       interp_ref (AN r)
   | Inr c ->
-      l, Inr (intern_typed_pattern ist c)
+      Inr (intern_typed_pattern ist c))
 
 (* This seems fairly hacky, but it's the first way I've found to get proper
    globalization of [unfold].  --adamc *)

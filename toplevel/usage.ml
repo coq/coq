@@ -52,7 +52,7 @@ let print_usage_channel co command =
 \n                         proofs in each fi.vio\
 \n\
 \n  -where                 print Coq's standard library location and exit\
-\n  -config                print Coq's configuration information and exit\
+\n  -config, --config      print Coq's configuration information and exit\
 \n  -v                     print Coq version and exit\
 \n  -list-tags             print highlight color tags known by Coq and exit\
 \n\
@@ -74,8 +74,12 @@ let print_usage_channel co command =
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
 \n  -time                  display the time taken by each command\
+\n  -m, --memory           display total heap size at program exit\
+\n                         (use environment variable\
+\n                          OCAML_GC_STATS=\"/tmp/gclog.txt\"\
+\n                          for full Gc stats dump)
 \n  -native-compiler       precompile files for the native_compute machinery\
-\n  -h, -help              print this list of options\
+\n  -h, -help, --help      print this list of options\
 \n";
   List.iter (fun (name, text) ->
     output_string co

@@ -94,9 +94,21 @@ let output_context = ref false
 let memory_stat = ref false
 
 let print_memory_stat () =
-  if !memory_stat then
+  begin (* -m|--memory from the command-line *)
+    if !memory_stat then
     ppnl
-      (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes")
+      (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes");
+  end;
+  begin
+    (* operf-macro interface:
+       https://github.com/OCamlPro/operf-macro *)
+    try
+      let fn = Sys.getenv "OCAML_GC_STATS" in
+      let oc = open_out fn in
+      Gc.print_stat oc;
+      close_out oc
+    with _ -> ()
+  end
 
 let _ = at_exit print_memory_stat
 
@@ -111,10 +123,15 @@ let set_hierarchy () = if !type_in_type then Global.set_type_in_type ()
 
 let set_batch_mode () = batch_mode := true
 
-let set_warning = function
-| "all" -> make_warn true
-| "none" -> make_warn false
-| _ -> prerr_endline ("Error: all/none expected after option w"); exit 1
+let user_warning = ref false
+(** User explicitly set warning *)
+
+let set_warning p =
+  let () = user_warning := true in
+  match p with
+  | "all" -> make_warn true
+  | "none" -> make_warn false
+  | _ -> prerr_endline ("Error: all/none expected after option w"); exit 1
 
 let toplevel_default_name = DirPath.make [Id.of_string "Top"]
 let toplevel_name = ref (Some toplevel_default_name)
@@ -630,6 +647,7 @@ let start () =
   let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in
   (* In batch mode, Coqtop has already exited at this point. In interactive one,
      dump glob is nothing but garbage ...  *)
+  if not !user_warning then make_warn true;
   !toploop_run ();
   exit 1
 

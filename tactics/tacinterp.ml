@@ -678,7 +678,19 @@ let interp_constr_with_occurrences ist env sigma (occs,c) =
 
 let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
   let p = match a with
-  | Inl b -> Inl (interp_evaluable ist env sigma b)
+  | Inl (ArgVar (loc,id)) ->
+      (* This is the encoding of an ltac var supposed to be bound
+         prioritary to an evaluable reference and otherwise to a constr
+         (it is an encoding to satisfy the "union" type given to Simpl) *)
+    let coerce_eval_ref_or_constr x =
+      try Inl (coerce_to_evaluable_ref env x)
+      with CannotCoerceTo _ ->
+        let c = coerce_to_closed_constr env x in
+        Inr (pi3 (pattern_of_constr env sigma c)) in
+    (try try_interp_ltac_var coerce_eval_ref_or_constr ist (Some (env,sigma)) (loc,id)
+     with Not_found ->
+       error_global_not_found_loc loc (qualid_of_ident id))
+  | Inl (ArgArg _ as b) -> Inl (interp_evaluable ist env sigma b)
   | Inr c -> Inr (pi3 (interp_typed_pattern ist env sigma c)) in
   interp_occurrences ist occs, p
 

@@ -723,29 +723,26 @@ let enter_arc ca g =
 (* repr : universes -> Level.t -> canonical_arc *)
 (* canonical representative : we follow the Equiv links *)
 
-let repr g u =
-  let rec repr_rec u =
-    let a =
-      try UMap.find u g
-      with Not_found -> anomaly ~label:"Univ.repr"
-	  (str"Universe " ++ Level.pr u ++ str" undefined")
-    in
-    match a with
-      | Equiv v -> repr_rec v
-      | Canonical arc -> arc
+let rec repr g u =
+  let a =
+    try UMap.find u g
+    with Not_found -> anomaly ~label:"Univ.repr"
+        (str"Universe " ++ Level.pr u ++ str" undefined")
   in
-  repr_rec u
+  match a with
+    | Equiv v -> repr g v
+    | Canonical arc -> arc
 
 (* [safe_repr] also search for the canonical representative, but
    if the graph doesn't contain the searched universe, we add it. *)
 
 let safe_repr g u =
-  let rec safe_repr_rec u =
+  let rec safe_repr_rec g u =
     match UMap.find u g with
-      | Equiv v -> safe_repr_rec v
+      | Equiv v -> safe_repr_rec g v
       | Canonical arc -> arc
   in
-  try g, safe_repr_rec u
+  try g, safe_repr_rec g u
   with Not_found ->
     let can = terminal u in
     enter_arc can g, can
