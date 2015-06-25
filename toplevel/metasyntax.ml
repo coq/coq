@@ -1385,7 +1385,10 @@ let add_infix local ((loc,inf),modifiers) pr sc =
 (**********************************************************************)
 (* Delimiters and classes bound to scopes                             *)
 
-type scope_command = ScopeDelim of string | ScopeClasses of scope_class list
+type scope_command =
+  | ScopeDelim of string
+  | ScopeClasses of scope_class list
+  | ScopeRemove
 
 let load_scope_command _ (_,(scope,dlm)) =
   Notation.declare_scope scope
@@ -1395,6 +1398,7 @@ let open_scope_command i (_,(scope,o)) =
     match o with
     | ScopeDelim dlm -> Notation.declare_delimiters scope dlm
     | ScopeClasses cl -> List.iter (Notation.declare_scope_class scope) cl
+    | ScopeRemove -> Notation.remove_delimiters scope
 
 let cache_scope_command o =
   load_scope_command 1 o;
@@ -1419,6 +1423,9 @@ let inScopeCommand : scope_name * scope_command -> obj =
 
 let add_delimiters scope key =
   Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDelim key))
+
+let remove_delimiters scope =
+  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeRemove))
 
 let add_class_scope scope cl =
   Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeClasses cl))

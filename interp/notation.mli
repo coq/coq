@@ -55,6 +55,7 @@ val find_scope : scope_name -> scope
 (** Declare delimiters for printing *)
 
 val declare_delimiters : scope_name -> delimiters -> unit
+val remove_delimiters : scope_name -> unit
 val find_delimiters_scope : Loc.t -> delimiters -> scope_name
 
 (** {6 Declare and uses back and forth an interpretation of primitive token } *)

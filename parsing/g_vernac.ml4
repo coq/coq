@@ -96,12 +96,12 @@ GEXTEND Gram
       | IDENT "Stm"; IDENT "Command"; v = vernac_aux -> VernacStm (Command v)
       | IDENT "Stm"; IDENT "PGLast"; v = vernac_aux -> VernacStm (PGLast v)
 
-      | v = vernac_poly -> v ] 
+      | v = vernac_poly -> v ]
     ]
   ;
-  vernac_poly: 
+  vernac_poly:
     [ [ IDENT "Polymorphic"; v = vernac_aux -> VernacPolymorphic (true, v)
-      | IDENT "Monomorphic"; v = vernac_aux -> VernacPolymorphic (false, v) 
+      | IDENT "Monomorphic"; v = vernac_aux -> VernacPolymorphic (false, v)
       | v = vernac_aux -> v ]
     ]
   ;
@@ -146,7 +146,7 @@ GEXTEND Gram
     ] ]
   ;
 
-  subgoal_command: 
+  subgoal_command:
     [ [ c = query_command; "." ->
                   begin function
                     | Some (SelectNth g) -> c (Some g)
@@ -1043,7 +1043,9 @@ GEXTEND Gram
          VernacOpenCloseScope (local,(false,sc))
 
      | IDENT "Delimit"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
-	 VernacDelimiters (sc,key)
+	 VernacDelimiters (sc, Some key)
+     | IDENT "Undelimit"; IDENT "Scope"; sc = IDENT ->
+	 VernacDelimiters (sc, None)
 
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
        refl = LIST1 smart_global -> VernacBindScope (sc,refl)
