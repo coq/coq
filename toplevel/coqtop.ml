@@ -643,7 +643,79 @@ let init arglist =
 
 let init_toplevel = init
 
+module Foo =
+struct
+open Memprof
+open Printexc
+
+type sampleTree =
+    STC of sample list * int * (raw_backtrace_slot, sampleTree) Hashtbl.t
+
+let add_sampleTree (s:sample) (t:sampleTree) : sampleTree =
+  let rec aux idx (STC (sl, n, sth)) =
+    if idx >= Printexc.raw_backtrace_length s.callstack then
+      STC(s::sl, n+s.occurences, sth)
+    else
+      let li = Printexc.get_raw_backtrace_slot s.callstack idx in
+      let child =
+        try Hashtbl.find sth li
+        with Not_found -> STC ([], 0, Hashtbl.create 3)
+      in
+      Hashtbl.replace sth li (aux (idx+1) child);
+      STC(sl, n+s.occurences, sth)
+  in
+  aux 1 t
+
+type sortedSampleTree =
+    SSTC of sample list * int * (raw_backtrace_slot * sortedSampleTree) list
+
+let rec sort_sampleTree (t:sampleTree) : sortedSampleTree =
+  let STC (sl, n, sth) = t in
+  SSTC (sl, n,
+        List.sort (fun (_, SSTC (_, n1, _)) (_, SSTC (_, n2, _)) -> n2 - n1)
+          (Hashtbl.fold (fun li st lst -> (li, sort_sampleTree st)::lst) sth []))
+
+let print chan (SSTC (_, n, tl)) =
+  let rec aux indent =
+    List.iter (fun (li, SSTC (sl, n, tl)) ->
+      begin match Printexc.Slot.location (convert_raw_backtrace_slot li) with
+      | Some { filename; line_number; start_char; end_char } ->
+          Printf.fprintf chan "%7d | %s%s:%d %d-%d" n indent filename line_number start_char end_char
+      | None ->
+          Printf.fprintf chan "%7d | %s?" n indent
+      end;
+      (match sl with
+      | _ :: _ ->
+          let mean =
+            (List.fold_left (+.) 0. (List.map (fun x -> float_of_int x.size) sl)) /.
+            (float_of_int (List.length sl))
+          in
+          Printf.fprintf chan " mean size=%f\n" mean
+      | [] -> Printf.fprintf chan "\n");
+      aux (indent^"  ") tl)
+  in
+  Printf.fprintf chan "%7d | Total samples\n" n;
+  aux "" tl
+
+let dump () =
+  sort_sampleTree
+    (Array.fold_left (fun st s -> add_sampleTree s st) (STC ([], 0, Hashtbl.create 3))
+       (Memprof.dump_samples ()))
+end
+
+let () =
+  let count = ref 0 in
+  let signal _ =
+    let () = incr count in
+    let f = Printf.sprintf "%i.%i" (Unix.getpid ()) !count in
+    let chan = open_out f in
+    let () = try Foo.print chan (Foo.dump ()) with _ -> () in
+    close_out chan
+  in
+  Sys.set_signal Sys.sigusr1 (Sys.Signal_handle signal)
+
 let start () =
+  let () = Memprof.(set_ctrl { lambda = 0.001; dumpped_callstack_size = 5; }) in
   let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in
   (* In batch mode, Coqtop has already exited at this point. In interactive one,
      dump glob is nothing but garbage ...  *)
