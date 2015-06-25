@@ -76,7 +76,12 @@ val with_universes : ('a -> 'b) -> 'a -> 'b
 val without_symbols : ('a -> 'b) -> 'a -> 'b
 
 (** This suppresses printing of specific notations only *)
+val deactivate_notation_printing : notation -> scope_name option -> unit
+val reactivate_notation_printing : notation -> scope_name option -> unit
 val without_specific_symbols : interp_rule list -> ('a -> 'b) -> 'a -> 'b
+
+(** This prints all notations with inactive printing *)
+val show_printing_inactive_notations : unit -> unit
 
 (** This prints metas as anonymous holes *)
 val with_meta_as_hole : ('a -> 'b) -> 'a -> 'b

@@ -65,7 +65,7 @@ let print_universes = Detyping.print_universes
 (* This suppresses printing of primitive tokens (e.g. numeral) and notations *)
 let print_no_symbol = ref false
 
-(* This tells which notations still not to used if print_no_symbol is true *)
+(* This tells which notations still not to use if print_no_symbol is false *)
 let print_non_active_notations = ref ([] : interp_rule list)
 
 (* This governs printing of projections using the dot notation symbols *)
@@ -81,6 +81,46 @@ let with_meta_as_hole f = Flags.with_option print_meta_as_hole f
 let without_symbols f = Flags.with_option print_no_symbol f
 let without_specific_symbols l f =
   Flags.with_extra_values print_non_active_notations l f
+
+(* Global deactivation and reactivation of one notation *)
+
+let show_scope scopt =
+  match scopt with
+  | None -> str ""
+  | Some sc -> spc () ++ str "in scope" ++ spc () ++ str sc
+
+let deactivate_notation_printing ntn scopt =
+  (* match scopt with (\* ensures that the scope exists *\) *)
+  (* | Some sc -> ignore (find_scope sc) *)
+  (* | None -> (); *)
+  (* match availability_of_notation (scopt, ntn) (scopt, []) with *)
+  (* | None -> user_err_loc (Loc.ghost, "", str "Notation" ++ spc () ++ str ntn *)
+  (*                                        ++ spc () ++ str "does not exist" *)
+  (*                                        ++ show_scope scopt ++ str ".") *)
+  (* | Some _ -> *)
+     let nr = NotationRule (scopt, ntn) in
+     if List.mem nr !print_non_active_notations then
+       Pp.msg_warning (str "Notation " ++ spc () ++ str ntn ++ spc ()
+                       ++ str "is already inactive" ++ show_scope scopt ++ str ".")
+     else print_non_active_notations := nr :: !print_non_active_notations
+
+let reactivate_notation_printing ntn scopt =
+  try
+    print_non_active_notations :=
+      List.remove_first
+      (fun x -> x = (NotationRule (scopt, ntn)))
+      !print_non_active_notations
+  with Not_found ->
+    Pp.msg_warning (str "Notation " ++ str ntn ++ str " is already activated"
+                    ++ show_scope scopt ++ str ".")
+
+let show_printing_inactive_notations () =
+  let _ = Pp.msg_notice (str "Inactive notations:") in
+  List.iter
+    (function
+    | NotationRule (scopt, ntn) -> Pp.msg_notice (str ntn ++ show_scope scopt)
+    | SynDefRule _ -> ())
+    !print_non_active_notations
 
 (**********************************************************************)
 (* Control printing of records *)
