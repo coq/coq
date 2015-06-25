@@ -374,6 +374,8 @@ let to_memory (init_code, fun_code, fv) =
   emit fun_code;
   let code = String.create !out_position in
   String.unsafe_blit !out_buffer 0 code 0 !out_position;
+  (** Later uses of this string are all purely functional *)
+  let code = CString.hcons code in
   let reloc = List.rev !reloc_info in
   Array.iter (fun lbl ->
     (match lbl with
