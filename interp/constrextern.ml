@@ -601,8 +601,14 @@ let rec remove_coercions inctx c =
       (try match Classops.hide_coercion r with
 	  | Some n when n < nargs && (inctx || n + 1 < nargs) ->
 	      let l = List.skipn n args in
+              let mark glob_in_bool =
+                let f = GApp (loc, GRef (loc', r, opts), List.firstn n args) in
+                GApp
+                  (loc, Lazy.force quoted_coercion,
+                   ghole :: ghole :: f ::
+                   (GRef (loc, glob_in_bool, None)) :: l) in
               if is_print_coercions_mode_named () then
-	        (* We skip a coercion *)
+	        (* We skip a coercion. *)
                 let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
                 (* Recursively remove the head coercions *)
                 let a' = remove_coercions true a in
@@ -616,12 +622,11 @@ let rec remove_coercions inctx c =
                    have been made explicit to match *)
                 if List.is_empty l then a' else GApp (loc,a',l)
               else if is_print_coercions_mode_quoted () then
-	        (* We mark a coercion *)
-                let f = GApp (loc, GRef (loc', r, opts), List.firstn n args) in
-                GApp (loc, Lazy.force quoted_coercion, ghole :: ghole :: f :: l)
+	        (* We mark a coercion without displaying its target type. *)
+                mark Coqlib.glob_false
               else if is_print_coercions_mode_cast () then
-                Errors.error
-                  "Printing Coercions Mode \"Cast\" not implemented yet"
+	        (* We mark a coercion and display its target type. *)
+                mark Coqlib.glob_true
               else if is_print_coercions_mode_collapsed () then
                 Errors.error
                   "Printing Coercions Mode \"Collapsed\" not implemented yet"

@@ -30,19 +30,25 @@ a
      : C
 “Some a” ++ nil
      : list A
+"Mode = Cast"
+     : string
+““a ↑ B” ↑ C”:C
+     : C
+x = g “a ↑ B”
+     : C
+x' = id ““a ↑ B” ↑ C”
+     : C
+a
+     : A
+““a ↑ B” ↑ C”:C
+     : C
+““a ↑ B”:B ↑ C”:C
+     : C
+“Some a” ++ nil
+     : list A
 "Printing All"
      : string
-@QuotedCoercion B C g (@QuotedCoercion A B f a)
-     : C
-"Mode = Quoted + uparrow"
-     : string
-““a ↑ _” ↑ _”:C
-     : C
-x = g “a ↑ _”
-     : C
-x' = id ““a ↑ _” ↑ _”
-     : C
-““a ↑ B” ↑ C”
+@QuotedCoercion B C g false (@QuotedCoercion A B f false a)
      : C
 "Mode = Quoted + notations for specific coercions"
      : string
@@ -52,5 +58,5 @@ x = g “f a”
      : C
 x' = id “g “f a””
      : C
-““a ↑ B” ↑ C”
+““a””
      : C

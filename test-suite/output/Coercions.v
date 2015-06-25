@@ -55,8 +55,20 @@ Print x'.  (* This shows that within the context of id, both coercion levels
 Set Printing Coercions.
 
 Set Printing Coercions Mode "Quoted".
-
 Check "Mode = Quoted".
+
+Check a : C.
+Print x.
+Print x'.
+
+Check a.
+Check ““a”” : C.
+Check ““a” : B” : C.
+
+Check List.app (Some a) nil.
+
+Set Printing Coercions Mode "Cast".
+Check "Mode = Cast".
 
 Check a : C.
 Print x.
@@ -71,26 +83,16 @@ Check List.app (Some a) nil.
 Check "Printing All".
 Set Printing All.
 
-Check QuotedCoercion g (QuotedCoercion f a).
+Check QuotedCoercion g false (QuotedCoercion f false a).
 
 Unset Printing All.
 
-Notation "“ x ↑ T ”" := (@QuotedCoercion _ T _ x) (at level 0,
-  format "“ x  ↑  T ”").
-
 Set Printing Coercions Mode "Quoted".
 
-Check "Mode = Quoted + uparrow".
-Check a : C.
-Print x.
-Print x'.
-
-Check QuotedCoercion g (QuotedCoercion f a).
-
-Notation "“f x ”" := (@QuotedCoercion _ _ (@f) x) (at level 0,
+Notation "“f x ”" := (@QuotedCoercion _ _ (@f) false x) (at level 0,
   format "“f  x ”").
 
-Notation "“g x ”" := (@QuotedCoercion _ _ (@g) x) (at level 0,
+Notation "“g x ”" := (@QuotedCoercion _ _ (@g) false x) (at level 0,
   format "“g  x ”").
 
 Check "Mode = Quoted + notations for specific coercions".
@@ -98,7 +100,7 @@ Check a : C.
 Print x.
 Print x'.
 
-(* I would like this to display with “f _” as above, not with “_ ↑ _”. *)
-Check QuotedCoercion g (QuotedCoercion f a).
+(* I would like this to display with “f _” as above, not just “_”. *)
+Check QuotedCoercion g false (QuotedCoercion f false a).
 
 End testQuotedCoercions.

@@ -93,4 +93,5 @@ Declare ML Module "tauto".
 
 (** Notation for marking coercions *)
 Reserved Notation "“ x ”" (at level 0, format "“ x ”").
+Reserved Notation "“ x ↑ T ”" (at level 0, format "“ x  ↑  T ”").
 Reserved Notation "“ x ”" (at level 0, only parsing).
