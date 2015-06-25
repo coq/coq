@@ -29,10 +29,18 @@ let patch_char4 buff pos c1 c2 c3 c4 =
   String.unsafe_set buff (pos + 2) c3;
   String.unsafe_set buff (pos + 3) c4 
   
-let patch_int buff pos n =
+let patch buff (pos, n) =
   patch_char4 buff pos 
     (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
     (Char.unsafe_chr (n asr 24))
+
+let patch_int buff patches =
+  (* copy code *before* patching because of nested evaluations:
+     the code we are patching might be called (and thus "concurrently" patched)
+     and results in wrong results. Side-effects... *)
+  let buff = String.copy buff in
+  let () = List.iter (fun p -> patch buff p) patches in
+  buff
 
 (* Buffering of bytecode *)
 
