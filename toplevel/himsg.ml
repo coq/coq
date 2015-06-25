@@ -1086,7 +1086,7 @@ let error_bad_ind_parameters env c n v1 v2  =
   let pv1 = pr_lconstr_env env Evd.empty v1 in
   let pv2 = pr_lconstr_env env Evd.empty v2 in
   str "Last occurrence of " ++ pv2 ++ str " must have " ++ pv1 ++
-  str " as " ++ pr_nth n ++ str " argument in " ++ brk(1,1) ++ pc ++ str "."
+  str " as " ++ pr_nth n ++ str " argument in" ++ brk(1,1) ++ pc ++ str "."
 
 let error_same_names_types id =
   str "The name" ++ spc () ++ pr_id id ++ spc () ++
