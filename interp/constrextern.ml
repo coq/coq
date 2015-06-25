@@ -90,9 +90,9 @@ let show_scope scopt =
   | Some sc -> spc () ++ str "in scope" ++ spc () ++ str sc
 
 let deactivate_notation_printing ntn scopt =
-  (* match scopt with (\* ensures that the scope exists *\) *)
-  (* | Some sc -> ignore (find_scope sc) *)
-  (* | None -> (); *)
+  match scopt with (* ensures that the scope exists *)
+  | Some sc -> ignore (find_scope sc)
+  | None -> ();
   (* match availability_of_notation (scopt, ntn) (scopt, []) with *)
   (* | None -> user_err_loc (Loc.ghost, "", str "Notation" ++ spc () ++ str ntn *)
   (*                                        ++ spc () ++ str "does not exist" *)
@@ -100,7 +100,7 @@ let deactivate_notation_printing ntn scopt =
   (* | Some _ -> *)
      let nr = NotationRule (scopt, ntn) in
      if List.mem nr !print_non_active_notations then
-       Pp.msg_warning (str "Notation " ++ spc () ++ str ntn ++ spc ()
+       Pp.msg_warning (str "Notation" ++ spc () ++ str ntn ++ spc ()
                        ++ str "is already inactive" ++ show_scope scopt ++ str ".")
      else print_non_active_notations := nr :: !print_non_active_notations
 
@@ -111,8 +111,8 @@ let reactivate_notation_printing ntn scopt =
       (fun x -> x = (NotationRule (scopt, ntn)))
       !print_non_active_notations
   with Not_found ->
-    Pp.msg_warning (str "Notation " ++ str ntn ++ str " is already activated"
-                    ++ show_scope scopt ++ str ".")
+    Pp.msg_warning (str "Notation" ++ spc () ++ str ntn ++ spc ()
+                    ++ str "is already activated" ++ show_scope scopt ++ str ".")
 
 let show_printing_inactive_notations () =
   let _ = Pp.msg_notice (str "Inactive notations:") in
