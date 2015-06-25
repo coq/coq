@@ -74,7 +74,9 @@ instead for the \ocaml\ modules dependencies.
 See the man page of {\tt coqdep} for more details and options.
 
 
-\section[Creating a {\tt Makefile} for \Coq\ modules]{Creating a {\tt Makefile} for \Coq\ modules\label{Makefile}
+\section[Creating a {\tt Makefile} for \Coq\ modules]
+{Creating a {\tt Makefile} for \Coq\ modules
+\label{Makefile}
 \ttindex{Makefile}
 \ttindex{coq\_Makefile}
 \ttindex{\_CoqProject}}
@@ -98,7 +100,7 @@ generator using for instance the command:
 \texttt{\% coq\_makefile -f \_CoqProject -o Makefile}
 \end{quotation}
 
-This command generates a file \texttt{Makfile} that can be used to
+This command generates a file \texttt{Makefile} that can be used to
 compile all the sources of the current project. It follows the
 syntax described by the output of \texttt{\% coq\_makefile --help}.
 Once the \texttt{Makefile} file has been generated a first time, it
@@ -115,12 +117,12 @@ The following command generates a minimal example of
 \end{quotation}
 when executed at the root of the directory containing the
 project. Here the \texttt{\_CoqProject} lists all the \texttt{.v} files
-that are present in the current directory and its subdirectories. But no
+that are present in the current directory and its sub-directories. But no
 plugin sources is listed. If a \texttt{Makefile} is generated from
 this \texttt{\_CoqProject}, the command \texttt{make install} will
-install the compiled project in a subdirectory \texttt{MyFancyLib} of
+install the compiled project in a sub-directory \texttt{MyFancyLib} of
 the \texttt{user-contrib} directory  (of the user's {\Coq} libraries
-location). This subdirectory is created if it does not already exist.
+location). This sub-directory is created if it does not already exist.
 
 \paragraph{\_CoqProject file as a configuration for IDEs.}
 
@@ -129,7 +131,7 @@ of the \texttt{coqtop} process executed by a user interface. This
 allows to import the libraries of the project under a correct name,
 both as a developer of the project, working in the directory
 containing its sources, and as a user, using the project after
-the installation of its libraries. Currently, both CoqIDE and Proof
+the installation of its libraries. Currently, both \CoqIDE{} and Proof
 General (version $\geq$ 4.3pre) support configuration via
 \texttt{\_CoqProject} files.
 
@@ -144,11 +146,11 @@ General (version $\geq$ 4.3pre) support configuration via
  \texttt{.mllib} and \texttt{.mlpack} file extension.
 
 \item Any argument that is not a valid option is considered as a
-  subdirectory. Any subdirectory specified in the list of targets must
+  sub-directory. Any sub-directory specified in the list of targets must
   itself contain a \texttt{Makefile}.
 
 \item The phony targets \texttt{all} and \texttt{clean} recursively
-  call their target in every subdirectory.
+  call their target in every sub-directory.
 
 \item \texttt{-R} and \texttt{-Q} options are for {\Coq} files, \texttt{-I}
   for {\ocaml} ones. A same directory can be passed to both nature of
