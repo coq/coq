@@ -757,7 +757,8 @@ ways to change the interpretation of subterms are available.
 \subsubsection{Local opening of an interpretation scope 
 \label{scopechange}
 \index{\%}
-\comindex{Delimit Scope}}
+\comindex{Delimit Scope}
+\comindex{Undelimit Scope}}
 
 It is possible to locally extend the interpretation scope stack using
 the syntax ({\term})\%{\delimkey} (or simply {\term}\%{\delimkey}
@@ -772,6 +773,12 @@ To bind a delimiting key to a scope, use the command
 
 \begin{quote}
 \texttt{Delimit Scope} {\scope} \texttt{with} {\ident} 
+\end{quote}
+
+To remove a delimiting key of a scope, use the command
+
+\begin{quote}
+\texttt{Undelimit Scope} {\scope}
 \end{quote}
 
 \subsubsection{Binding arguments of a constant to an interpretation scope
