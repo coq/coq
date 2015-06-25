@@ -1382,7 +1382,7 @@ module Make
         pr_lconstr = pr_lconstr_env env Evd.empty;
         pr_pattern = pr_pat_and_constr_expr (pr_glob_constr_env env);
         pr_lpattern = pr_pat_and_constr_expr (pr_lglob_constr_env env);
-        pr_constant = pr_and_short_name (pr_evaluable_reference_env env);
+        pr_constant = pr_evaluable_reference_env env;
         pr_reference = pr_located pr_ltac_constant;
         pr_name = pr_id;
         pr_generic = Genprint.generic_top_print;
