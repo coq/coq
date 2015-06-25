@@ -577,16 +577,7 @@ let rec extern_args extern scopes env args subscopes =
 
 
 let quoted_coercion =
-  let r =
-    ConstRef
-      (Names.Constant.make1
-         (Names.KerName.make2
-            (Names.MPfile
-               (Names.DirPath.make
-                  (List.map Names.Id.of_string
-                     ["Notations"; "Init"; "Coq"])))
-            (Names.Label.of_id (Names.Id.of_string "QuotedCoercion"))))
-  in GRef (Loc.ghost, r, None)
+  lazy (GRef (Loc.ghost, Lazy.force Coqlib.coq_QuotedCoercion, None))
 
 let ghole =
   GHole
@@ -627,7 +618,7 @@ let rec remove_coercions inctx c =
               else if is_print_coercions_mode_quoted () then
 	        (* We mark a coercion *)
                 let f = GApp (loc, GRef (loc', r, opts), List.firstn n args) in
-                GApp (loc, quoted_coercion, ghole :: ghole :: f :: l)
+                GApp (loc, Lazy.force quoted_coercion, ghole :: ghole :: f :: l)
               else if is_print_coercions_mode_cast () then
                 Errors.error
                   "Printing Coercions Mode \"Cast\" not implemented yet"
