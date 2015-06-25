@@ -312,6 +312,8 @@ type mutual_inductive_body = {
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
 
+    mind_checked_positive : bool; (** [false] when the mutual-inductive was assumed to be well-founded, bypassing the positivity checker.  *)
+
 (** {8 Data for native compilation } *)
 
     mind_native_name : native_name ref; (** status of the code (linked or not, and where) *)
