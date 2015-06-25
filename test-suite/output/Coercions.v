@@ -46,44 +46,27 @@ Definition x' := id a.
 
 Check "No Printing option".
 Check a : C.
+Print x.  (* This seems like a bug, but this is more of a misfeature: the
+  rationale is that the external coercion cannot be inferred with no context. *)
+Print x'.  (* This shows that within the context of id, both coercion levels
+  are printed as quotes. *)
+
+(* Has to set Printing Coercions before any Mode is effectively activated. *)
+Set Printing Coercions.
+
+Set Printing Coercions Mode "Quoted".
+
+Check "Mode = Quoted".
+
+Check a : C.
 Print x.
 Print x'.
-
-Set Printing Coercions Quoted.
-
-Check "Printing Coercions Quoted".
-Check a : C.
-Print x.  (* This seems to be a bug, but this more of a misfeature: the would-be
-  rationale is that the external coercion cannot be inferred with no context. *)
-Print x'.  (* This shows that within the context of id, both levels of coercion
-  are printing as quotes. *)
 
 Check a.
 Check ““a”” : C.
 Check ““a” : B” : C.
 
 Check List.app (Some a) nil.
-
-Set Printing Coercions.
-
-Check "Printing Coercions Quoted + Printing Coercions".
-Check a : C.
-Print x.
-Print x'.
-
-Unset Printing Coercions Quoted.
-
-Check "Printing Coercions".
-Check a : C.
-Print x.
-Print x'.
-
-Unset Printing Coercions.
-
-Check "No Printing option again".
-Check a : C.
-Print x.
-Print x'.
 
 Check "Printing All".
 Set Printing All.
@@ -95,9 +78,9 @@ Unset Printing All.
 Notation "“ x ↑ T ”" := (@QuotedCoercion _ T _ x) (at level 0,
   format "“ x  ↑  T ”").
 
-Set Printing Coercions Quoted.
+Set Printing Coercions Mode "Quoted".
 
-Check "Printing Coercions Quoted + uparrow".
+Check "Mode = Quoted + uparrow".
 Check a : C.
 Print x.
 Print x'.
@@ -110,7 +93,7 @@ Notation "“f x ”" := (@QuotedCoercion _ _ (@f) x) (at level 0,
 Notation "“g x ”" := (@QuotedCoercion _ _ (@g) x) (at level 0,
   format "“g  x ”").
 
-Check "Printing Coercions Quoted + notations for specific coercions".
+Check "Mode = Quoted + notations for specific coercions".
 Check a : C.
 Print x.
 Print x'.

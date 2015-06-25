@@ -14,7 +14,7 @@ x = g a
      : C
 x' = id a
      : C
-"Printing Coercions Quoted"
+"Mode = Quoted"
      : string
 ““a””:C
      : C
@@ -30,35 +30,11 @@ a
      : C
 “Some a” ++ nil
      : list A
-"Printing Coercions Quoted + Printing Coercions"
-     : string
-““a””:C
-     : C
-x = g “a”
-     : C
-x' = id ““a””
-     : C
-"Printing Coercions"
-     : string
-g (f a):C
-     : C
-x = g (f a)
-     : C
-x' = id (g (f a))
-     : C
-"No Printing option again"
-     : string
-a:C
-     : C
-x = g a
-     : C
-x' = id a
-     : C
 "Printing All"
      : string
 @QuotedCoercion B C g (@QuotedCoercion A B f a)
      : C
-"Printing Coercions Quoted + uparrow"
+"Mode = Quoted + uparrow"
      : string
 ““a ↑ _” ↑ _”:C
      : C
@@ -68,7 +44,7 @@ x' = id ““a ↑ _” ↑ _”
      : C
 ““a ↑ B” ↑ C”
      : C
-"Printing Coercions Quoted + notations for specific coercions"
+"Mode = Quoted + notations for specific coercions"
      : string
 “g “f a””:C
      : C

@@ -50,7 +50,8 @@ val print_implicits_defensive : bool ref
 val print_arguments : bool ref
 val print_evar_arguments : bool ref
 val print_coercions : bool ref
-val print_coercions_quoted : bool ref
+val get_print_coercions_mode : unit -> string
+val set_print_coercions_mode : string -> unit
 val print_universes : bool ref
 val print_no_symbol : bool ref
 val print_projections : bool ref

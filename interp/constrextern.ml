@@ -58,7 +58,34 @@ let print_implicits_defensive = ref true
 let print_coercions = ref false
 
 (* This marks coercions by quotes *)
-let print_coercions_quoted = ref false
+let default_print_coercions_mode = "Named"
+let print_coercions_mode = ref default_print_coercions_mode
+let get_print_coercions_mode () = !print_coercions_mode
+
+let set_print_coercions_mode o =
+  let err_msg =
+    "A coercion-printing mode must be \"Named\" (default), \"Quoted\", \"Cast\", or \"Collapsed\"."
+  in
+  match o with
+  | "Named" | "Quoted" | "Cast" | "Collapsed" -> print_coercions_mode := o
+  | _ -> Errors.error err_msg
+
+
+let is_print_coercions_mode_named () = match !print_coercions_mode with
+| "Named" -> true
+| _ -> false
+
+let is_print_coercions_mode_quoted () = match !print_coercions_mode with
+| "Quoted" -> true
+| _ -> false
+
+let is_print_coercions_mode_cast () = match !print_coercions_mode with
+| "Cast" -> true
+| _ -> false
+
+let is_print_coercions_mode_collapsed () = match !print_coercions_mode with
+| "Collapsed" -> true
+| _ -> false
 
 (* This forces printing universe names of Type{.} *)
 let print_universes = Detyping.print_universes
@@ -565,16 +592,25 @@ let ghole =
   GHole
     (Loc.ghost, Evar_kinds.BinderType Anonymous, Misctypes.IntroAnonymous, None)
 
+(* Coercions are fully displayed when !Flags.raw_print; otherwise:
+   * they are fully removed when not !print_coercions,
+   * they leave a mark when !print_coercions, depending on print_coercions_mode:
+     - they get fully displayed when the mode is "Named" (default),
+     - they get partially identified:
+       . with quotes when the mode is "Quoted",
+       . with quotes and target type when the mode is "Cast",
+       . with a single pair of quotes for stacked coercions when the mode
+         is "Collapsed". *)
 let rec remove_coercions inctx c =
   match c with
   | GApp (loc, GRef (loc', r, opts), args)
-    when not (!Flags.raw_print || !print_coercions) ||
-    !print_coercions_quoted ->
+    when not (!Flags.raw_print
+            || (!print_coercions && is_print_coercions_mode_named ())) ->
       let nargs = List.length args in
       (try match Classops.hide_coercion r with
 	  | Some n when n < nargs && (inctx || n + 1 < nargs) ->
 	      let l = List.skipn n args in
-              if not !print_coercions_quoted then
+              if is_print_coercions_mode_named () then
 	        (* We skip a coercion *)
                 let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
                 (* Recursively remove the head coercions *)
@@ -588,10 +624,17 @@ let rec remove_coercions inctx c =
                    a surrounding context and the coercion to funclass would
                    have been made explicit to match *)
                 if List.is_empty l then a' else GApp (loc,a',l)
-              else
+              else if is_print_coercions_mode_quoted () then
 	        (* We mark a coercion *)
                 let f = GApp (loc, GRef (loc', r, opts), List.firstn n args) in
                 GApp (loc, quoted_coercion, ghole :: ghole :: f :: l)
+              else if is_print_coercions_mode_cast () then
+                Errors.error
+                  "Printing Coercions Mode \"Cast\" not implemented yet"
+              else if is_print_coercions_mode_collapsed () then
+                Errors.error
+                  "Printing Coercions Mode \"Collapsed\" not implemented yet"
+              else assert false
 	  | _ -> c
       with Not_found -> c)
   | _ -> c

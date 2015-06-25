@@ -312,17 +312,6 @@ Conversely, to skip the printing of coercions, use
  {\tt Unset Printing Coercions}.
 By default, coercions are not printed.
 
-\begin{Variants}
-\item {\tt Set Printing Coercions Quoted.}
-\optindex{Printing Coercions Quoted}
-
-The command forces all the coercions to be denoted by quoting the coerced
-term, without printing the name of the coercion function.  Coercion quoting
-takes precedence over coercions printing.  To disable coercion quoting, use
-  {\tt Unset Printing Coercions Quoted}.
-By default, coercion are not quoted.
-\end{Variants}
-
 \asubsection{\tt Set Printing Coercion {\qualid}.}
 \optindex{Printing Coercion}
 
@@ -330,6 +319,25 @@ This command forces coercion denoted by {\qualid} to be printed.
 To skip the printing of coercion {\qualid}, use
  {\tt Unset Printing Coercion {\qualid}}.
 By default, a coercion is never printed.
+
+\asubsection{\tt Set Printing Coercion Mode ``\nterm{mode}''.}
+\optindex{Printing Coercions Mode}
+
+The command describes how coercions are displayed, when {\tt Printing
+  Coercions} is activated.  The mode ``\nterm{mode}'' defaults to {\tt
+  ``Named''}, and can otherwise be set to either of:
+\begin{itemize}
+\item {\tt ``Quoted''}: all the coercions are marked by quoting the coerced
+  term, without printing the name of the coercion function.
+\item {\tt ``Cast''}: all the coercions are marked by quoting the coerced
+  term and appending the target type of the coercion, without printing the
+  name of the coercion function.  (NOT IMPLEMENTED YET.)
+\item {\tt ``Collapsed''}: behaves like {\tt ``Quoted''}, but additionally
+  collapses multiple levels of composed coercions to a single mark by
+  quotes.  (NOT IMPLEMENTED YET.)
+\end{itemize}
+To disable any kind of coercion quoting and revert to named coercion, use
+{\tt Unset Printing Coercions Mode}.  By default, coercion are not quoted.
 
 \asection{Classes as Records}
 \label{Coercions-and-records}

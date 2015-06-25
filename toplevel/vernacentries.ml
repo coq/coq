@@ -1275,13 +1275,13 @@ let _ =
       optwrite = (fun b ->  Constrextern.print_coercions := b) }
 
 let _ =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
+  declare_string_option
+    { optsync = true;
+      optdepr = false;
       optname  = "coercion quoting";
-      optkey   = ["Printing";"Coercions";"Quoted"];
-      optread  = (fun () -> !Constrextern.print_coercions_quoted);
-      optwrite = (fun b ->  Constrextern.print_coercions_quoted := b) }
+      optkey   = ["Printing";"Coercions";"Mode"];
+      optread  = Constrextern.get_print_coercions_mode;
+      optwrite = (fun o -> Constrextern.set_print_coercions_mode o) }
 
 let _ =
   declare_bool_option
