@@ -1380,8 +1380,8 @@ module Make
         pr_uconstr = pr_closed_glob_env env Evd.empty;
         pr_dconstr = pr_and_constr_expr (pr_glob_constr_env env);
         pr_lconstr = pr_lconstr_env env Evd.empty;
-        pr_pattern = pr_pat_and_constr_expr (pr_glob_constr_env env);
-        pr_lpattern = pr_pat_and_constr_expr (pr_lglob_constr_env env);
+        pr_pattern = pr_constr_pattern_env env Evd.empty;
+        pr_lpattern = pr_lconstr_pattern_env env Evd.empty;
         pr_constant = pr_evaluable_reference_env env;
         pr_reference = pr_located pr_ltac_constant;
         pr_name = pr_id;
