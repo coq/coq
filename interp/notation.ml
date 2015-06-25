@@ -200,6 +200,19 @@ let declare_delimiters scope key =
     end
   with Not_found -> delimiters_map := String.Map.add key scope !delimiters_map
 
+let remove_delimiters scope =
+  let sc = find_scope scope in
+  let newsc = { sc with delimiters = None } in
+  match sc.delimiters with
+    | None -> msg_warning (str "No bound key for scope " ++ str scope ++ str ".")
+    | Some key ->
+       scope_map := String.Map.add scope newsc !scope_map;
+       try
+         let _ = ignore (String.Map.find key !delimiters_map) in
+         delimiters_map := String.Map.remove key !delimiters_map
+       with Not_found ->
+         assert false (* A delimiter for scope [scope] should exist *)
+
 let find_delimiters_scope loc key =
   try String.Map.find key !delimiters_map
   with Not_found ->

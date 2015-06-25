@@ -644,10 +644,14 @@ module Make
             keyword (if opening then "Open " else "Close ") ++
               keyword "Scope" ++ spc() ++ str sc
           )
-        | VernacDelimiters (sc,key) ->
+        | VernacDelimiters (sc,Some key) ->
           return (
             keyword "Delimit Scope" ++ spc () ++ str sc ++
               spc() ++ keyword "with" ++ spc () ++ str key
+          )
+        | VernacDelimiters (sc, None) ->
+          return (
+            keyword "Undelimit Scope" ++ spc () ++ str sc
           )
         | VernacBindScope (sc,cll) ->
           return (

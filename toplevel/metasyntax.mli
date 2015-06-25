@@ -39,6 +39,7 @@ val add_notation_extra_printing_rule : string -> string -> string -> unit
 (** Declaring delimiter keys and default scopes *)
 
 val add_delimiters : scope_name -> string -> unit
+val remove_delimiters : scope_name -> unit
 val add_class_scope : scope_name -> scope_class list -> unit
 
 (** Add only the interpretation of a notation that already has pa/pp rules *)
