@@ -1210,4 +1210,14 @@ module V82 = struct
     with e when catchable_exception e ->
       let (e, info) = Errors.push e in tclZERO ~info e
 
+  (** Compatibility version of [with_check]. This adds a [tclONCE] around [t]. *)
+  let with_check t =
+    let get = tclLIFT (NonLogical.make (fun () -> !Logic.check)) in
+    let set x = tclLIFT (NonLogical.make (fun () -> Logic.check := x)) in
+    let open Notations in
+      get >>= fun old ->
+      set true <*>
+      tclIFCATCH (tclONCE t)
+        (fun res -> set old <*> tclUNIT res)
+        (fun (e, info) -> set old <*> tclZERO ~info:info e)
 end

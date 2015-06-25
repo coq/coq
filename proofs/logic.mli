@@ -16,6 +16,9 @@ open Proof_type
 
 val with_check    : tactic -> tactic
 
+(** This flag is exported for compatibility reasons. Do not use it directly. *)
+val check : bool ref
+
 (** [without_check] respectively means:\\
   [Intro]: no check that the name does not exist\\
   [Intro_after]: no check that the name does not exist and that variables in

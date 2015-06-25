@@ -362,14 +362,14 @@ let prove_fun_correct evd functional_induction funs_constr graphs_constr schemes
 	    (* unfolding of all the defined variables introduced by this branch *)
 	    (* observe_tac "unfolding" pre_tac; *)
 	    (* $zeta$ normalizing of the conclusion *)
-	    reduce
+	    Proofview.V82.of_tactic (reduce
 	      (Genredexpr.Cbv
 		 { Redops.all_flags with
 		     Genredexpr.rDelta = false ;
 		     Genredexpr.rConst = []
 		 }
 	      )
-	      Locusops.onConcl;
+	      Locusops.onConcl);
 	    observe_tac ("toto ") tclIDTAC;
     
 	    (* introducing the the result of the graph and the equality hypothesis *)
@@ -531,12 +531,12 @@ and intros_with_rewrite_aux : tactic =
 		      ] g
 		  | LetIn _ ->
 		      tclTHENSEQ[
-			reduce
+			Proofview.V82.of_tactic (reduce
 			  (Genredexpr.Cbv
 			     {Redops.all_flags
 			      with Genredexpr.rDelta = false;
 			     })
-			  Locusops.onConcl
+			  Locusops.onConcl)
 			;
 			intros_with_rewrite
 		      ] g
@@ -546,12 +546,12 @@ and intros_with_rewrite_aux : tactic =
 	      end
 	  | LetIn _ ->
 	      tclTHENSEQ[
-		reduce
+		Proofview.V82.of_tactic (reduce
 		  (Genredexpr.Cbv
 		     {Redops.all_flags
 		      with Genredexpr.rDelta = false;
 		     })
-		  Locusops.onConcl
+		  Locusops.onConcl)
 		;
 		intros_with_rewrite
 	      ] g
@@ -691,12 +691,12 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_lemma));
 	  (* Don't forget to $\zeta$ normlize the term since the principles
              have been $\zeta$-normalized *)
-	  reduce
+	  Proofview.V82.of_tactic (reduce
 	    (Genredexpr.Cbv
 	       {Redops.all_flags
 		with Genredexpr.rDelta = false;
 	       })
-	    Locusops.onConcl
+	    Locusops.onConcl)
 	  ;
 	  Simple.generalize (List.map mkVar ids);
 	  thin ids

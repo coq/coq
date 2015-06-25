@@ -157,11 +157,11 @@ let rec n_x_id ids n =
 
 
 let simpl_iter clause =
-  reduce
+  Proofview.V82.of_tactic (reduce
     (Lazy
        {rBeta=true;rIota=true;rZeta= true; rDelta=false;
         rConst = [ EvalConstRef (const_of_ref (delayed_force iter_ref))]})
-    clause
+    clause)
 
 (* Others ugly things ... *)
 let (value_f:constr list -> global_reference -> constr) =

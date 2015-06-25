@@ -582,4 +582,7 @@ module V82 : sig
   (* transforms every Ocaml (catchable) exception into a failure in
      the monad. *)
   val wrap_exceptions : (unit -> 'a tactic) -> 'a tactic
+
+  (** Compatibility version of [with_check]. This adds a [tclONCE] around [t]. *)
+val with_check : 'a tactic -> 'a tactic
 end

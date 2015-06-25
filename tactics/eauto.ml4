@@ -179,7 +179,7 @@ and e_my_find_search db_list local_db hdc concl =
         | Res_pf_THEN_trivial_fail (term,cl) ->
           Tacticals.New.tclTHEN (Proofview.V82.tactic (unify_e_resolve poly st (term,cl)))
             (e_trivial_fail_db db_list local_db)
-        | Unfold_nth c -> Proofview.V82.tactic (reduce (Unfold [AllOccurrences,c]) onConcl)
+        | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
         | Extern tacast -> conclPattern concl p tacast
        in
        let tac = run_hint t tac in

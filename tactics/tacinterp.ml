@@ -2106,15 +2106,14 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
   (* Conversion *)
   | TacReduce (r,cl) ->
-      (* spiwack: until the tactic is in the monad *)
-      Proofview.Trace.name_tactic (fun () -> Pp.str"<reduce>") begin
-      Proofview.V82.tactic begin fun gl -> 
-        let (sigma,r_interp) = interp_red_expr ist (pf_env gl) (project gl) r in
-        tclTHEN
-	  (tclEVARS sigma)
-	  (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl))
-          gl
-      end
+      Proofview.Goal.enter begin fun gl ->
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
+        let (sigma, r_interp) = interp_red_expr ist env sigma r in
+        let cl_interp = interp_clause ist env sigma cl in
+        let tac =  Proofview.Unsafe.tclEVARS sigma <*>
+          Tactics.reduce r_interp cl_interp in
+        name_atomic ~env (TacReduce (r_interp, cl_interp)) tac
       end
   | TacChange (None,c,cl) ->
       (* spiwack: until the tactic is in the monad *)

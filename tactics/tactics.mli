@@ -157,8 +157,8 @@ val unfold_option     :
 val change            :
   constr_pattern option -> change_arg -> clause -> tactic
 val pattern_option    :
-  (occurrences * constr) list -> goal_location -> tactic
-val reduce            : red_expr -> clause -> tactic
+  (occurrences * constr) list -> goal_location -> unit Proofview.tactic
+val reduce            : red_expr -> clause -> unit Proofview.tactic
 val unfold_constr     : global_reference -> tactic
 
 (** {6 Modification of the local context. } *)

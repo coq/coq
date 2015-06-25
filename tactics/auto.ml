@@ -370,10 +370,11 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly})) 
 	   with "debug auto" we don't display the details of inner trivial *)
         (trivial_fail_db (no_dbg ()) (not (Option.is_empty flags)) db_list local_db)
     | Unfold_nth c ->
-      Proofview.V82.tactic (fun gl ->
-       if exists_evaluable_reference (pf_env gl) c then
-	 tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl) gl
-       else tclFAIL 0 (str"Unbound reference") gl)
+        Proofview.Goal.enter begin fun gl ->
+          if exists_evaluable_reference (Proofview.Goal.env gl) c then
+            Proofview.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
+          else Tacticals.New.tclFAIL 0 (str"Unbound reference")
+        end
     | Extern tacast -> 
       conclPattern concl p tacast
   in
