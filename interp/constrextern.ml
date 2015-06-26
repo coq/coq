@@ -90,9 +90,9 @@ let show_scope scopt =
   | Some sc -> spc () ++ str "in scope" ++ spc () ++ str sc
 
 let deactivate_notation_printing ntn scopt =
-  match scopt with (* ensures that the scope exists *)
-  | Some sc -> ignore (find_scope sc)
-  | None -> ();
+  (* match scopt with (\* ensures that the scope exists *\) *)
+  (* | Some sc -> ignore (find_scope sc) *)
+  (* | None -> (); *)
   (* match availability_of_notation (scopt, ntn) (scopt, []) with *)
   (* | None -> user_err_loc (Loc.ghost, "", str "Notation" ++ spc () ++ str ntn *)
   (*                                        ++ spc () ++ str "does not exist" *)
