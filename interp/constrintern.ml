@@ -1032,8 +1032,10 @@ let find_pattern_variable = function
   | Ident (loc,id) -> id
   | Qualid (loc,_) as x -> raise (InternalizationError(loc,NotAConstructor x))
 
-let sort_fields mode loc l completer =
-(*mode=false if pattern and true if constructor*)
+let sort_fields ~complete loc l completer =
+  (* the 'complete' parameter is true when we require that all the
+     record fields be provided -- when building a new record value;
+     when pattern-matching, the list of fields may be partial. *)
   match l with
     | [] -> None
     | (refer, value)::rem ->
@@ -1053,27 +1055,28 @@ let sort_fields mode loc l completer =
 	  let rec build_patt l m i acc =
 	    match l with
 	      | [] -> (i, acc)
-	      | (Some name) :: b->
-		 (match m with
+	      | (Some name) :: b ->
+		 begin match m with
 		    | [] -> anomaly (Pp.str "Number of projections mismatch")
 		    | (_, regular)::tm ->
-		       let boolean = not regular in
                        begin match global_reference_of_reference refer with
 		       | ConstRef name' when eq_constant name name' ->
-			 if boolean && mode then
-			   user_err_loc (loc, "", str"No local fields allowed in a record construction.")
+			 if not regular && complete then
+			   user_err_loc (loc, "", str "No local fields allowed in a record construction.")
 			 else build_patt b tm (i + 1) (i, snd acc) (* we found it *)
                        | _ ->
-			  build_patt b tm (if boolean&&mode then i else i + 1)
-			    (if boolean && mode then acc
+			  build_patt b tm
+			    (if not regular && complete then i else i + 1)
+			    (if not regular && complete then acc
 			     else fst acc, (i, ConstRef name) :: snd acc)
-                       end)
+		       end
+		 end
 	      | None :: b-> (* we don't want anonymous fields *)
-		 if mode then
+		 if complete then
 		   user_err_loc (loc, "", str "This record contains anonymous fields.")
 		 else build_patt b m (i+1) acc
 		   (* anonymous arguments don't appear in m *)
-	    in
+	  in
 	  let ind = record.Recordops.s_CONST in
 	  try (* insertion of Constextern.reference_global *)
 	    (record.Recordops.s_EXPECTEDPARAM,
@@ -1109,7 +1112,8 @@ let sort_fields mode loc l completer =
 	  sf rem ([first_index, value], list_proj) in
 	(* we sort them *)
 	let sorted_indexed_pattern =
-	  List.sort (fun (i, _) (j, _) -> compare i j) unsorted_indexed_pattern in
+          let cmp_by_index (i, _) (j, _) = Int.compare i j in
+	  List.sort cmp_by_index unsorted_indexed_pattern in
 	(* a function to complete with wildcards *)
 	let rec complete_list n l =
 	  if n <= 1 then l else complete_list (n-1) (completer n l) in
@@ -1220,7 +1224,7 @@ let drop_notations_pattern looked_for =
     | CPatAlias (loc, p, id) -> RCPatAlias (loc, in_pat top scopes p, id)
     | CPatRecord (loc, l) ->
       let sorted_fields =
-	sort_fields false loc l (fun _ l -> (CPatAtom (loc, None))::l) in
+	sort_fields ~complete:false loc l (fun _ l -> (CPatAtom (loc, None))::l) in
       begin match sorted_fields with
 	| None -> RCPatAtom (loc, None)
 	| Some (n, head, pl) ->
@@ -1587,7 +1591,7 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 
     | CRecord (loc, fs) ->
 	let cargs =
-	  sort_fields true loc fs
+	  sort_fields ~complete:true loc fs
 	    (fun k l -> CHole (loc, Some (Evar_kinds.QuestionMark (Evar_kinds.Define true)), Misctypes.IntroAnonymous, None) :: l)
 	in
 	begin
