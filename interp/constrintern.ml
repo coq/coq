@@ -959,92 +959,93 @@ let sort_fields ~complete loc l completer =
   match l with
     | [] -> None
     | (refer, value)::rem ->
-	let (nparams,          (* the number of parameters *)
-	     base_constructor, (* the reference constructor of the record *)
-	     (max,             (* number of params *)
-	      (first_index,    (* index of the first field of the record *)
-	       list_proj)))    (* list of projections *)
-	  =
-	  let record =
-	    try Recordops.find_projection
-	      (global_reference_of_reference refer)
-	    with Not_found ->
-	      user_err_loc (loc_of_reference refer, "intern", pr_reference refer ++ str": Not a projection")
-	    in
-	  (* elimination of the first field from the projections *)
-	  let rec build_patt l m i acc =
-	    match l with
-	      | [] -> (i, acc)
-	      | (Some name) :: b ->
-		 begin match m with
-		    | [] -> anomaly (Pp.str "Number of projections mismatch")
-		    | (_, regular)::tm ->
+        let (nparams,          (* the number of parameters *)
+             base_constructor, (* the reference constructor of the record *)
+             (max,             (* number of params *)
+              (first_index,    (* index of the first field of the record *)
+               list_proj)))    (* list of projections *)
+          =
+          let record =
+            try Recordops.find_projection
+              (global_reference_of_reference refer)
+            with Not_found ->
+              user_err_loc (loc_of_reference refer, "intern", pr_reference refer ++ str": Not a projection")
+            in
+          (* elimination of the first field from the projections *)
+          let rec build_patt l m i acc =
+            match l with
+              | [] -> (i, acc)
+              | (Some name) :: b ->
+                 begin match m with
+                    | [] -> anomaly (Pp.str "Number of projections mismatch")
+                    | (_, regular)::tm ->
                        begin match global_reference_of_reference refer with
-		       | ConstRef name' when eq_constant name name' ->
-			 if not regular && complete then
-			   user_err_loc (loc, "", str "No local fields allowed in a record construction.")
-			 else build_patt b tm (i + 1) (i, snd acc) (* we found it *)
+                       | ConstRef name' when eq_constant name name' ->
+                         if not regular && complete then
+                           user_err_loc (loc, "", str "No local fields allowed in a record construction.")
+                         else build_patt b tm (i + 1) (i, snd acc) (* we found it *)
                        | _ ->
-			  build_patt b tm
-			    (if not regular && complete then i else i + 1)
-			    (if not regular && complete then acc
-			     else fst acc, (i, ConstRef name) :: snd acc)
-		       end
-		 end
-	      | None :: b-> (* we don't want anonymous fields *)
-		 if complete then
-		   user_err_loc (loc, "", str "This record contains anonymous fields.")
-		 else build_patt b m (i+1) acc
-		   (* anonymous arguments don't appear in m *)
-	  in
-	  let ind = record.Recordops.s_CONST in
-	  try (* insertion of Constextern.reference_global *)
-	    (record.Recordops.s_EXPECTEDPARAM,
-	     Qualid (loc, shortest_qualid_of_global Id.Set.empty (ConstructRef ind)),
-	     build_patt record.Recordops.s_PROJ record.Recordops.s_PROJKIND 1 (0,[]))
-	  with Not_found -> anomaly (Pp.str "Environment corruption for records.")
-	  in
-	(* now we want to have all fields of the pattern indexed by their place in
-	   the constructor *)
-	let rec sf patts accpatt =
-	  match patts with
-	    | [] -> accpatt
-	    | p::q->
-	       let refer, patt = p in
-	       let glob_refer = try global_reference_of_reference refer
-	       with |Not_found ->
-		 user_err_loc (loc_of_reference refer, "intern",
-			       str "The field \"" ++ pr_reference refer ++ str "\" does not exist.") in
-	       let rec add_patt l acc =
-		 match l with
-		   | [] ->
-		       user_err_loc
-			 (loc, "",
-			  str "This record contains fields of different records.")
-		   | (i, a) :: b->
-		       if eq_gr glob_refer a
-		       then (i,List.rev_append acc l)
-		       else add_patt b ((i,a)::acc)
-	         in
-	       let (index, projs) = add_patt (snd accpatt) [] in
-		 sf q ((index, patt)::fst accpatt, projs) in
-	let (unsorted_indexed_pattern, remainings) =
-	  sf rem ([first_index, value], list_proj) in
-	(* we sort them *)
-	let sorted_indexed_pattern =
+                          build_patt b tm
+                            (if not regular && complete then i else i + 1)
+                            (if not regular && complete then acc
+                             else fst acc, (i, ConstRef name) :: snd acc)
+                       end
+                 end
+              | None :: b-> (* we don't want anonymous fields *)
+                 if complete then
+                   user_err_loc (loc, "", str "This record contains anonymous fields.")
+                 else build_patt b m (i+1) acc
+                   (* anonymous arguments don't appear in m *)
+          in
+          let ind = record.Recordops.s_CONST in
+          try (* insertion of Constextern.reference_global *)
+            (record.Recordops.s_EXPECTEDPARAM,
+             Qualid (loc, shortest_qualid_of_global Id.Set.empty (ConstructRef ind)),
+             build_patt record.Recordops.s_PROJ record.Recordops.s_PROJKIND 1 (0,[]))
+          with Not_found -> anomaly (Pp.str "Environment corruption for records.")
+          in
+        (* now we want to have all fields of the pattern indexed by their place in
+           the constructor *)
+        let rec sf patts accpatt =
+          match patts with
+            | [] -> accpatt
+            | p::q->
+               let refer, patt = p in
+               let glob_refer = try global_reference_of_reference refer
+               with |Not_found ->
+                 user_err_loc (loc_of_reference refer, "intern",
+                               str "The field \"" ++ pr_reference refer ++ str "\" does not exist.") in
+               let rec add_patt l acc =
+                 match l with
+                   | [] ->
+                       user_err_loc
+                         (loc, "",
+                          str "This record contains fields of different records.")
+                   | (i, a) :: b->
+                       if eq_gr glob_refer a
+                       then (i,List.rev_append acc l)
+                       else add_patt b ((i,a)::acc)
+                 in
+               let (index, projs) = add_patt (snd accpatt) [] in
+                 sf q ((index, patt)::fst accpatt, projs) in
+        let (unsorted_indexed_pattern, remainings) =
+          sf rem ([first_index, value], list_proj) in
+        (* we sort them *)
+        let sorted_indexed_pattern =
           let cmp_by_index (i, _) (j, _) = Int.compare i j in
-	  List.sort cmp_by_index unsorted_indexed_pattern in
-	(* a function to complete with wildcards *)
-	let rec complete_list n l =
-	  if n <= 1 then l else complete_list (n-1) (completer n l) in
-	(* a function to remove indice *)
-	let rec clean_list l i acc =
-	  match l with
-	    | [] -> complete_list (max - i) acc
-	    | (k, p)::q-> clean_list q k (p::(complete_list (k - i) acc))
-	  in
-	Some (nparams, base_constructor,
-	  List.rev (clean_list sorted_indexed_pattern 0 []))
+          List.sort cmp_by_index unsorted_indexed_pattern in
+        (* a function to complete with wildcards *)
+        let rec complete_list n l =
+          if n <= 1 then l else complete_list (n-1) (completer n l) in
+        (* a function to remove indice *)
+        let rec clean_list l i acc =
+          match l with
+            | [] -> complete_list (max - i) acc
+            | (k, p)::q-> clean_list q k (p::(complete_list (k - i) acc))
+          in
+        Some (nparams, base_constructor,
+          List.rev (clean_list sorted_indexed_pattern 0 []))
+
 
 (** {6 Manage multiple aliases} *)
 
