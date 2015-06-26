@@ -1168,7 +1168,7 @@ let do_program_recursive local p fixkind fixl ntns =
       in
       let indexes = 
 	Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
-	List.iteri (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
+	List.iteri (fun i _ -> Inductive.check_fix env ~chk:true ((indexes,i),fixdecls)) fixl
   end in
   let ctx = Evd.evar_universe_context evd in
   let kind = match fixkind with

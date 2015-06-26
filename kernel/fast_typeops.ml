@@ -410,12 +410,12 @@ let rec execute env cstr =
     | Fix ((vn,i as vni),recdef) ->
       let (fix_ty,recdef') = execute_recdef env recdef i in
       let fix = (vni,recdef') in
-        check_fix env fix; fix_ty
+        check_fix env ~chk:true fix; fix_ty
 	  
     | CoFix (i,recdef) ->
       let (fix_ty,recdef') = execute_recdef env recdef i in
       let cofix = (i,recdef') in
-        check_cofix env cofix; fix_ty
+        check_cofix env ~chk:true cofix; fix_ty
 	  
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
