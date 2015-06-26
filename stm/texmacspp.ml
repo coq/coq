@@ -598,14 +598,14 @@ let rec tmpp v loc =
             (fun (ie, dnl) -> (pp_inductive_expr ie) @
                               (List.map pp_decl_notation dnl)) iednll) in
       xmlInductive kind loc exprs
-  | VernacFixpoint (_, fednll) ->
+  | VernacFixpoint (_,_, fednll) ->
       let exprs =
         List.flatten (* should probably not be flattened *)
           (List.map
             (fun (fe, dnl) -> (pp_fixpoint_expr fe) @
                               (List.map pp_decl_notation dnl)) fednll) in
       xmlFixpoint exprs
-  | VernacCoFixpoint (_, cfednll) ->
+  | VernacCoFixpoint (_,_, cfednll) ->
       (* Nota: it is like VernacFixpoint without so could be merged *)
       let exprs =
         List.flatten (* should probably not be flattened *)

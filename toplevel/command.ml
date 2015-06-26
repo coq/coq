@@ -1044,7 +1044,7 @@ let interp_cofixpoint l ntns =
   check_recursive false  env evd fix;
   fix,Evd.evar_universe_context evd,info
     
-let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexes ntns =
+let declare_fixpoint ~chkguard local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexes ntns =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -1080,7 +1080,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexe
   (* Declare notations *)
   List.iter Metasyntax.add_notation_interpretation ntns
 
-let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns =
+let declare_cofixpoint ~chkguard local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -1202,19 +1202,19 @@ let do_program_fixpoint local poly l =
 	errorlabstrm "do_program_fixpoint"
 	  (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
-let do_fixpoint local poly l =
+let do_fixpoint ~chkguard local poly l =
   if Flags.is_program_mode () then do_program_fixpoint local poly l
   else
     let fixl, ntns = extract_fixpoint_components true l in
     let fix = interp_fixpoint fixl ntns in
     let possible_indexes =
       List.map compute_possible_guardness_evidences (pi3 fix) in
-    declare_fixpoint local poly fix possible_indexes ntns
+    declare_fixpoint ~chkguard local poly fix possible_indexes ntns
 
-let do_cofixpoint local poly l =
+let do_cofixpoint ~chkguard local poly l =
   let fixl,ntns = extract_cofixpoint_components l in
     if Flags.is_program_mode () then
       do_program_recursive local poly Obligations.IsCoFixpoint fixl ntns
     else
       let cofix = interp_cofixpoint fixl ntns in
-	declare_cofixpoint local poly cofix ntns
+	declare_cofixpoint ~chkguard local poly cofix ntns

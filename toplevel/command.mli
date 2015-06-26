@@ -146,12 +146,14 @@ val interp_cofixpoint :
 (** Registering fixpoints and cofixpoints in the environment *)
 
 val declare_fixpoint :
+  chkguard:bool ->
   locality -> polymorphic ->
   recursive_preentry * Evd.evar_universe_context * 
   (Name.t list * Impargs.manual_implicits * int option) list ->
   lemma_possible_guards -> decl_notation list -> unit
 
-val declare_cofixpoint : locality -> polymorphic -> 
+val declare_cofixpoint :
+  chkguard:bool -> locality -> polymorphic ->
   recursive_preentry * Evd.evar_universe_context * 
   (Name.t list * Impargs.manual_implicits * int option) list ->
   decl_notation list -> unit
@@ -159,9 +161,11 @@ val declare_cofixpoint : locality -> polymorphic ->
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint :
+  chkguard:bool -> (* When [false], assume guarded. *)
   locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> unit
 
 val do_cofixpoint :
+  chkguard:bool -> (* When [false], assume guarded. *)
   locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> unit
 
 (** Utils *)

@@ -578,17 +578,17 @@ let vernac_inductive chk poly lo finite indl =
     let indl = List.map unpack indl in
     do_mutual_inductive chk indl poly lo finite
 
-let vernac_fixpoint locality poly local l =
+let vernac_fixpoint ~chkguard locality poly local l =
   let local = enforce_locality_exp locality local in
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_fixpoint local poly l
+  do_fixpoint ~chkguard local poly l
 
-let vernac_cofixpoint locality poly local l =
+let vernac_cofixpoint ~chkguard locality poly local l =
   let local = enforce_locality_exp locality local in
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_cofixpoint local poly l
+  do_cofixpoint ~chkguard local poly l
 
 let vernac_scheme l =
   if Dumpglob.dump () then
@@ -1895,8 +1895,8 @@ let interp ?proof locality poly c =
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
   | VernacInductive (chk,priv,finite,l) -> vernac_inductive chk poly priv finite l
-  | VernacFixpoint (local, l) -> vernac_fixpoint locality poly local l
-  | VernacCoFixpoint (local, l) -> vernac_cofixpoint locality poly local l
+  | VernacFixpoint (chkguard,local, l) -> vernac_fixpoint ~chkguard locality poly local l
+  | VernacCoFixpoint (chkguard,local, l) -> vernac_cofixpoint ~chkguard locality poly local l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
   | VernacUniverse l -> vernac_universe l
