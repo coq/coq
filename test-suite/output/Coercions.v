@@ -100,7 +100,7 @@ Check a : C.
 Print x.
 Print x'.
 
-(* I would like this to display with “f _” as above, not just “_”. *)
+(* Why doesn't it display as “g “f _””, as above? *)
 Check QuotedCoercion g false (QuotedCoercion f false a).
 
 End testQuotedCoercions.

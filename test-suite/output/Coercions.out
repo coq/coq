@@ -58,5 +58,5 @@ x = g “f a”
      : C
 x' = id “g “f a””
      : C
-““a””
+“g “f a””
      : C
