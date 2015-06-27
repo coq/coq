@@ -1100,7 +1100,6 @@ let sort_fields ~complete loc l completer =
            the constructor *)
         let rec index_fields fields remaining_projs acc =
           match fields with
-            | [] -> acc
             | (field_ref, field_value) :: fields ->
                let field_glob_ref = try global_reference_of_reference field_ref
                with |Not_found ->
@@ -1115,26 +1114,22 @@ let sort_fields ~complete loc l completer =
                       str "This record contains fields of different records.")
                in
                index_fields fields remaining_projs ((field_index, field_value) :: acc)
+            | [] ->
+               (* the order does not matter as we sort them next,
+                  List.rev_* is just for efficiency *)
+               let remaining_fields =
+                 let complete_field (idx, _field_ref) = (idx, completer idx) in
+                 List.rev_map complete_field remaining_projs in
+               List.rev_append remaining_fields acc
         in
-        let unsorted_indexed_pattern =
+        let unsorted_indexed_fields =
           index_fields other_fields proj_list
             [(first_field_index, first_field_value)] in
-        (* we sort them *)
-        let sorted_indexed_pattern =
+        let sorted_indexed_fields =
           let cmp_by_index (i, _) (j, _) = Int.compare i j in
-          List.sort cmp_by_index unsorted_indexed_pattern in
-        (* a function to complete with wildcards *)
-        let rec complete_list n l =
-          if n <= 1 then l else complete_list (n-1) (completer n l) in
-        (* a function to remove indice *)
-        let rec clean_list l i acc =
-          match l with
-            | [] -> complete_list (end_index - i) acc
-            | (k, p)::q-> clean_list q k (p::(complete_list (k - i) acc))
-          in
-        Some (nparams, base_constructor,
-          List.rev (clean_list sorted_indexed_pattern 0 []))
-
+          List.sort cmp_by_index unsorted_indexed_fields in
+        let sorted_fields = List.map snd sorted_indexed_fields in
+        Some (nparams, base_constructor, sorted_fields)
 
 (** {6 Manage multiple aliases} *)
 
@@ -1234,7 +1229,7 @@ let drop_notations_pattern looked_for =
     | CPatAlias (loc, p, id) -> RCPatAlias (loc, in_pat top scopes p, id)
     | CPatRecord (loc, l) ->
       let sorted_fields =
-	sort_fields ~complete:false loc l (fun _ l -> (CPatAtom (loc, None))::l) in
+	sort_fields ~complete:false loc l (fun _idx -> (CPatAtom (loc, None))) in
       begin match sorted_fields with
 	| None -> RCPatAtom (loc, None)
 	| Some (n, head, pl) ->
@@ -1600,12 +1595,12 @@ let internalize globalenv env allow_patvar (_, ntnvars as lvar) c =
 	    (merge_impargs l args) loc
 
     | CRecord (loc, fs) ->
-	let cargs =
+	let fields =
 	  sort_fields ~complete:true loc fs
-	    (fun k l -> CHole (loc, Some (Evar_kinds.QuestionMark (Evar_kinds.Define true)), Misctypes.IntroAnonymous, None) :: l)
+	    (fun _idx -> CHole (loc, Some (Evar_kinds.QuestionMark (Evar_kinds.Define true)), Misctypes.IntroAnonymous, None))
 	in
 	begin
-	  match cargs with
+	  match fields with
 	    | None -> user_err_loc (loc, "intern", str"No constructor inference.")
 	    | Some (n, constrname, args) ->
 		let pars = List.make n (CHole (loc, None, Misctypes.IntroAnonymous, None)) in
