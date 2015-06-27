@@ -1018,30 +1018,27 @@ let sort_fields ~complete loc l completer =
         in
         (* now we want to have all fields of the pattern indexed by their place in
            the constructor *)
-        let rec sf patts accpatt =
-          match patts with
-            | [] -> accpatt
-            | p::q->
-               let refer, patt = p in
-               let glob_refer = try global_reference_of_reference refer
+        let rec index_fields fields remaining_projs acc =
+          match fields with
+            | [] -> acc
+            | (field_ref, field_value) :: fields ->
+               let field_glob_ref = try global_reference_of_reference field_ref
                with |Not_found ->
-                 user_err_loc (loc_of_reference refer, "intern",
-                               str "The field \"" ++ pr_reference refer ++ str "\" does not exist.") in
-               let rec add_patt l acc =
-                 match l with
-                   | [] ->
-                       user_err_loc
-                         (loc, "",
-                          str "This record contains fields of different records.")
-                   | (i, a) :: b->
-                       if eq_gr glob_refer a
-                       then (i,List.rev_append acc l)
-                       else add_patt b ((i,a)::acc)
-                 in
-               let (index, projs) = add_patt (snd accpatt) [] in
-                 sf q ((index, patt)::fst accpatt, projs) in
-        let (unsorted_indexed_pattern, remainings) =
-          sf other_fields ([first_field_index, first_field_value], proj_list) in
+                 user_err_loc (loc_of_reference field_ref, "intern",
+                               str "The field \"" ++ pr_reference field_ref ++ str "\" does not exist.") in
+               let remaining_projs, (field_index, _) =
+                 let the_proj (idx, glob_ref) = eq_gr field_glob_ref glob_ref in
+                 try CList.extract_first the_proj remaining_projs
+                 with Not_found ->
+                   user_err_loc
+                     (loc, "",
+                      str "This record contains fields of different records.")
+               in
+               index_fields fields remaining_projs ((field_index, field_value) :: acc)
+        in
+        let unsorted_indexed_pattern =
+          index_fields other_fields proj_list
+            [(first_field_index, first_field_value)] in
         (* we sort them *)
         let sorted_indexed_pattern =
           let cmp_by_index (i, _) (j, _) = Int.compare i j in
