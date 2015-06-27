@@ -119,6 +119,10 @@ sig
   val remove_first : ('a -> bool) -> 'a list -> 'a list
   (** Remove the first element satisfying a predicate, or raise [Not_found] *)
 
+  val extract_first : ('a -> bool) -> 'a list -> 'a list * 'a
+  (** Remove and return the first element satisfying a predicate,
+      or raise [Not_found] *)
+
   val insert : ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
   (** Insert at the (first) position so that if the list is ordered wrt to the
       total order given as argument, the order is preserved *)
