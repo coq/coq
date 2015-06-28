@@ -1437,6 +1437,15 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
+      optname  = "printing of universes";
+      optkey   = ["Printing";"Universes"];
+      optread  = (fun () -> !Constrextern.print_universes);
+      optwrite = (fun b -> Constrextern.print_universes:=b) }
+     
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
       optname  = "dumping bytecode after compilation";
       optkey   = ["Dump";"Bytecode"];
       optread  = Flags.get_dump_bytecode;
