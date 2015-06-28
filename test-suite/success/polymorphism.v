@@ -292,3 +292,19 @@ Section foo2.
   Context `{forall A B, Funext A B}.
   Print Universes.
 End foo2.
+
+Module eta.
+Set Universe Polymorphism.
+
+Set Printing Universes.
+
+Axiom admit : forall A, A.
+Record R := {O : Type}.
+
+Definition RL (x : R@{i}) : $(let u := constr:(Type@{i}:Type@{j}) in exact (R@{j}) )$ := {|O := @O x|}.
+Definition RLRL : forall x : R, RL x = RL (RL x) := fun x => eq_refl.
+Definition RLRL' : forall x : R, RL x = RL (RL x).
+  intros. apply eq_refl.
+Qed.
+
+End eta.

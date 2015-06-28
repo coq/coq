@@ -1287,7 +1287,9 @@ let sigma_compare_sorts env pb s0 s1 sigma =
     
 let sigma_compare_instances flex i0 i1 sigma =
   try Evd.set_eq_instances ~flex sigma i0 i1
-  with Evd.UniversesDiffer -> raise Reduction.NotConvertible
+  with Evd.UniversesDiffer
+     | Univ.UniverseInconsistency _ ->
+	raise Reduction.NotConvertible
 
 let sigma_univ_state = 
   { Reduction.compare = sigma_compare_sorts;
