@@ -43,7 +43,7 @@ Notation IsHProp := (IsTrunc -1).
 Monomorphic Axiom dummy_funext_type : Type0.
 Monomorphic Class Funext := { dummy_funext_value : dummy_funext_type }.
 
-Inductive Unit : Type1 :=
+Inductive Unit : Set :=
     tt : Unit.
 
 Record TruncType (n : trunc_index) := BuildTruncType {

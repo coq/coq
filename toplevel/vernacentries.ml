@@ -424,7 +424,9 @@ let vernac_syntax_extension locality local =
   let local = enforce_module_locality locality local in
   Metasyntax.add_syntax_extension local
 
-let vernac_delimiters = Metasyntax.add_delimiters
+let vernac_delimiters sc = function
+  | Some lr -> Metasyntax.add_delimiters sc lr
+  | None -> Metasyntax.remove_delimiters sc
 
 let vernac_bind_scope sc cll =
   Metasyntax.add_class_scope sc (List.map scope_class_of_qualid cll)
@@ -1431,6 +1433,15 @@ let _ =
       optread  = Pp_control.get_margin;
       optwrite = Pp_control.set_margin }
 
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "printing of universes";
+      optkey   = ["Printing";"Universes"];
+      optread  = (fun () -> !Constrextern.print_universes);
+      optwrite = (fun b -> Constrextern.print_universes:=b) }
+     
 let _ =
   declare_bool_option
     { optsync  = true;

@@ -351,10 +351,7 @@ let evar_universe_context_of ctx = { empty_evar_universe_context with uctx_local
 let evar_universe_context_subst ctx = ctx.uctx_univ_variables
 
 let instantiate_variable l b v =
-  (* let b = Univ.subst_large_constraint (Univ.Universe.make l) Univ.type0m_univ b in *)
-  (* if Univ.univ_depends (Univ.Universe.make l) b then  *)
-  (*   error ("Occur-check in universe variable instantiation") *)
-  (* else *) v := Univ.LMap.add l (Some b) !v
+  v := Univ.LMap.add l (Some b) !v
 
 exception UniversesDiffer
 
@@ -420,7 +417,16 @@ let process_universe_constraints univs vars alg cstrs =
 		      raise UniversesDiffer
 	      in
 	        Univ.enforce_eq_level l' r' local
-           | _, _ (* One of the two is algebraic or global *) -> 
+	    | Inr (l, loc, alg), Inl r
+	    | Inl r, Inr (l, loc, alg) ->
+	       let inst = Univ.univ_level_rem l r r in
+		 if alg then (instantiate_variable l inst vars; local)
+		 else
+		   let lu = Univ.Universe.make l in
+		   if Univ.univ_level_mem l r then
+		     Univ.enforce_leq inst lu local
+		   else raise (Univ.UniverseInconsistency (Univ.Eq, lu, r, None))
+            | _, _ (* One of the two is algebraic or global *) -> 
 	     if Univ.check_eq univs l r then local
 	     else raise (Univ.UniverseInconsistency (Univ.Eq, l, r, None))
   in

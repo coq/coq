@@ -509,8 +509,10 @@ let rec tmpp v loc =
 
   | VernacOpenCloseScope (_,(true,name)) -> xmlScope loc "open" name []
   | VernacOpenCloseScope (_,(false,name)) -> xmlScope loc "close" name []
-  | VernacDelimiters (name,tag) ->
+  | VernacDelimiters (name,Some tag) ->
       xmlScope loc "delimit" name ~attr:["delimiter",tag] []
+  | VernacDelimiters (name,None) ->
+      xmlScope loc "undelimit" name ~attr:[] []
   | VernacBindScope (name,l) ->
       xmlScope loc "bind" name
         (List.map (function

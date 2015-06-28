@@ -26,8 +26,8 @@ let univ_of_sort = function
   | Prop Null -> Universe.type0m
 
 let sort_of_univ u =
-  if is_type0m_univ u then Prop Null
-  else if is_type0_univ u then Prop Pos
+  if is_type0m_univ u then prop
+  else if is_type0_univ u then set
   else Type u
 
 let compare s1 s2 =
@@ -62,6 +62,8 @@ let is_small = function
 let family = function
   | Prop Null -> InProp
   | Prop Pos -> InSet
+  | Type u when is_type0m_univ u -> InProp
+  | Type u when is_type0_univ u -> InSet
   | Type _ -> InType
 
 let family_equal = (==)
@@ -76,7 +78,7 @@ let hash = function
   in
   combinesmall 1 h
 | Type u ->
-  let h = Hashtbl.hash u in (** FIXME *)
+ let h = Univ.Universe.hash u in
   combinesmall 2 h
 
 module List = struct
@@ -101,7 +103,7 @@ module Hsorts =
         | (Type u1, Type u2) -> u1 == u2
         |_ -> false
 
-      let hash = Hashtbl.hash (** FIXME *)
+      let hash = hash
     end)
 
 let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons hcons_univ
