@@ -93,11 +93,11 @@ let deactivate_notation_printing ntn scopt =
   (* match scopt with (\* ensures that the scope exists *\) *)
   (* | Some sc -> ignore (find_scope sc) *)
   (* | None -> (); *)
-  (* match availability_of_notation (scopt, ntn) (scopt, []) with *)
-  (* | None -> user_err_loc (Loc.ghost, "", str "Notation" ++ spc () ++ str ntn *)
-  (*                                        ++ spc () ++ str "does not exist" *)
-  (*                                        ++ show_scope scopt ++ str ".") *)
-  (* | Some _ -> *)
+  match availability_of_notation (scopt, ntn) (scopt, []) with
+  | None -> user_err_loc (Loc.ghost, "", str "Notation" ++ spc () ++ str ntn
+                                         ++ spc () ++ str "does not exist"
+                                         ++ show_scope scopt ++ str ".")
+  | Some _ ->
      let nr = NotationRule (scopt, ntn) in
      if List.mem nr !print_non_active_notations then
        Pp.msg_warning (str "Notation" ++ spc () ++ str ntn ++ spc ()
