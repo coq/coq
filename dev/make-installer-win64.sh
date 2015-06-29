@@ -5,13 +5,13 @@ ZIP=_make.zip
 URL1=http://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download
 URL2=http://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download
 
-[ -e config/Makefile ] || ./configure -prefix ./ -with-doc no
+[ -e config/Makefile ] || ./configure -debug -prefix ./ -with-doc no
 make -j2 coqide
 mkdir -p bin32
 cp bin/* bin32/
 make clean
 make archclean
-( . ${BASE}_64/environ; ./configure -prefix ./ -with-doc no; make -j2; make ide/coqidetop.cmxs )
+( . ${BASE}_64/environ; ./configure -debug -prefix ./ -with-doc no; make -j2; make ide/coqidetop.cmxs )
 cp bin32/coqide* bin/
 if [ ! -e bin/make.exe ]; then
   wget -O $ZIP $URL1 && 7z x $ZIP "bin/*"
