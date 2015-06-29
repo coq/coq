@@ -240,7 +240,7 @@ val set_nosuchgoals_hook: (int -> string option) -> unit
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
 
 (** [tclFOCUSLIST li t] applies [t] on the list of focused goals
-    described by [li]. Each element of [li] is a pair [(i, j)] denothing
+    described by [li]. Each element of [li] is a pair [(i, j)] denoting
     the goals numbered from [i] to [j] (inclusive, starting from 1).
     It will try to apply [t] to all the valid goals in any of these
     intervals. If the set of such goals is not a single range, then it
