@@ -713,7 +713,33 @@ let prterm = pr_lconstr
 (* Printer function for sets of Assumptions.assumptions.
    It is used primarily by the Print Assumptions command. *)
 
-open Assumptions
+type context_object =
+  | Variable of Id.t (* A section variable or a Let definition *)
+  | Axiom of constant * (Label.t * Context.rel_context * types) list
+  | Opaque of constant     (* An opaque constant. *)
+  | Transparent of constant
+
+(* Defines a set of [assumption] *)
+module OrderedContextObject =
+struct
+  type t = context_object
+  let compare x y =
+      match x , y with
+      | Variable i1 , Variable i2 -> Id.compare i1 i2
+      | Axiom (k1,_) , Axiom (k2, _) -> con_ord k1 k2
+      | Opaque k1 , Opaque k2 -> con_ord k1 k2
+      | Transparent k1 , Transparent k2 -> con_ord k1 k2
+      | Axiom _ , Variable _ -> 1
+      | Opaque _ , Variable _
+      | Opaque _ , Axiom _ -> 1
+      | Transparent _ , Variable _
+      | Transparent _ , Axiom _
+      | Transparent _ , Opaque _ -> 1
+      | _ , _ -> -1
+end
+
+module ContextObjectSet = Set.Make (OrderedContextObject)
+module ContextObjectMap = Map.Make (OrderedContextObject)
 
 let pr_assumptionset env s =
   if ContextObjectMap.is_empty s then
@@ -729,14 +755,28 @@ let pr_assumptionset env s =
       try str " : " ++ pr_ltype typ
       with e when Errors.noncritical e -> mt ()
     in
+    let safe_pr_ltype_relctx (rctx, typ) =
+      let sigma, env = get_current_context () in
+      let env = Environ.push_rel_context rctx env in
+      try str " " ++ pr_ltype_env env sigma typ
+      with e when Errors.noncritical e -> mt ()
+    in
     let fold t typ accu =
       let (v, a, o, tr) = accu in
       match t with
       | Variable id ->
         let var = str (Id.to_string id) ++ str " : " ++ pr_ltype typ in
         (var :: v, a, o, tr)
-      | Axiom kn ->
+      | Axiom (kn,[]) ->
         let ax = safe_pr_constant env kn ++ safe_pr_ltype typ in
+        (v, ax :: a, o, tr)
+      | Axiom (kn,l) ->
+        let ax = safe_pr_constant env kn ++ safe_pr_ltype typ ++
+          cut() ++
+          prlist_with_sep cut (fun (lbl, ctx, ty) ->
+            str " used in " ++ str (Names.Label.to_string lbl) ++
+            str " to prove:" ++ safe_pr_ltype_relctx (ctx,ty))
+          l in
         (v, ax :: a, o, tr)
       | Opaque kn ->
         let opq = safe_pr_constant env kn ++ safe_pr_ltype typ in

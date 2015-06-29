@@ -160,10 +160,20 @@ val emacs_str              : string -> string
 val prterm                 : constr -> std_ppcmds (** = pr_lconstr *)
 
 
-(** spiwack: printer function for sets of Environ.assumption.
-            It is used primarily by the Print Assumption command. *)
+(** Declarations for the "Print Assumption" command *)
+type context_object =
+  | Variable of Id.t  (** A section variable or a Let definition *)
+  (** An axiom and the type it inhabits (if an axiom of the empty type) *)
+  | Axiom of constant * (Label.t * Context.rel_context * types) list
+  | Opaque of constant      (** An opaque constant. *)
+  | Transparent of constant (** A transparent constant *)
+
+module ContextObjectSet : Set.S with type elt = context_object
+module ContextObjectMap : CMap.ExtS
+  with type key = context_object and module Set := ContextObjectSet
+
 val pr_assumptionset :
-  env -> Term.types Assumptions.ContextObjectMap.t ->std_ppcmds
+  env -> Term.types ContextObjectMap.t -> std_ppcmds
 
 val pr_goal_by_id : string -> std_ppcmds
 

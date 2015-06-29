@@ -22,34 +22,7 @@ open Term
 open Declarations
 open Mod_subst
 open Globnames
-
-type context_object =
-  | Variable of Id.t (* A section variable or a Let definition *)
-  | Axiom of constant      (* An axiom or a constant. *)
-  | Opaque of constant     (* An opaque constant. *)
-  | Transparent of constant
-
-(* Defines a set of [assumption] *)
-module OrderedContextObject =
-struct
-  type t = context_object
-  let compare x y =
-      match x , y with
-      | Variable i1 , Variable i2 -> Id.compare i1 i2
-      | Axiom k1 , Axiom k2 -> con_ord k1 k2
-      | Opaque k1 , Opaque k2 -> con_ord k1 k2
-      | Transparent k1 , Transparent k2 -> con_ord k1 k2
-      | Axiom _ , Variable _ -> 1
-      | Opaque _ , Variable _
-      | Opaque _ , Axiom _ -> 1
-      | Transparent _ , Variable _
-      | Transparent _ , Axiom _
-      | Transparent _ , Opaque _ -> 1
-      | _ , _ -> -1
-end
-
-module ContextObjectSet = Set.Make (OrderedContextObject)
-module ContextObjectMap = Map.Make (OrderedContextObject)
+open Printer
 
 (** For a constant c in a module sealed by an interface (M:T and
     not M<:T), [Global.lookup_constant] may return a [constant_body]
@@ -161,7 +134,16 @@ let lookup_constant cst =
 
 (** Graph traversal of an object, collecting on the way the dependencies of
     traversed objects *)
-let rec traverse accu t = match kind_of_term t with
+
+let label_of = function
+  | ConstRef kn -> pi3 (repr_con kn)
+  | IndRef (kn,_)
+  | ConstructRef ((kn,_),_) -> pi3 (repr_mind kn)
+  | VarRef id -> Label.of_id id
+
+let push (r : Context.rel_declaration) (ctx : Context.rel_context) = r :: ctx
+
+let rec traverse current ctx accu t = match kind_of_term t with
 | Var id ->
   let body () = match Global.lookup_named id with (_, body, _) -> body in
   traverse_object accu body (VarRef id)
@@ -173,22 +155,42 @@ let rec traverse accu t = match kind_of_term t with
 | Construct (cst, _) ->
   traverse_object accu (fun () -> None) (ConstructRef cst)
 | Meta _ | Evar _ -> assert false
-| _ -> Constr.fold traverse accu t
+| Case (_,oty,c,[||]) ->
+    (* non dependent match on an inductive with no constructors *) 
+    begin match Constr.(kind oty, kind c) with
+    | Lambda(Anonymous,_,oty), Const (kn, _)
+      when Vars.noccurn 1 oty &&
+      not (Declareops.constant_has_body (lookup_constant kn)) ->
+        let body () = Global.body_of_constant_body (lookup_constant kn) in
+        traverse_object
+          ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
+    | _ -> Termops.fold_constr_with_full_binders push (traverse current) ctx accu t 
+    end
+| _ -> Termops.fold_constr_with_full_binders push (traverse current) ctx accu t
 
-and traverse_object (curr, data) body obj =
-  let data =
-    if Refmap.mem obj data then data
-    else match body () with
-    | None -> Refmap.add obj Refset.empty data
+and traverse_object ?inhabits (curr, data, ax2ty) body obj =
+  let data, ax2ty =
+    let already_in = Refmap.mem obj data in
+    match body () with
+    | None ->
+        let data =
+          if not already_in then Refmap.add obj Refset.empty data else data in
+        let ax2ty =
+          if Option.is_empty inhabits then ax2ty else
+          let ty = Option.get inhabits in
+          try let l = Refmap.find obj ax2ty in Refmap.add obj (ty::l) ax2ty 
+          with Not_found -> Refmap.add obj [ty] ax2ty in
+        data, ax2ty
     | Some body ->
-      let (contents, data) = traverse (Refset.empty, data) body in
-      Refmap.add obj contents data
+      let contents,data,ax2ty =
+        traverse (label_of obj) [] (Refset.empty,data,ax2ty) body in
+      Refmap.add obj contents data, ax2ty
   in
-  (Refset.add obj curr, data)
+  (Refset.add obj curr, data, ax2ty)
 
-let traverse t =
+let traverse current t =
   let () = modcache := MPmap.empty in
-  traverse (Refset.empty, Refmap.empty) t
+  traverse current [] (Refset.empty, Refmap.empty, Refmap.empty) t
 
 (** Hopefully bullet-proof function to recover the type of a constant. It just
     ignores all the universe stuff. There are many issues that can arise when
@@ -198,10 +200,10 @@ let type_of_constant cb = match cb.Declarations.const_type with
 | Declarations.TemplateArity (ctx, arity) ->
   Term.mkArity (ctx, Sorts.sort_of_univ arity.Declarations.template_level)
 
-let assumptions ?(add_opaque=false) ?(add_transparent=false) st t =
+let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
   let (idts, knst) = st in
   (** Only keep the transitive dependencies *)
-  let (_, graph) = traverse t in
+  let (_, graph, ax2ty) = traverse (label_of gr) t in
   let fold obj _ accu = match obj with
   | VarRef id ->
     let (_, body, t) = Global.lookup_named id in
@@ -211,7 +213,8 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st t =
     let cb = lookup_constant kn in
     if not (Declareops.constant_has_body cb) then
       let t = type_of_constant cb in
-      ContextObjectMap.add (Axiom kn) t accu
+      let l = try Refmap.find obj ax2ty with Not_found -> [] in
+      ContextObjectMap.add (Axiom (kn,l)) t accu
     else if add_opaque && (Declareops.is_opaque cb || not (Cpred.mem kn knst)) then
       let t = type_of_constant cb in
       ContextObjectMap.add (Opaque kn) t accu
