@@ -1032,11 +1032,21 @@ let find_pattern_variable = function
   | Ident (loc,id) -> id
   | Qualid (loc,_) as x -> raise (InternalizationError(loc,NotAConstructor x))
 
-let sort_fields ~complete loc l completer =
-  (* the 'complete' parameter is true when we require that all the
-     record fields be provided -- when building a new record value;
-     when pattern-matching, the list of fields may be partial. *)
-  match l with
+(** [sort_fields ~complete loc fields completer] expects a list
+    [fields] of field assignments [f = e1; g = e2; ...], where [f, g]
+    are fields of a record and [e1] are "values" (either terms, when
+    interning a record construction, or patterns, when intering record
+    pattern-matching). It will sort the fields according to the record
+    declaration order (which is important when type-checking them in
+    presence of dependencies between fields). If the parameter
+    [complete] is true, we require the assignment to be complete: all
+    the fields of the record must be present in the
+    assignment. Otherwise the record assignment may be partial
+    (in a pattern, we may match on some fields only), and we call the
+    function [completer] to fill the missing fields; the returned
+    field assignment list is always complete. *)
+let sort_fields ~complete loc fields completer =
+  match fields with
     | [] -> None
     | (first_field_ref, first_field_value):: other_fields ->
         let env_error_msg = "Environment corruption for records." in
@@ -1096,13 +1106,13 @@ let sort_fields ~complete loc l completer =
           in
           build_proj_list record.Recordops.s_PROJ record.Recordops.s_PROJKIND 1 ~acc_first_idx:0 []
         in
-        (* now we want to have all fields of the pattern indexed by their place in
+        (* now we want to have all fields assignments indexed by their place in
            the constructor *)
         let rec index_fields fields remaining_projs acc =
           match fields with
             | (field_ref, field_value) :: fields ->
                let field_glob_ref = try global_reference_of_reference field_ref
-               with |Not_found ->
+               with Not_found ->
                  user_err_loc (loc_of_reference field_ref, "intern",
                                str "The field \"" ++ pr_reference field_ref ++ str "\" does not exist.") in
                let remaining_projs, (field_index, _) =
