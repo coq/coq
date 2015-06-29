@@ -490,6 +490,7 @@ let hints_tac hints =
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
   let rec aux s (acc : autogoal list list) fk = function
     | (gl,info) :: gls ->
+        Control.check_for_interrupt ();
 	(match info.is_evar with
 	 | Some ev when Evd.is_defined s ev -> aux s acc fk gls
 	 | _ ->
