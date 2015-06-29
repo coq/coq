@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "tools/compat5b.cmo" i*)
 
+(** Implementation of the VERNAC EXTEND macro. *)
+
 open Pp
 open Util
 open Q_util

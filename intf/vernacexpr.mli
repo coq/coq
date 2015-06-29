@@ -225,7 +225,14 @@ type section_subset_expr =
 
 type section_subset_descr = SsAll | SsType | SsExpr of section_subset_expr
 
-type extend_name = string * int
+(** Extension identifiers for the VERNAC EXTEND mechanism. *)
+type extend_name =
+  (** Name of the vernac entry where the tactic is defined, typically found
+      after the VERNAC EXTEND statement in the source. *)
+  string *
+  (** Index of the extension in the VERNAC EXTEND statement. Each parsing branch
+      is given an offset, starting from zero. *)
+  int
 
 (* This type allows registering the inlining of constants in native compiler.
    It will be extended with primitive inductive types and operators *)
