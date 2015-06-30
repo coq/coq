@@ -1001,11 +1001,10 @@ let sort_fields ~complete loc fields completer =
                  begin match proj_kinds with
                     | [] -> anomaly (Pp.str "Number of projections mismatch")
                     | (_, regular) :: proj_kinds ->
+                       (* "regular" is false when the field is defined
+                           by a let-in in the record declaration
+                           (its value is fixed from other fields). *)
                        if first_field && not regular && complete then
-                         (* G.S.: why do we fail only in the
-                            first-field case? I would expect to fail
-                            whenever (not regular && complete), and
-                            skip the fields only when (not complete *)
                          user_err_loc (loc, "", str "No local fields allowed in a record construction.")
                        else if first_field then
                          build_proj_list projs proj_kinds (idx+1) ~acc_first_idx:idx acc
