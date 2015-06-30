@@ -81,7 +81,7 @@ Abort.
 Theorem T: forall (A B C:Prop), A -> B -> C -> A /\ B.
 intros A B C HA HB HC.
 proof.
-hence C. (* fails *)
+Fail hence C. (* fails *)
 Abort.
 
 Theorem T: forall (A B:Prop), B -> A \/ B.
