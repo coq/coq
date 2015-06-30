@@ -86,9 +86,9 @@ let vAccu   = ref ([] : (string * string) list)
 
 let addQueue q v = q := v :: !q
 
-let safe_hash_add cmp clq q (k,v) =
+let safe_hash_add cmp clq q (k, (v, b)) =
   try
-    let v2 = Hashtbl.find q k in
+    let (v2, _) = Hashtbl.find q k in
     if not (cmp v v2) then
       let rec add_clash = function
           (k1,l1)::cltl when k=k1 -> (k1,v::l1)::cltl
@@ -96,8 +96,8 @@ let safe_hash_add cmp clq q (k,v) =
         | [] -> [(k,[v;v2])] in
       clq := add_clash !clq;
       (* overwrite previous bindings, as coqc does *)
-      Hashtbl.add q k v
-  with Not_found -> Hashtbl.add q k v
+      Hashtbl.add q k (v, b)
+  with Not_found -> Hashtbl.add q k (v, b)
 
 (** Files found in the loadpaths.
     For the ML files, the string is the basename without extension.
@@ -126,8 +126,36 @@ let add_mli_known, iter_mli_known, search_mli_known = mkknown ()
 let add_mllib_known, _, search_mllib_known = mkknown ()
 let add_mlpack_known, _, search_mlpack_known = mkknown ()
 
-let vKnown = (Hashtbl.create 19 : (string list, string) Hashtbl.t)
+let vKnown = (Hashtbl.create 19 : (string list, string * bool) Hashtbl.t)
+(** The associated boolean is true if this is a root path. *)
 let coqlibKnown = (Hashtbl.create 19 : (string list, unit) Hashtbl.t)
+
+let get_prefix p l =
+  let rec drop_prefix_rec = function
+    | (h1::tp, h2::tl) when h1 = h2 -> drop_prefix_rec (tp,tl)
+    | ([], tl) -> Some tl
+    | _ -> None
+  in
+  drop_prefix_rec (p, l)
+
+exception Found of string
+
+let search_v_known ?from s = match from with
+| None -> fst (Hashtbl.find vKnown s)
+| Some from ->
+  let iter logpath (phys_dir, root) =
+    if root then match get_prefix from logpath with
+    | None -> ()
+    | Some rem ->
+      match get_prefix (List.rev s) (List.rev rem) with
+      | None -> ()
+      | Some _ -> raise (Found phys_dir)
+  in
+  try Hashtbl.iter iter vKnown; raise Not_found
+  with Found s -> s
+
+let search_v_known ?from s =
+  try Some (search_v_known ?from s) with Not_found -> None
 
 let clash_v = ref ([]: (string list * string list) list)
 
@@ -163,9 +191,11 @@ let warning_clash file dir =
       eprintf "%s and %s; used the latter)\n" d2 d1
   | _ -> assert false
 
-let safe_assoc verbose file k =
+let safe_assoc from verbose file k =
   if verbose && List.mem_assoc k !clash_v then warning_clash file k;
-  Hashtbl.find vKnown k
+  match search_v_known ?from k with
+  | None -> raise Not_found
+  | Some path -> path
 
 let absolute_dir dir =
   let current = Sys.getcwd () in
@@ -309,18 +339,18 @@ let rec traite_fichier_Coq suffixe verbose f =
   try
     let chan = open_in f in
     let buf = Lexing.from_channel chan in
-    let deja_vu_v = ref ([]: string list list)
+    let deja_vu_v = ref ([]: (string list option * string list) list)
     and deja_vu_ml = ref ([] : string list) in
     try
       while true do
       	let tok = coq_action buf in
 	match tok with
-	  | Require strl ->
+	  | Require (from, strl) ->
 	      List.iter (fun str ->
-		if not (List.mem str !deja_vu_v) then begin
-	          addQueue deja_vu_v str;
+		if not (List.mem (from, str) !deja_vu_v) then begin
+	          addQueue deja_vu_v (from, str);
                   try
-                    let file_str = safe_assoc verbose f str in
+                    let file_str = safe_assoc from verbose f str in
                     printf " %s%s" (canonize file_str) suffixe
                   with Not_found ->
 		    if verbose && not (Hashtbl.mem coqlibKnown str) then
@@ -349,10 +379,10 @@ let rec traite_fichier_Coq suffixe verbose f =
 	      in List.iter decl sl
 	  | Load str ->
 	      let str = Filename.basename str in
-	      if not (List.mem [str] !deja_vu_v) then begin
-	        addQueue deja_vu_v [str];
+	      if not (List.mem (None, [str]) !deja_vu_v) then begin
+	        addQueue deja_vu_v (None, [str]);
                 try
-                  let file_str = Hashtbl.find vKnown [str] in
+                  let (file_str, _) = Hashtbl.find vKnown [str] in
                   let canon = canonize file_str in
                   printf " %s.v" canon;
                   traite_fichier_Coq suffixe true (canon ^ ".v")
@@ -441,9 +471,11 @@ let add_known recur phys_dir log_dir f =
     | (basename,".v") ->
 	let name = log_dir@[basename] in
 	let file = phys_dir//basename in
-	let paths = if recur then suffixes name else [name] in
-	List.iter
-	  (fun n -> safe_hash_add compare_file clash_v vKnown (n,file)) paths
+	let () = safe_hash_add compare_file clash_v vKnown (name, (file, true)) in
+	if recur then
+          let paths = List.tl (suffixes name) in
+          let iter n = safe_hash_add compare_file clash_v vKnown (n, (file, false)) in
+          List.iter iter paths
     | (basename,".vo") when not(!option_boot) ->
         let name = log_dir@[basename] in
 	let paths = if recur then suffixes name else [name] in

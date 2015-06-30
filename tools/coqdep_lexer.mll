@@ -16,7 +16,7 @@
   type qualid = string list
 
   type coq_token =
-    | Require of qualid list
+    | Require of qualid option * qualid list
     | Declare of string list
     | Load of string
     | AddLoadPath of string
@@ -270,12 +270,9 @@ and require_file = parse
         module_names := [coq_qual_id_tail lexbuf];
         let qid = coq_qual_id_list lexbuf in
         parse_dot lexbuf;
-	match !from_pre_ident with
-	  None ->
-          Require qid
-	| Some from ->
-	  (from_pre_ident := None ;
-	   Require (List.map (fun x -> from @ x) qid)) }
+        let from = !from_pre_ident in
+        from_pre_ident := None;
+        Require (from, qid) }
   | eof
       { syntax_error lexbuf }
   | _
