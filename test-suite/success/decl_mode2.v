@@ -146,7 +146,7 @@ Abort.
 Theorem T: forall (P:nat -> Prop), forall x, P x -> P x.
 proof.
 let P:(nat -> Prop).
-let x. (* fails because x's type is not clear *) 
+Fail let x. (* fails because x's type is not clear *) 
 let x be such that HP:(P x). (* here x's type is inferred from (P x) *)
 Abort.
 
@@ -169,7 +169,7 @@ let P:(nat -> Prop),A:Prop be such that H:(exists x, P x /\ A).
 consider x such that HP:(P x) and HA:A from H.
 Abort.
 
-Here is an example with pairs:
+(* Here is an example with pairs: *)
 
 Theorem T: forall p:(nat * nat)%type, (fst p >= snd p) \/ (fst p < snd p).
 proof.
