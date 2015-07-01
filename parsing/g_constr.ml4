@@ -364,10 +364,10 @@ GEXTEND Gram
     | "100" RIGHTA
       [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> CPatOr (!@loc,p::pl) ]
     | "99" RIGHTA [ ]
-    | "10" LEFTA
+    | "11" LEFTA
       [ p = pattern; "as"; id = ident ->
 	  CPatAlias (!@loc, p, id) ]
-    | "9" RIGHTA
+    | "10" RIGHTA
       [ p = pattern; lp = LIST1 NEXT ->
         (match p with
 	  | CPatAtom (_, Some r) -> CPatCstr (!@loc, r, [], lp)
