@@ -253,10 +253,6 @@ CSDPCERTCMO:=$(addprefix plugins/micromega/, \
   mutils.cmo 	micromega.cmo \
   sos_types.cmo sos_lib.cmo sos.cmo 	csdpcert.cmo )
 
-DEVPRINTERS:=dev/vm_printers.ml dev/top_printers.ml
-
-DEVFILES:=dev/base_include dev/include
-
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
 COQDEPCMO:=$(COQENVCMO) tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
