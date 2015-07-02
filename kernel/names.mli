@@ -652,6 +652,10 @@ module Projection : sig
   val compare : t -> t -> int
     
   val map : (constant -> constant) -> t -> t
+
+  val to_string : t -> string
+  val print : t -> Pp.std_ppcmds
+
 end
 
 type projection = Projection.t

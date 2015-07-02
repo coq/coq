@@ -94,8 +94,13 @@ type ('a,'t) match_rule =
   | Pat of 'a match_context_hyps list * 'a match_pattern * 't
   | All of 't
 
+(** Extension indentifiers for the TACTIC EXTEND mechanism. *)
 type ml_tactic_name = {
+  (** Name of the plugin where the tactic is defined, typically coming from a
+      DECLARE PLUGIN statement in the source. *)
   mltac_plugin : string;
+  (** Name of the tactic entry where the tactic is defined, typically found
+      after the TACTIC EXTEND statement in the source. *)
   mltac_tactic : string;
 }
 

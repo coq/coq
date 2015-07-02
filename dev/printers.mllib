@@ -110,7 +110,6 @@ Loadpath
 Goptions
 Decls
 Heads
-Assumptions
 Keys
 Locusops
 Miscops
@@ -204,6 +203,7 @@ Hints
 Himsg
 Cerrors
 Locality
+Assumptions
 Vernacinterp
 Dischargedhypsmap
 Discharge

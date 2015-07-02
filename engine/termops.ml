@@ -453,25 +453,28 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
    index) which is processed by [g] (which typically add 1 to [n]) at
    each binder traversal; it is not recursive *)
 
-let fold_constr_with_binders g f n acc c = match kind_of_term c with
+let fold_constr_with_full_binders g f n acc c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
-  | Prod (_,t,c) -> f (g n) (f n acc t) c
-  | Lambda (_,t,c) -> f (g n) (f n acc t) c
-  | LetIn (_,b,t,c) -> f (g n) (f n (f n acc b) t) c
+  | Prod (na,t,c) -> f (g (na,None,t) n) (f n acc t) c
+  | Lambda (na,t,c) -> f (g (na,None,t) n) (f n acc t) c
+  | LetIn (na,b,t,c) -> f (g (na,Some b,t) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
   | Proj (p,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
-      let n' = iterate g (Array.length tl) n in
+      let n' = CArray.fold_left2 (fun c n t -> g (n,None,t) c) n lna tl in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | CoFix (_,(lna,tl,bl)) ->
-      let n' = iterate g (Array.length tl) n in
+      let n' = CArray.fold_left2 (fun c n t -> g (n,None,t) c) n lna tl in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+
+let fold_constr_with_binders g f n acc c =
+  fold_constr_with_full_binders (fun _ x -> g x) f n acc c
 
 (* [iter_constr_with_full_binders g f acc c] iters [f acc] on the immediate
    subterms of [c]; it carries an extra data [acc] which is processed by [g] at

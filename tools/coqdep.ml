@@ -62,7 +62,6 @@ let sort () =
 		    try loop (Hashtbl.find vKnown s)
 		    with Not_found -> ())
 		sl
-	    | RequireString s -> loop s
 	    | _ -> ()
 	done
       with Fin_fichier ->
@@ -320,9 +319,6 @@ let treat_coq_file chan =
       let acc = match action with
       | Require strl ->
         List.fold_left mark_v_done acc strl
-      | RequireString s ->
-        let str = Filename.basename s in
-        mark_v_done acc [str]
       | Declare sl ->
         let declare suff dir s =
           let base = file_name s dir in

@@ -316,17 +316,6 @@ let rec traite_fichier_Coq suffixe verbose f =
 		    if verbose && not (Hashtbl.mem coqlibKnown str) then
                       warning_module_notfound f str
        		end) strl
-	  | RequireString s ->
-	      let str = Filename.basename s in
-	      if not (List.mem [str] !deja_vu_v) then begin
-	        addQueue deja_vu_v [str];
-                try
-                  let file_str = Hashtbl.find vKnown [str] in
-                  printf " %s%s" (canonize file_str) suffixe
-                with Not_found ->
-		  if not (Hashtbl.mem coqlibKnown [str]) then
-		    warning_notfound f s
-       	      end
 	  | Declare sl ->
 	      let declare suff dir s =
 		let base = file_name s dir in

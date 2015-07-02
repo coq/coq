@@ -12,7 +12,6 @@ type qualid = string list
 
 type coq_token =
     Require of qualid list
-  | RequireString of string
   | Declare of string list
   | Load of string
   | AddLoadPath of string

@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "tools/compat5b.cmo" i*)
 
+(** Implementation of the TACTIC EXTEND macro. *)
+
 open Util
 open Pp
 open Names

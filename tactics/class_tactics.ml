@@ -205,7 +205,7 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
 	if cl.cl_strict then
 	  Evd.evars_of_term concl
 	else Evar.Set.empty
-    with _ -> Evar.Set.empty
+    with e when Errors.noncritical e -> Evar.Set.empty
   in
   let hintl =
     List.map_append
@@ -397,7 +397,7 @@ let is_unique env concl =
   try 
     let (cl,u), args = dest_class_app env concl in
       cl.cl_unique
-  with _ -> false
+  with e when Errors.noncritical e -> false
 
 let needs_backtrack env evd oev concl =
   if Option.is_empty oev || is_Prop env evd concl then
@@ -490,6 +490,7 @@ let hints_tac hints =
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
   let rec aux s (acc : autogoal list list) fk = function
     | (gl,info) :: gls ->
+        Control.check_for_interrupt ();
 	(match info.is_evar with
 	 | Some ev when Evd.is_defined s ev -> aux s acc fk gls
 	 | _ ->

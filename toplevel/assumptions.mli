@@ -10,19 +10,7 @@ open Util
 open Names
 open Term
 open Globnames
-
-(** A few declarations for the "Print Assumption" command
-    @author spiwack *)
-type context_object =
-  | Variable of Id.t  (** A section variable or a Let definition *)
-  | Axiom of constant       (** An axiom or a constant. *)
-  | Opaque of constant      (** An opaque constant. *)
-  | Transparent of constant (** A transparent constant *)
-
-(** AssumptionSet.t is a set of [assumption] *)
-module ContextObjectSet : Set.S with type elt = context_object
-module ContextObjectMap : Map.ExtS
-  with type key = context_object and module Set := ContextObjectSet
+open Printer
 
 (** Collects all the objects on which a term directly relies, bypassing kernel
     opacity, together with the recursive dependence DAG of objects.
@@ -31,11 +19,14 @@ module ContextObjectMap : Map.ExtS
     sealed inside opaque modules. Do not try to do anything fancy with those
     terms apart from printing them, otherwise demons may fly out of your nose.
 *)
-val traverse : constr -> (Refset.t * Refset.t Refmap.t)
+val traverse :
+  Label.t -> constr ->
+    (Refset.t * Refset.t Refmap.t *
+     (label * Context.rel_context * types) list Refmap.t)
 
 (** Collects all the assumptions (optionally including opaque definitions)
    on which a term relies (together with their type). The above warning of
    {!traverse} also applies. *)
 val assumptions :
-  ?add_opaque:bool -> ?add_transparent:bool -> transparent_state -> constr ->
-    Term.types ContextObjectMap.t
+  ?add_opaque:bool -> ?add_transparent:bool -> transparent_state ->
+     global_reference -> constr -> Term.types ContextObjectMap.t

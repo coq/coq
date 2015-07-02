@@ -819,6 +819,10 @@ struct
   let map f (c, b as x) =
     let c' = f c in
       if c' == c then x else (c', b)
+
+  let to_string p = Constant.to_string (constant p)
+  let print p = Constant.print (constant p)
+
 end
 
 type projection = Projection.t

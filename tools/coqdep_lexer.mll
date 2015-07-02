@@ -17,7 +17,6 @@
 
   type coq_token =
     | Require of qualid list
-    | RequireString of string
     | Declare of string list
     | Load of string
     | AddLoadPath of string
@@ -277,10 +276,6 @@ and require_file = parse
 	| Some from ->
 	  (from_pre_ident := None ;
 	   Require (List.map (fun x -> from @ x) qid)) }
-  | '"' [^'"']* '"' (*'"'*)
-      { let s = Lexing.lexeme lexbuf in
-        parse_dot lexbuf;
-        RequireString (unquote_vfile_string s) }
   | eof
       { syntax_error lexbuf }
   | _
