@@ -164,7 +164,8 @@ let rec traverse current ctx accu t = match kind_of_term t with
         let body () = Global.body_of_constant_body (lookup_constant kn) in
         traverse_object
           ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
-    | _ -> Termops.fold_constr_with_full_binders push (traverse current) ctx accu t 
+    | _ ->
+        Termops.fold_constr_with_full_binders push (traverse current) ctx accu t
     end
 | _ -> Termops.fold_constr_with_full_binders push (traverse current) ctx accu t
 
@@ -182,6 +183,7 @@ and traverse_object ?inhabits (curr, data, ax2ty) body obj =
           with Not_found -> Refmap.add obj [ty] ax2ty in
         data, ax2ty
     | Some body ->
+      if already_in then data, ax2ty else
       let contents,data,ax2ty =
         traverse (label_of obj) [] (Refset.empty,data,ax2ty) body in
       Refmap.add obj contents data, ax2ty
