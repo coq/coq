@@ -57,11 +57,14 @@ let set_global v =
 
 let rec eq_structured_constant c1 c2 = match c1, c2 with
 | Const_sorts s1, Const_sorts s2 -> Sorts.equal s1 s2
+| Const_sorts _, _ -> false
 | Const_ind i1, Const_ind i2 -> Univ.eq_puniverses eq_ind i1 i2
+| Const_ind _, _ -> false
 | Const_b0 t1, Const_b0 t2 -> Int.equal t1 t2
+| Const_b0 _, _ -> false
 | Const_bn (t1, a1), Const_bn (t2, a2) ->
   Int.equal t1 t2 && Array.equal eq_structured_constant a1 a2
-| _ -> false
+| Const_bn _, _ -> false
 
 let rec hash_structured_constant c =
   let open Hashset.Combine in
