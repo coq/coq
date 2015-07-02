@@ -20,11 +20,15 @@ let rec conv_val env pb lvl cu v1 v2 =
   if v1 == v2 then ()
   else
     match kind_of_value v1, kind_of_value v2 with
-    | Vaccu k1, Vaccu k2 ->
-	conv_accu env pb lvl cu k1 k2
     | Vfun f1, Vfun f2 ->
 	let v = mk_rel_accu lvl in
 	conv_val env CONV (lvl+1) cu (f1 v) (f2 v)
+    | Vfun f1, _ ->
+	conv_val env CONV lvl cu v1 (fun x -> v2 x)
+    | _, Vfun f2 ->
+	conv_val env CONV lvl cu (fun x -> v1 x) v2
+    | Vaccu k1, Vaccu k2 ->
+	conv_accu env pb lvl cu k1 k2
     | Vconst i1, Vconst i2 -> 
 	if not (Int.equal i1 i2) then raise NotConvertible
     | Vblock b1, Vblock b2 ->
@@ -40,11 +44,7 @@ let rec conv_val env pb lvl cu v1 v2 =
 	    aux lvl max b1 b2 (i+1) cu)
 	in
 	aux lvl (n1-1) b1 b2 0 cu
-    | Vfun f1, _ -> 
-	conv_val env CONV lvl cu v1 (fun x -> v2 x)
-    | _, Vfun f2 ->
-	conv_val env CONV lvl cu (fun x -> v1 x) v2
-    | _, _ -> raise NotConvertible
+    | Vaccu _, _ | Vconst _, _ | Vblock _, _ -> raise NotConvertible
 
 and conv_accu env pb lvl cu k1 k2 = 
   let n1 = accu_nargs k1 in
@@ -60,6 +60,7 @@ and conv_atom env pb lvl a1 a2 cu =
   if a1 == a2 then ()
   else
     match a1, a2 with
+    | Ameta _, _ | _, Ameta _ | Aevar _, _ | _, Aevar _ -> assert false
     | Arel i1, Arel i2 -> 
 	if not (Int.equal i1 i2) then raise NotConvertible
     | Aind ind1, Aind ind2 ->
@@ -104,7 +105,12 @@ and conv_atom env pb lvl a1 a2 cu =
 	conv_val env CONV lvl cu d1 d2;
 	let v = mk_rel_accu lvl in
 	conv_val env pb (lvl + 1) cu (d1 v) (d2 v)
-    | _, _ -> raise NotConvertible
+    | Aproj(p1,ac1), Aproj(p2,ac2) ->
+       if not (Constant.equal p1 p2) then raise NotConvertible
+       else conv_accu env CONV lvl cu ac1 ac2
+    | Arel _, _ | Aind _, _ | Aconstant _, _ | Asort _, _ | Avar _, _
+    | Acase _, _ | Afix _, _ | Acofix _, _ | Acofixe _, _ | Aprod _, _
+    | Aproj _, _ -> raise NotConvertible
 
 (* Precondition length t1 = length f1 = length f2 = length t2 *)
 and conv_fix env lvl t1 f1 t2 f2 cu =
