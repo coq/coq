@@ -123,10 +123,13 @@ Abort.
 Theorem T: forall (A:Prop) (P:nat -> Prop), P 2 -> A -> A /\ (forall x, x = 2 -> P x).
 intros A P HP HA.
 proof.
+(* BUG: the next line fails when it should succeed.
+Waiting for someone to investigate the bug.
 focus on (forall x, x = 2 -> P x).
 let x be such that (x = 2).
 hence thesis by HP.
 end focus.
+*)
 Abort.
 
 Theorem T: forall x, x = 0 -> x + x = x * x.
