@@ -425,8 +425,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	      switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i)) (Stack.zip apprF) tM
 	    else quick_fail i)
 	  ev lF tM i
-    and consume (termF,skF as apprF) (termM,skM as apprM) i = 
+    and consume (termF,skF as apprF) (termM,skM as apprM) i =
       if not (Stack.is_empty skF && Stack.is_empty skM) then
+        (* This tries first-order matching *)
         consume_stack on_left apprF apprM i
       else quick_fail i
     and delta i =
@@ -469,28 +470,28 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	     | Construct u -> eta_constructor ts env evd skR u skF termF
 	     | _ -> UnifFailure (evd,NotSameHead)
     in
+    let postpone tR lF evd =
+      (* Postpone the use of an heuristic *)
+      if not (occur_rigidly (fst ev) evd tR) then
+        let evd,tF =
+          if isRel tR || isVar tR then
+            (* Optimization so as to generate candidates *)
+            let evd,ev = evar_absorb_arguments env evd ev lF in
+            evd,mkEvar ev
+          else
+            evd,Stack.zip apprF in
+	switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) evd))
+	  tF tR
+      else
+        UnifFailure (evd,OccurCheck (fst ev,tR))
+    in
     match Stack.list_of_app_stack skF with
     | None ->
         ise_try evd [consume_stack on_left apprF apprR; eta]
     | Some lF ->
         let tR = Stack.zip apprR in
 	  miller_pfenning on_left
-	    (fun () ->
-	      ise_try evd 
-	        [eta;(* Postpone the use of an heuristic *)
-		 (fun i -> 
-		   if not (occur_rigidly (fst ev) i tR) then
-                     let i,tF =
-                       if isRel tR || isVar tR then
-                         (* Optimization so as to generate candidates *)
-                         let i,ev = evar_absorb_arguments env i ev lF in
-                         i,mkEvar ev
-                       else
-                         i,Stack.zip apprF in
-		     switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i))
-	               tF tR
-		   else
-                     UnifFailure (evd,OccurCheck (fst ev,tR)))])
+	    (fun () -> ise_try evd [eta;postpone tR lF])
 	    ev lF tR evd
   in
   let app_empty = match sk1, sk2 with [], [] -> true | _ -> false in
