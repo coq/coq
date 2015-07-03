@@ -28,6 +28,7 @@ let rec parse_string = parser
 and parse_string2 = parser
   | [< ''"' >] -> ""
   | [< 'c; s >] -> (String.make 1 c)^(parse_string2 s)
+  | [< >] -> raise Parsing_error
 and parse_skip_comment = parser
   | [< ''\n'; s >] -> s
   | [< 'c; s >] -> parse_skip_comment s
