@@ -417,7 +417,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let not_only_app = Stack.not_purely_applicative skM in
     let f1 i =
       match Stack.list_of_app_stack skF with
-      | None -> default_fail evd
+      | None -> quick_fail evd
       | Some lF -> 
         let tM = Stack.zip apprM in
 	  miller_pfenning on_left
