@@ -60,6 +60,8 @@ let rec eq_structured_constant c1 c2 = match c1, c2 with
 | Const_sorts _, _ -> false
 | Const_ind i1, Const_ind i2 -> Univ.eq_puniverses eq_ind i1 i2
 | Const_ind _, _ -> false
+| Const_proj p1, Const_proj p2 -> Constant.equal p1 p2
+| Const_proj _, _ -> false
 | Const_b0 t1, Const_b0 t2 -> Int.equal t1 t2
 | Const_b0 _, _ -> false
 | Const_bn (t1, a1), Const_bn (t2, a2) ->
@@ -71,11 +73,12 @@ let rec hash_structured_constant c =
   match c with
   | Const_sorts s -> combinesmall 1 (Sorts.hash s)
   | Const_ind (i,u) -> combinesmall 2 (combine (ind_hash i) (Univ.Instance.hash u))
-  | Const_b0 t -> combinesmall 3 (Int.hash t)
+  | Const_proj p -> combinesmall 3 (Constant.hash p)
+  | Const_b0 t -> combinesmall 4 (Int.hash t)
   | Const_bn (t, a) ->
     let fold h c = combine h (hash_structured_constant c) in
     let h = Array.fold_left fold 0 a in
-    combinesmall 4 (combine (Int.hash t) h)
+    combinesmall 5 (combine (Int.hash t) h)
 
 module SConstTable = Hashtbl.Make (struct
   type t = structured_constant

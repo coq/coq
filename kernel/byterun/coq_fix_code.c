@@ -60,7 +60,7 @@ void init_arity () {
     arity[BRANCH]=arity[ISCONST]= 1;
   /* instruction with two operands */
   arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=
-  arity[ARECONST]=2;
+  arity[ARECONST]=arity[PROJ]=2;
   /* instruction with four operands */ 
   arity[MAKESWITCHBLOCK]=4;
   /* instruction with arbitrary operands */

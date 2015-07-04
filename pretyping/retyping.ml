@@ -127,13 +127,8 @@ let retype ?(polyprop=true) sigma =
         strip_outer_cast
           (subst_type env sigma (type_of env f) (Array.to_list args))
     | Proj (p,c) -> 
-       let Inductiveops.IndType(pars,realargs) =
-	 let ty = type_of env c in
-           try Inductiveops.find_rectype env sigma ty
-           with Not_found -> retype_error BadRecursiveType
-       in
-       let (_,u), pars = dest_ind_family pars in
-	 substl (c :: List.rev pars) (Typeops.type_of_projection env (p,u))
+       let ty = type_of env c in
+       Inductiveops.type_of_projection_knowing_arg env sigma p c ty
     | Cast (c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
 

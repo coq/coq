@@ -127,10 +127,11 @@ type vswitch = {
 (* + Accumulators : At_[accumulate| accu | arg1 | ... | argn ]            *)
 (*   - representation of [accu] : tag_[....]                              *)
 (*     -- tag <= 2 : encoding atom type (sorts, free vars, etc.)          *)
-(*     -- 3_[accu|fix_app] : a fixpoint blocked by an accu                *)
-(*     -- 4_[accu|vswitch] : a match blocked by an accu                   *)
-(*     -- 5_[fcofix]       : a cofix function                             *)
-(*     -- 6_[fcofix|val]   : a cofix function, val represent the value    *)
+(*     -- 3_[accu|proj name] : a projection blocked by an accu            *)
+(*     -- 4_[accu|fix_app] : a fixpoint blocked by an accu                *)
+(*     -- 5_[accu|vswitch] : a match blocked by an accu                   *)
+(*     -- 6_[fcofix]       : a cofix function                             *)
+(*     -- 7_[fcofix|val]   : a cofix function, val represent the value    *)
 (*        of the function applied to arg1 ... argn                        *)
 (* The [arguments] type, which is abstracted as an array, represents :    *)
 (*          tag[ _ | _ |v1|... | vn]                                      *)
@@ -149,6 +150,7 @@ type zipper =
   | Zapp of arguments
   | Zfix of vfix*arguments  (* Possibly empty *)
   | Zswitch of vswitch
+  | Zproj of Constant.t (* name of the projection *)
 
 type stack = zipper list
 
@@ -176,15 +178,18 @@ let rec whd_accu a stk =
   match Obj.tag at with
   | i when i <= 2 ->
       Vatom_stk(Obj.magic at, stk)
-  | 3 (* fix_app tag *) ->
+  | 3 (* proj tag *) ->
+     let zproj = Zproj (Obj.obj (Obj.field at 0)) in
+     whd_accu (Obj.field at 1) (zproj :: stk)
+  | 4 (* fix_app tag *) ->
       let fa = Obj.field at 1 in
       let zfix  =
 	Zfix (Obj.obj (Obj.field fa 1), Obj.obj fa) in
       whd_accu (Obj.field at 0) (zfix :: stk)
-  | 4 (* switch tag  *) ->
+  | 5 (* switch tag  *) ->
       let zswitch = Zswitch (Obj.obj (Obj.field at 1)) in
       whd_accu (Obj.field at 0) (zswitch :: stk)
-  | 5 (* cofix_tag *) ->
+  | 6 (* cofix_tag *) ->
       let vcfx = Obj.obj (Obj.field at 0) in
       let to_up = Obj.obj a in
       begin match stk with
@@ -192,7 +197,7 @@ let rec whd_accu a stk =
       | [Zapp args] -> Vcofix(vcfx, to_up, Some args)
       | _           -> assert false
       end
-  | 6 (* cofix_evaluated_tag *) ->
+  | 7 (* cofix_evaluated_tag *) ->
       let vcofix = Obj.obj (Obj.field at 0) in
       let res = Obj.obj a in
       begin match stk with
@@ -289,6 +294,7 @@ let rec obj_of_str_const str =
   match str with
   | Const_sorts s -> Obj.repr (Vsort s)
   | Const_ind ind -> obj_of_atom (Aind ind)
+  | Const_proj p -> Obj.repr p
   | Const_b0 tag -> Obj.repr tag
   | Const_bn(tag, args) ->
       let len = Array.length args in

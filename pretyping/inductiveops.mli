@@ -126,6 +126,8 @@ val allowed_sorts : env -> inductive -> sorts_family list
 (** Primitive projections *)
 val projection_nparams : projection -> int
 val projection_nparams_env : env -> projection -> int
+val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
+  constr -> types -> types
 
 (** Extract information from an inductive family *)
 

@@ -34,6 +34,7 @@ type zipper =
   | Zapp of arguments
   | Zfix of vfix * arguments  (** might be empty *)
   | Zswitch of vswitch
+  | Zproj of Constant.t (* name of the projection *)
 
 type stack = zipper list
 
