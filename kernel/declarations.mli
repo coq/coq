@@ -142,12 +142,10 @@ type one_inductive_body = {
     mind_nf_lc : types array; (** Head normalized constructor types so that their conclusion exposes the inductive type *)
 
     mind_consnrealargs : int array;
- (** Number of expected proper arguments of the constructors (w/o params)
-    (not used in the kernel) *)
+ (** Number of expected proper arguments of the constructors (w/o params) *)
 
     mind_consnrealdecls : int array;
- (** Length of the signature of the constructors (with let, w/o params)
-    (not used in the kernel) *)
+ (** Length of the signature of the constructors (with let, w/o params) *)
 
     mind_recargs : wf_paths; (** Signature of recursive arguments in the constructors *)
 
