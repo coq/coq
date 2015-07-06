@@ -18,8 +18,8 @@ let compare_zipper z1 z2 =
   match z1, z2 with
   | Zapp args1, Zapp args2 -> Int.equal (nargs args1) (nargs args2)
   | Zfix(f1,args1), Zfix(f2,args2) ->  Int.equal (nargs args1) (nargs args2)
-  | Zswitch _, Zswitch _ -> true
-  | _ , _ -> false
+  | Zswitch _, Zswitch _ | Zproj _, Zproj _ -> true
+  | Zapp _ , _ | Zfix _, _ | Zswitch _, _ | Zproj _, _ -> false
 
 let rec compare_stack stk1 stk2 =
   match stk1, stk2 with
@@ -81,7 +81,10 @@ and conv_whd env pb k whd1 whd2 cu =
       conv_whd env pb k whd1 (force_whd v stk) cu
   | Vatom_stk(Aiddef(_,v),stk), _ ->
       conv_whd env pb k (force_whd v stk) whd2 cu
-  | _, _ -> raise NotConvertible
+
+  | Vsort _, _ | Vprod _, _ | Vfix _, _ | Vcofix _, _  | Vconstr_const _, _
+  | Vconstr_block _, _ | Vatom_stk _, _ -> raise NotConvertible
+
 
 and conv_atom env pb k a1 stk1 a2 stk2 cu =
   match a1, a2 with
@@ -110,7 +113,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
       conv_whd env pb k (force_whd v1 stk1) (Vatom_stk(a2,stk2)) cu
   | _, Aiddef(ik2,v2) ->
       conv_whd env pb k (Vatom_stk(a1,stk1)) (force_whd v2 stk2) cu
-  | _, _ -> raise NotConvertible
+  | Aind _, _ | Aid _, _ -> raise NotConvertible
 
 and conv_stack env k stk1 stk2 cu =
   match stk1, stk2 with
@@ -131,7 +134,11 @@ and conv_stack env k stk1 stk2 cu =
 	done;
 	conv_stack env k stk1 stk2 !rcu
       else raise NotConvertible
-  | _, _ -> raise NotConvertible
+  | Zproj p1 :: stk1, Zproj p2 :: stk2 ->
+    if Constant.equal p1 p2 then conv_stack env k stk1 stk2 cu
+    else raise NotConvertible
+  | [], _ | Zapp _ :: _, _ | Zfix _ :: _, _ | Zswitch _ :: _, _
+  | Zproj _ :: _, _ -> raise NotConvertible
 
 and conv_fun env pb k f1 f2 cu =
   if f1 == f2 then cu

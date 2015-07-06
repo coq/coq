@@ -878,8 +878,32 @@ value coq_interprete
 	caml_modify(&Field(accu, *pc),*sp);
 	sp++; pc++;
 	Next;
-      }	
-   
+      }
+
+
+      Instruct(PROJ){
+	print_instr("PROJ");
+	if (Is_accu (accu)) {
+	  /* Skip over the index of projected field */
+	  pc++;
+	  /* Save the argument on the stack */
+	  *--sp = accu;
+	  /* Create atom */
+	  Alloc_small(accu, 2, ATOM_PROJ_TAG);
+	  Field(accu, 0) = Field(coq_global_data, *pc);
+	  Field(accu, 1) = sp[0];
+	  sp[0] = accu;
+	  /* Create accumulator */
+	  Alloc_small(accu, 2, Accu_tag);
+	  Code_val(accu) = accumulate;
+	  Field(accu,1) = *sp++;
+	} else {
+	    accu = Field(accu, *pc++);
+	}
+	pc++;
+	Next;
+      }
+
 /* Integer constants */
 
       Instruct(CONST0){

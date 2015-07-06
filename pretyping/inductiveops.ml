@@ -584,6 +584,15 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
         env evdref scl ar.template_level (ctx,ar.template_param_levels) in
       !evdref, mkArity (List.rev ctx,scl)
 
+let type_of_projection_knowing_arg env sigma p c ty =
+  let IndType(pars,realargs) =
+    try find_rectype env sigma ty
+    with Not_found ->
+      raise (Invalid_argument "type_of_projection_knowing_arg_type: not an inductive type")
+  in
+  let (_,u), pars = dest_ind_family pars in
+  substl (c :: List.rev pars) (Typeops.type_of_projection env (p,u))
+
 (***********************************************)
 (* Guard condition *)
 

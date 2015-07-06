@@ -29,7 +29,7 @@ val iter_mli_known : (string -> dir -> unit) -> unit
 val search_mli_known : string -> dir option
 val add_mllib_known : string -> dir -> string -> unit
 val search_mllib_known : string -> dir option
-val vKnown : (string list, string) Hashtbl.t
+val search_v_known : ?from:string list -> string list -> string option
 val coqlibKnown : (string list, unit) Hashtbl.t
 val file_name : string -> string option -> string
 val escape : string -> string

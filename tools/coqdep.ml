@@ -56,11 +56,12 @@ let sort () =
       try
 	while true do
 	  match coq_action lb with
-	    | Require sl ->
+	    | Require (from, sl) ->
 		List.iter
 		  (fun s ->
-		    try loop (Hashtbl.find vKnown s)
-		    with Not_found -> ())
+                    match search_v_known ?from s with
+                    | None -> ()
+                    | Some f -> loop f)
 		sl
 	    | _ -> ()
 	done
@@ -299,16 +300,15 @@ module DAG = DAG(struct type t = string let compare = compare end)
 (** TODO: we should share this code with Coqdep_common *)
 let treat_coq_file chan =
   let buf = Lexing.from_channel chan in
-  let deja_vu_v = ref ([]: string list list)
+  let deja_vu_v = ref ([]: (string list option * string list) list)
   and deja_vu_ml = ref ([] : string list) in
-  let mark_v_done acc str =
-    let seen = List.mem str !deja_vu_v in
+  let mark_v_done from acc str =
+    let seen = List.mem (from, str) !deja_vu_v in
     if not seen then
-      let () = addQueue deja_vu_v str in
-      try
-        let file_str = Hashtbl.find vKnown str in
-        (canonize file_str, !suffixe) :: acc
-      with Not_found -> acc
+      let () = addQueue deja_vu_v (from, str) in
+      match search_v_known ?from str with
+      | None -> acc
+      | Some file_str -> (canonize file_str, !suffixe) :: acc
     else acc
   in
   let rec loop acc =
@@ -317,8 +317,8 @@ let treat_coq_file chan =
     | None -> acc
     | Some action ->
       let acc = match action with
-      | Require strl ->
-        List.fold_left mark_v_done acc strl
+      | Require (from, strl) ->
+        List.fold_left (fun accu v -> mark_v_done from accu v) acc strl
       | Declare sl ->
         let declare suff dir s =
           let base = file_name s dir in
@@ -340,13 +340,12 @@ let treat_coq_file chan =
         List.fold_left decl acc sl
       | Load str ->
         let str = Filename.basename str in
-        let seen = List.mem [str] !deja_vu_v in
+        let seen = List.mem (None, [str]) !deja_vu_v in
         if not seen then
-          let () = addQueue deja_vu_v [str] in
-          try
-            let file_str = Hashtbl.find vKnown [str] in
-            (canonize file_str, ".v") :: acc
-          with Not_found -> acc
+          let () = addQueue deja_vu_v (None, [str]) in
+          match search_v_known [str] with
+          | None -> acc
+          | Some file_str -> (canonize file_str, ".v") :: acc
         else acc
       | AddLoadPath _ | AddRecLoadPath _ -> acc (** TODO *)
       in

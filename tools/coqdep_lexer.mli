@@ -11,7 +11,7 @@ type mL_token = Use_module of string
 type qualid = string list
 
 type coq_token =
-    Require of qualid list
+    Require of qualid option * qualid list
   | Declare of string list
   | Load of string
   | AddLoadPath of string
