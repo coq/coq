@@ -847,8 +847,13 @@ let configure ?(apply=(fun () -> ())) () =
               vertical_tabs;opposite_tabs] in
 
   let edit_user_query (q, k) =
-    let q = Configwin_ihm.edit_string "User query" q in
-    let k = Configwin_ihm.edit_string "Shortcut key" k in
+    let input_string l s v =
+      match GToolbox.input_string ~title:l ~text:s v with
+      | None -> s
+      | Some s -> s
+    in
+    let q = input_string "User query" q "Your query" in
+    let k = input_string "Shortcut key" k "Shortcut (a single letter)" in
       q, k
   in
 
