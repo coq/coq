@@ -723,7 +723,10 @@ let pr_constraints_map cmap =
       prlist_with_sep spc (fun (d,r) -> pr_constraint_type d ++ Level.pr r) cstrs ++ fnl ()
     ++ acc)
     cmap (mt ())
-	
+
+let remove_alg l (ctx, us, algs, insts, cstrs) =
+  (ctx, us, LSet.remove l algs, insts, cstrs)
+    
 let minimize_univ_variables ctx us algs left right cstrs =
   let left, lbounds = 
     Univ.LMap.fold (fun r lower (left, lbounds as acc)  ->
@@ -767,8 +770,8 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	     if not (Level.equal l u) then
 	       (* Should check that u does not 
   	          have upper constraints that are not already in right *)
-	       let acc' = (ctx', us, LSet.remove l algs, insts, cstrs) in
-		 instantiate_with_lbound u lbound false false acc
+	       let acc' = remove_alg l acc in
+		 instantiate_with_lbound u lbound false false acc'
 	     else acc, (true, false, lbound)
 	| None -> 
 	  try 
