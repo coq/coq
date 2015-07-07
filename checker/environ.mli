@@ -51,7 +51,7 @@ val constant_value : env -> constant puniverses -> constr
 val evaluable_constant : constant -> env -> bool
 
 val is_projection : constant -> env -> bool
-val lookup_projection : constant -> env -> projection_body
+val lookup_projection : projection -> env -> projection_body
 
 (* Inductives *)
 val mind_equiv : env -> inductive -> inductive -> bool

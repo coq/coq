@@ -147,8 +147,8 @@ let evaluable_constant cst env =
 let is_projection cst env = 
   not (Option.is_empty (lookup_constant cst env).const_proj)
 
-let lookup_projection cst env =
-  match (lookup_constant cst env).const_proj with 
+let lookup_projection p env =
+  match (lookup_constant (Projection.constant p) env).const_proj with 
   | Some pb -> pb
   | None -> anomaly ("lookup_projection: constant is not a projection")
 

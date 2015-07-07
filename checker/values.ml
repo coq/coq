@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 f5fd749af797e08efee22122742bc740 checker/cic.mli
+MD5 cabb12868c5ab7a51dbc6dc2ae8c0894 checker/cic.mli
 
 *)
 
@@ -126,6 +126,7 @@ let v_caseinfo =
   v_tuple "case_info" [|v_ind;Int;Array Int;Array Int;v_cprint|]
 
 let v_cast = v_enum "cast_kind" 4
+let v_proj = v_tuple "projection" [|v_cst; v_bool|]
 
 let rec v_constr =
   Sum ("constr",0,[|
@@ -145,7 +146,7 @@ let rec v_constr =
     [|v_caseinfo;v_constr;v_constr;Array v_constr|]; (* Case *)
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
-    [|v_cst;v_constr|] (* Proj *)
+    [|v_proj;v_constr|] (* Proj *)
   |])
 
 and v_prec = Tuple ("prec_declaration",
@@ -205,8 +206,10 @@ let v_cst_def =
     [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]|]
 
 let v_projbody =
-  v_tuple "projection_body" [|v_cst;Int;Int;v_constr;v_tuple "proj_eta" [|v_constr;v_constr|];
-			      v_constr|]
+  v_tuple "projection_body"
+	  [|v_cst;Int;Int;v_constr;
+	    v_tuple "proj_eta" [|v_constr;v_constr|];
+	    v_constr|]
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;

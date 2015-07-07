@@ -52,7 +52,7 @@ let compare_stack_shape stk1 stk2 =
 
 type lft_constr_stack_elt =
     Zlapp of (lift * fconstr) array
-  | Zlproj of Names.constant * lift
+  | Zlproj of Names.projection * lift
   | Zlfix of (lift * fconstr) * lft_constr_stack
   | Zlcase of case_info * lift * fconstr * fconstr array
 and lft_constr_stack = lft_constr_stack_elt list
@@ -137,7 +137,9 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 =
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 f fx1 fx2; cmp_rec a1 a2
 	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
-	      if not (Names.eq_con_chk c1 c2) then 
+	       if not (Names.eq_con_chk
+		       (Names.Projection.constant c1)
+		       (Names.Projection.constant c2)) then 
 		raise NotConvertible
             | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
                 if not (fmind ci1.ci_ind ci2.ci_ind) then
