@@ -86,6 +86,8 @@ type pref =
 
       mutable nanoPG : bool;
 
+      mutable user_queries : (string * string) list;
+
     }
 
 val save_pref : unit -> unit
