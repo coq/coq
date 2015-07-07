@@ -173,6 +173,6 @@ let init () =
     (if Coq_config.gtk_platform <> `QUARTZ then "<menuitem action='Quit' />" else "")
     (Buffer.contents (list_items "Tactic" Coq_commands.tactics))
     (Buffer.contents (list_items "Template" Coq_commands.commands))
-    (Buffer.contents (list_queries "Query" Preferences.current.user_queries))
+    (Buffer.contents (list_queries "Query" Preferences.current.Preferences.user_queries))
  in
   ignore (ui_m#add_ui_from_string theui);
