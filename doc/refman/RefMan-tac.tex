@@ -4164,6 +4164,12 @@ first-order reasoning, written by Pierre Corbineau.
 It is not restricted to usual logical connectives but
 instead may reason about any first-order class inductive definition.
 
+The default tactic used by \texttt{firstorder} when no rule applies is {\tt
+  auto with *}, it can be reset locally or globally using the {\nobreak
+  {\tt Set Firstorder Solver {\tac}}} \optindex{Firstorder Solver}
+vernacular command and printed using {\nobreak {\tt Print Firstorder
+    Solver}}.
+
 \begin{Variants}
  \item {\tt firstorder {\tac}}
    \tacindex{firstorder {\tac}}
