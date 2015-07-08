@@ -185,12 +185,14 @@ let process_goal sigma g =
   let ccl =
     let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
     string_of_ppcmds (pr_goal_concl_style_env env sigma norm_constr) in
-  let process_hyp d =
+  let process_hyp d (env,l) =
     let d = Context.map_named_list_declaration (Reductionops.nf_evar sigma) d in
-    (string_of_ppcmds (pr_var_list_decl min_env sigma d)) in
-  let hyps =
-    List.map process_hyp
-      (Termops.compact_named_context_reverse (Environ.named_context env)) in
+    let d' = List.map (fun x -> (x, pi2 d, pi3 d)) (pi1 d) in
+      (List.fold_right Environ.push_named d' env,
+       (string_of_ppcmds (pr_var_list_decl env sigma d)) :: l) in
+  let (_env, hyps) =
+    Context.fold_named_list_context process_hyp
+      (Termops.compact_named_context_reverse (Environ.named_context env)) ~init:(min_env,[]) in
   { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 
 let export_pre_goals pgs =
