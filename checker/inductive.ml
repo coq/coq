@@ -104,12 +104,14 @@ let instantiate_params full t u args sign =
 let full_inductive_instantiate mib u params sign =
   let dummy = Prop Null in
   let t = mkArity (sign,dummy) in
-    fst (destArity (instantiate_params true t u params mib.mind_params_ctxt))
+  let ar = fst (destArity (instantiate_params true t u params mib.mind_params_ctxt)) in
+    subst_instance_context u ar
 
-let full_constructor_instantiate ((mind,_),u,(mib,_),params) =
-  let inst_ind = constructor_instantiate mind u mib in
-  (fun t ->
-    instantiate_params true (inst_ind t) u params mib.mind_params_ctxt)
+
+let full_constructor_instantiate ((mind,_),u,(mib,_),params) t =
+  let inst_ind = constructor_instantiate mind u mib t in
+    instantiate_params true inst_ind u params
+		       (subst_instance_context u mib.mind_params_ctxt)
 
 (************************************************************************)
 (************************************************************************)
