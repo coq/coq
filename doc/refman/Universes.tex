@@ -93,7 +93,7 @@ of monoids).
 
 \begin{coq_example*}
 Polymorphic Definition monoid_monoid : Monoid.
-  refine (@Build_Monoid Monoid unit_monoid _) ; admit.
+  refine (@Build_Monoid Monoid unit_monoid (fun x y => x)).
 Defined.
 \end{coq_example*}
 \begin{coq_example}
