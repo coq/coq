@@ -796,8 +796,8 @@ let pr_scope_classes sc =
   let l = classes_of_scope sc in
   match l with
   | [] -> mt ()
-  | _ :: l ->
-    let opt_s = match l with [] -> mt () | _ -> str "es" in
+  | _ :: ll ->
+    let opt_s = match ll with [] -> mt () | _ -> str "es" in
     hov 0 (str "Bound to class" ++ opt_s ++
       spc() ++ prlist_with_sep spc pr_scope_class l) ++ fnl()
 
