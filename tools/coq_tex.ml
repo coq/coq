@@ -249,7 +249,7 @@ let files = ref []
 let parse_cl () =
   Arg.parse
       [ "-o", Arg.String (fun s -> output_specified := true; output := s),
-	"output-file    Specifiy the resulting LaTeX file";
+	"output-file    Specify the resulting LaTeX file";
 	"-n", Arg.Int (fun n -> linelen := n),
 	"line-width     Set the line width";
 	"-image", Arg.String (fun s -> image := s),
@@ -265,7 +265,7 @@ let parse_cl () =
 	"-small", Arg.Set small,
 	"           Coq parts are written in small font";
 	"-boot", Arg.Set boot,
-	"           Launch coqtop with the -boot option"
+	"            Launch coqtop with the -boot option"
       ]
       (fun s -> files := s :: !files)
       "coq-tex [options] file ..."
@@ -290,7 +290,7 @@ let main () =
     let _ = Sys.command (!image ^ " -batch") in
     exit 1
   end else begin
-    Printf.printf "Your version of coqtop seems OK\n";
+    (*Printf.printf "Your version of coqtop seems OK\n";*)
     flush stdout
   end;
   List.iter one_file (List.rev !files)
