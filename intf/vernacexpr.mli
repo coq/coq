@@ -292,7 +292,7 @@ type vernac_expr =
       obsolete_locality * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
   | VernacDelimiters of scope_name * string option
-  | VernacBindScope of scope_name * reference or_by_notation list
+  | VernacBindScope of scope_name * class_rawexpr list
   | VernacInfix of obsolete_locality * (lstring * syntax_modifier list) *
       constr_expr * scope_name option
   | VernacNotation of

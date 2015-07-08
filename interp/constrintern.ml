@@ -298,7 +298,7 @@ let set_var_scope loc id istermvar env ntnvars =
     (* Not in a notation *)
     ()
 
-let set_type_scope env = {env with tmp_scope = Some Notation.type_scope}
+let set_type_scope env = {env with tmp_scope = Notation.current_type_scope_name ()}
 
 let reset_tmp_scope env = {env with tmp_scope = None}
 
@@ -449,12 +449,15 @@ let intern_generalization intern env lvar loc bk ak c =
 	| Some AbsPi -> true
         | Some _ -> false
 	| None ->
-          let is_type_scope = match env.tmp_scope with
+          match Notation.current_type_scope_name () with
+          | Some type_scope ->
+              let is_type_scope = match env.tmp_scope with
+              | None -> false
+              | Some sc -> String.equal sc type_scope
+              in
+              is_type_scope ||
+              String.List.mem type_scope env.scopes
           | None -> false
-          | Some sc -> String.equal sc Notation.type_scope
-          in
-          is_type_scope ||
-          String.List.mem Notation.type_scope env.scopes
       in
 	if pi then
 	  (fun (id, loc') acc ->
@@ -1755,7 +1758,7 @@ let extract_ids env =
     Id.Set.empty
 
 let scope_of_type_kind = function
-  | IsType -> Some Notation.type_scope
+  | IsType -> Notation.current_type_scope_name ()
   | OfType typ -> compute_type_scope typ
   | WithoutTypeConstraint -> None
 

@@ -76,9 +76,14 @@ Reserved Notation "{ x : A  & P }" (at level 0, x at level 99).
 Reserved Notation "{ x : A  & P  & Q }" (at level 0, x at level 99).
 
 Delimit Scope type_scope with type.
+Delimit Scope function_scope with function.
 Delimit Scope core_scope with core.
 
+Bind Scope type_scope with Sortclass.
+Bind Scope function_scope with Funclass.
+
 Open Scope core_scope.
+Open Scope function_scope.
 Open Scope type_scope.
 
 (** ML Tactic Notations *)

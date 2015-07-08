@@ -788,7 +788,7 @@ let rec extern inctx scopes vars r =
 	     Miscops.map_cast_type (extern_typ scopes vars) c')
 
 and extern_typ (_,scopes) =
-  extern true (Some Notation.type_scope,scopes)
+  extern true (Notation.current_type_scope_name (),scopes)
 
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 

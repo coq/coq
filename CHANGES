@@ -21,6 +21,9 @@ Tactics
   * "Strict" changes the behavior of an unloaded hint to the one of the fail
   tactic, allowing to emulate the hopefully future import-scoped hint mechanism.
 
+Notations
+- "Bind Scope" can once again bind "Funclass" and "Sortclass".
+
 API
 
 - Some functions from pretyping/typing.ml and their derivatives were potential

@@ -65,11 +65,9 @@ let empty_scope = {
 }
 
 let default_scope = "" (* empty name, not available from outside *)
-let type_scope = "type_scope" (* special scope used for interpreting types *)
 
 let init_scope_map () =
-  scope_map := String.Map.add default_scope empty_scope !scope_map;
-  scope_map := String.Map.add type_scope empty_scope !scope_map
+  scope_map := String.Map.add default_scope empty_scope !scope_map
 
 (**********************************************************************)
 (* Operations on scopes *)
@@ -556,23 +554,16 @@ let isNVar_or_NHole = function NVar _ | NHole _ -> true | _ -> false
 (**********************************************************************)
 (* Mapping classes to scopes *)
 
-type scope_class = ScopeRef of global_reference | ScopeSort
+open Classops
 
-let scope_class_compare sc1 sc2 = match sc1, sc2 with
-| ScopeRef gr1, ScopeRef gr2 -> RefOrdered.compare gr1 gr2
-| ScopeRef _, ScopeSort -> -1
-| ScopeSort, ScopeRef _ -> 1
-| ScopeSort, ScopeSort -> 0
+type scope_class = cl_typ
 
-let scope_class_of_reference x = ScopeRef x
+let scope_class_compare : scope_class -> scope_class -> int =
+  cl_typ_ord
 
 let compute_scope_class t =
-  let t', _ = decompose_appvect (Reductionops.whd_betaiotazeta Evd.empty t) in
-  match kind_of_term t' with
-  | Var _ | Const _ | Ind _ -> ScopeRef (global_of_constr t')
-  | Proj (p, c) -> ScopeRef (ConstRef (Projection.constant p))
-  | Sort _ -> ScopeSort
-  |  _ -> raise Not_found
+  let (cl,_,_) = find_class_type Evd.empty t in
+  cl
 
 module ScopeClassOrd =
 struct
@@ -583,7 +574,7 @@ end
 module ScopeClassMap = Map.Make(ScopeClassOrd)
 
 let initial_scope_class_map : scope_name ScopeClassMap.t =
-  ScopeClassMap.add ScopeSort "type_scope" ScopeClassMap.empty
+  ScopeClassMap.empty
 
 let scope_class_map = ref initial_scope_class_map
 
@@ -617,8 +608,11 @@ let compute_arguments_scope t = fst (compute_arguments_scope_full t)
 let compute_type_scope t =
   find_scope_class_opt (try Some (compute_scope_class t) with Not_found -> None)
 
-let compute_scope_of_global ref =
-  find_scope_class_opt (Some (ScopeRef ref))
+let current_type_scope_name () =
+   find_scope_class_opt (Some CL_SORT)
+
+let scope_class_of_class (x : cl_typ) : scope_class =
+  x
 
 (** Updating a scope list, thanks to a list of argument classes
     and the current Bind Scope base. When some current scope
@@ -650,12 +644,8 @@ let load_arguments_scope _ (_,(_,r,scl,cls)) =
 let cache_arguments_scope o =
   load_arguments_scope 1 o
 
-let subst_scope_class subst cs = match cs with
-  | ScopeSort -> Some cs
-  | ScopeRef t ->
-      let (t',c) = subst_global subst t in
-      if t == t' then Some cs
-      else try Some (compute_scope_class c) with Not_found -> None
+let subst_scope_class subst cs =
+  try Some (subst_cl_typ subst cs) with Not_found -> None
 
 let subst_arguments_scope (subst,(req,r,scl,cls)) =
   let r' = fst (subst_global subst r) in
@@ -788,16 +778,14 @@ let pr_delimiters_info = function
 let classes_of_scope sc =
   ScopeClassMap.fold (fun cl sc' l -> if String.equal sc sc' then cl::l else l) !scope_class_map []
 
-let pr_scope_class = function
-  | ScopeSort -> str "Sort"
-  | ScopeRef t -> pr_global_env Id.Set.empty t
+let pr_scope_class = pr_class
 
 let pr_scope_classes sc =
   let l = classes_of_scope sc in
   match l with
   | [] -> mt ()
-  | _ :: l ->
-    let opt_s = match l with [] -> mt () | _ -> str "es" in
+  | _ :: cls ->
+    let opt_s = match cls with [] -> mt () | _ -> str "es" in
     hov 0 (str "Bound to class" ++ opt_s ++
       spc() ++ prlist_with_sep spc pr_scope_class l) ++ fnl()
 
