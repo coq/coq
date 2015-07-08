@@ -192,8 +192,8 @@ let process_goal sigma g =
        (string_of_ppcmds (pr_var_list_decl env sigma d)) :: l) in
   let (_env, hyps) =
     Context.fold_named_list_context process_hyp
-      (Termops.compact_named_context_reverse (Environ.named_context env)) ~init:(min_env,[]) in
-  { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
+      (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
+  { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 
 let export_pre_goals pgs =
   {
