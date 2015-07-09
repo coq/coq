@@ -110,9 +110,11 @@ let call_linker ?(fatal=true) prefix f upds =
   rt1 := dummy_value ();
   rt2 := dummy_value ();
   if not (Sys.file_exists f) then
-    let msg = "Cannot find native compiler file " ^ f in
-    if fatal then Errors.error msg
-    else Pp.msg_warning (Pp.str msg)
+    begin
+      let msg = "Cannot find native compiler file " ^ f in
+      if fatal then Errors.error msg
+      else if !Flags.native_compiler then Pp.msg_warning (Pp.str msg)
+    end
   else
   (try
     if Dynlink.is_native then Dynlink.loadfile f else !load_obj f;

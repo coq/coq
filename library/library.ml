@@ -169,8 +169,9 @@ let register_loaded_library m =
     let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
     let f = prefix ^ "cmo" in
     let f = Dynlink.adapt_filename f in
-    if !Flags.native_compiler then
-      Nativelib.link_library ~prefix ~dirname ~basename:f
+    (* This will not produce errors or warnings if the native compiler was
+       not enabled *)
+    Nativelib.link_library ~prefix ~dirname ~basename:f
   in
   let rec aux = function
     | [] -> link m; [libname]
