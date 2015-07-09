@@ -158,7 +158,7 @@ type conv_pb =
   | CONV
   | CUMUL
 
-let sort_cmp univ pb s0 s1 =
+let sort_cmp env univ pb s0 s1 =
   match (s0,s1) with
     | (Prop c1, Prop c2) when pb = CUMUL -> if c1 = Pos && c2 = Null then raise NotConvertible
     | (Prop c1, Prop c2) -> if c1 <> c2 then raise NotConvertible
@@ -167,7 +167,8 @@ let sort_cmp univ pb s0 s1 =
             CUMUL -> ()
           | _ -> raise NotConvertible)
     | (Type u1, Type u2) ->
-        if not
+        if snd (engagement env) == StratifiedType
+          && not
 	  (match pb with
             | CONV -> Univ.check_eq univ u1 u2
 	    | CUMUL -> Univ.check_leq univ u1 u2)
@@ -261,7 +262,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 	(match a1, a2 with
 	   | (Sort s1, Sort s2) ->
 	       assert (is_empty_stack v1 && is_empty_stack v2);
-	       sort_cmp univ cv_pb s1 s2
+	       sort_cmp (infos_env infos) univ cv_pb s1 s2
 	   | (Meta n, Meta m) ->
                if n=m
 	       then convert_stacks univ infos lft1 lft2 v1 v2

@@ -14,7 +14,10 @@ open Context
    declarations. This includes global constants/axioms, mutual
    inductive definitions, modules and module types *)
 
-type engagement = ImpredicativeSet
+type set_predicativity = ImpredicativeSet | PredicativeSet
+type type_hierarchy = TypeInType | StratifiedType
+
+type engagement = set_predicativity * type_hierarchy
 
 (** {6 Representation of constants (Definition/Axiom) } *)
 

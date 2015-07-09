@@ -50,10 +50,9 @@ val opaque_tables : env -> Opaqueproof.opaquetab
 val set_opaque_tables : env -> Opaqueproof.opaquetab -> env
 
 
-val engagement    : env -> engagement option
+val engagement    : env -> engagement
 val is_impredicative_set : env -> bool
-
-val type_in_type  : env -> bool
+val type_in_type : env -> bool
 
 (** is the local context empty *)
 val empty_context : env -> bool
@@ -214,8 +213,6 @@ val push_context_set : Univ.universe_context_set -> env -> env
 val push_constraints_to_env : 'a Univ.constrained -> env -> env
 
 val set_engagement : engagement -> env -> env
-
-val set_type_in_type : env -> env
 
 (** {6 Sets of referred section variables }
    [global_vars_set env c] returns the list of [id]'s occurring either

@@ -99,11 +99,8 @@ val add_constraints :
 (* (\** Generator of universes *\) *)
 (* val next_universe : int safe_transformer *)
 
-(** Setting the strongly constructive or classical logical engagement *)
+(** Setting the type theory flavor *)
 val set_engagement : Declarations.engagement -> safe_transformer0
-
-(** Collapsing the type hierarchy *)
-val set_type_in_type : safe_transformer0
 
 (** {6 Interactive module functions } *)
 

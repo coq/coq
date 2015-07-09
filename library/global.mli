@@ -27,7 +27,6 @@ val named_context : unit -> Context.named_context
 
 (** Changing the (im)predicativity of the system *)
 val set_engagement : Declarations.engagement -> unit
-val set_type_in_type : unit -> unit
 
 (** Variables, Local definitions, constants, inductive types *)
 

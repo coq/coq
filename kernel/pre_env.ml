@@ -46,8 +46,7 @@ type globals = {
 
 type stratification = {
   env_universes : universes;
-  env_engagement : engagement option;
-  env_type_in_type : bool
+  env_engagement : engagement
 }
 
 type val_kind =
@@ -95,8 +94,7 @@ let empty_env = {
   env_nb_rel = 0;
   env_stratification = {
     env_universes = initial_universes;
-    env_engagement = None;
-    env_type_in_type = false};
+    env_engagement = (PredicativeSet,StratifiedType) };
   env_conv_oracle = Conv_oracle.empty;
   retroknowledge = Retroknowledge.initial_retroknowledge;
   indirect_pterms = Opaqueproof.empty_opaquetab }

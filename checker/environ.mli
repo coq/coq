@@ -11,7 +11,7 @@ type globals = {
   env_modtypes : module_type_body MPmap.t}
 type stratification = {
   env_universes : Univ.universes;
-  env_engagement : engagement option;
+  env_engagement : engagement;
 }
 type env = {
   env_globals : globals;
@@ -22,7 +22,7 @@ type env = {
 val empty_env : env
 
 (* Engagement *)
-val engagement : env -> Cic.engagement option
+val engagement : env -> Cic.engagement
 val set_engagement : Cic.engagement -> env -> env
 
 (* Digests *)

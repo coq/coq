@@ -173,7 +173,7 @@ let cumulate_arity_large_levels env sign =
     sign (Universe.type0m,env))
 
 let is_impredicative env u =
-  is_type0m_univ u || (is_type0_univ u && engagement env = Some ImpredicativeSet)
+  is_type0m_univ u || (is_type0_univ u && is_impredicative_set env)
 
 (* Returns the list [x_1, ..., x_n] of levels contributing to template
    polymorphism. The elements x_k is None if the k-th parameter (starting

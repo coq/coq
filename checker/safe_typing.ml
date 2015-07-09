@@ -32,13 +32,21 @@ let full_add_module dp mb univs digest =
   let env = Modops.add_module mb env in
   genv := add_digest env dp digest
 
-(* Check that the engagement expected by a library matches the initial one *)
-let check_engagement env c =
-  match engagement env, c with
-    | Some ImpredicativeSet, Some ImpredicativeSet -> ()
-    | _, None -> ()
-    | _, Some ImpredicativeSet ->
-        error "Needs option -impredicative-set"
+(* Check that the engagement expected by a library extends the initial one *)
+let check_engagement env (expected_impredicative_set,expected_type_in_type) =
+  let impredicative_set,type_in_type = Environ.engagement env in
+  begin
+    match impredicative_set, expected_impredicative_set with
+    | PredicativeSet, ImpredicativeSet ->
+        Errors.error "Needs option -impredicative-set."
+    | _ -> ()
+  end;
+  begin
+    match type_in_type, expected_type_in_type with
+    | StratifiedType, TypeInType ->
+        Errors.error "Needs option -type-in-type."
+    | _ -> ()
+  end
 
 (* Libraries = Compiled modules *)
 

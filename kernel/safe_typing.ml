@@ -184,16 +184,20 @@ let set_engagement c senv =
 
 (** Check that the engagement [c] expected by a library matches
     the current (initial) one *)
-let check_engagement env c =
-  match Environ.engagement env, c with
-  | None, Some ImpredicativeSet ->
-    Errors.error "Needs option -impredicative-set."
-  | _ -> ()
-
-let set_type_in_type senv = 
-  { senv with
-    env = Environ.set_type_in_type senv.env;
-    type_in_type = true }
+let check_engagement env (expected_impredicative_set,expected_type_in_type) =
+  let impredicative_set,type_in_type = Environ.engagement env in
+  begin
+    match impredicative_set, expected_impredicative_set with
+    | PredicativeSet, ImpredicativeSet ->
+        Errors.error "Needs option -impredicative-set."
+    | _ -> ()
+  end;
+  begin
+    match type_in_type, expected_type_in_type with
+    | StratifiedType, TypeInType ->
+        Errors.error "Needs option -type-in-type."
+    | _ -> ()
+  end
 
 (** {6 Stm machinery } *)
 
@@ -734,7 +738,7 @@ type compiled_library = {
   comp_name : DirPath.t;
   comp_mod : module_body;
   comp_deps : library_info array;
-  comp_enga : engagement option;
+  comp_enga : engagement;
   comp_natsymbs : Nativecode.symbols
 }
 

@@ -135,7 +135,7 @@ let typecheck_params_and_fields def id t ps nots fs =
     let ctx, aritysort = Reduction.dest_arity env0 arity in
       assert(List.is_empty ctx); (* Ensured by above analysis *)
       if Sorts.is_prop aritysort || 
-	(Sorts.is_set aritysort && engagement env0 = Some ImpredicativeSet) then
+	(Sorts.is_set aritysort && is_impredicative_set env0) then
 	evars
       else Evd.set_leq_sort env_ar evars (Type univ) aritysort
   in

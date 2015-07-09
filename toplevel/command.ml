@@ -360,8 +360,7 @@ let make_conclusion_flexible evdref ty poly =
   else () 
 	
 let is_impredicative env u = 
-  u = Prop Null || 
-  (engagement env = Some Declarations.ImpredicativeSet && u = Prop Pos)
+  u = Prop Null || (is_impredicative_set env && u = Prop Pos)
 
 let interp_ind_arity env evdref ind =
   let c = intern_gen IsType env ind.ind_arity in

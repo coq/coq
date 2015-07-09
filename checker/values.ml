@@ -193,7 +193,9 @@ let v_lazy_constr =
 
 (** kernel/declarations *)
 
-let v_engagement = v_enum "eng" 1
+let v_impredicative_set = v_enum "impr-set" 2
+let v_type_in_type = v_enum "type-in-type" 2
+let v_engagement = v_tuple "eng" [|v_impredicative_set; v_type_in_type|]
 
 let v_pol_arity =
   v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ|]
@@ -315,7 +317,7 @@ and v_modtype =
 let v_vodigest = Sum ("module_impl",0, [| [|String|]; [|String;String|] |])
 let v_deps = Array (v_tuple "dep" [|v_dp;v_vodigest|])
 let v_compiled_lib =
-  v_tuple "compiled" [|v_dp;v_module;v_deps;Opt v_engagement;Any|]
+  v_tuple "compiled" [|v_dp;v_module;v_deps;v_engagement;Any|]
 
 (** Library objects *)
 
