@@ -102,7 +102,7 @@ val export : ?except:Future.UUIDSet.t -> DirPath.t ->
   module_path * Safe_typing.compiled_library * Safe_typing.native_library
 val import :
   Safe_typing.compiled_library -> Univ.universe_context_set -> Safe_typing.vodigest ->
-  module_path * Nativecode.symbol array
+  module_path
 
 (** {6 Misc } *)
 

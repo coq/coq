@@ -22,29 +22,33 @@ val pp_global : Format.formatter -> global -> unit
 
 val mk_open : string -> global
 
+(* Precomputed values for a compilation unit *)
 type symbol
+type symbols
 
-val clear_symb_tbl : unit -> unit
+val empty_symbols : symbols
 
-val get_value : symbol array -> int -> Nativevalues.t
+val clear_symbols : unit -> unit
 
-val get_sort : symbol array -> int -> sorts
+val get_value : symbols -> int -> Nativevalues.t
 
-val get_name : symbol array -> int -> name
+val get_sort : symbols -> int -> sorts
 
-val get_const : symbol array -> int -> constant
+val get_name : symbols -> int -> name
 
-val get_match : symbol array -> int -> Nativevalues.annot_sw
+val get_const : symbols -> int -> constant
 
-val get_ind : symbol array -> int -> inductive
+val get_match : symbols -> int -> Nativevalues.annot_sw
 
-val get_meta : symbol array -> int -> metavariable
+val get_ind : symbols -> int -> inductive
 
-val get_evar : symbol array -> int -> existential
+val get_meta : symbols -> int -> metavariable
 
-val get_level : symbol array -> int -> Univ.Level.t
+val get_evar : symbols -> int -> existential
 
-val get_symbols_tbl : unit -> symbol array
+val get_level : symbols -> int -> Univ.Level.t
+
+val get_symbols : unit -> symbols
 
 type code_location_update
 type code_location_updates
