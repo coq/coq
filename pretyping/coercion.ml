@@ -345,7 +345,7 @@ let saturate_evd env evd =
   Typeclasses.resolve_typeclasses
     ~filter:Typeclasses.no_goals ~split:false ~fail:false env evd
 
-(* appliquer le chemin de coercions p à hj *)
+(* Apply coercion path from p to hj; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p hj typ_cl =
   try
     let j,t,evd = 
@@ -367,7 +367,8 @@ let apply_coercion env sigma p hj typ_cl =
   with NoCoercion as e -> raise e
   | e when Errors.noncritical e -> anomaly (Pp.str "apply_coercion")
 
-let inh_app_fun env evd j =
+(* Try to coerce to a funclass; raise NoCoercion if not possible *)
+let inh_app_fun_core env evd j =
   let t = whd_betadeltaiota env evd j.uj_type in
     match kind_of_term t with
     | Prod (_,_,_) -> (evd,j)
@@ -387,16 +388,17 @@ let inh_app_fun env evd j =
 	      (!evdref, res)
 	  with NoSubtacCoercion | NoCoercion ->
 	    (evd,j)
-          else (evd, j)
+          else raise NoCoercion
 
+(* Try to coerce to a funclass; returns [j] if no coercion is applicable *)
 let inh_app_fun resolve_tc env evd j =
-  try inh_app_fun env evd j
+  try inh_app_fun_core env evd j
   with
-  | Not_found when not resolve_tc 
+  | NoCoercion when not resolve_tc
     || not !use_typeclasses_for_conversion -> (evd, j)
-  | Not_found ->
-    try inh_app_fun env (saturate_evd env evd) j
-    with Not_found -> (evd, j)
+  | NoCoercion ->
+    try inh_app_fun_core env (saturate_evd env evd) j
+    with NoCoercion -> (evd, j)
 
 let inh_tosort_force loc env evd j =
   try
