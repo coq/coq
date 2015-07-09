@@ -43,5 +43,5 @@ val is_indices_matter : unit -> bool
 
 val compute_projections : pinductive -> Id.t -> Id.t ->
   int -> Context.rel_context -> int array -> int array -> 
-  Context.rel_context -> 
+  Context.rel_context -> Context.rel_context -> 
   (constant array * projection_body array)

@@ -646,10 +646,28 @@ exception UndefinableExpansion
     build an expansion function.
     The term built is expecting to be substituted first by 
     a substitution of the form [params, x : ind params] *)
-let compute_projections ((kn, _ as ind), u as indsp) n x nparamargs params
-    mind_consnrealdecls mind_consnrealargs ctx =
+let compute_projections ((kn, _ as ind), u as indu) n x nparamargs params
+    mind_consnrealdecls mind_consnrealargs paramslet ctx =
   let mp, dp, l = repr_mind kn in
-  let rp = mkApp (mkIndU indsp, rel_vect 0 nparamargs) in
+  (** We build a substitution smashing the lets in the record parameters so
+      that typechecking projections requires just a substitution and not
+      matching with a parameter context. *)
+  let indty, paramsletsubst =
+    let subst, inst = 
+      List.fold_right
+	(fun (na, b, t) (subst, inst) ->
+	 match b with
+	 | None -> (mkRel 1 :: List.map (lift 1) subst,
+		   mkRel 1 :: List.map (lift 1) inst)
+	 | Some b -> (substl subst b) :: subst, List.map (lift 1) inst)
+	paramslet ([], [])
+    in
+    let subst = (* For the record parameter: *)
+      mkRel 1 :: List.map (lift 1) subst
+    in
+    let ty = mkApp (mkIndU indu, CArray.rev_of_list inst) in
+      ty, subst
+  in
   let ci = 
     let print_info =
       { ind_tags = []; cstr_tags = [|rel_context_tags ctx|]; style = LetStyle } in
@@ -662,34 +680,39 @@ let compute_projections ((kn, _ as ind), u as indsp) n x nparamargs params
   let len = List.length ctx in
   let x = Name x in
   let compat_body ccl i = 
-    (* [ccl] is defined in context [params;x:rp] *)
-    (* [ccl'] is defined in context [params;x:rp;x:rp] *)
+    (* [ccl] is defined in context [params;x:indty] *)
+    (* [ccl'] is defined in context [params;x:indty;x:indty] *)
     let ccl' = liftn 1 2 ccl in
-    let p = mkLambda (x, lift 1 rp, ccl') in
+    let p = mkLambda (x, lift 1 indty, ccl') in
     let branch = it_mkLambda_or_LetIn (mkRel (len - i)) ctx in
     let body = mkCase (ci, p, mkRel 1, [|lift 1 branch|]) in
-      it_mkLambda_or_LetIn (mkLambda (x,rp,body)) params
+      it_mkLambda_or_LetIn (mkLambda (x,indty,body)) params
   in
-  let projections (na, b, t) (i, j, kns, pbs, subst) =
+  let projections (na, b, t) (i, j, kns, pbs, subst, letsubst) =
     match b with
-    | Some c -> (i, j+1, kns, pbs, substl subst c :: subst)
+    | Some c -> (i, j+1, kns, pbs, substl subst c :: subst,
+		substl letsubst c :: subst)
     | None ->
       match na with
       | Name id ->
 	let kn = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
+	let projty = substl letsubst (liftn 1 j t) in
 	let ty = substl subst (liftn 1 j t) in
 	let term = mkProj (Projection.make kn true, mkRel 1) in
 	let fterm = mkProj (Projection.make kn false, mkRel 1) in
 	let compat = compat_body ty (j - 1) in
-	let etab = it_mkLambda_or_LetIn (mkLambda (x, rp, term)) params in
-	let etat = it_mkProd_or_LetIn (mkProd (x, rp, ty)) params in
+	let etab = it_mkLambda_or_LetIn (mkLambda (x, indty, term)) params in
+	let etat = it_mkProd_or_LetIn (mkProd (x, indty, ty)) params in
 	let body = { proj_ind = fst ind; proj_npars = nparamargs;
-		     proj_arg = i; proj_type = ty; proj_eta = etab, etat; 
+		     proj_arg = i; proj_type = projty; proj_eta = etab, etat; 
 		     proj_body = compat } in
-	  (i + 1, j + 1, kn :: kns, body :: pbs, fterm :: subst)
+	  (i + 1, j + 1, kn :: kns, body :: pbs,
+	   fterm :: subst, fterm :: letsubst)
       | Anonymous -> raise UndefinableExpansion
   in
-  let (_, _, kns, pbs, subst) = List.fold_right projections ctx (0, 1, [], [], []) in
+  let (_, _, kns, pbs, subst, letsubst) =
+    List.fold_right projections ctx (0, 1, [], [], [], paramsletsubst)
+  in
     Array.of_list (List.rev kns),
     Array.of_list (List.rev pbs)
 
@@ -775,12 +798,12 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
 	else Univ.Instance.empty 
       in
       let indsp = ((kn, 0), u) in
-      let rctx, _ = decompose_prod_assum (subst1 (mkIndU indsp) pkt.mind_nf_lc.(0)) in
+      let rctx, indty = decompose_prod_assum (subst1 (mkIndU indsp) pkt.mind_nf_lc.(0)) in
 	(try 
-	   let fields = List.firstn pkt.mind_consnrealdecls.(0) rctx in
+	   let fields, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
 	   let kns, projs = 
 	     compute_projections indsp pkt.mind_typename rid nparamargs params
-	       pkt.mind_consnrealdecls pkt.mind_consnrealargs fields
+	       pkt.mind_consnrealdecls pkt.mind_consnrealargs paramslet fields
 	   in Some (Some (rid, kns, projs))
 	 with UndefinableExpansion -> Some None)
     | Some _ -> Some None
