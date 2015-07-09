@@ -113,7 +113,7 @@ let call_linker ?(fatal=true) prefix f upds =
     begin
       let msg = "Cannot find native compiler file " ^ f in
       if fatal then Errors.error msg
-      else if !Flags.native_compiler then Pp.msg_warning (Pp.str msg)
+      else if !Flags.debug then Pp.msg_debug (Pp.str msg)
     end
   else
   (try
@@ -123,7 +123,7 @@ let call_linker ?(fatal=true) prefix f upds =
      let exn = Errors.push exn in
      let msg = "Dynlink error, " ^ Dynlink.error_message e in
      if fatal then (Pp.msg_error (Pp.str msg); iraise exn)
-     else Pp.msg_warning (Pp.str msg));
+     else if !Flags.debug then Pp.msg_debug (Pp.str msg));
   match upds with Some upds -> update_locations upds | _ -> ()
 
 let link_library ~prefix ~dirname ~basename =
