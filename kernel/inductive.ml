@@ -73,7 +73,7 @@ let constructor_instantiate mind u mib c =
   let s = ind_subst mind mib u in
     substl s (subst_instance_constr u c)
 
-let instantiate_params full t args sign =
+let instantiate_params full t u args sign =
   let fail () =
     anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch") in
   let (rem_args, subs, ty) =
@@ -81,7 +81,8 @@ let instantiate_params full t args sign =
       (fun (_,copt,_) (largs,subs,ty) ->
         match (copt, largs, kind_of_term ty) with
           | (None, a::args, Prod(_,_,t)) -> (args, a::subs, t)
-          | (Some b,_,LetIn(_,_,_,t))    -> (largs, (substl subs b)::subs, t)
+          | (Some b,_,LetIn(_,_,_,t))    ->
+	     (largs, (substl subs (subst_instance_constr u b))::subs, t)
 	  | (_,[],_)                -> if full then fail() else ([], subs, ty)
 	  | _                       -> fail ())
       sign
@@ -93,13 +94,11 @@ let instantiate_params full t args sign =
 let full_inductive_instantiate mib u params sign =
   let dummy = prop_sort in
   let t = mkArity (sign,dummy) in
-  let ar = fst (destArity (instantiate_params true t params mib.mind_params_ctxt)) in
-    Vars.subst_instance_context u ar
+    fst (destArity (instantiate_params true t u params mib.mind_params_ctxt))
 
 let full_constructor_instantiate ((mind,_),u,(mib,_),params) t =
   let inst_ind = constructor_instantiate mind u mib t in
-   instantiate_params true inst_ind params
-		      (Vars.subst_instance_context u mib.mind_params_ctxt)
+   instantiate_params true inst_ind u params mib.mind_params_ctxt
 		      
 (************************************************************************)
 (************************************************************************)
