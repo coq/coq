@@ -696,8 +696,6 @@ let otherquery command = cb_on_current_term (otherquery command)
 let query command _ =
   if command = "Search" || command = "SearchAbout"
   then searchabout ()
-  else if command = "Show Proof"
-  then showproof ()
   else otherquery command ()
 
 let simplequery query = cb_on_current_term (doquery query)
