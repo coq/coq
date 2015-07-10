@@ -155,8 +155,6 @@ val empty_universes : universes
 (** The initial graph of universes: Prop < Set *)
 val initial_universes : universes
 
-val is_initial_universes : universes -> bool
-
 val sort_universes : universes -> universes
 
 (** Adds a universe to the graph, ensuring it is >= Prop. *)

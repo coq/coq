@@ -328,9 +328,9 @@ let dump_universes_gen g s =
         let () = Lazy.force init in
         match kind with
           | Univ.Lt ->
-            Printf.fprintf output "  \"%s\" -> \"%s\" [style=bold];\n" right left
+            Printf.fprintf output "  \"%s\" -> \"%s\" [style=bold];\n" left right
           | Univ.Le ->
-            Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" right left
+            Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" left right
           | Univ.Eq ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=dashed];\n" left right
       end, begin fun () ->

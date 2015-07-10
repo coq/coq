@@ -13,7 +13,7 @@
 (* Support for universe polymorphism by MS [2014] *)
 
 (* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey, Matthieu Sozeau, 
-   Pierre-Marie Pédrot *)
+   Pierre-Marie Pédrot, Jacques-Henri Jourdan *)
 
 open Pp
 open Errors
@@ -29,7 +29,15 @@ open Util
 
    The equivalence $\~{}$ is represented by a tree structure, as in the
    union-find algorithm. The assertions $<$ and $\le$ are represented by
-   adjacency lists *)
+   adjacency lists.
+
+   We use the algorithm described in the paper:
+
+   Bender, M. A., Fineman, J. T., Gilbert, S., & Tarjan, R. E. (2011). A
+   new approach to incremental cycle detection and related
+   problems. arXiv preprint arXiv:1112.0784.
+
+  *)
 
 module type Hashconsed =
 sig
@@ -269,8 +277,8 @@ module Level = struct
 
   let is_small x = 
     match data x with
-    | Level _ -> false
-    | _ -> true
+    | Level _ | Var _ -> false
+    | Set | Prop -> true
 
   let is_prop x =
     match data x with
@@ -647,61 +655,46 @@ open Universe
 
 let universe_level = Universe.level
 
-type status = Unset | SetLe | SetLt
+type status = NoMark | BackwardMark | MergeMark
 
 (* Comparison on this type is pointer equality *)
-type canonical_arc =
+type canonical_node =
     { univ: Level.t;
       lt: Level.t list;
       le: Level.t list;
+      gtge: Level.t list;
       rank : int;
       predicative : bool;
-      mutable status : status;
-      (** Guaranteed to be unset out of the [compare_neq] functions. It is used
-          to do an imperative traversal of the graph, ensuring a O(1) check that
-          a node has already been visited. Quite performance critical indeed. *)
+      klvl: int;
+      ilvl: int;
+      mutable parent: Level.t;
+      mutable status: status
     }
 
-let arc_is_le arc = match arc.status with
-| Unset -> false
-| SetLe | SetLt -> true
+let nil_parent = Level.var max_int
 
-let arc_is_lt arc = match arc.status with
-| Unset | SetLe -> false
-| SetLt -> true
-
-let terminal u = {univ=u; lt=[]; le=[]; rank=0; predicative=false; status = Unset}
-
-module UMap :
-sig
-  type key = Level.t
-  type +'a t
-  val empty : 'a t
-  val add : key -> 'a -> 'a t -> 'a t
-  val find : key -> 'a t -> 'a
-  val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-  val iter : (key -> 'a -> unit) -> 'a t -> unit
-  val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-end = HMap.Make(Level)
+module UMap = HMap.Make(Level)
 
 (* A Level.t is either an alias for another one, or a canonical one,
    for which we know the universes that are above *)
 
 type univ_entry =
-    Canonical of canonical_arc
+    Canonical of canonical_node
   | Equiv of Level.t
 
-type universes = univ_entry UMap.t
+type universes =
+  { entries : univ_entry UMap.t;
+    index : int;
+    n_nodes : int; n_edges : int }
 
 (** Used to cleanup universes if a traversal function is interrupted before it
     has the opportunity to do it itself. *)
 let unsafe_cleanup_universes g =
-  let iter _ arc = match arc with
+  let iter _ n = match n with
   | Equiv _ -> ()
-  | Canonical arc -> arc.status <- Unset
+  | Canonical n -> n.parent <- nil_parent; n.status <- NoMark
   in
-  UMap.iter iter g
+  UMap.iter iter g.entries
 
 let rec cleanup_universes g =
   try unsafe_cleanup_universes g
@@ -712,328 +705,436 @@ let rec cleanup_universes g =
         succeed. *)
     cleanup_universes g; raise e
 
-let enter_equiv_arc u v g =
-  UMap.add u (Equiv v) g
-
-let enter_arc ca g =
-  UMap.add ca.univ (Canonical ca) g
-
 (* Every Level.t has a unique canonical arc representative *)
+
+(* Low-level function : makes u an alias for v.
+   Does not removes edges from n_edges, but decrements n_nodes.
+   u should be entered as canonical before.  *)
+let enter_equiv g u v =
+  { entries =
+      UMap.modify u (fun _ a ->
+        match a with
+        | Canonical _ -> Equiv v
+        | _ -> assert false) g.entries;
+    index = g.index;
+    n_nodes = g.n_nodes - 1;
+    n_edges = g.n_edges }
+
+(* Low-level function : changes data associated with a canonical node.
+   Resets the mutable fields in the old record, in order to avoid breaking
+   invariants for other users of this record.
+   n.univ should already been inserted as a canonical node. *)
+let change_node g n =
+  { g with entries =
+      UMap.modify n.univ
+        (fun _ a ->
+          match a with
+          | Canonical n' ->
+            if n'.parent != nil_parent then n'.parent <- nil_parent;
+            n'.status <- NoMark;
+            Canonical n
+          | _ -> assert false)
+        g.entries }
 
 (* repr : universes -> Level.t -> canonical_arc *)
 (* canonical representative : we follow the Equiv links *)
-
 let rec repr g u =
   let a =
-    try UMap.find u g
+    try UMap.find u g.entries
     with Not_found -> anomaly ~label:"Univ.repr"
         (str"Universe " ++ Level.pr u ++ str" undefined")
   in
   match a with
-    | Equiv v -> repr g v
+  | Equiv v -> repr g v
+  | Canonical arc -> arc
+
+(* Reindexes the given universe, using the next available index. *)
+let use_index g u =
+  let u = repr g u in
+  let g = change_node g { u with ilvl = g.index } in
+  assert (g.index > min_int);
+  { g with index = g.index - 1 }
+
+(* [safe_repr] is like [repr] but if the graph doesn't contain the
+   searched universe, we add it. *)
+let rec safe_repr g u =
+  let rec safe_repr_rec entries u =
+    match UMap.find u entries with
+    | Equiv v -> safe_repr_rec entries v
     | Canonical arc -> arc
-
-(* [safe_repr] also search for the canonical representative, but
-   if the graph doesn't contain the searched universe, we add it. *)
-
-let safe_repr g u =
-  let rec safe_repr_rec g u =
-    match UMap.find u g with
-      | Equiv v -> safe_repr_rec g v
-      | Canonical arc -> arc
   in
-  try g, safe_repr_rec g u
+  try g, safe_repr_rec g.entries u
   with Not_found ->
-    let can = terminal u in
-    enter_arc can g, can
+    let can =
+      { univ = u;
+        lt = []; le = []; gtge = [];
+        rank = if Level.is_small u then max_int else 0;
+        predicative = Level.is_set u;
+        klvl = 0; ilvl = 0;
+        parent = nil_parent; status = NoMark }
+    in
+    let g = { g with entries = UMap.add u (Canonical can) g.entries } in
+    let g = use_index g u in
+    g, repr g u
 
-(* reprleq : canonical_arc -> canonical_arc list *)
-(* All canonical arcv such that arcu<=arcv with arcv#arcu *)
-let reprleq g arcu =
-  let rec searchrec w = function
-    | [] -> w
-    | v :: vl ->
-	let arcv = repr g v in
-        if List.memq arcv w || arcu==arcv then
-	  searchrec w vl
-        else
-	  searchrec (arcv :: w) vl
-  in
-  searchrec [] arcu.le
+(* [idx_of_can u] returns a pair of integers. Using lexicographical order
+   over this pair for different nodes can be used to know the relative
+   position of both nodes in the topological order. *)
+let idx_of_can u = u.klvl, u.ilvl
 
+(* [get_ltle] and [get_gtge] return ltle and gtge arcs.
+   Moreover, if one of these lists is dirty (e.g. points to a
+   non-canonical node), these functions clean this node in the
+   graph by removing some duplicate edges *)
+let get_ltle g u =
+  let lt = CList.map (fun u -> (repr g u).univ) u.lt in
+  let le = CList.map (fun u -> (repr g u).univ) u.le in
+  if List.for_all2 (==) lt u.lt &&
+     List.for_all2 (==) le u.le then
+    u.lt, u.le, u, g
+  else
+    let lt = CList.sort_uniquize Level.compare lt in
+    let le = CList.sort_uniquize Level.compare le in
+    let le = CList.subtract_sorted Level.compare le lt in
+    let le = CList.except (==) u.univ le in
+    let u = { u with lt; le } in
+    let g = change_node g u in
+    let sz = List.length u.lt + List.length u.le in
+    let sz2 = List.length lt + List.length le in
+    let g = { g with n_edges = g.n_edges + sz2 - sz } in
+    u.lt, u.le, u, g
 
-(* between : Level.t -> canonical_arc -> canonical_arc list *)
-(* between u v = { w | u<=w<=v, w canonical }          *)
-(* between is the most costly operation *)
+let get_gtge g u =
+  let gtge = CList.map (fun u -> (repr g u).univ) u.gtge in
+  if List.for_all2 (==) gtge u.gtge then u.gtge, u, g
+  else
+    let gtge = CList.sort_uniquize Level.compare gtge in
+    let gtge = CList.except (==) u.univ gtge in
+    let u = { u with gtge } in
+    let g = change_node g u in
+    u.gtge, u, g
 
-let between g arcu arcv =
-  (* good are all w | u <= w <= v  *)
-  (* bad are all w | u <= w ~<= v *)
-    (* find good and bad nodes in {w | u <= w} *)
-    (* explore b u = (b or "u is good") *)
-  let rec explore ((good, bad, b) as input) arcu =
-    if List.memq arcu good then
-      (good, bad, true) (* b or true *)
-    else if List.memq arcu bad then
-      input    (* (good, bad, b or false) *)
+(* [mark_parents] marks the path leading to x from u to be merged *)
+let rec mark_parents g x u =
+  match x.status with
+  | MergeMark -> ()
+  | BackwardMark | NoMark ->
+    x.status <- MergeMark;
+    if x.univ != u then mark_parents g (repr g x.parent) u
+
+(* [revert_graph] rollbacks the changes made to mutable fields in
+   nodes in the graph.
+   [to_revert] contains the touched nodes. *)
+let revert_graph to_revert g =
+  List.iter (fun t ->
+    match UMap.find t g.entries with
+    | Equiv _ -> ()
+    | Canonical t ->
+      t.status <- NoMark;
+      t.parent <- nil_parent) to_revert
+
+exception AbortBackward of universes * int
+exception CycleDetected
+
+(* Implementation of the algorithm described in § 5.1 of the following paper:
+
+   Bender, M. A., Fineman, J. T., Gilbert, S., & Tarjan, R. E. (2011). A
+   new approach to incremental cycle detection and related
+   problems. arXiv preprint arXiv:1112.0784. *)
+(* Assumes [u] and [v] are already in the graph. *)
+let insert_edge strict ucan vcan g =
+  try
+    let u = ucan.univ and v = vcan.univ in
+    let g =
+      (* STEP 1: do we need to reorder nodes ? *)
+      if idx_of_can ucan <= idx_of_can vcan then g
+      else begin
+        (* STEP 2: backward search in the k-level of u. *)
+        (* [delta] is the timeout for backward search. It might be
+           usefull to tune a multiplicative constant. *)
+        let delta =
+          int_of_float
+            (min (float_of_int g.n_edges ** 0.5)
+               (float_of_int g.n_nodes ** (2./.3.)))
+        in
+        let rec backward_traverse to_revert b_traversed count g x y =
+          let x = repr g x in
+          let count = count + 1 in
+          if count >= delta then begin
+            (* Backward search is too long, abort it and use
+               the next k-level. *)
+            let v_klvl = (repr g u).klvl + 1 in
+            revert_graph to_revert g;
+            raise (AbortBackward (g, v_klvl))
+          end;
+          x.status <- BackwardMark;
+          if x.univ == v then x.status <- MergeMark;
+          if x.status = MergeMark then mark_parents g y u;
+          if x.parent == nil_parent then begin
+            x.parent <- y.univ;
+            let to_revert = x.univ::to_revert in
+            let gtge, x, g = get_gtge g x in
+            let to_revert, b_traversed, count, g =
+              List.fold_left (fun (to_revert, b_traversed, count, g) w ->
+                backward_traverse to_revert b_traversed count g w x)
+                (to_revert, b_traversed, count, g) gtge
+            in
+            to_revert, x.univ::b_traversed, count, g
+          end
+          else to_revert, b_traversed, count, g
+        in
+        (* We do not record in to_revert the changes of status,
+           because it must follow a change of parent, except for [u]
+           and [v], where the situation is unclear. *)
+        let to_revert_init = [u; v] in
+        (* [v_klvl] is the chosen future level for u, v and all
+           traversed nodes. *)
+        let to_revert, b_traversed, v_klvl, g =
+          try
+            let to_revert, b_traversed, _, g =
+              backward_traverse to_revert_init [] (-1) g u ucan
+            in
+            let v_klvl = (repr g u).klvl in
+            to_revert, b_traversed, v_klvl, g
+          with AbortBackward (g, v_klvl) -> to_revert_init, [], v_klvl, g
+        in
+        let to_revert, f_traversed, g =
+          (* STEP 3: forward search. Contrary to what is described in
+             the paper, we do not test whether v_klvl = u.klvl nor we assign
+             v_klvl to v.klvl. Indeed, the first call to forward_traverse
+             will do all that. *)
+          let rec forward_traverse to_revert f_traversed g x y =
+            let y = repr g y in
+            if y.status = BackwardMark || y.univ == u then mark_parents g y u;
+            if y.status = MergeMark then mark_parents g x v;
+            if y.klvl < v_klvl then begin
+              let y = { y with gtge = if x == y then [] else [x.univ];
+                               klvl = v_klvl; parent = x.univ }
+              in
+              let g = change_node g y in
+              let to_revert = y.univ::to_revert in
+              let lt, le, y, g = get_ltle g y in
+              let to_revert, f_traversed, g =
+                List.fold_left (fun (to_revert, f_traversed, g) z ->
+                  forward_traverse to_revert f_traversed g y z)
+                  (to_revert, f_traversed, g) (lt@le)
+              in
+              to_revert, y.univ::f_traversed, g
+             end else if y.klvl = v_klvl && x != y then
+               let g = change_node g { y with gtge = x.univ::y.gtge } in
+               to_revert, f_traversed, g
+             else to_revert, f_traversed, g
+          in
+          forward_traverse to_revert [] g (repr g v) v
+        in
+
+        (* STEP 4: merge nodes if needed. *)
+        let b_to_merge, b_reindex =
+          List.partition (fun u -> (repr g u).status = MergeMark) b_traversed in
+        let f_to_merge, f_reindex =
+          List.partition (fun u -> (repr g u).status = MergeMark) f_traversed in
+        let to_merge_lvl = List.sort Level.compare (b_to_merge @ f_to_merge) in
+        let to_merge_can = List.map (repr g) to_merge_lvl in
+        let to_reindex, g =
+          match to_merge_can with
+          | [] -> List.rev_append f_reindex b_reindex, g
+          | n0::q0 ->
+            (* Computing new root. *)
+            let root, rank_rest =
+              List.fold_left (fun ((best, rank_rest) as acc) n ->
+                if n.rank >= best.rank then n, best.rank else acc)
+                (n0, min_int) q0
+            in
+
+            (* Computing edge sets. *)
+            let merge_neigh f =
+              CList.sort_uniquize Level.compare (CList.map_append f to_merge_can)
+            in
+            let lt = merge_neigh (fun n -> n.lt) in
+            (* There is a lt edge inside the new component. This is a
+               "bad cycle". *)
+            if not (CList.disjoint_sorted Level.compare lt to_merge_lvl) then
+              begin revert_graph to_revert g; raise CycleDetected end;
+            let le = merge_neigh (fun n -> n.le) in
+            let le = CList.subtract_sorted Level.compare le to_merge_lvl in
+            let le = CList.subtract_sorted Level.compare le lt in
+            let gtge = merge_neigh (fun n -> n.gtge) in
+            let gtge = CList.subtract_sorted Level.compare gtge to_merge_lvl in
+
+            (* Inserting the new root. *)
+            let g = change_node g
+              { root with lt; le; gtge;
+                rank = max root.rank (rank_rest + 1);
+                predicative = List.exists (fun n -> n.predicative) to_merge_can }
+            in
+
+            (* Inserting shortcuts for old nodes. *)
+            let g = List.fold_left (fun g n ->
+              if n.univ == root.univ then g else enter_equiv g n.univ root.univ)
+              g to_merge_can
+            in
+
+            (* Updating g.n_edges *)
+            let oldsz =
+              List.fold_left (fun sz u -> sz+List.length u.lt) 0 to_merge_can +
+              List.fold_left (fun sz u -> sz+List.length u.le) 0 to_merge_can
+            in
+            let sz = List.length le + List.length lt in
+            let g = { g with n_edges = g.n_edges + sz - oldsz } in
+
+            (* Not clear in the paper: we have to put the newly
+               created component just between B and F. *)
+            List.rev_append f_reindex (root.univ::b_reindex), g
+        in
+        (* Cleanup *)
+        revert_graph to_revert g;
+
+        (* STEP 5: reindex traversed nodes. *)
+        List.fold_left use_index g to_reindex
+      end
+    in
+
+    (* STEP 6: insert the new edge in the graph. *)
+    let u = repr g u in
+    let v = repr g v in
+    if u == v then
+      if strict then raise CycleDetected else g
     else
-      let leq = reprleq g arcu in
-	(* is some universe >= u good ? *)
-      let good, bad, b_leq =
-	List.fold_left explore (good, bad, false) leq
+      let g =
+        match strict, List.memq v.univ u.lt, List.memq v.univ u.le with
+        | _, true, _ | false, _, true -> g
+        | true, false, true ->
+          change_node g
+            { u with lt = v.univ :: u.lt;
+              le = CList.except (==) v.univ u.le }
+        | _, false, false ->
+          let u = if strict then { u with lt = v.univ :: u.lt }
+                            else { u with le = v.univ :: u.le }
+          in
+          let g = change_node g u in
+          { g with n_edges = g.n_edges + 1 }
       in
-	if b_leq then
-	  arcu::good, bad, true (* b or true *)
-	else
-	  good, arcu::bad, b    (* b or false *)
-  in
-  let good,_,_ = explore ([arcv],[],false) arcu in
-    good
-
-(* We assume  compare(u,v) = LE with v canonical (see compare below).
-   In this case List.hd(between g u v) = repr u
-   Otherwise, between g u v = []
- *)
+      let v, g =
+        if not u.predicative || v.predicative then v, g
+        else
+          let v = { v with predicative = true } in
+          v, change_node g v
+      in
+      if u.klvl <> v.klvl || List.memq u.univ v.gtge then g
+      else
+        let v = { v with gtge = u.univ :: v.gtge } in
+        change_node g v
+  with
+  | CycleDetected as e -> raise e
+  | e ->
+    (** Unlikely event: fatal error or signal *)
+    let () = cleanup_universes g in
+    raise e
 
 type constraint_type = Lt | Le | Eq
 
 type explanation = (constraint_type * universe) list
 
-let constraint_type_ord c1 c2 = match c1, c2 with
-| Lt, Lt -> 0
-| Lt, _ -> -1
-| Le, Lt -> 1
-| Le, Le -> 0
-| Le, Eq -> -1
-| Eq, Eq -> 0
-| Eq, _ -> 1
+exception Found_explanation of explanation
 
-(** [fast_compare_neq] : is [arcv] in the transitive upward closure of [arcu] ?
-
-  In [strict] mode, we fully distinguish between LE and LT, while in
-  non-strict mode, we simply answer LE for both situations.
-
-  If [arcv] is encountered in a LT part, we could directly answer
-  without visiting unneeded parts of this transitive closure.
-  In [strict] mode, if [arcv] is encountered in a LE part, we could only
-  change the default answer (1st arg [c]) from NLE to LE, since a strict
-  constraint may appear later. During the recursive traversal,
-  [lt_done] and [le_done] are universes we have already visited,
-  they do not contain [arcv]. The 4rd arg is [(lt_todo,le_todo)],
-  two lists of universes not yet considered, known to be above [arcu],
-  strictly or not.
-
-  We use depth-first search, but the presence of [arcv] in [new_lt]
-  is checked as soon as possible : this seems to be slightly faster
-  on a test.
-
-  We do the traversal imperatively, setting the [status] flag on visited nodes.
-  This ensures O(1) check, but it also requires unsetting the flag when leaving
-  the function. Some special care has to be taken in order to ensure we do not
-  recover a messed up graph at the end. This occurs in particular when the
-  traversal raises an exception. Even though the code below is exception-free,
-  OCaml may still raise random exceptions, essentially fatal exceptions or
-  signal handlers. Therefore we ensure the cleanup by a catch-all clause. Note
-  also that the use of an imperative solution does make this function
-  thread-unsafe. For now we do not check universes in different threads, but if
-  ever this is to be done, we would need some lock somewhere.
-
-*)
-
-let get_explanation strict g arcu arcv =
-  (* [c] characterizes whether (and how) arcv has already been related
-     to arcu among the lt_done,le_done universe *)
-  let rec cmp c to_revert lt_todo le_todo = match lt_todo, le_todo with
-  | [],[] -> (to_revert, c)
-  | (arc,p)::lt_todo, le_todo ->
-    if arc_is_lt arc then
-      cmp c to_revert lt_todo le_todo
+let get_explanation strict u v g =
+  let v = repr g v in
+  let visited_strict = ref UMap.empty in
+  let rec traverse strict u =
+    if u == v then
+      if strict then None else Some []
+    else if idx_of_can u > idx_of_can v then None
     else
-      let rec find lt_todo lt le = match le with
-      | [] ->
-        begin match lt with
-        | [] ->
-          let () = arc.status <- SetLt in
-          cmp c (arc :: to_revert) lt_todo le_todo
-        | u :: lt ->
-          let arc = repr g u in
-          let p = (Lt, make u) :: p in
-          if arc == arcv then
-            if strict then (to_revert, p) else (to_revert, p)
-          else find ((arc, p) :: lt_todo) lt le
-        end
-      | u :: le ->
-        let arc = repr g u in
-        let p = (Le, make u) :: p in
-        if arc == arcv then
-          if strict then (to_revert, p) else (to_revert, p)
-        else find ((arc, p) :: lt_todo) lt le
+      let visited =
+        try not (UMap.find u.univ !visited_strict) || strict
+        with Not_found -> false
       in
-      find lt_todo arc.lt arc.le
-  | [], (arc,p)::le_todo ->
-    if arc == arcv then
-      (* No need to continue inspecting universes above arc:
-	 if arcv is strictly above arc, then we would have a cycle.
-         But we cannot answer LE yet, a stronger constraint may
-	 come later from [le_todo]. *)
-      if strict then cmp p to_revert [] le_todo else (to_revert, p)
-    else
-      if arc_is_le arc then
-        cmp c to_revert [] le_todo
-      else
-        let rec find lt_todo lt = match lt with
-        | [] ->
-          let fold accu u =
-            let p = (Le, make u) :: p in
-            let node = (repr g u, p) in
-            node :: accu
+      if visited then None
+      else begin
+        visited_strict := UMap.add u.univ strict !visited_strict;
+        try
+          let f typ u' =
+            match traverse (strict && typ = Le) (repr g u') with
+            | None -> ()
+            | Some exp -> raise (Found_explanation ((typ, make u') :: exp))
           in
-          let le_new = List.fold_left fold le_todo arc.le in
-          let () = arc.status <- SetLe in
-          cmp c (arc :: to_revert) lt_todo le_new
-        | u :: lt ->
-          let arc = repr g u in
-          let p = (Lt, make u) :: p in
-          if arc == arcv then
-            if strict then (to_revert, p) else (to_revert, p)
-          else find ((arc, p) :: lt_todo) lt
-        in
-        find [] arc.lt
+          List.iter (f Lt) u.lt;
+          List.iter (f Le) u.le;
+          None
+        with Found_explanation exp -> Some exp
+      end
   in
-  try
-    let (to_revert, c) = cmp [] [] [] [(arcu, [])] in
-    (** Reset all the touched arcs. *)
-    let () = List.iter (fun arc -> arc.status <- Unset) to_revert in
-    List.rev c
-  with e ->
-    (** Unlikely event: fatal error or signal *)
-    let () = cleanup_universes g in
-    raise e
+  let u = repr g u in
+  if u == v then [(Eq, make v.univ)]
+  else match traverse strict u with Some exp -> exp | None -> assert false
 
-let get_explanation strict g arcu arcv =
-  if !Flags.univ_print then Some (get_explanation strict g arcu arcv)
+let get_explanation strict u v g =
+  if !Flags.univ_print then Some (get_explanation strict u v g)
   else None
 
-type fast_order = FastEQ | FastLT | FastLE | FastNLE
+module TopoOrdered : Heap.Ordered with type t = canonical_node = struct
+  type t = canonical_node
+  let compare u v = Pervasives.compare (idx_of_can u) (idx_of_can v)
+end
 
-let fast_compare_neq strict g arcu arcv =
-  (* [c] characterizes whether arcv has already been related
-     to arcu among the lt_done,le_done universe *)
-  let rec cmp c to_revert lt_todo le_todo = match lt_todo, le_todo with
-  | [],[] -> (to_revert, c)
-  | arc::lt_todo, le_todo ->
-    if arc_is_lt arc then
-      cmp c to_revert lt_todo le_todo
-    else
-      let () = arc.status <- SetLt in
-      process_lt c (arc :: to_revert) lt_todo le_todo arc.lt arc.le
-  | [], arc::le_todo ->
-    if arc == arcv then
-      (* No need to continue inspecting universes above arc:
-	 if arcv is strictly above arc, then we would have a cycle.
-         But we cannot answer LE yet, a stronger constraint may
-	 come later from [le_todo]. *)
-      if strict then cmp FastLE to_revert [] le_todo else (to_revert, FastLE)
-    else
-      if arc_is_le arc then
-        cmp c to_revert [] le_todo
+module TopoHeap = Heap.Functional (TopoOrdered)
+
+(* To compare two nodes, we simply do a forward search.
+   We have two ameliorations:
+   - we ignore nodes that ar higher than the destination;
+   - we visit first the nodes that are close to the destination in the
+     topological order.
+ *)
+let search_path strict u v g =
+  let rec loop heap strict_visited =
+    let u = try Some (TopoHeap.maximum heap) with Heap.EmptyHeap -> None in
+    match u with
+    | None -> false (* No path found *)
+    | Some u ->
+      let heap = TopoHeap.remove heap in
+      let strict = UMap.find u.univ strict_visited in
+      if u == v && not strict then true
       else
-        let () = arc.status <- SetLe in
-        process_le c (arc :: to_revert) [] le_todo arc.lt arc.le
-
-  and process_lt c to_revert lt_todo le_todo lt le = match le with
-  | [] ->
-    begin match lt with
-    | [] -> cmp c to_revert lt_todo le_todo
-    | u :: lt ->
-      let arc = repr g u in
-      if arc == arcv then
-        if strict then (to_revert, FastLT) else (to_revert, FastLE)
-      else process_lt c to_revert (arc :: lt_todo) le_todo lt le
-    end
-  | u :: le ->
-    let arc = repr g u in
-    if arc == arcv then
-      if strict then (to_revert, FastLT) else (to_revert, FastLE)
-    else process_lt c to_revert (arc :: lt_todo) le_todo lt le
-
-  and process_le c to_revert lt_todo le_todo lt le = match lt with
-  | [] ->
-    let fold accu u =
-      let node = repr g u in
-      node :: accu
-    in
-    let le_new = List.fold_left fold le_todo le in
-    cmp c to_revert lt_todo le_new
-  | u :: lt ->
-    let arc = repr g u in
-    if arc == arcv then
-      if strict then (to_revert, FastLT) else (to_revert, FastLE)
-    else process_le c to_revert (arc :: lt_todo) le_todo lt le
-
+        let insert_node strict ((heap, strict_visited) as acc) x =
+          let x = repr g x in
+          if idx_of_can x > idx_of_can v then acc
+          else
+            let visited =
+              try not (UMap.find x.univ strict_visited) || strict
+              with Not_found -> false
+            in
+            if visited then acc
+            else (TopoHeap.add x heap, UMap.add x.univ strict strict_visited)
+        in
+        let heap, strict_visited =
+          List.fold_left (insert_node false) (heap, strict_visited) u.lt in
+        let heap, strict_visited =
+          List.fold_left (insert_node strict) (heap, strict_visited) u.le in
+        loop heap strict_visited
   in
-
-  try
-    let (to_revert, c) = cmp FastNLE [] [] [arcu] in
-    (** Reset all the touched arcs. *)
-    let () = List.iter (fun arc -> arc.status <- Unset) to_revert in
-    c
-  with e ->
-    (** Unlikely event: fatal error or signal *)
-    let () = cleanup_universes g in
-    raise e
-
-let get_explanation_strict g arcu arcv = get_explanation true g arcu arcv
-
-let fast_compare g arcu arcv =
-  if arcu == arcv then FastEQ else fast_compare_neq true g arcu arcv
-
-let is_leq g arcu arcv =
-  arcu == arcv ||
-    (match fast_compare_neq false g arcu arcv with
-    | FastNLE -> false
-    | (FastEQ|FastLE|FastLT) -> true)
-    
-let is_lt g arcu arcv =
-  if arcu == arcv then false
-  else
-    match fast_compare_neq true g arcu arcv with
-    | FastLT -> true
-    | (FastEQ|FastLE|FastNLE) -> false
-
-(* Invariants : compare(u,v) = EQ <=> compare(v,u) = EQ
-                compare(u,v) = LT or LE => compare(v,u) = NLE
-                compare(u,v) = NLE => compare(v,u) = NLE or LE or LT
-
-   Adding u>=v is consistent iff compare(v,u) # LT
-    and then it is redundant iff compare(u,v) # NLE
-   Adding u>v is consistent iff compare(v,u) = NLE
-    and then it is redundant iff compare(u,v) = LT *)
+  loop (TopoHeap.add u TopoHeap.empty) (UMap.singleton u.univ strict)
 
 (** * Universe checks [check_eq] and [check_leq], used in coqchk *)
 
 (** First, checks on universe levels *)
 
-let check_equal g u v =
-  let g, arcu = safe_repr g u in
-  let _, arcv = safe_repr g v in
-  arcu == arcv
-
-let check_eq_level g u v = u == v || check_equal g u v
-
-let is_set_arc u = Level.is_set u.univ
-let is_prop_arc u = Level.is_prop u.univ
-let get_prop_arc g = snd (safe_repr g Level.prop)
+let check_eq_level g u v =
+  u == v ||
+    let g, arcu = safe_repr g u in
+    let _, arcv = safe_repr g v in
+    arcu == arcv
 
 let check_smaller g strict u v =
-  let g, arcu = safe_repr g u in
-  let g, arcv = safe_repr g v in
+  let g, ucan = safe_repr g u in
+  let g, vcan = safe_repr g v in
   if strict then
-    is_lt g arcu arcv
+    if ucan == vcan then false
+    else search_path true ucan vcan g
   else
-    is_prop_arc arcu 
-    || (is_set_arc arcu && arcv.predicative) 
-    || is_leq g arcu arcv
+    Level.is_prop ucan.univ
+    || (Level.is_set ucan.univ && vcan.predicative)
+    || ucan == vcan
+    || search_path false ucan vcan g
 
 (** Then, checks on universes *)
 
@@ -1041,7 +1142,7 @@ type 'a check_function = universes -> 'a -> 'a -> bool
 
 let check_equal_expr g x y =
   x == y || (let (u, n) = x and (v, m) = y in 
-	       Int.equal n m && check_equal g u v)
+	       Int.equal n m && check_eq_level g u v)
 
 let check_eq_univs g l1 l2 =
   let f x1 x2 = check_equal_expr g x1 x2 in
@@ -1072,97 +1173,6 @@ let check_leq g u v =
     Universe.is_type0m u ||
     check_eq_univs g u v || real_check_leq g u v
 
-(** Enforcing new constraints : [setlt], [setleq], [merge], [merge_disc] *)
-
-(** To speed up tests of Set </<= i *)
-let set_predicative g arcv = 
-  enter_arc {arcv with predicative = true} g
-
-(* setlt : Level.t -> Level.t -> reason -> unit *)
-(* forces u > v *)
-(* this is normally an update of u in g rather than a creation. *)
-let setlt g arcu arcv =
-  let arcu' = {arcu with lt=arcv.univ::arcu.lt} in
-  let g = 
-    if is_set_arc arcu then set_predicative g arcv
-    else g
-  in
-    enter_arc arcu' g, arcu'
-
-(* checks that non-redundant *)
-let setlt_if (g,arcu) v =
-  let arcv = repr g v in
-  if is_lt g arcu arcv then g, arcu
-  else setlt g arcu arcv
-
-(* setleq : Level.t -> Level.t -> unit *)
-(* forces u >= v *)
-(* this is normally an update of u in g rather than a creation. *)
-let setleq g arcu arcv =
-  let arcu' = {arcu with le=arcv.univ::arcu.le} in
-  let g = 
-    if is_set_arc arcu' then
-      set_predicative g arcv
-    else g
-  in
-    enter_arc arcu' g, arcu'
-
-(* checks that non-redundant *)
-let setleq_if (g,arcu) v =
-  let arcv = repr g v in
-  if is_leq g arcu arcv then g, arcu
-  else setleq g arcu arcv
-
-(* merge : Level.t -> Level.t -> unit *)
-(* we assume  compare(u,v) = LE *)
-(* merge u v  forces u ~ v with repr u as canonical repr *)
-let merge g arcu arcv =
-  (* we find the arc with the biggest rank, and we redirect all others to it *)
-  let arcu, g, v =
-    let best_ranked (max_rank, old_max_rank, best_arc, rest) arc =
-      if Level.is_small arc.univ || arc.rank >= max_rank
-      then (arc.rank, max_rank, arc, best_arc::rest)
-      else (max_rank, old_max_rank, best_arc, arc::rest)
-    in
-      match between g arcu arcv with
-      | [] -> anomaly (str "Univ.between")
-      | arc::rest ->
-        let (max_rank, old_max_rank, best_arc, rest) =
-          List.fold_left best_ranked (arc.rank, min_int, arc, []) rest in
-          if max_rank > old_max_rank then best_arc, g, rest
-          else begin
-              (* one redirected node also has max_rank *)
-            let arcu = {best_arc with rank = max_rank + 1} in
-	      arcu, enter_arc arcu g, rest
-          end 
-  in
-  let redirect (g,w,w') arcv =
-    let g' = enter_equiv_arc arcv.univ arcu.univ g in
-    (g',List.unionq arcv.lt w,arcv.le@w')
-  in
-  let (g',w,w') = List.fold_left redirect (g,[],[]) v in
-  let g_arcu = (g',arcu) in
-  let g_arcu = List.fold_left setlt_if g_arcu w in
-  let g_arcu = List.fold_left setleq_if g_arcu w' in
-  fst g_arcu
-
-(* merge_disc : Level.t -> Level.t -> unit *)
-(* we assume  compare(u,v) = compare(v,u) = NLE *)
-(* merge_disc u v  forces u ~ v with repr u as canonical repr *)
-let merge_disc g arc1 arc2 =
-  let arcu, arcv = if arc1.rank < arc2.rank then arc2, arc1 else arc1, arc2 in
-  let arcu, g = 
-    if not (Int.equal arc1.rank arc2.rank) then arcu, g
-    else
-      let arcu = {arcu with rank = succ arcu.rank} in 
-      arcu, enter_arc arcu g
-  in
-  let g' = enter_equiv_arc arcv.univ arcu.univ g in
-  let g_arcu = (g',arcu) in
-  let g_arcu = List.fold_left setlt_if g_arcu arcv.lt in
-  let g_arcu = List.fold_left setleq_if g_arcu arcv.le in
-  fst g_arcu
-
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
@@ -1173,72 +1183,43 @@ exception UniverseInconsistency of univ_inconsistency
 let error_inconsistency o u v (p:explanation option) =
   raise (UniverseInconsistency (o,make u,make v,p))
 
-(* enforc_univ_eq : Level.t -> Level.t -> unit *)
-(* enforc_univ_eq u v will force u=v if possible, will fail otherwise *)
+(* enforc_univ_eq g u v will force u=v if possible, will fail otherwise *)
 
-let enforce_univ_eq u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
-    match fast_compare g arcu arcv with
-    | FastEQ -> g
-    | FastLT ->
-      let p = get_explanation_strict g arcu arcv in
-      error_inconsistency Eq v u p
-    | FastLE -> merge g arcu arcv
-    | FastNLE ->
-      (match fast_compare g arcv arcu with
-      | FastLT ->
-        let p = get_explanation_strict g arcv arcu in
-        error_inconsistency Eq u v p
-      | FastLE -> merge g arcv arcu
-      | FastNLE -> merge_disc g arcu arcv
-      | FastEQ -> anomaly (Pp.str "Univ.compare"))
-
-(* enforce_univ_leq : Level.t -> Level.t -> unit *)
-(* enforce_univ_leq u v will force u<=v if possible, will fail otherwise *)
-let enforce_univ_leq u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
-  if is_leq g arcu arcv then g
+let rec enforce_univ_eq u v g =
+  let g,ucan = safe_repr g u in
+  let g,vcan = safe_repr g v in
+  if idx_of_can ucan > idx_of_can vcan then enforce_univ_eq v u g
   else
-    match fast_compare g arcv arcu with
-    | FastLT ->
-      let p = get_explanation_strict g arcv arcu in
-      error_inconsistency Le u v p
-    | FastLE  -> merge g arcv arcu
-    | FastNLE -> fst (setleq g arcu arcv)
-    | FastEQ -> anomaly (Pp.str "Univ.compare")
+    let g = insert_edge false ucan vcan g in  (* Cannot fail *)
+    try insert_edge false vcan ucan g
+    with CycleDetected ->
+      error_inconsistency Eq v u (get_explanation true u v g)
+
+(* enforce_univ_leq g u v will force u<=v if possible, will fail otherwise *)
+let enforce_univ_leq u v g =
+  let g,ucan = safe_repr g u in
+  let g,vcan = safe_repr g v in
+  try insert_edge false ucan vcan g
+  with CycleDetected ->
+    error_inconsistency Le u v (get_explanation true v u g)
 
 (* enforce_univ_lt u v will force u<v if possible, will fail otherwise *)
 let enforce_univ_lt u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
-    match fast_compare g arcu arcv with
-    | FastLT -> g
-    | FastLE -> fst (setlt g arcu arcv)
-    | FastEQ -> error_inconsistency Lt u v (Some [(Eq,make v)])
-    | FastNLE ->
-      match fast_compare_neq false g arcv arcu with
-	FastNLE -> fst (setlt g arcu arcv)
-      | FastEQ -> anomaly (Pp.str "Univ.compare")
-      | (FastLE|FastLT) ->
-        let p = get_explanation false g arcv arcu  in
-        error_inconsistency Lt u v p
+  let g,ucan = safe_repr g u in
+  let g,vcan = safe_repr g v in
+  try insert_edge true ucan vcan g
+  with CycleDetected ->
+    error_inconsistency Lt u v (get_explanation false v u g)
 
-let empty_universes = UMap.empty
+let empty_universes =
+  { entries = UMap.empty; index = 0; n_nodes = 0; n_edges = 0 }
 
 (* Prop = Set is forbidden here. *)
-let initial_universes = enforce_univ_lt Level.prop Level.set UMap.empty
+let initial_universes = enforce_univ_lt Level.prop Level.set empty_universes
 
-let is_initial_universes g = UMap.equal (==) g initial_universes
+let add_universe v g = enforce_univ_leq Level.prop v g
 
-let add_universe vlev g = 
-  let v = terminal vlev in
-  let proparc = get_prop_arc g in
-    enter_arc {proparc with le=vlev::proparc.le}
-      (enter_arc v g)
-      
-(* Constraints and sets of constraints. *)    
+(* Constraints and sets of constraints. *)
 
 type univ_constraint = Level.t * constraint_type * Level.t
 
@@ -1247,13 +1228,23 @@ let enforce_constraint cst g =
     | (u,Lt,v) -> enforce_univ_lt u v g
     | (u,Le,v) -> enforce_univ_leq u v g
     | (u,Eq,v) -> enforce_univ_eq u v g
-      
-let pr_constraint_type op = 
+
+let pr_constraint_type op =
   let op_str = match op with
     | Lt -> " < "
     | Le -> " <= "
     | Eq -> " = "
   in str op_str
+
+let constraint_type_ord c1 c2 =
+  match c1, c2 with
+  | Lt, Lt -> 0
+  | Lt, _ -> -1
+  | Le, Lt -> 1
+  | Le, Le -> 0
+  | Le, Eq -> -1
+  | Eq, Eq -> 0
+  | Eq, _ -> 1
 
 module UConstraintOrd =
 struct
@@ -1362,7 +1353,7 @@ let constraint_add_leq v u c =
 	if Level.equal x y then c (* u <= u+k, trivial *)
 	else if Level.is_small x then c (* Prop,Set <= u+S k, trivial *)
 	else anomaly (Pp.str"Unable to handle arbitrary u <= v+k constraints")
-	  
+
 let check_univ_leq_one u v = Universe.exists (Expr.leq u) v
 
 let check_univ_leq u v = 
@@ -1384,7 +1375,7 @@ let enforce_leq_level u v c =
 
 let check_constraint g (l,d,r) =
   match d with
-  | Eq -> check_equal g l r
+  | Eq -> check_eq_level g l r
   | Le -> check_smaller g false l r
   | Lt -> check_smaller g true l r
 
@@ -1406,49 +1397,24 @@ let lookup_level u g =
     directly to the canonical representent of their target. The output
     graph should be equivalent to the input graph from a logical point
     of view, but optimized. We maintain the invariant that the key of
-    a [Canonical] element is its own name, by keeping [Equiv] edges
-    (see the assertion)... I (Stéphane Glondu) am not sure if this
-    plays a role in the rest of the module. *)
+    a [Canonical] element is its own name, by keeping [Equiv] edges. *)
 let normalize_universes g =
-  let rec visit u arc cache = match lookup_level u cache with
-    | Some x -> x, cache
-    | None -> match Lazy.force arc with
-    | None ->
-      u, UMap.add u u cache
-    | Some (Canonical {univ=v; lt=_; le=_}) ->
-      v, UMap.add u v cache
-    | Some (Equiv v) ->
-      let v, cache = visit v (lazy (lookup_level v g)) cache in
-      v, UMap.add u v cache
+  let g =
+    { g with
+      entries = UMap.map (fun entry ->
+        match entry with
+        | Equiv u -> Equiv ((repr g u).univ)
+        | Canonical ucan -> Canonical { ucan with rank = 1 })
+        g.entries }
   in
-  let cache = UMap.fold
-    (fun u arc cache -> snd (visit u (Lazy.lazy_from_val (Some arc)) cache))
-    g UMap.empty
-  in
-  let repr x = UMap.find x cache in
-  let lrepr us = List.fold_left
-    (fun e x -> LSet.add (repr x) e) LSet.empty us
-  in
-  let canonicalize u = function
-    | Equiv _ -> Equiv (repr u)
-    | Canonical {univ=v; lt=lt; le=le; rank=rank} ->
-      assert (u == v);
-      (* avoid duplicates and self-loops *)
-      let lt = lrepr lt and le = lrepr le in
-      let le = LSet.filter
-        (fun x -> x != u && not (LSet.mem x lt)) le
-      in
-      LSet.iter (fun x -> assert (x != u)) lt;
-      Canonical {
-        univ = v;
-        lt = LSet.elements lt;
-        le = LSet.elements le;
-	rank = rank;
-	predicative = false;
-	status = Unset;
-      }
-  in
-  UMap.mapi canonicalize g
+  UMap.fold (fun _ u g ->
+    match u with
+    | Equiv u -> g
+    | Canonical u ->
+      let _, _, u, g = get_ltle g u in
+      let _, _, g = get_gtge g u in
+      g)
+    g.entries g
 
 let constraints_of_universes g =
   let constraints_of u v acc =
@@ -1459,141 +1425,50 @@ let constraints_of_universes g =
 	acc
     | Equiv v -> Constraint.add (u,Eq,v) acc
   in
-  UMap.fold constraints_of g Constraint.empty
+  UMap.fold constraints_of g.entries Constraint.empty
 
 let constraints_of_universes g =
   constraints_of_universes (normalize_universes g)
 
-(** Longest path algorithm. This is used to compute the minimal number of
-    universes required if the only strict edge would be the Lt one. This
-    algorithm assumes that the given universes constraints are a almost DAG, in
-    the sense that there may be {Eq, Le}-cycles. This is OK for consistent
-    universes, which is the only case where we use this algorithm. *)
-
-(** Adjacency graph *)
-type graph = constraint_type LMap.t LMap.t
-
-exception Connected
-
-(** Check connectedness *)
-let connected x y (g : graph) =
-  let rec connected x target seen g =
-    if Level.equal x target then raise Connected
-    else if not (LSet.mem x seen) then
-      let seen = LSet.add x seen in
-      let fold z _ seen = connected z target seen g in
-      let neighbours = try LMap.find x g with Not_found -> LMap.empty in
-      LMap.fold fold neighbours seen
-    else seen
+(** [sort_universes g] builds a totaly ordered universe graph.  The
+    output graph should imply the input graph (and the implication
+    will be strict most of the time), but is not necessarily minimal.
+    Moreover, it adds levels [Type.n] to identify universes at level n.
+    Note: the result is unspecified if the input graph already contains
+    [Type.n] nodes (calling a module Type is probably a bad idea
+    anyway). *)
+let sort_universes g =
+  let cans =
+    UMap.fold (fun _ u l ->
+      match u with
+      | Equiv _ -> l
+      | Canonical can -> can :: l
+    ) g.entries []
   in
-  try ignore(connected x y LSet.empty g); false with Connected -> true
-
-let add_edge x y v (g : graph) =
-  try
-    let neighbours = LMap.find x g in
-    let neighbours = LMap.add y v neighbours in
-    LMap.add x neighbours g
-  with Not_found ->
-    LMap.add x (LMap.singleton y v) g
-
-(** We want to keep the graph DAG. If adding an edge would cause a cycle, that
-    would necessarily be an {Eq, Le}-cycle, otherwise there would have been a
-    universe inconsistency. Therefore we may omit adding such a cycling edge
-    without changing the compacted graph. *)
-let add_eq_edge x y v g = if connected y x g then g else add_edge x y v g
-
-(** Construct the DAG and its inverse at the same time. *)
-let make_graph g : (graph * graph) =
-  let fold u arc accu = match arc with
-  | Equiv v ->
-    let (dir, rev) = accu in
-    (add_eq_edge u v Eq dir, add_eq_edge v u Eq rev)
-  | Canonical { univ; lt; le; } ->
-    let () = assert (u == univ) in
-    let fold_lt (dir, rev) v = (add_edge u v Lt dir, add_edge v u Lt rev) in
-    let fold_le (dir, rev) v = (add_eq_edge u v Le dir, add_eq_edge v u Le rev) in
-    (** Order is important : lt after le, because of the possible redundancy
-        between [le] and [lt] in a canonical arc. This way, the [lt] constraint
-        is the last one set, which is correct because it implies [le]. *)
-    let accu = List.fold_left fold_le accu le in
-    let accu = List.fold_left fold_lt accu lt in
-    accu
+  let cans = List.sort TopoOrdered.compare cans in
+  let lowest_level =
+    UMap.map (fun _ -> 0)
+      (UMap.filter
+         (fun _ u -> match u with Equiv _ -> false | Canonical _ -> true)
+         g.entries)
   in
-  UMap.fold fold g (LMap.empty, LMap.empty)
-
-(** Construct a topological order out of a DAG. *)
-let rec topological_fold u g rem seen accu =
-  let is_seen =
-    try
-      let status = LMap.find u seen in
-      assert status; (** If false, not a DAG! *)
-      true
-    with Not_found -> false
+  let lowest_level =
+    List.fold_left (fun lowest_level can ->
+      let lvl = UMap.find can.univ lowest_level in
+      let upd cost lowest_level u' =
+        let u' = (repr g u').univ in
+        UMap.modify u' (fun _ lvl0 -> max lvl0 (lvl+cost)) lowest_level
+      in
+      let lowest_level = List.fold_left (upd 1) lowest_level can.lt in
+      let lowest_level = List.fold_left (upd 0) lowest_level can.le in
+      lowest_level)
+      lowest_level cans
   in
-  if not is_seen then
-    let rem = LMap.remove u rem in
-    let seen = LMap.add u false seen in
-    let neighbours = try LMap.find u g with Not_found -> LMap.empty in
-    let fold v _ (rem, seen, accu) = topological_fold v g rem seen accu in
-    let (rem, seen, accu) = LMap.fold fold neighbours (rem, seen, accu) in
-    (rem, LMap.add u true seen, u :: accu)
-  else (rem, seen, accu)
-
-let rec topological g rem seen accu =
-  let node = try Some (LMap.choose rem) with Not_found -> None in
-  match node with
-  | None -> accu
-  | Some (u, _) ->
-    let rem, seen, accu = topological_fold u g rem seen accu in
-    topological g rem seen accu
-
-(** Compute the longest path from any vertex. *)
-let constraint_cost = function
-| Eq | Le -> 0
-| Lt -> 1
-
-(** This algorithm browses the graph in topological order, computing for each
-    encountered node the length of the longest path leading to it. Should be
-    O(|V|) or so (modulo map representation). *)
-let rec flatten_graph rem (rev : graph) map mx = match rem with
-| [] -> map, mx
-| u :: rem ->
-  let prev = try LMap.find u rev with Not_found -> LMap.empty in
-  let fold v cstr accu =
-    let v_cost = LMap.find v map in
-    max (v_cost + constraint_cost cstr) accu
-  in
-  let u_cost = LMap.fold fold prev 0 in
-  let map = LMap.add u u_cost map in
-  flatten_graph rem rev map (max mx u_cost)
-
-(** [sort_universes g] builds a map from universes in [g] to natural
-    numbers. It outputs a graph containing equivalence edges from each
-    level appearing in [g] to [Type.n], and [lt] edges between the
-    [Type.n]s. The output graph should imply the input graph (and the
-    [Type.n]s. The output graph should imply the input graph (and the
-    implication will be strict most of the time), but is not
-    necessarily minimal. Note: the result is unspecified if the input
-    graph already contains [Type.n] nodes (calling a module Type is
-    probably a bad idea anyway). *)
-let sort_universes orig =
-  let (dir, rev) = make_graph orig in
-  let order = topological dir dir LMap.empty [] in
-  let compact, max = flatten_graph order rev LMap.empty 0 in
+  let max_lvl = UMap.fold (fun _ a b -> max a b) lowest_level 0 in
   let mp = Names.DirPath.make [Names.Id.of_string "Type"] in
-  let types = Array.init (max + 1) (fun n -> Level.make mp n) in
-  (** Old universes are made equal to [Type.n] *)
-  let fold u level accu = UMap.add u (Equiv types.(level)) accu in
-  let sorted = LMap.fold fold compact UMap.empty in
-  (** Add all [Type.n] nodes *)
-  let fold i accu u =
-    if 0 < i then
-      let pred = types.(i - 1) in
-      let arc = {univ = u; lt = [pred]; le = []; rank = 0; predicative = false; status = Unset; } in
-      UMap.add u (Canonical arc) accu
-    else accu
-  in
-  Array.fold_left_i fold sorted types
+  let types = Array.init (max_lvl + 1) (fun n -> Level.make mp n) in
+  UMap.fold (fun u lvl g -> enforce_univ_eq u (types.(lvl)) g)
+    lowest_level g
 
 (* Miscellaneous functions to remove or test local univ assumed to
    occur in a universe *)
@@ -2008,7 +1883,7 @@ let pr_arc prl = function
       prl u  ++ str " = " ++ prl v ++ fnl ()
 
 let pr_universes prl g =
-  let graph = UMap.fold (fun u a l -> (u,a)::l) g [] in
+  let graph = UMap.fold (fun u a l -> (u,a)::l) g.entries [] in
   prlist (pr_arc prl) graph
 
 let pr_constraints prl = Constraint.pr prl
@@ -2029,12 +1904,12 @@ let dump_universes output g =
   let dump_arc u = function
     | Canonical {univ=u; lt=lt; le=le} ->
 	let u_str = Level.to_string u in
-	List.iter (fun v -> output Lt (Level.to_string v) u_str) lt;
-	List.iter (fun v -> output Le (Level.to_string v) u_str) le
+	List.iter (fun v -> output Lt u_str (Level.to_string v)) lt;
+	List.iter (fun v -> output Le u_str (Level.to_string v)) le
     | Equiv v ->
       output Eq (Level.to_string u) (Level.to_string v)
   in
-  UMap.iter dump_arc g
+  UMap.iter dump_arc g.entries
 
 module Huniverse_set = 
   Hashcons.Make(

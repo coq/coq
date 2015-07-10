@@ -26,6 +26,8 @@ sig
   val unionq : 'a list -> 'a list -> 'a list
   val subtract : 'a eq -> 'a list -> 'a list -> 'a list
   val subtractq : 'a list -> 'a list -> 'a list
+  val subtract_sorted : 'a cmp -> 'a list -> 'a list -> 'a list
+  val disjoint_sorted : 'a cmp -> 'a list -> 'a list -> bool
   val interval : int -> int -> int list
   val make : int -> 'a -> 'a list
   val assign : 'a list -> int -> 'a -> 'a list
@@ -308,6 +310,28 @@ let subtract cmp l1 l2 =
 
 let unionq l1 l2 = union (==) l1 l2
 let subtractq l1 l2 = subtract (==) l1 l2
+
+let rec subtract_sorted cmp l1 l2 =
+  match l1, l2 with
+  | [], _ | _, [] -> l1
+  | h1::q1, h2::q2 ->
+    let c = cmp h1 h2 in
+    if Int.equal c 0
+    then subtract_sorted cmp q1 l2
+    else if c <= 0
+    then h1 :: subtract_sorted cmp q1 l2
+    else subtract_sorted cmp l1 q2
+
+let rec disjoint_sorted cmp l1 l2 =
+  match l1, l2 with
+  | [], _ | _, [] -> true
+  | h1::q1, h2::q2 ->
+    let c = cmp h1 h2 in
+    if Int.equal c 0
+    then false
+    else if c <= 0
+    then disjoint_sorted cmp q1 l2
+    else disjoint_sorted cmp l1 q2
 
 let interval n m =
   let rec interval_n (l,m) =
