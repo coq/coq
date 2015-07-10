@@ -153,7 +153,7 @@ let remember_subst u subst =
 (* Propagate the new levels in the signature *)
 let rec make_subst env =
   let rec make subst = function
-    | (_,Some _,_ as t)::sign, exp, args ->
+    | (_,Some _,_)::sign, exp, args ->
         make subst (sign, exp, args)
     | d::sign, None::exp, args ->
         let args = match args with _::args -> args | [] -> [] in
@@ -166,7 +166,7 @@ let rec make_subst env =
         (* a useless extra constraint *)
         let s = sort_as_univ (snd (dest_arity env (Lazy.force a))) in
         make (cons_subst u s subst) (sign, exp, args)
-    | (na,None,t as d)::sign, Some u::exp, [] ->
+    | (na,None,t)::sign, Some u::exp, [] ->
         (* No more argument here: we add the remaining universes to the *)
         (* substitution (when [u] is distinct from all other universes in the *)
         (* template, it is identity substitution  otherwise (ie. when u is *)
