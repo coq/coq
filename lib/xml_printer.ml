@@ -46,6 +46,8 @@ let buffer_attr tmp (n,v) =
     match v.[p] with
       | '\\' -> output "\\\\"
       | '"' -> output "\\\""
+      | '<' -> output "&lt;"
+      | '&' -> output "&amp;"
       | c -> output' c
   done;
   output' '"'
