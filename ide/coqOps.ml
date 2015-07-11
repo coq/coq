@@ -669,7 +669,10 @@ object(self)
       push_info "Coq is undoing" in
     let conclusion () =
       pop_info ();
-      if move_insert then buffer#place_cursor ~where:self#get_start_of_input;
+      if move_insert then begin
+        buffer#place_cursor ~where:self#get_start_of_input;
+        script#recenter_insert;
+      end;
       let start = self#get_start_of_input in
       let stop = self#get_end_of_input in
       Minilib.log(Printf.sprintf "cleanup tags %d %d" start#offset stop#offset);
