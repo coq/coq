@@ -282,11 +282,11 @@ $(COQC):  $(patsubst %.cma,%$(BESTLIB),$(COQCCMO:.cmo=$(BESTOBJ)))
 
 # For the checker, different flags may be used
 
-checker/check.cma: | checker/check.mllib.d
+checker/check.cma: | md5chk checker/check.mllib.d
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -a -o $@ $^
 
-checker/check.cmxa: | checker/check.mllib.d
+checker/check.cmxa: | md5chk checker/check.mllib.d
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -a -o $@ $^
 
@@ -479,7 +479,7 @@ md5chk:
 
 VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m
 
-validate: $(CHICKEN) md5chk | $(ALLVO)
+validate: $(CHICKEN) | $(ALLVO)
 	$(SHOW)'COQCHK <theories & plugins>'
 	$(HIDE)$(CHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
 
