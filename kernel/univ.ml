@@ -655,7 +655,14 @@ open Universe
 
 let universe_level = Universe.level
 
-type status = NoMark | BackwardMark | MergeMark
+type status =
+| NoMark            (* Node is not marked *)
+(* Used in [insert_edge] *)
+| BackwardMark      (* Node has been visited during the backward search *)
+| MergeMark         (* This node is in a cycle : it will be merged *)
+(* Used in [search_path] *)
+| Visited
+| WeakVisited
 
 (* Comparison on this type is pointer equality *)
 type canonical_node =
@@ -821,6 +828,7 @@ let rec mark_parents g x u =
   | BackwardMark | NoMark ->
     x.status <- MergeMark;
     if x.univ != u then mark_parents g (repr g x.parent) u
+  | _ -> assert false
 
 (* [revert_graph] rollbacks the changes made to mutable fields in
    nodes in the graph.
@@ -1072,49 +1080,53 @@ let get_explanation strict u v g =
   if !Flags.univ_print then Some (get_explanation strict u v g)
   else None
 
-module TopoOrdered : Heap.Ordered with type t = canonical_node = struct
-  type t = canonical_node
-  let compare u v = Pervasives.compare (idx_of_can u) (idx_of_can v)
-end
-
-module TopoHeap = Heap.Functional (TopoOrdered)
-
 (* To compare two nodes, we simply do a forward search.
    We have two ameliorations:
    - we ignore nodes that ar higher than the destination;
-   - we visit first the nodes that are close to the destination in the
-     topological order.
+   - we do a BFS rather than a DFS because we expect to have a short
+       path (typically, the shortest path has length 1)
  *)
 let search_path strict u v g =
-  let rec loop heap strict_visited =
-    let u = try Some (TopoHeap.maximum heap) with Heap.EmptyHeap -> None in
-    match u with
-    | None -> false (* No path found *)
-    | Some u ->
-      let heap = TopoHeap.remove heap in
-      let strict = UMap.find u.univ strict_visited in
-      if u == v && not strict then true
-      else
-        let insert_node strict ((heap, strict_visited) as acc) x =
-          let x = repr g x in
-          if idx_of_can x > idx_of_can v then acc
-          else
-            let visited =
-              try not (UMap.find x.univ strict_visited) || strict
-              with Not_found -> false
-            in
-            if visited then acc
-            else (TopoHeap.add x heap, UMap.add x.univ strict strict_visited)
-        in
-        let heap, strict_visited =
-          List.fold_left (insert_node false) (heap, strict_visited) u.lt in
-        let heap, strict_visited =
-          List.fold_left (insert_node strict) (heap, strict_visited) u.le in
-        loop heap strict_visited
+  (* Purely functional queue with two lists. *)
+  let qpush (l1, l2) x = (l1, x::l2) in
+  let qpop (l1, l2) =
+    match l1 with
+    | t :: q -> Some (t, (q, l2))
+    | [] ->
+      match List.rev l2 with
+      | t :: q -> Some (t, (q, []))
+      | [] -> None
   in
-  loop (TopoHeap.add u TopoHeap.empty) (UMap.singleton u.univ strict)
-
-(** * Universe checks [check_eq] and [check_leq], used in coqchk *)
+  let rec loop to_revert q =
+    match qpop q with
+    | None -> false, to_revert (* No path found *)
+    | Some ((u, strict), q) ->
+      if u.status = Visited || (u.status = WeakVisited && strict)
+      then loop to_revert q
+      else
+        let to_revert = if u.status = NoMark then u::to_revert else to_revert in
+        u.status <- if strict then WeakVisited else Visited;
+        let rec aux strict q l cont =
+          match l with
+          | [] -> cont q
+          | u::l ->
+            let u = repr g u in
+            if u == v && not strict then true, to_revert
+            else if idx_of_can u >= idx_of_can v then aux strict q l cont
+            else aux strict (qpush q (u, strict)) l cont
+        in
+        aux false q u.lt (fun q -> aux strict q u.le (loop to_revert))
+  in
+  if u == v then not strict
+  else
+    try
+      let res, to_revert = loop [] ([u, strict],[]) in
+      List.iter (fun u -> u.status <- NoMark) to_revert;
+      res
+    with e ->
+      (** Unlikely event: fatal error or signal *)
+      let () = cleanup_universes g in
+      raise e
 
 (** First, checks on universe levels *)
 
@@ -1127,13 +1139,10 @@ let check_eq_level g u v =
 let check_smaller g strict u v =
   let g, ucan = safe_repr g u in
   let g, vcan = safe_repr g v in
-  if strict then
-    if ucan == vcan then false
-    else search_path true ucan vcan g
+  if strict then search_path true ucan vcan g
   else
     Level.is_prop ucan.univ
     || (Level.is_set ucan.univ && vcan.predicative)
-    || ucan == vcan
     || search_path false ucan vcan g
 
 (** Then, checks on universes *)
@@ -1430,6 +1439,8 @@ let constraints_of_universes g =
 let constraints_of_universes g =
   constraints_of_universes (normalize_universes g)
 
+let topo_compare u v = Pervasives.compare (idx_of_can u) (idx_of_can v)
+
 (** [sort_universes g] builds a totaly ordered universe graph.  The
     output graph should imply the input graph (and the implication
     will be strict most of the time), but is not necessarily minimal.
@@ -1445,7 +1456,7 @@ let sort_universes g =
       | Canonical can -> can :: l
     ) g.entries []
   in
-  let cans = List.sort TopoOrdered.compare cans in
+  let cans = List.sort topo_compare cans in
   let lowest_level =
     UMap.map (fun _ -> 0)
       (UMap.filter
