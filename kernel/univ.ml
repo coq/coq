@@ -795,14 +795,10 @@ let check_universes_invariants g =
       let check_arc strict v =
         incr n_edges;
         let v = repr g v in
-        if u == v then assert (not strict)
-        else
-          begin
-            assert (idx_of_can u < idx_of_can v);
-            if u.klvl = v.klvl then
-              assert (List.memq u.univ v.gtge ||
-                      List.memq u (List.map (repr g) v.gtge))
-          end
+        assert (idx_of_can u < idx_of_can v);
+        if u.klvl = v.klvl then
+          assert (List.memq u.univ v.gtge ||
+                  List.memq u (List.map (repr g) v.gtge))
       in
       List.iter (check_arc true) u.lt;
       List.iter (check_arc false) u.le;
@@ -838,7 +834,6 @@ let get_ltle g u =
     let lt = CList.sort_uniquize Level.compare lt in
     let le = CList.sort_uniquize Level.compare le in
     let le = CList.subtract_sorted Level.compare le lt in
-    let le = CList.except Level.equal u.univ le in
     let sz = List.length u.lt + List.length u.le in
     let sz2 = List.length lt + List.length le in
     let u = { u with lt; le } in
@@ -851,7 +846,6 @@ let get_gtge g u =
   if List.for_all2 (==) gtge u.gtge then u.gtge, u, g
   else
     let gtge = CList.sort_uniquize Level.compare gtge in
-    let gtge = CList.except Level.equal u.univ gtge in
     let u = { u with gtge } in
     let g = change_node g u in
     u.gtge, u, g
@@ -1003,7 +997,9 @@ let insert_edge strict ucan vcan g =
               List.sort Level.compare (List.map (fun u -> u.univ) to_merge)
             in
             let merge_neigh f =
-              CList.sort_uniquize Level.compare (CList.map_append f to_merge)
+              CList.sort_uniquize Level.compare
+                (List.map (fun u -> (repr g u).univ)
+                   (CList.map_append f to_merge))
             in
             let lt = merge_neigh (fun n -> n.lt) in
             (* There is a lt edge inside the new component. This is a
