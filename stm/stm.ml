@@ -2117,7 +2117,7 @@ let process_transaction ?(newtip=Stateid.fresh ()) ~tty verbose c (loc, expr) =
              iraise (State.exn_on report_id e)); `Ok
       | VtQuery (false,(report_id,route)), VtNow ->
           (try vernac_interp report_id ~route x
-           with e when Errors.noncritical e ->
+           with e ->
              let e = Errors.push e in
              iraise (State.exn_on report_id e)); `Ok
       | VtQuery (true,(report_id,_)), w ->
