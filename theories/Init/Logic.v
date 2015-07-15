@@ -215,7 +215,7 @@ Notation "A (+) B" := (xor A B) : type_scope.
 Section Exclusive_Or.
   Theorem or_of_xor : forall A B:Prop, A (+) B -> A \/ B.
   Proof.
-    intros A B [ a nb | na b ]; auto.
+    intros A B [ a _ | _ b ]; [ left | right ]; assumption.
   Qed.
 
   Theorem xor_comm : forall A B:Prop, A (+) B <-> B (+) A.

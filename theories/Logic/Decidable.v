@@ -89,7 +89,7 @@ Theorem xor_is_antivalence :
   forall A B:Prop, decidable A -> decidable B ->
     ~ (A <-> B) <-> A (+) B.
 Proof.
-unfold decidable; unfold xor; split; tauto.
+firstorder.
 Qed.
 
 (** Results formulated with iff, used in FSetDecide.
