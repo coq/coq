@@ -93,7 +93,7 @@ let instantiate_params full t u args sign =
 
 let full_inductive_instantiate mib u params sign =
   let dummy = prop_sort in
-  let t = mkArity (sign,dummy) in
+  let t = mkArity (Vars.subst_instance_context u sign,dummy) in
     fst (destArity (instantiate_params true t u params mib.mind_params_ctxt))
 
 let full_constructor_instantiate ((mind,_),u,(mib,_),params) t =
@@ -344,13 +344,13 @@ let is_correct_arity env c pj ind specif params =
       | Prod (na1,a1,a2), [] -> (* whnf of t was not needed here! *)
 	 let env' = push_rel (na1,None,a1) env in
 	 let ksort = match kind_of_term (whd_betadeltaiota env' a2) with
-       | Sort s -> family_of_sort s
-       | _ -> raise (LocalArity None) in
+	 | Sort s -> family_of_sort s
+	 | _ -> raise (LocalArity None) in
 	 let dep_ind = build_dependent_inductive ind specif params in
 	 let _ =
            try conv env a1 dep_ind
            with NotConvertible -> raise (LocalArity None) in
-	 check_allowed_sort ksort specif
+	   check_allowed_sort ksort specif
       | _, (_,Some _,_ as d)::ar' ->
 	  srec (push_rel d env) (lift 1 pt') ar'
       | _ ->
