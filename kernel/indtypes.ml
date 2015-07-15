@@ -383,16 +383,8 @@ let explain_ind_err id ntyp env nbpar c nargs err =
 	raise (InductiveError
 		 (NotConstructor (env,id,c',mkRel (ntyp+nbpar),nbpar,nargs)))
     | LocalNonPar (n,l) ->
-        let rec index_nth_hyp pos k = function
-          | (_,Some _,_)::l -> index_nth_hyp (pos + 1) k l
-          | (_,None,_)::l when k = 1 -> pos
-          | (_,None,_)::l -> index_nth_hyp (pos + 1) (k - 1) l
-          | _ -> assert false
-        in 
-        assert (1 <= n && n <= nbpar);
-        let nth_hyp = index_nth_hyp 1 n (List.rev lpar) in
 	raise (InductiveError
-		 (NonPar (env,c',n,mkRel (nbpar-nth_hyp+1),mkRel (l+nbpar))))
+		 (NonPar (env,c',n,mkRel (nbpar-n+1), mkRel (l+nbpar))))
 
 let failwith_non_pos n ntypes c =
   for k = n to n + ntypes - 1 do
