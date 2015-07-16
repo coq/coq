@@ -577,7 +577,7 @@ struct
   let is_type0m x = equal type0m x
   let is_type0 x = equal type0 x
 
-  (* Returns the formal universe that lies juste above the universe variable u.
+  (* Returns the formal universe that lies just above the universe variable u.
      Used to type the sort u. *)
   let super l = 
     if is_small l then type1

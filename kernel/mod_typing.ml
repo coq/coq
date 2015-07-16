@@ -307,7 +307,9 @@ let finalize_module env mp (sign,alg,reso,cst) restype = match restype with
     { res_mtb with
       mod_mp = mp;
       mod_expr = impl;
-      mod_constraints = cst +++ cst' }
+      (** cst from module body typing, cst' from subtyping, 
+          and constraints from module type. *)
+      mod_constraints = cst +++ cst' +++ res_mtb.mod_constraints }
 
 let translate_module env mp inl = function
   |MType (params,ty) ->
