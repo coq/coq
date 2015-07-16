@@ -1326,7 +1326,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 		      tclFIRST[
 			tclTHEN
 			  (Proofview.V82.of_tactic (eapply_with_bindings (mkVar (List.nth !lid !h_num), NoBindings)))
-			  e_assumption;
+			  (Proofview.V82.of_tactic e_assumption);
 		      Eauto.eauto_with_bases
 			(true,5)
 			[Evd.empty,Lazy.force refl_equal]

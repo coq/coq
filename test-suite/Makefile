@@ -388,7 +388,7 @@ misc/deps-order.log:
 	} > "$@"
 
 # Sort universes for the whole standard library
-EXPECTED_UNIVERSES := 3
+EXPECTED_UNIVERSES := 5
 universes: misc/universes.log
 misc/universes.log: misc/universes/all_stdlib.v
 	@echo "TEST      misc/universes"
@@ -396,7 +396,7 @@ misc/universes.log: misc/universes/all_stdlib.v
 	  $(bincoqc) -R misc/universes Universes misc/universes/all_stdlib 2>&1; \
 	  $(bincoqc) -R misc/universes Universes misc/universes/universes 2>&1; \
 	  mv universes.txt misc/universes; \
-	  N=`awk '{print $$3}' misc/universes/universes.txt | sort -u | wc -l`; \
+	  N=`(awk '{print $$3}' misc/universes/universes.txt && echo Prop) | sort -u | wc -l`; \
 	  times; \
 	  if [ "$$N" -eq $(EXPECTED_UNIVERSES) ]; then \
 	    echo $(log_success); \

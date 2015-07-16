@@ -64,8 +64,8 @@ type ml_tactic =
   typed_generic_argument list -> Geninterp.interp_sign -> unit Proofview.tactic
 (** Type of external tactics, used by [TacML]. *)
 
-val register_ml_tactic : ?overwrite:bool -> ml_tactic_name -> ml_tactic -> unit
+val register_ml_tactic : ?overwrite:bool -> ml_tactic_name -> ml_tactic array -> unit
 (** Register an external tactic. *)
 
-val interp_ml_tactic : ml_tactic_name -> ml_tactic
+val interp_ml_tactic : ml_tactic_entry -> ml_tactic
 (** Get the named tactic. Raises a user error if it does not exist. *)

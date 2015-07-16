@@ -184,7 +184,7 @@ let with_prods nprods poly (c, clenv) f gls =
 
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl =
-    Eauto.registered_e_assumption ::
+    Proofview.V82.of_tactic Eauto.registered_e_assumption ::
     (tclTHEN (Proofview.V82.of_tactic Tactics.intro)
        (function g'->
 	  let d = pf_last_hyp g' in

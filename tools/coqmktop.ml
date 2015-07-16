@@ -149,7 +149,7 @@ let usage () =
   prerr_endline "Usage: coqmktop <options> <ocaml options> files\
 \nFlags are:\
 \n  -coqlib dir    Specify where the Coq object files are\
-\n  -camlbin dir   Specify where the OCaml binaries are\
+\n  -ocamlfind dir Specify where the ocamlfind binary is\
 \n  -camlp4bin dir Specify where the Camlp4/5 binaries are\
 \n  -o exec-file   Specify the name of the resulting toplevel\
 \n  -boot          Run in boot mode\
@@ -167,8 +167,8 @@ let parse_args () =
     (* Directories *)
     | "-coqlib" :: d :: rem ->
 	Flags.coqlib_spec := true; Flags.coqlib := d ; parse (op,fl) rem
-    | "-camlbin" :: d :: rem ->
-	Flags.camlbin_spec := true; Flags.camlbin := d ; parse (op,fl) rem
+    | "-ocamlfind" :: d :: rem ->
+	Flags.ocamlfind_spec := true; Flags.ocamlfind := d ; parse (op,fl) rem
     | "-camlp4bin" :: d :: rem ->
 	Flags.camlp4bin_spec := true; Flags.camlp4bin := d ; parse (op,fl) rem
     | "-R" :: d :: rem -> parse (incl_all_subdirs d op,fl) rem
@@ -266,10 +266,9 @@ let main () =
   let (options, userfiles) = parse_args () in
   (* Directories: *)
   let () = Envars.set_coqlib ~fail:Errors.error in
-  let camlbin = Envars.camlbin () in
   let basedir = if !Flags.boot then None else Some (Envars.coqlib ()) in
   (* Which ocaml compiler to invoke *)
-  let prog = camlbin/(if !opt then "ocamlopt" else "ocamlc") in
+  let prog = if !opt then "opt" else "ocamlc" in
   (* Which arguments ? *)
   if !opt && !top then failwith "no custom toplevel in native code !";
   let flags = if !opt then [] else Coq_config.vmbyteflags in
@@ -284,14 +283,14 @@ let main () =
       (std_includes basedir) @ tolink @ [ main_file ] @ topstart
     in
     if !echo then begin
-      let command = String.concat " " (prog::args) in
+      let command = String.concat " " (Envars.ocamlfind ()::prog::args) in
       print_endline command;
       print_endline
 	("(command length is " ^
 	    (string_of_int (String.length command)) ^ " characters)");
       flush Pervasives.stdout
     end;
-    let exitcode = run_command prog args in
+    let exitcode = run_command (Envars.ocamlfind ()) (prog::args) in
     clean main_file;
     exitcode
   with reraise -> clean main_file; raise reraise

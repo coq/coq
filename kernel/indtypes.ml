@@ -30,8 +30,13 @@ let indices_matter = ref false
 let enforce_indices_matter () = indices_matter := true
 let is_indices_matter () = !indices_matter
 
-(* Same as noccur_between but may perform reductions.
-   Could be refined more...  *)
+(* [weaker_noccur_between env n nvars t] (defined above), checks that
+   no de Bruijn indices between [n] and [n+nvars] occur in [t]. If
+   some such occurrences are found, then reduction is performed
+   (lazily for efficiency purposes) in order to determine whether
+   these occurrences are occurrences in the normal form. If the
+   occurrences are eliminated a witness reduct [Some t'] of [t] is
+   returned otherwise [None] is returned. *)
 let weaker_noccur_between env x nvars t =
   if noccur_between x nvars t then Some t
   else
@@ -451,17 +456,30 @@ let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
 let array_min nmr a = if Int.equal nmr 0 then 0 else
   Array.fold_left (fun k (nmri,_) -> min k nmri) nmr a
 
-(* The recursive function that checks positivity and builds the list
-   of recursive arguments *)
+(** [check_positivity_one ienv hyps (mind,i) nargs lcnames indlc]
+    checks the positivity of the [i]-th member of the mutually
+    inductive definition [mind]. It returns an [Rtree.t] which
+    represents the position of the recursive calls of inductive in [i]
+    for use by the guard condition (terms at these positions are
+    considered sub-terms) as well as the number of of non-uniform
+    arguments (used to generate induction schemes, so a priori less
+    relevant to the kernel). *)
 let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcnames indlc =
   let lparams = rel_context_length hyps in
   let nmr = rel_context_nhyps hyps in
-  (* Checking the (strict) positivity of a constructor argument type [c] *)
+  (** Positivity of one argument [c] of a constructor (i.e. the
+      constructor [cn] has a type of the shape [… -> c … -> P], where,
+      more generally, the arrows may be dependent). *)
   let rec check_pos (env, n, ntypes, ra_env as ienv) nmr c =
     let x,largs = decompose_app (whd_betadeltaiota env c) in
       match kind_of_term x with
 	| Prod (na,b,d) ->
 	    let () = assert (List.is_empty largs) in
+            (** If one of the inductives of the mutually inductive
+                block occurs in the left-hand side of a product, then
+                such an occurrence is a non-strictly-positive
+                recursive call. Occurrences in the right-hand side of
+                the product must be strictly positive.*)
             (match weaker_noccur_between env n ntypes b with
 		None -> failwith_non_pos_list n ntypes [b]
               | Some b ->
@@ -474,21 +492,35 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
                   Mrec _ -> compute_rec_par ienv hyps nmr largs
 		|  _ -> nmr)
 	    in
+              (** The case where one of the inductives of the mutually
+                  inductive block occurs as an argument of another is not
+                  known to be safe. So Coq rejects it. *)
 	      if not (List.for_all (noccur_between n ntypes) largs)
 	      then failwith_non_pos_list n ntypes largs
 	      else (nmr1,rarg)
               with Failure _ | Invalid_argument _ -> (nmr,mk_norec))
 	| Ind ind_kn ->
-            (* If the inductive type being defined appears in a
-               parameter, then we have a nested indtype *)
+            (** If one of the inductives of the mutually inductive
+                block being defined appears in a parameter, then we
+                have a nested inductive type. The positivity is then
+                discharged to the [check_positive_nested] function. *)
             if List.for_all (noccur_between n ntypes) largs then (nmr,mk_norec)
             else check_positive_nested ienv nmr (ind_kn, largs)
 	| err ->
+            (** If an inductive of the mutually inductive block
+                appears in any other way, then the positivy check gives
+                up. *)
 	    if noccur_between n ntypes x &&
               List.for_all (noccur_between n ntypes) largs
 	    then (nmr,mk_norec)
 	    else failwith_non_pos_list n ntypes (x::largs)
 
+  (** [check_positive_nested] handles the case of nested inductive
+      calls, that is, when an inductive types from the mutually
+      inductive block is called as an argument of an inductive types
+      (for the moment, this inductive type must be a previously
+      defined types, not one of the types of the mutually inductive
+      block being defined). *)
   (* accesses to the environment are not factorised, but is it worth? *)
   and check_positive_nested (env,n,ntypes,ra_env as ienv) nmr ((mi,u), largs) =
     let (mib,mip) = lookup_mind_specif env mi in
@@ -497,12 +529,13 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
     let (lpar,auxlargs) =
       try List.chop auxnpar largs
       with Failure _ -> raise (IllFormedInd (LocalNonPos n)) in
-      (* If the inductive appears in the args (non params) then the
-	 definition is not positive. *)
 
+      (** Inductives of the inductive block being defined are only
+          allowed to appear nested in the parameters of another inductive
+          type. Not in the proper indices. *)
       if not (List.for_all (noccur_between n ntypes) auxlargs) then
 	failwith_non_pos_list n ntypes auxlargs;
-      (* We do not deal with imbricated mutual inductive types *)
+      (* Nested mutual inductive types are not supported *)
       let auxntyp = mib.mind_ntypes in
 	if not (Int.equal auxntyp 1) then raise (IllFormedInd (LocalNonPos n));
 	(* The nested inductive type with parameters removed *)
@@ -513,8 +546,11 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 	  (* Parameters expressed in env' *)
 	let lpar' = List.map (lift auxntyp) lpar in
 	let irecargs_nmr =
-	  (* fails if the inductive type occurs non positively *)
-	  (* with recursive parameters substituted *)
+	  (** Checks that the "nesting" inductive type is covariant in
+	      the relevant parameters. In other words, that the
+	      (nested) parameters which are instantiated with
+	      inductives of the mutually inductive block occur
+	      positively in the types of the nested constructors. *)
 	  Array.map
 	    (function c ->
 	      let c' = hnf_prod_applist env' c lpar' in
@@ -528,10 +564,14 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 	in
 	  (nmr',(Rtree.mk_rec [|mk_paths (Imbr mi) irecargs|]).(0))
 
-  (* check the inductive types occur positively in the products of C, if
-     check_head=true, also check the head corresponds to a constructor of
-     the ith type *)
-
+  (** [check_constructors ienv check_head nmr c] checks the positivity
+      condition in the type [c] of a constructor (i.e. that recursive
+      calls to the inductives of the mutually inductive definition
+      appear strictly positively in each of the arguments of the
+      constructor, see also [check_pos]). If [check_head] is [true],
+      then the type of the fully applied constructor (the "head" of
+      the type [c]) is checked to be the right (properly applied)
+      inductive type. *)
   and check_constructors ienv check_head nmr c =
     let rec check_constr_rec (env,n,ntypes,ra_env as ienv) nmr lrec c =
       let x,largs = decompose_app (whd_betadeltaiota env c) in
@@ -571,6 +611,8 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
   and nmr' = array_min nmr irecargs_nmr
   in (nmr', mk_paths (Mrec ind) irecargs)
 
+(** [check_positivity kn env_ar params] checks that the mutually
+    inductive block [inds] is strictly positive. *)
 let check_positivity kn env_ar params inds =
   let ntypes = Array.length inds in
   let rc = Array.mapi (fun j t -> (Mrec (kn,j),t)) (Rtree.mk_rec_calls ntypes) in

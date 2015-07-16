@@ -125,7 +125,7 @@ let init_ocaml_path () =
     Mltop.add_ml_dir (Envars.coqlib ());
     List.iter add_subdir
       [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ];
-	[ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
+	[ "engine" ]; [ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
 	[ "tactics" ]; [ "toplevel" ]; [ "printing" ]; [ "intf" ];
         [ "grammar" ]; [ "ide" ] ]
 

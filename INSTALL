@@ -32,6 +32,11 @@ WHAT DO YOU NEED ?
    - Objective Caml version 3.12.1 or later
      (available at http://caml.inria.fr/)
 
+   - Findlib (included in OCaml binary distribution under windows,
+     probably available in your distribution and for sure at
+     http://projects.camlcity.org/projects/findlib.html)
+
+
    - Camlp5 (version >= 6.02) (Coq compiles with Camlp4 but might be less
      well supported)
 

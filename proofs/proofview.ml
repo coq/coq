@@ -887,7 +887,7 @@ module Unsafe = struct
 
 end
 
-
+module UnsafeRepr = Proof.Unsafe
 
 (** {7 Notations} *)
 

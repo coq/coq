@@ -1,0 +1,13 @@
+Require Import MSets.
+Require Import Orders.
+
+Declare Module Signal : OrderedType.
+
+Module S := MSetAVL.Make(Signal).
+Module Sdec := Decide(S).
+Export Sdec.
+
+Hint Extern 0 (Signal.eq ?x ?y) => now symmetry.
+
+Goal forall o s, Signal.eq o s.
+Proof. fsetdec. Qed.

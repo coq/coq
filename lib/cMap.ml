@@ -12,6 +12,13 @@ sig
   val compare : t -> t -> int
 end
 
+module type MonadS =
+sig
+  type +'a t
+  val return : 'a -> 'a t
+  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+end
+
 module type S = Map.S
 
 module type ExtS =
@@ -30,6 +37,12 @@ sig
   sig
     val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t
   end
+  module Monad(M : MonadS) :
+  sig
+    val fold : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
+    val fold_left : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
+    val fold_right : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
+  end
 end
 
 module MapExt (M : Map.OrderedType) :
@@ -46,6 +59,12 @@ sig
   module Unsafe :
   sig
     val map : (M.t -> 'a -> M.t * 'b) -> 'a map -> 'b map
+  end
+  module Monad(MS : MonadS) :
+  sig
+    val fold : (M.t -> 'a -> 'b -> 'b MS.t) -> 'a map -> 'b -> 'b MS.t
+    val fold_left : (M.t -> 'a -> 'b -> 'b MS.t) -> 'a map -> 'b -> 'b MS.t
+    val fold_right : (M.t -> 'a -> 'b -> 'b MS.t) -> 'a map -> 'b -> 'b MS.t
   end
 end =
 struct
@@ -156,6 +175,29 @@ struct
     | MNode (l, k, v, r, h) ->
       let (k, v) = f k v in
       map_inj (MNode (map f l, k, v, map f r, h))
+
+  end
+
+  module Monad(M : MonadS) =
+  struct
+
+    open M
+
+    let rec fold_left f s accu = match map_prj s with
+    | MEmpty -> return accu
+    | MNode (l, k, v, r, h) ->
+      fold_left f l accu >>= fun accu ->
+      f k v accu >>= fun accu ->
+      fold_left f r accu
+
+    let rec fold_right f s accu = match map_prj s with
+    | MEmpty -> return accu
+    | MNode (l, k, v, r, h) ->
+      fold_right f r accu >>= fun accu ->
+      f k v accu >>= fun accu ->
+      fold_right f l accu
+
+    let fold = fold_left
 
   end
 

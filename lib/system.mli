@@ -8,13 +8,45 @@
 
 (** {5 Coqtop specific system utilities} *)
 
+(** {6 Directories} *)
+
+type unix_path = string (* path in unix-style, with '/' separator *)
+
+type file_kind =
+  | FileDir of unix_path * (* basename of path: *) string
+  | FileRegular of string (* basename of file *)
+
+val (//) : unix_path -> string -> unix_path
+
+val exists_dir : unix_path -> bool
+
+(** [check_unix_dir warn path] calls [warn] with an appropriate
+     message if [path] looks does not look like a Unix path on Windows *)
+
+val check_unix_dir : (string -> unit) -> unix_path -> unit
+
+(** [exclude_search_in_dirname path] excludes [path] when processing
+    directories *)
+
+val exclude_directory : unix_path -> unit
+
+(** [process_directory f path] applies [f] on contents of directory
+    [path]; fails with Unix_error if the latter does not exists; skips
+    all files or dirs starting with "." *)
+
+val process_directory : (file_kind -> unit) -> unix_path -> unit
+
+(** [process_subdirectories f path] applies [f path/file file] on each
+    [file] of the directory [path]; fails with Unix_error if the
+    latter does not exists; kips all files or dirs starting with "." *)
+
+val process_subdirectories : (unix_path -> string -> unit) -> unix_path -> unit
+
 (** {6 Files and load paths} *)
 
 (** Load path entries remember the original root
     given by the user. For efficiency, we keep the full path (field
     [directory]), the root path and the path relative to the root. *)
-
-val exclude_search_in_dirname : string -> unit
 
 val all_subdirs : unix_path:string -> (CUnix.physical_path * string list) list
 val is_in_path : CUnix.load_path -> string -> bool
@@ -23,8 +55,6 @@ val where_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
 val where_in_path_rex :
   CUnix.load_path -> Str.regexp -> (CUnix.physical_path * string) list
-
-val exists_dir : string -> bool
 
 val find_file_in_path :
   ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string

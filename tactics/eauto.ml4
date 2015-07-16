@@ -33,27 +33,35 @@ DECLARE PLUGIN "eauto"
 
 let eauto_unif_flags = auto_flags_of_state full_transparent_state
 
-let e_give_exact ?(flags=eauto_unif_flags) c gl = let t1 = (pf_unsafe_type_of gl c) and t2 = pf_concl gl in
+let e_give_exact ?(flags=eauto_unif_flags) c =
+  Proofview.Goal.nf_enter begin fun gl ->
+  let t1 = Tacmach.New.pf_unsafe_type_of gl c in
+  let t2 = Tacmach.New.pf_concl gl in
   if occur_existential t1 || occur_existential t2 then
-     tclTHEN (Proofview.V82.of_tactic (Clenvtac.unify ~flags t1)) (exact_no_check c) gl
-  else Proofview.V82.of_tactic (exact_check c) gl
+     Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (Proofview.V82.tactic (exact_no_check c))
+  else exact_check c
+  end
 
 let assumption id = e_give_exact (mkVar id)
 
-let e_assumption gl =
-  tclFIRST (List.map assumption (pf_ids_of_hyps gl)) gl
+let e_assumption =
+  Proofview.Goal.enter begin fun gl ->
+    Tacticals.New.tclFIRST (List.map assumption (Tacmach.New.pf_ids_of_hyps gl))
+  end
 
 TACTIC EXTEND eassumption
-| [ "eassumption" ] -> [ Proofview.V82.tactic e_assumption ]
+| [ "eassumption" ] -> [ e_assumption ]
 END
 
 TACTIC EXTEND eexact
-| [ "eexact" constr(c) ] -> [ Proofview.V82.tactic (e_give_exact c) ]
+| [ "eexact" constr(c) ] -> [ e_give_exact c ]
 END
 
-let registered_e_assumption gl =
-  tclFIRST (List.map (fun id gl -> e_give_exact (mkVar id) gl)
-              (pf_ids_of_hyps gl)) gl
+let registered_e_assumption =
+  Proofview.Goal.enter begin fun gl ->
+  Tacticals.New.tclFIRST (List.map (fun id -> e_give_exact (mkVar id))
+              (Tacmach.New.pf_ids_of_hyps gl))
+  end
 
 (************************************************************************)
 (*   PROLOG tactic                                                      *)
@@ -82,7 +90,7 @@ let one_step l gl =
   [Proofview.V82.of_tactic Tactics.intro]
   @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) (List.map mkVar (pf_ids_of_hyps gl)))
   @ (List.map (fun c -> Proofview.V82.of_tactic (Tactics.Simple.eapply c)) l)
-  @ (List.map assumption (pf_ids_of_hyps gl))
+  @ (List.map (fun c -> Proofview.V82.of_tactic (assumption c)) (pf_ids_of_hyps gl))
 
 let rec prolog l n gl =
   if n <= 0 then error "prolog - failure";
@@ -138,19 +146,21 @@ let e_exact poly flags (c,clenv) =
     if poly then Clenv.refresh_undefined_univs clenv 
     else clenv, Univ.empty_level_subst
   in e_give_exact (* ~flags *) (Vars.subst_univs_level_constr subst c)
-    
-let rec e_trivial_fail_db db_list local_db goal =
+
+let rec e_trivial_fail_db db_list local_db =
+  let next = Proofview.Goal.nf_enter begin fun gl ->
+    let d = Tacmach.New.pf_last_hyp gl in
+    let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) d in
+    e_trivial_fail_db db_list (Hint_db.add_list hintl local_db)
+  end in
+  Proofview.Goal.enter begin fun gl ->
   let tacl =
     registered_e_assumption ::
-    (tclTHEN (Proofview.V82.of_tactic Tactics.intro)
-       (function g'->
-	  let d = pf_last_hyp g' in
-	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
-          (e_trivial_fail_db db_list
-	      (Hint_db.add_list hintl local_db) g'))) ::
-    (List.map fst (e_trivial_resolve db_list local_db (pf_concl goal)) )
+    (Tacticals.New.tclTHEN Tactics.intro next) ::
+    (List.map fst (e_trivial_resolve db_list local_db (Tacmach.New.pf_nf_concl gl)))
   in
-    tclFIRST (List.map tclCOMPLETE tacl) goal
+  Tacticals.New.tclFIRST (List.map Tacticals.New.tclCOMPLETE tacl)
+  end
 
 and e_my_find_search db_list local_db hdc concl =
   let hint_of_db = hintmap_of hdc concl in
@@ -165,14 +175,14 @@ and e_my_find_search db_list local_db hdc concl =
         let tac = function
         | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
         | ERes_pf (term,cl) -> Proofview.V82.tactic (unify_e_resolve poly st (term,cl))
-        | Give_exact (c,cl) -> Proofview.V82.tactic (e_exact poly st (c,cl))
+        | Give_exact (c,cl) -> e_exact poly st (c,cl)
         | Res_pf_THEN_trivial_fail (term,cl) ->
-          Proofview.V82.tactic (tclTHEN (unify_e_resolve poly st (term,cl))
-            (e_trivial_fail_db db_list local_db))
+          Tacticals.New.tclTHEN (Proofview.V82.tactic (unify_e_resolve poly st (term,cl)))
+            (e_trivial_fail_db db_list local_db)
         | Unfold_nth c -> Proofview.V82.tactic (reduce (Unfold [AllOccurrences,c]) onConcl)
         | Extern tacast -> conclPattern concl p tacast
        in
-       let tac = Proofview.V82.of_tactic (run_hint t tac) in
+       let tac = run_hint t tac in
        (tac, lazy (pr_hint t)))
   in
   List.map tac_of_hint hintl
@@ -224,7 +234,7 @@ module SearchProblem = struct
       | [] -> []
       | (tac, cost, pptac) :: tacl ->
 	  try
-	    let lgls = apply_tac_list tac glls in
+	    let lgls = apply_tac_list (Proofview.V82.of_tactic tac) glls in
 (* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
 	      (lgls, cost, pptac) :: aux tacl
@@ -262,7 +272,7 @@ module SearchProblem = struct
 				    prev = ps}) l
       in
       let intro_tac =
-        let l = filter_tactics s.tacres [Proofview.V82.of_tactic Tactics.intro, (-1), lazy (str "intro")] in
+        let l = filter_tactics s.tacres [Tactics.intro, (-1), lazy (str "intro")] in
 	List.map
 	  (fun (lgls, cost, pp) ->
 	     let g' = first_goal lgls in

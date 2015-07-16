@@ -43,6 +43,8 @@ sig
   val unionq : 'a list -> 'a list -> 'a list
   val subtract : 'a eq -> 'a list -> 'a list -> 'a list
   val subtractq : 'a list -> 'a list -> 'a list
+  val subtract_sorted : 'a cmp -> 'a list -> 'a list -> 'a list
+  val disjoint_sorted : 'a cmp -> 'a list -> 'a list -> bool
 
   val interval : int -> int -> int list
   (** [interval i j] creates the list [[i; i + 1; ...; j]], or [[]] when 

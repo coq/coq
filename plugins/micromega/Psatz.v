@@ -96,6 +96,14 @@ Ltac psatzl dom :=
 Ltac lra := 
   first [ psatzl R | psatzl Q ].
 
+Ltac nra := 
+  unfold Rdiv in * ; 
+  xnra ;     
+  abstract 
+    (intros __wit __varmap __ff ;
+     change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
+     apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
+                                                                       
 
 
 (* Local Variables: *)

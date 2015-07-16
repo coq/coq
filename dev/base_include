@@ -8,6 +8,7 @@
 #directory "toplevel";;
 #directory "library";;
 #directory "kernel";;
+#directory "engine";;
 #directory "pretyping";;
 #directory "lib";;
 #directory "proofs";;

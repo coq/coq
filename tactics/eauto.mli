@@ -21,11 +21,11 @@ val wit_auto_using :
     Genarg.genarg_type
 
 
-val e_assumption : tactic
+val e_assumption : unit Proofview.tactic
 
-val registered_e_assumption : tactic
+val registered_e_assumption : unit Proofview.tactic
 
-val e_give_exact : ?flags:Unification.unify_flags -> constr -> tactic
+val e_give_exact : ?flags:Unification.unify_flags -> constr -> unit Proofview.tactic
 
 val gen_eauto : ?debug:Tacexpr.debug -> bool * int -> open_constr list ->
   hint_db_name list option -> tactic

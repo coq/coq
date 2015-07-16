@@ -104,7 +104,7 @@ let _build = Options.build_dir
 
 let core_libs =
   ["lib/clib"; "lib/lib"; "kernel/kernel"; "library/library";
-   "pretyping/pretyping"; "interp/interp";  "proofs/proofs";
+   "engine/engine"; "pretyping/pretyping"; "interp/interp";  "proofs/proofs";
    "parsing/parsing"; "printing/printing"; "tactics/tactics";
    "stm/stm"; "toplevel/toplevel";  "parsing/highparsing";
    "tactics/hightactics"]

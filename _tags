@@ -63,6 +63,7 @@
 "library": include
 "parsing": include
 "plugins": include
+"engine": include
 "pretyping": include
 "printing": include
 "proofs": include

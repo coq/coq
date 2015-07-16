@@ -4,8 +4,6 @@ Evar_refiner
 Proof_using
 Proof_type
 Proof_errors
-Logic_monad
-Proofview_monad
 Logic
 Proofview
 Proof

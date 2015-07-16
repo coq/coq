@@ -69,7 +69,6 @@ USEGRAMMAR := '(\*.*camlp4deps.*grammar'
 
 ## Files in the source tree
 
-YACCFILES:=$(call find, '*.mly')
 LEXFILES := $(call find, '*.mll')
 export MLLIBFILES := $(call find, '*.mllib')
 export ML4BASEFILES := $(call findx, '*.ml4', grep -L -e $(USEGRAMMAR))
@@ -86,10 +85,9 @@ EXISTINGMLI := $(call find, '*.mli')
 ## Files that will be generated
 
 GENML4FILES:= $(ML4FILES:.ml4=.ml)
-GENMLIFILES:=$(YACCFILES:.mly=.mli)
 GENPLUGINSMOD:=$(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml))
-export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
-  tools/tolink.ml kernel/copcodes.ml $(GENPLUGINSMOD)
+export GENMLFILES:=$(LEXFILES:.mll=.ml) $(GENPLUGINSMOD) \
+  tools/tolink.ml kernel/copcodes.ml
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENVFILES:=theories/Numbers/Natural/BigN/NMake_gen.v
 export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES)

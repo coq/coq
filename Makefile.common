@@ -63,7 +63,7 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 CORESRCDIRS:=\
   config 	lib		kernel		kernel/byterun	library \
   proofs 	tactics 	pretyping	interp		stm \
-  toplevel	parsing	printing	grammar	        intf
+  toplevel	parsing	printing	grammar	        intf	engine
 
 PLUGINS:=\
   omega		romega 		micromega 	quote \
@@ -87,7 +87,7 @@ CHKSRCDIRS:= checker lib config kernel parsing
 ###########################################################################
 
 COQDEP:=bin/coqdep$(EXE)
-COQDEPBOOT:=bin/coqdep_boot$(EXE)
+OCAMLLIBDEP:=bin/ocamllibdep$(EXE)
 COQMAKEFILE:=bin/coq_makefile$(EXE)
 GALLINA:=bin/gallina$(EXE)
 COQTEX:=bin/coq-tex$(EXE)
@@ -99,7 +99,7 @@ COQWORKMGR:=bin/coqworkmgr$(EXE)
 TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)\
 	$(COQWORKMGR)
 
-PRIVATEBINARIES:=$(FAKEIDE) $(COQDEPBOOT)
+PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP)
 
 ###########################################################################
 # Documentation
@@ -161,7 +161,7 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 # the libraries directly
 
 CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
-        pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
+        engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma \
 	stm/stm.cma toplevel/toplevel.cma parsing/highparsing.cma tactics/hightactics.cma
 
@@ -255,7 +255,7 @@ CSDPCERTCMO:=$(addprefix plugins/micromega/, \
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
-COQDEPCMO:=$(COQENVCMO) tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
+COQDEPCMO:=$(COQENVCMO) lib/system.cmo tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
 
 COQDOCCMO:=lib/clib.cma $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
@@ -371,7 +371,7 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 OCAMLDOCDIR=dev/ocamldoc
 
 DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
-	./pretyping/*.mli ./interp/*.mli printing/*.mli \
+	./engine/*.mli ./pretyping/*.mli ./interp/*.mli printing/*.mli \
 	./parsing/*.mli ./proofs/*.mli \
 	./tactics/*.mli ./stm/*.mli ./toplevel/*.mli)
 
