@@ -676,7 +676,11 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb 
 	| Evar (evk,_ as ev), Evar (evk',_)
             when not (Evar.Set.mem evk flags.frozen_evars)
               && Evar.equal evk evk' ->
-	    sigma,metasubst,((curenv,ev,cN)::evarsubst)
+            let sigma',b = constr_cmp cv_pb sigma flags cM cN in
+            if b then
+	      sigma',metasubst,evarsubst
+            else
+	      sigma,metasubst,((curenv,ev,cN)::evarsubst)
 	| Evar (evk,_ as ev), _
             when not (Evar.Set.mem evk flags.frozen_evars) 
 	      && not (occur_evar evk cN) ->
