@@ -726,12 +726,13 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
                UnifFailure (evd,UnifUnivInconsistency p)
 	     | e when Errors.noncritical e -> UnifFailure (evd,NotSameHead))
 
-	| Prod (n,c1,c'1), Prod (_,c2,c'2) when app_empty ->
+	| Prod (n1,c1,c'1), Prod (n2,c2,c'2) when app_empty ->
             ise_and evd
               [(fun i -> evar_conv_x ts env i CONV c1 c2);
                (fun i ->
  	         let c = nf_evar i c1 in
-	         evar_conv_x ts (push_rel (n,None,c) env) i pbty c'1 c'2)]
+                 let na = Nameops.name_max n1 n2 in
+	         evar_conv_x ts (push_rel (na,None,c) env) i pbty c'1 c'2)]
 
 	| Rel x1, Rel x2 ->
 	    if Int.equal x1 x2 then

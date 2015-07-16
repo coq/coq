@@ -34,7 +34,7 @@ val name_iter : (Id.t -> unit) -> Name.t -> unit
 val name_cons : Name.t -> Id.t list -> Id.t list
 val name_app : (Id.t -> Id.t) -> Name.t -> Name.t
 val name_fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> Name.t -> 'a * Name.t
-
+val name_max : Name.t -> Name.t -> Name.t
 
 val pr_lab : Label.t -> Pp.std_ppcmds
 
