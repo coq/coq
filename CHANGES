@@ -161,7 +161,7 @@ Specification Language
   break user notations using "$(", fixable by inserting a space or
   rewriting the notation).
 - Constructors in pattern-matching patterns now respect the same rules
-  regarding implicit arguments than in applicative position. The old
+  regarding implicit arguments as in applicative position. The old
   behavior can be recovered by the command "Set Asymmetric
   Patterns". As a side effect, notations for constructors explicitly
   mentioning non-implicit parameters can now be used in patterns.
@@ -188,10 +188,12 @@ Tactics
     during the execution of c, it can backtrack and try b instead of a.
   * New tactical (once a) removes all the backtracking points from a
     (i.e. it selects the first success of a).
-  * Tactic "constructor" is now fully backtracking, thus deprecating
-    the need of the undocumented "constructor <tac>" syntax which is
-    now equivalent to "[> once (constructor; tac) ..]". (potential
-    source of rare incompatibilities).
+  * Tactic "constructor" is now fully backtracking. In case of
+    incompatibilities (e.g. combinatoric explosion), the former
+    behavior of "constructor" can be retrieved by using instead
+    "[> once constructor ..]". Thanks to backtracking, undocumented
+    "constructor <tac>" syntax is now equivalent to
+    "[> once (constructor; tac) ..]".
   * New "multimatch" variant of "match" tactic which backtracks to
     new branches in case of a later failure. The "match" tactic is
     equivalent to "once multimatch".

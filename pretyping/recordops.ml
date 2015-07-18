@@ -190,7 +190,7 @@ let cs_pattern_of_constr t =
 (* Intended to always succeed *)
 let compute_canonical_projections (con,ind) =
   let env = Global.env () in
-  let ctx = Environ.constant_context env con in
+  let ctx = Univ.instantiate_univ_context (Environ.constant_context env con) in
   let u = Univ.UContext.instance ctx in
   let v = (mkConstU (con,u)) in
   let ctx = Univ.ContextSet.of_context ctx in

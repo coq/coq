@@ -205,16 +205,20 @@ let print_polymorphism ref =
        else "not universe polymorphic") ]
   else []
 
-let print_primitive_record mipv = function
+let print_primitive_record recflag mipv = function
   | Some (Some (_, ps,_)) ->
-    [pr_id mipv.(0).mind_typename ++ str" is primitive and has eta conversion."]
+    let eta = match recflag with
+    | Decl_kinds.CoFinite -> mt ()
+    | Decl_kinds.Finite | Decl_kinds.BiFinite -> str " and has eta conversion"
+    in
+    [pr_id mipv.(0).mind_typename ++ str" is primitive" ++ eta ++ str"."]
   | _ -> []
     
 let print_primitive ref =
   match ref with 
   | IndRef ind -> 
     let mib,_ = Global.lookup_inductive ind in
-      print_primitive_record mib.mind_packets mib.mind_record
+      print_primitive_record mib.mind_finite mib.mind_packets mib.mind_record
   | _ -> []
 
 let print_name_infos ref =
@@ -447,7 +451,7 @@ let gallina_print_inductive sp =
   let mipv = mib.mind_packets in
   pr_mutual_inductive_body env sp mib ++
   with_line_skip
-    (print_primitive_record mipv mib.mind_record @
+    (print_primitive_record mib.mind_finite mipv mib.mind_record @
      print_inductive_renames sp mipv @
      print_inductive_implicit_args sp mipv @
      print_inductive_argument_scopes sp mipv)

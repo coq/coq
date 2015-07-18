@@ -78,9 +78,9 @@ val coercion_value : coe_index -> (unsafe_judgment * bool * bool) Univ.in_univer
 
 (** {6 Lookup functions for coercion paths } *)
 
-val lookup_path_between_class : cl_index * cl_index -> inheritance_path
-(** @raise Not_found when no such path exists *)
+(** @raise Not_found in the following functions when no path exists *)
 
+val lookup_path_between_class : cl_index * cl_index -> inheritance_path
 val lookup_path_between : env -> evar_map -> types * types ->
       types * types * inheritance_path
 val lookup_path_to_fun_from : env -> evar_map -> types ->

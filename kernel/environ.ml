@@ -46,11 +46,14 @@ let empty_env = empty_env
 
 let engagement env = env.env_stratification.env_engagement
 
-let type_in_type env = env.env_stratification.env_type_in_type
-
 let is_impredicative_set env = 
-  match engagement env with
-  | Some ImpredicativeSet -> true
+  match fst (engagement env) with
+  | ImpredicativeSet -> true
+  | _ -> false
+
+let type_in_type env =
+  match snd (engagement env) with
+  | TypeInType -> true
   | _ -> false
 
 let universes env = env.env_stratification.env_universes
@@ -191,11 +194,7 @@ let check_constraints c env =
 
 let set_engagement c env = (* Unsafe *)
   { env with env_stratification =
-    { env.env_stratification with env_engagement = Some c } }
-
-let set_type_in_type env =
-  { env with env_stratification =
-    { env.env_stratification with env_type_in_type = true } }
+    { env.env_stratification with env_engagement = c } }
 
 let push_constraints_to_env (_,univs) env =
   add_constraints univs env

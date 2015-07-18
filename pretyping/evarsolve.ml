@@ -157,6 +157,7 @@ let restrict_evar_key evd evk filter candidates =
     end
 
 (* Restrict an applied evar and returns its restriction in the same context *)
+(* (the filter is assumed to be at least stronger than the original one) *)
 let restrict_applied_evar evd (evk,argsv) filter candidates =
   let evd,newevk = restrict_evar_key evd evk filter candidates in
   let newargsv = match filter with
@@ -693,7 +694,8 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
     (* projectable on [y] *)
       if with_evars then
-        let idcl' = List.filter (fun (c,_,id) -> isEvar c) idcl in
+        let f (c,_,id) = isEvar c && is_undefined sigma (fst (destEvar c)) in
+        let idcl' = List.filter f idcl in
         match idcl' with
         | [c,_,id] ->
           begin
@@ -885,6 +887,9 @@ let filter_candidates evd evk filter candidates_update =
       else
         UpdateWith l'
 
+(* Given a filter refinement for the evar [evk], restrict it so that
+   dependencies are preserved *)
+
 let closure_of_filter evd evk = function
   | None -> None
   | Some filter ->
@@ -892,8 +897,11 @@ let closure_of_filter evd evk = function
   let vars = collect_vars (Evarutil.nf_evar evd (evar_concl evi)) in
   let test b (id,c,_) = b || Idset.mem id vars || match c with None -> false | Some c -> not (isRel c || isVar c) in
   let newfilter = Filter.map_along test filter (evar_context evi) in
+  (* Now ensure that restriction is at least what is was originally *)
+  let newfilter = Option.cata (Filter.map_along (&&) newfilter) newfilter (Filter.repr (evar_filter evi)) in
   if Filter.equal newfilter (evar_filter evi) then None else Some newfilter
 
+(* The filter is assumed to be at least stronger than the original one *)
 let restrict_hyps evd evk filter candidates =
     (* What to do with dependencies?
        Assume we have x:A, y:B(x), z:C(x,y) |- ?e:T(x,y,z) and restrict on y.

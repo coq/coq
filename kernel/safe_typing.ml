@@ -125,7 +125,8 @@ type safe_environment =
     type_in_type : bool;
     required : vodigest DPMap.t;
     loads : (module_path * module_body) list;
-    local_retroknowledge : Retroknowledge.action list }
+    local_retroknowledge : Retroknowledge.action list;
+    native_symbols : Nativecode.symbols DPMap.t }
 
 and modvariant =
   | NONE
@@ -154,7 +155,8 @@ let empty_environment =
     type_in_type = false;
     required = DPMap.empty;
     loads = [];
-    local_retroknowledge = [] }
+    local_retroknowledge = [];
+    native_symbols = DPMap.empty }
 
 let is_initial senv =
   match senv.revstruct, senv.modvariant with
@@ -182,16 +184,20 @@ let set_engagement c senv =
 
 (** Check that the engagement [c] expected by a library matches
     the current (initial) one *)
-let check_engagement env c =
-  match Environ.engagement env, c with
-  | None, Some ImpredicativeSet ->
-    Errors.error "Needs option -impredicative-set."
-  | _ -> ()
-
-let set_type_in_type senv = 
-  { senv with
-    env = Environ.set_type_in_type senv.env;
-    type_in_type = true }
+let check_engagement env (expected_impredicative_set,expected_type_in_type) =
+  let impredicative_set,type_in_type = Environ.engagement env in
+  begin
+    match impredicative_set, expected_impredicative_set with
+    | PredicativeSet, ImpredicativeSet ->
+        Errors.error "Needs option -impredicative-set."
+    | _ -> ()
+  end;
+  begin
+    match type_in_type, expected_type_in_type with
+    | StratifiedType, TypeInType ->
+        Errors.error "Needs option -type-in-type."
+    | _ -> ()
+  end
 
 (** {6 Stm machinery } *)
 
@@ -623,7 +629,8 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     required = senv.required;
     loads = senv.loads@oldsenv.loads;
     local_retroknowledge =
-            senv.local_retroknowledge@oldsenv.local_retroknowledge }
+            senv.local_retroknowledge@oldsenv.local_retroknowledge;
+    native_symbols = senv.native_symbols}
 
 let end_module l restype senv =
   let mp = senv.modpath in
@@ -731,11 +738,14 @@ type compiled_library = {
   comp_name : DirPath.t;
   comp_mod : module_body;
   comp_deps : library_info array;
-  comp_enga : engagement option;
-  comp_natsymbs : Nativecode.symbol array
+  comp_enga : engagement;
+  comp_natsymbs : Nativecode.symbols
 }
 
 type native_library = Nativecode.global list
+
+let get_library_native_symbols senv dir =
+  DPMap.find dir senv.native_symbols
 
 (** FIXME: MS: remove?*)
 let current_modpath senv = senv.modpath
@@ -773,17 +783,17 @@ let export ?except senv dir =
       mod_retroknowledge = senv.local_retroknowledge
     }
   in
-  let ast, values =
+  let ast, symbols =
     if !Flags.native_compiler then
       Nativelibrary.dump_library mp dir senv.env str
-    else [], [||]
+    else [], Nativecode.empty_symbols
   in
   let lib = {
     comp_name = dir;
     comp_mod = mb;
     comp_deps = Array.of_list (DPMap.bindings senv.required);
     comp_enga = Environ.engagement senv.env;
-    comp_natsymbs = values }
+    comp_natsymbs = symbols }
   in
   mp, lib, ast
 
@@ -796,7 +806,7 @@ let import lib cst vodigest senv =
   let mb = lib.comp_mod in
   let env = Environ.add_constraints mb.mod_constraints senv.env in
   let env = Environ.push_context_set cst env in
-  (mp, lib.comp_natsymbs),
+  mp,
   { senv with
     env =
       (let linkinfo =
@@ -805,7 +815,8 @@ let import lib cst vodigest senv =
        Modops.add_linked_module mb linkinfo env);
     modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;
     required = DPMap.add lib.comp_name vodigest senv.required;
-    loads = (mp,mb)::senv.loads }
+    loads = (mp,mb)::senv.loads;
+    native_symbols = DPMap.add lib.comp_name lib.comp_natsymbs senv.native_symbols }
 
 (** {6 Safe typing } *)
 

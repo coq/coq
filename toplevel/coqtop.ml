@@ -112,14 +112,12 @@ let print_memory_stat () =
 
 let _ = at_exit print_memory_stat
 
-let engagement = ref None
-let set_engagement c = engagement := Some c
+let impredicative_set = ref Declarations.PredicativeSet
+let set_impredicative_set c = impredicative_set := Declarations.ImpredicativeSet
+let type_in_type = ref Declarations.StratifiedType
+let set_type_in_type () = type_in_type := Declarations.TypeInType
 let engage () =
-  match !engagement with Some c -> Global.set_engagement c | None -> ()
-
-let type_in_type = ref false
-let set_type_in_type () = type_in_type := true
-let set_hierarchy () = if !type_in_type then Global.set_type_in_type ()
+  Global.set_engagement (!impredicative_set,!type_in_type)
 
 let set_batch_mode () = batch_mode := true
 
@@ -521,7 +519,7 @@ let parse_args arglist =
     |"-filteropts" -> filter_opts := true
     |"-h"|"-H"|"-?"|"-help"|"--help" -> usage ()
     |"-ideslave" -> toploop := Some "coqidetop"; Flags.ide_slave := true
-    |"-impredicative-set" -> set_engagement Declarations.ImpredicativeSet
+    |"-impredicative-set" -> set_impredicative_set ()
     |"-indices-matter" -> Indtypes.enforce_indices_matter ()
     |"-just-parsing" -> Vernac.just_parsing := true
     |"-m"|"--memory" -> memory_stat := true
@@ -605,7 +603,6 @@ let init arglist =
       Mltop.init_known_plugins ();
       set_vm_opt ();
       engage ();
-      set_hierarchy ();
       (* Be careful to set these variables after the inputstate *)
       Syntax_def.set_verbose_compat_notations !verb_compat_ntn;
       Syntax_def.set_compat_notations (not !no_compat_ntn);

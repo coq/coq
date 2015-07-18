@@ -392,7 +392,7 @@ let compare_constr f t1 t2 =
       Array.equal f tl1 tl2 && Array.equal f bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
       Int.equal ln1 ln2 && Array.equal f tl1 tl2 && Array.equal f bl1 bl2
-  | Proj (p1,c1), Proj(p2,c2) -> eq_con_chk p1 p2 && f c1 c2
+  | Proj (p1,c1), Proj(p2,c2) -> Projection.equal p1 p2 && f c1 c2
   | _ -> false
 
 let rec eq_constr m n =

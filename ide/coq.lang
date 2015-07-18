@@ -29,7 +29,7 @@
     <define-regex id="qualit">(\%{ident}\.)*\%{ident}</define-regex>
     <define-regex id="dot_sep">\.(\s|\z)</define-regex>
     <define-regex id="bullet">([-+*]+|{)(\s|\z)|}(\s*})*</define-regex>
-    <define-regex id="single_decl">Definition|Let|Example|SubClass|(Co)?Fixpoint|Function|Conjecture|(Co)?Inductive|Record|Structure|Ltac|Instance|Class|Existing\%{space}Instance|Canonical\%{space}Structure|Coercion</define-regex>
+    <define-regex id="single_decl">Definition|Let|Example|SubClass|(Co)?Fixpoint|Function|Conjecture|(Co)?Inductive|Record|Structure|Ltac|Instance|Class|Existing\%{space}Instance|Canonical\%{space}Structure|Coercion|Universe</define-regex>
     <define-regex id="mult_decl">Hypothes[ie]s|Axiom(s)?|Variable(s)?|Parameter(s)?|Context|Implicit\%{space}Type(s)?</define-regex>
     <define-regex id="locality">((Local|Global)\%{space})?</define-regex>
     <define-regex id="begin_proof">Theorem|Lemma|Fact|Remark|Corollary|Proposition|Property</define-regex>

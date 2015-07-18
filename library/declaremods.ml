@@ -845,10 +845,6 @@ type library_objects = Lib.lib_objects * Lib.lib_objects
 
 (** For the native compiler, we cache the library values *)
 
-type library_values = Nativecode.symbol array
-let library_values =
-  Summary.ref (Dirmap.empty : library_values Dirmap.t) ~name:"LIBVALUES"
-
 let register_library dir cenv (objs:library_objects) digest univ =
   let mp = MPfile dir in
   let () =
@@ -857,15 +853,15 @@ let register_library dir cenv (objs:library_objects) digest univ =
       ignore(Global.lookup_module mp);
     with Not_found ->
       (* If not, let's do it now ... *)
-      let mp', values = Global.import cenv univ digest in
+      let mp' = Global.import cenv univ digest in
       if not (ModPath.equal mp mp') then
         anomaly (Pp.str "Unexpected disk module name");
-      library_values := Dirmap.add dir values !library_values
   in
   let sobjs,keepobjs = objs in
   do_module false Lib.load_objects 1 dir mp ([],Objs sobjs) keepobjs
 
-let get_library_symbols_tbl dir = Dirmap.find dir !library_values
+let get_library_native_symbols dir =
+  Safe_typing.get_library_native_symbols (Global.safe_env ()) dir
 
 let start_library dir =
   let mp = Global.start_library dir in

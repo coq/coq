@@ -52,7 +52,7 @@ let compare_stack_shape stk1 stk2 =
 
 type lft_constr_stack_elt =
     Zlapp of (lift * fconstr) array
-  | Zlproj of Names.constant * lift
+  | Zlproj of Names.projection * lift
   | Zlfix of (lift * fconstr) * lft_constr_stack
   | Zlcase of case_info * lift * fconstr * fconstr array
 and lft_constr_stack = lft_constr_stack_elt list
@@ -137,7 +137,9 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 =
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 f fx1 fx2; cmp_rec a1 a2
 	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
-	      if not (Names.eq_con_chk c1 c2) then 
+	       if not (Names.eq_con_chk
+		       (Names.Projection.constant c1)
+		       (Names.Projection.constant c2)) then 
 		raise NotConvertible
             | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
                 if not (fmind ci1.ci_ind ci2.ci_ind) then
@@ -156,7 +158,7 @@ type conv_pb =
   | CONV
   | CUMUL
 
-let sort_cmp univ pb s0 s1 =
+let sort_cmp env univ pb s0 s1 =
   match (s0,s1) with
     | (Prop c1, Prop c2) when pb = CUMUL -> if c1 = Pos && c2 = Null then raise NotConvertible
     | (Prop c1, Prop c2) -> if c1 <> c2 then raise NotConvertible
@@ -165,7 +167,8 @@ let sort_cmp univ pb s0 s1 =
             CUMUL -> ()
           | _ -> raise NotConvertible)
     | (Type u1, Type u2) ->
-        if not
+        if snd (engagement env) == StratifiedType
+          && not
 	  (match pb with
             | CONV -> Univ.check_eq univ u1 u2
 	    | CUMUL -> Univ.check_leq univ u1 u2)
@@ -259,7 +262,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 	(match a1, a2 with
 	   | (Sort s1, Sort s2) ->
 	       assert (is_empty_stack v1 && is_empty_stack v2);
-	       sort_cmp univ cv_pb s1 s2
+	       sort_cmp (infos_env infos) univ cv_pb s1 s2
 	   | (Meta n, Meta m) ->
                if n=m
 	       then convert_stacks univ infos lft1 lft2 v1 v2

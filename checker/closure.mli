@@ -95,7 +95,7 @@ type fterm =
   | FInd of pinductive
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
-  | FProj of constant * fconstr
+  | FProj of projection * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCase of case_info * fconstr * fconstr * fconstr array
@@ -117,7 +117,7 @@ type stack_member =
   | Zapp of fconstr array
   | Zcase of case_info * fconstr * fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
-  | Zproj of int * int * constant
+  | Zproj of int * int * projection
   | Zfix of fconstr * stack
   | Zshift of int
   | Zupdate of fconstr

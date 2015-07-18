@@ -176,7 +176,7 @@ let typecheck_arity env params inds =
 (* Allowed eliminations *)
 
 let check_predicativity env s small level =
-  match s, engagement env with
+  match s, fst (engagement env) with
       Type u, _ ->
         (* let u' = fresh_local_univ () in *)
         (* let cst = *)
@@ -184,7 +184,7 @@ let check_predicativity env s small level =
         (*     (universes env) in *)
         if not (Univ.check_leq (universes env) level u) then
           failwith "impredicative Type inductive type"
-    | Prop Pos, Some ImpredicativeSet -> ()
+    | Prop Pos, ImpredicativeSet -> ()
     | Prop Pos, _ ->
         if not small then failwith "impredicative Set inductive type"
     | Prop Null,_ -> ()

@@ -276,7 +276,7 @@ and fterm =
   | FInd of pinductive
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
-  | FProj of constant * fconstr
+  | FProj of projection * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCase of case_info * fconstr * fconstr * fconstr array
@@ -308,7 +308,7 @@ type stack_member =
   | Zapp of fconstr array
   | Zcase of case_info * fconstr * fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
-  | Zproj of int * int * constant
+  | Zproj of int * int * projection
   | Zfix of fconstr * stack
   | Zshift of int
   | Zupdate of fconstr
@@ -678,8 +678,9 @@ let eta_expand_ind_stack env ind m s (f, s') =
       let (depth, args, s) = strip_update_shift_app m s in
       (** Try to drop the params, might fail on partially applied constructors. *)
       let argss = try_drop_parameters depth pars args in
-      let hstack = Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
-					 term = FProj (p, right) }) projs in
+	let hstack =
+	  Array.map (fun p -> { norm = Red; (* right can't be a constructor though *)
+			     term = FProj (Projection.make p false, right) }) projs in
 	argss, [Zapp hstack]	
     | _ -> raise Not_found (* disallow eta-exp for non-primitive records *)
 
@@ -738,7 +739,7 @@ let rec knh info m stk =
     | FCast(t,_,_) -> knh info t stk
 
     | FProj (p,c) ->
-      if red_set info.i_flags (fCONST p) then
+      if red_set info.i_flags (fCONST (Projection.constant p)) then
         (let pb = lookup_projection p (info.i_env) in
 	   knh info c (Zproj (pb.proj_npars, pb.proj_arg, p)
 		       :: zupdate m stk))

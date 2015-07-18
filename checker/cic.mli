@@ -102,7 +102,7 @@ type constr =
   | Case      of case_info * constr * constr * constr array
   | Fix       of constr pfixpoint
   | CoFix     of constr pcofixpoint
-  | Proj      of constant * constr
+  | Proj      of projection * constr
 
 type existential = constr pexistential
 type rec_declaration = constr prec_declaration
@@ -165,7 +165,10 @@ type action
 
 (** Engagements *)
 
-type engagement = ImpredicativeSet
+type set_predicativity = ImpredicativeSet | PredicativeSet
+type type_hierarchy = TypeInType | StratifiedType
+
+type engagement = set_predicativity * type_hierarchy
 
 (** {6 Representation of constants (Definition/Axiom) } *)
 
@@ -407,7 +410,7 @@ type compiled_library = {
   comp_name : compilation_unit_name;
   comp_mod : module_body;
   comp_deps : library_deps;
-  comp_enga : engagement option;
+  comp_enga : engagement;
   comp_natsymbs : nativecode_symb_array
 }
 

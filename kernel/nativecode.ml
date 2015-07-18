@@ -195,7 +195,11 @@ module HashtblSymbol = Hashtbl.Make(HashedTypeSymbol)
 
 let symb_tbl = HashtblSymbol.create 211
 
-let clear_symb_tbl () = HashtblSymbol.clear symb_tbl
+let clear_symbols () = HashtblSymbol.clear symb_tbl
+
+type symbols = symbol array
+
+let empty_symbols = [||]
 
 let get_value tbl i =
   match tbl.(i) with
@@ -250,7 +254,7 @@ let push_symbol x =
 
 let symbols_tbl_name = Ginternal "symbols_tbl"
 
-let get_symbols_tbl () =
+let get_symbols () =
   let tbl = Array.make (HashtblSymbol.length symb_tbl) dummy_symb in
   HashtblSymbol.iter (fun x i -> tbl.(i) <- x) symb_tbl; tbl
 
@@ -2058,7 +2062,7 @@ let mk_internal_let s code =
 
 (* ML Code for conversion function *)
 let mk_conv_code env sigma prefix t1 t2 =
-  clear_symb_tbl ();
+  clear_symbols ();
   clear_global_tbl ();
   let gl, (mind_updates, const_updates) =
     let init = ([], empty_updates) in
@@ -2080,12 +2084,12 @@ let mk_conv_code env sigma prefix t1 t2 =
   let setref2 = Glet(Ginternal "_", MLsetref("rt2",g2)) in
   let gl = List.rev (setref2 :: setref1 :: t2 :: t1 :: gl) in
   let header = Glet(Ginternal "symbols_tbl",
-    MLapp (MLglobal (Ginternal "get_symbols_tbl"),
+    MLapp (MLglobal (Ginternal "get_symbols"),
       [|MLglobal (Ginternal "()")|])) in
   header::gl, (mind_updates, const_updates)
 
 let mk_norm_code env sigma prefix t =
-  clear_symb_tbl ();
+  clear_symbols ();
   clear_global_tbl ();
   let gl, (mind_updates, const_updates) =
     let init = ([], empty_updates) in
@@ -2098,14 +2102,14 @@ let mk_norm_code env sigma prefix t =
   let setref = Glet(Ginternal "_", MLsetref("rt1",g1)) in
   let gl = List.rev (setref :: t1 :: gl) in
   let header = Glet(Ginternal "symbols_tbl",
-    MLapp (MLglobal (Ginternal "get_symbols_tbl"),
+    MLapp (MLglobal (Ginternal "get_symbols"),
       [|MLglobal (Ginternal "()")|])) in
   header::gl, (mind_updates, const_updates)
 
 let mk_library_header dir =
   let libname = Format.sprintf "(str_decode \"%s\")" (str_encode dir) in
   [Glet(Ginternal "symbols_tbl",
-    MLapp (MLglobal (Ginternal "get_library_symbols_tbl"),
+    MLapp (MLglobal (Ginternal "get_library_native_symbols"),
     [|MLglobal (Ginternal libname)|]))]
 
 let update_location (r,v) = r := v

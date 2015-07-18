@@ -99,11 +99,8 @@ val add_constraints :
 (* (\** Generator of universes *\) *)
 (* val next_universe : int safe_transformer *)
 
-(** Setting the strongly constructive or classical logical engagement *)
+(** Setting the type theory flavor *)
 val set_engagement : Declarations.engagement -> safe_transformer0
-
-(** Collapsing the type hierarchy *)
-val set_type_in_type : safe_transformer0
 
 (** {6 Interactive module functions } *)
 
@@ -137,6 +134,8 @@ type compiled_library
 
 type native_library = Nativecode.global list
 
+val get_library_native_symbols : safe_environment -> DirPath.t -> Nativecode.symbols
+
 val start_library : DirPath.t -> module_path safe_transformer
 
 val export :
@@ -146,7 +145,7 @@ val export :
 
 (* Constraints are non empty iff the file is a vi2vo *)
 val import : compiled_library -> Univ.universe_context_set -> vodigest ->
-  (module_path * Nativecode.symbol array) safe_transformer
+  module_path safe_transformer
 
 (** {6 Safe typing judgments } *)
 

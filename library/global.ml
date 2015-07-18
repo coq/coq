@@ -84,7 +84,6 @@ let push_context_set c = globalize0 (Safe_typing.push_context_set c)
 let push_context c = globalize0 (Safe_typing.push_context c)
 
 let set_engagement c = globalize0 (Safe_typing.set_engagement c)
-let set_type_in_type () = globalize0 (Safe_typing.set_type_in_type)
 let add_constant dir id d = globalize (Safe_typing.add_constant dir (i2l id) d)
 let add_mind dir id mie = globalize (Safe_typing.add_mind dir (i2l id) mie)
 let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)

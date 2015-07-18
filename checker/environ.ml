@@ -14,7 +14,7 @@ type globals = {
 
 type stratification = {
   env_universes : Univ.universes;
-  env_engagement : engagement option
+  env_engagement : engagement
 }
 
 type env = {
@@ -33,19 +33,28 @@ let empty_env = {
   env_rel_context = [];
   env_stratification =
   { env_universes = Univ.initial_universes;
-    env_engagement = None};
+    env_engagement = (PredicativeSet,StratifiedType)};
   env_imports = MPmap.empty }
 
 let engagement env = env.env_stratification.env_engagement
 let universes env = env.env_stratification.env_universes
 let rel_context env = env.env_rel_context
 
-let set_engagement c env =
-  match env.env_stratification.env_engagement with
-    | Some c' -> if c=c' then env else error "Incompatible engagement"
-    | None ->
-        { env with env_stratification =
-          { env.env_stratification with env_engagement = Some c } }
+let set_engagement (impr_set,type_in_type as c) env =
+  let expected_impr_set,expected_type_in_type =
+    env.env_stratification.env_engagement in
+  begin
+    match impr_set,expected_impr_set with
+    | PredicativeSet, ImpredicativeSet -> error "Incompatible engagement"
+    | _ -> ()
+  end;
+  begin
+    match type_in_type,expected_type_in_type with
+    | StratifiedType, TypeInType -> error "Incompatible engagement"
+    | _ -> ()
+  end;
+  { env with env_stratification =
+      { env.env_stratification with env_engagement = c } }
 
 (* Digests *)
 
@@ -147,8 +156,8 @@ let evaluable_constant cst env =
 let is_projection cst env = 
   not (Option.is_empty (lookup_constant cst env).const_proj)
 
-let lookup_projection cst env =
-  match (lookup_constant cst env).const_proj with 
+let lookup_projection p env =
+  match (lookup_constant (Projection.constant p) env).const_proj with 
   | Some pb -> pb
   | None -> anomaly ("lookup_projection: constant is not a projection")
 

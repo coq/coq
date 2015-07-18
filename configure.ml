@@ -372,7 +372,7 @@ let coq_annotate_flag =
   then if program_in_path "ocamlmerlin" then "-bin-annot" else "-dtypes"
   else ""
 
-let cflags = "-Wall -Wno-unused -g " ^ (if !Prefs.debug then "-O1" else "-O2")
+let cflags = "-Wall -Wno-unused -g -O2"
 
 (** * Architecture *)
 

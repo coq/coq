@@ -11,7 +11,7 @@ type globals = {
   env_modtypes : module_type_body MPmap.t}
 type stratification = {
   env_universes : Univ.universes;
-  env_engagement : engagement option;
+  env_engagement : engagement;
 }
 type env = {
   env_globals : globals;
@@ -22,7 +22,7 @@ type env = {
 val empty_env : env
 
 (* Engagement *)
-val engagement : env -> Cic.engagement option
+val engagement : env -> Cic.engagement
 val set_engagement : Cic.engagement -> env -> env
 
 (* Digests *)
@@ -51,7 +51,7 @@ val constant_value : env -> constant puniverses -> constr
 val evaluable_constant : constant -> env -> bool
 
 val is_projection : constant -> env -> bool
-val lookup_projection : constant -> env -> projection_body
+val lookup_projection : projection -> env -> projection_body
 
 (* Inductives *)
 val mind_equiv : env -> inductive -> inductive -> bool

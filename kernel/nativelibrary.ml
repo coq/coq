@@ -62,12 +62,12 @@ let dump_library mp dp env mod_expr =
       let prefix = mod_uid_of_dirpath dp ^ "." in
       let t0 = Sys.time () in
       clear_global_tbl ();
-      clear_symb_tbl ();
+      clear_symbols ();
       let mlcode =
         List.fold_left (translate_field prefix mp env) [] struc
       in
       let t1 = Sys.time () in
       let time_info = Format.sprintf "Time spent generating this code: %.5fs" (t1-.t0) in
       let mlcode = add_header_comment (List.rev mlcode) time_info in
-      mlcode, get_symbols_tbl ()
+      mlcode, get_symbols ()
   | _ -> assert false

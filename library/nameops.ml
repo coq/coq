@@ -136,6 +136,11 @@ let name_fold_map f e = function
   | Name id -> let (e,id) = f e id in (e,Name id)
   | Anonymous -> e,Anonymous
 
+let name_max na1 na2 =
+  match na1 with
+  | Name _ -> na1
+  | Anonymous -> na2
+
 let pr_lab l = str (Label.to_string l)
 
 let default_library = Names.DirPath.initial (* = ["Top"] *)

@@ -107,9 +107,11 @@ let call_linker ?(fatal=true) prefix f upds =
   rt1 := dummy_value ();
   rt2 := dummy_value ();
   if not (Sys.file_exists f) then
-    let msg = "Cannot find native compiler file " ^ f in
-    if fatal then Errors.error msg
-    else Pp.msg_warning (Pp.str msg)
+    begin
+      let msg = "Cannot find native compiler file " ^ f in
+      if fatal then Errors.error msg
+      else if !Flags.debug then Pp.msg_debug (Pp.str msg)
+    end
   else
   (try
     if Dynlink.is_native then Dynlink.loadfile f else !load_obj f;
@@ -118,7 +120,7 @@ let call_linker ?(fatal=true) prefix f upds =
      let exn = Errors.push exn in
      let msg = "Dynlink error, " ^ Dynlink.error_message e in
      if fatal then (Pp.msg_error (Pp.str msg); iraise exn)
-     else Pp.msg_warning (Pp.str msg));
+     else if !Flags.debug then Pp.msg_debug (Pp.str msg));
   match upds with Some upds -> update_locations upds | _ -> ()
 
 let link_library ~prefix ~dirname ~basename =

@@ -100,7 +100,7 @@ let print_pure_constr csr =
         done
       in print_string"{"; print_fix (); print_string"}"
   | Proj (p, c) ->
-    print_string "Proj("; sp_con_display p; print_string ","; 
+    print_string "Proj("; sp_con_display (Projection.constant p); print_string ","; 
     box_display c; print_string ")"
 
   and box_display c = open_hovbox 1; term_display c; close_box()

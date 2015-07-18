@@ -27,7 +27,6 @@ val named_context : unit -> Context.named_context
 
 (** Changing the (im)predicativity of the system *)
 val set_engagement : Declarations.engagement -> unit
-val set_type_in_type : unit -> unit
 
 (** Variables, Local definitions, constants, inductive types *)
 
@@ -102,7 +101,7 @@ val export : ?except:Future.UUIDSet.t -> DirPath.t ->
   module_path * Safe_typing.compiled_library * Safe_typing.native_library
 val import :
   Safe_typing.compiled_library -> Univ.universe_context_set -> Safe_typing.vodigest ->
-  module_path * Nativecode.symbol array
+  module_path
 
 (** {6 Misc } *)
 

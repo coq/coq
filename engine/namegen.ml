@@ -278,6 +278,7 @@ let make_all_name_different env =
   let avoid = ref (ids_of_named_context (named_context env)) in
   process_rel_context
     (fun (na,c,t) newenv ->
+       let na = named_hd newenv t na in
        let id = next_name_away na !avoid in
        avoid := id::!avoid;
        push_rel (Name id,c,t) newenv)
