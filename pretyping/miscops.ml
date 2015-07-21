@@ -30,7 +30,7 @@ let smartmap_cast_type f c =
 let glob_sort_eq g1 g2 = match g1, g2 with
 | GProp, GProp -> true
 | GSet, GSet -> true
-| GType l1, GType l2 -> List.for_all2 CString.equal l1 l2
+| GType l1, GType l2 -> List.equal CString.equal l1 l2
 | _ -> false
 
 let intro_pattern_naming_eq nam1 nam2 = match nam1, nam2 with
