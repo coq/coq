@@ -49,6 +49,7 @@ let rec ppzipper z =
       close_box()
   | Zfix _ -> print_string "Zfix"
   | Zswitch _ -> print_string "Zswitch"
+  | Zproj _ -> print_string "Zproj"
 
 and ppstack s =
   open_hovbox 0;
