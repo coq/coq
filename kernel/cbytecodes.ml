@@ -24,8 +24,8 @@ let fix_tag = 3
 let switch_tag = 4
 let cofix_tag = 5
 let cofix_evaluated_tag = 6
-(* It could be greate if OCaml export this value,
-   So fixme if this occur in a new version of OCaml *)
+(* It would be great if OCaml exported this value,
+   So fixme if this happens in a new version of OCaml *)
 let last_variant_tag = 245 
 
 type structured_constant =
@@ -34,7 +34,6 @@ type structured_constant =
   | Const_proj of Constant.t
   | Const_b0 of tag
   | Const_bn of tag * structured_constant array
-
 
 type reloc_table = (tag * int) array
 
@@ -59,24 +58,22 @@ type instruction =
   | Kpush
   | Kpop of int
   | Kpush_retaddr of Label.t
-  | Kapply of int                       (*  number of arguments *)
-  | Kappterm of int * int               (* number of arguments, slot size *)
-  | Kreturn of int                      (* slot size *)
+  | Kapply of int
+  | Kappterm of int * int
+  | Kreturn of int
   | Kjump
   | Krestart
-  | Kgrab of int                        (* number of arguments *)
-  | Kgrabrec of int                     (* rec arg *)
-  | Kclosure of Label.t * int           (* label, number of free variables *)
+  | Kgrab of int
+  | Kgrabrec of int
+  | Kclosure of Label.t * int
   | Kclosurerec of int * int * Label.t array * Label.t array
-                   (* nb fv, init, lbl types, lbl bodies *)
   | Kclosurecofix of int * int * Label.t array * Label.t array
-                   (* nb fv, init, lbl types, lbl bodies *)
   | Kgetglobal of pconstant
   | Kconst of structured_constant
-  | Kmakeblock of int * tag             (* size, tag *)
+  | Kmakeblock of int * tag
   | Kmakeprod
   | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
-  | Kswitch of Label.t array * Label.t array (* consts,blocks *)
+  | Kswitch of Label.t array * Label.t array
   | Kpushfields of int
   | Kfield of int
   | Ksetfield of int
@@ -210,7 +207,7 @@ let rec pp_instr i =
 	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
 	     str " bodies = " ++
 	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
-  | Kgetglobal (id,u) -> str "getglobal " ++ pr_con id
+  | Kgetglobal (id,_u) -> str "getglobal " ++ pr_con id
   | Kconst sc ->
       str "const " ++ pp_struct_const sc
   | Kmakeblock(n, m) ->
@@ -261,12 +258,12 @@ and pp_bytecodes c =
   match c with
   | [] -> str ""
   | Klabel lbl :: c ->
-	str "L" ++ int lbl ++ str ":" ++ str "\n" ++
+	str "L" ++ int lbl ++ str ":" ++ fnl () ++
 	pp_bytecodes c
   | Ksequence (l1, l2) :: c ->
       pp_bytecodes l1 ++ pp_bytecodes l2 ++  pp_bytecodes c
   | i :: c ->
-      str "\t" ++ pp_instr i ++ str "\n" ++ pp_bytecodes c
+      tab () ++ pp_instr i ++ fnl () ++ pp_bytecodes c
 
 let dump_bytecode c =
   pperrnl (pp_bytecodes c);
