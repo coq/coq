@@ -633,7 +633,8 @@ let rec extract_term env mle mlt c args =
     | Construct (cp,u) ->
 	extract_cons_app env mle mlt cp u args
     | Proj (p, c) ->
-        extract_cst_app env mle mlt (Projection.constant p) Univ.Instance.empty (c :: args)
+        let term = Retyping.expand_projection env (Evd.from_env env) p c [] in
+	  extract_term env mle mlt term args
     | Rel n ->
 	(* As soon as the expected [mlt] for the head is known, *)
 	(* we unify it with an fresh copy of the stored type of [Rel n]. *)
