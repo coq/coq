@@ -101,7 +101,7 @@ BYTEFLAGS=-thread $(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=-thread $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 DEPFLAGS= $(LOCALINCLUDES) -I ide -I ide/utils
 
-ifeq ($(shell which codesign 2>&1 > /dev/null && echo $(ARCH)),Darwin)
+ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)
 LINKMETADATA=-ccopt "-sectcreate __TEXT __info_plist config/Info-$(notdir $@).plist"
 CODESIGN:=codesign -s -
 else
