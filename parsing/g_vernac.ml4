@@ -73,11 +73,16 @@ let make_bullet s =
 
 type nl_assumption =
   | Positive
+  | Guarded
 let eq_nl_assumption x y =
   match x,y with
   | Positive,Positive -> true
+  | Guarded,Guarded -> true
+  | _ , _ -> false
 let check_positivity l =
   not (List.mem_f eq_nl_assumption Positive l)
+let check_guardedness l =
+  not (List.mem_f eq_nl_assumption Guarded l)
 
 let default_command_entry =
   Gram.Entry.of_parser "command_entry"
@@ -281,7 +286,8 @@ GEXTEND Gram
     [ [ IDENT "Assume"; "[" ; l=LIST1 nl_assumption ; "]" -> l | -> [] ] ]
   ;
   nl_assumption:
-    [ [ IDENT "Positive" -> Positive ] ]
+    [ [ IDENT "Positive" -> Positive
+      | IDENT "Guarded" -> Guarded ] ]
   ;
   private_token:
     [ [ IDENT "Private" -> true | -> false ] ]
