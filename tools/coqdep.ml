@@ -289,14 +289,21 @@ struct
 module DAG = DAG(struct type t = string let compare = compare end)
 
 (** TODO: we should share this code with Coqdep_common *)
+module VData = struct
+  type t = string list option * string list
+  let compare = Pervasives.compare
+end
+
+module VCache = Set.Make(VData)
+
 let treat_coq_file chan =
   let buf = Lexing.from_channel chan in
-  let deja_vu_v = ref ([]: (string list option * string list) list)
-  and deja_vu_ml = ref ([] : string list) in
+  let deja_vu_v = ref VCache.empty in
+  let deja_vu_ml = ref StrSet.empty in
   let mark_v_done from acc str =
-    let seen = List.mem (from, str) !deja_vu_v in
+    let seen = VCache.mem (from, str) !deja_vu_v in
     if not seen then
-      let () = addQueue deja_vu_v (from, str) in
+      let () = deja_vu_v := VCache.add (from, str) !deja_vu_v in
       match search_v_known ?from str with
       | None -> acc
       | Some file_str -> (canonize file_str, !suffixe) :: acc
@@ -318,8 +325,8 @@ let treat_coq_file chan =
         in
         let decl acc str =
           let s = basename_noext str in
-          if not (List.mem s !deja_vu_ml) then
-            let () = addQueue deja_vu_ml s in
+          if not (StrSet.mem s !deja_vu_ml) then
+            let () = deja_vu_ml := StrSet.add s !deja_vu_ml in
             match search_mllib_known s with
             | Some mldir -> (declare ".cma" mldir s) :: acc
             | None ->
@@ -331,9 +338,9 @@ let treat_coq_file chan =
         List.fold_left decl acc sl
       | Load str ->
         let str = Filename.basename str in
-        let seen = List.mem (None, [str]) !deja_vu_v in
+        let seen = VCache.mem (None, [str]) !deja_vu_v in
         if not seen then
-          let () = addQueue deja_vu_v (None, [str]) in
+          let () = deja_vu_v := VCache.add (None, [str]) !deja_vu_v in
           match search_v_known [str] with
           | None -> acc
           | Some file_str -> (canonize file_str, ".v") :: acc
@@ -448,7 +455,7 @@ let rec parse = function
   | "-R" :: ([] | [_]) -> usage ()
   | "-dumpgraph" :: f :: ll -> option_dump := Some (false, f); parse ll
   | "-dumpgraphbox" :: f :: ll -> option_dump := Some (true, f); parse ll
-  | "-exclude-dir" :: r :: ll -> norec_dirnames := r::!norec_dirnames; parse ll
+  | "-exclude-dir" :: r :: ll -> norec_dirnames := StrSet.add r !norec_dirnames; parse ll
   | "-exclude-dir" :: [] -> usage ()
   | "-coqlib" :: r :: ll -> Flags.coqlib_spec := true; Flags.coqlib := r; parse ll
   | "-coqlib" :: [] -> usage ()

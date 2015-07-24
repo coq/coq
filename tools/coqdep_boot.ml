@@ -25,7 +25,7 @@ let rec parse = function
        (* To solve conflict (e.g. same filename in kernel and checker)
           we allow to state an explicit order *)
        add_caml_dir r;
-       norec_dirs:=r::!norec_dirs;
+       norec_dirs := StrSet.add r !norec_dirs;
        parse ll
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
