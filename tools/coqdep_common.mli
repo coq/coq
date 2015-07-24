@@ -32,7 +32,6 @@ val search_mli_known : string -> dir option
 val add_mllib_known : string -> dir -> string -> unit
 val search_mllib_known : string -> dir option
 val search_v_known : ?from:string list -> string list -> string option
-val coqlibKnown : (string list, unit) Hashtbl.t
 val file_name : string -> string option -> string
 val escape : string -> string
 val canonize : string -> string
@@ -40,6 +39,7 @@ val mL_dependencies : unit -> unit
 val coq_dependencies : unit -> unit
 val suffixes : 'a list -> 'a list list
 val add_known : bool -> string -> string list -> string -> unit
+val add_coqlib_known : bool -> string -> string list -> string -> unit
 val add_caml_known : string -> string list -> string -> unit
 val add_directory :
   bool ->

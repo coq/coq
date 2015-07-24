@@ -138,24 +138,31 @@ let get_prefix p l =
   in
   drop_prefix_rec (p, l)
 
-exception Found of string
-
-let search_v_known ?from s = match from with
-| None -> fst (Hashtbl.find vKnown s)
+let search_table (type r) is_root table ?from s = match from with
+| None -> Hashtbl.find table s
 | Some from ->
-  let iter logpath (phys_dir, root) =
-    if root then match get_prefix from logpath with
+  let module M = struct exception Found of r end in
+  let iter logpath binding =
+    if is_root binding then match get_prefix from logpath with
     | None -> ()
     | Some rem ->
       match get_prefix (List.rev s) (List.rev rem) with
       | None -> ()
-      | Some _ -> raise (Found phys_dir)
+      | Some _ -> raise (M.Found binding)
   in
-  try Hashtbl.iter iter vKnown; raise Not_found
-  with Found s -> s
+  try Hashtbl.iter iter table; raise Not_found
+  with M.Found s -> s
 
 let search_v_known ?from s =
-  try Some (search_v_known ?from s) with Not_found -> None
+  let is_root (_, root) = root in
+  try
+    let (phys_dir, _) = search_table is_root vKnown ?from s in
+    Some phys_dir
+  with Not_found -> None
+
+let is_in_coqlib ?from s =
+  let is_root _ = true in
+  try search_table is_root coqlibKnown ?from s; true with Not_found -> false
 
 let clash_v = ref ([]: (string list * string list) list)
 
@@ -353,7 +360,7 @@ let rec traite_fichier_Coq suffixe verbose f =
                     let file_str = safe_assoc from verbose f str in
                     printf " %s%s" (canonize file_str) suffixe
                   with Not_found ->
-		    if verbose && not (Hashtbl.mem coqlibKnown str) then
+		    if verbose && not (is_in_coqlib ?from str) then
                       warning_module_notfound f str
        		end) strl
 	  | Declare sl ->
@@ -464,6 +471,14 @@ let add_caml_known phys_dir _ f =
     | ".mli" -> add_mli_known basename (Some phys_dir) suff
     | ".mllib" -> add_mllib_known basename (Some phys_dir) suff
     | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
+    | _ -> ()
+
+let add_coqlib_known recur phys_dir log_dir f =
+  match get_extension f [".vo"] with
+    | (basename,".vo") ->
+        let name = log_dir@[basename] in
+        let paths = if recur then suffixes name else [name] in
+        List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
     | _ -> ()
 
 let add_known recur phys_dir log_dir f =

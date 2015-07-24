@@ -36,14 +36,6 @@ let warning_mult suf iter =
   in
   iter check
 
-let add_coqlib_known recur phys_dir log_dir f =
-  match get_extension f [".vo"] with
-    | (basename,".vo") ->
-        let name = log_dir@[basename] in
-	let paths = if recur then suffixes name else [name] in
-        List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
-    | _ -> ()
-
 let sort () =
   let seen = Hashtbl.create 97 in
   let rec loop file =
