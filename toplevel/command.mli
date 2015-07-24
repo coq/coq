@@ -34,7 +34,8 @@ val interp_definition :
   local_binder list -> polymorphic -> red_expr option -> constr_expr ->
   constr_expr option -> definition_entry * Evd.evar_map * Impargs.manual_implicits
 
-val declare_definition : Id.t -> definition_kind ->
+val declare_definition : chkguard:bool ->
+  Id.t -> definition_kind ->
   definition_entry -> Impargs.manual_implicits ->
     Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
 
@@ -172,5 +173,7 @@ val do_cofixpoint :
 
 val check_mutuality : Environ.env -> bool -> (Id.t * types) list -> unit
 
-val declare_fix : ?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->
+val declare_fix :
+  chkguard:bool ->
+  ?opaque:bool -> definition_kind -> Univ.universe_context -> Id.t ->
   Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference

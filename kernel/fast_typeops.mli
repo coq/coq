@@ -18,6 +18,6 @@ open Environ
  *)
 
 
-val infer      : env -> constr       -> unsafe_judgment
-val infer_v    : env -> constr array -> unsafe_judgment array
-val infer_type : env -> types        -> unsafe_type_judgment
+val infer      : chkguard:bool -> env -> constr       -> unsafe_judgment
+val infer_v    : chkguard:bool -> env -> constr array -> unsafe_judgment array
+val infer_type : chkguard:bool -> env -> types        -> unsafe_type_judgment

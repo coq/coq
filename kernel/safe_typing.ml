@@ -332,8 +332,8 @@ let safe_push_named (id,_,_ as d) env =
   Environ.push_named d env
 
 
-let push_named_def (id,de) senv =
-  let c,typ,univs = Term_typing.translate_local_def senv.env id de in
+let push_named_def ~chkguard (id,de) senv =
+  let c,typ,univs = Term_typing.translate_local_def ~chkguard senv.env id de in
   let senv' = push_context univs senv in
   let c, senv' = match c with
     | Def c -> Mod_subst.force_constr c, senv'
@@ -346,9 +346,9 @@ let push_named_def (id,de) senv =
   let env'' = safe_push_named (id,Some c,typ) senv'.env in
     {senv' with env=env''}
 
-let push_named_assum ((id,t),ctx) senv =
+let push_named_assum ~chkguard ((id,t),ctx) senv =
   let senv' = push_context_set ctx senv in
-  let t = Term_typing.translate_local_assum senv'.env t in
+  let t = Term_typing.translate_local_assum ~chkguard senv'.env t in
   let env'' = safe_push_named (id,None,t) senv'.env in
     {senv' with env=env''}
 
@@ -439,13 +439,14 @@ let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
 (** Insertion of constants and parameters in environment *)
 type global_declaration =
-  | ConstantEntry of Entries.constant_entry
+  | ConstantEntry of Entries.constant_entry * bool (* check guard *)
   | GlobalRecipe of Cooking.recipe
 
 let add_constant dir l decl senv =
   let kn = make_con senv.modpath dir l in
   let cb = match decl with
-    | ConstantEntry ce -> Term_typing.translate_constant senv.env kn ce
+    | ConstantEntry (ce,chkguard) ->
+        Term_typing.translate_constant ~chkguard senv.env kn ce
     | GlobalRecipe r ->
       let cb = Term_typing.translate_recipe senv.env kn r in
       if DirPath.is_empty dir then Declareops.hcons_const_body cb else cb

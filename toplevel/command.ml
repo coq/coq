@@ -139,9 +139,9 @@ let get_locality id = function
 | Local -> true
 | Global -> false
 
-let declare_global_definition ident ce local k imps =
+let declare_global_definition ~chkguard ident ce local k imps =
   let local = get_locality ident local in
-  let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
+  let kn = declare_constant ~chkguard ident ~local (DefinitionEntry ce, IsDefinition k) in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = definition_message ident in
@@ -151,7 +151,7 @@ let declare_definition_hook = ref ignore
 let set_declare_definition_hook = (:=) declare_definition_hook
 let get_declare_definition_hook () = !declare_definition_hook
 
-let declare_definition ident (local, p, k) ce imps hook =
+let declare_definition ~chkguard ident (local, p, k) ce imps hook =
   let () = !declare_definition_hook ce in
   let r = match local with
   | Discharge when Lib.sections_are_opened () ->
@@ -167,10 +167,10 @@ let declare_definition ident (local, p, k) ce imps hook =
     in
     gr
   | Discharge | Local | Global ->
-    declare_global_definition ident ce local k imps in
+    declare_global_definition ~chkguard ident ce local k imps in
   Lemmas.call_hook (Future.fix_exn_of ce.Entries.const_entry_body) hook local r
 
-let _ = Obligations.declare_definition_ref := declare_definition
+let _ = Obligations.declare_definition_ref := declare_definition ~chkguard:true
 
 let do_definition ident k bl red_option c ctypopt hook =
   let (ce, evd, imps as def) = interp_definition bl (pi2 k) red_option c ctypopt in
@@ -191,7 +191,7 @@ let do_definition ident k bl red_option c ctypopt hook =
 	ignore(Obligations.add_definition
           ident ~term:c cty ctx ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
-      ignore(declare_definition ident k ce imps
+      ignore(declare_definition ~chkguard:true ident k ce imps
         (Lemmas.mk_hook
           (fun l r -> Lemmas.call_hook (fun exn -> exn) hook l r;r)))
 
@@ -752,11 +752,11 @@ let interp_fix_body env_rec evdref impls (_,ctx) fix ccl =
 
 let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 
-let declare_fix ?(opaque = false) (_,poly,_ as kind) ctx f ((def,_),eff) t imps =
+let declare_fix ~chkguard ?(opaque = false) (_,poly,_ as kind) ctx f ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~poly ~univs:ctx ~eff def in
-  declare_definition f kind ce imps (Lemmas.mk_hook (fun _ r -> r))
+  declare_definition ~chkguard f kind ce imps (Lemmas.mk_hook (fun _ r -> r))
 
-let _ = Obligations.declare_fix_ref := declare_fix
+let _ = Obligations.declare_fix_ref := (declare_fix ~chkguard:true)
 
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let defs = List.map (subst_vars (List.rev fixnames)) fixdefs in
@@ -1072,7 +1072,7 @@ let declare_fixpoint ~chkguard local poly ((fixnames,fixdefs,fixtypes),ctx,fixim
     let ctx = Universes.restrict_universe_context ctx vars in
     let fixdecls = List.map Term_typing.mk_pure_proof fixdecls in
     let ctx = Univ.ContextSet.to_context ctx in
-    ignore (List.map4 (declare_fix (local, poly, Fixpoint) ctx)
+    ignore (List.map4 (declare_fix ~chkguard (local, poly, Fixpoint) ctx)
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     fixpoint_message (Some indexes) fixnames;
@@ -1103,7 +1103,7 @@ let declare_cofixpoint ~chkguard local poly ((fixnames,fixdefs,fixtypes),ctx,fix
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     let ctx = Evd.evar_universe_context_set Univ.UContext.empty ctx in
     let ctx = Univ.ContextSet.to_context ctx in
-    ignore (List.map4 (declare_fix (local, poly, CoFixpoint) ctx) 
+    ignore (List.map4 (declare_fix ~chkguard (local, poly, CoFixpoint) ctx) 
 	      fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames
