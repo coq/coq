@@ -2579,12 +2579,6 @@ Qed.
 
 You can help {\Coq} using the {\pattern} tactic.
 
-\Question{Why does {\Coq} tell me that \texttt{\{x:A|(P x)\}} is not convertible with \texttt{(sig A P)}?}
-
- This is because \texttt{\{x:A|P x\}} is a notation for
-\texttt{sig (fun x:A => P x)}. Since {\Coq} does not reason up to
-$\eta$-conversion, this is different from \texttt{sig P}.
-
 
 \Question{I copy-paste a term and {\Coq} says it is not convertible
   to the original term. Sometimes it even says the copied term is not
