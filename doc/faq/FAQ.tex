@@ -503,19 +503,34 @@ $\forall A \forall x y:A \forall p_1 p_2:x=y, p_1=p_2$
 \item Extensionality of functions: $\forall f g:A\rightarrow B, (\forall x, f(x)=g(x)) \rightarrow f=g$
 \end{itemize}
 
-Here is a summary of the relative strength of these axioms, most
-proofs can be found in directory {\tt Logic} of the standard library.
-The justification of their validity relies on the interpretability in
-set theory.
+Figure~\ref{fig:axioms} is a summary of the relative strength of these
+axioms, most proofs can be found in directory {\tt Logic} of the standard
+library. (Statements in boldface are the most ``interesting'' ones for
+Coq.) The justification of their validity relies on the interpretability
+in set theory.
 
+% fig2dev -m 2 -L png axioms.fig axioms.png
+% fig2dev -L pdftex axioms.fig axioms.pdf
+% fig2dev -L pdftex_t -p axioms.pdf axioms.fig axioms.pdf_t
+% fig2dev -L pstex axioms.fig axioms.eps
+% fig2dev -L pstex_t -p axioms.eps axioms.fig axioms.eps_t
+
+\begin{figure}[htbp]
 %HEVEA\imgsrc{axioms.png}
 %BEGIN LATEX
+\begin{center}
 \ifpdf   % si on est en pdflatex
-\includegraphics[width=1.0\textwidth]{axioms.png}
+\scalebox{0.65}{\input{axioms.pdf_t}}
+%\includegraphics[width=1.0\textwidth]{axioms.png}
 \else
-\includegraphics[width=1.0\textwidth]{axioms.eps}
+\scalebox{0.65}{\input{axioms.eps_t}}
+%\includegraphics[width=1.0\textwidth]{axioms.eps}
 \fi
+\end{center}
 %END LATEX
+\caption{The dependency graph of axioms in the Calculus of Inductive Constructions}
+\label{fig:axioms}
+\end{figure}
 
 \Question{What standard axioms are inconsistent with {\Coq}?}
 
