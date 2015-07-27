@@ -184,9 +184,8 @@ let try_declare_scheme what f internal names kn =
         alarm what internal
           (str "Decidability lemma for mutual inductive types not supported.")
     | e when Errors.noncritical e ->
-	alarm what internal
-	  (str "Unknown exception during scheme creation: "++
-           str (Printexc.to_string e))
+        alarm what internal
+	  (str "Unexpected error during scheme creation: " ++ Errors.print e)
 
 let beq_scheme_msg mind =
   let mib = Global.lookup_mind mind in
