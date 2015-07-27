@@ -315,15 +315,17 @@ let rec print_typ_expr env mp locals mty =
       let mapp = List.tl lapp in
       hov 3 (str"(" ++ (print_kn locals fapp) ++ spc () ++
 		 prlist_with_sep spc (print_modpath locals) mapp ++ str")")
-  | MEwith(me,WithDef(idl,c))->
+  | MEwith(me,WithDef(idl,(c, _)))->
       let env' = None in (* TODO: build a proper environment if env <> None *)
       let s = String.concat "." (List.map Id.to_string idl) in
       hov 2 (print_typ_expr env' mp locals me ++ spc() ++ str "with" ++ spc()
-             ++ def "Definition"++ spc() ++ str s ++ spc() ++  str ":="++ spc())
-  | MEwith(me,WithMod(idl,mp))->
+             ++ def "Definition"++ spc() ++ str s ++ spc() ++ str ":="++ spc()
+             ++ Printer.pr_lconstr c)
+  | MEwith(me,WithMod(idl,mp'))->
       let s = String.concat "." (List.map Id.to_string idl) in
       hov 2 (print_typ_expr env mp locals me ++ spc() ++ str "with" ++ spc() ++
-             keyword "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc())
+             keyword "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc()
+             ++ print_modpath locals mp')
 
 let print_mod_expr env mp locals = function
   | MEident mp -> print_modpath locals mp

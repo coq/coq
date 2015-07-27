@@ -18,6 +18,11 @@ open System
     options (see for instance [option_natdynlk] below).
 *)
 
+module StrSet = Set.Make(String)
+
+module StrList = struct type t = string list let compare = compare end
+module StrListMap = Map.Make(StrList)
+
 let stderr = Pervasives.stderr
 let stdout = Pervasives.stdout
 
@@ -27,7 +32,7 @@ let option_natdynlk = ref true
 let option_boot = ref false
 let option_mldep = ref None
 
-let norec_dirs = ref ([] : string list)
+let norec_dirs = ref StrSet.empty
 
 let suffixe = ref ".vo"
 
@@ -76,11 +81,11 @@ let safe_hash_add cmp clq q (k, (v, b)) =
   try
     let (v2, _) = Hashtbl.find q k in
     if not (cmp v v2) then
-      let rec add_clash = function
-          (k1,l1)::cltl when k=k1 -> (k1,v::l1)::cltl
-        | cl::cltl -> cl::add_clash cltl
-        | [] -> [(k,[v;v2])] in
-      clq := add_clash !clq;
+      let nv =
+        try v :: StrListMap.find k !clq
+        with Not_found -> [v; v2]
+      in
+      clq := StrListMap.add k nv !clq;
       (* overwrite previous bindings, as coqc does *)
       Hashtbl.add q k (v, b)
   with Not_found -> Hashtbl.add q k (v, b)
@@ -124,26 +129,33 @@ let get_prefix p l =
   in
   drop_prefix_rec (p, l)
 
-exception Found of string
-
-let search_v_known ?from s = match from with
-| None -> fst (Hashtbl.find vKnown s)
+let search_table (type r) is_root table ?from s = match from with
+| None -> Hashtbl.find table s
 | Some from ->
-  let iter logpath (phys_dir, root) =
-    if root then match get_prefix from logpath with
+  let module M = struct exception Found of r end in
+  let iter logpath binding =
+    if is_root binding then match get_prefix from logpath with
     | None -> ()
     | Some rem ->
       match get_prefix (List.rev s) (List.rev rem) with
       | None -> ()
-      | Some _ -> raise (Found phys_dir)
+      | Some _ -> raise (M.Found binding)
   in
-  try Hashtbl.iter iter vKnown; raise Not_found
-  with Found s -> s
+  try Hashtbl.iter iter table; raise Not_found
+  with M.Found s -> s
 
 let search_v_known ?from s =
-  try Some (search_v_known ?from s) with Not_found -> None
+  let is_root (_, root) = root in
+  try
+    let (phys_dir, _) = search_table is_root vKnown ?from s in
+    Some phys_dir
+  with Not_found -> None
 
-let clash_v = ref ([]: (string list * string list) list)
+let is_in_coqlib ?from s =
+  let is_root _ = true in
+  try search_table is_root coqlibKnown ?from s; true with Not_found -> false
+
+let clash_v = ref (StrListMap.empty : string list StrListMap.t)
 
 let error_cannot_parse s (i,j) =
   Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
@@ -164,7 +176,7 @@ let warning_declare f s =
   flush stderr
 
 let warning_clash file dir =
-  match List.assoc dir !clash_v with
+  match StrListMap.find dir !clash_v with
     (f1::f2::fl) ->
       let f = Filename.basename f1 in
       let d1 = Filename.dirname f1 in
@@ -182,7 +194,7 @@ let warning_cannot_open_dir dir =
   flush stderr
 
 let safe_assoc from verbose file k =
-  if verbose && List.mem_assoc k !clash_v then warning_clash file k;
+  if verbose && StrListMap.mem k !clash_v then warning_clash file k;
   match search_v_known ?from k with
   | None -> raise Not_found
   | Some path -> path
@@ -240,16 +252,16 @@ let autotraite_fichier_ML md ext =
   try
     let chan = open_in (md ^ ext) in
     let buf = Lexing.from_channel chan in
-    let deja_vu = ref [md] in
+    let deja_vu = ref (StrSet.singleton md) in
     let a_faire = ref "" in
     let a_faire_opt = ref "" in
     begin try
       while true do
 	let (Use_module str) = caml_action buf in
-	if List.mem str !deja_vu then
+	if StrSet.mem str !deja_vu then
 	  ()
 	else begin
-	  addQueue deja_vu str;
+	  deja_vu := StrSet.add str !deja_vu;
 	  let byte,opt = depend_ML str in
 	  a_faire := !a_faire ^ byte;
 	  a_faire_opt := !a_faire_opt ^ opt
@@ -325,25 +337,32 @@ let canonize f =
     | (f,_) :: _ -> escape f
     | _ -> escape f
 
+module VData = struct
+  type t = string list option * string list
+  let compare = Pervasives.compare
+end
+
+module VCache = Set.Make(VData)
+
 let rec traite_fichier_Coq suffixe verbose f =
   try
     let chan = open_in f in
     let buf = Lexing.from_channel chan in
-    let deja_vu_v = ref ([]: (string list option * string list) list)
-    and deja_vu_ml = ref ([] : string list) in
+    let deja_vu_v = ref VCache.empty in
+    let deja_vu_ml = ref StrSet.empty in
     try
       while true do
       	let tok = coq_action buf in
 	match tok with
 	  | Require (from, strl) ->
 	      List.iter (fun str ->
-		if not (List.mem (from, str) !deja_vu_v) then begin
-	          addQueue deja_vu_v (from, str);
+		if not (VCache.mem (from, str) !deja_vu_v) then begin
+	          deja_vu_v := VCache.add (from, str) !deja_vu_v;
                   try
                     let file_str = safe_assoc from verbose f str in
                     printf " %s%s" (canonize file_str) suffixe
                   with Not_found ->
-		    if verbose && not (Hashtbl.mem coqlibKnown str) then
+		    if verbose && not (is_in_coqlib ?from str) then
                       warning_module_notfound f str
        		end) strl
 	  | Declare sl ->
@@ -354,8 +373,8 @@ let rec traite_fichier_Coq suffixe verbose f =
 	      in
 	      let decl str =
                 let s = basename_noext str in
-		if not (List.mem s !deja_vu_ml) then begin
-		  addQueue deja_vu_ml s;
+		if not (StrSet.mem s !deja_vu_ml) then begin
+		  deja_vu_ml := StrSet.add s !deja_vu_ml;
 		  match search_mllib_known s with
 		    | Some mldir -> declare ".cma" mldir s
 		    | None ->
@@ -369,8 +388,8 @@ let rec traite_fichier_Coq suffixe verbose f =
 	      in List.iter decl sl
 	  | Load str ->
 	      let str = Filename.basename str in
-	      if not (List.mem (None, [str]) !deja_vu_v) then begin
-	        addQueue deja_vu_v (None, [str]);
+	      if not (VCache.mem (None, [str]) !deja_vu_v) then begin
+	        deja_vu_v := VCache.add (None, [str]) !deja_vu_v;
                 try
                   let (file_str, _) = Hashtbl.find vKnown [str] in
                   let canon = canonize file_str in
@@ -456,6 +475,14 @@ let add_caml_known phys_dir _ f =
     | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
     | _ -> ()
 
+let add_coqlib_known recur phys_dir log_dir f =
+  match get_extension f [".vo"] with
+    | (basename,".vo") ->
+        let name = log_dir@[basename] in
+        let paths = if recur then suffixes name else [name] in
+        List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
+    | _ -> ()
+
 let add_known recur phys_dir log_dir f =
   match get_extension f [".v";".vo"] with
     | (basename,".v") ->
@@ -475,7 +502,7 @@ let add_known recur phys_dir log_dir f =
 (* Visits all the directories under [dir], including [dir] *)
 
 let is_not_seen_directory phys_f =
-  not (List.mem phys_f !norec_dirs)
+  not (StrSet.mem phys_f !norec_dirs)
 
 let rec add_directory add_file phys_dir log_dir =
   let f = function

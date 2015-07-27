@@ -37,14 +37,6 @@ let warning_mult suf iter =
   in
   iter check
 
-let add_coqlib_known recur phys_dir log_dir f =
-  match get_extension f [".vo"] with
-    | (basename,".vo") ->
-        let name = log_dir@[basename] in
-	let paths = if recur then suffixes name else [name] in
-        List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
-    | _ -> ()
-
 let sort () =
   let seen = Hashtbl.create 97 in
   let rec loop file =
@@ -298,14 +290,21 @@ struct
 module DAG = DAG(struct type t = string let compare = compare end)
 
 (** TODO: we should share this code with Coqdep_common *)
+module VData = struct
+  type t = string list option * string list
+  let compare = Pervasives.compare
+end
+
+module VCache = Set.Make(VData)
+
 let treat_coq_file chan =
   let buf = Lexing.from_channel chan in
-  let deja_vu_v = ref ([]: (string list option * string list) list)
-  and deja_vu_ml = ref ([] : string list) in
+  let deja_vu_v = ref VCache.empty in
+  let deja_vu_ml = ref StrSet.empty in
   let mark_v_done from acc str =
-    let seen = List.mem (from, str) !deja_vu_v in
+    let seen = VCache.mem (from, str) !deja_vu_v in
     if not seen then
-      let () = addQueue deja_vu_v (from, str) in
+      let () = deja_vu_v := VCache.add (from, str) !deja_vu_v in
       match search_v_known ?from str with
       | None -> acc
       | Some file_str -> (canonize file_str, !suffixe) :: acc
@@ -327,8 +326,8 @@ let treat_coq_file chan =
         in
         let decl acc str =
           let s = basename_noext str in
-          if not (List.mem s !deja_vu_ml) then
-            let () = addQueue deja_vu_ml s in
+          if not (StrSet.mem s !deja_vu_ml) then
+            let () = deja_vu_ml := StrSet.add s !deja_vu_ml in
             match search_mllib_known s with
             | Some mldir -> (declare ".cma" mldir s) :: acc
             | None ->
@@ -340,9 +339,9 @@ let treat_coq_file chan =
         List.fold_left decl acc sl
       | Load str ->
         let str = Filename.basename str in
-        let seen = List.mem (None, [str]) !deja_vu_v in
+        let seen = VCache.mem (None, [str]) !deja_vu_v in
         if not seen then
-          let () = addQueue deja_vu_v (None, [str]) in
+          let () = deja_vu_v := VCache.add (None, [str]) !deja_vu_v in
           match search_v_known [str] with
           | None -> acc
           | Some file_str -> (canonize file_str, ".v") :: acc

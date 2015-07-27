@@ -308,6 +308,7 @@ type to_patch = emitcodes * (patch list) * fv
 let rec subst_strcst s sc =
   match sc with
   | Const_sorts _ | Const_b0 _ -> sc
+  | Const_proj p -> Const_proj (subst_constant s p)
   | Const_bn(tag,args) -> Const_bn(tag,Array.map (subst_strcst s) args)
   | Const_ind(ind,u) -> let kn,i = ind in Const_ind((subst_mind s kn, i), u)
 

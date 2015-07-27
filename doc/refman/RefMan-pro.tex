@@ -453,10 +453,15 @@ In the case of a non-product goal, it prints nothing.
 This command is similar to the previous one, it simulates the naming 
 process of an {\tt Intros}.
 
-\item{\tt Show Existentials\label{ShowExistentials}}\comindex{Show Existentials}
+\item{\tt Show Existentials.\label{ShowExistentials}}\comindex{Show Existentials}
 \\ It displays
 the set of all uninstantiated existential variables in the current proof tree, 
 along with the type and the context of each variable.
+
+\item{\tt Show Universes.\label{ShowUniverses}}\comindex{Show Universes}
+\\ It displays the set of all universe constraints and its
+normalized form at the current stage of the proof, useful for
+debugging universe inconsistencies.
 
 \end{Variants}
 
