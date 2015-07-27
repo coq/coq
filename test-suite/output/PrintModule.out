@@ -1,0 +1,4 @@
+Module N : S with Definition T := nat := M
+
+Module N : S with Module T := K := M
+
