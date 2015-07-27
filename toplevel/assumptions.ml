@@ -141,8 +141,6 @@ let label_of = function
   | ConstructRef ((kn,_),_) -> pi3 (repr_mind kn)
   | VarRef id -> Label.of_id id
 
-let push (r : Context.rel_declaration) (ctx : Context.rel_context) = r :: ctx
-
 let rec traverse current ctx accu t = match kind_of_term t with
 | Var id ->
   let body () = match Global.lookup_named id with (_, body, _) -> body in
@@ -150,24 +148,26 @@ let rec traverse current ctx accu t = match kind_of_term t with
 | Const (kn, _) ->
   let body () = Global.body_of_constant_body (lookup_constant kn) in
   traverse_object accu body (ConstRef kn)
-| Ind (ind, _) ->
-  traverse_object accu (fun () -> None) (IndRef ind)
-| Construct (cst, _) ->
-  traverse_object accu (fun () -> None) (ConstructRef cst)
+| Ind ((mind, _) as ind, _) ->
+  traverse_inductive accu mind (IndRef ind)
+| Construct (((mind, _), _) as cst, _) ->
+  traverse_inductive accu mind (ConstructRef cst)
 | Meta _ | Evar _ -> assert false
 | Case (_,oty,c,[||]) ->
-    (* non dependent match on an inductive with no constructors *) 
+    (* non dependent match on an inductive with no constructors *)
     begin match Constr.(kind oty, kind c) with
-    | Lambda(Anonymous,_,oty), Const (kn, _)
+    | Lambda(_,_,oty), Const (kn, _)
       when Vars.noccurn 1 oty &&
       not (Declareops.constant_has_body (lookup_constant kn)) ->
         let body () = Global.body_of_constant_body (lookup_constant kn) in
         traverse_object
           ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
     | _ ->
-        Termops.fold_constr_with_full_binders push (traverse current) ctx accu t
+        Termops.fold_constr_with_full_binders
+          Context.add_rel_decl (traverse current) ctx accu t
     end
-| _ -> Termops.fold_constr_with_full_binders push (traverse current) ctx accu t
+| _ -> Termops.fold_constr_with_full_binders
+          Context.add_rel_decl (traverse current) ctx accu t
 
 and traverse_object ?inhabits (curr, data, ax2ty) body obj =
   let data, ax2ty =
@@ -179,20 +179,93 @@ and traverse_object ?inhabits (curr, data, ax2ty) body obj =
         let ax2ty =
           if Option.is_empty inhabits then ax2ty else
           let ty = Option.get inhabits in
-          try let l = Refmap.find obj ax2ty in Refmap.add obj (ty::l) ax2ty 
+          try let l = Refmap.find obj ax2ty in Refmap.add obj (ty::l) ax2ty
           with Not_found -> Refmap.add obj [ty] ax2ty in
         data, ax2ty
     | Some body ->
       if already_in then data, ax2ty else
       let contents,data,ax2ty =
-        traverse (label_of obj) [] (Refset.empty,data,ax2ty) body in
+        traverse (label_of obj) Context.empty_rel_context
+                 (Refset.empty,data,ax2ty) body in
       Refmap.add obj contents data, ax2ty
   in
   (Refset.add obj curr, data, ax2ty)
 
+(** Collects the references occurring in the declaration of mutual inductive
+    definitions. All the constructors and names of a mutual inductive
+    definition share exactly the same dependencies. Also, there is no explicit
+    dependency between mutually defined inductives and constructors. *)
+and traverse_inductive (curr, data, ax2ty) mind obj =
+  let firstind_ref = (IndRef (mind, 0)) in
+  let label = label_of obj in
+  let data, ax2ty =
+   (* Invariant : I_0 \in data iff I_i \in data iff c_ij \in data
+      where I_0, I_1, ... are in the same mutual definition and c_ij
+      are all their constructors. *)
+   if Refmap.mem firstind_ref data then data, ax2ty else
+     let mib = Global.lookup_mind mind in
+     (* Collects references of parameters *)
+     let param_ctx = mib.mind_params_ctxt in
+     let nparam = List.length param_ctx in
+     let accu =
+       traverse_context label Context.empty_rel_context
+                        (Refset.empty, data, ax2ty) param_ctx
+     in
+     (* Build the context of all arities *)
+     let arities_ctx =
+       let global_env = Global.env () in
+       Array.fold_left (fun accu oib ->
+          let pspecif = Univ.in_punivs (mib, oib) in
+          let ind_type = Inductive.type_of_inductive global_env pspecif in
+          let ind_name = Name oib.mind_typename in
+          Context.add_rel_decl (ind_name, None, ind_type) accu)
+          Context.empty_rel_context mib.mind_packets
+     in
+     (* For each inductive, collects references in their arity and in the type
+        of constructors*)
+     let (contents, data, ax2ty) = Array.fold_left (fun accu oib ->
+         let arity_wo_param =
+           List.rev (List.skipn nparam (List.rev oib.mind_arity_ctxt))
+         in
+         let accu =
+           traverse_context
+             label param_ctx accu arity_wo_param
+         in
+         Array.fold_left (fun accu cst_typ ->
+            let param_ctx, cst_typ_wo_param = Term.decompose_prod_n_assum nparam cst_typ in
+            let ctx = Context.(fold_rel_context add_rel_decl ~init:arities_ctx param_ctx) in
+            traverse label ctx accu cst_typ_wo_param)
+          accu oib.mind_user_lc)
+       accu mib.mind_packets
+     in
+     (* Maps all these dependencies to inductives and constructors*)
+     let data = Array.fold_left_i (fun n data oib ->
+       let ind = (mind, n) in
+       let data = Refmap.add (IndRef ind) contents data in
+       Array.fold_left_i (fun k data _ ->
+         Refmap.add (ConstructRef (ind, k+1)) contents data
+       ) data oib.mind_consnames) data mib.mind_packets
+     in
+     data, ax2ty
+  in
+  (Refset.add obj curr, data, ax2ty)
+
+(** Collects references in a rel_context. *)
+and traverse_context current ctx accu ctxt =
+  snd (Context.fold_rel_context (fun decl (ctx, accu) ->
+    match decl with
+     | (_, Some c, t) ->
+          let accu = traverse current ctx (traverse current ctx accu t) c in
+          let ctx = Context.add_rel_decl decl ctx in
+          ctx, accu
+     | (_, None, t) ->
+          let accu = traverse current ctx accu t in
+          let ctx = Context.add_rel_decl decl ctx in
+           ctx, accu) ctxt ~init:(ctx, accu))
+
 let traverse current t =
   let () = modcache := MPmap.empty in
-  traverse current [] (Refset.empty, Refmap.empty, Refmap.empty) t
+  traverse current Context.empty_rel_context (Refset.empty, Refmap.empty, Refmap.empty) t
 
 (** Hopefully bullet-proof function to recover the type of a constant. It just
     ignores all the universe stuff. There are many issues that can arise when
