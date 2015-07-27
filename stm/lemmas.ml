@@ -503,7 +503,7 @@ let save_proof ?proof = function
       let (proof_obj,terminator) =
         match proof with
         | None ->
-            Proof_global.close_proof ~keep_body_ucst_sepatate:false (fun x -> x)
+            Proof_global.close_proof ~keep_body_ucst_separate:false (fun x -> x)
         | Some proof -> proof
       in
       (* if the proof is given explicitly, nothing has to be deleted *)

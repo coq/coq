@@ -1220,7 +1220,7 @@ end = struct (* {{{ *)
         (Lemmas.standard_proof_terminator []
           (Lemmas.mk_hook (fun _ _ -> ())));
       let proof =
-        Proof_global.close_proof ~keep_body_ucst_sepatate:true (fun x -> x) in
+        Proof_global.close_proof ~keep_body_ucst_separate:true (fun x -> x) in
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
       Reach.known_state ~cache:`No start;
@@ -1854,7 +1854,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                       qed.fproof <- Some (fp, ref false); None
                   | VtKeep ->
                       Some(Proof_global.close_proof
-                                ~keep_body_ucst_sepatate:false
+                                ~keep_body_ucst_separate:false
                                 (State.exn_on id ~valid:eop)) in
                 reach view.next;
                 if keep == VtKeepAsAxiom then
