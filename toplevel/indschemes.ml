@@ -180,6 +180,9 @@ let try_declare_scheme what f internal names kn =
 	  (strbrk "Required constant " ++ str s ++ str " undefined.")
     | AlreadyDeclared msg ->
         alarm what internal (msg ++ str ".")
+    | DecidabilityMutualNotSupported ->
+        alarm what internal
+          (str "Decidability lemma for mutual inductive types not supported.")
     | e when Errors.noncritical e ->
 	alarm what internal
 	  (str "Unknown exception during scheme creation: "++
