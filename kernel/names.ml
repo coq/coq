@@ -124,7 +124,7 @@ let rec check_bound_mp = function
 
 let rec string_of_mp = function
   | MPfile sl -> string_of_dirpath sl
-  | MPbound uid -> debug_string_of_uid uid
+  | MPbound uid -> string_of_uid uid
   | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
 
 (** we compare labels first if both are MPdots *)
