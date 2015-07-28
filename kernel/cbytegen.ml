@@ -524,14 +524,14 @@ let rec compile_fv reloc l sz cont =
 
 (* Compiling constants *)
 
-let rec get_allias env (kn,u as p) =
+let rec get_alias env (kn,u as p) =
   let cb = lookup_constant kn env in
   let tps = cb.const_body_code in
     match tps with
     | None -> p
     | Some tps ->
        (match Cemitcodes.force tps with
-	| BCallias (kn',u') -> get_allias env (kn', Univ.subst_instance_instance u u')
+	| BCalias (kn',u') -> get_alias env (kn', Univ.subst_instance_instance u u')
 	| _ -> p)
 
 (* Compiling expressions *)
@@ -756,10 +756,10 @@ and compile_const =
                   (mkConstU (kn,u)) reloc args sz cont
   with Not_found ->
     if Int.equal nargs 0 then
-      Kgetglobal (get_allias !global_env (kn, u)) :: cont
+      Kgetglobal (get_alias !global_env (kn, u)) :: cont
     else
       comp_app (fun _ _ _ cont ->
-                   Kgetglobal (get_allias !global_env (kn,u)) :: cont)
+                   Kgetglobal (get_alias !global_env (kn,u)) :: cont)
         compile_constr reloc () args sz cont
 
 let compile fail_on_error env c =
@@ -797,14 +797,14 @@ let compile_constant_body fail_on_error env = function
 	| Const (kn',u) ->
 	    (* we use the canonical name of the constant*)
 	    let con= constant_of_kn (canonical_con kn') in
-	      Some (BCallias (get_allias env (con,u)))
+	      Some (BCalias (get_alias env (con,u)))
 	| _ ->
 	    let res = compile fail_on_error env body in
 	      Option.map (fun x -> BCdefined (to_memory x)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 
-let compile_alias (kn,u) = BCallias (constant_of_kn (canonical_con kn), u)
+let compile_alias (kn,u) = BCalias (constant_of_kn (canonical_con kn), u)
 
 (* spiwack: additional function which allow different part of compilation of the
       31-bit integers *)
@@ -867,7 +867,7 @@ let op2_compilation op =
          Kareconst(2, else_lbl):: Kacc 0:: Kpop 1::
           op:: Kreturn 0:: Klabel else_lbl::
          (* works as comp_app with nargs = 2 and tailcall cont [Kreturn 0]*)
-          (*Kgetglobal (get_allias !global_env kn):: *)
+          (*Kgetglobal (get_alias !global_env kn):: *)
           normal::
           Kappterm(2, 2):: [] (* = discard_dead_code [Kreturn 0] *)
      in
@@ -886,7 +886,7 @@ let op2_compilation op =
            (*Kaddint31::escape::Klabel else_lbl::Kpush::*)
            (op::escape::Klabel else_lbl::Kpush::
            (* works as comp_app with nargs = 2 and non-tailcall cont*)
-           (*Kgetglobal (get_allias !global_env kn):: *)
+           (*Kgetglobal (get_alias !global_env kn):: *)
            normal::
            Kapply 2::labeled_cont)))
   else if nargs=0 then
@@ -900,7 +900,7 @@ let op2_compilation op =
   1/ checks if all the arguments are constants (i.e. non-block values)
   2/ if they are, uses the "op" instruction to execute
   3/ if at least one is not, branches to the normal behavior:
-      Kgetglobal (get_allias !global_env kn) *)
+      Kgetglobal (get_alias !global_env kn) *)
 let op_compilation n op =
   let code_construct kn cont =
      let f_cont =
@@ -908,7 +908,7 @@ let op_compilation n op =
          Kareconst(n, else_lbl):: Kacc 0:: Kpop 1::
           op:: Kreturn 0:: Klabel else_lbl::
          (* works as comp_app with nargs = n and tailcall cont [Kreturn 0]*)
-          Kgetglobal (get_allias !global_env kn)::
+          Kgetglobal (get_alias !global_env kn)::
           Kappterm(n, n):: [] (* = discard_dead_code [Kreturn 0] *)
      in
      let lbl = Label.create () in
@@ -926,7 +926,7 @@ let op_compilation n op =
            (*Kaddint31::escape::Klabel else_lbl::Kpush::*)
            (op::escape::Klabel else_lbl::Kpush::
            (* works as comp_app with nargs = n and non-tailcall cont*)
-           Kgetglobal (get_allias !global_env kn)::
+           Kgetglobal (get_alias !global_env kn)::
            Kapply n::labeled_cont)))
   else if Int.equal nargs 0 then
     code_construct kn cont
