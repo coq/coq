@@ -311,7 +311,7 @@ let read_buffer = Buffer.create maxread
     I/O Exceptions are propagated. *)
 
 let read_file name buf =
-  let ic = open_in name in
+  let ic = Util.open_utf8_file_in name in
   let len = ref 0 in
   try
     while len := input ic read_string 0 maxread; !len > 0 do

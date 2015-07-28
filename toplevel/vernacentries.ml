@@ -1841,16 +1841,6 @@ let vernac_load interp fname =
     match Pcoq.Gram.entry_parse Pcoq.main_entry po with
       | Some x -> x
       | None -> raise End_of_input) in
-  let open_utf8_file_in fname =
-    let is_bom s =
-      Int.equal (Char.code s.[0]) 0xEF &&
-      Int.equal (Char.code s.[1]) 0xBB &&
-      Int.equal (Char.code s.[2]) 0xBF
-    in
-    let in_chan = open_in fname in
-    let s = "   " in
-    if input in_chan s 0 3 < 3 || not (is_bom s) then seek_in in_chan 0;
-    in_chan in
   let fname =
     Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
   let fname = CUnix.make_suffix fname ".v" in

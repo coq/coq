@@ -92,19 +92,6 @@ let disable_drop = function
 
 let user_error loc s = Errors.user_err_loc (loc,"_",str s)
 
-(* Open an utf-8 encoded file and skip the byte-order mark if any *)
-
-let open_utf8_file_in fname =
-  let is_bom s =
-    Int.equal (Char.code s.[0]) 0xEF &&
-    Int.equal (Char.code s.[1]) 0xBB &&
-    Int.equal (Char.code s.[2]) 0xBF
-  in
-  let in_chan = open_in fname in
-  let s = "   " in
-  if input in_chan s 0 3 < 3 || not (is_bom s) then seek_in in_chan 0;
-  in_chan
-
 (* Opening and closing a channel. Open it twice when verbose: the first
    channel is used to read the commands, and the second one to print them.
    Note: we could use only one thanks to seek_in, but seeking on and on in
