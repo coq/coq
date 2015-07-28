@@ -98,8 +98,8 @@ struct
   | DSort, DSort -> 0
   | DRef gr1, DRef gr2 -> RefOrdered.compare gr1 gr2
   | DCtx (tl1, tr1), DCtx (tl2, tr2)
-  | DLambda (tl1, tr1), DCtx (tl2, tr2)
-  | DApp (tl1, tr1), DCtx (tl2, tr2) ->
+  | DLambda (tl1, tr1), DLambda (tl2, tr2)
+  | DApp (tl1, tr1), DApp (tl2, tr2) ->
     let c = cmp tl1 tl2 in
     if c = 0 then cmp tr1 tr2 else c
 
