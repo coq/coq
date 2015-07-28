@@ -755,18 +755,18 @@ the result (look at \verb=inj_pair2= in \vfile{\LogicEqdep}{Eqdep}).
  E.g. in this case (this occurs only in the {\tt Set}-impredicative
  variant of \Coq):
 
-\begin{coq_eval}
-Reset Initial.
-\end{coq_eval}
-
 \begin{coq_example*}
 Inductive I : Type :=
   intro : forall k:Set, k -> I.
-Lemma eq_jdef : 
+Lemma eq_jdef :
    forall x y:nat, intro _ x = intro _ y -> x = y.
 Proof.
    intros x y H; injection H.
 \end{coq_example*}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 
  Injectivity of constructors is restricted to predicative types. If
 injectivity on large inductive types were not restricted, we would be
