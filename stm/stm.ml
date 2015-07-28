@@ -2451,7 +2451,7 @@ let get_script prf =
   let branch, test =
     match prf with
     | None -> VCS.Branch.master, fun _ -> true
-    | Some name -> VCS.current_branch (),  List.mem name in
+    | Some name -> VCS.current_branch (),fun nl -> nl=[] || List.mem name nl in
   let rec find acc id =
     if Stateid.equal id Stateid.initial ||
        Stateid.equal id Stateid.dummy then acc else
@@ -2462,7 +2462,9 @@ let get_script prf =
     | `Sideff (`Ast (x,_)) ->
          find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
     | `Sideff (`Id id)  -> find acc id
-    | `Cmd {cast = x} -> find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
+    | `Cmd {cast = x; ctac} when ctac -> (* skip non-tactics *)
+         find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
+    | `Cmd _ -> find acc view.next
     | `Alias (id,_) -> find acc id
     | `Fork _ -> find acc view.next
     in
