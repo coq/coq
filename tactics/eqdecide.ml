@@ -104,22 +104,29 @@ let mkGenDecideEqGoal rectype g =
         (mkDecideEqGoal true (build_coq_sumbool ())
           rectype (mkVar xname) (mkVar yname))))
 
-let eqCase tac =
-  (tclTHEN intro
-  (tclTHEN (onLastHyp Equality.rewriteLR)
-  (tclTHEN clear_last
-  tac)))
+let rec rewrite_and_clear hyps = match hyps with
+| [] -> Proofview.tclUNIT ()
+| id :: hyps ->
+  tclTHENLIST [
+    Equality.rewriteLR (mkVar id);
+    clear [id];
+    rewrite_and_clear hyps;
+  ]
 
-let diseqCase eqonleft =
+let eqCase tac =
+  tclTHEN intro (onLastHypId tac)
+
+let diseqCase hyps eqonleft =
   let diseq  = Id.of_string "diseq" in
   let absurd = Id.of_string "absurd" in
   (tclTHEN (intro_using diseq)
   (tclTHEN (choose_noteq eqonleft)
+  (tclTHEN (rewrite_and_clear (List.rev hyps))
   (tclTHEN  (Proofview.V82.tactic red_in_concl)
   (tclTHEN  (intro_using absurd)
   (tclTHEN  (Simple.apply (mkVar diseq))
   (tclTHEN  (Extratactics.injHyp absurd)
-            (full_trivial [])))))))
+            (full_trivial []))))))))
 
 open Proofview.Notations
 
@@ -131,15 +138,24 @@ let match_eqdec c =
 
 (* /spiwack *)
 
-let solveArg eqonleft op a1 a2 tac =
+let rec solveArg hyps eqonleft op largs rargs = match largs, rargs with
+| [], [] ->
+  tclTHENLIST [
+    choose_eq eqonleft;
+    rewrite_and_clear (List.rev hyps);
+    intros_reflexivity;
+  ]
+| a1 :: largs, a2 :: rargs ->
   Proofview.Goal.enter begin fun gl ->
   let rectype = pf_unsafe_type_of gl a1 in
   let decide = mkDecideEqGoal eqonleft op rectype a1 a2 in
+  let tac hyp = solveArg (hyp :: hyps) eqonleft op largs rargs in
   let subtacs =
-    if eqonleft then [eqCase tac;diseqCase eqonleft;default_auto]
-    else [diseqCase eqonleft;eqCase tac;default_auto] in
+    if eqonleft then [eqCase tac;diseqCase hyps eqonleft;default_auto]
+    else [diseqCase hyps eqonleft;eqCase tac;default_auto] in
   (tclTHENS (elim_type decide) subtacs)
   end
+| _ -> invalid_arg "List.fold_right2"
 
 let solveEqBranch rectype =
   Proofview.tclORELSE
@@ -152,9 +168,7 @@ let solveEqBranch rectype =
           let getargs l = List.skipn nparams (snd (decompose_app l)) in
           let rargs   = getargs rhs
           and largs   = getargs lhs in
-          List.fold_right2
-            (solveArg eqonleft op) largs rargs
-            (tclTHEN (choose_eq eqonleft) intros_reflexivity)
+          solveArg [] eqonleft op largs rargs
       end
     end
     begin function (e, info) -> match e with
