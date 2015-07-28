@@ -124,7 +124,7 @@ let rec check_bound_mp = function
 
 let rec string_of_mp = function
   | MPfile sl -> string_of_dirpath sl
-  | MPbound uid -> string_of_uid uid
+  | MPbound uid -> debug_string_of_uid uid
   | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
 
 (** we compare labels first if both are MPdots *)
@@ -399,17 +399,16 @@ module Hkn = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-(** For [constant] and [mutual_inductive], we discriminate only on
-    the user part : having the same user part implies having the
-    same canonical part (invariant of the system). *)
+(** For [constant], we could discriminate the user part only if the counter
+    for unique id of bound module names were synchronized with backtrack *)
 
 module Hcn = Hashcons.Make(
   struct
     type t = kernel_name*kernel_name
     type u = kernel_name -> kernel_name
     let hash_sub hkn (user,can) = (hkn user, hkn can)
-    let equal (user1,_) (user2,_) = user1 == user2
-    let hash (user,_) = Hashtbl.hash user
+    let equal (user1,can1) (user2,can2) = user1 == user2 && can1 == can2
+    let hash = Hashtbl.hash
   end)
 
 module Hind = Hashcons.Make(
