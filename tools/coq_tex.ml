@@ -68,7 +68,7 @@ let begin_coq_example =
 let begin_coq_eval = Str.regexp "\\\\begin{coq_eval}[ \t]*$"
 let end_coq_example = Str.regexp "\\\\end{coq_\\(example\\|example\\*\\|example\\#\\)}[ \t]*$"
 let end_coq_eval = Str.regexp "\\\\end{coq_eval}[ \t]*$"
-let dot_end_line = Str.regexp "\\.[ \t]*\\((\\*.*\\*)\\)?[ \t]*$"
+let dot_end_line = Str.regexp "\\(\\.\\|}\\)[ \t]*\\((\\*.*\\*)\\)?[ \t]*$"
 
 let has_match r s =
   try let _ = Str.search_forward r s 0 in true with Not_found -> false
