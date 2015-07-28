@@ -281,6 +281,11 @@ and dq_string = parse
                         Buffer.add_char tmp (lexeme_char lexbuf 1);
                         dq_string lexbuf
                 }
+        | '&'
+                {
+                        Buffer.add_string tmp (entity lexbuf);
+                        dq_string lexbuf
+                }
         | eof
                 { raise (Error EUnterminatedString) }
         | _
@@ -295,6 +300,11 @@ and q_string = parse
         | '\\' [ '\'' '\\' ]
                 {
                         Buffer.add_char tmp (lexeme_char lexbuf 1);
+                        q_string lexbuf
+                }
+        | '&'
+                {
+                        Buffer.add_string tmp (entity lexbuf);
                         q_string lexbuf
                 }
         | eof
