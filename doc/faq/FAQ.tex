@@ -849,7 +849,7 @@ mapped to {\Prop}.
 
 Use some theorem or assumption or use the {\split} tactic.
 \begin{coq_example}
-Goal forall A B:Prop, A->B-> A/\B.
+Goal forall A B:Prop, A -> B -> A/\B.
 intros.
 split.
 assumption.
@@ -859,16 +859,25 @@ Qed.
 
 \Question{My goal contains a conjunction as an hypothesis, how can I use it?}
 
-If you want to decompose your hypothesis into other hypothesis you can use the {\decompose} tactic:
+If you want to decompose a hypothesis into several hypotheses, you can
+use the {\destruct} tactic:
 
 \begin{coq_example}
-Goal forall A B:Prop, A/\B-> B.
+Goal forall A B:Prop, A/\B -> B.
 intros.
-decompose [and] H.
+destruct H as [H1 H2].
 assumption.
 Qed.
 \end{coq_example}
 
+You can also perform the destruction at the time of introduction:
+
+\begin{coq_example}
+Goal forall A B:Prop, A/\B -> B.
+intros A B [H1 H2].
+assumption.
+Qed.
+\end{coq_example}
 
 \Question{My goal is a disjunction, how can I prove it?}
 
@@ -878,7 +887,7 @@ reasoning step, use the {\tt classic} axiom to prove the right part with the ass
 that the left part of the disjunction is false.
 
 \begin{coq_example}
-Goal forall A B:Prop, A-> A\/B.
+Goal forall A B:Prop, A -> A\/B.
 intros.
 left.
 assumption.
@@ -890,14 +899,14 @@ An example using classical reasoning:
 \begin{coq_example}
 Require Import Classical.
 
-Ltac classical_right := 
-match goal with 
-| _:_ |-?X1 \/ _ => (elim (classic X1);intro;[left;trivial|right])
+Ltac classical_right :=
+match goal with
+| _:_ |- ?X1 \/ _ => (elim (classic X1);intro;[left;trivial|right])
 end.
 
-Ltac classical_left := 
-match goal with 
-| _:_ |- _ \/?X1 => (elim (classic X1);intro;[right;trivial|left])
+Ltac classical_left :=
+match goal with
+| _:_ |- _ \/ ?X1 => (elim (classic X1);intro;[right;trivial|left])
 end.
 
 
@@ -1199,7 +1208,7 @@ Qed.
 \end{coq_example}
 
 
-\Question{My goal is an inequality on integers in Presburger's arithmetic (an expression build from +,-,constants and variables), how can I prove it?}
+\Question{My goal is an inequality on integers in Presburger's arithmetic (an expression build from $+$, $-$, constants, and variables), how can I prove it?}
 
 
 \begin{coq_example}
