@@ -16,8 +16,8 @@ open Globnames
 val declare_generalizable : Vernacexpr.locality_flag -> (Id.t located) list option -> unit
 
 val ids_of_list : Id.t list -> Id.Set.t
-val destClassApp : constr_expr -> Loc.t * reference * constr_expr list
-val destClassAppExpl : constr_expr -> Loc.t * reference * (constr_expr * explicitation located option) list
+val destClassApp : constr_expr -> Loc.t * reference * constr_expr list * instance_expr option
+val destClassAppExpl : constr_expr -> Loc.t * reference * (constr_expr * explicitation located option) list * instance_expr option
 
 (** Fragile, should be used only for construction a set of identifiers to avoid *)
 

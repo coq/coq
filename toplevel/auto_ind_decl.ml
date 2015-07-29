@@ -55,6 +55,7 @@ exception InductiveWithProduct
 exception InductiveWithSort
 exception ParameterWithoutEquality of constant
 exception NonSingletonProp of inductive
+exception DecidabilityMutualNotSupported
 
 let dl = Loc.ghost
 
@@ -921,7 +922,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
 let make_eq_decidability mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
-    anomaly (Pp.str "Decidability lemma for mutual inductive types not supported");
+    raise DecidabilityMutualNotSupported;
   let ind = (mind,0) in
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in

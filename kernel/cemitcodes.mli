@@ -25,7 +25,7 @@ val subst_to_patch : Mod_subst.substitution -> to_patch -> to_patch
 
 type body_code =
   | BCdefined of to_patch
-  | BCallias of constant Univ.puniverses
+  | BCalias of constant Univ.puniverses
   | BCconstant
 
 

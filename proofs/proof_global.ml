@@ -269,7 +269,7 @@ let get_open_goals () =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
     List.length shelf
 
-let close_proof ~keep_body_ucst_sepatate ?feedback_id ~now fpl =
+let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
   let { pid; section_vars; strength; proof; terminator } = cur_pstate () in
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
@@ -290,7 +290,7 @@ let close_proof ~keep_body_ucst_sepatate ?feedback_id ~now fpl =
         let body = c and typ = nf t in
         let used_univs_body = Universes.universes_of_constr body in
         let used_univs_typ = Universes.universes_of_constr typ in
-        if keep_body_ucst_sepatate then
+        if keep_body_ucst_separate then
           let initunivs = Evd.evar_context_universe_context initial_euctx in
           let ctx = Evd.evar_universe_context_set initunivs universes in
           (* For vi2vo compilation proofs are computed now but we need to
@@ -379,9 +379,9 @@ let return_proof ?(allow_partial=false) () =
     proofs, Evd.evar_universe_context evd
 
 let close_future_proof ~feedback_id proof =
-  close_proof ~keep_body_ucst_sepatate:true ~feedback_id ~now:false proof
-let close_proof ~keep_body_ucst_sepatate fix_exn =
-  close_proof ~keep_body_ucst_sepatate ~now:true
+  close_proof ~keep_body_ucst_separate:true ~feedback_id ~now:false proof
+let close_proof ~keep_body_ucst_separate fix_exn =
+  close_proof ~keep_body_ucst_separate ~now:true
     (Future.from_val ~fix_exn (return_proof ()))
 
 (** Gets the current terminator without checking that the proof has

@@ -1120,7 +1120,7 @@ let drop_notations_pattern looked_for =
 	      let (argscs,_) = find_remaining_scopes pats [] g in
 	      Some (g, List.map2 (in_pat_sc env) argscs pats, [])
 	| NApp (NRef g,args) ->
-	      ensure_kind top loc g;
+	      test_kind top g;
 	      let nvars = List.length vars in
 	      if List.length pats < nvars then error_not_enough_arguments loc;
 	      let pats1,pats2 = List.chop nvars pats in

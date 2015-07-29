@@ -2012,7 +2012,7 @@ let rec compile_deps env sigma prefix ~interactive init t =
   match kind_of_term t with
   | Ind ((mind,_),u) -> compile_mind_deps env prefix ~interactive init mind
   | Const c ->
-      let c,u = get_allias env c in
+      let c,u = get_alias env c in
       let cb,(nameref,_) = lookup_constant_key c env in
       let (_, (_, const_updates)) = init in
       if is_code_loaded ~interactive nameref

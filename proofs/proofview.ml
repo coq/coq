@@ -648,7 +648,7 @@ let goodmod p m =
 
 let cycle n =
   let open Proof in
-  InfoL.leaf (Info.Tactic (fun () -> Pp.(str"cycle"++spc()++int n))) >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.(str"cycle "++int n))) >>
   Comb.modify begin fun initial ->
     let l = CList.length initial in
     let n' = goodmod n l in
@@ -658,7 +658,7 @@ let cycle n =
 
 let swap i j =
   let open Proof in
-  InfoL.leaf (Info.Tactic (fun () -> Pp.(str"swap"++spc()++int i++spc()++int j))) >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.(hov 2 (str"swap"++spc()++int i++spc()++int j)))) >>
   Comb.modify begin fun initial ->
     let l = CList.length initial in
     let i = if i>0 then i-1 else i and j = if j>0 then j-1 else j in
@@ -1057,7 +1057,7 @@ struct
     let comb = undefined sigma (CList.rev evs) in
     let sigma = CList.fold_left Unsafe.mark_as_goal_evm sigma comb in
     let open Proof in
-    InfoL.leaf (Info.Tactic (fun () -> Pp.(str"refine"++spc()++ Hook.get pr_constrv env sigma c))) >>
+    InfoL.leaf (Info.Tactic (fun () -> Pp.(hov 2 (str"refine"++spc()++ Hook.get pr_constrv env sigma c)))) >>
     Pv.set { solution = sigma; comb; }
   end
 

@@ -26,7 +26,7 @@ val mk_lazy : lambda -> lambda
 
 val get_mind_prefix : env -> mutual_inductive -> string
 
-val get_allias : env -> pconstant -> pconstant
+val get_alias : env -> pconstant -> pconstant
 
 val lambda_of_constr : env -> evars -> Constr.constr -> lambda
 

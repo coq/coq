@@ -373,13 +373,13 @@ let makeblock env cn u tag args =
 
 (* Translation of constants *)
 
-let rec get_allias env (kn, u as p) =
+let rec get_alias env (kn, u as p) =
   let tps = (lookup_constant kn env).const_body_code in
     match tps with
     | None -> p
     | Some tps ->
        match Cemitcodes.force tps with
-       | Cemitcodes.BCallias kn' -> get_allias env kn'
+       | Cemitcodes.BCalias kn' -> get_alias env kn'
        | _ -> p
 
 (*i Global environment *)
@@ -651,7 +651,7 @@ let rec lambda_of_constr env sigma c =
 and lambda_of_app env sigma f args =
   match kind_of_term f with
   | Const (kn,u as c) ->
-      let kn,u = get_allias !global_env c in
+      let kn,u = get_alias !global_env c in
       let cb = lookup_constant kn !global_env in
       (try
           let prefix = get_const_prefix !global_env kn in

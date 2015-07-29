@@ -91,7 +91,7 @@ val start_dependent_proof :
 
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)
-val close_proof : keep_body_ucst_sepatate:bool -> Future.fix_exn -> closed_proof
+val close_proof : keep_body_ucst_separate:bool -> Future.fix_exn -> closed_proof
 
 (* Intermediate step necessary to delegate the future.
  * Both access the current proof state. The formes is supposed to be

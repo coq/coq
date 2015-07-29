@@ -1220,7 +1220,7 @@ end = struct (* {{{ *)
         (Lemmas.standard_proof_terminator []
           (Lemmas.mk_hook (fun _ _ -> ())));
       let proof =
-        Proof_global.close_proof ~keep_body_ucst_sepatate:true (fun x -> x) in
+        Proof_global.close_proof ~keep_body_ucst_separate:true (fun x -> x) in
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
       Reach.known_state ~cache:`No start;
@@ -1854,7 +1854,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                       qed.fproof <- Some (fp, ref false); None
                   | VtKeep ->
                       Some(Proof_global.close_proof
-                                ~keep_body_ucst_sepatate:false
+                                ~keep_body_ucst_separate:false
                                 (State.exn_on id ~valid:eop)) in
                 reach view.next;
                 if keep == VtKeepAsAxiom then
@@ -2451,7 +2451,7 @@ let get_script prf =
   let branch, test =
     match prf with
     | None -> VCS.Branch.master, fun _ -> true
-    | Some name -> VCS.current_branch (),  List.mem name in
+    | Some name -> VCS.current_branch (),fun nl -> nl=[] || List.mem name nl in
   let rec find acc id =
     if Stateid.equal id Stateid.initial ||
        Stateid.equal id Stateid.dummy then acc else
@@ -2462,7 +2462,9 @@ let get_script prf =
     | `Sideff (`Ast (x,_)) ->
          find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
     | `Sideff (`Id id)  -> find acc id
-    | `Cmd {cast = x} -> find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
+    | `Cmd {cast = x; ctac} when ctac -> (* skip non-tactics *)
+         find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
+    | `Cmd _ -> find acc view.next
     | `Alias (id,_) -> find acc id
     | `Fork _ -> find acc view.next
     in
