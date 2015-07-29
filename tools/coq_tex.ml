@@ -55,7 +55,10 @@ let extract texfile inputv =
       ("Set Printing Width " ^ (string_of_int !linelen) ^".\n");
     outside ()
   with End_of_file ->
-    begin close_in chan_in; close_out chan_out end
+    (* a dummy command, just in case the last line was a comment *)
+    output_string chan_out "Set Printing Width 78.\n";
+    close_in chan_in;
+    close_out chan_out
 
 (* Second pass: insert the answers of Coq from [coq_output] into the
  * TeX file [texfile]. The result goes in file [result]. *)
