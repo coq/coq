@@ -129,16 +129,20 @@ let insert texfile coq_output result =
 	s :: read_lines () in
     (first :: read_lines (), !nb) in
   let unhandled_output = ref None in
+  let read_output () =
+    match !unhandled_output with
+    | Some some -> unhandled_output := None; some
+    | None -> read_output () in
   (* we are inside a \begin{coq_...} ... \end{coq_...} block
    * show_... tell what kind of block it is *)
-  let rec inside show_answers show_questions not_first =
+  let rec inside show_answers show_questions not_first discarded =
     let s = input_line c_tex in
-    if not (Str.string_match end_coq s 0) then begin
-      let (bl,n) =
-        match !unhandled_output with
-        | Some some -> unhandled_output := None; some
-        | None -> read_output () in
-      assert (n > 0);
+    if s = "" then
+      inside show_answers show_questions not_first (discarded + 1)
+    else if not (Str.string_match end_coq s 0) then begin
+      let (bl,n) = read_output () in
+      assert (n > discarded);
+      let n = n - discarded in
       if not_first then output_string c_out "\\medskip\n";
       if !verbose then Printf.printf "Coq < %s\n" s;
       if show_questions then encapsule false c_out ("Coq < " ^ s);
@@ -160,8 +164,13 @@ let insert texfile coq_output result =
       else begin
         if !verbose then List.iter print_endline bl;
         if show_answers then print_block c_out bl;
-        inside show_answers show_questions (show_answers || show_questions)
+        inside show_answers show_questions (show_answers || show_questions) 0
       end
+    end else if discarded > 0 then begin
+      (* this happens when the block ends with an empty line *)
+      let (bl,n) = read_output () in
+      assert (n > discarded);
+      unhandled_output := Some (bl, n - discarded)
     end in
   (* we are outside of a \begin{coq_...} ... \end{coq_...} block *)
   let rec outside just_after =
@@ -178,13 +187,13 @@ let insert texfile coq_output result =
       let kind = Str.matched_group 1 s in
       if kind = "eval" then begin
         if just_after then end_block ();
-        inside false false false;
+        inside false false false 0;
         outside false
       end else begin
         let show_answers   = kind <> "example*" in
         let show_questions = kind <> "example#" in
         if not just_after then start_block ();
-        inside show_answers show_questions just_after;
+        inside show_answers show_questions just_after 0;
         outside true
       end
     end else begin
