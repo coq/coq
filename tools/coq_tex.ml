@@ -24,10 +24,7 @@ let hrule = ref false
 let small = ref false
 let boot = ref false
 
-let coq_prompt = Str.regexp "Coq < "
-let any_prompt = Str.regexp "^[A-Z0-9a-z_\\$']* < "
-
-let remove_prompt s = Str.replace_first any_prompt "" s
+let any_prompt = Str.regexp "[A-Z0-9a-z_\\$']* < "
 
 (* First pass: extract the Coq phrases to evaluate from [texfile]
  * and put them into the file [inputv] *)
@@ -66,9 +63,6 @@ let extract texfile inputv =
 let begin_coq_example =
   Str.regexp "\\\\begin{coq_\\(example\\|example\\*\\|example\\#\\)}[ \t]*$"
 let begin_coq_eval = Str.regexp "\\\\begin{coq_eval}[ \t]*$"
-let end_coq_example = Str.regexp "\\\\end{coq_\\(example\\|example\\*\\|example\\#\\)}[ \t]*$"
-let end_coq_eval = Str.regexp "\\\\end{coq_eval}[ \t]*$"
-let dot_end_line = Str.regexp "\\(\\.\\|}\\)[ \t]*\\((\\*.*\\*)\\)?[ \t]*$"
 
 let has_match r s =
   try let _ = Str.search_forward r s 0 in true with Not_found -> false
@@ -111,99 +105,97 @@ let insert texfile coq_output result =
   let c_tex = open_in texfile in
   let c_coq = open_in coq_output in
   let c_out = open_out result in
-  (* next_block k : this function reads the next block of Coq output
-   * removing the k leading prompts.
-   * it returns the block as a list of string) *)
-  let last_read = ref "" in
-  let next_block k =
-    if !last_read = "" then last_read := input_line c_coq;
-    (* skip k prompts *)
-    for _i = 1 to k do
-      last_read := remove_prompt !last_read;
-    done;
+  (* read lines until a prompt is found (starting from the second line),
+     purge prompts on the first line and return their number *)
+  let last_read = ref (input_line c_coq) in
+  let read_output () =
+    let first = !last_read in
+    let nb = ref 0 in
+    (* remove the leading prompts *)
+    let rec skip_prompts pos =
+      if Str.string_match any_prompt first pos then
+        let () = incr nb in
+        skip_prompts (Str.match_end ())
+      else pos in
+    let first =
+      let start = skip_prompts 0 in
+      String.sub first start (String.length first - start) in
     (* read and return the following lines until a prompt is found *)
     let rec read_lines () =
       let s = input_line c_coq in
       if Str.string_match any_prompt s 0 then begin
 	last_read := s; []
       end else
-	s :: (read_lines ())
-    in
-    let first = !last_read in first :: (read_lines ())
-  in
-  (* we are just after \end{coq_...} block *)
-  let rec just_after () =
+	s :: read_lines () in
+    (first :: read_lines (), !nb) in
+  let unhandled_output = ref None in
+  (* we are inside a \begin{coq_...} ... \end{coq_...} block
+   * show_... tell what kind of block it is *)
+  let rec inside show_answers show_questions not_first =
     let s = input_line c_tex in
-    if Str.string_match begin_coq_example s 0 then begin
-      inside (Str.matched_group 1 s <> "example*")
-             (Str.matched_group 1 s <> "example#") 0 false
-    end
-    else begin
-      if !hrule then output_string c_out "\\hrulefill\\\\\n";
-      output_string c_out "\\end{flushleft}\n";
-      if !small then output_string c_out "\\end{small}\n";
-      if Str.string_match begin_coq_eval s 0 then
-	eval 0
+    if not (Str.string_match end_coq s 0) then begin
+      let (bl,n) =
+        match !unhandled_output with
+        | Some some -> unhandled_output := None; some
+        | None -> read_output () in
+      assert (n > 0);
+      if not_first then output_string c_out "\\medskip\n";
+      if !verbose then Printf.printf "Coq < %s\n" s;
+      if show_questions then encapsule false c_out ("Coq < " ^ s);
+      let rec read_lines k =
+        if k = 0 then []
+        else
+          let s = input_line c_tex in
+          if Str.string_match end_coq s 0 then []
+          else s :: read_lines (k - 1) in
+      let al = read_lines (n - 1) in
+      if !verbose then List.iter (Printf.printf "      %s\n") al;
+      if show_questions then
+        List.iter (fun s -> encapsule false c_out ("      " ^ s)) al;
+      let la = n - 1 - List.length al in
+      if la <> 0 then
+        (* this happens when the block ends with a comment; the output
+           is for the command at the beginning of the next block *)
+        unhandled_output := Some (bl, la)
       else begin
-	output_string c_out (s ^ "\n");
-	outside ()
+        if !verbose then List.iter print_endline bl;
+        if show_answers then print_block c_out bl;
+        inside show_answers show_questions (show_answers || show_questions)
       end
-    end
+    end in
   (* we are outside of a \begin{coq_...} ... \end{coq_...} block *)
-  and outside () =
-    let s = input_line c_tex in
-    if Str.string_match begin_coq_example s 0 then begin
+  let rec outside just_after =
+    let start_block () =
       if !small then output_string c_out "\\begin{small}\n";
       output_string c_out "\\begin{flushleft}\n";
+      if !hrule then output_string c_out "\\hrulefill\\\\\n" in
+    let end_block () =
       if !hrule then output_string c_out "\\hrulefill\\\\\n";
-      inside (Str.matched_group 1 s <> "example*")
-             (Str.matched_group 1 s <> "example#") 0 true
-    end else if Str.string_match begin_coq_eval s 0 then
-      eval 0
-    else begin
-      output_string c_out (s ^ "\n");
-      outside ()
-    end
-  (* we are inside a \begin{coq_example?} ... \end{coq_example?} block
-   * show_answers tells what kind of block it is
-   * k is the number of lines read until now *)
-  and inside show_answers  show_questions k first_block =
+      output_string c_out "\\end{flushleft}\n";
+      if !small then output_string c_out "\\end{small}\n" in
     let s = input_line c_tex in
-    if Str.string_match end_coq_example s 0 then begin
-      just_after ()
+    if Str.string_match begin_coq s 0 then begin
+      let kind = Str.matched_group 1 s in
+      if kind = "eval" then begin
+        if just_after then end_block ();
+        inside false false false;
+        outside false
+      end else begin
+        let show_answers   = kind <> "example*" in
+        let show_questions = kind <> "example#" in
+        if not just_after then start_block ();
+        inside show_answers show_questions just_after;
+        outside true
+      end
     end else begin
-      let prompt = if k = 0 then "Coq < " else "      " in
-      if !verbose then Printf.printf "%s%s\n" prompt s;
-      if (not first_block) && k=0 then output_string c_out "\\medskip\n";
-      if show_questions then encapsule false c_out (prompt ^ s);
-      if has_match dot_end_line s then begin
-	let bl = next_block (succ k) in
-	if !verbose then List.iter print_endline bl;
-	if show_answers then print_block c_out bl;
-	inside show_answers  show_questions 0 false
-      end else
-	inside show_answers  show_questions (succ k) first_block
-    end
-  (* we are inside a \begin{coq_eval} ... \end{coq_eval} block
-   * k is the number of lines read until now *)
-  and eval k =
-    let s = input_line c_tex in
-    if Str.string_match end_coq_eval s 0 then
-      outside ()
-    else begin
-      if !verbose then Printf.printf "Coq < %s\n" s;
-      if has_match dot_end_line s then
-	let bl = next_block (succ k) in
-	if !verbose then List.iter print_endline bl;
-	eval 0
-      else
-	eval (succ k)
-    end
-  in
+      if just_after then end_block ();
+      output_string c_out (s ^ "\n");
+      outside false
+    end in
   try
-    let _ = next_block 0 in (* to skip the Coq banner *)
-    let _ = next_block 0 in (* to skip the Coq answer to Set Printing Width *)
-    outside ()
+    let _ = read_output () in (* to skip the Coq banner *)
+    let _ = read_output () in (* to skip the Coq answer to Set Printing Width *)
+    outside false
   with End_of_file -> begin
     close_in c_tex;
     close_in c_coq;
