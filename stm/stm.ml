@@ -1858,9 +1858,8 @@ let known_state ?(redefine_qed=false) ~cache id =
                       Some(Proof_global.close_proof
                                 ~keep_body_ucst_separate:false
                                 (State.exn_on id ~valid:eop)) in
-                reach view.next;
-                if keep == VtKeepAsAxiom then
-                  Option.iter (vernac_interp id) pua;
+                if keep != VtKeepAsAxiom then
+                  reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in
                 vernac_interp id ?proof x;
                 let wall_clock3 = Unix.gettimeofday () in
