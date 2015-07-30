@@ -35,7 +35,6 @@ API
   * A new safe pf_type_of function.
   All uses of unsafe_* functions should be eventually eliminated.
 
-
 Tools
 
 - Added an option -w to control the output of coqtop warnings.
@@ -359,6 +358,10 @@ Tactics
   trace anymore. Use "Info 1 auto" instead. The same goes for
   "info_trivial". On the other hand "info_eauto" still works fine,
   while "Info 1 eauto" prints a trivial trace.
+- When using a lemma of the prototypical form "forall A, {a:A & P a}",
+  "apply" and "apply in" do not instantiate anymore "A" with the
+  current goal and use "a" as the proof, as they were sometimes doing,
+  now considering that it is a too powerful decision.
 
 Program
 
