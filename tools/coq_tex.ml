@@ -64,8 +64,7 @@ let extract texfile inputv =
  * TeX file [texfile]. The result goes in file [result]. *)
 
 let tex_escaped s =
-  let dollar = "\\$" and  backslash = "\\\\" and expon = "\\^" in
-  let delims = Str.regexp ("[_{}&%#" ^ dollar ^ backslash ^ expon ^"~ <>'`]") in
+  let delims = Str.regexp "[_{}&%#$\\^~ <>'`]" in
   let adapt_delim = function
     | "_" | "{" | "}" | "&" | "%" | "#" | "$" as c -> "\\"^c
     | "\\" -> "{\\char'134}"
