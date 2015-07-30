@@ -1837,7 +1837,6 @@ let known_state ?(redefine_qed=false) ~cache id =
                 Proof_global.discard_all ()
               ), (if redefine_qed then `No else `Yes), true
           | `Sync (name, _, `Immediate) -> (fun () -> 
-                assert (Stateid.equal view.next eop);
                 reach eop; vernac_interp id x; Proof_global.discard_all ()
               ), `Yes, true
           | `Sync (name, pua, reason) -> (fun () ->
