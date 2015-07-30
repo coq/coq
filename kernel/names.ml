@@ -524,18 +524,9 @@ module KerPair = struct
     let hash x = KerName.hash (canonical x)
   end
 
-  (** Default (logical) comparison is on the canonical part *)
+  (** Default (logical) comparison and hash is on the canonical part *)
   let equal = CanOrd.equal
-
-  (** Hash-consing (despite having the same user part implies having
-      the same canonical part is a logical invariant of the system, it
-      is not necessarily an invariant in memory, so we treat kernel
-      names as they are syntactically for hash-consing) *)
-
-  let hash = function
-  | Same kn -> KerName.hash kn
-  | Dual (knu, knc) ->
-    Hashset.Combine.combine (KerName.hash knu) (KerName.hash knc)
+  let hash = CanOrd.hash
 
   module Self_Hashcons =
     struct
@@ -550,7 +541,14 @@ module KerPair = struct
         | Same x, Same y -> x == y
         | Dual (ux,cx), Dual (uy,cy) -> ux == uy && cx == cy
         | (Same _ | Dual _), _ -> false
-      let hash = hash
+      (** Hash-consing (despite having the same user part implies having
+          the same canonical part is a logical invariant of the system, it
+          is not necessarily an invariant in memory, so we treat kernel
+          names as they are syntactically for hash-consing) *)
+      let hash = function
+      | Same kn -> KerName.hash kn
+      | Dual (knu, knc) ->
+        Hashset.Combine.combine (KerName.hash knu) (KerName.hash knc)
     end
 
   module HashKP = Hashcons.Make(Self_Hashcons)
