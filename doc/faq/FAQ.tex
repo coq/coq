@@ -854,8 +854,10 @@ intros.
 split.
 assumption.
 assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{My goal contains a conjunction as an hypothesis, how can I use it?}
 
@@ -867,8 +869,10 @@ Goal forall A B:Prop, A/\B -> B.
 intros.
 destruct H as [H1 H2].
 assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 You can also perform the destruction at the time of introduction:
 
@@ -876,8 +880,10 @@ You can also perform the destruction at the time of introduction:
 Goal forall A B:Prop, A/\B -> B.
 intros A B [H1 H2].
 assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{My goal is a disjunction, how can I prove it?}
 
@@ -891,8 +897,10 @@ Goal forall A B:Prop, A -> A\/B.
 intros.
 left.
 assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 An example using classical reasoning:
 
@@ -914,8 +922,10 @@ Goal forall A B:Prop, (~A -> B) -> A\/B.
 intros.
 classical_right.
 auto.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{My goal is an universally quantified statement, how can I prove it?}
 
@@ -944,8 +954,10 @@ Goal exists x:nat, forall y, x+y=y.
 exists 0.
 intros.
 auto.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 \Question{My goal is solvable by  some lemma, how can I prove it?}
@@ -963,8 +975,10 @@ Qed.
 
 Goal 3+0 = 3.
 apply mylemma.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 
@@ -981,8 +995,10 @@ Just use the {\reflexivity} tactic.
 Goal forall x, 0+x = x.
 intros.
 reflexivity.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{My goal is a {\tt let x := a in ...}, how can I prove it?}
 
@@ -1013,8 +1029,10 @@ Goal forall x y : nat, x=y -> y=x.
 intros.
 symmetry.
 assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{My hypothesis is an equality, how can I swap the left and right hand terms?}
 
@@ -1025,8 +1043,10 @@ Goal forall x y : nat, x=y -> y=x.
 intros.
 symmetry in H.
 assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 \Question{My goal is an equality, how can I prove it by transitivity?}
@@ -1038,8 +1058,10 @@ intros.
 transitivity y.
 assumption.
 assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 \Question{My goal would be solvable using {\tt apply;assumption} if it would not create meta-variables, how can I prove it?}
@@ -1075,7 +1097,6 @@ eapply trans.
 apply H.
 auto.
 Qed.
-
 \end{coq_example}
 
 \Question{My goal is solvable by  some lemma within a set of lemmas and I don't want to remember which one, how can I prove it?}
@@ -1112,8 +1133,10 @@ Use the {\assumption} tactic.
 Goal 1=1 -> 1=1.
 intro.
 assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 \Question{My goal appears twice in the hypotheses and I want to choose which one is used, how can I do it?}
@@ -1123,8 +1146,10 @@ Use the {\exact} tactic.
 Goal 1=1 -> 1=1 -> 1=1.
 intros.
 exact H0.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{What can be the difference between applying one hypothesis or another in the context of the last question?}
 
@@ -1140,8 +1165,10 @@ Just use the {\tauto} tactic.
 Goal forall A B:Prop, A-> (A\/B) /\ A.
 intros.
 tauto.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{My goal is a first order formula, how can I prove it?}
 
@@ -1158,8 +1185,10 @@ Just use the {\congruence} tactic.
 Goal forall a b c d e, a=d -> b=e -> c+b=d -> c+e=a.
 intros.
 congruence.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 \Question{My goal is a disequality solvable by a sequence of rewrites, how can I prove it?}
@@ -1170,8 +1199,10 @@ Just use the {\congruence} tactic.
 Goal forall a b c d, a<>d -> b=a -> d=c+b -> b<>c+b.
 intros.
 congruence.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 \Question{My goal is an equality on some ring (e.g. natural numbers), how can I prove it?}
@@ -1182,11 +1213,13 @@ Just use the {\ring} tactic.
 Require Import ZArith.
 Require Ring.
 Local Open Scope Z_scope.
-Goal forall a b : Z, (a+b)*(a+b) = a*a + 2*a*b + b*b. 
+Goal forall a b : Z, (a+b)*(a+b) = a*a + 2*a*b + b*b.
 intros.
 ring.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{My goal is an equality on some field (e.g. real numbers), how can I prove it?}
 
@@ -1196,16 +1229,14 @@ Just use the {\field} tactic.
 Require Import Reals.
 Require Ring.
 Local Open Scope R_scope.
-Goal forall a b : R, b*a<>0 -> (a/b) * (b/a) = 1. 
+Goal forall a b : R, b*a<>0 -> (a/b) * (b/a) = 1.
 intros.
 field.
-cut (b*a <>0 -> a<>0).
-cut (b*a <>0 -> b<>0).
-auto.
-auto with real.
-auto with real.
-Qed.
+split ; auto with real.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 \Question{My goal is an inequality on integers in Presburger's arithmetic (an expression build from $+$, $-$, constants, and variables), how can I prove it?}
@@ -1215,11 +1246,13 @@ Qed.
 Require Import ZArith.
 Require Omega.
 Local Open Scope Z_scope.
-Goal forall a : Z, a>0 -> a+a > a. 
+Goal forall a : Z, a>0 -> a+a > a.
 intros.
 omega.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 \Question{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it?}
@@ -1242,16 +1275,22 @@ assert (A->C).
 intro;apply H0;apply H;assumption.
 apply H2.
 assumption.
+\end{coq_example}
+\begin{coq_example*}
 Qed.
+\end{coq_example*}
 
+\begin{coq_example}
 Goal forall A B C D : Prop, (A -> B) -> (B->C) -> A -> C. 
 intros.
 cut (A->C).
 intro.
 apply H2;assumption.
 intro;apply H0;apply H;assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 
@@ -1342,8 +1381,10 @@ H1
 *)
 intros A B C H H0 H1.
 repeat split;assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{I want to automatize the use of some tactic, how can I do it?}
 
@@ -1356,8 +1397,10 @@ Goal forall A B C : Prop, A -> B/\C -> A/\B/\C.
 Proof with assumption.
 intros.
 split...
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{I want to execute the {\texttt proof with} tactic only if it solves the goal, how can I do it?}
 
@@ -1369,8 +1412,10 @@ Local Open Scope Z_scope.
 Goal forall a b c : Z, a+b=b+a.
 Proof with try solve [ring].
 intros...
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{How can I do the opposite of the {\intro} tactic?}
 
@@ -1382,8 +1427,10 @@ intros.
 generalize H.
 intro.
 auto.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{One of the hypothesis is an equality between a variable and some term, I want to get rid of this variable, how can I do it?}
 
@@ -1521,8 +1568,10 @@ You can use the {\discriminate} tactic.
 Inductive toto : Set := | C1 : toto | C2 : toto.
 Goal C1 <> C2.
 discriminate.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 \Question{During an inductive proof, how to get rid of impossible cases of an inductive definition?}
 
@@ -1824,9 +1873,9 @@ induction 1.
   inversion 1.
   inversion 1. apply IHeven; trivial.
 \end{coq_example}
-\begin{coq_eval}
+\begin{coq_example*}
 Qed.
-\end{coq_eval}
+\end{coq_example*}
 
 In case the type of the second induction hypothesis is not
 dependent, {\tt inversion} can just be replaced by {\tt destruct}.
@@ -1861,10 +1910,10 @@ Double induction (or induction on pairs) is a restriction of the
 lexicographic induction. Here is an example of double induction.
 
 \begin{coq_example}
-Lemma nat_double_ind : 
-forall P : nat -> nat -> Prop, P 0 0 -> 
-  (forall m n, P m n -> P m (S n)) -> 
-  (forall m n, P m n -> P (S m) n) -> 
+Lemma nat_double_ind :
+forall P : nat -> nat -> Prop, P 0 0 ->
+  (forall m n, P m n -> P m (S n)) ->
+  (forall m n, P m n -> P (S m) n) ->
      forall m n, P m n.
 intros P H00 HmS HSn; induction m.
 (* case 0 *)
@@ -1872,9 +1921,9 @@ induction n; [assumption | apply HmS; apply IHn].
 (* case Sm *)
 intro n; apply HSn; apply IHm.
 \end{coq_example}
-\begin{coq_eval}
+\begin{coq_example*}
 Qed.
-\end{coq_eval}
+\end{coq_example*}
 
 \Question{How to define a function by nested recursion?}
 
@@ -1909,7 +1958,7 @@ Set Implicit Arguments.
 CoInductive Stream (A:Set) : Set :=
   Cons : A -> Stream A -> Stream A.
 CoFixpoint nats (n:nat) : Stream nat := Cons n (nats (S n)).
-Lemma Stream_unfold : 
+Lemma Stream_unfold :
    forall n:nat, nats n = Cons n (nats (S n)).
 Proof.
   intro;
@@ -1917,8 +1966,10 @@ Proof.
                   | Cons x s => Cons x s
                   end).
   case (nats n); reflexivity.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 
@@ -2599,8 +2650,10 @@ eapply eq_trans.
 Show Existentials.
 eassumption.
 assumption.
-Qed.
 \end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 \Question{What can I do if I get ``Cannot solve a second-order unification problem''?}
