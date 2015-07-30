@@ -285,7 +285,7 @@ let find_coqtop () =
     "coqtop"
   end
 
-let main () =
+let _ =
   parse_cl ();
   if !image = "" then image := Filename.quote (find_coqtop ());
   if !boot then image := !image ^ " -boot";
@@ -298,5 +298,3 @@ let main () =
     flush stdout
   end;
   List.iter one_file (List.rev !files)
-
-let _ = Printexc.catch main ()

@@ -30,7 +30,7 @@ let rec parse = function
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
 
-let coqdep_boot () =
+let _ =
   let () = option_boot := true in
   if Array.length Sys.argv < 2 then exit 1;
   parse (List.tl (Array.to_list Sys.argv));
@@ -47,5 +47,3 @@ let coqdep_boot () =
   end;
   if !option_c then mL_dependencies ();
   coq_dependencies ()
-
-let _ = Printexc.catch coqdep_boot ()

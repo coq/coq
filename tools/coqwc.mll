@@ -276,7 +276,7 @@ let rec parse = function
 
 (*s Main program. *)
 
-let main () =
+let _ =
   let files = parse (List.tl (Array.to_list Sys.argv)) in
   if not (!spec_only || !proof_only) then
     printf "     spec    proof comments\n";
@@ -284,8 +284,6 @@ let main () =
     | [] -> process_channel stdin; print_file None
     | [f] -> process_file f
     | _ -> List.iter process_file files; print_totals ()
-
-let _ = Printexc.catch main ()
 
 (*i*)}(*i*)
 

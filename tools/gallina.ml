@@ -39,7 +39,7 @@ let traite_stdin () =
   with Sys_error _ ->
     ()
 
-let gallina () =
+let _ =
   let lg_command = Array.length Sys.argv in
   if lg_command < 2 then begin
     output_string stderr "Usage: gallina [-] [-stdout] file1 file2 ...\n";
@@ -59,6 +59,3 @@ let gallina () =
     traite_stdin ()
   else
     List.iter traite_fichier !vfiles
-
-let _ = Printexc.catch gallina ()
-

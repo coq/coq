@@ -557,10 +557,8 @@ let produce_output fl =
 (*s \textbf{Main program.} Print the banner, parse the command line,
     read the files and then call [produce_document] from module [Web]. *)
 
-let main () =
+let _ =
   let files = parse () in
     Index.init_coqlib_library ();
     if not !quiet then banner ();
     if files <> [] then produce_output files
-
-let _ = Printexc.catch main ()
