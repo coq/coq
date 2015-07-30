@@ -658,17 +658,17 @@ arguments (or whatever subrelation of the pointwise extension).
 For example, one could declare the \texttt{map} combinator on lists as 
 a morphism:
 \begin{coq_eval}
-Require Import List.
+Require Import List Setoid Morphisms.
 Set Implicit Arguments.
 Inductive list_equiv {A:Type} (eqA : relation A) : relation (list A) :=
 | eq_nil : list_equiv eqA nil nil
-| eq_cons : forall x y, eqA x y -> 
+| eq_cons : forall x y, eqA x y ->
   forall l l', list_equiv eqA l l' -> list_equiv eqA (x :: l) (y :: l').
+Generalizable All Variables.
 \end{coq_eval}
 \begin{coq_example*}
 Instance map_morphism `{Equivalence A eqA, Equivalence B eqB} :
-  Proper ((eqA ==> eqB) ==> list_equiv eqA ==> list_equiv eqB) 
-     (@map A B).
+  Proper ((eqA ==> eqB) ==> list_equiv eqA ==> list_equiv eqB) (@map A B).
 \end{coq_example*}
 
 where \texttt{list\_equiv} implements an equivalence on lists

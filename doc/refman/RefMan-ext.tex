@@ -749,9 +749,12 @@ Function plus (n m : nat) {struct n} : nat :=
 each branch.  
 
 Function does not support partial application of the function being defined. Thus, the following example cannot be accepted due to the presence of partial application of \ident{wrong} into the body of \ident{wrong}~:
+\begin{coq_eval}
+Require List.
+\end{coq_eval}
 \begin{coq_example*}
-  Function wrong (C:nat) : nat := 
-    List.hd(List.map wrong (C::nil)).
+Fail Function wrong (C:nat) : nat :=
+  List.hd 0 (List.map wrong (C::nil)).
 \end{coq_example*}
 
 For now dependent cases are not treated for non structurally terminating functions.
@@ -1633,13 +1636,11 @@ one of the other arguments, then only the type of the first of these
 arguments is taken into account, and not an upper type of all of
 them.  As a consequence, the inference of the implicit argument of
 ``='' fails in
-
 \begin{coq_example*}
-Check nat = Prop.
+Fail Check nat = Prop.
 \end{coq_example*}
 
-but succeeds in 
-
+but succeeds in
 \begin{coq_example*}
 Check Prop = nat.
 \end{coq_example*}
@@ -2010,7 +2011,7 @@ binding as well as those introduced by tactic binding. The expression {\expr}
 can be any tactic expression as described at section~\ref{TacticLanguage}.
 
 \begin{coq_example*}
-Definition foo (x : A) : A := $( exact x )$.
+Definition foo (x : nat) : nat := $( exact x )$.
 \end{coq_example*}
 
 This construction is useful when one wants to define complicated terms using

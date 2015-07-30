@@ -140,12 +140,12 @@ Rougthly speaking, the deductive power of {\tt lia} is the combined deductive po
 However, it solves linear goals that {\tt omega} and {\tt romega} do not solve, such as the
 following so-called \emph{omega nightmare}~\cite{TheOmegaPaper}.
 \begin{coq_example*}
-  Goal forall x y, 
-       27 <= 11 * x + 13 * y <= 45 -> 
-       -10 <= 7 * x - 9 * y <= 4 ->   False.
+Goal forall x y,
+  27 <= 11 * x + 13 * y <= 45 ->
+  -10 <= 7 * x - 9 * y <= 4 ->  False.
 \end{coq_example*}
 \begin{coq_eval}
-intro x; lia.
+intros x y; lia.
 \end{coq_eval}
 The estimation of the relative efficiency of lia \emph{vs} {\tt omega}
 and {\tt romega} is under evaluation.

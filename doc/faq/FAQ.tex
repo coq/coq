@@ -1570,7 +1570,7 @@ If you type for instance the following ``definition'':
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
-Definition max (n p : nat) := if n <= p then p else n.
+Fail Definition max (n p : nat) := if n <= p then p else n.
 \end{coq_example}
 
 As \Coq~ says, the term ``~\texttt{n <= p}~'' is a proposition, i.e. a
@@ -1738,7 +1738,7 @@ mergesort} as an example).
 the arguments of the loop.
 
 \begin{coq_eval}
-Open Scope R_scope.
+Reset Initial.
 Require Import List.
 \end{coq_eval}
 
@@ -1751,21 +1751,25 @@ Definition R (a b:list nat) := length a < length b.
 \begin{coq_example*}
 Lemma Rwf : well_founded R.
 \end{coq_example*}
+\begin{coq_eval}
+Admitted.
+\end{coq_eval}
 
 \item Define the step function (which needs proofs that recursive
 calls are on smaller arguments).
 
-\begin{verbatim}
-Definition split (l : list nat) 
-   : {l1: list nat | R l1 l} * {l2 : list nat | R l2 l}
-   := (* ... *) .
-Definition concat (l1 l2 : list nat) : list nat := (* ... *) .
+\begin{coq_example*}
+Definition split (l : list nat)
+   : {l1: list nat | R l1 l} * {l2 : list nat | R l2 l}.
+Admitted.
+Definition concat (l1 l2 : list nat) : list nat.
+Admitted.
 Definition merge_step (l : list nat) (f: forall l':list nat, R l' l -> list nat) :=
   let (lH1,lH2) := (split l) in
   let (l1,H1) := lH1 in
   let (l2,H2) := lH2 in
   concat (f l1 H1) (f l2 H2).
-\end{verbatim}
+\end{coq_example*}
 
 \item Define the recursive function by fixpoint on the step function.
 
