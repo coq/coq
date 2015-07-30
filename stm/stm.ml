@@ -1688,7 +1688,10 @@ let collect_proof keep cur hd brkind id =
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         `MaybeASync (parent last, None, accn, name, delegate name)
-    | `Sideff _ -> `Sync (no_name,None,`NestedProof)
+    | `Sideff _ ->
+        Pp.(msg_warning (strbrk ("Nested proofs are deprecated and will "^
+           "stop working in the next Coq version")));
+        `Sync (no_name,None,`NestedProof)
     | _ -> `Sync (no_name,None,`Unknown) in
  let make_sync why = function
    | `Sync(name,pua,_) -> `Sync (name,pua,why)
