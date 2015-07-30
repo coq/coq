@@ -58,7 +58,7 @@ let print_usage_channel co command =
 \n\
 \n  -quiet                 unset display of extra information (implies -w none)\
 \n  -w (all|none)          configure display of warnings\
-\n  -color (on|off|auto)   configure color output\
+\n  -color (yes|no|auto)   configure color output\
 \n\
 \n  -q                     skip loading of rcfile\
 \n  -init-file f           set the rcfile to f\

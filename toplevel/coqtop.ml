@@ -41,8 +41,8 @@ let toploop = ref None
 
 let color : [`ON | `AUTO | `OFF] ref = ref `AUTO
 let set_color = function
-| "on" -> color := `ON
-| "off" -> color := `OFF
+| "yes" | "on" -> color := `ON
+| "no" | "off" -> color := `OFF
 | "auto" -> color := `AUTO
 | _ -> prerr_endline ("Error: on/off/auto expected after option color"); exit 1
 
@@ -326,8 +326,8 @@ let get_priority opt s =
     prerr_endline ("Error: low/high expected after "^opt); exit 1
 
 let get_async_proofs_mode opt = function
-  | "off" -> Flags.APoff
-  | "on" -> Flags.APon
+  | "no" | "off" -> Flags.APoff
+  | "yes" | "on" -> Flags.APon
   | "lazy" -> Flags.APonLazy
   | _ -> prerr_endline ("Error: on/off/lazy expected after "^opt); exit 1
 
@@ -341,8 +341,8 @@ let set_worker_id opt s =
   Flags.async_proofs_worker_id := s
 
 let get_bool opt = function
-  | "yes" -> true
-  | "no" -> false
+  | "yes" | "on" -> true
+  | "no" | "off" -> false
   | _ -> prerr_endline ("Error: yes/no expected after option "^opt); exit 1
 
 let get_int opt n =
