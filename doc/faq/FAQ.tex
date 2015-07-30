@@ -1012,13 +1012,21 @@ Just use the {\destruct} c as (a,...,b) tactic.
 
 \Question{My goal contains some existential hypotheses, how can I use it?}
 
-You can use the tactic {\elim} with you hypotheses as an argument.
+As with conjunctive hypotheses, you can use the {\destruct} tactic or
+the {\intros} tactic to decompose them into several hypotheses.
 
-\Question{My goal contains some existential hypotheses, how can I use it and decompose my knowledge about this new thing into different hypotheses?}
-
-\begin{verbatim}
-Ltac DecompEx H P := elim H;intro P;intro TO;decompose [and] TO;clear TO;clear H.
-\end{verbatim}
+\begin{coq_example*}
+Require Import Arith.
+\end{coq_example*}
+\begin{coq_example}
+Goal forall x, (exists y, x * y = 1) -> x = 1.
+intros x [y H].
+apply mult_is_one in H.
+easy.
+\end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
 
 
 \Question{My goal is an equality, how can I swap the left and right hand terms?}
