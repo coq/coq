@@ -63,17 +63,6 @@ let extract texfile inputv =
 (* Second pass: insert the answers of Coq from [coq_output] into the
  * TeX file [texfile]. The result goes in file [result]. *)
 
-let begin_coq_example =
-  Str.regexp "\\\\begin{coq_\\(example\\|example\\*\\|example\\#\\)}[ \t]*$"
-let begin_coq_eval = Str.regexp "\\\\begin{coq_eval}[ \t]*$"
-
-let has_match r s =
-  try let _ = Str.search_forward r s 0 in true with Not_found -> false
-
-let percent = Str.regexp "%"
-let bang    = Str.regexp "!"
-let expos   = Str.regexp "^"
-
 let tex_escaped s =
   let dollar = "\\$" and  backslash = "\\\\" and expon = "\\^" in
   let delims = Str.regexp ("[_{}&%#" ^ dollar ^ backslash ^ expon ^"~ <>'`]") in
@@ -216,7 +205,7 @@ let insert texfile coq_output result =
 
 (* Process of one TeX file *)
 
-let rm f = try Sys.remove f with any -> ()
+let rm f = try Sys.remove f with _ -> ()
 
 let one_file texfile =
   let inputv = Filename.temp_file "coq_tex" ".v" in
