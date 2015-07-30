@@ -2305,9 +2305,7 @@ let edit_at id =
   let rec master_for_br root tip =
       if Stateid.equal tip Stateid.initial then tip else
       match VCS.visit tip with
-      | { next } when next = root -> root
-      | { step = `Fork _ } -> tip
-      | { step = `Sideff (`Ast(_,id)|`Id id) } -> id
+      | { step = (`Fork _ | `Sideff _ | `Qed _) } -> tip
       | { next } -> master_for_br root next in
   let reopen_branch start at_id mode qed_id tip old_branch =
     let master_id, cancel_switch, keep =
