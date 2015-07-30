@@ -66,7 +66,8 @@ let extract texfile inputv =
 let tex_escaped s =
   let delims = Str.regexp "[_{}&%#$\\^~ <>'`]" in
   let adapt_delim = function
-    | "_" | "{" | "}" | "&" | "%" | "#" | "$" as c -> "\\"^c
+    | "{" | "}" | "&" | "%" | "#" | "$" as c -> "\\"^c
+    | "_" -> "{\\char`\\_}"
     | "\\" -> "{\\char'134}"
     | "^" -> "{\\char'136}"
     | "~" -> "{\\char'176}"
