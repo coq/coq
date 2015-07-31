@@ -20,6 +20,9 @@ Tactics
   will eventually fail and backtrack.
   * "Strict" changes the behavior of an unloaded hint to the one of the fail
   tactic, allowing to emulate the hopefully future import-scoped hint mechanism.
+- New compatibility flag "Universal Lemma Under Conjunction" which
+  let tactics working under conjunctions apply sublemmas of the form
+  "forall A, ... -> A".
 
 API
 

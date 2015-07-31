@@ -485,7 +485,24 @@ apply Rmp.
 Reset R.
 \end{coq_eval}
 
+\noindent {\bf Remark: } When the conclusion of the type of the term
+to apply is an inductive type isomorphic to a tuple type and {\em apply}
+looks recursively whether a component of the tuple matches the goal,
+it excludes components whose statement would result in applying an
+universal lemma of the form {\tt forall A, ... -> A}. Excluding this
+kind of lemma can be avoided by setting the following option:
+
+\begin{quote}
+\optindex{Universal Lemma Under Conjunction}
+{\tt Set Universal Lemma Under Conjunction}
+\end{quote}
+
+This option, which preserves compatibility with versions of {\Coq}
+prior to 8.4 is also available for {\tt apply {\term} in {\ident}}
+(see Section~\ref{apply-in}).
+
 \subsection{\tt apply {\term} in {\ident}}
+\label{apply-in}
 \tacindex{apply \dots\ in}
 
 This tactic applies to any goal.  The argument {\term} is a term
