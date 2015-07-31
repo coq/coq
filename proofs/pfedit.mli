@@ -153,7 +153,7 @@ val build_constant_by_tactic :
   types -> unit Proofview.tactic -> 
   Entries.definition_entry * bool * Evd.evar_universe_context
 
-val build_by_tactic : env -> Evd.evar_universe_context -> ?poly:polymorphic -> 
+val build_by_tactic : ?side_eff:bool -> env -> Evd.evar_universe_context -> ?poly:polymorphic ->
   types -> unit Proofview.tactic -> 
   constr * bool * Evd.evar_universe_context
 

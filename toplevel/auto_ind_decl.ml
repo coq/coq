@@ -637,7 +637,7 @@ let make_bl_scheme mind =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let bl_goal, eff = compute_bl_goal ind lnamesparrec nparrec in
   let ctx = Evd.empty_evar_universe_context (*FIXME univs *) in
-  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx bl_goal
+  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff:false (Global.env()) ctx bl_goal
     (compute_bl_tact (!bl_scheme_kind_aux()) (ind, Univ.Instance.empty) lnamesparrec nparrec)
   in
   ([|ans|], ctx), eff
@@ -759,7 +759,7 @@ let make_lb_scheme mind =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
   let ctx = Evd.empty_evar_universe_context in
-  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx lb_goal
+  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff:false (Global.env()) ctx lb_goal
     (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
   in
   ([|ans|], ctx (* FIXME *)), eff
@@ -930,7 +930,7 @@ let make_eq_decidability mind =
   let ctx = Evd.empty_evar_universe_context (* FIXME *)in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx
+  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff:false (Global.env()) ctx
     (compute_dec_goal (ind,u) lnamesparrec nparrec)
     (compute_dec_tact ind lnamesparrec nparrec)
   in
