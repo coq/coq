@@ -5,7 +5,7 @@
 \index{Asynchronous and Parallel Proof Processing!presentation}
 
 This chapter explains how proofs can be asynchronously processed by Coq.
-This feature improves the reactiveness of the system when used in interactive
+This feature improves the reactivity of the system when used in interactive
 mode via CoqIDE.  In addition to that, it allows Coq to take advantage of
 parallel hardware when used as a batch compiler by decoupling the checking
 of statements and definitions from the construction and checking of proofs
@@ -24,7 +24,7 @@ are universe inconsistencies.
 
 Last, at the time of writing, only opaque proofs (ending with \texttt{Qed} or \texttt{Admitted}) can be processed asynchronously.
 
-\subsection{Proof annotations}
+\section{Proof annotations}
 
 To process a proof asynchronously Coq needs to know the precise statement
 of the theorem without looking at the proof.  This requires some annotations
@@ -52,7 +52,7 @@ The command \texttt{Set Suggest Proof Using} makes Coq suggest, when a
 \texttt{Qed} command is processed, a correct proof annotation. It is up
 to the user to modify the proof script accordingly.
 
-\subsection{Interactive mode}
+\section{Interactive mode}
 
 At the time of writing the only user interface supporting asynchronous proof
 processing is CoqIDE.
@@ -85,7 +85,7 @@ reduce the reactivity of the master process to user commands.
 To disable this feature, one can pass the \texttt{-async-proofs off} flag to
 CoqIDE.
 
-\subsection{Batch mode}
+\section{Batch mode}
 
 When Coq is used as a batch compiler by running \texttt{coqc} or
 \texttt{coqtop -compile}, it produces a \texttt{.vo} file for each
@@ -148,7 +148,7 @@ globally consistent. Hence this compilation mode is only useful for quick
 regression testing and on developments not making heavy use of the $Type$
 hierarchy.
 
-\subsection{Limiting the number of parallel workers}
+\section{Limiting the number of parallel workers}
 \label{coqworkmgr}
 
 Many Coq processes may run on the same computer, and each of them may start
