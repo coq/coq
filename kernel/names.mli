@@ -305,6 +305,12 @@ sig
     val hash : t -> int
   end
 
+  module SyntacticOrd : sig
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
   val equal : t -> t -> bool
   (** Default comparison, alias for [CanOrd.equal] *)
 
@@ -379,6 +385,12 @@ sig
     val hash : t -> int
   end
 
+  module SyntacticOrd : sig
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
+
   val equal : t -> t -> bool
   (** Default comparison, alias for [CanOrd.equal] *)
 
@@ -417,16 +429,22 @@ val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
 val eq_ind : inductive -> inductive -> bool
 val eq_user_ind : inductive -> inductive -> bool
+val eq_syntactic_ind : inductive -> inductive -> bool
 val ind_ord : inductive -> inductive -> int
 val ind_hash : inductive -> int
 val ind_user_ord : inductive -> inductive -> int
 val ind_user_hash : inductive -> int
+val ind_syntactic_ord : inductive -> inductive -> int
+val ind_syntactic_hash : inductive -> int
 val eq_constructor : constructor -> constructor -> bool
 val eq_user_constructor : constructor -> constructor -> bool
+val eq_syntactic_constructor : constructor -> constructor -> bool
 val constructor_ord : constructor -> constructor -> int
-val constructor_user_ord : constructor -> constructor -> int
 val constructor_hash : constructor -> int
+val constructor_user_ord : constructor -> constructor -> int
 val constructor_user_hash : constructor -> int
+val constructor_syntactic_ord : constructor -> constructor -> int
+val constructor_syntactic_hash : constructor -> int
 
 (** Better to have it here that in Closure, since required in grammar.cma *)
 type evaluable_global_reference =
@@ -639,6 +657,12 @@ module Projection : sig
   type t
     
   val make : constant -> bool -> t
+
+  module SyntacticOrd : sig
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val hash : t -> int
+  end
 
   val constant : t -> constant
   val unfolded : t -> bool

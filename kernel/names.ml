@@ -477,7 +477,7 @@ module KerPair = struct
     | Dual (kn,_) -> kn
 
   let same kn = Same kn
-  let make knu knc = if knu == knc then Same knc else Dual (knu,knc)
+  let make knu knc = if KerName.equal knu knc then Same knc else Dual (knu,knc)
 
   let make1 = same
   let make2 mp l = same (KerName.make2 mp l)
@@ -522,6 +522,23 @@ module KerPair = struct
     let compare x y = KerName.compare (canonical x) (canonical y)
     let equal x y = x == y || KerName.equal (canonical x) (canonical y)
     let hash x = KerName.hash (canonical x)
+  end
+
+  module SyntacticOrd = struct
+    type t = kernel_pair
+    let compare x y = match x, y with
+      | Same knx, Same kny -> KerName.compare knx kny
+      | Dual (knux,kncx), Dual (knuy,kncy) ->
+        let c = KerName.compare knux knuy in
+        if not (Int.equal c 0) then c
+        else KerName.compare kncx kncy
+      | Same _, _ -> -1
+      | Dual _, _ -> 1
+    let equal x y = x == y || compare x y = 0
+    let hash = function
+      | Same kn -> KerName.hash kn
+      | Dual (knu, knc) ->
+        Hashset.Combine.combine (KerName.hash knu) (KerName.hash knc)
   end
 
   (** Default (logical) comparison and hash is on the canonical part *)
@@ -590,6 +607,8 @@ let index_of_constructor (ind, i) = i
 let eq_ind (m1, i1) (m2, i2) = Int.equal i1 i2 && MutInd.equal m1 m2
 let eq_user_ind (m1, i1) (m2, i2) =
   Int.equal i1 i2 && MutInd.UserOrd.equal m1 m2
+let eq_syntactic_ind (m1, i1) (m2, i2) =
+  Int.equal i1 i2 && MutInd.SyntacticOrd.equal m1 m2
 
 let ind_ord (m1, i1) (m2, i2) =
   let c = Int.compare i1 i2 in
@@ -597,15 +616,22 @@ let ind_ord (m1, i1) (m2, i2) =
 let ind_user_ord (m1, i1) (m2, i2) =
   let c = Int.compare i1 i2 in
   if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
+let ind_syntactic_ord (m1, i1) (m2, i2) =
+  let c = Int.compare i1 i2 in
+  if Int.equal c 0 then MutInd.SyntacticOrd.compare m1 m2 else c
 
 let ind_hash (m, i) =
   Hashset.Combine.combine (MutInd.hash m) (Int.hash i)
 let ind_user_hash (m, i) =
   Hashset.Combine.combine (MutInd.UserOrd.hash m) (Int.hash i)
+let ind_syntactic_hash (m, i) =
+  Hashset.Combine.combine (MutInd.SyntacticOrd.hash m) (Int.hash i)
 
 let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
 let eq_user_constructor (ind1, j1) (ind2, j2) =
   Int.equal j1 j2 && eq_user_ind ind1 ind2
+let eq_syntactic_constructor (ind1, j1) (ind2, j2) =
+  Int.equal j1 j2 && eq_syntactic_ind ind1 ind2
 
 let constructor_ord (ind1, j1) (ind2, j2) =
   let c = Int.compare j1 j2 in
@@ -613,11 +639,16 @@ let constructor_ord (ind1, j1) (ind2, j2) =
 let constructor_user_ord (ind1, j1) (ind2, j2) =
   let c = Int.compare j1 j2 in
   if Int.equal c 0 then ind_user_ord ind1 ind2 else c
+let constructor_syntactic_ord (ind1, j1) (ind2, j2) =
+  let c = Int.compare j1 j2 in
+  if Int.equal c 0 then ind_syntactic_ord ind1 ind2 else c
 
 let constructor_hash (ind, i) =
   Hashset.Combine.combine (ind_hash ind) (Int.hash i)
 let constructor_user_hash (ind, i) =
   Hashset.Combine.combine (ind_user_hash ind) (Int.hash i)
+let constructor_syntactic_hash (ind, i) =
+  Hashset.Combine.combine (ind_syntactic_hash ind) (Int.hash i)
 
 module InductiveOrdered = struct
   type t = inductive
@@ -804,6 +835,15 @@ struct
   let equal (c, b) (c', b') = Constant.equal c c' && b == b'
 
   let hash (c, b) = (if b then 0 else 1) + Constant.hash c
+
+  module SyntacticOrd = struct
+    type t = constant * bool
+    let compare (c, b) (c', b') =
+      if b = b' then Constant.SyntacticOrd.compare c c' else -1
+    let equal (c, b as x) (c', b' as x') =
+      x == x' || b = b' && Constant.SyntacticOrd.equal c c'
+    let hash (c, b) = (if b then 0 else 1) + Constant.SyntacticOrd.hash c
+  end
 
   module Self_Hashcons =
     struct
