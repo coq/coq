@@ -732,12 +732,10 @@ let hasheq t1 t2 =
       n1 == n2 && b1 == b2 && t1 == t2 && c1 == c2
     | App (c1,l1), App (c2,l2) -> c1 == c2 && array_eqeq l1 l2
     | Proj (p1,c1), Proj(p2,c2) -> p1 == p2 && c1 == c2
-    | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && array_eqeq l1 l2
+    | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && array_eqeq l1 l2
     | Const (c1,u1), Const (c2,u2) -> c1 == c2 && u1 == u2
-    | Ind ((sp1,i1),u1), Ind ((sp2,i2),u2) -> 
-      sp1 == sp2 && Int.equal i1 i2 && u1 == u2
-    | Construct (((sp1,i1),j1),u1), Construct (((sp2,i2),j2),u2) ->
-      sp1 == sp2 && Int.equal i1 i2 && Int.equal j1 j2 && u1 == u2
+    | Ind (ind1,u1), Ind (ind2,u2) -> ind1 == ind2 && u1 == u2
+    | Construct (cstr1,u1), Construct (cstr2,u2) -> cstr1 == cstr2 && u1 == u2
     | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
       ci1 == ci2 && p1 == p2 && c1 == c2 && array_eqeq bl1 bl2
     | Fix ((ln1, i1),(lna1,tl1,bl1)), Fix ((ln2, i2),(lna2,tl2,bl2)) ->
@@ -815,19 +813,19 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Proj (p,c) ->
         let c, hc = sh_rec c in
 	let p' = Projection.hcons p in
-	  (Proj (p', c), combinesmall 17 (combine (Projection.hash p') hc))
+	  (Proj (p', c), combinesmall 17 (combine (Projection.SyntacticOrd.hash p') hc))
       | Const (c,u) ->
 	let c' = sh_con c in
 	let u', hu = sh_instance u in
-	(Const (c', u'), combinesmall 9 (combine (Constant.hash c) hu))
-      | Ind ((kn,i) as ind,u) ->
+	(Const (c', u'), combinesmall 9 (combine (Constant.SyntacticOrd.hash c) hu))
+      | Ind (ind,u) ->
 	let u', hu = sh_instance u in
 	(Ind (sh_ind ind, u'), 
-	 combinesmall 10 (combine (ind_hash ind) hu))
-      | Construct ((((kn,i),j) as c,u))->
+	 combinesmall 10 (combine (ind_syntactic_hash ind) hu))
+      | Construct (c,u) ->
 	let u', hu = sh_instance u in
 	(Construct (sh_construct c, u'),
-	 combinesmall 11 (combine (constructor_hash c) hu))
+	 combinesmall 11 (combine (constructor_syntactic_hash c) hu))
       | Case (ci,p,c,bl) ->
 	let p, hp = sh_rec p
 	and c, hc = sh_rec c in
