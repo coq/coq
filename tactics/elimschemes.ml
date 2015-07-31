@@ -21,7 +21,7 @@ open Ind_tables
 
 (* Induction/recursion schemes *)
 
-let optimize_non_type_induction_scheme kind dep sort ind =
+let optimize_non_type_induction_scheme kind dep sort _ ind =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   if check_scheme kind ind then
@@ -68,15 +68,15 @@ let build_induction_scheme_in_type dep sort ind =
  
 let rect_scheme_kind_from_type =
   declare_individual_scheme_object "_rect_nodep"
-    (fun x -> build_induction_scheme_in_type false InType x, Declareops.no_seff)
+    (fun _ x -> build_induction_scheme_in_type false InType x, Declareops.no_seff)
 
 let rect_scheme_kind_from_prop =
   declare_individual_scheme_object "_rect" ~aux:"_rect_from_prop"
-    (fun x -> build_induction_scheme_in_type false InType x, Declareops.no_seff)
+    (fun _ x -> build_induction_scheme_in_type false InType x, Declareops.no_seff)
 
 let rect_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_rect" ~aux:"_rect_from_type"
-    (fun x -> build_induction_scheme_in_type true InType x, Declareops.no_seff)
+    (fun _ x -> build_induction_scheme_in_type true InType x, Declareops.no_seff)
 
 let ind_scheme_kind_from_type =
   declare_individual_scheme_object "_ind_nodep"
@@ -109,24 +109,24 @@ let build_case_analysis_scheme_in_type dep sort ind =
 
 let case_scheme_kind_from_type =
   declare_individual_scheme_object "_case_nodep"
-  (fun x -> build_case_analysis_scheme_in_type false InType x, Declareops.no_seff)
+  (fun _ x -> build_case_analysis_scheme_in_type false InType x, Declareops.no_seff)
 
 let case_scheme_kind_from_prop =
   declare_individual_scheme_object "_case" ~aux:"_case_from_prop"
-  (fun x -> build_case_analysis_scheme_in_type false InType x, Declareops.no_seff)
+  (fun _ x -> build_case_analysis_scheme_in_type false InType x, Declareops.no_seff)
 
 let case_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_case" ~aux:"_case_from_type"
-  (fun x -> build_case_analysis_scheme_in_type true InType x, Declareops.no_seff)
+  (fun _ x -> build_case_analysis_scheme_in_type true InType x, Declareops.no_seff)
 
 let case_dep_scheme_kind_from_type_in_prop =
   declare_individual_scheme_object "_casep_dep"
-  (fun x -> build_case_analysis_scheme_in_type true InProp x, Declareops.no_seff)
+  (fun _ x -> build_case_analysis_scheme_in_type true InProp x, Declareops.no_seff)
 
 let case_dep_scheme_kind_from_prop =
   declare_individual_scheme_object "_case_dep"
-  (fun x -> build_case_analysis_scheme_in_type true InType x, Declareops.no_seff)
+  (fun _ x -> build_case_analysis_scheme_in_type true InType x, Declareops.no_seff)
 
 let case_dep_scheme_kind_from_prop_in_prop =
   declare_individual_scheme_object "_casep"
-  (fun x -> build_case_analysis_scheme_in_type true InProp x, Declareops.no_seff)
+  (fun _ x -> build_case_analysis_scheme_in_type true InProp x, Declareops.no_seff)
