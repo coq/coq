@@ -33,7 +33,7 @@ module type Hashconsed =
 sig
   type t
   val hash : t -> int
-  val equal : t -> t -> bool
+  val eq : t -> t -> bool
   val hcons : t -> t
 end
 
@@ -51,7 +51,7 @@ struct
     type t = _t
     type u = (M.t -> M.t)
     let hash = function Nil -> 0 | Cons (_, h, _) -> h
-    let equal l1 l2 = match l1, l2 with
+    let eq l1 l2 = match l1, l2 with
     | Nil, Nil -> true
     | Cons (x1, _, l1), Cons (x2, _, l2) -> x1 == x2 && l1 == l2
     | _ -> false
@@ -131,7 +131,7 @@ module HList = struct
   let rec remove x = function
   | Nil -> nil
   | Cons (y, _, l) ->
-    if H.equal x y then l
+    if H.eq x y then l
     else cons y (remove x l)
 
   end
@@ -229,7 +229,7 @@ module Level = struct
     type _t = t
     type t = _t
     type u = unit
-    let equal x y = x.hash == y.hash && RawLevel.hequal x.data y.data
+    let eq x y = x.hash == y.hash && RawLevel.hequal x.data y.data
     let hash x = x.hash
     let hashcons () x =
       let data' = RawLevel.hcons x.data in
@@ -319,7 +319,7 @@ struct
       let hashcons hdir (b,n as x) = 
 	let b' = hdir b in 
 	  if b' == b then x else (b',n)
-      let equal l1 l2 =
+      let eq l1 l2 =
         l1 == l2 || 
         match l1,l2 with
 	| (b,n), (b',n') -> b == b' && n == n'
@@ -338,7 +338,7 @@ struct
       let hcons =
         Hashcons.simple_hcons H.generate H.hcons Level.hcons
       let hash = ExprHash.hash
-      let equal x y = x == y ||
+      let eq x y = x == y ||
         (let (u,n) = x and (v,n') = y in
            Int.equal n n' && Level.equal u v)
 
@@ -1079,7 +1079,7 @@ struct
 	  a
 	end
 
-    let equal t1 t2 =
+    let eq t1 t2 =
       t1 == t2 ||
 	(Int.equal (Array.length t1) (Array.length t2) &&
 	   let rec aux i =
