@@ -371,7 +371,7 @@ Qed.
 
 Goal True.
 Fail eapply existT.
-Set Universal Lemma Under Conjunction.
+Set Trivial Tactic Unification Under Conjunction.
 eapply existT.
 Abort.
 

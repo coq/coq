@@ -35,7 +35,7 @@ module type Hashconsed =
 sig
   type t
   val hash : t -> int
-  val eq : t -> t -> bool
+  val equal : t -> t -> bool
   val hcons : t -> t
 end
 
@@ -53,7 +53,7 @@ struct
     type t = _t
     type u = (M.t -> M.t)
     let hash = function Nil -> 0 | Cons (_, h, _) -> h
-    let eq l1 l2 = match l1, l2 with
+    let equal l1 l2 = match l1, l2 with
     | Nil, Nil -> true
     | Cons (x1, _, l1), Cons (x2, _, l2) -> x1 == x2 && l1 == l2
     | _ -> false
@@ -135,12 +135,12 @@ module HList = struct
   let rec remove x = function
   | Nil -> nil
   | Cons (y, _, l) ->
-    if H.eq x y then l
+    if H.equal x y then l
     else cons y (remove x l)
 
   let rec mem x = function
   | Nil -> false
-  | Cons (y, _, l) -> H.eq x y || mem x l
+  | Cons (y, _, l) -> H.equal x y || mem x l
 
   let rec compare cmp l1 l2 = match l1, l2 with
   | Nil, Nil -> 0
@@ -251,7 +251,7 @@ module Level = struct
     type _t = t
     type t = _t
     type u = unit
-    let eq x y = x.hash == y.hash && RawLevel.hequal x.data y.data
+    let equal x y = x.hash == y.hash && RawLevel.hequal x.data y.data
     let hash x = x.hash
     let hashcons () x =
       let data' = RawLevel.hcons x.data in
@@ -398,7 +398,7 @@ struct
       let hashcons hdir (b,n as x) = 
 	let b' = hdir b in 
 	  if b' == b then x else (b',n)
-      let eq l1 l2 =
+      let equal l1 l2 =
         l1 == l2 || 
         match l1,l2 with
 	| (b,n), (b',n') -> b == b' && n == n'
@@ -417,7 +417,7 @@ struct
       let hcons =
 	Hashcons.simple_hcons H.generate H.hcons Level.hcons
       let hash = ExprHash.hash
-      let eq x y = x == y ||
+      let equal x y = x == y ||
 	(let (u,n) = x and (v,n') = y in
 	   Int.equal n n' && Level.equal u v)
 
@@ -1293,7 +1293,7 @@ module Hconstraint =
       type t = univ_constraint
       type u = universe_level -> universe_level
       let hashcons hul (l1,k,l2) = (hul l1, k, hul l2)
-      let eq (l1,k,l2) (l1',k',l2') =
+      let equal (l1,k,l2) (l1',k',l2') =
 	l1 == l1' && k == k' && l2 == l2'
       let hash = Hashtbl.hash
     end)
@@ -1305,7 +1305,7 @@ module Hconstraints =
       type u = univ_constraint -> univ_constraint
       let hashcons huc s =
 	Constraint.fold (fun x -> Constraint.add (huc x)) s Constraint.empty
-      let eq s s' =
+      let equal s s' =
 	List.for_all2eq (==)
 	  (Constraint.elements s)
 	  (Constraint.elements s')
@@ -1676,7 +1676,7 @@ struct
 	  a
 	end
 
-    let eq t1 t2 =
+    let equal t1 t2 =
       t1 == t2 ||
 	(Int.equal (Array.length t1) (Array.length t2) &&
 	   let rec aux i =
@@ -2043,7 +2043,7 @@ module Huniverse_set =
       type u = universe_level -> universe_level
       let hashcons huc s =
 	LSet.fold (fun x -> LSet.add (huc x)) s LSet.empty
-      let eq s s' =
+      let equal s s' =
 	LSet.equal s s'
       let hash = Hashtbl.hash
     end)

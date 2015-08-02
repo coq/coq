@@ -306,9 +306,7 @@ struct
     | Update t -> str "ZUpdate(" ++ pr_c t ++ str ")"
   and pr pr_c l =
     let open Pp in
-    str "[" ++
-    prlist_with_sep pr_semicolon (fun x -> hov 1 (pr_member pr_c x)) l ++
-    str "]"
+    prlist_with_sep pr_semicolon (fun x -> hov 1 (pr_member pr_c x)) l
 
   and pr_cst_member pr_c c =
     let open Pp in

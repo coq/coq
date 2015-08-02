@@ -162,7 +162,7 @@ let reset_context = reset_with_named_context empty_named_context_val
 let pop_rel_context n env =
   let ctxt = env.env_rel_context in
   { env with
-    env_rel_context = List.skipn n ctxt;
+    env_rel_context = List.firstn (List.length ctxt - n) ctxt;
     env_nb_rel = env.env_nb_rel - n }
 
 let fold_named_context f env ~init =

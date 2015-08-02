@@ -16,7 +16,7 @@
 
 module type EqType = sig
   type t
-  val eq : t -> t -> bool
+  val equal : t -> t -> bool
 end
 
 type statistics = {

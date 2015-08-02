@@ -380,26 +380,24 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
   in
   let consume_stack on_left (termF,skF) (termO,skO) evd =
     let switch f a b = if on_left then f a b else f b a in
-    let not_only_appO = Stack.not_purely_applicative skO in
-    match switch (ise_stack2 not_only_appO env evd (evar_conv_x ts)) skF skO with
-      |Some (lF,rO), Success i' when on_left && (not_only_appO || List.is_empty lF) ->
-        (* Case (?termF,stk) = (termO,u1..un::stk') with stk,stk' w/o app *)
-        (* or (?termF,stk) = (termO,u1..un::stk') with stk,stk' w/o app *)
-	switch (evar_conv_x ts env i' pbty) (Stack.zip(termF,lF)) (Stack.zip(termO,rO))
-      |Some (rO,lF), Success i' when not on_left && (not_only_appO || List.is_empty lF) ->
-	switch (evar_conv_x ts env i' pbty) (Stack.zip(termF,lF)) (Stack.zip(termO,rO))
+    let not_only_app = Stack.not_purely_applicative skO in
+    match switch (ise_stack2 not_only_app env evd (evar_conv_x ts)) skF skO with
+      |Some (l,r), Success i' when on_left && (not_only_app || List.is_empty l) ->
+	switch (evar_conv_x ts env i' pbty) (Stack.zip(termF,l)) (Stack.zip(termO,r))
+      |Some (r,l), Success i' when not on_left && (not_only_app || List.is_empty l) ->
+	switch (evar_conv_x ts env i' pbty) (Stack.zip(termF,l)) (Stack.zip(termO,r))
       |None, Success i' -> switch (evar_conv_x ts env i' pbty) termF termO
       |_, (UnifFailure _ as x) -> x
       |Some _, _ -> UnifFailure (evd,NotSameArgSize) in
-  let eta env evd onleft (termR,skR) (termO,skO) =
-    assert (match skR with [] -> true | _ -> false);
-    let (na,c1,c'1) = destLambda termR in
+  let eta env evd onleft sk term sk' term' =
+    assert (match sk with [] -> true | _ -> false);
+    let (na,c1,c'1) = destLambda term in
     let c = nf_evar evd c1 in
     let env' = push_rel (na,None,c) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
       (fst ts) env' evd Cst_stack.empty (c'1, Stack.empty) in
     let out2 = whd_nored_state evd
-      (Stack.zip (termO, skO @ [Stack.Shift 1]), Stack.append_app [|mkRel 1|] Stack.empty),
+      (Stack.zip (term', sk' @ [Stack.Shift 1]), Stack.append_app [|mkRel 1|] Stack.empty), 
       Cst_stack.empty in
     if onleft then evar_eqappr_x ts env' evd CONV out1 out2
     else evar_eqappr_x ts env' evd CONV out2 out1
@@ -419,7 +417,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let not_only_app = Stack.not_purely_applicative skM in
     let f1 i =
       match Stack.list_of_app_stack skF with
-      | None -> quick_fail evd
+      | None -> default_fail evd
       | Some lF -> 
         let tM = Stack.zip apprM in
 	  miller_pfenning on_left
@@ -427,9 +425,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	      switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i)) (Stack.zip apprF) tM
 	    else quick_fail i)
 	  ev lF tM i
-    and consume (termF,skF as apprF) (termM,skM as apprM) i =
+    and consume (termF,skF as apprF) (termM,skM as apprM) i = 
       if not (Stack.is_empty skF && Stack.is_empty skM) then
-        (* This tries first-order matching *)
         consume_stack on_left apprF apprM i
       else quick_fail i
     and delta i =
@@ -468,24 +465,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let switch f a b = if on_left then f a b else f b a in
     let eta evd =
              match kind_of_term termR with
-	     | Lambda _ -> eta env evd false apprR apprF
-	     | Construct u -> eta_constructor ts env evd (u,skR) apprF
+	     | Lambda _ -> eta env evd false skR termR skF termF
+	     | Construct u -> eta_constructor ts env evd skR u skF termF
 	     | _ -> UnifFailure (evd,NotSameHead)
-    in
-    let postpone tR lF evd =
-      (* Postpone the use of an heuristic *)
-      if not (occur_rigidly (fst ev) evd tR) then
-        let evd,tF =
-          if isRel tR || isVar tR then
-            (* Optimization so as to generate candidates *)
-            let evd,ev = evar_absorb_arguments env evd ev lF in
-            evd,mkEvar ev
-          else
-            evd,Stack.zip apprF in
-	switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) evd))
-	  tF tR
-      else
-        UnifFailure (evd,OccurCheck (fst ev,tR))
     in
     match Stack.list_of_app_stack skF with
     | None ->
@@ -493,7 +475,22 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     | Some lF ->
         let tR = Stack.zip apprR in
 	  miller_pfenning on_left
-	    (fun () -> ise_try evd [eta;postpone tR lF])
+	    (fun () ->
+	      ise_try evd 
+	        [eta;(* Postpone the use of an heuristic *)
+		 (fun i -> 
+		   if not (occur_rigidly (fst ev) i tR) then
+                     let i,tF =
+                       if isRel tR || isVar tR then
+                         (* Optimization so as to generate candidates *)
+                         let i,ev = evar_absorb_arguments env i ev lF in
+                         i,mkEvar ev
+                       else
+                         i,Stack.zip apprF in
+		     switch (fun x y -> Success (add_conv_pb (pbty,env,x,y) i))
+	               tF tR
+		   else
+                     UnifFailure (evd,OccurCheck (fst ev,tR)))])
 	    ev lF tR evd
   in
   let app_empty = match sk1, sk2 with [], [] -> true | _ -> false in
@@ -712,10 +709,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 
     (* Eta-expansion *)
     | Rigid, _ when isLambda term1 ->
-        eta env evd true appr1 appr2
+        eta env evd true sk1 term1 sk2 term2
 
     | _, Rigid when isLambda term2 ->
-        eta env evd false appr2 appr1
+        eta env evd false sk2 term2 sk1 term1
 
     | Rigid, Rigid -> begin
         match kind_of_term term1, kind_of_term term2 with
@@ -755,10 +752,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  rigids env evd sk1 term1 sk2 term2
 
 	| Construct u, _ ->
-	  eta_constructor ts env evd (u,sk1) appr2
+	  eta_constructor ts env evd sk1 u sk2 term2
 	    
 	| _, Construct u ->
-	  eta_constructor ts env evd (u,sk2) appr1
+	  eta_constructor ts env evd sk2 u sk1 term1
 
 	| Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
 	  if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
@@ -854,7 +851,7 @@ and conv_record trs env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk2)
 	 (fst (decompose_app_vect (substl ks h))))]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
-and eta_constructor ts env evd (((ind, i), u),sk1) (term2,sk2) =
+and eta_constructor ts env evd sk1 ((ind, i), u) sk2 term2 =
   let mib = lookup_mind (fst ind) env in
     match mib.Declarations.mind_record with
     | Some (Some (id, projs, pbs)) when mib.Declarations.mind_finite <> Decl_kinds.CoFinite -> 

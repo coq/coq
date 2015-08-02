@@ -28,10 +28,11 @@ open Pp
 (**********************************************************************)
 (* Registering schemes in the environment *)
 
+
 type mutual_scheme_object_function =
-  internal_flag -> mutual_inductive -> constr array Evd.in_evar_universe_context * Declareops.side_effects
+  mutual_inductive -> constr array Evd.in_evar_universe_context * Declareops.side_effects
 type individual_scheme_object_function =
-  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Declareops.side_effects
+  inductive -> constr Evd.in_evar_universe_context * Declareops.side_effects
 
 type 'a scheme_kind = string
 
@@ -140,31 +141,32 @@ let define internal id c p univs =
   in
   kn
 
-let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
-  let (c, ctx), eff = f mode ind in
+let define_individual_scheme_base kind suff f internal idopt (mind,i as ind) =
+  let (c, ctx), eff = f ind in
   let mib = Global.lookup_mind mind in
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
-  let const = define mode id c mib.mind_polymorphic ctx in
+  let const = define internal id c mib.mind_polymorphic ctx in
   declare_scheme kind [|ind,const|];
   const, Declareops.cons_side_effects
      (Safe_typing.sideff_of_scheme kind (Global.safe_env()) [ind,const]) eff
 
-let define_individual_scheme kind mode names (mind,i as ind) =
+let define_individual_scheme kind internal names (mind,i as ind) =
   match Hashtbl.find scheme_object_table kind with
   | _,MutualSchemeFunction f -> assert false
   | s,IndividualSchemeFunction f ->
-      define_individual_scheme_base kind s f mode names ind
+      define_individual_scheme_base kind s f internal names ind
 
-let define_mutual_scheme_base kind suff f mode names mind =
-  let (cl, ctx), eff = f mode mind in
+let define_mutual_scheme_base kind suff f internal names mind =
+  let (cl, ctx), eff = f mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
+
   let consts = Array.map2 (fun id cl -> 
-     define mode id cl mib.mind_polymorphic ctx) ids cl in
+     define internal id cl mib.mind_polymorphic ctx) ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
   declare_scheme kind schemes;
   consts,
@@ -173,11 +175,11 @@ let define_mutual_scheme_base kind suff f mode names mind =
       kind (Global.safe_env()) (Array.to_list schemes))
     eff 
 
-let define_mutual_scheme kind mode names mind =
+let define_mutual_scheme kind internal names mind =
   match Hashtbl.find scheme_object_table kind with
   | _,IndividualSchemeFunction _ -> assert false
   | s,MutualSchemeFunction f ->
-      define_mutual_scheme_base kind s f mode names mind
+      define_mutual_scheme_base kind s f internal names mind
 
 let find_scheme_on_env_too kind ind =
   let s = String.Map.find kind (Indmap.find ind !scheme_map) in
@@ -186,14 +188,14 @@ let find_scheme_on_env_too kind ind =
             kind (Global.safe_env()) [ind, s])
       Declareops.no_seff 
 
-let find_scheme ?(mode=KernelSilent) kind (mind,i as ind) =
+let find_scheme kind (mind,i as ind) =
   try find_scheme_on_env_too kind ind
   with Not_found ->
   match Hashtbl.find scheme_object_table kind with
   | s,IndividualSchemeFunction f ->
-      define_individual_scheme_base kind s f mode None ind
+      define_individual_scheme_base kind s f KernelSilent None ind
   | s,MutualSchemeFunction f ->
-      let ca, eff = define_mutual_scheme_base kind s f mode [] mind in
+      let ca, eff = define_mutual_scheme_base kind s f KernelSilent [] mind in
       ca.(i), eff
 
 let check_scheme kind ind =

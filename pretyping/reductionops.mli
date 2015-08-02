@@ -90,9 +90,6 @@ module Stack : sig
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
 
   val not_purely_applicative : 'a t -> bool
-
-  (** @return the arguments in the stack if a purely applicative
-      stack, None otherwise *)
   val list_of_app_stack : constr t -> constr list option
 
   val assign : 'a t -> int -> 'a -> 'a t

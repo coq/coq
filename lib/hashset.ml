@@ -16,7 +16,7 @@
 
 module type EqType = sig
   type t
-  val eq : t -> t -> bool
+  val equal : t -> t -> bool
 end
 
 type statistics = {
@@ -183,7 +183,7 @@ module Make (E : EqType) =
       if i >= sz then ifnotfound index
       else if h = hashes.(i) then begin
         match Weak.get bucket i with
-        | Some v when E.eq v d -> v
+        | Some v when E.equal v d -> v
         | _ -> loop (i + 1)
       end else loop (i + 1)
     in

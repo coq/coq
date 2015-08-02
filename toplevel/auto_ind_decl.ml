@@ -111,7 +111,7 @@ let check_bool_is_defined () =
 
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
-let build_beq_scheme mode kn =
+let build_beq_scheme kn =
   check_bool_is_defined ();
   (* fetching global env *)
   let env = Global.env() in
@@ -188,7 +188,7 @@ let build_beq_scheme mode kn =
             else begin
               try
                 let eq, eff =
-                  let c, eff = find_scheme ~mode (!beq_scheme_kind_aux()) (kn',i) in
+                  let c, eff = find_scheme (!beq_scheme_kind_aux()) (kn',i) in
                   mkConst c, eff in
                 let eqa, eff =
                   let eqa, effs = List.split (List.map aux a) in
@@ -330,7 +330,7 @@ let destruct_ind c =
 so from Ai we can find the the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
-let do_replace_lb mode lb_scheme_key aavoid narg p q =
+let do_replace_lb lb_scheme_key aavoid narg p q =
   let avoid = Array.of_list aavoid in
   let do_arg v offset =
   try
@@ -360,7 +360,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
     let u,v = destruct_ind type_of_pq
     in let lb_type_of_p =
         try
-          let c, eff = find_scheme ~mode lb_scheme_key (out_punivs u) (*FIXME*) in
+          let c, eff = find_scheme lb_scheme_key (out_punivs u) (*FIXME*) in
           Proofview.tclUNIT (mkConst c, eff)
         with Not_found ->
           (* spiwack: the format of this error message should probably
@@ -388,7 +388,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
   end
 
 (* used in the bool -> leib side *)
-let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
+let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   let avoid = Array.of_list aavoid in
   let do_arg v offset =
   try
@@ -551,7 +551,7 @@ let compute_bl_goal ind lnamesparrec nparrec =
               (mkApp(Lazy.force eq,[|mkFullInd (ind,u) (nparrec+3);mkVar n;mkVar m|]))
         ))), eff
 
-let compute_bl_tact mode bl_scheme_key ind lnamesparrec nparrec =
+let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let avoid = ref [] in
       let first_intros =
@@ -608,7 +608,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                               if eq_gr (IndRef indeq) Coqlib.glob_eq
                               then
                                 Tacticals.New.tclTHEN
-                                  (do_replace_bl mode bl_scheme_key ind
+                                  (do_replace_bl bl_scheme_key ind
 				     (!avoid)
                                      nparrec (ca.(2))
                                      (ca.(1)))
@@ -625,12 +625,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 
 let bl_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
-let side_effect_of_mode = function
-  | Declare.KernelVerbose -> false
-  | Declare.KernelSilent -> true
-  | Declare.UserVerbose -> false
-
-let make_bl_scheme mode mind =
+let make_bl_scheme mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     errorlabstrm ""
@@ -642,9 +637,8 @@ let make_bl_scheme mode mind =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let bl_goal, eff = compute_bl_goal ind lnamesparrec nparrec in
   let ctx = Evd.empty_evar_universe_context (*FIXME univs *) in
-  let side_eff = side_effect_of_mode mode in
-  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx bl_goal
-    (compute_bl_tact mode (!bl_scheme_kind_aux()) (ind, Univ.Instance.empty) lnamesparrec nparrec)
+  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx bl_goal
+    (compute_bl_tact (!bl_scheme_kind_aux()) (ind, Univ.Instance.empty) lnamesparrec nparrec)
   in
   ([|ans|], ctx), eff
 
@@ -694,7 +688,7 @@ let compute_lb_goal ind lnamesparrec nparrec =
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar n;mkVar m|]);tt|]))
         ))), eff
 
-let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
+let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
     let avoid = ref [] in
       let first_intros =
@@ -738,7 +732,7 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
                         | App(c,ca) -> (match (kind_of_term ca.(1)) with
                           | App(c',ca') ->
                               let n = Array.length ca' in
-                              do_replace_lb mode lb_scheme_key
+                              do_replace_lb lb_scheme_key
 				(!avoid)
                                 nparrec
                                 ca'.(n-2) ca'.(n-1)
@@ -753,7 +747,7 @@ let compute_lb_tact mode lb_scheme_key ind lnamesparrec nparrec =
 
 let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 
-let make_lb_scheme mode mind =
+let make_lb_scheme mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     errorlabstrm ""
@@ -765,9 +759,8 @@ let make_lb_scheme mode mind =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
   let ctx = Evd.empty_evar_universe_context in
-  let side_eff = side_effect_of_mode mode in
-  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx lb_goal
-    (compute_lb_tact mode (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
+  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx lb_goal
+    (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
   in
   ([|ans|], ctx (* FIXME *)), eff
 
@@ -926,7 +919,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
   ]
   end
 
-let make_eq_decidability mode mind =
+let make_eq_decidability mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     raise DecidabilityMutualNotSupported;
@@ -937,8 +930,7 @@ let make_eq_decidability mode mind =
   let ctx = Evd.empty_evar_universe_context (* FIXME *)in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  let side_eff = side_effect_of_mode mode in
-  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx
+  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx
     (compute_dec_goal (ind,u) lnamesparrec nparrec)
     (compute_dec_tact ind lnamesparrec nparrec)
   in
