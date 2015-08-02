@@ -304,5 +304,5 @@ Abort.
 Goal True.
 let x := ipattern:y in assert (forall x y, x = y + 0).
 intro.
-destruct y. (* Check that the name is y here *).
+destruct y. (* Check that the name is y here *)
 Abort.

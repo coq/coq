@@ -297,13 +297,14 @@ let protected_get_type_of env sigma c =
       (str "Cannot reinterpret " ++ quote (print_constr c) ++
        str " in the current environment.")
 
-let pretype_id pretype loc env evdref lvar id =
+let pretype_id pretype k0 loc env evdref lvar id =
   let sigma = !evdref in
   (* Look for the binder of [id] *)
   try
     let (n,_,typ) = lookup_rel_id id (rel_context env) in
       { uj_val  = mkRel n; uj_type = lift n typ }
   with Not_found ->
+    let env = ltac_interp_name_env k0 lvar env in
     (* Check if [id] is an ltac variable *)
     try
       let (ids,c) = Id.Map.find id lvar.ltac_constrs in
@@ -433,7 +434,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
 
   | GVar (loc, id) ->
     inh_conv_coerce_to_tycon loc env evdref
-      (pretype_id (fun e r l t -> pretype tycon e r l t) loc env evdref lvar id)
+      (pretype_id (fun e r l t -> pretype tycon e r l t) k0 loc env evdref lvar id)
       tycon
 
   | GEvar (loc, id, inst) ->
