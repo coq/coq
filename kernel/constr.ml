@@ -755,10 +755,10 @@ let hasheq t1 t2 =
     once and for all the table we'll use for hash-consing all constr *)
 
 module HashsetTerm =
-  Hashset.Make(struct type t = constr let equal = hasheq end)
+  Hashset.Make(struct type t = constr let eq = hasheq end)
 
 module HashsetTermArray =
-  Hashset.Make(struct type t = constr array let equal = array_eqeq end)
+  Hashset.Make(struct type t = constr array let eq = array_eqeq end)
 
 let term_table = HashsetTerm.create 19991
 (* The associative table to hashcons terms. *)
@@ -928,7 +928,7 @@ struct
     List.equal (==) info1.ind_tags info2.ind_tags &&
     Array.equal (List.equal (==)) info1.cstr_tags info2.cstr_tags &&
     info1.style == info2.style
-  let equal ci ci' =
+  let eq ci ci' =
     ci.ci_ind == ci'.ci_ind &&
     Int.equal ci.ci_npar ci'.ci_npar &&
     Array.equal Int.equal ci.ci_cstr_ndecls ci'.ci_cstr_ndecls && (* we use [Array.equal] on purpose *)
@@ -970,7 +970,7 @@ module Hsorts =
       let hashcons huniv = function
           Prop c -> Prop c
         | Type u -> Type (huniv u)
-      let equal s1 s2 =
+      let eq s1 s2 =
         s1 == s2 ||
 	  match (s1,s2) with
             (Prop c1, Prop c2) -> c1 == c2

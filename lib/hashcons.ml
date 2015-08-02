@@ -15,7 +15,7 @@
  *   of objects of type t (u usually has the form (t1->t1)*(t2->t2)*...).
  * [hashcons u x] is a function that hash-cons the sub-structures of x using
  *   the hash-consing functions u provides.
- * [equal] is a comparison function. It is allowed to use physical equality
+ * [eq] is a comparison function. It is allowed to use physical equality
  *   on the sub-terms hash-consed by the hashcons function.
  * [hash] is the hash function given to the Hashtbl.Make function
  *
@@ -27,7 +27,7 @@ module type HashconsedType =
     type t
     type u
     val hashcons :  u -> t -> t
-    val equal : t -> t -> bool
+    val eq : t -> t -> bool
     val hash : t -> int
   end
 
@@ -53,7 +53,7 @@ module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u) =
 
     (* We create the type of hashtables for t, with our comparison fun.
      * An invariant is that the table never contains two entries equals
-     * w.r.t (=), although the equality on keys is X.equal. This is
+     * w.r.t (=), although the equality on keys is X.eq. This is
      * granted since we hcons the subterms before looking up in the table.
      *)
     module Htbl = Hashset.Make(X)
@@ -124,7 +124,7 @@ module Hlist (D:HashedType) =
       let hashcons (hrec,hdata) = function
         | x :: l -> hdata x :: hrec l
         | l -> l
-      let equal l1 l2 =
+      let eq l1 l2 =
         l1 == l2 ||
           match l1, l2 with
           | [], [] -> true
@@ -144,7 +144,7 @@ module Hstring = Make(
     type t = string
     type u = unit
     let hashcons () s =(* incr accesstr;*) s
-    external equal : string -> string -> bool = "caml_string_equal" "noalloc"
+    external eq : string -> string -> bool = "caml_string_equal" "noalloc"
     (** Copy from CString *)
     let rec hash len s i accu =
       if i = len then accu
@@ -191,7 +191,7 @@ module Hobj = Make(
     type t = Obj.t
     type u = (Obj.t -> Obj.t) * unit
     let hashcons (hrec,_) = hash_obj hrec
-    let equal = comp_obj
+    let eq = comp_obj
     let hash = Hashtbl.hash
   end)
 

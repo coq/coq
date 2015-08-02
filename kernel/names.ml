@@ -102,7 +102,7 @@ struct
       let hashcons hident = function
         | Name id -> Name (hident id)
         | n -> n
-      let equal n1 n2 =
+      let eq n1 n2 =
         n1 == n2 ||
         match (n1,n2) with
           | (Name id1, Name id2) -> id1 == id2
@@ -236,7 +236,7 @@ struct
       type t = _t
       type u = (Id.t -> Id.t) * (DirPath.t -> DirPath.t)
       let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
-      let equal ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
+      let eq ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
         (x == y) ||
         (Int.equal n1 n2 && s1 == s2 && dir1 == dir2)
       let hash = hash
@@ -327,7 +327,7 @@ module ModPath = struct
       | MPfile dir -> MPfile (hdir dir)
       | MPbound m -> MPbound (huniqid m)
       | MPdot (md,l) -> MPdot (hashcons hfuns md, hstr l)
-    let rec equal d1 d2 =
+    let rec eq d1 d2 =
       d1 == d2 ||
       match d1,d2 with
       | MPfile dir1, MPfile dir2 -> dir1 == dir2
@@ -423,7 +423,7 @@ module KerName = struct
     let hashcons (hmod,hdir,hstr) kn =
       let { modpath = mp; dirpath = dp; knlabel = l; refhash; } = kn in
       { modpath = hmod mp; dirpath = hdir dp; knlabel = hstr l; refhash; canary; }
-    let equal kn1 kn2 =
+    let eq kn1 kn2 =
       kn1.modpath == kn2.modpath && kn1.dirpath == kn2.dirpath &&
         kn1.knlabel == kn2.knlabel
     let hash = hash
@@ -552,7 +552,7 @@ module KerPair = struct
       let hashcons hkn = function
         | Same kn -> Same (hkn kn)
         | Dual (knu,knc) -> make (hkn knu) (hkn knc)
-      let equal x y = (* physical comparison on subterms *)
+      let eq x y = (* physical comparison on subterms *)
         x == y ||
         match x,y with
         | Same x, Same y -> x == y
@@ -693,7 +693,7 @@ module Hind = Hashcons.Make(
     type t = inductive
     type u = MutInd.t -> MutInd.t
     let hashcons hmind (mind, i) = (hmind mind, i)
-    let equal (mind1,i1) (mind2,i2) = mind1 == mind2 && Int.equal i1 i2
+    let eq (mind1,i1) (mind2,i2) = mind1 == mind2 && Int.equal i1 i2
     let hash = ind_hash
   end)
 
@@ -702,7 +702,7 @@ module Hconstruct = Hashcons.Make(
     type t = constructor
     type u = inductive -> inductive
     let hashcons hind (ind, j) = (hind ind, j)
-    let equal (ind1, j1) (ind2, j2) = ind1 == ind2 && Int.equal j1 j2
+    let eq (ind1, j1) (ind2, j2) = ind1 == ind2 && Int.equal j1 j2
     let hash = constructor_hash
   end)
 
@@ -851,7 +851,7 @@ struct
       type t = _t
       type u = Constant.t -> Constant.t
       let hashcons hc (c,b) = (hc c,b)
-      let equal ((c,b) as x) ((c',b') as y) =
+      let eq ((c,b) as x) ((c',b') as y) =
         x == y || (c == c' && b == b')
       let hash = hash
     end
