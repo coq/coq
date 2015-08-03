@@ -2535,18 +2535,19 @@ let generalized_name c t ids cl = function
    [forall x, x1:A1(x1), .., xi:Ai(x). T(x)] with all [c] abtracted in [Ai]
    but only those at [occs] in [T] *)
 
-let generalize_goal_gen env ids i ((occs,c,b),na) t (cl,evd) =
+let generalize_goal_gen env sigma ids i ((occs,c,b),na) t cl =
   let decls,cl = decompose_prod_n_assum i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
   let newdecls,_ = decompose_prod_n_assum i (subst_term_gen eq_constr_nounivs c dummy_prod) in
-  let cl',evd' = subst_closed_term_occ env evd (AtOccs occs) c (it_mkProd_or_LetIn cl newdecls) in
+  let cl',sigma' = subst_closed_term_occ env sigma (AtOccs occs) c (it_mkProd_or_LetIn cl newdecls) in
   let na = generalized_name c t ids cl' na in
-    mkProd_or_LetIn (na,b,t) cl', evd'
+  mkProd_or_LetIn (na,b,t) cl', sigma'
 
-let generalize_goal gl i ((occs,c,b),na as o) cl =
-  let t = Tacmach.pf_unsafe_type_of gl c in
+let generalize_goal gl i ((occs,c,b),na as o) (cl,sigma) =
   let env = Tacmach.pf_env gl in
-    generalize_goal_gen env (Tacmach.pf_ids_of_hyps gl) i o t cl
+  let ids = Tacmach.pf_ids_of_hyps gl in
+  let sigma, t = Typing.type_of env sigma c in
+  generalize_goal_gen env sigma ids i o t cl
 
 let generalize_dep ?(with_let=false) c gl =
   let env = pf_env gl in
@@ -2603,13 +2604,14 @@ let new_generalize_gen_let lconstr =
     let sigma = Sigma.to_evar_map sigma in
     let env = Proofview.Goal.env gl in
     let ids = Tacmach.New.pf_ids_of_hyps gl in
-    let (newcl, sigma), args =
+    let newcl, sigma, args =
       List.fold_right_i 
-	(fun i ((_,c,b),_ as o) (cl, args) ->
-	  let t = Tacmach.New.pf_unsafe_type_of gl c in
+	(fun i ((_,c,b),_ as o) (cl, sigma, args) ->
+	  let sigma, t = Typing.type_of env sigma c in
 	  let args = if Option.is_empty b then c :: args else args in
-	    generalize_goal_gen env ids i o t cl, args)
-	0 lconstr ((concl, sigma), [])
+          let cl, sigma = generalize_goal_gen env sigma ids i o t cl in
+          (cl, sigma, args))
+	0 lconstr (concl, sigma, [])
     in
     let tac =
 	Proofview.Refine.refine { run = begin fun sigma ->
