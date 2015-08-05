@@ -1,22 +1,22 @@
-# THE COQ V8 SYSTEM
+# Coq
 
-## INSTALLATION
+## Installation
 See the file `INSTALL` for installation procedure.
 
-## DOCUMENTATION
+## Documentation
 The documentation is part of the archive in directory doc. The
 documentation of the last released version is available on the Coq
 web site at [coq.inria.fr/doc](http://coq.inria.fr/doc).
 
-## CHANGES
+## Changes
 There is a file named `CHANGES` that explains the differences and the
 incompatibilities since last versions. If you upgrade Coq, please read
 it carefully.
 
-## AVAILABILITY
+## Availability
 Coq is available from [coq.inria.fr](http://coq.inria.fr).
 
-## THE COQ CLUB
+## The Coq Club
 The Coq Club moderated mailing list is meant to be a standard way
 to discuss questions about the Coq system and related topics. The
 subscription link can be found at [coq.inria.fr/community](http://coq.inria.fr/community).
@@ -33,7 +33,7 @@ The topics to be discussed in the club should include:
 For any questions/suggestions about the Coq Club, please write to
 `coq-club-request@inria.fr`.
 
-## BUGS REPORT
+## Bugs report
 Send your bug reports by filling a form at [coq.inria.fr/bugs](http://coq.inria.fr/bugs).
 
 To be effective, bug reports should mention the OCaml version used
