@@ -453,6 +453,9 @@ module KNset = KNmap.Set
     - when user and canonical parts differ, we cannot be in a section
       anymore, hence the dirpath must be empty
     - two pairs with the same user part should have the same canonical part
+      in a given environment (though with backtracking, the hash-table can
+      contains pairs with same user part but different canonical part from
+      a previous state of the session)
 
    Note: since most of the time the canonical and user parts are equal,
    we handle this case with a particular constructor to spare some memory *)
@@ -504,7 +507,7 @@ module KerPair = struct
   let debug_print kp = str (debug_to_string kp)
 
   (** For ordering kernel pairs, both user or canonical parts may make
-      sense, according to your needs : user for the environments, canonical
+      sense, according to your needs: user for the environments, canonical
       for other uses (ex: non-logical things). *)
 
   module UserOrd = struct
@@ -521,16 +524,9 @@ module KerPair = struct
     let hash x = KerName.hash (canonical x)
   end
 
-  (** Default comparison is on the canonical part *)
+  (** Default (logical) comparison and hash is on the canonical part *)
   let equal = CanOrd.equal
-
-  (** Hash-consing : we discriminate only on the user part, since having
-      the same user part implies having the same canonical part
-      (invariant of the system). *)
-
-  let hash = function
-  | Same kn -> KerName.hash kn
-  | Dual (kn, _) -> KerName.hash kn
+  let hash = CanOrd.hash
 
   module Self_Hashcons =
     struct
@@ -539,8 +535,20 @@ module KerPair = struct
       let hashcons hkn = function
         | Same kn -> Same (hkn kn)
         | Dual (knu,knc) -> make (hkn knu) (hkn knc)
-      let equal x y = (user x) == (user y)
-      let hash = hash
+      let equal x y = (* physical comparison on subterms *)
+        x == y ||
+        match x,y with
+        | Same x, Same y -> x == y
+        | Dual (ux,cx), Dual (uy,cy) -> ux == uy && cx == cy
+        | (Same _ | Dual _), _ -> false
+      (** Hash-consing (despite having the same user part implies having
+          the same canonical part is a logical invariant of the system, it
+          is not necessarily an invariant in memory, so we treat kernel
+          names as they are syntactically for hash-consing) *)
+      let hash = function
+      | Same kn -> KerName.hash kn
+      | Dual (knu, knc) ->
+        Hashset.Combine.combine (KerName.hash knu) (KerName.hash knc)
     end
 
   module HashKP = Hashcons.Make(Self_Hashcons)

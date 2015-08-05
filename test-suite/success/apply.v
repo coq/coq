@@ -333,13 +333,10 @@ exact (refl_equal 3).
 exact (refl_equal 4).
 Qed.
 
-(* From 12612, descent in conjunctions is more powerful *)
+(* From 12612, Dec 2009, descent in conjunctions is more powerful *)
 (* The following, which was failing badly in bug 1980, is now
    properly rejected, as descend in conjunctions builds an
-   ill-formed elimination from Prop to Type.
-
-   Added Aug 2014: why it fails is now that trivial unification ?x = goal is
-   rejected by the descent in conjunctions to avoid surprising results. *)
+   ill-formed elimination from Prop to the domain of ex which is in Type. *)
 
 Goal True.
 Fail eapply ex_intro.
@@ -351,28 +348,32 @@ Fail eapply (ex_intro _).
 exact I.
 Qed.
 
-(* Note: the following succeed directly (i.e. w/o "exact I") since
-   Aug 2014 since the descent in conjunction does not use a "cut"
-   anymore: the iota-redex is contracted and we get rid of the
-   uninstantiated evars
-
-   Is it good or not? Maybe it does not matter so much.
+(* No failure here, because the domain of ex is in Prop *)
 
 Goal True.
-eapply (ex_intro (fun _ => True) I).    
-exact I. (* Not needed since Aug 2014 *)
+eapply (ex_intro (fun _ => 0=0) I).
+reflexivity.
 Qed.
 
 Goal True.
-eapply (ex_intro (fun _ => True) I _).    
-exact I. (* Not needed since Aug 2014 *)
+eapply (ex_intro (fun _ => 0=0) I _).
+Unshelve. (* In 8.4:  Grab Existential Variables. *)
+reflexivity.
 Qed.
 
 Goal True.
 eapply (fun (A:Prop) (x:A) => conj I x).
-exact I. (* Not needed since Aug 2014 *)
+Unshelve. (* In 8.4: the goal ?A was there *)
+exact I.
 Qed.
-*)
+
+(* Testing compatibility mode with v8.4 *)
+
+Goal True.
+Fail eapply existT.
+Set Universal Lemma Under Conjunction.
+eapply existT.
+Abort.
 
 (* The following was not accepted from r12612 to r12657 *)
 
@@ -463,6 +464,7 @@ Abort.
 Goal forall H:0=0, H = H.
 intros.
 Fail apply eq_sym in H.
+Abort.
 
 (* Check that unresolved evars not originally present in goal prevent
    apply in to work*)

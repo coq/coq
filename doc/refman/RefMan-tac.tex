@@ -485,7 +485,24 @@ apply Rmp.
 Reset R.
 \end{coq_eval}
 
+\noindent {\bf Remark: } When the conclusion of the type of the term
+to apply is an inductive type isomorphic to a tuple type and {\em apply}
+looks recursively whether a component of the tuple matches the goal,
+it excludes components whose statement would result in applying an
+universal lemma of the form {\tt forall A, ... -> A}. Excluding this
+kind of lemma can be avoided by setting the following option:
+
+\begin{quote}
+\optindex{Universal Lemma Under Conjunction}
+{\tt Set Universal Lemma Under Conjunction}
+\end{quote}
+
+This option, which preserves compatibility with versions of {\Coq}
+prior to 8.4 is also available for {\tt apply {\term} in {\ident}}
+(see Section~\ref{apply-in}).
+
 \subsection{\tt apply {\term} in {\ident}}
+\label{apply-in}
 \tacindex{apply \dots\ in}
 
 This tactic applies to any goal.  The argument {\term} is a term
@@ -3129,7 +3146,7 @@ follows: \comindex{Arguments}
 A constant can be marked to be never unfolded by \texttt{cbn} or
 \texttt{simpl}:
 \begin{coq_example*}
-Arguments minus x y : simpl never.
+Arguments minus n m : simpl never.
 \end{coq_example*}
 After that command an expression like \texttt{(minus (S x) y)} is left
 untouched by the tactics \texttt{cbn} and \texttt{simpl}.
@@ -3156,7 +3173,7 @@ A constant can be marked to be unfolded only if an entire set of arguments
 evaluates to a constructor. The {\tt !} symbol can be used to mark such
 arguments.
 \begin{coq_example*}
-Arguments minus !x !y.
+Arguments minus !n !m.
 \end{coq_example*}
 After that command, the expression {\tt (minus (S x) y)} is left untouched by
 {\tt simpl}, while {\tt (minus (S x) (S y))} is reduced to {\tt (minus x y)}.
@@ -3164,7 +3181,7 @@ After that command, the expression {\tt (minus (S x) y)} is left untouched by
 A special heuristic to determine if a constant has to be unfolded can be
 activated with the following command:
 \begin{coq_example*}
-Arguments minus x y : simpl nomatch.
+Arguments minus n m : simpl nomatch.
 \end{coq_example*}
 The heuristic avoids to perform a simplification step that would
 expose a {\tt match} construct in head position. For example the

@@ -298,3 +298,11 @@ evar(foo:nat).
 let evval := eval compute in foo in not_eq evval 1.
 let evval := eval compute in foo in not_eq 1 evval.
 Abort.
+
+(* Check instantiation of binders using ltac names *)
+
+Goal True.
+let x := ipattern:y in assert (forall x y, x = y + 0).
+intro.
+destruct y. (* Check that the name is y here *)
+Abort.

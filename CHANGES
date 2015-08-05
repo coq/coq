@@ -20,6 +20,9 @@ Tactics
   will eventually fail and backtrack.
   * "Strict" changes the behavior of an unloaded hint to the one of the fail
   tactic, allowing to emulate the hopefully future import-scoped hint mechanism.
+- New compatibility flag "Universal Lemma Under Conjunction" which
+  let tactics working under conjunctions apply sublemmas of the form
+  "forall A, ... -> A".
 
 API
 
@@ -34,7 +37,6 @@ API
   * Tacmach.pf_type_of -> pf_unsafe_type_of
   * A new safe pf_type_of function.
   All uses of unsafe_* functions should be eventually eliminated.
-
 
 Tools
 
@@ -359,6 +361,10 @@ Tactics
   trace anymore. Use "Info 1 auto" instead. The same goes for
   "info_trivial". On the other hand "info_eauto" still works fine,
   while "Info 1 eauto" prints a trivial trace.
+- When using a lemma of the prototypical form "forall A, {a:A & P a}",
+  "apply" and "apply in" do not instantiate anymore "A" with the
+  current goal and use "a" as the proof, as they were sometimes doing,
+  now considering that it is a too powerful decision.
 
 Program
 

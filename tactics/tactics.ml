@@ -109,6 +109,24 @@ let _ =
       optread  = (fun () -> !clear_hyp_by_default) ;
       optwrite = (fun b -> clear_hyp_by_default := b) }
 
+(* Compatibility option useful in developments using apply intensively
+   in ltac code *)
+
+let universal_lemma_under_conjunctions = ref false
+
+let accept_universal_lemma_under_conjunctions () =
+  !universal_lemma_under_conjunctions
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "trivial unification in tactics applying under conjunctions";
+      optkey   = ["Universal";"Lemma";"Under";"Conjunction"];
+      optread  = (fun () -> !universal_lemma_under_conjunctions) ;
+      optwrite = (fun b -> universal_lemma_under_conjunctions := b) }
+
+
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -1332,7 +1350,7 @@ let make_projection env sigma params cstr sign elim i n c u =
 	(* to avoid surprising unifications, excludes flexible
 	projection types or lambda which will be instantiated by Meta/Evar *)
 	&& not (isEvar (fst (whd_betaiota_stack sigma t)))
-	&& not (isRel t && destRel t > n-i)
+	&& (accept_universal_lemma_under_conjunctions () || not (isRel t))
       then
         let t = lift (i+1-n) t in
 	let abselim = beta_applist (elim,params@[t;branch]) in

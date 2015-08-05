@@ -1688,7 +1688,10 @@ let collect_proof keep cur hd brkind id =
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         `MaybeASync (parent last, None, accn, name, delegate name)
-    | `Sideff _ -> `Sync (no_name,None,`NestedProof)
+    | `Sideff _ ->
+        Pp.(msg_warning (strbrk ("Nested proofs are deprecated and will "^
+           "stop working in the next Coq version")));
+        `Sync (no_name,None,`NestedProof)
     | _ -> `Sync (no_name,None,`Unknown) in
  let make_sync why = function
    | `Sync(name,pua,_) -> `Sync (name,pua,why)
@@ -1837,7 +1840,6 @@ let known_state ?(redefine_qed=false) ~cache id =
                 Proof_global.discard_all ()
               ), (if redefine_qed then `No else `Yes), true
           | `Sync (name, _, `Immediate) -> (fun () -> 
-                assert (Stateid.equal view.next eop);
                 reach eop; vernac_interp id x; Proof_global.discard_all ()
               ), `Yes, true
           | `Sync (name, pua, reason) -> (fun () ->
@@ -1856,9 +1858,8 @@ let known_state ?(redefine_qed=false) ~cache id =
                       Some(Proof_global.close_proof
                                 ~keep_body_ucst_separate:false
                                 (State.exn_on id ~valid:eop)) in
-                reach view.next;
-                if keep == VtKeepAsAxiom then
-                  Option.iter (vernac_interp id) pua;
+                if keep != VtKeepAsAxiom then
+                  reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in
                 vernac_interp id ?proof x;
                 let wall_clock3 = Unix.gettimeofday () in
@@ -2306,9 +2307,7 @@ let edit_at id =
   let rec master_for_br root tip =
       if Stateid.equal tip Stateid.initial then tip else
       match VCS.visit tip with
-      | { next } when next = root -> root
-      | { step = `Fork _ } -> tip
-      | { step = `Sideff (`Ast(_,id)|`Id id) } -> id
+      | { step = (`Fork _ | `Sideff _ | `Qed _) } -> tip
       | { next } -> master_for_br root next in
   let reopen_branch start at_id mode qed_id tip old_branch =
     let master_id, cancel_switch, keep =

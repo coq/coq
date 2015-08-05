@@ -270,6 +270,18 @@ let ltac_interp_name { ltac_idents ; ltac_genargs } = function
                            str"It cannot be used in a binder.")
         else n
 
+let ltac_interp_name_env k0 lvar env =
+  (* envhd is the initial part of the env when pretype was called first *)
+  (* (in practice is is probably 0, but we have to grant the
+     specification of pretype which accepts to start with a non empty
+     rel_context) *)
+  (* tail is the part of the env enriched by pretyping *)
+  let n = rel_context_length (rel_context env) - k0 in
+  let ctxt,_ = List.chop n (rel_context env) in
+  let env = pop_rel_context n env in
+  let ctxt = List.map (fun (na,c,t) -> ltac_interp_name lvar na,c,t) ctxt in
+  push_rel_context ctxt env
+
 let invert_ltac_bound_name lvar env id0 id =
   let id = Id.Map.find id lvar.ltac_idents in
   try mkRel (pi1 (lookup_rel_id id (rel_context env)))
@@ -285,17 +297,14 @@ let protected_get_type_of env sigma c =
       (str "Cannot reinterpret " ++ quote (print_constr c) ++
        str " in the current environment.")
 
-let pretype_id pretype loc env evdref lvar id =
+let pretype_id pretype k0 loc env evdref lvar id =
   let sigma = !evdref in
   (* Look for the binder of [id] *)
   try
-    let id =
-      try Id.Map.find id lvar.ltac_idents
-      with Not_found -> id
-    in
     let (n,_,typ) = lookup_rel_id id (rel_context env) in
       { uj_val  = mkRel n; uj_type = lift n typ }
   with Not_found ->
+    let env = ltac_interp_name_env k0 lvar env in
     (* Check if [id] is an ltac variable *)
     try
       let (ids,c) = Id.Map.find id lvar.ltac_constrs in
@@ -413,10 +422,10 @@ let is_GHole = function
 
 let evars = ref Id.Map.empty
 
-let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var_map) t =
+let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var_map) t =
   let inh_conv_coerce_to_tycon = inh_conv_coerce_to_tycon resolve_tc in
-  let pretype_type = pretype_type resolve_tc in
-  let pretype = pretype resolve_tc in
+  let pretype_type = pretype_type k0 resolve_tc in
+  let pretype = pretype k0 resolve_tc in
   match t with
   | GRef (loc,ref,u) ->
       inh_conv_coerce_to_tycon loc env evdref
@@ -425,7 +434,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 
   | GVar (loc, id) ->
     inh_conv_coerce_to_tycon loc env evdref
-      (pretype_id (fun e r l t -> pretype tycon e r l t) loc env evdref lvar id)
+      (pretype_id (fun e r l t -> pretype tycon e r l t) k0 loc env evdref lvar id)
       tycon
 
   | GEvar (loc, id, inst) ->
@@ -436,12 +445,13 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
         with Not_found ->
           user_err_loc (loc,"",str "Unknown existential variable.") in
       let hyps = evar_filtered_context (Evd.find !evdref evk) in
-      let args = pretype_instance resolve_tc env evdref lvar loc hyps evk inst in
+      let args = pretype_instance k0 resolve_tc env evdref lvar loc hyps evk inst in
       let c = mkEvar (evk, args) in
       let j = (Retyping.get_judgment_of env !evdref c) in
 	inh_conv_coerce_to_tycon loc env evdref j tycon
 
   | GPatVar (loc,(someta,n)) ->
+    let env = ltac_interp_name_env k0 lvar env in
     let ty =
       match tycon with
       | Some ty -> ty
@@ -450,6 +460,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
       { uj_val = e_new_evar env evdref ~src:(loc,k) ty; uj_type = ty }
 
   | GHole (loc, k, naming, None) ->
+      let env = ltac_interp_name_env k0 lvar env in
       let ty =
         match tycon with
         | Some ty -> ty
@@ -458,6 +469,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
         { uj_val = e_new_evar env evdref ~src:(loc,k) ~naming ty; uj_type = ty }
 
   | GHole (loc, k, _naming, Some arg) ->
+      let env = ltac_interp_name_env k0 lvar env in
       let ty =
         match tycon with
         | Some ty -> ty
@@ -474,12 +486,14 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
       | (na,bk,None,ty)::bl ->
         let ty' = pretype_type empty_valcon env evdref lvar ty in
         let dcl = (na,None,ty'.utj_val) in
-	  type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl
+        let dcl' = (ltac_interp_name lvar na,None,ty'.utj_val) in
+	  type_bl (push_rel dcl env) (add_rel_decl dcl' ctxt) bl
       | (na,bk,Some bd,ty)::bl ->
         let ty' = pretype_type empty_valcon env evdref lvar ty in
         let bd' = pretype (mk_tycon ty'.utj_val) env evdref lvar bd in
         let dcl = (na,Some bd'.uj_val,ty'.utj_val) in
-	  type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl in
+        let dcl' = (ltac_interp_name lvar na,Some bd'.uj_val,ty'.utj_val) in
+	  type_bl (push_rel dcl env) (add_rel_decl dcl' ctxt) bl in
     let ctxtv = Array.map (type_bl env empty_rel_context) bl in
     let larj =
       Array.map2
@@ -647,9 +661,9 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     (* The name specified by ltac is used also to create bindings. So
        the substitution must also be applied on variables before they are
        looked up in the rel context. *)
-    let name = ltac_interp_name lvar name in
     let var = (name,None,j.utj_val) in
     let j' = pretype rng (push_rel var env) evdref lvar c2 in
+    let name = ltac_interp_name lvar name in
     let resj = judge_of_abstraction env (orelse_name name name') j j' in
       inh_conv_coerce_to_tycon loc env evdref resj tycon
 
@@ -658,7 +672,6 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     (* The name specified by ltac is used also to create bindings. So
        the substitution must also be applied on variables before they are
        looked up in the rel context. *)
-    let name = ltac_interp_name lvar name in
     let j' = match name with
       | Anonymous ->
         let j = pretype_type empty_valcon env evdref lvar c2 in
@@ -668,6 +681,7 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
         let env' = push_rel_assum var env in
           pretype_type empty_valcon env' evdref lvar c2
     in
+    let name = ltac_interp_name lvar name in
     let resj =
       try
         judge_of_product env name j j'
@@ -689,10 +703,10 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     (* The name specified by ltac is used also to create bindings. So
        the substitution must also be applied on variables before they are
        looked up in the rel context. *)
-    let name = ltac_interp_name lvar name in
     let var = (name,Some j.uj_val,t) in
     let tycon = lift_tycon 1 tycon in
     let j' = pretype tycon (push_rel var env) evdref lvar c2 in
+    let name = ltac_interp_name lvar name in
       { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	uj_type = subst1 j.uj_val j'.uj_type }
 
@@ -712,8 +726,6 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
     if not (Int.equal (List.length nal) cs.cs_nargs) then
       user_err_loc (loc,"", str "Destructing let on this type expects " ++ 
 	int cs.cs_nargs ++ str " variables.");
-    let nal = List.map (fun na -> ltac_interp_name lvar na) nal in
-    let na = ltac_interp_name lvar na in
     let fsign, record = 
       match get_projections env indf with
       | None -> List.map2 (fun na (_,c,t) -> (na,c,t))
@@ -729,10 +741,12 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	    (na, c, t) :: aux (n+1) k names l
 	  | [], [] -> []
 	  | _ -> assert false
-	in aux 1 1 (List.rev nal) cs.cs_args, true
-    in
+	in aux 1 1 (List.rev nal) cs.cs_args, true in
     let obj ind p v f =
       if not record then 
+        let nal = List.map (fun na -> ltac_interp_name lvar na) nal in
+        let nal = List.rev nal in
+        let fsign = List.map2 (fun na (_,b,t) -> (na,b,t)) nal fsign in
 	let f = it_mkLambda_or_LetIn f fsign in
 	let ci = make_case_info env (fst ind) LetStyle in
 	  mkCase (ci, p, cj.uj_val,[|f|]) 
@@ -818,7 +832,9 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	| None ->
 	  let p = match tycon with
 	    | Some ty -> ty
-	    | None -> new_type_evar env evdref loc
+	    | None ->
+              let env = ltac_interp_name_env k0 lvar env in
+              new_type_evar env evdref loc
 	  in
 	    it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
       let pred = nf_evar !evdref pred in
@@ -854,9 +870,6 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
       inh_conv_coerce_to_tycon loc env evdref cj tycon
 
   | GCases (loc,sty,po,tml,eqns) ->
-    let (tml,eqns) =
-      Glob_ops.map_pattern_binders (fun na -> ltac_interp_name lvar na) tml eqns
-    in
     Cases.compile_cases loc sty
       ((fun vtyc env evdref -> pretype vtyc env evdref lvar),evdref)
       tycon env (* loc *) (po,tml,eqns)
@@ -903,13 +916,13 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_var
 	  { uj_val = v; uj_type = tval }
     in inh_conv_coerce_to_tycon loc env evdref cj tycon
 
-and pretype_instance resolve_tc env evdref lvar loc hyps evk update =
+and pretype_instance k0 resolve_tc env evdref lvar loc hyps evk update =
   let f (id,_,t) (subst,update) =
     let t = replace_vars subst t in
     let c, update =
       try
         let c = List.assoc id update in
-        let c = pretype resolve_tc (mk_tycon t) env evdref lvar c in
+        let c = pretype k0 resolve_tc (mk_tycon t) env evdref lvar c in
         c.uj_val, List.remove_assoc id update
       with Not_found ->
       try
@@ -929,7 +942,7 @@ and pretype_instance resolve_tc env evdref lvar loc hyps evk update =
   Array.map_of_list snd subst
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
-and pretype_type resolve_tc valcon env evdref lvar = function
+and pretype_type k0 resolve_tc valcon env evdref lvar = function
   | GHole (loc, knd, naming, None) ->
       (match valcon with
        | Some v ->
@@ -945,11 +958,12 @@ and pretype_type resolve_tc valcon env evdref lvar = function
 	     { utj_val = v;
 	       utj_type = s }
        | None ->
+           let env = ltac_interp_name_env k0 lvar env in
 	   let s = evd_comb0 (new_sort_variable univ_flexible_alg) evdref in
 	     { utj_val = e_new_evar env evdref ~src:(loc, knd) ~naming (mkSort s);
 	       utj_type = s})
   | c ->
-      let j = pretype resolve_tc empty_tycon env evdref lvar c in
+      let j = pretype k0 resolve_tc empty_tycon env evdref lvar c in
       let loc = loc_of_glob_constr c in
       let tj = evd_comb1 (Coercion.inh_coerce_to_sort loc env) evdref j in
 	match valcon with
@@ -962,13 +976,14 @@ and pretype_type resolve_tc valcon env evdref lvar = function
 
 let ise_pretype_gen flags env sigma lvar kind c =
   let evdref = ref sigma in
+  let k0 = rel_context_length (rel_context env) in
   let c' = match kind with
     | WithoutTypeConstraint ->
-        (pretype flags.use_typeclasses empty_tycon env evdref lvar c).uj_val
+        (pretype k0 flags.use_typeclasses empty_tycon env evdref lvar c).uj_val
     | OfType exptyp ->
-	(pretype flags.use_typeclasses (mk_tycon exptyp) env evdref lvar c).uj_val
+	(pretype k0 flags.use_typeclasses (mk_tycon exptyp) env evdref lvar c).uj_val
     | IsType ->
-	(pretype_type flags.use_typeclasses empty_valcon env evdref lvar c).utj_val 
+	(pretype_type k0 flags.use_typeclasses empty_valcon env evdref lvar c).utj_val 
   in
   process_inference_flags flags env sigma (!evdref,c')
 
@@ -1003,14 +1018,16 @@ let on_judgment f j =
 
 let understand_judgment env sigma c =
   let evdref = ref sigma in
-  let j = pretype true empty_tycon env evdref empty_lvar c in
+  let k0 = rel_context_length (rel_context env) in
+  let j = pretype k0 true empty_tycon env evdref empty_lvar c in
   let j = on_judgment (fun c ->
     let evd, c = process_inference_flags all_and_fail_flags env sigma (!evdref,c) in 
       evdref := evd; c) j
   in j, Evd.evar_universe_context !evdref
 
 let understand_judgment_tcc env evdref c =
-  let j = pretype true empty_tycon env evdref empty_lvar c in
+  let k0 = rel_context_length (rel_context env) in
+  let j = pretype k0 true empty_tycon env evdref empty_lvar c in
   on_judgment (fun c ->
     let (evd,c) = process_inference_flags all_no_fail_flags env Evd.empty (!evdref,c) in
     evdref := evd; c) j

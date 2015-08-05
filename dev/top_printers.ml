@@ -229,6 +229,11 @@ let ppenv e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
    str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]")
 
+let ppenvwithcst e = pp
+  (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
+   str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]" ++ spc() ++
+   str "{" ++ Cmap_env.fold (fun a _ s -> pr_con a ++ spc () ++ s) (Obj.magic e).Pre_env.env_globals.Pre_env.env_constants (mt ()) ++ str "}")
+
 let pptac = (fun x -> pp(Pptactic.pr_glob_tactic (Global.env()) x))
 
 let ppobj obj = Format.print_string (Libobject.object_tag obj)

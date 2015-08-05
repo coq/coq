@@ -843,11 +843,9 @@ let do_makefile args =
   if not (makefile = None) then close_out !output_channel;
   exit 0
 
-let main () =
+let _ =
   let args =
     if Array.length Sys.argv = 1 then usage ();
     List.tl (Array.to_list Sys.argv)
   in
     do_makefile args
-
-let _ = Printexc.catch main ()

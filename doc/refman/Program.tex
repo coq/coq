@@ -42,20 +42,20 @@ operation (see Section~\ref{Caseexpr}).
   generalized by the corresponding equality. As an example,
   the expression: 
 
-\begin{coq_example*}
+\begin{verbatim}
   match x with
   | 0 => t
   | S n => u
   end.
-\end{coq_example*}
+\end{verbatim}
 will be first rewritten to:
-\begin{coq_example*}
+\begin{verbatim}
   (match x as y return (x = y -> _) with
   | 0 => fun H : x = 0 -> t
   | S n => fun H : x = S n -> u
   end) (eq_refl n).
-\end{coq_example*}
-  
+\end{verbatim}
+
   This permits to get the proper equalities in the context of proof
   obligations inside clauses, without which reasoning is very limited.
 
