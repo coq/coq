@@ -14,7 +14,7 @@ Impargs
 Implicit_quantifiers
 Constrintern
 Modintern
-Constrextern
 Coqlib
+Constrextern
 Discharge
 Declare

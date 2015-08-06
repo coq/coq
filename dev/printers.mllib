@@ -170,6 +170,7 @@ Implicit_quantifiers
 Smartlocate
 Constrintern
 Modintern
+Coqlib
 Constrextern
 Proof_type
 Goal

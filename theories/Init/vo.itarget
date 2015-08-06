@@ -3,6 +3,7 @@ Logic_Type.vo
 Logic.vo
 Notations.vo
 Peano.vo
+Annotations.vo
 Prelude.vo
 Specif.vo
 Tactics.vo

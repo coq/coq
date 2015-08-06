@@ -294,8 +294,8 @@ Arguments eq_ind [A] x P _ y _.
 Arguments eq_rec [A] x P _ y _.
 Arguments eq_rect [A] x P _ y _.
 
-Hint Resolve I conj or_introl or_intror : core. 
-Hint Resolve eq_refl: core. 
+Hint Resolve I conj or_introl or_intror : core.
+Hint Resolve eq_refl: core.
 Hint Resolve ex_intro ex_intro2: core.
 
 Section Logic_lemmas.
@@ -555,7 +555,7 @@ Proof.
   - intros (x0 & HPx0 & HQx0) x1 HPx1.
     replace x1 with x0 by (transitivity x; [symmetry|]; auto).
     assumption.
-Qed.   
+Qed.
 
 Lemma forall_exists_coincide_unique_domain :
   forall A (P:A->Prop),
@@ -567,7 +567,7 @@ Proof.
   exists x. split; [trivial|].
   destruct H with (Q:=fun x'=>x=x') as (_,Huniq).
   apply Huniq. exists x; auto.
-Qed.       
+Qed.
 
 (** * Being inhabited *)
 

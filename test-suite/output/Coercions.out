@@ -6,3 +6,57 @@ fun (x : foo) (n : nat) => x n
      : foo -> nat -> nat
 "1" 0
      : PAIR
+"No Printing option"
+     : string
+a:C
+     : C
+x = g a
+     : C
+x' = id a
+     : C
+"Mode = Quoted"
+     : string
+““a””:C
+     : C
+x = g “a”
+     : C
+x' = id ““a””
+     : C
+a
+     : A
+““a””:C
+     : C
+““a”:B”:C
+     : C
+“Some a” ++ nil
+     : list A
+"Mode = Cast"
+     : string
+““a ↑ B” ↑ C”:C
+     : C
+x = g “a ↑ B”
+     : C
+x' = id ““a ↑ B” ↑ C”
+     : C
+a
+     : A
+““a ↑ B” ↑ C”:C
+     : C
+““a ↑ B”:B ↑ C”:C
+     : C
+“Some a” ++ nil
+     : list A
+"Printing All"
+     : string
+@QuotedCoercion B C g false (@QuotedCoercion A B f false a)
+     : C
+"Mode = Quoted + notations for specific coercions"
+     : string
+“g “f a””:C
+     : C
+x = g “f a”
+     : C
+x' = id “g “f a””
+     : C
+“g “f a””
+     : C

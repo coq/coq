@@ -118,6 +118,7 @@ let init_dir = [coq;"Init"]
 let init_modules = [
   init_dir@["Datatypes"];
   init_dir@["Logic"];
+  init_dir@["Annotations"];
   init_dir@["Specif"];
   init_dir@["Logic_Type"];
   init_dir@["Nat"];
@@ -149,8 +150,8 @@ let make_con dir id = Globnames.encode_con dir (Id.of_string id)
 let id = make_con datatypes_module "idProp"
 let type_of_id = make_con datatypes_module "IDProp"
 
-let _ = Termops.set_impossible_default_clause 
-  (fun () -> 
+let _ = Termops.set_impossible_default_clause
+  (fun () ->
     let c, ctx = Universes.fresh_global_instance (Global.env()) (ConstRef id) in
     let (_, u) = destConst c in
       (c,mkConstU (type_of_id,u)), ctx)
@@ -246,6 +247,9 @@ type coq_inversion_data = {
 let lazy_init_reference dir id = lazy (init_reference dir id)
 let lazy_init_constant dir id = lazy (init_constant dir id)
 let lazy_logic_reference dir id = lazy (logic_reference dir id)
+
+(** Annotations *)
+let coq_QuotedCoercion = lazy_init_reference ["Annotations"] "QuotedCoercion"
 
 (* Leibniz equality on Type *)
 
@@ -396,4 +400,3 @@ let coq_sumbool_ref = lazy (init_reference ["Specif"] "sumbool")
 let coq_sig_ref = lazy (init_reference ["Specif"] "sig")
 let coq_or_ref     = lazy (init_reference ["Logic"] "or")
 let coq_iff_ref    = lazy (init_reference ["Logic"] "iff")
-

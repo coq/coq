@@ -57,7 +57,7 @@ let show_proof () =
   msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
 
 let show_node () =
-  (* spiwack: I'm have little clue what this function used to do. I deactivated it, 
+  (* spiwack: I'm have little clue what this function used to do. I deactivated it,
       could, possibly, be cleaned away. (Feb. 2010) *)
   ()
 
@@ -593,7 +593,7 @@ let vernac_scheme l =
 	       Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
 	       match s with
 	       | InductionScheme (_, r, _)
-	       | CaseScheme (_, r, _) 
+	       | CaseScheme (_, r, _)
 	       | EqualityScheme r -> dump_global r) l;
   Indschemes.do_scheme l
 
@@ -847,7 +847,7 @@ let vernac_solve n info tcom b =
     let p = Proof.maximal_unfocus command_focus p in
     p,status) in
     if not status then Pp.feedback Feedback.AddedAxiom
- 
+
 
   (* A command which should be a tactic. It has been
      added by Christine to patch an error in the design of the proof
@@ -871,7 +871,7 @@ let vernac_set_used_variables e =
     List.map snd (Proof.initial_goals (Proof_global.give_me_the_proof ())) in
   let l = Proof_using.process_expr env e tys in
   let vars = Environ.named_context env in
-  List.iter (fun id -> 
+  List.iter (fun id ->
     if not (List.exists (fun (id',_,_) -> Id.equal id id') vars) then
       errorlabstrm "vernac_set_used_variables"
         (str "Unknown variable: " ++ pr_id id))
@@ -882,7 +882,7 @@ let vernac_set_used_variables e =
   let aux env entry (all_safe,rest as orig) =
     match entry with
     | (x,None,_) ->
-       if Id.Set.mem x all_safe then orig else (all_safe, (Loc.ghost,x)::rest) 
+       if Id.Set.mem x all_safe then orig else (all_safe, (Loc.ghost,x)::rest)
     | (x,Some bo, ty) ->
        let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
        if Id.Set.subset vars all_safe then (Id.Set.add x all_safe, rest)
@@ -1067,7 +1067,7 @@ let vernac_declare_arguments locality r l nargs flags =
     | l, [], _ -> errorlabstrm "vernac_declare_arguments"
                     (str "The following arguments are not declared: " ++
                        prlist_with_sep pr_comma pr_name l ++ str ".")
-    | _::li, _::ld, _::ls -> check li ld ls 
+    | _::li, _::ld, _::ls -> check li ld ls
     | _ -> assert false in
   let () = match l with
   | [[]] -> ()
@@ -1075,7 +1075,7 @@ let vernac_declare_arguments locality r l nargs flags =
     List.iter2 (fun l -> check inf_names l) (names :: rest) scopes
   in
   (* we take extra scopes apart, and we check they are consistent *)
-  let l, scopes = 
+  let l, scopes =
     let scopes, rest = List.hd scopes, List.tl scopes in
     if List.exists (List.exists ((!=) None)) rest then
       error "Notation scopes can be given only once";
@@ -1274,6 +1274,15 @@ let _ =
       optkey   = ["Printing";"Coercions"];
       optread  = (fun () -> !Constrextern.print_coercions);
       optwrite = (fun b ->  Constrextern.print_coercions := b) }
+
+let _ =
+  declare_string_option
+    { optsync = true;
+      optdepr = false;
+      optname  = "coercion quoting";
+      optkey   = ["Printing";"Coercions";"Mode"];
+      optread  = Constrextern.get_print_coercions_mode;
+      optwrite = (fun o -> Constrextern.set_print_coercions_mode o) }
 
 let _ =
   declare_bool_option
@@ -1585,7 +1594,7 @@ let get_nth_goal n =
   let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
   let gl = {Evd.it=List.nth gls (n-1) ; sigma = sigma; } in
   gl
-  
+
 exception NoHyp
 (* Printing "About" information of a hypothesis of the current goal.
    We only print the type and a small statement to this comes from the
@@ -1612,7 +1621,7 @@ let print_about_hyp_globs ref_or_by_not glnumopt =
   with (* fallback to globals *)
     | NoHyp | Not_found -> print_about ref_or_by_not
 
-	       
+
 let vernac_print = function
   | PrintTables -> msg_notice (print_tables ())
   | PrintFullContext-> msg_notice (print_full_context_typ ())
@@ -1771,7 +1780,7 @@ let vernac_unfocused () =
     error "The proof is not fully unfocused."
 
 
-(* BeginSubproof / EndSubproof. 
+(* BeginSubproof / EndSubproof.
     BeginSubproof (vernac_subproof) focuses on the first goal, or the goal
     given as argument.
     EndSubproof (vernac_end_subproof) unfocuses from a BeginSubproof, provided
@@ -1962,7 +1971,7 @@ let interp ?proof locality poly c =
   | VernacDeclareImplicits (qid,l) ->
       vernac_declare_implicits locality qid l
   | VernacArguments (qid, l, narg, flags) ->
-      vernac_declare_arguments locality qid l narg flags 
+      vernac_declare_arguments locality qid l narg flags
   | VernacReserve bl -> vernac_reserve bl
   | VernacGeneralizable gen -> vernac_generalizable locality gen
   | VernacSetOpacity qidl -> vernac_set_opacity locality qidl
@@ -1990,7 +1999,7 @@ let interp ?proof locality poly c =
   | VernacUndo _ -> msg_warning (str "VernacUndo not handled by Stm")
   | VernacUndoTo _ -> msg_warning (str "VernacUndoTo not handled by Stm")
   | VernacBacktrack _ -> msg_warning (str "VernacBacktrack not handled by Stm")
-  
+
   (* Proof management *)
   | VernacGoal t -> vernac_start_proof poly Theorem [None,([],t,None)] false
   | VernacFocus n -> vernac_focus n
@@ -2004,7 +2013,7 @@ let interp ?proof locality poly c =
   | VernacProof (None, None) -> ()
   | VernacProof (Some tac, None) -> vernac_set_end_tac tac
   | VernacProof (None, Some l) -> vernac_set_used_variables l
-  | VernacProof (Some tac, Some l) -> 
+  | VernacProof (Some tac, Some l) ->
       vernac_set_end_tac tac; vernac_set_used_variables l
   | VernacProofMode mn -> Proof_global.set_proof_mode mn
   (* Toplevel control *)
@@ -2039,7 +2048,7 @@ let check_vernac_supports_locality c l =
     | VernacSetOpacity _ | VernacSetStrategy _
     | VernacSetOption _ | VernacUnsetOption _
     | VernacDeclareReduction _
-    | VernacExtend _ 
+    | VernacExtend _
     | VernacInductive _) -> ()
   | Some _, _ -> Errors.error "This command does not support Locality"
 
@@ -2049,7 +2058,7 @@ let check_vernac_supports_polymorphism c p =
   | None, _ -> ()
   | Some _, (
       VernacDefinition _ | VernacFixpoint _ | VernacCoFixpoint _
-    | VernacAssumption _ | VernacInductive _ 
+    | VernacAssumption _ | VernacInductive _
     | VernacStartTheoremProof _
     | VernacCoercion _ | VernacIdentityCoercion _
     | VernacInstance _ | VernacDeclareInstances _
@@ -2113,7 +2122,7 @@ let with_fail b f =
               raise (HasFailed (Errors.iprint
                 (Cerrors.process_vernac_interp_error ~allow_uncaught:false ~with_header:false e))))
         ()
-    with e when Errors.noncritical e -> 
+    with e when Errors.noncritical e ->
       let (e, _) = Errors.push e in
       match e with
       | HasNotFailed ->
@@ -2129,9 +2138,9 @@ let interp ?(verbosely=true) ?proof (loc,c) =
   let rec aux ?locality ?polymorphism isprogcmd = function
     | VernacProgram c when not isprogcmd -> aux ?locality ?polymorphism true c
     | VernacProgram _ -> Errors.error "Program mode specified twice"
-    | VernacLocal (b, c) when Option.is_empty locality -> 
+    | VernacLocal (b, c) when Option.is_empty locality ->
       aux ~locality:b ?polymorphism isprogcmd c
-    | VernacPolymorphic (b, c) when polymorphism = None -> 
+    | VernacPolymorphic (b, c) when polymorphism = None ->
       aux ?locality ~polymorphism:b isprogcmd c
     | VernacPolymorphic (b, c) -> Errors.error "Polymorphism specified twice"
     | VernacLocal _ -> Errors.error "Locality specified twice"
@@ -2149,7 +2158,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         System.with_time !Flags.time
           (aux_list ?locality ?polymorphism isprogcmd) v;
     | VernacLoad (_,fname) -> vernac_load (aux false) fname
-    | c -> 
+    | c ->
         check_vernac_supports_locality c locality;
         check_vernac_supports_polymorphism c polymorphism;
 	let poly = enforce_polymorphism polymorphism in
