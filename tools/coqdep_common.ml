@@ -373,6 +373,11 @@ let rec traite_fichier_Coq suffixe verbose f =
                     printf " %s%s" (canonize file_str) suffixe
                   with Not_found ->
 		    if verbose && not (is_in_coqlib ?from str) then
+		      let str =
+			match from with
+			  | None -> str
+			  | Some pth -> pth @ str
+		      in
                       warning_module_notfound f str
        		end) strl
 	  | Declare sl ->
