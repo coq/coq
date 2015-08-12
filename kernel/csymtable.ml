@@ -159,11 +159,11 @@ let rec slot_for_getglobal env (kn,u) =
       | Some code ->
 	 match Cemitcodes.force code with
 	 | BCdefined(code,pl,fv) ->
-	    if Univ.Instance.is_empty u then
-	    let v = eval_to_patch env (code,pl,fv) in
+(*	   if Univ.Instance.is_empty u then *)
+	      let v = eval_to_patch env (code,pl,fv) in
 	      set_global v
-	    else set_global (val_of_constant (kn,u))
-	 | BCalias kn' -> slot_for_getglobal env kn'
+(*	    else set_global (val_of_constant (kn,u)) *)
+	 | BCallias kn' -> slot_for_getglobal env kn'
 	 | BCconstant -> set_global (val_of_constant (kn,u)) in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (Ephemeron.create pos);
@@ -197,6 +197,8 @@ and slot_for_fv env fv =
           fill_fv_cache rv i val_of_rel env_of_rel b
       | Some (v, _) -> v
       end
+  | FVpoly_inst idu ->
+    assert false
 
 and eval_to_patch env (buff,pl,fv) =
   (* copy code *before* patching because of nested evaluations:
@@ -219,7 +221,7 @@ and eval_to_patch env (buff,pl,fv) =
 
 and val_of_constr env c =
   let (_,fun_code,_ as ccfv) =
-    try match compile true env c with
+    try match compile true env c with (** NOTE *)
 	| Some v -> v
 	| None -> assert false
     with reraise ->

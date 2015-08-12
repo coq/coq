@@ -20,7 +20,8 @@ val fix_tag : tag
 val switch_tag : tag
 val cofix_tag : tag
 val cofix_evaluated_tag : tag
-val last_variant_tag : tag 
+val last_variant_tag : tag
+val univ_instance_tag : tag
 
 type structured_constant =
   | Const_sorts of sorts
@@ -118,7 +119,7 @@ type instruction =
 
 and bytecodes = instruction list
 
-type fv_elem = FVnamed of Id.t | FVrel of int
+type fv_elem = FVnamed of Id.t | FVrel of int | FVpoly_inst of pconstant
 
 type fv = fv_elem array
 
@@ -130,7 +131,7 @@ exception NotClosed
 (*spiwack: both type have been moved from Cbytegen because I needed then
   for the retroknowledge *)
 type vm_env = {
-    size : int;              (** longueur de la liste [n] *)
+    size : int;              (** length of the list [n] *)
     fv_rev : fv_elem list    (** [fvn; ... ;fv1] *)
   }
 
@@ -139,14 +140,15 @@ type comp_env = {
     nb_stack : int;              (** number of variables on the stack       *)
     in_stack : int list;         (** position in the stack                  *)
     nb_rec : int;                (** number of mutually recursive functions *)
-                                 (** recursives =  nbr                      *)
+                                 (** (= nbr)                                *)
     pos_rec  : instruction list; (** instruction d'acces pour les variables *)
                                  (**  de point fix ou de cofix              *)
     offset : int;
-    in_env : vm_env ref
+    in_env : vm_env ref          (** the variables that are accessed        *)
   }
 
-val dump_bytecode : bytecodes -> unit
+val pp_bytecodes : bytecodes -> Pp.std_ppcmds
+val pp_fv_elem : fv_elem -> Pp.std_ppcmds
 
 (*spiwack: moved this here because I needed it for retroknowledge *)
 type block =

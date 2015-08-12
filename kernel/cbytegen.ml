@@ -102,7 +102,7 @@ let empty_comp_env ()=
     nb_rec = 0;
     pos_rec = [];
     offset = 0;
-    in_env = ref empty_fv;
+    in_env = ref empty_fv
   }
 
 (*i Creation functions for comp_env *)
@@ -176,8 +176,6 @@ let push_local sz r =
     nb_stack = r.nb_stack + 1;
     in_stack = (sz + 1) :: r.in_stack }
 
-
-
 (*i Compilation of variables *)
 let find_at f l =
   let rec aux n = function
@@ -213,6 +211,16 @@ let pos_rel i r sz =
 	let pos = env.size in
 	r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
 	Kenvacc(r.offset + pos)
+
+let pos_poly_inst idu r =
+  let env = !(r.in_env) in
+  let f = function FVpoly_inst i -> true | _ -> false in
+  try Kenvacc (r.offset + env.size - (find_at f env.fv_rev))
+  with Not_found ->
+    let pos = env.size in
+    let db = FVpoly_inst idu in
+    r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
+    Kenvacc(r.offset + pos)
 
 (*i  Examination of the continuation *)
 
@@ -513,6 +521,7 @@ let compile_fv_elem reloc fv sz cont =
   match fv with
   | FVrel i -> pos_rel i reloc sz :: cont
   | FVnamed id -> pos_named id reloc :: cont
+  | FVpoly_inst idu -> pos_poly_inst idu reloc :: cont
 
 let rec compile_fv reloc l sz cont =
   match l with
@@ -531,7 +540,8 @@ let rec get_alias env (kn,u as p) =
     | None -> p
     | Some tps ->
        (match Cemitcodes.force tps with
-	| BCalias (kn',u') -> get_alias env (kn', Univ.subst_instance_instance u u')
+	| BCallias (kn',u') ->
+	  get_allias env (kn', Univ.subst_instance_instance u u')
 	| _ -> p)
 
 (* Compiling expressions *)
@@ -745,6 +755,15 @@ and compile_str_cst reloc sc sz cont =
 
 (* spiwack : compilation of constants with their arguments.
    Makes a special treatment with 31-bit integer addition *)
+and compile_get_global reloc knu cont =
+  let (kn,u) = get_allias !global_env knu in
+(*
+  if Univ.Instance.is_empty u then
+    Kgetglobal (kn,u) :: cont
+  else
+*)
+    pos_poly_inst (kn,u) reloc :: cont
+
 and compile_const =
   fun reloc-> fun  kn u -> fun args -> fun sz -> fun cont ->
   let nargs = Array.length args in
@@ -756,34 +775,70 @@ and compile_const =
                   (mkConstU (kn,u)) reloc args sz cont
   with Not_found ->
     if Int.equal nargs 0 then
-      Kgetglobal (get_alias !global_env (kn, u)) :: cont
+      compile_get_global reloc (kn,u) cont
     else
       comp_app (fun _ _ _ cont ->
-                   Kgetglobal (get_alias !global_env (kn,u)) :: cont)
+                   compile_get_global reloc (kn,u) cont)
         compile_constr reloc () args sz cont
+
+let compile_inst inst u_offset cont =
+  (** TODO: If we are making a copy then we can skip this
+   ** - In order to check this, we need to know the length of the instance
+   **)
+  let ainst = Univ.Instance.to_array inst in
+  let inst_size = Univ.Instance.length inst in
+  let relative_offset = u_offset + inst_size - 1 in
+  Array.fold_left_i
+    (fun i cont lvl ->
+      match Univ.Level.var_index lvl with
+      | None -> assert false
+        (** TODO: this needs to be the representation of the universe
+	 ** in the byte-code! It probably needs to be patchable!
+	 **)
+      | Some v -> Kacc (relative_offset - i) :: Kfield v :: cont)
+    (Kmakeblock (inst_size, univ_instance_tag) :: cont) ainst
+
+(** The annoying piece of this function is that the order is less-than-ideal. **)
+let rec compile_poly_inst reloc fvs sz cont =
+  match fvs with
+  | [] -> cont
+  | FVpoly_inst (id,u) :: fvs ->
+    
+    (* TODO: generate some code using idu *)
+    (Kpush :: compile_poly_inst reloc fvs (sz+1) cont)
+  | fv_elem :: fvs ->
+    compile_fv_elem reloc fv_elem sz
+      (Kpush :: compile_poly_inst reloc fvs (sz+1) cont)
 
 let compile fail_on_error env c =
   set_global_env env;
   init_fun_code ();
   Label.reset_label_counter ();
   let reloc = empty_comp_env () in
-  try 
+  try
     let init_code = compile_constr reloc c 0 [Kstop] in
     let fv = List.rev (!(reloc.in_env).fv_rev) in
-    let pp_v v =
-      match v with
-      | FVnamed id -> Pp.str (Id.to_string id)
-      | FVrel i -> Pp.str (string_of_int i)
-    in
+    (** TODO: Here I need to instantiate all of the polymorphic constants in
+     ** [fv] and wrap [init_code] with
+     **     fun u => polymorphic_instantiations ; init_code
+     **)
+    
     let open Pp in
     if !Flags.dump_bytecode then
-      (dump_bytecode init_code;
-       dump_bytecode !fun_code;
-       Pp.msg_debug (Pp.str "fv = " ++
-	 Pp.prlist_with_sep (fun () -> Pp.str "; ") pp_v fv ++ Pp.fnl ()));
-    Some (init_code,!fun_code, Array.of_list fv)
+      Pp.msg_debug
+	Pp.(str "init_code =" ++ fnl () ++
+	      pp_bytecodes init_code ++ fnl () ++
+	    str "fun_code =" ++ fnl () ++
+ 	      pp_bytecodes !fun_code ++ fnl () ++
+	    str "fv = " ++
+	      prlist_with_sep (fun () -> str "; ") pp_fv_elem fv ++
+	    fnl ()) ;
+    Some (init_code, !fun_code, Array.of_list fv)
   with TooLargeInductive tname ->
-    let fn = if fail_on_error then Errors.errorlabstrm "compile" else Pp.msg_warning in
+    let fn =
+      if fail_on_error then Errors.errorlabstrm "compile"
+      else Pp.msg_warning
+    in
       (Pp.(fn
 	   (str "Cannot compile code for virtual machine as it uses inductive " ++
 	    Id.print tname ++ str str_max_constructors));
@@ -799,8 +854,8 @@ let compile_constant_body fail_on_error env = function
 	    let con= constant_of_kn (canonical_con kn') in
 	      Some (BCalias (get_alias env (con,u)))
 	| _ ->
-	    let res = compile fail_on_error env body in
-	      Option.map (fun x -> BCdefined (to_memory x)) res
+	  let res = compile fail_on_error env body in
+	  Option.map (fun x -> BCdefined (to_memory x)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 
@@ -902,14 +957,14 @@ let op2_compilation op =
   3/ if at least one is not, branches to the normal behavior:
       Kgetglobal (get_alias !global_env kn) *)
 let op_compilation n op =
-  let code_construct kn cont =
+  let code_construct reloc kn cont =
      let f_cont =
          let else_lbl = Label.create () in
          Kareconst(n, else_lbl):: Kacc 0:: Kpop 1::
           op:: Kreturn 0:: Klabel else_lbl::
          (* works as comp_app with nargs = n and tailcall cont [Kreturn 0]*)
-          Kgetglobal (get_alias !global_env kn)::
-          Kappterm(n, n):: [] (* = discard_dead_code [Kreturn 0] *)
+          compile_get_global reloc kn (
+            Kappterm(n, n):: []) (* = discard_dead_code [Kreturn 0] *)
      in
      let lbl = Label.create () in
      fun_code := [Ksequence (add_grab n lbl f_cont, !fun_code)];
@@ -926,12 +981,11 @@ let op_compilation n op =
            (*Kaddint31::escape::Klabel else_lbl::Kpush::*)
            (op::escape::Klabel else_lbl::Kpush::
            (* works as comp_app with nargs = n and non-tailcall cont*)
-           Kgetglobal (get_alias !global_env kn)::
-           Kapply n::labeled_cont)))
+           compile_get_global reloc kn (Kapply n::labeled_cont))))
   else if Int.equal nargs 0 then
-    code_construct kn cont
+    code_construct reloc kn cont
   else
-    comp_app (fun _ _ _ cont -> code_construct kn cont)
+    comp_app (fun reloc _ _ cont -> code_construct reloc kn cont)
       compile_constr reloc () args sz cont
 
 let int31_escape_before_match fc cont =

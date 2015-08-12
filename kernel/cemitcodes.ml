@@ -127,11 +127,11 @@ let slot_for_const c =
   enter (Reloc_const c);
   out_int 0
 
-and slot_for_annot a =
+let slot_for_annot a =
   enter (Reloc_annot a);
   out_int 0
 
-and slot_for_getglobal p =
+let slot_for_getglobal p =
   enter (Reloc_getglobal p);
   out_int 0
 
