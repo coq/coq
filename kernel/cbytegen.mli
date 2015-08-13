@@ -5,7 +5,7 @@ open Declarations
 open Pre_env
 
 val compile : bool -> (* Fail on error with a nice user message, otherwise simply a warning *)
-	      env -> constr -> (bytecodes * bytecodes * fv) option
+	      env -> constr -> (bytecodes (* * bytecodes *) * fv) option
 (** init, fun, fv *)
 
 val compile_constant_body : bool -> 

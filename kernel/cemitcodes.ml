@@ -360,9 +360,8 @@ let repr_body_code = function
   (s, BCalias cu)
 | PBCconstant -> (None, BCconstant)
 
-let to_memory (init_code, fun_code, fv) =
+let to_memory (fun_code, fv) =
   init();
-  emit init_code;
   emit fun_code;
   let code = String.create !out_position in
   String.unsafe_blit !out_buffer 0 code 0 !out_position;
@@ -373,8 +372,3 @@ let to_memory (init_code, fun_code, fv) =
     | Label_undefined patchlist ->
 	assert (patchlist = []))) !label_table;
   (code, reloc, fv)
-
-
-
-
-

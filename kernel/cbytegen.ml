@@ -214,13 +214,16 @@ let pos_rel i r sz =
 
 let pos_poly_inst idu r =
   let env = !(r.in_env) in
-  let f = function FVpoly_inst i -> true | _ -> false in
+  let f = function
+    | FVpoly_inst i -> Univ.eq_puniverses Names.Constant.equal idu i
+    | _ -> false
+  in
   try Kenvacc (r.offset + env.size - (find_at f env.fv_rev))
   with Not_found ->
     let pos = env.size in
     let db = FVpoly_inst idu in
     r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
-    Kenvacc(r.offset + pos)
+    Kenvacc(r.offset + pos + 1)
 
 (*i  Examination of the continuation *)
 
@@ -785,55 +788,73 @@ let compile_inst inst u_offset cont =
   (** TODO: If we are making a copy then we can skip this
    ** - In order to check this, we need to know the length of the instance
    **)
-  let ainst = Univ.Instance.to_array inst in
-  let inst_size = Univ.Instance.length inst in
-  let relative_offset = u_offset + inst_size - 1 in
-  Array.fold_left_i
-    (fun i cont lvl ->
-      match Univ.Level.var_index lvl with
-      | None -> assert false
-        (** TODO: this needs to be the representation of the universe
-	 ** in the byte-code! It probably needs to be patchable!
-	 **)
-      | Some v -> Kacc (relative_offset - i) :: Kfield v :: cont)
-    (Kmakeblock (inst_size, univ_instance_tag) :: cont) ainst
+  if Univ.Instance.is_empty inst then
+    Kconst (Const_b0 univ_instance_tag) :: Kpush :: cont
+  else
+    let ainst = Univ.Instance.to_array inst in
+    let inst_size = Univ.Instance.length inst in
+    let relative_offset = u_offset + inst_size - 1 in
+    Array.fold_left_i
+      (fun i cont lvl ->
+	match Univ.Level.var_index lvl with
+	| None -> Kconst (Const_univ_level lvl) :: Kpush :: cont
+	| Some v -> Kacc (relative_offset - i) :: Kfield v :: Kpush :: cont)
+      (Kmakeblock (inst_size, univ_instance_tag) :: cont) ainst
 
 (** The annoying piece of this function is that the order is less-than-ideal. **)
 let rec compile_poly_inst reloc fvs sz cont =
   match fvs with
   | [] -> cont
-  | FVpoly_inst (id,u) :: fvs ->
-    
+  | FVpoly_inst (kn,u) :: fvs ->
     (* TODO: generate some code using idu *)
-    (Kpush :: compile_poly_inst reloc fvs (sz+1) cont)
+    compile_inst u sz
+      (compile_poly_inst reloc fvs (sz+1)
+	 (Kgetglobal (kn,u) :: Kapply 1 :: Kpush :: cont))
   | fv_elem :: fvs ->
     compile_fv_elem reloc fv_elem sz
       (Kpush :: compile_poly_inst reloc fvs (sz+1) cont)
 
-let compile fail_on_error env c =
+let compile_term fail_on_error env c cont =
   set_global_env env;
   init_fun_code ();
   Label.reset_label_counter ();
   let reloc = empty_comp_env () in
   try
-    let init_code = compile_constr reloc c 0 [Kstop] in
-    let fv = List.rev (!(reloc.in_env).fv_rev) in
+    (* 1 is the number of parameters, in this case, this is the "fake"
+     * substitution
+     *)
+    let init_code = compile_constr reloc c 0 [Kreturn 1] in
     (** TODO: Here I need to instantiate all of the polymorphic constants in
      ** [fv] and wrap [init_code] with
-     **     fun u => polymorphic_instantiations ; init_code
+     **     polymorphic_instantiations ; init_code
+     ** The problem is that init_code references these constants using the
+     ** environment, not on the stack. So I need to build a closure and invoke
+     ** it.
      **)
-    
+    let reloc_final = comp_env_fun 1 in
+    let subst_lbl = Label.create () in
+    let body_code =
+      compile_poly_inst reloc_final (!(reloc.in_env).fv_rev) 0
+	((if !(reloc.in_env).size > 0 then
+	    Kacc 0 :: Kpop 1 :: []
+	  else []) @
+	    (Kclosure (subst_lbl, !(reloc.in_env).size) :: Kpush ::
+	       Kconst (Const_b0 univ_instance_tag) :: Kpush ::
+	       Kacc 1 :: Kapply 1 :: Kpop 2 ::
+	       [Ksequence (cont,
+			   Klabel subst_lbl :: init_code)]))
+    in
+    let final_code = [Ksequence (body_code, !fun_code)] in
+    let fv = List.rev (!(reloc_final.in_env).fv_rev) in
     let open Pp in
     if !Flags.dump_bytecode then
       Pp.msg_debug
-	Pp.(str "init_code =" ++ fnl () ++
-	      pp_bytecodes init_code ++ fnl () ++
-	    str "fun_code =" ++ fnl () ++
- 	      pp_bytecodes !fun_code ++ fnl () ++
+	Pp.(str "code =" ++ fnl () ++
+	      pp_bytecodes final_code ++ fnl () ++
 	    str "fv = " ++
 	      prlist_with_sep (fun () -> str "; ") pp_fv_elem fv ++
 	    fnl ()) ;
-    Some (init_code, !fun_code, Array.of_list fv)
+    Some (final_code, Array.of_list fv)
   with TooLargeInductive tname ->
     let fn =
       if fail_on_error then Errors.errorlabstrm "compile"
@@ -843,6 +864,10 @@ let compile fail_on_error env c =
 	   (str "Cannot compile code for virtual machine as it uses inductive " ++
 	    Id.print tname ++ str str_max_constructors));
        None)
+
+let compile fail_on_error env c =
+  compile_term fail_on_error env c
+    [Kstop]
 
 let compile_constant_body fail_on_error env = function
   | Undef _ | OpaqueDef _ -> Some BCconstant
@@ -854,8 +879,22 @@ let compile_constant_body fail_on_error env = function
 	    let con= constant_of_kn (canonical_con kn') in
 	      Some (BCalias (get_alias env (con,u)))
 	| _ ->
-	  let res = compile fail_on_error env body in
-	  Option.map (fun x -> BCdefined (to_memory x)) res
+	  let res = compile_term fail_on_error env body [Kreturn 0] in
+	  let wrap (body_code, fvs) =
+	    let body_label = Label.create () in
+	    let wrapped_body_code =
+	      Kclosure (body_label, 0) :: (** TODO: might be wrong here *)
+		Kstop :: Krestart ::
+		Klabel body_label :: body_code
+	    in
+(*
+	    let () =
+	      Pp.(msg_debug (str "final code = " ++ fnl () ++
+			       pp_bytecodes wrapped_body_code ++ fnl ())) in
+*)
+	    (wrapped_body_code, fvs)
+	  in
+	  Option.map (fun x -> BCdefined (to_memory (wrap x))) res
 
 (* Shortcut of the previous function used during module strengthening *)
 
@@ -865,7 +904,7 @@ let compile_alias (kn,u) = BCalias (constant_of_kn (canonical_con kn), u)
       31-bit integers *)
 
 let make_areconst n else_lbl cont =
-  if n <=0 then
+  if n <= 0 then
     cont
   else
     Kareconst (n, else_lbl)::cont

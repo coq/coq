@@ -165,6 +165,7 @@ type whd =
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vatom_stk of atom * stack
+  | Vuniv_level of Univ.universe_level
 
 (*************************************************)
 (* Destructors ***********************************)
@@ -303,6 +304,7 @@ let rec obj_of_str_const str =
 	Obj.set_field res i (obj_of_str_const args.(i))
       done;
       res
+  | Const_univ_level l -> Obj.repr (Vuniv_level l)
 
 let val_of_obj o = ((Obj.obj o) : values)
 

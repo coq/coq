@@ -67,6 +67,8 @@ let rec eq_structured_constant c1 c2 = match c1, c2 with
 | Const_bn (t1, a1), Const_bn (t2, a2) ->
   Int.equal t1 t2 && Array.equal eq_structured_constant a1 a2
 | Const_bn _, _ -> false
+| Const_univ_level l1 , Const_univ_level l2 -> Univ.eq_levels l1 l2
+| Const_univ_level _ , _ -> false
 
 let rec hash_structured_constant c =
   let open Hashset.Combine in
@@ -79,6 +81,7 @@ let rec hash_structured_constant c =
     let fold h c = combine h (hash_structured_constant c) in
     let h = Array.fold_left fold 0 a in
     combinesmall 5 (combine (Int.hash t) h)
+  | Const_univ_level l -> combinesmall 6 (Univ.Level.hash l)
 
 module SConstTable = Hashtbl.Make (struct
   type t = structured_constant
@@ -220,8 +223,8 @@ and eval_to_patch env (buff,pl,fv) =
   eval_tcode tc vm_env
 
 and val_of_constr env c =
-  let (_,fun_code,_ as ccfv) =
-    try match compile true env c with (** NOTE *)
+  let ((_,_) as ccfv) =
+    try match compile true env c with
 	| Some v -> v
 	| None -> assert false
     with reraise ->

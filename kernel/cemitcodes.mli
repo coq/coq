@@ -40,5 +40,5 @@ val subst_to_patch_subst : Mod_subst.substitution -> to_patch_substituted -> to_
 val repr_body_code :
   to_patch_substituted -> Mod_subst.substitution list option * body_code
 
-val to_memory : bytecodes * bytecodes * fv -> to_patch
+val to_memory : bytecodes (* * bytecodes *) * fv -> to_patch
                (** init code, fun code, fv *)
