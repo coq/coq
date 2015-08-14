@@ -218,12 +218,12 @@ let pos_poly_inst idu r =
     | FVpoly_inst i -> Univ.eq_puniverses Names.Constant.equal idu i
     | _ -> false
   in
-  try Kenvacc (r.offset + env.size - (find_at f env.fv_rev))
+  try  Kenvacc (r.offset + env.size - (find_at f env.fv_rev))
   with Not_found ->
     let pos = env.size in
     let db = FVpoly_inst idu in
     r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
-    Kenvacc(r.offset + pos + 1)
+    Kenvacc(r.offset + pos)
 
 (*i  Examination of the continuation *)
 
@@ -818,7 +818,7 @@ let compile_term fail_on_error env c cont =
   set_global_env env;
   init_fun_code ();
   Label.reset_label_counter ();
-  let reloc = empty_comp_env () in
+  let reloc = comp_env_fun 1 in
   try
     (* 1 is the number of parameters, in this case, this is the "fake"
      * substitution
@@ -831,7 +831,7 @@ let compile_term fail_on_error env c cont =
      ** environment, not on the stack. So I need to build a closure and invoke
      ** it.
      **)
-    let reloc_final = comp_env_fun 1 in
+    let reloc_final = empty_comp_env () in
     let subst_lbl = Label.create () in
     let body_code =
       compile_poly_inst reloc_final (!(reloc.in_env).fv_rev) 0
@@ -887,11 +887,9 @@ let compile_constant_body fail_on_error env = function
 		Kstop :: Krestart ::
 		Klabel body_label :: body_code
 	    in
-(*
 	    let () =
 	      Pp.(msg_debug (str "final code = " ++ fnl () ++
 			       pp_bytecodes wrapped_body_code ++ fnl ())) in
-*)
 	    (wrapped_body_code, fvs)
 	  in
 	  Option.map (fun x -> BCdefined (to_memory (wrap x))) res
