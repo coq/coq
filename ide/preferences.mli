@@ -12,6 +12,25 @@ val style_manager : GSourceView2.source_style_scheme_manager
 type project_behavior = Ignore_args | Append_args | Subst_args
 type inputenc = Elocale | Eutf8 | Emanual of string
 
+class type ['a] repr =
+object
+  method into : string list -> 'a option
+  method from : 'a -> string list
+end
+
+class ['a] preference_signals : changed:'a GUtil.signal ->
+object
+  inherit GUtil.ml_signals
+  method changed : callback:('a -> unit) -> GtkSignal.id
+end
+
+class ['a] preference : name:string list -> init:'a -> repr:'a repr ->
+object
+  method connect : 'a preference_signals
+  method get : 'a
+  method set : 'a -> unit
+end
+
 type pref =
     {
       mutable cmd_coqtop : string option;

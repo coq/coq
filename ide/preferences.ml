@@ -17,6 +17,88 @@ let style_manager = GSourceView2.source_style_scheme_manager ~default:true
 let () = style_manager#set_search_path
   ((Minilib.coqide_data_dirs ())@style_manager#search_path)
 
+(** Generic preferences *)
+
+type obj = {
+  set : string list -> unit;
+  get : unit -> string list;
+}
+
+let preferences : obj Util.String.Map.t ref = ref Util.String.Map.empty
+
+class type ['a] repr =
+object
+  method into : string list -> 'a option
+  method from : 'a -> string list
+end
+
+class ['a] preference_signals ~(changed : 'a GUtil.signal) =
+object
+  inherit GUtil.ml_signals [changed#disconnect]
+  method changed = changed#connect ~after
+end
+
+class ['a] preference
+  ~(name : string list) ~(init : 'a) ~(repr : 'a repr) =
+object (self)
+  initializer
+    let set v = match repr#into v with None -> () | Some s -> self#set s in
+    let get () = repr#from self#get in
+    let obj = { set = set; get = get; } in
+    let name = String.concat "." name in
+    if Util.String.Map.mem name !preferences then
+      invalid_arg ("Preference " ^ name ^ " already exists")
+    else
+      preferences := Util.String.Map.add name obj !preferences
+
+  val default = init
+  val mutable data = init
+  val changed : 'a GUtil.signal = new GUtil.signal ()
+  val name : string list = name
+  method connect = new preference_signals ~changed
+  method get = data
+  method set (n : 'a) = data <- n; changed#call n
+end
+
+(** Useful marshallers *)
+
+module Repr =
+struct
+
+let string : string repr =
+object
+  method from s = [s]
+  method into = function [s] -> Some s | _ -> None
+end
+
+let bool : bool repr =
+object
+  method from s = [string_of_bool s]
+  method into = function
+  | ["true"] -> Some true
+  | ["false"] -> Some false
+  | _ -> None
+end
+
+let int : int repr =
+object
+  method from s = [string_of_int s]
+  method into = function
+  | [i] -> (try Some (int_of_string i) with _ -> None)
+  | _ -> None
+end
+
+let option (r : 'a repr) : 'a option repr =
+object
+  method from = function None -> [] | Some v -> "" :: r#from v
+  method into = function
+  | [] -> Some None
+  | "" :: s -> Some (r#into s)
+  | _ -> None
+end
+
+end
+
 let get_config_file name =
   let find_config dir = Sys.file_exists (Filename.concat dir name) in
   let config_dir = List.find find_config (Minilib.coqide_config_dirs ()) in
@@ -247,10 +329,11 @@ let save_pref () =
   then Unix.mkdir (Minilib.coqide_config_home ()) 0o700;
   let () = try GtkData.AccelMap.save accel_file with _ -> () in
   let p = current in
-
-    let add = Util.String.Map.add in
-    let (++) x f = f x in
-    Util.String.Map.empty ++
+  let add = Util.String.Map.add in
+  let (++) x f = f x in
+  let fold key obj accu = add key (obj.get ()) accu in
+ 
+    (Util.String.Map.fold fold !preferences Util.String.Map.empty) ++
     add "cmd_coqtop" (match p.cmd_coqtop with | None -> [] | Some v-> [v]) ++
     add "cmd_coqc" [p.cmd_coqc] ++
     add "cmd_make" [p.cmd_make] ++
@@ -318,6 +401,11 @@ let load_pref () =
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
 
     let m = Config_lexer.load_file loaded_pref_file in
+    let iter name v =
+      try (Util.String.Map.find name !preferences).set v
+      with _ -> ()
+    in
+    let () = Util.String.Map.iter iter m in
     let np = current in
     let set k f = try let v = Util.String.Map.find k m in f v with _ -> () in
     let set_hd k f = set k (fun v -> f (List.hd v)) in
