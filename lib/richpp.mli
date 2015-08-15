@@ -11,7 +11,7 @@
 (** Each annotation of the semi-structured document refers to the
     substring it annotates. *)
 type 'annotation located = {
-  annotation : 'annotation;
+  annotation : 'annotation option;
   startpos   : int;
   endpos     : int
 }
@@ -20,16 +20,16 @@ type 'annotation located = {
     of [ppcmds] as a semi-structured document
     that represents (located) annotations of this string.
     The [get_annotations] function is used to convert tags into the desired
-    annotation. If this function returns [None], then no annotation is put. *)
+    annotation. *)
 val rich_pp :
   (Pp.Tag.t -> 'annotation option) -> Pp.std_ppcmds ->
-  (unit, 'annotation located) Xml_datatype.gxml
+  'annotation located Xml_datatype.gxml
 
 (** [annotations_positions ssdoc] returns a list associating each
     annotations with its position in the string from which [ssdoc] is
     built. *)
 val annotations_positions :
-  ('a, 'annotation located) Xml_datatype.gxml ->
+  'annotation located Xml_datatype.gxml ->
   ('annotation * (int * int)) list
 
 (** [xml_of_rich_pp ssdoc] returns an XML representation of the
@@ -37,5 +37,5 @@ val annotations_positions :
 val xml_of_rich_pp :
   ('annotation -> string) ->
   ('annotation -> (string * string) list) ->
-  ('a, 'annotation located) Xml_datatype.gxml ->
+  'annotation located Xml_datatype.gxml ->
   Xml_datatype.xml

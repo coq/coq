@@ -7,11 +7,13 @@
 (************************************************************************)
 
 (** ['a gxml] is the type for semi-structured documents. They generalize
-    XML by allowing any kind of tags and attributes. *)
-type ('a, 'b) gxml =
-  | Element of ('a * 'b * ('a, 'b) gxml list)
+    XML by allowing any kind of attributes. *)
+type 'a gxml =
+  | Element of (string * 'a * 'a gxml list)
   | PCData of string
 
-(** [xml] is a semi-structured documents where tags are strings and attributes
-    are association lists from string to string. *)
-type xml = (string, (string * string) list) gxml
+(** [xml] is a semi-structured documents where attributes are association
+    lists from string to string. *)
+type xml = (string * string) list gxml
+
+
