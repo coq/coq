@@ -8,6 +8,7 @@
 
 open Util
 open Preferences
+open Ideutils
 
 class type proof_view =
   object
@@ -83,7 +84,8 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
           let () = hook_tag_cb tag hint sel_cb on_hover in
           [tag], hints
         in
-        let () = proof#buffer#insert ~tags (hyp ^ "\n") in
+        let () = insert_xml ~tags proof#buffer hyp in
+        proof#buffer#insert "\n";
         insert_hyp rem_hints hs
       in
       let () = proof#buffer#insert head_str in
@@ -96,13 +98,14 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
           else []
         in
         proof#buffer#insert (goal_str 1 goals_cnt);
-        proof#buffer#insert ~tags cur_goal;
+        insert_xml proof#buffer cur_goal;
         proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
       let fold_goal i _ { Interface.goal_ccl = g } =
         proof#buffer#insert (goal_str i goals_cnt);
-        proof#buffer#insert (g ^ "\n")
+        insert_xml proof#buffer g;
+        proof#buffer#insert "\n"
       in
       let () = Util.List.fold_left_i fold_goal 2 () rem_goals in
 
@@ -116,10 +119,12 @@ let mode_cesar (proof : #GText.view_skel) = function
   | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; } :: _ ->
       proof#buffer#insert "    *** Declarative Mode ***\n";
       List.iter
-        (fun hyp -> proof#buffer#insert (hyp^"\n"))
+        (fun hyp -> insert_xml proof#buffer hyp; proof#buffer#insert "\n")
         hyps;
       proof#buffer#insert "______________________________________\n";
-      proof#buffer#insert ("thesis := \n "^cur_goal^"\n");
+      proof#buffer#insert "thesis := \n ";
+      insert_xml proof#buffer cur_goal;
+      proof#buffer#insert "\n";
       ignore (proof#scroll_to_iter (proof#buffer#get_iter_at_mark `INSERT))
 
 let rec flatten = function
@@ -152,8 +157,8 @@ let display mode (view : #GText.view_skel) goals hints evars =
       (* The proof is finished, with the exception of given up goals. *)
       view#buffer#insert "No more subgoals, but there are some goals you gave up:\n\n";
       let iter goal =
-        let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
-        view#buffer#insert msg
+        insert_xml view#buffer goal.Interface.goal_ccl;
+        view#buffer#insert "\n"
       in
       List.iter iter given_up_goals;
       view#buffer#insert "\nYou need to go back and solve them."
@@ -161,8 +166,8 @@ let display mode (view : #GText.view_skel) goals hints evars =
       (* All the goals have been resolved but those on the shelf. *)
       view#buffer#insert "All the remaining goals are on the shelf:\n\n";
       let iter goal =
-        let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
-        view#buffer#insert msg
+        insert_xml view#buffer goal.Interface.goal_ccl;
+        view#buffer#insert "\n"
       in
       List.iter iter shelved_goals
     | _, _, _, _ ->
@@ -174,8 +179,8 @@ let display mode (view : #GText.view_skel) goals hints evars =
       view#buffer#insert "This subproof is complete, but there are some unfocused goals:\n\n";
       let iter i goal =
         let () = view#buffer#insert (goal_str (succ i)) in
-        let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
-        view#buffer#insert msg
+        insert_xml view#buffer goal.Interface.goal_ccl;
+        view#buffer#insert "\n"
       in
       List.iteri iter bg
     end

@@ -18,9 +18,9 @@ type richpp = Richpp.richpp
 type goal = {
   goal_id : string;
   (** Unique goal identifier *)
-  goal_hyp : string list;
+  goal_hyp : richpp list;
   (** List of hypotheses *)
-  goal_ccl : string;
+  goal_ccl : richpp;
   (** Goal conclusion *)
 }
 

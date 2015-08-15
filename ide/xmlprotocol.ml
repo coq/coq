@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20140312"
+let protocol_version = "20150815"
 
 (** * Interface of calls to Coq by CoqIde *)
 
@@ -131,14 +131,14 @@ let to_evar = function
   | _ -> raise Marshal_error
 
 let of_goal g =
-  let hyp = of_list of_string g.goal_hyp in
-  let ccl = of_string g.goal_ccl in
+  let hyp = of_list Richpp.of_richpp g.goal_hyp in
+  let ccl = Richpp.of_richpp g.goal_ccl in
   let id = of_string g.goal_id in
   Element ("goal", [], [id; hyp; ccl])
 let to_goal = function
   | Element ("goal", [], [id; hyp; ccl]) ->
-    let hyp = to_list to_string hyp in
-    let ccl = to_string ccl in
+    let hyp = to_list Richpp.to_richpp hyp in
+    let ccl = Richpp.to_richpp ccl in
     let id = to_string id in
     { goal_hyp = hyp; goal_ccl = ccl; goal_id = id; }
   | _ -> raise Marshal_error
@@ -318,10 +318,9 @@ end = struct
               (List.length lg + List.length rg) pr_focus l in
         Printf.sprintf "Still focussed: [%a]." pr_focus g.bg_goals
     else
-      let pr_menu s = s in
       let pr_goal { goal_hyp = hyps; goal_ccl = goal } =
-        "[" ^ String.concat "; " (List.map pr_menu hyps) ^ " |- " ^
-            pr_menu goal ^ "]" in
+        "[" ^ String.concat "; " (List.map Richpp.raw_print hyps) ^ " |- " ^
+            Richpp.raw_print goal ^ "]" in
       String.concat " " (List.map pr_goal g.fg_goals)
   let pr_evar (e : evar) = "[" ^ e.evar_info ^ "]"
   let pr_status (s : status) =
