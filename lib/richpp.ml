@@ -17,7 +17,7 @@ type 'annotation located = {
 
 type 'a stack =
 | Leaf
-| Node of string * 'a located gxml list * int * 'a stack
+| Node of string * (string, 'a located) gxml list * int * 'a stack
 
 type 'a context = {
   mutable stack : 'a stack;
