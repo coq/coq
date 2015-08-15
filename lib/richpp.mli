@@ -23,7 +23,7 @@ type 'annotation located = {
     annotation. If this function returns [None], then no annotation is put. *)
 val rich_pp :
   (Pp.Tag.t -> 'annotation option) -> Pp.std_ppcmds ->
-  (string, 'annotation located) Xml_datatype.gxml
+  (unit, 'annotation located) Xml_datatype.gxml
 
 (** [annotations_positions ssdoc] returns a list associating each
     annotations with its position in the string from which [ssdoc] is
@@ -37,5 +37,5 @@ val annotations_positions :
 val xml_of_rich_pp :
   ('annotation -> string) ->
   ('annotation -> (string * string) list) ->
-  (string, 'annotation located) Xml_datatype.gxml ->
+  ('a, 'annotation located) Xml_datatype.gxml ->
   Xml_datatype.xml

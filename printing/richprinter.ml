@@ -5,7 +5,7 @@ module RichppVernac = Ppvernac.Richpp
 module RichppTactic = Pptactic.Richpp
 
 type rich_pp =
-    (string, Ppannotation.t Richpp.located) Xml_datatype.gxml
+    (unit, Ppannotation.t Richpp.located) Xml_datatype.gxml
     * Xml_datatype.xml
 
 let get_annotations obj = Pp.Tag.prj obj Ppannotation.tag

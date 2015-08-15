@@ -17,7 +17,7 @@ type 'annotation located = {
 
 type 'a stack =
 | Leaf
-| Node of string * (string, 'a located) gxml list * int * 'a stack
+| Node of int * (unit, 'a located) gxml list * int * 'a stack
 
 type 'a context = {
   mutable stack : 'a stack;
@@ -72,6 +72,7 @@ let rich_pp annotate ppcmds =
 
   let open_xml_tag tag =
     let () = push_pcdata () in
+    let tag = try int_of_string tag with _ -> assert false in
     context.stack <- Node (tag, [], context.offset, context.stack)
   in
 
@@ -80,10 +81,11 @@ let rich_pp annotate ppcmds =
     match context.stack with
     | Leaf -> assert false
     | Node (node, child, pos, ctx) ->
-      let () = assert (String.equal tag node) in
+      let tag = try int_of_string tag with _ -> assert false in
+      let () = assert (Int.equal tag node) in
       let annotation =
-        try Int.Map.find (int_of_string node) context.annotations
-        with _ -> None
+        try Int.Map.find node context.annotations
+        with _ -> assert false
       in
       let child = List.rev child in
       let xml = match annotation with
@@ -94,12 +96,12 @@ let rich_pp annotate ppcmds =
           startpos = pos;
           endpos = context.offset;
         } in
-        [Element (node, annotation, child)]
+        [Element ((), annotation, child)]
       in
       match ctx with
       | Leaf ->
         (** Final node: we keep the result in a dummy context *)
-        context.stack <- Node ("", List.rev xml, 0, Leaf)
+        context.stack <- Node ((-1), List.rev xml, 0, Leaf)
       | Node (node, child, pos, ctx) ->
         context.stack <- Node (node, List.rev_append xml child, pos, ctx)
   in
@@ -128,7 +130,7 @@ let rich_pp annotate ppcmds =
   let () = pp_print_flush ft () in
   let () = assert (Buffer.length pp_buffer = 0) in
   match context.stack with
-  | Node ("", [xml], 0, Leaf) -> xml
+  | Node ((-1), [xml], 0, Leaf) -> xml
   | _ -> assert false
 
 
