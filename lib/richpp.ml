@@ -10,7 +10,7 @@ open Util
 open Xml_datatype
 
 type 'annotation located = {
-  annotation : 'annotation option;
+  annotation : 'annotation;
   startpos   : int;
   endpos     : int
 }
@@ -90,7 +90,7 @@ let rich_pp annotate ppcmds =
       | None -> child (** Ignore the node *)
       | Some annotation ->
         let annotation = {
-          annotation = Some annotation;
+          annotation = annotation;
           startpos = pos;
           endpos = context.offset;
         } in
@@ -134,10 +134,8 @@ let rich_pp annotate ppcmds =
 
 let annotations_positions xml =
   let rec node accu = function
-    | Element (_, { annotation = Some annotation; startpos; endpos }, cs) ->
+    | Element (_, { annotation = annotation; startpos; endpos }, cs) ->
       children ((annotation, (startpos, endpos)) :: accu) cs
-    | Element (_, _, cs) ->
-      children accu cs
     | _ ->
       accu
   and children accu cs =
@@ -152,16 +150,9 @@ let xml_of_rich_pp tag_of_annotation attributes_of_annotation xml =
         [ "startpos", string_of_int startpos;
           "endpos", string_of_int endpos
         ]
-        @ (match annotation with
-          | None -> []
-          | Some annotation -> attributes_of_annotation annotation
-        )
+        @ (attributes_of_annotation annotation)
       in
-      let tag =
-        match annotation with
-          | None -> index
-          | Some annotation -> tag_of_annotation annotation
-      in
+      let tag = tag_of_annotation annotation in
       Element (tag, attributes, List.map node cs)
     | PCData s ->
       PCData s

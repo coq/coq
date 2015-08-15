@@ -11,7 +11,7 @@
 (** Each annotation of the semi-structured document refers to the
     substring it annotates. *)
 type 'annotation located = {
-  annotation : 'annotation option;
+  annotation : 'annotation;
   startpos   : int;
   endpos     : int
 }
