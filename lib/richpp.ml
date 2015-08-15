@@ -85,18 +85,23 @@ let rich_pp annotate ppcmds =
         try Int.Map.find (int_of_string node) context.annotations
         with _ -> None
       in
-      let annotation = {
-        annotation = annotation;
-        startpos = pos;
-        endpos = context.offset;
-      } in
-      let xml = Element (node, annotation, List.rev child) in
+      let child = List.rev child in
+      let xml = match annotation with
+      | None -> child (** Ignore the node *)
+      | Some annotation ->
+        let annotation = {
+          annotation = Some annotation;
+          startpos = pos;
+          endpos = context.offset;
+        } in
+        [Element (node, annotation, child)]
+      in
       match ctx with
       | Leaf ->
         (** Final node: we keep the result in a dummy context *)
-        context.stack <- Node ("", [xml], 0, Leaf)
+        context.stack <- Node ("", List.rev xml, 0, Leaf)
       | Node (node, child, pos, ctx) ->
-        context.stack <- Node (node, xml :: child, pos, ctx)
+        context.stack <- Node (node, List.rev_append xml child, pos, ctx)
   in
 
   let open Format in
