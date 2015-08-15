@@ -38,8 +38,7 @@ object
   method changed = changed#connect ~after
 end
 
-class ['a] preference
-  ~(name : string list) ~(init : 'a) ~(repr : 'a repr) =
+class ['a] preference ~(name : string list) ~(init : 'a) ~(repr : 'a repr) =
 object (self)
   initializer
     let set v = match repr#into v with None -> () | Some s -> self#set s in
@@ -163,42 +162,174 @@ let refresh_style_hook = ref (fun () -> ())
 let refresh_language_hook = ref (fun () -> ())
 let refresh_editor_hook = ref (fun () -> ())
 let refresh_toolbar_hook = ref (fun () -> ())
-let contextual_menus_on_goal_hook = ref (fun x -> ())
 let resize_window_hook = ref (fun () -> ())
 let refresh_tabs_hook = ref (fun () -> ())
 
+(** New style preferences *)
+
+let cmd_coqtop =
+  new preference ~name:["cmd_coqtop"] ~init:None ~repr:Repr.(option string)
+
+let cmd_coqc =
+  new preference ~name:["cmd_coqc"] ~init:"coqc" ~repr:Repr.(string)
+
+let cmd_make =
+  new preference ~name:["cmd_make"] ~init:"make" ~repr:Repr.(string)
+
+let cmd_coqmakefile =
+  new preference ~name:["cmd_coqmakefile"] ~init:"coq_makefile -o makefile *.v" ~repr:Repr.(string)
+
+let cmd_coqdoc =
+  new preference ~name:["cmd_coqdoc"] ~init:"coqdoc -q -g" ~repr:Repr.(string)
+
+let source_language =
+  new preference ~name:["source_language"] ~init:"coq" ~repr:Repr.(string)
+
+let source_style =
+  new preference ~name:["source_style"] ~init:"coq_style" ~repr:Repr.(string)
+
+let global_auto_revert =
+  new preference ~name:["global_auto_revert"] ~init:false ~repr:Repr.(bool)
+
+let global_auto_revert_delay =
+  new preference ~name:["global_auto_revert_delay"] ~init:10000 ~repr:Repr.(int)
+
+let auto_save =
+  new preference ~name:["auto_save"] ~init:true ~repr:Repr.(bool)
+
+let auto_save_delay =
+  new preference ~name:["auto_save_delay"] ~init:10000 ~repr:Repr.(int)
+
+(* let auto_save_name =
+  new preference ~name:["auto_save_name"] ~init: ~repr:Repr.() *)
+(* let read_project =
+  new preference ~name:["read_project"] ~init: ~repr:Repr.() *)
+
+let project_file_name =
+  new preference ~name:["project_file_name"] ~init:"_CoqProject" ~repr:Repr.(string)
+
+let project_path =
+  new preference ~name:["project_path"] ~init:None ~repr:Repr.(option string)
+
+(* let encoding =
+  new preference ~name:["encoding"] ~init: ~repr:Repr.() *)
+(* let automatic_tactics =
+  new preference ~name:["automatic_tactics"] ~init: ~repr:Repr.() *)
+
+let cmd_print =
+  new preference ~name:["cmd_print"] ~init:"lpr" ~repr:Repr.(string)
+
+let modifier_for_navigation =
+  new preference ~name:["modifier_for_navigation"] ~init:"<Control><Alt>" ~repr:Repr.(string)
+
+let modifier_for_templates =
+  new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
+ 
+let modifier_for_tactics =
+  new preference ~name:["modifier_for_tactics"] ~init:"<Control><Alt>" ~repr:Repr.(string)
+
+let modifier_for_display =
+  new preference ~name:["modifier_for_display"] ~init:"<Alt><Shift>" ~repr:Repr.(string)
+
+let modifiers_valid =
+  new preference ~name:["modifiers_valid"] ~init:"<Alt><Control><Shift>" ~repr:Repr.(string)
+
+(* let cmd_browse =
+  new preference ~name:["cmd_browse"] ~init: ~repr:Repr.() *)
+(* let cmd_editor =
+  new preference ~name:["cmd_editor"] ~init: ~repr:Repr.() *)
+(* let text_font =
+  new preference ~name:["text_font"] ~init: ~repr:Repr.() *)
+(* let doc_url =
+  new preference ~name:["doc_url"] ~init: ~repr:Repr.() *)
+
+let library_url =
+  new preference ~name:["library_url"] ~init:Coq_config.wwwstdlib ~repr:Repr.(string)
+
+let show_toolbar =
+  new preference ~name:["show_toolbar"] ~init:true ~repr:Repr.(bool)
+
+let contextual_menus_on_goal =
+  new preference ~name:["contextual_menus_on_goal"] ~init:true ~repr:Repr.(bool)
+
+let window_width =
+  new preference ~name:["window_width"] ~init:800 ~repr:Repr.(int)
+
+let window_height =
+  new preference ~name:["window_height"] ~init:600 ~repr:Repr.(int)
+
+let auto_complete =
+  new preference ~name:["auto_complete"] ~init:false ~repr:Repr.(bool)
+
+let stop_before =
+  new preference ~name:["stop_before"] ~init:true ~repr:Repr.(bool)
+
+let reset_on_tab_switch =
+  new preference ~name:["reset_on_tab_switch"] ~init:false ~repr:Repr.(bool)
+
+let vertical_tabs =
+  new preference ~name:["vertical_tabs"] ~init:false ~repr:Repr.(bool)
+
+let opposite_tabs =
+  new preference ~name:["opposite_tabs"] ~init:false ~repr:Repr.(bool)
+
+let background_color =
+  new preference ~name:["background_color"] ~init:Tags.default_color ~repr:Repr.(string)
+
+let processing_color =
+  new preference ~name:["processing_color"] ~init:Tags.default_processing_color ~repr:Repr.(string)
+
+let processed_color =
+  new preference ~name:["processed_color"] ~init:Tags.default_processed_color ~repr:Repr.(string)
+
+let error_color =
+  new preference ~name:["error_color"] ~init:Tags.default_error_color ~repr:Repr.(string)
+
+let error_fg_color =
+  new preference ~name:["error_fg_color"] ~init:Tags.default_error_fg_color ~repr:Repr.(string)
+
+let dynamic_word_wrap =
+  new preference ~name:["dynamic_word_wrap"] ~init:false ~repr:Repr.(bool)
+
+let show_line_number =
+  new preference ~name:["show_line_number"] ~init:false ~repr:Repr.(bool)
+
+let auto_indent =
+  new preference ~name:["auto_indent"] ~init:false ~repr:Repr.(bool)
+
+let show_spaces =
+  new preference ~name:["show_spaces"] ~init:true ~repr:Repr.(bool)
+
+let show_right_margin =
+  new preference ~name:["show_right_margin"] ~init:false ~repr:Repr.(bool)
+
+let show_progress_bar =
+  new preference ~name:["show_progress_bar"] ~init:true ~repr:Repr.(bool)
+
+let spaces_instead_of_tabs =
+  new preference ~name:["spaces_instead_of_tabs"] ~init:true ~repr:Repr.(bool)
+
+let tab_length =
+  new preference ~name:["tab_length"] ~init:2 ~repr:Repr.(int)
+
+let highlight_current_line =
+  new preference ~name:["highlight_current_line"] ~init:false ~repr:Repr.(bool)
+
+let nanoPG =
+  new preference ~name:["nanoPG"] ~init:false ~repr:Repr.(bool)
+
+(** Old style preferences *)
+
 type pref =
     {
-      mutable cmd_coqtop : string option;
-      mutable cmd_coqc : string;
-      mutable cmd_make : string;
-      mutable cmd_coqmakefile : string;
-      mutable cmd_coqdoc : string;
 
-      mutable source_language : string;
-      mutable source_style : string;
-
-      mutable global_auto_revert : bool;
-      mutable global_auto_revert_delay : int;
-
-      mutable auto_save : bool;
-      mutable auto_save_delay : int;
       mutable auto_save_name : string * string;
 
       mutable read_project : project_behavior;
-      mutable project_file_name : string;
-      mutable project_path : string option;
 
       mutable encoding : inputenc;
 
       mutable automatic_tactics : string list;
-      mutable cmd_print : string;
-
-      mutable modifier_for_navigation : string;
-      mutable modifier_for_templates : string;
-      mutable modifier_for_tactics : string;
-      mutable modifier_for_display : string;
-      mutable modifiers_valid : string;
 
       mutable cmd_browse : string;
       mutable cmd_editor : string;
@@ -206,78 +337,21 @@ type pref =
       mutable text_font : Pango.font_description;
 
       mutable doc_url : string;
-      mutable library_url : string;
-
-      mutable show_toolbar : bool;
-      mutable contextual_menus_on_goal : bool;
-      mutable window_width : int;
-      mutable window_height :int;
-      mutable query_window_width : int;
-      mutable query_window_height : int;
-(*
-      mutable use_utf8_notation : bool;
-*)
-      mutable auto_complete : bool;
-      mutable stop_before : bool;
-      mutable reset_on_tab_switch : bool;
-      mutable vertical_tabs : bool;
-      mutable opposite_tabs : bool;
-
-      mutable background_color : string;
-      mutable processing_color : string;
-      mutable processed_color : string;
-      mutable error_color : string;
-      mutable error_fg_color : string;
-
-      mutable dynamic_word_wrap : bool;
-      mutable show_line_number : bool;
-      mutable auto_indent : bool;
-      mutable show_spaces : bool;
-      mutable show_right_margin : bool;
-      mutable show_progress_bar : bool;
-      mutable spaces_instead_of_tabs : bool;
-      mutable tab_length : int;
-      mutable highlight_current_line : bool;
-
-      mutable nanoPG : bool;
 
 }
 
 let use_default_doc_url = "(automatic)"
 
 let current = {
-    cmd_coqtop = None;
-    cmd_coqc = "coqc";
-    cmd_make = "make";
-    cmd_coqmakefile = "coq_makefile -o makefile *.v";
-    cmd_coqdoc = "coqdoc -q -g";
-    cmd_print = "lpr";
 
-    global_auto_revert = false;
-    global_auto_revert_delay = 10000;
-
-    auto_save = true;
-    auto_save_delay = 10000;
     auto_save_name = "#","#";
 
-    source_language = "coq";
-    source_style = "coq_style";
-
     read_project = Append_args;
-    project_file_name = "_CoqProject";
-    project_path = None;
 
     encoding = if Sys.os_type = "Win32" then Eutf8 else Elocale;
 
     automatic_tactics = ["trivial"; "tauto"; "auto"; "omega";
 			 "auto with *"; "intuition" ];
-
-    modifier_for_navigation = "<Control><Alt>";
-    modifier_for_templates = "<Control><Shift>";
-    modifier_for_tactics = "<Control><Alt>";
-    modifier_for_display = "<Alt><Shift>";
-    modifiers_valid = "<Alt><Control><Shift>";
-
 
     cmd_browse = Flags.browser_cmd_fmt;
     cmd_editor = if Sys.os_type = "Win32" then "NOTEPAD %s" else "emacs %s";
@@ -288,40 +362,6 @@ let current = {
 					  |_ -> "Monospace 10");
 
     doc_url = Coq_config.wwwrefman;
-    library_url = Coq_config.wwwstdlib;
-
-    show_toolbar = true;
-    contextual_menus_on_goal = true;
-    window_width = 800;
-    window_height = 600;
-    query_window_width = 600;
-    query_window_height = 400;
-(*
-    use_utf8_notation = false;
-*)
-    auto_complete = false;
-    stop_before = true;
-    reset_on_tab_switch = false;
-    vertical_tabs = false;
-    opposite_tabs = false;
-
-    background_color = Tags.default_color;
-    processed_color = Tags.default_processed_color;
-    processing_color = Tags.default_processing_color;
-    error_color = Tags.default_error_color;
-    error_fg_color = Tags.default_error_fg_color;
-
-    dynamic_word_wrap = false;
-    show_line_number = false;
-    auto_indent = false;
-    show_spaces = true;
-    show_right_margin = false;
-    show_progress_bar = true;
-    spaces_instead_of_tabs = true;
-    tab_length = 2;
-    highlight_current_line = false;
-
-    nanoPG = false;
   }
 
 let save_pref () =
@@ -334,67 +374,19 @@ let save_pref () =
   let fold key obj accu = add key (obj.get ()) accu in
  
     (Util.String.Map.fold fold !preferences Util.String.Map.empty) ++
-    add "cmd_coqtop" (match p.cmd_coqtop with | None -> [] | Some v-> [v]) ++
-    add "cmd_coqc" [p.cmd_coqc] ++
-    add "cmd_make" [p.cmd_make] ++
-    add "cmd_coqmakefile" [p.cmd_coqmakefile] ++
-    add "cmd_coqdoc" [p.cmd_coqdoc] ++
-    add "source_language" [p.source_language] ++
-    add "source_style" [p.source_style] ++
-    add "global_auto_revert" [string_of_bool p.global_auto_revert] ++
-    add "global_auto_revert_delay"
-      [string_of_int p.global_auto_revert_delay] ++
-    add "auto_save" [string_of_bool p.auto_save] ++
-    add "auto_save_delay" [string_of_int p.auto_save_delay] ++
     add "auto_save_name" [fst p.auto_save_name; snd p.auto_save_name] ++
 
     add "project_options" [string_of_project_behavior p.read_project] ++
-    add "project_file_name" [p.project_file_name] ++
-    add "project_path" (match p.project_path with None -> [] | Some s -> [s]) ++
 
     add "encoding" [string_of_inputenc p.encoding] ++
 
     add "automatic_tactics" p.automatic_tactics ++
-    add "cmd_print" [p.cmd_print] ++
-    add "modifier_for_navigation" [p.modifier_for_navigation] ++
-    add "modifier_for_templates" [p.modifier_for_templates] ++
-    add "modifier_for_tactics" [p.modifier_for_tactics] ++
-    add "modifier_for_display" [p.modifier_for_display] ++
-    add "modifiers_valid" [p.modifiers_valid] ++
     add "cmd_browse" [p.cmd_browse] ++
     add "cmd_editor" [p.cmd_editor] ++
 
     add "text_font" [Pango.Font.to_string p.text_font] ++
 
     add "doc_url" [p.doc_url] ++
-    add "library_url" [p.library_url] ++
-    add "show_toolbar" [string_of_bool p.show_toolbar] ++
-    add "contextual_menus_on_goal"
-      [string_of_bool p.contextual_menus_on_goal] ++
-    add "window_height" [string_of_int p.window_height] ++
-    add "window_width" [string_of_int p.window_width] ++
-    add "query_window_height" [string_of_int p.query_window_height] ++
-    add "query_window_width" [string_of_int p.query_window_width] ++
-    add "auto_complete" [string_of_bool p.auto_complete] ++
-    add "stop_before" [string_of_bool p.stop_before] ++
-    add "reset_on_tab_switch" [string_of_bool p.reset_on_tab_switch] ++
-    add "vertical_tabs" [string_of_bool p.vertical_tabs] ++
-    add "opposite_tabs" [string_of_bool p.opposite_tabs] ++
-    add "background_color" [p.background_color] ++
-    add "processing_color" [p.processing_color] ++
-    add "processed_color" [p.processed_color] ++
-    add "error_color" [p.error_color] ++
-    add "error_fg_color" [p.error_fg_color] ++
-    add "dynamic_word_wrap" [string_of_bool p.dynamic_word_wrap] ++
-    add "show_line_number" [string_of_bool p.show_line_number] ++
-    add "auto_indent" [string_of_bool p.auto_indent] ++
-    add "show_spaces" [string_of_bool p.show_spaces] ++
-    add "show_right_margin" [string_of_bool p.show_right_margin] ++
-    add "show_progress_bar" [string_of_bool p.show_progress_bar] ++
-    add "spaces_instead_of_tabs" [string_of_bool p.spaces_instead_of_tabs] ++
-    add "tab_length" [string_of_int p.tab_length] ++
-    add "highlight_current_line" [string_of_bool p.highlight_current_line] ++
-    add "nanoPG" [string_of_bool p.nanoPG] ++
     Config_lexer.print_file pref_file
 
 let load_pref () =
@@ -409,45 +401,16 @@ let load_pref () =
     let np = current in
     let set k f = try let v = Util.String.Map.find k m in f v with _ -> () in
     let set_hd k f = set k (fun v -> f (List.hd v)) in
-    let set_bool k f = set_hd k (fun v -> f (bool_of_string v)) in
-    let set_int k f = set_hd k (fun v -> f (int_of_string v)) in
     let set_pair k f = set k (function [v1;v2] -> f v1 v2 | _ -> raise Exit) in
     let set_command_with_pair_compat k f =
       set k (function [v1;v2] -> f (v1^"%s"^v2) | [v] -> f v | _ -> raise Exit)
     in
-    let set_option k f = set k (fun v -> f (match v with |[] -> None |h::_ ->  Some h)) in
-    set_option "cmd_coqtop" (fun v -> np.cmd_coqtop <- v);
-    set_hd "cmd_coqc" (fun v -> np.cmd_coqc <- v);
-    set_hd "cmd_make" (fun v -> np.cmd_make <- v);
-    set_hd "cmd_coqmakefile" (fun v -> np.cmd_coqmakefile <- v);
-    set_hd "cmd_coqdoc" (fun v -> np.cmd_coqdoc <- v);
-    set_hd "source_language" (fun v -> np.source_language <- v);
-    set_hd "source_style" (fun v -> np.source_style <- v);
-    set_bool "global_auto_revert" (fun v -> np.global_auto_revert <- v);
-    set_int "global_auto_revert_delay"
-      (fun v -> np.global_auto_revert_delay <- v);
-    set_bool "auto_save" (fun v -> np.auto_save <- v);
-    set_int "auto_save_delay" (fun v -> np.auto_save_delay <- v);
     set_pair "auto_save_name" (fun v1 v2 -> np.auto_save_name <- (v1,v2));
     set_hd "encoding" (fun v -> np.encoding <- (inputenc_of_string v));
     set_hd "project_options"
       (fun v -> np.read_project <- (project_behavior_of_string v));
-    set_hd "project_file_name" (fun v -> np.project_file_name <- v);
-    set_option "project_path" (fun v -> np.project_path <- v);
     set "automatic_tactics"
       (fun v -> np.automatic_tactics <- v);
-    set_hd "cmd_print" (fun v -> np.cmd_print <- v);
-    set_hd "modifier_for_navigation"
-      (fun v -> np.modifier_for_navigation <- v);
-    set_hd "modifier_for_templates"
-      (fun v -> np.modifier_for_templates <- v);
-    set_hd "modifier_for_tactics"
-      (fun v -> np.modifier_for_tactics <- v);
-    set_hd "modifier_for_display"
-      (fun v -> np.modifier_for_display <- v);
-    set_hd "modifiers_valid"
-      (fun v ->
-	np.modifiers_valid <- v);
     set_command_with_pair_compat "cmd_browse" (fun v -> np.cmd_browse <- v);
     set_command_with_pair_compat "cmd_editor" (fun v -> np.cmd_editor <- v);
     set_hd "text_font" (fun v -> np.text_font <- Pango.Font.from_string v);
@@ -460,61 +423,21 @@ let load_pref () =
       then
 	(* ("Warning: Non-standard URL for Coq documentation in preference file: "^v);*)
       np.doc_url <- v);
-    set_hd "library_url" (fun v -> np.library_url <- v);
-    set_bool "show_toolbar" (fun v -> np.show_toolbar <- v);
-    set_bool "contextual_menus_on_goal"
-      (fun v -> np.contextual_menus_on_goal <- v);
-    set_int "window_width" (fun v -> np.window_width <- v);
-    set_int "window_height" (fun v -> np.window_height <- v);
-    set_int "query_window_width" (fun v -> np.query_window_width <- v);
-    set_int "query_window_height" (fun v -> np.query_window_height <- v);
-    set_bool "auto_complete" (fun v -> np.auto_complete <- v);
-    set_bool "stop_before" (fun v -> np.stop_before <- v);
-    set_bool "reset_on_tab_switch" (fun v -> np.reset_on_tab_switch <- v);
-    set_bool "vertical_tabs" (fun v -> np.vertical_tabs <- v);
-    set_bool "opposite_tabs" (fun v -> np.opposite_tabs <- v);
-    set_hd "background_color" (fun v -> np.background_color <- v);
-    set_hd "processing_color" (fun v -> np.processing_color <- v);
-    set_hd "processed_color" (fun v -> np.processed_color <- v);
-    set_hd "error_color" (fun v -> np.error_color <- v);
-    set_hd "error_fg_color" (fun v -> np.error_fg_color <- v);
-    set_bool "dynamic_word_wrap" (fun v -> np.dynamic_word_wrap <- v);
-    set_bool "show_line_number" (fun v -> np.show_line_number <- v);
-    set_bool "auto_indent" (fun v -> np.auto_indent <- v);
-    set_bool "show_spaces" (fun v -> np.show_spaces <- v);
-    set_bool "show_right_margin" (fun v -> np.show_right_margin <- v);
-    set_bool "show_progress_bar" (fun v -> np.show_progress_bar <- v);
-    set_bool "spaces_instead_of_tabs" (fun v -> np.spaces_instead_of_tabs <- v);
-    set_int "tab_length" (fun v -> np.tab_length <- v);
-    set_bool "highlight_current_line" (fun v -> np.highlight_current_line <- v);
-    set_bool "nanoPG" (fun v -> np.nanoPG <- v);
     ()
+
+let pstring name p = string ~f:p#set name p#get
+let pbool name p = bool ~f:p#set name p#get
 
 let configure ?(apply=(fun () -> ())) () =
   let cmd_coqtop =
     string
-      ~f:(fun s -> current.cmd_coqtop <- if s = "AUTO" then None else Some s)
-      "       coqtop" (match current.cmd_coqtop with |None -> "AUTO" | Some x -> x) in
-  let cmd_coqc =
-    string
-      ~f:(fun s -> current.cmd_coqc <- s)
-      "       coqc"  current.cmd_coqc in
-  let cmd_make =
-    string
-      ~f:(fun s -> current.cmd_make <- s)
-      "       make" current.cmd_make in
-  let cmd_coqmakefile =
-    string
-      ~f:(fun s -> current.cmd_coqmakefile <- s)
-      "coqmakefile" current.cmd_coqmakefile in
-  let cmd_coqdoc =
-    string
-      ~f:(fun s -> current.cmd_coqdoc <- s)
-      "     coqdoc" current.cmd_coqdoc in
-  let cmd_print =
-    string
-      ~f:(fun s -> current.cmd_print <- s)
-      "   Print ps" current.cmd_print in
+      ~f:(fun s -> cmd_coqtop#set (if s = "AUTO" then None else Some s))
+      "       coqtop" (match cmd_coqtop#get with |None -> "AUTO" | Some x -> x) in
+  let cmd_coqc = pstring "       coqc" cmd_coqc in
+  let cmd_make = pstring "       make" cmd_make in
+  let cmd_coqmakefile = pstring "coqmakefile" cmd_coqmakefile in
+  let cmd_coqdoc = pstring "     coqdoc" cmd_coqdoc in
+  let cmd_print = pstring "   Print ps" cmd_print in
 
   let config_font =
     let box = GPack.hbox () in
@@ -572,7 +495,7 @@ let configure ?(apply=(fun () -> ())) () =
     let () = error_label#set_xalign 0. in
     let () = error_fg_label#set_xalign 0. in
     let background_button = GButton.color_button
-      ~color:(Tags.color_of_string (current.background_color))
+      ~color:(Tags.color_of_string (background_color#get))
       ~packing:(table#attach ~left:1 ~top:0) ()
     in
     let processed_button = GButton.color_button
@@ -604,11 +527,11 @@ let configure ?(apply=(fun () -> ())) () =
     let _ = reset_button#connect#clicked ~callback:reset_cb in
     let label = "Color configuration" in
     let callback () =
-      current.background_color <- Tags.string_of_color background_button#color;
-      current.processing_color <- Tags.string_of_color processing_button#color;
-      current.processed_color <- Tags.string_of_color processed_button#color;
-      current.error_color <- Tags.string_of_color error_button#color;
-      current.error_fg_color <- Tags.string_of_color error_fg_button#color;
+      background_color#set (Tags.string_of_color background_button#color);
+      processing_color#set (Tags.string_of_color processing_button#color);
+      processed_color#set (Tags.string_of_color processed_button#color);
+      error_color#set (Tags.string_of_color error_button#color);
+      error_fg_color#set (Tags.string_of_color error_fg_button#color);
       !refresh_editor_hook ();
       Tags.set_processing_color processing_button#color;
       Tags.set_processed_color processed_button#color;
@@ -623,22 +546,22 @@ let configure ?(apply=(fun () -> ())) () =
     let box = GPack.vbox () in
     let gen_button text active =
       GButton.check_button ~label:text ~active ~packing:box#pack () in
-    let wrap = gen_button "Dynamic word wrap" current.dynamic_word_wrap in
-    let line = gen_button "Show line number" current.show_line_number in
-    let auto_indent = gen_button "Auto indentation" current.auto_indent in
-    let auto_complete = gen_button "Auto completion" current.auto_complete in
-    let show_spaces = gen_button "Show spaces" current.show_spaces in
-    let show_right_margin = gen_button "Show right margin" current.show_right_margin in
-    let show_progress_bar = gen_button "Show progress bar" current.show_progress_bar in
-    let spaces_instead_of_tabs =
+    let wrap = gen_button "Dynamic word wrap" dynamic_word_wrap#get in
+    let line = gen_button "Show line number" show_line_number#get in
+    let b_auto_indent = gen_button "Auto indentation" auto_indent#get in
+    let b_auto_complete = gen_button "Auto completion" auto_complete#get in
+    let b_show_spaces = gen_button "Show spaces" show_spaces#get in
+    let b_show_right_margin = gen_button "Show right margin" show_right_margin#get in
+    let b_show_progress_bar = gen_button "Show progress bar" show_progress_bar#get in
+    let b_spaces_instead_of_tabs =
       gen_button "Insert spaces instead of tabs"
-      current.spaces_instead_of_tabs
+      spaces_instead_of_tabs#get
     in
-    let highlight_current_line =
+    let b_highlight_current_line =
       gen_button "Highlight current line"
-      current.highlight_current_line
+      highlight_current_line#get
     in
-    let nanoPG = gen_button "Emacs/PG keybindings (μPG mode)" current.nanoPG in
+    let b_nanoPG = gen_button "Emacs/PG keybindings (μPG mode)" nanoPG#get in
 (*     let lbox = GPack.hbox ~packing:box#pack () in *)
 (*     let _ = GMisc.label ~text:"Tab width" *)
 (*         ~xalign:0. *)
@@ -648,17 +571,17 @@ let configure ?(apply=(fun () -> ())) () =
 (*       ~digits:0 ~packing:lbox#pack () *)
 (*     in *)
     let callback () =
-      current.dynamic_word_wrap <- wrap#active;
-      current.show_line_number <- line#active;
-      current.auto_indent <- auto_indent#active;
-      current.show_spaces <- show_spaces#active;
-      current.show_right_margin <- show_right_margin#active;
-      current.show_progress_bar <- show_progress_bar#active;
-      current.spaces_instead_of_tabs <- spaces_instead_of_tabs#active;
-      current.highlight_current_line <- highlight_current_line#active;
-      current.nanoPG <- nanoPG#active;
-      current.auto_complete <- auto_complete#active;
-(*       current.tab_length <- tab_width#value_as_int; *)
+      dynamic_word_wrap#set wrap#active;
+      show_line_number#set line#active;
+      auto_indent#set b_auto_indent#active;
+      show_spaces#set b_show_spaces#active;
+      show_right_margin#set b_show_right_margin#active;
+      show_progress_bar#set b_show_progress_bar#active;
+      spaces_instead_of_tabs#set b_spaces_instead_of_tabs#active;
+      highlight_current_line#set b_highlight_current_line#active;
+      nanoPG#set b_nanoPG#active;
+      auto_complete#set b_auto_complete#active;
+(*       tab_length#set tab_width#value_as_int; *)
       !refresh_editor_hook ()
     in
     custom ~label box callback true
@@ -688,66 +611,34 @@ let configure ?(apply=(fun () -> ())) () =
       (string_of_int current.window_width)
   in
 *)
-(*  let use_utf8_notation =
-    bool
-      ~f:(fun b ->
-	    current.use_utf8_notation <- b;
-	 )
-      "Use Unicode Notation: " current.use_utf8_notation
-  in
-*)
 (*
   let config_appearance = [show_toolbar; window_width; window_height] in
 *)
-  let global_auto_revert =
-    bool
-      ~f:(fun s -> current.global_auto_revert <- s)
-      "Enable global auto revert" current.global_auto_revert
-  in
+  let global_auto_revert = pbool "Enable global auto revert" global_auto_revert in
   let global_auto_revert_delay =
     string
-    ~f:(fun s -> current.global_auto_revert_delay <-
+    ~f:(fun s -> global_auto_revert_delay#set
 	  (try int_of_string s with _ -> 10000))
       "Global auto revert delay (ms)"
-      (string_of_int current.global_auto_revert_delay)
+      (string_of_int global_auto_revert_delay#get)
   in
 
-  let auto_save =
-    bool
-      ~f:(fun s -> current.auto_save <- s)
-      "Enable auto save" current.auto_save
-  in
+  let auto_save = pbool "Enable auto save" auto_save in
   let auto_save_delay =
     string
-    ~f:(fun s -> current.auto_save_delay <-
+    ~f:(fun s -> auto_save_delay#set
 	  (try int_of_string s with _ -> 10000))
       "Auto save delay (ms)"
-      (string_of_int current.auto_save_delay)
+      (string_of_int auto_save_delay#get)
   in
 
-  let stop_before =
-    bool
-      ~f:(fun s -> current.stop_before <- s)
-      "Stop interpreting before the current point" current.stop_before
-  in
+  let stop_before = pbool "Stop interpreting before the current point" stop_before in
 
-  let reset_on_tab_switch =
-    bool
-      ~f:(fun s -> current.reset_on_tab_switch <- s)
-      "Reset coqtop on tab switch" current.reset_on_tab_switch
-  in
+  let reset_on_tab_switch = pbool "Reset coqtop on tab switch" reset_on_tab_switch in
 
-  let vertical_tabs =
-    bool
-      ~f:(fun s -> current.vertical_tabs <- s; !refresh_tabs_hook ())
-      "Vertical tabs" current.vertical_tabs
-  in
+  let vertical_tabs = pbool "Vertical tabs" vertical_tabs in
 
-  let opposite_tabs =
-    bool
-      ~f:(fun s -> current.opposite_tabs <- s; !refresh_tabs_hook ())
-      "Tabs on opposite side" current.opposite_tabs
-  in
+  let opposite_tabs = pbool "Tabs on opposite side" opposite_tabs in
 
   let encodings =
     combo
@@ -763,17 +654,17 @@ let configure ?(apply=(fun () -> ())) () =
 
   let source_style =
     let f s =
-      current.source_style <- s;
+      source_style#set s;
       !refresh_style_hook ()
     in
     combo "Highlighting style:"
       ~f ~new_allowed:false
-      style_manager#style_scheme_ids current.source_style
+      style_manager#style_scheme_ids source_style#get
   in
 
   let source_language =
     let f s =
-      current.source_language <- s;
+      source_language#set s;
       !refresh_language_hook ()
     in
     combo "Language:"
@@ -781,7 +672,7 @@ let configure ?(apply=(fun () -> ())) () =
       (List.filter
         (fun x -> Str.string_match (Str.regexp "^coq") x 0)
         lang_manager#language_ids)
-      current.source_language
+      source_language#get
   in
 
   let read_project =
@@ -794,51 +685,47 @@ let configure ?(apply=(fun () -> ())) () =
        string_of_project_behavior Ignore_args]
       (string_of_project_behavior current.read_project)
   in
-  let project_file_name =
-    string "Default name for project file"
-      ~f:(fun s -> current.project_file_name <- s)
-      current.project_file_name
-  in
+  let project_file_name = pstring "Default name for project file" project_file_name in
   let help_string =
     "restart to apply"
   in
-  let the_valid_mod = str_to_mod_list current.modifiers_valid in
+  let the_valid_mod = str_to_mod_list modifiers_valid#get in
   let modifier_for_tactics =
     modifiers
       ~allow:the_valid_mod
-      ~f:(fun l -> current.modifier_for_tactics <- mod_list_to_str l)
+      ~f:(fun l -> modifier_for_tactics#set (mod_list_to_str l))
       ~help:help_string
       "Modifiers for Tactics Menu"
-      (str_to_mod_list current.modifier_for_tactics)
+      (str_to_mod_list modifier_for_tactics#get)
   in
   let modifier_for_templates =
     modifiers
       ~allow:the_valid_mod
-      ~f:(fun l -> current.modifier_for_templates <- mod_list_to_str l)
+      ~f:(fun l -> modifier_for_templates#set (mod_list_to_str l))
       ~help:help_string
       "Modifiers for Templates Menu"
-      (str_to_mod_list current.modifier_for_templates)
+      (str_to_mod_list modifier_for_templates#get)
   in
   let modifier_for_navigation =
     modifiers
       ~allow:the_valid_mod
-      ~f:(fun l -> current.modifier_for_navigation <- mod_list_to_str l)
+      ~f:(fun l -> modifier_for_navigation#set (mod_list_to_str l))
       ~help:help_string
       "Modifiers for Navigation Menu"
-      (str_to_mod_list current.modifier_for_navigation)
+      (str_to_mod_list modifier_for_navigation#get)
   in
   let modifier_for_display =
     modifiers
       ~allow:the_valid_mod
-      ~f:(fun l -> current.modifier_for_display <- mod_list_to_str l)
+      ~f:(fun l -> modifier_for_display#set (mod_list_to_str l))
       ~help:help_string
       "Modifiers for View Menu"
-      (str_to_mod_list current.modifier_for_display)
+      (str_to_mod_list modifier_for_display#get)
   in
   let modifiers_valid =
     modifiers
       ~f:(fun l ->
-	current.modifiers_valid <- mod_list_to_str l)
+	modifiers_valid#set (mod_list_to_str l))
       "Allowed modifiers"
       the_valid_mod
   in
@@ -890,11 +777,11 @@ let configure ?(apply=(fun () -> ())) () =
     ] in
     combo
       "Library URL"
-      ~f:(fun s -> current.library_url <- s)
+      ~f:(fun s -> library_url#set s)
       ~new_allowed: true
-      (predefined@[if List.mem current.library_url predefined then ""
-                   else current.library_url])
-      current.library_url
+      (predefined@[if List.mem library_url#get predefined then ""
+                   else library_url#get])
+      library_url#get
   in
   let automatic_tactics =
     strings
@@ -905,13 +792,7 @@ let configure ?(apply=(fun () -> ())) () =
 
   in
 
-  let contextual_menus_on_goal =
-    bool
-      ~f:(fun s ->
-	    current.contextual_menus_on_goal <- s;
-	    !contextual_menus_on_goal_hook s)
-      "Contextual menus on goal" current.contextual_menus_on_goal
-  in
+  let contextual_menus_on_goal = pbool "Contextual menus on goal" contextual_menus_on_goal in
 
   let misc = [contextual_menus_on_goal;stop_before;reset_on_tab_switch;
               vertical_tabs;opposite_tabs] in

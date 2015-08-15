@@ -630,7 +630,7 @@ object(self)
 
   method private process_until_iter iter =
     let until _ start stop =
-      if prefs.Preferences.stop_before then stop#compare iter > 0
+      if Preferences.stop_before#get then stop#compare iter > 0
       else start#compare iter >= 0
     in
     self#process_until until false

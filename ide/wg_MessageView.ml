@@ -86,7 +86,7 @@ let message_view () : message_view =
 
     method refresh_color () =
       let open Preferences in
-      let clr = Tags.color_of_string current.background_color in
+      let clr = Tags.color_of_string background_color#get in
       view#misc#modify_base [`NORMAL, `COLOR clr]
 
   end

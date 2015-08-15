@@ -31,80 +31,69 @@ object
   method set : 'a -> unit
 end
 
+val cmd_coqtop : string option preference
+val cmd_coqc : string preference
+val cmd_make : string preference
+val cmd_coqmakefile : string preference
+val cmd_coqdoc : string preference
+val source_language : string preference
+val source_style : string preference
+val global_auto_revert : bool preference
+val global_auto_revert_delay : int preference
+val auto_save : bool preference
+val auto_save_delay : int preference
+(* val auto_save_name : string * string preference *)
+(* val read_project : project_behavior preference *)
+val project_file_name : string preference
+val project_path : string option preference
+(* val encoding : inputenc preference *)
+(* val automatic_tactics : string list preference *)
+val cmd_print : string preference
+val modifier_for_navigation : string preference
+val modifier_for_templates : string preference
+val modifier_for_tactics : string preference
+val modifier_for_display : string preference
+val modifiers_valid : string preference
+(* val cmd_browse : string preference *)
+(* val cmd_editor : string preference *)
+(* val text_font : Pango.font_description preference *)
+(* val doc_url : string preference *)
+val library_url : string preference
+val show_toolbar : bool preference
+val contextual_menus_on_goal : bool preference
+val window_width : int preference
+val window_height : int preference
+val auto_complete : bool preference
+val stop_before : bool preference
+val reset_on_tab_switch : bool preference
+val vertical_tabs : bool preference
+val opposite_tabs : bool preference
+val background_color : string preference
+val processing_color : string preference
+val processed_color : string preference
+val error_color : string preference
+val error_fg_color : string preference
+val dynamic_word_wrap : bool preference
+val show_line_number : bool preference
+val auto_indent : bool preference
+val show_spaces : bool preference
+val show_right_margin : bool preference
+val show_progress_bar : bool preference
+val spaces_instead_of_tabs : bool preference
+val tab_length : int preference
+val highlight_current_line : bool preference
+val nanoPG : bool preference
+
 type pref =
     {
-      mutable cmd_coqtop : string option;
-      mutable cmd_coqc : string;
-      mutable cmd_make : string;
-      mutable cmd_coqmakefile : string;
-      mutable cmd_coqdoc : string;
-
-      mutable source_language : string;
-      mutable source_style : string;
-
-      mutable global_auto_revert : bool;
-      mutable global_auto_revert_delay : int;
-
-      mutable auto_save : bool;
-      mutable auto_save_delay : int;
       mutable auto_save_name : string * string;
-
       mutable read_project : project_behavior;
-      mutable project_file_name : string;
-      mutable project_path : string option;
-
       mutable encoding : inputenc;
-
       mutable automatic_tactics : string list;
-      mutable cmd_print : string;
-
-      mutable modifier_for_navigation : string;
-      mutable modifier_for_templates : string;
-      mutable modifier_for_tactics : string;
-      mutable modifier_for_display : string;
-      mutable modifiers_valid : string;
-
       mutable cmd_browse : string;
       mutable cmd_editor : string;
-
       mutable text_font : Pango.font_description;
-
       mutable doc_url : string;
-      mutable library_url : string;
-
-      mutable show_toolbar : bool;
-      mutable contextual_menus_on_goal : bool;
-      mutable window_width : int;
-      mutable window_height : int;
-      mutable query_window_width : int;
-      mutable query_window_height : int;
-(*
-      mutable use_utf8_notation : bool;
-*)
-      mutable auto_complete : bool;
-      mutable stop_before : bool;
-      mutable reset_on_tab_switch : bool;
-      mutable vertical_tabs : bool;
-      mutable opposite_tabs : bool;
-
-      mutable background_color : string;
-      mutable processing_color : string;
-      mutable processed_color : string;
-      mutable error_color : string;
-      mutable error_fg_color : string;
-
-      mutable dynamic_word_wrap : bool;
-      mutable show_line_number : bool;
-      mutable auto_indent : bool;
-      mutable show_spaces : bool;
-      mutable show_right_margin : bool;
-      mutable show_progress_bar : bool;
-      mutable spaces_instead_of_tabs : bool;
-      mutable tab_length : int;
-      mutable highlight_current_line : bool;
-
-      mutable nanoPG : bool;
-
     }
 
 val save_pref : unit -> unit

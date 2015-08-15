@@ -86,7 +86,7 @@ object(self)
     let result = GText.view ~packing:r_bin#add () in
     views <- (frame#coerce, result, combo#entry) :: views;
     result#misc#modify_font current.text_font;
-    let clr = Tags.color_of_string current.background_color in
+    let clr = Tags.color_of_string background_color#get in
     result#misc#modify_base [`NORMAL, `COLOR clr];
     result#misc#set_can_focus true; (* false causes problems for selection *)
     result#set_editable false;
@@ -150,7 +150,7 @@ object(self)
     List.iter iter views
 
   method refresh_color () =
-    let clr = Tags.color_of_string current.background_color in
+    let clr = Tags.color_of_string background_color#get in
     let iter (_,view,_) = view#misc#modify_base [`NORMAL, `COLOR clr] in
     List.iter iter views
 

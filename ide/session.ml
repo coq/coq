@@ -50,8 +50,8 @@ let create_buffer () =
   let buffer = GSourceView2.source_buffer
     ~tag_table:Tags.Script.table
     ~highlight_matching_brackets:true
-    ?language:(lang_manager#language prefs.source_language)
-    ?style_scheme:(style_manager#style_scheme prefs.source_style)
+    ?language:(lang_manager#language source_language#get)
+    ?style_scheme:(style_manager#style_scheme source_style#get)
     ()
   in
   let _ = buffer#create_mark ~name:"start_of_input" buffer#start_iter in
@@ -255,7 +255,7 @@ let make_table_widget ?sort cd cb =
   let () = data#set_headers_visible true in
   let () = data#set_headers_clickable true in
   let refresh () =
-    let clr = Tags.color_of_string current.background_color in
+    let clr = Tags.color_of_string background_color#get in
     data#misc#modify_base [`NORMAL, `COLOR clr]
   in
   let mk_rend c = GTree.cell_renderer_text [], ["text",c] in

@@ -87,7 +87,7 @@ object(self)
                 flash_info "Could not overwrite file"
             | _ ->
               Minilib.log "Auto revert set to false";
-              prefs.Preferences.global_auto_revert <- false;
+              Preferences.global_auto_revert#set false;
               revert_timer.kill ()
 
   method save f =

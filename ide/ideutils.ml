@@ -140,7 +140,7 @@ let filter_coq_files () =  GFile.filter
   ~name:"Coq source code"
   ~patterns:[ "*.v"] ()
 
-let current_dir () = match current.project_path with
+let current_dir () = match project_path#get with
 | None -> ""
 | Some dir -> dir
 
@@ -164,7 +164,7 @@ let select_file_for_open ~title ?filename () =
 	match file_chooser#filename with
 	  | None -> None
 	  | Some _ as f ->
-            current.project_path <- file_chooser#current_folder; f
+            project_path#set file_chooser#current_folder; f
       end
     | `DELETE_EVENT | `CANCEL -> None in
   file_chooser#destroy ();
@@ -193,7 +193,7 @@ let select_file_for_save ~title ?filename () =
         file := file_chooser#filename;
         match !file with
             None -> ()
-          | Some s -> current.project_path <- file_chooser#current_folder
+          | Some s -> project_path#set file_chooser#current_folder
       end
     | `DELETE_EVENT | `CANCEL -> ()
   end ;
@@ -238,7 +238,7 @@ let coqtop_path () =
   let file = match !custom_coqtop with
     | Some s -> s
     | None ->
-      match current.cmd_coqtop with
+      match cmd_coqtop#get with
 	| Some s -> s
 	| None ->
 	  let prog = String.copy Sys.executable_name in
