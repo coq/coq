@@ -25,7 +25,6 @@ class type message_view =
     method buffer : GText.buffer
       (** for more advanced text edition *)
     method modify_font : Pango.font_description -> unit
-    method refresh_color : unit -> unit
   end
 
 val message_view : unit -> message_view

@@ -828,8 +828,6 @@ let refresh_editor_prefs () =
     else 0
   in
   let fd = prefs.text_font in
-  let clr = Tags.color_of_string background_color#get
-  in
   let iter_session sn =
     (* Editor settings *)
     sn.script#set_wrap_mode wrap_mode;
@@ -853,18 +851,6 @@ let refresh_editor_prefs () =
     sn.proof#misc#modify_font fd;
     sn.messages#modify_font fd;
     sn.command#refresh_font ();
-
-    (* Colors *)
-    Tags.set_processing_color (Tags.color_of_string processing_color#get);
-    Tags.set_processed_color (Tags.color_of_string processed_color#get);
-    Tags.set_error_color (Tags.color_of_string error_color#get);
-    Tags.set_error_fg_color (Tags.color_of_string error_fg_color#get);
-    sn.script#misc#modify_base [`NORMAL, `COLOR clr];
-    sn.proof#misc#modify_base [`NORMAL, `COLOR clr];
-    sn.messages#refresh_color ();
-    sn.command#refresh_color ();
-    sn.errpage#refresh_color ();
-    sn.jobpage#refresh_color ();
 
   in
   List.iter iter_session notebook#pages
@@ -1315,11 +1301,10 @@ let build_ui () =
   Tags.Script.incomplete#set_property
     (`BACKGROUND_STIPPLE
       (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));
-  Tags.Script.incomplete#set_property
-    (`BACKGROUND_GDK (Tags.get_processed_color ())); 
 
   (* Showtime ! *)
   w#show ()
+
 
 
 (** {2 Coqide main function } *)

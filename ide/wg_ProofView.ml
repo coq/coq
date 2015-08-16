@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Util
+open Preferences
 
 class type proof_view =
   object
@@ -193,6 +194,9 @@ let proof_view () =
   let () = Gtk_parsing.fix_double_click view in
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
   let _ = buffer#add_selection_clipboard default_clipboard in
+  let cb clr = view#misc#modify_base [`NORMAL, `NAME clr] in
+  let _ = background_color#connect#changed cb in
+  let _ = view#misc#connect#realize (fun () -> cb background_color#get) in
   object
     inherit GObj.widget view#as_widget
     val mutable goals = None

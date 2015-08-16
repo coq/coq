@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Preferences
+
 class type message_view_signals =
 object
   inherit GObj.misc_signals
@@ -33,7 +35,6 @@ class type message_view =
     method buffer : GText.buffer
       (** for more advanced text edition *)
     method modify_font : Pango.font_description -> unit
-    method refresh_color : unit -> unit
   end
 
 let message_view () : message_view =
@@ -53,6 +54,10 @@ let message_view () : message_view =
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
   let _ = buffer#add_selection_clipboard default_clipboard in
   let () = view#set_left_margin 2 in
+  view#misc#show ();
+  let cb clr = view#misc#modify_base [`NORMAL, `NAME clr] in
+  let _ = background_color#connect#changed cb in
+  let _ = view#misc#connect#realize (fun () -> cb background_color#get) in
   object (self)
     inherit GObj.widget box#as_widget
 
@@ -83,10 +88,5 @@ let message_view () : message_view =
     method buffer = text_buffer
 
     method modify_font fd = view#misc#modify_font fd
-
-    method refresh_color () =
-      let open Preferences in
-      let clr = Tags.color_of_string background_color#get in
-      view#misc#modify_base [`NORMAL, `COLOR clr]
 
   end

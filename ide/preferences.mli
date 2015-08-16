@@ -29,6 +29,8 @@ object
   method connect : 'a preference_signals
   method get : 'a
   method set : 'a -> unit
+  method reset : unit -> unit
+  method default : 'a
 end
 
 val cmd_coqtop : string option preference

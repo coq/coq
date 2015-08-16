@@ -160,12 +160,11 @@ object
 end
 
 let flags_to_color f =
-  let of_col c = `NAME (Tags.string_of_color c) in
   if List.mem `PROCESSING f then `NAME "blue"
   else if List.mem `ERROR f then `NAME "red"
   else if List.mem `UNSAFE f then `NAME "orange"
   else if List.mem `INCOMPLETE f then `NAME "gray"
-  else of_col (Tags.get_processed_color ())
+  else `NAME Preferences.processed_color#get
 
 module Doc = Document
 

@@ -57,6 +57,8 @@ object (self)
   method connect = new preference_signals ~changed
   method get = data
   method set (n : 'a) = data <- n; changed#call n
+  method reset () = self#set default
+  method default = default
 end
 
 (** Useful marshallers *)
@@ -269,19 +271,35 @@ let opposite_tabs =
   new preference ~name:["opposite_tabs"] ~init:false ~repr:Repr.(bool)
 
 let background_color =
-  new preference ~name:["background_color"] ~init:Tags.default_color ~repr:Repr.(string)
+  new preference ~name:["background_color"] ~init:"cornsilk" ~repr:Repr.(string)
+
+let attach_bg (pref : string preference) (tag : GText.tag) =
+  pref#connect#changed (fun c -> tag#set_property (`BACKGROUND c))
+
+let attach_fg (pref : string preference) (tag : GText.tag) =
+  pref#connect#changed (fun c -> tag#set_property (`FOREGROUND c))
 
 let processing_color =
-  new preference ~name:["processing_color"] ~init:Tags.default_processing_color ~repr:Repr.(string)
+  new preference ~name:["processing_color"] ~init:"light blue" ~repr:Repr.(string)
+
+let _ = attach_bg processing_color Tags.Script.to_process
+let _ = attach_bg processing_color Tags.Script.incomplete
 
 let processed_color =
-  new preference ~name:["processed_color"] ~init:Tags.default_processed_color ~repr:Repr.(string)
+  new preference ~name:["processed_color"] ~init:"light green" ~repr:Repr.(string)
+
+let _ = attach_bg processed_color Tags.Script.processed
+let _ = attach_bg processed_color Tags.Proof.highlight
 
 let error_color =
-  new preference ~name:["error_color"] ~init:Tags.default_error_color ~repr:Repr.(string)
+  new preference ~name:["error_color"] ~init:"#FFCCCC" ~repr:Repr.(string)
+
+let _ = attach_bg error_color Tags.Script.error_bg
 
 let error_fg_color =
-  new preference ~name:["error_fg_color"] ~init:Tags.default_error_fg_color ~repr:Repr.(string)
+  new preference ~name:["error_fg_color"] ~init:"red" ~repr:Repr.(string)
+
+let _ = attach_fg error_fg_color Tags.Script.error
 
 let dynamic_word_wrap =
   new preference ~name:["dynamic_word_wrap"] ~init:false ~repr:Repr.(bool)
@@ -470,75 +488,38 @@ let configure ?(apply=(fun () -> ())) () =
       ~border_width:2
       ~packing:(box#pack ~expand:true) ()
     in
-    let background_label = GMisc.label
-      ~text:"Background color"
-      ~packing:(table#attach ~expand:`X ~left:0 ~top:0) ()
-    in
-    let processed_label = GMisc.label
-      ~text:"Background color of processed text"
-      ~packing:(table#attach ~expand:`X ~left:0 ~top:1) ()
-    in
-    let processing_label = GMisc.label
-      ~text:"Background color of text being processed"
-      ~packing:(table#attach ~expand:`X ~left:0 ~top:2) ()
-    in
-    let error_label = GMisc.label
-      ~text:"Background color of errors"
-      ~packing:(table#attach ~expand:`X ~left:0 ~top:3) ()
-    in
-    let error_fg_label = GMisc.label
-      ~text:"Foreground color of errors"
-      ~packing:(table#attach ~expand:`X ~left:0 ~top:4) ()
-    in
-    let () = background_label#set_xalign 0. in
-    let () = processed_label#set_xalign 0. in
-    let () = processing_label#set_xalign 0. in
-    let () = error_label#set_xalign 0. in
-    let () = error_fg_label#set_xalign 0. in
-    let background_button = GButton.color_button
-      ~color:(Tags.color_of_string (background_color#get))
-      ~packing:(table#attach ~left:1 ~top:0) ()
-    in
-    let processed_button = GButton.color_button
-      ~color:(Tags.get_processed_color ())
-      ~packing:(table#attach ~left:1 ~top:1) ()
-    in
-    let processing_button = GButton.color_button
-      ~color:(Tags.get_processing_color ())
-      ~packing:(table#attach ~left:1 ~top:2) ()
-    in
-    let error_button = GButton.color_button
-      ~color:(Tags.get_error_color ())
-      ~packing:(table#attach ~left:1 ~top:3) ()
-    in
-    let error_fg_button = GButton.color_button
-      ~color:(Tags.get_error_fg_color ())
-      ~packing:(table#attach ~left:1 ~top:4) ()
-    in
     let reset_button = GButton.button
       ~label:"Reset"
       ~packing:box#pack ()
     in
-    let reset_cb () =
-      background_button#set_color Tags.(color_of_string default_color);
-      processing_button#set_color Tags.(color_of_string default_processing_color);
-      processed_button#set_color Tags.(color_of_string default_processed_color);
-      error_button#set_color Tags.(color_of_string default_error_color);
+    let iter i (text, pref) =
+      let label = GMisc.label
+        ~text ~packing:(table#attach ~expand:`X ~left:0 ~top:i) ()
+      in
+      let () = label#set_xalign 0. in
+      let button = GButton.color_button
+        ~color:(Tags.color_of_string pref#get)
+        ~packing:(table#attach ~left:1 ~top:i) ()
+      in
+      let _ = button#connect#color_set begin fun () ->
+        pref#set (Tags.string_of_color button#color)
+      end in
+      let reset _ =
+        pref#reset ();
+        button#set_color Tags.(color_of_string pref#get)
+      in
+      let _ = reset_button#connect#clicked ~callback:reset in
+      ()
     in
-    let _ = reset_button#connect#clicked ~callback:reset_cb in
+    let () = Util.List.iteri iter [
+      ("Background color", background_color);
+      ("Background color of processed text", processed_color);
+      ("Background color of text being processed", processing_color);
+      ("Background color of errors", error_color);
+      ("Foreground color of errors", error_fg_color);
+    ] in
     let label = "Color configuration" in
-    let callback () =
-      background_color#set (Tags.string_of_color background_button#color);
-      processing_color#set (Tags.string_of_color processing_button#color);
-      processed_color#set (Tags.string_of_color processed_button#color);
-      error_color#set (Tags.string_of_color error_button#color);
-      error_fg_color#set (Tags.string_of_color error_fg_button#color);
-      !refresh_editor_hook ();
-      Tags.set_processing_color processing_button#color;
-      Tags.set_processed_color processed_button#color;
-      Tags.set_error_color error_button#color;
-      Tags.set_error_fg_color error_fg_button#color
-    in
+    let callback () = () in
     custom ~label box callback true
   in
 

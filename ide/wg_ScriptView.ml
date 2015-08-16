@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Preferences
+
 type insert_action = {
   ins_val : string;
   ins_off : int;
@@ -456,6 +458,10 @@ object (self)
       if not proceed then GtkSignal.stop_emit ()
     in
     let _ = GtkSignal.connect ~sgn:move_line_signal ~callback obj in
+    (** Plug on preferences *)
+    let cb clr = self#misc#modify_base [`NORMAL, `NAME clr] in
+    let _ = background_color#connect#changed cb in
+    let _ = self#misc#connect#realize (fun () -> cb background_color#get) in
     ()
 
 end
