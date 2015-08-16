@@ -158,12 +158,7 @@ let inputenc_of_string s =
 
 (** Hooks *)
 
-let refresh_style_hook = ref (fun () -> ())
-let refresh_language_hook = ref (fun () -> ())
 let refresh_editor_hook = ref (fun () -> ())
-let refresh_toolbar_hook = ref (fun () -> ())
-let resize_window_hook = ref (fun () -> ())
-let refresh_tabs_hook = ref (fun () -> ())
 
 (** New style preferences *)
 
@@ -427,6 +422,12 @@ let load_pref () =
 
 let pstring name p = string ~f:p#set name p#get
 let pbool name p = bool ~f:p#set name p#get
+let pmodifiers ?(all = false) name p = modifiers
+  ?allow:(if all then None else Some (str_to_mod_list modifiers_valid#get))
+  ~f:(fun l -> p#set (mod_list_to_str l))
+  ~help:"restart to apply"
+  name
+  (str_to_mod_list p#get)
 
 let configure ?(apply=(fun () -> ())) () =
   let cmd_coqtop =
@@ -544,46 +545,22 @@ let configure ?(apply=(fun () -> ())) () =
   let config_editor =
     let label = "Editor configuration" in
     let box = GPack.vbox () in
-    let gen_button text active =
-      GButton.check_button ~label:text ~active ~packing:box#pack () in
-    let wrap = gen_button "Dynamic word wrap" dynamic_word_wrap#get in
-    let line = gen_button "Show line number" show_line_number#get in
-    let b_auto_indent = gen_button "Auto indentation" auto_indent#get in
-    let b_auto_complete = gen_button "Auto completion" auto_complete#get in
-    let b_show_spaces = gen_button "Show spaces" show_spaces#get in
-    let b_show_right_margin = gen_button "Show right margin" show_right_margin#get in
-    let b_show_progress_bar = gen_button "Show progress bar" show_progress_bar#get in
-    let b_spaces_instead_of_tabs =
-      gen_button "Insert spaces instead of tabs"
-      spaces_instead_of_tabs#get
+    let button text (pref : bool preference) =
+      let active = pref#get in
+      let but = GButton.check_button ~label:text ~active ~packing:box#pack () in
+      ignore (but#connect#toggled (fun () -> pref#set but#active))
     in
-    let b_highlight_current_line =
-      gen_button "Highlight current line"
-      highlight_current_line#get
-    in
-    let b_nanoPG = gen_button "Emacs/PG keybindings (μPG mode)" nanoPG#get in
-(*     let lbox = GPack.hbox ~packing:box#pack () in *)
-(*     let _ = GMisc.label ~text:"Tab width" *)
-(*         ~xalign:0. *)
-(*         ~packing:(lbox#pack ~expand:true) () *)
-(*     in *)
-(*     let tab_width = GEdit.spin_button *)
-(*       ~digits:0 ~packing:lbox#pack () *)
-(*     in *)
-    let callback () =
-      dynamic_word_wrap#set wrap#active;
-      show_line_number#set line#active;
-      auto_indent#set b_auto_indent#active;
-      show_spaces#set b_show_spaces#active;
-      show_right_margin#set b_show_right_margin#active;
-      show_progress_bar#set b_show_progress_bar#active;
-      spaces_instead_of_tabs#set b_spaces_instead_of_tabs#active;
-      highlight_current_line#set b_highlight_current_line#active;
-      nanoPG#set b_nanoPG#active;
-      auto_complete#set b_auto_complete#active;
-(*       tab_length#set tab_width#value_as_int; *)
-      !refresh_editor_hook ()
-    in
+    let () = button "Dynamic word wrap" dynamic_word_wrap in
+    let () = button "Show line number" show_line_number in
+    let () = button "Auto indentation" auto_indent in
+    let () = button "Auto completion" auto_complete in
+    let () = button "Show spaces" show_spaces in
+    let () = button "Show right margin" show_right_margin in
+    let () = button "Show progress bar" show_progress_bar in
+    let () = button "Insert spaces instead of tabs" spaces_instead_of_tabs in
+    let () = button "Highlight current line" highlight_current_line in
+    let () = button "Emacs/PG keybindings (μPG mode)" nanoPG in
+    let callback () = !refresh_editor_hook () in
     custom ~label box callback true
   in
 
@@ -653,22 +630,14 @@ let configure ?(apply=(fun () -> ())) () =
   in
 
   let source_style =
-    let f s =
-      source_style#set s;
-      !refresh_style_hook ()
-    in
     combo "Highlighting style:"
-      ~f ~new_allowed:false
+      ~f:source_style#set ~new_allowed:false
       style_manager#style_scheme_ids source_style#get
   in
 
   let source_language =
-    let f s =
-      source_language#set s;
-      !refresh_language_hook ()
-    in
     combo "Language:"
-      ~f ~new_allowed:false
+      ~f:source_language#set ~new_allowed:false
       (List.filter
         (fun x -> Str.string_match (Str.regexp "^coq") x 0)
         lang_manager#language_ids)
@@ -686,48 +655,20 @@ let configure ?(apply=(fun () -> ())) () =
       (string_of_project_behavior current.read_project)
   in
   let project_file_name = pstring "Default name for project file" project_file_name in
-  let help_string =
-    "restart to apply"
-  in
-  let the_valid_mod = str_to_mod_list modifiers_valid#get in
   let modifier_for_tactics =
-    modifiers
-      ~allow:the_valid_mod
-      ~f:(fun l -> modifier_for_tactics#set (mod_list_to_str l))
-      ~help:help_string
-      "Modifiers for Tactics Menu"
-      (str_to_mod_list modifier_for_tactics#get)
+    pmodifiers "Modifiers for Tactics Menu" modifier_for_tactics
   in
   let modifier_for_templates =
-    modifiers
-      ~allow:the_valid_mod
-      ~f:(fun l -> modifier_for_templates#set (mod_list_to_str l))
-      ~help:help_string
-      "Modifiers for Templates Menu"
-      (str_to_mod_list modifier_for_templates#get)
+    pmodifiers "Modifiers for Templates Menu" modifier_for_templates
   in
   let modifier_for_navigation =
-    modifiers
-      ~allow:the_valid_mod
-      ~f:(fun l -> modifier_for_navigation#set (mod_list_to_str l))
-      ~help:help_string
-      "Modifiers for Navigation Menu"
-      (str_to_mod_list modifier_for_navigation#get)
+    pmodifiers "Modifiers for Navigation Menu" modifier_for_navigation
   in
   let modifier_for_display =
-    modifiers
-      ~allow:the_valid_mod
-      ~f:(fun l -> modifier_for_display#set (mod_list_to_str l))
-      ~help:help_string
-      "Modifiers for View Menu"
-      (str_to_mod_list modifier_for_display#get)
+    pmodifiers "Modifiers for View Menu" modifier_for_display
   in
   let modifiers_valid =
-    modifiers
-      ~f:(fun l ->
-	modifiers_valid#set (mod_list_to_str l))
-      "Allowed modifiers"
-      the_valid_mod
+    pmodifiers ~all:true "Allowed modifiers" modifiers_valid
   in
   let cmd_editor =
     let predefined = [ "emacs %s"; "vi %s"; "NOTEPAD %s" ] in

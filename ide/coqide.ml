@@ -1087,52 +1087,35 @@ let build_ui () =
         ~stock:`ZOOM_FIT ~callback:(cb_on_current_term MiscMenu.zoom_fit);
     toggle_item "Show Toolbar" ~label:"Show _Toolbar"
       ~active:(show_toolbar#get)
-      ~callback:(fun _ ->
-        show_toolbar#set (not show_toolbar#get);
-        !refresh_toolbar_hook ());
+      ~callback:(fun _ -> show_toolbar#set (not show_toolbar#get));
     item "Query Pane" ~label:"_Query Pane"
       ~accel:"F1"
       ~callback:(cb_on_current_term MiscMenu.show_hide_query_pane)
   ];
   toggle_items view_menu Coq.PrintOpt.bool_items;
 
-  menu navigation_menu [
-    item "Navigation" ~label:"_Navigation";
-    item "Forward" ~label:"_Forward" ~stock:`GO_DOWN ~callback:Nav.forward_one
-      ~tooltip:"Forward one command"
-      ~accel:(modifier_for_navigation#get ^"Down");
-    item "Backward" ~label:"_Backward" ~stock:`GO_UP ~callback:Nav.backward_one
-      ~tooltip:"Backward one command"
-      ~accel:(modifier_for_navigation#get ^"Up");
-    item "Go to" ~label:"_Go to" ~stock:`JUMP_TO ~callback:Nav.goto
-      ~tooltip:"Go to cursor"
-      ~accel:(modifier_for_navigation#get ^"Right");
-    item "Start" ~label:"_Start" ~stock:`GOTO_TOP ~callback:Nav.restart
-      ~tooltip:"Restart coq"
-      ~accel:(modifier_for_navigation#get ^"Home");
-    item "End" ~label:"_End" ~stock:`GOTO_BOTTOM  ~callback:Nav.goto_end
-      ~tooltip:"Go to end"
-      ~accel:(modifier_for_navigation#get ^"End");
-    item "Interrupt" ~label:"_Interrupt" ~stock:`STOP ~callback:Nav.interrupt
-      ~tooltip:"Interrupt computations"
-      ~accel:(modifier_for_navigation#get ^"Break");
-(* wait for this available in GtkSourceView !
-      item "Hide" ~label:"_Hide" ~stock:`MISSING_IMAGE
-	~callback:(fun _ -> let sess = notebook#current_term in
-		     toggle_proof_visibility sess.buffer
-		       sess.analyzed_view#get_insert) ~tooltip:"Hide proof"
-	~accel:(prefs.modifier_for_navigation^"h");*)
-    item "Previous" ~label:"_Previous" ~stock:`GO_BACK
-      ~callback:Nav.previous_occ
-      ~tooltip:"Previous occurence"
-      ~accel:(modifier_for_navigation#get ^"less");
-    item "Next" ~label:"_Next" ~stock:`GO_FORWARD ~callback:Nav.next_occ
-      ~tooltip:"Next occurence"
-      ~accel:(modifier_for_navigation#get ^"greater");
-    item "Force" ~label:"_Force" ~stock:`EXECUTE ~callback:Nav.join_document
-      ~tooltip:"Fully check the document" 
-      ~accel:(modifier_for_navigation#get ^"f"); 
-  ];
+  let navitem (text, label, stock, callback, tooltip, accel) =
+    let accel = modifier_for_navigation#get ^ accel in
+    item text ~label ~stock ~callback ~tooltip ~accel
+  in
+  menu navigation_menu begin
+  [
+    (fun e -> item "Navigation" ~label:"_Navigation" e);
+  ] @ List.map navitem [
+    ("Forward", "_Forward", `GO_DOWN, Nav.forward_one, "Forward one command", "Down");
+    ("Backward", "_Backward", `GO_UP, Nav.backward_one, "Backward one command", "Up");
+    ("Go to", "_Go to", `JUMP_TO, Nav.goto, "Go to cursor", "Right");
+    ("Start", "_Start", `GOTO_TOP, Nav.restart, "Restart coq", "Home");
+    ("End", "_End", `GOTO_BOTTOM, Nav.goto_end, "Go to end", "End");
+    ("Interrupt", "_Interrupt", `STOP, Nav.interrupt, "Interrupt computations", "Break");
+    (* wait for this available in GtkSourceView !
+    ("Hide", "_Hide", `MISSING_IMAGE,
+        ~callback:(fun _ -> let sess = notebook#current_term in
+          toggle_proof_visibility sess.buffer sess.analyzed_view#get_insert), "Hide proof", "h"); *)
+    ("Previous", "_Previous", `GO_BACK, Nav.previous_occ, "Previous occurence", "less");
+    ("Next", "_Next", `GO_FORWARD, Nav.next_occ, "Next occurence", "greater");
+    ("Force", "_Force", `EXECUTE, Nav.join_document, "Fully check the document", "f");
+  ] end;
 
   let tacitem s sc =
     item s ~label:("_"^s)
@@ -1309,31 +1292,24 @@ let build_ui () =
   let _ = Glib.Timeout.add ~ms:300 ~callback in
 
   (* Initializing hooks *)
-  let refresh_toolbar () =
-    if show_toolbar#get
-    then toolbar#misc#show ()
-    else toolbar#misc#hide ()
+  let refresh_toolbar b =
+    if b then toolbar#misc#show () else toolbar#misc#hide ()
   in
-  let refresh_style () =
-    let style =  style_manager#style_scheme source_style#get in
+  let refresh_style style =
+    let style = style_manager#style_scheme style in
     let iter_session v = v.script#source_buffer#set_style_scheme style in
     List.iter iter_session notebook#pages
   in
-  let refresh_language () =
-    let lang =  lang_manager#language source_language#get in
+  let refresh_language lang =
+    let lang = lang_manager#language lang in
     let iter_session v = v.script#source_buffer#set_language lang in
     List.iter iter_session notebook#pages
   in
-  let resize_window () =
-    w#resize ~width:window_width#get ~height:window_height#get
-  in
-  refresh_toolbar ();
-  refresh_toolbar_hook := refresh_toolbar;
-  refresh_style_hook := refresh_style;
-  refresh_language_hook := refresh_language;
+  refresh_toolbar show_toolbar#get;
+  let _ = show_toolbar#connect#changed refresh_toolbar in
+  let _ = source_style#connect#changed refresh_style in
+  let _ = source_language#connect#changed refresh_language in
   refresh_editor_hook := refresh_editor_prefs;
-  resize_window_hook := resize_window;
-  refresh_tabs_hook := refresh_notebook_pos;
 
   (* Color configuration *)
   Tags.Script.incomplete#set_property
