@@ -1,7 +1,7 @@
                            The Coq documentation
                            =====================
 
-The Coq documentation includes 
+The Coq documentation includes
 
 - A Reference Manual
 - A Tutorial
@@ -15,31 +15,25 @@ html files are generated.
 Prerequisite
 ------------
 
-To produce the PostScript documents, the following tools
-are needed:
+To produce all the documents, the following tools are needed:
 
   - latex (latex2e)
+  - pdflatex
   - dvips
   - bibtex
   - makeindex
-  - pngtopnm and pnmtops (for the Reference Manual and the FAQ)
-
-To produce the PDF documents, the following tools are needed:
-
-  - pdflatex
-  - bibtex
-
-To produce the html documents, the following tools are needed:
-
-  - hevea (e.g. 1.07 works)
+  - fig2dev
+  - convert
+  - hevea
+  - hacha
 
 
 Under Debian based operating systems (Debian, Ubuntu, ...) a
 working set of packages for compiling the documentation for Coq is:
 
   texlive texlive-latex-extra texlive-math-extra texlive-fonts-extra
-  texlive-lang-french texlive-humanities texlive-pictures latex-xcolor
-  hevea netpbm
+  texlive-humanities texlive-pictures latex-xcolor hevea transfig
+  imagemagick
 
 
 Compilation
@@ -52,7 +46,7 @@ To produce all documentation about Coq, just run:
 
 Alternatively, you can use some specific targets:
 
-   make doc-ps 
+   make doc-ps
    	to produce all PostScript documents
 
    make doc-pdf
@@ -74,7 +68,7 @@ Alternatively, you can use some specific targets:
         to produce all formats of the FAQ
 
    make stdlib
-   	to produce all formats of the Coq standard library 
+        to produce all formats of the Coq standard library
 
 
 Installation

@@ -509,22 +509,14 @@ library. (Statements in boldface are the most ``interesting'' ones for
 Coq.) The justification of their validity relies on the interpretability
 in set theory.
 
-% fig2dev -m 2 -L png axioms.fig axioms.png
-% fig2dev -L pdftex axioms.fig axioms.pdf
-% fig2dev -L pdftex_t -p axioms.pdf axioms.fig axioms.pdf_t
-% fig2dev -L pstex axioms.fig axioms.eps
-% fig2dev -L pstex_t -p axioms.eps axioms.fig axioms.eps_t
-
 \begin{figure}[htbp]
 %HEVEA\imgsrc{axioms.png}
 %BEGIN LATEX
 \begin{center}
 \ifpdf   % si on est en pdflatex
 \scalebox{0.65}{\input{axioms.pdf_t}}
-%\includegraphics[width=1.0\textwidth]{axioms.png}
 \else
 \scalebox{0.65}{\input{axioms.eps_t}}
-%\includegraphics[width=1.0\textwidth]{axioms.eps}
 \fi
 \end{center}
 %END LATEX

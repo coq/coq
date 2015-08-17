@@ -61,7 +61,13 @@ test-suite/misc/universes/universes.txt
 
 # documentation
 
+doc/common/version.tex
 doc/faq/html/
+doc/faq/axioms.eps
+doc/faq/axioms.eps_t
+doc/faq/axioms.pdf
+doc/faq/axioms.pdf_t
+doc/faq/axioms.png
 doc/refman/csdp.cache
 doc/refman/trace
 doc/refman/Reference-Manual.pdf
@@ -71,7 +77,6 @@ doc/refman/Reference-Manual.out
 doc/refman/Reference-Manual.sh
 doc/refman/cover.html
 doc/refman/styles.hva
-doc/common/version.tex
 doc/refman/coqide-queries.eps
 doc/refman/coqide.eps
 doc/refman/euclid.ml
