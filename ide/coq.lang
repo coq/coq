@@ -122,7 +122,7 @@
         </context>
 
         <context id="proof">
-          <start>Proof(\%{dot_sep}|\%{space}using|\%{space}with)</start>
+          <start>(Proof(\%{dot_sep}|\%{space}using|\%{space}with))|Next Obligation</start>
           <end>\%{end_proof}\%{dot_sep}</end>
           <include>
             <context sub-pattern="0" where="start" style-ref="vernac-keyword"/>
