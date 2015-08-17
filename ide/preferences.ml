@@ -17,6 +17,14 @@ let style_manager = GSourceView2.source_style_scheme_manager ~default:true
 let () = style_manager#set_search_path
   ((Minilib.coqide_data_dirs ())@style_manager#search_path)
 
+type tag = {
+  tag_fg_color : string option;
+  tag_bg_color : string option;
+  tag_bold : bool;
+  tag_italic : bool;
+  tag_underline : bool;
+}
+
 (** Generic preferences *)
 
 type obj = {
@@ -167,6 +175,30 @@ object
   method from x = try [from x] with _ -> []
   method into = function
   | [s] -> (try Some (into s) with _ -> None)
+  | _ -> None
+end
+
+let tag : tag repr =
+let _to s = if s = "" then None else Some s in
+let _of = function None -> "" | Some s -> s in
+object
+  method from tag = [
+    _of tag.tag_fg_color;
+    _of tag.tag_bg_color;
+    string_of_bool tag.tag_bold;
+    string_of_bool tag.tag_italic;
+    string_of_bool tag.tag_underline;
+  ]
+  method into = function
+  | [fg; bg; bd; it; ul] ->
+    (try Some {
+      tag_fg_color = _to fg;
+      tag_bg_color = _to bg;
+      tag_bold = bool_of_string bd;
+      tag_italic = bool_of_string it;
+      tag_underline = bool_of_string ul;
+      }
+    with _ -> None)
   | _ -> None
 end
 
@@ -354,6 +386,18 @@ let processing_color =
 let _ = attach_bg processing_color Tags.Script.to_process
 let _ = attach_bg processing_color Tags.Script.incomplete
 
+let default_tag = {
+  tag_fg_color = None;
+  tag_bg_color = None;
+  tag_bold = false;
+  tag_italic = false;
+  tag_underline = false;
+}
+
+let tags = ref Util.String.Map.empty
+
+let list_tags () = !tags
+
 let processed_color =
   new preference ~name:["processed_color"] ~init:"light green" ~repr:Repr.(string)
 
@@ -399,6 +443,74 @@ let highlight_current_line =
 
 let nanoPG =
   new preference ~name:["nanoPG"] ~init:false ~repr:Repr.(bool)
+
+class tag_button (box : Gtk.box Gtk.obj) =
+object (self)
+
+  inherit GObj.widget box
+
+  val fg_color = GButton.color_button ()
+  val fg_unset = GButton.toggle_button ()
+  val bg_color = GButton.color_button ()
+  val bg_unset = GButton.toggle_button ()
+  val bold = GButton.toggle_button ()
+  val italic = GButton.toggle_button ()
+  val underline = GButton.toggle_button ()
+
+  method set_tag tag =
+    let track c but set = match c with
+    | None -> set#set_active true
+    | Some c ->
+      set#set_active false;
+      but#set_color (Tags.color_of_string c)
+    in
+    track tag.tag_bg_color bg_color bg_unset;
+    track tag.tag_fg_color fg_color fg_unset;
+    bold#set_active tag.tag_bold;
+    italic#set_active tag.tag_italic;
+    underline#set_active tag.tag_underline;
+
+  method tag =
+    let get but set =
+      if set#active then None
+      else Some (Tags.string_of_color but#color)
+    in
+    {
+      tag_bg_color = get bg_color bg_unset;
+      tag_fg_color = get fg_color fg_unset;
+      tag_bold = bold#active;
+      tag_italic = italic#active;
+      tag_underline = underline#active;
+    }
+
+  initializer
+    let box = new GPack.box box in
+    let set_stock button stock =
+      let stock = GMisc.image ~stock ~icon_size:`BUTTON () in
+      button#set_image stock#coerce
+    in
+    set_stock fg_unset `CANCEL;
+    set_stock bg_unset `CANCEL;
+    set_stock bold `BOLD;
+    set_stock italic `ITALIC;
+    set_stock underline `UNDERLINE;
+    box#pack fg_color#coerce;
+    box#pack fg_unset#coerce;
+    box#pack bg_color#coerce;
+    box#pack bg_unset#coerce;
+    box#pack bold#coerce;
+    box#pack italic#coerce;
+    box#pack underline#coerce;
+    let cb but obj = obj#set_sensitive (not but#active) in
+    let _ = fg_unset#connect#toggled (fun () -> cb fg_unset fg_color#misc) in
+    let _ = bg_unset#connect#toggled (fun () -> cb bg_unset bg_color#misc) in
+    ()
+
+end
+
+let tag_button () =
+  let box = GPack.hbox () in
+  new tag_button (Gobject.unsafe_cast box#as_widget)
 
 (** Old style preferences *)
 
@@ -500,6 +612,44 @@ let configure ?(apply=(fun () -> ())) () =
     ] in
     let label = "Color configuration" in
     let callback () = () in
+    custom ~label box callback true
+  in
+
+  let config_tags =
+    let box = GPack.vbox () in
+    let scroll = GBin.scrolled_window
+      ~hpolicy:`NEVER
+      ~vpolicy:`AUTOMATIC
+      ~packing:(box#pack ~expand:true)
+      ()
+    in
+    let table = GPack.table
+      ~row_spacings:5
+      ~col_spacings:5
+      ~border_width:2
+      ~packing:scroll#add_with_viewport ()
+    in
+    let reset_button = GButton.button
+      ~label:"Reset"
+      ~packing:box#pack ()
+    in
+    let i = ref 0 in
+    let cb = ref [] in
+    let iter text tag =
+      let label = GMisc.label
+        ~text ~packing:(table#attach ~expand:`X ~left:0 ~top:!i) ()
+      in
+      let () = label#set_xalign 0. in
+      let button = tag_button () in
+      let callback () = tag#set button#tag in
+      button#set_tag tag#get;
+      table#attach ~left:1 ~top:!i button#coerce;
+      incr i;
+      cb := callback :: !cb;
+    in
+    let () = Util.String.Map.iter iter !tags in
+    let label = "Tag configuration" in
+    let callback () = List.iter (fun f -> f ()) !cb in
     custom ~label box callback true
   in
 
@@ -706,6 +856,8 @@ let configure ?(apply=(fun () -> ())) () =
 	     [config_font]);
      Section("Colors", Some `SELECT_COLOR,
              [config_color; source_language; source_style]);
+     Section("Tags", Some `SELECT_COLOR,
+             [config_tags]);
      Section("Editor", Some `EDIT, [config_editor]);
      Section("Files", Some `DIRECTORY,
 	     [global_auto_revert;global_auto_revert_delay;

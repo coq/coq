@@ -12,6 +12,14 @@ val style_manager : GSourceView2.source_style_scheme_manager
 type project_behavior = Ignore_args | Append_args | Subst_args
 type inputenc = Elocale | Eutf8 | Emanual of string
 
+type tag = {
+  tag_fg_color : string option;
+  tag_bg_color : string option;
+  tag_bold : bool;
+  tag_italic : bool;
+  tag_underline : bool;
+}
+
 class type ['a] repr =
 object
   method into : string list -> 'a option
@@ -32,6 +40,8 @@ object
   method reset : unit -> unit
   method default : 'a
 end
+
+val list_tags : unit -> tag preference Util.String.Map.t
 
 val cmd_coqtop : string option preference
 val cmd_coqc : string preference
