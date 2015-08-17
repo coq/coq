@@ -838,12 +838,6 @@ let md5sum =
   if arch = "Darwin" then "md5 -q" else "md5sum"
 
 
-(** * md5sum command *)
-
-let md5sum =
-  if arch = "Darwin" then "md5 -q" else "md5sum"
-
-
 (** * Documentation : do we have latex, hevea, ... *)
 
 let check_doc () =
