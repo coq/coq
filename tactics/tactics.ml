@@ -126,6 +126,18 @@ let _ =
       optread  = (fun () -> !universal_lemma_under_conjunctions) ;
       optwrite = (fun b -> universal_lemma_under_conjunctions := b) }
 
+(* Shrinking of abstract proofs. *)
+
+let shrink_abstract = ref false
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "shrinking of abstracted proofs";
+      optkey   = ["Shrink"; "Abstract"];
+      optread  = (fun () -> !shrink_abstract) ;
+      optwrite = (fun b -> shrink_abstract := b) }
 
 (*********************************************)
 (*                 Tactics                   *)
@@ -4354,6 +4366,49 @@ let interpretable_as_section_decl evd d1 d2 = match d2,d1 with
     e_eq_constr_univs evd b1 b2 && e_eq_constr_univs evd t1 t2
   | (_,None,t1), (_,_,t2) -> e_eq_constr_univs evd t1 t2
 
+let rec decompose len c t accu =
+  if len = 0 then (c, t, accu)
+  else match kind_of_term c, kind_of_term t with 
+  | Lambda (na, u, c), Prod (_, _, t) ->
+    decompose (pred len) c t ((na, None, u) :: accu)
+  | LetIn (na, b, u, c), LetIn (_, _, _, t) ->
+    decompose (pred len) c t ((na, Some b, u) :: accu)
+  | _ -> assert false
+
+let rec shrink ctx sign c t accu = match ctx, sign with
+| [], [] -> (c, t, accu)
+| p :: ctx, (id, _, _) :: sign ->
+  if noccurn 1 c then
+    let c = subst1 mkProp c in
+    let t = subst1 mkProp t in
+    shrink ctx sign c t accu
+  else
+    let c = mkLambda_or_LetIn p c in
+    let t = mkProd_or_LetIn p t in
+    let accu = match p with
+    | (_, None, _) -> mkVar id :: accu
+    | (_, Some _, _) -> accu
+    in
+    shrink ctx sign c t accu
+| _ -> assert false
+
+let shrink_entry sign const =
+  let open Entries in
+  let typ = match const.const_entry_type with
+  | None -> assert false
+  | Some t -> t
+  in
+  (** The body has been forced by the call to [build_constant_by_tactic] *)
+  let () = assert (Future.is_over const.const_entry_body) in
+  let ((body, uctx), eff) = Future.force const.const_entry_body in
+  let (body, typ, ctx) = decompose (List.length sign) body typ [] in
+  let (body, typ, args) = shrink ctx sign body typ [] in
+  let const = { const with
+    const_entry_body = Future.from_val ((body, uctx), eff);
+    const_entry_type = Some typ;
+  } in
+  (const, args)
+
 let abstract_subproof id gk tac =
   let open Tacticals.New in
   let open Tacmach.New in
@@ -4395,6 +4450,10 @@ let abstract_subproof id gk tac =
     let (_, info) = Errors.push src in
     iraise (e, info)
   in
+  let const, args =
+    if !shrink_abstract then shrink_entry sign const
+    else (const, List.rev (instance_from_named_context sign))
+  in
   let cd = Entries.DefinitionEntry const in
   let decl = (cd, IsProof Lemma) in
   (** ppedrot: seems legit to have abstracted subproofs as local*)
@@ -4406,7 +4465,6 @@ let abstract_subproof id gk tac =
   let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
   let effs = cons_side_effects eff
     Entries.(snd (Future.force const.const_entry_body)) in
-  let args = List.rev (instance_from_named_context sign) in
   let solve =
     Proofview.Unsafe.tclEVARS evd <*>
     Proofview.tclEFFECTS effs <*>
