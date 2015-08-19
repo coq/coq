@@ -351,8 +351,11 @@ let universe_proof_terminator compute_guard hook =
 let standard_proof_terminator compute_guard hook =
   universe_proof_terminator compute_guard (fun _ -> hook)
 
-let start_proof id kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
-  let terminator = standard_proof_terminator compute_guard hook in
+let start_proof id kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=[]) hook =
+  let terminator = match terminator with
+  | None -> standard_proof_terminator compute_guard hook
+  | Some terminator -> terminator compute_guard hook
+  in
   let sign = 
     match sign with
     | Some sign -> sign
@@ -361,8 +364,11 @@ let start_proof id kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
   !start_hook c;
   Pfedit.start_proof id kind sigma sign c ?init_tac terminator
 
-let start_proof_univs id kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
-  let terminator = universe_proof_terminator compute_guard hook in
+let start_proof_univs id kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=[]) hook =
+  let terminator = match terminator with
+  | None -> universe_proof_terminator compute_guard hook
+  | Some terminator -> terminator compute_guard hook
+  in
   let sign = 
     match sign with
     | Some sign -> sign
