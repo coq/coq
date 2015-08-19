@@ -327,7 +327,8 @@ let check_exist =
   )
 
 let universe_proof_terminator compute_guard hook =
-  let open Proof_global in function
+  let open Proof_global in
+  make_terminator begin function
   | Admitted (id,k,pe,ctx) ->
       admit (id,k,pe) (hook (Some ctx)) ();
       Pp.feedback Feedback.AddedAxiom
@@ -345,6 +346,7 @@ let universe_proof_terminator compute_guard hook =
           save_anonymous_with_strength ~export_seff proof kind id
       end;
       check_exist exports
+  end
 
 let standard_proof_terminator compute_guard hook =
   universe_proof_terminator compute_guard (fun _ -> hook)
@@ -482,7 +484,7 @@ let save_proof ?proof = function
               | _ -> None in
             Admitted(id,k,(sec_vars, pi2 k, (typ, ctx), None),universes)
       in
-      Proof_global.get_terminator() pe
+      Proof_global.apply_terminator (Proof_global.get_terminator ()) pe
   | Vernacexpr.Proved (is_opaque,idopt) ->
       let (proof_obj,terminator) =
         match proof with
@@ -492,7 +494,7 @@ let save_proof ?proof = function
       in
       (* if the proof is given explicitly, nothing has to be deleted *)
       if Option.is_empty proof then Pfedit.delete_current_proof ();
-      terminator (Proof_global.Proved (is_opaque,idopt,proof_obj))
+      Proof_global.(apply_terminator terminator (Proved (is_opaque,idopt,proof_obj)))
 
 (* Miscellaneous *)
 

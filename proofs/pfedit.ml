@@ -134,7 +134,8 @@ let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
   let evd = Evd.from_env ~ctx Environ.empty_env in
-  start_proof id goal_kind evd sign typ (fun _ -> ());
+  let terminator = Proof_global.make_terminator (fun _ -> ()) in
+  start_proof id goal_kind evd sign typ terminator;
   try
     let status = by tac in
     let _,(const,univs,_) = cook_proof () in

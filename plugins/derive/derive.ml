@@ -93,6 +93,7 @@ let start_deriving f suchthat lemma =
       ignore (Declare.declare_constant lemma lemma_def)
       in
 
+  let terminator = Proof_global.make_terminator terminator in
   let () = Proof_global.start_dependent_proof lemma kind goals terminator in
   let _ = Proof_global.with_current_proof begin fun _ p ->
     Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p

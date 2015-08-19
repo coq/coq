@@ -91,6 +91,9 @@ type pstate = {
   mode : proof_mode Ephemeron.key;
 }
 
+let make_terminator f = f
+let apply_terminator f = f
+
 (* The head of [!pstates] is the actual current proof, the other ones are
    to be resumed when the current proof is closed or aborted. *)
 let pstates = ref ([] : pstate list)

@@ -70,8 +70,11 @@ type proof_ending =
   | Proved of Vernacexpr.opacity_flag *
              (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
               proof_object
-type proof_terminator = proof_ending -> unit
+type proof_terminator
 type closed_proof = proof_object * proof_terminator
+
+val make_terminator : (proof_ending -> unit) -> proof_terminator
+val apply_terminator : proof_terminator -> proof_ending -> unit
 
 (** [start_proof id str goals terminator] starts a proof of name [id]
     with goals [goals] (a list of pairs of environment and
