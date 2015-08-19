@@ -32,8 +32,7 @@ val start_proof_univs : Id.t -> goal_kind -> Evd.evar_map -> ?sign:Environ.named
   ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
   (Proof_global.proof_universes option -> unit declaration_hook) -> unit
 
-val start_proof_com : goal_kind ->
-  (lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)) list ->
+val start_proof_com : goal_kind -> Vernacexpr.proof_expr list ->
   unit declaration_hook -> unit
 
 val start_proof_with_initialization : 
