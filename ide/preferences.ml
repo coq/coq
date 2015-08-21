@@ -398,11 +398,41 @@ let tags = ref Util.String.Map.empty
 
 let list_tags () = !tags
 
-let () =
-  let iter name =
-    let pref = new preference ~name:[name] ~init:default_tag ~repr:Repr.(tag) in
-    tags := Util.String.Map.add name pref !tags
+let create_tag name default =
+  let pref = new preference ~name:[name] ~init:default ~repr:Repr.(tag) in
+  let set_tag tag =
+    begin match pref#get.tag_bg_color with
+    | None -> ()
+    | Some c -> tag#set_property (`BACKGROUND c)
+    end;
+    begin match pref#get.tag_fg_color with
+    | None -> ()
+    | Some c -> tag#set_property (`FOREGROUND c)
+    end;
+    begin match pref#get.tag_bold with
+    | false -> ()
+    | true -> tag#set_property (`WEIGHT `BOLD)
+    end;
+    begin match pref#get.tag_italic with
+    | false -> ()
+    | true -> tag#set_property (`STYLE `ITALIC)
+    end;
+    begin match pref#get.tag_underline with
+    | false -> ()
+    | true -> tag#set_property (`UNDERLINE `SINGLE)
+    end;
   in
+  let iter table =
+    let tag = GText.tag ~name () in
+    table#add tag#as_tag;
+    pref#connect#changed (fun _ -> set_tag tag);
+    set_tag tag;
+  in
+  List.iter iter [Tags.Script.table; Tags.Proof.table; Tags.Message.table];
+  tags := Util.String.Map.add name pref !tags
+
+let () =
+  let iter name = create_tag name default_tag in
   List.iter iter [
     "constr.evar";
     "constr.keyword";
