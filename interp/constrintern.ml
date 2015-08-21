@@ -1214,7 +1214,8 @@ let drop_notations_pattern looked_for =
 		 List.map2 (fun x -> in_not false loc {env with tmp_scope = x} fullsubst []) argscs1 pl,
 		 List.map2 (in_pat_sc env) argscs2 args)
     | NList (x,_,iter,terminator,lassoc) ->
-      let () = assert (List.is_empty args) in
+      if not (List.is_empty args) then user_err_loc
+        (loc,"",strbrk "Application of arguments to a recursive notation not supported in patterns.");
       (try
          (* All elements of the list are in scopes (scopt,subscopes) *)
 	 let (l,(scopt,subscopes)) = Id.Map.find x substlist in
