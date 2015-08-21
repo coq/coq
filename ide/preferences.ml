@@ -398,6 +398,29 @@ let tags = ref Util.String.Map.empty
 
 let list_tags () = !tags
 
+let () =
+  let iter name =
+    let pref = new preference ~name:[name] ~init:default_tag ~repr:Repr.(tag) in
+    tags := Util.String.Map.add name pref !tags
+  in
+  List.iter iter [
+    "constr.evar";
+    "constr.keyword";
+    "constr.notation";
+    "constr.path";
+    "constr.reference";
+    "constr.type";
+    "constr.variable";
+    "message.debug";
+    "message.error";
+    "message.warning";
+    "module.definition";
+    "module.keyword";
+    "tactic.keyword";
+    "tactic.primitive";
+    "tactic.string";
+  ]
+
 let processed_color =
   new preference ~name:["processed_color"] ~init:"light green" ~repr:Repr.(string)
 
