@@ -329,14 +329,14 @@ object(self)
     let display_error s =
       if not (Glib.Utf8.validate s) then
         flash_info "This error is so nasty that I can't even display it."
-      else messages#add s;
+      else messages#add_string s;
     in
     let query =
       Coq.query ~logger:messages#push (phrase,Stateid.dummy) in
     let next = function
     | Fail (_, _, err) -> display_error err; Coq.return ()
     | Good msg ->
-      messages#add msg; Coq.return ()
+      messages#add_string msg; Coq.return ()
     in
     Coq.bind (Coq.seq action query) next
 
@@ -564,7 +564,7 @@ object(self)
         if Queue.is_empty queue then conclude topstack else
         match Queue.pop queue, topstack with
         | `Skip(start,stop), [] ->
-            logger Pp.Error "You muse close the proof with Qed or Admitted";
+            logger Pp.Error (Richpp.richpp_of_string "You muse close the proof with Qed or Admitted");
             self#discard_command_queue queue;
             conclude [] 
         | `Skip(start,stop), (_,s) :: topstack ->
@@ -580,7 +580,7 @@ object(self)
             let handle_answer = function
               | Good (id, (Util.Inl (* NewTip *) (), msg)) ->
                   Doc.assign_tip_id document id;
-                  logger Pp.Notice msg;
+                  logger Pp.Notice (Richpp.richpp_of_string msg);
                   self#commit_queue_transaction sentence;
                   loop id []
               | Good (id, (Util.Inr (* Unfocus *) tip, msg)) ->
@@ -588,13 +588,13 @@ object(self)
                   let topstack, _ = Doc.context document in
                   self#exit_focus;
                   self#cleanup (Doc.cut_at document tip);
-                  logger Pp.Notice msg;
+                  logger Pp.Notice (Richpp.richpp_of_string msg);
                   self#mark_as_needed sentence;
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
                   let sentence = Doc.pop document in
-                  self#process_interp_error queue sentence loc msg tip id in
+                  self#process_interp_error queue sentence loc (Richpp.richpp_of_string msg) tip id in
             Coq.bind coq_query handle_answer
       in
       let tip =
@@ -607,7 +607,7 @@ object(self)
    let next = function
      | Good _ ->
          messages#clear;
-         messages#push Pp.Info "All proof terms checked by the kernel";
+         messages#push Pp.Info (Richpp.richpp_of_string "All proof terms checked by the kernel");
          Coq.return ()
      | Fail x -> self#handle_failure x in
    Coq.bind (Coq.status ~logger:messages#push true) next
@@ -701,8 +701,8 @@ object(self)
           self#cleanup (Doc.cut_at document to_id);
           conclusion ()
       | Fail (safe_id, loc, msg) ->
-          if loc <> None then messages#push Pp.Error "Fixme LOC";
-          messages#push Pp.Error msg;
+          if loc <> None then messages#push Pp.Error (Richpp.richpp_of_string "Fixme LOC");
+          messages#push Pp.Error (Richpp.richpp_of_string msg);
           if Stateid.equal safe_id Stateid.dummy then self#show_goals
           else undo safe_id
                  (Doc.focused document && Doc.is_in_focus document safe_id))
@@ -720,7 +720,7 @@ object(self)
     ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
   =
     messages#clear;
-    messages#push Pp.Error msg;
+    messages#push Pp.Error (Richpp.richpp_of_string msg);
     ignore(self#process_feedback ());
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
     else
@@ -779,7 +779,7 @@ object(self)
     let display_error (loc, s) =
       if not (Glib.Utf8.validate s) then
         flash_info "This error is so nasty that I can't even display it."
-      else messages#add s
+      else messages#add_string s
     in
     let try_phrase phrase stop more =
       let action = log "Sending to coq now" in
@@ -787,10 +787,10 @@ object(self)
       let next = function
       | Fail (_, l, str) -> (* FIXME: check *)
         display_error (l, str);
-        messages#add ("Unsuccessfully tried: "^phrase);
+        messages#add (Richpp.richpp_of_string ("Unsuccessfully tried: "^phrase));
         more
       | Good msg ->
-        messages#add msg;
+        messages#add_string msg;
         stop Tags.Script.processed
       in
       Coq.bind (Coq.seq action query) next
@@ -834,7 +834,7 @@ object(self)
   method initialize =
     let get_initial_state =
       let next = function
-      | Fail _ -> messages#set ("Couln't initialize Coq"); Coq.return ()
+      | Fail _ -> messages#set (Richpp.richpp_of_string "Couln't initialize Coq"); Coq.return ()
       | Good id -> initial_state <- id; Coq.return () in
       Coq.bind (Coq.init (get_filename ())) next in
     Coq.seq get_initial_state Coq.PrintOpt.enforce

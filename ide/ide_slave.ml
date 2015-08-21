@@ -429,12 +429,12 @@ let print_xml =
 
 let slave_logger xml_oc level message =
   (* convert the message into XML *)
-  let msg = string_of_ppcmds (hov 0 message) in
+  let msg = hov 0 message in
   let message = {
     Pp.message_level = level;
-    Pp.message_content = msg;
+    Pp.message_content = (Richpp.repr (Richpp.richpp_of_pp msg));
   } in
-  let () = pr_debug (Printf.sprintf "-> %S" msg) in
+  let () = pr_debug (Printf.sprintf "-> %S" (string_of_ppcmds msg)) in
   let xml = Pp.of_message message in
   print_xml xml_oc xml
 

@@ -116,7 +116,7 @@ type message_level = Feedback.message_level =
 
 type message = Feedback.message = {
   message_level : message_level;
-  message_content : string;
+  message_content : Xml_datatype.xml;
 }
 
 type logger = message_level -> std_ppcmds -> unit
@@ -154,7 +154,7 @@ val std_logger : logger
 
 val set_logger : logger -> unit
 
-val log_via_feedback : unit -> unit
+val log_via_feedback : (std_ppcmds -> Xml_datatype.xml) -> unit
 
 val of_message : message -> Xml_datatype.xml
 val to_message : Xml_datatype.xml -> message

@@ -37,6 +37,17 @@ let flash_info =
   let flash_context = status#new_context ~name:"Flash" in
     (fun ?(delay=5000) s -> flash_context#flash ~delay s)
 
+let xml_to_string xml =
+  let open Xml_datatype in
+  let buf = Buffer.create 1024 in
+  let rec iter = function
+  | PCData s -> Buffer.add_string buf s
+  | Element (_, _, children) ->
+    List.iter iter children
+  in
+  let () = iter (Richpp.repr xml) in
+  Buffer.contents buf
+
 let translate s = s
 
 let insert_xml ?(tags = []) (buf : #GText.buffer_skel) msg =
@@ -288,7 +299,7 @@ let textview_width (view : #GText.view_skel) =
   let char_width = GPango.to_pixels metrics#approx_char_width in
   pixel_width / char_width
 
-type logger = Pp.message_level -> string -> unit
+type logger = Pp.message_level -> Richpp.richpp -> unit
 
 let default_logger level message =
   let level = match level with
@@ -298,7 +309,7 @@ let default_logger level message =
   | Pp.Warning -> `WARNING
   | Pp.Error -> `ERROR
   in
-  Minilib.log ~level message
+  Minilib.log ~level (xml_to_string message)
 
 
 (** {6 File operations} *)

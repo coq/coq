@@ -412,7 +412,7 @@ type message_level =  Feedback.message_level =
 
 type message = Feedback.message = {
   message_level : message_level;
-  message_content : string;
+  message_content : Xml_datatype.xml;
 }
 
 let of_message = Feedback.of_message
@@ -511,11 +511,11 @@ let string_of_ppcmds c =
   msg_with Format.str_formatter c;
   Format.flush_str_formatter ()
 
-let log_via_feedback () = logger := (fun ~id lvl msg ->
+let log_via_feedback printer = logger := (fun ~id lvl msg ->
   !feeder {
      Feedback.contents = Feedback.Message {
        message_level = lvl;
-       message_content = string_of_ppcmds msg };
+       message_content = printer msg };
      Feedback.route = !feedback_route;
      Feedback.id = id })
 

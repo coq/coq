@@ -18,7 +18,7 @@ type message_level =
 
 type message = {
   message_level : message_level;
-  message_content : string;
+  message_content : xml;
 }
 
 val of_message : message -> xml

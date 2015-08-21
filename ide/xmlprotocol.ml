@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20150815"
+let protocol_version = "20150821"
 
 (** * Interface of calls to Coq by CoqIde *)
 

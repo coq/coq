@@ -297,7 +297,7 @@ module Make(T : Task) = struct
     let slave_feeder oc fb =
       Marshal.to_channel oc (RespFeedback fb) []; flush oc in
     Pp.set_feeder (fun x -> slave_feeder (Option.get !slave_oc) x);
-    Pp.log_via_feedback ();
+    Pp.log_via_feedback (fun msg -> Richpp.repr (Richpp.richpp_of_pp msg));
     Universes.set_remote_new_univ_level (bufferize (fun () ->
       marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
       match unmarshal_more_data (Option.get !slave_ic) with

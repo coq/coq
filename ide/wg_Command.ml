@@ -100,7 +100,10 @@ object(self)
         if Str.string_match (Str.regexp "\\. *$") com 0 then com
         else com ^ " " ^ arg ^" . "
       in
-      let log level message = result#buffer#insert (message^"\n") in
+      let log level message =
+        Ideutils.insert_xml result#buffer message;
+        result#buffer#insert "\n";
+      in
       let process =
 	Coq.bind (Coq.query ~logger:log (phrase,Stateid.dummy)) (function
           | Interface.Fail (_,l,str) ->

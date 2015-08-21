@@ -302,13 +302,13 @@ let handle_intermediate_message handle xml =
   let logger = match handle.waiting_for with
     | Some (_, l) -> l 
     | None -> function
-        | Pp.Error -> Minilib.log ~level:`ERROR
-        | Pp.Info -> Minilib.log ~level:`INFO
-        | Pp.Notice -> Minilib.log ~level:`NOTICE
-        | Pp.Warning -> Minilib.log ~level:`WARNING
-        | Pp.Debug _ -> Minilib.log ~level:`DEBUG
+        | Pp.Error -> fun s -> Minilib.log ~level:`ERROR (xml_to_string s)
+        | Pp.Info -> fun s -> Minilib.log ~level:`INFO  (xml_to_string s)
+        | Pp.Notice -> fun s -> Minilib.log ~level:`NOTICE  (xml_to_string s)
+        | Pp.Warning -> fun s -> Minilib.log ~level:`WARNING  (xml_to_string s)
+        | Pp.Debug _ -> fun s -> Minilib.log ~level:`DEBUG (xml_to_string s)
   in
-  logger level content
+  logger level (Richpp.richpp_of_xml content)
 
 let handle_feedback feedback_processor xml =
   let feedback = Feedback.to_feedback xml in

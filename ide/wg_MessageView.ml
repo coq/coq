@@ -12,7 +12,7 @@ class type message_view_signals =
 object
   inherit GObj.misc_signals
   inherit GUtil.add_ml_signals
-  method pushed : callback:(Pp.message_level -> string -> unit) -> GtkSignal.id
+  method pushed : callback:Ideutils.logger -> GtkSignal.id
 end
 
 class message_view_signals_impl obj (pushed : 'a GUtil.signal) : message_view_signals =
@@ -28,9 +28,10 @@ class type message_view =
     inherit GObj.widget
     method connect : message_view_signals
     method clear : unit
-    method add : string -> unit
-    method set : string -> unit
-    method push : Pp.message_level -> string -> unit
+    method add : Richpp.richpp -> unit
+    method add_string : string -> unit
+    method set : Richpp.richpp -> unit
+    method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer
       (** for more advanced text edition *)
@@ -76,13 +77,20 @@ let message_view () : message_view =
       | Pp.Warning -> [Tags.Message.warning]
       | _ -> []
       in
-      if msg <> "" then begin
-        buffer#insert ~tags msg;
-        buffer#insert ~tags "\n";
+      let rec non_empty = function
+      | Xml_datatype.PCData "" -> false
+      | Xml_datatype.PCData _ -> true
+      | Xml_datatype.Element (_, _, children) -> List.exists non_empty children
+      in
+      if non_empty (Richpp.repr msg) then begin
+        Ideutils.insert_xml buffer ~tags msg;
+        buffer#insert (*~tags*) "\n";
         push#call (level, msg)
       end
 
     method add msg = self#push Pp.Notice msg
+
+    method add_string s = self#add (Richpp.richpp_of_string s)
 
     method set msg = self#clear; self#add msg
 
