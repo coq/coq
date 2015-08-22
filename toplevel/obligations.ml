@@ -613,7 +613,12 @@ let shrink_body c =
       else mkLambda (n,t,b), succ i, mkRel i :: args)
      (b, 1, []) ctx
   in List.map (fun (c,t) -> (c,None,t)) ctx, b', Array.of_list args
-      
+
+let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
+
+let add_hint local prg cst =
+  Hints.add_hints local [Id.to_string prg.prg_name] (unfold_entry cst)
+
 let declare_obligation prg obl body ty uctx =
   let body = prg.prg_reduce body in
   let ty = Option.map prg.prg_reduce ty in
@@ -640,9 +645,7 @@ let declare_obligation prg obl body ty uctx =
       let constant = Declare.declare_constant obl.obl_name ~local:true
 	(DefinitionEntry ce,IsProof Property)
       in
-	if not opaque then
-	  Hints.add_hints false [Id.to_string prg.prg_name]
-	    (Hints.HintsUnfoldEntry [EvalConstRef constant]);
+	if not opaque then add_hint false prg constant;
 	definition_message obl.obl_name;
 	{ obl with obl_body = 
 	    if poly then 
@@ -774,7 +777,7 @@ let not_transp_msg =
   str "Obligation should be transparent but was declared opaque." ++ spc () ++
     str"Use 'Defined' instead."
 
-let error_not_transp () = pperror not_transp_msg
+let err_not_transp () = pperror not_transp_msg
 
 let rec string_of_list sep f = function
     [] -> ""
@@ -797,74 +800,61 @@ let solve_by_tac name evi t poly ctx =
   Inductiveops.control_only_guard (Global.env ()) (fst body);
   (fst body), entry.Entries.const_entry_type, ctx'
 
+let obligation_hook prg obl num auto ctx' _ gr =
+  let obls, rem = prg.prg_obligations in
+  let cst = match gr with ConstRef cst -> cst | _ -> assert false in
+  let transparent = evaluable_constant cst (Global.env ()) in
+  let () = match obl.obl_status with
+  | Evar_kinds.Expand -> if not transparent then err_not_transp ()
+  | Evar_kinds.Define op -> if not op && not transparent then err_not_transp ()
+  in
+  let obl = { obl with obl_body = Some (DefinedObl cst) } in
+  let () = if transparent then add_hint true prg cst in
+  let obls = Array.copy obls in
+  let _ = obls.(num) <- obl in
+  let ctx' = match ctx' with None -> prg.prg_ctx | Some ctx' -> ctx' in
+  let ctx' =
+    if not (pi2 prg.prg_kind) (* Not polymorphic *) then
+      (* This context is already declared globally, we cannot
+          instantiate the rigid variables anymore *)
+      Evd.abstract_undefined_variables ctx'
+    else ctx'
+  in
+  let prg = { prg with prg_ctx = ctx' } in
+  let () =
+    try ignore (update_obls prg obls (pred rem))
+    with e when Errors.noncritical e ->
+      let e = Errors.push e in
+      pperror (Errors.iprint (Cerrors.process_vernac_interp_error e))
+  in
+  if pred rem > 0 then begin
+    let deps = dependencies obls num in
+    if not (Int.Set.is_empty deps) then
+      ignore (auto (Some prg.prg_name) None deps)
+  end
+
 let rec solve_obligation prg num tac =
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in
   let obl = obls.(num) in
+  let remaining = deps_remaining obls obl.obl_deps in
+  let () =
     if not (Option.is_empty obl.obl_body) then
-      pperror (str "Obligation" ++ spc () ++ int user_num ++ str "already" ++ spc() ++ str "solved.")
-    else
-      match deps_remaining obls obl.obl_deps with
-      | [] ->
-          let obl = subst_deps_obl obls obl in
-          let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
-            let evd = Evd.from_env ~ctx:prg.prg_ctx Environ.empty_env in
-            Lemmas.start_proof_univs obl.obl_name kind evd obl.obl_type
-              (fun ctx' -> Lemmas.mk_hook (fun strength gr ->
-		let cst = match gr with ConstRef cst -> cst | _ -> assert false in
-		let obl =
-		  let transparent = evaluable_constant cst (Global.env ()) in
-		  let body =
-		    match obl.obl_status with
-		    | Evar_kinds.Expand ->
-			if not transparent then error_not_transp ()
-			else DefinedObl cst
-		    | Evar_kinds.Define opaque ->
-			if not opaque && not transparent then error_not_transp ()
-			else DefinedObl cst
-		  in
-		    if transparent then
-		      Hints.add_hints true [Id.to_string prg.prg_name]
-			(Hints.HintsUnfoldEntry [EvalConstRef cst]);
-		    { obl with obl_body = Some body }
-		in
-		let obls = Array.copy obls in
-		let _ = obls.(num) <- obl in
-		let ctx' = 
-		  let ctx = 
-		    match ctx' with
-		    | None -> prg.prg_ctx
-		    | Some ctx' -> ctx'
-		  in
-  		    if not (pi2 prg.prg_kind) (* Not polymorphic *) then
-		      (* This context is already declared globally, we cannot 
-			 instantiate the rigid variables anymore *) 
-		      Evd.abstract_undefined_variables ctx
-		    else ctx
-		in
-		let res = 
-		  try update_obls 
-			{prg with prg_body = prg.prg_body;
-			  prg_type = prg.prg_type;
-			  prg_ctx = ctx' }
-			  
-			obls (pred rem)
-		  with e when Errors.noncritical e ->
-                    let e = Errors.push e in
-                    pperror (Errors.iprint (Cerrors.process_vernac_interp_error e))
-		in
-		  match res with
-		  | Remain n when n > 0 ->
-		      let deps = dependencies obls num in
-			if not (Int.Set.is_empty deps) then
-			  ignore(auto_solve_obligations (Some prg.prg_name) None ~oblset:deps)
-		  | _ -> ()));
-	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
-		     Printer.pr_constr_env (Global.env ()) Evd.empty obl.obl_type);
-	    ignore (Pfedit.by (snd (get_default_tactic ())));
-	    Option.iter (fun tac -> Pfedit.set_end_tac tac) tac
-      | l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
-		      ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l))
+      pperror (str "Obligation" ++ spc () ++ int user_num ++ str "already" ++ spc() ++ str "solved.");
+    if not (List.is_empty remaining) then
+      pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
+        ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) remaining));
+  in
+  let obl = subst_deps_obl obls obl in
+  let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
+  let evd = Evd.from_env ~ctx:prg.prg_ctx Environ.empty_env in
+  let auto n tac oblset = auto_solve_obligations n ~oblset tac in
+  let hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
+  let () = Lemmas.start_proof_univs obl.obl_name kind evd obl.obl_type hook in
+  let () = trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
+            Printer.pr_constr_env (Global.env ()) Evd.empty obl.obl_type) in
+  let _ = Pfedit.by (snd (get_default_tactic ())) in
+  Option.iter (fun tac -> Pfedit.set_end_tac tac) tac
 
 and obligation (user_num, name, typ) tac =
   let num = pred user_num in
