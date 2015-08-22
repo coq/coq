@@ -1028,6 +1028,18 @@ This tactical is useful with tactics such as \texttt{omega} or
 the user can avoid the explosion at time of the \texttt{Save} command
 without having to cut manually the proof in smaller lemmas.
 
+It may be useful to generate lemmas minimal w.r.t. the assumptions they depend
+on. This can be obtained thanks to the option below.
+
+\begin{quote}
+\optindex{Shrink Abstract}
+{\tt Set Shrink Abstract}
+\end{quote}
+
+When set, all lemmas generated through \texttt{abstract {\tacexpr}} are
+quantified only over the variables that appear in the term constructed by
+\texttt{\tacexpr}.
+
 \begin{Variants}
 \item \texttt{abstract {\tacexpr} using {\ident}}.\\
   Give explicitly the name of the auxiliary lemma.
