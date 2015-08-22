@@ -802,6 +802,36 @@ let solve_by_tac name evi t poly ctx =
   Inductiveops.control_only_guard (Global.env ()) (fst body);
   (fst body), entry.Entries.const_entry_type, ctx'
 
+let obligation_terminator name num guard hook pf =
+  let open Proof_global in
+  let term = Lemmas.universe_proof_terminator guard hook in
+  match pf with
+  | Admitted _ -> apply_terminator term pf
+  | Proved (opq, id, proof) ->
+    if not !shrink_obligations then apply_terminator term pf
+    else
+      let (_, (entry, uctx, _)) = Pfedit.cook_this_proof proof in
+      let env = Global.env () in
+      let entry = Term_typing.handle_entry_side_effects env entry in
+      let ty = entry.Entries.const_entry_type  in
+      let (body, cstr), eff = Future.force entry.Entries.const_entry_body in
+      assert(Declareops.side_effects_is_empty eff);
+      assert(Univ.ContextSet.is_empty cstr);
+      Inductiveops.control_only_guard (Global.env ()) body;
+      (** Declare the obligation ourselves and drop the hook *)
+      let prg = get_info (ProgMap.find name !from_prg) in
+      let prg = { prg with prg_ctx = uctx } in
+      let obls, rem = prg.prg_obligations in
+      let obl = obls.(num) in
+      let ctx = Evd.evar_context_universe_context uctx in
+      let obl = declare_obligation prg obl body ty ctx in
+      let obls = Array.copy obls in
+      let _ = obls.(num) <- obl in
+      try ignore (update_obls prg obls (pred rem))
+      with e when Errors.noncritical e ->
+        let e = Errors.push e in
+        pperror (Errors.iprint (Cerrors.process_vernac_interp_error e))
+
 let obligation_hook prg obl num auto ctx' _ gr =
   let obls, rem = prg.prg_obligations in
   let cst = match gr with ConstRef cst -> cst | _ -> assert false in
@@ -851,8 +881,9 @@ let rec solve_obligation prg num tac =
   let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
   let evd = Evd.from_env ~ctx:prg.prg_ctx Environ.empty_env in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
+  let terminator guard hook = Proof_global.make_terminator (obligation_terminator prg.prg_name num guard hook) in
   let hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
-  let () = Lemmas.start_proof_univs obl.obl_name kind evd obl.obl_type hook in
+  let () = Lemmas.start_proof_univs obl.obl_name kind evd obl.obl_type ~terminator hook in
   let () = trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
             Printer.pr_constr_env (Global.env ()) Evd.empty obl.obl_type) in
   let _ = Pfedit.by (snd (get_default_tactic ())) in
