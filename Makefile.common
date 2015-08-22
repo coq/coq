@@ -109,7 +109,11 @@ LATEX:=latex
 BIBTEX:=BIBINPUTS=.: bibtex -min-crossrefs=10
 MAKEINDEX:=makeindex
 PDFLATEX:=pdflatex
+DVIPS:=dvips
+FIG2DEV:=fig2dev
+CONVERT:=convert
 HEVEA:=hevea
+HACHA:=hacha
 HEVEAOPTS:=-fix -exec xxdate.exe
 HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
 HTMLSTYLE:=simple

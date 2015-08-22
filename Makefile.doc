@@ -58,7 +58,21 @@ else
 endif
 
 %.ps: %.dvi
-	(cd `dirname $<`; dvips -q -o `basename $@` `basename $<`)
+	(cd `dirname $<`; $(DVIPS) -q -o `basename $@` `basename $<`)
+
+%.png: %.fig
+	$(FIG2DEV) -m 2 -L png $< $@
+
+%.pdf: %.fig
+	$(FIG2DEV) -L pdftex $< $@
+	$(FIG2DEV) -L pdftex_t -p `basename $@` $< $@_t
+
+%.eps: %.fig
+	$(FIG2DEV) -L pstex $< $@
+	$(FIG2DEV) -L pstex_t -p `basename $@` $< $@_t
+
+%.eps: %.png
+	$(CONVERT) $< $@
 
 ######################################################################
 # Macros for filtering outputs
@@ -107,7 +121,7 @@ doc/refman/Reference-Manual.dvi: $(REFMANFILES) doc/refman/Reference-Manual.tex
 	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
 	../tools/show_latex_messages -no-overfull Reference-Manual.log)
 
-doc/refman/Reference-Manual.pdf: doc/refman/Reference-Manual.dvi
+doc/refman/Reference-Manual.pdf: doc/refman/Reference-Manual.dvi $(REFMANPNGFILES)
 	(cd doc/refman;\
 	$(PDFLATEX) -interaction=batchmode Reference-Manual.tex;\
 	../tools/show_latex_messages -no-overfull Reference-Manual.log)
@@ -133,7 +147,7 @@ refman-html-dir: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
 	- rm -rf doc/refman/html
 	$(MKDIR) doc/refman/html
 	$(INSTALLLIB) $(REFMANPNGFILES) doc/refman/html
-	(cd doc/refman/html; hacha -nolinks -tocbis -o toc.html ../styles.hva ../Reference-Manual.html)
+	(cd doc/refman/html; $(HACHA) -nolinks -tocbis -o toc.html ../styles.hva ../Reference-Manual.html)
 	$(INSTALLLIB) doc/refman/cover.html doc/refman/html/index.html
 	-$(INSTALLLIB) doc/common/styles/html/$(HTMLSTYLE)/*.css doc/refman/html
 
@@ -173,7 +187,7 @@ doc/tutorial/Tutorial.v.html: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
 # FAQ
 ######################################################################
 
-doc/faq/FAQ.v.dvi: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.tex
+doc/faq/FAQ.v.dvi: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.tex doc/faq/axioms.eps
 	(cd doc/faq;\
 	$(LATEX) -interaction=batchmode FAQ.v;\
 	$(BIBTEX) -terse FAQ.v;\
@@ -181,12 +195,12 @@ doc/faq/FAQ.v.dvi: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.tex
 	$(LATEX) -interaction=batchmode FAQ.v > /dev/null;\
 	../tools/show_latex_messages FAQ.v.log)
 
-doc/faq/FAQ.v.pdf: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.dvi doc/faq/axioms.png
+doc/faq/FAQ.v.pdf: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.dvi doc/faq/axioms.pdf
 	(cd doc/faq;\
         $(PDFLATEX) -interaction=batchmode FAQ.v.tex;\
 	../tools/show_latex_messages FAQ.v.log)
 
-doc/faq/FAQ.v.html: doc/faq/FAQ.v.dvi # to ensure FAQ.v.bbl
+doc/faq/FAQ.v.html: doc/faq/FAQ.v.dvi doc/faq/axioms.png # to ensure FAQ.v.bbl
 	(cd doc/faq; ($(HEVEA) $(HEVEAOPTS) FAQ.v.tex $(HEVEAFAQFILTER)))
 
 doc/faq/html/index.html: doc/faq/FAQ.v.html

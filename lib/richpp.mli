@@ -20,7 +20,7 @@ type 'annotation located = {
     of [ppcmds] as a semi-structured document
     that represents (located) annotations of this string.
     The [get_annotations] function is used to convert tags into the desired
-    annotation. If this function returns [None], then no annotation is put. *)
+    annotation. *)
 val rich_pp :
   (Pp.Tag.t -> 'annotation option) -> Pp.std_ppcmds ->
   'annotation located Xml_datatype.gxml

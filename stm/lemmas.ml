@@ -326,25 +326,6 @@ let check_exist =
         user_err_loc (loc,"",pr_id id ++ str " does not exist.")
   )
 
-let standard_proof_terminator compute_guard hook =
-  let open Proof_global in function
-  | Admitted (id,k,pe,_) ->
-      admit (id,k,pe) hook ();
-      Pp.feedback Feedback.AddedAxiom
-  | Proved (opaque,idopt,proof) ->
-      let is_opaque, export_seff, exports = match opaque with
-        | Vernacexpr.Transparent -> false, true, []
-        | Vernacexpr.Opaque None -> true, false, []
-        | Vernacexpr.Opaque (Some l) -> true, true, l in
-      let proof = get_proof proof compute_guard hook is_opaque in
-      begin match idopt with
-      | None -> save_named ~export_seff proof
-      | Some ((_,id),None) -> save_anonymous ~export_seff proof id
-      | Some ((_,id),Some kind) -> 
-          save_anonymous_with_strength ~export_seff proof kind id
-      end;
-      check_exist exports
-
 let universe_proof_terminator compute_guard hook =
   let open Proof_global in function
   | Admitted (id,k,pe,ctx) ->
@@ -364,6 +345,9 @@ let universe_proof_terminator compute_guard hook =
           save_anonymous_with_strength ~export_seff proof kind id
       end;
       check_exist exports
+
+let standard_proof_terminator compute_guard hook =
+  universe_proof_terminator compute_guard (fun _ -> hook)
 
 let start_proof id kind sigma ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = standard_proof_terminator compute_guard hook in

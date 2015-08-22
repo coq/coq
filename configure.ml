@@ -792,12 +792,6 @@ let md5sum =
   if arch = "Darwin" then "md5 -q" else "md5sum"
 
 
-(** * md5sum command *)
-
-let md5sum =
-  if arch = "Darwin" then "md5 -q" else "md5sum"
-
-
 (** * Documentation : do we have latex, hevea, ... *)
 
 let check_doc () =
@@ -809,6 +803,9 @@ let check_doc () =
     if not !Prefs.withdoc then raise Not_found;
     if not (program_in_path "latex") then err "latex";
     if not (program_in_path "hevea") then err "hevea";
+    if not (program_in_path "hacha") then err "hacha";
+    if not (program_in_path "fig2dev") then err "fig2dev";
+    if not (program_in_path "convert") then err "convert";
     true
   with Not_found -> false
 

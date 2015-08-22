@@ -196,6 +196,9 @@ type inductive_expr =
 type one_inductive_expr =
   lident * local_binder list * constr_expr option * constructor_expr list
 
+type proof_expr =
+  lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)
+
 type grammar_tactic_prod_item_expr =
   | TacTerm of string
   | TacNonTerm of Loc.t * string * (Names.Id.t * string) option
@@ -303,9 +306,7 @@ type vernac_expr =
   (* Gallina *)
   | VernacDefinition of
       (locality option * definition_object_kind) * lident * definition_expr
-  | VernacStartTheoremProof of theorem_kind * 
-      (lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)) list *
-        bool
+  | VernacStartTheoremProof of theorem_kind * proof_expr list * bool
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (locality option * assumption_object_kind) *

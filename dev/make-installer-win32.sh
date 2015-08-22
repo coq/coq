@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 NSIS="$BASE/NSIS/makensis"
 ZIP=_make.zip
 URL1=http://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download
