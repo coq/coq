@@ -162,7 +162,6 @@ let load_file ?(maycreate=false) f =
       input_buffer#place_cursor ~where:input_buffer#start_iter;
       Sentence.tag_all input_buffer;
       session.script#clear_undo ();
-      !refresh_editor_hook ();
       Minilib.log "Loading: success";
     end
   with e -> flash_info ("Load failed: "^(Printexc.to_string e))
@@ -248,7 +247,6 @@ module File = struct
 let newfile _ =
   let session = create_session None in
   let index = notebook#append_term session in
-  !refresh_editor_hook ();
   notebook#goto_page index
 
 let load _ =
@@ -812,46 +810,11 @@ let zoom_fit sn =
   let tlen = fst (Pango.Layout.get_pixel_size layout) in
   Pango.Font.set_size (Pango.Font.from_string text_font#get)
     (fsize * space / tlen / Pango.scale * Pango.scale);
-  save_pref ();
-  !refresh_editor_hook ()
+  save_pref ()
 
 end
 
 (** Refresh functions *)
-
-let refresh_editor_prefs () =
-  let wrap_mode = if dynamic_word_wrap#get then `WORD else `NONE in
-  let show_spaces =
-    if show_spaces#get then 0b1001011 (* SPACE, TAB, NBSP, TRAILING *)
-    else 0
-  in
-  let fd = Pango.Font.from_string text_font#get in
-  let iter_session sn =
-    (* Editor settings *)
-    sn.script#set_wrap_mode wrap_mode;
-    sn.script#set_show_line_numbers show_line_number#get;
-    sn.script#set_auto_indent auto_indent#get;
-    sn.script#set_highlight_current_line highlight_current_line#get;
-
-    (* Hack to handle missing binding in lablgtk *)
-    let conv = { Gobject.name = "draw-spaces"; Gobject.conv = Gobject.Data.int }
-    in
-    Gobject.set conv sn.script#as_widget show_spaces;
-
-    sn.script#set_show_right_margin show_right_margin#get;
-    if show_progress_bar#get then sn.segment#misc#show () else sn.segment#misc#hide ();
-    sn.script#set_insert_spaces_instead_of_tabs spaces_instead_of_tabs#get;
-    sn.script#set_tab_width tab_length#get;
-    sn.script#set_auto_complete auto_complete#get;
-
-    (* Fonts *)
-    sn.script#misc#modify_font fd;
-    sn.proof#misc#modify_font fd;
-    sn.messages#modify_font fd;
-    sn.command#refresh_font ();
-
-  in
-  List.iter iter_session notebook#pages
 
 let refresh_notebook_pos () =
   let pos = match vertical_tabs#get, opposite_tabs#get with
@@ -1060,15 +1023,13 @@ let build_ui () =
           let ft = Pango.Font.from_string text_font#get in
           Pango.Font.set_size ft (Pango.Font.get_size ft + Pango.scale);
           text_font#set (Pango.Font.to_string ft);
-          save_pref ();
-          !refresh_editor_hook ());
+          save_pref ());
     item "Zoom out" ~label:"_Zoom out" ~accel:("<Control>minus")
         ~stock:`ZOOM_OUT ~callback:(fun _ ->
           let ft = Pango.Font.from_string text_font#get in
           Pango.Font.set_size ft (Pango.Font.get_size ft - Pango.scale);
           text_font#set (Pango.Font.to_string ft);
-          save_pref ();
-          !refresh_editor_hook ());
+          save_pref ());
     item "Zoom fit" ~label:"_Zoom fit" ~accel:("<Control>0")
         ~stock:`ZOOM_FIT ~callback:(cb_on_current_term MiscMenu.zoom_fit);
     toggle_item "Show Toolbar" ~label:"Show _Toolbar"
@@ -1278,9 +1239,6 @@ let build_ui () =
   let _ = Glib.Timeout.add ~ms:300 ~callback in
 
   (* Initializing hooks *)
-  let refresh_toolbar b =
-    if b then toolbar#misc#show () else toolbar#misc#hide ()
-  in
   let refresh_style style =
     let style = style_manager#style_scheme style in
     let iter_session v = v.script#source_buffer#set_style_scheme style in
@@ -1291,11 +1249,12 @@ let build_ui () =
     let iter_session v = v.script#source_buffer#set_language lang in
     List.iter iter_session notebook#pages
   in
-  refresh_toolbar show_toolbar#get;
-  let _ = show_toolbar#connect#changed refresh_toolbar in
+  let refresh_toolbar b =
+    if b then toolbar#misc#show () else toolbar#misc#hide ()
+  in
+  stick show_toolbar toolbar refresh_toolbar;
   let _ = source_style#connect#changed refresh_style in
   let _ = source_language#connect#changed refresh_language in
-  refresh_editor_hook := refresh_editor_prefs;
 
   (* Color configuration *)
   Tags.Script.incomplete#set_property
@@ -1316,7 +1275,7 @@ let make_file_buffer f =
 let make_scratch_buffer () =
   let session = create_session None in
   let _ = notebook#append_term session in
-  !refresh_editor_hook ()
+  ()
 
 let main files =
   build_ui ();

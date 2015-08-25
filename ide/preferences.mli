@@ -91,7 +91,7 @@ val load_pref : unit -> unit
 
 val configure : ?apply:(unit -> unit) -> unit -> unit
 
-(* Hooks *)
-val refresh_editor_hook : (unit -> unit) ref
+val stick : 'a preference ->
+  (#GObj.widget as 'obj) -> ('a -> unit) -> unit
 
 val use_default_doc_url : string

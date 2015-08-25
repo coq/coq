@@ -34,7 +34,6 @@ class type message_view =
       (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer
       (** for more advanced text edition *)
-    method modify_font : Pango.font_description -> unit
   end
 
 let message_view () : message_view =
@@ -58,6 +57,8 @@ let message_view () : message_view =
   let cb clr = view#misc#modify_base [`NORMAL, `NAME clr] in
   let _ = background_color#connect#changed cb in
   let _ = view#misc#connect#realize (fun () -> cb background_color#get) in
+  let cb ft = view#misc#modify_font (Pango.Font.from_string ft) in
+  stick text_font view cb;
   object (self)
     inherit GObj.widget box#as_widget
 
@@ -86,7 +87,5 @@ let message_view () : message_view =
     method set msg = self#clear; self#add msg
 
     method buffer = text_buffer
-
-    method modify_font fd = view#misc#modify_font fd
 
   end

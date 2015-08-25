@@ -10,7 +10,6 @@ class command_window : string -> Coq.coqtop ->
   object
     method new_query : ?command:string -> ?term:string -> unit -> unit
     method pack_in : (GObj.widget -> unit) -> unit
-    method refresh_font : unit -> unit
     method show : unit
     method hide : unit
     method visible : bool

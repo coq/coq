@@ -197,6 +197,9 @@ let proof_view () =
   let cb clr = view#misc#modify_base [`NORMAL, `NAME clr] in
   let _ = background_color#connect#changed cb in
   let _ = view#misc#connect#realize (fun () -> cb background_color#get) in
+  let cb ft = view#misc#modify_font (Pango.Font.from_string ft) in
+  stick text_font view cb;
+
   object
     inherit GObj.widget view#as_widget
     val mutable goals = None

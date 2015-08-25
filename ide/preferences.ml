@@ -61,6 +61,13 @@ object (self)
   method default = default
 end
 
+let stick (pref : 'a preference) (obj : #GObj.widget as 'obj)
+  (cb : 'a -> unit) =
+  let _ = cb pref#get in
+  let p_id = pref#connect#changed (fun v -> cb v) in
+  let _ = obj#misc#connect#destroy (fun () -> pref#connect#disconnect p_id) in
+  ()
+
 (** Useful marshallers *)
 
 let mod_to_str m =
@@ -180,8 +187,6 @@ let loaded_accel_file =
   with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqide.keys"
 
 (** Hooks *)
-
-let refresh_editor_hook = ref (fun () -> ())
 
 (** New style preferences *)
 
@@ -435,11 +440,7 @@ let configure ?(apply=(fun () -> ())) () =
       box
       (fun () ->
 	 let fd =  w#font_name in
-	 text_font#set fd ;
-(*
-	 Format.printf "in config_font: current.text_font = %s@." (Pango.Font.to_string current.text_font);
-*)
-	 !refresh_editor_hook ())
+	 text_font#set fd)
       true
   in
 
@@ -504,7 +505,7 @@ let configure ?(apply=(fun () -> ())) () =
     let () = button "Insert spaces instead of tabs" spaces_instead_of_tabs in
     let () = button "Highlight current line" highlight_current_line in
     let () = button "Emacs/PG keybindings (μPG mode)" nanoPG in
-    let callback () = !refresh_editor_hook () in
+    let callback () = () in
     custom ~label box callback true
   in
 

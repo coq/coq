@@ -462,6 +462,29 @@ object (self)
     let cb clr = self#misc#modify_base [`NORMAL, `NAME clr] in
     let _ = background_color#connect#changed cb in
     let _ = self#misc#connect#realize (fun () -> cb background_color#get) in
+
+    let cb b = self#set_wrap_mode (if b then `WORD else `NONE) in
+    stick dynamic_word_wrap self cb;
+    stick show_line_number self self#set_show_line_numbers;
+    stick auto_indent self self#set_auto_indent;
+    stick highlight_current_line self self#set_highlight_current_line;
+
+    (* Hack to handle missing binding in lablgtk *)
+    let cb b =
+      let flag = if b then 0b1001011 (* SPACE, TAB, NBSP, TRAILING *) else 0 in
+      let conv = Gobject.({ name = "draw-spaces"; conv = Data.int }) in
+      Gobject.set conv self#as_widget flag
+    in
+    stick show_spaces self cb;
+
+    stick show_right_margin self self#set_show_right_margin;
+    stick spaces_instead_of_tabs self self#set_insert_spaces_instead_of_tabs;
+    stick tab_length self self#set_tab_width;
+    stick auto_complete self self#set_auto_complete;
+
+    let cb ft = self#misc#modify_font (Pango.Font.from_string ft) in
+    stick text_font self cb;
+
     ()
 
 end

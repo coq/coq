@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Util
+open Preferences
 
 type color = GDraw.color
 
@@ -122,6 +123,8 @@ object (self)
       true
     in
     let _ = eventbox#event#connect#button_press clicked_cb in
+    let cb show = if show then self#misc#show () else self#misc#hide () in
+    stick show_progress_bar self cb;
     (** Initial pixmap *)
     draw#set_pixmap pixmap
 
