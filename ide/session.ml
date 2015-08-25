@@ -8,8 +8,6 @@
 
 open Preferences
 
-let prefs = Preferences.current
-
 (** A session is a script buffer + proof + messages,
     interacting with a coqtop, and a few other elements around *)
 

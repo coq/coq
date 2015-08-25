@@ -44,8 +44,6 @@ open Session
 
 (** {2 Some static elements } *)
 
-let prefs = Preferences.current
-
 (** The arguments that will be passed to coqtop. No quoting here, since
     no /bin/sh when using create_process instead of open_process. *)
 let custom_project_files = ref []
@@ -89,7 +87,7 @@ let make_coqtop_args = function
     let get_args f = Project_file.args_from_project f
       !custom_project_files project_file_name#get
     in
-    match prefs.read_project with
+    match read_project#get with
       |Ignore_args -> "", !sup_args
       |Append_args ->
          let fname, args = get_args the_file in fname, args @ !sup_args
@@ -421,7 +419,7 @@ let editor sn =
     |Some f ->
       File.save ();
       let f = Filename.quote f in
-      let cmd = Util.subst_command_placeholder prefs.cmd_editor f in
+      let cmd = Util.subst_command_placeholder cmd_editor#get f in
       run_command ignore (fun _ -> sn.fileops#revert) cmd
 
 let editor = cb_on_current_term editor
@@ -809,10 +807,10 @@ let zoom_fit sn =
   let cols = script#right_margin_position in
   let pango_ctx = script#misc#pango_context in
   let layout = pango_ctx#create_layout in
-  let fsize = Pango.Font.get_size current.text_font in
+  let fsize = Pango.Font.get_size (Pango.Font.from_string text_font#get) in
   Pango.Layout.set_text layout (String.make cols 'X');
   let tlen = fst (Pango.Layout.get_pixel_size layout) in
-  Pango.Font.set_size current.text_font
+  Pango.Font.set_size (Pango.Font.from_string text_font#get)
     (fsize * space / tlen / Pango.scale * Pango.scale);
   save_pref ();
   !refresh_editor_hook ()
@@ -827,7 +825,7 @@ let refresh_editor_prefs () =
     if show_spaces#get then 0b1001011 (* SPACE, TAB, NBSP, TRAILING *)
     else 0
   in
-  let fd = prefs.text_font in
+  let fd = Pango.Font.from_string text_font#get in
   let iter_session sn =
     (* Editor settings *)
     sn.script#set_wrap_mode wrap_mode;
@@ -1059,14 +1057,16 @@ let build_ui () =
       ~callback:(fun _ -> notebook#next_page ());
     item "Zoom in" ~label:"_Zoom in" ~accel:("<Control>plus")
         ~stock:`ZOOM_IN ~callback:(fun _ ->
-          Pango.Font.set_size current.text_font
-            (Pango.Font.get_size current.text_font + Pango.scale);
+          let ft = Pango.Font.from_string text_font#get in
+          Pango.Font.set_size ft (Pango.Font.get_size ft + Pango.scale);
+          text_font#set (Pango.Font.to_string ft);
           save_pref ();
           !refresh_editor_hook ());
     item "Zoom out" ~label:"_Zoom out" ~accel:("<Control>minus")
         ~stock:`ZOOM_OUT ~callback:(fun _ ->
-          Pango.Font.set_size current.text_font
-            (Pango.Font.get_size current.text_font - Pango.scale);
+          let ft = Pango.Font.from_string text_font#get in
+          Pango.Font.set_size ft (Pango.Font.get_size ft - Pango.scale);
+          text_font#set (Pango.Font.to_string ft);
           save_pref ();
           !refresh_editor_hook ());
     item "Zoom fit" ~label:"_Zoom fit" ~accel:("<Control>0")
@@ -1112,7 +1112,7 @@ let build_ui () =
     item "Try Tactics" ~label:"_Try Tactics";
     item "Wizard" ~label:"<Proof Wizard>" ~stock:`DIALOG_INFO
       ~tooltip:"Proof Wizard" ~accel:(modifier_for_tactics#get^"dollar")
-      ~callback:(tactic_wizard_callback prefs.automatic_tactics);
+      ~callback:(tactic_wizard_callback automatic_tactics#get);
     tacitem "auto" "a";
     tacitem "auto with *" "asterisk";
     tacitem "eauto" "e";

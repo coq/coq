@@ -44,22 +44,22 @@ val global_auto_revert : bool preference
 val global_auto_revert_delay : int preference
 val auto_save : bool preference
 val auto_save_delay : int preference
-(* val auto_save_name : string * string preference *)
-(* val read_project : project_behavior preference *)
+val auto_save_name : (string * string) preference
+val read_project : project_behavior preference
 val project_file_name : string preference
 val project_path : string option preference
-(* val encoding : inputenc preference *)
-(* val automatic_tactics : string list preference *)
+val encoding : inputenc preference
+val automatic_tactics : string list preference
 val cmd_print : string preference
 val modifier_for_navigation : string preference
 val modifier_for_templates : string preference
 val modifier_for_tactics : string preference
 val modifier_for_display : string preference
 val modifiers_valid : string preference
-(* val cmd_browse : string preference *)
-(* val cmd_editor : string preference *)
-(* val text_font : Pango.font_description preference *)
-(* val doc_url : string preference *)
+val cmd_browse : string preference
+val cmd_editor : string preference
+val text_font : string preference
+val doc_url : string preference
 val library_url : string preference
 val show_toolbar : bool preference
 val contextual_menus_on_goal : bool preference
@@ -86,22 +86,8 @@ val tab_length : int preference
 val highlight_current_line : bool preference
 val nanoPG : bool preference
 
-type pref =
-    {
-      mutable auto_save_name : string * string;
-      mutable read_project : project_behavior;
-      mutable encoding : inputenc;
-      mutable automatic_tactics : string list;
-      mutable cmd_browse : string;
-      mutable cmd_editor : string;
-      mutable text_font : Pango.font_description;
-      mutable doc_url : string;
-    }
-
 val save_pref : unit -> unit
 val load_pref : unit -> unit
-
-val current : pref
 
 val configure : ?apply:(unit -> unit) -> unit -> unit
 

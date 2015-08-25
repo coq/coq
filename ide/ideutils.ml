@@ -74,7 +74,7 @@ let do_convert s =
   in
   let s =
     if Glib.Utf8.validate s then (Minilib.log "Input is UTF-8"; s)
-    else match current.encoding with
+    else match encoding#get with
       |Preferences.Eutf8 | Preferences.Elocale -> from_loc ()
       |Emanual enc -> try from_manual enc with _ -> from_loc ()
   in
@@ -90,7 +90,7 @@ Please choose a correct encoding in the preference panel.*)";;
 
 let try_export file_name s =
   let s =
-    try match current.encoding with
+    try match encoding#get with
       |Eutf8 -> Minilib.log "UTF-8 is enforced" ; s
       |Elocale ->
 	let is_unicode,char_set = Glib.Convert.get_charset () in
@@ -364,7 +364,7 @@ let run_command display finally cmd =
 (** Web browsing *)
 
 let browse prerr url =
-  let com = Util.subst_command_placeholder current.cmd_browse url in
+  let com = Util.subst_command_placeholder cmd_browse#get url in
   let finally = function
     | Unix.WEXITED 127 ->
       prerr
@@ -375,13 +375,13 @@ let browse prerr url =
   run_command (fun _ -> ()) finally com
 
 let doc_url () =
-  if current.doc_url = use_default_doc_url || current.doc_url = ""
+  if doc_url#get = use_default_doc_url || doc_url#get = ""
   then
     let addr = List.fold_left Filename.concat (Coq_config.docdir)
       ["html";"refman";"index.html"]
     in
     if Sys.file_exists addr then "file://"^addr else Coq_config.wwwrefman
-  else current.doc_url
+  else doc_url#get
 
 let url_for_keyword =
   let ht = Hashtbl.create 97 in

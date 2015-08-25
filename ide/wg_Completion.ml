@@ -258,7 +258,7 @@ object (self)
 
   method private refresh_style () =
     let (renderer, _) = renderer in
-    let font = Preferences.current.Preferences.text_font in
+    let font = Pango.Font.from_string Preferences.text_font#get in
     renderer#set_properties [`FONT_DESC font; `XPAD 10]
 
   method private coordinates pos =

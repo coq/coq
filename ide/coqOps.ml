@@ -130,8 +130,6 @@ end = struct
 end
 open SentenceId
 
-let prefs = Preferences.current
-
 let log msg : unit task =
   Coq.lift (fun () -> Minilib.log msg)
 

@@ -85,7 +85,7 @@ object(self)
 	~packing:(vbox#pack ~fill:true ~expand:true) () in
     let result = GText.view ~packing:r_bin#add () in
     views <- (frame#coerce, result, combo#entry) :: views;
-    result#misc#modify_font current.text_font;
+    result#misc#modify_font (Pango.Font.from_string text_font#get);
     let cb clr = result#misc#modify_base [`NORMAL, `NAME clr] in
     let _ = background_color#connect#changed cb in
     let _ = result#misc#connect#realize (fun () -> cb background_color#get) in
@@ -147,7 +147,7 @@ object(self)
     frame#visible
   
   method refresh_font () =
-    let iter (_,view,_) = view#misc#modify_font current.text_font in
+    let iter (_,view,_) = view#misc#modify_font (Pango.Font.from_string text_font#get) in
     List.iter iter views
 
   method private refresh_color clr =

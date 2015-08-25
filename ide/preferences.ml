@@ -63,57 +63,6 @@ end
 
 (** Useful marshallers *)
 
-module Repr =
-struct
-
-let string : string repr =
-object
-  method from s = [s]
-  method into = function [s] -> Some s | _ -> None
-end
-
-let bool : bool repr =
-object
-  method from s = [string_of_bool s]
-  method into = function
-  | ["true"] -> Some true
-  | ["false"] -> Some false
-  | _ -> None
-end
-
-let int : int repr =
-object
-  method from s = [string_of_int s]
-  method into = function
-  | [i] -> (try Some (int_of_string i) with _ -> None)
-  | _ -> None
-end
-
-let option (r : 'a repr) : 'a option repr =
-object
-  method from = function None -> [] | Some v -> "" :: r#from v
-  method into = function
-  | [] -> Some None
-  | "" :: s -> Some (r#into s)
-  | _ -> None
-end
-
-end
-
-let get_config_file name =
-  let find_config dir = Sys.file_exists (Filename.concat dir name) in
-  let config_dir = List.find find_config (Minilib.coqide_config_dirs ()) in
-  Filename.concat config_dir name
-
-(* Small hack to handle v8.3 to v8.4 change in configuration file *)
-let loaded_pref_file =
-  try get_config_file "coqiderc"
-  with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqiderc"
-
-let loaded_accel_file =
-  try get_config_file "coqide.keys"
-  with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqide.keys"
-
 let mod_to_str m =
   match m with
     | `MOD1 -> "<Alt>"
@@ -157,6 +106,78 @@ let inputenc_of_string s =
        else if s = "LOCALE" then Elocale
        else Emanual s)
 
+let use_default_doc_url = "(automatic)"
+
+module Repr =
+struct
+
+let string : string repr =
+object
+  method from s = [s]
+  method into = function [s] -> Some s | _ -> None
+end
+
+let string_pair : (string * string) repr =
+object
+  method from (s1, s2) = [s1; s2]
+  method into = function [s1; s2] -> Some (s1, s2) | _ -> None
+end
+
+let string_list : string list repr =
+object
+  method from s = s
+  method into s = Some s
+end
+
+let bool : bool repr =
+object
+  method from s = [string_of_bool s]
+  method into = function
+  | ["true"] -> Some true
+  | ["false"] -> Some false
+  | _ -> None
+end
+
+let int : int repr =
+object
+  method from s = [string_of_int s]
+  method into = function
+  | [i] -> (try Some (int_of_string i) with _ -> None)
+  | _ -> None
+end
+
+let option (r : 'a repr) : 'a option repr =
+object
+  method from = function None -> [] | Some v -> "" :: r#from v
+  method into = function
+  | [] -> Some None
+  | "" :: s -> Some (r#into s)
+  | _ -> None
+end
+
+let custom (from : 'a -> string) (into : string -> 'a) : 'a repr =
+object
+  method from x = try [from x] with _ -> []
+  method into = function
+  | [s] -> (try Some (into s) with _ -> None)
+  | _ -> None
+end
+
+end
+
+let get_config_file name =
+  let find_config dir = Sys.file_exists (Filename.concat dir name) in
+  let config_dir = List.find find_config (Minilib.coqide_config_dirs ()) in
+  Filename.concat config_dir name
+
+(* Small hack to handle v8.3 to v8.4 change in configuration file *)
+let loaded_pref_file =
+  try get_config_file "coqiderc"
+  with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqiderc"
+
+let loaded_accel_file =
+  try get_config_file "coqide.keys"
+  with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqide.keys"
 
 (** Hooks *)
 
@@ -197,10 +218,12 @@ let auto_save =
 let auto_save_delay =
   new preference ~name:["auto_save_delay"] ~init:10000 ~repr:Repr.(int)
 
-(* let auto_save_name =
-  new preference ~name:["auto_save_name"] ~init: ~repr:Repr.() *)
-(* let read_project =
-  new preference ~name:["read_project"] ~init: ~repr:Repr.() *)
+let auto_save_name =
+  new preference ~name:["auto_save_name"] ~init:("#","#") ~repr:Repr.(string_pair)
+
+let read_project =
+  let repr = Repr.custom string_of_project_behavior project_behavior_of_string in
+  new preference ~name:["read_project"] ~init:Append_args ~repr
 
 let project_file_name =
   new preference ~name:["project_file_name"] ~init:"_CoqProject" ~repr:Repr.(string)
@@ -208,10 +231,14 @@ let project_file_name =
 let project_path =
   new preference ~name:["project_path"] ~init:None ~repr:Repr.(option string)
 
-(* let encoding =
-  new preference ~name:["encoding"] ~init: ~repr:Repr.() *)
-(* let automatic_tactics =
-  new preference ~name:["automatic_tactics"] ~init: ~repr:Repr.() *)
+let encoding =
+  let repr = Repr.custom string_of_inputenc inputenc_of_string in
+  let init = if Sys.os_type = "Win32" then Eutf8 else Elocale in
+  new preference ~name:["encoding"] ~init ~repr
+
+let automatic_tactics =
+  let init = ["trivial"; "tauto"; "auto"; "omega"; "auto with *"; "intuition" ] in
+  new preference ~name:["automatic_tactics"] ~init ~repr:Repr.(string_list)
 
 let cmd_print =
   new preference ~name:["cmd_print"] ~init:"lpr" ~repr:Repr.(string)
@@ -231,14 +258,35 @@ let modifier_for_display =
 let modifiers_valid =
   new preference ~name:["modifiers_valid"] ~init:"<Alt><Control><Shift>" ~repr:Repr.(string)
 
-(* let cmd_browse =
-  new preference ~name:["cmd_browse"] ~init: ~repr:Repr.() *)
-(* let cmd_editor =
-  new preference ~name:["cmd_editor"] ~init: ~repr:Repr.() *)
-(* let text_font =
-  new preference ~name:["text_font"] ~init: ~repr:Repr.() *)
-(* let doc_url =
-  new preference ~name:["doc_url"] ~init: ~repr:Repr.() *)
+let cmd_browse =
+  new preference ~name:["cmd_browse"] ~init:Flags.browser_cmd_fmt ~repr:Repr.(string)
+
+let cmd_editor =
+  let init = if Sys.os_type = "Win32" then "NOTEPAD %s" else "emacs %s" in
+  new preference ~name:["cmd_editor"] ~init ~repr:Repr.(string)
+
+let text_font =
+  let init = match Coq_config.gtk_platform with
+  | `QUARTZ -> "Arial Unicode MS 11"
+  | _ -> "Monospace 10"
+  in
+  new preference ~name:["text_font"] ~init ~repr:Repr.(string)
+
+let doc_url =
+object
+  inherit [string] preference
+    ~name:["doc_url"] ~init:Coq_config.wwwrefman ~repr:Repr.(string)
+    as super
+
+  method set v =
+    if not (Flags.is_standard_doc_url v) &&
+      v <> use_default_doc_url &&
+      (* Extra hack to support links to last released doc version *)
+      v <> Coq_config.wwwcoq ^ "doc" &&
+      v <> Coq_config.wwwcoq ^ "doc/"
+    then super#set v
+
+end
 
 let library_url =
   new preference ~name:["library_url"] ~init:Coq_config.wwwstdlib ~repr:Repr.(string)
@@ -333,73 +381,15 @@ let nanoPG =
 
 (** Old style preferences *)
 
-type pref =
-    {
-
-      mutable auto_save_name : string * string;
-
-      mutable read_project : project_behavior;
-
-      mutable encoding : inputenc;
-
-      mutable automatic_tactics : string list;
-
-      mutable cmd_browse : string;
-      mutable cmd_editor : string;
-
-      mutable text_font : Pango.font_description;
-
-      mutable doc_url : string;
-
-}
-
-let use_default_doc_url = "(automatic)"
-
-let current = {
-
-    auto_save_name = "#","#";
-
-    read_project = Append_args;
-
-    encoding = if Sys.os_type = "Win32" then Eutf8 else Elocale;
-
-    automatic_tactics = ["trivial"; "tauto"; "auto"; "omega";
-			 "auto with *"; "intuition" ];
-
-    cmd_browse = Flags.browser_cmd_fmt;
-    cmd_editor = if Sys.os_type = "Win32" then "NOTEPAD %s" else "emacs %s";
-
-(*    text_font = Pango.Font.from_string "sans 12";*)
-    text_font = Pango.Font.from_string (match Coq_config.gtk_platform with
-					  |`QUARTZ -> "Arial Unicode MS 11"
-					  |_ -> "Monospace 10");
-
-    doc_url = Coq_config.wwwrefman;
-  }
-
 let save_pref () =
   if not (Sys.file_exists (Minilib.coqide_config_home ()))
   then Unix.mkdir (Minilib.coqide_config_home ()) 0o700;
   let () = try GtkData.AccelMap.save accel_file with _ -> () in
-  let p = current in
   let add = Util.String.Map.add in
   let (++) x f = f x in
   let fold key obj accu = add key (obj.get ()) accu in
  
     (Util.String.Map.fold fold !preferences Util.String.Map.empty) ++
-    add "auto_save_name" [fst p.auto_save_name; snd p.auto_save_name] ++
-
-    add "project_options" [string_of_project_behavior p.read_project] ++
-
-    add "encoding" [string_of_inputenc p.encoding] ++
-
-    add "automatic_tactics" p.automatic_tactics ++
-    add "cmd_browse" [p.cmd_browse] ++
-    add "cmd_editor" [p.cmd_editor] ++
-
-    add "text_font" [Pango.Font.to_string p.text_font] ++
-
-    add "doc_url" [p.doc_url] ++
     Config_lexer.print_file pref_file
 
 let load_pref () =
@@ -410,33 +400,7 @@ let load_pref () =
       try (Util.String.Map.find name !preferences).set v
       with _ -> ()
     in
-    let () = Util.String.Map.iter iter m in
-    let np = current in
-    let set k f = try let v = Util.String.Map.find k m in f v with _ -> () in
-    let set_hd k f = set k (fun v -> f (List.hd v)) in
-    let set_pair k f = set k (function [v1;v2] -> f v1 v2 | _ -> raise Exit) in
-    let set_command_with_pair_compat k f =
-      set k (function [v1;v2] -> f (v1^"%s"^v2) | [v] -> f v | _ -> raise Exit)
-    in
-    set_pair "auto_save_name" (fun v1 v2 -> np.auto_save_name <- (v1,v2));
-    set_hd "encoding" (fun v -> np.encoding <- (inputenc_of_string v));
-    set_hd "project_options"
-      (fun v -> np.read_project <- (project_behavior_of_string v));
-    set "automatic_tactics"
-      (fun v -> np.automatic_tactics <- v);
-    set_command_with_pair_compat "cmd_browse" (fun v -> np.cmd_browse <- v);
-    set_command_with_pair_compat "cmd_editor" (fun v -> np.cmd_editor <- v);
-    set_hd "text_font" (fun v -> np.text_font <- Pango.Font.from_string v);
-    set_hd "doc_url" (fun v ->
-      if not (Flags.is_standard_doc_url v) &&
-        v <> use_default_doc_url &&
-	(* Extra hack to support links to last released doc version *)
-        v <> Coq_config.wwwcoq ^ "doc" &&
-	v <> Coq_config.wwwcoq ^ "doc/"
-      then
-	(* ("Warning: Non-standard URL for Coq documentation in preference file: "^v);*)
-      np.doc_url <- v);
-    ()
+    Util.String.Map.iter iter m
 
 let pstring name p = string ~f:p#set name p#get
 let pbool name p = bool ~f:p#set name p#get
@@ -465,14 +429,13 @@ let configure ?(apply=(fun () -> ())) () =
       "Goal (∃n : nat, n ≤ 0)∧(∀x,y,z, x∈y⋃z↔x∈y∨x∈z).";
     box#pack ~expand:true w#coerce;
     ignore (w#misc#connect#realize
-	      ~callback:(fun () -> w#set_font_name
-			   (Pango.Font.to_string current.text_font)));
+	      ~callback:(fun () -> w#set_font_name text_font#get));
     custom
       ~label:"Fonts for text"
       box
       (fun () ->
 	 let fd =  w#font_name in
-	 current.text_font <- (Pango.Font.from_string fd) ;
+	 text_font#set fd ;
 (*
 	 Format.printf "in config_font: current.text_font = %s@." (Pango.Font.to_string current.text_font);
 *)
@@ -601,13 +564,13 @@ let configure ?(apply=(fun () -> ())) () =
   let encodings =
     combo
       "File charset encoding "
-      ~f:(fun s -> current.encoding <- (inputenc_of_string s))
+      ~f:(fun s -> encoding#set (inputenc_of_string s))
       ~new_allowed: true
-      ("UTF-8"::"LOCALE":: match current.encoding with
+      ("UTF-8"::"LOCALE":: match encoding#get with
 	|Emanual s -> [s]
 	|_ -> []
       )
-      (string_of_inputenc current.encoding)
+      (string_of_inputenc encoding#get)
   in
 
   let source_style =
@@ -628,12 +591,12 @@ let configure ?(apply=(fun () -> ())) () =
   let read_project =
     combo
       "Project file options are"
-      ~f:(fun s -> current.read_project <- project_behavior_of_string s)
+      ~f:(fun s -> read_project#set (project_behavior_of_string s))
       ~editable:false
       [string_of_project_behavior Subst_args;
        string_of_project_behavior Append_args;
        string_of_project_behavior Ignore_args]
-      (string_of_project_behavior current.read_project)
+      (string_of_project_behavior read_project#get)
   in
   let project_file_name = pstring "Default name for project file" project_file_name in
   let modifier_for_tactics =
@@ -656,11 +619,11 @@ let configure ?(apply=(fun () -> ())) () =
     combo
       ~help:"(%s for file name)"
       "External editor"
-      ~f:(fun s -> current.cmd_editor <- s)
+      ~f:cmd_editor#set
       ~new_allowed: true
-      (predefined@[if List.mem current.cmd_editor predefined then ""
-                   else current.cmd_editor])
-      current.cmd_editor
+      (predefined@[if List.mem cmd_editor#get predefined then ""
+                   else cmd_editor#get])
+      cmd_editor#get
   in
   let cmd_browse =
     let predefined = [
@@ -673,11 +636,11 @@ let configure ?(apply=(fun () -> ())) () =
     combo
       ~help:"(%s for url)"
       "Browser"
-      ~f:(fun s -> current.cmd_browse <- s)
+      ~f:cmd_browse#set
       ~new_allowed: true
-      (predefined@[if List.mem current.cmd_browse predefined then ""
-                   else current.cmd_browse])
-      current.cmd_browse
+      (predefined@[if List.mem cmd_browse#get predefined then ""
+                   else cmd_browse#get])
+      cmd_browse#get
   in
   let doc_url =
     let predefined = [
@@ -687,11 +650,11 @@ let configure ?(apply=(fun () -> ())) () =
     ] in
     combo
       "Manual URL"
-      ~f:(fun s -> current.doc_url <- s)
+      ~f:doc_url#set
       ~new_allowed: true
-      (predefined@[if List.mem current.doc_url predefined then ""
-                   else current.doc_url])
-      current.doc_url in
+      (predefined@[if List.mem doc_url#get predefined then ""
+                   else doc_url#get])
+      doc_url#get in
   let library_url =
     let predefined = [
       "file://"^(List.fold_left Filename.concat (Coq_config.docdir) ["html";"stdlib";""]);
@@ -707,10 +670,10 @@ let configure ?(apply=(fun () -> ())) () =
   in
   let automatic_tactics =
     strings
-      ~f:(fun l -> current.automatic_tactics <- l)
+      ~f:automatic_tactics#set
       ~add:(fun () -> ["<edit me>"])
       "Wizard tactics to try in order"
-      current.automatic_tactics
+      automatic_tactics#get
 
   in
 
