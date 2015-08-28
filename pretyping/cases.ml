@@ -1466,6 +1466,14 @@ and compile_alias initial pb (na,orig,(expanded,expanded_typ)) rest =
     compile pb
   in
   let sigma = !(pb.evdref) in
+  (* If the "match" was orginally over a variable, as in "match x with
+     O => true | n => n end", we give preference to non-expansion in
+     the default clause (i.e. "match x with O => true | n => n end"
+     rather than "match x with O => true | S p => S p end";
+     computationally, this avoids reallocating constructors in cbv
+     evaluation; the drawback is that it might duplicate the instances
+     of the term to match when the corresponding variable is
+     substituted by a non-evaluated expression *)
   if not (Flags.is_program_mode ()) && (isRel orig || isVar orig) then
     (* Try to compile first using non expanded alias *)
     try
@@ -1473,6 +1481,7 @@ and compile_alias initial pb (na,orig,(expanded,expanded_typ)) rest =
       else just_pop ()
     with e when precatchable_exception e ->
     (* Try then to compile using expanded alias *)
+    (* Could be needed in case of dependent return clause *)
     pb.evdref := sigma;
     f expanded expanded_typ
   else
@@ -1480,6 +1489,8 @@ and compile_alias initial pb (na,orig,(expanded,expanded_typ)) rest =
     try f expanded expanded_typ
     with e when precatchable_exception e ->
     (* Try then to compile using non expanded alias *)
+    (* Could be needed in case of a recursive call which requires to
+       be on a variable for size reasons *)
     pb.evdref := sigma;
     if initial then f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
     else just_pop ()
