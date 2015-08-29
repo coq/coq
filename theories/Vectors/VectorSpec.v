@@ -22,6 +22,16 @@ Definition cons_inj {A} {a1 a2} {n} {v1 v2 : t A n}
    with | eq_refl => conj eq_refl eq_refl
    end.
 
+Lemma eta {A} {n} (v : t A (S n)) : v = hd v :: tl v.
+Proof.
+  change
+    (match S n with
+    | 0 => fun v : t A 0 => v = v
+    | S n => fun v => v = hd v :: tl v
+    end v).
+  destruct v; reflexivity.
+Defined.
+
 (** Lemmas are done for functions that use [Fin.t] but thanks to [Peano_dec.le_unique], all
 is true for the one that use [lt] *)
 
