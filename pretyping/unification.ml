@@ -1530,6 +1530,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     | None, Some _ -> c2
     | None, None -> None in
   { match_fun = matching_fun; merge_fun = merge_fun;
+    get_evars = (function None -> sigma | Some (evd,_,_) -> evd);
     testing_state = None; last_found = None },
   (fun test -> match test.testing_state with
   | None -> None
@@ -1545,8 +1546,8 @@ let make_eq_test env evd c =
   (make_eq_univs_test env evd c, out)
 
 let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
+  let t = match ty with Some t -> t | None -> get_type_of env sigma c in
   let id =
-    let t = match ty with Some t -> t | None -> get_type_of env sigma c in
     let x = id_of_name_using_hdchar (Global.env()) t name in
     let ids = ids_of_named_context (named_context env) in
     if name == Anonymous then next_ident_away_in_goal x ids else
@@ -1554,8 +1555,8 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
       errorlabstrm "Unification.make_abstraction_core"
         (str "The variable " ++ Nameops.pr_id x ++ str " is already declared.")
     else
-      x
-  in
+      x in
+  let env' = push_named (id, Some c, t) env in
   let likefirst = clause_with_generic_occurrences occs in
   let mkvarid () = mkVar id in
   let compute_dependency _ (hyp,_,_ as d) (sign,depdecls) =
@@ -1571,7 +1572,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
           (push_named_context_val d sign,depdecls)
     | AllOccurrences, InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
-        let newdecl = replace_term_occ_decl_modulo occ test mkvarid d in
+        let newdecl = replace_term_occ_decl_modulo occ test mkvarid env' d in
         if Context.eq_named_declaration d newdecl
            && not (indirectly_dependent c d depdecls)
         then
@@ -1582,7 +1583,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
           (push_named_context_val newdecl sign, newdecl :: depdecls)
     | occ ->
         (* There are specific occurrences, hence not like first *)
-        let newdecl = replace_term_occ_decl_modulo (AtOccs occ) test mkvarid d in
+        let newdecl = replace_term_occ_decl_modulo (AtOccs occ) test mkvarid env' d in
         (push_named_context_val newdecl sign, newdecl :: depdecls) in
   try
     let sign,depdecls =
@@ -1592,7 +1593,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
       | NoOccurrences -> concl
       | occ ->
           let occ = if likefirst then LikeFirst else AtOccs occ in
-          replace_term_occ_modulo occ test mkvarid concl
+          replace_term_occ_modulo occ test mkvarid env' concl
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (pi1(List.last depdecls)) in
