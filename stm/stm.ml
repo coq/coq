@@ -1773,7 +1773,7 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), cache, true
       | `Cmd { cast = x; cqueue = `QueryQueue cancel }
         when Flags.async_proofs_is_master () -> (fun () ->
-            reach ~cache:`Shallow view.next;
+            reach view.next;
             Query.vernac_interp cancel view.next id x
           ), cache, false
       | `Cmd { cast = x } -> (fun () ->
@@ -1935,7 +1935,7 @@ let finish ?(print_goals=false) () =
   VCS.print ();
   (* Some commands may by side effect change the proof mode *)
   match VCS.get_branch head with
-  | { VCS.kind = `Edit (mode, _,_,_,_) } -> Proof_global.activate_proof_mode mode
+  | { VCS.kind = `Edit (mode,_,_,_,_) } -> Proof_global.activate_proof_mode mode
   | { VCS.kind = `Proof (mode, _) } -> Proof_global.activate_proof_mode mode
   | _ -> ()
 
