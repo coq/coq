@@ -71,6 +71,17 @@ let make_bullet s =
   | '*' -> Star n
   | _ -> assert false
 
+(* Hack to parse "[ id" without dropping [ *)
+let test_bracket_ident =
+  Gram.Entry.of_parser "test_bracket_ident"
+    (fun strm ->
+      match get_tok (stream_nth 0 strm) with
+        | KEYWORD "[" ->
+            (match get_tok (stream_nth 1 strm) with
+              | IDENT _ -> ()
+	      | _ -> raise Stream.Failure)
+	| _ -> raise Stream.Failure)
+
 let default_command_entry =
   Gram.Entry.of_parser "command_entry"
     (fun strm -> Gram.parse_tokens_after_filter (get_command_entry ()) strm)
@@ -129,7 +140,7 @@ GEXTEND Gram
 
   selector:
     [ [ n=natural; ":" -> SelectNth n
-      | "["; id = ident; "]"; ":" -> SelectId id
+      | test_bracket_ident; "["; id = ident; "]"; ":" -> SelectId id
       | IDENT "all" ; ":" -> SelectAll
       | IDENT "par" ; ":" -> SelectAllParallel ] ]
   ;
