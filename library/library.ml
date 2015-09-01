@@ -379,7 +379,7 @@ let access_table what tables dp i =
     | Fetched t -> t
     | ToFetch f ->
       let dir_path = Names.DirPath.to_string dp in
-      msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
+      Flags.if_verbose msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
       let t =
         try fetch_delayed f
         with Faulty f ->
