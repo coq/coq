@@ -319,7 +319,7 @@ let subst_patch s (ri,pos) =
       let ci = {a.ci with ci_ind = (subst_mind s kn,i)} in
       (Reloc_annot {a with ci = ci},pos)
   | Reloc_const sc -> (Reloc_const (subst_strcst s sc), pos)
-  | Reloc_getglobal kn -> (Reloc_getglobal kn (*subst_pcon s kn*), pos)
+  | Reloc_getglobal kn -> (Reloc_getglobal (subst_constant s kn), pos)
 
 let subst_to_patch s (code,pl,fv) =
   code,List.rev_map (subst_patch s) pl,fv

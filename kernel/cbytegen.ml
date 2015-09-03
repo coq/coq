@@ -549,6 +549,7 @@ let rec get_alias env kn =
 
 (* Compiling expressions *)
 
+(* sz is the size of the local stack? *)
 let rec compile_constr reloc c sz cont =
   match kind_of_term c with
   | Meta _ -> invalid_arg "Cbytegen.compile_constr : Meta"
@@ -565,9 +566,17 @@ let rec compile_constr reloc c sz cont =
   | Rel i -> pos_rel i reloc sz :: cont
   | Var id -> pos_named id reloc :: cont
   | Const (kn,u) -> compile_const reloc kn u [||] sz cont
-  | Sort _  | Ind _ | Construct _ ->
+  | Sort (Prop _) | Ind _ | Construct _ ->
       compile_str_cst reloc (str_const c) sz cont
-
+  | Sort (Type u) ->
+    begin
+      if Univ.LSet.exists (fun x -> Univ.Level.var_index x <> None)
+	(Univ.Universe.levels u)
+      then
+	assert false (* TODO: compile universe variable in an expression *)
+      else
+	compile_str_cst reloc (str_const c) sz cont
+    end
   | LetIn(_,xb,_,body) ->
       compile_constr reloc xb sz
 	(Kpush ::
@@ -676,7 +685,11 @@ let rec compile_constr reloc c sz cont =
       let lbl_sw = Label.create () in
       let sz_b,branch,is_tailcall =
 	match branch1 with
-	| Kreturn k -> assert (Int.equal k sz); sz, branch1, true
+	| Kreturn k ->
+	  Printf.fprintf stderr "assert %d = %d <<<<<<<<<<<<<<<<<\n" k sz ;
+	  flush stderr ;
+	  assert (Int.equal k sz) ;
+	  sz, branch1, true
 	| _ -> sz+3, Kjump, false
       in
       let annot = {ci = ci; rtbl = tbl; tailcall = is_tailcall} in
@@ -782,18 +795,22 @@ and compile_const =
 let compile_inst inst u_offset cont =
   (** TODO: If we are making a copy then we can skip this
    ** - In order to check this, we need to know the length of the instance
+   ** TODO: Don't box single universes
    **)
   if Univ.Instance.is_empty inst then
-    Kconst (Const_b0 univ_instance_tag) :: Kpush :: cont
+    Kconst (Const_b0 univ_instance_tag) :: cont
   else
     let ainst = Univ.Instance.to_array inst in
     let inst_size = Univ.Instance.length inst in
     let relative_offset = u_offset + inst_size - 1 in
     Array.fold_left_i
       (fun i cont lvl ->
+	let rest =
+	  if i = 0 then cont else Kpush :: cont
+	in
 	match Univ.Level.var_index lvl with
-	| None -> Kconst (Const_univ_level lvl) :: Kpush :: cont
-	| Some v -> Kacc (relative_offset - i) :: Kfield v :: Kpush :: cont)
+	| None -> Kconst (Const_univ_level lvl) :: rest
+	| Some v -> Kacc (relative_offset - i) :: Kfield v :: rest)
       (Kmakeblock (inst_size, univ_instance_tag) :: cont) ainst
 
 (** The annoying piece of this function is that the order is less-than-ideal. **)
@@ -803,8 +820,8 @@ let rec compile_poly_inst reloc fvs sz cont =
   | FVpoly_inst (kn,u) :: fvs ->
     (* TODO: generate some code using idu *)
     compile_inst u sz
-      (compile_poly_inst reloc fvs (sz+1)
-	 (Kpush :: Kgetglobal kn :: Kapply 1 :: Kpush :: cont))
+      (Kpush :: Kgetglobal kn :: Kapply 1 :: Kpush ::
+	 compile_poly_inst reloc fvs (sz+1) cont)
   | fv_elem :: fvs ->
     compile_fv_elem reloc fv_elem sz
       (Kpush :: compile_poly_inst reloc fvs (sz+1) cont)
@@ -814,11 +831,14 @@ let compile_term fail_on_error env c cont =
   init_fun_code ();
   Label.reset_label_counter ();
   let reloc = comp_env_fun 1 in
+  (** TODO: Optimize code generation in the case where there are no
+   ** polymorphic instantiations
+   **)
   try
     (* 1 is the number of parameters, in this case, this is the "fake"
      * substitution
      *)
-    let init_code = compile_constr reloc c 0 [Kreturn 1] in
+    let init_code = compile_constr reloc c 1 [Kreturn 1] in
     (** Here I need to instantiate all of the polymorphic constants in
      ** [fv] and wrap [init_code] with
      **     polymorphic_instantiations ; init_code
@@ -826,6 +846,7 @@ let compile_term fail_on_error env c cont =
      ** environment, not on the stack. So I need to build a closure and invoke
      ** it.
      **)
+    let _ = Pp.(msg_debug (str "init code =" ++ fnl () ++ pp_bytecodes init_code ++ fnl ())) in
     let reloc_final = empty_comp_env () in
     let subst_lbl = Label.create () in
     let body_code =
@@ -835,7 +856,7 @@ let compile_term fail_on_error env c cont =
 	  else []) @
 	    (Kclosure (subst_lbl, !(reloc.in_env).size) :: Kpush ::
 	       Kconst (Const_b0 univ_instance_tag) :: Kpush ::
-	       Kacc 1 :: Kapply 1 :: Kpop 2 ::
+	       Kacc 1 :: Kapply 1 :: Kpop 1 :: (* ? *)
 	       [Ksequence (cont,
 			   Klabel subst_lbl :: init_code)]))
     in
@@ -874,7 +895,7 @@ let compile_constant_body fail_on_error env = function
 	    let con= constant_of_kn (canonical_con kn') in
 	      Some (BCalias (get_alias env con))
 	| _ ->
-	  let res = compile_term fail_on_error env body [Kreturn 0] in
+	  let res = compile_term fail_on_error env body [Kreturn 1] in
 	  let wrap (body_code, fvs) =
 	    let body_label = Label.create () in
 	    let wrapped_body_code =

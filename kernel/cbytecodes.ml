@@ -37,6 +37,17 @@ type structured_constant =
   | Const_bn of tag * structured_constant array
   | Const_univ_level of Univ.universe_level
 
+let pr_structured_constant sc =
+  Pp.(
+  match sc with
+  | Const_sorts _ -> str "Const_sorts"
+  | Const_ind _ -> str "Const_ind"
+  | Const_proj _ -> str "Const_proj"
+  | Const_b0 i -> str "Const_b0(" ++ int i ++ str ")"
+  | Const_bn (i,x) -> str "Const_bn(" ++ int i ++ str ";" ++ str ")"
+  | Const_univ_level u -> str "Const_univ_level(" ++ Univ.Level.pr u ++ str ")"
+  )
+
 type reloc_table = (tag * int) array
 
 type annot_switch =

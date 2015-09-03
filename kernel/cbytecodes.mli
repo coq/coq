@@ -31,6 +31,8 @@ type structured_constant =
   | Const_bn of tag * structured_constant array
   | Const_univ_level of Univ.universe_level
 
+val pr_structured_constant : structured_constant -> Pp.std_ppcmds
+
 type reloc_table = (tag * int) array
 
 type annot_switch =
@@ -66,7 +68,9 @@ type instruction =
                    (** nb fv, init, lbl types, lbl bodies *)
   | Kgetglobal of constant
   | Kconst of structured_constant
-  | Kmakeblock of (* size: *) int * tag (** allocate an ocaml block *)
+  | Kmakeblock of (* size: *) int * tag (** allocate an ocaml block. Index 0
+                                         ** is accu, all others are popped from
+					 ** the top of the stack  *)
   | Kmakeprod
   | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
   | Kswitch of Label.t array * Label.t array (** consts,blocks *)

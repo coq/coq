@@ -210,7 +210,10 @@ and eval_to_patch env (buff,pl,fv) =
   let buff = Cemitcodes.copy buff in
   let patch = function
     | Reloc_annot a, pos -> patch_int buff pos (slot_for_annot a)
-    | Reloc_const sc, pos -> patch_int buff pos (slot_for_str_cst sc)
+    | Reloc_const sc, pos ->
+      Pp.(msg_debug (str "patching " ++ Cbytecodes.pr_structured_constant sc ++
+		       str " " ++ int (slot_for_str_cst sc))) ;
+      patch_int buff pos (slot_for_str_cst sc)
     | Reloc_getglobal kn, pos ->
 (*      Pp.msgnl (str"patching global: "++str(debug_string_of_con kn));*)
 	patch_int buff pos (slot_for_getglobal env kn);

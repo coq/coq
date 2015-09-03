@@ -230,8 +230,9 @@ let whd_val : values -> whd =
 	   | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
 	   | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
 	   | _ -> Errors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work"))
-	else 
-          Vconstr_block(Obj.obj o)
+	else
+	  (Printf.fprintf stderr "parse tag = %d \n" tag ;
+           Vconstr_block(Obj.obj o))
          
 (************************************************)
 (* Abstrct machine ******************************)

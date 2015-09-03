@@ -93,35 +93,6 @@ let construct_of_constr_const env tag typ =
 
 let construct_of_constr_block = construct_of_constr false
 
-let rec string_of_value (v : Term.values) : string =
-  match whd_val v with
-  | Vconstr_block blk ->
-    "Vconstr_block[" ^ string_of_int (btag blk) ^ ", " ^
-                       string_of_int (bsize blk) ^ ", ...]"
-  | Vsort _ -> "Vsort"
-  | Vprod _ -> "Vprod"
-  | Vfun _ -> "Vfun"
-  | Vfix _ -> "Vfix"
-  | Vcofix _ -> "Vcofix"
-  | Vconstr_const i -> "Vconstr_const(" ^ string_of_int i ^ ")"
-  | Vatom_stk (a,s) -> "Vatom_stk(" ^ string_of_atom a ^ ", " ^ string_of_stack s ^ ")"
-  | Vuniv_level _ -> "Vuniv_level"
-and string_of_atom a =
-  match a with
-  | Aid _ -> "Aid"
-  | Aiddef _ -> "Aiddef"
-  | Aind _ -> "Aind"
-and string_of_zipper z =
-  match z with
-  | Zapp _ -> "Zapp"
-  | Zfix _ -> "Zfix"
-  | Zswitch _ -> "Zswitch"
-  | Zproj _ -> "Zproj"
-and string_of_stack s =
-  match s with
-  | [] -> "-"
-  | z :: zs -> string_of_zipper z ^ " ; " ^ string_of_stack zs
-
 let parse_universe_instance (ui : Term.values) : Univ.Instance.t =
   match whd_val ui with
   | Vconstr_block blk ->
@@ -131,10 +102,22 @@ let parse_universe_instance (ui : Term.values) : Univ.Instance.t =
     let inst = Univ.Instance.of_array
       (Array.init (bsize blk)
 	 (fun i ->
-	   Pp.(msg_debug (str "repr = " ++ int (Obj.magic (bfield blk i)))) ;
-	   Obj.magic (bfield blk i)))
+	   Printf.fprintf stderr "i = %d\n" i ;
+	   match Obj.magic (bfield blk i) with
+	   | Vuniv_level lvl ->
+	     Pp.(msg_debug (str "lvl = " ++ Univ.Level.pr lvl)) ;
+	     lvl
+	   | Vsort s -> assert false
+	   | Vprod s -> assert false
+	   | Vfun _ -> assert false
+	   | Vfix _ -> assert false
+	   | Vcofix _ -> assert false
+	   | Vconstr_const _ -> assert false
+	   | Vconstr_block _ -> assert false
+	   | Vatom_stk _ -> assert false))
     in
-    Pp.(msg_debug (str "parsed universe levels = " ++ Univ.Instance.pr Univ.Level.pr inst)) ;
+    Pp.(msg_debug (str "parsed universe levels = " ++
+		     Univ.Instance.pr Univ.Level.pr inst)) ;
     inst
   | _ ->
     Printf.fprintf stderr "not a block\n" ;
@@ -226,17 +209,11 @@ and constr_type_of_idkey env (idkey : Vars.id_key) stk cont =
     if Environ.polymorphic_constant cst env then
       match stk with
       | Zapp vargs :: stk' when Vm.nargs vargs = 1 ->
-	Printf.fprintf stderr "nargs = 1\n" ;
 	let ui = parse_universe_instance (Vm.arg vargs 0) in
 	let ucst = (cst, ui) in
 	let const_type = Typeops.type_of_constant_in env ucst in
 	cont env (mkConstU ucst) const_type stk'
       | Zapp vargs :: stk' when Vm.nargs vargs > 1 ->
-	Printf.fprintf stderr "nargs = %d\n" (Vm.nargs vargs) ;
-	for i = 0 to (Vm.nargs vargs - 1)
-	do
-	  Printf.fprintf stderr "%s\n" (string_of_value (Vm.arg vargs i))
-	done ;
 	let ui = parse_universe_instance (Vm.arg vargs 0) in
 	let ucst = (cst, ui) in
 	let const_type = Typeops.type_of_constant_in env ucst in
@@ -400,8 +377,6 @@ let cbv_vm env c t  =
   let transp = transp_values () in
   if not transp then set_transp_values true;
   let v = Vconv.val_of_constr env c in
-  let () = Pp.(msg_debug (str "result = " ++
-			  str "link cycle" (* Vm_printers.ppvalues v*))) in
   let c = nf_val env v t in
   if not transp then set_transp_values false;
   c
