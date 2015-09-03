@@ -2,11 +2,6 @@ Axioms:
 foo : nat
 Axioms:
 foo : nat
-Fetching opaque proofs from disk for Coq.Numbers.NatInt.NZAdd
-Fetching opaque proofs from disk for Coq.Arith.PeanoNat
-Fetching opaque proofs from disk for Coq.Classes.Morphisms
-Fetching opaque proofs from disk for Coq.Init.Logic
-Fetching opaque proofs from disk for Coq.Numbers.NatInt.NZBase
 Axioms:
 extensionality : forall (P Q : Type) (f g : P -> Q),
                  (forall x : P, f x = g x) -> f = g
