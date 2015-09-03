@@ -207,7 +207,8 @@ let rec pp_instr i =
 	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
 	     str " bodies = " ++
 	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
-  | Kgetglobal (id,_u) -> str "getglobal " ++ pr_con id
+  | Kgetglobal (id,u) ->
+    str "getglobal " ++ pr_con id ++ str "@{" ++ Univ.Instance.pr Univ.Level.pr u ++ str "}"
   | Kconst sc ->
       str "const " ++ pp_struct_const sc
   | Kmakeblock(n, m) ->
