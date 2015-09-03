@@ -104,7 +104,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
 	    conv_stack env k stk1 stk2 cu
 	  else raise NotConvertible
 	with NotConvertible ->
-	  if oracle_order Univ.out_punivs (oracle_of_infos !infos) 
+	  if oracle_order (fun x -> x) (oracle_of_infos !infos) 
 	    false ik1 ik2 then
             conv_whd env pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
           else conv_whd env pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu

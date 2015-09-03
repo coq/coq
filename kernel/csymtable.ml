@@ -151,14 +151,14 @@ let slot_for_annot key =
     AnnotTable.add annot_tbl key n;
     n
 
-let rec slot_for_getglobal env (kn,u) =
+let rec slot_for_getglobal env kn =
   let (cb,(_,rk)) = lookup_constant_key kn env in
   try key rk
   with NotEvaluated ->
 (*    Pp.msgnl(str"not yet evaluated");*)
     let pos =
       match cb.const_body_code with
-      | None -> set_global (val_of_constant (kn,u))
+      | None -> set_global (val_of_constant kn)
       | Some code ->
 	 match Cemitcodes.force code with
 	 | BCdefined(code,pl,fv) ->
@@ -166,8 +166,8 @@ let rec slot_for_getglobal env (kn,u) =
 	      let v = eval_to_patch env (code,pl,fv) in
 	      set_global v
 (*	    else set_global (val_of_constant (kn,u)) *)
-	 | BCallias kn' -> slot_for_getglobal env kn'
-	 | BCconstant -> set_global (val_of_constant (kn,u)) in
+	 | BCalias kn' -> slot_for_getglobal env kn'
+	 | BCconstant -> set_global (val_of_constant kn) in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (Ephemeron.create pos);
     pos

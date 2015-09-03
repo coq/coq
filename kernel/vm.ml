@@ -224,7 +224,7 @@ let whd_val : values -> whd =
 	  else (Vprod(Obj.obj o)))
       else
 	if tag = Obj.closure_tag || tag = Obj.infix_tag then
-	  (	   match kind_of_closure o with
+	  (match kind_of_closure o with
 	   | 0 -> Vfun(Obj.obj o)
 	   | 1 -> Vfix(Obj.obj o, None)
 	   | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
@@ -314,11 +314,11 @@ let val_of_atom a = val_of_obj (obj_of_atom a)
 
 module IdKeyHash =
 struct
-  type t = pconstant tableKey
-  let equal = Names.eq_table_key (Univ.eq_puniverses Constant.equal)
+  type t = constant tableKey
+  let equal = Names.eq_table_key Constant.equal
   open Hashset.Combine
   let hash = function
-  | ConstKey (c,u) -> combinesmall 1 (Constant.hash c)
+  | ConstKey c -> combinesmall 1 (Constant.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
   | RelKey i -> combinesmall 3 (Int.hash i)
 end
@@ -651,7 +651,8 @@ let eta_whd k whd =
       push_val v;
       interprete (fun_code to_up) (Obj.magic to_up) (Obj.magic to_up) 0
   | Vatom_stk(a,stk) ->
-      eta_stack (val_of_atom a) stk v 
+      eta_stack (val_of_atom a) stk v
+  | Vuniv_level lvl -> assert false
 
 
       

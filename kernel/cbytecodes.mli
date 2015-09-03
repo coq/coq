@@ -64,7 +64,7 @@ type instruction =
                    (** nb fv, init, lbl types, lbl bodies *)
   | Kclosurecofix of int * int * Label.t array * Label.t array
                    (** nb fv, init, lbl types, lbl bodies *)
-  | Kgetglobal of pconstant             (** accu = coq_global_data[c] *)
+  | Kgetglobal of constant
   | Kconst of structured_constant
   | Kmakeblock of (* size: *) int * tag (** allocate an ocaml block *)
   | Kmakeprod

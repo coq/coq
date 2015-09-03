@@ -13,7 +13,7 @@ val compile_constant_body : bool ->
 
 (** Shortcut of the previous function used during module strengthening *)
 
-val compile_alias : pconstant -> body_code
+val compile_alias : Names.constant -> body_code
 
 (** spiwack: this function contains the information needed to perform
             the static compilation of int31 (trying and obtaining

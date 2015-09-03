@@ -56,7 +56,7 @@ type whd =
 val val_of_str_const : structured_constant -> values
 val val_of_rel : int -> values
 val val_of_named : Id.t -> values
-val val_of_constant : pconstant -> values
+val val_of_constant : constant -> values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 

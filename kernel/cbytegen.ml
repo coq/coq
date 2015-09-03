@@ -536,16 +536,16 @@ let rec compile_fv reloc l sz cont =
 
 (* Compiling constants *)
 
-let rec get_alias env (kn,u as p) =
+let rec get_alias env kn =
   let cb = lookup_constant kn env in
   let tps = cb.const_body_code in
     match tps with
-    | None -> p
+    | None -> kn
     | Some tps ->
        (match Cemitcodes.force tps with
-	| BCallias (kn',u') ->
-	  get_allias env (kn', Univ.subst_instance_instance u u')
-	| _ -> p)
+	| BCalias kn' ->
+	  get_alias env kn' (* , Univ.subst_instance_instance u u') *)
+	| _ -> kn)
 
 (* Compiling expressions *)
 
@@ -758,14 +758,9 @@ and compile_str_cst reloc sc sz cont =
 
 (* spiwack : compilation of constants with their arguments.
    Makes a special treatment with 31-bit integer addition *)
-and compile_get_global reloc knu cont =
-  let (kn,u) = get_allias !global_env knu in
-(*
-  if Univ.Instance.is_empty u then
-    Kgetglobal (kn,u) :: cont
-  else
-*)
-    pos_poly_inst (kn,u) reloc :: cont
+and compile_get_global reloc (kn,u) cont =
+  let kn = get_alias !global_env kn in
+  pos_poly_inst (kn,u) reloc :: cont
 
 and compile_const =
   fun reloc-> fun  kn u -> fun args -> fun sz -> fun cont ->
@@ -809,7 +804,7 @@ let rec compile_poly_inst reloc fvs sz cont =
     (* TODO: generate some code using idu *)
     compile_inst u sz
       (compile_poly_inst reloc fvs (sz+1)
-	 (Kgetglobal (kn,u) :: Kapply 1 :: Kpush :: cont))
+	 (Kpush :: Kgetglobal kn :: Kapply 1 :: Kpush :: cont))
   | fv_elem :: fvs ->
     compile_fv_elem reloc fv_elem sz
       (Kpush :: compile_poly_inst reloc fvs (sz+1) cont)
@@ -824,7 +819,7 @@ let compile_term fail_on_error env c cont =
      * substitution
      *)
     let init_code = compile_constr reloc c 0 [Kreturn 1] in
-    (** TODO: Here I need to instantiate all of the polymorphic constants in
+    (** Here I need to instantiate all of the polymorphic constants in
      ** [fv] and wrap [init_code] with
      **     polymorphic_instantiations ; init_code
      ** The problem is that init_code references these constants using the
@@ -877,7 +872,7 @@ let compile_constant_body fail_on_error env = function
 	| Const (kn',u) ->
 	    (* we use the canonical name of the constant*)
 	    let con= constant_of_kn (canonical_con kn') in
-	      Some (BCalias (get_alias env (con,u)))
+	      Some (BCalias (get_alias env con))
 	| _ ->
 	  let res = compile_term fail_on_error env body [Kreturn 0] in
 	  let wrap (body_code, fvs) =
@@ -896,7 +891,7 @@ let compile_constant_body fail_on_error env = function
 
 (* Shortcut of the previous function used during module strengthening *)
 
-let compile_alias (kn,u) = BCalias (constant_of_kn (canonical_con kn), u)
+let compile_alias kn = BCalias (constant_of_kn (canonical_con kn))
 
 (* spiwack: additional function which allow different part of compilation of the
       31-bit integers *)

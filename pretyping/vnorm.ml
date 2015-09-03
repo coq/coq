@@ -93,18 +93,52 @@ let construct_of_constr_const env tag typ =
 
 let construct_of_constr_block = construct_of_constr false
 
-let constr_type_of_idkey env idkey =
-  match idkey with
-  | ConstKey cst ->
-    let const_type = Typeops.type_of_constant_in env cst in
-      mkConstU cst, const_type
-  | VarKey id ->
-      let (_,_,ty) = lookup_named id env in
-      mkVar id, ty
-  | RelKey i ->
-      let n = (nb_rel env - i) in
-      let (_,_,ty) = lookup_rel n env in
-      mkRel n, lift n ty
+let rec string_of_value (v : Term.values) : string =
+  match whd_val v with
+  | Vconstr_block blk ->
+    "Vconstr_block[" ^ string_of_int (btag blk) ^ ", " ^
+                       string_of_int (bsize blk) ^ ", ...]"
+  | Vsort _ -> "Vsort"
+  | Vprod _ -> "Vprod"
+  | Vfun _ -> "Vfun"
+  | Vfix _ -> "Vfix"
+  | Vcofix _ -> "Vcofix"
+  | Vconstr_const i -> "Vconstr_const(" ^ string_of_int i ^ ")"
+  | Vatom_stk (a,s) -> "Vatom_stk(" ^ string_of_atom a ^ ", " ^ string_of_stack s ^ ")"
+  | Vuniv_level _ -> "Vuniv_level"
+and string_of_atom a =
+  match a with
+  | Aid _ -> "Aid"
+  | Aiddef _ -> "Aiddef"
+  | Aind _ -> "Aind"
+and string_of_zipper z =
+  match z with
+  | Zapp _ -> "Zapp"
+  | Zfix _ -> "Zfix"
+  | Zswitch _ -> "Zswitch"
+  | Zproj _ -> "Zproj"
+and string_of_stack s =
+  match s with
+  | [] -> "-"
+  | z :: zs -> string_of_zipper z ^ " ; " ^ string_of_stack zs
+
+let parse_universe_instance (ui : Term.values) : Univ.Instance.t =
+  match whd_val ui with
+  | Vconstr_block blk ->
+    Printf.fprintf stderr "tag = %d ; size = %d\n" (btag blk) (bsize blk) ;
+    assert (btag blk = Cbytecodes.univ_instance_tag) ;
+    (* parse this as a universe *)
+    let inst = Univ.Instance.of_array
+      (Array.init (bsize blk)
+	 (fun i ->
+	   Pp.(msg_debug (str "repr = " ++ int (Obj.magic (bfield blk i)))) ;
+	   Obj.magic (bfield blk i)))
+    in
+    Pp.(msg_debug (str "parsed universe levels = " ++ Univ.Instance.pr Univ.Level.pr inst)) ;
+    inst
+  | _ ->
+    Printf.fprintf stderr "not a block\n" ;
+    assert false
 
 let type_of_ind env (ind, u) =
   type_of_inductive env (Inductive.lookup_mind_specif env ind, u)
@@ -164,7 +198,8 @@ and nf_whd env whd typ =
       let t = ta.(i) in
       let _, args = nf_args env vargs t in
       mkApp(cfd,args)
-  | Vconstr_const n -> construct_of_constr_const env n typ
+  | Vconstr_const n ->
+    construct_of_constr_const env n typ
   | Vconstr_block b ->
       let tag = btag b in
       let (tag,ofs) =
@@ -177,12 +212,62 @@ and nf_whd env whd typ =
       let args = nf_bargs env b ofs ctyp in
       mkApp(capp,args)
   | Vatom_stk(Aid idkey, stk) ->
-      let c,typ = constr_type_of_idkey env idkey in
-      nf_stk env c typ stk
+      constr_type_of_idkey env idkey stk nf_stk
   | Vatom_stk(Aiddef(idkey,v), stk) ->
       nf_whd env (whd_stack v stk) typ
   | Vatom_stk(Aind ind, stk) ->
       nf_stk env (mkIndU ind) (type_of_ind env ind) stk
+  | Vuniv_level lvl ->
+    assert false
+
+and constr_type_of_idkey env (idkey : Vars.id_key) stk cont =
+  match idkey with
+  | ConstKey cst ->
+    if Environ.polymorphic_constant cst env then
+      match stk with
+      | Zapp vargs :: stk' when Vm.nargs vargs = 1 ->
+	Printf.fprintf stderr "nargs = 1\n" ;
+	let ui = parse_universe_instance (Vm.arg vargs 0) in
+	let ucst = (cst, ui) in
+	let const_type = Typeops.type_of_constant_in env ucst in
+	cont env (mkConstU ucst) const_type stk'
+      | Zapp vargs :: stk' when Vm.nargs vargs > 1 ->
+	Printf.fprintf stderr "nargs = %d\n" (Vm.nargs vargs) ;
+	for i = 0 to (Vm.nargs vargs - 1)
+	do
+	  Printf.fprintf stderr "%s\n" (string_of_value (Vm.arg vargs i))
+	done ;
+	let ui = parse_universe_instance (Vm.arg vargs 0) in
+	let ucst = (cst, ui) in
+	let const_type = Typeops.type_of_constant_in env ucst in
+	let t, args = nf_args env vargs ~from:1 const_type in
+	cont env (mkApp (mkConstU ucst, args)) t stk'
+      | _ -> assert false
+    else
+      begin
+	let ucst = (cst, Univ.Instance.empty) in
+	let const_type = Typeops.type_of_constant_in env ucst in
+	(* Even if the constant is not universe polymorphic,
+         * it still gets a universe. That instance is just empty.
+	 *)
+	match stk with
+	| Zapp vargs :: stk' ->
+	  if Vm.nargs vargs = 1 then
+	    cont env (mkConstU ucst) const_type stk'
+	  else if Vm.nargs vargs > 1 then
+	    let t, args = nf_args env vargs ~from:1 const_type in
+	    cont env (mkApp (mkConstU ucst, args)) t stk'
+	  else
+	    assert false
+	| _ -> assert false
+      end
+  | VarKey id ->
+      let (_,_,ty) = lookup_named id env in
+      cont env (mkVar id) ty stk
+  | RelKey i ->
+      let n = (nb_rel env - i) in
+      let (_,_,ty) = lookup_rel n env in
+      cont env (mkRel n) (lift n ty) stk
 
 and nf_stk env c t stk  =
   match stk with
@@ -242,14 +327,14 @@ and nf_predicate env ind mip params v pT =
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_val env v crazy_type
 
-and nf_args env vargs t =
+and nf_args env vargs ?from:(f=0) t =
   let t = ref t in
-  let len = nargs vargs in
+  let len = nargs vargs - f in
   let args =
     Array.init len
       (fun i ->
 	let _,dom,codom = decompose_prod env !t in
-	let c = nf_val env (arg vargs i) dom in
+	let c = nf_val env (arg vargs (f+i)) dom in
 	t := subst1 c codom; c) in
   !t,args
 
@@ -315,6 +400,8 @@ let cbv_vm env c t  =
   let transp = transp_values () in
   if not transp then set_transp_values true;
   let v = Vconv.val_of_constr env c in
+  let () = Pp.(msg_debug (str "result = " ++
+			  str "link cycle" (* Vm_printers.ppvalues v*))) in
   let c = nf_val env v t in
   if not transp then set_transp_values false;
   c

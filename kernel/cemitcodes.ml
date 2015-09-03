@@ -19,7 +19,7 @@ open Mod_subst
 type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
-  | Reloc_getglobal of pconstant
+  | Reloc_getglobal of Names.constant
 
 type patch = reloc_info * int
 
@@ -190,7 +190,7 @@ let emit_instr = function
       Array.iter (out_label_with_orig org) lbl_bodies
   | Kgetglobal q ->
       out opGETGLOBAL; slot_for_getglobal q
-  | Kconst((Const_b0 i)) ->
+  | Kconst (Const_b0 i) ->
       if i >= 0 && i <= 3
           then out (opCONST0 + i)
           else (out opCONSTINT; out_int i)
@@ -319,7 +319,7 @@ let subst_patch s (ri,pos) =
       let ci = {a.ci with ci_ind = (subst_mind s kn,i)} in
       (Reloc_annot {a with ci = ci},pos)
   | Reloc_const sc -> (Reloc_const (subst_strcst s sc), pos)
-  | Reloc_getglobal kn -> (Reloc_getglobal (subst_pcon s kn), pos)
+  | Reloc_getglobal kn -> (Reloc_getglobal kn (*subst_pcon s kn*), pos)
 
 let subst_to_patch s (code,pl,fv) =
   code,List.rev_map (subst_patch s) pl,fv
@@ -328,12 +328,12 @@ let subst_pconstant s (kn, u) = (fst (subst_con_kn s kn), u)
 
 type body_code =
   | BCdefined of to_patch
-  | BCalias of pconstant
+  | BCalias of Names.constant
   | BCconstant
 
 type to_patch_substituted =
 | PBCdefined of to_patch substituted
-| PBCalias of pconstant substituted
+| PBCalias of Names.constant substituted
 | PBCconstant
 
 let from_val = function
@@ -343,7 +343,7 @@ let from_val = function
 
 let force = function
 | PBCdefined tp -> BCdefined (force subst_to_patch tp)
-| PBCalias cu -> BCalias (force subst_pconstant cu)
+| PBCalias cu -> BCalias (force subst_constant cu)
 | PBCconstant -> BCconstant
 
 let subst_to_patch_subst s = function
