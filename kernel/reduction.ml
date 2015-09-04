@@ -735,8 +735,8 @@ let vm_conv cv_pb env t1 t2 =
   try
     !vm_conv cv_pb env t1 t2
   with Not_found | Invalid_argument _ ->
-      (* If compilation fails, fall-back to closure conversion *)
-      fconv cv_pb false (fun _->None) env t1 t2
+    Pp.msg_warning (Pp.str "Bytecode compilation failed, falling back to standard conversion");
+    fconv cv_pb false (fun _->None) env t1 t2
 
 
 let default_conv = ref (fun cv_pb ?(l2r=false) -> fconv cv_pb l2r (fun _->None))
@@ -747,8 +747,8 @@ let default_conv cv_pb ?(l2r=false) env t1 t2 =
   try
     !default_conv ~l2r cv_pb env t1 t2
   with Not_found | Invalid_argument _ ->
-      (* If compilation fails, fall-back to closure conversion *)
-      fconv cv_pb false (fun _->None) env t1 t2
+    Pp.msg_warning (Pp.str "Compilation failed, falling back to standard conversion");
+    fconv cv_pb false (fun _->None) env t1 t2
 
 let default_conv_leq = default_conv CUMUL
 (*
