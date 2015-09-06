@@ -1253,7 +1253,7 @@ value coq_interprete
         if (shiftby > 31) {
           if (shiftby < 62) {
             sp++;
-	    accu = (value)((((*sp++)^1) << (shiftby - 31)) | 1);
+	    accu = (value)(((((uint32_t)*sp++)^1) << (shiftby - 31)) | 1);
           }
           else {
             sp+=2;
@@ -1262,7 +1262,7 @@ value coq_interprete
 	}
         else{
         /* *sp = 2*x+1 --> accu = 2^(shiftby+1)*x */
-        accu = (value)(((*sp++)^1) << shiftby);
+	  accu = (value)((((uint32_t)*sp++)^1) << shiftby);
         /* accu = 2^(shiftby+1)*x --> 2^(shifby+1)*x+2*y/2^(31-shiftby)+1 */
         accu = (value)((accu | (((uint32_t)(*sp++)) >> (31-shiftby)))|1);
 	}
