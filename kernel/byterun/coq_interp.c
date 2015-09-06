@@ -1240,10 +1240,11 @@ value coq_interprete
         shiftby = uint32_of_value(accu);
         if (shiftby > 31) {
           if (shiftby < 62) {
-            *sp++;
+            sp++;
 	    accu = (value)((((*sp++)^1) << (shiftby - 31)) | 1);
           }
           else {
+            sp+=2;
             accu = (value)(1);
           }
 	}
