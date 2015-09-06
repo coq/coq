@@ -525,6 +525,7 @@ hightactics: tactics/hightactics.cma
 .PHONY: init theories theories-light
 .PHONY: logic arith bool narith zarith qarith lists strings sets
 .PHONY: fsets relations wellfounded reals setoids sorting numbers noreal
+.PHONY: msets mmaps
 
 init: $(INITVO)
 
@@ -552,6 +553,8 @@ classes: $(CLASSESVO)
 program: $(PROGRAMVO)
 structures: $(STRUCTURESVO)
 vectors: $(VECTORSVO)
+msets: $(MSETSVO)
+mmaps: $(MMAPSVO)
 
 noreal: unicode logic arith bool zarith qarith lists sets fsets \
 	relations wellfounded setoids sorting

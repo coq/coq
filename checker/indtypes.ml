@@ -269,7 +269,7 @@ type ill_formed_ind =
   | LocalNonPos of int
   | LocalNotEnoughArgs of int
   | LocalNotConstructor
-  | LocalNonPar of int * int
+  | LocalNonPar of int * int * int
 
 exception IllFormedInd of ill_formed_ind
 
@@ -291,9 +291,9 @@ let explain_ind_err ntyp env0 nbpar c err =
     | LocalNotConstructor ->
 	raise (InductiveError
 		 (NotConstructor (env,c',Rel (ntyp+nbpar))))
-    | LocalNonPar (n,l) ->
+    | LocalNonPar (n,i,l) ->
 	raise (InductiveError
-		 (NonPar (env,c',n,Rel (nbpar-n+1), Rel (l+nbpar))))
+		 (NonPar (env,c',n,Rel i,Rel (l+nbpar))))
 
 let failwith_non_pos n ntypes c =
   for k = n to n + ntypes - 1 do
@@ -323,7 +323,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
     | _::hyps ->
         match whd_betadeltaiota env lpar.(k) with
 	  | Rel w when w = index -> check (k-1) (index+1) hyps
-	  | _ -> raise (IllFormedInd (LocalNonPar (k+1,l)))
+	  | _ -> raise (IllFormedInd (LocalNonPar (k+1,index,l)))
   in check (nparams-1) (n-nhyps) hyps;
   if not (Array.for_all (noccur_between n ntypes) largs') then
     failwith_non_pos_vect n ntypes largs'
