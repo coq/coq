@@ -152,18 +152,18 @@ Fixpoint L {m} n (p : t m) : t (m + n) :=
 Lemma L_sanity {m} n (p : t m) : proj1_sig (to_nat (L n p)) = proj1_sig (to_nat p).
 Proof.
 induction p.
-  reflexivity.
-  simpl; destruct (to_nat (L n p)); simpl in *; rewrite IHp. now destruct (to_nat p).
+- reflexivity.
+- simpl; destruct (to_nat (L n p)); simpl in *; rewrite IHp. now destruct (to_nat p).
 Qed.
-
+ 
 (** The p{^ th} element of [fin m] viewed as the p{^ th} element of
 [fin (n + m)]
 Really really ineficient !!! *)
 Definition L_R {m} n (p : t m) : t (n + m).
 Proof.
 induction n.
-  exact p.
-  exact ((fix LS k (p: t k) :=
+- exact p.
+- exact ((fix LS k (p: t k) :=
     match p with
       |@F1 k' => @F1 (S k')
       |FS p' => FS (LS _ p')
@@ -178,8 +178,8 @@ Fixpoint R {m} n (p : t m) : t (n + m) :=
 Lemma R_sanity {m} n (p : t m) : proj1_sig (to_nat (R n p)) = n + proj1_sig (to_nat p).
 Proof.
 induction n.
-  reflexivity.
-  simpl; destruct (to_nat (R n p)); simpl in *; rewrite IHn. now destruct (to_nat p).
+- reflexivity.
+- simpl; destruct (to_nat (R n p)); simpl in *; rewrite IHn. now destruct (to_nat p).
 Qed.
 
 Fixpoint depair {m n} (o : t m) (p : t n) : t (m * n) :=
@@ -192,9 +192,9 @@ Lemma depair_sanity {m n} (o : t m) (p : t n) :
   proj1_sig (to_nat (depair o p)) = n * (proj1_sig (to_nat o)) + (proj1_sig (to_nat p)).
 Proof.
 induction o ; simpl.
-  rewrite L_sanity. now rewrite Mult.mult_0_r.
+- rewrite L_sanity. now rewrite Mult.mult_0_r.
 
-  rewrite R_sanity. rewrite IHo.
+- rewrite R_sanity. rewrite IHo.
   rewrite Plus.plus_assoc. destruct (to_nat o); simpl; rewrite Mult.mult_succ_r.
     now rewrite (Plus.plus_comm n).
 Qed.
@@ -210,10 +210,10 @@ end.
 Lemma eqb_nat_eq : forall m n (p : t m) (q : t n), eqb p q = true -> m = n.
 Proof.
 intros m n p; revert n; induction p; destruct q; simpl; intros; f_equal.
-+ now apply EqNat.beq_nat_true.
-+ easy.
-+ easy.
-+ eapply IHp. eassumption.
+- now apply EqNat.beq_nat_true.
+- easy.
+- easy.
+- eapply IHp. eassumption.
 Qed.
 
 Lemma eqb_eq : forall n (p q : t n), eqb p q = true <-> p = q.
@@ -231,9 +231,9 @@ Qed.
 
 Lemma eq_dec {n} (x y : t n): {x = y} + {x <> y}.
 Proof.
- case_eq (eqb x y); intros.
-  + left; now apply eqb_eq.
-  + right. intros Heq. apply <- eqb_eq in Heq. congruence.
+case_eq (eqb x y); intros.
+- left; now apply eqb_eq.
+- right. intros Heq. apply <- eqb_eq in Heq. congruence.
 Defined.
 
 Definition cast: forall {m} (v: t m) {n}, m = n -> t n.
