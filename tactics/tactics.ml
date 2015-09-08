@@ -126,6 +126,26 @@ let _ =
       optread  = (fun () -> !universal_lemma_under_conjunctions) ;
       optwrite = (fun b -> universal_lemma_under_conjunctions := b) }
 
+(* The following boolean governs what "intros []" do on examples such
+   as "forall x:nat*nat, x=x"; if true, it behaves as "intros [? ?]";
+   if false, it behaves as "intro H; case H; clear H" for fresh H.
+   Kept as false for compatibility.
+ *)
+
+let bracketing_last_or_and_intro_pattern = ref false
+
+let use_bracketing_last_or_and_intro_pattern () =
+  !bracketing_last_or_and_intro_pattern
+  && Flags.version_strictly_greater Flags.V8_4
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "bracketing last or-and introduction pattern";
+      optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
+      optread  = (fun () -> !bracketing_last_or_and_intro_pattern) ;
+      optwrite = (fun b -> bracketing_last_or_and_intro_pattern := b) }
 
 (*********************************************)
 (*                 Tactics                   *)
@@ -2191,17 +2211,10 @@ and prepare_intros_loc loc dft = function
 
 let intro_patterns_bound_to n destopt =
   intro_patterns_core true [] [] [] destopt
-    (Some (true,n)) 0 (fun _ -> clear_wildcards)
-
-(* The following boolean governs what "intros []" do on examples such
-   as "forall x:nat*nat, x=x"; if true, it behaves as "intros [? ?]";
-   if false, it behaves as "intro H; case H; clear H" for fresh H.
-   Kept as false for compatibility.
- *)
-let bracketing_last_or_and_intro_pattern = false 
+    (Some (true,n)) 0 (fun _ l -> clear_wildcards l)
 
 let intro_patterns_to destopt =
-  intro_patterns_core bracketing_last_or_and_intro_pattern
+  intro_patterns_core (use_bracketing_last_or_and_intro_pattern ())
     [] [] [] destopt None 0 (fun _ l -> clear_wildcards l)
 
 let intro_pattern_to destopt pat =

@@ -23,6 +23,11 @@ Tactics
 - New compatibility flag "Universal Lemma Under Conjunction" which
   let tactics working under conjunctions apply sublemmas of the form
   "forall A, ... -> A".
+- New compatibility flag "Bracketing Last Introduction Pattern" which can be
+  set so that the last disjunctive-conjunctive introduction pattern given to
+  "intros" automatically complete the introduction of its subcomponents, as the
+  the disjunctive-conjunctive introduction patterns in non-terminal position
+  already do.
 
 API
 
