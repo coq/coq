@@ -2129,6 +2129,21 @@ let exceed_bound n = function
      to ensure that dependent hypotheses are cleared in the right
      dependency order (see bug #1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
+  (* In [intro_patterns_core b avoid ids thin destopt bound n tac patl]:
+     [b]: compatibility flag, if false at toplevel, do not complete incomplete
+          trailing toplevel or_and patterns (as in "intros []", see
+          [bracketing_last_or_and_intro_pattern])
+     [avoid]: names to avoid when creating an internal name
+     [ids]: collect introduced names for possible use by the [tac] continuation
+     [thin]: collect names to erase at the end
+     [destopt]: position in the context where to introduce the hypotheses
+     [bound]: number of pending intros to do in the current or-and pattern,
+              with remembering of [b] flag if at toplevel
+     [n]: number of introduction done in the current or-and pattern
+     [tac]: continuation tactic
+     [patl]: introduction patterns to interpret
+  *)
+
 let rec intro_patterns_core b avoid ids thin destopt bound n tac = function
   | [] when fit_bound n bound ->
       tac ids thin
@@ -2152,23 +2167,24 @@ let rec intro_patterns_core b avoid ids thin destopt bound n tac = function
             (fun ids thin ->
               intro_patterns_core b avoid ids thin destopt bound (n+1) tac l)))
   | IntroNaming pat ->
-      intro_pattern_naming loc b avoid ids pat thin destopt bound n tac l
+      intro_pattern_naming loc b avoid ids pat thin destopt bound (n+1) tac l
 
+  (* Pi-introduction rule, used backwards *)
 and intro_pattern_naming loc b avoid ids pat thin destopt bound n tac l =
   match pat with
   | IntroIdentifier id ->
       check_thin_clash_then id thin avoid (fun thin ->
         intro_then_gen (NamingMustBe (loc,id)) destopt true false
-          (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound (n+1) tac l))
+          (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound n tac l))
   | IntroAnonymous ->
       intro_then_gen (NamingAvoid (avoid@explicit_intro_names l))
 	destopt true false
-        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound (n+1) tac l)
+        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound n tac l)
   | IntroFresh id ->
       (* todo: avoid thinned names to interfere with generation of fresh name *)
       intro_then_gen (NamingBasedOn (id, avoid@explicit_intro_names l))
 	destopt true false
-        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound (n+1) tac l)
+        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound n tac l)
 
 and intro_pattern_action loc b style pat thin tac id = match pat with
   | IntroWildcard ->
