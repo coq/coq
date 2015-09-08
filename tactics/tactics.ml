@@ -2172,7 +2172,7 @@ and intro_pattern_action loc b style pat thin tac id = match pat with
           (Tacticals.New.tclTHENFIRST
              (* Skip the side conditions of the apply *)
              (apply_in_once false true true true naming id
-                (None,(sigma,(c,NoBindings))) tac_ipat) (tac thin None []))
+                (None,(sigma,(c,NoBindings))) tac_ipat) (tac ((dloc,id)::thin) None []))
           sigma
       end
 
