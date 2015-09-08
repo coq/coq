@@ -2122,7 +2122,7 @@ let make_tmp_naming avoid l = function
      case of IntroFresh, we should use check_thin_clash_then anyway to
      prevent the case of an IntroFresh precisely using the wild_id *)
   | IntroWildcard -> NamingBasedOn (wild_id,avoid@explicit_intro_names l)
-  | _ -> NamingAvoid(avoid@explicit_intro_names l)
+  | pat -> NamingAvoid(avoid@explicit_intro_names ((dloc,IntroAction pat)::l))
 
 let fit_bound n = function
   | None -> true

@@ -51,3 +51,13 @@ Fail clear H0.
 match goal with H:_ |- _ => clear H end. (* clear H1:False *)
 match goal with H:_ |- _ => exact H end. (* check that next hyp shows 0=0 *)
 Qed.
+
+Goal (True -> 0=0) -> True -> 0=0.
+intros H H1/H.
+exact H1.
+Qed.
+
+Goal forall n, n = S n -> 0=0.
+intros n H/n_Sn.
+destruct H.
+Qed.
