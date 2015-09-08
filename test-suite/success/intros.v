@@ -33,3 +33,21 @@ Goal True -> True -> True.
 intros _ ?.
 exact H.
 Qed.
+
+(* A short test about introduction pattern pat/c *)
+Goal (True -> 0=0) -> True /\ False -> 0=0.
+intros H (H1/H,_).
+exact H1.
+Qed.
+
+(* A test about bugs in 8.5beta2 *)
+Goal (True -> 0=0) -> True /\ False -> False -> 0=0.
+intros H H0 H1.
+destruct H0 as (a/H,_).
+(* Check that H0 is removed (was bugged in 8.5beta2) *)
+Fail clear H0.
+(* Check position of newly created hypotheses when using pat/c (was
+   left at top in 8.5beta2) *)
+match goal with H:_ |- _ => clear H end. (* clear H1:False *)
+match goal with H:_ |- _ => exact H end. (* check that next hyp shows 0=0 *)
+Qed.
