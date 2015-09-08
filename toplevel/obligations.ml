@@ -605,14 +605,16 @@ let declare_mutual_definition l =
       List.iter progmap_remove l; kn
 
 let shrink_body c = 
-  let ctx, b = decompose_lam c in
+  let ctx, b = decompose_lam_assum c in
   let b', n, args = 
-    List.fold_left (fun (b, i, args) (n,t) ->
+    List.fold_left (fun (b, i, args) (n, u, t) ->
       if noccurn 1 b then 
 	subst1 mkProp b, succ i, args
-      else mkLambda (n,t,b), succ i, mkRel i :: args)
+      else
+        let args = if Option.is_empty u then mkRel i :: args else args in
+        mkLambda_or_LetIn (n, u, t) b, succ i, args)
      (b, 1, []) ctx
-  in List.map (fun (c,t) -> (c,None,t)) ctx, b', Array.of_list args
+  in ctx, b', Array.of_list args
 
 let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
 
