@@ -2230,11 +2230,11 @@ let ipat_of_name = function
    let c = fst (decompose_app ((strip_lam_assum c))) in
    if isVar c then Some (destVar c) else None
 
-let assert_as first ipat c =
+let assert_as first hd ipat t =
   let naming,tac = prepare_intros IntroAnonymous ipat in
-  let repl = do_replace (head_ident c) naming in
-  if first then assert_before_then_gen repl naming c tac
-  else assert_after_then_gen repl naming c tac
+  let repl = do_replace hd naming in
+  if first then assert_before_then_gen repl naming t tac
+  else assert_after_then_gen repl naming t tac
 
 (* apply in as *)
 
@@ -2394,16 +2394,17 @@ let forward b usetac ipat c =
   match usetac with
   | None ->
       Proofview.Goal.enter begin fun gl ->
-      let t = Tacmach.New.pf_unsafe_type_of gl  c in
-      Tacticals.New.tclTHENFIRST (assert_as true ipat t)
+      let t = Tacmach.New.pf_unsafe_type_of gl c in
+      let hd = head_ident c in
+      Tacticals.New.tclTHENFIRST (assert_as true hd ipat t)
 	(Proofview.V82.tactic (exact_no_check c))
       end
   | Some tac ->
       if b then
-        Tacticals.New.tclTHENFIRST (assert_as b ipat c) tac
+        Tacticals.New.tclTHENFIRST (assert_as b None ipat c) tac
       else
         Tacticals.New.tclTHENS3PARTS
-          (assert_as b ipat c) [||] tac [|Tacticals.New.tclIDTAC|]
+          (assert_as b None ipat c) [||] tac [|Tacticals.New.tclIDTAC|]
 
 let pose_proof na c = forward true None (ipat_of_name na) c
 let assert_by na t tac = forward true (Some tac) (ipat_of_name na) t
