@@ -838,16 +838,15 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
   aux n []
 
 let get_next_hyp_position id gl =
-  let rec get_next_hyp_position id = function
+  let rec aux = function
   | [] -> raise (RefinerError (NoSuchHyp id))
   | (hyp,_,_) :: right ->
     if Id.equal hyp id then
       match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveLast
     else
-      get_next_hyp_position id right
+      aux right
   in
-  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-  get_next_hyp_position id hyps
+  aux (Proofview.Goal.hyps (Proofview.Goal.assume gl))
 
 let intro_replacing id =
   Proofview.Goal.enter begin fun gl ->
@@ -2255,7 +2254,7 @@ let ipat_of_name = function
   | Anonymous -> None
   | Name id -> Some (dloc, IntroNaming (IntroIdentifier id))
 
- let head_ident c =
+let head_ident c =
    let c = fst (decompose_app ((strip_lam_assum c))) in
    if isVar c then Some (destVar c) else None
 
