@@ -146,7 +146,7 @@ let _ =
    Kept as false for compatibility.
  *)
 
-let bracketing_last_or_and_intro_pattern = ref false
+let bracketing_last_or_and_intro_pattern = ref true
 
 let use_bracketing_last_or_and_intro_pattern () =
   !bracketing_last_or_and_intro_pattern

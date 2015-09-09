@@ -1,3 +1,8 @@
+Changes beyond V8.5
+===================
+
+- Flag "Bracketing Last Introduction Pattern" is now on by default.
+
 Changes from V8.5beta2 to V8.5beta3
 ===================================
 
