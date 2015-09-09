@@ -48,7 +48,9 @@ end
 
 val coerce_to_constr_context : Value.t -> constr
 
-val coerce_to_ident : bool -> Environ.env -> Value.t -> Id.t
+val coerce_var_to_ident : bool -> Environ.env -> Value.t -> Id.t
+
+val coerce_to_ident_not_fresh : Environ.env -> Value.t -> Id.t
 
 val coerce_to_intro_pattern : Environ.env -> Value.t -> Tacexpr.delayed_open_constr intro_pattern_expr
 

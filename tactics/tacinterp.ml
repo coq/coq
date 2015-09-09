@@ -319,7 +319,7 @@ let interp_ltac_var coerce ist env locid =
   with Not_found -> anomaly (str "Detected '" ++ Id.print (snd locid) ++ str "' as ltac var at interning time")
 
 let interp_ident ist env sigma id =
-  try try_interp_ltac_var (coerce_to_ident false env) ist (Some (env,sigma)) (dloc,id)
+  try try_interp_ltac_var (coerce_var_to_ident false env) ist (Some (env,sigma)) (dloc,id)
   with Not_found -> id
 
 let pf_interp_ident id gl = interp_ident id (pf_env gl) (project gl)
@@ -478,6 +478,10 @@ let extract_ids ids lfun =
 let default_fresh_id = Id.of_string "H"
 
 let interp_fresh_id ist env sigma l =
+  let extract_ident ist env sigma id =
+    try try_interp_ltac_var (coerce_to_ident_not_fresh env)
+			    ist (Some (env,sigma)) (dloc,id)
+    with Not_found -> id in
   let ids = List.map_filter (function ArgVar (_, id) -> Some id | _ -> None) l in
   let avoid = match TacStore.get ist.extra f_avoid_ids with
   | None -> []
@@ -490,7 +494,7 @@ let interp_fresh_id ist env sigma l =
       let s =
 	String.concat "" (List.map (function
 	  | ArgArg s -> s
-	  | ArgVar (_,id) -> Id.to_string (interp_ident ist env sigma id)) l) in
+	  | ArgVar (_,id) -> Id.to_string (extract_ident ist env sigma id)) l) in
       let s = if Lexer.is_keyword s then s^"0" else s in
       Id.of_string s in
   Tactics.fresh_id_in_env avoid id env
@@ -507,7 +511,7 @@ let extract_ltac_constr_context ist env =
     with CannotCoerceTo _ -> map
   in
   let add_ident id env v map =
-    try Id.Map.add id (coerce_to_ident false env v) map
+    try Id.Map.add id (coerce_var_to_ident false env v) map
     with CannotCoerceTo _ -> map
   in
   let fold id v {idents;typed;untyped} =
