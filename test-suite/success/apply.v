@@ -548,3 +548,14 @@ apply (foo ?y).
 Grab Existential Variables.
 exact 0.
 Qed.
+
+(* Test position of new hypotheses when using "apply ... in ... as ..." *)
+Goal (True -> 0=0 /\ True) -> True -> False -> True/\0=0.
+intros H H0 H1.
+apply H in H0 as (a,b).
+(* clear H1:False *) match goal with H:_ |- _ => clear H end.
+split.
+- (* use b:True *) match goal with H:_ |- _ => exact H end.
+- (* clear b:True *) match goal with H:_ |- _ => clear H end.
+  (* use a:0=0 *) match goal with H:_ |- _ => exact H end.
+Qed.

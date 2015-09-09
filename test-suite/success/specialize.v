@@ -46,3 +46,21 @@ specialize eq_trans with _ a b c. intros _.
 *)
 
 Abort.
+
+(* Test use of pose proof and assert as a specialize *)
+
+Goal True -> (True -> 0=0) -> False -> 0=0.
+intros H0 H H1.
+pose proof (H I) as H.
+(* Check that the hypothesis is in 2nd position by removing the top one *)
+match goal with H:_ |- _ => clear H end.
+match goal with H:_ |- _ => exact H end.
+Qed.
+
+Goal True -> (True -> 0=0) -> False -> 0=0.
+intros H0 H H1.
+assert (H:=H I).
+(* Check that the hypothesis is in 2nd position by removing the top one *)
+match goal with H:_ |- _ => clear H end.
+match goal with H:_ |- _ => exact H end.
+Qed.

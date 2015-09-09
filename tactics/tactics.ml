@@ -139,6 +139,27 @@ let _ =
       optread  = (fun () -> !shrink_abstract) ;
       optwrite = (fun b -> shrink_abstract := b) }
 
+(* The following boolean governs what "intros []" do on examples such
+   as "forall x:nat*nat, x=x"; if true, it behaves as "intros [? ?]";
+   if false, it behaves as "intro H; case H; clear H" for fresh H.
+   Kept as false for compatibility.
+ *)
+
+let bracketing_last_or_and_intro_pattern = ref false
+
+let use_bracketing_last_or_and_intro_pattern () =
+  !bracketing_last_or_and_intro_pattern
+  && Flags.version_strictly_greater Flags.V8_4
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "bracketing last or-and introduction pattern";
+      optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
+      optread  = (fun () -> !bracketing_last_or_and_intro_pattern);
+      optwrite = (fun b -> bracketing_last_or_and_intro_pattern := b) }
+
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -830,16 +851,23 @@ let intro_forthcoming_then_gen name_flag move_flag dep_flag n bound tac =
   aux n []
 
 let get_next_hyp_position id gl =
-  let rec get_next_hyp_position id = function
+  let rec aux = function
   | [] -> raise (RefinerError (NoSuchHyp id))
   | (hyp,_,_) :: right ->
     if Id.equal hyp id then
       match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveLast
     else
-      get_next_hyp_position id right
+      aux right
   in
-  let hyps = Proofview.Goal.hyps (Proofview.Goal.assume gl) in
-  get_next_hyp_position id hyps
+  aux (Proofview.Goal.hyps (Proofview.Goal.assume gl))
+
+let get_previous_hyp_position id gl =
+  let rec aux dest = function
+  | [] -> raise (RefinerError (NoSuchHyp id))
+  | (hyp,_,_) :: right ->
+    if Id.equal hyp id then dest else aux (MoveAfter hyp) right
+  in
+  aux MoveLast (Proofview.Goal.hyps (Proofview.Goal.assume gl))
 
 let intro_replacing id =
   Proofview.Goal.enter begin fun gl ->
@@ -2107,7 +2135,7 @@ let make_tmp_naming avoid l = function
      case of IntroFresh, we should use check_thin_clash_then anyway to
      prevent the case of an IntroFresh precisely using the wild_id *)
   | IntroWildcard -> NamingBasedOn (wild_id,avoid@explicit_intro_names l)
-  | _ -> NamingAvoid(avoid@explicit_intro_names l)
+  | pat -> NamingAvoid(avoid@explicit_intro_names ((dloc,IntroAction pat)::l))
 
 let fit_bound n = function
   | None -> true
@@ -2121,6 +2149,21 @@ let exceed_bound n = function
      to ensure that dependent hypotheses are cleared in the right
      dependency order (see bug #1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
+  (* In [intro_patterns_core b avoid ids thin destopt bound n tac patl]:
+     [b]: compatibility flag, if false at toplevel, do not complete incomplete
+          trailing toplevel or_and patterns (as in "intros []", see
+          [bracketing_last_or_and_intro_pattern])
+     [avoid]: names to avoid when creating an internal name
+     [ids]: collect introduced names for possible use by the [tac] continuation
+     [thin]: collect names to erase at the end
+     [destopt]: position in the context where to introduce the hypotheses
+     [bound]: number of pending intros to do in the current or-and pattern,
+              with remembering of [b] flag if at toplevel
+     [n]: number of introduction done in the current or-and pattern
+     [tac]: continuation tactic
+     [patl]: introduction patterns to interpret
+  *)
+
 let rec intro_patterns_core b avoid ids thin destopt bound n tac = function
   | [] when fit_bound n bound ->
       tac ids thin
@@ -2138,31 +2181,33 @@ let rec intro_patterns_core b avoid ids thin destopt bound n tac = function
           (n+List.length ids) tac l)
   | IntroAction pat ->
       intro_then_gen (make_tmp_naming avoid l pat)
-	MoveLast true false
+	destopt true false
         (intro_pattern_action loc (b || not (List.is_empty l)) false pat thin
+          destopt
           (fun thin bound' -> intro_patterns_core b avoid ids thin destopt bound' 0
             (fun ids thin ->
               intro_patterns_core b avoid ids thin destopt bound (n+1) tac l)))
   | IntroNaming pat ->
-      intro_pattern_naming loc b avoid ids pat thin destopt bound n tac l
+      intro_pattern_naming loc b avoid ids pat thin destopt bound (n+1) tac l
 
+  (* Pi-introduction rule, used backwards *)
 and intro_pattern_naming loc b avoid ids pat thin destopt bound n tac l =
   match pat with
   | IntroIdentifier id ->
       check_thin_clash_then id thin avoid (fun thin ->
         intro_then_gen (NamingMustBe (loc,id)) destopt true false
-          (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound (n+1) tac l))
+          (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound n tac l))
   | IntroAnonymous ->
       intro_then_gen (NamingAvoid (avoid@explicit_intro_names l))
 	destopt true false
-        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound (n+1) tac l)
+        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound n tac l)
   | IntroFresh id ->
       (* todo: avoid thinned names to interfere with generation of fresh name *)
       intro_then_gen (NamingBasedOn (id, avoid@explicit_intro_names l))
 	destopt true false
-        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound (n+1) tac l)
+        (fun id -> intro_patterns_core b avoid (id::ids) thin destopt bound n tac l)
 
-and intro_pattern_action loc b style pat thin tac id = match pat with
+and intro_pattern_action loc b style pat thin destopt tac id = match pat with
   | IntroWildcard ->
       tac ((loc,id)::thin) None []
   | IntroOrAndPattern ll ->
@@ -2175,7 +2220,8 @@ and intro_pattern_action loc b style pat thin tac id = match pat with
 	(rewrite_hyp style l2r id)
         (tac thin None [])
   | IntroApplyOn (f,(loc,pat)) ->
-      let naming,tac_ipat = prepare_intros_loc loc (IntroIdentifier id) pat in
+      let naming,tac_ipat =
+        prepare_intros_loc loc (IntroIdentifier id) destopt pat in
       Proofview.Goal.enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
@@ -2184,36 +2230,29 @@ and intro_pattern_action loc b style pat thin tac id = match pat with
           (Tacticals.New.tclTHENFIRST
              (* Skip the side conditions of the apply *)
              (apply_in_once false true true true naming id
-                (None,(sigma,(c,NoBindings))) tac_ipat) (tac thin None []))
+                (None,(sigma,(c,NoBindings))) tac_ipat) (tac ((dloc,id)::thin) None []))
           sigma
       end
 
-and prepare_intros_loc loc dft = function
+and prepare_intros_loc loc dft destopt = function
   | IntroNaming ipat ->
       prepare_naming loc ipat,
-      (fun _ -> Proofview.tclUNIT ())
+      (fun id -> Proofview.V82.tactic (move_hyp id destopt))
   | IntroAction ipat ->
       prepare_naming loc dft,
       (let tac thin bound =
-        intro_patterns_core true [] [] thin MoveLast bound 0
+        intro_patterns_core true [] [] thin destopt bound 0
           (fun _ l -> clear_wildcards l) in
-      fun id -> intro_pattern_action loc true true ipat [] tac id)
+      fun id -> intro_pattern_action loc true true ipat [] destopt tac id)
   | IntroForthcoming _ -> user_err_loc
       (loc,"",str "Introduction pattern for one hypothesis expected.")
 
 let intro_patterns_bound_to n destopt =
   intro_patterns_core true [] [] [] destopt
-    (Some (true,n)) 0 (fun _ -> clear_wildcards)
-
-(* The following boolean governs what "intros []" do on examples such
-   as "forall x:nat*nat, x=x"; if true, it behaves as "intros [? ?]";
-   if false, it behaves as "intro H; case H; clear H" for fresh H.
-   Kept as false for compatibility.
- *)
-let bracketing_last_or_and_intro_pattern = false 
+    (Some (true,n)) 0 (fun _ l -> clear_wildcards l)
 
 let intro_patterns_to destopt =
-  intro_patterns_core bracketing_last_or_and_intro_pattern
+  intro_patterns_core (use_bracketing_last_or_and_intro_pattern ())
     [] [] [] destopt None 0 (fun _ l -> clear_wildcards l)
 
 let intro_pattern_to destopt pat =
@@ -2230,23 +2269,24 @@ let intros_patterns = function
 (*   Forward reasoning    *)
 (**************************)
 
-let prepare_intros dft = function
+let prepare_intros dft destopt = function
   | None -> prepare_naming dloc dft, (fun _id -> Proofview.tclUNIT ())
-  | Some (loc,ipat) -> prepare_intros_loc loc dft ipat
+  | Some (loc,ipat) -> prepare_intros_loc loc dft destopt ipat
 
 let ipat_of_name = function
   | Anonymous -> None
   | Name id -> Some (dloc, IntroNaming (IntroIdentifier id))
 
- let head_ident c =
+let head_ident c =
    let c = fst (decompose_app ((strip_lam_assum c))) in
    if isVar c then Some (destVar c) else None
 
-let assert_as first ipat c =
-  let naming,tac = prepare_intros IntroAnonymous ipat in
-  let repl = do_replace (head_ident c) naming in
-  if first then assert_before_then_gen repl naming c tac
-  else assert_after_then_gen repl naming c tac
+let assert_as first hd ipat t =
+  let naming,tac = prepare_intros IntroAnonymous MoveLast ipat in
+  let repl = do_replace hd naming in
+  let tac = if repl then (fun id -> Proofview.tclUNIT ()) else tac in
+  if first then assert_before_then_gen repl naming t tac
+  else assert_after_then_gen repl naming t tac
 
 (* apply in as *)
 
@@ -2255,13 +2295,16 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
   let tac (naming,lemma) tac id =
     apply_in_delayed_once sidecond_first with_delta with_destruct with_evars
       naming id lemma tac in
-  let naming,ipat_tac = prepare_intros (IntroIdentifier id) ipat in
+  Proofview.Goal.enter begin fun gl ->
+  let destopt = get_previous_hyp_position id gl in
+  let naming,ipat_tac = prepare_intros (IntroIdentifier id) destopt ipat in
   let lemmas_target, last_lemma_target =
     let last,first = List.sep_last lemmas in
     List.map (fun lem -> (NamingMustBe (dloc,id),lem)) first, (naming,last)
   in
   (* We chain apply_in_once, ending with an intro pattern *)
   List.fold_right tac lemmas_target (tac last_lemma_target ipat_tac) id
+  end
 
 (*
   if sidecond_first then
@@ -2406,16 +2449,17 @@ let forward b usetac ipat c =
   match usetac with
   | None ->
       Proofview.Goal.enter begin fun gl ->
-      let t = Tacmach.New.pf_unsafe_type_of gl  c in
-      Tacticals.New.tclTHENFIRST (assert_as true ipat t)
+      let t = Tacmach.New.pf_unsafe_type_of gl c in
+      let hd = head_ident c in
+      Tacticals.New.tclTHENFIRST (assert_as true hd ipat t)
 	(Proofview.V82.tactic (exact_no_check c))
       end
   | Some tac ->
       if b then
-        Tacticals.New.tclTHENFIRST (assert_as b ipat c) tac
+        Tacticals.New.tclTHENFIRST (assert_as b None ipat c) tac
       else
         Tacticals.New.tclTHENS3PARTS
-          (assert_as b ipat c) [||] tac [|Tacticals.New.tclIDTAC|]
+          (assert_as b None ipat c) [||] tac [|Tacticals.New.tclIDTAC|]
 
 let pose_proof na c = forward true None (ipat_of_name na) c
 let assert_by na t tac = forward true (Some tac) (ipat_of_name na) t

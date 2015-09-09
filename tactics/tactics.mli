@@ -348,6 +348,7 @@ val assert_before : Name.t -> types -> unit Proofview.tactic
 val assert_after  : Name.t -> types -> unit Proofview.tactic
 
 val assert_as     : (* true = before *) bool ->
+  (* optionally tell if a specialization of some hyp: *) identifier option ->
   intro_pattern option -> constr -> unit Proofview.tactic
 
 (** Implements the tactics assert, enough and pose proof; note that "by"

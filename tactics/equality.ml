@@ -540,7 +540,7 @@ let replace_core clause l2r eq =
   if check_setoid clause
   then init_setoid ();
   tclTHENFIRST
-    (assert_as false None eq)
+    (assert_as false None None eq)
     (onLastHypId (fun id ->
       tclTHEN
         (tclTRY (general_rewrite_clause l2r false (mkVar id,NoBindings) clause))
