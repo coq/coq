@@ -106,8 +106,11 @@ and check_with_def env sign (idl,c) mp equiv =
 		    let def = Def (Declarations.from_val j.uj_val) in
 		    def,cst
 		| Def cs ->
-		    let cst1 = Reduction.conv env' c (Declarations.force cs) in
-		    let cst = union_constraints cb.const_constraints cst1 in
+		    let (j,cst1) = Typeops.infer env' c in
+		    let cst2 = Reduction.conv env' c (Declarations.force cs) in
+		    let cst = union_constraints cb.const_constraints
+						(union_constraints cst1 cst2)
+		    in
 		    let def = Def (Declarations.from_val c) in
 		    def,cst
 	      in
@@ -170,7 +173,7 @@ and check_with_mod env sign (idl,mp1) mp equiv =
 		    None ->
 		      begin
 			try union_constraints
-			  (check_subtypes env' mtb_mp1 
+			  (check_subtypes env' mtb_mp1
 			     (module_type_of_module None old))
 			  old.mod_constraints
 			with Failure _ -> error_incorrect_with_constraint (label_of_id id)

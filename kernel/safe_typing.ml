@@ -408,6 +408,7 @@ let end_module l restype senv =
 	    mtb in
 	  let mod_typ = functorize_struct mtb.typ_expr in
 	  let mexpr = functorize_struct auto_tb in
+	  let cst = union_constraints cst mtb.typ_constraints in
 	  let typ_alg = 
 	    Option.map functorize_struct mtb.typ_expr_alg in
 	    mexpr,mod_typ,typ_alg,mtb.typ_delta,cst
