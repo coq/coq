@@ -17,7 +17,7 @@
 
 let space = [' ' '\010' '\013' '\009' '\012']
 let char = ['A'-'Z' 'a'-'z' '_' '0'-'9']
-let ident = char+
+let ident = (char | '.')+
 let ignore = space | ('#' [^ '\n']*)
 
 rule prefs m = parse
