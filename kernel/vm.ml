@@ -126,12 +126,12 @@ type vswitch = {
 (*                                                                        *)
 (* + Accumulators : At_[accumulate| accu | arg1 | ... | argn ]            *)
 (*   - representation of [accu] : tag_[....]                              *)
-(*     -- tag <= 2 : encoding atom type (sorts, free vars, etc.)          *)
-(*     -- 3_[accu|proj name] : a projection blocked by an accu            *)
-(*     -- 4_[accu|fix_app] : a fixpoint blocked by an accu                *)
-(*     -- 5_[accu|vswitch] : a match blocked by an accu                   *)
-(*     -- 6_[fcofix]       : a cofix function                             *)
-(*     -- 7_[fcofix|val]   : a cofix function, val represent the value    *)
+(*     -- tag <= 3 : encoding atom type (sorts, free vars, etc.)          *)
+(*     -- 10_[accu|proj name] : a projection blocked by an accu           *)
+(*     -- 11_[accu|fix_app] : a fixpoint blocked by an accu               *)
+(*     -- 12_[accu|vswitch] : a match blocked by an accu                  *)
+(*     -- 13_[fcofix]       : a cofix function                            *)
+(*     -- 14_[fcofix|val]   : a cofix function, val represent the value   *)
 (*        of the function applied to arg1 ... argn                        *)
 (* The [arguments] type, which is abstracted as an array, represents :    *)
 (*          tag[ _ | _ |v1|... | vn]                                      *)
@@ -142,7 +142,8 @@ type vswitch = {
 type atom =
   | Aid of Vars.id_key
   | Aiddef of Vars.id_key * values
-  | Aind of pinductive
+  | Aind of inductive
+  | Atype of Univ.universe
 
 (* Zippers *)
 
@@ -176,21 +177,22 @@ let rec whd_accu a stk =
     if Int.equal (Obj.size a) 2 then stk
     else Zapp (Obj.obj a) :: stk in
   let at = Obj.field a 1 in
+  Printf.eprintf "whd_accu (tag = %d)\n" (Obj.tag at) ; flush stderr ;
   match Obj.tag at with
-  | i when i <= 2 ->
+  | i when i <= 3 ->
       Vatom_stk(Obj.magic at, stk)
-  | 3 (* proj tag *) ->
+  | 10 (* proj tag *) ->
      let zproj = Zproj (Obj.obj (Obj.field at 0)) in
      whd_accu (Obj.field at 1) (zproj :: stk)
-  | 4 (* fix_app tag *) ->
+  | 11 (* fix_app tag *) ->
       let fa = Obj.field at 1 in
       let zfix  =
 	Zfix (Obj.obj (Obj.field fa 1), Obj.obj fa) in
       whd_accu (Obj.field at 0) (zfix :: stk)
-  | 5 (* switch tag  *) ->
+  | 12 (* switch tag  *) ->
       let zswitch = Zswitch (Obj.obj (Obj.field at 1)) in
       whd_accu (Obj.field at 0) (zswitch :: stk)
-  | 6 (* cofix_tag *) ->
+  | 13 (* cofix_tag *) ->
       let vcfx = Obj.obj (Obj.field at 0) in
       let to_up = Obj.obj a in
       begin match stk with
@@ -198,7 +200,7 @@ let rec whd_accu a stk =
       | [Zapp args] -> Vcofix(vcfx, to_up, Some args)
       | _           -> assert false
       end
-  | 7 (* cofix_evaluated_tag *) ->
+  | 14 (* cofix_evaluated_tag *) ->
       let vcofix = Obj.obj (Obj.field at 0) in
       let res = Obj.obj a in
       begin match stk with
@@ -206,22 +208,28 @@ let rec whd_accu a stk =
       | [Zapp args] -> Vcofix(vcofix, res, Some args)
       | _           -> assert false
       end
-  | _ -> assert false
+  | tg -> Printf.fprintf stderr "tag = %d" tg ; flush stderr ;
+    assert false
 
 external kind_of_closure : Obj.t -> int = "coq_kind_of_closure"
 
 let whd_val : values -> whd =
+  let dbg x = Printf.fprintf stderr "whd_val: %s\n" x ; flush stderr in
   fun v ->
+    dbg "starting with v" ;
     let o = Obj.repr v in
-    if Obj.is_int o then Vconstr_const (Obj.obj o)
+    if Obj.is_int o then
+      (dbg "Vconstr_const" ; Vconstr_const (Obj.obj o))
     else
       let tag = Obj.tag o in
+      dbg (string_of_int tag) ;
+      dbg ("size = " ^ string_of_int (Obj.size o)) ;
       if tag = accu_tag then
 	(
-	if Int.equal (Obj.size o) 1 then Obj.obj o (* sort *)
+	if Int.equal (Obj.size o) 1 then (dbg "sort?" ; Obj.obj o) (* sort *)
 	else
-	  if is_accumulate (fun_code o) then whd_accu o []
-	  else (Vprod(Obj.obj o)))
+	  if is_accumulate (fun_code o) then (dbg "accu" ; whd_accu o [])
+	  else (dbg "Prod" ; Vprod(Obj.obj o)))
       else
 	if tag = Obj.closure_tag || tag = Obj.infix_tag then
 	  (match kind_of_closure o with
@@ -232,10 +240,11 @@ let whd_val : values -> whd =
 	   | _ -> Errors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work"))
 	else
 	  (Printf.fprintf stderr "parse tag = %d \n" tag ;
+	   dbg "Vconstr_block" ;
            Vconstr_block(Obj.obj o))
          
 (************************************************)
-(* Abstrct machine ******************************)
+(* Abstract machine *****************************)
 (************************************************)
 
 (* gestion de la pile *)
@@ -306,6 +315,7 @@ let rec obj_of_str_const str =
       done;
       res
   | Const_univ_level l -> Obj.repr (Vuniv_level l)
+  | Const_type u -> obj_of_atom (Atype u)
 
 let val_of_obj o = ((Obj.obj o) : values)
 
@@ -656,5 +666,36 @@ let eta_whd k whd =
   | Vuniv_level lvl -> assert false
 
 
-      
-      
+let rec pr_atom a =
+  Pp.(match a with
+  | Aid c -> str "Aid(" ++ (match c with
+                            | ConstKey c -> Names.pr_con c
+			    | RelKey i -> str "#" ++ int i
+			    | _ -> str "...") ++ str ")"
+  | Aiddef (c,vs) -> str "Aiddef(" ++ (match c with
+                                       | ConstKey c -> Names.pr_con c
+				       | RelKey i -> str "#" ++ int i
+				       | _ -> str "...") ++ str ")"
+  | Aind (mi,i) -> str "Aind(" ++ Names.pr_mind mi ++ str "#" ++ int i ++ str ")"
+  | Atype _ -> str "Atype(")
+and pr_whd w =
+  Pp.(match w with
+  | Vsort _ -> str "Vsort"
+  | Vprod _ -> str "Vprod"
+  | Vfun _ -> str "Vfun"
+  | Vfix _ -> str "Vfix"
+  | Vcofix _ -> str "Vcofix"
+  | Vconstr_const i -> str "Vconstr_const(" ++ int i ++ str ")"
+  | Vconstr_block b -> str "Vconstr_block"
+  | Vatom_stk (a,stk) -> str "Vatom_stk(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")"
+  | Vuniv_level _ -> assert false)
+and pr_stack stk =
+  Pp.(match stk with
+      | [] -> str "[]"
+      | s :: stk -> pr_zipper s ++ str " :: " ++ pr_stack stk)
+and pr_zipper z =
+  Pp.(match z with
+  | Zapp args -> str "Zapp(len = " ++ int (nargs args) ++ str ")"
+  | Zfix (f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
+  | Zswitch s -> str "Zswitch(...)"
+  | Zproj c -> str "Zproj(" ++ Names.pr_con c ++ str ")")

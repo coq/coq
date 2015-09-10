@@ -184,7 +184,9 @@ and nf_whd env whd typ =
   | Vconstr_const n ->
     construct_of_constr_const env n typ
   | Vconstr_block b ->
+      Printf.fprintf stderr "Vconstr_block\n" ;
       let tag = btag b in
+      Printf.fprintf stderr "tag = %d\n" tag ;
       let (tag,ofs) =
         if tag = Cbytecodes.last_variant_tag then
 	  match whd_val (bfield b 0) with
@@ -199,7 +201,22 @@ and nf_whd env whd typ =
   | Vatom_stk(Aiddef(idkey,v), stk) ->
       nf_whd env (whd_stack v stk) typ
   | Vatom_stk(Aind ind, stk) ->
-      nf_stk env (mkIndU ind) (type_of_ind env ind) stk
+      if Environ.polymorphic_ind ind env then
+	assert false
+      else
+	let pind = (ind, Univ.Instance.empty) in
+	nf_stk env (mkIndU pind) (type_of_ind env pind) stk
+  | Vatom_stk(Atype u, stk) ->
+    begin
+      assert (Univ.Universe.is_level u) ;
+      (* stk should have exactly 1 entry and it should be a universe level *)
+      match stk with
+      | [Zapp args] ->
+	assert (nargs args = 1) ;
+	let lvl = arg args 0 in
+	mkSort (Type (Univ.Universe.make (Obj.magic lvl)))
+      | _ -> assert false
+    end
   | Vuniv_level lvl ->
     assert false
 
@@ -373,11 +390,38 @@ and nf_cofix env cf =
   let cfb = Util.Array.map2 (fun v t -> nf_val env v t) vb cft in
   mkCoFix (init,(name,cft,cfb))
 
+let rec pr_constr c =
+  Pp.(match kind_of_term c with
+      | Rel i -> str "Rel(" ++ int i ++ str ")"
+      | Var v -> str "Var(-)"
+      | Meta _ -> assert false
+      | Evar _ -> assert false
+      | Sort s -> str "Sort(-)"
+      | Cast _ -> str "Cast"
+      | LetIn (_,x,t,b) -> str "let : (" ++ pr_constr t ++ str ") := (" ++ pr_constr x ++ str ") in (" ++ pr_constr b ++ str ")"
+      | App(f,xs) -> pr_constr f ++ str "@" ++ pr_sequence pr_constr (Array.to_list xs)
+      | Const (c,_) -> Names.pr_con c
+      | Lambda (_,t,b) -> str "(\\" ++ pr_constr t ++ str " -> " ++ pr_constr b ++ str ")"
+      | Ind ((mi,i),_) -> Names.pr_mind mi ++ str "#" ++ int i
+      | Case _ -> str "Case"
+      | Fix _ -> str "Fix"
+      | CoFix _ -> str "CoFix"
+      | Prod _ -> str "Prod"
+      | Construct _ -> str "Constructor"
+      | Proj _ -> str "Proj"
+      )
+
+
 let cbv_vm env c t  =
+  Printf.eprintf "cbv_vm >>>>>>>>>>>>>>>>>>>>>\n" ; flush stderr ;
   let transp = transp_values () in
   if not transp then set_transp_values true;
+  Printf.eprintf "val_of_constr >>>>>>>>>>>>>>>>>>>>>\n" ; flush stderr ;
   let v = Vconv.val_of_constr env c in
+  Printf.eprintf "val_of_constr <<<<<<<<<<<<<<<<<<<<<\n" ; flush stderr ;
   let c = nf_val env v t in
+  Printf.eprintf "nf_val <<<<<<<<<<<<<<<<<<<<<\n" ; flush stderr ;
+  Pp.(msg_debug (str "vm_result =" ++ fnl () ++ pr_constr c ++ fnl ()));
   if not transp then set_transp_values false;
   c
 

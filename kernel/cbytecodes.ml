@@ -20,33 +20,23 @@ type tag = int
 let id_tag = 0
 let iddef_tag = 1
 let ind_tag = 2
-let fix_tag = 3
-let switch_tag = 4
-let cofix_tag = 5
-let cofix_evaluated_tag = 6
-let univ_instance_tag = 7
-(* It could be greate if OCaml export this value,
-   So fixme if this occur in a new version of OCaml *)
+let fix_tag = 10
+let switch_tag = 11
+let cofix_tag = 12
+let cofix_evaluated_tag = 13
+let univ_instance_tag = 7 (** WHAT TO PICK HERE? *)
+(* It would be great if OCaml exported this value,
+   So fixme if this happens in a new version of OCaml *)
 let last_variant_tag = 245 
 
 type structured_constant =
   | Const_sorts of sorts
-  | Const_ind of pinductive
+  | Const_ind of inductive
   | Const_proj of Constant.t
   | Const_b0 of tag
   | Const_bn of tag * structured_constant array
   | Const_univ_level of Univ.universe_level
-
-let pr_structured_constant sc =
-  Pp.(
-  match sc with
-  | Const_sorts _ -> str "Const_sorts"
-  | Const_ind _ -> str "Const_ind"
-  | Const_proj _ -> str "Const_proj"
-  | Const_b0 i -> str "Const_b0(" ++ int i ++ str ")"
-  | Const_bn (i,x) -> str "Const_bn(" ++ int i ++ str ";" ++ str ")"
-  | Const_univ_level u -> str "Const_univ_level(" ++ Univ.Level.pr u ++ str ")"
-  )
+  | Const_type of Univ.universe
 
 type reloc_table = (tag * int) array
 
@@ -142,6 +132,7 @@ type fv_elem =
   | FVnamed of Id.t
   | FVrel of int
   | FVpoly_inst of pconstant
+  | FVunivs
 
 type fv = fv_elem array
 
@@ -165,7 +156,7 @@ type comp_env = {
     pos_rec  : instruction list; (* instruction d'acces pour les variables *)
                                  (*  de point fix ou de cofix              *)
     offset : int;
-    in_env : vm_env ref
+    in_env : vm_env ref          (* The free variables of the expression   *)
   }
 
 (* --- Pretty print *)
@@ -180,12 +171,13 @@ let pp_sort s =
 
 let rec pp_struct_const = function
   | Const_sorts s -> pp_sort s
-  | Const_ind ((mind, i), u) -> pr_mind mind ++ str"#" ++ int i
+  | Const_ind (mind, i) -> pr_mind mind ++ str"#" ++ int i
   | Const_proj p -> Constant.print p
   | Const_b0 i -> int i
   | Const_bn (i,t) ->
      int i ++ surround (prvect_with_sep pr_comma pp_struct_const t)
   | Const_univ_level l -> Univ.Level.pr l
+  | Const_type u -> str "Type@{" ++ Univ.pr_uni u ++ str "}"
 
 let pp_lbl lbl = str "L" ++ int lbl
 
@@ -193,9 +185,10 @@ let pp_pcon (id,u) =
   pr_con id ++ str "@{" ++ Univ.Instance.pr Univ.Level.pr u ++ str "}"
 
 let pp_fv_elem = function
-  | FVnamed id -> str (Id.to_string id)
-  | FVrel i -> str (string_of_int i)
-  | FVpoly_inst idu -> pp_pcon idu
+  | FVnamed id -> str "FVnamed(" ++ Id.print id ++ str ")"
+  | FVrel i -> str "Rel(" ++ int i ++ str ")"
+  | FVpoly_inst idu -> str "FVpoly_inst(" ++ pp_pcon idu ++ str ")"
+  | FVunivs -> str "FVunivs"
 
 let rec pp_instr i =
   match i with

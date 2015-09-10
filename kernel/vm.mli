@@ -26,7 +26,8 @@ type arguments
 type atom =
   | Aid of Vars.id_key
   | Aiddef of Vars.id_key * values
-  | Aind of pinductive
+  | Aind of inductive
+  | Atype of Univ.universe
 
 (** Zippers *)
 
@@ -50,6 +51,9 @@ type whd =
   | Vconstr_block of vblock
   | Vatom_stk of atom * stack
   | Vuniv_level of Univ.universe_level
+
+val pr_atom : atom -> Pp.std_ppcmds
+val pr_whd : whd -> Pp.std_ppcmds
 
 (** Constructors *)
 

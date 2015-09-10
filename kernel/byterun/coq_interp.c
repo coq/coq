@@ -72,7 +72,7 @@ sp is a local copy of the global variable extern_sp. */
 #  define Next break
 #endif 
 
-#define _COQ_DEBUG_
+/* #define _COQ_DEBUG_ */
 
 #ifdef _COQ_DEBUG_ 
 #   define print_instr(s) /*if (drawinstr)*/ printf("%s\n",s)

@@ -47,7 +47,10 @@ let rec conv_val env pb k v1 v2 cu =
   else conv_whd env pb k (whd_val v1) (whd_val v2) cu
 
 and conv_whd env pb k whd1 whd2 cu =
+  Pp.(msg_debug (str "conv_whd(" ++ pr_whd whd1 ++ str ", " ++ pr_whd whd2 ++ str ")")) ;
   match whd1, whd2 with
+  | Vuniv_level _ , _ -> assert false
+  | _ , Vuniv_level _ -> assert false
   | Vsort s1, Vsort s2 -> check_sort_cmp_universes env pb s1 s2 cu; cu
   | Vprod p1, Vprod p2 ->
       let cu = conv_val env CONV k (dom p1) (dom p2) cu in
@@ -87,9 +90,10 @@ and conv_whd env pb k whd1 whd2 cu =
 
 
 and conv_atom env pb k a1 stk1 a2 stk2 cu =
+  Pp.(msg_debug (str "conv_atom(" ++ pr_atom a1 ++ str ", " ++ pr_atom a2 ++ str ")")) ;
   match a1, a2 with
   | Aind ind1, Aind ind2 ->
-      if eq_puniverses eq_ind ind1 ind2 && compare_stack stk1 stk2
+      if eq_ind ind1 ind2 && compare_stack stk1 stk2
       then
 	conv_stack env k stk1 stk2 cu
       else raise NotConvertible
@@ -98,7 +102,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
 	conv_stack env k stk1 stk2 cu
       else raise NotConvertible
   | Aiddef(ik1,v1), Aiddef(ik2,v2) ->
-      begin
+    begin
 	try
 	  if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
 	    conv_stack env k stk1 stk2 cu
@@ -111,8 +115,14 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
       end
   | Aiddef(ik1,v1), _ ->
       conv_whd env pb k (force_whd v1 stk1) (Vatom_stk(a2,stk2)) cu
-  | _, Aiddef(ik2,v2) ->
+  | _ , Aiddef(ik2,v2) ->
       conv_whd env pb k (Vatom_stk(a1,stk1)) (force_whd v2 stk2) cu
+  | Atype u1 , Atype u2 ->
+    (** TODO: need to compare **)
+    cu
+  | Atype _ , Aid _
+  | Atype _ , Aind _
+  | Aid _ , Atype _
   | Aind _, _ | Aid _, _ -> raise NotConvertible
 
 and conv_stack env k stk1 stk2 cu =
@@ -243,6 +253,7 @@ let vconv pb env t1 t2 =
   let _cu =
     try conv_eq env pb t1 t2 (universes env)
     with NotConvertible ->
+      Printf.eprintf "conv_eq failed, trying reduction\n" ; flush stderr ;
       let v1 = val_of_constr env t1 in
       let v2 = val_of_constr env t2 in
       let cu = conv_val env pb (nb_rel env) v1 v2 (universes env) in

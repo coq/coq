@@ -225,6 +225,20 @@ let pos_poly_inst idu r =
     r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
     Kenvacc(r.offset + pos)
 
+let pos_universes r =
+  let env = !(r.in_env) in
+  let f = function
+    | FVunivs -> true
+    | _ -> false
+  in
+  try Kenvacc (r.offset + env.size - (find_at f env.fv_rev))
+  with Not_found ->
+    let pos = env.size in
+    let db = FVunivs in
+    r.in_env := { size = pos + 1; fv_rev = db::env.fv_rev } ;
+    Kenvacc(r.offset + pos)
+
+
 (*i  Examination of the continuation *)
 
 (* Discard all instructions up to the next label.                        *)
@@ -470,7 +484,7 @@ let rec str_const c =
               end
 	| _ -> Bconstr c
       end
-  | Ind ind -> Bstrconst (Const_ind ind)
+  | Ind (ind,_) -> Bstrconst (Const_ind ind)
   | Construct (((kn,j),i),u) ->  
       begin
       (* spiwack: tries first to apply the run-time compilation
@@ -525,6 +539,7 @@ let compile_fv_elem reloc fv sz cont =
   | FVrel i -> pos_rel i reloc sz :: cont
   | FVnamed id -> pos_named id reloc :: cont
   | FVpoly_inst idu -> pos_poly_inst idu reloc :: cont
+  | FVunivs -> pos_universes reloc :: cont
 
 let rec compile_fv reloc l sz cont =
   match l with
@@ -570,10 +585,24 @@ let rec compile_constr reloc c sz cont =
       compile_str_cst reloc (str_const c) sz cont
   | Sort (Type u) ->
     begin
-      if Univ.LSet.exists (fun x -> Univ.Level.var_index x <> None)
-	(Univ.Universe.levels u)
+      let levels = Univ.Universe.levels u in
+      if Univ.LSet.exists (fun x -> Univ.Level.var_index x <> None) levels
       then
-	assert false (* TODO: compile universe variable in an expression *)
+	let level_vars =
+	  List.map_filter (fun x -> Univ.Level.var_index x)
+	    (Univ.LSet.elements levels)
+	in
+	(* TODO: compile universe variables in an expression *)
+	(Pp.(msg_debug (str "u = " ++ Univ.Universe.pr u)) ;
+	 let compile_get_univ reloc idx sz cont =
+	   compile_fv_elem reloc FVunivs sz (Kfield idx :: cont)
+	 in
+	 (** TODO **)
+	 comp_app compile_str_cst compile_get_univ reloc
+	   (Bstrconst (Const_type u))
+	   (Array.of_list level_vars)
+	   sz
+	   cont)
       else
 	compile_str_cst reloc (str_const c) sz cont
     end
@@ -822,6 +851,8 @@ let rec compile_poly_inst reloc fvs sz cont =
     compile_inst u sz
       (Kpush :: Kgetglobal kn :: Kapply 1 :: Kpush ::
 	 compile_poly_inst reloc fvs (sz+1) cont)
+  | FVunivs :: fvs ->
+    Kacc sz :: Kpush :: compile_poly_inst reloc fvs (sz+1) cont
   | fv_elem :: fvs ->
     compile_fv_elem reloc fv_elem sz
       (Kpush :: compile_poly_inst reloc fvs (sz+1) cont)
@@ -830,7 +861,7 @@ let compile_term fail_on_error env c cont =
   set_global_env env;
   init_fun_code ();
   Label.reset_label_counter ();
-  let reloc = comp_env_fun 1 in
+  let reloc = comp_env_fun 1 in (** TODO: This is a problem, because it shifts indices *)
   (** TODO: Optimize code generation in the case where there are no
    ** polymorphic instantiations
    **)
@@ -867,6 +898,8 @@ let compile_term fail_on_error env c cont =
       Pp.msg_debug
 	Pp.(str "code =" ++ fnl () ++
 	      pp_bytecodes final_code ++ fnl () ++
+	    str "fv_initial = " ++
+	      prlist_with_sep (fun () -> str "; ") pp_fv_elem (!(reloc.in_env).fv_rev) ++ fnl () ++
 	    str "fv = " ++
 	      prlist_with_sep (fun () -> str "; ") pp_fv_elem fv ++
 	    fnl ()) ;

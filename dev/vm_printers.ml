@@ -62,7 +62,8 @@ and ppatom a =
   match a with
   | Aid idk -> print_idkey idk
   | Aiddef(idk,_) -> print_string "&";print_idkey idk
-  | Aind((sp,i),_) ->  print_string "Ind(";
+  | Atype u -> print_string "Type(...)" (** TODO **)
+  | Aind(sp,i) ->  print_string "Ind(";
       print_string (string_of_mind sp);
       print_string ","; print_int i;
       print_string ")"

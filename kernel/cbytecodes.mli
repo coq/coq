@@ -13,25 +13,28 @@ open Term
 
 type tag = int
 
+(*
 val id_tag : tag
 val iddef_tag : tag
 val ind_tag : tag
 val fix_tag : tag
 val switch_tag : tag
+*)
 val cofix_tag : tag
 val cofix_evaluated_tag : tag
+val univ_instance_tag : tag (** TODO: this should die *)
 val last_variant_tag : tag
-val univ_instance_tag : tag
 
 type structured_constant =
   | Const_sorts of sorts
-  | Const_ind of pinductive
+  | Const_ind of inductive
   | Const_proj of Constant.t
   | Const_b0 of tag
   | Const_bn of tag * structured_constant array
   | Const_univ_level of Univ.universe_level
+  | Const_type of Univ.universe
 
-val pr_structured_constant : structured_constant -> Pp.std_ppcmds
+val pp_struct_const : structured_constant -> Pp.std_ppcmds
 
 type reloc_table = (tag * int) array
 
@@ -124,7 +127,11 @@ type instruction =
 
 and bytecodes = instruction list
 
-type fv_elem = FVnamed of Id.t | FVrel of int | FVpoly_inst of pconstant
+type fv_elem =
+  FVnamed of Id.t
+| FVrel of int
+| FVpoly_inst of pconstant
+| FVunivs
 
 type fv = fv_elem array
 

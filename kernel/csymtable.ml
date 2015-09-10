@@ -58,7 +58,7 @@ let set_global v =
 let rec eq_structured_constant c1 c2 = match c1, c2 with
 | Const_sorts s1, Const_sorts s2 -> Sorts.equal s1 s2
 | Const_sorts _, _ -> false
-| Const_ind i1, Const_ind i2 -> Univ.eq_puniverses eq_ind i1 i2
+| Const_ind i1, Const_ind i2 -> eq_ind i1 i2
 | Const_ind _, _ -> false
 | Const_proj p1, Const_proj p2 -> Constant.equal p1 p2
 | Const_proj _, _ -> false
@@ -69,12 +69,14 @@ let rec eq_structured_constant c1 c2 = match c1, c2 with
 | Const_bn _, _ -> false
 | Const_univ_level l1 , Const_univ_level l2 -> Univ.eq_levels l1 l2
 | Const_univ_level _ , _ -> false
+| Const_type u1 , Const_type u2 -> Univ.Universe.equal u1 u2
+| Const_type _ , _ -> false
 
 let rec hash_structured_constant c =
   let open Hashset.Combine in
   match c with
   | Const_sorts s -> combinesmall 1 (Sorts.hash s)
-  | Const_ind (i,u) -> combinesmall 2 (combine (ind_hash i) (Univ.Instance.hash u))
+  | Const_ind i -> combinesmall 2 (ind_hash i)
   | Const_proj p -> combinesmall 3 (Constant.hash p)
   | Const_b0 t -> combinesmall 4 (Int.hash t)
   | Const_bn (t, a) ->
@@ -82,6 +84,7 @@ let rec hash_structured_constant c =
     let h = Array.fold_left fold 0 a in
     combinesmall 5 (combine (Int.hash t) h)
   | Const_univ_level l -> combinesmall 6 (Univ.Level.hash l)
+  | Const_type u -> combinesmall 7 (Univ.Universe.hash u)
 
 module SConstTable = Hashtbl.Make (struct
   type t = structured_constant
@@ -211,7 +214,7 @@ and eval_to_patch env (buff,pl,fv) =
   let patch = function
     | Reloc_annot a, pos -> patch_int buff pos (slot_for_annot a)
     | Reloc_const sc, pos ->
-      Pp.(msg_debug (str "patching " ++ Cbytecodes.pr_structured_constant sc ++
+      Pp.(msg_debug (str "patching " ++ Cbytecodes.pp_struct_const sc ++
 		       str " " ++ int (slot_for_str_cst sc))) ;
       patch_int buff pos (slot_for_str_cst sc)
     | Reloc_getglobal kn, pos ->
@@ -240,5 +243,3 @@ and val_of_constr env c =
 
 let set_transparent_const kn = () (* !?! *)
 let set_opaque_const kn = () (* !?! *)
-
-
