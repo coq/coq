@@ -88,7 +88,8 @@ let error lexbuf e =
 let newline = ['\n']
 let break = ['\r']
 let space = [' ' '\t']
-let identchar =  ['A'-'Z' 'a'-'z' '_' '0'-'9' ':' '-']
+let identchar =  ['A'-'Z' 'a'-'z' '_' '0'-'9' ':' '-' '.']
+let ident = ['A'-'Z' 'a'-'z' '_' ':'] identchar+
 let entitychar = ['A'-'Z' 'a'-'z']
 let pcchar = [^ '\r' '\n' '<' '>' '&']
 
@@ -226,7 +227,7 @@ and entity = parse
                 { raise (Error EUnterminatedEntity) }
 
 and ident_name = parse
-        | identchar+
+        | ident
                 { lexeme lexbuf }
         | _ | eof
                 { error lexbuf EIdentExpected }
@@ -252,7 +253,7 @@ and attributes = parse
                 }
 
 and attribute = parse
-        | identchar+
+        | ident
                 { lexeme lexbuf }
         | _ | eof
                 { error lexbuf EAttributeNameExpected }
