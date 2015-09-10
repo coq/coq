@@ -93,6 +93,22 @@ let construct_of_constr_const env tag typ =
 
 let construct_of_constr_block = construct_of_constr false
 
+(** TODO: This should almost certainly go somewhere else *)
+let get_universe_level : values -> Univ.universe_level =
+  fun v ->
+    match Obj.magic v with
+    | Vuniv_level lvl ->
+      Pp.(msg_debug (str "lvl = " ++ Univ.Level.pr lvl)) ;
+      lvl
+    | Vsort s -> assert false
+    | Vprod s -> assert false
+    | Vfun _ -> assert false
+    | Vfix _ -> assert false
+    | Vcofix _ -> assert false
+    | Vconstr_const _ -> assert false
+    | Vconstr_block _ -> assert false
+    | Vatom_stk _ -> assert false
+
 let parse_universe_instance (ui : Term.values) : Univ.Instance.t =
   match whd_val ui with
   | Vconstr_block blk ->
@@ -103,18 +119,7 @@ let parse_universe_instance (ui : Term.values) : Univ.Instance.t =
       (Array.init (bsize blk)
 	 (fun i ->
 	   Printf.fprintf stderr "i = %d\n" i ;
-	   match Obj.magic (bfield blk i) with
-	   | Vuniv_level lvl ->
-	     Pp.(msg_debug (str "lvl = " ++ Univ.Level.pr lvl)) ;
-	     lvl
-	   | Vsort s -> assert false
-	   | Vprod s -> assert false
-	   | Vfun _ -> assert false
-	   | Vfix _ -> assert false
-	   | Vcofix _ -> assert false
-	   | Vconstr_const _ -> assert false
-	   | Vconstr_block _ -> assert false
-	   | Vatom_stk _ -> assert false))
+	   get_universe_level (bfield blk i)))
     in
     Pp.(msg_debug (str "parsed universe levels = " ++
 		     Univ.Instance.pr Univ.Level.pr inst)) ;
@@ -208,9 +213,9 @@ and nf_whd env whd typ =
 	| Zapp args :: stk' ->
 	  assert (ulen <= nargs args) ;
 	  let inst =
-	    Array.init ulen (fun i -> Obj.magic (arg args i))
+	    Array.init ulen (fun i -> get_universe_level (arg args i))
 	  in
-	  let pind = (ind, Univ.Instance.empty) in
+	  let pind = (ind, Univ.Instance.of_array inst) in
 	  nf_stk ~from:ulen env (mkIndU pind) (type_of_ind env pind) stk
 	| _ -> assert false
       else
@@ -218,13 +223,25 @@ and nf_whd env whd typ =
 	nf_stk env (mkIndU pind) (type_of_ind env pind) stk
   | Vatom_stk(Atype u, stk) ->
     begin
-      assert (Univ.Universe.is_level u) ;
-      (* stk should have exactly 1 entry and it should be a universe level *)
       match stk with
       | [Zapp args] ->
-	assert (nargs args = 1) ;
-	let lvl = arg args 0 in
-	mkSort (Type (Univ.Universe.make (Obj.magic lvl)))
+	Printf.eprintf "running here! univ = \n" ; flush stderr ;
+	Pp.(msg_debug (Univ.pr_uni u)) ;
+	flush stderr ; flush stdout ;
+	assert (Univ.LSet.cardinal (Univ.Universe.levels u) = nargs args) ;
+	let _,mp = Univ.LSet.fold (fun key (i,mp) ->
+	  Printf.eprintf "getting %d\n" i ; flush stderr ;
+	  Printf.eprintf "tag = %d\n" (Obj.tag (Obj.repr (arg args i))) ; flush stderr ;
+	  let u = get_universe_level (arg args i) in
+	  (i+1, Univ.LMap.add key (Univ.Universe.make u) mp))
+	  (Univ.Universe.levels u)
+	  (0,Univ.LMap.empty) in
+	Printf.eprintf "finished map\n" ; flush stderr ;
+	let subst = Univ.make_subst mp in
+	Printf.eprintf "made subst\n" ; flush stderr ;
+	let nuniv = Univ.subst_univs_universe subst u in
+	Printf.eprintf "substituted\n" ; flush stderr ;
+	mkSort (Type nuniv)
       | _ -> assert false
     end
   | Vuniv_level lvl ->

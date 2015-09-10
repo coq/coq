@@ -565,7 +565,7 @@ let rec get_alias env kn =
 
 (* Compiling expressions *)
 
-(* sz is the size of the local stack? *)
+(* sz is the size of the local stack *)
 let rec compile_constr reloc c sz cont =
   match kind_of_term c with
   | Meta _ -> invalid_arg "Cbytegen.compile_constr : Meta"
@@ -582,7 +582,7 @@ let rec compile_constr reloc c sz cont =
   | Rel i -> pos_rel i reloc sz :: cont
   | Var id -> pos_named id reloc :: cont
   | Const (kn,u) -> compile_const reloc kn u [||] sz cont
-  | Ind (i,u) as iu ->
+  | Ind (i,u) ->
     if Univ.Instance.is_empty u then
       compile_str_cst reloc (str_const c) sz cont
     else
@@ -730,8 +730,6 @@ let rec compile_constr reloc c sz cont =
       let sz_b,branch,is_tailcall =
 	match branch1 with
 	| Kreturn k ->
-	  Printf.fprintf stderr "assert %d = %d <<<<<<<<<<<<<<<<<\n" k sz ;
-	  flush stderr ;
 	  assert (Int.equal k sz) ;
 	  sz, branch1, true
 	| _ -> sz+3, Kjump, false
@@ -892,7 +890,6 @@ let compile_term fail_on_error env c cont =
      ** environment, not on the stack. So I need to build a closure and invoke
      ** it.
      **)
-    let _ = Pp.(msg_debug (str "init code =" ++ fnl () ++ pp_bytecodes init_code ++ fnl ())) in
     let reloc_final = empty_comp_env () in
     let subst_lbl = Label.create () in
     let body_code =
@@ -951,9 +948,6 @@ let compile_constant_body fail_on_error env = function
 		Kstop :: Krestart ::
 		Klabel body_label :: body_code
 	    in
-	    let () =
-	      Pp.(msg_debug (str "final code = " ++ fnl () ++
-			       pp_bytecodes wrapped_body_code ++ fnl ())) in
 	    (wrapped_body_code, fvs)
 	  in
 	  Option.map (fun x -> BCdefined (to_memory (wrap x))) res
