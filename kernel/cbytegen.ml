@@ -484,7 +484,8 @@ let rec str_const c =
               end
 	| _ -> Bconstr c
       end
-  | Ind (ind,_) -> Bstrconst (Const_ind ind)
+  | Ind (ind,_) ->
+    Bstrconst (Const_ind ind)
   | Construct (((kn,j),i),u) ->  
       begin
       (* spiwack: tries first to apply the run-time compilation
@@ -581,7 +582,21 @@ let rec compile_constr reloc c sz cont =
   | Rel i -> pos_rel i reloc sz :: cont
   | Var id -> pos_named id reloc :: cont
   | Const (kn,u) -> compile_const reloc kn u [||] sz cont
-  | Sort (Prop _) | Ind _ | Construct _ ->
+  | Ind (i,u) as iu ->
+    if Univ.Instance.is_empty u then
+      compile_str_cst reloc (str_const c) sz cont
+    else
+      let compile_get_univ reloc l sz cont =
+	match Univ.Level.var_index l with
+	| None -> Kconst (Const_univ_level l) :: cont
+	| Some idx -> compile_fv_elem reloc FVunivs sz (Kfield idx :: cont)
+      in
+      comp_app compile_str_cst compile_get_univ reloc
+	   (str_const c)
+	   (Univ.Instance.to_array u)
+	   sz
+	   cont
+  | Sort (Prop _) | Construct _ ->
       compile_str_cst reloc (str_const c) sz cont
   | Sort (Type u) ->
     begin

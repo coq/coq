@@ -200,9 +200,19 @@ and nf_whd env whd typ =
       constr_type_of_idkey env idkey stk nf_stk
   | Vatom_stk(Aiddef(idkey,v), stk) ->
       nf_whd env (whd_stack v stk) typ
-  | Vatom_stk(Aind ind, stk) ->
+  | Vatom_stk(Aind ((mi,i) as ind), stk) ->
       if Environ.polymorphic_ind ind env then
-	assert false
+	let mib = Environ.lookup_mind mi env in
+	let ulen = Univ.UContext.size mib.mind_universes in
+	match stk with
+	| Zapp args :: stk' ->
+	  assert (ulen <= nargs args) ;
+	  let inst =
+	    Array.init ulen (fun i -> Obj.magic (arg args i))
+	  in
+	  let pind = (ind, Univ.Instance.empty) in
+	  nf_stk ~from:ulen env (mkIndU pind) (type_of_ind env pind) stk
+	| _ -> assert false
       else
 	let pind = (ind, Univ.Instance.empty) in
 	nf_stk env (mkIndU pind) (type_of_ind env pind) stk
@@ -263,17 +273,23 @@ and constr_type_of_idkey env (idkey : Vars.id_key) stk cont =
       let (_,_,ty) = lookup_rel n env in
       cont env (mkRel n) (lift n ty) stk
 
-and nf_stk env c t stk  =
+and nf_stk ?from:(from=0) env c t stk  =
   match stk with
   | [] -> c
   | Zapp vargs :: stk ->
-      let t, args = nf_args env vargs t in
-      nf_stk env (mkApp(c,args)) t stk
+      if nargs vargs >= from then
+	let t, args = nf_args ~from:from env vargs t in
+	nf_stk env (mkApp(c,args)) t stk
+      else
+	let rest = from - nargs vargs in
+	nf_stk ~from:rest env c t stk
   | Zfix (f,vargs) :: stk ->
+      assert (from = 0) ;
       let fa, typ = nf_fix_app env f vargs in
       let _,_,codom = decompose_prod env typ in
       nf_stk env (mkApp(fa,[|c|])) (subst1 c codom) stk
   | Zswitch sw :: stk ->
+      assert (from = 0) ;
       let ((mind,_ as ind), u), allargs = find_rectype_a env t in
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mib.mind_nparams in
@@ -296,6 +312,7 @@ and nf_stk env c t stk  =
       let ci = case_info sw in
       nf_stk env (mkCase(ci, p, c, branchs)) tcase stk
   | Zproj p :: stk ->
+     assert (from = 0) ;
      let p' = Projection.make p true in
      let ty = Inductiveops.type_of_projection_knowing_arg env Evd.empty p' c t in
      nf_stk env (mkProj(p',c)) ty stk
@@ -390,24 +407,29 @@ and nf_cofix env cf =
   let cfb = Util.Array.map2 (fun v t -> nf_val env v t) vb cft in
   mkCoFix (init,(name,cft,cfb))
 
+let pr_instance = Univ.Instance.pr Univ.Level.pr
+
+
 let rec pr_constr c =
   Pp.(match kind_of_term c with
       | Rel i -> str "Rel(" ++ int i ++ str ")"
-      | Var v -> str "Var(-)"
+      | Var v -> str "Var(" ++ Id.print v ++ str ")"
       | Meta _ -> assert false
       | Evar _ -> assert false
-      | Sort s -> str "Sort(-)"
+      | Sort (Prop Pos) -> str "Sort(Set)"
+      | Sort (Prop Null) -> str "Sort(Prop)"
+      | Sort (Type u) -> str "Sort(Type@{" ++ Univ.pr_uni u ++ str "})"
       | Cast _ -> str "Cast"
       | LetIn (_,x,t,b) -> str "let : (" ++ pr_constr t ++ str ") := (" ++ pr_constr x ++ str ") in (" ++ pr_constr b ++ str ")"
-      | App(f,xs) -> pr_constr f ++ str "@" ++ pr_sequence pr_constr (Array.to_list xs)
+      | App(f,xs) -> str "(" ++ pr_constr f ++ str " @ " ++ pr_sequence pr_constr (Array.to_list xs) ++ str ")"
       | Const (c,_) -> Names.pr_con c
       | Lambda (_,t,b) -> str "(\\" ++ pr_constr t ++ str " -> " ++ pr_constr b ++ str ")"
-      | Ind ((mi,i),_) -> Names.pr_mind mi ++ str "#" ++ int i
+      | Ind ((mi,i),u) -> Names.pr_mind mi ++ str "#" ++ int i ++ str "@{" ++ pr_instance u ++ str "}"
       | Case _ -> str "Case"
       | Fix _ -> str "Fix"
       | CoFix _ -> str "CoFix"
-      | Prod _ -> str "Prod"
-      | Construct _ -> str "Constructor"
+      | Prod (_,d,c) -> str "Prod(" ++ pr_constr d ++ str ", " ++ pr_constr c ++ str ")"
+      | Construct (((mi,i),id),u) -> str "Constructor(" ++ Names.pr_mind mi ++ str "#" ++ int i ++ str "#" ++ int id ++ str "@{" ++ pr_instance u ++ str "})"
       | Proj _ -> str "Proj"
       )
 
@@ -424,4 +446,3 @@ let cbv_vm env c t  =
   Pp.(msg_debug (str "vm_result =" ++ fnl () ++ pr_constr c ++ fnl ()));
   if not transp then set_transp_values false;
   c
-

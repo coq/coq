@@ -1783,8 +1783,11 @@ struct
 
   let union (univs, cst) (univs', cst') =
     Instance.append univs univs', Constraint.union cst cst'
-      
+
   let dest x = x
+
+  let size (x,_) = Instance.length x
+
 end
 
 type universe_context = UContext.t
