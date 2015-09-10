@@ -89,7 +89,7 @@ let newline = ['\n']
 let break = ['\r']
 let space = [' ' '\t']
 let identchar =  ['A'-'Z' 'a'-'z' '_' '0'-'9' ':' '-' '.']
-let ident = ['A'-'Z' 'a'-'z' '_' ':'] identchar+
+let ident = ['A'-'Z' 'a'-'z' '_' ':'] identchar*
 let entitychar = ['A'-'Z' 'a'-'z']
 let pcchar = [^ '\r' '\n' '<' '>' '&']
 
