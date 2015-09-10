@@ -861,7 +861,7 @@ let compile_term fail_on_error env c cont =
   set_global_env env;
   init_fun_code ();
   Label.reset_label_counter ();
-  let reloc = comp_env_fun 1 in (** TODO: This is a problem, because it shifts indices *)
+  let reloc = comp_env_fun 0 in
   (** TODO: Optimize code generation in the case where there are no
    ** polymorphic instantiations
    **)
