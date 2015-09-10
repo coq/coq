@@ -584,7 +584,10 @@ let dispatch =
 	  Array.init 31 (fun n -> mkConstruct
 			   (digit_ind, nth_digit_plus_one i (30-n)))
 	in
-	  mkApp(mkConstruct(ind, 1), array_of_int tag)
+	(* We check that no bit above 31 is set to one. This assertion used to
+	fail in the VM, and led to conversion tests failing at Qed. *)
+        assert (Int.equal (tag lsr 31) 0);
+	mkApp(mkConstruct(ind, 1), array_of_int tag)
   in
 
   (* subfunction which dispatches the compiling information of an
