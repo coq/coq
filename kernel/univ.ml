@@ -270,8 +270,10 @@ module Level = struct
   let is_small x = 
     match data x with
     | Level _ -> false
-    | _ -> true
-
+    | Var _ -> false
+    | Prop -> true
+    | Set -> true
+ 
   let is_prop x =
     match data x with
     | Prop -> true
@@ -670,7 +672,7 @@ let arc_is_lt arc = match arc.status with
 | Unset | SetLe -> false
 | SetLt -> true
 
-let terminal u = {univ=u; lt=[]; le=[]; rank=0; predicative=false; status = Unset}
+let terminal ?(predicative=false) u = {univ=u; lt=[]; le=[]; rank=0; predicative; status = Unset}
 
 module UMap :
 sig
@@ -720,6 +722,16 @@ let enter_arc ca g =
 
 (* Every Level.t has a unique canonical arc representative *)
 
+(** The graph always contains nodes for Prop and Set. *)
+
+let terminal_lt u v =
+  {(terminal u) with lt=[v]}
+    
+let empty_universes =
+  let g = enter_arc (terminal ~predicative:true Level.set) UMap.empty in
+  let g = enter_arc (terminal_lt Level.prop Level.set) g in
+    g
+
 (* repr : universes -> Level.t -> canonical_arc *)
 (* canonical representative : we follow the Equiv links *)
 
@@ -733,6 +745,22 @@ let rec repr g u =
     | Equiv v -> repr g v
     | Canonical arc -> arc
 
+let get_prop_arc g = repr g Level.prop
+let get_set_arc g = repr g Level.set
+let is_set_arc u = Level.is_set u.univ
+let is_prop_arc u = Level.is_prop u.univ
+
+let add_universe vlev ~predicative g = 
+  let v = terminal ~predicative vlev in
+  let arc =
+    let arc =
+      if predicative then get_set_arc g else get_prop_arc g
+    in
+      { arc with le=vlev::arc.le}
+  in
+  let g = enter_arc arc g in
+    enter_arc v g
+
 (* [safe_repr] also search for the canonical representative, but
    if the graph doesn't contain the searched universe, we add it. *)
 
@@ -745,6 +773,8 @@ let safe_repr g u =
   try g, safe_repr_rec g u
   with Not_found ->
     let can = terminal u in
+    let setarc = get_set_arc g in
+    let g = enter_arc {setarc with le=u::setarc.le} g in
     enter_arc can g, can
 
 (* reprleq : canonical_arc -> canonical_arc list *)
@@ -789,7 +819,6 @@ let between g arcu arcv =
   in
   let good,_,_ = explore ([arcv],[],false) arcu in
     good
-
 (* We assume  compare(u,v) = LE with v canonical (see compare below).
    In this case List.hd(between g u v) = repr u
    Otherwise, between g u v = []
@@ -900,8 +929,9 @@ let get_explanation strict g arcu arcv =
         in
         find [] arc.lt
   in
+  let start = (* if is_prop_arc arcu then [Le, make arcv.univ] else *) [] in
   try
-    let (to_revert, c) = cmp [] [] [] [(arcu, [])] in
+    let (to_revert, c) = cmp start [] [] [(arcu, [])] in
     (** Reset all the touched arcs. *)
     let () = List.iter (fun arc -> arc.status <- Unset) to_revert in
     List.rev c
@@ -972,7 +1002,6 @@ let fast_compare_neq strict g arcu arcv =
     else process_le c to_revert (arc :: lt_todo) le_todo lt le
 
   in
-
   try
     let (to_revert, c) = cmp FastNLE [] [] [arcu] in
     (** Reset all the touched arcs. *)
@@ -1020,10 +1049,6 @@ let check_equal g u v =
   arcu == arcv
 
 let check_eq_level g u v = u == v || check_equal g u v
-
-let is_set_arc u = Level.is_set u.univ
-let is_prop_arc u = Level.is_prop u.univ
-let get_prop_arc g = snd (safe_repr g Level.prop)
 
 let check_smaller g strict u v =
   let g, arcu = safe_repr g u in
@@ -1120,7 +1145,7 @@ let merge g arcu arcv =
   (* we find the arc with the biggest rank, and we redirect all others to it *)
   let arcu, g, v =
     let best_ranked (max_rank, old_max_rank, best_arc, rest) arc =
-      if Level.is_small arc.univ || arc.rank >= max_rank
+      if arc.rank >= max_rank && not (Level.is_small best_arc.univ)
       then (arc.rank, max_rank, arc, best_arc::rest)
       else (max_rank, old_max_rank, best_arc, arc::rest)
     in
@@ -1150,7 +1175,7 @@ let merge g arcu arcv =
 (* we assume  compare(u,v) = compare(v,u) = NLE *)
 (* merge_disc u v  forces u ~ v with repr u as canonical repr *)
 let merge_disc g arc1 arc2 =
-  let arcu, arcv = if arc1.rank < arc2.rank then arc2, arc1 else arc1, arc2 in
+  let arcu, arcv = if Level.is_small arc2.univ || arc1.rank < arc2.rank then arc2, arc1 else arc1, arc2 in
   let arcu, g = 
     if not (Int.equal arc1.rank arc2.rank) then arcu, g
     else
@@ -1173,8 +1198,8 @@ exception UniverseInconsistency of univ_inconsistency
 let error_inconsistency o u v (p:explanation option) =
   raise (UniverseInconsistency (o,make u,make v,p))
 
-(* enforc_univ_eq : Level.t -> Level.t -> unit *)
-(* enforc_univ_eq u v will force u=v if possible, will fail otherwise *)
+(* enforce_univ_eq : Level.t -> Level.t -> unit *)
+(* enforce_univ_eq u v will force u=v if possible, will fail otherwise *)
 
 let enforce_univ_eq u v g =
   let g,arcu = safe_repr g u in
@@ -1225,18 +1250,10 @@ let enforce_univ_lt u v g =
         let p = get_explanation false g arcv arcu  in
         error_inconsistency Lt u v p
 
-let empty_universes = UMap.empty
-
 (* Prop = Set is forbidden here. *)
-let initial_universes = enforce_univ_lt Level.prop Level.set UMap.empty
+let initial_universes = empty_universes
 
 let is_initial_universes g = UMap.equal (==) g initial_universes
-
-let add_universe vlev g = 
-  let v = terminal vlev in
-  let proparc = get_prop_arc g in
-    enter_arc {proparc with le=vlev::proparc.le}
-      (enter_arc v g)
       
 (* Constraints and sets of constraints. *)    
 
@@ -1370,10 +1387,12 @@ let check_univ_leq u v =
 
 let enforce_leq u v c =
   let open Universe.Huniv in
+  let rec aux acc v =
   match v with
-  | Cons (v, _, Nil) ->
-    fold (fun u -> constraint_add_leq u v) u c
-  | _ -> anomaly (Pp.str"A universe bound can only be a variable")
+  | Cons (v, _, l) ->
+    aux (fold (fun u -> constraint_add_leq u v) u c) l
+  | Nil -> acc
+  in aux c v
 
 let enforce_leq u v c =
   if check_univ_leq u v then c

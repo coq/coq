@@ -467,16 +467,17 @@ let inductive_levels env evdref poly arities inds =
 	    Evd.set_leq_sort env evd (Prop Pos) du
 	  else evd
 	in
-	  (* let arity = it_mkProd_or_LetIn (mkType cu) ctx in *\) *)
-	  let duu = Sorts.univ_of_sort du in
-	  let evd =
-	    if not (Univ.is_small_univ duu) && Evd.check_eq evd cu duu then
-	      if is_flexible_sort evd duu then
-		Evd.set_eq_sort env evd (Prop Null) du
-	      else evd
-	    else Evd.set_eq_sort env evd (Type cu) du
-	  in
-	    (evd, arity :: arities))
+	let duu = Sorts.univ_of_sort du in
+	let evd =
+	  if not (Univ.is_small_univ duu) && Evd.check_eq evd cu duu then
+	    if is_flexible_sort evd duu then
+	      if Evd.check_leq evd Univ.type0_univ duu then
+	      	evd
+	      else Evd.set_eq_sort env evd (Prop Null) du
+	    else evd
+	  else Evd.set_eq_sort env evd (Type cu) du
+	in
+	  (evd, arity :: arities))
     (!evdref,[]) (Array.to_list levels') destarities sizes
   in evdref := evd; List.rev arities
 

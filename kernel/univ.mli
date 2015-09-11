@@ -20,7 +20,11 @@ sig
 
   val is_small : t -> bool
   (** Is the universe set or prop? *)
-
+		       
+  val is_prop : t -> bool
+  val is_set : t -> bool
+  (** Is it specifically Prop or Set *)
+		       
   val compare : t -> t -> int
   (** Comparison function *)
 
@@ -159,8 +163,8 @@ val is_initial_universes : universes -> bool
 
 val sort_universes : universes -> universes
 
-(** Adds a universe to the graph, ensuring it is >= Prop. *)
-val add_universe : universe_level -> universes -> universes
+(** Adds a universe to the graph, ensuring it is >= Prop or Set. *)
+val add_universe : universe_level -> predicative:bool -> universes -> universes
 
 (** {6 Constraints. } *)
 

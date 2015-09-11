@@ -267,10 +267,9 @@ Section GenericInstances.
   Qed.
 
   (** The complement of a crelation conserves its proper elements. *)
-  
   Program Definition complement_proper
           `(mR : Proper (A -> A -> Prop) (RA ==> RA ==> iff) R) :
-    Proper (RA ==> RA ==> iff) (complement R) := _.
+    Proper (RA ==> RA ==> iff) (complement@{i j Prop} R) := _.
   
   Next Obligation.
   Proof.

@@ -453,7 +453,7 @@ let add_constraints_context ctx cstrs =
   in
     { ctx with uctx_local = (univs, Univ.Constraint.union local local');
       uctx_univ_variables = vars;
-      uctx_universes = Univ.merge_constraints cstrs ctx.uctx_universes }
+      uctx_universes = Univ.merge_constraints local' ctx.uctx_universes }
 
 (* let addconstrkey = Profile.declare_profile "add_constraints_context";; *)
 (* let add_constraints_context = Profile.profile2 addconstrkey add_constraints_context;; *)
@@ -1058,36 +1058,49 @@ let with_context_set rigid d (a, ctx) =
 let add_uctx_names s l (names, names_rev) =
     (UNameMap.add s l names, Univ.LMap.add l s names_rev)
 
-let uctx_new_univ_variable rigid name
+let uctx_new_univ_variable rigid name predicative
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
   let u = Universes.new_univ_level (Global.current_dirpath ()) in
   let ctx' = Univ.ContextSet.add_universe u ctx in
-  let uctx' = 
+  let uctx', pred =
     match rigid with
-    | UnivRigid -> uctx
+    | UnivRigid -> uctx, true
     | UnivFlexible b -> 
       let uvars' = Univ.LMap.add u None uvars in
 	if b then {uctx with uctx_univ_variables = uvars';
-	  uctx_univ_algebraic = Univ.LSet.add u avars}
-	else {uctx with uctx_univ_variables = Univ.LMap.add u None uvars} in
+	  uctx_univ_algebraic = Univ.LSet.add u avars}, false
+	else {uctx with uctx_univ_variables = uvars'}, false
+  in
+  (* let ctx' = *)
+  (*   if pred then *)
+  (*     Univ.ContextSet.add_constraints *)
+  (* 	(Univ.Constraint.singleton (Univ.Level.set, Univ.Le, u)) ctx' *)
+  (*   else ctx' *)
+  (* in *)
   let names = 
     match name with
     | Some n -> add_uctx_names n u uctx.uctx_names
     | None -> uctx.uctx_names
   in
+  let initial =
+    Univ.add_universe u pred uctx.uctx_initial_universes
+  in						     
+  let uctx' =
     {uctx' with uctx_names = names; uctx_local = ctx';
-      uctx_universes = Univ.add_universe u uctx.uctx_universes}, u
-
-let new_univ_level_variable ?name rigid evd =
-  let uctx', u = uctx_new_univ_variable rigid name evd.universes in
+		uctx_universes = Univ.add_universe u pred uctx.uctx_universes;
+		uctx_initial_universes = initial}
+  in uctx', u
+						     
+let new_univ_level_variable ?name ?(predicative=true) rigid evd =
+  let uctx', u = uctx_new_univ_variable rigid name predicative evd.universes in
     ({evd with universes = uctx'}, u)
 
-let new_univ_variable ?name rigid evd =
-  let uctx', u = uctx_new_univ_variable rigid name evd.universes in
+let new_univ_variable ?name ?(predicative=true) rigid evd =
+  let uctx', u = uctx_new_univ_variable rigid name predicative evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
-let new_sort_variable ?name rigid d =
-  let (d', u) = new_univ_variable rigid ?name d in
+let new_sort_variable ?name ?(predicative=true) rigid d =
+  let (d', u) = new_univ_variable rigid ?name ~predicative d in
     (d', Type u)
 
 let make_flexible_variable evd b u =
