@@ -248,6 +248,17 @@ let automatic_tactics =
 let cmd_print =
   new preference ~name:["cmd_print"] ~init:"lpr" ~repr:Repr.(string)
 
+let attach_modifiers (pref : string preference) prefix =
+  let cb mds =
+    let mds = str_to_mod_list mds in
+    let change ~path ~key ~modi ~changed =
+      if CString.is_sub prefix path 0 then
+        ignore (GtkData.AccelMap.change_entry ~key ~modi:mds ~replace:true path)
+    in
+    GtkData.AccelMap.foreach change
+  in
+  pref#connect#changed cb
+
 let modifier_for_navigation =
   new preference ~name:["modifier_for_navigation"] ~init:"<Control><Alt>" ~repr:Repr.(string)
 
@@ -259,6 +270,11 @@ let modifier_for_tactics =
 
 let modifier_for_display =
   new preference ~name:["modifier_for_display"] ~init:"<Alt><Shift>" ~repr:Repr.(string)
+
+let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/"
+let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/"
+let _ = attach_modifiers modifier_for_tactics "<Actions>/Tactics/"
+let _ = attach_modifiers modifier_for_display "<Actions>/View/"
 
 let modifiers_valid =
   new preference ~name:["modifiers_valid"] ~init:"<Alt><Control><Shift>" ~repr:Repr.(string)
