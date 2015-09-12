@@ -834,6 +834,7 @@ and compile_const =
                    compile_get_global reloc (kn,u) cont)
         compile_constr reloc () args sz cont
 
+(** TODO: This should be implemented with comp_args *)
 let compile_inst inst u_offset cont =
   (** TODO: If we are making a copy then we can skip this
    ** - In order to check this, we need to know the length of the instance

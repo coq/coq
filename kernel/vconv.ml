@@ -92,10 +92,29 @@ and conv_whd env pb k whd1 whd2 cu =
 and conv_atom env pb k a1 stk1 a2 stk2 cu =
   Pp.(msg_debug (str "conv_atom(" ++ pr_atom a1 ++ str ", " ++ pr_atom a2 ++ str ")")) ;
   match a1, a2 with
-  | Aind ind1, Aind ind2 ->
+  | Aind ((mi,i) as ind1) , Aind ind2 ->
       if eq_ind ind1 ind2 && compare_stack stk1 stk2
       then
-	conv_stack env k stk1 stk2 cu
+        if Environ.polymorphic_ind ind1 env
+        then
+          let mib = Environ.lookup_mind mi env in
+	  let ulen = Univ.UContext.size mib.Declarations.mind_universes in
+          match stk1 , stk2 with
+	  | Zapp args1 :: stk1' , Zapp args2 :: stk2' ->
+	    assert (ulen <= nargs args1) ;
+            assert (ulen <= nargs args2) ;
+            for i = 0 to ulen - 1 do
+              let a1 = uni_lvl_val (arg args1 i) in
+              let a2 = uni_lvl_val (arg args2 i) in
+              let result = Univ.Level.equal a1 a2 in
+              if not result
+              then raise NotConvertible
+            done ;
+            conv_arguments env ~from:ulen k args1 args2
+              (conv_stack env k stk1' stk2' cu)
+	  | _ -> raise NotConvertible
+        else
+	  conv_stack env k stk1 stk2 cu
       else raise NotConvertible
   | Aid ik1, Aid ik2 ->
       if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
@@ -108,7 +127,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
 	    conv_stack env k stk1 stk2 cu
 	  else raise NotConvertible
 	with NotConvertible ->
-	  if oracle_order (fun x -> x) (oracle_of_infos !infos) 
+	  if oracle_order (fun x -> x) (oracle_of_infos !infos)
 	    false ik1 ik2 then
             conv_whd env pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
           else conv_whd env pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
@@ -125,14 +144,14 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
   | Aid _ , Atype _
   | Aind _, _ | Aid _, _ -> raise NotConvertible
 
-and conv_stack env k stk1 stk2 cu =
+and conv_stack env ?from:(from=0) k stk1 stk2 cu =
   match stk1, stk2 with
   | [], [] -> cu
   | Zapp args1 :: stk1, Zapp args2 :: stk2 ->
-      conv_stack env k stk1 stk2 (conv_arguments env k args1 args2 cu)
+      conv_stack env k stk1 stk2 (conv_arguments env ~from:from k args1 args2 cu)
   | Zfix(f1,args1) :: stk1, Zfix(f2,args2) :: stk2 ->
       conv_stack env k stk1 stk2
-	(conv_arguments env k args1 args2 (conv_fix env k f1 f2 cu))
+	(conv_arguments env ~from:from k args1 args2 (conv_fix env k f1 f2 cu))
   | Zswitch sw1 :: stk1, Zswitch sw2 :: stk2 ->
       if check_switch sw1 sw2 then
 	let vt1,vt2 = type_of_switch sw1, type_of_switch sw2 in
@@ -176,13 +195,14 @@ and conv_cofix env k cf1 cf2 cu =
       conv_vect (conv_val env CONV (k + Array.length tcf1)) bcf1 bcf2 cu
     else raise NotConvertible
 
-and conv_arguments env k args1 args2 cu =
+and conv_arguments env ?from:(from=0) k args1 args2 cu =
   if args1 == args2 then cu
   else
     let n = nargs args1 in
     if Int.equal n (nargs args2) then
       let rcu = ref cu in
-      for i = 0 to n - 1 do
+      Pp.(msg_debug (str "from = " ++ int from ++ str ", to = " ++ int (n - 1) ++ fnl ())) ;
+      for i = from to n - 1 do
 	rcu := conv_val env CONV k (arg args1 i) (arg args2 i) !rcu
       done;
       !rcu

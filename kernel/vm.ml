@@ -227,9 +227,12 @@ let whd_val : values -> whd =
       if tag = accu_tag then
 	(
 	if Int.equal (Obj.size o) 1 then (dbg "sort?" ; Obj.obj o) (* sort *)
-	else
+        else
+          (dbg "checking acumulate" ;
+           dbg (string_of_bool (is_accumulate (fun_code o))) ;
+           dbg "here" ;
 	  if is_accumulate (fun_code o) then (dbg "accu" ; whd_accu o [])
-	  else (dbg "Prod" ; Vprod(Obj.obj o)))
+	  else (dbg "Prod" ; Vprod(Obj.obj o))))
       else
 	if tag = Obj.closure_tag || tag = Obj.infix_tag then
 	  (match kind_of_closure o with
@@ -242,7 +245,22 @@ let whd_val : values -> whd =
 	  (Printf.fprintf stderr "parse tag = %d \n" tag ;
 	   dbg "Vconstr_block" ;
            Vconstr_block(Obj.obj o))
-         
+
+let uni_lvl_val : values -> Univ.universe_level =
+  fun v ->
+    match Obj.magic v with
+    | Vuniv_level lvl ->
+(*      Pp.(msg_debug (str "lvl = " ++ Univ.Level.pr lvl)) ; *)
+      lvl
+    | Vsort s -> assert false
+    | Vprod s -> assert false
+    | Vfun _ -> assert false
+    | Vfix _ -> assert false
+    | Vcofix _ -> assert false
+    | Vconstr_const _ -> assert false
+    | Vconstr_block _ -> assert false
+    | Vatom_stk _ -> assert false
+
 (************************************************)
 (* Abstract machine *****************************)
 (************************************************)
