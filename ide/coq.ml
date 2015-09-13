@@ -336,7 +336,7 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
   let lex = Lexing.from_string s in
   let p = Xml_parser.make (Xml_parser.SLexbuf lex) in
   let rec loop () =
-    let xml = Xml_parser.parse p in
+    let xml = Xml_parser.parse ~do_not_canonicalize:true p in
     let l_end = Lexing.lexeme_end lex in
     state.fragment <- String.sub s l_end (String.length s - l_end);
     state.lexerror <- None;
