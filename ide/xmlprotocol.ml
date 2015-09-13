@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20150821"
+let protocol_version = "20150913"
 
 (** * Interface of calls to Coq by CoqIde *)
 
@@ -90,7 +90,7 @@ let of_value f = function
   | None -> []
   | Some (s, e) -> [("loc_s", string_of_int s); ("loc_e", string_of_int e)] in
   let id = Stateid.to_xml id in
-  Element ("value", ["val", "fail"] @ loc, [id;PCData msg])
+  Element ("value", ["val", "fail"] @ loc, [id; Richpp.of_richpp msg])
 let to_value f = function
 | Element ("value", attrs, l) ->
   let ans = massoc "val" attrs in
@@ -103,8 +103,9 @@ let to_value f = function
         Some (loc_s, loc_e)
       with Marshal_error | Failure _ -> None
     in
-    let id = Stateid.of_xml (List.hd l) in
-    let msg = raw_string (List.tl l) in
+    let (id, msg) = match l with [id; msg] -> (id, msg) | _ -> raise Marshal_error in
+    let id = Stateid.of_xml id in
+    let msg = Richpp.to_richpp msg in
     Fail (id, loc, msg)
   else raise Marshal_error
 | _ -> raise Marshal_error
@@ -671,10 +672,10 @@ let to_call : xml -> unknown call =
 
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
-  | Fail (id,None,str) -> "FAIL "^Stateid.to_string id^" ["^str^"]"
+  | Fail (id,None,str) -> "FAIL "^Stateid.to_string id^" ["^Richpp.raw_print str^"]"
   | Fail (id,Some(i,j),str) ->
       "FAIL "^Stateid.to_string id^
-        " ("^string_of_int i^","^string_of_int j^")["^str^"]"
+        " ("^string_of_int i^","^string_of_int j^")["^Richpp.raw_print str^"]"
 let pr_value v = pr_value_gen (fun _ -> "FIXME") v
 let pr_full_value call value = match call with
   | Add _        -> pr_value_gen (print add_rty_t        ) (Obj.magic value)
@@ -730,7 +731,7 @@ let document to_string_fmt =
     (to_string_fmt (of_value (fun _ -> PCData "b") (Good ())));
   Printf.printf "or:\n\n%s\n\nwhere the attributes loc_s and loc_c are optional.\n"
     (to_string_fmt (of_value (fun _ -> PCData "b")
-      (Fail (Stateid.initial,Some (15,34),"error message"))));
+      (Fail (Stateid.initial,Some (15,34),Richpp.richpp_of_string "error message"))));
   document_type_encoding to_string_fmt
 
 (* vim: set foldmethod=marker: *)

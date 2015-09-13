@@ -327,9 +327,9 @@ object(self)
   method raw_coq_query phrase =
     let action = log "raw_coq_query starting now" in
     let display_error s =
-      if not (Glib.Utf8.validate s) then
+      if not (validate s) then
         flash_info "This error is so nasty that I can't even display it."
-      else messages#add_string s;
+      else messages#add s;
     in
     let query =
       Coq.query ~logger:messages#push (phrase,Stateid.dummy) in
@@ -594,7 +594,7 @@ object(self)
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
                   let sentence = Doc.pop document in
-                  self#process_interp_error queue sentence loc (Richpp.richpp_of_string msg) tip id in
+                  self#process_interp_error queue sentence loc msg tip id in
             Coq.bind coq_query handle_answer
       in
       let tip =
@@ -702,7 +702,7 @@ object(self)
           conclusion ()
       | Fail (safe_id, loc, msg) ->
           if loc <> None then messages#push Pp.Error (Richpp.richpp_of_string "Fixme LOC");
-          messages#push Pp.Error (Richpp.richpp_of_string msg);
+          messages#push Pp.Error msg;
           if Stateid.equal safe_id Stateid.dummy then self#show_goals
           else undo safe_id
                  (Doc.focused document && Doc.is_in_focus document safe_id))
@@ -720,7 +720,7 @@ object(self)
     ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
   =
     messages#clear;
-    messages#push Pp.Error (Richpp.richpp_of_string msg);
+    messages#push Pp.Error msg;
     ignore(self#process_feedback ());
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
     else
@@ -777,9 +777,9 @@ object(self)
       self#show_goals
     in
     let display_error (loc, s) =
-      if not (Glib.Utf8.validate s) then
+      if not (validate s) then
         flash_info "This error is so nasty that I can't even display it."
-      else messages#add_string s
+      else messages#add s
     in
     let try_phrase phrase stop more =
       let action = log "Sending to coq now" in

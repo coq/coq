@@ -330,10 +330,14 @@ let handle_exn (e, info) =
   let loc_of e = match Loc.get_loc e with
     | Some loc when not (Loc.is_ghost loc) -> Some (Loc.unloc loc)
     | _ -> None in
-  let mk_msg () = read_stdout ()^"\n"^string_of_ppcmds (Errors.print ~info e) in
+  let mk_msg () =
+    let msg = read_stdout () in
+    let msg = str msg ++ fnl () ++ Errors.print ~info e in
+    Richpp.richpp_of_pp msg
+  in
   match e with
-  | Errors.Drop -> dummy, None, "Drop is not allowed by coqide!"
-  | Errors.Quit -> dummy, None, "Quit is not allowed by coqide!"
+  | Errors.Drop -> dummy, None, Richpp.richpp_of_string "Drop is not allowed by coqide!"
+  | Errors.Quit -> dummy, None, Richpp.richpp_of_string "Quit is not allowed by coqide!"
   | e ->
       match Stateid.get info with
       | Some (valid, _) -> valid, loc_of info, mk_msg ()

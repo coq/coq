@@ -118,7 +118,7 @@ type edit_id = Feedback.edit_id
    should probably retract to that point *)
 type 'a value =
   | Good of 'a
-  | Fail of (state_id * location * string)
+  | Fail of (state_id * location * richpp)
 
 type ('a, 'b) union = ('a, 'b) Util.union
 
@@ -202,7 +202,7 @@ type about_sty = unit
 type about_rty = coq_info
 
 type handle_exn_sty = Exninfo.iexn
-type handle_exn_rty = state_id * location * string
+type handle_exn_rty = state_id * location * richpp
 
 (* Retrocompatibility stuff *)
 type interp_sty = (raw * verbose) * string
