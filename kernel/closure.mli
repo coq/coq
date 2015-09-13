@@ -107,7 +107,6 @@ type fterm =
   | FApp of fconstr * fconstr array
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
-  | FCase of case_info * fconstr * fconstr * fconstr array
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
   | FLambda of int * (name * constr) list * constr * fconstr subs
   | FProd of name * fconstr * fconstr
@@ -124,7 +123,6 @@ type fterm =
 
 type stack_member =
   | Zapp of fconstr array
-  | Zcase of case_info * fconstr * fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
   | Zfix of fconstr * stack
   | Zshift of int
