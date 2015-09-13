@@ -346,7 +346,6 @@ and fterm =
   | FProj of projection * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
-  | FCase of case_info * fconstr * fconstr * fconstr array
   | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
   | FLambda of int * (Name.t * constr) list * constr * fconstr subs
   | FProd of Name.t * fconstr * fconstr
@@ -376,7 +375,6 @@ let update v1 no t =
 
 type stack_member =
   | Zapp of fconstr array
-  | Zcase of case_info * fconstr * fconstr array
   | ZcaseT of case_info * constr * constr array * fconstr subs
   | Zproj of int * int * constant
   | Zfix of fconstr * stack
@@ -569,10 +567,6 @@ let rec to_constr constr_fun lfts v =
     | FFlex (ConstKey op) -> mkConstU op
     | FInd op -> mkIndU op
     | FConstruct op -> mkConstructU op
-    | FCase (ci,p,c,ve) ->
-	mkCase (ci, constr_fun lfts p,
-                constr_fun lfts c,
-		CArray.Fun1.map constr_fun lfts ve)
     | FCaseT (ci,p,c,ve,env) ->
 	mkCase (ci, constr_fun lfts (mk_clos env p),
                 constr_fun lfts c,
@@ -646,9 +640,6 @@ let rec zip m stk =
   match stk with
     | [] -> m
     | Zapp args :: s -> zip {norm=neutr m.norm; term=FApp(m, args)} s
-    | Zcase(ci,p,br)::s ->
-        let t = FCase(ci, p, m, br) in
-        zip {norm=neutr m.norm; term=t} s
     | ZcaseT(ci,p,br,e)::s ->
         let t = FCaseT(ci, p, m, br, e) in
         zip {norm=neutr m.norm; term=t} s
@@ -731,7 +722,7 @@ let rec get_args n tys f e stk =
 
 (* Eta expansion: add a reference to implicit surrounding lambda at end of stack *)
 let rec eta_expand_stack = function
-  | (Zapp _ | Zfix _ | Zcase _ | ZcaseT _ | Zproj _ 
+  | (Zapp _ | Zfix _ | ZcaseT _ | Zproj _
 	| Zshift _ | Zupdate _ as e) :: s ->
       e :: eta_expand_stack s
   | [] ->
@@ -842,7 +833,6 @@ let rec knh info m stk =
     | FCLOS(t,e) -> knht info e t (zupdate m stk)
     | FLOCKED -> assert false
     | FApp(a,b) -> knh info a (append_stack b (zupdate m stk))
-    | FCase(ci,p,t,br) -> knh info t (Zcase(ci,p,br)::zupdate m stk)
     | FCaseT(ci,p,t,br,e) -> knh info t (ZcaseT(ci,p,br,e)::zupdate m stk)
     | FFix(((ri,n),(_,_,_)),_) ->
         (match get_nth_arg m ri.(n) stk with
@@ -904,10 +894,6 @@ let rec knr info m stk =
         | None -> (set_norm m; (m,stk)))
   | FConstruct((ind,c),u) when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
-          (depth, args, Zcase(ci,_,br)::s) ->
-            assert (ci.ci_npar>=0);
-            let rargs = drop_parameters depth ci.ci_npar args in
-            kni info br.(c-1) (rargs@s)
         | (depth, args, ZcaseT(ci,_,br,e)::s) ->
             assert (ci.ci_npar>=0);
             let rargs = drop_parameters depth ci.ci_npar args in
@@ -924,7 +910,7 @@ let rec knr info m stk =
         | (_,args,s) -> (m,args@s))
   | FCoFix _ when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
-          (_, args, (((Zcase _|ZcaseT _|Zproj _)::_) as stk')) ->
+          (_, args, (((ZcaseT _|Zproj _)::_) as stk')) ->
             let (fxe,fxbd) = contract_fix_vect m.term in
             knit info fxe fxbd (args@stk')
         | (_,args,s) -> (m,args@s))
@@ -953,9 +939,6 @@ let rec zip_term zfun m stk =
     | [] -> m
     | Zapp args :: s ->
         zip_term zfun (mkApp(m, Array.map zfun args)) s
-    | Zcase(ci,p,br)::s ->
-        let t = mkCase(ci, zfun p, m, Array.map zfun br) in
-        zip_term zfun t s
     | ZcaseT(ci,p,br,e)::s ->
         let t = mkCase(ci, zfun (mk_clos e p), m,
 		       Array.map (fun b -> zfun (mk_clos e b)) br) in
