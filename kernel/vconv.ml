@@ -141,8 +141,7 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
   | _ , Aiddef(ik2,v2) ->
       conv_whd env pb k (Vatom_stk(a1,stk1)) (force_whd v2 stk2) cu
   | Atype u1 , Atype u2 ->
-    if Univ.equal_universes u1 u2 then cu
-    else raise NotConvertible
+    check_sort_cmp_universes env pb (Type u1) (Type u2) cu ; cu
   | Atype _ , Aid _
   | Atype _ , Aind _
   | Aid _ , Atype _
