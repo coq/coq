@@ -12,6 +12,7 @@
 
 type raw = bool
 type verbose = bool
+type richpp = Richpp.richpp
 
 (** The type of coqtop goals *)
 type goal = {

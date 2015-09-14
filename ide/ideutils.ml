@@ -37,11 +37,9 @@ let flash_info =
   let flash_context = status#new_context ~name:"Flash" in
     (fun ?(delay=5000) s -> flash_context#flash ~delay s)
 
-module StringMap = Map.Make(String)
-
 let translate s = s
 
-let insert_xml ?(tags = []) (buf : #GText.buffer_skel) xml =
+let insert_xml ?(tags = []) (buf : #GText.buffer_skel) msg =
   let open Xml_datatype in
   let tag name =
     let name = translate name in
@@ -55,7 +53,7 @@ let insert_xml ?(tags = []) (buf : #GText.buffer_skel) xml =
     let tags = try tag t :: tags with Not_found -> tags in
     List.iter (fun xml -> insert tags xml) children
   in
-  insert tags xml
+  insert tags (Richpp.repr msg)
 
 let set_location = ref  (function s -> failwith "not ready")
 

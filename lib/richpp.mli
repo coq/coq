@@ -39,3 +39,29 @@ val xml_of_rich_pp :
   ('annotation -> (string * string) list) ->
   'annotation located Xml_datatype.gxml ->
   Xml_datatype.xml
+
+(** {5 Enriched text} *)
+
+type richpp
+(** Type of text with style annotations *)
+
+val richpp_of_pp : Pp.std_ppcmds -> richpp
+(** Extract style information from formatted text *)
+
+val richpp_of_xml : Xml_datatype.xml -> richpp
+(** Do not use outside of dedicated areas *)
+
+val richpp_of_string : string -> richpp
+(** Make a styled text out of a normal string *)
+
+val repr : richpp -> Xml_datatype.xml
+(** Observe the styled text as XML *)
+
+(** {5 Serialization} *)
+
+val of_richpp : richpp -> Xml_datatype.xml
+val to_richpp : Xml_datatype.xml -> richpp
+
+(** Represent the semi-structured document as a string, dropping any additional
+    information. *)
+val raw_print : richpp -> string

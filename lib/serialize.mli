@@ -35,3 +35,5 @@ val of_edit_id: int -> xml
 val to_edit_id: xml -> int
 val of_loc : Loc.t -> xml
 val to_loc : xml -> Loc.t
+val of_xml : xml -> xml
+val to_xml : xml -> xml

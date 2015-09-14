@@ -164,6 +164,14 @@ let flags_to_color f =
   else if List.mem `INCOMPLETE f then `NAME "gray"
   else `NAME Preferences.processed_color#get
 
+let validate s =
+  let open Xml_datatype in
+  let rec validate = function
+  | PCData s -> Glib.Utf8.validate s
+  | Element (_, _, children) -> List.for_all validate children
+  in
+  validate (Richpp.repr s)
+
 module Doc = Document
 
 class coqops

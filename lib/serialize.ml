@@ -114,3 +114,7 @@ let to_loc xml =
       with Not_found | Invalid_argument _ -> raise Marshal_error)
   | _ -> raise Marshal_error
 
+let of_xml x = Element ("xml", [], [x])
+let to_xml xml = match xml with
+| Element ("xml", [], [x]) -> x
+| _ -> raise Marshal_error

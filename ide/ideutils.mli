@@ -52,6 +52,9 @@ val pop_info : unit -> unit
 val clear_info : unit -> unit
 val flash_info : ?delay:int -> string -> unit
 
+val insert_xml : ?tags:GText.tag list ->
+  #GText.buffer_skel -> Richpp.richpp -> unit
+
 val set_location : (string -> unit) ref
 
 (* In win32, when a command-line is to be executed via cmd.exe
