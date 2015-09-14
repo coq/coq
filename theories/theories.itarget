@@ -1,6 +1,7 @@
 Arith/vo.otarget
 Bool/vo.otarget
 Classes/vo.otarget
+Compat/vo.otarget
 FSets/vo.otarget
 MSets/vo.otarget
 Structures/vo.otarget
