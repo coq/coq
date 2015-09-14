@@ -31,14 +31,14 @@ val get_declare_definition_hook : unit -> (definition_entry -> unit)
 (** {6 Definitions/Let} *)
 
 val interp_definition :
-  local_binder list -> polymorphic -> red_expr option -> constr_expr ->
+  lident list option -> local_binder list -> polymorphic -> red_expr option -> constr_expr ->
   constr_expr option -> definition_entry * Evd.evar_map * Impargs.manual_implicits
 
 val declare_definition : Id.t -> definition_kind ->
   definition_entry -> Impargs.manual_implicits ->
     Globnames.global_reference Lemmas.declaration_hook -> Globnames.global_reference
 
-val do_definition : Id.t -> definition_kind ->
+val do_definition : Id.t -> definition_kind -> lident list option ->
   local_binder list -> red_expr option -> constr_expr ->
   constr_expr option -> unit Lemmas.declaration_hook -> unit
 
@@ -70,6 +70,7 @@ val do_assumptions : locality * polymorphic * assumption_object_kind ->
 
 type structured_one_inductive_expr = {
   ind_name : Id.t;
+  ind_univs : lident list option;
   ind_arity : constr_expr;
   ind_lc : (Id.t * constr_expr) list
 }
@@ -109,6 +110,7 @@ val do_mutual_inductive :
 
 type structured_fixpoint_expr = {
   fix_name : Id.t;
+  fix_univs : lident list option;
   fix_annot : Id.t Loc.located option;
   fix_binders : local_binder list;
   fix_body : constr_expr option;

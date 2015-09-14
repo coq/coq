@@ -43,6 +43,12 @@ module Make
     else
       pr_id id
 
+  let pr_plident (lid, l) =
+    pr_lident lid ++
+    (match l with
+     | Some l -> prlist_with_sep spc pr_lident l
+     | None -> mt())
+    
   let string_of_fqid fqid =
     String.concat "." (List.map Id.to_string fqid)
 
@@ -387,10 +393,16 @@ module Make
              hov 0 (prlist_with_sep sep pr_production_item pil ++
                       spc() ++ str":=" ++ spc() ++ pr_raw_tactic t))
 
-  let pr_statement head (id,(bl,c,guard)) =
-    assert (not (Option.is_empty id));
+  let pr_univs pl =
+    match pl with
+    | None -> mt ()
+    | Some pl -> str"@{" ++ prlist_with_sep spc pr_lident pl ++ str"}"
+
+  let pr_statement head (idpl,(bl,c,guard)) =
+    assert (not (Option.is_empty idpl));
+    let id, pl = Option.get idpl in
     hov 2
-      (head ++ spc() ++ pr_lident (Option.get id) ++ spc() ++
+      (head ++ spc() ++ pr_lident id ++ pr_univs pl ++ spc() ++
          (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
          pr_opt (pr_guard_annot pr_lconstr_expr bl) guard ++
          str":" ++ pr_spc_lconstr c)
@@ -729,7 +741,7 @@ module Make
           return (
             hov 2 (
               pr_def_token d ++ spc()
-              ++ pr_lident id ++ binds ++ typ
+              ++ pr_plident id ++ binds ++ typ
               ++ (match c with
                 | None -> mt()
                 | Some cc -> str" :=" ++ spc() ++ cc))
@@ -781,10 +793,10 @@ module Make
             | RecordDecl (c,fs) ->
               pr_record_decl b c fs
           in
-          let pr_oneind key (((coe,id),indpar,s,k,lc),ntn) =
+          let pr_oneind key (((coe,(id,pl)),indpar,s,k,lc),ntn) =
             hov 0 (
               str key ++ spc() ++
-                (if coe then str"> " else str"") ++ pr_lident id ++
+                (if coe then str"> " else str"") ++ pr_lident id ++ pr_univs pl ++
                 pr_and_type_binders_arg indpar ++ spc() ++
                 Option.cata (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) (mt()) s ++
                 str" :=") ++ pr_constructor_list k lc ++
@@ -808,9 +820,9 @@ module Make
             | None | Some Global -> ""
           in
           let pr_onerec = function
-            | ((loc,id),ro,bl,type_,def),ntn ->
+            | (((loc,id),pl),ro,bl,type_,def),ntn ->
               let annot = pr_guard_annot pr_lconstr_expr bl ro in
-              pr_id id ++ pr_binders_arg bl ++ annot
+              pr_id id ++ pr_univs pl ++ pr_binders_arg bl ++ annot
               ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
               ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) def ++
                 prlist (pr_decl_notation pr_constr) ntn
@@ -826,8 +838,8 @@ module Make
             | Some Local -> keyword "Local" ++ spc ()
             | None | Some Global -> str ""
           in
-          let pr_onecorec (((loc,id),bl,c,def),ntn) =
-            pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
+          let pr_onecorec ((((loc,id),pl),bl,c,def),ntn) =
+            pr_id id ++ pr_univs pl ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
               spc() ++ pr_lconstr_expr c ++
               pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) def ++
               prlist (pr_decl_notation pr_constr) ntn

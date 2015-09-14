@@ -212,7 +212,7 @@ let save ?export_seff id const cstrs do_guard (locality,poly,kind) hook =
 let default_thm_id = Id.of_string "Unnamed_thm"
 
 let compute_proof_name locality = function
-  | Some (loc,id) ->
+  | Some ((loc,id),pl) ->
       (* We check existence here: it's a bit late at Qed time *)
       if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
 	 locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
@@ -431,7 +431,11 @@ let start_proof_with_initialization kind ctx recguard thms snl hook =
 
 let start_proof_com kind thms hook =
   let env0 = Global.env () in
-  let evdref = ref (Evd.from_env env0) in
+  let levels = Option.map snd (fst (List.hd thms)) in 
+  let evdref = ref (match levels with
+		    | None -> Evd.from_env env0
+		    | Some l -> Evd.from_ctx (Evd.make_evar_universe_context env0 l))
+  in
   let thms = List.map (fun (sopt,(bl,t,guard)) ->
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in

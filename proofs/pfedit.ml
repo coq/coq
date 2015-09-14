@@ -133,7 +133,7 @@ open Decl_kinds
 let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
-  let evd = Evd.from_env ~ctx Environ.empty_env in
+  let evd = Evd.from_ctx ctx in
   start_proof id goal_kind evd sign typ (fun _ -> ());
   try
     let status = by tac in

@@ -90,9 +90,10 @@ let binder_of_decl = function
 
 let binders_of_decls = List.map binder_of_decl
 
-let typecheck_params_and_fields def id t ps nots fs =
+let typecheck_params_and_fields def id pl t ps nots fs =
   let env0 = Global.env () in
-  let evars = ref (Evd.from_env env0) in
+  let ctx = Evd.make_evar_universe_context env0 pl in
+  let evars = ref (Evd.from_ctx ctx) in
   let _ = 
     let error bk (loc, name) = 
       match bk, name with
@@ -502,7 +503,7 @@ open Vernacexpr
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions 
    or subinstances *)
-let definition_structure (kind,poly,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
+let definition_structure (kind,poly,finite,(is_coe,((loc,idstruc),pl)),ps,cfs,idbuild,s) =
   let cfs,notations = List.split cfs in
   let cfs,priorities = List.split cfs in
   let coers,fs = List.split cfs in
@@ -519,7 +520,7 @@ let definition_structure (kind,poly,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild
   (* Now, younger decl in params and fields is on top *)
   let ctx, arity, template, implpars, params, implfs, fields =
     States.with_state_protection (fun () ->
-      typecheck_params_and_fields (kind = Class true) idstruc s ps notations fs) () in
+      typecheck_params_and_fields (kind = Class true) idstruc pl s ps notations fs) () in
   let sign = structure_signature (fields@params) in
     match kind with
     | Class def ->

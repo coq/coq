@@ -150,7 +150,7 @@ let build_newrecursive
   in
   let (rec_sign,rec_impls) =
     List.fold_left
-      (fun (env,impls) ((_,recname),bl,arityc,_) ->
+      (fun (env,impls) (((_,recname),_),bl,arityc,_) ->
         let arityc = Constrexpr_ops.prod_constr_expr arityc bl in
         let arity,ctx = Constrintern.interp_type env0 sigma arityc in
 	let evdref =  ref (Evd.from_env env0) in
@@ -323,7 +323,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     is_general do_built (fix_rec_l:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) recdefs  interactive_proof
     (continue_proof : int -> Names.constant array -> Term.constr array -> int ->
       Tacmach.tactic) : unit =
-  let names = List.map (function ((_, name),_,_,_,_),_ -> name) fix_rec_l in
+  let names = List.map (function (((_, name),_),_,_,_,_),_ -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
   let funs_types =  List.map (function ((_,_,_,types,_),_) -> types) fix_rec_l in
@@ -343,7 +343,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 		 locate_ind
 		 f_R_mut)
 	in
-	let fname_kn ((fname,_,_,_,_),_) =
+	let fname_kn (((fname,_),_,_,_,_),_) =
 	  let f_ref = Ident fname in
 	  locate_with_msg
 	    (pr_reference f_ref++str ": Not an inductive type!")
@@ -380,15 +380,15 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 
 let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
   match fixpoint_exprl with
-    | [((_,fname),_,bl,ret_type,body),_] when not is_rec ->
+    | [(((_,fname),pl),_,bl,ret_type,body),_] when not is_rec ->
       let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
       Command.do_definition
 	fname
-	(Decl_kinds.Global,(Flags.is_universe_polymorphism ()),Decl_kinds.Definition)
+	(Decl_kinds.Global,(Flags.is_universe_polymorphism ()),Decl_kinds.Definition) pl
 	bl None body (Some ret_type) (Lemmas.mk_hook (fun _ _ -> ()));
        let evd,rev_pconstants =
 	 List.fold_left
-	   (fun (evd,l) (((_,fname),_,_,_,_),_) ->
+	   (fun (evd,l) ((((_,fname),_),_,_,_,_),_) ->
 	    let evd,c =
 	      Evd.fresh_global
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
@@ -402,7 +402,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
        Command.do_fixpoint Global (Flags.is_universe_polymorphism ()) fixpoint_exprl;
        let evd,rev_pconstants =
 	 List.fold_left
-	   (fun (evd,l) (((_,fname),_,_,_,_),_) ->
+	   (fun (evd,l) ((((_,fname),_),_,_,_,_),_) ->
 	    let evd,c =
 	      Evd.fresh_global
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
@@ -614,7 +614,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
   let _is_struct =
     match fixpoint_exprl with
       | [((_,(wf_x,Constrexpr.CWfRec wf_rel),_,_,_),_) as fixpoint_expr] ->
- 	  let ((((_,name),_,args,types,body)),_)  as fixpoint_expr =
+ 	  let (((((_,name),pl),_,args,types,body)),_)  as fixpoint_expr =
 	    match recompute_binder_list [fixpoint_expr] with 
 	      | [e] -> e
 	      | _ -> assert false
@@ -638,7 +638,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	  then register_wf name rec_impls wf_rel (map_option snd wf_x) using_lemmas args types body pre_hook;
 	  false
       |[((_,(wf_x,Constrexpr.CMeasureRec(wf_mes,wf_rel_opt)),_,_,_),_) as fixpoint_expr] ->
- 	  let ((((_,name),_,args,types,body)),_)  as fixpoint_expr =
+ 	  let (((((_,name),_),_,args,types,body)),_)  as fixpoint_expr =
 	    match recompute_binder_list [fixpoint_expr] with 
 	      | [e] -> e
 	      | _ -> assert false
@@ -672,7 +672,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	    fixpoint_exprl;
 	let fixpoint_exprl = recompute_binder_list fixpoint_exprl in 
 	let fix_names =
-	  List.map (function (((_,name),_,_,_,_),_) -> name) fixpoint_exprl
+	  List.map (function ((((_,name),_),_,_,_,_),_) -> name) fixpoint_exprl
 	in
 	(* ok all the expressions are structural *)
   	let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
@@ -867,20 +867,20 @@ let make_graph (f_ref:global_reference) =
 			    )
 			in
 			let b' = add_args (snd id) new_args b in
-			(((id, ( Some (Loc.ghost,rec_id),CStructRec),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
+			((((id,None), ( Some (Loc.ghost,rec_id),CStructRec),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
 		     )
 		     fixexprl
 		 in
 		 l
 	     | _ ->
 		let id = Label.to_id (con_label c) in
-		 [((Loc.ghost,id),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
+		 [(((Loc.ghost,id),None),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
 	 let mp,dp,_ = repr_con c in
 	 do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list;
 	 (* We register the infos *)
 	 List.iter
-	   (fun (((_,id),_,_,_,_),_) -> add_Function false (make_con mp dp (Label.of_id id)))
+	   (fun ((((_,id),_),_,_,_,_),_) -> add_Function false (make_con mp dp (Label.of_id id)))
 	   expr_list);
   Dumpglob.continue ()
 

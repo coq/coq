@@ -424,8 +424,8 @@ end = struct (* {{{ *)
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
     (match x with
-    | VernacDefinition (_,(_,i),_) -> string_of_id i
-    | VernacStartTheoremProof (_,[Some (_,i),_],_) -> string_of_id i
+    | VernacDefinition (_,((_,i),_),_) -> string_of_id i
+    | VernacStartTheoremProof (_,[Some ((_,i),_),_],_) -> string_of_id i
     | _ -> "branch")
   let edit_branch = Branch.make "edit"
   let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind

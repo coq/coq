@@ -841,7 +841,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
     FIXME: params et cstr_expr (arity) *)
 let glob_constr_list_to_inductive_expr prms1 prms2 mib1 mib2 shift
     (rawlist:(Id.t * glob_constr) list) =
-  let lident = Loc.ghost, shift.ident in
+  let lident = (Loc.ghost, shift.ident), None in
   let bindlist , cstr_expr = (* params , arities *)
     merge_rec_params_and_arity prms1 prms2 shift mkSet in
   let lcstor_expr : (bool * (lident * constr_expr)) list  =
