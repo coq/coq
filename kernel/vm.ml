@@ -177,7 +177,6 @@ let rec whd_accu a stk =
     if Int.equal (Obj.size a) 2 then stk
     else Zapp (Obj.obj a) :: stk in
   let at = Obj.field a 1 in
-(*   Printf.eprintf "whd_accu (tag = %d)\n" (Obj.tag at) ; flush stderr ; *)
   match Obj.tag at with
   | i when i <= 3 ->
       Vatom_stk(Obj.magic at, stk)
@@ -214,25 +213,18 @@ let rec whd_accu a stk =
 external kind_of_closure : Obj.t -> int = "coq_kind_of_closure"
 
 let whd_val : values -> whd =
-  let dbg x = (* Printf.fprintf stderr "whd_val: %s\n" x ; flush stderr *) () in
   fun v ->
-    dbg "starting with v" ;
     let o = Obj.repr v in
     if Obj.is_int o then
-      (dbg "Vconstr_const" ; Vconstr_const (Obj.obj o))
+      Vconstr_const (Obj.obj o)
     else
       let tag = Obj.tag o in
-      dbg (string_of_int tag) ;
-      dbg ("size = " ^ string_of_int (Obj.size o)) ;
       if tag = accu_tag then
 	(
-	if Int.equal (Obj.size o) 1 then (dbg "sort?" ; Obj.obj o) (* sort *)
+	if Int.equal (Obj.size o) 1 then Obj.obj o (* sort *)
         else
-          (dbg "checking acumulate" ;
-           dbg (string_of_bool (is_accumulate (fun_code o))) ;
-           dbg "here" ;
-	  if is_accumulate (fun_code o) then (dbg "accu" ; whd_accu o [])
-	  else (dbg "Prod" ; Vprod(Obj.obj o))))
+	  if is_accumulate (fun_code o) then whd_accu o []
+	  else Vprod(Obj.obj o))
       else
 	if tag = Obj.closure_tag || tag = Obj.infix_tag then
 	  (match kind_of_closure o with
@@ -242,23 +234,13 @@ let whd_val : values -> whd =
 	   | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
 	   | _ -> Errors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work"))
 	else
-	  (dbg "Vconstr_block" ;
-           Vconstr_block(Obj.obj o))
+           Vconstr_block(Obj.obj o)
 
 let uni_lvl_val : values -> Univ.universe_level =
   fun v ->
     match Obj.magic v with
-    | Vuniv_level lvl ->
-(*      Pp.(msg_debug (str "lvl = " ++ Univ.Level.pr lvl)) ; *)
-      lvl
-    | Vsort s -> assert false
-    | Vprod s -> assert false
-    | Vfun _ -> assert false
-    | Vfix _ -> assert false
-    | Vcofix _ -> assert false
-    | Vconstr_const _ -> assert false
-    | Vconstr_block _ -> assert false
-    | Vatom_stk _ -> assert false
+    | Vuniv_level lvl -> lvl
+    | _ -> assert false
 
 (************************************************)
 (* Abstract machine *****************************)

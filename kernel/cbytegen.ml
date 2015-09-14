@@ -850,8 +850,7 @@ let compile_inst u_size inst u_offset cont =
   if Univ.Instance.is_empty inst then
     Kconst (Const_b0 univ_instance_tag) :: cont
   else if is_univ_copy u_size inst then
-    (Printf.eprintf "copy optimization! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n" ; flush stderr ;
-    Kacc u_offset :: cont)
+    Kacc u_offset :: cont
   else
     let ainst = Univ.Instance.to_array inst in
     let inst_size = Univ.Instance.length inst in
@@ -888,9 +887,6 @@ let compile_term fail_on_error env instance_size c cont =
   init_fun_code ();
   Label.reset_label_counter ();
   let reloc = comp_env_fun 0 in
-  (** TODO: Optimize code generation in the case where there are no
-   ** polymorphic instantiations
-   **)
   try
     (* 1 is the number of parameters, in this case, this is the "fake"
      * substitution
