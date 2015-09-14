@@ -4,12 +4,13 @@ open Term
 open Declarations
 open Pre_env
 
+(** Should only be used for monomorphic terms *)
 val compile : bool -> (* Fail on error with a nice user message, otherwise simply a warning *)
 	      env -> constr -> (bytecodes (* * bytecodes *) * fv) option
 (** init, fun, fv *)
 
-val compile_constant_body : bool -> 
-			    env -> constant_def -> body_code option
+val compile_constant_body : bool ->
+			    env -> constant_universes option -> constant_def -> body_code option
 
 (** Shortcut of the previous function used during module strengthening *)
 

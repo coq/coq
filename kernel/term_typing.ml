@@ -243,9 +243,10 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
               let inferred = keep_hyps env (Idset.union ids_typ ids_def) in
               check declared inferred) lc) in
   let tps = 
-    let res = 
+    let res =
+      let comp_univs = if poly then Some univs else None in
       match proj with
-      | None -> compile_constant_body env def
+      | None -> compile_constant_body env comp_univs def
       | Some pb ->
 	(* The compilation of primitive projections is a bit tricky, because
            they refer to themselves (the body of p looks like fun c =>
@@ -264,7 +265,7 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
 	    const_inline_code = inline_code }
 	in
 	let env = add_constant kn cb env in
-	compile_constant_body env def
+	compile_constant_body env comp_univs def
     in Option.map Cemitcodes.from_val res
   in
   { const_hyps = hyps;

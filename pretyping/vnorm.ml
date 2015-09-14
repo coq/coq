@@ -96,20 +96,15 @@ let construct_of_constr_block = construct_of_constr false
 let parse_universe_instance (ui : Term.values) : Univ.Instance.t =
   match whd_val ui with
   | Vconstr_block blk ->
-    Printf.fprintf stderr "tag = %d ; size = %d\n" (btag blk) (bsize blk) ;
     assert (btag blk = Cbytecodes.univ_instance_tag) ;
     (* parse this as a universe *)
     let inst = Univ.Instance.of_array
       (Array.init (bsize blk)
 	 (fun i ->
-	   Printf.fprintf stderr "i = %d\n" i ;
 	   Vm.uni_lvl_val (bfield blk i)))
     in
-    Pp.(msg_debug (str "parsed universe levels = " ++
-		     Univ.Instance.pr Univ.Level.pr inst)) ;
     inst
   | _ ->
-    Printf.fprintf stderr "not a block\n" ;
     assert false
 
 let type_of_ind env (ind, u) =
@@ -173,9 +168,7 @@ and nf_whd env whd typ =
   | Vconstr_const n ->
     construct_of_constr_const env n typ
   | Vconstr_block b ->
-      Printf.fprintf stderr "Vconstr_block\n" ;
       let tag = btag b in
-      Printf.fprintf stderr "tag = %d\n" tag ;
       let (tag,ofs) =
         if tag = Cbytecodes.last_variant_tag then
 	  match whd_val (bfield b 0) with
@@ -209,22 +202,14 @@ and nf_whd env whd typ =
     begin
       match stk with
       | [Zapp args] ->
-	Printf.eprintf "running here! univ = \n" ; flush stderr ;
-	Pp.(msg_debug (Univ.pr_uni u)) ;
-	flush stderr ; flush stdout ;
 	assert (Univ.LSet.cardinal (Univ.Universe.levels u) = nargs args) ;
 	let _,mp = Univ.LSet.fold (fun key (i,mp) ->
-	  Printf.eprintf "getting %d\n" i ; flush stderr ;
-	  Printf.eprintf "tag = %d\n" (Obj.tag (Obj.repr (arg args i))) ; flush stderr ;
 	  let u = Vm.uni_lvl_val (arg args i) in
 	  (i+1, Univ.LMap.add key (Univ.Universe.make u) mp))
 	  (Univ.Universe.levels u)
 	  (0,Univ.LMap.empty) in
-	Printf.eprintf "finished map\n" ; flush stderr ;
 	let subst = Univ.make_subst mp in
-	Printf.eprintf "made subst\n" ; flush stderr ;
 	let nuniv = Univ.subst_univs_universe subst u in
-	Printf.eprintf "substituted\n" ; flush stderr ;
 	mkSort (Type nuniv)
       | _ -> assert false
     end
@@ -410,40 +395,10 @@ and nf_cofix env cf =
 
 let pr_instance = Univ.Instance.pr Univ.Level.pr
 
-
-let rec pr_constr c =
-  Pp.(match kind_of_term c with
-      | Rel i -> str "Rel(" ++ int i ++ str ")"
-      | Var v -> str "Var(" ++ Id.print v ++ str ")"
-      | Meta _ -> assert false
-      | Evar _ -> assert false
-      | Sort (Prop Pos) -> str "Sort(Set)"
-      | Sort (Prop Null) -> str "Sort(Prop)"
-      | Sort (Type u) -> str "Sort(Type@{" ++ Univ.pr_uni u ++ str "})"
-      | Cast _ -> str "Cast"
-      | LetIn (_,x,t,b) -> str "let : (" ++ pr_constr t ++ str ") := (" ++ pr_constr x ++ str ") in (" ++ pr_constr b ++ str ")"
-      | App(f,xs) -> str "(" ++ pr_constr f ++ str " @ " ++ pr_sequence pr_constr (Array.to_list xs) ++ str ")"
-      | Const (c,_) -> Names.pr_con c
-      | Lambda (_,t,b) -> str "(\\" ++ pr_constr t ++ str " -> " ++ pr_constr b ++ str ")"
-      | Ind ((mi,i),u) -> Names.pr_mind mi ++ str "#" ++ int i ++ str "@{" ++ pr_instance u ++ str "}"
-      | Case _ -> str "Case"
-      | Fix _ -> str "Fix"
-      | CoFix _ -> str "CoFix"
-      | Prod (_,d,c) -> str "Prod(" ++ pr_constr d ++ str ", " ++ pr_constr c ++ str ")"
-      | Construct (((mi,i),id),u) -> str "Constructor(" ++ Names.pr_mind mi ++ str "#" ++ int i ++ str "#" ++ int id ++ str "@{" ++ pr_instance u ++ str "})"
-      | Proj _ -> str "Proj"
-      )
-
-
 let cbv_vm env c t  =
-  Printf.eprintf "cbv_vm >>>>>>>>>>>>>>>>>>>>>\n" ; flush stderr ;
   let transp = transp_values () in
   if not transp then set_transp_values true;
-  Printf.eprintf "val_of_constr >>>>>>>>>>>>>>>>>>>>>\n" ; flush stderr ;
   let v = Vconv.val_of_constr env c in
-  Printf.eprintf "val_of_constr <<<<<<<<<<<<<<<<<<<<<\n" ; flush stderr ;
   let c = nf_val env v t in
-  Printf.eprintf "nf_val <<<<<<<<<<<<<<<<<<<<<\n" ; flush stderr ;
-  Pp.(msg_debug (str "vm_result =" ++ fnl () ++ pr_constr c ++ fnl ()));
   if not transp then set_transp_values false;
   c

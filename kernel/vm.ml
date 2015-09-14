@@ -177,7 +177,7 @@ let rec whd_accu a stk =
     if Int.equal (Obj.size a) 2 then stk
     else Zapp (Obj.obj a) :: stk in
   let at = Obj.field a 1 in
-  Printf.eprintf "whd_accu (tag = %d)\n" (Obj.tag at) ; flush stderr ;
+(*   Printf.eprintf "whd_accu (tag = %d)\n" (Obj.tag at) ; flush stderr ; *)
   match Obj.tag at with
   | i when i <= 3 ->
       Vatom_stk(Obj.magic at, stk)
@@ -208,13 +208,13 @@ let rec whd_accu a stk =
       | [Zapp args] -> Vcofix(vcofix, res, Some args)
       | _           -> assert false
       end
-  | tg -> Printf.fprintf stderr "tag = %d" tg ; flush stderr ;
+  | tg -> (* Printf.fprintf stderr "tag = %d" tg ; flush stderr ; *)
     assert false
 
 external kind_of_closure : Obj.t -> int = "coq_kind_of_closure"
 
 let whd_val : values -> whd =
-  let dbg x = Printf.fprintf stderr "whd_val: %s\n" x ; flush stderr in
+  let dbg x = (* Printf.fprintf stderr "whd_val: %s\n" x ; flush stderr *) () in
   fun v ->
     dbg "starting with v" ;
     let o = Obj.repr v in
@@ -242,8 +242,7 @@ let whd_val : values -> whd =
 	   | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
 	   | _ -> Errors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work"))
 	else
-	  (Printf.fprintf stderr "parse tag = %d \n" tag ;
-	   dbg "Vconstr_block" ;
+	  (dbg "Vconstr_block" ;
            Vconstr_block(Obj.obj o))
 
 let uni_lvl_val : values -> Univ.universe_level =

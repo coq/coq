@@ -47,10 +47,14 @@ let rec conv_val env pb k v1 v2 cu =
   else conv_whd env pb k (whd_val v1) (whd_val v2) cu
 
 and conv_whd env pb k whd1 whd2 cu =
-  Pp.(msg_debug (str "conv_whd(" ++ pr_whd whd1 ++ str ", " ++ pr_whd whd2 ++ str ")")) ;
+(*  Pp.(msg_debug (str "conv_whd(" ++ pr_whd whd1 ++ str ", " ++ pr_whd whd2 ++ str ")")) ; *)
   match whd1, whd2 with
-  | Vuniv_level _ , _ -> assert false
-  | _ , Vuniv_level _ -> assert false
+  | Vuniv_level _ , _
+  | _ , Vuniv_level _ ->
+    (** Both of these are invalid since universes are handled via
+     ** special cases in the code.
+     **)
+    assert false
   | Vsort s1, Vsort s2 -> check_sort_cmp_universes env pb s1 s2 cu; cu
   | Vprod p1, Vprod p2 ->
       let cu = conv_val env CONV k (dom p1) (dom p2) cu in
@@ -90,7 +94,7 @@ and conv_whd env pb k whd1 whd2 cu =
 
 
 and conv_atom env pb k a1 stk1 a2 stk2 cu =
-  Pp.(msg_debug (str "conv_atom(" ++ pr_atom a1 ++ str ", " ++ pr_atom a2 ++ str ")")) ;
+(*  Pp.(msg_debug (str "conv_atom(" ++ pr_atom a1 ++ str ", " ++ pr_atom a2 ++ str ")")) ; *)
   match a1, a2 with
   | Aind ((mi,i) as ind1) , Aind ind2 ->
       if eq_ind ind1 ind2 && compare_stack stk1 stk2
@@ -122,23 +126,23 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
       else raise NotConvertible
   | Aiddef(ik1,v1), Aiddef(ik2,v2) ->
     begin
-	try
-	  if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
-	    conv_stack env k stk1 stk2 cu
-	  else raise NotConvertible
-	with NotConvertible ->
-	  if oracle_order (fun x -> x) (oracle_of_infos !infos)
-	    false ik1 ik2 then
-            conv_whd env pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
-          else conv_whd env pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
-      end
+      try
+	if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
+          conv_stack env k stk1 stk2 cu
+        else raise NotConvertible
+      with NotConvertible ->
+	if oracle_order (fun x -> x) (oracle_of_infos !infos)
+             false ik1 ik2 then
+          conv_whd env pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
+        else conv_whd env pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
+    end
   | Aiddef(ik1,v1), _ ->
       conv_whd env pb k (force_whd v1 stk1) (Vatom_stk(a2,stk2)) cu
   | _ , Aiddef(ik2,v2) ->
       conv_whd env pb k (Vatom_stk(a1,stk1)) (force_whd v2 stk2) cu
   | Atype u1 , Atype u2 ->
-    (** TODO: need to compare **)
-    cu
+    if Univ.equal_universes u1 u2 then cu
+    else raise NotConvertible
   | Atype _ , Aid _
   | Atype _ , Aind _
   | Aid _ , Atype _
@@ -201,7 +205,6 @@ and conv_arguments env ?from:(from=0) k args1 args2 cu =
     let n = nargs args1 in
     if Int.equal n (nargs args2) then
       let rcu = ref cu in
-      Pp.(msg_debug (str "from = " ++ int from ++ str ", to = " ++ int (n - 1) ++ fnl ())) ;
       for i = from to n - 1 do
 	rcu := conv_val env CONV k (arg args1 i) (arg args2 i) !rcu
       done;
@@ -273,7 +276,6 @@ let vconv pb env t1 t2 =
   let _cu =
     try conv_eq env pb t1 t2 (universes env)
     with NotConvertible ->
-      Printf.eprintf "conv_eq failed, trying reduction\n" ; flush stderr ;
       let v1 = val_of_constr env t1 in
       let v2 = val_of_constr env t2 in
       let cu = conv_val env pb (nb_rel env) v1 v2 (universes env) in

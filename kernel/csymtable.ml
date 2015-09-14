@@ -130,7 +130,7 @@ exception NotEvaluated
 let key rk =
   match !rk with
   | None -> raise NotEvaluated
-  | Some k -> (*Pp.msgnl (str"found at: "++int k);*)
+  | Some k ->
       try Ephemeron.get k
       with Ephemeron.InvalidKey -> raise NotEvaluated
 
@@ -165,12 +165,11 @@ let rec slot_for_getglobal env kn =
       | Some code ->
 	 match Cemitcodes.force code with
 	 | BCdefined(code,pl,fv) ->
-(*	   if Univ.Instance.is_empty u then *)
-	      let v = eval_to_patch env (code,pl,fv) in
-	      set_global v
-(*	    else set_global (val_of_constant (kn,u)) *)
+           let v = eval_to_patch env (code,pl,fv) in
+           set_global v
 	 | BCalias kn' -> slot_for_getglobal env kn'
-	 | BCconstant -> set_global (val_of_constant kn) in
+	 | BCconstant -> set_global (val_of_constant kn)
+    in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (Ephemeron.create pos);
     pos
@@ -214,18 +213,13 @@ and eval_to_patch env (buff,pl,fv) =
   let patch = function
     | Reloc_annot a, pos -> patch_int buff pos (slot_for_annot a)
     | Reloc_const sc, pos ->
-      Pp.(msg_debug (str "patching " ++ Cbytecodes.pp_struct_const sc ++
-		       str " " ++ int (slot_for_str_cst sc))) ;
       patch_int buff pos (slot_for_str_cst sc)
     | Reloc_getglobal kn, pos ->
-(*      Pp.msgnl (str"patching global: "++str(debug_string_of_con kn));*)
-	patch_int buff pos (slot_for_getglobal env kn);
-(*      Pp.msgnl (str"patch done: "++str(debug_string_of_con kn))*)
+	patch_int buff pos (slot_for_getglobal env kn)
   in
   List.iter patch pl;
   let vm_env = Array.map (slot_for_fv env) fv in
   let tc = tcode_of_code buff (length buff) in
-(*Pp.msgnl (str"execute code");*)
   eval_tcode tc vm_env
 
 and val_of_constr env c =

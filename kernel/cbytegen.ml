@@ -607,17 +607,14 @@ let rec compile_constr reloc c sz cont =
 	  List.map_filter (fun x -> Univ.Level.var_index x)
 	    (Univ.LSet.elements levels)
 	in
-	(* TODO: compile universe variables in an expression *)
-	(Pp.(msg_debug (str "u = " ++ Univ.Universe.pr u)) ;
-	 let compile_get_univ reloc idx sz cont =
-	   compile_fv_elem reloc FVunivs sz (Kfield idx :: cont)
-	 in
-	 (** TODO **)
-	 comp_app compile_str_cst compile_get_univ reloc
+        let compile_get_univ reloc idx sz cont =
+	  compile_fv_elem reloc FVunivs sz (Kfield idx :: cont)
+	in
+        comp_app compile_str_cst compile_get_univ reloc
 	   (Bstrconst (Const_type u))
 	   (Array.of_list level_vars)
 	   sz
-	   cont)
+	   cont
       else
 	compile_str_cst reloc (str_const c) sz cont
     end
@@ -834,44 +831,59 @@ and compile_const =
                    compile_get_global reloc (kn,u) cont)
         compile_constr reloc () args sz cont
 
-(** TODO: This should be implemented with comp_args *)
-let compile_inst inst u_offset cont =
-  (** TODO: If we are making a copy then we can skip this
-   ** - In order to check this, we need to know the length of the instance
-   ** TODO: Don't box single universes
+let is_univ_copy max u =
+  let u = Univ.Instance.to_array u in
+  if Array.length u = max then
+    Array.fold_left_i (fun i acc u ->
+        if acc then
+          match Univ.Level.var_index u with
+          | None -> false
+          | Some l -> l = i
+        else false) true u
+  else
+    false
+
+let compile_inst u_size inst u_offset cont =
+  (** Note: this code boxes universe instances of size 1 so
+   ** that [compile_constr] can access universese in a uniform way
    **)
   if Univ.Instance.is_empty inst then
     Kconst (Const_b0 univ_instance_tag) :: cont
+  else if is_univ_copy u_size inst then
+    (Printf.eprintf "copy optimization! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n" ; flush stderr ;
+    Kacc u_offset :: cont)
   else
     let ainst = Univ.Instance.to_array inst in
     let inst_size = Univ.Instance.length inst in
-    let relative_offset = u_offset + inst_size - 1 in
-    Array.fold_left_i
-      (fun i cont lvl ->
-	let rest =
-	  if i = 0 then cont else Kpush :: cont
-	in
-	match Univ.Level.var_index lvl with
-	| None -> Kconst (Const_univ_level lvl) :: rest
-	| Some v -> Kacc (relative_offset - i) :: Kfield v :: rest)
-      (Kmakeblock (inst_size, univ_instance_tag) :: cont) ainst
+    let compile_get_univ reloc lvl sz cont =
+      match Univ.Level.var_index lvl with
+      | None -> Kconst (Const_univ_level lvl) :: cont
+      | Some v -> Kacc sz :: Kfield v :: cont
+    in
+    let result =
+      comp_args compile_get_univ () ainst u_offset
+        (Kmakeblock (inst_size, univ_instance_tag) :: cont)
+    in
+    result
 
 (** The annoying piece of this function is that the order is less-than-ideal. **)
-let rec compile_poly_inst reloc fvs sz cont =
-  match fvs with
-  | [] -> cont
-  | FVpoly_inst (kn,u) :: fvs ->
-    (* TODO: generate some code using idu *)
-    compile_inst u sz
-      (Kpush :: Kgetglobal kn :: Kapply 1 :: Kpush ::
-	 compile_poly_inst reloc fvs (sz+1) cont)
-  | FVunivs :: fvs ->
-    Kacc sz :: Kpush :: compile_poly_inst reloc fvs (sz+1) cont
-  | fv_elem :: fvs ->
-    compile_fv_elem reloc fv_elem sz
-      (Kpush :: compile_poly_inst reloc fvs (sz+1) cont)
+let compile_poly_inst u_size =
+  let rec compile_poly_inst reloc fvs sz cont =
+    match fvs with
+    | [] -> cont
+    | fv_elem :: fvs ->
+      let cont =
+        if fvs = [] then cont
+        else Kpush :: compile_poly_inst reloc fvs (sz+1) cont
+      in
+      match fv_elem with
+      | FVpoly_inst (kn,u) ->
+        compile_inst u_size u sz (Kpush :: Kgetglobal kn :: Kapply 1 :: cont)
+      | FVunivs -> Kacc sz :: cont
+      | _ -> compile_fv_elem reloc fv_elem sz cont
+  in compile_poly_inst
 
-let compile_term fail_on_error env c cont =
+let compile_term fail_on_error env instance_size c cont =
   set_global_env env;
   init_fun_code ();
   Label.reset_label_counter ();
@@ -883,28 +895,25 @@ let compile_term fail_on_error env c cont =
     (* 1 is the number of parameters, in this case, this is the "fake"
      * substitution
      *)
-    let init_code = compile_constr reloc c 1 [Kreturn 1] in
+    let body_code = compile_constr reloc c 1 [Kreturn 1] in
     (** Here I need to instantiate all of the polymorphic constants in
-     ** [fv] and wrap [init_code] with
-     **     polymorphic_instantiations ; init_code
-     ** The problem is that init_code references these constants using the
+     ** [fv] and wrap [body_code] with
+     **     polymorphic_instantiations ; body_code
+     ** The problem is that body_code references these constants using the
      ** environment, not on the stack. So I need to build a closure and invoke
      ** it.
      **)
     let reloc_final = empty_comp_env () in
     let subst_lbl = Label.create () in
-    let body_code =
-      compile_poly_inst reloc_final (!(reloc.in_env).fv_rev) 0
-	((if !(reloc.in_env).size > 0 then
-	    Kacc 0 :: Kpop 1 :: []
-	  else []) @
-	    (Kclosure (subst_lbl, !(reloc.in_env).size) :: Kpush ::
-	       Kconst (Const_b0 univ_instance_tag) :: Kpush ::
-	       Kacc 1 :: Kapply 1 :: Kpop 1 :: (* ? *)
-	       [Ksequence (cont,
-			   Klabel subst_lbl :: init_code)]))
+    let inst_code =
+      compile_poly_inst instance_size reloc_final (!(reloc.in_env).fv_rev) 0
+	(Kclosure (subst_lbl, !(reloc.in_env).size) :: Kpush ::
+         Kconst (Const_b0 univ_instance_tag) :: Kpush ::
+         Kacc 1 :: Kapply 1 :: Kpop 1 :: (* ? *)
+         [Ksequence (cont,
+		     Klabel subst_lbl :: body_code)])
     in
-    let final_code = [Ksequence (body_code, !fun_code)] in
+    let final_code = [Ksequence (inst_code, !fun_code)] in
     let fv = List.rev (!(reloc_final.in_env).fv_rev) in
     let open Pp in
     if !Flags.dump_bytecode then
@@ -928,30 +937,36 @@ let compile_term fail_on_error env c cont =
        None)
 
 let compile fail_on_error env c =
-  compile_term fail_on_error env c
+  compile_term fail_on_error env 0 c
     [Kstop]
 
-let compile_constant_body fail_on_error env = function
+let compile_constant_body fail_on_error env univs = function
   | Undef _ | OpaqueDef _ -> Some BCconstant
   | Def sb ->
       let body = Mod_subst.force_constr sb in
+      let instance_size =
+        match univs with
+        | None -> 0
+        | Some univ -> Univ.UContext.size univ
+      in
       match kind_of_term body with
-	| Const (kn',u) ->
-	    (* we use the canonical name of the constant*)
-	    let con= constant_of_kn (canonical_con kn') in
-	      Some (BCalias (get_alias env con))
-	| _ ->
-	  let res = compile_term fail_on_error env body [Kreturn 1] in
-	  let wrap (body_code, fvs) =
-	    let body_label = Label.create () in
-	    let wrapped_body_code =
-	      Kclosure (body_label, 0) :: (** TODO: might be wrong here *)
-		Kstop :: Krestart ::
-		Klabel body_label :: body_code
-	    in
-	    (wrapped_body_code, fvs)
+      | Const (kn',u) when is_univ_copy instance_size u ->
+	(* we use the canonical name of the constant*)
+	let con = constant_of_kn (canonical_con kn') in
+        Some (BCalias (get_alias env con))
+      | _ ->
+	let res =
+          compile_term fail_on_error env instance_size body [Kreturn 1] in
+	let wrap (body_code, fvs) =
+          let body_label = Label.create () in
+	  let wrapped_body_code =
+	    Kclosure (body_label, 0) ::
+	    Kstop :: Krestart ::
+	    Klabel body_label :: body_code
 	  in
-	  Option.map (fun x -> BCdefined (to_memory (wrap x))) res
+	  (wrapped_body_code, fvs)
+	in
+	Option.map (fun x -> BCdefined (to_memory (wrap x))) res
 
 (* Shortcut of the previous function used during module strengthening *)
 
