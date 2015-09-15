@@ -385,7 +385,7 @@ let process_universe_constraints univs vars alg cstrs =
 		  let levels = Univ.Universe.levels l in
 		    Univ.LSet.fold (fun l local ->
 		      if Univ.Level.is_small l || Univ.LMap.mem l !vars then
-			Univ.enforce_eq (Univ.Universe.make l) r local
+			unify_universes fo (Univ.Universe.make l) Universes.UEq r local
 		      else raise (Univ.UniverseInconsistency (Univ.Le, Univ.Universe.make l, r, None)))
 		      levels local
 		else
@@ -1083,11 +1083,11 @@ let uctx_new_univ_variable rigid name predicative
     | None -> uctx.uctx_names
   in
   let initial =
-    Univ.add_universe u pred uctx.uctx_initial_universes
+    Univ.add_universe u true uctx.uctx_initial_universes
   in						     
   let uctx' =
     {uctx' with uctx_names = names; uctx_local = ctx';
-		uctx_universes = Univ.add_universe u pred uctx.uctx_universes;
+		uctx_universes = Univ.add_universe u true uctx.uctx_universes;
 		uctx_initial_universes = initial}
   in uctx', u
 						     
