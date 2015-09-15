@@ -866,13 +866,13 @@ let compile_inst u_size inst u_offset cont =
     result
 
 (** The annoying piece of this function is that the order is less-than-ideal. **)
-let compile_poly_inst u_size =
+let compile_poly_inst u_size subst_lbl =
   let rec compile_poly_inst reloc fvs sz cont =
     match fvs with
-    | [] -> cont
+    | [] -> Kclosure (subst_lbl, sz) :: cont
     | fv_elem :: fvs ->
       let cont =
-        if fvs = [] then cont
+        if fvs = [] then compile_poly_inst reloc fvs (sz+1) cont
         else Kpush :: compile_poly_inst reloc fvs (sz+1) cont
       in
       match fv_elem with
@@ -882,46 +882,39 @@ let compile_poly_inst u_size =
       | _ -> compile_fv_elem reloc fv_elem sz cont
   in compile_poly_inst
 
-let compile_term fail_on_error env instance_size c cont =
+(** TODO: Better way to compile monomorphic definitions
+ ** TODO: There is a tight coupling between [cont] and [for_closure]
+ **)
+let compile_term fail_on_error env for_closure instance_size c cont =
   set_global_env env;
   init_fun_code ();
   Label.reset_label_counter ();
-  let reloc = comp_env_fun 0 in
   try
-    (* 1 is the number of parameters, in this case, this is the "fake"
-     * substitution
-     *)
-    let body_code = compile_constr reloc c 1 [Kreturn 1] in
+    let reloc = comp_env_fun 0 in
+    let body_code = compile_constr reloc c 0 [Kreturn 0] in
     (** Here I need to instantiate all of the polymorphic constants in
      ** [fv] and wrap [body_code] with
      **     polymorphic_instantiations ; body_code
-     ** The problem is that body_code references these constants using the
-     ** environment, not on the stack. So I need to build a closure and invoke
-     ** it.
+     ** Since body_code references these constants using the environment,
+     ** I need to build a closure and invoke it.
      **)
-    let reloc_final = empty_comp_env () in
+    let reloc_final =
+      if for_closure then comp_env_fun 0
+      else empty_comp_env ()
+    in
     let subst_lbl = Label.create () in
     let inst_code =
-      compile_poly_inst instance_size reloc_final (!(reloc.in_env).fv_rev) 0
-	(Kclosure (subst_lbl, !(reloc.in_env).size) :: Kpush ::
+      compile_poly_inst instance_size subst_lbl
+        reloc_final (!(reloc.in_env).fv_rev) 0
+	(Kpush ::
          Kconst (Const_b0 univ_instance_tag) :: Kpush ::
          Kacc 1 :: Kapply 1 :: Kpop 1 :: (* ? *)
          [Ksequence (cont,
-		     Klabel subst_lbl :: body_code)])
+		     Klabel subst_lbl :: Kpop 1 :: body_code)])
     in
     let final_code = [Ksequence (inst_code, !fun_code)] in
     let fv = List.rev (!(reloc_final.in_env).fv_rev) in
-    let open Pp in
-    if !Flags.dump_bytecode then
-      Pp.msg_debug
-	Pp.(str "code =" ++ fnl () ++
-	      pp_bytecodes final_code ++ fnl () ++
-	    str "fv_initial = " ++
-	      prlist_with_sep (fun () -> str "; ") pp_fv_elem (!(reloc.in_env).fv_rev) ++ fnl () ++
-	    str "fv = " ++
-	      prlist_with_sep (fun () -> str "; ") pp_fv_elem fv ++
-	    fnl ()) ;
-    Some (final_code, Array.of_list fv)
+    Some (final_code, fv)
   with TooLargeInductive tname ->
     let fn =
       if fail_on_error then Errors.errorlabstrm "compile"
@@ -932,9 +925,27 @@ let compile_term fail_on_error env instance_size c cont =
 	    Id.print tname ++ str str_max_constructors));
        None)
 
+let dump_bytecodes code fvs =
+  let open Pp in
+  msg_debug
+    (str "code =" ++ fnl () ++
+     pp_bytecodes code ++ fnl () ++
+     str "fv = " ++
+     prlist_with_sep (fun () -> str "; ") pp_fv_elem fvs ++
+     fnl ())
+
 let compile fail_on_error env c =
-  compile_term fail_on_error env 0 c
-    [Kstop]
+  let maybe_output (final_code, fv) =
+    if !Flags.dump_bytecode then dump_bytecodes final_code fv ;
+    (final_code, Array.of_list fv)
+  in
+  Option.map maybe_output (compile_term fail_on_error env false 0 c [Kstop])
+
+let rec up_to n cont =
+  match n with
+  | 0 -> cont
+  | 1 -> Kenvacc 0 :: cont
+  | n -> Kenvacc (n-1) :: Kpush :: up_to (n - 1) cont
 
 let compile_constant_body fail_on_error env univs = function
   | Undef _ | OpaqueDef _ -> Some BCconstant
@@ -952,15 +963,18 @@ let compile_constant_body fail_on_error env univs = function
         Some (BCalias (get_alias env con))
       | _ ->
 	let res =
-          compile_term fail_on_error env instance_size body [Kreturn 1] in
+          compile_term fail_on_error env true instance_size body [Kreturn 1] in
 	let wrap (body_code, fvs) =
           let body_label = Label.create () in
 	  let wrapped_body_code =
-	    Kclosure (body_label, 0) ::
-	    Kstop :: Krestart ::
-	    Klabel body_label :: body_code
+            (* up_to essentially copies the environment *)
+            up_to (List.length fvs)
+              (Kclosure (body_label, List.length fvs) ::
+	       Kstop :: Krestart ::
+	       Klabel body_label :: body_code)
 	  in
-	  (wrapped_body_code, fvs)
+          if !Flags.dump_bytecode then dump_bytecodes wrapped_body_code fvs ;
+	  (wrapped_body_code, Array.of_list fvs)
 	in
 	Option.map (fun x -> BCdefined (to_memory (wrap x))) res
 
