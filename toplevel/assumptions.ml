@@ -171,28 +171,28 @@ let rec traverse current ctx accu t = match kind_of_term t with
 
 and traverse_object ?inhabits (curr, data, ax2ty) body obj =
   let data, ax2ty =
-    let already_in = Refmap.mem obj data in
+    let already_in = Refmap_env.mem obj data in
     match body () with
     | None ->
         let data =
-          if not already_in then Refmap.add obj Refset.empty data else data in
+          if not already_in then Refmap_env.add obj Refset_env.empty data else data in
         let ax2ty =
           if Option.is_empty inhabits then ax2ty else
           let ty = Option.get inhabits in
-          try let l = Refmap.find obj ax2ty in Refmap.add obj (ty::l) ax2ty 
-          with Not_found -> Refmap.add obj [ty] ax2ty in
+          try let l = Refmap_env.find obj ax2ty in Refmap_env.add obj (ty::l) ax2ty 
+          with Not_found -> Refmap_env.add obj [ty] ax2ty in
         data, ax2ty
     | Some body ->
       if already_in then data, ax2ty else
       let contents,data,ax2ty =
-        traverse (label_of obj) [] (Refset.empty,data,ax2ty) body in
-      Refmap.add obj contents data, ax2ty
+        traverse (label_of obj) [] (Refset_env.empty,data,ax2ty) body in
+      Refmap_env.add obj contents data, ax2ty
   in
-  (Refset.add obj curr, data, ax2ty)
+  (Refset_env.add obj curr, data, ax2ty)
 
 let traverse current t =
   let () = modcache := MPmap.empty in
-  traverse current [] (Refset.empty, Refmap.empty, Refmap.empty) t
+  traverse current [] (Refset_env.empty, Refmap_env.empty, Refmap_env.empty) t
 
 (** Hopefully bullet-proof function to recover the type of a constant. It just
     ignores all the universe stuff. There are many issues that can arise when
@@ -215,7 +215,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
     let cb = lookup_constant kn in
     if not (Declareops.constant_has_body cb) then
       let t = type_of_constant cb in
-      let l = try Refmap.find obj ax2ty with Not_found -> [] in
+      let l = try Refmap_env.find obj ax2ty with Not_found -> [] in
       ContextObjectMap.add (Axiom (kn,l)) t accu
     else if add_opaque && (Declareops.is_opaque cb || not (Cpred.mem kn knst)) then
       let t = type_of_constant cb in
@@ -227,4 +227,4 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       accu
   | IndRef _ | ConstructRef _ -> accu
   in
-  Refmap.fold fold graph ContextObjectMap.empty
+  Refmap_env.fold fold graph ContextObjectMap.empty
