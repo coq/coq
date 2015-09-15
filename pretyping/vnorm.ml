@@ -393,8 +393,6 @@ and nf_cofix env cf =
   let cfb = Util.Array.map2 (fun v t -> nf_val env v t) vb cft in
   mkCoFix (init,(name,cft,cfb))
 
-let pr_instance = Univ.Instance.pr Univ.Level.pr
-
 let cbv_vm env c t  =
   let transp = transp_values () in
   if not transp then set_transp_values true;
