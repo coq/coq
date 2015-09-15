@@ -173,9 +173,13 @@ let rec classify_vernac e =
     | VernacDeclareReduction _
     | VernacDeclareClass _ | VernacDeclareInstances _
     | VernacRegister _
-    | VernacDeclareTacticDefinition _
     | VernacNameSectionHypSet _
     | VernacComments _ -> VtSideff [], VtLater
+    | VernacDeclareTacticDefinition (_,l) ->
+        let open Libnames in
+        VtSideff (List.map (function
+          | (Ident (_,r),_,_) -> r
+          | (Qualid (_,q),_,_) -> snd(repr_qualid q)) l), VtLater
     (* Who knows *)
     | VernacLoad _ -> VtSideff [], VtNow
     (* (Local) Notations have to disappear *)
