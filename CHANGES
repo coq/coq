@@ -46,6 +46,11 @@ API
 Tools
 
 - Added an option -w to control the output of coqtop warnings.
+- Configure now takes an optional -native-compiler (yes|no) flag replacing
+  -no-native-compiler. The new flag is set to no by default under Windows.
+- Flag -no-native-compiler was removed and became the default for coqc. If
+  precompilation of files for native conversion test is desired, use
+  -native-compiler.
 
 Changes from V8.5beta1 to V8.5beta2
 ===================================
