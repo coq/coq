@@ -2283,7 +2283,9 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
     apply_in_delayed_once sidecond_first with_delta with_destruct with_evars
       naming id lemma tac in
   Proofview.Goal.enter begin fun gl ->
-  let destopt = get_previous_hyp_position id gl in
+  let destopt =
+    if with_evars then MoveLast (* evars would depend on the whole context *)
+    else get_previous_hyp_position id gl in
   let naming,ipat_tac = prepare_intros (IntroIdentifier id) destopt ipat in
   let lemmas_target, last_lemma_target =
     let last,first = List.sep_last lemmas in
