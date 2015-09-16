@@ -252,7 +252,7 @@ module Prefs = struct
   let profile = ref false
   let annotate = ref false
   let makecmd = ref "make"
-  let nativecompiler = ref true
+  let nativecompiler = ref (not (os_type_win32 || os_type_cygwin))
   let coqwebsite = ref "http://coq.inria.fr/"
   let force_caml_version = ref false
 end
