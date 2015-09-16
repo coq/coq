@@ -2209,6 +2209,11 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
   | IntroApplyOn (f,(loc,pat)) ->
       let naming,tac_ipat =
         prepare_intros_loc loc (IntroIdentifier id) destopt pat in
+      let doclear =
+        if naming = NamingMustBe (loc,id) then
+          Proofview.tclUNIT () (* apply_in_once do a replacement *)
+        else
+          Proofview.V82.tactic (clear [id]) in
       Proofview.Goal.enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
@@ -2217,7 +2222,9 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
           (Tacticals.New.tclTHENFIRST
              (* Skip the side conditions of the apply *)
              (apply_in_once false true true true naming id
-                (None,(sigma,(c,NoBindings))) tac_ipat) (tac ((dloc,id)::thin) None []))
+                (None,(sigma,(c,NoBindings)))
+                (fun id -> Tacticals.New.tclTHEN doclear (tac_ipat id)))
+             (tac thin None []))
           sigma
       end
 
