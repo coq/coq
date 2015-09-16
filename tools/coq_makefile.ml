@@ -769,7 +769,7 @@ let ensure_root_dir (v,(mli,ml4,ml,mllib,mlpack),_,_) ((ml_inc,i_inc,r_inc) as l
 	&& not_tops mllib && not_tops mlpack) then
     l
   else
-    ((".",here)::ml_inc,(".","Top",here)::i_inc,r_inc)
+    ((".",here)::ml_inc,i_inc,(".","Top",here)::r_inc)
 
 let warn_install_at_root_directory
     (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,_) (inc_ml,inc_i,inc_r) =
