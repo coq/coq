@@ -331,8 +331,8 @@ let args_options = Arg.align [
     " Dumps ml annotation files while compiling Coq";
   "-makecmd", Arg.Set_string Prefs.makecmd,
     "<command> Name of GNU Make command";
-  "-no-native-compiler", Arg.Clear Prefs.nativecompiler,
-    " No compilation to native code for conversion and normalization";
+  "-native-compiler", arg_bool Prefs.nativecompiler,
+    " (yes|no) Compilation to native code for conversion and normalization";
   "-coqwebsite", Arg.Set_string Prefs.coqwebsite,
     " URL of the coq website";
   "-force-caml-version", arg_bool Prefs.force_caml_version,
