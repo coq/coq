@@ -95,8 +95,8 @@ Section "Coq" Sec1
   File /r ${COQ_SRC_PATH}\theories\*.vo
   File /r ${COQ_SRC_PATH}\theories\*.v
   File /r ${COQ_SRC_PATH}\theories\*.glob
-  File /r ${COQ_SRC_PATH}\theories\*.cmi
-  File /r ${COQ_SRC_PATH}\theories\*.cmxs
+  ; File /r ${COQ_SRC_PATH}\theories\*.cmi
+  ; File /r ${COQ_SRC_PATH}\theories\*.cmxs
   SetOutPath "$INSTDIR\lib\plugins"
   File /r ${COQ_SRC_PATH}\plugins\*.vo
   File /r ${COQ_SRC_PATH}\plugins\*.v

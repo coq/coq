@@ -196,9 +196,9 @@ GEXTEND Gram
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = identref; bl = binders; ":"; c = lconstr;
+    [ [ thm = thm_token; id = pidentref; bl = binders; ":"; c = lconstr;
         l = LIST0
-          [ "with"; id = identref; bl = binders; ":"; c = lconstr ->
+          [ "with"; id = pidentref; bl = binders; ":"; c = lconstr ->
           (Some id,(bl,c,None)) ] ->
           VernacStartTheoremProof (thm, (Some id,(bl,c,None))::l, false)
       | stre = assumption_token; nl = inline; bl = assum_list ->
@@ -206,10 +206,10 @@ GEXTEND Gram
       | stre = assumptions_token; nl = inline; bl = assum_list ->
 	  test_plurial_form bl;
 	  VernacAssumption (stre, nl, bl)
-      | d = def_token; id = identref; b = def_body ->
+      | d = def_token; id = pidentref; b = def_body ->
           VernacDefinition (d, id, b)
       | IDENT "Let"; id = identref; b = def_body ->
-          VernacDefinition ((Some Discharge, Definition), id, b)
+          VernacDefinition ((Some Discharge, Definition), (id, None), b)
       (* Gallina inductive declarations *)
       | priv = private_token; f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
@@ -268,6 +268,9 @@ GEXTEND Gram
       | IDENT "Inline" -> DefaultInline
       | -> NoInline] ]
   ;
+  pidentref:
+    [ [ i = identref; l = OPT [ "@{" ; l = LIST1 identref; "}" -> l ] -> (i,l) ] ]
+  ;
   univ_constraint:
     [ [ l = identref; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
 	r = identref -> (l, ord, r) ] ]
@@ -312,7 +315,7 @@ GEXTEND Gram
       | -> RecordDecl (None, []) ] ]
   ;
   inductive_definition:
-    [ [ oc = opt_coercion; id = identref; indpar = binders;
+    [ [ oc = opt_coercion; id = pidentref; indpar = binders;
         c = OPT [ ":"; c = lconstr -> c ];
         lc=opt_constructors_or_fields; ntn = decl_notation ->
 	   (((oc,id),indpar,c,lc),ntn) ] ]
@@ -338,14 +341,14 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = identref;
+    [ [ id = pidentref;
 	bl = binders_fixannot;
         ty = type_cstr;
 	def = OPT [":="; def = lconstr -> def]; ntn = decl_notation ->
 	  let bl, annot = bl in ((id,annot,bl,ty,def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = identref; bl = binders; ty = type_cstr;
+    [ [ id = pidentref; bl = binders; ty = type_cstr;
         def = OPT [":="; def = lconstr -> def]; ntn = decl_notation ->
           ((id,bl,ty,def),ntn) ] ]
   ;
@@ -605,15 +608,15 @@ GEXTEND Gram
           d = def_body ->
           let s = coerce_reference_to_id qid in
 	  VernacDefinition
-	    ((Some Global,CanonicalStructure),(Loc.ghost,s),d)
+	    ((Some Global,CanonicalStructure),((Loc.ghost,s),None),d)
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-	  VernacDefinition ((None,Coercion),(Loc.ghost,s),d)
+	  VernacDefinition ((None,Coercion),((Loc.ghost,s),None),d)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = coerce_reference_to_id qid in
-	  VernacDefinition ((Some Decl_kinds.Local,Coercion),(Loc.ghost,s),d)
+	  VernacDefinition ((Some Decl_kinds.Local,Coercion),((Loc.ghost,s),None),d)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr ->
 	   VernacIdentityCoercion (true, f, s, t)

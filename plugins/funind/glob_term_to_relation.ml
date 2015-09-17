@@ -1395,7 +1395,7 @@ let do_build_inductive
       (rel_constructors)
   in
   let rel_ind i ext_rel_constructors =
-    ((Loc.ghost,relnames.(i)),
+    (((Loc.ghost,relnames.(i)), None),
     rel_params,
     Some rel_arities.(i),
     ext_rel_constructors),[]

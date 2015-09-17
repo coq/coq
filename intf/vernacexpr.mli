@@ -160,6 +160,9 @@ type option_ref_value =
   | StringRefValue of string
   | QualidRefValue of reference
 
+(** Identifier and optional list of bound universes. *)						 
+type plident = lident * lident list option
+
 type sort_expr = glob_sort
 
 type definition_expr =
@@ -168,10 +171,10 @@ type definition_expr =
       * constr_expr option
 
 type fixpoint_expr =
-    Id.t located * (Id.t located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr option
+    plident * (Id.t located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr option
 
 type cofixpoint_expr =
-    Id.t located * local_binder list * constr_expr * constr_expr option
+    plident * local_binder list * constr_expr * constr_expr option
 
 type local_decl_expr =
   | AssumExpr of lname * constr_expr
@@ -190,14 +193,14 @@ type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
 type inductive_expr =
-  lident with_coercion * local_binder list * constr_expr option * inductive_kind *
+  plident with_coercion * local_binder list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr
 
 type one_inductive_expr =
-  lident * local_binder list * constr_expr option * constructor_expr list
+  plident * local_binder list * constr_expr option * constructor_expr list
 
 type proof_expr =
-  lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)
+  plident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)
 
 type grammar_tactic_prod_item_expr =
   | TacTerm of string
@@ -305,7 +308,7 @@ type vernac_expr =
 
   (* Gallina *)
   | VernacDefinition of
-      (locality option * definition_object_kind) * lident * definition_expr
+      (locality option * definition_object_kind) * plident * definition_expr
   | VernacStartTheoremProof of theorem_kind * proof_expr list * bool
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr

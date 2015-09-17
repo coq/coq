@@ -61,3 +61,11 @@ Goal forall n, n = S n -> 0=0.
 intros n H/n_Sn.
 destruct H.
 Qed.
+
+(* Another check about generated names and cleared hypotheses with
+   pat/c patterns *)
+Goal (True -> 0=0 /\ 1=1) -> True -> 0=0.
+intros H (H1,?)/H.
+change (1=1) in H0.
+exact H1.
+Qed.

@@ -1398,9 +1398,7 @@ let com_terminate
   start_proof ctx tclIDTAC tclIDTAC;
   try
     let sigma, new_goal_type = build_new_goal_type () in
-    let sigma =
-      Evd.from_env ~ctx:(Evd.evar_universe_context sigma) Environ.empty_env
-    in
+    let sigma = Evd.from_ctx (Evd.evar_universe_context sigma) in
     open_new_goal start_proof sigma
       using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
@@ -1437,9 +1435,7 @@ let (com_eqn : int -> Id.t ->
 	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant")
     in
     let (evmap, env) = Lemmas.get_current_context() in
-    let evmap =
-      Evd.from_env ~ctx:(Evd.evar_universe_context evmap) Environ.empty_env
-    in
+    let evmap = Evd.from_ctx (Evd.evar_universe_context evmap) in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (Lemmas.start_proof eq_name (Global, false, Proof Lemma)

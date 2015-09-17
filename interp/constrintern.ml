@@ -1142,7 +1142,11 @@ let drop_notations_pattern looked_for =
 	sort_fields false loc l (fun _ l -> (CPatAtom (loc, None))::l) in
       begin match sorted_fields with
 	| None -> RCPatAtom (loc, None)
-	| Some (_, head, pl) ->
+	| Some (n, head, pl) ->
+          let pl =
+            if !oldfashion_patterns then pl else
+            let pars = List.make n (CPatAtom (loc, None)) in
+            List.rev_append pars pl in
 	  match drop_syndef top env head pl with
 	    |Some (a,b,c) -> RCPatCstr(loc, a, b, c)
 	    |None -> raise (InternalizationError (loc,NotAConstructor head))

@@ -2222,6 +2222,11 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
   | IntroApplyOn (f,(loc,pat)) ->
       let naming,tac_ipat =
         prepare_intros_loc loc (IntroIdentifier id) destopt pat in
+      let doclear =
+        if naming = NamingMustBe (loc,id) then
+          Proofview.tclUNIT () (* apply_in_once do a replacement *)
+        else
+          Proofview.V82.tactic (clear [id]) in
       Proofview.Goal.enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
@@ -2230,7 +2235,9 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
           (Tacticals.New.tclTHENFIRST
              (* Skip the side conditions of the apply *)
              (apply_in_once false true true true naming id
-                (None,(sigma,(c,NoBindings))) tac_ipat) (tac ((dloc,id)::thin) None []))
+                (None,(sigma,(c,NoBindings)))
+                (fun id -> Tacticals.New.tclTHEN doclear (tac_ipat id)))
+             (tac thin None []))
           sigma
       end
 
@@ -2296,7 +2303,9 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
     apply_in_delayed_once sidecond_first with_delta with_destruct with_evars
       naming id lemma tac in
   Proofview.Goal.enter begin fun gl ->
-  let destopt = get_previous_hyp_position id gl in
+  let destopt =
+    if with_evars then MoveLast (* evars would depend on the whole context *)
+    else get_previous_hyp_position id gl in
   let naming,ipat_tac = prepare_intros (IntroIdentifier id) destopt ipat in
   let lemmas_target, last_lemma_target =
     let last,first = List.sep_last lemmas in

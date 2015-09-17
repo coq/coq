@@ -277,15 +277,15 @@ end
 type evar_universe_context = 
  { uctx_names : Univ.Level.t UNameMap.t * string Univ.LMap.t;
    uctx_local : Univ.universe_context_set; (** The local context of variables *)
-    uctx_univ_variables : Universes.universe_opt_subst;
-      (** The local universes that are unification variables *)
-    uctx_univ_algebraic : Univ.universe_set; 
-    (** The subset of unification variables that
+   uctx_univ_variables : Universes.universe_opt_subst;
+   (** The local universes that are unification variables *)
+   uctx_univ_algebraic : Univ.universe_set; 
+   (** The subset of unification variables that
 	can be instantiated with algebraic universes as they appear in types 
 	and universe instances only. *)
-    uctx_universes : Univ.universes; (** The current graph extended with the local constraints *)
-    uctx_initial_universes : Univ.universes; (** The graph at the creation of the evar_map *)
-  }
+   uctx_universes : Univ.universes; (** The current graph extended with the local constraints *)
+   uctx_initial_universes : Univ.universes; (** The graph at the creation of the evar_map *)
+ }
   
 let empty_evar_universe_context = 
   { uctx_names = UNameMap.empty, Univ.LMap.empty;
@@ -769,10 +769,10 @@ let empty = {
   extras = Store.empty;
 }
 
-let from_env ?ctx e = 
-  match ctx with
-  | None -> { empty with universes = evar_universe_context_from e }
-  | Some ctx -> { empty with universes = ctx }
+let from_env e = 
+  { empty with universes = evar_universe_context_from e }
+
+let from_ctx ctx = { empty with universes = ctx }
 
 let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
 
@@ -982,9 +982,43 @@ let evar_universe_context d = d.universes
 
 let universe_context_set d = d.universes.uctx_local
 
-let universe_context evd =
-  Univ.ContextSet.to_context evd.universes.uctx_local
+let pr_uctx_level uctx = 
+  let map, map_rev = uctx.uctx_names in 
+    fun l ->
+      try str(Univ.LMap.find l map_rev)
+      with Not_found -> 
+	Universes.pr_with_global_universes l
 
+let universe_context ?names evd =
+  match names with
+  | None -> Univ.ContextSet.to_context evd.universes.uctx_local
+  | Some pl ->
+     let levels = Univ.ContextSet.levels evd.universes.uctx_local in
+     let newinst, left =
+       List.fold_right
+         (fun (loc,id) (newinst, acc) ->
+	  let l =
+	    try UNameMap.find (Id.to_string id) (fst evd.universes.uctx_names)
+	    with Not_found ->
+	      user_err_loc (loc, "universe_context",
+			    str"Universe " ++ pr_id id ++ str" is not bound anymore.")
+	  in (l :: newinst, Univ.LSet.remove l acc))
+	 pl ([], levels)
+     in
+       if not (Univ.LSet.is_empty left) then
+         let n = Univ.LSet.cardinal left in
+           errorlabstrm "universe_context"
+			(str(CString.plural n "Universe") ++ spc () ++
+			     Univ.LSet.pr (pr_uctx_level evd.universes) left ++
+			     spc () ++ str (CString.conjugate_verb_to_be n) ++ str" unbound.")
+       else Univ.UContext.make (Univ.Instance.of_array (Array.of_list newinst),
+				Univ.ContextSet.constraints evd.universes.uctx_local)
+
+let restrict_universe_context evd vars =
+  let uctx = evd.universes in
+  let uctx' = Universes.restrict_universe_context uctx.uctx_local vars in
+    { evd with universes = { uctx with uctx_local = uctx' } }
+						 
 let universe_subst evd =
   evd.universes.uctx_univ_variables
 
@@ -1072,6 +1106,15 @@ let make_flexible_variable evd b u =
     {evd with universes = {ctx with uctx_univ_variables = uvars'; 
       uctx_univ_algebraic = avars'}}
 
+let make_evar_universe_context e l = 
+  let uctx = evar_universe_context_from e in
+    match l with
+    | None -> uctx
+    | Some us ->
+       List.fold_left (fun uctx (loc,id) ->
+		       fst (uctx_new_univ_variable univ_rigid (Some (Id.to_string id)) uctx))
+		      uctx us
+    
 (****************************************)
 (* Operations on constants              *)
 (****************************************)
@@ -1702,13 +1745,6 @@ let evar_dependency_closure n sigma =
 
 let has_no_evar sigma =
   EvMap.is_empty sigma.defn_evars && EvMap.is_empty sigma.undf_evars
-
-let pr_uctx_level uctx = 
-  let map, map_rev = uctx.uctx_names in 
-    fun l ->
-      try str(Univ.LMap.find l map_rev)
-      with Not_found -> 
-	Universes.pr_with_global_universes l
 
 let pr_evd_level evd = pr_uctx_level evd.universes
 

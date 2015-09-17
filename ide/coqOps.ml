@@ -201,7 +201,7 @@ object(self)
     let on_changed (i, f) = segment#add i (flags_to_color f) in
     let on_push s =
       set_index s document_length;
-      (SentenceId.connect s)#changed on_changed;
+      ignore ((SentenceId.connect s)#changed on_changed);
       document_length <- succ document_length;
       segment#set_length document_length;
       let flags = List.map mem_flag_of_flag s.flags in

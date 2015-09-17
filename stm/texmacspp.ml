@@ -244,7 +244,7 @@ and pp_local_decl_expr lde = (* don't know what it is for now *)
   match lde with
   | AssumExpr (_, ce) -> pp_expr ce
   | DefExpr (_, ce, _) -> pp_expr ce
-and pp_inductive_expr ((_, (l, id)), lbl, ceo, _, cl_or_rdexpr) =
+and pp_inductive_expr ((_, ((l, id),_)), lbl, ceo, _, cl_or_rdexpr) =
   (* inductive_expr *)
   let b,e = Loc.unloc l in
   let location = ["begin", string_of_int b; "end", string_of_int e] in
@@ -273,7 +273,7 @@ and pp_recursion_order_expr optid roe = (* don't know what it is for now *)
     | CMeasureRec (e, None) -> "mesrec", [pp_expr e]
     | CMeasureRec (e, Some rel) -> "mesrec", [pp_expr e] @ [pp_expr rel] in
   Element ("recursion_order", ["kind", kind] @ attrs, expr)
-and pp_fixpoint_expr ((loc, id), (optid, roe), lbl, ce, ceo) =
+and pp_fixpoint_expr (((loc, id), pl), (optid, roe), lbl, ce, ceo) =
   (* fixpoint_expr *)
   let start, stop = unlock loc in
   let id = Id.to_string id in
@@ -286,7 +286,7 @@ and pp_fixpoint_expr ((loc, id), (optid, roe), lbl, ce, ceo) =
   | Some ce -> [pp_expr ce]
   | None -> []
   end
-and pp_cofixpoint_expr ((loc, id), lbl, ce, ceo) = (* cofixpoint_expr *)
+and pp_cofixpoint_expr (((loc, id), pl), lbl, ce, ceo) = (* cofixpoint_expr *)
   (* Nota: it is like fixpoint_expr without (optid, roe)
    * so could be merged if there is no more differences *)
   let start, stop = unlock loc in
@@ -473,7 +473,7 @@ and pp_expr ?(attr=[]) e =
       xmlApply loc
         (xmlOperator "fix" loc ::
            List.flatten (List.map
-             (fun (a,b,cl,c,d) -> pp_fixpoint_expr (a,b,cl,c,Some d))
+             (fun (a,b,cl,c,d) -> pp_fixpoint_expr ((a,None),b,cl,c,Some d))
              fel))
 
 let pp_comment (c) =
@@ -540,7 +540,7 @@ let rec tmpp v loc =
   | VernacConstraint _
   | VernacPolymorphic (_, _) as x -> xmlTODO loc x
   (* Gallina *)
-  | VernacDefinition (ldk, (_,id), de) ->
+  | VernacDefinition (ldk, ((_,id),_), de) ->
       let l, dk =
         match ldk with
         | Some l, dk -> (l, dk)
@@ -555,7 +555,7 @@ let rec tmpp v loc =
       let str_dk = Kindops.string_of_definition_kind (l, false, dk) in
       let str_id = Id.to_string id in
       (xmlDef str_dk str_id loc [pp_expr e])
-  | VernacStartTheoremProof (tk, [ Some (_,id), ([], statement, None) ], b) ->
+  | VernacStartTheoremProof (tk, [ Some ((_,id),_), ([], statement, None) ], b) ->
       let str_tk = Kindops.string_of_theorem_kind tk in
       let str_id = Id.to_string id in
       (xmlThm str_tk str_id loc [pp_expr statement])

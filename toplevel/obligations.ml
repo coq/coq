@@ -879,7 +879,7 @@ let rec solve_obligation prg num tac =
   in
   let obl = subst_deps_obl obls obl in
   let kind = kind_of_obligation (pi2 prg.prg_kind) obl.obl_status in
-  let evd = Evd.from_env ~ctx:prg.prg_ctx Environ.empty_env in
+  let evd = Evd.from_ctx prg.prg_ctx in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
   let terminator guard hook = Proof_global.make_terminator (obligation_terminator prg.prg_name num guard hook) in
   let hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in

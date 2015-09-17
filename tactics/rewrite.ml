@@ -1824,8 +1824,8 @@ let declare_projection n instance_id r =
 
 let build_morphism_signature m =
   let env = Global.env () in
-  let m,ctx = Constrintern.interp_constr env Evd.empty m in
-  let sigma = Evd.from_env ~ctx env in
+  let m,ctx = Constrintern.interp_constr env (Evd.from_env env) m in
+  let sigma = Evd.from_ctx ctx in
   let t = Typing.unsafe_type_of env sigma m in
   let cstrs =
     let rec aux t =

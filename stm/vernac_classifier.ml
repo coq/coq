@@ -116,25 +116,25 @@ let rec classify_vernac e =
     | VernacSetOption (["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
     | VernacDefinition (
-       (Some Decl_kinds.Discharge,Decl_kinds.Definition),(_,i),ProveBody _) ->
+       (Some Decl_kinds.Discharge,Decl_kinds.Definition),((_,i),_),ProveBody _) ->
         VtStartProof("Classic",Doesn'tGuaranteeOpacity,[i]), VtLater
-    | VernacDefinition (_,(_,i),ProveBody _) ->
+    | VernacDefinition (_,((_,i),_),ProveBody _) ->
         VtStartProof("Classic",GuaranteesOpacity,[i]), VtLater
     | VernacStartTheoremProof (_,l,_) ->
         let ids = 
-          CList.map_filter (function (Some(_,i), _) -> Some i | _ -> None) l in
+          CList.map_filter (function (Some ((_,i),pl), _) -> Some i | _ -> None) l in
         VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
     | VernacGoal _ -> VtStartProof ("Classic",GuaranteesOpacity,[]), VtLater
     | VernacFixpoint (_,l) ->
         let ids, open_proof =
-          List.fold_left (fun (l,b) (((_,id),_,_,_,p),_) ->
+          List.fold_left (fun (l,b) ((((_,id),_),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
         then VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
         else VtSideff ids, VtLater
     | VernacCoFixpoint (_,l) ->
         let ids, open_proof =
-          List.fold_left (fun (l,b) (((_,id),_,_,p),_) ->
+          List.fold_left (fun (l,b) ((((_,id),_),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
         if open_proof
         then VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
@@ -143,9 +143,9 @@ let rec classify_vernac e =
     | VernacAssumption (_,_,l) ->
         let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map snd l) l) in
         VtSideff ids, VtLater    
-    | VernacDefinition (_,(_,id),DefineBody _) -> VtSideff [id], VtLater
+    | VernacDefinition (_,((_,id),_),DefineBody _) -> VtSideff [id], VtLater
     | VernacInductive (_,_,l) ->
-        let ids = List.map (fun (((_,(_,id)),_,_,_,cl),_) -> id :: match cl with
+        let ids = List.map (fun (((_,((_,id),_)),_,_,_,cl),_) -> id :: match cl with
         | Constructors l -> List.map (fun (_,((_,id),_)) -> id) l
         | RecordDecl (oid,l) -> (match oid with Some (_,x) -> [x] | _ -> []) @
            CList.map_filter (function
@@ -173,9 +173,13 @@ let rec classify_vernac e =
     | VernacDeclareReduction _
     | VernacDeclareClass _ | VernacDeclareInstances _
     | VernacRegister _
-    | VernacDeclareTacticDefinition _
     | VernacNameSectionHypSet _
     | VernacComments _ -> VtSideff [], VtLater
+    | VernacDeclareTacticDefinition (_,l) ->
+        let open Libnames in
+        VtSideff (List.map (function
+          | (Ident (_,r),_,_) -> r
+          | (Qualid (_,q),_,_) -> snd(repr_qualid q)) l), VtLater
     (* Who knows *)
     | VernacLoad _ -> VtSideff [], VtNow
     (* (Local) Notations have to disappear *)

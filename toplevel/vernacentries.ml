@@ -461,7 +461,7 @@ let vernac_definition_hook p = function
 | SubClass -> Class.add_subclass_hook p
 | _ -> no_hook
 
-let vernac_definition locality p (local,k) (loc,id as lid) def =
+let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
   let local = enforce_locality_exp locality local in
   let hook = vernac_definition_hook p k in
   let () = match local with
@@ -471,20 +471,20 @@ let vernac_definition locality p (local,k) (loc,id as lid) def =
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
  	  start_proof_and_print (local,p,DefinitionBody Definition)
-	    [Some lid, (bl,t,None)] no_hook
+	    [Some (lid,pl), (bl,t,None)] no_hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
           | None -> None
           | Some r ->
 	      let (evc,env)= get_current_context () in
  		Some (snd (interp_redexp env evc r)) in
-	do_definition id (local,p,k) bl red_option c typ_opt hook)
+	do_definition id (local,p,k) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof p kind l lettop =
   if Dumpglob.dump () then
     List.iter (fun (id, _) ->
       match id with
-	| Some lid -> Dumpglob.dump_definition lid false "prf"
+	| Some (lid,_) -> Dumpglob.dump_definition lid false "prf"
 	| None -> ()) l;
   if not(refining ()) then
     if lettop then
@@ -525,11 +525,11 @@ let vernac_assumption locality poly (local, kind) l nl =
 
 let vernac_record k poly finite struc binders sort nameopt cfs =
   let const = match nameopt with
-    | None -> add_prefix "Build_" (snd (snd struc))
+    | None -> add_prefix "Build_" (snd (fst (snd struc)))
     | Some (_,id as lid) ->
 	Dumpglob.dump_definition lid false "constr"; id in
     if Dumpglob.dump () then (
-      Dumpglob.dump_definition (snd struc) false "rec";
+      Dumpglob.dump_definition (fst (snd struc)) false "rec";
       List.iter (fun (((_, x), _), _) ->
 	match x with
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
@@ -538,7 +538,7 @@ let vernac_record k poly finite struc binders sort nameopt cfs =
 
 let vernac_inductive poly lo finite indl =
   if Dumpglob.dump () then
-    List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
+    List.iter (fun (((coe,(lid,_)), _, _, _, cstrs), _) ->
       match cstrs with
 	| Constructors cstrs ->
 	    Dumpglob.dump_definition lid false "ind";
@@ -578,13 +578,13 @@ let vernac_inductive poly lo finite indl =
 let vernac_fixpoint locality poly local l =
   let local = enforce_locality_exp locality local in
   if Dumpglob.dump () then
-    List.iter (fun ((lid, _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
+    List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   do_fixpoint local poly l
 
 let vernac_cofixpoint locality poly local l =
   let local = enforce_locality_exp locality local in
   if Dumpglob.dump () then
-    List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
+    List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   do_cofixpoint local poly l
 
 let vernac_scheme l =
