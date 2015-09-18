@@ -39,25 +39,12 @@ let path_to_list p =
 let user_path () =
   path_to_list (Sys.getenv "PATH") (* may raise Not_found *)
 
-  (* Duplicated from system.ml to minimize dependencies *)
-let file_exists_respecting_case f =
-  if Coq_config.arch = "Darwin" then
-    (* ensure that the file exists with expected case on the
-       case-insensitive but case-preserving default MacOS file system *)
-    let rec aux f =
-      let bf = Filename.basename f in
-      let df = Filename.dirname f in
-      String.equal df "." || String.equal df "/" ||
-      aux df && Array.exists (String.equal bf) (Sys.readdir df)
-    in aux f
-  else Sys.file_exists f
-
 let rec which l f =
   match l with
     | [] ->
       raise Not_found
     | p :: tl ->
-      if file_exists_respecting_case (p / f) then
+      if Sys.file_exists (p / f) then
 	p
       else
 	which tl f
@@ -115,7 +102,7 @@ let _ =
     If the check fails, then [oth ()] is evaluated. *)
 let check_file_else ~dir ~file oth =
   let path = if Coq_config.local then coqroot else coqroot / dir in
-  if file_exists_respecting_case (path / file) then path else oth ()
+  if Sys.file_exists (path / file) then path else oth ()
 
 let guess_coqlib fail =
   let prelude = "theories/Init/Prelude.vo" in
@@ -147,7 +134,7 @@ let coqpath =
   let coqpath = getenv_else "COQPATH" (fun () -> "") in
   let make_search_path path =
     let paths = path_to_list path in
-    let valid_paths = List.filter file_exists_respecting_case paths in
+    let valid_paths = List.filter Sys.file_exists paths in
     List.rev valid_paths
   in
   make_search_path coqpath
