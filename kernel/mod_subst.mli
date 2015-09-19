@@ -68,8 +68,9 @@ val empty_subst : substitution
 
 val is_empty_subst : substitution -> bool
 
-(** add_* add [arg2/arg1]\{arg3\} to the substitution with no
-   sequential composition  *)
+(** add_* add [arg2/arg1]\{arg3\} to the substitution with no sequential
+   composition. Most often this is not what you want. For sequential
+   composition, try [join (map_mbid mp delta) subs] **)
 val add_mbid :
   MBId.t -> module_path -> delta_resolver  -> substitution -> substitution
 val add_mp :
