@@ -204,7 +204,7 @@ struct
     DirPath.to_string p ^ "." ^ s
 
   let debug_to_string (i, s, p) =
-    "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
+    "<"^DirPath.to_string p ^"#" ^ s ^"#"^ string_of_int i^">"
 
   let compare (x : t) (y : t) =
     if x == y then 0
@@ -281,6 +281,11 @@ module ModPath = struct
     | MPfile sl -> DirPath.to_string sl
     | MPbound uid -> MBId.to_string uid
     | MPdot (mp,l) -> to_string mp ^ "." ^ Label.to_string l
+
+  let rec debug_to_string = function
+    | MPfile sl -> DirPath.to_string sl
+    | MPbound uid -> MBId.debug_to_string uid
+    | MPdot (mp,l) -> debug_to_string mp ^ "." ^ Label.to_string l
 
   (** we compare labels first if both are MPdots *)
   let rec compare mp1 mp2 =
@@ -375,12 +380,16 @@ module KerName = struct
   let modpath kn = kn.modpath
   let label kn = kn.knlabel
 
-  let to_string kn =
+  let to_string_gen mp_to_string kn =
     let dp =
       if DirPath.is_empty kn.dirpath then "."
       else "#" ^ DirPath.to_string kn.dirpath ^ "#"
     in
-    ModPath.to_string kn.modpath ^ dp ^ Label.to_string kn.knlabel
+    mp_to_string kn.modpath ^ dp ^ Label.to_string kn.knlabel
+
+  let to_string kn = to_string_gen ModPath.to_string kn
+
+  let debug_to_string kn = to_string_gen ModPath.debug_to_string kn
 
   let print kn = str (to_string kn)
 
@@ -500,9 +509,9 @@ module KerPair = struct
   let print kp = str (to_string kp)
 
   let debug_to_string = function
-    | Same kn -> "(" ^ KerName.to_string kn ^ ")"
+    | Same kn -> "(" ^ KerName.debug_to_string kn ^ ")"
     | Dual (knu,knc) ->
-      "(" ^ KerName.to_string knu ^ "," ^ KerName.to_string knc ^ ")"
+      "(" ^ KerName.debug_to_string knu ^ "," ^ KerName.debug_to_string knc ^ ")"
 
   let debug_print kp = str (debug_to_string kp)
 

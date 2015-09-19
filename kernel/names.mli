@@ -217,6 +217,9 @@ sig
 
   val to_string : t -> string
 
+  val debug_to_string : t -> string
+  (** Same as [to_string], but outputs information related to debug. *)
+
   val initial : t
   (** Name of the toplevel structure ([= MPfile initial_dir]) *)
 
@@ -244,6 +247,10 @@ sig
 
   (** Display *)
   val to_string : t -> string
+
+  val debug_to_string : t -> string
+  (** Same as [to_string], but outputs information related to debug. *)
+
   val print : t -> Pp.std_ppcmds
 
   (** Comparisons *)
