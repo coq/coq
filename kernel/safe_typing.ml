@@ -81,8 +81,7 @@ open Declarations
       These fields could be deduced from [revstruct], but they allow faster
       name freshness checks.
  - [univ] and [future_cst] : current and future universe constraints
- - [engagement] : are we Set-impredicative?
- - [type_in_type] : does the universe hierarchy collapse?
+ - [engagement] : are we Set-impredicative? does the universe hierarchy collapse?
  - [required] : names and digests of Require'd libraries since big-bang.
       This field will only grow
  - [loads] : list of libraries Require'd inside the current module.
@@ -122,7 +121,6 @@ type safe_environment =
     univ : Univ.constraints;
     future_cst : Univ.constraints Future.computation list;
     engagement : engagement option;
-    type_in_type : bool;
     required : vodigest DPMap.t;
     loads : (module_path * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
@@ -152,7 +150,6 @@ let empty_environment =
     future_cst = [];
     univ = Univ.Constraint.empty;
     engagement = None;
-    type_in_type = false;
     required = DPMap.empty;
     loads = [];
     local_retroknowledge = [];
