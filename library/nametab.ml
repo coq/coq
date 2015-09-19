@@ -524,7 +524,8 @@ let shortest_qualid_of_tactic kn =
 
 let pr_global_env env ref =
   try str (string_of_qualid (shortest_qualid_of_global env ref))
-  with Not_found as e -> prerr_endline "pr_global_env not found"; raise e
+  with Not_found as e ->
+    if !Flags.debug then Pp.msg_debug (Pp.str "pr_global_env not found"); raise e
 
 let global_inductive r =
   match global r with
