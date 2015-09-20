@@ -173,6 +173,12 @@ let is_done p =
 (* spiwack: for compatibility with <= 8.2 proof engine *)
 let has_unresolved_evar p =
   Proofview.V82.has_unresolved_evar p.proofview
+let has_shelved_goals p = not (CList.is_empty (p.shelf))
+let has_given_up_goals p = not (CList.is_empty (p.given_up))
+
+let is_complete p =
+  is_done p && not (has_unresolved_evar p) &&
+  not (has_shelved_goals p) && not (has_given_up_goals p)
 
 (* Returns the list of partial proofs to initial goals *)
 let partial_proof p = Proofview.partial_proof p.entry p.proofview
@@ -305,9 +311,9 @@ end
 let return p =
   if not (is_done p) then
     raise UnfinishedProof
-  else if not (CList.is_empty (p.shelf)) then
+  else if has_shelved_goals p then
     raise HasShelvedGoals
-  else if not (CList.is_empty (p.given_up)) then
+  else if has_given_up_goals p then
     raise HasGivenUpGoals
   else if has_unresolved_evar p then
     (* spiwack: for compatibility with <= 8.3 proof engine *)
