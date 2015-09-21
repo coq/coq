@@ -100,11 +100,11 @@ let hcons_j j =
 
 let feedback_completion_typecheck =
   Option.iter (fun state_id -> Pp.feedback ~state_id Feedback.Complete)
-
+	      
 let infer_declaration env kn dcl =
   match dcl with
   | ParameterEntry (ctx,poly,(t,uctx),nl) ->
-      let env = push_context uctx env in
+      let env = push_context ~strict:(not poly) uctx env in
       let j = infer env t in
       let abstract = poly && not (Option.is_empty kn) in
       let usubst, univs = Univ.abstract_universes abstract uctx in
@@ -115,7 +115,7 @@ let infer_declaration env kn dcl =
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
 		       const_entry_polymorphic = false} as c) ->
-      let env = push_context c.const_entry_universes env in
+      let env = push_context ~strict:true c.const_entry_universes env in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
@@ -135,7 +135,7 @@ let infer_declaration env kn dcl =
 	c.const_entry_inline_code, c.const_entry_secctx
 
   | DefinitionEntry c ->
-      let env = push_context c.const_entry_universes env in
+      let env = push_context ~strict:(not c.const_entry_polymorphic) c.const_entry_universes env in
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let (body, ctx), side_eff = Future.join body in

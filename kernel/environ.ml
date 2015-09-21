@@ -181,26 +181,41 @@ let fold_named_context_reverse f ~init env =
 
 (* Universe constraints *)
 
-let add_constraints c env =
-  if Univ.Constraint.is_empty c then
-    env
-  else
-    let s = env.env_stratification in
+let map_universes f env =
+  let s = env.env_stratification in
     { env with env_stratification =
-      { s with env_universes = Univ.merge_constraints c s.env_universes } }
+	 { s with env_universes = f s.env_universes } }
+				     
+let add_constraints c env =
+  if Univ.Constraint.is_empty c then env
+  else map_universes (Univ.merge_constraints c) env
 
 let check_constraints c env =
   Univ.check_constraints c env.env_stratification.env_universes
 
-let set_engagement c env = (* Unsafe *)
-  { env with env_stratification =
-    { env.env_stratification with env_engagement = c } }
-
 let push_constraints_to_env (_,univs) env =
   add_constraints univs env
 
-let push_context ctx env = add_constraints (Univ.UContext.constraints ctx) env
-let push_context_set ctx env = add_constraints (Univ.ContextSet.constraints ctx) env
+let add_universes strict ctx g =
+  let g = Array.fold_left (fun g v -> Univ.add_universe v strict g)
+			  g (Univ.Instance.to_array (Univ.UContext.instance ctx))
+  in
+    Univ.merge_constraints (Univ.UContext.constraints ctx) g
+			   
+let push_context ?(strict=false) ctx env =
+  map_universes (add_universes strict ctx) env
+
+let add_universes_set strict ctx g =
+  let g = Univ.LSet.fold (fun v g -> Univ.add_universe v strict g)
+			 (Univ.ContextSet.levels ctx) g
+  in Univ.merge_constraints (Univ.ContextSet.constraints ctx) g
+
+let push_context_set ?(strict=false) ctx env =
+  map_universes (add_universes_set strict ctx) env
+
+let set_engagement c env = (* Unsafe *)
+  { env with env_stratification =
+    { env.env_stratification with env_engagement = c } }
 
 (* Global constants *)
 

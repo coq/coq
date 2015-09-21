@@ -830,8 +830,13 @@ let normalize_context_set ctx us algs =
   (** Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
     Constraint.fold (fun (l,d,r as cstr) (smallles, noneqs) ->
-	if d == Le && Univ.Level.is_small l then
-	  (Constraint.add cstr smallles, noneqs)
+        if d == Le then
+	  if Univ.Level.is_small l then
+	    (Constraint.add cstr smallles, noneqs)
+	  else if Level.is_small r then
+	    raise (Univ.UniverseInconsistency
+		     (Le,Universe.make l,Universe.make r,None))
+	  else (smallles, Constraint.add cstr noneqs)
 	else (smallles, Constraint.add cstr noneqs))
     csts (Constraint.empty, Constraint.empty)
   in

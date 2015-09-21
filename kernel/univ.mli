@@ -163,8 +163,8 @@ val is_initial_universes : universes -> bool
 
 val sort_universes : universes -> universes
 
-(** Adds a universe to the graph, ensuring it is >= Prop or Set. *)
-val add_universe : universe_level -> predicative:bool -> universes -> universes
+(** Adds a universe to the graph, ensuring it is >= or > Set. *)
+val add_universe : universe_level -> bool -> universes -> universes
 
 (** {6 Constraints. } *)
 

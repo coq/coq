@@ -208,8 +208,8 @@ val add_constraints : Univ.constraints -> env -> env
 
 (** Check constraints are satifiable in the environment. *)
 val check_constraints : Univ.constraints -> env -> bool
-val push_context : Univ.universe_context -> env -> env
-val push_context_set : Univ.universe_context_set -> env -> env
+val push_context : ?strict:bool -> Univ.universe_context -> env -> env
+val push_context_set : ?strict:bool -> Univ.universe_context_set -> env -> env
 val push_constraints_to_env : 'a Univ.constrained -> env -> env
 
 val set_engagement : engagement -> env -> env

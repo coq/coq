@@ -117,7 +117,7 @@ intros. hnf. apply dirprodpair. exact ax0. apply dirprodpair. exact ax1. exact a
 Defined.
 
 Definition eqax0 { X : UU } { R : hrel X } { A : hsubtypes X }  : iseqclass R A -> ishinh ( carrier A ) .
-intros X R A; exact ( fun is : iseqclass R A =>  projT1' _ is ).
+intros X R A. exact (fun is : iseqclass R A => projT1' _ is ).
 Defined.
 
 Lemma iseqclassdirprod { X Y : UU } { R : hrel X } { Q : hrel Y } { A : hsubtypes X } { B : hsubtypes Y } ( isa : iseqclass R A ) ( isb : iseqclass Q B ) : iseqclass ( hreldirprod R Q ) ( subtypesdirprod A B ) .
@@ -141,7 +141,7 @@ Definition prtoimage { X Y : UU } (f : X -> Y) : X -> image f.
   admit.
 Defined.
 
-Definition setquot { X : UU } ( R : hrel X ) : Type.
+Definition setquot { X : UU } ( R : hrel X ) : Set.
 intros; exact ( sigT' ( fun A : _ => iseqclass R A ) ).
 Defined.
 Definition setquotpair { X : UU } ( R : hrel X ) ( A : hsubtypes X ) ( is : iseqclass R A ) : setquot R.
@@ -157,7 +157,7 @@ Definition setquotinset { X : UU } ( R : hrel X ) : hSet.
 intros; exact ( hSetpair (setquot R) admit) .
 Defined.
 
-Definition dirprodtosetquot { X Y : UU } ( RX : hrel X ) ( RY : hrel Y ) (cd : dirprod ( setquot RX ) ( setquot RY ) ) : setquot ( hreldirprod RX RY ).
+Definition dirprodtosetquot { X Y : UU } ( RX : hrel X ) ( RY : hrel Y ) (cd : dirprod ( setquot@{i j k l m n p Set q r} RX ) ( setquot RY ) ) : setquot ( hreldirprod RX RY ).
 intros; exact ( setquotpair _ _ ( iseqclassdirprod ( projT2' _ ( projT1' _ cd ) ) ( projT2' _  ( projT2' _ cd ) ) ) ).
 Defined.
 

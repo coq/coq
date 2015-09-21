@@ -1083,11 +1083,11 @@ let uctx_new_univ_variable rigid name predicative
     | None -> uctx.uctx_names
   in
   let initial =
-    Univ.add_universe u true uctx.uctx_initial_universes
+    Univ.add_universe u false uctx.uctx_initial_universes
   in						     
   let uctx' =
     {uctx' with uctx_names = names; uctx_local = ctx';
-		uctx_universes = Univ.add_universe u true uctx.uctx_universes;
+		uctx_universes = Univ.add_universe u false uctx.uctx_universes;
 		uctx_initial_universes = initial}
   in uctx', u
 						     

@@ -750,17 +750,6 @@ let get_set_arc g = repr g Level.set
 let is_set_arc u = Level.is_set u.univ
 let is_prop_arc u = Level.is_prop u.univ
 
-let add_universe vlev ~predicative g = 
-  let v = terminal ~predicative vlev in
-  let arc =
-    let arc =
-      if predicative then get_set_arc g else get_prop_arc g
-    in
-      { arc with le=vlev::arc.le}
-  in
-  let g = enter_arc arc g in
-    enter_arc v g
-
 (* [safe_repr] also search for the canonical representative, but
    if the graph doesn't contain the searched universe, we add it. *)
 
@@ -776,6 +765,18 @@ let safe_repr g u =
     let setarc = get_set_arc g in
     let g = enter_arc {setarc with le=u::setarc.le} g in
     enter_arc can g, can
+
+let add_universe vlev strict g = 
+  let v = terminal ~predicative:true vlev in
+  let arc =
+    let arc = get_set_arc g in
+      if strict then
+	{ arc with lt=vlev::arc.lt}
+      else 
+	{ arc with le=vlev::arc.le}
+  in
+  let g = enter_arc arc g in
+    enter_arc v g
 
 (* reprleq : canonical_arc -> canonical_arc list *)
 (* All canonical arcv such that arcu<=arcv with arcv#arcu *)
@@ -1145,7 +1146,8 @@ let merge g arcu arcv =
   (* we find the arc with the biggest rank, and we redirect all others to it *)
   let arcu, g, v =
     let best_ranked (max_rank, old_max_rank, best_arc, rest) arc =
-      if arc.rank >= max_rank && not (Level.is_small best_arc.univ)
+      if Level.is_small arc.univ ||
+	   (arc.rank >= max_rank && not (Level.is_small best_arc.univ))
       then (arc.rank, max_rank, arc, best_arc::rest)
       else (max_rank, old_max_rank, best_arc, arc::rest)
     in
