@@ -190,7 +190,7 @@ let current = {
     automatic_tactics = ["trivial"; "tauto"; "auto"; "omega";
 			 "auto with *"; "intuition" ];
 
-    modifier_for_navigation = "<Control><Alt>";
+    modifier_for_navigation = "<Control>";
     modifier_for_templates = "<Control><Shift>";
     modifier_for_tactics = "<Control><Alt>";
     modifier_for_display = "<Alt><Shift>";
