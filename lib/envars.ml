@@ -39,6 +39,8 @@ let path_to_list p =
 let user_path () =
   path_to_list (Sys.getenv "PATH") (* may raise Not_found *)
 
+(* Finding a name in path using the equality provided by the file system *)
+(* whether it is case-sensitive or case-insensitive *)
 let rec which l f =
   match l with
     | [] ->
@@ -99,7 +101,8 @@ let _ =
 (** [check_file_else ~dir ~file oth] checks if [file] exists in
     the installation directory [dir] given relatively to [coqroot].
     If this Coq is only locally built, then [file] must be in [coqroot].
-    If the check fails, then [oth ()] is evaluated. *)
+    If the check fails, then [oth ()] is evaluated.
+    Using file system equality seems well enough for this heuristic *)
 let check_file_else ~dir ~file oth =
   let path = if Coq_config.local then coqroot else coqroot / dir in
   if Sys.file_exists (path / file) then path else oth ()
