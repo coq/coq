@@ -59,6 +59,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/WeakFan.v
     theories/Logic/WKL.v
     theories/Logic/FinFun.v
+    theories/Logic/PropFacts.v
   </dd>
 
   <dt> <b>Structures</b>:
