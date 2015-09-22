@@ -1542,7 +1542,7 @@ let newfail n s =
 
 let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
   let open Proofview.Notations in
-  let treat sigma (res, is_hyp) = 
+  let treat sigma res = 
     match res with
     | None -> newfail 0 (str "Nothing to rewrite")
     | Some None -> Proofview.tclUNIT ()
@@ -1550,7 +1550,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
         let (undef, prf, newt) = res in
         let fold ev _ accu = if Evd.mem sigma ev then accu else ev :: accu in
         let gls = List.rev (Evd.fold_undefined fold undef []) in
-	match is_hyp, prf with
+	match clause, prf with
 	| Some id, Some p ->
             let tac = Proofview.Refine.refine ~unsafe:false (fun h -> (h, p)) <*> Proofview.Unsafe.tclNEWGOALS gls in
             Proofview.Unsafe.tclEVARS undef <*>
@@ -1582,17 +1582,25 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
-    let ty, is_hyp =
-      match clause with
-      | Some id -> Environ.named_type id env, Some id
-      | None -> concl, None
+    let ty = match clause with
+    | None -> concl
+    | Some id -> Environ.named_type id env
+    in
+    let env = match clause with
+    | None -> env
+    | Some id ->
+      (** Only consider variables not depending on [id] *)
+      let ctx = Environ.named_context env in
+      let filter decl = not (occur_var_in_decl env id decl) in
+      let nctx = List.filter filter ctx in
+      Environ.reset_with_named_context (Environ.val_of_named_context nctx) env
     in
     try
       let res =
-        cl_rewrite_clause_aux ?abs strat env [] sigma ty is_hyp
+        cl_rewrite_clause_aux ?abs strat env [] sigma ty clause
       in
       let sigma = match origsigma with None -> sigma | Some sigma -> sigma in
-      treat sigma (res, is_hyp) <*>
+      treat sigma res <*>
       (** For compatibility *)
       beta <*> opt_beta <*> Proofview.shelve_unifiable
     with
