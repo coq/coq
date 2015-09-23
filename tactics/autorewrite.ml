@@ -292,10 +292,13 @@ let find_applied_relation metas loc env sigma c left2right =
 (* To add rewriting rules to a base *)
 let add_rew_rules base lrul =
   let counter = ref 0 in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   let lrul =
     List.fold_left
       (fun dn (loc,(c,ctx),b,t) ->
-	let info = find_applied_relation false loc (Global.env ()) Evd.empty c b in
+	let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
+	let info = find_applied_relation false loc env sigma c b in
 	let pat = if b then info.hyp_left else info.hyp_right in
 	let rul = { rew_lemma = c; rew_type = info.hyp_ty;
 		    rew_pat = pat; rew_ctx = ctx; rew_l2r = b;

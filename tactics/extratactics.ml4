@@ -262,7 +262,8 @@ TACTIC EXTEND rewrite_star
 (* Hint Rewrite                                                       *)
 
 let add_rewrite_hint bases ort t lcsr =
-  let env = Global.env() and sigma = Evd.empty in
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
   let poly = Flags.is_universe_polymorphism () in 
   let f ce = 
     let c, ctx = Constrintern.interp_constr env sigma ce in
@@ -490,7 +491,9 @@ let inTransitivity : bool * constr -> obj =
 (* Main entry points *)
 
 let add_transitivity_lemma left lem =
- let lem',ctx (*FIXME*) = Constrintern.interp_constr (Global.env ()) Evd.empty lem in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let lem',ctx (*FIXME*) = Constrintern.interp_constr env sigma lem in
   add_anonymous_leaf (inTransitivity (left,lem'))
 
 (* Vernacular syntax *)

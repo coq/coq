@@ -370,7 +370,7 @@ let add_instance check inst =
   List.iter (fun (path, pri, c) -> add_instance_hint (IsConstr c) path
     (is_local inst) pri poly)
     (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
-       (Global.env ()) Evd.empty inst.is_impl inst.is_pri)
+       (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_pri)
 
 let rebuild_instance (action, inst) =
   let () = match action with

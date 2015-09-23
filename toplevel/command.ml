@@ -241,11 +241,14 @@ let interp_assumption evdref env impls bl c =
   let ctx = Evd.universe_context_set evd in
     ((nf ty, ctx), impls)
 
-let declare_assumptions idl is_coe k c imps impl_is_on nl =
-  let refs, status =
-    List.fold_left (fun (refs,status) id ->
-      let ref',u',status' = declare_assumption is_coe k c imps impl_is_on nl id in
-      (ref',u')::refs, status' && status) ([],true) idl in
+let declare_assumptions idl is_coe k (c,ctx) imps impl_is_on nl =
+  let refs, status, _ =
+    List.fold_left (fun (refs,status,ctx) id ->
+      let ref',u',status' =
+	declare_assumption is_coe k (c,ctx) imps impl_is_on nl id in
+      (ref',u')::refs, status' && status, Univ.ContextSet.empty)
+      ([],true,ctx) idl
+  in
   List.rev refs, status
 
 let do_assumptions (_, poly, _ as kind) nl l =
