@@ -30,7 +30,7 @@ type cinfo =
 
 type term =
     Symb of constr
-  | Product of sorts_family * sorts_family
+  | Product of sorts * sorts
   | Eps of Id.t
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
