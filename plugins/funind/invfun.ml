@@ -760,7 +760,8 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
   let funs_constr = Array.map mkConstU funs  in
   States.with_state_protection_on_exception
     (fun () ->
-     let evd = ref Evd.empty in 
+     let env = Global.env () in
+     let evd = ref (Evd.from_env env) in 
      let graphs_constr = Array.map mkInd graphs in
      let lemmas_types_infos =
        Util.Array.map2_i
@@ -829,7 +830,6 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 
       )
       funs;
-    (* let evd = ref Evd.empty in  *)
     let lemmas_types_infos =
       Util.Array.map2_i
 	(fun i f_constr graph ->
@@ -875,7 +875,7 @@ let derive_correctness make_scheme functional_induction (funs: pconstant list) (
 	   i*)
 	 let lem_id = mk_complete_id f_id in
 	 Lemmas.start_proof lem_id
-	   (Decl_kinds.Global,Flags.is_universe_polymorphism (),(Decl_kinds.Proof Decl_kinds.Theorem))  !evd
+	   (Decl_kinds.Global,Flags.is_universe_polymorphism (),(Decl_kinds.Proof Decl_kinds.Theorem)) sigma
 	 (fst lemmas_types_infos.(i))
            (Lemmas.mk_hook (fun _ _ -> ()));
 	 ignore (Pfedit.by

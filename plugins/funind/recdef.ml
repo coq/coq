@@ -194,7 +194,7 @@ let (value_f:constr list -> global_reference -> constr) =
 			       Anonymous)],
 	  GVar(d0,v_id)])
     in
-    let body = fst (understand env Evd.empty glob_body)(*FIXME*) in
+    let body = fst (understand env (Evd.from_env env) glob_body)(*FIXME*) in
     it_mkLambda_or_LetIn body context
 
 let (declare_f : Id.t -> logical_kind -> constr list -> global_reference -> global_reference) =
@@ -1293,8 +1293,9 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
     ref_ := Some lemma ;
     let lid = ref [] in
     let h_num = ref (-1) in
+    let env = Global.env () in
     Proof_global.discard_all ();
-    build_proof Evd.empty
+    build_proof (Evd.from_env env)
       (  fun gls ->
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
 	   observe_tclTHENLIST (str "")
@@ -1513,7 +1514,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let relation =
     fst (*FIXME*)(interp_constr
       env_with_pre_rec_args
-      Evd.empty
+      (Evd.from_env env_with_pre_rec_args)
       r)
   in
   let tcc_lemma_name = add_suffix function_name "_tcc" in

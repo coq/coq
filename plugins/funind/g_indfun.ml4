@@ -388,7 +388,7 @@ let finduction (oid:Id.t option) (heuristic: fapp_info list -> fapp_info list)
     | Some id ->
        let idref = const_of_id id in
        (* JF : FIXME : we probably need to keep trace of evd in presence of universe polymorphism *)
-       let idconstr = snd (Evd.fresh_global (Global.env ()) Evd.empty idref) in
+       let idconstr = snd (Evd.fresh_global (Global.env ()) (Evd.from_env (Global.env ())) idref) in
 	(fun u -> constr_head_match u idconstr) (* select only id *)
     | None -> (fun u -> isApp u) in (* select calls to any function *)
   let info_list = find_fapp test g in
