@@ -102,14 +102,27 @@ let ((constr_in : constr -> Dyn.t),
 (** Miscellaneous interpretation functions *)
 let interp_universe_level_name evd s =
   let names, _ = Universes.global_universe_names () in
-  try
-    let id = try Id.of_string s with _ -> raise Not_found in
-      evd, Idmap.find id names
-  with Not_found ->
-    try let level = Evd.universe_of_name evd s in
-	  evd, level
-    with Not_found -> 
-      new_univ_level_variable ~name:s univ_rigid evd
+    if CString.string_contains s "." then
+      match List.rev (CString.split '.' s) with
+      | [] -> anomaly (str"Invalid universe name " ++ str s)
+      | n :: dp -> 
+	 let num = int_of_string n in
+	 let dp = DirPath.make (List.map Id.of_string dp) in
+	 let level = Univ.Level.make dp num in
+	 let evd =
+	   try Evd.add_global_univ evd level
+	   with Univ.AlreadyDeclared -> evd
+	 in evd, level
+    else 
+      try
+	let id =
+	  try Id.of_string s with _ -> raise Not_found in
+	  evd, Idmap.find id names
+      with Not_found ->
+	try let level = Evd.universe_of_name evd s in
+	      evd, level
+	with Not_found -> 
+	  new_univ_level_variable ~name:s univ_rigid evd
 
 let interp_universe evd = function
   | [] -> let evd, l = new_univ_level_variable univ_rigid evd in
