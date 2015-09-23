@@ -310,6 +310,9 @@ let union_evar_universe_context ctx ctx' =
   else
     let local = Univ.ContextSet.union ctx.uctx_local ctx'.uctx_local in
     let names = UNameMap.union (fst ctx.uctx_names) (fst ctx'.uctx_names) in
+    let newus = Univ.LSet.diff (Univ.ContextSet.levels ctx'.uctx_local)
+			       (Univ.ContextSet.levels ctx.uctx_local) in
+    let declarenew g = Univ.LSet.fold (fun u g -> Univ.add_universe u false g) newus g in	
     let names_rev = Univ.LMap.union (snd ctx.uctx_names) (snd ctx'.uctx_names) in
       { uctx_names = (names, names_rev);
 	uctx_local = local;
@@ -317,12 +320,12 @@ let union_evar_universe_context ctx ctx' =
 	  Univ.LMap.subst_union ctx.uctx_univ_variables ctx'.uctx_univ_variables;
 	uctx_univ_algebraic = 
 	  Univ.LSet.union ctx.uctx_univ_algebraic ctx'.uctx_univ_algebraic;
-	uctx_initial_universes = ctx.uctx_initial_universes;
+	uctx_initial_universes = declarenew ctx.uctx_initial_universes;
 	uctx_universes = 
 	  if local == ctx.uctx_local then ctx.uctx_universes
 	  else
 	    let cstrsr = Univ.ContextSet.constraints ctx'.uctx_local in
-	      Univ.merge_constraints cstrsr ctx.uctx_universes }
+	      Univ.merge_constraints cstrsr (declarenew ctx.uctx_universes) }
 
 (* let union_evar_universe_context_key = Profile.declare_profile "union_evar_universe_context";; *)
 (* let union_evar_universe_context =  *)
@@ -936,38 +939,6 @@ let evars_of_filtered_evar_info evi =
 	(evars_of_named_context (evar_filtered_context evi)))
 
 (**********************************************************)
-(* Side effects *)
-
-let emit_side_effects eff evd =
-  { evd with effects = Declareops.union_side_effects eff evd.effects; }
-
-let drop_side_effects evd =
-  { evd with effects = Declareops.no_seff; }
-
-let eval_side_effects evd = evd.effects
-
-(* Future goals *)
-let declare_future_goal evk evd =
-  { evd with future_goals = evk::evd.future_goals }
-
-let declare_principal_goal evk evd =
-  match evd.principal_future_goal with
-  | None -> { evd with
-    future_goals = evk::evd.future_goals;
-    principal_future_goal=Some evk; }
-  | Some _ -> Errors.error "Only one main subgoal per instantiation."
-
-let future_goals evd = evd.future_goals
-
-let principal_future_goal evd = evd.principal_future_goal
-
-let reset_future_goals evd =
-  { evd with future_goals = [] ; principal_future_goal=None }
-
-let restore_future_goals evd gls pgl =
-  { evd with future_goals = gls ; principal_future_goal = pgl }
-
-(**********************************************************)
 (* Sort variables *)
 
 type rigid = 
@@ -1022,13 +993,13 @@ let restrict_universe_context evd vars =
 let universe_subst evd =
   evd.universes.uctx_univ_variables
 
-let merge_uctx rigid uctx ctx' =
+let merge_uctx sideff rigid uctx ctx' =
   let open Univ in
-  let uctx = 
+  let levels = ContextSet.levels ctx' in
+  let uctx = if sideff then uctx else
     match rigid with
     | UnivRigid -> uctx
     | UnivFlexible b ->
-      let levels = ContextSet.levels ctx' in
       let fold u accu =
         if LMap.mem u accu then accu
         else LMap.add u None accu
@@ -1039,12 +1010,23 @@ let merge_uctx rigid uctx ctx' =
 	  uctx_univ_algebraic = LSet.union uctx.uctx_univ_algebraic levels }
 	else { uctx with uctx_univ_variables = uvars' }
   in
-  let uctx_local = ContextSet.append ctx' uctx.uctx_local in
-  let uctx_universes = merge_constraints (ContextSet.constraints ctx') uctx.uctx_universes in
-  { uctx with uctx_local; uctx_universes }
+  let uctx_local =
+    if sideff then uctx.uctx_local
+    else ContextSet.append ctx' uctx.uctx_local
+  in
+  let declare g =
+    LSet.fold (fun u g ->
+	       try Univ.add_universe u false g
+	       with Univ.AlreadyDeclared when sideff -> g)
+	      levels g
+  in
+  let initial = declare uctx.uctx_initial_universes in
+  let univs = declare uctx.uctx_universes in
+  let uctx_universes = merge_constraints (ContextSet.constraints ctx') univs in
+    { uctx with uctx_local; uctx_universes; uctx_initial_universes = initial }
 
 let merge_context_set rigid evd ctx' = 
-  {evd with universes = merge_uctx rigid evd.universes ctx'}
+  {evd with universes = merge_uctx false rigid evd.universes ctx'}
 
 let merge_uctx_subst uctx s =
   { uctx with uctx_univ_variables = Univ.LMap.subst_union uctx.uctx_univ_variables s }
@@ -1055,6 +1037,24 @@ let merge_universe_subst evd subst =
 let with_context_set rigid d (a, ctx) = 
   (merge_context_set rigid d ctx, a)
 
+let emit_universe_side_effects eff u =
+  Declareops.fold_side_effects
+    (fun acc eff ->
+     match eff with
+     | Declarations.SEscheme (l,s) ->
+	List.fold_left
+	  (fun acc (_,_,cb,c) ->
+	   let acc = match c with
+	     | `Nothing -> acc
+	     | `Opaque (s, ctx) -> merge_uctx true univ_rigid acc ctx
+	   in if cb.Declarations.const_polymorphic then acc
+	      else
+		merge_uctx true univ_rigid acc
+			   (Univ.ContextSet.of_context cb.Declarations.const_universes))
+	  acc l
+     | Declarations.SEsubproof _ -> acc)
+    u eff
+        
 let add_uctx_names s l (names, names_rev) =
     (UNameMap.add s l names, Univ.LMap.add l s names_rev)
 
@@ -1103,6 +1103,18 @@ let new_sort_variable ?name ?(predicative=true) rigid d =
   let (d', u) = new_univ_variable rigid ?name ~predicative d in
     (d', Type u)
 
+let add_global_univ d u =
+  let uctx = d.universes in
+  let initial =
+    Univ.add_universe u true uctx.uctx_initial_universes
+  in
+  let univs = 
+    Univ.add_universe u true uctx.uctx_universes
+  in
+    { d with universes = { uctx with uctx_local = Univ.ContextSet.add_universe u uctx.uctx_local;
+				     uctx_initial_universes = initial;
+				     uctx_universes = univs } }
+      
 let make_flexible_variable evd b u =
   let {uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as ctx = evd.universes in
   let uvars' = Univ.LMap.add u None uvars in
@@ -1291,12 +1303,16 @@ let refresh_undefined_univ_variables uctx =
 	Univ.LMap.add (Univ.subst_univs_level_level subst u) 
           (Option.map (Univ.subst_univs_level_universe subst) v) acc)
       uctx.uctx_univ_variables Univ.LMap.empty
-  in 
+  in
+  let declare g = Univ.LSet.fold (fun u g -> Univ.add_universe u false g)
+				   (Univ.ContextSet.levels ctx') g in
+  let initial = declare uctx.uctx_initial_universes in
+  let univs = declare Univ.initial_universes in
   let uctx' = {uctx_names = uctx.uctx_names;
 	       uctx_local = ctx'; 
 	       uctx_univ_variables = vars; uctx_univ_algebraic = alg;
-	       uctx_universes = Univ.initial_universes;
-	       uctx_initial_universes = uctx.uctx_initial_universes } in
+	       uctx_universes = univs;
+	       uctx_initial_universes = initial } in
     uctx', subst
 
 let refresh_undefined_universes evd =
@@ -1381,6 +1397,39 @@ let eq_constr_univs evd t u =
 let e_eq_constr_univs evdref t u =
   let evd, b = eq_constr_univs !evdref t u in
     evdref := evd; b
+
+(**********************************************************)
+(* Side effects *)
+
+let emit_side_effects eff evd =
+  { evd with effects = Declareops.union_side_effects eff evd.effects;
+	     universes = emit_universe_side_effects eff evd.universes }
+
+let drop_side_effects evd =
+  { evd with effects = Declareops.no_seff; }
+
+let eval_side_effects evd = evd.effects
+
+(* Future goals *)
+let declare_future_goal evk evd =
+  { evd with future_goals = evk::evd.future_goals }
+
+let declare_principal_goal evk evd =
+  match evd.principal_future_goal with
+  | None -> { evd with
+    future_goals = evk::evd.future_goals;
+    principal_future_goal=Some evk; }
+  | Some _ -> Errors.error "Only one main subgoal per instantiation."
+
+let future_goals evd = evd.future_goals
+
+let principal_future_goal evd = evd.principal_future_goal
+
+let reset_future_goals evd =
+  { evd with future_goals = [] ; principal_future_goal=None }
+
+let restore_future_goals evd gls pgl =
+  { evd with future_goals = gls ; principal_future_goal = pgl }
 
 (**********************************************************)
 (* Accessing metas *)
