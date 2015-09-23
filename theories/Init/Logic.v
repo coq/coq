@@ -370,7 +370,7 @@ Module EqNotations.
 End EqNotations.
 
 Import EqNotations.
-Set Printing Universes.
+
 Lemma rew_opp_r : forall A (P:A->Type) (x y:A) (H:x=y) (a:P y), rew H in rew <- H in a = a.
 Proof.
 intros.
