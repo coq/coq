@@ -657,7 +657,6 @@ type canonical_arc =
       lt: Level.t list;
       le: Level.t list;
       rank : int;
-      predicative : bool;
       mutable status : status;
       (** Guaranteed to be unset out of the [compare_neq] functions. It is used
           to do an imperative traversal of the graph, ensuring a O(1) check that
@@ -672,7 +671,7 @@ let arc_is_lt arc = match arc.status with
 | Unset | SetLe -> false
 | SetLt -> true
 
-let terminal ?(predicative=false) u = {univ=u; lt=[]; le=[]; rank=0; predicative; status = Unset}
+let terminal u = {univ=u; lt=[]; le=[]; rank=0; status = Unset}
 
 module UMap :
 sig
@@ -728,7 +727,7 @@ let terminal_lt u v =
   {(terminal u) with lt=[v]}
     
 let empty_universes =
-  let g = enter_arc (terminal ~predicative:true Level.set) UMap.empty in
+  let g = enter_arc (terminal Level.set) UMap.empty in
   let g = enter_arc (terminal_lt Level.prop Level.set) g in
     g
 
@@ -750,33 +749,23 @@ let get_set_arc g = repr g Level.set
 let is_set_arc u = Level.is_set u.univ
 let is_prop_arc u = Level.is_prop u.univ
 
-(* [safe_repr] also search for the canonical representative, but
-   if the graph doesn't contain the searched universe, we add it. *)
-
-let safe_repr g u =
-  let rec safe_repr_rec g u =
-    match UMap.find u g with
-      | Equiv v -> safe_repr_rec g v
-      | Canonical arc -> arc
-  in
-  try g, safe_repr_rec g u
-  with Not_found ->
-    let can = terminal u in
-    let setarc = get_set_arc g in
-    let g = enter_arc {setarc with le=u::setarc.le} g in
-    enter_arc can g, can
-
-let add_universe vlev strict g = 
-  let v = terminal ~predicative:true vlev in
-  let arc =
-    let arc = get_set_arc g in
-      if strict then
-	{ arc with lt=vlev::arc.lt}
-      else 
-	{ arc with le=vlev::arc.le}
-  in
-  let g = enter_arc arc g in
-    enter_arc v g
+exception AlreadyDeclared
+	    
+let add_universe vlev strict g =
+  try
+    let _arcv = UMap.find vlev g in
+      raise AlreadyDeclared
+  with Not_found -> 
+    let v = terminal vlev in
+    let arc =
+      let arc = get_set_arc g in
+	if strict then
+	  { arc with lt=vlev::arc.lt}
+	else 
+	  { arc with le=vlev::arc.le}
+    in
+    let g = enter_arc arc g in
+      enter_arc v g
 
 (* reprleq : canonical_arc -> canonical_arc list *)
 (* All canonical arcv such that arcu<=arcv with arcv#arcu *)
@@ -1045,20 +1034,18 @@ let is_lt g arcu arcv =
 (** First, checks on universe levels *)
 
 let check_equal g u v =
-  let g, arcu = safe_repr g u in
-  let _, arcv = safe_repr g v in
-  arcu == arcv
+  let arcu = repr g u and arcv = repr g v in
+    arcu == arcv
 
 let check_eq_level g u v = u == v || check_equal g u v
 
 let check_smaller g strict u v =
-  let g, arcu = safe_repr g u in
-  let g, arcv = safe_repr g v in
+  let arcu = repr g u and arcv = repr g v in
   if strict then
     is_lt g arcu arcv
   else
     is_prop_arc arcu 
-    || (is_set_arc arcu && arcv.predicative) 
+    || (is_set_arc arcu && not (is_prop_arc arcv))
     || is_leq g arcu arcv
 
 (** Then, checks on universes *)
@@ -1100,19 +1087,11 @@ let check_leq g u v =
 
 (** Enforcing new constraints : [setlt], [setleq], [merge], [merge_disc] *)
 
-(** To speed up tests of Set </<= i *)
-let set_predicative g arcv = 
-  enter_arc {arcv with predicative = true} g
-
 (* setlt : Level.t -> Level.t -> reason -> unit *)
 (* forces u > v *)
 (* this is normally an update of u in g rather than a creation. *)
 let setlt g arcu arcv =
   let arcu' = {arcu with lt=arcv.univ::arcu.lt} in
-  let g = 
-    if is_set_arc arcu then set_predicative g arcv
-    else g
-  in
     enter_arc arcu' g, arcu'
 
 (* checks that non-redundant *)
@@ -1126,11 +1105,6 @@ let setlt_if (g,arcu) v =
 (* this is normally an update of u in g rather than a creation. *)
 let setleq g arcu arcv =
   let arcu' = {arcu with le=arcv.univ::arcu.le} in
-  let g = 
-    if is_set_arc arcu' then
-      set_predicative g arcv
-    else g
-  in
     enter_arc arcu' g, arcu'
 
 (* checks that non-redundant *)
@@ -1204,8 +1178,7 @@ let error_inconsistency o u v (p:explanation option) =
 (* enforce_univ_eq u v will force u=v if possible, will fail otherwise *)
 
 let enforce_univ_eq u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
+  let arcu = repr g u and arcv = repr g v in
     match fast_compare g arcu arcv with
     | FastEQ -> g
     | FastLT ->
@@ -1224,8 +1197,7 @@ let enforce_univ_eq u v g =
 (* enforce_univ_leq : Level.t -> Level.t -> unit *)
 (* enforce_univ_leq u v will force u<=v if possible, will fail otherwise *)
 let enforce_univ_leq u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
+  let arcu = repr g u and arcv = repr g v in
   if is_leq g arcu arcv then g
   else
     match fast_compare g arcv arcu with
@@ -1238,8 +1210,7 @@ let enforce_univ_leq u v g =
 
 (* enforce_univ_lt u v will force u<v if possible, will fail otherwise *)
 let enforce_univ_lt u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
+  let arcu = repr g u and arcv = repr g v in
     match fast_compare g arcu arcv with
     | FastLT -> g
     | FastLE -> fst (setlt g arcu arcv)
@@ -1465,7 +1436,6 @@ let normalize_universes g =
         lt = LSet.elements lt;
         le = LSet.elements le;
 	rank = rank;
-	predicative = false;
 	status = Unset;
       }
   in
@@ -1610,7 +1580,7 @@ let sort_universes orig =
   let fold i accu u =
     if 0 < i then
       let pred = types.(i - 1) in
-      let arc = {univ = u; lt = [pred]; le = []; rank = 0; predicative = false; status = Unset; } in
+      let arc = {univ = u; lt = [pred]; le = []; rank = 0; status = Unset; } in
       UMap.add u (Canonical arc) accu
     else accu
   in

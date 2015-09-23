@@ -163,7 +163,11 @@ val is_initial_universes : universes -> bool
 
 val sort_universes : universes -> universes
 
-(** Adds a universe to the graph, ensuring it is >= or > Set. *)
+(** Adds a universe to the graph, ensuring it is >= or > Set.
+   @raises AlreadyDeclared if the level is already declared in the graph. *)
+
+exception AlreadyDeclared
+
 val add_universe : universe_level -> bool -> universes -> universes
 
 (** {6 Constraints. } *)
