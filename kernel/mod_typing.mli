@@ -30,7 +30,7 @@ val translate_modtype :
 *)
 
 type 'alg translation =
-  module_signature * 'alg option * delta_resolver * Univ.constraints
+  module_signature * 'alg option * delta_resolver * Univ.ContextSet.t
 
 val translate_mse :
   env -> module_path option -> inline -> module_struct_entry ->

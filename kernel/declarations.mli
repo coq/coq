@@ -246,8 +246,8 @@ and module_body =
     mod_type : module_signature; (** expanded type *)
     (** algebraic type, kept if it's relevant for extraction *)
     mod_type_alg : module_expression option;
-    (** set of all constraints in the module  *)
-    mod_constraints : Univ.constraints;
+    (** set of all universes constraints in the module  *)
+    mod_constraints : Univ.ContextSet.t;
     (** quotiented set of equivalent constants and inductive names *)
     mod_delta : Mod_subst.delta_resolver;
     mod_retroknowledge : Retroknowledge.action list }
