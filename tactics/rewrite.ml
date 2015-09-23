@@ -1896,7 +1896,7 @@ let add_morphism_infer glob m n =
   let instance = build_morphism_signature m in
   let evd = Evd.empty (*FIXME *) in
     if Lib.is_modtype () then
-      let cst = Declare.declare_constant ~internal:Declare.KernelSilent instance_id
+      let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
 				(Entries.ParameterEntry 
 				 (None,poly,(instance,Univ.UContext.empty),None), 
 				 Decl_kinds.IsAssumption Decl_kinds.Logical)

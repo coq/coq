@@ -28,9 +28,9 @@ open Decl_kinds
 
 (** flag for internal message display *)
 type internal_flag = 
-  | KernelVerbose (* kernel action, a message is displayed *)
-  | KernelSilent  (* kernel action, no message is displayed *)
-  | UserVerbose   (* user action, a message is displayed *)
+  | UserAutomaticRequest (* kernel action, a message is displayed *)
+  | InternalTacticRequest  (* kernel action, no message is displayed *)
+  | UserIndividualRequest   (* user action, a message is displayed *)
 
 (** Declaration of section variables and local definitions *)
 
@@ -253,7 +253,7 @@ let declare_sideff env fix_exn se =
                if Constant.equal c c' then Some (x,kn) else None) inds_consts)
            knl))
 
-let declare_constant ?(internal = UserVerbose) ?(local = false) id ?(export_seff=false) (cd, kind) =
+let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
   let cd = (* We deal with side effects *)
     match cd with
     | Entries.DefinitionEntry de ->
@@ -283,7 +283,7 @@ let declare_constant ?(internal = UserVerbose) ?(local = false) id ?(export_seff
   let kn = declare_constant_common id cst in
   kn
 
-let declare_definition ?(internal=UserVerbose) 
+let declare_definition ?(internal=UserIndividualRequest)
   ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)
   ?(poly=false) id ?types (body,ctx) =
   let cb = 

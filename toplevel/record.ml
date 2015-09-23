@@ -298,7 +298,7 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 		    const_entry_inline_code = false;
 		    const_entry_feedback = None } in
 		  let k = (DefinitionEntry entry,IsDefinition kind) in
-		  let kn = declare_constant ~internal:KernelSilent fid k in
+		  let kn = declare_constant ~internal:InternalTacticRequest fid k in
 		  let constr_fip =
 		    let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 		      applist (mkConstU (kn,u),proj_args) 

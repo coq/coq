@@ -626,9 +626,9 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 let bl_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
 let side_effect_of_mode = function
-  | Declare.KernelVerbose -> false
-  | Declare.KernelSilent -> true
-  | Declare.UserVerbose -> false
+  | Declare.UserAutomaticRequest -> false
+  | Declare.InternalTacticRequest -> true
+  | Declare.UserIndividualRequest -> false
 
 let make_bl_scheme mode mind =
   let mib = Global.lookup_mind mind in

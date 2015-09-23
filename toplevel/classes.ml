@@ -186,7 +186,7 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	in
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	let ctx = Evd.universe_context !evars in
-	let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
+	let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
 	  (Entries.ParameterEntry 
             (None,poly,(termtype,ctx),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in instance_hook k None global imps ?hook (ConstRef cst); id
@@ -363,7 +363,7 @@ let context poly l =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       let uctx = Univ.ContextSet.to_context uctx in	
       let decl = (ParameterEntry (None,poly,(t,uctx),None), IsAssumption Logical) in
-      let cst = Declare.declare_constant ~internal:Declare.KernelSilent id decl in
+      let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
 	match class_of_constr t with
 	| Some (rels, ((tc,_), args) as _cl) ->
 	    add_instance (Typeclasses.new_instance tc None false (*FIXME*)

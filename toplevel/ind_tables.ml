@@ -113,8 +113,8 @@ let is_visible_name id =
 
 let compute_name internal id =
   match internal with
-  | KernelVerbose | UserVerbose -> id
-  | KernelSilent ->
+  | UserAutomaticRequest | UserIndividualRequest -> id
+  | InternalTacticRequest ->
       Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
 
 let define internal id c p univs =
@@ -135,7 +135,7 @@ let define internal id c p univs =
   } in
   let kn = fd id (DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
   let () = match internal with
-    | KernelSilent -> ()
+    | InternalTacticRequest -> ()
     | _-> definition_message id
   in
   kn
@@ -186,7 +186,7 @@ let find_scheme_on_env_too kind ind =
             kind (Global.safe_env()) [ind, s])
       Declareops.no_seff 
 
-let find_scheme ?(mode=KernelSilent) kind (mind,i as ind) =
+let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
   try find_scheme_on_env_too kind ind
   with Not_found ->
   match Hashtbl.find scheme_object_table kind with
