@@ -455,12 +455,14 @@ let input_universes : universe_names -> Libobject.obj =
 
 let do_universe l =
   let glob = Universes.global_universe_names () in
-  let glob' = 
-    List.fold_left (fun (idl,lid) (l, id) ->
+  let glob', ctx = 
+    List.fold_left (fun ((idl,lid),ctx) (l, id) ->
       let lev = Universes.new_univ_level (Global.current_dirpath ()) in
-	(Idmap.add id lev idl, Univ.LMap.add lev id lid))
-      glob l
+        ((Idmap.add id lev idl, Univ.LMap.add lev id lid),
+	 Univ.ContextSet.add_universe lev ctx))
+      (glob, Univ.ContextSet.empty) l
   in
+    Global.push_context_set ctx;
     Lib.add_anonymous_leaf (input_universes glob')
 
 
