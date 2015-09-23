@@ -597,7 +597,7 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   let fixl,ntns = Command.extract_fixpoint_components false fixpoint_exprl in
   let ((_,_,typel),ctx,_) = Command.interp_fixpoint fixl ntns in
   let constr_expr_typel = 
-    with_full_print (List.map (Constrextern.extern_constr false (Global.env ()) (Evd.from_env ~ctx (Global.env ())))) typel in
+    with_full_print (List.map (Constrextern.extern_constr false (Global.env ()) (Evd.from_ctx ctx))) typel in
   let fixpoint_exprl_with_new_bl = 
     List.map2 (fun ((lna,(rec_arg_opt,rec_order),bl,ret_typ,opt_body),notation_list) fix_typ -> 
      

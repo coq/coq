@@ -1136,9 +1136,10 @@ let make_evar_universe_context e l =
     match l with
     | None -> uctx
     | Some us ->
-       List.fold_left (fun uctx (loc,id) ->
-		       fst (uctx_new_univ_variable univ_rigid (Some (Id.to_string id)) uctx))
-		      uctx us
+       List.fold_left
+	 (fun uctx (loc,id) ->
+	  fst (uctx_new_univ_variable univ_rigid (Some (Id.to_string id)) true uctx))
+	 uctx us
     
 (****************************************)
 (* Operations on constants              *)
