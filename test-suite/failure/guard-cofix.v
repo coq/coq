@@ -25,7 +25,7 @@ Fail Definition ff : False := match loop with CF _ t => t end.
 
 (* Second example *)
 
-Inductive omega := Omega : omega -> omega.
+Inductive omega : Prop := Omega : omega -> omega.
 
 Lemma H : omega = CoFalse.
 Proof.
