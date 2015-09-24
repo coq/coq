@@ -678,22 +678,22 @@ let check_module_name s =
     | c -> err c
 
 let start_library f =
-  let paths = Loadpath.get_paths () in
-  let _, longf =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+  let () = if not (Sys.file_exists f) then
+    errorlabstrm "" (hov 0 (str "Can't find file" ++ spc () ++ str f))
+  in
   let ldir0 =
     try
-      let lp = Loadpath.find_load_path (Filename.dirname longf) in
+      let lp = Loadpath.find_load_path (Filename.dirname f) in
       Loadpath.logical lp
     with Not_found -> Nameops.default_root_prefix
   in
-  let file = Filename.basename f in
+  let file = Filename.chop_extension (Filename.basename f) in
   let id = Id.of_string file in
   check_module_name file;
   check_coq_overwriting ldir0 id;
   let ldir = add_dirpath_suffix ldir0 id in
   Declaremods.start_library ldir;
-  ldir,longf
+  ldir
 
 let load_library_todo f =
   let paths = Loadpath.get_paths () in

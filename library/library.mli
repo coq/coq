@@ -25,7 +25,7 @@ val require_library_from_dirpath : (DirPath.t * string) list -> bool option -> u
 val require_library_from_file :
   Id.t option -> CUnix.physical_path -> bool option -> unit
 
-(** {6 ... } *)
+(** {6 Start the compilation of a library } *)
 
 (** Segments of a library *)
 type seg_sum
@@ -39,10 +39,12 @@ type seg_proofs = Term.constr Future.computation array
    an export otherwise just a simple import *)
 val import_module : bool -> qualid located list -> unit
 
-(** {6 Start the compilation of a library } *)
-val start_library : string -> DirPath.t * string
+(** Start the compilation of a file as a library. The argument must be an
+    existing file on the system, and the returned path is the associated
+    absolute logical path of the library. *)
+val start_library : CUnix.physical_path -> DirPath.t
 
-(** {6 End the compilation of a library and save it to a ".vo" file } *)
+(** End the compilation of a library and save it to a ".vo" file *)
 val save_library_to :
   ?todo:(((Future.UUID.t,'document) Stateid.request * bool) list * 'counters) ->
   DirPath.t -> string -> Opaqueproof.opaquetab -> unit
