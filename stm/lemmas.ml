@@ -449,7 +449,7 @@ let start_proof_com kind thms hook =
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in
   let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
-  start_proof_with_initialization kind evd
+  start_proof_with_initialization kind (Evd.fix_undefined_variables evd)
     recguard thms snl hook
 
 
