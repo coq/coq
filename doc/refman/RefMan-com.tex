@@ -162,11 +162,11 @@ Add physical path {\em directory} to the {\ocaml} loadpath.
   Load \Coq~compiled file {\em file}{\tt .vo} and import it ({\tt
     Require} {\em file}).
 
-\item[{\tt -compile} {\em file},{\tt -compile-verbose} {\em file}, {\tt -batch}]\ 
+\item[{\tt -compile} {\em file.v},{\tt -compile-verbose} {\em file.v}, {\tt -batch}]\ 
 
   {\tt coqtop} options only used internally by {\tt coqc}.
 
-  This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo} without/with a
+  This compiles file {\em file.v} into {\em file}{\tt .vo} without/with a
   copy of the contents of the file on standard input.  This option implies options
   {\tt -batch} (exit just after arguments parsing). It is only
   available for {\tt coqtop}.

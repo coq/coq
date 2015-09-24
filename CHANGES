@@ -51,6 +51,9 @@ Tools
 - Flag -no-native-compiler was removed and became the default for coqc. If
   precompilation of files for native conversion test is desired, use
   -native-compiler.
+- The -compile command-line option now takes the full path of the considered
+  file, including the ".v" extension, and outputs a warning if such an extension
+  is lacking.
 
 Changes from V8.5beta1 to V8.5beta2
 ===================================

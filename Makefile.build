@@ -587,7 +587,7 @@ pluginsbyte: $(PLUGINS)
 theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP) | theories/Init/%.v.d
 	$(SHOW)'COQC -noinit $<'
 	$(HIDE)rm -f theories/Init/$*.glob
-	$(HIDE)$(BOOTCOQC) theories/Init/$* -noinit -R theories Coq
+	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq
 
 theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_gen.ml
 	$(OCAML) $< $(TOTARGET)
@@ -1038,7 +1038,7 @@ plugins/%_mod.ml: plugins/%.mllib
 %.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d
 	$(SHOW)'COQC      $<'
 	$(HIDE)rm -f $*.glob 
-	$(HIDE)$(BOOTCOQC) $*
+	$(HIDE)$(BOOTCOQC) $<
 ifdef VALIDATE
 	$(SHOW)'COQCHK    $(call vo_to_mod,$@)'
 	$(HIDE)$(CHICKEN) -boot -silent -norec $(call vo_to_mod,$@) \

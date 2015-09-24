@@ -30,13 +30,8 @@ let verbose = ref false
 let rec make_compilation_args = function
   | [] -> []
   | file :: fl ->
-      let file_noext =
-        if Filename.check_suffix file ".v" then
-          Filename.chop_suffix file ".v"
-        else file
-      in
       (if !verbose then "-compile-verbose" else "-compile")
-      :: file_noext :: (make_compilation_args fl)
+      :: file :: (make_compilation_args fl)
 
 (* compilation of files [files] with command [command] and args [args] *)
 
