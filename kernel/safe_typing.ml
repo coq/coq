@@ -233,7 +233,7 @@ let add_constraints cst senv =
     univ = Univ.ContextSet.union cst senv.univ }
 
 let add_constraints_list cst senv =
-  List.fold_right add_constraints cst senv
+  List.fold_left (fun acc c -> add_constraints c acc) senv cst
 
 let push_context_set ctx = add_constraints (Now ctx)
 let push_context ctx = add_constraints (Now (Univ.ContextSet.of_context ctx))
