@@ -901,7 +901,7 @@ let discrimination_pf env sigma e (t,t1,t2) discriminator lbeq =
   let i            = build_coq_I () in
   let absurd_term  = build_coq_False () in
   let eq_elim, eff = ind_scheme_of_eq lbeq in
-  let sigma, eq_elim = Evd.fresh_global env sigma eq_elim in
+  let sigma, eq_elim = Evd.fresh_global (Global.env ()) sigma eq_elim in
     sigma, (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]), absurd_term),
     eff
 
