@@ -402,24 +402,34 @@ let create_tag name default =
   let pref = new preference ~name:[name] ~init:default ~repr:Repr.(tag) in
   let set_tag tag =
     begin match pref#get.tag_bg_color with
-    | None -> ()
-    | Some c -> tag#set_property (`BACKGROUND c)
+    | None -> tag#set_property (`BACKGROUND_SET false)
+    | Some c ->
+      tag#set_property (`BACKGROUND_SET true);
+      tag#set_property (`BACKGROUND c)
     end;
     begin match pref#get.tag_fg_color with
-    | None -> ()
-    | Some c -> tag#set_property (`FOREGROUND c)
+    | None -> tag#set_property (`FOREGROUND_SET false)
+    | Some c ->
+      tag#set_property (`FOREGROUND_SET true);
+      tag#set_property (`FOREGROUND c)
     end;
     begin match pref#get.tag_bold with
-    | false -> ()
-    | true -> tag#set_property (`WEIGHT `BOLD)
+    | false -> tag#set_property (`WEIGHT_SET false)
+    | true ->
+      tag#set_property (`WEIGHT_SET true);
+      tag#set_property (`WEIGHT `BOLD)
     end;
     begin match pref#get.tag_italic with
-    | false -> ()
-    | true -> tag#set_property (`STYLE `ITALIC)
+    | false -> tag#set_property (`STYLE_SET false)
+    | true ->
+      tag#set_property (`STYLE_SET true);
+      tag#set_property (`STYLE `ITALIC)
     end;
     begin match pref#get.tag_underline with
-    | false -> ()
-    | true -> tag#set_property (`UNDERLINE `SINGLE)
+    | false -> tag#set_property (`UNDERLINE_SET false)
+    | true ->
+      tag#set_property (`UNDERLINE_SET true);
+      tag#set_property (`UNDERLINE `SINGLE)
     end;
   in
   let iter table =
