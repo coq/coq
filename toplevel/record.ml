@@ -131,14 +131,18 @@ let typecheck_params_and_fields def id pl t ps nots fs =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar !evars (Evd.empty,!evars) in
   let evars, nf = Evarutil.nf_evars_and_universes sigma in
   let arity = nf t' in
-  let evars = 
+  let arity, evars = 
     let _, univ = compute_constructor_level evars env_ar newfs in
     let ctx, aritysort = Reduction.dest_arity env0 arity in
       assert(List.is_empty ctx); (* Ensured by above analysis *)
       if Sorts.is_prop aritysort || 
 	(Sorts.is_set aritysort && is_impredicative_set env0) then
-	evars
-      else Evd.set_leq_sort env_ar evars (Type univ) aritysort
+	arity, evars
+      else
+	let evars = Evd.set_leq_sort env_ar evars (Type univ) aritysort in
+	  if Univ.is_small_univ univ then
+	    mkArity (ctx, Sorts.sort_of_univ univ), evars
+	  else arity, evars
   in
   let evars, nf = Evarutil.nf_evars_and_universes evars in
   let newps = map_rel_context nf newps in
