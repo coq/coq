@@ -304,7 +304,7 @@ let build_beq_scheme mode kn =
 	  raise (NonSingletonProp (kn,i));
         let fix = mkFix (((Array.make nb_ind 0),i),(names,types,cores)) in
         create_input fix),
-       Evd.empty_evar_universe_context (* FIXME *)),
+       Evd.make_evar_universe_context (Global.env ()) None),
       !eff
 
 let beq_scheme_kind = declare_mutual_scheme_object "_beq" build_beq_scheme
@@ -641,7 +641,7 @@ let make_bl_scheme mode mind =
   let lnonparrec,lnamesparrec = (* TODO subst *)
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let bl_goal, eff = compute_bl_goal ind lnamesparrec nparrec in
-  let ctx = Evd.empty_evar_universe_context (*FIXME univs *) in
+  let ctx = Evd.make_evar_universe_context (Global.env ()) None in
   let side_eff = side_effect_of_mode mode in
   let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx bl_goal
     (compute_bl_tact mode (!bl_scheme_kind_aux()) (ind, Univ.Instance.empty) lnamesparrec nparrec)
@@ -764,12 +764,18 @@ let make_lb_scheme mode mind =
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
+<<<<<<< HEAD
   let ctx = Evd.empty_evar_universe_context in
   let side_eff = side_effect_of_mode mode in
   let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx lb_goal
     (compute_lb_tact mode (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
+=======
+  let ctx = Evd.make_evar_universe_context (Global.env ()) None in
+  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx lb_goal
+    (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
+>>>>>>> Univs: fix environment handling in scheme building.
   in
-  ([|ans|], ctx (* FIXME *)), eff
+  ([|ans|], ctx), eff
 
 let lb_scheme_kind = declare_mutual_scheme_object "_dec_lb" make_lb_scheme
 
@@ -934,7 +940,7 @@ let make_eq_decidability mode mind =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let u = Univ.Instance.empty in
-  let ctx = Evd.empty_evar_universe_context (* FIXME *)in
+  let ctx = Evd.make_evar_universe_context (Global.env ()) None in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let side_eff = side_effect_of_mode mode in
