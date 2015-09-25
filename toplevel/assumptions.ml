@@ -55,7 +55,7 @@ let rec fields_of_functor f subs mp0 args = function
     match args with
     | [] -> assert false (* we should only encounter applied functors *)
     | mpa :: args ->
-      let subs = add_mbid mbid mpa empty_delta_resolver (*TODO*) subs in
+      let subs = join (map_mbid mbid mpa empty_delta_resolver (*TODO*)) subs in
       fields_of_functor f subs mp0 args e
 
 let rec lookup_module_in_impl mp =
@@ -64,11 +64,11 @@ let rec lookup_module_in_impl mp =
     (* The module we search might not be exported by its englobing module(s).
        We access the upper layer, and then do a manual search *)
     match mp with
-      | MPfile _ | MPbound _ ->
-	raise Not_found (* should have been found by [lookup_module] *)
-      | MPdot (mp',lab') ->
-	let fields = memoize_fields_of_mp mp' in
-	search_mod_label lab' fields
+    | MPfile _ -> raise Not_found (* can happen if mp is an open module *)
+    | MPbound _ -> assert false
+    | MPdot (mp',lab') ->
+       let fields = memoize_fields_of_mp mp' in
+       search_mod_label lab' fields
 
 and memoize_fields_of_mp mp =
   try MPmap.find mp !modcache

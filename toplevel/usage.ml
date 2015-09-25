@@ -42,9 +42,9 @@ let print_usage_channel co command =
 \n  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose f.)\
 \n  -lv f	                 (idem)\
 \n  -load-vernac-object f  load Coq object file f.vo\
-\n  -require f             load Coq object file f.vo and import it (Require f.)\
-\n  -compile f             compile Coq file f.v (implies -batch)\
-\n  -compile-verbose f     verbosely compile Coq file f.v (implies -batch)\
+\n  -require path          load Coq library path and import it (Require Import path.)\
+\n  -compile f.v           compile Coq file f.v (implies -batch)\
+\n  -compile-verbose f.v   verbosely compile Coq file f.v (implies -batch)\
 \n  -quick                 quickly compile .v files to .vio files (skip proofs)\
 \n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
 \n                         into fi.vo\

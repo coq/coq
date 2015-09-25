@@ -294,7 +294,15 @@ let load_vernac verb file =
     if !Flags.beautify_file then close_out !chan_beautify;
     raise_with_file file (disable_drop e, info)
 
-(* Compile a vernac file (f is assumed without .v suffix) *)
+let ensure_v f =
+  if Filename.check_suffix f ".v" then f
+  else begin
+    msg_warning (str "File \"" ++ str f ++ strbrk "\" has been implicitly \
+    expanded to \"" ++ str f ++ str ".v\"");
+    f ^ ".v"
+  end
+
+(* Compile a vernac file *)
 let compile verbosely f =
   let check_pending_proofs () =
     let pfs = Pfedit.get_all_proof_names () in
@@ -302,7 +310,8 @@ let compile verbosely f =
       (msg_error (str "There are pending proofs"); flush_all (); exit 1) in
   match !Flags.compilation_mode with
   | BuildVo ->
-      let ldir,long_f_dot_v = Flags.verbosely Library.start_library f in
+      let long_f_dot_v = ensure_v f in
+      let ldir = Flags.verbosely Library.start_library long_f_dot_v in
       Stm.set_compilation_hints long_f_dot_v;
       Aux_file.start_aux_file_for long_f_dot_v;
       Dumpglob.start_dump_glob long_f_dot_v;
@@ -318,7 +327,8 @@ let compile verbosely f =
       Aux_file.stop_aux_file ();
       Dumpglob.end_dump_glob ()
   | BuildVio ->
-      let ldir, long_f_dot_v = Flags.verbosely Library.start_library f in
+      let long_f_dot_v = ensure_v f in
+      let ldir = Flags.verbosely Library.start_library long_f_dot_v in
       Dumpglob.noglob ();
       Stm.set_compilation_hints long_f_dot_v;
       let _ = load_vernac verbosely long_f_dot_v in

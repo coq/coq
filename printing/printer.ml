@@ -742,7 +742,8 @@ module ContextObjectSet = Set.Make (OrderedContextObject)
 module ContextObjectMap = Map.Make (OrderedContextObject)
 
 let pr_assumptionset env s =
-  if ContextObjectMap.is_empty s then
+  if ContextObjectMap.is_empty s &&
+       engagement env = (PredicativeSet, StratifiedType) then
     str "Closed under the global context"
   else
     let safe_pr_constant env kn =
@@ -788,6 +789,16 @@ let pr_assumptionset env s =
     let (vars, axioms, opaque, trans) = 
       ContextObjectMap.fold fold s ([], [], [], [])
     in
+    let theory =
+      if is_impredicative_set env then
+	[str "Set is impredicative"]
+      else []
+    in
+    let theory =
+      if type_in_type env then
+	str "Type hierarchy is collapsed (logic is inconsistent)" :: theory
+      else theory
+    in
     let opt_list title = function
     | [] -> None
     | l ->
@@ -801,6 +812,7 @@ let pr_assumptionset env s =
       opt_list (str "Section Variables:") vars;
       opt_list (str "Axioms:") axioms;
       opt_list (str "Opaque constants:") opaque;
+      opt_list (str "Theory:") theory;
     ] in
     prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
 

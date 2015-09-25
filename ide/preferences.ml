@@ -292,7 +292,7 @@ let attach_modifiers (pref : string preference) prefix =
   pref#connect#changed cb
 
 let modifier_for_navigation =
-  new preference ~name:["modifier_for_navigation"] ~init:"<Control><Alt>" ~repr:Repr.(string)
+  new preference ~name:["modifier_for_navigation"] ~init:"<Control>" ~repr:Repr.(string)
 
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)

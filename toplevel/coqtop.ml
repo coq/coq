@@ -171,7 +171,7 @@ let load_vernacular () =
 let load_vernacular_obj = ref ([] : string list)
 let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
 let load_vernac_obj () =
-  List.iter (fun f -> Library.require_library_from_file None f None)
+  List.iter (fun f -> Library.require_library_from_file f None)
     (List.rev !load_vernacular_obj)
 
 let require_prelude () =
@@ -185,9 +185,9 @@ let require_prelude () =
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
 let require () =
-  if !load_init then silently require_prelude ();
-  List.iter (fun s -> Library.require_library_from_file None s (Some false))
-    (List.rev !require_list)
+  let () = if !load_init then silently require_prelude () in
+  let map dir = Qualid (Loc.ghost, qualid_of_string dir) in
+  Vernacentries.vernac_require None (Some false) (List.rev_map map !require_list)
 
 let compile_list = ref ([] : (bool * string) list)
 

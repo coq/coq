@@ -146,12 +146,12 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
     delete_current_proof ();
     iraise reraise
 
-let build_by_tactic env ctx ?(poly=false) typ tac =
+let build_by_tactic ?(side_eff=true) env ctx ?(poly=false) typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
   let gk = Global, poly, Proof Theorem in
   let ce, status, univs = build_constant_by_tactic id ctx sign ~goal_kind:gk typ tac in
-  let ce = Term_typing.handle_entry_side_effects env ce in
+  let ce = if side_eff then Term_typing.handle_entry_side_effects env ce else { ce with const_entry_body = Future.chain ~pure:true ce.const_entry_body (fun (pt, _) -> pt, Declareops.no_seff) } in
   let (cb, ctx), se = Future.force ce.const_entry_body in
   assert(Declareops.side_effects_is_empty se);
   assert(Univ.ContextSet.is_empty ctx);

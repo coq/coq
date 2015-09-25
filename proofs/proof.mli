@@ -75,6 +75,9 @@ val initial_euctx : proof -> Evd.evar_universe_context
     to be considered (this does not require that all evars have been solved). *)
 val is_done : proof -> bool
 
+(* Like is_done, but this time it really means done (i.e. nothing left to do) *)
+val is_complete : proof -> bool
+
 (* Returns the list of partial proofs to initial goals. *)
 val partial_proof : proof -> Term.constr list
 

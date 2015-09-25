@@ -488,18 +488,8 @@ let rec_intern_library libs mref =
   let _, libs = intern_library libs mref None in
   libs
 
-let check_library_short_name f dir = function
-  | Some id when not (Id.equal id (snd (split_dirpath dir))) ->
-      errorlabstrm "check_library_short_name"
-      (str "The file " ++ str f ++ str " contains library" ++ spc () ++
-      pr_dirpath dir ++ spc () ++ str "and not library" ++ spc () ++
-      pr_id id)
-  | _ -> ()
-
-let rec_intern_by_filename_only id f =
+let rec_intern_by_filename_only f =
   let m = try intern_from_file f with Sys_error s -> error s in
-  (* Only the base name is expected to match *)
-  check_library_short_name f m.library_name id;
   (* We check no other file containing same library is loaded *)
   if library_is_loaded m.library_name then
     begin
@@ -518,12 +508,12 @@ let native_name_from_filename f =
   let (lmd : seg_sum), pos, digest_lmd = System.marshal_in_segment f ch in
   Nativecode.mod_uid_of_dirpath lmd.md_name
 
-let rec_intern_library_from_file idopt f =
+let rec_intern_library_from_file f =
   (* A name is specified, we have to check it contains library id *)
   let paths = Loadpath.get_paths () in
   let _, f =
     System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".vo") in
-  rec_intern_by_filename_only idopt f
+  rec_intern_by_filename_only f
 
 (**********************************************************************)
 (*s [require_library] loads and possibly opens a library. This is a
@@ -600,8 +590,8 @@ let require_library_from_dirpath modrefl export =
       add_anonymous_leaf (in_require (needed,modrefl,export));
   add_frozen_state ()
 
-let require_library_from_file idopt file export =
-  let modref,needed = rec_intern_library_from_file idopt file in
+let require_library_from_file file export =
+  let modref,needed = rec_intern_library_from_file file in
   let needed = List.rev_map snd needed in
   if Lib.is_module_or_modtype () then begin
     add_anonymous_leaf (in_require (needed,[modref],None));
@@ -678,22 +668,22 @@ let check_module_name s =
     | c -> err c
 
 let start_library f =
-  let paths = Loadpath.get_paths () in
-  let _, longf =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+  let () = if not (Sys.file_exists f) then
+    errorlabstrm "" (hov 0 (str "Can't find file" ++ spc () ++ str f))
+  in
   let ldir0 =
     try
-      let lp = Loadpath.find_load_path (Filename.dirname longf) in
+      let lp = Loadpath.find_load_path (Filename.dirname f) in
       Loadpath.logical lp
     with Not_found -> Nameops.default_root_prefix
   in
-  let file = Filename.basename f in
+  let file = Filename.chop_extension (Filename.basename f) in
   let id = Id.of_string file in
   check_module_name file;
   check_coq_overwriting ldir0 id;
   let ldir = add_dirpath_suffix ldir0 id in
   Declaremods.start_library ldir;
-  ldir,longf
+  ldir
 
 let load_library_todo f =
   let paths = Loadpath.get_paths () in

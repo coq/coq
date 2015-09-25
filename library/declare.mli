@@ -43,9 +43,9 @@ type constant_declaration = constant_entry * logical_kind
    
    *)
 type internal_flag =
-  | KernelVerbose
-  | KernelSilent
-  | UserVerbose
+  | UserAutomaticRequest
+  | InternalTacticRequest
+  | UserIndividualRequest
 
 (* Defaut definition entries, transparent with no secctx or proj information *)
 val definition_entry : ?opaque:bool -> ?inline:bool -> ?types:types -> 

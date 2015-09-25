@@ -122,7 +122,7 @@ let add_kn_delta_resolver kn kn' =
 
 let add_mp_delta_resolver mp1 mp2 = Deltamap.add_mp mp1 mp2
 
-(** Extending a [substitution] *)
+(** Extending a [substitution] without sequential composition *)
 
 let add_mbid mbid mp resolve s = Umap.add_mbi mbid (mp,resolve) s
 let add_mp mp1 mp2 resolve s = Umap.add_mp mp1 (mp2,resolve) s
