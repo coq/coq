@@ -186,7 +186,7 @@ let record_aux env s1 s2 =
 let suggest_proof_using = ref (fun _ _ _ _ _ -> ())
 let set_suggest_proof_using f = suggest_proof_using := f
 
-let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) =
+let build_constant_declaration ~chkguard kn env (def,typ,proj,poly,univs,inline_code,ctx) =
   let check declared inferred =
     let mk_set l = List.fold_right Id.Set.add (List.map pi1 l) Id.Set.empty in
     let inferred_set, declared_set = mk_set inferred, mk_set declared in
@@ -261,13 +261,14 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
     const_body_code = tps;
     const_polymorphic = poly;
     const_universes = univs;
-    const_inline_code = inline_code }
+    const_inline_code = inline_code;
+    const_checked_guarded = chkguard }
 
 
 (*s Global and local constant declaration. *)
 
 let translate_constant ~chkguard env kn ce =
-  build_constant_declaration kn env (infer_declaration ~chkguard env (Some kn) ce)
+  build_constant_declaration ~chkguard kn env (infer_declaration ~chkguard env (Some kn) ce)
 
 let translate_local_assum ~chkguard env t =
   let j = infer ~chkguard env t in
@@ -275,7 +276,7 @@ let translate_local_assum ~chkguard env t =
     t
 
 let translate_recipe env kn r =
-  build_constant_declaration kn env (Cooking.cook_constant env r)
+  build_constant_declaration ~chkguard:true kn env (Cooking.cook_constant env r)
 
 let translate_local_def ~chkguard env id centry =
   let def,typ,proj,poly,univs,inline_code,ctx =

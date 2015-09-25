@@ -41,7 +41,7 @@ val infer_declaration : chkguard:bool -> env -> constant option ->
   constant_entry -> Cooking.result
 
 val build_constant_declaration :
-  constant -> env -> Cooking.result -> constant_body
+  chkguard:bool -> constant -> env -> Cooking.result -> constant_body
 
 val set_suggest_proof_using :
   (constant -> env -> Id.Set.t -> Id.Set.t -> Id.t list -> unit) -> unit

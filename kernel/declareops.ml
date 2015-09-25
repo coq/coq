@@ -132,7 +132,8 @@ let subst_const_body sub cb =
           Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
         const_polymorphic = cb.const_polymorphic;
         const_universes = cb.const_universes;
-        const_inline_code = cb.const_inline_code }
+        const_inline_code = cb.const_inline_code;
+        const_checked_guarded = cb.const_checked_guarded }
 
 (** {7 Hash-consing of constants } *)
 

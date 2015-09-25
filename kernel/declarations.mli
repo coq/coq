@@ -74,7 +74,9 @@ type constant_body = {
     const_polymorphic : bool; (** Is it polymorphic or not *)
     const_universes : constant_universes;
     const_proj : projection_body option;
-    const_inline_code : bool }
+    const_inline_code : bool;
+    const_checked_guarded : bool; (** [false] is the (co)fixpoint in the constant were assumed to be well-founded. *)
+}
 
 type seff_env = [ `Nothing | `Opaque of Constr.t * Univ.universe_context_set ]
 
