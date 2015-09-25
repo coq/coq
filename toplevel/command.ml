@@ -1209,7 +1209,8 @@ let do_fixpoint ~chkguard local poly l =
     let fix = interp_fixpoint fixl ntns in
     let possible_indexes =
       List.map compute_possible_guardness_evidences (pi3 fix) in
-    declare_fixpoint ~chkguard local poly fix possible_indexes ntns
+    declare_fixpoint ~chkguard local poly fix possible_indexes ntns;
+    if not chkguard then Pp.feedback Feedback.AddedAxiom else ()
 
 let do_cofixpoint ~chkguard local poly l =
   let fixl,ntns = extract_cofixpoint_components l in
@@ -1217,4 +1218,5 @@ let do_cofixpoint ~chkguard local poly l =
       do_program_recursive local poly Obligations.IsCoFixpoint fixl ntns
     else
       let cofix = interp_cofixpoint fixl ntns in
-	declare_cofixpoint ~chkguard local poly cofix ntns
+      declare_cofixpoint ~chkguard local poly cofix ntns;
+      if not chkguard then Pp.feedback Feedback.AddedAxiom else ()
