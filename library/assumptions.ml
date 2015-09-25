@@ -26,6 +26,7 @@ open Globnames
 type axiom =
   | Constant of constant (* An axiom or a constant. *)
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
+  | Guarded of constant (* a constant whose (co)fixpoints have been assumed to be guarded *)
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
   | Axiom of axiom      (* An assumed fact. *)
@@ -43,7 +44,10 @@ struct
         con_ord k1 k2
     | Positive m1 , Positive m2 ->
         MutInd.CanOrd.compare m1 m2
-    | Positive _ , Constant _ -> 1
+    | Guarded k1 , Guarded k2 ->
+        con_ord k1 k2
+    | _ , Constant _ -> 1
+    | _ , Positive _ -> 1
     | _ -> -1
 
   let compare x y =
@@ -221,7 +225,11 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st t =
     if Option.is_empty body then ContextObjectMap.add (Variable id) t accu
     else accu
   | ConstRef kn ->
-    let cb = lookup_constant kn in
+      let cb = lookup_constant kn in
+      let accu =
+        if cb.const_checked_guarded then accu
+        else ContextObjectMap.add (Axiom (Guarded kn)) Constr.mkProp accu
+      in
     if not (Declareops.constant_has_body cb) then
       let t = type_of_constant cb in
       ContextObjectMap.add (Axiom (Constant kn)) t accu

@@ -735,6 +735,8 @@ let pr_assumptionset env s =
           safe_pr_constant env kn ++ safe_pr_ltype typ
       | Positive m ->
           hov 2 (MutInd.print m ++ spc () ++ strbrk"is positive.")
+      | Guarded kn ->
+          hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"is positive.")
     in
     let fold t typ accu =
       let (v, a, o, tr) = accu in

@@ -16,6 +16,7 @@ open Globnames
 type axiom =
   | Constant of constant (** An axiom or a constant. *)
   | Positive of MutInd.t (** A mutually inductive definition which has been assumed positive. *)
+  | Guarded of constant (** A constant whose (co)fixpoints have been assumed to be guarded *)
 type context_object =
   | Variable of Id.t  (** A section variable or a Let definition. *)
   | Axiom of axiom       (** An assumed fact. *)
