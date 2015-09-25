@@ -16,6 +16,9 @@ val show_prooftree : unit -> unit
 
 val show_node : unit -> unit
 
+val vernac_require :
+  Libnames.reference option -> bool option -> Libnames.reference list -> unit
+
 (** This function can be used by any command that want to observe terms
    in the context of the current goal *)
 val get_current_context_of_args : int option -> Evd.evar_map * Environ.env

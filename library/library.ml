@@ -488,18 +488,8 @@ let rec_intern_library libs mref =
   let _, libs = intern_library libs mref None in
   libs
 
-let check_library_short_name f dir = function
-  | Some id when not (Id.equal id (snd (split_dirpath dir))) ->
-      errorlabstrm "check_library_short_name"
-      (str "The file " ++ str f ++ str " contains library" ++ spc () ++
-      pr_dirpath dir ++ spc () ++ str "and not library" ++ spc () ++
-      pr_id id)
-  | _ -> ()
-
-let rec_intern_by_filename_only id f =
+let rec_intern_by_filename_only f =
   let m = try intern_from_file f with Sys_error s -> error s in
-  (* Only the base name is expected to match *)
-  check_library_short_name f m.library_name id;
   (* We check no other file containing same library is loaded *)
   if library_is_loaded m.library_name then
     begin
@@ -518,12 +508,12 @@ let native_name_from_filename f =
   let (lmd : seg_sum), pos, digest_lmd = System.marshal_in_segment f ch in
   Nativecode.mod_uid_of_dirpath lmd.md_name
 
-let rec_intern_library_from_file idopt f =
+let rec_intern_library_from_file f =
   (* A name is specified, we have to check it contains library id *)
   let paths = Loadpath.get_paths () in
   let _, f =
     System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".vo") in
-  rec_intern_by_filename_only idopt f
+  rec_intern_by_filename_only f
 
 (**********************************************************************)
 (*s [require_library] loads and possibly opens a library. This is a
@@ -600,8 +590,8 @@ let require_library_from_dirpath modrefl export =
       add_anonymous_leaf (in_require (needed,modrefl,export));
   add_frozen_state ()
 
-let require_library_from_file idopt file export =
-  let modref,needed = rec_intern_library_from_file idopt file in
+let require_library_from_file file export =
+  let modref,needed = rec_intern_library_from_file file in
   let needed = List.rev_map snd needed in
   if Lib.is_module_or_modtype () then begin
     add_anonymous_leaf (in_require (needed,[modref],None));

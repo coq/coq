@@ -22,8 +22,7 @@ open Libnames
 (** Require = load in the environment + open (if the optional boolean
     is not [None]); mark also for export if the boolean is [Some true] *)
 val require_library_from_dirpath : (DirPath.t * string) list -> bool option -> unit
-val require_library_from_file :
-  Id.t option -> CUnix.physical_path -> bool option -> unit
+val require_library_from_file : CUnix.physical_path -> bool option -> unit
 
 (** {6 Start the compilation of a library } *)
 

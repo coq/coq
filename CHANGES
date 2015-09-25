@@ -54,6 +54,8 @@ Tools
 - The -compile command-line option now takes the full path of the considered
   file, including the ".v" extension, and outputs a warning if such an extension
   is lacking.
+- The -require command-line option now takes a logical path of a given library
+  rather than a physical path.
 
 Changes from V8.5beta1 to V8.5beta2
 ===================================

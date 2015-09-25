@@ -157,10 +157,10 @@ Add physical path {\em directory} to the {\ocaml} loadpath.
 
   Load \Coq~compiled file {\em file}{\tt .vo}
 
-\item[{\tt -require} {\em file}]\ 
+\item[{\tt -require} {\em path}]\ 
 
-  Load \Coq~compiled file {\em file}{\tt .vo} and import it ({\tt
-    Require} {\em file}).
+  Load \Coq~compiled library {\em path} and import it (equivalent to {\tt
+    Require Import} {\em path}).
 
 \item[{\tt -compile} {\em file.v},{\tt -compile-verbose} {\em file.v}, {\tt -batch}]\ 
 
