@@ -73,14 +73,9 @@ let search_guard loc env possible_indexes fixdefs =
   (* We treat it separately in order to get proper error msg. *)
   let is_singleton = function [_] -> true | _ -> false in
   if List.for_all is_singleton possible_indexes then
-    let indexes = Array.of_list (List.map List.hd possible_indexes) in
-    let fix = ((indexes, 0),fixdefs) in
-    (try check_fix env fix
-     with reraise ->
-       let (e, info) = Errors.push reraise in
-       let info = Loc.add_loc info loc in
-       iraise (e, info));
-    indexes
+    (* in this case, errors are delegated to the kernel, which will
+       check well-guardedness if required. *)
+    Array.of_list (List.map List.hd possible_indexes)
   else
     (* we now search recursively among all combinations *)
     (try
