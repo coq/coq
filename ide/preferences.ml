@@ -398,6 +398,14 @@ let tags = ref Util.String.Map.empty
 
 let list_tags () = !tags
 
+let make_tag ?fg ?bg ?(bold = false) ?(italic = false) ?(underline = false) () = {
+  tag_fg_color = fg;
+  tag_bg_color = bg;
+  tag_bold = bold;
+  tag_italic = italic;
+  tag_underline = underline;
+}
+
 let create_tag name default =
   let pref = new preference ~name:[name] ~init:default ~repr:Repr.(tag) in
   let set_tag tag =
@@ -442,23 +450,23 @@ let create_tag name default =
   tags := Util.String.Map.add name pref !tags
 
 let () =
-  let iter name = create_tag name default_tag in
+  let iter (name, tag) = create_tag name tag in
   List.iter iter [
-    "constr.evar";
-    "constr.keyword";
-    "constr.notation";
-    "constr.path";
-    "constr.reference";
-    "constr.type";
-    "constr.variable";
-    "message.debug";
-    "message.error";
-    "message.warning";
-    "module.definition";
-    "module.keyword";
-    "tactic.keyword";
-    "tactic.primitive";
-    "tactic.string";
+    ("constr.evar", make_tag ());
+    ("constr.keyword", make_tag ~fg:"dark green" ());
+    ("constr.notation", make_tag ());
+    ("constr.path", make_tag ());
+    ("constr.reference", make_tag ~fg:"navy"());
+    ("constr.type", make_tag ~fg:"#008080" ());
+    ("constr.variable", make_tag ());
+    ("message.debug", make_tag ());
+    ("message.error", make_tag ());
+    ("message.warning", make_tag ());
+    ("module.definition", make_tag ~fg:"orange red" ~bold:true ());
+    ("module.keyword", make_tag ());
+    ("tactic.keyword", make_tag ());
+    ("tactic.primitive", make_tag ());
+    ("tactic.string", make_tag ());
   ]
 
 let processed_color =
