@@ -285,7 +285,7 @@ suffix \verb!.tex!.
   
   Select a \texmacs\ output.
 
-\item[\texttt{--stdout}] ~\par
+\item[\texttt{\mm{}stdout}] ~\par
 
   Write output to stdout.
 
@@ -496,14 +496,16 @@ Default behavior is to assume ASCII 7 bits input files.
 \item[\texttt{-latin1}, \texttt{\mm{}latin1}] ~\par
 
   Select ISO-8859-1 input files. It is equivalent to
-  \texttt{--inputenc latin1 --charset iso-8859-1}.
+  \texttt{\mm{}inputenc latin1 \mm{}charset iso-8859-1}.
 
 \item[\texttt{-utf8}, \texttt{\mm{}utf8}] ~\par
 
-  Select UTF-8 (Unicode) input files. It is equivalent to
-  \texttt{--inputenc utf8 --charset utf-8}.
-  \LaTeX\ UTF-8 support can be found at
- \url{http://www.ctan.org/pkg/unicode}.
+  Set \texttt{\mm{}inputenc utf8x} for \LaTeX\ output and
+  \texttt{\mm{}charset utf-8} for HTML output. Also use Unicode
+  replacements for a couple of standard plain ASCII notations such
+  as $\rightarrow$ for \texttt{->} and $\forall$ for
+  \texttt{forall}. \LaTeX\ UTF-8 support can be found at
+  \url{http://www.ctan.org/pkg/unicode}.
 
 \item[\texttt{\mm{}inputenc} \textit{string}] ~\par
 
