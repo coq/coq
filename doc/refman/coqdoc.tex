@@ -507,6 +507,15 @@ Default behavior is to assume ASCII 7 bits input files.
   \texttt{forall}. \LaTeX\ UTF-8 support can be found at
   \url{http://www.ctan.org/pkg/unicode}.
 
+  For the interpretation of Unicode characters by \LaTeX, extra
+  packages which {\coqdoc} does not provide by default might be
+  required, such as \texttt{textgreek} for some Greek letters or
+  \texttt{stmaryrd} for some mathematical symbols. If a Unicode
+  character is missing an interpretation in the \texttt{utf8x} input
+  encoding, add
+  \verb=\DeclareUnicodeCharacter{=\textit{code}\verb=}{=\textit{latex-interpretation}\verb=}=. Packages
+  and declarations can be added with option \texttt{-p}.
+
 \item[\texttt{\mm{}inputenc} \textit{string}] ~\par
 
   Give a \LaTeX\ input encoding, as an option to \LaTeX\ package
