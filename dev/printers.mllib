@@ -119,6 +119,7 @@ Termops
 Namegen
 UState
 Evd
+Sigma
 Glob_ops
 Redops
 Reductionops
