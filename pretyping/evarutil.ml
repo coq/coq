@@ -239,17 +239,6 @@ let make_pure_subst evi args =
         | _ -> anomaly (Pp.str "Instance does not match its signature"))
     (evar_filtered_context evi) (Array.rev_to_list args,[]))
 
-(**********************)
-(* Creating new evars *)
-(**********************)
-
-let evar_counter_summary_name = "evar counter"
-
-(* Generator of existential names *)
-let new_untyped_evar =
-  let evar_ctr = Summary.ref 0 ~name:evar_counter_summary_name in
-  fun () -> incr evar_ctr; Evar.unsafe_of_int !evar_ctr
-
 (*------------------------------------*
  * functional operations on evar sets *
  *------------------------------------*)
@@ -354,17 +343,15 @@ let push_rel_context_to_named_context env typ =
 let default_source = (Loc.ghost,Evar_kinds.InternalHole)
 
 let restrict_evar evd evk filter candidates =
-  let evk' = new_untyped_evar () in
-  let evd = Evd.restrict evk evk' filter ?candidates evd in
+  let evd, evk' = Evd.restrict evk filter ?candidates evd in
   Evd.declare_future_goal evk' evd, evk'
 
 let new_pure_evar_full evd evi =
-  let evk = new_untyped_evar () in
-  let evd = Evd.add evd evk evi in
+  let (evd, evk) = Evd.new_evar evd evi in
   let evd = Evd.declare_future_goal evk evd in
   (evd, evk)
 
-let new_pure_evar sign evd ?(src=default_source) ?filter ?candidates ?store ?naming ?(principal=false) typ =
+let new_pure_evar sign evd ?(src=default_source) ?(filter = Filter.identity) ?candidates ?(store = Store.empty) ?naming ?(principal=false) typ =
   let default_naming =
     if principal then
         (* waiting for a more principled approach
@@ -374,8 +361,16 @@ let new_pure_evar sign evd ?(src=default_source) ?filter ?candidates ?store ?nam
         Misctypes.IntroAnonymous
   in
   let naming = Option.default default_naming naming in
-  let newevk = new_untyped_evar() in
-  let evd = evar_declare sign newevk typ ~src ?filter ?candidates ?store ~naming evd in
+  let evi = {
+    evar_hyps = sign;
+    evar_concl = typ;
+    evar_body = Evar_empty;
+    evar_filter = filter;
+    evar_source = src;
+    evar_candidates = candidates;
+    evar_extra = store; }
+  in
+  let (evd, newevk) = Evd.new_evar evd ~naming evi in
   let evd =
     if principal then Evd.declare_principal_goal newevk evd
     else Evd.declare_future_goal newevk evd

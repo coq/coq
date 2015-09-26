@@ -143,6 +143,10 @@ val has_undefined : evar_map -> bool
 (** [has_undefined sigma] is [true] if and only if
     there are uninstantiated evars in [sigma]. *)
 
+val new_evar : evar_map ->
+  ?naming:Misctypes.intro_pattern_naming_expr -> evar_info -> evar_map * evar
+(** Creates a fresh evar mapping to the given information. *)
+
 val add : evar_map -> evar -> evar_info -> evar_map
 (** [add sigma ev info] adds [ev] with evar info [info] in sigma.
     Precondition: ev must not preexist in [sigma]. *)
@@ -230,14 +234,8 @@ val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
 
 (** {6 Misc} *)
 
-val evar_declare :
-  named_context_val -> evar -> types -> ?src:Loc.t * Evar_kinds.t ->
-      ?filter:Filter.t -> ?candidates:constr list -> ?store:Store.t ->
-      ?naming:Misctypes.intro_pattern_naming_expr -> evar_map -> evar_map
-(** Convenience function. Just a wrapper around {!add}. *)
-
-val restrict : evar -> evar -> Filter.t -> ?candidates:constr list ->
-  evar_map -> evar_map
+val restrict : evar -> Filter.t -> ?candidates:constr list ->
+  evar_map -> evar_map * evar
 (** Restrict an undefined evar into a new evar by filtering context and
     possibly limiting the instances to a set of candidates *)
 
@@ -614,3 +612,7 @@ val create_evar_defs      : evar_map -> evar_map
 (** Create an [evar_map] with empty meta map: *)
 
 val create_goal_evar_defs : evar_map -> evar_map
+
+(** {5 Summary names} *)
+
+val evar_counter_summary_name : string

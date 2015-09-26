@@ -632,13 +632,29 @@ let reassign_name_defined evk evk' (evtoid,idtoev) =
   (EvMap.add evk' id (EvMap.remove evk evtoid),
    Idmap.add id evk' (Idmap.remove id idtoev))
 
-let add d e i = match i.evar_body with
+let add_with_name ?(naming = Misctypes.IntroAnonymous) d e i = match i.evar_body with
 | Evar_empty ->
-  let evar_names = add_name_undefined Misctypes.IntroAnonymous e i d.evar_names in
+  let evar_names = add_name_undefined naming e i d.evar_names in
   { d with undf_evars = EvMap.add e i d.undf_evars; evar_names }
 | Evar_defined _ ->
   let evar_names = remove_name_possibly_already_defined e d.evar_names in
   { d with defn_evars = EvMap.add e i d.defn_evars; evar_names }
+
+let add d e i = add_with_name d e i
+
+(** New evars *)
+
+let evar_counter_summary_name = "evar counter"
+
+(* Generator of existential names *)
+let new_untyped_evar =
+  let evar_ctr = Summary.ref 0 ~name:evar_counter_summary_name in
+  fun () -> incr evar_ctr; Evar.unsafe_of_int !evar_ctr
+
+let new_evar evd ?naming evi =
+  let evk = new_untyped_evar () in
+  let evd = add_with_name evd ?naming evk evi in
+  (evd, evk)
 
 let remove d e =
   let undf_evars = EvMap.remove e d.undf_evars in
@@ -831,27 +847,8 @@ let define evk body evd =
   let evar_names = remove_name_defined evk evd.evar_names in
   { evd with defn_evars; undf_evars; last_mods; evar_names }
 
-let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) 
-    ?(filter=Filter.identity) ?candidates ?(store=Store.empty)
-    ?(naming=Misctypes.IntroAnonymous) evd =
-  let () = match Filter.repr filter with
-  | None -> ()
-  | Some filter ->
-    assert (Int.equal (List.length filter) (List.length (named_context_of_val hyps)))
-  in
-  let evar_info = {
-    evar_hyps = hyps;
-    evar_concl = ty;
-    evar_body = Evar_empty;
-    evar_filter = filter;
-    evar_source = src;
-    evar_candidates = candidates;
-    evar_extra = store; }
-  in
-  let evar_names = add_name_newly_undefined naming evk evar_info evd.evar_names in
-  { evd with undf_evars = EvMap.add evk evar_info evd.undf_evars; evar_names }
-
-let restrict evk evk' filter ?candidates evd =
+let restrict evk filter ?candidates evd =
+  let evk' = new_untyped_evar () in
   let evar_info = EvMap.find evk evd.undf_evars in
   let evar_info' =
     { evar_info with evar_filter = filter;
@@ -863,7 +860,7 @@ let restrict evk evk' filter ?candidates evd =
   let body = mkEvar(evk',id_inst) in
   let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
   { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
-    defn_evars; evar_names }
+    defn_evars; evar_names }, evk'
 
 let downcast evk ccl evd =
   let evar_info = EvMap.find evk evd.undf_evars in

@@ -166,7 +166,7 @@ type visit = { step : step; next : Stateid.t }
 
 (* Parts of the system state that are morally part of the proof state *)
 let summary_pstate = [ Evarutil.meta_counter_summary_name;
-                       Evarutil.evar_counter_summary_name;
+                       Evd.evar_counter_summary_name;
                        "program-tcc-table" ]
 type state = {
   system : States.state;
