@@ -1385,7 +1385,7 @@ let set_metas evd metas = {
   evar_names = evd.evar_names;
   future_goals = evd.future_goals;
   principal_future_goal = evd.principal_future_goal;
-  extras = Store.empty;
+  extras = evd.extras;
 }
 
 let meta_list evd = metamap_to_list evd.metas
