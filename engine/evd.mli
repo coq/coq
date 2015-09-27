@@ -440,7 +440,6 @@ val meta_opt_fvalue : evar_map -> metavariable -> (constr freelisted * instance_
 val meta_type      : evar_map -> metavariable -> types
 val meta_ftype     : evar_map -> metavariable -> types freelisted
 val meta_name      : evar_map -> metavariable -> Name.t
-val meta_with_name : evar_map -> Id.t -> metavariable
 val meta_declare   :
   metavariable -> types -> ?name:Name.t -> evar_map -> evar_map
 val meta_assign    : metavariable -> constr * instance_status -> evar_map -> evar_map

@@ -432,6 +432,44 @@ let check_bindings bl =
 	   str " occurs more than once in binding list.")
     | [] -> ()
 
+let explain_no_such_bound_variable evd id =
+  let fold l (n, clb) =
+    let na = match clb with
+    | Cltyp (na, _) -> na
+    | Clval (na, _, _) -> na
+    in
+    if na != Anonymous then out_name na :: l else l
+  in
+  let mvl = List.fold_left fold [] (Evd.meta_list evd) in
+  errorlabstrm "Evd.meta_with_name"
+    (str"No such bound variable " ++ pr_id id ++
+     (if mvl == [] then str " (no bound variables at all in the expression)."
+      else
+        (str" (possible name" ++
+         str (if List.length mvl == 1 then " is: " else "s are: ") ++
+         pr_enum pr_id mvl ++ str").")))
+
+let meta_with_name evd id =
+  let na = Name id in
+  let fold (l1, l2 as l) (n, clb) =
+    let (na',def) = match clb with
+    | Cltyp (na, _) -> (na, false)
+    | Clval (na, _, _) -> (na, true)
+    in
+    if Name.equal na na' then if def then (n::l1,l2) else (n::l1,n::l2)
+    else l
+  in
+  let (mvl, mvnodef) = List.fold_left fold ([], []) (Evd.meta_list evd) in
+  match mvnodef, mvl with
+    | _,[]  ->
+      explain_no_such_bound_variable evd id
+    | ([n],_|_,[n]) ->
+        n
+    | _  ->
+        errorlabstrm "Evd.meta_with_name"
+          (str "Binder name \"" ++ pr_id id ++
+           strbrk "\" occurs more than once in clause.")
+
 let meta_of_binder clause loc mvs = function
   | NamedHyp s -> meta_with_name clause.evd s
   | AnonHyp n ->
