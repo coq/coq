@@ -457,7 +457,6 @@ val map_metas_fvalue : (constr -> constr) -> evar_map -> evar_map
 type metabinding = metavariable * constr * instance_status
 
 val retract_coercible_metas : evar_map -> metabinding list * evar_map
-val subst_defined_metas_evars : metabinding list * ('a * existential * constr) list -> constr -> constr option
 
 (** {5 FIXME: Nothing to do here} *)
 
