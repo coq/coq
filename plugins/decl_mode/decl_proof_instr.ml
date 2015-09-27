@@ -86,7 +86,7 @@ Please \"suppose\" something or \"end\" it now."
       | _ -> ()
 
 let mk_evd metalist gls =
-  let evd0= create_goal_evar_defs (sig_sig gls) in
+  let evd0= clear_metas (sig_sig gls) in
   let add_one (meta,typ) evd =
     meta_declare meta typ evd in
     List.fold_right add_one metalist evd0

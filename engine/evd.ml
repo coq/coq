@@ -766,10 +766,6 @@ let cmap f evd =
 (* spiwack: deprecated *)
 let create_evar_defs sigma = { sigma with
   conv_pbs=[]; last_mods=Evar.Set.empty; metas=Metamap.empty }
-(* spiwack: tentatively deprecated *)
-let create_goal_evar_defs sigma = { sigma with
-   (* conv_pbs=[]; last_mods=Evar.Set.empty; metas=Metamap.empty } *)
-  metas=Metamap.empty } 
 
 let empty = {
   defn_evars = EvMap.empty;

@@ -119,7 +119,7 @@ let clenv_environments evd bound t =
   clrec (evd,[]) bound t
 
 let mk_clenv_from_env env sigma n (c,cty) =
-  let evd = create_goal_evar_defs sigma in
+  let evd = clear_metas sigma in
   let (evd,args,concl) = clenv_environments evd n cty in
   { templval = mk_freelisted (applist (c,args));
     templtyp = mk_freelisted concl;

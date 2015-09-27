@@ -121,7 +121,7 @@ let unify ?(flags=fail_quick_unif_flags) m =
   Proofview.Goal.enter begin fun gl ->
     let env = Tacmach.New.pf_env gl in
     let n = Tacmach.New.pf_nf_concl gl in
-    let evd = create_goal_evar_defs (Proofview.Goal.sigma gl) in
+    let evd = clear_metas (Proofview.Goal.sigma gl) in
     try
       let evd' = w_unify env evd CONV ~flags m n in
 	Proofview.Unsafe.tclEVARSADVANCE evd'

@@ -1095,7 +1095,7 @@ let minimal_free_rels_rec env sigma =
 
 let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
   let sigdata = find_sigma_data env sort_of_ty in
-  let evdref = ref (Evd.create_goal_evar_defs sigma) in
+  let evdref = ref (Evd.clear_metas sigma) in
   let rec sigrec_clausal_form siglen p_i =
     if Int.equal siglen 0 then
       (* is the default value typable with the expected type *)

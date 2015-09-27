@@ -611,8 +611,6 @@ val pr_evd_level : evar_map -> Univ.Level.t -> Pp.std_ppcmds
 val create_evar_defs      : evar_map -> evar_map
 (** Create an [evar_map] with empty meta map: *)
 
-val create_goal_evar_defs : evar_map -> evar_map
-
 (** {5 Summary names} *)
 
 val evar_counter_summary_name : string
