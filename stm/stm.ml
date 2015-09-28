@@ -1577,7 +1577,8 @@ end = struct (* {{{ *)
       vernac_interp r_for { r_what with verbose = true };
       feedback ~state_id:r_for Feedback.Processed     
     with e when Errors.noncritical e ->
-      let msg = string_of_ppcmds (print e) in
+      let e = Errors.push e in
+      let msg = string_of_ppcmds (iprint e) in
       feedback ~state_id:r_for (Feedback.ErrorMsg (Loc.ghost, msg))
     
   let name_of_task { t_what } = string_of_ppcmds (pr_ast t_what)
