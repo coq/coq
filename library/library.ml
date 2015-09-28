@@ -488,32 +488,10 @@ let rec_intern_library libs mref =
   let _, libs = intern_library libs mref None in
   libs
 
-let rec_intern_by_filename_only f =
-  let m = try intern_from_file f with Sys_error s -> error s in
-  (* We check no other file containing same library is loaded *)
-  if library_is_loaded m.library_name then
-    begin
-      msg_warning
-	(pr_dirpath m.library_name ++ str " is already loaded from file " ++
-	str (library_full_filename m.library_name));
-      m.library_name, []
-    end
- else
-    let needed, contents = intern_library_deps ([], DPMap.empty) m.library_name m (Some f) in
-    let needed = List.map (fun dir -> dir, DPMap.find dir contents) needed in
-    m.library_name, needed
-
 let native_name_from_filename f =
   let ch = System.with_magic_number_check raw_intern_library f in
   let (lmd : seg_sum), pos, digest_lmd = System.marshal_in_segment f ch in
   Nativecode.mod_uid_of_dirpath lmd.md_name
-
-let rec_intern_library_from_file f =
-  (* A name is specified, we have to check it contains library id *)
-  let paths = Loadpath.get_paths () in
-  let _, f =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".vo") in
-  rec_intern_by_filename_only f
 
 (**********************************************************************)
 (*s [require_library] loads and possibly opens a library. This is a
@@ -588,18 +566,6 @@ let require_library_from_dirpath modrefl export =
       end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
-  add_frozen_state ()
-
-let require_library_from_file file export =
-  let modref,needed = rec_intern_library_from_file file in
-  let needed = List.rev_map snd needed in
-  if Lib.is_module_or_modtype () then begin
-    add_anonymous_leaf (in_require (needed,[modref],None));
-    Option.iter (fun exp -> add_anonymous_leaf (in_import_library ([modref],exp)))
-      export
-  end
-  else
-    add_anonymous_leaf (in_require (needed,[modref],export));
   add_frozen_state ()
 
 (* the function called by Vernacentries.vernac_import *)

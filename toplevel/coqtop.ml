@@ -171,8 +171,8 @@ let load_vernacular () =
 let load_vernacular_obj = ref ([] : string list)
 let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
 let load_vernac_obj () =
-  List.iter (fun f -> Library.require_library_from_file f None)
-    (List.rev !load_vernacular_obj)
+  let map dir = Qualid (Loc.ghost, qualid_of_string dir) in
+  Vernacentries.vernac_require None None (List.rev_map map !load_vernacular_obj)
 
 let require_prelude () =
   let vo = Envars.coqlib () / "theories/Init/Prelude.vo" in
