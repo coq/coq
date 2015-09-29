@@ -768,7 +768,7 @@ let save_library_to ?todo dir f otab =
     iraise reraise
 
 let save_library_raw f sum lib univs proofs =
-  let f' = f^".o" in
+  let f' = f^"o" in
   let ch = raw_extern_library f' in
   System.marshal_out_segment f' ch (sum        : seg_sum);
   System.marshal_out_segment f' ch (lib        : seg_lib);
