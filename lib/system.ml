@@ -178,7 +178,7 @@ let raw_extern_intern magic =
   let extern_state filename =
     let channel = open_trapping_failure filename in
     output_binary_int channel magic;
-    filename, channel
+    channel
   and intern_state filename =
     try
       let channel = open_in_bin filename in
@@ -191,11 +191,11 @@ let raw_extern_intern magic =
   in
   (extern_state,intern_state)
 
-let extern_intern ?(warn=true) magic =
+let extern_intern magic =
   let (raw_extern,raw_intern) = raw_extern_intern magic in
-  let extern_state name val_0 =
+  let extern_state filename val_0 =
     try
-      let (filename,channel) = raw_extern name in
+      let channel = raw_extern filename in
       try
         marshal_out channel val_0;
         close_out channel
@@ -205,9 +205,8 @@ let extern_intern ?(warn=true) magic =
         iraise reraise
     with Sys_error s ->
       errorlabstrm "System.extern_state" (str "System error: " ++ str s)
-  and intern_state paths name =
+  and intern_state filename =
     try
-      let _,filename = find_file_in_path ~warn paths name in
       let channel = raw_intern filename in
       let v = marshal_in filename channel in
       close_in channel;

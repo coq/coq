@@ -742,7 +742,8 @@ let save_library_to ?todo dir f otab =
   if Array.exists (fun (d,_) -> DirPath.equal d dir) sd.md_deps then
     error_recursively_dependent_library dir;
   (* Open the vo file and write the magic number *)
-  let (f',ch) = raw_extern_library f in
+  let f' = f in
+  let ch = raw_extern_library f' in
   try
     (* Writing vo payload *)
     System.marshal_out_segment f' ch (sd           : seg_sum);
@@ -765,7 +766,8 @@ let save_library_to ?todo dir f otab =
     iraise reraise
 
 let save_library_raw f sum lib univs proofs =
-  let (f',ch) = raw_extern_library (f^"o") in
+  let f' = f^".o" in
+  let ch = raw_extern_library f' in
   System.marshal_out_segment f' ch (sum        : seg_sum);
   System.marshal_out_segment f' ch (lib        : seg_lib);
   System.marshal_out_segment f' ch (Some univs : seg_univ option);

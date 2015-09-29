@@ -929,10 +929,12 @@ let vernac_chdir = function
 
 let vernac_write_state file =
   Pfedit.delete_all_proofs ();
+  let file = CUnix.make_suffix file ".coq" in
   States.extern_state file
 
 let vernac_restore_state file =
   Pfedit.delete_all_proofs ();
+  let file = Loadpath.locate_file (CUnix.make_suffix file ".coq") in
   States.intern_state file
 
 (************)

@@ -37,10 +37,10 @@ val find_file_in_path :
 exception Bad_magic_number of string
 
 val raw_extern_intern : int ->
-  (string -> string * out_channel) * (string -> in_channel)
+  (string -> out_channel) * (string -> in_channel)
 
-val extern_intern : ?warn:bool -> int ->
-  (string -> 'a -> unit) * (CUnix.load_path -> string -> 'a)
+val extern_intern : int ->
+  (string -> 'a -> unit) * (string -> 'a)
 
 val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
 

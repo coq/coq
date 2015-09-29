@@ -144,13 +144,19 @@ let inputstate = ref ""
 let set_inputstate s =
   let () = msg_warning (str "The inputstate option is deprecated and discouraged.") in
   inputstate:=s
-let inputstate () = if not (String.is_empty !inputstate) then intern_state !inputstate
+let inputstate () =
+  if not (String.is_empty !inputstate) then
+    let fname = Loadpath.locate_file (CUnix.make_suffix !inputstate ".coq") in
+    intern_state fname
 
 let outputstate = ref ""
 let set_outputstate s =
   let () = msg_warning (str "The outputstate option is deprecated and discouraged.") in
   outputstate:=s
-let outputstate () = if not (String.is_empty !outputstate) then extern_state !outputstate
+let outputstate () =
+  if not (String.is_empty !outputstate) then
+    let fname = CUnix.make_suffix !outputstate ".coq" in
+    extern_state fname
 
 let set_include d p implicit =
   let p = dirpath_of_string p in

@@ -22,16 +22,12 @@ let unfreeze (fl,fs) =
   Summary.unfreeze_summaries fs
 
 let (extern_state,intern_state) =
-  let ensure_suffix f = CUnix.make_suffix f ".coq" in
   let (raw_extern, raw_intern) =
     extern_intern Coq_config.state_magic_number in
   (fun s ->
-    let s = ensure_suffix s in
     raw_extern s (freeze ~marshallable:`Yes)),
   (fun s ->
-    let s = ensure_suffix s in
-    let paths = Loadpath.get_paths () in
-    unfreeze (with_magic_number_check (raw_intern paths) s);
+    unfreeze (with_magic_number_check raw_intern s);
     Library.overwrite_library_filenames s)
 
 (* Rollback. *)
