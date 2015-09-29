@@ -162,6 +162,7 @@ let add_load_vernacular verb s =
 let load_vernacular () =
   List.iter
     (fun (s,b) ->
+      let s = Loadpath.locate_file s in
       if Flags.do_beautify () then
 	with_option beautify_file (Vernac.load_vernac b) s
       else

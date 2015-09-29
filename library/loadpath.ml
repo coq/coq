@@ -112,3 +112,9 @@ let expand_path dir =
       if DirPath.equal dir lg then (ph, lg) :: aux l else aux l
   in
   aux !load_paths
+
+let locate_file fname =
+  let paths = get_paths () in
+  let _,longfname =
+    System.find_file_in_path ~warn:(Flags.is_verbose()) paths fname in
+  longfname

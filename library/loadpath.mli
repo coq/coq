@@ -52,3 +52,7 @@ val expand_path : DirPath.t -> (CUnix.physical_path * DirPath.t) list
 val filter_path : (DirPath.t -> bool) -> (CUnix.physical_path * DirPath.t) list
 (** As {!expand_path} but uses a filter function instead, and ignores the
     implicit status of loadpaths. *)
+
+val locate_file : string -> string
+(** Locate a file among the registered paths. Do not use this function, as
+    it does not respect the visibility of paths. *)

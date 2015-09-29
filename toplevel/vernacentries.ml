@@ -365,8 +365,7 @@ let dump_universes sorted s =
 (* "Locate" commands *)
 
 let locate_file f =
-  let paths = Loadpath.get_paths () in
-  let _, file = System.find_file_in_path ~warn:false paths f in
+  let file = Flags.silently Loadpath.locate_file f in
   str file
 
 let msg_found_library = function
@@ -1845,9 +1844,7 @@ let vernac_load interp fname =
     Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
   let fname = CUnix.make_suffix fname ".v" in
   let input =
-    let paths = Loadpath.get_paths () in
-    let _,longfname =
-      System.find_file_in_path ~warn:(Flags.is_verbose()) paths fname in
+    let longfname = Loadpath.locate_file fname in
     let in_chan = open_utf8_file_in longfname in
     Pcoq.Gram.parsable (Stream.of_channel in_chan) in
   try while true do interp (snd (parse_sentence input)) done

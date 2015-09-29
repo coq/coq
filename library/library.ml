@@ -652,9 +652,7 @@ let start_library f =
   ldir
 
 let load_library_todo f =
-  let paths = Loadpath.get_paths () in
-  let _, longf =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+  let longf = Loadpath.locate_file (f^".v") in
   let f = longf^"io" in
   let ch = System.with_magic_number_check raw_intern_library f in
   let (s0 : seg_sum), _, _ = System.marshal_in_segment f ch in

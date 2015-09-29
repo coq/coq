@@ -104,9 +104,7 @@ let schedule_vio_compilation j fs =
     let f =
       if Filename.check_suffix f ".vio" then Filename.chop_extension f
       else f in
-    let paths = Loadpath.get_paths () in
-    let _, long_f_dot_v =
-      System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+    let long_f_dot_v = Loadpath.locate_file (f^".v") in
     let aux = Aux_file.load_aux_file_for long_f_dot_v in
     let eta =
       try float_of_string (Aux_file.get aux Loc.ghost "vo_compile_time")
