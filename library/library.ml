@@ -19,10 +19,12 @@ open Lib
 (************************************************************************)
 (*s Low-level interning/externing of libraries to files *)
 
-(*s Loading from disk to cache (preparation phase) *)
+let raw_extern_library f =
+  System.raw_extern_state Coq_config.vo_magic_number f
 
-let (raw_extern_library, raw_intern_library) =
-  System.raw_extern_intern Coq_config.vo_magic_number
+let raw_intern_library f =
+  System.with_magic_number_check
+    (System.raw_intern_state Coq_config.vo_magic_number) f
 
 (************************************************************************)
 (** Serialized objects loaded on-the-fly *)
@@ -56,7 +58,7 @@ let in_delayed f ch =
 let fetch_delayed del =
   let { del_digest = digest; del_file = f; del_off = pos; } = del in
   try
-    let ch = System.with_magic_number_check raw_intern_library f in
+    let ch = raw_intern_library f in
     let () = seek_in ch pos in
     let obj, _, digest' = System.marshal_in_segment f ch in
     let () = close_in ch in
@@ -434,7 +436,7 @@ let mk_summary m = {
 }
 
 let intern_from_file f =
-  let ch = System.with_magic_number_check raw_intern_library f in
+  let ch = raw_intern_library f in
   let (lsd : seg_sum), _, digest_lsd = System.marshal_in_segment f ch in
   let (lmd : seg_lib delayed) = in_delayed f ch in
   let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
@@ -489,7 +491,7 @@ let rec_intern_library libs mref =
   libs
 
 let native_name_from_filename f =
-  let ch = System.with_magic_number_check raw_intern_library f in
+  let ch = raw_intern_library f in
   let (lmd : seg_sum), pos, digest_lmd = System.marshal_in_segment f ch in
   Nativecode.mod_uid_of_dirpath lmd.md_name
 
@@ -654,7 +656,7 @@ let start_library f =
 let load_library_todo f =
   let longf = Loadpath.locate_file (f^".v") in
   let f = longf^"io" in
-  let ch = System.with_magic_number_check raw_intern_library f in
+  let ch = raw_intern_library f in
   let (s0 : seg_sum), _, _ = System.marshal_in_segment f ch in
   let (s1 : seg_lib), _, _ = System.marshal_in_segment f ch in
   let (s2 : seg_univ option), _, _ = System.marshal_in_segment f ch in

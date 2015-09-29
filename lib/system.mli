@@ -36,11 +36,13 @@ val find_file_in_path :
 
 exception Bad_magic_number of string
 
-val raw_extern_intern : int ->
-  (string -> out_channel) * (string -> in_channel)
+val raw_extern_state : int -> string -> out_channel
 
-val extern_intern : int ->
-  (string -> 'a -> unit) * (string -> 'a)
+val raw_intern_state : int -> string -> in_channel
+
+val extern_state : int -> string -> 'a -> unit
+
+val intern_state : int -> string -> 'a
 
 val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
 

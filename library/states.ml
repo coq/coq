@@ -21,14 +21,12 @@ let unfreeze (fl,fs) =
   Lib.unfreeze fl;
   Summary.unfreeze_summaries fs
 
-let (extern_state,intern_state) =
-  let (raw_extern, raw_intern) =
-    extern_intern Coq_config.state_magic_number in
-  (fun s ->
-    raw_extern s (freeze ~marshallable:`Yes)),
-  (fun s ->
-    unfreeze (with_magic_number_check raw_intern s);
-    Library.overwrite_library_filenames s)
+let extern_state s =
+  System.extern_state Coq_config.state_magic_number s (freeze ~marshallable:`Yes)
+
+let intern_state s =
+  unfreeze (with_magic_number_check (System.intern_state Coq_config.state_magic_number) s);
+  Library.overwrite_library_filenames s
 
 (* Rollback. *)
 
