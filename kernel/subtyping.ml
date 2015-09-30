@@ -311,9 +311,12 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 		try 
 		  (* The environment with the expected universes plus equality 
 		     of the body instances with the expected instance *)
-		  let env = Environ.add_constraints cstrs env in
-		    (* Check that the given definition does not add any constraint over
-		       the expected ones, so that it can be used in place of the original. *)
+		  let ctxi = Univ.Instance.append inst1 inst2 in
+		  let ctx = Univ.UContext.make (ctxi, cstrs) in
+		  let env = Environ.push_context ctx env in
+		  (* Check that the given definition does not add any constraint over
+		     the expected ones, so that it can be used in place of 
+                     the original. *)
 		    if Univ.check_constraints ctx1 (Environ.universes env) then
 		      cstrs, env, inst2
 		    else error (IncompatibleConstraints ctx1)
