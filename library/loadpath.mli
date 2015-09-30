@@ -27,9 +27,6 @@ val logical : t -> DirPath.t
 val get_load_paths : unit -> t list
 (** Get the current loadpath association. *)
 
-val get_paths : unit -> CUnix.physical_path list
-(** Same as [get_load_paths] but only get the physical part. *)
-
 val add_load_path : CUnix.physical_path -> DirPath.t -> implicit:bool -> unit
 (** [add_load_path phys log type] adds the binding [phys := log] to the current
     loadpaths. *)
