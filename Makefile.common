@@ -302,6 +302,7 @@ SETOIDSVO:=$(call cat_vo_itarget, theories/Setoids)
 UNICODEVO:=$(call cat_vo_itarget, theories/Unicode)
 CLASSESVO:=$(call cat_vo_itarget, theories/Classes)
 PROGRAMVO:=$(call cat_vo_itarget, theories/Program)
+COMPATVO:=$(call cat_vo_itarget, theories/Compat)
 
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) \
@@ -311,7 +312,8 @@ THEORIESVO:=\
   $(PARITHVO) $(NARITHVO) $(ZARITHVO) \
   $(SETSVO) $(FSETSVO) $(MSETSVO) $(MMAPSVO) \
   $(REALSVO)  $(SORTINGVO) $(QARITHVO) \
-  $(NUMBERSVO) $(STRUCTURESVO) $(VECTORSVO)
+  $(NUMBERSVO) $(STRUCTURESVO) $(VECTORSVO) \
+  $(COMPATVO)
 
 THEORIESLIGHTVO:= $(INITVO) $(LOGICVO) $(UNICODEVO) $(ARITHVO)
 
