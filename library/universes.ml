@@ -834,8 +834,10 @@ let normalize_context_set ctx us algs =
 	  if Univ.Level.is_small l then
 	    (Constraint.add cstr smallles, noneqs)
 	  else if Level.is_small r then
-	    raise (Univ.UniverseInconsistency
-		     (Le,Universe.make l,Universe.make r,None))
+	    if Level.is_prop r then
+	      raise (Univ.UniverseInconsistency
+		       (Le,Universe.make l,Universe.make r,None))
+	    else (smallles, Constraint.add (l,Eq,r) noneqs)
 	  else (smallles, Constraint.add cstr noneqs)
 	else (smallles, Constraint.add cstr noneqs))
     csts (Constraint.empty, Constraint.empty)
@@ -850,13 +852,13 @@ let normalize_context_set ctx us algs =
       Univ.Constraint.fold (fun (l, d, r) g ->
 			    let g =
 			      if not (Level.is_small l || LSet.mem l ctx) then
-				try Univ.add_universe l true g
+				try Univ.add_universe l false g
 				with Univ.AlreadyDeclared -> g
 			      else g
 			    in
 			    let g =
 			      if not (Level.is_small r || LSet.mem r ctx) then
-				try Univ.add_universe r true g
+				try Univ.add_universe r false g
 				with Univ.AlreadyDeclared -> g
 			      else g
 			    in g) csts g
