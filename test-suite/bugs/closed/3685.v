@@ -63,7 +63,7 @@ Module Success.
 End Success.
 Module Bad.
   Include PointwiseCore.
-  Fail Definition functor_uncurried `{Funext} (P : PreCategory -> Type)
+  Definition functor_uncurried `{Funext} (P : PreCategory -> Type)
              (has_functor_categories : forall C D : sub_pre_cat P, P (C -> D))
   : object (((sub_pre_cat P)^op * (sub_pre_cat P)) -> (sub_pre_cat P))
     := Eval cbv zeta in
