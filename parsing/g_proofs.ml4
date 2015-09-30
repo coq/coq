@@ -37,12 +37,12 @@ GEXTEND Gram
   command:
     [ [ IDENT "Goal"; c = lconstr -> VernacGoal c
       | IDENT "Proof" ->
-          VernacProof (None,hint_proof_using G_vernac.section_subset_descr None)
+          VernacProof (None,hint_proof_using G_vernac.section_subset_expr None)
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> VernacProofMode mn
       | IDENT "Proof"; "with"; ta = tactic; 
-        l = OPT [ "using"; l = G_vernac.section_subset_descr -> l ] ->
-          VernacProof (Some ta,hint_proof_using G_vernac.section_subset_descr l)
-      | IDENT "Proof"; "using"; l = G_vernac.section_subset_descr;
+        l = OPT [ "using"; l = G_vernac.section_subset_expr -> l ] ->
+          VernacProof (Some ta,hint_proof_using G_vernac.section_subset_expr l)
+      | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
         ta = OPT [ "with"; ta = tactic -> ta ] ->
           VernacProof (ta,Some l)
       | IDENT "Proof"; c = lconstr -> VernacExactProof c

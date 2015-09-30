@@ -888,9 +888,16 @@ let set_compilation_hints file =
   hints := Aux_file.load_aux_file_for file
 let get_hint_ctx loc =
   let s = Aux_file.get !hints loc "context_used" in
-  let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") s) in
-  let ids = List.map (fun id -> Loc.ghost, id) ids in
-  SsExpr (SsSet ids)
+  match Str.split (Str.regexp ";") s with
+  | ids :: _ ->
+      let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") ids) in
+      let ids = List.map (fun id -> Loc.ghost, id) ids in
+      begin match ids with
+      | [] -> SsEmpty
+      | x :: xs ->
+          List.fold_left (fun a x -> SsUnion (SsSingl x,a)) (SsSingl x) xs
+      end
+  | _ -> raise Not_found
 
 let get_hint_bp_time proof_name =
   try float_of_string (Aux_file.get !hints Loc.ghost proof_name)

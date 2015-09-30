@@ -157,6 +157,14 @@ in Section~\ref{ProofWith}.
   
   Use only section variables occurring in the statement.
 
+\variant {\tt Proof using Type*.} 
+  
+  The {\tt *} operator computes the forward transitive closure.
+  E.g. if the variable {\tt H} has type {\tt p < 5} then {\tt H} is
+  in {\tt p*} since {\tt p} occurs in the type of {\tt H}.
+  {\tt Type* } is the forward transitive closure of the entire set of
+  section variables occurring in the statement.
+
 \variant {\tt Proof using -(} {\ident$_1$} {\ldots} {\ident$_n$} {\tt ).}
   
   Use all section variables except {\ident$_1$} {\ldots} {\ident$_n$}.
@@ -164,14 +172,18 @@ in Section~\ref{ProofWith}.
 \variant {\tt Proof using }  {\emph collection$_1$} {\tt + } {\emph collection$_2$} {\tt .}
 \variant {\tt Proof using }  {\emph collection$_1$} {\tt - } {\emph collection$_2$} {\tt .}
 \variant {\tt Proof using }  {\emph collection$_1$} {\tt - (} {\ident$_1$} {\ldots} {\ident$_n$} {\tt ).}
+\variant {\tt Proof using }  {\emph collection$_1$}{\tt* .}
 
-  Use section variables being in the set union or set difference of the two
-  colelctions.  See Section~\ref{Collection} to know how to form a named
+  Use section variables being, respectively, in the set union, set difference,
+  set complement, set forward transitive closure.
+  See Section~\ref{Collection} to know how to form a named
   collection.
+  The {\tt *} operator binds stronger than {\tt +} and {\tt -}.
 
 \subsubsection{{\tt Proof using} options}
-\comindex{Default Proof Using}
-\comindex{Suggest Proof Using}
+\optindex{Default Proof Using}
+\optindex{Suggest Proof Using}
+\optindex{Proof Using Clear Unused}
 
 The following options modify the behavior of {\tt Proof using}.
 
@@ -186,11 +198,17 @@ The following options modify the behavior of {\tt Proof using}.
   When {\tt Qed} is performed, suggest a {\tt using} annotation if
   the user did not provide one.
 
+\variant{\tt Unset Proof Using Clear Unused.}
+
+  When {\tt Proof using a} all section variables but for {\tt a} and
+  the variables used in the type of {\tt a} are cleared.
+  This option can be used to turn off this behavior.
+
 \subsubsection[\tt Collection]{Name a set of section hypotheses for {\tt Proof using}}
 \comindex{Collection}\label{Collection}
 
 The command {\tt Collection} can be used to name a set of section hypotheses,
-with the purpose of making {\tt Proof using} annotations more compat.
+with the purpose of making {\tt Proof using} annotations more compact.
 
 \variant {\tt Collection Some := x y z.}
 
@@ -209,7 +227,7 @@ with the purpose of making {\tt Proof using} annotations more compat.
 \variant {\tt Collection Many := Fewer - (x y).}
 
   Define the collection named "Many" containing the set difference
-  of "Fewer" and the unamed collection {\tt x y}.
+  of "Fewer" and the unnamed collection {\tt x y}.
 
 \subsection[\tt Abort.]{\tt Abort.\comindex{Abort}}
 

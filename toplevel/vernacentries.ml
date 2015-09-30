@@ -874,18 +874,7 @@ let vernac_set_used_variables e =
       errorlabstrm "vernac_set_used_variables"
         (str "Unknown variable: " ++ pr_id id))
     l;
-  let closure_l = List.map pi1 (set_used_variables l) in
-  let closure_l = List.fold_right Id.Set.add closure_l Id.Set.empty in
-  let vars_of = Environ.global_vars_set in
-  let aux env entry (all_safe,rest as orig) =
-    match entry with
-    | (x,None,_) ->
-       if Id.Set.mem x all_safe then orig else (all_safe, (Loc.ghost,x)::rest) 
-    | (x,Some bo, ty) ->
-       let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
-       if Id.Set.subset vars all_safe then (Id.Set.add x all_safe, rest)
-       else (all_safe, (Loc.ghost,x) :: rest) in
-  let _,to_clear = Environ.fold_named_context aux env ~init:(closure_l,[]) in
+  let _, to_clear = set_used_variables l in
   vernac_solve
     SelectAll None Tacexpr.(TacAtom (Loc.ghost,TacClear(false,to_clear))) false
 

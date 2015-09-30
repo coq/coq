@@ -182,14 +182,17 @@ let global_vars_set_constant_type env = function
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty
 
-let record_aux env s1 s2 =
+let record_aux env s_ty s_bo suggested_expr =
+  let in_ty = keep_hyps env s_ty in
   let v =
     String.concat " "
-      (List.map (fun (id, _,_) -> Id.to_string id)
-        (keep_hyps env (Id.Set.union s1 s2))) in
-  Aux_file.record_in_aux "context_used" v
+      (CList.map_filter (fun (id, _,_) ->
+          if List.exists (fun (id',_,_) -> Id.equal id id') in_ty then None
+          else Some (Id.to_string id))
+        (keep_hyps env s_bo)) in
+  Aux_file.record_in_aux "context_used" (v ^ ";" ^ suggested_expr)
 
-let suggest_proof_using = ref (fun _ _ _ _ _ -> ())
+let suggest_proof_using = ref (fun _ _ _ _ _ -> "")
 let set_suggest_proof_using f = suggest_proof_using := f
 
 let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) =
@@ -225,15 +228,17 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
                 (Opaqueproof.force_proof (opaque_tables env) lc) in
             (* we force so that cst are added to the env immediately after *)
             ignore(Opaqueproof.force_constraints (opaque_tables env) lc);
-            !suggest_proof_using kn env vars ids_typ context_ids;
+            let expr =
+              !suggest_proof_using (Constant.to_string kn)
+                env vars ids_typ context_ids in
             if !Flags.compilation_mode = Flags.BuildVo then
-              record_aux env ids_typ vars;
+              record_aux env ids_typ vars expr;
             vars
         in
         keep_hyps env (Idset.union ids_typ ids_def), def
     | None ->
         if !Flags.compilation_mode = Flags.BuildVo then
-          record_aux env Id.Set.empty Id.Set.empty;
+          record_aux env Id.Set.empty Id.Set.empty "";
         [], def (* Empty section context: no need to check *)
     | Some declared ->
         (* We use the declared set and chain a check of correctness *)
@@ -307,6 +312,20 @@ let translate_local_def env id centry =
   let def,typ,proj,poly,univs,inline_code,ctx =
     infer_declaration env None (DefinitionEntry centry) in
   let typ = type_of_constant_type env typ in
+  if ctx = None && !Flags.compilation_mode = Flags.BuildVo then begin
+    match def with
+    | Undef _ -> ()
+    | Def _ -> ()
+    | OpaqueDef lc ->
+       let context_ids = List.map pi1 (named_context env) in
+       let ids_typ = global_vars_set env typ in
+       let ids_def = global_vars_set env
+         (Opaqueproof.force_proof (opaque_tables env) lc) in
+       let expr =
+         !suggest_proof_using (Id.to_string id)
+           env ids_def ids_typ context_ids in
+       record_aux env ids_typ ids_def expr
+  end;
   def, typ, univs
 
 (* Insertion of inductive types. *)
