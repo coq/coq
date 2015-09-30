@@ -107,7 +107,7 @@ Section path_functor.
   Variable D : PreCategory.
   Local Notation path_functor'_T F G
     := { HO : object_of F = object_of G
-       | transport (fun GO => forall s d, morphism C s d -> morphism D (GO s) (GO d))
+       & transport (fun GO => forall s d, morphism C s d -> morphism D (GO s) (GO d))
                    HO
                    (morphism_of F)
          = morphism_of G }
