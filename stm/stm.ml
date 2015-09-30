@@ -2342,7 +2342,8 @@ let edit_at id =
     VCS.delete_cluster_of id;
     VCS.gc ();
     VCS.print ();
-    Reach.known_state ~cache:(interactive ()) id;
+    if not !Flags.async_proofs_full then
+      Reach.known_state ~cache:(interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `NewTip in
   try
