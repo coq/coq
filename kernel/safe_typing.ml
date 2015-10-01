@@ -338,17 +338,18 @@ let safe_push_named (id,_,_ as d) env =
 
 let push_named_def (id,de) senv =
   let c,typ,univs = Term_typing.translate_local_def senv.env id de in
-  let senv' = push_context de.Entries.const_entry_polymorphic univs senv in
-  let c, senv' = match c with
-    | Def c -> Mod_subst.force_constr c, senv'
+  let poly = de.Entries.const_entry_polymorphic in
+  let univs = Univ.ContextSet.of_context univs in
+  let c, univs = match c with
+    | Def c -> Mod_subst.force_constr c, univs
     | OpaqueDef o ->
-        Opaqueproof.force_proof (Environ.opaque_tables senv'.env) o,
-        push_context_set de.Entries.const_entry_polymorphic
-	 (Opaqueproof.force_constraints (Environ.opaque_tables senv'.env) o)
-          senv'
+        Opaqueproof.force_proof (Environ.opaque_tables senv.env) o,
+        Univ.ContextSet.union univs 
+	(Opaqueproof.force_constraints (Environ.opaque_tables senv.env) o)
     | _ -> assert false in
+  let senv' = push_context_set poly univs senv in
   let env'' = safe_push_named (id,Some c,typ) senv'.env in
-    {senv' with env=env''}
+    univs, {senv' with env=env''}
 
 let push_named_assum ((id,t,poly),ctx) senv =
   let senv' = push_context_set poly ctx senv in

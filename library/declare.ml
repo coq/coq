@@ -54,9 +54,9 @@ let cache_variable ((sp,_),o) =
       let impl = if impl then Implicit else Explicit in
 	impl, true, poly, ctx
     | SectionLocalDef (de) ->
-      let () = Global.push_named_def (id,de) in
-        Explicit, de.const_entry_opaque, de.const_entry_polymorphic, 
-	(Univ.ContextSet.of_context de.const_entry_universes) in
+      let univs = Global.push_named_def (id,de) in
+      Explicit, de.const_entry_opaque,
+      de.const_entry_polymorphic, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl poly ctx;
   Dischargedhypsmap.set_discharged_hyps sp [];

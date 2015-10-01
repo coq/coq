@@ -59,8 +59,11 @@ val is_joined_environment : safe_environment -> bool
 val push_named_assum :
   (Id.t * Term.types * bool (* polymorphic *))
     Univ.in_universe_context_set -> safe_transformer0
+
+(** Returns the full universe context necessary to typecheck the definition
+  (futures are forced) *)
 val push_named_def :
-  Id.t * Entries.definition_entry -> safe_transformer0
+  Id.t * Entries.definition_entry -> Univ.universe_context_set safe_transformer
 
 (** Insertion of global axioms or definitions *)
 
