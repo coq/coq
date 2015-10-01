@@ -553,6 +553,10 @@ struct
     | Cons (l, _, Nil) -> Expr.is_level l
     | _ -> false
 
+  let rec is_levels l = match l with
+    | Cons (l, _, r) -> Expr.is_level l && is_levels r
+    | Nil -> true
+
   let level l = match l with
     | Cons (l, _, Nil) -> Expr.level l
     | _ -> None

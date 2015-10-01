@@ -91,6 +91,9 @@ sig
   val is_level : t -> bool
   (** Test if the universe is a level or an algebraic universe. *)
 
+  val is_levels : t -> bool
+  (** Test if the universe is a lub of levels or contains +n's. *)
+
   val level : t -> Level.t option
   (** Try to get a level out of a universe, returns [None] if it
       is an algebraic universe. *)
