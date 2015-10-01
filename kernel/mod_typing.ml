@@ -111,6 +111,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
 	    | Undef _ | OpaqueDef _ ->
 	      let j = Typeops.infer env' c in
 	      let typ = Typeops.type_of_constant_type env' cb.const_type in
+	      let typ = Vars.subst_instance_constr cus typ in
 	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
 						j.uj_type typ in
 	      cst'
