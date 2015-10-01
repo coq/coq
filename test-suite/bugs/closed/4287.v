@@ -100,34 +100,14 @@ End Hurkens.
 
 Polymorphic Record box (T : Type) := wrap {unwrap : T}.
 
-(* Here we instantiate to Prop *)
-(* Here we instantiate to Prop *)
+(* Here we instantiate to Set *)
 
-Fail Definition down (x : Type) : Set := box x.
-Definition down (x : Set) : Set := box x.
+Fail Definition down (x : Type) : Prop := box x.
 Definition up (x : Prop) : Type := x.
 
 Fail Definition back A : up (down A) -> A := unwrap A.
 
 Fail Definition forth A : A -> up (down A) := wrap A.
-
-(* Lemma backforth (A:Type) (P:A->Type) (a:A) : *)
-(*       P (back A (forth A a)) -> P a. *)
-(* Proof. *)
-(* intros; assumption. *)
-(* Qed. *)
-
-(* Lemma backforth_r (A:Type) (P:A->Type) (a:A) : *)
-(*       P a -> P (back A (forth A a)). *)
-(* Proof. *)
-(* intros; assumption. *)
-(* Qed. *)
-
-(* Theorem bad : False. *)
-(* apply (paradox down up back forth backforth backforth_r). *)
-(* Qed. *)
-
-(* Print Assumptions bad. *)
 
 Definition id {A : Type} (a : A) := a.
 Definition setlt (A : Type@{i}) :=
@@ -142,31 +122,3 @@ Check @setle@{Prop j}.
 
 Fail Definition foo := @setle@{j Prop}.
 Definition foo := @setle@{Prop j}.
-
-(* Definition up (x : Prop) : Type := x. *)
-
-(* Definition back A : up (down A) -> A := unwrap A. *)
-
-(* Definition forth A : A -> up (down A) := wrap A. *)
-
-(* Lemma backforth (A:Type) (P:A->Type) (a:A) : *)
-(*       P (back A (forth A a)) -> P a. *)
-(* Proof. *)
-(* intros; assumption. *)
-(* Qed. *)
-
-(* Lemma backforth_r (A:Type) (P:A->Type) (a:A) : *)
-(*       P a -> P (back A (forth A a)). *)
-(* Proof. *)
-(* intros; assumption. *)
-(* Qed. *)
-
-(* Theorem bad : False. *)
-(* apply (paradox down up back forth backforth backforth_r). *)
-(* Qed. *)
-
-(* Print Assumptions bad. *)
-
-(* Polymorphic Record box (T : Type) := wrap {unwrap : T}. *)
-
-(* Definition down (x : Type) : Prop := box x. *)
