@@ -72,33 +72,64 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
       (* In the spirit of subtyping.check_constant, we accept
          any implementations of parameters and opaques terms,
 	 as long as they have the right type *)
-      let ccst = Declareops.constraints_of_constant (opaque_tables env) cb in
-      let env' = Environ.add_constraints ccst env' in
-      let newus, cst = Univ.UContext.dest ctx in
-      let ctxs = Univ.ContextSet.of_context ctx in
-      let env' = Environ.add_constraints cst env' in
-      let c',ctx' = match cb.const_body with
-	| Undef _ | OpaqueDef _ ->
-	  let j = Typeops.infer env' c in
-	  let typ = Typeops.type_of_constant_type env' cb.const_type in
-	  let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
-	    j.uj_type typ in
-	    j.uj_val, Univ.ContextSet.add_constraints cst' ctxs
-	| Def cs ->
-	  let cst' = Reduction.infer_conv env' (Environ.universes env') c
-	    (Mod_subst.force_constr cs) in
-	  let cst = (*FIXME MS: what to check here? subtyping of polymorphic constants... *)
-	    (* if cb.const_polymorphic then  *)Univ.ContextSet.add_constraints cst' ctxs
-	    (* else cst' +++ cst *)
+      let uctx = Declareops.universes_of_constant (opaque_tables env) cb in
+      let uctx = (* Context of the spec *)
+	if cb.const_polymorphic then
+	  Univ.instantiate_univ_context uctx
+	else uctx
+      in
+      let c', univs, ctx' = 
+	if not cb.const_polymorphic then
+	  let env' = Environ.push_context ~strict:true uctx env' in
+	  let env' = Environ.push_context ~strict:true ctx env' in
+	  let c',cst = match cb.const_body with
+	    | Undef _ | OpaqueDef _ ->
+	      let j = Typeops.infer env' c in
+	      let typ = Typeops.type_of_constant_type env' cb.const_type in
+	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
+						j.uj_type typ in
+	      j.uj_val, cst'
+	    | Def cs ->
+	       let c' = Mod_subst.force_constr cs in
+	         c, Reduction.infer_conv env' (Environ.universes env') c c'
+	  in c', ctx, Univ.ContextSet.add_constraints cst (Univ.ContextSet.of_context ctx)
+	else
+	  let cus, ccst = Univ.UContext.dest uctx in
+	  let newus, cst = Univ.UContext.dest ctx in
+	  let () =
+	    if not (Univ.Instance.length cus == Univ.Instance.length newus) then
+	      error_incorrect_with_constraint lab
 	  in
-            c, cst
+	  let inst = Univ.Instance.append cus newus in
+	  let csti = Univ.enforce_eq_instances cus newus cst in
+	  let csta = Univ.Constraint.union csti ccst in
+	  let env' = Environ.push_context ~strict:false (Univ.UContext.make (inst, csta)) env in
+	  let () = if not (Univ.check_constraints cst (Environ.universes env')) then
+		     error_incorrect_with_constraint lab
+	  in
+	  let cst = match cb.const_body with
+	    | Undef _ | OpaqueDef _ ->
+	      let j = Typeops.infer env' c in
+	      let typ = Typeops.type_of_constant_type env' cb.const_type in
+	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
+						j.uj_type typ in
+	      cst'
+	    | Def cs ->
+	       let c' = Vars.subst_instance_constr cus (Mod_subst.force_constr cs) in
+	       let cst' = Reduction.infer_conv env' (Environ.universes env') c c' in
+	        cst'
+	  in
+	    if not (Univ.Constraint.is_empty cst) then
+	      error_incorrect_with_constraint lab;
+	    let subst, ctx = Univ.abstract_universes true ctx in
+	      Vars.subst_univs_level_constr subst c, ctx, Univ.ContextSet.empty
       in
       let def = Def (Mod_subst.from_val c') in
       let cb' =
 	{ cb with
 	  const_body = def;
-	  const_body_code = Option.map Cemitcodes.from_val (compile_constant_body env' def);
-	  const_universes = Univ.ContextSet.to_context ctx' }
+	  const_universes = univs;
+	  const_body_code = Option.map Cemitcodes.from_val (compile_constant_body env' def) }
       in
       before@(lab,SFBconst(cb'))::after, c', ctx'
     else

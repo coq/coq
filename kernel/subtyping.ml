@@ -322,7 +322,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 		    else error (IncompatibleConstraints ctx1)
 		with Univ.UniverseInconsistency incon -> 
 		  error (IncompatibleUniverses incon)
-	else cst, env, Univ.Instance.empty
+	else
+	  cst, env, Univ.Instance.empty
       in
       (* Now check types *)
       let typ1 = Typeops.type_of_constant_type env' cb1.const_type in
@@ -459,6 +460,7 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
 
 let check_subtypes env sup super =
   let env = add_module_type sup.mod_mp sup env in
+  let env = Environ.push_context_set ~strict:true super.mod_constraints env in
   check_modtypes Univ.Constraint.empty env
     (strengthen sup sup.mod_mp) super empty_subst
     (map_mp super.mod_mp sup.mod_mp sup.mod_delta) false
