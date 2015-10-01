@@ -244,7 +244,8 @@ module Level = struct
 
   let set = make Set
   let prop = make Prop
-
+  let var i = make (Var i)
+		  
   let is_small x = 
     match data x with
     | Level _ -> false
@@ -281,8 +282,8 @@ module Level = struct
 end
 
 (** Level sets and maps *)
-module LSet = Set.Make (Level)
-module LMap = Map.Make (Level)
+module LMap = HMap.Make (Level)
+module LSet = LMap.Set
 
 type 'a universe_map = 'a LMap.t
 
@@ -559,6 +560,8 @@ let repr g u =
   in
   repr_rec u
 
+let get_set_arc g = repr g Level.set
+
 (* [safe_repr] also search for the canonical representative, but
    if the graph doesn't contain the searched universe, we add it. *)
 
@@ -573,6 +576,24 @@ let safe_repr g u =
     let can = terminal u in
     enter_arc can g, can
 
+exception AlreadyDeclared
+	    
+let add_universe vlev strict g =
+  try
+    let _arcv = UMap.find vlev g in
+      raise AlreadyDeclared
+  with Not_found -> 
+    let v = terminal vlev in
+    let arc =
+      let arc = get_set_arc g in
+	if strict then
+	  { arc with lt=vlev::arc.lt}
+	else 
+	  { arc with le=vlev::arc.le}
+    in
+    let g = enter_arc arc g in
+      enter_arc v g
+		       
 (* reprleq : canonical_arc -> canonical_arc list *)
 (* All canonical arcv such that arcu<=arcv with arcv#arcu *)
 let reprleq g arcu =
@@ -970,7 +991,7 @@ module Constraint = Set.Make(UConstraintOrd)
 let empty_constraint = Constraint.empty
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
-
+		  
 type constraints = Constraint.t
 
 (** A value with universe constraints. *)
@@ -1158,6 +1179,7 @@ struct
   type t = LSet.t constrained
   let empty = LSet.empty, Constraint.empty
   let constraints (_, cst) = cst
+  let levels (ctx, _) = ctx
 end
 type universe_context_set = ContextSet.t
 
@@ -1207,6 +1229,9 @@ let subst_instance_constraints s csts =
     (fun c csts -> Constraint.add (subst_instance_constraint s c) csts)
     csts Constraint.empty 
 
+let make_abstract_instance (ctx, _) = 
+  Array.mapi (fun i l -> Level.var i) ctx
+
 (** Substitute instance inst for ctx in csts *)
 let instantiate_univ_context (ctx, csts) = 
   (ctx, subst_instance_constraints ctx csts)
@@ -1237,6 +1262,20 @@ let subst_univs_universe fn ul =
       in
 	List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.Huniv.tip u))
 	  substs nosubst
+
+let merge_context strict ctx g =
+  let g = Array.fold_left
+   (* Be lenient, module typing reintroduces universes and 
+      constraints due to includes *)
+	    (fun g v -> try add_universe v strict g with AlreadyDeclared -> g)
+	    g (UContext.instance ctx)
+  in merge_constraints (UContext.constraints ctx) g
+
+let merge_context_set strict ctx g =
+  let g = LSet.fold
+	    (fun v g -> try add_universe v strict g with AlreadyDeclared -> g)
+	    (ContextSet.levels ctx) g
+  in merge_constraints (ContextSet.constraints ctx) g
 
 (** Pretty-printing *)
 

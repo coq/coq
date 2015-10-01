@@ -84,13 +84,20 @@ let push_rec_types (lna,typarray,_) env =
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
 
 (* Universe constraints *)
-let add_constraints c env =
-  if c == Univ.Constraint.empty then
-    env
-  else
-    let s = env.env_stratification in
+let map_universes f env =
+  let s = env.env_stratification in
     { env with env_stratification =
-      { s with env_universes = Univ.merge_constraints c s.env_universes } }
+	 { s with env_universes = f s.env_universes } }
+
+let add_constraints c env =
+  if c == Univ.Constraint.empty then env
+  else map_universes (Univ.merge_constraints c) env
+			   
+let push_context ?(strict=false) ctx env =
+  map_universes (Univ.merge_context strict ctx) env
+
+let push_context_set ?(strict=false) ctx env =
+  map_universes (Univ.merge_context_set strict ctx) env
 
 let check_constraints cst env =
   Univ.check_constraints cst env.env_stratification.env_universes

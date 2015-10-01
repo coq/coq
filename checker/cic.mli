@@ -380,7 +380,7 @@ and module_body =
     (** algebraic type, kept if it's relevant for extraction *)
     mod_type_alg : module_expression option;
     (** set of all constraints in the module  *)
-    mod_constraints : Univ.constraints;
+    mod_constraints : Univ.ContextSet.t;
     (** quotiented set of equivalent constants and inductive names *)
     mod_delta : delta_resolver;
     mod_retroknowledge : action list }
