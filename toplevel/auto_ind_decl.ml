@@ -764,16 +764,10 @@ let make_lb_scheme mode mind =
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
-<<<<<<< HEAD
-  let ctx = Evd.empty_evar_universe_context in
+  let ctx = Evd.make_evar_universe_context (Global.env ()) None in
   let side_eff = side_effect_of_mode mode in
   let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx lb_goal
     (compute_lb_tact mode (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
-=======
-  let ctx = Evd.make_evar_universe_context (Global.env ()) None in
-  let (ans, _, ctx) = Pfedit.build_by_tactic (Global.env()) ctx lb_goal
-    (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
->>>>>>> Univs: fix environment handling in scheme building.
   in
   ([|ans|], ctx), eff
 
