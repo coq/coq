@@ -562,20 +562,6 @@ let repr g u =
 
 let get_set_arc g = repr g Level.set
 
-(* [safe_repr] also search for the canonical representative, but
-   if the graph doesn't contain the searched universe, we add it. *)
-
-let safe_repr g u =
-  let rec safe_repr_rec u =
-    match UMap.find u g with
-      | Equiv v -> safe_repr_rec v
-      | Canonical arc -> arc
-  in
-  try g, safe_repr_rec u
-  with Not_found ->
-    let can = terminal u in
-    enter_arc can g, can
-
 exception AlreadyDeclared
 	    
 let add_universe vlev strict g =
@@ -760,8 +746,8 @@ let is_lt g arcu arcv =
 (** First, checks on universe levels *)
 
 let check_equal g u v =
-  let g, arcu = safe_repr g u in
-  let _, arcv = safe_repr g v in
+  let arcu = repr g u in
+  let arcv = repr g v in
   arcu == arcv
 
 let check_eq_level g u v = u == v || check_equal g u v
@@ -770,8 +756,8 @@ let is_set_arc u = Level.is_set u.univ
 let is_prop_arc u = Level.is_prop u.univ
 
 let check_smaller g strict u v =
-  let g, arcu = safe_repr g u in
-  let g, arcv = safe_repr g v in
+  let arcu = repr g u in
+  let arcv = repr g v in
   if strict then
     is_lt g arcu arcv
   else
@@ -921,8 +907,8 @@ let error_inconsistency o u v =
 (* enforc_univ_eq u v will force u=v if possible, will fail otherwise *)
 
 let enforce_univ_eq u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
+  let arcu = repr g u in
+  let arcv = repr g v in
     match fast_compare g arcu arcv with
     | FastEQ -> g
     | FastLT -> error_inconsistency Eq v u
@@ -937,8 +923,8 @@ let enforce_univ_eq u v g =
 (* enforce_univ_leq : Level.t -> Level.t -> unit *)
 (* enforce_univ_leq u v will force u<=v if possible, will fail otherwise *)
 let enforce_univ_leq u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
+  let arcu = repr g u in
+  let arcv = repr g v in
   if is_leq g arcu arcv then g
   else
     match fast_compare g arcv arcu with
@@ -949,8 +935,8 @@ let enforce_univ_leq u v g =
 
 (* enforce_univ_lt u v will force u<v if possible, will fail otherwise *)
 let enforce_univ_lt u v g =
-  let g,arcu = safe_repr g u in
-  let g,arcv = safe_repr g v in
+  let arcu = repr g u in
+  let arcv = repr g v in
     match fast_compare g arcu arcv with
     | FastLT -> g
     | FastLE -> fst (setlt g arcu arcv)
@@ -962,7 +948,10 @@ let enforce_univ_lt u v g =
       | FastLE | FastLT -> error_inconsistency Lt u v
 
 (* Prop = Set is forbidden here. *)
-let initial_universes = enforce_univ_lt Level.prop Level.set UMap.empty
+let initial_universes =
+  let g = enter_arc (terminal Level.set) UMap.empty in
+  let g = enter_arc (terminal Level.prop) g in
+    enforce_univ_lt Level.prop Level.set g
 
 (* Constraints and sets of constraints. *)    
 
@@ -1167,7 +1156,7 @@ struct
 
   (** Universe contexts (variables as a list) *)
   let empty = (Instance.empty, Constraint.empty)
-
+  let make x = x
   let instance (univs, cst) = univs
   let constraints (univs, cst) = cst
 end
@@ -1180,6 +1169,7 @@ struct
   let empty = LSet.empty, Constraint.empty
   let constraints (_, cst) = cst
   let levels (ctx, _) = ctx
+  let make ctx cst = (ctx, cst)
 end
 type universe_context_set = ContextSet.t
 

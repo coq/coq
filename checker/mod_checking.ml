@@ -18,19 +18,27 @@ let refresh_arity ar =
   let ctxt, hd = decompose_prod_assum ar in
   match hd with
       Sort (Type u) when not (Univ.is_univ_variable u) ->
-        let u' = Univ.Universe.make (Univ.Level.make empty_dirpath 1) in
-        mkArity (ctxt,Prop Null), 
-	  Univ.enforce_leq u u' Univ.empty_constraint
-    | _ -> ar, Univ.empty_constraint
+      let ul = Univ.Level.make empty_dirpath 1 in
+      let u' = Univ.Universe.make ul in
+      let cst = Univ.enforce_leq u u' Univ.empty_constraint in
+      let ctx = Univ.ContextSet.make (Univ.LSet.singleton ul) cst in
+        mkArity (ctxt,Prop Null), ctx
+    | _ -> ar, Univ.ContextSet.empty
 
 let check_constant_declaration env kn cb =
   Flags.if_verbose ppnl (str "  checking cst: " ++ prcon kn); pp_flush ();
-  let env' = add_constraints (Univ.UContext.constraints cb.const_universes) env in
+  let env' =
+    if cb.const_polymorphic then
+      let inst = Univ.make_abstract_instance cb.const_universes in
+      let ctx = Univ.UContext.make (inst, Univ.UContext.constraints cb.const_universes) in
+        push_context ~strict:false ctx env
+    else push_context ~strict:true cb.const_universes env
+  in
   let envty, ty = 
     match cb.const_type with
       RegularArity ty ->
         let ty', cu = refresh_arity ty in
-        let envty = add_constraints cu env' in
+        let envty = push_context_set cu env' in
         let _ = infer_type envty ty' in envty, ty
     | TemplateArity(ctxt,par) ->
         let _ = check_ctxt env' ctxt in

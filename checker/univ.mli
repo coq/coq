@@ -131,7 +131,7 @@ val check_constraints : constraints -> universes -> bool
 
 (** Polymorphic maps from universe levels to 'a *)
 module LMap : Map.S with type key = universe_level
-
+module LSet : CSig.SetS with type elt = universe_level
 type 'a universe_map = 'a LMap.t
 
 (** {6 Substitution} *)
@@ -184,7 +184,7 @@ sig
   type t
 
   val empty : t
-
+  val make : universe_instance constrained -> t
   val instance : t -> Instance.t
   val constraints : t -> constraints
 
@@ -193,6 +193,7 @@ end
 module ContextSet :
   sig 
     type t
+    val make : LSet.t -> constraints -> t
     val empty : t
     val constraints : t -> constraints
   end
