@@ -221,22 +221,23 @@ let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
 
 type constraints_addition =
-  Now of Univ.ContextSet.t | Later of Univ.ContextSet.t Future.computation
+  | Now of bool * Univ.ContextSet.t
+  | Later of Univ.ContextSet.t Future.computation
 
 let add_constraints cst senv =
   match cst with
   | Later fc -> 
     {senv with future_cst = fc :: senv.future_cst}
-  | Now cst ->
+  | Now (poly,cst) ->
   { senv with
-    env = Environ.push_context_set ~strict:true cst senv.env;
+    env = Environ.push_context_set ~strict:(not poly) cst senv.env;
     univ = Univ.ContextSet.union cst senv.univ }
 
 let add_constraints_list cst senv =
   List.fold_left (fun acc c -> add_constraints c acc) senv cst
 
-let push_context_set ctx = add_constraints (Now ctx)
-let push_context ctx = add_constraints (Now (Univ.ContextSet.of_context ctx))
+let push_context_set poly ctx = add_constraints (Now (poly,ctx))
+let push_context poly ctx = add_constraints (Now (poly,Univ.ContextSet.of_context ctx))
 
 let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
@@ -246,7 +247,7 @@ let join_safe_environment ?(except=Future.UUIDSet.empty) e =
   List.fold_left
     (fun e fc ->
        if Future.UUIDSet.mem (Future.uuid fc) except then e
-       else add_constraints (Now (Future.join fc)) e)
+       else add_constraints (Now (false, Future.join fc)) e)
     {e with future_cst = []} e.future_cst
 
 let is_joined_environment e = List.is_empty e.future_cst 
@@ -337,20 +338,20 @@ let safe_push_named (id,_,_ as d) env =
 
 let push_named_def (id,de) senv =
   let c,typ,univs = Term_typing.translate_local_def senv.env id de in
-  let senv' = push_context univs senv in
+  let senv' = push_context de.Entries.const_entry_polymorphic univs senv in
   let c, senv' = match c with
     | Def c -> Mod_subst.force_constr c, senv'
     | OpaqueDef o ->
         Opaqueproof.force_proof (Environ.opaque_tables senv'.env) o,
-        push_context_set
-          (Opaqueproof.force_constraints (Environ.opaque_tables senv'.env) o)
+        push_context_set de.Entries.const_entry_polymorphic
+	 (Opaqueproof.force_constraints (Environ.opaque_tables senv'.env) o)
           senv'
     | _ -> assert false in
   let env'' = safe_push_named (id,Some c,typ) senv'.env in
     {senv' with env=env''}
 
-let push_named_assum ((id,t),ctx) senv =
-  let senv' = push_context_set ctx senv in
+let push_named_assum ((id,t,poly),ctx) senv =
+  let senv' = push_context_set poly ctx senv in
   let t = Term_typing.translate_local_assum senv'.env t in
   let env'' = safe_push_named (id,None,t) senv'.env in
     {senv' with env=env''}
@@ -373,10 +374,10 @@ let labels_of_mib mib =
 
 let globalize_constant_universes env cb =
   if cb.const_polymorphic then
-    [Now Univ.ContextSet.empty]
+    [Now (true, Univ.ContextSet.empty)]
   else
     let cstrs = Univ.ContextSet.of_context cb.const_universes in
-      Now cstrs ::  
+      Now (false, cstrs) ::  
 	(match cb.const_body with
 	| (Undef _ | Def _) -> []
 	| OpaqueDef lc ->
@@ -385,20 +386,20 @@ let globalize_constant_universes env cb =
 	  | Some fc ->
             match Future.peek_val fc with
             | None -> [Later fc]
-            | Some c -> [Now c])
+            | Some c -> [Now (false, c)])
       
 let globalize_mind_universes mb =
   if mb.mind_polymorphic then
-    [Now Univ.ContextSet.empty]
+    [Now (true, Univ.ContextSet.empty)]
   else
-    [Now (Univ.ContextSet.of_context mb.mind_universes)]
+    [Now (false, Univ.ContextSet.of_context mb.mind_universes)]
 
 let constraints_of_sfb env sfb = 
   match sfb with
   | SFBconst cb -> globalize_constant_universes env cb
   | SFBmind mib -> globalize_mind_universes mib
-  | SFBmodtype mtb -> [Now mtb.mod_constraints]
-  | SFBmodule mb -> [Now mb.mod_constraints]
+  | SFBmodtype mtb -> [Now (false, mtb.mod_constraints)]
+  | SFBmodule mb -> [Now (false, mb.mod_constraints)]
 
 (** A generic function for adding a new field in a same environment.
     It also performs the corresponding [add_constraints]. *)
@@ -501,13 +502,13 @@ let add_modtype l params_mte inl senv =
 (** full_add_module adds module with universes and constraints *)
 
 let full_add_module mb senv =
-  let senv = add_constraints (Now mb.mod_constraints) senv in
+  let senv = add_constraints (Now (false, mb.mod_constraints)) senv in
   let dp = ModPath.dp mb.mod_mp in
   let linkinfo = Nativecode.link_info_of_dirpath dp in
   { senv with env = Modops.add_linked_module mb linkinfo senv.env }
 
 let full_add_module_type mp mt senv =
-  let senv = add_constraints (Now mt.mod_constraints) senv in
+  let senv = add_constraints (Now (false, mt.mod_constraints)) senv in
   { senv with env = Modops.add_module_type mp mt senv.env }
 
 (** Insertion of modules *)
@@ -688,14 +689,16 @@ let add_include me is_module inl senv =
       let mtb = translate_modtype senv.env mp_sup inl ([],me) in
       mtb.mod_type,mtb.mod_constraints,mtb.mod_delta
   in
-  let senv = add_constraints (Now cst) senv in
+  let senv = add_constraints (Now (false, cst)) senv in
   (* Include Self support  *)
   let rec compute_sign sign mb resolver senv =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->
       let cst_sub = Subtyping.check_subtypes senv.env mb mtb in
-      let senv = add_constraints
-		   (Now (Univ.ContextSet.add_constraints cst_sub Univ.ContextSet.empty)) senv in
+      let senv =
+	add_constraints
+	  (Now (false, Univ.ContextSet.add_constraints cst_sub Univ.ContextSet.empty))
+	  senv in
       let mpsup_delta =
 	Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb mb.mod_delta
       in
@@ -858,7 +861,7 @@ let register_inline kn senv =
 
 let add_constraints c =
   add_constraints
-    (Now (Univ.ContextSet.add_constraints c Univ.ContextSet.empty))
+    (Now (false, Univ.ContextSet.add_constraints c Univ.ContextSet.empty))
 
 
 (* NB: The next old comment probably refers to [propagate_loads] above.

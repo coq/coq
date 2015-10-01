@@ -849,19 +849,20 @@ let normalize_context_set ctx us algs =
 			   ctx Univ.empty_universes
     in
     let g =
-      Univ.Constraint.fold (fun (l, d, r) g ->
-			    let g =
-			      if not (Level.is_small l || LSet.mem l ctx) then
-				try Univ.add_universe l false g
-				with Univ.AlreadyDeclared -> g
-			      else g
-			    in
-			    let g =
-			      if not (Level.is_small r || LSet.mem r ctx) then
-				try Univ.add_universe r false g
-				with Univ.AlreadyDeclared -> g
-			      else g
-			    in g) csts g
+      Univ.Constraint.fold
+	(fun (l, d, r) g ->
+	 let g =
+	   if not (Level.is_small l || LSet.mem l ctx) then
+	     try Univ.add_universe l false g
+	     with Univ.AlreadyDeclared -> g
+	   else g
+	 in
+	 let g =
+	   if not (Level.is_small r || LSet.mem r ctx) then
+	     try Univ.add_universe r false g
+	     with Univ.AlreadyDeclared -> g
+	   else g
+	 in g) csts g
     in
     let g = Univ.Constraint.fold Univ.enforce_constraint csts g in
       Univ.constraints_of_universes g
@@ -870,10 +871,7 @@ let normalize_context_set ctx us algs =
     Constraint.fold (fun (l,d,r as cstr) noneqs ->
       if d == Eq then (UF.union l r uf; noneqs)
       else (* We ignore the trivial Prop/Set <= i constraints. *)
-	if d == Le && Univ.Level.is_small l then
-	  noneqs
-	else if Level.is_small l && d == Lt && not (LSet.mem r ctx) then
-	  noneqs
+	if d == Le && Univ.Level.is_small l then noneqs
 	else Constraint.add cstr noneqs)
       csts Constraint.empty
   in

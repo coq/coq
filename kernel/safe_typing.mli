@@ -57,7 +57,8 @@ val is_joined_environment : safe_environment -> bool
 (** Insertion of local declarations (Local or Variables) *)
 
 val push_named_assum :
-  (Id.t * Term.types) Univ.in_universe_context_set -> safe_transformer0
+  (Id.t * Term.types * bool (* polymorphic *))
+    Univ.in_universe_context_set -> safe_transformer0
 val push_named_def :
   Id.t * Entries.definition_entry -> safe_transformer0
 
@@ -88,10 +89,10 @@ val add_modtype :
 (** Adding universe constraints *)
 
 val push_context_set :
-  Univ.universe_context_set -> safe_transformer0
+  bool -> Univ.universe_context_set -> safe_transformer0
 
 val push_context :
-  Univ.universe_context -> safe_transformer0
+  bool -> Univ.universe_context -> safe_transformer0
 
 val add_constraints :
   Univ.constraints -> safe_transformer0

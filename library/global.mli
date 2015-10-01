@@ -30,7 +30,7 @@ val set_engagement : Declarations.engagement -> unit
 
 (** Variables, Local definitions, constants, inductive types *)
 
-val push_named_assum : (Id.t * Constr.types) Univ.in_universe_context_set -> unit
+val push_named_assum : (Id.t * Constr.types * bool) Univ.in_universe_context_set -> unit
 val push_named_def   : (Id.t * Entries.definition_entry) -> unit
 
 val add_constant :
@@ -41,8 +41,8 @@ val add_mind :
 (** Extra universe constraints *)
 val add_constraints : Univ.constraints -> unit
 
-val push_context : Univ.universe_context -> unit
-val push_context_set : Univ.universe_context_set -> unit
+val push_context : bool -> Univ.universe_context -> unit
+val push_context_set : bool -> Univ.universe_context_set -> unit
 
 (** Non-interactive modules and module types *)
 

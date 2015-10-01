@@ -270,7 +270,7 @@ let add_rewrite_hint bases ort t lcsr =
     let ctx =
       let ctx = Evd.evar_universe_context_set Univ.UContext.empty ctx in
         if poly then ctx
-	else (Global.push_context_set ctx; Univ.ContextSet.empty)
+	else (Global.push_context_set false ctx; Univ.ContextSet.empty)
     in
       Constrexpr_ops.constr_loc ce, (c, ctx), ort, t in
   let eqs = List.map f lcsr in
