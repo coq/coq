@@ -140,7 +140,8 @@ identifier with a number) or a successor of an algebraic universe (an
 expression $u+1$), or an upper bound of algebraic universes (an
 expression $max(u_1,...,u_n)$), or the base universe (the expression
 $0$) which corresponds, in the arity of sort-polymorphic inductive
-types, to the predicative sort {\Set}. A graph of constraints between
+types (see Section \ref{Sort-polymorphism-inductive}),
+to the predicative sort {\Set}. A graph of constraints between
 the universe variables is maintained globally. To ensure the existence
 of a mapping of the universes to the positive integers, the graph of
 constraints must remain acyclic.  Typing expressions that violate the
@@ -148,9 +149,10 @@ acyclicity of the graph of constraints results in a \errindex{Universe
 inconsistency} error (see also Section~\ref{PrintingUniverses}).
 
 \subsection{Constants}
-Besides the sorts, the language also contains constants denoting
-objects in the environment. These constants may denote previously
-defined objects but also objects related to inductive definitions
+
+Constants refers to
+objects in the global environment. These constants may denote previously
+defined objects, but also objects related to inductive definitions
 (either the type itself or one of its constructors or destructors).
 
 \medskip\noindent {\bf Remark. } In other presentations of \CIC, 
@@ -174,7 +176,7 @@ in a theory where inductive objects are represented by terms.
 
 \subsection{Terms}
 
-Terms are built from variables, global names, constructors,
+Terms are built from variables, constants, constructors,
 abstraction, application, local declarations bindings (``let-in''
 expressions) and product.
 
