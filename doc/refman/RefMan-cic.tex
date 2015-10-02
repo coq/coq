@@ -109,7 +109,7 @@ sets, namely the sorts {\Set} and {\Type$(j)$} for $j<i$, and all
 products, subsets and function types over these sorts.
 
 Formally, we call {\Sort} the set of sorts which is defined by:
-\[\Sort \equiv \{\Prop,\Set,\Type(i)| i \in \NN\} \]
+\[\Sort \equiv \{\Prop,\Set,\Type(i)\;|\; i \in \NN\} \]
 \index{Type@{\Type}}
 \index{Prop@{\Prop}}
 \index{Set@{\Set}}
@@ -128,7 +128,7 @@ the universe \Type$(i)$. One only writes \Type. The
 system itself generates for each instance of \Type\ a new
 index for the universe and checks that the constraints between these
 indexes can be solved. From the user point of view we consequently
-have {\sf Type :Type}.
+have {\Type}:{\Type}.
 
 We shall make precise in the typing rules the constraints between the
 indexes. 
@@ -213,7 +213,7 @@ More precisely the language of the {\em Calculus of Inductive
 \end{enumerate}
 
 \paragraph{Notations.} Application associates to the left such that
-$(t~t_1\ldots t_n)$ represents $(\ldots (t~t_1)\ldots t_n)$. The
+$(t\;t_1\;t_2\ldots t_n)$ represents $(\ldots ((t\;t_1)\;t_2)\ldots t_n)$. The
 products and arrows associate to the right such that $\forall~x:A,B\ra C\ra
 D$ represents $\forall~x:A,(B\ra (C\ra D))$.  One uses sometimes
 $\forall~x~y:A,B$ or
@@ -421,7 +421,7 @@ term $t$ of functional type $\forall x:T, U$ with its so-called
 $\eta$-expansion $\lb x:T\mto (t\ x)$ for $x$ an arbitrary variable
 name fresh in $t$.
 
-The notion of $\eta$-reduction ${\lb x:T\mto (t\ x)}{\triangleright}{t}$
+The notion of $\eta$-reduction ${\lb x:T\mto (t\ x)}{\;\triangleright\;}{t}$
 (for $x$ not occurring in $t$) is not type-sound because of subtyping
 (think about $\lb x:\Type(1)\mto (f x)$ of type $\forall
 x:\Type(1), \Type(1)$ for $f$ of type $\forall x:\Type(2),
