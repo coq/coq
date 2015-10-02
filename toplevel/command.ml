@@ -241,11 +241,14 @@ let interp_assumption evdref env impls bl c =
   let ctx = Evd.universe_context_set evd in
     ((nf ty, ctx), impls)
 
-let declare_assumptions idl is_coe k c imps impl_is_on nl =
-  let refs, status =
-    List.fold_left (fun (refs,status) id ->
-      let ref',u',status' = declare_assumption is_coe k c imps impl_is_on nl id in
-      (ref',u')::refs, status' && status) ([],true) idl in
+let declare_assumptions idl is_coe k (c,ctx) imps impl_is_on nl =
+  let refs, status, _ =
+    List.fold_left (fun (refs,status,ctx) id ->
+      let ref',u',status' =
+	declare_assumption is_coe k (c,ctx) imps impl_is_on nl id in
+      (ref',u')::refs, status' && status, Univ.ContextSet.empty)
+      ([],true,ctx) idl
+  in
   List.rev refs, status
 
 let do_assumptions (_, poly, _ as kind) nl l =
@@ -467,16 +470,17 @@ let inductive_levels env evdref poly arities inds =
 	    Evd.set_leq_sort env evd (Prop Pos) du
 	  else evd
 	in
-	  (* let arity = it_mkProd_or_LetIn (mkType cu) ctx in *\) *)
-	  let duu = Sorts.univ_of_sort du in
-	  let evd =
-	    if not (Univ.is_small_univ duu) && Evd.check_eq evd cu duu then
-	      if is_flexible_sort evd duu then
-		Evd.set_eq_sort env evd (Prop Null) du
-	      else evd
-	    else Evd.set_eq_sort env evd (Type cu) du
-	  in
-	    (evd, arity :: arities))
+	let duu = Sorts.univ_of_sort du in
+	let evd =
+	  if not (Univ.is_small_univ duu) && Evd.check_eq evd cu duu then
+	    if is_flexible_sort evd duu then
+	      if Evd.check_leq evd Univ.type0_univ duu then
+	      	evd
+	      else Evd.set_eq_sort env evd (Prop Null) du
+	    else evd
+	  else Evd.set_eq_sort env evd (Type cu) du
+	in
+	  (evd, arity :: arities))
     (!evdref,[]) (Array.to_list levels') destarities sizes
   in evdref := evd; List.rev arities
 

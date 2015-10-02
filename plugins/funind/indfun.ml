@@ -145,15 +145,14 @@ let interp_casted_constr_with_implicits env sigma impls c  =
 
 let build_newrecursive
     lnameargsardef  =
-  let env0 = Global.env()
-  and sigma = Evd.empty
-  in
+  let env0 = Global.env() in
+  let sigma = Evd.from_env env0 in
   let (rec_sign,rec_impls) =
     List.fold_left
       (fun (env,impls) (((_,recname),_),bl,arityc,_) ->
         let arityc = Constrexpr_ops.prod_constr_expr arityc bl in
         let arity,ctx = Constrintern.interp_type env0 sigma arityc in
-	let evdref =  ref (Evd.from_env env0) in
+	let evdref = ref (Evd.from_env env0) in
 	let _, (_, impls') = Constrintern.interp_context_evars env evdref bl in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity impls' in
         (Environ.push_named (recname,None,arity) env, Id.Map.add recname impl impls))
@@ -228,7 +227,7 @@ let process_vernac_interp_error e =
 
 let derive_inversion fix_names =
   try
-    let evd' = Evd.empty in 
+    let evd' = Evd.from_env (Global.env ()) in 
     (* we first transform the fix_names identifier into their corresponding constant *)
     let evd',fix_names_as_constant =
       List.fold_right
@@ -355,9 +354,11 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 	  List.map_i
 	    (fun i x ->
 	     let princ = Indrec.lookup_eliminator (ind_kn,i) (InProp) in
-	     let evd',uprinc = Evd.fresh_global (Global.env ()) !evd princ in
+	     let env = Global.env () in
+	     let evd = ref (Evd.from_env env) in
+	     let evd',uprinc = Evd.fresh_global env !evd princ in
              let _ = evd := evd' in 
-	     let princ_type = Typing.e_type_of ~refresh:true (Global.env ()) evd uprinc in
+	     let princ_type = Typing.e_type_of ~refresh:true env evd uprinc in
     	     Functional_principles_types.generate_functional_principle
 	       evd
 		 interactive_proof
@@ -394,7 +395,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
 	    evd,((destConst c)::l)
 	   )
-	   (Evd.empty,[])
+	   (Evd.from_env (Global.env ()),[])
 	   fixpoint_exprl
        in
        evd,List.rev rev_pconstants
@@ -408,7 +409,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
 	    evd,((destConst c)::l)
 	   )
-	   (Evd.empty,[])
+	   (Evd.from_env (Global.env ()),[])
 	   fixpoint_exprl
        in
        evd,List.rev rev_pconstants
@@ -594,9 +595,9 @@ let rebuild_bl (aux,assoc) bl typ = rebuild_bl (aux,assoc) bl typ
 
 let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) = 
   let fixl,ntns = Command.extract_fixpoint_components false fixpoint_exprl in
-  let ((_,_,typel),_,_) = Command.interp_fixpoint fixl ntns in
+  let ((_,_,typel),ctx,_) = Command.interp_fixpoint fixl ntns in
   let constr_expr_typel = 
-    with_full_print (List.map (Constrextern.extern_constr false (Global.env ()) Evd.empty)) typel in
+    with_full_print (List.map (Constrextern.extern_constr false (Global.env ()) (Evd.from_ctx ctx))) typel in
   let fixpoint_exprl_with_new_bl = 
     List.map2 (fun ((lna,(rec_arg_opt,rec_order),bl,ret_typ,opt_body),notation_list) fix_typ -> 
      
@@ -625,7 +626,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	  let using_lemmas = [] in 
 	  let pre_hook pconstants =
 	    generate_principle
-	      (ref (Evd.empty))
+	      (ref (Evd.from_env (Global.env ())))
 	      pconstants
 	      on_error
 	      true
@@ -649,7 +650,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	  let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
 	  let pre_hook pconstants =
 	    generate_principle
-	      (ref Evd.empty)
+	      (ref (Evd.from_env (Global.env ())))
 	      pconstants
 	      on_error
 	      true
@@ -680,7 +681,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	let evd,pconstants =
 	  if register_built
 	  then register_struct is_rec fixpoint_exprl
-	  else (Evd.empty,pconstants)
+	  else (Evd.from_env (Global.env ()),pconstants)
 	in
 	let evd = ref evd in 
 	generate_principle
@@ -835,10 +836,11 @@ let make_graph (f_ref:global_reference) =
      | None -> error "Cannot build a graph over an axiom !"
      | Some body ->
 	 let env = Global.env () in
+	 let sigma = Evd.from_env env in
 	 let extern_body,extern_type =
 	   with_full_print (fun () ->
-		(Constrextern.extern_constr false env Evd.empty body,
-		 Constrextern.extern_type false env Evd.empty
+		(Constrextern.extern_constr false env sigma body,
+		 Constrextern.extern_type false env sigma
                    ((*FIXME*) Typeops.type_of_constant_type env c_body.const_type)
 		)
 	     )

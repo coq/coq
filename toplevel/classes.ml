@@ -347,7 +347,7 @@ let named_of_rel_context l =
 
 let context poly l =
   let env = Global.env() in
-  let evars = ref Evd.empty in
+  let evars = ref (Evd.from_env env) in
   let _, ((env', fullctx), impls) = interp_context_evars env evars l in
   let subst = Evarutil.evd_comb0 Evarutil.nf_evars_and_universes evars in
   let fullctx = Context.map_rel_context subst fullctx in
@@ -358,11 +358,13 @@ let context poly l =
     with e when Errors.noncritical e ->
       error "Anonymous variables not allowed in contexts."
   in
-  let uctx = Evd.universe_context_set !evars in
+  let uctx = ref (Evd.universe_context_set !evars) in
   let fn status (id, b, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
-      let uctx = Univ.ContextSet.to_context uctx in	
-      let decl = (ParameterEntry (None,poly,(t,uctx),None), IsAssumption Logical) in
+      let ctx = Univ.ContextSet.to_context !uctx in
+      (* Declare the universe context once *)
+      let () = uctx := Univ.ContextSet.empty in
+      let decl = (ParameterEntry (None,poly,(t,ctx),None), IsAssumption Logical) in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
 	match class_of_constr t with
 	| Some (rels, ((tc,_), args) as _cl) ->
@@ -379,8 +381,9 @@ let context poly l =
       let impl = List.exists test impls in
       let decl = (Discharge, poly, Definitional) in
       let nstatus =
-        pi3 (Command.declare_assumption false decl (t, uctx) [] impl
+        pi3 (Command.declare_assumption false decl (t, !uctx) [] impl
           Vernacexpr.NoInline (Loc.ghost, id))
       in
-      status && nstatus
+      let () = uctx := Univ.ContextSet.empty in
+	status && nstatus
   in List.fold_left fn true (List.rev ctx)

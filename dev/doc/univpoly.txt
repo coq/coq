@@ -1,5 +1,5 @@
-Notes on universe polymorphism and primitive projections, M. Sozeau - WIP 
-=========================================================================
+Notes on universe polymorphism and primitive projections, M. Sozeau
+===================================================================
 
 The new implementation of universe polymorphism and primitive
 projections introduces a few changes to the API of Coq. First and
@@ -46,15 +46,16 @@ universes and constraints to the global universe context when it is put
 in the environment. No other universes than the global ones and the
 declared local ones are needed to check a declaration, hence the kernel
 does not produce any constraints anymore, apart from module
-subtyping.... There are hance two conversion functions now: check_conv
-and infer_conv: the former just checks the definition in the current env
+subtyping.... There are hence two conversion functions now: [check_conv]
+and [infer_conv]: the former just checks the definition in the current env
 (in which we usually push_universe_context of the associated context),
-and infer_conv which produces constraints that were not implied by the
+and [infer_conv] which produces constraints that were not implied by the
 ambient constraints. Ideally, that one could be put out of the kernel,
-but again, module subtyping needs it. 
+but currently module subtyping needs it. 
 
  Inference of universes is now done during refinement, and the evar_map
-carries the incrementally built universe context. [Evd.conversion] is a
+carries the incrementally built universe context, starting from the
+global universe constraints (see [Evd.from_env]). [Evd.conversion] is a
 wrapper around [infer_conv] that will do the bookkeeping for you, it
 uses [evar_conv_x]. There is a universe substitution being built
 incrementally according to the constraints, so one should normalize at
@@ -72,7 +73,7 @@ val pf_constr_of_global : Globnames.global_reference -> (constr -> tactic) -> ta
 Is the way to make a constr out of a global reference in the new API.
 If they constr is polymorphic, it will add the necessary constraints to
 the evar_map. Even if a constr is not polymorphic, we have to take care
-of keeping track of it's universes. Typically, using:
+of keeping track of its universes. Typically, using:
 
   mkApp (coq_id_function, [| A; a |]) 
 
@@ -84,8 +85,8 @@ produce the right constraints and put them in the evar_map. Of course in
 some cases you might now from an invariant that no new constraint would
 be produced and get rid of it. Anyway the kernel will tell you if you
 forgot some. As a temporary way out, [Universes.constr_of_global] allows
-you to make a constr from any non-polymorphic constant, but it might
-forget constraints.
+you to make a constr from any non-polymorphic constant, but it will fail
+on polymorphic ones.
 
 Other than that, unification (w_unify and evarconv) now take account of universes and
 produce only well-typed evar_maps.
@@ -157,6 +158,30 @@ this is the only solution I found. In the case of global_references
 only, it's just a matter of using [Evd.fresh_global] /
 [pf_constr_of_global] to let the system take care of universes.
 
+
+The universe graph
+==================
+
+To accomodate universe polymorphic definitions, the graph structure in
+kernel/univ.ml was modified. The new API forces every universe to be
+declared before it is mentionned in any constraint. This forces to
+declare every universe to be >= Set or > Set. Every universe variable
+introduced during elaboration is >= Set. Every _global_ universe is now
+declared explicitely > Set, _after_ typechecking the definition. In
+polymorphic definitions Type@{i} ranges over Set and any other universe
+j. However, at instantiation time for polymorphic references, one can
+try to instantiate a universe parameter with Prop as well, if the
+instantiated constraints allow it. The graph invariants ensure that
+no universe i can be set lower than Set, so the chain of universes
+always bottoms down at Prop < Set.
+
+Modules
+=======
+
+One has to think of universes in modules as being globally declared, so
+when including a module (type) which declares a type i (e.g. through a
+parameter), we get back a copy of i and not some fresh universe.
+
 Projections
 ===========
 
@@ -208,8 +233,7 @@ constants left (the most common case). E.g. Ring with Set Universe
 Polymorphism and Set Primitive Projections work (at least it did at some
 point, I didn't recheck yet).  
 
-- [native_compute] is untested: it should deal with primitive
-projections right but not universes.
+- [native_compute] works with universes and projections.
 
 
 Incompatibilities

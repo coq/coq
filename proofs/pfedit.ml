@@ -153,9 +153,9 @@ let build_by_tactic ?(side_eff=true) env ctx ?(poly=false) typ tac =
   let ce, status, univs = build_constant_by_tactic id ctx sign ~goal_kind:gk typ tac in
   let ce = if side_eff then Term_typing.handle_entry_side_effects env ce else { ce with const_entry_body = Future.chain ~pure:true ce.const_entry_body (fun (pt, _) -> pt, Declareops.no_seff) } in
   let (cb, ctx), se = Future.force ce.const_entry_body in
+  let univs' = Evd.merge_context_set Evd.univ_rigid (Evd.from_ctx univs) ctx in
   assert(Declareops.side_effects_is_empty se);
-  assert(Univ.ContextSet.is_empty ctx);
-  cb, status, univs
+  cb, status, Evd.evar_universe_context univs'
 
 let refine_by_tactic env sigma ty tac =
   (** Save the initial side-effects to restore them afterwards. We set the

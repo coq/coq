@@ -20,7 +20,11 @@ sig
 
   val is_small : t -> bool
   (** Is the universe set or prop? *)
-
+		       
+  val is_prop : t -> bool
+  val is_set : t -> bool
+  (** Is it specifically Prop or Set *)
+		       
   val compare : t -> t -> int
   (** Comparison function *)
 
@@ -86,6 +90,9 @@ sig
 
   val is_level : t -> bool
   (** Test if the universe is a level or an algebraic universe. *)
+
+  val is_levels : t -> bool
+  (** Test if the universe is a lub of levels or contains +n's. *)
 
   val level : t -> Level.t option
   (** Try to get a level out of a universe, returns [None] if it
@@ -159,8 +166,12 @@ val is_initial_universes : universes -> bool
 
 val sort_universes : universes -> universes
 
-(** Adds a universe to the graph, ensuring it is >= Prop. *)
-val add_universe : universe_level -> universes -> universes
+(** Adds a universe to the graph, ensuring it is >= or > Set.
+   @raises AlreadyDeclared if the level is already declared in the graph. *)
+
+exception AlreadyDeclared
+
+val add_universe : universe_level -> bool -> universes -> universes
 
 (** {6 Constraints. } *)
 

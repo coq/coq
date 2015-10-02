@@ -625,7 +625,7 @@ let declare_obligation prg obl body ty uctx =
   let body = prg.prg_reduce body in
   let ty = Option.map prg.prg_reduce ty in
   match obl.obl_status with
-  | Evar_kinds.Expand -> { obl with obl_body = Some (TermObl body) }
+  | Evar_kinds.Expand -> false, { obl with obl_body = Some (TermObl body) }
   | Evar_kinds.Define opaque ->
       let opaque = if get_proofs_transparency () then false else opaque in
       let poly = pi2 prg.prg_kind in
@@ -649,7 +649,7 @@ let declare_obligation prg obl body ty uctx =
       in
 	if not opaque then add_hint false prg constant;
 	definition_message obl.obl_name;
-	{ obl with obl_body = 
+	true, { obl with obl_body =
 	    if poly then 
 	      Some (DefinedObl constant)
 	    else
@@ -798,9 +798,9 @@ let solve_by_tac name evi t poly ctx =
   let entry = Term_typing.handle_entry_side_effects env entry in
   let body, eff = Future.force entry.Entries.const_entry_body in
   assert(Declareops.side_effects_is_empty eff);
-  assert(Univ.ContextSet.is_empty (snd body));
+  let ctx' = Evd.merge_context_set Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
   Inductiveops.control_only_guard (Global.env ()) (fst body);
-  (fst body), entry.Entries.const_entry_type, ctx'
+  (fst body), entry.Entries.const_entry_type, Evd.evar_universe_context ctx'
 
 let obligation_terminator name num guard hook pf =
   let open Proof_global in
@@ -824,7 +824,7 @@ let obligation_terminator name num guard hook pf =
       let obls, rem = prg.prg_obligations in
       let obl = obls.(num) in
       let ctx = Evd.evar_context_universe_context uctx in
-      let obl = declare_obligation prg obl body ty ctx in
+      let (_, obl) = declare_obligation prg obl body ty ctx in
       let obls = Array.copy obls in
       let _ = obls.(num) <- obl in
       try ignore (update_obls prg obls (pred rem))
@@ -847,9 +847,9 @@ let obligation_hook prg obl num auto ctx' _ gr =
   let ctx' = match ctx' with None -> prg.prg_ctx | Some ctx' -> ctx' in
   let ctx' =
     if not (pi2 prg.prg_kind) (* Not polymorphic *) then
-      (* This context is already declared globally, we cannot
-          instantiate the rigid variables anymore *)
-      Evd.abstract_undefined_variables ctx'
+      (* The universe context was declared globally, we continue
+         from the new global environment. *)
+      Evd.evar_universe_context (Evd.from_env (Global.env ()))
     else ctx'
   in
   let prg = { prg with prg_ctx = ctx' } in
@@ -922,8 +922,13 @@ and solve_obligation_by_tac prg obls i tac =
 	        (pi2 !prg.prg_kind) !prg.prg_ctx
 	    in
 	    let uctx = Evd.evar_context_universe_context ctx in
-	      prg := {!prg with prg_ctx = ctx};
-	      obls.(i) <- declare_obligation !prg obl t ty uctx;
+	    let () = prg := {!prg with prg_ctx = ctx} in
+	    let def, obl' = declare_obligation !prg obl t ty uctx in
+	      obls.(i) <- obl';
+	      if def && not (pi2 !prg.prg_kind) then (
+		(* Declare the term constraints with the first obligation only *)
+		let ctx' = Evd.evar_universe_context (Evd.from_env (Global.env ())) in
+		  prg := {!prg with prg_ctx = ctx'});
 	      true
 	  else false
 	with e when Errors.noncritical e ->

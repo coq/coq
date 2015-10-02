@@ -420,6 +420,7 @@ let extract_hyps (secs,ohyps) =
   in aux (secs,ohyps)
 
 let instance_from_variable_context sign =
+
   let rec inst_rec = function
     | (id,b,None,_) :: sign -> id :: inst_rec sign
     | _ :: sign -> inst_rec sign

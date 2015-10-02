@@ -21,7 +21,7 @@ Section lift.
   Definition Lift (A : Type@{i}) : Type@{j} := A.
 End lift.
 
-Goal forall (A : Type@{i}) (x y : A), @paths@{i} A x y -> @paths@{j} A x y.
+Goal forall (A : Type@{i}) (x y : A), @paths@{i j} A x y -> @paths@{j k} A x y.
 intros A x y p.
 compute in *. destruct p. exact idpath.
 Defined.

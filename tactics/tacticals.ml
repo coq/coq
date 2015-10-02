@@ -593,10 +593,12 @@ module New = struct
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
       isrec allnames tac predicate ind (c, t) =
-    Proofview.Goal.nf_enter begin fun gl ->
-    let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
-    (** FIXME: evar leak. *)
+    Proofview.Goal.nf_enter
+    begin fun gl ->
     let sigma, elim = Tacmach.New.of_old (mk_elim ind) gl in
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+    (Proofview.Goal.nf_enter begin fun gl ->
+    let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
     (* applying elimination_scheme just a little modified *)
     let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_unsafe_type_of gl elim)) gl in
     let indmv =
@@ -647,7 +649,7 @@ module New = struct
     Proofview.tclTHEN
       (Clenvtac.clenv_refine false clenv')
       (Proofview.tclEXTEND [] tclIDTAC branchtacs)
-    end
+    end) end
 
   let elimination_then tac c =
     Proofview.Goal.nf_enter begin fun gl ->

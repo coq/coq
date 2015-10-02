@@ -145,14 +145,19 @@ let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 (****************************************************************************)
 
 let ic c =
-  let env = Global.env() and sigma = Evd.empty in
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
   Constrintern.interp_open_constr env sigma c
 
 let ic_unsafe c = (*FIXME remove *)
-  let env = Global.env() and sigma = Evd.empty in
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
     fst (Constrintern.interp_constr env sigma c)
 
-let ty c = Typing.unsafe_type_of (Global.env()) Evd.empty c
+let ty c =
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
+    Typing.unsafe_type_of env sigma c
 
 let decl_constant na ctx c =
   let vars = Universes.universes_of_constr c in

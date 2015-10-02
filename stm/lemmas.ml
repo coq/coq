@@ -457,8 +457,12 @@ let start_proof_com kind thms hook =
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in
   let thms = List.map (fun (n, (t, info)) -> (n, (nf t, info))) thms in
-  start_proof_with_initialization kind evd
-    recguard thms snl hook
+  let evd =
+    if pi2 kind then evd
+    else (* We fix the variables to ensure they won't be lowered to Set *)
+      Evd.fix_undefined_variables evd
+  in
+    start_proof_with_initialization kind evd recguard thms snl hook
 
 
 (* Saving a proof *)
@@ -511,4 +515,5 @@ let save_proof ?proof = function
 let get_current_context () =
   try Pfedit.get_current_goal_context ()
   with e when Logic.catchable_exception e ->
-    (Evd.empty, Global.env())
+    let env = Global.env () in
+    (Evd.from_env env, env)

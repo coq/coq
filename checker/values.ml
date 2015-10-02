@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 8b7e75b4b94a2d8506a62508e0374c0a checker/cic.mli
+MD5 76312d06933f47498a1981a6261c9f75 checker/cic.mli
 
 *)
 
@@ -307,10 +307,10 @@ and v_impl =
 and v_noimpl = v_enum "no_impl" 1 (* Abstract is mandatory for mtb *)
 and v_module =
   Tuple ("module_body",
-         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_cstrs;v_resolver;Any|])
+         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_context_set;v_resolver;Any|])
 and v_modtype =
   Tuple ("module_type_body",
-         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_cstrs;v_resolver;Any|])
+         [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_context_set;v_resolver;Any|])
 
 (** kernel/safe_typing *)
 

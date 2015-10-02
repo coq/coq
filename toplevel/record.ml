@@ -131,14 +131,21 @@ let typecheck_params_and_fields def id pl t ps nots fs =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar !evars (Evd.empty,!evars) in
   let evars, nf = Evarutil.nf_evars_and_universes sigma in
   let arity = nf t' in
-  let evars = 
+  let arity, evars = 
     let _, univ = compute_constructor_level evars env_ar newfs in
     let ctx, aritysort = Reduction.dest_arity env0 arity in
       assert(List.is_empty ctx); (* Ensured by above analysis *)
       if Sorts.is_prop aritysort || 
 	(Sorts.is_set aritysort && is_impredicative_set env0) then
-	evars
-      else Evd.set_leq_sort env_ar evars (Type univ) aritysort
+	arity, evars
+      else
+	let evars = Evd.set_leq_sort env_ar evars (Type univ) aritysort in
+	  if Univ.is_small_univ univ then
+	    (* We can assume that the level aritysort is not constrained
+  	       and clear it. *)
+	    mkArity (ctx, Sorts.sort_of_univ univ),
+	    Evd.set_eq_sort env_ar evars (Prop Pos) aritysort
+	  else arity, evars
   in
   let evars, nf = Evarutil.nf_evars_and_universes evars in
   let newps = map_rel_context nf newps in
@@ -233,7 +240,8 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
   let (mib,mip) = Global.lookup_inductive indsp in
   let u = Declareops.inductive_instance mib in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
-  let poly = mib.mind_polymorphic and ctx = Univ.instantiate_univ_context mib.mind_universes in
+  let poly = mib.mind_polymorphic in
+  let ctx = Univ.instantiate_univ_context mib.mind_universes in
   let indu = indsp, u in
   let r = mkIndU (indsp,u) in
   let rp = applist (r, Termops.extended_rel_list 0 paramdecls) in
@@ -293,7 +301,8 @@ let declare_projections indsp ?(kind=StructureComponent) binder_name coers field
 		    const_entry_secctx = None;
 		    const_entry_type = Some projtyp;
 		    const_entry_polymorphic = poly;
-		    const_entry_universes = ctx;
+		    const_entry_universes =
+		      if poly then ctx else Univ.UContext.empty;
 		    const_entry_opaque = false;
 		    const_entry_inline_code = false;
 		    const_entry_feedback = None } in
@@ -397,44 +406,49 @@ let declare_class finite def poly ctx id idbuild paramimpls params arity
   let impl, projs =
     match fields with
     | [(Name proj_name, _, field)] when def ->
-	let class_body = it_mkLambda_or_LetIn field params in
-        let _class_type = it_mkProd_or_LetIn arity params in
-	let class_entry = 
-	  Declare.definition_entry (* ?types:class_type *) ~poly ~univs:ctx class_body in
-	let cst = Declare.declare_constant (snd id)
-	  (DefinitionEntry class_entry, IsDefinition Definition)
-	in
-	let cstu = (cst, if poly then Univ.UContext.instance ctx else Univ.Instance.empty) in
-	let inst_type = appvectc (mkConstU cstu) (Termops.rel_vect 0 (List.length params)) in
-	let proj_type =
-	  it_mkProd_or_LetIn (mkProd(Name binder_name, inst_type, lift 1 field)) params in
-	let proj_body =
-	  it_mkLambda_or_LetIn (mkLambda (Name binder_name, inst_type, mkRel 1)) params in
-	let proj_entry = Declare.definition_entry ~types:proj_type ~poly ~univs:ctx proj_body in
-	let proj_cst = Declare.declare_constant proj_name
-	  (DefinitionEntry proj_entry, IsDefinition Definition)
-	in
-	let cref = ConstRef cst in
-	Impargs.declare_manual_implicits false cref [paramimpls];
-	Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
-	Classes.set_typeclass_transparency (EvalConstRef cst) false false;
-	let sub = match List.hd coers with
-	  | Some b -> Some ((if b then Backward else Forward), List.hd priorities) 
-	  | None -> None 
-	in
-	  cref, [Name proj_name, sub, Some proj_cst]
+      let class_body = it_mkLambda_or_LetIn field params in
+      let _class_type = it_mkProd_or_LetIn arity params in
+      let class_entry = 
+	Declare.definition_entry (* ?types:class_type *) ~poly ~univs:ctx class_body in
+      let cst = Declare.declare_constant (snd id)
+	(DefinitionEntry class_entry, IsDefinition Definition)
+      in
+      let cstu = (cst, if poly then Univ.UContext.instance ctx else Univ.Instance.empty) in
+      let inst_type = appvectc (mkConstU cstu)
+			       (Termops.rel_vect 0 (List.length params)) in
+      let proj_type =
+	it_mkProd_or_LetIn (mkProd(Name binder_name, inst_type, lift 1 field)) params in
+      let proj_body =
+	it_mkLambda_or_LetIn (mkLambda (Name binder_name, inst_type, mkRel 1)) params in
+      let proj_entry =
+	Declare.definition_entry ~types:proj_type ~poly
+	    ~univs:(if poly then ctx else Univ.UContext.empty) proj_body
+      in
+      let proj_cst = Declare.declare_constant proj_name
+        (DefinitionEntry proj_entry, IsDefinition Definition)
+      in
+      let cref = ConstRef cst in
+      Impargs.declare_manual_implicits false cref [paramimpls];
+      Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
+      Classes.set_typeclass_transparency (EvalConstRef cst) false false;
+      let sub = match List.hd coers with
+	| Some b -> Some ((if b then Backward else Forward), List.hd priorities) 
+	| None -> None 
+      in
+      cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
-	let ind = declare_structure BiFinite poly ctx (snd id) idbuild paramimpls
+       let ind = declare_structure BiFinite poly ctx (snd id) idbuild paramimpls
 	  params arity template fieldimpls fields
 	  ~kind:Method ~name:binder_name false (List.map (fun _ -> false) fields) sign
-	in
-	let coers = List.map2 (fun coe pri -> 
-			       Option.map (fun b -> 
-			         if b then Backward, pri else Forward, pri) coe) 
+       in
+       let coers = List.map2 (fun coe pri -> 
+			      Option.map (fun b -> 
+			      if b then Backward, pri else Forward, pri) coe)
 	  coers priorities
-	in
-	  IndRef ind, (List.map3 (fun (id, _, _) b y -> (id, b, y))
-			 (List.rev fields) coers (Recordops.lookup_projections ind))
+       in
+       let l = List.map3 (fun (id, _, _) b y -> (id, b, y))
+         (List.rev fields) coers (Recordops.lookup_projections ind)
+       in IndRef ind, l
   in
   let ctx_context =
     List.map (fun (na, b, t) ->

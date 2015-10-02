@@ -45,8 +45,8 @@ let map_option_typ = function None -> `None | Some x -> `Some x
 
 let mk_pure_proof c = (c, Univ.ContextSet.empty), Declareops.no_seff
 
-let handle_side_effects env body side_eff =
-  let handle_sideff t se =
+let handle_side_effects env body ctx side_eff =
+  let handle_sideff (t,ctx) se =
     let cbl = match se with
       | SEsubproof (c,cb,b) -> [c,cb,b]
       | SEscheme (cl,_) -> List.map (fun (_,c,cb,b) -> c,cb,b) cl in
@@ -66,7 +66,7 @@ let handle_side_effects env body side_eff =
       | Const (c',u') when eq_constant c c' -> 
 	Vars.subst_instance_constr u' b
       | _ -> map_constr_with_binders ((+) 1) (fun i x -> sub_body c u b i x) i x in
-    let fix_body (c,cb,b) t =
+    let fix_body (c,cb,b) (t,ctx) =
       match cb.const_body, b with
       | Def b, _ ->
           let b = Mod_subst.force_constr b in
@@ -74,25 +74,29 @@ let handle_side_effects env body side_eff =
 	    if not poly then
               let b_ty = Typeops.type_of_constant_type env cb.const_type in
               let t = sub c 1 (Vars.lift 1 t) in
-		mkLetIn (cname c, b, b_ty, t)
+	        mkLetIn (cname c, b, b_ty, t),
+		Univ.ContextSet.union ctx
+		  (Univ.ContextSet.of_context cb.const_universes)
 	    else 
 	      let univs = cb.const_universes in
-		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t)
+		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t), ctx
       | OpaqueDef _, `Opaque (b,_) -> 
 	  let poly = cb.const_polymorphic in
 	    if not poly then
               let b_ty = Typeops.type_of_constant_type env cb.const_type in
               let t = sub c 1 (Vars.lift 1 t) in
-		mkApp (mkLambda (cname c, b_ty, t), [|b|]) 
+	        mkApp (mkLambda (cname c, b_ty, t), [|b|]),
+		Univ.ContextSet.union ctx
+		  (Univ.ContextSet.of_context cb.const_universes)		
 	    else
 	      let univs = cb.const_universes in
-		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t)
+		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t), ctx
       | _ -> assert false
     in
-      List.fold_right fix_body cbl t
+      List.fold_right fix_body cbl (t,ctx)
   in
   (* CAVEAT: we assure a proper order *)
-  Declareops.fold_side_effects handle_sideff body
+  Declareops.fold_side_effects handle_sideff (body,ctx)
     (Declareops.uniquize_side_effects side_eff)
 
 let hcons_j j =
@@ -100,11 +104,11 @@ let hcons_j j =
 
 let feedback_completion_typecheck =
   Option.iter (fun state_id -> Pp.feedback ~state_id Feedback.Complete)
-
+	      
 let infer_declaration env kn dcl =
   match dcl with
   | ParameterEntry (ctx,poly,(t,uctx),nl) ->
-      let env = push_context uctx env in
+      let env = push_context ~strict:(not poly) uctx env in
       let j = infer env t in
       let abstract = poly && not (Option.is_empty kn) in
       let usubst, univs = Univ.abstract_universes abstract uctx in
@@ -115,12 +119,12 @@ let infer_declaration env kn dcl =
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
 		       const_entry_polymorphic = false} as c) ->
-      let env = push_context c.const_entry_universes env in
+      let env = push_context ~strict:true c.const_entry_universes env in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
         Future.chain ~greedy:true ~pure:true body (fun ((body, ctx),side_eff) ->
-          let body = handle_side_effects env body side_eff in
+          let body,ctx = handle_side_effects env body ctx side_eff in
 	  let env' = push_context_set ctx env in
           let j = infer env' body in
           let j = hcons_j j in
@@ -135,14 +139,16 @@ let infer_declaration env kn dcl =
 	c.const_entry_inline_code, c.const_entry_secctx
 
   | DefinitionEntry c ->
-      let env = push_context c.const_entry_universes env in
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let (body, ctx), side_eff = Future.join body in
-      assert(Univ.ContextSet.is_empty ctx);
-      let body = handle_side_effects env body side_eff in
+      let univsctx = Univ.ContextSet.of_context c.const_entry_universes in
+      let body, ctx = handle_side_effects env body
+        (Univ.ContextSet.union univsctx ctx) side_eff in
+      let env = push_context_set ~strict:(not c.const_entry_polymorphic) ctx env in
       let abstract = c.const_entry_polymorphic && not (Option.is_empty kn) in
-      let usubst, univs = Univ.abstract_universes abstract c.const_entry_universes in
+      let usubst, univs =
+	Univ.abstract_universes abstract (Univ.ContextSet.to_context ctx) in      
       let j = infer env body in
       let typ = constrain_type env j c.const_entry_polymorphic usubst (map_option_typ typ) in
       let def = hcons_constr (Vars.subst_univs_level_constr usubst j.uj_val) in
@@ -306,5 +312,9 @@ let translate_mind env kn mie = Indtypes.check_inductive env kn mie
 let handle_entry_side_effects env ce = { ce with
   const_entry_body = Future.chain ~greedy:true ~pure:true
     ce.const_entry_body (fun ((body, ctx), side_eff) ->
-      (handle_side_effects env body side_eff, ctx), Declareops.no_seff);
+			 let body, ctx' = handle_side_effects env body ctx side_eff in
+			 (body, ctx'), Declareops.no_seff);
 }
+
+let handle_side_effects env body side_eff =
+  fst (handle_side_effects env body Univ.ContextSet.empty side_eff)

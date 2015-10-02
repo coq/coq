@@ -291,7 +291,10 @@ let typecheck_inductive env mie =
 	let defu = Term.univ_of_sort def_level in
 	let is_natural =
 	  type_in_type env || (check_leq (universes env') infu defu &&
-	    not (is_type0m_univ defu && not is_unit))
+				not (is_type0m_univ defu && not is_unit)
+				  (* (~ is_type0m_univ defu \/ is_unit) (\* infu <= defu && not prop or unital *\) *)
+
+			     )
 	in
 	let _ =
 	  (** Impredicative sort, always allow *)

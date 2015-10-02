@@ -129,14 +129,14 @@ type cinfo=
      ci_nhyps: int}     (* # projectable args *)
 
 let family_eq f1 f2 = match f1, f2 with
-| InProp, InProp
-| InSet, InSet
-| InType, InType -> true
-| _ -> false
+  | Prop Pos, Prop Pos
+  | Prop Null, Prop Null
+  | Type _, Type _ -> true
+  | _ -> false
 
 type term=
     Symb of constr
-  | Product of sorts_family * sorts_family
+  | Product of sorts * sorts
   | Eps of Id.t
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
@@ -161,7 +161,7 @@ let hash_sorts_family = function
 
 let rec hash_term = function
   | Symb c -> combine 1 (hash_constr c)
-  | Product (s1, s2) -> combine3 2 (hash_sorts_family s1) (hash_sorts_family s2)
+  | Product (s1, s2) -> combine3 2 (Sorts.hash s1) (Sorts.hash s2)
   | Eps i -> combine 3 (Id.hash i)
   | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
   | Constructor {ci_constr=(c,u); ci_arity=i; ci_nhyps=j} -> combine4 5 (constructor_hash c) i j
@@ -425,8 +425,8 @@ let _B_ = Name (Id.of_string "A")
 let _body_ =  mkProd(Anonymous,mkRel 2,mkRel 2)
 
 let cc_product s1 s2 =
-  mkLambda(_A_,mkSort(Universes.new_sort_in_family s1),
-	   mkLambda(_B_,mkSort(Universes.new_sort_in_family s2),_body_))
+  mkLambda(_A_,mkSort(s1),
+	   mkLambda(_B_,mkSort(s2),_body_))
 
 let rec constr_of_term = function
     Symb s-> applist_projection s []

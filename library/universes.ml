@@ -182,10 +182,13 @@ let leq_constr_univs_infer univs m n =
       if Sorts.equal s1 s2 then true
       else 
 	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if Univ.check_leq univs u1 u2 then true
-	else
-	  (cstrs := Constraints.add (u1, ULe, u2) !cstrs; 
-	   true)
+	  if Univ.check_leq univs u1 u2 then
+	    ((if Univ.is_small_univ u1 then
+		cstrs := Constraints.add (u1, ULe, u2) !cstrs);
+	     true)
+	  else
+	    (cstrs := Constraints.add (u1, ULe, u2) !cstrs; 
+	     true)
     in
     let rec eq_constr' m n = 
       m == n ||	Constr.compare_head_gen eq_universes eq_sorts eq_constr' m n
@@ -820,22 +823,59 @@ let minimize_univ_variables ctx us algs left right cstrs =
       if v == None then fst (aux acc u)
       else LSet.remove u ctx', us, LSet.remove u algs, seen, cstrs)
       us (ctx, us, algs, lbounds, cstrs)
-      
+
 let normalize_context_set ctx us algs = 
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   let uf = UF.create () in
+  (** Keep the Prop/Set <= i constraints separate for minimization *)
+  let smallles, csts =
+    Constraint.fold (fun (l,d,r as cstr) (smallles, noneqs) ->
+        if d == Le then
+	  if Univ.Level.is_small l then
+	    (Constraint.add cstr smallles, noneqs)
+	  else if Level.is_small r then
+	    if Level.is_prop r then
+	      raise (Univ.UniverseInconsistency
+		       (Le,Universe.make l,Universe.make r,None))
+	    else (smallles, Constraint.add (l,Eq,r) noneqs)
+	  else (smallles, Constraint.add cstr noneqs)
+	else (smallles, Constraint.add cstr noneqs))
+    csts (Constraint.empty, Constraint.empty)
+  in
   let csts = 
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
-    let g = Univ.merge_constraints csts Univ.empty_universes in
+    let g = Univ.LSet.fold (fun v g -> Univ.add_universe v false g)
+			   ctx Univ.empty_universes
+    in
+    let g =
+      Univ.Constraint.fold
+	(fun (l, d, r) g ->
+	 let g =
+	   if not (Level.is_small l || LSet.mem l ctx) then
+	     try Univ.add_universe l false g
+	     with Univ.AlreadyDeclared -> g
+	   else g
+	 in
+	 let g =
+	   if not (Level.is_small r || LSet.mem r ctx) then
+	     try Univ.add_universe r false g
+	     with Univ.AlreadyDeclared -> g
+	   else g
+	 in g) csts g
+    in
+    let g = Univ.Constraint.fold Univ.enforce_constraint csts g in
       Univ.constraints_of_universes g
   in
   let noneqs =
-    Constraint.fold (fun (l,d,r) noneqs ->
-      if d == Eq then (UF.union l r uf; noneqs) 
-      else Constraint.add (l,d,r) noneqs)
-    csts Constraint.empty
+    Constraint.fold (fun (l,d,r as cstr) noneqs ->
+      if d == Eq then (UF.union l r uf; noneqs)
+      else (* We ignore the trivial Prop/Set <= i constraints. *)
+	if d == Le && Univ.Level.is_small l then noneqs
+	else Constraint.add cstr noneqs)
+      csts Constraint.empty
   in
+  let noneqs = Constraint.union noneqs smallles in
   let partition = UF.partition uf in
   let flex x = LMap.mem x us in
   let ctx, subst, eqs = List.fold_left (fun (ctx, subst, cstrs) s -> 
@@ -941,12 +981,12 @@ let simplify_universe_context (univs,csts) =
   let csts' = subst_univs_level_constraints subst csts' in
     (univs', csts'), subst
 
-let is_small_leq (l,d,r) =
-  Level.is_small l && d == Univ.Le
+let is_trivial_leq (l,d,r) =
+  Univ.Level.is_prop l && (d == Univ.Le || (d == Univ.Lt && Univ.Level.is_set r))
 
 (* Prop < i <-> Set+1 <= i <-> Set < i *)
 let translate_cstr (l,d,r as cstr) =
-  if Level.equal Level.prop l && d == Univ.Lt then
+  if Level.equal Level.prop l && d == Univ.Lt && not (Level.equal Level.set r) then
     (Level.set, d, r)
   else cstr
 
@@ -954,7 +994,7 @@ let refresh_constraints univs (ctx, cstrs) =
   let cstrs', univs' = 
     Univ.Constraint.fold (fun c (cstrs', univs as acc) -> 
       let c = translate_cstr c in
-      if Univ.check_constraint univs c && not (is_small_leq c) then acc
+      if is_trivial_leq c then acc
       else (Univ.Constraint.add c cstrs', Univ.enforce_constraint c univs))
       cstrs (Univ.Constraint.empty, univs)
   in ((ctx, cstrs'), univs')

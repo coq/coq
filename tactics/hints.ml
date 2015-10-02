@@ -1085,8 +1085,10 @@ let prepare_hint check env init (sigma,c) =
 
 let interp_hints poly =
   fun h ->
+  let env = (Global.env()) in
+  let sigma = Evd.from_env env in
   let f c =
-    let evd,c = Constrintern.interp_open_constr (Global.env()) Evd.empty c in
+    let evd,c = Constrintern.interp_open_constr env sigma c in
       prepare_hint true (Global.env()) Evd.empty (evd,c) in
   let fref r =
     let gr = global_with_alias r in
@@ -1135,7 +1137,8 @@ let add_hints local dbnames0 h =
   if String.List.mem "nocore" dbnames0 then
     error "The hint database \"nocore\" is meant to stay empty.";
   let dbnames = if List.is_empty dbnames0 then ["core"] else dbnames0 in
-  let env = Global.env() and sigma = Evd.empty in
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
   match h with
   | HintsResolveEntry lhints -> add_resolves env sigma lhints local dbnames
   | HintsImmediateEntry lhints -> add_trivials env sigma lhints local dbnames

@@ -303,7 +303,8 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   try
 
   let f = funs.(i) in
-  let type_sort = Universes.new_sort_in_family InType in
+  let env = Global.env () in    
+  let type_sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd InType in
   let new_sorts =
     match sorts with
       | None -> Array.make (Array.length funs) (type_sort)
@@ -317,14 +318,14 @@ let generate_functional_principle (evd: Evd.evar_map ref)
 	  id_of_f,Indrec.make_elimination_ident id_of_f (family_of_sort type_sort)
   in
   let names = ref [new_princ_name] in
-  let evd' = !evd in 
   let hook =
     fun  new_principle_type _ _  -> 
     if Option.is_empty sorts
     then
       (*     let id_of_f = Label.to_id (con_label f) in *)
       let register_with_sort fam_sort =
-	let s = Universes.new_sort_in_family fam_sort in
+	let evd' = Evd.from_env (Global.env ()) in
+	let evd',s = Evd.fresh_sort_in_family env evd' fam_sort in
 	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
 	let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
 	let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' value) in
@@ -394,7 +395,7 @@ let get_funs_constant mp dp =
 	    let body = Tacred.cbv_norm_flags
 	      (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
 	      (Global.env ())
-	      (Evd.empty)
+	      (Evd.from_env (Global.env ()))
 	      body
 	    in
 	    body
@@ -483,11 +484,10 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Entries.definition_entr
   let i = ref (-1) in
   let sorts =
     List.rev_map (fun (_,x) ->
-		Universes.new_sort_in_family (Pretyping.interp_elimination_sort x)
+		  Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd (Pretyping.interp_elimination_sort x)
 	     )
       fas
   in
-  evd:=sigma;
   (* We create the first priciple by tactic *)
   let first_type,other_princ_types =
     match l_schemes with
@@ -597,7 +597,7 @@ let make_scheme evd (fas : (pconstant*glob_sort) list) : Entries.definition_entr
 	   
 let build_scheme fas =
   Dumpglob.pause ();
-  let evd = (ref Evd.empty) in
+  let evd = (ref (Evd.from_env (Global.env ()))) in
   let pconstants = (List.map
 	 (fun (_,f,sort) ->
 	    let f_as_constant =
@@ -633,7 +633,7 @@ let build_scheme fas =
 
 let build_case_scheme fa =
   let env = Global.env ()
-  and sigma = Evd.empty in
+  and sigma = (Evd.from_env (Global.env ())) in
 (*   let id_to_constr id =  *)
 (*     Constrintern.global_reference  id *)
 (*   in  *)
@@ -673,14 +673,14 @@ let build_case_scheme fa =
 	    );
   *)
     generate_functional_principle
-      (ref Evd.empty)
+      (ref (Evd.from_env (Global.env ())))
       false
       scheme_type
       (Some ([|sorts|]))
       (Some princ_name)
       this_block_funs
       0
-      (prove_princ_for_struct (ref Evd.empty) false 0 [|fst (destConst funs)|])
+      (prove_princ_for_struct (ref (Evd.from_env (Global.env ()))) false 0 [|fst (destConst funs)|])
   in
   ()
  

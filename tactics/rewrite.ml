@@ -1797,11 +1797,13 @@ let proper_projection r ty =
     it_mkLambda_or_LetIn app ctx
 
 let declare_projection n instance_id r =
-  let c,uctx = Universes.fresh_global_instance (Global.env()) r in
   let poly = Global.is_polymorphic r in
-  let ty = Retyping.get_type_of (Global.env ()) Evd.empty c in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let evd,c = Evd.fresh_global env sigma r in
+  let ty = Retyping.get_type_of env sigma c in
   let term = proper_projection c ty in
-  let typ = Typing.unsafe_type_of (Global.env ()) Evd.empty term in
+  let typ = Typing.unsafe_type_of env sigma term in
   let ctx, typ = decompose_prod_assum typ in
   let typ =
     let n =
@@ -1824,15 +1826,16 @@ let declare_projection n instance_id r =
   in
   let typ = it_mkProd_or_LetIn typ ctx in
   let cst = 
-    Declare.definition_entry ~types:typ ~poly ~univs:(Univ.ContextSet.to_context uctx) 
-      term 
+    Declare.definition_entry ~types:typ ~poly
+      ~univs:(Evd.universe_context sigma) term
   in
     ignore(Declare.declare_constant n 
 	   (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
 
 let build_morphism_signature m =
   let env = Global.env () in
-  let m,ctx = Constrintern.interp_constr env (Evd.from_env env) m in
+  let sigma = Evd.from_env env in
+  let m,ctx = Constrintern.interp_constr env sigma m in
   let sigma = Evd.from_ctx ctx in
   let t = Typing.unsafe_type_of env sigma m in
   let cstrs =
@@ -1844,7 +1847,7 @@ let build_morphism_signature m =
     in aux t
   in
   let evars, t', sig_, cstrs = 
-    PropGlobal.build_signature (Evd.empty, Evar.Set.empty) env t cstrs None in
+    PropGlobal.build_signature (sigma, Evar.Set.empty) env t cstrs None in
   let evd = ref evars in
   let _ = List.iter
     (fun (ty, rel) ->
@@ -1861,9 +1864,10 @@ let build_morphism_signature m =
 
 let default_morphism sign m =
   let env = Global.env () in
-  let t = Typing.unsafe_type_of env Evd.empty m in
+  let sigma = Evd.from_env env in
+  let t = Typing.unsafe_type_of env sigma m in
   let evars, _, sign, cstrs =
-    PropGlobal.build_signature (Evd.empty, Evar.Set.empty) env t (fst sign) (snd sign)
+    PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
   let evars, morph = app_poly_check env evars PropGlobal.proper_type [| t; sign; m |] in
   let evars, mor = resolve_one_typeclass env (goalevars evars) morph in
@@ -1894,7 +1898,7 @@ let add_morphism_infer glob m n =
   let poly = Flags.is_universe_polymorphism () in
   let instance_id = add_suffix n "_Proper" in
   let instance = build_morphism_signature m in
-  let evd = Evd.empty (*FIXME *) in
+  let evd = Evd.from_env (Global.env ()) in
     if Lib.is_modtype () then
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
 				(Entries.ParameterEntry 

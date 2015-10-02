@@ -102,14 +102,27 @@ let ((constr_in : constr -> Dyn.t),
 (** Miscellaneous interpretation functions *)
 let interp_universe_level_name evd s =
   let names, _ = Universes.global_universe_names () in
-  try
-    let id = try Id.of_string s with _ -> raise Not_found in
-      evd, Idmap.find id names
-  with Not_found ->
-    try let level = Evd.universe_of_name evd s in
-	  evd, level
-    with Not_found -> 
-      new_univ_level_variable ~name:s univ_rigid evd
+    if CString.string_contains s "." then
+      match List.rev (CString.split '.' s) with
+      | [] -> anomaly (str"Invalid universe name " ++ str s)
+      | n :: dp -> 
+	 let num = int_of_string n in
+	 let dp = DirPath.make (List.map Id.of_string dp) in
+	 let level = Univ.Level.make dp num in
+	 let evd =
+	   try Evd.add_global_univ evd level
+	   with Univ.AlreadyDeclared -> evd
+	 in evd, level
+    else 
+      try
+	let id =
+	  try Id.of_string s with _ -> raise Not_found in
+	  evd, Idmap.find id names
+      with Not_found ->
+	try let level = Evd.universe_of_name evd s in
+	      evd, level
+	with Not_found -> 
+	  new_univ_level_variable ~name:s univ_rigid evd
 
 let interp_universe evd = function
   | [] -> let evd, l = new_univ_level_variable univ_rigid evd in
@@ -632,7 +645,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
       match evar_kind_of_term !evdref resj.uj_val with
       | App (f,args) ->
         let f = whd_evar !evdref f in
-          if isInd f && is_template_polymorphic env f then
+          if is_template_polymorphic env f then
 	    (* Special case for inductive type applications that must be 
 	       refreshed right away. *)
 	    let sigma = !evdref in

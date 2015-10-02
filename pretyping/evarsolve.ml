@@ -107,6 +107,7 @@ let refresh_universes ?(inferred=false) ?(onlyalg=false) pbty env evd t =
 let get_type_of_refresh ?(polyprop=true) ?(lax=false) env sigma c =
   let ty = Retyping.get_type_of ~polyprop ~lax env sigma c in
     refresh_universes (Some false) env sigma ty
+		      
 
 (************************)
 (* Unification results  *)
@@ -127,6 +128,32 @@ let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
   | Some false -> add_conv_pb ~tail (Reduction.CUMUL,env,t2,t1) evd
   | None -> add_conv_pb ~tail (Reduction.CONV,env,t1,t2) evd
 
+(* We retype applications to ensure the universe constraints are collected *)
+
+let recheck_applications conv_algo env evdref t =
+  let rec aux env t =
+    match kind_of_term t with
+    | App (f, args) ->
+       let () = aux env f in
+       let fty = Retyping.get_type_of env !evdref f in
+       let argsty = Array.map (fun x -> aux env x; Retyping.get_type_of env !evdref x) args in
+       let rec aux i ty =
+	 if i < Array.length argsty then
+	 match kind_of_term (whd_betadeltaiota env !evdref ty) with
+	 | Prod (na, dom, codom) ->
+	    (match conv_algo env !evdref Reduction.CUMUL argsty.(i) dom with
+	     | Success evd -> evdref := evd;
+			     aux (succ i) (subst1 args.(i) codom)
+	     | UnifFailure (evd, reason) ->
+		Pretype_errors.error_cannot_unify env evd ~reason (argsty.(i), dom))
+	 | _ -> assert false
+       else ()
+     in aux 0 fty
+    | _ ->
+       iter_constr_with_full_binders (fun d env -> push_rel d env) aux env t
+  in aux env t
+
+	  
 (*------------------------------------*
  * Restricting existing evars         *
  *------------------------------------*)
@@ -1404,10 +1431,10 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
               evdref := restrict_evar evd (fst ev'') None (UpdateWith candidates);
               evar'')
         | None ->
-          (* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
-            map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
-              imitate envk t in
-
+           (* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
+	   map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
+					imitate envk t
+  in
   let rhs = whd_beta evd rhs (* heuristic *) in
   let fast rhs = 
     let filter_ctxt = evar_filtered_context evi in
@@ -1426,8 +1453,12 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
   in
   let body =
     if fast rhs then nf_evar evd rhs
-    else imitate (env,0) rhs
- in (!evdref,body)
+    else
+      let t' = imitate (env,0) rhs in
+	if !progress then
+	  (recheck_applications conv_algo (evar_env evi) evdref t'; t')
+	else t'
+  in (!evdref,body)
 
 (* [define] tries to solve the problem "?ev[args] = rhs" when "?ev" is
  * an (uninstantiated) evar such that "hyps |- ?ev : typ". Otherwise said,

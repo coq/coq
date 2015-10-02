@@ -42,7 +42,7 @@ type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
 let cache_variable ((sp,_),o) =
   match o with
-  | Inl ctx -> Global.push_context_set ctx
+  | Inl ctx -> Global.push_context_set false ctx
   | Inr (id,(p,d,mk)) ->
   (* Constr raisonne sur les noms courts *)
   if variable_exists id then
@@ -50,13 +50,13 @@ let cache_variable ((sp,_),o) =
 
   let impl,opaq,poly,ctx = match d with (* Fails if not well-typed *)
     | SectionLocalAssum ((ty,ctx),poly,impl) ->
-      let () = Global.push_named_assum ((id,ty),ctx) in
+      let () = Global.push_named_assum ((id,ty,poly),ctx) in
       let impl = if impl then Implicit else Explicit in
 	impl, true, poly, ctx
     | SectionLocalDef (de) ->
-      let () = Global.push_named_def (id,de) in
-        Explicit, de.const_entry_opaque, de.const_entry_polymorphic, 
-	(Univ.ContextSet.of_context de.const_entry_universes) in
+      let univs = Global.push_named_def (id,de) in
+      Explicit, de.const_entry_opaque,
+      de.const_entry_polymorphic, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl poly ctx;
   Dischargedhypsmap.set_discharged_hyps sp [];
@@ -116,8 +116,9 @@ let open_constant i ((sp,kn), obj) =
     match (Global.lookup_constant con).const_body with
     | (Def _ | Undef _) -> ()
     | OpaqueDef lc ->
-        match Opaqueproof.get_constraints (Global.opaque_tables ())lc with
-        | Some f when Future.is_val f -> Global.push_context_set (Future.force f)
+        match Opaqueproof.get_constraints (Global.opaque_tables ()) lc with
+        | Some f when Future.is_val f ->
+	   Global.push_context_set false (Future.force f)
         | _ -> ()
 
 let exists_name id =
@@ -455,12 +456,14 @@ let input_universes : universe_names -> Libobject.obj =
 
 let do_universe l =
   let glob = Universes.global_universe_names () in
-  let glob' = 
-    List.fold_left (fun (idl,lid) (l, id) ->
+  let glob', ctx = 
+    List.fold_left (fun ((idl,lid),ctx) (l, id) ->
       let lev = Universes.new_univ_level (Global.current_dirpath ()) in
-	(Idmap.add id lev idl, Univ.LMap.add lev id lid))
-      glob l
+        ((Idmap.add id lev idl, Univ.LMap.add lev id lid),
+	 Univ.ContextSet.add_universe lev ctx))
+      (glob, Univ.ContextSet.empty) l
   in
+    Global.push_context_set false ctx;
     Lib.add_anonymous_leaf (input_universes glob')
 
 

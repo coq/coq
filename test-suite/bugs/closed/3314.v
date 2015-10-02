@@ -122,12 +122,12 @@ Definition depsort (T : Type) (x : bool) : informative x :=
   end.
 
 (** This definition should fail *)
-Definition Box (T : Type1) : Prop := Lift T.
+Fail Definition Box (T : Type1) : Prop := Lift T.
 
-Definition prop {T : Type1} (t : Box T) : T := t.
-Definition wrap {T : Type1} (t : T) : Box T := t.
+Fail Definition prop {T : Type1} (t : Box T) : T := t.
+Fail Definition wrap {T : Type1} (t : T) : Box T := t.
 
-Definition down (x : Type1) : Prop := Box x.
+Fail Definition down (x : Type1) : Prop := Box x.
 Definition up (x : Prop) : Type1 := x.
 
 Fail Definition back A : up (down A) -> A := @prop A.
