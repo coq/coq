@@ -21,7 +21,8 @@ Coq
 Coq_lex
 Sentence
 Gtk_parsing
-Wg_ProofView
+Wg_GoalView
+Wg_ProofNotebook
 Wg_MessageView
 Wg_Detachable
 Wg_Find

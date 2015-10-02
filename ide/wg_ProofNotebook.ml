@@ -6,55 +6,115 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-class proof_notebook nb =
+(*let _ = proof#misc#set_can_focus true in
+  let _ = GtkBase.Widget.add_events proof#as_widget
+  [`ENTER_NOTIFY;`POINTER_MOTION] in*)
+
+open Interface
+
+type goal_tab = {
+  interface_goal : goal;
+  goal_view : Wg_GoalView.goal_view;
+}
+
+let rec flatten = function
+| [] -> []
+| (lg, rg) :: l ->
+  let inner = flatten l in
+  List.rev_append lg inner @ rg
+
+
+class proof_notebook nb msg =
 object(self)
   inherit GPack.notebook nb as super
-  val mutable proof_list = []
+  val mutable goals = None
+  val mutable evars = None
+  val mutable tabs = []
 
-  method append_proof (page: Wg_ProofView.proof_view) =
-    ignore (super#append_page page#coerce);
-    let real_pos = super#page_num page#coerce in
-    let lower,higher = Util.List.chop real_pos proof_list in
-      proof_list <- lower@[page]@higher;
-      real_pos
+  method clear () =
+    ()
 
-  method get_nth_proof i =
-    List.nth proof_list i
+  method set_goals g =
+    goals <- g
 
-  method width =
-    let cp = self#current_page in
-    let wdg = self#get_nth_proof cp in
-    wdg#width
+  method set_evars (e: Interface.evar list option) =
+    evars <- e
 
-  method set_goals =
-    let cp = self#current_page in
-    let wdg = self#get_nth_proof cp in
-    wdg#set_goals
-
-  method set_evars =
-    let cp = self#current_page in
-    let wdg = self#get_nth_proof cp in
-    wdg#set_evars
-
-  method refresh =
-    let cp = self#current_page in
-    let wdg = self#get_nth_proof cp in
-    wdg#refresh
-
-  method clear =
-    let cp = self#current_page in
-    let wdg = self#get_nth_proof cp in
-    wdg#clear
-
-  method buffer =
-    let cp = self#current_page in
-    let wdg = self#get_nth_proof cp in
-    wdg#buffer
+  method refresh () =
+    match goals with
+    | None -> (* no proof in progress, remove all tabs *)
+      List.iter (fun t -> 
+        let p = self#page_num t.goal_view#coerce in
+        self#remove_page p
+      ) tabs;
+      tabs <- []
+    | Some { fg_goals = fg; bg_goals = bg; shelved_goals; given_up_goals; } ->
+      let evars = match evars with None -> [] | Some evs -> evs in
+      if fg = [] then
+      begin
+        match (bg, shelved_goals, given_up_goals, evars) with
+        | [], [], [], [] -> msg Pp.Info "No more subgoals."
+        | [], [], [], _::_ -> msg Pp.Notice
+            ("No more subgoals, but there are non-instantiated existential variables:\n\n" ^
+            List.fold_left (fun acc e ->
+              acc ^ e.Interface.evar_info ^ "\n"
+            ) "" evars ^
+            "\nYou can use Grab Existential Variables.")
+        | [], [], _, _ -> msg Pp.Notice
+            ("No more subgoals, but there are some goals you gave up:\n\n" ^
+            List.fold_left (fun acc g ->
+              acc ^ g.Interface.goal_ccl ^ "\n"
+            ) "" given_up_goals ^
+            "\nYou need to go back and solve them.")
+        | [], _, _, _ ->  msg Pp.Notice
+            ("All the remaining goals are on the shelf:\n\n" ^
+            List.fold_left (fun acc g ->
+              acc ^ g.Interface.goal_ccl ^ "\n"
+            ) "" given_up_goals)
+        | _, _, _, _ -> ()
+      end;
+        let new_tabs = ref [] in
+        (* Remove all old tabs *)
+        List.iter (fun t ->
+          let p = self#page_num t.goal_view#coerce in
+          self#remove_page p
+        ) tabs;
+        List.iter (fun g ->
+          let lbl = GMisc.label
+            ~markup:(Printf.sprintf "<b>%s</b>" g.goal_name) () in
+          let proof = Wg_GoalView.goal_view () in
+          new_tabs := { interface_goal = g; goal_view = proof }::!new_tabs;
+          ignore (self#append_page ~tab_label:lbl#coerce proof#coerce);
+          proof#refresh g
+        ) fg;
+        self#goto_page 0;
+        List.iter (fun g ->
+          let lbl = GMisc.label ~markup:(Printf.sprintf "%s" g.goal_name) () in
+          let proof = Wg_GoalView.goal_view () in
+          new_tabs := { interface_goal = g; goal_view = proof }::!new_tabs;
+          ignore (self#append_page ~tab_label:lbl#coerce proof#coerce);
+          proof#refresh g
+        ) (flatten (List.rev bg));
+        List.iter (fun g ->
+          let lbl = GMisc.label ~markup:(Printf.sprintf "<i>%s</i>" g.goal_name) () in
+          let proof = Wg_GoalView.goal_view () in
+          new_tabs := { interface_goal = g; goal_view = proof }::!new_tabs;
+          ignore (self#append_page ~tab_label:lbl#coerce proof#coerce);
+          proof#refresh g
+        ) shelved_goals;
+        List.iter (fun g ->
+          let lbl = GMisc.label ~markup:(Printf.sprintf "<s>%s</s>" g.goal_name) () in
+          let proof = Wg_GoalView.goal_view () in
+          new_tabs := { interface_goal = g; goal_view = proof }::!new_tabs;
+          ignore (self#append_page ~tab_label:lbl#coerce proof#coerce);
+          proof#refresh g
+        ) given_up_goals;
+        tabs <- List.rev !new_tabs
 end
 
-let create () =
+let create msg =
   GtkPack.Notebook.make_params []
     ~cont:(GContainer.pack_container
       ~create:(fun pl ->
         let nb = GtkPack.Notebook.create pl in
-          (new proof_notebook nb)))
+          new proof_notebook nb msg))
