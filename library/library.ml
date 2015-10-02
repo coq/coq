@@ -19,10 +19,12 @@ open Lib
 (************************************************************************)
 (*s Low-level interning/externing of libraries to files *)
 
-(*s Loading from disk to cache (preparation phase) *)
+let raw_extern_library f =
+  System.raw_extern_state Coq_config.vo_magic_number f
 
-let (raw_extern_library, raw_intern_library) =
-  System.raw_extern_intern Coq_config.vo_magic_number
+let raw_intern_library f =
+  System.with_magic_number_check
+    (System.raw_intern_state Coq_config.vo_magic_number) f
 
 (************************************************************************)
 (** Serialized objects loaded on-the-fly *)
@@ -56,7 +58,7 @@ let in_delayed f ch =
 let fetch_delayed del =
   let { del_digest = digest; del_file = f; del_off = pos; } = del in
   try
-    let ch = System.with_magic_number_check raw_intern_library f in
+    let ch = raw_intern_library f in
     let () = seek_in ch pos in
     let obj, _, digest' = System.marshal_in_segment f ch in
     let () = close_in ch in
@@ -434,7 +436,7 @@ let mk_summary m = {
 }
 
 let intern_from_file f =
-  let ch = System.with_magic_number_check raw_intern_library f in
+  let ch = raw_intern_library f in
   let (lsd : seg_sum), _, digest_lsd = System.marshal_in_segment f ch in
   let (lmd : seg_lib delayed) = in_delayed f ch in
   let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
@@ -488,32 +490,10 @@ let rec_intern_library libs mref =
   let _, libs = intern_library libs mref None in
   libs
 
-let rec_intern_by_filename_only f =
-  let m = try intern_from_file f with Sys_error s -> error s in
-  (* We check no other file containing same library is loaded *)
-  if library_is_loaded m.library_name then
-    begin
-      msg_warning
-	(pr_dirpath m.library_name ++ str " is already loaded from file " ++
-	str (library_full_filename m.library_name));
-      m.library_name, []
-    end
- else
-    let needed, contents = intern_library_deps ([], DPMap.empty) m.library_name m (Some f) in
-    let needed = List.map (fun dir -> dir, DPMap.find dir contents) needed in
-    m.library_name, needed
-
 let native_name_from_filename f =
-  let ch = System.with_magic_number_check raw_intern_library f in
+  let ch = raw_intern_library f in
   let (lmd : seg_sum), pos, digest_lmd = System.marshal_in_segment f ch in
   Nativecode.mod_uid_of_dirpath lmd.md_name
-
-let rec_intern_library_from_file f =
-  (* A name is specified, we have to check it contains library id *)
-  let paths = Loadpath.get_paths () in
-  let _, f =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".vo") in
-  rec_intern_by_filename_only f
 
 (**********************************************************************)
 (*s [require_library] loads and possibly opens a library. This is a
@@ -588,18 +568,6 @@ let require_library_from_dirpath modrefl export =
       end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
-  add_frozen_state ()
-
-let require_library_from_file file export =
-  let modref,needed = rec_intern_library_from_file file in
-  let needed = List.rev_map snd needed in
-  if Lib.is_module_or_modtype () then begin
-    add_anonymous_leaf (in_require (needed,[modref],None));
-    Option.iter (fun exp -> add_anonymous_leaf (in_import_library ([modref],exp)))
-      export
-  end
-  else
-    add_anonymous_leaf (in_require (needed,[modref],export));
   add_frozen_state ()
 
 (* the function called by Vernacentries.vernac_import *)
@@ -686,11 +654,9 @@ let start_library f =
   ldir
 
 let load_library_todo f =
-  let paths = Loadpath.get_paths () in
-  let _, longf =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+  let longf = Loadpath.locate_file (f^".v") in
   let f = longf^"io" in
-  let ch = System.with_magic_number_check raw_intern_library f in
+  let ch = raw_intern_library f in
   let (s0 : seg_sum), _, _ = System.marshal_in_segment f ch in
   let (s1 : seg_lib), _, _ = System.marshal_in_segment f ch in
   let (s2 : seg_univ option), _, _ = System.marshal_in_segment f ch in
@@ -778,7 +744,8 @@ let save_library_to ?todo dir f otab =
   if Array.exists (fun (d,_) -> DirPath.equal d dir) sd.md_deps then
     error_recursively_dependent_library dir;
   (* Open the vo file and write the magic number *)
-  let (f',ch) = raw_extern_library f in
+  let f' = f in
+  let ch = raw_extern_library f' in
   try
     (* Writing vo payload *)
     System.marshal_out_segment f' ch (sd           : seg_sum);
@@ -801,7 +768,8 @@ let save_library_to ?todo dir f otab =
     iraise reraise
 
 let save_library_raw f sum lib univs proofs =
-  let (f',ch) = raw_extern_library (f^"o") in
+  let f' = f^"o" in
+  let ch = raw_extern_library f' in
   System.marshal_out_segment f' ch (sum        : seg_sum);
   System.marshal_out_segment f' ch (lib        : seg_lib);
   System.marshal_out_segment f' ch (Some univs : seg_univ option);

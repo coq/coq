@@ -271,20 +271,10 @@ let try_locate_qualified_library qid =
     | LibNotFound -> error_lib_not_found qid
 
 (************************************************************************)
-(*s Low-level interning/externing of libraries to files *)
+(*s Low-level interning of libraries from files *)
 
-(*s Loading from disk to cache (preparation phase) *)
-
-let raw_intern_library =
-  snd (System.raw_extern_intern Coq_config.vo_magic_number)
-
-let with_magic_number_check f a =
-  try f a
-  with System.Bad_magic_number fname ->
-    errorlabstrm "with_magic_number_check"
-    (str"file " ++ str fname ++ spc () ++ str"has bad magic number." ++
-    spc () ++ str"It is corrupted" ++ spc () ++
-    str"or was compiled with another version of Coq.")
+let raw_intern_library f =
+  System.raw_intern_state Coq_config.vo_magic_number f
 
 (************************************************************************)
 (* Internalise libraries *)
@@ -312,7 +302,7 @@ let intern_from_file (dir, f) =
   Flags.if_verbose pp (str"[intern "++str f++str" ..."); pp_flush ();
   let (sd,md,table,opaque_csts,digest) =
     try
-      let ch = with_magic_number_check raw_intern_library f in
+      let ch = System.with_magic_number_check raw_intern_library f in
       let (sd:Cic.summary_disk), _, digest = System.marshal_in_segment f ch in
       let (md:Cic.library_disk), _, _ = System.marshal_in_segment f ch in
       let (opaque_csts:'a option), _, udg = System.marshal_in_segment f ch in

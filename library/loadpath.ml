@@ -28,8 +28,6 @@ let physical p = p.path_physical
 
 let get_load_paths () = !load_paths
 
-let get_paths () = List.map physical !load_paths
-
 let anomaly_too_many_paths path =
   anomaly (str "Several logical paths are associated to" ++ spc () ++ str path)
 
@@ -112,3 +110,9 @@ let expand_path dir =
       if DirPath.equal dir lg then (ph, lg) :: aux l else aux l
   in
   aux !load_paths
+
+let locate_file fname =
+  let paths = List.map physical !load_paths in
+  let _,longfname =
+    System.find_file_in_path ~warn:(Flags.is_verbose()) paths fname in
+  longfname

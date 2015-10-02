@@ -197,8 +197,11 @@ module Latex = struct
     printf "\n";
     printf "%%Warning: tipa declares many non-standard macros used by utf8x to\n";
     printf "%%interpret utf8 characters but extra packages might have to be added\n";
-    printf "%%(e.g. \"textgreek\" for Greek letters not already in tipa).\n";
-    printf "%%Use coqdoc's option -p to add new packages.\n";
+    printf "%%such as \"textgreek\" for Greek letters not already in tipa\n";
+    printf "%%or \"stmaryrd\" for mathematical symbols.\n";
+    printf "%%Utf8 codes missing a LaTeX interpretation can be defined by using\n";
+    printf "%%\\DeclareUnicodeCharacter{code}{interpretation}.\n";
+    printf "%%Use coqdoc's option -p to add new packages or declarations.\n";
     printf "\\usepackage{tipa}\n";
     printf "\n"
 

@@ -752,7 +752,7 @@ let define_evar_as_product evd (evk,args) =
 let define_pure_evar_as_lambda env evd evk =
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_env evi in
-  let typ = whd_betadeltaiota env evd (evar_concl evi) in
+  let typ = whd_betadeltaiota evenv evd (evar_concl evi) in
   let evd1,(na,dom,rng) = match kind_of_term typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
   | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd typ

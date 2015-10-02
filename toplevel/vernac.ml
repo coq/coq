@@ -97,10 +97,7 @@ let user_error loc s = Errors.user_err_loc (loc,"_",str s)
    Note: we could use only one thanks to seek_in, but seeking on and on in
    the file we parse seems a bit risky to me.  B.B.  *)
 
-let open_file_twice_if verbosely fname =
-  let paths = Loadpath.get_paths () in
-  let _,longfname =
-    find_file_in_path ~warn:(Flags.is_verbose()) paths fname in
+let open_file_twice_if verbosely longfname =
   let in_chan = open_utf8_file_in longfname in
   let verb_ch =
     if verbosely then Some (open_utf8_file_in longfname) else None in
@@ -206,19 +203,17 @@ let rec vernac_com verbose checknav (loc,com) =
   let interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
+        let fname = CUnix.make_suffix fname ".v" in
+        let f = Loadpath.locate_file fname in
 	let st = save_translator_coqdoc () in
 	if !Flags.beautify_file then
 	  begin
-            let paths = Loadpath.get_paths () in
-            let _,f = find_file_in_path ~warn:(Flags.is_verbose())
-	      paths
-	      (CUnix.make_suffix fname ".v") in
 	    chan_beautify := open_out (f^beautify_suffix);
 	    Pp.comments := []
           end;
 	begin
 	  try
-            read_vernac_file verbosely (CUnix.make_suffix fname ".v");
+            read_vernac_file verbosely f;
 	    restore_translator_coqdoc st;
 	  with reraise ->
             let reraise = Errors.push reraise in

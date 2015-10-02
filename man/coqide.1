@@ -63,9 +63,11 @@ Load Coq file
 (Load Verbose
 .IR f .).
 .TP
-.BI \-load\-vernac\-object\  f
-Load Coq object file
-.IR f .vo.
+.BI \-load\-vernac\-object\  path
+Load Coq library
+.IR path
+(Require
+.IR path .).
 .TP
 .BI \-require\  path
 Load Coq library

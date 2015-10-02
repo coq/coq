@@ -144,13 +144,19 @@ let inputstate = ref ""
 let set_inputstate s =
   let () = msg_warning (str "The inputstate option is deprecated and discouraged.") in
   inputstate:=s
-let inputstate () = if not (String.is_empty !inputstate) then intern_state !inputstate
+let inputstate () =
+  if not (String.is_empty !inputstate) then
+    let fname = Loadpath.locate_file (CUnix.make_suffix !inputstate ".coq") in
+    intern_state fname
 
 let outputstate = ref ""
 let set_outputstate s =
   let () = msg_warning (str "The outputstate option is deprecated and discouraged.") in
   outputstate:=s
-let outputstate () = if not (String.is_empty !outputstate) then extern_state !outputstate
+let outputstate () =
+  if not (String.is_empty !outputstate) then
+    let fname = CUnix.make_suffix !outputstate ".coq" in
+    extern_state fname
 
 let set_include d p implicit =
   let p = dirpath_of_string p in
@@ -162,6 +168,7 @@ let add_load_vernacular verb s =
 let load_vernacular () =
   List.iter
     (fun (s,b) ->
+      let s = Loadpath.locate_file s in
       if Flags.do_beautify () then
 	with_option beautify_file (Vernac.load_vernac b) s
       else
@@ -171,8 +178,8 @@ let load_vernacular () =
 let load_vernacular_obj = ref ([] : string list)
 let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
 let load_vernac_obj () =
-  List.iter (fun f -> Library.require_library_from_file f None)
-    (List.rev !load_vernacular_obj)
+  let map dir = Qualid (Loc.ghost, qualid_of_string dir) in
+  Vernacentries.vernac_require None None (List.rev_map map !load_vernacular_obj)
 
 let require_prelude () =
   let vo = Envars.coqlib () / "theories/Init/Prelude.vo" in

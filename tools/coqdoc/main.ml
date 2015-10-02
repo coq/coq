@@ -61,8 +61,8 @@ let usage () =
   prerr_endline "  --coqlib_path <dir>  set the path where Coq files are installed";
   prerr_endline "  -R <dir> <coqdir>    map physical dir to Coq dir";
   prerr_endline "  -Q <dir> <coqdir>    map physical dir to Coq dir";
-  prerr_endline "  --latin1             set ISO-8859-1 input language";
-  prerr_endline "  --utf8               set UTF-8 input language";
+  prerr_endline "  --latin1             set ISO-8859-1 mode";
+  prerr_endline "  --utf8               set UTF-8 mode";
   prerr_endline "  --charset <string>   set HTML charset";
   prerr_endline "  --inputenc <string>  set LaTeX input encoding";
   prerr_endline "  --interpolate        try to typeset identifiers in comments using definitions in the same module";

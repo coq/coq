@@ -215,48 +215,42 @@ let skip_in_segment f ch =
 
 exception Bad_magic_number of string
 
-let raw_extern_intern magic =
-  let extern_state filename =
-    let channel = open_trapping_failure filename in
-    output_binary_int channel magic;
-    filename, channel
-  and intern_state filename =
-    try
-      let channel = open_in_bin filename in
-      if not (Int.equal (input_binary_int filename channel) magic) then
-        raise (Bad_magic_number filename);
-      channel
-    with
-    | End_of_file -> error_corrupted filename "premature end of file"
-    | Failure s | Sys_error s -> error_corrupted filename s
-  in
-  (extern_state,intern_state)
+let raw_extern_state magic filename =
+  let channel = open_trapping_failure filename in
+  output_binary_int channel magic;
+  channel
 
-let extern_intern ?(warn=true) magic =
-  let (raw_extern,raw_intern) = raw_extern_intern magic in
-  let extern_state name val_0 =
+let raw_intern_state magic filename =
+  try
+    let channel = open_in_bin filename in
+    if not (Int.equal (input_binary_int filename channel) magic) then
+      raise (Bad_magic_number filename);
+    channel
+  with
+  | End_of_file -> error_corrupted filename "premature end of file"
+  | Failure s | Sys_error s -> error_corrupted filename s
+
+let extern_state magic filename val_0 =
+  try
+    let channel = raw_extern_state magic filename in
     try
-      let (filename,channel) = raw_extern name in
-      try
-        marshal_out channel val_0;
-        close_out channel
-      with reraise ->
-	let reraise = Errors.push reraise in
-        let () = try_remove filename in
-        iraise reraise
-    with Sys_error s ->
-      errorlabstrm "System.extern_state" (str "System error: " ++ str s)
-  and intern_state paths name =
-    try
-      let _,filename = find_file_in_path ~warn paths name in
-      let channel = raw_intern filename in
-      let v = marshal_in filename channel in
-      close_in channel;
-      v
-    with Sys_error s ->
-      errorlabstrm "System.intern_state" (str "System error: " ++ str s)
-  in
-  (extern_state,intern_state)
+      marshal_out channel val_0;
+      close_out channel
+    with reraise ->
+      let reraise = Errors.push reraise in
+      let () = try_remove filename in
+      iraise reraise
+  with Sys_error s ->
+    errorlabstrm "System.extern_state" (str "System error: " ++ str s)
+
+let intern_state magic filename =
+  try
+    let channel = raw_intern_state magic filename in
+    let v = marshal_in filename channel in
+    close_in channel;
+    v
+  with Sys_error s ->
+    errorlabstrm "System.intern_state" (str "System error: " ++ str s)
 
 let with_magic_number_check f a =
   try f a
