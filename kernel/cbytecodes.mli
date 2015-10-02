@@ -13,21 +13,28 @@ open Term
 
 type tag = int
 
+(*
 val id_tag : tag
 val iddef_tag : tag
 val ind_tag : tag
 val fix_tag : tag
 val switch_tag : tag
+*)
 val cofix_tag : tag
 val cofix_evaluated_tag : tag
-val last_variant_tag : tag 
+val univ_instance_tag : tag (** TODO: this should die *)
+val last_variant_tag : tag
 
 type structured_constant =
   | Const_sorts of sorts
-  | Const_ind of pinductive
+  | Const_ind of inductive
   | Const_proj of Constant.t
   | Const_b0 of tag
   | Const_bn of tag * structured_constant array
+  | Const_univ_level of Univ.universe_level
+  | Const_type of Univ.universe
+
+val pp_struct_const : structured_constant -> Pp.std_ppcmds
 
 type reloc_table = (tag * int) array
 
@@ -62,9 +69,11 @@ type instruction =
                    (** nb fv, init, lbl types, lbl bodies *)
   | Kclosurecofix of int * int * Label.t array * Label.t array
                    (** nb fv, init, lbl types, lbl bodies *)
-  | Kgetglobal of pconstant             (** accu = coq_global_data[c] *)
+  | Kgetglobal of constant
   | Kconst of structured_constant
-  | Kmakeblock of (* size: *) int * tag (** allocate an ocaml block *)
+  | Kmakeblock of (* size: *) int * tag (** allocate an ocaml block. Index 0
+                                         ** is accu, all others are popped from
+					 ** the top of the stack  *)
   | Kmakeprod
   | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
   | Kswitch of Label.t array * Label.t array (** consts,blocks *)
@@ -118,7 +127,11 @@ type instruction =
 
 and bytecodes = instruction list
 
-type fv_elem = FVnamed of Id.t | FVrel of int
+type fv_elem =
+  FVnamed of Id.t
+| FVrel of int
+| FVpoly_inst of pconstant
+| FVunivs
 
 type fv = fv_elem array
 
@@ -130,7 +143,7 @@ exception NotClosed
 (*spiwack: both type have been moved from Cbytegen because I needed then
   for the retroknowledge *)
 type vm_env = {
-    size : int;              (** longueur de la liste [n] *)
+    size : int;              (** length of the list [n] *)
     fv_rev : fv_elem list    (** [fvn; ... ;fv1] *)
   }
 
@@ -139,14 +152,15 @@ type comp_env = {
     nb_stack : int;              (** number of variables on the stack       *)
     in_stack : int list;         (** position in the stack                  *)
     nb_rec : int;                (** number of mutually recursive functions *)
-                                 (** recursives =  nbr                      *)
+                                 (** (= nbr)                                *)
     pos_rec  : instruction list; (** instruction d'acces pour les variables *)
                                  (**  de point fix ou de cofix              *)
     offset : int;
-    in_env : vm_env ref
+    in_env : vm_env ref          (** the variables that are accessed        *)
   }
 
-val dump_bytecode : bytecodes -> unit
+val pp_bytecodes : bytecodes -> Pp.std_ppcmds
+val pp_fv_elem : fv_elem -> Pp.std_ppcmds
 
 (*spiwack: moved this here because I needed it for retroknowledge *)
 type block =

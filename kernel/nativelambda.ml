@@ -379,7 +379,7 @@ let rec get_alias env (kn, u as p) =
     | None -> p
     | Some tps ->
        match Cemitcodes.force tps with
-       | Cemitcodes.BCalias kn' -> get_alias env kn'
+       | Cemitcodes.BCalias kn' -> get_alias env (kn', u)
        | _ -> p
 
 (*i Global environment *)

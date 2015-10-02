@@ -94,10 +94,15 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
       in
       let def = Def (Mod_subst.from_val c') in
       let ctx' = Univ.UContext.make (newus, cst) in
+      let univs =
+        if cb.const_polymorphic then Some cb.const_universes
+        else None
+      in
       let cb' =
 	{ cb with
 	  const_body = def;
-	  const_body_code = Option.map Cemitcodes.from_val (compile_constant_body env' def);
+	  const_body_code = Option.map Cemitcodes.from_val
+                              (compile_constant_body env' univs def);
 	  const_universes = ctx' }
       in
       before@(lab,SFBconst(cb'))::after, c', ctx'

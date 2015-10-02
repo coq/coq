@@ -4,7 +4,7 @@ open Cbytecodes
 type reloc_info =
   | Reloc_annot of annot_switch
   | Reloc_const of structured_constant
-  | Reloc_getglobal of constant Univ.puniverses
+  | Reloc_getglobal of constant
 
 type patch = reloc_info * int
 
@@ -25,7 +25,7 @@ val subst_to_patch : Mod_subst.substitution -> to_patch -> to_patch
 
 type body_code =
   | BCdefined of to_patch
-  | BCalias of constant Univ.puniverses
+  | BCalias of constant
   | BCconstant
 
 
@@ -40,5 +40,5 @@ val subst_to_patch_subst : Mod_subst.substitution -> to_patch_substituted -> to_
 val repr_body_code :
   to_patch_substituted -> Mod_subst.substitution list option * body_code
 
-val to_memory : bytecodes * bytecodes * fv -> to_patch
+val to_memory : bytecodes (* * bytecodes *) * fv -> to_patch
                (** init code, fun code, fv *)
