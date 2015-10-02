@@ -424,7 +424,7 @@ type logger = message_level -> std_ppcmds -> unit
 let make_body info s =
   emacs_quote (hov 0 (info ++ spc () ++ s))
 
-let debugbody strm = hov 0 (str "Debug:" ++ spc () ++ strm)
+let debugbody strm = emacs_quote_info (hov 0 (str "Debug:" ++ spc () ++ strm))
 let warnbody strm = make_body (str "Warning:") strm
 let errorbody strm = make_body (str "Error:") strm
 let infobody strm = emacs_quote_info strm
