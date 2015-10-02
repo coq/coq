@@ -3645,16 +3645,16 @@ The {\hintdef} is one of the following expressions:
   that is used only by \texttt{eauto} is a transitivity lemma.
 
   \begin{ErrMsgs}
-  \item \errindex{Bound head variable}
+%%  \item \errindex{Bound head variable}
+
+  \item \term\ \errindex{cannot be used as a hint}
 
     The head symbol of the type of {\term} is a bound variable such
     that this tactic cannot be associated to a constant.
 
-  \item \term\ \errindex{cannot be used as a hint}
-
-    The type of {\term} contains products over variables that do not
-    appear in the conclusion. A typical example is a transitivity axiom.
-    In that case the {\tt simple apply} tactic fails, and thus is useless.
+    %% The type of {\term} contains products over variables that do not
+    %% appear in the conclusion. A typical example is a transitivity axiom.
+    %% In that case the {\tt simple apply} tactic fails, and thus is useless.
 
   \end{ErrMsgs}
 
@@ -3684,7 +3684,7 @@ The {\hintdef} is one of the following expressions:
 
   \begin{ErrMsgs}
 
-  \item \errindex{Bound head variable}
+%%  \item \errindex{Bound head variable}
 
   \item \term\ \errindex{cannot be used as a hint}
 
@@ -3710,7 +3710,9 @@ The {\hintdef} is one of the following expressions:
 
     \item {\ident} \errindex{is not an inductive type}
 
-    \item {\ident} \errindex{not declared}
+% No need to have this message here, is is generic to all commands
+% referring to globals
+%%    \item {\ident} \errindex{not declared}
 
   \end{ErrMsgs}
 
