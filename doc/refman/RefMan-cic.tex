@@ -2,20 +2,22 @@
 \label{Cic}
 \index{Cic@\textsc{CIC}}
 \index{pCic@p\textsc{CIC}}
-\index{Calculus of (Co)Inductive Constructions}}
+\index{Calculus of Inductive Constructions}}
 
 The underlying formal language of {\Coq} is a {\em Calculus of
-  Constructions} with {\em Inductive Definitions}.  It is presented in
-this chapter.  
+  Constructions} with {\em Inductive Definitions}, also featuring a
+universe hierarchy and coinductive types. Its inference rules are
+presented in this chapter.
+
 For {\Coq} version V7, this Calculus was known as the
-{\em Calculus of (Co)Inductive Constructions}\index{Calculus of
-  (Co)Inductive Constructions} (\iCIC\ in short).
+{\em Calculus of Inductive Constructions}\index{Calculus of
+  Inductive Constructions} (\iCIC\ in short).
 The underlying calculus of {\Coq} version V8.0 and up is a weaker
   calculus where the sort \Set{} satisfies predicative rules. 
 We call this calculus the 
-{\em Predicative Calculus of (Co)Inductive
+{\em Predicative Calculus of Inductive
   Constructions}\index{Predicative Calculus of
-  (Co)Inductive Constructions} (\pCIC\ in short).
+  Inductive Constructions} (\pCIC\ in short).
 In Section~\ref{impredicativity} we give the extra-rules for \iCIC. A
   compiling option of \Coq{} allows type-checking theories in this
   extended system.
