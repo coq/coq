@@ -312,7 +312,10 @@ let union_evar_universe_context ctx ctx' =
     let names = UNameMap.union (fst ctx.uctx_names) (fst ctx'.uctx_names) in
     let newus = Univ.LSet.diff (Univ.ContextSet.levels ctx'.uctx_local)
 			       (Univ.ContextSet.levels ctx.uctx_local) in
-    let declarenew g = Univ.LSet.fold (fun u g -> Univ.add_universe u false g) newus g in	
+    let newus = Univ.LSet.diff newus (Univ.LMap.domain ctx.uctx_univ_variables) in
+    let declarenew g =
+      Univ.LSet.fold (fun u g -> Univ.add_universe u false g) newus g
+    in
     let names_rev = Univ.LMap.union (snd ctx.uctx_names) (snd ctx'.uctx_names) in
       { uctx_names = (names, names_rev);
 	uctx_local = local;
