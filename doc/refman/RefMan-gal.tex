@@ -971,7 +971,7 @@ are the names of its constructors and {\type$_1$}, {\ldots},
 {\type$_n$} their respective types. The types of the constructors have
 to satisfy a {\em positivity condition} (see Section~\ref{Positivity})
 for {\ident}.  This condition ensures the soundness of the inductive
-definition.  If this is the case, the constants {\ident},
+definition.  If this is the case, the names {\ident},
 {\ident$_1$}, {\ldots}, {\ident$_n$} are added to the environment with
 their respective types.  Accordingly to the universe where
 the inductive type lives ({\it e.g.} its type {\sort}), {\Coq} provides a
@@ -990,7 +990,7 @@ Inductive nat : Set :=
 \end{coq_example}
 
 The type {\tt nat} is defined as the least \verb:Set: containing {\tt
-  O} and closed by the {\tt S} constructor. The constants {\tt nat},
+  O} and closed by the {\tt S} constructor. The names {\tt nat},
 {\tt O} and {\tt S} are added to the environment.
 
 Now let us have a look at the elimination principles. They are three
@@ -1101,7 +1101,7 @@ Inductive list (A:Set) : Set :=
 \end{coq_example*}
 
 Note that in the type of {\tt nil} and {\tt cons}, we write {\tt
-  (list A)} and not just {\tt list}.\\ The constants {\tt nil} and
+  (list A)} and not just {\tt list}.\\ The constructors {\tt nil} and
 {\tt cons} will have respectively types:
 
 \begin{coq_example}
