@@ -148,31 +148,33 @@ constraints must remain acyclic.  Typing expressions that violate the
 acyclicity of the graph of constraints results in a \errindex{Universe
 inconsistency} error (see also Section~\ref{PrintingUniverses}).
 
-\subsection{Constants}
+%% HH: This looks to me more like source of confusion than helpful
 
-Constants refers to
-objects in the global environment. These constants may denote previously
-defined objects, but also objects related to inductive definitions
-(either the type itself or one of its constructors or destructors).
+%% \subsection{Constants}
 
-\medskip\noindent {\bf Remark. } In other presentations of \CIC, 
-the inductive objects are not seen as
-external declarations but as first-class terms. Usually the
-definitions are also completely ignored.  This is a nice theoretical
-point of view but not so practical. An inductive definition is
-specified by a possibly huge set of declarations, clearly we want to
-share this specification among the various inductive objects and not
-to duplicate it. So the specification should exist somewhere and the
-various objects should refer to it.  We choose one more level of
-indirection where the objects are just represented as constants and
-the environment gives the information on the kind of object the
-constant refers to.
+%% Constants refers to
+%% objects in the global environment. These constants may denote previously
+%% defined objects, but also objects related to inductive definitions
+%% (either the type itself or one of its constructors or destructors).
 
-\medskip
-Our inductive objects will be manipulated as constants declared in the
-environment. This roughly corresponds to the way they are actually
-implemented in the \Coq\ system. It is simple to map this presentation
-in a theory where inductive objects are represented by terms.
+%% \medskip\noindent {\bf Remark. } In other presentations of \CIC, 
+%% the inductive objects are not seen as
+%% external declarations but as first-class terms. Usually the
+%% definitions are also completely ignored.  This is a nice theoretical
+%% point of view but not so practical. An inductive definition is
+%% specified by a possibly huge set of declarations, clearly we want to
+%% share this specification among the various inductive objects and not
+%% to duplicate it. So the specification should exist somewhere and the
+%% various objects should refer to it.  We choose one more level of
+%% indirection where the objects are just represented as constants and
+%% the environment gives the information on the kind of object the
+%% constant refers to.
+
+%% \medskip
+%% Our inductive objects will be manipulated as constants declared in the
+%% environment. This roughly corresponds to the way they are actually
+%% implemented in the \Coq\ system. It is simple to map this presentation
+%% in a theory where inductive objects are represented by terms.
 
 \subsection{Terms}
 
