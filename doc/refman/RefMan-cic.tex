@@ -297,10 +297,10 @@ definitions, but also declarations of inductive objects. Inductive objects thems
 (see Section~\ref{Cic-inductive-definitions}).
 
 A global assumption will be represented in the global environment as
-\Assum{\Gamma}{c}{T} which assumes the name $c$ to be of some type $T$
-valid in some local context $\Gamma$. A global definition will
-be represented in the global environment as \Def{\Gamma}{c}{t}{T} which defines
-the name $c$ to have value $t$ and type $T$, both valid in $\Gamma$.
+$(c:T)$ which assumes the name $c$ to be of some type $T$.
+A global definition will
+be represented in the global environment as $c:=t:T$ which defines
+the name $c$ to have value $t$ and type $T$.
 We shall call such names {\em constants}.
 
 The rules for inductive definitions (see section
@@ -342,10 +342,10 @@ be derived from the following rules.
     \frac{\WTEG{t}{T}~~~~x \not\in
       \Gamma           % \cup E
      }{\WFE{\Gamma::(x:=t:T)}}}
-\item[Def] \inference{\frac{\WTEG{t}{T}~~~c \notin E \cup \Gamma}
-                      {\WF{E;\Def{\Gamma}{c}{t}{T}}{\Gamma}}}
-\item[Assum] \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~c \notin E \cup \Gamma}
-                      {\WF{E;\Assum{\Gamma}{c}{T}}{\Gamma}}}
+\item[Def] \inference{\frac{\WTE{}{t}{T}~~~c \notin E}
+                      {\WF{E;c:=t:T}{}}}
+ \item[Assum] \inference{\frac{\WTE{}{T}{s}~~~~s \in \Sort~~~~c \notin E}
+                      {\WF{E;c:T}{}}}
 \item[Ax] \index{Typing rules!Ax}
 \inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(p)}}~~~~~
 \frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(q)}}}
@@ -372,7 +372,7 @@ be derived from the following rules.
                  {\WTEG{(t\ u)}{\subst{T}{x}{u}}}}
 \item[Let]\index{Typing rules!Let} 
 \inference{\frac{\WTEG{t}{T}~~~~ \WTE{\Gamma::(x:=t:T)}{u}{U}}
-        {\WTEG{\kw{let}~x:=t~\kw{in}~u}{\subst{U}{x}{t}}}}
+        {\WTEG{\letin{x}{t:T}{u}}{\subst{U}{x}{t}}}}
 \end{description}
     
 \Rem We may have $\kw{let}~x:=t~\kw{in}~u$
@@ -528,51 +528,55 @@ Because these rules correspond to elementary operations in the \Coq\
 engine used in the discharge mechanism at the end of a section, we
 state them explicitly.
 
-\paragraph{Mechanism of substitution.}
+% This is obsolete: Abstraction over defined constants actually uses a
+% let-in since there are let-ins in Coq
 
-One rule which can be proved valid, is to replace a term $c$ by its
-value in the global environment. As we defined the substitution of a term for
-a variable in a term, one can define the substitution of a term for a
-constant. One easily extends this substitution to local contexts and global
-environments.
+%% \paragraph{Mechanism of substitution.}
 
-\paragraph{Substitution Property:} 
-\inference{\frac{\WF{E;\Def{\Gamma}{c}{t}{T}; F}{\Delta}}
-           {\WF{E; \subst{F}{c}{t}}{\subst{\Delta}{c}{t}}}}
+%% One rule which can be proved valid, is to replace a term $c$ by its
+%% value in the global environment. As we defined the substitution of a term for
+%% a variable in a term, one can define the substitution of a term for a
+%% constant. One easily extends this substitution to local contexts and global
+%% environments.
 
+%% \paragraph{Substitution Property:}
+%% \inference{\frac{\WF{E;c:=t:T; E'}{\Gamma}}
+%%            {\WF{E; \subst{E'}{c}{t}}{\subst{\Gamma}{c}{t}}}}
 
 \paragraph{Abstraction.}
 
-One can modify the local context of definition of a constant $c$ by
-abstracting a constant with respect to the last variable $x$ of its
-defining local context. For doing that, we need to check that the constants
-appearing in the body of the declaration do not depend on $x$, we need
-also to modify the reference to the constant $c$ in the global environment
-and local context by explicitly applying this constant to the variable $x$.
-Because of the rules for building global environments and terms we know the
-variable $x$ is available at each stage where $c$ is mentioned.
+One can modify the definition of a constant $c$ by generalizing it
+over a previously assumed constant $c'$. For doing that, we need
+to modify the reference to $c$ in the subsequent global environment
+and local context by explicitly applying this constant to the constant $c'$.
 
-\paragraph{Abstracting property:} 
- \inference{\frac{\WF{E; \Def{\Gamma::(x:U)}{c}{t}{T};
-       F}{\Delta}~~~~\WFE{\Gamma}}
-           {\WF{E;\Def{\Gamma}{c}{\lb x:U\mto t}{\forall~x:U,T};
-  \subst{F}{c}{(c~x)}}{\subst{\Delta}{c}{(c~x)}}}}
+\paragraph{First abstracting property:}
+ \inference{\frac{\WF{E;c':U;E';c:=t:T;E''}{\Gamma}}
+                 {\WF{E;c':U;E';c:=\lb x:U\mto \subst{t}{c'}{x}:\forall~x:U,\subst{T}{c'}{x};
+  \subst{E''}{c}{(c~c')}}{\subst{\Gamma}{c}{(c~c')}}}}
+
+One can similarly modify the definition of a constant $c$ by generalizing it
+over a previously defined constant $c'$.
+
+\paragraph{Second abstracting property:}
+ \inference{\frac{\WF{E;c':=u:U;E';c:=t:T;E''}{\Gamma}}
+           {\WF{E;c':=u:U;E';c:=(\letin{x}{u:U}{\subst{t}{c'}{x}}):\subst{T}{c'}{u};
+  E''}{\Gamma}}}
 
 \paragraph{Pruning the local context.}
-We said the judgment \WFE{\Gamma} means that the defining local contexts of
-constants in $E$ are included in $\Gamma$. If one abstracts or
-substitutes the constants with the above rules then it may happen
-that the local context $\Gamma$ is now bigger than the one needed for
-defining the constants in $E$. Because defining local contexts are growing
-in $E$, the minimum local context needed for defining the constants in $E$
-is the same as the one for the last constant. One can consequently
-derive the following property.
+If one abstracts or substitutes constants with the above rules then it
+may happen that some declared or defined constant does not occur any
+more in the subsequent global environment and in the local context. One can
+consequently derive the following property.
 
-\paragraph{Pruning property:}
-\inference{\frac{\WF{E; \Def{\Delta}{c}{t}{T}}{\Gamma}}
-                {\WF{E;\Def{\Delta}{c}{t}{T}}{\Delta}}}
-
-
+\paragraph{First pruning property:}
+\inference{\frac{\WF{E;c:U;E'}{\Gamma} \qquad c \mbox{ does not occur in $E'$ and $\Gamma$}}
+                {\WF{E;E'}{\Gamma}}}
+ 
+\paragraph{Second pruning property:}
+\inference{\frac{\WF{E;c:=u:U;E'}{\Gamma} \qquad c \mbox{ does not occur in $E'$ and $\Gamma$}}
+                {\WF{E;E'}{\Gamma}}}
+ 
 \section[Inductive Definitions]{Inductive Definitions\label{Cic-inductive-definitions}}
 
 A (possibly mutual) inductive definition is specified by giving the
