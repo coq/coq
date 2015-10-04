@@ -5,22 +5,29 @@
 \index{Calculus of Inductive Constructions}}
 
 The underlying formal language of {\Coq} is a {\em Calculus of
-  Constructions} with {\em Inductive Definitions}, also featuring a
-universe hierarchy and coinductive types. Its inference rules are
-presented in this chapter.
+  Inductive Constructions} (\CIC) whose inference rules are presented in
+this chapter.
 
-For {\Coq} version V7, this Calculus was known as the
-{\em Calculus of Inductive Constructions}\index{Calculus of
-  Inductive Constructions} (\iCIC\ in short).
-The underlying calculus of {\Coq} version V8.0 and up is a weaker
-  calculus where the sort \Set{} satisfies predicative rules. 
-We call this calculus the 
-{\em Predicative Calculus of Inductive
-  Constructions}\index{Predicative Calculus of
-  Inductive Constructions} (\pCIC\ in short).
-In Section~\ref{impredicativity} we give the extra-rules for \iCIC. A
-  compiling option of \Coq{} allows type-checking theories in this
-  extended system.
+The {\CIC} implemented in {\Coq}
+takes its name from Coquand and Paulin's {\em Calculus of
+  Inductive Constructions}~\cite{CoPa89} which itself extends
+Coquand-Huet's {\em Calculus of
+  Constructions}~\cite{CoHu85a,CoHu85b,CoHu86,Coq85} with a universe
+hierarchy~\cite{Coq86,Luo90,Hue88b} and a generic presentation of
+inductive types à la Martin-L\"of~\cite{MaL84,Dyb91}. First implemented in
+{\Coq} version 5.0, it incorporated coinductive
+types~\cite{Coquand93,Gim96} from {\Coq} version 5.10. It
+progressively extended with various new features such as local
+definitions (since {\Coq} version 7.0), universe polymorphism (since
+{\Coq} version 8.1 for inductive types and version 8.5 for full
+polymorphism), recursively non-uniform parameters (since {\Coq} version 8.1),
+some $\eta$-rules (for dependent product in {\Coq}
+version 8.4, for record types in {\Coq} version 8.5), and other
+refinements in the expressiveness of fixpoints and inductive types.
+Up to version 7.4, the {\CIC} implemented in {\Coq}
+had an impredicative sort {\Set}. Since {\Coq} version 8.0, the sort
+{\Set} is predicative by default, with an option to make it
+impredicative (see Section~\ref{impredicativity}).
 
 In \CIC\, all objects have a {\em type}. There are types for functions (or
 programs), there are atomic types (especially datatypes)... but also
@@ -28,29 +35,25 @@ types for proofs and types for the types themselves.
 Especially, any object handled in the formalism must belong to a
 type.  For instance, the statement {\it ``for all x, P''} is not
 allowed in type theory; you must say instead: {\it ``for all x
-belonging to T, P''}. The expression {\it ``x belonging to T''} is
-written {\it ``x:T''}. One also says: {\it ``x has type T''}.
+of type T, P''}. The expression {\it ``x of type T''} is
+written {\it ``x:T''}. Informally, {\it ``x:T''} can be thought as
+{\it ``x belongs to T''}.
 The terms of {\CIC} are detailed in Section~\ref{Terms}.
 
-In \CIC\, there is an internal reduction mechanism. In particular, it
+In \CIC, there is an internal reduction mechanism. In particular, it
 can decide if two programs are {\em intentionally} equal (one
 says {\em convertible}). Convertibility is presented in section 
 \ref{convertibility}.
 
-The remaining sections are concerned with the type-checking of terms.
-The beginner can skip them.
-
 The reader seeking a background on the Calculus of Inductive
-Constructions may read several papers. Giménez and Castéran~\cite{GimCas05}
+Constructions may read several papers. In addition to the references given above, Giménez and Castéran~\cite{GimCas05}
 provide
 an introduction to inductive and co-inductive definitions in Coq. In
-their book~\cite{CoqArt}, Bertot and Castéran give a precise
+their book~\cite{CoqArt}, Bertot and Castéran give a
 description of the \CIC{} based on numerous practical examples.
 Barras~\cite{Bar99}, Werner~\cite{Wer94} and
-Paulin-Mohring~\cite{Moh97} are the most recent theses dealing with
-Inductive Definitions. Coquand-Huet~\cite{CoHu85a,CoHu85b,CoHu86}
-introduces the Calculus of Constructions. Coquand-Paulin~\cite{CoPa89}
-extended this calculus to inductive definitions. The {\CIC} is a
+Paulin-Mohring~\cite{Moh97} are dealing with
+Inductive Definitions. The {\CIC} is a
 formulation of type theory including the possibility of inductive
 constructions, Barendregt~\cite{Bar91} studies the modern form of type
 theory.
@@ -1701,11 +1704,11 @@ More information on co-inductive definitions can be found
 in~\cite{Gimenez95b,Gim98,GimCas05}.
 %They are described in Chapter~\ref{Co-inductives}.
 
-\section[\iCIC : the Calculus of Inductive Construction with
-  impredicative \Set]{\iCIC : the Calculus of Inductive Construction with
+\section[The Calculus of Inductive Construction with
+  impredicative \Set]{The Calculus of Inductive Construction with
   impredicative \Set\label{impredicativity}}
 
-\Coq{} can be used as a type-checker for \iCIC{}, the original 
+\Coq{} can be used as a type-checker for the
 Calculus of Inductive Constructions with an impredicative sort \Set{}
 by using the compiler option \texttt{-impredicative-set}.
 
