@@ -250,7 +250,8 @@ a global environment (see below) and a local context.
 
 \paragraph{Local context.}
 A {\em local context} is an ordered list of
-declarations of variables. The declaration of some variable $x$ is
+declarations of names which we call {\em variables}.
+The declaration of some variable $x$ is
 either a local assumption, written $x:T$ ($T$ is a type) or a local definition,
 written $x:=t:T$.  We use brackets to write local contexts. A
 typical example is $[x:T;y:=u:U;z:V]$.  Notice that the variables
@@ -289,11 +290,11 @@ definitions, but also declarations of inductive objects. Inductive objects thems
 (see Section~\ref{Cic-inductive-definitions}).
 
 A global assumption will be represented in the global environment as
-\Assum{\Gamma}{c}{T} which means that $c$ is assumed of some type $T$
-well-defined in some local context $\Gamma$. A global definition will
-be represented in the global environment as \Def{\Gamma}{c}{t}{T} which means
-that $c$ is a constant which is valid in some local context $\Gamma$ whose
-value is $t$ and type is $T$.
+\Assum{\Gamma}{c}{T} which assumes the name $c$ to be of some type $T$
+valid in some local context $\Gamma$. A global definition will
+be represented in the global environment as \Def{\Gamma}{c}{t}{T} which defines
+the name $c$ to have value $t$ and type $T$, both valid in $\Gamma$.
+We shall call such names {\em constants}.
 
 The rules for inductive definitions (see section
 \ref{Cic-inductive-definitions}) have to be considered as assumption
@@ -405,7 +406,7 @@ called $\iota$-reduction and is more precisely studied in
 
 \paragraph[$\delta$-reduction.]{$\delta$-reduction.\label{delta}\index{delta-reduction@$\delta$-reduction}}
 
-We may have defined variables in local contexts or constants in the global
+We may have variables defined in local contexts or constants defined in the global
 environment. It is legal to identify such a reference with its value,
 that is to expand (or unfold) it into its value. This
 reduction is called $\delta$-reduction and shows as follows.
