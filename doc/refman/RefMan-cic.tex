@@ -176,9 +176,11 @@ in a theory where inductive objects are represented by terms.
 
 \subsection{Terms}
 
-Terms are built from variables, constants, constructors,
-abstraction, application, local declarations bindings (``let-in''
-expressions) and product.
+Terms are built from sorts, variables, constant,
+%constructors, inductive types,
+abstraction, application, local definitions,
+%case analysis, fixpoints, cofixpoints
+and products.
 
 From a syntactic point of view, types cannot be distinguished from terms,
 except that they cannot start by an abstraction, and that if a term is
@@ -188,9 +190,11 @@ More precisely the language of the {\em Calculus of Inductive
   Constructions} is built from the following rules:
 
 \begin{enumerate}
-\item the sorts {\sf Set, Prop, Type} are terms.
-\item names for global constants of the environment are terms.
-\item variables are terms.
+\item the sorts {\Set}, {\Prop}, ${\Type(i)}$ are terms.
+\item variables are terms
+\item constants are terms.
+%\item constructors are terms.
+%\item inductive types are terms.
 \item if $x$ is a variable and $T$, $U$ are terms then $\forall~x:T,U$
   ($\kw{forall}~x:T,U$ in \Coq{} concrete syntax) is a term. If $x$
   occurs in $U$, $\forall~x:T,U$ reads as {\it ``for all x of type T,
@@ -212,6 +216,9 @@ More precisely the language of the {\em Calculus of Inductive
   term which denotes the term $U$ where the variable $x$ is locally
   bound to $T$. This stands for the common ``let-in'' construction of
   functional programs such as ML or Scheme.
+%\item case ...
+%\item fixpoint ...
+%\item cofixpoint ...
 \end{enumerate}
 
 \paragraph{Notations.} Application associates to the left such that
