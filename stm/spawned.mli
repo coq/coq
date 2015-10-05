@@ -8,7 +8,7 @@
 
 (* To link this file, threads are needed *)
 
-type chandescr = AnonPipe | Socket of string * int
+type chandescr = AnonPipe | Socket of string * int * int
 
 (* Argument parsing should set these *)
 val main_channel : chandescr option ref
