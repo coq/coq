@@ -51,7 +51,7 @@ let execution_error, execution_error_hook = Hook.make
     feedback ~state_id (Feedback.ErrorMsg (loc, string_of_ppcmds msg))) ()
 
 let unreachable_state, unreachable_state_hook = Hook.make
- ~default:(fun _ -> ()) ()
+ ~default:(fun _ _ -> ()) ()
 
 include Hook
 
@@ -736,7 +736,7 @@ end = struct (* {{{ *)
       let good_id = !cur_id in
       cur_id := Stateid.dummy;
       VCS.reached id false;
-      Hooks.(call unreachable_state id);
+      Hooks.(call unreachable_state id (e, info));
       match Stateid.get info, safe_id with
       | None, None -> iraise (exn_on id ~valid:good_id (e, info))
       | None, Some good_id -> iraise (exn_on id ~valid:good_id (e, info))
