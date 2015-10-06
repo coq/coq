@@ -15,6 +15,7 @@ module PriorityQueue : sig
   val pop : ?picky:('a -> bool) -> 'a t -> 'a
   val push : 'a t -> 'a -> unit
   val clear : 'a t -> unit
+  val length : 'a t -> int
 end = struct
   type 'a item = int * 'a
   type 'a rel = 'a item -> 'a item -> int
@@ -38,6 +39,7 @@ end = struct
   let set_rel rel ({ contents = (xs, _) } as t) =
     let rel (_,x) (_,y) = rel x y in
     t := (List.sort rel xs, rel)
+  let length ({ contents = (l, _) }) = List.length l
 end
 
 type 'a t = {
@@ -91,6 +93,12 @@ let push { queue = q; lock = m; cond = c; release } x =
   PriorityQueue.push q x;
   Condition.broadcast c;
   Mutex.unlock m
+
+let length { queue = q; lock = m } =
+  Mutex.lock m;
+  let n = PriorityQueue.length q in
+  Mutex.unlock m;
+  n
 
 let clear { queue = q; lock = m; cond = c } =
   Mutex.lock m;

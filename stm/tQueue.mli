@@ -28,3 +28,5 @@ exception BeingDestroyed
 (* Threads blocked in pop can get this exception if the queue is being
  * destroyed *)
 val destroy : 'a t -> unit
+
+val length : 'a t -> int
