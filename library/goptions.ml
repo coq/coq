@@ -20,6 +20,7 @@ type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
+  | StringOptValue of string option
 
 (** Summary of an option status *)
 type option_state = {
@@ -293,6 +294,10 @@ let declare_string_option =
   declare_option
     (fun v -> StringValue v)
     (function StringValue v -> v | _ -> anomaly (Pp.str "async_option"))
+let declare_stringopt_option =
+  declare_option
+    (fun v -> StringOptValue v)
+    (function StringOptValue v -> v | _ -> anomaly (Pp.str "async_option"))
 
 (* 3- User accessible commands *)
 
@@ -324,11 +329,13 @@ let check_bool_value v = function
 
 let check_string_value v = function
   | StringValue _ -> StringValue v
+  | StringOptValue _ -> StringOptValue (Some v)
   | _ -> bad_type_error ()
 
 let check_unset_value v = function
   | BoolValue _ -> BoolValue false
   | IntValue _ -> IntValue None
+  | StringOptValue _ -> StringOptValue None
   | _ -> bad_type_error ()
 
 (* Nota: For compatibility reasons, some errors are treated as
@@ -359,6 +366,8 @@ let msg_option_value (name,v) =
     | IntValue (Some n) -> int n
     | IntValue None   -> str "undefined"
     | StringValue s   -> str s
+    | StringOptValue None   -> str"undefined"
+    | StringOptValue (Some s)   -> str s
 (*     | IdentValue r    -> pr_global_env Id.Set.empty r *)
 
 let print_option_value key =

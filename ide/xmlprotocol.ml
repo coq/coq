@@ -62,10 +62,12 @@ let of_option_value = function
   | IntValue i -> constructor "option_value" "intvalue" [of_option of_int i]
   | BoolValue b -> constructor "option_value" "boolvalue" [of_bool b]
   | StringValue s -> constructor "option_value" "stringvalue" [of_string s]
+  | StringOptValue s -> constructor "option_value" "stringoptvalue" [of_option of_string s]
 let to_option_value = do_match "option_value" (fun s args -> match s with
   | "intvalue" -> IntValue (to_option to_int (singleton args))
   | "boolvalue" -> BoolValue (to_bool (singleton args))
   | "stringvalue" -> StringValue (to_string (singleton args))
+  | "stringoptvalue" -> StringOptValue (to_option to_string (singleton args))
   | _ -> raise Marshal_error)
 
 let of_option_state s =
@@ -337,6 +339,8 @@ end = struct
     | IntValue None -> "none"
     | IntValue (Some i) -> string_of_int i
     | StringValue s -> s
+    | StringOptValue None -> "none"
+    | StringOptValue (Some s) -> s
     | BoolValue b -> if b then "true" else "false"
   let pr_option_state (s : option_state) =
     Printf.sprintf "sync := %b; depr := %b; name := %s; value := %s\n"
