@@ -290,7 +290,7 @@ let typecheck_inductive env mie =
       let full_polymorphic () = 
 	let defu = Term.univ_of_sort def_level in
 	let is_natural =
-	  type_in_type env || (check_leq (universes env') infu defu &&
+	  type_in_type env || (UGraph.check_leq (universes env') infu defu &&
 				not (is_type0m_univ defu && not is_unit)
 				  (* (~ is_type0m_univ defu \/ is_unit) (\* infu <= defu && not prop or unital *\) *)
 
@@ -320,7 +320,7 @@ let typecheck_inductive env mie =
 	    (* conclusions of the parameters *)
             (* We enforce [u >= lev] in case [lev] has a strict upper *)
             (* constraints over [u] *)
-	    let b = type_in_type env || check_leq (universes env') infu u in
+	    let b = type_in_type env || UGraph.check_leq (universes env') infu u in
 	      if not b then
 		anomaly ~label:"check_inductive" 
 		  (Pp.str"Incorrect universe " ++

@@ -30,7 +30,7 @@ exception NotConvertibleVect of int
 
 type 'a conversion_function = env -> 'a -> 'a -> unit
 type 'a trans_conversion_function = Names.transparent_state -> 'a conversion_function
-type 'a universe_conversion_function = env -> Univ.universes -> 'a -> 'a -> unit
+type 'a universe_conversion_function = env -> UGraph.t -> 'a -> 'a -> unit
 type 'a trans_universe_conversion_function = 
   Names.transparent_state -> 'a universe_conversion_function
 
@@ -47,10 +47,10 @@ type 'a universe_state = 'a * 'a universe_compare
 
 type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
-type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
+type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.constraints
 
 val check_sort_cmp_universes :
-  env -> conv_pb -> sorts -> sorts -> Univ.universes -> unit
+  env -> conv_pb -> sorts -> sorts -> UGraph.t -> unit
 
 (* val sort_cmp : *)
 (*     conv_pb -> sorts -> sorts -> Univ.constraints -> Univ.constraints *)

@@ -60,11 +60,11 @@ val subst_univs_universe_constraints : universe_subst_fn ->
 
 val enforce_eq_instances_univs : bool -> universe_instance universe_constraint_function
 
-val to_constraints : universes -> universe_constraints -> constraints
+val to_constraints : UGraph.t -> universe_constraints -> constraints
 
 (** [eq_constr_univs_infer u a b] is [true, c] if [a] equals [b] modulo alpha, casts,
    application grouping, the universe constraints in [u] and additional constraints [c]. *)
-val eq_constr_univs_infer : Univ.universes -> constr -> constr -> bool universe_constrained
+val eq_constr_univs_infer : UGraph.t -> constr -> constr -> bool universe_constrained
 
 (** [eq_constr_univs_infer_With kind1 kind2 univs m n] is a variant of
     {!eq_constr_univs_infer} taking kind-of-term functions, to expose
@@ -72,12 +72,12 @@ val eq_constr_univs_infer : Univ.universes -> constr -> constr -> bool universe_
 val eq_constr_univs_infer_with :
   (constr -> (constr,types) kind_of_term) ->
   (constr -> (constr,types) kind_of_term) ->
-  Univ.universes -> constr -> constr -> bool universe_constrained
+  UGraph.t -> constr -> constr -> bool universe_constrained
 
 (** [leq_constr_univs u a b] is [true, c] if [a] is convertible to [b]
     modulo alpha, casts, application grouping, the universe constraints
     in [u] and additional constraints [c]. *)
-val leq_constr_univs_infer : Univ.universes -> constr -> constr -> bool universe_constrained
+val leq_constr_univs_infer : UGraph.t -> constr -> constr -> bool universe_constrained
 
 (** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
     application grouping and the universe constraints in [c]. *)
@@ -212,7 +212,7 @@ val restrict_universe_context : universe_context_set -> universe_set -> universe
 val simplify_universe_context : universe_context_set -> 
   universe_context_set * universe_level_subst
 
-val refresh_constraints : universes -> universe_context_set -> universe_context_set * universes
+val refresh_constraints : UGraph.t -> universe_context_set -> universe_context_set * UGraph.t
 
 (** Pretty-printing *)
 

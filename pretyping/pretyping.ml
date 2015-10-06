@@ -111,7 +111,7 @@ let interp_universe_level_name evd s =
 	 let level = Univ.Level.make dp num in
 	 let evd =
 	   try Evd.add_global_univ evd level
-	   with Univ.AlreadyDeclared -> evd
+	   with UGraph.AlreadyDeclared -> evd
 	 in evd, level
     else 
       try

@@ -317,7 +317,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 		  (* Check that the given definition does not add any constraint over
 		     the expected ones, so that it can be used in place of 
                      the original. *)
-		    if Univ.check_constraints ctx1 (Environ.universes env) then
+		    if UGraph.check_constraints ctx1 (Environ.universes env) then
 		      cstrs, env, inst2
 		    else error (IncompatibleConstraints ctx1)
 		with Univ.UniverseInconsistency incon -> 

@@ -32,7 +32,7 @@ type globals = {
   env_modtypes : module_type_body MPmap.t}
 
 type stratification = {
-  env_universes : universes;
+  env_universes : UGraph.t;
   env_engagement : engagement
 }
 

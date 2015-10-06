@@ -40,6 +40,9 @@ sig
   val pr : t -> Pp.std_ppcmds
   (** Pretty-printing *)
 
+  val to_string : t -> string
+  (** Debug printing *)
+
   val var : int -> t
 
   val var_index : t -> int option
@@ -115,6 +118,9 @@ sig
   
   val type1 : t 
   (** the universe of the type of Prop/Set *)
+
+  val exists : (Level.t * int -> bool) -> t -> bool
+  val for_all : (Level.t * int -> bool) -> t -> bool
 end
 
 type universe = Universe.t
@@ -148,31 +154,6 @@ val univ_level_mem : universe_level -> universe -> bool
 
 val univ_level_rem : universe_level -> universe -> universe -> universe
 
-(** {6 Graphs of universes. } *)
-
-type universes
-
-type 'a check_function = universes -> 'a -> 'a -> bool
-val check_leq : universe check_function
-val check_eq : universe check_function
-
-(** The empty graph of universes *)
-val empty_universes : universes
-
-(** The initial graph of universes: Prop < Set *)
-val initial_universes : universes
-
-val is_initial_universes : universes -> bool
-
-val sort_universes : universes -> universes
-
-(** Adds a universe to the graph, ensuring it is >= or > Set.
-   @raises AlreadyDeclared if the level is already declared in the graph. *)
-
-exception AlreadyDeclared
-
-val add_universe : universe_level -> bool -> universes -> universes
-
 (** {6 Constraints. } *)
 
 type constraint_type = Lt | Le | Eq
@@ -203,12 +184,6 @@ val enforce_leq : universe constraint_function
 val enforce_eq_level : universe_level constraint_function
 val enforce_leq_level : universe_level constraint_function
 
-(** {6 ... } *)
-(** Merge of constraints in a universes graph.
-  The function [merge_constraints] merges a set of constraints in a given
-  universes graph. It raises the exception [UniverseInconsistency] if the
-  constraints are not satisfiable. *)
-
 (** Type explanation is used to decorate error messages to provide
   useful explanation why a given constraint is rejected. It is composed
   of a path of universes and relation kinds [(r1,u1);..;(rn,un)] means
@@ -225,14 +200,6 @@ type explanation = (constraint_type * universe) list
 type univ_inconsistency = constraint_type * universe * universe * explanation option
 
 exception UniverseInconsistency of univ_inconsistency
-
-val enforce_constraint : univ_constraint -> universes -> universes
-val merge_constraints : constraints -> universes -> universes
-
-val constraints_of_universes : universes -> constraints
-
-val check_constraint  : universes -> univ_constraint -> bool
-val check_constraints : constraints -> universes -> bool
 
 (** {6 Support for universe polymorphism } *)
 
@@ -309,8 +276,6 @@ sig
   val levels : t -> LSet.t
   (** The set of levels in the instance *)
 
-  val check_eq : t check_function 
-  (** Check equality of instances w.r.t. a universe graph *)
 end
 
 type universe_instance = Instance.t
@@ -424,7 +389,6 @@ val instantiate_univ_constraints : universe_instance -> universe_context -> cons
 
 (** {6 Pretty-printing of universes. } *)
 
-val pr_universes : (Level.t -> Pp.std_ppcmds) -> universes -> Pp.std_ppcmds
 val pr_constraint_type : constraint_type -> Pp.std_ppcmds
 val pr_constraints : (Level.t -> Pp.std_ppcmds) -> constraints -> Pp.std_ppcmds
 val pr_universe_context : (Level.t -> Pp.std_ppcmds) -> universe_context -> Pp.std_ppcmds
@@ -434,12 +398,6 @@ val explain_universe_inconsistency : (Level.t -> Pp.std_ppcmds) ->
 
 val pr_universe_level_subst : universe_level_subst -> Pp.std_ppcmds
 val pr_universe_subst : universe_subst -> Pp.std_ppcmds
-
-(** {6 Dumping to a file } *)
-
-val dump_universes :
-  (constraint_type -> string -> string -> unit) ->
-  universes -> unit
 
 (** {6 Hash-consing } *)
 
