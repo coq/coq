@@ -105,6 +105,18 @@ let clear { queue = q; lock = m; cond = c } =
   PriorityQueue.clear q;
   Mutex.unlock m
 
+let clear_saving { queue = q; lock = m; cond = c } f =
+  Mutex.lock m;
+  let saved = ref [] in
+  while not (PriorityQueue.is_empty q) do
+    let elem = PriorityQueue.pop q in
+    match f elem with
+    | Some x -> saved := x :: !saved
+    | None -> ()
+  done;
+  Mutex.unlock m;
+  List.rev !saved
+
 let is_empty { queue = q } = PriorityQueue.is_empty q
 
 let destroy tq =
