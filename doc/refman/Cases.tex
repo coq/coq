@@ -521,6 +521,8 @@ I have a copy of {\tt b} in type {\tt listn 0} resp {\tt listn (S n')}.
 % \end{coq_example}
 
 \paragraph{Patterns in {\tt in}}
+\label{match-in-patterns}
+
 If the type of the matched term is more precise than an inductive applied to
 variables, arguments of the inductive in the {\tt in} branch can be more
 complicated patterns than a variable.
@@ -530,7 +532,7 @@ become impossible branches. In an impossible branch, you can answer
 anything but {\tt False\_rect unit} has the advantage to be subterm of
 anything. % ???
 
-To be concrete: the tail function can be written:
+To be concrete: the {\tt tail} function can be written:
 \begin{coq_example}
 Definition tail n (v: listn (S n)) :=
   match v in listn (S m) return listn m with
