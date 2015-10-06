@@ -372,7 +372,7 @@ end = struct (* {{{ *)
          (try let n = Hashtbl.find clus c in from::n
          with Not_found -> [from]); true in
     let oc = open_out fname_dot in
-    output_string oc "digraph states {\nsplines=ortho\n";
+    output_string oc "digraph states {\n";
     Dag.iter graph (fun from cf _ l ->
       let c1 = add_to_clus_or_ids from cf in
       List.iter (fun (dest, trans) ->
