@@ -347,13 +347,18 @@ let dump_universes_gen g s =
     end
   in
   try
-    Univ.dump_universes output_constraint g;
+    UGraph.dump_universes output_constraint g;
     close ();
     msg_info (str "Universes written to file \"" ++ str s ++ str "\".")
   with reraise ->
     let reraise = Errors.push reraise in
     close ();
     iraise reraise
+
+let dump_universes sorted s =
+  let g = Global.universes () in
+  let g = if sorted then UGraph.sort_universes g else g in
+  dump_universes_gen g s
 
 (*********************)
 (* "Locate" commands *)
@@ -1620,15 +1625,13 @@ let vernac_print = function
   | PrintCanonicalConversions -> msg_notice (Prettyp.print_canonical_projections ())
   | PrintUniverses (b, dst) ->
      let univ = Global.universes () in
-     let univ = if b then Univ.sort_universes univ else univ in
+     let univ = if b then UGraph.sort_universes univ else univ in
      let pr_remaining =
        if Global.is_joined_environment () then mt ()
        else str"There may remain asynchronous universe constraints"
      in
-     begin match dst with
-     | None -> msg_notice (Univ.pr_universes Universes.pr_with_global_universes univ ++ pr_remaining)
-     | Some s -> dump_universes_gen univ s
-     end
+     msg_notice (UGraph.pr_universes Universes.pr_with_global_universes univ ++ pr_remaining)
+  | PrintUniverses (b, Some s) -> dump_universes b s
   | PrintHint r -> msg_notice (Hints.pr_hint_ref (smart_global r))
   | PrintHintGoal -> msg_notice (Hints.pr_applicable_hint ())
   | PrintHintDbName s -> msg_notice (Hints.pr_hint_db_by_name s)

@@ -28,7 +28,7 @@ exception NotConvertibleVect of int
 
 type 'a conversion_function = env -> 'a -> 'a -> unit
 type 'a trans_conversion_function = Names.transparent_state -> 'a conversion_function
-type 'a universe_conversion_function = env -> Univ.universes -> 'a -> 'a -> unit
+type 'a universe_conversion_function = env -> UGraph.t -> 'a -> 'a -> unit
 type 'a trans_universe_conversion_function = 
   Names.transparent_state -> 'a universe_conversion_function
 
@@ -45,7 +45,7 @@ type 'a universe_state = 'a * 'a universe_compare
 
 type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
 
-type 'a infer_conversion_function = env -> Univ.universes -> 'a -> 'a -> Univ.constraints
+type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.constraints
 
 val sort_cmp_universes : env -> conv_pb -> sorts -> sorts ->
   'a * 'a universe_compare -> 'a * 'a universe_compare
@@ -55,8 +55,8 @@ constructors. *)
 val convert_instances : flex:bool -> Univ.Instance.t -> Univ.Instance.t ->
   'a * 'a universe_compare -> 'a * 'a universe_compare
 
-val checked_universes : Univ.universes universe_compare
-val inferred_universes : (Univ.universes * Univ.Constraint.t) universe_compare
+val checked_universes : UGraph.t universe_compare
+val inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare
 
 val trans_conv_cmp       : ?l2r:bool -> conv_pb -> constr trans_conversion_function
 val trans_conv           :

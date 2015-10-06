@@ -45,7 +45,7 @@ type globals = {
   env_modtypes : module_type_body MPmap.t}
 
 type stratification = {
-  env_universes : universes;
+  env_universes : UGraph.t;
   env_engagement : engagement
 }
 
@@ -93,7 +93,7 @@ let empty_env = {
   env_rel_val = [];
   env_nb_rel = 0;
   env_stratification = {
-    env_universes = initial_universes;
+    env_universes = UGraph.initial_universes;
     env_engagement = (PredicativeSet,StratifiedType) };
   env_conv_oracle = Conv_oracle.empty;
   retroknowledge = Retroknowledge.initial_retroknowledge;
