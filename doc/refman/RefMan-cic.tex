@@ -497,7 +497,7 @@ The conversion rule is now exactly:
 \paragraph[Normal form.]{Normal form.\index{Normal form}\label{Normal-form}\label{Head-normal-form}\index{Head normal form}}
 A term which cannot be any more reduced is said to be in {\em normal
   form}. There are several ways (or strategies) to apply the reduction
-rule. Among them, we have to mention the {\em head reduction} which
+rules. Among them, we have to mention the {\em head reduction} which
 will play an important role (see Chapter~\ref{Tactics}). Any term can
 be written as $\lb x_1:T_1\mto \ldots \lb x_k:T_k \mto
 (t_0\ t_1\ldots t_n)$ where
@@ -967,7 +967,7 @@ Inductive exType (P:Type->Prop) : Type
 From {\Coq} version 8.1, inductive families declared in {\Type} are
 polymorphic over their arguments in {\Type}.
 
-If $A$ is an arity and $s$ a sort, we write $A_{/s}$ for the arity
+If $A$ is an arity of some sort and $s$ is a sort, we write $A_{/s}$ for the arity
 obtained from $A$ by replacing its sort with $s$. Especially, if $A$
 is well-typed in some global environment and local context, then $A_{/s}$ is typable
 by typability of all products in the Calculus of Inductive Constructions.
@@ -1260,13 +1260,13 @@ compact notation:
 \paragraph[Allowed elimination sorts.]{Allowed elimination sorts.\index{Elimination sorts}}
 
 An important question for building the typing rule for \kw{match} is
-what can be the type of $P$ with respect to the type of the inductive
+what can be the type of $\lb a x \mto P$ with respect to the type of the inductive
 definitions.
 
 We define now a relation \compat{I:A}{B} between an inductive
 definition $I$ of type $A$ and an arity $B$. This relation states that
 an object in the inductive definition $I$ can be eliminated for
-proving a property $P$ of type $B$.
+proving a property $\lb a x \mto P$ of type $B$.
 
 The case of inductive definitions in sorts \Set\ or \Type{} is simple.
 There is no restriction on the sort of the predicate to be
