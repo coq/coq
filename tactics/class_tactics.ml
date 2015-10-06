@@ -190,7 +190,7 @@ let rec e_trivial_fail_db db_list local_db goal =
 	  let d = pf_last_hyp g' in
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
-	      (Hint_db.add_list hintl local_db) g'))) ::
+	      (Hint_db.add_list (pf_env g') (project g') hintl local_db) g'))) ::
     (List.map (fun (x,_,_,_,_) -> x) 
      (e_trivial_resolve db_list local_db (project goal) (pf_concl goal)))
   in
@@ -339,7 +339,7 @@ let make_hints g st only_classes sign =
 	  (PathOr (paths, path), hint @ hints)
       else (paths, hints))
     (PathEmpty, []) sign
-  in Hint_db.add_list hintlist (Hint_db.empty st true)
+  in Hint_db.add_list (pf_env g) (project g) hintlist (Hint_db.empty st true)
 
 let make_autogoal_hints =
   let cache = ref (true, Environ.empty_named_context_val, 
@@ -374,7 +374,7 @@ let intro_tac : atac =
 	  let context = Environ.named_context_of_val (Goal.V82.hyps s g') in
 	  let hint = make_resolve_hyp env s (Hint_db.transparent_state info.hints)
 	    (true,false,false) info.only_classes None (List.hd context) in
-	  let ldb = Hint_db.add_list hint info.hints in
+	  let ldb = Hint_db.add_list env s hint info.hints in
 	    (g', { info with is_evar = None; hints = ldb; auto_last_tac = lazy (str"intro") })) gls
       in {it = gls'; sigma = s;})
 

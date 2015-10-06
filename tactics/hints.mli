@@ -93,8 +93,8 @@ module Hint_db :
 	arguments. *)
     val map_auto : (global_reference * constr array) -> constr -> t -> full_hint list
 
-    val add_one : hint_entry -> t -> t
-    val add_list : (hint_entry) list -> t -> t
+    val add_one : env -> evar_map -> hint_entry -> t -> t
+    val add_list : env -> evar_map -> hint_entry list -> t -> t
     val remove_one : global_reference -> t -> t
     val remove_list : global_reference list -> t -> t
     val iter : (global_reference option -> bool array list -> full_hint list -> unit) -> t -> unit

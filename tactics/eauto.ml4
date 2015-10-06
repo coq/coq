@@ -147,7 +147,7 @@ let rec e_trivial_fail_db db_list local_db goal =
 	  let d = pf_last_hyp g' in
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
-	      (Hint_db.add_list hintl local_db) g'))) ::
+	      (Hint_db.add_list (pf_env g') (project g') hintl local_db) g'))) ::
     (List.map fst (e_trivial_resolve db_list local_db (pf_concl goal)) )
   in
     tclFIRST (List.map tclCOMPLETE tacl) goal
@@ -269,7 +269,8 @@ module SearchProblem = struct
 	     let hintl =
 	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
 	     in
-             let ldb = Hint_db.add_list hintl (List.hd s.localdb) in
+             let ldb = Hint_db.add_list (pf_env g') (project g')
+		  hintl (List.hd s.localdb) in
 	     { depth = s.depth; priority = cost; tacres = lgls;
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb; prev = ps })
