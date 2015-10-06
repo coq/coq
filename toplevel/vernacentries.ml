@@ -1846,8 +1846,9 @@ let vernac_load interp fname =
 
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
- * still parsed as the obsolete_locality grammar entry for retrocompatibility *)
-let interp ?proof locality poly c =
+ * still parsed as the obsolete_locality grammar entry for retrocompatibility.
+ * loc is the Loc.t of the vernacular command being interpreted. *)
+let interp ?proof ~loc locality poly c =
   prerr_endline ("interpreting: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac c));
   match c with
   (* Done later in this file *)
@@ -1991,10 +1992,16 @@ let interp ?proof locality poly c =
   | VernacEndSubproof -> vernac_end_subproof ()
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
-  | VernacProof (None, None) -> ()
-  | VernacProof (Some tac, None) -> vernac_set_end_tac tac
-  | VernacProof (None, Some l) -> vernac_set_used_variables l
+  | VernacProof (None, None) ->
+      Aux_file.record_in_aux_at loc "VernacProof" "tac:no using:no"
+  | VernacProof (Some tac, None) ->
+      Aux_file.record_in_aux_at loc "VernacProof" "tac:yes using:no";
+      vernac_set_end_tac tac
+  | VernacProof (None, Some l) ->
+      Aux_file.record_in_aux_at loc "VernacProof" "tac:no using:yes";
+      vernac_set_used_variables l
   | VernacProof (Some tac, Some l) -> 
+      Aux_file.record_in_aux_at loc "VernacProof" "tac:yes using:yes";
       vernac_set_end_tac tac; vernac_set_used_variables l
   | VernacProofMode mn -> Proof_global.set_proof_mode mn
   (* Toplevel control *)
@@ -2146,8 +2153,9 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         Obligations.set_program_mode isprogcmd;
         try
           vernac_timeout begin fun () ->
-          if verbosely then Flags.verbosely (interp ?proof locality poly) c
-                       else Flags.silently  (interp ?proof locality poly) c;
+          if verbosely
+            then Flags.verbosely (interp ?proof ~loc locality poly) c
+            else Flags.silently  (interp ?proof ~loc locality poly) c;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
             Flags.program_mode := orig_program_mode
           end
