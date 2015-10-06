@@ -32,7 +32,8 @@ let explain_logic_error = ref (fun e -> mt())
 
 let explain_logic_error_no_anomaly = ref (fun e -> mt())
 
-let msg_tac_debug s = Proofview.NonLogical.print (s++fnl())
+let msg_tac_debug s = Proofview.NonLogical.print_debug (s++fnl())
+let msg_tac_notice s = Proofview.NonLogical.print (s++fnl())
 
 (* Prints the goal *)
 
@@ -48,7 +49,7 @@ let db_pr_goal gl =
 let db_pr_goal =
   Proofview.Goal.nf_enter begin fun gl ->
   let pg = db_pr_goal gl in
-  Proofview.tclLIFT (msg_tac_debug (str "Goal:" ++ fnl () ++ pg))
+  Proofview.tclLIFT (msg_tac_notice (str "Goal:" ++ fnl () ++ pg))
   end
 
 
