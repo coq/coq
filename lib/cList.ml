@@ -61,6 +61,7 @@ sig
   val except : 'a eq -> 'a -> 'a list -> 'a list
   val remove : 'a eq -> 'a -> 'a list -> 'a list
   val remove_first : ('a -> bool) -> 'a list -> 'a list
+  val extract_first : ('a -> bool) -> 'a list -> 'a list * 'a
   val insert : ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val sep_last : 'a list -> 'a * 'a list
@@ -444,6 +445,14 @@ let rec remove_first p = function
   | b::l when p b -> l
   | b::l -> b::remove_first p l
   | [] -> raise Not_found
+
+let extract_first p li =
+  let rec loop rev_left = function
+    | [] -> raise Not_found
+    | x::right ->
+       if p x then List.rev_append rev_left right, x
+       else loop (x :: rev_left) right
+  in loop [] li
 
 let insert p v l =
   let rec insrec = function
