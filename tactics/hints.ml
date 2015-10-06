@@ -266,11 +266,10 @@ let strip_params env c =
     | _ -> c)
   | _ -> c
 
-let instantiate_hint p =
+let instantiate_hint env sigma p =
   let mk_clenv c cty ctx =
-    let env = Global.env () in
-    let sigma = Evd.merge_context_set univ_flexible (Evd.from_env env) ctx in
-    let cl = mk_clenv_from_env (Global.env()) sigma None (c,cty) in 
+    let sigma = Evd.merge_context_set univ_flexible sigma ctx in
+    let cl = mk_clenv_from_env env sigma None (c,cty) in 
       {cl with templval = 
 	  { cl.templval with rebus = strip_params env cl.templval.rebus };
 	env = empty_env}
@@ -524,8 +523,8 @@ module Hint_db = struct
     in
       List.fold_left (fun db (gr,(id,v)) -> addkv gr id v db) db' db.hintdb_nopat
 
-  let add_one (k, v) db =
-    let v = instantiate_hint v in
+  let add_one env sigma (k, v) db =
+    let v = instantiate_hint env sigma v in
     let st',db,rebuild =
       match v.code.obj with
       | Unfold_nth egr ->
@@ -542,7 +541,7 @@ module Hint_db = struct
     let db, id = next_hint_id db in
     addkv k id v db
 
-  let add_list l db = List.fold_left (fun db k -> add_one k db) db l
+  let add_list env sigma l db = List.fold_left (fun db k -> add_one env sigma k db) db l
 
   let remove_sdl p sdl = List.smartfilter p sdl 
 
@@ -812,7 +811,9 @@ let add_hint dbname hintlist =
   in
   let () = List.iter check hintlist in
   let db = get_db dbname in
-  let db' = Hint_db.add_list hintlist db in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let db' = Hint_db.add_list env sigma hintlist db in
     searchtable_add (dbname,db')
 
 let add_transparency dbname grs b =
@@ -1166,8 +1167,8 @@ let expand_constructor_hints env sigma lems =
 let add_hint_lemmas env sigma eapply lems hint_db =
   let lems = expand_constructor_hints env sigma lems in
   let hintlist' =
-    List.map_append (make_resolves env sigma (eapply,true,false) None true) lems in
-  Hint_db.add_list hintlist' hint_db
+    List.map_append (make_resolves env sigma (eapply,true,false) None false) lems in
+  Hint_db.add_list env sigma hintlist' hint_db
 
 let make_local_hint_db env sigma ts eapply lems =
   let sign = Environ.named_context env in
@@ -1177,7 +1178,7 @@ let make_local_hint_db env sigma ts eapply lems =
   in
   let hintlist = List.map_append (make_resolve_hyp env sigma) sign in
   add_hint_lemmas env sigma eapply lems
-    (Hint_db.add_list hintlist (Hint_db.empty ts false))
+    (Hint_db.add_list env sigma hintlist (Hint_db.empty ts false))
 
 let make_local_hint_db = 
   if Flags.profile then

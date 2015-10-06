@@ -309,7 +309,8 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
           let decl = Tacmach.New.pf_last_hyp (Proofview.Goal.assume gl) in
           let hyp = Context.map_named_declaration nf decl in
 	  let hintl = make_resolve_hyp env sigma hyp
-	  in trivial_fail_db dbg mod_delta db_list (Hint_db.add_list hintl local_db)
+	  in trivial_fail_db dbg mod_delta db_list
+	       (Hint_db.add_list env sigma hintl local_db)
       end)
   in
   Proofview.Goal.enter begin fun gl ->
@@ -438,7 +439,9 @@ let possible_resolve dbg mod_delta db_list local_db cl =
   with Not_found -> []
 
 let extend_local_db decl db gl =
-  Hint_db.add_list (make_resolve_hyp (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) decl) db
+  let env = Tacmach.New.pf_env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  Hint_db.add_list env sigma (make_resolve_hyp env sigma decl) db
 
 (* Introduce an hypothesis, then call the continuation tactic [kont]
    with the hint db extended with the so-obtained hypothesis *)

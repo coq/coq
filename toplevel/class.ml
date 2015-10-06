@@ -186,8 +186,9 @@ let error_not_transparent source =
 
 let build_id_coercion idf_opt source poly =
   let env = Global.env () in
-  let vs, ctx = match source with
-    | CL_CONST sp -> Universes.fresh_global_instance env (ConstRef sp)
+  let sigma = Evd.from_env env in
+  let sigma, vs = match source with
+    | CL_CONST sp -> Evd.fresh_global env sigma (ConstRef sp)
     | _ -> error_not_transparent source in
   let c = match constant_opt_value_in env (destConst vs) with
     | Some c -> c
@@ -208,8 +209,8 @@ let build_id_coercion idf_opt source poly =
   (* juste pour verification *)
   let _ =
     if not
-      (Reductionops.is_conv_leq env Evd.empty
-	(Typing.unsafe_type_of env Evd.empty val_f) typ_f)
+      (Reductionops.is_conv_leq env sigma
+	(Typing.unsafe_type_of env sigma val_f) typ_f)
     then
       errorlabstrm "" (strbrk
 	"Cannot be defined as coercion (maybe a bad number of arguments).")
@@ -218,13 +219,13 @@ let build_id_coercion idf_opt source poly =
     match idf_opt with
       | Some idf -> idf
       | None ->
-	  let cl,u,_ = find_class_type Evd.empty t in
+	  let cl,u,_ = find_class_type sigma t in
 	  Id.of_string ("Id_"^(ident_key_of_class source)^"_"^
                         (ident_key_of_class cl))
   in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     DefinitionEntry
-      (definition_entry ~types:typ_f ~poly ~univs:(Univ.ContextSet.to_context ctx)
+      (definition_entry ~types:typ_f ~poly ~univs:(Evd.universe_context sigma)
 	 ~inline:true (mkCast (val_f, DEFAULTcast, typ_f)))
   in
   let decl = (constr_entry, IsDefinition IdentityCoercion) in

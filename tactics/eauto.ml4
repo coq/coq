@@ -151,7 +151,7 @@ let rec e_trivial_fail_db db_list local_db =
   let next = Proofview.Goal.nf_enter begin fun gl ->
     let d = Tacmach.New.pf_last_hyp gl in
     let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) d in
-    e_trivial_fail_db db_list (Hint_db.add_list hintl local_db)
+    e_trivial_fail_db db_list (Hint_db.add_list (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) hintl local_db)
   end in
   Proofview.Goal.enter begin fun gl ->
   let tacl =
@@ -279,7 +279,8 @@ module SearchProblem = struct
 	     let hintl =
 	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
 	     in
-             let ldb = Hint_db.add_list hintl (List.hd s.localdb) in
+             let ldb = Hint_db.add_list (pf_env g') (project g')
+		  hintl (List.hd s.localdb) in
 	     { depth = s.depth; priority = cost; tacres = lgls;
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb; prev = ps })

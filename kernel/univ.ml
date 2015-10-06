@@ -1582,8 +1582,8 @@ let sort_universes orig =
   let sorted = LMap.fold fold compact UMap.empty in
   (** Add all [Type.n] nodes *)
   let fold i accu u =
-    if 0 < i then
-      let pred = types.(i - 1) in
+    if i < max then
+      let pred = types.(i + 1) in
       let arc = {univ = u; lt = [pred]; le = []; rank = 0; status = Unset; } in
       UMap.add u (Canonical arc) accu
     else accu

@@ -259,6 +259,10 @@ let print_body is_impl env mp (l,body) =
     | SFBmodule _ -> keyword "Module" ++ spc () ++ name
     | SFBmodtype _ -> keyword "Module Type" ++ spc () ++ name
     | SFBconst cb ->
+       let u =
+	 if cb.const_polymorphic then Univ.UContext.instance cb.const_universes
+	 else Univ.Instance.empty
+       in
       (match cb.const_body with
 	| Def _ -> def "Definition" ++ spc ()
 	| OpaqueDef _ when is_impl -> def "Theorem" ++ spc ()
@@ -268,14 +272,16 @@ let print_body is_impl env mp (l,body) =
 	  | Some env ->
 	    str " :" ++ spc () ++
 	    hov 0 (Printer.pr_ltype_env env Evd.empty (* No evars in modules *)
-		     (Typeops.type_of_constant_type env cb.const_type)) ++
+		(Vars.subst_instance_constr u
+   		  (Typeops.type_of_constant_type env cb.const_type))) ++
 	    (match cb.const_body with
 	      | Def l when is_impl ->
 		spc () ++
 		hov 2 (str ":= " ++
-		       Printer.pr_lconstr_env env Evd.empty (Mod_subst.force_constr l))
+		       Printer.pr_lconstr_env env Evd.empty
+			  (Vars.subst_instance_constr u (Mod_subst.force_constr l)))
 	      | _ -> mt ()) ++ str "." ++
-	    Printer.pr_universe_ctx cb.const_universes)
+	    Printer.pr_universe_ctx (Univ.instantiate_univ_context cb.const_universes))
     | SFBmind mib ->
       try
 	let env = Option.get env in
