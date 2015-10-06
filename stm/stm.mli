@@ -83,6 +83,10 @@ val set_compilation_hints : string -> unit
 (* Reorders the task queue putting forward what is in the perspective *)
 val set_perspective : Stateid.t list -> unit
 
+type document
+val backup : unit -> document
+val restore : document -> unit
+
 (** workers **************************************************************** **)
 
 module ProofTask : AsyncTaskQueue.Task

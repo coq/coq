@@ -2405,6 +2405,9 @@ let edit_at id =
         VCS.print ();
         iraise (e, info)
 
+let backup () = VCS.backup ()
+let restore d = VCS.restore d
+
 (*********************** TTY API (PG, coqtop, coqc) ***************************)
 (******************************************************************************)
 
