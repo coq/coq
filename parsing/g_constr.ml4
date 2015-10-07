@@ -224,11 +224,20 @@ GEXTEND Gram
       ] ]
   ;
   record_declaration:
-    [ [ fs = LIST0 record_field_declaration SEP ";" -> CRecord (!@loc, None, fs)
+    [ [ fs = record_fields -> CRecord (!@loc, None, fs)
 (*       | c = lconstr; "with"; fs = LIST1 record_field_declaration SEP ";" -> *)
 (* 	  CRecord (!@loc, Some c, fs) *)
     ] ]
   ;
+
+  record_fields:
+    [ [ f = record_field_declaration; ";"; fs = record_fields -> f :: fs
+      | f = record_field_declaration; ";" -> [f]
+      | f = record_field_declaration -> [f]
+      | -> []
+    ] ]
+  ;
+
   record_field_declaration:
     [ [ id = global; params = LIST0 identref; ":="; c = lconstr ->
       (id, abstract_constr_expr c (binders_of_lidents params)) ] ]
@@ -356,8 +365,15 @@ GEXTEND Gram
     [ [ pll = LIST1 mult_pattern SEP "|";
         "=>"; rhs = lconstr -> (!@loc,pll,rhs) ] ]
   ;
-  recordpattern:
+  record_pattern:
     [ [ id = global; ":="; pat = pattern -> (id, pat) ] ]
+  ;
+  record_patterns:
+    [ [ p = record_pattern; ";"; ps = record_patterns -> p :: ps
+      | p = record_pattern; ";" -> [p]
+      | p = record_pattern-> [p]
+      | -> []
+    ] ]
   ;
   pattern:
     [ "200" RIGHTA [ ]
@@ -382,7 +398,7 @@ GEXTEND Gram
       [ c = pattern; "%"; key=IDENT -> CPatDelimiters (!@loc,key,c) ]
     | "0"
       [ r = Prim.reference -> CPatAtom (!@loc,Some r)
-      | "{|"; pat = LIST0 recordpattern SEP ";" ; "|}" -> CPatRecord (!@loc, pat)
+      | "{|"; pat = record_patterns; "|}" -> CPatRecord (!@loc, pat)
       | "_" -> CPatAtom (!@loc,None)
       | "("; p = pattern LEVEL "200"; ")" ->
           (match p with

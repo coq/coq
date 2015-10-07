@@ -325,9 +325,9 @@ GEXTEND Gram
       | id = identref ; c = constructor_type; "|"; l = LIST0 constructor SEP "|" ->
 	  Constructors ((c id)::l)
       | id = identref ; c = constructor_type -> Constructors [ c id ]
-      | cstr = identref; "{"; fs = LIST0 record_field SEP ";"; "}" ->
+      | cstr = identref; "{"; fs = record_fields; "}" ->
 	  RecordDecl (Some cstr,fs)
-      | "{";fs = LIST0 record_field SEP ";"; "}" -> RecordDecl (None,fs)
+      | "{";fs = record_fields; "}" -> RecordDecl (None,fs)
       |  -> Constructors [] ] ]
   ;
 (*
@@ -388,6 +388,13 @@ GEXTEND Gram
   record_field:
   [ [ bd = record_binder; pri = OPT [ "|"; n = natural -> n ];
       ntn = decl_notation -> (bd,pri),ntn ] ]
+  ;
+  record_fields:
+    [ [ f = record_field; ";"; fs = record_fields -> f :: fs
+      | f = record_field; ";" -> [f]
+      | f = record_field -> [f]
+      | -> []
+    ] ]
   ;
   record_binder_body:
     [ [ l = binders; oc = of_type_with_opt_coercion;
