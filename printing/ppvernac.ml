@@ -356,6 +356,7 @@ module Make
       | l ->
         prlist_with_sep spc
           (fun p -> hov 1 (str "(" ++ pr_params pr_c p ++ str ")")) l
+
 (*
   prlist_with_sep pr_semicolon (pr_params pr_c)
 *)
@@ -774,11 +775,12 @@ module Make
           return (hov 2 (keyword "Proof" ++ pr_lconstrarg c))
         | VernacAssumption (stre,_,l) ->
           let n = List.length (List.flatten (List.map fst (List.map snd l))) in
-          return (
-            hov 2
-              (pr_assumption_token (n > 1) stre ++ spc() ++
-                 pr_ne_params_list pr_lconstr_expr l)
-          )
+          let pr_params (c, (xl, t)) =
+            hov 2 (prlist_with_sep sep pr_plident xl ++ spc() ++
+              (if c then str":>" else str":" ++ spc() ++ pr_lconstr_expr t))
+          in
+          let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
+          return (hov 2 (pr_assumption_token (n > 1) stre ++ spc() ++ assumptions))
         | VernacInductive (p,f,l) ->
           let pr_constructor (coe,(id,c)) =
             hov 2 (pr_lident id ++ str" " ++

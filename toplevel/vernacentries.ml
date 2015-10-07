@@ -515,7 +515,7 @@ let vernac_assumption locality poly (local, kind) l nl =
   let kind = local, poly, kind in
   List.iter (fun (is_coe,(idl,c)) ->
     if Dumpglob.dump () then
-      List.iter (fun lid ->
+      List.iter (fun (lid, _) ->
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
   let status = do_assumptions kind nl l in

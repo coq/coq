@@ -57,7 +57,7 @@ val declare_assumption : coercion_flag -> assumption_kind ->
   global_reference * Univ.Instance.t * bool
 
 val do_assumptions : locality * polymorphic * assumption_object_kind ->
-  Vernacexpr.inline -> simple_binder with_coercion list -> bool
+  Vernacexpr.inline -> (plident list * constr_expr) with_coercion list -> bool
 
 (* val declare_assumptions : variable Loc.located list -> *)
 (*   coercion_flag -> assumption_kind -> types Univ.in_universe_context_set ->  *)

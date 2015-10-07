@@ -251,7 +251,7 @@ let declare_assumptions idl is_coe k (c,ctx) imps impl_is_on nl =
   in
   List.rev refs, status
 
-let do_assumptions (_, poly, _ as kind) nl l =
+let do_assumptions_unbound_univs (_, poly, _ as kind) nl l =
   let env = Global.env () in
   let evdref = ref (Evd.from_env env) in
   let l = 
@@ -283,6 +283,44 @@ let do_assumptions (_, poly, _ as kind) nl l =
       idl refs 
     in
       (subst'@subst, status' && status)) ([],true) l)
+
+let do_assumptions_bound_univs coe kind nl id pl c =
+  let env = Global.env () in
+  let ctx = Evd.make_evar_universe_context env pl in
+  let evdref = ref (Evd.from_ctx ctx) in
+  let ty, impls = interp_type_evars_impls env evdref c in
+  let nf, subst = Evarutil.e_nf_evars_and_universes evdref in
+  let ty = nf ty in
+  let vars = Universes.universes_of_constr ty in
+  let evd = Evd.restrict_universe_context !evdref vars in
+  let uctx = Evd.universe_context ?names:pl evd in
+  let uctx = Univ.ContextSet.of_context uctx in
+  let (_, _, st) = declare_assumption coe kind (ty, uctx) impls false nl id in
+  st
+
+let do_assumptions kind nl l = match l with
+| [coe, ([id, Some pl], c)] ->
+  let () = match kind with
+  | (Discharge, _, _) when Lib.sections_are_opened () ->
+    let loc = fst id in
+    let msg = Pp.str "Section variables cannot be polymorphic." in
+    user_err_loc (loc, "", msg)
+  | _ -> ()
+  in
+  do_assumptions_bound_univs coe kind nl id (Some pl) c
+| _ ->
+  let map (coe, (idl, c)) =
+    let map (id, univs) = match univs with
+    | None -> id
+    | Some _ ->
+      let loc = fst id in
+      let msg = Pp.str "Assumptions with bound universes can only be defined once at a time." in
+      user_err_loc (loc, "", msg)
+    in
+    (coe, (List.map map idl, c))
+  in
+  let l = List.map map l in
+  do_assumptions_unbound_univs kind nl l
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 

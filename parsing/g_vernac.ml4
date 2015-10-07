@@ -420,7 +420,7 @@ GEXTEND Gram
     [ [ "("; a = simple_assum_coe; ")" -> a ] ]
   ;
   simple_assum_coe:
-    [ [ idl = LIST1 identref; oc = of_type_with_opt_coercion; c = lconstr ->
+    [ [ idl = LIST1 pidentref; oc = of_type_with_opt_coercion; c = lconstr ->
         (not (Option.is_empty oc),(idl,c)) ] ]
   ;
 
