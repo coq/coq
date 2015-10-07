@@ -1028,8 +1028,8 @@ let merge_uctx sideff rigid uctx ctx' =
   let uctx_universes = merge_constraints (ContextSet.constraints ctx') univs in
     { uctx with uctx_local; uctx_universes; uctx_initial_universes = initial }
 
-let merge_context_set rigid evd ctx' = 
-  {evd with universes = merge_uctx false rigid evd.universes ctx'}
+let merge_context_set ?(sideff=false) rigid evd ctx' = 
+  {evd with universes = merge_uctx sideff rigid evd.universes ctx'}
 
 let merge_uctx_subst uctx s =
   { uctx with uctx_univ_variables = Univ.LMap.subst_union uctx.uctx_univ_variables s }

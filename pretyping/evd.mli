@@ -542,7 +542,7 @@ val universes : evar_map -> Univ.universes
 val merge_universe_context : evar_map -> evar_universe_context -> evar_map
 val set_universe_context : evar_map -> evar_universe_context -> evar_map
 
-val merge_context_set : rigid -> evar_map -> Univ.universe_context_set -> evar_map
+val merge_context_set : ?sideff:bool -> rigid -> evar_map -> Univ.universe_context_set -> evar_map
 val merge_universe_subst : evar_map -> Universes.universe_opt_subst -> evar_map
 
 val with_context_set : rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
