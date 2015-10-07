@@ -482,6 +482,15 @@ let congruence_tac depth l =
    This isn't particularly related with congruence, apart from
    the fact that congruence is called internally.
 *)
+    
+let new_app_global_check f args k =
+  new_app_global f args
+    (fun c ->
+     Proofview.Goal.enter
+     begin fun gl ->
+  	   let evm, _ = Tacmach.New.pf_apply type_of gl c in
+	   Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm)) (k c)
+    end)
 
 let f_equal =
   Proofview.Goal.nf_enter begin fun gl ->
@@ -490,11 +499,9 @@ let f_equal =
     let cut_eq c1 c2 =
       try (* type_of can raise an exception *)
         let ty = (* Termops.refresh_universes *) (type_of c1) in
-        if eq_constr_nounivs c1 c2 then Proofview.tclUNIT ()
-        else
-          Tacticals.New.tclTRY (Tacticals.New.tclTHEN
-          ((new_app_global _eq [|ty; c1; c2|]) Tactics.cut)
-          (Tacticals.New.tclTRY ((new_app_global _refl_equal [||]) apply)))
+        Tacticals.New.tclTHEN
+	  ((new_app_global_check _eq [|ty; c1; c2|]) Tactics.cut)
+	  (Tacticals.New.tclTRY ((new_app_global _refl_equal [||]) apply))
       with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
     in
     Proofview.tclORELSE
