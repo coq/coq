@@ -204,6 +204,10 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
         str " " ++ str (String.conjugate_verb_to_be n) ++
         str " used but not declared:" ++
         fnl () ++ pr_sequence Id.print (List.rev l) ++ str ".")) in
+  let sort evn l =
+    List.filter (fun (id,_,_) ->
+      List.exists (fun (id',_,_) -> Names.Id.equal id id') l)
+    (named_context env) in
   (* We try to postpone the computation of used section variables *)
   let hyps, def =
     let context_ids = List.map pi1 (named_context env) in
@@ -233,7 +237,7 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
         [], def (* Empty section context: no need to check *)
     | Some declared ->
         (* We use the declared set and chain a check of correctness *)
-        declared,
+        sort env declared,
         match def with
         | Undef _ as x -> x (* nothing to check *)
         | Def cs as x ->
