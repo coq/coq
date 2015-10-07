@@ -500,12 +500,13 @@ let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
   check_all_names_different indl;
   List.iter check_param paramsl;
   let env0 = Global.env() in
-  let evdref = ref Evd.(from_env env0) in
+  let pl = (List.hd indl).ind_univs in
+  let ctx = Evd.make_evar_universe_context env0 pl in
+  let evdref = ref Evd.(from_ctx ctx) in
   let _, ((env_params, ctx_params), userimpls) =
     interp_context_evars env0 evdref paramsl
   in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
-  let pl = (List.hd indl).ind_univs in
       
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   let assums = List.filter(fun (_,b,_) -> Option.is_empty b) ctx_params in

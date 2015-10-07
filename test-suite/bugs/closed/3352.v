@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 
 (*
 I'm not sure what the general rule should be; intuitively, I want [IsHProp (* Set *) Foo] to mean [IsHProp (* U >= Set *) Foo].  (I think this worked in HoTT/coq, too.)  Morally, [IsHProp] has no universe level associated with it distinct from that of its argument, you should never get a universe inconsistency from unifying [IsHProp A] with [IsHProp A].  (The issue is tricker when IsHProp uses [A] elsewhere, as in:

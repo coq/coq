@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Notation idmap := (fun x => x).
 Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a.
 Arguments idpath {A a} , [A] a.

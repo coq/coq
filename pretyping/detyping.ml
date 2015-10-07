@@ -401,7 +401,7 @@ let detype_sort sigma = function
   | Type u ->
     GType
       (if !print_universes
-       then [Pp.string_of_ppcmds (Univ.Universe.pr_with (Evd.pr_evd_level sigma) u)]
+       then [dl, Pp.string_of_ppcmds (Univ.Universe.pr_with (Evd.pr_evd_level sigma) u)]
        else [])
 
 type binder_kind = BProd | BLambda | BLetIn
@@ -413,7 +413,7 @@ let detype_anonymous = ref (fun loc n -> anomaly ~label:"detype" (Pp.str "index 
 let set_detype_anonymous f = detype_anonymous := f
 
 let detype_level sigma l =
-  GType (Some (Pp.string_of_ppcmds (Evd.pr_evd_level sigma l)))
+  GType (Some (dl, Pp.string_of_ppcmds (Evd.pr_evd_level sigma l)))
 
 let detype_instance sigma l = 
   if Univ.Instance.is_empty l then None

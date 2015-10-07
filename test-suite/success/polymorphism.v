@@ -1,3 +1,5 @@
+Unset Strict Universe Declaration.
+
 Module withoutpoly.
 
 Inductive empty :=. 

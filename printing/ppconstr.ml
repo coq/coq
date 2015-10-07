@@ -140,8 +140,8 @@ end) = struct
 
   let pr_univ l =
     match l with
-      | [x] -> str x
-      | l -> str"max(" ++ prlist_with_sep (fun () -> str",") str l ++ str")"
+      | [_,x] -> str x
+      | l -> str"max(" ++ prlist_with_sep (fun () -> str",") (fun x -> str (snd x)) l ++ str")"
 
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
@@ -174,7 +174,7 @@ end) = struct
       tag_type (str "Set")
     | GType u ->
       (match u with
-        | Some u -> str u
+        | Some (_,u) -> str u
         | None -> tag_type (str "Type"))
 
   let pr_universe_instance l =

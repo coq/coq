@@ -1074,12 +1074,6 @@ let uctx_new_univ_variable rigid name predicative
 	  uctx_univ_algebraic = Univ.LSet.add u avars}, false
 	else {uctx with uctx_univ_variables = uvars'}, false
   in
-  (* let ctx' = *)
-  (*   if pred then *)
-  (*     Univ.ContextSet.add_constraints *)
-  (* 	(Univ.Constraint.singleton (Univ.Level.set, Univ.Le, u)) ctx' *)
-  (*   else ctx' *)
-  (* in *)
   let names = 
     match name with
     | Some n -> add_uctx_names n u uctx.uctx_names

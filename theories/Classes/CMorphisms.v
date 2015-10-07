@@ -266,8 +266,10 @@ Section GenericInstances.
     transitivity (y x0)...
   Qed.
 
+  Unset Strict Universe Declaration.
+  
   (** The complement of a crelation conserves its proper elements. *)
-  Program Definition complement_proper
+  Program Definition complement_proper (A : Type@{k}) (RA : crelation A)
           `(mR : Proper (A -> A -> Prop) (RA ==> RA ==> iff) R) :
     Proper (RA ==> RA ==> iff) (complement@{i j Prop} R) := _.
   
@@ -279,7 +281,6 @@ Section GenericInstances.
   Qed.
  
   (** The [flip] too, actually the [flip] instance is a bit more general. *)
-
   Program Definition flip_proper
           `(mor : Proper (A -> B -> C) (RA ==> RB ==> RC) f) :
     Proper (RB ==> RA ==> RC) (flip f) := _.

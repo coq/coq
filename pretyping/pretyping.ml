@@ -99,8 +99,22 @@ let search_guard loc env possible_indexes fixdefs =
 let ((constr_in : constr -> Dyn.t),
      (constr_out : Dyn.t -> constr)) = Dyn.create "constr"
 
+(* To force universe name declaration before use *)
+
+let strict_universe_declarations = ref true
+let is_strict_universe_declarations () = !strict_universe_declarations
+
+let _ =
+  Goptions.(declare_bool_option
+	  { optsync  = true;
+            optdepr  = false;
+	    optname  = "strict universe declaration";
+	    optkey   = ["Strict";"Universe";"Declaration"];
+	    optread  = is_strict_universe_declarations;
+	    optwrite = (:=) strict_universe_declarations })
+						  
 (** Miscellaneous interpretation functions *)
-let interp_universe_level_name evd s =
+let interp_universe_level_name evd (loc,s) =
   let names, _ = Universes.global_universe_names () in
     if CString.string_contains s "." then
       match List.rev (CString.split '.' s) with
@@ -122,7 +136,10 @@ let interp_universe_level_name evd s =
 	try let level = Evd.universe_of_name evd s in
 	      evd, level
 	with Not_found -> 
-	  new_univ_level_variable ~name:s univ_rigid evd
+	  if not (is_strict_universe_declarations ()) then
+  	    new_univ_level_variable ~name:s univ_rigid evd
+	  else user_err_loc (loc, "interp_universe_level_name",
+			     Pp.(str "Undeclared universe: " ++ str s))
 
 let interp_universe evd = function
   | [] -> let evd, l = new_univ_level_variable univ_rigid evd in
@@ -135,7 +152,7 @@ let interp_universe evd = function
 
 let interp_universe_level evd = function
   | None -> new_univ_level_variable univ_rigid evd
-  | Some s -> interp_universe_level_name evd s
+  | Some (loc,s) -> interp_universe_level_name evd (loc,s)
 
 let interp_sort evd = function
   | GProp -> evd, Prop Null
@@ -357,7 +374,8 @@ let evar_kind_of_term sigma c =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let interp_universe_level_name evd = function
+let interp_universe_level_name evd l =
+  match l with
   | GProp -> evd, Univ.Level.prop
   | GSet -> evd, Univ.Level.set
   | GType s -> interp_universe_level evd s
