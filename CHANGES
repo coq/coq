@@ -28,6 +28,8 @@ Tactics
   "intros" automatically complete the introduction of its subcomponents, as the
   the disjunctive-conjunctive introduction patterns in non-terminal position
   already do.
+- Importing Program no longer overrides the "exists" tactic (potential source
+  of incompatibilities).
 
 API
 

@@ -32,10 +32,3 @@ Require List.
 Export List.ListNotations.
 
 Require Import Bvector.
-
-(** Treating n-ary exists *)
-
-Tactic Notation "exists" constr(x) := exists x.
-Tactic Notation "exists" constr(x) constr(y) := exists x ; exists y.
-Tactic Notation "exists" constr(x) constr(y) constr(z) := exists x ; exists y ; exists z.
-Tactic Notation "exists" constr(x) constr(y) constr(z) constr(w) := exists x ; exists y ; exists z ; exists w.
