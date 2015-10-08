@@ -310,7 +310,7 @@ let judge_of_cast env cj k tj =
       | NATIVEcast ->
 	 let sigma = Nativelambda.empty_evars in
          mkCast (cj.uj_val, k, expected_type),
-         native_conv CUMUL sigma env cj.uj_type expected_type
+         Nativeconv.native_conv CUMUL sigma env cj.uj_type expected_type
     in
       { uj_val = c;
 	uj_type = expected_type }

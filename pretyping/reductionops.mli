@@ -266,13 +266,20 @@ val is_trans_fconv : conv_pb -> transparent_state -> env ->  evar_map -> constr 
  *)
 val check_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> constr -> constr -> bool
 
-(** [infer_fconv] Adds necessary universe constraints to the evar map.
+(** [infer_conv] Adds necessary universe constraints to the evar map.
     pb defaults to CUMUL and ts to a full transparent state.
     @raises UniverseInconsistency iff catch_incon is set to false, 
     otherwise returns false in that case.
  *)
 val infer_conv : ?catch_incon:bool -> ?pb:conv_pb -> ?ts:transparent_state -> 
   env -> evar_map -> constr -> constr -> evar_map * bool
+
+(** [infer_conv_gen] behaves like [infer_conv] but is parametrized by a
+conversion function. Used to pretype vm and native casts. *)
+val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> transparent_state ->
+    (constr, evar_map) Reduction.generic_conversion_function) ->
+  ?catch_incon:bool -> ?pb:conv_pb -> ?ts:transparent_state -> env ->
+  evar_map -> constr -> constr -> evar_map * bool
 
 (** {6 Special-Purpose Reduction Functions } *)
 

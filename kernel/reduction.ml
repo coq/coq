@@ -637,7 +637,7 @@ let infer_cmp_universes env pb s0 s1 univs =
 let infer_convert_instances flex u u' (univs,cstrs) =
   (univs, Univ.enforce_eq_instances u u' cstrs)
 
-let infered_universes : (Univ.universes * Univ.Constraint.t) universe_compare = 
+let inferred_universes : (Univ.universes * Univ.Constraint.t) universe_compare =
   { compare = infer_cmp_universes;
     compare_instances = infer_convert_instances }
 
@@ -685,7 +685,7 @@ let conv_leq_vecti ?(l2r=false) ?(evars=fun _->None) env v1 v2 =
     v1
     v2
 
-let generic_conv cv_pb l2r evars reds env univs t1 t2 =
+let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
   let (s, _) = 
     clos_fconv reds cv_pb l2r evars env univs t1 t2 
   in s
@@ -697,7 +697,7 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
   in
     if b then cstrs
     else
-      let univs = ((univs, Univ.Constraint.empty), infered_universes) in
+      let univs = ((univs, Univ.Constraint.empty), inferred_universes) in
       let ((_,cstrs), _) = clos_fconv reds cv_pb l2r evars env univs t1 t2 in
 	cstrs
 
@@ -715,19 +715,6 @@ let infer_conv ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_state)
 let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_state) 
     env univs t1 t2 = 
   infer_conv_universes CUMUL l2r evars ts env univs t1 t2
-
-(* option for conversion *)
-let nat_conv = ref (fun cv_pb sigma ->
-		    fconv cv_pb false (sigma.Nativelambda.evars_val))
-let set_nat_conv f = nat_conv := f
-
-let native_conv cv_pb sigma env t1 t2 =
-  if eq_constr t1 t2 then ()
-  else begin
-    let t1 = (it_mkLambda_or_LetIn t1 (rel_context env)) in
-    let t2 = (it_mkLambda_or_LetIn t2 (rel_context env)) in
-    !nat_conv cv_pb sigma env t1 t2 
-  end
 
 let vm_conv = ref (fun cv_pb -> fconv cv_pb false (fun _->None))
 let set_vm_conv f = vm_conv := f

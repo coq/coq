@@ -22,11 +22,6 @@ open Nativelambda
 
 (** This module implements normalization by evaluation to OCaml code *)
 
-let evars_of_evar_map evd =
-  { evars_val = Evd.existential_opt_value evd;
-    evars_typ = Evd.existential_type evd;
-    evars_metas = Evd.meta_type evd }
-
 exception Find_at of int
 
 let invert_tag cst tag reloc_tbl =
@@ -375,11 +370,17 @@ and  nf_predicate env ind mip params v pT =
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_type env v
 
+let evars_of_evar_map sigma =
+  { Nativelambda.evars_val = Evd.existential_opt_value sigma;
+    Nativelambda.evars_typ = Evd.existential_type sigma;
+    Nativelambda.evars_metas = Evd.meta_type sigma }
+
 let native_norm env sigma c ty =  
   if Coq_config.no_native_compiler then
     error "Native_compute reduction has been disabled at configure time."
   else
-  let penv = Environ.pre_env env in 
+  let penv = Environ.pre_env env in
+  let sigma = evars_of_evar_map sigma in
   (*
   Format.eprintf "Numbers of free variables (named): %i\n" (List.length vl1);
   Format.eprintf "Numbers of free variables (rel): %i\n" (List.length vl2);
@@ -400,3 +401,10 @@ let native_norm env sigma c ty =
         if !Flags.debug then Pp.msg_debug (Pp.str time_info);
         res
     | _ -> anomaly (Pp.str "Compilation failure") 
+
+let native_conv_generic pb sigma t =
+  Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t
+
+let native_infer_conv ?(pb=Reduction.CUMUL) env sigma x y =
+  Reductionops.infer_conv_gen (fun pb ~l2r sigma ts -> native_conv_generic pb sigma)
+    ~catch_incon:true ~pb env sigma x y
