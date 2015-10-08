@@ -360,6 +360,7 @@ sig
   val of_instance : Instance.t -> t
   val of_set : universe_set -> t
 
+  val equal : t -> t -> bool
   val union : t -> t -> t
 
   val append : t -> t -> t

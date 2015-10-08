@@ -1324,8 +1324,7 @@ let normalize_evar_universe_context uctx =
       Universes.normalize_context_set uctx.uctx_local uctx.uctx_univ_variables
         uctx.uctx_univ_algebraic
     in
-      if Univ.LSet.equal (fst us') (fst uctx.uctx_local) then 
-        uctx
+      if Univ.ContextSet.equal us' uctx.uctx_local then uctx
       else
 	let us', universes = Universes.refresh_constraints uctx.uctx_initial_universes us' in
 	let uctx' = 

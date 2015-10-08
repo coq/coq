@@ -26,6 +26,11 @@ let pr_with_global_universes l =
   try Nameops.pr_id (LMap.find l (snd !global_universes))
   with Not_found -> Level.pr l
 
+(* To disallow minimization to Set *)
+
+let set_minimization = ref true
+let is_set_minimization () = !set_minimization
+			    
 type universe_constraint_type = ULe | UEq | ULub
 
 type universe_constraint = universe * universe_constraint_type * universe
@@ -832,7 +837,9 @@ let normalize_context_set ctx us algs =
     Constraint.fold (fun (l,d,r as cstr) (smallles, noneqs) ->
         if d == Le then
 	  if Univ.Level.is_small l then
-	    (Constraint.add cstr smallles, noneqs)
+	    if is_set_minimization () then
+	      (Constraint.add cstr smallles, noneqs)
+	    else (smallles, noneqs)
 	  else if Level.is_small r then
 	    if Level.is_prop r then
 	      raise (Univ.UniverseInconsistency
@@ -872,6 +879,8 @@ let normalize_context_set ctx us algs =
       if d == Eq then (UF.union l r uf; noneqs)
       else (* We ignore the trivial Prop/Set <= i constraints. *)
 	if d == Le && Univ.Level.is_small l then noneqs
+	else if Univ.Level.is_prop l && d == Lt && Univ.Level.is_set r
+	then noneqs
 	else Constraint.add cstr noneqs)
       csts Constraint.empty
   in
