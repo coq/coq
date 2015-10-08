@@ -269,7 +269,7 @@ GEXTEND Gram
       | -> NoInline] ]
   ;
   pidentref:
-    [ [ i = identref; l = OPT [ "@{" ; l = LIST1 identref; "}" -> l ] -> (i,l) ] ]
+    [ [ i = identref; l = OPT [ "@{" ; l = LIST0 identref; "}" -> l ] -> (i,l) ] ]
   ;
   univ_constraint:
     [ [ l = identref; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
