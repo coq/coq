@@ -365,10 +365,6 @@ type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.ev
 let return_proof ?(allow_partial=false) () =
  let { pid; proof; strength = (_,poly,_) } = cur_pstate () in
  if allow_partial then begin
-  if Proof.is_complete proof then begin
-    msg_warning (str"The proof of " ++ str (Names.Id.to_string pid) ++
-     str" is complete, no need to end it with Admitted");
-  end;
   let proofs = Proof.partial_proof proof in
   let _,_,_,_, evd = Proof.proof proof in
   let eff = Evd.eval_side_effects evd in
