@@ -155,6 +155,7 @@ type option_value = Goptions.option_value =
   | BoolValue of bool
   | IntValue of int option
   | StringValue of string
+  | StringOptValue of string option
 
 type option_ref_value =
   | StringRefValue of string
@@ -224,12 +225,12 @@ type scheme =
   | EqualityScheme of reference or_by_notation
 
 type section_subset_expr =
-  | SsSet of lident list
+  | SsEmpty
+  | SsSingl of lident
   | SsCompl of section_subset_expr
   | SsUnion of section_subset_expr * section_subset_expr
   | SsSubstr of section_subset_expr * section_subset_expr
-
-type section_subset_descr = SsAll | SsType | SsExpr of section_subset_expr
+  | SsFwdClose of section_subset_expr
 
 (** Extension identifiers for the VERNAC EXTEND mechanism. *)
 type extend_name =
@@ -313,7 +314,7 @@ type vernac_expr =
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of (locality option * assumption_object_kind) *
-      inline * simple_binder with_coercion list
+      inline * (plident list * constr_expr) with_coercion list
   | VernacInductive of private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of
       locality option * (fixpoint_expr * decl_notation list) list
@@ -335,7 +336,7 @@ type vernac_expr =
       class_rawexpr * class_rawexpr
   | VernacIdentityCoercion of obsolete_locality * lident *
       class_rawexpr * class_rawexpr
-  | VernacNameSectionHypSet of lident * section_subset_descr 
+  | VernacNameSectionHypSet of lident * section_subset_expr 
 
   (* Type classes *)
   | VernacInstance of
@@ -440,7 +441,7 @@ type vernac_expr =
   | VernacEndSubproof
   | VernacShow of showable
   | VernacCheckGuard
-  | VernacProof of raw_tactic_expr option * section_subset_descr option
+  | VernacProof of raw_tactic_expr option * section_subset_expr option
   | VernacProofMode of string
   (* Toplevel control *)
   | VernacToplevelControl of exn

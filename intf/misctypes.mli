@@ -44,8 +44,8 @@ type 'id move_location =
 (** Sorts *)
 
 type 'a glob_sort_gen = GProp | GSet | GType of 'a
-type sort_info = string list
-type level_info = string option
+type sort_info = string Loc.located list
+type level_info = string Loc.located option
 
 type glob_sort = sort_info glob_sort_gen
 type glob_level = level_info glob_sort_gen

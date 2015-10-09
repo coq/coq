@@ -11,21 +11,27 @@ let freeze = ref (fun () -> assert false : unit -> Dyn.t)
 let unfreeze = ref (fun _ -> () : Dyn.t -> unit)
 let set_freeze f g = freeze := f; unfreeze := g
 
-exception NotReady of string
-exception NotHere of string
-let _ = Errors.register_handler (function
-  | NotReady name ->
+let not_ready_msg = ref (fun name ->
       Pp.strbrk("The value you are asking for ("^name^") is not ready yet. "^
                 "Please wait or pass "^
                 "the \"-async-proofs off\" option to CoqIDE to disable "^
                 "asynchronous script processing and don't pass \"-quick\" to "^
-                "coqc.")
-  | NotHere name ->
+                "coqc."))
+let not_here_msg = ref (fun name ->
       Pp.strbrk("The value you are asking for ("^name^") is not available "^
                 "in this process. If you really need this, pass "^
                 "the \"-async-proofs off\" option to CoqIDE to disable "^
                 "asynchronous script processing and don't pass \"-quick\" to "^
-                "coqc.")
+                "coqc."))
+
+let customize_not_ready_msg f = not_ready_msg := f
+let customize_not_here_msg f = not_here_msg := f
+
+exception NotReady of string
+exception NotHere of string
+let _ = Errors.register_handler (function
+  | NotReady name -> !not_ready_msg name
+  | NotHere name -> !not_here_msg name
   | _ -> raise Errors.Unhandled)
 
 type fix_exn = Exninfo.iexn -> Exninfo.iexn

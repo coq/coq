@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Module WithoutPoly.
   Unset Universe Polymorphism.
   Definition foo (A : Type@{i}) (B : Type@{i}) := A -> B.

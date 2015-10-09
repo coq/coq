@@ -482,19 +482,28 @@ let congruence_tac depth l =
    This isn't particularly related with congruence, apart from
    the fact that congruence is called internally.
 *)
-
+    
+let mk_eq f c1 c2 k =
+  Tacticals.New.pf_constr_of_global (Lazy.force f) (fun fc ->
+  Proofview.Goal.enter begin
+    fun gl ->
+    let open Tacmach.New in
+    let evm, ty = pf_apply type_of gl c1 in
+    let evm, ty = Evarsolve.refresh_universes (Some false) (pf_env gl) evm ty in
+    let term = mkApp (fc, [| ty; c1; c2 |]) in
+    let evm, _ =  type_of (pf_env gl) evm term in
+    Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evm))
+			  (k term)
+    end)
+    
 let f_equal =
   Proofview.Goal.nf_enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let cut_eq c1 c2 =
       try (* type_of can raise an exception *)
-        let ty = (* Termops.refresh_universes *) (type_of c1) in
-        if eq_constr_nounivs c1 c2 then Proofview.tclUNIT ()
-        else
-          Tacticals.New.tclTRY (Tacticals.New.tclTHEN
-          ((new_app_global _eq [|ty; c1; c2|]) Tactics.cut)
-          (Tacticals.New.tclTRY ((new_app_global _refl_equal [||]) apply)))
+        Tacticals.New.tclTHEN
+	  (mk_eq _eq c1 c2 Tactics.cut)
+	  (Tacticals.New.tclTRY ((new_app_global _refl_equal [||]) apply))
       with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
     in
     Proofview.tclORELSE

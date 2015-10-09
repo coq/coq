@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 (** It would be nice if we had more lax constraint checking of inductive types, and had variance annotations on their universes *)
 Set Printing All.
 Set Printing Implicit.

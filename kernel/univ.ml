@@ -1020,6 +1020,9 @@ struct
   let empty = (LSet.empty, Constraint.empty)
   let is_empty (univs, cst) = LSet.is_empty univs && Constraint.is_empty cst
 
+  let equal (univs, cst as x) (univs', cst' as y) =
+    x == y || (LSet.equal univs univs' && Constraint.equal cst cst')
+									
   let of_set s = (s, Constraint.empty)
   let singleton l = of_set (LSet.singleton l)
   let of_instance i = of_set (Instance.levels i)

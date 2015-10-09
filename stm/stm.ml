@@ -888,9 +888,16 @@ let set_compilation_hints file =
   hints := Aux_file.load_aux_file_for file
 let get_hint_ctx loc =
   let s = Aux_file.get !hints loc "context_used" in
-  let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") s) in
-  let ids = List.map (fun id -> Loc.ghost, id) ids in
-  SsExpr (SsSet ids)
+  match Str.split (Str.regexp ";") s with
+  | ids :: _ ->
+      let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") ids) in
+      let ids = List.map (fun id -> Loc.ghost, id) ids in
+      begin match ids with
+      | [] -> SsEmpty
+      | x :: xs ->
+          List.fold_left (fun a x -> SsUnion (SsSingl x,a)) (SsSingl x) xs
+      end
+  | _ -> raise Not_found
 
 let get_hint_bp_time proof_name =
   try float_of_string (Aux_file.get !hints Loc.ghost proof_name)
@@ -1577,7 +1584,8 @@ end = struct (* {{{ *)
       vernac_interp r_for { r_what with verbose = true };
       feedback ~state_id:r_for Feedback.Processed     
     with e when Errors.noncritical e ->
-      let msg = string_of_ppcmds (print e) in
+      let e = Errors.push e in
+      let msg = string_of_ppcmds (iprint e) in
       feedback ~state_id:r_for (Feedback.ErrorMsg (Loc.ghost, msg))
     
   let name_of_task { t_what } = string_of_ppcmds (pr_ast t_what)
@@ -2341,7 +2349,8 @@ let edit_at id =
     VCS.delete_cluster_of id;
     VCS.gc ();
     VCS.print ();
-    Reach.known_state ~cache:(interactive ()) id;
+    if not !Flags.async_proofs_full then
+      Reach.known_state ~cache:(interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `NewTip in
   try

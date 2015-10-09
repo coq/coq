@@ -253,17 +253,43 @@ let start_dependent_proof id str goals terminator =
 
 let get_used_variables () = (cur_pstate ()).section_vars
 
+let proof_using_auto_clear = ref true
+let _ = Goptions.declare_bool_option
+    { Goptions.optsync  = true;
+      Goptions.optdepr  = false;
+      Goptions.optname  = "Proof using Clear Unused";
+      Goptions.optkey   = ["Proof";"Using";"Clear";"Unused"];
+      Goptions.optread  = (fun () -> !proof_using_auto_clear);
+      Goptions.optwrite = (fun b -> proof_using_auto_clear := b) }
+
 let set_used_variables l =
   let env = Global.env () in
   let ids = List.fold_right Id.Set.add l Id.Set.empty in
   let ctx = Environ.keep_hyps env ids in
+  let ctx_set =
+    List.fold_right Id.Set.add (List.map pi1 ctx) Id.Set.empty in
+  let vars_of = Environ.global_vars_set in
+  let aux env entry (ctx, all_safe, to_clear as orig) =
+    match entry with
+    | (x,None,_) ->
+       if Id.Set.mem x all_safe then orig
+       else (ctx, all_safe, (Loc.ghost,x)::to_clear) 
+    | (x,Some bo, ty) as decl ->
+       if Id.Set.mem x all_safe then orig else
+       let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
+       if Id.Set.subset vars all_safe
+       then (decl :: ctx, Id.Set.add x all_safe, to_clear)
+       else (ctx, all_safe, (Loc.ghost,x) :: to_clear) in
+  let ctx, _, to_clear =
+    Environ.fold_named_context aux env ~init:(ctx,ctx_set,[]) in
+  let to_clear = if !proof_using_auto_clear then to_clear else [] in
   match !pstates with
   | [] -> raise NoCurrentProof
   | p :: rest ->
       if not (Option.is_empty p.section_vars) then
         Errors.error "Used section variables can be declared only once";
       pstates := { p with section_vars = Some ctx} :: rest;
-      ctx
+      ctx, to_clear
 
 let get_open_goals () =
   let gl, gll, shelf , _ , _ = Proof.proof (cur_pstate ()).proof in
@@ -342,10 +368,6 @@ type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.ev
 let return_proof ?(allow_partial=false) () =
  let { pid; proof; strength = (_,poly,_) } = cur_pstate () in
  if allow_partial then begin
-  if Proof.is_complete proof then begin
-    msg_warning (str"The proof of " ++ str (Names.Id.to_string pid) ++
-     str" is complete, no need to end it with Admitted");
-  end;
   let proofs = Proof.partial_proof proof in
   let _,_,_,_, evd = Proof.proof proof in
   let eff = Evd.eval_side_effects evd in

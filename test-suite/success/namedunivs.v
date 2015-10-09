@@ -4,6 +4,8 @@
 (* Fail  exact H. *)
 (* Section . *)
 
+Unset Strict Universe Declaration.
+
 Section lift_strict.
 Polymorphic Definition liftlt := 
   let t := Type@{i} : Type@{k} in

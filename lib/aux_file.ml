@@ -42,6 +42,8 @@ module M = Map.Make(String)
 type data = string M.t
 type aux_file = data H.t
 
+let contents x = x
+
 let empty_aux_file = H.empty
 
 let get aux loc key = M.find key (H.find (Loc.unloc loc) aux)

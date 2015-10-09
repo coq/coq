@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Set Printing Universes.
 Set Universe Polymorphism.
 Definition foo (a := Type) (b := Type) (c := Type) := Type.

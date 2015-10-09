@@ -132,8 +132,10 @@ val set_interp_tac :
     -> unit
 
 (** Sets the section variables assumed by the proof, returns its closure
- * (w.r.t. type dependencies *)
-val set_used_variables : Names.Id.t list -> Context.section_context
+ * (w.r.t. type dependencies and let-ins covered by it) + a list of
+ * ids to be cleared *)
+val set_used_variables :
+  Names.Id.t list -> Context.section_context * (Loc.t * Names.Id.t) list
 val get_used_variables : unit -> Context.section_context option
 
 (**********************************************************)

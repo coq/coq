@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 (* File reduced by coq-bug-finder from original input, then from 8657 lines to
 4731 lines, then from 4174 lines to 192 lines, then from 161 lines to 55 lines,
 then from 51 lines to 37 lines, then from 43 lines to 30 lines *)

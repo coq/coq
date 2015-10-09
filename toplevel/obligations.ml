@@ -798,7 +798,7 @@ let solve_by_tac name evi t poly ctx =
   let entry = Term_typing.handle_entry_side_effects env entry in
   let body, eff = Future.force entry.Entries.const_entry_body in
   assert(Declareops.side_effects_is_empty eff);
-  let ctx' = Evd.merge_context_set Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
+  let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
   Inductiveops.control_only_guard (Global.env ()) (fst body);
   (fst body), entry.Entries.const_entry_type, Evd.evar_universe_context ctx'
 

@@ -35,7 +35,9 @@ val query :
    new document tip, the document between [id] and [fo.stop] has been dropped.
    The portion between [fo.stop] and [fo.tip] has been kept.  [fo.start] is
    just to tell the gui where the editing zone starts, in case it wants to
-   graphically denote it.  All subsequent [add] happen on top of [id]. *)
+   graphically denote it.  All subsequent [add] happen on top of [id].
+   If Flags.async_proofs_full is set, then [id] is not [observe]d, else it is.
+*)
 type focus = { start : Stateid.t; stop : Stateid.t; tip : Stateid.t }
 val edit_at : Stateid.t -> [ `NewTip | `Focus of focus ]
 
@@ -49,11 +51,11 @@ val stop_worker : string -> unit
 (* Joins the entire document.  Implies finish, but also checks proofs *)
 val join : unit -> unit
 
-(* Saves on the dist a .vio corresponding to the current status:
-   - if the worker prool is empty, all tasks are saved
+(* Saves on the disk a .vio corresponding to the current status:
+   - if the worker pool is empty, all tasks are saved
    - if the worker proof is not empty, then it waits until all workers
      are done with their current jobs and then dumps (or fails if one
-     of the completed tasks is a failuere) *)
+     of the completed tasks is a failure) *)
 val snapshot_vio : DirPath.t -> string -> unit
 
 (* Empties the task queue, can be used only if the worker pool is empty (E.g.

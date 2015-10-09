@@ -515,7 +515,7 @@ let vernac_assumption locality poly (local, kind) l nl =
   let kind = local, poly, kind in
   List.iter (fun (is_coe,(idl,c)) ->
     if Dumpglob.dump () then
-      List.iter (fun lid ->
+      List.iter (fun (lid, _) ->
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
   let status = do_assumptions kind nl l in
@@ -874,18 +874,7 @@ let vernac_set_used_variables e =
       errorlabstrm "vernac_set_used_variables"
         (str "Unknown variable: " ++ pr_id id))
     l;
-  let closure_l = List.map pi1 (set_used_variables l) in
-  let closure_l = List.fold_right Id.Set.add closure_l Id.Set.empty in
-  let vars_of = Environ.global_vars_set in
-  let aux env entry (all_safe,rest as orig) =
-    match entry with
-    | (x,None,_) ->
-       if Id.Set.mem x all_safe then orig else (all_safe, (Loc.ghost,x)::rest) 
-    | (x,Some bo, ty) ->
-       let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
-       if Id.Set.subset vars all_safe then (Id.Set.add x all_safe, rest)
-       else (all_safe, (Loc.ghost,x) :: rest) in
-  let _,to_clear = Environ.fold_named_context aux env ~init:(closure_l,[]) in
+  let _, to_clear = set_used_variables l in
   vernac_solve
     SelectAll None Tacexpr.(TacAtom (Loc.ghost,TacClear(false,to_clear))) false
 
@@ -1497,6 +1486,8 @@ let vernac_set_opacity locality (v,l) =
 
 let vernac_set_option locality key = function
   | StringValue s -> set_string_option_value_gen locality key s
+  | StringOptValue (Some s) -> set_string_option_value_gen locality key s
+  | StringOptValue None -> unset_option_value_gen locality key
   | IntValue n -> set_int_option_value_gen locality key n
   | BoolValue b -> set_bool_option_value_gen locality key b
 
@@ -1855,8 +1846,9 @@ let vernac_load interp fname =
 
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
- * still parsed as the obsolete_locality grammar entry for retrocompatibility *)
-let interp ?proof locality poly c =
+ * still parsed as the obsolete_locality grammar entry for retrocompatibility.
+ * loc is the Loc.t of the vernacular command being interpreted. *)
+let interp ?proof ~loc locality poly c =
   prerr_endline ("interpreting: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac c));
   match c with
   (* Done later in this file *)
@@ -2000,10 +1992,16 @@ let interp ?proof locality poly c =
   | VernacEndSubproof -> vernac_end_subproof ()
   | VernacShow s -> vernac_show s
   | VernacCheckGuard -> vernac_check_guard ()
-  | VernacProof (None, None) -> ()
-  | VernacProof (Some tac, None) -> vernac_set_end_tac tac
-  | VernacProof (None, Some l) -> vernac_set_used_variables l
+  | VernacProof (None, None) ->
+      Aux_file.record_in_aux_at loc "VernacProof" "tac:no using:no"
+  | VernacProof (Some tac, None) ->
+      Aux_file.record_in_aux_at loc "VernacProof" "tac:yes using:no";
+      vernac_set_end_tac tac
+  | VernacProof (None, Some l) ->
+      Aux_file.record_in_aux_at loc "VernacProof" "tac:no using:yes";
+      vernac_set_used_variables l
   | VernacProof (Some tac, Some l) -> 
+      Aux_file.record_in_aux_at loc "VernacProof" "tac:yes using:yes";
       vernac_set_end_tac tac; vernac_set_used_variables l
   | VernacProofMode mn -> Proof_global.set_proof_mode mn
   (* Toplevel control *)
@@ -2155,8 +2153,9 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         Obligations.set_program_mode isprogcmd;
         try
           vernac_timeout begin fun () ->
-          if verbosely then Flags.verbosely (interp ?proof locality poly) c
-                       else Flags.silently  (interp ?proof locality poly) c;
+          if verbosely
+            then Flags.verbosely (interp ?proof ~loc locality poly) c
+            else Flags.silently  (interp ?proof ~loc locality poly) c;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
             Flags.program_mode := orig_program_mode
           end

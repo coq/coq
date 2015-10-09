@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Require Import TestSuite.admit.
 (* -*- mode: coq; coq-prog-args: ("-emacs" "-indices-matter") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 6522 lines to 318 lines, then from 1139 lines to 361 lines *)

@@ -1021,8 +1021,8 @@ let merge_uctx sideff rigid uctx ctx' =
   let uctx_universes = UGraph.merge_constraints (ContextSet.constraints ctx') univs in
     { uctx with uctx_local; uctx_universes; uctx_initial_universes = initial }
 
-let merge_context_set rigid evd ctx' = 
-  {evd with universes = merge_uctx false rigid evd.universes ctx'}
+let merge_context_set ?(sideff=false) rigid evd ctx' = 
+  {evd with universes = merge_uctx sideff rigid evd.universes ctx'}
 
 let merge_uctx_subst uctx s =
   { uctx with uctx_univ_variables = Univ.LMap.subst_union uctx.uctx_univ_variables s }
@@ -1067,12 +1067,6 @@ let uctx_new_univ_variable rigid name predicative
 	  uctx_univ_algebraic = Univ.LSet.add u avars}, false
 	else {uctx with uctx_univ_variables = uvars'}, false
   in
-  (* let ctx' = *)
-  (*   if pred then *)
-  (*     Univ.ContextSet.add_constraints *)
-  (* 	(Univ.Constraint.singleton (Univ.Level.set, Univ.Le, u)) ctx' *)
-  (*   else ctx' *)
-  (* in *)
   let names = 
     match name with
     | Some n -> add_uctx_names n u uctx.uctx_names
@@ -1323,8 +1317,7 @@ let normalize_evar_universe_context uctx =
       Universes.normalize_context_set uctx.uctx_local uctx.uctx_univ_variables
         uctx.uctx_univ_algebraic
     in
-      if Univ.LSet.equal (fst us') (fst uctx.uctx_local) then 
-        uctx
+      if Univ.ContextSet.equal us' uctx.uctx_local then uctx
       else
 	let us', universes = Universes.refresh_constraints uctx.uctx_initial_universes us' in
 	let uctx' = 

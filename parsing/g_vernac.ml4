@@ -46,7 +46,7 @@ let record_field = Gram.entry_create "vernac:record_field"
 let of_type_with_opt_coercion = Gram.entry_create "vernac:of_type_with_opt_coercion"
 let subgoal_command = Gram.entry_create "proof_mode:subgoal_command"
 let instance_name = Gram.entry_create "vernac:instance_name"
-let section_subset_descr = Gram.entry_create "vernac:section_subset_descr"
+let section_subset_expr = Gram.entry_create "vernac:section_subset_expr"
 
 let command_entry = ref noedit_mode
 let set_command_entry e = command_entry := e
@@ -269,7 +269,7 @@ GEXTEND Gram
       | -> NoInline] ]
   ;
   pidentref:
-    [ [ i = identref; l = OPT [ "@{" ; l = LIST1 identref; "}" -> l ] -> (i,l) ] ]
+    [ [ i = identref; l = OPT [ "@{" ; l = LIST0 identref; "}" -> l ] -> (i,l) ] ]
   ;
   univ_constraint:
     [ [ l = identref; ord = [ "<" -> Univ.Lt | "=" -> Univ.Eq | "<=" -> Univ.Le ];
@@ -325,9 +325,9 @@ GEXTEND Gram
       | id = identref ; c = constructor_type; "|"; l = LIST0 constructor SEP "|" ->
 	  Constructors ((c id)::l)
       | id = identref ; c = constructor_type -> Constructors [ c id ]
-      | cstr = identref; "{"; fs = LIST0 record_field SEP ";"; "}" ->
+      | cstr = identref; "{"; fs = record_fields; "}" ->
 	  RecordDecl (Some cstr,fs)
-      | "{";fs = LIST0 record_field SEP ";"; "}" -> RecordDecl (None,fs)
+      | "{";fs = record_fields; "}" -> RecordDecl (None,fs)
       |  -> Constructors [] ] ]
   ;
 (*
@@ -389,6 +389,13 @@ GEXTEND Gram
   [ [ bd = record_binder; pri = OPT [ "|"; n = natural -> n ];
       ntn = decl_notation -> (bd,pri),ntn ] ]
   ;
+  record_fields:
+    [ [ f = record_field; ";"; fs = record_fields -> f :: fs
+      | f = record_field; ";" -> [f]
+      | f = record_field -> [f]
+      | -> []
+    ] ]
+  ;
   record_binder_body:
     [ [ l = binders; oc = of_type_with_opt_coercion;
          t = lconstr -> fun id -> (oc,AssumExpr (id,mkCProdN (!@loc) l t))
@@ -413,7 +420,7 @@ GEXTEND Gram
     [ [ "("; a = simple_assum_coe; ")" -> a ] ]
   ;
   simple_assum_coe:
-    [ [ idl = LIST1 identref; oc = of_type_with_opt_coercion; c = lconstr ->
+    [ [ idl = LIST1 pidentref; oc = of_type_with_opt_coercion; c = lconstr ->
         (not (Option.is_empty oc),(idl,c)) ] ]
   ;
 
@@ -440,20 +447,24 @@ GEXTEND Gram
   ;
 END
 
-let only_identrefs =
-  Gram.Entry.of_parser "test_only_identrefs"
+let only_starredidentrefs =
+  Gram.Entry.of_parser "test_only_starredidentrefs"
     (fun strm ->
       let rec aux n =
       match get_tok (Util.stream_nth n strm) with
         | KEYWORD "." -> ()
         | KEYWORD ")" -> ()
-        | IDENT _ -> aux (n+1)
+        | (IDENT _ | KEYWORD "Type" | KEYWORD "*") -> aux (n+1)
         | _ -> raise Stream.Failure in
       aux 0)
+let starredidentreflist_to_expr l =
+  match l with
+  | [] -> SsEmpty
+  | x :: xs -> List.fold_right (fun i acc -> SsUnion(i,acc)) xs x
 
 (* Modules and Sections *)
 GEXTEND Gram
-  GLOBAL: gallina_ext module_expr module_type section_subset_descr;
+  GLOBAL: gallina_ext module_expr module_type section_subset_expr;
 
   gallina_ext:
     [ [ (* Interactive module declaration *)
@@ -476,7 +487,7 @@ GEXTEND Gram
       | IDENT "End"; id = identref -> VernacEndSegment id
 
       (* Naming a set of section hyps *)
-      | IDENT "Collection"; id = identref; ":="; expr = section_subset_descr ->
+      | IDENT "Collection"; id = identref; ":="; expr = section_subset_expr ->
           VernacNameSectionHypSet (id, expr)
 
       (* Requiring an already compiled module *)
@@ -567,22 +578,32 @@ GEXTEND Gram
           CMwith (!@loc,mty,decl)
       ] ]
   ;
-  section_subset_descr:
-    [ [ IDENT "All" -> SsAll
-      | "Type" -> SsType
-      | only_identrefs; l = LIST0 identref -> SsExpr (SsSet l)
-      | e = section_subset_expr -> SsExpr e ] ]
-  ;
+  (* Proof using *)
   section_subset_expr:
+    [ [ only_starredidentrefs; l = LIST0 starredidentref ->
+          starredidentreflist_to_expr l
+      | e = ssexpr -> e ]]
+  ;
+  starredidentref:
+    [ [ i = identref -> SsSingl i
+      | i = identref; "*" -> SsFwdClose(SsSingl i)
+      | "Type" -> SsSingl (!@loc, Id.of_string "Type")
+      | "Type"; "*" -> SsFwdClose (SsSingl (!@loc, Id.of_string "Type")) ]]
+  ;
+  ssexpr:
     [ "35" 
-      [ "-"; e = section_subset_expr -> SsCompl e ]
+      [ "-"; e = ssexpr -> SsCompl e ]
     | "50"
-      [ e1 = section_subset_expr; "-"; e2 = section_subset_expr->SsSubstr(e1,e2)
-      | e1 = section_subset_expr; "+"; e2 = section_subset_expr->SsUnion(e1,e2)]
+      [ e1 = ssexpr; "-"; e2 = ssexpr->SsSubstr(e1,e2)
+      | e1 = ssexpr; "+"; e2 = ssexpr->SsUnion(e1,e2)]
     | "0"
-      [ i = identref -> SsSet [i]
-      | "("; only_identrefs; l = LIST0 identref; ")"-> SsSet l
-      | "("; e = section_subset_expr; ")"-> e ] ]
+      [ i = starredidentref -> i
+      | "("; only_starredidentrefs; l = LIST0 starredidentref; ")"->
+          starredidentreflist_to_expr l
+      | "("; only_starredidentrefs; l = LIST0 starredidentref; ")"; "*" ->
+          SsFwdClose(starredidentreflist_to_expr l)
+      | "("; e = ssexpr; ")"-> e 
+      | "("; e = ssexpr; ")"; "*" -> SsFwdClose e ] ]
   ;
 END
 

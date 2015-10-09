@@ -13,6 +13,10 @@ val get : aux_file -> Loc.t -> string -> string
 val empty_aux_file : aux_file
 val set : aux_file -> Loc.t -> string -> string -> aux_file
 
+module H : Map.S with type key = int * int
+module M : Map.S with type key = string
+val contents : aux_file -> string M.t H.t
+
 val start_aux_file_for : string -> unit
 val stop_aux_file : unit -> unit 
 val recording : unit -> bool

@@ -45,26 +45,38 @@ end
 (* Common code *)
 let assert_ b s = if not b then Errors.anomaly (Pp.str s)
 
+(* According to http://caml.inria.fr/mantis/view.php?id=5325
+ * you can't use the same socket for both writing and reading (may change
+ * in 4.03 *)
 let mk_socket_channel () =
   let open Unix in
-  let s = socket PF_INET SOCK_STREAM 0 in
-  bind s (ADDR_INET (inet_addr_loopback,0));
-  listen s 1;
-  match getsockname s with
-  | ADDR_INET(host, port) ->
-      s, string_of_inet_addr host ^":"^ string_of_int port
+  let sr = socket PF_INET SOCK_STREAM 0 in
+  bind sr (ADDR_INET (inet_addr_loopback,0)); listen sr 1;
+  let sw = socket PF_INET SOCK_STREAM 0 in
+  bind sw (ADDR_INET (inet_addr_loopback,0)); listen sw 1;
+  match getsockname sr, getsockname sw with
+  | ADDR_INET(host, portr), ADDR_INET(_, portw) ->
+      (sr, sw),
+      string_of_inet_addr host
+        ^":"^ string_of_int portr ^":"^ string_of_int portw
   | _ -> assert false
 
-let accept s =
-  let r, _, _ = Unix.select [s] [] [] accept_timeout in
+let accept (sr,sw) =
+  let r, _, _ = Unix.select [sr] [] [] accept_timeout in
   if r = [] then raise (Failure (Printf.sprintf
     "The spawned process did not connect back in %2.1fs" accept_timeout));
-  let cs, _ = Unix.accept s in
-  Unix.close s;
-  let cin, cout = Unix.in_channel_of_descr cs, Unix.out_channel_of_descr cs in
+  let csr, _ = Unix.accept sr in
+  Unix.close sr;
+  let cin = Unix.in_channel_of_descr csr in
   set_binary_mode_in cin true;
+  let w, _, _ = Unix.select [sw] [] [] accept_timeout in
+  if w = [] then raise (Failure (Printf.sprintf
+    "The spawned process did not connect back in %2.1fs" accept_timeout));
+  let csw, _ = Unix.accept sw in
+  Unix.close sw;
+  let cout = Unix.out_channel_of_descr csw in
   set_binary_mode_out cout true;
-  cs, cin, cout
+  (csr, csw), cin, cout
 
 let handshake cin cout =
   try
@@ -116,7 +128,7 @@ let spawn_pipe env prog args =
   let cout = Unix.out_channel_of_descr master2worker_w in
   set_binary_mode_in cin true;
   set_binary_mode_out cout true;
-  pid, cin, cout, worker2master_r
+  pid, cin, cout, (worker2master_r, master2worker_w)
 
 let filter_args args =
   let rec aux = function
@@ -180,10 +192,10 @@ let spawn ?(prefer_sock=prefer_sock) ?(env=Unix.environment ())
 =
   let pid, oob_resp, oob_req, cin, cout, main, is_sock =
     spawn_with_control prefer_sock env prog args in
-  Unix.set_nonblock main;
+  Unix.set_nonblock (fst main);
   let gchan =
-    if is_sock then ML.async_chan_of_socket main
-    else ML.async_chan_of_file main in
+    if is_sock then ML.async_chan_of_socket (fst main)
+    else ML.async_chan_of_file (fst main) in
   let alive, watch = true, None in
   let p = { cin; cout; gchan; pid; oob_resp; oob_req; alive; watch } in
   p.watch <- Some (

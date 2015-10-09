@@ -161,3 +161,6 @@ val print : ('a -> Pp.std_ppcmds) -> 'a computation -> Pp.std_ppcmds
    Thy are set for the outermos layer of the system, since they have to
    deal with the whole system state. *)
 val set_freeze : (unit -> Dyn.t) -> (Dyn.t -> unit) -> unit
+
+val customize_not_ready_msg : (string -> Pp.std_ppcmds) -> unit
+val customize_not_here_msg : (string -> Pp.std_ppcmds) -> unit

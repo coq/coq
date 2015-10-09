@@ -359,7 +359,8 @@ let get_int opt n =
 
 let get_host_port opt s =
   match CString.split ':' s with
-  | [host; port] -> Some (Spawned.Socket(host, int_of_string port))
+  | [host; portr; portw] ->
+       Some (Spawned.Socket(host, int_of_string portr, int_of_string portw))
   | ["stdfds"] -> Some Spawned.AnonPipe
   | _ ->
      prerr_endline ("Error: host:port or stdfds expected after option "^opt);

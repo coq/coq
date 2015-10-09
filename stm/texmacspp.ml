@@ -575,10 +575,11 @@ let rec tmpp v loc =
       end
   | VernacExactProof _ as x -> xmlTODO loc x
   | VernacAssumption ((l, a), _, sbwcl) ->
+      let binders = List.map (fun (_, (id, c)) -> (List.map fst id, c)) sbwcl in
       let many =
-        List.length (List.flatten (List.map fst (List.map snd sbwcl))) > 1 in
+        List.length (List.flatten (List.map fst binders)) > 1 in
       let exprs =
-        List.flatten (List.map pp_simple_binder (List.map snd sbwcl)) in
+        List.flatten (List.map pp_simple_binder binders) in
       let l = match l with Some x -> x | None -> Decl_kinds.Global in
       let kind = string_of_assumption_kind l a many in
       xmlAssumption kind loc exprs

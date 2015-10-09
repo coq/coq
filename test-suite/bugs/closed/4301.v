@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Set Universe Polymorphism.
 
 Module Type Foo.

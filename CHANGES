@@ -35,6 +35,8 @@ Program
 
 - The "Shrink Obligations" flag now applies to all obligations, not only those
 solved by the automatic tactic.
+- Importing Program no longer overrides the "exists" tactic (potential source
+  of incompatibilities).
 
 API
 

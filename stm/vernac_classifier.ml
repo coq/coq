@@ -141,7 +141,7 @@ let rec classify_vernac e =
         else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->
-        let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map snd l) l) in
+        let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> snd id) l) l) in
         VtSideff ids, VtLater    
     | VernacDefinition (_,((_,id),_),DefineBody _) -> VtSideff [id], VtLater
     | VernacInductive (_,_,l) ->

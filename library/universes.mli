@@ -12,6 +12,9 @@ open Term
 open Environ
 open Univ
 
+val set_minimization : bool ref
+val is_set_minimization : unit -> bool
+       
 (** Universes *)
 
 type universe_names = 

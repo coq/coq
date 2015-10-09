@@ -1,3 +1,4 @@
+Unset Strict Universe Declaration.
 Require Import TestSuite.admit.
 Module Comment1.
   Set Implicit Arguments.
