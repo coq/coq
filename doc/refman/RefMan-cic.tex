@@ -1644,13 +1644,12 @@ Abort.
 The principles of mutual induction can be automatically generated 
 using the {\tt Scheme} command described in Section~\ref{Scheme}.
 
-\section{Derived rules for global environments}
+\section{Admissible rules for global environments}
 
-From the original rules of the type system, one can derive new rules
-which change the local context of definition of objects in the global environment.
-Because these rules correspond to elementary operations in the \Coq\ 
-engine used in the discharge mechanism at the end of a section, we
-state them explicitly.
+From the original rules of the type system, one can show the
+admissibility of rules which change the local context of definition of
+objects in the global environment. We show here the admissible rules
+that are used used in the discharge mechanism at the end of a section.
 
 % This is obsolete: Abstraction over defined constants actually uses a
 % let-in since there are let-ins in Coq
@@ -1669,23 +1668,48 @@ state them explicitly.
 
 \paragraph{Abstraction.}
 
-One can modify the definition of a constant $c$ by generalizing it
-over a previously assumed constant $c'$. For doing that, we need
-to modify the reference to $c$ in the subsequent global environment
-and local context by explicitly applying this constant to the constant $c'$.
+One can modify a global declaration by generalizing it over a
+previously assumed constant $c$. For doing that, we need to modify the
+reference to the global declaration in the subsequent global
+environment and local context by explicitly applying this constant to
+the constant $c'$.
+
+Below, if $\Gamma$ is a context of the form
+$[y_1:A_1;\ldots;y_n:A_n]$, we write $\forall
+x:U,\subst{\Gamma}{c}{x}$ to mean
+$[y_1:\forall~x:U,\subst{A_1}{c}{x};\ldots;y_n:\forall~x:U,\subst{A_n}{c}{x}]$
+and
+$\subst{E}{|\Gamma|}{|\Gamma|c}$.
+to mean the parallel substitution
+$\subst{\subst{E}{y_1}{(y_1~c)}\ldots}{y_n}{(y_n~c)}$.
 
 \paragraph{First abstracting property:}
- \inference{\frac{\WF{E;c':U;E';c:=t:T;E''}{\Gamma}}
-                 {\WF{E;c':U;E';c:=\lb x:U\mto \subst{t}{c'}{x}:\forall~x:U,\subst{T}{c'}{x};
-  \subst{E''}{c}{(c~c')}}{\subst{\Gamma}{c}{(c~c')}}}}
+ \inference{\frac{\WF{E;c:U;E';c':=t:T;E''}{\Gamma}}
+                 {\WF{E;c:U;E';c':=\lb x:U\mto \subst{t}{c}{x}:\forall~x:U,\subst{T}{c}{x};
+                      \subst{E''}{c'}{(c'~c)}}{\subst{\Gamma}{c}{(c~c')}}}}
 
-One can similarly modify the definition of a constant $c$ by generalizing it
-over a previously defined constant $c'$.
+ \inference{\frac{\WF{E;c:U;E';c':T;E''}{\Gamma}}
+                 {\WF{E;c:U;E';c':\forall~x:U,\subst{T}{c}{x};
+                      \subst{E''}{c'}{(c'~c)}}{\subst{\Gamma}{c}{(c~c')}}}}
+
+ \inference{\frac{\WF{E;c:U;E';\Ind{}{p}{\Gamma_I}{\Gamma_C};E''}{\Gamma}}
+                 {\WFTWOLINES{E;c:U;E';\Ind{}{p+1}{\forall x:U,\subst{\Gamma_I}{c}{x}}{\forall x:U,\subst{\Gamma_C}{c}{x}};\subst{E''}{|\Gamma_I,\Gamma_C|}{|\Gamma_I,\Gamma_C|~c}}{\subst{\Gamma}{|\Gamma_I,\Gamma_C|}{|\Gamma_I,\Gamma_C|~c}}}}
+
+One can similarly modify a global declaration by generalizing it over
+a previously defined constant~$c'$.  Below, if $\Gamma$ is a context
+of the form $[y_1:A_1;\ldots;y_n:A_n]$, we write $
+\subst{\Gamma}{c}{u}$ to mean
+$[y_1:\subst{A_1}{c}{u};\ldots;y_n:\subst{A_n}{c}{u}]$.
 
 \paragraph{Second abstracting property:}
- \inference{\frac{\WF{E;c':=u:U;E';c:=t:T;E''}{\Gamma}}
-           {\WF{E;c':=u:U;E';c:=(\letin{x}{u:U}{\subst{t}{c'}{x}}):\subst{T}{c'}{u};
-  E''}{\Gamma}}}
+ \inference{\frac{\WF{E;c:=u:U;E';c':=t:T;E''}{\Gamma}}
+           {\WF{E;c:=u:U;E';c':=(\letin{x}{u:U}{\subst{t}{c}{x}}):\subst{T}{c}{u};E''}{\Gamma}}}
+
+ \inference{\frac{\WF{E;c:=u:U;E';c':T;E''}{\Gamma}}
+           {\WF{E;c:=u:U;E';c':\subst{T}{c}{u};E''}{\Gamma}}}
+
+ \inference{\frac{\WF{E;c:=u:U;E';\Ind{}{p}{\Gamma_I}{\Gamma_C};E''}{\Gamma}}
+                 {\WF{E;c:=u:U;E';\Ind{}{p}{\subst{\Gamma_I}{c}{u}}{\subst{\Gamma_C}{c}{u}};E''}{\Gamma}}}
 
 \paragraph{Pruning the local context.}
 If one abstracts or substitutes constants with the above rules then it
