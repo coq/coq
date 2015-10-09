@@ -375,7 +375,7 @@ be derived from the following rules.
         {\WTEG{\letin{x}{t:T}{u}}{\subst{U}{x}{t}}}}
 \end{description}
     
-\Rem We may have $\kw{let}~x:=t~\kw{in}~u$
+\Rem We may have $\letin{x}{t:T}{u}$
 well-typed without having $((\lb x:T\mto u)~t)$ well-typed (where
 $T$ is a type of $t$). This is because the value $t$ associated to $x$
 may be used in a conversion rule (see Section~\ref{conv-rules}).
@@ -520,63 +520,6 @@ $u_i$ can be reducible.
 Similar notions of head-normal forms involving $\delta$, $\iota$ and $\zeta$
 reductions or any combination of those can also be defined.
 
-\section{Derived rules for global environments}
-
-From the original rules of the type system, one can derive new rules
-which change the local context of definition of objects in the global environment.
-Because these rules correspond to elementary operations in the \Coq\ 
-engine used in the discharge mechanism at the end of a section, we
-state them explicitly.
-
-% This is obsolete: Abstraction over defined constants actually uses a
-% let-in since there are let-ins in Coq
-
-%% \paragraph{Mechanism of substitution.}
-
-%% One rule which can be proved valid, is to replace a term $c$ by its
-%% value in the global environment. As we defined the substitution of a term for
-%% a variable in a term, one can define the substitution of a term for a
-%% constant. One easily extends this substitution to local contexts and global
-%% environments.
-
-%% \paragraph{Substitution Property:}
-%% \inference{\frac{\WF{E;c:=t:T; E'}{\Gamma}}
-%%            {\WF{E; \subst{E'}{c}{t}}{\subst{\Gamma}{c}{t}}}}
-
-\paragraph{Abstraction.}
-
-One can modify the definition of a constant $c$ by generalizing it
-over a previously assumed constant $c'$. For doing that, we need
-to modify the reference to $c$ in the subsequent global environment
-and local context by explicitly applying this constant to the constant $c'$.
-
-\paragraph{First abstracting property:}
- \inference{\frac{\WF{E;c':U;E';c:=t:T;E''}{\Gamma}}
-                 {\WF{E;c':U;E';c:=\lb x:U\mto \subst{t}{c'}{x}:\forall~x:U,\subst{T}{c'}{x};
-  \subst{E''}{c}{(c~c')}}{\subst{\Gamma}{c}{(c~c')}}}}
-
-One can similarly modify the definition of a constant $c$ by generalizing it
-over a previously defined constant $c'$.
-
-\paragraph{Second abstracting property:}
- \inference{\frac{\WF{E;c':=u:U;E';c:=t:T;E''}{\Gamma}}
-           {\WF{E;c':=u:U;E';c:=(\letin{x}{u:U}{\subst{t}{c'}{x}}):\subst{T}{c'}{u};
-  E''}{\Gamma}}}
-
-\paragraph{Pruning the local context.}
-If one abstracts or substitutes constants with the above rules then it
-may happen that some declared or defined constant does not occur any
-more in the subsequent global environment and in the local context. One can
-consequently derive the following property.
-
-\paragraph{First pruning property:}
-\inference{\frac{\WF{E;c:U;E'}{\Gamma} \qquad c \mbox{ does not occur in $E'$ and $\Gamma$}}
-                {\WF{E;E'}{\Gamma}}}
- 
-\paragraph{Second pruning property:}
-\inference{\frac{\WF{E;c:=u:U;E'}{\Gamma} \qquad c \mbox{ does not occur in $E'$ and $\Gamma$}}
-                {\WF{E;E'}{\Gamma}}}
- 
 \section[Inductive Definitions]{Inductive Definitions\label{Cic-inductive-definitions}}
 
 A (possibly mutual) inductive definition is specified by giving the
@@ -1701,6 +1644,63 @@ Abort.
 The principles of mutual induction can be automatically generated 
 using the {\tt Scheme} command described in Section~\ref{Scheme}.
 
+\section{Derived rules for global environments}
+
+From the original rules of the type system, one can derive new rules
+which change the local context of definition of objects in the global environment.
+Because these rules correspond to elementary operations in the \Coq\ 
+engine used in the discharge mechanism at the end of a section, we
+state them explicitly.
+
+% This is obsolete: Abstraction over defined constants actually uses a
+% let-in since there are let-ins in Coq
+
+%% \paragraph{Mechanism of substitution.}
+
+%% One rule which can be proved valid, is to replace a term $c$ by its
+%% value in the global environment. As we defined the substitution of a term for
+%% a variable in a term, one can define the substitution of a term for a
+%% constant. One easily extends this substitution to local contexts and global
+%% environments.
+
+%% \paragraph{Substitution Property:}
+%% \inference{\frac{\WF{E;c:=t:T; E'}{\Gamma}}
+%%            {\WF{E; \subst{E'}{c}{t}}{\subst{\Gamma}{c}{t}}}}
+
+\paragraph{Abstraction.}
+
+One can modify the definition of a constant $c$ by generalizing it
+over a previously assumed constant $c'$. For doing that, we need
+to modify the reference to $c$ in the subsequent global environment
+and local context by explicitly applying this constant to the constant $c'$.
+
+\paragraph{First abstracting property:}
+ \inference{\frac{\WF{E;c':U;E';c:=t:T;E''}{\Gamma}}
+                 {\WF{E;c':U;E';c:=\lb x:U\mto \subst{t}{c'}{x}:\forall~x:U,\subst{T}{c'}{x};
+  \subst{E''}{c}{(c~c')}}{\subst{\Gamma}{c}{(c~c')}}}}
+
+One can similarly modify the definition of a constant $c$ by generalizing it
+over a previously defined constant $c'$.
+
+\paragraph{Second abstracting property:}
+ \inference{\frac{\WF{E;c':=u:U;E';c:=t:T;E''}{\Gamma}}
+           {\WF{E;c':=u:U;E';c:=(\letin{x}{u:U}{\subst{t}{c'}{x}}):\subst{T}{c'}{u};
+  E''}{\Gamma}}}
+
+\paragraph{Pruning the local context.}
+If one abstracts or substitutes constants with the above rules then it
+may happen that some declared or defined constant does not occur any
+more in the subsequent global environment and in the local context. One can
+consequently derive the following property.
+
+\paragraph{First pruning property:}
+\inference{\frac{\WF{E;c:U;E'}{\Gamma} \qquad c \mbox{ does not occur in $E'$ and $\Gamma$}}
+                {\WF{E;E'}{\Gamma}}}
+ 
+\paragraph{Second pruning property:}
+\inference{\frac{\WF{E;c:=u:U;E'}{\Gamma} \qquad c \mbox{ does not occur in $E'$ and $\Gamma$}}
+                {\WF{E;E'}{\Gamma}}}
+ 
 \section{Co-inductive types}
 The implementation contains also co-inductive definitions, which are
 types inhabited by infinite objects. 
