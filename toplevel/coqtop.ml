@@ -235,11 +235,9 @@ let compile_files () =
 
 (*s options for the virtual machine *)
 
-let boxed_val = ref false
 let use_vm = ref false
 
 let set_vm_opt () =
-  Vm.set_transp_values (not !boxed_val);
   Vconv.set_use_vm !use_vm
 
 (** Options for proof general *)

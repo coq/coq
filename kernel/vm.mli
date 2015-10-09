@@ -2,12 +2,9 @@ open Names
 open Term
 open Cbytecodes
 
-(** Efficient Virtual Machine *)
+(** Debug printing *)
 
 val set_drawinstr : unit -> unit
-
-val transp_values : unit -> bool
-val set_transp_values : bool -> unit
 
 (** Machine code *)
 
@@ -25,7 +22,6 @@ type arguments
 
 type atom =
   | Aid of Vars.id_key
-  | Aiddef of Vars.id_key * values
   | Aind of pinductive
 
 (** Zippers *)
@@ -106,10 +102,6 @@ val case_info : vswitch -> case_info
 val type_of_switch : vswitch -> values
 val branch_of_switch : int -> vswitch -> (int * values) array
 
-(** Evaluation *)
+(** Apply a value *)
 
-val whd_stack : values -> stack -> whd
-val force_whd : values -> stack -> whd
-
-val eta_whd : int -> whd -> values
-
+val apply_whd : int -> whd -> values
