@@ -314,6 +314,15 @@ let val_of_str_const str = val_of_obj (obj_of_str_const str)
 
 let val_of_atom a = val_of_obj (obj_of_atom a)
 
+let atom_of_proj kn v =
+  let r = Obj.new_block proj_tag 2 in
+  Obj.set_field r 0 (Obj.repr kn);
+  Obj.set_field r 1 (Obj.repr v);
+  ((Obj.obj r) : atom)
+
+let val_of_proj kn v =
+  val_of_atom (atom_of_proj kn v)
+
 module IdKeyHash =
 struct
   type t = pconstant tableKey
@@ -560,6 +569,7 @@ let rec apply_stack a stk v =
   match stk with
   | [] -> apply_varray a [|v|]
   | Zapp args :: stk -> apply_stack (apply_arguments a args) stk v
+  | Zproj kn :: stk -> apply_stack (val_of_proj kn a) stk v
   | Zfix(f,args) :: stk ->
       let a,stk = 
 	match stk with
