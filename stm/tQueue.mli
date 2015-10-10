@@ -22,9 +22,12 @@ val broadcast : 'a t -> unit
 val wait_until_n_are_waiting_then_snapshot : int -> 'a t -> 'a list
 
 val clear : 'a t -> unit
+val clear_saving : 'a t -> ('a -> 'b option) -> 'b list
 val is_empty : 'a t -> bool
 
 exception BeingDestroyed
 (* Threads blocked in pop can get this exception if the queue is being
  * destroyed *)
 val destroy : 'a t -> unit
+
+val length : 'a t -> int

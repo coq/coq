@@ -82,7 +82,7 @@ show that A's type is in cumululativity relation with id's type
 argument, incurring a universe constraint. To do this, one can simply
 call Typing.resolve_evars env evdref c which will do some infer_conv to
 produce the right constraints and put them in the evar_map. Of course in
-some cases you might now from an invariant that no new constraint would
+some cases you might know from an invariant that no new constraint would
 be produced and get rid of it. Anyway the kernel will tell you if you
 forgot some. As a temporary way out, [Universes.constr_of_global] allows
 you to make a constr from any non-polymorphic constant, but it will fail

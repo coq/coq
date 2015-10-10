@@ -76,11 +76,7 @@ and conv_whd env pb k whd1 whd2 cu =
   | Vatom_stk(a1,stk1), Vatom_stk(a2,stk2) ->
       conv_atom env pb k a1 stk1 a2 stk2 cu
   | Vfun _, _ | _, Vfun _ ->
-      conv_val env CONV (k+1) (eta_whd k whd1) (eta_whd k whd2) cu
-  | _, Vatom_stk(Aiddef(_,v),stk) ->
-      conv_whd env pb k whd1 (force_whd v stk) cu
-  | Vatom_stk(Aiddef(_,v),stk), _ ->
-      conv_whd env pb k (force_whd v stk) whd2 cu
+      conv_val env CONV (k+1) (apply_whd k whd1) (apply_whd k whd2) cu
 
   | Vsort _, _ | Vprod _, _ | Vfix _, _ | Vcofix _, _  | Vconstr_const _, _
   | Vconstr_block _, _ | Vatom_stk _, _ -> raise NotConvertible
@@ -97,22 +93,6 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
       if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
 	conv_stack env k stk1 stk2 cu
       else raise NotConvertible
-  | Aiddef(ik1,v1), Aiddef(ik2,v2) ->
-      begin
-	try
-	  if Vars.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
-	    conv_stack env k stk1 stk2 cu
-	  else raise NotConvertible
-	with NotConvertible ->
-	  if oracle_order Univ.out_punivs (oracle_of_infos !infos) 
-	    false ik1 ik2 then
-            conv_whd env pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
-          else conv_whd env pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
-      end
-  | Aiddef(ik1,v1), _ ->
-      conv_whd env pb k (force_whd v1 stk1) (Vatom_stk(a2,stk2)) cu
-  | _, Aiddef(ik2,v2) ->
-      conv_whd env pb k (Vatom_stk(a1,stk1)) (force_whd v2 stk2) cu
   | Aind _, _ | Aid _, _ -> raise NotConvertible
 
 and conv_stack env k stk1 stk2 cu =

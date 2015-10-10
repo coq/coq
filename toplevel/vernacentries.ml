@@ -1375,15 +1375,6 @@ let _ =
       optread  = (fun () -> !Closure.share);
       optwrite = (fun b -> Closure.share := b) }
 
-let _ =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "use of boxed values";
-      optkey   = ["Boxed";"Values"];
-      optread  = (fun _ -> not (Vm.transp_values ()));
-      optwrite = (fun b -> Vm.set_transp_values (not b)) }
-
 (* No more undo limit in the new proof engine.
    The command still exists for compatibility (e.g. with ProofGeneral) *)
 

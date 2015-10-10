@@ -463,19 +463,6 @@ let map_replace k v m = ProgMap.add k (Ephemeron.create v) (ProgMap.remove k m)
 
 let map_keys m = ProgMap.fold (fun k _ l -> k :: l) m []
 
-let map_cardinal m =
-  let i = ref 0 in
-    ProgMap.iter (fun _ _ -> incr i) m;
-    !i
-
-exception Found of program_info
-
-let map_first m =
-  try
-    ProgMap.iter (fun _ v -> raise (Found v)) m;
-    assert(false)
-  with Found x -> x
-
 let from_prg : program_info ProgMap.t ref =
   Summary.ref ProgMap.empty ~name:"program-tcc-table"
 
@@ -681,6 +668,22 @@ let init_prog_info ?(opaque = false) n b t ctx deps fixkind notations obls impls
       prg_implicits = impls; prg_kind = kind; prg_reduce = reduce; 
       prg_hook = hook;
       prg_opaque = opaque; }
+
+let map_cardinal m =
+  let i = ref 0 in
+  ProgMap.iter (fun _ v ->
+		if snd (Ephemeron.get v).prg_obligations > 0 then incr i) m;
+  !i
+
+exception Found of program_info
+
+let map_first m =
+  try
+    ProgMap.iter (fun _ v ->
+		  if snd (Ephemeron.get v).prg_obligations > 0 then
+		    raise (Found v)) m;
+    assert(false)
+  with Found x -> x
 
 let get_prog name =
   let prg_infos = !from_prg in

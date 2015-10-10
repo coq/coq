@@ -151,8 +151,9 @@ val interp_hints : polymorphic -> hints_expr -> hints_entry
 
 val add_hints : locality_flag -> hint_db_name list -> hints_entry -> unit
 
-val prepare_hint : bool (* Check no remaining evars *) -> env -> evar_map -> 
-  open_constr -> hint_term
+val prepare_hint : bool (* Check no remaining evars *) ->
+  (bool * bool) (* polymorphic or monomorphic, local or global *) ->
+  env -> evar_map -> open_constr -> hint_term
 
 (** [make_exact_entry pri (c, ctyp)].
    [c] is the term given as an exact proof to solve the goal;

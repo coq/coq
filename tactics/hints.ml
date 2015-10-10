@@ -1052,7 +1052,7 @@ let default_prepare_hint_ident = Id.of_string "H"
 
 exception Found of constr * types
 
-let prepare_hint check env init (sigma,c) =
+let prepare_hint check (poly,local) env init (sigma,c) =
   let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
   (* We re-abstract over uninstantiated evars.
      It is actually a bit stupid to generalize over evars since the first
@@ -1082,15 +1082,18 @@ let prepare_hint check env init (sigma,c) =
   let c' = iter c in
     if check then Evarutil.check_evars (Global.env()) Evd.empty sigma c';
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
-      IsConstr (c', diff)
+    if poly then IsConstr (c', diff)
+    else if local then IsConstr (c', diff)
+    else (Global.push_context_set false diff;
+	  IsConstr (c', Univ.ContextSet.empty))
 
 let interp_hints poly =
   fun h ->
   let env = (Global.env()) in
   let sigma = Evd.from_env env in
-  let f c =
+  let f poly c =
     let evd,c = Constrintern.interp_open_constr env sigma c in
-      prepare_hint true (Global.env()) Evd.empty (evd,c) in
+      prepare_hint true (poly,false) (Global.env()) Evd.empty (evd,c) in
   let fref r =
     let gr = global_with_alias r in
     Dumpglob.add_glob (loc_of_reference r) gr;
@@ -1103,7 +1106,7 @@ let interp_hints poly =
     | HintsReference c ->
       let gr = global_with_alias c in
 	(PathHints [gr], poly, IsGlobRef gr)
-    | HintsConstr c -> (PathAny, poly, f c)
+    | HintsConstr c -> (PathAny, poly, f poly c)
   in
   let fres (pri, b, r) =
     let path, poly, gr = fi r in
@@ -1159,7 +1162,7 @@ let expand_constructor_hints env sigma lems =
 	  (fun i -> IsConstr (mkConstructU ((ind,i+1),u), 
 			      Univ.ContextSet.empty))
     | _ ->
-	[prepare_hint false env sigma (evd,lem)]) lems
+	[prepare_hint false (false,true) env sigma (evd,lem)]) lems
 
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)

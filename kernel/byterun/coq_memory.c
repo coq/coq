@@ -26,7 +26,6 @@ asize_t coq_max_stack_size = Coq_max_stack_size;
 
 
 value coq_global_data;
-int coq_all_transp;
 value coq_atom_tbl;
 
 int drawinstr;
@@ -117,7 +116,6 @@ value init_coq_vm(value unit) /* ML */
     init_coq_global_data(Coq_global_data_Size);
     init_coq_atom_tbl(40);
     /* Initialing the interpreter */
-    coq_all_transp = 0;
     init_coq_interpreter();
     
     /* Some predefined pointer code */
@@ -205,18 +203,6 @@ value realloc_coq_atom_tbl(value size)            /* ML */
     coq_atom_tbl = new_atom_tbl;
   }
   return Val_unit;
-}
-
-
-value coq_set_transp_value(value transp)
-{
-  coq_all_transp = (transp == Val_true);
-  return Val_unit;
-}
-
-value get_coq_transp_value(value unit)
-{
-  return Val_bool(coq_all_transp);
 }
 
 value coq_set_drawinstr(value unit)

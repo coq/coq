@@ -179,8 +179,6 @@ and nf_whd env whd typ =
   | Vatom_stk(Aid idkey, stk) ->
       let c,typ = constr_type_of_idkey env idkey in
       nf_stk env c typ stk
-  | Vatom_stk(Aiddef(idkey,v), stk) ->
-      nf_whd env (whd_stack v stk) typ
   | Vatom_stk(Aind ind, stk) ->
       nf_stk env (mkIndU ind) (type_of_ind env ind) stk
 
@@ -312,10 +310,5 @@ and nf_cofix env cf =
   mkCoFix (init,(name,cft,cfb))
 
 let cbv_vm env c t  =
-  let transp = transp_values () in
-  if not transp then set_transp_values true;
   let v = Vconv.val_of_constr env c in
-  let c = nf_val env v t in
-  if not transp then set_transp_values false;
-  c
-
+  nf_val env v t

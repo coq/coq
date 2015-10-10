@@ -102,7 +102,7 @@ let out_term = function
   | IsGlobRef gr -> fst (Universes.fresh_global_instance (Global.env ()) gr)
 
 let prolog_tac l n gl =
-  let l = List.map (fun x -> out_term (pf_apply (prepare_hint false) gl x)) l in
+  let l = List.map (fun x -> out_term (pf_apply (prepare_hint false (false,true)) gl x)) l in
   let n =
     match n with
       | ArgArg n -> n

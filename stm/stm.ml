@@ -51,7 +51,7 @@ let execution_error, execution_error_hook = Hook.make
     feedback ~state_id (Feedback.ErrorMsg (loc, string_of_ppcmds msg))) ()
 
 let unreachable_state, unreachable_state_hook = Hook.make
- ~default:(fun _ -> ()) ()
+ ~default:(fun _ _ -> ()) ()
 
 include Hook
 
@@ -372,7 +372,7 @@ end = struct (* {{{ *)
          (try let n = Hashtbl.find clus c in from::n
          with Not_found -> [from]); true in
     let oc = open_out fname_dot in
-    output_string oc "digraph states {\nsplines=ortho\n";
+    output_string oc "digraph states {\n";
     Dag.iter graph (fun from cf _ l ->
       let c1 = add_to_clus_or_ids from cf in
       List.iter (fun (dest, trans) ->
@@ -736,7 +736,7 @@ end = struct (* {{{ *)
       let good_id = !cur_id in
       cur_id := Stateid.dummy;
       VCS.reached id false;
-      Hooks.(call unreachable_state id);
+      Hooks.(call unreachable_state id (e, info));
       match Stateid.get info, safe_id with
       | None, None -> iraise (exn_on id ~valid:good_id (e, info))
       | None, Some good_id -> iraise (exn_on id ~valid:good_id (e, info))
@@ -2404,6 +2404,9 @@ let edit_at id =
         VCS.restore vcs;
         VCS.print ();
         iraise (e, info)
+
+let backup () = VCS.backup ()
+let restore d = VCS.restore d
 
 (*********************** TTY API (PG, coqtop, coqc) ***************************)
 (******************************************************************************)

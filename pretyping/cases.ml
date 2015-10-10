@@ -1865,17 +1865,10 @@ let inh_conv_coerce_to_tycon loc env evdref j tycon =
 
 (* We put the tycon inside the arity signature, possibly discovering dependencies. *)
 
-let context_of_arsign l =
-  let (x, _) = List.fold_right
-    (fun c (x, n) ->
-       (lift_rel_context n c @ x, List.length c + n))
-    l ([], 0)
-  in x
-
 let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
   let nar = List.fold_left (fun n sign -> List.length sign + n) 0 arsign in
   let subst, len =
-    List.fold_left2 (fun (subst, len) (tm, tmtype) sign ->
+    List.fold_right2 (fun (tm, tmtype) sign (subst, len) ->
       let signlen = List.length sign in
 	match kind_of_term tm with
 	  | Rel n when dependent tm c
@@ -1886,19 +1879,21 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
 	      (match tmtype with
 		  NotInd _ -> (subst, len - signlen)
 		| IsInd (_, IndType(indf,realargs),_) ->
-		    let subst =
-		      if dependent tm c && List.for_all isRel realargs
-		      then (n, 1) :: subst else subst
-		    in
+		    let subst, len =
 		      List.fold_left
 			(fun (subst, len) arg ->
 			  match kind_of_term arg with
 			  | Rel n when dependent arg c ->
 			      ((n, len) :: subst, pred len)
 			  | _ -> (subst, pred len))
-			(subst, len) realargs)
+			(subst, len) realargs
+		    in
+		    let subst =
+		      if dependent tm c && List.for_all isRel realargs
+		      then (n, len) :: subst else subst
+		    in (subst, pred len))
 	  | _ -> (subst, len - signlen))
-      ([], nar) tomatchs arsign
+      (List.rev tomatchs) arsign ([], nar)
   in
   let rec predicate lift c =
     match kind_of_term c with
@@ -1913,9 +1908,12 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
       | _ ->
 	  map_constr_with_binders succ predicate lift c
   in
+  assert (len == 0);
   let p = predicate 0 c in
-  fst (Typing.type_of (push_rel_context (context_of_arsign arsign) env) sigma p), p
-
+  let env' = List.fold_right push_rel_context arsign env in
+  try let sigma' = fst (Typing.type_of env' sigma p) in
+        Some (sigma', p)
+  with e when precatchable_exception e -> None
 
 (* Builds the predicate. If the predicate is dependent, its context is
  * made of 1+nrealargs assumptions for each matched term in an inductive
@@ -1936,11 +1934,13 @@ let prepare_predicate loc typing_fun env sigma tomatchs arsign tycon pred =
 	(* If the tycon is not closed w.r.t real variables, we try *)
         (* two different strategies *)
 	(* First strategy: we abstract the tycon wrt to the dependencies *)
-        let sigma1,pred1 =
+        let p1 =
           prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign t in
 	(* Second strategy: we build an "inversion" predicate *)
 	let sigma2,pred2 = build_inversion_problem loc env sigma tomatchs t in
-	[sigma1, pred1; sigma2, pred2]
+	(match p1 with
+	 | Some (sigma1,pred1) -> [sigma1, pred1; sigma2, pred2]
+	 | None -> [sigma2, pred2])
     | None, _ ->
 	(* No dependent type constraint, or no constraints at all: *)
 	(* we use two strategies *)
@@ -2375,6 +2375,13 @@ let build_dependent_signature env evdref avoid tomatchs arsign =
     assert(Int.equal slift 0); (* we must have folded over all elements of the arity signature *)
     arsign'', allnames, nar, eqs, neqs, refls
 
+let context_of_arsign l =
+  let (x, _) = List.fold_right
+    (fun c (x, n) ->
+       (lift_rel_context n c @ x, List.length c + n))
+    l ([], 0)
+  in x
+
 let compile_program_cases loc style (typing_function, evdref) tycon env
     (predopt, tomatchl, eqns) =
   let typing_fun tycon env = function
@@ -2405,12 +2412,11 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
     | None -> let ev = mkExistential env evdref in ev, ev
     | Some t ->
 	let pred = 
-	  try
-	    let evd, pred = prepare_predicate_from_arsign_tycon env !evdref loc tomatchs sign t in
-	      evdref := evd; pred
-	  with e when Errors.noncritical e ->
-	    let nar = List.fold_left (fun n sign -> List.length sign + n) 0 sign in
-	      lift nar t
+	  match prepare_predicate_from_arsign_tycon env !evdref loc tomatchs sign t with
+	  | Some (evd, pred) -> evdref := evd; pred
+	  | None ->
+	     let nar = List.fold_left (fun n sign -> List.length sign + n) 0 sign in
+	       lift nar t
 	in Option.get tycon, pred
   in
   let neqs, arity =
