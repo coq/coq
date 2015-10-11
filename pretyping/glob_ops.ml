@@ -183,37 +183,32 @@ let map_glob_constr_left_to_right f = function
 
 let map_glob_constr = map_glob_constr_left_to_right
 
-let fold_glob_constr f acc =
-  let rec fold acc = function
+let fold_return_type f acc (na,tyopt) = Option.fold_left f acc tyopt
+
+let fold_glob_constr f acc = function
   | GVar _ -> acc
-  | GApp (_,c,args) -> List.fold_left fold (fold acc c) args
+  | GApp (_,c,args) -> List.fold_left f (f acc c) args
   | GLambda (_,_,_,b,c) | GProd (_,_,_,b,c) | GLetIn (_,_,b,c) ->
-      fold (fold acc b) c
+    f (f acc b) c
   | GCases (_,_,rtntypopt,tml,pl) ->
-      List.fold_left fold_pattern
-	(List.fold_left fold (Option.fold_left fold acc rtntypopt) (List.map fst tml))
-	pl
-    | GLetTuple (_,_,rtntyp,b,c) ->
-	fold (fold (fold_return_type acc rtntyp) b) c
-    | GIf (_,c,rtntyp,b1,b2) ->
-	fold (fold (fold (fold_return_type acc rtntyp) c) b1) b2
-    | GRec (_,_,_,bl,tyl,bv) ->
-	let acc = Array.fold_left
-	  (List.fold_left (fun acc (na,k,bbd,bty) ->
-	    fold (Option.fold_left fold acc bbd) bty)) acc bl in
-	Array.fold_left fold (Array.fold_left fold acc tyl) bv
-    | GCast (_,c,k) ->
-        let r = match k with
-        | CastConv t | CastVM t | CastNative t -> fold acc t | CastCoerce -> acc
-        in
-        fold r c
-    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc
-
-  and fold_pattern acc (_,idl,p,c) = fold acc c
-
-  and fold_return_type acc (na,tyopt) = Option.fold_left fold acc tyopt
-
-  in fold acc
+    let fold_pattern acc (_,idl,p,c) = f acc c in
+    List.fold_left fold_pattern
+      (List.fold_left f (Option.fold_left f acc rtntypopt) (List.map fst tml))
+      pl
+  | GLetTuple (_,_,rtntyp,b,c) ->
+    f (f (fold_return_type f acc rtntyp) b) c
+  | GIf (_,c,rtntyp,b1,b2) ->
+    f (f (f (fold_return_type f acc rtntyp) c) b1) b2
+  | GRec (_,_,_,bl,tyl,bv) ->
+    let acc = Array.fold_left
+      (List.fold_left (fun acc (na,k,bbd,bty) ->
+	f (Option.fold_left f acc bbd) bty)) acc bl in
+    Array.fold_left f (Array.fold_left f acc tyl) bv
+  | GCast (_,c,k) ->
+    let acc = match k with
+      | CastConv t | CastVM t | CastNative t -> f acc t | CastCoerce -> acc in
+    f acc c
+  | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc
 
 let iter_glob_constr f = fold_glob_constr (fun () -> f) ()
 
