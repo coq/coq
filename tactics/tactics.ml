@@ -726,12 +726,11 @@ let reduction_clause redexp cl =
 let reduce redexp cl goal =
   let cl = concrete_clause_of (fun () -> pf_ids_of_hyps goal) cl in
   let redexps = reduction_clause redexp cl in
+  let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
   let tac = tclMAP (fun (where,redexp) ->
-    e_reduct_option ~check:true
+    e_reduct_option ~check
       (Redexpr.reduction_of_red_expr (pf_env goal) redexp) where) redexps in
-  match redexp with
-  | Fold _ | Pattern _ -> with_check tac goal
-  | _ -> tac goal
+  if check then with_check tac goal else tac goal
 
 (* Unfolding occurrences of a constant *)
 
