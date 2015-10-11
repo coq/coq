@@ -8,6 +8,7 @@
 
 open Util
 open Names
+open Nameops
 open Globnames
 open Misctypes
 open Glob_term
@@ -322,6 +323,65 @@ let free_glob_vars  =
   fun rt ->
     let vs = vars Id.Set.empty Id.Set.empty rt in
     Id.Set.elements vs
+
+let add_and_check_ident id set =
+  if Id.Set.mem id set then
+    Pp.(msg_warning
+      (str "Collision between bound variables of name " ++ Id.print id));
+  Id.Set.add id set
+
+let bound_glob_vars =
+  let rec vars bound = function
+    | GLambda (_,na,_,_,_) | GProd (_,na,_,_,_) | GLetIn (_,na,_,_) as c ->
+        let bound = name_fold add_and_check_ident na bound in
+        fold_glob_constr vars bound c
+    | GCases (loc,sty,rtntypopt,tml,pl) ->
+	let bound = vars_option bound rtntypopt in
+	let bound =
+          List.fold_left (fun bound (tm,_) -> vars bound tm) bound tml in
+	List.fold_left vars_pattern bound pl
+    | GLetTuple (loc,nal,rtntyp,b,c) ->
+	let bound = vars_return_type bound rtntyp in
+	let bound = vars bound b in
+	let bound = List.fold_right (name_fold add_and_check_ident) nal bound in
+	vars bound c
+    | GIf (loc,c,rtntyp,b1,b2) ->
+	let bound = vars_return_type bound rtntyp in
+	let bound = vars bound c in
+	let bound = vars bound b1 in
+	vars bound b2
+    | GRec (loc,fk,idl,bl,tyl,bv) ->
+	let bound = Array.fold_right Id.Set.add idl bound in
+	let vars_fix i bound fid =
+	  let bound =
+	    List.fold_left
+	      (fun bound (na,k,bbd,bty) ->
+		 let bound = vars_option bound bbd in
+		 let bound = vars bound bty in
+		 name_fold add_and_check_ident na bound
+	      )
+	      bound
+	      bl.(i)
+	  in
+	  let bound = vars bound tyl.(i) in
+	  vars bound bv.(i)
+	in
+	Array.fold_left_i vars_fix bound idl
+    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GVar _) -> bound
+    | GApp _ | GCast _ as c -> fold_glob_constr vars bound c
+
+  and vars_pattern bound (loc,idl,p,c) =
+    let bound = List.fold_right add_and_check_ident idl bound in
+    vars bound c
+
+  and vars_option bound = function None -> bound | Some p -> vars bound p
+
+  and vars_return_type bound (na,tyopt) =
+    let bound = name_fold add_and_check_ident na bound in
+    vars_option bound tyopt
+  in
+  fun rt ->
+    vars Id.Set.empty rt
 
 (** Mapping of names in binders *)
 

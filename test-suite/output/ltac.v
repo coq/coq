@@ -6,3 +6,12 @@ Fail let T := constr:((fun a b : nat => a+b) 1 1) in
     => pose ((fun x _ => y) 1 1)
   end.
 Abort.
+
+(* This should not raise a warning (see #4317) *)
+Goal True.
+assert (H:= eq_refl ((fun x => x) 1)).
+let HT := type of H in
+lazymatch goal with
+| H1 : HT |- _ => idtac "matched"
+end.
+Abort.

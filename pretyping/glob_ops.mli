@@ -38,6 +38,7 @@ val fold_glob_constr : ('a -> glob_constr -> 'a) -> 'a -> glob_constr -> 'a
 val iter_glob_constr : (glob_constr -> unit) -> glob_constr -> unit
 val occur_glob_constr : Id.t -> glob_constr -> bool
 val free_glob_vars : glob_constr -> Id.t list
+val bound_glob_vars : glob_constr -> Id.Set.t
 val loc_of_glob_constr : glob_constr -> Loc.t
 
 (** [map_pattern_binders f m c] applies [f] to all the binding names

@@ -56,10 +56,6 @@ let warn_bound_meta name =
 let warn_bound_bound name =
   msg_warning (str "Collision between bound variables of name " ++ pr_id name)
 
-let warn_bound_again name =
-  msg_warning (str "Collision between bound variable " ++ pr_id name ++
-    str " and another bound variable of same name.")
-
 let constrain n (ids, m as x) (names, terms as subst) =
   try
     let (ids', m') = Id.Map.find n terms in
@@ -69,16 +65,17 @@ let constrain n (ids, m as x) (names, terms as subst) =
     let () = if Id.Map.mem n names then warn_bound_meta n in
     (names, Id.Map.add n x terms)
 
-let add_binders na1 na2 (names, terms as subst) = match na1, na2 with
-| Name id1, Name id2 ->
-  if Id.Map.mem id1 names then
-    let () = warn_bound_bound id1 in
-    (names, terms)
-  else
-    let names = Id.Map.add id1 id2 names in
-    let () = if Id.Map.mem id1 terms then warn_bound_again id1 in
-    (names, terms)
-| _ -> subst
+let add_binders na1 na2 binding_vars (names, terms as subst) =
+  match na1, na2 with
+  | Name id1, Name id2 when Id.Set.mem id1 binding_vars ->
+    if Id.Map.mem id1 names then
+      let () = warn_bound_bound id1 in
+      (names, terms)
+    else
+      let names = Id.Map.add id1 id2 names in
+      let () = if Id.Map.mem id1 terms then warn_bound_meta id1 in
+      (names, terms)
+  | _ -> subst
 
 let rec build_lambda vars ctx m = match vars with
 | [] ->
@@ -155,7 +152,8 @@ let merge_binding allow_bound_rels ctx n cT subst =
   in
   constrain n c subst
       
-let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
+let matches_core env sigma convert allow_partial_app allow_bound_rels
+    (binding_vars,pat) c =
   let convref ref c = 
     match ref, kind_of_term c with
     | VarRef id, Var id' -> Names.id_eq id id'
@@ -258,15 +256,15 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
 	  sorec ((na1,na2,c2)::ctx) (Environ.push_rel (na2,None,c2) env)
-            (add_binders na1 na2 (sorec ctx env subst c1 c2)) d1 d2
+            (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLambda (na1,c1,d1), Lambda(na2,c2,d2) ->
 	  sorec ((na1,na2,c2)::ctx) (Environ.push_rel (na2,None,c2) env)
-            (add_binders na1 na2 (sorec ctx env subst c1 c2)) d1 d2
+            (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLetIn (na1,c1,d1), LetIn(na2,c2,t2,d2) ->
 	  sorec ((na1,na2,t2)::ctx) (Environ.push_rel (na2,Some c2,t2) env)
-            (add_binders na1 na2 (sorec ctx env subst c1 c2)) d1 d2
+            (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
 	  let ctx_b2,b2 = decompose_lam_n_assum ci.ci_cstr_ndecls.(0) b2 in
@@ -319,7 +317,8 @@ let matches_core_closed env sigma convert allow_partial_app pat c =
 
 let extended_matches env sigma = matches_core env sigma false true true
 
-let matches env sigma pat c = snd (matches_core_closed env sigma false true pat c)
+let matches env sigma pat c =
+  snd (matches_core_closed env sigma false true (Id.Set.empty,pat) c)
 
 let special_meta = (-1)
 
@@ -464,10 +463,10 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
   let result () = aux env c (fun x -> x) lempty in
   IStream.thunk result
 
-let match_subterm env sigma pat c = sub_match env sigma pat c
+let match_subterm env sigma pat c = sub_match env sigma (Id.Set.empty,pat) c
 
 let match_appsubterm env sigma pat c = 
-  sub_match ~partial_app:true env sigma pat c
+  sub_match ~partial_app:true env sigma (Id.Set.empty,pat) c
 
 let match_subterm_gen env sigma app pat c = 
   sub_match ~partial_app:app env sigma pat c
@@ -481,11 +480,12 @@ let is_matching_head env sigma pat c =
   with PatternMatchingFailure -> false
 
 let is_matching_appsubterm ?(closed=true) env sigma pat c =
+  let pat = (Id.Set.empty,pat) in
   let results = sub_match ~partial_app:true ~closed env sigma pat c in
   not (IStream.is_empty results)
 
-let matches_conv env sigma c p =
-  snd (matches_core_closed env sigma true false c p)
+let matches_conv env sigma p c =
+  snd (matches_core_closed env sigma true false (Id.Set.empty,p) c)
 
 let is_matching_conv env sigma pat n =
   try let _ = matches_conv env sigma pat n in true

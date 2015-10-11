@@ -114,6 +114,7 @@ type glob_constr_and_expr = Glob_term.glob_constr * constr_expr option
 type open_constr_expr = unit * constr_expr
 type open_glob_constr = unit * glob_constr_and_expr
 
+type binding_bound_vars = Id.Set.t
 type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
 
 type delayed_open_constr_with_bindings =
@@ -325,7 +326,7 @@ constraint 'a = <
 
 type g_trm = glob_constr_and_expr
 type g_utrm = g_trm
-type g_pat = glob_constr_and_expr * constr_pattern
+type g_pat = glob_constr_pattern_and_expr
 type g_cst = evaluable_global_reference and_short_name or_var
 type g_ref = ltac_constant located or_var
 type g_nam  = Id.t located
@@ -386,7 +387,7 @@ type raw_tactic_arg =
 
 type t_trm = Term.constr
 type t_utrm = Glob_term.closed_glob_constr
-type t_pat = glob_constr_and_expr * constr_pattern
+type t_pat = glob_constr_pattern_and_expr
 type t_cst = evaluable_global_reference and_short_name
 type t_ref = ltac_constant located
 type t_nam  = Id.t
