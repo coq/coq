@@ -691,6 +691,13 @@ variables of the form {\tt @?id} that occur in head position of an
 application. For these variables, the matching is second-order and
 returns a functional term.
 
+Alternatively, when a metavariable of the form {\tt ?id} occurs under
+binders, say $x_1$, \ldots, $x_n$ and the expression matches, the
+metavariable is instantiated by a term which can then be used in any
+context which also binds the variables $x_1$, \ldots, $x_n$ with
+same types. This provides with a primitive form of matching
+under context which does not require manipulating a functional term.
+
 If the matching with {\cpattern}$_1$ succeeds, then {\tacexpr}$_1$ is
 evaluated into some value by substituting the pattern matching
 instantiations to the metavariables. If {\tacexpr}$_1$ evaluates to a
