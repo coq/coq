@@ -12,6 +12,6 @@ Goal True.
 assert (H:= eq_refl ((fun x => x) 1)).
 let HT := type of H in
 lazymatch goal with
-| H1 : HT |- _ => idtac "matched"
+| H1 : HT |- _ => idtac
 end.
 Abort.
