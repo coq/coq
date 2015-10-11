@@ -29,6 +29,7 @@ open Termops
 open Namegen
 open Goptions
 open Misctypes
+open Sigma.Notations
 
 (* Strictness option *)
 
@@ -1305,7 +1306,11 @@ let understand_my_constr env sigma c concl =
   Pretyping.understand_tcc env sigma ~expected_type:(Pretyping.OfType concl) (frob rawc)
 
 let my_refine c gls =
-  let oc sigma = understand_my_constr (pf_env gls) sigma c (pf_concl gls) in
+  let oc = { run = begin fun sigma ->
+    let sigma = Sigma.to_evar_map sigma in
+    let (sigma, c) = understand_my_constr (pf_env gls) sigma c (pf_concl gls) in
+    Sigma.Unsafe.of_pair (c, sigma)
+  end } in
   Proofview.V82.of_tactic (Tactics.New.refine oc) gls
 
 (* end focus/claim *)

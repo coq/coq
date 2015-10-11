@@ -430,7 +430,7 @@ end
 
 module New : sig
 
-  val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map*constr) -> unit Proofview.tactic
+  val refine : ?unsafe:bool -> constr Sigma.run -> unit Proofview.tactic
   (** [refine ?unsafe c] is [Proofview.Refine.refine ?unsafe c]
       followed by beta-iota-reduction of the conclusion. *)
 

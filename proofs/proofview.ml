@@ -16,6 +16,7 @@
 open Pp
 open Util
 open Proofview_monad
+open Sigma.Notations
 
 (** Main state of tactics *)
 type proofview = Proofview_monad.proofview
@@ -1031,7 +1032,7 @@ struct
     let prev_future_goals = Evd.future_goals sigma in
     let prev_principal_goal = Evd.principal_future_goal sigma in
     (** Create the refinement term *)
-    let (sigma, c) = f (Evd.reset_future_goals sigma) in
+    let (c, sigma) = Sigma.run (Evd.reset_future_goals sigma) f in
     let evs = Evd.future_goals sigma in
     let evkmain = Evd.principal_future_goal sigma in
     (** Check that the introduced evars are well-typed *)
@@ -1074,7 +1075,11 @@ struct
   let refine_casted ?unsafe f = Goal.enter begin fun gl ->
     let concl = Goal.concl gl in
     let env = Goal.env gl in
-    let f h = let (h, c) = f h in with_type env h c concl in
+    let f = { run = fun h ->
+      let Sigma (c, h, p) = f.run h in
+      let sigma, c = with_type env (Sigma.to_evar_map h) c concl in
+      Sigma (c, Sigma.Unsafe.of_evar_map sigma, p)
+    } in
     refine ?unsafe f
   end
 end

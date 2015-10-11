@@ -487,7 +487,7 @@ module Refine : sig
 
   (** {7 Refinement primitives} *)
 
-  val refine : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map * Constr.t) -> unit tactic
+  val refine : ?unsafe:bool -> Constr.t Sigma.run -> unit tactic
   (** In [refine ?unsafe t], [t] is a term with holes under some
       [evar_map] context. The term [t] is used as a partial solution
       for the current goal (refine is a goal-dependent tactic), the
@@ -503,7 +503,7 @@ module Refine : sig
   (** [with_type env sigma c t] ensures that [c] is of type [t]
       inserting a coercion if needed. *)
 
-  val refine_casted : ?unsafe:bool -> (Evd.evar_map -> Evd.evar_map*Constr.t) -> unit tactic
+  val refine_casted : ?unsafe:bool -> Constr.t Sigma.run -> unit tactic
   (** Like {!refine} except the refined term is coerced to the conclusion of the
       current goal. *)
 

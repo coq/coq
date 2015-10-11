@@ -27,6 +27,7 @@ open Elim
 open Equality
 open Misctypes
 open Tacexpr
+open Sigma.Notations
 open Proofview.Notations
 
 let clear hyps = Proofview.V82.tactic (clear hyps)
@@ -457,7 +458,7 @@ let raw_inversion inv_kind id status names =
     in
     let refined id =
       let prf = mkApp (mkVar id, args) in
-      Proofview.Refine.refine (fun h -> h, prf)
+      Proofview.Refine.refine { run = fun h -> Sigma (prf, h, Sigma.refl) }
     in
     let neqns = List.length realargs in
     let as_mode = names != None in

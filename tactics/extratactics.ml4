@@ -21,6 +21,7 @@ open Util
 open Evd
 open Equality
 open Misctypes
+open Sigma.Notations
 
 DECLARE PLUGIN "extratactics"
 
@@ -355,7 +356,11 @@ let refine_tac {Glob_term.closure=closure;term=term} =
       Pretyping.ltac_uconstrs = closure.Glob_term.untyped;
       Pretyping.ltac_idents = closure.Glob_term.idents;
     } in
-    let update evd = Pretyping.understand_ltac flags env evd lvar tycon term in
+    let update = { run = begin fun sigma ->
+      let sigma = Sigma.to_evar_map sigma in
+      let (sigma, c) = Pretyping.understand_ltac flags env sigma lvar tycon term in
+      Sigma.Unsafe.of_pair (c, sigma)
+    end } in
     Tactics.New.refine ~unsafe:false update
   end
 

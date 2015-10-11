@@ -34,6 +34,7 @@ open Elimschemes
 open Environ
 open Termops
 open Libnames
+open Sigma.Notations
 
 (** Typeclass-based generalized rewriting. *)
 
@@ -1508,13 +1509,14 @@ let assert_replacing id newt tac =
     | (id, b, _) :: rem -> insert_dependent env (id, b, newt) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
-    Proofview.Refine.refine ~unsafe:false begin fun sigma ->
+    Proofview.Refine.refine ~unsafe:false { run = begin fun sigma ->
+      let sigma = Sigma.to_evar_map sigma in
       let sigma, ev = Evarutil.new_evar env' sigma concl in
       let sigma, ev' = Evarutil.new_evar env sigma newt in
       let map (n, _, _) = if Id.equal n id then ev' else mkVar n in
       let (e, _) = destEvar ev in
-      sigma, mkEvar (e, Array.map_of_list map nc)
-    end
+      Sigma.Unsafe.of_pair (mkEvar (e, Array.map_of_list map nc), sigma)
+    end }
   end in
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
 
@@ -1533,7 +1535,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
         let gls = List.rev (Evd.fold_undefined fold undef []) in
 	match clause, prf with
 	| Some id, Some p ->
-            let tac = Proofview.Refine.refine ~unsafe:false (fun h -> (h, p)) <*> Proofview.Unsafe.tclNEWGOALS gls in
+            let tac = Proofview.Refine.refine ~unsafe:false { run = fun h -> Sigma (p, h, Sigma.refl) } <*> Proofview.Unsafe.tclNEWGOALS gls in
             Proofview.Unsafe.tclEVARS undef <*>
 	    assert_replacing id newt tac
 	| Some id, None ->
@@ -1543,10 +1545,11 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
             Proofview.Unsafe.tclEVARS undef <*>
             Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
-            let make sigma =
+            let make = { run = begin fun sigma ->
+              let sigma = Sigma.to_evar_map sigma in
               let (sigma, ev) = Evarutil.new_evar env sigma newt in
-              sigma, mkApp (p, [| ev |])
-            in
+              Sigma.Unsafe.of_pair (mkApp (p, [| ev |]), sigma)
+            end } in
             Proofview.Refine.refine ~unsafe:false make <*> Proofview.Unsafe.tclNEWGOALS gls
             end
 	| None, None ->
