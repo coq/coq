@@ -306,3 +306,14 @@ let x := ipattern:y in assert (forall x y, x = y + 0).
 intro.
 destruct y. (* Check that the name is y here *)
 Abort.
+
+(* An example suggested by Jason (see #4317) showing the intended semantics *)
+(* Order of binders is reverted because y is just told to depend on x *)
+
+Goal 1=1.
+let T := constr:(fun a b : nat => a) in
+  lazymatch T with
+  | (fun x z => ?y) => pose ((fun x x => y) 2 1)
+  end.
+exact (eq_refl n).
+Qed.

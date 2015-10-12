@@ -8,6 +8,7 @@
 
 open Util
 open Names
+open Nameops
 open Globnames
 open Misctypes
 open Glob_term
@@ -183,37 +184,32 @@ let map_glob_constr_left_to_right f = function
 
 let map_glob_constr = map_glob_constr_left_to_right
 
-let fold_glob_constr f acc =
-  let rec fold acc = function
+let fold_return_type f acc (na,tyopt) = Option.fold_left f acc tyopt
+
+let fold_glob_constr f acc = function
   | GVar _ -> acc
-  | GApp (_,c,args) -> List.fold_left fold (fold acc c) args
+  | GApp (_,c,args) -> List.fold_left f (f acc c) args
   | GLambda (_,_,_,b,c) | GProd (_,_,_,b,c) | GLetIn (_,_,b,c) ->
-      fold (fold acc b) c
+    f (f acc b) c
   | GCases (_,_,rtntypopt,tml,pl) ->
-      List.fold_left fold_pattern
-	(List.fold_left fold (Option.fold_left fold acc rtntypopt) (List.map fst tml))
-	pl
-    | GLetTuple (_,_,rtntyp,b,c) ->
-	fold (fold (fold_return_type acc rtntyp) b) c
-    | GIf (_,c,rtntyp,b1,b2) ->
-	fold (fold (fold (fold_return_type acc rtntyp) c) b1) b2
-    | GRec (_,_,_,bl,tyl,bv) ->
-	let acc = Array.fold_left
-	  (List.fold_left (fun acc (na,k,bbd,bty) ->
-	    fold (Option.fold_left fold acc bbd) bty)) acc bl in
-	Array.fold_left fold (Array.fold_left fold acc tyl) bv
-    | GCast (_,c,k) ->
-        let r = match k with
-        | CastConv t | CastVM t | CastNative t -> fold acc t | CastCoerce -> acc
-        in
-        fold r c
-    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc
-
-  and fold_pattern acc (_,idl,p,c) = fold acc c
-
-  and fold_return_type acc (na,tyopt) = Option.fold_left fold acc tyopt
-
-  in fold acc
+    let fold_pattern acc (_,idl,p,c) = f acc c in
+    List.fold_left fold_pattern
+      (List.fold_left f (Option.fold_left f acc rtntypopt) (List.map fst tml))
+      pl
+  | GLetTuple (_,_,rtntyp,b,c) ->
+    f (f (fold_return_type f acc rtntyp) b) c
+  | GIf (_,c,rtntyp,b1,b2) ->
+    f (f (f (fold_return_type f acc rtntyp) c) b1) b2
+  | GRec (_,_,_,bl,tyl,bv) ->
+    let acc = Array.fold_left
+      (List.fold_left (fun acc (na,k,bbd,bty) ->
+	f (Option.fold_left f acc bbd) bty)) acc bl in
+    Array.fold_left f (Array.fold_left f acc tyl) bv
+  | GCast (_,c,k) ->
+    let acc = match k with
+      | CastConv t | CastVM t | CastNative t -> f acc t | CastCoerce -> acc in
+    f acc c
+  | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc
 
 let iter_glob_constr f = fold_glob_constr (fun () -> f) ()
 
@@ -327,6 +323,65 @@ let free_glob_vars  =
   fun rt ->
     let vs = vars Id.Set.empty Id.Set.empty rt in
     Id.Set.elements vs
+
+let add_and_check_ident id set =
+  if Id.Set.mem id set then
+    Pp.(msg_warning
+      (str "Collision between bound variables of name " ++ Id.print id));
+  Id.Set.add id set
+
+let bound_glob_vars =
+  let rec vars bound = function
+    | GLambda (_,na,_,_,_) | GProd (_,na,_,_,_) | GLetIn (_,na,_,_) as c ->
+        let bound = name_fold add_and_check_ident na bound in
+        fold_glob_constr vars bound c
+    | GCases (loc,sty,rtntypopt,tml,pl) ->
+	let bound = vars_option bound rtntypopt in
+	let bound =
+          List.fold_left (fun bound (tm,_) -> vars bound tm) bound tml in
+	List.fold_left vars_pattern bound pl
+    | GLetTuple (loc,nal,rtntyp,b,c) ->
+	let bound = vars_return_type bound rtntyp in
+	let bound = vars bound b in
+	let bound = List.fold_right (name_fold add_and_check_ident) nal bound in
+	vars bound c
+    | GIf (loc,c,rtntyp,b1,b2) ->
+	let bound = vars_return_type bound rtntyp in
+	let bound = vars bound c in
+	let bound = vars bound b1 in
+	vars bound b2
+    | GRec (loc,fk,idl,bl,tyl,bv) ->
+	let bound = Array.fold_right Id.Set.add idl bound in
+	let vars_fix i bound fid =
+	  let bound =
+	    List.fold_left
+	      (fun bound (na,k,bbd,bty) ->
+		 let bound = vars_option bound bbd in
+		 let bound = vars bound bty in
+		 name_fold add_and_check_ident na bound
+	      )
+	      bound
+	      bl.(i)
+	  in
+	  let bound = vars bound tyl.(i) in
+	  vars bound bv.(i)
+	in
+	Array.fold_left_i vars_fix bound idl
+    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GVar _) -> bound
+    | GApp _ | GCast _ as c -> fold_glob_constr vars bound c
+
+  and vars_pattern bound (loc,idl,p,c) =
+    let bound = List.fold_right add_and_check_ident idl bound in
+    vars bound c
+
+  and vars_option bound = function None -> bound | Some p -> vars bound p
+
+  and vars_return_type bound (na,tyopt) =
+    let bound = name_fold add_and_check_ident na bound in
+    vars_option bound tyopt
+  in
+  fun rt ->
+    vars Id.Set.empty rt
 
 (** Mapping of names in binders *)
 

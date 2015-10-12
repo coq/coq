@@ -322,8 +322,8 @@ let ltac_interp_name_env k0 lvar env =
   push_rel_context ctxt env
 
 let invert_ltac_bound_name lvar env id0 id =
-  let id = Id.Map.find id lvar.ltac_idents in
-  try mkRel (pi1 (lookup_rel_id id (rel_context env)))
+  let id' = Id.Map.find id lvar.ltac_idents in
+  try mkRel (pi1 (lookup_rel_id id' (rel_context env)))
   with Not_found ->
     errorlabstrm "" (str "Ltac variable " ++ pr_id id0 ++
 		       str " depends on pattern variable name " ++ pr_id id ++

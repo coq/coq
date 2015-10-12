@@ -76,25 +76,6 @@ let coq_f_equal = find_global ["Init"; "Logic"] "f_equal"
 let coq_all = find_global ["Init"; "Logic"] "all"
 let impl = find_global ["Program"; "Basics"] "impl"
 
-(* let coq_inverse = lazy (gen_constant ["Program"; "Basics"] "flip") *)
-
-(* let inverse car rel = mkApp (Lazy.force coq_inverse, [| car ; car; mkProp; rel |]) *)
-
-(* let forall_relation = lazy (gen_constant ["Classes"; "Morphisms"] "forall_relation") *)
-(* let pointwise_relation = lazy (gen_constant ["Classes"; "Morphisms"] "pointwise_relation") *)
-(* let respectful = lazy (gen_constant ["Classes"; "Morphisms"] "respectful") *)
-(* let default_relation = lazy (gen_constant ["Classes"; "SetoidTactics"] "DefaultRelation") *)
-(* let subrelation = lazy (gen_constant ["Classes"; "RelationClasses"] "subrelation") *)
-(* let do_subrelation = lazy (gen_constant ["Classes"; "Morphisms"] "do_subrelation") *)
-(* let apply_subrelation = lazy (gen_constant ["Classes"; "Morphisms"] "apply_subrelation") *)
-(* let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "relation") *)
-(* let mk_relation a = mkApp (Lazy.force coq_relation, [| a |]) *)
-
-(* let proper_type = lazy (Universes.constr_of_global (Lazy.force proper_class).cl_impl) *)
-(* let proper_proxy_type = lazy (Universes.constr_of_global (Lazy.force proper_proxy_class).cl_impl) *)
-
-
-
 (** Bookkeeping which evars are constraints so that we can 
     remove them at the end of the tactic. *)
 

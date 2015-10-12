@@ -165,14 +165,17 @@ in Section~\ref{ProofWith}.
   {\tt Type* } is the forward transitive closure of the entire set of
   section variables occurring in the statement.
 
-\variant {\tt Proof using -(} {\ident$_1$} {\ldots} {\ident$_n$} {\tt ).}
+\variant {\tt Proof using -( \ident$_1$} {\ldots} {\tt \ident$_n$  ).}
   
   Use all section variables except {\ident$_1$} {\ldots} {\ident$_n$}.
 
-\variant {\tt Proof using }  {\emph collection$_1$} {\tt + } {\emph collection$_2$} {\tt .}
-\variant {\tt Proof using }  {\emph collection$_1$} {\tt - } {\emph collection$_2$} {\tt .}
-\variant {\tt Proof using }  {\emph collection$_1$} {\tt - (} {\ident$_1$} {\ldots} {\ident$_n$} {\tt ).}
-\variant {\tt Proof using }  {\emph collection$_1$}{\tt* .}
+\variant {\tt Proof using \nterm{collection}$_1$ + \nterm{collection}$_2$ .}
+
+\variant {\tt Proof using \nterm{collection}$_1$ - \nterm{collection}$_2$ .}
+
+\variant {\tt Proof using \nterm{collection} - ( \ident$_1$} {\ldots} {\tt \ident$_n$ ).}
+
+\variant {\tt Proof using \nterm{collection} * .}
 
   Use section variables being, respectively, in the set union, set difference,
   set complement, set forward transitive closure.

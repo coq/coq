@@ -1038,11 +1038,12 @@ let interp_context ctxt = in_gen (topwit wit_constr_context) ctxt
 (* Reads a pattern by substituting vars of lfun *)
 let use_types = false
 
-let eval_pattern lfun ist env sigma (_,pat as c) =
+let eval_pattern lfun ist env sigma ((glob,_),pat as c) =
+  let bound_names = bound_glob_vars glob in
   if use_types then
-    pi3 (interp_typed_pattern ist env sigma c)
+    (bound_names,pi3 (interp_typed_pattern ist env sigma c))
   else
-    instantiate_pattern env sigma lfun pat
+    (bound_names,instantiate_pattern env sigma lfun pat)
 
 let read_pattern lfun ist env sigma = function
   | Subterm (b,ido,c) -> Subterm (b,ido,eval_pattern lfun ist env sigma c)

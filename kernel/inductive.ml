@@ -165,10 +165,7 @@ let rec make_subst env =
         (* to be greater than the level of the argument; this is probably *)
         (* a useless extra constraint *)
         let s = sort_as_univ (snd (dest_arity env (Lazy.force a))) in
-	  if Univ.Universe.is_levels s then
-            make (cons_subst u s subst) (sign, exp, args)
-	  else (* Cannot handle substitution by i+n universes. *)
-	    make subst (sign, exp, args)
+          make (cons_subst u s subst) (sign, exp, args)
     | (na,None,t)::sign, Some u::exp, [] ->
         (* No more argument here: we add the remaining universes to the *)
         (* substitution (when [u] is distinct from all other universes in the *)

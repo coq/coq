@@ -17,13 +17,16 @@ open Term
 
 type tag = int
 
-let id_tag = 0
-let iddef_tag = 1
-let ind_tag = 2
-let fix_tag = 3
+let accu_tag = 0
+
+let max_atom_tag = 1
+let proj_tag = 2
+let fix_app_tag = 3
 let switch_tag = 4
 let cofix_tag = 5
 let cofix_evaluated_tag = 6
+
+
 (* It would be great if OCaml exported this value,
    So fixme if this happens in a new version of OCaml *)
 let last_variant_tag = 245 

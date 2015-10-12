@@ -134,10 +134,16 @@ let extract_context_levels env l =
 let make_polymorphic_if_constant_for_ind env {uj_val = c; uj_type = t} =
   let params, ccl = dest_prod_assum env t in
   match kind_of_term ccl with
-  | Sort (Type u) when isInd (fst (decompose_app (whd_betadeltaiota env c))) ->
-      let param_ccls = extract_context_levels env params in
-      let s = { template_param_levels = param_ccls; template_level = u} in
-      TemplateArity (params,s)
+  | Sort (Type u) ->
+     let ind, l = decompose_app (whd_betadeltaiota env c) in
+     if isInd ind && List.is_empty l then
+       let mis = lookup_mind_specif env (fst (destInd ind)) in
+       let nparams = Inductive.inductive_params mis in
+       let paramsl = CList.lastn nparams params in
+       let param_ccls = extract_context_levels env paramsl in
+       let s = { template_param_levels = param_ccls; template_level = u} in
+       TemplateArity (params,s)
+     else RegularArity t
   | _ ->
       RegularArity t
 

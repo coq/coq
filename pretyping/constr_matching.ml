@@ -56,10 +56,6 @@ let warn_bound_meta name =
 let warn_bound_bound name =
   msg_warning (str "Collision between bound variables of name " ++ pr_id name)
 
-let warn_bound_again name =
-  msg_warning (str "Collision between bound variable " ++ pr_id name ++
-    str " and another bound variable of same name.")
-
 let constrain n (ids, m as x) (names, terms as subst) =
   try
     let (ids', m') = Id.Map.find n terms in
@@ -69,32 +65,33 @@ let constrain n (ids, m as x) (names, terms as subst) =
     let () = if Id.Map.mem n names then warn_bound_meta n in
     (names, Id.Map.add n x terms)
 
-let add_binders na1 na2 (names, terms as subst) = match na1, na2 with
-| Name id1, Name id2 ->
-  if Id.Map.mem id1 names then
-    let () = warn_bound_bound id1 in
-    (names, terms)
-  else
-    let names = Id.Map.add id1 id2 names in
-    let () = if Id.Map.mem id1 terms then warn_bound_again id1 in
-    (names, terms)
-| _ -> subst
+let add_binders na1 na2 binding_vars (names, terms as subst) =
+  match na1, na2 with
+  | Name id1, Name id2 when Id.Set.mem id1 binding_vars ->
+    if Id.Map.mem id1 names then
+      let () = warn_bound_bound id1 in
+      (names, terms)
+    else
+      let names = Id.Map.add id1 id2 names in
+      let () = if Id.Map.mem id1 terms then warn_bound_meta id1 in
+      (names, terms)
+  | _ -> subst
 
-let rec build_lambda vars stk m = match vars with
+let rec build_lambda vars ctx m = match vars with
 | [] ->
-  let len = List.length stk in
+  let len = List.length ctx in
   lift (-1 * len) m
 | n :: vars ->
   (* change [ x1 ... xn y z1 ... zm |- t ] into
      [ x1 ... xn z1 ... zm |- lam y. t ] *)
-  let len = List.length stk in
+  let len = List.length ctx in
   let init i =
     if i < pred n then mkRel (i + 2)
     else if Int.equal i (pred n) then mkRel 1
     else mkRel (i + 1)
   in
   let m = substl (List.init len init) m in
-  let pre, suf = List.chop (pred n) stk in
+  let pre, suf = List.chop (pred n) ctx in
   match suf with
   | [] -> assert false
   | (_, na, t) :: suf ->
@@ -108,21 +105,21 @@ let rec build_lambda vars stk m = match vars with
     let m = mkLambda (na, t, m) in
     build_lambda vars (pre @ suf) m
 
-let rec extract_bound_aux k accu frels stk = match stk with
+let rec extract_bound_aux k accu frels ctx = match ctx with
 | [] -> accu
-| (na1, na2, _) :: stk ->
+| (na1, na2, _) :: ctx ->
   if Int.Set.mem k frels then
     begin match na1 with
     | Name id ->
       let () = assert (match na2 with Anonymous -> false | Name _ -> true) in
       let () = if Id.Set.mem id accu then raise PatternMatchingFailure in
-      extract_bound_aux (k + 1) (Id.Set.add id accu) frels stk
+      extract_bound_aux (k + 1) (Id.Set.add id accu) frels ctx
     | Anonymous -> raise PatternMatchingFailure
     end
-  else extract_bound_aux (k + 1) accu frels stk
+  else extract_bound_aux (k + 1) accu frels ctx
 
-let extract_bound_vars frels stk =
-  extract_bound_aux 1 Id.Set.empty frels stk
+let extract_bound_vars frels ctx =
+  extract_bound_aux 1 Id.Set.empty frels ctx
 
 let dummy_constr = mkProp
 
@@ -134,20 +131,20 @@ let make_renaming ids = function
   end
 | _ -> dummy_constr
 
-let merge_binding allow_bound_rels stk n cT subst =
-  let c = match stk with
+let merge_binding allow_bound_rels ctx n cT subst =
+  let c = match ctx with
   | [] -> (* Optimization *)
     ([], cT)
   | _ ->
     let frels = free_rels cT in
     if allow_bound_rels then
-      let vars = extract_bound_vars frels stk in
+      let vars = extract_bound_vars frels ctx in
       let ordered_vars = Id.Set.elements vars in
       let rename binding = make_renaming ordered_vars binding in
-      let renaming = List.map rename stk in
+      let renaming = List.map rename ctx in
       (ordered_vars, substl renaming cT)
     else
-      let depth = List.length stk in
+      let depth = List.length ctx in
       let min_elt = try Int.Set.min_elt frels with Not_found -> succ depth in
       if depth < min_elt then
         ([], lift (- depth) cT)
@@ -155,7 +152,8 @@ let merge_binding allow_bound_rels stk n cT subst =
   in
   constrain n c subst
       
-let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
+let matches_core env sigma convert allow_partial_app allow_bound_rels
+    (binding_vars,pat) c =
   let convref ref c = 
     match ref, kind_of_term c with
     | VarRef id, Var id' -> Names.id_eq id id'
@@ -168,7 +166,7 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 	    is_conv env sigma c' c
        else false)
   in
-  let rec sorec stk env subst p t =
+  let rec sorec ctx env subst p t =
     let cT = strip_outer_cast t in
     match p,kind_of_term cT with
       | PSoApp (n,args),m ->
@@ -181,11 +179,11 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
         let relargs, relset = List.fold_left fold ([], Int.Set.empty) args in
         let frels = free_rels cT in
         if Int.Set.subset frels relset then
-          constrain n ([], build_lambda relargs stk cT) subst
+          constrain n ([], build_lambda relargs ctx cT) subst
         else
           raise PatternMatchingFailure
 
-      | PMeta (Some n), m -> merge_binding allow_bound_rels stk n cT subst
+      | PMeta (Some n), m -> merge_binding allow_bound_rels ctx n cT subst
 
       | PMeta None, m -> subst
 
@@ -203,10 +201,10 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 
       | PSort (GType _), Sort (Type _) -> subst
 
-      | PApp (p, [||]), _ -> sorec stk env subst p t
+      | PApp (p, [||]), _ -> sorec ctx env subst p t
 
       | PApp (PApp (h, a1), a2), _ ->
-          sorec stk env subst (PApp(h,Array.append a1 a2)) t
+          sorec ctx env subst (PApp(h,Array.append a1 a2)) t
 
       | PApp (PMeta meta,args1), App (c2,args2) when allow_partial_app ->
          (let diff = Array.length args2 - Array.length args1 in
@@ -216,13 +214,13 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
             let subst =
               match meta with
               | None -> subst
-              | Some n -> merge_binding allow_bound_rels stk n c subst in
-            Array.fold_left2 (sorec stk env) subst args1 args22
+              | Some n -> merge_binding allow_bound_rels ctx n c subst in
+            Array.fold_left2 (sorec ctx env) subst args1 args22
           else (* Might be a projection on the right *)
 	    match kind_of_term c2 with
 	    | Proj (pr, c) when not (Projection.unfolded pr) ->
 	      (try let term = Retyping.expand_projection env sigma pr c (Array.to_list args2) in
-		     sorec stk env subst p term
+		     sorec ctx env subst p term
 	       with Retyping.RetypeError _ -> raise PatternMatchingFailure)
 	    | _ -> raise PatternMatchingFailure)
 	   
@@ -233,15 +231,15 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 	  raise PatternMatchingFailure
 	| PProj (pr1,c1), Proj (pr,c) ->
 	  if Projection.equal pr1 pr then 
-	    try Array.fold_left2 (sorec stk env) (sorec stk env subst c1 c) arg1 arg2
+	    try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c) arg1 arg2
 	    with Invalid_argument _ -> raise PatternMatchingFailure
 	  else raise PatternMatchingFailure
 	| _, Proj (pr,c) when not (Projection.unfolded pr) ->
 	  (try let term = Retyping.expand_projection env sigma pr c (Array.to_list arg2) in
-		 sorec stk env subst p term
+		 sorec ctx env subst p term
 	   with Retyping.RetypeError _ -> raise PatternMatchingFailure)	    
 	| _, _ ->
-          try Array.fold_left2 (sorec stk env) (sorec stk env subst c1 c2) arg1 arg2
+          try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c2) arg1 arg2
           with Invalid_argument _ -> raise PatternMatchingFailure)
 	  
       | PApp (PRef (ConstRef c1), _), Proj (pr, c2) 
@@ -250,37 +248,37 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 	
       | PApp (c, args), Proj (pr, c2) ->
 	(try let term = Retyping.expand_projection env sigma pr c2 [] in
-	       sorec stk env subst p term
+	       sorec ctx env subst p term
 	 with Retyping.RetypeError _ -> raise PatternMatchingFailure)
 
       | PProj (p1,c1), Proj (p2,c2) when Projection.equal p1 p2 ->
-          sorec stk env subst c1 c2
+          sorec ctx env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
-	  sorec ((na1,na2,c2)::stk) (Environ.push_rel (na2,None,c2) env)
-            (add_binders na1 na2 (sorec stk env subst c1 c2)) d1 d2
+	  sorec ((na1,na2,c2)::ctx) (Environ.push_rel (na2,None,c2) env)
+            (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLambda (na1,c1,d1), Lambda(na2,c2,d2) ->
-	  sorec ((na1,na2,c2)::stk) (Environ.push_rel (na2,None,c2) env)
-            (add_binders na1 na2 (sorec stk env subst c1 c2)) d1 d2
+	  sorec ((na1,na2,c2)::ctx) (Environ.push_rel (na2,None,c2) env)
+            (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLetIn (na1,c1,d1), LetIn(na2,c2,t2,d2) ->
-	  sorec ((na1,na2,t2)::stk) (Environ.push_rel (na2,Some c2,t2) env)
-            (add_binders na1 na2 (sorec stk env subst c1 c2)) d1 d2
+	  sorec ((na1,na2,t2)::ctx) (Environ.push_rel (na2,Some c2,t2) env)
+            (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
-	  let ctx,b2 = decompose_lam_n_assum ci.ci_cstr_ndecls.(0) b2 in
-	  let ctx',b2' = decompose_lam_n_assum ci.ci_cstr_ndecls.(1) b2' in
-	  let n = rel_context_length ctx in
-          let n' = rel_context_length ctx' in
+	  let ctx_b2,b2 = decompose_lam_n_assum ci.ci_cstr_ndecls.(0) b2 in
+	  let ctx_b2',b2' = decompose_lam_n_assum ci.ci_cstr_ndecls.(1) b2' in
+	  let n = rel_context_length ctx_b2 in
+          let n' = rel_context_length ctx_b2' in
 	  if noccur_between 1 n b2 && noccur_between 1 n' b2' then
-	    let s =
-	      List.fold_left (fun l (na,_,t) -> (Anonymous,na,t)::l) stk ctx in
-	    let s' =
-	      List.fold_left (fun l (na,_,t) -> (Anonymous,na,t)::l) stk ctx' in
+            let f l (na,_,t) = (Anonymous,na,t)::l in
+	    let ctx_br = List.fold_left f ctx ctx_b2 in
+	    let ctx_br' = List.fold_left f ctx ctx_b2' in
 	    let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in
-	    sorec s' (Environ.push_rel_context ctx' env)
-	      (sorec s (Environ.push_rel_context ctx env) (sorec stk env subst a1 a2) b1 b2) b1' b2'
+	    sorec ctx_br' (Environ.push_rel_context ctx_b2' env)
+	      (sorec ctx_br (Environ.push_rel_context ctx_b2 env)
+                 (sorec ctx env subst a1 a2) b1 b2) b1' b2'
           else
             raise PatternMatchingFailure
 
@@ -301,9 +299,9 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels pat c =
 	    (* (ind,j+1) is normally known to be a correct constructor
 	       and br2 a correct match over the same inductive *)
 	    assert (j < n2);
-	    sorec stk env subst c br2.(j)
+	    sorec ctx env subst c br2.(j)
 	  in
-	  let chk_head = sorec stk env (sorec stk env subst a1 a2) p1 p2 in
+	  let chk_head = sorec ctx env (sorec ctx env subst a1 a2) p1 p2 in
 	  List.fold_left chk_branch chk_head br1
 
       |	PFix c1, Fix _ when eq_constr (mkFix c1) cT -> subst
@@ -319,7 +317,8 @@ let matches_core_closed env sigma convert allow_partial_app pat c =
 
 let extended_matches env sigma = matches_core env sigma false true true
 
-let matches env sigma pat c = snd (matches_core_closed env sigma false true pat c)
+let matches env sigma pat c =
+  snd (matches_core_closed env sigma false true (Id.Set.empty,pat) c)
 
 let special_meta = (-1)
 
@@ -464,10 +463,10 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
   let result () = aux env c (fun x -> x) lempty in
   IStream.thunk result
 
-let match_subterm env sigma pat c = sub_match env sigma pat c
+let match_subterm env sigma pat c = sub_match env sigma (Id.Set.empty,pat) c
 
 let match_appsubterm env sigma pat c = 
-  sub_match ~partial_app:true env sigma pat c
+  sub_match ~partial_app:true env sigma (Id.Set.empty,pat) c
 
 let match_subterm_gen env sigma app pat c = 
   sub_match ~partial_app:app env sigma pat c
@@ -481,11 +480,12 @@ let is_matching_head env sigma pat c =
   with PatternMatchingFailure -> false
 
 let is_matching_appsubterm ?(closed=true) env sigma pat c =
+  let pat = (Id.Set.empty,pat) in
   let results = sub_match ~partial_app:true ~closed env sigma pat c in
   not (IStream.is_empty results)
 
-let matches_conv env sigma c p =
-  snd (matches_core_closed env sigma true false c p)
+let matches_conv env sigma p c =
+  snd (matches_core_closed env sigma true false (Id.Set.empty,p) c)
 
 let is_matching_conv env sigma pat n =
   try let _ = matches_conv env sigma pat n in true
