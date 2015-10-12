@@ -19,14 +19,6 @@ external set_drawinstr : unit -> unit = "coq_set_drawinstr"
 external offset_closure : Obj.t -> int -> Obj.t = "coq_offset_closure"
 external offset : Obj.t -> int = "coq_offset"
 
-let accu_tag = 0
-let max_atom_tag = 1
-let proj_tag = 2
-let fix_app_tag = 3
-let switch_tag = 4
-let cofix_tag = 5
-let cofix_evaluated_tag = 6
-
 (*******************************************)
 (* Initalization of the abstract machine ***)
 (*******************************************)
