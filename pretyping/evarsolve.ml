@@ -130,6 +130,8 @@ let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
 
 (* We retype applications to ensure the universe constraints are collected *)
 
+exception IllTypedInstance of env * types * types
+
 let recheck_applications conv_algo env evdref t =
   let rec aux env t =
     match kind_of_term t with
@@ -146,7 +148,7 @@ let recheck_applications conv_algo env evdref t =
 			     aux (succ i) (subst1 args.(i) codom)
 	     | UnifFailure (evd, reason) ->
 		Pretype_errors.error_cannot_unify env evd ~reason (argsty.(i), dom))
-	 | _ -> assert false
+	 | _ -> raise (IllTypedInstance (env, ty, argsty.(i)))
        else ()
      in aux 0 fty
     | _ ->
@@ -1133,8 +1135,6 @@ let project_evar_on_evar force g env evd aliases k2 pbty (evk1,argsv1 as ev1) (e
       raise (CannotProject (evd,ev1'))
   else
     raise (CannotProject (evd,ev1'))
-
-exception IllTypedInstance of env * types * types
 
 let check_evar_instance evd evk1 body conv_algo =
   let evi = Evd.find evd evk1 in
