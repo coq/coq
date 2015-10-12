@@ -41,13 +41,13 @@ open Vernacexpr
 let do_universe l = Declare.do_universe l  
 let do_constraint l = Declare.do_constraint l
 
-let rec under_binders env f n c =
-  if Int.equal n 0 then snd (f env Evd.empty c) else
+let rec under_binders env sigma f n c =
+  if Int.equal n 0 then snd (f env sigma c) else
     match kind_of_term c with
       | Lambda (x,t,c) ->
-	  mkLambda (x,t,under_binders (push_rel (x,None,t) env) f (n-1) c)
+	  mkLambda (x,t,under_binders (push_rel (x,None,t) env) sigma f (n-1) c)
       | LetIn (x,b,t,c) ->
-	  mkLetIn (x,b,t,under_binders (push_rel (x,Some b,t) env) f (n-1) c)
+	  mkLetIn (x,b,t,under_binders (push_rel (x,Some b,t) env) sigma f (n-1) c)
       | _ -> assert false
 
 let rec complete_conclusion a cs = function
@@ -67,14 +67,14 @@ let rec complete_conclusion a cs = function
 
 (* 1| Constant definitions *)
 
-let red_constant_entry n ce = function
+let red_constant_entry n ce sigma = function
   | None -> ce
   | Some red ->
       let proof_out = ce.const_entry_body in
       let env = Global.env () in
       { ce with const_entry_body = Future.chain ~greedy:true ~pure:true proof_out
         (fun ((body,ctx),eff) ->
-          (under_binders env
+          (under_binders env sigma
              (fst (reduction_of_red_expr env red)) n body,ctx),eff) }
 
 let interp_definition pl bl p red_option c ctypopt =
@@ -125,7 +125,7 @@ let interp_definition pl bl p red_option c ctypopt =
 	  definition_entry ~types:typ ~poly:p 
 	    ~univs:uctx body
   in
-  red_constant_entry (rel_context_length ctx) ce red_option, !evdref, imps
+  red_constant_entry (rel_context_length ctx) ce !evdref red_option, !evdref, imps
 
 let check_definition (ce, evd, imps) =
   check_evars_are_solved (Global.env ()) evd (Evd.empty,evd);
