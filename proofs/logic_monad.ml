@@ -188,7 +188,7 @@ struct
       shape of the monadic type is reminiscent of that of the
       continuation monad transformer.
 
-      The paper also contains the rational for the [split] abstraction.
+      The paper also contains the rationale for the [split] abstraction.
 
       An explanation of how to derive such a monad from mathematical
       principles can be found in "Kan Extensions for Program

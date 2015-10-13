@@ -639,7 +639,7 @@ end = struct (* {{{ *)
     proof,
     Summary.project_summary (States.summary_of_state system) summary_pstate
 
-  let freeze marhallable id = VCS.set_state id (freeze_global_state marhallable)
+  let freeze marshallable id = VCS.set_state id (freeze_global_state marshallable)
 
   let is_cached ?(cache=`No) id =
     if Stateid.equal id !cur_id then
@@ -1912,7 +1912,7 @@ let init () =
   Backtrack.record ();
   Slaves.init ();
   if Flags.async_proofs_is_master () then begin
-    prerr_endline "Initialising workers";
+    prerr_endline "Initializing workers";
     Query.init ();
     let opts = match !Flags.async_proofs_private_flags with
       | None -> []

@@ -477,7 +477,7 @@ let rec execute env cstr =
       let j' = execute env1 c3 in
         judge_of_letin env name j1 j2 j'
 
-    | Cast (c,k, t) ->
+    | Cast (c,k,t) ->
       let cj = execute env c in
       let tj = execute_type env t in
         judge_of_cast env cj k tj
