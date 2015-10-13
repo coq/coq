@@ -1386,7 +1386,7 @@ module Strategies =
 
 end
 
-(** The strategy for a single rewrite, dealing with occurences. *)
+(** The strategy for a single rewrite, dealing with occurrences. *)
 
 (** A dummy initial clauseenv to avoid generating initial evars before
     even finding a first application of the rewriting lemma, in setoid_rewrite

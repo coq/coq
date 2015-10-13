@@ -119,5 +119,5 @@ TROUBLESHOOTING
   rid of the problem is to edit by hand your coqiderc (either
   /home/<user>/.config/coq/coqiderc under Linux, or
   C:\Documents and Settings\<user>\.config\coq\coqiderc under Windows)
-  and replace any occurence of MOD4 by MOD1.
+  and replace any occurrence of MOD4 by MOD1.
 

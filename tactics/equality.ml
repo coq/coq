@@ -88,7 +88,7 @@ type freeze_evars_flag = bool (* true = don't instantiate existing evars *)
 type orientation = bool
 
 type conditions =
-  | Naive (* Only try the first occurence of the lemma (default) *)
+  | Naive (* Only try the first occurrence of the lemma (default) *)
   | FirstSolved (* Use the first match whose side-conditions are solved *)
   | AllMatches (* Rewrite all matches whose side-conditions are solved *)
 
@@ -1577,7 +1577,7 @@ let restrict_to_eq_and_identity eq = (* compatibility *)
 
 exception FoundHyp of (Id.t * constr * bool)
 
-(* tests whether hyp [c] is [x = t] or [t = x], [x] not occuring in [t] *)
+(* tests whether hyp [c] is [x = t] or [t = x], [x] not occurring in [t] *)
 let is_eq_x gl x (id,_,c) =
   try
     let c = pf_nf_evar gl c in

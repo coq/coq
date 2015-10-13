@@ -36,10 +36,10 @@ type t
 
 (** Several exceptions can be raised when parsing an Xml document : {ul
         {li {!Xml.Error} is raised when an xml parsing error occurs. the
-                {!Xml.error_msg} tells you which error occured during parsing
+                {!Xml.error_msg} tells you which error occurred during parsing
                 and the {!Xml.error_pos} can be used to retreive the document
-                location where the error occured at.}
-        {li {!Xml.File_not_found} is raised when and error occured while
+                location where the error occurred at.}
+        {li {!Xml.File_not_found} is raised when and error occurred while
                 opening a file with the {!Xml.parse_file} function.}
         }
  *)
@@ -71,13 +71,13 @@ val error : error -> string
 (** Get the Xml error message as a string. *)
 val error_msg : error_msg -> string
 
-(** Get the line the error occured at. *)
+(** Get the line the error occurred at. *)
 val line : error_pos -> int
 
-(** Get the relative character range (in current line) the error occured at.*)
+(** Get the relative character range (in current line) the error occurred at.*)
 val range : error_pos -> int * int
 
-(** Get the absolute character range the error occured at. *)
+(** Get the absolute character range the error occurred at. *)
 val abs_range : error_pos -> int * int
 
 val pos : Lexing.lexbuf -> error_pos

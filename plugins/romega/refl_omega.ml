@@ -44,7 +44,7 @@ let occ_step_eq s1 s2 = match s1, s2 with
 
 (* chemin identifiant une proposition sous forme du nom de l'hypothèse et
    d'une liste de pas à partir de la racine de l'hypothèse *)
-type occurence = {o_hyp : Names.Id.t; o_path : occ_path}
+type occurrence = {o_hyp : Names.Id.t; o_path : occ_path}
 
 (* \subsection{refiable formulas} *)
 type oformula =
@@ -81,7 +81,7 @@ and oequation = {
     e_left: oformula;			(* formule brute gauche *)
     e_right: oformula;			(* formule brute droite *)
     e_trace: Term.constr;		(* tactique de normalisation *)
-    e_origin: occurence;		(* l'hypothèse dont vient le terme *)
+    e_origin: occurrence;		(* l'hypothèse dont vient le terme *)
     e_negated: bool;			(* vrai si apparait en position nié
 					   après normalisation *)
     e_depends: direction  list;		(* liste des points de disjonction dont
@@ -111,7 +111,7 @@ type environment = {
   real_indices : (int,int) Hashtbl.t;
   mutable cnt_connectors : int;
   equations : (int,oequation) Hashtbl.t;
-  constructors : (int, occurence) Hashtbl.t
+  constructors : (int, occurrence) Hashtbl.t
 }
 
 (* \subsection{Solution tree}
@@ -136,7 +136,7 @@ type solution_tree =
    chemins pour extraire des equations ou d'hypothèses *)
 
 type context_content =
-    CCHyp of occurence
+    CCHyp of occurrence
   | CCEqua of int
 
 (* \section{Specific utility functions to handle base types} *)

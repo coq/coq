@@ -539,7 +539,7 @@ let context operation path (t : constr) =
   in
   loop 1 path t
 
-let occurence path (t : constr) =
+let occurrence path (t : constr) =
   let rec loop p0 t = match (p0,kind_of_term t) with
     | (p, Cast (c,_,_)) -> loop p c
     | ([], _) -> t
@@ -555,7 +555,7 @@ let occurence path (t : constr) =
     | ((P_TYPE :: p), Lambda (n,term,c)) -> loop p term
     | ((P_TYPE :: p), LetIn (n,b,term,c)) -> loop p term
     | (p, _) ->
-	failwith ("occurence " ^ string_of_int(List.length p))
+	failwith ("occurrence " ^ string_of_int(List.length p))
   in
   loop path t
 
@@ -660,7 +660,7 @@ let clever_rewrite_gen_nat p result (t,args) =
 let clever_rewrite p vpath t gl =
   let full = pf_concl gl in
   let (abstracted,occ) = abstract_path (Lazy.force coq_Z) (List.rev p) full in
-  let vargs = List.map (fun p -> occurence p occ) vpath in
+  let vargs = List.map (fun p -> occurrence p occ) vpath in
   let t' = applist(t, (vargs @ [abstracted])) in
   exact (applist(t',[mkNewMeta()])) gl
 

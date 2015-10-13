@@ -124,7 +124,7 @@ let rec add_prods_sign env sigma t =
         add_prods_sign (push_named (id,Some c1,t1) env) sigma b'
     | _ -> (env,t)
 
-(* [dep_option] indicates wether the inversion lemma is dependent or not.
+(* [dep_option] indicates whether the inversion lemma is dependent or not.
    If it is dependent and I is of the form (x_bar:T_bar)(I t_bar) then
    the stated goal will be (x_bar:T_bar)(H:(I t_bar))(P t_bar H)
    where P:(x_bar:T_bar)(H:(I x_bar))[sort].

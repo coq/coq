@@ -1011,8 +1011,8 @@ let contextually byhead occs f env sigma t =
     snd (e_contextually byhead occs f' env sigma t)
 
 (* linear bindings (following pretty-printer) of the value of name in c.
- * n is the number of the next occurence of name.
- * ol is the occurence list to find. *)
+ * n is the number of the next occurrence of name.
+ * ol is the occurrence list to find. *)
 
 let match_constr_evaluable_ref sigma c evref = 
   match kind_of_term c, evref with
@@ -1061,7 +1061,7 @@ let is_projection env = function
 
 (* [unfoldoccs : (readable_constraints -> (int list * full_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.
- * at the occurrences of occ_list. If occ_list is empty, unfold all occurences.
+ * at the occurrences of occ_list. If occ_list is empty, unfold all occurrences.
  * Performs a betaiota reduction after unfolding. *)
 let unfoldoccs env sigma (occs,name) c =
   let unfo nowhere_except_in locs =

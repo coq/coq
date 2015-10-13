@@ -622,9 +622,9 @@ Section Elts.
   Qed.
 
 
-  (****************************************)
-  (** ** Counting occurences of a element *)
-  (****************************************)
+  (******************************************)
+  (** ** Counting occurrences of an element *)
+  (******************************************)
 
   Fixpoint count_occ (l : list A) (x : A) : nat :=
     match l with

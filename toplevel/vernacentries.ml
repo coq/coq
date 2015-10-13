@@ -1359,7 +1359,7 @@ let _ =
   declare_int_option
     { optsync  = true;
       optdepr  = false;
-      optname  = "the level of inling duging functor application";
+      optname  = "the level of inlining during functor application";
       optkey   = ["Inline";"Level"];
       optread  = (fun () -> Some (Flags.get_inline_level ()));
       optwrite = (fun o ->

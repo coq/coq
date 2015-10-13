@@ -104,7 +104,7 @@ let set_maximality imps b =
   inferable following a rigid path (useful to know how to print a
   partial application)
 
-- [Manual] means the argument has been explicitely set as implicit.
+- [Manual] means the argument has been explicitly set as implicit.
 
   We also consider arguments inferable from the conclusion but it is
   operational only if [conclusion_matters] is true.

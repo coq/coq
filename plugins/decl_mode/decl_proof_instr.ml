@@ -212,7 +212,7 @@ let close_previous_case pts =
     Proof.is_done pts
   then
     match get_top_stack pts with
-	Per (et,_,_,_) :: _ -> anomaly (Pp.str "Weird case occured ...")
+	Per (et,_,_,_) :: _ -> anomaly (Pp.str "Weird case occurred ...")
       | Suppose_case :: Per (et,_,_,_) :: _ ->
 	  goto_current_focus ()
       | _ -> error "Not inside a proof per cases or induction."

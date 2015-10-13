@@ -12,7 +12,7 @@
 
 }
 
-(* Replace all occurences of \x{iiii} and \x{iiiiiiii} by UTF-8 valid chars *)
+(* Replace all occurrences of \x{iiii} and \x{iiiiiiii} by UTF-8 valid chars *)
 
 let digit = ['0'-'9''A'-'Z''a'-'z']
 let short = digit digit digit digit

@@ -525,7 +525,7 @@ let rec check_and_clear_in_constr env evdref err ids c =
 let clear_hyps_in_evi_main env evdref hyps terms ids =
   (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
-     the contexts of the evars occuring in evi *)
+     the contexts of the evars occurring in evi *)
   let terms =
     List.map (check_and_clear_in_constr env evdref (OccurHypInSimpleClause None) ids) terms in
   let nhyps =

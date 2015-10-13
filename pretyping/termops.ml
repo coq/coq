@@ -561,7 +561,7 @@ let free_rels m =
   in
   frec 1 Int.Set.empty m
 
-(* collects all metavar occurences, in left-to-right order, preserving
+(* collects all metavar occurrences, in left-to-right order, preserving
  * repetitions and all. *)
 
 let collect_metas c =

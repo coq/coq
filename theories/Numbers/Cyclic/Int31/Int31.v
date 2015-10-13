@@ -19,7 +19,7 @@ Require Export DoubleType.
   arithmetic. In fact it is more general than that. The only reason
   for this use of 31 is the underlying mecanism for hardware-efficient
   computations by A. Spiwack. Apart from this, a switch to, say,
-  63-bit integers is now just a matter of replacing every occurences
+  63-bit integers is now just a matter of replacing every occurrences
   of 31 by 63. This is actually made possible by the use of
   dependently-typed n-ary constructions for the inductive type
   [int31], its constructor [I31] and any pattern matching on it.

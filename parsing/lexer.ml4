@@ -70,7 +70,7 @@ let ttree_remove ttree str =
   remove ttree 0
 
 
-(* Errors occuring while lexing (explained as "Lexer error: ...") *)
+(* Errors occurring while lexing (explained as "Lexer error: ...") *)
 
 module Error = struct
 

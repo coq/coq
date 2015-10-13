@@ -2180,7 +2180,7 @@ Changes from V7.3.1 to V7.4
 Symbolic notations
 
 - Introduction of a notion of scope gathering notations in a consistent set;
-  a notation sets has been developped for nat, Z and R (undocumented)
+  a notation sets has been developed for nat, Z and R (undocumented)
 - New command "Notation" for declaring notations simultaneously for
   parsing and printing (see chap 10 of the reference manual)
 - Declarations with only implicit arguments now handled (e.g. the

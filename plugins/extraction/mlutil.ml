@@ -490,8 +490,8 @@ let ast_occurs_itvl k k' t =
     ast_iter_rel (fun i -> if (k <= i) && (i <= k') then raise Found) t; false
   with Found -> true
 
-(* Number of occurences of [Rel 1] in [t], with special treatment of match:
-   occurences in different branches aren't added, but we rather use max. *)
+(* Number of occurrences of [Rel 1] in [t], with special treatment of match:
+   occurrences in different branches aren't added, but we rather use max. *)
 
 let nb_occur_match =
   let rec nb k = function
@@ -851,7 +851,7 @@ let factor_branches o typ br =
     else Some (br_factor, br_set)
   end
 
-(*s If all branches are functions, try to permut the case and the functions. *)
+(*s If all branches are functions, try to permute the case and the functions. *)
 
 let rec merge_ids ids ids' = match ids,ids' with
   | [],l -> l
@@ -1127,7 +1127,7 @@ let term_expunge s (ids,c) =
       MLlam (Dummy, ast_lift 1 c)
     else named_lams ids c
 
-(*s [kill_dummy_args ids r t] looks for occurences of [MLrel r] in [t] and
+(*s [kill_dummy_args ids r t] looks for occurrences of [MLrel r] in [t] and
   purge the args of [MLrel r] corresponding to a [dummy_name].
   It makes eta-expansion if needed. *)
 
@@ -1351,10 +1351,10 @@ let is_not_strict t =
    We expand small terms with at least one non-strict
    variable (i.e. a variable that may not be evaluated).
 
-   Futhermore we don't expand fixpoints.
+   Furthermore we don't expand fixpoints.
 
-   Moreover, as mentionned by X. Leroy (bug #2241),
-   inling a constant from inside an opaque module might
+   Moreover, as mentioned by X. Leroy (bug #2241),
+   inlining a constant from inside an opaque module might
    break types. To avoid that, we require below that
    both [r] and its body are globally visible. This isn't
    fully satisfactory, since [r] might not be visible (functor),

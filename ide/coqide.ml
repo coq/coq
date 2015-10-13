@@ -1125,10 +1125,10 @@ let build_ui () =
 	~accel:(prefs.modifier_for_navigation^"h");*)
     item "Previous" ~label:"_Previous" ~stock:`GO_BACK
       ~callback:Nav.previous_occ
-      ~tooltip:"Previous occurence"
+      ~tooltip:"Previous occurrence"
       ~accel:(prefs.modifier_for_navigation^"less");
     item "Next" ~label:"_Next" ~stock:`GO_FORWARD ~callback:Nav.next_occ
-      ~tooltip:"Next occurence"
+      ~tooltip:"Next occurrence"
       ~accel:(prefs.modifier_for_navigation^"greater");
     item "Force" ~label:"_Force" ~stock:`EXECUTE ~callback:Nav.join_document
       ~tooltip:"Fully check the document" 

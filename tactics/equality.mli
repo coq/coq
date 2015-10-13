@@ -23,7 +23,7 @@ type freeze_evars_flag = bool (* true = don't instantiate existing evars *)
 type orientation = bool
 
 type conditions =
-  | Naive (* Only try the first occurence of the lemma (default) *)
+  | Naive (* Only try the first occurrence of the lemma (default) *)
   | FirstSolved (* Use the first match whose side-conditions are solved *)
   | AllMatches (* Rewrite all matches whose side-conditions are solved *)
 
