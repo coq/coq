@@ -181,7 +181,7 @@ let initial_refutation j n s =
   | _ ->
       let c = String.sub s 0 j in
       Some (false,
-            "Invalid character '"^c^"' at beginning of identifier \""^s^"\".")
+            "Invalid character '" ^ c ^ "' at beginning of identifier \"" ^ s ^ "\".")
 
 let trailing_refutation i j n s =
   match classify n with
@@ -189,35 +189,35 @@ let trailing_refutation i j n s =
   | _ ->
       let c = String.sub s i j in
       Some (false,
-            "Invalid character '"^c^"' in identifier \""^s^"\".")
+            "Invalid character '" ^ c ^ "' in identifier \"" ^ s ^ "\".")
 
 let ident_refutation s =
   if s = ".." then None else try
     let j, n = next_utf8 s 0 in
       match initial_refutation j n s with
-        |None ->
-           begin try
-             let rec aux i =
-               let j, n = next_utf8 s i in
-                 match trailing_refutation i j n s with
-                   |None -> aux (i + j)
-                   |x -> x
-             in aux j
-           with End_of_input -> None
-           end
-        |x -> x
+      | None ->
+         begin try
+           let rec aux i =
+             let j, n = next_utf8 s i in
+               match trailing_refutation i j n s with
+               | None -> aux (i + j)
+               | x -> x
+           in aux j
+         with End_of_input -> None
+         end
+      | x -> x
   with
   | End_of_input -> Some (true,"The empty string is not an identifier.")
-  | Unsupported -> Some (true,s^": unsupported character in utf8 sequence.")
-  | Invalid_argument _ -> Some (true,s^": invalid utf8 sequence.")
+  | Unsupported -> Some (true,s ^ ": unsupported character in utf8 sequence.")
+  | Invalid_argument _ -> Some (true,s ^ ": invalid utf8 sequence.")
 
 let lowercase_unicode =
   let tree = Segmenttree.make Unicodetable.to_lower in
   fun unicode ->
     try
       match Segmenttree.lookup unicode tree with
-        | `Abs c -> c
-        | `Delta d -> unicode + d
+      | `Abs c -> c
+      | `Delta d -> unicode + d
     with Not_found -> unicode
 
 let lowercase_first_char s =

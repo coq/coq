@@ -175,7 +175,7 @@ struct
       | Prop, Prop -> true
       | Set, Set -> true
       | Level (n,d), Level (n',d') ->
-        Int.equal n n' && DirPath.equal d d'
+          Int.equal n n' && DirPath.equal d d'
       | Var n, Var n' -> Int.equal n n'
       | _ -> false
 
@@ -188,9 +188,9 @@ struct
     | Set, _ -> -1
     | _, Set -> 1
     | Level (i1, dp1), Level (i2, dp2) ->
-      if i1 < i2 then -1
-      else if i1 > i2 then 1
-      else DirPath.compare dp1 dp2
+        if i1 < i2 then -1
+        else if i1 > i2 then 1
+        else DirPath.compare dp1 dp2
     | Level _, _ -> -1
     | _, Level _ -> 1
     | Var n, Var m -> Int.compare n m
@@ -201,7 +201,7 @@ struct
       | Prop, Prop -> true
       | Set, Set -> true
       | Level (n,d), Level (n',d') ->
-        n == n' && d == d'
+          n == n' && d == d'
       | Var n, Var n' -> n == n'
       | _ -> false
 
@@ -209,7 +209,7 @@ struct
     | Prop as x -> x
     | Set as x -> x
     | Level (n,d) as x -> 
-      let d' = Names.DirPath.hcons d in
+        let d' = Names.DirPath.hcons d in
         if d' == d then x else Level (n,d')
     | Var n as x -> x
 
@@ -288,8 +288,8 @@ module Level = struct
     if u == v then 0
     else
       let c = Int.compare (hash u) (hash v) in
-	if c == 0 then RawLevel.compare (data u) (data v)
-	else c
+      if c == 0 then RawLevel.compare (data u) (data v)
+      else c
 
   let natural_compare u v =
     if u == v then 0
@@ -299,7 +299,7 @@ module Level = struct
     match data x with
     | Prop -> "Prop"
     | Set -> "Set"
-    | Level (n,d) -> Names.DirPath.to_string d^"."^string_of_int n
+    | Level (n,d) -> Names.DirPath.to_string d ^ "." ^ string_of_int n
     | Var n -> "Var(" ^ string_of_int n ^ ")"
 
   let pr u = str (to_string u)
