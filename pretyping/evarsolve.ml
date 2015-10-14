@@ -1484,7 +1484,7 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
     if occur_meta body then raise MetaOccurInBodyInternal;
     (* invert_definition may have instantiate some evars of rhs with evk *)
     (* so we recheck acyclicity *)
-    if occur_evar evk body then raise (OccurCheckIn (evd',body));
+    if occur_evar_upto evd' evk body then raise (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
     let evd', body = refresh_universes pbty env evd' body in
 (* Cannot strictly type instantiations since the unification algorithm
