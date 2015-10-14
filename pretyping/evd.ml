@@ -750,7 +750,7 @@ let cmap f evd =
   { evd with
       metas = Metamap.map (map_clb f) evd.metas;
       defn_evars = EvMap.map (map_evar_info f) evd.defn_evars;
-      undf_evars = EvMap.map (map_evar_info f) evd.defn_evars
+      undf_evars = EvMap.map (map_evar_info f) evd.undf_evars
   }
 
 (* spiwack: deprecated *)
