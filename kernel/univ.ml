@@ -243,8 +243,6 @@ module Level = struct
 
   let hash x = x.hash
 
-  let data x = x.data
-
   (** Hashcons on levels + their hash *)
 
   module Self = struct
@@ -268,19 +266,19 @@ module Level = struct
   let prop = make Prop
 
   let is_small x = 
-    match data x with
+    match x.data with
     | Level _ -> false
     | Var _ -> false
     | Prop -> true
     | Set -> true
  
   let is_prop x =
-    match data x with
+    match x.data with
     | Prop -> true
     | _ -> false
 
   let is_set x =
-    match data x with
+    match x.data with
     | Set -> true
     | _ -> false
 
@@ -288,15 +286,15 @@ module Level = struct
     if u == v then 0
     else
       let c = Int.compare (hash u) (hash v) in
-      if c == 0 then RawLevel.compare (data u) (data v)
+      if c == 0 then RawLevel.compare u.data v.data
       else c
 
   let natural_compare u v =
     if u == v then 0
-    else RawLevel.compare (data u) (data v)
+    else RawLevel.compare u.data v.data
 	    
   let to_string x = 
-    match data x with
+    match x.data with
     | Prop -> "Prop"
     | Set -> "Set"
     | Level (n,d) -> Names.DirPath.to_string d ^ "." ^ string_of_int n
@@ -305,7 +303,7 @@ module Level = struct
   let pr u = str (to_string u)
 
   let apart u v =
-    match data u, data v with
+    match u.data, v.data with
     | Prop, Set | Set, Prop -> true
     | _ -> false
 
@@ -315,7 +313,7 @@ module Level = struct
     if n < 20 then vars.(n) else make (Var n)
 
   let var_index u =
-    match data u with
+    match u.data with
     | Var n -> Some n | _ -> None
 
   let make m n = make (Level (n, Names.DirPath.hcons m))
