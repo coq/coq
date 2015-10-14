@@ -40,8 +40,6 @@ let conv_vect fconv vect1 vect2 cu =
     !rcu
   else raise NotConvertible
 
-let infos = ref (create_clos_infos betaiotazeta Environ.empty_env)
-
 let rec conv_val env pb k v1 v2 cu =
   if v1 == v2 then cu
   else conv_whd env pb k (whd_val v1) (whd_val v2) cu
@@ -219,7 +217,6 @@ and conv_eq_vect env vt1 vt2 cu =
   else raise NotConvertible
 
 let vconv pb env t1 t2 =
-  infos := create_clos_infos betaiotazeta env;
   let _cu =
     try conv_eq env pb t1 t2 (universes env)
     with NotConvertible ->
