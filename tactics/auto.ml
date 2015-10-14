@@ -93,6 +93,7 @@ let unify_resolve_gen poly = function
   | Some flags -> unify_resolve poly flags
 
 let exact poly (c,clenv) =
+  let (c, _, _) = c in
   let ctx, c' = 
     if poly then
       let evd', subst = Evd.refresh_undefined_universes clenv.evd in

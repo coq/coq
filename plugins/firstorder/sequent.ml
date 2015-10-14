@@ -212,6 +212,7 @@ let extend_with_auto_hints l seq gl=
     match repr_hint p_a_t.code with
 	Res_pf (c,_) | Give_exact (c,_)
       | Res_pf_THEN_trivial_fail (c,_) ->
+          let (c, _, _) = c in
 	  (try
 	     let gr = global_of_constr c in
 	     let typ=(pf_unsafe_type_of gl c) in

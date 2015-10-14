@@ -118,6 +118,7 @@ open Unification
 let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 
 let unify_e_resolve poly flags (c,clenv) gls =
+  let (c, _, _) = c in
   let clenv', subst = if poly then Clenv.refresh_undefined_univs clenv 
   else clenv, Univ.empty_level_subst in
   let clenv' = connect_clenv gls clenv' in
@@ -134,6 +135,7 @@ let hintmap_of hdc concl =
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
 let e_exact poly flags (c,clenv) =
+  let (c, _, _) = c in
   let clenv', subst = 
     if poly then Clenv.refresh_undefined_univs clenv 
     else clenv, Univ.empty_level_subst
