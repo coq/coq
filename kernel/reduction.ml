@@ -740,7 +740,7 @@ let vm_conv cv_pb env t1 t2 =
 
 let default_conv cv_pb ?(l2r=false) env t1 t2 =
   try
-    fconv cv_pb l2r (fun _ -> None) env t1 t2
+    fconv cv_pb false (fun _ -> None) env t1 t2
   with Not_found | Invalid_argument _ ->
       (* If compilation fails, fall-back to closure conversion *)
       fconv cv_pb false (fun _->None) env t1 t2
