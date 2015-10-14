@@ -111,7 +111,7 @@ let prsub s =
 (*#install_printer prenvu;;
 #install_printer prsub;;*)
 
-Checker.init_with_argv [|""|];;
+Checker.init_with_argv [|Sys.argv.(0);"-coqlib";Sys.getcwd()|];;
 Flags.make_silent false;;
 Flags.debug := true;;
 Sys.catch_break true;;
