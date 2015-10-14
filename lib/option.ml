@@ -57,13 +57,6 @@ let init b x =
   else
     None
 
-
-(** [flatten x] is [Some y] if [x] is [Some (Some y)] and [None] otherwise. *)
-let flatten = function
-  | Some (Some y) -> Some y
-  | _ -> None
-
-
 (** [append x y] is the first element of the concatenation of [x] and
     [y] seen as lists. *)
 let append o1 o2 =
