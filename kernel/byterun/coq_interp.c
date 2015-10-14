@@ -1271,7 +1271,7 @@ value coq_interprete
 
       Instruct (COMPAREINT31) {
 	/* returns Eq if equal, Lt if accu is less than *sp, Gt otherwise */
-	/* assumes Inudctive _ : _ := Eq | Lt | Gt */
+	/* assumes Inductive _ : _ := Eq | Lt | Gt */
 	print_instr("COMPAREINT31");
 	if ((uint32_t)accu == (uint32_t)*sp) {
 	  accu = 1;  /* 2*0+1 */

@@ -710,7 +710,7 @@ There are also ``simple enough'' propositions for which you can prove
 the equality without requiring any extra axioms.  This is typically
 the case for propositions defined deterministically as a first-order
 inductive predicate on decidable sets. See for instance in question
-\ref{le-uniqueness} an axiom-free proof of the unicity of the proofs of
+\ref{le-uniqueness} an axiom-free proof of the uniqueness of the proofs of
 the proposition {\tt le m n} (less or equal on {\tt nat}).
 
 %  It is an ongoing work of research to natively include proof
@@ -1625,7 +1625,7 @@ Fail Definition max (n p : nat) := if n <= p then p else n.
 As \Coq~ says, the term ``~\texttt{n <= p}~'' is a proposition, i.e. a
 statement that belongs to the mathematical world. There are many ways to
 prove such a proposition, either by some computation, or using some already
-proven theoremas. For instance, proving $3-2 \leq 2^{45503}$ is very easy,
+proven theorems. For instance, proving $3-2 \leq 2^{45503}$ is very easy,
 using some theorems on arithmetical operations. If you compute both numbers
 before comparing them, you risk to use a lot of time and space.
 

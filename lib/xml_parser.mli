@@ -37,9 +37,9 @@ type t
 (** Several exceptions can be raised when parsing an Xml document : {ul
         {li {!Xml.Error} is raised when an xml parsing error occurs. the
                 {!Xml.error_msg} tells you which error occurred during parsing
-                and the {!Xml.error_pos} can be used to retreive the document
+                and the {!Xml.error_pos} can be used to retrieve the document
                 location where the error occurred at.}
-        {li {!Xml.File_not_found} is raised when and error occurred while
+        {li {!Xml.File_not_found} is raised when an error occurred while
                 opening a file with the {!Xml.parse_file} function.}
         }
  *)
@@ -98,7 +98,7 @@ val make : source -> t
  in the original Xmllight)}. *)
 val check_eof : t -> bool -> unit
 
-(** Once the parser is configurated, you can run the parser on a any kind
+(** Once the parser is configured, you can run the parser on a any kind
     of xml document source to parse its contents into an Xml data structure.
 
     When [do_not_canonicalize] is set, the XML document is given as

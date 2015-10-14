@@ -69,7 +69,7 @@ Section Facts.
   Variable A : Type.
 
 
-  (** *** Genereric facts *)
+  (** *** Generic facts *)
 
   (** Discrimination *)
   Theorem nil_cons : forall (x:A) (l:list A), [] <> x :: l.

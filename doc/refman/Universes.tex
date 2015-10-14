@@ -183,7 +183,7 @@ bound if it is an atomic universe (i.e. not an algebraic max()).
 \end{flushleft}
 
 The syntax has been extended to allow users to explicitly bind names to
-universes and explicitly instantantiate polymorphic
+universes and explicitly instantiate polymorphic
 definitions. Currently, binding is implicit at the first occurrence of a 
 universe name. For example, i and j below are introduced by the
 annotations attached to Types. 
@@ -200,7 +200,7 @@ we are using $A : Type@{i} <= Type@{j}$, hence the generated
 constraint. Note that the names here are not bound in the final
 definition, they just allow to specify locally what relations should
 hold. In the term and in general in proof mode, universe names
-introduced in the types can be refered to in terms.
+introduced in the types can be referred to in terms.
 
 Definitions can also be instantiated explicitly, giving their full instance:
 \begin{coq_example}
@@ -209,7 +209,7 @@ Check (le@{i j}).
 \end{coq_example}
 
 User-named universes are considered rigid for unification and are never
-miminimized.
+minimized.
 
 Finally, two commands allow to name \emph{global} universes and constraints.
 

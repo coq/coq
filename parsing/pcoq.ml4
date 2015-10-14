@@ -298,7 +298,7 @@ module Prim =
   struct
     let gec_gen x = make_gen_entry uprim x
 
-    (* Entries that can be refered via the string -> Gram.entry table *)
+    (* Entries that can be referred via the string -> Gram.entry table *)
     (* Typically for tactic or vernac extensions *)
     let preident = gec_gen (rawwit wit_pre_ident) "preident"
     let ident = gec_gen (rawwit wit_ident) "ident"
@@ -334,7 +334,7 @@ module Constr =
   struct
     let gec_constr = make_gen_entry uconstr (rawwit wit_constr)
 
-    (* Entries that can be refered via the string -> Gram.entry table *)
+    (* Entries that can be referred via the string -> Gram.entry table *)
     let constr = gec_constr "constr"
     let operconstr = gec_constr "operconstr"
     let constr_eoi = eoi_entry constr
@@ -367,7 +367,7 @@ module Tactic =
     (* Main entry for extensions *)
     let simple_tactic = Gram.entry_create "tactic:simple_tactic"
 
-    (* Entries that can be refered via the string -> Gram.entry table *)
+    (* Entries that can be referred via the string -> Gram.entry table *)
     (* Typically for tactic user extensions *)
     let open_constr =
       make_gen_entry utactic (rawwit wit_open_constr) "open_constr"
