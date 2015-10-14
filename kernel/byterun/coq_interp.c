@@ -883,19 +883,17 @@ value coq_interprete
       Instruct(PROJ){
 	print_instr("PROJ");
 	if (Is_accu (accu)) {
+          value block;
 	  /* Skip over the index of projected field */
 	  pc++;
-	  /* Save the argument on the stack */
-	  *--sp = accu;
 	  /* Create atom */
-	  Alloc_small(accu, 2, ATOM_PROJ_TAG);
-	  Field(accu, 0) = Field(coq_global_data, *pc);
-	  Field(accu, 1) = sp[0];
-	  sp[0] = accu;
+	  Alloc_small(block, 2, ATOM_PROJ_TAG);
+	  Field(block, 0) = Field(coq_global_data, *pc);
+	  Field(block, 1) = accu;
 	  /* Create accumulator */
 	  Alloc_small(accu, 2, Accu_tag);
 	  Code_val(accu) = accumulate;
-	  Field(accu,1) = *sp++;
+	  Field(accu, 1) = block;
 	} else {
 	    accu = Field(accu, *pc++);
 	}
