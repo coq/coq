@@ -103,7 +103,6 @@ static int coq_vm_initialized = 0;
 
 value init_coq_vm(value unit) /* ML */
 {
-  int i;
   if (coq_vm_initialized == 1) {
     fprintf(stderr,"already open \n");fflush(stderr);}
   else {
@@ -135,7 +134,6 @@ void realloc_coq_stack(asize_t required_space)
 {
   asize_t size;
   value * new_low, * new_high, * new_sp;
-  value * p;
   size = coq_stack_high - coq_stack_low;
   do {
     size *= 2;

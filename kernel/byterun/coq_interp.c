@@ -844,7 +844,6 @@ value coq_interprete
       }
 	
       Instruct(SETFIELD1){
-        int i, j, size, size_aux;
 	print_instr("SETFIELD1");
 	caml_modify(&Field(accu, 1),*sp);
        	sp++;
@@ -1110,7 +1109,6 @@ value coq_interprete
 	/* returns the sum plus one with a carry */
 	uint32_t s;
 	s = (uint32_t)accu + (uint32_t)*sp++ + 1;
-	value block;
         if( (uint32_t)s <= (uint32_t)accu ) {
           /* carry */
 	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
