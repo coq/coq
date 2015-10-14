@@ -1347,15 +1347,6 @@ let _ =
       optwrite = Flags.make_universe_polymorphism }
 
 let _ =
-  declare_bool_option
-    { optsync  = true;
-      optdepr  = false;
-      optname  = "use of virtual machine inside the kernel";
-      optkey   = ["Virtual";"Machine"];
-      optread  = (fun () -> Vconv.use_vm ());
-      optwrite = (fun b -> Vconv.set_use_vm b) }
-
-let _ =
   declare_int_option
     { optsync  = true;
       optdepr  = false;

@@ -233,13 +233,6 @@ let compile_files () =
           compile_file vf)
         (List.rev l)
 
-(*s options for the virtual machine *)
-
-let use_vm = ref false
-
-let set_vm_opt () =
-  Vconv.set_use_vm !use_vm
-
 (** Options for proof general *)
 
 let set_emacs () =
@@ -547,7 +540,6 @@ let parse_args arglist =
     |"-unicode" -> add_require "Utf8_core"
     |"-v"|"--version" -> Usage.version (exitcode ())
     |"-verbose-compat-notations" -> verb_compat_ntn := true
-    |"-vm" -> use_vm := true
     |"-where" -> print_where := true
 
     (* Deprecated options *)
@@ -607,7 +599,6 @@ let init arglist =
       if_verbose print_header ();
       inputstate ();
       Mltop.init_known_plugins ();
-      set_vm_opt ();
       engage ();
       (* Be careful to set these variables after the inputstate *)
       Syntax_def.set_verbose_compat_notations !verb_compat_ntn;

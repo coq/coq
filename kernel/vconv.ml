@@ -227,14 +227,3 @@ let vconv pb env t1 t2 =
   in ()
 
 let _ = Reduction.set_vm_conv vconv
-
-let use_vm = ref false
-
-let set_use_vm b =
-  use_vm := b;
-  if b then Reduction.set_default_conv (fun cv_pb ?(l2r=false) -> vconv cv_pb)
-  else Reduction.set_default_conv (fun cv_pb ?(l2r=false) -> Reduction.conv_cmp cv_pb)
-
-let use_vm _ = !use_vm
-
-

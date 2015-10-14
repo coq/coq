@@ -12,8 +12,6 @@ open Reduction
 
 (**********************************************************************
   s conversion functions *)
-val use_vm : unit -> bool
-val set_use_vm : bool -> unit
 val vconv : conv_pb -> types conversion_function
 
 val val_of_constr : env -> constr -> values
