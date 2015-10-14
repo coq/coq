@@ -181,10 +181,10 @@ type ('constr, 'types) kind_of_term =
   | Evar      of 'constr pexistential
   | Sort      of Sorts.t
   | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t * 'types * 'types
-  | Lambda    of Name.t * 'types * 'constr
-  | LetIn     of Name.t * 'constr * 'types * 'constr
-  | App       of 'constr * 'constr array
+  | Prod      of Name.t * 'types * 'types             (** [Prod (A,B,C)] represents ["forall A:B,C"] *)
+  | Lambda    of Name.t * 'types * 'constr            (** [Lambda (A,B,C)] represents ["fun A:B => C"] *)
+  | LetIn     of Name.t * 'constr * 'types * 'constr  (** [LetIn (A,B,C,D)] represents ["let A:B := C in D"] *)
+  | App       of 'constr * 'constr array              (** [App (F [| P1; P2; ...; Pn |])] represents ["(F P1 P2 ...  Pn)"] *)
   | Const     of constant puniverses
   | Ind       of inductive puniverses
   | Construct of constructor puniverses
