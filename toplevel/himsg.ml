@@ -783,7 +783,7 @@ let explain_pretype_error env sigma err =
     let {uj_val = c; uj_type = actty} = j in
     let (env, c, actty, expty), e = contract3' env c actty t e in
     let j = {uj_val = c; uj_type = actty} in
-    explain_actual_type env sigma j t (Some e)
+    explain_actual_type env sigma j expty (Some e)
   | UnifOccurCheck (ev,rhs) -> explain_occur_check env sigma ev rhs
   | UnsolvableImplicit (evk,exp) -> explain_unsolvable_implicit env sigma evk exp
   | VarNotFound id -> explain_var_not_found env id
