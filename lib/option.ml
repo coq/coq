@@ -88,7 +88,7 @@ exception Heterogeneous
     [Heterogeneous] otherwise. *)
 let iter2 f x y =
   match x,y with
-  | Some z, Some w -> f z w
+  | Some x, Some y -> f x y
   | None,None -> ()
   | _,_ -> raise Heterogeneous
 

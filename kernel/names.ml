@@ -33,11 +33,11 @@ struct
 
   let hash = String.hash
 
-  let check_soft ?(warn = true) x =
-    let iter (fatal, x) =
-      if fatal then Errors.error x else if warn then Pp.msg_warning (str x)
+  let check_soft ?(warn = true) s =
+    let iter (fatal, s) =
+      if fatal then Errors.error s else if warn then Pp.msg_warning (str s)
     in
-    Option.iter iter (Unicode.ident_refutation x)
+    Option.iter iter (Unicode.ident_refutation s)
 
   let is_valid s =
     match Unicode.ident_refutation s with
