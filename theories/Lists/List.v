@@ -69,7 +69,7 @@ Section Facts.
   Variable A : Type.
 
 
-  (** *** Genereric facts *)
+  (** *** Generic facts *)
 
   (** Discrimination *)
   Theorem nil_cons : forall (x:A) (l:list A), [] <> x :: l.
@@ -622,9 +622,9 @@ Section Elts.
   Qed.
 
 
-  (****************************************)
-  (** ** Counting occurences of a element *)
-  (****************************************)
+  (******************************************)
+  (** ** Counting occurrences of an element *)
+  (******************************************)
 
   Fixpoint count_occ (l : list A) (x : A) : nat :=
     match l with

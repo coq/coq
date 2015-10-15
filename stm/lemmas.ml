@@ -447,7 +447,7 @@ let start_proof_com kind thms hook =
   let thms = List.map (fun (sopt,(bl,t,guard)) ->
     let impls, ((env, ctx), imps) = interp_context_evars env0 evdref bl in
     let t', imps' = interp_type_evars_impls ~impls env evdref t in
-    check_evars_are_solved env !evdref (Evd.empty,!evdref);
+    evdref := solve_remaining_evars all_and_fail_flags env !evdref (Evd.empty,!evdref);
     let ids = List.map pi1 ctx in
       (compute_proof_name (pi1 kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),

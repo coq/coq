@@ -141,7 +141,7 @@ object(self)
 
   (** We don't care about atomicity. Return:
     1. `OK when there was no error, `FAIL otherwise
-    2. `NOOP if no write occured, `WRITE otherwise
+    2. `NOOP if no write occurred, `WRITE otherwise
   *)
   method private process_action = function
   | Insert ins ->

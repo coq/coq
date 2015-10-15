@@ -902,7 +902,7 @@ let find_Function_infos_safe (id:Id.t): Indfun_common.function_info =
 
 (** [merge id1 id2 args1 args2 id] builds and declares a new inductive
     type called [id], representing the merged graphs of both graphs
-    [ind1] and [ind2]. identifiers occuring in both arrays [args1] and
+    [ind1] and [ind2]. identifiers occurring in both arrays [args1] and
     [args2] are considered linked (i.e. are the same variable) in the
     new graph.
 

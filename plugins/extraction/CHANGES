@@ -193,7 +193,7 @@ beginning of files. Possible clashes are dealt with.
 in extracted code. 
 
 
-* A few constants are explicitely declared to be inlined in extracted code. 
+* A few constants are explicitly declared to be inlined in extracted code.
 For the moment there are: 
 	Wf.Acc_rec
 	Wf.Acc_rect
@@ -234,12 +234,12 @@ Those two commands enable a precise control of what is inlined and what is not.
 
 Print Extraction Inline. 
 
-Sum up the current state of the table recording the custom inlings 
+Sum up the current state of the table recording the custom inlinings
 (Extraction (No)Inline). 
 
 Reset Extraction Inline. 
 
-Put the table recording the custom inlings back to empty. 
+Put the table recording the custom inlinings back to empty.
 
 As a consequence, there is no more need for options inside the commands of 
 extraction: 

@@ -15,7 +15,7 @@ Require Import List.
 (** * Generic dependently-typed operators about [n]-ary functions *)
 
 (** The type of [n]-ary function: [nfun A n B] is
-    [A -> ... -> A -> B] with [n] occurences of [A] in this type. *)
+    [A -> ... -> A -> B] with [n] occurrences of [A] in this type. *)
 
 Fixpoint nfun A n B :=
  match n with

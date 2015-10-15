@@ -37,6 +37,7 @@ type 'a hint_ast =
   | Extern     of Tacexpr.glob_tactic_expr       (* Hint Extern *)
 
 type hint
+type raw_hint = constr * types * Univ.universe_context_set
 
 type hints_path_atom = 
   | PathHints of global_reference list
@@ -199,11 +200,11 @@ val make_extern :
       -> hint_entry
 
 val run_hint : hint ->
-  ((constr * clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
+  ((raw_hint * clausenv) hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
 
 (** This function is for backward compatibility only, not to use in newly
     written code. *)
-val repr_hint : hint -> (constr * clausenv) hint_ast
+val repr_hint : hint -> (raw_hint * clausenv) hint_ast
 
 val extern_intern_tac :
   (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr) Hook.t

@@ -379,7 +379,7 @@ let find_fapp (test:constr -> bool) g : fapp_info list =
 
 
 (** [finduction id filter g] tries to apply functional induction on
-    an occurence of function [id] in the conclusion of goal [g]. If
+    an occurrence of function [id] in the conclusion of goal [g]. If
     [id]=[None] then calls to any function are selected. In any case
     [heuristic] is used to select the most pertinent occurrence. *)
 let finduction (oid:Id.t option) (heuristic: fapp_info list -> fapp_info list)

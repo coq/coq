@@ -1059,8 +1059,8 @@ let build_ui () =
     ("Hide", "_Hide", `MISSING_IMAGE,
         ~callback:(fun _ -> let sess = notebook#current_term in
           toggle_proof_visibility sess.buffer sess.analyzed_view#get_insert), "Hide proof", "h"); *)
-    ("Previous", "_Previous", `GO_BACK, Nav.previous_occ, "Previous occurence", "less");
-    ("Next", "_Next", `GO_FORWARD, Nav.next_occ, "Next occurence", "greater");
+    ("Previous", "_Previous", `GO_BACK, Nav.previous_occ, "Previous occurrence", "less");
+    ("Next", "_Next", `GO_FORWARD, Nav.next_occ, "Next occurrence", "greater");
     ("Force", "_Force", `EXECUTE, Nav.join_document, "Fully check the document", "f");
   ] end;
 

@@ -28,7 +28,7 @@ val free_vars_of_binders :
   ?bound:Id.Set.t -> Id.t list -> local_binder list -> Id.Set.t * Id.t list
 
 (** Returns the generalizable free ids in left-to-right
-   order with the location of their first occurence *)
+   order with the location of their first occurrence *)
 
 val generalizable_vars_of_glob_constr : ?bound:Id.Set.t -> ?allowed:Id.Set.t ->
   glob_constr -> (Id.t * Loc.t) list

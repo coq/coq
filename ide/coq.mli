@@ -16,7 +16,7 @@ type coqtop
     Liveness management of coqtop is automatic. Whenever a coqtop dies abruptly,
     this module is responsible for relaunching the whole process. The reset
     handler set through [set_reset_handler] will be called after such an
-    abrupt failure. It is also called when explicitely requesting coqtop to
+    abrupt failure. It is also called when explicitly requesting coqtop to
     reset. *)
 
 type 'a task
@@ -29,7 +29,7 @@ type 'a task
     ([is_computing] will answer [true]), and any other task submission
     will be rejected by [try_grab].
 
-    Any exception occuring within the task will trigger a coqtop reset.
+    Any exception occurring within the task will trigger a coqtop reset.
 
     Beware, because of the GTK scheduler, you never know when a task will
     actually be executed. If you need to sequentialize imperative actions, you
@@ -43,7 +43,7 @@ val bind : 'a task -> ('a -> 'b task) -> 'b task
 (** Monadic binding of tasks *)
 
 val lift : (unit -> 'a) -> 'a task
-(** Return the impertative computation waiting to be processed. *)
+(** Return the imperative computation waiting to be processed. *)
 
 val seq : unit task -> 'a task -> 'a task
 (** Sequential composition *)

@@ -481,7 +481,7 @@ and eq_mllam_branches gn1 gn2 n env1 env2 br1 br2 =
   in
   Array.equal eq_branch br1 br2
 
-(* hash_mllambda gn n env t computes the hash for t ignoring occurences of gn *)
+(* hash_mllambda gn n env t computes the hash for t ignoring occurrences of gn *)
 let rec hash_mllambda gn n env t =
   match t with
   | MLlocal ln -> combinesmall 1 (LNmap.find ln env)
@@ -979,7 +979,7 @@ let compile_prim decl cond paux =
 	let args = Array.map opt_prim_aux args in
 	app_prim (Coq_primitive(op,None)) args
 (*
-    TODO: check if this inling was useful
+    TODO: check if this inlining was useful
 	begin match op with
         | Int31lt -> 
            if Sys.word_size = 64 then

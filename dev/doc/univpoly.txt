@@ -167,7 +167,7 @@ kernel/univ.ml was modified. The new API forces every universe to be
 declared before it is mentionned in any constraint. This forces to
 declare every universe to be >= Set or > Set. Every universe variable
 introduced during elaboration is >= Set. Every _global_ universe is now
-declared explicitely > Set, _after_ typechecking the definition. In
+declared explicitly > Set, _after_ typechecking the definition. In
 polymorphic definitions Type@{i} ranges over Set and any other universe
 j. However, at instantiation time for polymorphic references, one can
 try to instantiate a universe parameter with Prop as well, if the

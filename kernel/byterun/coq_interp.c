@@ -844,7 +844,6 @@ value coq_interprete
       }
 	
       Instruct(SETFIELD1){
-        int i, j, size, size_aux;
 	print_instr("SETFIELD1");
 	caml_modify(&Field(accu, 1),*sp);
        	sp++;
@@ -884,19 +883,17 @@ value coq_interprete
       Instruct(PROJ){
 	print_instr("PROJ");
 	if (Is_accu (accu)) {
+          value block;
 	  /* Skip over the index of projected field */
 	  pc++;
-	  /* Save the argument on the stack */
-	  *--sp = accu;
 	  /* Create atom */
-	  Alloc_small(accu, 2, ATOM_PROJ_TAG);
-	  Field(accu, 0) = Field(coq_global_data, *pc);
-	  Field(accu, 1) = sp[0];
-	  sp[0] = accu;
+	  Alloc_small(block, 2, ATOM_PROJ_TAG);
+	  Field(block, 0) = Field(coq_global_data, *pc);
+	  Field(block, 1) = accu;
 	  /* Create accumulator */
 	  Alloc_small(accu, 2, Accu_tag);
 	  Code_val(accu) = accumulate;
-	  Field(accu,1) = *sp++;
+	  Field(accu, 1) = block;
 	} else {
 	    accu = Field(accu, *pc++);
 	}
@@ -1110,7 +1107,6 @@ value coq_interprete
 	/* returns the sum plus one with a carry */
 	uint32_t s;
 	s = (uint32_t)accu + (uint32_t)*sp++ + 1;
-	value block;
         if( (uint32_t)s <= (uint32_t)accu ) {
           /* carry */
 	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
@@ -1271,7 +1267,7 @@ value coq_interprete
 
       Instruct (COMPAREINT31) {
 	/* returns Eq if equal, Lt if accu is less than *sp, Gt otherwise */
-	/* assumes Inudctive _ : _ := Eq | Lt | Gt */
+	/* assumes Inductive _ : _ := Eq | Lt | Gt */
 	print_instr("COMPAREINT31");
 	if ((uint32_t)accu == (uint32_t)*sp) {
 	  accu = 1;  /* 2*0+1 */

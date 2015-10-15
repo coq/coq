@@ -415,8 +415,8 @@ let sub_match ?(partial_app=false) ?(closed=true) env sigma pat c =
           try_aux sub mk_ctx next
   | Case (ci,hd,c1,lc) ->
       let next_mk_ctx = function
-      | [] -> assert false
-      | c1 :: lc -> mk_ctx (mkCase (ci,hd,c1,Array.of_list lc))
+      | c1 :: hd :: lc -> mk_ctx (mkCase (ci,hd,c1,Array.of_list lc))
+      | _ -> assert false
       in
       let sub = (env, c1) :: (env, hd) :: subargs env lc in
       try_aux sub next_mk_ctx next

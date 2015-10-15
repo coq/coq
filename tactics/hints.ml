@@ -97,7 +97,9 @@ type 'a with_uid = {
   uid : KerName.t;
 }
 
-type hint = (constr * clausenv) hint_ast with_uid
+type raw_hint = constr * types * Univ.universe_context_set
+
+type hint = (raw_hint * clausenv) hint_ast with_uid
 
 type 'a with_metadata = {
   pri  : int;            (* A number lower is higher priority *)
@@ -110,7 +112,7 @@ type 'a with_metadata = {
 type full_hint = hint with_metadata
 
 type hint_entry = global_reference option * 
-  (constr * types * Univ.universe_context_set) hint_ast with_uid with_metadata
+  raw_hint hint_ast with_uid with_metadata
 
 type import_level = [ `LAX | `WARN | `STRICT ]
 
@@ -267,7 +269,7 @@ let strip_params env c =
   | _ -> c
 
 let instantiate_hint env sigma p =
-  let mk_clenv c cty ctx =
+  let mk_clenv (c, cty, ctx) =
     let sigma = Evd.merge_context_set univ_flexible sigma ctx in
     let cl = mk_clenv_from_env env sigma None (c,cty) in 
       {cl with templval = 
@@ -275,11 +277,11 @@ let instantiate_hint env sigma p =
 	env = empty_env}
   in
   let code = match p.code.obj with
-    | Res_pf (c, cty, ctx) -> Res_pf (c, mk_clenv c cty ctx)
-    | ERes_pf (c, cty, ctx) -> ERes_pf (c, mk_clenv c cty ctx)
-    | Res_pf_THEN_trivial_fail (c, cty, ctx) ->
-      Res_pf_THEN_trivial_fail (c, mk_clenv c cty ctx)
-    | Give_exact (c, cty, ctx) -> Give_exact (c, mk_clenv c cty ctx)
+    | Res_pf c -> Res_pf (c, mk_clenv c)
+    | ERes_pf c -> ERes_pf (c, mk_clenv c)
+    | Res_pf_THEN_trivial_fail c ->
+      Res_pf_THEN_trivial_fail (c, mk_clenv c)
+    | Give_exact c -> Give_exact (c, mk_clenv c)
     | Unfold_nth e -> Unfold_nth e
     | Extern t -> Extern t
   in
@@ -1205,12 +1207,14 @@ let make_db_list dbnames =
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
 
+let pr_hint_elt (c, _, _) = pr_constr c
+
 let pr_hint h = match h.obj with
-  | Res_pf (c,clenv) -> (str"apply " ++ pr_constr c)
-  | ERes_pf (c,clenv) -> (str"eapply " ++ pr_constr c)
-  | Give_exact (c,clenv) -> (str"exact " ++ pr_constr c)
-  | Res_pf_THEN_trivial_fail (c,clenv) ->
-      (str"apply " ++ pr_constr c ++ str" ; trivial")
+  | Res_pf (c, _) -> (str"apply " ++ pr_hint_elt c)
+  | ERes_pf (c, _) -> (str"eapply " ++ pr_hint_elt c)
+  | Give_exact (c, _) -> (str"exact " ++ pr_hint_elt c)
+  | Res_pf_THEN_trivial_fail (c, _) ->
+      (str"apply " ++ pr_hint_elt c ++ str" ; trivial")
   | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
   | Extern tac ->
       let env =

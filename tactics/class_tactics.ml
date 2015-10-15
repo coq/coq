@@ -154,6 +154,7 @@ let progress_evars t =
 
 
 let e_give_exact flags poly (c,clenv) gl =
+  let (c, _, _) = c in
   let c, gl =
     if poly then
       let clenv', subst = Clenv.refresh_undefined_univs clenv in
@@ -179,6 +180,7 @@ let unify_resolve poly flags (c,clenv) gls =
     (Clenvtac.clenv_refine false ~with_classes:false clenv') gls
 
 let clenv_of_prods poly nprods (c, clenv) gls =
+  let (c, _, _) = c in
   if poly || Int.equal nprods 0 then Some clenv
   else
     let ty = pf_unsafe_type_of gls c in

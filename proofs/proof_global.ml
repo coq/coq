@@ -316,7 +316,12 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
     if poly || now then
       let make_body t (c, eff) =
         let open Universes in
-        let body = c and typ = nf t in
+        let body = c in
+	let typ =
+	  if not (keep_body_ucst_separate || not (Declareops.side_effects_is_empty eff)) then
+	    nf t
+	  else t
+	in
         let used_univs_body = Universes.universes_of_constr body in
         let used_univs_typ = Universes.universes_of_constr typ in
         if keep_body_ucst_separate || not (Declareops.side_effects_is_empty eff) then

@@ -277,7 +277,7 @@ and reduce_lapp substf lids body substa largs =
   | [], _::_ -> simplify_app substf body substa (Array.of_list largs)
 
 
-(* [occurence kind k lam]:
+(* [occurrence kind k lam]:
    If [kind] is [true] return [true] if the variable [k] does not appear in 
    [lam], return [false] if the variable appear one time and not
    under a lambda, a fixpoint, a cofixpoint; else raise Not_found.
@@ -285,7 +285,7 @@ and reduce_lapp substf lids body substa largs =
    else raise [Not_found]
 *)
 
-let rec occurence k kind lam =   
+let rec occurrence k kind lam =
   match lam with
   | Lrel (_,n) -> 
       if Int.equal n k then 
@@ -294,35 +294,35 @@ let rec occurence k kind lam =
   | Lvar _  | Lconst _  | Lproj _ | Luint _ | Lval _ | Lsort _ | Lind _
   | Lconstruct _ | Llazy | Lforce | Lmeta _ | Levar _ -> kind
   | Lprod(dom, codom) ->
-      occurence k (occurence k kind dom) codom
+      occurrence k (occurrence k kind dom) codom
   | Llam(ids,body) ->
-      let _ = occurence (k+Array.length ids) false body in kind
+      let _ = occurrence (k+Array.length ids) false body in kind
   | Llet(_,def,body) ->
-      occurence (k+1) (occurence k kind def) body
+      occurrence (k+1) (occurrence k kind def) body
   | Lapp(f, args) ->
-      occurence_args k (occurence k kind f) args
+      occurrence_args k (occurrence k kind f) args
   | Lprim(_,_,_,args) | Lmakeblock(_,_,_,args) ->
-      occurence_args k kind args
+      occurrence_args k kind args
   | Lcase(_,t,a,br) ->
-      let kind = occurence k (occurence k kind t) a in
+      let kind = occurrence k (occurrence k kind t) a in
       let r = ref kind in
       Array.iter (fun (_,ids,c) -> 
-	r := occurence (k+Array.length ids) kind c && !r) br;
+	r := occurrence (k+Array.length ids) kind c && !r) br;
       !r 
   | Lif (t, bt, bf) ->
-      let kind = occurence k kind t in
-      kind && occurence k kind bt && occurence k kind bf
+      let kind = occurrence k kind t in
+      kind && occurrence k kind bt && occurrence k kind bf
   | Lfix(_,(ids,ltypes,lbodies)) 
   | Lcofix(_,(ids,ltypes,lbodies)) ->
-      let kind = occurence_args k kind ltypes in
-      let _ = occurence_args (k+Array.length ids) false lbodies in
+      let kind = occurrence_args k kind ltypes in
+      let _ = occurrence_args (k+Array.length ids) false lbodies in
       kind 
 
-and occurence_args k kind args = 
-  Array.fold_left (occurence k) kind args
+and occurrence_args k kind args =
+  Array.fold_left (occurrence k) kind args
     
 let occur_once lam = 
-  try let _ = occurence 1 true lam in true
+  try let _ = occurrence 1 true lam in true
   with Not_found -> false
       
 (* [remove_let lam] remove let expression in [lam] if the variable is *)

@@ -23,7 +23,7 @@ struct
 	  - None , Some v -> \]-oo,v\]
 	  - Some v, None  -> \[v,+oo\[
 	  - Some v, Some v' -> \[v,v'\]
-      Intervals needs to be explicitely normalised.
+      Intervals needs to be explicitly normalised.
       *)
 
   type who = Left | Right
