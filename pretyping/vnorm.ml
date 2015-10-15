@@ -316,3 +316,5 @@ let cbv_vm env c t  =
 let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
   Reductionops.infer_conv_gen (fun pb ~l2r sigma ts -> Vconv.vm_conv_gen pb)
     ~catch_incon:true ~pb env sigma t1 t2
+
+let _ = Reductionops.set_vm_infer_conv vm_infer_conv

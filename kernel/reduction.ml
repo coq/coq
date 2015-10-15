@@ -716,6 +716,7 @@ let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_sta
     env univs t1 t2 = 
   infer_conv_universes CUMUL l2r evars ts env univs t1 t2
 
+(* This reference avoids always having to link C code with the kernel *)
 let vm_conv = ref (fun cv_pb -> fconv cv_pb false (fun _->None))
 let set_vm_conv f = vm_conv := f
 let vm_conv cv_pb env t1 t2 =

@@ -272,6 +272,13 @@ val check_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> con
 val infer_conv : ?catch_incon:bool -> ?pb:conv_pb -> ?ts:transparent_state -> 
   env -> evar_map -> constr -> constr -> evar_map * bool
 
+(** Conversion with inference of universe constraints *)
+val set_vm_infer_conv : (?pb:conv_pb -> env -> evar_map -> constr -> constr ->
+  evar_map * bool) -> unit
+val vm_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
+  evar_map * bool
+
+
 (** [infer_conv_gen] behaves like [infer_conv] but is parametrized by a
 conversion function. Used to pretype vm and native casts. *)
 val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> transparent_state ->

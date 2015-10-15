@@ -1321,6 +1321,12 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
       Reduction.generic_conv pb ~l2r (safe_evar_value sigma))
 
+(* This reference avoids always having to link C code with the kernel *)
+let vm_infer_conv = ref (infer_conv ~catch_incon:true ~ts:full_transparent_state)
+let set_vm_infer_conv f = vm_infer_conv := f
+let vm_infer_conv ?(pb=Reduction.CUMUL) env t1 t2 =
+  !vm_infer_conv ~pb env t1 t2
+
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
