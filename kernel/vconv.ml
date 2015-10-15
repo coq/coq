@@ -46,7 +46,7 @@ let rec conv_val env pb k v1 v2 cu =
 
 and conv_whd env pb k whd1 whd2 cu =
   match whd1, whd2 with
-  | Vsort s1, Vsort s2 -> check_sort_cmp_universes env pb s1 s2 cu; cu
+  | Vsort s1, Vsort s2 -> sort_cmp_universes env pb s1 s2 cu
   | Vprod p1, Vprod p2 ->
       let cu = conv_val env CONV k (dom p1) (dom p2) cu in
       conv_fun env pb k (codom p1) (codom p2) cu
@@ -163,67 +163,25 @@ let rec eq_puniverses f (x,l1) (y,l2) cu =
 and conv_universes l1 l2 cu =
   if Univ.Instance.equal l1 l2 then cu else raise NotConvertible
 
-let rec conv_eq env pb t1 t2 cu =
-  if t1 == t2 then cu
-  else
-    match kind_of_term t1, kind_of_term t2 with
-    | Rel n1, Rel n2 ->
-	if Int.equal n1 n2 then cu else raise NotConvertible
-    | Meta m1, Meta m2 ->
-	if Int.equal m1 m2 then cu else raise NotConvertible
-    | Var id1, Var id2 ->
-	if Id.equal id1 id2 then cu else raise NotConvertible
-    | Sort s1, Sort s2 -> check_sort_cmp_universes env pb s1 s2 cu; cu
-    | Cast (c1,_,_), _ -> conv_eq env pb c1 t2 cu
-    | _, Cast (c2,_,_) -> conv_eq env pb t1 c2 cu
-    | Prod (_,t1,c1), Prod (_,t2,c2) ->
-	conv_eq env pb c1 c2 (conv_eq env CONV t1 t2 cu)
-    | Lambda (_,t1,c1), Lambda (_,t2,c2) -> conv_eq env CONV c1 c2 cu
-    | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) ->
-	conv_eq env pb c1 c2 (conv_eq env CONV b1 b2 cu)
-    | App (c1,l1), App (c2,l2) ->
-	conv_eq_vect env l1 l2 (conv_eq env CONV c1 c2 cu)
-    | Evar (e1,l1), Evar (e2,l2) ->
-	if Evar.equal e1 e2 then conv_eq_vect env l1 l2 cu
-	else raise NotConvertible
-    | Const c1, Const c2 -> eq_puniverses eq_constant c1 c2 cu
-    | Proj (p1,c1), Proj (p2,c2) ->
-	if eq_constant (Projection.constant p1) (Projection.constant p2) then
-	  conv_eq env pb c1 c2 cu 
-	else raise NotConvertible
-    | Ind c1, Ind c2 ->
-       eq_puniverses eq_ind c1 c2 cu
-    | Construct c1, Construct c2 ->
-       eq_puniverses eq_constructor c1 c2 cu
-    | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-	let pcu = conv_eq env CONV p1 p2 cu in
-	let ccu = conv_eq env CONV c1 c2 pcu in
-	conv_eq_vect env bl1 bl2 ccu
-    | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
-	if Int.equal i1 i2 && Array.equal Int.equal ln1 ln2 then conv_eq_vect env tl1 tl2 (conv_eq_vect env bl1 bl2 cu)
-	else raise NotConvertible
-    | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-	if Int.equal ln1 ln2 then conv_eq_vect env tl1 tl2 (conv_eq_vect env bl1 bl2 cu)
-	else raise NotConvertible
-    | _ -> raise NotConvertible
+let vm_conv_gen cv_pb env univs t1 t2 =
+  try 
+    let v1 = val_of_constr env t1 in
+    let v2 = val_of_constr env t2 in
+    fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
+  with Not_found | Invalid_argument _ ->
+    (Pp.msg_warning
+      (Pp.str "Bytecode compilation failed, falling back to default conversion");
+     Reduction.generic_conv cv_pb ~l2r:false (fun _ -> None)
+			    full_transparent_state env univs t1 t2)
 
-and conv_eq_vect env vt1 vt2 cu =
-  let len = Array.length vt1 in
-  if Int.equal len (Array.length vt2) then
-    let rcu = ref cu in
-    for i = 0 to len-1 do
-      rcu := conv_eq env CONV vt1.(i) vt2.(i) !rcu
-    done; !rcu
-  else raise NotConvertible
+let vm_conv cv_pb env t1 t2 =
+  let univs = Environ.universes env in
+  let b =
+    if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2
+    else Constr.eq_constr_univs univs t1 t2
+  in
+  if not b then
+    let univs = (univs, checked_universes) in
+    let _ = vm_conv_gen cv_pb env univs t1 t2 in ()
 
-let vconv pb env t1 t2 =
-  let _cu =
-    try conv_eq env pb t1 t2 (universes env)
-    with NotConvertible ->
-      let v1 = val_of_constr env t1 in
-      let v2 = val_of_constr env t2 in
-      let cu = conv_val env pb (nb_rel env) v1 v2 (universes env) in
-      cu
-  in ()
-
-let _ = Reduction.set_vm_conv vconv
+let _ = Reduction.set_vm_conv vm_conv

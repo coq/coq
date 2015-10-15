@@ -405,6 +405,6 @@ let native_norm env sigma c ty =
 let native_conv_generic pb sigma t =
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t
 
-let native_infer_conv ?(pb=Reduction.CUMUL) env sigma x y =
+let native_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
   Reductionops.infer_conv_gen (fun pb ~l2r sigma ts -> native_conv_generic pb sigma)
-    ~catch_incon:true ~pb env sigma x y
+    ~catch_incon:true ~pb env sigma t1 t2

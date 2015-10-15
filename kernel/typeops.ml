@@ -300,7 +300,7 @@ let judge_of_cast env cj k tj =
       match k with
       | VMcast ->
           mkCast (cj.uj_val, k, expected_type),
-          vm_conv CUMUL env cj.uj_type expected_type
+          Reduction.vm_conv CUMUL env cj.uj_type expected_type
       | DEFAULTcast ->
           mkCast (cj.uj_val, k, expected_type),
           default_conv ~l2r:false CUMUL env cj.uj_type expected_type

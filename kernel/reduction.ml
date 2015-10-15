@@ -670,7 +670,7 @@ let trans_conv_universes ?(l2r=false) ?(evars=fun _->None) reds =
 let trans_conv_leq_universes ?(l2r=false) ?(evars=fun _->None) reds = 
   trans_fconv_universes reds CUMUL l2r evars
 
-let fconv = trans_fconv (Id.Pred.full, Cpred.full)
+let fconv = trans_fconv full_transparent_state
 
 let conv_cmp ?(l2r=false) cv_pb = fconv cv_pb l2r (fun _->None)
 let conv ?(l2r=false) ?(evars=fun _->None) = fconv CONV l2r evars

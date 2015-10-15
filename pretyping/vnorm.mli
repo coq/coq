@@ -8,7 +8,11 @@
 
 open Term
 open Environ
+open Evd
 
 (** {6 Reduction functions } *)
 val cbv_vm : env -> constr -> types -> constr
 
+(** Conversion with inference of universe constraints *)
+val vm_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
+  evar_map * bool

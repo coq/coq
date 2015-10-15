@@ -157,9 +157,8 @@ let native_conv cv_pb sigma env t1 t2 =
     if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2
     else Constr.eq_constr_univs univs t1 t2
   in
-  let univs = (univs, checked_universes) in
-  if not b then begin
+  if not b then
+    let univs = (univs, checked_universes) in
     let t1 = Term.it_mkLambda_or_LetIn t1 (Environ.rel_context env) in
     let t2 = Term.it_mkLambda_or_LetIn t2 (Environ.rel_context env) in
     let _ = native_conv_gen cv_pb sigma env univs t1 t2 in ()
-  end

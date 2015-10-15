@@ -1251,9 +1251,6 @@ let pb_equal = function
   | Reduction.CUMUL -> Reduction.CONV
   | Reduction.CONV -> Reduction.CONV
 
-let sort_cmp cv_pb s1 s2 u = 
-  Reduction.check_sort_cmp_universes cv_pb s1 s2 u
-
 let test_trans_conversion (f: ?l2r:bool-> ?evars:'a->'b) reds env sigma x y =
   try
     let evars ev = safe_evar_value sigma ev in

@@ -251,8 +251,6 @@ type conversion_test = constraints -> constraints
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 
-val sort_cmp : env -> conv_pb -> sorts -> sorts -> universes -> unit
-
 val is_conv : env ->  evar_map -> constr -> constr -> bool
 val is_conv_leq : env ->  evar_map -> constr -> constr -> bool
 val is_fconv : conv_pb -> env ->  evar_map -> constr -> constr -> bool
