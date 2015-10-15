@@ -27,11 +27,8 @@ let rec is_navigation_vernac = function
   | VernacBacktrack _
   | VernacBackTo _
   | VernacBack _ -> true
-  | VernacTime (_,c) ->
+  | VernacTime (_,c) | VernacRedirect (_, (_,c)) ->
       is_navigation_vernac c
-  | VernacRedirect (_, l) ->
-    List.exists
-      (fun (_,c) -> is_navigation_vernac c) l (* Time Back* is harmless *)
   | c -> is_deep_navigation_vernac c
 
 and is_deep_navigation_vernac = function
