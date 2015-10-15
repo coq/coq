@@ -286,7 +286,7 @@ type module_binder = bool option * lident list * module_ast_inl
 type vernac_expr =
   (* Control *)
   | VernacLoad of verbose_flag * string
-  | VernacTime of vernac_list
+  | VernacTime of located_vernac_expr
   | VernacRedirect of string * vernac_list
   | VernacTimeout of int * vernac_expr
   | VernacFail of vernac_expr

@@ -640,8 +640,8 @@ module Make
               else
                 spc() ++ qs s
           )
-        | VernacTime v ->
-          return (keyword "Time" ++ spc() ++ pr_vernac_list v)
+        | VernacTime (_,v) ->
+          return (keyword "Time" ++ spc() ++ pr_vernac v)
         | VernacRedirect (s, v) ->
           return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_list v)
         | VernacTimeout(n,v) ->

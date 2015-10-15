@@ -85,8 +85,8 @@ let rec classify_vernac e =
       if b || Flags.is_universe_polymorphism () (* Ok or not? *) then
 	make_polymorphic (classify_vernac e)
       else classify_vernac e
-    | VernacTimeout (_,e) -> classify_vernac e
-    | VernacTime e | VernacRedirect (_, e) -> classify_vernac_list e
+    | VernacTimeout (_,e) | VernacTime (_,e) -> classify_vernac e
+    | VernacRedirect (_, e) -> classify_vernac_list e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
         | ( VtQuery _ | VtProofStep _ | VtSideff _

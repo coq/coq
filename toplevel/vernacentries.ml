@@ -2125,9 +2125,8 @@ let interp ?(verbosely=true) ?proof (loc,c) =
         aux ?locality ?polymorphism isprogcmd v
     | VernacRedirect (s, v) ->
          Pp.with_output_to_file s (aux_list ?locality ?polymorphism isprogcmd) v;
-    | VernacTime v ->
-        System.with_time !Flags.time
-          (aux_list ?locality ?polymorphism isprogcmd) v;
+    | VernacTime (_,c) ->
+        System.with_time !Flags.time (aux false) c
     | VernacLoad (_,fname) -> vernac_load (aux false) fname
     | c -> 
         check_vernac_supports_locality c locality;
