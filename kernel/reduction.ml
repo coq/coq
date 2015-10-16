@@ -26,8 +26,6 @@ open Environ
 open Closure
 open Esubst
 
-let left2right = ref false
-
 let rec is_empty_stack = function
   [] -> true
   | Zupdate _::s -> is_empty_stack s
@@ -210,9 +208,7 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
           let cu1 = cmp_rec s1 s2 cuniv in
           (match (z1,z2) with
             | (Zlapp a1,Zlapp a2) -> 
-	      if !left2right then
-		Array.fold_left2 (fun cu x y -> f x y cu) cu1 a1 a2
-	      else Array.fold_right2 f a1 a2 cu1
+	       Array.fold_right2 f a1 a2 cu1
 	    | (Zlproj (c1,l1),Zlproj (c2,l2)) -> 
 	      if not (eq_constant c1 c2) then 
 		raise NotConvertible
