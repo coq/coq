@@ -458,7 +458,9 @@ module Hint_db = struct
     else List.exists (matches_mode args) modes
 
   let merge_entry db nopat pat =
-    let h = Sort.merge pri_order (List.map snd db.hintdb_nopat @ nopat) pat in
+    let h = List.sort pri_order_int (List.map snd db.hintdb_nopat) in
+    let h = List.merge pri_order_int h nopat in
+    let h = List.merge pri_order_int h pat in
     List.map realize_tac h
 
   let map_none db =
@@ -562,7 +564,9 @@ module Hint_db = struct
 
   let remove_one gr db = remove_list [gr] db
 
-  let get_entry se = List.map realize_tac (se.sentry_nopat @ se.sentry_pat)
+  let get_entry se =
+    let h = List.merge pri_order_int se.sentry_nopat se.sentry_pat in
+    List.map realize_tac h
 
   let iter f db =
     let iter_se k se = f (Some k) se.sentry_mode (get_entry se) in
