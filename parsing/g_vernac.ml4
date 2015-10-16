@@ -181,7 +181,7 @@ GEXTEND Gram
   ;
 END
 
-let test_plurial_form = function
+let test_plural_form = function
   | [(_,([_],_))] ->
       Flags.if_verbose msg_warning
    (strbrk "Keywords Variables/Hypotheses/Parameters expect more than one assumption")
@@ -209,7 +209,7 @@ GEXTEND Gram
           VernacAssumption (stre, nl, bl)
 
       | stre = assumptions_token; nl = inline; bl = assum_list ->
-          test_plurial_form bl; VernacAssumption (stre, nl, bl)
+          test_plural_form bl; VernacAssumption (stre, nl, bl)
 
       | d = def_token; id = pidentref; b = def_body ->
           VernacDefinition (d, id, b)
