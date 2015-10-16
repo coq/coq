@@ -116,15 +116,17 @@ open Unification
 (***************************************************************************)
 
 let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
-
-let unify_e_resolve poly flags (c,clenv) gls =
-  let (c, _, _) = c in
-  let clenv', subst = if poly then Clenv.refresh_undefined_univs clenv 
-  else clenv, Univ.empty_level_subst in
-  let clenv' = connect_clenv gls clenv' in
-  let clenv' = clenv_unique_resolver ~flags clenv' gls in
-    tclTHEN (Refiner.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
-      (Proofview.V82.of_tactic (Tactics.Simple.eapply (Vars.subst_univs_level_constr subst c))) gls
+			  
+let unify_e_resolve poly flags (c,clenv) =
+  Proofview.Goal.nf_enter begin
+      fun gl ->
+      let clenv', c = connect_hint_clenv poly c clenv gl in
+      Proofview.V82.tactic
+	(fun gls ->
+	 let clenv' = clenv_unique_resolver ~flags clenv' gls in
+	 tclTHEN (Refiner.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
+		 (Proofview.V82.of_tactic (Tactics.Simple.eapply c)) gls)
+    end
 
 let hintmap_of hdc concl =
   match hdc with
@@ -166,10 +168,10 @@ and e_my_find_search db_list local_db hdc concl =
       (b,
         let tac = function
         | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
-        | ERes_pf (term,cl) -> Proofview.V82.tactic (unify_e_resolve poly st (term,cl))
+        | ERes_pf (term,cl) -> unify_e_resolve poly st (term,cl)
         | Give_exact (c,cl) -> Proofview.V82.tactic (e_exact poly st (c,cl))
         | Res_pf_THEN_trivial_fail (term,cl) ->
-          Proofview.V82.tactic (tclTHEN (unify_e_resolve poly st (term,cl))
+          Proofview.V82.tactic (tclTHEN (Proofview.V82.of_tactic (unify_e_resolve poly st (term,cl)))
             (e_trivial_fail_db db_list local_db))
         | Unfold_nth c -> Proofview.V82.tactic (reduce (Unfold [AllOccurrences,c]) onConcl)
         | Extern tacast -> conclPattern concl p tacast
