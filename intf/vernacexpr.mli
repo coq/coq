@@ -412,7 +412,12 @@ type vernac_expr =
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list
   | VernacPrintOption of Goptions.option_name
-  | VernacCheckMayEval of raw_red_expr option * int option * constr_expr
+  | VernacCheckMayEval        (* "Check 3."  --->   VernacCheckMayEval (None, None, CPrim (loc, Numeral (Bigint.of_string "3"))) *)
+      of raw_red_expr option
+       * int option           (* "None" means that user did not specify any goal number.
+                                 "Some n" means that user wishes to execute a
+                                    this command on goal "n". *)
+       * constr_expr
   | VernacGlobalCheck of constr_expr
   | VernacDeclareReduction of string * raw_red_expr
   | VernacPrint of printable

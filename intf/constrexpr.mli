@@ -32,7 +32,9 @@ type abstraction_kind = AbsLambda | AbsPi
 
 type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
-type prim_token = Numeral of Bigint.bigint | String of string
+type prim_token =
+  | Numeral of Bigint.bigint (** AST representation of integer literals that appear in Coq scripts. *)
+  | String of string
 
 type raw_cases_pattern_expr =
   | RCPatAlias of Loc.t * raw_cases_pattern_expr * Id.t
@@ -63,8 +65,10 @@ and cases_pattern_notation_substitution =
 
 type instance_expr = Misctypes.glob_level list
 
+(** AST representation of a term. *)
 type constr_expr =
   | CRef of reference * instance_expr option
+    (** identifier  *)
   | CFix of Loc.t * Id.t located * fix_expr list
   | CCoFix of Loc.t * Id.t located * cofix_expr list
   | CProdN of Loc.t * binder_expr list * constr_expr

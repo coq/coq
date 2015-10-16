@@ -13,10 +13,10 @@ open Mod_subst
 
 (** {6 Global reference is a kernel side type for all references together } *)
 type global_reference =
-  | VarRef of variable
-  | ConstRef of constant
-  | IndRef of inductive
-  | ConstructRef of constructor
+  | VarRef of variable (** A reference to (local) context. *)
+  | ConstRef of constant (** A reference to (global) environment. *)
+  | IndRef of inductive (** A reference to an inductive type. *)
+  | ConstructRef of constructor (** A reference to a constructor of an inductive type. *)
 
 val isVarRef : global_reference -> bool
 val isConstRef : global_reference -> bool
