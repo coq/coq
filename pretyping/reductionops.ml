@@ -1251,9 +1251,6 @@ let pb_equal = function
   | Reduction.CUMUL -> Reduction.CONV
   | Reduction.CONV -> Reduction.CONV
 
-let sort_cmp cv_pb s1 s2 u = 
-  Reduction.check_sort_cmp_universes cv_pb s1 s2 u
-
 let test_trans_conversion (f: ?l2r:bool-> ?evars:'a->'b) reds env sigma x y =
   try
     let evars ev = safe_evar_value sigma ev in
@@ -1295,8 +1292,8 @@ let sigma_univ_state =
   { Reduction.compare = sigma_compare_sorts;
     Reduction.compare_instances = sigma_compare_instances }
 
-let infer_conv ?(catch_incon=true) ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) 
-    env sigma x y = 
+let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
+    ?(ts=full_transparent_state) env sigma x y =
   try 
     let b, sigma = 
       let b, cstrs = 
@@ -1313,14 +1310,23 @@ let infer_conv ?(catch_incon=true) ?(pb=Reduction.CUMUL) ?(ts=full_transparent_s
       if b then sigma, true
       else
 	let sigma' = 
-	  Reduction.generic_conv pb false (safe_evar_value sigma) ts 
+	  conv_fun pb ~l2r:false sigma ts
 	    env (sigma, sigma_univ_state) x y in
 	  sigma', true
   with
   | Reduction.NotConvertible -> sigma, false
   | Univ.UniverseInconsistency _ when catch_incon -> sigma, false
   | e when is_anomaly e -> error "Conversion test raised an anomaly"
-    
+
+let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
+      Reduction.generic_conv pb ~l2r (safe_evar_value sigma))
+
+(* This reference avoids always having to link C code with the kernel *)
+let vm_infer_conv = ref (infer_conv ~catch_incon:true ~ts:full_transparent_state)
+let set_vm_infer_conv f = vm_infer_conv := f
+let vm_infer_conv ?(pb=Reduction.CUMUL) env t1 t2 =
+  !vm_infer_conv ~pb env t1 t2
+
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)

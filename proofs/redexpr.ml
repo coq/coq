@@ -35,8 +35,7 @@ let cbv_native env sigma c =
     cbv_vm env sigma c
   else
     let ctyp = Retyping.get_type_of env sigma c in
-    let evars = Nativenorm.evars_of_evar_map sigma in
-    Nativenorm.native_norm env evars c ctyp
+    Nativenorm.native_norm env sigma c ctyp
 
 let whd_cbn flags env sigma t =
   let (state,_) =

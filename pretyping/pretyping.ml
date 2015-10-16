@@ -929,25 +929,20 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) env evdref (lvar : ltac_
  	    let cj = pretype empty_tycon env evdref lvar c in
 	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tj.utj_val in
 	      if not (occur_existential cty || occur_existential tval) then
-		begin 
-		  try
-		    let env = Environ.push_context_set (Evd.universe_context_set !evdref) env in 
-		    ignore (Reduction.vm_conv Reduction.CUMUL env cty tval); cj
-		  with Reduction.NotConvertible -> 
-		    error_actual_type_loc loc env !evdref cj tval 
+		let (evd,b) = Reductionops.vm_infer_conv env !evdref cty tval in
+		if b then (evdref := evd; cj)
+		else
+		  error_actual_type_loc loc env !evdref cj tval 
                       (ConversionFailed (env,cty,tval))
-		end
 	      else user_err_loc (loc,"",str "Cannot check cast with vm: " ++
 		str "unresolved arguments remain.")
 	  | NATIVEcast ->
  	    let cj = pretype empty_tycon env evdref lvar c in
 	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tj.utj_val in
-            let evars = Nativenorm.evars_of_evar_map !evdref in
-	    let env = Environ.push_context_set (Evd.universe_context_set !evdref) env in 
             begin
-              try
-                ignore (Nativeconv.native_conv Reduction.CUMUL evars env cty tval); cj
-              with Reduction.NotConvertible -> 
+	      let (evd,b) = Nativenorm.native_infer_conv env !evdref cty tval in
+	      if b then (evdref := evd; cj)
+	      else
                 error_actual_type_loc loc env !evdref cj tval 
                   (ConversionFailed (env,cty,tval))
             end

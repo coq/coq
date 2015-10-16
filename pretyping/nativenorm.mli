@@ -12,6 +12,8 @@ open Nativelambda
 
 (** This module implements normalization by evaluation to OCaml code *)
 
-val evars_of_evar_map : evar_map -> evars
+val native_norm : env -> evar_map -> constr -> types -> constr
 
-val native_norm : env -> evars -> constr -> types -> constr
+(** Conversion with inference of universe constraints *)
+val native_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
+  evar_map * bool

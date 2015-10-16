@@ -10,8 +10,6 @@ open Term
 open Context
 open Environ
 
-val left2right : bool ref
-
 (***********************************************************************
   s Reduction functions *)
 
@@ -49,14 +47,11 @@ type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a 
 
 type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.constraints
 
-val check_sort_cmp_universes :
-  env -> conv_pb -> sorts -> sorts -> UGraph.t -> unit
+val sort_cmp_universes : env -> conv_pb -> sorts -> sorts ->
+  'a * 'a universe_compare -> 'a * 'a universe_compare
 
-(* val sort_cmp : *)
-(*     conv_pb -> sorts -> sorts -> Univ.constraints -> Univ.constraints *)
-
-(* val conv_sort      : sorts conversion_function *)
-(* val conv_sort_leq  : sorts conversion_function *)
+val checked_universes : UGraph.t universe_compare
+val inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare
 
 val trans_conv_cmp       : ?l2r:bool -> conv_pb -> constr trans_conversion_function
 val trans_conv           :
@@ -77,21 +72,19 @@ val conv_leq       :
 val conv_leq_vecti :
   ?l2r:bool -> ?evars:(existential->constr option) -> types array conversion_function
 
+(** These conversion functions are used by module subtyping, which needs to infer
+    universe constraints inside the kernel *)
 val infer_conv : ?l2r:bool -> ?evars:(existential->constr option) -> 
   ?ts:Names.transparent_state -> constr infer_conversion_function
 val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) -> 
   ?ts:Names.transparent_state -> types infer_conversion_function
 
-val generic_conv : conv_pb -> bool -> (existential->constr option) -> 
+val generic_conv : conv_pb -> l2r:bool -> (existential->constr option) ->
   Names.transparent_state -> (constr,'a) generic_conversion_function
 
 (** option for conversion *)
 val set_vm_conv : (conv_pb -> types conversion_function) -> unit
 val vm_conv : conv_pb -> types conversion_function
-
-val set_nat_conv :
-  (conv_pb -> Nativelambda.evars -> types conversion_function) -> unit
-val native_conv : conv_pb -> Nativelambda.evars -> types conversion_function
 
 val default_conv     : conv_pb -> ?l2r:bool -> types conversion_function
 val default_conv_leq : ?l2r:bool -> types conversion_function

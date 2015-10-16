@@ -12,7 +12,11 @@ open Reduction
 
 (**********************************************************************
   s conversion functions *)
-val vconv : conv_pb -> types conversion_function
+val vm_conv : conv_pb -> types conversion_function
 
+(** A conversion function parametrized by a universe comparator. Used outside of
+    the kernel. *)
+val vm_conv_gen : conv_pb -> (types, 'a) generic_conversion_function
+
+(** Precompute a VM value from a constr *)
 val val_of_constr : env -> constr -> values
-

@@ -227,7 +227,7 @@ let judge_of_cast env c ct k expected_type =
       default_conv ~l2r:true CUMUL env ct expected_type
     | NATIVEcast ->
       let sigma = Nativelambda.empty_evars in
-      native_conv CUMUL sigma env ct expected_type
+      Nativeconv.native_conv CUMUL sigma env ct expected_type
   with NotConvertible ->
     error_actual_type env (make_judge c ct) expected_type
 
