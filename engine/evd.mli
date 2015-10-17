@@ -119,7 +119,7 @@ val map_evar_info : (constr -> constr) -> evar_info -> evar_info
 
 (** {6 Unification state} **)
 
-type evar_universe_context
+type evar_universe_context = UState.t
 (** The universe context associated to an evar map *)
 
 type evar_map
@@ -464,7 +464,7 @@ val retract_coercible_metas : evar_map -> metabinding list * evar_map
 
 (** Rigid or flexible universe variables *)
 
-type rigid = 
+type rigid = UState.rigid =
   | UnivRigid
   | UnivFlexible of bool (** Is substitution by an algebraic ok? *)
 

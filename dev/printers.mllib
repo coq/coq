@@ -117,6 +117,7 @@ Miscops
 Universes
 Termops
 Namegen
+UState
 Evd
 Glob_ops
 Redops
