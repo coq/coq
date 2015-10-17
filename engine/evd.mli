@@ -474,7 +474,7 @@ val univ_flexible_alg : rigid
 
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
-val evar_universe_context_set : Univ.universe_context -> evar_universe_context -> Univ.universe_context_set
+val evar_universe_context_set : evar_universe_context -> Univ.universe_context_set
 val evar_universe_context_constraints : evar_universe_context -> Univ.constraints
 val evar_context_universe_context : evar_universe_context -> Univ.universe_context
 val evar_universe_context_of : Univ.universe_context_set -> evar_universe_context
@@ -482,6 +482,8 @@ val empty_evar_universe_context : evar_universe_context
 val union_evar_universe_context : evar_universe_context -> evar_universe_context ->
   evar_universe_context
 val evar_universe_context_subst : evar_universe_context -> Universes.universe_opt_subst
+val constrain_variables : Univ.LSet.t -> evar_universe_context -> Univ.constraints
+
 
 val make_evar_universe_context : env -> (Id.t located) list option -> evar_universe_context
 val restrict_universe_context : evar_map -> Univ.universe_set -> evar_map							   

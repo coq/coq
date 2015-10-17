@@ -13,14 +13,14 @@ open Names
 exception UniversesDiffer
 
 type t
+(** Type of universe unification states. They allow the incremental building of
+    universe constraints during an interactive proof. *)
 
 (** {5 Constructors} *)
 
 val empty : t
 
-val from : Environ.env -> t
-
-val make : Environ.env -> Id.t Loc.located list option -> t
+val make : UGraph.t -> t
 
 val is_empty : t -> bool
 
@@ -30,23 +30,47 @@ val of_context_set : Univ.universe_context_set -> t
 
 (** {5 Projections} *)
 
-val context_set : Univ.universe_context -> t -> Univ.universe_context_set
-val constraints : t -> Univ.constraints
-val context : t -> Univ.universe_context
+val context_set : t -> Univ.universe_context_set
+(** The local context of the state, i.e. a set of bound variables together
+    with their associated constraints. *)
+
 val subst : t -> Universes.universe_opt_subst
+(** The local universes that are unification variables *)
+
 val ugraph : t -> UGraph.t
-val variables : t -> Univ.LSet.t
+(** The current graph extended with the local constraints *)
+
+val algebraics : t -> Univ.LSet.t
+(** The subset of unification variables that can be instantiated with algebraic
+    universes as they appear in types and universe instances only. *)
+
+val constraints : t -> Univ.constraints
+(** Shorthand for {!context_set} composed with {!ContextSet.constraints}. *)
+
+val context : t -> Univ.universe_context
+(** Shorthand for {!context_set} with {!Context_set.to_context}. *)
 
 (** {5 Constraints handling} *)
 
 val add_constraints : t -> Univ.constraints -> t
+(**
+  @raise UniversesDiffer
+*)
+
 val add_universe_constraints : t -> Universes.universe_constraints -> t
+(**
+  @raise UniversesDiffer
+*)
 
-(** {5 TODO: Document me} *)
+(** {5 Names} *)
 
-val universe_context : ?names:(Id.t Loc.located) list -> t -> Univ.universe_context
+val add_universe_name : t -> string -> Univ.Level.t -> t
+(** Associate a human-readable name to a local variable. *)
 
-val pr_uctx_level : t -> Univ.Level.t -> Pp.std_ppcmds
+val universe_of_name : t -> string -> Univ.Level.t
+(** Retrieve the universe associated to the name. *)
+
+(** {5 Unification} *)
 
 val restrict : t -> Univ.universe_set -> t
 
@@ -70,6 +94,8 @@ val is_sort_variable : t -> Sorts.t -> Univ.Level.t option
 
 val normalize_variables : t -> Univ.universe_subst * t
 
+val constrain_variables : Univ.LSet.t -> t -> Univ.constraints
+
 val abstract_undefined_variables : t -> t
 
 val fix_undefined_variables : t -> t
@@ -78,6 +104,10 @@ val refresh_undefined_univ_variables : t -> t * Univ.universe_level_subst
 
 val normalize : t -> t
 
-val universe_of_name : t -> string -> Univ.Level.t
+(** {5 TODO: Document me} *)
 
-val add_universe_name : t -> string -> Univ.Level.t -> t
+val universe_context : ?names:(Id.t Loc.located) list -> t -> Univ.universe_context
+
+(** {5 Pretty-printing} *)
+
+val pr_uctx_level : t -> Univ.Level.t -> Pp.std_ppcmds

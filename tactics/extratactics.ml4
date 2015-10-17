@@ -268,7 +268,7 @@ let add_rewrite_hint bases ort t lcsr =
   let f ce = 
     let c, ctx = Constrintern.interp_constr env sigma ce in
     let ctx =
-      let ctx = Evd.evar_universe_context_set Univ.UContext.empty ctx in
+      let ctx = UState.context_set ctx in
         if poly then ctx
 	else (Global.push_context_set false ctx; Univ.ContextSet.empty)
     in

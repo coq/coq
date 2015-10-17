@@ -263,7 +263,6 @@ type evar_universe_context = UState.t
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
 let empty_evar_universe_context = UState.empty
-let evar_universe_context_from = UState.from
 let is_empty_evar_universe_context = UState.is_empty
 let union_evar_universe_context = UState.union
 let evar_universe_context_set = UState.context_set
@@ -273,6 +272,7 @@ let evar_universe_context_of = UState.of_context_set
 let evar_universe_context_subst = UState.subst
 let add_constraints_context = UState.add_constraints
 let add_universe_constraints_context = UState.add_universe_constraints
+let constrain_variables = UState.constrain_variables 
 
 (* let addunivconstrkey = Profile.declare_profile "add_universe_constraints_context";; *)
 (* let add_universe_constraints_context =  *)
@@ -587,7 +587,7 @@ let empty = {
 }
 
 let from_env e = 
-  { empty with universes = evar_universe_context_from e }
+  { empty with universes = UState.make (Environ.universes e) }
 
 let from_ctx ctx = { empty with universes = ctx }
 
@@ -746,7 +746,7 @@ let univ_flexible_alg = UnivFlexible true
 
 let evar_universe_context d = d.universes
 
-let universe_context_set d = UState.context_set Univ.UContext.empty d.universes
+let universe_context_set d = UState.context_set d.universes
 
 let pr_uctx_level = UState.pr_uctx_level
 let universe_context ?names evd = UState.universe_context ?names evd.universes
@@ -784,8 +784,16 @@ let add_global_univ d u =
 let make_flexible_variable evd b u =
   { evd with universes = UState.make_flexible_variable evd.universes b u }
 
-let make_evar_universe_context = UState.make
-    
+let make_evar_universe_context e l =
+  let uctx = UState.make (Environ.universes e) in
+  match l with
+  | None -> uctx
+  | Some us ->
+      List.fold_left
+        (fun uctx (loc,id) ->
+        fst (UState.new_univ_variable univ_rigid (Some (Id.to_string id)) uctx))
+        uctx us
+
 (****************************************)
 (* Operations on constants              *)
 (****************************************)
@@ -1338,9 +1346,9 @@ let pr_evar_universe_context ctx =
   if is_empty_evar_universe_context ctx then mt ()
   else
     (str"UNIVERSES:"++brk(0,1)++ 
-       h 0 (Univ.pr_universe_context_set prl (evar_universe_context_set Univ.UContext.empty ctx)) ++ fnl () ++
+       h 0 (Univ.pr_universe_context_set prl (evar_universe_context_set ctx)) ++ fnl () ++
      str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
-     h 0 (Univ.LSet.pr prl (UState.variables ctx)) ++ fnl() ++
+     h 0 (Univ.LSet.pr prl (UState.algebraics ctx)) ++ fnl() ++
      str"UNDEFINED UNIVERSES:"++brk(0,1)++
        h 0 (Universes.pr_universe_opt_subst (UState.subst ctx)) ++ fnl())
 

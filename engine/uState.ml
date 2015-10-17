@@ -47,8 +47,7 @@ let empty =
     uctx_universes = UGraph.initial_universes;
     uctx_initial_universes = UGraph.initial_universes }
 
-let from e =
-  let u = Environ.universes e in
+let make u =
     { empty with 
       uctx_universes = u; uctx_initial_universes = u}
 
@@ -82,20 +81,8 @@ let union ctx ctx' =
             let cstrsr = Univ.ContextSet.constraints ctx'.uctx_local in
               UGraph.merge_constraints cstrsr (declarenew ctx.uctx_universes) }
 
-let context_set diff ctx =
-  let initctx = ctx.uctx_local in
-  let cstrs =
-    Univ.LSet.fold
-      (fun l cstrs ->
-       try
-         match Univ.LMap.find l ctx.uctx_univ_variables with
-         | Some u -> Univ.Constraint.add (l, Univ.Eq, Option.get (Univ.Universe.level u)) cstrs
-         | None -> cstrs
-       with Not_found | Option.IsNone -> cstrs)
-      (Univ.Instance.levels (Univ.UContext.instance diff)) Univ.Constraint.empty
-  in
-    Univ.ContextSet.add_constraints cstrs initctx 
-                      
+let context_set ctx = ctx.uctx_local
+
 let constraints ctx = snd ctx.uctx_local
 
 let context ctx = Univ.ContextSet.to_context ctx.uctx_local
@@ -106,7 +93,17 @@ let subst ctx = ctx.uctx_univ_variables
 
 let ugraph ctx = ctx.uctx_universes
 
-let variables ctx = ctx.uctx_univ_algebraic
+let algebraics ctx = ctx.uctx_univ_algebraic
+
+let constrain_variables diff ctx =
+  Univ.LSet.fold
+    (fun l cstrs ->
+      try
+        match Univ.LMap.find l ctx.uctx_univ_variables with
+        | Some u -> Univ.Constraint.add (l, Univ.Eq, Option.get (Univ.Universe.level u)) cstrs
+        | None -> cstrs
+      with Not_found | Option.IsNone -> cstrs)
+    diff Univ.Constraint.empty
 
 let instantiate_variable l b v =
   v := Univ.LMap.add l (Some b) !v
@@ -381,16 +378,6 @@ let make_flexible_variable ctx b u =
   {ctx with uctx_univ_variables = uvars'; 
       uctx_univ_algebraic = avars'}
 
-let make e l = 
-  let uctx = from e in
-    match l with
-    | None -> uctx
-    | Some us ->
-       List.fold_left
-         (fun uctx (loc,id) ->
-          fst (new_univ_variable univ_rigid (Some (Id.to_string id)) uctx))
-         uctx us
-    
 let is_sort_variable uctx s = 
   match s with 
   | Sorts.Type u -> 

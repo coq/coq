@@ -298,6 +298,11 @@ let get_open_goals () =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
     List.length shelf
 
+let constrain_variables init uctx =
+  let levels = Univ.Instance.levels (Univ.UContext.instance init) in
+  let cstrs = UState.constrain_variables levels uctx in
+  Univ.ContextSet.add_constraints cstrs (UState.context_set uctx)
+
 let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
   let { pid; section_vars; strength; proof; terminator } = cur_pstate () in
   let poly = pi2 strength (* Polymorphic *) in
@@ -326,7 +331,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
         let used_univs_typ = Universes.universes_of_constr typ in
         if keep_body_ucst_separate || not (Declareops.side_effects_is_empty eff) then
           let initunivs = Evd.evar_context_universe_context initial_euctx in
-          let ctx = Evd.evar_universe_context_set initunivs universes in
+          let ctx = constrain_variables initunivs universes in
           (* For vi2vo compilation proofs are computed now but we need to
            * complement the univ constraints of the typ with the ones of
            * the body.  So we keep the two sets distinct. *)
@@ -334,7 +339,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
           (initunivs, typ), ((body, ctx_body), eff)
         else
           let initunivs = Univ.UContext.empty in
-          let ctx = Evd.evar_universe_context_set initunivs universes in
+          let ctx = constrain_variables initunivs universes in
           (* Since the proof is computed now, we can simply have 1 set of
            * constraints in which we merge the ones for the body and the ones
            * for the typ *)
@@ -349,7 +354,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now fpl =
         let initunivs = Evd.evar_context_universe_context initial_euctx in
         Future.from_val (initunivs, nf t),
         Future.chain ~pure:true p (fun (pt,eff) ->
-          (pt,Evd.evar_universe_context_set initunivs (Future.force univs)),eff)
+          (pt,constrain_variables initunivs (Future.force univs)),eff)
   in
   let entries =
     Future.map2 (fun p (_, t) ->
