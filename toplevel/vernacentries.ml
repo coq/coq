@@ -478,7 +478,8 @@ let vernac_definition locality p (local,k) ((loc,id as lid),pl) def =
  		Some (snd (interp_redexp env evc r)) in
 	do_definition id (local,p,k) pl bl red_option c typ_opt hook)
 
-let vernac_start_proof p kind l lettop =
+let vernac_start_proof locality p kind l lettop =
+  let local = enforce_locality_exp locality None in
   if Dumpglob.dump () then
     List.iter (fun (id, _) ->
       match id with
@@ -488,7 +489,7 @@ let vernac_start_proof p kind l lettop =
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
-  start_proof_and_print (Global, p, Proof kind) l no_hook
+  start_proof_and_print (local, p, Proof kind) l no_hook
 
 let qed_display_script = ref true
 
@@ -1860,7 +1861,7 @@ let interp ?proof ~loc locality poly c =
 
   (* Gallina *)
   | VernacDefinition (k,lid,d) -> vernac_definition locality poly k lid d
-  | VernacStartTheoremProof (k,l,top) -> vernac_start_proof poly k l top
+  | VernacStartTheoremProof (k,l,top) -> vernac_start_proof locality poly k l top
   | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
@@ -1965,7 +1966,7 @@ let interp ?proof ~loc locality poly c =
   | VernacBacktrack _ -> msg_warning (str "VernacBacktrack not handled by Stm")
   
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof poly Theorem [None,([],t,None)] false
+  | VernacGoal t -> vernac_start_proof locality poly Theorem [None,([],t,None)] false
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
   | VernacUnfocused -> vernac_unfocused ()
@@ -2006,7 +2007,7 @@ let check_vernac_supports_locality c l =
     | VernacOpenCloseScope _
     | VernacSyntaxExtension _ | VernacInfix _ | VernacNotation _
     | VernacDefinition _ | VernacFixpoint _ | VernacCoFixpoint _
-    | VernacAssumption _
+    | VernacAssumption _ | VernacStartTheoremProof _
     | VernacCoercion _ | VernacIdentityCoercion _
     | VernacInstance _ | VernacDeclareInstances _
     | VernacDeclareMLModule _
