@@ -27,6 +27,7 @@ open Recordops
 open Locus
 open Locusops
 open Find_subterm
+open Sigma.Notations
 
 let keyed_unification = ref (false)
 let _ = Goptions.declare_bool_option {
@@ -105,7 +106,9 @@ let set_occurrences_of_last_arg args =
   Some AllOccurrences :: List.tl (Array.map_to_list (fun _ -> None) args)
 
 let abstract_list_all_with_dependencies env evd typ c l =
-  let evd,ev = new_evar env evd typ in
+  let evd = Sigma.Unsafe.of_evar_map evd in
+  let Sigma (ev, evd, _) = new_evar env evd typ in
+  let evd = Sigma.to_evar_map evd in
   let evd,ev' = evar_absorb_arguments env evd (destEvar ev) l in
   let n = List.length l in
   let argoccs = set_occurrences_of_last_arg (Array.sub (snd ev') 0 n) in
@@ -1155,20 +1158,20 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
  * close it off.  But this might not always work,
  * since other metavars might also need to be resolved. *)
 
-let applyHead env evd n c  =
-  let rec apprec n c cty evd =
+let applyHead env (type r) (evd : r Sigma.t) n c =
+  let rec apprec : type s. _ -> _ -> _ -> (r, s) Sigma.le -> s Sigma.t -> (constr, r) Sigma.sigma =
+    fun n c cty p evd ->
     if Int.equal n 0 then
-      (evd, c)
+      Sigma (c, evd, p)
     else
-      match kind_of_term (whd_betadeltaiota env evd cty) with
+      match kind_of_term (whd_betadeltaiota env (Sigma.to_evar_map evd) cty) with
       | Prod (_,c1,c2) ->
-        let (evd',evar) =
-	  Evarutil.new_evar env evd ~src:(Loc.ghost,Evar_kinds.GoalEvar) c1 in
-	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
+        let Sigma (evar, evd', q) = Evarutil.new_evar env evd ~src:(Loc.ghost,Evar_kinds.GoalEvar) c1 in
+	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) (p +> q) evd'
       | _ -> error "Apply_Head_Then"
   in
-    apprec n c (Typing.unsafe_type_of env evd c) evd
-    
+    apprec n c (Typing.unsafe_type_of env (Sigma.to_evar_map evd) c) Sigma.refl evd
+
 let is_mimick_head ts f =
   match kind_of_term f with
   | Const (c,u) -> not (Closure.is_transparent_constant ts c)
@@ -1328,7 +1331,9 @@ let w_merge env with_types flags (evd,metas,evars) =
   and mimick_undefined_evar evd flags hdc nargs sp =
     let ev = Evd.find_undefined evd sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
-    let (evd', c) = applyHead sp_env evd nargs hdc in
+    let evd = Sigma.Unsafe.of_evar_map evd in
+    let Sigma (c, evd', _) = applyHead sp_env evd nargs hdc in
+    let evd' = Sigma.to_evar_map evd' in
     let (evd'',mc,ec) =
       unify_0 sp_env evd' CUMUL flags
         (get_type_of sp_env evd' c) ev.evar_concl in

@@ -385,7 +385,7 @@ let new_evar_instance sign evd typ ?src ?filter ?candidates ?store ?naming ?prin
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
+let new_evar_unsafe env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
   let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env typ in
   let candidates = Option.map (List.map (subst2 subst vsubst)) candidates in
   let instance =
@@ -394,9 +394,14 @@ let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
     | Some filter -> Filter.filter_list filter instance in
   new_evar_instance sign evd typ' ?src ?filter ?candidates ?store ?naming ?principal instance
 
+let new_evar env evd ?src ?filter ?candidates ?store ?naming ?principal typ =
+  let evd = Sigma.to_evar_map evd in
+  let (sigma, c) = new_evar_unsafe env evd ?src ?filter ?candidates ?store ?naming ?principal typ in
+  Sigma.Unsafe.of_pair (c, sigma)
+
 let new_type_evar env evd ?src ?filter ?naming ?principal rigid =
   let evd', s = new_sort_variable rigid evd in
-  let evd', e = new_evar env evd' ?src ?filter ?naming ?principal (mkSort s) in
+  let evd', e = new_evar_unsafe env evd' ?src ?filter ?naming ?principal (mkSort s) in
     evd', (e, s)
 
 let e_new_type_evar env evdref ?src ?filter ?naming ?principal rigid =
@@ -414,7 +419,7 @@ let e_new_Type ?(rigid=Evd.univ_flexible) env evdref =
 
   (* The same using side-effect *)
 let e_new_evar env evdref ?(src=default_source) ?filter ?candidates ?store ?naming ?principal ty =
-  let (evd',ev) = new_evar env !evdref ~src:src ?filter ?candidates ?store ?naming ?principal ty in
+  let (evd',ev) = new_evar_unsafe env !evdref ~src:src ?filter ?candidates ?store ?naming ?principal ty in
   evdref := evd';
   ev
 
@@ -717,7 +722,7 @@ let define_pure_evar_as_product evd evk =
     let filter = Filter.extend 1 (evar_filter evi) in
       if is_prop_sort s then
        (* Impredicative product, conclusion must fall in [Prop]. *)
-        new_evar newenv evd1 concl ~src ~filter
+        new_evar_unsafe newenv evd1 concl ~src ~filter
       else
 	let evd3, (rng, srng) =
 	  new_type_evar newenv evd1 univ_flexible_alg ~src ~filter in
@@ -763,7 +768,7 @@ let define_pure_evar_as_lambda env evd evk =
   let newenv = push_named (id, None, dom) evenv in
   let filter = Filter.extend 1 (evar_filter evi) in
   let src = evar_source evk evd1 in
-  let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in
+  let evd2,body = new_evar_unsafe newenv evd1 ~src (subst1 (mkVar id) rng) ~filter in
   let lam = mkLambda (Name id, dom, subst_var id body) in
   Evd.define evk lam evd2, lam
 

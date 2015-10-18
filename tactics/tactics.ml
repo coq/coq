@@ -217,9 +217,10 @@ let convert_concl ?(check=true) ty k =
           if not b then error "Not convertible.";
           sigma
         end else sigma in
-      let (sigma,x) = Evarutil.new_evar env sigma ~principal:true ~store ty in
+      let sigma = Sigma.Unsafe.of_evar_map sigma in
+      let Sigma (x, sigma, p) = Evarutil.new_evar env sigma ~principal:true ~store ty in
       let ans = if k == DEFAULTcast then x else mkCast(x,k,conclty) in
-      Sigma.Unsafe.of_pair (ans, sigma)
+      Sigma (ans, sigma, p)
     end }
   end
 
@@ -232,9 +233,7 @@ let convert_hyp ?(check=true) d =
     let sign = convert_hyp check (named_context_val env) sigma d in
     let env = reset_with_named_context sign env in
     Proofview.Refine.refine ~unsafe:true { run = begin fun sigma ->
-      let sigma = Sigma.to_evar_map sigma in
-      let (sigma, c) = Evarutil.new_evar env sigma ~principal:true ~store ty in
-      Sigma.Unsafe.of_pair (c, sigma)
+      Evarutil.new_evar env sigma ~principal:true ~store ty
     end }
   end
 
@@ -1058,11 +1057,10 @@ let cut c =
       (** Backward compat: normalize [c]. *)
       let c = local_strong whd_betaiota sigma c in
       Proofview.Refine.refine ~unsafe:true { run = begin fun h ->
-        let h = Sigma.to_evar_map h in
-        let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
-        let (h, x) = Evarutil.new_evar env h c in
+        let Sigma (f, h, p) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
+        let Sigma (x, h, q) = Evarutil.new_evar env h c in
         let f = mkLambda (Name id, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
-        Sigma.Unsafe.of_pair (mkApp (f, [|x|]), h)
+        Sigma (mkApp (f, [|x|]), h, p +> q)
       end }
     else
       Tacticals.New.tclZEROMSG (str "Not a proposition or a type.")
@@ -1712,12 +1710,11 @@ let cut_and_apply c =
         let concl = Proofview.Goal.concl gl in
         let env = Tacmach.New.pf_env gl in
         Proofview.Refine.refine { run = begin fun sigma ->
-          let sigma = Sigma.to_evar_map sigma in
           let typ = mkProd (Anonymous, c2, concl) in
-          let (sigma, f) = Evarutil.new_evar env sigma typ in
-          let (sigma, x) = Evarutil.new_evar env sigma c1 in
+          let Sigma (f, sigma, p) = Evarutil.new_evar env sigma typ in
+          let Sigma (x, sigma, q) = Evarutil.new_evar env sigma c1 in
           let ans = mkApp (f, [|mkApp (c, [|x|])|]) in
-          Sigma.Unsafe.of_pair (ans, sigma)
+          Sigma (ans, sigma, p +> q)
         end }
       | _ -> error "lapply needs a non-dependent product."
   end
@@ -1858,9 +1855,7 @@ let clear_body ids =
     in
     check_hyps <*> check_concl <*>
     Proofview.Refine.refine ~unsafe:true { run = begin fun sigma ->
-      let sigma = Sigma.to_evar_map sigma in
-      let (sigma, c) = Evarutil.new_evar env sigma concl in
-      Sigma.Unsafe.of_pair (c, sigma)
+      Evarutil.new_evar env sigma concl
     end }
   end
 
@@ -2432,12 +2427,14 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
       let newenv = insert_before [heq,None,eq;id,body,t] lastlhyp env in
-      let (sigma,x) = new_evar newenv sigma ~principal:true ~store ccl in
-      Sigma.Unsafe.of_pair (mkNamedLetIn id c t (mkNamedLetIn heq refl eq x), sigma)
+      let sigma = Sigma.Unsafe.of_evar_map sigma in
+      let Sigma (x, sigma, p) = new_evar newenv sigma ~principal:true ~store ccl in
+      Sigma (mkNamedLetIn id c t (mkNamedLetIn heq refl eq x), sigma, p)
   | None ->
       let newenv = insert_before [id,body,t] lastlhyp env in
-      let (sigma,x) = new_evar newenv sigma ~principal:true ~store ccl in
-      Sigma.Unsafe.of_pair (mkNamedLetIn id c t x, sigma)
+      let sigma = Sigma.Unsafe.of_evar_map sigma in
+      let Sigma (x, sigma, p) = new_evar newenv sigma ~principal:true ~store ccl in
+      Sigma (mkNamedLetIn id c t x, sigma, p)
 
 let letin_tac with_eq id c ty occs =
   Proofview.Goal.nf_enter begin fun gl ->
@@ -2511,9 +2508,8 @@ let bring_hyps hyps =
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
       let args = Array.of_list (instance_from_named_context hyps) in
       Proofview.Refine.refine { run = begin fun sigma ->
-        let sigma = Sigma.to_evar_map sigma in
-        let (sigma, ev) = Evarutil.new_evar env sigma newcl in
-        Sigma.Unsafe.of_pair (mkApp (ev, args), sigma)
+        let Sigma (ev, sigma, p) = Evarutil.new_evar env sigma newcl in
+        Sigma (mkApp (ev, args), sigma, p)
       end }
     end
 
@@ -2624,9 +2620,8 @@ let new_generalize_gen_let lconstr =
     in
       Proofview.Unsafe.tclEVARS sigma <*>
 	Proofview.Refine.refine { run = begin fun sigma ->
-          let sigma = Sigma.to_evar_map sigma in
-          let (sigma, ev) = Evarutil.new_evar env sigma newcl in
-          Sigma.Unsafe.of_pair ((applist (ev, args)), sigma)
+          let Sigma (ev, sigma, p) = Evarutil.new_evar env sigma newcl in
+          Sigma ((applist (ev, args)), sigma, p)
 	end }
   end
 

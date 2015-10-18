@@ -85,7 +85,9 @@ let cstrevars evars = snd evars
 
 let new_cstr_evar (evd,cstrs) env t =
   let s = Typeclasses.set_resolvable Evd.Store.empty false in
-  let evd', t = Evarutil.new_evar ~store:s env evd t in
+  let evd = Sigma.Unsafe.of_evar_map evd in
+  let Sigma (t, evd', _) = Evarutil.new_evar ~store:s env evd t in
+  let evd' = Sigma.to_evar_map evd' in
   let ev, _ = destEvar t in
     (evd', Evar.Set.add ev cstrs), t
 
@@ -1510,12 +1512,11 @@ let assert_replacing id newt tac =
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
     Proofview.Refine.refine ~unsafe:false { run = begin fun sigma ->
-      let sigma = Sigma.to_evar_map sigma in
-      let sigma, ev = Evarutil.new_evar env' sigma concl in
-      let sigma, ev' = Evarutil.new_evar env sigma newt in
+      let Sigma (ev, sigma, p) = Evarutil.new_evar env' sigma concl in
+      let Sigma (ev', sigma, q) = Evarutil.new_evar env sigma newt in
       let map (n, _, _) = if Id.equal n id then ev' else mkVar n in
       let (e, _) = destEvar ev in
-      Sigma.Unsafe.of_pair (mkEvar (e, Array.map_of_list map nc), sigma)
+      Sigma (mkEvar (e, Array.map_of_list map nc), sigma, p +> q)
     end }
   end in
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
@@ -1546,9 +1547,8 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
             Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
             let make = { run = begin fun sigma ->
-              let sigma = Sigma.to_evar_map sigma in
-              let (sigma, ev) = Evarutil.new_evar env sigma newt in
-              Sigma.Unsafe.of_pair (mkApp (p, [| ev |]), sigma)
+              let Sigma (ev, sigma, q) = Evarutil.new_evar env sigma newt in
+              Sigma (mkApp (p, [| ev |]), sigma, q)
             end } in
             Proofview.Refine.refine ~unsafe:false make <*> Proofview.Unsafe.tclNEWGOALS gls
             end

@@ -22,10 +22,10 @@ val mk_new_meta : unit -> constr
 
 (** {6 Creating a fresh evar given their type and context} *)
 val new_evar :
-  env -> evar_map -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
+  env -> 'r Sigma.t -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
   ?candidates:constr list -> ?store:Store.t ->
   ?naming:Misctypes.intro_pattern_naming_expr ->
-  ?principal:bool -> types -> evar_map * constr
+  ?principal:bool -> types -> (constr, 'r) Sigma.sigma
 
 val new_pure_evar :
   named_context_val -> evar_map -> ?src:Loc.t * Evar_kinds.t -> ?filter:Filter.t ->
