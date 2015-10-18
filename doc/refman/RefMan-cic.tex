@@ -531,7 +531,7 @@ definitions, one for constructors).
 
 Stating the rules for inductive definitions in their general form
 needs quite tedious definitions. We shall try to give a concrete
-understanding of the rules by precising them on running examples.  We
+understanding of the rules by illustrating them on running examples.  We
 take as examples the type of natural numbers, the type of
 parameterized lists over a type $A$, the relation which states that
 a list has some given length and the mutual inductive definition of trees and
@@ -539,36 +539,38 @@ forests.
 
 \subsection{Representing an inductive definition}
 \subsubsection{Inductive definitions without parameters}
-As for constants, inductive definitions can be defined in a non-empty
+As for constants, inductive definitions must be defined in a non-empty
 local context. \\
-We write \NInd{\Gamma}{\Gamma_I}{\Gamma_C} an inductive
-definition valid in a local context $\Gamma$, a
+We write \NInd{}{\Gamma_I}{\Gamma_C} for an inductive
+definition with a
 context of type definitions $\Gamma_I$ and a context of constructors
 $\Gamma_C$.
 \paragraph{Examples.}
 The inductive declaration for the type of natural numbers will be:
 \[\NInd{}{\nat:\Set}{\nO:\nat,\nS:\nat\ra\nat}\]
-In a local context with a variable $A:\Set$, the lists of elements in $A$ are
+In a context with assumption $A:\Set$, the lists of elements in $A$ are
 represented by:
-\[\NInd{A:\Set}{\List:\Set}{\Nil:\List,\cons : A \ra \List \ra
+\[\NInd{}{\List:\Set}{\Nil:\List,\cons : A \ra \List \ra
   \List}\]
- Assuming 
-  $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
-  $[c_1:C_1;\ldots;c_n:C_n]$, the general typing rules are, 
-  for $1\leq j\leq k$ and $1\leq i\leq n$:
+%%  Assuming 
+%%   $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
+%%   $[c_1:C_1;\ldots;c_n:C_n]$, the general typing rules are, 
+%%   for $1\leq j\leq k$ and $1\leq i\leq n$:
 
-\bigskip
-\inference{\frac{\NInd{\Gamma}{\Gamma_I}{\Gamma_C} \in E}{(I_j:A_j) \in E}}
+%% \bigskip
 
-\inference{\frac{\NInd{\Gamma}{\Gamma_I}{\Gamma_C} \in E}{(c_i:C_i) \in E}}
+%% \item[Ind]  \index{Typing rules!Ind}
+%% \inference{\frac{\NInd{}{\Gamma_I}{\Gamma_C} \in E}{(I_j:A_j) \in E}}
+%% \item[Constr]  \index{Typing rules!Constr}
+
+%% \inference{\frac{\NInd{}{\Gamma_I}{\Gamma_C} \in E}{(c_i:C_i) \in E}}
 
 \subsubsection{Inductive definitions with parameters}
 
-We have to slightly complicate the representation above in order to handle
-the delicate problem of parameters. 
+We have refine the representation above in order to handle parameters. 
 Let us explain that on the example of \List. With the above definition,
 the type \List\ can only be used in a global environment where we
-have a variable $A:\Set$. Generally one want to consider lists of
+have a variable $A:\Set$. Generally one wants to consider lists of
 elements in different types. For constants this is easily done by abstracting
 the value over the parameter. In the case of inductive definitions we
 have to handle the abstraction over several objects.
@@ -648,22 +650,22 @@ parameters.
 
 Formally the representation of an inductive declaration
 will be 
-\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} for an inductive
-definition valid in a local context $\Gamma$ with $p$ parameters, a
+\Ind{}{p}{\Gamma_I}{\Gamma_C} for an inductive
+definition with $p$ parameters, a
 context of definitions $\Gamma_I$ and a context of constructors
 $\Gamma_C$.
 
-The definition \Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} will be
-well-formed exactly when \NInd{\Gamma}{\Gamma_I}{\Gamma_C} is and 
+The definition \Ind{}{p}{\Gamma_I}{\Gamma_C} will be
+well-formed exactly when \NInd{}{\Gamma_I}{\Gamma_C} is and 
 when $p$ is (less or equal than) the number of parameters in
-\NInd{\Gamma}{\Gamma_I}{\Gamma_C}. 
+\NInd{}{\Gamma_I}{\Gamma_C}. 
 
 \paragraph{Examples}
 The declaration for parameterized lists is:
 \[\Ind{}{1}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set,\List~A),\cons :
   (\forall A:\Set, A \ra \List~A \ra   \List~A)}\]
 
-The declaration for the length of lists is:
+The declaration for an inductive type specifying the length of lists is:
 \[\Ind{}{1}{\Length:\forall A:\Set, (\List~A)\ra \nat\ra\Prop}
       {\LNil:\forall A:\Set, \Length~A~(\Nil~A)~\nO,\\ 
      \LCons :\forall A:\Set,\forall a:A, \forall l:(\List~A),\forall n:\nat, (\Length~A~l~n)\ra (\Length~A~(\cons~A~a~l)~(\nS~n))}\]
@@ -674,7 +676,7 @@ The declaration for a mutual inductive definition of forests and trees is:
        \emptyf:\forest,\consf:\tree \ra \forest \ra \forest\-}\]
   
 These representations are the ones obtained as the result of the \Coq\ 
-declaration:
+declarations:
 \begin{coq_example*}
 Inductive nat : Set :=
   | O : nat
@@ -731,16 +733,13 @@ We have to give the type of constants in a global environment $E$ which
 contains an inductive declaration.
 
 \begin{description}
-\item[Ind-Const] Assuming 
-  $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
-  $[c_1:C_1;\ldots;c_n:C_n]$,
-   
-\inference{\frac{\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E
-    ~~j=1\ldots k}{(I_j:A_j) \in E}}
+\item[Ind]  \index{Typing rules!Ind}
+\inference{\frac{\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E}{(I_j:A_j) \in E}}
+\inference{\frac{\WFE{\Gamma}~~~~\NInd{}{\Gamma_I}{\Gamma_C} \in E}{\WTEG{I_j}{A_j}}}
+\item[Constr]  \index{Typing rules!Constr}
 
-\inference{\frac{\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E
-    ~~~~i=1.. n}
-   {(c_i:C_i) \in E}}
+\inference{\frac{\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E}{(c_i:C_i) \in E}}
+\inference{\frac{\WFE{\Gamma}~~~~\NInd{}{\Gamma_I}{\Gamma_C} \in E}{\WTEG{c_i}{C_i}}}
 \end{description}
 
 \paragraph{Example.}
@@ -846,20 +845,20 @@ inductive definition.
 
 \begin{description}
 \item[W-Ind] Let $E$ be a global environment and
-  $\Gamma,\Gamma_P,\Gamma_I,\Gamma_C$ are contexts such that
+  $\Gamma_P,\Gamma_I,\Gamma_C$ are contexts such that
   $\Gamma_I$ is $[I_1:\forall \Gamma_P,A_1;\ldots;I_k:\forall
   \Gamma_P,A_k]$ and $\Gamma_C$ is 
   $[c_1:\forall \Gamma_P,C_1;\ldots;c_n:\forall \Gamma_P,C_n]$. 
 \inference{
   \frac{
-  (\WTE{\Gamma;\Gamma_P}{A_j}{s'_j})_{j=1\ldots  k}
-  ~~ (\WTE{\Gamma;\Gamma_I;\Gamma_P}{C_i}{s_{q_i}})_{i=1\ldots  n}
+  (\WTE{\Gamma_P}{A_j}{s'_j})_{j=1\ldots  k}
+  ~~ (\WTE{\Gamma_I;\Gamma_P}{C_i}{s_{q_i}})_{i=1\ldots  n}
 }
-  {\WF{E;\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}}{\Gamma}}}
+  {\WF{E;\Ind{}{p}{\Gamma_I}{\Gamma_C}}{\Gamma}}}
 provided that the following side conditions hold:
 \begin{itemize}
 \item $k>0$ and all of $I_j$ and $c_i$ are distinct names for $j=1\ldots  k$ and $i=1\ldots  n$,
-\item $p$ is the number of parameters of \NInd{\Gamma}{\Gamma_I}{\Gamma_C}
+\item $p$ is the number of parameters of \NInd{}{\Gamma_I}{\Gamma_C}
   and $\Gamma_P$ is the context of parameters, 
 \item for $j=1\ldots  k$ we have that $A_j$ is an arity of sort $s_j$ and $I_j
   \notin \Gamma \cup E$,
@@ -871,7 +870,7 @@ provided that the following side conditions hold:
 One can remark that there is a constraint between the sort of the
 arity of the inductive type and the sort of the type of its
 constructors which will always be satisfied for the impredicative sort
-(\Prop) but may fail to define inductive definition 
+{\Prop} but may fail to define inductive definition 
 on sort \Set{} and generate constraints between universes for
 inductive definitions in the {\Type} hierarchy.
 
@@ -917,7 +916,7 @@ by typability of all products in the Calculus of Inductive Constructions.
 The following typing rule is added to the theory.
 
 \begin{description}
-\item[Ind-Family] Let $\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$ be an
+\item[Ind-Family] Let $\Ind{}{p}{\Gamma_I}{\Gamma_C}$ be an
   inductive definition. Let $\Gamma_P = [p_1:P_1;\ldots;p_{p}:P_{p}]$
   be its local context of parameters, $\Gamma_I = [I_1:\forall
     \Gamma_P,A_1;\ldots;I_k:\forall \Gamma_P,A_k]$ its context of
@@ -937,13 +936,13 @@ The following typing rule is added to the theory.
 
 \inference{\frac
 {\left\{\begin{array}{l}
-\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E\\
-(E[\Gamma] \vdash q_l : P'_l)_{l=1\ldots r}\\
+\Ind{}{p}{\Gamma_I}{\Gamma_C} \in E\\
+(E[] \vdash q_l : P'_l)_{l=1\ldots r}\\
 (\WTEGLECONV{P'_l}{\subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}})_{l=1\ldots r}\\
 1 \leq j \leq k
 \end{array}
 \right.}
-{E[\Gamma] \vdash (I_j\,q_1\,\ldots\,q_r:\forall [p_{r+1}:P_{r+1};\ldots;p_{p}:P_{p}], (A_j)_{/s_j})}
+{E[] \vdash (I_j\,q_1\,\ldots\,q_r:\forall [p_{r+1}:P_{r+1};\ldots;p_{p}:P_{p}], (A_j)_{/s_j})}
 }
 
 provided that the following side conditions hold:
@@ -955,7 +954,7 @@ $P_l$ arity implies $P'_l$ arity since $\WTEGLECONV{P'_l}{ \subst{P_l}{p_u}{q_u}
 \item there are sorts $s_i$, for $1 \leq i \leq k$ such that, for
  $\Gamma_{I'} = [I_1:\forall
     \Gamma_{P'},(A_1)_{/s_1};\ldots;I_k:\forall \Gamma_{P'},(A_k)_{/s_k}]$
-we have $(\WTE{\Gamma;\Gamma_{I'};\Gamma_{P'}}{C_i}{s_{q_i}})_{i=1\ldots  n}$;
+we have $(\WTE{\Gamma_{I'};\Gamma_{P'}}{C_i}{s_{q_i}})_{i=1\ldots  n}$;
 \item the sorts are such that all eliminations, to {\Prop}, {\Set} and
   $\Type(j)$, are allowed (see section~\ref{elimdep}).
 \end{itemize}
@@ -965,12 +964,12 @@ Notice that if $I_j\,q_1\,\ldots\,q_r$ is typable using the rules {\bf
 Ind-Const} and {\bf App}, then it is typable using the rule {\bf
 Ind-Family}. Conversely, the extended theory is not stronger than the
 theory without {\bf Ind-Family}. We get an equiconsistency result by
-mapping each $\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$ occurring into a
+mapping each $\Ind{}{p}{\Gamma_I}{\Gamma_C}$ occurring into a
 given derivation into as many different inductive types and constructors
 as the number of different (partial) replacements of sorts, needed for
 this derivation, in the parameters that are arities (this is possible
-because $\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$ well-formed implies
-that $\Ind{\Gamma}{p}{\Gamma_{I'}}{\Gamma_{C'}}$ is well-formed and
+because $\Ind{}{p}{\Gamma_I}{\Gamma_C}$ well-formed implies
+that $\Ind{}{p}{\Gamma_{I'}}{\Gamma_{C'}}$ is well-formed and
 has the same allowed eliminations, where
 $\Gamma_{I'}$ is defined as above and $\Gamma_{C'} = [c_1:\forall
 \Gamma_{P'},C_1;\ldots;c_n:\forall \Gamma_{P'},C_n]$). That is,
@@ -980,7 +979,7 @@ sorts among the types of parameters, and to each signature is
 associated a new inductive definition with fresh names. Conversion is
 preserved as any (partial) instance $I_j\,q_1\,\ldots\,q_r$ or
 $C_i\,q_1\,\ldots\,q_r$ is mapped to the names chosen in the specific
-instance of $\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$.
+instance of $\Ind{}{p}{\Gamma_I}{\Gamma_C}$.
 
 \newcommand{\Single}{\mbox{\textsf{Set}}}
 
@@ -1396,7 +1395,7 @@ following typing rule
 {\WTEG{\Case{P}{c}{f_1|\ldots  |f_l}}{(P\ t_1\ldots  t_s\ c)}}}%\\[3mm]
 
 provided $I$ is an inductive type in a declaration
-\Ind{\Delta}{r}{\Gamma_I}{\Gamma_C} with 
+\Ind{}{r}{\Gamma_I}{\Gamma_C} with 
 $\Gamma_C = [c_1:C_1;\ldots;c_n:C_n]$ and $c_{p_1}\ldots  c_{p_l}$ are the
 only constructors of $I$.
 \end{description}
@@ -1511,7 +1510,7 @@ syntactically recognized as structurally smaller than $y_{k_i}$
 The definition of being structurally smaller is a bit technical.
 One needs first to  define the notion of 
 {\em recursive arguments of a constructor}\index{Recursive arguments}.
-For an inductive definition \Ind{\Gamma}{r}{\Gamma_I}{\Gamma_C},
+For an inductive definition \Ind{}{r}{\Gamma_I}{\Gamma_C},
 the type of a constructor $c$ has the form
 $\forall p_1:P_1,\ldots \forall p_r:P_r, 
 \forall x_1:T_1, \ldots \forall x_r:T_r, (I_j~p_1\ldots 
@@ -1522,7 +1521,7 @@ which one of the $I_l$ occurs.
 The main rules for being structurally smaller are the following:\\
 Given a variable $y$ of type an inductive
 definition in a declaration 
-\Ind{\Gamma}{r}{\Gamma_I}{\Gamma_C}
+\Ind{}{r}{\Gamma_I}{\Gamma_C}
 where $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
   $[c_1:C_1;\ldots;c_n:C_n]$.
 The terms structurally smaller than $y$ are:
