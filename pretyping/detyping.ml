@@ -302,7 +302,7 @@ and contract_branch isgoal e (cdn,can,mkpat,b) =
 let is_nondep_branch c l =
   try
     (* FIXME: do better using tags from l *)
-    let sign,ccl = decompose_lam_n_assum (List.length l) c in
+    let sign,ccl = decompose_lam_n_decls (List.length l) c in
     noccur_between 1 (rel_context_length sign) ccl
   with e when Errors.noncritical e -> (* Not eta-expanded or not reduced *)
     false

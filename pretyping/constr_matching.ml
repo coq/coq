@@ -267,8 +267,8 @@ let matches_core env sigma convert allow_partial_app allow_bound_rels
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
-	  let ctx_b2,b2 = decompose_lam_n_assum ci.ci_cstr_ndecls.(0) b2 in
-	  let ctx_b2',b2' = decompose_lam_n_assum ci.ci_cstr_ndecls.(1) b2' in
+	  let ctx_b2,b2 = decompose_lam_n_decls ci.ci_cstr_ndecls.(0) b2 in
+	  let ctx_b2',b2' = decompose_lam_n_decls ci.ci_cstr_ndecls.(1) b2' in
 	  let n = rel_context_length ctx_b2 in
           let n' = rel_context_length ctx_b2' in
 	  if noccur_between 1 n b2 && noccur_between 1 n' b2' then

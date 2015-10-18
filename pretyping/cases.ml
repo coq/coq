@@ -1077,7 +1077,7 @@ let rec ungeneralize n ng body =
         let p = prod_applist p [mkRel (n+List.length sign+ng)] in
         it_mkLambda_or_LetIn (it_mkProd_or_LetIn p sign2) sign in
       mkCase (ci,p,c,Array.map2 (fun q c ->
-        let sign,b = decompose_lam_n_assum q c in
+        let sign,b = decompose_lam_n_decls q c in
         it_mkLambda_or_LetIn (ungeneralize (n+q) ng b) sign)
         ci.ci_cstr_ndecls brs)
   | App (f,args) ->
@@ -1102,7 +1102,8 @@ let rec is_dependent_generalization ng body =
   | Case (ci,p,c,brs) ->
       (* We traverse a split *)
       Array.exists2 (fun q c ->
-        let _,b = decompose_lam_n_assum q c in is_dependent_generalization ng b)
+        let _,b = decompose_lam_n_decls q c in
+        is_dependent_generalization ng b)
         ci.ci_cstr_ndecls brs
   | App (g,args) ->
       (* We traverse an inner generalization *)
