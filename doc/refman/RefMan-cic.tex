@@ -68,21 +68,6 @@ a mutual recursive way and also because similar constructions can be
 applied to both terms and types and consequently can share the same
 syntactic structure.
 
-Consider for instance the $\ra$ constructor and assume \nat\ is the
-type of natural numbers. Then $\ra$ is used both to denote
-$\nat\ra\nat$ which is the type of functions from \nat\ to \nat, and
-to denote $\nat \ra \Prop$ which is the type of unary predicates over
-the natural numbers. Consider abstraction which builds functions. It
-serves to build ``ordinary'' functions as $\kw{fun}~x:\nat \Ra ({\tt mult} ~x~x)$ (assuming {\tt mult} is already defined) but may build also 
-predicates over the natural numbers. For instance $\kw{fun}~x:\nat \Ra
-(x=x)$ will
-represent a predicate $P$, informally written in mathematics
-$P(x)\equiv x=x$. If $P$ has type $\nat \ra \Prop$, $(P~x)$ is a
-proposition, furthermore $\kw{forall}~x:\nat,(P~x)$ will represent the type of
-functions which associate to each natural number $n$ an object of
-type $(P~n)$ and consequently represent proofs of the formula
-``$\forall x.P(x)$''.
-
 \subsection[Sorts]{Sorts\label{Sorts}
 \index{Sorts}}
 When manipulated as terms, types have themselves a type which is called a sort.
@@ -248,6 +233,37 @@ The notion of substituting a term $t$ to free occurrences of a
 variable $x$ in a term $u$ is defined as usual. The resulting term
 is written $\subst{u}{x}{t}$.
 
+\paragraph[The logical vs programming readings.]{The logical vs programming readings.}
+
+The constructions of the {\CIC} can be used to express both logical
+and programming notions, accordingly to the Curry-Howard
+correspondence between proofs and programs, and between propositions
+and types~\cite{Cur58,How80,Bru72}.
+
+For instance, let us assume that \nat\ is the type of natural numbers
+with zero element written $0$ and that ${\tt True}$ is the always true
+proposition.  Then $\ra$ is used both to denote $\nat\ra\nat$ which is
+the type of functions from \nat\ to \nat, to denote ${\tt True}\ra{\tt
+  True}$ which is an implicative proposition, to denote $\nat \ra
+\Prop$ which is the type of unary predicates over the natural numbers,
+etc.
+
+Let us assume that ${\tt mult}$ is a function of type $\nat\ra\nat\ra
+\nat$ and ${\tt eqnat}$ a predicate of type $\nat\ra\nat\ra \Prop$.
+The $\lambda$-abstraction can serve to build ``ordinary'' functions as
+in $\lambda x:\nat.({\tt mult}~x~x)$ (i.e. $\kw{fun}~x:\nat ~{\tt =>}~
+{\tt mult} ~x~x$ in {\Coq} notation) but may build also predicates
+over the natural numbers. For instance $\lambda x:\nat.({\tt eqnat}~
+x~0)$ (i.e. $\kw{fun}~x:\nat ~{\tt =>}~ {\tt eqnat}~ x~0$ in {\Coq}
+notation) will represent the predicate of one variable $x$ which
+asserts the equality of $x$ with $0$. This predicate has type $\nat
+\ra \Prop$ and it can be applied to any expression of type ${\nat}$,
+say $t$, to give an object $P~t$ of type \Prop, namely a proposition.
+
+Furthermore $\kw{forall}~x:\nat,\,P\;x$ will represent the type of
+functions which associate to each natural number $n$ an object of type
+$(P~n)$ and consequently represent the type of proofs of the formula
+``$\forall x.\,P(x)$''.
 
 \section[Typing rules]{Typing rules\label{Typed-terms}}
 
