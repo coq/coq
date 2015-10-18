@@ -343,6 +343,9 @@ sig
   (** Keeps the order of the instances *)
   val union : t -> t -> t
 
+  (* the number of universes in the context *)
+  val size : t -> int
+
 end
 
 type universe_context = UContext.t

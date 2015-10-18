@@ -1754,7 +1754,7 @@ let eq_puniverses f (x, u) (y, u') =
   f x y && Instance.equal u u'
 
 (** A context of universe levels with universe constraints,
-    representiong local universe variables and constraints *)
+    representing local universe variables and constraints *)
 
 module UContext =
 struct
@@ -1778,8 +1778,11 @@ struct
 
   let union (univs, cst) (univs', cst') =
     Instance.append univs univs', Constraint.union cst cst'
-      
+
   let dest x = x
+
+  let size (x,_) = Instance.length x
+
 end
 
 type universe_context = UContext.t

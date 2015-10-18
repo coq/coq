@@ -121,12 +121,12 @@ type vswitch = {
 (*                                                                        *)
 (* + Accumulators : At_[accumulate| accu | arg1 | ... | argn ]            *)
 (*   - representation of [accu] : tag_[....]                              *)
-(*     -- tag <= 2 : encoding atom type (sorts, free vars, etc.)          *)
-(*     -- 3_[accu|proj name] : a projection blocked by an accu            *)
-(*     -- 4_[accu|fix_app] : a fixpoint blocked by an accu                *)
-(*     -- 5_[accu|vswitch] : a match blocked by an accu                   *)
-(*     -- 6_[fcofix]       : a cofix function                             *)
-(*     -- 7_[fcofix|val]   : a cofix function, val represent the value    *)
+(*     -- tag <= 3 : encoding atom type (sorts, free vars, etc.)          *)
+(*     -- 10_[accu|proj name] : a projection blocked by an accu           *)
+(*     -- 11_[accu|fix_app] : a fixpoint blocked by an accu               *)
+(*     -- 12_[accu|vswitch] : a match blocked by an accu                  *)
+(*     -- 13_[fcofix]       : a cofix function                            *)
+(*     -- 14_[fcofix|val]   : a cofix function, val represent the value   *)
 (*        of the function applied to arg1 ... argn                        *)
 (* The [arguments] type, which is abstracted as an array, represents :    *)
 (*          tag[ _ | _ |v1|... | vn]                                      *)
@@ -136,7 +136,8 @@ type vswitch = {
 
 type atom =
   | Aid of Vars.id_key
-  | Aind of pinductive
+  | Aind of inductive
+  | Atype of Univ.universe
 
 (* Zippers *)
 
@@ -159,6 +160,7 @@ type whd =
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vatom_stk of atom * stack
+  | Vuniv_level of Univ.universe_level
 
 (*************************************************)
 (* Destructors ***********************************)
@@ -199,7 +201,9 @@ let rec whd_accu a stk =
       | [Zapp args] -> Vcofix(vcofix, res, Some args)
       | _           -> assert false
       end
-  | _ -> assert false
+  | tg ->
+    Errors.anomaly
+      Pp.(strbrk "Failed to parse VM value. Tag = " ++ int tg)
 
 external kind_of_closure : Obj.t -> int = "coq_kind_of_closure"
 
@@ -212,22 +216,45 @@ let whd_val : values -> whd =
       if tag = accu_tag then
 	(
 	if Int.equal (Obj.size o) 1 then Obj.obj o (* sort *)
-	else
+        else
 	  if is_accumulate (fun_code o) then whd_accu o []
-	  else (Vprod(Obj.obj o)))
+	  else Vprod(Obj.obj o))
       else
 	if tag = Obj.closure_tag || tag = Obj.infix_tag then
-	  (	   match kind_of_closure o with
+	  (match kind_of_closure o with
 	   | 0 -> Vfun(Obj.obj o)
 	   | 1 -> Vfix(Obj.obj o, None)
 	   | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
 	   | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
 	   | _ -> Errors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work"))
-	else 
-          Vconstr_block(Obj.obj o)
-         
+	else
+           Vconstr_block(Obj.obj o)
+
+let uni_lvl_val : values -> Univ.universe_level =
+  fun v ->
+    let whd = Obj.magic v in
+    match whd with
+    | Vuniv_level lvl -> lvl
+    | _ ->
+      let pr =
+        let open Pp in
+        match whd with
+        | Vsort _ -> str "Vsort"
+        | Vprod _ -> str "Vprod"
+        | Vfun _ -> str "Vfun"
+        | Vfix _ -> str "Vfix"
+        | Vcofix _ -> str "Vcofix"
+        | Vconstr_const i -> str "Vconstr_const"
+        | Vconstr_block b -> str "Vconstr_block"
+        | Vatom_stk (a,stk) -> str "Vatom_stk"
+        | _ -> assert false
+      in
+      Errors.anomaly
+        Pp.(   strbrk "Parsing virtual machine value expected universe level, got "
+            ++ pr)
+
 (************************************************)
-(* Abstrct machine ******************************)
+(* Abstract machine *****************************)
 (************************************************)
 
 (* gestion de la pile *)
@@ -299,6 +326,8 @@ let rec obj_of_str_const str =
 	Obj.set_field res i (obj_of_str_const args.(i))
       done;
       res
+  | Const_univ_level l -> Obj.repr (Vuniv_level l)
+  | Const_type u -> obj_of_atom (Atype u)
 
 let val_of_obj o = ((Obj.obj o) : values)
 
@@ -317,11 +346,11 @@ let val_of_proj kn v =
 
 module IdKeyHash =
 struct
-  type t = pconstant tableKey
-  let equal = Names.eq_table_key (Univ.eq_puniverses Constant.equal)
+  type t = constant tableKey
+  let equal = Names.eq_table_key Constant.equal
   open Hashset.Combine
   let hash = function
-  | ConstKey (c,u) -> combinesmall 1 (Constant.hash c)
+  | ConstKey c -> combinesmall 1 (Constant.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
   | RelKey i -> combinesmall 3 (Int.hash i)
 end
@@ -606,3 +635,50 @@ let apply_whd k whd =
       interprete (fun_code to_up) (Obj.magic to_up) (Obj.magic to_up) 0
   | Vatom_stk(a,stk) ->
       apply_stack (val_of_atom a) stk v 
+  | Vuniv_level lvl -> assert false
+
+let instantiate_universe (u : Univ.universe) (stk : stack) : Univ.universe =
+  match stk with
+  | [] -> u
+  | [Zapp args] ->
+    assert (Univ.LSet.cardinal (Univ.Universe.levels u) = nargs args) ;
+    let _,mp = Univ.LSet.fold (fun key (i,mp) ->
+	let u = uni_lvl_val (arg args i) in
+        (i+1, Univ.LMap.add key (Univ.Universe.make u) mp))
+	(Univ.Universe.levels u)
+        (0,Univ.LMap.empty) in
+    let subst = Univ.make_subst mp in
+    Univ.subst_univs_universe subst u
+  | _ ->
+    Errors.anomaly Pp.(str "ill-formed universe")
+
+
+let rec pr_atom a =
+  Pp.(match a with
+  | Aid c -> str "Aid(" ++ (match c with
+                            | ConstKey c -> Names.pr_con c
+			    | RelKey i -> str "#" ++ int i
+			    | _ -> str "...") ++ str ")"
+  | Aind (mi,i) -> str "Aind(" ++ Names.pr_mind mi ++ str "#" ++ int i ++ str ")"
+  | Atype _ -> str "Atype(")
+and pr_whd w =
+  Pp.(match w with
+  | Vsort _ -> str "Vsort"
+  | Vprod _ -> str "Vprod"
+  | Vfun _ -> str "Vfun"
+  | Vfix _ -> str "Vfix"
+  | Vcofix _ -> str "Vcofix"
+  | Vconstr_const i -> str "Vconstr_const(" ++ int i ++ str ")"
+  | Vconstr_block b -> str "Vconstr_block"
+  | Vatom_stk (a,stk) -> str "Vatom_stk(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")"
+  | Vuniv_level _ -> assert false)
+and pr_stack stk =
+  Pp.(match stk with
+      | [] -> str "[]"
+      | s :: stk -> pr_zipper s ++ str " :: " ++ pr_stack stk)
+and pr_zipper z =
+  Pp.(match z with
+  | Zapp args -> str "Zapp(len = " ++ int (nargs args) ++ str ")"
+  | Zfix (f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
+  | Zswitch s -> str "Zswitch(...)"
+  | Zproj c -> str "Zproj(" ++ Names.pr_con c ++ str ")")

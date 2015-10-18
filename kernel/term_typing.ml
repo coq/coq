@@ -258,33 +258,30 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
               let inferred = keep_hyps env (Idset.union ids_typ ids_def) in
               check declared inferred) lc) in
   let tps = 
-    (* FIXME: incompleteness of the bytecode vm: we compile polymorphic 
-       constants like opaque definitions. *)
-    if poly then Some (Cemitcodes.from_val Cemitcodes.BCconstant)
-    else
-      let res = 
-	match proj with
-	| None -> compile_constant_body env def
-	| Some pb ->
+    let res =
+      let comp_univs = if poly then Some univs else None in
+      match proj with
+      | None -> compile_constant_body env comp_univs def
+      | Some pb ->
 	(* The compilation of primitive projections is a bit tricky, because
            they refer to themselves (the body of p looks like fun c =>
            Proj(p,c)). We break the cycle by building an ad-hoc compilation
            environment. A cleaner solution would be that kernel projections are
            simply Proj(i,c) with i an int and c a constr, but we would have to
            get rid of the compatibility layer. *)
-	   let cb =
-	     { const_hyps = hyps;
-	       const_body = def;
-	       const_type = typ;
-	       const_proj = proj;
-	       const_body_code = None;
-	       const_polymorphic = poly;
-	       const_universes = univs;
-	       const_inline_code = inline_code }
-	   in
-	   let env = add_constant kn cb env in
-	   compile_constant_body env def
-      in Option.map Cemitcodes.from_val res
+	let cb =
+	  { const_hyps = hyps;
+	    const_body = def;
+	    const_type = typ;
+	    const_proj = proj;
+	    const_body_code = None;
+	    const_polymorphic = poly;
+	    const_universes = univs;
+	    const_inline_code = inline_code }
+	in
+	let env = add_constant kn cb env in
+	compile_constant_body env comp_univs def
+    in Option.map Cemitcodes.from_val res
   in
   { const_hyps = hyps;
     const_body = def;

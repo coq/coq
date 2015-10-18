@@ -19,13 +19,12 @@ type tag = int
 
 let accu_tag = 0
 
-let max_atom_tag = 1
-let proj_tag = 2
-let fix_app_tag = 3
-let switch_tag = 4
-let cofix_tag = 5
-let cofix_evaluated_tag = 6
-
+let max_atom_tag = 2
+let proj_tag = 3
+let fix_app_tag = 4
+let switch_tag = 5
+let cofix_tag = 6
+let cofix_evaluated_tag = 7
 
 (* It would be great if OCaml exported this value,
    So fixme if this happens in a new version of OCaml *)
@@ -33,10 +32,12 @@ let last_variant_tag = 245
 
 type structured_constant =
   | Const_sorts of sorts
-  | Const_ind of pinductive
+  | Const_ind of inductive
   | Const_proj of Constant.t
   | Const_b0 of tag
   | Const_bn of tag * structured_constant array
+  | Const_univ_level of Univ.universe_level
+  | Const_type of Univ.universe
 
 type reloc_table = (tag * int) array
 
@@ -71,7 +72,8 @@ type instruction =
   | Kclosure of Label.t * int
   | Kclosurerec of int * int * Label.t array * Label.t array
   | Kclosurecofix of int * int * Label.t array * Label.t array
-  | Kgetglobal of pconstant
+                   (* nb fv, init, lbl types, lbl bodies *)
+  | Kgetglobal of constant
   | Kconst of structured_constant
   | Kmakeblock of int * tag
   | Kmakeprod
@@ -127,7 +129,10 @@ type instruction =
 
 and bytecodes = instruction list
 
-type fv_elem = FVnamed of Id.t | FVrel of int
+type fv_elem =
+  | FVnamed of Id.t
+  | FVrel of int
+  | FVuniv_var of int
 
 type fv = fv_elem array
 
@@ -145,17 +150,16 @@ type vm_env = {
 
 
 type comp_env = {
-    nb_stack : int;              (* nbre de variables sur la pile          *)
-    in_stack : int list;         (* position dans la pile                  *)
-    nb_rec : int;                (* nbre de fonctions mutuellement         *)
-                                 (* recursives =  nbr                      *)
+    nb_uni_stack : int ;         (* number of universes on the stack,      *)
+                                 (* universes are always at the bottom.    *)
+    nb_stack : int;              (* number of variables on the stack       *)
+    in_stack : int list;         (* position in the stack                  *)
+    nb_rec : int;                (* number of mutually recursive functions *)
     pos_rec  : instruction list; (* instruction d'acces pour les variables *)
                                  (*  de point fix ou de cofix              *)
     offset : int;
-    in_env : vm_env ref
+    in_env : vm_env ref          (* The free variables of the expression   *)
   }
-
-
 
 (* --- Pretty print *)
 open Pp
@@ -169,13 +173,23 @@ let pp_sort s =
 
 let rec pp_struct_const = function
   | Const_sorts s -> pp_sort s
-  | Const_ind ((mind, i), u) -> pr_mind mind ++ str"#" ++ int i
+  | Const_ind (mind, i) -> pr_mind mind ++ str"#" ++ int i
   | Const_proj p -> Constant.print p
   | Const_b0 i -> int i
   | Const_bn (i,t) ->
      int i ++ surround (prvect_with_sep pr_comma pp_struct_const t)
+  | Const_univ_level l -> Univ.Level.pr l
+  | Const_type u -> str "Type@{" ++ Univ.pr_uni u ++ str "}"
 
 let pp_lbl lbl = str "L" ++ int lbl
+
+let pp_pcon (id,u) =
+  pr_con id ++ str "@{" ++ Univ.Instance.pr Univ.Level.pr u ++ str "}"
+
+let pp_fv_elem = function
+  | FVnamed id -> str "FVnamed(" ++ Id.print id ++ str ")"
+  | FVrel i -> str "Rel(" ++ int i ++ str ")"
+  | FVuniv_var v -> str "FVuniv(" ++ int v ++ str ")"
 
 let rec pp_instr i =
   match i with
@@ -210,8 +224,7 @@ let rec pp_instr i =
 	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
 	     str " bodies = " ++
 	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
-  | Kgetglobal (id,u) ->
-    str "getglobal " ++ pr_con id ++ str "@{" ++ Univ.Instance.pr Univ.Level.pr u ++ str "}"
+  | Kgetglobal idu -> str "getglobal " ++ pr_con idu
   | Kconst sc ->
       str "const " ++ pp_struct_const sc
   | Kmakeblock(n, m) ->
@@ -268,10 +281,6 @@ and pp_bytecodes c =
       pp_bytecodes l1 ++ pp_bytecodes l2 ++  pp_bytecodes c
   | i :: c ->
       tab () ++ pp_instr i ++ fnl () ++ pp_bytecodes c
-
-let dump_bytecode c =
-  pperrnl (pp_bytecodes c);
-  flush_all()
 
 (*spiwack: moved this type in this file  because I needed it for
   retroknowledge which can't depend from cbytegen *)

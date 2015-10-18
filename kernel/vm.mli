@@ -22,7 +22,8 @@ type arguments
 
 type atom =
   | Aid of Vars.id_key
-  | Aind of pinductive
+  | Aind of inductive
+  | Atype of Univ.universe
 
 (** Zippers *)
 
@@ -45,19 +46,25 @@ type whd =
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vatom_stk of atom * stack
+  | Vuniv_level of Univ.universe_level
+
+val pr_atom : atom -> Pp.std_ppcmds
+val pr_whd : whd -> Pp.std_ppcmds
 
 (** Constructors *)
 
 val val_of_str_const : structured_constant -> values
 val val_of_rel : int -> values
 val val_of_named : Id.t -> values
-val val_of_constant : pconstant -> values
+val val_of_constant : constant -> values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 
 (** Destructors *)
 
 val whd_val : values -> whd
+val uni_lvl_val : values -> Univ.universe_level
+val instantiate_universe : Univ.universe -> stack -> Univ.universe
 
 (** Arguments *)
 

@@ -58,7 +58,7 @@ let set_global v =
 let rec eq_structured_constant c1 c2 = match c1, c2 with
 | Const_sorts s1, Const_sorts s2 -> Sorts.equal s1 s2
 | Const_sorts _, _ -> false
-| Const_ind i1, Const_ind i2 -> Univ.eq_puniverses eq_ind i1 i2
+| Const_ind i1, Const_ind i2 -> eq_ind i1 i2
 | Const_ind _, _ -> false
 | Const_proj p1, Const_proj p2 -> Constant.equal p1 p2
 | Const_proj _, _ -> false
@@ -67,18 +67,24 @@ let rec eq_structured_constant c1 c2 = match c1, c2 with
 | Const_bn (t1, a1), Const_bn (t2, a2) ->
   Int.equal t1 t2 && Array.equal eq_structured_constant a1 a2
 | Const_bn _, _ -> false
+| Const_univ_level l1 , Const_univ_level l2 -> Univ.eq_levels l1 l2
+| Const_univ_level _ , _ -> false
+| Const_type u1 , Const_type u2 -> Univ.Universe.equal u1 u2
+| Const_type _ , _ -> false
 
 let rec hash_structured_constant c =
   let open Hashset.Combine in
   match c with
   | Const_sorts s -> combinesmall 1 (Sorts.hash s)
-  | Const_ind (i,u) -> combinesmall 2 (combine (ind_hash i) (Univ.Instance.hash u))
+  | Const_ind i -> combinesmall 2 (ind_hash i)
   | Const_proj p -> combinesmall 3 (Constant.hash p)
   | Const_b0 t -> combinesmall 4 (Int.hash t)
   | Const_bn (t, a) ->
     let fold h c = combine h (hash_structured_constant c) in
     let h = Array.fold_left fold 0 a in
     combinesmall 5 (combine (Int.hash t) h)
+  | Const_univ_level l -> combinesmall 6 (Univ.Level.hash l)
+  | Const_type u -> combinesmall 7 (Univ.Universe.hash u)
 
 module SConstTable = Hashtbl.Make (struct
   type t = structured_constant
@@ -124,7 +130,7 @@ exception NotEvaluated
 let key rk =
   match !rk with
   | None -> raise NotEvaluated
-  | Some k -> (*Pp.msgnl (str"found at: "++int k);*)
+  | Some k ->
       try Ephemeron.get k
       with Ephemeron.InvalidKey -> raise NotEvaluated
 
@@ -148,23 +154,22 @@ let slot_for_annot key =
     AnnotTable.add annot_tbl key n;
     n
 
-let rec slot_for_getglobal env (kn,u) =
+let rec slot_for_getglobal env kn =
   let (cb,(_,rk)) = lookup_constant_key kn env in
   try key rk
   with NotEvaluated ->
 (*    Pp.msgnl(str"not yet evaluated");*)
     let pos =
       match cb.const_body_code with
-      | None -> set_global (val_of_constant (kn,u))
+      | None -> set_global (val_of_constant kn)
       | Some code ->
 	 match Cemitcodes.force code with
 	 | BCdefined(code,pl,fv) ->
-	    if Univ.Instance.is_empty u then
-	    let v = eval_to_patch env (code,pl,fv) in
-	      set_global v
-	    else set_global (val_of_constant (kn,u))
+           let v = eval_to_patch env (code,pl,fv) in
+           set_global v
 	 | BCalias kn' -> slot_for_getglobal env kn'
-	 | BCconstant -> set_global (val_of_constant (kn,u)) in
+	 | BCconstant -> set_global (val_of_constant kn)
+    in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (Ephemeron.create pos);
     pos
@@ -197,6 +202,8 @@ and slot_for_fv env fv =
           fill_fv_cache rv i val_of_rel env_of_rel b
       | Some (v, _) -> v
       end
+  | FVuniv_var idu ->
+    assert false
 
 and eval_to_patch env (buff,pl,fv) =
   (* copy code *before* patching because of nested evaluations:
@@ -214,7 +221,6 @@ and eval_to_patch env (buff,pl,fv) =
   List.iter patch pl;
   let vm_env = Array.map (slot_for_fv env) fv in
   let tc = tcode_of_code buff (length buff) in
-(*Pp.msgnl (str"execute code");*)
   eval_tcode tc vm_env
 
 and val_of_constr env c =
@@ -232,5 +238,3 @@ and val_of_constr env c =
 
 let set_transparent_const kn = () (* !?! *)
 let set_opaque_const kn = () (* !?! *)
-
-

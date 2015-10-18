@@ -341,6 +341,7 @@ value coq_interprete
       /* Fallthrough */
       Instruct(ENVACC){
 	print_instr("ENVACC");
+	print_int(*pc);
 	accu = Field(coq_env, *pc++);
         Next;
       }
@@ -371,6 +372,10 @@ value coq_interprete
 	sp[1] = (value)pc;
 	sp[2] = coq_env;
 	sp[3] = Val_long(coq_extra_args);
+	print_instr("call stack=");
+	print_lint(sp[1]);
+	print_lint(sp[2]);
+	print_lint(sp[3]);
 	pc = Code_val(accu);
 	coq_env = accu;
 	coq_extra_args = 0;
@@ -458,6 +463,7 @@ value coq_interprete
 	sp[0] = arg1;
 	sp[1] = arg2;
 	pc = Code_val(accu);
+	print_lint(accu);
 	coq_env = accu;
 	coq_extra_args += 1;
 	goto check_stacks;
@@ -481,11 +487,18 @@ value coq_interprete
 	print_instr("RETURN");
 	print_int(*pc);
 	sp += *pc++;
+	print_instr("stack=");
+	print_lint(sp[0]);
+	print_lint(sp[1]);
+	print_lint(sp[2]);
 	if (coq_extra_args > 0) {
+	  print_instr("extra args > 0");
+	  print_lint(coq_extra_args);
 	  coq_extra_args--;
 	  pc = Code_val(accu);
 	  coq_env = accu;
 	} else {
+	  print_instr("extra args = 0");
 	  pc = (code_t)(sp[0]);
 	  coq_env = sp[1];
 	  coq_extra_args = Long_val(sp[2]);
@@ -585,7 +598,10 @@ value coq_interprete
 	Alloc_small(accu, 1 + nvars, Closure_tag);
 	Code_val(accu) = pc + *pc;
 	pc++;
-	for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
+	for (i = 0; i < nvars; i++) {
+	  print_lint(sp[i]);
+	  Field(accu, i + 1) = sp[i];
+	}
 	sp += nvars;
 	Next;
       }
@@ -720,6 +736,7 @@ value coq_interprete
       /* Fallthrough */
       Instruct(GETGLOBAL){
 	print_instr("GETGLOBAL");
+	print_int(*pc);
 	accu = Field(coq_global_data, *pc);
         pc++;
         Next;
@@ -732,7 +749,7 @@ value coq_interprete
 	tag_t tag = *pc++;
 	mlsize_t i;
 	value block;
-	print_instr("MAKEBLOCK");
+	print_instr("MAKEBLOCK, tag=");
 	Alloc_small(block, wosize, tag);
 	Field(block, 0) = accu;
 	for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
@@ -743,7 +760,8 @@ value coq_interprete
 	
 	tag_t tag = *pc++;
 	value block;
-	print_instr("MAKEBLOCK1");
+	print_instr("MAKEBLOCK1, tag=");
+	print_int(tag);
 	Alloc_small(block, 1, tag);
 	Field(block, 0) = accu;
 	accu = block;
@@ -753,7 +771,8 @@ value coq_interprete
 	
 	tag_t tag = *pc++;
 	value block;
-	print_instr("MAKEBLOCK2");
+	print_instr("MAKEBLOCK2, tag=");
+	print_int(tag);
 	Alloc_small(block, 2, tag);
 	Field(block, 0) = accu;
 	Field(block, 1) = sp[0];
@@ -764,7 +783,8 @@ value coq_interprete
       Instruct(MAKEBLOCK3) {
 	tag_t tag = *pc++;
 	value block;
-	print_instr("MAKEBLOCK3");
+	print_instr("MAKEBLOCK3, tag=");
+	print_int(tag);
 	Alloc_small(block, 3, tag);
 	Field(block, 0) = accu;
 	Field(block, 1) = sp[0];
@@ -776,7 +796,8 @@ value coq_interprete
       Instruct(MAKEBLOCK4) {
 	tag_t tag = *pc++;
 	value block;
-	print_instr("MAKEBLOCK4");
+	print_instr("MAKEBLOCK4, tag=");
+	print_int(tag);
 	Alloc_small(block, 4, tag);
 	Field(block, 0) = accu;
 	Field(block, 1) = sp[0];
@@ -940,6 +961,7 @@ value coq_interprete
       /* Fallthrough */
       Instruct(CONSTINT) {
 	print_instr("CONSTINT");
+	print_int(*pc);
 	accu = Val_int(*pc);
 	pc++;
 	Next;
