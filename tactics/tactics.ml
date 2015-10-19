@@ -2418,6 +2418,7 @@ let insert_before decls lasthyp env =
 (* unsafe *)
 
 let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
+  let sigma = Sigma.to_evar_map sigma in
   let body = if dep then Some c else None in
   let t = match ty with Some t -> t | _ -> typ_of env sigma c in
   match with_eq with
@@ -2446,31 +2447,30 @@ let mkletin_goal env sigma store with_eq dep (id,lastlhyp,ccl,c) ty =
       Sigma (mkNamedLetIn id c t x, sigma, p)
 
 let letin_tac with_eq id c ty occs =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_s_enter { enter = begin fun gl sigma ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
     let ccl = Proofview.Goal.concl gl in
     let abs = AbstractExact (id,c,ty,occs,true) in
     let (id,_,depdecls,lastlhyp,ccl,_) = make_abstraction env sigma ccl abs in
     (* We keep the original term to match *)
-    letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty
-  end
+    let tac = letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty in
+    Sigma (tac, sigma, Sigma.refl)
+  end }
 
 let letin_pat_tac with_eq id c occs =
   Proofview.Goal.nf_s_enter { enter = begin fun gl sigma ->
     let env = Proofview.Goal.env gl in
-    let sigma = Sigma.to_evar_map sigma in
     let ccl = Proofview.Goal.concl gl in
     let check t = true in
     let abs = AbstractPattern (false,check,id,c,occs,false) in
     let (id,_,depdecls,lastlhyp,ccl,res) = make_abstraction env sigma ccl abs in
-    let sigma,c = match res with
+    let Sigma (c, sigma, p) = match res with
     | None -> finish_evar_resolution ~flags:(tactic_infer_flags false) env sigma c
-    | Some (sigma,c) -> (sigma,c) in
+    | Some res -> res in
     let tac =
       (letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) None)
     in
-    Sigma.Unsafe.of_pair (tac, sigma)
+    Sigma (tac, sigma, p)
   end }
 
 (* Tactics "pose proof" (usetac=None) and "assert"/"enough" (otherwise) *)
@@ -3892,6 +3892,7 @@ let clear_unselected_context id inhyps cls gl =
   | None -> tclIDTAC gl
 
 let use_bindings env sigma elim must_be_closed (c,lbind) typ =
+  let sigma = Sigma.to_evar_map sigma in
   let typ =
     if elim == None then
       (* w/o an scheme, the term has to be applied at least until
@@ -3913,7 +3914,8 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       if must_be_closed && occur_meta (clenv_value indclause) then
         error "Need a fully applied argument.";
       (* We lose the possibility of coercions in with-bindings *)
-      pose_all_metas_as_evars env indclause.evd (clenv_value indclause)
+      let (sigma, c) = pose_all_metas_as_evars env indclause.evd (clenv_value indclause) in
+      Sigma.Unsafe.of_pair (c, sigma)
     with e when catchable_exception e ->
     try find_clause (try_red_product env sigma typ)
     with Redelimination -> raise e in
@@ -3931,6 +3933,7 @@ let check_expected_type env sigma (elimc,bl) elimt =
   fun t -> Evarconv.e_cumul env (ref sigma) t u
 
 let check_enough_applied env sigma elim =
+  let sigma = Sigma.to_evar_map sigma in
   (* A heuristic to decide whether the induction arg is enough applied *)
   match elim with
   | None ->
@@ -3953,11 +3956,10 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
      id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
   Proofview.Goal.s_enter { enter = begin fun gl sigma ->
   let env = Proofview.Goal.env gl in
-  let sigma = Sigma.to_evar_map sigma in
   let ccl = Proofview.Goal.raw_concl gl in
   let store = Proofview.Goal.extra gl in
   let check = check_enough_applied env sigma elim in
-  let (sigma',c) = use_bindings env sigma elim false (c0,lbind) t0 in
+  let Sigma (c, sigma', p) = use_bindings env sigma elim false (c0,lbind) t0 in
   let abs = AbstractPattern (from_prefix,check,Name id,(pending,c),cls,false) in
   let (id,sign,_,lastlhyp,ccl,res) = make_abstraction env sigma' ccl abs in
   match res with
@@ -3967,7 +3969,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       (* we restart using bindings after having tried type-class
          resolution etc. on the term given by the user *)
       let flags = tactic_infer_flags (with_evars && (* do not give a success semantics to edestruct on an open term yet *) false) in
-      let (sigma,c0) = finish_evar_resolution ~flags env sigma (pending,c0) in
+      let Sigma (c0, sigma, q) = finish_evar_resolution ~flags env sigma (pending,c0) in
       let tac =
       (if isrec then
           (* Historically, induction has side conditions last *)
@@ -3977,10 +3979,9 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
           Tacticals.New.tclTHENLAST)
       (Tacticals.New.tclTHENLIST [
         Proofview.Refine.refine ~unsafe:true { run = begin fun sigma ->
-          let sigma = Sigma.to_evar_map sigma in
           let b = not with_evars && with_eq != None in
-          let (sigma,c) = use_bindings env sigma elim b (c0,lbind) t0 in
-          let t = Retyping.get_type_of env sigma c in
+          let Sigma (c, sigma, _) = use_bindings env sigma elim b (c0,lbind) t0 in
+          let t = Retyping.get_type_of env (Sigma.to_evar_map sigma) c in
           mkletin_goal env sigma store with_eq false (id,lastlhyp,ccl,c) (Some t)
         end };
         Proofview.(if with_evars then shelve_unifiable else guard_no_unifiable);
@@ -3991,9 +3992,9 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       ])
       tac
       in
-      Sigma.Unsafe.of_pair (tac, sigma)
+      Sigma (tac, sigma, q)
 
-  | Some (sigma',c) ->
+  | Some (Sigma (c, sigma', q)) ->
       (* pattern found *)
       let with_eq = Option.map (fun eq -> (false,eq)) eqname in
       (* TODO: if ind has predicate parameters, use JMeq instead of eq *)
@@ -4001,13 +4002,12 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       let tac =
       Tacticals.New.tclTHENLIST [
         Proofview.Refine.refine ~unsafe:true { run = begin fun sigma ->
-          let sigma = Sigma.to_evar_map sigma in
           mkletin_goal env sigma store with_eq true (id,lastlhyp,ccl,c) None
         end };
         tac
       ]
       in
-      Sigma.Unsafe.of_pair (tac, sigma')
+      Sigma (tac, sigma', p +> q)
   end }
 
 let has_generic_occurrences_but_goal cls id env ccl =
@@ -4026,6 +4026,7 @@ let induction_gen clear_flag isrec with_evars elim
   let ccl = Proofview.Goal.raw_concl gl in
   let cls = Option.default allHypsAndConcl cls in
   let t = typ_of env sigma c in
+  let sigma = Sigma.Unsafe.of_evar_map sigma in
   let is_arg_pure_hyp =
     isVar c && not (mem_named_context (destVar c) (Global.named_context()))
     && lbind == NoBindings && not with_evars && Option.is_empty eqname
@@ -4119,7 +4120,10 @@ let induction_destruct isrec with_evars (lc,elim) =
       let finish_evar_resolution f =
         let (sigma',(c,lbind)) = f env sigma in
         let pending = (sigma,sigma') in
-        snd (finish_evar_resolution env sigma' (pending,c)),lbind in
+        let sigma' = Sigma.Unsafe.of_evar_map sigma' in
+        let Sigma (c, _, _) = finish_evar_resolution env sigma' (pending,c) in
+        (c, lbind)
+      in
       let c = map_induction_arg finish_evar_resolution c in
       onInductionArg
 	(fun _clear_flag (c,lbind) ->
@@ -4161,7 +4165,10 @@ let induction_destruct isrec with_evars (lc,elim) =
         let pending = (sigma,sigma') in
 	if lbind != NoBindings then
 	  error "'with' clause not supported here.";
-        snd (finish_evar_resolution env sigma' (pending,c)) in
+	let sigma' = Sigma.Unsafe.of_evar_map sigma' in
+        let Sigma (c, _, _) = finish_evar_resolution env sigma' (pending,c) in
+        c
+      in
       let lc = List.map (on_pi1 (map_induction_arg finish_evar_resolution)) lc in
       let newlc =
         List.map (fun (x,(eqn,names),cls) ->

@@ -1442,9 +1442,10 @@ let indirect_dependency d decls =
   pi1 (List.hd (List.filter (fun (id,_,_) -> dependent_in_decl (mkVar id) d) decls))
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
+  let current_sigma = Sigma.to_evar_map current_sigma in
   let sigma = Pretyping.solve_remaining_evars flags env current_sigma pending in
   let sigma, subst = nf_univ_variables sigma in
-  sigma, subst_univs_constr subst (nf_evar sigma c)
+  Sigma.Unsafe.of_pair (subst_univs_constr subst (nf_evar sigma c), sigma)
 
 let default_matching_core_flags sigma =
   let ts = Names.full_transparent_state in {
@@ -1595,7 +1596,11 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (pi1(List.last depdecls)) in
-    (id,sign,depdecls,lastlhyp,ccl,out test)
+    let res = match out test with
+    | None -> None
+    | Some (sigma, c) -> Some (Sigma.Unsafe.of_pair (c, sigma))
+    in
+    (id,sign,depdecls,lastlhyp,ccl,res)
   with
     SubtermUnificationError e ->
       raise (PretypeError (env,sigma,CannotUnifyOccurrences e))
@@ -1617,12 +1622,13 @@ type abstraction_request =
 | AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * pending_constr * clause * bool
 | AbstractExact of Name.t * constr * types option * clause * bool
 
-type abstraction_result =
+type 'r abstraction_result =
   Names.Id.t * named_context_val *
     Context.named_declaration list * Names.Id.t option *
-    types * (Evd.evar_map * constr) option
+    types * (constr, 'r) Sigma.sigma option
 
 let make_abstraction env evd ccl abs =
+  let evd = Sigma.to_evar_map evd in
   match abs with
   | AbstractPattern (from_prefix,check,name,c,occs,check_occs) ->
       make_abstraction_core name
