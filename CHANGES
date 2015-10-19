@@ -5,6 +5,9 @@ Vernacular commands
 
 - New command "Redirect" to redirect the output of a command to a file.
 - New command "Undelimit Scope" to remove the delimiter of a scope.
+- New option "Strict Universe Declaration", set by default. It enforces the
+  declaration of all polymorphic universes appearing in a definition when
+  introducing it.
 
 Tactics
 
