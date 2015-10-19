@@ -48,7 +48,7 @@ says {\em convertible}). Convertibility is presented in section
 The reader seeking a background on the Calculus of Inductive
 Constructions may read several papers. In addition to the references given above, Giménez and Castéran~\cite{GimCas05}
 provide
-an introduction to inductive and co-inductive definitions in Coq. In
+an introduction to inductive and co-inductive definitions in {\Coq}. In
 their book~\cite{CoqArt}, Bertot and Castéran give a
 description of the \CIC{} based on numerous practical examples.
 Barras~\cite{Bar99}, Werner~\cite{Wer94} and
@@ -120,15 +120,15 @@ Formally, we call {\Sort} the set of sorts which is defined by:
 \index{Set@{\Set}}
 
 The sorts enjoy the following properties\footnote{In the Reference
-  Manual of versions of Coq prior to 8.4, the level of {\Type} typing
-  {\Prop} and {\Set} was numbered $0$. From Coq 8.4, it started to be
+  Manual of versions of {\Coq} prior to 8.4, the level of {\Type} typing
+  {\Prop} and {\Set} was numbered $0$. From {\Coq} 8.4, it started to be
   numbered $1$ so as to be able to leave room for re-interpreting
   {\Set} in the hierarchy as {\Type$(0)$}. This change also put the
   reference manual in accordance with the internal conventions adopted
   in the implementation.}: {\Prop:\Type$(1)$}, {\Set:\Type$(1)$} and
 {\Type$(i)$:\Type$(i+1)$}.
 
-The user will never mention explicitly the index $i$ when referring to
+The user does not have to mention explicitly the index $i$ when referring to
 the universe \Type$(i)$. One only writes \Type. The
 system itself generates for each instance of \Type\ a new
 index for the universe and checks that the constraints between these
@@ -203,14 +203,14 @@ More precisely the language of the {\em Calculus of Inductive
 %\item constructors are terms.
 %\item inductive types are terms.
 \item if $x$ is a variable and $T$, $U$ are terms then $\forall~x:T,U$
-  ($\kw{forall}~x:T,U$ in \Coq{} concrete syntax) is a term. If $x$
+  ($\kw{forall}~x:T,~U$ in \Coq{} concrete syntax) is a term. If $x$
   occurs in $U$, $\forall~x:T,U$ reads as {\it ``for all x of type T,
     U''}. As $U$ depends on $x$, one says that $\forall~x:T,U$ is a
   {\em dependent product}. If $x$ doesn't occurs in $U$ then
   $\forall~x:T,U$ reads as {\it ``if T then U''}. A non dependent
   product can be written: $T \rightarrow U$.
 \item if $x$ is a variable and $T$, $U$ are terms then $\lb x:T \mto U$
-  ($\kw{fun}~x:T\Ra U$ in \Coq{} concrete syntax) is a term. This is a
+  ($\kw{fun}~x:T~ {\tt =>}~ U$ in \Coq{} concrete syntax) is a term. This is a
   notation for the $\lambda$-abstraction of
   $\lambda$-calculus\index{lambda-calculus@$\lambda$-calculus}
   \cite{Bar81}. The term $\lb x:T \mto U$ is a function which maps
@@ -249,11 +249,11 @@ variable $x$ in a term $u$ is defined as usual. The resulting term
 is written $\subst{u}{x}{t}$.
 
 
-\section[Typed terms]{Typed terms\label{Typed-terms}}
+\section[Typing rules]{Typing rules\label{Typed-terms}}
 
 As objects of type theory, terms are subjected to {\em type
 discipline}. The well typing of a term depends on
-a global environment (see below) and a local context.
+a global environment and a local context.
 
 \paragraph{Local context.}
 A {\em local context} is an ordered list of
@@ -375,7 +375,7 @@ be derived from the following rules.
         {\WTEG{\letin{x}{t:T}{u}}{\subst{U}{x}{t}}}}
 \end{description}
     
-\Rem We may have $\letin{x}{t:T}{u}$
+\Rem We may have $\kw{let}~x:=t~\kw{in}~u$
 well-typed without having $((\lb x:T\mto u)~t)$ well-typed (where
 $T$ is a type of $t$). This is because the value $t$ associated to $x$
 may be used in a conversion rule (see Section~\ref{conv-rules}).
@@ -628,7 +628,7 @@ But the following definition has $0$ parameters:
 %$\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
 %  \ra (\List~A\ra A) \ra (\List~A)}$.}
 \paragraph{Concrete syntax.}
-In the Coq system, the local context of parameters is given explicitly
+In the {\Coq} system, the local context of parameters is given explicitly
 after the name of the inductive definitions and is shared between the
 arities and the type of constructors.
 % The vernacular declaration of polymorphic trees and forests will be:\\
@@ -906,7 +906,7 @@ Inductive exType (P:Type->Prop) : Type
 \paragraph[Sort-polymorphism of inductive types.]{Sort-polymorphism of inductive types.\index{Sort-polymorphism of inductive types}}
 \label{Sort-polymorphism-inductive}
 
-From {\Coq} version 8.1, inductive types declared in {\Type} are
+Inductive types declared in {\Type} are
 polymorphic over their arguments in {\Type}.
 
 If $A$ is an arity of some sort and $s$ is a sort, we write $A_{/s}$ for the arity
@@ -1113,7 +1113,7 @@ at the computational level it implements a generic operator for doing
 primitive recursion over the structure.
 
 But this operator is rather tedious to implement and use. We choose in
-this version of Coq to factorize the operator for primitive recursion
+this version of {\Coq} to factorize the operator for primitive recursion
 into two more primitive operations as was first suggested by Th. Coquand
 in~\cite{Coq92}.  One is the definition by pattern-matching. The second one is a definition by guarded fixpoints. 
 
