@@ -66,16 +66,50 @@ and cases_pattern_notation_substitution =
 type instance_expr = Misctypes.glob_level list
 
 (** AST representation of a term. *)
+
+(* Reference manual defines the grammar for Vernacular commands in Chapter 6
+ *
+ * ------------------------------------------------------------
+ *
+ * These files:
+ *
+ *   parsing/*.ml4
+ *
+ * define mapping of concrete syntax into "constr_expr" values.
+ *
+ * ------------------------------------------------------------
+ *
+ * One can explore this mapping in the following way:
+ *
+ *   $ make -j4 bin/coqtop.byte
+ *   $ rlwrap bin/coqtop.byte
+ *
+ *   Coq < Drop.
+ *
+ *   # #use "dev/include";;
+ *   open Constrexpr;;
+ *
+ *   # Pcoq.Gram.entry_parse Pcoq.Constr.lconstr Coqloop.top_buffer.tokens;;
+ *
+ *   Coq < 42.
+ *
+ *     - : Constrexpr.constr_expr = CPrim _ (Numeral 42)
+ *
+ *   Coq < foo + 42.
+ *
+ *     - : Constrexpr.constr_expr =
+ *           CNotation (20,28) "_ + _"
+ *           ([CRef (Ident (_, foo)) None; CPrim _ (Numeral 42)], [], [])
+ *)
 type constr_expr =
-  | CRef of reference * instance_expr option
-    (** identifier  *)
-  | CFix of Loc.t * Id.t located * fix_expr list
-  | CCoFix of Loc.t * Id.t located * cofix_expr list
-  | CProdN of Loc.t * binder_expr list * constr_expr
-  | CLambdaN of Loc.t * binder_expr list * constr_expr
-  | CLetIn of Loc.t * Name.t located * constr_expr * constr_expr
+  | CRef of reference * instance_expr option                      (** qualified or unqualified identifiers *)
+  | CFix of Loc.t * Id.t located * fix_expr list                 
+  | CCoFix of Loc.t * Id.t located * cofix_expr list             
+  | CProdN of Loc.t * binder_expr list * constr_expr              (** product *)
+  | CLambdaN of Loc.t * binder_expr list * constr_expr            (** lambda-abstraction *)
+  | CLetIn of Loc.t * Name.t located * constr_expr * constr_expr  (** let-binding *)
   | CAppExpl of Loc.t * (proj_flag * reference * instance_expr option) * constr_expr list
-  | CApp of Loc.t * (proj_flag * constr_expr) *
+  | CApp of Loc.t * (proj_flag * constr_expr) *                   (** application *)
       (constr_expr * explicitation located option) list
   | CRecord of Loc.t * constr_expr option * (reference * constr_expr) list
   | CCases of Loc.t * case_style * constr_expr option *
@@ -83,15 +117,43 @@ type constr_expr =
   | CLetTuple of Loc.t * Name.t located list * (Name.t located option * constr_expr option) *
       constr_expr * constr_expr
   | CIf of Loc.t * constr_expr * (Name.t located option * constr_expr option)
-      * constr_expr * constr_expr
+      * constr_expr * constr_expr 
+
+  (* Representation of '_' characters that appear in the original terms.
+   * Those '_' characters either represent terms that user expects Coq will infer during pre-typing phase,
+   * or they represent wildcards in patterns.
+   *)
   | CHole of Loc.t * Evar_kinds.t option * intro_pattern_naming_expr * Genarg.raw_generic_argument option
+
   | CPatVar of Loc.t * patvar
-  | CEvar of Loc.t * Glob_term.existential_name * (Id.t * constr_expr) list
-  | CSort of Loc.t * glob_sort
+  | CEvar of Loc.t * Glob_term.existential_name * (Id.t * constr_expr) list   (* existential variables *)
+  | CSort of Loc.t * glob_sort   (* representation of sorts (i.e. 'Prop', 'Set', and 'Type' *)
+
+  (* (<constr_expr> : constr_expr cast_type) *)
   | CCast of Loc.t * constr_expr * constr_expr cast_type
+
+  (* Representation of terms that take advantage of user-defined 'notations'. E.g.:
+   *
+   *  2+3  --->  CNotation loc "_ + _" ([CPrim _ (Numeral 2); CPrim _ (Numeral 3)],
+   *                                    [],
+   *                                    []))
+   *)
   | CNotation of Loc.t * notation * constr_notation_substitution
+
   | CGeneralization of Loc.t * binding_kind * abstraction_kind option * constr_expr
+
+  (* Representation of 'primitive tokens' (in other words 'literals'). E.g.:
+   *
+   *   42     --->  CPrim _ (Numeral 42)
+   *   "foo"  --->  CPrim (280,285) (String "foo")
+   *)
   | CPrim of Loc.t * prim_token
+
+  (* Representation of 'interpretation scope'. E.g.:
+   *
+   *   0%nat  --->  CDelimiters _ "nat" (CPrim _ (Numeral 0))
+   *   0%Z    --->  CDelimiters _ "Z" (CPrim _ (Numeral 0))
+   *)
   | CDelimiters of Loc.t * string * constr_expr
 
 and case_expr =
@@ -100,8 +162,10 @@ and case_expr =
 and branch_expr =
   Loc.t * cases_pattern_expr list located list * constr_expr
 
-and binder_expr =
-  Name.t located list * binder_kind * constr_expr
+(* representation of bindings (of products and lambda-expressions) *)
+and binder_expr = Name.t located list  (* names of bound variables *)
+                * binder_kind          (* implicit bindings / explicit bindings *)
+                * constr_expr          (* type of bound variables *)
 
 and fix_expr =
     Id.t located * (Id.t located option * recursion_order_expr) *

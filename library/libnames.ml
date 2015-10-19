@@ -183,9 +183,10 @@ let eq_global_dir_reference r1 r2 = match r1, r2 with
 | DirClosedSection dp1, DirClosedSection dp2 -> DirPath.equal dp1 dp2
 | _ -> false
 
+(* Representation of qualified or non-qualified identifiers. *)
 type reference =
-  | Qualid of qualid Loc.located
-  | Ident of Id.t Loc.located
+  | Qualid of qualid Loc.located   (** representation of qualified identifiers *)
+  | Ident of Id.t Loc.located      (** representation of (non-qualified) identifiers *)
 
 let qualid_of_reference = function
   | Qualid (loc,qid) -> loc, qid

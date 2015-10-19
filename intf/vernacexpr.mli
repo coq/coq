@@ -283,6 +283,53 @@ type module_binder = bool option * lident list * module_ast_inl
 
 (** {6 The type of vernacular expressions} *)
 
+(* Reference manual defines the grammar for Vernacular commands in Chapter 6
+ *
+ * ------------------------------------------------------------
+ *
+ * These files:
+ *
+ *   parsing/*.ml4
+ *
+ * define mapping of concrete syntax into "vernac_expr" values.
+ *
+ * ------------------------------------------------------------
+ *
+ * One can explore this mapping in the following way:
+ *
+ *   $ make -j4 bin/coqtop.byte
+ *   $ rlwrap bin/coqtop.byte
+ *
+ *   Coq < Drop.
+ *
+ *   # #use "dev/include";;
+ *   open Vernacexpr;;
+ *
+ *   # Pcoq.Gram.entry_parse Pcoq.main_entry Coqloop.top_buffer.tokens;;
+ *
+ *   Coq < Time Load "foo".
+ *     - : option (Loc.t * Vernacexpr.vernac_expr) =
+ *     Some (_, VernacTime (_, VernacLoad False "foo"))
+ *
+ *   # Pcoq.Gram.entry_parse Pcoq.main_entry Coqloop.top_buffer.tokens;;
+ *
+ *   Coq < Definition foo := fun x => x = 3.
+ *     - : option (Loc.t * Vernacexpr.vernac_expr) =
+ *     Some
+ *      (_,
+ *      VernacDefinition (None, Decl_kinds.Definition) ((_, foo), None)
+ *       (DefineBody [] None
+ *         (CLambdaN _
+ *           [([(_, Names.Name.Name x)], Default Decl_kinds.Explicit,
+ *            CHole _ (Some (Evar_kinds.BinderType (Names.Name.Name x)))
+ *             Misctypes.IntroAnonymous None)]
+ *           (CNotation _ "_ = _"
+ *             ([CRef (Ident (_, x)) None; CPrim _ (Numeral 3)], 
+ *             [], [])))
+ *         None))
+ *)
+
+(** Representation of Vernacular commands. *)
 type vernac_expr =
   (* Control *)
   | VernacLoad of verbose_flag * string
