@@ -33,7 +33,7 @@ let explain_logic_error = ref (fun e -> mt())
 let explain_logic_error_no_anomaly = ref (fun e -> mt())
 
 let msg_tac_debug s = Proofview.NonLogical.print_debug (s++fnl())
-let msg_tac_notice s = Proofview.NonLogical.print (s++fnl())
+let msg_tac_notice s = Proofview.NonLogical.print_notice (s++fnl())
 
 (* Prints the goal *)
 
@@ -122,7 +122,7 @@ let run ini =
   let open Proofview.NonLogical in
   if not ini then
     begin
-      Proofview.NonLogical.print (str"\b\r\b\r") >>
+      Proofview.NonLogical.print_notice (str"\b\r\b\r") >>
       !skipped >>= fun skipped ->
       msg_tac_debug (str "Executed expressions: " ++ int skipped ++ fnl())
     end >>
@@ -137,7 +137,7 @@ let rec prompt level =
   let runtrue = run true in
   begin
     let open Proofview.NonLogical in
-    Proofview.NonLogical.print (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ") >>
+    Proofview.NonLogical.print_notice (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ") >>
     let exit = (skip:=0) >> (skipped:=0) >> raise Sys.Break in
     Proofview.NonLogical.catch Proofview.NonLogical.read_line
       begin function (e, info) -> match e with

@@ -566,8 +566,10 @@ let decompose_lam_assum =
   in
   lamdec_rec empty_rel_context
 
-(* Given a positive integer n, transforms a product term (x1:T1)..(xn:Tn)T
-   into the pair ([(xn,Tn);...;(x1,T1)],T) *)
+(* Given a positive integer n, decompose a product or let-in term
+   of the form [forall (x1:T1)..(xi:=ci:Ti)..(xn:Tn), T] into the pair
+   of the quantifying context [(xn,None,Tn);..;(xi,Some
+   ci,Ti);..;(x1,None,T1)] and of the inner type [T]) *)
 let decompose_prod_n_assum n =
   if n < 0 then
     error "decompose_prod_n_assum: integer parameter must be positive";
@@ -581,10 +583,12 @@ let decompose_prod_n_assum n =
   in
   prodec_rec empty_rel_context n
 
-(* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T
-   into the pair ([(xn,Tn);...;(x1,T1)],T)
+(* Given a positive integer n, decompose a lambda or let-in term [fun
+   (x1:T1)..(xi:=ci:Ti)..(xn:Tn) => T] into the pair of the abstracted
+   context [(xn,None,Tn);...;(xi,Some ci,Ti);...;(x1,None,T1)] and of
+   the inner body [T].
    Lets in between are not expanded but turn into local definitions,
-   but n is the actual number of destructurated lambdas.  *)
+   but n is the actual number of destructurated lambdas. *)
 let decompose_lam_n_assum n =
   if n < 0 then
     error "decompose_lam_n_assum: integer parameter must be positive";
@@ -595,6 +599,20 @@ let decompose_lam_n_assum n =
     | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) n c
     | Cast (c,_,_)      -> lamdec_rec l n c
     | c -> error "decompose_lam_n_assum: not enough abstractions"
+  in
+  lamdec_rec empty_rel_context n
+
+(* Same, counting let-in *)
+let decompose_lam_n_decls n =
+  if n < 0 then
+    error "decompose_lam_n_decls: integer parameter must be positive";
+  let rec lamdec_rec l n c =
+    if Int.equal n 0 then l,c
+    else match kind_of_term c with
+    | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) (n-1) c
+    | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) (n-1) c
+    | Cast (c,_,_)      -> lamdec_rec l n c
+    | c -> error "decompose_lam_n_decls: not enough abstractions"
   in
   lamdec_rec empty_rel_context n
 

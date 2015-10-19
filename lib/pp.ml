@@ -362,11 +362,11 @@ let emacs_quote_info_start = "<infomsg>"
 let emacs_quote_info_end = "</infomsg>"
 
 let emacs_quote g =
-  if !print_emacs then str emacs_quote_start ++ hov 0 g ++ str emacs_quote_end
+  if !print_emacs then hov 0 (str emacs_quote_start ++ g ++ str emacs_quote_end)
   else hov 0 g
 
 let emacs_quote_info g =
-  if !print_emacs then str emacs_quote_info_start++fnl() ++ hov 0 g ++ str emacs_quote_info_end
+  if !print_emacs then hov 0 (str emacs_quote_info_start++ brk(0,0) ++ g ++ brk(0,0) ++ str emacs_quote_info_end)
   else hov 0 g
 
 

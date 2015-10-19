@@ -97,7 +97,7 @@ val start_dependent_proof :
 val close_proof : keep_body_ucst_separate:bool -> Future.fix_exn -> closed_proof
 
 (* Intermediate step necessary to delegate the future.
- * Both access the current proof state. The formes is supposed to be
+ * Both access the current proof state. The former is supposed to be
  * chained with a computation that completed the proof *)
 
 type closed_proof_output = (Term.constr * Declareops.side_effects) list * Evd.evar_universe_context

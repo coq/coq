@@ -45,8 +45,8 @@ open Proofview.Notations
 
 let safe_msgnl s =
   Proofview.NonLogical.catch
-    (Proofview.NonLogical.print (s++fnl()))
-    (fun _ -> Proofview.NonLogical.print (str "bug in the debugger: an exception is raised while printing debug information"++fnl()))
+    (Proofview.NonLogical.print_debug (s++fnl()))
+    (fun _ -> Proofview.NonLogical.print_warning (str "bug in the debugger: an exception is raised while printing debug information"++fnl()))
 
 type value = tlevel generic_argument
 
@@ -1151,7 +1151,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
         interp_message ist s >>= fun msg ->
         return (hov 0 msg , hov 0 msg)
       in
-      let print (_,msgnl) = Proofview.(tclLIFT (NonLogical.print msgnl)) in
+      let print (_,msgnl) = Proofview.(tclLIFT (NonLogical.print_info msgnl)) in
       let log (msg,_) = Proofview.Trace.log (fun () -> msg) in
       let break = Proofview.tclLIFT (db_breakpoint (curr_debug ist) s) in
       Ftactic.run msgnl begin fun msgnl ->

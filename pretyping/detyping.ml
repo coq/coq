@@ -302,7 +302,7 @@ and contract_branch isgoal e (cdn,can,mkpat,b) =
 let is_nondep_branch c l =
   try
     (* FIXME: do better using tags from l *)
-    let sign,ccl = decompose_lam_n_assum (List.length l) c in
+    let sign,ccl = decompose_lam_n_decls (List.length l) c in
     noccur_between 1 (rel_context_length sign) ccl
   with e when Errors.noncritical e -> (* Not eta-expanded or not reduced *)
     false
@@ -513,7 +513,7 @@ let rec detype flags avoid env sigma t =
           id,l
         with Not_found ->
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)), 
-          (Array.map_to_list (fun c -> (Id.of_string "A",c)) cl)
+          (Array.map_to_list (fun c -> (Id.of_string "__",c)) cl)
       in
         GEvar (dl,id,
                List.map (on_snd (detype flags avoid env sigma)) l)

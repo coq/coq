@@ -94,14 +94,6 @@ struct
 
   let print_char = fun c -> (); fun () -> print_char c
 
-  (** {!Pp.pp}. The buffer is also flushed. *)
-  let print_debug = fun s -> (); fun () -> try Pp.msg_info s; Pp.pp_flush () with e ->
-    let (e, info) = Errors.push e in raise ~info e ()
-
-  (** {!Pp.pp}. The buffer is also flushed. *)
-  let print = fun s -> (); fun () -> try Pp.msg_notice s; Pp.pp_flush () with e ->
-    let (e, info) = Errors.push e in raise ~info e ()
-
   let timeout = fun n t -> (); fun () ->
     Control.timeout n t (Exception Timeout)
 
@@ -110,6 +102,13 @@ struct
     with e when Errors.noncritical e ->
       let (e, info) = Errors.push e in
       Util.iraise (Exception e, info)
+
+  (** Use the current logger. The buffer is also flushed. *)
+  let print_debug s = make (fun _ -> Pp.msg_info s;Pp.pp_flush ())
+  let print_info s =  make (fun _ -> Pp.msg_info s;Pp.pp_flush ())
+  let print_warning s =  make (fun _ -> Pp.msg_warning s;Pp.pp_flush ())
+  let print_error s =  make (fun _ -> Pp.msg_error s;Pp.pp_flush ())
+  let print_notice s = make (fun _ -> Pp.msg_notice s;Pp.pp_flush ())
 
   let run = fun x ->
     try x () with Exception e as src ->
@@ -155,7 +154,7 @@ struct
       shape of the monadic type is reminiscent of that of the
       continuation monad transformer.
 
-      The paper also contains the rational for the [split] abstraction.
+      The paper also contains the rationale for the [split] abstraction.
 
       An explanation of how to derive such a monad from mathematical
       principles can be found in "Kan Extensions for Program

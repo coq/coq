@@ -281,13 +281,15 @@ val decompose_prod : constr -> (Name.t*constr) list * constr
    {% $ %}([(x_n,T_n);...;(x_1,T_1)],T){% $ %}, where {% $ %}T{% $ %} is not a lambda. *)
 val decompose_lam : constr -> (Name.t*constr) list * constr
 
-(** Given a positive integer n, transforms a product term
+(** Given a positive integer n, decompose a product term
    {% $ %}(x_1:T_1)..(x_n:T_n)T{% $ %}
-   into the pair {% $ %}([(xn,Tn);...;(x1,T1)],T){% $ %}. *)
+   into the pair {% $ %}([(xn,Tn);...;(x1,T1)],T){% $ %}.
+   Raise a user error if not enough products. *)
 val decompose_prod_n : int -> constr -> (Name.t * constr) list * constr
 
-(** Given a positive integer {% $ %}n{% $ %}, transforms a lambda term
-   {% $ %}[x_1:T_1]..[x_n:T_n]T{% $ %} into the pair {% $ %}([(x_n,T_n);...;(x_1,T_1)],T){% $ %} *)
+(** Given a positive integer {% $ %}n{% $ %}, decompose a lambda term
+   {% $ %}[x_1:T_1]..[x_n:T_n]T{% $ %} into the pair {% $ %}([(x_n,T_n);...;(x_1,T_1)],T){% $ %}.
+   Raise a user error if not enough lambdas. *)
 val decompose_lam_n : int -> constr -> (Name.t * constr) list * constr
 
 (** Extract the premisses and the conclusion of a term of the form
@@ -297,9 +299,14 @@ val decompose_prod_assum : types -> rel_context * types
 (** Idem with lambda's *)
 val decompose_lam_assum : constr -> rel_context * constr
 
-(** Idem but extract the first [n] premisses *)
+(** Idem but extract the first [n] premisses, counting let-ins. *)
 val decompose_prod_n_assum : int -> types -> rel_context * types
+
+(** Idem for lambdas, _not_ counting let-ins *)
 val decompose_lam_n_assum : int -> constr -> rel_context * constr
+
+(** Idem, counting let-ins *)
+val decompose_lam_n_decls : int -> constr -> rel_context * constr
 
 (** [nb_lam] {% $ %}[x_1:T_1]...[x_n:T_n]c{% $ %} where {% $ %}c{% $ %} is not an abstraction
    gives {% $ %}n{% $ %} (casts are ignored) *)
@@ -308,12 +315,14 @@ val nb_lam : constr -> int
 (** Similar to [nb_lam], but gives the number of products instead *)
 val nb_prod : constr -> int
 
-(** Returns the premisses/parameters of a type/term (let-in included) *)
+(** Return the premisses/parameters of a type/term (let-in included) *)
 val prod_assum : types -> rel_context
 val lam_assum : constr -> rel_context
 
-(** Returns the first n-th premisses/parameters of a type/term (let included)*)
+(** Return the first n-th premisses/parameters of a type (let included and counted) *)
 val prod_n_assum : int -> types -> rel_context
+
+(** Return the first n-th premisses/parameters of a term (let included but not counted) *)
 val lam_n_assum : int -> constr -> rel_context
 
 (** Remove the premisses/parameters of a type/term *)
@@ -328,11 +337,11 @@ val strip_lam_n : int -> constr -> constr
 val strip_prod_assum : types -> types
 val strip_lam_assum : constr -> constr
 
-(** flattens application lists *)
+(** Flattens application lists *)
 val collapse_appl : constr -> constr
 
 
-(** Removes recursively the casts around a term i.e.
+(** Remove recursively the casts around a term i.e.
    [strip_outer_cast (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)
 val strip_outer_cast : constr -> constr
 
@@ -352,10 +361,10 @@ type arity = rel_context * sorts
 (** Build an "arity" from its canonical form *)
 val mkArity : arity -> types
 
-(** Destructs an "arity" into its canonical form *)
+(** Destruct an "arity" into its canonical form *)
 val destArity : types -> arity
 
-(** Tells if a term has the form of an arity *)
+(** Tell if a term has the form of an arity *)
 val isArity : types -> bool
 
 (** {5 Kind of type} *)

@@ -167,33 +167,31 @@ let e_give_exact flags poly (c,clenv) gl =
     tclTHEN (Proofview.V82.of_tactic (Clenvtac.unify ~flags t1)) (exact_no_check c) gl
 
 let unify_e_resolve poly flags (c,clenv) gls =
-  let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
-  let clenv' = connect_clenv gls clenv' in
-  let clenv' = clenv_unique_resolver ~flags clenv' gls in
-  Proofview.V82.of_tactic (Clenvtac.clenv_refine true ~with_classes:false clenv') gls
+  let clenv', c = connect_hint_clenv poly c clenv gls in
+  let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags clenv') gls in
+    Clenvtac.clenv_refine true ~with_classes:false clenv'
 
 let unify_resolve poly flags (c,clenv) gls =
-  let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
-  let clenv' = connect_clenv gls clenv' in
-  let clenv' = clenv_unique_resolver ~flags clenv' gls in
-  Proofview.V82.of_tactic 
-    (Clenvtac.clenv_refine false ~with_classes:false clenv') gls
+  let clenv', _ = connect_hint_clenv poly c clenv gls in
+  let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags clenv') gls in
+    Clenvtac.clenv_refine false ~with_classes:false clenv'
 
-let clenv_of_prods poly nprods (c, clenv) gls =
+let clenv_of_prods poly nprods (c, clenv) gl =
   let (c, _, _) = c in
   if poly || Int.equal nprods 0 then Some clenv
   else
-    let ty = pf_unsafe_type_of gls c in
+    let ty = Tacmach.New.pf_unsafe_type_of gl c in
     let diff = nb_prod ty - nprods in
       if Pervasives.(>=) diff 0 then
         (* Was Some clenv... *)
-	Some (mk_clenv_from_n gls (Some diff) (c,ty))
+	Some (Tacmach.New.of_old (fun gls -> mk_clenv_from_n gls (Some diff) (c,ty)) gl)
       else None
 
-let with_prods nprods poly (c, clenv) f gls =
-  match clenv_of_prods poly nprods (c, clenv) gls with
-  | None -> tclFAIL 0 (str"Not enough premisses") gls
-  | Some clenv' -> f (c, clenv') gls
+let with_prods nprods poly (c, clenv) f =
+  Proofview.Goal.nf_enter (fun gl ->
+  match clenv_of_prods poly nprods (c, clenv) gl with
+  | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
+  | Some clenv' -> f (c, clenv') gl)
 
 (** Hack to properly solve dependent evars that are typeclasses *)
 
@@ -237,12 +235,13 @@ and e_my_find_search db_list local_db hdc complete sigma concl =
   let tac_of_hint =
     fun (flags, {pri = b; pat = p; poly = poly; code = t; name = name}) ->
       let tac = function
-      | Res_pf (term,cl) -> Proofview.V82.tactic (with_prods nprods poly (term,cl) (unify_resolve poly flags))
-      | ERes_pf (term,cl) -> Proofview.V82.tactic (with_prods nprods poly (term,cl) (unify_e_resolve poly flags))
+      | Res_pf (term,cl) -> with_prods nprods poly (term,cl) (unify_resolve poly flags)
+      | ERes_pf (term,cl) -> with_prods nprods poly (term,cl) (unify_e_resolve poly flags)
       | Give_exact c -> Proofview.V82.tactic (e_give_exact flags poly c)
       | Res_pf_THEN_trivial_fail (term,cl) ->
-          Proofview.V82.tactic (tclTHEN (with_prods nprods poly (term,cl) (unify_e_resolve poly flags))
-            (if complete then tclIDTAC else e_trivial_fail_db db_list local_db))
+         Proofview.V82.tactic (tclTHEN
+				 (Proofview.V82.of_tactic ((with_prods nprods poly (term,cl) (unify_e_resolve poly flags))))
+				 (if complete then tclIDTAC else e_trivial_fail_db db_list local_db))
       | Unfold_nth c -> Proofview.V82.tactic (tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c]))
       | Extern tacast -> conclPattern concl p tacast
       in
@@ -902,4 +901,5 @@ let autoapply c i gl =
     (Hints.Hint_db.transparent_state (Hints.searchtable_map i)) in
   let cty = pf_unsafe_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
-  unify_e_resolve false flags (c,ce) gl
+  let tac = unify_e_resolve false flags ((c,cty,Univ.ContextSet.empty),ce) in
+  Proofview.V82.of_tactic (Proofview.Goal.nf_enter tac) gl
