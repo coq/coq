@@ -892,17 +892,9 @@ end
 
 module UnsafeRepr = Proof.Unsafe
 
-(** {7 Notations} *)
-
-module Notations = struct
-  let (>>=) = tclBIND
-  let (<*>) = tclTHEN
-  let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
-end
-
-open Notations
-
-
+let (>>=) = tclBIND
+let (<*>) = tclTHEN
+let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
 
 (** {6 Goal-dependent tactics} *)
 
@@ -976,6 +968,43 @@ module Goal = struct
       Env.get >>= fun env ->
       tclEVARMAP >>= fun sigma ->
       try f (gmake env sigma goal)
+      with e when catchable_exception e ->
+        let (e, info) = Errors.push e in
+        tclZERO ~info e
+    end
+    end
+
+  type 'a enter =
+    { enter : 'r. 'a t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
+
+  let s_enter f =
+    InfoL.tag (Info.Dispatch) begin
+    iter_goal begin fun goal ->
+      Env.get >>= fun env ->
+      tclEVARMAP >>= fun sigma ->
+      try
+        let gl = gmake env sigma goal in
+        let sigma = Sigma.Unsafe.of_evar_map sigma in
+        let Sigma (tac, sigma, _) = f.enter gl sigma in
+        let sigma = Sigma.to_evar_map sigma in
+        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) tac)
+      with e when catchable_exception e ->
+        let (e, info) = Errors.push e in
+        tclZERO ~info e
+    end
+    end
+
+  let nf_s_enter f =
+    InfoL.tag (Info.Dispatch) begin
+    iter_goal begin fun goal ->
+      Env.get >>= fun env ->
+      tclEVARMAP >>= fun sigma ->
+      try
+        let (gl, sigma) = nf_gmake env sigma goal in
+        let sigma = Sigma.Unsafe.of_evar_map sigma in
+        let Sigma (tac, sigma, _) = f.enter gl sigma in
+        let sigma = Sigma.to_evar_map sigma in
+        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) tac)
       with e when catchable_exception e ->
         let (e, info) = Errors.push e in
         tclZERO ~info e
@@ -1217,4 +1246,14 @@ module V82 = struct
     with e when catchable_exception e ->
       let (e, info) = Errors.push e in tclZERO ~info e
 
+end
+
+(** {7 Notations} *)
+
+module Notations = struct
+  let (>>=) = tclBIND
+  let (<*>) = tclTHEN
+  let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
+  type 'a enter = 'a Goal.enter =
+    { enter : 'r. 'a Goal.t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
 end
