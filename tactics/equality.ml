@@ -1126,7 +1126,14 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
               applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
             else
               error "Cannot solve a unification problem."
-	| None -> anomaly (Pp.str "Not enough components to build the dependent tuple")
+	| None ->
+            (* This at least happens if what has been detected as a
+               dependency is not one; use an evasive error message;
+               even if the problem is upwards: unification should be
+               tried in the first place in make_iterated_tuple instead
+               of approximatively computing the free rels; then
+               unsolved evars would mean not binding rel *)
+	    error "Cannot solve a unification problem."
   in
   let scf = sigrec_clausal_form siglen ty in
     !evdref, Evarutil.nf_evar !evdref scf
