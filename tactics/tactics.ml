@@ -610,17 +610,12 @@ let e_reduct_option ?(check=false) redfun = function
 (** Versions with evars to maintain the unification of universes resulting
     from conversions. *)
 
-let tclWITHEVARS f k =
-  Proofview.Goal.enter begin fun gl ->
-  let evm, c' = f gl in
-  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evm) (k c')
-  end
-
 let e_change_in_concl (redfun,sty) =
-  tclWITHEVARS
-    (fun gl -> redfun (Proofview.Goal.env gl) (Proofview.Goal.sigma gl)
-        (Proofview.Goal.raw_concl gl))
-    (fun c -> convert_concl_no_check c sty)
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
+    let sigma = Sigma.to_evar_map sigma in
+    let (sigma, c) = redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.raw_concl gl) in
+    Sigma.Unsafe.of_pair (convert_concl_no_check c sty, sigma)
+  end }
 
 let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env sigma =
   match c with
@@ -639,11 +634,12 @@ let e_pf_change_decl (redfun : bool -> e_reduction_function) where (id,c,ty) env
 	sigma', (id,Some b',ty')
 
 let e_change_in_hyp redfun (id,where) =
-  tclWITHEVARS
-    (fun gl -> e_pf_change_decl redfun where
-      (Tacmach.New.pf_get_hyp id (Proofview.Goal.assume gl))
-      (Proofview.Goal.env gl) (Proofview.Goal.sigma gl))
-    convert_hyp
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
+    let sigma = Sigma.to_evar_map sigma in
+    let hyp = Tacmach.New.pf_get_hyp id (Proofview.Goal.assume gl) in
+    let sigma, c = e_pf_change_decl redfun where hyp (Proofview.Goal.env gl) sigma in
+    Sigma.Unsafe.of_pair (convert_hyp c, sigma)
+  end }
 
 type change_arg = Pattern.patvar_map -> evar_map -> evar_map * constr
 
@@ -1249,9 +1245,9 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
 (* Case analysis tactics *)
 
 let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_s_enter { enter = begin fun gl sigma ->
   let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
+  let sigma = Sigma.to_evar_map sigma in
   let concl = Proofview.Goal.concl gl in
   let t = Retyping.get_type_of env sigma c in
   let (mind,_) = reduce_to_quantified_ind env sigma t in
@@ -1261,11 +1257,13 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
       build_case_analysis_scheme env sigma mind true sort
     else
       build_case_analysis_scheme_default env sigma mind sort in
-  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+  let tac =
   (general_elim with_evars clear_flag (c,lbindc)
    {elimindex = None; elimbody = (elim,NoBindings);
     elimrename = Some (false, constructors_nrealdecls (fst mind))})
-  end
+  in
+  Sigma.Unsafe.of_pair (tac, sigma)
+  end }
 
 let general_case_analysis with_evars clear_flag (c,lbindc as cx) =
   match kind_of_term c with
@@ -1298,11 +1296,13 @@ let find_eliminator c gl =
 
 let default_elim with_evars clear_flag (c,_ as cx) =
   Proofview.tclORELSE
-    (Proofview.Goal.enter begin fun gl ->
-      let evd, elim = find_eliminator c gl in
-	Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evd)
+    (Proofview.Goal.s_enter { enter = begin fun gl sigma ->
+      let sigma, elim = find_eliminator c gl in
+      let tac =
 	  (general_elim with_evars clear_flag cx elim)
-    end)
+      in
+      Sigma.Unsafe.of_pair (tac, sigma)
+    end })
     begin function (e, info) -> match e with
       | IsNonrec ->
           (* For records, induction principles aren't there by default
@@ -1467,21 +1467,22 @@ let descend_in_conjunctions avoid tac (err, info) c =
 (****************************************************)
 
 let solve_remaining_apply_goals =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_s_enter { enter = begin fun gl sigma ->
   if !apply_solve_class_goals then
     try 
       let env = Proofview.Goal.env gl in
-      let sigma = Proofview.Goal.sigma gl in
+      let evd = Sigma.to_evar_map sigma in
       let concl = Proofview.Goal.concl gl in
-      if Typeclasses.is_class_type sigma concl then
-        let evd', c' = Typeclasses.resolve_one_typeclass env sigma concl in
-	Tacticals.New.tclTHEN
-          (Proofview.Unsafe.tclEVARS evd')
+      if Typeclasses.is_class_type evd concl then
+        let evd', c' = Typeclasses.resolve_one_typeclass env evd concl in
+        let tac =
           (Proofview.V82.tactic (refine_no_check c'))
-	else Proofview.tclUNIT ()
-    with Not_found -> Proofview.tclUNIT ()
-  else Proofview.tclUNIT ()
-  end
+        in
+        Sigma.Unsafe.of_pair (tac, evd')
+	else Sigma (Proofview.tclUNIT (), sigma, Sigma.refl)
+    with Not_found -> Sigma (Proofview.tclUNIT (), sigma, Sigma.refl)
+  else Sigma (Proofview.tclUNIT (), sigma, Sigma.refl)
+  end }
 
 let tclORELSEOPT t k =
   Proofview.tclORELSE t
@@ -1733,15 +1734,17 @@ let new_exact_no_check c =
   Proofview.Refine.refine ~unsafe:true { run = fun h -> Sigma (c, h, Sigma.refl) }
 
 let exact_check c =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
   (** We do not need to normalize the goal because we just check convertibility *)
   let concl = Proofview.Goal.concl (Proofview.Goal.assume gl) in
   let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
+  let sigma = Sigma.to_evar_map sigma in
   let sigma, ct = Typing.type_of env sigma c in
-    Proofview.Unsafe.tclEVARS sigma <*>
+  let tac =
       Tacticals.New.tclTHEN (convert_leq ct concl) (new_exact_no_check c)
-  end
+  in
+  Sigma.Unsafe.of_pair (tac, sigma)
+  end }
 
 let exact_no_check = refine_no_check
 
@@ -1947,7 +1950,7 @@ let check_number_of_constructors expctdnumopt i nconstr =
   if i > nconstr then error "Not enough constructors."
 
 let constructor_tac with_evars expctdnumopt i lbind =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
     let cl = Tacmach.New.pf_nf_concl gl in
     let reduce_to_quantified_ind =
       Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl
@@ -1957,16 +1960,20 @@ let constructor_tac with_evars expctdnumopt i lbind =
       Array.length (snd (Global.lookup_inductive (fst mind))).mind_consnames in
       check_number_of_constructors expctdnumopt i nconstr;
 
+      let sigma = Sigma.to_evar_map sigma in
       let sigma, cons = Evd.fresh_constructor_instance
-	(Proofview.Goal.env gl) (Proofview.Goal.sigma gl) (fst mind, i) in
+	(Proofview.Goal.env gl) sigma (fst mind, i) in
       let cons = mkConstructU cons in
 	
       let apply_tac = general_apply true false with_evars None (dloc,(cons,lbind)) in
+      let tac =
 	(Tacticals.New.tclTHENLIST
-           [Proofview.Unsafe.tclEVARS sigma; 
+           [
 	    convert_concl_no_check redcl DEFAULTcast;
 	    intros; apply_tac])
-  end
+      in
+      Sigma.Unsafe.of_pair (tac, sigma)
+  end }
 
 let one_constructor i lbind = constructor_tac false None i lbind
 
@@ -2363,9 +2370,9 @@ let decode_hyp = function
 *)
 
 let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = Sigma.to_evar_map sigma in
     let t = match ty with Some t -> t | _ -> typ_of env sigma c in
     let eq_tac gl = match with_eq with
       | Some (lr,(loc,ido)) ->
@@ -2388,13 +2395,15 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
       | None ->
 	  (sigma, mkNamedLetIn id c t ccl, Proofview.tclUNIT ()) in
     let (sigma,newcl,eq_tac) = eq_tac gl in
-    Tacticals.New.tclTHENLIST
-      [ Proofview.Unsafe.tclEVARS sigma;
-	convert_concl_no_check newcl DEFAULTcast;
+    let tac =
+      Tacticals.New.tclTHENLIST
+      [ convert_concl_no_check newcl DEFAULTcast;
         intro_gen (NamingMustBe (dloc,id)) (decode_hyp lastlhyp) true false;
         Tacticals.New.tclMAP convert_hyp_no_check depdecls;
         eq_tac ]
-  end
+    in
+    Sigma.Unsafe.of_pair (tac, sigma)
+  end }
 
 let insert_before decls lasthyp env =
   match lasthyp with
@@ -2448,9 +2457,9 @@ let letin_tac with_eq id c ty occs =
   end
 
 let letin_pat_tac with_eq id c occs =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_s_enter { enter = begin fun gl sigma ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = Sigma.to_evar_map sigma in
     let ccl = Proofview.Goal.concl gl in
     let check t = true in
     let abs = AbstractPattern (false,check,id,c,occs,false) in
@@ -2458,10 +2467,11 @@ let letin_pat_tac with_eq id c occs =
     let sigma,c = match res with
     | None -> finish_evar_resolution ~flags:(tactic_infer_flags false) env sigma c
     | Some (sigma,c) -> (sigma,c) in
-    Tacticals.New.tclTHEN
-      (Proofview.Unsafe.tclEVARS sigma)
+    let tac =
       (letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) None)
-  end
+    in
+    Sigma.Unsafe.of_pair (tac, sigma)
+  end }
 
 (* Tactics "pose proof" (usetac=None) and "assert"/"enough" (otherwise) *)
 let forward b usetac ipat c =
@@ -2604,10 +2614,10 @@ let generalize_gen_let lconstr gl =
       if Option.is_empty b then Some c else None) lconstr)) gl
 
 let new_generalize_gen_let lconstr =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
     let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = Sigma.to_evar_map sigma in
     let env = Proofview.Goal.env gl in
     let ids = Tacmach.New.pf_ids_of_hyps gl in
     let (newcl, sigma), args =
@@ -2618,12 +2628,14 @@ let new_generalize_gen_let lconstr =
 	    generalize_goal_gen env ids i o t cl, args)
 	0 lconstr ((concl, sigma), [])
     in
-      Proofview.Unsafe.tclEVARS sigma <*>
+    let tac =
 	Proofview.Refine.refine { run = begin fun sigma ->
           let Sigma (ev, sigma, p) = Evarutil.new_evar env sigma newcl in
           Sigma ((applist (ev, args)), sigma, p)
 	end }
-  end
+    in
+    Sigma.Unsafe.of_pair (tac, sigma)
+  end }
 
 let generalize_gen lconstr =
   generalize_gen_let (List.map (fun ((occs,c),na) ->
@@ -3775,9 +3787,9 @@ let induction_tac with_evars params indvars elim gl =
    induction applies with the induction hypotheses *)
 
 let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = Sigma.to_evar_map sigma in
     let concl = Tacmach.New.pf_nf_concl gl in
     let statuslists,lhyp0,toclear,deps,avoid,dep = cook_sign hyp0 inhyps indvars env in
     let dep = dep || Option.cata (fun id -> occur_var env id concl) false hyp0 in
@@ -3788,9 +3800,9 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
         (fun a (id,b,_) -> if Option.is_empty b then (mkVar id)::a else a) [] deps in
     let (sigma, isrec, elim, indsign) = get_eliminator elim dep s (Proofview.Goal.assume gl) in
     let names = compute_induction_names (Array.length indsign) names in
+    let tac =
     (if isrec then Tacticals.New.tclTHENFIRSTn else Tacticals.New.tclTHENLASTn)
       (Tacticals.New.tclTHENLIST [
-        Proofview.Unsafe.tclEVARS sigma;
         (* Generalize dependent hyps (but not args) *)
         if deps = [] then Proofview.tclUNIT () else Proofview.V82.tactic (apply_type tmpcl deps_cstr);
         (* side-conditions in elim (resp case) schemes come last (resp first) *)
@@ -3800,7 +3812,9 @@ let apply_induction_in_context hyp0 inhyps elim indvars names induct_tac =
       (Array.map2
          (induct_discharge lhyp0 avoid (re_intro_dependent_hypotheses statuslists))
          indsign names)
-  end
+    in
+    Sigma.Unsafe.of_pair (tac, sigma)
+  end }
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
   Proofview.Goal.enter begin fun gl ->
@@ -3937,9 +3951,9 @@ let check_enough_applied env sigma elim =
 
 let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
      id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
   let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
+  let sigma = Sigma.to_evar_map sigma in
   let ccl = Proofview.Goal.raw_concl gl in
   let store = Proofview.Goal.extra gl in
   let check = check_enough_applied env sigma elim in
@@ -3954,6 +3968,7 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
          resolution etc. on the term given by the user *)
       let flags = tactic_infer_flags (with_evars && (* do not give a success semantics to edestruct on an open term yet *) false) in
       let (sigma,c0) = finish_evar_resolution ~flags env sigma (pending,c0) in
+      let tac =
       (if isrec then
           (* Historically, induction has side conditions last *)
           Tacticals.New.tclTHENFIRST
@@ -3961,7 +3976,6 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
           (* and destruct has side conditions first *)
           Tacticals.New.tclTHENLAST)
       (Tacticals.New.tclTHENLIST [
-        Proofview.Unsafe.tclEVARS sigma;
         Proofview.Refine.refine ~unsafe:true { run = begin fun sigma ->
           let sigma = Sigma.to_evar_map sigma in
           let b = not with_evars && with_eq != None in
@@ -3976,21 +3990,25 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
         if isrec then Proofview.cycle (-1) else Proofview.tclUNIT ()
       ])
       tac
+      in
+      Sigma.Unsafe.of_pair (tac, sigma)
 
   | Some (sigma',c) ->
       (* pattern found *)
       let with_eq = Option.map (fun eq -> (false,eq)) eqname in
       (* TODO: if ind has predicate parameters, use JMeq instead of eq *)
       let env = reset_with_named_context sign env in
+      let tac =
       Tacticals.New.tclTHENLIST [
-        Proofview.Unsafe.tclEVARS sigma';
         Proofview.Refine.refine ~unsafe:true { run = begin fun sigma ->
           let sigma = Sigma.to_evar_map sigma in
           mkletin_goal env sigma store with_eq true (id,lastlhyp,ccl,c) None
         end };
         tac
       ]
-  end
+      in
+      Sigma.Unsafe.of_pair (tac, sigma')
+  end }
 
 let has_generic_occurrences_but_goal cls id env ccl =
   clause_with_generic_context_selection cls &&
@@ -4215,20 +4233,20 @@ let elim_scheme_type elim t =
   end
 
 let elim_type t =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
   let (ind,t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
   let evd, elimc = find_ind_eliminator (fst ind) (Tacticals.New.elimination_sort_of_goal gl) gl in
-  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type elimc t)
-  end
+  Sigma.Unsafe.of_pair (elim_scheme_type elimc t, evd)
+  end }
 
 let case_type t =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
   let (ind,t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
   let evd, elimc =
     Tacmach.New.pf_apply build_case_analysis_scheme_default gl ind (Tacticals.New.elimination_sort_of_goal gl)
   in
-  Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type elimc t)
-  end
+  Sigma.Unsafe.of_pair (elim_scheme_type elimc t, evd)
+  end }
 
 
 (************************************************)
@@ -4480,10 +4498,11 @@ let abstract_subproof id gk tac =
   let open Tacticals.New in
   let open Tacmach.New in
   let open Proofview.Notations in
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_s_enter { enter = begin fun gl sigma ->
   let current_sign = Global.named_context()
   and global_sign = Proofview.Goal.hyps gl in
-  let evdref = ref (Proofview.Goal.sigma gl) in
+  let sigma = Sigma.to_evar_map sigma in
+  let evdref = ref sigma in
   let sign,secsign =
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) ->
@@ -4533,12 +4552,12 @@ let abstract_subproof id gk tac =
   let effs = cons_side_effects eff
     Entries.(snd (Future.force const.const_entry_body)) in
   let solve =
-    Proofview.Unsafe.tclEVARS evd <*>
     Proofview.tclEFFECTS effs <*>
     new_exact_no_check (applist (lem, args))
   in
-  if not safe then Proofview.mark_as_unsafe <*> solve else solve
-  end
+  let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in
+  Sigma.Unsafe.of_pair (tac, evd)
+  end }
 
 let anon_id = Id.of_string "anonymous"
 
@@ -4558,7 +4577,8 @@ let tclABSTRACT name_op tac =
   abstract_subproof s gk tac
 
 let unify ?(state=full_transparent_state) x y =
-  Proofview.Goal.nf_enter begin fun gl ->
+  Proofview.Goal.nf_s_enter { enter = begin fun gl sigma ->
+  let sigma = Sigma.to_evar_map sigma in
   try
     let core_flags =
       { (default_unify_flags ()).core_unify_flags with
@@ -4570,10 +4590,11 @@ let unify ?(state=full_transparent_state) x y =
       merge_unify_flags = core_flags;
       subterm_unify_flags = { core_flags with modulo_delta = empty_transparent_state } }
     in
-    let evd = w_unify (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) Reduction.CONV ~flags x y
-    in Proofview.Unsafe.tclEVARS evd
-  with e when Errors.noncritical e -> Tacticals.New.tclFAIL 0 (str"Not unifiable")
-  end
+    let sigma = w_unify (Tacmach.New.pf_env gl) sigma Reduction.CONV ~flags x y in
+    Sigma.Unsafe.of_pair (Proofview.tclUNIT (), sigma)
+  with e when Errors.noncritical e ->
+    Sigma.Unsafe.of_pair (Tacticals.New.tclFAIL 0 (str"Not unifiable"), sigma)
+  end }
 
 module Simple = struct
   (** Simplified version of some of the above tactics *)
