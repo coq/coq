@@ -1272,6 +1272,15 @@ let solve_candidates conv_algo env evd (evk,argsv) rhs =
           restrict_evar evd evk None (UpdateWith candidates)
       | l -> evd
 
+let occur_evar_upto_types sigma n c =
+  let rec occur_rec c = match kind_of_term c with
+    | Evar (sp,_) when Evar.equal sp n -> raise Occur
+    | Evar e -> Option.iter occur_rec (existential_opt_value sigma e);
+		occur_rec (existential_type sigma e)
+    | _ -> iter_constr occur_rec c
+  in
+  try occur_rec c; false with Occur -> true
+
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
  * (i.e. we tackle a generalization of Miller-Pfenning patterns unification)
@@ -1459,7 +1468,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
 	  (recheck_applications conv_algo (evar_env evi) evdref t'; t')
 	else t'
   in (!evdref,body)
-
+     
 (* [define] tries to solve the problem "?ev[args] = rhs" when "?ev" is
  * an (uninstantiated) evar such that "hyps |- ?ev : typ". Otherwise said,
  * [define] tries to find an instance lhs such that
@@ -1484,7 +1493,7 @@ and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
     if occur_meta body then raise MetaOccurInBodyInternal;
     (* invert_definition may have instantiate some evars of rhs with evk *)
     (* so we recheck acyclicity *)
-    if occur_evar_upto evd' evk body then raise (OccurCheckIn (evd',body));
+    if occur_evar_upto_types evd' evk body then raise (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
     let evd', body = refresh_universes pbty env evd' body in
 (* Cannot strictly type instantiations since the unification algorithm
