@@ -252,18 +252,14 @@ let set_emacs () =
 *)
 
 let init_gc () =
-  let param =
-    try ignore (Sys.getenv "OCAMLRUNPARAM"); true
-    with Not_found -> false
-  in
-  let control = Gc.get () in
-  let tweaked_control = { control with
-    Gc.minor_heap_size = 33554432; (** 4M *)
-(*     Gc.major_heap_increment = 268435456; (** 32M *) *)
-    Gc.space_overhead = 120;
-  } in
-  if param then ()
-  else Gc.set tweaked_control
+  try
+    ignore (Sys.getenv "OCAMLRUNPARAM");
+    Gc.set { (Gc.get ()) with
+             Gc.minor_heap_size = 33554432; (** 4M *)
+             Gc.space_overhead = 120
+           }
+  with Not_found ->
+    ()
 
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
