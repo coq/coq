@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Names
+open Constr
+
 (** Monotonous state enforced by typing.
 
     This module allows to constrain uses of evarmaps in a monotonous fashion,
@@ -37,6 +40,11 @@ type ('a, 'r) sigma = Sigma : 'a * 's t * ('r, 's) le -> ('a, 'r) sigma
 type 'r evar
 (** Stage-indexed evars *)
 
+(** {5 Constructors} *)
+
+val here : 'a -> 'r t -> ('a, 'r) sigma
+(** [here x s] is a shorthand for [Sigma (x, s, refl)] *)
+
 (** {5 Postponing} *)
 
 val lift_evar : 'r evar -> ('r, 's) le -> 's evar
@@ -55,6 +63,14 @@ val new_evar : 'r t -> ?naming:Misctypes.intro_pattern_naming_expr ->
   Evd.evar_info -> 'r fresh
 
 val define : 'r evar -> Constr.t -> 'r t -> (unit, 'r) sigma
+
+(** Polymorphic universes *)
+
+val fresh_constructor_instance : Environ.env -> 'r t -> constructor ->
+  (pconstructor, 'r) sigma
+
+val fresh_global : ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> Environ.env ->
+  'r t -> Globnames.global_reference -> (constr, 'r) sigma
 
 (** FILLME *)
 

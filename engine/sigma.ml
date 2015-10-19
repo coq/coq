@@ -23,6 +23,8 @@ let lift_evar evk () = evk
 let to_evar_map evd = evd
 let to_evar evk = evk
 
+let here x s = Sigma (x, s, ())
+
 (** API *)
 
 type 'r fresh = Fresh : 's evar * 's t * ('r, 's) le -> 'r fresh
@@ -33,6 +35,14 @@ let new_evar sigma ?naming info =
 
 let define evk c sigma =
   Sigma ((), Evd.define evk c sigma, ())
+
+let fresh_constructor_instance env sigma pc =
+  let (sigma, c) = Evd.fresh_constructor_instance env sigma pc in
+  Sigma (c, sigma, ())
+
+let fresh_global ?rigid ?names env sigma r =
+  let (sigma, c) = Evd.fresh_global ?rigid ?names env sigma r in
+  Sigma (c, sigma, ())
 
 (** Run *)
 
