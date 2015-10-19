@@ -617,8 +617,8 @@ let out_arg = function
   | ArgArg x -> x
 
 let hResolve id c occ t =
-  Proofview.Goal.nf_enter begin fun gl ->
-  let sigma = Proofview.Goal.sigma gl in
+  Proofview.Goal.nf_s_enter { enter = begin fun gl sigma ->
+  let sigma = Sigma.to_evar_map sigma in
   let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
   let concl = Proofview.Goal.concl gl in
   let env_ids = Termops.ids_of_context env in
@@ -636,10 +636,11 @@ let hResolve id c occ t =
   let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
   let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in
-  Tacticals.New.tclTHEN
-    (Proofview.Unsafe.tclEVARS sigma)
+  let tac =
     (change_concl (mkLetIn (Anonymous,t_constr,t_constr_type,concl)))
-  end
+  in
+  Sigma.Unsafe.of_pair (tac, sigma)
+  end }
 
 let hResolve_auto id c t =
   let rec resolve_auto n = 

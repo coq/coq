@@ -15,6 +15,7 @@ open Refiner
 open Evd
 open Locus
 open Sigma.Notations
+open Proofview.Notations
 
 (* The instantiate tactic *)
 
@@ -69,17 +70,17 @@ let instantiate_tac_by_name id c =
 
 let let_evar name typ =
   let src = (Loc.ghost,Evar_kinds.GoalEvar) in
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
     let env = Proofview.Goal.env gl in
     let id = match name with
     | Names.Anonymous -> 
       let id = Namegen.id_of_name_using_hdchar env typ name in
       Namegen.next_ident_away_in_goal id (Termops.ids_of_named_context (Environ.named_context env))
-    | Names.Name id -> id in
-      let sigma = Sigma.Unsafe.of_evar_map sigma in
-      let Sigma (evar, sigma', _) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
-      let sigma' = Sigma.to_evar_map sigma' in
-    Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS sigma'))
+    | Names.Name id -> id
+    in
+    let Sigma (evar, sigma, p) = Evarutil.new_evar env sigma ~src ~naming:(Misctypes.IntroFresh id) typ in
+    let tac =
       (Tactics.letin_tac None (Names.Name id) evar None Locusops.nowhere)
-  end
+    in
+    Sigma (tac, sigma, p)
+  end }

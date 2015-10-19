@@ -13,6 +13,8 @@ open Tactics
 open Coqlib
 open Reductionops
 open Misctypes
+open Sigma.Notations
+open Proofview.Notations
 
 (* Absurd *)
 
@@ -22,18 +24,19 @@ let mk_absurd_proof t =
     mkLambda (Names.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
 
 let absurd c =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = Sigma.to_evar_map sigma in
     let j = Retyping.get_judgment_of env sigma c in
     let sigma, j = Coercion.inh_coerce_to_sort Loc.ghost env sigma j in
     let t = j.Environ.utj_val in
+    let tac =
     Tacticals.New.tclTHENLIST [
-      Proofview.Unsafe.tclEVARS sigma;
       elim_type (build_coq_False ());
       Simple.apply (mk_absurd_proof t)
-    ]
-  end
+    ] in
+    Sigma.Unsafe.of_pair (tac, sigma)
+  end }
 
 let absurd c = absurd c
 

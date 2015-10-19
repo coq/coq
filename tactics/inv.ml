@@ -432,8 +432,8 @@ let rewrite_equations_tac as_mode othin id neqns names ba =
     tac
 
 let raw_inversion inv_kind id status names =
-  Proofview.Goal.nf_enter begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
+  Proofview.Goal.nf_s_enter { enter = begin fun gl sigma ->
+    let sigma = Sigma.to_evar_map sigma in
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     let c = mkVar id in
@@ -462,7 +462,7 @@ let raw_inversion inv_kind id status names =
     in
     let neqns = List.length realargs in
     let as_mode = names != None in
-    tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+    let tac =
       (tclTHENS
         (assert_before Anonymous cut_concl)
         [case_tac names
@@ -470,7 +470,9 @@ let raw_inversion inv_kind id status names =
                (rewrite_equations_tac as_mode inv_kind id neqns))
             (Some elim_predicate) ind (c, t);
         onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
-  end
+    in
+    Sigma.Unsafe.of_pair (tac, sigma)
+  end }
 
 (* Error messages of the inversion tactics *)
 let wrap_inv_error id = function (e, info) -> match e with

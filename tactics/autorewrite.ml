@@ -18,6 +18,8 @@ open Util
 open Tacexpr
 open Mod_subst
 open Locus
+open Sigma.Notations
+open Proofview.Notations
 
 (* Rewriting rules *)
 type rew_rule = { rew_lemma: constr;
@@ -91,14 +93,15 @@ type raw_rew_rule = Loc.t * constr Univ.in_universe_context_set * bool * raw_tac
 (* Applies all the rules of one base *)
 let one_base general_rewrite_maybe_in tac_main bas =
   let lrul = find_rewrites bas in
-  let try_rewrite dir ctx c tc = Proofview.Goal.nf_enter (fun gl ->
+  let try_rewrite dir ctx c tc =
+  Proofview.Goal.nf_s_enter { enter = begin fun gl sigma ->
     let subst, ctx' = Universes.fresh_universe_context_set_instance ctx in
     let c' = Vars.subst_univs_level_constr subst c in
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = Sigma.to_evar_map sigma in
     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
-    Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-      (general_rewrite_maybe_in dir c' tc)
-  ) in
+    let tac = general_rewrite_maybe_in dir c' tc in
+    Sigma.Unsafe.of_pair (tac, sigma)
+  end } in
   let lrul = List.map (fun h -> 
   let tac = match h.rew_tac with None -> Proofview.tclUNIT () | Some t -> Tacinterp.eval_tactic t in
     (h.rew_ctx,h.rew_lemma,h.rew_l2r,tac)) lrul in

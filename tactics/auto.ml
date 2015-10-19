@@ -117,10 +117,11 @@ let exact poly (c,clenv) =
       let ctx = Evd.evar_universe_context clenv.evd in
 	ctx, c
   in
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Evd.merge_universe_context (Proofview.Goal.sigma gl) ctx in
-    Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (exact_check c')
-  end
+  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
+    let sigma = Sigma.to_evar_map sigma in
+    let sigma = Evd.merge_universe_context sigma ctx in
+    Sigma.Unsafe.of_pair (exact_check c', sigma)
+  end }
 
 (* Util *)
 
