@@ -26,7 +26,7 @@ open Evd
 open Pfedit
 open Tacred
 open Genredexpr
-open Tacmach
+open Tacmach.New
 open Logic
 open Clenv
 open Refiner
@@ -280,7 +280,7 @@ let error_replacing_dependency env sigma id err =
   errorlabstrm "" (replacing_dependency_msg env sigma id err)
 
 let thin l gl =
-  try thin l gl
+  try Tacmach.thin l gl
   with Evarutil.ClearDependencyError (id,err) ->
     error_clear_dependency (pf_env gl) (project gl) id err
 
@@ -422,7 +422,7 @@ let assert_before_then_gen b naming t tac =
     Tacticals.New.tclTHENLAST
       (Proofview.V82.tactic
          (fun gl ->
-           try internal_cut b id t gl
+           try Tacmach.internal_cut b id t gl
            with Evarutil.ClearDependencyError (id,err) ->
              error_replacing_dependency (pf_env gl) (project gl) id err))
       (tac id)
@@ -440,7 +440,7 @@ let assert_after_then_gen b naming t tac =
     Tacticals.New.tclTHENFIRST
       (Proofview.V82.tactic
          (fun gl ->
-           try internal_cut_rev b id t gl
+           try Tacmach.internal_cut_rev b id t gl
            with Evarutil.ClearDependencyError (id,err) ->
              error_replacing_dependency (pf_env gl) (project gl) id err))
       (tac id)
@@ -481,7 +481,7 @@ let cofix ido gl = match ido with
 type tactic_reduction = env -> evar_map -> constr -> constr
 
 let pf_reduce_decl redfun where (id,c,ty) gl =
-  let redfun' = pf_reduce redfun gl in
+  let redfun' = Tacmach.pf_reduce redfun gl in
   match c with
   | None ->
       if where == InHypValueOnly then
@@ -561,11 +561,11 @@ let bind_red_expr_occurrences occs nbcl redexp =
    certain hypothesis *)
 
 let reduct_in_concl (redfun,sty) gl =
-  Proofview.V82.of_tactic (convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) sty) gl
+  Proofview.V82.of_tactic (convert_concl_no_check (Tacmach.pf_reduce redfun gl (Tacmach.pf_concl gl)) sty) gl
 
 let reduct_in_hyp ?(check=false) redfun (id,where) gl =
   Proofview.V82.of_tactic (convert_hyp ~check
-    (pf_reduce_decl redfun where (pf_get_hyp gl id) gl)) gl
+    (pf_reduce_decl redfun where (Tacmach.pf_get_hyp gl id) gl)) gl
 
 let revert_cast (redfun,kind as r) =
   if kind == DEFAULTcast then (redfun,REVERTcast) else r
@@ -592,13 +592,13 @@ let pf_e_reduce_decl redfun where (id,c,ty) gl =
 
 let e_reduct_in_concl (redfun,sty) gl =
   Proofview.V82.of_tactic
-    (let sigma, c' = (pf_apply redfun gl (pf_concl gl)) in
+    (let sigma, c' = (Tacmach.pf_apply redfun gl (Tacmach.pf_concl gl)) in
        Proofview.Unsafe.tclEVARS sigma <*> 
 	 convert_concl_no_check c' sty) gl
 
 let e_reduct_in_hyp ?(check=false) redfun (id,where) gl =
   Proofview.V82.of_tactic 
-    (let sigma, decl' = pf_e_reduce_decl redfun where (pf_get_hyp gl id) gl in
+    (let sigma, decl' = pf_e_reduce_decl redfun where (Tacmach.pf_get_hyp gl id) gl in
        Proofview.Unsafe.tclEVARS sigma <*> 
 	 convert_hyp ~check decl') gl
 
@@ -700,7 +700,7 @@ let change_option occl t = function
   | None -> change_in_concl occl t
 
 let change chg c cls gl =
-  let cls = concrete_clause_of (fun () -> pf_ids_of_hyps gl) cls in
+  let cls = concrete_clause_of (fun () -> Tacmach.pf_ids_of_hyps gl) cls in
   Proofview.V82.of_tactic (Tacticals.New.tclMAP (function
     | OnHyp (id,occs,where) ->
        change_option (bind_change_occurrences occs chg) c (Some (id,where))
@@ -741,12 +741,12 @@ let reduction_clause redexp cl =
 	(None, bind_red_expr_occurrences occs nbcl redexp)) cl
 
 let reduce redexp cl goal =
-  let cl = concrete_clause_of (fun () -> pf_ids_of_hyps goal) cl in
+  let cl = concrete_clause_of (fun () -> Tacmach.pf_ids_of_hyps goal) cl in
   let redexps = reduction_clause redexp cl in
   let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
   let tac = tclMAP (fun (where,redexp) ->
     e_reduct_option ~check
-      (Redexpr.reduction_of_red_expr (pf_env goal) redexp) where) redexps in
+      (Redexpr.reduction_of_red_expr (Tacmach.pf_env goal) redexp) where) redexps in
   if check then with_check tac goal else tac goal
 
 (* Unfolding occurrences of a constant *)
@@ -928,7 +928,7 @@ let pf_lookup_hypothesis_as_renamed_gen red h gl =
 	       env (project gl) ccl))
       | x -> x
   in
-  try aux (pf_concl gl)
+  try aux (Tacmach.pf_concl gl)
   with Redelimination -> None
 
 let is_quantified_hypothesis id g =
@@ -965,7 +965,7 @@ let intros_until_n_gen red n = intros_until_gen red (AnonHyp n)
 let intros_until = intros_until_gen true
 let intros_until_n = intros_until_n_gen true
 
-let tclCHECKVAR id gl = ignore (pf_get_hyp gl id); tclIDTAC gl
+let tclCHECKVAR id gl = ignore (Tacmach.pf_get_hyp gl id); tclIDTAC gl
 
 let try_intros_until_id_check id =
   Tacticals.New.tclORELSE (intros_until_id id) (Proofview.V82.tactic (tclCHECKVAR id))
@@ -1106,7 +1106,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true)
   if not with_evars && occur_meta new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
-  let exact_tac = Proofview.V82.tactic (refine_no_check new_hyp_prf) in
+  let exact_tac = Proofview.V82.tactic (Tacmach.refine_no_check new_hyp_prf) in
   let naming = NamingMustBe (dloc,targetid) in
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
@@ -1478,7 +1478,7 @@ let solve_remaining_apply_goals =
       if Typeclasses.is_class_type evd concl then
         let evd', c' = Typeclasses.resolve_one_typeclass env evd concl in
         let tac =
-          (Proofview.V82.tactic (refine_no_check c'))
+          (Proofview.V82.tactic (Tacmach.refine_no_check c'))
         in
         Sigma.Unsafe.of_pair (tac, evd')
 	else Sigma.here (Proofview.tclUNIT ()) sigma
@@ -1748,16 +1748,16 @@ let exact_check c =
   Sigma.Unsafe.of_pair (tac, sigma)
   end }
 
-let exact_no_check = refine_no_check
+let exact_no_check = Tacmach.refine_no_check
 
 let vm_cast_no_check c gl =
-  let concl = pf_concl gl in
-  refine_no_check (Term.mkCast(c,Term.VMcast,concl)) gl
+  let concl = Tacmach.pf_concl gl in
+  Tacmach.refine_no_check (Term.mkCast(c,Term.VMcast,concl)) gl
 
 
 let exact_proof c gl =
-  let c,ctx = Constrintern.interp_casted_constr (pf_env gl) (project gl) c (pf_concl gl)
-  in tclTHEN (tclEVARUNIVCONTEXT ctx) (refine_no_check c) gl
+  let c,ctx = Constrintern.interp_casted_constr (Tacmach.pf_env gl) (Tacmach.project gl) c (Tacmach.pf_concl gl)
+  in tclTHEN (tclEVARUNIVCONTEXT ctx) (Tacmach.refine_no_check c) gl
 
 let assumption =
   let rec arec gl only_eq = function
@@ -1892,7 +1892,7 @@ let specialize (c,lbind) g =
       let evd = Typeclasses.resolve_typeclasses (pf_env g) (project g) in
 	tclEVARS evd, nf_evar evd c
     else
-      let clause = pf_apply make_clenv_binding g (c,pf_unsafe_type_of g c) lbind in
+      let clause = Tacmach.pf_apply make_clenv_binding g (c,Tacmach.pf_unsafe_type_of g c) lbind in
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
       let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
@@ -1909,14 +1909,14 @@ let specialize (c,lbind) g =
        tclEVARS clause.evd, term
   in
   match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
-       | Var id when Id.List.mem id (pf_ids_of_hyps g) ->
+       | Var id when Id.List.mem id (Tacmach.pf_ids_of_hyps g) ->
 	   tclTHEN tac
 	     (tclTHENFIRST
-	       (fun g -> Proofview.V82.of_tactic (assert_before_replacing id (pf_unsafe_type_of g term)) g)
+	       (fun g -> Proofview.V82.of_tactic (assert_before_replacing id (Tacmach.pf_unsafe_type_of g term)) g)
 	       (exact_no_check term)) g
        | _ -> tclTHEN tac
 	   (tclTHENLAST
-              (fun g -> Proofview.V82.of_tactic (cut (pf_unsafe_type_of g term)) g)
+              (fun g -> Proofview.V82.of_tactic (cut (Tacmach.pf_unsafe_type_of g term)) g)
               (exact_no_check term)) g
 
 (* Keeping only a few hypotheses *)
@@ -2562,9 +2562,9 @@ let generalize_goal_gen env ids i ((occs,c,b),na) t (cl,evd) =
     mkProd_or_LetIn (na,b,t) cl', evd'
 
 let generalize_goal gl i ((occs,c,b),na as o) cl =
-  let t = pf_unsafe_type_of gl c in
-  let env = pf_env gl in
-    generalize_goal_gen env (pf_ids_of_hyps gl) i o t cl
+  let t = Tacmach.pf_unsafe_type_of gl c in
+  let env = Tacmach.pf_env gl in
+    generalize_goal_gen env (Tacmach.pf_ids_of_hyps gl) i o t cl
 
 let generalize_dep ?(with_let=false) c gl =
   let env = pf_env gl in
@@ -2586,11 +2586,11 @@ let generalize_dep ?(with_let=false) c gl =
 	  -> id::tothin
       | _ -> tothin
   in
-  let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
+  let cl' = it_mkNamedProd_or_LetIn (Tacmach.pf_concl gl) to_quantify in
   let body =
     if with_let then
       match kind_of_term c with
-      | Var id -> pi2 (pf_get_hyp gl id)
+      | Var id -> pi2 (Tacmach.pf_get_hyp gl id)
       | _ -> None
     else None
   in
@@ -2607,7 +2607,7 @@ let generalize_dep ?(with_let=false) c gl =
 let generalize_gen_let lconstr gl =
   let newcl, evd =
     List.fold_right_i (generalize_goal gl) 0 lconstr
-      (pf_concl gl,project gl)
+      (Tacmach.pf_concl gl,Tacmach.project gl)
   in
   tclTHEN (tclEVARS evd)
     (apply_type newcl (List.map_filter (fun ((_,c,b),_) ->
@@ -3221,11 +3221,11 @@ let mk_term_eq env sigma ty t ty' t' =
 let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
   let meta = Evarutil.new_meta() in
   let eqslen = List.length eqs in
-  let term, typ = mkVar id, pf_get_hyp_typ gl id in
+  let term, typ = mkVar id, Tacmach.pf_get_hyp_typ gl id in
     (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
   let abshypeq, abshypt =
     if dep then
-      let eq, refl = mk_term_eq (push_rel_context ctx (pf_env gl)) (project gl) (lift 1 c) (mkRel 1) typ term in
+      let eq, refl = mk_term_eq (push_rel_context ctx (Tacmach.pf_env gl)) (Tacmach.project gl) (lift 1 c) (mkRel 1) typ term in
 	mkProd (Anonymous, eq, lift 1 concl), [| refl |]
     else concl, [||]
   in
@@ -3286,9 +3286,9 @@ let is_defined_variable env id = match lookup_named id env with
 | (_, Some _, _) -> true
 
 let abstract_args gl generalize_vars dep id defined f args =
-  let sigma = project gl in
-  let env = pf_env gl in
-  let concl = pf_concl gl in
+  let sigma = Tacmach.project gl in
+  let env = Tacmach.pf_env gl in
+  let concl = Tacmach.pf_concl gl in
   let dep = dep || dependent (mkVar id) concl in
   let avoid = ref [] in
   let get_id name =
@@ -3306,7 +3306,7 @@ let abstract_args gl generalize_vars dep id defined f args =
       let rel, c = Reductionops.splay_prod_n env sigma 1 prod in
 	List.hd rel, c
     in
-    let argty = pf_unsafe_type_of gl arg in
+    let argty = Tacmach.pf_unsafe_type_of gl arg in
     let ty = (* refresh_universes_strict *) ty in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
@@ -3347,7 +3347,7 @@ let abstract_args gl generalize_vars dep id defined f args =
   in
     if dogen then
       let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env =
-	Array.fold_left aux (pf_unsafe_type_of gl f',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty,env) args'
+	Array.fold_left aux (Tacmach.pf_unsafe_type_of gl f',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty,env) args'
       in
       let args, refls = List.rev args, List.rev refls in
       let vars =
@@ -3401,8 +3401,8 @@ let rec compare_upto_variables x y =
   else compare_constr compare_upto_variables x y
 
 let specialize_eqs id gl =
-  let env = pf_env gl in
-  let ty = pf_get_hyp_typ gl id in
+  let env = Tacmach.pf_env gl in
+  let ty = Tacmach.pf_get_hyp_typ gl id in
   let evars = ref (project gl) in
   let unif env evars c1 c2 =
     compare_upto_variables c1 c2 && Evarconv.e_conv env evars c1 c2
@@ -3745,10 +3745,10 @@ let recolle_clenv i params args elimclause gl =
   let k = match i with -1 -> Array.length lindmv - List.length args | _ -> i in
   (* parameters correspond to first elts of lid. *)
   let clauses_params =
-    List.map_i (fun i id -> mkVar id , pf_get_hyp_typ gl id , lindmv.(i))
+    List.map_i (fun i id -> mkVar id , Tacmach.pf_get_hyp_typ gl id , lindmv.(i))
       0 params in
   let clauses_args =
-    List.map_i (fun i id -> mkVar id , pf_get_hyp_typ gl id , lindmv.(k+i))
+    List.map_i (fun i id -> mkVar id , Tacmach.pf_get_hyp_typ gl id , lindmv.(k+i))
       0 args in
   let clauses = clauses_params@clauses_args in
   (* iteration of clenv_fchain with all infos we have. *)
@@ -3775,7 +3775,7 @@ let induction_tac with_evars params indvars elim gl =
   let elimc = contract_letin_in_lam_header elimc in
   let elimc = mkCast (elimc, DEFAULTcast, elimt) in
   let elimclause =
-    pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
+    Tacmach.pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
   (* elimclause' is built from elimclause by instanciating all args and params. *)
   let elimclause' = recolle_clenv i params indvars elimclause gl in
   (* one last resolution (useless?) *)
@@ -3874,7 +3874,7 @@ let induction_without_atomization isrec with_evars elim names lid =
 
 (* assume that no occurrences are selected *)
 let clear_unselected_context id inhyps cls gl =
-  if occur_var (pf_env gl) id (pf_concl gl) &&
+  if occur_var (Tacmach.pf_env gl) id (Tacmach.pf_concl gl) &&
     cls.concl_occs == NoOccurrences
   then errorlabstrm ""
     (str "Conclusion must be mentioned: it depends on " ++ pr_id id
