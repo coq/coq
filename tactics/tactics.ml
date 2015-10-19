@@ -981,12 +981,15 @@ let rec intros_move = function
       Tacticals.New.tclTHEN (intro_gen (NamingMustBe (dloc,hyp)) destopt false false)
 	(intros_move rest)
 
+let run_delayed env sigma c =
+  Sigma.run sigma { Sigma.run = fun sigma -> c.delayed env sigma }
+
 (* Apply a tactic on a quantified hypothesis, an hypothesis in context
    or a term with bindings *)
 
 let onOpenInductionArg env sigma tac = function
   | clear_flag,ElimOnConstr f ->
-      let (sigma',cbl) = f env sigma in
+      let (cbl, sigma') = run_delayed env sigma f in
       let pending = (sigma,sigma') in
       Tacticals.New.tclTHEN
         (Proofview.Unsafe.tclEVARS sigma')
@@ -1578,7 +1581,7 @@ let apply_with_delayed_bindings_gen b e l =
     Proofview.Goal.enter begin fun gl ->
       let sigma = Proofview.Goal.sigma gl in
       let env = Proofview.Goal.env gl in
-      let sigma, cb = f env sigma in
+      let (cb, sigma) = run_delayed env sigma f in
 	Tacticals.New.tclWITHHOLES e
           (general_apply b b e k (loc,cb)) sigma
     end
@@ -1680,7 +1683,7 @@ let apply_in_delayed_once sidecond_first with_delta with_destruct with_evars nam
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
-    let sigma, c = f env sigma in
+    let (c, sigma) = run_delayed env sigma f in
     Tacticals.New.tclWITHHOLES with_evars 
       (apply_in_once sidecond_first with_delta with_destruct with_evars
          naming id (clear_flag,(loc,c)) tac)
@@ -2245,7 +2248,7 @@ and intro_pattern_action loc b style pat thin destopt tac id = match pat with
       Proofview.Goal.enter begin fun gl ->
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
-        let sigma,c = f env sigma in
+        let (c, sigma) = run_delayed env sigma f in
         Tacticals.New.tclWITHHOLES false
           (Tacticals.New.tclTHENFIRST
              (* Skip the side conditions of the apply *)
@@ -2339,7 +2342,7 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
 *)
 
 let apply_in simple with_evars clear_flag id lemmas ipat =
-  let lemmas = List.map (fun (k,(loc,l)) -> k, (loc, fun _ sigma -> sigma, l)) lemmas in
+  let lemmas = List.map (fun (k,(loc,l)) -> k, (loc, { delayed = fun _ sigma -> Sigma (l, sigma, Sigma.refl) })) lemmas in
   general_apply_in false simple simple with_evars clear_flag id lemmas ipat
 
 let apply_delayed_in simple with_evars clear_flag id lemmas ipat =
@@ -2729,7 +2732,7 @@ let check_unused_names names =
       (str"Unused introduction " ++ str (String.plural (List.length names) "pattern")
        ++ str": " ++ prlist_with_sep spc 
 	 (Miscprint.pr_intro_pattern 
-	    (fun c -> Printer.pr_constr (snd (c (Global.env()) Evd.empty)))) names)
+	    (fun c -> Printer.pr_constr (fst (run_delayed (Global.env()) Evd.empty c)))) names)
 
 let intropattern_of_name gl avoid = function
   | Anonymous -> IntroNaming IntroAnonymous
@@ -4118,7 +4121,7 @@ let induction_destruct isrec with_evars (lc,elim) =
       (* will be removable when is_functional_induction will be more clever *)
       if not (Option.is_empty cls) then error "'in' clause not supported here.";
       let finish_evar_resolution f =
-        let (sigma',(c,lbind)) = f env sigma in
+        let ((c, lbind), sigma') = run_delayed env sigma f in
         let pending = (sigma,sigma') in
         let sigma' = Sigma.Unsafe.of_evar_map sigma' in
         let Sigma (c, _, _) = finish_evar_resolution env sigma' (pending,c) in
@@ -4161,7 +4164,7 @@ let induction_destruct isrec with_evars (lc,elim) =
     | Some elim ->
       (* Several induction hyps with induction scheme *)
       let finish_evar_resolution f =
-        let (sigma',(c,lbind)) = f env sigma in
+        let ((c, lbind), sigma') = run_delayed env sigma f in
         let pending = (sigma,sigma') in
 	if lbind != NoBindings then
 	  error "'with' clause not supported here.";

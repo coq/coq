@@ -285,10 +285,10 @@ let error_too_many_names pats =
   tclZEROMSG ~loc (
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
-    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (snd (c env Evd.empty)))) pats ++
+    str ": " ++ pr_enum (Miscprint.pr_intro_pattern (fun c -> Printer.pr_constr (fst (run_delayed env Evd.empty c)))) pats ++
     str ".")
 
-let rec get_names (allow_conj,issimple) (loc,pat as x) = match pat with
+let get_names (allow_conj,issimple) (loc, pat as x) = match pat with
   | IntroNaming IntroAnonymous | IntroForthcoming _ ->
       error "Anonymous pattern not allowed for inversion equations."
   | IntroNaming (IntroFresh _) ->

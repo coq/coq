@@ -40,6 +40,7 @@ open Misctypes
 open Locus
 open Tacintern
 open Taccoerce
+open Sigma.Notations
 open Proofview.Notations
 
 let safe_msgnl s =
@@ -801,7 +802,7 @@ let rec message_of_value v =
     Ftactic.return (int (out_gen (topwit wit_int) v))
   else if has_type v (topwit wit_intro_pattern) then
     let p = out_gen (topwit wit_intro_pattern) v in
-    let print env sigma c = pr_constr_env env sigma (snd (c env Evd.empty)) in
+    let print env sigma c = pr_constr_env env sigma (fst (Tactics.run_delayed env Evd.empty c)) in
     Ftactic.nf_enter begin fun gl ->
       Ftactic.return (Miscprint.pr_intro_pattern (fun c -> print (pf_env gl) (Proofview.Goal.sigma gl) c) p)
     end
@@ -864,7 +865,11 @@ and interp_intro_pattern_action ist env sigma = function
       let sigma,l = interp_intro_pattern_list_as_list ist env sigma l in
       sigma, IntroInjection l
   | IntroApplyOn (c,ipat) ->
-      let c = fun env sigma -> interp_constr ist env sigma c in
+      let c = { delayed = fun env sigma ->
+        let sigma = Sigma.to_evar_map sigma in
+        let (sigma, c) = interp_constr ist env sigma c in
+        Sigma.Unsafe.of_pair (c, sigma)
+      } in
       let sigma,ipat = interp_intro_pattern ist env sigma ipat in
       sigma, IntroApplyOn (c,ipat)
   | IntroWildcard | IntroRewrite _ as x -> sigma, x
@@ -967,13 +972,21 @@ let interp_open_constr_with_bindings_loc ist ((c,_),bl as cb) =
   let loc1 = loc_of_glob_constr c in
   let loc2 = loc_of_bindings bl in
   let loc = if Loc.is_ghost loc2 then loc1 else Loc.merge loc1 loc2 in
-  let f env sigma = interp_open_constr_with_bindings ist env sigma cb in
+  let f = { delayed = fun env sigma ->
+    let sigma = Sigma.to_evar_map sigma in
+    let (sigma, c) = interp_open_constr_with_bindings ist env sigma cb in
+    Sigma.Unsafe.of_pair (c, sigma)
+  } in
     (loc,f)
 
 let interp_induction_arg ist gl arg =
   match arg with
   | keep,ElimOnConstr c ->
-      keep,ElimOnConstr (fun env sigma -> interp_constr_with_bindings ist env sigma c)
+      keep,ElimOnConstr { delayed = fun env sigma ->
+        let sigma = Sigma.to_evar_map sigma in
+        let (sigma, c) = interp_constr_with_bindings ist env sigma c in
+        Sigma.Unsafe.of_pair (c, sigma)
+      }
   | keep,ElimOnAnonHyp n as x -> x
   | keep,ElimOnIdent (loc,id) ->
       let error () = user_err_loc (loc, "",
@@ -984,7 +997,7 @@ let interp_induction_arg ist gl arg =
         if Tactics.is_quantified_hypothesis id' gl
         then keep,ElimOnIdent (loc,id')
         else
-          (try keep,ElimOnConstr (fun env sigma -> sigma,(constr_of_id env id',NoBindings))
+          (try keep,ElimOnConstr { delayed = fun env sigma -> Sigma ((constr_of_id env id',NoBindings), sigma, Sigma.refl) }
           with Not_found ->
             user_err_loc (loc,"",
             pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis."))
@@ -1005,16 +1018,18 @@ let interp_induction_arg ist gl arg =
           keep,ElimOnAnonHyp (out_gen (topwit wit_int) v)
         else match Value.to_constr v with
         | None -> error ()
-        | Some c -> keep,ElimOnConstr (fun env sigma -> sigma,(c,NoBindings))
+        | Some c -> keep,ElimOnConstr { delayed = fun env sigma -> Sigma ((c,NoBindings), sigma, Sigma.refl) }
       with Not_found ->
 	(* We were in non strict (interactive) mode *)
 	if Tactics.is_quantified_hypothesis id gl then
           keep,ElimOnIdent (loc,id)
 	else
           let c = (GVar (loc,id),Some (CRef (Ident (loc,id),None))) in
-          let f env sigma = 
+          let f = { delayed = fun env sigma ->
+            let sigma = Sigma.to_evar_map sigma in
             let (sigma,c) = interp_open_constr ist env sigma c in
-            sigma,(c,NoBindings) in
+            Sigma.Unsafe.of_pair ((c,NoBindings), sigma)
+          } in
           keep,ElimOnConstr f
 
 (* Associates variables with values and gives the remaining variables and
@@ -2185,7 +2200,11 @@ and interp_atomic ist tac : unit Proofview.tactic =
   | TacRewrite (ev,l,cl,by) ->
       Proofview.Goal.enter begin fun gl ->
         let l' = List.map (fun (b,m,(keep,c)) ->
-          let f env sigma = interp_open_constr_with_bindings ist env sigma c in
+          let f = { delayed = fun env sigma ->
+            let sigma = Sigma.to_evar_map sigma in
+            let (sigma, c) = interp_open_constr_with_bindings ist env sigma c in
+            Sigma.Unsafe.of_pair (c, sigma)
+          } in
 	  (b,m,keep,f)) l in
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in

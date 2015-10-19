@@ -487,7 +487,7 @@ let apply_special_clear_request clear_flag f =
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     try
-      let sigma,(c,bl) = f env sigma in
+      let ((c, bl), sigma) = run_delayed env sigma f in
       apply_clear_request clear_flag (use_clear_hyp_by_default ()) c
     with
       e when catchable_exception e -> tclIDTAC
@@ -498,7 +498,7 @@ let general_multi_rewrite with_evars l cl tac =
     Proofview.Goal.enter begin fun gl ->
       let sigma = Proofview.Goal.sigma gl in
       let env = Proofview.Goal.env gl in
-      let sigma,c = f env sigma in
+      let (c, sigma) = run_delayed env sigma f in
       tclWITHHOLES with_evars
         (general_rewrite_clause l2r with_evars ?tac c cl) sigma
     end

@@ -122,11 +122,12 @@ type open_glob_constr = unit * glob_constr_and_expr
 type binding_bound_vars = Id.Set.t
 type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
 
-type delayed_open_constr_with_bindings =
-    Environ.env -> Evd.evar_map -> Evd.evar_map * Term.constr with_bindings
+type 'a delayed_open =
+  { delayed : 'r. Environ.env -> 'r Sigma.t -> ('a, 'r) Sigma.sigma }
 
-type delayed_open_constr =
-    Environ.env -> Evd.evar_map -> Evd.evar_map * Term.constr
+type delayed_open_constr_with_bindings = Term.constr with_bindings delayed_open
+
+type delayed_open_constr = Term.constr delayed_open
 
 type intro_pattern = delayed_open_constr intro_pattern_expr located
 type intro_patterns = delayed_open_constr intro_pattern_expr located list

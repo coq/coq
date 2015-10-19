@@ -205,6 +205,8 @@ val apply_delayed_in :
     (clear_flag * delayed_open_constr_with_bindings located) list ->
     intro_pattern option -> unit Proofview.tactic
 
+val run_delayed : Environ.env -> evar_map -> 'a delayed_open -> 'a * evar_map
+
 (** {6 Elimination tactics. } *)
 
 (*
