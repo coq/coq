@@ -52,10 +52,10 @@ let rec print_debug_queue e =
       let _ =
 	match e with
 	| Some e ->
-	   Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
+	   Pp.msg_debug (hov 0 (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal" ++ fnl() ++ goal))
 	| None ->
 	   begin
-	     Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
+	     Pp.msg_debug (str " from " ++ lmsg ++ str " on goal" ++ fnl() ++ goal);
 	   end in
       print_debug_queue None ;
     end

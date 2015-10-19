@@ -70,8 +70,8 @@ let do_observe_tac s tac g =
   with reraise ->
     let reraise = Errors.push reraise in
     let e = Cerrors.process_vernac_interp_error reraise in
-    observe (str "observation "++ s++str " raised exception " ++
-	     Errors.iprint e ++ str " on goal " ++ goal );
+    observe (hov 0 (str "observation "++ s++str " raised exception " ++
+	     Errors.iprint e ++ str " on goal" ++ fnl() ++ goal ));
     iraise reraise;;
 
 

@@ -212,10 +212,10 @@ let rec print_debug_queue b e =
     begin
       let lmsg,goal = Stack.pop debug_queue in 
       if b then 
-	Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
+	Pp.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal" ++ fnl() ++ goal))
       else
 	begin
-	  Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
+	  Pp.msg_debug (hov 1 (str " from " ++ lmsg ++ str " on goal"++fnl() ++ goal));
 	end;
       (* print_debug_queue false e; *)
     end
