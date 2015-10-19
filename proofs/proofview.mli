@@ -454,16 +454,16 @@ module Goal : sig
   (** Like {!nf_enter}, but does not normalize the goal beforehand. *)
   val enter : ([ `LZ ] t -> unit tactic) -> unit tactic
 
-  type 'a enter =
-    { enter : 'r. 'a t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
+  type 'a s_enter =
+    { s_enter : 'r. 'a t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
 
   (** A variant of {!enter} allows to work with a monotonic state. The evarmap
       returned by the argument is put back into the current state before firing
       the returned tactic. *)
-  val s_enter : [ `LZ ] enter -> unit tactic
+  val s_enter : [ `LZ ] s_enter -> unit tactic
 
   (** Like {!s_enter}, but normalizes the goal beforehand. *)
-  val nf_s_enter : [ `NF ] enter -> unit tactic
+  val nf_s_enter : [ `NF ] s_enter -> unit tactic
 
   (** Recover the list of current goals under focus, without evar-normalization *)
   val goals : [ `LZ ] t tactic list tactic
@@ -592,6 +592,6 @@ module Notations : sig
   (** {!tclOR}: [t1+t2] = [tclOR t1 (fun _ -> t2)]. *)
   val (<+>) : 'a tactic -> 'a tactic -> 'a tactic
 
-  type 'a enter = 'a Goal.enter =
-    { enter : 'r. 'a Goal.t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
+  type 'a s_enter = 'a Goal.s_enter =
+    { s_enter : 'r. 'a Goal.t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
 end

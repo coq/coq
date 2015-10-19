@@ -974,8 +974,8 @@ module Goal = struct
     end
     end
 
-  type 'a enter =
-    { enter : 'r. 'a t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
+  type 'a s_enter =
+    { s_enter : 'r. 'a t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
 
   let s_enter f =
     InfoL.tag (Info.Dispatch) begin
@@ -985,7 +985,7 @@ module Goal = struct
       try
         let gl = gmake env sigma goal in
         let sigma = Sigma.Unsafe.of_evar_map sigma in
-        let Sigma (tac, sigma, _) = f.enter gl sigma in
+        let Sigma (tac, sigma, _) = f.s_enter gl sigma in
         let sigma = Sigma.to_evar_map sigma in
         tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) tac)
       with e when catchable_exception e ->
@@ -1002,7 +1002,7 @@ module Goal = struct
       try
         let (gl, sigma) = nf_gmake env sigma goal in
         let sigma = Sigma.Unsafe.of_evar_map sigma in
-        let Sigma (tac, sigma, _) = f.enter gl sigma in
+        let Sigma (tac, sigma, _) = f.s_enter gl sigma in
         let sigma = Sigma.to_evar_map sigma in
         tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) tac)
       with e when catchable_exception e ->
@@ -1254,6 +1254,6 @@ module Notations = struct
   let (>>=) = tclBIND
   let (<*>) = tclTHEN
   let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
-  type 'a enter = 'a Goal.enter =
-    { enter : 'r. 'a Goal.t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
+  type 'a s_enter = 'a Goal.s_enter =
+    { s_enter : 'r. 'a Goal.t -> 'r Sigma.t -> (unit tactic, 'r) Sigma.sigma }
 end

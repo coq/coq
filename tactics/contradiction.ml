@@ -24,7 +24,7 @@ let mk_absurd_proof t =
     mkLambda (Names.Name id,t,mkApp (mkRel 2,[|mkRel 1|])))
 
 let absurd c =
-  Proofview.Goal.s_enter { enter = begin fun gl sigma ->
+  Proofview.Goal.s_enter { s_enter = begin fun gl sigma ->
     let env = Proofview.Goal.env gl in
     let sigma = Sigma.to_evar_map sigma in
     let j = Retyping.get_judgment_of env sigma c in
