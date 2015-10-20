@@ -444,7 +444,7 @@ module Goal : sig
   val concl : ([ `NF ], 'r) t -> Term.constr
   val hyps : ([ `NF ], 'r) t -> Context.named_context
   val env : ('a, 'r) t -> Environ.env
-  val sigma : ('a, 'r) t -> Evd.evar_map
+  val sigma : ('a, 'r) t -> 'r Sigma.t
   val extra : ('a, 'r) t -> Evd.Store.t
 
   (** Returns the goal's conclusion even if the goal is not

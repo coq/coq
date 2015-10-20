@@ -664,7 +664,7 @@ END
 
 let hget_evar n =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-  let sigma = Proofview.Goal.sigma gl in
+  let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
   let evl = evar_list concl in
   if List.length evl < n then
@@ -779,7 +779,7 @@ END
 
 let eq_constr x y = 
   Proofview.Goal.enter { enter = begin fun gl ->
-    let evd = Proofview.Goal.sigma gl in
+    let evd = Tacmach.New.project gl in
       if Evarutil.eq_constr_univs_test evd evd x y then Proofview.tclUNIT () 
       else Tacticals.New.tclFAIL 0 (str "Not equal")
   end }

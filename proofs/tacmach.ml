@@ -158,11 +158,15 @@ let pr_glls glls =
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New = struct
 
+  let project gl =
+    let sigma = Proofview.Goal.sigma gl in
+    Sigma.to_evar_map sigma
+
   let pf_apply f gl =
-    f (Proofview.Goal.env gl) (Proofview.Goal.sigma gl)
+    f (Proofview.Goal.env gl) (project gl)
 
   let of_old f gl =
-    f { Evd.it = Proofview.Goal.goal gl ; sigma = Proofview.Goal.sigma gl }
+    f { Evd.it = Proofview.Goal.goal gl ; sigma = project gl; }
 
   let pf_global id gl =
     (** We only check for the existence of an [id] in [hyps] *)
@@ -216,7 +220,7 @@ module New = struct
     (** We normalize the conclusion just after *)
     let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = project gl in
     nf_evar sigma concl
 
   let pf_whd_betadeltaiota gl t = pf_apply whd_betadeltaiota gl t
@@ -235,6 +239,6 @@ module New = struct
   let pf_whd_betadeltaiota gl t = pf_apply whd_betadeltaiota gl t
   let pf_compute gl t = pf_apply compute gl t
 
-  let pf_nf_evar gl t = nf_evar (Proofview.Goal.sigma gl) t
+  let pf_nf_evar gl t = nf_evar (project gl) t
 
 end

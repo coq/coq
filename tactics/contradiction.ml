@@ -55,7 +55,7 @@ let filter_hyp f tac =
 
 let contradiction_context =
   Proofview.Goal.enter { enter = begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let rec seek_neg l = match l with
       | [] ->  Tacticals.New.tclZEROMSG (Pp.str"No such contradiction")
@@ -91,7 +91,7 @@ let is_negation_of env sigma typ t =
 
 let contradiction_term (c,lbind as cl) =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = Tacmach.New.project gl in
     let env = Proofview.Goal.env gl in
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let typ = type_of c in

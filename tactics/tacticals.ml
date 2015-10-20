@@ -696,7 +696,7 @@ module New = struct
   let pf_constr_of_global ref tac =
     Proofview.Goal.nf_enter { enter = begin fun gl ->
       let env = Proofview.Goal.env gl in
-      let sigma = Proofview.Goal.sigma gl in
+      let sigma = Tacmach.New.project gl in
       let (sigma, c) = Evd.fresh_global env sigma ref in
       Proofview.Unsafe.tclEVARS sigma <*> (tac c)
     end }

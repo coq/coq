@@ -111,6 +111,7 @@ module New : sig
   (** FIXME: encapsulate the level in an existential type. *)
   val of_old : (Proof_type.goal Evd.sigma -> 'a) -> ([ `NF ], 'r) Proofview.Goal.t -> 'a
 
+  val project : ('a, 'r) Proofview.Goal.t -> Evd.evar_map
   val pf_env : ('a, 'r) Proofview.Goal.t -> Environ.env
   val pf_concl : ([ `NF ], 'r) Proofview.Goal.t -> types
 

@@ -228,7 +228,7 @@ let compute_ivs f cs gl =
         let (args3, body3) = decompose_lam body2 in
         let nargs3 = List.length args3 in
         let env = Proofview.Goal.env gl in
-        let sigma = Proofview.Goal.sigma gl in
+        let sigma = Tacmach.New.project gl in
         let is_conv = Reductionops.is_conv env sigma in
           begin match decomp_term body3 with
           | Case(_,p,c,lci) -> (* <p> Case c of c1 ... cn end *)

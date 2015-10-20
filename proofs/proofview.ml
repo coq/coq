@@ -921,7 +921,7 @@ module Goal = struct
   let assume (gl : ('a, 'r) t) = (gl :> ([ `NF ], 'r) t)
 
   let env { env=env } = env
-  let sigma { sigma=sigma } = sigma
+  let sigma { sigma=sigma } = Sigma.Unsafe.of_evar_map sigma
   let hyps { env=env } = Environ.named_context env
   let concl { concl=concl } = concl
   let extra { sigma=sigma; self=self } = Goal.V82.extra sigma self
@@ -1061,6 +1061,7 @@ struct
 
   let refine ?(unsafe = true) f = Goal.enter { Goal.enter = begin fun gl ->
     let sigma = Goal.sigma gl in
+    let sigma = Sigma.to_evar_map sigma in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
     (** Save the [future_goals] state to restore them after the

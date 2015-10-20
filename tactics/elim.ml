@@ -97,7 +97,7 @@ let general_decompose recognizer c =
 
 let head_in indl t gl =
   let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
+  let sigma = Tacmach.New.project gl in
   try
     let ity,_ =
       if !up_to_delta

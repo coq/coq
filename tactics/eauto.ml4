@@ -154,8 +154,8 @@ let e_exact poly flags (c,clenv) =
 let rec e_trivial_fail_db db_list local_db =
   let next = Proofview.Goal.nf_enter { enter = begin fun gl ->
     let d = Tacmach.New.pf_last_hyp gl in
-    let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) d in
-    e_trivial_fail_db db_list (Hint_db.add_list (Tacmach.New.pf_env gl) (Proofview.Goal.sigma gl) hintl local_db)
+    let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Tacmach.New.project gl) d in
+    e_trivial_fail_db db_list (Hint_db.add_list (Tacmach.New.pf_env gl) (Tacmach.New.project gl) hintl local_db)
   end } in
   Proofview.Goal.enter { enter = begin fun gl ->
   let tacl =

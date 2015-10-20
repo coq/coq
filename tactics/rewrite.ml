@@ -1566,7 +1566,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma strat clause =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = Tacmach.New.project gl in
     let ty = match clause with
     | None -> concl
     | Some id -> Environ.named_type id env
@@ -2040,7 +2040,7 @@ let not_declared env ty rel =
 let setoid_proof ty fn fallback =
   Proofview.Goal.nf_enter { enter = begin fun gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
+    let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
     Proofview.tclORELSE
       begin
